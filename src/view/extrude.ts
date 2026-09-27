@@ -26,8 +26,11 @@
  * each subset is joined on its own, with its own openings. A plan where every wall is the
  * same height — which is every plan that writes no `height` clause — has exactly one
  * subset and therefore one seamless solid, with its courtyards and its door and window
- * holes already cut. A plan that mixes heights gets one solid per height, and the visible
- * seam between them is a real edge in the building.
+ * holes already cut. A plan that mixes heights gets one solid per height, and those
+ * solids are NOT trimmed against each other: where a wall of one height meets a wall of
+ * another, each runs to its own centreline and the two interpenetrate. The centroid-keyed
+ * painter can then draw the nearer-by-centroid solid over a face that really hides it, so
+ * a mixed-height joint is drawn wrongly (open in `docs/backlog.md`).
  *
  * ## Openings are filled back in, they are not re-cut
  *
@@ -124,20 +127,24 @@ function ringArea2(pts: readonly Point[]): number {
  * its own top rather than a second slab. There is no bottom cap: it is the underside of a
  * solid standing on the floor, and both cameras look down.
  *
- * No rings is no solid, and so no faces — not a cap with no boundary. That case is real:
- * a wall set whose every wall is consumed by its openings joins to an EMPTY outline (the
- * plan view's `lowerWallSet` already draws nothing for it), and an empty cap would be a
- * face with no `loops[0]` for the painter to take a depth from.
+ * A ring of fewer than three points bounds no area, so it is dropped, and no rings is no
+ * solid — no faces, not a cap with no boundary. Both cases are real: a wall set whose
+ * every wall is consumed by its openings joins to an EMPTY outline (the plan view's
+ * `lowerWallSet` already draws nothing for it), and the joinery can hand back a
+ * degenerate chain. A face with no `loops[0]`, or an empty one, leaves the painter no
+ * depth to sort on — a throw, or a NaN key that makes the order engine-defined.
  */
 function extrudeLoops(
-  rings: readonly Point[][],
+  input: readonly Point[][],
   z0: number,
   z1: number,
   kind: FaceKind,
   elementId: string,
   out: Face[],
 ): void {
-  if (!(z1 > z0) || rings.length === 0) return;
+  if (!(z1 > z0)) return;
+  const rings = input.filter((r) => r.length >= 3);
+  if (rings.length === 0) return;
   for (let li = 0; li < rings.length; li++) {
     const ring = rings[li]!;
     for (let i = 0; i < ring.length; i++) {

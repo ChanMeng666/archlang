@@ -21,7 +21,9 @@ import { compile } from "../src/index.js";
 import { resolveAll } from "../src/ir.js";
 import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
+import { cameraFor } from "../src/view/camera.js";
 import { type Face, facesOf } from "../src/view/extrude.js";
+import { orderFaces } from "../src/view/paint.js";
 
 const VIEWS = ["iso", "axon"] as const;
 
@@ -49,11 +51,20 @@ function renderBoth(src: string): Record<(typeof VIEWS)[number], string> {
   return out;
 }
 
-/** The extruder's contract, which the painter relies on: a boundary with a real ring. */
+/**
+ * The extruder's contract, which the painter relies on: a boundary, every ring a real one,
+ * and so a FINITE sort key under both cameras. A NaN depth would not throw — it would make
+ * `orderFaces`'s comparator return NaN, leaving the draw order to the engine's sort.
+ */
 function expectWellFormed(fs: readonly Face[]): void {
   for (const f of fs) {
     expect(f.loops.length, f.elementId).toBeGreaterThan(0);
     for (const l of f.loops) expect(l.length, f.elementId).toBeGreaterThanOrEqual(3);
+  }
+  for (const view of VIEWS) {
+    for (const d of orderFaces(fs, cameraFor(view))) {
+      expect(Number.isFinite(d.depth), `${view} ${d.face.elementId}`).toBe(true);
+    }
   }
 }
 
@@ -113,6 +124,27 @@ ${MIXED_SHELL}  wall id=w_h1 partition thickness 80 { (0,4000) (2300,4000) }
     // is the shell's own, byte for byte.
     expect(got.iso).toBe(shell.iso);
     expect(got.axon).toBe(shell.axon);
+  });
+
+  it("a door on a ZERO-LENGTH wall: no empty ring, no NaN sort key, no `M  Z` path", () => {
+    // Diagnostic-free source. A zero-length host has no direction, so every corner of the
+    // door's cut coincided and the cut came back as an empty — but truthy — loop; the
+    // header block then reached the painter as a face whose one ring had no points.
+    const ZERO = `plan "t" {
+  wall id=s exterior thickness 150 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+  wall id=z partition thickness 100 { (1000,1000) (1000,1000) }
+  door on z at 50% width 900
+}
+`;
+    expect(compile(ZERO, { noCache: true }).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    const fs = faces(ZERO);
+    expectWellFormed(fs);
+    // Only the shell stands: the door on a wall with no length puts no header back.
+    expect([...new Set(fs.map((f) => f.elementId))]).toEqual(["L0:walls@3000"]);
+    const got = renderBoth(ZERO);
+    for (const view of VIEWS) {
+      expect(got[view], view).not.toMatch(/NaN|d="M\s+Z"/);
+    }
   });
 
   it("a consumed wall still gets the blocks above and below its openings", () => {
@@ -225,7 +257,8 @@ const PARTITION = fc.record({
   at: fc.integer({ min: 10, max: 90 }),
   /** Full span (a T at both ends), or a stub from one side (a T and a free end). */
   stub: fc.boolean(),
-  length: fc.integer({ min: 400, max: 3000 }),
+  /** 0 makes a zero-length wall: legal source, and a host with no direction. */
+  length: fc.integer({ min: 0, max: 3000 }),
   height: HEIGHT,
   openings: fc.array(OPENING, { maxLength: 3 }),
 });
@@ -270,7 +303,7 @@ suite("mixed wall heights — generated", () => {
           expectWellFormed(faces(src));
         }
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 20260927 },
     );
     // The property is over drawings, not over refusals.
     expect(clean).toBeGreaterThan(150);
