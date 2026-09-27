@@ -1054,16 +1054,16 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   ),
   W_WHILE_DEPRECATED: W(
     "W_WHILE_DEPRECATED",
-    "`while` is deprecated and will be removed in 2.0.",
-    "`while` plus a reassignment to make it terminate is the one construct in ArchLang's expand-time language that breaks referential transparency: a `let` binding reassigned later is no longer a value that can be substituted, which every equational tool (LSP rename, `arch fix`'s rewrite-in-your-form, the planned re-roll refactor) relies on. `for x in a..b` covers every counted loop `while` is used for in practice, and the construct ships in 0 shipped examples.",
-    "Rewrite the loop as `for I in A..B { … }`. The machine-applicable fix does this for the canonical shape `let I = A` immediately before `while I < B { …; I = I + 1 }`; anything else needs a hand rewrite before 2.0.",
+    "`while` is deprecated and will be removed in a future major version.",
+    "`while` plus a reassignment to make it terminate is the one construct in ArchLang's expand-time language that breaks referential transparency: a `let` binding reassigned later is no longer a value that can be substituted, which every equational tool (LSP rename, `arch fix`'s rewrite-in-your-form, the planned re-roll refactor) relies on. `for x in a..b` covers every counted loop `while` is used for in practice.",
+    "Rewrite the loop as `for I in A..B { … }`. A machine-applicable fix is offered for the canonical shape `let I = A` immediately before `while I < B { …; I = I + 1 }` — but ONLY once the compiler has PROVED the rewrite compiles to the same drawing (same SVG, `describe()` and `lint()`); a shape that merely LOOKS like it, but whose body calls a component that reads or writes `I`, or that already caps out at `while`'s 10,000-iteration limit, is left as a warning with no fix. Anything the fix declines needs a hand rewrite.",
     "let i = 0\nwhile i < 5 {\n  room at (0, i * 3000) size 3000x3000\n  i = i + 1\n}   # warning: deprecated; rewrites to `for i in 0..5 { … }`",
   ),
   W_REASSIGN_DEPRECATED: W(
     "W_REASSIGN_DEPRECATED",
-    "Reassignment (`NAME = expr`) is deprecated and will be removed in 2.0.",
-    "Reassigning an existing `let` binding exists only to make a `while` loop progress. Outside that role it is the same referential-transparency break `while` is deprecated for: a name bound with `let` can no longer be trusted to keep its first value, which breaks the equational tools (rename, `arch fix`, the planned re-roll refactor) that treat a `let` as a substitutable value. A `while` loop's own progress step (its body's last statement, updating the name the condition tests) does not also raise this — that reassignment is already covered by `W_WHILE_DEPRECATED` on the loop itself.",
-    "Bind a new name with `let` instead of reassigning it, or express the loop as `for NAME in A..B { … }` (the machine-applicable fix on `W_WHILE_DEPRECATED` does this for the canonical shape).",
+    "Reassignment (`NAME = expr`) is deprecated and will be removed in a future major version.",
+    "Reassigning an existing `let` binding exists only to make a `while` loop progress. Outside that role it is the same referential-transparency break `while` is deprecated for: a name bound with `let` can no longer be trusted to keep its first value, which breaks the equational tools (rename, `arch fix`, the planned re-roll refactor) that treat a `let` as a substitutable value. A reassignment LEXICALLY INSIDE a `while` body (at any depth, including inside a nested `if`/`for`/`zone`) does not also raise this — every reassignment there is already covered by that loop's own `W_WHILE_DEPRECATED`.",
+    "Bind a new name with `let` instead of reassigning it, or express the surrounding loop as `for NAME in A..B { … }` (a machine-applicable fix is offered on `W_WHILE_DEPRECATED` for the canonical shape, once proved sound).",
     "let total = 0\ntotal = total + 100   # warning: deprecated reassignment; bind a new name instead",
   ),
 });

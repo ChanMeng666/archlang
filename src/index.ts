@@ -22,8 +22,12 @@ import { clearParseCache } from "./parser.js";
 import { clearResolveCache } from "./ir.js";
 import { idToken } from "./identity.js";
 import type { Scene } from "./scene.js";
-import type { Diagnostic } from "./diagnostics.js";
+import type { Diagnostic, FixSuggestion } from "./diagnostics.js";
 import type { CompileError, CompileOptions, CompilePage, CompileResult } from "./types.js";
+import type { PlanNode } from "./ast.js";
+import { describe as describePlan } from "./describe.js";
+import { lint as lintPlan } from "./lint.js";
+import { buildCandidateEdit, canonicalShapeAt, collectWhileSites } from "./while-fix.js";
 
 export type {
   CompileError,
@@ -539,8 +543,111 @@ function compileUncached(source: string, opts: CompileOptions): CompileResult {
     svg = renderErrorSvg(source, diagnostics);
   }
 
+  const provenDiagnostics = attachWhileFixes(diagnostics, plan, source, pages ? pages.map((p) => p.svg) : [svg], opts);
+
   // `pages` is spread so a single-storey result has no such key at all (append-only).
-  return { svg, errors, warnings, diagnostics, ast: plan, scene, ...(pages ? { pages } : {}) };
+  return { svg, errors, warnings, diagnostics: provenDiagnostics, ast: plan, scene, ...(pages ? { pages } : {}) };
+}
+
+/** Diagnostic codes stripped from a `describe()`/`lint()` comparison — a `while`→`for`
+ *  rewrite always drops these two from the twin (that is the point), and a `while`→`for`
+ *  rewrite always shifts byte spans below it, so codes/messages are compared, never spans. */
+const isDeprecationCode = (code: string | undefined): boolean =>
+  code === "W_WHILE_DEPRECATED" || code === "W_REASSIGN_DEPRECATED";
+
+/** A `{code, message}` multiset, deprecation codes excluded, order-independent. */
+function diagnosticKeys(ds: readonly { code?: string; message: string }[]): string[] {
+  return ds
+    .filter((d) => !isDeprecationCode(d.code))
+    .map((d) => `${d.code ?? ""}\u0000${d.message}`)
+    .sort();
+}
+
+/**
+ * W7's fix-soundness proof (`src/while-fix.ts`'s header explains why it cannot live at
+ * parse time — a red-team review found the parse-time version unsound: a component
+ * called from the loop body can read or write the counter, `zone` is scope-transparent,
+ * the loop may already be at `while`'s 10,000-iteration cap where `for`'s 100,000-item
+ * cap would not be, and a recovered parse `error` node was silently deleted on reprint).
+ *
+ * Runs once per `compileUncached` call, over the diagnostics THIS compile just produced.
+ * Skipped entirely on the internal "twin" compile this proof performs on a candidate
+ * rewrite (`opts._skipWhileFixProof`) — without that, proving a fix would compile a twin
+ * that tries to prove its own fixes, recursing without bound — and short-circuited
+ * whenever the ORIGINAL carries any error-severity diagnostic (this excludes both
+ * `E_WHILE_LIMIT`, a `while` already at its cap, and a recovered parse error, since a
+ * candidate built from either would be reprinting something already known-broken).
+ *
+ * For each remaining `W_WHILE_DEPRECATED` (never one forwarded from an imported module —
+ * those carry `Diagnostic.file` and are skipped; `arch fix` already refuses a cross-file
+ * edit), re-derives the candidate shape from the freshly-parsed `plan` (pre-link, so only
+ * LOCAL statements are ever considered) and, only if it still matches, builds ONE
+ * candidate edit and proves it: compile the resulting source (the "twin") and require
+ * ALL of —
+ *   - the twin raises no error-severity diagnostic;
+ *   - the twin's SVG (every storey, in `pages[]` order, or the lone `svg` for a
+ *     single-storey plan) is byte-identical to the original's;
+ *   - `describe()` is deep-equal (its own embedded `diagnostics` compared with both
+ *     deprecation codes stripped from each side first — the twin never carries them);
+ *   - `lint()`'s `{code, message}` multiset is equal with the same codes excluded
+ *     (defensive: `lint()` does not raise them today, but the exclusion keeps this
+ *     correct if that ever changes) — spans are never compared, since the rewrite moves
+ *     every byte below it regardless of anything else.
+ * Only then is the candidate attached as a `machine-applicable` fix. Any failure leaves
+ * the diagnostic exactly as `parse()` produced it — the warning stands, with no fix.
+ */
+function attachWhileFixes(
+  diagnostics: readonly Diagnostic[],
+  plan: PlanNode | undefined,
+  source: string,
+  originalPages: readonly string[],
+  opts: CompileOptions,
+): Diagnostic[] {
+  if (opts._skipWhileFixProof || !plan) return diagnostics as Diagnostic[];
+  if (diagnostics.some((d) => d.severity === "error")) return diagnostics as Diagnostic[];
+  const candidates = diagnostics.filter((d) => d.code === "W_WHILE_DEPRECATED" && d.file === undefined && d.span);
+  if (candidates.length === 0) return diagnostics as Diagnostic[];
+
+  const sites = collectWhileSites(plan);
+  const analyzeOpts = { plugins: opts.plugins, world: opts.world };
+
+  let changed = false;
+  const out = diagnostics.map((d) => {
+    if (!candidates.includes(d)) return d;
+    const site = sites.find((s) => s.whileStmt.span!.start === d.span!.start && s.whileStmt.span!.end === d.span!.end);
+    if (!site) return d;
+    const shape = canonicalShapeAt(site.body, site.index);
+    if (!shape) return d;
+
+    const edit = buildCandidateEdit(shape, source);
+    const candidateSource = source.slice(0, edit.span.start) + edit.newText + source.slice(edit.span.end);
+    const twin = compile(candidateSource, { ...opts, noCache: true, _skipWhileFixProof: true });
+    if (twin.diagnostics.some((x) => x.severity === "error")) return d;
+
+    const twinPages = twin.pages ? twin.pages.map((p) => p.svg) : [twin.svg];
+    if (twinPages.length !== originalPages.length || twinPages.some((s, i) => s !== originalPages[i])) return d;
+
+    const origDesc = describePlan(source, analyzeOpts);
+    const twinDesc = describePlan(candidateSource, analyzeOpts);
+    const origDescCmp = { ...origDesc, diagnostics: diagnosticKeys(origDesc.diagnostics) };
+    const twinDescCmp = { ...twinDesc, diagnostics: diagnosticKeys(twinDesc.diagnostics) };
+    if (JSON.stringify(origDescCmp) !== JSON.stringify(twinDescCmp)) return d;
+
+    const origLint = diagnosticKeys(lintPlan(source, analyzeOpts));
+    const twinLint = diagnosticKeys(lintPlan(candidateSource, analyzeOpts));
+    if (JSON.stringify(origLint) !== JSON.stringify(twinLint)) return d;
+
+    changed = true;
+    const fix: FixSuggestion = {
+      title: `rewrite the counted \`while\` loop over "${shape.name}" as \`for\``,
+      applicability: "machine-applicable",
+      fixId: "while-to-for",
+      edits: [edit],
+    };
+    return { ...d, fixes: [fix] };
+  });
+
+  return changed ? out : (diagnostics as Diagnostic[]);
 }
 
 /** Clear the internal compile cache + all per-stage memos (lex/parse/resolve). */

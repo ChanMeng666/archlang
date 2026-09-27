@@ -95,3 +95,25 @@ export function semanticDigestWith(api: CompilerApi, src: string, opts: DigestOp
   const payload = [JSON.stringify(api.describe(src, opts)), JSON.stringify(api.lint(src, opts))].join(" ");
   return createHash("sha256").update(payload, "utf8").digest("hex");
 }
+
+/**
+ * {@link allStoreysDigestWith} widened with `compile().diagnostics` as a FOURTH payload.
+ *
+ * `docs/agents/iron-laws.md`'s own rule for a new language form: "an SVG + `describe()` +
+ * `lint()` sweep carries no parse- or resolve-stage diagnostic — add `compile().diagnostics`
+ * when a change reaches the resolver." W7 (`while`/reassignment soft-deprecation,
+ * `src/while-deprecation.ts`) is raised at PARSE, invisible to every existing digest above,
+ * so it needs this one: the law it pins is that a plan using neither `while` nor a bare
+ * reassignment gets no new diagnostic, not merely an unchanged drawing and summary.
+ */
+export function allStoreysDigestWithDiagnostics(api: CompilerApi, src: string, opts: DigestOptions = {}): string {
+  const out = api.compile(src, { noCache: true, ...opts });
+  const drawings = out.pages ? out.pages.map((p) => p.svg) : [out.svg];
+  const payload = [
+    ...drawings,
+    JSON.stringify(api.describe(src, opts)),
+    JSON.stringify(api.lint(src, opts)),
+    JSON.stringify(out.diagnostics),
+  ].join(" ");
+  return createHash("sha256").update(payload, "utf8").digest("hex");
+}

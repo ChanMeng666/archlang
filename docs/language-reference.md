@@ -395,10 +395,12 @@ i = i + 1            # reassigns the existing binding
 
 Reassignment breaks the one property every equational tool in ArchLang relies
 on — that a `let` names a value, substitutable wherever it is used — so it is
-**deprecated** (`W_REASSIGN_DEPRECATED`) and scheduled for removal in 2.0. It
-still parses, compiles and renders exactly as before; a counted `while` loop
-that only reassigns to make progress rewrites to a `for` over a range (see
-[Control flow](#control-flow)) — the machine-applicable fix does this for you.
+**deprecated** (`W_REASSIGN_DEPRECATED`) and will be removed in a future major
+version. It still parses, compiles and renders exactly as before. A
+reassignment inside a `while` body does not raise this on its own — see
+[Control flow](#control-flow) for that loop's own warning and, for the
+canonical counted-loop shape, a `for`-over-a-range rewrite the compiler can
+prove sound and apply for you.
 
 ### Functions
 
@@ -613,13 +615,13 @@ while i < COUNT {
 - `while <cond> { … }` repeats until the condition is false; it is capped at
   10,000 iterations (a runaway loop is reported, not hung).
 
-**`while` is deprecated** (`W_WHILE_DEPRECATED`) and scheduled for removal in
-2.0: it is the one construct that needs a reassignment to make progress, and
-`for x in a..b` covers every counted loop `while` is used for. It still
-parses, compiles and renders exactly as before. The canonical shape above —
-`let i = 0` immediately before `while i < COUNT { …; i = i + 1 }`, with no
-other reassignment in the body — has a machine-applicable fix that rewrites
-it to the equivalent, and equally shorter, range form:
+**`while` is deprecated** (`W_WHILE_DEPRECATED`) and will be removed in a
+future major version: it is the one construct that needs a reassignment to
+make progress, and `for x in a..b` covers every counted loop `while` is used
+for. It still parses, compiles and renders exactly as before. The canonical
+shape above — `let i = 0` immediately before `while i < COUNT { …; i = i + 1
+}`, with no other reassignment in the body — offers a machine-applicable fix
+that rewrites it to the equivalent, and equally shorter, range form:
 
 ```
 for i in 0..COUNT {
@@ -627,8 +629,13 @@ for i in 0..COUNT {
 }
 ```
 
-Anything that does not fit that shape (a decrementing counter, a second
-reassignment, a condition other than `<`) needs a hand rewrite before 2.0.
+The fix is offered only once the compiler has **proved** the rewrite compiles
+to the identical drawing (same SVG, `describe()` and `lint()`) — a body that
+merely looks like this shape, but calls a component reading or writing `i`,
+or a loop already at `while`'s 10,000-iteration cap, is left as a warning
+with no fix. Anything that does not fit the shape at all (a decrementing
+counter, a second reassignment, a condition other than `<`) needs a hand
+rewrite.
 
 ## Built-in functions
 

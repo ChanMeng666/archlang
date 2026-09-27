@@ -76,11 +76,11 @@ site { street north|south|east|west [hemisphere north|south] [boundary (x,y) (x,
 ## Scripting (all expand-time, deterministic)
 
 - `let NAME = expr` — bind a constant. `NAME = expr` — reassign an existing binding
-  (**deprecated**, removed in 2.0: `W_REASSIGN_DEPRECATED`; bind a new name instead).
+  (**deprecated**: `W_REASSIGN_DEPRECATED`; bind a new name instead).
 - `let f(a, b) = expr` — a pure value-function. Built-ins: `min max abs sqrt floor ceil round len str`.
 - `for i in lo..hi { … }` — loop over a half-open integer range (`0..3` → 0,1,2).
-- `if cond { … } else { … }` · `while cond { … }` (**deprecated**, removed in 2.0:
-  `W_WHILE_DEPRECATED`; use `for` — a machine fix rewrites the canonical counted-loop shape).
+- `if cond { … } else { … }` · `while cond { … }` (**deprecated**: `W_WHILE_DEPRECATED`;
+  use `for` instead).
 - `set <element>(attr: value)` — scoped default for following elements (e.g. `set door(swing: out)`).
 - Arrays: `[a, b, c]`, indexed `arr[i]`. Operators: `+ - * / %`, `== != < > <= >=`, `&& ||`. Comments: `# …`.
 - `import "lib/x.arch": name` and `component name(args) { … }` for reuse.
