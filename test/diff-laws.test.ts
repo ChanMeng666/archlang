@@ -13,11 +13,14 @@
  *
  * `summary` (English sentences) is excluded from the antisymmetry comparison by design
  * (the task card says so): it is prose, not structured data, and is never meant to be
- * machine-inverted. A room's `label` (only the AFTER label is ever recorded — see
- * `diffPlans`) and an opening's `between` (which side's rooms it names varies with the
- * change kind, not with direction) are excluded for the same reason: they are
- * descriptive fields the diff does not store enough of to reconstruct the other
- * direction's value from the result alone.
+ * machine-inverted. An opening's `between` (which side's rooms it names varies with the
+ * change kind, not with direction) is excluded for the same reason: it is a descriptive
+ * field the diff does not store enough of to reconstruct the other direction's value
+ * from the result alone. A room's `label` is DIFFERENT: `diffPlans` records it from the
+ * one side that exists for `added`/`removed` (so it round-trips through `invert()`
+ * unchanged and IS compared below), but only ever the AFTER side for `resized`/
+ * `relabeled` (so those two still exclude it, for the same reason `between` is
+ * excluded).
  */
 
 import { readFileSync } from "node:fs";
@@ -29,6 +32,7 @@ import {
   type CirculationChange,
   type FurnitureChange,
   type OpeningChange,
+  type PlanDiff,
   type RoomChange,
 } from "../src/diff.js";
 import { planSpec, renderPlan, type PlanSpec } from "./arbitrary-plan.js";
@@ -46,10 +50,13 @@ const circB = fx("diff-circ-b.arch");
 
 function invertRoom(r: RoomChange): RoomChange {
   switch (r.change) {
+    // `label` carries straight through: it describes the one room that exists on
+    // either side of an add/remove, which does not change when the direction does
+    // (diff.ts sets it from that same single side both ways).
     case "added":
-      return { id: r.id, change: "removed", areaBeforeM2: r.areaAfterM2 };
+      return { id: r.id, change: "removed", areaBeforeM2: r.areaAfterM2, label: r.label };
     case "removed":
-      return { id: r.id, change: "added", areaAfterM2: r.areaBeforeM2 };
+      return { id: r.id, change: "added", areaAfterM2: r.areaBeforeM2, label: r.label };
     case "relabeled":
       return { id: r.id, change: "relabeled" };
     case "resized":
@@ -108,17 +115,25 @@ function roundFloats<T>(t: T): T {
   return t;
 }
 
-/** Drop `keys` (descriptive fields the diff shape cannot round-trip through `invert`
- *  alone — see the file header) from a copy of `obj`, then round its floats. Applied to
- *  BOTH the inverted entry and its real counterpart, so the comparison is symmetric. */
-function normalize<T extends object>(obj: T, keys: (keyof T)[]): unknown {
-  const copy: Partial<T> = { ...obj };
-  for (const k of keys) delete copy[k];
+/** `RoomChange`'s own normalizer: `label` is direction-dependent (and so excluded, per
+ *  the file header) for `resized`/`relabeled` only — `added`/`removed` keep it, since it
+ *  round-trips through `invertRoom` unchanged for those two kinds. */
+function normalizeRoom(r: RoomChange): unknown {
+  const copy: Partial<RoomChange> = { ...r };
+  if (r.change === "resized" || r.change === "relabeled") delete copy.label;
+  return roundFloats(copy);
+}
+
+/** `OpeningChange`'s own normalizer: `between` is excluded for every change kind (see
+ *  the file header). */
+function normalizeOpening(o: OpeningChange): unknown {
+  const copy: Partial<OpeningChange> = { ...o };
+  delete copy.between;
   return roundFloats(copy);
 }
 
 /** `dst`'s changes, keyed by `kind:id`, compared to `src`'s changes INVERTED and keyed
- *  the same way — same key set, and each pair equal after `normalize` drops the
+ *  the same way — same key set, and each pair equal after `normalizeFn` drops the
  *  direction-dependent descriptive fields from BOTH sides. */
 function expectInverted<T extends object>(
   label: string,
@@ -126,7 +141,7 @@ function expectInverted<T extends object>(
   dst: T[],
   keyOf: (t: T) => string,
   invert: (t: T) => T,
-  dropKeys: (keyof T)[],
+  normalizeFn: (t: T) => unknown,
 ): void {
   const dstByKey = new Map(dst.map((d) => [keyOf(d), d]));
   const srcKeys = new Set(src.map(keyOf));
@@ -134,29 +149,24 @@ function expectInverted<T extends object>(
   for (const s of src) {
     const counterpart = dstByKey.get(keyOf(s));
     expect(counterpart, `${label}: no counterpart for ${keyOf(s)}`).toBeDefined();
-    expect(normalize(invert(s), dropKeys), `${label}: mismatch for ${keyOf(s)}`).toEqual(
-      normalize(counterpart!, dropKeys),
-    );
+    expect(normalizeFn(invert(s)), `${label}: mismatch for ${keyOf(s)}`).toEqual(normalizeFn(counterpart!));
   }
 }
 
-/** The full antisymmetry law: `diffPlans(B, A)` is `diffPlans(A, B)` inverted. */
-function checkAntisymmetry(srcA: string, srcB: string): void {
-  const ab = diffPlans(srcA, srcB);
-  const ba = diffPlans(srcB, srcA);
-  expect(ab.ok, "A→B failed to resolve").toBe(true);
-  expect(ba.ok, "B→A failed to resolve").toBe(true);
-
-  expectInverted("rooms", ab.rooms, ba.rooms, (r) => `room:${r.id}`, invertRoom, ["label"]);
-  expectInverted("openings", ab.openings, ba.openings, (o) => `${o.kind}:${o.id}`, invertOpening, ["between"]);
-  expectInverted("furniture", ab.furniture, ba.furniture, (f) => `furniture:${f.id}`, invertFurniture, []);
+/** The comparison half of the antisymmetry law, over two ALREADY-COMPUTED diffs — split
+ *  out from {@link checkAntisymmetry} so a caller that can generate an invalid pair (a
+ *  mutated fast-check plan) can gate on `ok` itself, with `fc.pre`, before asserting. */
+function assertAntisymmetric(ab: PlanDiff, ba: PlanDiff): void {
+  expectInverted("rooms", ab.rooms, ba.rooms, (r) => `room:${r.id}`, invertRoom, normalizeRoom);
+  expectInverted("openings", ab.openings, ba.openings, (o) => `${o.kind}:${o.id}`, invertOpening, normalizeOpening);
+  expectInverted("furniture", ab.furniture, ba.furniture, (f) => `furniture:${f.id}`, invertFurniture, roundFloats);
   expectInverted(
     "circulation",
     ab.circulation,
     ba.circulation,
     (c) => `circulation:${c.roomId}`,
     invertCirculation,
-    [],
+    roundFloats,
   );
 
   expect(roundFloats(ba.totals)).toEqual(
@@ -167,6 +177,17 @@ function checkAntisymmetry(srcA: string, srcB: string): void {
       roomsAfter: ab.totals.roomsBefore,
     }),
   );
+}
+
+/** The full antisymmetry law: `diffPlans(B, A)` is `diffPlans(A, B)` inverted. For a
+ *  pair known to both resolve cleanly (the example fixtures; a fast-check pair should
+ *  use {@link assertAntisymmetric} directly, behind its own `ok` precondition). */
+function checkAntisymmetry(srcA: string, srcB: string): void {
+  const ab = diffPlans(srcA, srcB);
+  const ba = diffPlans(srcB, srcA);
+  expect(ab.ok, "A→B failed to resolve").toBe(true);
+  expect(ba.ok, "B→A failed to resolve").toBe(true);
+  assertAntisymmetric(ab, ba);
 }
 
 // ---------------------------------------------------------------------------
@@ -236,6 +257,17 @@ describe("diffPlans — antisymmetry over the example fixture pairs", () => {
 // key-set check catches it. After the fix neither direction rescues an ambiguous
 // pair, so both report the same three add/remove events, which — being single-id,
 // not a cross-id pairing — round-trip through the plain `id` key cleanly.
+//
+// The `cols + shift` mutation can land OUTSIDE `archPlan`'s validity envelope: a
+// `furniture … against wall … offset` clause is written from the UNSNAPPED wall run
+// (`renderPlan`'s own text, computed against the spec's raw `cols`), but the wall
+// itself is drawn from the GRID-SNAPPED points, so a `shift` that is not a multiple of
+// the grid can round the two away from each other by up to half a grid step — enough,
+// near a wall's end, to push a percentage-derived offset past the snapped run and raise
+// `E_FURN_AGAINST` on one side only (`diffPlans().ok === false`). That is a real
+// interaction between the arbitrary's own text generation and grid snapping, not
+// something `diffPlans` promises to handle, so the property gates on both sides
+// actually resolving (`fc.pre`) rather than asserting through a compile error.
 // ---------------------------------------------------------------------------
 
 describe("diffPlans — antisymmetry over fast-check-mutated pairs", () => {
@@ -249,7 +281,17 @@ describe("diffPlans — antisymmetry over fast-check-mutated pairs", () => {
           cols: base.cols.map((c) => Math.max(c + shift, 100)),
           labels: base.labels.map((l) => !l),
         };
-        checkAntisymmetry(renderPlan(base), renderPlan(mutated));
+        const srcA = renderPlan(base);
+        const srcB = renderPlan(mutated);
+        const ab = diffPlans(srcA, srcB);
+        const ba = diffPlans(srcB, srcA);
+        // Discard (not fail) the rare pair the mutation pushed out of the arbitrary's
+        // own validity envelope — see the header above. `diffPlans` degrading to
+        // `ok: false` on a plan that no longer compiles is correct behaviour, not the
+        // antisymmetry law this test states; asserting through it would be a false
+        // positive on `diffPlans`'s account, and a false negative on this test's.
+        fc.pre(ab.ok && ba.ok);
+        assertAntisymmetric(ab, ba);
       }),
       { numRuns: 60 },
     );
@@ -277,5 +319,34 @@ describe("diffPlans — antisymmetry over fast-check-mutated pairs", () => {
       ),
       { numRuns: 30 },
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// MAJOR 2 pin — an empty-string label is "no label" everywhere in this module (the
+// relabel check a few lines down reads both sides through `?? ""`), so it must not
+// become a rescue key: two same-"" rooms are just as ambiguous as two same-"Dup"
+// rooms, and rescuing them anyway would special-case the one label spelled "" into
+// meaning something different from having none.
+// ---------------------------------------------------------------------------
+
+describe("diffPlans — an empty-string label is never a rescue key", () => {
+  it('two rooms both labelled "", different ids, are removed+added — never rescued', () => {
+    const room = (id: string) => `  room id=${id} at (0,0) size 3000x2000 label ""`;
+    const planWith = (id: string) =>
+      `plan "P" {\n  units mm\n` +
+      `  wall id=w0 exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }\n` +
+      `${room(id)}\n}\n`;
+    const a = planWith("rA");
+    const b = planWith("rB");
+
+    const d = diffPlans(a, b);
+    expect(d.ok).toBe(true);
+    expect(d.rooms).toHaveLength(2);
+    expect(d.rooms.find((r) => r.id === "rA")?.change).toBe("removed");
+    expect(d.rooms.find((r) => r.id === "rB")?.change).toBe("added");
+    // The two full-antisymmetry laws above cover the reverse direction generically;
+    // this test pins the specific "" case concretely, by shape.
+    checkAntisymmetry(a, b);
   });
 });

@@ -91,7 +91,11 @@ function matchRooms(before: RoomSummary[], after: RoomSummary[]): Array<[RoomSum
   // does not say which pairs with which — so neither side rescues, and every one of them
   // reports as a separate add/remove instead of a guessed match.
   for (const a of leftoverBefore) {
-    const uniqueBefore = a.label !== undefined && leftoverBefore.filter((r) => r.label === a.label).length === 1;
+    // `a.label` (not `!== undefined`): an EMPTY label is "no label" everywhere else in
+    // this file (the relabel check below reads both sides through `?? ""`), so it must
+    // not become a rescue key here either — that would be a second, inconsistent
+    // definition of "no label" for the one type this module treats as frozen API.
+    const uniqueBefore = !!a.label && leftoverBefore.filter((r) => r.label === a.label).length === 1;
     const byLabel = uniqueBefore ? [...unmatchedAfter.values()].filter((r) => r.label === a.label) : [];
     if (byLabel.length === 1) {
       const b = byLabel[0]!;
