@@ -17,9 +17,10 @@
  */
 
 import { DEFAULT_TOL, resolvePlan, storeyGrounded } from "./analyze.js";
-import type { ResolvedLevel } from "./ir.js";
-import type { Diagnostic } from "./diagnostics.js";
+import type { ResolvedLevel, ResolvedPlan } from "./ir.js";
+import type { Diagnostic, Span } from "./diagnostics.js";
 import { type BuildingContext, buildLintContext } from "./lint/context.js";
+import { ONCE_PER_PLACEMENT_CODES } from "./lint/rules/dims.js";
 import { LINT_RULES } from "./lint/rules/index.js";
 import { DEFAULT_RULESET, LINT_PROFILES, type LintOptions, type LintRuleset } from "./lint/ruleset.js";
 import { verticalConnections, verticalReach } from "./vertical.js";
@@ -58,9 +59,114 @@ export function lint(source: string, opts: LintOptions = {}): Diagnostic[] {
 
   if (levels.length > 0) {
     const byLevel = buildingContexts(levels, rules.tolMm);
-    return levels.flatMap((l) => lintOne(l.ir, rules, byLevel.get(l.level)).map((d) => ({ ...d, level: l.level })));
+    const out = levels.flatMap((l) =>
+      lintOne(l.ir, rules, byLevel.get(l.level)).map((d) => ({ ...d, level: l.level })),
+    );
+    return reconcileSharedFixes(out, levels);
   }
-  return lintOne(ir, rules);
+  return reconcileSharedFixes(lintOne(ir, rules), [{ ir }]);
+}
+
+/** One resolved storey a {@link reconcileSharedFixes} census reads (`level` absent for a
+ *  single-storey plan). */
+export interface LintedStorey {
+  ir: ResolvedPlan;
+  level?: number;
+}
+
+/** The identity of a SOURCE statement: file plus byte span (two modules' offsets are not
+ *  comparable, so the file is part of it — the key `dimInside`/`dimOverlap` dedupe on). */
+const statementKey = (file: string | undefined, span: Span): string => `${file ?? ""}:${span.start}:${span.end}`;
+
+/**
+ * Reconcile the fixes on diagnostics whose statement is SHARED by several `place`d
+ * instances — one component placed twice is one source span behind two resolved elements,
+ * and a fix edits that one span for all of them.
+ *
+ * Each rule mints its fix per element, pulled back into the element's own frame
+ * ({@link import("./lint/context.js").LintContext.frameOf}). For a statement drawn by
+ * elements of two or more placements (a `place`d instance on a given storey), a fix
+ * survives only when EVERY raiser the statement has raised the same code and every one of
+ * them carries the same edits. A raiser is an element for a rule that reports per element,
+ * and a placement for one that reports once per statement per placement
+ * ({@link ONCE_PER_PLACEMENT_CODES}). When they agree ONE copy is kept, on the first diagnostic, so
+ * `arch fix` applies and reports it once. Otherwise the fixes are stripped from the whole
+ * group — the diagnostics stay, each with a hint naming how many instances share the
+ * statement — because no single rewrite of the shared source is right for all of them,
+ * and a wrong one would silently move a placement nobody asked to move (ADR 0005: decline,
+ * never guess; `repair.ts` refuses a multi-resolved statement for the same reason).
+ *
+ * Deliberately NOT reconciled: a statement no `place`d instance draws (a root `for`, a
+ * root statement shared into every storey) or drawn by one placement only — those keep
+ * the behaviour they had. So a plan with no shared placed statement comes out of here
+ * unchanged, element for element, in the same order.
+ */
+export function reconcileSharedFixes(diags: Diagnostic[], storeys: readonly LintedStorey[]): Diagnostic[] {
+  interface Drawn {
+    ids: string[];
+    placements: Set<string>;
+    placed: boolean;
+  }
+  const drawn = new Map<string, Drawn>();
+  for (const { ir, level } of storeys) {
+    for (const e of ir.elements) {
+      if (!e.span) continue;
+      const k = statementKey(e._file, e.span);
+      const s = drawn.get(k) ?? { ids: [], placements: new Set<string>(), placed: false };
+      drawn.set(k, s);
+      s.ids.push(e.id);
+      s.placements.add(`${level ?? ""}:${e._instance ?? ""}`);
+      if (e._instance !== undefined) s.placed = true;
+    }
+  }
+
+  // Diagnostics of one code on one shared statement, in output order.
+  const groups = new Map<string, number[]>();
+  diags.forEach((d, i) => {
+    if (!d.span || d.code === undefined) return;
+    const s = drawn.get(statementKey(d.file, d.span));
+    if (!s?.placed || s.placements.size < 2) return;
+    const k = `${d.code}|${statementKey(d.file, d.span)}`;
+    const g = groups.get(k);
+    if (g) g.push(i);
+    else groups.set(k, [i]);
+  });
+
+  const out = diags.slice();
+  for (const idx of groups.values()) {
+    const first = diags[idx[0]!]!;
+    if (!idx.some((i) => diags[i]!.fixes?.length)) continue; // no fix to reconcile
+    const s = drawn.get(statementKey(first.file, first.span!))!;
+    const editsOf = (d: Diagnostic): string =>
+      JSON.stringify((d.fixes ?? []).map((f) => [f.applicability, f.fixId ?? null, f.file ?? null, f.edits]));
+    // Each raiser raises a code at most once, so equal counts mean every raiser raised it.
+    const perPlacement = ONCE_PER_PLACEMENT_CODES.has(first.code!);
+    const raisers = perPlacement ? s.placements.size : s.ids.length;
+    const allRaise = idx.length === raisers;
+    const withFix = idx.filter((i) => diags[i]!.fixes?.length).length;
+    const agree = withFix === idx.length && idx.every((i) => editsOf(diags[i]!) === editsOf(first));
+    if (allRaise && agree) {
+      for (const i of idx.slice(1)) out[i] = withoutFixes(diags[i]!);
+      continue;
+    }
+    const why = !allRaise
+      ? `only ${idx.length} of the ${raisers} ${perPlacement ? "placed instances" : "elements it draws"} raise ${first.code}`
+      : withFix < idx.length
+        ? `a fix could be derived for only ${withFix} of them`
+        : "they need different edits";
+    const hint = `This statement is shared by ${s.placements.size} placed instances (${s.ids.join(", ")}), and ${why}, so no fix is offered: one edit to the shared source cannot be right for all of them. Edit it by hand, or give the instances their own statements.`;
+    for (const i of idx) {
+      const d = withoutFixes(diags[i]!);
+      out[i] = { ...d, hints: [...(d.hints ?? []), hint] };
+    }
+  }
+  return out;
+}
+
+/** A copy of `d` without its `fixes` key (the key is left out, never set `undefined`). */
+function withoutFixes(d: Diagnostic): Diagnostic {
+  const { fixes: _dropped, ...rest } = d;
+  return rest;
 }
 
 /**

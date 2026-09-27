@@ -283,13 +283,17 @@ witness are deleted, and each pin's class predicate must account for what it pin
 is one pinned class; the gate for closing it is that suite going `FIXED` for exactly that class.
 Status is `todo` for a defect and `declared` for a convention that is not a group fact.
 
-### E.1 · `fix-pullback` — lint fixes rewrite a shared component in plan coordinates — `todo`
+### E.1 · `fix-pullback` — lint fixes rewrite a shared component in plan coordinates — closed by W5c
 
-`W_FIXTURE_BACK_TO_ROOM` (`src/lint/rules/furniture.ts:196,207`) and `W_DIM_OVERLAP`
-(`src/lint/rules/dims.ts:180`) compute their edit from the resolved, frame-transformed element, but
-the edit lands in the component's own source. A `rotate 90` instance proposes `rotate 0` where the
-unturned one proposes `rotate 270`; a mirrored dim proposes `offset -626` for `offset 626`. Close by
-pulling the fix back through the inverse frame.
+`W_FIXTURE_BACK_TO_ROOM` and `W_DIM_OVERLAP` now pull their value back through the element's
+instance frame (`LintContext.frameOf`) before writing it: `actOnQuarterTurn(g⁻¹, n)` for the
+quarter-turn, `det(g)` on the offset (applied before rounding). A statement shared by several
+placed instances keeps one fix only when every instance raises the same edit; otherwise the fix is
+dropped with a hint (`reconcileSharedFixes`, `src/lint.ts`); the two dim rules report once per
+statement per placement so each instance answers for itself. Pin deleted; the witness is now the law
+(`test/equivariance-corpus.test.ts`, "closed classes"; `test/fix-pullback.test.ts`). What the pin
+also absorbed, `W_DIM_OVERLAP` measuring a mirrored opposite-normal pair differently, is the text
+side's, not the pullback's: it moved to E.14.
 
 ### E.2 · `stair-tail` — a vertical run's arrow and entry edge ignore the frame — `todo`
 
@@ -372,6 +376,13 @@ always puts the number on the from→to left normal, whatever the offset's sign.
 `dim (0,3000)->(4000,3000) offset -400` draws its line at y = 2600 and its number at y = 2658.8,
 between the line and the wall at 3000. The oracle meets it because a reflection negates every placed
 dim's offset (`src/frame.ts:392`). Close by drawing on `sign(offset)` of the normal.
+
+`W_DIM_OVERLAP` measures the same convention: its band puts each number on +n. So under a
+reflection an opposite-normal pair collides differently. At A3 1:50,
+`dim (0,3000)->(4000,3000) offset 550` + `dim (4000,3000)->(0,3000) offset -550` bumps to `offset -1100`
+unplaced and to `-825` mirrored, and `550`/`-650` warns unplaced but not mirrored. Each offered fix
+clears its own warning. The class also covers `lint.dim-overlap[.fixes]` under a reflection, with
+a witness in `test/equivariance-corpus.test.ts`; moving the band's text side closes both.
 
 ### E.15 · `dim-tick-hand` — a mirrored dim draws its ticks on the other diagonal — `declared`
 
