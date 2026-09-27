@@ -35,7 +35,6 @@ export type ClassName =
   | "fix-pullback"
   | "stair-tail"
   | "stair-break-hand"
-  | "plugin-throw"
   | "facing-tie"
   | "raster-tie"
   | "entrance-seed-walk"
@@ -184,13 +183,6 @@ export const KNOWN_CLASSES: Readonly<Record<ClassName, KnownClass & Partial<Rast
     site: "src/elements/vertical-glyphs.ts:144 (the break-line diagonals)",
     summary: "a stair's break line is drawn with a fixed handedness and a reflected stair never reads its mirror",
     covers: (v, c) => c.reflects && /^scene\.stair\[/.test(v.key),
-  },
-  "plugin-throw": {
-    status: "defect",
-    law: "equivariance",
-    site: "src/frame.ts:296-303 (transformGeometry has no arm for a plugin kind)",
-    summary: "a plugin element inside a placed component makes compile() THROW instead of returning a diagnostic",
-    covers: () => false,
   },
   "facing-tie": {
     status: "declared",
@@ -386,7 +378,6 @@ const CLOSES: Readonly<Record<ClassName, string>> = {
   "fix-pullback": "pull the fix back through the inverse frame before editing the component source",
   "stair-tail": "carry the tail edge through the frame (or an authored `entry <edge>`)",
   "stair-break-hand": "mirror the break line when the frame reflects (a `_mirror` flag, as fixtures carry)",
-  "plugin-throw": "an element-module transform hook, or a catalogued diagnostic — never a throw",
   "facing-tie": "never — declared convention (src/site.ts); the pin moves only if the tie rule does",
   "raster-tie": "break nav-grid endpoint ties by a D4-symmetric rule (or measure every tied endpoint)",
   "entrance-seed-walk": "seed the entrance symmetrically across its lattice line (both sides, nearest free)",

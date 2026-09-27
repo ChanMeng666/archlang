@@ -304,11 +304,11 @@ the `entry <edge>` clause the module already anticipates.
 The break-line diagonals (`src/elements/vertical-glyphs.ts:144`) are drawn in the run frame with a
 fixed handedness; nothing tells a reflected stair to mirror them, as `_mirror` does for fixtures.
 
-### E.4 · `plugin-throw` — a plugin element inside `place` throws — `todo`
+### E.4 · `plugin-throw` — a plugin element inside `place` throws — closed by W2
 
-`transformGeometry` (`src/frame.ts:303`) has no arm for a registry kind it does not know, so
-`transformElement` dereferences `undefined` and `compile()` throws. Close with an element-module
-transform hook (or a catalogued diagnostic), never a thrown error.
+Each element module owns its frame action (`ElementDef.transform`); a plugin kind without one is
+dropped inside a `place` with `E_INSTANCE_NO_TRANSFORM`, never thrown. Pin deleted; the witness is now
+the law (`test/equivariance-corpus.test.ts`, "closed classes"; `test/transform-seam.test.ts`).
 
 ### E.5 · `facing-tie` — a corner or 45° window resolves its tie N/S-first — `declared`
 
