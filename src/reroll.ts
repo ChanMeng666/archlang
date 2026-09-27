@@ -10,26 +10,44 @@
  *  - every statement has the same `kind` and the same STRUCTURE, compared on the
  *    AST with spans/line numbers ignored;
  *  - every differing slot is a numeric literal (`Expr` `{ t: "num" }`), and the
- *    literals form an arithmetic progression in statement order (exact on the
- *    printed numbers — `num-format.ts`'s `fmt3`);
+ *    literals form an EXACT (binary, not printed-form) arithmetic progression in
+ *    statement order: `vals[0] + j*d === vals[j]` for every `j` — so the public
+ *    `scene`/SVG built from the substituted `loopVar*d` expression is
+ *    byte-identical to the one built from the original literals, not merely
+ *    equal once rounded for display;
  *  - every other token is identical, including strings/labels (v1: a string slot
  *    must be identical, not just its printed form — no numeric interpolation
  *    inside a string may vary across the run);
  *  - no statement carries an explicit `id=` (auto-ids only — an id can't be
- *    generated inside a loop).
+ *    generated inside a loop);
+ *  - no `#` comment falls inside the run, or trails its last statement (the
+ *    formatter preserves comments; a refactor must never be lossier than it).
  *
  * Each surviving candidate is gated by a PROOF OBLIGATION (apply the edit, compile
  * the twin, and require: no new error, byte-identical SVG per page, deep-equal
- * `describe()`, and a `{code,message}`/`{code,severity,message}` multiset match
- * for lint/compile diagnostics) and a token-count gate (the loop must be
- * genuinely shorter, by the lexer's own count) before it is offered. Pure and
- * synchronous — no I/O, no mutation of the parsed `PlanNode`.
+ * `describe()` MODULO its own `diagnostics` — compared separately as a
+ * `{code,severity,message}` multiset, exactly like lint/compile diagnostics, so a
+ * warning ON the run does not fail the proof over a byte span that legitimately
+ * shifted — and a token-count gate (the loop must be genuinely shorter, by the
+ * lexer's own count) before it is offered. Pure and synchronous — no I/O, no
+ * mutation of the parsed `PlanNode`.
  *
  * The proof obligation calls `compileUncached` from `pipeline.ts` — the SAME
  * pipeline `compile()` wraps with its memoization cache — rather than
  * re-deriving parse→link→resolve→render here, so the two can never drift
  * apart (one compile pipeline). `reroll` never calls itself while proving a
  * twin (no recursion).
+ *
+ * PERFORMANCE (the LSP calls this on every code-action request): detection
+ * (structural matching + printing a replacement) is cheap; PROVING a candidate
+ * — compiling, describing and linting the twin — is not. `detectCandidates`
+ * therefore never proves; {@link reroll} proves every candidate it found,
+ * while `rerollInRange` (used by `codeActions`) filters candidates to those
+ * touching a byte range FIRST and proves only the survivors. The ORIGINAL
+ * source's own compile/describe/lint (`getBaseline`) is memoized in a single
+ * slot keyed by source text (+ `world`/`plugins` identity), so repeat requests
+ * on an unchanged document (an editor re-asking on every selection change)
+ * recompute nothing.
  */
 
 import type { PlanNode, Statement } from "./ast.js";
@@ -42,7 +60,6 @@ import { lint } from "./lint.js";
 import { statementBodies } from "./cursor.js";
 import { concat, type Doc, hardline, indent, printDoc } from "./doc.js";
 import { statementText, type LeafStatement } from "./statement-print.js";
-import { fmt3 as numStr } from "./num-format.js";
 import { lex } from "./lexer.js";
 
 /** One offered `for` loop, replacing a run of `count` consecutive statements. */
@@ -79,6 +96,16 @@ const PRINT_WIDTH = 80;
 
 const BLOCK_KINDS = new Set<Statement["kind"]>(["for", "if", "while", "level", "zone"]);
 const LOOP_VAR_CANDIDATES = ["i", "j", "k", "n", "idx"];
+
+/** Do two byte spans touch (share ≥1 byte, or a shared endpoint)? Mirrors
+ *  `lsp.ts`'s own `spansTouch` — duplicated rather than imported (`lsp.ts`
+ *  already imports THIS module; importing it back would be a cycle). */
+const spansTouch = (a: Span, b: Span): boolean => a.start <= b.end && a.end >= b.start;
+
+/** Are offsets `a` and `b` on the same source line (no `\n` between them,
+ *  either order)? Mirrors `format.ts`'s own trailing-comment test. */
+const sameLine = (a: number, b: number, src: string): boolean =>
+  !src.slice(Math.min(a, b), Math.max(a, b)).includes("\n");
 
 // ---- generic, span-blind structural diff over a run of statements --------
 
@@ -122,16 +149,20 @@ const deepEqual = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSO
  * by `nodes[0]`'s own key order (so a caller re-walking the template alone in
  * the same order — {@link buildReplacement} — sees the same slot sequence).
  * Pushes one entry per matched numeric-literal slot (`Expr { t: "num" }`), each
- * entry the slot's value across the whole run, in run order. Returns `null` the
- * moment the statements are NOT the same shape modulo numeric literals: a
- * differing key set, a differing non-numeric primitive, or a differing string
- * (a `str` `Expr` is opaque — required byte-for-byte, per v1).
+ * entry the slot's value across the whole run, in run order — EVERY numeric
+ * slot, constant or varying: the `isExprNum` branch is checked before any
+ * reference/primitive shortcut, so a constant literal is recorded the same way
+ * a varying one is, and {@link buildReplacement}'s identical ordering (it also
+ * checks `isExprNum` first) stays in lockstep BY CONSTRUCTION rather than by
+ * the two traversals happening to agree. Returns `null` the moment the
+ * statements are NOT the same shape modulo numeric literals: a differing key
+ * set, a differing non-numeric primitive, or a differing string (a `str`
+ * `Expr` is opaque — required byte-for-byte, per v1).
  */
 function collectSlots(nodes: unknown[]): number[][] | null {
   const slots: number[][] = [];
   function visit(vs: unknown[]): boolean {
     const v0 = vs[0];
-    if (vs.every((v) => v === v0)) return true; // same reference, or equal primitive (incl. undefined)
     if (isExprNum(v0)) {
       if (!vs.every(isExprNum)) return false;
       slots.push(vs.map((v) => (v as { value: number }).value));
@@ -156,17 +187,23 @@ function collectSlots(nodes: unknown[]): number[][] | null {
       for (const k of keys) if (!visit(vs.map((v) => (v as Record<string, unknown>)[k]))) return false;
       return true;
     }
-    return false; // primitive mismatch (or null vs non-null)
+    // A true primitive (string/number/boolean/undefined) — never a `num`/`str`
+    // Expr node (those are handled above), so this must be exactly equal.
+    return vs.every((v) => v === v0);
   }
   return visit(nodes) ? slots : null;
 }
 
-/** Exact on the PRINTED numbers (num-format's own rounding), per the card. */
+/** EXACT binary arithmetic progression: `vals[0] + j*d === vals[j]` for every
+ *  `j`, no rounding. A progression that only agrees once printed (`100.1,
+ *  100.2, 100.3` — IEEE-754 doubles a fraction of a unit apart) is refused: the
+ *  substituted `a + loopVar*d` expression must reproduce the exact `scene`
+ *  values the literals did, not merely their displayed form. */
 function isArithmeticProgression(vals: number[]): boolean {
   if (vals.every((v) => v === vals[0])) return true; // constant — trivially fine, not "differing"
   const d = vals[1]! - vals[0]!;
   for (let j = 0; j < vals.length; j++) {
-    if (numStr(vals[0]! + j * d) !== numStr(vals[j]!)) return false;
+    if (vals[0]! + j * d !== vals[j]!) return false;
   }
   return true;
 }
@@ -243,7 +280,7 @@ function pickLoopVar(bound: Set<string>, runSource: string): string | undefined 
   return LOOP_VAR_CANDIDATES.find((c) => !bound.has(c) && !used.has(c));
 }
 
-// ---- replacement printing (at the run's own nesting depth) ---------------
+// ---- replacement printing (at the run's own nesting depth, source EOL) ---
 
 function indentBy(n: number, doc: Doc): Doc {
   let out = doc;
@@ -255,15 +292,40 @@ function indentBy(n: number, doc: Doc): Doc {
  *  printer and the Doc pretty-printer — never hand-concatenated — with `depth`
  *  extra indent levels so the loop's body and closing brace land at the same
  *  column `format()` would put them at (the opening `for … {` line needs none:
- *  it is spliced in at the first statement's own column, already correct). */
-function printForLoop(loopVar: string, count: number, body: LeafStatement, depth: number): string {
+ *  it is spliced in at the first statement's own column, already correct).
+ *  `eol` is `"\r\n"` when the SOURCE uses CRLF (detected once, over the whole
+ *  file, by the caller) — `printDoc` always emits `"\n"`, so a CRLF source
+ *  gets its replacement's newlines translated to match, or the spliced-in loop
+ *  would be the one CRLF file's one block of LF line endings. */
+function printForLoop(loopVar: string, count: number, body: LeafStatement, depth: number, eol: string): string {
   const block = concat(["{", indent(concat([hardline, statementText(body)])), hardline, "}"]);
-  return printDoc(indentBy(depth, concat([`for ${loopVar} in 0..${count} `, block])), PRINT_WIDTH);
+  const text = printDoc(indentBy(depth, concat([`for ${loopVar} in 0..${count} `, block])), PRINT_WIDTH);
+  return eol === "\n" ? text : text.replace(/\n/g, eol);
 }
 
 // ---- token counting (the shortening gate) ---------------------------------
 
 const tokenCount = (text: string): number => lex(text).tokens.filter((t) => t.type !== "eof").length;
+
+// ---- comment-loss guard (MAJOR 2) -----------------------------------------
+
+/** Does any `#` comment fall inside `[start, end)`, or trail the byte AT
+ *  `end` (same source line, so it visually trails the run's last statement)?
+ *  The formatter (`format.ts`) preserves every comment by weaving it back in
+ *  by position; a refactor that deletes one by silently overwriting its span
+ *  would be lossier than `format`, which this project never accepts. */
+function commentInOrTrailingRun(
+  comments: readonly { span: Span }[],
+  start: number,
+  end: number,
+  source: string,
+): boolean {
+  return comments.some((c) => {
+    if (c.span.start >= start && c.span.start < end) return true; // swallowed by the splice
+    if (c.span.start >= end && sameLine(end, c.span.start, source)) return true; // trails the last statement
+    return false;
+  });
+}
 
 // ---- the proof obligation --------------------------------------------------
 
@@ -272,6 +334,10 @@ interface ProofPipeline {
   diagnostics: Diagnostic[];
   pages: string[];
 }
+
+/** A `describe()` result split into its diagnostics (compared separately, as a
+ *  multiset — see {@link Baseline}) and everything else (compared deep-equal). */
+type DescribeFacts = Omit<SceneSummary, "diagnostics">;
 
 /** Project a full `compile()` result down to what the proof obligation
  *  compares: whether it errored, its diagnostics, and one SVG string per page
@@ -284,11 +350,18 @@ function toProofPipeline(result: CompileResult): ProofPipeline {
   };
 }
 
-/** Compile `source` through the SAME pipeline `compile()` uses — see this
- *  module's header — carrying `pipelineOpts` (the `world`/`plugins` `reroll`
- *  was given) so an `import`-bearing plan proves against the same modules
- *  `compile()` would resolve. */
-function compileForProof(source: string, pipelineOpts: CompileOptions): ProofPipeline {
+/**
+ * Compile `source` through the SAME pipeline `compile()` uses — see this
+ * module's header — carrying `pipelineOpts` (the `world`/`plugins` `reroll`
+ * was given) so an `import`-bearing plan proves against the same modules
+ * `compile()` would resolve.
+ *
+ * @internal Exported for `test/reroll.test.ts` to drive the proof obligation
+ * directly (a deliberately WRONG replacement, to prove each of its checks
+ * actually rejects something) — not part of the package's public surface
+ * (`src/index.ts` does not re-export it).
+ */
+export function compileForProof(source: string, pipelineOpts: CompileOptions): ProofPipeline {
   return toProofPipeline(compileUncached(source, pipelineOpts));
 }
 
@@ -297,16 +370,43 @@ const diagTriples = (ds: Diagnostic[]): string[] =>
 const lintPairs = (ds: Diagnostic[]): string[] => ds.map((d) => JSON.stringify([d.code, d.message])).sort();
 const sameMultiset = (a: string[], b: string[]): boolean => a.length === b.length && a.every((v, i) => v === b[i]);
 
-/** Does applying `replacement` over `[span.start, span.end)` of `source` prove
- *  fully equivalent? See the module doc's proof-obligation list. `pipelineOpts`
- *  (`reroll`'s own `world`/`plugins`) is threaded through every stage so an
- *  `import`-bearing plan's twin resolves the same modules the original did. */
-function proves(
+/** Split a `describe()` result into its diagnostics (own multiset comparison)
+ *  and the rest of the facts (deep-equal, diagnostics removed so a warning's
+ *  byte SPAN shifting because the run's length changed never fails the proof
+ *  over bytes nothing downstream reads a diagnostic's span to redraw). */
+function describeFacts(s: SceneSummary): DescribeFacts {
+  const { diagnostics: _diagnostics, ...rest } = s;
+  return rest;
+}
+
+/** The whole-plan baseline a candidate's twin is compared against: the
+ *  original's own compile/describe/lint, computed once per source text (see
+ *  {@link getBaseline}'s memo). */
+interface Baseline {
+  pipeline: ProofPipeline;
+  describeFacts: DescribeFacts;
+  describeDiagTriples: string[];
+  lintPairs: string[];
+}
+
+/**
+ * Does applying `replacement` over `[span.start, span.end)` of `source` prove
+ * fully equivalent to `baseline`? See the module doc's proof-obligation list.
+ * `pipelineOpts` (`reroll`'s own `world`/`plugins`) is threaded through every
+ * stage so an `import`-bearing plan's twin resolves the same modules the
+ * original did.
+ *
+ * @internal Exported for `test/reroll.test.ts` to call directly with a
+ * deliberately wrong `replacement` (proving each check — SVG, describe, lint,
+ * diagnostics — actually rejects a mismatch, not just happening to pass on
+ * `reroll`'s own always-correct replacements). Not part of the public surface.
+ */
+export function proves(
   source: string,
   span: Span,
   replacement: string,
   pipelineOpts: CompileOptions,
-  baseline: { pipeline: ProofPipeline; describe: SceneSummary; lintPairs: string[] },
+  baseline: Baseline,
 ): boolean {
   const twin = source.slice(0, span.start) + replacement + source.slice(span.end);
   const twinPipeline = compileForProof(twin, pipelineOpts);
@@ -314,12 +414,14 @@ function proves(
   if (twinPipeline.pages.length !== baseline.pipeline.pages.length) return false;
   if (twinPipeline.pages.some((svg, i) => svg !== baseline.pipeline.pages[i])) return false;
   if (!sameMultiset(diagTriples(twinPipeline.diagnostics), diagTriples(baseline.pipeline.diagnostics))) return false;
-  if (!deepEqual(describe(twin, pipelineOpts), baseline.describe)) return false;
+  const twinDescribe = describe(twin, pipelineOpts);
+  if (!deepEqual(describeFacts(twinDescribe), baseline.describeFacts)) return false;
+  if (!sameMultiset(diagTriples(twinDescribe.diagnostics), baseline.describeDiagTriples)) return false;
   if (!sameMultiset(lintPairs(lint(twin, pipelineOpts)), baseline.lintPairs)) return false;
   return true;
 }
 
-// ---- run detection ----------------------------------------------------------
+// ---- run detection (cheap: no compile) -------------------------------------
 
 function isEligible(s: Statement): boolean {
   return !BLOCK_KINDS.has(s.kind) && s.kind !== "error" && "id" in s && s.id === "";
@@ -345,22 +447,28 @@ function findRun(stmts: Statement[], start: number): RunFound | null {
   return null;
 }
 
-/** Build the offered suggestion for a matched run, or `undefined` if it fails
- *  the token-shortening gate, has no free loop variable, or fails the proof
- *  obligation. */
-function buildSuggestion(
+/** A structurally-detected, UNPROVEN run: everything {@link RerollSuggestion}
+ *  carries, before the (expensive) proof obligation runs. */
+type Candidate = RerollSuggestion;
+
+/** Build the candidate for a matched run, or `undefined` if it fails the
+ *  comment-loss guard, has no free loop variable, or fails the token-shortening
+ *  gate. Does NOT prove — see {@link proves} — so this is cheap enough to run
+ *  over every run in the plan regardless of what the caller ends up proving. */
+function buildCandidate(
   source: string,
+  comments: readonly { span: Span }[],
+  eol: string,
   stmts: Statement[],
   start: number,
   run: RunFound,
   depth: number,
   bound: Set<string>,
-  pipelineOpts: CompileOptions,
-  baseline: { pipeline: ProofPipeline; describe: SceneSummary; lintPairs: string[] },
-): RerollSuggestion | undefined {
+): Candidate | undefined {
   const group = stmts.slice(start, start + run.length);
   const spanStart = group[0]!.span!.start;
   const spanEnd = group[group.length - 1]!.span!.end;
+  if (commentInOrTrailingRun(comments, spanStart, spanEnd, source)) return undefined;
   const runSource = source.slice(spanStart, spanEnd);
 
   const loopVar = pickLoopVar(bound, runSource);
@@ -371,16 +479,94 @@ function buildSuggestion(
     return slotExpr(vals[0]!, vals[1]! - vals[0]!, loopVar);
   });
   const bodyStmt = buildReplacement(group[0], replacements) as LeafStatement;
-  const replacement = printForLoop(loopVar, run.length, bodyStmt, depth);
+  const replacement = printForLoop(loopVar, run.length, bodyStmt, depth, eol);
 
   const tokensBefore = tokenCount(runSource);
   const tokensAfter = tokenCount(replacement);
   if (tokensAfter >= tokensBefore) return undefined;
 
-  const span: Span = { start: spanStart, end: spanEnd };
-  if (!proves(source, span, replacement, pipelineOpts, baseline)) return undefined;
+  return {
+    span: { start: spanStart, end: spanEnd },
+    replacement,
+    count: run.length,
+    loopVar,
+    tokensBefore,
+    tokensAfter,
+  };
+}
 
-  return { span, replacement, count: run.length, loopVar, tokensBefore, tokensAfter };
+/** Detect every candidate run in `plan` — the plan body, every component body,
+ *  and every nested `for`/`if`/`while`/`level`/`zone` body. Pure detection,
+ *  no proof (see this module's header on why the two are split). */
+function detectCandidates(plan: PlanNode, source: string, bound: Set<string>): Candidate[] {
+  const comments = lex(source).comments;
+  const eol = source.includes("\r\n") ? "\r\n" : "\n";
+  const out: Candidate[] = [];
+  function scan(stmts: Statement[], depth: number): void {
+    let i = 0;
+    while (i < stmts.length) {
+      const run = findRun(stmts, i);
+      if (run) {
+        const candidate = buildCandidate(source, comments, eol, stmts, i, run, depth + 1, bound);
+        if (candidate) {
+          out.push(candidate);
+          i += run.length;
+          continue;
+        }
+      }
+      for (const body of statementBodies(stmts[i]!)) scan(body, depth + 1);
+      i++;
+    }
+  }
+  scan(plan.body, 0);
+  for (const comp of plan.components.values()) scan(comp.body, 1);
+  return out;
+}
+
+// ---- baseline memo (one slot; see the module header) -----------------------
+
+interface BaselineContext {
+  plan: PlanNode;
+  bound: Set<string>;
+  pipelineOpts: CompileOptions;
+  baseline: Baseline;
+}
+
+let cachedSource: string | undefined;
+let cachedWorld: CompileOptions["world"] | undefined;
+let cachedPlugins: CompileOptions["plugins"] | undefined;
+let cachedContext: BaselineContext | null | undefined; // `null` = source has errors (cached miss)
+
+/** The original source's own compile/describe/lint, needed by every candidate's
+ *  proof — computed once and kept in a SINGLE slot keyed by source text (and
+ *  `world`/`plugins` identity, compared by reference: the LSP always passes the
+ *  same `undefined`, so its repeat requests on an unchanged document hit this
+ *  every time). Returns `null` when the source fails to parse or carries any
+ *  error diagnostic — nothing is ever offered against a broken plan. */
+function getBaseline(source: string, opts: RerollOptions): BaselineContext | null {
+  if (cachedSource === source && cachedWorld === opts.world && cachedPlugins === opts.plugins) {
+    return cachedContext ?? null;
+  }
+  cachedSource = source;
+  cachedWorld = opts.world;
+  cachedPlugins = opts.plugins;
+
+  const pipelineOpts: CompileOptions = { world: opts.world, plugins: opts.plugins };
+  const compiled = compileUncached(source, pipelineOpts);
+  if (!compiled.ast || compiled.errors.length > 0) {
+    cachedContext = null;
+    return null;
+  }
+  const plan = compiled.ast;
+  const describeResult = describe(source, pipelineOpts);
+  const baseline: Baseline = {
+    pipeline: toProofPipeline(compiled),
+    describeFacts: describeFacts(describeResult),
+    describeDiagTriples: diagTriples(describeResult.diagnostics),
+    lintPairs: lintPairs(lint(source, pipelineOpts)),
+  };
+  cachedContext = { plan, bound: collectBoundNames(plan), pipelineOpts, baseline };
+  return cachedContext;
 }
 
 /**
@@ -395,36 +581,30 @@ function buildSuggestion(
  * proven equivalent through the same modules.
  */
 export function reroll(source: string, opts: RerollOptions = {}): RerollSuggestion[] {
-  const pipelineOpts: CompileOptions = { world: opts.world, plugins: opts.plugins };
-  const compiled = compileUncached(source, pipelineOpts);
-  if (!compiled.ast || compiled.errors.length > 0) return [];
-  const plan = compiled.ast;
-
-  const baseline = {
-    pipeline: toProofPipeline(compiled),
-    describe: describe(source, pipelineOpts),
-    lintPairs: lintPairs(lint(source, pipelineOpts)),
-  };
-  const bound = collectBoundNames(plan);
-
+  const ctx = getBaseline(source, opts);
+  if (!ctx) return [];
+  const candidates = detectCandidates(ctx.plan, source, ctx.bound);
   const out: RerollSuggestion[] = [];
-  function scan(stmts: Statement[], depth: number): void {
-    let i = 0;
-    while (i < stmts.length) {
-      const run = findRun(stmts, i);
-      if (run) {
-        const suggestion = buildSuggestion(source, stmts, i, run, depth + 1, bound, pipelineOpts, baseline);
-        if (suggestion) {
-          out.push(suggestion);
-          i += run.length;
-          continue;
-        }
-      }
-      for (const body of statementBodies(stmts[i]!)) scan(body, depth + 1);
-      i++;
-    }
-  }
-  scan(plan.body, 0);
-  for (const comp of plan.components.values()) scan(comp.body, 1);
+  for (const c of candidates) if (proves(source, c.span, c.replacement, ctx.pipelineOpts, ctx.baseline)) out.push(c);
+  return out;
+}
+
+/**
+ * `reroll`, filtered to candidates whose span touches `range` BEFORE the
+ * (expensive) proof obligation runs — a candidate outside the request's range
+ * is never compiled/described/linted at all. Used by `lsp.ts`'s `codeActions`,
+ * which an editor calls on every selection change; a candidate far from the
+ * cursor costs nothing here beyond the cheap structural detection every
+ * `codeActions` call already needs to decide what touches the range.
+ *
+ * @internal Not part of the public surface (`src/index.ts` does not re-export
+ * it) — `lsp.ts` is a sibling module in `src/` and imports it directly.
+ */
+export function rerollInRange(source: string, range: Span, opts: RerollOptions = {}): RerollSuggestion[] {
+  const ctx = getBaseline(source, opts);
+  if (!ctx) return [];
+  const candidates = detectCandidates(ctx.plan, source, ctx.bound).filter((c) => spansTouch(c.span, range));
+  const out: RerollSuggestion[] = [];
+  for (const c of candidates) if (proves(source, c.span, c.replacement, ctx.pipelineOpts, ctx.baseline)) out.push(c);
   return out;
 }
