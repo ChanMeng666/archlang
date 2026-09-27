@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from "vitest";
 import { resolvePlan } from "../src/analyze.js";
-import { makeFrame, transformElement } from "../src/frame.js";
+import { composeFrame, makeFrame, transformElement } from "../src/frame.js";
 import { compile, describe as describePlan, lint, makeVirtualWorld, type World } from "../src/index.js";
 import type { RDoor, RFurniture, ResolvedElement, RRoom } from "../src/ir.js";
 
@@ -185,5 +185,103 @@ describe("no level reaches out", () => {
       ["E_LAYOUT_REF", "h.b"],
       ["W_ROOM_OVERLAP", null],
     ]);
+  });
+});
+
+describe("a host found through a descendant is registered on its wall — by id, not by coordinates", () => {
+  // With `grid 0` a descendant's wall reaches the plan through the COMPOSED frame, while a
+  // door the parent hosted on it is carried by the child's frame and then the parent's —
+  // the same point by two float evaluation orders. Registering the opening by endpoint
+  // equality lost it silently: the wall was drawn solid across the door.
+  const CASES = [
+    { name: "tenths, no turn", c: ["0.2", "0.7"], p: ["0.3", "0.9"], rotate: 0, mirror: undefined },
+    { name: "thirds, parent turned 90", c: ["0.1", "1000/3"], p: ["0.1", "1000/3"], rotate: 90, mirror: undefined },
+    { name: "tenths and thirds, parent mirrored", c: ["0.1", "0.2"], p: ["0.2", "1000/3"], rotate: 270, mirror: "x" },
+  ] as const;
+  const num = (s: string): number => {
+    const [a, b] = s.split("/");
+    return b === undefined ? Number(a) : Number(a) / Number(b);
+  };
+  const INNER_TENTHS = `  component inner() {
+    wall id=shell exterior thickness 200 { (0.1,0.1) (4000.1,0.1) (4000.1,3000.1) (0.1,3000.1) close }
+    room id=main at (0.1,0.1) size 4000x3000
+  }`;
+  const xf = (rotate: number, mirror?: string) =>
+    `${rotate ? ` rotate ${rotate}` : ""}${mirror ? ` mirror ${mirror}` : ""}`;
+  /** The wall outline as drawn, rounded to the 1e-6 mm comparison quantum. */
+  const wallFace = (src: string) =>
+    JSON.stringify(
+      compile(src, { noCache: true, annotate: true })
+        .scene!.nodes.filter((n) => n.layer === "wallFace")
+        .map((n) => n.prim),
+      (_k, v: unknown) => (typeof v === "number" ? Math.round(v * 1e6) / 1e6 + 0 : v),
+    );
+  const openings = (src: string, id: string) => ir(src).walls.find((w) => w.id === id)?.openings ?? [];
+
+  for (const k of CASES) {
+    it(`${k.name}: one opening on the child's wall, and the hole the root spelling cuts`, () => {
+      const nested = (door: boolean) =>
+        `plan "h" {\n  units mm\n${INNER_TENTHS}\n  component mid() {\n    place inner() as i at (${k.c[0]},${k.c[1]})\n${door ? "    door id=d on i.shell at 50% width 900\n" : ""}  }\n  place mid() as m at (${k.p[0]},${k.p[1]})${xf(k.rotate, k.mirror)}\n}`;
+      // The root spelling: the child placed at the root by the composed frame and the door
+      // written at the root — the single-level path, where host and wall share one frame.
+      const f = composeFrame(
+        makeFrame({
+          origin: { x: num(k.p[0]), y: num(k.p[1]) },
+          rotate: k.rotate,
+          ...(k.mirror ? { mirror: k.mirror } : {}),
+          prefix: "m",
+          component: "mid",
+        }),
+        makeFrame({ origin: { x: num(k.c[0]), y: num(k.c[1]) }, prefix: "m.i", component: "inner" }),
+      );
+      const flat = `plan "h" {\n  units mm\n${INNER_TENTHS}\n  place inner() as i at (${f.tx},${f.ty})${xf(f.rotate, f.mirror)}\n  door id=d on i.shell at 50% width 900\n}`;
+      expect(compile(nested(true), { noCache: true }).diagnostics).toEqual([]);
+      expect(compile(flat, { noCache: true }).diagnostics).toEqual([]);
+      expect(openings(nested(true), "m.i.shell").map((o) => o.ownerId)).toEqual(["m.d"]);
+      expect(openings(flat, "i.shell").map((o) => o.ownerId)).toEqual(["d"]);
+      // The hole is really cut: the outline differs from the door-less plan's…
+      expect(wallFace(nested(true))).not.toBe(wallFace(nested(false)));
+      // …and is the root spelling's, to the comparison quantum.
+      expect(wallFace(nested(true))).toBe(wallFace(flat));
+    });
+  }
+});
+
+describe("a tie between a component's own wall and its child's goes where the root sends it", () => {
+  // At the root, instance walls precede the root's own (ADR 0016, Consequences) and the
+  // nearest-wall host is first-wins, so a coincident INSTANCE wall wins whatever the source
+  // order. Nested must be the root: a component's view lists its descendants first.
+  const OWN = "wall id=own exterior thickness 200 { (0,0) (4000,0) }";
+  const PLACE = "place inner() as i at (0,0)";
+  for (const ref of ["", " wall exterior"])
+    for (const ownFirst of [true, false]) {
+      it(`${ref ? "by category" : "by position"}, own wall written ${ownFirst ? "first" : "second"}`, () => {
+        const body = `${ownFirst ? OWN : PLACE}\n    ${ownFirst ? PLACE : OWN}\n    door id=d at (2000,0) width 900${ref}`;
+        const nested = `plan "t" {\n  units mm\n${INNER}\n  component mid() {\n    ${body}\n  }\n  place mid() as m at (1000,1000)\n}`;
+        const root = `plan "t" {\n  units mm\n${INNER}\n    ${body}\n}`;
+        const host = (src: string, id: string) => byId<RDoor>(ir(src).elements, "door", id).host?.wallId;
+        const cut = (src: string) => Object.fromEntries(ir(src).walls.map((w) => [w.id, w.openings.length]));
+        expect(host(root, "d")).toBe("i.shell");
+        expect(host(nested, "m.d")).toBe("m.i.shell");
+        expect(cut(root)).toEqual({ "i.shell": 1, own: 0 });
+        expect(cut(nested)).toEqual({ "m.i.shell": 1, "m.own": 0 });
+        expect(compile(nested, { noCache: true }).diagnostics.map((d) => d.code)).toEqual(
+          compile(root, { noCache: true }).diagnostics.map((d) => d.code),
+        );
+      });
+    }
+
+  it("a category search sees the child's walls too — the root's verdict, even when it is an error", () => {
+    // A plan that compiled clean before W8 (the component could not see `i.shell`) and now
+    // does not: `exterior` names two walls here, exactly as it does in the root spelling.
+    const body = `wall id=outer exterior thickness 200 { (-3000,0) (-3000,3000) }
+    room id=hall at (-3000,0) size 3000x3000
+    place inner() as i at (0,0)
+    furniture id=k counter against wall exterior offset 500 size 1200x600 in hall`;
+    const nested = `plan "fa" {\n  units mm\n${INNER}\n  component mid() {\n    ${body}\n  }\n  place mid() as m at (0,0)\n}`;
+    const root = `plan "fa" {\n  units mm\n${INNER}\n    ${body}\n}`;
+    const codes = (src: string) => compile(src, { noCache: true }).diagnostics.map((d) => d.code);
+    expect(codes(root)).toEqual(["E_FURN_AGAINST"]);
+    expect(codes(nested)).toEqual(codes(root));
   });
 });

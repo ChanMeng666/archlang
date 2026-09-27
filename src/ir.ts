@@ -1823,7 +1823,11 @@ function resolveImpl(
     const buffer: Diagnostic[] = [];
     diagSink = buffer;
     // What this instance can reach: its descendants' walls and rooms, carried into its
-    // local frame (before its own, as the plan-wide arrays hold instances before the root).
+    // local frame, BEFORE its own — the order the plan-wide arrays hold instances and root
+    // in. Every search by position or category (a door hosted by position or by `wall
+    // exterior`, `against wall <category>`, a `dim` projection, a wall's height, a rail)
+    // reads this array in this order, so it breaks a tie here exactly as it breaks it at
+    // the root: the nearest-wall host is first-wins, so a coincident descendant wall wins.
     const view = descendantView(grp, groups, placed, registry);
     resolveGroup(grp, view.walls, view.rooms);
     // The instance's own relational placement runs HERE, in the local frame, because
@@ -2218,8 +2222,13 @@ function deepestFirst(groups: readonly ResolveGroup[]): ResolveGroup[] {
  * The frame that carries descendant `d`'s local coordinates into `ancestor`'s: the authored
  * `place` frames between them, composed outermost first, with ids named relative to the
  * ancestor (`g.c2.main` is `c2.main` in `g`). That is the frame `d` would have if the
- * ancestor's body were compiled as the plan, computed by the same arithmetic, so the two
- * agree byte for byte. `undefined` when `d` is not a descendant of `ancestor`.
+ * ancestor's body were compiled as the plan, by the same frame arithmetic. It is NOT the
+ * frame `d`'s elements reach the plan by: a host found on this view is carried on by the
+ * ancestor's frame, `tp(A, tp(rel, p))`, while `d`'s own wall goes through the composed
+ * frame, `tp(A∘rel, p)` — equal for integers, not always for floats (grid 0). Which is why
+ * `registerOpenings` matches a host to its wall by id, never by coordinates.
+ * `undefined` when `d` is not a descendant of `ancestor`. Walking the chain per
+ * (group, descendant) pair is quadratic in the nesting, which place depth keeps small.
  */
 function relativeFrame(ancestor: Frame, d: Frame): Frame | undefined {
   const chain: Frame[] = [];
@@ -2347,13 +2356,25 @@ function markPlacement(r: ResolvedElement, node: AstElement, fromStrip: boolean)
   }
 }
 
-/** Each hosted door/window/opening voids its wall's solid. The host segment came
- *  from `segmentsOfWall`, so the owning wall is matched by endpoint coords. */
+/**
+ * Each hosted door/window/opening voids its wall's solid. The owning wall is found by
+ * IDENTITY: the host segment came from `segmentsOfWall`, so it carries its wall's id, and a
+ * `place` frame namespaces that id with the same `nsId` as the wall's own. Coordinates are
+ * not an identity: a host an instance found on a DESCENDANT's wall was carried by the
+ * descendant's frame and then by the instance's (`tp(P, tp(C, s))`), while the wall itself
+ * was carried by the composed frame (`tp(P∘C, s)`) — the same point by two float evaluation
+ * orders, which need not be equal when the grid is 0. Endpoint equality survives only to
+ * choose among walls that share an id (an `E_DUP_ID` plan), and as the fallback for a host
+ * whose id names no wall.
+ */
 function registerOpenings(elements: ResolvedElement[], walls: RWall[]): void {
-  const wallOfSegment = (seg: WallSegment): RWall | undefined =>
-    walls.find((w) =>
-      segmentsOfWall(w).some((s) => s.a.x === seg.a.x && s.a.y === seg.a.y && s.b.x === seg.b.x && s.b.y === seg.b.y),
-    );
+  const sameSegment = (seg: WallSegment) => (w: RWall) =>
+    segmentsOfWall(w).some((s) => s.a.x === seg.a.x && s.a.y === seg.a.y && s.b.x === seg.b.x && s.b.y === seg.b.y);
+  const wallOfSegment = (seg: WallSegment): RWall | undefined => {
+    const named = walls.filter((w) => w.id === seg.wallId);
+    if (named.length === 1) return named[0];
+    return (named.length > 1 ? named : walls).find(sameSegment(seg));
+  };
   for (const el of elements) {
     if ((el.kind === "door" || el.kind === "window" || el.kind === "opening") && el.host) {
       // `kind`/`ownerId`/`sill`/`head` are APPENDED facts: the wall lowering reads
