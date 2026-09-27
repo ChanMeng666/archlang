@@ -123,6 +123,11 @@ function ringArea2(pts: readonly Point[]): number {
  * The cap is ONE face carrying every loop, so a wall ring's inner boundary is a hole in
  * its own top rather than a second slab. There is no bottom cap: it is the underside of a
  * solid standing on the floor, and both cameras look down.
+ *
+ * No rings is no solid, and so no faces — not a cap with no boundary. That case is real:
+ * a wall set whose every wall is consumed by its openings joins to an EMPTY outline (the
+ * plan view's `lowerWallSet` already draws nothing for it), and an empty cap would be a
+ * face with no `loops[0]` for the painter to take a depth from.
  */
 function extrudeLoops(
   rings: readonly Point[][],
@@ -132,7 +137,7 @@ function extrudeLoops(
   elementId: string,
   out: Face[],
 ): void {
-  if (!(z1 > z0)) return;
+  if (!(z1 > z0) || rings.length === 0) return;
   for (let li = 0; li < rings.length; li++) {
     const ring = rings[li]!;
     for (let i = 0; i < ring.length; i++) {
@@ -185,6 +190,9 @@ function extrudeWalls(st: Storey, out: Face[]): void {
     const joined = joinWallSet(subset, []);
     if (!joined) continue;
     const id = `L${st.index}:walls@${fmt2(h)}`;
+    // The outline is empty when openings consume every wall of this height — most easily
+    // reached by a short partition of its own height — and then only the header and sill
+    // blocks below stand, the wall that is still there above and below each opening.
     extrudeLoops(joined.result.outline.map(ringOf), elev, elev + h, "wall", id, out);
 
     // Put the wall back above and below each hole. `cut.wall` indexes `subset`, so the
