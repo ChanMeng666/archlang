@@ -117,3 +117,26 @@ The carve now tries the centre first (so any plan that already carves is untouch
 only if that is blocked, carves the parts of the opening that are genuinely walkable. A
 fully covered opening still reports the room as unreachable: no room is ever connected by
 fiat.
+
+## Addendum (2026-09): every walk starts at the room's nearest entrance
+
+The decision stands; this replaces one choice inside it. Every walk used to be measured
+from `entrances[0]`, so on a plan with several front doors a room served by another door
+was measured the long way round, or not at all (`unmeasured: other_entrance` — sixteen
+rooms across the shipped examples, among them three of `terrace-row`'s four houses).
+
+The owner's decision is **nearest entrance per room**. The walk is one multi-source search
+seeded at every entrance at once — the `MIN_PLUS` sum over the entrances, the same shape as
+the multi-source flood that already decided `blocked` — and each room is measured from
+whichever entrance reaches it first, ties to the entrance written first. The bottleneck is
+the widest route from ANY entrance, each seeded at its own clear width, and the detour
+ratio is taken from the room's own entrance.
+
+- `rooms[].entranceId` names that entrance, and appears **only when the plan has more than
+  one entrance**, so every single-entrance plan keeps its bytes. The top-level `entranceId`
+  stays (append-only) and means the first entrance.
+- `other_entrance` is retired: a room any entrance reaches is measured. The reason stays in
+  the type so an exhaustive consumer still compiles.
+- The lint rules (`W_PATH_TOO_NARROW`, `W_CIRCUITOUS_PATH`) and the `--overlay circulation`
+  walks read the same per-room values, so the drawing starts each walk at the room's own
+  entrance.

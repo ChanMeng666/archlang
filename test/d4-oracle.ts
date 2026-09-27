@@ -782,7 +782,11 @@ export function circulationFacts(s: SceneSummary, translation: boolean): Facts {
  * from and returns each measured walk as a polyline from the entrance cell to the room's
  * measured cell). All distances are in cells.
  *
- *  - `ent` — how far gP's entrance cell is from the image of P₀'s (Manhattan);
+ *  - `ent` — how far gP's entrance cell is from the image of P₀'s (Manhattan). Every walk
+ *    starts at the room's NEAREST entrance, so the two sides may start at different
+ *    entrances (E₀ in P₀, E_g in gP) when two are nearly equidistant. The walk is a
+ *    minimum over entrances, so it is bounded by the seed displacement of BOTH: `ent` is
+ *    the larger of E₀'s and E_g's own displacement (each measured against its image);
  *  - `anchor` — how far gP's measured cell is from the image of P₀'s (Manhattan);
  *  - `anchorTie` — whether the two measured cells are EXACTLY equidistant from the room's
  *    seed point, i.e. both are nearest cells and the choice between them was a tie;
@@ -835,6 +839,15 @@ export function attributeWalks(obs0: Observation, obsG: Observation, f: Frame, a
   if (!o0 || !oG || !c0 || !cG) return [];
   const cell = o0.cellSizeMm;
   const man = (a: Point, b: Point): number => Math.round((Math.abs(a.x - b.x) + Math.abs(a.y - b.y)) / cell);
+  // One entrance's seed displacement: gP's seed cell against the image of P₀'s. An entrance
+  // that seeds on one side only moved without bound.
+  const seed0 = new Map(o0.entrances.map((e) => [e.entranceId, e.seed] as const));
+  const seedG = new Map(oG.entrances.map((e) => [e.entranceId, e.seed] as const));
+  const entShift = (id: string): number => {
+    const a = seed0.get(id);
+    const b = seedG.get(id);
+    return a && b ? man(tp(f, a), b) : Number.POSITIVE_INFINITY;
+  };
   const roomsG = new Map(obsG.ir.elements.filter((e): e is RRoom => e.kind === "room").map((r) => [r.id, r] as const));
   const rooms0 = new Map(obs0.ir.elements.filter((e): e is RRoom => e.kind === "room").map((r) => [r.id, r] as const));
   const out: WalkAttribution[] = [];
@@ -853,7 +866,7 @@ export function attributeWalks(obs0: Observation, obsG: Observation, f: Frame, a
     out.push({
       roomId: r0.roomId,
       delta: (wG - w0) / cell,
-      ent: man(tp(f, r0.path[0]!), rG.path[0]!),
+      ent: Math.max(entShift(r0.entranceId), entShift(rG.entranceId)),
       anchor: man(a0, aG),
       anchorTie: Math.abs(dist(a0) - dist(aG)) <= 1e-6,
       seedMoved: Math.hypot(seed.x - seed0.x, seed.y - seed0.y) > 1e-6,
@@ -898,7 +911,8 @@ function seedsOnLattice(
 
 /** The P₀-side tie facts the raster classes predicate on (see `test/equivariance-known.ts`). */
 export interface LatticeTies {
-  /** The first entrance (the walk origin) is seeded across a lattice line. */
+  /** An entrance (a walk origin — every entrance is one, each room walking from its
+   *  nearest) is seeded across a lattice line. */
   entrance: boolean;
   /** Some internal connector (two real rooms) is seeded across a lattice line. */
   connector: boolean;
@@ -924,9 +938,9 @@ export function latticeTies(obs: Observation): LatticeTies {
     return el !== undefined && seedsOnLattice(el, ex, served);
   };
   const edges = obs.summary.access.edges;
-  const entrance = edges.find((e) => e.doorId === c.entranceId);
+  const entrances = edges.filter((e) => obs.summary.access.entrances.includes(e.doorId));
   return {
-    entrance: entrance !== undefined && onLattice(entrance),
+    entrance: entrances.some(onLattice),
     connector: edges.some((e) => !e.exterior && !e.ambiguous && onLattice(e)),
   };
 }

@@ -2282,14 +2282,15 @@ entrance — there is nothing to measure a walk from — otherwise a `Circulatio
 
 ```ts
 interface CirculationModel {
-  entranceId: string;   // door the walk starts from (first entrance in source order)
+  entranceId: string;   // the first entrance in source order
   cellSizeMm: number;   // nav-grid quantum every distance is rounded to (coarse)
   bodyRadiusMm: number; // obstacles were inflated by this
-  rooms: {              // one entry per room reachable from the entrance
+  rooms: {              // one entry per room reachable from any entrance
     roomId: string;
-    walkDistanceMm: number;        // entrance → room, over the eroded grid
-    bottleneckClearWidthMm: number;// narrowest unavoidable clear width on the way in
-    detourRatio: number;           // walkDistance ÷ straight-line (≥ ~1)
+    walkDistanceMm: number;        // NEAREST entrance → room, over the eroded grid
+    bottleneckClearWidthMm: number;// narrowest unavoidable clear width, widest way in from any entrance
+    detourRatio: number;           // walkDistance ÷ straight-line from its own entrance (≥ ~1)
+    entranceId?: string;           // that nearest entrance — only when the plan has several
   }[];
   routes: {             // key functional routes (kitchen→living, bedroom→bath)
     fromRoomId: string; toRoomId: string;
@@ -2306,8 +2307,8 @@ Two advisory lint rules read this model (see [ADR 0008](adr/0008-circulation-as-
   (**3.0×**), i.e. it's reached the long way round.
 
 The same model backs an **opt-in render overlay** (see
-[`overlays`](#compilation-result) below) — the entrance→room walks, their pinch
-markers, and key routes drawn on top of the plan.
+[`overlays`](#compilation-result) below) — the entrance→room walks (each from the room's
+nearest entrance), their pinch markers, and key routes drawn on top of the plan.
 
 ### Correcting a plan — `arch repair`
 

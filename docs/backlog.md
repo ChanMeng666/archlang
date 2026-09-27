@@ -185,13 +185,13 @@ inside one.
 Five things the G.2/G.3/5.8 work turned up. None was in scope for the item that found it, and each
 was deliberately NOT widened into — recorded here rather than half-fixed.
 
-### G.5 · Circulation measures every walk from `entrances[0]` only — `todo` (the repair half is done)
+### G.5 · Circulation measures every walk from `entrances[0]` only — closed by W3b
 
-**Still open (deliberately, and it is now 16 rooms not 12):** `computeCirculation` measures every walk
-from `entrances[0]` only. That needs somebody to decide what a multi-dwelling sheet means — a
-per-entrance model, or nearest-entrance-per-room — before a line of code is written. Those 16 are
-reported as `other_entrance` rather than silently dropped, so the gap is now visible rather than
-invisible.
+Owner decision: nearest entrance per room. The walk is one multi-source search seeded at every
+entrance (`bfsNearest`, ties to the lowest entrance index); the bottleneck is the widest route from
+any entrance, each seeded at its own clear width; the detour is taken from the room's own entrance.
+`rooms[].entranceId` appears only on a plan with several entrances. The 16 `other_entrance` rooms
+are measured and the reason is retired (ADR 0008 addendum; `test/circulation-entrances.test.ts`).
 
 ### G.10 · A `place`d plan does not round-trip through Plan JSON — `todo` (the projection half is done)
 

@@ -298,11 +298,17 @@ entrance. For the studio:
 
 | Field | Meaning |
 |-------|---------|
-| `entranceId` | the door the walk is measured from (first entrance in source order) |
+| `entranceId` | the first entrance in source order. With one entrance every walk starts there; with several, each room names its own |
 | `cellSizeMm` / `bodyRadiusMm` | the nav-grid quantum (distances are rounded to it, so they're coarse) and the radius obstacles were inflated by |
-| `rooms[].walkDistanceMm` | walking distance from the entrance to the room, over the eroded grid |
-| `rooms[].bottleneckClearWidthMm` | the narrowest unavoidable clear width on the way in (a door width, or a furniture pinch) |
-| `rooms[].detourRatio` | `walkDistance ÷ straight-line` — how far the route wanders from a beeline (`≥ ~1`) |
+| `rooms[].walkDistanceMm` | walking distance to the room from its **nearest** entrance, over the eroded grid |
+| `rooms[].bottleneckClearWidthMm` | the narrowest unavoidable clear width on the widest way in from **any** entrance (a door width, or a furniture pinch) |
+| `rooms[].detourRatio` | `walkDistance ÷ straight-line` from the room's own entrance — how far the route wanders from a beeline (`≥ ~1`) |
+| `rooms[].entranceId` | the entrance this room's walk starts at: its nearest, ties to the one written first. **Present only when the plan has more than one entrance** |
+
+A plan with several front doors — a terrace of houses on one sheet, a building with a
+street door and a garden door — is walked from all of them at once: every room is measured
+from whichever entrance is nearest, so no room is reported the long way round, or left out,
+because a different door happens to come first in the source.
 | `routes[]` | key functional routes (kitchen → nearest living/dining, bedroom → nearest bath), same three metrics |
 
 A room the grid cannot reach at all is simply **absent** from `rooms[]`. Three things
