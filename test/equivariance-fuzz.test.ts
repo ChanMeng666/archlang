@@ -27,14 +27,17 @@
  *  - `raster-tie` — the walk moved by no more than its endpoints did, each endpoint at most
  *    one lattice step per tied axis (≤ 3 cells), with the measured/unmeasured/sealed room
  *    sets unchanged; a bottleneck by at most one clear-width quantum (2 cells);
- *  - `entrance-seed-walk` — the entrance is on a lattice line and its tied row is eroded,
- *    and the walk moved by no more than the endpoints did;
+ *  - `entrance-seed-walk` — an entrance is on a lattice line and its tied row is eroded,
+ *    and the walk moved by no more than the endpoints did; or, with several entrances, one
+ *    seeds on one side only and its width leaves (or joins) a room's bottleneck;
  *  - `anchor-far-tie` — the measured cell jumped more than a step to a cell EXACTLY as far
  *    from the seed point (a ring round an obstacle);
- *  - `label-point-tie` — a concave room's seed point itself moved;
  *  - `threshold-carve` — P₀ has a doorway seeded across a lattice line, and the walk moved
- *    by MORE than its endpoints did (the grid itself differs) or a room's measurement
- *    appeared, vanished or was sealed;
+ *    by MORE than its endpoints did (the grid itself differs), the room's own widest way in
+ *    changed, or a room's measurement appeared, vanished or was sealed;
+ *
+ * No class covers a circulation change under a translation (the grid samples in its own
+ * snapped frame), nor a concave room's seed moving (it is measured over its pole orbit).
  *  - a raster lint rule only when every circulation change of the case is one of these.
  *
  * It does NOT prove a walk is right: a raster regression that happens to fit one of these

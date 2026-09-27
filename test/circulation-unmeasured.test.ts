@@ -97,15 +97,25 @@ describe("G.5 — circulation reports every room it cannot measure", () => {
     expect(JSON.stringify(s.circulation)).not.toContain("unmeasured");
   });
 
-  it("`other_entrance` names a room a LATER front door reaches — not a defect", () => {
-    // `terrace-row` is four dwellings on one sheet; every walk is measured from house 1's
-    // door, so the other three are legitimately elsewhere. Reporting them as `blocked`
-    // would be the false positive item 5.8's furniture control exists to prevent.
+  it("a room a LATER front door reaches is measured from it — `other_entrance` is retired", () => {
+    // `terrace-row` is four dwellings on one sheet. Every walk used to be measured from
+    // house 1's door, so the other three houses' twelve rooms were `other_entrance`. Each
+    // room is now walked to from its NEAREST entrance (backlog G.5), so all sixteen are
+    // measured, none is unmeasured, and none is (falsely) `blocked`.
     const s = describePlan(readFileSync("examples/terrace-row.arch", "utf8"), { world: exampleWorld });
-    const u = s.circulation?.unmeasured ?? [];
-    expect(u.length).toBe(12);
-    expect(new Set(u.map((r) => r.reason))).toEqual(new Set(["other_entrance"]));
+    expect(s.circulation?.unmeasured).toBeUndefined();
     expect(s.circulation?.blocked ?? []).toEqual([]);
+    expect(s.circulation?.rooms.map((r) => r.roomId).sort()).toEqual(s.rooms.map((r) => r.id).sort());
+    // …and no shipped example reports the retired reason on any storey.
+    for (const f of EXAMPLES) {
+      const all = everySummary(describePlan(readFileSync(`examples/${f}`, "utf8"), { world: exampleWorld }));
+      for (const lvl of all) {
+        expect(
+          (lvl.circulation?.unmeasured ?? []).map((u) => u.reason),
+          f,
+        ).not.toContain("other_entrance");
+      }
+    }
   });
 
   it("`no_threshold` names a room whose doorway never opened in the grid", () => {

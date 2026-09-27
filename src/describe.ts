@@ -41,7 +41,7 @@ import {
   roomBox,
   roomsAdjacent,
   roomsAtPoint,
-  doorConnections,
+  connectorConnection,
   roomUses,
   buildDoorAccessGraph,
   DEFAULT_TOL,
@@ -995,7 +995,7 @@ function summarize(
   const doors: DoorSummary[] = doorEls.map((d) => ({
     id: d.id,
     ...(d._instance !== undefined ? { instance: d._instance } : {}),
-    between: doorConnections(d, roomRects, tol),
+    between: connectorConnection(d, roomRects, tol).between,
     width: d.width,
     ...(d.doorKind !== undefined ? { kind: d.doorKind } : {}),
     ...(heights ? { head: d.head } : {}),
@@ -1034,7 +1034,7 @@ function summarize(
 
   const openings: OpeningSummary[] = openingEls.map((o) => ({
     id: o.id,
-    between: doorConnections(o, roomRects, tol),
+    between: connectorConnection(o, roomRects, tol).between,
     width: o.width,
     ...(heights ? { head: o.head } : {}),
   }));

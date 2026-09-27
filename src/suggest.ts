@@ -453,11 +453,11 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
   // the first set but not the second is en-suite-trapped. Propose a door on a wall it
   // shares with a non-bedroom space that still reaches the entrance (preferred), with
   // exterior-wall doors as a fallback. Only runs when an entrance exists.
-  // The same `"slice"` graph and search as the lint rule.
+  // The same `"probe"` graph and search as the lint rule.
   const roomRects = new Map(rooms.map((r) => [r.id, roomBox(r)] as const));
   const g = accessDigraph(
     rooms.map((r) => r.id),
-    connectorEdges(roomRects, [...doors, ...openings], tol, DEFAULT_CLEAR_ALLOWANCE_MM, "slice"),
+    connectorEdges(roomRects, [...doors, ...openings], tol, DEFAULT_CLEAR_ALLOWANCE_MM, "probe"),
   );
   const isBedroomId = (id: string): boolean => {
     const r = rooms.find((x) => x.id === id);

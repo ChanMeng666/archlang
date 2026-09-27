@@ -265,6 +265,7 @@ openings) and walks it from the exterior. For the studio:
 | `edges[].nominalWidth` | the connector's drawn width |
 | `edges[].estimatedClearWidth` | the usable opening: a **door** loses ~60 mm to its leaf and stop, an **opening** keeps its full width |
 | `edges[].exterior` | whether this connector reaches the outside |
+| `edges[].ambiguous` | the connector sits where three or more rooms meet, and probing one wall thickness off each face of its host wall could not say which two it joins (a probe landed on a room boundary). It is listed but joins nothing, so it counts for no room's reachability. When the probe does decide, `between` is the room on each face, and lint, circulation and `suggest` all read that same pair |
 | `rooms[].depthFromEntrance` | how many connectors you pass through from the nearest entrance (`1` = opens straight off it); `null` if you can't get there |
 | `rooms[].reachable` | can this room be reached from the exterior at all? |
 | `rooms[].bottleneckClearWidth` | the **narrowest clear width** along the widest path in from the entrance — the real constraint for moving furniture or a wheelchair (a widest-path search, so it reports the best route's worst pinch) |
@@ -297,12 +298,26 @@ entrance. For the studio:
 
 | Field | Meaning |
 |-------|---------|
-| `entranceId` | the door the walk is measured from (first entrance in source order) |
+| `entranceId` | the first entrance in source order. With one entrance every walk starts there; with several, each room names its own |
 | `cellSizeMm` / `bodyRadiusMm` | the nav-grid quantum (distances are rounded to it, so they're coarse) and the radius obstacles were inflated by |
-| `rooms[].walkDistanceMm` | walking distance from the entrance to the room, over the eroded grid |
-| `rooms[].bottleneckClearWidthMm` | the narrowest unavoidable clear width on the way in (a door width, or a furniture pinch) |
-| `rooms[].detourRatio` | `walkDistance ÷ straight-line` — how far the route wanders from a beeline (`≥ ~1`) |
+| `rooms[].walkDistanceMm` | walking distance to the room from its **nearest** entrance, over the eroded grid |
+| `rooms[].bottleneckClearWidthMm` | the narrowest unavoidable clear width on the widest way in from **any** entrance (a door width, or a furniture pinch) |
+| `rooms[].detourRatio` | `walkDistance ÷ straight-line` from the room's own entrance — how far the route wanders from a beeline (`≥ ~1`) |
+| `rooms[].entranceId` | the entrance this room's walk starts at: its nearest, ties to the one written first. **Present only when the plan has more than one entrance** |
 | `routes[]` | key functional routes (kitchen → nearest living/dining, bedroom → nearest bath), same three metrics |
+
+A plan with several front doors — a terrace of houses on one sheet, a building with a
+street door and a garden door — is walked from all of them at once: every room is measured
+from whichever entrance is nearest, so no room is reported the long way round, or left out,
+because a different door happens to come first in the source.
+
+The three per-room numbers answer two different questions, on purpose. `walkDistanceMm`,
+`detourRatio` and `entranceId` all come from the room's **nearest entrance by walk** — the
+route a person would take. `bottleneckClearWidthMm` is the widest way in from **any**
+entrance — what you can get a sofa or a wheelchair through, whichever door that means. So a
+room can report a wide bottleneck through one door and a walk from another, and its detour is
+measured from its nearest door even when another door is in a straighter line (the museum's
+`g3` reads 2.32, from a door that is nearest by walk but roundabout).
 
 A room the grid cannot reach at all is simply **absent** from `rooms[]`. Three things
 obstruct it: furniture (halo on every side), a
@@ -321,6 +336,9 @@ Two advisory lint rules read this model, and the same model backs the opt-in
 tells you how coarse.** Room areas, adjacency and the access graph come from exact
 rectangle arithmetic. Circulation distances and clear widths are read off a raster, so
 they are quantised to the cell — treat them as "about", never as a dimension to build to.
+The grid is anchored at the rooms' min corner and samples everything relative to it (snapped
+to 1/1024 mm), so moving a whole plan changes no circulation number — exactly, except in the
+vanishing case of a relative coordinate within about one float ulp of a half-quantum.
 
 The cell is derived from the plan's own area: a **target cell size bounded by a total
 cell budget**, `cell = max(100 mm, ceil(sqrt(planArea / 250 000)))`. So resolution is

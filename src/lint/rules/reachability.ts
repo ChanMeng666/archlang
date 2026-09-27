@@ -3,9 +3,10 @@
  * (rooms + the literal "exterior") once, then — per room, in source order — emits
  * W_BATH_VIA_BEDROOM and W_ROOM_UNREACHABLE, preserving the historical interleaving.
  *
- * The graph is the `"slice"` access graph: a connector touching 3+ rooms joins the first
- * two (see `AmbiguityPolicy` in `analyze.ts`, and `test/access-policy.test.ts` for where
- * that disagrees with `describe().access`).
+ * The graph is the `"probe"` access graph `describe().access` reads too: a connector
+ * touching 3+ rooms joins the room on each face of its host wall, or nothing when the
+ * probe cannot decide (see `AmbiguityPolicy` in `analyze.ts`; `test/access-policy.test.ts`
+ * holds every surface to one reachability answer).
  *
  * On a storey with no exterior door that a shaft nevertheless reaches, the room
  * the shaft lands in is a source beside "exterior" — coming down the stairs
@@ -32,7 +33,7 @@ export const reachability: LintRule = {
     const out: Diagnostic[] = [];
     const g = accessDigraph(
       rooms.map((r) => r.id),
-      connectorEdges(roomRects, connectors, rules.tolMm, DEFAULT_CLEAR_ALLOWANCE_MM, "slice"),
+      connectorEdges(roomRects, connectors, rules.tolMm, DEFAULT_CLEAR_ALLOWANCE_MM, "probe"),
     );
     // A shaft arriving from a reachable storey is this floor's entrance.
     const arrivals = building.arrivalRooms.filter((id) => roomRects.has(id));

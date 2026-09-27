@@ -4,6 +4,7 @@ import { bestPaths, type Digraph } from "../src/algebra/paths.js";
 import { BOOLEAN, lexicographic, MAX_MIN, MIN_PLUS, type OrderedSemiring } from "../src/algebra/semiring.js";
 import {
   bfs,
+  bfsNearest,
   distanceTransform4,
   type NavGrid,
   reachableFromAny,
@@ -19,6 +20,7 @@ import { neighbours4 } from "../src/analyze/grid.js";
  * computes exactly what the engine computes on the same grid:
  *
  *  - `bfs`                 ≡ unit `MIN_PLUS`, constant rank: distance AND parent;
+ *  - `bfsNearest`          ≡ the ⊕ of `bfs` over the entrances, ties to the lowest index;
  *  - `reachableFromAny`    ≡ the `BOOLEAN` closure;
  *  - `widestBottleneck`    ≡ `MAX_MIN` values (a cell's clear width is its in-edge weight);
  *  - `distanceTransform4`  ≡ multi-source unit `MIN_PLUS`.
@@ -308,6 +310,53 @@ describe("the nav-grid searches equal the engine on random grids up to 12 × 12"
           s: MAX_MIN,
           weight: (w) => w,
           sources: r.sources.map((s) => [s, seed] as const),
+          admit: (k) => r.free[k] === 1,
+          rank: () => 0,
+        });
+        for (let k = 0; k < r.nx * r.ny; k++) expect(best[k]).toBe(e.value.get(k) ?? Number.NEGATIVE_INFINITY);
+      }),
+      GRID_RUNS,
+    );
+  });
+
+  it("bfsNearest with one source IS bfs, distance and parent", () => {
+    fc.assert(
+      fc.property(randomGrid, (r) => {
+        const one = bfs(navOf(r), r.sources[0]!);
+        const many = bfsNearest(navOf(r), [r.sources[0]!]);
+        expect([...many.dist]).toEqual([...one.dist]);
+        expect([...many.parent]).toEqual([...one.parent]);
+      }),
+      GRID_RUNS,
+    );
+  });
+
+  it("bfsNearest ≡ the ⊕ over sources of unit MIN_PLUS; a tie goes to the LOWEST source index", () => {
+    fc.assert(
+      fc.property(randomGrid, (r) => {
+        const { dist, from } = bfsNearest(navOf(r), r.sources);
+        const each = r.sources.map((s) => bfs(navOf(r), s).dist);
+        for (let k = 0; k < r.nx * r.ny; k++) {
+          const reached = each.map((d) => d[k]!).filter((d) => d >= 0);
+          const best = reached.length > 0 ? Math.min(...reached) : -1;
+          expect(dist[k]).toBe(best);
+          expect(from[k]).toBe(best < 0 ? -1 : each.findIndex((d) => d[k] === best));
+        }
+      }),
+      GRID_RUNS,
+    );
+  });
+
+  it("widestBottleneck with a seed PER source ≡ MAX_MIN seeded each at its own value", () => {
+    const widths = fc.array(fc.constantFrom(0, 450, 840, 900, 1140), { minLength: 4, maxLength: 4 });
+    fc.assert(
+      fc.property(randomGrid, widths, (r, w) => {
+        const seeds = r.sources.map((_, i) => w[i]!);
+        const best = widestBottleneck(navOf(r), r.sources, seeds);
+        const e = bestPaths(gridDigraph(r), {
+          s: MAX_MIN,
+          weight: (x) => x,
+          sources: r.sources.map((s, i) => [s, seeds[i]!] as const),
           admit: (k) => r.free[k] === 1,
           rank: () => 0,
         });

@@ -23,8 +23,15 @@
 
 import { describe, expect, it } from "vitest";
 import { resolvePlan } from "../src/analyze.js";
-import { composeFrame } from "../src/frame.js";
-import { compile, type ElementDef, lint, makeVirtualWorld, registerElement } from "../src/index.js";
+import { composeFrame, tp } from "../src/frame.js";
+import {
+  compile,
+  describe as describePlan,
+  type ElementDef,
+  lint,
+  makeVirtualWorld,
+  registerElement,
+} from "../src/index.js";
 import { levelBlocks, type RFurniture } from "../src/ir.js";
 import { LINT_RULES } from "../src/lint.js";
 import { entryEdges, verticalsOf } from "../src/vertical.js";
@@ -45,6 +52,7 @@ import {
   lin,
   type Observed,
   observe,
+  overlayOf,
   pinAudit,
   pinDiff,
   RULE_CLASS,
@@ -308,6 +316,61 @@ const WITNESSES: Record<ClassName, [string, () => void][]> = {
         expect([v.expected, v.actual]).toEqual(["1800", "1100"]);
       },
     ],
+    [
+      "STILL drops a sealed-on-one-side entrance's width out of a turned room's bottleneck",
+      () => {
+        // Three entrances side by side (fuzz seed 12, case 308). The 1400 mm opening's centre is
+        // on a lattice line; in P₀ it seeds and sets the widest way in, in gP its tied cell is
+        // inside the cabinets' halo and it seeds nowhere — so the bottleneck falls to the next
+        // door's 740 mm. Rate: 1 case in 3000 random plans.
+        const body = `    wall id=shell exterior thickness 150 { (0,0) (2200,0) (2200,2800) (0,2800) close }
+    room id=r at (0,0) size 2200x2800 label "Office"
+    door id=d1 on shell at 17% width 800
+    opening id=wide on shell at 15% width 1400
+    door id=d2 on shell at 81% width 700
+    furniture id=s cabinet at (200,200) size 1200x900
+    furniture id=c cabinet at (0,830) size 1200x1800`;
+        const { ctx } = witnessCase(body, elementNamed("r270"));
+        expect(ctx.entranceShift()).toBe(Number.POSITIVE_INFINITY);
+        const v = reproduce("entrance-seed-walk", body, "r270", "circulation.rooms[g.r].bottleneck");
+        expect([v.expected, v.actual]).toEqual(["1400", "740"]);
+        // The class is BOUNDED to exactly this: a planted regression in the bottleneck —
+        // any other value on either side — is not absorbed.
+        const cls = KNOWN_CLASSES["entrance-seed-walk"];
+        const { ctx: c2 } = witnessCase(body, elementNamed("r270"));
+        for (const [expected, actual] of <[string, string][]>[
+          ["1400", "600"], // narrower than the widest entrance seeding on both sides (740)
+          ["1400", "1234"], // wider than any entrance seeding on gP's side
+          ["1300", "740"], // the wider reading is no one-sided entrance's width
+          ["740", "1400"], // the one-sided entrance seeds on P₀, not on gP
+        ]) {
+          expect(cls.covers({ ...v, expected, actual }, c2), `${expected} -> ${actual}`).toBe(false);
+        }
+      },
+    ],
+    [
+      "STILL seals a turned room whose own entrance seeds on one side only",
+      () => {
+        // Fuzz seed 91, case 244 (with case 648: 2 in 16 000). The 800 mm barn door `o5` into
+        // the utility room seeds in P₀; turned and mirrored its tied seed lands in the
+        // cabinets' halo, and the room's other doorway seeds into a pocket — so the room is
+        // measured on one side and sealed on the other.
+        const body = `    wall id=w_shell exterior thickness 150 { (0,0) (2100,0) (2100,5400) (0,5400) close }
+    wall id=w_h1 partition thickness 100 { (0,2600) (2100,2600) }
+    room id=r0 at (0,0) size 2100x2600 uses utility
+    room id=r1 at (0,2600) size 2100x2800 label "Bed 1"
+    opening id=o1 on w_shell at 40% width 1500
+    door id=o2 sliding on w_shell at 93% width 700
+    door id=o5 barn on w_shell at 89% width 800 slide left
+    furniture id=f1 lavatory in r0 centered size 1000x600
+    furniture id=f2 shoe_cabinet in r0 centered size 1200x700`;
+        const { ctx } = witnessCase(body, elementNamed("r90mx"), { grid: 100 });
+        expect(ctx.entranceSides().only0.map((e) => e.id)).toEqual(["g.o5"]);
+        const v = reproduce("entrance-seed-walk", body, "r90mx", "circulation.rooms[g.r0].walk", { grid: 100 });
+        expect([v.expected, v.actual]).toEqual(["1200", "<absent>"]);
+        reproduce("entrance-seed-walk", body, "r90mx", "circulation.blocked", { grid: 100 });
+      },
+    ],
   ],
   "anchor-far-tie": [
     [
@@ -320,20 +383,6 @@ const WITNESSES: Record<ClassName, [string, () => void][]> = {
         const v = reproduce("anchor-far-tie", body, "r180", "circulation.rooms[g.r].walk");
         expect([v.expected, v.actual]).toEqual(["2500", "2300"]);
         expect(ctx.walks().get("g.r")?.anchor).toBeGreaterThan(20); // the measured cell jumped
-      },
-    ],
-  ],
-  "label-point-tie": [
-    [
-      "STILL measures a mirrored U-shaped room in its other arm",
-      () => {
-        const ring = "(0,0) (6000,0) (6000,4000) (4000,4000) (4000,1000) (2000,1000) (2000,4000) (0,4000)";
-        const body = `    wall id=shell exterior thickness 200 { ${ring} close }
-    room id=u polygon ${ring} label "Gallery"
-    door id=d at (3050,0) width 900 wall shell`;
-        const { ctx } = witnessCase(body, elementNamed("mx"));
-        reproduce("label-point-tie", body, "mx", "circulation.rooms[g.u].walk");
-        expect(ctx.walks().get("g.u")?.seedMoved).toBe(true);
       },
     ],
   ],
@@ -356,15 +405,41 @@ const WITNESSES: Record<ClassName, [string, () => void][]> = {
         reproduce("threshold-carve", body, "r180", "circulation.blocked");
       },
     ],
-  ],
-  "float-translation": [
     [
-      "STILL moves a curved room's walk under a pure translation",
+      "STILL measures a turned room split by furniture in the other part its doorway carved into",
       () => {
-        const v = reproduce("float-translation", DRUM(3400), "t", "circulation.rooms[g.rot].walk");
-        expect([v.expected, v.actual]).toEqual(["3100", "3200"]);
+        // Fuzz seed 22, case 991 (with seed 43 case 447: 2 in 12 000). Furniture splits the
+        // bath (r1); the opening o2 has a threshold point on a lattice line, so the part of r1
+        // it carves into differs under r90mx — the room's own widest way in changes (700 →
+        // 840 mm), and the cell nearest its centre is in a pocket on one side (`fallback`), so
+        // that side measures to the nearest REACHABLE cell 23 cells away: no tie, +3600 mm.
+        const body = `    wall id=w_shell exterior thickness 100 { (0,0) (6500,0) (6500,6300) (0,6300) close }
+    wall id=w_v1 partition thickness 100 { (3000,0) (3000,6300) }
+    wall id=w_h1 partition thickness 100 { (0,3500) (6500,3500) }
+    room id=r0 at (0,0) size 3000x3500 label "Living" uses utility
+    room id=r1 at (3000,0) size 3500x3500 label "Bed 1" uses bath
+    room id=r2 at (0,3500) size 3000x2800
+    room id=r3 at (3000,3500) size 3500x2800
+    opening id=o0 on w_h1 at 16% width 1200
+    door id=o1 garage on w_shell at 88% width 900 head 2400
+    opening id=o2 on w_v1 at 29% width 1100
+    furniture id=f0 urinal in r1 centered size 500x1100
+    furniture id=f1 crib in r1 anchor left inset 400 size 900x600
+    furniture id=f2 plant at (4136,2632) size 1800x1600 label "Hall" rotate 180 in r3
+    furniture id=f3 water_heater against wall w_v1 segment 0 offset 5292 side left size 800x400
+    furniture id=f4 outdoor_chair against wall w_v1 segment 0 offset 3024 side left size 900x300
+    furniture id=f5 dryer at (0,2989) size 300x1400 label "Living" rotate 0 in r0
+    room id=r_circ circle at (11500,8000) radius 1500
+    room id=r_base at (9500,16000) size 3000x2500
+    room id=r_rel left-of r_base align bottom gap 0 size 2000x2000`;
+        const v = reproduce("threshold-carve", body, "r90mx", "circulation.rooms[g.r1].walk", { grid: 100 });
+        expect([v.expected, v.actual]).toEqual(["4200", "7800"]);
+        const { ctx } = witnessCase(body, elementNamed("r90mx"), { grid: 100 });
+        expect(ctx.walks().get("g.r1")).toMatchObject({ anchorTie: false, seedMoved: false, fallback: true });
       },
     ],
+  ],
+  "float-translation": [
     [
       "STILL flips a pocket door's fix when 20 m of offset rounds its ulp away",
       () => {
@@ -410,6 +485,100 @@ describe("the pinned classes — each STILL reproduced by a minimal witness", ()
 
 /** Closed classes: each former `STILL …` witness, inverted into the law it was waiting for. */
 describe("closed classes — each former witness is now the law", () => {
+  it("label-point-tie (W3b): a concave room is measured over its pole ORBIT, so no turn or flip moves its seed", () => {
+    // The former witness: a U-shaped gallery whose centroid is in its notch. The pole of
+    // inaccessibility scan keeps the first of two equally wide arms, so mirrored the room was
+    // measured in its other arm. It is now measured to the nearest of every pole the scan
+    // finds on the ring turned or flipped — a set no page order can change.
+    const u = "(0,0) (6000,0) (6000,4000) (4000,4000) (4000,1000) (2000,1000) (2000,4000) (0,4000)";
+    const c = "(0,0) (5000,0) (5000,1500) (1500,1500) (1500,3500) (5000,3500) (5000,5000) (0,5000)";
+    for (const [ring, door] of [
+      [u, "(3050,0)"],
+      [c, "(0,2450)"],
+    ] as const) {
+      const body = `    wall id=shell exterior thickness 200 { ${ring} close }
+    room id=u polygon ${ring} label "Gallery"
+    door id=d at ${door} width 900 wall shell`;
+      for (const g of D4_ELEMENTS) {
+        const { vs, ctx } = witnessCase(body, g);
+        expect(ctx.walks().get("g.u")?.seedMoved ?? false, `${ring} ${g.name}`).toBe(false);
+        // Anything left is an endpoint tie of the cell measured to, never an arm swap.
+        for (const v of vs.filter((x) => x.path === "circulation.rooms[].walk")) {
+          expect(KNOWN_CLASSES["raster-tie"].covers(v, ctx), `${ring} ${g.name} ${v.key}`).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("label-point-tie (W3b): the PICK within the orbit is D4-symmetric — the chosen point maps to the chosen point", () => {
+    // The orbit is a set; the pole the room is measured to is chosen from it by fewest hops,
+    // then straight-line distance from the walk's own entrance, then the candidate's offsets
+    // from the room's centre as a sorted multiset — never by cell index (that settles only a
+    // tie some symmetry of the whole plan maps onto itself, where every fact is equal).
+    const ring = "(0,0) (6000,0) (6000,4000) (4000,4000) (4000,1000) (2000,1000) (2000,4000) (0,4000)";
+    const body = (x: number) => `    wall id=shell exterior thickness 200 { ${ring} close }
+    room id=u polygon ${ring} label "Gallery"
+    door id=d at (${x},0) width 900 wall shell`;
+    const measured = (src: string) => overlayOf(observe(src).ir!)!.rooms.find((r) => r.roomId === "g.u")!;
+    const ends = (path: readonly { x: number; y: number }[]) => [path[0], path[path.length - 1]];
+    for (const g of D4_ELEMENTS) {
+      const f = frameFor(g, 50);
+      // A door off the lattice line: the entrance seeds without a tie, so the chosen seed and
+      // the walk's two ends (entrance cell, measured cell) are exactly equivariant.
+      const off = witnessPair(body(3050), g);
+      const m0 = measured(off.p0);
+      const mG = measured(off.gP);
+      expect(mG.seed, g.name).toEqual(tp(f, m0.seed));
+      expect(ends(mG.path), g.name).toEqual(ends(m0.path.map((p) => tp(f, p))));
+      // A door dead on the axis of the mirror-symmetric U: the entrance itself seeds across a
+      // lattice line (E.6), so the nearer arm — and the seed — follows that tie; the facts
+      // (walk, detour) are still equal under every element.
+      const on = witnessPair(body(3000), g);
+      const c0 = observe(on.p0).summary.circulation!.rooms[0]!;
+      const cG = observe(on.gP).summary.circulation!.rooms[0]!;
+      expect([cG.walkDistanceMm, cG.detourRatio], g.name).toEqual([c0.walkDistanceMm, c0.detourRatio]);
+      // The case the row-major pick got wrong: an asymmetric U whose pole (1015, 1000) sits
+      // on a lattice line, so two cells are equally near it (rows 950 and 1050), and a
+      // second pole (1015, 3000) is as many hops away as the farther of them. The first
+      // cell in row-major order was taken; under a half-turn that is the image of the other
+      // cell, and the walk moved by a cell. Fewest hops decides it now, under every element.
+      const asym = "(0,0) (7000,0) (7000,5000) (5000,5000) (5000,1000) (2000,1000) (2000,4000) (0,4000)";
+      const side = `    wall id=shell exterior thickness 200 { ${asym} close }
+    room id=u polygon ${asym} label "Gallery"
+    door id=d at (0,1950) width 900 wall shell`;
+      const a = witnessPair(side, g);
+      const a0 = measured(a.p0);
+      const aG = measured(a.gP);
+      expect(a0.path.at(-1), "P₀ measures to the cell fewer hops away").toEqual({ x: 1050, y: 1050 });
+      expect(aG.seed, g.name).toEqual(tp(f, a0.seed));
+      expect(ends(aG.path), g.name).toEqual(ends(a0.path.map((p) => tp(f, p))));
+      expect(observe(a.gP).summary.circulation!.rooms[0], g.name).toEqual(observe(a.p0).summary.circulation!.rooms[0]);
+    }
+  });
+
+  it("float-translation, circulation half (W3b): a curved room's walk is exactly invariant under translation", () => {
+    // The former witness: a drum 20 m out measured 3200 mm against 3100 at the origin,
+    // because its tessellated ring re-rounds. The nav grid now samples in its extent's own
+    // frame, snapped to a dyadic lattice, so the ring reads the same numbers on both sides.
+    for (const r of [3400, 2150, 5075]) {
+      const { vs, ctx } = witnessCase(DRUM(r), elementNamed("t"));
+      expect(
+        vs.filter((v) => v.path.startsWith("circulation")).map((v) => v.key),
+        `r = ${r}`,
+      ).toEqual([]);
+      expect(ctx.floatSensitive, `r = ${r}: the case must still re-round`).toBe(true);
+      const walk = (o: typeof ctx.obs0) => o.summary.circulation?.rooms.find((x) => x.roomId === "g.rot");
+      expect(walk(ctx.obsG), `r = ${r}`).toEqual(walk(ctx.obs0));
+      expect(walk(ctx.obs0), `r = ${r}: the room is measured`).toBeDefined();
+    }
+    // …and whole-millimetre translations that are not a whole number of cells. (A
+    // non-integer translation of the resolved plan is `test/circulation-translation.test.ts`.)
+    const odd = (dx: number) =>
+      `plan "w" {\n  units mm\n  component c() {\n${DRUM(3400)}\n  }\n  place c() as g at (${dx},${dx})\n}`;
+    const at0 = describePlan(odd(0)).circulation?.rooms;
+    for (const dx of [37, 20013, 123457]) expect(describePlan(odd(dx)).circulation?.rooms, `dx = ${dx}`).toEqual(at0);
+  });
+
   it("plugin-throw (backlog E.4): a plugin element inside a placed component is E_INSTANCE_NO_TRANSFORM, never a throw", () => {
     const flat = `plan "p" {\n  units mm\n  room at (0,0) size 4000x3000\n  tree (1000,1000)\n}`;
     const placed = `plan "p" {\n  units mm\n  component c() {\n    room at (0,0) size 4000x3000\n    tree (1000,1000)\n  }\n  place c() as g at (0,0)\n}`;

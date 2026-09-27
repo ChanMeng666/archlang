@@ -294,16 +294,26 @@ export const DEFAULT_CLEAR_ALLOWANCE_MM = 60;
 
 /**
  * What a connector with three or more rooms at its point joins. The point is on
- * several room edges, so the geometry does not say which two rooms it connects.
+ * several room edges, so the edge-touch test alone does not say which two rooms it
+ * connects.
  *
- *  - `"drop"` joins nothing: the edge is reported with `ambiguous: true` and left out
- *    of reachability and bottleneck. `describe().access`, Plan JSON and circulation use it.
- *  - `"slice"` joins the first two rooms in source order ({@link doorConnections}).
- *    Lint reachability and `suggestTopology` use it.
+ *  - `"probe"` asks the connector's HOST WALL: one wall thickness off each face
+ *    ({@link wallFaceProbes}), which room's floor holds the probe point
+ *    ({@link pointInRoomBox}, shape-aware)? A probe on no floor is the `exterior` side
+ *    when the host is an exterior wall. When both faces resolve, to two different
+ *    spaces, the connector joins exactly those. When either face cannot be decided —
+ *    the probe lies on a room boundary (in two floors at once), or in no floor behind a
+ *    non-exterior host — the edge is `ambiguous` and joins nothing. Every surface uses
+ *    it: `describe().access`, Plan JSON, circulation, lint reachability,
+ *    `suggestTopology` and the intent channel's `reachable`
+ *    (`test/access-policy.test.ts` is the agreement law).
+ *  - `"drop"` joins nothing: every such connector is `ambiguous`. The reference the
+ *    probe degrades to when it cannot decide.
  *
- * The two can disagree about whether a room is reachable (`test/access-policy.test.ts`).
+ * A connector touching two rooms or fewer is never affected: it keeps
+ * {@link doorConnections}' answer under either policy.
  */
-export type AmbiguityPolicy = "drop" | "slice";
+export type AmbiguityPolicy = "probe" | "drop";
 
 /** What {@link connectorEdges} reads off a door or cased opening. `RDoor` and
  *  `ROpening` satisfy it as they are. */
@@ -311,8 +321,57 @@ export interface AccessConnector {
   id: string;
   at: Point;
   width: number;
-  host: { category: string; wallId: string } | null;
+  host: (Pick<WallSegment, "a" | "b" | "arc" | "thickness"> & { category: string; wallId: string }) | null;
   kind: "door" | "opening";
+}
+
+/**
+ * The two spaces a connector touching 3+ rooms joins under the `"probe"`
+ * {@link AmbiguityPolicy}, or `null` when the probe cannot decide. The pair is in
+ * `roomRects` order with `exterior` first — the order {@link doorConnections} uses — so
+ * it depends on no page direction.
+ */
+function probeConnection(
+  c: Pick<AccessConnector, "at" | "host">,
+  roomRects: Map<string, RoomBox>,
+): [string, string] | null {
+  const host = c.host;
+  if (!host) return null;
+  const { plus, minus } = wallFaceProbes(host, c.at, Math.max(host.thickness, 1));
+  const face = (p: Point): string | null => {
+    const holding: string[] = [];
+    for (const [id, box] of roomRects) if (pointInRoomBox(p, box)) holding.push(id);
+    if (holding.length === 1) return holding[0]!;
+    if (holding.length === 0 && host.category === "exterior") return EXTERIOR_NODE;
+    return null; // on a room boundary, or in no floor behind an interior wall
+  };
+  const a = face(minus);
+  const b = face(plus);
+  if (a === null || b === null || a === b) return null;
+  const order = [EXTERIOR_NODE, ...roomRects.keys()];
+  return order.indexOf(a) <= order.indexOf(b) ? [a, b] : [b, a];
+}
+
+/**
+ * The spaces one connector joins, and whether it is `ambiguous` — the ONE answer every
+ * access surface reads (`describe().doors[]`/`openings[]` `between`, `describe().access`,
+ * circulation, lint reachability, `suggestTopology`). A connector touching ≤2 rooms is
+ * exactly {@link doorConnections}; one touching 3+ is resolved by `policy`, and when
+ * that cannot decide it keeps {@link doorConnections}' pair for display and is
+ * `ambiguous`.
+ */
+export function connectorConnection(
+  c: Pick<AccessConnector, "at" | "host">,
+  roomRects: Map<string, RoomBox>,
+  tol: number,
+  policy: AmbiguityPolicy = "probe",
+): { between: string[]; ambiguous: boolean } {
+  const touching = roomsAtPoint(c.at, roomRects, tol);
+  if (touching.length < 3) return { between: doorConnections(c, roomRects, tol), ambiguous: false };
+  const probed = policy === "probe" ? probeConnection(c, roomRects) : null;
+  return probed
+    ? { between: probed, ambiguous: false }
+    : { between: doorConnections(c, roomRects, tol), ambiguous: true };
 }
 
 /** One connector (door or cased opening) as a graph edge between two spaces. */
@@ -332,10 +391,11 @@ export interface AccessEdge {
   hostWallId?: string;
   /** Connects the exterior to a room (an entrance edge). */
   exterior: boolean;
-  /** The point touched 3+ rooms and the {@link AmbiguityPolicy} that built the edge
-   *  joins none of them, so the edge is reported but excluded from
-   *  reachability/bottleneck. Under `"drop"` every 3+-room connector is ambiguous; under
-   *  `"slice"` none is. */
+  /** The point touched 3+ rooms and the wall-face probe could not decide which two the
+   *  connector joins — a probe landed on a room boundary, or in no floor behind an
+   *  interior wall ({@link AmbiguityPolicy}). The edge is reported, its `between` the
+   *  first two touching spaces, but it joins nothing: it is excluded from reachability,
+   *  bottleneck and circulation. */
   ambiguous: boolean;
 }
 
@@ -375,11 +435,10 @@ export function connectorEdges(
   connectors: readonly AccessConnector[],
   tol: number,
   clearAllowanceMm: number,
-  policy: AmbiguityPolicy,
+  policy: AmbiguityPolicy = "probe",
 ): AccessEdge[] {
   return connectors.map((c) => {
-    const touching = roomsAtPoint(c.at, roomRects, tol);
-    const between = doorConnections(c, roomRects, tol);
+    const { between, ambiguous } = connectorConnection(c, roomRects, tol, policy);
     const exterior = between.includes(EXTERIOR_NODE);
     return {
       doorId: c.id,
@@ -390,7 +449,7 @@ export function connectorEdges(
       ...(c.host?.category !== undefined ? { hostCategory: c.host.category } : {}),
       ...(c.host?.wallId !== undefined ? { hostWallId: c.host.wallId } : {}),
       exterior,
-      ambiguous: policy === "drop" && touching.length >= 3,
+      ambiguous,
     };
   });
 }
@@ -442,7 +501,7 @@ export function reachFrom(
 
 /**
  * Build the {@link AccessGraph} from the resolved rooms + doors. Pure and
- * deterministic, on the `"drop"` policy. Depth is unit-weight `MIN_PLUS` from the
+ * deterministic, on the `"probe"` policy. Depth is unit-weight `MIN_PLUS` from the
  * single {@link EXTERIOR_NODE} (breadth-first, neighbours in door source order); the
  * bottleneck is `MAX_MIN`, ties settled in `[exterior, ...rooms]` order. Both values are
  * unique optima, so no tie-break can change them.
@@ -456,7 +515,7 @@ export function buildDoorAccessGraph(
 ): AccessGraph {
   const roomRects = new Map<string, RoomBox>(rooms.map((r) => [r.id, roomBox(r)]));
   // Doors and cased openings are both connectors, doors first.
-  const edges = connectorEdges(roomRects, [...doors, ...openings], tol, clearAllowanceMm, "drop");
+  const edges = connectorEdges(roomRects, [...doors, ...openings], tol, clearAllowanceMm, "probe");
   const g = accessDigraph(
     rooms.map((r) => r.id),
     edges,

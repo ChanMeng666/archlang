@@ -22,7 +22,10 @@ import type { Point } from "../src/ast.js";
  * so the walk, the detour ratio and the drawn overlay path all stop at the room's edge
  * instead of reaching its body. The seed is now `polygonLabelPoint` — the centroid
  * verbatim whenever the centroid is legal, the ring's pole of inaccessibility only when
- * it is not — the same rule commit `5480bb2` gave the LABEL one layer up.
+ * it is not — the same rule commit `5480bb2` gave the LABEL one layer up. A pole is not
+ * always unique (a U's arm can have a whole spine of them), and the scan keeps the first
+ * it meets, a page-order choice; so the WALK is measured to the widest poles the scan
+ * finds on the ring turned and flipped by D4, whichever the walk reaches first.
  *
  * `examples/gallery-l.arch` is no longer the only shipped `room polygon`:
  * `hexagon-pavilion.arch` (seven rings, all convex, all centroids on their own floor) and
@@ -111,9 +114,15 @@ describe("circulation — a concave room's routing anchor is on the room, not on
     expect(pointInPolygon(a.x, a.y, ring)).toBe(true);
     expect(distToPolygonEdge(a, ring)).toBeGreaterThan(1500);
 
-    // Strictly: the nearest free cell to the ring's pole of inaccessibility, within half
-    // a cell diagonal of it. The old seed was 3.9 m away from this point.
-    expect(dist(a, polygonLabelPoint(ring))).toBeLessThanOrEqual(cellSizeMm);
+    // Strictly: within a cell of a pole of inaccessibility — a point with the ring's widest
+    // clearance, 2000 mm. The 4 m leg has a whole SPINE of them (a 2 m-radius circle slides
+    // from y = 2000 to y = 8000), and `polygonLabelPoint`'s scan keeps whichever it meets
+    // first, (8000, 2000) here — a page-order choice a turn or flip changes. The walk is
+    // measured to the widest poles the scan finds on the ring turned and flipped (a set no
+    // page order changes), the one the walk reaches first: (8000, 8000), nearest the door.
+    expect(distToPolygonEdge(polygonLabelPoint(ring), ring)).toBe(2000);
+    expect(dist(a, { x: 8000, y: 8000 })).toBeLessThanOrEqual(cellSizeMm);
+    expect(distToPolygonEdge(a, ring)).toBeGreaterThan(2000 - cellSizeMm);
     expect(dist(a, polygonCentroid(ring))).toBeGreaterThan(2000);
   });
 
@@ -122,11 +131,11 @@ describe("circulation — a concave room's routing anchor is on the room, not on
     expect(c).not.toBeNull();
     if (!c) return;
     const hall = c.rooms.find((r) => r.roomId === "hall")!;
-    // Entrance (5000, 10000) → anchor (~7950, 1950) on a 4-connected grid with the notch
-    // in the way: ≈ 2.95 m across + 8.05 m up ≈ 11.0 m. The pre-fix anchor on the notch
-    // lip read 5.6 m — a walk that stopped half the room short.
-    expect(hall.walkDistanceMm).toBeGreaterThan(9500);
-    expect(hall.walkDistanceMm).toBeLessThan(12500);
+    // Entrance (5000, 10000) → anchor (~7950, 7950) on a 4-connected grid, along the base
+    // below the notch: ≈ 2.95 m across + 1.9 m up ≈ 4.85 m. The pre-fix anchor was on the
+    // notch LIP (6150, 5450), 150 mm off a wall; this one has 2 m of floor on every side.
+    expect(hall.walkDistanceMm).toBeGreaterThan(4500);
+    expect(hall.walkDistanceMm).toBeLessThan(5500);
     expect(hall.detourRatio).toBeGreaterThanOrEqual(1);
     expect(hall.bottleneckClearWidthMm).toBe(840); // the 900 mm entrance, unchanged
   });

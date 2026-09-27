@@ -87,7 +87,6 @@ import { join, relative, resolve as resolvePath, sep } from "node:path";
 import type { NorthDir, PlaceNode, PlaceRotate, PlanNode, Point } from "../src/ast.js";
 import { buildDoorAccessGraph, DEFAULT_TOL, resolvePlan } from "../src/analyze.js";
 import { type CirculationOverlay, computeCirculationOverlay, navExtent } from "../src/analyze/circulation.js";
-import { polygonLabelPoint } from "../src/geometry/polygon.js";
 import type { RDoor, RFurniture, ROpening, RVoid } from "../src/ir.js";
 import { verticalsOf } from "../src/vertical.js";
 import { northQuarterTurns } from "../src/describe.js";
@@ -782,12 +781,16 @@ export function circulationFacts(s: SceneSummary, translation: boolean): Facts {
  * from and returns each measured walk as a polyline from the entrance cell to the room's
  * measured cell). All distances are in cells.
  *
- *  - `ent` — how far gP's entrance cell is from the image of P₀'s (Manhattan);
+ *  - `ent` — how far gP's entrance cell is from the image of P₀'s (Manhattan). Every walk
+ *    starts at the room's NEAREST entrance, so the two sides may start at different
+ *    entrances (E₀ in P₀, E_g in gP) when two are nearly equidistant. The walk is a
+ *    minimum over entrances, so it is bounded by the seed displacement of BOTH: `ent` is
+ *    the larger of E₀'s and E_g's own displacement (each measured against its image);
  *  - `anchor` — how far gP's measured cell is from the image of P₀'s (Manhattan);
  *  - `anchorTie` — whether the two measured cells are EXACTLY equidistant from the room's
  *    seed point, i.e. both are nearest cells and the choice between them was a tie;
- *  - `seedMoved` — whether the seed point itself failed to map (a concave room's
- *    pole-of-inaccessibility search, `polygonLabelPoint`, broke a tie between two arms);
+ *  - `seedMoved` — whether the point the room is measured to failed to map (the overlay's
+ *    `seed`: the label point, or the orbit pole of a concave room the walk reached first);
  *  - `delta` — the walk change.
  */
 export interface WalkAttribution {
@@ -797,9 +800,12 @@ export interface WalkAttribution {
   anchor: number;
   anchorTie: boolean;
   seedMoved: boolean;
+  /** On either side the room's nearest free cell is in a pocket no entrance reaches, so it
+   *  was measured to the nearest REACHABLE cell instead (the overlay's `fallback`). */
+  fallback: boolean;
 }
 
-function overlayOf(ir: ResolvedPlan): CirculationOverlay | null {
+export function overlayOf(ir: ResolvedPlan): CirculationOverlay | null {
   const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
   const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
@@ -820,9 +826,58 @@ function overlayOf(ir: ResolvedPlan): CirculationOverlay | null {
   );
 }
 
-/** The point a room's walk is measured to: its label point (poly-aware), as `circulation.ts` seeds it. */
-const roomSeed = (r: RRoom): Point =>
-  r.poly ? polygonLabelPoint(r.poly) : { x: r.at.x + r.size.w / 2, y: r.at.y + r.size.h / 2 };
+/** Which entrances seed a walk on each side, with each entrance's connector clear width. */
+export interface EntranceSides {
+  /** Entrances whose doorway seeds on P₀ but not on gP, and vice versa. */
+  only0: ReadonlyArray<{ id: string; clear: number }>;
+  onlyG: ReadonlyArray<{ id: string; clear: number }>;
+  /** The widest clear width among entrances that seed on BOTH sides (0 if none). */
+  bothClear: number;
+  /** The widest clear width among the entrances seeding on each side (0 if none). */
+  widest0: number;
+  widestG: number;
+}
+
+/** See {@link EntranceSides}. Empty sides when either side has no overlay. */
+export function entranceSides(obs0: Observation, obsG: Observation): EntranceSides {
+  const none: EntranceSides = { only0: [], onlyG: [], bothClear: 0, widest0: 0, widestG: 0 };
+  if (!obs0.ir || !obsG.ir) return none;
+  const o0 = overlayOf(obs0.ir);
+  const oG = overlayOf(obsG.ir);
+  if (!o0 || !oG) return none;
+  const clear = new Map(obs0.summary.access.edges.map((e) => [e.doorId, e.estimatedClearWidth] as const));
+  const ids0 = new Set(o0.entrances.map((e) => e.entranceId));
+  const idsG = new Set(oG.entrances.map((e) => e.entranceId));
+  const w = (id: string) => clear.get(id) ?? 0;
+  const max = (xs: number[]) => xs.reduce((a, b) => Math.max(a, b), 0);
+  return {
+    only0: [...ids0].filter((id) => !idsG.has(id)).map((id) => ({ id, clear: w(id) })),
+    onlyG: [...idsG].filter((id) => !ids0.has(id)).map((id) => ({ id, clear: w(id) })),
+    bothClear: max([...ids0].filter((id) => idsG.has(id)).map(w)),
+    widest0: max([...ids0].map(w)),
+    widestG: max([...idsG].map(w)),
+  };
+}
+
+/** See {@link CaseContext.entranceShift}. 0 when either side has no overlay. */
+export function entranceSeedShift(obs0: Observation, obsG: Observation, f: Frame): number {
+  if (!obs0.ir || !obsG.ir) return 0;
+  const o0 = overlayOf(obs0.ir);
+  const oG = overlayOf(obsG.ir);
+  if (!o0 || !oG) return 0;
+  const cell = o0.cellSizeMm;
+  const seedG = new Map(oG.entrances.map((e) => [e.entranceId, e.seed] as const));
+  let worst = oG.entrances.some((e) => !o0.entrances.some((x) => x.entranceId === e.entranceId))
+    ? Number.POSITIVE_INFINITY
+    : 0;
+  for (const e of o0.entrances) {
+    const b = seedG.get(e.entranceId);
+    if (!b) return Number.POSITIVE_INFINITY;
+    const a = tp(f, e.seed);
+    worst = Math.max(worst, Math.round((Math.abs(a.x - b.x) + Math.abs(a.y - b.y)) / cell));
+  }
+  return worst;
+}
 
 /** One {@link WalkAttribution} per room measured on both sides — only those whose walk
  *  differs, unless `all` (a detour can move with an endpoint while the walk does not). */
@@ -835,6 +890,15 @@ export function attributeWalks(obs0: Observation, obsG: Observation, f: Frame, a
   if (!o0 || !oG || !c0 || !cG) return [];
   const cell = o0.cellSizeMm;
   const man = (a: Point, b: Point): number => Math.round((Math.abs(a.x - b.x) + Math.abs(a.y - b.y)) / cell);
+  // One entrance's seed displacement: gP's seed cell against the image of P₀'s. An entrance
+  // that seeds on one side only moved without bound.
+  const seed0 = new Map(o0.entrances.map((e) => [e.entranceId, e.seed] as const));
+  const seedG = new Map(oG.entrances.map((e) => [e.entranceId, e.seed] as const));
+  const entShift = (id: string): number => {
+    const a = seed0.get(id);
+    const b = seedG.get(id);
+    return a && b ? man(tp(f, a), b) : Number.POSITIVE_INFINITY;
+  };
   const roomsG = new Map(obsG.ir.elements.filter((e): e is RRoom => e.kind === "room").map((r) => [r.id, r] as const));
   const rooms0 = new Map(obs0.ir.elements.filter((e): e is RRoom => e.kind === "room").map((r) => [r.id, r] as const));
   const out: WalkAttribution[] = [];
@@ -847,16 +911,19 @@ export function attributeWalks(obs0: Observation, obsG: Observation, f: Frame, a
     if (!rG || w0 === undefined || wG === undefined || (w0 === wG && !all) || !room0 || !roomG) continue;
     const a0 = tp(f, r0.path[r0.path.length - 1]!);
     const aG = rG.path[rG.path.length - 1]!;
-    const seed = roomSeed(roomG);
-    const seed0 = tp(f, roomSeed(room0));
+    // The point each side measured the room to (its label point, or the orbit pole the walk
+    // reached first); a room's label point alone would call an orbit pole's choice a move.
+    const seed = rG.seed;
+    const seed0 = tp(f, r0.seed);
     const dist = (p: Point): number => Math.hypot(p.x - seed.x, p.y - seed.y);
     out.push({
       roomId: r0.roomId,
       delta: (wG - w0) / cell,
-      ent: man(tp(f, r0.path[0]!), rG.path[0]!),
+      ent: Math.max(entShift(r0.entranceId), entShift(rG.entranceId)),
       anchor: man(a0, aG),
       anchorTie: Math.abs(dist(a0) - dist(aG)) <= 1e-6,
       seedMoved: Math.hypot(seed.x - seed0.x, seed.y - seed0.y) > 1e-6,
+      fallback: r0.fallback || rG.fallback,
     });
   }
   return out;
@@ -898,7 +965,8 @@ function seedsOnLattice(
 
 /** The P₀-side tie facts the raster classes predicate on (see `test/equivariance-known.ts`). */
 export interface LatticeTies {
-  /** The first entrance (the walk origin) is seeded across a lattice line. */
+  /** An entrance (a walk origin — every entrance is one, each room walking from its
+   *  nearest) is seeded across a lattice line. */
   entrance: boolean;
   /** Some internal connector (two real rooms) is seeded across a lattice line. */
   connector: boolean;
@@ -924,9 +992,9 @@ export function latticeTies(obs: Observation): LatticeTies {
     return el !== undefined && seedsOnLattice(el, ex, served);
   };
   const edges = obs.summary.access.edges;
-  const entrance = edges.find((e) => e.doorId === c.entranceId);
+  const entrances = edges.filter((e) => obs.summary.access.entrances.includes(e.doorId));
   return {
-    entrance: entrance !== undefined && onLattice(entrance),
+    entrance: entrances.some(onLattice),
     connector: edges.some((e) => !e.exterior && !e.ambiguous && onLattice(e)),
   };
 }
@@ -984,6 +1052,11 @@ export interface CaseContext {
   walks(): ReadonlyMap<string, WalkAttribution>;
   /** Where every room's endpoints went, walk changed or not (lazy). */
   endpoints(): ReadonlyMap<string, WalkAttribution>;
+  /** The largest entrance seed shift in cells (gP's seed against the image of P₀'s), over
+   *  every entrance; `Infinity` when an entrance seeds on one side only (lazy). */
+  entranceShift(): number;
+  /** Which entrances seed on each side (lazy) — see {@link EntranceSides}. */
+  entranceSides(): EntranceSides;
   /**
    * P₀ carries geometry a translation re-rounds: a circle room or an arc edge (whose
    * tessellation and tangents are irrational), or a resolved coordinate `x` with
@@ -1016,6 +1089,8 @@ export function caseContext(
 ): CaseContext {
   let walks: Map<string, WalkAttribution> | null = null;
   let endpoints: Map<string, WalkAttribution> | null = null;
+  let shift: number | null = null;
+  let sides: EntranceSides | null = null;
   return {
     g,
     f,
@@ -1032,6 +1107,8 @@ export function caseContext(
     ties: latticeTies(obs0),
     walks: () => (walks ??= new Map(attributeWalks(obs0, obsG, f).map((a) => [a.roomId, a]))),
     endpoints: () => (endpoints ??= new Map(attributeWalks(obs0, obsG, f, true).map((a) => [a.roomId, a]))),
+    entranceShift: () => (shift ??= entranceSeedShift(obs0, obsG, f)),
+    entranceSides: () => (sides ??= entranceSides(obs0, obsG)),
     floatSensitive: g.translate === true && floatSensitive(obs0, f.tx),
   };
 }
