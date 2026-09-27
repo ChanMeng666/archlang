@@ -401,6 +401,29 @@ frame (tier T0). An instance group resolves against its own walls and rooms only
 imported whole. Close by resolving a component's references against its nested instances'
 transformed elements.
 
+## Wall-face probe findings
+
+Left open by routing "which side of this wall has floor" through `wallFaceProbes`
+(`src/geometry.ts`) and giving `roomOfVertical` the room's shape. Neither was in that change's scope.
+
+### P.1 · A shaft landing on no room says its storey has no way in — `todo`
+
+`verticalReach` (`src/vertical.ts`) counts the storey reachable (`describe().vertical.reachable_levels`
+lists it) but records an arrival room only for a stop whose `room` is non-null, and `no-entrance`
+(`src/lint/rules/entrance.ts`) stands down only for an arrival room. A stair landing in an L's
+unroomed notch therefore gets `W_NO_ENTRANCE` ("there is no way into the building") on a storey the
+shaft reaches. The rule is right — nothing at the landing is floor to arrive in — but the message
+misleads. Want a message (or code) that says the shaft lands on no room; keep the rule. Pinned by
+`test/vertical-room-shape.test.ts`.
+
+### P.2 · `swing into <rectangle room>` on an arc host picks its side off the chord — `todo`
+
+`swingInto`'s rectangle path (`src/elements/door.ts`) dots the box centre against the CHORD normal;
+`doorSwing` and `roomSideOf` use the tangent (`wallFaceProbes`). They agree on a straight host, not
+on an arc. Reproduced: room `at (0,0) size 4000x4000`, wall `(4000,1000) arc (4000,3000) radius 1200
+cw major`, a door at 1–5% or 95–99% with `swing into` the room resolves `in` and its leaf is drawn
+outside the room. Close by probing as the ring path does, behind a corpus sweep.
+
 ---
 
 ## Wave 5 — deferred by name in v1.28.0 / v1.29.0

@@ -31,6 +31,8 @@ import type { RElevator, REscalator, ResolvedElement, ResolvedPlan, RRoom, RStai
 import type { BBox } from "./geometry/rect.js";
 import type { RectEdge } from "./fixture-orientation.js";
 import { oppositeSide, SIDE_NORMAL } from "./algebra/d4.js";
+import { pointInPolygon } from "./geometry/polygon.js";
+import { pointInRect } from "./geometry/rect.js";
 
 /** The element kinds that model vertical circulation, in registration order. */
 export const VERTICAL_KINDS = ["stair", "elevator", "escalator"] as const;
@@ -158,12 +160,23 @@ export function outsideOpenEdge(px: number, py: number, rect: BBox, open: readon
   return false;
 }
 
-/** The id of the room whose rectangle contains a run's footprint centre, or null. */
+/**
+ * The id of the first room whose FLOOR contains a run's footprint centre, or null. The
+ * floor is the room's shape — its ring for a `polygon`/`circle` room, so a stair in the
+ * notch of an L is not claimed by the L — and its rectangle otherwise, closed bounds.
+ *
+ * This is `pointInRoomBox(centre, roomBox(r))` from `analyze.ts`, spelled with the two leaf
+ * predicates it is made of: `vertical.ts` is loaded by `elements/stair.ts` while the element
+ * registry is still initialising, and importing `analyze.ts` from here would close that cycle.
+ */
 export function roomOfVertical(v: RVertical, rooms: readonly RRoom[]): string | null {
   const cx = v.at.x + v.size.w / 2;
   const cy = v.at.y + v.size.h / 2;
   for (const r of rooms) {
-    if (cx >= r.at.x && cx <= r.at.x + r.size.w && cy >= r.at.y && cy <= r.at.y + r.size.h) return r.id;
+    const inside = r.poly
+      ? pointInPolygon(cx, cy, r.poly)
+      : pointInRect(cx, cy, { x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h });
+    if (inside) return r.id;
   }
   return null;
 }

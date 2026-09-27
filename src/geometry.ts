@@ -419,6 +419,29 @@ export function segmentDirAt(s: { a: Point; b: Point; arc?: Arc }, p: Point): Ve
   return s.arc ? arcTangentAt(s.arc, p) : unit(sub(s.b, s.a));
 }
 
+/**
+ * The wall-face probe: the unit normal at `at` (the left normal of {@link segmentDirAt},
+ * so the TANGENT on an arc — the same `+normal` {@link doorSwing} sweeps a leaf `in`
+ * toward) and the two points `dist` off each face along it. Ask which of `plus`/`minus`
+ * has floor and you know which side of the wall a room is on — the shape's answer, never
+ * a bounding box's. `dist` is the caller's: one wall thickness clears the solid.
+ *
+ * The arithmetic is `at ± n·dist` per axis, in exactly that order, so every call site
+ * that used to write it out inline stays byte-identical.
+ */
+export function wallFaceProbes(
+  seg: { a: Point; b: Point; arc?: Arc },
+  at: Point,
+  dist: number,
+): { n: Vec; plus: Point; minus: Point } {
+  const n = normal(segmentDirAt(seg, at));
+  return {
+    n,
+    plus: { x: at.x + n.x * dist, y: at.y + n.y * dist },
+    minus: { x: at.x - n.x * dist, y: at.y - n.y * dist },
+  };
+}
+
 /** Run length of a wall segment (arc length for a curve, chord length otherwise). */
 export function segmentLength(s: { a: Point; b: Point; arc?: Arc }): number {
   return s.arc ? arcLength(s.arc) : length(sub(s.b, s.a));
