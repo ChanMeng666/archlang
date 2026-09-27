@@ -468,7 +468,7 @@ $ arch fix plan.arch -o fixed.arch --unsafe --json
 
 ### `arch reroll`
 
-offer a proven-equivalent `for` loop for a run of ≥3 statements in arithmetic progression
+offer a proven-equivalent `for` loop for a repeated statement run
 
 **Input:** `<file.arch|->` · **Output:** suggestions (JSON or a summary), or the rewritten file with --write
 

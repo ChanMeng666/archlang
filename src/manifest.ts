@@ -737,7 +737,7 @@ const COMMANDS: ManifestCommand[] = [
   },
   {
     name: "reroll",
-    summary: "offer a proven-equivalent `for` loop for a run of ≥3 statements in arithmetic progression",
+    summary: "offer a proven-equivalent `for` loop for a repeated statement run",
     flags: [
       {
         flag: "--write",
