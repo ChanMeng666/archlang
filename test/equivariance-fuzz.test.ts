@@ -3,10 +3,10 @@
  *
  * The corpus suites pin violations per example; a random plan has no name to pin, so here
  * whole CLASSES are excluded — each through its own `covers` predicate in
- * `test/equivariance-known.ts`, as narrow as the evidence allows — and any violation no
- * class accounts for fails with the shrunk plan printed. The instance variant of the
- * arbitrary (`RenderOptions.instance`) draws the whole plan as ONE placed component, so a
- * spec renders as P₀ and as gP for any element g.
+ * `test/equivariance-known.ts` — and any violation no class accounts for fails with the
+ * shrunk plan printed. The instance variant of the arbitrary (`RenderOptions.instance`)
+ * draws the whole plan as ONE placed component, so a spec renders as P₀ and as gP for any
+ * element g.
  *
  * Three laws:
  *
@@ -16,30 +16,52 @@
  *  - nested `place` IS frame composition: `place outer()` around `place body() rotate r1
  *    mirror m1` is the flat `place body()` spelled with the composed frame — same facts,
  *    same lint, byte-identical SVG — modulo the instance path.
+ *
+ * ## What the T2 (raster) half guarantees, and what it does not
+ *
+ * No class covers a raster change by PATH. Every walk change is attributed through the
+ * render overlay (`attributeWalks`): where the entrance cell and the room's measured cell
+ * went, whether the measured cell is an exact tie, whether the seed point itself moved. So
+ * a random plan passes only when each change is one of these, and no bigger:
+ *
+ *  - `raster-tie` — the walk moved by no more than its endpoints did, each endpoint at most
+ *    one lattice step per tied axis (≤ 3 cells), with the measured/unmeasured/sealed room
+ *    sets unchanged; a bottleneck by at most one clear-width quantum (2 cells);
+ *  - `entrance-seed-walk` — the entrance is on a lattice line and its tied row is eroded,
+ *    and the walk moved by no more than the endpoints did;
+ *  - `anchor-far-tie` — the measured cell jumped more than a step to a cell EXACTLY as far
+ *    from the seed point (a ring round an obstacle);
+ *  - `label-point-tie` — a concave room's seed point itself moved;
+ *  - `threshold-carve` — P₀ has a doorway seeded across a lattice line, and the walk moved
+ *    by MORE than its endpoints did (the grid itself differs) or a room's measurement
+ *    appeared, vanished or was sealed;
+ *  - a raster lint rule only when every circulation change of the case is one of these.
+ *
+ * It does NOT prove a walk is right: a raster regression that happens to fit one of these
+ * shapes (say, a threshold that stops carving in a plan with a doorway on a lattice line)
+ * passes here and is caught only by the corpus pins, which bound each room's change.
+ *
+ * ## Probabilistic
+ *
+ * Like every property in `test/fuzz.test.ts`, the three `fc.assert` calls are UNSEEDED:
+ * each run draws new plans, so this gate samples rather than proves, and a class too rare
+ * for 60 draws can go unseen for many runs. A failure prints its seed and shrunk plan.
  */
 
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import type { PlaceRotate } from "../src/ast.js";
-import { composeFrame, det, makeFrame } from "../src/frame.js";
+import { composeFrame, makeFrame } from "../src/frame.js";
 import { compile, type Diagnostic, describe as describePlan, lint } from "../src/index.js";
 import { type PlanSpec, planSpec, withInstance } from "./arbitrary-plan.js";
 import {
-  compareObservations,
-  compareScenes,
   D4_TEST_ELEMENTS,
   explain,
-  frameFor,
   type GroupElement,
-  gateFacts,
-  gateFor,
-  observe,
-  sceneOf,
+  type InstanceRender,
+  instanceCase,
   stable,
-  swapsAxes,
   translationFor,
-  type Violation,
-  withFixedSheet,
 } from "./d4-oracle.js";
 import { KNOWN_CLASSES } from "./equivariance-known.js";
 
@@ -55,6 +77,12 @@ const placedBy = (spec: PlanSpec, g: GroupElement | null) => {
     at: { x: t, y: t },
   } as const;
 };
+
+/** P₀ / gP of a spec; on the fixed sheet the spec's own `paper` is dropped. */
+const renderOf =
+  (spec: PlanSpec): InstanceRender =>
+  (g, fixedSheet) =>
+    withInstance(fixedSheet ? { ...spec, paper: undefined } : spec, placedBy(spec, g));
 
 const geometryCount = (svg: string): number =>
   (svg.match(/<(path|rect|line|circle|polyline|polygon|text)\b/g) ?? []).length;
@@ -81,41 +109,11 @@ describe("facts(gP) = g · facts(P₀) over random plans, modulo the pinned clas
   it("every violation is accounted for by a pinned class", () => {
     fc.assert(
       fc.property(planSpec, element, (spec, g) => {
-        const grid = spec.grid ?? 0;
-        const f = frameFor(g, grid);
-        const p0 = withInstance(spec, placedBy(spec, null));
-        const gP = withInstance(spec, placedBy(spec, g));
-        const obs0 = observe(p0);
-        const vs: Violation[] = compareObservations(
-          obs0,
-          observe(gP),
-          f,
-          spec.north ?? "up",
-          gateFor(g, f, gateFacts(obs0)),
-          {
-            translation: g.translate === true,
-          },
-        );
-        // T3 on the fixed sheet: the spec's own paper is dropped for the drawing only.
-        const sheetless = { ...spec, paper: undefined };
-        vs.push(
-          ...compareScenes(
-            sceneOf(withFixedSheet(withInstance(sheetless, placedBy(spec, null)))),
-            sceneOf(withFixedSheet(withInstance(sheetless, placedBy(spec, g)))),
-            f,
-          ),
-        );
-        const ctx = {
-          g,
-          reflects: det(f) < 0,
-          swaps: swapsAxes(f),
-          src: gP,
-          paths: new Set(vs.map((v) => v.path)),
-        };
+        const { vs, ctx } = instanceCase(renderOf(spec), g, spec.grid ?? 0, spec.north ?? "up");
         const uncovered = vs.filter((v) => !Object.values(KNOWN_CLASSES).some((c) => c.covers(v, ctx)));
         expect(
           uncovered.map((v) => v.key),
-          `NEW equivariance violation under ${g.name} — no pinned class accounts for it:\n${explain(uncovered, 4)}\n\n${gP}`,
+          `NEW equivariance violation under ${g.name} — no pinned class accounts for it:\n${explain(uncovered, 4)}\n\n${ctx.src}`,
         ).toEqual([]);
       }),
       { numRuns: 60 },

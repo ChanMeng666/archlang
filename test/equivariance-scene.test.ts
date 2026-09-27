@@ -5,9 +5,12 @@
  * primitive multiset must equal g · P₀'s — every polygon, line, region, curved path, arc
  * and circle carried through the frame, compared orientation-free at a 1e-6 mm quantum
  * (`test/d4-oracle.ts`: `canonPrim`). The wall fabric, unioned across statements, is one
- * group. Both sides are drawn on one fixed sheet so every render size is a constant and a
- * violation names the element that caused it. Violations are held to
- * `test/equivariance-known.ts` in both directions, exactly as T0–T2 are.
+ * group; a hand-written dimension is three (`.line`, `.ticks`, `.text`), because under a
+ * reflection its tick hand is a declared convention and its text side a defect, and one
+ * pin must not absorb the other. Both sides are drawn on one fixed sheet so every render
+ * size is a constant and a violation names the element that caused it. Violations are held
+ * to `test/equivariance-known.ts` in both directions, and audited against their class, as
+ * T0–T2 are.
  */
 
 import { describe, expect, it } from "vitest";
@@ -19,7 +22,8 @@ import {
   elementNamed,
   explain,
   frameFor,
-  type Observed,
+  idOfKey,
+  pinAudit,
   pinDiff,
   runScenes,
   sceneOf,
@@ -27,7 +31,7 @@ import {
   transformPrim,
   wrapperSource,
 } from "./d4-oracle.js";
-import { KNOWN } from "./equivariance-known.js";
+import { KNOWN, KNOWN_CLASSES } from "./equivariance-known.js";
 
 const SLOW = 120_000;
 
@@ -60,12 +64,14 @@ describe("T3 — the drawn scene, under the group", () => {
         expect(pinned, `${rel}: P₀ does not compile and T0 does not pin it`).toBe(true);
         return;
       }
-      const observed: Observed[] = runs.flatMap((r) => toObserved(rel, r.tag, r.vs));
-      const { added, vanished } = pinDiff(KNOWN, observed, (o) => o.where === rel && o.path.startsWith("scene."));
+      const observed = runs.flatMap((r) => toObserved(rel, r.tag, r.vs));
+      const inScope = (o: { where: string; path: string }) => o.where === rel && o.path.startsWith("scene.");
+      const { added, vanished } = pinDiff(KNOWN, observed, inScope);
       const detail = added
         .map((k) => {
-          const [, tag, path] = k.split(" | ");
-          return `${k}\n${explain(runs.find((r) => r.tag === tag)?.vs.filter((v) => v.path === path) ?? [], 2)}`;
+          const [, tag, path, idAndDelta = ""] = k.split(" | ");
+          const id = idAndDelta.split("  ")[0];
+          return `${k}\n${explain(runs.find((r) => r.tag === tag)?.vs.filter((v) => v.path === path && idOfKey(v.key) === id) ?? [], 2)}`;
         })
         .join("\n");
       expect(
@@ -73,6 +79,7 @@ describe("T3 — the drawn scene, under the group", () => {
         `NEW equivariance violation — pin it in test/equivariance-known.ts with a class, a witness and a why:\n${detail}`,
       ).toEqual([]);
       expect(vanished, `FIXED: delete the pin and its witness:\n${vanished.join("\n")}`).toEqual([]);
+      expect(pinAudit(KNOWN, KNOWN_CLASSES, rel, runs), "a pin whose class does not account for it").toEqual([]);
     },
     SLOW,
   );

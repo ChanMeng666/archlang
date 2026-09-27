@@ -37,11 +37,24 @@
  * `src/frame.ts` itself exports (`tp`, `transformRect`, `transformDeg`, `makeFrame`), and
  * {@link diffFacts} reports every key where the prediction and gP disagree.
  *
+ * **Which predictions are independent of the code under test.** `KINDS.rect`, `box`, `deg`
+ * and `instance` predict with the SAME `frame.ts` primitives the compiler uses to move a
+ * placed element (`transformRect`, `transformDeg`, `makeFrame`), and `rails` with the same
+ * normal-through-the-matrix rule — so a defect inside one of those primitives would move
+ * the prediction and the observation together and pass. They are cross-checked elsewhere:
+ * T3 carries every drawn primitive through `tp` ALONE (a point map, no rectangle or
+ * quarter-turn logic), and `ring` compares floor rings vertex by vertex through `tp`, so a
+ * wrong `transformRect`/`transformDeg`/rail rule shows up in the drawing and the rings even
+ * though it cannot in the bboxes. `instance` has no such cross-check: its matrix is
+ * predicted with `makeFrame`, the constructor `place` itself calls.
+ *
  * GATED — compared only under the elements for which they are group facts ({@link gateFor}):
  *
  *  - the raster (`circulation`, and the lint rules that read the nav grid) — sampled on a
  *    lattice anchored at the rooms' min corner, so compared only when that lattice maps onto
- *    itself, and always under a pure translation (tier T2);
+ *    itself, and always under a pure translation (tier T2), ONE fact per room so a pin names
+ *    the room and bounds its change ({@link circulationFacts}); {@link attributeWalks} says
+ *    why a walk moved;
  *  - the compass-class lint rule — compared when `north` turns with the building (the
  *    co-rotated variant) or under a translation;
  *  - the sheet fit (`sheet`, and the diagnostics anchored on the wrapper's `paper`/`scale`
@@ -63,7 +76,8 @@
  *    compared instead.
  *  - in the drawing (T3): the label pass (a greedy search in page order), every text but a
  *    hand-written dimension's number, the `dims auto` chains (laid on fixed PAGE sides) and
- *    hatch fills — see {@link sceneGroups}.
+ *    hatch fills — see {@link sceneGroups}, which also splits a dimension into `.line`,
+ *    `.ticks` and `.text` so its declared tick hand and its text-side defect pin apart.
  *
  * Geometric facts compare at a 1e-6 mm quantum (see `quantise`); invariant facts exactly.
  */
@@ -71,8 +85,11 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve as resolvePath, sep } from "node:path";
 import type { NorthDir, PlaceNode, PlaceRotate, PlanNode, Point } from "../src/ast.js";
-import { resolvePlan } from "../src/analyze.js";
-import { navExtent } from "../src/analyze/circulation.js";
+import { buildDoorAccessGraph, DEFAULT_TOL, resolvePlan } from "../src/analyze.js";
+import { type CirculationOverlay, computeCirculationOverlay, navExtent } from "../src/analyze/circulation.js";
+import { polygonLabelPoint } from "../src/geometry/polygon.js";
+import type { RDoor, RFurniture, ROpening, RVoid } from "../src/ir.js";
+import { verticalsOf } from "../src/vertical.js";
 import { northQuarterTurns } from "../src/describe.js";
 import type { Diagnostic, FixSuggestion, Span } from "../src/diagnostics.js";
 import { formatPlan } from "../src/format.js";
@@ -86,6 +103,7 @@ import {
   offsetToLineCol,
   type ResolvedPlan,
   type RRoom,
+  type RWindow,
   type Scene,
   type SceneSummary,
   type ScenePrim,
@@ -430,7 +448,12 @@ export function observe(src: string, world: World = EXAMPLES_WORLD): Observation
   const { ir } = resolvePlan(src, { world });
   const lint = ir ? lintByRule(ir) : [];
   const obs = { src, summary, ir, lint };
-  if (world === EXAMPLES_WORLD) observed.set(src, obs);
+  if (world === EXAMPLES_WORLD) {
+    // Bounded, oldest first out: the corpus revisits a few hundred sources, a fuzz run
+    // thousands it never sees again.
+    if (observed.size >= 512) observed.delete(observed.keys().next().value!);
+    observed.set(src, obs);
+  }
   return obs;
 }
 
@@ -700,26 +723,312 @@ export function lintFacts(
 }
 
 /**
- * Tier T2's circulation facts. `whole` (a pure translation) compares the entire model;
- * otherwise only the lattice-level measurements that an aligned D4 element must preserve:
- * each room's walk distance and bottleneck width, and the sealed-room set. Route polylines
- * and detour ratios are excluded — BFS breaks parent ties in a fixed W,E,N,S order
- * (`src/analyze/circulation.ts`), so which of several equal-length routes is kept is a
- * convention, not a fact.
+ * Tier T2's circulation facts, one key per measured number so a pin names the room (and a
+ * bound can name the size). Under every element: the model's header (entrance, cell size,
+ * body radius), each room's walk distance and bottleneck width, the sealed rooms and the
+ * unmeasured rooms with their reasons — a room measured on one side only shows up as an
+ * `<absent>` walk.
+ *
+ * `translation` adds what only a translation must preserve exactly: each room's detour
+ * ratio, every key route's walk, bottleneck and detour, and the sealed rooms' widest way in.
+ * Under a turn or a flip those are excluded — the straight-line leg of a detour runs to the
+ * room's anchor CELL, which a page-order tie moves, and BFS keeps one of several
+ * equal-length routes by a fixed W,E,N,S parent order (`src/analyze/circulation.ts`), a
+ * convention rather than a fact.
  */
-export function circulationFacts(s: SceneSummary, whole: boolean): Facts {
+export function circulationFacts(s: SceneSummary, translation: boolean): Facts {
   const f: Facts = new Map();
   const c = s.circulation;
-  if (whole || !c) {
-    f.set("circulation", { kind: "inv", value: c });
-    return f;
-  }
+  const inv = (k: string, value: unknown): void => void f.set(k, { kind: "inv", value });
+  inv("circulation.present", c !== null);
+  if (!c) return f;
+  inv("circulation.header", { entranceId: c.entranceId, cellSizeMm: c.cellSizeMm, bodyRadiusMm: c.bodyRadiusMm });
   for (const r of c.rooms) {
-    f.set(`circulation.rooms[${r.roomId}].walk`, { kind: "inv", value: r.walkDistanceMm });
-    f.set(`circulation.rooms[${r.roomId}].bottleneck`, { kind: "inv", value: r.bottleneckClearWidthMm });
+    inv(`circulation.rooms[${r.roomId}].walk`, r.walkDistanceMm);
+    inv(`circulation.rooms[${r.roomId}].bottleneck`, r.bottleneckClearWidthMm);
+    if (translation) inv(`circulation.rooms[${r.roomId}].detour`, r.detourRatio);
   }
-  f.set("circulation.blocked", { kind: "inv", value: (c.blocked ?? []).map((b) => b.roomId).sort() });
+  inv(
+    "circulation.blocked",
+    (c.blocked ?? []).map((b) => (translation ? b : b.roomId)),
+  );
+  inv(
+    "circulation.unmeasured",
+    (c.unmeasured ?? []).map((u) => `${u.roomId}:${u.reason}`),
+  );
+  if (translation) {
+    for (const r of c.routes) {
+      const k = `circulation.routes[${r.fromRoomId}>${r.toRoomId}]`;
+      inv(`${k}.walk`, r.walkDistanceMm);
+      inv(`${k}.bottleneck`, r.bottleneckClearWidthMm);
+      inv(`${k}.detour`, r.detourRatio);
+    }
+  }
   return f;
+}
+
+// ---------------------------------------------------------------------------
+// T2 attribution — WHY a walk moved
+// ---------------------------------------------------------------------------
+
+/**
+ * What the nav grid did to one room's walk under g, measured from the outside through the
+ * render overlay (`computeCirculationOverlay`, which rebuilds the SAME grid the facts come
+ * from and returns each measured walk as a polyline from the entrance cell to the room's
+ * measured cell). All distances are in cells.
+ *
+ *  - `ent` — how far gP's entrance cell is from the image of P₀'s (Manhattan);
+ *  - `anchor` — how far gP's measured cell is from the image of P₀'s (Manhattan);
+ *  - `anchorTie` — whether the two measured cells are EXACTLY equidistant from the room's
+ *    seed point, i.e. both are nearest cells and the choice between them was a tie;
+ *  - `seedMoved` — whether the seed point itself failed to map (a concave room's
+ *    pole-of-inaccessibility search, `polygonLabelPoint`, broke a tie between two arms);
+ *  - `delta` — the walk change.
+ */
+export interface WalkAttribution {
+  roomId: string;
+  delta: number;
+  ent: number;
+  anchor: number;
+  anchorTie: boolean;
+  seedMoved: boolean;
+}
+
+function overlayOf(ir: ResolvedPlan): CirculationOverlay | null {
+  const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
+  const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
+  const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
+  const furniture = ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
+  const voids = ir.elements.filter((e): e is RVoid => e.kind === "void");
+  const access = buildDoorAccessGraph(rooms, doors, DEFAULT_TOL, undefined, openings);
+  return computeCirculationOverlay(
+    rooms,
+    ir.walls,
+    doors,
+    openings,
+    furniture,
+    access,
+    DEFAULT_TOL,
+    undefined,
+    verticalsOf(ir),
+    voids,
+  );
+}
+
+/** The point a room's walk is measured to: its label point (poly-aware), as `circulation.ts` seeds it. */
+const roomSeed = (r: RRoom): Point =>
+  r.poly ? polygonLabelPoint(r.poly) : { x: r.at.x + r.size.w / 2, y: r.at.y + r.size.h / 2 };
+
+/** One {@link WalkAttribution} per room measured on both sides — only those whose walk
+ *  differs, unless `all` (a detour can move with an endpoint while the walk does not). */
+export function attributeWalks(obs0: Observation, obsG: Observation, f: Frame, all = false): WalkAttribution[] {
+  if (!obs0.ir || !obsG.ir) return [];
+  const o0 = overlayOf(obs0.ir);
+  const oG = overlayOf(obsG.ir);
+  const c0 = obs0.summary.circulation;
+  const cG = obsG.summary.circulation;
+  if (!o0 || !oG || !c0 || !cG) return [];
+  const cell = o0.cellSizeMm;
+  const man = (a: Point, b: Point): number => Math.round((Math.abs(a.x - b.x) + Math.abs(a.y - b.y)) / cell);
+  const roomsG = new Map(obsG.ir.elements.filter((e): e is RRoom => e.kind === "room").map((r) => [r.id, r] as const));
+  const rooms0 = new Map(obs0.ir.elements.filter((e): e is RRoom => e.kind === "room").map((r) => [r.id, r] as const));
+  const out: WalkAttribution[] = [];
+  for (const r0 of o0.rooms) {
+    const rG = oG.rooms.find((r) => r.roomId === r0.roomId);
+    const w0 = c0.rooms.find((r) => r.roomId === r0.roomId)?.walkDistanceMm;
+    const wG = cG.rooms.find((r) => r.roomId === r0.roomId)?.walkDistanceMm;
+    const room0 = rooms0.get(r0.roomId);
+    const roomG = roomsG.get(r0.roomId);
+    if (!rG || w0 === undefined || wG === undefined || (w0 === wG && !all) || !room0 || !roomG) continue;
+    const a0 = tp(f, r0.path[r0.path.length - 1]!);
+    const aG = rG.path[rG.path.length - 1]!;
+    const seed = roomSeed(roomG);
+    const seed0 = tp(f, roomSeed(room0));
+    const dist = (p: Point): number => Math.hypot(p.x - seed.x, p.y - seed.y);
+    out.push({
+      roomId: r0.roomId,
+      delta: (wG - w0) / cell,
+      ent: man(tp(f, r0.path[0]!), rG.path[0]!),
+      anchor: man(a0, aG),
+      anchorTie: Math.abs(dist(a0) - dist(aG)) <= 1e-6,
+      seedMoved: Math.hypot(seed.x - seed0.x, seed.y - seed0.y) > 1e-6,
+    });
+  }
+  return out;
+}
+
+/**
+ * Does a connector sit where the nav grid must break a tie to seed it? Three shapes:
+ *
+ *  - its centre is on a lattice line along an axis-aligned wall (to float noise — an
+ *    `at 55%` position can resolve an ulp off the line): its threshold points are the centre
+ *    and whole-cell steps from it (`thresholdPoints`), so ALL lie on lines, and each is
+ *    floored to one side (`cellOf`), which a reflection or a turn does not preserve;
+ *  - any of its threshold points (which span its width along the wall) comes within the
+ *    adjacency tolerance of a PERPENDICULAR edge of a room it serves — a corner:
+ *    `seedCell` then steps DIAGONALLY inward and `carvePath` joins the seeds by an
+ *    x-then-y L, both page-ordered;
+ *  - it serves a polygon room, seeded by a row-major ring scan whose ties are page-ordered.
+ */
+function seedsOnLattice(
+  el: { at: Point; width: number; host: { a: Point; b: Point } | null },
+  ex: { minX: number; minY: number; cell: number },
+  rooms: readonly RRoom[],
+): boolean {
+  if (rooms.some((r) => r.poly)) return true;
+  const h = el.host;
+  if (!h) return false;
+  const horizontal = h.a.y === h.b.y;
+  if (!horizontal && h.a.x !== h.b.x) return false;
+  const along = horizontal ? el.at.x : el.at.y;
+  const lo = along - el.width / 2 - DEFAULT_TOL;
+  const hi = along + el.width / 2 + DEFAULT_TOL;
+  const corner = rooms.some((r) =>
+    (horizontal ? [r.at.x, r.at.x + r.size.w] : [r.at.y, r.at.y + r.size.h]).some((e) => e >= lo && e <= hi),
+  );
+  if (corner) return true;
+  const k = (along - (horizontal ? ex.minX : ex.minY)) / ex.cell;
+  return Math.abs(k - Math.round(k)) <= 1e-9;
+}
+
+/** The P₀-side tie facts the raster classes predicate on (see `test/equivariance-known.ts`). */
+export interface LatticeTies {
+  /** The first entrance (the walk origin) is seeded across a lattice line. */
+  entrance: boolean;
+  /** Some internal connector (two real rooms) is seeded across a lattice line. */
+  connector: boolean;
+}
+
+export function latticeTies(obs: Observation): LatticeTies {
+  const none = { entrance: false, connector: false };
+  const ir = obs.ir;
+  const c = obs.summary.circulation;
+  if (!ir || !c) return none;
+  const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
+  const ex = navExtent(rooms);
+  if (!ex) return none;
+  const roomById = new Map(rooms.map((r) => [r.id, r] as const));
+  const byId = new Map(
+    ir.elements
+      .filter((e): e is RDoor | ROpening => e.kind === "door" || e.kind === "opening")
+      .map((e) => [e.id, e] as const),
+  );
+  const onLattice = (edge: { doorId: string; between: readonly string[] }): boolean => {
+    const el = byId.get(edge.doorId);
+    const served = edge.between.map((b) => roomById.get(b)).filter((r): r is RRoom => r !== undefined);
+    return el !== undefined && seedsOnLattice(el, ex, served);
+  };
+  const edges = obs.summary.access.edges;
+  const entrance = edges.find((e) => e.doorId === c.entranceId);
+  return {
+    entrance: entrance !== undefined && onLattice(entrance),
+    connector: edges.some((e) => !e.exterior && !e.ambiguous && onLattice(e)),
+  };
+}
+
+/**
+ * Does a window's page facing sit on a declared TIE (`windowFacingPage`, `src/site.ts`)?
+ * Either it sits on a corner of a rectangular room — equidistant from two perpendicular
+ * edges, resolved N/S-first — or its host wall's tangent at the window is at 45°, where
+ * the outward probe's `|oy| >= |ox|` is an equality.
+ */
+export function windowOnTie(obs: Observation, windowId: string): boolean {
+  const ir = obs.ir;
+  if (!ir) return false;
+  const w = ir.elements.find((e): e is RWindow => e.kind === "window" && e.id === windowId);
+  if (!w) return false;
+  const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
+  const corner = rooms.some(
+    (r) =>
+      !r.poly &&
+      !r.circle &&
+      [r.at.x, r.at.x + r.size.w].includes(w.at.x) &&
+      [r.at.y, r.at.y + r.size.h].includes(w.at.y),
+  );
+  if (corner) return true;
+  const h = w.host;
+  if (!h) return false;
+  const arc = h.arc;
+  const t = arc ? { x: -(w.at.y - arc.center.y), y: w.at.x - arc.center.x } : { x: h.b.x - h.a.x, y: h.b.y - h.a.y };
+  return Math.abs(Math.abs(t.x) - Math.abs(t.y)) <= 1e-6 * Math.hypot(t.x, t.y);
+}
+
+/** Everything a class's `covers` may consult about one (P₀, gP) case. */
+export interface CaseContext {
+  g: GroupElement;
+  /** g's frame. */
+  f: Frame;
+  /** The element's linear part has `det < 0`. */
+  reflects: boolean;
+  /** The element's linear part swaps the axes (a quarter-turn). */
+  swaps: boolean;
+  /** The linear part is the identity or the transposition `[0 1; 1 0]`. */
+  identityOrTransposition: boolean;
+  /** gP's source — so a class can name the construct it is about (`door id=o2 sliding`). */
+  src: string;
+  obs0: Observation;
+  obsG: Observation;
+  /** Every violation of this case, and the set of their paths. */
+  violations: readonly Violation[];
+  paths: ReadonlySet<string>;
+  /** P₀'s nav-grid cell size (mm), when it has a circulation model. */
+  cellMm: number;
+  /** P₀'s lattice ties. */
+  ties: LatticeTies;
+  /** Why each room's walk moved (lazy — it rebuilds two grids). */
+  walks(): ReadonlyMap<string, WalkAttribution>;
+  /** Where every room's endpoints went, walk changed or not (lazy). */
+  endpoints(): ReadonlyMap<string, WalkAttribution>;
+  /**
+   * P₀ carries geometry a translation re-rounds: a circle room or an arc edge (whose
+   * tessellation and tangents are irrational), or a resolved coordinate `x` with
+   * `(x + T) − T ≠ x` — an `at 55%` position that resolved an ulp off its integer.
+   */
+  floatSensitive: boolean;
+}
+
+function floatSensitive(obs: Observation, t: number): boolean {
+  const ir = obs.ir;
+  if (!ir) return false;
+  const pts: Point[] = [];
+  for (const e of ir.elements) {
+    if (e.kind === "room" && e.circle) return true;
+    if (e.kind === "wall") {
+      if (e.arcs?.some((a) => a !== undefined)) return true;
+      pts.push(...e.points, ...e.openings.map((o) => o.at));
+    }
+    if ("at" in e && e.at && typeof e.at === "object") pts.push(e.at as Point);
+  }
+  return pts.some((p) => p.x + t - t !== p.x || p.y + t - t !== p.y);
+}
+
+export function caseContext(
+  obs0: Observation,
+  obsG: Observation,
+  g: GroupElement,
+  f: Frame,
+  vs: readonly Violation[],
+): CaseContext {
+  let walks: Map<string, WalkAttribution> | null = null;
+  let endpoints: Map<string, WalkAttribution> | null = null;
+  return {
+    g,
+    f,
+    reflects: f.a * f.d - f.b * f.c < 0,
+    swaps: swapsAxes(f),
+    identityOrTransposition:
+      (f.a === 1 && f.d === 1 && f.b === 0) || (f.a === 0 && f.d === 0 && f.b === 1 && f.c === 1),
+    src: obsG.src,
+    obs0,
+    obsG,
+    violations: vs,
+    paths: new Set(vs.map((v) => v.path)),
+    cellMm: obs0.summary.circulation?.cellSizeMm ?? Number.NaN,
+    ties: latticeTies(obs0),
+    walks: () => (walks ??= new Map(attributeWalks(obs0, obsG, f).map((a) => [a.roomId, a]))),
+    endpoints: () => (endpoints ??= new Map(attributeWalks(obs0, obsG, f, true).map((a) => [a.roomId, a]))),
+    floatSensitive: g.translate === true && floatSensitive(obs0, f.tx),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -988,12 +1297,20 @@ const WALL_LAYERS: ReadonlySet<string> = new Set(["wallFill", "wallFace"]);
  * `dims auto` chains (no element id — they are laid on fixed sides of the PAGE), and hatch
  * fills (a pattern's angle is a drafting convention of the page, not of the building).
  *
- * A hand-written `dim`'s number is kept as its ANCHOR POINT only: which side of its line
- * the number sits on is geometry (it is what `W_DIM_OVERLAP` measures), while its value
- * and reading rotation are not group facts.
+ * A hand-written `dim` is split into three PARTS, because it carries two different facts
+ * under a reflection and a pin must be able to name one without absorbing the other:
+ *
+ *  - `.text` — the number, as its ANCHOR POINT only: which side of the line it sits on is
+ *    geometry (what `W_DIM_OVERLAP` measures); its value and reading rotation are not;
+ *  - `.ticks` — the two 45° station strokes, drawn along `dir + n` (`src/elements/dim.ts`),
+ *    whose mirror image is the OTHER diagonal: a page drafting convention, like a hatch;
+ *  - `.line` — the dimension line and its witness lines.
+ *
+ * A tick is recognised by its shape, not by emission order: the one line whose MIDPOINT is
+ * an endpoint of another line of the same dim (a station).
  */
-export function sceneGroups(scene: Scene): Map<string, { kind: string; prims: ScenePrim[] }> {
-  const out = new Map<string, { kind: string; prims: ScenePrim[] }>();
+export function sceneGroups(scene: Scene): Map<string, { kind: string; part?: string; prims: ScenePrim[] }> {
+  const out = new Map<string, { kind: string; part?: string; prims: ScenePrim[] }>();
   for (const n of scene.nodes) {
     if (n.prim.t === "hatch" || n.layer === "labels") continue;
     if (n.layer === "dims" && n.elementId === undefined) continue;
@@ -1010,6 +1327,20 @@ export function sceneGroups(scene: Scene): Map<string, { kind: string; prims: Sc
     const g = out.get(id) ?? { kind, prims: [] };
     g.prims.push(n.prim);
     out.set(id, g);
+  }
+  for (const [id, g] of [...out]) {
+    if (g.kind !== "dim") continue;
+    out.delete(id);
+    const lines = g.prims.filter((p): p is Extract<ScenePrim, { t: "line" }> => p.t === "line");
+    const ends = new Set(lines.flatMap((l) => [pt(l.a), pt(l.b)]));
+    const isTick = (p: ScenePrim): boolean =>
+      p.t === "line" && ends.has(pt({ x: (p.a.x + p.b.x) / 2, y: (p.a.y + p.b.y) / 2 }));
+    const parts: [string, ScenePrim[]][] = [
+      ["text", g.prims.filter((p) => p.t === "text")],
+      ["ticks", g.prims.filter(isTick)],
+      ["line", g.prims.filter((p) => p.t !== "text" && !isTick(p))],
+    ];
+    for (const [part, prims] of parts) if (prims.length > 0) out.set(`${id}|${part}`, { kind: g.kind, part, prims });
   }
   return out;
 }
@@ -1200,16 +1531,18 @@ export function compareScenes(s0: Scene, sG: Scene, f: Frame): Violation[] {
   }
   const g0 = sceneGroups(s0);
   const gG = sceneGroups(sG);
-  for (const id of [...new Set([...g0.keys(), ...gG.keys()])].sort()) {
-    const a = g0.get(id);
-    const b = gG.get(id);
+  for (const gid of [...new Set([...g0.keys(), ...gG.keys()])].sort()) {
+    const a = g0.get(gid);
+    const b = gG.get(gid);
     const kind = a?.kind ?? b?.kind ?? "?";
+    const part = a?.part ?? b?.part;
     const expected = (a?.prims ?? []).map((p) => canonPrim(transformPrim(f, p))).sort();
     const actual = (b?.prims ?? []).map(canonPrim).sort();
     if (stable(expected) === stable(actual)) continue;
     const missing = multisetMinus(expected, actual);
     const extra = multisetMinus(actual, expected);
-    const key = id === "@walls" ? "scene.walls" : `scene.${kind}[${id}]`;
+    const id = gid.split("|")[0]!;
+    const key = id === "@walls" ? "scene.walls" : `scene.${kind}[${id}]${part ? `.${part}` : ""}`;
     out.push({ key, path: generalize(key), expected: missing.join(" ; "), actual: extra.join(" ; ") });
   }
   return out;
@@ -1346,6 +1679,8 @@ export function t0Violations(rel: string): Violation[] {
 export interface Run {
   tag: string;
   vs: Violation[];
+  /** The case, so a pin's class can be asked whether it really accounts for a violation. */
+  ctx?: CaseContext;
 }
 
 /**
@@ -1359,23 +1694,16 @@ export function runFacts(rel: string): Run[] | null {
   if (!obs0.summary.ok) return null;
   const gf = gateFacts(obs0);
   const runs: Run[] = [];
-  for (const g of corpusElements(rel)) {
+  const run = (tag: string, g: GroupElement, north: NorthDir, coNorth: boolean): void => {
     const f = frameFor(g, ast.grid);
-    const obsG = observe(wrapperSource(rel, g));
-    runs.push({
-      tag: g.name,
-      vs: compareObservations(obs0, obsG, f, ast.north, gateFor(g, f, gf), { translation: g.translate === true }),
+    const obsG = observe(wrapperSource(rel, g, coNorth ? { north } : {}));
+    const vs = compareObservations(obs0, obsG, f, north, gateFor(g, f, { ...gf, coNorth }), {
+      translation: g.translate === true,
     });
-  }
-  for (const g of coRotatedElements(rel)) {
-    const f = frameFor(g, ast.grid);
-    const north = rotateNorth(ast.north, g.rotate / 90);
-    const obsG = observe(wrapperSource(rel, g, { north }));
-    runs.push({
-      tag: `${g.name}+N`,
-      vs: compareObservations(obs0, obsG, f, north, gateFor(g, f, { ...gf, coNorth: true })),
-    });
-  }
+    runs.push({ tag, vs, ctx: caseContext(obs0, obsG, g, f, vs) });
+  };
+  for (const g of corpusElements(rel)) run(g.name, g, ast.north, false);
+  for (const g of coRotatedElements(rel)) run(`${g.name}+N`, g, rotateNorth(ast.north, g.rotate / 90), true);
   return runs;
 }
 
@@ -1386,10 +1714,40 @@ export function runScenes(rel: string): Run[] | null {
   const src0 = wrapperSource(rel, null, { fixedSheet: true });
   if (compile(src0, { world: EXAMPLES_WORLD }).errors.length > 0) return null;
   const s0 = sceneOf(src0);
-  return corpusElements(rel).map((g) => ({
-    tag: g.name,
-    vs: compareScenes(s0, sceneOf(wrapperSource(rel, g, { fixedSheet: true })), frameFor(g, ast.grid)),
-  }));
+  const obs0 = observe(wrapperSource(rel, null));
+  return corpusElements(rel).map((g) => {
+    const f = frameFor(g, ast.grid);
+    const vs = compareScenes(s0, sceneOf(wrapperSource(rel, g, { fixedSheet: true })), f);
+    return { tag: g.name, vs, ctx: caseContext(obs0, observe(wrapperSource(rel, g)), g, f, vs) };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// One random case (the fuzz suite, and any probe of it)
+// ---------------------------------------------------------------------------
+
+/** How a random plan is rendered as P₀ (`g === null`) or gP, optionally on {@link FIXED_SHEET}. */
+export type InstanceRender = (g: GroupElement | null, fixedSheet: boolean) => string;
+
+/**
+ * Tiers T1–T3 for one random plan and one element: every violation, and the case context
+ * the classes' `covers` predicates read. The scene is drawn on {@link FIXED_SHEET}, so the
+ * renderer must drop the plan's own `paper` when asked for it.
+ */
+export function instanceCase(
+  render: InstanceRender,
+  g: GroupElement,
+  grid: number,
+  north: NorthDir,
+): { vs: Violation[]; ctx: CaseContext } {
+  const f = frameFor(g, grid);
+  const obs0 = observe(render(null, false));
+  const obsG = observe(render(g, false));
+  const vs = compareObservations(obs0, obsG, f, north, gateFor(g, f, gateFacts(obs0)), {
+    translation: g.translate === true,
+  });
+  vs.push(...compareScenes(sceneOf(withFixedSheet(render(null, true))), sceneOf(withFixedSheet(render(g, true))), f));
+  return { vs, ctx: caseContext(obs0, obsG, g, f, vs) };
 }
 
 // ---------------------------------------------------------------------------
@@ -1424,6 +1782,16 @@ export function witnessPair(body: string, g: GroupElement, opts: WitnessOptions 
 
 /** Tiers T1–T3 over one witness: every violation, gated exactly as the corpus is. */
 export function witnessViolations(body: string, g: GroupElement, opts: WitnessOptions = {}): Violation[] {
+  return witnessCase(body, g, opts).vs;
+}
+
+/** {@link witnessViolations} with its case context, so a witness can also ask its class
+ *  whether the predicate accounts for what it reproduces. */
+export function witnessCase(
+  body: string,
+  g: GroupElement,
+  opts: WitnessOptions = {},
+): { vs: Violation[]; ctx: CaseContext } {
   const world = opts.world ?? EXAMPLES_WORLD;
   const f = frameFor(g, opts.grid ?? 50);
   const { p0, gP } = witnessPair(body, g, opts);
@@ -1434,46 +1802,88 @@ export function witnessViolations(body: string, g: GroupElement, opts: WitnessOp
   });
   const scenes = witnessPair(body, g, { ...opts, fixedSheet: true });
   vs.push(...compareScenes(sceneOf(scenes.p0, world), sceneOf(scenes.gP, world), f));
-  return vs;
+  return { vs, ctx: caseContext(obs0, obsG, g, f, vs) };
 }
 
 // ---------------------------------------------------------------------------
 // Violation bookkeeping
 // ---------------------------------------------------------------------------
 
-/** One observed violation, reduced to what a pin names. */
+/**
+ * One observed violation, reduced to what a pin names: where, under which element, which
+ * generalised path, WHICH element (`id`, the concrete key's bracketed id — `g.r_gallery`;
+ * `""` for a key with none), and how BIG (`delta`, the largest numeric |actual − expected|
+ * over the violations collapsed into it; `NaN` when a side is absent or not a number).
+ */
 export interface Observed {
   where: string;
   g: string;
   path: string;
+  id: string;
+  delta: number;
 }
 
-export const observedKey = (o: Observed): string => `${o.where} | ${o.g} | ${o.path}`;
+/** The element id inside a concrete key: `circulation.rooms[g.hall].walk` → `g.hall`. */
+export const idOfKey = (key: string): string => /\[([^\]]*)\]/.exec(key)?.[1] ?? "";
 
-/** Collapse violations to their distinct pinnable paths for one (where, g). */
+export const observedKey = (o: Pick<Observed, "where" | "g" | "path" | "id">): string =>
+  `${o.where} | ${o.g} | ${o.path} | ${o.id}`;
+
+/** |actual − expected| of a numeric violation; `NaN` for anything else. */
+export function numericDelta(v: Violation): number {
+  const a = Number(v.actual);
+  const e = Number(v.expected);
+  return v.actual.trim() === "" || v.expected.trim() === "" ? Number.NaN : Math.abs(a - e);
+}
+
+/** Collapse violations to their distinct (path, id) pairs for one (where, g). */
 export function toObserved(where: string, g: string, vs: readonly Violation[]): Observed[] {
-  return [...new Set(vs.map((v) => v.path))].sort().map((path) => ({ where, g, path }));
+  const out = new Map<string, Observed>();
+  for (const v of vs) {
+    const id = idOfKey(v.key);
+    const o = { where, g, path: v.path, id, delta: numericDelta(v) };
+    const k = observedKey(o);
+    const prev = out.get(k);
+    out.set(k, prev ? { ...prev, delta: Number.isNaN(prev.delta) ? prev.delta : Math.max(prev.delta, o.delta) } : o);
+  }
+  return [...out.values()].sort((a, b) => (observedKey(a) < observedKey(b) ? -1 : 1));
 }
 
-/** A pin row as the known table spells it: `where` and `g` may list several values, and a
- *  row stands for their cross product with its one `path`. */
+/**
+ * A pin row as the known table spells it: `where` and `g` may list several values, and a
+ * row stands for their cross product with its one `path`.
+ *
+ *  - `ids`, when present, pins ONLY those elements — one expanded pin per id, each of which
+ *    must still be observed. Absent: the row pins the path for every element (one wildcard
+ *    pin per (where, g), observed while any element violates it).
+ *  - `maxDelta`, when present, bounds the SIZE the row absorbs: an observed violation whose
+ *    `delta` exceeds it (or is `NaN` — a side absent) is not pinned by this row, so a
+ *    regression past the measured magnitude fails as NEW.
+ */
 export interface PinRow {
   where: string | readonly string[];
   g: string | readonly string[];
   path: string;
+  ids?: readonly string[];
+  maxDelta?: number;
   cls: string;
 }
 
 const listOf = (v: string | readonly string[]): readonly string[] => (typeof v === "string" ? [v] : v);
 
-/** Every (where, g, path) a set of rows pins, with the class(es) pinning it. */
-export function expandPins(rows: readonly PinRow[]): Map<string, string[]> {
-  const out = new Map<string, string[]>();
+/** The wildcard id of a row with no `ids`. */
+const ANY = "*";
+
+/** Every (where, g, path, id) a set of rows pins, with the rows pinning it. */
+export function expandPins(rows: readonly PinRow[]): Map<string, PinRow[]> {
+  const out = new Map<string, PinRow[]>();
   for (const r of rows) {
     for (const where of listOf(r.where)) {
       for (const g of listOf(r.g)) {
-        const key = observedKey({ where, g, path: r.path });
-        out.set(key, [...(out.get(key) ?? []), r.cls]);
+        for (const id of r.ids ?? [ANY]) {
+          const key = observedKey({ where, g, path: r.path, id });
+          out.set(key, [...(out.get(key) ?? []), r]);
+        }
       }
     }
   }
@@ -1481,25 +1891,63 @@ export function expandPins(rows: readonly PinRow[]): Map<string, string[]> {
 }
 
 /**
- * The two-way pin check for one scope (an example, a tier): observed violations the table
- * does not pin are NEW; pinned ones no longer observed are FIXED. Both must be empty.
+ * The two-way pin check for one scope (an example, a tier): observed violations no row
+ * pins (by id, or by wildcard, within the row's bound) are NEW; pinned ones no longer
+ * observed are FIXED. Both must be empty.
  */
 export function pinDiff(
   rows: readonly PinRow[],
   observed: readonly Observed[],
-  inScope: (o: Observed) => boolean,
+  inScope: (o: Pick<Observed, "where" | "g" | "path" | "id">) => boolean,
 ): { added: string[]; vanished: string[] } {
   const pinned = expandPins(rows);
-  const seen = new Set(observed.filter(inScope).map(observedKey));
-  const added = [...seen].filter((k) => !pinned.has(k)).sort();
+  const seen = observed.filter(inScope);
+  const within = (o: Observed, rs: readonly PinRow[] | undefined): boolean =>
+    (rs ?? []).some((r) => r.maxDelta === undefined || o.delta <= r.maxDelta);
+  const added = seen
+    .filter((o) => !within(o, pinned.get(observedKey(o))) && !within(o, pinned.get(observedKey({ ...o, id: ANY }))))
+    .map((o) => `${observedKey(o)}${Number.isNaN(o.delta) ? "" : `  (Δ ${o.delta})`}`)
+    .sort();
+  const seenExact = new Set(seen.map(observedKey));
+  const seenAny = new Set(seen.map((o) => observedKey({ ...o, id: ANY })));
   const vanished = [...pinned]
     .filter(([k]) => {
-      const [where, g, path] = k.split(" | ");
-      return inScope({ where: where!, g: g!, path: path! }) && !seen.has(k);
+      const [where, g, path, id] = k.split(" | ") as [string, string, string, string];
+      return inScope({ where, g, path, id }) && !(id === ANY ? seenAny : seenExact).has(k);
     })
-    .map(([k, cls]) => `${k}  (${cls.join(", ")})`)
+    .map(([k, rs]) => `${k}  (${rs.map((r) => r.cls).join(", ")})`)
     .sort();
   return { added, vanished };
+}
+
+/**
+ * The pin AUDIT: a pin is a claim about a mechanism, and its class's `covers` predicate is
+ * that claim made executable. For every observed violation a row pins, at least one of
+ * the pinning rows' classes must say it accounts for it — so a pin cannot sit on a
+ * violation its own class's evidence does not describe. Returns the failures.
+ */
+export function pinAudit(
+  rows: readonly PinRow[],
+  classes: Readonly<Record<string, { covers(v: Violation, c: CaseContext): boolean }>>,
+  where: string,
+  runs: readonly Run[],
+): string[] {
+  const pinned = expandPins(rows);
+  const out: string[] = [];
+  for (const r of runs) {
+    if (!r.ctx) continue;
+    for (const v of r.vs) {
+      const o = { where, g: r.tag, path: v.path, id: idOfKey(v.key) };
+      const rs = [...(pinned.get(observedKey(o)) ?? []), ...(pinned.get(observedKey({ ...o, id: ANY })) ?? [])];
+      if (rs.length === 0) continue; // unpinned: pinDiff reports it as NEW
+      if (!rs.some((row) => classes[row.cls]?.covers(v, r.ctx!) === true)) {
+        out.push(
+          `${observedKey(o)} is pinned as ${rs.map((x) => x.cls).join("/")}, whose predicate does not account for it`,
+        );
+      }
+    }
+  }
+  return out;
 }
 
 /** A one-line human rendering of violations, for failure messages. */
