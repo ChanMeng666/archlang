@@ -29,7 +29,8 @@
  * transforms the segment, and the direction rides along). `swing` — which face a
  * `barn` panel hangs on, a `bifold` folds toward, or a `garage` panel projects INTO —
  * is measured off the wall normal and DOES flip under a reflection, which
- * `transformElement` already does.
+ * `transformElement` already does. A `sliding` door's track choice is neither: it is
+ * `slide` times the normal, so it reads `RDoor._mirror` (see that case).
  *
  * ## The dash convention: DASHED MEANS ABOVE THE CUT PLANE
  *
@@ -132,8 +133,12 @@ export function renderDoorPanels(dr: RDoor, ctx: PanelCtx): SceneNode[] {
       const pt = 0.2 * t; // panel thickness
       const off = pt / 2 + 0.05 * t; // each track's offset from the centreline (0.1t clear between)
       const travel = w - pl;
-      const fixedC = add(add(dr.at, mul(d, sd * (hw - pl / 2))), mul(n, off * sd));
-      const movingRest = add(add(dr.at, mul(d, -sd * (hw - pl / 2))), mul(n, -off * sd));
+      // Which track the fixed panel runs on: `slide` times the LEFT normal `n`, a handed
+      // product. A reflection reverses `n` against the carried traversal but not `slide`, so
+      // a mirrored door (`_mirror`) takes the other track, which is its mirror image.
+      const track = dr._mirror ? -sd : sd;
+      const fixedC = add(add(dr.at, mul(d, sd * (hw - pl / 2))), mul(n, off * track));
+      const movingRest = add(add(dr.at, mul(d, -sd * (hw - pl / 2))), mul(n, -off * track));
       const movingC = add(movingRest, mul(d, sd * travel * open));
       return [
         rule(add(add(dr.at, mul(d, -hw)), mul(n, off)), add(add(dr.at, mul(d, hw)), mul(n, off))),

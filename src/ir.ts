@@ -332,6 +332,13 @@ export interface RDoor extends RBase {
   /** How far the panel is DRAWN open, 0–1. Present only on a non-hinged door. A
    *  drawing fact: no measured output may read it (see `E_DOOR_OPEN_RANGE`). */
   open?: number;
+  /**
+   * This door's instance frame REFLECTS (`place … mirror`). XOR-composed by `door.transform`.
+   * Read only by a `sliding` door, whose fixed panel's track is the product of `slide` and the
+   * wall's LEFT normal — a handed choice a reflection reverses while `slide` (measured along
+   * the traversal) does not. Internal; never reaches `describe()` or Plan JSON.
+   */
+  _mirror?: true;
   /** Byte span of the authored `slide` clause, or the zero-width insertion point —
    *  see {@link import("./ast.js").DoorNode.slideSpan}. Internal: never in the Scene. */
   _slideSpan?: Span;
