@@ -476,6 +476,38 @@ const WITNESSES: Record<ClassName, [string, () => void][]> = {
         reproduce("dim-text-side", body, "mx", "scene.dim[g.dim_1].text");
       },
     ],
+    [
+      "STILL measures W_DIM_OVERLAP with the text on +n, so an opposite-normal pair bumps differently mirrored",
+      () => {
+        // Two dims on one wall, written in opposite directions with opposite offsets: the
+        // same drawn line. `W_DIM_OVERLAP`'s band carries each number on its +n side
+        // whatever the offset's sign (the drawing's convention, measured), so a reflection —
+        // which negates both offsets — changes which bands overlap and by how much. Each
+        // offered fix clears its own warning; the VALUE is not frame-invariant. Not the
+        // pullback (backlog E.1): with the text on the offset's side this closes too.
+        const sheet = "paper A3 landscape\n  scale 1:50\n  ";
+        const pair = (a: number, b: number) => {
+          const body = `${room(4000, 3000)}
+    dim (0,3000)->(4000,3000) offset ${a}
+    dim (4000,3000)->(0,3000) offset ${b}`;
+          return { body, opts: { declare: `${sheet}component c() {\n${body}\n  }` } };
+        };
+        const bump = (src: string) =>
+          lint(src)
+            .filter((d) => d.code === "W_DIM_OVERLAP")
+            .flatMap((d) => d.fixes?.[0]?.edits.map((e) => e.newText) ?? []);
+        const moved = pair(550, -550);
+        const w = witnessPair(moved.body, elementNamed("mx"), moved.opts);
+        expect(bump(w.p0)).toEqual(["offset -1100"]);
+        expect(bump(w.gP)).toEqual(["offset -825"]);
+        reproduce("dim-text-side", moved.body, "mx", "lint.dim-overlap.fixes", moved.opts);
+        const fired = pair(550, -650);
+        const f = witnessPair(fired.body, elementNamed("mx"), fired.opts);
+        expect(lint(f.p0).filter((d) => d.code === "W_DIM_OVERLAP")).toHaveLength(1);
+        expect(lint(f.gP).filter((d) => d.code === "W_DIM_OVERLAP")).toHaveLength(0);
+        reproduce("dim-text-side", fired.body, "mx", "lint.dim-overlap", fired.opts);
+      },
+    ],
   ],
   "dim-tick-hand": [
     [

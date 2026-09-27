@@ -289,8 +289,11 @@ Status is `todo` for a defect and `declared` for a convention that is not a grou
 instance frame (`LintContext.frameOf`) before writing it: `actOnQuarterTurn(g⁻¹, n)` for the
 quarter-turn, `det(g)` on the offset (applied before rounding). A statement shared by several
 placed instances keeps one fix only when every instance raises the same edit; otherwise the fix is
-dropped with a hint (`reconcileSharedFixes`, `src/lint.ts`). Pin deleted; the witness is now the law
-(`test/equivariance-corpus.test.ts`, "closed classes"; `test/fix-pullback.test.ts`).
+dropped with a hint (`reconcileSharedFixes`, `src/lint.ts`); the two dim rules report once per
+statement per placement so each instance answers for itself. Pin deleted; the witness is now the law
+(`test/equivariance-corpus.test.ts`, "closed classes"; `test/fix-pullback.test.ts`). What the pin
+also absorbed, `W_DIM_OVERLAP` measuring a mirrored opposite-normal pair differently, is the text
+side's, not the pullback's: it moved to E.14.
 
 ### E.2 · `stair-tail` — a vertical run's arrow and entry edge ignore the frame — `todo`
 
@@ -373,6 +376,13 @@ always puts the number on the from→to left normal, whatever the offset's sign.
 `dim (0,3000)->(4000,3000) offset -400` draws its line at y = 2600 and its number at y = 2658.8,
 between the line and the wall at 3000. The oracle meets it because a reflection negates every placed
 dim's offset (`src/frame.ts:392`). Close by drawing on `sign(offset)` of the normal.
+
+`W_DIM_OVERLAP` measures the same convention: its band puts each number on +n. So under a
+reflection an opposite-normal pair collides differently. At A3 1:50,
+`dim (0,3000)->(4000,3000) offset 550` + `dim (4000,3000)->(0,3000) offset -550` bumps to `offset -1100`
+unplaced and to `-825` mirrored, and `550`/`-650` warns unplaced but not mirrored. Each offered fix
+clears its own warning. The class also covers `lint.dim-overlap[.fixes]` under a reflection, with
+a witness in `test/equivariance-corpus.test.ts`; moving the band's text side closes both.
 
 ### E.15 · `dim-tick-hand` — a mirrored dim draws its ticks on the other diagonal — `declared`
 

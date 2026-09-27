@@ -323,7 +323,13 @@ export const KNOWN_CLASSES: Readonly<Record<ClassName, KnownClass & Partial<Rast
     site: "src/elements/dim.ts:259-262,320 (the number rides the from→to LEFT normal, whatever the offset's sign); src/frame.ts:392 negates the offset under a reflection",
     summary:
       "a ROOT renderer defect: a dim's number is always drawn on the left normal, so any NEGATIVE offset puts it between the line and what it measures — with no `place` at all; a reflection negates every placed dim's offset, which is how the oracle meets it",
-    covers: (v, c) => c.reflects && v.path === "scene.dim[].text",
+    // `W_DIM_OVERLAP`'s band model puts each dim's text on +n whatever the offset's sign —
+    // the same convention, measured instead of drawn — so under a reflection a pair of
+    // opposite-normal dims collides differently (a different bump, or no warning at all).
+    // Each offered fix still clears its own warning; this is the text side, not the pullback.
+    covers: (v, c) =>
+      c.reflects &&
+      (v.path === "scene.dim[].text" || v.path === "lint.dim-overlap" || v.path === "lint.dim-overlap.fixes"),
   },
   "dim-tick-hand": {
     status: "declared",
