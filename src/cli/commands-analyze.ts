@@ -10,6 +10,7 @@ import { resolve as resolvePath } from "node:path";
 import {
   describe,
   describeLevel,
+  DESCRIBE_FACTS,
   lint,
   LINT_PROFILE_NAMES,
   ERROR_CODES,
@@ -20,6 +21,8 @@ import {
   feedbackForResult,
 } from "../index.js";
 import type {
+  DescribeFact,
+  LayerSymmetry,
   Diagnostic,
   World,
   Intent,
@@ -127,6 +130,9 @@ export const DESCRIBE_KEYS: readonly string[] = [
   "zones",
   "levels",
   "vertical",
+  // Opt-in: present only under `--facts`, so selectable only alongside it.
+  "symmetry",
+  "syntax",
 ];
 
 /** Tally a {@link FreedomReport} bucket without fighting the placement unions. */
@@ -255,9 +261,28 @@ export function cmdDescribe(args: Args): number {
   }
   const wantRooms = args.room === undefined ? null : csv(args.room);
   const wantZones = args.zone === undefined ? null : csv(args.zone);
+  // `--facts` names opt-in derived facts; like `--select`, an unknown name is a usage error.
+  const facts = args.facts === undefined ? [] : csv(args.facts);
+  for (const f of facts) {
+    if (!(DESCRIBE_FACTS as readonly string[]).includes(f)) {
+      return usageError(
+        `unknown --facts name "${f}"${didYouMean(f, DESCRIBE_FACTS)} (available: ${echoList(DESCRIBE_FACTS)})`,
+      );
+    }
+  }
+  // An opt-in fact is absent unless computed, so selecting one without asking for it would
+  // silently print nothing — a usage error with the fix, rather than an empty answer.
+  for (const k of selected ?? []) {
+    if ((DESCRIBE_FACTS as readonly string[]).includes(k) && !facts.includes(k)) {
+      return usageError(`--select ${k} needs the fact computed: add --facts ${k}`);
+    }
+  }
 
   return withSource(args, (source, input) => {
-    const full = describe(source, { world: makeNodeWorld(baseDirOf(input)) });
+    const full = describe(source, {
+      world: makeNodeWorld(baseDirOf(input)),
+      ...(facts.length > 0 ? { facts: facts as DescribeFact[] } : {}),
+    });
 
     // A plan that failed to resolve has no rooms to narrow: report ITS diagnostics
     // rather than a misleading `unknown room` (the room list is empty for a reason).
@@ -337,11 +362,25 @@ export function cmdDescribe(args: Args): number {
           (r) =>
             `  ${r.id}${r.label ? ` "${r.label}"` : ""}: ${r.area_m2} m²${r.adjacent.length ? ` — adj: ${r.adjacent.join(", ")}` : ""}`,
         ),
+        ...factLines(summary),
       ];
       process.stdout.write(lines.join("\n") + "\n");
     }
     return summary.ok ? EXIT.OK : EXIT.USER;
   });
+}
+
+/** One compact human line per requested opt-in fact (`--facts` without `--json`). */
+function factLines(s: SceneSummary): string[] {
+  const out: string[] = [];
+  if (s.symmetry) {
+    const g = (l: LayerSymmetry | null): string =>
+      l === null ? "—" : `${l.group}${l.axis ? ` ${l.axis}` : ""}${l.axes ? ` ${l.axes.join("/")}` : ""}`;
+    const { shell, rooms, full } = s.symmetry.layers;
+    out.push(`symmetry: shell ${g(shell)} · rooms ${g(rooms)} · full ${g(full)}; repeats ${s.symmetry.repeats.length}`);
+  }
+  if (s.syntax) out.push(`syntax: k=${s.syntax.k} cycleRank=${s.syntax.cycleRank}`);
+  return out;
 }
 
 /**

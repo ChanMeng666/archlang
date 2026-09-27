@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { describe as suite, expect, it } from "vitest";
-import { describe } from "../src/index.js";
+import { DESCRIBE_FACTS, describe } from "../src/index.js";
 import { DESCRIBE_KEYS } from "../src/cli/commands-analyze.js";
 
 /**
@@ -90,7 +90,8 @@ suite("DESCRIBE_KEYS — no drift vs the real describe() result", () => {
    * plan-level settings the multi-storey shape puts elsewhere.
    */
   it("DESCRIBE_KEYS is EXACTLY the set of keys describe() can emit", () => {
-    const single = describe(`plan "S" {
+    const single = describe(
+      `plan "S" {
       units mm
       paper A3 landscape
       accTitle "T"
@@ -108,7 +109,9 @@ suite("DESCRIBE_KEYS — no drift vs the real describe() result", () => {
         stair id=s at (500,500) size 900x2600 dir up
         void id=well at (5000,1000) size 1200x1200
       }
-    }`);
+    }`,
+      { facts: DESCRIBE_FACTS },
+    );
     const multi = describe(`plan "M" {
       units mm
       level 1 "Ground" {
@@ -129,7 +132,20 @@ suite("DESCRIBE_KEYS — no drift vs the real describe() result", () => {
     // conditional on the SOURCE having written a height clause, so a fixture that writes
     // none would let it ship unselectable with this whole suite green — the `voids` failure
     // exactly. The `height 2700` line above is what makes the claim non-vacuous.
-    for (const k of ["sheet", "site", "axes", "schedule", "zones", "instances", "verticals", "voids", "heights"]) {
+    // `symmetry`/`syntax` are opt-in (`facts`), so the single fixture asks for them.
+    for (const k of [
+      "sheet",
+      "site",
+      "axes",
+      "schedule",
+      "zones",
+      "instances",
+      "verticals",
+      "voids",
+      "heights",
+      "symmetry",
+      "syntax",
+    ]) {
       expect(Object.keys(single), `the single-storey fixture stopped emitting "${k}"`).toContain(k);
     }
     for (const k of ["levels", "vertical"]) {
@@ -143,6 +159,43 @@ suite("DESCRIBE_KEYS — no drift vs the real describe() result", () => {
         "only is one `--select` accepts and describe() never produces.",
     ).toEqual([...DESCRIBE_KEYS].sort());
   });
+});
+
+suite("describe --facts", () => {
+  it("adds only the named opt-in facts, and composes with --select", () => {
+    const plain = JSON.parse(run(["describe", "-", "--json"], TWO_ROOM).stdout);
+    expect(plain.symmetry).toBeUndefined();
+    expect(plain.syntax).toBeUndefined();
+    const r = run(["describe", "-", "--facts", "symmetry,syntax", "--select", "symmetry,syntax", "--json"], TWO_ROOM);
+    expect(r.status).toBe(0);
+    const o = JSON.parse(r.stdout);
+    expect(Object.keys(o).sort()).toEqual(["diagnostics", "ok", "plan", "symmetry", "syntax", "units"]);
+    expect(o.syntax.k).toBeGreaterThan(0);
+  }, 30000);
+
+  it("--select of an opt-in fact without --facts is a usage error naming the fix, never a silent absence", () => {
+    for (const k of DESCRIBE_FACTS) {
+      const r = run(["describe", "-", "--select", k, "--json"], TWO_ROOM);
+      expect(r.status, k).toBe(3);
+      expect(r.stderr).toContain(`add --facts ${k}`);
+    }
+  }, 30000);
+
+  it("--facts without --json prints one compact line per fact", () => {
+    const r = run(["describe", "-", "--facts", "symmetry,syntax"], TWO_ROOM);
+    expect(r.status).toBe(0);
+    const lines = r.stdout.trim().split("\n");
+    expect(lines.at(-2)).toMatch(/^symmetry: shell \S.* · rooms \S.* · full \S.*; repeats \d+$/);
+    expect(lines.at(-1)).toMatch(/^syntax: k=\d+ cycleRank=\d+$/);
+    // …and nothing of the sort without --facts.
+    expect(run(["describe", "-"], TWO_ROOM).stdout).not.toMatch(/^(symmetry|syntax):/m);
+  }, 30000);
+
+  it("an unknown fact name is a usage error (exit 3) with a did-you-mean", () => {
+    const r = run(["describe", "-", "--facts", "symetry", "--json"], TWO_ROOM);
+    expect(r.status).toBe(3);
+    expect(r.stderr).toContain('did you mean "symmetry"');
+  }, 30000);
 });
 
 suite("describe --select", () => {

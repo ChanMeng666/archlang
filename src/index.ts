@@ -75,6 +75,8 @@ export { describe } from "./describe.js";
 // switcher must not each own a copy (a second copy is a second place to forget a
 // per-storey key, and that failure is silent — it reports the wrong floor's facts).
 export { describeLevel, PER_STOREY_OPTIONAL_KEYS } from "./describe.js";
+// The opt-in derived facts `describe(src, { facts })` can add (`symmetry`, `syntax`).
+export { DESCRIBE_FACTS } from "./describe.js";
 // An instance's rigid map as one canonical D4 value: `mirror y` and `rotate 180 mirror x`
 // describe differently (the summary echoes the spelling) and compare equal here.
 export { instanceTransform } from "./describe.js";
@@ -135,6 +137,17 @@ export type {
   CirculationModel,
   RoomCirculation,
   CirculationRoute,
+  DescribeFact,
+  SymmetryFacts,
+  SymmetryGroup,
+  SymmetryElement,
+  LayerSymmetry,
+  MirrorAxis,
+  Repeat,
+  TranslationRepeat,
+  MirrorRepeat,
+  SyntaxFacts,
+  SyntaxRoom,
 } from "./describe.js";
 // Structured JSON I/O: the machine-native RPLAN/DStruct2Design plan shape.
 // `planFromJson` builds a PlanNode from JSON (catalogued E_JSON_* on bad shape),
