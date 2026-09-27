@@ -270,6 +270,9 @@ interface Band {
   u: Point;
   /** Left normal of `u` — the axis `offset` runs along. */
   n: Point;
+  /** The normal the NUMBER rides off the line along: `n`, reversed for a negative offset —
+   *  the side `dim.render` draws it on (`sign(offset) · n`). */
+  m: Point;
   /** Midpoint of the DRAWN line (the measured midpoint pushed out by `offset`). */
   mid: Point;
   /** Half the along-axis extent about `mid`. */
@@ -280,6 +283,7 @@ function band(dm: RDim, dimFont: number): Band {
   const span = dm.span!;
   const u = unit(sub(dm.to, dm.from));
   const n = normal(u);
+  const m = dm.offset < 0 ? { x: -n.x, y: -n.y } : n;
   const len = length(sub(dm.to, dm.from));
   // The same drawn-line midpoint `dimInside` tests — one formula, both rules.
   const mid = dimLineMid(dm);
@@ -297,6 +301,7 @@ function band(dm: RDim, dimFont: number): Band {
     report: reportKey(dm),
     u,
     n,
+    m,
     mid,
     half: Math.max(len, textWidth(label, dimFont)) / 2,
   };
@@ -341,12 +346,12 @@ function collide(a: Band, b: Band, back: number, fore: number): boolean {
   const d = sub(b.mid, a.mid);
   const s = dot(d, a.u);
   if (!overlaps(-a.half, a.half, s - b.half, s + b.half)) return false;
-  const [lo, hi] = crossBand(dot(d, a.n), dot(b.n, a.n) > 0, back, fore);
+  const [lo, hi] = crossBand(dot(d, a.m), dot(b.m, a.m) > 0, back, fore);
   return overlaps(-back, fore, lo, hi);
 }
 
 /** A band's cross-axis interval about its line at `t`, expressed on a reference normal. A
- *  dim whose own normal points the other way carries its text on the other side. */
+ *  dim whose own text normal (`Band.m`) points the other way carries its text on the other side. */
 function crossBand(t: number, sameSide: boolean, back: number, fore: number): [number, number] {
   return sameSide ? [t - back, t + fore] : [t - fore, t + back];
 }
@@ -370,11 +375,12 @@ function retier(later: Band, other: Band, size: { back: number; fore: number; st
   // `other`'s band in LATER's offset coordinate: distance along `later.n` from the segment
   // `later` measures, which is where its own `offset` is measured from.
   const t = dot(sub(other.mid, later.dm.from), later.n);
-  const [lo, hi] = crossBand(t, dot(other.n, later.n) > 0, back, fore);
+  const [lo, hi] = crossBand(t, dot(other.m, later.n) > 0, back, fore);
   // How far past its current offset the line must travel for the near edge of its band to
   // clear the far edge of the other's, in the direction it is already offset. `floor + 1`
-  // (never `ceil`) so an exact multiple still lands strictly beyond, never touching.
-  const need = dir > 0 ? hi + back - off : off - (lo - fore);
+  // (never `ceil`) so an exact multiple still lands strictly beyond, never touching. The
+  // near edge is the tick reach `back` either way: the number rides the side it travels to.
+  const need = dir > 0 ? hi + back - off : off - (lo - back);
   const k = Math.max(1, Math.floor(need / step) + 1);
   return Math.round(sign * (off + dir * k * step));
 }
