@@ -195,12 +195,16 @@ export async function cmdFix(args: Args): Promise<number> {
   // fix, e.g. W_ALIAS_MATCH). lint() is silent on an unresolvable plan, so this is exactly
   // compile's diagnostics whenever there is a fatal error.
   const diagsOf = (src: string): Diagnostic[] => {
-    const ds = [...compile(src, { noCache: true, world }).diagnostics, ...lint(src, { world })];
+    const compiled = compile(src, { noCache: true, world });
+    const linted = lint(src, { world });
+    const ds = [...compiled.diagnostics, ...linted];
     // Only `arch fix` ever proves a `while`→`for` rewrite — never `compile()` itself (see
     // `src/while-fix.ts`'s header) — so it is the one place a `W_WHILE_DEPRECATED`
-    // diagnostic gains a `fixes` array, matched back onto it by span.
+    // diagnostic gains a `fixes` array, matched back onto it by span. `compiled`/`linted`
+    // are handed straight to `proveWhileFixes` as its ORIGINAL — both were computed with
+    // this exact `src`/`world`, `noCache: true`, so it skips recomputing either itself.
     if (!ds.some((d) => d.code === "W_WHILE_DEPRECATED" && d.file === undefined)) return ds;
-    const proven = proveWhileFixes(src, { world });
+    const proven = proveWhileFixes(src, { world }, { compile: compiled, lint: linted });
     if (proven.length === 0) return ds;
     return ds.map((d) => {
       if (d.code !== "W_WHILE_DEPRECATED" || !d.span) return d;

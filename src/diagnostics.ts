@@ -228,8 +228,23 @@ export function formatDiagnostic(source: string, d: Diagnostic): string {
     }
   }
 
-  // Related locations: a small framed snippet per secondary span.
+  // Related locations: a small framed snippet per secondary span. A `RelatedSpan` carries
+  // no `file` of its own — it is measured in whatever source the OWNING diagnostic is
+  // (`d.file`), so the same "cannot index the wrong file" rule as the primary span above
+  // applies here too: `file` present means `--> <file> [start..end]`, no excerpt.
+  //
+  // One known imprecision, pre-existing and not introduced here: `ir.ts`'s
+  // `stampProvenance` can attach a "placed here" related span measured in the COMPILED
+  // source even when the diagnostic's OWN span (and `file`) point into a component's
+  // body — a `place` statement always renders its related span against the file it is
+  // written in, which is not always `d.file`. `diagnosticJson` does not project
+  // `relatedSpans` at all today, so no consumer currently disambiguates this either;
+  // fixing it precisely needs `RelatedSpan` to carry its own optional `file`.
   for (const rel of d.relatedSpans ?? []) {
+    if (d.file !== undefined) {
+      lines.push(` --> ${d.file} [${rel.span.start}..${rel.span.end}] note: ${rel.message}`);
+      continue;
+    }
     const { line, col } = offsetToLineCol(source, rel.span.start);
     const ls = lineStart(source, rel.span.start);
     const le = lineEnd(source, rel.span.start);

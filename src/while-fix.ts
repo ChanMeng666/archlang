@@ -43,12 +43,14 @@
 
 import type { AssignNode, LetNode, PlanNode, Statement, WhileNode } from "./ast.js";
 import type { Comment } from "./lexer.js";
-import type { FixEdit, FixSuggestion } from "./diagnostics.js";
+import type { Diagnostic, FixEdit, FixSuggestion } from "./diagnostics.js";
 import type { Expr } from "./expr.js";
 import { exprToSource } from "./expr-source.js";
 import { resolvePlan } from "./analyze.js";
 import type { AnalyzeOptions } from "./analyze.js";
+import { whileSpanKey } from "./ir.js";
 import { compile } from "./index.js";
+import type { CompileResult } from "./types.js";
 import { describe as describePlan } from "./describe.js";
 import { lint as lintPlan } from "./lint.js";
 
@@ -126,6 +128,9 @@ export function canonicalShapeAt(body: readonly Statement[], i: number): Canonic
   const a = prev.value;
 
   const wbody = w.body;
+  // A body of ONLY the increment rewrites to a pointless `for` with an empty body — not
+  // wrong, just not useful, and not worth the extra empty-body formatting case. Decline.
+  if (wbody.length < 2) return null;
   const last = wbody[wbody.length - 1];
   if (last?.kind !== "assign" || last.name !== name) return null;
   if (!isIncrementByOne(last.value, name)) return null;
@@ -193,16 +198,6 @@ export function collectWhileSites(plan: PlanNode): WhileSite[] {
   return out;
 }
 
-/** The key {@link import("./ir.js")}'s resolver records an executed `while` under — kept
- *  in lockstep with `src/ir.ts`'s own (private) `whileSpanKey`, which is why this is a
- *  literal string template rather than an import: the resolver has no reason to export
- *  a formatting helper across a layer, and the format itself (file-qualified span) is
- *  documented on `ResolvedPlan._executedWhileSpans`. A local drift test pins the two
- *  producing the same key for the same input. */
-function executedKey(span: { start: number; end: number }, file: string | undefined): string {
-  return `${file ?? ""}\u0000${span.start}\u0000${span.end}`;
-}
-
 /** Comments starting in `[from, to)`, in source order. */
 function commentsIn(comments: readonly Comment[], from: number, to: number): Comment[] {
   return comments.filter((c) => c.span.start >= from && c.span.start < to).sort((x, y) => x.span.start - y.span.start);
@@ -229,10 +224,25 @@ function lineEndOf(source: string, offset: number): number {
  * in original source order. (Not trailing the new header's own `{`: `arch fmt` itself
  * moves a comment there onto the following line, so putting one there would make the fix
  * its own `fmt`-instability; leading lines are what the formatter already agrees with.)
+ * Each comment has exactly ONE owner: a comment trailing `{` is CARRIED (this paragraph)
+ * and the verbatim slice below starts AFTER that comment's own line, never before it — a
+ * comment carried AND left in the slice would appear twice.
  *
- * Returns `null` — decline, no fix — only when a comment sits on the INCREMENT's own
- * line: that statement is deleted, and unlike the header's two source lines merging into
- * one, there is no corresponding position left for a comment attached to gone text.
+ * Returns `null` — decline, no fix — when:
+ *   - a comment sits on the INCREMENT's own line: that statement is deleted, and unlike
+ *     the header's two source lines merging into one, there is no corresponding position
+ *     left for a comment attached to gone text;
+ *   - the closing `}` sits on the SAME LINE as the increment (`i = i + 1 }`): the body
+ *     slice ends at the increment's own start, so anything sharing its line — the
+ *     increment's text included — sits AFTER that cut point, and there is no faithful
+ *     single-line rewrite that drops the increment but keeps whatever follows it. A
+ *     "declined, no fix" one-line loop is not a defect; misplacing `}` and reintroducing
+ *     the deprecated reassignment inside the `for` would be.
+ *
+ * Result is `fmt`-stable exactly when the input already was: this only ever narrows one
+ * span's worth of text (the loop's own two-statement header) and copies the rest verbatim,
+ * so it introduces no indentation or wrapping decision `arch fmt` would ever revisit — see
+ * `test/while-fix.test.ts`'s `format(fixed) === fixed` cases for the nesting depths pinned.
  */
 export function buildCandidateEdit(
   shape: CanonicalShape,
@@ -247,26 +257,43 @@ export function buildCandidateEdit(
   const increment = bodyStmts[bodyStmts.length - 1]!;
   if (commentsIn(comments, increment.span!.end, lineEndOf(source, increment.span!.end)).length > 0) return null;
 
+  // M2: the closing `}` must NOT share the increment's own line — otherwise the body
+  // slice (which ends at the increment's START) cuts off before it, and there is no
+  // faithful place left for whatever sits between the increment and `}` on that one line.
+  const closeIdx = whileStmt.span!.end - 1; // the "}" itself
+  if (!source.slice(increment.span!.end, closeIdx).includes("\n")) return null;
+
+  // M1: a comment trailing `{` is CARRIED (below) — the verbatim slice must start AFTER
+  // that comment's own line, never at `braceIdx + 1`, or the same text appears twice.
+  // Only skip past it when such a comment actually exists: `{` with body content on the
+  // SAME line (no comment) must keep that content, which starting past the whole line
+  // would silently drop.
+  const braceLineEnd = lineEndOf(source, braceIdx + 1);
+  const trailingBrace = commentsIn(comments, braceIdx + 1, braceLineEnd);
+  const innerStart = trailingBrace.length > 0 ? trailingBrace[trailingBrace.length - 1]!.span.end : braceIdx + 1;
+
   // Every comment the merge would otherwise swallow: trailing `let`, trailing the `while`
   // header (either side of its own `{`), and any standalone one between the two
   // statements — collected in ORIGINAL SOURCE ORDER, not by which bucket they fall in.
   const carried = [
     ...commentsIn(comments, letStmt.span!.end, whileStmt.span!.start),
     ...commentsIn(comments, cond.span!.end, braceIdx),
-    ...commentsIn(comments, braceIdx + 1, lineEndOf(source, braceIdx + 1)),
+    ...trailingBrace,
   ].sort((x, y) => x.span.start - y.span.start);
 
+  const eol = source.includes("\r\n") ? "\r\n" : "\n";
   const indent = baseIndentOf(source, letStmt.span!.start);
-  const carriedLines = carried.map((c) => `\n${indent}  ${c.text}`).join("");
+  const carriedLines = carried.map((c) => `${eol}${indent}  ${c.text}`).join("");
 
-  // Verbatim: everything from just after `{` up to the START of the increment, with only
-  // its own trailing indentation (never a newline) trimmed off — the increment's line
-  // disappears, the blank line it leaves does not.
-  const inner = source.slice(braceIdx + 1, increment.span!.start).replace(/[ \t]*$/, "");
+  // Verbatim: everything from just past `{` (and its own trailing comment, if carried
+  // above) up to the START of the increment, with only its own trailing indentation
+  // (never a newline) trimmed off — the increment's line disappears, the blank line it
+  // leaves does not.
+  const inner = source.slice(innerStart, increment.span!.start).replace(/[ \t]*$/, "");
 
   // The closing `}`'s OWN original indentation, read from the source rather than assumed
-  // — faithful even when the block's indent style is unusual.
-  const closeIdx = whileStmt.span!.end - 1; // the "}" itself
+  // — faithful even when the block's indent style is unusual. Safe now that M2 above
+  // guarantees `}` is on a line of its own, below the increment's.
   let closeLineStart = closeIdx;
   while (closeLineStart > 0 && source[closeLineStart - 1] !== "\n") closeLineStart--;
   const closeIndent = source.slice(closeLineStart, closeIdx);
@@ -284,23 +311,48 @@ function baseIndentOf(source: string, offset: number): string {
   return /^[ \t]*/.exec(source.slice(start, offset))?.[0] ?? "";
 }
 
-/** Diagnostic codes stripped from a `describe()`/`lint()` comparison — a `while`→`for`
- *  rewrite always drops these two from the twin (that is the point), and always shifts
- *  byte spans below it, so codes/messages are compared, never spans. */
-const isDeprecationCode = (code: string | undefined): boolean =>
-  code === "W_WHILE_DEPRECATED" || code === "W_REASSIGN_DEPRECATED";
-
-/** A `{code, message}` multiset, deprecation codes excluded, order-independent. */
+/** A `{code, message}` multiset, order-independent, spans never included (a rewrite always
+ *  shifts every byte offset below it, so a span diff proves nothing about SOUNDNESS). */
 function diagnosticKeys(ds: readonly { code?: string; message: string }[]): string[] {
-  return ds
-    .filter((d) => !isDeprecationCode(d.code))
-    .map((d) => `${d.code ?? ""}\u0000${d.message}`)
-    .sort();
+  return ds.map((d) => `${d.code ?? ""}\u0000${d.message}`).sort();
+}
+
+/** `diagnosticKeys(ds)`, with exactly ONE occurrence of `code` at `span` removed first —
+ *  the target `W_WHILE_DEPRECATED` this candidate is proving a fix FOR. Every other
+ *  diagnostic, deprecation-coded or not, must still appear in the TWIN unchanged: this is
+ *  what catches an edit that accidentally drops or (M2's bug) re-adds one. */
+function keysMinusOne(
+  ds: readonly { code?: string; message: string; span?: { start: number; end: number } }[],
+  code: string,
+  span: { start: number; end: number },
+): string[] {
+  let removed = false;
+  const keys: string[] = [];
+  for (const d of ds) {
+    if (!removed && d.code === code && d.span && d.span.start === span.start && d.span.end === span.end) {
+      removed = true;
+      continue;
+    }
+    keys.push(`${d.code ?? ""}\u0000${d.message}`);
+  }
+  return keys.sort();
 }
 
 /** Options {@link proveWhileFixes} takes — the same two fields a compile's own scoping
  *  can vary (`AnalyzeOptions` is `Pick<CompileOptions, "plugins" | "world">`). */
 export type ProveWhileFixesOptions = AnalyzeOptions;
+
+/** Already-computed results a caller (`arch fix`) may hand in so `proveWhileFixes` does
+ *  not redundantly recompute the ORIGINAL's `compile()`/`lint()` — it already needed both
+ *  to know a `W_WHILE_DEPRECATED` diagnostic exists at all. Both must have been produced
+ *  with the SAME `source` and `opts` this call receives, `noCache: true`; a mismatched
+ *  pair would silently prove against the wrong source, so a caller unsure just omits this
+ *  and pays for one extra `compile()`/`lint()` — still one twin cheaper than the original
+ *  design (see this function's own doc comment). */
+export interface PrecomputedOriginal {
+  compile: CompileResult;
+  lint: readonly Diagnostic[];
+}
 
 /** One proven fix, paired with the `W_WHILE_DEPRECATED` diagnostic span it belongs to —
  *  a caller (`arch fix`) matches it back onto that diagnostic by `span.start`/`span.end`. */
@@ -316,10 +368,16 @@ export interface ProvenWhileFix {
  *
  * `describe()`/`lint()` of the ORIGINAL are computed once, hoisted out of the per-
  * candidate loop — proving N candidates costs one extra parse/resolve pass (for the
- * non-vacuity gate) plus N twin compiles, not N times the whole original pipeline.
+ * non-vacuity gate) plus N twin compiles, not N times the whole original pipeline. Pass
+ * `precomputed` to also skip the ORIGINAL's own `compile()`/`lint()` when the caller
+ * already has both (see {@link PrecomputedOriginal}).
  */
-export function proveWhileFixes(source: string, opts: ProveWhileFixesOptions = {}): ProvenWhileFix[] {
-  const original = compile(source, { ...opts, noCache: true });
+export function proveWhileFixes(
+  source: string,
+  opts: ProveWhileFixesOptions = {},
+  precomputed?: PrecomputedOriginal,
+): ProvenWhileFix[] {
+  const original = precomputed?.compile ?? compile(source, { ...opts, noCache: true });
   if (!original.ast || original.diagnostics.some((d) => d.severity === "error")) return [];
   const whileDiags = original.diagnostics.filter(
     (d) => d.code === "W_WHILE_DEPRECATED" && d.file === undefined && d.span,
@@ -340,18 +398,18 @@ export function proveWhileFixes(source: string, opts: ProveWhileFixesOptions = {
   const sites = collectWhileSites(plan);
   const origPages = original.pages ? original.pages.map((p) => p.svg) : [original.svg];
   const origDesc = describePlan(source, opts);
-  const origLintKeys = diagnosticKeys(lintPlan(source, opts));
+  const origLint = precomputed?.lint ?? lintPlan(source, opts);
 
   const out: ProvenWhileFix[] = [];
   for (const d of whileDiags) {
     const site = sites.find((s) => s.whileStmt.span!.start === d.span!.start && s.whileStmt.span!.end === d.span!.end);
     if (!site) continue;
-    if (!executed.has(executedKey(site.whileStmt.span!, undefined))) continue; // never ran
+    if (!executed.has(whileSpanKey(site.whileStmt, undefined))) continue; // never ran
 
     const shape = canonicalShapeAt(site.body, site.index);
     if (!shape) continue;
     const edit = buildCandidateEdit(shape, source, comments);
-    if (!edit) continue; // an unplaceable comment — decline rather than drop it
+    if (!edit) continue; // an unplaceable comment, or an unsafe `}` — decline, not guess
 
     const candidateSource = source.slice(0, edit.span.start) + edit.newText + source.slice(edit.span.end);
     const twin = compile(candidateSource, { ...opts, noCache: true });
@@ -360,12 +418,20 @@ export function proveWhileFixes(source: string, opts: ProveWhileFixesOptions = {
     const twinPages = twin.pages ? twin.pages.map((p) => p.svg) : [twin.svg];
     if (twinPages.length !== origPages.length || twinPages.some((s, i) => s !== origPages[i])) continue;
 
+    // describe()'s own `diagnostics`: the ORIGINAL's full set, minus exactly the ONE
+    // `W_WHILE_DEPRECATED` this candidate targets, must equal the TWIN's full set —
+    // never a blanket strip of every deprecation code (see `isDeprecationCode`'s doc).
     const twinDesc = describePlan(candidateSource, opts);
-    const stripDesc = (s: typeof origDesc) => ({ ...s, diagnostics: diagnosticKeys(s.diagnostics) });
+    const origDescKeys = keysMinusOne(origDesc.diagnostics, "W_WHILE_DEPRECATED", d.span!);
+    const twinDescKeys = diagnosticKeys(twinDesc.diagnostics);
+    if (JSON.stringify(origDescKeys) !== JSON.stringify(twinDescKeys)) continue;
+    const stripDesc = (s: typeof origDesc) => ({ ...s, diagnostics: undefined });
     if (JSON.stringify(stripDesc(origDesc)) !== JSON.stringify(stripDesc(twinDesc))) continue;
 
+    // `lint()` never raises either deprecation code today, so this is already the same
+    // comparison as before — stated as the general rule (no filtering) for consistency.
     const twinLintKeys = diagnosticKeys(lintPlan(candidateSource, opts));
-    if (JSON.stringify(origLintKeys) !== JSON.stringify(twinLintKeys)) continue;
+    if (JSON.stringify(diagnosticKeys(origLint)) !== JSON.stringify(twinLintKeys)) continue;
 
     out.push({
       span: { start: d.span!.start, end: d.span!.end },

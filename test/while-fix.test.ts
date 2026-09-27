@@ -15,7 +15,7 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { applyFixes, compile, format } from "../src/index.js";
+import { applyFixes, compile, describe as describePlan, format, planToJson } from "../src/index.js";
 import type { World } from "../src/world.js";
 import { proveWhileFixes } from "../src/while-fix.js";
 
@@ -86,11 +86,20 @@ describe("proveWhileFixes — B1' non-vacuity: only a `while` that actually ran 
     expect(proveWhileFixes(src)).toHaveLength(0);
   });
 
-  it("`_executedWhileSpans` never reaches Plan JSON, describe() or the SVG", () => {
+  it("`_executedWhileSpans` never reaches the SVG, describe(), or Plan JSON", () => {
     const src = plan(`  let i = 0\n  while i < 3 {\n    column at (i * 300, 0) size 100x100\n    i = i + 1\n  }`);
     const c = compile(src, { noCache: true });
-    expect(JSON.stringify(c.scene)).not.toContain("_executedWhileSpans");
-    expect(JSON.stringify(c.svg)).not.toContain("_executedWhileSpans");
+    expect(c.svg).not.toContain("_executedWhileSpans");
+    expect(c.svg).not.toContain("executedWhile");
+
+    const summary = describePlan(src);
+    expect(JSON.stringify(summary)).not.toContain("_executedWhileSpans");
+    expect(JSON.stringify(summary)).not.toContain("executedWhile");
+
+    const { json, diagnostics } = planToJson(src);
+    expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    expect(JSON.stringify(json)).not.toContain("_executedWhileSpans");
+    expect(JSON.stringify(json)).not.toContain("executedWhile");
   });
 });
 
@@ -264,6 +273,57 @@ describe("proveWhileFixes — M-A: comments are kept verbatim, never reprinted",
     expect(p).toBeTruthy();
     const { output } = applyFixes(src, [p!.fix]);
     expect(format(output)).toBe(output);
+  });
+
+  // M1 (round-3 red team): a comment trailing `while … {` was carried AND left in the
+  // verbatim slice, so it appeared TWICE. The six-comment case above never exercised this
+  // slot at all, and even a fixture that did would have hidden the bug once `format()`ed
+  // first — `arch fmt` moves a `{`-trailing comment onto its own next line, which is
+  // exactly the position this fix ALSO carries it to, making "duplicated" and "correct"
+  // look identical after formatting. So this is the reviewer's exact case, run on the
+  // UNFORMATTED draft, on purpose.
+  it("M1: a comment trailing `while … {` is carried exactly ONCE, not duplicated", () => {
+    const src = plan(
+      `  let i = 0\n  while i < 3 {   # three bays\n    column at (i * 300, 0) size 100x100\n    i = i + 1\n  }`,
+    );
+    const p = proven(src);
+    expect(p).toBeTruthy();
+    const { output } = applyFixes(src, [p!.fix]);
+    expect(output.split("# three bays")).toHaveLength(2); // exactly one occurrence
+    expect(output).not.toContain("# three bays   # three bays");
+
+    const before = compile(src, { noCache: true });
+    const after = compile(output, { noCache: true });
+    expect(after.svg).toBe(before.svg);
+  });
+
+  // M2 (round-3 red team): `}` sharing the increment's own line (`i = i + 1 }`) made the
+  // closing-indent slice walk backward into the increment's OWN text (no `\n` to stop
+  // it), re-inserting the deprecated reassignment inside the `for` body.
+  it("M2: DECLINED when `}` shares the increment's own line", () => {
+    const src = plan(`  let i = 0\n  while i < 3 {\n    column at (i * 300, 0) size 100x100\n    i = i + 1 }`);
+    expect(proveWhileFixes(src)).toHaveLength(0);
+  });
+
+  it("m1: a carried comment uses the source's own CRLF line endings", () => {
+    const draft = plan(
+      `  let i = 0  # trailing let\n  while i < 3 {\n    column at (i * 300, 0) size 100x100\n    i = i + 1\n  }`,
+    );
+    const src = draft.replace(/\n/g, "\r\n");
+    expect(src).toContain("\r\n");
+    const p = proven(src);
+    expect(p).toBeTruthy();
+    const { output } = applyFixes(src, [p!.fix]);
+    expect(output).toContain("# trailing let\r\n");
+    expect(output).not.toMatch(/[^\r]\n/); // every "\n" is preceded by "\r" — no bare LF introduced
+    const before = compile(src, { noCache: true });
+    const after = compile(output, { noCache: true });
+    expect(after.svg).toBe(before.svg);
+  });
+
+  it("m2: DECLINED when the body is only the increment (empty once it's dropped)", () => {
+    const src = plan(`  let i = 0\n  while i < 3 {\n    i = i + 1\n  }`);
+    expect(proveWhileFixes(src)).toHaveLength(0);
   });
 });
 

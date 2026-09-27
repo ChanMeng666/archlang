@@ -828,8 +828,10 @@ interface ExpandCtx {
 
 /** The key {@link ExpandCtx.executedWhiles} records a `while` statement under — its own
  *  span, qualified by the file it was written in (absent = the compiled source), so two
- *  different files' statements at coincidentally equal offsets never collide. */
-function whileSpanKey(stmt: { span?: Span }, file: string | undefined): string {
+ *  different files' statements at coincidentally equal offsets never collide. Exported so
+ *  `src/while-fix.ts`'s non-vacuity gate computes the SAME key rather than a lookalike
+ *  (a second copy of this formatting rule is exactly how the two would silently drift). */
+export function whileSpanKey(stmt: { span?: Span }, file: string | undefined): string {
   return `${file ?? ""}\u0000${stmt.span?.start ?? -1}\u0000${stmt.span?.end ?? -1}`;
 }
 
