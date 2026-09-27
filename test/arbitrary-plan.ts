@@ -105,6 +105,7 @@ import {
 } from "../src/ast.js";
 import { DOOR_ENUMS, DOOR_KINDS, DOOR_KIND_CLAUSES, type DoorKind } from "../src/grammar/tokens.js";
 import { CATALOG_CATEGORIES } from "../src/fixtures-catalog.js";
+import { STOREY_HEIGHT, WINDOW_HEAD } from "../src/datum.js";
 
 // ---------------------------------------------------------------------------
 // The spec — plain data, no strings. This is what fast-check shrinks.
@@ -132,6 +133,19 @@ export interface OpeningSpec {
   withSwing: boolean;
   withSlide: boolean;
   withOpen: boolean;
+  /**
+   * `sill <mm>` — `window` only (the grammar offers it to no other kind; see
+   * `parseOpeningHeights`'s `opts.sill`). `undefined`/`false` omits the clause, so the
+   * opening keeps the {@link WINDOW_SILL}-driven default and the non-heights byte
+   * stream this arbitrary already emits is untouched.
+   */
+  withSill: boolean;
+  sillMm: number;
+  /** `head <mm>` — every opening kind. Bounded well under {@link headMm}'s own
+   *  ceiling and any authored wall `height` below, so `E_SILL_ABOVE_HEAD` /
+   *  `E_OPENING_ABOVE_WALL` can never fire from this arbitrary. */
+  withHead: boolean;
+  headMm: number;
 }
 
 /** All four fixture placement forms. */
@@ -213,6 +227,13 @@ export interface PlanSpec {
   rows: number[];
   shellThickness: number;
   partitionThickness: number;
+  /**
+   * `height <mm>` on the shell wall alone (`undefined` omits the clause, inheriting the
+   * {@link STOREY_HEIGHT}-driven storey default). Always well above any opening's
+   * `headMm` above, so it can only ever raise the ceiling an opening's head is checked
+   * against, never trip `E_OPENING_ABOVE_WALL`.
+   */
+  shellHeightMm?: number;
   /** Snap grid, or `undefined` for none. */
   grid?: number;
   north?: NorthCardinal;
@@ -345,8 +366,9 @@ export function renderPlan(spec: PlanSpec, opts: RenderOptions = {}): string {
   const wallLines: string[] = [];
 
   walls.push({ id: "w_shell", segments: [W, H, W, H] });
+  const shellHeight = spec.shellHeightMm !== undefined ? ` height ${mm(spec.shellHeightMm)}` : "";
   wallLines.push(
-    `  wall id=w_shell exterior thickness ${mm(spec.shellThickness)} ` +
+    `  wall id=w_shell exterior thickness ${mm(spec.shellThickness)}${shellHeight} ` +
       `{ (0,0) (${mm(W)},0) (${mm(W)},${mm(H)}) (0,${mm(H)}) close }`,
   );
   for (let k = 1; k < xs.length - 1; k++) {
@@ -384,9 +406,15 @@ export function renderPlan(spec: PlanSpec, opts: RenderOptions = {}): string {
   // --- openings ------------------------------------------------------------
   const openingLines = spec.openings.map((o, n) => {
     const host = walls[wrap(o.host, walls.length)]!;
-    const head = `${o.what} id=o${n}`;
+    const lead = `${o.what} id=o${n}`;
     const place = `on ${host.id} at ${mm(o.pct)}% width ${mm(o.widthMm)}`;
-    if (o.what !== "door") return `  ${head} ${place}`;
+    // `sill` (window only) then `head` (every kind) — grammar order, both LAST, after
+    // every other clause. Absent unless `withSill`/`withHead` say otherwise, so the
+    // no-heights byte stream (both false, the default) is exactly what this arbitrary
+    // always emitted.
+    const sill = o.withSill && o.what === "window" ? ` sill ${mm(o.sillMm)}` : "";
+    const height = o.withHead ? ` head ${mm(o.headMm)}` : "";
+    if (o.what !== "door") return `  ${lead} ${place}${sill}${height}`;
     // A kind's legal clause set is the owner's, so a new kind — or a change to what an
     // existing one accepts — flows in here without an edit.
     const legal = DOOR_KIND_CLAUSES[o.kind];
@@ -397,7 +425,7 @@ export function renderPlan(spec: PlanSpec, opts: RenderOptions = {}): string {
     if (o.withOpen && legal.open) clauses.push(`open ${o.open}`);
     // `hinged` is the default and the resolver drops it; spelling it is still legal
     // and is what proves the drop stays byte-identical under the determinism law.
-    return `  door id=o${n} ${o.kind} ${place}${clauses.length ? ` ${clauses.join(" ")}` : ""}`;
+    return `  door id=o${n} ${o.kind} ${place}${clauses.length ? ` ${clauses.join(" ")}` : ""}${height}`;
   });
 
   // --- furniture -----------------------------------------------------------
@@ -529,6 +557,17 @@ export function renderPlan(spec: PlanSpec, opts: RenderOptions = {}): string {
 const mmRange = (loHundreds: number, hiHundreds: number) =>
   fc.integer({ min: loHundreds, max: hiHundreds }).map((n) => n * 100);
 
+// Bounded well clear of each other and of `STOREY_HEIGHT`/`WINDOW_HEAD`'s neighbourhood
+// — derived from the owning datum constants rather than retyped, and chosen so
+// `E_SILL_ABOVE_HEAD`/`E_OPENING_ABOVE_WALL` can never fire regardless of which opening
+// gets which value or whether the host wall's own `shellHeightMm` is set at all (its
+// floor, `STOREY_HEIGHT`, already clears every `headMm` candidate below).
+const sillMmArb = fc.constantFrom(0, Math.floor(WINDOW_HEAD / 2));
+const headMmArb = fc.constantFrom(WINDOW_HEAD, WINDOW_HEAD + 300);
+const shellHeightMmArb = fc.option(fc.constantFrom(STOREY_HEIGHT, STOREY_HEIGHT + 600, STOREY_HEIGHT + 1200), {
+  nil: undefined,
+});
+
 const doorSpec = fc.record({
   what: fc.constant<"door">("door"),
   host: fc.nat({ max: 5 }),
@@ -543,6 +582,12 @@ const doorSpec = fc.record({
   withSwing: fc.boolean(),
   withSlide: fc.boolean(),
   withOpen: fc.boolean(),
+  // `sill` is offered only to `window` (see `OpeningSpec.withSill`) — a door never
+  // draws this arbitrary's randomness for a clause it could never render.
+  withSill: fc.constant(false),
+  sillMm: fc.constant(0),
+  withHead: fc.boolean(),
+  headMm: headMmArb,
 });
 
 /** A window or cased opening: the same placement, none of the door clauses. */
@@ -552,10 +597,16 @@ const holeSpec = fc
     host: fc.nat({ max: 5 }),
     pct: fc.integer({ min: 5, max: 95 }),
     widthMm: mmRange(6, 15),
+    withSill: fc.boolean(),
+    sillMm: sillMmArb,
+    withHead: fc.boolean(),
+    headMm: headMmArb,
   })
   .map(
     (h): OpeningSpec => ({
       ...h,
+      // `sill` is offered only to `window` — see `OpeningSpec.withSill`.
+      withSill: h.withSill && h.what === "window",
       kind: "hinged",
       hinge: DOOR_ENUMS.hinge[0],
       swing: DOOR_ENUMS.swing[0],
@@ -641,6 +692,7 @@ export const planSpec: fc.Arbitrary<PlanSpec> = fc.record({
   rows: fc.array(mmRange(20, 40), { minLength: 1, maxLength: 2 }),
   shellThickness: fc.constantFrom(100, 150, 200, 300),
   partitionThickness: fc.constantFrom(80, 100, 150),
+  shellHeightMm: shellHeightMmArb,
   grid: fc.option(fc.constantFrom(50, 100), { nil: undefined }),
   north: fc.option(fc.constantFrom(...NORTH_DIRS), { nil: undefined }),
   paper: fc.option(fc.constantFrom<"A4" | "A3" | "A2">("A4", "A3", "A2"), { nil: undefined }),

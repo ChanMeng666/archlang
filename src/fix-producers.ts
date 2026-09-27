@@ -9,17 +9,20 @@
  * spans they emit are ORIGINAL-source byte offsets so {@link
  * import("./fix-apply.js").applyFixes} can apply them deterministically.
  *
- * Dependency-light on purpose (geometry + expression re-emission only) so an
- * element module can import it without pulling the parser/registry in.
+ * Dependency-light on purpose (geometry + expression re-emission only, plus
+ * `statement-print.js` — the shared printer, itself parser-free — for
+ * {@link emitOpening}) so an element module can import it without pulling the
+ * parser/registry in.
  */
 
-import type { DoorNode, OpeningAttach, OpeningNode, Point, WindowNode } from "./ast.js";
+import type { DoorNode, OpeningNode, Point, WindowNode } from "./ast.js";
 import type { FixSuggestion, Span } from "./diagnostics.js";
 import type { DoorHinge } from "./grammar/tokens.js";
 import type { Bounds, DimLike, WallLike } from "./geometry.js";
 import { dimReadsInside, dimSwapped, distPointToSegment, length, segmentsOfWall, sub } from "./geometry.js";
-import { exprToSource } from "./expr-source.js";
 import { fmt3 as numStr } from "./num-format.js";
+import { printDoc } from "./doc.js";
+import { statementText } from "./statement-print.js";
 
 /** A wall we can reference by id and re-project a point onto (a resolved wall). */
 export type AttachableWall = WallLike & { span?: Span };
@@ -34,30 +37,23 @@ export function fixesFrom(fixes: FixSuggestion[] | null): { fixes?: FixSuggestio
 type OpeningKind = "door" | "window" | "opening";
 type OpeningLikeNode = DoorNode | WindowNode | OpeningNode;
 
-/** An attached opening position rendered to source (`40%` | `1200` | `bay * i` |
- *  `center`) — the position is an expression, and re-emitting the AUTHORED expression
- *  is what keeps a fix from baking a resolved number into a generated run. */
-function attachPosText(pos: OpeningAttach["pos"]): string {
-  if (pos.kind === "center") return "center";
-  const v = pos.value ? exprToSource(pos.value) : numStr(0);
-  return pos.kind === "percent" ? `${v}%` : v;
-}
-
-/** The leading placement clause of an opening node, re-emitted from the AST. */
-function leadText(node: OpeningLikeNode): string {
-  if (node.attach) return `on ${node.attach.wall} at ${attachPosText(node.attach.pos)}`;
-  return `at (${exprToSource(node.at!.x)}, ${exprToSource(node.at!.y)})`;
-}
-
-/** Options for {@link emitOpening} — override the placement lead and/or width. */
+/**
+ * Options for {@link emitOpening} — each field is an AST edit applied to a deep
+ * clone of the node before it is handed to the shared printer
+ * ({@link statementText}), never a hand-assembled text fragment. This is what makes
+ * `emitOpening` print `sill`/`head`/heights (and anything the grammar adds later)
+ * for free: it never enumerates clauses itself.
+ */
 interface EmitOpts {
-  /** Replacement placement clause (e.g. `on w1 at 40%`); defaults to the node's own. */
+  /** Replacement placement clause — always `on <wall> at <pct>%` at today's call
+   *  sites (`offWallFix`); parsed into an {@link OpeningAttach} and replaces the
+   *  node's own `at`/`wall`/`attach`. Defaults to the node's own lead. */
   lead?: string;
-  /** Replacement width text (e.g. `<positive-number>`); defaults to the node's own. */
+  /** Replacement width text (only `<positive-number>`, the has-placeholders form,
+   *  at today's call sites); becomes a `ref` Expr, which prints its name verbatim —
+   *  the same text `emitOpening` always produced for this placeholder. Defaults to
+   *  the node's own width. */
   width?: string;
-  /** True when the (overridden) lead is an attachment — suppresses the trailing
-   *  `wall <ref>` clause, which the attachment form does not take. */
-  attached?: boolean;
   /**
    * Replacement hinge side (doors only). Keeps the author's idiom: a node written
    * with `hinge near start|end` is re-emitted in that form (`start` ≡ `left`,
@@ -74,42 +70,78 @@ interface EmitOpts {
   open?: string;
 }
 
+/** `on <wall> at <pct>%` — the only shape {@link EmitOpts.lead} is ever given
+ *  (by `offWallFix`, always a plain percentage of the just-projected point). */
+const LEAD_ATTACH_RE = /^on (\S+) at ([0-9.]+)%$/;
+
 /**
- * Re-emit a whole door/window/opening statement from its AST node, canonically.
- * Every attribute the node can carry is enumerated here (these three elements are
- * simple), so a rebuild never silently drops one. Used to rewrite the placement
- * clause without hand-editing non-contiguous sub-spans.
- *
- * The enumeration is load-bearing and grows with the grammar: a door's kind word and
- * its `slide`/`open` clauses are emitted here too, or every rebuild — the off-wall
- * attach fix, the hinge flip — would silently turn a pocket door back into a hinged one.
+ * Apply an {@link EmitOpts} to `node` (already a deep clone — see {@link emitOpening})
+ * as AST edits, so the shared printer ({@link statementText}) re-emits everything the
+ * old hand-written `emitOpening` had to enumerate by hand, including clauses it never
+ * knew about (`sill`/`head`/wall `height`).
  */
-export function emitOpening(kind: OpeningKind, node: OpeningLikeNode, opts: EmitOpts = {}): string {
-  const id = node.id ? `id=${node.id} ` : "";
-  const lead = opts.lead ?? leadText(node);
-  const width = opts.width ?? exprToSource(node.width);
-  const attached = opts.attached ?? !!node.attach;
-  const wall = attached ? "" : node.wall ? ` wall ${node.wall}` : "";
-  const dropped = (c: "hinge" | "swing" | "slide" | "open"): boolean => opts.drop?.includes(c) === true;
-  let head = "";
-  let tail = "";
-  if (kind === "door") {
-    const d = node as DoorNode;
-    head = d.doorKind ? `${d.doorKind} ` : "";
-    if (!dropped("hinge")) {
-      if (opts.hinge) {
-        tail += d.hingeNear ? ` hinge near ${opts.hinge === "left" ? "start" : "end"}` : ` hinge ${opts.hinge}`;
+function applyEmitOpts(node: OpeningLikeNode, opts: EmitOpts): OpeningLikeNode {
+  if (opts.lead !== undefined) {
+    const m = LEAD_ATTACH_RE.exec(opts.lead);
+    if (!m) throw new Error(`emitOpening: unsupported lead override "${opts.lead}"`);
+    const [, wall, pct] = m;
+    node.attach = { wall: wall!, pos: { kind: "percent", value: { t: "num", value: Number(pct) } } };
+    delete node.at;
+    delete node.wall;
+  }
+  if (opts.width !== undefined) {
+    node.width = { t: "ref", name: opts.width };
+  }
+  if (node.kind === "door") {
+    const d = node;
+    if (opts.hinge !== undefined) {
+      if (d.hingeNear) {
+        d.hingeNear = opts.hinge === "left" ? "start" : "end";
+        delete d.hinge;
       } else {
-        tail += d.hinge ? ` hinge ${d.hinge}` : d.hingeNear ? ` hinge near ${d.hingeNear}` : "";
+        d.hinge = opts.hinge;
+        delete d.hingeNear;
       }
     }
-    if (!dropped("swing")) {
-      tail += d.swing ? ` swing ${d.swing}` : d.swingInto ? ` swing into ${d.swingInto}` : "";
+    if (opts.drop?.includes("hinge")) {
+      delete d.hinge;
+      delete d.hingeNear;
     }
-    if (!dropped("slide") && d.slide) tail += ` slide ${d.slide}`;
-    if (!dropped("open") && d.open !== undefined) tail += ` open ${opts.open ?? exprToSource(d.open)}`;
+    if (opts.drop?.includes("swing")) {
+      delete d.swing;
+      delete d.swingInto;
+    }
+    if (opts.drop?.includes("slide")) delete d.slide;
+    if (opts.drop?.includes("open")) {
+      delete d.open;
+    } else if (opts.open !== undefined && d.open !== undefined) {
+      // Matches the old printer's own guard: `open` is a REPLACEMENT for an
+      // authored value, never an insertion — a door with no `open` clause at all
+      // keeps having none. Every real call site (`doorOpenRangeFix`) already only
+      // fires when `node.open !== undefined`, so this is a no-op there.
+      d.open = { t: "num", value: Number(opts.open) };
+    }
   }
-  return `${kind} ${id}${head}${lead} width ${width}${wall}${tail}`;
+  return node;
+}
+
+/**
+ * Re-emit a whole door/window/opening statement from its AST node, canonically —
+ * through the shared printer ({@link statementText}), the same one `arch fmt` and
+ * Plan JSON's decompiler use. A deep clone absorbs `opts` as AST edits
+ * ({@link applyEmitOpts}); the clone is then printed flat, exactly as `statementText`
+ * already prints every leaf kind except `wall`/`strip`.
+ *
+ * Going through the shared printer — rather than a second, hand-written
+ * enumeration of clauses — is what keeps a rebuild from silently dropping one:
+ * `sill`/`head` (and any future clause) are printed because `statementText` prints
+ * them, not because this function remembered to.
+ */
+export function emitOpening(kind: OpeningKind, node: OpeningLikeNode, opts: EmitOpts = {}): string {
+  if (node.kind !== kind) throw new Error(`emitOpening: node.kind "${node.kind}" does not match "${kind}"`);
+  const clone = structuredClone(node);
+  const edited = applyEmitOpts(clone, opts);
+  return printDoc(statementText(edited));
 }
 
 /** Clamp `v` into `[lo, hi]`. */
@@ -187,7 +219,7 @@ export function offWallFix(
   if (!near?.wall.id) return null;
   const { pct } = projectPointOntoWall(near.wall, at);
   const lead = `on ${near.wall.id} at ${numStr(pct)}%`;
-  const replacement = emitOpening(kind, node, { lead, attached: true });
+  const replacement = emitOpening(kind, node, { lead });
   return [
     {
       title: `attach the ${kind} to wall "${near.wall.id}" at ${numStr(pct)}%`,
