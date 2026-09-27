@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { codeActions, compile, format, reroll } from "../src/index.js";
+import { codeActions, compile, format, makeVirtualWorld, reroll } from "../src/index.js";
 
 /**
  * `reroll(source)` (W6b): detect ≥3 consecutive statements in arithmetic
@@ -122,6 +122,44 @@ describe("reroll — loop-variable collision", () => {
     expect(suggestions.length).toBe(1);
     expect(suggestions[0]!.loopVar).toBe("j");
     expect(suggestions[0]!.replacement).toContain("for j in 0..3 {");
+  });
+});
+
+describe("reroll — world passthrough (a plan with imports)", () => {
+  // The reroll TARGET (3 furniture statements) doesn't itself reference the
+  // import — the point is that the whole plan fails to link without a World,
+  // which trips reroll's global "offer nothing on a plan with errors" gate
+  // regardless of which statements would otherwise re-roll.
+  const world = makeVirtualWorld({
+    "lib.arch": `plan "Lib" {
+      units mm
+      component marker() {
+        column at (0, 0) size 100x100
+      }
+    }`,
+  });
+  const importingSrc = format(`plan "Imports" {
+    units mm
+    grid 50
+    north up
+    import "lib.arch": marker
+    marker()
+    furniture bed at (0, 0) size 1000x2000
+    furniture bed at (4000, 0) size 1000x2000
+    furniture bed at (8000, 0) size 1000x2000
+  }`);
+
+  it("without `world`, the import fails to link, so nothing is offered", () => {
+    expect(reroll(importingSrc)).toEqual([]);
+  });
+
+  it("with `world`, the import resolves and the run is proven equivalent", () => {
+    const suggestions = reroll(importingSrc, { world });
+    expect(suggestions.length).toBe(1);
+    expect(suggestions[0]!.replacement).toContain("for i in 0..3 {");
+    const twin = applyOne(importingSrc, suggestions[0]!);
+    expect(compile(twin, { world }).errors).toEqual([]);
+    expect(compile(twin, { world }).svg).toBe(compile(importingSrc, { world }).svg);
   });
 });
 

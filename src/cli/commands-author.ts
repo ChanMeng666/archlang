@@ -346,7 +346,11 @@ export async function cmdFix(args: Args): Promise<number> {
  */
 export function cmdReroll(args: Args): number {
   return withSource(args, (source, input) => {
-    const suggestions = reroll(source);
+    // The fs World, like `compile` gets — so a plan with `import`s can still
+    // be proven (the proof obligation resolves the same modules `compile`
+    // would).
+    const world = makeNodeWorld(baseDirOf(input));
+    const suggestions = reroll(source, { world });
 
     if (args.write && input !== "-") {
       const fixes: FixSuggestion[] = suggestions.map((s) => ({
@@ -358,7 +362,7 @@ export function cmdReroll(args: Args): number {
       const changed = report.output !== source;
       // Belt and braces: the per-suggestion proof already checked each edit in
       // isolation; re-verify the COMBINED result compiles clean before writing it.
-      const verified = !changed || compile(report.output, { noCache: true }).errors.length === 0;
+      const verified = !changed || compile(report.output, { noCache: true, world }).errors.length === 0;
       if (changed && verified) writeFileSync(resolvePath(input), report.output, "utf8");
 
       if (args.json) {

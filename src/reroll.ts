@@ -25,21 +25,18 @@
  * genuinely shorter, by the lexer's own count) before it is offered. Pure and
  * synchronous — no I/O, no mutation of the parsed `PlanNode`.
  *
- * Self-contained: the twin-compile proof here does not share code with a similar
- * one W7 builds for `attachWhileFixes` in `index.ts` — a later cleanup may unify
- * them. `reroll` never calls itself while proving a twin (no recursion).
+ * The proof obligation calls `compileUncached` from `pipeline.ts` — the SAME
+ * pipeline `compile()` wraps with its memoization cache — rather than
+ * re-deriving parse→link→resolve→render here, so the two can never drift
+ * apart (one compile pipeline). `reroll` never calls itself while proving a
+ * twin (no recursion).
  */
 
 import type { PlanNode, Statement } from "./ast.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Expr } from "./expr.js";
-import { parse } from "./parser.js";
-import { link } from "./import.js";
-import { resolveAll } from "./ir.js";
-import { toScene } from "./scene-build.js";
-import { renderSvg } from "./backends/svg.js";
-import { BUILTIN_REGISTRY } from "./registry.js";
-import { NULL_WORLD } from "./world.js";
+import { compileUncached } from "./pipeline.js";
+import type { CompileOptions, CompileResult } from "./types.js";
 import { describe, type SceneSummary } from "./describe.js";
 import { lint } from "./lint.js";
 import { statementBodies } from "./cursor.js";
@@ -64,8 +61,18 @@ export interface RerollSuggestion {
   tokensAfter: number;
 }
 
-/** Reserved for future options; `reroll` takes none today. */
-export type RerollOptions = Record<string, never>;
+/** Options `reroll` shares with `compile()` — append-only. */
+export interface RerollOptions {
+  /**
+   * Environment seam for `import` resolution (and `now`), exactly as
+   * `compile(src, { world })` takes it — so a plan whose statements come from
+   * an `import`ed module can still be proven. Default: a no-op World (nothing
+   * readable), matching `compile()`'s own default.
+   */
+  world?: CompileOptions["world"];
+  /** Third-party element definitions, as `compile(src, { plugins })` takes them. */
+  plugins?: CompileOptions["plugins"];
+}
 
 // Matches format.ts's own print width — the pretty-printer's fixed point.
 const PRINT_WIDTH = 80;
@@ -266,22 +273,23 @@ interface ProofPipeline {
   pages: string[];
 }
 
-/** A self-contained rebuild of `compile()`'s pipeline (parse → link → resolve →
- *  render), deliberately NOT imported from `index.js`: `index.ts` re-exports
- *  `reroll`, so importing `compile` back from there would be a cycle. Every
- *  module reached here sits at (or below) `index.ts`'s own layer. */
-function compileForProof(source: string): ProofPipeline {
-  const { plan, diagnostics: parseDiags } = parse(source, BUILTIN_REGISTRY);
-  if (!plan) return { ok: false, diagnostics: parseDiags, pages: [] };
-  const linked = link(plan, NULL_WORLD, BUILTIN_REGISTRY);
-  const resolved = resolveAll(linked.plan, BUILTIN_REGISTRY, NULL_WORLD);
-  const diagnostics = [...parseDiags, ...linked.diagnostics, ...resolved.diagnostics];
-  if (diagnostics.some((d) => d.severity === "error")) return { ok: false, diagnostics, pages: [] };
-  const pages =
-    resolved.levels.length > 0
-      ? resolved.levels.map((l) => renderSvg(toScene(l.ir, {}, { registry: BUILTIN_REGISTRY }), {}))
-      : [renderSvg(toScene(resolved.ir, {}, { registry: BUILTIN_REGISTRY }), {})];
-  return { ok: true, diagnostics, pages };
+/** Project a full `compile()` result down to what the proof obligation
+ *  compares: whether it errored, its diagnostics, and one SVG string per page
+ *  (a single-storey result's own `svg` is its one page). */
+function toProofPipeline(result: CompileResult): ProofPipeline {
+  return {
+    ok: result.errors.length === 0,
+    diagnostics: result.diagnostics,
+    pages: result.pages ? result.pages.map((p) => p.svg) : [result.svg],
+  };
+}
+
+/** Compile `source` through the SAME pipeline `compile()` uses — see this
+ *  module's header — carrying `pipelineOpts` (the `world`/`plugins` `reroll`
+ *  was given) so an `import`-bearing plan proves against the same modules
+ *  `compile()` would resolve. */
+function compileForProof(source: string, pipelineOpts: CompileOptions): ProofPipeline {
+  return toProofPipeline(compileUncached(source, pipelineOpts));
 }
 
 const diagTriples = (ds: Diagnostic[]): string[] =>
@@ -290,21 +298,24 @@ const lintPairs = (ds: Diagnostic[]): string[] => ds.map((d) => JSON.stringify([
 const sameMultiset = (a: string[], b: string[]): boolean => a.length === b.length && a.every((v, i) => v === b[i]);
 
 /** Does applying `replacement` over `[span.start, span.end)` of `source` prove
- *  fully equivalent? See the module doc's proof-obligation list. */
+ *  fully equivalent? See the module doc's proof-obligation list. `pipelineOpts`
+ *  (`reroll`'s own `world`/`plugins`) is threaded through every stage so an
+ *  `import`-bearing plan's twin resolves the same modules the original did. */
 function proves(
   source: string,
   span: Span,
   replacement: string,
+  pipelineOpts: CompileOptions,
   baseline: { pipeline: ProofPipeline; describe: SceneSummary; lintPairs: string[] },
 ): boolean {
   const twin = source.slice(0, span.start) + replacement + source.slice(span.end);
-  const twinPipeline = compileForProof(twin);
+  const twinPipeline = compileForProof(twin, pipelineOpts);
   if (!twinPipeline.ok) return false;
   if (twinPipeline.pages.length !== baseline.pipeline.pages.length) return false;
   if (twinPipeline.pages.some((svg, i) => svg !== baseline.pipeline.pages[i])) return false;
   if (!sameMultiset(diagTriples(twinPipeline.diagnostics), diagTriples(baseline.pipeline.diagnostics))) return false;
-  if (!deepEqual(describe(twin), baseline.describe)) return false;
-  if (!sameMultiset(lintPairs(lint(twin)), baseline.lintPairs)) return false;
+  if (!deepEqual(describe(twin, pipelineOpts), baseline.describe)) return false;
+  if (!sameMultiset(lintPairs(lint(twin, pipelineOpts)), baseline.lintPairs)) return false;
   return true;
 }
 
@@ -344,6 +355,7 @@ function buildSuggestion(
   run: RunFound,
   depth: number,
   bound: Set<string>,
+  pipelineOpts: CompileOptions,
   baseline: { pipeline: ProofPipeline; describe: SceneSummary; lintPairs: string[] },
 ): RerollSuggestion | undefined {
   const group = stmts.slice(start, start + run.length);
@@ -366,7 +378,7 @@ function buildSuggestion(
   if (tokensAfter >= tokensBefore) return undefined;
 
   const span: Span = { start: spanStart, end: spanEnd };
-  if (!proves(source, span, replacement, baseline)) return undefined;
+  if (!proves(source, span, replacement, pipelineOpts, baseline)) return undefined;
 
   return { span, replacement, count: run.length, loopVar, tokensBefore, tokensAfter };
 }
@@ -377,15 +389,22 @@ function buildSuggestion(
  * `for`/`if`/`while` body, a `level`, a `zone`) and offer a proven-equivalent
  * `for` loop for each. Pure and synchronous; returns `[]` on a plan that fails
  * to parse or carries any error diagnostic (compile or resolve) — nothing is
- * ever offered against a broken plan.
+ * ever offered against a broken plan. `opts.world`/`opts.plugins` are threaded
+ * through detection AND the proof obligation, exactly as `compile()` takes
+ * them, so a plan whose statements come from an `import`ed module can still be
+ * proven equivalent through the same modules.
  */
-export function reroll(source: string, _opts: RerollOptions = {}): RerollSuggestion[] {
-  const { plan, diagnostics: parseDiags } = parse(source);
-  if (!plan || parseDiags.some((d) => d.severity === "error")) return [];
+export function reroll(source: string, opts: RerollOptions = {}): RerollSuggestion[] {
+  const pipelineOpts: CompileOptions = { world: opts.world, plugins: opts.plugins };
+  const compiled = compileUncached(source, pipelineOpts);
+  if (!compiled.ast || compiled.errors.length > 0) return [];
+  const plan = compiled.ast;
 
-  const pipeline = compileForProof(source);
-  if (!pipeline.ok) return [];
-  const baseline = { pipeline, describe: describe(source), lintPairs: lintPairs(lint(source)) };
+  const baseline = {
+    pipeline: toProofPipeline(compiled),
+    describe: describe(source, pipelineOpts),
+    lintPairs: lintPairs(lint(source, pipelineOpts)),
+  };
   const bound = collectBoundNames(plan);
 
   const out: RerollSuggestion[] = [];
@@ -394,7 +413,7 @@ export function reroll(source: string, _opts: RerollOptions = {}): RerollSuggest
     while (i < stmts.length) {
       const run = findRun(stmts, i);
       if (run) {
-        const suggestion = buildSuggestion(source, stmts, i, run, depth + 1, bound, baseline);
+        const suggestion = buildSuggestion(source, stmts, i, run, depth + 1, bound, pipelineOpts, baseline);
         if (suggestion) {
           out.push(suggestion);
           i += run.length;
