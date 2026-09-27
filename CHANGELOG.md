@@ -7,6 +7,142 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `describe --facts symmetry,syntax`
+
+- **A plan's symmetry group, and its repeats.** Opt-in (`arch describe --facts symmetry`):
+  per layer — shell, rooms, and the full drawing — the plan's stabiliser in the rectilinear
+  isometry group, with any translational and mirror repeats it has. A plan drawn with no
+  intent of symmetry usually has none to report; a wing mirrored about its own centreline,
+  or a row of identical units, now says so.
+- **Space syntax on the access graph.** Opt-in (`--facts syntax`): depth, mean depth, real
+  relative asymmetry (RRA), integration (`1 / RRA`), control and cycle rank, read from the
+  same connectivity graph `describe().access` already builds — Hillier & Hanson's
+  *The Social Logic of Space* read against the plan's own door graph.
+- Default `describe()` output is unchanged; both facts are opt-in and additive.
+
+### Changed — `place` now composes: a component can reference the instances it places itself
+
+- `place` now composes associatively: a component can reference the instances it places
+  itself (`door … on i.shell`, `furniture … in i.main`, `room … right-of i.main`), and every
+  position or category search inside it (door/window/opening hosting, `against wall
+  <category>`, `dim faces|clear`, derived `outdoor` rails) sees those instances exactly as
+  the plan sees its own.
+- **Behaviour change.** A component that places a child can therefore resolve differently
+  than before, or raise a diagnostic such as `E_FURN_AGAINST`, where it compiled clean
+  before; openings now register on their wall by id rather than by endpoint coordinates. A
+  plan with no `place` inside a component body is unaffected, measured byte for byte over
+  the shipped examples.
+
+### Changed — `while` and reassignment are soft-deprecated; `validate --strict` now enforces it
+
+- **`W_WHILE_DEPRECATED` and `W_REASSIGN_DEPRECATED`**, forwarded from imported modules, flag
+  the one construct in ArchLang's expand-time language that breaks referential transparency:
+  a counted `while` loop with a reassignment to make it terminate. `for x in a..b` covers
+  every counted loop it is used for.
+- **`arch fix` offers a proven `while`→`for` rewrite.** It rewrites only after proving it
+  sound for this exact file: the loop actually ran, the twin compiles with no error,
+  identical SVG on every page, equal `describe()`, equal diagnostics minus the warning it
+  removes, and the loop body kept byte-for-byte. A component site needs `--unsafe`, since the
+  proof cannot see every instantiation.
+- **Behaviour change: `arch validate --strict` now exits 2** for any plan using `while` or a
+  bare reassignment, where it previously passed.
+- The human-readable CLI output now prints file-qualified locations for a diagnostic whose
+  span points into an imported module, rather than an offset that silently addressed the
+  wrong file's bytes.
+
+### Fixed — lint fixes inside a turned or mirrored `place` now write in the component's own frame
+
+- **`W_FIXTURE_BACK_TO_ROOM` and `W_DIM_OVERLAP`** used to write their suggested fix in plan
+  coordinates even when the statement they were fixing lived inside a rotated or mirrored
+  component, so the machine-applicable edit could rotate or mirror the wrong way once
+  applied. Both now pull the value back through the instance's own frame before writing it.
+- **A statement drawn by several placements of the same component keeps one fix only when
+  every placement agrees on it**; when they disagree the diagnostic stays and the fix is
+  declined, rather than emitting an edit that is only correct for one of the instances that
+  share it. The `W_SWING_OBSTRUCTED` hint and the `W_DIM_INSIDE`/`W_DIM_OVERLAP` messages
+  now quote the source values they are talking about.
+
+### Fixed — a placed vertical run, column and mirrored fixture now follow the frame correctly
+
+- **A stair, escalator or lift's arrow and entry edge now follow a turned or mirrored
+  `place`'s frame**, and a mirrored stair's break line mirrors with it. Previously each run
+  re-derived its up/down arrow from the plan's global footprint by a fixed convention, so a
+  turn could point it the wrong way.
+- **A column inside a turned or mirrored instance is now placed correctly**; its top-left
+  corner used to be carried through the frame as if it were the shape's centre.
+- **A mirrored sliding door now takes the correct track.** `examples/terrace-row.arch` is
+  redrawn: its mirrored units' rear sliding doors were drawn on the wrong track, and the
+  corrected example's goldens move accordingly.
+- **A dimension's number is now drawn on the side its offset actually points to.** A
+  negative `dim … offset` used to draw its reading inside the measured line instead of
+  outside it; this is fixed at the root, not patched per drawing. A zero-offset call-out on
+  a mirrored placement now carries its handedness explicitly, rather than relying on a
+  signed zero that reflection can lose.
+
+### Fixed — a stair or lift now belongs to the room whose floor holds it, and a door's swing agrees with its own leaf
+
+- **`swing into` on a door hosted by a curved (arc) wall now agrees with the leaf the door
+  actually draws.** The two used to be computed from different probes and could disagree at
+  the ends of an arc.
+- **A stair or lift assigns to the room whose floor actually contains it**, for a polygon or
+  circular room, rather than to whichever room's bounding box happens to overlap its
+  footprint.
+
+### Fixed — LSP rename and find-references now find every use of a name
+
+- `cursor.ts`'s statement-expression walk used to miss fields it never listed, so renaming
+  or finding references to a name silently skipped uses inside a `sill`/`head` clause, an
+  attach position (`on w at <expr>`), an arc's radius, a wall or level's `height`, a
+  relational `gap`, and a furniture statement's `rotate`/`against`/`inset` clauses, as well
+  as a plan-level `height`, `axes` or site boundary. The walk is now exhaustive — checked
+  against an independent reflective oracle, not just a fixed field list — so a rename can no
+  longer leave a use behind.
+
+### Changed — `diffPlans` rescues a moved room by label only when the label is unique on both sides
+
+- A room moved between two plan revisions used to be "rescued" (matched to its old self, so
+  the diff reports a move rather than a delete+add) by label alone, even when two rooms
+  shared that label — silently pairing the wrong rooms. **Behaviour change:** the rescue now
+  requires the label to be unique among the unmatched rooms on BOTH sides; a plan with
+  duplicate labels gets a delete+add instead of a guessed match (`test/diff-laws.test.ts`).
+
+### Fixed — a fix that rebuilds a door, window or opening statement no longer drops its authored `sill`/`head`
+
+- Applying a machine-applicable fix to a door, window or opening statement that also
+  specified a `sill` or `head` height used to silently delete that clause when the fix
+  rewrote the statement's text. The fix now goes through the same printer `arch fmt` uses,
+  so every clause an author wrote survives a fix.
+
+### Fixed — `compile(src, { view: "iso" | "axon" })` no longer throws on a fully-consumed or zero-length wall
+
+- A wall whose openings consumed its entire length, or a host with no length at all, used to
+  make the axonometric or isometric view throw instead of rendering. It now draws no solid
+  for that wall (its opening blocks still stand), and every remaining face is well-formed
+  and painted in a total order.
+
+### Fixed — a plugin element with no frame action inside a `place` now returns a diagnostic instead of crashing
+
+- A third-party element registered without an `ElementDef.transform` used to make
+  `compile()` throw a `TypeError` the moment it was used inside a turned or mirrored
+  `place`. It now returns the ordinary `E_INSTANCE_NO_TRANSFORM` diagnostic.
+- **Plan JSON furniture now carries `mirror: true`** when a `place … mirror` frame reflects
+  it, alongside the `rotate` it already carried. `planJsonToArch`/`planFromJson` refuse a
+  `mirror: true` piece with `E_JSON_MIRROR` rather than silently drawing the unmirrored
+  symbol, since ArchLang source has no per-furniture `mirror` word to emit. A plan with no
+  reflecting `place` is byte-identical (the key is absent).
+- `instanceTransform()` is now exported from the public surface.
+
+### Changed — internals: a shared algebra layer, and a permanent equivariance gate
+
+- `src/algebra/` now states the D4 rectilinear symmetry group, the path-search semirings and
+  one label-setting best-path engine exactly once; roughly fifteen independent re-encodings
+  of the group action, and several independent graph/grid searches, now share these modules.
+  No behaviour change; see [ADR 0020](docs/adr/0020-algebraic-core.md).
+- A permanent test oracle now places every shipped example and a fuzz corpus under each of
+  the eight rectilinear symmetries and checks every fact transforms correctly; violations are
+  tracked as data (`test/equivariance-known.ts`) so a regression here is a specific, named
+  failure rather than a vague one.
+
 ### Changed — dependencies: zod 4 in the MCP shim, pdfkit 0.20, Vite 8 for the playground
 
 - **The MCP shim moves to zod 4 (#114).** `@modelcontextprotocol/sdk@1.29` accepts
