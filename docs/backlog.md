@@ -548,7 +548,6 @@ inconsistent, and closing the chain there would fabricate an edge; start from th
 
 ### 6.1 · D4-orbit `reroll` for a component or a `place … mirror` — `todo`
 
-<!-- W6b -->
 W6b landed `arch reroll` + the LSP `refactor.rewrite` action + the `reroll()` API
 (`src/reroll.ts`, sharing `src/pipeline.ts`'s one `compileUncached` with `compile()`), but
 only for a **translation** arithmetic progression — same statement, same structure, a numeric

@@ -80,8 +80,8 @@ source (.arch)
   space-syntax depths/RA/RRA/integration on the access graph — both opt-in `describe --facts`
 - `while-deprecation.ts` the `W_WHILE_DEPRECATED`/`W_REASSIGN_DEPRECATED` advisory warnings ·
   `while-fix.ts` the proven `while`→`for` rewrite `arch fix` offers, kept out of `compile()`
-  itself on purpose (see its header)
-<!-- W6b: src/pipeline.ts (arch reroll + the reroll() API) — not yet landed -->
+  itself on purpose (see its header) · `reroll.ts` the proven re-roll of a run in arithmetic
+  progression into a `for` loop (`arch reroll`, `reroll()`, the LSP's `refactorActions`)
 - `plan-json.ts` Plan JSON · `diagnostic-json.ts` · `repair.ts` (geometric corrector) vs
   `fix-apply.ts` (`arch fix`; skips a fix carrying `file`) · `manifest.ts` the CLI contract
 - `pipeline.ts` the ONE `compileUncached()` (parse→link→resolve→render), extracted verbatim from

@@ -135,6 +135,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   outside it; this is fixed at the root, not patched per drawing. A zero-offset call-out on
   a mirrored placement now carries its handedness explicitly, rather than relying on a
   signed zero that reflection can lose.
+- **Behaviour change: `W_DIM_OVERLAP`'s collision band now follows the side the number is
+  drawn on.** A negative-offset `dim` is tested for overlap where its number now sits, so the
+  warning's verdict and its suggested bump `offset` can change for negative-offset
+  dimensions written at the plan root, not only for those inside a placed instance.
 
 ### Fixed — a stair or lift now belongs to the room whose floor holds it, and a door's swing agrees with its own leaf
 
@@ -181,7 +185,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A third-party element registered without an `ElementDef.transform` used to make
   `compile()` throw a `TypeError` the moment it was used inside a turned or mirrored
-  `place`. It now returns the ordinary `E_INSTANCE_NO_TRANSFORM` diagnostic.
+  `place`. It now returns the ordinary `E_INSTANCE_NO_TRANSFORM` diagnostic. A plugin that
+  replaces a built-in kind without its own `transform` inherits the built-in's; when its
+  `resolve` returns a different shape, so the inherited action cannot read it, the element
+  gets the same diagnostic instead of a throw.
 - **Plan JSON furniture now carries `mirror: true`** when a `place … mirror` frame reflects
   it, alongside the `rotate` it already carried. `planJsonToArch`/`planFromJson` refuse a
   `mirror: true` piece with `E_JSON_MIRROR` rather than silently drawing the unmirrored
@@ -222,18 +229,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   skipped }`, the same `wrote`/`target` names `arch fix` uses. No `--dry-run`/`--backup`: every
   suggestion is already proven byte-for-byte before it is offered, so a failed re-verify simply
   writes nothing.
-- **The LSP gains a `refactor.rewrite` code action** (never `isPreferred`) for a `reroll`
-  suggestion whose span touches the request's range. `codeActions(source, range, only?)` now
-  filters candidates to the range BEFORE proving any of them (proving — compiling, describing
-  and linting the twin — is the expensive step, and an editor asks on every selection change),
-  and skips `reroll` entirely when the request's `only` (mirroring LSP's own
-  `CodeActionContext.only`) excludes every refactor kind. The original source's own
+- **`refactorActions(source, range, opts?)`** (new public export) returns a
+  `RefactorAction` — `{ title, kind: "refactor.rewrite", edits }`, with no diagnostic — for
+  each `reroll` suggestion whose span touches the range. It filters candidates to the range
+  BEFORE proving any of them (proving — compiling, describing and linting the twin — is the
+  expensive step, and an editor asks on selection changes). The original source's own
   compile/describe/lint is memoized in one slot per source text, so repeat requests on an
-  unchanged document recompute nothing. Absent `only` (the historical call shape) is unchanged.
+  unchanged document recompute nothing; a plan with errors is never memoized, and
+  `clearCache()` empties the slot. The API is additive: `codeActions` and `CodeAction` are
+  unchanged and still return quick fixes only, each carrying its `diagnostic`.
+- **The VS Code extension offers the re-roll as a `refactor.rewrite` code action** (never
+  preferred), alongside the quick fixes. It asks for it only when code actions are invoked
+  explicitly (Ctrl+. or the refactor menu) or the request names a refactor kind, never on the
+  automatic lightbulb request that follows every cursor move.
 - **Internals: `src/pipeline.ts`.** `compile()`'s uncached parse→link→resolve→render pipeline
   moved into this one leaf module, verbatim; `compile()`'s memo-cache wrapper and `reroll()`'s
   twin-compile proof both call the SAME function, so the two can never drift apart. No
   behaviour change — see [ADR 0020](docs/adr/0020-algebraic-core.md) §4.
+
+### API — what the entries above add to the public surface
+
+- **New exports:** `reroll`, `RerollOptions`, `RerollSuggestion`; `refactorActions`,
+  `RefactorAction`; `DESCRIBE_FACTS` and the `DescribeOptions.facts` option; `instanceTransform`
+  and the `D4`/`QuarterTurn` types; the symmetry and syntax fact types (`DescribeFact`,
+  `SymmetryFacts`, `SymmetryGroup`, `SymmetryElement`, `LayerSymmetry`, `MirrorAxis`, `Repeat`,
+  `TranslationRepeat`, `MirrorRepeat`, `SyntaxFacts`, `SyntaxRoom`); `TransformCtx`.
+- **New optional fields:** `ElementDef.transform` (a plugin's frame action) and
+  `RoomCirculation.entranceId` (present only on a plan with more than one entrance).
+- **Plan JSON:** `furniture[].mirror` (`true` only when a reflecting `place` frame carried the
+  piece; absent otherwise).
+- **New diagnostic codes:** `E_INSTANCE_NO_TRANSFORM`, `E_JSON_MIRROR`, `W_WHILE_DEPRECATED`,
+  `W_REASSIGN_DEPRECATED`.
+- **Changed meaning:** `AccessEdge.ambiguous` now means the wall-face probe could not decide
+  which rooms the connector joins; it used to mean the connector touched three or more rooms.
+- **Retired value:** `other_entrance` stays in the `UnmeasuredReason` union but is never
+  emitted.
 
 ### Changed — dependencies: zod 4 in the MCP shim, pdfkit 0.20, Vite 8 for the playground
 
