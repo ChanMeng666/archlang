@@ -426,11 +426,12 @@ Two pre-existing defects W3b's agreement law and corpus sweep ran into. Neither 
 
 `rasteriseWallSegments` blocks a cell only when its CENTRE is within half a wall's thickness of the
 wall, so a partition thinner than one cell (the random plans draw 80 mm walls on a 100 mm grid)
-blocks no cell at all, and the walk leaks through it into a room no door reaches. The access graph
-says the room is unreachable while circulation measures a walk to it. `test/access-policy.test.ts`
-therefore asserts only one direction (a `no_door_route` room is unreachable), not equality. Close by
-blocking every cell the wall band crosses, not only those whose centre it covers — a measured corpus
-change, since dwelling partitions are 100 mm on 100 mm cells.
+blocks no cell at all, and the walk leaks through it into a room no door reaches. Circulation no
+longer REPORTS such a walk — every room the access graph cannot reach is `no_door_route`, so
+`test/access-policy.test.ts` asserts equality — but the raster still routes through the partition,
+so a walk to a reachable room can take a shortcut through a wall that is not there on the grid.
+Close by blocking every cell the wall band crosses, not only those whose centre it covers — a
+measured corpus change, since dwelling partitions are 100 mm on 100 mm cells.
 
 ### C.2 · `--overlay circulation` ignores floor voids — `todo`
 

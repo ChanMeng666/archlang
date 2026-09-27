@@ -1,3 +1,4 @@
+import { readdirSync, readFileSync } from "node:fs";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
@@ -78,11 +79,10 @@ function assertAgree(src: string): void {
   expect(v.lintUnreachable, src).toEqual(v.unreachable.filter(v.withConnector));
   // …and never calls a room describe() cannot reach "reachable only through a bedroom".
   for (const id of v.bathViaBedroom) expect(v.unreachable, src).not.toContain(id);
-  // circulation's `no_door_route` names only rooms the access graph cannot reach. (Not
-  // "exactly": the nav grid blocks a wall only where it covers a cell centre, so a
-  // partition thinner than one cell lets the walk leak into a room no door reaches — a
-  // raster fact, not an access-policy one.)
-  for (const id of v.noDoorRoute) expect(v.unreachable, src).toContain(id);
+  // circulation's `no_door_route` names exactly the rooms the access graph cannot reach —
+  // even where the raster leaks into one through a partition thinner than a cell (backlog
+  // C.1): circulation gates every walk on the door route.
+  if (v.s.circulation) expect(v.noDoorRoute, src).toEqual(v.unreachable);
   // the intent channel's `reachable` is the same fact.
   expect(v.intent.assertions.find((a) => a.predicate.kind === "reachable")?.pass, src).toBe(v.unreachable.length === 0);
 }
@@ -163,6 +163,21 @@ describe("one access policy: every surface agrees on reachability", () => {
       fc.property(fc.integer({ min: 3600, max: 4400 }), fc.boolean(), (at, bed) => assertAgree(tJunction(at, bed))),
       { numRuns: 60 },
     );
+  });
+
+  it("every shipped single-file example — incl. relational's open plan, which has no partition to stop the raster", () => {
+    const files = readdirSync("examples").filter(
+      (f) => f.endsWith(".arch") && f !== "imports.arch" && f !== "museum-wings.arch",
+    );
+    for (const f of files) assertAgree(readFileSync(`examples/${f}`, "utf8"));
+    // relational's kitchen, bedroom and bath have no door: the grid (no interior wall at
+    // all) walks straight into them, but circulation reports them as `no_door_route`.
+    const rel = describePlan(readFileSync("examples/relational.arch", "utf8"));
+    expect(rel.circulation?.unmeasured).toEqual([
+      { roomId: "kitchen", reason: "no_door_route" },
+      { roomId: "bed", reason: "no_door_route" },
+      { roomId: "bath", reason: "no_door_route" },
+    ]);
   });
 
   it("random plans that carry a connector touching three rooms", () => {

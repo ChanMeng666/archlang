@@ -146,6 +146,15 @@
  * whole-surface digest of `laneway-house` and `aquarium` under their own body); they moved
  * for exactly these reasons and were re-measured in the same commit.
  *
+ * `relational` (both rows) re-measured for W3b's door-route gate: circulation now reports a
+ * room the access graph cannot reach as `no_door_route` even when the raster walks into it.
+ * relational has no interior wall at all (its rooms are placed relationally, partitions
+ * are not drawn), so the grid walked from the living room straight into `kitchen`, `bed`
+ * and `bath`, which have no door (`W_ROOM_DISCONNECTED`, `access.rooms[].reachable:
+ * false`). Field by field: those three `circulation.rooms[]` entries and the two routes
+ * that start from them (kitchen → living, bed → bath) are gone, and `circulation.unmeasured`
+ * lists the three as `no_door_route`. SVG and `lint()` are byte-identical.
+ *
  * `terrace-row`'s whole-surface row carries BOTH re-measurements above: W5b's SVG (the
  * mirrored sliding doors) and W3b's circulation. Re-measured once on the merged tree; a
  * same-tree sweep with only W3b's `src/` swapped out shows W3b moves `describe()` alone.
@@ -174,7 +183,7 @@ export const BASELINE: [string, string][] = [
   ["museum", "07f06548d662a7283d4d47136c1e4260662ba0d8115282dd98d1b87134188304"],
   ["one-room", "1a310fb617bfe42e9749d66bddac7b9eb417b843f2525c558f66e6ecb1177b33"],
   ["parametric", "e30cff0f2fb517d5b19723cef6092a9d614ae198a63fd96f7f1b23508ee2c0a3"],
-  ["relational", "e6e1f0a6fb9589b3a6eaaa6491bd97620567d6fbdb35d162f25720e9da940b07"],
+  ["relational", "c3eab06b8184405f6c2a89edd04ce75ffbf97956cc0aa6d0d9780ad7495d6b7b"],
   ["studio", "90951a2517e141dfe28f0e12462fd29cefba5460c900304e435ef53e7f3c0f3f"],
   ["terrace-row", "09d36f9a91483ae6febf948aa5eb70fd9e7aad9f21aa6e0d0ab3550186a90721"], // re-measured, see header
   ["themed", "55e8723dd35cc3ec24b73a7bbf8052bea24f1fdaddd6d90012cffb81d7d00057"],
@@ -218,7 +227,7 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["museum", "7ec1245b5a9ae03f813436680f5bb750cc707631703b26e1ecf6f0c1d750d573"],
   ["one-room", "f0649bfd821eff989cc1beed233ad722eb4f2d3c3284ac4a8f74d5ea07ef306f"],
   ["parametric", "5783da773c0493767621e2c063e6da257c660dec2edb5351893f0ad4907afc3a"],
-  ["relational", "1011260beda141af5f99716609f12d5a9a6be8a81466ed14760e6924025c0ad4"],
+  ["relational", "d31bd84bfcb7bfce8d662470f8828144f55ef3e4117924af898587706bf46293"],
   ["studio", "7ed53b6e0925e21fe4c4fad7351ce7e80635818395fc79cf661ba095db8129b3"],
   ["terrace-row", "9f9636fed1e32e916db91c641ef0e5bb1703036ddb1460748f810dbcabe58726"],
   ["themed", "3644012b9d972af8e0314ce0a210073cc0315127d38a5f6b35220b00c883aff8"],

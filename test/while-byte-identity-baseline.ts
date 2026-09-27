@@ -27,6 +27,12 @@
  *   - `aquarium`: rotunda_r detour 1.01 → 1, the snapped relative frame (translation
  *     invariance);
  *   - `hexagon-pavilion`: rotunda walk 5800 → 5700, the snapped relative frame.
+ *
+ * Two more rows re-measured for W3b's door-route gate (a room `access` cannot reach is
+ * `no_door_route` even where the raster walks into it): `examples/relational.arch` —
+ * kitchen, bed and bath, doorless rooms of an open plan with no interior wall, lose their
+ * walks and their two routes; `test/fixtures/zones-wings.arch` — gal_b and store, doorless
+ * rooms of a plan with no partitions, likewise. Only `describe().circulation` moved.
  */
 export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/accessible.arch", "a8b70a680754e431524037dc3a936bba2ec7c0e2cba8df0c72a16f45e5d1e27b"],
@@ -50,7 +56,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/museum.arch", "afc31f3ca38ea93b1ff3031a7f89cc3bdf15c6255be5987569f427bcbaaa5fea"],
   ["examples/one-room.arch", "1b4e455d3f64e83a7a8139fb5b4df88b358faf756a80befff46c255e731635a0"],
   ["examples/parametric.arch", "963fd4b30b77d52f0367492e8e7ff13eabb08c9f709fd2100aba7eb67764ca63"],
-  ["examples/relational.arch", "4563e746db1dbd428c1135d6cec80fff35aa21a760038a098834376e45ec17fb"],
+  ["examples/relational.arch", "63fa6c32c6838fdc364e6e177c6c794f916ac9992ece18e8cc6218b72f8080a9"],
   ["examples/studio.arch", "caff7bcd95ee0f378f3e2f764332d00002f3d9706435b4b9c9a48b4d02841f9f"],
   ["examples/terrace-row.arch", "a88f753ca9f5b241bc536acefa26b748371a048a87bda1919f9a369e0efff902"],
   ["examples/themed.arch", "9395b6c8962d09e72701690c14ce8e12ef7ae1c9f65a1d4827d5f9734c1fcc4c"],
@@ -67,5 +73,5 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["test/fixtures/diff-circ-b.arch", "4f166d45197b41b42585324eda1cf2cea329beeddc6731036240214bb2d26708"],
   ["test/fixtures/schedule-sheet.arch", "87b0599a57b6df143daf9f593a4099c0cb19fb230b36aabe93cf37bef15c4fff"],
   ["test/fixtures/zones-levels.arch", "73386d89afe78ed066d395979141521f6b9d7ca42ee883c42cd8c7bbc7db884b"],
-  ["test/fixtures/zones-wings.arch", "887c24283b921f4f86d91efa26d64b25dd1a696b2c79d20c757ede924acd0220"],
+  ["test/fixtures/zones-wings.arch", "363ce9a95cd784244caba4783e34dfca2eb7b8f8d45612b1f99d4e3dedcc1dca"],
 ];

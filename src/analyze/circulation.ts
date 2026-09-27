@@ -1505,7 +1505,12 @@ export function computeCirculation(
   const originOf = (k: number): Point => centreOf(g, sources[from[k]!]!);
   const rep = new Int32Array(rooms.length);
   for (let ri = 0; ri < rooms.length; ri++) {
-    rep[ri] = roomRep(g, roomCells[ri]!, seed[ri]!, poles[ri]!, dist, anchor[ri]!, originOf, bboxCentre(rooms[ri]!)).k;
+    // A room the modeled doors do not reach has no walk, whatever the raster says: a
+    // partition thinner than a cell blocks no cell centre (backlog C.1), so the grid can
+    // leak into it. It is `no_door_route`, as `access` and lint say.
+    rep[ri] = doorReachable.has(rooms[ri]!.id)
+      ? roomRep(g, roomCells[ri]!, seed[ri]!, poles[ri]!, dist, anchor[ri]!, originOf, bboxCentre(rooms[ri]!)).k
+      : -1;
   }
 
   const blocked = furnitureSealed(blockedCandidates(nav));
@@ -1702,9 +1707,11 @@ export function computeCirculationOverlay(
   const originOf = (k: number): Point => centreOf(g, sources[from[k]!]!);
   const rep = new Int32Array(rooms.length);
   const repSeed: Point[] = [];
+  // The same door-route gate as the facts: a room `access` cannot reach draws no walk.
+  const doorReachable = new Set(access.rooms.filter((n) => n.reachable).map((n) => n.id));
   for (let ri = 0; ri < rooms.length; ri++) {
     const r = roomRep(g, nav.roomCells[ri]!, seed[ri]!, nav.poles[ri]!, dist, anchor[ri]!, originOf, bboxCentre(rooms[ri]!));
-    rep[ri] = r.k;
+    rep[ri] = doorReachable.has(rooms[ri]!.id) ? r.k : -1;
     repSeed.push(r.seed);
   }
 
