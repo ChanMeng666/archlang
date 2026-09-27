@@ -1268,15 +1268,17 @@ function labelPointOrbit(poly: readonly Point[]): Point[] {
   return out;
 }
 
+/** A room's bounding-box centre (exact: a half-sum of snapped coordinates). Not a derived
+ *  position (so no `r.poly` branch): only `roomRep`'s D4-symmetric tie-break key is taken
+ *  about it, and a plan symmetry maps a box centre to its image's, so the key is invariant. */
+const bboxCentre = (r: RRoom): Point => ({ x: r.at.x + r.size.w / 2, y: r.at.y + r.size.h / 2 });
+
 /**
  * The cell a room's facts are measured at, and the point it was chosen for. A room with
  * {@link labelPointOrbit} poles is measured to each pole's {@link reachableRep} and keeps
  * the one the walk reaches first (ties to the lowest cell index); every other room is its
  * label point's `reachableRep`, exactly as before.
  */
-/** A room's bounding-box centre (exact: a half-sum of snapped coordinates). */
-const bboxCentre = (r: RRoom): Point => ({ x: r.at.x + r.size.w / 2, y: r.at.y + r.size.h / 2 });
-
 function roomRep(
   g: NavGrid,
   cells: number[],

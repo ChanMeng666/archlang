@@ -755,7 +755,7 @@ export interface ResolvedPlan {
    * false on entry (an empty loop proves nothing about the body it never ran).
    * Internal: never serialized into the Scene/SVG/exports/Plan JSON.
    */
-  _executedWhileSpans: ReadonlySet<string>;
+  _executedWhileSpans?: ReadonlySet<string>;
   /** Resolved elements, in source order (for rendering). */
   elements: ResolvedElement[];
   /** Resolved walls (for bounds/hosting), in source order. */

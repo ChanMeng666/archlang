@@ -391,7 +391,7 @@ export function proveWhileFixes(
   const analysis = resolvePlan(source, opts);
   const irs = analysis.levels.length > 0 ? analysis.levels.map((l) => l.ir) : analysis.ir ? [analysis.ir] : [];
   const executed = new Set<string>();
-  for (const ir of irs) for (const k of ir._executedWhileSpans) executed.add(k);
+  for (const ir of irs) for (const k of ir._executedWhileSpans ?? []) executed.add(k);
 
   const plan = original.ast;
   const comments = plan.comments ?? [];
