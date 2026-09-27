@@ -72,8 +72,9 @@ export const dimInside: LintRule = {
       // One warning per SOURCE statement: a dim inside a `for` loop resolves many
       // times over one span, and the fix would otherwise be offered N times. The FILE is
       // part of that identity — two modules' spans are offsets into different sources, so
-      // an equal `start:end` pair is not the same statement.
-      const key = `${dm._file ?? ""}:${dm.span.start}:${dm.span.end}`;
+      // an equal `start:end` pair is not the same statement. Per PLACEMENT, though
+      // ({@link reportKey}): each `place`d instance of the statement answers for itself.
+      const key = reportKey(dm);
       if (seen.has(key)) continue;
       // Asked of the MIDPOINT of the offset line, not the endpoints: a dimension
       // legitimately runs corner to corner, so its endpoints sit ON the box edges —
@@ -90,7 +91,8 @@ export const dimInside: LintRule = {
         severity: "warning",
         code: "W_DIM_INSIDE",
         ...ctx.at(dm),
-        message: `Dimension "${dm.id}" draws its line inside the building — the \`offset ${dm.offset}\` pushes it into the plan, not out to the margin.`,
+        // The offset as WRITTEN: a reflecting frame negated it on the way into plan space.
+        message: `Dimension "${dm.id}" draws its line inside the building — the \`offset ${(offsetSign(ctx, dm) ?? 1) * dm.offset}\` pushes it into the plan, not out to the margin.`,
         hints: [
           swapHelps
             ? "Swap the two endpoints (or negate the offset) so the dimension reads outside the building."
@@ -163,8 +165,8 @@ export const dimOverlap: LintRule = {
         // dimension keeps the inner tier, which is the order an author reads them in.
         const later = b.at >= a.at ? b : a;
         const other = later === b ? a : b;
-        if (seen.has(later.key)) continue;
-        seen.add(later.key);
+        if (seen.has(later.report)) continue;
+        seen.add(later.report);
         // Every offset below is quoted or written in its statement's OWN source. A frame
         // that reflects negated `offset` on the way into plan space (`dim.transform`), so
         // the source value is the plan value times det(g); a turn leaves it alone. At root
@@ -262,6 +264,8 @@ interface Band {
   /** Identity of the SOURCE STATEMENT — file plus span, since a `for` resolves one
    *  statement many times and two modules' offsets are not comparable. */
   key: string;
+  /** What the rule reports ONCE per — {@link reportKey}. */
+  report: string;
   /** Unit direction of from→to. */
   u: Point;
   /** Left normal of `u` — the axis `offset` runs along. */
@@ -290,11 +294,32 @@ function band(dm: RDim, dimFont: number): Band {
     span,
     at: span.start,
     key: `${dm._file ?? ""}:${span.start}:${span.end}`,
+    report: reportKey(dm),
     u,
     n,
     mid,
     half: Math.max(len, textWidth(label, dimFont)) / 2,
   };
+}
+
+/**
+ * The codes these rules raise at most ONCE per statement per placement, not once per
+ * resolved element: the unit `reconcileSharedFixes` (`src/lint.ts`) counts a shared
+ * statement's raisers in.
+ */
+export const ONCE_PER_PLACEMENT_CODES: ReadonlySet<string> = new Set(["W_DIM_INSIDE", "W_DIM_OVERLAP"]);
+
+/**
+ * What a dim rule reports once per: its SOURCE statement (file plus span — a `for` resolves
+ * one statement many times, and two modules' offsets are not comparable) and, for a dim a
+ * `place` carried in, its instance. Each placement then answers for itself, with its own
+ * frame's value, so a statement shared by several placements raises once per placement and
+ * `reconcileSharedFixes` can see whether they all need the same edit. A root dim has no
+ * `_instance`, so its key is exactly the statement key it always was.
+ */
+function reportKey(dm: RDim): string {
+  const stmt = `${dm._file ?? ""}:${dm.span!.start}:${dm.span!.end}`;
+  return dm._instance === undefined ? stmt : `${stmt}@${dm._instance}`;
 }
 
 /** Are the two measured segments parallel (either direction)? Both vectors are unit, so

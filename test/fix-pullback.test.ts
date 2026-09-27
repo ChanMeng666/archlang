@@ -10,6 +10,13 @@
  * A statement shared by several placed instances is one span behind several elements.
  * `reconcileSharedFixes` (`src/lint.ts`) keeps ONE fix when every instance raises the same
  * edit, and otherwise drops the fix and says why (ADR 0005: decline, never guess).
+ *
+ * Byte-identity evidence (a scratch sweep, not a test): SHA-256 of every storey's SVG,
+ * `describe()`, `lint()` (fix edits included) and `compile().diagnostics`, base vs branch,
+ * over the 30 top-level `examples/*.arch` (the 3 in `examples/lib/` compiled only as their
+ * importers' components) and the 9 `test/fixtures/**` plans — 45 storeys, nothing moved; a
+ * planted `offset 500 → 501` in `studio.arch` moved its row. That corpus carries NO
+ * fix-bearing lint diagnostic, so every case the change reaches is written out below.
  */
 
 import { describe, expect, it } from "vitest";
@@ -153,7 +160,7 @@ ${places}
     for (const d of ds) {
       expect(d.fixes).toBeUndefined();
       expect("fixes" in d).toBe(false);
-      expect(d.hints!.at(-1)).toContain("shared by 2 placed instances (a.wc_1, b.wc_1) and they need different edits");
+      expect(d.hints!.at(-1)).toContain("shared by 2 placed instances (a.wc_1, b.wc_1), and they need different edits");
     }
     // Each hint still names its own instance's local answer.
     expect(ds.map((d) => d.hints![0])).toEqual([
@@ -178,7 +185,7 @@ ${places}
     for (const d of ds) {
       expect(d.fixes).toBeUndefined();
       expect(d.hints!.at(-1)).toContain(
-        "shared by 3 placed instances (a.wc_1, b.wc_1, far.wc_1) and the fix was derived for only 2 of the 3 elements it draws",
+        "shared by 3 placed instances (a.wc_1, b.wc_1, far.wc_1), and only 2 of the 3 elements it draws raise W_FIXTURE_BACK_TO_ROOM",
       );
     }
   });
@@ -200,6 +207,52 @@ ${places}
     const patched = applyFixes(MULTI_LIB, fixes.map(forItsFile));
     expect(patched.applied).toHaveLength(1);
     expect(byCode(lintWith(src, patched.output), "W_FIXTURE_BACK_TO_ROOM")).toEqual([]);
+  });
+
+  it("a fix-less raiser withholds the fix too, and the hint says so", () => {
+    // `b` stands in a corner — two walled edges, no unique quarter-turn — so its diagnostic
+    // carries no fix; `a`'s would then rotate `b` as well.
+    const src = square(
+      "  wall id=v exterior thickness 200 { (8000,-3000) (8000,3000) }\n  place c() as a at (1000,-600)\n  place c() as b at (7400,-600)",
+    );
+    const ds = byCode(lint(src), "W_FIXTURE_BACK_TO_ROOM");
+    expect(ds).toHaveLength(2);
+    for (const d of ds) {
+      expect(d.fixes).toBeUndefined();
+      expect(d.hints!.at(-1)).toContain(
+        "shared by 2 placed instances (a.wc_1, b.wc_1), and a fix could be derived for only 1 of them",
+      );
+    }
+  });
+
+  /** Two dims stacked in one tier, the component placed twice side by side. */
+  const twice = (b: string): string => `plan "p" {
+  units mm
+  component dd() {
+    wall id=shell exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+    room id=r at (0,0) size 4000x3000 label "Room"
+    dim (0,3000)->(4000,3000) offset 400
+    dim (0,3000)->(4000,3000) offset 450
+  }
+  place dd() as a at (0,0)
+  place dd() as b at (20000,0)${b}
+}`;
+
+  it.each([
+    ["both at the identity", "", "offset 1506"],
+    ["one of them mirrored", " mirror x", "offset 1330"],
+  ])("a dim rule that reports once per statement reports once per PLACEMENT: %s — exactly one fix", (_n, b, want) => {
+    const src = twice(b);
+    const ds = byCode(lint(src), "W_DIM_OVERLAP");
+    // One report per placement, each with its own instance's value in the hint…
+    expect(ds.map((d) => d.message.slice(0, 22))).toEqual(['Dimension "a.dim_2" is', 'Dimension "b.dim_2" is']);
+    for (const d of ds) expect(d.hints![0]).toContain(`\`${want}\``);
+    // …and the one statement gets one edit, applied once, which clears both.
+    const fixes = ds.flatMap((d) => d.fixes ?? []);
+    expect(fixes.map((f) => f.edits.map((e) => e.newText))).toEqual([[want]]);
+    const patched = applyFixes(src, fixes);
+    expect(patched.applied).toHaveLength(1);
+    expect(byCode(lint(patched.output), "W_DIM_OVERLAP")).toEqual([]);
   });
 
   it("the same component placed on two storeys is one statement too", () => {
@@ -238,5 +291,30 @@ ${places}
           src,
         ).toEqual([["rotate 270"]]);
     }
+  });
+});
+
+describe("the prose names the source as written, too", () => {
+  const placed = (body: string, clauses: string): string =>
+    `plan "p" {\n  units mm\n  component c() {\n    wall id=shell exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }\n    room id=r at (0,0) size 4000x3000 label "Hall"\n${body}\n  }\n  place c() as g at (0,0)${clauses}\n}`;
+
+  it.each([
+    ["e", ""],
+    ["mx", " mirror x"],
+  ])("W_SWING_OBSTRUCTED under %s advises the swing opposite the WRITTEN one", (_n, clauses) => {
+    // `door.transform` flips `swing` under a reflection; the hint must not quote that back.
+    const body =
+      "    door id=d at (2000,3000) width 900 wall shell swing in\n    furniture id=k cabinet at (1600,2300) size 800x500";
+    const [d] = byCode(lint(placed(body, clauses)), "W_SWING_OBSTRUCTED");
+    expect(d!.hints).toContain("Open it to the other side of the wall — `swing out`.");
+  });
+
+  it.each([
+    ["e", ""],
+    ["mx", " mirror x"],
+  ])("W_DIM_INSIDE under %s quotes the offset as written", (_n, clauses) => {
+    const [d] = byCode(lint(placed("    dim (0,3000)->(4000,3000) offset -400", clauses)), "W_DIM_INSIDE");
+    expect(d!.message).toContain("the `offset -400` pushes it into the plan");
+    expect(d!.fixes![0]!.edits.map((e) => e.newText)).toEqual(["dim (4000, 3000)->(0, 3000) offset -400"]);
   });
 });

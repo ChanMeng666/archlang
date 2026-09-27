@@ -20,6 +20,7 @@ import { DEFAULT_TOL, resolvePlan, storeyGrounded } from "./analyze.js";
 import type { ResolvedLevel, ResolvedPlan } from "./ir.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import { type BuildingContext, buildLintContext } from "./lint/context.js";
+import { ONCE_PER_PLACEMENT_CODES } from "./lint/rules/dims.js";
 import { LINT_RULES } from "./lint/rules/index.js";
 import { DEFAULT_RULESET, LINT_PROFILES, type LintOptions, type LintRuleset } from "./lint/ruleset.js";
 import { verticalConnections, verticalReach } from "./vertical.js";
@@ -85,8 +86,10 @@ const statementKey = (file: string | undefined, span: Span): string => `${file ?
  * Each rule mints its fix per element, pulled back into the element's own frame
  * ({@link import("./lint/context.js").LintContext.frameOf}). For a statement drawn by
  * elements of two or more placements (a `place`d instance on a given storey), a fix
- * survives only when EVERY element the statement draws raised the same code and every
- * one of them carries the same edits: then ONE copy is kept, on the first diagnostic, so
+ * survives only when EVERY raiser the statement has raised the same code and every one of
+ * them carries the same edits. A raiser is an element for a rule that reports per element,
+ * and a placement for one that reports once per statement per placement
+ * ({@link ONCE_PER_PLACEMENT_CODES}). When they agree ONE copy is kept, on the first diagnostic, so
  * `arch fix` applies and reports it once. Otherwise the fixes are stripped from the whole
  * group — the diagnostics stay, each with a hint naming how many instances share the
  * statement — because no single rewrite of the shared source is right for all of them,
@@ -136,16 +139,22 @@ export function reconcileSharedFixes(diags: Diagnostic[], storeys: readonly Lint
     const s = drawn.get(statementKey(first.file, first.span!))!;
     const editsOf = (d: Diagnostic): string =>
       JSON.stringify((d.fixes ?? []).map((f) => [f.applicability, f.fixId ?? null, f.file ?? null, f.edits]));
-    const allRaise = idx.length === s.ids.length;
-    const agree = idx.every((i) => diags[i]!.fixes?.length && editsOf(diags[i]!) === editsOf(first));
+    // Each raiser raises a code at most once, so equal counts mean every raiser raised it.
+    const perPlacement = ONCE_PER_PLACEMENT_CODES.has(first.code!);
+    const raisers = perPlacement ? s.placements.size : s.ids.length;
+    const allRaise = idx.length === raisers;
+    const withFix = idx.filter((i) => diags[i]!.fixes?.length).length;
+    const agree = withFix === idx.length && idx.every((i) => editsOf(diags[i]!) === editsOf(first));
     if (allRaise && agree) {
       for (const i of idx.slice(1)) out[i] = withoutFixes(diags[i]!);
       continue;
     }
-    const why = allRaise
-      ? "they need different edits"
-      : `the fix was derived for only ${idx.length} of the ${s.ids.length} elements it draws`;
-    const hint = `This statement is shared by ${s.placements.size} placed instances (${s.ids.join(", ")}) and ${why}, so no fix is offered: one edit to the shared source cannot be right for all of them. Edit it by hand, or give the instances their own statements.`;
+    const why = !allRaise
+      ? `only ${idx.length} of the ${raisers} ${perPlacement ? "placed instances" : "elements it draws"} raise ${first.code}`
+      : withFix < idx.length
+        ? `a fix could be derived for only ${withFix} of them`
+        : "they need different edits";
+    const hint = `This statement is shared by ${s.placements.size} placed instances (${s.ids.join(", ")}), and ${why}, so no fix is offered: one edit to the shared source cannot be right for all of them. Edit it by hand, or give the instances their own statements.`;
     for (const i of idx) {
       const d = withoutFixes(diags[i]!);
       out[i] = { ...d, hints: [...(d.hints ?? []), hint] };
