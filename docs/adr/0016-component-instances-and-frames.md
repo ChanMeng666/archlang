@@ -81,6 +81,37 @@ reference as a parameter, or the parent draws the connecting element — which i
 plan's walls in each instance's local frame by inverse transform) is implementable but buys
 a coupling we do not want to promise.
 
+**Addendum (W8): the law holds at every level.** Every level can reach into its own
+descendants, and none can reach out. As first built only the root could reach in, so a
+component that placed a child and referenced it (`door … on i.shell`, `furniture … in i.main`,
+`room … right-of i.main`) failed with `E_PLACE_REF` / `E_ATTACH_WALL_REF` / `E_LAYOUT_REF` —
+and so did `examples/clinic.arch` the moment it was itself imported and placed, even at the
+identity: composition was not associative. Instances now resolve deepest first, and each sees
+its descendants' walls and rooms carried into its own local frame by the composed authored
+`place` frames, under ids relative to it (`c2.main`, not `g.c2.main`) — the same frame
+arithmetic its body gets when compiled as the plan. An instance still never sees its parent's
+or its siblings' elements.
+
+This widens more than reference by id. EVERY rule that searches walls or rooms by position or
+by category now also finds a component's descendants, exactly as the same rule at the root
+finds its instances: a door, window or opening hosted by position or by a category (`wall
+exterior`), `against wall <category>`, a `dim faces` / `dim clear` projection, a curve `dim`
+naming a wall category, the wall height an opening inherits, the rail an `outdoor` derives from
+the walls, and the room lookups a door makes (`swing into`). Descendant walls come before the
+component's own, as instance walls come before the root's, and the nearest-wall host is
+first-wins — so a child's wall coincident with the component's own hosts the door, whatever the
+source order, as it does at the root. A component that already placed a child can therefore
+resolve differently than before, and a plan that compiled clean can now raise a diagnostic —
+`against wall exterior` in a component whose child also has an exterior wall now matches two
+walls (`E_FURN_AGAINST`).
+A plan with no `place` inside a component body is unaffected (measured byte for byte over the
+shipped corpus).
+
+A host found through a descendant reaches the plan by two float evaluation orders (the child's
+frame, then the component's; the wall itself by their composition), which need not agree when
+the grid is 0. So an opening is registered on its wall by the host's wall **id**, never by its
+endpoint coordinates; endpoint equality only chooses among walls sharing an id.
+
 ### 4. Ids are namespaced; zone membership comes free
 
 Every id born inside an instance becomes `<instance>.<id>`, and auto-id counters restart per

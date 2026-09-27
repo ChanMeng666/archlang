@@ -496,14 +496,27 @@ rather than reflected — reflection is not a drawing primitive — which for
 ArchLang's rectilinear fixture symbols is the same picture.)
 
 **An instance is a closed world — one way.** It resolves entirely in its own
-frame, against its **own** walls and rooms, and one rigid transform then carries
-the result into the plan. That is what makes `anchor top-left`, `against wall …
-side left`, `swing into`, `right-of` and `hinge left` mean inside a rotated
-instance exactly what they mean when the component is drawn on its own. The
-consequence to know: **the plan can reach into an instance (`wall west.shell`),
-but a component cannot reach out of itself.** A component that needs to touch
-its surroundings takes the reference as a parameter, or the parent draws the
-connecting element — as `examples/museum-wings.arch` does with its hall doors.
+frame, against its **own** walls and rooms (and those of the instances it places
+itself), and one rigid transform then carries the result into the plan. That is
+what makes `anchor top-left`, `against wall … side left`, `swing into`,
+`right-of` and `hinge left` mean inside a rotated instance exactly what they
+mean when the component is drawn on its own. The consequence to know: **the plan
+can reach into an instance (`wall west.shell`), and so can a component into the
+instances it places, at any depth — but a component cannot reach out of
+itself.** A component that needs to touch its surroundings takes the reference
+as a parameter, or the parent draws the connecting element — as
+`examples/museum-wings.arch` does with its hall doors.
+
+Reaching in is not only by id. Every rule that searches walls or rooms by position
+or category finds the instances a component places, exactly as the same rule at
+the plan level finds the plan's instances: a door, window or opening hosted by
+position or by a category (`wall exterior`), `against wall <category>`,
+`dim faces` / `dim clear`, a curve `dim` naming a wall category, the wall
+height an opening inherits, an `outdoor` rail derived from the walls, and
+`swing into`. An instance's walls come before the component's own, so where a
+child's wall coincides with the component's, the child's hosts the door; and
+`against wall exterior` fails with `E_FURN_AGAINST` once a child adds a second
+exterior wall. Name the wall by id when that matters.
 
 **Analysis still sees one building.** Flattening happens before `lint`,
 `describe()` and the wall union run, so two overlapping instances raise

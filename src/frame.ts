@@ -82,6 +82,17 @@ export interface Frame {
   span?: Span;
   /** The file the `place` statement lives in (absent = the compiled source). */
   file?: string;
+  /**
+   * For a NESTED instance only: the enclosing instance's frame, and this `place`'s own
+   * frame relative to it (what {@link makeFrame} built before {@link composeFrame}). Absent
+   * on a top-level instance, whose frame is its own local frame. The resolver walks these
+   * to express a descendant in an ancestor's local frame by composing the authored frames,
+   * with the same arithmetic the ancestor's body gets when it is compiled as the plan.
+   * Resolver-internal: {@link makeTransformCtx} strips both, so an element's `transform`
+   * (a plugin's included) never sees them.
+   */
+  parent?: Frame;
+  local?: Frame;
 }
 
 /** The identity frame (the root plan). Exposed so callers can spell "no transform". */
@@ -272,8 +283,11 @@ function transformSegment(f: Frame, s: WallSegment): WallSegment {
  * surface an element module needs, so none of them imports this file.
  */
 export function makeTransformCtx(f: Frame, id: string): TransformCtx {
+  // The nesting chain is the resolver's bookkeeping, not part of the transform: an element's
+  // action (a plugin's included) sees the frame without it.
+  const { parent: _parent, local: _local, ...frame } = f;
   return {
-    frame: f,
+    frame: f.parent || f.local ? frame : f,
     id,
     reflected: det(f) < 0,
     swapsAxes: swapsAxes(f),

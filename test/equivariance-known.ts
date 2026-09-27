@@ -44,8 +44,7 @@ export type ClassName =
   | "slide-track"
   | "column-corner"
   | "dim-text-side"
-  | "dim-tick-hand"
-  | "nested-ref";
+  | "dim-tick-hand";
 
 export interface KnownClass {
   /** `defect`: a later change closes it. `declared`: a convention, never a defect. */
@@ -339,14 +338,6 @@ export const KNOWN_CLASSES: Readonly<Record<ClassName, KnownClass & Partial<Rast
       "a dimension's 45° station tick is a slash of fixed page sense relative to the line — a drafting convention like a hatch angle — so a reflected dim draws the other diagonal",
     covers: (v, c) => c.reflects && v.path === "scene.dim[].ticks",
   },
-  "nested-ref": {
-    status: "defect",
-    law: "composition",
-    site: "src/ir.ts:1773 (an instance group resolves against its OWN walls/rooms only)",
-    summary:
-      "a COMPOSITION defect, not an equivariance one: inside a component, a reference INTO a nested instance (`in c2.main anchor …`, `on west.shell at …`) does not resolve, so a plan that composes instances works at the root and fails at the IDENTITY once it is itself placed — contradicting ADR 0016 §3's 'the parent can reach in' and the museum-wings pattern",
-    covers: () => false,
-  },
 };
 
 /** One pinned violation (or a cross product of them). */
@@ -380,7 +371,6 @@ const CLOSES: Readonly<Record<ClassName, string>> = {
   "column-corner": "carry a column through `transformRect`, like every other top-left rectangle",
   "dim-text-side": "draw the number on the side the offset points, `sign(offset) · n`",
   "dim-tick-hand": "never — declared drafting convention; the pin moves only if the tick convention does",
-  "nested-ref": "resolve a component's references against its nested instances' transformed elements",
 };
 
 const DIM_REFLECTED_2 = ["mx", "r90mx"] as const;
@@ -399,32 +389,6 @@ const DIM_EXAMPLES_2 = [
 const DIM_EXAMPLES_4 = ["hexagon-pavilion.arch", "studio.arch"] as const;
 
 export const KNOWN: readonly KnownViolation[] = [
-  // ---- T0: the wrapper is not faithful (a COMPOSITION defect) -----------------------------
-  {
-    where: "clinic.arch",
-    g: "T0",
-    path: "ok",
-    cls: "nested-ref",
-    why: "composition, not equivariance: clinic's root `furniture f_ecg … in c2.main anchor bottom-right` is E_PLACE_REF once the file is itself placed — at the identity",
-    closesWith: CLOSES["nested-ref"],
-  },
-  {
-    where: "museum-wings.arch",
-    g: "T0",
-    path: "access",
-    cls: "nested-ref",
-    why: "composition, not equivariance: `door d_west/d_east … wall west.shell|east.shell` no longer host once the file is placed, so their access edges lose their host wall",
-    closesWith: CLOSES["nested-ref"],
-  },
-  {
-    where: "museum-wings.arch",
-    g: "T0",
-    path: "diagnostics",
-    cls: "nested-ref",
-    why: "composition, not equivariance: the same two doors raise W_DOOR_OFF_WALL + W_SWING_ROOM_NOT_ADJACENT inside the wrapper",
-    closesWith: CLOSES["nested-ref"],
-  },
-
   // ---- T1: describe() -------------------------------------------------------------------
   {
     where: "aquarium.arch",
@@ -492,6 +456,35 @@ export const KNOWN: readonly KnownViolation[] = [
     cls: "slide-track",
     why: "every `sliding` door swaps which track its fixed panel runs on",
     closesWith: CLOSES["slide-track"],
+  },
+  // clinic's T3 run is observable only since nested-ref closed (backlog E.16): before, its
+  // P₀ did not resolve and T3 compared nothing. Every row below is an existing class.
+  {
+    where: "clinic.arch",
+    g: ["mx", "r90mx"],
+    path: "scene.door[]",
+    ids: ["g.d_main", "g.d_treat"],
+    cls: "slide-track",
+    why: "d_main and d_treat are the plan's two `sliding` doors; each swaps which track its fixed panel runs on (the pocket doors in the placed consult rooms have no fixed panel)",
+    closesWith: CLOSES["slide-track"],
+  },
+  {
+    where: "clinic.arch",
+    g: ["mx", "r90mx"],
+    path: "scene.dim[].text",
+    ids: ["g.dim_1"],
+    cls: "dim-text-side",
+    why: "dim_1 is `dim clear … offset 0`: with no offset to negate, its number still rides the from→to LEFT normal, which the reflection makes the other side of the line (350 mm across)",
+    closesWith: CLOSES["dim-text-side"],
+  },
+  {
+    where: "clinic.arch",
+    g: ["mx", "r90mx"],
+    path: "scene.dim[].ticks",
+    ids: ["g.dim_1"],
+    cls: "dim-tick-hand",
+    why: "dim_1's 45° station ticks are drawn along dir + n, a fixed page slash; the mirror image is the other diagonal (a drafting convention, like a hatch angle)",
+    closesWith: CLOSES["dim-tick-hand"],
   },
   {
     where: ["courtyard-house.arch", "hexagon-pavilion.arch"],
@@ -648,6 +641,59 @@ export const KNOWN: readonly KnownViolation[] = [
     cls: "raster-tie",
     why: "r_bath, r_bed1, r_bed2, r_hall, r_kitchen, r_living: entrance moved ≤1 step, measured cell ≤1 steps (exact ties); walk ≤±200 mm (2 cells)",
     closesWith: CLOSES["raster-tie"],
+  },
+  // clinic's raster is observable only since nested-ref closed (backlog E.16): before, its
+  // P₀ did not resolve and T1/T2 compared nothing. Its entrance is not on a lattice tie
+  // (ent = 0 in every row); the connectors are.
+  {
+    where: "clinic.arch",
+    g: ["r180", "mx", "r90mx"],
+    path: "circulation.rooms[].walk",
+    ids: ["g.c1.main", "g.c2.main", "g.c3.main", "g.r_treat", "g.r_wait"],
+    maxDelta: 100,
+    cls: "raster-tie",
+    why: "c1.main, c2.main, c3.main, r_treat, r_wait: entrance moved 0 steps, measured cell 1 step (exact ties); walk ±100 mm (1 cell)",
+    closesWith: CLOSES["raster-tie"],
+  },
+  {
+    where: "clinic.arch",
+    g: ["r90", "mx"],
+    path: "circulation.rooms[].walk",
+    ids: ["g.r_corr"],
+    maxDelta: 100,
+    cls: "raster-tie",
+    why: "r_corr: entrance moved 0 steps, measured cell 1 step (exact ties); walk ±100 mm (1 cell)",
+    closesWith: CLOSES["raster-tie"],
+  },
+  {
+    where: "clinic.arch",
+    g: "mx",
+    path: "circulation.rooms[].walk",
+    ids: ["g.c4.main", "g.c5.main", "g.c6.main", "g.r_staff", "g.r_wc"],
+    maxDelta: 100,
+    cls: "raster-tie",
+    why: "c4.main, c5.main, c6.main, r_staff, r_wc: entrance moved 0 steps, measured cell 1 step (exact ties); walk +100 mm (1 cell)",
+    closesWith: CLOSES["raster-tie"],
+  },
+  {
+    where: "clinic.arch",
+    g: "r90",
+    path: "circulation.rooms[].walk",
+    ids: ["g.c4.main", "g.c5.main", "g.c6.main", "g.r_staff", "g.r_wc"],
+    maxDelta: 200,
+    cls: "threshold-carve",
+    why: "c4.main, c5.main, c6.main, r_staff, r_wc (every room entered from the corridor's south side, y = 6900): a doorway seeded across a lattice line carves on another row, beyond the endpoints' 0+0 steps; walk +200 mm (2 cells)",
+    closesWith: CLOSES["threshold-carve"],
+  },
+  {
+    where: "clinic.arch",
+    g: ["r180", "r90mx"],
+    path: "circulation.rooms[].walk",
+    ids: ["g.c4.main", "g.c5.main", "g.c6.main", "g.r_staff", "g.r_wc"],
+    maxDelta: 300,
+    cls: "threshold-carve",
+    why: "c4.main, c5.main, c6.main, r_staff, r_wc (every room entered from the corridor's south side, y = 6900): a doorway seeded across a lattice line carves on another row, beyond the endpoints' 0+1 steps; walk +300 mm (3 cells)",
+    closesWith: CLOSES["threshold-carve"],
   },
   {
     where: "courtyard-house.arch",
