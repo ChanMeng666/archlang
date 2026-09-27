@@ -23,6 +23,11 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 - **CJK text in PDF/PNG**: the face from `@chanmeng666/archlang-font-cjk` is registered only when a
   drawn string needs it, which keeps every non-CJK PDF/PNG byte-identical. Loading it
   unconditionally moves every PDF golden — a finding, not a re-pin.
+- **A new handed/oriented fact crosses `place` only through the element's own `transform`**; the
+  equivariance oracle (`test/d4-oracle.ts`) will pin it `NEW` otherwise, not fail silently.
+- **A lint fix inside a turned or mirrored `place` must pull its value back through the instance
+  frame before writing it** (`LintContext.frameOf`, `src/lint.ts`), or the machine-applicable edit
+  is correct in plan coordinates and wrong once `arch fix` writes it back into the component body.
 
 ## Docs & prose
 

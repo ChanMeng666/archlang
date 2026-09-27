@@ -402,24 +402,29 @@ deleted; the witness is now the law (`test/equivariance-corpus.test.ts`, "closed
 
 Left open by routing "which side of this wall has floor" through `wallFaceProbes`
 (`src/geometry.ts`) and giving `roomOfVertical` the room's shape. Neither was in that change's scope.
+Both closed their SHAPE half in W5a; P.1's message half is still `todo`.
 
-### P.1 · A shaft landing on no room says its storey has no way in — `todo`
+### P.1 · A shaft landing on no room says its storey has no way in — `todo` (the shape half is done)
 
-`verticalReach` (`src/vertical.ts`) counts the storey reachable (`describe().vertical.reachable_levels`
-lists it) but records an arrival room only for a stop whose `room` is non-null, and `no-entrance`
-(`src/lint/rules/entrance.ts`) stands down only for an arrival room. A stair landing in an L's
-unroomed notch therefore gets `W_NO_ENTRANCE` ("there is no way into the building") on a storey the
-shaft reaches. The rule is right — nothing at the landing is floor to arrive in — but the message
-misleads. Want a message (or code) that says the shaft lands on no room; keep the rule. Pinned by
-`test/vertical-room-shape.test.ts`.
+**Landed (W5a): `roomOfVertical` asks the room's shape, not its bounding box.** A stair or lift
+standing in a concave room's notch, or in a circle's bounding-box corner, is no longer claimed by
+that room — `test/vertical-room-shape.test.ts`.
 
-### P.2 · `swing into <rectangle room>` on an arc host picks its side off the chord — `todo`
+**Still open: the message.** `verticalReach` (`src/vertical.ts`) counts the storey reachable
+(`describe().vertical.reachable_levels` lists it) but records an arrival room only for a stop whose
+`room` is non-null, and `no-entrance` (`src/lint/rules/entrance.ts`) stands down only for an arrival
+room. A stair landing in an L's unroomed notch therefore gets `W_NO_ENTRANCE` ("there is no way into
+the building") on a storey the shaft reaches. The rule is right — nothing at the landing is floor to
+arrive in — but the message misleads. Want a message (or code) that says the shaft lands on no room;
+keep the rule. Pinned by `test/vertical-room-shape.test.ts`.
 
-`swingInto`'s rectangle path (`src/elements/door.ts`) dots the box centre against the CHORD normal;
-`doorSwing` and `roomSideOf` use the tangent (`wallFaceProbes`). They agree on a straight host, not
-on an arc. Reproduced: room `at (0,0) size 4000x4000`, wall `(4000,1000) arc (4000,3000) radius 1200
-cw major`, a door at 1–5% or 95–99% with `swing into` the room resolves `in` and its leaf is drawn
-outside the room. Close by probing as the ring path does, behind a corpus sweep.
+### P.2 · `swing into <rectangle room>` on an arc host picks its side off the chord — closed by W5a
+
+`wallFaceProbes` (`src/geometry.ts`) replaced the CHORD-normal probe `swingInto`'s rectangle path used
+with the TANGENT normal `doorSwing` and `roomSideOf` already used, so all three now agree on an arc
+host as they already did on a straight one. `test/wall-face-probe.test.ts` pins a major-arc door
+swinging into the side its leaf is actually drawn on, at both ends and the midpoint, for both winding
+directions.
 
 ## Axonometric view findings
 
@@ -453,6 +458,74 @@ cover a wall end to end, are diagnostic-free. The wall is silently gone from bot
 it exposes reaches the drawing as an open outline. Found by the W9 red team: 11 of 8739 generated
 iso/axon compiles hit it. Its header says a dead-end chain means the classification was
 inconsistent, and closing the chain there would fabricate an edge; start from the classification.
+
+---
+
+## Parked from the algebra programme (2026-09, [ADR 0020](adr/0020-algebraic-core.md))
+
+### 6.1 · D4-orbit `reroll` for a component or a `place … mirror` — `todo`
+
+<!-- W6b -->
+`arch reroll` and its LSP refactor are designed against `src/algebra/d4.ts`'s normal form
+(propose an orbit member, prove it sound against `compile()`, apply) but the `reroll()` API
+and `src/pipeline.ts` have not landed. Track under W6b; do not build ahead of it.
+
+### 6.2 · A `mirror` fact on `describe()` furniture — `todo`
+
+Plan JSON already projects a reflecting `place`'s furniture as `mirror: true`
+(`planToJson`, G.10). `describe()`'s own furniture facts do not carry the equivalent bit, so
+an agent reading `describe()` alone cannot tell a mirrored piece from an unmirrored one of
+the same kind without also fetching Plan JSON. Small, additive, same key name.
+
+### 6.3 · Plan JSON `_mirror`/`_tail` for dims, doors and vertical runs — `todo`
+
+`_mirror` (dim text side, sliding-door track) and `_tail` (a placed run's entry edge) are
+IR-internal, resolved-frame facts (`src/frame.ts`, `src/elements/dim.ts`, `door.ts`,
+`{stair,escalator,elevator}.ts`) that never reach `planToJson`. A consumer resolving a
+placed plan from Plan JSON alone cannot reproduce which side a dim reads on or which track a
+mirrored sliding door takes. Needs the same "can this be re-expressed, or must it be
+dropped" test G.10 already answered for furniture `mirror`.
+
+### 6.4 · Rectangle-algebra path consistency for `intent` — `todo`, rejected for now (ADR 0020)
+
+Considered and set aside while writing ADR 0020: routing the `intent` channel's
+adjacency/reachability assertions through a general interval/rectangle constraint solver
+instead of today's bipartite matching (`checkPredicates`). Rejected as an eval-judge risk —
+a solver can satisfy a rubric with a *different* room assignment than the judge expects,
+moving eval scores for reasons unrelated to plan quality. Revisit only against a concrete
+rubric failure, not as a generalisation exercise.
+
+### 6.5 · Exact projective predicates (orient2d / homogeneous intersection) — `todo`, rejected for now (ADR 0020)
+
+Measured bounds with today's plain double arithmetic: `orient2d` stays exact to `2²⁵` mm;
+homogeneous line intersection is exact only to roughly 10³ m. Both cover every plan size the
+language can express today. Revisit only if a shipped plan (not a synthetic stress case)
+measures outside either bound.
+
+### 6.6 · A trig/hypot cross-engine audit — `todo`
+
+`src/analyze/syntax.ts`'s integration value uses `Math.log2` alongside the existing view and
+geometry code's `Math.hypot`/`Math.atan2` family (`docs/agents/architecture.md`: "the view
+uses no `Math.cos/sin/tan/atan`, not exactly rounded across platforms"). Nobody has swept
+`Math.log2` and the rest of the transcendental surface for the same cross-platform exactness
+risk the view already avoids. Needs a differential run across the CI matrix's platforms
+before it can be called safe, not just assumed so by analogy.
+
+### 6.7 · `while` and reassignment removal in a future MAJOR — `todo`, not before then
+
+W7 soft-deprecates (`W_WHILE_DEPRECATED`/`W_REASSIGN_DEPRECATED`) and offers a proven
+`arch fix` rewrite; it does not remove the construct. Removing it is a language-breaking
+change and stays out of scope until a MAJOR version boundary, by which point the warning
+should have converted most of the corpus that can be converted mechanically.
+
+### 6.8 · `museum-wings.arch`'s wings: D1 at shell/rooms, C1 at `full` — owner question, `todo`
+
+`describe --facts symmetry` (W6a) reports the flagship's two wings as mirror-symmetric (D1)
+at the shell and room layers but only rotationally symmetric (C1) at `full`, because the
+doors hinge on opposite jambs — a real asymmetry the fact correctly reports, not a bug in
+the fact. Open question for the owner: should the wings be redrawn with their doors mirrored
+too, so the building is D1 end to end, or is the hinge asymmetry intentional (handedness of
+approach, fire egress convention)? No code change until that is answered.
 
 ---
 

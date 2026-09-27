@@ -70,7 +70,17 @@ source (.arch)
 - `algebra/` domain-free leaf layer (value imports only from inside the folder,
   `test/algebra-leaf.test.ts`): `d4.ts` is the one encoding of the four directions — the
   group D4 in normal form `R^k·Fx^f` and its actions on sides, compass letters and
-  quarter-turns
+  quarter-turns; `semiring.ts` states BOOLEAN/MIN_PLUS/MAX_MIN/lexicographic path algebra;
+  `paths.ts` is the one label-setting best-path engine over any of them
+  (`docs/adr/0020-algebraic-core.md`)
+- `statement-print.ts` the one printer for a leaf statement, shared by `format.ts`, an
+  element's own `resolve()` fix text and Plan JSON's decompiler
+- `analyze/symmetry.ts` a plan's D4 ⋉ Z² stabiliser and its repeats · `analyze/syntax.ts`
+  space-syntax depths/RA/RRA/integration on the access graph — both opt-in `describe --facts`
+- `while-deprecation.ts` the `W_WHILE_DEPRECATED`/`W_REASSIGN_DEPRECATED` advisory warnings ·
+  `while-fix.ts` the proven `while`→`for` rewrite `arch fix` offers, kept out of `compile()`
+  itself on purpose (see its header)
+<!-- W6b: src/pipeline.ts (arch reroll + the reroll() API) — not yet landed -->
 - `plan-json.ts` Plan JSON · `diagnostic-json.ts` · `repair.ts` (geometric corrector) vs
   `fix-apply.ts` (`arch fix`; skips a fix carrying `file`) · `manifest.ts` the CLI contract
 

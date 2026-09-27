@@ -253,6 +253,11 @@ const PAGE_META = [
     "ADR 19 — hosting on Cloudflare Workers",
     "Both ArchLang sites are served as Cloudflare Workers static assets and deployed from CI, with no URL change from the hosting move and no server to run.",
   ],
+  [
+    "/adr/0020-algebraic-core",
+    "ADR 20 — an algebraic core layer",
+    "ArchLang states its D4 symmetry group, path semirings and statement printer once each, behind a permanent test oracle that checks every fact against the group law.",
+  ],
 ] as const;
 
 type PageMeta = { readonly title: string; readonly description: string };
