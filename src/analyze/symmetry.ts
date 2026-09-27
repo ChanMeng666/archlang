@@ -16,7 +16,10 @@
  * candidate centre, which is a necessary condition only. Every reported symmetry is then
  * VERIFIED ON THE SHAPE, by exact equality of the whole labelled record set with its image,
  * and no position anywhere is derived from the box. A shape the box would mislead (an L, a
- * courtyard) is simply one whose candidates fail the test.
+ * courtyard) is simply one whose candidates fail the test. That is also why `centre` is
+ * reported ONLY for a layer with a non-trivial group: there it is the fixed point every
+ * verified element shares — a fact of the shape. On a `C1` layer it would be nothing but
+ * the box's midpoint, so it is omitted.
  *
  * ## Exactness
  *
@@ -36,20 +39,26 @@
  *  - `shell` — the walls in MAXIMAL-LINE NORMAL FORM (the maximal lines of Stiny's shape
  *    algebra; Krishnamurti 1980): collinear segments of one thickness that overlap or touch
  *    are merged along their carrier line, so how an author split a wall into statements does
- *    not matter. Arcs stay
- *    arcs (centre, endpoints, turning sense). Label: the wall thickness.
+ *    not matter. Arcs stay arcs (centre, endpoints, turning sense). Label: the wall
+ *    thickness — and ONLY the thickness: a wall's category, material and hatch are not read,
+ *    as the equivariance oracle's drawing tier excludes hatch fills (a hatch is laid on page
+ *    axes and does not turn with the building).
  *  - `rooms` — each room's floor (a rectangle's or polygon's ring with collinear vertices
  *    removed, a circle's centre and radius), labelled by its `uses` — the room's function,
- *    never its label text.
- *  - `full` — the rooms plus every opening (a door's handed choices as the drawing reads
- *    them — hinge side and swing, slide side, a sliding door's track, a panel's face; see
- *    {@link doorRec}; a window's and a cased opening's jambs and width) plus the furniture
+ *    never its label text. A room with no `uses` clause gets `roomUses`' fallback, the one
+ *    `describe().rooms[].uses` reports: its uses classified from its label, or from its id
+ *    when it has no label — so two untagged rooms named "Bed 1" and "Kitchen" differ.
+ *  - `full` — everything the plan DRAWS as building: the rooms, every opening (a door's
+ *    handed choices as the drawing reads them — hinge side and swing, slide side, a sliding
+ *    door's track, a panel's face, how far a non-hinged panel is drawn open; see
+ *    {@link doorRec}; a window's and a cased opening's jambs and width), the furniture
  *    (footprint, category, the back vector when the catalogue gives the symbol a back, and
  *    the handedness of a HANDED symbol — asked of the drawing itself, `glyph-chirality.ts`'s
- *    predicate, and flipped by a reflection) plus the vertical runs (footprint, kind, the
- *    direction the frame-carried tail edge gives, a stair's break-line hand). Dimensions,
- *    columns, voids and ground surfaces are in no layer: a dimension is annotation, and the
- *    others are left for a later layer rather than half-modelled here.
+ *    predicate, and flipped by a reflection), the vertical runs (footprint, kind, the
+ *    direction the frame-carried tail edge gives, a stair's break-line hand), the columns,
+ *    floor voids and roof outlines (footprints), the ground surfaces (ring and kind, and a
+ *    balcony's railed edges) and the fences (each run's segments, by style). Dimensions are
+ *    in no layer: a dimension is annotation about the building, not part of it.
  *
  * A furniture piece is compared on those attributes, not on its drawn marks, so a symbol
  * with more symmetry than its attributes say can only make the answer SMALLER, never
@@ -62,7 +71,10 @@
  * furniture laid out the same way, up to a translation — whose positions, sorted by
  * `(y, x)`, have a constant first difference. And alternating MIRROR runs (a terrace: A,
  * mirror-A, A, mirror-A), where each room is the exact reflection of the one before it
- * about an axis-parallel line and the lines are evenly spaced.
+ * about an axis-parallel line and the lines are evenly spaced. Runs are cut GREEDILY:
+ * scanning in `(y, x)` order, each run is extended as far as its first difference holds and
+ * the next run starts after it, so runs are maximal-first and never overlap — five rooms at
+ * offsets 0, 1, 2, 4, 6 report `[0, 1, 2]` and not `[2, 4, 6]`.
  *
  * Pure, synchronous, deterministic. Integer arithmetic throughout (BigInt where a cross
  * product could pass 2^53); no trig, no clock, no randomness.
@@ -111,8 +123,9 @@ export interface LayerSymmetry {
   axis?: MirrorAxis;
   /** The two mirror lines of a `D2`: `["x","y"]` or `["diag","antidiag"]`. */
   axes?: [MirrorAxis, MirrorAxis];
-  /** The fixed point every element turns or reflects about, in plan mm. */
-  centre: { x: number; y: number };
+  /** The fixed point every element turns or reflects about, in plan mm. Absent on a `C1`
+   *  layer, where no element fixes a point and it would be only the extent's midpoint. */
+  centre?: { x: number; y: number };
   /** Every element of the group, the identity first, in D4's `R^k·Fx^f` index order. */
   elements: SymmetryElement[];
   /** True when every coordinate was a multiple of half a millimetre and the comparison
@@ -343,7 +356,8 @@ function layerSymmetry(f: Frame0, recs: readonly Rec<IP>[]): LayerSymmetry {
   const els = stabiliser(recs);
   return {
     ...classify(els),
-    centre: { x: mm(f.c2.x / 4), y: mm(f.c2.y / 4) },
+    // The verified fixed point — only when some element fixes it (see the module header).
+    ...(els.length > 1 ? { centre: { x: mm(f.c2.x / 4), y: mm(f.c2.y / 4) } } : {}),
     elements: els.map((g) => toSpelling(g)),
     exact: f.exact,
   };
@@ -514,10 +528,14 @@ function jambs(at: Point, width: number, host: RDoor["host"]): Point[] {
  *    and nothing along the wall, which the symbol is symmetric about.
  *
  * So a reflection that swaps any of those choices is seen, and one the drawing ignores is not.
+ * The label carries the kind and width, and — for the four kinds whose panel is DRAWN at a
+ * travel fraction (`sliding`, `barn`, `bifold`, `pocket`) — that fraction, `open`, with the
+ * renderer's own default of 0.5: two sliders at different `open` draw different panels.
  */
 function doorRec(d: RDoor): Rec<Point> {
   const kind = d.doorKind ?? "hinged";
-  const label = `door ${kind} w=${fmt4(d.width)}`;
+  const drawnOpen = kind === "sliding" || kind === "barn" || kind === "bifold" || kind === "pocket";
+  const label = `door ${kind} w=${fmt4(d.width)}${drawnOpen ? ` open=${fmt4(d.open ?? 0.5)}` : ""}`;
   const swing = doorSwing(d);
   if (swing) return { form: "seq", label, pts: [swing.hinge, swing.farJamb, swing.leafEnd] };
   if (!d.host) return { form: "set", label, pts: [d.at] };
@@ -576,6 +594,67 @@ function verticalRec(v: RVertical): Rec<Point> {
     vec: { x: vec.x, y: vec.y },
     ...(v.kind === "stair" ? { hand: v._mirror ? -1 : 1 } : {}),
   };
+}
+
+/** An axis-aligned rectangle (top-left + size) as a closed ring. */
+const boxRing = (at: Point, size: { w: number; h: number }): Point[] => [
+  { x: at.x, y: at.y },
+  { x: at.x + size.w, y: at.y },
+  { x: at.x + size.w, y: at.y + size.h },
+  { x: at.x, y: at.y + size.h },
+];
+
+/**
+ * The rest of what the plan draws as building, each as its footprint — like a piece of
+ * furniture with no back: a column's and a floor void's rectangle, a roof's ring, a ground
+ * surface's ring (its box, or its polygon) labelled by kind with a balcony's railed edges
+ * as edge records of their own, and a fence as the segments of its run labelled by style.
+ *
+ * What their symbols draw inside the footprint is symmetric enough not to add a hand: a
+ * void's two diagonals, a roof's dashed ring, a column's fill. A fence's posts are spaced
+ * evenly along each SEGMENT from both ends alike and tick both sides, so a segment is
+ * compared unordered, and segments are NOT merged into maximal lines — the post pitch is
+ * per segment, so a run split at a vertex draws differently from one that is not. A ground
+ * surface's hatch is laid on page axes, and its `label` text is not read (as a room's is
+ * not).
+ */
+function drawnRecs(ir: ResolvedPlan): Rec<Point>[] {
+  const out: Rec<Point>[] = [];
+  for (const e of ir.elements) {
+    switch (e.kind) {
+      case "column":
+        out.push({ form: "ring", label: "column", pts: boxRing(e.at, e.size) });
+        break;
+      case "void":
+        out.push({ form: "ring", label: "void", pts: boxRing(e.at, e.size) });
+        break;
+      case "roof":
+        if (e.ring.length >= 3) out.push({ form: "ring", label: "roof", pts: e.ring });
+        break;
+      case "outdoor": {
+        const ring = e.poly ?? boxRing(e.at, e.size);
+        out.push({ form: "ring", label: `outdoor ${e.surface}`, pts: ring });
+        if (e.rail && !e.poly) {
+          const [tl, tr, br, bl] = boxRing(e.at, e.size) as [Point, Point, Point, Point];
+          const edge = { top: [tl, tr], right: [tr, br], bottom: [br, bl], left: [bl, tl] } as const;
+          for (const side of e.rail) out.push({ form: "set", label: "rail", pts: [...edge[side]] });
+        }
+        break;
+      }
+      case "fence": {
+        const label = `fence ${e.style}`;
+        const pts = e.points;
+        const segs: [Point, Point][] = [];
+        for (let i = 0; i + 1 < pts.length; i++) segs.push([pts[i]!, pts[i + 1]!]);
+        if (e.closed && pts.length > 2) segs.push([pts[pts.length - 1]!, pts[0]!]);
+        for (const [a, b] of segs) if (a.x !== b.x || a.y !== b.y) out.push({ form: "set", label, pts: [a, b] });
+        break;
+      }
+      default:
+        break;
+    }
+  }
+  return out;
 }
 
 /** Pen sizes for the handedness question. Glyph GEOMETRY never reads them (they are paint
@@ -829,6 +908,7 @@ export function symmetryFacts(ir: ResolvedPlan): SymmetryFacts {
     ),
     ...furniture.map(furnitureRec),
     ...verticalsOf(ir).map(verticalRec),
+    ...drawnRecs(ir),
   ];
   const tidyLayer = (raw: readonly Rec<Point>[]): LayerSymmetry | null => {
     const f = frameOf(raw);

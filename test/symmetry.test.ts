@@ -63,12 +63,13 @@ function predict(
   l0: LayerSymmetry,
   g: GroupElement,
   grid: number,
-): { els: string[]; centre: { x: number; y: number } } {
+): { els: string[]; centre: { x: number; y: number } | undefined } {
   const gd = fromSpelling(g.rotate, g.mirror);
   const els = l0.elements
     .map((e) => compose(compose(gd, fromSpelling(e.rotate, e.mirror)), inverse(gd)))
     .map((h) => `${h.k},${h.f}`)
     .sort();
+  if (l0.centre === undefined) return { els, centre: undefined };
   const c = tp(frameFor(g, grid), l0.centre);
   return { els, centre: { x: c.x + 0, y: c.y + 0 } };
 }
@@ -87,7 +88,7 @@ function conjugationViolations(s0: SymmetryFacts, sG: SymmetryFacts, g: GroupEle
     if (JSON.stringify(elementKeys(lG)) !== JSON.stringify(p.els)) {
       out.push(`${layer}: elements ${elementKeys(lG)} ≠ predicted ${p.els}`);
     }
-    if (lG.centre.x !== p.centre.x || lG.centre.y !== p.centre.y) {
+    if (JSON.stringify(lG.centre) !== JSON.stringify(p.centre)) {
       out.push(`${layer}: centre ${JSON.stringify(lG.centre)} ≠ predicted ${JSON.stringify(p.centre)}`);
     }
     if (lG.group !== l0.group) out.push(`${layer}: group ${lG.group} ≠ ${l0.group} (conjugates have one type)`);
@@ -240,7 +241,9 @@ suite("symmetry — hand cases", () => {
     // wider unit break every candidate.
     const s = sym(EXAMPLE_FILES["terrace-row.arch"]!);
     for (const layer of LAYERS) expect(groupOf(s.layers[layer]), layer).toBe("C1");
-    expect(s.layers.shell!.centre).toEqual({ x: 11100, y: 4800 });
+    // A C1 layer reports no centre: nothing fixes a point, and the extent's midpoint is not
+    // a fact of the shape.
+    for (const layer of LAYERS) expect(s.layers[layer]!.centre, layer).toBeUndefined();
     expect(s.repeats).toEqual([]);
   });
 
@@ -252,7 +255,7 @@ suite("symmetry — hand cases", () => {
     expect(even).not.toBe(src);
     const s = sym(even);
     for (const layer of LAYERS) expect(groupOf(s.layers[layer]), layer).toBe("D1 x");
-    expect(s.layers.shell!.centre.x).toBe(10800);
+    expect(s.layers.shell!.centre!.x).toBe(10800);
     const run = (room: string) => ({
       kind: "mirror",
       count: 4,
@@ -377,6 +380,112 @@ ${body}
     const s = sym(src);
     expect(groupOf(s.layers.rooms)).toBe("D2 x/y");
     expect(groupOf(s.layers.full)).toBe("D1 y");
+  });
+});
+
+/**
+ * `full` is everything the plan draws as building, not a subset: a column, a floor void, a
+ * ground surface (and a balcony's railing), a fence and a roof outline each join it as a
+ * footprint. Per kind, on the D2 rectangle: ONE off-centre instance breaks `full` (the
+ * drawing is then C1), and a symmetric arrangement keeps it — so the record is read, and
+ * read as a shape rather than a count.
+ */
+suite("symmetry — `full` covers every drawn footprint", () => {
+  const CASES: Record<string, { off: string; sym: string; symGroup: string }> = {
+    column: {
+      off: "column at (1000,1000) size 600x600",
+      sym: "column at (1000,1000) size 600x600\n    column at (6400,1000) size 600x600\n    column at (1000,2400) size 600x600\n    column at (6400,2400) size 600x600",
+      symGroup: "D2 x/y",
+    },
+    void: {
+      off: "void id=v at (1000,1000) size 1200x1200",
+      sym: "void id=v at (3400,1400) size 1200x1200",
+      symGroup: "D2 x/y",
+    },
+    outdoor: {
+      off: "outdoor id=o paving at (8200,0) size 1200x1000",
+      sym: "outdoor id=o1 paving at (8200,1500) size 1200x1000\n    outdoor id=o2 paving at (-1400,1500) size 1200x1000",
+      symGroup: "D2 x/y",
+    },
+    fence: {
+      off: "fence id=f picket { (-2000,-1000) (3000,-1000) }",
+      sym: "fence id=f picket { (-2000,-1000) (10000,-1000) }\n    fence id=g picket { (-2000,5000) (10000,5000) }",
+      symGroup: "D2 x/y",
+    },
+    roof: {
+      off: "roof polygon (-600,-600) (8600,-600) (8600,4600) (-600,5000)",
+      sym: "roof polygon (-600,-600) (8600,-600) (8600,4600) (-600,4600)",
+      symGroup: "D2 x/y",
+    },
+  };
+
+  it.each(Object.keys(CASES))("%s: one off-centre instance breaks `full`; a symmetric one keeps it", (kind) => {
+    const c = CASES[kind]!;
+    const base = sym(plan(RECT));
+    expect(groupOf(base.layers.full)).toBe("D2 x/y");
+    const off = sym(plan(`${RECT}\n    ${c.off}`));
+    expect(groupOf(off.layers.full), `${kind} off-centre`).toBe("C1");
+    expect(groupOf(off.layers.shell), "the shell does not see it").toBe("D2 x/y");
+    const kept = sym(plan(`${RECT}\n    ${c.sym}`));
+    expect(groupOf(kept.layers.full), `${kind} symmetric`).toBe(c.symGroup);
+  });
+
+  it("a balcony's railed edges are part of its record", () => {
+    // Centred on the south face, so the slab alone is mirror-symmetric about x = 4000. One
+    // railed side edge (`left`) breaks that; both side edges keep it.
+    const slab = (rail: string) =>
+      sym(plan(`${RECT}\n    outdoor id=b balcony at (3000,4000) size 2000x1200 rail ${rail}`)).layers.full;
+    expect(groupOf(slab("bottom"))).toBe("D1 x");
+    expect(groupOf(slab("bottom left"))).toBe("C1");
+    expect(groupOf(slab("bottom left right"))).toBe("D1 x");
+  });
+
+  it("dimensions are annotation: a lone off-centre dim leaves `full` alone", () => {
+    const s = sym(plan(`${RECT}\n    dim (0,0)->(3000,0) offset 800`));
+    expect(groupOf(s.layers.full)).toBe("D2 x/y");
+  });
+});
+
+/** The subgroup types the first hand cases do not reach: C2, D1 antidiag, D2 diag/antidiag. */
+suite("symmetry — the remaining subgroup types", () => {
+  const poly = (pts: string) => `
+    wall id=shell exterior thickness 200 { ${pts} close }
+    room id=r polygon ${pts} label "R" uses living`;
+
+  it("a Z is C2: the half-turn only", () => {
+    const s = sym(plan(poly("(0,0) (4000,0) (4000,2000) (6000,2000) (6000,4000) (2000,4000) (2000,2000) (0,2000)")));
+    for (const layer of LAYERS) expect(groupOf(s.layers[layer]), layer).toBe("C2");
+    expect(s.layers.shell!.centre).toEqual({ x: 3000, y: 2000 });
+    expect(s.layers.shell!.elements).toEqual([{ rotate: 0 }, { rotate: 180 }]);
+  });
+
+  it("the mirrored L is D1 antidiag", () => {
+    const s = sym(plan(poly("(0,0) (6000,0) (6000,6000) (3000,6000) (3000,3000) (0,3000)")));
+    expect(groupOf(s.layers.shell)).toBe("D1 antidiag");
+    expect(groupOf(s.layers.rooms)).toBe("D1 antidiag");
+  });
+
+  it("a square notched at two opposite corners is D2 about its diagonals", () => {
+    const s = sym(plan(poly("(2000,0) (6000,0) (6000,4000) (4000,4000) (4000,6000) (0,6000) (0,2000) (2000,2000)")));
+    expect(groupOf(s.layers.shell)).toBe("D2 diag/antidiag");
+    expect(groupOf(s.layers.rooms)).toBe("D2 diag/antidiag");
+    expect(s.layers.shell!.centre).toEqual({ x: 3000, y: 3000 });
+  });
+});
+
+suite("symmetry — a non-hinged panel's drawn `open`", () => {
+  it("two sliders mirrored by `place` match only at the same `open`", () => {
+    const pairOf = (openA: string, openB: string): string =>
+      plan(`
+  component c(o) {
+    wall id=shell exterior thickness 200 { (0,0) (4000,0) (4000,4000) (0,4000) close }
+    room id=r at (0,0) size 4000x4000 label "R" uses living
+    door id=d sliding at (2000,4000) width 1200 wall shell slide left open o
+  }
+  place c(${openA}) as a at (0,0)
+  place c(${openB}) as b at (8000,0) mirror x`);
+    expect(groupOf(sym(pairOf("0.5", "0.5")).layers.full)).toBe("D1 x");
+    expect(groupOf(sym(pairOf("0.5", "0.8")).layers.full)).toBe("C1");
   });
 });
 
