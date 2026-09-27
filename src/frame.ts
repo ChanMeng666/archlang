@@ -82,6 +82,15 @@ export interface Frame {
   span?: Span;
   /** The file the `place` statement lives in (absent = the compiled source). */
   file?: string;
+  /**
+   * For a NESTED instance only: the enclosing instance's frame, and this `place`'s own
+   * frame relative to it (what {@link makeFrame} built before {@link composeFrame}). Absent
+   * on a top-level instance, whose frame is its own local frame. The resolver walks these
+   * to express a descendant in an ancestor's local frame by composing the authored frames,
+   * exactly as the ancestor's body would if it were compiled as the plan.
+   */
+  parent?: Frame;
+  local?: Frame;
 }
 
 /** The identity frame (the root plan). Exposed so callers can spell "no transform". */

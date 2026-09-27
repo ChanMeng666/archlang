@@ -22,9 +22,10 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { resolvePlan } from "../src/analyze.js";
 import { composeFrame } from "../src/frame.js";
 import { compile, type ElementDef, lint, makeVirtualWorld, registerElement } from "../src/index.js";
-import { levelBlocks } from "../src/ir.js";
+import { levelBlocks, type RFurniture } from "../src/ir.js";
 import { LINT_RULES } from "../src/lint.js";
 import { entryEdges, verticalsOf } from "../src/vertical.js";
 import {
@@ -527,21 +528,6 @@ const WITNESSES: Record<ClassName, [string, () => void][]> = {
       },
     ],
   ],
-  "nested-ref": [
-    [
-      "(COMPOSITION) STILL fails a reference into a nested instance once the plan is itself placed",
-      () => {
-        const inner = `  component inner() {\n${room(4000, 3000, "main")}\n  }`;
-        const ref = "furniture id=f trolley in c2.main anchor bottom-right inset 300 size 700x500";
-        const flat = `plan "w" {\n  units mm\n${inner}\n  place inner() as c2 at (0,0)\n  ${ref}\n}`;
-        const nested = `plan "w" {\n  units mm\n${inner}\n  component c() {\n    place inner() as c2 at (0,0)\n    ${ref}\n  }\n  place c() as g at (0,0)\n}`;
-        expect(compile(flat, { noCache: true }).diagnostics).toEqual([]); // the control
-        // At the IDENTITY frame: this is composition, not equivariance.
-        expect(compile(nested, { noCache: true }).diagnostics.map((d) => d.code)).toEqual(["E_PLACE_REF"]);
-        expect(KNOWN_CLASSES["nested-ref"].law).toBe("composition");
-      },
-    ],
-  ],
 };
 
 describe("the pinned classes — each STILL reproduced by a minimal witness", () => {
@@ -609,5 +595,24 @@ describe("closed classes — each former witness is now the law", () => {
         g.name,
       ).toEqual([]);
     }
+  });
+
+  it("nested-ref (backlog E.16): a reference into a nested instance resolves once the plan is itself placed", () => {
+    const inner = `  component inner() {\n${room(4000, 3000, "main")}\n  }`;
+    const ref = "furniture id=f trolley in c2.main anchor bottom-right inset 300 size 700x500";
+    const flat = `plan "w" {\n  units mm\n${inner}\n  place inner() as c2 at (0,0)\n  ${ref}\n}`;
+    const nested = `plan "w" {\n  units mm\n${inner}\n  component c() {\n    place inner() as c2 at (0,0)\n    ${ref}\n  }\n  place c() as g at (0,0)\n}`;
+    const piece = (src: string, id: string) =>
+      resolvePlan(src).ir?.elements.find((e): e is RFurniture => e.kind === "furniture" && e.id === id);
+    expect(compile(flat, { noCache: true }).diagnostics).toEqual([]); // the control
+    // At the IDENTITY frame: composition, not equivariance — the placed plan is the plan.
+    expect(compile(nested, { noCache: true }).diagnostics).toEqual([]);
+    const a = piece(flat, "f");
+    const b = piece(nested, "g.f");
+    // Anchored bottom-right inset 300 in the 4000×3000 room: the same footprint either way.
+    expect(a?.at).toEqual({ x: 3000, y: 2200 });
+    expect({ at: b?.at, size: b?.size }).toEqual({ at: a?.at, size: a?.size });
+    // Every shipped example that reaches into its instances survives being placed.
+    for (const rel of ["clinic.arch", "museum-wings.arch"]) expect(t0Violations(rel), rel).toEqual([]);
   });
 });

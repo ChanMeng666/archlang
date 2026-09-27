@@ -1232,7 +1232,7 @@ function placeFrame(
     ...(stmt.span ? { span: stmt.span } : {}),
     ...(ectx.file !== undefined ? { file: ectx.file } : {}),
   });
-  return ectx.frame ? composeFrame(ectx.frame, local) : local;
+  return ectx.frame ? { ...composeFrame(ectx.frame, local), parent: ectx.frame, local } : local;
 }
 
 /**
@@ -1693,14 +1693,19 @@ function resolveImpl(
   // 3. Resolve each group in registry order (walls first → openings can host against
   //    them), then transform the instance groups into plan coordinates.
   //
-  //    A `place`d instance is a CLOSED WORLD: it resolves entirely in its own local frame
-  //    against its OWN walls and rooms, and one rigid transform then carries the result
-  //    into the plan. That is what makes every derived-geometry rule (`anchor top-left`,
-  //    `against wall … side`, `swing into`, `right-of`) mean inside a rotated instance
-  //    exactly what it means when the component is authored on its own — see `frame.ts`.
-  //    The root plan resolves LAST and sees every instance's walls and rooms under their
-  //    namespaced ids, which is how `door on west.perimeter` and `furniture … in west.main`
-  //    work. The reverse does not hold, by design: a component cannot reach out of itself.
+  //    A `place`d instance is a CLOSED WORLD going out: it resolves entirely in its own
+  //    local frame, and one rigid transform then carries the result into the plan. That is
+  //    what makes every derived-geometry rule (`anchor top-left`, `against wall … side`,
+  //    `swing into`, `right-of`) mean inside a rotated instance exactly what it means when
+  //    the component is authored on its own — see `frame.ts`.
+  //
+  //    Every level reaches INTO its descendants the same way: the root plan resolves LAST
+  //    and sees every instance's walls and rooms under their namespaced ids (`door on
+  //    west.perimeter`, `furniture … in west.main`), and an instance resolves after all of
+  //    its descendants and sees theirs, carried into its own local frame and named relative
+  //    to it — exactly what its body would see compiled as the plan. So placing a plan is
+  //    associative. None reaches OUT: an instance never sees its parent's or its siblings'
+  //    elements, so a component cannot reference anything outside itself (ADR 0016 §3).
   const walls: RWall[] = [];
   const rooms2: RRoom[] = [];
   const instances: RInstance[] = [];
@@ -1709,8 +1714,10 @@ function resolveImpl(
   let activeEnv: Env = new Map();
   /** The entry being resolved — the provenance every diagnostic below inherits. */
   let activeEntry: Entry | undefined;
+  /** Where resolution diagnostics go: the plan's list, or an instance group's buffer. */
+  let diagSink: Diagnostic[] = diagnostics;
   const pushDiag = (d: Diagnostic): void => {
-    diagnostics.push(activeEntry ? stampProvenance(d, activeEntry.frame, activeEntry.file) : d);
+    diagSink.push(activeEntry ? stampProvenance(d, activeEntry.frame, activeEntry.file) : d);
   };
   const evalNum = (e: Expr): number => asNum(evalExpr(e, activeEnv, pushDiag), pushDiag, exprSpan(e));
   const evalStr = (e: Expr): string => asStr(evalExpr(e, activeEnv, pushDiag));
@@ -1769,11 +1776,9 @@ function resolveImpl(
     return hiVal;
   }
 
-  for (const grp of groups) {
-    // The root group accumulates into the plan-wide arrays (already carrying every
-    // instance's transformed walls/rooms); an instance group gets its own local pair.
-    const grpWalls: RWall[] = grp.frame ? [] : walls;
-    const grpRooms: RRoom[] = grp.frame ? [] : rooms2;
+  /** Resolve one group's entries in registry order against `grpWalls`/`grpRooms`, which
+   *  the group's own walls and rooms are appended to as they resolve. */
+  const resolveGroup = (grp: ResolveGroup, grpWalls: RWall[], grpRooms: RRoom[]): void => {
     ctx.walls = grpWalls;
     ctx.rooms = grpRooms;
     wallGrid = null;
@@ -1806,19 +1811,28 @@ function resolveImpl(
       }
     }
     activeEntry = undefined;
-    if (!grp.frame) continue;
-    instances.push({
-      name: grp.frame.prefix,
-      component: grp.frame.component,
-      at: { x: grp.frame.tx, y: grp.frame.ty },
-      rotate: grp.frame.rotate,
-      ...(grp.frame.mirror ? { mirror: grp.frame.mirror } : {}),
-    });
+  };
+
+  // 3(i). The instance groups, DEEPEST FIRST, so every descendant of a group has resolved
+  //      before the group does. Each group's effects are held in `placed` and committed
+  //      below in the original group order, so the plan-wide wall/room arrays, `instances`
+  //      and the diagnostic order are exactly what one pass in that order produces.
+  const placed = new Map<ResolveGroup, PlacedGroup>();
+  for (const grp of deepestFirst(groups)) {
+    const f = grp.frame!;
+    const buffer: Diagnostic[] = [];
+    diagSink = buffer;
+    // What this instance can reach: its descendants' walls and rooms, carried into its
+    // local frame (before its own, as the plan-wide arrays hold instances before the root).
+    const view = descendantView(grp, groups, placed, registry);
+    resolveGroup(grp, view.walls, view.rooms);
     // The instance's own relational placement runs HERE, in the local frame, because
     // `right-of` means the COMPONENT's right — resolving it after the transform would
-    // read the page's right instead (ADR 0004 arithmetic, one frame at a time).
-    placeRelational(grpRooms, snapPt, (d) => diagnostics.push(stampProvenance(d, grp.frame, undefined)));
-    const f = grp.frame;
+    // read the page's right instead (ADR 0004 arithmetic, one frame at a time). A
+    // descendant's room is a reference only: it carries no `_rel` once transformed.
+    placeRelational(view.rooms, snapPt, (d) => diagSink.push(stampProvenance(d, grp.frame, undefined)));
+    const locals = grp.entries.map((e) => e.resolved!);
+    const carried: ResolvedElement[] = [];
     // Kinds already refused in THIS instance: a component with ten plugin elements of one
     // kind is one fact, reported once per (instance, kind).
     const refusedKinds = new Set<string>();
@@ -1850,15 +1864,36 @@ function resolveImpl(
           );
           if (extra?.length) refusal.relatedSpans = extra;
           else delete refusal.relatedSpans;
-          diagnostics.push(refusal);
+          diagSink.push(refusal);
         }
         continue;
       }
       e.resolved = t;
+      carried.push(t);
+    }
+    placed.set(grp, { diagnostics: buffer, local: locals, carried });
+  }
+  diagSink = diagnostics;
+
+  // 3(ii). Commit the instance groups in the original order, then resolve the root plan
+  //        against the plan-wide arrays, which by then carry every instance.
+  for (const grp of groups) {
+    const done = placed.get(grp);
+    if (!done) continue;
+    for (const d of done.diagnostics) diagnostics.push(d);
+    instances.push({
+      name: grp.frame!.prefix,
+      component: grp.frame!.component,
+      at: { x: grp.frame!.tx, y: grp.frame!.ty },
+      rotate: grp.frame!.rotate,
+      ...(grp.frame!.mirror ? { mirror: grp.frame!.mirror } : {}),
+    });
+    for (const t of done.carried) {
       if (t.kind === "wall") walls.push(t);
       else if (t.kind === "room") rooms2.push(t);
     }
   }
+  for (const grp of groups) if (!grp.frame) resolveGroup(grp, walls, rooms2);
 
   // 3. IR element list in source order (for rendering), less any element a `place` could
   //    not carry (`E_INSTANCE_NO_TRANSFORM` above).
@@ -2151,16 +2186,92 @@ interface ResolveGroup {
   entries: Entry[];
 }
 
+/** What resolving one instance group produced, held until the groups are committed. */
+interface PlacedGroup {
+  /** Every diagnostic the group raised, in the order it raised them. */
+  diagnostics: Diagnostic[];
+  /** Each entry's element in the instance's LOCAL frame, parallel to the group's entries. */
+  local: ResolvedElement[];
+  /** The elements carried into plan coordinates, in entry order (dropped ones absent). */
+  carried: ResolvedElement[];
+}
+
+/** How many `place`s enclose this instance's own (0 for a top-level instance). */
+function frameDepth(f: Frame): number {
+  let n = 0;
+  for (let p = f.parent; p; p = p.parent) n++;
+  return n;
+}
+
+/**
+ * The instance groups in resolution order: deepest first, ties in the original order. Every
+ * descendant of an instance is strictly deeper, so it resolves before the instance does.
+ */
+function deepestFirst(groups: readonly ResolveGroup[]): ResolveGroup[] {
+  return groups
+    .flatMap((grp, i) => (grp.frame ? [{ grp, i, depth: frameDepth(grp.frame) }] : []))
+    .sort((x, y) => y.depth - x.depth || x.i - y.i)
+    .map((x) => x.grp);
+}
+
+/**
+ * The frame that carries descendant `d`'s local coordinates into `ancestor`'s: the authored
+ * `place` frames between them, composed outermost first, with ids named relative to the
+ * ancestor (`g.c2.main` is `c2.main` in `g`). That is the frame `d` would have if the
+ * ancestor's body were compiled as the plan, computed by the same arithmetic, so the two
+ * agree byte for byte. `undefined` when `d` is not a descendant of `ancestor`.
+ */
+function relativeFrame(ancestor: Frame, d: Frame): Frame | undefined {
+  const chain: Frame[] = [];
+  let f: Frame | undefined = d;
+  for (; f && f !== ancestor; f = f.parent) chain.push(f);
+  if (!f || chain.length === 0) return undefined;
+  const localOf = (x: Frame): Frame => x.local ?? x;
+  let rel = localOf(chain[chain.length - 1]!);
+  for (let i = chain.length - 2; i >= 0; i--) rel = composeFrame(rel, localOf(chain[i]!));
+  return { ...rel, prefix: d.prefix.slice(ancestor.prefix.length + 1) };
+}
+
+/**
+ * The walls and rooms instance group `grp` can reach before its own: every descendant
+ * instance's, carried into `grp`'s local frame by {@link relativeFrame}, in the original
+ * group order — the order the plan-wide arrays hold instances in. Siblings and ancestors are
+ * not descendants, so they never appear (a component cannot reach out of itself).
+ */
+function descendantView(
+  grp: ResolveGroup,
+  groups: readonly ResolveGroup[],
+  placed: ReadonlyMap<ResolveGroup, PlacedGroup>,
+  registry: Registry,
+): { walls: RWall[]; rooms: RRoom[] } {
+  const walls: RWall[] = [];
+  const rooms: RRoom[] = [];
+  for (const d of groups) {
+    const done = placed.get(d);
+    if (!d.frame || !done) continue;
+    const rel = relativeFrame(grp.frame!, d.frame);
+    if (!rel) continue;
+    for (const local of done.local) {
+      if (local.kind !== "wall" && local.kind !== "room") continue;
+      const v = tryTransformElement(rel, local, registry.byKind.get(local.kind));
+      if (v?.kind === "wall") walls.push(v);
+      else if (v?.kind === "room") rooms.push(v);
+    }
+  }
+  return { walls, rooms };
+}
+
 /**
  * Partition the expanded entry stream by coordinate frame — one group per `place`d
  * instance (keyed on the frame OBJECT, which every entry of that instance shares), plus
  * the root plan.
  *
- * Instance groups come FIRST, in first-appearance order, and the root LAST. That ordering
- * is what lets the plan reference an instance's walls and rooms by their namespaced ids
- * (`door on west.perimeter`) while keeping the instance itself sealed. Element ORDER in
- * the drawing is untouched — `elements` is rebuilt from `entries` in source order after
- * every group has resolved — so this affects only which facts each group can see.
+ * Instance groups come FIRST, in first-appearance order, and the root LAST. That is the
+ * order the groups' effects are COMMITTED in (the plan-wide wall/room arrays, `instances`,
+ * diagnostics); the instances RESOLVE deepest first ({@link deepestFirst}) so each one can
+ * reference its descendants, and the root resolves last so it can reference every
+ * instance (`door on west.perimeter`). Element ORDER in the drawing is untouched —
+ * `elements` is rebuilt from `entries` in source order after every group has resolved.
  *
  * A plan with no `place` yields exactly one group holding every entry: the historical
  * single pass.
