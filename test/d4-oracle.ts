@@ -828,6 +828,26 @@ function overlayOf(ir: ResolvedPlan): CirculationOverlay | null {
 const roomSeed = (r: RRoom): Point =>
   r.poly ? polygonLabelPoint(r.poly) : { x: r.at.x + r.size.w / 2, y: r.at.y + r.size.h / 2 };
 
+/** See {@link CaseContext.entranceShift}. 0 when either side has no overlay. */
+export function entranceSeedShift(obs0: Observation, obsG: Observation, f: Frame): number {
+  if (!obs0.ir || !obsG.ir) return 0;
+  const o0 = overlayOf(obs0.ir);
+  const oG = overlayOf(obsG.ir);
+  if (!o0 || !oG) return 0;
+  const cell = o0.cellSizeMm;
+  const seedG = new Map(oG.entrances.map((e) => [e.entranceId, e.seed] as const));
+  let worst = oG.entrances.some((e) => !o0.entrances.some((x) => x.entranceId === e.entranceId))
+    ? Number.POSITIVE_INFINITY
+    : 0;
+  for (const e of o0.entrances) {
+    const b = seedG.get(e.entranceId);
+    if (!b) return Number.POSITIVE_INFINITY;
+    const a = tp(f, e.seed);
+    worst = Math.max(worst, Math.round((Math.abs(a.x - b.x) + Math.abs(a.y - b.y)) / cell));
+  }
+  return worst;
+}
+
 /** One {@link WalkAttribution} per room measured on both sides — only those whose walk
  *  differs, unless `all` (a detour can move with an endpoint while the walk does not). */
 export function attributeWalks(obs0: Observation, obsG: Observation, f: Frame, all = false): WalkAttribution[] {
@@ -998,6 +1018,9 @@ export interface CaseContext {
   walks(): ReadonlyMap<string, WalkAttribution>;
   /** Where every room's endpoints went, walk changed or not (lazy). */
   endpoints(): ReadonlyMap<string, WalkAttribution>;
+  /** The largest entrance seed shift in cells (gP's seed against the image of P₀'s), over
+   *  every entrance; `Infinity` when an entrance seeds on one side only (lazy). */
+  entranceShift(): number;
   /**
    * P₀ carries geometry a translation re-rounds: a circle room or an arc edge (whose
    * tessellation and tangents are irrational), or a resolved coordinate `x` with
@@ -1030,6 +1053,7 @@ export function caseContext(
 ): CaseContext {
   let walks: Map<string, WalkAttribution> | null = null;
   let endpoints: Map<string, WalkAttribution> | null = null;
+  let shift: number | null = null;
   return {
     g,
     f,
@@ -1046,6 +1070,7 @@ export function caseContext(
     ties: latticeTies(obs0),
     walks: () => (walks ??= new Map(attributeWalks(obs0, obsG, f).map((a) => [a.roomId, a]))),
     endpoints: () => (endpoints ??= new Map(attributeWalks(obs0, obsG, f, true).map((a) => [a.roomId, a]))),
+    entranceShift: () => (shift ??= entranceSeedShift(obs0, obsG, f)),
     floatSensitive: g.translate === true && floatSensitive(obs0, f.tx),
   };
 }

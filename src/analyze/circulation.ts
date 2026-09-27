@@ -943,6 +943,69 @@ function buildGrid(
   return g;
 }
 
+/** The dyadic lattice (mm) {@link toExtentFrame} snaps relative coordinates to: 2⁻¹⁰. */
+const FRAME_QUANTUM_MM = 1 / 1024;
+
+/**
+ * The circulation inputs moved into the nav extent's OWN frame: every coordinate minus the
+ * extent's min corner, so the grid is anchored at (0, 0) and every sample — a cell centre,
+ * a room's seed point, a threshold point, a distance to a wall or a footprint — is taken in
+ * coordinates relative to it.
+ *
+ * Why: the grid used to sample in ABSOLUTE float coordinates, and a curve's tessellated
+ * vertices do not survive a translation bit for bit — `9071.796769724491` placed 20 m out
+ * is stored as `29071.79676972449`, one ulp of the larger number coarser — so the ring's
+ * label point, a point-to-edge distance or a membership test resolved an exact tie the
+ * other way, and a pure translation moved a walk (`library`'s reading room 25 500 →
+ * 25 300 mm) or a detour (`aquarium`'s rotunda 1.01 → 1).
+ *
+ * So each coordinate is taken relative to the min corner and then snapped to a dyadic
+ * lattice of {@link FRAME_QUANTUM_MM} — far coarser than any ulp a translation can cost
+ * (≈ 1e-10 mm at a kilometre), far finer than anything a 100 mm grid can see. Both sides
+ * of a translation then read the SAME number, so every fact is bit-for-bit invariant. An
+ * integer or dyadic coordinate — every rectangle, every authored point — is unchanged by
+ * the snap, and so is every plan whose extent starts at (0, 0) and draws no curve.
+ */
+function toExtentFrame(
+  origin: Point,
+  plan: {
+    rooms: RRoom[];
+    walls: RWall[];
+    doors: RDoor[];
+    openings: ROpening[];
+    furniture: RFurniture[];
+    verticals: RVertical[];
+    voids: RVoid[];
+  },
+): typeof plan {
+  const snap = (v: number): number => Math.round(v / FRAME_QUANTUM_MM) * FRAME_QUANTUM_MM;
+  const p = (q: Point): Point => ({ x: snap(q.x - origin.x), y: snap(q.y - origin.y) });
+  const at = <T extends { at: Point }>(e: T): T => ({ ...e, at: p(e.at) });
+  return {
+    rooms: plan.rooms.map((r) => ({
+      ...at(r),
+      ...(r.poly ? { poly: r.poly.map(p) } : {}),
+      ...(r.circle ? { circle: { ...r.circle, c: p(r.circle.c) } } : {}),
+    })),
+    walls: plan.walls.map((w) => ({
+      ...w,
+      points: w.points.map(p),
+      ...(w.arcs ? { arcs: w.arcs.map((a) => (a ? { ...a, center: p(a.center), a: p(a.a), b: p(a.b) } : a)) } : {}),
+    })),
+    doors: plan.doors.map(at),
+    openings: plan.openings.map(at),
+    furniture: plan.furniture.map(at),
+    verticals: plan.verticals.map(at),
+    voids: plan.voids.map(at),
+  };
+}
+
+/** The nav extent's min corner — the origin {@link toExtentFrame} moves a plan to. */
+function extentOrigin(rooms: readonly RRoom[]): Point {
+  const ex = navExtent(rooms);
+  return ex ? { x: ex.minX, y: ex.minY } : { x: 0, y: 0 };
+}
+
 /** Shared nav-grid setup for both the facts and overlay entry points: the grid, each
  *  room's anchor + free-cell list, and every entrance's seed cell (with its clear width
  *  stamped). `none` → no entrance/rooms (null circulation); `empty` → entrances, but not
@@ -1143,6 +1206,16 @@ export function computeCirculation(
    *  Append-only: omitting it means a storey with no voids. */
   voids: RVoid[] = [],
 ): CirculationModel | null {
+  // Every sample in the nav extent's own frame, so a translation moves no fact.
+  ({ rooms, walls, doors, openings, furniture, verticals, voids } = toExtentFrame(extentOrigin(rooms), {
+    rooms,
+    walls,
+    doors,
+    openings,
+    furniture,
+    verticals,
+    voids,
+  }));
   const nav = buildNav(rooms, walls, doors, openings, furniture, verticals, voids, access, tol, bodyRadiusMm);
   if (nav.kind === "none") return null;
   // Rooms the modeled doors reach: the only ones a walkability verdict is meaningful
@@ -1449,9 +1522,23 @@ export function computeCirculationOverlay(
   /** Floor voids on this storey — see {@link computeCirculation}. */
   voids: RVoid[] = [],
 ): CirculationOverlay | null {
+  // Measured in the nav extent's own frame, exactly as the facts are; every point drawn
+  // is moved back by the same origin (`o + (i + ½)·cell` is the old absolute centre).
+  const o = extentOrigin(rooms);
+  const entranceAt = [...doors, ...openings].find((d) => d.id === access.entrances[0])?.at;
+  ({ rooms, walls, doors, openings, furniture, verticals, voids } = toExtentFrame(o, {
+    rooms,
+    walls,
+    doors,
+    openings,
+    furniture,
+    verticals,
+    voids,
+  }));
+  const back = (p: Point): Point => ({ x: o.x + p.x, y: o.y + p.y });
   const nav = buildNav(rooms, walls, doors, openings, furniture, verticals, voids, access, tol, bodyRadiusMm);
-  if (nav.kind !== "ok") return null;
-  const { g, anchor, seed, sources, sourceIds, sourceClear, entrancePoint } = nav;
+  if (nav.kind !== "ok" || entranceAt === undefined) return null;
+  const { g, anchor, seed, sources, sourceIds, sourceClear } = nav;
 
   // The same multi-source walk the facts measure: each room's path starts at its own
   // nearest entrance, and each pinch lies on the widest route from any entrance.
@@ -1483,8 +1570,8 @@ export function computeCirculationOverlay(
     overlayRooms.push({
       roomId: rooms[ri]!.id,
       entranceId: sourceIds[from[a]!]!,
-      path: reconstructPath(g, parent, a),
-      pinch: pinchCell >= 0 ? { at: centreOf(g, pinchCell), clearMm: Math.round(bestVal) } : null,
+      path: reconstructPath(g, parent, a).map(back),
+      pinch: pinchCell >= 0 ? { at: back(centreOf(g, pinchCell)), clearMm: Math.round(bestVal) } : null,
     });
   }
 
@@ -1508,7 +1595,7 @@ export function computeCirculationOverlay(
     overlayRoutes.push({
       fromRoomId: rooms[fromIdx]!.id,
       toRoomId: rooms[best]!.id,
-      path: reconstructPath(g, r.parent, rep[best]!),
+      path: reconstructPath(g, r.parent, rep[best]!).map(back),
     });
   };
   const livingDining = rooms.map((r, i) => (isLivingOrDining(r) ? i : -1)).filter((i) => i >= 0);
@@ -1522,8 +1609,8 @@ export function computeCirculationOverlay(
 
   return {
     cellSizeMm: g.cell,
-    entranceAt: entrancePoint,
-    entrances: sources.map((k, i) => ({ entranceId: sourceIds[i]!, seed: centreOf(g, k) })),
+    entranceAt,
+    entrances: sources.map((k, i) => ({ entranceId: sourceIds[i]!, seed: back(centreOf(g, k)) })),
     rooms: overlayRooms,
     routes: overlayRoutes,
   };

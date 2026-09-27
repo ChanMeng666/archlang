@@ -161,13 +161,17 @@ export const KNOWN_CLASSES: Readonly<Record<ClassName, KnownClass & Partial<Rast
     law: "equivariance",
     site: "src/analyze/circulation.ts:285 (cellOf floors the tied entrance to one side), :340-352 (seedCell then walks inward), :996-1010 (the walk origin is the first entrance's seed)",
     summary:
-      "the first entrance is seeded across a tie (a lattice line, or a corner's diagonal step) and the tied side's inward walk goes elsewhere: further in past eroded cells, or into a pocket sealed from every room — so the walk origin moves several cells, or no room measures at all on one side",
+      "an entrance is seeded across a tie (a lattice line, or a corner's diagonal step) and the tied side's inward walk goes elsewhere: further in past eroded cells, or into a pocket sealed from every room — so a walk origin moves several cells, no room measures at all on one side, or (with several entrances) that entrance's width drops out of every room's widest-from-any-entrance bottleneck",
     coversFact: (v, c) => {
       if (c.g.translate || !c.ties.entrance || !v.path.startsWith("circulation")) return false;
       // One side measures no room from the first entrance and the other does: its seed
       // landed in a sealed pocket on one side only.
       const measured = (o: CaseContext["obs0"]) => (o.summary.circulation?.rooms.length ?? 0) > 0;
       if (measured(c.obs0) !== measured(c.obsG)) return true;
+      // With several entrances the bottleneck is the widest from ANY of them, so an entrance
+      // whose tied seed lands in a sealed pocket on one side only (or walks in past eroded
+      // cells) drops its width out of — or into — every room's bottleneck on that side.
+      if (v.path === "circulation.rooms[].bottleneck") return c.entranceShift() > 1;
       // Otherwise the seed moved more than a step: its magnitude is the geodesic between the
       // two tied seeds, which no straight-line bound holds — and a room whose nearest cell
       // lies in the pocket one seed cannot reach measures to a different reachable cell,
@@ -237,22 +241,12 @@ export const KNOWN_CLASSES: Readonly<Record<ClassName, KnownClass & Partial<Rast
   "float-translation": raster("float-translation", {
     status: "defect",
     law: "equivariance",
-    site: "src/analyze/circulation.ts (cells and seeds in ABSOLUTE float coordinates); src/lint/rules/doors.ts:180-185 (pocketRunMm `>=` / `<= 0`), and every exact comparison on a resolved coordinate",
+    site: "src/lint/rules/doors.ts:180-185 (pocketRunMm `>=` / `<= 0`), and every exact comparison lint makes on a resolved coordinate",
     summary:
-      "the compiler measures in ABSOLUTE float coordinates, and P₀ carries geometry a translation re-rounds — a curve's tessellation, or an `at 55%` position resolved an ulp off its integer that 20 m of offset rounds back — so an exact tie or an exact threshold flips under a pure translation: a measured cell, a detour ratio, a pocket door's `>= need`",
-    // Under a translation of float-sensitive geometry only: a walk within its endpoints'
-    // displacement, a detour whose room's endpoints moved at most a step per axis, or a
-    // lint output (an exact comparison flipped).
-    coversFact: (v, c) => {
-      if (!c.g.translate || !c.floatSensitive) return false;
-      if (v.path === "circulation.rooms[].detour") {
-        const e = c.endpoints().get(idOf(v.key));
-        return e?.anchorTie === true && e.ent <= 1 && e.anchor <= 2;
-      }
-      if (v.path !== "circulation.rooms[].walk") return false;
-      const a = walkOf(v, c);
-      return a?.anchorTie === true && a.ent <= 1 && Math.abs(a.delta) <= a.ent + a.anchor;
-    },
+      "lint compares resolved coordinates in ABSOLUTE floats, and P₀ carries geometry a translation re-rounds — an `at 55%` position resolved an ulp off its integer that 20 m of offset rounds back — so an exact threshold flips under a pure translation: a pocket door's `>= need`. (The circulation half is CLOSED: the nav grid samples in its extent's own frame, snapped to a dyadic lattice — see the closed-classes law.)",
+    // No circulation fact moves under a translation any more: a raster change under `t` is
+    // NEW. Only lint outputs of float-sensitive geometry remain (the wrapper below).
+    coversFact: () => false,
   }),
   "dim-tick-hand": {
     status: "declared",
@@ -288,7 +282,8 @@ const CLOSES: Readonly<Record<ClassName, string>> = {
   "anchor-far-tie": "choose a room's measured cell by a D4-symmetric rule among equidistant cells",
   "label-point-tie": "a D4-symmetric tie-break in polygonLabelPoint (or measure to every tied arm)",
   "threshold-carve": "try threshold points on BOTH sides of a lattice line (a symmetric seed set)",
-  "float-translation": "sample the nav grid in coordinates relative to its own origin",
+  "float-translation":
+    "compare resolved coordinates in lint through a snapped relative frame, as the nav grid now does",
   "dim-tick-hand": "never — declared drafting convention; the pin moves only if the tick convention does",
 };
 
@@ -363,53 +358,43 @@ export const KNOWN: readonly KnownViolation[] = [
   },
   {
     where: "aquarium.arch",
-    g: "t",
-    path: "circulation.rooms[].detour",
-    ids: ["g.rotunda_r"],
-    maxDelta: 0.011,
-    cls: "float-translation",
-    why: "rotunda_r: a re-rounded tie 20 m from the origin; detour 0.01",
-    closesWith: CLOSES["float-translation"],
-  },
-  {
-    where: "aquarium.arch",
-    g: ["r90", "r180", "r90mx"],
+    g: "r180",
     path: "circulation.rooms[].walk",
-    ids: ["g.foyer", "g.plant"],
-    maxDelta: 100,
-    cls: "raster-tie",
-    why: "foyer, plant: entrance moved ≤1 step, measured cell ≤2 steps (exact ties); walk ≤−100 mm (1 cells)",
-    closesWith: CLOSES["raster-tie"],
-  },
-  {
-    where: "aquarium.arch",
-    g: ["r90", "r180", "mx", "r90mx"],
-    path: "circulation.rooms[].walk",
-    ids: ["g.kelp", "g.reef", "g.shop"],
+    ids: ["g.cafe", "g.concourse", "g.foyer", "g.kelp", "g.plant", "g.reef", "g.rotunda_r", "g.shop"],
     maxDelta: 300,
     cls: "raster-tie",
-    why: "kelp, reef, shop: entrance moved ≤1 step, measured cell ≤2 steps (exact ties); walk ≤±300 mm (3 cells)",
+    why: "cafe, concourse, foyer, kelp, plant, reef, rotunda_r, shop: entrance moved ≤1 step, measured cell ≤2 steps (exact ties); walk ≤±300 mm (3 cells)",
     closesWith: CLOSES["raster-tie"],
   },
   {
     where: "aquarium.arch",
-    g: ["r180", "mx", "r90mx"],
+    g: "r90mx",
     path: "circulation.rooms[].walk",
-    ids: ["g.cafe", "g.concourse", "g.rotunda_r"],
-    maxDelta: 100,
+    ids: ["g.cafe", "g.concourse", "g.foyer", "g.kelp", "g.plant", "g.reef", "g.shop"],
+    maxDelta: 300,
     cls: "raster-tie",
-    why: "cafe, concourse, rotunda_r: entrance moved ≤1 step, measured cell ≤0 steps (exact ties); walk ≤±100 mm (1 cells)",
+    why: "cafe, concourse, foyer, kelp, plant, reef, shop: entrance moved ≤1 step, measured cell ≤2 steps (exact ties); walk ≤±300 mm (3 cells)",
+    closesWith: CLOSES["raster-tie"],
+  },
+  {
+    where: "aquarium.arch",
+    g: "mx",
+    path: "circulation.rooms[].walk",
+    ids: ["g.cafe", "g.concourse", "g.kelp", "g.reef", "g.rotunda_r", "g.shop"],
+    maxDelta: 200,
+    cls: "raster-tie",
+    why: "cafe, concourse, kelp, reef, rotunda_r, shop: entrance moved ≤1 step, measured cell ≤1 steps (exact ties); walk ≤±200 mm (2 cells)",
     closesWith: CLOSES["raster-tie"],
   },
   {
     where: "aquarium.arch",
     g: "r90",
     path: "circulation.rooms[].walk",
-    ids: ["g.rotunda_r"],
-    maxDelta: 200,
-    cls: "threshold-carve",
-    why: "rotunda_r: a doorway seeded across a lattice line carves on another row, beyond the endpoints' ≤0+0 steps; walk −200 mm (2 cells)",
-    closesWith: CLOSES["threshold-carve"],
+    ids: ["g.foyer", "g.kelp", "g.plant", "g.reef", "g.rotunda_r", "g.shop"],
+    maxDelta: 100,
+    cls: "raster-tie",
+    why: "foyer, kelp, plant, reef, rotunda_r, shop: entrance moved ≤0 step, measured cell ≤1 steps (exact ties); walk ≤−100 mm (1 cells)",
+    closesWith: CLOSES["raster-tie"],
   },
   {
     where: "attached.arch",
@@ -696,7 +681,7 @@ export const KNOWN: readonly KnownViolation[] = [
   },
   {
     where: "hexagon-pavilion.arch",
-    g: ["r180", "r270", "mx", "r90mx"],
+    g: ["r270", "r90mx"],
     path: "circulation.rooms[].walk",
     ids: ["g.g_ne", "g.g_nw"],
     maxDelta: 100,
@@ -708,40 +693,30 @@ export const KNOWN: readonly KnownViolation[] = [
     where: "hexagon-pavilion.arch",
     g: ["r180", "mx"],
     path: "circulation.rooms[].walk",
-    ids: ["g.g_se", "g.g_sw"],
+    ids: ["g.g_ne", "g.g_nw", "g.g_se", "g.g_sw"],
     maxDelta: 100,
     cls: "raster-tie",
-    why: "g_se, g_sw: entrance moved ≤1 step, measured cell ≤0 steps (exact ties); walk ≤±100 mm (1 cells)",
+    why: "g_ne, g_nw, g_se, g_sw: entrance moved ≤1 step, measured cell ≤0 steps (exact ties); walk ≤±100 mm (1 cells)",
     closesWith: CLOSES["raster-tie"],
   },
   {
     where: "hexagon-pavilion.arch",
-    g: ["r270", "mx", "r90mx"],
-    path: "circulation.rooms[].walk",
-    ids: ["g.rotunda"],
-    maxDelta: 100,
-    cls: "raster-tie",
-    why: "rotunda: entrance moved ≤1 step, measured cell ≤0 steps (exact ties); walk ≤+100 mm (1 cells)",
-    closesWith: CLOSES["raster-tie"],
-  },
-  {
-    where: "hexagon-pavilion.arch",
-    g: ["r90", "r270", "mx", "r90mx", "r180mx", "r270mx", "r90+N"],
+    g: ["mx", "r180mx"],
     path: "circulation.rooms[].walk",
     ids: ["g.g_n"],
     maxDelta: 1200,
     cls: "threshold-carve",
-    why: "g_n: a doorway seeded across a lattice line carves on another row, beyond the endpoints' ≤1+1 steps; walk −1200 mm (12 cells)",
+    why: "g_n: a doorway centred on a lattice line carves on shifted rows, so the walk moves past its endpoints' ties; walk ≤−1200 mm (12 cells)",
     closesWith: CLOSES["threshold-carve"],
   },
   {
     where: "hexagon-pavilion.arch",
     g: ["r90", "r270", "r90mx", "r270mx", "r90+N"],
     path: "circulation.rooms[].walk",
-    ids: ["g.g_se", "g.g_sw"],
-    maxDelta: 700,
+    ids: ["g.g_n", "g.g_se", "g.g_sw"],
+    maxDelta: 1200,
     cls: "threshold-carve",
-    why: "g_se, g_sw: a doorway seeded across a lattice line carves on another row, beyond the endpoints' ≤1+0 steps; walk +700 mm (7 cells)",
+    why: "g_n, g_se, g_sw: a doorway centred on a lattice line carves on shifted rows, so the walk moves past its endpoints' ties; walk ≤±1200 mm (12 cells)",
     closesWith: CLOSES["threshold-carve"],
   },
   {
@@ -749,9 +724,9 @@ export const KNOWN: readonly KnownViolation[] = [
     g: "r180",
     path: "circulation.rooms[].walk",
     ids: ["g.rotunda"],
-    maxDelta: 1300,
+    maxDelta: 1200,
     cls: "threshold-carve",
-    why: "rotunda: a doorway seeded across a lattice line carves on another row, beyond the endpoints' ≤1+0 steps; walk +1300 mm (13 cells)",
+    why: "rotunda: a doorway centred on a lattice line carves on shifted rows, so the walk moves past its endpoints' ties; walk ≤+1200 mm (12 cells)",
     closesWith: CLOSES["threshold-carve"],
   },
   {
@@ -840,10 +815,20 @@ export const KNOWN: readonly KnownViolation[] = [
     where: "library.arch",
     g: "r90",
     path: "circulation.rooms[].walk",
-    ids: ["g.r_cafe", "g.r_eaisle", "g.r_hall", "g.r_kitchen", "g.r_lobby", "g.r_ref", "g.r_staff", "g.r_waisle"],
+    ids: [
+      "g.r_cafe",
+      "g.r_eaisle",
+      "g.r_hall",
+      "g.r_kitchen",
+      "g.r_lobby",
+      "g.r_reading",
+      "g.r_ref",
+      "g.r_staff",
+      "g.r_waisle",
+    ],
     maxDelta: 200,
     cls: "raster-tie",
-    why: "r_cafe, r_eaisle, r_hall, r_kitchen, r_lobby, r_ref, r_staff, r_waisle: entrance moved ≤1 step, measured cell ≤1 steps (exact ties); walk ≤±200 mm (2 cells)",
+    why: "r_cafe, r_eaisle, r_hall, r_kitchen, r_lobby, r_reading, r_ref, r_staff, r_waisle: entrance moved ≤1 step, measured cell ≤1 steps (exact ties); walk ≤±200 mm (2 cells)",
     closesWith: CLOSES["raster-tie"],
   },
   {
@@ -856,6 +841,7 @@ export const KNOWN: readonly KnownViolation[] = [
       "g.r_kitchen",
       "g.r_lobby",
       "g.r_plant",
+      "g.r_reading",
       "g.r_ref",
       "g.r_staff",
       "g.r_waisle",
@@ -864,7 +850,7 @@ export const KNOWN: readonly KnownViolation[] = [
     ],
     maxDelta: 200,
     cls: "raster-tie",
-    why: "r_children, r_eaisle, r_kitchen, r_lobby, r_plant, r_ref, r_staff, r_waisle, r_wc_m, r_wc_w: entrance moved ≤1 step, measured cell ≤1 steps (exact ties); walk ≤±200 mm (2 cells)",
+    why: "r_children, r_eaisle, r_kitchen, r_lobby, r_plant, r_reading, r_ref, r_staff, r_waisle, r_wc_m, r_wc_w: entrance moved ≤1 step, measured cell ≤2 steps (exact ties); walk ≤±200 mm (2 cells)",
     closesWith: CLOSES["raster-tie"],
   },
   {
@@ -878,16 +864,6 @@ export const KNOWN: readonly KnownViolation[] = [
     // gP's grid was not g · P₀'s. With stair-tail closed only the endpoint ties remain.
     why: "r_plant, r_wc_m, r_wc_w: entrance moved ≤1 step, measured cell ≤2 steps (exact ties); walk +100 mm (r90), +300 mm (r90mx)",
     closesWith: CLOSES["raster-tie"],
-  },
-  {
-    where: "library.arch",
-    g: "t",
-    path: "circulation.rooms[].walk",
-    ids: ["g.r_reading"],
-    maxDelta: 200,
-    cls: "float-translation",
-    why: "r_reading: a re-rounded tie 20 m from the origin; walk ≤−200 mm (2 cells)",
-    closesWith: CLOSES["float-translation"],
   },
   {
     where: "materials.arch",

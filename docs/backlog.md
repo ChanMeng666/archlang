@@ -347,13 +347,19 @@ applies and a witness:
 Close with D4-symmetric tie-breaks: seed both sides of a line, choose among equidistant cells by a
 rule the group preserves, carve thresholds on a symmetric row set.
 
-### E.11 · `float-translation` — facts change under a pure translation — `todo`
+### E.11 · `float-translation` — facts change under a pure translation — `todo` (circulation half closed by W3b)
 
-The compiler measures in absolute float coordinates, and a translation re-rounds geometry: a curve's
-tessellation (`aquarium` detour 1.01 → 1, `library` reading-room walk 25500 → 25300 mm), or an
-`on <wall> at 55%` position that resolved an ulp off its integer and rounds back 20 m away — which
-flips `W_POCKET_RUN`'s `>= need` and makes its reverse-slide fix appear. Close by measuring relative
-to the plan's own origin and snapping resolved positions.
+**Closed for circulation.** A translation re-rounds a curve's tessellation (placed 20 m out, a ring
+vertex keeps one ulp less of its fraction), so the nav grid, sampling in absolute floats, resolved
+exact ties the other way (`aquarium` detour 1.01 → 1, `library` reading-room walk 25500 → 25300 mm).
+The grid now samples in its extent's own frame, each coordinate taken relative to the min corner and
+snapped to a 2⁻¹⁰ mm lattice (`toExtentFrame`), so every circulation fact is bit-for-bit invariant
+under any translation (`test/equivariance-corpus.test.ts`, "closed classes"). The snap moved three
+P₀ values to their translation-invariant readings (the baseline header names them).
+
+**Still open for lint:** an `on <wall> at 55%` position that resolved an ulp off its integer rounds
+back 20 m away and flips `W_POCKET_RUN`'s `>= need`, making its reverse-slide fix appear. Close by
+snapping resolved positions (or comparing through the same snapped frame).
 
 ### E.12 · `slide-track` — a mirrored sliding door swaps its panels' tracks — closed by W5b
 

@@ -328,6 +328,8 @@ Two advisory lint rules read this model, and the same model backs the opt-in
 tells you how coarse.** Room areas, adjacency and the access graph come from exact
 rectangle arithmetic. Circulation distances and clear widths are read off a raster, so
 they are quantised to the cell — treat them as "about", never as a dimension to build to.
+The grid is anchored at the rooms' min corner and samples everything relative to it (snapped
+to 1/1024 mm), so moving a whole plan — by any distance — changes no circulation number.
 
 The cell is derived from the plan's own area: a **target cell size bounded by a total
 cell budget**, `cell = max(100 mm, ceil(sqrt(planArea / 250 000)))`. So resolution is

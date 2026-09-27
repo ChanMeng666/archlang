@@ -24,7 +24,14 @@
 import { describe, expect, it } from "vitest";
 import { resolvePlan } from "../src/analyze.js";
 import { composeFrame } from "../src/frame.js";
-import { compile, type ElementDef, lint, makeVirtualWorld, registerElement } from "../src/index.js";
+import {
+  compile,
+  describe as describePlan,
+  type ElementDef,
+  lint,
+  makeVirtualWorld,
+  registerElement,
+} from "../src/index.js";
 import { levelBlocks, type RFurniture } from "../src/ir.js";
 import { LINT_RULES } from "../src/lint.js";
 import { entryEdges, verticalsOf } from "../src/vertical.js";
@@ -308,6 +315,26 @@ const WITNESSES: Record<ClassName, [string, () => void][]> = {
         expect([v.expected, v.actual]).toEqual(["1800", "1100"]);
       },
     ],
+    [
+      "STILL drops a sealed-on-one-side entrance's width out of a turned room's bottleneck",
+      () => {
+        // Three entrances side by side (fuzz seed 12, case 308). The 1400 mm opening's centre is
+        // on a lattice line; in P₀ it seeds and sets the widest way in, in gP its tied cell is
+        // inside the cabinets' halo and it seeds nowhere — so the bottleneck falls to the next
+        // door's 740 mm. Rate: 1 case in 3000 random plans.
+        const body = `    wall id=shell exterior thickness 150 { (0,0) (2200,0) (2200,2800) (0,2800) close }
+    room id=r at (0,0) size 2200x2800 label "Office"
+    door id=d1 on shell at 17% width 800
+    opening id=wide on shell at 15% width 1400
+    door id=d2 on shell at 81% width 700
+    furniture id=s cabinet at (200,200) size 1200x900
+    furniture id=c cabinet at (0,830) size 1200x1800`;
+        const { ctx } = witnessCase(body, elementNamed("r270"));
+        expect(ctx.entranceShift()).toBe(Number.POSITIVE_INFINITY);
+        const v = reproduce("entrance-seed-walk", body, "r270", "circulation.rooms[g.r].bottleneck");
+        expect([v.expected, v.actual]).toEqual(["1400", "740"]);
+      },
+    ],
   ],
   "anchor-far-tie": [
     [
@@ -359,13 +386,6 @@ const WITNESSES: Record<ClassName, [string, () => void][]> = {
   ],
   "float-translation": [
     [
-      "STILL moves a curved room's walk under a pure translation",
-      () => {
-        const v = reproduce("float-translation", DRUM(3400), "t", "circulation.rooms[g.rot].walk");
-        expect([v.expected, v.actual]).toEqual(["3100", "3200"]);
-      },
-    ],
-    [
       "STILL flips a pocket door's fix when 20 m of offset rounds its ulp away",
       () => {
         // `at 55%` resolves an ulp short of x = 1400 at the origin (grid 0 snaps nothing),
@@ -410,6 +430,28 @@ describe("the pinned classes — each STILL reproduced by a minimal witness", ()
 
 /** Closed classes: each former `STILL …` witness, inverted into the law it was waiting for. */
 describe("closed classes — each former witness is now the law", () => {
+  it("float-translation, circulation half (W3b): a curved room's walk is exactly invariant under translation", () => {
+    // The former witness: a drum 20 m out measured 3200 mm against 3100 at the origin,
+    // because its tessellated ring re-rounds. The nav grid now samples in its extent's own
+    // frame, snapped to a dyadic lattice, so the ring reads the same numbers on both sides.
+    for (const r of [3400, 2150, 5075]) {
+      const { vs, ctx } = witnessCase(DRUM(r), elementNamed("t"));
+      expect(
+        vs.filter((v) => v.path.startsWith("circulation")).map((v) => v.key),
+        `r = ${r}`,
+      ).toEqual([]);
+      expect(ctx.floatSensitive, `r = ${r}: the case must still re-round`).toBe(true);
+      const walk = (o: typeof ctx.obs0) => o.summary.circulation?.rooms.find((x) => x.roomId === "g.rot");
+      expect(walk(ctx.obsG), `r = ${r}`).toEqual(walk(ctx.obs0));
+      expect(walk(ctx.obs0), `r = ${r}: the room is measured`).toBeDefined();
+    }
+    // …and a translation that is not a whole number of cells, or even of millimetres.
+    const odd = (dx: number) =>
+      `plan "w" {\n  units mm\n  component c() {\n${DRUM(3400)}\n  }\n  place c() as g at (${dx},${dx})\n}`;
+    const at0 = describePlan(odd(0)).circulation?.rooms;
+    for (const dx of [37, 20013, 123457]) expect(describePlan(odd(dx)).circulation?.rooms, `dx = ${dx}`).toEqual(at0);
+  });
+
   it("plugin-throw (backlog E.4): a plugin element inside a placed component is E_INSTANCE_NO_TRANSFORM, never a throw", () => {
     const flat = `plan "p" {\n  units mm\n  room at (0,0) size 4000x3000\n  tree (1000,1000)\n}`;
     const placed = `plan "p" {\n  units mm\n  component c() {\n    room at (0,0) size 4000x3000\n    tree (1000,1000)\n  }\n  place c() as g at (0,0)\n}`;
