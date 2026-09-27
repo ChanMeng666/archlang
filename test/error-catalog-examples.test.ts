@@ -68,7 +68,7 @@ const FRAGMENT =
 /**
  * Every code whose example does not reproduce it, with why.
  *
- * 48 of 144, so **96 catalog examples are now executed and held to their own code**. That
+ * 48 of 146, so **98 catalog examples are now executed and held to their own code**. That
  * ratio is the honest state of a field documented as illustrative, not a to-do list: adding a
  * building to each fragment would make the catalog's snippets longer than the prose they
  * illustrate, which is the opposite of what `arch explain` is for.

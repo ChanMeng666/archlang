@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**94 errors** · **50 warnings**
+**94 errors** · **52 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -135,6 +135,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_OUTDOOR_OVERLAPS_ROOM`](#w_outdoor_overlaps_room) | warning | A ground surface is laid over a room's floor. |
 | [`W_PATH_TOO_NARROW`](#w_path_too_narrow) | warning | The walk to a room squeezes below a passable width. |
 | [`W_POCKET_RUN`](#w_pocket_run) | warning | A pocket door has no wall to slide into. |
+| [`W_REASSIGN_DEPRECATED`](#w_reassign_deprecated) | warning | Reassignment (`NAME = expr`) is deprecated and will be removed in a future major version. |
 | [`W_ROOM_DISCONNECTED`](#w_room_disconnected) | warning | Room has no door — it can't be entered. |
 | [`W_ROOM_LABEL_OUTSIDE`](#w_room_label_outside) | warning | A room's explicit label anchor falls outside the room. |
 | [`W_ROOM_NO_CLEAR_PATH`](#w_room_no_clear_path) | warning | A room cannot be entered or crossed. |
@@ -152,6 +153,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_UNKNOWN_MATERIAL`](#w_unknown_material) | warning | Unknown wall material; using the default hatch. |
 | [`W_UNKNOWN_STYLE_KEY`](#w_unknown_style_key) | warning | Unknown style key. |
 | [`W_UNKNOWN_THEME_KEY`](#w_unknown_theme_key) | warning | Unknown theme key. |
+| [`W_WHILE_DEPRECATED`](#w_while_deprecated) | warning | `while` is deprecated and will be removed in a future major version. |
 | [`W_WINDOW_OFF_WALL`](#w_window_off_wall) | warning | Window does not lie on any wall. |
 
 ## E_ACC_PLACEMENT
@@ -1714,6 +1716,19 @@ wall w1 thickness 200 { (0,0) (3000,0) }
 door pocket on w1 at 80% width 900 slide right   # lint: only ~600 mm of run
 ```
 
+## W_REASSIGN_DEPRECATED
+
+*warning* — Reassignment (`NAME = expr`) is deprecated and will be removed in a future major version.
+
+**Cause.** Reassigning an existing `let` binding exists only to make a `while` loop progress. Outside that role it is the same referential-transparency break `while` is deprecated for: a name bound with `let` can no longer be trusted to keep its first value, which breaks the equational tools (rename, `arch fix`, the planned re-roll refactor) that treat a `let` as a substitutable value. A reassignment LEXICALLY INSIDE a `while` body (at any depth, including inside a nested `if`/`for`/`zone`) does not also raise this — every reassignment there is already covered by that loop's own `W_WHILE_DEPRECATED`.
+
+**Fix.** Bind a new name with `let` instead of reassigning it, or express the surrounding loop as `for NAME in A..B { … }` — `arch fix` offers this on `W_WHILE_DEPRECATED` for the canonical shape, once proved against this file's own expansion (component sites need `--unsafe`).
+
+```arch static
+let total = 0
+total = total + 100   # warning: deprecated reassignment; bind a new name instead
+```
+
 ## W_ROOM_DISCONNECTED
 
 *warning* — Room has no door — it can't be entered.
@@ -1921,6 +1936,22 @@ style room { nope: "#000" }   # warning
 
 ```arch static
 theme { nope: "#000" }   # warning
+```
+
+## W_WHILE_DEPRECATED
+
+*warning* — `while` is deprecated and will be removed in a future major version.
+
+**Cause.** `while` plus a reassignment to make it terminate is the one construct in ArchLang's expand-time language that breaks referential transparency: a `let` binding reassigned later is no longer a value that can be substituted, which every equational tool (LSP rename, `arch fix`'s rewrite-in-your-form, the planned re-roll refactor) relies on. `for x in a..b` covers every counted loop `while` is used for in practice.
+
+**Fix.** Rewrite the loop as `for I in A..B { … }`. `compile()` never offers this fix — only `arch fix` proves it, against THIS file's own expansion: a shape that merely LOOKS canonical, but whose body calls a component that reads or writes `I`, that never actually ran (a library compiled standalone, a dead `if` branch), or that already caps out at `while`'s 10,000-iteration limit, is left as a warning with no fix. A proven fix at plan level is `machine-applicable`; one inside a `component` is `maybe-incorrect` (needs `arch fix --unsafe`) — the proof only covers how THIS file instantiates it, and an importer may call it differently. Anything the fix declines needs a hand rewrite.
+
+```arch static
+let i = 0
+while i < 5 {
+  room at (0, i * 3000) size 3000x3000
+  i = i + 1
+}   # warning: deprecated; rewrites to `for i in 0..5 { … }`
 ```
 
 ## W_WINDOW_OFF_WALL

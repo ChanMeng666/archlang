@@ -184,13 +184,26 @@ function lineEnd(source: string, offset: number): number {
  * ```
  *
  * With no `span`, only the header line is produced.
+ *
+ * A diagnostic carrying `file` is measured in ANOTHER module's source (an imported
+ * component's body — see {@link Diagnostic.file}), so `source` — the string this
+ * function was handed — cannot be indexed for line/col or a source excerpt without
+ * confidently pointing at the wrong bytes. That case prints `--> <file> [start..end]`
+ * instead, no excerpt, matching the JSON projection's rule
+ * ({@link import("./diagnostic-json.js").diagnosticToJson}: `file` present means no
+ * `line`/`col`).
  */
 export function formatDiagnostic(source: string, d: Diagnostic): string {
   const codeTag = d.code ? `[${d.code}]` : "";
   const header = `${d.severity}${codeTag}: ${d.message}`;
   const lines: string[] = [header];
 
-  if (d.span) {
+  if (d.span && d.file !== undefined) {
+    lines.push(` --> ${d.file} [${d.span.start}..${d.span.end}]`);
+    for (const hint of d.hints ?? []) {
+      lines.push(` = help: ${hint}`);
+    }
+  } else if (d.span) {
     const { line, col } = offsetToLineCol(source, d.span.start);
     const ls = lineStart(source, d.span.start);
     const le = lineEnd(source, d.span.start);
@@ -215,8 +228,23 @@ export function formatDiagnostic(source: string, d: Diagnostic): string {
     }
   }
 
-  // Related locations: a small framed snippet per secondary span.
+  // Related locations: a small framed snippet per secondary span. A `RelatedSpan` carries
+  // no `file` of its own — it is measured in whatever source the OWNING diagnostic is
+  // (`d.file`), so the same "cannot index the wrong file" rule as the primary span above
+  // applies here too: `file` present means `--> <file> [start..end]`, no excerpt.
+  //
+  // One known imprecision, pre-existing and not introduced here: `ir.ts`'s
+  // `stampProvenance` can attach a "placed here" related span measured in the COMPILED
+  // source even when the diagnostic's OWN span (and `file`) point into a component's
+  // body — a `place` statement always renders its related span against the file it is
+  // written in, which is not always `d.file`. `diagnosticJson` does not project
+  // `relatedSpans` at all today, so no consumer currently disambiguates this either;
+  // fixing it precisely needs `RelatedSpan` to carry its own optional `file`.
   for (const rel of d.relatedSpans ?? []) {
+    if (d.file !== undefined) {
+      lines.push(` --> ${d.file} [${rel.span.start}..${rel.span.end}] note: ${rel.message}`);
+      continue;
+    }
     const { line, col } = offsetToLineCol(source, rel.span.start);
     const ls = lineStart(source, rel.span.start);
     const le = lineEnd(source, rel.span.start);

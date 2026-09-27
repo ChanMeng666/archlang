@@ -130,7 +130,8 @@ function loadModule(
   stack.add(path);
   const { plan, diagnostics: pdiags } = parse(src, registry);
   // Module spans don't map onto the importing source, so surface parse *errors*
-  // at the import site, prefixed with the module path. (Warnings are dropped.)
+  // at the import site, prefixed with the module path. (Most warnings are dropped —
+  // see below for the two named exceptions.)
   for (const d of pdiags) {
     if (d.severity === "error") {
       diagnostics.push({
@@ -139,6 +140,17 @@ function loadModule(
         message: `In module "${path}": ${d.message}`,
         span: atSpan,
       });
+    } else if (d.code === "W_WHILE_DEPRECATED" || d.code === "W_REASSIGN_DEPRECATED") {
+      // W7: forwarded (unlike every other module warning) because the deprecation is
+      // about the LANGUAGE FORM, not this plan's own content — an importer should still
+      // learn a library it pulled in uses a construct scheduled for removal. Tagged with
+      // the module's own `file` (its span is already measured in THAT source, unchanged)
+      // and never carries a `fixes` array to begin with (parse-time never attaches one;
+      // `applyFixes` refuses a suggestion with `file` besides). No other module warning
+      // is forwarded: that would move `compile().diagnostics` for every plan that merely
+      // imports a library, which is exactly the byte-identity law this deprecation must
+      // not break.
+      diagnostics.push({ ...d, file: path });
     }
   }
   // Tag every component DECLARED here with its file. Its body's spans are offsets into

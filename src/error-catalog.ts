@@ -1052,6 +1052,20 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Widen the room to the figure the warning quotes, park fewer cars in it, or drop the `uses garage` tag if the room is not one (a store that happens to be called a garage classifies as one from its label alone — an explicit `uses storage` overrides that).",
     'room id=g at (0,0) size 2500x6000 label "Garage" uses garage\nfurniture car at (300,300) size 1800x4600 in g   # lint: 2500 mm across, one bay wants 2700',
   ),
+  W_WHILE_DEPRECATED: W(
+    "W_WHILE_DEPRECATED",
+    "`while` is deprecated and will be removed in a future major version.",
+    "`while` plus a reassignment to make it terminate is the one construct in ArchLang's expand-time language that breaks referential transparency: a `let` binding reassigned later is no longer a value that can be substituted, which every equational tool (LSP rename, `arch fix`'s rewrite-in-your-form, the planned re-roll refactor) relies on. `for x in a..b` covers every counted loop `while` is used for in practice.",
+    "Rewrite the loop as `for I in A..B { … }`. `compile()` never offers this fix — only `arch fix` proves it, against THIS file's own expansion: a shape that merely LOOKS canonical, but whose body calls a component that reads or writes `I`, that never actually ran (a library compiled standalone, a dead `if` branch), or that already caps out at `while`'s 10,000-iteration limit, is left as a warning with no fix. A proven fix at plan level is `machine-applicable`; one inside a `component` is `maybe-incorrect` (needs `arch fix --unsafe`) — the proof only covers how THIS file instantiates it, and an importer may call it differently. Anything the fix declines needs a hand rewrite.",
+    "let i = 0\nwhile i < 5 {\n  room at (0, i * 3000) size 3000x3000\n  i = i + 1\n}   # warning: deprecated; rewrites to `for i in 0..5 { … }`",
+  ),
+  W_REASSIGN_DEPRECATED: W(
+    "W_REASSIGN_DEPRECATED",
+    "Reassignment (`NAME = expr`) is deprecated and will be removed in a future major version.",
+    "Reassigning an existing `let` binding exists only to make a `while` loop progress. Outside that role it is the same referential-transparency break `while` is deprecated for: a name bound with `let` can no longer be trusted to keep its first value, which breaks the equational tools (rename, `arch fix`, the planned re-roll refactor) that treat a `let` as a substitutable value. A reassignment LEXICALLY INSIDE a `while` body (at any depth, including inside a nested `if`/`for`/`zone`) does not also raise this — every reassignment there is already covered by that loop's own `W_WHILE_DEPRECATED`.",
+    "Bind a new name with `let` instead of reassigning it, or express the surrounding loop as `for NAME in A..B { … }` — `arch fix` offers this on `W_WHILE_DEPRECATED` for the canonical shape, once proved against this file's own expansion (component sites need `--unsafe`).",
+    "let total = 0\ntotal = total + 100   # warning: deprecated reassignment; bind a new name instead",
+  ),
 });
 
 /** All catalog codes, sorted (errors then warnings, alphabetically within). */

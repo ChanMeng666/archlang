@@ -76,6 +76,55 @@ describe("formatDiagnostic — codespan frames", () => {
     const d: Diagnostic = { severity: "warning", message: "nothing to draw" };
     expect(formatDiagnostic("", d)).toBe("warning: nothing to draw");
   });
+
+  it("M-D: a diagnostic carrying `file` gets `--> <file> [start..end]`, no excerpt from the wrong file", () => {
+    const d: Diagnostic = {
+      severity: "warning",
+      code: "W_WHILE_DEPRECATED",
+      message: `"while" is deprecated and will be removed in a future major version.`,
+      span: { start: 10, end: 20 },
+      file: "lib/m.arch",
+      hints: ['Use "for i in A..B { … }" for a counted loop.'],
+    };
+    // `source` is the IMPORTER's text — offsets 10..20 in it are unrelated bytes, which is
+    // exactly why a `file`-carrying diagnostic must never be indexed into it.
+    const text = formatDiagnostic('plan "main" { units mm }', d);
+    expect(text).toContain("--> lib/m.arch [10..20]");
+    expect(text).not.toMatch(/\d+:\d+/); // no line:col
+    expect(text).not.toContain("units mm"); // no excerpt from the wrong file
+    expect(text).toContain("= help:");
+  });
+
+  it("m6: a relatedSpan on a `file`-carrying diagnostic also gets no excerpt", () => {
+    const d: Diagnostic = {
+      severity: "error",
+      code: "E_DOOR_OFF_WALL",
+      message: "door is off the wall",
+      span: { start: 5, end: 9 },
+      file: "lib/m.arch",
+      relatedSpans: [{ span: { start: 40, end: 50 }, message: "the wall it should be on" }],
+    };
+    const text = formatDiagnostic('plan "main" { units mm }', d);
+    const lines = text.split("\n");
+    const relatedLine = lines.find((l) => l.includes("note: the wall it should be on"))!;
+    expect(relatedLine).toContain("--> lib/m.arch [40..50]");
+    expect(relatedLine).not.toMatch(/\d+:\d+/);
+    expect(text).not.toContain("units mm");
+  });
+
+  it("a relatedSpan on a diagnostic with NO `file` still frames a normal excerpt", () => {
+    const src = "room id=a at (0,0) size 3000x3000\nroom id=b at (0,0) size 2000x2000";
+    const d: Diagnostic = {
+      severity: "warning",
+      code: "W_ROOM_OVERLAP",
+      message: "rooms overlap",
+      span: { start: 0, end: 6 },
+      relatedSpans: [{ span: { start: 35, end: 41 }, message: "overlaps this room" }],
+    };
+    const text = formatDiagnostic(src, d);
+    expect(text).toContain("room id=b at (0,0) size 2000x2000");
+    expect(text).toContain("note: overlaps this room");
+  });
 });
 
 describe("parser — error recovery + multi-error collection", () => {

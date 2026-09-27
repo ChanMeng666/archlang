@@ -384,14 +384,23 @@ room at (0, 0) size W x H
   body or a control-flow block) may **shadow** an outer name.
 - Unknown names produce a `did you mean …?` hint.
 
-**Reassignment.** Once a name is bound, `name = <expr>` updates it (this is how a
-`while` loop makes progress — see [Control flow](#control-flow)). Assigning a
-name that was never `let`-bound is an error.
+**Reassignment (deprecated).** Once a name is bound, `name = <expr>` updates it
+(this is how a `while` loop makes progress — see [Control flow](#control-flow)).
+Assigning a name that was never `let`-bound is an error.
 
 ```
 let i = 0
 i = i + 1            # reassigns the existing binding
 ```
+
+Reassignment breaks the one property every equational tool in ArchLang relies
+on — that a `let` names a value, substitutable wherever it is used — so it is
+**deprecated** (`W_REASSIGN_DEPRECATED`) and will be removed in a future major
+version. It still parses, compiles and renders exactly as before. A
+reassignment inside a `while` body does not raise this on its own — see
+[Control flow](#control-flow) for that loop's own warning and, for the
+canonical counted-loop shape, a `for`-over-a-range rewrite `arch fix` can
+prove sound (against this file's own expansion) and apply for you.
 
 ### Functions
 
@@ -605,6 +614,32 @@ while i < COUNT {
   boolean.
 - `while <cond> { … }` repeats until the condition is false; it is capped at
   10,000 iterations (a runaway loop is reported, not hung).
+
+**`while` is deprecated** (`W_WHILE_DEPRECATED`) and will be removed in a
+future major version: it is the one construct that needs a reassignment to
+make progress, and `for x in a..b` covers every counted loop `while` is used
+for. It still parses, compiles and renders exactly as before — `compile()`
+never offers a fix for it. The canonical shape above — `let i = 0`
+immediately before `while i < COUNT { …; i = i + 1 }`, with no other
+reassignment in the body — has a fix **`arch fix` proves and applies**,
+rewriting it to the equivalent, and equally shorter, range form:
+
+```
+for i in 0..COUNT {
+  column at (i * 600, 0) size 300x300
+}
+```
+
+The fix is proved ONLY against this file's own expansion (same SVG,
+`describe()` and `lint()`) — a body that merely looks like this shape, but
+calls a component reading or writing `i`, that never actually ran (inside a
+component this file never instantiates, or a dead `if` branch), or a loop
+already at `while`'s 10,000-iteration cap, is left as a warning with no fix.
+A proven fix at plan level is `machine-applicable`; one inside a `component`
+is `maybe-incorrect` and needs `arch fix --unsafe`, since the proof cannot
+see how an IMPORTER instantiates it. Anything that does not fit the shape at
+all (a decrementing counter, a second reassignment, a condition other than
+`<`) needs a hand rewrite.
 
 ## Built-in functions
 
