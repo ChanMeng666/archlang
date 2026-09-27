@@ -50,13 +50,17 @@
  *  - **Not exhaustive over the grammar.** Deliberately absent, because each brings a
  *    refusal surface a random generator would have to model rather than explore:
  *    `import` (I/O through the `World` seam), `level` (either/or nesting — `E_LEVEL_MIX`),
- *    `place`/`component` (frames), `strip`, the scripting forms (`for`/`if`/`while`/
- *    `let`/`set`), `theme`/`style`, `axes`, `schedule`/`legend`, `stair`/`elevator`/
- *    `escalator`, and `title`. Those have dedicated example-based suites.
- *  - **`site` and `zone` are deliberately NOT emitted by the base arbitrary.** They are
- *    the two forms whose law is "adding this changes no bytes", so they are applied as
- *    *mutations* ({@link withSite}, {@link withZone}) — a plan cannot be both the
- *    control and the treatment.
+ *    `strip`, the scripting forms (`for`/`if`/`while`/`let`/`set`), `theme`/`style`,
+ *    `axes`, `schedule`/`legend`, `stair`/`elevator`/`escalator`, and `title`. Those have
+ *    dedicated example-based suites.
+ *  - **`site`, `zone` and `place` are deliberately NOT emitted by the base arbitrary.**
+ *    `site` and `zone` are the two forms whose law is "adding this changes no bytes", so
+ *    they are applied as *mutations* ({@link withSite}, {@link withZone}) — a plan cannot
+ *    be both the control and the treatment. `place` is applied the same way
+ *    ({@link RenderOptions.instance}): the whole drawable body becomes ONE `component` placed
+ *    once, so the same spec renders as P₀ (placed at the origin, unturned) and as gP (placed
+ *    through any element of the plane's isometry group) — the pair
+ *    `test/equivariance-fuzz.test.ts` compares.
  *
  * ## Shape, and why it shrinks
  *
@@ -95,6 +99,7 @@ import {
   type FurnitureAnchor,
   type Hemisphere,
   type NorthCardinal,
+  type PlaceRotate,
   type RelDir,
   type UseKind,
 } from "../src/ast.js";
@@ -301,7 +306,27 @@ export interface RenderOptions {
   site?: { street: CompassWord; hemisphere?: Hemisphere };
   /** Wrap every drawable statement in `zone <id> { … }`. Zero geometric semantics. */
   zone?: string;
+  /**
+   * Wrap every drawable statement (inside the `zone`, when there is one) in
+   * `component body() { … }` and draw it with ONE `place body() as g at (x,y) [rotate r]
+   * [mirror m]`. Plan-level settings stay outside, exactly as for `zone`: a component body
+   * cannot hold them, and they configure the one sheet both placements are drawn on.
+   *
+   * With `inner`, the placement NESTS: `component outer() { place body() as inner at (0,0)
+   * [rotate r1] [mirror m1] }` and the outer `place` instantiates `outer()` instead — the
+   * form whose law is that it equals ONE `place body()` with the composed frame.
+   */
+  instance?: {
+    rotate: PlaceRotate;
+    mirror?: "x" | "y";
+    at: { x: number; y: number };
+    inner?: { rotate: PlaceRotate; mirror?: "x" | "y" };
+  };
 }
+
+/** ` rotate r` / ` mirror m` clauses of a `place`, each only when it says something. */
+const frameClauses = (f: { rotate: PlaceRotate; mirror?: "x" | "y" }): string =>
+  `${f.rotate ? ` rotate ${f.rotate}` : ""}${f.mirror ? ` mirror ${f.mirror}` : ""}`;
 
 /**
  * Render a {@link PlanSpec} to ArchLang source. Pure and total: every spec renders,
@@ -478,7 +503,19 @@ export function renderPlan(spec: PlanSpec, opts: RenderOptions = {}): string {
   }
 
   const body = [...wallLines, ...roomLines, ...openingLines, ...furnitureLines, ...annexLines, ...dimLines];
-  const drawable = opts.zone ? [`  zone ${opts.zone} {`, ...body.map((l) => `  ${l}`), `  }`] : body;
+  const zoned = opts.zone ? [`  zone ${opts.zone} {`, ...body.map((l) => `  ${l}`), `  }`] : body;
+  const inst = opts.instance;
+  const drawable = inst
+    ? [
+        "  component body() {",
+        ...zoned.map((l) => `  ${l}`),
+        "  }",
+        ...(inst.inner
+          ? ["  component outer() {", `    place body() as inner at (0,0)${frameClauses(inst.inner)}`, "  }"]
+          : []),
+        `  place ${inst.inner ? "outer" : "body"}() as g at (${mm(inst.at.x)},${mm(inst.at.y)})${frameClauses(inst)}`,
+      ]
+    : zoned;
 
   return `plan "${spec.name}" {\n${settings.join("\n")}\n${drawable.join("\n")}\n}\n`;
 }
@@ -650,3 +687,7 @@ export const withSite = (spec: PlanSpec, site: { street: CompassWord; hemisphere
 /** The same plan with every drawable statement wrapped in one `zone`. A zone has zero
  *  geometric semantics, so the SVG must not move. */
 export const withZone = (spec: PlanSpec, zone: string): string => renderPlan(spec, { zone });
+
+/** The same plan drawn as ONE placed component — see {@link RenderOptions.instance}. */
+export const withInstance = (spec: PlanSpec, instance: NonNullable<RenderOptions["instance"]>): string =>
+  renderPlan(spec, { instance });
