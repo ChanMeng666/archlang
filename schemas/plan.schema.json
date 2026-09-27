@@ -494,6 +494,10 @@
             ],
             "description": "Quarter-turn rotation of the drawn symbol."
           },
+          "mirror": {
+            "type": "boolean",
+            "description": "The drawn symbol is the mirror image of the catalogued one (a reflecting `place` frame). Output-only: `planFromJson` refuses `true` with E_JSON_MIRROR."
+          },
           "centered": {
             "type": "boolean",
             "description": "Room-relative placement: centre inside `room`."

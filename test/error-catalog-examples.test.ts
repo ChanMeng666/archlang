@@ -68,7 +68,7 @@ const FRAGMENT =
 /**
  * Every code whose example does not reproduce it, with why.
  *
- * 47 of 143, so **96 catalog examples are now executed and held to their own code**. That
+ * 48 of 144, so **96 catalog examples are now executed and held to their own code**. That
  * ratio is the honest state of a field documented as illustrative, not a to-do list: adding a
  * building to each fragment would make the catalog's snippets longer than the prose they
  * illustrate, which is the opposite of what `arch explain` is for.
@@ -92,6 +92,7 @@ const NOT_REPRODUCED: ReadonlyMap<string, string> = new Map([
   ["W_IMPORT_EMPTY_FILE", IMPORT],
 
   ["E_JSON_KIND", JSON_CHANNEL],
+  ["E_JSON_MIRROR", JSON_CHANNEL],
   ["E_JSON_SCHEMA", JSON_CHANNEL],
 
   ["E_INSTANCE_NO_TRANSFORM", PLUGIN],
@@ -192,8 +193,9 @@ suite("error catalog — every example that can raise its code does", () => {
     // The cap includes W_CJK_FONT_MISSING and W_GLYPH_UNSUPPORTED, which are raised by the
     // PDF/PNG backends at render time, which compile() never reaches. They are not excused
     // untested: test/export-font-cjk.test.ts raises both through toPdf/renderPng. Likewise
-    // E_INSTANCE_NO_TRANSFORM (a plugin), the code that took the cap from 46 to 47: no
-    // `.arch` snippet can reach it, and it is raised in test/transform-seam.test.ts.
-    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(47);
+    // E_INSTANCE_NO_TRANSFORM (a plugin) and E_JSON_MIRROR (a JSON payload), the two codes
+    // that took the cap from 46 to 48: no `.arch` snippet can reach either, and they are
+    // raised in test/transform-seam.test.ts and test/plan-json.test.ts.
+    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(48);
   });
 });

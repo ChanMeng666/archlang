@@ -538,33 +538,25 @@ describe("plan-json — schema object", () => {
 });
 
 /**
- * Plan JSON carries a frame's ROTATION but not its REFLECTION.
+ * Plan JSON carries a frame's ROTATION and its REFLECTION (backlog G.10).
  *
- * This is a TRIPWIRE, not a passing feature test. Both assertions below pin the
- * CURRENT, WRONG state on purpose, because the defect is currently unreachable and
- * would otherwise be un-masked silently by an unrelated fix.
+ * `planToJson` projects the quarter-turn a `place` frame imposes on a fixture as `rotate`,
+ * and — since handed-symbol mirroring made 19 of the 83 catalogued families genuinely
+ * handed — the reflection as `mirror: true` (the IR's `_mirror`). The quarter-turn alone
+ * cannot say it: `M · R(l) = R(m − l) · Fx`, and the `Fx` is the part `rotate` drops.
  *
- * The situation: `planToJson` projects the rotation a `place` frame imposes on a
- * fixture, and not the reflection. That once lost nothing — a mirrored
- * symbol drew identically to its twin — but handed-symbol mirroring made 19 of the 83 catalogued families
- * genuinely handed, so the projection now loses a fact the drawing depends on.
+ * The way back is REFUSED, not approximated: source has no per-furniture `mirror` (only a
+ * `place … mirror x|y` frame can reflect a symbol), so `planJsonToArch` answers a
+ * `mirror: true` piece with `E_JSON_MIRROR` rather than emitting the unmirrored symbol.
  *
- * It cannot bite today because a plan containing `place` never round-trips at all:
- * `planFromJson` refuses a namespaced id with `E_DOTTED_DECL`. The two defects mask
- * each other, and there is no fixture that can reach the projection bug.
+ * The second test is still a TRIPWIRE, armed on purpose: a plan containing `place` does
+ * not round-trip at all (`planFromJson` refuses a namespaced id with `E_DOTTED_DECL`).
+ * When someone makes a placed plan round-trip, it goes red here and names the work left:
+ * the reflection is projected, but nothing in source can yet receive it.
  *
- * THE TRAP THIS FILE EXISTS TO CLOSE: fixing `E_DOTTED_DECL` un-masks the missing
- * reflection with NO test going red, because nothing can currently reach it — the
- * only witness would be a symbol drawn the wrong way round on someone else's plan.
- *
- * So when you make a `place`d plan round-trip, THIS SUITE GOES RED, here, and the
- * failure names the work: teach the projection to carry the reflection (or decide,
- * and record, that a placed instance projects resolved coordinates and nothing else),
- * then invert both assertions below into the real round-trip test.
- *
- * Do not "fix" this file by deleting it: it is the tripwire for the unprojected reflection.
+ * Do not "fix" this file by deleting it.
  */
-describe("plan-json — G.10 tripwire: a frame's reflection is not projected", () => {
+describe("plan-json — G.10: a frame's reflection is projected", () => {
   const placed = (mirror: string): string => `plan "p" {
   units mm
   component c() {
@@ -575,7 +567,7 @@ describe("plan-json — G.10 tripwire: a frame's reflection is not projected", (
   place c() as a at (4000,0)${mirror}
 }`;
 
-  it("STILL LOSES the reflection — a mirrored placed fixture projects no handedness", () => {
+  it("projects the reflection — a mirrored placed fixture carries `mirror: true`", () => {
     const plain = planToJson(placed("")).json?.furniture ?? [];
     const flipped = planToJson(placed(" mirror x")).json?.furniture ?? [];
     expect(plain).toHaveLength(1);
@@ -588,26 +580,48 @@ describe("plan-json — G.10 tripwire: a frame's reflection is not projected", (
     // pieces are drawn as mirror images of one another…
     expect(a.category).toBe("desk");
 
-    // …yet the two payloads differ ONLY in `x`. Strip the position and they are equal:
-    // nothing in the projection records that one of them is reflected.
+    // …and the two payloads now say so. Strip the position and they differ in exactly
+    // the reflection: the plain piece carries no `mirror` key at all (so a reflection-free
+    // plan's payload is byte-identical), the mirrored one carries `mirror: true`.
     const shape = (f: unknown): Record<string, unknown> => {
       const { x: _x, y: _y, id: _id, ...rest } = f as Record<string, unknown>;
       return rest;
     };
-    expect(shape(b)).toEqual(shape(a));
+    expect(shape(b)).not.toEqual(shape(a));
+    expect("mirror" in a).toBe(false);
+    expect(shape(b)).toEqual({ ...shape(a), mirror: true });
 
-    // WHEN THIS FAILS: the projection learned to carry the reflection. Good — now make
-    // the assertion the real one (the two shapes must DIFFER) and delete this comment.
+    // `mirror y` is `rotate 180 mirror x` (one D4 element, two spellings): same payload.
+    const y = planToJson(placed(" mirror y")).json?.furniture?.[0];
+    const x180 = planToJson(placed(" rotate 180 mirror x")).json?.furniture?.[0];
+    expect(y?.mirror).toBe(true);
+    expect(y).toEqual(x180);
+
+    // The way back is refused, never approximated: source has no per-furniture `mirror`.
+    const back = planJsonToArch({ ...planToJson(placed(" mirror x")).json, furniture: [b] });
+    expect(back.source).toBeUndefined();
+    const refusal = back.diagnostics.find((d) => d.code === "E_JSON_MIRROR");
+    expect(refusal?.severity).toBe("error");
+    expect(refusal?.message).toContain("/furniture/0/mirror");
+    // `mirror: false` is the absent key spelled out, and is accepted.
+    expect(
+      planJsonToArch({ ...planToJson(placed("")).json, furniture: [{ ...a, mirror: false }] }).diagnostics.map(
+        (d) => d.code,
+      ),
+    ).not.toContain("E_JSON_MIRROR");
   });
 
   it("is MASKED because a `place`d plan cannot round-trip at all (E_DOTTED_DECL)", () => {
-    const payload = planToJson(placed(" mirror x")).json;
+    // The unmirrored placement: a mirrored one is now refused earlier, by `E_JSON_MIRROR`,
+    // before the parser that raises `E_DOTTED_DECL` ever runs — which would mask this pin.
+    const payload = planToJson(placed("")).json;
     if (!payload) throw new Error("expected the plan to project");
     const back = planFromJson(payload);
     const codes = back.diagnostics.map((d) => d.code);
     expect(codes).toContain("E_DOTTED_DECL");
 
-    // WHEN THIS FAILS: someone taught `planFromJson` to accept a namespaced id, which
-    // un-masks the assertion above. That is the moment the lost reflection becomes reachable and real.
+    // WHEN THIS FAILS: someone taught `planFromJson` to accept a namespaced id. A placed
+    // plan then round-trips — except its mirrored fixtures, which `E_JSON_MIRROR` still
+    // refuses because source has no per-furniture `mirror` to receive them.
   });
 });

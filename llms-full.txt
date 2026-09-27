@@ -719,7 +719,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `arch explain <CODE>`.
-**93 errors** (abort rendering) · **50 warnings** (advisory; `validate --strict` fails on them too).
+**94 errors** (abort rendering) · **50 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -767,6 +767,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `E_INTENT_TOTAL_AREA` — The plan's total floor area is outside the brief's band. **Fix:** Grow or shrink rooms so the total lands in the band. Gating tier: this failure fails `validateIntent`'s `ok`. Assert a band only where the brief states a number.
 - `E_INTENT_UNREACHABLE` — A room cannot be reached from the entrance through modeled doors. **Fix:** Add interior doors so every room connects back to the entrance. Advisory tier: reported and scored by `validateIntent` but does NOT fail `ok` (gate: false).
 - `E_JSON_KIND` — Unknown element kind in plan JSON. **Fix:** Use one of the supported kinds: opening `kind` must be `door` | `window` | `opening`.
+- `E_JSON_MIRROR` — Plan JSON furniture is `mirror: true`, which `.arch` source cannot state. **Fix:** Keep the instance in `.arch` source (the `place … mirror x|y` that produced it), or drop `mirror` from the fixture if the unmirrored symbol is what you want.
 - `E_JSON_SCHEMA` — Plan JSON does not match the schema. **Fix:** Fix the value at the reported JSON path (the message names it, e.g. `/rooms/0/width`); express geometry as concrete numbers, and author scripting/imports in `.arch` source instead.
 - `E_LAYOUT_CYCLE` — Relational room placement forms a cycle. **Fix:** Break the cycle by giving one of the rooms absolute `at (x,y)` coordinates.
 - `E_LAYOUT_REF` — Relational placement references an unknown room. **Fix:** Reference an existing room id, or fix the typo.

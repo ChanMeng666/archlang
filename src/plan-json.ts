@@ -295,6 +295,11 @@ export interface FurnitureJson {
   width?: number;
   height?: number;
   rotate?: number;
+  /** The drawn symbol is the MIRROR IMAGE of the catalogued one — a reflecting `place`
+   *  frame's handedness, which the quarter-turn `rotate` cannot carry. Emitted only on
+   *  such a piece; `planJsonToArch` refuses it (`E_JSON_MIRROR`), since source has no
+   *  per-furniture `mirror`. */
+  mirror?: boolean;
   /** Room-relative placement: centre the fixture inside `room`. */
   centered?: boolean;
   /** Room-relative placement: anchor the fixture to a corner/edge of `room`. */
@@ -559,6 +564,9 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL): Pla
       width: f.size.w,
       height: f.size.h,
       ...(f.rotate ? { rotate: f.rotate } : {}),
+      // A reflecting `place` draws a handed symbol as its mirror image (`_mirror`, set by
+      // the furniture element's `transform`); the quarter-turn above cannot say so.
+      ...(f._mirror ? { mirror: true } : {}),
       ...(f.room !== undefined ? { room: f.room } : {}),
       ...(a?.mode === "centered" ? { centered: true } : {}),
       ...(a?.mode === "anchor"
@@ -884,6 +892,16 @@ function validateFurniture(f: unknown, path: string, val: Validator): void {
   if (!hasAt && !hasAgainst && !hasInPlace)
     val.err(path, "needs a placement: `x`/`y`, `against_wall`, or (`centered`/`anchor` with `room`)");
   if (f.rotate !== undefined && !isNum(f.rotate)) val.err(`${path}/rotate`, "expected a number");
+  // `mirror: true` is a reflecting `place` frame's handedness, and a frame is the only
+  // thing source can say it with: there is no per-furniture `mirror`, so emitting the
+  // piece would silently draw the unmirrored symbol. Refused rather than dropped.
+  if (f.mirror !== undefined && typeof f.mirror !== "boolean") val.err(`${path}/mirror`, "expected a boolean");
+  if (f.mirror === true)
+    val.diags.push({
+      severity: "error",
+      message: `plan JSON ${path}/mirror: a mirrored symbol cannot be written as source — \`.arch\` has no per-furniture \`mirror\` (only a \`place … mirror x|y\` frame reflects one)`,
+      code: "E_JSON_MIRROR",
+    });
   if (f.side !== undefined && f.side !== "left" && f.side !== "right")
     val.err(`${path}/side`, 'expected "left" or "right"');
   // The anchor accept-list is DERIVED from the parser's own `FURNITURE_ANCHORS`, never
@@ -1122,7 +1140,8 @@ export function planJsonToArch(json: unknown): { source?: string; diagnostics: D
  * canonical `.arch` text and runs the real parser (reusing every parse-time check),
  * and also returns that `source` for callers that want to compile it.
  *
- * Not supported (documented): scripting (`let`/`for`/`if`/`component`) and `import`.
+ * Not supported (documented): scripting (`let`/`for`/`if`/`component`) and `import`; and a
+ * `mirror: true` fixture, which only a `place` frame can state (`E_JSON_MIRROR`).
  */
 export function planFromJson(json: unknown): { ast?: PlanNode; source?: string; diagnostics: Diagnostic[] } {
   const { source, diagnostics } = planJsonToArch(json);
@@ -1544,6 +1563,11 @@ export const PLAN_JSON_SCHEMA = {
           width: { type: "number", description: "Plan-axis width in millimetres." },
           height: { type: "number", description: "Plan-axis height in millimetres." },
           rotate: { enum: [0, 90, 180, 270], description: "Quarter-turn rotation of the drawn symbol." },
+          mirror: {
+            type: "boolean",
+            description:
+              "The drawn symbol is the mirror image of the catalogued one (a reflecting `place` frame). Output-only: `planFromJson` refuses `true` with E_JSON_MIRROR.",
+          },
           centered: { type: "boolean", description: "Room-relative placement: centre inside `room`." },
           anchor: {
             // DERIVED from the parser's own `FURNITURE_ANCHORS`, never retyped.

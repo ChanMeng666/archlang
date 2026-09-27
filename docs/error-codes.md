@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**93 errors** · **50 warnings**
+**94 errors** · **50 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -53,6 +53,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_INTENT_TOTAL_AREA`](#e_intent_total_area) | error | The plan's total floor area is outside the brief's band. |
 | [`E_INTENT_UNREACHABLE`](#e_intent_unreachable) | error | A room cannot be reached from the entrance through modeled doors. |
 | [`E_JSON_KIND`](#e_json_kind) | error | Unknown element kind in plan JSON. |
+| [`E_JSON_MIRROR`](#e_json_mirror) | error | Plan JSON furniture is `mirror: true`, which `.arch` source cannot state. |
 | [`E_JSON_SCHEMA`](#e_json_schema) | error | Plan JSON does not match the schema. |
 | [`E_LAYOUT_CYCLE`](#e_layout_cycle) | error | Relational room placement forms a cycle. |
 | [`E_LAYOUT_REF`](#e_layout_ref) | error | Relational placement references an unknown room. |
@@ -688,6 +689,18 @@ door on wall_hall_store width 800   # connect the isolated room
 
 ```arch static
 { "openings": [ { "kind": "portal", "width": 900 } ] }   # error at /openings/0/kind: unknown kind "portal"
+```
+
+## E_JSON_MIRROR
+
+*error* — Plan JSON furniture is `mirror: true`, which `.arch` source cannot state.
+
+**Cause.** `planToJson` reports `mirror: true` on a fixture a reflecting `place` drew as the mirror image of its symbol (a handed family such as `desk` or `sofa_l`). A `place` frame is the only thing that can reflect a symbol — the grammar has no per-furniture `mirror` — so converting that payload back to source would silently draw the unmirrored symbol, and it is refused instead.
+
+**Fix.** Keep the instance in `.arch` source (the `place … mirror x|y` that produced it), or drop `mirror` from the fixture if the unmirrored symbol is what you want.
+
+```arch static
+{ "furniture": [ { "category": "desk", "x": 0, "y": 0, "width": 1400, "height": 700, "mirror": true } ] }   # error at /furniture/0/mirror
 ```
 
 ## E_JSON_SCHEMA
