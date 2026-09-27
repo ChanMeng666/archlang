@@ -358,11 +358,14 @@ covered — 14; seed an entrance on both sides of its lattice line — 22 exampl
 threshold points on both sides of a lattice line — 5 (`courtyard-house`, `garden-house`,
 `laneway-house`, `terrace-row`, `townhouse`), 9 walks, halves E.10 without closing it.
 
-W3b also widened two predicates, each with a `STILL` witness from the fuzz case that found it: E.7
-covers an entrance that seeds on one side only and so drops its width out of a room's
-widest-from-any-entrance bottleneck (1 in 3000 random plans); E.10 covers a room split by furniture
-whose nearest free cell is in a pocket on one side (`fallback`), so it measures to the nearest
-reachable cell instead (2 in 12 000).
+W3b also widened three predicates, each with a `STILL` witness from the fuzz case that found it,
+and each bounded to its mechanism: E.7 covers an entrance that seeds on one side only and so drops
+its width out of a room's widest-from-any-entrance bottleneck — the wider reading must BE that
+entrance's width, the narrower one between the widest entrance seeding on both sides and the widest
+on its own side (1 in 3000 random plans); E.7 also covers a room sealed on one side because its own
+entrance seeds on the other side only, every other room then moving only by its endpoints' ties
+(2 in 16 000); E.10 covers a room split by furniture whose nearest free cell is in a pocket on one
+side (`fallback`), so it measures to the nearest reachable cell instead (2 in 12 000).
 
 ### E.11 · `float-translation` — facts change under a pure translation — `todo` (circulation half closed by W3b)
 
