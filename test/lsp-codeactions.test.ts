@@ -25,7 +25,7 @@ describe("codeActions", () => {
     expect(actions[0]!.kind).toBe("quickfix");
     expect(actions[0]!.isPreferred).toBe(true); // sole machine-applicable fix
     expect(actions[0]!.edits[0]!.newText).toContain("on w1 at");
-    expect(actions[0]!.diagnostic.code).toBe("W_DOOR_OFF_WALL");
+    expect(actions[0]!.diagnostic?.code).toBe("W_DOOR_OFF_WALL");
   });
 
   it("returns nothing when the range does not overlap a diagnostic", () => {
@@ -38,7 +38,7 @@ describe("codeActions", () => {
     const src = shell("door id=d at (2500,0) width 0 wall exterior");
     const at = src.indexOf("door id=d");
     const actions = codeActions(src, { start: at, end: at });
-    const widthFix = actions.find((a) => a.diagnostic.code === "E_DOOR_WIDTH")!;
+    const widthFix = actions.find((a) => a.diagnostic?.code === "E_DOOR_WIDTH")!;
     expect(widthFix).toBeDefined();
     expect(widthFix.isPreferred).toBe(false);
   });

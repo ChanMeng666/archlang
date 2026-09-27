@@ -641,6 +641,45 @@ see how an IMPORTER instantiates it. Anything that does not fit the shape at
 all (a decrementing counter, a second reassignment, a condition other than
 `<`) needs a hand rewrite.
 
+### Re-roll repetition into a loop — `arch reroll`
+
+Three units written out by hand, at x = 0, 4000, 8000, is exactly what a `for`
+loop already expresses — and `arch reroll` finds the repetition and offers the
+loop, proven equivalent (twin-compiled: no new diagnostic, byte-identical SVG on
+every storey, matching `describe()`/`lint()`) before it is ever suggested. It
+never rewrites silently (ADR 0005) — run it, review the suggestion, then apply.
+
+```arch static
+room at (0, 0) size 4000x5000 label "Studio"
+room at (4000, 0) size 4000x5000 label "Studio"
+room at (8000, 0) size 4000x5000 label "Studio"
+```
+
+`arch reroll plan.arch` offers:
+
+```arch static
+for i in 0..3 {
+  room at (i * 4000, 0) size 4000x5000 label "Studio"
+}
+```
+
+It looks for ≥3 CONSECUTIVE statements — in the plan body, a component, a
+`for`/`if`/`while` body, a `level`, or a `zone` — with the same kind and
+structure, where every differing slot is a numeric literal in an EXACT
+arithmetic progression (`vals[0] + j*d === vals[j]`, not merely equal once
+rounded for display — everything else, including a label string, must match
+exactly, and no `#` comment may fall inside the run or trail its last
+statement) and none carries an explicit `id=` (an id can't be generated inside
+a loop). `arch reroll plan.arch --json` prints each candidate as
+`{ span, replacement, count, loopVar, tokensBefore, tokensAfter }`; `--write`
+applies every non-overlapping suggestion and re-verifies the COMBINED result's
+compiled SVG is byte-identical to the original before writing — `{ ok, wrote,
+target, applied, skipped }`, the same `wrote`/`target` names `arch fix` uses.
+There is no `--dry-run`/`--backup`: every suggestion is already proven
+byte-for-byte equivalent before it is offered, so a failed re-verify simply
+writes nothing.
+See `arch help reroll`.
+
 ## Built-in functions
 
 A frozen set of pure helpers is always in scope (a `let` of the same name

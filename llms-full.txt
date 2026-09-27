@@ -136,6 +136,7 @@ arch complete  # completion items in scope at a source byte offset (the LSP comp
 arch fmt       # canonical formatting
 arch repair    # explicit source-to-source corrector (furniture out of walls) + change log
 arch fix       # apply the machine-applicable fix suggestions on a plan's diagnostics (bounded fixpoint)
+arch reroll    # offer a proven-equivalent `for` loop for a repeated statement run
 arch suggest   # advisory topology suggestions as data (door/window statements that resolve reachability/window faults)
 arch manifest  # this document: the whole CLI API as structured data
 arch spec      # print the one-prompt language spec (spec.llm.md)
@@ -685,6 +686,11 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
   - input: <file.arch|-> → output: fixed source (to the input file or -o) + a unified diff and change log on stderr
   - flags: `--out|-o <file|->` output file for the fixed source, or '-' for stdout (default: rewrite the input file in place) · `--unsafe` also apply `maybe-incorrect` fixes (default: machine-applicable only) · `--dry-run` compute the result but do not write it (the diff preview still prints) · `--backup` before rewriting a file in place, save the original bytes to <file>.bak · `--force` keep a pass even if it raises the error count · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `arch fix plan.arch --dry-run` — preview the exact unified diff `fix` would write, changing nothing on disk
+
+**`arch reroll`** — offer a proven-equivalent `for` loop for a repeated statement run
+  - input: <file.arch|-> → output: suggestions (JSON or a summary), or the rewritten file with --write
+  - flags: `--write` apply every non-overlapping suggestion and re-verify the combined result's compiled SVG is byte-identical to the original before writing (no --dry-run/--backup: a failed re-verify writes nothing, and every suggestion is already proven byte-for-byte before it is offered) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+  - example: `arch reroll plan.arch --json` — each candidate run as { span, replacement, count, loopVar, tokensBefore, tokensAfter }
 
 **`arch suggest`** — advisory topology suggestions as data (door/window statements that resolve reachability/window faults)
   - input: <file.arch|-> → output: suggestions (JSON or a summary)

@@ -14,7 +14,8 @@ source (.arch)
   └─ src/view/           toIso(): the axonometric, a sibling of toScene producing the same Scene
   └─ src/backends/       svg (default) · png (optional resvg) · ascii · error-svg
   └─ src/export/         dxf · pdf (optional pdfkit)
-  └─ src/index.ts        compile() orchestrates; the only public surface
+  └─ src/pipeline.ts     compileUncached(): the one parse→link→resolve→render pipeline
+  └─ src/index.ts        compile() wraps it with the memo cache; the only public surface
 ```
 
 ## Conventions
@@ -83,6 +84,9 @@ source (.arch)
 <!-- W6b: src/pipeline.ts (arch reroll + the reroll() API) — not yet landed -->
 - `plan-json.ts` Plan JSON · `diagnostic-json.ts` · `repair.ts` (geometric corrector) vs
   `fix-apply.ts` (`arch fix`; skips a fix carrying `file`) · `manifest.ts` the CLI contract
+- `pipeline.ts` the ONE `compileUncached()` (parse→link→resolve→render), extracted verbatim from
+  `index.ts` so `compile()`'s memo-cache wrapper and `reroll.ts`'s twin-compile proof obligation
+  call the same function and can never drift apart
 
 ## Layout
 

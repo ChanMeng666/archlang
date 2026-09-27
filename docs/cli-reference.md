@@ -466,6 +466,28 @@ $ arch fix plan.arch --backup --json
 $ arch fix plan.arch -o fixed.arch --unsafe --json
 ```
 
+### `arch reroll`
+
+offer a proven-equivalent `for` loop for a repeated statement run
+
+**Input:** `<file.arch|->` · **Output:** suggestions (JSON or a summary), or the rewritten file with --write
+
+| Flag | Does |
+| --- | --- |
+| `--write` | apply every non-overlapping suggestion and re-verify the combined result's compiled SVG is byte-identical to the original before writing (no --dry-run/--backup: a failed re-verify writes nothing, and every suggestion is already proven byte-for-byte before it is offered) |
+| `--json` | structured result on stdout, messages on stderr |
+| `--quiet, -q` | suppress human messages on stderr |
+
+**Examples**
+
+```bash
+# each candidate run as { span, replacement, count, loopVar, tokensBefore, tokensAfter }
+$ arch reroll plan.arch --json
+
+# splice in every proven loop; { ok, wrote, target, applied, skipped } (wrote/target as in `arch fix`)
+$ arch reroll plan.arch --write --json
+```
+
 ### `arch suggest`
 
 advisory topology suggestions as data (door/window statements that resolve reachability/window faults)

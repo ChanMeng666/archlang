@@ -18,6 +18,7 @@
  *   describe  semantic facts: rooms, areas, adjacency, what doors connect
  *   lint      architectural soundness warnings
  *   fmt       canonical formatting
+ *   reroll    offer a proven-equivalent `for` loop for a repeated statement run
  *   spec      print the one-prompt language spec (spec.llm.md)
  *   new       scaffold a starter .arch
  *   explain   look up an error code
@@ -43,7 +44,7 @@ import { buildManifest, MANIFEST_COMMAND_NAMES } from "./manifest.js";
 import { closest } from "./expr.js";
 import { cmdBatch, cmdCompile, cmdMd, cmdPreview, cmdWatch } from "./cli/commands-render.js";
 import { cmdDescribe, cmdLint, cmdScore, cmdValidate } from "./cli/commands-analyze.js";
-import { cmdAst, cmdComplete, cmdFix, cmdFmt, cmdRepair, cmdSuggest } from "./cli/commands-author.js";
+import { cmdAst, cmdComplete, cmdFix, cmdFmt, cmdRepair, cmdReroll, cmdSuggest } from "./cli/commands-author.js";
 import { cmdContext, cmdExplain, cmdManifest, cmdNew, cmdSpec } from "./cli/commands-meta.js";
 
 /**
@@ -159,6 +160,8 @@ async function main(): Promise<void> {
       return finish(await cmdFix(args));
     case "suggest":
       return finish(cmdSuggest(args));
+    case "reroll":
+      return finish(cmdReroll(args));
     case "spec":
       return finish(cmdSpec(args));
     case "context":
