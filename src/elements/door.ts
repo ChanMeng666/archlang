@@ -109,7 +109,9 @@ function swingInto(
     return inPos ? "in" : "out";
   }
   // —— Rectangle path: UNCHANGED, byte-identical. ——
-  // Not `wallFaceProbes`: a box-CENTRE dot product against the chord normal, exact on a rectangle's own edges.
+  // Not `wallFaceProbes`: a box-CENTRE dot product against the CHORD normal. Right on a straight host,
+  // where chord and tangent coincide; NOT on an arc host, where it can pick the face opposite the one
+  // `doorSwing` draws the leaf toward (near a major arc's ends — `docs/backlog.md` P.2).
   const n = normal(unit(sub(host.b, host.a)));
   const { x, y } = room.at;
   const x1 = x + room.size.w;
