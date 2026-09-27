@@ -496,14 +496,16 @@ rather than reflected — reflection is not a drawing primitive — which for
 ArchLang's rectilinear fixture symbols is the same picture.)
 
 **An instance is a closed world — one way.** It resolves entirely in its own
-frame, against its **own** walls and rooms, and one rigid transform then carries
-the result into the plan. That is what makes `anchor top-left`, `against wall …
-side left`, `swing into`, `right-of` and `hinge left` mean inside a rotated
-instance exactly what they mean when the component is drawn on its own. The
-consequence to know: **the plan can reach into an instance (`wall west.shell`),
-but a component cannot reach out of itself.** A component that needs to touch
-its surroundings takes the reference as a parameter, or the parent draws the
-connecting element — as `examples/museum-wings.arch` does with its hall doors.
+frame, against its **own** walls and rooms (and those of the instances it places
+itself), and one rigid transform then carries the result into the plan. That is
+what makes `anchor top-left`, `against wall … side left`, `swing into`,
+`right-of` and `hinge left` mean inside a rotated instance exactly what they
+mean when the component is drawn on its own. The consequence to know: **the plan
+can reach into an instance (`wall west.shell`), and so can a component into the
+instances it places, at any depth — but a component cannot reach out of
+itself.** A component that needs to touch its surroundings takes the reference
+as a parameter, or the parent draws the connecting element — as
+`examples/museum-wings.arch` does with its hall doors.
 
 **Analysis still sees one building.** Flattening happens before `lint`,
 `describe()` and the wall union run, so two overlapping instances raise

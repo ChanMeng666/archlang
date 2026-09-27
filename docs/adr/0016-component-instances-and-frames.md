@@ -81,6 +81,20 @@ reference as a parameter, or the parent draws the connecting element — which i
 plan's walls in each instance's local frame by inverse transform) is implementable but buys
 a coupling we do not want to promise.
 
+**Addendum (W8): the law holds at every level.** Every level can reach into its own
+descendants, and none can reach out. As first built only the root could reach in, so a
+component that placed a child and referenced it (`door … on i.shell`, `furniture … in i.main`,
+`room … right-of i.main`) failed with `E_PLACE_REF` / `E_ATTACH_WALL_REF` / `E_LAYOUT_REF` —
+and so did `examples/clinic.arch` the moment it was itself imported and placed, even at the
+identity: composition was not associative. Instances now resolve deepest first, and each sees
+its descendants' walls and rooms carried into its own local frame by the composed authored
+`place` frames, under ids relative to it (`c2.main`, not `g.c2.main`) — exactly what its body
+sees when compiled as the plan. An instance still never sees its parent's or its siblings'
+elements. Commit order is unchanged, so a plan with no `place` inside a component body
+resolves byte for byte as before; a component that does place a child now also sees that
+child's walls for positional rules (a door hosted by position, a `roof` naming no wall), as the
+root always did.
+
 ### 4. Ids are namespaced; zone membership comes free
 
 Every id born inside an instance becomes `<instance>.<id>`, and auto-id counters restart per

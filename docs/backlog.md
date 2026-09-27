@@ -390,16 +390,16 @@ Each 45° station tick is drawn along `dir + n` (`src/elements/dim.ts:290-291`),
 sense relative to the line — a drafting convention, like a hatch angle. Its mirror image is the
 other diagonal. Not a defect; the pin moves only if the tick convention does.
 
-### E.16 · `nested-ref` — a reference into a nested instance fails once its plan is placed — `todo`
+### E.16 · `nested-ref` — a reference into a nested instance fails once its plan is placed — closed by W8
 
-A COMPOSITION defect, found by the oracle but not an equivariance one: it fails at the identity
-frame (tier T0). An instance group resolves against its own walls and rooms only
-(`src/ir.ts:1773`), and a nested instance's elements go straight to plan space, so
-`in c2.main anchor …` and `on west.shell at …` work at the root and fail inside a component
-(`E_PLACE_REF`, `E_ATTACH_WALL_REF`) — contradicting ADR 0016 §3's "the parent can reach in" and the
-`museum-wings.arch` pattern. This is why `clinic.arch` and `museum-wings.arch` do not survive being
-imported whole. Close by resolving a component's references against its nested instances'
-transformed elements.
+Every level now reaches into its own descendants the way the root does: instance groups resolve
+deepest first, and each sees its descendants' walls and rooms carried into its local frame by the
+composed authored `place` frames, named relative to it (`src/ir.ts`, `descendantView`). None
+reaches out. `clinic.arch` and `museum-wings.arch` survive being imported whole (T0 is clean);
+clinic's T1–T3 runs, vacuous until then, surfaced only existing classes (`raster-tie`,
+`threshold-carve`, `slide-track`, `dim-text-side`, `dim-tick-hand`), pinned per element. Pins
+deleted; the witness is now the law (`test/equivariance-corpus.test.ts`, "closed classes";
+`test/compose-assoc.test.ts`).
 
 ## Wall-face probe findings
 
