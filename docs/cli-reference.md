@@ -474,7 +474,7 @@ offer a proven-equivalent `for` loop for a run of ≥3 statements in arithmetic 
 
 | Flag | Does |
 | --- | --- |
-| `--write` | apply every non-overlapping suggestion in place and re-verify |
+| `--write` | apply every non-overlapping suggestion and re-verify the combined result's compiled SVG is byte-identical to the original before writing (no --dry-run/--backup: a failed re-verify writes nothing, and every suggestion is already proven byte-for-byte before it is offered) |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -484,8 +484,8 @@ offer a proven-equivalent `for` loop for a run of ≥3 statements in arithmetic 
 # each candidate run as { span, replacement, count, loopVar, tokensBefore, tokensAfter }
 $ arch reroll plan.arch --json
 
-# splice in every proven loop and re-verify the result compiles
-$ arch reroll plan.arch --write
+# splice in every proven loop; { ok, wrote, target, applied, skipped } (wrote/target as in `arch fix`)
+$ arch reroll plan.arch --write --json
 ```
 
 ### `arch suggest`

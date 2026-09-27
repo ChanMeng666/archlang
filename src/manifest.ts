@@ -739,7 +739,13 @@ const COMMANDS: ManifestCommand[] = [
     name: "reroll",
     summary: "offer a proven-equivalent `for` loop for a run of ≥3 statements in arithmetic progression",
     flags: [
-      { flag: "--write", description: "apply every non-overlapping suggestion in place and re-verify" },
+      {
+        flag: "--write",
+        description:
+          "apply every non-overlapping suggestion and re-verify the combined result's compiled SVG is " +
+          "byte-identical to the original before writing (no --dry-run/--backup: a failed re-verify writes " +
+          "nothing, and every suggestion is already proven byte-for-byte before it is offered)",
+      },
       JSON_FLAG,
       QUIET_FLAG,
     ],
@@ -750,7 +756,10 @@ const COMMANDS: ManifestCommand[] = [
         cmd: "arch reroll plan.arch --json",
         note: "each candidate run as { span, replacement, count, loopVar, tokensBefore, tokensAfter }",
       },
-      { cmd: "arch reroll plan.arch --write", note: "splice in every proven loop and re-verify the result compiles" },
+      {
+        cmd: "arch reroll plan.arch --write --json",
+        note: "splice in every proven loop; { ok, wrote, target, applied, skipped } (wrote/target as in `arch fix`)",
+      },
     ],
   },
   {

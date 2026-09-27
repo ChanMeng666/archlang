@@ -665,12 +665,19 @@ for i in 0..3 {
 
 It looks for ≥3 CONSECUTIVE statements — in the plan body, a component, a
 `for`/`if`/`while` body, a `level`, or a `zone` — with the same kind and
-structure, where every differing slot is a numeric literal in arithmetic
-progression (everything else, including a label string, must match exactly) and
-none carries an explicit `id=` (an id can't be generated inside a loop). `arch
-reroll plan.arch --json` prints each candidate as
+structure, where every differing slot is a numeric literal in an EXACT
+arithmetic progression (`vals[0] + j*d === vals[j]`, not merely equal once
+rounded for display — everything else, including a label string, must match
+exactly, and no `#` comment may fall inside the run or trail its last
+statement) and none carries an explicit `id=` (an id can't be generated inside
+a loop). `arch reroll plan.arch --json` prints each candidate as
 `{ span, replacement, count, loopVar, tokensBefore, tokensAfter }`; `--write`
-applies every non-overlapping suggestion and re-verifies the result compiles.
+applies every non-overlapping suggestion and re-verifies the COMBINED result's
+compiled SVG is byte-identical to the original before writing — `{ ok, wrote,
+target, applied, skipped }`, the same `wrote`/`target` names `arch fix` uses.
+There is no `--dry-run`/`--backup`: every suggestion is already proven
+byte-for-byte equivalent before it is offered, so a failed re-verify simply
+writes nothing.
 See `arch help reroll`.
 
 ## Built-in functions

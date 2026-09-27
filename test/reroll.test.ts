@@ -315,7 +315,8 @@ describe("arch reroll — CLI", () => {
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.ok).toBe(true);
-    expect(j.changed).toBe(true);
+    expect(j.wrote).toBe(true);
+    expect(j.target).toBe(file);
     expect(j.applied).toBe(3);
 
     const after = readFileSync(file, "utf8");
