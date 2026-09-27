@@ -40,8 +40,8 @@ const tJunction = (at: number, bedroomStudy = false): string => `plan "T" {
 }`;
 
 /** The room a lint diagnostic is anchored on: the one whose own span it carries. */
-const roomOf = (rooms: readonly RRoom[], span: { start: number; end: number }): string =>
-  rooms.find((r) => r.span?.start === span.start && r.span.end === span.end)?.id ?? "?";
+const roomOf = (rooms: readonly RRoom[], span: { start: number; end: number } | undefined): string =>
+  rooms.find((r) => span !== undefined && r.span?.start === span.start && r.span.end === span.end)?.id ?? "?";
 
 /**
  * Every surface's reachability verdict for one plan, side by side. Null when the plan does
