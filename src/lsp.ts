@@ -19,7 +19,7 @@ import type { ParamDoc, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
 import { lex, type Token } from "./lexer.js";
 import { parse } from "./parser.js";
-import { eachExpr, eachStatement } from "./cursor.js";
+import { eachExpr, eachStatement, statementBodies } from "./cursor.js";
 import { resolvePlan } from "./analyze.js";
 import { diagnosticToJson, type DiagnosticJson } from "./diagnostic-json.js";
 import { rankFixes } from "./fix-apply.js";
@@ -142,21 +142,14 @@ function collectBindings(plan: PlanNode, tokens: Token[]): Binding[] {
         const nameSpan = findNameSpan(tokens, s.span!.start, s.varName);
         if (nameSpan)
           out.push({ name: s.varName, nameSpan, kind: "loopvar", detail: `for ${s.varName} in …`, scope: s.span });
-        visit(s.body, s.span);
-      } else if (s.kind === "if") {
-        visit(s.then, s.span);
-        if (s.else) visit(s.else, s.span);
-      } else if (s.kind === "while") {
-        visit(s.body, s.span);
-      } else if (s.kind === "level") {
-        // A storey's body binds like any block body (its `let`s are level-local).
-        visit(s.body, s.span);
-      } else if (s.kind === "zone") {
-        // A zone is NOT a scope (see `expandScope`): a `let` inside one is visible after
-        // the closing brace exactly as if it were not written, so its bindings are
-        // collected with no `scope` span narrowing them.
-        visit(s.body, undefined);
       }
+      // Every block kind recurses through the one shared `statementBodies` (`cursor.ts`):
+      // `if`'s `then`/`else` and `for`/`while`/`level`'s single body all inherit THIS
+      // statement's span as their scope — except `zone`, which is NOT a scope (see
+      // `expandScope`): a `let` inside one is visible after the closing brace exactly as
+      // if it were not written, so its bindings are collected with no `scope` narrowing.
+      const childScope = s.kind === "zone" ? undefined : s.span;
+      for (const body of statementBodies(s)) visit(body, childScope);
     }
   };
   visit(plan.body, undefined);
