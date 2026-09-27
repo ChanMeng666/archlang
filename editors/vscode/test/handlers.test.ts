@@ -16,7 +16,7 @@
  */
 import { describe, expect, it } from "vitest";
 import * as archlang from "@chanmeng666/archlang";
-import { CompletionItemKind, DiagnosticSeverity } from "vscode-languageserver-protocol";
+import { CodeActionTriggerKind, CompletionItemKind, DiagnosticSeverity } from "vscode-languageserver-protocol";
 import { offsetToPosition } from "../src/diagnostics.js";
 import { COMPLETION_KIND, createHandlers, type CoreCodeAction, type CoreLsp } from "../src/handlers.js";
 
@@ -400,6 +400,64 @@ describe("codeAction — never edits another file", () => {
     ].join("\n");
     const whole = { start: pos(importer, 0), end: pos(importer, importer.length) };
     expect(h.codeAction(importer, uri, whole)).toEqual([]);
+  });
+});
+
+// --------------------------------- gating `reroll` by CodeActionTriggerKind
+
+/**
+ * `reroll` (behind `refactor.rewrite`) is the expensive call: proving a
+ * candidate compiles/describes/lints a twin. An AUTOMATIC code-action request
+ * — VS Code's lightbulb re-asking on every cursor/selection move, no user
+ * action taken — must never reach it, or the single-threaded server stalls on
+ * a large plan on every keystroke. Driven with a stub core that records the
+ * `only` it was actually called with, since the real core's own gating
+ * (range-filter-before-proving) is already covered by `test/reroll.test.ts`
+ * and `test/lsp-codeactions.test.ts` — this guard is specifically about the
+ * ADAPTER deciding whether to call the core with reroll enabled at all.
+ */
+describe("codeAction — gates reroll by CodeActionTriggerKind", () => {
+  const uri = "file:///p.arch";
+  const text = 'plan "P" { units mm }';
+  const range = { start: pos(text, 0), end: pos(text, text.length) };
+
+  function spyCore(): { core: CoreLsp; calls: (readonly string[] | undefined)[] } {
+    const calls: (readonly string[] | undefined)[] = [];
+    const core = stubCore({
+      codeActions: (_src, _range, only) => {
+        calls.push(only);
+        return [];
+      },
+    });
+    return { core, calls };
+  }
+
+  it("Automatic (VS Code's lightbulb on cursor move): the core is called with refactor EXCLUDED", () => {
+    const { core, calls } = spyCore();
+    createHandlers(core).codeAction(text, uri, range, undefined, CodeActionTriggerKind.Automatic);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toEqual(["quickfix"]);
+  });
+
+  it("no triggerKind at all (a client that never sends one): treated the same as Automatic", () => {
+    const { core, calls } = spyCore();
+    createHandlers(core).codeAction(text, uri, range);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toEqual(["quickfix"]);
+  });
+
+  it("Invoked (Ctrl+. / the refactor menu): the request's own `only` reaches the core unfiltered", () => {
+    const { core, calls } = spyCore();
+    createHandlers(core).codeAction(text, uri, range, undefined, CodeActionTriggerKind.Invoked);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toBeUndefined(); // undefined = "every kind", reroll included
+  });
+
+  it("Automatic, but `only` explicitly names a refactor kind: honoured anyway (an explicit ask)", () => {
+    const { core, calls } = spyCore();
+    createHandlers(core).codeAction(text, uri, range, ["refactor.rewrite"], CodeActionTriggerKind.Automatic);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toEqual(["refactor.rewrite"]);
   });
 });
 

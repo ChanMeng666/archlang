@@ -73,7 +73,9 @@ connection.onRenameRequest((p) =>
 );
 
 connection.onCodeAction((p) =>
-  withDoc(p.textDocument.uri, [], (h, t) => h.codeAction(t, p.textDocument.uri, p.range, p.context.only)),
+  withDoc(p.textDocument.uri, [], (h, t) =>
+    h.codeAction(t, p.textDocument.uri, p.range, p.context.only, p.context.triggerKind),
+  ),
 );
 
 connection.onSignatureHelp((p) => withDoc(p.textDocument.uri, null, (h, t) => h.signatureHelp(t, p.position)));
