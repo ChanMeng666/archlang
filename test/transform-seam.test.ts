@@ -98,6 +98,12 @@ describe("ElementDef.transform — the seam", () => {
         'Element kind "tree" in component "grove" cannot be placed: its plugin ElementDef has no transform()',
       );
       expect(d.component).toBe("grove");
+      // No related span repeats the primary one (the `place` is already the primary span,
+      // so `stampProvenance`'s "placed here" note would point at the same bytes twice).
+      const selfRefs = (d.relatedSpans ?? []).filter(
+        (r) => r.span.start === d.span?.start && r.span.end === d.span?.end,
+      );
+      expect(selfRefs).toEqual([]);
       // The span is the `place` statement that could not carry it.
       expect(placed.slice(d.span!.start, d.span!.end)).toMatch(new RegExp(`^place grove\\(\\) as ${d.instance}\\b`));
     }

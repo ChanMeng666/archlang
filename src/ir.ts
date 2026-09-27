@@ -1832,18 +1832,25 @@ function resolveImpl(
         dropped.add(e);
         if (!refusedKinds.has(local.kind)) {
           refusedKinds.add(local.kind);
-          diagnostics.push(
-            stampProvenance(
-              {
-                severity: "error",
-                message: `Element kind "${local.kind}" in component "${f.component}" cannot be placed: its plugin ElementDef has no transform()`,
-                code: "E_INSTANCE_NO_TRANSFORM",
-                span: f.span,
-              },
-              f,
-              f.file,
-            ),
+          const refusal = stampProvenance(
+            {
+              severity: "error",
+              message: `Element kind "${local.kind}" in component "${f.component}" cannot be placed: its plugin ElementDef has no transform()`,
+              code: "E_INSTANCE_NO_TRANSFORM",
+              span: f.span,
+            },
+            f,
+            f.file,
           );
+          // The primary span IS the `place` statement, so the "placed here" related span
+          // `stampProvenance` appends would only repeat it. Dropped for this code alone:
+          // every other placed diagnostic points INTO the instance and keeps its pointer out.
+          const extra = refusal.relatedSpans?.filter(
+            (r) => r.span.start !== f.span?.start || r.span.end !== f.span?.end,
+          );
+          if (extra?.length) refusal.relatedSpans = extra;
+          else delete refusal.relatedSpans;
+          diagnostics.push(refusal);
         }
         continue;
       }
