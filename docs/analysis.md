@@ -265,6 +265,7 @@ openings) and walks it from the exterior. For the studio:
 | `edges[].nominalWidth` | the connector's drawn width |
 | `edges[].estimatedClearWidth` | the usable opening: a **door** loses ~60 mm to its leaf and stop, an **opening** keeps its full width |
 | `edges[].exterior` | whether this connector reaches the outside |
+| `edges[].ambiguous` | the connector sits where three or more rooms meet, and probing one wall thickness off each face of its host wall could not say which two it joins (a probe landed on a room boundary). It is listed but joins nothing, so it counts for no room's reachability. When the probe does decide, `between` is the room on each face, and lint, circulation and `suggest` all read that same pair |
 | `rooms[].depthFromEntrance` | how many connectors you pass through from the nearest entrance (`1` = opens straight off it); `null` if you can't get there |
 | `rooms[].reachable` | can this room be reached from the exterior at all? |
 | `rooms[].bottleneckClearWidth` | the **narrowest clear width** along the widest path in from the entrance — the real constraint for moving furniture or a wheelchair (a widest-path search, so it reports the best route's worst pinch) |
