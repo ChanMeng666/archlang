@@ -27,12 +27,15 @@
  */
 
 import {
+  accessDigraph,
   buildDoorAccessGraph,
+  connectorEdges,
+  DEFAULT_CLEAR_ALLOWANCE_MM,
   DEFAULT_TOL,
-  doorConnections,
   EXTERIOR_NODE,
   isBedroom,
   isWetRoom,
+  reachFrom,
   rectOf,
   resolvePlan,
   roomBox,
@@ -450,39 +453,19 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
   // the first set but not the second is en-suite-trapped. Propose a door on a wall it
   // shares with a non-bedroom space that still reaches the entrance (preferred), with
   // exterior-wall doors as a fallback. Only runs when an entrance exists.
+  // The same `"probe"` graph and search as the lint rule.
   const roomRects = new Map(rooms.map((r) => [r.id, roomBox(r)] as const));
-  const graphConnectors = [...doors, ...openings];
-  const adj = new Map<string, Set<string>>();
-  const addEdge = (x: string, y: string): void => {
-    if (!adj.has(x)) adj.set(x, new Set());
-    if (!adj.has(y)) adj.set(y, new Set());
-    adj.get(x)!.add(y);
-    adj.get(y)!.add(x);
-  };
-  for (const c of graphConnectors) {
-    const conn = doorConnections(c, roomRects, tol);
-    if (conn.length === 2) addEdge(conn[0]!, conn[1]!);
-  }
+  const g = accessDigraph(
+    rooms.map((r) => r.id),
+    connectorEdges(roomRects, [...doors, ...openings], tol, DEFAULT_CLEAR_ALLOWANCE_MM, "probe"),
+  );
   const isBedroomId = (id: string): boolean => {
     const r = rooms.find((x) => x.id === id);
     return r ? isBedroom(r) : false;
   };
-  if (adj.has(EXTERIOR_NODE)) {
-    const bfs = (excludeBedrooms: boolean): Set<string> => {
-      const seen = new Set<string>([EXTERIOR_NODE]);
-      const queue = [EXTERIOR_NODE];
-      while (queue.length) {
-        const cur = queue.shift()!;
-        for (const nb of adj.get(cur) ?? []) {
-          if (seen.has(nb) || (excludeBedrooms && isBedroomId(nb))) continue;
-          seen.add(nb);
-          queue.push(nb);
-        }
-      }
-      return seen;
-    };
-    const reachAll = bfs(false);
-    const reachNoBed = bfs(true);
+  if (g.out(EXTERIOR_NODE).length > 0) {
+    const reachAll = reachFrom(g);
+    const reachNoBed = reachFrom(g, { avoid: isBedroomId });
     for (const room of rectRooms) {
       if (!isWetRoom(room) || !reachAll.has(room.id) || reachNoBed.has(room.id)) continue;
       const rect = rectOf(room);

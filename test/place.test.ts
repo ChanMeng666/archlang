@@ -17,6 +17,7 @@
 
 import { describe, expect, it } from "vitest";
 import { applyFixes, compile, describe as describePlan, lint, makeVirtualWorld } from "../src/index.js";
+import { canonPrim, elementNamed, frameFor, sceneOf, transformPrim } from "./d4-oracle.js";
 
 /** The gallery wing used by most cases: one room inside a closed shell, with a door. */
 const WING = `component wing() {
@@ -157,41 +158,42 @@ describe("place — a mirror is physics: the door swing mirrors too", () => {
 describe("place — the door VOCABULARY under a mirror: `slide`'s flip is the identity", () => {
   /**
    * The iron law is "add a handed rule ⇒ add its flip to `transformElement`". The door
-   * vocabulary adds exactly one — `slide left|right` — and the honest answer is that
-   * its flip is the IDENTITY, for the same reason `hinge`'s is: both are measured along
-   * the host wall's traversal direction, which the frame carries with it, rather than
-   * against a normal. That is a claim worth nothing without a fixture, so here it is,
-   * stated the strongest way available: a mirrored instance must equal a hand-authored
-   * mirror-image twin, BYTE FOR BYTE.
+   * vocabulary's `slide left|right` flips as the IDENTITY, for the same reason `hinge`'s
+   * does: both are measured along the host wall's traversal direction, which the frame
+   * carries with it, rather than against a normal. That is a claim worth nothing without a
+   * fixture, so here it is, stated the strongest way available: a mirrored instance must
+   * equal a hand-authored mirror-image twin, BYTE FOR BYTE.
    *
    * Read the two sources side by side. Every `slide` word is written UNCHANGED in the
    * twin and every `swing` word is written FLIPPED — which is precisely the split
-   * `frame.ts` implements (`swing` reverses when `det(f) < 0`, `hinge` does not). If
-   * `slide` ever needed a compensating flip this case would fail, and the reasoning
-   * behind `hinge`'s existing exemption would be wrong too — a much larger finding than
-   * a door kind, and one to report rather than patch around.
+   * `frame.ts` implements (`swing` reverses when `det(f) < 0`, `hinge` does not).
+   *
+   * The `sliding` kind is NOT in the twin. Its fixed panel's track is `slide` times the
+   * wall's LEFT normal, a handed product whose mirror image puts each panel on the other
+   * track, and no root spelling draws that (reversing the wall reverses the traversal and
+   * the normal together). This case used to include a sliding door and pass because the
+   * placed door drew the same handed rule the twin did: it encoded the `slide-track` defect
+   * (backlog E.12). The last case below pins the sliding door against its true mirror image.
    */
   const wing = `component wing() {
     wall id=w partition thickness 200 { (0,0) (6000,0) }
-    door id=sl sliding on w at 1500 width 1200 slide left
     door id=bn barn    on w at 3000 width 1000 swing in  slide right
     door id=bf bifold  on w at 4200 width 1400 swing out slide left
     door id=pk pocket  on w at 5200 width 700  slide right open 0.4
   }`;
   const placed = (t: string): string => `plan "t" {\n  grid 100\n  ${wing}\n  place wing() as m at (0,0) ${t}\n}`;
   /** The same body in world coordinates after `mirror x`: (x,y) → (−x,y). */
-  const twin = (slide: [string, string, string, string], swing: [string, string]): string => `plan "t" {
+  const twin = (slide: [string, string, string], swing: [string, string]): string => `plan "t" {
   grid 100
   wall id=w partition thickness 200 { (0,0) (-6000,0) }
-  door id=sl sliding on w at 1500 width 1200 slide ${slide[0]}
-  door id=bn barn    on w at 3000 width 1000 swing ${swing[0]}  slide ${slide[1]}
-  door id=bf bifold  on w at 4200 width 1400 swing ${swing[1]} slide ${slide[2]}
-  door id=pk pocket  on w at 5200 width 700  slide ${slide[3]} open 0.4
+  door id=bn barn    on w at 3000 width 1000 swing ${swing[0]}  slide ${slide[0]}
+  door id=bf bifold  on w at 4200 width 1400 swing ${swing[1]} slide ${slide[1]}
+  door id=pk pocket  on w at 5200 width 700  slide ${slide[2]} open 0.4
 }`;
 
   it("a mirrored instance equals the twin written with `slide` UNCHANGED and `swing` flipped", () => {
     const a = compile(placed("mirror x"), { noCache: true });
-    const b = compile(twin(["left", "right", "left", "right"], ["out", "in "]), { noCache: true });
+    const b = compile(twin(["right", "left", "right"], ["out", "in "]), { noCache: true });
     expect(a.errors.map((e) => e.message)).toEqual([]);
     expect(b.errors.map((e) => e.message)).toEqual([]);
     expect(a.svg).toBe(b.svg);
@@ -200,10 +202,10 @@ describe("place — the door VOCABULARY under a mirror: `slide`'s flip is the id
   it("is not vacuous: reversing any `slide` in the twin breaks the equality", () => {
     // If `slide` were ignored by the renderer the case above would pass for free.
     const a = compile(placed("mirror x"), { noCache: true }).svg;
-    expect(compile(twin(["right", "right", "left", "right"], ["out", "in "]), { noCache: true }).svg).not.toBe(a);
-    expect(compile(twin(["left", "right", "left", "left"], ["out", "in "]), { noCache: true }).svg).not.toBe(a);
+    expect(compile(twin(["left", "left", "right"], ["out", "in "]), { noCache: true }).svg).not.toBe(a);
+    expect(compile(twin(["right", "left", "left"], ["out", "in "]), { noCache: true }).svg).not.toBe(a);
     // …and `swing` genuinely does need its flip: writing it unflipped also breaks.
-    expect(compile(twin(["left", "right", "left", "right"], ["in ", "out"]), { noCache: true }).svg).not.toBe(a);
+    expect(compile(twin(["right", "left", "right"], ["in ", "out"]), { noCache: true }).svg).not.toBe(a);
   });
 
   it("holds under `mirror y` as well", () => {
@@ -213,7 +215,6 @@ describe("place — the door VOCABULARY under a mirror: `slide`'s flip is the id
       `plan "t" {
   grid 100
   wall id=w partition thickness 200 { (0,0) (6000,0) }
-  door id=sl sliding on w at 1500 width 1200 slide left
   door id=bn barn    on w at 3000 width 1000 swing out slide right
   door id=bf bifold  on w at 4200 width 1400 swing in  slide left
   door id=pk pocket  on w at 5200 width 700  slide right open 0.4
@@ -221,6 +222,33 @@ describe("place — the door VOCABULARY under a mirror: `slide`'s flip is the id
       { noCache: true },
     );
     expect(a.svg).toBe(b.svg);
+  });
+
+  it("a mirrored `sliding` door is its exact mirror image, which no root spelling draws", () => {
+    const body = `component c() {
+    wall id=w partition thickness 200 { (0,0) (6000,0) }
+    door id=sl sliding on w at 1500 width 1200 slide left
+  }`;
+    const sheet = "  grid 100\n  paper A0 landscape\n  scale 1:100\n";
+    const inst = (t: string) => `plan "t" {\n${sheet}  ${body}\n  place c() as m at (0,0)${t}\n}`;
+    const doors = (src: string) => sceneOf(src).nodes.filter((n) => n.layer === "doors");
+    const canon = (src: string) =>
+      doors(src)
+        .map((n) => canonPrim(n.prim))
+        .sort();
+    for (const name of ["mx", "r90mx"]) {
+      const g = elementNamed(name);
+      const f = frameFor(g, 100);
+      const expected = doors(inst(""))
+        .map((n) => canonPrim(transformPrim(f, n.prim)))
+        .sort();
+      expect(canon(inst(`${g.rotate ? ` rotate ${g.rotate}` : ""} mirror x`)), name).toEqual(expected);
+    }
+    // The twin above, with EITHER `slide`, draws the other hand: the mirror image of a
+    // sliding door is reachable only through `place … mirror`.
+    const root = (slide: string) =>
+      `plan "t" {\n${sheet}  wall id=w partition thickness 200 { (0,0) (-6000,0) }\n  door id=sl sliding on w at 1500 width 1200 slide ${slide}\n}`;
+    for (const slide of ["left", "right"]) expect(canon(root(slide)), slide).not.toEqual(canon(inst(" mirror x")));
   });
 });
 

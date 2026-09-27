@@ -6,12 +6,12 @@
 
 import type { DoorNode, Point } from "../ast.js";
 import type { Span } from "../diagnostics.js";
-import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { RDoor, RRoom } from "../ir.js";
 import type { Value } from "../expr.js";
 import type { WallSegment } from "../geometry.js";
-import { add, doorSwing, mul, nearestWallNote, normal, segmentDirAt, sub, unit } from "../geometry.js";
+import { add, doorSwing, mul, nearestWallNote, normal, segmentDirAt, sub, unit, wallFaceProbes } from "../geometry.js";
 import { pointInPolygon, pointOnPolygonEdge } from "../geometry/polygon.js";
 import type { DoorClauseName, DoorKind } from "../grammar/tokens.js";
 import { DOOR_ENUMS, DOOR_HINGE_NEAR, DOOR_KIND_CLAUSES, DOOR_KINDS, enumList } from "../grammar/tokens.js";
@@ -94,20 +94,25 @@ function swingInto(
   if (!room || !host || room._rel) return notAdjacent();
   // The room borders the wall if the door position sits on the room's perimeter.
   const tol = host.thickness / 2 + Math.max(host.thickness, 1);
-  const n = normal(unit(sub(host.b, host.a)));
   // —— Ring path: a `polygon` or `circle` room (a circle carries the 48-gon in `poly`). ——
   if (room.poly) {
     const ring = room.poly;
     if (!pointOnPolygonEdge(at, ring, tol)) return notAdjacent();
     // One wall thickness clears the solid on either face, so a probe that lands on the
-    // floor is genuinely inside the room rather than inside the wall.
-    const d = Math.max(host.thickness, 1);
-    const inPos = pointInPolygon(at.x + n.x * d, at.y + n.y * d, ring);
-    const inNeg = pointInPolygon(at.x - n.x * d, at.y - n.y * d, ring);
+    // floor is genuinely inside the room rather than inside the wall. The normal is the
+    // TANGENT's (the one `doorSwing` sweeps the leaf toward), not the chord's: on a major
+    // arc the two point to opposite faces, and `in` must mean the side the leaf is drawn on.
+    const { plus, minus } = wallFaceProbes(host, at, Math.max(host.thickness, 1));
+    const inPos = pointInPolygon(plus.x, plus.y, ring);
+    const inNeg = pointInPolygon(minus.x, minus.y, ring);
     if (inPos === inNeg) return notAdjacent();
     return inPos ? "in" : "out";
   }
   // —— Rectangle path: UNCHANGED, byte-identical. ——
+  // Not `wallFaceProbes`: a box-CENTRE dot product against the CHORD normal. Right on a straight host,
+  // where chord and tangent coincide; NOT on an arc host, where it can pick the face opposite the one
+  // `doorSwing` draws the leaf toward (near a major arc's ends — `docs/backlog.md` P.2).
+  const n = normal(unit(sub(host.b, host.a)));
   const { x, y } = room.at;
   const x1 = x + room.size.w;
   const y1 = y + room.size.h;
@@ -140,19 +145,16 @@ function swingInto(
  */
 function roomSideOf(at: Point, host: WallSegment | null, rooms: readonly RRoom[]): "in" | "out" | undefined {
   if (!host) return undefined;
-  const n = normal(unit(sub(host.b, host.a)));
-  const d = Math.max(host.thickness, 1);
-  const onFloor = (sign: 1 | -1): boolean => {
-    const px = at.x + sign * n.x * d;
-    const py = at.y + sign * n.y * d;
-    return rooms.some((r) => {
+  // The tangent's normal, as in `swingInto`'s ring path: `in` is the face `doorSwing` uses.
+  const { plus, minus } = wallFaceProbes(host, at, Math.max(host.thickness, 1));
+  const onFloor = ({ x: px, y: py }: Point): boolean =>
+    rooms.some((r) => {
       if (r._rel) return false;
       if (r.poly) return pointInPolygon(px, py, r.poly);
       return px >= r.at.x && px <= r.at.x + r.size.w && py >= r.at.y && py <= r.at.y + r.size.h;
     });
-  };
-  const pos = onFloor(1);
-  const neg = onFloor(-1);
+  const pos = onFloor(plus);
+  const neg = onFloor(minus);
   if (pos === neg) return undefined;
   return pos ? "in" : "out";
 }
@@ -486,5 +488,24 @@ export const door: ElementDef = {
       });
     }
     return nodes;
+  },
+  /**
+   * The frame's action on a door (`frame.ts`'s `transformElement` calls this). A reflection
+   * flips `swing` (measured off the wall normal) and records `_mirror` (XORed, as a fixture's
+   * is), which a `sliding` door's track choice reads; `hinge` and `slide` ride the traversal.
+   */
+  transform(resolved, t: TransformCtx): RDoor {
+    const el = resolved as RDoor;
+    const { id, reflected } = t;
+    const out: RDoor = {
+      ...el,
+      id,
+      at: t.point(el.at),
+      host: el.host ? t.segment(el.host) : null,
+      swing: reflected ? (el.swing === "in" ? "out" : "in") : el.swing,
+    };
+    if (reflected !== (el._mirror === true)) out._mirror = true;
+    else delete out._mirror;
+    return out;
   },
 };

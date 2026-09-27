@@ -41,7 +41,7 @@
  */
 
 import type { ExprPoint, Point, RoofNode } from "../ast.js";
-import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import { weightWidth } from "../scene.js";
 import type { RRoof, RWall } from "../ir.js";
@@ -331,5 +331,21 @@ export const roof: ElementDef = {
         },
       },
     ];
+  },
+  /** The frame's action on a roof (`frame.ts`'s `transformElement` calls this). */
+  transform(resolved, t: TransformCtx): RRoof {
+    // A roof's ring rides through vertex by vertex, like a polygon room's: a frame is an
+    // exact integer isometry, so the turned/mirrored outline is the same outline. Its
+    // OFFSET was already discharged in the instance's own frame, which is the point — an
+    // overhang is measured off the wall face, and a face is a face after a rotation.
+    //
+    // A `roof` inside a `component` body is refused at parse (`E_ROOF_PLACEMENT`), so the
+    // only way to reach this arm is a whole-FILE `import "x.arch" as w` + `place w()`,
+    // where the roof was written as a plan statement in the imported module. That case is
+    // carried correctly rather than refused a second time, deeper, where the diagnostic
+    // would have nowhere useful to point.
+    const el = resolved as RRoof;
+    const { id } = t;
+    return { ...el, id, ring: el.ring.map((p) => t.point(p)) };
   },
 };

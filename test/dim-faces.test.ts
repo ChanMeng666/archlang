@@ -314,3 +314,35 @@ describe("describe().bbox_outer — the building measured on its wall faces", ()
     expect(describePlan("plan").bbox_outer).toEqual({ w: 0, h: 0 });
   });
 });
+
+describe("W_DIM_OVERLAP reads the number on the side `dim.render` draws it", () => {
+  // `dim a->b offset k` and `dim b->a offset -k` are one drawing: the same line, and (since the
+  // number rides `sign(offset) · n`, backlog E.14) the same number on the same side. So no
+  // verdict and no bump may depend on which end a dim is written from.
+  const over = (src: string) => lint(src).filter((d) => d.code === "W_DIM_OVERLAP");
+  const A = `  dim (0,-100)->(5000,-100) offset -400 text "5000"\n`;
+  const B = (off: number, reversed: boolean) =>
+    reversed
+      ? `  dim (3000,-100)->(0,-100) offset ${-off} text "3000"\n`
+      : `  dim (0,-100)->(3000,-100) offset ${off} text "3000"\n`;
+
+  it("gives the same verdict and the mirrored bump for either spelling, across every tier", () => {
+    let warned = 0;
+    let clear = 0;
+    for (let off = -2000; off <= -100; off += 25) {
+      const a = over(shell(A + B(off, false)));
+      const b = over(shell(A + B(off, true)));
+      expect(b.length, `offset ${off}`).toBe(a.length);
+      if (a.length === 0) {
+        clear++;
+        continue;
+      }
+      warned++;
+      const bump = (ds: typeof a) => Number(/offset (-?\d+)/.exec(ds[0]!.fixes![0]!.edits[0]!.newText)![1]);
+      expect(bump(b), `offset ${off}`).toBe(-bump(a));
+    }
+    // Both verdicts occur, so the sweep crossed the band's edges (including the text's).
+    expect(warned).toBeGreaterThan(0);
+    expect(clear).toBeGreaterThan(0);
+  });
+});

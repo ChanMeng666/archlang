@@ -2,7 +2,7 @@
  *  the host wall (no door leaf, no glazing) that still connects the two spaces. */
 
 import type { Point, OpeningNode } from "../ast.js";
-import type { ElementDef, ParseCtx, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { ROpening } from "../ir.js";
 import { add, mul, nearestWallNote, normal, segmentDirAt } from "../geometry.js";
@@ -130,5 +130,11 @@ export const opening: ElementDef = {
     // which is the opposite of what the passage means — so they are gone, with no
     // opt-in.
     return nodes;
+  },
+  /** The frame's action on a cased opening (`frame.ts`'s `transformElement` calls this). */
+  transform(resolved, t: TransformCtx): ROpening {
+    const el = resolved as ROpening;
+    const { id } = t;
+    return { ...el, id, at: t.point(el.at), host: el.host ? t.segment(el.host) : null };
   },
 };

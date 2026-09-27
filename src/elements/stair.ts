@@ -11,11 +11,11 @@
 
 import type { Point, StairNode, VerticalDir } from "../ast.js";
 import { VERTICAL_DIRS } from "../ast.js";
-import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { RStair } from "../ir.js";
 import { rectCorners } from "../geometry.js";
-import { flightAxis } from "../vertical.js";
+import { flightAxis, tailEdge } from "../vertical.js";
 import { stairGlyph } from "./vertical-glyphs.js";
 
 /** Parse the mandatory `dir up|down` clause shared by `stair` and `escalator`. */
@@ -103,5 +103,20 @@ export const stair: ElementDef = {
 
   render(resolved, ctx: RenderCtx): SceneNode[] {
     return stairGlyph(resolved as RStair, ctx.theme, ctx.sizes);
+  },
+  /**
+   * The frame's action on a stair (`frame.ts`'s `transformElement` calls this). The tail is
+   * read in the LOCAL frame and acted on (`_tail`), so the arrow and the nav grid's entry
+   * edge follow the turn; a reflection also mirrors the break line (`_mirror`, XORed so a
+   * nested reflection composes back to the identity, as a fixture's does).
+   */
+  transform(resolved, t: TransformCtx): RStair {
+    const el = resolved as RStair;
+    const { id } = t;
+    const r = t.rect(el.at, el.size);
+    const out: RStair = { ...el, id, at: r.at, size: r.size, _tail: t.side(tailEdge(el)) };
+    if (t.reflected !== (el._mirror === true)) out._mirror = true;
+    else delete out._mirror;
+    return out;
   },
 };

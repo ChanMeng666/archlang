@@ -384,14 +384,23 @@ room at (0, 0) size W x H
   body or a control-flow block) may **shadow** an outer name.
 - Unknown names produce a `did you mean …?` hint.
 
-**Reassignment.** Once a name is bound, `name = <expr>` updates it (this is how a
-`while` loop makes progress — see [Control flow](#control-flow)). Assigning a
-name that was never `let`-bound is an error.
+**Reassignment (deprecated).** Once a name is bound, `name = <expr>` updates it
+(this is how a `while` loop makes progress — see [Control flow](#control-flow)).
+Assigning a name that was never `let`-bound is an error.
 
 ```
 let i = 0
 i = i + 1            # reassigns the existing binding
 ```
+
+Reassignment breaks the one property every equational tool in ArchLang relies
+on — that a `let` names a value, substitutable wherever it is used — so it is
+**deprecated** (`W_REASSIGN_DEPRECATED`) and will be removed in a future major
+version. It still parses, compiles and renders exactly as before. A
+reassignment inside a `while` body does not raise this on its own — see
+[Control flow](#control-flow) for that loop's own warning and, for the
+canonical counted-loop shape, a `for`-over-a-range rewrite `arch fix` can
+prove sound (against this file's own expansion) and apply for you.
 
 ### Functions
 
@@ -496,14 +505,27 @@ rather than reflected — reflection is not a drawing primitive — which for
 ArchLang's rectilinear fixture symbols is the same picture.)
 
 **An instance is a closed world — one way.** It resolves entirely in its own
-frame, against its **own** walls and rooms, and one rigid transform then carries
-the result into the plan. That is what makes `anchor top-left`, `against wall …
-side left`, `swing into`, `right-of` and `hinge left` mean inside a rotated
-instance exactly what they mean when the component is drawn on its own. The
-consequence to know: **the plan can reach into an instance (`wall west.shell`),
-but a component cannot reach out of itself.** A component that needs to touch
-its surroundings takes the reference as a parameter, or the parent draws the
-connecting element — as `examples/museum-wings.arch` does with its hall doors.
+frame, against its **own** walls and rooms (and those of the instances it places
+itself), and one rigid transform then carries the result into the plan. That is
+what makes `anchor top-left`, `against wall … side left`, `swing into`,
+`right-of` and `hinge left` mean inside a rotated instance exactly what they
+mean when the component is drawn on its own. The consequence to know: **the plan
+can reach into an instance (`wall west.shell`), and so can a component into the
+instances it places, at any depth — but a component cannot reach out of
+itself.** A component that needs to touch its surroundings takes the reference
+as a parameter, or the parent draws the connecting element — as
+`examples/museum-wings.arch` does with its hall doors.
+
+Reaching in is not only by id. Every rule that searches walls or rooms by position
+or category finds the instances a component places, exactly as the same rule at
+the plan level finds the plan's instances: a door, window or opening hosted by
+position or by a category (`wall exterior`), `against wall <category>`,
+`dim faces` / `dim clear`, a curve `dim` naming a wall category, the wall
+height an opening inherits, an `outdoor` rail derived from the walls, and
+`swing into`. An instance's walls come before the component's own, so where a
+child's wall coincides with the component's, the child's hosts the door; and
+`against wall exterior` fails with `E_FURN_AGAINST` once a child adds a second
+exterior wall. Name the wall by id when that matters.
 
 **Analysis still sees one building.** Flattening happens before `lint`,
 `describe()` and the wall union run, so two overlapping instances raise
@@ -592,6 +614,71 @@ while i < COUNT {
   boolean.
 - `while <cond> { … }` repeats until the condition is false; it is capped at
   10,000 iterations (a runaway loop is reported, not hung).
+
+**`while` is deprecated** (`W_WHILE_DEPRECATED`) and will be removed in a
+future major version: it is the one construct that needs a reassignment to
+make progress, and `for x in a..b` covers every counted loop `while` is used
+for. It still parses, compiles and renders exactly as before — `compile()`
+never offers a fix for it. The canonical shape above — `let i = 0`
+immediately before `while i < COUNT { …; i = i + 1 }`, with no other
+reassignment in the body — has a fix **`arch fix` proves and applies**,
+rewriting it to the equivalent, and equally shorter, range form:
+
+```
+for i in 0..COUNT {
+  column at (i * 600, 0) size 300x300
+}
+```
+
+The fix is proved ONLY against this file's own expansion (same SVG,
+`describe()` and `lint()`) — a body that merely looks like this shape, but
+calls a component reading or writing `i`, that never actually ran (inside a
+component this file never instantiates, or a dead `if` branch), or a loop
+already at `while`'s 10,000-iteration cap, is left as a warning with no fix.
+A proven fix at plan level is `machine-applicable`; one inside a `component`
+is `maybe-incorrect` and needs `arch fix --unsafe`, since the proof cannot
+see how an IMPORTER instantiates it. Anything that does not fit the shape at
+all (a decrementing counter, a second reassignment, a condition other than
+`<`) needs a hand rewrite.
+
+### Re-roll repetition into a loop — `arch reroll`
+
+Three units written out by hand, at x = 0, 4000, 8000, is exactly what a `for`
+loop already expresses — and `arch reroll` finds the repetition and offers the
+loop, proven equivalent (twin-compiled: no new diagnostic, byte-identical SVG on
+every storey, matching `describe()`/`lint()`) before it is ever suggested. It
+never rewrites silently (ADR 0005) — run it, review the suggestion, then apply.
+
+```arch static
+room at (0, 0) size 4000x5000 label "Studio"
+room at (4000, 0) size 4000x5000 label "Studio"
+room at (8000, 0) size 4000x5000 label "Studio"
+```
+
+`arch reroll plan.arch` offers:
+
+```arch static
+for i in 0..3 {
+  room at (i * 4000, 0) size 4000x5000 label "Studio"
+}
+```
+
+It looks for ≥3 CONSECUTIVE statements — in the plan body, a component, a
+`for`/`if`/`while` body, a `level`, or a `zone` — with the same kind and
+structure, where every differing slot is a numeric literal in an EXACT
+arithmetic progression (`vals[0] + j*d === vals[j]`, not merely equal once
+rounded for display — everything else, including a label string, must match
+exactly, and no `#` comment may fall inside the run or trail its last
+statement) and none carries an explicit `id=` (an id can't be generated inside
+a loop). `arch reroll plan.arch --json` prints each candidate as
+`{ span, replacement, count, loopVar, tokensBefore, tokensAfter }`; `--write`
+applies every non-overlapping suggestion and re-verifies the COMBINED result's
+compiled SVG is byte-identical to the original before writing — `{ ok, wrote,
+target, applied, skipped }`, the same `wrote`/`target` names `arch fix` uses.
+There is no `--dry-run`/`--backup`: every suggestion is already proven
+byte-for-byte equivalent before it is offered, so a failed re-verify simply
+writes nothing.
+See `arch help reroll`.
 
 ## Built-in functions
 
@@ -1247,6 +1334,10 @@ so it is offered only when that actually reaches the outside: a dimension whose
 run cuts through the plan reads inside either way, and keeps the warning with no
 automatic edit.
 
+The number rides just outside its line, on the side the offset points, so a negative
+`offset` puts the line *and* its number on the right normal: `dim a->b offset -k` draws
+exactly what `dim b->a offset k` draws.
+
 #### `faces` / `clear` — let the walls place the endpoints
 
 A room rectangle's edges are wall **centerlines**, so a hand-written overall dim
@@ -1356,6 +1447,9 @@ it is the same answer in the renderer and in the analysis layer, on every storey
 else the plan contains. A flight genuinely approached from the north or the west therefore
 draws its arrow the wrong way round in v1; swap the footprint's authored coordinates, or
 wait for the `entry <edge>` clause a later release can add without changing this default.
+Inside a `place`d component the rule is read in the component's own frame and carried by
+the `rotate`/`mirror`, so a turned or mirrored run is entered from the image of the end it
+was authored with, and a mirrored stair's break line is drawn mirrored.
 
 **`width` (stairs only)** is the FLIGHT width measured across the run. It defaults to the
 footprint's cross-axis extent, and may not exceed it
@@ -2188,14 +2282,15 @@ entrance — there is nothing to measure a walk from — otherwise a `Circulatio
 
 ```ts
 interface CirculationModel {
-  entranceId: string;   // door the walk starts from (first entrance in source order)
+  entranceId: string;   // the first entrance in source order
   cellSizeMm: number;   // nav-grid quantum every distance is rounded to (coarse)
   bodyRadiusMm: number; // obstacles were inflated by this
-  rooms: {              // one entry per room reachable from the entrance
+  rooms: {              // one entry per room reachable from any entrance
     roomId: string;
-    walkDistanceMm: number;        // entrance → room, over the eroded grid
-    bottleneckClearWidthMm: number;// narrowest unavoidable clear width on the way in
-    detourRatio: number;           // walkDistance ÷ straight-line (≥ ~1)
+    walkDistanceMm: number;        // NEAREST entrance → room, over the eroded grid
+    bottleneckClearWidthMm: number;// narrowest unavoidable clear width, widest way in from any entrance
+    detourRatio: number;           // walkDistance ÷ straight-line from its own entrance (≥ ~1)
+    entranceId?: string;           // that nearest entrance — only when the plan has several
   }[];
   routes: {             // key functional routes (kitchen→living, bedroom→bath)
     fromRoomId: string; toRoomId: string;
@@ -2212,8 +2307,8 @@ Two advisory lint rules read this model (see [ADR 0008](adr/0008-circulation-as-
   (**3.0×**), i.e. it's reached the long way round.
 
 The same model backs an **opt-in render overlay** (see
-[`overlays`](#compilation-result) below) — the entrance→room walks, their pinch
-markers, and key routes drawn on top of the plan.
+[`overlays`](#compilation-result) below) — the entrance→room walks (each from the room's
+nearest entrance), their pinch markers, and key routes drawn on top of the plan.
 
 ### Correcting a plan — `arch repair`
 
@@ -2613,3 +2708,17 @@ which keeps it backend-ready.
 `ElementDef`, then add one `register()` line in `src/elements/index.ts`. No
 edits to the parser, resolver, or renderer cores are needed — `column` is the
 worked example.
+
+**`transform` — carrying an element through `place`.** A component instance
+resolves in its own frame, and each element then maps itself into plan
+coordinates with `transform(el, t)`, where `t` is a `TransformCtx`: `t.point`,
+`t.rect` (top-left + size, re-cornered), `t.arc`, `t.segment`, `t.side`,
+`t.quarterTurn`, `t.nsId`, plus `t.id` (the namespaced id), `t.reflected` and
+`t.swapsAxes`. Return a new element and flip any handed fact yourself when
+`t.reflected` is true. Every built-in has one. A plugin passed through
+`compile(src, { plugins })` may omit it: one that replaces a built-in kind
+inherits the built-in's, and a new kind without one is refused inside a `place`
+with `E_INSTANCE_NO_TRANSFORM` (the instance's copy is dropped, never drawn
+untransformed). The inherited action assumes the built-in's resolved shape, so a
+replacement whose `resolve` returns a different shape must provide its own
+`transform`.

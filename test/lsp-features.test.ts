@@ -271,6 +271,52 @@ describe("T5.3 — rename", () => {
     for (const e of edits!) expect(e.span.start).toBeGreaterThan(SRC.indexOf("component bed"));
     for (const e of edits!) expect(e.span.end).toBeLessThan(SRC.indexOf("wall exterior"));
   });
+
+  // `statementExprs` (`cursor.ts`) used to have no case for `opening`/`level`, and missed
+  // a window/door's `sill`/`head`, a furniture `against`'s `segment`/`offset`, and a
+  // `place`'s `inset` entirely — so a reference living ONLY in one of those clauses was
+  // invisible to `eachExpr`, and renaming its `let` silently left that clause unrenamed
+  // (a rewrite the author never asked for is what a `let` rename becomes when it misses a
+  // use). Each case below binds a `let` used SOLELY inside the clause named, so a
+  // regression shows up as `edits!.length` staying at 1 (the definition alone).
+  const SRC2 = [
+    'plan "M" {',
+    "  units mm",
+    "  let H = 900",
+    "  let OFF = 500",
+    "  let LVLH = 3000",
+    "  level 0 height LVLH {",
+    "    wall id=w1 exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }",
+    "    window id=win on w1 at 50% width 900 sill H",
+    "    furniture id=f chair against wall w1 segment 0 offset OFF size 500x500",
+    "  }",
+    "}",
+  ].join("\n");
+  const at2 = (needle: string, plus = 1): number => SRC2.indexOf(needle) + plus;
+
+  it("renames a `let` used inside a window's `sill` clause", () => {
+    const edits = rename(SRC2, at2("let H = ") + 4, "SILL_H");
+    expect(edits).not.toBeNull();
+    expect(edits!.length).toBe(2); // the def + the use in `sill H`
+    for (const e of edits!) expect(SRC2.slice(e.span.start, e.span.end)).toBe("H");
+    expect(edits!.some((e) => e.span.start === SRC2.indexOf("sill H") + "sill ".length)).toBe(true);
+  });
+
+  it("renames a `let` used inside a furniture `against … offset` clause", () => {
+    const edits = rename(SRC2, at2("let OFF = ") + 4, "STANDOFF");
+    expect(edits).not.toBeNull();
+    expect(edits!.length).toBe(2); // the def + the use in `offset OFF`
+    for (const e of edits!) expect(SRC2.slice(e.span.start, e.span.end)).toBe("OFF");
+    expect(edits!.some((e) => e.span.start === SRC2.indexOf("offset OFF") + "offset ".length)).toBe(true);
+  });
+
+  it("renames a `let` used inside a `level … height` clause", () => {
+    const edits = rename(SRC2, at2("let LVLH = ") + 4, "STOREY_H");
+    expect(edits).not.toBeNull();
+    expect(edits!.length).toBe(2); // the def + the use in `level 0 height LVLH`
+    for (const e of edits!) expect(SRC2.slice(e.span.start, e.span.end)).toBe("LVLH");
+    expect(edits!.some((e) => e.span.start === SRC2.indexOf("height LVLH") + "height ".length)).toBe(true);
+  });
 });
 
 describe("T5.3 — signature help", () => {

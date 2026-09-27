@@ -4,6 +4,7 @@
  * once per `lint()` run, so no rule re-derives them.
  */
 
+import { type D4, D4_IDENTITY, fromSpelling } from "../algebra/d4.js";
 import type { AccessGraph, RoomBox } from "../analyze.js";
 import { buildDoorAccessGraph, roomBox } from "../analyze.js";
 import type { Diagnostic } from "../diagnostics.js";
@@ -78,6 +79,21 @@ export interface LintContext {
    * plan's diagnostics are byte-identical.
    */
   at(el: DiagnosticSite): { span?: Diagnostic["span"]; file?: string };
+  /**
+   * The linear part of the frame that carried `el` into plan coordinates: the D4 element
+   * of its `place` instance, composed through every enclosing `place`, or the identity for
+   * an element written in the root plan.
+   *
+   * A rule that computes a fix value from plan-space geometry needs it. A fix edits the
+   * element's SOURCE, and an element inside a component is written in the component's
+   * local frame, so the value to write is the plan-space one pulled back through `g⁻¹`.
+   * Read from `ir.instances`, which records for each instance the frame the resolver handed
+   * `transformElement` (a nested instance's is already composed there), keyed by the dotted
+   * path stamped on the element as `_instance`. `null` only if the element names an
+   * instance the plan never recorded; the rule then offers no fix rather than a plan-space
+   * guess.
+   */
+  frameOf(el: { _instance?: string }): D4 | null;
 }
 
 /** What {@link LintContext.at} needs off an element: where it is, and in which file. */
@@ -104,6 +120,7 @@ export function buildLintContext(
   const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
   const furniture = ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
   let accessMemo: AccessGraph | null = null;
+  let framesMemo: Map<string, D4> | null = null;
   return {
     ir,
     rules,
@@ -125,5 +142,10 @@ export function buildLintContext(
       ...(el.span ? { span: el.span } : {}),
       ...(el._file !== undefined ? { file: el._file } : {}),
     }),
+    frameOf: (el) => {
+      if (el._instance === undefined) return D4_IDENTITY;
+      framesMemo ??= new Map((ir.instances ?? []).map((i) => [i.name, fromSpelling(i.rotate, i.mirror)]));
+      return framesMemo.get(el._instance) ?? null;
+    },
   };
 }

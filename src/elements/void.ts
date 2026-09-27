@@ -34,7 +34,7 @@
  */
 
 import type { Point, VoidNode } from "../ast.js";
-import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import { weightWidth } from "../scene.js";
 import type { RVoid } from "../ir.js";
@@ -112,5 +112,14 @@ export const voidEl: ElementDef = {
       node({ t: "line", a: pts[0]!, b: pts[2]! }),
       node({ t: "line", a: pts[1]!, b: pts[3]! }),
     ];
+  },
+  /** The frame's action on a floor void (`frame.ts`'s `transformElement` calls this). */
+  transform(resolved, t: TransformCtx): RVoid {
+    // A void is an axis-aligned rectangle given as TOP-LEFT + size, exactly like the
+    // vertical runs — so a quarter-turn swaps its extents and re-derives the corner.
+    const el = resolved as RVoid;
+    const { id } = t;
+    const r = t.rect(el.at, el.size);
+    return { ...el, id, at: r.at, size: r.size };
   },
 };

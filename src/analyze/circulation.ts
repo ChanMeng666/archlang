@@ -56,9 +56,16 @@ import {
 } from "../analyze.js";
 import { pointInRect } from "../geometry/rect.js";
 import { arcExtremes, distPointToArc } from "../geometry/arc.js";
-import { pointInPolygon, polygonEdges, polygonLabelPoint } from "../geometry/polygon.js";
+import {
+  distToPolygonEdge,
+  pointInPolygon,
+  polygonCentroid,
+  polygonEdges,
+  polygonLabelPoint,
+} from "../geometry/polygon.js";
 import { matchesLivingDining } from "../vocabulary.js";
 import { solidFurniture } from "../fixtures-catalog.js";
+import { neighbours4 } from "./grid.js";
 
 /** Radius (mm) of the walking body obstacles are inflated by (clearance erosion). */
 export const DEFAULT_BODY_RADIUS_MM = 300;
@@ -111,17 +118,23 @@ export function centreFreedomToClearWidth(hops: number, cellMm: number, bodyRadi
   return Math.max(0, 2 * hops - 1) * cellMm + 2 * bodyRadiusMm;
 }
 
-/** Circulation facts for one room, measured from the building entrance. */
+/** Circulation facts for one room, measured from its NEAREST building entrance. */
 export interface RoomCirculation {
   roomId: string;
-  /** Walking distance (mm) from the entrance to the room's centre-nearest free cell,
-   *  over the clearance-eroded nav grid. Grid-quantized to `cellSizeMm`; coarse. */
+  /** Walking distance (mm) from the room's nearest entrance to the room's centre-nearest
+   *  free cell, over the clearance-eroded nav grid — one multi-source walk seeded at
+   *  every entrance at once. Grid-quantized to `cellSizeMm`; coarse. */
   walkDistanceMm: number;
-  /** Narrowest unavoidable clear width (mm) on the widest route from the entrance into
+  /** Narrowest unavoidable clear width (mm) on the widest route from ANY entrance into
    *  the room — a modeled door width, or a furniture pinch. Coarse and grid-quantized. */
   bottleneckClearWidthMm: number;
-  /** walkDistance ÷ straight-line (entrance threshold → room target). ≥ ~1; 2 dp. */
+  /** walkDistance ÷ straight-line (the room's own entrance threshold → room target).
+   *  ≥ ~1; 2 dp. */
   detourRatio: number;
+  /** The entrance this room's walk is measured from: the nearest one, ties to the
+   *  lowest entrance index. **Present only when the plan has more than one entrance**,
+   *  so a single-entrance plan keeps the bytes it had (append-only). */
+  entranceId?: string;
 }
 
 /** A key functional route between two rooms (e.g. kitchen → living). */
@@ -136,18 +149,20 @@ export interface CirculationRoute {
 /** The whole-plan circulation model. Null from {@link computeCirculation} when the
  *  plan has no modeled exterior entrance (nothing to measure a walk from). */
 export interface CirculationModel {
-  /** Door id the walk is measured from — the first entrance in source order. */
+  /** The first entrance in source order. With one entrance it is the door every walk
+   *  is measured from; with several, each room carries its own
+   *  ({@link RoomCirculation.entranceId}) — its nearest. */
   entranceId: string;
   /** Nav-grid cell size (mm) — the quantum every distance is rounded to. */
   cellSizeMm: number;
   /** Body radius (mm) obstacles were inflated by. */
   bodyRadiusMm: number;
-  /** One entry per room reachable from the entrance on the walkable grid (source order). */
+  /** One entry per room reachable from any entrance on the walkable grid (source order). */
   rooms: RoomCirculation[];
   /** Key functional routes (kitchen → nearest living/dining, bedroom → nearest bath). */
   routes: CirculationRoute[];
   /**
-   * Rooms the modeled doors DO reach from the entrance but the WALKABLE grid does not —
+   * Rooms the modeled doors DO reach from an entrance but the WALKABLE grid does not —
    * furniture and its clearances leave no way in a body fits through, so the room has no
    * `rooms[]` entry. Source order; **present only when non-empty**, so a plan with
    * nothing sealed keeps the summary bytes it had.
@@ -166,8 +181,8 @@ export interface CirculationModel {
    *
    * This exists because the ABSENCE was the whole report. A consumer got circulation
    * facts for five of seven rooms and nothing telling it two were missing, and could
-   * not tell "this room is fine, we just measure from a different front door" from
-   * "nothing can walk in here". `blocked` cannot carry them:
+   * not tell "this room is fine, we just could not measure it" from "nothing can walk in
+   * here". `blocked` cannot carry them:
    * that key means *sealed by furniture*, a real plan defect with a piece to move, and
    * widening it to mean "we did not measure this" would manufacture exactly the false
    * positive its furniture-free control exists to prevent.
@@ -181,8 +196,8 @@ export interface CirculationModel {
 }
 
 /**
- * Why one room has no measured walk. A closed set — five DIFFERENT facts, not five
- * shades of "unknown", and each names the thing a reader would have to change:
+ * Why one room has no measured walk. A closed set — DIFFERENT facts, not shades of
+ * "unknown", and each names the thing a reader would have to change:
  *
  *  - `no_door_route` — the modeled doors do not connect it to the exterior at all, so
  *    there is no walk to measure. `W_ROOM_UNREACHABLE`'s subject; `access.rooms[]`
@@ -190,12 +205,11 @@ export interface CirculationModel {
  *  - `below_grid_resolution` — the room is smaller than one nav-grid cell, so it holds
  *    no cell centre and the grid cannot see it. A resolution limit, not a plan defect;
  *    `W_ROOM_TOO_SMALL`'s subject.
- *  - `other_entrance` — it IS walkable, from an entrance other than the one every walk
- *    is measured from ({@link CirculationModel.entranceId}, the first in source order).
- *    A terrace of four dwellings on one sheet is four buildings with four front doors,
- *    and "cannot be reached from door #1" is an ordinary fact about a terrace rather
- *    than anything wrong. A per-entrance model is the honest fix and is deliberately
- *    NOT attempted here.
+ *  - `other_entrance` — RETIRED, never emitted. It named a room walkable only from an
+ *    entrance other than the first, back when every walk was measured from
+ *    `entrances[0]`. Every walk is now measured from the room's NEAREST entrance (one
+ *    multi-source search), so a room any entrance reaches is measured. Kept in the type
+ *    so a consumer's exhaustive `switch` still compiles (append-only).
  *  - `no_threshold` — no doorway of this room ever became a carved opening in the
  *    walkable grid: every threshold across its connectors was refused because something
  *    stands in the run on one side or the other. `garden-house`'s study is the specimen
@@ -258,7 +272,8 @@ function distPointToRect(px: number, py: number, r: BBox): number {
   return Math.hypot(dx, dy);
 }
 
-interface NavGrid {
+/** @internal The whole-plan nav grid; exported only so the grid searches' signatures can be. */
+export interface NavGrid {
   minX: number;
   minY: number;
   cell: number;
@@ -426,24 +441,23 @@ function thresholdPoints(g: NavGrid, at: Point, rb: RoomBox, clear: number, tol:
   return out;
 }
 
-/** 4-connected uniform-cost BFS from `source`; returns hop distance + parent. */
-function bfs(g: NavGrid, source: number): { dist: Int32Array; parent: Int32Array } {
+/**
+ * 4-connected uniform-cost BFS from `source`; returns hop distance + parent.
+ *
+ * @internal Exported for `test/path-algebra.test.ts`, which proves it equals the
+ * `bestPaths` engine (unit `MIN_PLUS`, constant rank). Not re-exported by `src/index.ts`.
+ */
+export function bfs(g: NavGrid, source: number): { dist: Int32Array; parent: Int32Array } {
   const dist = new Int32Array(g.nx * g.ny).fill(-1);
   const parent = new Int32Array(g.nx * g.ny).fill(-1);
   dist[source] = 0;
   const queue = [source];
+  const nb4 = new Int32Array(4);
   for (let h = 0; h < queue.length; h++) {
     const k = queue[h]!;
-    const ix = k % g.nx;
-    const iy = (k - ix) / g.nx;
-    const nbrs = [
-      ix > 0 ? k - 1 : -1,
-      ix < g.nx - 1 ? k + 1 : -1,
-      iy > 0 ? k - g.nx : -1,
-      iy < g.ny - 1 ? k + g.nx : -1,
-    ];
-    for (const nb of nbrs) {
-      if (nb >= 0 && g.free[nb] && dist[nb]! < 0) {
+    for (let i = 0, m = neighbours4(k, g.nx, g.ny, nb4); i < m; i++) {
+      const nb = nb4[i]!;
+      if (g.free[nb] && dist[nb]! < 0) {
         dist[nb] = dist[k]! + 1;
         parent[nb] = k;
         queue.push(nb);
@@ -454,12 +468,56 @@ function bfs(g: NavGrid, source: number): { dist: Int32Array; parent: Int32Array
 }
 
 /**
- * Cells reachable on the walkable grid from ANY of `sources` — one 4-connected
- * multi-source flood, not `sources.length` separate BFSs. Used for exactly one question:
- * is this room walkable-into from some front door? (Distances stay measured from the
- * first entrance; only the blocked/not-blocked verdict is plan-wide.)
+ * {@link bfs} from SEVERAL sources at once: the `MIN_PLUS` sum over the entrances, in one
+ * pass. `dist` is the hop distance to the NEAREST source, `parent` the BFS tree toward it,
+ * and `from[k]` the index (into `sources`) of the source cell `k` was reached from.
+ *
+ * Ties go to the LOWEST source index, and exactly so: the queue starts with the sources in
+ * index order, so every BFS layer is ordered by `from`, and a cell first reached at
+ * distance d is reached from the smallest-index source among its nearest ones. A source
+ * repeated in the list keeps its first index. With one source this is {@link bfs} — same
+ * queue, same neighbour order, same `dist` and `parent` — which is what keeps a
+ * single-entrance plan byte-identical.
  */
-function reachableFromAny(g: NavGrid, sources: number[]): Uint8Array {
+export function bfsNearest(
+  g: NavGrid,
+  sources: readonly number[],
+): { dist: Int32Array; parent: Int32Array; from: Int32Array } {
+  const dist = new Int32Array(g.nx * g.ny).fill(-1);
+  const parent = new Int32Array(g.nx * g.ny).fill(-1);
+  const from = new Int32Array(g.nx * g.ny).fill(-1);
+  const queue: number[] = [];
+  sources.forEach((s, i) => {
+    if (dist[s]! >= 0) return;
+    dist[s] = 0;
+    from[s] = i;
+    queue.push(s);
+  });
+  const nb4 = new Int32Array(4);
+  for (let h = 0; h < queue.length; h++) {
+    const k = queue[h]!;
+    for (let i = 0, m = neighbours4(k, g.nx, g.ny, nb4); i < m; i++) {
+      const nb = nb4[i]!;
+      if (g.free[nb] && dist[nb]! < 0) {
+        dist[nb] = dist[k]! + 1;
+        parent[nb] = k;
+        from[nb] = from[k]!;
+        queue.push(nb);
+      }
+    }
+  }
+  return { dist, parent, from };
+}
+
+/**
+ * Cells reachable on the walkable grid from ANY of `sources` — one 4-connected
+ * multi-source flood, not `sources.length` separate BFSs — the `BOOLEAN` closure of
+ * {@link bfsNearest}. Used for the blocked/unmeasured verdicts: is this room
+ * walkable-into from some front door?
+ *
+ * @internal Exported for `test/path-algebra.test.ts` (the `BOOLEAN` closure).
+ */
+export function reachableFromAny(g: NavGrid, sources: number[]): Uint8Array {
   const seen = new Uint8Array(g.nx * g.ny);
   const queue: number[] = [];
   for (const s of sources) {
@@ -468,18 +526,11 @@ function reachableFromAny(g: NavGrid, sources: number[]): Uint8Array {
       queue.push(s);
     }
   }
+  const nb4 = new Int32Array(4);
   for (let h = 0; h < queue.length; h++) {
-    const k = queue[h]!;
-    const ix = k % g.nx;
-    const iy = (k - ix) / g.nx;
-    const nbrs = [
-      ix > 0 ? k - 1 : -1,
-      ix < g.nx - 1 ? k + 1 : -1,
-      iy > 0 ? k - g.nx : -1,
-      iy < g.ny - 1 ? k + g.nx : -1,
-    ];
-    for (const nb of nbrs) {
-      if (nb >= 0 && g.free[nb] && !seen[nb]) {
+    for (let i = 0, m = neighbours4(queue[h]!, g.nx, g.ny, nb4); i < m; i++) {
+      const nb = nb4[i]!;
+      if (g.free[nb] && !seen[nb]) {
         seen[nb] = 1;
         queue.push(nb);
       }
@@ -505,14 +556,23 @@ function perRoomMax(g: NavGrid, vals: Float64Array, nRooms: number): Float64Arra
  * squeeze between the sources and a cell (e.g. the narrowest door you must pass), not
  * an artifact of the shortest path hugging a wall — a max-min Dijkstra, the cell-grid
  * analogue of the access graph's widest-path clear-width. Each source is seeded with
- * `seed` (the entrance's own clear width for the entrance walk; `+Infinity` for a
- * room→room route, so the source room's internal furniture-crowding never caps it).
+ * `seed` — one value for all (`+Infinity` for a room→room route, so the source room's
+ * internal furniture-crowding never caps it), or one per source (the entrance walk: each
+ * entrance at its OWN clear width, so the widest route from any entrance wins; a cell two
+ * entrances share keeps the wider).
  * Deterministic: the best value per cell is unique, so the heap's tie order does not
  * affect the result. When `pinch` is supplied it is filled with, per cell, the index
  * of the limiting (narrowest) cell on that cell's widest route — used to place the
  * overlay's bottleneck marker.
+ *
+ * @internal Exported for `test/path-algebra.test.ts` (values equal the `MAX_MIN` engine).
  */
-function widestBottleneck(g: NavGrid, sources: number[], seed: number, pinch?: Int32Array): Float64Array {
+export function widestBottleneck(
+  g: NavGrid,
+  sources: readonly number[],
+  seed: number | readonly number[],
+  pinch?: Int32Array,
+): Float64Array {
   const n = g.nx * g.ny;
   const best = new Float64Array(n).fill(-Infinity);
   const done = new Uint8Array(n);
@@ -563,28 +623,23 @@ function widestBottleneck(g: NavGrid, sources: number[], seed: number, pinch?: I
     return top;
   };
 
-  for (const s of sources) {
-    if (seed > best[s]!) {
-      best[s] = seed;
+  sources.forEach((s, i) => {
+    const v = typeof seed === "number" ? seed : seed[i]!;
+    if (v > best[s]!) {
+      best[s] = v;
       if (pinch) pinch[s] = s;
-      push(seed, s);
+      push(v, s);
     }
-  }
+  });
 
+  const nb4 = new Int32Array(4);
   while (hk.length > 0) {
     const u = pop();
     if (done[u]) continue;
     done[u] = 1;
-    const ix = u % g.nx;
-    const iy = (u - ix) / g.nx;
-    const nbrs = [
-      ix > 0 ? u - 1 : -1,
-      ix < g.nx - 1 ? u + 1 : -1,
-      iy > 0 ? u - g.nx : -1,
-      iy < g.ny - 1 ? u + g.nx : -1,
-    ];
-    for (const nb of nbrs) {
-      if (nb < 0 || !g.free[nb] || done[nb]) continue;
+    for (let i = 0, m = neighbours4(u, g.nx, g.ny, nb4); i < m; i++) {
+      const nb = nb4[i]!;
+      if (!g.free[nb] || done[nb]) continue;
       const cand = Math.min(best[u]!, g.clearMm[nb]!);
       if (cand > best[nb]!) {
         best[nb] = cand;
@@ -595,6 +650,34 @@ function widestBottleneck(g: NavGrid, sources: number[], seed: number, pinch?: I
     }
   }
   return best;
+}
+
+/**
+ * 4-connected hop distance from the nearest of `seeds` to every cell of an `nx` × `ny`
+ * grid, walls and all (−1 when there is no seed). A multi-source BFS, so the result does
+ * not depend on the seeds' order.
+ *
+ * @internal Exported for `test/path-algebra.test.ts` (multi-source `MIN_PLUS`).
+ */
+export function distanceTransform4(nx: number, ny: number, seeds: readonly number[]): Int32Array {
+  const D = new Int32Array(nx * ny).fill(-1);
+  const q: number[] = [];
+  for (const k of seeds) {
+    D[k] = 0;
+    q.push(k);
+  }
+  const nb4 = new Int32Array(4);
+  for (let h = 0; h < q.length; h++) {
+    const k = q[h]!;
+    for (let i = 0, m = neighbours4(k, nx, ny, nb4); i < m; i++) {
+      const nb = nb4[i]!;
+      if (D[nb]! < 0) {
+        D[nb] = D[k]! + 1;
+        q.push(nb);
+      }
+    }
+  }
+  return D;
 }
 
 /** Euclidean distance from a point to a segment. */
@@ -855,24 +938,7 @@ function buildGrid(
   // the erosion took out. A cell with no furniture in reach reads BIG (an open room),
   // so it never sets the bottleneck — only doors and furniture gaps do.
   const BIG = W + H;
-  const D = new Int32Array(nx * ny).fill(-1);
-  const q: number[] = [];
-  for (const k of furnObstacle) {
-    D[k] = 0;
-    q.push(k);
-  }
-  for (let h = 0; h < q.length; h++) {
-    const k = q[h]!;
-    const ix = k % nx;
-    const iy = (k - ix) / nx;
-    const nbrs = [ix > 0 ? k - 1 : -1, ix < nx - 1 ? k + 1 : -1, iy > 0 ? k - nx : -1, iy < ny - 1 ? k + nx : -1];
-    for (const nb of nbrs) {
-      if (nb >= 0 && D[nb]! < 0) {
-        D[nb] = D[k]! + 1;
-        q.push(nb);
-      }
-    }
-  }
+  const D = distanceTransform4(nx, ny, furnObstacle);
   for (let k = 0; k < free.length; k++) {
     g.clearMm[k] = free[k] ? (D[k]! >= 0 ? centreFreedomToClearWidth(D[k]!, cell, bodyRadius) : BIG) : 0;
   }
@@ -883,15 +949,88 @@ function buildGrid(
   return g;
 }
 
+/** The dyadic lattice (mm) {@link toExtentFrame} snaps relative coordinates to: 2⁻¹⁰. */
+const FRAME_QUANTUM_MM = 1 / 1024;
+
+/**
+ * The circulation inputs moved into the nav extent's OWN frame: every coordinate minus the
+ * extent's min corner, so the grid is anchored at (0, 0) and every sample — a cell centre,
+ * a room's seed point, a threshold point, a distance to a wall or a footprint — is taken in
+ * coordinates relative to it.
+ *
+ * Why: the grid used to sample in ABSOLUTE float coordinates, and a curve's tessellated
+ * vertices do not survive a translation bit for bit — `9071.796769724491` placed 20 m out
+ * is stored as `29071.79676972449`, one ulp of the larger number coarser — so the ring's
+ * label point, a point-to-edge distance or a membership test resolved an exact tie the
+ * other way, and a pure translation moved a walk (`library`'s reading room 25 500 →
+ * 25 300 mm) or a detour (`aquarium`'s rotunda 1.01 → 1).
+ *
+ * So each coordinate is taken relative to the min corner and then snapped to a dyadic
+ * lattice of {@link FRAME_QUANTUM_MM} — far coarser than any ulp a translation can cost
+ * (≈ 1e-10 mm at a kilometre), far finer than anything a 100 mm grid can see. Both sides
+ * of a translation then read the same number, so every fact is invariant EXCEPT when a
+ * relative coordinate's residue lies within about an ulp of a half-quantum — the one place
+ * a rounding still depends on the ulp (measured: 0 moves over 69 non-integer translations
+ * of 8 examples; `test/circulation-translation.test.ts`). An integer or dyadic coordinate —
+ * every rectangle, every authored point — is unchanged by the snap, and so is every plan
+ * whose extent starts at (0, 0) and draws no curve.
+ *
+ * Translated, exactly: `rooms[].at`, `.poly`, `.circle.c`; `walls[].points` and each arc's
+ * `center`, `a`, `b`; `at` of every door, opening, furniture, vertical and void. Left in
+ * ABSOLUTE coordinates because nothing on the nav grid reads them: `door.host`/
+ * `opening.host` (the wall segment — the grid reads the wall list, and only `hostWallId`
+ * through the access graph), `room.labelAt`, `_placement` and every span.
+ */
+function toExtentFrame(
+  origin: Point,
+  plan: {
+    rooms: RRoom[];
+    walls: RWall[];
+    doors: RDoor[];
+    openings: ROpening[];
+    furniture: RFurniture[];
+    verticals: RVertical[];
+    voids: RVoid[];
+  },
+): typeof plan {
+  const snap = (v: number): number => Math.round(v / FRAME_QUANTUM_MM) * FRAME_QUANTUM_MM;
+  const p = (q: Point): Point => ({ x: snap(q.x - origin.x), y: snap(q.y - origin.y) });
+  const at = <T extends { at: Point }>(e: T): T => ({ ...e, at: p(e.at) });
+  return {
+    rooms: plan.rooms.map((r) => ({
+      ...at(r),
+      ...(r.poly ? { poly: r.poly.map(p) } : {}),
+      ...(r.circle ? { circle: { ...r.circle, c: p(r.circle.c) } } : {}),
+    })),
+    walls: plan.walls.map((w) => ({
+      ...w,
+      points: w.points.map(p),
+      ...(w.arcs ? { arcs: w.arcs.map((a) => (a ? { ...a, center: p(a.center), a: p(a.a), b: p(a.b) } : a)) } : {}),
+    })),
+    doors: plan.doors.map(at),
+    openings: plan.openings.map(at),
+    furniture: plan.furniture.map(at),
+    verticals: plan.verticals.map(at),
+    voids: plan.voids.map(at),
+  };
+}
+
+/** The nav extent's min corner — the origin {@link toExtentFrame} moves a plan to. */
+function extentOrigin(rooms: readonly RRoom[]): Point {
+  const ex = navExtent(rooms);
+  return ex ? { x: ex.minX, y: ex.minY } : { x: 0, y: 0 };
+}
+
 /** Shared nav-grid setup for both the facts and overlay entry points: the grid, each
- *  room's anchor + free-cell list, and the entrance seed cell (with its clear width
- *  stamped). `none` → no entrance/rooms (null circulation); `empty` → an entrance but
- *  nothing walkable from it (facts return an empty model). */
+ *  room's anchor + free-cell list, and every entrance's seed cell (with its clear width
+ *  stamped). `none` → no entrance/rooms (null circulation); `empty` → entrances, but not
+ *  one with a walkable cell behind it (facts return an empty model). */
 type Nav =
   | { kind: "none" }
-  /** The first entrance has no walkable cell behind it, so there is no walk to measure.
-   *  The grid and the OTHER entrances' seeds still come back, because "nothing can be
-   *  measured from the front door" is not the same as "nothing can be said". */
+  /** ALL entrances are sealed — not one has a walkable cell behind it — so there is no walk
+   *  to measure. (One sealed entrance among several is `ok`: the others seed the walk.) The
+   *  grid still comes back, because "nothing can be measured from a front door" is not the
+   *  same as "nothing can be said". */
   | { kind: "empty"; entranceId: string; cellSizeMm: number; g: NavGrid; roomCells: number[][]; sources: number[] }
   | {
       kind: "ok";
@@ -902,17 +1041,22 @@ type Nav =
        *  name is drawn at (poly-aware). Kept so a room whose anchor turns out to be
        *  unreachable can re-pick the nearest cell that is. */
       seed: Point[];
-      /** The measured walk's origin: the FIRST entrance, as it has always been. */
-      source: number;
+      /** Per room, the widest poles of inaccessibility its label-point scan finds on the
+       *  ring turned and flipped ({@link labelPointOrbit}); empty unless the room is
+       *  concave with its centroid off its floor. */
+      poles: Point[][];
       /**
-       * Every entrance's seed cell, source order. Only the *blocked* verdict reads this,
-       * and it must: a plan may have several front doors serving disjoint parts of the
-       * drawing — `examples/terrace-row.arch` is four dwellings on one sheet — and
-       * "cannot be reached from door #1" is then an ordinary fact about a terrace, not
-       * furniture sealing a room. Judging blockage from the first entrance alone claimed
-       * three of that row's four houses were impassable.
+       * Every entrance's seed cell whose doorway is not sealed, in entrance (source)
+       * order — the walk's sources, all at once: each room is measured from its NEAREST
+       * one. A plan may have several front doors serving disjoint parts of the drawing
+       * (`examples/terrace-row.arch` is four dwellings on one sheet), and a room is
+       * walked to from its own.
        */
       sources: number[];
+      /** Per source, its entrance's id and its connector's clear width (the walk's seed). */
+      sourceIds: string[];
+      sourceClear: number[];
+      /** The first entrance's id and point (the model's header; the overlay's anchor). */
       entranceId: string;
       entrancePoint: Point;
     };
@@ -974,6 +1118,10 @@ function buildNav(
   const anchorDist = new Float64Array(rooms.length).fill(Infinity);
   const roomCells: number[][] = rooms.map(() => []);
   const seed = rects.map((rb) => (rb.poly ? polygonLabelPoint(rb.poly) : { x: rb.x + rb.w / 2, y: rb.y + rb.h / 2 }));
+  // A pole of inaccessibility is found by a scan that keeps the FIRST of equally wide arms
+  // (a page-order tie), so such a room is measured to every widest pole the same scan finds
+  // on the ring turned or flipped — the orbit — and its walk is the shortest of them.
+  const poles = rects.map((rb) => (rb.poly ? labelPointOrbit(rb.poly) : []));
   for (let k = 0; k < g.free.length; k++) {
     const ri = g.roomIdx[k]!;
     if (!g.free[k] || ri < 0) continue;
@@ -988,13 +1136,12 @@ function buildNav(
   }
 
   const entranceId = access.entrances[0]!;
-  const entranceEdge = access.edges.find((e) => e.doorId === entranceId);
   const entrancePoint = atById.get(entranceId);
 
-  // Every entrance's inner seed cell, source order. The first one (when it seeds) is the
-  // origin of every reported walk, exactly as before; the rest exist so the *blocked*
-  // verdict can ask "from ANY front door", which a multi-dwelling plan requires.
+  // Every entrance's inner seed cell, source order: the walk's sources, all at once.
   const sources: number[] = [];
+  const sourceIds: string[] = [];
+  const sourceClear: number[] = [];
   for (const id of access.entrances) {
     const edge = access.edges.find((e) => e.doorId === id);
     const roomId = edge?.between.find((x) => x !== EXTERIOR_NODE && x !== "");
@@ -1008,21 +1155,19 @@ function buildNav(
     const clear = edge?.estimatedClearWidth;
     if (clear !== undefined) g.clearMm[k] = clear;
     sources.push(k);
+    sourceIds.push(id);
+    // The seed a widest-path search starts this entrance at. A single entrance reads the
+    // cell's stamped width, exactly as its seed always did.
+    sourceClear.push(clear ?? g.clearMm[k]!);
   }
 
-  const entranceRoomId = entranceEdge?.between.find((x) => x !== EXTERIOR_NODE && x !== "");
-  const entranceRoomIdx = entranceRoomId !== undefined ? roomIndexById.get(entranceRoomId) : undefined;
-  const source =
-    entranceRoomIdx === undefined || entrancePoint === undefined
-      ? -1
-      : seedCell(g, entrancePoint, rects[entranceRoomIdx]!, entranceRoomIdx, tol, bandOf(entranceEdge?.hostWallId));
-  // A sealed front door is not "no information": the grid and the other entrances still
-  // have something to say about which rooms can be walked into at all.
-  if (source < 0 || entrancePoint === undefined) {
+  // Sealed front doors are not "no information": the grid still has something to say
+  // about which rooms can be walked into at all.
+  if (sources.length === 0 || entrancePoint === undefined) {
     return { kind: "empty", entranceId, cellSizeMm: g.cell, g, roomCells, sources };
   }
 
-  return { kind: "ok", g, anchor, roomCells, seed, source, sources, entranceId, entrancePoint };
+  return { kind: "ok", g, anchor, roomCells, seed, poles, sources, sourceIds, sourceClear, entranceId, entrancePoint };
 }
 
 /**
@@ -1061,6 +1206,136 @@ function reachableRep(g: NavGrid, cells: number[], seed: Point, dist: Int32Array
   return best;
 }
 
+/** The eight signed permutations of D4 as `[a, b, c, d]`: `(x, y) ↦ (a·x + b·y, c·x + d·y)`. */
+const D4_MATS: readonly (readonly [number, number, number, number])[] = [
+  [1, 0, 0, 1],
+  [0, -1, 1, 0],
+  [-1, 0, 0, -1],
+  [0, 1, -1, 0],
+  [-1, 0, 0, 1],
+  [0, 1, 1, 0],
+  [1, 0, 0, -1],
+  [0, -1, -1, 0],
+];
+
+/**
+ * The poles of inaccessibility a concave ring whose centroid is off its floor is measured
+ * to: `polygonLabelPoint` run on the ring turned and flipped by each element of D4 about
+ * its bounding-box centre and carried back, keeping the WIDEST of them — or `[]` when the
+ * centroid is on the floor (the label point is then the centroid, and nothing is scanned).
+ *
+ * The label-point scan keeps the first of equally wide arms, which is a page-order
+ * choice: a U-shaped gallery turned 180° is measured in its other arm. The ORBIT is not a
+ * choice — it is the same set however the ring is drawn, because turning the ring first
+ * only permutes the eight scans. Centring on the bounding box keeps every transformed
+ * coordinate exact (a signed permutation of values that are already on the snapped
+ * lattice), so the orbit of a turned ring is exactly the turned orbit.
+ */
+function labelPointOrbit(poly: readonly Point[]): Point[] {
+  // The centroid is the scan's answer whenever it is on the floor: no scan, no tie.
+  const centroid = polygonCentroid(poly);
+  if (pointInPolygon(centroid.x, centroid.y, poly)) return [];
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const p of poly) {
+    minX = Math.min(minX, p.x);
+    minY = Math.min(minY, p.y);
+    maxX = Math.max(maxX, p.x);
+    maxY = Math.max(maxY, p.y);
+  }
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+  const centred = poly.map((p) => ({ x: p.x - cx, y: p.y - cy }));
+  // The scan is a coarse grid search refined locally, so on some turns it settles on a
+  // worse local maximum; only the widest poles found (to a micron) are genuine ties.
+  const found = D4_MATS.map(([a, b, c, d]) => {
+    const ring = centred.map((p) => ({ x: a * p.x + b * p.y, y: c * p.x + d * p.y }));
+    const l = polygonLabelPoint(ring);
+    // The inverse of a signed permutation is its transpose.
+    return { at: { x: a * l.x + c * l.y + cx, y: b * l.x + d * l.y + cy }, width: distToPolygonEdge(l, ring) };
+  });
+  const widest = Math.max(...found.map((f) => f.width));
+  const out: Point[] = [];
+  const seen = new Set<string>();
+  for (const f of found) {
+    const key = `${f.at.x},${f.at.y}`;
+    if (f.width < widest - 1e-3 || seen.has(key)) continue;
+    seen.add(key);
+    out.push(f.at);
+  }
+  return out;
+}
+
+/** A room's bounding-box centre (exact: a half-sum of snapped coordinates). Not a derived
+ *  position (so no `r.poly` branch): only `roomRep`'s D4-symmetric tie-break key is taken
+ *  about it, and a plan symmetry maps a box centre to its image's, so the key is invariant. */
+const bboxCentre = (r: RRoom): Point => ({ x: r.at.x + r.size.w / 2, y: r.at.y + r.size.h / 2 });
+
+/**
+ * The cell a room's facts are measured at, and the point it was chosen for. A room with
+ * {@link labelPointOrbit} poles is measured to each pole's {@link reachableRep} and keeps
+ * the one the walk reaches first (ties to the lowest cell index); every other room is its
+ * label point's `reachableRep`, exactly as before.
+ */
+function roomRep(
+  g: NavGrid,
+  cells: number[],
+  seed: Point,
+  poles: readonly Point[],
+  dist: Int32Array,
+  anchor: number,
+  /** Where the walk to cell `k` starts (its entrance seed cell's centre). */
+  originOf: (k: number) => Point,
+  /** The room's bounding-box centre — the point the D4-invariant key is taken about. */
+  centre: Point,
+): { k: number; seed: Point } {
+  if (poles.length === 0) return { k: reachableRep(g, cells, seed, dist, anchor), seed };
+  // Every reachable cell nearest to ANY pole of the orbit — the whole tie set, not the
+  // row-major first — so the candidates are the same set however the plan is drawn.
+  const cand: Array<{ k: number; seed: Point }> = [];
+  for (const p of poles) {
+    let bestD = Infinity;
+    const at: number[] = [];
+    for (const k of cells) {
+      if (dist[k]! < 0) continue;
+      const c = centreOf(g, k);
+      const d = (c.x - p.x) ** 2 + (c.y - p.y) ** 2;
+      if (d < bestD) {
+        bestD = d;
+        at.length = 0;
+      }
+      if (d === bestD) at.push(k);
+    }
+    for (const k of at) cand.push({ k, seed: p });
+  }
+  if (cand.length === 0) return { k: -1, seed: poles[0]! };
+  // Then a D4-symmetric order: fewest hops, then nearest (straight line) to the walk's own
+  // entrance, then the candidate's offsets from the room's centre as a sorted multiset of
+  // magnitudes (what a turn or flip about that centre preserves). Only a candidate some
+  // symmetry of the whole plan maps onto another survives all three, and the facts read
+  // off either are identical; the cell index settles that last, page-order tie.
+  const key = (k: number): [number, number, number, number] => {
+    const c = centreOf(g, k);
+    const o = originOf(k);
+    const [lo, hi] = [Math.abs(c.x - centre.x), Math.abs(c.y - centre.y)].sort((a, b) => a - b);
+    return [dist[k]!, (c.x - o.x) ** 2 + (c.y - o.y) ** 2, lo!, hi!];
+  };
+  let best = cand[0]!;
+  let bk = key(best.k);
+  for (const c of cand.slice(1)) {
+    const ck = key(c.k);
+    let cmp = 0;
+    for (let i = 0; i < 4 && cmp === 0; i++) cmp = ck[i]! - bk[i]!;
+    if (cmp < 0 || (cmp === 0 && c.k < best.k)) {
+      best = c;
+      bk = ck;
+    }
+  }
+  return best;
+}
+
 /**
  * Whole-plan circulation facts. Deterministic; returns null when the plan has no
  * modeled exterior entrance (there is nothing to measure a walk from — mirrors how
@@ -1085,6 +1360,18 @@ export function computeCirculation(
    *  Append-only: omitting it means a storey with no voids. */
   voids: RVoid[] = [],
 ): CirculationModel | null {
+  if (rooms.length === 0 || !access.hasEntrance) return null; // buildNav's "none", before any copy
+  // Every sample in the nav extent's own frame, so a translation moves no fact (see
+  // `toExtentFrame` for the one ulp-level exception).
+  ({ rooms, walls, doors, openings, furniture, verticals, voids } = toExtentFrame(extentOrigin(rooms), {
+    rooms,
+    walls,
+    doors,
+    openings,
+    furniture,
+    verticals,
+    voids,
+  }));
   const nav = buildNav(rooms, walls, doors, openings, furniture, verticals, voids, access, tol, bodyRadiusMm);
   if (nav.kind === "none") return null;
   // Rooms the modeled doors reach: the only ones a walkability verdict is meaningful
@@ -1120,10 +1407,10 @@ export function computeCirculation(
    *
    * The rule this feeds says "furniture and its clearances seal every way in", and that
    * sentence has to be earned. A nav grid can fail to route a plan for reasons that have
-   * nothing to do with furniture — `examples/hexagon-pavilion.arch` is six galleries
-   * round a 1200 mm-thick curved drum whose openings mostly touch three rooms at once and
-   * so never become carved thresholds at all — and reporting those as sealed rooms would
-   * be handing the user a fiction. The differential is the proof: the route exists on the
+   * nothing to do with furniture — a threshold that never carves (a stair's flank over a
+   * doorway, `garden-house`'s study), or a connector whose wall-face probe cannot decide
+   * which rooms it joins — and reporting those as sealed rooms would be handing the user
+   * a fiction. The differential is the proof: the route exists on the
    * empty plan and dies once the furniture is in, or the claim is not made.
    *
    * Paid for only when something is blocked, so a plan with nothing sealed builds one grid
@@ -1170,16 +1457,14 @@ export function computeCirculation(
   /**
    * Why each room with no `rooms[]` entry has none — see {@link UnmeasuredReason}. The
    * order of the tests IS the classification, and it is chosen so the reason names the
-   * operative fact rather than the first true one: a room reached from ANOTHER front
-   * door is reported as `other_entrance` even though no threshold of its own carved,
-   * because "you can walk in, just not from where we measure" is what a reader needs.
+   * operative fact rather than the first true one. A room any entrance reaches is
+   * measured (every walk starts at the nearest entrance), so no reason here needs `reach`.
    *
    * `measured` and `sealed` are excluded by the caller, so the three lists partition the
    * plan's rooms. Source order, so the output is deterministic.
    */
   const classifyUnmeasured = (nv: Nav, measured: Set<string>, sealed: Set<string>): UnmeasuredRoom[] => {
     if (nv.kind === "none") return [];
-    const reach = reachableFromAny(nv.g, nv.sources);
     // One pass instead of a scan per room: which room indices the grid can see at all.
     const inGrid = new Uint8Array(rooms.length);
     for (let k = 0; k < nv.g.roomIdx.length; k++) {
@@ -1194,11 +1479,9 @@ export function computeCirculation(
         ? "no_door_route"
         : !inGrid[ri]
           ? "below_grid_resolution"
-          : nv.roomCells[ri]!.some((k) => reach[k])
-            ? "other_entrance"
-            : !nv.g.carved.has(ri)
-              ? "no_threshold"
-              : "unreachable";
+          : !nv.g.carved.has(ri)
+            ? "no_threshold"
+            : "unreachable";
       out.push({ roomId: id, reason });
     }
     return out;
@@ -1217,35 +1500,48 @@ export function computeCirculation(
       ...(unmeasured.length > 0 ? { unmeasured } : {}),
     };
   }
-  const { g, anchor, roomCells, seed, source, entranceId } = nav;
+  const { g, anchor, roomCells, seed, poles, sources, sourceIds, sourceClear, entranceId } = nav;
   const cellSizeMm = g.cell;
 
-  const { dist } = bfs(g, source);
-  const widest = widestBottleneck(g, [source], g.clearMm[source]!); // seeded with the entrance width
+  // One multi-source walk: every room is measured from its NEAREST entrance.
+  const { dist, from } = bfsNearest(g, sources);
+  // Widest route from ANY entrance, each seeded at its own clear width.
+  const widest = widestBottleneck(g, sources, sourceClear);
   const roomWidest = perRoomMax(g, widest, rooms.length); // widest route *into* each room
-  const origin = centreOf(g, source); // walk & straight-line share the threshold origin
+  // Name each room's entrance only when there is a choice, so a single-entrance plan's
+  // facts keep their bytes.
+  const perRoomEntrance = access.entrances.length > 1;
 
   // One representative cell per room, reachability-aware (see `reachableRep`). Computed
   // once: the room facts, the key routes and the render overlay must all measure to the
   // same point or the drawing and the numbers disagree.
+  const originOf = (k: number): Point => centreOf(g, sources[from[k]!]!);
   const rep = new Int32Array(rooms.length);
   for (let ri = 0; ri < rooms.length; ri++) {
-    rep[ri] = reachableRep(g, roomCells[ri]!, seed[ri]!, dist, anchor[ri]!);
+    // A room the modeled doors do not reach has no walk, whatever the raster says: a
+    // partition thinner than a cell blocks no cell centre (backlog C.1), so the grid can
+    // leak into it. It is `no_door_route`, as `access` and lint say.
+    rep[ri] = doorReachable.has(rooms[ri]!.id)
+      ? roomRep(g, roomCells[ri]!, seed[ri]!, poles[ri]!, dist, anchor[ri]!, originOf, bboxCentre(rooms[ri]!)).k
+      : -1;
   }
 
   const blocked = furnitureSealed(blockedCandidates(nav));
   const roomFacts: RoomCirculation[] = [];
   for (let ri = 0; ri < rooms.length; ri++) {
     const a = rep[ri]!;
-    if (a < 0) continue; // nothing reachable from THIS entrance; `blocked` says whether that is a defect
+    if (a < 0) continue; // nothing reachable from any entrance; `blocked` says whether that is a defect
     const walkExact = dist[a]! * g.cell;
     const centre = centreOf(g, a);
+    // Walk & straight-line share the threshold origin: this room's own entrance.
+    const origin = centreOf(g, sources[from[a]!]!);
     const straight = Math.hypot(centre.x - origin.x, centre.y - origin.y);
     roomFacts.push({
       roomId: rooms[ri]!.id,
       walkDistanceMm: Math.round(walkExact),
       bottleneckClearWidthMm: Math.round(roomWidest[ri]!),
       detourRatio: straight > 0 ? r2(walkExact / straight) : 1,
+      ...(perRoomEntrance ? { entranceId: sourceIds[from[a]!]! } : {}),
     });
   }
 
@@ -1315,7 +1611,15 @@ export function computeCirculation(
 /** The entrance walk into one room, for the render overlay. */
 export interface OverlayRoom {
   roomId: string;
-  /** Shortest-walk polyline (mm, collinear-merged) from the entrance to the room target. */
+  /** The entrance the walk starts at: the room's nearest (ties to the lowest index). */
+  entranceId: string;
+  /** The point the room is measured to: its label point, or the {@link labelPointOrbit} pole
+   *  whose cell the walk reaches first. */
+  seed: Point;
+  /** The free cell nearest `seed` is NOT reachable (a pocket), so the walk ends at the
+   *  nearest reachable cell instead — see `reachableRep`. */
+  fallback: boolean;
+  /** Shortest-walk polyline (mm, collinear-merged) from the room's nearest entrance to the room target. */
   path: Point[];
   /** The tightest unavoidable squeeze on the widest route in, or null if none. */
   pinch: { at: Point; clearMm: number } | null;
@@ -1331,7 +1635,12 @@ export interface OverlayRoute {
 /** Geometry for the opt-in circulation render overlay (ADR 0008). */
 export interface CirculationOverlay {
   cellSizeMm: number;
+  /** The first entrance's point; each room's path starts at its own nearest entrance. */
   entranceAt: Point;
+  /** Every entrance whose doorway seeds the walk, in entrance order, with the centre of
+   *  its seed cell — where a room walked from it starts. Geometry for readers of the
+   *  overlay (the equivariance oracle); nothing draws it. */
+  entrances: Array<{ entranceId: string; seed: Point }>;
   rooms: OverlayRoom[];
   routes: OverlayRoute[];
 }
@@ -1360,7 +1669,7 @@ function reconstructPath(g: NavGrid, parent: Int32Array, target: number): Point[
 
 /**
  * Geometry for the opt-in circulation overlay: per reachable room the shortest walk
- * from the entrance (the {@link RoomCirculation.walkDistanceMm} route) plus the pinch
+ * from its nearest entrance (the {@link RoomCirculation.walkDistanceMm} route) plus the pinch
  * cell of its widest route in (the {@link RoomCirculation.bottleneckClearWidthMm}
  * point); and the same key routes as the facts. Rebuilds the same nav grid as
  * {@link computeCirculation} via the shared {@link buildNav}, so the drawing matches
@@ -1381,21 +1690,54 @@ export function computeCirculationOverlay(
   /** Floor voids on this storey — see {@link computeCirculation}. */
   voids: RVoid[] = [],
 ): CirculationOverlay | null {
+  // Measured in the nav extent's own frame, exactly as the facts are; every point drawn
+  // is moved back by the same origin (`o + (i + ½)·cell` is the old absolute centre).
+  if (rooms.length === 0 || !access.hasEntrance) return null; // buildNav's "none", before any copy
+  const o = extentOrigin(rooms);
+  const entranceAt = [...doors, ...openings].find((d) => d.id === access.entrances[0])?.at;
+  ({ rooms, walls, doors, openings, furniture, verticals, voids } = toExtentFrame(o, {
+    rooms,
+    walls,
+    doors,
+    openings,
+    furniture,
+    verticals,
+    voids,
+  }));
+  const back = (p: Point): Point => ({ x: o.x + p.x, y: o.y + p.y });
   const nav = buildNav(rooms, walls, doors, openings, furniture, verticals, voids, access, tol, bodyRadiusMm);
-  if (nav.kind !== "ok") return null;
-  const { g, anchor, seed, source, entrancePoint } = nav;
+  if (nav.kind !== "ok" || entranceAt === undefined) return null;
+  const { g, anchor, seed, sources, sourceIds, sourceClear } = nav;
 
-  const { dist, parent } = bfs(g, source);
+  // The same multi-source walk the facts measure: each room's path starts at its own
+  // nearest entrance, and each pinch lies on the widest route from any entrance.
+  const { dist, parent, from } = bfsNearest(g, sources);
   const pinchOf = new Int32Array(g.nx * g.ny).fill(-1);
-  const widest = widestBottleneck(g, [source], g.clearMm[source]!, pinchOf);
+  const widest = widestBottleneck(g, sources, sourceClear, pinchOf);
 
   // The same reachability-aware representative the facts measure to — a drawing that
   // ends somewhere else from the number it illustrates is worse than no drawing.
+  const originOf = (k: number): Point => centreOf(g, sources[from[k]!]!);
   const rep = new Int32Array(rooms.length);
+  const repSeed: Point[] = [];
+  // The same door-route gate as the facts: a room `access` cannot reach draws no walk.
+  const doorReachable = new Set(access.rooms.filter((n) => n.reachable).map((n) => n.id));
   for (let ri = 0; ri < rooms.length; ri++) {
-    rep[ri] = reachableRep(g, nav.roomCells[ri]!, seed[ri]!, dist, anchor[ri]!);
+    const r = roomRep(
+      g,
+      nav.roomCells[ri]!,
+      seed[ri]!,
+      nav.poles[ri]!,
+      dist,
+      anchor[ri]!,
+      originOf,
+      bboxCentre(rooms[ri]!),
+    );
+    rep[ri] = doorReachable.has(rooms[ri]!.id) ? r.k : -1;
+    repSeed.push(r.seed);
   }
 
+  const everyCell = new Int32Array(g.nx * g.ny); // all 0: "reached"
   const overlayRooms: OverlayRoom[] = [];
   for (let ri = 0; ri < rooms.length; ri++) {
     const a = rep[ri]!;
@@ -1412,8 +1754,13 @@ export function computeCirculationOverlay(
     const pinchCell = bestCell >= 0 ? pinchOf[bestCell]! : -1;
     overlayRooms.push({
       roomId: rooms[ri]!.id,
-      path: reconstructPath(g, parent, a),
-      pinch: pinchCell >= 0 ? { at: centreOf(g, pinchCell), clearMm: Math.round(bestVal) } : null,
+      entranceId: sourceIds[from[a]!]!,
+      path: reconstructPath(g, parent, a).map(back),
+      seed: back(repSeed[ri]!),
+      // The free cell nearest the seed, reachable or not: the same scan with every cell
+      // counted as reached.
+      fallback: a !== reachableRep(g, nav.roomCells[ri]!, repSeed[ri]!, everyCell, -1),
+      pinch: pinchCell >= 0 ? { at: back(centreOf(g, pinchCell)), clearMm: Math.round(bestVal) } : null,
     });
   }
 
@@ -1437,7 +1784,7 @@ export function computeCirculationOverlay(
     overlayRoutes.push({
       fromRoomId: rooms[fromIdx]!.id,
       toRoomId: rooms[best]!.id,
-      path: reconstructPath(g, r.parent, rep[best]!),
+      path: reconstructPath(g, r.parent, rep[best]!).map(back),
     });
   };
   const livingDining = rooms.map((r, i) => (isLivingOrDining(r) ? i : -1)).filter((i) => i >= 0);
@@ -1449,5 +1796,11 @@ export function computeCirculationOverlay(
     if (isBedroom(rooms[i]!)) addRoute(i, wetRooms);
   }
 
-  return { cellSizeMm: g.cell, entranceAt: entrancePoint, rooms: overlayRooms, routes: overlayRoutes };
+  return {
+    cellSizeMm: g.cell,
+    entranceAt,
+    entrances: sources.map((k, i) => ({ entranceId: sourceIds[i]!, seed: back(centreOf(g, k)) })),
+    rooms: overlayRooms,
+    routes: overlayRoutes,
+  };
 }

@@ -881,6 +881,18 @@ const NEGATIVE: Negative[] = [
         `  level 2 { room id=r2 at (0,0) size 6000x5000 }`,
     ),
   },
+  {
+    code: "W_WHILE_DEPRECATED",
+    channel: "compile",
+    note: "`while` (W7) is deprecated — a `for` over a range replaces every counted loop",
+    src: plan(`  let i = 0\n  while i < 3 {\n    column at (i * 300, 0) size 100x100\n    i = i + 1\n  }`),
+  },
+  {
+    code: "W_REASSIGN_DEPRECATED",
+    channel: "compile",
+    note: "reassigning a `let` binding (W7) is deprecated outside a `while`'s own progress step",
+    src: plan(`  let total = 0\n  total = total + 100`),
+  },
 ];
 
 /**

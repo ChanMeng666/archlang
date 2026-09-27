@@ -29,7 +29,7 @@ import type {
   OpeningPlacement,
   FurniturePlacement,
 } from "./ir.js";
-import type { FenceStyle, NorthDir, OutdoorKind, Point, RailSide, VerticalDir } from "./ast.js";
+import type { FenceStyle, OutdoorKind, Point, RailSide, VerticalDir } from "./ast.js";
 import { polygonArea, polygonBounds } from "./geometry/polygon.js";
 import type { DoorKind } from "./grammar/tokens.js";
 import type { Diagnostic } from "./diagnostics.js";
@@ -41,11 +41,11 @@ import {
   roomBox,
   roomsAdjacent,
   roomsAtPoint,
-  doorConnections,
+  connectorConnection,
   roomUses,
   buildDoorAccessGraph,
   DEFAULT_TOL,
-  levelIsGrounded,
+  storeyGrounded,
   type AnalyzeOptions,
   type AccessGraph,
   type BBox,
@@ -54,6 +54,8 @@ import {
 import { outerFaceBounds } from "./geometry.js";
 import type { PaperOrientation, PaperSize } from "./sheet.js";
 import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
+import { symmetryFacts, type SymmetryFacts } from "./analyze/symmetry.js";
+import { syntaxFacts, type SyntaxFacts } from "./analyze/syntax.js";
 import { roomTypeForUses, buildInputGraph } from "./plan-json.js";
 import { roomSchedule, type ScheduleRow } from "./sheet-tables.js";
 // The page→compass conversion and the `site` derivation live in ONE module: the site
@@ -70,6 +72,7 @@ import {
   verticalsOf,
 } from "./vertical.js";
 import { fmt2 } from "./num-format.js";
+import { type D4, fromSpelling, northQuarterTurns } from "./algebra/d4.js";
 
 export type { ScheduleRow } from "./sheet-tables.js";
 
@@ -85,6 +88,18 @@ export type {
 } from "./analyze/circulation.js";
 
 export type { BBox } from "./analyze.js";
+
+export type {
+  LayerSymmetry,
+  MirrorAxis,
+  MirrorRepeat,
+  Repeat,
+  SymmetryElement,
+  SymmetryFacts,
+  SymmetryGroup,
+  TranslationRepeat,
+} from "./analyze/symmetry.js";
+export type { SyntaxFacts, SyntaxRoom } from "./analyze/syntax.js";
 
 // The access graph and its two node/edge shapes are DECLARED in `analyze.js`, but
 // `describe()` is the only public value that surfaces them ({@link SceneSummary.access}),
@@ -105,7 +120,19 @@ export interface DescribeOptions extends AnalyzeOptions {
    * adjacent, narrow enough to avoid joining clearly separate rooms.
    */
   adjacencyTolMm?: number;
+  /**
+   * Opt-in derived facts, each computed only when named here: `"symmetry"` adds
+   * {@link SceneSummary.symmetry}, `"syntax"` adds {@link SceneSummary.syntax}. Absent or
+   * empty (the default), the summary is byte-identical to one written before either existed.
+   */
+  facts?: readonly DescribeFact[];
 }
+
+/** Every opt-in fact {@link DescribeOptions.facts} can name — `arch describe --facts` reads this list. */
+export const DESCRIBE_FACTS = ["symmetry", "syntax"] as const;
+
+/** One opt-in fact of {@link DESCRIBE_FACTS}. */
+export type DescribeFact = (typeof DESCRIBE_FACTS)[number];
 
 export interface RoomSummary {
   id: string;
@@ -388,6 +415,16 @@ export interface InstanceSummary {
   at: { x: number; y: number };
   rotate: 0 | 90 | 180 | 270;
   mirror?: "x" | "y";
+}
+
+/**
+ * The rigid map an instance applies, as ONE canonical value: the D4 element its
+ * `(rotate, mirror)` spelling denotes (`src/algebra/d4.ts`). Two spellings of one map —
+ * `mirror y` and `rotate 180 mirror x` — describe differently (the summary echoes what was
+ * written) and have equal transforms, so compare instances with this, never by spelling.
+ */
+export function instanceTransform(i: Pick<InstanceSummary, "rotate" | "mirror">): D4 {
+  return fromSpelling(i.rotate, i.mirror);
 }
 
 export type { RoomPlacement, OpeningPlacement, FurniturePlacement } from "./ir.js";
@@ -723,6 +760,16 @@ export interface SceneSummary {
    * {@link VerticalReport}.
    */
   vertical?: VerticalReport;
+  /**
+   * The storey's symmetry group per layer (shell, rooms, full) and its repeated rooms.
+   * Present **only when requested** (`facts: ["symmetry"]`). See {@link SymmetryFacts}.
+   */
+  symmetry?: SymmetryFacts;
+  /**
+   * Space-syntax metrics on the access graph (depth, mean depth, RA, integration,
+   * control, cycle rank). Present **only when requested** (`facts: ["syntax"]`).
+   */
+  syntax?: SyntaxFacts;
   /** All problems from parse/link/resolve, with byte spans and codes. */
   diagnostics: Diagnostic[];
 }
@@ -746,40 +793,9 @@ function lotFacts(ring: readonly Point[] | undefined): Pick<SiteFacts, "lot_area
 /** Round to 2 decimals, deterministically (avoids float drift in output). */
 const r2 = (n: number): number => Math.round(n * 100) / 100;
 
-/**
- * How many CLOCKWISE quarter-turns separate the top of the page from compass north, for
- * the plan's declared `north` — `0` for `up` (the default), `1` for `right`, `2` for
- * `down`, `3` for `left`. This is the same page bearing the north arrow is drawn at
- * (`src/backends/svg.ts`), quantised to the four cardinals.
- *
- * A `{ deg }` bearing is **snapped to the nearest cardinal**, because a facing can only
- * be one of four letters and ArchLang geometry is rectilinear: `north 80` is reported as
- * if north were `right`. **An exact 45° tie rounds CLOCKWISE** — `north 45` snaps to
- * `right` (1), `north -45` to `up` (0), `north 135` to `down` (2). A bearing outside
- * [0,360) is normalised, so `north 450` == `north 90`. Pure, closed-form, deterministic:
- * no trigonometry and no floating-point comparisons beyond one `Math.floor`.
- */
-export function northQuarterTurns(north: NorthDir): 0 | 1 | 2 | 3 {
-  let q: number;
-  switch (north) {
-    case "up":
-      q = 0;
-      break;
-    case "right":
-      q = 1;
-      break;
-    case "down":
-      q = 2;
-      break;
-    case "left":
-      q = 3;
-      break;
-    default:
-      // Nearest cardinal, ties clockwise: floor((deg + 45) / 90).
-      q = Math.floor((north.deg + 45) / 90);
-  }
-  return (((q % 4) + 4) % 4) as 0 | 1 | 2 | 3;
-}
+/** Compass north as page quarter-turns — D4 arithmetic, so it lives in `src/algebra/d4.ts`;
+ *  re-exported here, its historical home, where `lint` and the tests import it from. */
+export { northQuarterTurns };
 
 /** How many rooms to name in a caption before collapsing the rest to "and N more". */
 const CAPTION_ROOM_CAP = 8;
@@ -913,7 +929,11 @@ function inst(instance: string | undefined): { instance?: string } {
 }
 
 /** Build the summary from a fully resolved plan. */
-function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "diagnostics"> {
+function summarize(
+  ir: ResolvedPlan,
+  tol: number,
+  facts: readonly DescribeFact[] = [],
+): Omit<SceneSummary, "ok" | "diagnostics"> {
   const roomEls = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const doorEls = ir.elements.filter((e): e is RDoor => e.kind === "door");
   const windowEls = ir.elements.filter((e): e is RWindow => e.kind === "window");
@@ -975,7 +995,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
   const doors: DoorSummary[] = doorEls.map((d) => ({
     id: d.id,
     ...(d._instance !== undefined ? { instance: d._instance } : {}),
-    between: doorConnections(d, roomRects, tol),
+    between: connectorConnection(d, roomRects, tol).between,
     width: d.width,
     ...(d.doorKind !== undefined ? { kind: d.doorKind } : {}),
     ...(heights ? { head: d.head } : {}),
@@ -1014,7 +1034,7 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
 
   const openings: OpeningSummary[] = openingEls.map((o) => ({
     id: o.id,
-    between: doorConnections(o, roomRects, tol),
+    between: connectorConnection(o, roomRects, tol).between,
     width: o.width,
     ...(heights ? { head: o.head } : {}),
   }));
@@ -1214,13 +1234,17 @@ function summarize(ir: ResolvedPlan, tol: number): Omit<SceneSummary, "ok" | "di
     access,
     circulation,
     totals,
-    input_graph: buildInputGraph(roomEls, doorEls, openingEls, tol),
+    input_graph: buildInputGraph(roomEls, doorEls, openingEls, tol, access),
     freedom: buildFreedom(roomEls, doorEls, windowEls, openingEls, furnEls),
     // The drawn schedule, from the same pure derivation the renderer uses — so the table
     // in the SVG and this JSON can never disagree. Opt-in only. `ir.zones` is passed for
     // exactly the same reason: the rows here must be the rows drawn, grouping included.
     ...(ir.schedule === "rooms" ? { schedule: roomSchedule(roomEls, ir.zones).rows } : {}),
     ...(zones ? { zones } : {}),
+    // Opt-in derived facts: computed and present ONLY when requested, so the default
+    // summary is byte-identical. The logic lives in `analyze/symmetry.ts`/`analyze/syntax.ts`.
+    ...(facts.includes("symmetry") ? { symmetry: symmetryFacts(ir) } : {}),
+    ...(facts.includes("syntax") ? { syntax: syntaxFacts(access) } : {}),
   };
 }
 
@@ -1236,7 +1260,7 @@ function inZone(member: string | undefined, path: string): boolean {
 /**
  * The building-level vertical report for a multi-storey plan, or `undefined` when no run
  * spans two storeys. A storey is *grounded* when it has its own exterior entrance that is
- * a real arrival point — {@link levelIsGrounded}, the same predicate `lint` builds its
+ * a real arrival point — {@link storeyGrounded}, the same predicate `lint` builds its
  * `grounded()` callback from, discounting a door that opens onto an `outdoor balcony`.
  * Reachability then spreads along the shafts. This is deliberately NOT the
  * same thing as this storey's own `access.hasEntrance` below, which stays the honest,
@@ -1248,13 +1272,7 @@ function buildVerticalReport(levels: readonly ResolvedLevel[], tol: number): Ver
   if (connections.length === 0) return undefined;
   const grounded = (n: number): boolean => {
     const l = levels.find((x) => x.level === n);
-    if (!l) return false;
-    const rooms = l.ir.elements.filter((e): e is RRoom => e.kind === "room");
-    const doors = l.ir.elements.filter((e): e is RDoor => e.kind === "door");
-    const openings = l.ir.elements.filter((e): e is ROpening => e.kind === "opening");
-    const outdoors = l.ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor");
-    const graph = buildDoorAccessGraph(rooms, doors, tol, undefined, openings);
-    return levelIsGrounded(graph, rooms, doors, outdoors);
+    return l ? storeyGrounded(l.ir, tol) : false;
   };
   const reach = verticalReach(inputs, grounded);
   return { connections, reachable_levels: [...reach.reachable].sort((a, b) => a - b) };
@@ -1303,7 +1321,7 @@ export function describe(source: string, opts: DescribeOptions = {}): SceneSumma
       ? levels.map((l) => ({
           level: l.level,
           ...(l.name !== undefined ? { name: l.name } : {}),
-          ...summarize(l.ir, tol),
+          ...summarize(l.ir, tol, opts.facts),
         }))
       : undefined;
 
@@ -1313,7 +1331,7 @@ export function describe(source: string, opts: DescribeOptions = {}): SceneSumma
 
   return {
     ok: true,
-    ...summarize(ir, tol),
+    ...summarize(ir, tol, opts.facts),
     ...(perLevel ? { levels: perLevel } : {}),
     ...(vertical ? { vertical } : {}),
     diagnostics,

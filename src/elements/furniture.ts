@@ -3,13 +3,14 @@
 import type { FurnitureAnchor, FurnitureNode, FurniturePlace, Point } from "../ast.js";
 import { FURNITURE_ANCHORS } from "../ast.js";
 import type { Span } from "../diagnostics.js";
-import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { FurnitureAuthored, RFurniture, RRoom } from "../ir.js";
 import { rectCorners, segmentsOfWall, unit, normal, add, mul, sub, length } from "../geometry.js";
 import { pointInPolygon } from "../geometry/polygon.js";
 import { fixtureGlyph } from "./fixtures-glyphs.js";
 import { mirrorGlyph } from "./glyph-chirality.js";
+import { mapSceneNode } from "./glyph-lib.js";
 import { defaultFootprint, orientationMatters } from "../fixtures-catalog.js";
 import {
   ANCHOR_BACK_EDGES,
@@ -20,6 +21,7 @@ import {
   type RectEdge,
   rotateForBackEdge,
 } from "../fixture-orientation.js";
+import { mod360 } from "../algebra/d4.js";
 
 const ANCHOR_SET: ReadonlySet<string> = new Set<FurnitureAnchor>(FURNITURE_ANCHORS);
 
@@ -189,7 +191,7 @@ export const furniture: ElementDef = {
     }
     let rotate: number | undefined;
     if (n.rotate !== undefined) {
-      rotate = ((ctx.eval(n.rotate) % 360) + 360) % 360; // normalize to [0,360)
+      rotate = mod360(ctx.eval(n.rotate)); // normalize to [0,360)
       if (rotate !== 0 && rotate !== 90 && rotate !== 180 && rotate !== 270) {
         ctx.diag({
           severity: "error",
@@ -344,6 +346,48 @@ export const furniture: ElementDef = {
     }
     return deg === 0 ? nodes : nodes.map((n) => rotateNode(n, { x: cx, y: cy }, deg));
   },
+  /** The frame's action on a piece of furniture (`frame.ts`'s `transformElement` calls this). */
+  transform(resolved, t: TransformCtx): RFurniture {
+    const el = resolved as RFurniture;
+    const { id, reflected } = t;
+    const r = t.rect(el.at, el.size);
+    const deg = t.quarterTurn(el.rotate);
+    const out: RFurniture = { ...el, id, at: r.at, size: r.size };
+    if (deg) out.rotate = deg;
+    else delete out.rotate;
+    // TWO handed facts cross here, and they are INDEPENDENT — different fields,
+    // opposite answers, no ordering between them. Backlog G.4 and 5.4 landed them
+    // separately and `test/glyph-chirality.test.ts`'s pairing case is the fixture
+    // neither could produce alone: a plan whose piece carries an authored clause AND
+    // a handed symbol, asserting the position lands at the MIRRORED corner while the
+    // marks become the mirror IMAGE.
+    // The authored placement clause names LOCAL ids in LOCAL coordinates (`anchor
+    // top-right` is a corner of the instance's own room, and a reflection turns it
+    // into a different corner), so it does not survive the crossing into plan space.
+    // Dropping it leaves a placed instance projecting its resolved `at (x,y)`, which
+    // is what it has always done.
+    delete out._authored;
+    // The symbol's own CHIRALITY — the handed rule this module used to miss. A
+    // quarter-turn carries a fixture's facing (that is `transformDeg` above), but a
+    // reflection also swaps the drawing's left and right, and nothing said so: a
+    // mirrored wing drew a left-handed `sofa_l` in a right-handed room, every number
+    // right and the picture wrong.
+    //
+    // `M · R(l) = R(m − l) · Fx` for any reflecting frame — see the derivation in
+    // `elements/glyph-chirality.ts` — so `transformDeg` above is already the whole
+    // rotation, and what is left over is exactly ONE reflection of the glyph in its own
+    // frame. Which axis the author wrote does not survive the factorisation and must
+    // not: `mirror x` and `mirror y` differ only in the quarter-turn.
+    //
+    // XORed rather than assigned, so a nested reflection composes back to the identity.
+    // Today `transformElement` is applied once per element with the FULLY COMPOSED
+    // frame, so `el._mirror` is always absent and this reads as an assignment; it is
+    // written as the group law because that is what makes it true either way.
+    if (reflected !== (el._mirror === true)) out._mirror = true;
+    else delete out._mirror;
+    if (el.room !== undefined) out.room = t.nsId(el.room);
+    return out;
+  },
 };
 
 /**
@@ -405,6 +449,7 @@ function placeAgainst(
     if (!room) return err("needs `side left|right` (or `in <room>` to infer the wall face to back onto)");
     if (room._rel)
       return err(`can't infer \`side\` from a relationally-placed room "${roomId}" — give \`side left|right\``);
+    // Not `wallFaceProbes`: it lands on the piece's footprint CENTRE (thickness/2 + depth/2), not past a face.
     const probe = (n: { x: number; y: number }) => add(add(seg.a, mul(d, off)), mul(n, seg.thickness / 2 + depth / 2));
     // The probe is tested against the room's FLOOR, not its bounding box. For a
     // rectangle the two are the same and the arithmetic below is the historical one; for
@@ -589,9 +634,10 @@ function rotatePoint(p: Point, c: Point, deg: number): Point {
  * the radius is a length, and a rotation preserves orientation so the sense of travel from
  * start to end is unchanged.
  *
- * The switch is **exhaustive with no `default`** on purpose — the same guard `pdf.ts`'s
- * `drawNode` grew after poché fell through its missing one. A new `ScenePrim` variant now
- * fails the typecheck here instead of being silently passed through unrotated.
+ * The traversal is `glyph-lib.ts`'s `mapSceneNode` — shared with the reflection
+ * `mirrorNode` — whose switch is **exhaustive with no `default`** on purpose, the same guard
+ * `pdf.ts`'s `drawNode` grew after poché fell through its missing one. A new `ScenePrim`
+ * variant fails the typecheck there instead of being silently passed through unrotated.
  *
  * Exported for `test/furniture-rotate.test.ts` only — it is NOT on `src/index.ts`, so this
  * is not a public-surface change. The test needs it directly because no shipped glyph emits
@@ -600,42 +646,7 @@ function rotatePoint(p: Point, c: Point, deg: number): Point {
  */
 export function rotateNode(n: SceneNode, c: Point, deg: number): SceneNode {
   const rp = (p: Point): Point => rotatePoint(p, c, deg);
-  const prim = n.prim;
-  switch (prim.t) {
-    case "polygon":
-      return { ...n, prim: { ...prim, pts: prim.pts.map(rp) } };
-    case "line":
-      return { ...n, prim: { ...prim, a: rp(prim.a), b: rp(prim.b) } };
-    case "text":
-      return { ...n, prim: { ...prim, at: rp(prim.at) } };
-    case "circle":
-      return { ...n, prim: { ...prim, center: rp(prim.center) } };
-    case "arc":
-      return { ...n, prim: { ...prim, center: rp(prim.center), start: rp(prim.start), end: rp(prim.end) } };
-    case "region":
-      return { ...n, prim: { ...prim, loops: prim.loops.map((lp) => lp.map(rp)) } };
-    // `r` and `sweep` are invariant under a rotation — the radius is a length, and a
-    // rotation preserves orientation, so the sense of travel from one end to the other is
-    // unchanged. Only the three POINTS move. Same rule as the `arc` case above.
-    case "path":
-      return {
-        ...n,
-        prim: {
-          ...prim,
-          loops: prim.loops.map((lp) => ({
-            start: rp(lp.start),
-            edges: lp.edges.map((e) =>
-              e.t === "line" ? { ...e, to: rp(e.to) } : { ...e, to: rp(e.to), center: rp(e.center) },
-            ),
-          })),
-        },
-      };
-    // A hatch's `angle` is measured in PATTERN space, so turning its loops without turning
-    // the pattern with them would shear the poché off its own boundary. No fixture glyph
-    // emits one (the furniture pass draws linework, never a material fill), so this is a
-    // declared non-case rather than an omission: give a glyph a hatch and this needs the
-    // angle rule written first.
-    case "hatch":
-      return n;
-  }
+  // A rotation preserves orientation: every `sweep` (an arc prim's, a path's arc edges')
+  // is unchanged, and only the POINTS move.
+  return mapSceneNode(n, rp, false);
 }

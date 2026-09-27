@@ -25,6 +25,7 @@ import type { FurnitureAnchor } from "./ast.js";
 import type { WallLike, WallSegment } from "./geometry.js";
 import { segmentsOfWall } from "./geometry.js";
 import { type BBox, mergedLength, overlap1d } from "./geometry/rect.js";
+import { BACK_EDGE_DEG, backEdgeOfDeg, degOfBackEdge } from "./algebra/d4.js";
 
 /** An edge of an axis-aligned rectangle. `top` is −y (north); +y is down (SVG). */
 export type RectEdge = "top" | "bottom" | "left" | "right";
@@ -46,33 +47,19 @@ export const FIXTURE_WALL_TOL_MM = 300;
 
 /** Quarter-turn that puts the symbol's back on each edge of its footprint.
  *  `rotate 0` draws the back on top (north); the render rotation is clockwise in
- *  screen space, so a quarter-turn moves the back north → east → south → west. */
-export const BACK_EDGE_ROTATE: Readonly<Record<RectEdge, 0 | 90 | 180 | 270>> = Object.freeze({
-  top: 0,
-  right: 90,
-  bottom: 180,
-  left: 270,
-});
+ *  screen space, so a quarter-turn moves the back north → east → south → west.
+ *  The table is D4's (`src/algebra/d4.ts`). */
+export const BACK_EDGE_ROTATE: Readonly<Record<RectEdge, 0 | 90 | 180 | 270>> = BACK_EDGE_DEG;
 
 /** The quarter-turn that faces a fixture's back onto `edge` of its footprint. */
 export function rotateForBackEdge(edge: RectEdge): 0 | 90 | 180 | 270 {
-  return BACK_EDGE_ROTATE[edge];
+  return degOfBackEdge(edge);
 }
 
 /** Which footprint edge a fixture's back lands on at quarter-turn `rotate`
  *  (non-quarter/absent values normalize; anything unrecognized reads as `0`). */
 export function backEdgeForRotate(rotate: number | undefined): RectEdge {
-  const rot = (((rotate ?? 0) % 360) + 360) % 360;
-  switch (rot) {
-    case 90:
-      return "right";
-    case 180:
-      return "bottom";
-    case 270:
-      return "left";
-    default:
-      return "top";
-  }
+  return backEdgeOfDeg(rotate);
 }
 
 /** The `rotate` value whose back faces the wall on `edge`, as the fixture's own

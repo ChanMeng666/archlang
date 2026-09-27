@@ -33,6 +33,7 @@ export type ExportFormat = (typeof EXPORT_FORMATS)[number]["id"];
 import { ERROR_CODES, ERROR_CATALOG } from "./error-catalog.js";
 import { LINT_PROFILE_NAMES, LINT_PROFILES, DEFAULT_RULESET } from "./lint.js";
 import { FIXTURE_CATEGORIES } from "./elements/fixtures-glyphs.js";
+import { DESCRIBE_FACTS } from "./describe.js";
 import { CASED_OPENING_HEAD, DOOR_HEAD, MAX_HEIGHT, STOREY_HEIGHT, WINDOW_HEAD, WINDOW_SILL } from "./datum.js";
 
 export interface ManifestFlag {
@@ -270,6 +271,16 @@ const ZONE_FLAG: ManifestFlag = {
   arg: "<path[,path…]>",
   description:
     "keep only the rooms declared in these `zone` blocks (nested zones roll up; paths are dotted, e.g. west.galleries) — a DISPLAY filter: `ok` and the exit code still weigh the whole plan",
+};
+/**
+ * `--facts <fact[,fact…]>` — opt-in DERIVED facts `describe()` computes only on request, so
+ * the default payload stays byte-identical. The names are `DESCRIBE_FACTS`, never retyped.
+ */
+const FACTS_FLAG: ManifestFlag = {
+  flag: "--facts",
+  arg: `<${DESCRIBE_FACTS.join("|")}[,…]>`,
+  description:
+    "also compute these opt-in facts: `symmetry` (the plan's symmetry group per layer — shell, rooms, full — and its repeated rooms) and `syntax` (space-syntax depth, mean depth, RA, integration and control on the access graph); absent by default",
 };
 const SELECT_FLAG: ManifestFlag = {
   flag: "--select",
@@ -555,6 +566,7 @@ const COMMANDS: ManifestCommand[] = [
         description:
           "report this storey of a multi-storey plan as the top-level facts (a DISPLAY filter — `ok` and the exit code still weigh the whole plan)",
       },
+      FACTS_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
@@ -581,6 +593,10 @@ const COMMANDS: ManifestCommand[] = [
       {
         cmd: "arch describe house.arch --level 2 --json",
         note: "the upper storey's rooms/areas/access as the top-level facts (`levels[]` carries every storey)",
+      },
+      {
+        cmd: "arch describe plan.arch --facts symmetry,syntax --json",
+        note: "add the symmetry group per layer, repeated rooms, and space-syntax integration on the access graph",
       },
     ],
   },
@@ -716,6 +732,33 @@ const COMMANDS: ManifestCommand[] = [
       {
         cmd: "arch fix plan.arch -o fixed.arch --unsafe --json",
         note: "also apply the maybe-incorrect fixes, leaving the input untouched",
+      },
+    ],
+  },
+  {
+    name: "reroll",
+    summary: "offer a proven-equivalent `for` loop for a repeated statement run",
+    flags: [
+      {
+        flag: "--write",
+        description:
+          "apply every non-overlapping suggestion and re-verify the combined result's compiled SVG is " +
+          "byte-identical to the original before writing (no --dry-run/--backup: a failed re-verify writes " +
+          "nothing, and every suggestion is already proven byte-for-byte before it is offered)",
+      },
+      JSON_FLAG,
+      QUIET_FLAG,
+    ],
+    input: "<file.arch|->",
+    output: "suggestions (JSON or a summary), or the rewritten file with --write",
+    examples: [
+      {
+        cmd: "arch reroll plan.arch --json",
+        note: "each candidate run as { span, replacement, count, loopVar, tokensBefore, tokensAfter }",
+      },
+      {
+        cmd: "arch reroll plan.arch --write --json",
+        note: "splice in every proven loop; { ok, wrote, target, applied, skipped } (wrote/target as in `arch fix`)",
       },
     ],
   },

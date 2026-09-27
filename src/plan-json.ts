@@ -41,6 +41,7 @@ import {
   buildDoorAccessGraph,
   EXTERIOR_NODE,
   DEFAULT_TOL,
+  type AccessGraph,
   type AnalyzeOptions,
 } from "./analyze.js";
 import { verticalConnections } from "./vertical.js";
@@ -295,6 +296,11 @@ export interface FurnitureJson {
   width?: number;
   height?: number;
   rotate?: number;
+  /** `true` on every fixture inside a reflecting `place` frame — the FRAME's reflection,
+   *  which the quarter-turn `rotate` cannot carry, not the glyph's handedness, so a
+   *  symmetric symbol carries it too. Absent otherwise; `planJsonToArch` refuses it
+   *  (`E_JSON_MIRROR`), since source has no per-furniture `mirror`. */
+  mirror?: boolean;
   /** Room-relative placement: centre the fixture inside `room`. */
   centered?: boolean;
   /** Room-relative placement: anchor the fixture to a corner/edge of `room`. */
@@ -416,18 +422,18 @@ function rectPolygon(x: number, y: number, w: number, h: number): PointJson[] {
  * rooms it shares a door / cased opening with (exterior entrances excluded). Keys
  * are in room source order; each neighbour list is sorted by room source order, so
  * the result is deterministic. Shared by {@link planToJson}, {@link checkGraph}, and
- * `describe()`.
+ * `describe()`. A caller already holding the plan's access graph passes it as `access`.
  */
 export function buildInputGraph(
   rooms: RRoom[],
   doors: RDoor[],
   openings: ROpening[],
   tol: number = DEFAULT_TOL,
+  access: AccessGraph = buildDoorAccessGraph(rooms, doors, tol, undefined, openings),
 ): Record<string, string[]> {
   const order = rooms.map((r) => r.id);
   const rank = new Map<string, number>(order.map((id, i) => [id, i]));
   const adj = new Map<string, Set<string>>(order.map((id) => [id, new Set<string>()]));
-  const access = buildDoorAccessGraph(rooms, doors, tol, undefined, openings);
   for (const e of access.edges) {
     if (e.ambiguous) continue;
     const [a, b] = e.between;
@@ -444,8 +450,7 @@ export function buildInputGraph(
 }
 
 /** Project the modeled access graph to output-only connector {@link EdgeJson}s. */
-function buildEdges(rooms: RRoom[], doors: RDoor[], openings: ROpening[], tol: number): EdgeJson[] {
-  const access = buildDoorAccessGraph(rooms, doors, tol, undefined, openings);
+function buildEdges(access: AccessGraph): EdgeJson[] {
   const edges: EdgeJson[] = [];
   for (const e of access.edges) {
     if (e.ambiguous || e.between[0] === "" || e.between[1] === "") continue;
@@ -559,6 +564,10 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL): Pla
       width: f.size.w,
       height: f.size.h,
       ...(f.rotate ? { rotate: f.rotate } : {}),
+      // The reflecting `place` frame this piece crossed (`_mirror`, set by the furniture
+      // element's `transform` on every piece in the instance, symmetric or not); the
+      // quarter-turn above cannot say so.
+      ...(f._mirror ? { mirror: true } : {}),
       ...(f.room !== undefined ? { room: f.room } : {}),
       ...(a?.mode === "centered" ? { centered: true } : {}),
       ...(a?.mode === "anchor"
@@ -598,6 +607,7 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL): Pla
   const roomTypes: RoomType[] = [];
   for (const rm of rooms) if (!roomTypes.includes(rm.room_type)) roomTypes.push(rm.room_type);
   const totalArea = r2(rooms.reduce((s, rm) => s + (rm.area ?? 0), 0));
+  const access = buildDoorAccessGraph(roomEls, doorEls, tol, undefined, openingEls);
 
   const out: PlanJson = {
     version: 1,
@@ -624,8 +634,8 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL): Pla
     ...(dims.length > 0 ? { dims } : {}),
     ...(columns.length > 0 ? { columns } : {}),
     ...(ir.title ? { title: titleToJson(ir.title) } : {}),
-    edges: buildEdges(roomEls, doorEls, openingEls, tol),
-    input_graph: buildInputGraph(roomEls, doorEls, openingEls, tol),
+    edges: buildEdges(access),
+    input_graph: buildInputGraph(roomEls, doorEls, openingEls, tol, access),
   };
   // `windowEls` intentionally unused beyond its inclusion in `openings`; keep the
   // binding for symmetry with the resolved-element filters above.
@@ -884,6 +894,17 @@ function validateFurniture(f: unknown, path: string, val: Validator): void {
   if (!hasAt && !hasAgainst && !hasInPlace)
     val.err(path, "needs a placement: `x`/`y`, `against_wall`, or (`centered`/`anchor` with `room`)");
   if (f.rotate !== undefined && !isNum(f.rotate)) val.err(`${path}/rotate`, "expected a number");
+  // `mirror: true` is a reflecting `place` frame's reflection, and a frame is the only
+  // thing source can say it with: there is no per-furniture `mirror`, so emitting the
+  // piece would silently lose it (a handed symbol would draw unmirrored). Refused rather
+  // than dropped.
+  if (f.mirror !== undefined && typeof f.mirror !== "boolean") val.err(`${path}/mirror`, "expected a boolean");
+  if (f.mirror === true)
+    val.diags.push({
+      severity: "error",
+      message: `plan JSON ${path}/mirror: a fixture reflected by a \`place\` frame cannot be written as source — \`.arch\` has no per-furniture \`mirror\` (only a \`place … mirror x|y\` frame reflects one)`,
+      code: "E_JSON_MIRROR",
+    });
   if (f.side !== undefined && f.side !== "left" && f.side !== "right")
     val.err(`${path}/side`, 'expected "left" or "right"');
   // The anchor accept-list is DERIVED from the parser's own `FURNITURE_ANCHORS`, never
@@ -922,7 +943,12 @@ function validateColumn(c: unknown, path: string, val: Validator): void {
 
 // ---- canonical .arch emission ---------------------------------------------
 
-/** Deterministic number → source token (no scientific notation; normalize -0). */
+/** Deterministic number → source token (no scientific notation; normalize -0).
+ *  Deliberately full-precision `String(n)`, NOT `src/num-format.ts`'s 3-dp `fmt3`
+ *  (`statement-print.ts`'s `numStr`): Plan JSON round-trips a RESOLVED, already-rounded
+ *  number, so re-quantizing it here would only lose precision a second time for
+ *  nothing — this emitter also never touches `statement-print.ts`, since it prints from
+ *  validated JSON values, not the `Expr` AST that module's leaf printer takes. */
 function num(n: number): string {
   if (Object.is(n, -0)) return "0";
   return String(n);
@@ -1117,7 +1143,8 @@ export function planJsonToArch(json: unknown): { source?: string; diagnostics: D
  * canonical `.arch` text and runs the real parser (reusing every parse-time check),
  * and also returns that `source` for callers that want to compile it.
  *
- * Not supported (documented): scripting (`let`/`for`/`if`/`component`) and `import`.
+ * Not supported (documented): scripting (`let`/`for`/`if`/`component`) and `import`; and a
+ * `mirror: true` fixture, which only a `place` frame can state (`E_JSON_MIRROR`).
  */
 export function planFromJson(json: unknown): { ast?: PlanNode; source?: string; diagnostics: Diagnostic[] } {
   const { source, diagnostics } = planJsonToArch(json);
@@ -1539,6 +1566,11 @@ export const PLAN_JSON_SCHEMA = {
           width: { type: "number", description: "Plan-axis width in millimetres." },
           height: { type: "number", description: "Plan-axis height in millimetres." },
           rotate: { enum: [0, 90, 180, 270], description: "Quarter-turn rotation of the drawn symbol." },
+          mirror: {
+            type: "boolean",
+            description:
+              "True on every fixture inside a reflecting `place` frame: it records the frame's reflection, not the glyph's handedness, so a symmetric symbol carries it too (a handed one is drawn as its mirror image). Absent otherwise. Output-only: `planFromJson` refuses `true` with E_JSON_MIRROR.",
+          },
           centered: { type: "boolean", description: "Room-relative placement: centre inside `room`." },
           anchor: {
             // DERIVED from the parser's own `FURNITURE_ANCHORS`, never retyped.

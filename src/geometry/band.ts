@@ -693,6 +693,10 @@ export function openingCut(w: BandWall, op: CutOpening, intern: PointInterner): 
 
   if (!host.arc) {
     const dir = unit2(sub2(host.b, host.a));
+    // A zero-length host has no direction (`unit2` gives `(0,0)`), every corner would
+    // coincide, and `internLoop` would return an EMPTY loop — which is truthy, so a caller
+    // would carry a 0-edge cut. A segment with no length has no hole in it.
+    if (dir.x === 0 && dir.y === 0) return null;
     const n = perp(dir);
     const corner = (u: number, v: number): Point => ({
       x: op.at.x + dir.x * u + n.x * v,

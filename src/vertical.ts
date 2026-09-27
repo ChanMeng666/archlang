@@ -30,6 +30,9 @@ import type { Point, VerticalDir } from "./ast.js";
 import type { RElevator, REscalator, ResolvedElement, ResolvedPlan, RRoom, RStair } from "./ir.js";
 import type { BBox } from "./geometry/rect.js";
 import type { RectEdge } from "./fixture-orientation.js";
+import { oppositeSide, SIDE_NORMAL } from "./algebra/d4.js";
+import { pointInPolygon } from "./geometry/polygon.js";
+import { pointInRect } from "./geometry/rect.js";
 
 /** The element kinds that model vertical circulation, in registration order. */
 export const VERTICAL_KINDS = ["stair", "elevator", "escalator"] as const;
@@ -65,6 +68,17 @@ export function flightAxis(size: { w: number; h: number }): "x" | "y" {
 }
 
 /**
+ * The axis a run's flight lies along, as DRAWN: read off its tail edge once a `place`
+ * frame has carried one ({@link RStair._tail} — a top/bottom tail runs along `"y"`), else
+ * {@link flightAxis} of its footprint. The two agree except on a SQUARE footprint, whose
+ * `flightAxis` tie reads `"y"` whichever way the frame turned it.
+ */
+export function runAxis(v: RVertical): "x" | "y" {
+  if (v._tail !== undefined) return v._tail === "left" || v._tail === "right" ? "x" : "y";
+  return flightAxis(v.size);
+}
+
+/**
  * The end of a run's long axis that a RISING flight starts from: the bottom of a portrait
  * footprint, the right of a landscape one. The fixed half of the convention — see
  * {@link tailEdge} for the half that depends on `dir`.
@@ -73,11 +87,11 @@ function footEdge(size: { w: number; h: number }): RectEdge {
   return flightAxis(size) === "y" ? "bottom" : "right";
 }
 
-const OPPOSITE: Record<RectEdge, RectEdge> = { bottom: "top", top: "bottom", right: "left", left: "right" };
-
 /**
  * The footprint edge the direction arrow's TAIL sits on — the end of the run you are
- * standing at, on this storey.
+ * standing at, on this storey. A run inside a `place` carries its own ({@link RStair._tail}:
+ * the rule below applied in the component's LOCAL frame, then acted on by the frame), so a
+ * turned or mirrored flight is entered from the image of its authored end.
  *
  * Two rules compose. First, geometry: the flight lies along the footprint's LONG axis and
  * a RISING flight starts at that axis's larger-coordinate end (bottom / right), so an `up`
@@ -96,9 +110,10 @@ const OPPOSITE: Record<RectEdge, RectEdge> = { bottom: "top", top: "bottom", rig
  * changing this default.
  */
 export function tailEdge(v: RVertical): RectEdge {
+  if (v._tail !== undefined) return v._tail;
   const foot = footEdge(v.size);
   if (v.kind === "elevator") return "bottom";
-  return v.dir === "down" ? OPPOSITE[foot] : foot;
+  return v.dir === "down" ? oppositeSide(foot) : foot;
 }
 
 /**
@@ -109,26 +124,19 @@ export function tailEdge(v: RVertical): RectEdge {
  */
 export function entryEdges(v: RVertical): RectEdge[] {
   const tail = tailEdge(v);
-  if (v.kind === "escalator") return [tail, OPPOSITE[tail]];
+  if (v.kind === "escalator") return [tail, oppositeSide(tail)];
   return [tail];
 }
 
 /**
  * The direction of travel in the PLAN, as a unit vector pointing from the entry edge
  * toward the far end of the run — the way the UP/DN arrow points. +y is down, so a
- * portrait flight's arrow points north (`{x: 0, y: -1}`).
+ * portrait flight's arrow points north (`{x: 0, y: -1}`) — the outward normal of the side
+ * OPPOSITE the tail. A fresh object, so a caller may keep it.
  */
 export function travelVector(v: RVertical): Point {
-  switch (tailEdge(v)) {
-    case "bottom":
-      return { x: 0, y: -1 };
-    case "top":
-      return { x: 0, y: 1 };
-    case "right":
-      return { x: -1, y: 0 };
-    default:
-      return { x: 1, y: 0 };
-  }
+  const n = SIDE_NORMAL[oppositeSide(tailEdge(v))];
+  return { x: n.x, y: n.y };
 }
 
 /** The text a run's arrow carries on the storey it is drawn on. */
@@ -166,12 +174,23 @@ export function outsideOpenEdge(px: number, py: number, rect: BBox, open: readon
   return false;
 }
 
-/** The id of the room whose rectangle contains a run's footprint centre, or null. */
+/**
+ * The id of the first room whose FLOOR contains a run's footprint centre, or null. The
+ * floor is the room's shape — its ring for a `polygon`/`circle` room, so a stair in the
+ * notch of an L is not claimed by the L — and its rectangle otherwise, closed bounds.
+ *
+ * This is `pointInRoomBox(centre, roomBox(r))` from `analyze.ts`, spelled with the two leaf
+ * predicates it is made of: `vertical.ts` is loaded by `elements/stair.ts` while the element
+ * registry is still initialising, and importing `analyze.ts` from here would close that cycle.
+ */
 export function roomOfVertical(v: RVertical, rooms: readonly RRoom[]): string | null {
   const cx = v.at.x + v.size.w / 2;
   const cy = v.at.y + v.size.h / 2;
   for (const r of rooms) {
-    if (cx >= r.at.x && cx <= r.at.x + r.size.w && cy >= r.at.y && cy <= r.at.y + r.size.h) return r.id;
+    const inside = r.poly
+      ? pointInPolygon(cx, cy, r.poly)
+      : pointInRect(cx, cy, { x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h });
+    if (inside) return r.id;
   }
   return null;
 }

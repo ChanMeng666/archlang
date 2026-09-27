@@ -21,6 +21,7 @@ import { rectOf, roomBox, pointOnRoomEdge } from "../analyze.js";
 import { solidFurniture } from "../fixtures-catalog.js";
 import { pointInRect } from "../geometry/rect.js";
 import { pointInPolygon } from "../geometry/polygon.js";
+import { neighbours4 } from "./grid.js";
 
 export interface RoomClearance {
   roomId: string;
@@ -185,13 +186,11 @@ export function computeRoomClearances(
       }
     }
     let reached = queue.length;
+    const nb4 = new Int32Array(4);
     for (let h = 0; h < queue.length; h++) {
-      const k = queue[h]!;
-      const ix = k % nx;
-      const iy = (k - ix) / nx;
-      const nbrs = [ix > 0 ? k - 1 : -1, ix < nx - 1 ? k + 1 : -1, iy > 0 ? k - nx : -1, iy < ny - 1 ? k + nx : -1];
-      for (const nb of nbrs) {
-        if (nb >= 0 && free[nb] && !seen[nb]) {
+      for (let i = 0, m = neighbours4(queue[h]!, nx, ny, nb4); i < m; i++) {
+        const nb = nb4[i]!;
+        if (free[nb] && !seen[nb]) {
           seen[nb] = 1;
           queue.push(nb);
           reached++;

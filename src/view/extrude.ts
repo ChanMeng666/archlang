@@ -26,8 +26,11 @@
  * each subset is joined on its own, with its own openings. A plan where every wall is the
  * same height — which is every plan that writes no `height` clause — has exactly one
  * subset and therefore one seamless solid, with its courtyards and its door and window
- * holes already cut. A plan that mixes heights gets one solid per height, and the visible
- * seam between them is a real edge in the building.
+ * holes already cut. A plan that mixes heights gets one solid per height, and those
+ * solids are NOT trimmed against each other: where a wall of one height meets a wall of
+ * another, each runs to its own centreline and the two interpenetrate. The centroid-keyed
+ * painter can then draw the nearer-by-centroid solid over a face that really hides it, so
+ * a mixed-height joint is drawn wrongly (`docs/backlog.md` V.1).
  *
  * ## Openings are filled back in, they are not re-cut
  *
@@ -123,9 +126,16 @@ function ringArea2(pts: readonly Point[]): number {
  * The cap is ONE face carrying every loop, so a wall ring's inner boundary is a hole in
  * its own top rather than a second slab. There is no bottom cap: it is the underside of a
  * solid standing on the floor, and both cameras look down.
+ *
+ * A ring of fewer than three points bounds no area, so it is dropped, and no rings is no
+ * solid — no faces, not a cap with no boundary. Both cases are real: a wall set whose
+ * every wall is consumed by its openings joins to an EMPTY outline (the plan view's
+ * `lowerWallSet` already draws nothing for it), and the joinery can hand back a
+ * degenerate chain. A face with no `loops[0]`, or an empty one, leaves the painter no
+ * depth to sort on — a throw, or a NaN key that makes the order engine-defined.
  */
 function extrudeLoops(
-  rings: readonly Point[][],
+  input: readonly Point[][],
   z0: number,
   z1: number,
   kind: FaceKind,
@@ -133,6 +143,8 @@ function extrudeLoops(
   out: Face[],
 ): void {
   if (!(z1 > z0)) return;
+  const rings = input.filter((r) => r.length >= 3);
+  if (rings.length === 0) return;
   for (let li = 0; li < rings.length; li++) {
     const ring = rings[li]!;
     for (let i = 0; i < ring.length; i++) {
@@ -185,6 +197,9 @@ function extrudeWalls(st: Storey, out: Face[]): void {
     const joined = joinWallSet(subset, []);
     if (!joined) continue;
     const id = `L${st.index}:walls@${fmt2(h)}`;
+    // The outline is empty when openings consume every wall of this height — most easily
+    // reached by a short partition of its own height — and then only the header and sill
+    // blocks below stand, the wall that is still there above and below each opening.
     extrudeLoops(joined.result.outline.map(ringOf), elev, elev + h, "wall", id, out);
 
     // Put the wall back above and below each hole. `cut.wall` indexes `subset`, so the

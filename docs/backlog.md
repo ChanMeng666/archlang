@@ -185,37 +185,33 @@ inside one.
 Five things the G.2/G.3/5.8 work turned up. None was in scope for the item that found it, and each
 was deliberately NOT widened into — recorded here rather than half-fixed.
 
-### G.5 · Circulation measures every walk from `entrances[0]` only — `todo` (the repair half is done)
+### G.5 · Circulation measures every walk from `entrances[0]` only — closed by W3b
 
-**Still open (deliberately, and it is now 16 rooms not 12):** `computeCirculation` measures every walk
-from `entrances[0]` only. That needs somebody to decide what a multi-dwelling sheet means — a
-per-entrance model, or nearest-entrance-per-room — before a line of code is written. Those 16 are
-reported as `other_entrance` rather than silently dropped, so the gap is now visible rather than
-invisible.
+Owner decision: nearest entrance per room. The walk is one multi-source search seeded at every
+entrance (`bfsNearest`, ties to the lowest entrance index); the bottleneck is the widest route from
+any entrance, each seeded at its own clear width; the detour is taken from the room's own entrance.
+`rooms[].entranceId` appears only on a plan with several entrances. The 16 `other_entrance` rooms
+are measured and the reason is retired (ADR 0008 addendum; `test/circulation-entrances.test.ts`).
 
-### G.10 · Plan JSON carries a frame's ROTATION but not its REFLECTION — `todo` (tripwire ARMED)
+### G.10 · A `place`d plan does not round-trip through Plan JSON — `todo` (the projection half is done)
 
-`planToJson` projects the rotation a `place` frame imposes on a fixture and not the reflection.
-Before item 5.4 that lost nothing — a mirrored symbol drew identically to its twin — but 5.4 made
-**19 of the 83 catalogued families genuinely handed**, so the projection now drops a fact the drawing
-depends on. Measured: a plain and a `mirror x` placed `desk` produce payloads differing **only in
-`x`**.
+**Landed: the projection carries the reflection.** `planToJson` now emits `mirror: true` on every
+fixture inside a reflecting `place` frame (the IR's `_mirror`), beside the quarter-turn it already
+carried as `rotate` — the `Fx` in `M · R(l) = R(m − l) · Fx` that `rotate` cannot say. The key rides
+the frame's fact, not the glyph's: symmetric families carry it too, though only a handed one draws
+differently. A reflection-free plan's payload is byte-identical (no key).
 
-**Still unreachable, and therefore still `todo`.** A plan containing `place` never round-trips at
-all: `planFromJson` refuses a namespaced id with `E_DOTTED_DECL` (×3 on the minimal fixture). The two
-defects mask each other and no fixture can reach the projection bug.
+**Landed: the way back refuses rather than approximates.** Source has no per-furniture `mirror` — only
+a `place … mirror x|y` frame reflects a symbol — so `planJsonToArch`/`planFromJson` answer a
+`mirror: true` piece with `E_JSON_MIRROR` instead of emitting the unmirrored symbol. `mirror: false`
+is accepted as the absent key.
 
-**The tripwire is now armed** (`test/plan-json.test.ts`, "G.10 tripwire"), which is the part of this
-entry that has been actioned. Two assertions pin the CURRENT, WRONG state on purpose, each carrying
-the sentence that says what its failure means:
-
-1. the two payloads are equal once position is stripped — **fails when the projection learns to carry
-   the reflection**;
-2. the round-trip is refused with `E_DOTTED_DECL` — **fails when a placed plan starts round-tripping**.
-
-So whoever fixes `E_DOTTED_DECL` lands on a **red test that names this work**, instead of un-masking
-the defect silently with no witness but a symbol drawn the wrong way round on someone else's plan.
-Do not "fix" that suite by deleting the block; invert it into the real round-trip assertion.
+**Still open: a placed plan does not round-trip at all.** `planFromJson` refuses the namespaced ids
+with `E_DOTTED_DECL` (×3 on the minimal fixture). The tripwire stays armed (`test/plan-json.test.ts`,
+"G.10"): its second test pins `E_DOTTED_DECL` on an UNMIRRORED placement (a mirrored one is now
+refused earlier, by `E_JSON_MIRROR`) and goes red when a placed plan starts round-tripping. Whoever
+fixes that still has to decide what a mirrored fixture becomes on the way back, since source has no
+word for it outside a `place`.
 
 The neighbouring rule, from [ADR 0016](adr/0016-component-instances-and-frames.md) and now stated in
 `AGENTS.md`: when a fact crosses a frame, ask **can this be re-expressed in plan coordinates?** A
@@ -274,6 +270,353 @@ Also deferred by name in v1.32.0 and previously untracked. `style <kind> { … }
 layer as ONE kind, so there is no way to give `tree` a different pen from `sofa`. The symbols are
 drawn with named line weights already, so the seam exists — the syntax does not. Any design has to
 say how a per-category rule composes with the existing per-kind one.
+
+---
+
+## Equivariance findings
+
+`place … rotate r mirror m` must carry every fact through the frame's D4 ⋉ Z² action. The oracle
+(`test/d4-oracle.ts`; suites `test/equivariance-{corpus,scene,fuzz}.test.ts`) measures that law, and
+every violation it finds is pinned in `test/equivariance-known.ts`, per element and, for the raster,
+with a size bound: a new one fails as `NEW`, a closed one as `FIXED` until its pin and its `STILL …`
+witness are deleted, and each pin's class predicate must account for what it pins. Each entry below
+is one pinned class; the gate for closing it is that suite going `FIXED` for exactly that class.
+Status is `todo` for a defect and `declared` for a convention that is not a group fact.
+
+### E.1 · `fix-pullback` — lint fixes rewrite a shared component in plan coordinates — closed by W5c
+
+`W_FIXTURE_BACK_TO_ROOM` and `W_DIM_OVERLAP` now pull their value back through the element's
+instance frame (`LintContext.frameOf`) before writing it: `actOnQuarterTurn(g⁻¹, n)` for the
+quarter-turn, `det(g)` on the offset (applied before rounding). A statement shared by several
+placed instances keeps one fix only when every instance raises the same edit; otherwise the fix is
+dropped with a hint (`reconcileSharedFixes`, `src/lint.ts`); the two dim rules report once per
+statement per placement so each instance answers for itself. Pin deleted; the witness is now the law
+(`test/equivariance-corpus.test.ts`, "closed classes"; `test/fix-pullback.test.ts`). What the pin
+also absorbed, `W_DIM_OVERLAP` measuring a mirrored opposite-normal pair differently, is the text
+side's, not the pullback's: it moved to E.14.
+
+### E.2 · `stair-tail` — a vertical run's arrow and entry edge ignore the frame — closed by W5b
+
+Each run's `transform` (`src/elements/{stair,escalator,elevator}.ts`) carries its local tail as
+`_tail`; `tailEdge` reads it and `runAxis` replaces `flightAxis` for the drawn axis (a square
+footprint's tie). Pins deleted; law: `test/vertical-frames.test.ts`, "closed classes" in
+`test/equivariance-corpus.test.ts`. The fixed page rule still decides the tail at the root.
+
+### E.3 · `stair-break-hand` — a mirrored stair keeps its break line's hand — closed by W5b
+
+`stair.transform` XORs `_mirror` on a reflection; `stairGlyph` negates the break line's cross
+coordinate for it. Pins deleted; law as E.2.
+
+### E.4 · `plugin-throw` — a plugin element inside `place` throws — closed by W2
+
+Each element module owns its frame action (`ElementDef.transform`); a plugin kind without one is
+dropped inside a `place` with `E_INSTANCE_NO_TRANSFORM`, never thrown. Pin deleted; the witness is now
+the law (`test/equivariance-corpus.test.ts`, "closed classes"; `test/transform-seam.test.ts`).
+
+### E.5 · `facing-tie` — a corner or 45° window resolves its tie N/S-first — `declared`
+
+`windowFacingPage` (`src/site.ts:191,206`) breaks a tie horizontal-first by stated convention, which
+an axis swap does not commute with. Not a defect; the pin moves only if the convention does.
+
+### E.6–E.10 · the nav grid breaks its ties in page order — `todo` (E.9 closed by W3b)
+
+ADR 0008 makes circulation facts deterministic by row-major iteration and calls them "coarse and
+advisory: grid-quantised to the cell size". That licenses a cell of noise; it does not license a
+turned plan measuring the same room 7.3 m further away (`courtyard-house`'s gallery), which is
+outside any reading of "coarse". Five mechanisms, each its own class with a predicate the fuzz suite
+applies and a witness:
+
+- **E.6 `raster-tie`** — an entrance on a lattice line is floored to its +x/+y side
+  (`src/analyze/circulation.ts:285`), and a room whose seed point is equidistant from several cells
+  measures to the row-major first (`:962-986`). Each endpoint moves at most one lattice step per tied
+  axis, so a walk moves at most 3 cells (a single-room plan with no furniture: 1500 → 1400 mm).
+- **E.7 `entrance-seed-walk`** — the tied entrance cell's row is eroded, so `seedCell` keeps walking
+  inward: the walk origin moves several cells (1800 → 1100 mm), or lands in a pocket from which no
+  room measures at all.
+- **E.8 `anchor-far-tie`** — furniture covers a room's centre, so its nearest free cells form a ring
+  round the obstacle, all equidistant; the row-major first lands on another side of it (the corpus:
+  up to 3600 mm in `laneway-house`).
+- **E.9 `label-point-tie`** — closed by W3b. A concave room whose centroid is off its floor is
+  measured to the nearest of its pole ORBIT (`polygonLabelPoint` on the ring turned and flipped by
+  each element of D4, carried back), a set no page order changes, and the pick within it is
+  D4-symmetric too (fewest hops, then straight line from the walk's own entrance, then the sorted
+  offsets from the room's centre; the cell index settles only a tie a symmetry of the whole plan
+  maps onto itself, where every fact is equal). `courtyard-house`'s gallery went from +7300 mm to
+  exactly equivariant, and no shipped digest moved.
+- **E.10 `threshold-carve`** — a doorway centred on a lattice line (or near a room corner, where
+  seeding steps diagonally and `carvePath` joins seeds by an x-then-y L) is tried on a set of rows
+  that shifts by one under a turn or flip: the grid itself differs, walks detour (`hexagon-pavilion`
+  −1200 mm), and a room can carve on one side only and be sealed.
+
+Close with D4-symmetric tie-breaks: seed both sides of a line, choose among equidistant cells by a
+rule the group preserves, carve thresholds on a symmetric row set.
+
+Measured by W3b (examples whose `describe()` digest moves; owner decision pending, each exceeds the
+five-row budget): among equidistant nearest cells take the one the walk reaches first — 24 examples,
+217 walks (mostly −100/−200 mm), closes E.8 in the corpus; the same only when the seed point is
+covered — 14; seed an entrance on both sides of its lattice line — 22 examples, 119 walks; try
+threshold points on both sides of a lattice line — 5 (`courtyard-house`, `garden-house`,
+`laneway-house`, `terrace-row`, `townhouse`), 9 walks, halves E.10 without closing it.
+
+W3b also widened three predicates, each with a `STILL` witness from the fuzz case that found it,
+and each bounded to its mechanism: E.7 covers an entrance that seeds on one side only and so drops
+its width out of a room's widest-from-any-entrance bottleneck — the wider reading must BE that
+entrance's width, the narrower one between the widest entrance seeding on both sides and the widest
+on its own side (1 in 3000 random plans); E.7 also covers a room sealed on one side because its own
+entrance seeds on the other side only, every other room then moving only by its endpoints' ties
+(2 in 16 000); E.10 covers a room split by furniture whose nearest free cell is in a pocket on one
+side (`fallback`), so it measures to the nearest reachable cell instead (2 in 12 000).
+
+### E.11 · `float-translation` — facts change under a pure translation — `todo` (circulation half closed by W3b)
+
+**Closed for circulation.** A translation re-rounds a curve's tessellation (placed 20 m out, a ring
+vertex keeps one ulp less of its fraction), so the nav grid, sampling in absolute floats, resolved
+exact ties the other way (`aquarium` detour 1.01 → 1, `library` reading-room walk 25500 → 25300 mm).
+The grid now samples in its extent's own frame, each coordinate taken relative to the min corner and
+snapped to a 2⁻¹⁰ mm lattice (`toExtentFrame`), so every circulation fact is invariant under a
+translation unless a relative residue lies within about an ulp of a half-quantum (0 moves over 69
+non-integer translations of 8 examples; `test/equivariance-corpus.test.ts` "closed classes",
+`test/circulation-translation.test.ts`). The snap moved three
+P₀ values to their translation-invariant readings (the baseline header names them).
+
+**Still open for lint:** an `on <wall> at 55%` position that resolved an ulp off its integer rounds
+back 20 m away and flips `W_POCKET_RUN`'s `>= need`, making its reverse-slide fix appear. Close by
+snapping resolved positions (or comparing through the same snapped frame).
+
+### E.12 · `slide-track` — a mirrored sliding door swaps its panels' tracks — closed by W5b
+
+`door.transform` XORs `_mirror`; the `sliding` case of `renderDoorPanels` puts the fixed panel on
+`n · off · (_mirror ? −slide : slide)`. `slide` itself still does not flip. No root spelling
+draws a mirrored sliding door (reversing the wall reverses the normal with the traversal); the
+`test/place.test.ts` twin case encoded the defect and now excludes the sliding kind.
+
+### E.13 · `column-corner` — the frame carried a column's corner as a centre — closed by W5b
+
+`column.transform` carries `at`/`size` through `t.rect`, as every top-left rectangle is. Pins
+deleted; law: "closed classes" in `test/equivariance-corpus.test.ts`, `test/frame.test.ts`.
+
+### E.14 · `dim-text-side` — a dim's number was drawn inside its line for a negative offset — closed by W5b
+
+`dim.render` puts the number on the side a negative offset points (`pointsRight`), so it reads
+outside its line at the root. A zero offset has no sign, so a reflected call-out takes the frame's
+handedness from `RDim._mirror` (XORed in `dim.transform`, which writes `0 - offset` and so never
+makes a `-0`); an evaluated `-0` is folded to `0` at resolve. `W_DIM_OVERLAP`'s band follows the
+same side. No shipped example has a negative offset.
+
+The lint half W5c moved here closed with it: `W_DIM_OVERLAP`'s band (`Band.m`) now puts the number
+on the drawn side, so the A3 1:50 opposite-normal pairs (`550`/`-550` bumped `-1100` unplaced and
+`-825` mirrored; `550`/`-650` warned only unplaced) give one verdict and one bump under every g.
+
+### E.15 · `dim-tick-hand` — a mirrored dim draws its ticks on the other diagonal — `declared`
+
+Each 45° station tick is drawn along `dir + n` (`src/elements/dim.ts:290-291`), a slash of fixed page
+sense relative to the line — a drafting convention, like a hatch angle. Its mirror image is the
+other diagonal. Not a defect; the pin moves only if the tick convention does.
+
+### E.16 · `nested-ref` — a reference into a nested instance fails once its plan is placed — closed by W8
+
+Every level now reaches into its own descendants the way the root does: instance groups resolve
+deepest first, and each sees its descendants' walls and rooms carried into its local frame by the
+composed authored `place` frames, named relative to it (`src/ir.ts`, `descendantView`). None
+reaches out. Every position or category search sees descendants too (ADR 0016 §3 addendum), and
+an opening registers on its wall by the host's wall id, not its endpoint coordinates (which two
+float evaluation orders can split at grid 0). `clinic.arch` and `museum-wings.arch` survive being imported whole (T0 is clean);
+clinic's T1–T3 runs, vacuous until then, surfaced only existing classes (`raster-tie`,
+`threshold-carve`, `slide-track`, `dim-text-side`, `dim-tick-hand`), pinned per element. Pins
+deleted; the witness is now the law (`test/equivariance-corpus.test.ts`, "closed classes";
+`test/compose-assoc.test.ts`).
+
+## Circulation findings (found while landing W3b)
+
+Pre-existing defects and one owner decision that W3b and its red-team review ran into; none was in
+W3b's scope.
+
+### C.1 · A partition thinner than a nav cell does not block the walk — `todo`
+
+`rasteriseWallSegments` blocks a cell only when its CENTRE is within half a wall's thickness of the
+wall, so a partition thinner than one cell (the random plans draw 80 mm walls on a 100 mm grid)
+blocks no cell at all, and the walk leaks through it into a room no door reaches. Circulation no
+longer REPORTS such a walk — every room the access graph cannot reach is `no_door_route`, so
+`test/access-policy.test.ts` asserts equality — but the raster still routes through the partition,
+so a walk to a reachable room can take a shortcut through a wall that is not there on the grid.
+Close by blocking every cell the wall band crosses, not only those whose centre it covers — a
+measured corpus change, since dwelling partitions are 100 mm on 100 mm cells.
+
+### C.2 · `--overlay circulation` ignores floor voids — `todo`
+
+`src/overlays/circulation.ts` calls `computeCirculationOverlay` without the storey's voids, while
+`describe()` and lint pass them, so on a plan with a `void` the drawn walks and pinches come from a
+different grid than the numbers they illustrate. Close by passing `voids` (every plan without a
+`void` is unaffected).
+
+### C.3 · The detour ratio is taken from the nearest-by-walk entrance, which can be roundabout — `owner decision`
+
+Since G.5, a room's `detourRatio` divides its walk by the straight line from the entrance nearest
+it BY WALK. That door can sit behind the room's back: the museum's `g3` went 1.36 → 2.32 because the
+door it is now walked from is nearer on foot but not in a line. The alternative is "detour as the
+minimum over entrances" (each entrance's walk ÷ its own straight line), which would call `g3`
+direct again but would no longer describe the walk that `walkDistanceMm` reports. Not changed;
+`docs/analysis.md` documents the current semantics.
+
+### C.4 · An exterior door at the corner of two rooms joins them and gives no entrance — `todo`
+
+A connector touching TWO rooms keeps `doorConnections`' answer (the ≤2-room carve-out of the
+`probe` policy), and that answer is the two rooms — so an exterior door whose point is within the
+adjacency tolerance of a partition's end joins the rooms to each other and the plan reports
+`W_NO_ENTRANCE`. The probe would say "exterior" on the outer face. Repro:
+
+```arch static
+plan "corner" {
+  units mm
+  wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,3000) (0,3000) close }
+  wall id=mid partition thickness 100 { (4000,0) (4000,3000) }
+  room id=a at (0,0) size 4000x3000 label "Hall"
+  room id=b at (4000,0) size 4000x3000 label "Living"
+  door id=d at (4100,3000) width 900 wall shell
+  door id=d2 at (4000,1500) width 800 wall mid
+}
+```
+
+`describe().doors[d].between` is `["a", "b"]`, `access.entrances` is `[]`, lint: `W_NO_ENTRANCE`.
+Close by probing a two-room connector on an EXTERIOR host too (a measured change for any plan
+with a door that close to a partition end).
+
+## Wall-face probe findings
+
+Left open by routing "which side of this wall has floor" through `wallFaceProbes`
+(`src/geometry.ts`) and giving `roomOfVertical` the room's shape. Neither was in that change's scope.
+Both closed their SHAPE half in W5a; P.1's message half is still `todo`.
+
+### P.1 · A shaft landing on no room says its storey has no way in — `todo` (the shape half is done)
+
+**Landed (W5a): `roomOfVertical` asks the room's shape, not its bounding box.** A stair or lift
+standing in a concave room's notch, or in a circle's bounding-box corner, is no longer claimed by
+that room — `test/vertical-room-shape.test.ts`.
+
+**Still open: the message.** `verticalReach` (`src/vertical.ts`) counts the storey reachable
+(`describe().vertical.reachable_levels` lists it) but records an arrival room only for a stop whose
+`room` is non-null, and `no-entrance` (`src/lint/rules/entrance.ts`) stands down only for an arrival
+room. A stair landing in an L's unroomed notch therefore gets `W_NO_ENTRANCE` ("there is no way into
+the building") on a storey the shaft reaches. The rule is right — nothing at the landing is floor to
+arrive in — but the message misleads. Want a message (or code) that says the shaft lands on no room;
+keep the rule. Pinned by `test/vertical-room-shape.test.ts`.
+
+### P.2 · `swing into <rectangle room>` on an arc host picks its side off the chord — closed by W5a
+
+`wallFaceProbes` (`src/geometry.ts`) replaced the CHORD-normal probe `swingInto`'s rectangle path used
+with the TANGENT normal `doorSwing` and `roomSideOf` already used, so all three now agree on an arc
+host as they already did on a straight one. `test/wall-face-probe.test.ts` pins a major-arc door
+swinging into the side its leaf is actually drawn on, at both ends and the midpoint, for both winding
+directions.
+
+## Axonometric view findings
+
+Left open by W9, which made `compile(src, { view })` stop throwing on a wall set its openings
+consume and stop painting an empty ring. None of these throws; each draws or reports wrongly.
+
+### V.1 · Mixed-height joints interpenetrate and draw in the wrong order — `todo`
+
+`extrudeWalls` (`src/view/extrude.ts`) joins each wall-height subset on its own, so walls of
+different heights are never trimmed against each other: each runs to its own centreline. The painter
+keys on one centroid per face, so a short partition's quads sort nearer than a long, unsplit shell
+face and are drawn over it. Reproduced: a 4200 shell `(0,0)…(2300,5700) close` with a 3000 partition
+`(0,3700) (2300,3700)` paints the partition across the shell's near outer face; the same plan at one
+height draws correctly. No example mixes heights within a storey. A candidate: join by height
+BAND (every wall at least as tall as the band) rather than by equal height.
+
+### V.2 · A header or sill block overhangs its wall's end — `todo`
+
+`openingCut` (`src/geometry/band.ts`) is not clipped to its host segment, and the view extrudes the
+opening's fill-back blocks from that loop, so an opening running past a wall end puts a header or
+sill block out past it. The plan view does not show it: it only subtracts the cut.
+
+### V.3 · No diagnostic for an opening wider than, or consuming, its host — `todo`
+
+`wall … { (0,0) (1000,0) }` + `opening on w at center width 1200`, or overlapping openings that
+cover a wall end to end, are diagnostic-free. The wall is silently gone from both drawings.
+
+### V.4 · The joinery emits an UNCLOSED chain for a door consuming an arc wall under `grid` — `todo`
+
+`finishLoops` (`src/geometry/joinery.ts`) passes an unclosed chain through by design, so the defect
+it exposes reaches the drawing as an open outline. Found by the W9 red team: 11 of 8739 generated
+iso/axon compiles hit it. Its header says a dead-end chain means the classification was
+inconsistent, and closing the chain there would fabricate an edge; start from the classification.
+
+---
+
+## Parked from the algebra programme (2026-09, [ADR 0020](adr/0020-algebraic-core.md))
+
+### 6.1 · D4-orbit `reroll` for a component or a `place … mirror` — `todo`
+
+W6b landed `arch reroll` + the LSP `refactor.rewrite` action + the `reroll()` API
+(`src/reroll.ts`, sharing `src/pipeline.ts`'s one `compileUncached` with `compile()`), but
+only for a **translation** arithmetic progression — same statement, same structure, a numeric
+slot advancing by a constant delta each iteration (`for i in 0..N { … i*d … }`). It does not
+recognise a run related by a D4 group element other than the identity: three `place`d
+instances of the same component at `rotate 0`, `rotate 90`, `rotate 180` (or a mirrored pair)
+are a real repetition — an ORBIT under `src/algebra/d4.ts`'s normal form — that a reader would
+also fold into a loop by hand, but nothing here proposes `for r in [0, 90, 180] { place C(...)
+rotate r ... }`. Detecting it needs a second structural-match mode (same statement/args, an
+`at`/`rotate`/`mirror` triple forming a D4 orbit rather than an AP) ahead of the same proof
+obligation `reroll.ts` already has; the proof machinery (`proves`/`compileUncached`) carries
+over unchanged. Track under a new work-package; do not build ahead of it.
+
+### 6.2 · A `mirror` fact on `describe()` furniture — `todo`
+
+Plan JSON already projects a reflecting `place`'s furniture as `mirror: true`
+(`planToJson`, G.10). `describe()`'s own furniture facts do not carry the equivalent bit, so
+an agent reading `describe()` alone cannot tell a mirrored piece from an unmirrored one of
+the same kind without also fetching Plan JSON. Small, additive, same key name.
+
+### 6.3 · Plan JSON `_mirror`/`_tail` for dims, doors and vertical runs — `todo`
+
+`_mirror` (dim text side, sliding-door track) and `_tail` (a placed run's entry edge) are
+IR-internal, resolved-frame facts (`src/frame.ts`, `src/elements/dim.ts`, `door.ts`,
+`{stair,escalator,elevator}.ts`) that never reach `planToJson`. A consumer resolving a
+placed plan from Plan JSON alone cannot reproduce which side a dim reads on or which track a
+mirrored sliding door takes. Needs the same "can this be re-expressed, or must it be
+dropped" test G.10 already answered for furniture `mirror`.
+
+### 6.4 · Rectangle-algebra path consistency for `intent` — `todo`, rejected for now (ADR 0020)
+
+Considered and set aside while writing ADR 0020: routing the `intent` channel's
+adjacency/reachability assertions through a general interval/rectangle constraint solver
+instead of today's bipartite matching (`checkPredicates`). Rejected as an eval-judge risk —
+a solver can satisfy a rubric with a *different* room assignment than the judge expects,
+moving eval scores for reasons unrelated to plan quality. Revisit only against a concrete
+rubric failure, not as a generalisation exercise.
+
+### 6.5 · Exact projective predicates (orient2d / homogeneous intersection) — `todo`, rejected for now (ADR 0020)
+
+Measured bounds with today's plain double arithmetic: `orient2d` stays exact to `2²⁵` mm;
+homogeneous line intersection is exact only to roughly 10³ m. Both cover every plan size the
+language can express today. Revisit only if a shipped plan (not a synthetic stress case)
+measures outside either bound.
+
+### 6.6 · A trig/hypot cross-engine audit — `todo`
+
+`src/analyze/syntax.ts`'s integration value uses `Math.log2` alongside the existing view and
+geometry code's `Math.hypot`/`Math.atan2` family (`docs/agents/architecture.md`: "the view
+uses no `Math.cos/sin/tan/atan`, not exactly rounded across platforms"). Nobody has swept
+`Math.log2` and the rest of the transcendental surface for the same cross-platform exactness
+risk the view already avoids. Needs a differential run across the CI matrix's platforms
+before it can be called safe, not just assumed so by analogy.
+
+### 6.7 · `while` and reassignment removal in a future MAJOR — `todo`, not before then
+
+W7 soft-deprecates (`W_WHILE_DEPRECATED`/`W_REASSIGN_DEPRECATED`) and offers a proven
+`arch fix` rewrite; it does not remove the construct. Removing it is a language-breaking
+change and stays out of scope until a MAJOR version boundary, by which point the warning
+should have converted most of the corpus that can be converted mechanically.
+
+### 6.8 · `museum-wings.arch`'s wings: D1 at shell/rooms, C1 at `full` — owner question, `todo`
+
+`describe --facts symmetry` (W6a) reports the flagship's two wings as mirror-symmetric (D1)
+at the shell and room layers but only rotationally symmetric (C1) at `full`, because the
+doors hinge on opposite jambs — a real asymmetry the fact correctly reports, not a bug in
+the fact. Open question for the owner: should the wings be redrawn with their doors mirrored
+too, so the building is D1 end to end, or is the hinge asymmetry intentional (handedness of
+approach, fire egress convention)? No code change until that is answered.
 
 ---
 

@@ -16,7 +16,7 @@
  */
 import { describe, expect, it } from "vitest";
 import * as archlang from "@chanmeng666/archlang";
-import { CompletionItemKind, DiagnosticSeverity } from "vscode-languageserver-protocol";
+import { CodeActionTriggerKind, CompletionItemKind, DiagnosticSeverity } from "vscode-languageserver-protocol";
 import { offsetToPosition } from "../src/diagnostics.js";
 import { COMPLETION_KIND, createHandlers, type CoreCodeAction, type CoreLsp } from "../src/handlers.js";
 
@@ -57,6 +57,7 @@ function stubCore(over: Partial<CoreLsp>): CoreLsp {
     rename: nope("rename"),
     signatureHelp: nope("signatureHelp"),
     codeActions: nope("codeActions"),
+    refactorActions: nope("refactorActions"),
     ...over,
   } as CoreLsp;
 }
@@ -400,6 +401,145 @@ describe("codeAction — never edits another file", () => {
     ].join("\n");
     const whole = { start: pos(importer, 0), end: pos(importer, importer.length) };
     expect(h.codeAction(importer, uri, whole)).toEqual([]);
+  });
+});
+
+// --------------------------------- gating `reroll` by CodeActionTriggerKind
+
+/**
+ * `reroll` (behind `refactor.rewrite`, the core's `refactorActions`) is the
+ * expensive call: proving a candidate compiles/describes/lints a twin. An
+ * AUTOMATIC code-action request — VS Code's lightbulb re-asking on every
+ * cursor/selection move, no user action taken — must never reach it, or the
+ * single-threaded server stalls on a large plan on every keystroke. Driven with
+ * a stub core that records WHICH core function was called, since the real
+ * core's own gating (range-filter-before-proving) is already covered by
+ * `test/reroll.test.ts` — this guard is specifically about the ADAPTER
+ * deciding whether to call `refactorActions` at all. Quick fixes always come
+ * from `codeActions`, whose historical contract (every action carries a
+ * diagnostic) the adapter relies on.
+ */
+describe("codeAction — gates reroll by CodeActionTriggerKind", () => {
+  const uri = "file:///p.arch";
+  const text = 'plan "P" { units mm }';
+  const range = { start: pos(text, 0), end: pos(text, text.length) };
+
+  function spyCore(): { core: CoreLsp; calls: string[] } {
+    const calls: string[] = [];
+    const core = stubCore({
+      codeActions: () => {
+        calls.push("codeActions");
+        return [];
+      },
+      refactorActions: () => {
+        calls.push("refactorActions");
+        return [
+          { title: "Re-roll", kind: "refactor.rewrite", edits: [{ span: { start: 0, end: 4 }, newText: "plan" }] },
+        ];
+      },
+    });
+    return { core, calls };
+  }
+
+  it("Automatic (VS Code's lightbulb on cursor move): quick fixes only, refactorActions never called", () => {
+    const { core, calls } = spyCore();
+    const out = createHandlers(core).codeAction(text, uri, range, undefined, CodeActionTriggerKind.Automatic);
+    expect(calls).toEqual(["codeActions"]);
+    expect(out).toEqual([]);
+  });
+
+  it("no triggerKind at all (a client that never sends one): treated the same as Automatic", () => {
+    const { core, calls } = spyCore();
+    createHandlers(core).codeAction(text, uri, range);
+    expect(calls).toEqual(["codeActions"]);
+  });
+
+  it("Invoked (Ctrl+. / the refactor menu): both are called and merged, the refactor never preferred", () => {
+    const { core, calls } = spyCore();
+    const out = createHandlers(core).codeAction(text, uri, range, undefined, CodeActionTriggerKind.Invoked);
+    expect(calls).toEqual(["codeActions", "refactorActions"]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.kind).toBe("refactor.rewrite");
+    expect(out[0]!.isPreferred).toBe(false);
+    expect(out[0]!.diagnostics).toBeUndefined();
+    expect(out[0]!.edit!.changes![uri]).toEqual([
+      { range: { start: pos(text, 0), end: pos(text, 4) }, newText: "plan" },
+    ]);
+  });
+
+  it("Automatic, but `only` explicitly names a refactor kind: honoured anyway, and no quick fixes", () => {
+    const { core, calls } = spyCore();
+    createHandlers(core).codeAction(text, uri, range, ["refactor.rewrite"], CodeActionTriggerKind.Automatic);
+    expect(calls).toEqual(["refactorActions"]);
+  });
+
+  it('Invoked with `only: ["quickfix"]`: refactorActions is not called', () => {
+    const { core, calls } = spyCore();
+    createHandlers(core).codeAction(text, uri, range, ["quickfix"], CodeActionTriggerKind.Invoked);
+    expect(calls).toEqual(["codeActions"]);
+  });
+
+  it("drops a refactor whose edit runs past the end of the document", () => {
+    const core = stubCore({
+      codeActions: () => [],
+      refactorActions: () => [
+        {
+          title: "Re-roll",
+          kind: "refactor.rewrite",
+          edits: [{ span: { start: 0, end: text.length + 1 }, newText: "x" }],
+        },
+      ],
+    });
+    expect(createHandlers(core).codeAction(text, uri, range, undefined, CodeActionTriggerKind.Invoked)).toEqual([]);
+  });
+});
+
+/** The same two paths through the REAL core: a plan with an arithmetic-progression run. */
+describe("codeAction — quick fixes and the re-roll refactor, real core", () => {
+  const uri = "file:///row.arch";
+  const text = archlang.format(`plan "Row" {
+  units mm
+  grid 50
+  north up
+  wall exterior thickness 200 { (0,0) (4000,0) (4000,5000) (0,5000) close }
+  wall exterior thickness 200 { (4000,0) (8000,0) (8000,5000) (4000,5000) close }
+  wall exterior thickness 200 { (8000,0) (12000,0) (12000,5000) (8000,5000) close }
+  room at (0,0) size 4000x5000 label "Studio"
+  room at (4000,0) size 4000x5000 label "Studio"
+  room at (8000,0) size 4000x5000 label "Studio"
+  door at (2000,5000) width 900 wall exterior hinge left
+  door at (6000,5000) width 900 wall exterior hinge left
+  door at (10000,5000) width 900 wall exterior hinge left
+  door id=d at (2500,9000) width 900
+}`);
+  const whole = { start: pos(text, 0), end: pos(text, text.length) };
+
+  it("the core's codeActions stays quickfix-only, every action carrying a diagnostic", () => {
+    const actions = archlang.codeActions(text, { start: 0, end: text.length });
+    expect(actions.length).toBeGreaterThan(0);
+    for (const a of actions) {
+      expect(a.kind).toBe("quickfix");
+      expect(typeof a.diagnostic.code).toBe("string");
+    }
+  });
+
+  it("Automatic: the off-wall quick fix only", () => {
+    const out = h.codeAction(text, uri, whole, undefined, CodeActionTriggerKind.Automatic);
+    expect(out.length).toBeGreaterThan(0);
+    expect(new Set(out.map((a) => a.kind))).toEqual(new Set(["quickfix"]));
+  });
+
+  it("Invoked: the quick fix plus the three re-roll refactors, merged", () => {
+    const out = h.codeAction(text, uri, whole, undefined, CodeActionTriggerKind.Invoked);
+    const refactors = out.filter((a) => a.kind === "refactor.rewrite");
+    expect(refactors).toHaveLength(archlang.reroll(text).length);
+    expect(refactors.length).toBe(3);
+    for (const a of refactors) {
+      expect(a.isPreferred).toBe(false);
+      expect(a.diagnostics).toBeUndefined();
+      expect(a.title).toMatch(/^Re-roll 3 statements into a `for` loop$/);
+    }
+    expect(out.filter((a) => a.kind === "quickfix").length).toBeGreaterThan(0);
   });
 });
 

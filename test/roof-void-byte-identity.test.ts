@@ -210,20 +210,27 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
  * `test/byte-identity-baseline.ts` has the field-by-field account.
  *
  * Do not read this entry as permission either.
+ *
+ * ## `laneway-house` and `aquarium` re-measured for circulation (W3b)
+ *
+ * Only `describe().circulation` moved; SVG and `lint()` are byte-identical. `laneway-house`
+ * has two entrances and each room now walks from its nearest (r_bed 9200 → 4400); `aquarium`'s
+ * rotunda detour 1.01 → 1 is the nav grid sampling in its own snapped frame.
+ * `test/byte-identity-baseline.ts` has the account ("Fourteen rows re-measured").
  */
 const BASELINE: [string, string][] = [
-  ["laneway-house", "2052f41a371dc7164ad7534142338f92a6abb516b8ec488a0ebbad20158c5292"],
+  ["laneway-house", "1e78cc8744a4cb1c8f25f5ff0a87cfaed110a64735d92fd8c783ea6a87c6e3a8"],
   ["studio", "28e8de0bce723f8822d966fbb4a1fe9e533c21dd0c68f22e7f2ff2d57cd1ad44"],
   ["gallery-l", "fd7ee33e2787e3f5099ed6b533111754aa8b62761d3540940414c94822cac4f6"],
-  ["aquarium", "4f01142d8bb57e0e8c0df5635d63af3afcbc2d52570288230fc6785dc46ea8ff"],
+  ["aquarium", "ab67674a9eb016b21c66e0a382456d47c2ce59f06ac8559bdf45f10244fe01b3"],
 ];
 
 /** The SUMMARY half of the same law — see the header. Re-measured once, for `aquarium`, because its rooms were wrong. */
 const SEMANTIC_BASELINE: [string, string][] = [
-  ["laneway-house", "bde186c2290e5aa19ea60c3ec9e8ad7cfa3f5237e7d2a0a80cdca393fa3ab85a"],
+  ["laneway-house", "d3ab0140b1f474997ff52c711e9c539e92a23a6d65003b656f9b72b6a7ad0cca"],
   ["studio", "7ed53b6e0925e21fe4c4fad7351ce7e80635818395fc79cf661ba095db8129b3"],
   ["gallery-l", "cef0ee1863a505bb831aa2512ca204547117872a61cf1a1ddd293361f0b688be"],
-  ["aquarium", "129653fb293bb4b79108f660577b7ce56dd96b8409943a5ffa0e6f2fd378817f"],
+  ["aquarium", "23cd27bb45079f977c89494898dba45b67338b26e845777b2c536c627e3d5c81"],
 ];
 
 /** The compiler surface the summary-half pins are taken over. */

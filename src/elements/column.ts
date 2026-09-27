@@ -7,7 +7,7 @@
  */
 
 import type { ColumnNode, Point } from "../ast.js";
-import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { RColumn } from "../ir.js";
 import { rectCorners } from "../geometry.js";
@@ -71,5 +71,15 @@ export const column: ElementDef = {
         paint: { fill: theme.column, stroke: theme.wallStroke, width: sizes.thin },
       },
     ];
+  },
+  /**
+   * The frame's action on a column (`frame.ts`'s `transformElement` calls this). `at` is the
+   * TOP-LEFT (see `params`), so the rectangle is re-cornered like every other top-left box.
+   */
+  transform(resolved, t: TransformCtx): RColumn {
+    const el = resolved as RColumn;
+    const { id } = t;
+    const r = t.rect(el.at, el.size);
+    return { ...el, id, at: r.at, size: r.size };
   },
 };

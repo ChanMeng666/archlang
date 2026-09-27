@@ -342,3 +342,74 @@ export function dashedPoly(g: GlyphCtx, pts: Point[], fill: string, weight: Glyp
     lineType: "dashed",
   });
 }
+
+/**
+ * Map a scene node's geometry point by point — the one traversal behind a glyph's
+ * quarter-turn (`furniture.ts`'s `rotateNode`) and its reflection (`glyph-chirality.ts`'s
+ * `mirrorNode`), which differ only in the point map and in whether it is a reflection.
+ *
+ * Every POINT a primitive carries goes through `pointMap`; a length (`r`) is invariant and
+ * text stays upright. `reversesOrientation` says the map is a reflection: a reflection
+ * REVERSES orientation, so every `sweep` flag flips — on an `arc` prim and on a `path`'s arc
+ * edges — because a curve drawn clockwise from `start` to `end` is drawn counter-clockwise
+ * once mirrored; a rotation preserves orientation and leaves them alone. Point ORDER within
+ * a polygon is left alone, which flips the winding under a reflection (nothing downstream
+ * reads a furniture polygon's winding).
+ *
+ * The switch is **exhaustive with no `default`** on purpose — the same guard `pdf.ts`'s
+ * `drawNode` carries. A new `ScenePrim` variant fails the typecheck here instead of being
+ * silently passed through unmapped. A `hatch` is a declared non-case: its `angle` is
+ * measured in PATTERN space, so mapping its loops without the pattern would shear the fill
+ * off its own boundary; no fixture glyph emits one, so give a glyph a hatch and the angle
+ * rule has to be written first.
+ */
+export function mapSceneNode(n: SceneNode, pointMap: (p: Point) => Point, reversesOrientation: boolean): SceneNode {
+  const pm = pointMap;
+  const flip = (s: 0 | 1): 0 | 1 => (s === 0 ? 1 : 0);
+  const prim = n.prim;
+  switch (prim.t) {
+    case "polygon":
+      return { ...n, prim: { ...prim, pts: prim.pts.map(pm) } };
+    case "line":
+      return { ...n, prim: { ...prim, a: pm(prim.a), b: pm(prim.b) } };
+    case "text":
+      return { ...n, prim: { ...prim, at: pm(prim.at) } };
+    case "circle":
+      return { ...n, prim: { ...prim, center: pm(prim.center) } };
+    case "arc":
+      return {
+        ...n,
+        prim: {
+          ...prim,
+          center: pm(prim.center),
+          start: pm(prim.start),
+          end: pm(prim.end),
+          ...(reversesOrientation ? { sweep: flip(prim.sweep) } : {}),
+        },
+      };
+    case "region":
+      return { ...n, prim: { ...prim, loops: prim.loops.map((lp) => lp.map(pm)) } };
+    case "path":
+      return {
+        ...n,
+        prim: {
+          ...prim,
+          loops: prim.loops.map((lp) => ({
+            start: pm(lp.start),
+            edges: lp.edges.map((e) =>
+              e.t === "line"
+                ? { ...e, to: pm(e.to) }
+                : {
+                    ...e,
+                    to: pm(e.to),
+                    center: pm(e.center),
+                    ...(reversesOrientation ? { sweep: flip(e.sweep) } : {}),
+                  },
+            ),
+          })),
+        },
+      };
+    case "hatch":
+      return n;
+  }
+}

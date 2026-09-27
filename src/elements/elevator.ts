@@ -8,10 +8,11 @@
  */
 
 import type { ElevatorNode, Point } from "../ast.js";
-import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { RElevator } from "../ir.js";
 import { rectCorners } from "../geometry.js";
+import { tailEdge } from "../vertical.js";
 import { elevatorGlyph } from "./vertical-glyphs.js";
 
 export const elevator: ElementDef = {
@@ -58,5 +59,13 @@ export const elevator: ElementDef = {
 
   render(resolved, ctx: RenderCtx): SceneNode[] {
     return elevatorGlyph(resolved as RElevator, ctx.theme, ctx.sizes);
+  },
+  /** The frame's action on a lift car (`frame.ts`'s `transformElement` calls this). */
+  transform(resolved, t: TransformCtx): RElevator {
+    const el = resolved as RElevator;
+    const { id } = t;
+    const r = t.rect(el.at, el.size);
+    // The car's entry side (its local south edge) acted on — see `stair.transform`.
+    return { ...el, id, at: r.at, size: r.size, _tail: t.side(tailEdge(el)) };
   },
 };

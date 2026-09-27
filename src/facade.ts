@@ -15,22 +15,29 @@ import {
   distPointToWallSegment,
   emptyBounds,
   extendBounds,
-  normal,
-  segmentDirAt,
   segmentFaceExtremes,
   segmentsOfWall,
+  wallFaceProbes,
 } from "./geometry.js";
 import { pointInRoomBox, roomBox } from "./analyze.js";
 import type { Point } from "./ast.js";
+import { SIDE_NORMAL } from "./algebra/d4.js";
 
 /** The four facades a dimension chain can run along. */
 export type Side = "bottom" | "left" | "top" | "right";
 export const SIDES: readonly Side[] = ["bottom", "left", "top", "right"];
 
-/** Which axis a side measures along: `h` = along x (bottom/top), `v` = along y. */
-export const SIDE_AXIS: Record<Side, "h" | "v"> = { bottom: "h", top: "h", left: "v", right: "v" };
-/** Outward direction along the side's CROSS axis (+1 = increasing coordinate). */
-export const SIDE_OUT: Record<Side, 1 | -1> = { bottom: 1, right: 1, top: -1, left: -1 };
+/** Which axis a side measures along: `h` = along x (bottom/top), `v` = along y. Derived
+ *  from the side's outward normal (D4's `SIDE_NORMAL`): a vertical normal means a
+ *  horizontal side. */
+export const SIDE_AXIS: Record<Side, "h" | "v"> = Object.fromEntries(
+  SIDES.map((s) => [s, SIDE_NORMAL[s].y !== 0 ? "h" : "v"]),
+) as Record<Side, "h" | "v">;
+/** Outward direction along the side's CROSS axis (+1 = increasing coordinate) — the
+ *  normal's one non-zero component. */
+export const SIDE_OUT: Record<Side, 1 | -1> = Object.fromEntries(
+  SIDES.map((s) => [s, SIDE_NORMAL[s].x + SIDE_NORMAL[s].y]),
+) as Record<Side, 1 | -1>;
 
 /**
  * Where one facade's chains live: the axis they measure along, the outer-face
@@ -461,10 +468,7 @@ export function unchainedOpenings(ir: ResolvedPlan): UnchainedOpening[] {
       if (!seg) continue;
       const reach = op.width / 2 + seg.thickness / 2 + TICK_TOL;
       if (handEnds.some((p) => Math.hypot(p.x - op.at.x, p.y - op.at.y) <= reach)) continue;
-      const n = normal(segmentDirAt(seg, op.at));
-      const clear = seg.thickness;
-      const sideA = { x: op.at.x + n.x * clear, y: op.at.y + n.y * clear };
-      const sideB = { x: op.at.x - n.x * clear, y: op.at.y - n.y * clear };
+      const { plus: sideA, minus: sideB } = wallFaceProbes(seg, op.at, seg.thickness);
       // Joins two DIFFERENT rooms: a connection, not a facade opening. The same room on
       // both sides is a room ring overhanging its own wall, which still leaves this
       // opening on the facade.

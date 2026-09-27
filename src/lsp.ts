@@ -19,12 +19,18 @@ import type { ParamDoc, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
 import { lex, type Token } from "./lexer.js";
 import { parse } from "./parser.js";
-import { eachExpr, eachStatement } from "./cursor.js";
+import { eachExpr, eachStatement, statementBodies } from "./cursor.js";
 import { resolvePlan } from "./analyze.js";
 import { diagnosticToJson, type DiagnosticJson } from "./diagnostic-json.js";
 import { rankFixes } from "./fix-apply.js";
 import { canonicalFixture, FIXTURE_CATEGORIES, hasFixtureGlyph } from "./elements/fixtures-glyphs.js";
 import { defaultFootprint, fixtureSpec } from "./fixtures-catalog.js";
+// `rerollInRange`, not the public `reroll`: it filters candidate runs to those
+// touching the request's range BEFORE proving any of them — see its own doc
+// comment in reroll.ts. `refactorActions` is called on selection changes, so
+// proving a candidate the request doesn't even overlap would be wasted work
+// on a large plan (library.arch, museum.arch).
+import { rerollInRange, type RerollOptions } from "./reroll.js";
 
 // ---- keyword catalog (one place; T5.4 will source this from grammar/tokens) ----
 
@@ -142,21 +148,14 @@ function collectBindings(plan: PlanNode, tokens: Token[]): Binding[] {
         const nameSpan = findNameSpan(tokens, s.span!.start, s.varName);
         if (nameSpan)
           out.push({ name: s.varName, nameSpan, kind: "loopvar", detail: `for ${s.varName} in …`, scope: s.span });
-        visit(s.body, s.span);
-      } else if (s.kind === "if") {
-        visit(s.then, s.span);
-        if (s.else) visit(s.else, s.span);
-      } else if (s.kind === "while") {
-        visit(s.body, s.span);
-      } else if (s.kind === "level") {
-        // A storey's body binds like any block body (its `let`s are level-local).
-        visit(s.body, s.span);
-      } else if (s.kind === "zone") {
-        // A zone is NOT a scope (see `expandScope`): a `let` inside one is visible after
-        // the closing brace exactly as if it were not written, so its bindings are
-        // collected with no `scope` span narrowing them.
-        visit(s.body, undefined);
       }
+      // Every block kind recurses through the one shared `statementBodies` (`cursor.ts`):
+      // `if`'s `then`/`else` and `for`/`while`/`level`'s single body all inherit THIS
+      // statement's span as their scope — except `zone`, which is NOT a scope (see
+      // `expandScope`): a `let` inside one is visible after the closing brace exactly as
+      // if it were not written, so its bindings are collected with no `scope` narrowing.
+      const childScope = s.kind === "zone" ? undefined : s.span;
+      for (const body of statementBodies(s)) visit(body, childScope);
     }
   };
   visit(plan.body, undefined);
@@ -537,6 +536,38 @@ export function codeActions(source: string, range: Span): CodeAction[] {
   const machine = built.filter((b) => b.machine);
   if (machine.length === 1) machine[0]!.action.isPreferred = true;
   return built.map((b) => b.action);
+}
+
+// ---- refactor actions (re-roll) ----
+
+/**
+ * An editor refactor derived from a `reroll` suggestion: a titled bundle of
+ * {@link TextEdit}s that rewrites a run of statements in arithmetic progression as one
+ * proven-equivalent `for` loop. Structurally what an LSP `CodeAction` of kind
+ * `refactor.rewrite` needs. It carries no diagnostic — nothing is WRONG with the source
+ * it offers to restructure (ADR 0005) — so it is never preferred and is a separate type
+ * from the diagnostic-bound {@link CodeAction}.
+ */
+export interface RefactorAction {
+  title: string;
+  kind: "refactor.rewrite";
+  edits: TextEdit[];
+}
+
+/**
+ * Refactor actions touching `range`: one `refactor.rewrite` per `reroll`
+ * suggestion whose span touches it. Pure and synchronous. Candidates are filtered to
+ * `range` BEFORE any of them is proven (`rerollInRange`), since the proof — compiling,
+ * describing and linting each candidate's twin — is the expensive part and an editor
+ * asks on selection changes. `opts.world`/`opts.plugins` are threaded through as
+ * `reroll` takes them. `[]` on a plan that fails to parse or carries any error.
+ */
+export function refactorActions(source: string, range: Span, opts: RerollOptions = {}): RefactorAction[] {
+  return rerollInRange(source, range, opts).map((s) => ({
+    title: `Re-roll ${s.count} statements into a \`for\` loop`,
+    kind: "refactor.rewrite",
+    edits: [{ span: s.span, newText: s.replacement }],
+  }));
 }
 
 /** Signature help for an enclosing `callee(…)` at `offset`, or null. */

@@ -14,7 +14,8 @@ source (.arch)
   └─ src/view/           toIso(): the axonometric, a sibling of toScene producing the same Scene
   └─ src/backends/       svg (default) · png (optional resvg) · ascii · error-svg
   └─ src/export/         dxf · pdf (optional pdfkit)
-  └─ src/index.ts        compile() orchestrates; the only public surface
+  └─ src/pipeline.ts     compileUncached(): the one parse→link→resolve→render pipeline
+  └─ src/index.ts        compile() wraps it with the memo cache; the only public surface
 ```
 
 ## Conventions
@@ -64,9 +65,28 @@ source (.arch)
 - `sheet.ts`, `axes.ts`, `sheet-tables.ts` paper, axis grid, margin tables
 - `label-placement.ts` moves room labels off obstacles, after walls and dims · `text-metrics.ts`
   the single text-width estimate
-- `frame.ts` the `place` transform (signed-permutation matrix, no trig)
+- `frame.ts` the `place` transform (signed-permutation matrix, no trig); each element carries
+  itself across through `ElementDef.transform` (a `TransformCtx` facade), and a plugin kind
+  without one is refused inside a `place` (`E_INSTANCE_NO_TRANSFORM`), never thrown
+- `algebra/` domain-free leaf layer (value imports only from inside the folder,
+  `test/algebra-leaf.test.ts`): `d4.ts` is the one encoding of the four directions — the
+  group D4 in normal form `R^k·Fx^f` and its actions on sides, compass letters and
+  quarter-turns; `semiring.ts` states BOOLEAN/MIN_PLUS/MAX_MIN/lexicographic path algebra;
+  `paths.ts` is the one label-setting best-path engine over any of them
+  (`docs/adr/0020-algebraic-core.md`)
+- `statement-print.ts` the one printer for a leaf statement, shared by `format.ts`, an
+  element's own `resolve()` fix text and Plan JSON's decompiler
+- `analyze/symmetry.ts` a plan's D4 ⋉ Z² stabiliser and its repeats · `analyze/syntax.ts`
+  space-syntax depths/RA/RRA/integration on the access graph — both opt-in `describe --facts`
+- `while-deprecation.ts` the `W_WHILE_DEPRECATED`/`W_REASSIGN_DEPRECATED` advisory warnings ·
+  `while-fix.ts` the proven `while`→`for` rewrite `arch fix` offers, kept out of `compile()`
+  itself on purpose (see its header) · `reroll.ts` the proven re-roll of a run in arithmetic
+  progression into a `for` loop (`arch reroll`, `reroll()`, the LSP's `refactorActions`)
 - `plan-json.ts` Plan JSON · `diagnostic-json.ts` · `repair.ts` (geometric corrector) vs
   `fix-apply.ts` (`arch fix`; skips a fix carrying `file`) · `manifest.ts` the CLI contract
+- `pipeline.ts` the ONE `compileUncached()` (parse→link→resolve→render), extracted verbatim from
+  `index.ts` so `compile()`'s memo-cache wrapper and `reroll.ts`'s twin-compile proof obligation
+  call the same function and can never drift apart
 
 ## Layout
 

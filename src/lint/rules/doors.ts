@@ -4,6 +4,7 @@
  * too little wall at a corner — in that (pinned) order via `rules/index.ts`.
  */
 
+import { det } from "../../algebra/d4.js";
 import { rectOf } from "../../analyze.js";
 import type { Point } from "../../ast.js";
 import type { Diagnostic } from "../../diagnostics.js";
@@ -29,7 +30,7 @@ import { approachGapMm, distPointToRect, mm, shortfall } from "../measure.js";
  */
 export const swingObstructed: LintRule = {
   name: "swing-obstructed",
-  check({ doors, furniture, rules, at }: LintContext): Diagnostic[] {
+  check({ doors, furniture, rules, at, frameOf }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
     const swings: Array<{ d: RDoor; s: DoorSwing }> = [];
     for (const d of doors) {
@@ -77,6 +78,10 @@ export const swingObstructed: LintRule = {
         !furniture.some((f) => sectorIntersectsRect(alt, rectOf(f), clr)) &&
         swings.every((o) => o.d === d || !swingsCollide(alt, o.s, clr));
       const narrowTo = Math.max(0, Math.floor(cause.widest));
+      // The swing as WRITTEN: `door.transform` flips `swing` under a reflecting frame, so a
+      // mirrored instance's plan-space swing is the opposite of its source clause.
+      const g = frameOf(d);
+      const writtenSwing = g !== null && det(g) < 0 ? (d.swing === "in" ? "out" : "in") : d.swing;
       out.push({
         severity: "warning",
         code: "W_SWING_OBSTRUCTED",
@@ -84,7 +89,7 @@ export const swingObstructed: LintRule = {
         message: `Door swing is obstructed — ${cause.text}.`,
         hints: [
           `Hang the leaf on the other jamb — \`hinge ${flipped}\`${flipClears ? " (this clears it)" : ""}.`,
-          `Open it to the other side of the wall — \`swing ${d.swing === "in" ? "out" : "in"}\`.`,
+          `Open it to the other side of the wall — \`swing ${writtenSwing === "in" ? "out" : "in"}\`.`,
           `Move the door along its wall (\`on <wall> at <pos>\`), or the obstruction — \`arch repair\` computes the smallest clearing shift.`,
           narrowTo >= min
             ? `Narrow the door to ${mm(narrowTo)} mm or less, which still clears the ${min} mm minimum.`

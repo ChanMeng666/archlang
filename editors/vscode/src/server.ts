@@ -72,7 +72,11 @@ connection.onRenameRequest((p) =>
   withDoc(p.textDocument.uri, null, (h, t) => h.rename(t, p.textDocument.uri, p.position, p.newName)),
 );
 
-connection.onCodeAction((p) => withDoc(p.textDocument.uri, [], (h, t) => h.codeAction(t, p.textDocument.uri, p.range)));
+connection.onCodeAction((p) =>
+  withDoc(p.textDocument.uri, [], (h, t) =>
+    h.codeAction(t, p.textDocument.uri, p.range, p.context.only, p.context.triggerKind),
+  ),
+);
 
 connection.onSignatureHelp((p) => withDoc(p.textDocument.uri, null, (h, t) => h.signatureHelp(t, p.position)));
 

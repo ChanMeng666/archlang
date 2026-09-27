@@ -648,10 +648,12 @@ ${elementLines}
 
 ## Scripting (all expand-time, deterministic)
 
-- \`let NAME = expr\` — bind a constant. \`NAME = expr\` — reassign an existing binding.
+- \`let NAME = expr\` — bind a constant. \`NAME = expr\` — reassign an existing binding
+  (**deprecated**: \`W_REASSIGN_DEPRECATED\`; bind a new name instead).
 - \`let f(a, b) = expr\` — a pure value-function. Built-ins: \`${BUILTIN_NAMES.join(" ")}\`.
 - \`for i in lo..hi { … }\` — loop over a half-open integer range (\`0..3\` → 0,1,2).
-- \`if cond { … } else { … }\` · \`while cond { … }\`.
+- \`if cond { … } else { … }\` · \`while cond { … }\` (**deprecated**: \`W_WHILE_DEPRECATED\`;
+  use \`for\` instead).
 - \`set <element>(attr: value)\` — scoped default for following elements (e.g. \`set door(swing: out)\`).
 - Arrays: \`[a, b, c]\`, indexed \`arr[i]\`. Operators: \`+ - * / %\`, \`== != < > <= >=\`, \`&& ||\`. Comments: \`# …\`.
 - \`import "lib/x.arch": name\` and \`component name(args) { … }\` for reuse.

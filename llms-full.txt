@@ -98,10 +98,12 @@ site { street north|south|east|west [hemisphere north|south] [boundary (x,y) (x,
 
 ## Scripting (all expand-time, deterministic)
 
-- `let NAME = expr` — bind a constant. `NAME = expr` — reassign an existing binding.
+- `let NAME = expr` — bind a constant. `NAME = expr` — reassign an existing binding
+  (**deprecated**: `W_REASSIGN_DEPRECATED`; bind a new name instead).
 - `let f(a, b) = expr` — a pure value-function. Built-ins: `min max abs sqrt floor ceil round len str`.
 - `for i in lo..hi { … }` — loop over a half-open integer range (`0..3` → 0,1,2).
-- `if cond { … } else { … }` · `while cond { … }`.
+- `if cond { … } else { … }` · `while cond { … }` (**deprecated**: `W_WHILE_DEPRECATED`;
+  use `for` instead).
 - `set <element>(attr: value)` — scoped default for following elements (e.g. `set door(swing: out)`).
 - Arrays: `[a, b, c]`, indexed `arr[i]`. Operators: `+ - * / %`, `== != < > <= >=`, `&& ||`. Comments: `# …`.
 - `import "lib/x.arch": name` and `component name(args) { … }` for reuse.
@@ -134,6 +136,7 @@ arch complete  # completion items in scope at a source byte offset (the LSP comp
 arch fmt       # canonical formatting
 arch repair    # explicit source-to-source corrector (furniture out of walls) + change log
 arch fix       # apply the machine-applicable fix suggestions on a plan's diagnostics (bounded fixpoint)
+arch reroll    # offer a proven-equivalent `for` loop for a repeated statement run
 arch suggest   # advisory topology suggestions as data (door/window statements that resolve reachability/window faults)
 arch manifest  # this document: the whole CLI API as structured data
 arch spec      # print the one-prompt language spec (spec.llm.md)
@@ -646,7 +649,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 
 **`arch describe`** — semantic facts: rooms, areas, adjacency, what doors connect
   - input: <file.arch|-> → output: facts (JSON or a summary), narrowed by --room/--zone/--select/--level
-  - flags: `--room <id[,id…]>` keep only these rooms; doors/windows/openings/furniture narrow to the ones touching them (plan-level facts — bbox, totals, caption — stay whole-plan) · `--zone <path[,path…]>` keep only the rooms declared in these `zone` blocks (nested zones roll up; paths are dotted, e.g. west.galleries) — a DISPLAY filter: `ok` and the exit code still weigh the whole plan · `--select <key[,key…]>` emit only these top-level keys of the --json object (rooms, doors, totals, access, circulation, freedom, …); the ok/plan/units/diagnostics envelope is always kept · `--level <n>` report this storey of a multi-storey plan as the top-level facts (a DISPLAY filter — `ok` and the exit code still weigh the whole plan) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+  - flags: `--room <id[,id…]>` keep only these rooms; doors/windows/openings/furniture narrow to the ones touching them (plan-level facts — bbox, totals, caption — stay whole-plan) · `--zone <path[,path…]>` keep only the rooms declared in these `zone` blocks (nested zones roll up; paths are dotted, e.g. west.galleries) — a DISPLAY filter: `ok` and the exit code still weigh the whole plan · `--select <key[,key…]>` emit only these top-level keys of the --json object (rooms, doors, totals, access, circulation, freedom, …); the ok/plan/units/diagnostics envelope is always kept · `--level <n>` report this storey of a multi-storey plan as the top-level facts (a DISPLAY filter — `ok` and the exit code still weigh the whole plan) · `--facts <symmetry|syntax[,…]>` also compute these opt-in facts: `symmetry` (the plan's symmetry group per layer — shell, rooms, full — and its repeated rooms) and `syntax` (space-syntax depth, mean depth, RA, integration and control on the access graph); absent by default · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `arch describe plan.arch --json` — rooms, areas, adjacency, door connections, caption, freedom — confirm the plan means what you intended
 
 **`arch score`** — continuous intent satisfaction (satisfied/total) as data — the refine-loop reward. Measures, never gates (validate --intent is the gate).
@@ -684,6 +687,11 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
   - flags: `--out|-o <file|->` output file for the fixed source, or '-' for stdout (default: rewrite the input file in place) · `--unsafe` also apply `maybe-incorrect` fixes (default: machine-applicable only) · `--dry-run` compute the result but do not write it (the diff preview still prints) · `--backup` before rewriting a file in place, save the original bytes to <file>.bak · `--force` keep a pass even if it raises the error count · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `arch fix plan.arch --dry-run` — preview the exact unified diff `fix` would write, changing nothing on disk
 
+**`arch reroll`** — offer a proven-equivalent `for` loop for a repeated statement run
+  - input: <file.arch|-> → output: suggestions (JSON or a summary), or the rewritten file with --write
+  - flags: `--write` apply every non-overlapping suggestion and re-verify the combined result's compiled SVG is byte-identical to the original before writing (no --dry-run/--backup: a failed re-verify writes nothing, and every suggestion is already proven byte-for-byte before it is offered) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+  - example: `arch reroll plan.arch --json` — each candidate run as { span, replacement, count, loopVar, tokensBefore, tokensAfter }
+
 **`arch suggest`** — advisory topology suggestions as data (door/window statements that resolve reachability/window faults)
   - input: <file.arch|-> → output: suggestions (JSON or a summary)
   - flags: `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
@@ -719,7 +727,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `arch explain <CODE>`.
-**92 errors** (abort rendering) · **50 warnings** (advisory; `validate --strict` fails on them too).
+**94 errors** (abort rendering) · **52 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -756,6 +764,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `E_IMPORT_NOT_FOUND` — Import path could not be resolved. **Fix:** Check the path (relative to the importing file) and that the file exists.
 - `E_IMPORT_PARSE` — Imported module has a parse error. **Fix:** Fix the syntax error in the imported module.
 - `E_INDEX` — Array index out of range. **Fix:** Clamp or check the index against `len(arr)`.
+- `E_INSTANCE_NO_TRANSFORM` — A plugin element inside a `place`d component has no `transform()`. **Fix:** Give the plugin's `ElementDef` a `transform(el, t)` that maps its geometry with the `TransformCtx` it is handed (`t.point`, `t.rect`, `t.side`, `t.id`, …) — or write the element at plan level instead of inside the component.
 - `E_INTENT_NO_DOOR` — The plan has no modeled entrance, so `reachable` cannot hold. **Fix:** Add an exterior entrance `door` on a perimeter wall. Advisory tier: reported and scored by `validateIntent` but does NOT fail `ok` (gate: false).
 - `E_INTENT_NO_SITE` — An intent asserts a SYMBOLIC window facing against a plan with no `site`. **Fix:** Declare `site { street … }` in the plan (that is what gives the derived names their letters), or assert a plain compass letter instead. Gating tier: this failure fails `validateIntent`'s `ok` — it is a refusal, never a silent pass and never a silent miss.
 - `E_INTENT_NO_WINDOW` — A room the brief wants a window in has too few. **Fix:** Add a `window` on one of that room's walls. Gating tier: this failure DOES fail `validateIntent`'s `ok`.
@@ -766,6 +775,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `E_INTENT_TOTAL_AREA` — The plan's total floor area is outside the brief's band. **Fix:** Grow or shrink rooms so the total lands in the band. Gating tier: this failure fails `validateIntent`'s `ok`. Assert a band only where the brief states a number.
 - `E_INTENT_UNREACHABLE` — A room cannot be reached from the entrance through modeled doors. **Fix:** Add interior doors so every room connects back to the entrance. Advisory tier: reported and scored by `validateIntent` but does NOT fail `ok` (gate: false).
 - `E_JSON_KIND` — Unknown element kind in plan JSON. **Fix:** Use one of the supported kinds: opening `kind` must be `door` | `window` | `opening`.
+- `E_JSON_MIRROR` — Plan JSON furniture is `mirror: true`, which `.arch` source cannot state. **Fix:** Keep the instance in `.arch` source (the `place … mirror x|y` that produced it), or drop `mirror` from the fixture if the unmirrored symbol is what you want.
 - `E_JSON_SCHEMA` — Plan JSON does not match the schema. **Fix:** Fix the value at the reported JSON path (the message names it, e.g. `/rooms/0/width`); express geometry as concrete numbers, and author scripting/imports in `.arch` source instead.
 - `E_LAYOUT_CYCLE` — Relational room placement forms a cycle. **Fix:** Break the cycle by giving one of the rooms absolute `at (x,y)` coordinates.
 - `E_LAYOUT_REF` — Relational placement references an unknown room. **Fix:** Reference an existing room id, or fix the typo.
@@ -850,6 +860,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `W_OUTDOOR_OVERLAPS_ROOM` — A ground surface is laid over a room's floor. **Fix:** Move or resize the surface so it sits outside the building's rooms. If the overlap is deliberate (a covered terrace drawn under a room), the two are genuinely different things and one of them is the wrong element.
 - `W_PATH_TOO_NARROW` — The walk to a room squeezes below a passable width. **Fix:** Widen the tightest door/opening on the route to at least the minimum, move the furniture pinching it, or add a second way in so the pinch is avoidable. There is no machine-applicable fix: the bottleneck is a nav-grid cell, not a named element, so nothing can be rewritten for you.
 - `W_POCKET_RUN` — A pocket door has no wall to slide into. **Fix:** Reverse the slide (`slide left` ↔ `slide right`) — a machine-applicable fix, emitted only after the reverse run is recomputed and proved to satisfy; move the door along its wall so the pocket lands on solid wall; or lengthen the wall. Narrowing the door is deliberately NOT offered as a fix: rewriting the author's stated width to satisfy a checker is the constraint-laundering pattern this project rules out, and it would also walk into `W_DOOR_CLEARANCE`.
+- `W_REASSIGN_DEPRECATED` — Reassignment (`NAME = expr`) is deprecated and will be removed in a future major version. **Fix:** Bind a new name with `let` instead of reassigning it, or express the surrounding loop as `for NAME in A..B { … }` — `arch fix` offers this on `W_WHILE_DEPRECATED` for the canonical shape, once proved against this file's own expansion (component sites need `--unsafe`).
 - `W_ROOM_DISCONNECTED` — Room has no door — it can't be entered. **Fix:** Add a `door` on one of the room's walls.
 - `W_ROOM_LABEL_OUTSIDE` — A room's explicit label anchor falls outside the room. **Fix:** Move the anchor inside the room, or drop the `at (…)` — automatic placement uses the rectangle's centre, the circle's centre, or a polygon's area centroid (falling back to the interior point furthest from any edge where a concave ring puts that centroid off its own floor), so it lands inside either way.
 - `W_ROOM_NO_CLEAR_PATH` — A room cannot be entered or crossed. **Fix:** Open up the layout: move or shrink the furniture nearest the door so there is a continuous walkable strip from each entrance into the room.
@@ -867,4 +878,5 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `W_UNKNOWN_MATERIAL` — Unknown wall material; using the default hatch. **Fix:** Use a known material (e.g. brick, concrete, insulation, tile) or omit it.
 - `W_UNKNOWN_STYLE_KEY` — Unknown style key. **Fix:** Use a valid key (e.g. fill / stroke / label, depending on the kind).
 - `W_UNKNOWN_THEME_KEY` — Unknown theme key. **Fix:** Use a known theme key (see the language reference / hover).
+- `W_WHILE_DEPRECATED` — `while` is deprecated and will be removed in a future major version. **Fix:** Rewrite the loop as `for I in A..B { … }`. `compile()` never offers this fix — only `arch fix` proves it, against THIS file's own expansion: a shape that merely LOOKS canonical, but whose body calls a component that reads or writes `I`, that never actually ran (a library compiled standalone, a dead `if` branch), or that already caps out at `while`'s 10,000-iteration limit, is left as a warning with no fix. A proven fix at plan level is `machine-applicable`; one inside a `component` is `maybe-incorrect` (needs `arch fix --unsafe`) — the proof only covers how THIS file instantiates it, and an importer may call it differently. Anything the fix declines needs a hand rewrite.
 - `W_WINDOW_OFF_WALL` — Window does not lie on any wall. **Fix:** Move the window onto a wall, or name its host with `wall <id|category>`. The diagnostic points at the nearest wall.

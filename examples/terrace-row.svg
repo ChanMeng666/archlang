@@ -278,8 +278,8 @@
 <polygon points="10300,-125 8900,-125 8900,125 10300,125" fill="none"/>
 <line x1="10300" y1="-37.5" x2="8900" y2="-37.5" stroke="#cfe0f5" stroke-width="35.92"/>
 <line x1="10300" y1="37.5" x2="8900" y2="37.5" stroke="#cfe0f5" stroke-width="35.92"/>
-<polygon points="10300,62.5 9530,62.5 9530,12.5 10300,12.5" fill="#0b3d6b" stroke="#cfe0f5" stroke-width="35.92"/>
-<polygon points="9985,-12.5 9215,-12.5 9215,-62.5 9985,-62.5" fill="#0b3d6b" stroke="#cfe0f5" stroke-width="35.92"/>
+<polygon points="10300,-12.5 9530,-12.5 9530,-62.5 10300,-62.5" fill="#0b3d6b" stroke="#cfe0f5" stroke-width="35.92"/>
+<polygon points="9985,62.5 9215,62.5 9215,12.5 9985,12.5" fill="#0b3d6b" stroke="#cfe0f5" stroke-width="35.92"/>
 <polygon points="8900,3950 8100,3950 8100,4050 8900,4050" fill="none"/>
 <line x1="8900" y1="4000" x2="8900" y2="3200" stroke="#cfe0f5" stroke-width="46.7"/>
 <path d="M 8900,3200 A 800 800 0 0 0 8100,4000" fill="none" stroke="#cfe0f5" stroke-width="35.92" stroke-dasharray="143.68 107.76"/>
@@ -306,8 +306,8 @@
 <polygon points="21700,-125 20300,-125 20300,125 21700,125" fill="none"/>
 <line x1="21700" y1="-37.5" x2="20300" y2="-37.5" stroke="#cfe0f5" stroke-width="35.92"/>
 <line x1="21700" y1="37.5" x2="20300" y2="37.5" stroke="#cfe0f5" stroke-width="35.92"/>
-<polygon points="21700,62.5 20930,62.5 20930,12.5 21700,12.5" fill="#0b3d6b" stroke="#cfe0f5" stroke-width="35.92"/>
-<polygon points="21385,-12.5 20615,-12.5 20615,-62.5 21385,-62.5" fill="#0b3d6b" stroke="#cfe0f5" stroke-width="35.92"/>
+<polygon points="21700,-12.5 20930,-12.5 20930,-62.5 21700,-62.5" fill="#0b3d6b" stroke="#cfe0f5" stroke-width="35.92"/>
+<polygon points="21385,62.5 20615,62.5 20615,12.5 21385,12.5" fill="#0b3d6b" stroke="#cfe0f5" stroke-width="35.92"/>
 <polygon points="20300,3950 19500,3950 19500,4050 20300,4050" fill="none"/>
 <line x1="20300" y1="4000" x2="20300" y2="3200" stroke="#cfe0f5" stroke-width="46.7"/>
 <path d="M 20300,3200 A 800 800 0 0 0 19500,4000" fill="none" stroke="#cfe0f5" stroke-width="35.92" stroke-dasharray="143.68 107.76"/>

@@ -39,7 +39,7 @@ import type { DoorHinge, DoorKind, DoorSlideDir, DoorSwingDir } from "./grammar/
 import { placeRelational } from "./layout.js";
 import { numberAxes } from "./axes.js";
 import type { Frame } from "./frame.js";
-import { composeFrame, makeFrame, transformElement } from "./frame.js";
+import { composeFrame, makeFrame, tryTransformElement } from "./frame.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Env, Expr, Value } from "./expr.js";
 import { asBool, asNum, asStr, closest, evalExpr, exprSpan } from "./expr.js";
@@ -51,6 +51,7 @@ import { NULL_WORLD } from "./world.js";
 import { idToken } from "./identity.js";
 import type { WallSegment } from "./geometry.js";
 import type { Arc } from "./geometry/arc.js";
+import type { Side } from "./algebra/d4.js";
 import { extendBounds, outerFaceBounds, segmentsOfWall, WallGrid } from "./geometry.js";
 import type { LevelStamp } from "./chrome-layout.js";
 import { titleRows } from "./chrome-layout.js";
@@ -331,6 +332,13 @@ export interface RDoor extends RBase {
   /** How far the panel is DRAWN open, 0–1. Present only on a non-hinged door. A
    *  drawing fact: no measured output may read it (see `E_DOOR_OPEN_RANGE`). */
   open?: number;
+  /**
+   * This door's instance frame REFLECTS (`place … mirror`). XOR-composed by `door.transform`.
+   * Read only by a `sliding` door, whose fixed panel's track is the product of `slide` and the
+   * wall's LEFT normal — a handed choice a reflection reverses while `slide` (measured along
+   * the traversal) does not. Internal; never reaches `describe()` or Plan JSON.
+   */
+  _mirror?: true;
   /** Byte span of the authored `slide` clause, or the zero-width insertion point —
    *  see {@link import("./ast.js").DoorNode.slideSpan}. Internal: never in the Scene. */
   _slideSpan?: Span;
@@ -479,6 +487,13 @@ export interface RDim extends RBase {
    * `W_DIM_OVERLAP` lint fix can re-tier the dimension. Internal; never reaches the Scene.
    */
   _offsetSpan?: Span;
+  /**
+   * This dim's instance frame REFLECTS (`place … mirror`). XOR-composed by `dim.transform`.
+   * The transform already negates `offset`, which carries the line and a non-zero offset's
+   * number; this bit is what carries a ZERO-offset call-out's number to the mirrored side.
+   * Internal; never reaches `describe()` or Plan JSON.
+   */
+  _mirror?: true;
 }
 export interface RColumn extends RBase {
   kind: "column";
@@ -495,6 +510,17 @@ export interface RStair extends RBase {
   dir: VerticalDir;
   /** Flight width across the run (mm). */
   width: number;
+  /**
+   * The footprint edge the run is entered across, in PLAN coordinates, once a `place` frame
+   * has carried it: the local tail (`tailEdge`) acted on by the frame. Absent at the root,
+   * where `tailEdge` applies its fixed page rule. Internal; never reaches `describe()`.
+   */
+  _tail?: Side;
+  /**
+   * The frame REFLECTS, so the break line's diagonals (the one handed part of the symbol)
+   * read their mirror. XOR-composed by `stair.transform`. Internal; never reaches `describe()`.
+   */
+  _mirror?: true;
 }
 
 /** A resolved lift shaft. */
@@ -502,6 +528,8 @@ export interface RElevator extends RBase {
   kind: "elevator";
   at: Point;
   size: { w: number; h: number };
+  /** The entry edge the frame carried — see {@link RStair._tail}. */
+  _tail?: Side;
 }
 
 /** A resolved escalator run. */
@@ -510,6 +538,8 @@ export interface REscalator extends RBase {
   at: Point;
   size: { w: number; h: number };
   dir: VerticalDir;
+  /** The tail edge the frame carried — see {@link RStair._tail}. */
+  _tail?: Side;
 }
 
 /**
@@ -713,6 +743,19 @@ export interface ResolvedPlan {
    * Internal: never serialized into the Scene/SVG/exports.
    */
   _heightsAuthored: boolean;
+  /**
+   * Every `while` statement that ran at least one iteration in THIS resolve, keyed by
+   * {@link whileSpanKey} (its own span, qualified by the file it was written in).
+   *
+   * The non-vacuity gate for W7's `while`→`for` machine fix (`src/while-fix.ts`): a
+   * candidate shape is proved only for a `while` this compile actually reached and
+   * entered — never one inside a component this file never instantiates (a library
+   * compiled standalone, or an unreachable branch of `place`), never one inside a dead
+   * `if` branch (which `expandScope` never visits), and never one whose own condition was
+   * false on entry (an empty loop proves nothing about the body it never ran).
+   * Internal: never serialized into the Scene/SVG/exports/Plan JSON.
+   */
+  _executedWhileSpans?: ReadonlySet<string>;
   /** Resolved elements, in source order (for rendering). */
   elements: ResolvedElement[];
   /** Resolved walls (for bounds/hosting), in source order. */
@@ -771,6 +814,25 @@ interface ExpandCtx {
   snap(v: number): number;
   /** Instance paths already taken, so `as west` twice is an error, not a silent merge. */
   seenInstances: Set<string>;
+  /**
+   * `while` statements that ran at least one iteration in THIS expansion, keyed by
+   * {@link whileSpanKey} — shared by reference across every recursive `expandScope` call
+   * in one `resolveImpl`, so it ends up recording every `while` this compile actually
+   * reached and entered, wherever it sits (plan level, a `for`/`if`/`zone` body, or a
+   * component's — including one never instantiated here, whose body is simply never
+   * visited). Read by `src/while-fix.ts`'s non-vacuity gate; never serialized (see
+   * {@link ResolvedPlan._executedWhileSpans}).
+   */
+  executedWhiles: Set<string>;
+}
+
+/** The key {@link ExpandCtx.executedWhiles} records a `while` statement under — its own
+ *  span, qualified by the file it was written in (absent = the compiled source), so two
+ *  different files' statements at coincidentally equal offsets never collide. Exported so
+ *  `src/while-fix.ts`'s non-vacuity gate computes the SAME key rather than a lookalike
+ *  (a second copy of this formatting rule is exactly how the two would silently drift). */
+export function whileSpanKey(stmt: { span?: Span }, file: string | undefined): string {
+  return `${file ?? ""}\u0000${stmt.span?.start ?? -1}\u0000${stmt.span?.end ?? -1}`;
 }
 
 /**
@@ -1017,6 +1079,7 @@ function expandScope(
               ...(comp.file !== undefined ? { file: comp.file } : { file: undefined }),
               snap: ectx.snap,
               seenInstances: ectx.seenInstances,
+              executedWhiles: ectx.executedWhiles,
             },
             // No label: the instance NAME is already the heading a reader wants, and
             // inventing one ("wing instance") would print the same text for every
@@ -1066,6 +1129,10 @@ function expandScope(
             break;
           }
           out.push(...expandScope(stmt.body, new Scope(scope), global, components, diagnostics, depth, ectx, zone));
+          // Recorded on every completed iteration, not just the first — a Set, so it
+          // costs nothing beyond the first — because this only needs to answer "did it
+          // run >= 1 time", which is exactly what reaching here at all proves.
+          ectx.executedWhiles.add(whileSpanKey(stmt, ectx.file));
         }
         break;
       }
@@ -1232,7 +1299,7 @@ function placeFrame(
     ...(stmt.span ? { span: stmt.span } : {}),
     ...(ectx.file !== undefined ? { file: ectx.file } : {}),
   });
-  return ectx.frame ? composeFrame(ectx.frame, local) : local;
+  return ectx.frame ? { ...composeFrame(ectx.frame, local), parent: ectx.frame, local } : local;
 }
 
 /**
@@ -1666,6 +1733,7 @@ function resolveImpl(
   // up holding every `zone` the plan declares — and every `place`d instance, which is
   // implicitly one — in first-declaration order.
   const zoneFrame = rootZoneFrame();
+  const executedWhiles = new Set<string>();
   const entries = expandScope(
     ast.body,
     globalScope,
@@ -1673,7 +1741,7 @@ function resolveImpl(
     ast.components,
     diagnostics,
     0,
-    { snap, seenInstances: new Set<string>() },
+    { snap, seenInstances: new Set<string>(), executedWhiles },
     zoneFrame,
   );
 
@@ -1693,22 +1761,31 @@ function resolveImpl(
   // 3. Resolve each group in registry order (walls first → openings can host against
   //    them), then transform the instance groups into plan coordinates.
   //
-  //    A `place`d instance is a CLOSED WORLD: it resolves entirely in its own local frame
-  //    against its OWN walls and rooms, and one rigid transform then carries the result
-  //    into the plan. That is what makes every derived-geometry rule (`anchor top-left`,
-  //    `against wall … side`, `swing into`, `right-of`) mean inside a rotated instance
-  //    exactly what it means when the component is authored on its own — see `frame.ts`.
-  //    The root plan resolves LAST and sees every instance's walls and rooms under their
-  //    namespaced ids, which is how `door on west.perimeter` and `furniture … in west.main`
-  //    work. The reverse does not hold, by design: a component cannot reach out of itself.
+  //    A `place`d instance is a CLOSED WORLD going out: it resolves entirely in its own
+  //    local frame, and one rigid transform then carries the result into the plan. That is
+  //    what makes every derived-geometry rule (`anchor top-left`, `against wall … side`,
+  //    `swing into`, `right-of`) mean inside a rotated instance exactly what it means when
+  //    the component is authored on its own — see `frame.ts`.
+  //
+  //    Every level reaches INTO its descendants the same way: the root plan resolves LAST
+  //    and sees every instance's walls and rooms under their namespaced ids (`door on
+  //    west.perimeter`, `furniture … in west.main`), and an instance resolves after all of
+  //    its descendants and sees theirs, carried into its own local frame and named relative
+  //    to it — exactly what its body would see compiled as the plan. So placing a plan is
+  //    associative. None reaches OUT: an instance never sees its parent's or its siblings'
+  //    elements, so a component cannot reference anything outside itself (ADR 0016 §3).
   const walls: RWall[] = [];
   const rooms2: RRoom[] = [];
   const instances: RInstance[] = [];
+  /** Entries a `place` could not carry into plan coordinates — excluded from `elements`. */
+  const dropped = new Set<Entry>();
   let activeEnv: Env = new Map();
   /** The entry being resolved — the provenance every diagnostic below inherits. */
   let activeEntry: Entry | undefined;
+  /** Where resolution diagnostics go: the plan's list, or an instance group's buffer. */
+  let diagSink: Diagnostic[] = diagnostics;
   const pushDiag = (d: Diagnostic): void => {
-    diagnostics.push(activeEntry ? stampProvenance(d, activeEntry.frame, activeEntry.file) : d);
+    diagSink.push(activeEntry ? stampProvenance(d, activeEntry.frame, activeEntry.file) : d);
   };
   const evalNum = (e: Expr): number => asNum(evalExpr(e, activeEnv, pushDiag), pushDiag, exprSpan(e));
   const evalStr = (e: Expr): string => asStr(evalExpr(e, activeEnv, pushDiag));
@@ -1767,11 +1844,9 @@ function resolveImpl(
     return hiVal;
   }
 
-  for (const grp of groups) {
-    // The root group accumulates into the plan-wide arrays (already carrying every
-    // instance's transformed walls/rooms); an instance group gets its own local pair.
-    const grpWalls: RWall[] = grp.frame ? [] : walls;
-    const grpRooms: RRoom[] = grp.frame ? [] : rooms2;
+  /** Resolve one group's entries in registry order against `grpWalls`/`grpRooms`, which
+   *  the group's own walls and rooms are appended to as they resolve. */
+  const resolveGroup = (grp: ResolveGroup, grpWalls: RWall[], grpRooms: RRoom[]): void => {
     ctx.walls = grpWalls;
     ctx.rooms = grpRooms;
     wallGrid = null;
@@ -1804,29 +1879,102 @@ function resolveImpl(
       }
     }
     activeEntry = undefined;
-    if (!grp.frame) continue;
-    instances.push({
-      name: grp.frame.prefix,
-      component: grp.frame.component,
-      at: { x: grp.frame.tx, y: grp.frame.ty },
-      rotate: grp.frame.rotate,
-      ...(grp.frame.mirror ? { mirror: grp.frame.mirror } : {}),
-    });
+  };
+
+  // 3(i). The instance groups, DEEPEST FIRST, so every descendant of a group has resolved
+  //      before the group does. Each group's effects are held in `placed` and committed
+  //      below in the original group order, so the plan-wide wall/room arrays, `instances`
+  //      and the diagnostic order are exactly what one pass in that order produces.
+  const placed = new Map<ResolveGroup, PlacedGroup>();
+  for (const grp of deepestFirst(groups)) {
+    const f = grp.frame!;
+    const buffer: Diagnostic[] = [];
+    diagSink = buffer;
+    // What this instance can reach: its descendants' walls and rooms, carried into its
+    // local frame, BEFORE its own — the order the plan-wide arrays hold instances and root
+    // in. Every search by position or category (a door hosted by position or by `wall
+    // exterior`, `against wall <category>`, a `dim` projection, a wall's height, a rail)
+    // reads this array in this order, so it breaks a tie here exactly as it breaks it at
+    // the root: the nearest-wall host is first-wins, so a coincident descendant wall wins.
+    const view = descendantView(grp, groups, placed, registry);
+    resolveGroup(grp, view.walls, view.rooms);
     // The instance's own relational placement runs HERE, in the local frame, because
     // `right-of` means the COMPONENT's right — resolving it after the transform would
-    // read the page's right instead (ADR 0004 arithmetic, one frame at a time).
-    placeRelational(grpRooms, snapPt, (d) => diagnostics.push(stampProvenance(d, grp.frame, undefined)));
-    const f = grp.frame;
+    // read the page's right instead (ADR 0004 arithmetic, one frame at a time). A
+    // descendant's room is a reference only: it carries no `_rel` once transformed.
+    placeRelational(view.rooms, snapPt, (d) => diagSink.push(stampProvenance(d, grp.frame, undefined)));
+    const locals = grp.entries.map((e) => e.resolved!);
+    const carried: ResolvedElement[] = [];
+    // Kinds already refused in THIS instance: a component with ten plugin elements of one
+    // kind is one fact, reported once per (instance, kind).
+    const refusedKinds = new Set<string>();
     for (const e of grp.entries) {
-      const t = transformElement(f, e.resolved!);
+      const local = e.resolved!;
+      const t = tryTransformElement(f, local, registry.byKind.get(local.kind));
+      if (typeof t === "string") {
+        // A plugin kind whose `ElementDef` has no `transform()` (or a plugin replacing a
+        // built-in kind whose inherited built-in `transform()` threw on the plugin's own
+        // resolved shape): the frame cannot carry it, and drawing it at its LOCAL
+        // coordinates would put it somewhere the author never wrote. So it is dropped from
+        // the drawing and reported at the `place`.
+        dropped.add(e);
+        if (!refusedKinds.has(local.kind)) {
+          refusedKinds.add(local.kind);
+          const refusal = stampProvenance(
+            {
+              severity: "error",
+              message:
+                t === "none"
+                  ? `Element kind "${local.kind}" in component "${f.component}" cannot be placed: its plugin ElementDef has no transform()`
+                  : `Element kind "${local.kind}" in component "${f.component}" cannot be placed: its plugin ElementDef has no transform(), and the built-in "${local.kind}" transform() it inherits could not read the plugin's resolved shape — the plugin must define its own transform()`,
+              code: "E_INSTANCE_NO_TRANSFORM",
+              span: f.span,
+            },
+            f,
+            f.file,
+          );
+          // The primary span IS the `place` statement, so the "placed here" related span
+          // `stampProvenance` appends would only repeat it. Dropped for this code alone:
+          // every other placed diagnostic points INTO the instance and keeps its pointer out.
+          const extra = refusal.relatedSpans?.filter(
+            (r) => r.span.start !== f.span?.start || r.span.end !== f.span?.end,
+          );
+          if (extra?.length) refusal.relatedSpans = extra;
+          else delete refusal.relatedSpans;
+          diagSink.push(refusal);
+        }
+        continue;
+      }
       e.resolved = t;
+      carried.push(t);
+    }
+    placed.set(grp, { diagnostics: buffer, local: locals, carried });
+  }
+  diagSink = diagnostics;
+
+  // 3(ii). Commit the instance groups in the original order, then resolve the root plan
+  //        against the plan-wide arrays, which by then carry every instance.
+  for (const grp of groups) {
+    const done = placed.get(grp);
+    if (!done) continue;
+    for (const d of done.diagnostics) diagnostics.push(d);
+    instances.push({
+      name: grp.frame!.prefix,
+      component: grp.frame!.component,
+      at: { x: grp.frame!.tx, y: grp.frame!.ty },
+      rotate: grp.frame!.rotate,
+      ...(grp.frame!.mirror ? { mirror: grp.frame!.mirror } : {}),
+    });
+    for (const t of done.carried) {
       if (t.kind === "wall") walls.push(t);
       else if (t.kind === "room") rooms2.push(t);
     }
   }
+  for (const grp of groups) if (!grp.frame) resolveGroup(grp, walls, rooms2);
 
-  // 3. IR element list in source order (for rendering).
-  const elements = entries.map((e) => e.resolved!);
+  // 3. IR element list in source order (for rendering), less any element a `place` could
+  //    not carry (`E_INSTANCE_NO_TRANSFORM` above).
+  const elements = entries.filter((e) => !dropped.has(e)).map((e) => e.resolved!);
 
   // 3a. Relational placement: rooms positioned with `right-of`/`below`/… get
   //     absolute coordinates here, by pure arithmetic in dependency order
@@ -1953,6 +2101,7 @@ function resolveImpl(
     storeyHeight,
     elevation: extras.elevation ?? 0,
     _heightsAuthored: extras.heightsAuthored ?? plansAuthorHeights(ast),
+    _executedWhileSpans: executedWhiles,
     elements,
     walls,
     ...(instances.length > 0 ? { instances } : {}),
@@ -2115,16 +2264,100 @@ interface ResolveGroup {
   entries: Entry[];
 }
 
+/** What resolving one instance group produced, held until the groups are committed. */
+interface PlacedGroup {
+  /** Every diagnostic the group raised, in the order it raised them. */
+  diagnostics: Diagnostic[];
+  /** Each entry's element in the instance's LOCAL frame, parallel to the group's entries. */
+  local: ResolvedElement[];
+  /** The elements carried into plan coordinates, in entry order (dropped ones absent). */
+  carried: ResolvedElement[];
+}
+
+/** How many `place`s enclose this instance's own (0 for a top-level instance). */
+function frameDepth(f: Frame): number {
+  let n = 0;
+  for (let p = f.parent; p; p = p.parent) n++;
+  return n;
+}
+
+/**
+ * The instance groups in resolution order: deepest first, ties in the original order. Every
+ * descendant of an instance is strictly deeper, so it resolves before the instance does.
+ */
+function deepestFirst(groups: readonly ResolveGroup[]): ResolveGroup[] {
+  return groups
+    .flatMap((grp, i) => (grp.frame ? [{ grp, i, depth: frameDepth(grp.frame) }] : []))
+    .sort((x, y) => y.depth - x.depth || x.i - y.i)
+    .map((x) => x.grp);
+}
+
+/**
+ * The frame that carries descendant `d`'s local coordinates into `ancestor`'s: the authored
+ * `place` frames between them, composed outermost first, with ids named relative to the
+ * ancestor (`g.c2.main` is `c2.main` in `g`). That is the frame `d` would have if the
+ * ancestor's body were compiled as the plan, by the same frame arithmetic. It is NOT the
+ * frame `d`'s elements reach the plan by: a host found on this view is carried on by the
+ * ancestor's frame, `tp(A, tp(rel, p))`, while `d`'s own wall goes through the composed
+ * frame, `tp(A∘rel, p)` — equal for integers, not always for floats (grid 0). Which is why
+ * `registerOpenings` matches a host to its wall by id, never by coordinates.
+ * `undefined` when `d` is not a descendant of `ancestor`. Walking the chain per
+ * (group, descendant) pair is quadratic in the nesting, which place depth keeps small.
+ */
+function relativeFrame(ancestor: Frame, d: Frame): Frame | undefined {
+  const chain: Frame[] = [];
+  let f: Frame | undefined = d;
+  for (; f && f !== ancestor; f = f.parent) chain.push(f);
+  if (!f || chain.length === 0) return undefined;
+  const localOf = (x: Frame): Frame => x.local ?? x;
+  let rel = localOf(chain[chain.length - 1]!);
+  for (let i = chain.length - 2; i >= 0; i--) rel = composeFrame(rel, localOf(chain[i]!));
+  return { ...rel, prefix: d.prefix.slice(ancestor.prefix.length + 1) };
+}
+
+/**
+ * The walls and rooms instance group `grp` can reach before its own: every descendant
+ * instance's, carried into `grp`'s local frame by {@link relativeFrame}, in the original
+ * group order — the order the plan-wide arrays hold instances in. Siblings and ancestors are
+ * not descendants, so they never appear (a component cannot reach out of itself).
+ */
+function descendantView(
+  grp: ResolveGroup,
+  groups: readonly ResolveGroup[],
+  placed: ReadonlyMap<ResolveGroup, PlacedGroup>,
+  registry: Registry,
+): { walls: RWall[]; rooms: RRoom[] } {
+  const walls: RWall[] = [];
+  const rooms: RRoom[] = [];
+  for (const d of groups) {
+    const done = placed.get(d);
+    if (!d.frame || !done) continue;
+    const rel = relativeFrame(grp.frame!, d.frame);
+    if (!rel) continue;
+    for (const local of done.local) {
+      if (local.kind !== "wall" && local.kind !== "room") continue;
+      const v = tryTransformElement(rel, local, registry.byKind.get(local.kind));
+      // A refusal is neither a wall nor a room: the descendant's own pass already dropped
+      // and reported it.
+      if (typeof v === "string") continue;
+      if (v.kind === "wall") walls.push(v);
+      else if (v.kind === "room") rooms.push(v);
+    }
+  }
+  return { walls, rooms };
+}
+
 /**
  * Partition the expanded entry stream by coordinate frame — one group per `place`d
  * instance (keyed on the frame OBJECT, which every entry of that instance shares), plus
  * the root plan.
  *
- * Instance groups come FIRST, in first-appearance order, and the root LAST. That ordering
- * is what lets the plan reference an instance's walls and rooms by their namespaced ids
- * (`door on west.perimeter`) while keeping the instance itself sealed. Element ORDER in
- * the drawing is untouched — `elements` is rebuilt from `entries` in source order after
- * every group has resolved — so this affects only which facts each group can see.
+ * Instance groups come FIRST, in first-appearance order, and the root LAST. That is the
+ * order the groups' effects are COMMITTED in (the plan-wide wall/room arrays, `instances`,
+ * diagnostics); the instances RESOLVE deepest first ({@link deepestFirst}) so each one can
+ * reference its descendants, and the root resolves last so it can reference every
+ * instance (`door on west.perimeter`). Element ORDER in the drawing is untouched —
+ * `elements` is rebuilt from `entries` in source order after every group has resolved.
  *
  * A plan with no `place` yields exactly one group holding every entry: the historical
  * single pass.
@@ -2200,13 +2433,25 @@ function markPlacement(r: ResolvedElement, node: AstElement, fromStrip: boolean)
   }
 }
 
-/** Each hosted door/window/opening voids its wall's solid. The host segment came
- *  from `segmentsOfWall`, so the owning wall is matched by endpoint coords. */
+/**
+ * Each hosted door/window/opening voids its wall's solid. The owning wall is found by
+ * IDENTITY: the host segment came from `segmentsOfWall`, so it carries its wall's id, and a
+ * `place` frame namespaces that id with the same `nsId` as the wall's own. Coordinates are
+ * not an identity: a host an instance found on a DESCENDANT's wall was carried by the
+ * descendant's frame and then by the instance's (`tp(P, tp(C, s))`), while the wall itself
+ * was carried by the composed frame (`tp(P∘C, s)`) — the same point by two float evaluation
+ * orders, which need not be equal when the grid is 0. Endpoint equality survives only to
+ * choose among walls that share an id (an `E_DUP_ID` plan), and as the fallback for a host
+ * whose id names no wall.
+ */
 function registerOpenings(elements: ResolvedElement[], walls: RWall[]): void {
-  const wallOfSegment = (seg: WallSegment): RWall | undefined =>
-    walls.find((w) =>
-      segmentsOfWall(w).some((s) => s.a.x === seg.a.x && s.a.y === seg.a.y && s.b.x === seg.b.x && s.b.y === seg.b.y),
-    );
+  const sameSegment = (seg: WallSegment) => (w: RWall) =>
+    segmentsOfWall(w).some((s) => s.a.x === seg.a.x && s.a.y === seg.a.y && s.b.x === seg.b.x && s.b.y === seg.b.y);
+  const wallOfSegment = (seg: WallSegment): RWall | undefined => {
+    const named = walls.filter((w) => w.id === seg.wallId);
+    if (named.length === 1) return named[0];
+    return (named.length > 1 ? named : walls).find(sameSegment(seg));
+  };
   for (const el of elements) {
     if ((el.kind === "door" || el.kind === "window" || el.kind === "opening") && el.host) {
       // `kind`/`ownerId`/`sill`/`head` are APPENDED facts: the wall lowering reads

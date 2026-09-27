@@ -19,7 +19,7 @@ import {
 } from "../ast.js";
 import type { Diagnostic, Span } from "../diagnostics.js";
 import type { Expr } from "../expr.js";
-import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { RRoom } from "../ir.js";
 import { rectCorners } from "../geometry.js";
@@ -474,6 +474,28 @@ export const room: ElementDef = {
       paint: { fill: theme.areaLabel },
     });
     return nodes;
+  },
+  /** The frame's action on a room (`frame.ts`'s `transformElement` calls this). */
+  transform(resolved, t: TransformCtx): RRoom {
+    const el = resolved as RRoom;
+    const { id } = t;
+    const r = t.rect(el.at, el.size);
+    const out: RRoom = { ...el, id, at: r.at, size: r.size };
+    // A polygon room's ring is carried through vertex by vertex — a frame is an
+    // integer isometry, so the turned/mirrored ring is EXACT (same area, same shape,
+    // no float drift) and its bbox above still bounds it. Ring ORDER is preserved,
+    // which flips the winding under a reflection; nothing downstream reads winding
+    // (area is taken absolute, containment is a crossing count).
+    if (el.poly) out.poly = el.poly.map((p) => t.point(p));
+    // A circle is invariant under an isometry apart from where its centre lands, so
+    // the radius carries over untouched and the area stays EXACTLY πR².
+    if (el.circle) out.circle = { c: t.point(el.circle.c), r: el.circle.r };
+    if (el.labelAt) out.labelAt = t.point(el.labelAt);
+    // The relational constraint is DISCHARGED by the instance's own placement pass
+    // (which ran in the local frame, where `right-of` means the component's right).
+    // Keeping it would let the plan-level pass re-place the room in global terms.
+    delete out._rel;
+    return out;
   },
 };
 

@@ -14,6 +14,7 @@ import {
   repair,
   applyFixes,
   rankFixes,
+  reroll,
   suggestTopology,
   astToJson,
   completion,
@@ -24,6 +25,9 @@ import type { Diagnostic, FixSuggestion } from "../index.js";
 // `arch ast` parses without resolving/rendering; parse() is not on the public
 // surface, so the CLI reaches for it directly (as it does resolvePlan).
 import { parse } from "../parser.js";
+// The W7 `while`→`for` fix is proved OUTSIDE `compile()` (see `src/while-fix.ts`'s
+// header) — `arch fix` is its one caller, on the public surface or not.
+import { proveWhileFixes } from "../while-fix.js";
 import {
   type Args,
   EXIT,
@@ -191,10 +195,24 @@ export async function cmdFix(args: Args): Promise<number> {
   // the architectural-soundness lint warnings (some of which now carry a machine-applicable
   // fix, e.g. W_ALIAS_MATCH). lint() is silent on an unresolvable plan, so this is exactly
   // compile's diagnostics whenever there is a fatal error.
-  const diagsOf = (src: string): Diagnostic[] => [
-    ...compile(src, { noCache: true, world }).diagnostics,
-    ...lint(src, { world }),
-  ];
+  const diagsOf = (src: string): Diagnostic[] => {
+    const compiled = compile(src, { noCache: true, world });
+    const linted = lint(src, { world });
+    const ds = [...compiled.diagnostics, ...linted];
+    // Only `arch fix` ever proves a `while`→`for` rewrite — never `compile()` itself (see
+    // `src/while-fix.ts`'s header) — so it is the one place a `W_WHILE_DEPRECATED`
+    // diagnostic gains a `fixes` array, matched back onto it by span. `compiled`/`linted`
+    // are handed straight to `proveWhileFixes` as its ORIGINAL — both were computed with
+    // this exact `src`/`world`, `noCache: true`, so it skips recomputing either itself.
+    if (!ds.some((d) => d.code === "W_WHILE_DEPRECATED" && d.file === undefined)) return ds;
+    const proven = proveWhileFixes(src, { world }, { compile: compiled, lint: linted });
+    if (proven.length === 0) return ds;
+    return ds.map((d) => {
+      if (d.code !== "W_WHILE_DEPRECATED" || !d.span) return d;
+      const p = proven.find((x) => x.span.start === d.span!.start && x.span.end === d.span!.end);
+      return p ? { ...d, fixes: [p.fix] } : d;
+    });
+  };
 
   const errorsOf = (src: string): Diagnostic[] =>
     compile(src, { noCache: true, world }).diagnostics.filter((d) => d.severity === "error");
@@ -314,6 +332,106 @@ export async function cmdFix(args: Args): Promise<number> {
     }
   }
   return ok ? EXIT.OK : EXIT.USER;
+}
+
+/** One SVG string per page of a `compile()` result (a single-storey result's
+ *  own `svg` is its one page) — the unit a byte-for-byte re-verify compares. */
+function compiledPages(source: string, world: ReturnType<typeof makeNodeWorld>): string[] | null {
+  const r = compile(source, { noCache: true, world });
+  if (r.errors.length > 0) return null;
+  return r.pages ? r.pages.map((p) => p.svg) : [r.svg];
+}
+
+/**
+ * `arch reroll` — offer a proven-equivalent `for` loop for a run of ≥3
+ * consecutive statements in arithmetic progression (Szalinski-style; see
+ * `src/reroll.ts`). Each suggestion is already twin-compiled and byte-checked
+ * in isolation before it reaches here; `--write` applies every non-overlapping
+ * one through `applyFixes` and re-verifies the COMBINED result — not just that
+ * it compiles clean, but that its compiled SVG (every page) is BYTE-IDENTICAL
+ * to the original's — before writing, belt and braces on top of the
+ * per-suggestion proof, never a substitute for it. Never rewrites silently
+ * (ADR 0005): with no `--write`, this only prints what it found.
+ *
+ * JSON shape is `{ ok, wrote, target, applied, skipped }` for `--write` (the
+ * `wrote`/`target` names match `arch fix`'s; `applied`/`skipped` are COUNTS
+ * here, not arrays — a reroll suggestion has no diagnostic code to report per
+ * item), and `{ ok, suggestions }` without it (see `docs/cli-reference.md`).
+ * Unlike `arch fix`, this has no `--dry-run` or `--backup`: every suggestion
+ * is already proven byte-for-byte equivalent before it is offered, so there
+ * is no partial/uncertain result worth previewing, and a failed re-verify
+ * writes nothing at all (the same "prove, then possibly write" shape a
+ * preview would add nothing to).
+ */
+export function cmdReroll(args: Args): number {
+  return withSource(args, (source, input) => {
+    // The fs World, like `compile` gets — so a plan with `import`s can still
+    // be proven (the proof obligation resolves the same modules `compile`
+    // would).
+    const world = makeNodeWorld(baseDirOf(input));
+    const suggestions = reroll(source, { world });
+
+    if (args.write && input !== "-") {
+      const fixes: FixSuggestion[] = suggestions.map((s) => ({
+        title: `re-roll ${s.count} statements into a \`for ${s.loopVar}\` loop`,
+        applicability: "machine-applicable",
+        edits: [{ span: s.span, newText: s.replacement }],
+      }));
+      const report = applyFixes(source, fixes, { maxApplicability: "machine-applicable" });
+      const changed = report.output !== source;
+      // Belt and braces: each suggestion's own proof already checked its edit
+      // in isolation; re-verify the COMBINED result renders BYTE-IDENTICAL SVG
+      // to the original before writing it — not merely "still compiles".
+      const beforePages = changed ? compiledPages(source, world) : null;
+      const afterPages = changed ? compiledPages(report.output, world) : null;
+      const verified =
+        !changed ||
+        (beforePages !== null &&
+          afterPages !== null &&
+          beforePages.length === afterPages.length &&
+          beforePages.every((svg, i) => svg === afterPages![i]));
+
+      if (changed && verified) {
+        try {
+          writeFileSync(resolvePath(input), report.output, "utf8");
+        } catch (e) {
+          return ioError((e as Error).message, args.json);
+        }
+      }
+
+      const wrote = changed && verified;
+      if (args.json) {
+        emitJson({
+          ok: verified,
+          wrote,
+          target: resolvePath(input),
+          applied: verified ? report.applied.length : 0,
+          skipped: report.skipped.length,
+        });
+      } else if (!args.quiet) {
+        if (!verified) process.stderr.write("  ⚠ combined result failed re-verification — nothing written\n");
+        else if (!wrote) process.stdout.write(`${input}: no reroll suggestions\n`);
+        else
+          process.stdout.write(
+            `✓ ${input} rerolled (${report.applied.length} loop${report.applied.length === 1 ? "" : "s"})\n`,
+          );
+      }
+      return verified ? EXIT.OK : EXIT.INTERNAL;
+    }
+
+    if (args.json) {
+      emitJson({ ok: true, suggestions });
+    } else if (!args.quiet) {
+      if (suggestions.length === 0) process.stdout.write("no reroll suggestions\n");
+      for (const s of suggestions) {
+        process.stdout.write(
+          `[${s.span.start},${s.span.end}) ${s.count} statements → for ${s.loopVar} ` +
+            `(tokens ${s.tokensBefore} → ${s.tokensAfter})\n${s.replacement}\n\n`,
+        );
+      }
+    }
+    return EXIT.OK;
+  });
 }
 
 /**

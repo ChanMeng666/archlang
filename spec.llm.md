@@ -75,10 +75,12 @@ site { street north|south|east|west [hemisphere north|south] [boundary (x,y) (x,
 
 ## Scripting (all expand-time, deterministic)
 
-- `let NAME = expr` — bind a constant. `NAME = expr` — reassign an existing binding.
+- `let NAME = expr` — bind a constant. `NAME = expr` — reassign an existing binding
+  (**deprecated**: `W_REASSIGN_DEPRECATED`; bind a new name instead).
 - `let f(a, b) = expr` — a pure value-function. Built-ins: `min max abs sqrt floor ceil round len str`.
 - `for i in lo..hi { … }` — loop over a half-open integer range (`0..3` → 0,1,2).
-- `if cond { … } else { … }` · `while cond { … }`.
+- `if cond { … } else { … }` · `while cond { … }` (**deprecated**: `W_WHILE_DEPRECATED`;
+  use `for` instead).
 - `set <element>(attr: value)` — scoped default for following elements (e.g. `set door(swing: out)`).
 - Arrays: `[a, b, c]`, indexed `arr[i]`. Operators: `+ - * / %`, `== != < > <= >=`, `&& ||`. Comments: `# …`.
 - `import "lib/x.arch": name` and `component name(args) { … }` for reuse.
@@ -111,6 +113,7 @@ arch complete  # completion items in scope at a source byte offset (the LSP comp
 arch fmt       # canonical formatting
 arch repair    # explicit source-to-source corrector (furniture out of walls) + change log
 arch fix       # apply the machine-applicable fix suggestions on a plan's diagnostics (bounded fixpoint)
+arch reroll    # offer a proven-equivalent `for` loop for a repeated statement run
 arch suggest   # advisory topology suggestions as data (door/window statements that resolve reachability/window faults)
 arch manifest  # this document: the whole CLI API as structured data
 arch spec      # print the one-prompt language spec (spec.llm.md)

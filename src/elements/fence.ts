@@ -45,7 +45,7 @@
 
 import type { ExprPoint, FenceNode, FenceStyle, Point } from "../ast.js";
 import { FENCE_STYLES } from "../ast.js";
-import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx } from "../registry.js";
+import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import { weightWidth } from "../scene.js";
 import type { RFence } from "../ir.js";
@@ -228,6 +228,12 @@ export const fence: ElementDef = {
       }
     }
     return nodes;
+  },
+  /** The frame's action on a fence (`frame.ts`'s `transformElement` calls this). */
+  transform(resolved, t: TransformCtx): RFence {
+    const el = resolved as RFence;
+    const { id } = t;
+    return { ...el, id, points: el.points.map((p) => t.point(p)) };
   },
 };
 
