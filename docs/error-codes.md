@@ -561,7 +561,7 @@ let x = a[5]   # error
 
 *error* — A plugin element inside a `place`d component has no `transform()`.
 
-**Cause.** A `place` carries every element of its component from the component's own frame into plan coordinates, and each element kind supplies that action as `ElementDef.transform`. A third-party element kind registered through `compile(src, { plugins })` without one cannot be turned, mirrored or moved, so the instance's copy is dropped from the drawing (never drawn at its local coordinates) and this is reported once per instance and kind, at the `place` statement.
+**Cause.** A `place` carries every element of its component from the component's own frame into plan coordinates, and each element kind supplies that action as `ElementDef.transform`. A third-party element kind registered through `compile(src, { plugins })` without one cannot be turned, mirrored or moved, so the instance's copy is dropped from the drawing (never drawn at its local coordinates) and this is reported once per instance and kind, at the `place` statement. A plugin that REPLACES a built-in kind without its own `transform()` inherits the built-in's; when that inherited action cannot read the plugin's resolved shape (its `resolve` returns a different shape from the built-in's), the element is refused the same way.
 
 **Fix.** Give the plugin's `ElementDef` a `transform(el, t)` that maps its geometry with the `TransformCtx` it is handed (`t.point`, `t.rect`, `t.side`, `t.id`, …) — or write the element at plan level instead of inside the component.
 

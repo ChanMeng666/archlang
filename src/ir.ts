@@ -1911,17 +1911,22 @@ function resolveImpl(
     for (const e of grp.entries) {
       const local = e.resolved!;
       const t = tryTransformElement(f, local, registry.byKind.get(local.kind));
-      if (!t) {
-        // A plugin kind whose `ElementDef` has no `transform()`: the frame cannot carry it,
-        // and drawing it at its LOCAL coordinates would put it somewhere the author never
-        // wrote. So it is dropped from the drawing and reported at the `place`.
+      if (typeof t === "string") {
+        // A plugin kind whose `ElementDef` has no `transform()` (or a plugin replacing a
+        // built-in kind whose inherited built-in `transform()` threw on the plugin's own
+        // resolved shape): the frame cannot carry it, and drawing it at its LOCAL
+        // coordinates would put it somewhere the author never wrote. So it is dropped from
+        // the drawing and reported at the `place`.
         dropped.add(e);
         if (!refusedKinds.has(local.kind)) {
           refusedKinds.add(local.kind);
           const refusal = stampProvenance(
             {
               severity: "error",
-              message: `Element kind "${local.kind}" in component "${f.component}" cannot be placed: its plugin ElementDef has no transform()`,
+              message:
+                t === "none"
+                  ? `Element kind "${local.kind}" in component "${f.component}" cannot be placed: its plugin ElementDef has no transform()`
+                  : `Element kind "${local.kind}" in component "${f.component}" cannot be placed: its plugin ElementDef has no transform(), and the built-in "${local.kind}" transform() it inherits could not read the plugin's resolved shape — the plugin must define its own transform()`,
               code: "E_INSTANCE_NO_TRANSFORM",
               span: f.span,
             },
@@ -2332,8 +2337,11 @@ function descendantView(
     for (const local of done.local) {
       if (local.kind !== "wall" && local.kind !== "room") continue;
       const v = tryTransformElement(rel, local, registry.byKind.get(local.kind));
-      if (v?.kind === "wall") walls.push(v);
-      else if (v?.kind === "room") rooms.push(v);
+      // A refusal is neither a wall nor a room: the descendant's own pass already dropped
+      // and reported it.
+      if (typeof v === "string") continue;
+      if (v.kind === "wall") walls.push(v);
+      else if (v.kind === "room") rooms.push(v);
     }
   }
   return { walls, rooms };
