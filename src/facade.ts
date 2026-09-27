@@ -15,10 +15,9 @@ import {
   distPointToWallSegment,
   emptyBounds,
   extendBounds,
-  normal,
-  segmentDirAt,
   segmentFaceExtremes,
   segmentsOfWall,
+  wallFaceProbes,
 } from "./geometry.js";
 import { pointInRoomBox, roomBox } from "./analyze.js";
 import type { Point } from "./ast.js";
@@ -469,10 +468,7 @@ export function unchainedOpenings(ir: ResolvedPlan): UnchainedOpening[] {
       if (!seg) continue;
       const reach = op.width / 2 + seg.thickness / 2 + TICK_TOL;
       if (handEnds.some((p) => Math.hypot(p.x - op.at.x, p.y - op.at.y) <= reach)) continue;
-      const n = normal(segmentDirAt(seg, op.at));
-      const clear = seg.thickness;
-      const sideA = { x: op.at.x + n.x * clear, y: op.at.y + n.y * clear };
-      const sideB = { x: op.at.x - n.x * clear, y: op.at.y - n.y * clear };
+      const { plus: sideA, minus: sideB } = wallFaceProbes(seg, op.at, seg.thickness);
       // Joins two DIFFERENT rooms: a connection, not a facade opening. The same room on
       // both sides is a room ring overhanging its own wall, which still leaves this
       // opening on the facade.

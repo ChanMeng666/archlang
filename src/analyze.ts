@@ -18,7 +18,7 @@ import { NULL_WORLD } from "./world.js";
 import type { Diagnostic } from "./diagnostics.js";
 import type { Point } from "./ast.js";
 import type { CompileOptions } from "./types.js";
-import { normal, segmentDirAt, segmentsOfWall, type WallLike, type WallSegment } from "./geometry.js";
+import { segmentsOfWall, wallFaceProbes, type WallLike, type WallSegment } from "./geometry.js";
 import { mergedLength, overlap1d, pointInRect, type BBox } from "./geometry/rect.js";
 import {
   collinearOverlapLength,
@@ -507,10 +507,7 @@ export function buildDoorAccessGraph(
  */
 function doorFacesBalcony(d: RDoor, rooms: readonly RRoom[], balconies: readonly ROutdoor[]): boolean {
   if (!d.host || balconies.length === 0) return false;
-  const n = normal(segmentDirAt(d.host, d.at));
-  const dist = Math.max(d.host.thickness, 1);
-  const plus: Point = { x: d.at.x + n.x * dist, y: d.at.y + n.y * dist };
-  const minus: Point = { x: d.at.x - n.x * dist, y: d.at.y - n.y * dist };
+  const { plus, minus } = wallFaceProbes(d.host, d.at, Math.max(d.host.thickness, 1));
   const onPlus = rooms.some((r) => pointInRoomBox(plus, roomBox(r)));
   const onMinus = rooms.some((r) => pointInRoomBox(minus, roomBox(r)));
   if (onPlus === onMinus) return false;

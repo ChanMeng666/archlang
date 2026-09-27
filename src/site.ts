@@ -29,7 +29,7 @@ import type { CompassWord, Hemisphere, SiteNode } from "./ast.js";
 import type { Point } from "./ast.js";
 import type { BBox, RoomBox } from "./analyze.js";
 import { pointInRoomBox } from "./analyze.js";
-import { normal, segmentDirAt } from "./geometry.js";
+import { wallFaceProbes } from "./geometry.js";
 import type { RWindow } from "./ir.js";
 import type { RenderSizes, SceneNode } from "./scene.js";
 import { weightWidth } from "./scene.js";
@@ -186,10 +186,9 @@ export function windowFacingPage(
     return dLeft <= dRight ? "W" : "E";
   }
   if (host) {
-    const n = normal(segmentDirAt(host, at));
-    const d = Math.max(host.thickness, 1);
-    const onPlus = anyRoomAt({ x: at.x + n.x * d, y: at.y + n.y * d }, rooms);
-    const onMinus = anyRoomAt({ x: at.x - n.x * d, y: at.y - n.y * d }, rooms);
+    const { n, plus, minus } = wallFaceProbes(host, at, Math.max(host.thickness, 1));
+    const onPlus = anyRoomAt(plus, rooms);
+    const onMinus = anyRoomAt(minus, rooms);
     if (onPlus !== onMinus) {
       // Outward is the side with no floor on it.
       const s = onPlus ? -1 : 1;
