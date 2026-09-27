@@ -135,20 +135,71 @@ const FIXTURES = readdirSync("test/fixtures")
   .filter((f) => f.endsWith(".arch"))
   .map((f) => `test/fixtures/${f}`);
 
-const CORPUS_SOURCES: string[] = [...EXAMPLES, ...LIB, ...FIXTURES].map((p) => readFileSync(p, "utf8"));
-const FUZZ_SOURCES: string[] = fc.sample(archPlan, { numRuns: 300, seed: 20260927 });
+// Hand-written, so the shapes below are PINNED regardless of what the shipped
+// examples/fixtures happen to contain or what `fc.sample` happens to draw: an
+// `at center` attach, a percent-EXPRESSION position, an mm-expression position, a
+// door combining `hinge near`/`swing into`/`slide`/`open`, expression/array/`if`
+// widths, and a sill-only + a head-only opening. Only parsed (never resolved), so
+// a semantically odd combination (e.g. `slide` alongside `swing into` on one door)
+// is fine — this file exercises `emitOpening`'s AST → text round trip, not
+// the resolver's kind-clause rules.
+const HAND_WRITTEN_SOURCES: string[] = [
+  `plan "hand-written coverage" {
+  units mm
+  grid 1
+  wall id=w1 exterior thickness 200 { (0,0) (4000,0) }
+  wall id=w2 exterior thickness 200 { (0,0) (0,3000) }
+  room id=r at (0,200) size 4000x3000 label "R"
+  let bay = 900
+  door id=d_center on w1 at center width 900
+  window id=w_pct on w1 at (1 + 1) * 10% width 700
+  door id=d_mm on w2 at bay * 2 + 600 width 700
+  door id=d_hn on w1 at 1200 width 900 hinge near start swing into r slide left open 0.4
+  door id=d_expr on w1 at 2000 width 800 + 100
+  door id=d_arr on w1 at 2400 width [900, 800][0]
+  door id=d_if on w1 at 2800 width if true { 900 } else { 800 }
+  window id=w_sill on w1 at 3200 width 1000 sill 600
+  window id=w_head on w1 at 3600 width 1000 head 2300
+  opening id=o_head on w2 at 1500 width 900 head 2000
+}`,
+];
 
-const ALL_OPENINGS: OpeningLikeNode[] = [...CORPUS_SOURCES, ...FUZZ_SOURCES].flatMap(openingsIn);
+const CORPUS_SOURCES: string[] = [...EXAMPLES, ...LIB, ...FIXTURES].map((p) => readFileSync(p, "utf8"));
+// 100, not 300: this and `fix-printer.test.ts` each pay their own collect-time for
+// an identical `fc.sample(archPlan, ...)` (vitest isolates test files, so a shared
+// cache module would not actually be shared) — 100 plus the corpus below is still
+// comfortably over the non-trivial-corpus floor this file asserts.
+const FUZZ_SOURCES: string[] = fc.sample(archPlan, { numRuns: 100, seed: 20260927 });
+
+const ALL_OPENINGS: OpeningLikeNode[] = [...CORPUS_SOURCES, ...HAND_WRITTEN_SOURCES, ...FUZZ_SOURCES].flatMap(
+  openingsIn,
+);
+
+// The current `EmitOpts` shape (`src/fix-producers.ts` post-MAJOR-2): `lead` is
+// structured data, not text to parse, so it is spelled out here rather than
+// imported (the real type is not exported, and re-declaring it is what lets this
+// file catch a shape drift as a type error instead of silently comparing nothing).
+interface RealEmitOpts {
+  lead?: { wall: string; pct: number };
+  width?: string;
+  hinge?: DoorHinge;
+  drop?: readonly ("hinge" | "swing" | "slide" | "open")[];
+  open?: string;
+}
+
+/** `RealEmitOpts` → `LegacyEmitOpts`: the one shape that differs is `lead`, which
+ *  the legacy printer only ever knew as pre-rendered text (`attached: true`
+ *  alongside it, since `legacyLeadText` always described an `attach`ed opening
+ *  when a lead override was given at all). */
+function toLegacyOpts(opts: RealEmitOpts): LegacyEmitOpts {
+  const { lead, ...rest } = opts;
+  return lead ? { ...rest, lead: `on ${lead.wall} at ${numStr(lead.pct)}%`, attached: true } : rest;
+}
 
 // Real `EmitOpts` combinations, grepped from every `emitOpening(...)` call site in
 // `src/fix-producers.ts` and `src/elements/door.ts`.
-const REAL_OPTS: { name: string; opts: LegacyEmitOpts; onlyDoors?: boolean }[] = [
-  // The historical real call site (`offWallFix`, pre-W4b) always passed `attached:
-  // true` alongside `lead` — `attached` no longer exists on the new `EmitOpts` (the
-  // new `applyEmitOpts` infers it from the `attach` the lead override installs), so
-  // it is harmless extra input to the NEW `emitOpening` and exactly what
-  // `legacyEmitOpening` needs to reproduce the old behaviour it is graded against.
-  { name: "offWallFix lead", opts: { lead: "on w1 at 42.5%", attached: true } },
+const REAL_OPTS: { name: string; opts: RealEmitOpts; onlyDoors?: boolean }[] = [
+  { name: "offWallFix lead", opts: { lead: { wall: "w1", pct: 42.5 } } },
   { name: "doorKindClauseFix drop hinge", opts: { drop: ["hinge"] }, onlyDoors: true },
   { name: "doorKindClauseFix drop swing", opts: { drop: ["swing"] }, onlyDoors: true },
   { name: "doorKindClauseFix drop slide", opts: { drop: ["slide"] }, onlyDoors: true },
@@ -168,15 +219,16 @@ const HEIGHTS_FREE_OPENINGS = ALL_OPENINGS.filter(
 const HEIGHTS_CARRYING_COUNT = ALL_OPENINGS.length - HEIGHTS_FREE_OPENINGS.length;
 
 describe("emitOpening === legacyEmitOpening (byte-identity, no sill/head/heights)", () => {
-  it(`ran over a non-trivial corpus (${ALL_OPENINGS.length} openings, ${CORPUS_SOURCES.length} files + ${FUZZ_SOURCES.length} fuzz seeds)`, () => {
+  it(`ran over a non-trivial corpus (${ALL_OPENINGS.length} openings, ${CORPUS_SOURCES.length} files + ${HAND_WRITTEN_SOURCES.length} hand-written + ${FUZZ_SOURCES.length} fuzz seeds)`, () => {
     expect(ALL_OPENINGS.length).toBeGreaterThan(20);
   });
 
   it("counted the heights-carrying openings excluded from the byte-identity assertion below", () => {
-    // See the report for the exact count and which files/seeds carry one — this
-    // count is a fact about today's corpus, not a law, so it is not pinned to a
-    // literal here (a corpus change should not need this test edited).
-    expect(HEIGHTS_CARRYING_COUNT).toBeGreaterThanOrEqual(0);
+    // A fact about today's corpus, not a law, so it is not pinned to a literal here
+    // (a corpus change should not need this test edited) — but it must be positive,
+    // or the corpus below has stopped exercising sill/head/heights at all and
+    // `fix-printer.test.ts`'s own law (which needs this set non-empty) is vacuous.
+    expect(HEIGHTS_CARRYING_COUNT).toBeGreaterThan(0);
   });
 
   // One `it()` per real `EmitOpts` combination, looping every heights-free opening
@@ -191,7 +243,7 @@ describe("emitOpening === legacyEmitOpening (byte-identity, no sill/head/heights
         if (onlyDoors && node.kind !== "door") continue;
         ran++;
         const got = emitOpening(node.kind, node, opts);
-        const want = legacyEmitOpening(node.kind, node, opts);
+        const want = legacyEmitOpening(node.kind, node, toLegacyOpts(opts));
         if (got !== want) {
           failures.push(`${node.kind} ${node.id ?? "<anon>"}:\n  got:  ${got}\n  want: ${want}`);
         }

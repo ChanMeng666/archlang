@@ -45,10 +45,13 @@ type OpeningLikeNode = DoorNode | WindowNode | OpeningNode;
  * for free: it never enumerates clauses itself.
  */
 interface EmitOpts {
-  /** Replacement placement clause — always `on <wall> at <pct>%` at today's call
-   *  sites (`offWallFix`); parsed into an {@link OpeningAttach} and replaces the
-   *  node's own `at`/`wall`/`attach`. Defaults to the node's own lead. */
-  lead?: string;
+  /** Replacement placement: `on <wall> at <pct>%`, built directly into an
+   *  {@link OpeningAttach} (never text to re-parse) and replacing the node's own
+   *  `at`/`wall`/`attach`. Defaults to the node's own lead. `pct` is a plain
+   *  number so it prints through the same `numStr` (`t: "num"` → {@link
+   *  import("./expr-source.js").exprToSource}) path a legal `on w at p%` always
+   *  printed through, byte-for-byte. */
+  lead?: { wall: string; pct: number };
   /** Replacement width text (only `<positive-number>`, the has-placeholders form,
    *  at today's call sites); becomes a `ref` Expr, which prints its name verbatim —
    *  the same text `emitOpening` always produced for this placeholder. Defaults to
@@ -70,10 +73,6 @@ interface EmitOpts {
   open?: string;
 }
 
-/** `on <wall> at <pct>%` — the only shape {@link EmitOpts.lead} is ever given
- *  (by `offWallFix`, always a plain percentage of the just-projected point). */
-const LEAD_ATTACH_RE = /^on (\S+) at ([0-9.]+)%$/;
-
 /**
  * Apply an {@link EmitOpts} to `node` (already a deep clone — see {@link emitOpening})
  * as AST edits, so the shared printer ({@link statementText}) re-emits everything the
@@ -82,10 +81,7 @@ const LEAD_ATTACH_RE = /^on (\S+) at ([0-9.]+)%$/;
  */
 function applyEmitOpts(node: OpeningLikeNode, opts: EmitOpts): OpeningLikeNode {
   if (opts.lead !== undefined) {
-    const m = LEAD_ATTACH_RE.exec(opts.lead);
-    if (!m) throw new Error(`emitOpening: unsupported lead override "${opts.lead}"`);
-    const [, wall, pct] = m;
-    node.attach = { wall: wall!, pos: { kind: "percent", value: { t: "num", value: Number(pct) } } };
+    node.attach = { wall: opts.lead.wall, pos: { kind: "percent", value: { t: "num", value: opts.lead.pct } } };
     delete node.at;
     delete node.wall;
   }
@@ -138,6 +134,12 @@ function applyEmitOpts(node: OpeningLikeNode, opts: EmitOpts): OpeningLikeNode {
  * them, not because this function remembered to.
  */
 export function emitOpening(kind: OpeningKind, node: OpeningLikeNode, opts: EmitOpts = {}): string {
+  // Unreachable at every current call site: each one either passes a literal kind
+  // alongside a node already cast to that same element's node type (`door.ts`'s
+  // `n = node as DoorNode` paired with `"door"`, and likewise for window/opening),
+  // so `node.kind` and `kind` can never disagree in practice. Kept as a guard
+  // against a future call site that forwards a caller-supplied `kind` without the
+  // matching cast — cheap insurance, not dead code to trust blindly.
   if (node.kind !== kind) throw new Error(`emitOpening: node.kind "${node.kind}" does not match "${kind}"`);
   const clone = structuredClone(node);
   const edited = applyEmitOpts(clone, opts);
@@ -218,8 +220,7 @@ export function offWallFix(
   const near = nearestWall(walls, at);
   if (!near?.wall.id) return null;
   const { pct } = projectPointOntoWall(near.wall, at);
-  const lead = `on ${near.wall.id} at ${numStr(pct)}%`;
-  const replacement = emitOpening(kind, node, { lead });
+  const replacement = emitOpening(kind, node, { lead: { wall: near.wall.id, pct } });
   return [
     {
       title: `attach the ${kind} to wall "${near.wall.id}" at ${numStr(pct)}%`,

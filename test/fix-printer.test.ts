@@ -56,7 +56,11 @@ function allOpenings(plan: PlanNode): OpeningLikeNode[] {
 // Property: every `EmitOpts` combination a real call site uses keeps sill/head.
 // ---------------------------------------------------------------------------
 
-const FUZZ_PLANS = fc.sample(archPlan, { numRuns: 300, seed: 20260927 });
+// 100, not 300: this and `emit-opening-oracle.test.ts` each pay their own
+// collect-time for an identical `fc.sample(archPlan, ...)` (vitest isolates test
+// files, so a shared cache module would not actually be shared) — 100 is still
+// comfortably enough to keep `HEIGHTS_OPENINGS` non-empty.
+const FUZZ_PLANS = fc.sample(archPlan, { numRuns: 100, seed: 20260927 });
 const HEIGHTS_OPENINGS: OpeningLikeNode[] = FUZZ_PLANS.flatMap((src) => {
   const { plan } = parse(src);
   return plan ? allOpenings(plan) : [];
@@ -71,7 +75,10 @@ describe("emitOpening preserves every clause it was not asked to change (incl. s
   // survive every one of them, because none is meant to touch either.
   const OPS: { name: string; run: (kind: "door" | "window" | "opening", n: OpeningLikeNode) => string }[] = [
     { name: "width placeholder", run: (k, n) => emitOpening(k, n, { width: "<positive-number>" }) },
-    { name: "off-wall lead override", run: (k, n) => emitOpening(k, n, { lead: "on w1 at 33.333%" }) },
+    {
+      name: "off-wall lead override",
+      run: (k, n) => emitOpening(k, n, { lead: { wall: "w1", pct: 33.333 } }),
+    },
     {
       name: "door-kind-clause drop (hinge)",
       run: (k, n) => emitOpening(k, n, { drop: ["hinge"] }),
