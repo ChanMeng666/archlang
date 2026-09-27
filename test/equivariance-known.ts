@@ -95,6 +95,27 @@ const endpointTie = (v: Violation, c: CaseContext): boolean => {
 };
 
 /**
+ * The rooms whose measurement appears or vanishes BECAUSE an entrance into that very room
+ * seeds on one side only (see `entrance-seed-walk`): measured on the side it seeds on, not
+ * measured (sealed, or unmeasured) on the other. `null` unless EVERY room whose measurement
+ * changed is explained that way.
+ */
+export function roomsLostWithEntrance(c: CaseContext): ReadonlySet<string> | null {
+  const s = c.entranceSides();
+  const into = (ids: ReadonlyArray<{ id: string }>) =>
+    new Set(c.obs0.summary.access.edges.filter((e) => ids.some((x) => x.id === e.doorId)).flatMap((e) => e.between));
+  const measured = (o: CaseContext["obs0"]) => new Set((o.summary.circulation?.rooms ?? []).map((r) => r.roomId));
+  const m0 = measured(c.obs0);
+  const mG = measured(c.obsG);
+  const changed = [...new Set([...m0, ...mG])].filter((id) => m0.has(id) !== mG.has(id));
+  if (changed.length === 0) return null;
+  const in0 = into(s.only0);
+  const inG = into(s.onlyG);
+  const lost = changed.filter((id) => (m0.has(id) ? in0.has(id) : inG.has(id)));
+  return lost.length === changed.length ? new Set(lost) : null;
+}
+
+/**
  * A bottleneck change explained by an entrance that seeds on one side only (see
  * `entrance-seed-walk`): the wider side's value is that entrance's own clear width, and the
  * narrower side's value lies in [widest entrance seeding on both sides, widest entrance
@@ -182,6 +203,27 @@ export const KNOWN_CLASSES: Readonly<Record<ClassName, KnownClass & Partial<Rast
       // landed in a sealed pocket on one side only.
       const measured = (o: CaseContext["obs0"]) => (o.summary.circulation?.rooms.length ?? 0) > 0;
       if (measured(c.obs0) !== measured(c.obsG)) return true;
+      // An entrance INTO a room seeds on one side only, and on the other side the room is
+      // sealed (its remaining doorways' seeds are eroded): the room's measurement appears or
+      // vanishes, `blocked`/`unmeasured` follow, and every OTHER room may only move by its
+      // endpoints' ties (fuzz seed 91, cases 244 and 648: 2 in 16 000).
+      const lost = roomsLostWithEntrance(c);
+      if (lost) {
+        if (v.path === "circulation.blocked" || v.path === "circulation.unmeasured") return true;
+        if (v.path.startsWith("circulation.rooms[]") && lost.has(idOf(v.key))) return true;
+        if (v.path === "circulation.rooms[].bottleneck") return numDelta(v) <= 2 * c.cellMm;
+        if (v.path === "circulation.rooms[].walk") {
+          const a = walkOf(v, c);
+          return (
+            a !== undefined &&
+            !a.seedMoved &&
+            a.anchorTie &&
+            a.ent <= 1 &&
+            a.anchor <= 2 &&
+            Math.abs(a.delta) <= a.ent + a.anchor
+          );
+        }
+      }
       // With several entrances the bottleneck is the widest from ANY of them, so an entrance
       // whose tied seed lands in a sealed pocket on one side only drops its width out of a
       // room's bottleneck on that side. Bounded to exactly that: the wider reading IS the

@@ -348,6 +348,29 @@ const WITNESSES: Record<ClassName, [string, () => void][]> = {
         }
       },
     ],
+    [
+      "STILL seals a turned room whose own entrance seeds on one side only",
+      () => {
+        // Fuzz seed 91, case 244 (with case 648: 2 in 16 000). The 800 mm barn door `o5` into
+        // the utility room seeds in P₀; turned and mirrored its tied seed lands in the
+        // cabinets' halo, and the room's other doorway seeds into a pocket — so the room is
+        // measured on one side and sealed on the other.
+        const body = `    wall id=w_shell exterior thickness 150 { (0,0) (2100,0) (2100,5400) (0,5400) close }
+    wall id=w_h1 partition thickness 100 { (0,2600) (2100,2600) }
+    room id=r0 at (0,0) size 2100x2600 uses utility
+    room id=r1 at (0,2600) size 2100x2800 label "Bed 1"
+    opening id=o1 on w_shell at 40% width 1500
+    door id=o2 sliding on w_shell at 93% width 700
+    door id=o5 barn on w_shell at 89% width 800 slide left
+    furniture id=f1 lavatory in r0 centered size 1000x600
+    furniture id=f2 shoe_cabinet in r0 centered size 1200x700`;
+        const { ctx } = witnessCase(body, elementNamed("r90mx"), { grid: 100 });
+        expect(ctx.entranceSides().only0.map((e) => e.id)).toEqual(["g.o5"]);
+        const v = reproduce("entrance-seed-walk", body, "r90mx", "circulation.rooms[g.r0].walk", { grid: 100 });
+        expect([v.expected, v.actual]).toEqual(["1200", "<absent>"]);
+        reproduce("entrance-seed-walk", body, "r90mx", "circulation.blocked", { grid: 100 });
+      },
+    ],
   ],
   "anchor-far-tie": [
     [
