@@ -646,13 +646,46 @@ describe("transformElement — an instance's resolved element crossing into plan
     expect("rotate" in back).toBe(false);
   });
 
-  it("treats a column's `at` as its CENTRE — no corner correction, only the extents swap", () => {
+  it("carries a column's TOP-LEFT `at` as the rectangle it is — re-cornered, extents swapped", () => {
+    // This case used to assert the corner rode as a CENTRE (`tp(f, at)`), which is the
+    // `column-corner` defect (backlog E.13): `column.ts` lays the column out from `at` as
+    // its top-left, so every frame but the identity and the transposition drew it one size off.
     const f = F({ rotate: 90, at: { x: 0, y: 0 } });
     const out = transformElement(f, column()) as RColumn;
-    expect(pt(out.at)).toEqual(pt(tp(f, { x: 1000, y: 1000 })));
+    // (1000,1000) + 400×600 turned 90° clockwise: x ∈ [-1600,-1000], y ∈ [1000,1400].
+    expect(pt(out.at)).toEqual(pt({ x: -1600, y: 1000 }));
     expect(out.size).toEqual({ w: 600, h: 400 });
-    expect(transformElement(F({ rotate: 180 }), column()).kind).toBe("column");
-    expect((transformElement(F({ rotate: 180 }), column()) as RColumn).size).toEqual({ w: 400, h: 600 });
+    // Every spelling, against the footprint's own two opposite corners pushed through `tp`
+    // (not `transformRect`, which the transform itself calls): the image rectangle is their
+    // component-wise min, and its extents swap exactly when the frame swaps the axes.
+    for (const { label, f: g } of PLACEMENTS) {
+      const c = transformElement(g, column()) as RColumn;
+      const a = tp(g, { x: 1000, y: 1000 });
+      const b = tp(g, { x: 1400, y: 1600 });
+      expect({ at: pt(c.at), size: c.size }, label).toEqual({
+        at: pt({ x: Math.min(a.x, b.x), y: Math.min(a.y, b.y) }),
+        size: { w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) },
+      });
+    }
+  });
+
+  it("XOR-composes a door's and a dim's `_mirror`: two reflections cancel, one leaves it set", () => {
+    // The sliding track and a zero-offset dim's number read `_mirror`, so it must be the
+    // determinant's sign carried through composition, not "was ever reflected".
+    const sliding = (): RDoor => ({ ...door("in"), doorKind: "sliding", slide: "left", open: 0.5 });
+    for (const { label, f } of PLACEMENTS) {
+      const reflects = det(f) < 0;
+      const once = transformElement(f, sliding()) as RDoor;
+      expect(once._mirror === true, label).toBe(reflects);
+      // f then its inverse: the identity, so the door is unplaced again.
+      expect("_mirror" in (transformElement(inverse(f), once) as RDoor), label).toBe(false);
+      // f applied twice: det² = +1 whatever f is.
+      expect("_mirror" in (transformElement(f, once) as RDoor), label).toBe(false);
+      const d0 = transformElement(f, dim(0)) as RDim;
+      expect(d0._mirror === true, label).toBe(reflects);
+      expect(Object.is(d0.offset, -0), `${label}: a reflected zero offset stays +0`).toBe(false);
+      expect("_mirror" in (transformElement(inverse(f), d0) as RDim), label).toBe(false);
+    }
   });
 
   it("is exactly invertible on geometry: transforming by f then by inverse(f) restores every coordinate", () => {

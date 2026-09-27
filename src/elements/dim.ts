@@ -16,6 +16,15 @@ import { fmt2 } from "../num-format.js";
 import { DIM_TEXT_GAP, textWidth } from "../text-metrics.js";
 
 /**
+ * Does a dim's number ride the RIGHT normal of from→to? A negative offset draws the line
+ * there. A ZERO offset has no side of its own, so it takes the frame's handedness
+ * (`_mirror`): the mirror image of a call-out's number is on the other side.
+ */
+function pointsRight(dm: RDim): boolean {
+  return dm.offset < 0 || (dm.offset === 0 && dm._mirror === true);
+}
+
+/**
  * How far PAST the far station the number must be pushed, along the dimension line's own
  * direction — `0` when it fits between the two stations and stays where it always was.
  *
@@ -198,7 +207,7 @@ export const dim: ElementDef = {
           id: ctx.id,
           from,
           to,
-          offset: ctx.eval(n.offset),
+          offset: ctx.eval(n.offset) + 0,
           text: n.text !== undefined ? ctx.evalStr(n.text) : undefined,
           span: n.span,
         };
@@ -234,7 +243,8 @@ export const dim: ElementDef = {
       id: ctx.id,
       from,
       to,
-      offset: ctx.eval(n.offset),
+      // `+ 0` folds an evaluated `-0` (`offset -0`, `0 * -1`) to `0`, and is exact otherwise.
+      offset: ctx.eval(n.offset) + 0,
       // An explicit `text "…"` still wins over the derived `R…`/`φ…`.
       text: n.text !== undefined ? ctx.evalStr(n.text) : derivedText,
       span: n.span,
@@ -304,9 +314,10 @@ export const dim: ElementDef = {
     // shared mm formatter so SVG and DXF show the same value (T3.6).
     const label = dm.text ?? fmt(length(sub(dm.to, dm.from)));
     // The number rides `dimFont * 0.7` off its own line, on the side the offset points
-    // (away from the building, for an auto chain). `stagger` flips it to the other side —
-    // the GB/T remedy for a chain of narrow spans, decided per span in `scene-build.ts` and
-    // never set on a hand-written `dim`. Flipping INWARD (rather than out to a second row)
+    // (away from the building, for an auto chain, whose offsets are never negative).
+    // `stagger` flips it to the other side — the GB/T remedy for a chain of narrow spans,
+    // decided per span in `scene-build.ts` and never set on a hand-written `dim`. `W_DIM_OVERLAP`
+    // models the same side (`Band.m` in `lint/rules/dims.ts`). Flipping INWARD (rather than out to a second row)
     // is what keeps the annotation band exactly as deep as `DIM_BAND_FONTS` reserves.
     //
     // …unless the number cannot fit BETWEEN the stations at all, in which case it goes
@@ -320,9 +331,13 @@ export const dim: ElementDef = {
     // order also decides the text's reading direction (a vertical number reads bottom-to-top
     // in one order and top-to-bottom in the other).
     const push = outsideStations(dm, label, sizes.dimFont);
+    // "The side the offset points" is `sign(offset) · n`: a NEGATIVE offset draws its line on
+    // the right normal, and its number must ride outside that line too, never between the
+    // line and what it measures.
+    const side = pointsRight(dm) !== (dm.stagger === true) ? -1 : 1;
     const tp =
       push === 0
-        ? add(mid, mul(n, (dm.stagger ? -1 : 1) * sizes.dimFont * 0.7))
+        ? add(mid, mul(n, side * sizes.dimFont * 0.7))
         : add(dm.calloutFrom ? p1 : p2, mul(dir, dm.calloutFrom ? -push : push));
     nodes.push({
       layer: "dims",
@@ -343,7 +358,18 @@ export const dim: ElementDef = {
   transform(resolved, t: TransformCtx): RDim {
     const el = resolved as RDim;
     const { id, reflected } = t;
-    return { ...el, id, from: t.point(el.from), to: t.point(el.to), offset: reflected ? -el.offset : el.offset };
+    // `0 - offset`, never `-offset`: a reflected zero stays `0`, not `-0`. Its handedness
+    // rides `_mirror` (XORed, so a nested reflection composes back to the identity).
+    const out: RDim = {
+      ...el,
+      id,
+      from: t.point(el.from),
+      to: t.point(el.to),
+      offset: reflected ? 0 - el.offset : el.offset,
+    };
+    if (reflected !== (el._mirror === true)) out._mirror = true;
+    else delete out._mirror;
+    return out;
   },
 };
 

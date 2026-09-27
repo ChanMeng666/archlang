@@ -179,10 +179,13 @@ entirely — losing machine-applicability for exactly the plans that need it mos
   instance-walls-then-root-walls rather than pure source order. Element draw order is
   unaffected (it is rebuilt from the entry stream), and a plan with no `place` has exactly
   one group, so nothing about the historical path changes.
-- **Limitation, inherited.** A `stair` inside a rotated instance re-derives its UP/DN arrow
-  from the global footprint by the fixed drafting convention in `src/vertical.ts`, so a
-  90°/270° turn can flip it — the same documented v1 limitation as authoring the flight in
-  that orientation directly.
+- **Limitation, inherited — closed.** A `stair` inside a rotated instance used to re-derive
+  its UP/DN arrow from the global footprint by the fixed drafting convention in
+  `src/vertical.ts`, so a turn could flip it. Now each run's `transform` reads the tail in the
+  component's LOCAL frame and carries it (`_tail`, the edge acted on by the frame), so a
+  placed stair, escalator or lift is drawn, and entered by the nav grid, from the image of
+  its authored end; a mirrored stair's break line is mirrored too (`_mirror`). The fixed
+  convention still decides the tail at the root and inside the component.
 - **Limitation, deliberate.** Handed fixture *glyphs* are re-oriented by quarter-turn under a
   mirror rather than reflected; reflection is not a Scene primitive. For ArchLang's
   rectilinear fixture symbols the two are the same picture.

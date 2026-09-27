@@ -72,13 +72,14 @@ export const column: ElementDef = {
       },
     ];
   },
-  /** The frame's action on a column (`frame.ts`'s `transformElement` calls this). */
+  /**
+   * The frame's action on a column (`frame.ts`'s `transformElement` calls this). `at` is the
+   * TOP-LEFT (see `params`), so the rectangle is re-cornered like every other top-left box.
+   */
   transform(resolved, t: TransformCtx): RColumn {
     const el = resolved as RColumn;
     const { id } = t;
-    // `column`'s `at` is its CENTRE, so it needs no corner correction — only the
-    // cross-axis extents swap on a quarter-turn.
-    const size = t.swapsAxes ? { w: el.size.h, h: el.size.w } : el.size;
-    return { ...el, id, at: t.point(el.at), size };
+    const r = t.rect(el.at, el.size);
+    return { ...el, id, at: r.at, size: r.size };
   },
 };

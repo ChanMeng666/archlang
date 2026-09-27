@@ -489,16 +489,23 @@ export const door: ElementDef = {
     }
     return nodes;
   },
-  /** The frame's action on a door (`frame.ts`'s `transformElement` calls this). */
+  /**
+   * The frame's action on a door (`frame.ts`'s `transformElement` calls this). A reflection
+   * flips `swing` (measured off the wall normal) and records `_mirror` (XORed, as a fixture's
+   * is), which a `sliding` door's track choice reads; `hinge` and `slide` ride the traversal.
+   */
   transform(resolved, t: TransformCtx): RDoor {
     const el = resolved as RDoor;
     const { id, reflected } = t;
-    return {
+    const out: RDoor = {
       ...el,
       id,
       at: t.point(el.at),
       host: el.host ? t.segment(el.host) : null,
       swing: reflected ? (el.swing === "in" ? "out" : "in") : el.swing,
     };
+    if (reflected !== (el._mirror === true)) out._mirror = true;
+    else delete out._mirror;
+    return out;
   },
 };

@@ -26,14 +26,10 @@
  * predicates alone.
  */
 
-import type { RDoor } from "../src/ir.js";
-import { type RVertical, tailEdge } from "../src/vertical.js";
-import { type CaseContext, lin, type Violation, windowOnTie } from "./d4-oracle.js";
+import { type CaseContext, type Violation, windowOnTie } from "./d4-oracle.js";
 
 /** Every pinned class. */
 export type ClassName =
-  | "stair-tail"
-  | "stair-break-hand"
   | "facing-tie"
   | "raster-tie"
   | "entrance-seed-walk"
@@ -41,9 +37,6 @@ export type ClassName =
   | "label-point-tie"
   | "threshold-carve"
   | "float-translation"
-  | "slide-track"
-  | "column-corner"
-  | "dim-text-side"
   | "dim-tick-hand";
 
 export interface KnownClass {
@@ -140,35 +133,6 @@ function raster(self: ClassName, def: Omit<RasterClass, "covers">): RasterClass 
 const ADR_0008 = "ADR 0008 (circulation facts are coarse and grid-quantised, ties row-major)";
 
 export const KNOWN_CLASSES: Readonly<Record<ClassName, KnownClass & Partial<RasterClass>>> = {
-  "stair-tail": {
-    status: "defect",
-    law: "equivariance",
-    site: "src/vertical.ts:72,98 (footEdge/tailEdge); recorded as 'Limitation, inherited' in docs/adr/0016-component-instances-and-frames.md",
-    summary:
-      "a stair/escalator arrow's tail (and the entry edge the nav grid opens) is a fixed page rule — larger-coordinate end of the long axis — so a run turned so its tail lands elsewhere points the wrong way; ADR 0016 recorded this as inherited, and it stays a defect because it is scheduled to close",
-    // Only when g really moves the tail off the rule's edge: the image of P₀'s tail normal
-    // is not the tail gP's run is drawn from.
-    covers: (v, c) => {
-      if (!/^scene\.(stair|escalator)\[/.test(v.key)) return false;
-      const id = idOf(v.key);
-      const find = (o: CaseContext["obs0"]) =>
-        o.ir?.elements.find((e): e is RVertical => (e.kind === "stair" || e.kind === "escalator") && e.id === id);
-      const r0 = find(c.obs0);
-      const rG = find(c.obsG);
-      if (!r0 || !rG) return false;
-      const N = { top: { x: 0, y: -1 }, bottom: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
-      const img = lin(c.f, N[tailEdge(r0)]);
-      const got = N[tailEdge(rG)];
-      return img.x !== got.x || img.y !== got.y;
-    },
-  },
-  "stair-break-hand": {
-    status: "defect",
-    law: "equivariance",
-    site: "src/elements/vertical-glyphs.ts:144 (the break-line diagonals)",
-    summary: "a stair's break line is drawn with a fixed handedness and a reflected stair never reads its mirror",
-    covers: (v, c) => c.reflects && /^scene\.stair\[/.test(v.key),
-  },
   "facing-tie": {
     status: "declared",
     law: "equivariance",
@@ -290,46 +254,6 @@ export const KNOWN_CLASSES: Readonly<Record<ClassName, KnownClass & Partial<Rast
       return a?.anchorTie === true && a.ent <= 1 && Math.abs(a.delta) <= a.ent + a.anchor;
     },
   }),
-  "slide-track": {
-    status: "defect",
-    law: "equivariance",
-    site: "src/elements/door-panels.ts:135-136 (the fixed panel's track is `n * off * sd`)",
-    summary:
-      "a sliding door's fixed/moving panels pick their track from the wall's LEFT normal times `slide`, a handed product the reflection never flips, so a mirrored door swaps its panels' faces",
-    covers: (v, c) =>
-      c.reflects &&
-      /^scene\.door\[/.test(v.key) &&
-      c.obs0.ir?.elements.some(
-        (e): e is RDoor => e.kind === "door" && e.id === idOf(v.key) && e.doorKind === "sliding",
-      ) === true,
-  },
-  "column-corner": {
-    status: "defect",
-    law: "equivariance",
-    site: "src/frame.ts:393-398 (treats `column.at` as the CENTRE) vs src/elements/column.ts:20-24 (it is the TOP-LEFT)",
-    summary:
-      "the frame carries a column's `at` as a centre point, but a column's `at` is its top-left corner, so a turned or flipped column lands one size away — correct only under the identity and the transposition, which fix that corner",
-    // A misplaced column that is the drawing's outermost element also moves the extent the
-    // sheet fit is measured on — so the sheet verdicts follow, but only alongside it.
-    covers: (v, c) =>
-      !c.identityOrTransposition &&
-      (v.path === "scene.column[]" ||
-        ((v.path === "sheet" || v.path === "diagnostics.sheet") && c.paths.has("scene.column[]"))),
-  },
-  "dim-text-side": {
-    status: "defect",
-    law: "equivariance",
-    site: "src/elements/dim.ts:259-262,320 (the number rides the from→to LEFT normal, whatever the offset's sign); src/frame.ts:392 negates the offset under a reflection",
-    summary:
-      "a ROOT renderer defect: a dim's number is always drawn on the left normal, so any NEGATIVE offset puts it between the line and what it measures — with no `place` at all; a reflection negates every placed dim's offset, which is how the oracle meets it",
-    // `W_DIM_OVERLAP`'s band model puts each dim's text on +n whatever the offset's sign —
-    // the same convention, measured instead of drawn — so under a reflection a pair of
-    // opposite-normal dims collides differently (a different bump, or no warning at all).
-    // Each offered fix still clears its own warning; this is the text side, not the pullback.
-    covers: (v, c) =>
-      c.reflects &&
-      (v.path === "scene.dim[].text" || v.path === "lint.dim-overlap" || v.path === "lint.dim-overlap.fixes"),
-  },
   "dim-tick-hand": {
     status: "declared",
     law: "equivariance",
@@ -358,8 +282,6 @@ export interface KnownViolation {
 
 /** What closes each class — one sentence, shared by its rows. */
 const CLOSES: Readonly<Record<ClassName, string>> = {
-  "stair-tail": "carry the tail edge through the frame (or an authored `entry <edge>`)",
-  "stair-break-hand": "mirror the break line when the frame reflects (a `_mirror` flag, as fixtures carry)",
   "facing-tie": "never — declared convention (src/site.ts); the pin moves only if the tie rule does",
   "raster-tie": "break nav-grid endpoint ties by a D4-symmetric rule (or measure every tied endpoint)",
   "entrance-seed-walk": "seed the entrance symmetrically across its lattice line (both sides, nearest free)",
@@ -367,9 +289,6 @@ const CLOSES: Readonly<Record<ClassName, string>> = {
   "label-point-tie": "a D4-symmetric tie-break in polygonLabelPoint (or measure to every tied arm)",
   "threshold-carve": "try threshold points on BOTH sides of a lattice line (a symmetric seed set)",
   "float-translation": "sample the nav grid in coordinates relative to its own origin",
-  "slide-track": "flip the track choice with the frame's determinant (as `swing` is)",
-  "column-corner": "carry a column through `transformRect`, like every other top-left rectangle",
-  "dim-text-side": "draw the number on the side the offset points, `sign(offset) · n`",
   "dim-tick-hand": "never — declared drafting convention; the pin moves only if the tick convention does",
 };
 
@@ -402,38 +321,6 @@ export const KNOWN: readonly KnownViolation[] = [
 
   // ---- T3: the scene --------------------------------------------------------------------
   {
-    where: "museum.arch",
-    g: ["r90", "r180", "mx", "r90mx"],
-    path: "scene.column[]",
-    cls: "column-corner",
-    why: "every gallery column is carried as a centre and lands one column-size off",
-    closesWith: CLOSES["column-corner"],
-  },
-  {
-    where: "transit-hall.arch",
-    g: ["r90", "r180", "r270", "mx", "r90mx", "r180mx"],
-    path: "scene.column[]",
-    cls: "column-corner",
-    why: "every platform column is carried as a centre and lands one column-size off (r270mx, the transposition, is right)",
-    closesWith: CLOSES["column-corner"],
-  },
-  {
-    where: DIM_EXAMPLES_2,
-    g: DIM_REFLECTED_2,
-    path: "scene.dim[].text",
-    cls: "dim-text-side",
-    why: "each hand-written dim's number lands between its line and what it measures once the reflection negates its offset",
-    closesWith: CLOSES["dim-text-side"],
-  },
-  {
-    where: DIM_EXAMPLES_4,
-    g: DIM_REFLECTED_4,
-    path: "scene.dim[].text",
-    cls: "dim-text-side",
-    why: "each hand-written dim's number lands between its line and what it measures once the reflection negates its offset",
-    closesWith: CLOSES["dim-text-side"],
-  },
-  {
     where: DIM_EXAMPLES_2,
     g: DIM_REFLECTED_2,
     path: "scene.dim[].ticks",
@@ -448,35 +335,9 @@ export const KNOWN: readonly KnownViolation[] = [
     cls: "dim-tick-hand",
     why: "each dim's 45° station ticks are drawn along dir + n, a fixed page slash; the mirror image is the other diagonal (a drafting convention, like a hatch angle)",
     closesWith: CLOSES["dim-tick-hand"],
-  },
-  {
-    where: ["bungalow.arch", "laneway-house.arch", "materials.arch", "terrace-row.arch"],
-    g: ["mx", "r90mx"],
-    path: "scene.door[]",
-    cls: "slide-track",
-    why: "every `sliding` door swaps which track its fixed panel runs on",
-    closesWith: CLOSES["slide-track"],
   },
   // clinic's T3 run is observable only since nested-ref closed (backlog E.16): before, its
-  // P₀ did not resolve and T3 compared nothing. Every row below is an existing class.
-  {
-    where: "clinic.arch",
-    g: ["mx", "r90mx"],
-    path: "scene.door[]",
-    ids: ["g.d_main", "g.d_treat"],
-    cls: "slide-track",
-    why: "d_main and d_treat are the plan's two `sliding` doors; each swaps which track its fixed panel runs on (the pocket doors in the placed consult rooms have no fixed panel)",
-    closesWith: CLOSES["slide-track"],
-  },
-  {
-    where: "clinic.arch",
-    g: ["mx", "r90mx"],
-    path: "scene.dim[].text",
-    ids: ["g.dim_1"],
-    cls: "dim-text-side",
-    why: "dim_1 is `dim clear … offset 0`: with no offset to negate, its number still rides the from→to LEFT normal, which the reflection makes the other side of the line (350 mm across)",
-    closesWith: CLOSES["dim-text-side"],
-  },
+  // P₀ did not resolve and T3 compared nothing.
   {
     where: "clinic.arch",
     g: ["mx", "r90mx"],
@@ -485,38 +346,6 @@ export const KNOWN: readonly KnownViolation[] = [
     cls: "dim-tick-hand",
     why: "dim_1's 45° station ticks are drawn along dir + n, a fixed page slash; the mirror image is the other diagonal (a drafting convention, like a hatch angle)",
     closesWith: CLOSES["dim-tick-hand"],
-  },
-  {
-    where: ["courtyard-house.arch", "hexagon-pavilion.arch"],
-    g: ["mx", "r90mx", "r180mx", "r270mx"],
-    path: "scene.door[]",
-    cls: "slide-track",
-    why: "every `sliding` door swaps which track its fixed panel runs on",
-    closesWith: CLOSES["slide-track"],
-  },
-  {
-    where: "transit-hall.arch",
-    g: ["r90", "r180", "r90mx", "r180mx"],
-    path: "scene.escalator[]",
-    cls: "stair-tail",
-    why: "both escalators' arrows keep the fixed page tail where g moves it (mx, r270, r270mx happen to fix it)",
-    closesWith: CLOSES["stair-tail"],
-  },
-  {
-    where: "library.arch",
-    g: ["r90", "r180", "r90mx"],
-    path: "scene.stair[]",
-    cls: "stair-tail",
-    why: "st_main's arrow keeps the fixed page tail where g moves it",
-    closesWith: CLOSES["stair-tail"],
-  },
-  {
-    where: "library.arch",
-    g: ["mx", "r90mx"],
-    path: "scene.stair[]",
-    cls: "stair-break-hand",
-    why: "st_main's break-line diagonals keep their handedness",
-    closesWith: CLOSES["stair-break-hand"],
   },
 
   // ---- T2: the raster — one row per (example, mechanism, room set), each with its own
@@ -1010,10 +839,12 @@ export const KNOWN: readonly KnownViolation[] = [
     g: ["r90", "r90mx"],
     path: "circulation.rooms[].walk",
     ids: ["g.r_plant", "g.r_wc_m", "g.r_wc_w"],
-    maxDelta: 1100,
-    cls: "threshold-carve",
-    why: "r_plant, r_wc_m, r_wc_w: a doorway seeded across a lattice line carves on another row, beyond the endpoints' ≤1+2 steps; walk −1100 mm (11 cells)",
-    closesWith: CLOSES["threshold-carve"],
+    maxDelta: 300,
+    cls: "raster-tie",
+    // Was threshold-carve, −1100 mm: st_main's nav-grid entry edge ignored the frame, so
+    // gP's grid was not g · P₀'s. With stair-tail closed only the endpoint ties remain.
+    why: "r_plant, r_wc_m, r_wc_w: entrance moved ≤1 step, measured cell ≤2 steps (exact ties); walk +100 mm (r90), +300 mm (r90mx)",
+    closesWith: CLOSES["raster-tie"],
   },
   {
     where: "materials.arch",

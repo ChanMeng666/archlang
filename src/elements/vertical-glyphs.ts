@@ -20,7 +20,7 @@ import type { Paint, RenderSizes, SceneNode } from "../scene.js";
 import type { Theme } from "../theme.js";
 import type { RElevator, REscalator, RStair } from "../ir.js";
 import { rectCorners } from "../geometry.js";
-import { dirLabel, flightAxis, type RVertical, tailEdge } from "../vertical.js";
+import { dirLabel, runAxis, type RVertical, tailEdge } from "../vertical.js";
 
 /** Nominal going (tread depth) in mm — the spacing tread lines are drawn at. */
 export const TREAD_GOING_MM = 280;
@@ -47,7 +47,7 @@ export interface RunFrame {
 export function runFrame(v: RVertical, flightWidth: number): RunFrame {
   const { x, y } = v.at;
   const { w, h } = v.size;
-  const axis = flightAxis(v.size);
+  const axis = runAxis(v);
   const edge = tailEdge(v);
   const length = axis === "y" ? h : w;
   const cx = x + w / 2;
@@ -140,8 +140,14 @@ export function stairGlyph(s: RStair, theme: Theme, sizes: RenderSizes): SceneNo
   const gap = Math.min(step, f.length / 6);
   const over = f.width * 0.06; // the diagonals overshoot the flight edges slightly
   const band = gap / 2 + rise / 2;
+  // The cut is the symbol's one HANDED part (everything else is symmetric across the
+  // centreline), so a reflected stair (`_mirror`) negates its cross coordinate — exactly,
+  // since `half + over` is the negation of `-half - over`.
+  const lo = -half - over;
+  const hi = half + over;
+  const [c0, c1] = s._mirror ? [hi, lo] : [lo, hi];
   for (const off of [-gap / 2, gap / 2]) {
-    nodes.push(line(f.at(mid + off - rise / 2, -half - over), f.at(mid + off + rise / 2, half + over), layer, stroke));
+    nodes.push(line(f.at(mid + off - rise / 2, c0), f.at(mid + off + rise / 2, c1), layer, stroke));
   }
 
   for (let i = 1; i < n; i++) {
@@ -151,7 +157,7 @@ export function stairGlyph(s: RStair, theme: Theme, sizes: RenderSizes): SceneNo
   }
   // The flight band's own long edges, drawn only when it is narrower than the footprint
   // (otherwise they would double the footprint rectangle's own edges).
-  const cross = flightAxis(s.size) === "y" ? s.size.w : s.size.h;
+  const cross = runAxis(s) === "y" ? s.size.w : s.size.h;
   if (f.width < cross) {
     nodes.push(line(f.at(0, -half), f.at(f.length, -half), layer, stroke));
     nodes.push(line(f.at(0, half), f.at(f.length, half), layer, stroke));
@@ -176,7 +182,7 @@ export function elevatorGlyph(e: RElevator, theme: Theme, sizes: RenderSizes): S
 
 /** The escalator symbol: parallel chevrons pointing the way of travel, plus the arrow. */
 export function escalatorGlyph(e: REscalator, theme: Theme, sizes: RenderSizes): SceneNode[] {
-  const cross = flightAxis(e.size) === "y" ? e.size.w : e.size.h;
+  const cross = runAxis(e) === "y" ? e.size.w : e.size.h;
   const f = runFrame(e, cross);
   const layer = STAIR_LAYER;
   const stroke: Paint = { stroke: theme.furnitureStroke, width: sizes.thin, fill: "none" };

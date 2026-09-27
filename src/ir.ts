@@ -51,6 +51,7 @@ import { NULL_WORLD } from "./world.js";
 import { idToken } from "./identity.js";
 import type { WallSegment } from "./geometry.js";
 import type { Arc } from "./geometry/arc.js";
+import type { Side } from "./algebra/d4.js";
 import { extendBounds, outerFaceBounds, segmentsOfWall, WallGrid } from "./geometry.js";
 import type { LevelStamp } from "./chrome-layout.js";
 import { titleRows } from "./chrome-layout.js";
@@ -331,6 +332,13 @@ export interface RDoor extends RBase {
   /** How far the panel is DRAWN open, 0–1. Present only on a non-hinged door. A
    *  drawing fact: no measured output may read it (see `E_DOOR_OPEN_RANGE`). */
   open?: number;
+  /**
+   * This door's instance frame REFLECTS (`place … mirror`). XOR-composed by `door.transform`.
+   * Read only by a `sliding` door, whose fixed panel's track is the product of `slide` and the
+   * wall's LEFT normal — a handed choice a reflection reverses while `slide` (measured along
+   * the traversal) does not. Internal; never reaches `describe()` or Plan JSON.
+   */
+  _mirror?: true;
   /** Byte span of the authored `slide` clause, or the zero-width insertion point —
    *  see {@link import("./ast.js").DoorNode.slideSpan}. Internal: never in the Scene. */
   _slideSpan?: Span;
@@ -479,6 +487,13 @@ export interface RDim extends RBase {
    * `W_DIM_OVERLAP` lint fix can re-tier the dimension. Internal; never reaches the Scene.
    */
   _offsetSpan?: Span;
+  /**
+   * This dim's instance frame REFLECTS (`place … mirror`). XOR-composed by `dim.transform`.
+   * The transform already negates `offset`, which carries the line and a non-zero offset's
+   * number; this bit is what carries a ZERO-offset call-out's number to the mirrored side.
+   * Internal; never reaches `describe()` or Plan JSON.
+   */
+  _mirror?: true;
 }
 export interface RColumn extends RBase {
   kind: "column";
@@ -495,6 +510,17 @@ export interface RStair extends RBase {
   dir: VerticalDir;
   /** Flight width across the run (mm). */
   width: number;
+  /**
+   * The footprint edge the run is entered across, in PLAN coordinates, once a `place` frame
+   * has carried it: the local tail (`tailEdge`) acted on by the frame. Absent at the root,
+   * where `tailEdge` applies its fixed page rule. Internal; never reaches `describe()`.
+   */
+  _tail?: Side;
+  /**
+   * The frame REFLECTS, so the break line's diagonals (the one handed part of the symbol)
+   * read their mirror. XOR-composed by `stair.transform`. Internal; never reaches `describe()`.
+   */
+  _mirror?: true;
 }
 
 /** A resolved lift shaft. */
@@ -502,6 +528,8 @@ export interface RElevator extends RBase {
   kind: "elevator";
   at: Point;
   size: { w: number; h: number };
+  /** The entry edge the frame carried — see {@link RStair._tail}. */
+  _tail?: Side;
 }
 
 /** A resolved escalator run. */
@@ -510,6 +538,8 @@ export interface REscalator extends RBase {
   at: Point;
   size: { w: number; h: number };
   dir: VerticalDir;
+  /** The tail edge the frame carried — see {@link RStair._tail}. */
+  _tail?: Side;
 }
 
 /**
