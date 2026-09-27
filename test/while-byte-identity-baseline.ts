@@ -10,6 +10,10 @@
  * `while` or a bare reassignment, so the measurement is the same on the tree before W7
  * existed and after — proved directly, not merely argued, by an ad-hoc before/after sweep
  * against `feat/algebra` (0 files moved) as part of this change.
+ *
+ * `terrace-row` re-measured after W5b (merged in `566f2d3`; commit `54d8b18` re-measured
+ * its own goldens): mirrored units' sliding doors now take the correct track — SVG only;
+ * describe/lint/diagnostics unchanged.
  */
 export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/accessible.arch", "a8b70a680754e431524037dc3a936bba2ec7c0e2cba8df0c72a16f45e5d1e27b"],
@@ -35,7 +39,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/parametric.arch", "73a3a769c0ca490501672c1cfa894c3aa84bf03fc066c131908409e02dbb9fc7"],
   ["examples/relational.arch", "4563e746db1dbd428c1135d6cec80fff35aa21a760038a098834376e45ec17fb"],
   ["examples/studio.arch", "caff7bcd95ee0f378f3e2f764332d00002f3d9706435b4b9c9a48b4d02841f9f"],
-  ["examples/terrace-row.arch", "27f04936fd39036584bd0713588f3f1296fa8af22df14ec912cf4d2f4a0694c8"],
+  ["examples/terrace-row.arch", "775f4f24f87856302a69b21083a78bd1935c23dcf6b305939bd9ea9e2a78bb73"],
   ["examples/themed.arch", "9395b6c8962d09e72701690c14ce8e12ef7ae1c9f65a1d4827d5f9734c1fcc4c"],
   ["examples/tiny-house.arch", "f10d5672954e9cf9b48bca3c3e81d27a18c15b310971241ae82389c6ae3cd199"],
   ["examples/townhouse.arch", "371b041ee1b1d24328ddb9e8b91fc4f41c5747f91cf2b3a8cc5e262f5c3cb73f"],
