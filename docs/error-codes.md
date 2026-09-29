@@ -53,7 +53,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_INTENT_TOTAL_AREA`](#e_intent_total_area) | error | The plan's total floor area is outside the brief's band. |
 | [`E_INTENT_UNREACHABLE`](#e_intent_unreachable) | error | A room cannot be reached from the entrance through modeled doors. |
 | [`E_JSON_KIND`](#e_json_kind) | error | Unknown element kind in plan JSON. |
-| [`E_JSON_MIRROR`](#e_json_mirror) | error | Plan JSON furniture is `mirror: true`, which `.arch` source cannot state. |
+| [`E_JSON_MIRROR`](#e_json_mirror) | error | Plan JSON furniture, door or dimension is `mirror: true`, which `.arch` source cannot state. |
 | [`E_JSON_SCHEMA`](#e_json_schema) | error | Plan JSON does not match the schema. |
 | [`E_LAYOUT_CYCLE`](#e_layout_cycle) | error | Relational room placement forms a cycle. |
 | [`E_LAYOUT_REF`](#e_layout_ref) | error | Relational placement references an unknown room. |
@@ -695,11 +695,11 @@ door on wall_hall_store width 800   # connect the isolated room
 
 ## E_JSON_MIRROR
 
-*error* — Plan JSON furniture is `mirror: true`, which `.arch` source cannot state.
+*error* — Plan JSON furniture, door or dimension is `mirror: true`, which `.arch` source cannot state.
 
-**Cause.** `planToJson` reports `mirror: true` on EVERY fixture inside a reflecting `place` (`mirror x|y`, or a nested composition that reflects) — the flag records the FRAME's reflection, not the glyph's handedness, so a symmetric symbol that draws the same either way carries it too. A `place` frame is the only thing that can reflect a symbol — the grammar has no per-furniture `mirror` — so converting that payload back to source would lose the reflection (a handed family such as `desk` or `sofa_l` would draw unmirrored), and it is refused instead.
+**Cause.** `planToJson` reports `mirror: true` on EVERY fixture, door and dimension inside a reflecting `place` (`mirror x|y`, or a nested composition that reflects) — the flag records the FRAME's reflection, not the glyph's handedness, so a symmetric symbol that draws the same either way carries it too. A `place` frame is the only thing that can reflect anything — the grammar has no per-furniture, per-door or per-dimension `mirror` — so converting that payload back to source would lose the reflection (a handed family such as `desk` or `sofa_l` would draw unmirrored, a sliding door would take the other track, a zero-offset dimension's number would read on the other side), and it is refused instead.
 
-**Fix.** Keep the instance in `.arch` source (the `place … mirror x|y` that produced it), or drop `mirror` from the fixture if the unmirrored symbol is what you want.
+**Fix.** Keep the instance in `.arch` source (the `place … mirror x|y` that produced it), or drop `mirror` from the element if the unreflected drawing is what you want.
 
 ```arch static
 { "furniture": [ { "category": "desk", "x": 0, "y": 0, "width": 1400, "height": 700, "mirror": true } ] }   # error at /furniture/0/mirror
@@ -1369,7 +1369,7 @@ room at (0,0) size 3000x4000 label "Bedroom"   # lint: no window
 
 *warning* — A room is reached by a very roundabout path.
 
-**Cause.** The walking distance from the entrance to a room is many times its straight-line distance — the room is reachable but only by a circuitous route (e.g. all the way around the plan). A coarse circulation fact (ADR 0008); the default ratio is generous so a normal tucked-away room does not trip it.
+**Cause.** The walking distance to a room from its entrance — the one nearest it by walk, which the message names — is many times the straight-line distance from that same entrance: the room is reachable but only by a circuitous route (e.g. all the way around the plan). The ratio describes the walk `walkDistanceMm` reports, not the least ratio over every entrance, so a room walked from a door behind its back can trip it even when another door faces it. A coarse circulation fact (ADR 0008); the default ratio is generous so a normal tucked-away room does not trip it.
 
 **Fix.** Add a more direct connection — a door or a hall — so the room is not reached the long way round.
 

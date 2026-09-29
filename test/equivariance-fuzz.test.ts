@@ -19,30 +19,24 @@
  *
  * ## What the T2 (raster) half guarantees, and what it does not
  *
- * No class covers a raster change by PATH. Every walk change is attributed through the
- * render overlay (`attributeWalks`): where the entrance cell and the room's measured cell
- * went, whether the measured cell is an exact tie, whether the seed point itself moved. So
- * a random plan passes only when each change is one of these, and no bigger:
+ * No class covers a raster change at all. The nav grid breaks its ties D4-symmetrically
+ * (backlog E.6–E.10: an entrance on a lattice line seeds both sides, a threshold is carved
+ * on a symmetric row set, a room is measured to the equidistant cell the walk reaches first
+ * and then by a group-invariant key, and its seed point sits on the frame's dyadic lattice),
+ * so every circulation fact — each room's walk, bottleneck, detour and entrance, every key
+ * route, the sealed and unmeasured rooms — and every lint rule that reads the grid must map
+ * exactly under every element on a grid-aligned plan, and under a pure translation on any.
+ * Any raster violation is NEW.
  *
- *  - `raster-tie` — the walk moved by no more than its endpoints did, each endpoint at most
- *    one lattice step per tied axis (≤ 3 cells), with the measured/unmeasured/sealed room
- *    sets unchanged; a bottleneck by at most one clear-width quantum (2 cells);
- *  - `entrance-seed-walk` — an entrance is on a lattice line and its tied row is eroded,
- *    and the walk moved by no more than the endpoints did; or, with several entrances, one
- *    seeds on one side only and its width leaves (or joins) a room's bottleneck;
- *  - `anchor-far-tie` — the measured cell jumped more than a step to a cell EXACTLY as far
- *    from the seed point (a ring round an obstacle);
- *  - `threshold-carve` — P₀ has a doorway seeded across a lattice line, and the walk moved
- *    by MORE than its endpoints did (the grid itself differs), the room's own widest way in
- *    changed, or a room's measurement appeared, vanished or was sealed;
+ * Measured once, not assumed (a one-off run; the shipped tests below run 60, 60 and 30 draws):
+ * 4 000 cases on four fixed seeds (11, 22, 43, 91) show no raster
+ * violation, where the tree before the tie rules showed one in 1 352 of them (1 076 endpoint
+ * ties, 334 far anchor ties, 91 threshold carves, 45 entrance seeds; a case can show more
+ * than one).
  *
- * No class covers a circulation change under a translation (the grid samples in its own
- * snapped frame), nor a concave room's seed moving (it is measured over its pole orbit).
- *  - a raster lint rule only when every circulation change of the case is one of these.
- *
- * It does NOT prove a walk is right: a raster regression that happens to fit one of these
- * shapes (say, a threshold that stops carving in a plan with a doorway on a lattice line)
- * passes here and is caught only by the corpus pins, which bound each room's change.
+ * It does NOT prove a walk is right, only that the same plan turned or flipped measures the
+ * same: an equivariant regression passes here and is caught by the model-vs-truth gates
+ * (`test/circulation-hand-derived.test.ts`, `test/nav-grid-residual.test.ts`).
  *
  * ## Probabilistic
  *

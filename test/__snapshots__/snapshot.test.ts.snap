@@ -7852,8 +7852,8 @@ exports[`golden SVG snapshots > renders museum-wings.arch (two placed instances)
 <line x1="18000" y1="9600" x2="19800" y2="9600" stroke="#555555" stroke-width="23.4"/>
 <path d="M 19800,9600 A 1800 1800 0 0 1 18000,11400" fill="none" stroke="#555555" stroke-width="18" stroke-dasharray="72 54"/>
 <polygon points="23850,9600 23850,11400 24150,11400 24150,9600" fill="none"/>
-<line x1="24000" y1="11400" x2="22200" y2="11400" stroke="#555555" stroke-width="23.4"/>
-<path d="M 22200,11400 A 1800 1800 0 0 1 24000,9600" fill="none" stroke="#555555" stroke-width="18" stroke-dasharray="72 54"/>
+<line x1="24000" y1="9600" x2="22200" y2="9600" stroke="#555555" stroke-width="23.4"/>
+<path d="M 22200,9600 A 1800 1800 0 0 0 24000,11400" fill="none" stroke="#555555" stroke-width="18" stroke-dasharray="72 54"/>
 <polygon points="1800,9100 4200,9100 4200,8900 1800,8900" fill="none"/>
 <polygon points="7800,9100 10200,9100 10200,8900 7800,8900" fill="none"/>
 <polygon points="13800,9100 16200,9100 16200,8900 13800,8900" fill="none"/>

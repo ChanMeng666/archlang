@@ -161,40 +161,194 @@
  * `terrace-row`'s whole-surface row carries BOTH re-measurements above: W5b's SVG (the
  * mirrored sliding doors) and W3b's circulation. Re-measured once on the merged tree; a
  * same-tree sweep with only W3b's `src/` swapped out shows W3b moves `describe()` alone.
+ *
+ * ## `museum-wings`: whole-surface row re-measured for a source edit; the summary row holds
+ *
+ * Case (2)'s cousin, and NOT the compiler: the EXAMPLE changed. `d_east` was `hinge right`
+ * and is now `hinge left`, so the east hall door is the true mirror image of `d_west`
+ * (`east.shell` runs the opposite way, the same word hangs the leaf on the mirrored jamb),
+ * (that consistency shows in `describe --facts symmetry` only once `d_main` is removed — see
+ * `symmetry.test.ts`; with `d_main` present `full` is C1 before and after, and the symmetry
+ * output is byte-identical). Field by field, on the same compiler, before/after:
+ *
+ *   - SVG: exactly two lines move, both `d_east`'s leaf — the leaf `<line>` from
+ *     `(24000,11400)→(22200,11400)` to `(24000,9600)→(22200,9600)` and the swing arc from
+ *     `M 22200,11400 A 1800 1800 0 0 1 24000,9600` to `M 22200,9600 A 1800 1800 0 0 0
+ *     24000,11400` — the hinge jamb flips from the south jamb to the north one. 49072 → 49070
+ *     bytes (the arc's sweep flag and the coordinates' digits); nothing else in the drawing.
+ *   - `describe()`: byte-identical (a door's hinge side is not in `describe()`).
+ *   - `lint()`: byte-identical, no diagnostics either side (the added source is comment lines
+ *     above every diagnostic-free statement, so there is no span to shift).
+ *
+ * So `SEMANTIC_BASELINE`'s `museum-wings` row is unchanged, and only the whole-surface row
+ * here (and `while-byte-identity-baseline.ts`'s, which digests the SVG too) was re-measured,
+ * with the tests' own digest bodies.
+ *
+ * ## Circulation v2 (backlog E.6–E.10, C.1): 24 examples re-measured, `describe().circulation` only
+ *
+ * Case (1), the compiler changed, deliberately. The nav grid breaks its ties D4-symmetrically
+ * instead of in page order, so a turned or flipped plan measures the same walks. For EVERY
+ * moved row below the default SVG (every storey), `lint()` and `compile().diagnostics` are
+ * byte-identical, and the only `describe()` fields that moved are under
+ * `describe().circulation` (each storey's `levels[].circulation` on a multi-storey plan):
+ * room walks, detour ratios and key routes. No bottleneck, no `entranceId`, no `blocked` or
+ * `unmeasured` entry moved; `accessible`, `gallery-l`, `museum`, `parametric`, `relational`
+ * and `themed` did not move at all. Swept on the rebased tree (SVG per storey, `describe()`,
+ * `lint()`, `compile().diagnostics`, field by field) against the same tree with the four
+ * circulation files taken from `feat/algebra-followup`; a planted bottleneck change was
+ * caught by the same sweep first. Each moved field, before → after, and the rule that moved
+ * it (a field two rules moved names both, in commit order):
+ *
+ *   A — a room's nearest-cell tie is broken by the walk, then a D4-invariant key, not the
+ *       row-major first (every even-celled room's centre sits on a lattice corner);
+ *   E — an entrance on a lattice line seeds both sides of it, and the straight line a
+ *       detour divides by runs to the nearer seed;
+ *   T — a threshold is carved on a symmetric row set (both sides, nearest seed pairs, both
+ *       L-runs, the host wall's axis);
+ *   S — a room's seed point is snapped to the frame lattice (the library drum's centroid was
+ *       an ulp off its lattice corner).
+ *
+ * `hexagon-pavilion`'s g_sw/g_se [T] rows are rule-consistent, not a correction: the oblique
+ * drum portals are carved as L-shaped tunnels between seeds either side of 1200 mm of masonry,
+ * and the symmetric seeds give a different tunnel (backlog C.5). Key routes are measured between
+ * the rooms' tie sets (`routeBetween`); that moved no route in the corpus.
+ *
+ * The centreline cover for walls thinner than a cell (C.1) moves no row: on the shipped
+ * corpus it blocks no cell the centre test does not already block (the residual census,
+ * `test/nav-grid-residual.test.ts`, counts zero `centrelineCover` cells).
+ *
+ *     - `aquarium`: rotunda_r walk 25900→25700 [AE]; reef walk 45400→45100 [AE]; kelp walk
+ *       45200→45100 [A]; plant walk 36900→36700 [AE]; concourse walk 13900→13800 [E]; concourse
+ *       detour 1.01→1 [E]; foyer walk 4900→4700 [A]; foyer detour 1.02→1 [A]; shop walk
+ *       24900→24600 [AE]
+ *     - `attached`: r_living walk 2000→1800 [A]; r_living detour 1.05→1 [A]; r_bed walk
+ *       4700→4600 [A]; r_bed detour 1.39→1.38 [A]
+ *     - `bungalow`: r_living walk 4000→3900 [E]; r_living detour 1.41→1.4 [E]; r_bed1 walk
+ *       8400→8200 [AE]; r_bed1 detour 1.32→1.31 [A]; r_kitchen walk 9900→9700 [AE]; r_kitchen
+ *       detour 1.35→1.34 [A]; r_hall walk 5400→5200 [AE]; r_laundry walk 6600→6400 [AE];
+ *       r_laundry detour 1.97→2.02 [AE]; r_entry walk 1100→900 [A]; r_entry detour 1.09→1 [A];
+ *       route r_kitchen>r_living walk 6100→6000 [A]; route r_kitchen>r_living detour 1.33→1.32
+ *       [A]; route r_bed1>r_bath walk 8100→8200 [A]
+ *     - `clinic`: r_wait walk 10100→10000 [A]; r_wait detour 1.24→1.23 [A]; r_corr walk
+ *       16200→16100 [A]
+ *     - `courtyard-house`: r_dining walk 12900→11500 [A]; r_dining detour 1.23→1.09 [A]; r_bed1
+ *       walk 13700→13500 [T]; r_bed1 detour 1.6→1.57 [T]; r_study walk 9900→9700 [T]; r_study
+ *       detour 2.22→2.17 [T]; route r_bed1>r_bath walk 17300→17100 [T]; route r_bed1>r_bath
+ *       detour 1.37→1.35 [T]; route r_bed2>r_bath walk 11800→11600 [T]; route r_bed2>r_bath
+ *       detour 1.49→1.46 [T]; route r_bed3>r_bath walk 9400→9200 [T]; route r_bed3>r_bath
+ *       detour 1.79→1.75 [T]
+ *     - `furnished-flat`: r_live walk 11200→11100 [E]; r_util walk 4400→4200 [AE]; r_util
+ *       detour 1.94→1.98 [AE]; r_hall walk 4200→4000 [A]; r_hall detour 1.02→1 [A]
+ *     - `garden-house`: L0 r_hall walk 4500→4400 [A]; L0 r_hall detour 1.07→1.05 [A]; L1
+ *       r_landing walk 7400→7100 [AE]; L1 r_landing detour 1.4→1.39 [A]; L1 r_bed3 walk
+ *       8000→7900 [E]; L1 r_bed3 detour 1.26→1.27 [E]; L1 r_bath walk 11900→11800 [E]; L1
+ *       r_bath detour 1.7→1.68 [E]; L1 route r_bed1>r_bath walk 10300→10100 [T]; L1 route
+ *       r_bed1>r_bath detour 2.29→2.24 [T]
+ *     - `garden-loft`: r_live walk 4400→2500 [AE]; r_live detour 1.29→1.39 [AE]; r_bed walk
+ *       4900→4800 [A]; route r_bed>r_bath walk 4600→4500 [A]; route r_bed>r_bath detour
+ *       1.91→1.95 [A]
+ *     - `hexagon-pavilion`: g_ne walk 12200→12100 [T]; g_n walk 11600→10400 [T]; g_n detour
+ *       1.12→1 [T]; g_sw walk 9200→9800 [T]; g_sw detour 1.75→1.87 [T]; g_se walk 9300→9800
+ *       [T]; g_se detour 1.75→1.87 [ET]
+ *     - `hillside-villa`: L0 r_utility walk 1900→1700 [AE]; L0 r_utility detour 1.05→1 [AE]; L0
+ *       r_powder walk 6700→6600 [A]; L0 r_powder detour 2.23→2.17 [A]; L0 r_pantry walk
+ *       9600→9500 [A]; L0 r_pantry detour 1.64→1.62 [A]; L0 r_office walk 5900→5800 [E]; L0
+ *       r_entry walk 1900→1800 [A]; L0 r_entry detour 1.05→1 [A]; L0 r_dining walk 8100→8000
+ *       [A]; L0 r_dining detour 1.3→1.29 [A]; L0 r_terrace walk 17300→17200 [E]; L0 r_terrace
+ *       detour 1.63→1.62 [E]; L0 route r_kitchen>r_dining walk 6900→6800 [A]; L0 route
+ *       r_kitchen>r_dining detour 1.38→1.39 [A]
+ *     - `imports`: r_main walk 2500→2400 [A]; r_main detour 1.25→1.26 [A]
+ *     - `laneway-house`: r_live walk 2400→2300 [A]; r_live detour 1.04→1 [A]; r_bed walk
+ *       4400→4300 [A]; route r_bed>r_bath walk 8400→8100 [AT]; route r_bed>r_bath detour
+ *       2.58→2.41 [AT]
+ *     - `library`: r_hall walk 3900→3700 [A]; r_hall detour 1.03→1 [A]; r_reading walk
+ *       25400→25300 [S]; r_children walk 22700→22600 [E]; r_waisle walk 32400→32100 [AE];
+ *       r_cafe walk 17700→17600 [E]; r_eaisle walk 11200→11100 [A]; r_eaisle detour 1.27→1.28
+ *       [A]; r_lobby walk 22700→22600 [A]; r_stacks walk 51900→51700 [AE]; r_ref walk
+ *       37100→36900 [AE]; r_staff walk 16000→15900 [A]; r_kitchen walk 8600→8400 [AE];
+ *       r_kitchen detour 1.34→1.33 [A]; route r_kitchen>r_cafe walk 9700→9800 [A]
+ *     - `materials`: r_shop walk 4100→3900 [AE]; r_shop detour 1.08→1.05 [E]; r_store walk
+ *       10700→10600 [A]; r_store detour 1.33→1.32 [A]
+ *     - `museum-wing`: g1 walk 8800→8600 [AE]; g1 detour 1.32→1.33 [E]; g2 walk 14800→14600
+ *       [AE]; g3 walk 20800→20600 [AE]; g3 detour 1.31→1.3 [A]; corridor walk 10000→9900 [A];
+ *       corridor detour 1.15→1.14 [A]
+ *     - `museum-wings`: west.g1 walk 8800→8600 [AE]; west.g1 detour 1.32→1.33 [E]; west.g2 walk
+ *       14800→14600 [AE]; west.g3 walk 13400→13100 [AE]; west.corridor walk 10000→9900 [A];
+ *       west.corridor detour 1.15→1.14 [A]; east.g1 walk 8900→8600 [AE]; east.g2 walk
+ *       14900→14600 [AE]; east.g3 walk 13200→13100 [A]; east.corridor walk 10100→9900 [A];
+ *       east.corridor detour 1.15→1.14 [A]; hall walk 5900→5700 [A]; hall detour 1.02→1 [A]
+ *     - `one-room`: r_main walk 2700→2400 [AE]; r_main detour 1.31→1.26 [AE]
+ *     - `studio`: r_living walk 4000→3700 [AE]; r_living detour 1.29→1.26 [AE]; r_bed walk
+ *       7500→7400 [A]; r_bed detour 1.39→1.4 [A]; r_hall walk 4600→4500 [A]; route r_bed>r_bath
+ *       walk 5100→5000 [A]; route r_bed>r_bath detour 1.31→1.32 [A]
+ *     - `terrace-row`: u1.bath walk 9200→9100 [A]; u1.bath detour 2.63→2.56 [A]; u1.hall walk
+ *       5700→5500 [AE]; u1.hall detour 1.39→1.37 [AE]; u1.living walk 2400→2300 [A]; u1.living
+ *       detour 1.37→1.38 [A]; u2.bed walk 2000→1900 [E]; u2.bed detour 1.26→1.22 [E]; u2.bath
+ *       walk 9400→9100 [AE]; u2.hall walk 5900→5500 [AT]; u2.hall detour 1.42→1.37 [T];
+ *       u2.living walk 2600→2300 [AE]; u2.living detour 1.4→1.38 [AE]; u3.bath walk 9800→9700
+ *       [A]; u3.bath detour 2.43→2.38 [A]; u3.hall walk 6000→5800 [AE]; u3.hall detour
+ *       1.44→1.42 [AE]; u3.living walk 2700→2600 [A]; u4.bed walk 2000→1900 [E]; u4.bed detour
+ *       1.26→1.22 [E]; u4.bath walk 9400→9100 [AE]; u4.hall walk 5900→5500 [AT]; u4.hall detour
+ *       1.42→1.37 [T]; u4.living walk 2600→2300 [AE]; u4.living detour 1.4→1.38 [AE]; route
+ *       u1.bed>u1.bath walk 7300→7200 [A]; route u1.bed>u1.bath detour 2.79→2.74 [A]; route
+ *       u2.bed>u2.bath walk 7400→7200 [A]; route u2.bed>u2.bath detour 2.72→2.74 [A]; route
+ *       u3.bed>u3.bath walk 7300→7200 [A]; route u3.bed>u3.bath detour 2.52→2.48 [A]; route
+ *       u4.bed>u4.bath walk 7400→7200 [A]; route u4.bed>u4.bath detour 2.72→2.74 [A]
+ *     - `tiny-house`: r_main walk 1800→1600 [AE]; r_main detour 1.29→1.26 [AE]
+ *     - `townhouse`: L0 r_hall walk 3700→3600 [E]; L0 r_hall detour 1.14→1.12 [E]; L0 r_living
+ *       walk 4700→4500 [AE]; L0 r_living detour 1.4→1.41 [E]; L0 r_wc walk 7400→7100 [AE]; L0
+ *       r_wc detour 1.37→1.36 [A]; L0 r_kitchen walk 4100→2300 [AE]; L0 r_kitchen detour
+ *       1.39→1.35 [AE]; L0 route r_kitchen>r_living walk 9200→10400 [AT]; L0 route
+ *       r_kitchen>r_living detour 1.56→1.39 [AT]
+ *     - `transit-hall`: r_shop1 walk 61680→61440 [AE]; r_shop2 walk 55200→54960 [AE]; r_shop3
+ *       walk 48600→48360 [AE]; r_shop4 walk 42120→41880 [AE]; r_paid walk 34200→34080 [E];
+ *       r_unpaid walk 13920→13680 [AE]; r_unpaid detour 1.08→1.07 [E]; r_lobby walk 23280→23040
+ *       [A]; r_wc_a walk 23520→23400 [A]; r_wc_a detour 2.42→2.43 [A]
+ *     - `two-bed`: r_kitchen walk 11900→11600 [AE]; r_bed1 walk 9300→8900 [AE]; r_bed1 detour
+ *       1.7→1.68 [AE]; r_bed2 walk 15000→14900 [E]; r_bed2 detour 2.26→2.28 [E]; r_bath walk
+ *       4400→4100 [AE]; r_hall walk 1400→1200 [A]; r_hall detour 1.07→1 [A]; route
+ *       r_bed1>r_bath walk 5700→5400 [A]; route r_bed1>r_bath detour 1.31→1.29 [A]; route
+ *       r_bed2>r_bath walk 10600→10800 [A]; route r_bed2>r_bath detour 3.12→3.08 [A]
+ *     - `two-storey`: L0 hall walk 3600→3500 [A]; L0 living walk 9000→8900 [A]; L0 kitchen walk
+ *       5500→5400 [A]; L0 kitchen detour 1.3→1.29 [A]
+ *
+ * `garage-`, `outdoor-` and `roof-void-byte-identity.test.ts` carry their own copies of some of
+ * these rows and moved for exactly these reasons; each was re-measured in the same commit with
+ * its own digest body.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
 export const BASELINE: [string, string][] = [
   ["accessible", "5602b128c5e8df74a5d3d85b1eb5d1b8778c4dfa03eafd39c62cade55d472d4f"],
-  ["aquarium", "1f9580316664684ca7ddddd22602e3677a054dd7e5d259dc6a66d11b6c62ab74"],
-  ["attached", "c8a219486b2c76c2ba3ecb8649b29ce77a6fd732e03da5e14013a386c6e701b9"],
-  ["bungalow", "4a5fbd670b2ed36a48309a4f76adf736f0b2fc1bb7dbfe1ea393de5496629245"],
-  ["clinic", "28fd1cb7e889a199d5e014df771848567612f1e0a93a9355524a871961a11b43"],
-  ["courtyard-house", "4e487e68dda210d7433cbb9b7f6fcff47d80bbd8156bb4c6bcd4bab8107a7ba2"],
-  ["furnished-flat", "6bca2fc18883e3dd6278cc03e0aa7a334ad6c26e67563c578344a77731a0ec05"],
+  ["aquarium", "736e20a429113534d882ccb8fa88187227ad7bdc7e6c95f55a70c2e0917d5768"],
+  ["attached", "b4aaf0c67e584a88f9eca8c35a525bf58e1b3054774c75e681cec2e03576f805"],
+  ["bungalow", "88ab68abfc47345fdef7098506116ad93fcbab466415837d5db99dc1542d8851"],
+  ["clinic", "1d20a7330af3826897fcdfd3771a948c13b4f3ae45b8844400bdb53657005926"],
+  ["courtyard-house", "8cc94cede4106e5d53afb9806307783b5bc02fd5dbc616821cb6bb194db3055d"],
+  ["furnished-flat", "78513fb8a5182104e2a22b69580fa952a2ff2f11839162241ebfe40839047d80"],
   ["gallery-l", "9cdfa47c8d0f0a1a1d1ecf998877ca4ed2b029289730c028065d9ca5f92af2f1"],
-  ["garden-house", "c1bf4b90a714913d96e7c1b3f68bda03c8c93770cf5b04da510e150824d6d4ae"],
-  ["garden-loft", "0273b238de6d7c0ad84f3d517febcec01338ebe9033fcfb9cbe06c8307389350"],
-  ["hexagon-pavilion", "4466d7ca53036ebdeabfcbd35b1a6fca1b4d2b0a990a8fedfda675c5f45570e7"],
-  ["hillside-villa", "846c4d6f70dd014bcd666cd7d2d8405d8003b8b6e40447389db87038edef5bd8"], // re-measured, see header
-  ["imports", "65f847d3309cfb25274bf45d07b854c703061a666627cdab56984e8ed5b1bab4"],
-  ["laneway-house", "0eab9c214b43f76765f55e10b0909047aaee34544fc5d78e27e4afc176b8e0d9"],
-  ["library", "5300487bb693592fb244121e84fda89476d19c08732e9ce487e09a5967f52222"],
-  ["materials", "5f9cad38f200ee41f25db60bf699ac18a67b7bebc4c07e84316a55a1da86357d"],
-  ["museum-wing", "fa89497eceb8e2dc56faeb5b5b9ff29f91c5b21db68cc7895307870f5cce1eba"],
-  ["museum-wings", "2b2e629257f7a47a8d0a8b6fd0b89d36dc54336730920a1c2be36d3e992e09ca"],
+  ["garden-house", "707e56c4a8992c77ecf5d76a409690c2554f68059e31758bb8712d2b54266654"],
+  ["garden-loft", "970f3edf687ae08093993eeb5ec87cc0e63b9dd51e8487202d6d5d3d61b5030b"],
+  ["hexagon-pavilion", "7bdf11d0b722ec26ce6f63aae7ce558a3da404529a405d87a387f9ba0e18c344"],
+  ["hillside-villa", "9f075ede483ebb255419c4ffb60e62f07d70a6de1f5f571587bd4e6e751a1cae"], // re-measured, see header
+  ["imports", "9a18b7a2e74117c3c986bbf513055d7ea333dea1451faeb4f9f3429ca23e7e55"],
+  ["laneway-house", "ca93975f9180ff845039a79422a4cca1fe683d76a28831cf700efbb8f6d2bea0"],
+  ["library", "614bc84423700e348345a7dd9bbf1e3ff098deacba76f3f62043cc2d7e5c144c"],
+  ["materials", "f400204eb2a5b4e189d33ce462c9135d602e21bb050df7dda94e260897d57450"],
+  ["museum-wing", "3c797bc54f382cfd1f3975d0e6d5cc49fbb10287fe24ba22b0d24ac321504e13"],
+  ["museum-wings", "7f6ab15da9e5f80f1b59c6d59baa44ec06eaa55ada8a575fe4fdfcfd65bff06b"], // re-measured, see header
   ["museum", "07f06548d662a7283d4d47136c1e4260662ba0d8115282dd98d1b87134188304"],
-  ["one-room", "1a310fb617bfe42e9749d66bddac7b9eb417b843f2525c558f66e6ecb1177b33"],
+  ["one-room", "153de2406dcdfd537ba6a8495bad8a046f1f75441119333f40c21c3970164431"],
   ["parametric", "e30cff0f2fb517d5b19723cef6092a9d614ae198a63fd96f7f1b23508ee2c0a3"],
   ["relational", "c3eab06b8184405f6c2a89edd04ce75ffbf97956cc0aa6d0d9780ad7495d6b7b"],
-  ["studio", "90951a2517e141dfe28f0e12462fd29cefba5460c900304e435ef53e7f3c0f3f"],
-  ["terrace-row", "09d36f9a91483ae6febf948aa5eb70fd9e7aad9f21aa6e0d0ab3550186a90721"], // re-measured, see header
+  ["studio", "20a7659eb5c0ae250d1b91e0a7c53cff9dc2fd8908365a40e679bbf97e91751d"],
+  ["terrace-row", "d47f75e57df406060420ee7ce6c18f5a7f4250edcf4171b6145df92966076d3f"], // re-measured, see header
   ["themed", "55e8723dd35cc3ec24b73a7bbf8052bea24f1fdaddd6d90012cffb81d7d00057"],
-  ["tiny-house", "a2e03e5262814a5566deb23fedcfe493b053d98ae49026336c75f3cb1ec104b5"],
-  ["townhouse", "c91ab67c8b8ec72005a53625775597a82b4c585c60e298aa0c8ed0f41b815a44"],
-  ["transit-hall", "378d0e215a55e6e5ee66d017c3753f3f8e7b91c4509a7470872bc1cf02cf2f79"],
-  ["two-bed", "dec746240dcc800c866a0dc928b451c83caa143f456adc704baa72d724ef6520"],
-  ["two-storey", "0cb36d51c57dce8e31c883f5b100a6f6758e51f61f4b40325ca68f3b05e2cdec"],
+  ["tiny-house", "4530542edaa0793db192ee26cfaa293bc353c3912a5bc42baf4749a5ce5ce010"],
+  ["townhouse", "7a8e8a6e84e53c0df96a85b02b81af6d2b81c5556e6146e36863a72fa845a9d7"],
+  ["transit-hall", "056a651ef496fa544aabdab8db6b0486ac00b3d4e32da8f8133bc73b6581e2e3"],
+  ["two-bed", "ff4ad8858ef6c8fa71a632c9df6c5c489b4661d0ea0b80719f69f0f481c50cd7"],
+  ["two-storey", "12e2c67328c957fcfd9fe245db48d4fde513746afd090e6f2be72e61e5bb9fcc"],
 ];
 
 /**
@@ -210,35 +364,35 @@ export const BASELINE: [string, string][] = [
  */
 export const SEMANTIC_BASELINE: [string, string][] = [
   ["accessible", "68484c56bb156de1e79654600b428779227547e5a44d46653217b34ab0364c9e"],
-  ["aquarium", "23cd27bb45079f977c89494898dba45b67338b26e845777b2c536c627e3d5c81"],
-  ["attached", "ccfcf88d1703b8793fe062dffe347511426f45ed1ece2152f1ecb78ccf15e17f"],
-  ["bungalow", "cc3dc56c65a9baa34f57ae766ad702b4e538db62419b4881c55ad84abfe39870"],
-  ["clinic", "68f5145df6c36c66cd8d5411f79df440a3f31c97af6d6b98d1ca194a92d67c6d"],
-  ["courtyard-house", "c25fbe81bcf795157ed5367f2b27edd34376ebc8f3714beeb21c1d279c265692"],
-  ["furnished-flat", "9ec505138f1d6d817a55e45aef46c0145639f68d577cacf7214dc2b06cfb0dc9"],
+  ["aquarium", "299f0e348e915d0f4f7aac16a047f708cc7003f3103892b10f46ee945a6b477c"],
+  ["attached", "df08961c92bc1d8412dd0f5ff7e9282c35b283e5a007b4192323005a6c564d0f"],
+  ["bungalow", "93a7bbad33a456a3f9a72b8ec7e0ccc116c3ea777b464149a6c40d0328e3d48d"],
+  ["clinic", "87a31334de932023821bb2a29a4a8b7f81b46f2c6a06283a00e4c4a0856d1e10"],
+  ["courtyard-house", "fe1c1009bf87d63b2e9dc77fb870ad43cc2a0957376e4ad3c2192ce5bab5ac0a"],
+  ["furnished-flat", "c55ce2b43dd4acf0eec4eada9ee456c799bf4188f6f1a2f6d32a8cb691424fc4"],
   ["gallery-l", "cef0ee1863a505bb831aa2512ca204547117872a61cf1a1ddd293361f0b688be"],
-  ["garden-house", "8c5f672a9a30115e7b1175bc260f7e6b9ccbf80031db5545b5a63b11849f9653"],
-  ["garden-loft", "fcfd3d6eff4014d553670aa6fbbbffb0cc07e42b8ac9a9664f374a3a6f75a20e"],
-  ["hexagon-pavilion", "87bff82a7ce3a41971dd2fbee4f55046ee87b531139cbdb6857e6306562f7270"],
-  ["hillside-villa", "9d7ec154a919af108cc7f38c18c6dfe300d7a3e0676d95d5ec7e6591230b9ce8"], // re-measured, see header
-  ["imports", "25899f6f578488bbdfe9929a743ff2b64f85ba1e318f06b542865b5d7d4d8136"],
-  ["laneway-house", "d3ab0140b1f474997ff52c711e9c539e92a23a6d65003b656f9b72b6a7ad0cca"],
-  ["library", "9b2dd482372e3cf55392271121767d8318f6a1064b9ef6ff7482ffda14784a64"],
-  ["materials", "b3469b47a19fffa653c9f13bf26583fe9c715206a29f500985f96a294fc1dffa"],
-  ["museum-wing", "38e455e3ebe53d0d71344ace3e82aae2ad837014319fbac114e997fe202a9943"],
-  ["museum-wings", "c209dde7f8c8ad936da4edafba7ea17d8f7761d2b04507aeb20e56453b2e9885"],
+  ["garden-house", "d41cfe2342e0e0818cc7531e75e08bf7c65fbe0d650d7e6a7f2b4261d3470bb8"],
+  ["garden-loft", "ad8935f435045684b7ed9975254dc2daf0357f4eb3735e514e319980ebecf793"],
+  ["hexagon-pavilion", "9d87d6ba7fb3a4cc3a459bc981e6b682d3c0d7926669fae90589b54308f8c5ff"],
+  ["hillside-villa", "066363a2120e1409e7fe68708b551468748ae1ce62caaba732b0883556dee7f3"], // re-measured, see header
+  ["imports", "5c75030d46ecbfc8b1e80b40945d17bd13afb68a813a286b9ddfe23252452cbc"],
+  ["laneway-house", "9a173beb7f213286b8e0c117d829d126166b93e118f91894ba278005254a5255"],
+  ["library", "f81107388c6547af37b0938ecc06a1f3ab3acbe69916edb7b0c9c76a4c9f3477"],
+  ["materials", "e5041b5dd4d5029e77b657823d988604464193e121cd3f4f3a236a72faf5bf9f"],
+  ["museum-wing", "95ef06b2e848b83c8d042250431b5c46deed6d8afc3f2c443b343b83e5b6cd6e"],
+  ["museum-wings", "9dc3f416d118e6fdb3669ee96376e4188b3ea67007e99dbc1de725f871cc4be1"],
   ["museum", "7ec1245b5a9ae03f813436680f5bb750cc707631703b26e1ecf6f0c1d750d573"],
-  ["one-room", "f0649bfd821eff989cc1beed233ad722eb4f2d3c3284ac4a8f74d5ea07ef306f"],
+  ["one-room", "4313ab047cbd42c75be08c6a6c72e3bbe8ee6b1e598a816d722d0aa8655c0551"],
   ["parametric", "5783da773c0493767621e2c063e6da257c660dec2edb5351893f0ad4907afc3a"],
   ["relational", "d31bd84bfcb7bfce8d662470f8828144f55ef3e4117924af898587706bf46293"],
-  ["studio", "7ed53b6e0925e21fe4c4fad7351ce7e80635818395fc79cf661ba095db8129b3"],
-  ["terrace-row", "9f9636fed1e32e916db91c641ef0e5bb1703036ddb1460748f810dbcabe58726"],
+  ["studio", "540245f5c6c0f523e13b455cad9bcfc3c6d21cf96ca953ce1bbfa3d547345208"],
+  ["terrace-row", "172aac3cd62b8ccbbdf2d58374fe0535e4657d1344f60c1c7cb825ae3e2a59b8"],
   ["themed", "3644012b9d972af8e0314ce0a210073cc0315127d38a5f6b35220b00c883aff8"],
-  ["tiny-house", "89f05cd969e28765d7c775022eed2a746c786e182b276f1ba5e8cd6f691c589c"],
-  ["townhouse", "acc41b078993c7d1ab8bc0e402b2462ea02968fdb77420ff849658ac903dcbd0"],
-  ["transit-hall", "520c6cf0902213c5b34380ca40e09d8c440f0316e12bfba2ca094418da399526"],
-  ["two-bed", "c8e5a430665c6ea875a94225dc062a534bebf776c28b3ffbdb0a614d3e71ff79"],
-  ["two-storey", "494341efa9edaa35f76d17b293023a87b9b1e68567d87b2e4445ebf9b6579f93"],
+  ["tiny-house", "63a784b0a353f2a0664dc710ca720364d3b246447972b5bda928c855ea0e18a8"],
+  ["townhouse", "5ecbdea1fb6fbcdc18000019f09c8705d0f27fda0a37d34063568c829cbcb2b2"],
+  ["transit-hall", "cc69ca4464febda4baee441c36b8c2a5f8b1b4b3f794b221ffa1261bb78a800e"],
+  ["two-bed", "061698b483472d4cee3801c39a6e1f74070037d82c8ea7efa19906388f24a79a"],
+  ["two-storey", "2d38f2f4fd0f50601b80262a37f843b96dc8558d80ea1bc16b2e4640f6288553"],
 ];
 
 /**

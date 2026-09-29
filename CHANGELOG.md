@@ -20,6 +20,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   *The Social Logic of Space* read against the plan's own door graph.
 - Default `describe()` output is unchanged; both facts are opt-in and additive.
 
+### Changed — Plan JSON: doors and dimensions inside a reflected `place` now carry `mirror: true`
+
+- **Behaviour change.** `planToJson` (and the Plan JSON schema) now emit `mirror: true` on a door
+  or dimension inside a reflecting `place` frame, with the same meaning as furniture's `mirror`:
+  the frame's reflection, present only when reflected. Plans without a reflected instance are
+  byte-identical; in `examples/` only `clinic` and `terrace-row` gain the key.
+- `planJsonToArch` refuses `mirror: true` on a door or dimension with `E_JSON_MIRROR`, as it
+  already did for furniture — source has no per-element `mirror`. `clinic` and `terrace-row`
+  already refused the round trip on their mirrored fixtures, so no example newly fails; `mirror` on
+  a window or cased opening is a shape error. A vertical run's entry edge
+  (`_tail`) is not projected: Plan JSON has no stair, escalator or elevator members.
+
 ### Changed — `place` now composes: a component can reference the instances it places itself
 
 - `place` now composes associatively: a component can reference the instances it places
@@ -32,6 +44,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   before; openings now register on their wall by id rather than by endpoint coordinates. A
   plan with no `place` inside a component body is unaffected, measured byte for byte over
   the shipped examples.
+
+### Changed — circulation measures the same building the same way however it is drawn
+
+- **Behaviour change.** `describe().circulation` (and each storey's `levels[].circulation`) now
+  breaks the nav grid's exact ties by rules a turn or a flip preserves, instead of in page
+  order, so a plan placed with `rotate`/`mirror` reports exactly the circulation of the unplaced
+  plan on a grid-aligned plan — every walk, bottleneck, detour, entrance and key route:
+  - an entrance whose doorway lies on a grid line starts the walk on **both** sides of it, and
+    a room's detour is taken from the nearer side;
+  - a doorway between two rooms is opened on a symmetric set of rows (both sides of a grid
+    line, along the host wall's direction), so it can no longer open in one orientation and
+    stay shut in another;
+  - among equally near cells a room is measured to the one the walk reaches **first**, then by
+    a direction-free key — not the first in reading order; a room's measured point sits on the
+    same fine lattice as every coordinate, so a curved room's centroid an ulp off a grid corner
+    no longer picks the cell by rounding noise;
+  - a key route (kitchen → living, bedroom → bath) is measured between the two rooms' whole
+    sets of equally good cells, so no reading-order pick inside a room can move it (no shipped
+    route changes).
+- 24 of the 30 shipped examples report different circulation numbers (27 byte-identity rows
+  move in `test/while-byte-identity-baseline.ts`: those 24 examples and three test fixtures,
+  `diff-circ-a`, `diff-circ-b` and `zones-wings`; mostly 100–300 mm on a
+  walk; a room whose centre furniture covers can move by metres, e.g. `courtyard-house`'s dining
+  room 12900 → 11500 mm). Behind the oblique portals of `hexagon-pavilion`'s thick drum two
+  galleries read 9200/9300 → 9800 mm: consistent with the new rules, but an oblique doorway is
+  still carved as an L-shaped tunnel, so neither value is the opening's own (an open backlog
+  item). No default drawing, lint verdict, bottleneck width or other `describe()` field changes;
+  the opt-in `--overlay circulation` drawing can move on any plan, whether or not a number
+  moved (the drawn cell is the pick inside a tie set, so a pinch marker can shift one cell and a
+  same-length walk can be redrawn; `accessible`, `gallery-l`, `parametric` and `relational`
+  change their overlay with no `describe()` fact moving).
+- **Behaviour change.** A wall thinner than a nav-grid cell now blocks the walk: the grid also
+  blocks every cell a wall's centreline passes through, so an 80 mm partition on the 100 mm grid
+  can no longer be walked through. A wall of about 142 mm or more is unaffected (no shipped
+  example moves).
+- **Behaviour change.** `W_CIRCUITOUS_PATH` now names the entrance its ratio is taken from
+  (`studio.arch` under `maxDetourRatio: 2`: `The walk from entrance "d_main" to "Bath" is 2.27×
+  the straight-line distance from that entrance (over 2×).`), so only the message text changes.
+  The ratio is the walk from the room's nearest entrance by walk over the straight line from that
+  same entrance, not the least ratio over every entrance.
+
+### Fixed — `--overlay circulation` is drawn on the grid the numbers come from
+
+- The opt-in circulation overlay ignored floor voids while `describe()` and lint honoured them,
+  so on a plan with a `void` the drawn walks and pinch markers could disagree with the reported
+  numbers. It now passes the same voids. Plans without a `void` are unaffected by this fix, and
+  measured on the shipped examples it changes no overlay drawing: `hillside-villa` and
+  `two-storey` have voids, but none lies across a measured walk. (Overlays can still move for
+  the tie-set reason above.)
+
+### Fixed — `examples/museum-wings.arch`: the east hall door is now the mirror of the west one
+
+- `d_east` hung on the wrong jamb, so the two wings' hall doors were not mirror images. It is
+  now `hinge left` (the wing is `mirror x`, so the same word mirrors the jamb). Only that one
+  door's leaf and swing arc move in the SVG; this fix on its own changes no `describe()` field
+  and no `lint()` result (the circulation numbers of `museum-wings` move under the entry above). The
+  single-leaf main door stays, so `describe --facts symmetry` still reports `full` as C1 (shell
+  and rooms are D1 x).
 
 ### Deprecated — the axonometric view (`--view`, `compile({ view })`) is removed at 2.0
 
@@ -276,8 +346,8 @@ shipped examples).
   `TranslationRepeat`, `MirrorRepeat`, `SyntaxFacts`, `SyntaxRoom`); `TransformCtx`.
 - **New optional fields:** `ElementDef.transform` (a plugin's frame action) and
   `RoomCirculation.entranceId` (present only on a plan with more than one entrance).
-- **Plan JSON:** `furniture[].mirror` (`true` only when a reflecting `place` frame carried the
-  piece; absent otherwise).
+- **Plan JSON:** `furniture[].mirror`, `openings[].mirror` (doors only) and `dims[].mirror`
+  (`true` only when a reflecting `place` frame carried the element; absent otherwise).
 - **New diagnostic codes:** `E_INSTANCE_NO_TRANSFORM`, `E_JSON_MIRROR`, `W_WHILE_DEPRECATED`,
   `W_REASSIGN_DEPRECATED`.
 - **Changed meaning:** `AccessEdge.ambiguous` now means the wall-face probe could not decide

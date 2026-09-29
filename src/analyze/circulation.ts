@@ -10,8 +10,9 @@
  * integer cell coordinates, source-ordered seeds, row-major iteration — never a float as
  * a key). Three things make it a *walking* model rather than a bare reachability one:
  *
- *   - WALLS BLOCK, DOORS CARVE. Walls are rasterised as blocked cells (a wall thinner
- *     than a cell occupies no cell centre, so without this adjacent rooms would leak
+ *   - WALLS BLOCK, DOORS CARVE. Walls are rasterised as blocked cells — every cell whose
+ *     centre the band covers, and every cell the centreline passes through, so a wall
+ *     thinner than a cell still blocks (room membership alone would let adjacent rooms leak
  *     into each other along their whole shared edge); each connector then carves a
  *     threshold slit between the two rooms' nearest free cells. Rooms connect only
  *     where a real door/opening is.
@@ -55,7 +56,7 @@ import {
   type RoomBox,
 } from "../analyze.js";
 import { pointInRect } from "../geometry/rect.js";
-import { arcExtremes, distPointToArc } from "../geometry/arc.js";
+import { type Arc, arcContainsRay, arcExtremes, distPointToArc } from "../geometry/arc.js";
 import {
   distToPolygonEdge,
   pointInPolygon,
@@ -294,25 +295,36 @@ export interface NavGrid {
   carved: Set<number>;
 }
 
-/** Cell index of a point, clamped into the grid. */
-function cellOf(g: NavGrid, x: number, y: number): { ix: number; iy: number } {
-  return {
-    ix: clamp(Math.floor((x - g.minX) / g.cell), 0, g.nx - 1),
-    iy: clamp(Math.floor((y - g.minY) / g.cell), 0, g.ny - 1),
-  };
-}
-
-/** Centre of a cell in mm. */
-function centreOf(g: NavGrid, k: number): { x: number; y: number } {
-  const ix = k % g.nx;
-  const iy = (k - ix) / g.nx;
-  return { x: g.minX + (ix + 0.5) * g.cell, y: g.minY + (iy + 0.5) * g.cell };
+/**
+ * The cells along one axis whose CLOSED span holds coordinate `v` (relative to the grid's
+ * origin), as an inclusive index range, clamped into the grid: one cell, or the two either
+ * side of a lattice line `v` lies exactly on. Flooring alone would put a point on a line on
+ * its +x/+y side — a page-order choice a turn or a flip does not preserve.
+ */
+function axisCells(v: number, cell: number, n: number): [number, number] {
+  const f = Math.floor(v / cell);
+  const hi = clamp(f, 0, n - 1);
+  return [f * cell === v ? clamp(f - 1, 0, n - 1) : hi, hi];
 }
 
 /**
- * Step inward from a connector on a room edge to the first free cell of that room
- * (mirrors occupancy.ts' inward seeding). Returns −1 when the doorway's inward run
- * is sealed by furniture, so a blocked doorway simply yields no seed.
+ * Step inward from a connector on a room edge to the first free cells of that room
+ * (mirrors occupancy.ts' inward seeding), as a sorted set of cell indices. Empty when the
+ * doorway's inward run is sealed by furniture, so a blocked doorway simply yields no seed.
+ *
+ * The walk starts from EVERY cell whose closed square holds `at` ({@link axisCells}): one
+ * cell for a point strictly inside a cell, and then the set is the single cell the walk
+ * reaches; two for a point on a lattice line (four at a crossing), and then it holds what
+ * each side's walk reaches. Flooring the point to one cell put a doorway on a line on its
+ * +x/+y side, so a turned or flipped plan seeded the other side — the same doorway, a walk
+ * origin a cell (or, past eroded cells, several) away. The set is the same however the plan
+ * is turned or flipped (backlog E.6/E.7/E.10).
+ *
+ * A POLYGON room's doorway need not sit on a bounding-box side, so the "step inward
+ * perpendicular to that side" walk has no direction to take. Take the room's nearest free
+ * cells to the doorway instead — scanned by increasing Chebyshev ring about the cells that
+ * hold `at`, keeping EVERY cell at the nearest distance in the first ring that has one (a
+ * row-major first would be a page-order pick among equidistant cells).
  *
  * `bandMm` is how far the search may look BEYOND the adjacency tolerance: a connector
  * sits on its host wall's CENTRELINE, so a room's floor begins half a wall thickness
@@ -321,38 +333,51 @@ function centreOf(g: NavGrid, k: number): { x: number; y: number } {
  * — but the polygon branch is a bounded ring scan, and at `tol` alone it gave up 200 mm
  * short of a 1200 mm drum's floor. Widening a bound that is only consulted when the
  * narrower one found NOTHING is strictly additive: every seed that already resolved
- * resolves to the same cell, because the scan is by increasing ring.
+ * resolves to the same cells, because the scan is by increasing ring.
  */
-function seedCell(g: NavGrid, at: Point, rb: RoomBox, roomIndex: number, tol: number, bandMm = 0): number {
-  const { ix, iy } = cellOf(g, at.x, at.y);
-  // A POLYGON room's doorway need not sit on a bounding-box side, so the "step inward
-  // perpendicular to that side" walk has no direction to take. Take the room's nearest
-  // free cell to the doorway instead — scanned by increasing Chebyshev ring, row-major
-  // inside each ring, so the answer is deterministic and local.
+function seedCells(g: NavGrid, at: Point, rb: RoomBox, roomIndex: number, tol: number, bandMm = 0): number[] {
+  const [x0, x1] = axisCells(at.x - g.minX, g.cell, g.nx);
+  const [y0, y1] = axisCells(at.y - g.minY, g.cell, g.ny);
   if (rb.poly) {
+    // Ring 0 is the cells holding `at`, so a point on a line is equidistant, in rings,
+    // from both sides of it.
+    const ring = (s: number, lo: number, hi: number): number => (s < lo ? lo - s : s > hi ? s - hi : 0);
     const reach = Math.ceil((tol + bandMm) / g.cell) + 2;
     for (let rad = 0; rad <= reach; rad++) {
-      let best = -1;
+      let best: number[] = [];
       let bestD = Infinity;
-      for (let sy = Math.max(0, iy - rad); sy <= Math.min(g.ny - 1, iy + rad); sy++) {
-        for (let sx = Math.max(0, ix - rad); sx <= Math.min(g.nx - 1, ix + rad); sx++) {
-          if (Math.max(Math.abs(sx - ix), Math.abs(sy - iy)) !== rad) continue;
+      for (let sy = Math.max(0, y0 - rad); sy <= Math.min(g.ny - 1, y1 + rad); sy++) {
+        for (let sx = Math.max(0, x0 - rad); sx <= Math.min(g.nx - 1, x1 + rad); sx++) {
+          if (Math.max(ring(sx, x0, x1), ring(sy, y0, y1)) !== rad) continue;
           const k = sy * g.nx + sx;
           if (g.roomIdx[k] !== roomIndex || !g.free[k]) continue;
           const c = centreOf(g, k);
           const d = (c.x - at.x) ** 2 + (c.y - at.y) ** 2;
           if (d < bestD) {
             bestD = d;
-            best = k;
-          }
+            best = [k];
+          } else if (d === bestD) best.push(k);
         }
       }
-      if (best >= 0) return best;
+      if (best.length > 0) return best;
     }
-    return -1;
+    return [];
   }
   const dx = Math.abs(at.x - rb.x) <= tol ? 1 : Math.abs(at.x - (rb.x + rb.w)) <= tol ? -1 : 0;
   const dy = Math.abs(at.y - rb.y) <= tol ? 1 : Math.abs(at.y - (rb.y + rb.h)) <= tol ? -1 : 0;
+  const out = new Set<number>();
+  for (let iy = y0; iy <= y1; iy++) {
+    for (let ix = x0; ix <= x1; ix++) {
+      const k = walkInward(g, ix, iy, dx, dy, roomIndex);
+      if (k >= 0) out.add(k);
+    }
+  }
+  return [...out].sort((a, b) => a - b);
+}
+
+/** {@link seedCells}' rectangle walk from one start cell: step (dx, dy) until the first
+ *  free cell of the room, or −1 at the grid's edge. */
+function walkInward(g: NavGrid, ix: number, iy: number, dx: number, dy: number, roomIndex: number): number {
   for (let step = 0; step < g.nx + g.ny; step++) {
     const sx = clamp(ix + dx * step, 0, g.nx - 1);
     const sy = clamp(iy + dy * step, 0, g.ny - 1);
@@ -365,13 +390,20 @@ function seedCell(g: NavGrid, at: Point, rb: RoomBox, roomIndex: number, tol: nu
   return -1;
 }
 
+/** Centre of a cell in mm. */
+function centreOf(g: NavGrid, k: number): { x: number; y: number } {
+  const ix = k % g.nx;
+  const iy = (k - ix) / g.nx;
+  return { x: g.minX + (ix + 0.5) * g.cell, y: g.minY + (iy + 0.5) * g.cell };
+}
+
 /**
  * The cells a Manhattan carve from seed `a` to seed `b` would open through the wall band
  * that separates them — or null when the run meets a furniture-eroded cell, since we
  * never carve through furniture. Pure: the caller applies the result, so a blocked
  * attempt leaves no half-open slit behind and another threshold point can be tried.
  */
-function carvePath(g: NavGrid, eroded: Uint8Array, a: number, b: number): number[] | null {
+function carvePath(g: NavGrid, eroded: Uint8Array, a: number, b: number, xFirst = true): number[] | null {
   let ax = a % g.nx;
   let ay = (a - ax) / g.nx;
   const bx = b % g.nx;
@@ -383,15 +415,50 @@ function carvePath(g: NavGrid, eroded: Uint8Array, a: number, b: number): number
     cells.push(k);
     return true;
   };
-  while (ax !== bx) {
-    ax += ax < bx ? 1 : -1;
-    if (!step(ax, ay)) return null;
+  const alongX = (): boolean => {
+    while (ax !== bx) {
+      ax += ax < bx ? 1 : -1;
+      if (!step(ax, ay)) return false;
+    }
+    return true;
+  };
+  const alongY = (): boolean => {
+    while (ay !== by) {
+      ay += ay < by ? 1 : -1;
+      if (!step(ax, ay)) return false;
+    }
+    return true;
+  };
+  const ok = xFirst ? alongX() && alongY() : alongY() && alongX();
+  return ok ? cells : null;
+}
+
+/**
+ * The seed pairs a threshold carves between: every `a` with each `b` at the least Manhattan
+ * (cell) distance from it, and every `b` with each `a` nearest it — a relation defined by
+ * distance alone, so the pairs of a turned or flipped plan are the images of these. A
+ * doorway straight across a wall pairs each column with the column facing it.
+ */
+function nearestPairs(g: NavGrid, as: readonly number[], bs: readonly number[]): Array<[number, number]> {
+  const man = (p: number, q: number): number =>
+    Math.abs((p % g.nx) - (q % g.nx)) + Math.abs(Math.floor(p / g.nx) - Math.floor(q / g.nx));
+  const keep = new Set<string>();
+  const out: Array<[number, number]> = [];
+  const add = (a: number, b: number): void => {
+    const k = `${a},${b}`;
+    if (keep.has(k)) return;
+    keep.add(k);
+    out.push([a, b]);
+  };
+  for (const a of as) {
+    const d = Math.min(...bs.map((b) => man(a, b)));
+    for (const b of bs) if (man(a, b) === d) add(a, b);
   }
-  while (ay !== by) {
-    ay += ay < by ? 1 : -1;
-    if (!step(ax, ay)) return null;
+  for (const b of bs) {
+    const d = Math.min(...as.map((a) => man(a, b)));
+    for (const a of as) if (man(a, b) === d) add(a, b);
   }
-  return cells;
+  return out;
 }
 
 /**
@@ -405,7 +472,15 @@ function carvePath(g: NavGrid, eroded: Uint8Array, a: number, b: number): number
  * not read as sealing the whole of it (the museum's servery covers 6 m of the cafe's 4 m
  * threshold; the other half is walkable and now measures that way).
  */
-function thresholdPoints(g: NavGrid, at: Point, rb: RoomBox, clear: number, tol: number): Point[] {
+function thresholdPoints(
+  g: NavGrid,
+  at: Point,
+  rb: RoomBox,
+  clear: number,
+  tol: number,
+  /** The host wall runs along x (`true`) or y (`false`); unknown for a slanted or curved host. */
+  hostAlongX?: boolean,
+): Point[] {
   const steps = Math.floor(Math.max(0, clear / 2 - g.cell / 2) / g.cell);
   const out: Point[] = [at];
   // A polygon room's opening runs along whichever of ITS edges the connector sits on —
@@ -432,7 +507,8 @@ function thresholdPoints(g: NavGrid, at: Point, rb: RoomBox, clear: number, tol:
     return out;
   }
   // The connector lies on a shared room edge; a horizontal edge means it spans in x.
-  const spansX = Math.abs(at.y - rb.y) <= tol || Math.abs(at.y - (rb.y + rb.h)) <= tol;
+  const spansX =
+    hostAlongX !== undefined ? hostAlongX : Math.abs(at.y - rb.y) <= tol || Math.abs(at.y - (rb.y + rb.h)) <= tol;
   for (let i = 1; i <= steps; i++) {
     const d = i * g.cell;
     out.push(spansX ? { x: at.x + d, y: at.y } : { x: at.x, y: at.y + d });
@@ -740,8 +816,22 @@ export function navExtent(rooms: readonly RRoom[]): NavExtent | null {
 
 /**
  * Rasterise walls as blocked cells so adjacent rooms don't leak into each other
- * across a shared partition (a wall thinner than a cell occupies no cell centre);
- * a cell within half the wall thickness of the segment is blocked. Doors carve back
+ * across a shared partition: a cell is blocked when its CENTRE lies within half the wall
+ * thickness of the centreline, or when the centreline itself passes through it (touches
+ * its closed square). The centre test alone blocked nothing for a partition thinner than
+ * a cell — an 80 mm wall on a lattice line of 100 mm cells has no cell centre within 40 mm
+ * of it — so the walk leaked through a wall the drawing has (backlog C.1).
+ *
+ * The centreline cover closes that leak: the cells a continuous centreline touches form a
+ * chain in which consecutive cells share an edge, or — where the line passes exactly
+ * through a lattice corner — all four cells round that corner are touched, so a
+ * 4-connected step (the walk's own neighbourhood, `neighbours4`) cannot slip between two
+ * of them. It adds nothing for a wall of at least `cell·√2` (~142 mm on 100 mm cells): a
+ * touched cell's centre is within `cell·√2/2` of the line, which the centre test already
+ * blocks — so every such wall rasterises exactly as before, and only a thinner one takes
+ * the cover. (The alternative, blocking every cell the whole BAND passes through, was
+ * rejected: it puts a curved wall's faces tangent to lattice lines, where a 1 mm nudge
+ * moves a hand-derived walk — `test/circulation-hand-derived.test.ts`.) Doors carve back
  * through afterwards, in {@link buildGrid}. Furniture-eroded cells stay eroded (never
  * reopened) — which is the caller's business, not this pass's: it only ever says
  * "block this cell", through `block`, and never reads what is already blocked.
@@ -765,6 +855,11 @@ export function rasteriseWallSegments(ex: NavExtent, walls: readonly RWall[], bl
   const { minX, minY, cell, nx, ny } = ex;
   for (const w of walls) {
     const half = w.thickness / 2;
+    // A cell the centreline touches has its centre within cell·√2/2 of it, so the centre
+    // test already blocks it unless the wall is thinner than that (< ~142 mm on 100 mm
+    // cells) — only then is the centreline cover consulted, and a thicker wall runs the
+    // centre test alone, exactly as it always has.
+    const thin = half < cell * Math.SQRT1_2;
     const pts = w.points;
     const segCount = w.closed ? pts.length : pts.length - 1;
     for (let i = 0; i < segCount; i++) {
@@ -788,17 +883,83 @@ export function rasteriseWallSegments(ex: NavExtent, walls: readonly RWall[], bl
           const cy = minY + (iy + 0.5) * cell;
           const d = arc ? distPointToArc({ x: cx, y: cy }, arc) : distPointToSeg(cx, cy, a.x, a.y, b.x, b.y);
           if (d <= half) block(iy * nx + ix);
+          else if (thin) {
+            // The centreline itself passes through this cell (touches its closed square).
+            const x0 = minX + ix * cell;
+            const y0 = minY + iy * cell;
+            const sq = { x0, y0, x1: x0 + cell, y1: y0 + cell };
+            if (arc ? arcMeetsBox(arc, sq) : segMeetsBox(a, b, sq)) block(iy * nx + ix);
+          }
         }
       }
     }
   }
 }
 
+/** A closed axis-aligned box (a nav-grid cell's square). */
+interface Box {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+const inBox = (p: Point, s: Box): boolean => p.x >= s.x0 && p.x <= s.x1 && p.y >= s.y0 && p.y <= s.y1;
+
+/** Does segment ab meet the CLOSED box? (Liang–Barsky clip.) */
+function segMeetsBox(a: Point, b: Point, s: Box): boolean {
+  let t0 = 0;
+  let t1 = 1;
+  const clip = (p: number, q: number): boolean => {
+    if (p === 0) return q >= 0;
+    const r = q / p;
+    if (p < 0) {
+      if (r > t1) return false;
+      if (r > t0) t0 = r;
+    } else {
+      if (r < t0) return false;
+      if (r < t1) t1 = r;
+    }
+    return true;
+  };
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  return clip(-dx, a.x - s.x0) && clip(dx, s.x1 - a.x) && clip(-dy, a.y - s.y0) && clip(dy, s.y1 - a.y) && t0 <= t1;
+}
+
+/**
+ * Does an arc meet the CLOSED box? An end inside it, or its circle crossing one of the
+ * box's edges, within that edge, at a radial inside the sweep — an arc that enters the box
+ * with both ends outside must cross its boundary to do so.
+ */
+function arcMeetsBox(arc: Arc, s: Box): boolean {
+  if (inBox(arc.a, s) || inBox(arc.b, s)) return true;
+  const c = arc.center;
+  const edges: Array<{ horizontal: boolean; fixed: number; lo: number; hi: number }> = [
+    { horizontal: true, fixed: s.y0, lo: s.x0, hi: s.x1 },
+    { horizontal: true, fixed: s.y1, lo: s.x0, hi: s.x1 },
+    { horizontal: false, fixed: s.x0, lo: s.y0, hi: s.y1 },
+    { horizontal: false, fixed: s.x1, lo: s.y0, hi: s.y1 },
+  ];
+  for (const e of edges) {
+    const off = e.fixed - (e.horizontal ? c.y : c.x);
+    const h = arc.r * arc.r - off * off;
+    if (h < 0) continue;
+    const mid = e.horizontal ? c.x : c.y;
+    const root = Math.sqrt(h);
+    for (const along of [mid - root, mid + root]) {
+      if (along < e.lo || along > e.hi) continue;
+      if (arcContainsRay(arc, e.horizontal ? { x: along, y: e.fixed } : { x: e.fixed, y: along })) return true;
+    }
+  }
+  return false;
+}
+
 /** Build the clearance-eroded nav grid, then stitch it through the connectors. */
 function buildGrid(
   rooms: RRoom[],
   walls: RWall[],
-  connectors: Array<{ at: Point; between: [string, string]; clear: number; bandMm: number }>,
+  connectors: Array<{ at: Point; between: [string, string]; clear: number; bandMm: number; hostAlongX?: boolean }>,
   furniture: RFurniture[],
   verticals: RVertical[],
   voids: RVoid[],
@@ -896,19 +1057,39 @@ function buildGrid(
   // Stitch: carve a threshold through the wall band at each internal connector,
   // recording the connector's clear width at the (grid-degenerate) carved cells.
   const clearAt = new Map<number, number>();
+  // Walkable before any threshold is carved: a carve stamps its connector's width on the
+  // cells it OPENS (and on its far seed, as it always has) — never on a room cell it only
+  // runs along, whose clearance is the room's own (a furniture pinch must stay a pinch).
+  const wasFree = free.slice();
   for (const c of connectors) {
     const ai = roomIndexById.get(c.between[0]);
     const bi = roomIndexById.get(c.between[1]);
     if (ai === undefined || bi === undefined) continue; // exterior / unknown endpoint
-    const pathAt = (at: Point): number[] | null => {
-      const a = seedCell(g, at, rects[ai]!, ai, tol, c.bandMm);
-      const b = seedCell(g, at, rects[bi]!, bi, tol, c.bandMm);
-      return a < 0 || b < 0 ? null : carvePath(g, eroded, a, b);
+    // Every carve a threshold point opens: each seed on one side to its NEAREST seed on the
+    // other (and back), by both L-shaped runs (x-then-y and y-then-x), each kept only if it
+    // meets no furniture. Nearest, not every pair: a doorway on a lattice line seeds a
+    // column either side of it, and pairing a column with the OTHER side's other column
+    // would run an L along a row inside a room, stamping the doorway's width over cells
+    // whose clearance is a furniture pinch.
+    const pathsAt = (at: Point): number[][] => {
+      const as = seedCells(g, at, rects[ai]!, ai, tol, c.bandMm);
+      const bs = seedCells(g, at, rects[bi]!, bi, tol, c.bandMm);
+      const out: number[][] = [];
+      for (const [a, b] of nearestPairs(g, as, bs)) {
+        const xy = carvePath(g, eroded, a, b, true);
+        if (xy) out.push(xy);
+        // The two runs coincide when the seeds share a row or a column.
+        if (a % g.nx === b % g.nx || Math.floor(a / g.nx) === Math.floor(b / g.nx)) continue;
+        const yx = carvePath(g, eroded, a, b, false);
+        if (yx) out.push(yx);
+      }
+      return out;
     };
     const apply = (path: number[]): void => {
+      const far = path[path.length - 1];
       for (const k of path) {
         g.free[k] = 1;
-        clearAt.set(k, Math.min(clearAt.get(k) ?? Infinity, c.clear));
+        if (!wasFree[k] || k === far) clearAt.set(k, Math.min(clearAt.get(k) ?? Infinity, c.clear));
       }
     };
     // Carve EVERY walkable part of the connector's width, the centre included. Stopping
@@ -920,11 +1101,11 @@ function buildGrid(
     // plan with MORE furniture measured WIDER (1500 mm of gap
     // read 700 mm and 1100 mm of gap read 840). A connector is a width, not a point, and
     // which part of it a route may use cannot depend on the phase of its midpoint.
-    const points = thresholdPoints(g, c.at, rects[ai]!, c.clear, tol);
+    const points = thresholdPoints(g, c.at, rects[ai]!, c.clear, tol, c.hostAlongX);
     for (const pt of points) {
-      const p = pathAt(pt);
-      if (p) {
-        apply(p);
+      const ps = pathsAt(pt);
+      for (const p of ps) apply(p);
+      if (ps.length > 0) {
         carved.add(ai);
         carved.add(bi);
       }
@@ -951,6 +1132,10 @@ function buildGrid(
 
 /** The dyadic lattice (mm) {@link toExtentFrame} snaps relative coordinates to: 2⁻¹⁰. */
 const FRAME_QUANTUM_MM = 1 / 1024;
+
+/** A coordinate, and a point, snapped to {@link FRAME_QUANTUM_MM}. */
+const snapToFrame = (v: number): number => Math.round(v / FRAME_QUANTUM_MM) * FRAME_QUANTUM_MM;
+const snapPoint = (p: Point): Point => ({ x: snapToFrame(p.x), y: snapToFrame(p.y) });
 
 /**
  * The circulation inputs moved into the nav extent's OWN frame: every coordinate minus the
@@ -993,7 +1178,7 @@ function toExtentFrame(
     voids: RVoid[];
   },
 ): typeof plan {
-  const snap = (v: number): number => Math.round(v / FRAME_QUANTUM_MM) * FRAME_QUANTUM_MM;
+  const snap = snapToFrame;
   const p = (q: Point): Point => ({ x: snap(q.x - origin.x), y: snap(q.y - origin.y) });
   const at = <T extends { at: Point }>(e: T): T => ({ ...e, at: p(e.at) });
   return {
@@ -1022,8 +1207,8 @@ function extentOrigin(rooms: readonly RRoom[]): Point {
 }
 
 /** Shared nav-grid setup for both the facts and overlay entry points: the grid, each
- *  room's anchor + free-cell list, and every entrance's seed cell (with its clear width
- *  stamped). `none` → no entrance/rooms (null circulation); `empty` → entrances, but not
+ *  room's free-cell list and seed point, and every entrance's seed cells (each with its
+ *  clear width stamped). `none` → no entrance/rooms (null circulation); `empty` → entrances, but not
  *  one with a walkable cell behind it (facts return an empty model). */
 type Nav =
   | { kind: "none" }
@@ -1035,11 +1220,9 @@ type Nav =
   | {
       kind: "ok";
       g: NavGrid;
-      anchor: Int32Array;
       roomCells: number[][];
       /** Per room, the point its facts are measured to — the same label point the room's
-       *  name is drawn at (poly-aware). Kept so a room whose anchor turns out to be
-       *  unreachable can re-pick the nearest cell that is. */
+       *  name is drawn at (poly-aware); `roomRep` measures to its nearest REACHABLE cell. */
       seed: Point[];
       /** Per room, the widest poles of inaccessibility its label-point scan finds on the
        *  ring turned and flipped ({@link labelPointOrbit}); empty unless the room is
@@ -1056,6 +1239,10 @@ type Nav =
       /** Per source, its entrance's id and its connector's clear width (the walk's seed). */
       sourceIds: string[];
       sourceClear: number[];
+      /** Per source, the ordinal (into `entranceSeeds`) of the entrance it seeds. */
+      sourceEntrance: number[];
+      /** Per seeding entrance, in entrance order, every seed cell it contributes. */
+      entranceSeeds: number[][];
       /** The first entrance's id and point (the model's header; the overlay's anchor). */
       entranceId: string;
       entrancePoint: Point;
@@ -1080,6 +1267,14 @@ function buildNav(
   const atById = new Map<string, Point>();
   for (const d of doors) atById.set(d.id, d.at);
   for (const o of openings) atById.set(o.id, o.at);
+  /** Which axis a connector's straight host runs along — the axis its threshold spans. */
+  const alongXById = new Map<string, boolean>();
+  for (const e of [...doors, ...openings]) {
+    const h = e.host;
+    if (!h || h.arc) continue;
+    if (h.a.y === h.b.y && h.a.x !== h.b.x) alongXById.set(e.id, true);
+    else if (h.a.x === h.b.x && h.a.y !== h.b.y) alongXById.set(e.id, false);
+  }
 
   // Internal connectors (two real room endpoints) become carved thresholds, tagged
   // with the door/opening clear width the access graph already estimated.
@@ -1097,15 +1292,15 @@ function buildNav(
       between: e.between,
       clear: e.estimatedClearWidth,
       bandMm: bandOf(e.hostWallId),
+      hostAlongX: alongXById.get(e.doorId),
     }))
     .filter((c) => c.at !== undefined);
 
   const g = buildGrid(rooms, walls, connectors, furniture, verticals, voids, roomIndexById, tol, bodyRadius);
   if (!g) return { kind: "none" };
 
-  // In one pass: each room's anchor (free cell nearest its seed point, row-major so ties
-  // resolve deterministically) and its full free-cell list (route bottlenecks seed the
-  // whole source room so its internal crowding can't cap the route).
+  // Each room's full free-cell list, row-major (route bottlenecks seed the whole source
+  // room so its internal crowding can't cap the route), and the point it is measured to.
   //
   // The seed is where you would stand in the room: its centroid — but a concave (L, U, C)
   // ring can put its exact centroid in its own notch, OFF the floor, and the nearest free
@@ -1114,51 +1309,59 @@ function buildNav(
   // centroid is legal (so nothing that already measured correctly moves) and the ring's
   // pole of inaccessibility — the middle of the widest part of the floor — only when it
   // is not. Same rule the label text uses, so the drawn walk ends where the name is.
-  const anchor = new Int32Array(rooms.length).fill(-1);
-  const anchorDist = new Float64Array(rooms.length).fill(Infinity);
+  //
+  // Snapped to the frame's dyadic lattice, like every input coordinate: a ring's centroid
+  // is a float sum, and a curved room's tessellated centroid lands an ulp or two off its
+  // exact centre — `library`'s drum read (25000.000000000004, 15999.999999999995) — which
+  // decided a tie between the four cells round a lattice corner by rounding noise instead
+  // of by `roomRep`'s key, and the noise does not turn with the plan.
   const roomCells: number[][] = rooms.map(() => []);
-  const seed = rects.map((rb) => (rb.poly ? polygonLabelPoint(rb.poly) : { x: rb.x + rb.w / 2, y: rb.y + rb.h / 2 }));
+  const seed = rects.map((rb) =>
+    snapPoint(rb.poly ? polygonLabelPoint(rb.poly) : { x: rb.x + rb.w / 2, y: rb.y + rb.h / 2 }),
+  );
   // A pole of inaccessibility is found by a scan that keeps the FIRST of equally wide arms
   // (a page-order tie), so such a room is measured to every widest pole the same scan finds
   // on the ring turned or flipped — the orbit — and its walk is the shortest of them.
-  const poles = rects.map((rb) => (rb.poly ? labelPointOrbit(rb.poly) : []));
+  const poles = rects.map((rb) => (rb.poly ? labelPointOrbit(rb.poly).map(snapPoint) : []));
   for (let k = 0; k < g.free.length; k++) {
     const ri = g.roomIdx[k]!;
     if (!g.free[k] || ri < 0) continue;
     roomCells[ri]!.push(k);
-    const c = centreOf(g, k);
-    const cen = seed[ri]!;
-    const dsq = (c.x - cen.x) ** 2 + (c.y - cen.y) ** 2;
-    if (dsq < anchorDist[ri]!) {
-      anchorDist[ri] = dsq;
-      anchor[ri] = k;
-    }
   }
 
   const entranceId = access.entrances[0]!;
   const entrancePoint = atById.get(entranceId);
 
-  // Every entrance's inner seed cell, source order: the walk's sources, all at once.
+  // Every entrance's inner seed cells, source order: the walk's sources, all at once. An
+  // entrance on a lattice line seeds BOTH sides of it (`seedCells`), so one entrance may
+  // contribute two sources; `sourceEntrance` maps each back to its entrance's ordinal.
   const sources: number[] = [];
   const sourceIds: string[] = [];
   const sourceClear: number[] = [];
+  const sourceEntrance: number[] = [];
+  const entranceSeeds: number[][] = [];
   for (const id of access.entrances) {
     const edge = access.edges.find((e) => e.doorId === id);
     const roomId = edge?.between.find((x) => x !== EXTERIOR_NODE && x !== "");
     const ri = roomId !== undefined ? roomIndexById.get(roomId) : undefined;
     const at = atById.get(id);
     if (ri === undefined || at === undefined) continue;
-    const k = seedCell(g, at, rects[ri]!, ri, tol, bandOf(edge?.hostWallId));
-    if (k < 0) continue; // that doorway is sealed by furniture; the others may not be
-    // A doorway in the outer wall has no exterior cells to carve, so its inner seed
-    // reads a degenerate 1-cell width; stamp the connector's own clear width there.
-    const clear = edge?.estimatedClearWidth;
-    if (clear !== undefined) g.clearMm[k] = clear;
-    sources.push(k);
-    sourceIds.push(id);
-    // The seed a widest-path search starts this entrance at. A single entrance reads the
-    // cell's stamped width, exactly as its seed always did.
-    sourceClear.push(clear ?? g.clearMm[k]!);
+    const ks = seedCells(g, at, rects[ri]!, ri, tol, bandOf(edge?.hostWallId));
+    if (ks.length === 0) continue; // that doorway is sealed by furniture; the others may not be
+    const ordinal = entranceSeeds.length;
+    entranceSeeds.push(ks);
+    for (const k of ks) {
+      // A doorway in the outer wall has no exterior cells to carve, so its inner seed
+      // reads a degenerate 1-cell width; stamp the connector's own clear width there.
+      const clear = edge?.estimatedClearWidth;
+      if (clear !== undefined) g.clearMm[k] = clear;
+      sources.push(k);
+      sourceIds.push(id);
+      sourceEntrance.push(ordinal);
+      // The seed a widest-path search starts this entrance at. A single entrance reads the
+      // cell's stamped width, exactly as its seed always did.
+      sourceClear.push(clear ?? g.clearMm[k]!);
+    }
   }
 
   // Sealed front doors are not "no information": the grid still has something to say
@@ -1167,43 +1370,20 @@ function buildNav(
     return { kind: "empty", entranceId, cellSizeMm: g.cell, g, roomCells, sources };
   }
 
-  return { kind: "ok", g, anchor, roomCells, seed, poles, sources, sourceIds, sourceClear, entranceId, entrancePoint };
-}
-
-/**
- * The cell a room's facts are measured AT: the **reachable** free cell nearest the
- * room's seed point (the label point its name is drawn at).
- *
- * The plain nearest-free-cell anchor is not enough, and the difference is not academic.
- * Furniture can leave the label point's own neighbourhood in a pocket the entrance
- * cannot reach — the gap behind a kitchen island, the strip beside a bath — while the
- * rest of the room is perfectly walkable. Measuring "is the anchor reachable?" then
- * answers a question about one derived POINT and reports it as a fact about the ROOM,
- * and the room used to drop out of the facts entirely on the strength of it: silently,
- * because nothing looked at what was missing. Two of `examples/furnished-flat.arch`'s
- * seven rooms were in exactly that state.
- *
- * Returns the anchor unchanged whenever the anchor is itself reachable, so every plan
- * that already measured correctly keeps its exact numbers, and −1 only when NO free
- * cell of the room can be reached — the honest "you cannot walk in here at all".
- *
- * Deterministic: `cells` is row-major and the comparison is strict, so the lowest cell
- * index wins a tie.
- */
-function reachableRep(g: NavGrid, cells: number[], seed: Point, dist: Int32Array, anchor: number): number {
-  if (anchor >= 0 && dist[anchor]! >= 0) return anchor;
-  let best = -1;
-  let bestD = Infinity;
-  for (const k of cells) {
-    if (dist[k]! < 0) continue;
-    const c = centreOf(g, k);
-    const d = (c.x - seed.x) ** 2 + (c.y - seed.y) ** 2;
-    if (d < bestD) {
-      bestD = d;
-      best = k;
-    }
-  }
-  return best;
+  return {
+    kind: "ok",
+    g,
+    roomCells,
+    seed,
+    poles,
+    sources,
+    sourceIds,
+    sourceClear,
+    sourceEntrance,
+    entranceSeeds,
+    entranceId,
+    entrancePoint,
+  };
 }
 
 /** The eight signed permutations of D4 as `[a, b, c, d]`: `(x, y) ↦ (a·x + b·y, c·x + d·y)`. */
@@ -1268,16 +1448,68 @@ function labelPointOrbit(poly: readonly Point[]): Point[] {
   return out;
 }
 
+/**
+ * Where a walk starts, as the straight line sees it: from a cell to the NEAREST seed cell of
+ * the entrance the walk to it came from (source `s` of the multi-source search). An entrance
+ * that seeds one cell reads exactly that cell's centre, as it always did; one on a lattice
+ * line seeds both sides, and which side the search reached a cell from first is a queue
+ * order, so the straight line takes the nearer side — the same number however the plan is
+ * turned or flipped.
+ */
+function entranceAim(nav: Extract<Nav, { kind: "ok" }>): {
+  straightSq(k: number, s: number): number;
+  straight(k: number, s: number): number;
+  entranceOf(s: number): number;
+} {
+  const { g, sourceEntrance, entranceSeeds } = nav;
+  const seedsOf = (s: number): number[] => entranceSeeds[sourceEntrance[s]!]!;
+  return {
+    straightSq(k, s) {
+      const c = centreOf(g, k);
+      let best = Infinity;
+      for (const e of seedsOf(s)) {
+        const o = centreOf(g, e);
+        best = Math.min(best, (c.x - o.x) ** 2 + (c.y - o.y) ** 2);
+      }
+      return best;
+    },
+    straight(k, s) {
+      const c = centreOf(g, k);
+      let best = Infinity;
+      for (const e of seedsOf(s)) {
+        const o = centreOf(g, e);
+        best = Math.min(best, Math.hypot(c.x - o.x, c.y - o.y));
+      }
+      return best;
+    },
+    entranceOf: (s) => sourceEntrance[s]!,
+  };
+}
+
 /** A room's bounding-box centre (exact: a half-sum of snapped coordinates). Not a derived
  *  position (so no `r.poly` branch): only `roomRep`'s D4-symmetric tie-break key is taken
  *  about it, and a plan symmetry maps a box centre to its image's, so the key is invariant. */
 const bboxCentre = (r: RRoom): Point => ({ x: r.at.x + r.size.w / 2, y: r.at.y + r.size.h / 2 });
 
 /**
- * The cell a room's facts are measured at, and the point it was chosen for. A room with
- * {@link labelPointOrbit} poles is measured to each pole's {@link reachableRep} and keeps
- * the one the walk reaches first (ties to the lowest cell index); every other room is its
- * label point's `reachableRep`, exactly as before.
+ * The cell a room's facts are measured AT, and the point it was chosen for: the
+ * **reachable** free cell nearest the room's seed point (the label point its name is drawn
+ * at) — or, for a concave room with {@link labelPointOrbit} poles, nearest any pole.
+ *
+ * Reachable, because the plain nearest free cell is not enough, and the difference is not
+ * academic. Furniture can leave the label point's own neighbourhood in a pocket the
+ * entrance cannot reach — the gap behind a kitchen island, the strip beside a bath — while
+ * the rest of the room is perfectly walkable. Measuring "is the nearest cell reachable?"
+ * then answers a question about one derived POINT and reports it as a fact about the ROOM,
+ * and the room used to drop out of the facts entirely on the strength of it: silently,
+ * because nothing looked at what was missing. Two of `examples/furnished-flat.arch`'s seven
+ * rooms were in exactly that state. −1 only when NO free cell of the room can be reached —
+ * the honest "you cannot walk in here at all".
+ *
+ * Among EQUIDISTANT nearest cells — a room whose seed point sits on a lattice line or a
+ * crossing (every even-celled rectangle), or whose seed is covered by furniture so the
+ * nearest free cells form a ring round it — the pick is D4-symmetric, not the row-major
+ * first: the one the walk reaches first, then the key below (backlog E.6, E.8, E.9).
  */
 function roomRep(
   g: NavGrid,
@@ -1285,17 +1517,20 @@ function roomRep(
   seed: Point,
   poles: readonly Point[],
   dist: Int32Array,
-  anchor: number,
-  /** Where the walk to cell `k` starts (its entrance seed cell's centre). */
-  originOf: (k: number) => Point,
+  /** Squared straight line from cell `k` to the nearest seed cell of the entrance its walk
+   *  starts at. */
+  straightSq: (k: number) => number,
+  /** The ordinal (entrance order) of the entrance the walk to cell `k` starts at. */
+  entranceOf: (k: number) => number,
   /** The room's bounding-box centre — the point the D4-invariant key is taken about. */
   centre: Point,
-): { k: number; seed: Point } {
-  if (poles.length === 0) return { k: reachableRep(g, cells, seed, dist, anchor), seed };
-  // Every reachable cell nearest to ANY pole of the orbit — the whole tie set, not the
-  // row-major first — so the candidates are the same set however the plan is drawn.
+): { k: number; seed: Point; ties: number[] } {
+  const points = poles.length > 0 ? poles : [seed];
+  // Every reachable cell nearest to the seed point (or to ANY pole of the orbit) — the
+  // whole tie set, not the row-major first — so the candidates are the same set however
+  // the plan is drawn.
   const cand: Array<{ k: number; seed: Point }> = [];
-  for (const p of poles) {
+  for (const p of points) {
     let bestD = Infinity;
     const at: number[] = [];
     for (const k of cells) {
@@ -1310,28 +1545,74 @@ function roomRep(
     }
     for (const k of at) cand.push({ k, seed: p });
   }
-  if (cand.length === 0) return { k: -1, seed: poles[0]! };
+  if (cand.length === 0) return { k: -1, seed: points[0]!, ties: [] };
   // Then a D4-symmetric order: fewest hops, then nearest (straight line) to the walk's own
   // entrance, then the candidate's offsets from the room's centre as a sorted multiset of
-  // magnitudes (what a turn or flip about that centre preserves). Only a candidate some
-  // symmetry of the whole plan maps onto another survives all three, and the facts read
-  // off either are identical; the cell index settles that last, page-order tie.
-  const key = (k: number): [number, number, number, number] => {
+  // magnitudes (what a turn or flip about that centre preserves), then the entrance's
+  // source order. Candidates that tie on all of them read the same room facts (walk,
+  // entrance, detour) but need not sit where a symmetry of the plan maps one onto the other
+  // — two cells mirrored about the entrance's own axis tie with the rest of the plan
+  // asymmetric — so they are ALL returned (`ties`): a key route measures from the whole set
+  // (`routeBetween`), never from the one the cell index picks. `k` is that page-order pick,
+  // kept only to draw the overlay's walk.
+  const key = (k: number): [number, number, number, number, number] => {
     const c = centreOf(g, k);
-    const o = originOf(k);
     const [lo, hi] = [Math.abs(c.x - centre.x), Math.abs(c.y - centre.y)].sort((a, b) => a - b);
-    return [dist[k]!, (c.x - o.x) ** 2 + (c.y - o.y) ** 2, lo!, hi!];
+    return [dist[k]!, straightSq(k), lo!, hi!, entranceOf(k)];
+  };
+  const cmpKey = (x: readonly number[], y: readonly number[]): number => {
+    let cmp = 0;
+    for (let i = 0; i < 5 && cmp === 0; i++) cmp = x[i]! - y[i]!;
+    return cmp;
   };
   let best = cand[0]!;
   let bk = key(best.k);
   for (const c of cand.slice(1)) {
-    const ck = key(c.k);
-    let cmp = 0;
-    for (let i = 0; i < 4 && cmp === 0; i++) cmp = ck[i]! - bk[i]!;
+    const cmp = cmpKey(key(c.k), bk);
     if (cmp < 0 || (cmp === 0 && c.k < best.k)) {
       best = c;
-      bk = ck;
+      bk = key(c.k);
     }
+  }
+  const ties = [...new Set(cand.filter((c) => cmpKey(key(c.k), bk) === 0).map((c) => c.k))].sort((a, b) => a - b);
+  return { ...best, ties };
+}
+
+/**
+ * A key route from one room to the nearest of `targets`, measured between TIE SETS: the walk
+ * is the fewest hops from any of the source room's tied cells to any of a target's
+ * ({@link roomRep}'s `ties`), the target is the nearest by that walk (ties to the one
+ * written first), and the straight line a detour divides by is the shortest between a pair
+ * that realises the walk. Every term is a minimum over sets a turn or flip of the plan maps
+ * onto their images, so no page-order pick inside a tie set can move a route's numbers. A
+ * room with one tied cell (the usual case) is measured exactly as from that one cell.
+ *
+ * Also returns the realising pair and its BFS parents (the first such pair in cell order)
+ * for the overlay to draw.
+ */
+function routeBetween(
+  g: NavGrid,
+  fromTies: readonly number[],
+  targets: ReadonlyArray<{ idx: number; ties: readonly number[] }>,
+): { idx: number; hops: number; straight: number; a: number; b: number; parent: Int32Array } | null {
+  const searches = fromTies.map((a) => ({ a, r: bfs(g, a) }));
+  let best: { idx: number; hops: number; straight: number; a: number; b: number; parent: Int32Array } | null = null;
+  for (const t of targets) {
+    let hops = Number.POSITIVE_INFINITY;
+    for (const { r } of searches) for (const b of t.ties) if (r.dist[b]! >= 0) hops = Math.min(hops, r.dist[b]!);
+    if (!Number.isFinite(hops) || (best && hops >= best.hops)) continue;
+    let straight = Number.POSITIVE_INFINITY;
+    let pick: { a: number; b: number; parent: Int32Array } | null = null;
+    for (const { a, r } of searches) {
+      for (const b of t.ties) {
+        if (r.dist[b] !== hops) continue;
+        const ca = centreOf(g, a);
+        const cb = centreOf(g, b);
+        straight = Math.min(straight, Math.hypot(cb.x - ca.x, cb.y - ca.y));
+        pick ??= { a, b, parent: r.parent };
+      }
+    }
+    best = { idx: t.idx, hops, straight, ...pick! };
   }
   return best;
 }
@@ -1500,8 +1781,9 @@ export function computeCirculation(
       ...(unmeasured.length > 0 ? { unmeasured } : {}),
     };
   }
-  const { g, anchor, roomCells, seed, poles, sources, sourceIds, sourceClear, entranceId } = nav;
+  const { g, roomCells, seed, poles, sources, sourceIds, sourceClear, entranceId } = nav;
   const cellSizeMm = g.cell;
+  const aim = entranceAim(nav);
 
   // One multi-source walk: every room is measured from its NEAREST entrance.
   const { dist, from } = bfsNearest(g, sources);
@@ -1512,18 +1794,29 @@ export function computeCirculation(
   // facts keep their bytes.
   const perRoomEntrance = access.entrances.length > 1;
 
-  // One representative cell per room, reachability-aware (see `reachableRep`). Computed
+  // One representative cell per room, reachability-aware (see `roomRep`). Computed
   // once: the room facts, the key routes and the render overlay must all measure to the
   // same point or the drawing and the numbers disagree.
-  const originOf = (k: number): Point => centreOf(g, sources[from[k]!]!);
   const rep = new Int32Array(rooms.length);
+  const repTies: number[][] = [];
   for (let ri = 0; ri < rooms.length; ri++) {
-    // A room the modeled doors do not reach has no walk, whatever the raster says: a
-    // partition thinner than a cell blocks no cell centre (backlog C.1), so the grid can
-    // leak into it. It is `no_door_route`, as `access` and lint say.
-    rep[ri] = doorReachable.has(rooms[ri]!.id)
-      ? roomRep(g, roomCells[ri]!, seed[ri]!, poles[ri]!, dist, anchor[ri]!, originOf, bboxCentre(rooms[ri]!)).k
-      : -1;
+    // A room the modeled doors do not reach has no walk, whatever the raster says (a gap
+    // the grid cannot see — a wall missing from the drawing, a door the access graph
+    // refuses — can still leak into it). It is `no_door_route`, as `access` and lint say.
+    const r = doorReachable.has(rooms[ri]!.id)
+      ? roomRep(
+          g,
+          roomCells[ri]!,
+          seed[ri]!,
+          poles[ri]!,
+          dist,
+          (k) => aim.straightSq(k, from[k]!),
+          (k) => aim.entranceOf(from[k]!),
+          bboxCentre(rooms[ri]!),
+        )
+      : { k: -1, ties: [] };
+    rep[ri] = r.k;
+    repTies.push(r.ties);
   }
 
   const blocked = furnitureSealed(blockedCandidates(nav));
@@ -1532,10 +1825,9 @@ export function computeCirculation(
     const a = rep[ri]!;
     if (a < 0) continue; // nothing reachable from any entrance; `blocked` says whether that is a defect
     const walkExact = dist[a]! * g.cell;
-    const centre = centreOf(g, a);
-    // Walk & straight-line share the threshold origin: this room's own entrance.
-    const origin = centreOf(g, sources[from[a]!]!);
-    const straight = Math.hypot(centre.x - origin.x, centre.y - origin.y);
+    // Walk & straight-line share the threshold origin: this room's own entrance (the
+    // nearest of its seed cells, when it seeds both sides of a lattice line).
+    const straight = aim.straight(a, from[a]!);
     roomFacts.push({
       roomId: rooms[ri]!.id,
       walkDistanceMm: Math.round(walkExact),
@@ -1548,31 +1840,17 @@ export function computeCirculation(
   // Key functional routes: kitchen → nearest living/dining, bedroom → nearest bath.
   const routes: CirculationRoute[] = [];
   const addNearestRoute = (fromIdx: number, targetIdxs: number[]): void => {
-    const a = rep[fromIdx]!;
-    if (a < 0) return;
-    const r = bfs(g, a);
-    let best = -1;
-    let bestDist = Infinity;
-    for (const tj of targetIdxs) {
-      if (tj === fromIdx) continue;
-      const ta = rep[tj]!;
-      if (ta < 0 || r.dist[ta]! < 0) continue;
-      const d = r.dist[ta]!;
-      if (d < bestDist) {
-        bestDist = d;
-        best = tj;
-      }
-    }
-    if (best < 0) return;
-    const ta = rep[best]!;
-    const walkExact = r.dist[ta]! * g.cell;
+    if (rep[fromIdx]! < 0) return;
+    const targets = targetIdxs.filter((tj) => tj !== fromIdx).map((tj) => ({ idx: tj, ties: repTies[tj]! }));
+    const found = routeBetween(g, repTies[fromIdx]!, targets);
+    if (!found) return;
+    const best = found.idx;
+    const walkExact = found.hops * g.cell;
     // Seed from every cell of room A with no cap: you start inside room A, so its own
     // furniture-crowding must not limit the route — only the doors/corridors between A
     // and B should.
     const wide = perRoomMax(g, widestBottleneck(g, roomCells[fromIdx]!, Number.POSITIVE_INFINITY), rooms.length);
-    const from = centreOf(g, a);
-    const to = centreOf(g, ta);
-    const straight = Math.hypot(to.x - from.x, to.y - from.y);
+    const straight = found.straight;
     routes.push({
       fromRoomId: rooms[fromIdx]!.id,
       toRoomId: rooms[best]!.id,
@@ -1616,8 +1894,8 @@ export interface OverlayRoom {
   /** The point the room is measured to: its label point, or the {@link labelPointOrbit} pole
    *  whose cell the walk reaches first. */
   seed: Point;
-  /** The free cell nearest `seed` is NOT reachable (a pocket), so the walk ends at the
-   *  nearest reachable cell instead — see `reachableRep`. */
+  /** No free cell nearest `seed` is reachable (a pocket), so the walk ends at the nearest
+   *  reachable cell instead — see `roomRep`. */
   fallback: boolean;
   /** Shortest-walk polyline (mm, collinear-merged) from the room's nearest entrance to the room target. */
   path: Point[];
@@ -1637,9 +1915,10 @@ export interface CirculationOverlay {
   cellSizeMm: number;
   /** The first entrance's point; each room's path starts at its own nearest entrance. */
   entranceAt: Point;
-  /** Every entrance whose doorway seeds the walk, in entrance order, with the centre of
-   *  its seed cell — where a room walked from it starts. Geometry for readers of the
-   *  overlay (the equivariance oracle); nothing draws it. */
+  /** One row per SEED CELL of every entrance whose doorway seeds the walk, in entrance
+   *  order, with the cell's centre — where a room walked from it starts. An entrance on a
+   *  lattice line seeds both sides of it, so its id appears twice. Geometry for readers of
+   *  the overlay (the equivariance oracle); nothing draws it. */
   entrances: Array<{ entranceId: string; seed: Point }>;
   rooms: OverlayRoom[];
   routes: OverlayRoute[];
@@ -1657,6 +1936,19 @@ function simplifyPolyline(pts: Array<{ x: number; y: number }>): Point[] {
   }
   out.push({ x: pts[pts.length - 1]!.x, y: pts[pts.length - 1]!.y });
   return out;
+}
+
+/** Squared distance (mm²) from cell `k`'s centre to `p`. */
+function sqDistTo(g: NavGrid, k: number, p: Point): number {
+  const c = centreOf(g, k);
+  return (c.x - p.x) ** 2 + (c.y - p.y) ** 2;
+}
+
+/** The smallest {@link sqDistTo} over `cells` (Infinity for none). */
+function nearestFreeSq(g: NavGrid, cells: readonly number[], p: Point): number {
+  let best = Infinity;
+  for (const k of cells) best = Math.min(best, sqDistTo(g, k, p));
+  return best;
 }
 
 /** Reconstruct a BFS shortest path (source→target) as simplified mm points. */
@@ -1707,7 +1999,7 @@ export function computeCirculationOverlay(
   const back = (p: Point): Point => ({ x: o.x + p.x, y: o.y + p.y });
   const nav = buildNav(rooms, walls, doors, openings, furniture, verticals, voids, access, tol, bodyRadiusMm);
   if (nav.kind !== "ok" || entranceAt === undefined) return null;
-  const { g, anchor, seed, sources, sourceIds, sourceClear } = nav;
+  const { g, seed, sources, sourceIds, sourceClear } = nav;
 
   // The same multi-source walk the facts measure: each room's path starts at its own
   // nearest entrance, and each pinch lies on the widest route from any entrance.
@@ -1717,8 +2009,9 @@ export function computeCirculationOverlay(
 
   // The same reachability-aware representative the facts measure to — a drawing that
   // ends somewhere else from the number it illustrates is worse than no drawing.
-  const originOf = (k: number): Point => centreOf(g, sources[from[k]!]!);
+  const aim = entranceAim(nav);
   const rep = new Int32Array(rooms.length);
+  const repTies: number[][] = [];
   const repSeed: Point[] = [];
   // The same door-route gate as the facts: a room `access` cannot reach draws no walk.
   const doorReachable = new Set(access.rooms.filter((n) => n.reachable).map((n) => n.id));
@@ -1729,15 +2022,15 @@ export function computeCirculationOverlay(
       seed[ri]!,
       nav.poles[ri]!,
       dist,
-      anchor[ri]!,
-      originOf,
+      (k) => aim.straightSq(k, from[k]!),
+      (k) => aim.entranceOf(from[k]!),
       bboxCentre(rooms[ri]!),
     );
     rep[ri] = doorReachable.has(rooms[ri]!.id) ? r.k : -1;
+    repTies.push(doorReachable.has(rooms[ri]!.id) ? r.ties : []);
     repSeed.push(r.seed);
   }
 
-  const everyCell = new Int32Array(g.nx * g.ny); // all 0: "reached"
   const overlayRooms: OverlayRoom[] = [];
   for (let ri = 0; ri < rooms.length; ri++) {
     const a = rep[ri]!;
@@ -1757,34 +2050,24 @@ export function computeCirculationOverlay(
       entranceId: sourceIds[from[a]!]!,
       path: reconstructPath(g, parent, a).map(back),
       seed: back(repSeed[ri]!),
-      // The free cell nearest the seed, reachable or not: the same scan with every cell
-      // counted as reached.
-      fallback: a !== reachableRep(g, nav.roomCells[ri]!, repSeed[ri]!, everyCell, -1),
+      // Farther from the seed than the room's nearest free cell, reachable or not — so it
+      // is not one of the (possibly several, equidistant) cells a free walk would end at.
+      fallback: sqDistTo(g, a, repSeed[ri]!) > nearestFreeSq(g, nav.roomCells[ri]!, repSeed[ri]!),
       pinch: pinchCell >= 0 ? { at: back(centreOf(g, pinchCell)), clearMm: Math.round(bestVal) } : null,
     });
   }
 
   const overlayRoutes: OverlayRoute[] = [];
   const addRoute = (fromIdx: number, targetIdxs: number[]): void => {
-    const a = rep[fromIdx]!;
-    if (a < 0) return;
-    const r = bfs(g, a);
-    let best = -1;
-    let bestDist = Infinity;
-    for (const tj of targetIdxs) {
-      if (tj === fromIdx) continue;
-      const ta = rep[tj]!;
-      if (ta < 0 || r.dist[ta]! < 0) continue;
-      if (r.dist[ta]! < bestDist) {
-        bestDist = r.dist[ta]!;
-        best = tj;
-      }
-    }
-    if (best < 0) return;
+    if (rep[fromIdx]! < 0) return;
+    // The same tie-set route the facts measure, drawn between the first pair realising it.
+    const targets = targetIdxs.filter((tj) => tj !== fromIdx).map((tj) => ({ idx: tj, ties: repTies[tj]! }));
+    const found = routeBetween(g, repTies[fromIdx]!, targets);
+    if (!found) return;
     overlayRoutes.push({
       fromRoomId: rooms[fromIdx]!.id,
-      toRoomId: rooms[best]!.id,
-      path: reconstructPath(g, r.parent, rep[best]!).map(back),
+      toRoomId: rooms[found.idx]!.id,
+      path: reconstructPath(g, found.parent, found.b).map(back),
     });
   };
   const livingDining = rooms.map((r, i) => (isLivingOrDining(r) ? i : -1)).filter((i) => i >= 0);

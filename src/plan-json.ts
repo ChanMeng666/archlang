@@ -260,6 +260,11 @@ export interface OpeningJson {
   slide?: DoorSlideDir;
   /** How far the panel is drawn open, 0–1. A drawing fact; nothing measured reads it. */
   open?: number;
+  /** `true` on a door inside a reflecting `place` frame — the FRAME's reflection (the IR's
+   *  `_mirror`, which a sliding door's track choice reads), not the leaf's handedness.
+   *  Absent otherwise; `planJsonToArch` refuses it (`E_JSON_MIRROR`), since source has no
+   *  per-door `mirror`. */
+  mirror?: boolean;
   /**
    * Bottom of the glazing above this storey's floor, in mm — `window` only. `0` is
    * legal and means a floor-length window. Emitted only when the plan authored a height
@@ -323,6 +328,10 @@ export interface DimJson {
   to: PointJson;
   offset?: number;
   text?: string;
+  /** `true` on a dimension inside a reflecting `place` frame — the FRAME's reflection (the
+   *  IR's `_mirror`, which sets the side a zero-offset call-out's number reads on).
+   *  Absent otherwise; `planJsonToArch` refuses it (`E_JSON_MIRROR`). */
+  mirror?: boolean;
 }
 
 export interface ColumnJson {
@@ -536,6 +545,9 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL): Pla
           if (allowed.slide && e.slide !== undefined) base.slide = e.slide;
           if (allowed.open && e.open !== undefined) base.open = e.open;
         }
+        // The reflecting `place` frame this door crossed (`_mirror`); `swing` above is
+        // already the reflected one, so the flag adds only what it cannot say.
+        if (e._mirror) base.mirror = true;
       }
       // The vertical datum, under the one gate. `sill` is a window's alone — a
       // door's and a cased opening's sill is the floor, and emitting `sill: 0` for them
@@ -594,6 +606,9 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL): Pla
     to: { x: d.to.x, y: d.to.y },
     offset: d.offset,
     ...(d.text !== undefined ? { text: d.text } : {}),
+    // The reflecting `place` frame this dimension crossed (`_mirror`); `offset` above is
+    // already the reflected one.
+    ...(d._mirror ? { mirror: true } : {}),
   }));
 
   const columns: ColumnJson[] = columnEls.map((c) => ({
@@ -843,6 +858,21 @@ function validateWall(w: unknown, path: string, val: Validator): void {
     val.err(`${path}/height`, `expected a number greater than 0 and no more than ${MAX_HEIGHT}`);
 }
 
+/**
+ * `mirror: true` is a reflecting `place` frame's reflection, and a frame is the only thing
+ * source can say it with: emitting the element would silently lose it. Refused (`E_JSON_MIRROR`)
+ * rather than dropped — the one rule furniture, doors and dimensions all follow.
+ */
+function refuseMirror(mirror: unknown, path: string, what: string, own: string, val: Validator): void {
+  if (mirror !== undefined && typeof mirror !== "boolean") val.err(`${path}/mirror`, "expected a boolean");
+  if (mirror === true)
+    val.diags.push({
+      severity: "error",
+      message: `plan JSON ${path}/mirror: ${what} cannot be written as source — \`.arch\` has no ${own} \`mirror\` (only a \`place … mirror x|y\` frame reflects one)`,
+      code: "E_JSON_MIRROR",
+    });
+}
+
 function validateOpening(o: unknown, path: string, val: Validator): void {
   if (!isObj(o)) {
     val.err(path, "expected an object");
@@ -851,6 +881,10 @@ function validateOpening(o: unknown, path: string, val: Validator): void {
   if (!(isStr(o.kind) && OPENING_KINDS.has(o.kind)))
     val.kindErr(`${path}/kind`, `expected "door", "window", or "opening"${isStr(o.kind) ? ` (got "${o.kind}")` : ""}`);
   if (!isNum(o.width)) val.err(`${path}/width`, "expected a number");
+  // `mirror` is a door's alone (only a door carries the IR's `_mirror`), as `sill` is a window's.
+  if (o.mirror !== undefined && o.kind !== "door")
+    val.err(`${path}/mirror`, "only a door has a `mirror` — a window and a cased opening are never reflected");
+  else refuseMirror(o.mirror, path, "a door reflected by a `place` frame", "per-door", val);
   const hasXY = isNum(o.x) && isNum(o.y);
   const hasOn =
     isObj(o.on) && isStr((o.on as Record<string, unknown>).wall) && isStr((o.on as Record<string, unknown>).at);
@@ -894,17 +928,8 @@ function validateFurniture(f: unknown, path: string, val: Validator): void {
   if (!hasAt && !hasAgainst && !hasInPlace)
     val.err(path, "needs a placement: `x`/`y`, `against_wall`, or (`centered`/`anchor` with `room`)");
   if (f.rotate !== undefined && !isNum(f.rotate)) val.err(`${path}/rotate`, "expected a number");
-  // `mirror: true` is a reflecting `place` frame's reflection, and a frame is the only
-  // thing source can say it with: there is no per-furniture `mirror`, so emitting the
-  // piece would silently lose it (a handed symbol would draw unmirrored). Refused rather
-  // than dropped.
-  if (f.mirror !== undefined && typeof f.mirror !== "boolean") val.err(`${path}/mirror`, "expected a boolean");
-  if (f.mirror === true)
-    val.diags.push({
-      severity: "error",
-      message: `plan JSON ${path}/mirror: a fixture reflected by a \`place\` frame cannot be written as source — \`.arch\` has no per-furniture \`mirror\` (only a \`place … mirror x|y\` frame reflects one)`,
-      code: "E_JSON_MIRROR",
-    });
+  // A handed symbol would draw unmirrored if the flag were dropped: refused, not dropped.
+  refuseMirror(f.mirror, path, "a fixture reflected by a `place` frame", "per-furniture", val);
   if (f.side !== undefined && f.side !== "left" && f.side !== "right")
     val.err(`${path}/side`, 'expected "left" or "right"');
   // The anchor accept-list is DERIVED from the parser's own `FURNITURE_ANCHORS`, never
@@ -929,6 +954,7 @@ function validateDim(d: unknown, path: string, val: Validator): void {
   reqPoint(d.to, `${path}/to`, val);
   if (d.offset !== undefined && !isNum(d.offset)) val.err(`${path}/offset`, "expected a number");
   if (d.text !== undefined && !isStr(d.text)) val.err(`${path}/text`, "expected a string");
+  refuseMirror(d.mirror, path, "a dimension reflected by a `place` frame", "per-dimension", val);
 }
 
 function validateColumn(c: unknown, path: string, val: Validator): void {
@@ -1269,7 +1295,7 @@ export function checkGraph(source: string, intent: Record<string, string[]>, opt
   // Intended undirected edges, as resolved id pairs (canonical order by source rank).
   const pairKey = (a: string, b: string): string => {
     const [x, y] = (rank.get(a) ?? 0) <= (rank.get(b) ?? 0) ? [a, b] : [b, a];
-    return `${x} ${y}`;
+    return `${x}\u0000${y}`;
   };
   const intended = new Map<string, [string, string]>();
   for (const key of intentKeys) {
@@ -1356,7 +1382,7 @@ export const PLAN_JSON_SCHEMA = {
   $id: "https://archlang.uk/plan.schema.json",
   title: "ArchLang Plan",
   description:
-    "A floor plan as structured JSON (RPLAN / DStruct2Design convention). Coordinates are millimetres; the origin is top-left with +x right and +y DOWN. Fields marked output-only are produced by planToJson and ignored on input. Scripting (let/for/if/component) and import are not representable — author those in .arch source.",
+    "A floor plan as structured JSON (RPLAN / DStruct2Design convention). Coordinates are millimetres; the origin is top-left with +x right and +y DOWN. Fields marked output-only are produced by planToJson and ignored on input. Scripting (let/for/if/component) and import are not representable — author those in .arch source. Vertical circulation (stair/escalator/elevator) is not projected: Plan JSON has no member for it.",
   type: "object",
   required: ["plan", "rooms", "walls", "openings", "furniture"],
   additionalProperties: false,
@@ -1526,6 +1552,11 @@ export const PLAN_JSON_SCHEMA = {
             description:
               "Which way a sliding-family panel travels to open, along the wall's direction (as `hinge` is). Sliding family only.",
           },
+          mirror: {
+            type: "boolean",
+            description:
+              "Door only. True on a door inside a reflecting `place` frame: it records the frame's reflection (a sliding door takes the other track), not the leaf's handedness. Absent otherwise. Output-only: `planFromJson` refuses `true` with E_JSON_MIRROR.",
+          },
           open: {
             type: "number",
             minimum: 0,
@@ -1602,6 +1633,11 @@ export const PLAN_JSON_SCHEMA = {
           to: { ...POINT_SCHEMA, description: "End point." },
           offset: { type: "number", description: "Perpendicular offset of the dimension line in millimetres." },
           text: { type: "string", description: "Override text; defaults to the measured length." },
+          mirror: {
+            type: "boolean",
+            description:
+              "True on a dimension inside a reflecting `place` frame: it records the frame's reflection (the side a zero-offset call-out's number reads on). Absent otherwise. Output-only: `planFromJson` refuses `true` with E_JSON_MIRROR.",
+          },
         },
       },
     },
