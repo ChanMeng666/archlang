@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
-import { approachGapMm, distPointToRect, frontGapMm, mm, shortfall } from "../src/lint/measure.js";
+import { approachGapMm, deficitMm, distPointToRect, frontGapMm, mm, shortfall } from "../src/lint/measure.js";
 import { frontClearanceRect } from "../src/analyze.js";
 import type { BBox } from "../src/geometry/rect.js";
 
@@ -159,6 +159,22 @@ describe("shortfall — how far `required` exceeds `available`", () => {
   it("never prints as a negative zero through mm()", () => {
     expect(mm(shortfall(0, 0))).toBe("0");
     expect(mm(shortfall(-0, 0))).toBe("0");
+  });
+});
+
+describe("deficitMm — a requirement, an availability and a shortfall that agree", () => {
+  it("rounds the requirement up and the availability down, and quotes their difference", () => {
+    // Rounded one by one these read "1999 … 1999 (1 short)".
+    expect(deficitMm(1999.2, 1998.6)).toEqual({ required: "2000", available: "1998", short: "2" });
+    expect(deficitMm(2000, 1999)).toEqual({ required: "2000", available: "1999", short: "1" });
+  });
+  it("never shows a real shortfall as 0, and never a negative one", () => {
+    expect(deficitMm(1000.4, 1000).short).toBe("1");
+    expect(deficitMm(1000, 1000).short).toBe("0");
+    expect(deficitMm(900, 1000).short).toBe("0");
+  });
+  it("ignores floating-point dust on a whole-millimetre value", () => {
+    expect(deficitMm(2000 + 1e-12, 2000 - 1e-12)).toEqual({ required: "2000", available: "2000", short: "0" });
   });
 });
 

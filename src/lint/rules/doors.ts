@@ -15,24 +15,24 @@ import { type Arc, arcLength, arcTangentAt } from "../../geometry/arc.js";
 import { doorLandingRect, rectsOverlap } from "../../geometry/rect.js";
 import type { RDoor } from "../../ir.js";
 import type { LintContext, LintRule } from "../context.js";
-import { approachGapMm, distPointToRect, mm, shortfall } from "../measure.js";
+import { approachGapMm, deficitMm, distPointToRect, mm, shortfall } from "../measure.js";
 
 /**
  * A door whose swing arc is blocked by furniture or another door's swing.
  *
  * The message states the clear radius the swing needs, what it actually has, and the
- * shortfall; the hints enumerate the closed remedy set. Only the hinge flip is carried
- * as a machine-applicable {@link doorHingeFlipFix} — and only when the flipped swing is
- * recomputed and proved clear of everything. The "narrow the door" remedy quotes the
- * exact width that would clear and **refuses itself** when that width is under the
- * minimum passable one: shrinking a door below its own floor does not solve the
- * conflict, it relocates it into `W_DOOR_CLEARANCE`. It is left out altogether when that
- * width is not strictly under the door's own (a shortfall of 0 mm, where the other
- * remedies stand alone).
+ * shortfall ({@link deficitMm}: rounded so the three numbers agree); the hints enumerate the
+ * closed remedy set. Only the hinge flip is carried as a machine-applicable
+ * {@link doorHingeFlipFix} — and only when the flipped swing is recomputed and proved clear
+ * of everything. The "narrow the door" remedy is held to the same proof: it quotes the widest
+ * narrower leaf whose recomputed swing (hinge moved, since narrowing keeps `at`) is clear of
+ * everything ({@link widestClearingWidth}), **refuses itself** when that width is under the
+ * minimum passable one (shrinking a door below its own floor does not solve the conflict, it
+ * relocates it into `W_DOOR_CLEARANCE`), and is left out when no narrower leaf clears.
  */
 export const swingObstructed: LintRule = {
   name: "swing-obstructed",
-  check({ doors, furniture, rules, at, frameOf }: LintContext): Diagnostic[] {
+  check({ ir, doors, furniture, rules, at, frameOf }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
     const swings: Array<{ d: RDoor; s: DoorSwing }> = [];
     for (const d of doors) {
@@ -43,17 +43,13 @@ export const swingObstructed: LintRule = {
     const min = rules.minDoorWidthMm;
     for (let i = 0; i < swings.length; i++) {
       const { d, s } = swings[i]!;
-      /** Measured cause + the widest leaf that would still clear it. */
-      let cause: { text: string; widest: number } | null = null;
+      /** The measured cause, as prose. */
+      let cause: string | null = null;
       const hit = furniture.find((f) => sectorIntersectsRect(s, rectOf(f), clr));
       if (hit) {
-        const need = s.radius + clr;
-        const reach = distPointToRect(s.hinge, rectOf(hit));
+        const m = deficitMm(s.radius + clr, distPointToRect(s.hinge, rectOf(hit)));
         const gn = hit.label ?? hit.category;
-        cause = {
-          text: `the swing needs ${mm(need)} mm of clear radius but "${gn}" is ${mm(reach)} mm from the hinge (${mm(shortfall(need, reach))} mm short)`,
-          widest: reach - clr,
-        };
+        cause = `the swing needs ${m.required} mm of clear radius but "${gn}" is ${m.available} mm from the hinge (${m.short} mm short)`;
       } else {
         // Pairwise, and only against LATER doors — one warning per colliding pair, on
         // the earlier door. (Unchanged: the raise set must stay exactly what it was.)
@@ -61,25 +57,23 @@ export const swingObstructed: LintRule = {
           const o = swings[j]!;
           if (!swingsCollide(s, o.s, clr)) continue;
           const gap = Math.hypot(s.hinge.x - o.s.hinge.x, s.hinge.y - o.s.hinge.y);
-          const need = s.radius + o.s.radius + clr;
-          cause = {
-            text: `door "${o.d.id}"'s swing overlaps it — the hinges are ${mm(gap)} mm apart where the two leaves need ${mm(need)} mm (${mm(shortfall(need, gap))} mm short)`,
-            widest: gap - o.s.radius - clr,
-          };
+          const m = deficitMm(s.radius + o.s.radius + clr, gap);
+          cause = `door "${o.d.id}"'s swing overlaps it — the hinges are ${m.available} mm apart where the two leaves need ${m.required} mm (${m.short} mm short)`;
           break;
         }
       }
       if (!cause) continue;
+      /** Is this swing provably clear of every piece and every OTHER door's swing —
+       *  including doors earlier in the list, which this rule does not warn about but
+       *  which a remedy could newly collide with? The one proof every quoted remedy
+       *  (the hinge flip, the narrowed width) is held to. */
+      const clearOf = (sw: DoorSwing | null): boolean =>
+        sw !== null &&
+        !furniture.some((f) => sectorIntersectsRect(sw, rectOf(f), clr)) &&
+        swings.every((o) => o.d === d || !swingsCollide(sw, o.s, clr));
       const flipped = d.hinge === "left" ? "right" : "left";
-      const alt = doorSwing({ ...d, hinge: flipped });
-      // Applicable only if the OTHER jamb is provably clear of every piece and every
-      // other door's swing — including doors earlier in the list, which this rule does
-      // not warn about but which a flip could newly collide with.
-      const flipClears =
-        alt !== null &&
-        !furniture.some((f) => sectorIntersectsRect(alt, rectOf(f), clr)) &&
-        swings.every((o) => o.d === d || !swingsCollide(alt, o.s, clr));
-      const narrowTo = Math.max(0, Math.floor(cause.widest));
+      const flipClears = clearOf(doorSwing({ ...d, hinge: flipped }));
+      const narrowTo = widestClearingWidth(d, ir.grid, clearOf);
       // The swing as WRITTEN: `door.transform` flips `swing` under a reflecting frame, so a
       // mirrored instance's plan-space swing is the opposite of its source clause.
       const g = frameOf(d);
@@ -88,14 +82,14 @@ export const swingObstructed: LintRule = {
         severity: "warning",
         code: "W_SWING_OBSTRUCTED",
         ...at(d),
-        message: `Door swing is obstructed — ${cause.text}.`,
+        message: `Door swing is obstructed — ${cause}.`,
         hints: [
           `Hang the leaf on the other jamb — \`hinge ${flipped}\`${flipClears ? " (this clears it)" : ""}.`,
           `Open it to the other side of the wall — \`swing ${writtenSwing === "in" ? "out" : "in"}\`.`,
           `Move the door along its wall (\`on <wall> at <pos>\`), or the obstruction — \`arch repair\` computes the smallest clearing shift.`,
-          // Only a width strictly under the door's own is advice (at a shortfall of 0 the
-          // clearing width IS the door's width, and "narrow it to itself" says nothing).
-          ...(narrowTo >= d.width
+          // Only a width strictly under the door's own, recomputed and proved clear, is
+          // quoted; with no such width (not even 1 mm) the hint is left out.
+          ...(narrowTo === null
             ? []
             : [
                 narrowTo >= min
@@ -113,6 +107,35 @@ export const swingObstructed: LintRule = {
     return out;
   },
 };
+
+/**
+ * The widest leaf strictly narrower than `d`'s own whose RECOMPUTED swing `clears` proves
+ * clear, or `null` when no narrower leaf would.
+ *
+ * Only widths the author can actually get are candidates: on a `grid` the resolver snaps a
+ * door's width to the module (`door.ts`), so a quoted 849 mm on `grid 50` would resolve to
+ * 850 and not clear; the candidates are the grid's multiples (whole millimetres without
+ * one). Narrowing keeps the door's `at`, so the hinge moves toward it by half the change;
+ * the recomputed `doorSwing` accounts for that exactly, where `gap − radius − clearance` did
+ * not. A narrower leaf's quarter-disc lies inside the wider one's (the radius shrinks by Δ
+ * while the hinge moves Δ/2 along the closed leaf, and the cone's vectors sum inside the
+ * cone), so being clear is monotone in the width and a bisection finds the widest. The
+ * width returned is one that was TESTED, never an extrapolation, and every narrower one is
+ * nested inside it — which is what the hint's "or less" rests on.
+ */
+function widestClearingWidth(d: RDoor, grid: number, clears: (s: DoorSwing | null) => boolean): number | null {
+  const step = grid > 0 ? grid : 1;
+  const ok = (k: number): boolean => clears(doorSwing({ ...d, width: k * step }));
+  let lo = 1;
+  let hi = Math.ceil(d.width / step) - 1;
+  if (hi < lo || !ok(lo)) return null;
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2);
+    if (ok(mid)) lo = mid;
+    else hi = mid - 1;
+  }
+  return lo * step;
+}
 
 /** Furniture parked in a door's straight approach (the clear landing on each side of
  *  the opening), so you can't pass through even with the leaf open. Distinct from the

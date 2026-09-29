@@ -14,6 +14,7 @@
  */
 
 import type { Point } from "../ast.js";
+import { VERTEX_EPS } from "../geometry/polygon.js";
 import type { BBox } from "../geometry/rect.js";
 import { fmt2 } from "../num-format.js";
 
@@ -26,6 +27,19 @@ export const mm = (n: number): string => fmt2(Math.round(n));
 
 /** How far `required` exceeds what is `available` — never negative. */
 export const shortfall = (required: number, available: number): number => Math.max(0, required - available);
+
+/**
+ * A deficit as prose whose three numbers agree: the requirement rounded UP, what is available
+ * rounded DOWN (each read within {@link VERTEX_EPS}, so floating-point dust on a whole-mm value
+ * does not tip it), and the shortfall as exactly their difference, never negative. Rounding
+ * each number on its own can print "1999 mm apart … need 1999 mm (1 mm short)"; this cannot,
+ * and it never states a real shortfall as 0.
+ */
+export function deficitMm(required: number, available: number): { required: string; available: string; short: string } {
+  const req = Math.ceil(required - VERTEX_EPS);
+  const have = Math.floor(available + VERTEX_EPS);
+  return { required: fmt2(req), available: fmt2(have), short: fmt2(Math.max(0, req - have)) };
+}
 
 /** Distance from a point to the nearest point of an axis-aligned rect (0 inside). */
 export function distPointToRect(p: Point, r: BBox): number {
