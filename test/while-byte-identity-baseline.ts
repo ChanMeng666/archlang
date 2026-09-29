@@ -38,6 +38,11 @@
  * now hangs `hinge left` (the mirror of `d_west`). Only the SVG moves — that one door's leaf
  * and swing arc; `describe()`, `lint()` and `compile().diagnostics` are byte-identical (the
  * full field-by-field is in `./byte-identity-baseline.ts`, "`museum-wings`: whole-surface row").
+ * Re-measured again for a second SOURCE edit (backlog 6.8): the single-leaf `d_main` became a
+ * mirror pair of 1000 mm leaves on a shared jamb. The SVG and `describe()` move (field by field
+ * in `./byte-identity-baseline.ts`, "the main door is a mirror pair"); `lint()` and
+ * `compile().diagnostics` are `[]` before and after. The `W_SWING_OBSTRUCTED` change that lets
+ * the pair lint clean moved no row on its own (the corpus swept with the examples untouched).
  *
  * Circulation v2 (backlog E.6–E.10): 24 example rows and three fixture rows re-measured, with
  * this test's own digest body. SVG, `lint()` and `compile().diagnostics` are byte-identical in
@@ -69,7 +74,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/library.arch", "89c83260fd894b5271a0ffba7e6622760298c8ffc996a8139caa416fe7a9ac29"],
   ["examples/materials.arch", "f580b5bff294860346858347ea21b3f43fe648e58266603dd4549026d1addafe"],
   ["examples/museum-wing.arch", "1dc44273ff89fdc84d1d1c84fe76d2cacb35f9f8cb05b09909780e9afdf63f1a"],
-  ["examples/museum-wings.arch", "4089f8f26c3d10e6fa9888d6c6087ce33c08c243f11261e339776e21f1d0b082"], // re-measured, see header
+  ["examples/museum-wings.arch", "ba10adf23d893ff18a3b146b783eb71c8b3b9239e07d9319ed4ad3527380893e"], // re-measured, see header
   ["examples/museum.arch", "afc31f3ca38ea93b1ff3031a7f89cc3bdf15c6255be5987569f427bcbaaa5fea"],
   ["examples/one-room.arch", "0cc68bb6a76ac2086b978b95bf6a461968f5e30779dfbe60acb9db695ec77e54"],
   ["examples/parametric.arch", "963fd4b30b77d52f0367492e8e7ff13eabb08c9f709fd2100aba7eb67764ca63"],

@@ -71,14 +71,21 @@ plan "Museum — two wings" {
   # `swing into hall` rather than `swing in`: `in`/`out` are relative to the host wall's
   # TRAVERSAL direction, so the correct answer here depends on which way `hall_south` was
   # written. Naming the room says what is meant and cannot be broken by editing the wall.
-  door id=d_main at (21000,12000) width 1800 wall hall_south hinge left swing into hall
+  #
+  # The main entrance is a DOUBLE door: two 1000 mm leaves meeting at a shared closed jamb
+  # on the axis (x=21000), each hinged on its outer jamb, so they are mirror images.
+  # `hall_south` runs west→east, so the west leaf's outer jamb is `hinge left` and the east
+  # leaf's is `hinge right`. The two swings touch only at the shared jamb, which is not an
+  # obstruction. (`grid 100` rounds a door's `at` to the hundred, so the leaves are an even
+  # 1000 mm: 900 mm leaves would land 50 mm off the axis.)
+  door id=d_main_w at (20500,12000) width 1000 wall hall_south hinge left  swing into hall
+  door id=d_main_e at (21500,12000) width 1000 wall hall_south hinge right swing into hall
   door id=d_west at (18000,10500) width 1800 wall west.shell  hinge left  swing into hall
   #
   # `d_east` is the mirror image of `d_west`. `east.shell` runs the opposite way to
   # `west.shell` (the wing is `mirror x`), so the SAME word `hinge left` hangs the leaf on
-  # the mirrored jamb. `d_main` is the one deliberate asymmetry: a single leaf hinged on one
-  # side of the axis, so `full` is C1 (no whole-building symmetry), while the shell and the
-  # rooms are D1 x (`arch describe --facts symmetry`).
+  # the mirrored jamb. With the main pair mirrored too, the whole building — shell, rooms
+  # and every door — is D1 x about the hall's axis (`arch describe --facts symmetry`).
   door id=d_east at (24000,10500) width 1800 wall east.shell  hinge left  swing into hall
 
   window id=w_hall_n at (21000,0) width 3000 wall hall_north

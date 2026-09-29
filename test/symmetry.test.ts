@@ -272,23 +272,22 @@ suite("symmetry — hand cases", () => {
     ]);
   });
 
-  it("museum-wings: the mirrored wings make shell and rooms D1 x; the single-leaf `d_main` keeps `full` C1", () => {
+  it("museum-wings: shell, rooms and `full` are all D1 x — every door is a mirror pair", () => {
     const src = EXAMPLE_FILES["museum-wings.arch"]!;
     const s = sym(src);
     expect(groupOf(s.layers.shell)).toBe("D1 x");
     expect(groupOf(s.layers.rooms)).toBe("D1 x");
     expect(s.layers.shell!.centre).toEqual({ x: 21000, y: 6000 });
     // `d_west`/`d_east` are mirror twins (`east.shell` runs the other way, so `hinge left` on
-    // both hangs the leaf on mirrored jambs). `full` is still C1, and that is the TRUE answer:
-    // `d_main` is ONE hinged leaf on the axis, the example's one deliberate asymmetry.
-    expect(groupOf(s.layers.full)).toBe("C1");
-    // Drop the axis door and the hall doors are the only handed pair left: `full` is D1 x.
-    const fixed = src
-      .split("\n")
-      .filter((l) => !l.includes("door id=d_main"))
-      .join("\n");
-    expect(fixed).not.toBe(src);
-    expect(groupOf(sym(fixed).layers.full)).toBe("D1 x");
+    // both hangs the leaf on mirrored jambs), and the main entrance is a double door whose two
+    // leaves meet at a shared jamb ON the axis, each hinged on its outer jamb.
+    expect(groupOf(s.layers.full)).toBe("D1 x");
+    expect(s.layers.full!.centre).toEqual({ x: 21000, y: 6000 });
+    // Control: hang the east leaf on the shared jamb instead and nothing maps the pair onto
+    // itself, so `full` falls to C1 — the D1 above is the doors' own symmetry, not a blind spot.
+    const handed = src.replace(/(door id=d_main_e .*?)hinge right/, "$1hinge left");
+    expect(handed).not.toBe(src);
+    expect(groupOf(sym(handed).layers.full)).toBe("C1");
     // The two wings' galleries repeat at a 6 m step, each wing its own run.
     expect(s.repeats).toEqual([
       { kind: "translate", count: 3, step: { x: 6000, y: 0 }, ids: ["west.g1", "west.g2", "west.g3"] },
