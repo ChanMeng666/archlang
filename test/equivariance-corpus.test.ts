@@ -457,6 +457,53 @@ describe("closed classes — each former witness is now the law", () => {
     });
   }
 
+  it("key routes are measured between TIE SETS, so a page-order pick inside one cannot move them", () => {
+    // Red-team counterexample (card A): the bed's two nearest cells are mirror images about
+    // its entrance's axis (x = 2000) and tie on every term of the room key, while the bath is
+    // entered off that axis — so a route measured from the cell-index pick read 4300 unplaced
+    // and 4200 under r180/r270/mx/r90mx. The route is now the fewest hops between the two
+    // rooms' whole tie sets (and the detour's straight line the shortest pair realising it).
+    // The second body ties the TARGET: two baths equally near the bed, where `toRoomId` must
+    // stay the one written first under every element.
+    const bodies = [
+      `    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
+    wall id=mid partition thickness 100 { (4000,0) (4000,3000) }
+    room id=bed at (0,0) size 4000x3000 label "Bed" uses bedroom
+    room id=bath at (4000,0) size 2000x3000 label "Bath" uses bath
+    door id=d at (2000,3000) width 900 wall shell
+    door id=d2 at (4000,500) width 800 wall mid`,
+      `    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,3000) (0,3000) close }
+    wall id=w1 partition thickness 100 { (2000,0) (2000,3000) }
+    wall id=w2 partition thickness 100 { (6000,0) (6000,3000) }
+    room id=bath1 at (0,0) size 2000x3000 label "Bath" uses bath
+    room id=bed at (2000,0) size 4000x3000 label "Bed" uses bedroom
+    room id=bath2 at (6000,0) size 2000x3000 label "Shower" uses bath
+    door id=d at (4000,3000) width 900 wall shell
+    door id=d1 at (2000,1500) width 800 wall w1
+    door id=d2 at (6000,1500) width 800 wall w2`,
+    ];
+    for (const body of bodies) {
+      const p0 = observe(witnessPair(body, elementNamed("mx")).p0);
+      expect(latticeAligned(p0.ir)).toBe(true);
+      const routes = p0.summary.circulation?.routes ?? [];
+      expect(routes.map((r) => r.fromRoomId)).toEqual(["g.bed"]);
+      for (const g of D4_TEST_ELEMENTS.filter((x) => x.name !== "e")) {
+        const { vs, ctx } = witnessCase(body, g);
+        expect(
+          vs.filter((v) => isRaster(v.path)).map((v) => `${v.key}: ${v.expected} -> ${v.actual}`),
+          g.name,
+        ).toEqual([]);
+        expect(
+          ctx.obsG.summary.circulation?.routes.map((r) => r.toRoomId),
+          g.name,
+        ).toEqual(routes.map((r) => r.toRoomId));
+      }
+    }
+    // The tied target resolves to the bath written first.
+    const twoBaths = observe(witnessPair(bodies[1]!, elementNamed("mx")).p0).summary.circulation!;
+    expect(twoBaths.routes[0]!.toRoomId).toBe("g.bath1");
+  });
+
   it("E.6/E.7: an entrance on a lattice line seeds BOTH sides of it, and one off the line seeds one cell", () => {
     // What the laws above rest on, observed directly: the overlay lists every seed cell.
     const seeds = (x: number) => {

@@ -1524,7 +1524,7 @@ function roomRep(
   entranceOf: (k: number) => number,
   /** The room's bounding-box centre — the point the D4-invariant key is taken about. */
   centre: Point,
-): { k: number; seed: Point } {
+): { k: number; seed: Point; ties: number[] } {
   const points = poles.length > 0 ? poles : [seed];
   // Every reachable cell nearest to the seed point (or to ANY pole of the orbit) — the
   // whole tie set, not the row-major first — so the candidates are the same set however
@@ -1545,28 +1545,74 @@ function roomRep(
     }
     for (const k of at) cand.push({ k, seed: p });
   }
-  if (cand.length === 0) return { k: -1, seed: points[0]! };
+  if (cand.length === 0) return { k: -1, seed: points[0]!, ties: [] };
   // Then a D4-symmetric order: fewest hops, then nearest (straight line) to the walk's own
   // entrance, then the candidate's offsets from the room's centre as a sorted multiset of
   // magnitudes (what a turn or flip about that centre preserves), then the entrance's
-  // source order. Only a candidate some symmetry of the whole plan maps onto another
-  // survives all of them, and the facts read off either are identical; the cell index
-  // settles that last, page-order tie.
+  // source order. Candidates that tie on all of them read the same room facts (walk,
+  // entrance, detour) but need not sit where a symmetry of the plan maps one onto the other
+  // — two cells mirrored about the entrance's own axis tie with the rest of the plan
+  // asymmetric — so they are ALL returned (`ties`): a key route measures from the whole set
+  // (`routeBetween`), never from the one the cell index picks. `k` is that page-order pick,
+  // kept only to draw the overlay's walk.
   const key = (k: number): [number, number, number, number, number] => {
     const c = centreOf(g, k);
     const [lo, hi] = [Math.abs(c.x - centre.x), Math.abs(c.y - centre.y)].sort((a, b) => a - b);
     return [dist[k]!, straightSq(k), lo!, hi!, entranceOf(k)];
   };
+  const cmpKey = (x: readonly number[], y: readonly number[]): number => {
+    let cmp = 0;
+    for (let i = 0; i < 5 && cmp === 0; i++) cmp = x[i]! - y[i]!;
+    return cmp;
+  };
   let best = cand[0]!;
   let bk = key(best.k);
   for (const c of cand.slice(1)) {
-    const ck = key(c.k);
-    let cmp = 0;
-    for (let i = 0; i < 5 && cmp === 0; i++) cmp = ck[i]! - bk[i]!;
+    const cmp = cmpKey(key(c.k), bk);
     if (cmp < 0 || (cmp === 0 && c.k < best.k)) {
       best = c;
-      bk = ck;
+      bk = key(c.k);
     }
+  }
+  const ties = [...new Set(cand.filter((c) => cmpKey(key(c.k), bk) === 0).map((c) => c.k))].sort((a, b) => a - b);
+  return { ...best, ties };
+}
+
+/**
+ * A key route from one room to the nearest of `targets`, measured between TIE SETS: the walk
+ * is the fewest hops from any of the source room's tied cells to any of a target's
+ * ({@link roomRep}'s `ties`), the target is the nearest by that walk (ties to the one
+ * written first), and the straight line a detour divides by is the shortest between a pair
+ * that realises the walk. Every term is a minimum over sets a turn or flip of the plan maps
+ * onto their images, so no page-order pick inside a tie set can move a route's numbers. A
+ * room with one tied cell (the usual case) is measured exactly as from that one cell.
+ *
+ * Also returns the realising pair and its BFS parents (the first such pair in cell order)
+ * for the overlay to draw.
+ */
+function routeBetween(
+  g: NavGrid,
+  fromTies: readonly number[],
+  targets: ReadonlyArray<{ idx: number; ties: readonly number[] }>,
+): { idx: number; hops: number; straight: number; a: number; b: number; parent: Int32Array } | null {
+  const searches = fromTies.map((a) => ({ a, r: bfs(g, a) }));
+  let best: { idx: number; hops: number; straight: number; a: number; b: number; parent: Int32Array } | null = null;
+  for (const t of targets) {
+    let hops = Number.POSITIVE_INFINITY;
+    for (const { r } of searches) for (const b of t.ties) if (r.dist[b]! >= 0) hops = Math.min(hops, r.dist[b]!);
+    if (!Number.isFinite(hops) || (best && hops >= best.hops)) continue;
+    let straight = Number.POSITIVE_INFINITY;
+    let pick: { a: number; b: number; parent: Int32Array } | null = null;
+    for (const { a, r } of searches) {
+      for (const b of t.ties) {
+        if (r.dist[b] !== hops) continue;
+        const ca = centreOf(g, a);
+        const cb = centreOf(g, b);
+        straight = Math.min(straight, Math.hypot(cb.x - ca.x, cb.y - ca.y));
+        pick ??= { a, b, parent: r.parent };
+      }
+    }
+    best = { idx: t.idx, hops, straight, ...pick! };
   }
   return best;
 }
@@ -1752,11 +1798,12 @@ export function computeCirculation(
   // once: the room facts, the key routes and the render overlay must all measure to the
   // same point or the drawing and the numbers disagree.
   const rep = new Int32Array(rooms.length);
+  const repTies: number[][] = [];
   for (let ri = 0; ri < rooms.length; ri++) {
     // A room the modeled doors do not reach has no walk, whatever the raster says (a gap
     // the grid cannot see — a wall missing from the drawing, a door the access graph
     // refuses — can still leak into it). It is `no_door_route`, as `access` and lint say.
-    rep[ri] = doorReachable.has(rooms[ri]!.id)
+    const r = doorReachable.has(rooms[ri]!.id)
       ? roomRep(
           g,
           roomCells[ri]!,
@@ -1766,8 +1813,10 @@ export function computeCirculation(
           (k) => aim.straightSq(k, from[k]!),
           (k) => aim.entranceOf(from[k]!),
           bboxCentre(rooms[ri]!),
-        ).k
-      : -1;
+        )
+      : { k: -1, ties: [] };
+    rep[ri] = r.k;
+    repTies.push(r.ties);
   }
 
   const blocked = furnitureSealed(blockedCandidates(nav));
@@ -1791,31 +1840,17 @@ export function computeCirculation(
   // Key functional routes: kitchen → nearest living/dining, bedroom → nearest bath.
   const routes: CirculationRoute[] = [];
   const addNearestRoute = (fromIdx: number, targetIdxs: number[]): void => {
-    const a = rep[fromIdx]!;
-    if (a < 0) return;
-    const r = bfs(g, a);
-    let best = -1;
-    let bestDist = Infinity;
-    for (const tj of targetIdxs) {
-      if (tj === fromIdx) continue;
-      const ta = rep[tj]!;
-      if (ta < 0 || r.dist[ta]! < 0) continue;
-      const d = r.dist[ta]!;
-      if (d < bestDist) {
-        bestDist = d;
-        best = tj;
-      }
-    }
-    if (best < 0) return;
-    const ta = rep[best]!;
-    const walkExact = r.dist[ta]! * g.cell;
+    if (rep[fromIdx]! < 0) return;
+    const targets = targetIdxs.filter((tj) => tj !== fromIdx).map((tj) => ({ idx: tj, ties: repTies[tj]! }));
+    const found = routeBetween(g, repTies[fromIdx]!, targets);
+    if (!found) return;
+    const best = found.idx;
+    const walkExact = found.hops * g.cell;
     // Seed from every cell of room A with no cap: you start inside room A, so its own
     // furniture-crowding must not limit the route — only the doors/corridors between A
     // and B should.
     const wide = perRoomMax(g, widestBottleneck(g, roomCells[fromIdx]!, Number.POSITIVE_INFINITY), rooms.length);
-    const from = centreOf(g, a);
-    const to = centreOf(g, ta);
-    const straight = Math.hypot(to.x - from.x, to.y - from.y);
+    const straight = found.straight;
     routes.push({
       fromRoomId: rooms[fromIdx]!.id,
       toRoomId: rooms[best]!.id,
@@ -1976,6 +2011,7 @@ export function computeCirculationOverlay(
   // ends somewhere else from the number it illustrates is worse than no drawing.
   const aim = entranceAim(nav);
   const rep = new Int32Array(rooms.length);
+  const repTies: number[][] = [];
   const repSeed: Point[] = [];
   // The same door-route gate as the facts: a room `access` cannot reach draws no walk.
   const doorReachable = new Set(access.rooms.filter((n) => n.reachable).map((n) => n.id));
@@ -1991,6 +2027,7 @@ export function computeCirculationOverlay(
       bboxCentre(rooms[ri]!),
     );
     rep[ri] = doorReachable.has(rooms[ri]!.id) ? r.k : -1;
+    repTies.push(doorReachable.has(rooms[ri]!.id) ? r.ties : []);
     repSeed.push(r.seed);
   }
 
@@ -2022,25 +2059,15 @@ export function computeCirculationOverlay(
 
   const overlayRoutes: OverlayRoute[] = [];
   const addRoute = (fromIdx: number, targetIdxs: number[]): void => {
-    const a = rep[fromIdx]!;
-    if (a < 0) return;
-    const r = bfs(g, a);
-    let best = -1;
-    let bestDist = Infinity;
-    for (const tj of targetIdxs) {
-      if (tj === fromIdx) continue;
-      const ta = rep[tj]!;
-      if (ta < 0 || r.dist[ta]! < 0) continue;
-      if (r.dist[ta]! < bestDist) {
-        bestDist = r.dist[ta]!;
-        best = tj;
-      }
-    }
-    if (best < 0) return;
+    if (rep[fromIdx]! < 0) return;
+    // The same tie-set route the facts measure, drawn between the first pair realising it.
+    const targets = targetIdxs.filter((tj) => tj !== fromIdx).map((tj) => ({ idx: tj, ties: repTies[tj]! }));
+    const found = routeBetween(g, repTies[fromIdx]!, targets);
+    if (!found) return;
     overlayRoutes.push({
       fromRoomId: rooms[fromIdx]!.id,
-      toRoomId: rooms[best]!.id,
-      path: reconstructPath(g, r.parent, rep[best]!).map(back),
+      toRoomId: rooms[found.idx]!.id,
+      path: reconstructPath(g, found.parent, found.b).map(back),
     });
   };
   const livingDining = rooms.map((r, i) => (isLivingOrDining(r) ? i : -1)).filter((i) => i >= 0);
