@@ -218,19 +218,22 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
  * rotunda detour 1.01 → 1 is the nav grid sampling in its own snapped frame.
  * `test/byte-identity-baseline.ts` has the account ("Fourteen rows re-measured").
  */
+// Rows re-measured for circulation v2 (backlog E.6–E.10) with this file's own digest body:
+// SVG and lint() byte-identical, only describe().circulation moved — each field, and the
+// rule that moved it, in ./byte-identity-baseline.ts ("Circulation v2").
 const BASELINE: [string, string][] = [
-  ["laneway-house", "1e78cc8744a4cb1c8f25f5ff0a87cfaed110a64735d92fd8c783ea6a87c6e3a8"],
-  ["studio", "28e8de0bce723f8822d966fbb4a1fe9e533c21dd0c68f22e7f2ff2d57cd1ad44"],
+  ["laneway-house", "367200dbbc7e8ee407fbdef3e9d77b9b10589845c7ee8e95d7c902e7fe6d003d"],
+  ["studio", "2068a9622c25b95311df4206d8950bf34cafa10dc5a69551bc4bdd653d27cf1f"],
   ["gallery-l", "fd7ee33e2787e3f5099ed6b533111754aa8b62761d3540940414c94822cac4f6"],
-  ["aquarium", "ab67674a9eb016b21c66e0a382456d47c2ce59f06ac8559bdf45f10244fe01b3"],
+  ["aquarium", "dea2576514cb91386b1b0bb17cdb5318fdfc501f7501ae607a8363822c04837d"],
 ];
 
 /** The SUMMARY half of the same law — see the header. Re-measured once, for `aquarium`, because its rooms were wrong. */
 const SEMANTIC_BASELINE: [string, string][] = [
-  ["laneway-house", "d3ab0140b1f474997ff52c711e9c539e92a23a6d65003b656f9b72b6a7ad0cca"],
-  ["studio", "7ed53b6e0925e21fe4c4fad7351ce7e80635818395fc79cf661ba095db8129b3"],
+  ["laneway-house", "9a173beb7f213286b8e0c117d829d126166b93e118f91894ba278005254a5255"],
+  ["studio", "540245f5c6c0f523e13b455cad9bcfc3c6d21cf96ca953ce1bbfa3d547345208"],
   ["gallery-l", "cef0ee1863a505bb831aa2512ca204547117872a61cf1a1ddd293361f0b688be"],
-  ["aquarium", "23cd27bb45079f977c89494898dba45b67338b26e845777b2c536c627e3d5c81"],
+  ["aquarium", "299f0e348e915d0f4f7aac16a047f708cc7003f3103892b10f46ee945a6b477c"],
 ];
 
 /** The compiler surface the summary-half pins are taken over. */

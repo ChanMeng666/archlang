@@ -145,17 +145,20 @@ const ROOT = join(HERE, "..");
  * 9200 → 4400). Only `describe().circulation` moved; SVG and `lint()` are byte-identical.
  * `test/byte-identity-baseline.ts` has the account ("Fourteen rows re-measured").
  */
+// Rows re-measured for circulation v2 (backlog E.6–E.10) with this file's own digest body:
+// SVG and lint() byte-identical, only describe().circulation moved — each field, and the
+// rule that moved it, in ./byte-identity-baseline.ts ("Circulation v2").
 const BASELINE: Readonly<Record<string, string>> = {
-  "studio.arch": "90951a2517e141dfe28f0e12462fd29cefba5460c900304e435ef53e7f3c0f3f",
-  "laneway-house.arch": "0eab9c214b43f76765f55e10b0909047aaee34544fc5d78e27e4afc176b8e0d9",
-  "bungalow.arch": "4a5fbd670b2ed36a48309a4f76adf736f0b2fc1bb7dbfe1ea393de5496629245",
+  "studio.arch": "20a7659eb5c0ae250d1b91e0a7c53cff9dc2fd8908365a40e679bbf97e91751d",
+  "laneway-house.arch": "ca93975f9180ff845039a79422a4cca1fe683d76a28831cf700efbb8f6d2bea0",
+  "bungalow.arch": "88ab68abfc47345fdef7098506116ad93fcbab466415837d5db99dc1542d8851",
   // Re-measured for the `overhead` flag. Its SOURCE gained two statements —
   // a `range_hood` over the stove and a `mirror` over the basin, the two correct drawings
   // the missing flag had kept out of the flagship — so this plan is a different building
   // and both its digests move. See the SEMANTIC_BASELINE note for the proof that the CODE
   // is innocent: the pre-`overhead` source reproduces the OLD hexes exactly under the NEW compiler.
-  "furnished-flat.arch": "6bca2fc18883e3dd6278cc03e0aa7a334ad6c26e67563c578344a77731a0ec05",
-  "two-bed.arch": "dec746240dcc800c866a0dc928b451c83caa143f456adc704baa72d724ef6520",
+  "furnished-flat.arch": "78513fb8a5182104e2a22b69580fa952a2ff2f11839162241ebfe40839047d80",
+  "two-bed.arch": "ff4ad8858ef6c8fa71a632c9df6c5c489b4661d0ea0b80719f69f0f481c50cd7",
 };
 
 /**
@@ -166,9 +169,9 @@ const BASELINE: Readonly<Record<string, string>> = {
  * allowed to move {@link BASELINE}; nothing in this release is allowed to move these.
  */
 const SEMANTIC_BASELINE: Readonly<Record<string, string>> = {
-  "studio.arch": "7ed53b6e0925e21fe4c4fad7351ce7e80635818395fc79cf661ba095db8129b3",
-  "laneway-house.arch": "d3ab0140b1f474997ff52c711e9c539e92a23a6d65003b656f9b72b6a7ad0cca",
-  "bungalow.arch": "cc3dc56c65a9baa34f57ae766ad702b4e538db62419b4881c55ad84abfe39870",
+  "studio.arch": "540245f5c6c0f523e13b455cad9bcfc3c6d21cf96ca953ce1bbfa3d547345208",
+  "laneway-house.arch": "9a173beb7f213286b8e0c117d829d126166b93e118f91894ba278005254a5255",
+  "bungalow.arch": "93a7bbad33a456a3f9a72b8ec7e0ccc116c3ea777b464149a6c40d0328e3d48d",
   // `furnished-flat.arch` is the ONE value in this table that is not the original `5298b99`
   // measurement, and the exception proves the rule rather than bending it. Its SOURCE keeps
   // being edited -- seven of the new families in the furniture pass, then a `range_hood` and a `mirror`
@@ -184,8 +187,8 @@ const SEMANTIC_BASELINE: Readonly<Record<string, string>> = {
   // auto-id renumbering that inserting two statements mid-file forces on every later piece;
   // `lint()` still returns ONE diagnostic, the same `W_PATH_TOO_NARROW` with the same
   // message and hints, its byte span shifted by the comment lines added above it.
-  "furnished-flat.arch": "9ec505138f1d6d817a55e45aef46c0145639f68d577cacf7214dc2b06cfb0dc9",
-  "two-bed.arch": "c8e5a430665c6ea875a94225dc062a534bebf776c28b3ffbdb0a614d3e71ff79",
+  "furnished-flat.arch": "c55ce2b43dd4acf0eec4eada9ee456c799bf4188f6f1a2f6d32a8cb691424fc4",
+  "two-bed.arch": "061698b483472d4cee3801c39a6e1f74070037d82c8ea7efa19906388f24a79a",
 };
 
 suite("the outdoor tranche — the byte-identity law", () => {
