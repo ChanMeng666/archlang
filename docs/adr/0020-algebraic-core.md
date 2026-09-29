@@ -186,7 +186,7 @@ one layer up.
   and dimensions as it does on furniture (`mirror`, refused on the way back with
   `E_JSON_MIRROR`; backlog 6.3). `museum-wings.arch`'s east hall door is now the mirror of
   the west one, and its main door a mirror pair of leaves on a shared jamb, so `full` is D1 x;
-  `W_SWING_OBSTRUCTED` needs an overlap of positive area, so that pair lints clean (backlog
+  `W_SWING_OBSTRUCTED` exempts single-point contact, so that pair lints clean (backlog
   6.8, 6.9).
 - **Open.** What `test/equivariance-known.ts` still pins: `float-translation` (E.11's lint
   half: an exact comparison on a resolved coordinate, `W_POCKET_RUN`'s `>= need`, flips under

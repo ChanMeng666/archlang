@@ -707,20 +707,23 @@ and `arch lint` is clean (`test/symmetry.test.ts`, with a C1 control that hangs 
 shared jamb).
 
 The pair used to raise `W_SWING_OBSTRUCTED` ("0 mm short"): the swing test accepted a closed
-boundary, so two quarter-discs tangent at the shared jamb collided. Owner decision: an
-obstruction is an overlap of positive area. `swingsCollide` (`src/geometry.ts`) keeps its
-sampler as the detector and asks `sectorInteriorsMeet` whether the shared point is more than
-boundary: a weak-separating-axis test over the finite candidate set of the two sectors'
-Minkowski difference. On axis-aligned whole-mm geometry it is exact (a shared jamb sums to 0);
-on an oblique wall the jambs agree only to ~1e-13 mm, so touching is read within `VERTEX_EPS`
-(1e-6 mm, `src/geometry/polygon.ts`'s vertex-coincidence tolerance), not a new epsilon. A
-shared-jamb pair (2×900, 2×1000, every axis direction, oblique walls, both swing sides) is
-clear; a 1 mm overlap still warns, "1 mm short" (`test/swing.test.ts`,
+boundary, so two quarter-discs tangent at the shared jamb collided. Owner decision: exempt
+single-point contact only. `swingsCollide` (`src/geometry.ts`) keeps its sampler as the
+detector and asks `sectorsObstruct` whether the contact is more than one point: a
+weak-separating-axis test over the finite candidate set of the two sectors' Minkowski
+difference (no separating line: the areas overlap), then, on the separating line, the length
+of the overlap of the two sectors' faces (a segment only where two straight edges lie on it).
+On axis-aligned whole-mm geometry both are exact (a shared jamb sums to 0, its contact has
+length 0); on an oblique wall the jambs agree only to ~1e-13 mm, so both are read within
+`VERTEX_EPS` (1e-6 mm, `src/geometry/polygon.ts`'s vertex-coincidence tolerance), not a new
+epsilon. A shared-jamb pair (2×900, 2×1000, every axis direction, oblique walls, both swing
+sides) is clear; a 1 mm overlap still warns, "1 mm short" (`test/swing.test.ts`,
 `test/lint-deficits.test.ts`). Consequences, each pinned:
 
-- Contact along a line is clear too: two leaves 100 mm too close opening to OPPOSITE faces (the
-  closed leaves overlap along the wall), and two leaves back to back on one post opening the
-  same way. Overlapping openings have no rule of their own; this one never meant to be it.
+- Contact along a segment still warns, as before: two leaves 100 mm too close opening to
+  OPPOSITE faces (the closed leaves overlap along the wall), and two leaves back to back on one
+  post opening the same way. Leaves are solid, so a shared line is a clash. (On an oblique wall
+  the sampler, unchanged, already missed the first of these; that is not new.)
 - With `swingClearanceMm > 0` (`accessibility-advisory`, 150), contact at exactly `radius +
   clearance` is clear, and a shared-jamb pair still warns: each leaf lies in the other's
   clearance band. `museum-wings` raises that one warning under the profile, none by default.
@@ -730,7 +733,10 @@ clear; a 1 mm overlap still warns, "1 mm short" (`test/swing.test.ts`,
 Measured: the corpus sweep (every storey's SVG, `describe()`, `lint()`, `compile().diagnostics`,
 the a11y profile's `lint()`, `--facts symmetry`; examples and fixtures) moved 0 of 279 payloads on
 the predicate change alone. No shipped plan reaches the sampler's hit branch at all, under either
-profile, so no example lost a warning. The re-measured `museum-wings` rows are explained field by
+profile, so no example lost a warning. A brute-force cross-check against the original predicate
+(random pairs on axis-aligned and oblique walls, clearance 0 and 150) finds no new collision,
+and every pair the change clears has no area in common and no collinear edge overlap: it is
+single-point contact. The re-measured `museum-wings` rows are explained field by
 field in `test/byte-identity-baseline.ts`.
 
 ### 6.9 · `W_SWING_OBSTRUCTED`'s narrowing hint was wrong at a shortfall of 0 — closed
@@ -748,6 +754,15 @@ On `grid 100` the resolver rounds a door's `at` (`Math.round`: `src/ir.ts`,
 20600 and 21500: a double door's "shared jamb" lands at x=21050, 50 mm off an axis at 21000, and
 nothing says so. No diagnostic reports the snap. Found via 6.8, which sidestepped it with even
 1000 mm leaves; behaviour deliberately unchanged.
+
+### 6.11 · The analysis reads a double door as two narrow doors, not one wide opening — `todo` (no code)
+
+`describe()`'s access graph and circulation treat each leaf of a double door as its own door.
+`museum-wings.arch`'s main entrance (two 1000 mm leaves, 940 mm clear each) therefore counts
+as two 940 mm doorways, not one ~1940 mm opening, and every room's `bottleneckClearWidth` is now
+1140 mm: the widest way in is a wing's 1200 mm exit, not the main door. A pair of leaves on a
+shared jamb with both open is one opening to anyone walking through. Open: whether (and how)
+the analysis should recognise a pair: shared jamb, same host, both hinged on the outer jambs.
 
 ---
 

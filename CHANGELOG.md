@@ -9,12 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed — a double door no longer reads as an obstructed swing
 
-- `W_SWING_OBSTRUCTED` between two doors now needs their swing quarter-discs to overlap with
-  positive area. Two leaves hinged on their outer jambs and meeting at a shared closed jamb (a
-  textbook double door) touch only at that point and lint clean; so does a row of leaves where
-  one's far jamb is the next one's hinge. Any real overlap still warns, down to 1 mm.
-- Contact along a line is clear too, for the same reason (for example two leaves hung back to
-  back on one post). With a swing clearance (`accessibility-advisory`), contact at exactly
+- `W_SWING_OBSTRUCTED` between two doors no longer fires on single-point contact. Two leaves
+  hinged on their outer jambs and meeting at a shared closed jamb (a textbook double door)
+  touch only at that point and lint clean; so does a row of leaves where one's far jamb is the
+  next one's hinge. Any real overlap still warns, down to 1 mm, and so does contact along a
+  segment (openings overlapping along the wall with opposite swings, or two leaves hung back to
+  back on one post).
+- With a swing clearance (`accessibility-advisory`), single-point contact at exactly
   `radius + clearance` is clear, and a shared-jamb pair still warns, since each leaf lies in the
   other's clearance band. The furniture half of the rule is unchanged.
 - No shipped example's lint output changes.
