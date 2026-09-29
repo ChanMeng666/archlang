@@ -162,13 +162,14 @@ describe("the oracle's own construction", () => {
     }
   });
 
-  it("every raster pin names its rooms and bounds its size", () => {
-    // A raster row that pinned a path for every room, or any magnitude, would absorb a
-    // raster regression of any size — which is what `maxDelta` and `ids` exist to stop.
-    for (const row of KNOWN.filter((r) => r.path.startsWith("circulation.rooms[]"))) {
-      expect(row.ids?.length ?? 0, row.why).toBeGreaterThan(0);
-      expect(row.maxDelta, row.why).toBeDefined();
-    }
+  it("T2 carries no pin: the raster is exactly equivariant on a grid-aligned plan", () => {
+    // Backlog E.6–E.10 closed the nav grid's page-order ties, so no circulation fact and no
+    // lint rule that reads the grid may be pinned — a raster violation of any size is NEW.
+    const raster = KNOWN.filter(
+      (r) =>
+        r.path.startsWith("circulation") || /^lint\.(room-no-clear-path|path-too-narrow|circuitous-path)/.test(r.path),
+    );
+    expect(raster).toEqual([]);
   });
 });
 
@@ -275,170 +276,6 @@ const WITNESSES: Record<ClassName, [string, () => void][]> = {
       },
     ],
   ],
-  "raster-tie": [
-    [
-      "STILL moves a single room's walk by its endpoints' one-cell ties",
-      () => {
-        // No furniture, one room: the entrance (x = 2000) is on a lattice line and the room's
-        // centre on a lattice corner. The walk still moves, by exactly those ties.
-        const body = `${room(4000, 3000)}
-    door id=d at (2000,3000) width 900 wall shell`;
-        const v = reproduce("raster-tie", body, "r180", "circulation.rooms[g.r].walk");
-        expect([v.expected, v.actual]).toEqual(["1500", "1400"]);
-      },
-    ],
-    [
-      "STILL measures a mirrored walk two cells apart on an ALIGNED lattice",
-      () => {
-        const body = `    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
-    wall id=mid partition thickness 100 { (3000,0) (3000,4000) }
-    room id=a at (0,0) size 3000x4000 label "Hall"
-    room id=b at (3000,0) size 3000x4000 label "Bed"
-    door id=d_ext at (1500,4000) width 900 wall shell
-    door id=d_in at (3000,2000) width 900 wall mid`;
-        expect(latticeAligned(observe(witnessPair(body, elementNamed("mx")).p0).ir)).toBe(true);
-        const v = reproduce("raster-tie", body, "mx", "circulation.rooms[g.b].walk");
-        expect([v.expected, v.actual]).toEqual(["4800", "5000"]);
-      },
-    ],
-  ],
-  "entrance-seed-walk": [
-    [
-      "STILL walks a turned entrance seven cells in past a table's halo",
-      () => {
-        // The door (y = 1400) is on a lattice line; P₀ seeds on the row below it, gP on the
-        // image of the row above, which the table's clearance halo erodes.
-        const body = `    wall id=shell exterior thickness 200 { (0,0) (3200,0) (3200,2100) (0,2100) close }
-    room id=r at (0,0) size 3200x2100 label "Hall"
-    door id=d at (0,1400) width 700 wall shell
-    furniture id=t table at (0,200) size 500x900`;
-        const v = reproduce("entrance-seed-walk", body, "r90", "circulation.rooms[g.r].walk");
-        expect([v.expected, v.actual]).toEqual(["1800", "1100"]);
-      },
-    ],
-    [
-      "STILL drops a sealed-on-one-side entrance's width out of a turned room's bottleneck",
-      () => {
-        // Three entrances side by side (fuzz seed 12, case 308). The 1400 mm opening's centre is
-        // on a lattice line; in P₀ it seeds and sets the widest way in, in gP its tied cell is
-        // inside the cabinets' halo and it seeds nowhere — so the bottleneck falls to the next
-        // door's 740 mm. Rate: 1 case in 3000 random plans.
-        const body = `    wall id=shell exterior thickness 150 { (0,0) (2200,0) (2200,2800) (0,2800) close }
-    room id=r at (0,0) size 2200x2800 label "Office"
-    door id=d1 on shell at 17% width 800
-    opening id=wide on shell at 15% width 1400
-    door id=d2 on shell at 81% width 700
-    furniture id=s cabinet at (200,200) size 1200x900
-    furniture id=c cabinet at (0,830) size 1200x1800`;
-        const { ctx } = witnessCase(body, elementNamed("r270"));
-        expect(ctx.entranceShift()).toBe(Number.POSITIVE_INFINITY);
-        const v = reproduce("entrance-seed-walk", body, "r270", "circulation.rooms[g.r].bottleneck");
-        expect([v.expected, v.actual]).toEqual(["1400", "740"]);
-        // The class is BOUNDED to exactly this: a planted regression in the bottleneck —
-        // any other value on either side — is not absorbed.
-        const cls = KNOWN_CLASSES["entrance-seed-walk"];
-        const { ctx: c2 } = witnessCase(body, elementNamed("r270"));
-        for (const [expected, actual] of <[string, string][]>[
-          ["1400", "600"], // narrower than the widest entrance seeding on both sides (740)
-          ["1400", "1234"], // wider than any entrance seeding on gP's side
-          ["1300", "740"], // the wider reading is no one-sided entrance's width
-          ["740", "1400"], // the one-sided entrance seeds on P₀, not on gP
-        ]) {
-          expect(cls.covers({ ...v, expected, actual }, c2), `${expected} -> ${actual}`).toBe(false);
-        }
-      },
-    ],
-    [
-      "STILL seals a turned room whose own entrance seeds on one side only",
-      () => {
-        // Fuzz seed 91, case 244 (with case 648: 2 in 16 000). The 800 mm barn door `o5` into
-        // the utility room seeds in P₀; turned and mirrored its tied seed lands in the
-        // cabinets' halo, and the room's other doorway seeds into a pocket — so the room is
-        // measured on one side and sealed on the other.
-        const body = `    wall id=w_shell exterior thickness 150 { (0,0) (2100,0) (2100,5400) (0,5400) close }
-    wall id=w_h1 partition thickness 100 { (0,2600) (2100,2600) }
-    room id=r0 at (0,0) size 2100x2600 uses utility
-    room id=r1 at (0,2600) size 2100x2800 label "Bed 1"
-    opening id=o1 on w_shell at 40% width 1500
-    door id=o2 sliding on w_shell at 93% width 700
-    door id=o5 barn on w_shell at 89% width 800 slide left
-    furniture id=f1 lavatory in r0 centered size 1000x600
-    furniture id=f2 shoe_cabinet in r0 centered size 1200x700`;
-        const { ctx } = witnessCase(body, elementNamed("r90mx"), { grid: 100 });
-        expect(ctx.entranceSides().only0.map((e) => e.id)).toEqual(["g.o5"]);
-        const v = reproduce("entrance-seed-walk", body, "r90mx", "circulation.rooms[g.r0].walk", { grid: 100 });
-        expect([v.expected, v.actual]).toEqual(["1200", "<absent>"]);
-        reproduce("entrance-seed-walk", body, "r90mx", "circulation.blocked", { grid: 100 });
-      },
-    ],
-  ],
-  "anchor-far-tie": [
-    [
-      "STILL measures a turned bedroom on the far side of its bed",
-      () => {
-        const body = `${room(4000, 3000)}
-    door id=d at (2050,3000) width 900 wall shell
-    furniture id=b bed at (1300,500) size 1400x2000`;
-        const { ctx } = witnessCase(body, elementNamed("r180"));
-        const v = reproduce("anchor-far-tie", body, "r180", "circulation.rooms[g.r].walk");
-        expect([v.expected, v.actual]).toEqual(["2500", "2300"]);
-        expect(ctx.walks().get("g.r")?.anchor).toBeGreaterThan(20); // the measured cell jumped
-      },
-    ],
-  ],
-  "threshold-carve": [
-    [
-      "STILL seals a turned store whose only doorway carves on one side only",
-      () => {
-        // The inner door's centre (y = 1000) is on a lattice line, so its threshold rows
-        // shift by one under r180; the one row the cabinet's halo leaves open is tried in
-        // P₀ and not in gP.
-        const body = `    wall id=shell exterior thickness 200 { (0,0) (4000,0) (4000,2000) (0,2000) close }
-    wall id=mid partition thickness 100 { (2000,0) (2000,2000) }
-    room id=a at (0,0) size 2000x2000 label "Hall"
-    room id=b at (2000,0) size 2000x2000 label "Store"
-    door id=d_ext at (0,1050) width 900 wall shell
-    door id=d_in at (2000,1000) width 900 wall mid
-    furniture id=c cabinet at (2050,0) size 600x1000`;
-        const v = reproduce("threshold-carve", body, "r180", "circulation.rooms[g.b].walk");
-        expect([v.expected, v.actual]).toEqual(["3600", "<absent>"]);
-        reproduce("threshold-carve", body, "r180", "circulation.blocked");
-      },
-    ],
-    [
-      "STILL measures a turned room split by furniture in the other part its doorway carved into",
-      () => {
-        // Fuzz seed 22, case 991 (with seed 43 case 447: 2 in 12 000). Furniture splits the
-        // bath (r1); the opening o2 has a threshold point on a lattice line, so the part of r1
-        // it carves into differs under r90mx — the room's own widest way in changes (700 →
-        // 840 mm), and the cell nearest its centre is in a pocket on one side (`fallback`), so
-        // that side measures to the nearest REACHABLE cell 23 cells away: no tie, +3600 mm.
-        const body = `    wall id=w_shell exterior thickness 100 { (0,0) (6500,0) (6500,6300) (0,6300) close }
-    wall id=w_v1 partition thickness 100 { (3000,0) (3000,6300) }
-    wall id=w_h1 partition thickness 100 { (0,3500) (6500,3500) }
-    room id=r0 at (0,0) size 3000x3500 label "Living" uses utility
-    room id=r1 at (3000,0) size 3500x3500 label "Bed 1" uses bath
-    room id=r2 at (0,3500) size 3000x2800
-    room id=r3 at (3000,3500) size 3500x2800
-    opening id=o0 on w_h1 at 16% width 1200
-    door id=o1 garage on w_shell at 88% width 900 head 2400
-    opening id=o2 on w_v1 at 29% width 1100
-    furniture id=f0 urinal in r1 centered size 500x1100
-    furniture id=f1 crib in r1 anchor left inset 400 size 900x600
-    furniture id=f2 plant at (4136,2632) size 1800x1600 label "Hall" rotate 180 in r3
-    furniture id=f3 water_heater against wall w_v1 segment 0 offset 5292 side left size 800x400
-    furniture id=f4 outdoor_chair against wall w_v1 segment 0 offset 3024 side left size 900x300
-    furniture id=f5 dryer at (0,2989) size 300x1400 label "Living" rotate 0 in r0
-    room id=r_circ circle at (11500,8000) radius 1500
-    room id=r_base at (9500,16000) size 3000x2500
-    room id=r_rel left-of r_base align bottom gap 0 size 2000x2000`;
-        const v = reproduce("threshold-carve", body, "r90mx", "circulation.rooms[g.r1].walk", { grid: 100 });
-        expect([v.expected, v.actual]).toEqual(["4200", "7800"]);
-        const { ctx } = witnessCase(body, elementNamed("r90mx"), { grid: 100 });
-        expect(ctx.walks().get("g.r1")).toMatchObject({ anchorTie: false, seedMoved: false, fallback: true });
-      },
-    ],
-  ],
   "float-translation": [
     [
       "STILL flips a pocket door's fix when 20 m of offset rounds its ulp away",
@@ -483,8 +320,157 @@ describe("the pinned classes — each STILL reproduced by a minimal witness", ()
   });
 });
 
+/**
+ * The former witnesses of the four raster classes backlog E.6–E.10 closed, each a plan whose
+ * circulation a turn or flip USED to move. Every body is on an aligned nav-grid lattice, so
+ * the raster is compared (the law is not vacuous), and each is now exactly equivariant under
+ * every element of the group and the translation.
+ */
+const RASTER_WITNESSES: ReadonlyArray<{ cls: string; title: string; body: string; opts?: WitnessOptions }> = [
+  {
+    // An entrance (x = 2000) on a lattice line and a room centre on a lattice corner: P₀
+    // walked 1500, the half-turn 1400 — each endpoint floored to one side.
+    cls: "raster-tie",
+    title: "a single room whose entrance and centre both sit on lattice lines",
+    body: `${room(4000, 3000)}
+    door id=d at (2000,3000) width 900 wall shell`,
+  },
+  {
+    cls: "raster-tie",
+    title: "two rooms through a partition door on a lattice line (was 4800 vs 5000 mirrored)",
+    body: `    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+    wall id=mid partition thickness 100 { (3000,0) (3000,4000) }
+    room id=a at (0,0) size 3000x4000 label "Hall"
+    room id=b at (3000,0) size 3000x4000 label "Bed"
+    door id=d_ext at (1500,4000) width 900 wall shell
+    door id=d_in at (3000,2000) width 900 wall mid`,
+  },
+  {
+    // The door (y = 1400) is on a lattice line; P₀ seeded the row below it, the quarter-turn
+    // the image of the row above, which a table's halo erodes: 1800 vs 1100.
+    cls: "entrance-seed-walk",
+    title: "an entrance whose tied row is eroded on one side",
+    body: `    wall id=shell exterior thickness 200 { (0,0) (3200,0) (3200,2100) (0,2100) close }
+    room id=r at (0,0) size 3200x2100 label "Hall"
+    door id=d at (0,1400) width 700 wall shell
+    furniture id=t table at (0,200) size 500x900`,
+  },
+  {
+    // Fuzz seed 12, case 308: the 1400 mm opening seeded on one side only, and its width
+    // dropped out of the room's widest-from-any-entrance bottleneck (1400 vs 740).
+    cls: "entrance-seed-walk",
+    title: "three entrances, one of which seeded on one side only",
+    body: `    wall id=shell exterior thickness 150 { (0,0) (2200,0) (2200,2800) (0,2800) close }
+    room id=r at (0,0) size 2200x2800 label "Office"
+    door id=d1 on shell at 17% width 800
+    opening id=wide on shell at 15% width 1400
+    door id=d2 on shell at 81% width 700
+    furniture id=s cabinet at (200,200) size 1200x900
+    furniture id=c cabinet at (0,830) size 1200x1800`,
+  },
+  {
+    // Fuzz seed 91, case 244: the barn door into the utility room seeded in P₀ and not
+    // turned and mirrored, so the room was measured on one side and sealed on the other.
+    cls: "entrance-seed-walk",
+    title: "a room sealed on one side because its own entrance seeded on the other",
+    body: `    wall id=w_shell exterior thickness 150 { (0,0) (2100,0) (2100,5400) (0,5400) close }
+    wall id=w_h1 partition thickness 100 { (0,2600) (2100,2600) }
+    room id=r0 at (0,0) size 2100x2600 uses utility
+    room id=r1 at (0,2600) size 2100x2800 label "Bed 1"
+    opening id=o1 on w_shell at 40% width 1500
+    door id=o2 sliding on w_shell at 93% width 700
+    door id=o5 barn on w_shell at 89% width 800 slide left
+    furniture id=f1 lavatory in r0 centered size 1000x600
+    furniture id=f2 shoe_cabinet in r0 centered size 1200x700`,
+    opts: { grid: 100 },
+  },
+  {
+    // A bed covers the room's centre, so its nearest free cells ring the bed: the half-turn
+    // measured the far side of it (2500 vs 2300).
+    cls: "anchor-far-tie",
+    title: "a bedroom whose centre a bed covers",
+    body: `${room(4000, 3000)}
+    door id=d at (2050,3000) width 900 wall shell
+    furniture id=b bed at (1300,500) size 1400x2000`,
+  },
+  {
+    // The inner door's centre (y = 1000) is on a lattice line; the one row a cabinet's halo
+    // leaves open was tried in P₀ and not in the half-turn, which sealed the store.
+    cls: "threshold-carve",
+    title: "a store whose only doorway carved on one side only",
+    body: `    wall id=shell exterior thickness 200 { (0,0) (4000,0) (4000,2000) (0,2000) close }
+    wall id=mid partition thickness 100 { (2000,0) (2000,2000) }
+    room id=a at (0,0) size 2000x2000 label "Hall"
+    room id=b at (2000,0) size 2000x2000 label "Store"
+    door id=d_ext at (0,1050) width 900 wall shell
+    door id=d_in at (2000,1000) width 900 wall mid
+    furniture id=c cabinet at (2050,0) size 600x1000`,
+  },
+  {
+    // Fuzz seed 22, case 991: furniture splits the bath, and the opening carved into a
+    // different part of it under r90mx (4200 vs 7800).
+    cls: "threshold-carve",
+    title: "a room split by furniture, entered by an opening with a threshold point on a line",
+    body: `    wall id=w_shell exterior thickness 100 { (0,0) (6500,0) (6500,6300) (0,6300) close }
+    wall id=w_v1 partition thickness 100 { (3000,0) (3000,6300) }
+    wall id=w_h1 partition thickness 100 { (0,3500) (6500,3500) }
+    room id=r0 at (0,0) size 3000x3500 label "Living" uses utility
+    room id=r1 at (3000,0) size 3500x3500 label "Bed 1" uses bath
+    room id=r2 at (0,3500) size 3000x2800
+    room id=r3 at (3000,3500) size 3500x2800
+    opening id=o0 on w_h1 at 16% width 1200
+    door id=o1 garage on w_shell at 88% width 900 head 2400
+    opening id=o2 on w_v1 at 29% width 1100
+    furniture id=f0 urinal in r1 centered size 500x1100
+    furniture id=f1 crib in r1 anchor left inset 400 size 900x600
+    furniture id=f2 plant at (4136,2632) size 1800x1600 label "Hall" rotate 180 in r3
+    furniture id=f3 water_heater against wall w_v1 segment 0 offset 5292 side left size 800x400
+    furniture id=f4 outdoor_chair against wall w_v1 segment 0 offset 3024 side left size 900x300
+    furniture id=f5 dryer at (0,2989) size 300x1400 label "Living" rotate 0 in r0
+    room id=r_circ circle at (11500,8000) radius 1500
+    room id=r_base at (9500,16000) size 3000x2500
+    room id=r_rel left-of r_base align bottom gap 0 size 2000x2000`,
+    opts: { grid: 100 },
+  },
+];
+
+/** A raster fact or a lint rule that reads the nav grid. */
+const isRaster = (path: string): boolean =>
+  path.startsWith("circulation") || /^lint\.(room-no-clear-path|path-too-narrow|circuitous-path)/.test(path);
+
 /** Closed classes: each former `STILL …` witness, inverted into the law it was waiting for. */
 describe("closed classes — each former witness is now the law", () => {
+  for (const w of RASTER_WITNESSES) {
+    it(`${w.cls} (backlog E.6–E.10): ${w.title} — every circulation fact is exactly equivariant`, () => {
+      // Not vacuous: the lattice maps onto itself, so the raster IS compared, and the plan
+      // measures something.
+      const p0 = observe(witnessPair(w.body, elementNamed("mx"), w.opts).p0);
+      expect(latticeAligned(p0.ir)).toBe(true);
+      expect(p0.summary.circulation?.rooms.length ?? 0).toBeGreaterThan(0);
+      for (const g of D4_TEST_ELEMENTS.filter((x) => x.name !== "e")) {
+        const { vs } = witnessCase(w.body, g, w.opts);
+        expect(
+          vs.filter((v) => isRaster(v.path)).map((v) => `${v.key}: ${v.expected} -> ${v.actual}`),
+          g.name,
+        ).toEqual([]);
+      }
+    });
+  }
+
+  it("E.6/E.7: an entrance on a lattice line seeds BOTH sides of it, and one off the line seeds one cell", () => {
+    // What the laws above rest on, observed directly: the overlay lists every seed cell.
+    const seeds = (x: number) => {
+      const { p0 } = witnessPair(
+        `${room(4000, 3000)}\n    door id=d at (${x},3000) width 900 wall shell`,
+        elementNamed("mx"),
+      );
+      return overlayOf(observe(p0).ir!)!
+        .entrances.filter((e) => e.entranceId === "g.d")
+        .map((e) => e.seed.x);
+    };
+    expect(seeds(2000)).toEqual([1950, 2050]);
+    expect(seeds(2050)).toEqual([2050]);
+  });
   it("label-point-tie (W3b): a concave room is measured over its pole ORBIT, so no turn or flip moves its seed", () => {
     // The former witness: a U-shaped gallery whose centroid is in its notch. The pole of
     // inaccessibility scan keeps the first of two equally wide arms, so mirrored the room was
@@ -500,12 +486,12 @@ describe("closed classes — each former witness is now the law", () => {
     room id=u polygon ${ring} label "Gallery"
     door id=d at ${door} width 900 wall shell`;
       for (const g of D4_ELEMENTS) {
-        const { vs, ctx } = witnessCase(body, g);
-        expect(ctx.walks().get("g.u")?.seedMoved ?? false, `${ring} ${g.name}`).toBe(false);
-        // Anything left is an endpoint tie of the cell measured to, never an arm swap.
-        for (const v of vs.filter((x) => x.path === "circulation.rooms[].walk")) {
-          expect(KNOWN_CLASSES["raster-tie"].covers(v, ctx), `${ring} ${g.name} ${v.key}`).toBe(true);
-        }
+        const { vs } = witnessCase(body, g);
+        // Not even an endpoint tie is left (backlog E.6–E.10): every circulation fact maps.
+        expect(
+          vs.filter((v) => isRaster(v.path)).map((v) => v.key),
+          `${ring} ${g.name}`,
+        ).toEqual([]);
       }
     }
   });
