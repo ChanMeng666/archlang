@@ -133,11 +133,16 @@ export const circuitousPath: LintRule = {
       if (rc.detourRatio <= max) continue;
       const r = roomById.get(rc.roomId);
       if (!r) continue;
+      // One record is one route (owner decision, backlog C.3): the ratio is the walk from
+      // the room's NEAREST entrance by walk, over the straight line from that SAME entrance —
+      // not the least ratio over every entrance. So the message names the door it measures
+      // from; a single-entrance plan's model carries it in the header.
+      const entrance = rc.entranceId ?? circ.entranceId;
       out.push({
         severity: "warning",
         code: "W_CIRCUITOUS_PATH",
         ...at(r),
-        message: `The walk from the entrance to "${labelOf(r)}" is ${rc.detourRatio}× the straight-line distance (over ${max}×).`,
+        message: `The walk from entrance "${entrance}" to "${labelOf(r)}" is ${rc.detourRatio}× the straight-line distance from that entrance (over ${max}×).`,
         hints: ["Add a more direct connection — a door or a hall — so the room isn't reached the long way round."],
       });
     }

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { lint } from "../src/index.js";
+import { describe as describePlan, lint } from "../src/index.js";
 
 /**
  * Circulation lint (ADR 0008): W_PATH_TOO_NARROW (a walk squeezes below a passable
@@ -83,6 +83,26 @@ describe("circulation lint", () => {
   it("trips W_CIRCUITOUS_PATH only below the detour ratio (studio's bath is ~2.7×)", () => {
     expect(codes(STUDIO)).not.toContain("W_CIRCUITOUS_PATH");
     expect(codes(STUDIO, { ruleset: { maxDetourRatio: 2.0 } })).toContain("W_CIRCUITOUS_PATH");
+  });
+
+  it("names the entrance a W_CIRCUITOUS_PATH ratio is taken from (backlog C.3: one record, one route)", () => {
+    // The ratio is the walk from the room's NEAREST entrance by walk over the straight line
+    // from that same entrance, so the message says which door that is — on a plan with one
+    // entrance (the model's header) and on one with several (the room's own `entranceId`).
+    const MUSEUM = readFileSync(new URL("../examples/museum.arch", import.meta.url), "utf8");
+    for (const src of [STUDIO, MUSEUM]) {
+      const circ = describePlan(src).circulation!;
+      const warns = lint(src, { ruleset: { maxDetourRatio: 2.0 } }).filter((d) => d.code === "W_CIRCUITOUS_PATH");
+      expect(warns.length).toBeGreaterThan(0);
+      const over = circ.rooms.filter((r) => r.detourRatio > 2.0);
+      expect(warns.length).toBe(over.length);
+      over.forEach((r, i) => {
+        expect(warns[i]!.message).toContain(`from entrance "${r.entranceId ?? circ.entranceId}"`);
+        expect(warns[i]!.message).toContain(`${r.detourRatio}×`);
+      });
+    }
+    // Not vacuous: the museum has several entrances, and its circuitous rooms name one each.
+    expect(describePlan(MUSEUM).access.entrances.length).toBeGreaterThan(1);
   });
 
   it("emits no circulation warnings when the plan has no entrance", () => {

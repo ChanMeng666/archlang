@@ -1369,7 +1369,7 @@ room at (0,0) size 3000x4000 label "Bedroom"   # lint: no window
 
 *warning* — A room is reached by a very roundabout path.
 
-**Cause.** The walking distance from the entrance to a room is many times its straight-line distance — the room is reachable but only by a circuitous route (e.g. all the way around the plan). A coarse circulation fact (ADR 0008); the default ratio is generous so a normal tucked-away room does not trip it.
+**Cause.** The walking distance to a room from its entrance — the one nearest it by walk, which the message names — is many times the straight-line distance from that same entrance: the room is reachable but only by a circuitous route (e.g. all the way around the plan). The ratio describes the walk `walkDistanceMm` reports, not the least ratio over every entrance, so a room walked from a door behind its back can trip it even when another door faces it. A coarse circulation fact (ADR 0008); the default ratio is generous so a normal tucked-away room does not trip it.
 
 **Fix.** Add a more direct connection — a door or a hall — so the room is not reached the long way round.
 
