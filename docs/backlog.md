@@ -590,14 +590,21 @@ Plan JSON already projects a reflecting `place`'s furniture as `mirror: true`
 an agent reading `describe()` alone cannot tell a mirrored piece from an unmirrored one of
 the same kind without also fetching Plan JSON. Small, additive, same key name.
 
-### 6.3 · Plan JSON `_mirror`/`_tail` for dims, doors and vertical runs — `todo`
+### 6.3 · Plan JSON reflection on dims, doors and vertical runs — `done` (doors, dims), `_tail` not projected
 
-`_mirror` (dim text side, sliding-door track) and `_tail` (a placed run's entry edge) are
-IR-internal, resolved-frame facts (`src/frame.ts`, `src/elements/dim.ts`, `door.ts`,
-`{stair,escalator,elevator}.ts`) that never reach `planToJson`. A consumer resolving a
-placed plan from Plan JSON alone cannot reproduce which side a dim reads on or which track a
-mirrored sliding door takes. Needs the same "can this be re-expressed, or must it be
-dropped" test G.10 already answered for furniture `mirror`.
+**Landed: doors and dimensions project the frame's reflection.** `planToJson` emits
+`mirror: true` on a door or dimension inside a reflecting `place` frame (the IR's `_mirror`),
+the same semantics as furniture's (G.10): it records the FRAME's reflection, present only when
+reflected (a doubly-reflected instance composes back to no key). `swing` and `offset` are
+already the reflected values; the flag adds what they cannot say — which track a sliding door
+takes and which side a zero-offset call-out's number reads on. `planJsonToArch` refuses
+`mirror: true` on either with `E_JSON_MIRROR`, exactly as for furniture. A reflection-free
+plan's payload is byte-identical; across `examples/` only `clinic.arch` and `terrace-row.arch`
+(mirrored doors) change, by exactly the added key.
+
+**Not projected: `_tail`.** A placed stair/escalator/elevator's entry edge is IR-internal, and
+Plan JSON has no vertical-circulation members at all, so there is nothing to attach it to. Adding
+one would be a new payload member, not a flag — a separate decision.
 
 ### 6.4 · Rectangle-algebra path consistency for `intent` — `todo`, rejected for now (ADR 0020)
 
