@@ -1,7 +1,9 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { resolvePlan } from "../src/analyze.js";
 import { navExtent, rasteriseWallSegments } from "../src/analyze/circulation.js";
+import type { Point } from "../src/ast.js";
 import { distPointToWallSegment, segmentsOfWall } from "../src/geometry.js";
+import { arcContainsRay } from "../src/geometry/arc.js";
 import { loopBBox, loopsContain, PointInterner, wallBand, type EdgeLoop } from "../src/geometry/band.js";
 import type { ResolvedPlan, RWall, RRoom } from "../src/ir.js";
 import { MITER_LIMIT } from "../src/scene.js";
@@ -163,8 +165,74 @@ export interface Census {
   onBoundary: number;
   /** The largest such tie's own offset from the face; measured headroom under `EPS_MM`. */
   maxOnBoundaryOffsetMm: number;
+  /**
+   * Blocked though the drawn solid misses its centre, because a THIN wall's centreline
+   * passes through the cell (backlog C.1): the mask's cover for a wall thinner than
+   * `cell·√2`, which the centre sample alone let a walk leak through. A structural class,
+   * like the vertex disc — never a residual.
+   */
+  centrelineCover: number;
   /** Disagreeing and NOT on a face. Every one of these is a finding. */
   inexplicable: Cell[];
+}
+
+/**
+ * Does some wall thinner than `cell·√2` have its CENTRELINE touch this cell's closed
+ * square? Computed here from the segment geometry — a closed clip for a straight run, the
+ * circle's crossings of the square's edges (within the sweep) or an end inside it for an
+ * arc — not through the rasteriser's own predicate.
+ */
+function thinCentrelineTouches(walls: readonly RWall[], cell: number, x: number, y: number): boolean {
+  const h = cell / 2;
+  const [x0, y0, x1, y1] = [x - h, y - h, x + h, y + h];
+  const inside = (q: Point): boolean => q.x >= x0 && q.x <= x1 && q.y >= y0 && q.y <= y1;
+  for (const w of walls) {
+    if (w.thickness / 2 >= cell * Math.SQRT1_2) continue;
+    for (const s of segmentsOfWall(w)) {
+      if (inside(s.a) || inside(s.b)) return true;
+      if (!s.arc) {
+        // Parametric clip against the four closed half-planes.
+        let lo = 0;
+        let hi = 1;
+        const dx = s.b.x - s.a.x;
+        const dy = s.b.y - s.a.y;
+        const bounds: Array<[number, number]> = [
+          [-dx, s.a.x - x0],
+          [dx, x1 - s.a.x],
+          [-dy, s.a.y - y0],
+          [dy, y1 - s.a.y],
+        ];
+        let ok = true;
+        for (const [p, q] of bounds) {
+          if (p === 0) {
+            if (q < 0) ok = false;
+            continue;
+          }
+          if (p < 0) lo = Math.max(lo, q / p);
+          else hi = Math.min(hi, q / p);
+        }
+        if (ok && lo <= hi) return true;
+        continue;
+      }
+      const arc = s.arc;
+      for (const [horizontal, fixed, a, b] of [
+        [true, y0, x0, x1],
+        [true, y1, x0, x1],
+        [false, x0, y0, y1],
+        [false, x1, y0, y1],
+      ] as const) {
+        const off = fixed - (horizontal ? arc.center.y : arc.center.x);
+        const d2 = arc.r * arc.r - off * off;
+        if (d2 < 0) continue;
+        const mid = horizontal ? arc.center.x : arc.center.y;
+        for (const t of [mid - Math.sqrt(d2), mid + Math.sqrt(d2)]) {
+          if (t >= a && t <= b && arcContainsRay(arc, horizontal ? { x: t, y: fixed } : { x: fixed, y: t }))
+            return true;
+        }
+      }
+    }
+  }
+  return false;
 }
 
 /**
@@ -218,6 +286,7 @@ export function censusOf(s: Storey): Census | null {
     agree: 0,
     onBoundary: 0,
     maxOnBoundaryOffsetMm: 0,
+    centrelineCover: 0,
     inexplicable: [],
   };
 
@@ -272,6 +341,10 @@ export function censusOf(s: Storey): Census | null {
           if (residualMm > out.maxOnBoundaryOffsetMm) out.maxOnBoundaryOffsetMm = residualMm;
           continue;
         }
+        if (blocked && thinCentrelineTouches(walls, ex.cell, x, y)) {
+          out.centrelineCover++;
+          continue;
+        }
         out.inexplicable.push({ x, y, kind: blocked ? "over" : "under", residualMm });
       }
     }
@@ -285,6 +358,7 @@ export function censusLine(c: Census): string {
   return (
     `${c.name.padEnd(18)} L${c.storey}  cells ${String(c.cells).padStart(7)}  examined ${String(c.examined).padStart(7)}` +
     `  agree ${String(c.agree).padStart(7)}  onBoundary ${String(c.onBoundary).padStart(5)}` +
+    `  centrelineCover ${String(c.centrelineCover).padStart(5)}` +
     `  inexplicable ${String(c.inexplicable.length).padStart(5)}  worst ${worst.toFixed(1)} mm`
   );
 }

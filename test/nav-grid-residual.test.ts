@@ -1,4 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { buildDoorAccessGraph, DEFAULT_TOL, resolvePlan } from "../src/analyze.js";
+import { computeCirculationOverlay } from "../src/analyze/circulation.js";
+import type { RDoor, RFurniture, ROpening, RRoom } from "../src/ir.js";
+import { describe as describePlan } from "../src/index.js";
 import { censusOf, EPS_MM, shippedStoreys, type Census } from "./wall-solid.js";
 
 /**
@@ -71,6 +75,26 @@ import { censusOf, EPS_MM, shippedStoreys, type Census } from "./wall-solid.js";
  * distances rather than on multiples of 50. So the gate's resolution is sub-millimetre on
  * curved geometry, and strictly finer than anything the shipped corpus can express.
  *
+ * ## A thin wall's centreline cover (backlog C.1) — the one structural class it added
+ *
+ * A partition thinner than a cell used to block nothing: an 80 mm wall on a lattice line of
+ * 100 mm cells has no cell centre within 40 mm of it, so the mask agreed with the drawing
+ * cell for cell and the walk still leaked through the wall. The rasteriser now also blocks
+ * every cell a wall's CENTRELINE passes through (touches its closed square). For a wall of
+ * at least `cell·√2` (~142 mm) that adds nothing — a touched cell's centre is within
+ * `cell·√2/2` of the line, which the centre test already blocks — and on the shipped
+ * corpus it adds nothing either: the census above is unchanged, and no cell falls in the
+ * new class. A thinner wall's covered cells are blocked though the drawn solid misses
+ * their centres; the census counts them as `centrelineCover`, from the segment geometry in
+ * `test/wall-solid.ts`, never as a residual. The class is shown non-vacuous below on a
+ * planted 80 mm partition: the leak law is red on the centre-only rule and green with the
+ * cover, and the census names the covered cells.
+ *
+ * (Blocking every cell the whole BAND passes through was measured and rejected: a square
+ * predicate puts the drum fixture of `test/circulation-hand-derived.test.ts` exactly on its
+ * decision boundary — its faces are tangent to lattice lines — so a 1 mm nudge moves a
+ * hand-derived walk, 16100 → 16300.)
+ *
  * ## If this test goes red
  *
  * It is naming a place where the circulation model and the drawing describe different
@@ -131,5 +155,75 @@ describe("G.11 — the nav grid's walls agree with the drawn walls", () => {
     expect(worst).toBeLessThan(1e-9);
     // ...and it must not be empty, or the classification is dead code hiding real findings.
     expect(measured.reduce((n, c) => n + c.onBoundary, 0)).toBeGreaterThan(0);
+  });
+});
+
+describe("C.1 — a wall thinner than a cell still blocks (the centreline cover)", () => {
+  /** Two rooms split by a partition of `t` mm on the lattice line x = 3000, joined only by a
+   *  door at the far end, so the walk to `b` must go round by the door. */
+  const SPLIT = (t: number) => `plan "Split" {
+  units mm
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  wall id=mid partition thickness ${t} { (3000,0) (3000,4000) }
+  room id=a at (0,0) size 3000x4000 label "Hall"
+  room id=b at (3000,0) size 3000x4000 label "Store"
+  door id=d_ext at (1500,0) width 900 wall shell
+  door id=d_in at (3000,3500) width 800 wall mid
+}
+`;
+  const walkB = (t: number) => describePlan(SPLIT(t)).circulation?.rooms.find((r) => r.roomId === "b")?.walkDistanceMm;
+
+  it("walks an 80 mm partition's rooms exactly as a 100 mm one's — round by the door, never through the wall", () => {
+    // The 100 mm twin blocks under both rules (its faces put cell centres at exactly 50 mm),
+    // so it is the control; an 80 mm wall leaked on the centre sample alone.
+    expect(walkB(100)).toBeDefined();
+    expect(walkB(80)).toBe(walkB(100));
+    // Not vacuous: the door really is the long way round (straight through the wall from
+    // the entrance to the store's centre is about 4800 mm; round by the door is 7000).
+    expect(walkB(100)!).toBeGreaterThanOrEqual(6000);
+  });
+
+  it("the census names the covered cells, and they are the only disagreement", () => {
+    const c = censusOf({ name: "split-80", storey: 0, ir: resolvePlan(SPLIT(80)).ir! })!;
+    expect(c.centrelineCover).toBeGreaterThan(0);
+    expect(c.inexplicable).toEqual([]);
+    // The 100 mm control has none: its cells are blocked by the centre test.
+    expect(censusOf({ name: "split-100", storey: 0, ir: resolvePlan(SPLIT(100)).ir! })!.centrelineCover).toBe(0);
+  });
+
+  it("a thin CURVED wall blocks too: a closed 80 mm drum keeps the walk out of its interior", () => {
+    // A hall with a closed drum (two 2000 mm-radius arcs, no door) round its own centre. The
+    // expectation is geometric, not the rasteriser's: if the drum blocks, the hall is measured
+    // to the nearest cell the entrance REACHES, which lies outside the drum (≥ R − t/2 from
+    // its centre); if it leaks, to the centre cell itself. On the centre rule alone the 80 mm
+    // drum leaked (the walk ended 70.7 mm from the centre, 2800 mm long); the 200 mm control
+    // blocks under both rules.
+    const DRUM = (t: number) => `plan "Drum" {
+  units mm
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }
+  wall id=drum partition thickness ${t} { (5000,3000) arc (1000,3000) radius 2000 arc (5000,3000) radius 2000 }
+  room id=hall at (0,0) size 6000x6000 label "Hall"
+  door id=d at (0,3000) width 900 wall shell
+}`;
+    for (const t of [80, 200]) {
+      const ir = resolvePlan(DRUM(t)).ir!;
+      const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
+      const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
+      const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
+      const furniture = ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
+      const access = buildDoorAccessGraph(rooms, doors, DEFAULT_TOL, undefined, openings);
+      const o = computeCirculationOverlay(rooms, ir.walls, doors, openings, furniture, access, DEFAULT_TOL)!;
+      const end = o.rooms[0]!.path.at(-1)!;
+      expect(Math.hypot(end.x - 3000, end.y - 3000), `t = ${t}`).toBeGreaterThanOrEqual(2000 - t / 2);
+      expect(o.rooms[0]!.fallback, `t = ${t}`).toBe(true);
+    }
+    // The census exercises the arc branch of the cover class, with nothing unexplained.
+    const c = censusOf({ name: "drum-80", storey: 0, ir: resolvePlan(DRUM(80)).ir! })!;
+    expect(c.centrelineCover).toBeGreaterThan(0);
+    expect(c.inexplicable).toEqual([]);
+  });
+
+  it("adds no covered cell anywhere in the shipped corpus", () => {
+    expect(measured.reduce((n, c) => n + c.centrelineCover, 0)).toBe(0);
   });
 });

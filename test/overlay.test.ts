@@ -70,3 +70,34 @@ describe("circulation overlay (opt-in render)", () => {
     expect(lint(STUDIO).map((x) => x.code)).toEqual(before.l);
   });
 });
+
+describe("circulation overlay — drawn on the grid the facts were measured on (backlog C.2)", () => {
+  /** One room entered from its west wall, with (or without) a floor void across the way in. */
+  const WELL = (withVoid: boolean) => `plan "Well" {
+  units mm
+  wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close }
+  room id=r at (0,0) size 8000x4000 label "Hall" uses living
+  door id=d at (0,2000) width 900 wall shell
+${withVoid ? "  void id=well at (1500,1000) size 2000x2000\n" : ""}}
+`;
+  /** Total length of the overlay's room-walk polylines: the annotation-colour lines. */
+  const drawnWalk = (src: string): number =>
+    (compile(src, { noCache: true, overlays: ["circulation"] }).scene?.nodes ?? [])
+      .filter((n) => n.layer === "annotations" && n.prim.t === "line" && n.paint.stroke === "#333333")
+      .reduce(
+        (sum, n) => (n.prim.t === "line" ? sum + Math.hypot(n.prim.b.x - n.prim.a.x, n.prim.b.y - n.prim.a.y) : sum),
+        0,
+      );
+  const reported = (src: string): number =>
+    (describePlan(src).circulation?.rooms ?? []).reduce((sum, r) => sum + r.walkDistanceMm, 0);
+
+  it("the void moves the walk (so the case is not vacuous)", () => {
+    expect(reported(WELL(true))).toBeGreaterThan(reported(WELL(false)));
+  });
+
+  it("the drawn walk is as long as the reported one, with and without the void", () => {
+    for (const withVoid of [false, true]) {
+      expect(drawnWalk(WELL(withVoid)), `void: ${withVoid}`).toBe(reported(WELL(withVoid)));
+    }
+  });
+});

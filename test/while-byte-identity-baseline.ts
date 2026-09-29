@@ -38,45 +38,57 @@
  * now hangs `hinge left` (the mirror of `d_west`). Only the SVG moves — that one door's leaf
  * and swing arc; `describe()`, `lint()` and `compile().diagnostics` are byte-identical (the
  * full field-by-field is in `./byte-identity-baseline.ts`, "`museum-wings`: whole-surface row").
+ *
+ * Circulation v2 (backlog E.6–E.10): 24 example rows and three fixture rows re-measured, with
+ * this test's own digest body. SVG, `lint()` and `compile().diagnostics` are byte-identical in
+ * every one; only `describe().circulation` moved — the examples field by field in
+ * `./byte-identity-baseline.ts` ("Circulation v2"), the fixtures here (A = the walk-first
+ * nearest-cell tie, E = an entrance seeded on both sides of its lattice line):
+ *     - `test/fixtures/diff-circ-a.arch`: living walk 2500→2300 [A]; living detour 1.04→1 [A]
+ *     - `test/fixtures/diff-circ-b.arch`: living walk 2500→2300 [A]; living detour 1.04→1 [A];
+ *       bed walk 5800→5700 [A]
+ *     - `test/fixtures/zones-wings.arch`: lobby walk 1900→1800 [A]; lobby detour 1.05→1 [A];
+ *       gal_a walk 7900→7700 [AE]; gal_a detour 1.28→1.26 [AE]; office walk 11900→11700 [AE];
+ *       office detour 1.19→1.17 [AE]
  */
 export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/accessible.arch", "a8b70a680754e431524037dc3a936bba2ec7c0e2cba8df0c72a16f45e5d1e27b"],
-  ["examples/aquarium.arch", "dd5f77a7f53548cc4d5e7261f3059c81a7b0bd28e33f7a2a969c3babedf9100b"],
-  ["examples/attached.arch", "94ae2b6be5daaddcc1482ea054c78798296f3582dffe39e8dd59984ce0222f3c"],
-  ["examples/bungalow.arch", "12e2b2e18249e8527a419cc78e1e5355ac8e22165ce0f09f714c5f6ad05f2640"],
-  ["examples/clinic.arch", "9f19793b4ed6d1013f93afae9dfa2dfd02026a5e015bcbba89c12bd83307ea83"],
-  ["examples/courtyard-house.arch", "35dae90f257666e7b356ab03c2f92c1333ee85974a64043d532feeae34cc3433"],
-  ["examples/furnished-flat.arch", "89da2da93c835cbd43199992ce8a664668c896eb5d8060c46ca0dc49e259a874"],
+  ["examples/aquarium.arch", "4f135e5fba5280498df1ab20fb940a68e649365b55f074e9763d722411d193eb"],
+  ["examples/attached.arch", "51833bf888bb42ce0bf0ac436375a281467b904bede6c8f590dda6d4c6a4b46f"],
+  ["examples/bungalow.arch", "717b2fe807b737a1a9a7b7c28732f97ab1679bfa7b6947555c14e8a442a6f0b7"],
+  ["examples/clinic.arch", "64e6abfc1bb9e12b2e63dda0deec06ad0029c7cb599ab0349df888528719a518"],
+  ["examples/courtyard-house.arch", "b1313ec6723213df69b054f821bc14316c671ca93f199d50fe2bc780002f475a"],
+  ["examples/furnished-flat.arch", "d00f64c4441c1e24f2de9aace0ebff2393d6db36fda37f8ae6a84ed38d3ebc87"],
   ["examples/gallery-l.arch", "8904c16f3c22da4f2b82d7a257a02fe2a578494378524a00a62b7fd94a2afa87"],
-  ["examples/garden-house.arch", "505aa382436742a62d469b9cae616b2d149380c305b9ae2c8472efd18619da04"],
-  ["examples/garden-loft.arch", "cab7c29cafef21898fe9653e5a76179319d33e1df9371ca2dda3e668f9e99a7b"],
-  ["examples/hexagon-pavilion.arch", "c94153a876553ea9825eae8fde9f8ffb48254d871b985e94f50d4f25fc06cd06"],
-  ["examples/hillside-villa.arch", "e16c5ec6dd510ddc87db50727f620af58e5ce6dec2d90a226f38f75180b86377"],
-  ["examples/imports.arch", "91665a5b909589c21001a2a7383c672e040b52031d9db513b0c37009063384e9"],
-  ["examples/laneway-house.arch", "88e02d50099df52b908a7a602955441c1b40bd603cea8659c59becc600335a05"],
-  ["examples/library.arch", "1ffc81af5b0e707af1d0c8e18502acea95cc8464234d48e5415e4c7490c99a03"],
-  ["examples/materials.arch", "618b6ce2d9036c654b9c9cdf28f73c43417cb20f2a4cc70cea6b618f979b1d43"],
-  ["examples/museum-wing.arch", "bcda3bd78b5082aa5e084987b6748ae3c6cba41fe30e28cc70b7dcbc3762af17"],
-  ["examples/museum-wings.arch", "537847875c1e44d3e472b2318e9d08b22ccde48d0b01f69687f0653b56c76ec7"], // re-measured, see header
+  ["examples/garden-house.arch", "8ea8fb09514623262787606780e5db8571d1fa7cbe1d48070b5eef0931cde302"],
+  ["examples/garden-loft.arch", "a21189336cc1d8160d968e51cf9407137eb8212d1692228325e8f7ff172abbcd"],
+  ["examples/hexagon-pavilion.arch", "8af657a388e70b72f315895d259b270531df758282a3b475d405cce25465a2ed"],
+  ["examples/hillside-villa.arch", "721f2fe608df7c23bc145ff9fd6176cbe37f828dc61393d63a8cff23a83c3758"],
+  ["examples/imports.arch", "7e44e3f95168fb671437b5d38e8918d72ec74d89636636aac858e7306538a4f4"],
+  ["examples/laneway-house.arch", "ef8afb7fa4673499128960f97075509cf41bf8270c9fbaece1f1c640e9679d7a"],
+  ["examples/library.arch", "89c83260fd894b5271a0ffba7e6622760298c8ffc996a8139caa416fe7a9ac29"],
+  ["examples/materials.arch", "f580b5bff294860346858347ea21b3f43fe648e58266603dd4549026d1addafe"],
+  ["examples/museum-wing.arch", "1dc44273ff89fdc84d1d1c84fe76d2cacb35f9f8cb05b09909780e9afdf63f1a"],
+  ["examples/museum-wings.arch", "4089f8f26c3d10e6fa9888d6c6087ce33c08c243f11261e339776e21f1d0b082"], // re-measured, see header
   ["examples/museum.arch", "afc31f3ca38ea93b1ff3031a7f89cc3bdf15c6255be5987569f427bcbaaa5fea"],
-  ["examples/one-room.arch", "1b4e455d3f64e83a7a8139fb5b4df88b358faf756a80befff46c255e731635a0"],
+  ["examples/one-room.arch", "0cc68bb6a76ac2086b978b95bf6a461968f5e30779dfbe60acb9db695ec77e54"],
   ["examples/parametric.arch", "963fd4b30b77d52f0367492e8e7ff13eabb08c9f709fd2100aba7eb67764ca63"],
   ["examples/relational.arch", "63fa6c32c6838fdc364e6e177c6c794f916ac9992ece18e8cc6218b72f8080a9"],
-  ["examples/studio.arch", "caff7bcd95ee0f378f3e2f764332d00002f3d9706435b4b9c9a48b4d02841f9f"],
-  ["examples/terrace-row.arch", "a88f753ca9f5b241bc536acefa26b748371a048a87bda1919f9a369e0efff902"],
+  ["examples/studio.arch", "d506b6b9ea5795c4d4b1b809067be40b474f42c3c41456ce7463be0bfdc253f4"],
+  ["examples/terrace-row.arch", "9ad5fcc128ecca935fa6fd43a6e02f3ecd762a79dcbcd8d6fe9f8718aa8b696e"],
   ["examples/themed.arch", "9395b6c8962d09e72701690c14ce8e12ef7ae1c9f65a1d4827d5f9734c1fcc4c"],
-  ["examples/tiny-house.arch", "f10d5672954e9cf9b48bca3c3e81d27a18c15b310971241ae82389c6ae3cd199"],
-  ["examples/townhouse.arch", "aea406a832507a5f2a78bcc04107b19b11817cbc6bf41460cd48078b9b392c34"],
-  ["examples/transit-hall.arch", "233e5b99547a81ce85728d5da7bb81be1777de27d998c08e69fa17800acf0e1d"],
-  ["examples/two-bed.arch", "ae1500f3711ee2caf9551ff46883b21f993cc9284e5d2ff3cbbfcf0ba0bec947"],
-  ["examples/two-storey.arch", "30409b71b07cd534ce2223f46e4ea1ad9a9db43f7179c4198dc54f4b8e34dd10"],
+  ["examples/tiny-house.arch", "62b7975513bb50faa6bef4d976e7229c07015b53615d9044d29b2e703bdc9d01"],
+  ["examples/townhouse.arch", "2ae6b32fbbe6fd365943f9c6057e8ce4d9e5a2f616ba77200985cb481fb55086"],
+  ["examples/transit-hall.arch", "27e02c494de9ec1e43a624a85c6ba1aa91f86b58441016b9d7ed83212c28fd05"],
+  ["examples/two-bed.arch", "ee833aac25fb9dcb73179acde49407cf065d9dd3c987a388aa362607cffc19d0"],
+  ["examples/two-storey.arch", "fb8b2405e56f3f3406867738d49ab9d6960dd76a799f7b8e2f42aa32a6445d28"],
   ["test/fixtures/axes-grid.arch", "392def55168a0672ecddda8e47deebc5be6289ce8db230fbf1dc7fe315e077ac"],
   ["test/fixtures/dense-bays.arch", "22f98cc0f66e94a5db73bd40f2ba111da74740976f5255f1f978467760828de3"],
   ["test/fixtures/diff-a.arch", "1df5ea19907127485872bd11c488eb5747e17ab3bd55051a0a69c7221394b24a"],
   ["test/fixtures/diff-b.arch", "6145ecc0ccbfa94fa78fb31d6eabca8d89194ca92290361ca52e37c572e468d8"],
-  ["test/fixtures/diff-circ-a.arch", "fe9c2244a86afcc31558780efd0486ad07fd7c5ca73782da8995e2ce06f456fc"],
-  ["test/fixtures/diff-circ-b.arch", "4f166d45197b41b42585324eda1cf2cea329beeddc6731036240214bb2d26708"],
+  ["test/fixtures/diff-circ-a.arch", "c735c9f3dd761ab9098fdc726ce8f9ed7eca6b66a6e7a929ad25ac91cfb61414"],
+  ["test/fixtures/diff-circ-b.arch", "604c70e57848bf2ebb2c0482c8caa7732667c0633fde02e77c8c67432094d852"],
   ["test/fixtures/schedule-sheet.arch", "87b0599a57b6df143daf9f593a4099c0cb19fb230b36aabe93cf37bef15c4fff"],
   ["test/fixtures/zones-levels.arch", "73386d89afe78ed066d395979141521f6b9d7ca42ee883c42cd8c7bbc7db884b"],
-  ["test/fixtures/zones-wings.arch", "363ce9a95cd784244caba4783e34dfca2eb7b8f8d45612b1f99d4e3dedcc1dca"],
+  ["test/fixtures/zones-wings.arch", "1b35741ed096626d8ea9e54ea8df294bb3ff5e7140d2cbde78ec6d91d5b17de3"],
 ];

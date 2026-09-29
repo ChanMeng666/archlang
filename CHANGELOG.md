@@ -45,6 +45,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   plan with no `place` inside a component body is unaffected, measured byte for byte over
   the shipped examples.
 
+### Changed — circulation measures the same building the same way however it is drawn
+
+- **Behaviour change.** `describe().circulation` (and each storey's `levels[].circulation`) now
+  breaks the nav grid's exact ties by rules a turn or a flip preserves, instead of in page
+  order, so a plan placed with `rotate`/`mirror` reports exactly the circulation of the unplaced
+  plan on a grid-aligned plan — every walk, bottleneck, detour, entrance and key route:
+  - an entrance whose doorway lies on a grid line starts the walk on **both** sides of it, and
+    a room's detour is taken from the nearer side;
+  - a doorway between two rooms is opened on a symmetric set of rows (both sides of a grid
+    line, along the host wall's direction), so it can no longer open in one orientation and
+    stay shut in another;
+  - among equally near cells a room is measured to the one the walk reaches **first**, then by
+    a direction-free key — not the first in reading order; a room's measured point sits on the
+    same fine lattice as every coordinate, so a curved room's centroid an ulp off a grid corner
+    no longer picks the cell by rounding noise;
+  - a key route (kitchen → living, bedroom → bath) is measured between the two rooms' whole
+    sets of equally good cells, so no reading-order pick inside a room can move it (no shipped
+    route changes).
+- 24 of the 30 shipped examples report different circulation numbers (mostly 100–300 mm on a
+  walk; a room whose centre furniture covers can move by metres, e.g. `courtyard-house`'s dining
+  room 12900 → 11500 mm). Behind the oblique portals of `hexagon-pavilion`'s thick drum two
+  galleries read 9200/9300 → 9800 mm: consistent with the new rules, but an oblique doorway is
+  still carved as an L-shaped tunnel, so neither value is the opening's own (an open backlog
+  item). No default drawing, lint verdict, bottleneck width or other `describe()` field changes;
+  the opt-in `--overlay circulation` drawing moves wherever a walk moved.
+- **Behaviour change.** A wall thinner than a nav-grid cell now blocks the walk: the grid also
+  blocks every cell a wall's centreline passes through, so an 80 mm partition on the 100 mm grid
+  can no longer be walked through. A wall of about 142 mm or more is unaffected (no shipped
+  example moves).
+- **Behaviour change.** `W_CIRCUITOUS_PATH` now names the entrance its ratio is taken from
+  (`studio.arch` under `maxDetourRatio: 2`: `The walk from entrance "d_main" to "Bath" is 2.27×
+  the straight-line distance from that entrance (over 2×).`). The ratio itself is unchanged in meaning: the walk from the room's nearest
+  entrance by walk over the straight line from that same entrance, not the least ratio over
+  every entrance.
+
+### Fixed — `--overlay circulation` is drawn on the grid the numbers come from
+
+- The opt-in circulation overlay ignored floor voids while `describe()` and lint honoured them,
+  so on a plan with a `void` the drawn walks and pinch markers could disagree with the reported
+  numbers. It now passes the same voids. Plans without a `void` are unaffected by this fix, and
+  measured on the shipped examples it changes no overlay drawing: `hillside-villa` and
+  `two-storey` have voids, but none lies across a measured walk. (Their overlays, like every
+  example's, still move wherever a walk moved above.)
+
 ### Fixed — `examples/museum-wings.arch`: the east hall door is now the mirror of the west one
 
 - `d_east` hung on the wrong jamb, so the two wings' hall doors were not mirror images. It is

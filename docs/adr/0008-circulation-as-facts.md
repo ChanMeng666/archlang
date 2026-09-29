@@ -140,3 +140,73 @@ ratio is taken from the room's own entrance.
 - The lint rules (`W_PATH_TOO_NARROW`, `W_CIRCUITOUS_PATH`) and the `--overlay circulation`
   walks read the same per-room values, so the drawing starts each walk at the room's own
   entrance.
+
+## Addendum (2026-09): ties are broken by the group, not by the page (circulation v2)
+
+The decision stands; this replaces how the grid resolves an exact tie. "Deterministic by
+row-major iteration" made every tie a page-order choice, and a turned or flipped plan (a
+`place … rotate r mirror m`) measured its rooms differently from the unplaced one — by a
+cell for an endpoint tie, by metres where furniture rings a room's centre (`courtyard-house`'s
+dining room 1.4 m, `garden-loft`'s living room 1.9 m) or where a doorway on a lattice line was
+carved on one side only. "Coarse and grid-quantised" licenses a cell of noise; it does not
+license a different answer for the same building drawn the other way up. The owner's decision
+is **D4-symmetric tie rules**, and every tie below is now resolved by a rule the dihedral group
+preserves:
+
+- **An entrance on a lattice line seeds both sides of it.** Every cell whose closed square
+  holds the doorway point starts the inward walk (one, two across a line, four at a crossing);
+  each seed is a source of the multi-source search, and the straight line a detour divides by
+  runs to the nearer seed.
+- **A threshold is carved on a symmetric row set.** Each threshold point seeds both rooms the
+  same way, each seed is paired with its nearest seed on the other side, and each pair is
+  carved by both L-shaped runs (x-then-y and y-then-x); the axis a threshold spans comes from
+  the host wall's direction. A carve stamps the connector's width on the cells it opens and on
+  its far seed, never on a room cell an L-run only passes along.
+- **Among equidistant cells, the one the walk reaches first, then a group-invariant key** —
+  the straight line to the walk's own entrance, the sorted offsets from the room's centre, the
+  entrance's source order. Cells that tie on the whole key read the same room facts (walk,
+  entrance, detour), but they need not be images of each other under a symmetry of the plan —
+  a bed's two cells mirrored about its entrance's own axis tie while the bath it is routed to
+  is entered off that axis — so a **key route is measured between the two rooms' tie sets**:
+  the fewest hops from any tied cell of one to any of the other, the target the nearest by
+  that walk (ties to the room written first), the detour's straight line the shortest pair
+  realising it. That was chosen over a longer key because no room-local term can see where a
+  route will go, and every term of the set rule is a minimum a turn or flip maps onto its
+  image; a room with one tied cell measures exactly as before, and no shipped route moved.
+  (The page-order route was pre-existing: on the tree before this addendum the red team's
+  plan moved its route under a turn too, where the oracle did not yet compare routes.) The
+  cell index still picks the one cell the overlay draws a walk to. A room's seed point (and a concave room's pole
+  orbit) is snapped to the frame's 2⁻¹⁰ mm lattice first, so a centroid an ulp off a lattice
+  corner cannot break the tie by rounding noise.
+
+With these, every circulation fact — each room's walk, bottleneck, detour and entrance, every
+key route, the sealed rooms' widest way in — is exactly equivariant on a grid-aligned plan
+(`test/equivariance-corpus.test.ts` compares all of them under every element; the four raster
+classes of the oracle are closed). A plan whose extent is not a whole number of cells is still
+compared only under translation: its last cell spills past one edge, and a turn moves the spill.
+
+**A wall thinner than a cell blocks the cells its centreline crosses** (backlog C.1). The grid
+blocked a cell only when its centre lay within half a wall's thickness of the centreline, so an
+80 mm partition on a lattice line of 100 mm cells blocked nothing and the walk leaked through it.
+Every cell the centreline touches (closed square) is now blocked too. The walk is 4-connected,
+and the touched cells of a continuous centreline form an edge-connected chain — where it passes
+exactly through a lattice corner all four cells round the corner are touched — so no step slips
+between them. A touched cell's centre is within `cell·√2/2` of the line, so for a wall of at
+least `cell·√2` (~142 mm on 100 mm cells) the centre test already blocked it and nothing changes.
+The literal alternative, blocking every cell the whole BAND passes through, was measured and
+rejected: a square predicate sits exactly on its decision boundary wherever a face is tangent to
+a lattice line, which puts the hand-derived drum of `test/circulation-hand-derived.test.ts` on a
+knife edge — a 1 mm nudge moved its walk 16100 → 16300 (and the open arc's 16500 → 16700) — where
+the centre rule's mod-8 argument had ruled every tie out.
+
+**The overlay is drawn on the facts' grid** (backlog C.2): `--overlay circulation` now passes the
+storey's voids, as `describe()` and lint do.
+
+**The detour stays per walk-nearest entrance** (owner decision, backlog C.3): one record is one
+route, the walk `walkDistanceMm` reports over the straight line from that same entrance, not the
+least ratio over every entrance. `W_CIRCUITOUS_PATH` names the entrance it measures from.
+
+Measured on the shipped corpus: 24 examples move, only in `describe().circulation` (walks,
+detours and key routes; no bottleneck, entrance or sealed room); SVG, `lint()` and
+`compile().diagnostics` are byte-identical. The field-by-field ledger is in the header of
+`test/byte-identity-baseline.ts`.

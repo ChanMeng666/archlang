@@ -287,14 +287,19 @@ entrance. For the studio:
   "cellSizeMm": 100,
   "bodyRadiusMm": 300,
   "rooms": [
-    { "roomId": "r_living", "walkDistanceMm": 4000, "bottleneckClearWidthMm": 940, "detourRatio": 1.29 },
-    { "roomId": "r_bath",   "walkDistanceMm": 5300, "bottleneckClearWidthMm": 700, "detourRatio": 2.74 }
+    { "roomId": "r_living", "walkDistanceMm": 3700, "bottleneckClearWidthMm": 940, "detourRatio": 1.26 },
+    { "roomId": "r_bath",   "walkDistanceMm": 4600, "bottleneckClearWidthMm": 740, "detourRatio": 2.27 }
   ],
   "routes": [
-    { "fromRoomId": "r_bed", "toRoomId": "r_bath", "walkDistanceMm": 6000, "bottleneckClearWidthMm": 700, "detourRatio": 1.53 }
+    { "fromRoomId": "r_bed", "toRoomId": "r_bath", "walkDistanceMm": 5000, "bottleneckClearWidthMm": 740, "detourRatio": 1.32 }
   ]
 }
 ```
+
+(Re-read from `arch describe examples/studio.arch --json`. The excerpt had drifted before the
+tie rules too: `r_bath` and the route were already 4600 mm / 740 mm / 2.27 and 5100 mm / 740 mm
+/ 1.31. Of the figures shown, the tie rules moved only `r_living` — 4000 mm, 1.29 → 3700 mm,
+1.26 — and the route — 5100 mm, 1.31 → 5000 mm, 1.32.)
 
 | Field | Meaning |
 |-------|---------|
@@ -302,7 +307,7 @@ entrance. For the studio:
 | `cellSizeMm` / `bodyRadiusMm` | the nav-grid quantum (distances are rounded to it, so they're coarse) and the radius obstacles were inflated by |
 | `rooms[].walkDistanceMm` | walking distance to the room from its **nearest** entrance, over the eroded grid |
 | `rooms[].bottleneckClearWidthMm` | the narrowest unavoidable clear width on the widest way in from **any** entrance (a door width, or a furniture pinch) |
-| `rooms[].detourRatio` | `walkDistance ÷ straight-line` from the room's own entrance — how far the route wanders from a beeline (`≥ ~1`) |
+| `rooms[].detourRatio` | `walkDistance ÷ straight-line` from the room's own entrance (the walk-nearest one, not the straightest) — how far the route wanders from a beeline (`≥ ~1`) |
 | `rooms[].entranceId` | the entrance this room's walk starts at: its nearest, ties to the one written first. **Present only when the plan has more than one entrance** |
 | `routes[]` | key functional routes (kitchen → nearest living/dining, bedroom → nearest bath), same three metrics |
 
@@ -318,6 +323,42 @@ entrance — what you can get a sofa or a wheelchair through, whichever door tha
 room can report a wide bottleneck through one door and a walk from another, and its detour is
 measured from its nearest door even when another door is in a straighter line (the museum's
 `g3` reads 2.32, from a door that is nearest by walk but roundabout).
+
+**The detour is per walk-nearest entrance, not the least over every entrance** — so one record
+describes one route. `detourRatio` divides the walk `walkDistanceMm` reports by the straight
+line from that SAME entrance; the alternative, each entrance's walk over its own straight line
+with the smallest ratio kept, would call `g3` direct again but would no longer describe the
+walk that is reported beside it, and a room could then read "direct" while its walk is the
+long way round. `W_CIRCUITOUS_PATH` therefore names the entrance it measures from ("The walk
+from entrance "…" to "…" is 2.33× the straight-line distance from that entrance"), so a warning
+on a room with a straighter door elsewhere says which door the ratio is about.
+
+### Ties — the same numbers however the plan is drawn
+
+A grid distance is quantised, and a quantised model meets exact TIES: a doorway centred on a
+cell boundary, a room centre equidistant from four cells, a bed whose clearance leaves a ring
+of equally near free cells. The grid breaks every such tie by a rule a turn or a flip of the
+plan preserves, never by page order:
+
+- an entrance on a lattice line seeds the walk on **both** sides of it, and the straight line a
+  detour divides by runs to the nearer side;
+- a doorway between two rooms is carved on a **symmetric** set of rows: both sides of every
+  lattice line, each seed to its nearest seed opposite, by both L-shaped runs;
+- among equally near cells a room is measured to the one the walk reaches **first**, then the
+  nearest (straight line) to its own entrance, then by its offsets from the room's centre; its
+  seed point sits on the same 1/1024 mm lattice as every input coordinate.
+
+So on a plan whose rooms span a whole number of cells, `place … rotate r mirror m` of it
+reports exactly the same circulation — every walk, bottleneck, detour, entrance, key route and
+sealed room — as the unplaced plan (the equivariance oracle checks this on every single-storey
+shipped example and on random plans). A plan whose extent is not a whole number of cells
+has its last cell spill past one edge, and a turn moves that spill: there a number can still
+move by a cell.
+
+A wall thinner than a cell still blocks: besides every cell whose centre its band covers, the
+grid blocks every cell its **centreline** passes through, so an 80 mm partition on a 100 mm grid
+cannot be walked through. A wall of about 142 mm or more (`cell·√2`) already blocks every such
+cell by its centre, so this changes nothing for it.
 
 A room the grid cannot reach at all is simply **absent** from `rooms[]`. Three things
 obstruct it: furniture (halo on every side), a
