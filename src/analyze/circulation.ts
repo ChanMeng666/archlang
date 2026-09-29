@@ -1186,7 +1186,7 @@ function buildNav(
     const ri = roomId !== undefined ? roomIndexById.get(roomId) : undefined;
     const at = atById.get(id);
     if (ri === undefined || at === undefined) continue;
-    const ks = seedCells(g, at, rects[ri]!, ri, tol, bandOf(edge?.hostWallId), false);
+    const ks = seedCells(g, at, rects[ri]!, ri, tol, bandOf(edge?.hostWallId));
     if (ks.length === 0) continue; // that doorway is sealed by furniture; the others may not be
     const ordinal = entranceSeeds.length;
     entranceSeeds.push(ks);
