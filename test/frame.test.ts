@@ -392,7 +392,7 @@ describe("nsId — namespacing an id with the instance path", () => {
       fc.property(fc.array(fc.tuple(prefixArb, identArb), { minLength: 2, maxLength: 40 }), (pairs) => {
         const seen = new Map<string, string>();
         for (const [prefix, id] of pairs) {
-          const source = `${prefix} ${id}`;
+          const source = `${prefix}\u0000${id}`;
           const out = nsId({ ...IDENTITY, prefix }, id);
           const prior = seen.get(out);
           // Same output ⇒ it must have come from the same (instance, id) pair.
