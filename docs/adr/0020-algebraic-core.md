@@ -229,7 +229,7 @@ one layer up.
   rubric expects, moving scores for reasons unrelated to plan quality.
 - **Exact projective predicates** (orientation/intersection via projective coordinates).
   Measured bounds with the plain double arithmetic already in use: `orient2d` stays exact
-  to `2²⁵` mm (≈ 33.5 km); homogeneous line intersection is exact only to roughly 103 m
+  to `2²⁵` mm (≈ 33.5 km); homogeneous line intersection is exact only to about 104 m
   (`2^(50/3)` mm). No observed defect motivated adopting exact predicates, and `BigInt` is
   available if a plan is ever measured that needs more precision than either bound gives —
   this is a decision to wait for that evidence, not a claim that no plan could exceed it.
