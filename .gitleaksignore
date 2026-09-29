@@ -117,3 +117,18 @@ a5e4be08f691200488704e1ebab3dae0c0d84655:test/byte-identity-baseline.ts:generic-
 aa6da412c4355a333198e3d6c94bebb4478b2aa7:test/height-byte-identity.test.ts:generic-api-key:59
 aa6da412c4355a333198e3d6c94bebb4478b2aa7:test/height-byte-identity.test.ts:generic-api-key:103
 51db42a99a53069e5c953e79fb0f9609ced0ce0e:test/indexnow-script.test.ts:generic-api-key:78
+
+# ---------------------------------------------------------------------------------------
+# 2026-09-30 — one finding, rule `generic-api-key`, the same false positive as the 2026-09-20
+# block above, in the table added for the while/reassignment deprecation law. Opened and read.
+#
+#   test/while-byte-identity-baseline.ts:16 at 1f58e609
+#
+#           `["examples/accessible.arch", "a8b70a68…<56 more hex>"]` — a MEASURED SHA-256
+#           BYTE-IDENTITY BASELINE of public output (`compile().diagnostics` over the shipped
+#           examples), keyed by `accessible`, which contains the rule's key-ish word "access".
+#           Nothing else in the table trips it. `test/opaque-literal-guard.test.ts` now holds
+#           this file to "digests and shipped example names only".
+# ---------------------------------------------------------------------------------------
+
+1f58e6090cdb6db444dabb0be4660ee77df099f8:test/while-byte-identity-baseline.ts:generic-api-key:16

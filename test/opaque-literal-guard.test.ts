@@ -76,6 +76,7 @@ const HAVE_RULES = [
   "test/byte-identity-baseline.ts",
   "test/height-byte-identity.test.ts",
   "test/indexnow-script.test.ts",
+  "test/while-byte-identity-baseline.ts",
 ].sort();
 
 describe("every gitleaks-excluded file is guarded for what it may CONTAIN", () => {
@@ -89,19 +90,22 @@ describe("every gitleaks-excluded file is guarded for what it may CONTAIN", () =
     }
   });
 
-  it("test/byte-identity-baseline.ts holds only digests and names of examples that ship", () => {
-    // A pure data file: measured SHA-256 values keyed by example name. Tying the names to
-    // real plans makes this a little stronger than a shape check. Any other long unbroken
-    // string — a token, a key, a base64 blob — fails here.
-    const opaque = opaqueLiteralsIn("test/byte-identity-baseline.ts");
-    expect(opaque.length).toBeGreaterThan(0);
-    const unexplained = opaque.filter((s) => {
-      if (/^[0-9a-f]{64}$/.test(s)) return false;
-      if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(s)) return true;
-      return !existsSync(resolve(ROOT, "examples", `${s}.arch`));
-    });
-    expect(unexplained, "an opaque string that is neither a digest nor a shipped example name").toEqual([]);
-  });
+  it.each(["test/byte-identity-baseline.ts", "test/while-byte-identity-baseline.ts"])(
+    "%s holds only digests and names of examples that ship",
+    (file) => {
+      // A pure data file: measured SHA-256 values keyed by example name. Tying the names to
+      // real plans makes this a little stronger than a shape check. Any other long unbroken
+      // string — a token, a key, a base64 blob — fails here.
+      const opaque = opaqueLiteralsIn(file);
+      expect(opaque.length).toBeGreaterThan(0);
+      const unexplained = opaque.filter((s) => {
+        if (/^[0-9a-f]{64}$/.test(s)) return false;
+        if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(s)) return true;
+        return !existsSync(resolve(ROOT, "examples", `${s}.arch`));
+      });
+      expect(unexplained, "an opaque string that is neither a digest nor a shipped example name").toEqual([]);
+    },
+  );
 
   it("test/height-byte-identity.test.ts holds no opaque string at all", () => {
     // Its tables moved to `byte-identity-baseline.ts`; it is excluded only because the
