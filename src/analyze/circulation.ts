@@ -10,8 +10,9 @@
  * integer cell coordinates, source-ordered seeds, row-major iteration — never a float as
  * a key). Three things make it a *walking* model rather than a bare reachability one:
  *
- *   - WALLS BLOCK, DOORS CARVE. Walls are rasterised as blocked cells (a wall thinner
- *     than a cell occupies no cell centre, so without this adjacent rooms would leak
+ *   - WALLS BLOCK, DOORS CARVE. Walls are rasterised as blocked cells — every cell whose
+ *     centre the band covers, and every cell the centreline passes through, so a wall
+ *     thinner than a cell still blocks (room membership alone would let adjacent rooms leak
  *     into each other along their whole shared edge); each connector then carves a
  *     threshold slit between the two rooms' nearest free cells. Rooms connect only
  *     where a real door/opening is.
@@ -55,7 +56,7 @@ import {
   type RoomBox,
 } from "../analyze.js";
 import { pointInRect } from "../geometry/rect.js";
-import { arcExtremes, distPointToArc } from "../geometry/arc.js";
+import { type Arc, arcContainsRay, arcExtremes, distPointToArc } from "../geometry/arc.js";
 import {
   distToPolygonEdge,
   pointInPolygon,
@@ -815,8 +816,22 @@ export function navExtent(rooms: readonly RRoom[]): NavExtent | null {
 
 /**
  * Rasterise walls as blocked cells so adjacent rooms don't leak into each other
- * across a shared partition (a wall thinner than a cell occupies no cell centre);
- * a cell within half the wall thickness of the segment is blocked. Doors carve back
+ * across a shared partition: a cell is blocked when its CENTRE lies within half the wall
+ * thickness of the centreline, or when the centreline itself passes through it (touches
+ * its closed square). The centre test alone blocked nothing for a partition thinner than
+ * a cell — an 80 mm wall on a lattice line of 100 mm cells has no cell centre within 40 mm
+ * of it — so the walk leaked through a wall the drawing has (backlog C.1).
+ *
+ * The centreline cover closes that leak: the cells a continuous centreline touches form a
+ * chain in which consecutive cells share an edge, or — where the line passes exactly
+ * through a lattice corner — all four cells round that corner are touched, so a
+ * 4-connected step (the walk's own neighbourhood, `neighbours4`) cannot slip between two
+ * of them. It adds nothing for a wall of at least `cell·√2` (~142 mm on 100 mm cells): a
+ * touched cell's centre is within `cell·√2/2` of the line, which the centre test already
+ * blocks — so every such wall rasterises exactly as before, and only a thinner one takes
+ * the cover. (The alternative, blocking every cell the whole BAND passes through, was
+ * rejected: it puts a curved wall's faces tangent to lattice lines, where a 1 mm nudge
+ * moves a hand-derived walk — `test/circulation-hand-derived.test.ts`.) Doors carve back
  * through afterwards, in {@link buildGrid}. Furniture-eroded cells stay eroded (never
  * reopened) — which is the caller's business, not this pass's: it only ever says
  * "block this cell", through `block`, and never reads what is already blocked.
@@ -840,6 +855,11 @@ export function rasteriseWallSegments(ex: NavExtent, walls: readonly RWall[], bl
   const { minX, minY, cell, nx, ny } = ex;
   for (const w of walls) {
     const half = w.thickness / 2;
+    // A cell the centreline touches has its centre within cell·√2/2 of it, so the centre
+    // test already blocks it unless the wall is thinner than that (< ~142 mm on 100 mm
+    // cells) — only then is the centreline cover consulted, and a thicker wall runs the
+    // centre test alone, exactly as it always has.
+    const thin = half < cell * Math.SQRT1_2;
     const pts = w.points;
     const segCount = w.closed ? pts.length : pts.length - 1;
     for (let i = 0; i < segCount; i++) {
@@ -863,10 +883,76 @@ export function rasteriseWallSegments(ex: NavExtent, walls: readonly RWall[], bl
           const cy = minY + (iy + 0.5) * cell;
           const d = arc ? distPointToArc({ x: cx, y: cy }, arc) : distPointToSeg(cx, cy, a.x, a.y, b.x, b.y);
           if (d <= half) block(iy * nx + ix);
+          else if (thin) {
+            // The centreline itself passes through this cell (touches its closed square).
+            const x0 = minX + ix * cell;
+            const y0 = minY + iy * cell;
+            const sq = { x0, y0, x1: x0 + cell, y1: y0 + cell };
+            if (arc ? arcMeetsBox(arc, sq) : segMeetsBox(a, b, sq)) block(iy * nx + ix);
+          }
         }
       }
     }
   }
+}
+
+/** A closed axis-aligned box (a nav-grid cell's square). */
+interface Box {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+const inBox = (p: Point, s: Box): boolean => p.x >= s.x0 && p.x <= s.x1 && p.y >= s.y0 && p.y <= s.y1;
+
+/** Does segment ab meet the CLOSED box? (Liang–Barsky clip.) */
+function segMeetsBox(a: Point, b: Point, s: Box): boolean {
+  let t0 = 0;
+  let t1 = 1;
+  const clip = (p: number, q: number): boolean => {
+    if (p === 0) return q >= 0;
+    const r = q / p;
+    if (p < 0) {
+      if (r > t1) return false;
+      if (r > t0) t0 = r;
+    } else {
+      if (r < t0) return false;
+      if (r < t1) t1 = r;
+    }
+    return true;
+  };
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  return clip(-dx, a.x - s.x0) && clip(dx, s.x1 - a.x) && clip(-dy, a.y - s.y0) && clip(dy, s.y1 - a.y) && t0 <= t1;
+}
+
+/**
+ * Does an arc meet the CLOSED box? An end inside it, or its circle crossing one of the
+ * box's edges, within that edge, at a radial inside the sweep — an arc that enters the box
+ * with both ends outside must cross its boundary to do so.
+ */
+function arcMeetsBox(arc: Arc, s: Box): boolean {
+  if (inBox(arc.a, s) || inBox(arc.b, s)) return true;
+  const c = arc.center;
+  const edges: Array<{ horizontal: boolean; fixed: number; lo: number; hi: number }> = [
+    { horizontal: true, fixed: s.y0, lo: s.x0, hi: s.x1 },
+    { horizontal: true, fixed: s.y1, lo: s.x0, hi: s.x1 },
+    { horizontal: false, fixed: s.x0, lo: s.y0, hi: s.y1 },
+    { horizontal: false, fixed: s.x1, lo: s.y0, hi: s.y1 },
+  ];
+  for (const e of edges) {
+    const off = e.fixed - (e.horizontal ? c.y : c.x);
+    const h = arc.r * arc.r - off * off;
+    if (h < 0) continue;
+    const mid = e.horizontal ? c.x : c.y;
+    const root = Math.sqrt(h);
+    for (const along of [mid - root, mid + root]) {
+      if (along < e.lo || along > e.hi) continue;
+      if (arcContainsRay(arc, e.horizontal ? { x: along, y: e.fixed } : { x: e.fixed, y: along })) return true;
+    }
+  }
+  return false;
 }
 
 /** Build the clearance-eroded nav grid, then stitch it through the connectors. */
@@ -1655,9 +1741,9 @@ export function computeCirculation(
   // same point or the drawing and the numbers disagree.
   const rep = new Int32Array(rooms.length);
   for (let ri = 0; ri < rooms.length; ri++) {
-    // A room the modeled doors do not reach has no walk, whatever the raster says: a
-    // partition thinner than a cell blocks no cell centre (backlog C.1), so the grid can
-    // leak into it. It is `no_door_route`, as `access` and lint say.
+    // A room the modeled doors do not reach has no walk, whatever the raster says (a gap
+    // the grid cannot see — a wall missing from the drawing, a door the access graph
+    // refuses — can still leak into it). It is `no_door_route`, as `access` and lint say.
     rep[ri] = doorReachable.has(rooms[ri]!.id)
       ? roomRep(
           g,
