@@ -1133,6 +1133,10 @@ function buildGrid(
 /** The dyadic lattice (mm) {@link toExtentFrame} snaps relative coordinates to: 2⁻¹⁰. */
 const FRAME_QUANTUM_MM = 1 / 1024;
 
+/** A coordinate, and a point, snapped to {@link FRAME_QUANTUM_MM}. */
+const snapToFrame = (v: number): number => Math.round(v / FRAME_QUANTUM_MM) * FRAME_QUANTUM_MM;
+const snapPoint = (p: Point): Point => ({ x: snapToFrame(p.x), y: snapToFrame(p.y) });
+
 /**
  * The circulation inputs moved into the nav extent's OWN frame: every coordinate minus the
  * extent's min corner, so the grid is anchored at (0, 0) and every sample — a cell centre,
@@ -1174,7 +1178,7 @@ function toExtentFrame(
     voids: RVoid[];
   },
 ): typeof plan {
-  const snap = (v: number): number => Math.round(v / FRAME_QUANTUM_MM) * FRAME_QUANTUM_MM;
+  const snap = snapToFrame;
   const p = (q: Point): Point => ({ x: snap(q.x - origin.x), y: snap(q.y - origin.y) });
   const at = <T extends { at: Point }>(e: T): T => ({ ...e, at: p(e.at) });
   return {
@@ -1305,12 +1309,20 @@ function buildNav(
   // centroid is legal (so nothing that already measured correctly moves) and the ring's
   // pole of inaccessibility — the middle of the widest part of the floor — only when it
   // is not. Same rule the label text uses, so the drawn walk ends where the name is.
+  //
+  // Snapped to the frame's dyadic lattice, like every input coordinate: a ring's centroid
+  // is a float sum, and a curved room's tessellated centroid lands an ulp or two off its
+  // exact centre — `library`'s drum read (25000.000000000004, 15999.999999999995) — which
+  // decided a tie between the four cells round a lattice corner by rounding noise instead
+  // of by `roomRep`'s key, and the noise does not turn with the plan.
   const roomCells: number[][] = rooms.map(() => []);
-  const seed = rects.map((rb) => (rb.poly ? polygonLabelPoint(rb.poly) : { x: rb.x + rb.w / 2, y: rb.y + rb.h / 2 }));
+  const seed = rects.map((rb) =>
+    snapPoint(rb.poly ? polygonLabelPoint(rb.poly) : { x: rb.x + rb.w / 2, y: rb.y + rb.h / 2 }),
+  );
   // A pole of inaccessibility is found by a scan that keeps the FIRST of equally wide arms
   // (a page-order tie), so such a room is measured to every widest pole the same scan finds
   // on the ring turned or flipped — the orbit — and its walk is the shortest of them.
-  const poles = rects.map((rb) => (rb.poly ? labelPointOrbit(rb.poly) : []));
+  const poles = rects.map((rb) => (rb.poly ? labelPointOrbit(rb.poly).map(snapPoint) : []));
   for (let k = 0; k < g.free.length; k++) {
     const ri = g.roomIdx[k]!;
     if (!g.free[k] || ri < 0) continue;
