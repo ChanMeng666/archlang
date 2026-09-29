@@ -51,7 +51,7 @@ diff's bounding box lands where the geometry changed.
 | MCP baked resources | `packages/mcp/scripts/check-dist-resources.mjs` | `npm run mcp:build` (`gen:all` first if the repo artifact is stale) |
 | VS Code bundle freshness | `editors/vscode/test/stdio.test.ts` | `npm run vscode:build:only` |
 | Docs tripwires | `docs-table-pipes`, `docs-fences`, `docs-flags`, `readme-permalink`, `docs-examples-figures`, `docs-page-meta`, `playground-examples-rows` | fix the prose from the tool's answer, never the plan to suit the prose; never widen a killed-claim regex; regenerate a permalink with `scripts/gen-permalink.mjs` |
-| Byte-identity digests | `roof-void-byte-identity`, `height-byte-identity`, `iso-byte-identity` (baseline `test/byte-identity-baseline.ts`), `site`, `doors` | a finding to explain before anything is re-measured (see below) |
+| Byte-identity digests | `roof-void-byte-identity`, `height-byte-identity` (baseline `test/byte-identity-baseline.ts`), `site`, `doors` | a finding to explain before anything is re-measured (see below) |
 | Model-vs-truth gates | `circulation-hand-derived`, `nav-grid-residual`, `joinery-oracle`, `joinery-pipeline` | a real defect. Never re-bless a number, add a tolerance, enlarge a radius or drop an example |
 | Fixture symbol snapshots | `fixture-byte-identity` | group 1 (PERMANENT) red is always a bug; groups 2–3 are re-blessable only with each diff explained |
 | Property/fuzz | `escape-fuzz`, `fuzz`, `security`, `dataset` | a shrunk counterexample is pinned as a regression case; never delete a pin |

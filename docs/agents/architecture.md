@@ -11,7 +11,6 @@ source (.arch)
                          relational placement (src/layout.ts) → ResolvedPlan
   └─ src/scene-build.ts  toScene() → Scene (src/scene.ts)
        └─ src/wall-lowering.ts  every wall in one joinery pass (geometry/band, intersect, joinery)
-  └─ src/view/           toIso(): the axonometric, a sibling of toScene (DEPRECATED, ADR 0021)
   └─ src/backends/       svg (default) · png (optional resvg) · ascii · error-svg
   └─ src/export/         dxf · pdf (optional pdfkit)
   └─ src/pipeline.ts     compileUncached(): the one parse→link→resolve→render pipeline
@@ -37,12 +36,11 @@ source (.arch)
 - **Coordinates are millimetres**, origin top-left, +x right, +y down. Colours, weights and fonts
   live in `src/theme.ts`.
 - **Opt-in output leaves the default byte-identical** (`annotate`, `accessible`, `--error-svg`,
-  heights, `--view`); never emit annotation unconditionally.
+  heights); never emit annotation unconditionally.
 - **Heights draw nothing** (`src/datum.ts`): `describe()` and Plan JSON report them only when the
   source authored one, gated by the single whole-plan flag `ResolvedPlan._heightsAuthored`.
-  Elevation accumulates the storeys below. **The view measures nothing**: `describe()` never
-  imports `src/view/`, and `src/view/` uses no `Math.cos/sin/tan/atan` (not exactly rounded across
-  platforms). A view refuses (exit 3) rather than falling back to the plan.
+  Elevation accumulates the storeys below. (The axonometric view that once drew them was removed
+  in 2.0, ADR 0021.)
 - **`place` resolves an instance in its own frame**, then `frame.ts`'s `transformElement` carries it
   into plan coordinates; never pre-transform a resolver's input. A bare `wing()` call is the legacy
   macro and stays byte-identical.

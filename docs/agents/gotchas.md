@@ -29,8 +29,8 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   frame before writing it** (`LintContext.frameOf`, `src/lint.ts`), or the machine-applicable edit
   is correct in plan coordinates and wrong once `arch fix` writes it back into the component body.
 
-- **The axonometric view (`src/view/`, `--view`) is deprecated** (`docs/adr/0021-plan-first-view-deprecated.md`):
-  fix nothing in it, promote it nowhere, and keep the height datum out of any removal.
+- **The axonometric view is removed** (2.0, `docs/adr/0021-plan-first-view-deprecated.md`); do not
+  re-add a drawing consumer of the height datum — 3D goes through data export.
 
 ## Docs & prose
 

@@ -51,6 +51,13 @@ height datum (backlog P3-2).
   datum's value is in `describe()`, which needs no view.
 - A reader who wants a picture of the building has to use a tool that consumes the export.
 
+## Removal
+
+Phase B is implemented on branch `feat/remove-view` (parked until 2.0): every item below is
+deleted, `describe()`, `lint()`, Plan JSON and the SVG/DXF/PDF bytes of every example are
+SHA-256-identical before and after, and `--view` is now an unknown flag (exit 3). The height datum
+is untouched.
+
 ## Phase B: the 2.0 removal checklist
 
 Tracked in `docs/backlog.md`. Prove the removal with a SHA-256 byte-identity sweep of `compile`,

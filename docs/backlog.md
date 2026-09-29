@@ -514,9 +514,9 @@ directions.
 Left open by W9, which made `compile(src, { view })` stop throwing on a wall set its openings
 consume and stop painting an empty ring. None of these throws; each draws or reports wrongly.
 
-**All four are won't-fix**: the view is deprecated and removed at 2.0 ([ADR 0021](adr/0021-plan-first-view-deprecated.md)), which closes them.
+**All four are closed by the removal of the view** ([ADR 0021](adr/0021-plan-first-view-deprecated.md), V.5 below, done on branch `feat/remove-view`, parked until 2.0). The text is kept as history.
 
-### V.1 · Mixed-height joints interpenetrate and draw in the wrong order — `won't fix`
+### V.1 · Mixed-height joints interpenetrate and draw in the wrong order — `closed by removal`
 
 `extrudeWalls` (`src/view/extrude.ts`) joins each wall-height subset on its own, so walls of
 different heights are never trimmed against each other: each runs to its own centreline. The painter
@@ -526,43 +526,43 @@ face and are drawn over it. Reproduced: a 4200 shell `(0,0)…(2300,5700) close`
 height draws correctly. No example mixes heights within a storey. A candidate: join by height
 BAND (every wall at least as tall as the band) rather than by equal height.
 
-### V.2 · A header or sill block overhangs its wall's end — `won't fix`
+### V.2 · A header or sill block overhangs its wall's end — `closed by removal`
 
 `openingCut` (`src/geometry/band.ts`) is not clipped to its host segment, and the view extrudes the
 opening's fill-back blocks from that loop, so an opening running past a wall end puts a header or
 sill block out past it. The plan view does not show it: it only subtracts the cut.
 
-### V.3 · No diagnostic for an opening wider than, or consuming, its host — `won't fix`
+### V.3 · No diagnostic for an opening wider than, or consuming, its host — `closed by removal`
 
 `wall … { (0,0) (1000,0) }` + `opening on w at center width 1200`, or overlapping openings that
 cover a wall end to end, are diagnostic-free. The wall is silently gone from both drawings.
 
-### V.4 · The joinery emits an UNCLOSED chain for a door consuming an arc wall under `grid` — `won't fix`
+### V.4 · The joinery emits an UNCLOSED chain for a door consuming an arc wall under `grid` — `closed by removal`
 
 `finishLoops` (`src/geometry/joinery.ts`) passes an unclosed chain through by design, so the defect
 it exposes reaches the drawing as an open outline. Found by the W9 red team: 11 of 8739 generated
 iso/axon compiles hit it. Its header says a dead-end chain means the classification was
 inconsistent, and closing the chain there would fabricate an edge; start from the classification.
 
-### V.5 · 2.0 removal of the axonometric view (phase B) — `todo`
+### V.5 · 2.0 removal of the axonometric view (phase B) — `done on branch feat/remove-view`
 
-Phase A (deprecation) is done ([ADR 0021](adr/0021-plan-first-view-deprecated.md)). At 2.0, together
-with the already soft-deprecated `while`/reassignment, delete:
+Phase A (deprecation) is done ([ADR 0021](adr/0021-plan-first-view-deprecated.md)). Phase B is implemented on `feat/remove-view`
+(parked; it lands at 2.0 with the removal of `while`/reassignment). Deleted:
 
-- [ ] `src/view/`; the view branch in `pipeline.ts`; `Scene.view`; `CompileOptions.view`.
-- [ ] the view branches in `backends/svg.ts`, `export/pdf.ts` and `export/dxf.ts` (the `V-3D-*` layers).
-- [ ] the CLI `--view`, `resolveView` and `VIEW_FLAG`; the `index.ts` exports and the compile cache
+- [x] `src/view/`; the view branch in `pipeline.ts`; `Scene.view`; `CompileOptions.view`.
+- [x] the view branches in `backends/svg.ts`, `export/pdf.ts` and `export/dxf.ts` (the `V-3D-*` layers).
+- [x] the CLI `--view`, `resolveView` and `VIEW_FLAG`; the `index.ts` exports and the compile cache
       key's `view`.
-- [ ] keep `joinWallSet` (the plan path uses it); un-export `themeBaseLookup` if only the view uses it.
-- [ ] the 10 `test/iso-*.test.ts` and the iso snapshot.
-- [ ] `VIEW_SVGS` in `scripts/gen-example-svgs.ts`, its `scripts/check-drift.ts` entries and
+- [x] keep `joinWallSet` (the plan path uses it); un-export `themeBaseLookup` if only the view uses it.
+- [x] the 10 `test/iso-*.test.ts` and the iso snapshot.
+- [x] `VIEW_SVGS` in `scripts/gen-example-svgs.ts`, its `scripts/check-drift.ts` entries and
       `docs-site/public/view/*.svg`.
-- [ ] `docs/axonometric.md`, its `docs-site/sync-docs.mjs` line and its `docs-site/.gitignore` entry.
-- [ ] the `AGENTS.md` rule becomes "Heights draw nothing."; drop the view lines in
+- [x] `docs/axonometric.md`, its `docs-site/sync-docs.mjs` line and its `docs-site/.gitignore` entry.
+- [x] the `AGENTS.md` rule becomes "Heights draw nothing."; drop the view lines in
       `docs/agents/architecture.md`; rewrite the P3-2 note "The datum now has ONE consumer — the
       axonometric" below.
-- [ ] ripgrep treats `src/plan-json.ts` as binary — sweep it with `grep -a`.
-- [ ] prove it with a SHA-256 byte-identity sweep of `compile`, `describe` and `lint` over every example.
+- [x] ripgrep treats `src/plan-json.ts` as binary — sweep it with `grep -a`.
+- [x] prove it with a SHA-256 byte-identity sweep of `compile`, `describe` and `lint` over every example.
 
 ---
 
@@ -617,11 +617,11 @@ measures outside either bound.
 
 ### 6.6 · A trig/hypot cross-engine audit — `todo`
 
-`src/analyze/syntax.ts`'s integration value uses `Math.log2` alongside the existing view and
-geometry code's `Math.hypot`/`Math.atan2` family (`docs/agents/architecture.md`: "the view
-uses no `Math.cos/sin/tan/atan`, not exactly rounded across platforms"). Nobody has swept
+`src/analyze/syntax.ts`'s integration value uses `Math.log2` alongside the existing
+geometry code's `Math.hypot`/`Math.atan2` family (the removed axonometric view used no
+`Math.cos/sin/tan/atan`, not exactly rounded across platforms). Nobody has swept
 `Math.log2` and the rest of the transcendental surface for the same cross-platform exactness
-risk the view already avoids. Needs a differential run across the CI matrix's platforms
+risk. Needs a differential run across the CI matrix's platforms
 before it can be called safe, not just assumed so by analogy.
 
 ### 6.7 · `while` and reassignment removal in a future MAJOR — `todo`, not before then
@@ -1137,7 +1137,8 @@ flag, not a step.
   datum layer (`src/datum.ts`, branch `feat/height-datum`) — `RWall.height`, `sill`/`head` on every
   resolved opening, `ResolvedPlan.storeyHeight`/`elevation`, and `Opening.kind`/`sill`/`head` on the
   list a wall keeps of what is cut into it, which is what a 2.5D slice at a sensor height reads.
-  **P3-2 itself stays open.** The datum now has ONE consumer — the axonometric — and what building
+  **P3-2 itself stays open.** The datum's consumers are `describe().heights` and the Plan JSON
+  height fields (the axonometric that once drew it is removed) — and what building
   it discovered is worth carrying: nothing was missing for a 2.5D slice, but a **slab thickness**
   still does not exist (v1's storey height is floor-to-floor and a wall runs the full storey), so
   a consumer that must separate structural depth from clear height has to add it.

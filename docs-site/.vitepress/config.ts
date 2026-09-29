@@ -134,11 +134,6 @@ const PAGE_META = [
     "describe() and lint() read a compiled plan back as facts: rooms, areas, adjacency, what each door connects, an access graph, circulation distances and warnings.",
   ],
   [
-    "/axonometric",
-    "The axonometric view",
-    "arch compile --view iso draws the building instead of the plan: extruded walls with their openings cut. It is an illustration, so it measures nothing.",
-  ],
-  [
     "/intent",
     "The intent contract",
     "Write a brief down as data, then check a plan against it. arch validate --intent reports code by code which expectations the drawing meets, with no image.",

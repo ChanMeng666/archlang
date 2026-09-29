@@ -1067,6 +1067,24 @@ human signs into).
   what was deliberately not built. `docs/testing.md` gains the new guards in its map and
   `AGENTS.md` a pointer plus the three rules that get broken. No language surface, no site change.
 
+### Removed — BREAKING (2.0): the axonometric view and its API
+
+The view deprecated above ([ADR 0021](docs/adr/0021-plan-first-view-deprecated.md)) is gone.
+A plan that never asked for it renders, `describe()`s and `lint()`s exactly as before (SHA-256
+identical across every shipped example, per storey, for SVG, DXF, PDF, `describe`, `lint` and Plan
+JSON).
+
+- **CLI:** `arch compile|preview --view <iso|axon>` is removed; it is now an unknown flag and
+  exits 3.
+- **Removed exports** (`@chanmeng666/archlang`): `toIso`, `VIEW_NAMES`, `isViewName`, `cameraFor`,
+  `projectedArea2`, `VIEW_LAYERS`, `VIEW_LAYER_NAMES` and the types `ViewName`, `Camera`, `Point3`
+  and `Projected`.
+- **Removed options and fields:** `CompileOptions.view` and `Scene.view`; `view` is no longer part
+  of the compile cache key. A DXF no longer declares `V-3D-*` layers (a plan DXF never did).
+- **Docs:** the `/axonometric` page and its two example SVGs are gone.
+- **The height datum stays.** `height`, `sill`, `head`, `describe().heights` and the Plan JSON
+  height fields are unchanged.
+
 ## [1.36.0] - 2026-09-13
 
 ### Added — a compiled plan you can reach with a keyboard (`annotate` + `accessible`)

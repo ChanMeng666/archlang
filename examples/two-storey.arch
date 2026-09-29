@@ -10,7 +10,7 @@
 # THE HEIGHTS DRAW NOTHING, AND THAT IS THE POINT. A plan is a horizontal cut, so the
 # `height` below moves no byte of either drawing — `examples/two-storey.svg` is the same
 # file it was before these clauses existed. What the datum feeds is `describe --json
-# --select heights` and `arch compile --view axon`. It is written in three tiers, narrowing:
+# --select heights` and the Plan JSON height fields. It is written in three tiers, narrowing:
 # the plan's `height 2700` is every storey's floor-to-floor, the upper `level … height 3000`
 # overrides it for that storey alone, and a `sill`/`head` on a window bounds that one piece
 # of glazing. `heights.elevation` ACCUMULATES the storeys below rather than multiplying, so

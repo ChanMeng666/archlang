@@ -27,7 +27,7 @@ npm run gen:all       # every gen:* generator
 - A derived position comes from the shape, never its bounding box or centroid.
 - Every new language form ships a byte-identity law pinned by test (SHA-256 of SVG + `describe()` +
   `lint()` over the examples). Never bless a golden to green a suite.
-- Heights draw nothing; `--view` measures nothing (`describe()`/`lint()` never learn it).
+- Heights draw nothing.
 - `npm run check` does not typecheck `test/`; `typecheck:all` does.
 - A clean auto-merge of a MOVED function another branch MODIFIED is not evidence: diff the moved
   body, run both branches' fixtures together.
