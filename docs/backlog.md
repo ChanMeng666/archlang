@@ -558,7 +558,7 @@ inconsistent, and closing the chain there would fabricate an edge; start from th
 ### V.5 · 2.0 removal of the axonometric view (phase B) — `todo`
 
 Phase A (deprecation) is done ([ADR 0021](adr/0021-plan-first-view-deprecated.md)). At 2.0, together
-with the already soft-deprecated `while`/reassignment, delete:
+with the removal of `while`/reassignment (its own checklist: 6.7), delete:
 
 - [ ] `src/view/`; the view branch in `pipeline.ts`; `Scene.view`; `CompileOptions.view`.
 - [ ] the view branches in `backends/svg.ts`, `export/pdf.ts` and `export/dxf.ts` (the `V-3D-*` layers).
@@ -629,7 +629,7 @@ rubric failure, not as a generalisation exercise.
 ### 6.5 · Exact projective predicates (orient2d / homogeneous intersection) — `todo`, rejected for now (ADR 0020)
 
 Measured bounds with today's plain double arithmetic: `orient2d` stays exact to `2²⁵` mm;
-homogeneous line intersection is exact only to roughly 10³ m. Both cover every plan size the
+homogeneous line intersection is exact only to about 104 m (`2^(50/3)` mm ≈ 104,000 mm). Both cover every plan size the
 language can express today. Revisit only if a shipped plan (not a synthetic stress case)
 measures outside either bound.
 
@@ -642,12 +642,57 @@ uses no `Math.cos/sin/tan/atan`, not exactly rounded across platforms"). Nobody 
 risk the view already avoids. Needs a differential run across the CI matrix's platforms
 before it can be called safe, not just assumed so by analogy.
 
-### 6.7 · `while` and reassignment removal in a future MAJOR — `todo`, not before then
+### 6.7 · `while` and reassignment removal at 2.0 — `todo`, owner decision: remove at the next MAJOR, no code before then
 
-W7 soft-deprecates (`W_WHILE_DEPRECATED`/`W_REASSIGN_DEPRECATED`) and offers a proven
-`arch fix` rewrite; it does not remove the construct. Removing it is a language-breaking
-change and stays out of scope until a MAJOR version boundary, by which point the warning
-should have converted most of the corpus that can be converted mechanically.
+`W_WHILE_DEPRECATED`/`W_REASSIGN_DEPRECATED` (`src/while-deprecation.ts`) soft-deprecate the two
+forms and `arch fix` offers a proven `while`→`for` rewrite (`src/while-fix.ts`); nothing is removed
+before the major. Removing them is language-breaking, so it ships in the same 2.0 as the
+axonometric removal (V.5) — one combined
+plan, one migration note, one byte-identity sweep. No shipped example, `test/fixtures/*.arch` or
+`dataset/` plan uses either form, so the sweep needs no example edits.
+
+Checklist:
+
+- [ ] **Escalate, do not delete, the parse.** `Parser.parseWhile` and `Parser.parseAssign`
+      (`src/parser.ts`) keep recognising both forms so the error can point at the construct and
+      carry the rewrite. `W_WHILE_DEPRECATED`/`W_REASSIGN_DEPRECATED` become errors under new
+      catalogued `E_*` codes (`src/error-catalog.ts`; propose `E_WHILE_REMOVED` and
+      `E_REASSIGN_REMOVED`, since the prefix encodes severity), raised from
+      `src/while-deprecation.ts` (`checkWhileDeprecation`; rename the module), still forwarded
+      from an imported module by `src/import.ts` and still ignored for a reassignment inside a
+      `while` body. The `ast.ts` `WhileNode`/`AssignNode` stay so the parse tree and the fix can
+      name them; the `while`/`assign` cases in `src/ir.ts`'s `expandScope` stop expanding (the
+      plan does not resolve) and `E_WHILE_LIMIT` plus `MAX_ITERATIONS` retire.
+- [ ] **The proven rewrite becomes the migration path.** `arch fix` keeps `proveWhileFixes`
+      (`src/while-fix.ts`, wired in `src/cli/commands-author.ts`) and applies it to the new error.
+      Because the plan no longer compiles, the proof cannot compare against the original run:
+      re-root it on the parse-stage shape (`canonicalShapeAt`) and prove the twin against the
+      pre-2.0 semantics kept as a test oracle, or ship the rewrite as `arch fix --migrate-2.0`
+      run on the last 1.x. Decide this before the code: it is the one non-mechanical item.
+- [ ] **The counter-example that is not a counted loop.** A `while` whose body does not have the
+      canonical `let I = A; while I < B { …; I = I + 1 }` shape (or a bare reassignment) has no
+      machine rewrite; the error's hint names `for NAME in A..B` and `let`, as today.
+- [ ] **Generated surfaces** (never hand-edit; run `npm run gen:all` and `npm run docs:build`):
+      `while` stays in `src/grammar/tokens.ts` `KEYWORDS` (the parser still recognises
+      it, and the editors keep colouring it); remove `while-stmt` and `assign-stmt` from
+      `scripts/gen-gbnf.ts` (`grammars/archlang.gbnf`) so a constrained decoder cannot emit them; update `scripts/gen-llm-spec.ts` (`spec.llm.md`,
+      `llms-full.txt`); `gen:errors` for `docs/error-codes.md`.
+- [ ] **Hand-written docs:** `docs/language-reference.md` ("Reassignment" and "Control flow"),
+      `docs/error-codes.md` examples, `docs/agents/architecture.md`, `SKILL.md`, and a migration
+      note in `CHANGELOG.md` ("Removed"): the before/after for a counted loop, the accumulator
+      (`let total = 0; while … { total = total + x }`, which has no `for` twin and needs an
+      `if`/`let` chain or a component parameter), and the `arch fix` command.
+- [ ] **Tests that change:** `test/while-deprecation.test.ts` (warning → error),
+      `test/while-fix.test.ts`, `test/spec-forms.test.ts` and `test/diagnostics.test.ts`
+      (the forms' spec rows and catalogued codes), `test/lang.test.ts`, and
+      `test/while-byte-identity.test.ts` with `test/while-byte-identity-baseline.ts` (the
+      `compile().diagnostics` law over every example and fixture: it must stay green with the
+      new codes and NO re-measured row, since no shipped plan uses either form).
+      `test/byte-identity-baseline.ts` and the other `*-byte-identity` suites must not move.
+- [ ] **`arch validate --strict`** (`src/cli/commands-analyze.ts`) stops needing the warning to
+      fail a plan using the forms: the error already exits non-zero; drop the special case.
+- [ ] **Prove it:** SHA-256 sweep of `compile`, `describe` and `lint` over every example, and a
+      plan using `while` returns the new `E_*` with a span and the rewrite, never throws.
 
 ### 6.8 · `museum-wings.arch`'s wings: D1 at shell/rooms, C1 at `full` — `todo` (the hall doors are fixed; the axis door is the one deliberate asymmetry)
 
