@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { resolvePlan } from "../src/analyze.js";
+import { buildDoorAccessGraph, DEFAULT_TOL, resolvePlan } from "../src/analyze.js";
+import { computeCirculationOverlay } from "../src/analyze/circulation.js";
+import type { RDoor, RFurniture, ROpening, RRoom } from "../src/ir.js";
 import { describe as describePlan } from "../src/index.js";
 import { censusOf, EPS_MM, shippedStoreys, type Census } from "./wall-solid.js";
 
@@ -187,6 +189,38 @@ describe("C.1 — a wall thinner than a cell still blocks (the centreline cover)
     expect(c.inexplicable).toEqual([]);
     // The 100 mm control has none: its cells are blocked by the centre test.
     expect(censusOf({ name: "split-100", storey: 0, ir: resolvePlan(SPLIT(100)).ir! })!.centrelineCover).toBe(0);
+  });
+
+  it("a thin CURVED wall blocks too: a closed 80 mm drum keeps the walk out of its interior", () => {
+    // A hall with a closed drum (two 2000 mm-radius arcs, no door) round its own centre. The
+    // expectation is geometric, not the rasteriser's: if the drum blocks, the hall is measured
+    // to the nearest cell the entrance REACHES, which lies outside the drum (≥ R − t/2 from
+    // its centre); if it leaks, to the centre cell itself. On the centre rule alone the 80 mm
+    // drum leaked (the walk ended 70.7 mm from the centre, 2800 mm long); the 200 mm control
+    // blocks under both rules.
+    const DRUM = (t: number) => `plan "Drum" {
+  units mm
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }
+  wall id=drum partition thickness ${t} { (5000,3000) arc (1000,3000) radius 2000 arc (5000,3000) radius 2000 }
+  room id=hall at (0,0) size 6000x6000 label "Hall"
+  door id=d at (0,3000) width 900 wall shell
+}`;
+    for (const t of [80, 200]) {
+      const ir = resolvePlan(DRUM(t)).ir!;
+      const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
+      const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
+      const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
+      const furniture = ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
+      const access = buildDoorAccessGraph(rooms, doors, DEFAULT_TOL, undefined, openings);
+      const o = computeCirculationOverlay(rooms, ir.walls, doors, openings, furniture, access, DEFAULT_TOL)!;
+      const end = o.rooms[0]!.path.at(-1)!;
+      expect(Math.hypot(end.x - 3000, end.y - 3000), `t = ${t}`).toBeGreaterThanOrEqual(2000 - t / 2);
+      expect(o.rooms[0]!.fallback, `t = ${t}`).toBe(true);
+    }
+    // The census exercises the arc branch of the cover class, with nothing unexplained.
+    const c = censusOf({ name: "drum-80", storey: 0, ir: resolvePlan(DRUM(80)).ir! })!;
+    expect(c.centrelineCover).toBeGreaterThan(0);
+    expect(c.inexplicable).toEqual([]);
   });
 
   it("adds no covered cell anywhere in the shipped corpus", () => {
