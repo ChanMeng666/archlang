@@ -1269,7 +1269,7 @@ export function checkGraph(source: string, intent: Record<string, string[]>, opt
   // Intended undirected edges, as resolved id pairs (canonical order by source rank).
   const pairKey = (a: string, b: string): string => {
     const [x, y] = (rank.get(a) ?? 0) <= (rank.get(b) ?? 0) ? [a, b] : [b, a];
-    return `${x} ${y}`;
+    return `${x}\u0000${y}`;
   };
   const intended = new Map<string, [string, string]>();
   for (const key of intentKeys) {
