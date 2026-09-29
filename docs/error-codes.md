@@ -1882,7 +1882,7 @@ level 2 "1" { }   # warning: "s" is on level 1 only
 
 *warning* — Door swing is obstructed.
 
-**Cause.** The quarter-circle a door leaf sweeps overlaps a piece of furniture/fixture or another door's swing, so the door cannot open fully. Two swings must share an area to collide: a double door's leaves, meeting only at their shared closed jamb, are clear. The warning states the clear radius the swing needs, what it actually has, and the shortfall.
+**Cause.** The quarter-circle a door leaf sweeps overlaps a piece of furniture/fixture or another door's swing, so the door cannot open fully. Two swings that meet in a single point are clear: a double door's leaves, meeting only at their shared closed jamb, do not obstruct each other. The warning states the clear radius the swing needs, what it actually has, and the shortfall.
 
 **Fix.** Hang the leaf on the other jamb (`hinge left|right`) — a machine-applicable fix when the flipped swing is proved clear; or open it the other way (`swing in|out`), move the door along its wall, move the obstruction (`arch repair`), narrow the leaf to the width the warning quotes (never below the minimum passable width — that relocates the problem into `W_DOOR_CLEARANCE`), hang no swinging leaf at all (a `sliding`, `pocket` or `barn` door sweeps nothing, so this rule cannot apply to it), or make it a leafless `opening`.
 

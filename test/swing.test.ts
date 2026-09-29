@@ -97,8 +97,8 @@ describe("swingsCollide", () => {
     expect(swingsCollide(a, far, 0)).toBe(false);
   });
 
-  // Backlog 6.8: an obstruction is an overlap of POSITIVE AREA. Two quarter-discs that meet
-  // only at a point (or along a line) are clear; any real overlap, however thin, collides.
+  // Backlog 6.8: two quarter-discs that meet in exactly ONE point are clear; any overlap of
+  // area, however thin, or any contact along a segment of positive length collides.
   // Every wall direction and both swing sides, so the rule is not an accident of one frame.
   const WALLS = [
     { a: { x: 0, y: 0 }, b: { x: 8000, y: 0 }, thickness: 200 }, // +x
@@ -185,15 +185,20 @@ describe("swingsCollide", () => {
     expect(swingsCollide(a, leaf(w, 2500, 1000, "start", "in"), 0)).toBe(true);
   });
 
-  it("treats contact along a LINE as clear too — the rule is positive area, nothing less", () => {
-    // Pinned so the consequence is visible, not accidental. The same pair 100 mm too close
-    // but opening to OPPOSITE faces: the discs share only a 100 mm run of the wall line (the
-    // two closed leaves' overlap), which has no area. Two leaves hung back to back on one
-    // post opening the same way share only their open-leaf line. Neither is this rule's.
-    const w = WALLS[0]!;
-    const a = leaf(w, 2500, 1000, "start", "in");
-    expect(swingsCollide(a, leaf(w, 3400, 1000, "end", "out"), 0)).toBe(false);
-    expect(swingsCollide(leaf(w, 2500, 1000, "end", "in"), leaf(w, 3500, 1000, "start", "in"), 0)).toBe(false);
+  it("still collides on contact along a SEGMENT — only single-point contact is exempt", () => {
+    // Leaves are solid, so sharing a line is a clash even with no area in common. The same
+    // pair 100 mm too close but opening to OPPOSITE faces: the closed leaves overlap along a
+    // 100 mm run of the wall line (the openings overlap). Two leaves hung back to back on one
+    // post opening the same way: both open leaves lie on the same 1000 mm line.
+    for (const w of WALLS) {
+      const a = leaf(w, 2500, 1000, "start", "in");
+      const opposite = leaf(w, 3400, 1000, "end", "out");
+      expect(swingsCollide(a, opposite, 0), `${JSON.stringify(w.a)} opposite faces`).toBe(true);
+      expect(swingsCollide(opposite, a, 0), `${JSON.stringify(w.a)} opposite faces`).toBe(true);
+      const post1 = leaf(w, 2500, 1000, "end", "in");
+      const post2 = leaf(w, 3500, 1000, "start", "in");
+      expect(swingsCollide(post1, post2, 0), `${JSON.stringify(w.a)} back to back`).toBe(true);
+    }
   });
 
   it("with a clearance, contact at exactly radius + clearance is clear and a shared jamb is not", () => {
