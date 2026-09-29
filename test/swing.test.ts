@@ -131,6 +131,32 @@ describe("swingsCollide", () => {
     }
   });
 
+  it("clears a double door on an OBLIQUE wall, where the shared jamb is equal only in floating point", () => {
+    // Off-axis walls put the two far jambs ~1e-13 mm apart; the touch is read within the
+    // repository's vertex tolerance (VERTEX_EPS), and a 1 mm overlap still collides.
+    const oblique = [
+      { a: { x: 0, y: 0 }, b: { x: 5000, y: 5000 }, thickness: 200 },
+      { a: { x: 7000, y: 0 }, b: { x: 0, y: 3000 }, thickness: 200 },
+      { a: { x: 100, y: 200 }, b: { x: 6100, y: 2700 }, thickness: 200 },
+    ];
+    for (const w of oblique) {
+      const L = Math.hypot(w.b.x - w.a.x, w.b.y - w.a.y);
+      const at = (p: number) => ({ x: w.a.x + ((w.b.x - w.a.x) * p) / L, y: w.a.y + ((w.b.y - w.a.y) * p) / L });
+      for (const width of [800, 900, 1000]) {
+        for (const jamb of [1500, 2000, 2345, 3000]) {
+          for (const swing of ["in", "out"] as const) {
+            const a = doorSwing({ at: at(jamb - width / 2), width, hinge: "left", swing, host: w })!;
+            const b = doorSwing({ at: at(jamb + width / 2), width, hinge: "right", swing, host: w })!;
+            const tag = `${JSON.stringify(w.a)}→${JSON.stringify(w.b)} ${width}@${jamb} ${swing}`;
+            expect(swingsCollide(a, b, 0), tag).toBe(false);
+            const over = doorSwing({ at: at(jamb + width / 2 - 1), width, hinge: "right", swing, host: w })!;
+            expect(swingsCollide(a, over, 0), `${tag} −1 mm`).toBe(true);
+          }
+        }
+      }
+    }
+  });
+
   it("still collides when the same pair overlaps by 1 mm", () => {
     for (const w of WALLS) {
       for (const swing of ["in", "out"] as const) {

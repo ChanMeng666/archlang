@@ -14,6 +14,7 @@ import {
 } from "./geometry/arc.js";
 import type { GridBox } from "./geometry/grid-index.js";
 import { GridIndex } from "./geometry/grid-index.js";
+import { VERTEX_EPS } from "./geometry/polygon.js";
 
 export interface Vec {
   x: number;
@@ -347,9 +348,11 @@ function sectorSupport(s: DoorSwing, d: Vec): number {
  * from edges and arcs of the two sectors, so that normal is one of a finite set: an
  * edge normal or an arc-end radial of either sector, or the axis from one arc's centre
  * (a hinge) to a vertex of the other (arc + vertex, arc + arc). Checking all of them, in
- * both signs, decides the question — no sampling and no tolerance. On an axis-aligned
- * wall with whole-millimetre positions every candidate is exact in floating point, so a
- * shared closed jamb evaluates to exactly 0 and is clear.
+ * both signs, decides the question without sampling. On an axis-aligned wall with
+ * whole-millimetre positions every candidate is exact in floating point, so a shared closed
+ * jamb evaluates to exactly 0. On an oblique wall the two far jambs agree only to ~1e-13 mm,
+ * so "touching" is read within {@link VERTEX_EPS} — the repository's own rule for when two
+ * vertices are the same vertex — rather than as a fresh epsilon.
  */
 function sectorInteriorsMeet(a: DoorSwing, b: DoorSwing): boolean {
   const axes: Vec[] = [];
@@ -362,7 +365,7 @@ function sectorInteriorsMeet(a: DoorSwing, b: DoorSwing): boolean {
     const u = unit(v);
     if (u.x === 0 && u.y === 0) continue;
     for (const d of [u, mul(u, -1)]) {
-      if (sectorSupport(a, d) + sectorSupport(b, mul(d, -1)) <= 0) return false;
+      if (sectorSupport(a, d) + sectorSupport(b, mul(d, -1)) <= VERTEX_EPS) return false;
     }
   }
   return true;

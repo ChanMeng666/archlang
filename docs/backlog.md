@@ -711,8 +711,11 @@ boundary, so two quarter-discs tangent at the shared jamb collided. Owner decisi
 obstruction is an overlap of positive area. `swingsCollide` (`src/geometry.ts`) keeps its
 sampler as the detector and asks `sectorInteriorsMeet` whether the shared point is more than
 boundary: a weak-separating-axis test over the finite candidate set of the two sectors'
-Minkowski difference, no tolerance. A shared-jamb pair (2×900, 2×1000, every wall direction and
-both swing sides) is clear; a 1 mm overlap still warns, "1 mm short" (`test/swing.test.ts`,
+Minkowski difference. On axis-aligned whole-mm geometry it is exact (a shared jamb sums to 0);
+on an oblique wall the jambs agree only to ~1e-13 mm, so touching is read within `VERTEX_EPS`
+(1e-6 mm, `src/geometry/polygon.ts`'s vertex-coincidence tolerance), not a new epsilon. A
+shared-jamb pair (2×900, 2×1000, every axis direction, oblique walls, both swing sides) is
+clear; a 1 mm overlap still warns, "1 mm short" (`test/swing.test.ts`,
 `test/lint-deficits.test.ts`). Consequences, each pinned:
 
 - Contact along a line is clear too: two leaves 100 mm too close opening to OPPOSITE faces (the
