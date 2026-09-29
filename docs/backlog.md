@@ -342,9 +342,16 @@ symmetric row set 6 examples, 7 walks (5, 9). All together, with the seed snap, 
 three fixtures move, only in `describe().circulation` — the ledger is in the header of
 `test/byte-identity-baseline.ts`. The largest single moves are the closed classes' own: an
 anchor ring (`courtyard-house` r_dining −1400, `garden-loft` r_live −1900, `townhouse` r_kitchen
-−1800) and a portal carve (`hexagon-pavilion` g_n −1200 straight through two aligned portals;
-g_sw/g_se, oblique portals on the 1200 mm drum, +600/+500 to an equal 9800 — they read 9200/9300
-while each portal was carved on one side only).
+−1800) and a portal carve (`hexagon-pavilion` g_n −1200 straight through two aligned portals).
+`hexagon-pavilion`'s g_sw/g_se, behind the OBLIQUE portals of the 1200 mm drum, move +600/+500
+to 9800: the new value is rule-consistent, NOT a correction — the portal is carved by an
+L-shaped tunnel between seed cells several cells apart on either side of the masonry, and the
+symmetric seeds give a different tunnel (the card-A red team measured 170 band cells un-carved and
+124 others carved, the new g_sw path zig-zagging through the band). See C.5.
+
+Key routes follow the same law: a room whose nearest cells tie on the whole key is routed from
+its whole tie set, not the cell-index pick (red-team counterexample: routes[bed>bath] 4300 vs
+4200 under a turn; pre-existing on the tree before, where routes were not yet compared).
 
 Still open by construction: a plan whose extent is not a whole number of cells spills its last
 cell past one edge, so the raster is compared only under translation there.
@@ -449,6 +456,18 @@ walk-nearest entrance", so one record describes one route — the alternative, t
 every entrance, would call `g3` direct but no longer describe the walk `walkDistanceMm` reports.
 `W_CIRCUITOUS_PATH` now names the entrance its ratio is taken from; `docs/analysis.md` documents
 the difference.
+
+### C.5 · An oblique doorway is carved as an L-shaped tunnel — `todo`
+
+A threshold joins a seed cell on each side of the wall by an x-then-y (and, since circulation v2,
+also y-then-x) run of cells. Through a straight wall the seeds face each other and the run is a
+straight slit; through a thick wall at an angle — `hexagon-pavilion`'s portals on the 1200 mm
+drum — the nearest free cells on either side are several cells apart diagonally, and the run is an
+L that tunnels through the masonry beside the opening rather than along it. Which tunnel is carved
+depends on which seeds are chosen, so a rule change moves the walk (g_sw/g_se 9200/9300 → 9800
+under circulation v2) without either value being the opening's. Close by carving along the
+opening's own axis (the host's normal at the connector) through the band, bounded by the opening's
+width — a measured change for every oblique or curved doorway.
 
 ### C.4 · An exterior door at the corner of two rooms joins them and gives no entrance — `todo`
 

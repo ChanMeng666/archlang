@@ -208,6 +208,11 @@
  *   S — a room's seed point is snapped to the frame lattice (the library drum's centroid was
  *       an ulp off its lattice corner).
  *
+ * `hexagon-pavilion`'s g_sw/g_se [T] rows are rule-consistent, not a correction: the oblique
+ * drum portals are carved as L-shaped tunnels between seeds either side of 1200 mm of masonry,
+ * and the symmetric seeds give a different tunnel (backlog C.5). Key routes are measured between
+ * the rooms' tie sets (`routeBetween`); that moved no route in the corpus.
+ *
  * The centreline cover for walls thinner than a cell (C.1) moves no row: on the shipped
  * corpus it blocks no cell the centre test does not already block (the residual census,
  * `test/nav-grid-residual.test.ts`, counts zero `centrelineCover` cells).

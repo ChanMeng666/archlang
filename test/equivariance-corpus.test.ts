@@ -547,7 +547,7 @@ describe("closed classes — each former witness is now the law", () => {
     // The orbit is a set; the pole the room is measured to is chosen from it by fewest hops,
     // then straight-line distance from the walk's own entrance, then the candidate's offsets
     // from the room's centre as a sorted multiset — never by cell index (that settles only a
-    // tie some symmetry of the whole plan maps onto itself, where every fact is equal).
+    // tie every room fact agrees on; a key route measures from the whole tie set).
     const ring = "(0,0) (6000,0) (6000,4000) (4000,4000) (4000,1000) (2000,1000) (2000,4000) (0,4000)";
     const body = (x: number) => `    wall id=shell exterior thickness 200 { ${ring} close }
     room id=u polygon ${ring} label "Gallery"

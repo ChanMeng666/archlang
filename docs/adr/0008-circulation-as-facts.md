@@ -164,8 +164,18 @@ preserves:
   its far seed, never on a room cell an L-run only passes along.
 - **Among equidistant cells, the one the walk reaches first, then a group-invariant key** —
   the straight line to the walk's own entrance, the sorted offsets from the room's centre, the
-  entrance's source order; the cell index settles only a tie a symmetry of the whole plan maps
-  onto itself, where every fact is equal. A room's seed point (and a concave room's pole
+  entrance's source order. Cells that tie on the whole key read the same room facts (walk,
+  entrance, detour), but they need not be images of each other under a symmetry of the plan —
+  a bed's two cells mirrored about its entrance's own axis tie while the bath it is routed to
+  is entered off that axis — so a **key route is measured between the two rooms' tie sets**:
+  the fewest hops from any tied cell of one to any of the other, the target the nearest by
+  that walk (ties to the room written first), the detour's straight line the shortest pair
+  realising it. That was chosen over a longer key because no room-local term can see where a
+  route will go, and every term of the set rule is a minimum a turn or flip maps onto its
+  image; a room with one tied cell measures exactly as before, and no shipped route moved.
+  (The page-order route was pre-existing: on the tree before this addendum the red team's
+  plan moved its route under a turn too, where the oracle did not yet compare routes.) The
+  cell index still picks the one cell the overlay draws a walk to. A room's seed point (and a concave room's pole
   orbit) is snapped to the frame's 2⁻¹⁰ mm lattice first, so a centroid an ulp off a lattice
   corner cannot break the tie by rounding noise.
 

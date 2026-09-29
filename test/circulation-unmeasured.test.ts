@@ -146,8 +146,9 @@ describe("G.5 — a curved wall obstructs the arc it is drawn as", () => {
       expect(r!.walkDistanceMm).toBeGreaterThan(9000);
     }
     // The two OBLIQUE galleries cannot be reached in a line: through a portal and out by
-    // another at an angle, so the walk exceeds the straight line — and, the plan being its
-    // own mirror image about x = 8500, by the same amount on either side.
+    // another at an angle, so the walk exceeds the straight line. (Their walks read equal;
+    // the plan is NOT a mirror image of itself — its fixtures differ — so that equality is
+    // the drum's, not a symmetry law.)
     for (const id of ["g_ne", "g_nw"]) {
       expect(by.get(id)!.detourRatio, `${id} must go round the drum, not through it`).toBeGreaterThan(1);
     }

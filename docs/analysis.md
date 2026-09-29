@@ -296,6 +296,11 @@ entrance. For the studio:
 }
 ```
 
+(Re-read from `arch describe examples/studio.arch --json`. The excerpt had drifted before the
+tie rules too: `r_bath` and the route were already 4600 mm / 740 mm / 2.27 and 5100 mm / 740 mm
+/ 1.31. Of the figures shown, the tie rules moved only `r_living` — 4000 mm, 1.29 → 3700 mm,
+1.26 — and the route — 5100 mm, 1.31 → 5000 mm, 1.32.)
+
 | Field | Meaning |
 |-------|---------|
 | `entranceId` | the first entrance in source order. With one entrance every walk starts there; with several, each room names its own |
