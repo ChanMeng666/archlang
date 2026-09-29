@@ -334,21 +334,9 @@ function axisCells(v: number, cell: number, n: number): [number, number] {
  * narrower one found NOTHING is strictly additive: every seed that already resolved
  * resolves to the same cells, because the scan is by increasing ring.
  */
-function seedCells(
-  g: NavGrid,
-  at: Point,
-  rb: RoomBox,
-  roomIndex: number,
-  tol: number,
-  bandMm = 0,
-  /** `false`: start from the one cell `at` floors to, and keep the first nearest — the
-   *  rule a connector's threshold still seeds by. */
-  bothSides = true,
-): number[] {
-  const [x0f, x1] = axisCells(at.x - g.minX, g.cell, g.nx);
-  const [y0f, y1] = axisCells(at.y - g.minY, g.cell, g.ny);
-  const x0 = bothSides ? x0f : x1;
-  const y0 = bothSides ? y0f : y1;
+function seedCells(g: NavGrid, at: Point, rb: RoomBox, roomIndex: number, tol: number, bandMm = 0): number[] {
+  const [x0, x1] = axisCells(at.x - g.minX, g.cell, g.nx);
+  const [y0, y1] = axisCells(at.y - g.minY, g.cell, g.ny);
   if (rb.poly) {
     // Ring 0 is the cells holding `at`, so a point on a line is equidistant, in rings,
     // from both sides of it.
@@ -370,7 +358,7 @@ function seedCells(
           } else if (d === bestD) best.push(k);
         }
       }
-      if (best.length > 0) return bothSides ? best : [best[0]!];
+      if (best.length > 0) return best;
     }
     return [];
   }
@@ -414,7 +402,7 @@ function centreOf(g: NavGrid, k: number): { x: number; y: number } {
  * never carve through furniture. Pure: the caller applies the result, so a blocked
  * attempt leaves no half-open slit behind and another threshold point can be tried.
  */
-function carvePath(g: NavGrid, eroded: Uint8Array, a: number, b: number): number[] | null {
+function carvePath(g: NavGrid, eroded: Uint8Array, a: number, b: number, xFirst = true): number[] | null {
   let ax = a % g.nx;
   let ay = (a - ax) / g.nx;
   const bx = b % g.nx;
@@ -426,15 +414,50 @@ function carvePath(g: NavGrid, eroded: Uint8Array, a: number, b: number): number
     cells.push(k);
     return true;
   };
-  while (ax !== bx) {
-    ax += ax < bx ? 1 : -1;
-    if (!step(ax, ay)) return null;
+  const alongX = (): boolean => {
+    while (ax !== bx) {
+      ax += ax < bx ? 1 : -1;
+      if (!step(ax, ay)) return false;
+    }
+    return true;
+  };
+  const alongY = (): boolean => {
+    while (ay !== by) {
+      ay += ay < by ? 1 : -1;
+      if (!step(ax, ay)) return false;
+    }
+    return true;
+  };
+  const ok = xFirst ? alongX() && alongY() : alongY() && alongX();
+  return ok ? cells : null;
+}
+
+/**
+ * The seed pairs a threshold carves between: every `a` with each `b` at the least Manhattan
+ * (cell) distance from it, and every `b` with each `a` nearest it — a relation defined by
+ * distance alone, so the pairs of a turned or flipped plan are the images of these. A
+ * doorway straight across a wall pairs each column with the column facing it.
+ */
+function nearestPairs(g: NavGrid, as: readonly number[], bs: readonly number[]): Array<[number, number]> {
+  const man = (p: number, q: number): number =>
+    Math.abs((p % g.nx) - (q % g.nx)) + Math.abs(Math.floor(p / g.nx) - Math.floor(q / g.nx));
+  const keep = new Set<string>();
+  const out: Array<[number, number]> = [];
+  const add = (a: number, b: number): void => {
+    const k = `${a},${b}`;
+    if (keep.has(k)) return;
+    keep.add(k);
+    out.push([a, b]);
+  };
+  for (const a of as) {
+    const d = Math.min(...bs.map((b) => man(a, b)));
+    for (const b of bs) if (man(a, b) === d) add(a, b);
   }
-  while (ay !== by) {
-    ay += ay < by ? 1 : -1;
-    if (!step(ax, ay)) return null;
+  for (const b of bs) {
+    const d = Math.min(...as.map((a) => man(a, b)));
+    for (const a of as) if (man(a, b) === d) add(a, b);
   }
-  return cells;
+  return out;
 }
 
 /**
@@ -448,7 +471,15 @@ function carvePath(g: NavGrid, eroded: Uint8Array, a: number, b: number): number
  * not read as sealing the whole of it (the museum's servery covers 6 m of the cafe's 4 m
  * threshold; the other half is walkable and now measures that way).
  */
-function thresholdPoints(g: NavGrid, at: Point, rb: RoomBox, clear: number, tol: number): Point[] {
+function thresholdPoints(
+  g: NavGrid,
+  at: Point,
+  rb: RoomBox,
+  clear: number,
+  tol: number,
+  /** The host wall runs along x (`true`) or y (`false`); unknown for a slanted or curved host. */
+  hostAlongX?: boolean,
+): Point[] {
   const steps = Math.floor(Math.max(0, clear / 2 - g.cell / 2) / g.cell);
   const out: Point[] = [at];
   // A polygon room's opening runs along whichever of ITS edges the connector sits on —
@@ -475,7 +506,8 @@ function thresholdPoints(g: NavGrid, at: Point, rb: RoomBox, clear: number, tol:
     return out;
   }
   // The connector lies on a shared room edge; a horizontal edge means it spans in x.
-  const spansX = Math.abs(at.y - rb.y) <= tol || Math.abs(at.y - (rb.y + rb.h)) <= tol;
+  const spansX =
+    hostAlongX !== undefined ? hostAlongX : Math.abs(at.y - rb.y) <= tol || Math.abs(at.y - (rb.y + rb.h)) <= tol;
   for (let i = 1; i <= steps; i++) {
     const d = i * g.cell;
     out.push(spansX ? { x: at.x + d, y: at.y } : { x: at.x, y: at.y + d });
@@ -841,7 +873,7 @@ export function rasteriseWallSegments(ex: NavExtent, walls: readonly RWall[], bl
 function buildGrid(
   rooms: RRoom[],
   walls: RWall[],
-  connectors: Array<{ at: Point; between: [string, string]; clear: number; bandMm: number }>,
+  connectors: Array<{ at: Point; between: [string, string]; clear: number; bandMm: number; hostAlongX?: boolean }>,
   furniture: RFurniture[],
   verticals: RVertical[],
   voids: RVoid[],
@@ -939,19 +971,39 @@ function buildGrid(
   // Stitch: carve a threshold through the wall band at each internal connector,
   // recording the connector's clear width at the (grid-degenerate) carved cells.
   const clearAt = new Map<number, number>();
+  // Walkable before any threshold is carved: a carve stamps its connector's width on the
+  // cells it OPENS (and on its far seed, as it always has) — never on a room cell it only
+  // runs along, whose clearance is the room's own (a furniture pinch must stay a pinch).
+  const wasFree = free.slice();
   for (const c of connectors) {
     const ai = roomIndexById.get(c.between[0]);
     const bi = roomIndexById.get(c.between[1]);
     if (ai === undefined || bi === undefined) continue; // exterior / unknown endpoint
-    const pathAt = (at: Point): number[] | null => {
-      const [a] = seedCells(g, at, rects[ai]!, ai, tol, c.bandMm, false);
-      const [b] = seedCells(g, at, rects[bi]!, bi, tol, c.bandMm, false);
-      return a === undefined || b === undefined ? null : carvePath(g, eroded, a, b);
+    // Every carve a threshold point opens: each seed on one side to its NEAREST seed on the
+    // other (and back), by both L-shaped runs (x-then-y and y-then-x), each kept only if it
+    // meets no furniture. Nearest, not every pair: a doorway on a lattice line seeds a
+    // column either side of it, and pairing a column with the OTHER side's other column
+    // would run an L along a row inside a room, stamping the doorway's width over cells
+    // whose clearance is a furniture pinch.
+    const pathsAt = (at: Point): number[][] => {
+      const as = seedCells(g, at, rects[ai]!, ai, tol, c.bandMm);
+      const bs = seedCells(g, at, rects[bi]!, bi, tol, c.bandMm);
+      const out: number[][] = [];
+      for (const [a, b] of nearestPairs(g, as, bs)) {
+        const xy = carvePath(g, eroded, a, b, true);
+        if (xy) out.push(xy);
+        // The two runs coincide when the seeds share a row or a column.
+        if (a % g.nx === b % g.nx || Math.floor(a / g.nx) === Math.floor(b / g.nx)) continue;
+        const yx = carvePath(g, eroded, a, b, false);
+        if (yx) out.push(yx);
+      }
+      return out;
     };
     const apply = (path: number[]): void => {
+      const far = path[path.length - 1];
       for (const k of path) {
         g.free[k] = 1;
-        clearAt.set(k, Math.min(clearAt.get(k) ?? Infinity, c.clear));
+        if (!wasFree[k] || k === far) clearAt.set(k, Math.min(clearAt.get(k) ?? Infinity, c.clear));
       }
     };
     // Carve EVERY walkable part of the connector's width, the centre included. Stopping
@@ -963,11 +1015,11 @@ function buildGrid(
     // plan with MORE furniture measured WIDER (1500 mm of gap
     // read 700 mm and 1100 mm of gap read 840). A connector is a width, not a point, and
     // which part of it a route may use cannot depend on the phase of its midpoint.
-    const points = thresholdPoints(g, c.at, rects[ai]!, c.clear, tol);
+    const points = thresholdPoints(g, c.at, rects[ai]!, c.clear, tol, c.hostAlongX);
     for (const pt of points) {
-      const p = pathAt(pt);
-      if (p) {
-        apply(p);
+      const ps = pathsAt(pt);
+      for (const p of ps) apply(p);
+      if (ps.length > 0) {
         carved.add(ai);
         carved.add(bi);
       }
@@ -1125,6 +1177,15 @@ function buildNav(
   const atById = new Map<string, Point>();
   for (const d of doors) atById.set(d.id, d.at);
   for (const o of openings) atById.set(o.id, o.at);
+  /** Which axis a connector's straight host runs along — the axis its threshold spans. */
+  const alongXById = new Map<string, boolean>();
+  for (const e of [...doors, ...openings]) {
+    const h = e.host;
+    if (!h || h.arc) continue;
+    if (h.a.y === h.b.y && h.a.x !== h.b.x) alongXById.set(e.id, true);
+    else if (h.a.x === h.b.x && h.a.y !== h.b.y) alongXById.set(e.id, false);
+  }
+
   // Internal connectors (two real room endpoints) become carved thresholds, tagged
   // with the door/opening clear width the access graph already estimated.
   const halfThicknessById = new Map<string, number>(walls.map((w) => [w.id, w.thickness / 2]));
@@ -1141,6 +1202,7 @@ function buildNav(
       between: e.between,
       clear: e.estimatedClearWidth,
       bandMm: bandOf(e.hostWallId),
+      hostAlongX: alongXById.get(e.doorId),
     }))
     .filter((c) => c.at !== undefined);
 

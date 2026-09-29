@@ -138,15 +138,26 @@ describe("G.5 — a curved wall obstructs the arc it is drawn as", () => {
     expect([...by.keys()].sort()).toEqual(s.rooms.map((r) => r.id).sort());
 
     // The entrance is on the south facade, in `g_s`. The three NORTHERN galleries are the
-    // ones the chord-rasterised drum orphaned. Each is now measured — and each walk must
-    // exceed the straight line, because reaching it means entering the rotunda at one
-    // opening and leaving by another rather than cutting across the masonry.
+    // ones the chord-rasterised drum orphaned. Each is now measured, by entering the
+    // rotunda at one opening and leaving by another rather than cutting across the masonry.
     for (const id of ["g_ne", "g_n", "g_nw"]) {
       const r = by.get(id);
       expect(r, `${id} must be measured`).toBeDefined();
-      expect(r!.detourRatio, `${id} must go round the drum, not through it`).toBeGreaterThan(1);
       expect(r!.walkDistanceMm).toBeGreaterThan(9000);
     }
+    // The two OBLIQUE galleries cannot be reached in a line: through a portal and out by
+    // another at an angle, so the walk exceeds the straight line — and, the plan being its
+    // own mirror image about x = 8500, by the same amount on either side.
+    for (const id of ["g_ne", "g_nw"]) {
+      expect(by.get(id)!.detourRatio, `${id} must go round the drum, not through it`).toBeGreaterThan(1);
+    }
+    expect(by.get("g_ne")!.walkDistanceMm).toBe(by.get("g_nw")!.walkDistanceMm);
+    // `g_n` sits dead ahead: the south portal `p_s` (8500,10000) and the north portal `p_n`
+    // (8500,4000) share the entrance's axis, so the straight line runs through both
+    // openings and the walk IS the straight line (ratio 1). It read 1.12 while a doorway on
+    // a lattice line was carved on one side of it only (backlog E.10): the axis column was
+    // shut at one portal and the walk jogged a cell round it.
+    expect(by.get("g_n")!.detourRatio).toBe(1);
 
     // The control: the three SOUTHERN galleries, on the entrance's own side, are measured
     // too. If the drum were over-blocked the plan would simply lose the other half.

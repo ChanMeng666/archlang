@@ -16,6 +16,14 @@ const bottleneck = (src: string, roomId: string): number | undefined =>
  * A wardrobe declared `in bed` but parked in a far corner of a big living room, out of
  * the entrance walk. The naive wrong-room fix would relocate it into the narrow bedroom
  * and pinch the walk to it below 700 mm — so the guard must decline the move.
+ *
+ * The bedroom door is at x = 1100. It was at x = 1000, where the move's pinch was a
+ * page-order accident of the nav grid (backlog E.10): the door's threshold points sat on
+ * lattice lines, each floored to its +x side, so the one column left of the moved
+ * wardrobe's halo was never carved — and the SAME wardrobe position mirrored measured
+ * 840 mm and passed. Carved on both sides of each line, that column opens in both
+ * orientations. At x = 1100 the wardrobe lands over the doorway itself, and the move
+ * pinches in both orientations and under both rules.
  */
 const GUARDED = `plan "Guard" {
   units mm
@@ -25,7 +33,7 @@ const GUARDED = `plan "Guard" {
   room id=living at (0,0)    size 5000x3000 label "Living" uses living
   room id=bed    at (0,3000) size 2000x2000 label "Bedroom" uses bedroom
   door id=entry at (2500,0)    width 900 wall exterior hinge left swing in
-  door id=mid   at (1000,3000) width 900 wall partition hinge left swing in
+  door id=mid   at (1100,3000) width 900 wall partition hinge left swing in
   furniture wardrobe at (3800,200) size 1000x800 label "Wardrobe" in bed
 }`;
 
