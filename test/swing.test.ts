@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { doorSwing, sectorIntersectsRect, swingsCollide } from "../src/geometry.js";
+import { doorSwing, isDoubleDoorPair, sectorIntersectsRect, swingsCollide } from "../src/geometry.js";
 import { largestPerimeterGap } from "../src/analyze.js";
 
 /**
@@ -201,7 +201,7 @@ describe("swingsCollide", () => {
     }
   });
 
-  it("with a clearance, contact at exactly radius + clearance is clear and a shared jamb is not", () => {
+  it("with a clearance, contact at exactly radius + clearance is clear; 1 mm closer is not", () => {
     const w = WALLS[0]!;
     const clr = 150;
     const a = leaf(w, 2500, 1000, "start", "in");
@@ -209,8 +209,40 @@ describe("swingsCollide", () => {
     const touching = leaf(w, 3650, 1000, "end", "in");
     expect(swingsCollide(a, touching, clr)).toBe(false);
     expect(swingsCollide(a, leaf(w, 3649, 1000, "end", "in"), clr)).toBe(true);
-    // The textbook pair lies inside each other's clearance band.
-    expect(swingsCollide(a, leaf(w, 3500, 1000, "end", "in"), clr)).toBe(true);
+  });
+
+  it("a double door is ONE assembly: its two leaves are clear at any clearance", () => {
+    // The swing clearance keeps independent doors apart, not a pair's two leaves. Every wall
+    // direction, both swing sides, 2×900 and 2×1000, at clearance 0 and 150.
+    for (const w of WALLS) {
+      for (const swing of ["in", "out"] as const) {
+        for (const width of [900, 1000]) {
+          const a = leaf(w, 3000 - width / 2, width, "start", swing);
+          const b = leaf(w, 3000 + width / 2, width, "end", swing);
+          const tag = `${JSON.stringify(w.a)} ${swing} 2×${width}`;
+          expect(isDoubleDoorPair(a, b), tag).toBe(true);
+          for (const clr of [0, 150]) {
+            expect(swingsCollide(a, b, clr), `${tag} clr ${clr}`).toBe(false);
+            expect(swingsCollide(b, a, clr), `${tag} clr ${clr}`).toBe(false);
+          }
+        }
+      }
+    }
+  });
+
+  it("a pair with a 1 mm gap at the jamb is two independent doors and keeps the clearance", () => {
+    for (const w of WALLS) {
+      const a = leaf(w, 2500, 1000, "start", "in");
+      const b = leaf(w, 3501, 1000, "end", "in"); // far jambs at 3000 and 3001
+      expect(isDoubleDoorPair(a, b)).toBe(false);
+      expect(swingsCollide(a, b, 0)).toBe(false); // a gap: clear on its own
+      expect(swingsCollide(a, b, 150)).toBe(true); // inside each other's clearance band
+    }
+    // Nor is a row of leaves (one's far jamb on the next one's HINGE) a pair.
+    const w = WALLS[0]!;
+    const row = [leaf(w, 2500, 1000, "start", "in"), leaf(w, 3500, 1000, "start", "in")] as const;
+    expect(isDoubleDoorPair(row[0], row[1])).toBe(false);
+    expect(swingsCollide(row[0], row[1], 150)).toBe(true);
   });
 
   it("asks BOTH clearance pairings, not only the one the sampler happened to hit", () => {

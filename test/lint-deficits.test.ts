@@ -113,6 +113,14 @@ describe("W_SWING_OBSTRUCTED on a double door (backlog 6.8)", () => {
     }
   });
 
+  it("keeps the pair clean under a swing clearance — one assembly — but not a pair 1 mm apart", () => {
+    const a11y = { profile: "accessibility-advisory" } as const;
+    const swingCodes = (src: string) => lint(src, a11y).filter((x) => x.code === "W_SWING_OBSTRUCTED");
+    for (const w of [900, 1000]) expect(swingCodes(pair(w, 3000 + w / 2)), `2×${w}`).toEqual([]);
+    // Far jambs 1 mm apart: two independent doors, inside each other's 150 mm band.
+    expect(swingCodes(pair(1000, 3501))).toHaveLength(1);
+  });
+
   it("still warns when the leaves overlap by 1 mm, quoting the 1 mm", () => {
     const d = one(pair(1000, 3499), "W_SWING_OBSTRUCTED");
     expect(d.message).toBe(

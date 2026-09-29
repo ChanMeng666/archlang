@@ -275,24 +275,32 @@ export function sectorIntersectsRect(s: DoorSwing, r: RectXYWH, clearance: numbe
 /**
  * Do two door swings' quarter-discs overlap (within `clearance`)?
  *
- * The sampler below finds a point the two closed quarter-discs share; {@link sectorsObstruct}
- * then decides whether that contact is an obstruction. Contact in exactly ONE POINT is clear:
- * the textbook double door (two leaves hinged on the outer jambs, meeting at the shared closed
- * jamb, discs tangent there) and a row of leaves where one's far jamb is the next one's hinge.
- * Anything more collides: any overlap of positive area however thin, and contact along a
- * segment of positive length (two openings overlapping along the wall with opposite swings;
- * two leaves hung back to back on one post) — leaves are solid, so a shared line is a clash.
+ * The sampler below is a DETECTOR, not a decision procedure: it tests nine points on each
+ * leaf's arc (both jambs included) against the other swing, so it can miss a real overlap
+ * whose shared region holds none of those points (backlog 6.12 records a ~90,000 mm²
+ * counterexample, missed before and after this rule). When it does find a shared point,
+ * {@link sectorsObstruct} decides whether that contact is an obstruction. Contact in exactly
+ * ONE POINT is clear: the textbook double door (two leaves hinged on the outer jambs, meeting
+ * at the shared closed jamb, discs tangent there) and a row of leaves where one's far jamb is
+ * the next one's hinge. Anything more collides: an overlap of area, or contact along a segment,
+ * longer than {@link VERTEX_EPS} (1e-6 mm, the tolerance an oblique wall's floating-point
+ * jambs need) — two openings overlapping along the wall with opposite swings, two leaves hung
+ * back to back on one post: leaves are solid, so a shared line is a clash.
  *
  * `clearance` inflates the OTHER swing's radius (the sampler's `o.radius + clearance`), so
  * with `clearance > 0` single-point contact at exactly `radius + clearance` is clear, the
- * same rule as at `clearance = 0` — and a shared-jamb double door collides, because each leaf
- * lies inside the other's clearance band.
+ * same rule as at `clearance = 0`. The clearance keeps INDEPENDENT doors apart; the two
+ * leaves of one double door ({@link isDoubleDoorPair}) are one assembly and are clear at any
+ * clearance.
  */
 export function swingsCollide(a: DoorSwing, b: DoorSwing, clearance: number): boolean {
   // Quick reject: if the hinges are farther apart than the sum of radii + clearance
   // the discs cannot meet.
   const hingeGap = Math.hypot(a.hinge.x - b.hinge.x, a.hinge.y - b.hinge.y);
   if (hingeGap > a.radius + b.radius + clearance) return false;
+  // Two leaves of one double door: a clearance between them would be a clearance between a
+  // door and itself. (At clearance 0 the pair is clear on its own, by single-point contact.)
+  if (clearance !== 0 && isDoubleDoorPair(a, b)) return false;
   // Sample b's wedge arc and test against a's wedge (and vice versa). Conservative.
   const sampleInOther = (s: DoorSwing, o: DoorSwing): boolean => {
     const c0 = sub(s.farJamb, s.hinge);
@@ -314,6 +322,23 @@ export function swingsCollide(a: DoorSwing, b: DoorSwing, clearance: number): bo
   // are asked, since the sampler may have found its point on the pairing that only touches
   // while missing the one that overlaps.
   return sectorsObstruct(a, inflateSwing(b, clearance)) || sectorsObstruct(b, inflateSwing(a, clearance));
+}
+
+/**
+ * Are `a` and `b` the two leaves of ONE double door? True when their far (latch) jambs are the
+ * same point, their closed leaves run away from it in opposite directions along one line (the
+ * wall they close), and at clearance 0 their quarter-discs meet in that one point only. Read
+ * within {@link VERTEX_EPS}, the vertex-coincidence tolerance. A pair with any gap at the
+ * jamb, however small, is two independent doors.
+ */
+export function isDoubleDoorPair(a: DoorSwing, b: DoorSwing): boolean {
+  if (Math.hypot(a.farJamb.x - b.farJamb.x, a.farJamb.y - b.farJamb.y) > VERTEX_EPS) return false;
+  const ua = sub(a.hinge, a.farJamb);
+  const ub = sub(b.hinge, b.farJamb);
+  if (ua.x * ub.x + ua.y * ub.y >= 0) return false; // hinges on opposite sides of the jamb
+  // b's hinge off the line of a's closed leaf, in mm.
+  if (Math.abs(ua.x * ub.y - ua.y * ub.x) / length(ua) > VERTEX_EPS) return false;
+  return !swingsCollide(a, b, 0);
 }
 
 /** `s` with its radius grown by `by` about the hinge (`s` itself when `by` is 0, exactly). */
