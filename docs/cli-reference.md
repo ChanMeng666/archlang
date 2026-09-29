@@ -67,7 +67,7 @@ render a plan to SVG/DXF/TXT/PDF/PNG
 | `--install` | auto-install the optional dep for the chosen format if missing (PNG/PDF) |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
-| `--view <iso\|axon>` | render an illustrative axonometric of the building instead of the plan (iso = true isometric, axon = the 30/60 plan oblique) — a picture, never a measured drawing: no scale, no title block, no dimensions, and `describe`/`lint` are unaffected |
+| `--view <iso\|axon>` | DEPRECATED (removed in 2.0; ArchLang draws plans) — render an illustrative axonometric of the building instead of the plan (iso = true isometric, axon = the 30/60 plan oblique) — a picture, never a measured drawing: no scale, no title block, no dimensions, and `describe`/`lint` are unaffected |
 
 **Examples**
 
@@ -178,7 +178,7 @@ render a PNG you can look at (zero-install where the optional binary is present)
 | `--overlay <circulation>` | draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged |
 | `--error-svg` | on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) |
 | `--install` | auto-install @resvg/resvg-js if missing, then render |
-| `--view <iso\|axon>` | render an illustrative axonometric of the building instead of the plan (iso = true isometric, axon = the 30/60 plan oblique) — a picture, never a measured drawing: no scale, no title block, no dimensions, and `describe`/`lint` are unaffected |
+| `--view <iso\|axon>` | DEPRECATED (removed in 2.0; ArchLang draws plans) — render an illustrative axonometric of the building instead of the plan (iso = true isometric, axon = the 30/60 plan oblique) — a picture, never a measured drawing: no scale, no title block, no dimensions, and `describe`/`lint` are unaffected |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 

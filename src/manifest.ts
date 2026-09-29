@@ -307,7 +307,7 @@ const SECTION_FLAG: ManifestFlag = {
 };
 
 /**
- * `--view <iso|axon>` — render an ILLUSTRATIVE axonometric instead of the plan.
+ * `--view <iso|axon>` — DEPRECATED (removed in 2.0, ADR 0021): render an ILLUSTRATIVE axonometric instead of the plan.
  *
  * On `compile` and `preview` only, and deliberately not on `watch` or `batch`: this is a
  * picture to look at once, not a drawing to iterate on. It is not an export FORMAT — every
@@ -319,7 +319,7 @@ const VIEW_FLAG: ManifestFlag = {
   flag: "--view",
   arg: "<iso|axon>",
   description:
-    "render an illustrative axonometric of the building instead of the plan (iso = true isometric, axon = the 30/60 plan oblique) — a picture, never a measured drawing: no scale, no title block, no dimensions, and `describe`/`lint` are unaffected",
+    "DEPRECATED (removed in 2.0; ArchLang draws plans) — render an illustrative axonometric of the building instead of the plan (iso = true isometric, axon = the 30/60 plan oblique) — a picture, never a measured drawing: no scale, no title block, no dimensions, and `describe`/`lint` are unaffected",
 };
 
 /**

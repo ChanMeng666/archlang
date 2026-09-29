@@ -1,3 +1,6 @@
+> **Deprecated.** The axonometric view is illustrative only and is removed in 2.0 —
+> ArchLang draws plans. See [ADR 0021](adr/0021-plan-first-view-deprecated.md).
+
 # The axonometric view
 
 `arch compile plan.arch --view iso` draws the building the plan describes, instead of the plan.

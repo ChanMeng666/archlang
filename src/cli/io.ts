@@ -393,6 +393,8 @@ export function parseFormat(args: Args): Format | null {
  *    bottleneck markers — and the whole contract of this view is that nothing measured
  *    reaches it. `toIso` does not draw one, so accepting the flag would ignore it.
  *
+ * **Deprecated**: a valid `--view` prints a one-line notice on stderr (never stdout); `--quiet` silences it.
+ *
  * Returns `{ view: undefined }` when the flag is absent, which is every existing call.
  */
 export function resolveView(args: Args, format: Format, command: string): { view?: ViewName } | { code: number } {
@@ -432,6 +434,8 @@ export function resolveView(args: Args, format: Format, command: string): { view
       ),
     };
   }
+  if (!args.quiet)
+    process.stderr.write("note: --view is deprecated — illustrative only; removed in 2.0 (ArchLang draws plans)\n");
   return { view: name };
 }
 
