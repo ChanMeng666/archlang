@@ -96,6 +96,102 @@ describe("swingsCollide", () => {
     expect(swingsCollide(a, near, 0)).toBe(true);
     expect(swingsCollide(a, far, 0)).toBe(false);
   });
+
+  // Backlog 6.8: an obstruction is an overlap of POSITIVE AREA. Two quarter-discs that meet
+  // only at a point (or along a line) are clear; any real overlap, however thin, collides.
+  // Every wall direction and both swing sides, so the rule is not an accident of one frame.
+  const WALLS = [
+    { a: { x: 0, y: 0 }, b: { x: 8000, y: 0 }, thickness: 200 }, // +x
+    { a: { x: 8000, y: 0 }, b: { x: 0, y: 0 }, thickness: 200 }, // −x
+    { a: { x: 0, y: 0 }, b: { x: 0, y: 8000 }, thickness: 200 }, // +y
+    { a: { x: 0, y: 8000 }, b: { x: 0, y: 0 }, thickness: 200 }, // −y
+  ];
+  /** A leaf of `width` centred `pos` mm along `w`, hinged on the jamb nearer to / farther
+   *  from the wall's start (`near`/`far`), so the helper states jambs, not hands. */
+  const leaf = (w: (typeof WALLS)[number], pos: number, width: number, jamb: "start" | "end", swing: "in" | "out") => {
+    const along = w.a.x === w.b.x ? { x: 0, y: Math.sign(w.b.y - w.a.y) } : { x: Math.sign(w.b.x - w.a.x), y: 0 };
+    const at = { x: w.a.x + along.x * pos, y: w.a.y + along.y * pos };
+    // `hinge left` puts the hinge half a width BEHIND the centre along the traversal.
+    return doorSwing({ at, width, hinge: jamb === "start" ? "left" : "right", swing, host: w })!;
+  };
+
+  it("clears a textbook double door — two leaves meeting at a shared closed jamb", () => {
+    for (const w of WALLS) {
+      for (const swing of ["in", "out"] as const) {
+        for (const width of [900, 1000]) {
+          // Shared jamb at 3000 along the wall; hinges on the OUTER jambs.
+          const a = leaf(w, 3000 - width / 2, width, "start", swing);
+          const b = leaf(w, 3000 + width / 2, width, "end", swing);
+          expect(Math.hypot(a.farJamb.x - b.farJamb.x, a.farJamb.y - b.farJamb.y)).toBe(0);
+          const at = `${JSON.stringify(w.a)}→${JSON.stringify(w.b)} ${swing} 2×${width}`;
+          expect(swingsCollide(a, b, 0), at).toBe(false);
+          expect(swingsCollide(b, a, 0), at).toBe(false);
+        }
+      }
+    }
+  });
+
+  it("still collides when the same pair overlaps by 1 mm", () => {
+    for (const w of WALLS) {
+      for (const swing of ["in", "out"] as const) {
+        const a = leaf(w, 2500, 1000, "start", swing);
+        const b = leaf(w, 3499, 1000, "end", swing); // hinges 1999 mm apart for two 1000 mm leaves
+        expect(swingsCollide(a, b, 0), `${JSON.stringify(w.a)} ${swing}`).toBe(true);
+        expect(swingsCollide(b, a, 0), `${JSON.stringify(w.a)} ${swing}`).toBe(true);
+      }
+    }
+  });
+
+  it("clears a row of leaves where one's far jamb is the next one's hinge", () => {
+    for (const w of WALLS) {
+      const a = leaf(w, 2500, 1000, "start", "in");
+      const b = leaf(w, 3500, 1000, "start", "in"); // b's hinge = a's far jamb, same hand
+      expect(swingsCollide(a, b, 0)).toBe(false);
+    }
+  });
+
+  it("still collides when a leaf opens INTO the other's swing (a real overlap)", () => {
+    // Facing each other from the outer jambs, 100 mm too close: overlap.
+    const w = WALLS[0]!;
+    const a = leaf(w, 2500, 1000, "start", "in");
+    expect(swingsCollide(a, leaf(w, 3400, 1000, "end", "in"), 0)).toBe(true);
+    // A duplicated door is the limit case: the same quarter-disc twice.
+    expect(swingsCollide(a, leaf(w, 2500, 1000, "start", "in"), 0)).toBe(true);
+  });
+
+  it("treats contact along a LINE as clear too — the rule is positive area, nothing less", () => {
+    // Pinned so the consequence is visible, not accidental. The same pair 100 mm too close
+    // but opening to OPPOSITE faces: the discs share only a 100 mm run of the wall line (the
+    // two closed leaves' overlap), which has no area. Two leaves hung back to back on one
+    // post opening the same way share only their open-leaf line. Neither is this rule's.
+    const w = WALLS[0]!;
+    const a = leaf(w, 2500, 1000, "start", "in");
+    expect(swingsCollide(a, leaf(w, 3400, 1000, "end", "out"), 0)).toBe(false);
+    expect(swingsCollide(leaf(w, 2500, 1000, "end", "in"), leaf(w, 3500, 1000, "start", "in"), 0)).toBe(false);
+  });
+
+  it("with a clearance, contact at exactly radius + clearance is clear and a shared jamb is not", () => {
+    const w = WALLS[0]!;
+    const clr = 150;
+    const a = leaf(w, 2500, 1000, "start", "in");
+    // Hinges exactly 1000 + 1000 + 150 apart: the clearance band touches the other disc.
+    const touching = leaf(w, 3650, 1000, "end", "in");
+    expect(swingsCollide(a, touching, clr)).toBe(false);
+    expect(swingsCollide(a, leaf(w, 3649, 1000, "end", "in"), clr)).toBe(true);
+    // The textbook pair lies inside each other's clearance band.
+    expect(swingsCollide(a, leaf(w, 3500, 1000, "end", "in"), clr)).toBe(true);
+  });
+
+  it("asks BOTH clearance pairings, not only the one the sampler happened to hit", () => {
+    // `a` hinged at 2000 opening in; `b` hinged at 3000 with its far jamb ON a's hinge. With
+    // 150 mm clearance, b's disc grown to 1150 overlaps a (positive area), while a's disc grown
+    // to 1150 only touches b. The sampler finds its shared point on the touching pairing.
+    const w = WALLS[0]!;
+    const a = leaf(w, 1500, 1000, "end", "in");
+    const b = leaf(w, 2500, 1000, "end", "in");
+    expect(swingsCollide(a, b, 150)).toBe(true);
+    expect(swingsCollide(b, a, 150)).toBe(true);
+  });
 });
 
 describe("largestPerimeterGap", () => {

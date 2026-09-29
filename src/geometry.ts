@@ -218,11 +218,16 @@ function pointInRect(p: Point, r: RectXYWH, pad: number): boolean {
 
 /** Is point `p` within the 90° wedge of swing `s` (between the two bounding radii)? */
 function pointInWedge(p: Point, s: DoorSwing): boolean {
+  return vecInCone(sub(p, s.hinge), sub(s.farJamb, s.hinge), sub(s.leafEnd, s.hinge));
+}
+
+/**
+ * Is the vector `pv` inside the closed cone spanned by `closed` and `open` (a door's
+ * closed- and open-leaf radii, taken from the hinge)? Boundary included.
+ */
+function vecInCone(pv: Vec, closed: Vec, open: Vec): boolean {
   const cr = (ux: number, uy: number, vx: number, vy: number): number => ux * vy - uy * vx;
-  const closed = sub(s.farJamb, s.hinge); // closed-leaf radius
-  const open = sub(s.leafEnd, s.hinge); // open-leaf radius
-  const pv = sub(p, s.hinge);
-  // p is in the wedge iff it is on the same rotational side of both bounding radii
+  // pv is in the wedge iff it is on the same rotational side of both bounding radii
   // as the wedge interior (the other bounding radius).
   const sideClosed = Math.sign(cr(closed.x, closed.y, open.x, open.y));
   const sideOpen = Math.sign(cr(open.x, open.y, closed.x, closed.y));
@@ -266,7 +271,21 @@ export function sectorIntersectsRect(s: DoorSwing, r: RectXYWH, clearance: numbe
   return false;
 }
 
-/** Do two door swings' quarter-discs overlap (within `clearance`)? */
+/**
+ * Do two door swings' quarter-discs overlap (within `clearance`)?
+ *
+ * An obstruction is an overlap of POSITIVE AREA. The sampler below finds a point the two
+ * closed quarter-discs share; {@link sectorInteriorsMeet} then asks whether they share more
+ * than boundary. So contact of measure zero is clear: the textbook double door (two leaves
+ * hinged on the outer jambs, meeting at the shared closed jamb, discs tangent there) and a
+ * row of leaves where one's far jamb is the next one's hinge. Any real overlap, however
+ * thin, still collides.
+ *
+ * `clearance` inflates the OTHER swing's radius (the sampler's `o.radius + clearance`), so
+ * with `clearance > 0` boundary contact at exactly `radius + clearance` is clear, the same
+ * rule as at `clearance = 0` — and a shared-jamb double door collides, because each leaf
+ * lies inside the other's clearance band.
+ */
 export function swingsCollide(a: DoorSwing, b: DoorSwing, clearance: number): boolean {
   // Quick reject: if the hinges are farther apart than the sum of radii + clearance
   // the discs cannot meet.
@@ -287,7 +306,66 @@ export function swingsCollide(a: DoorSwing, b: DoorSwing, clearance: number): bo
     }
     return false;
   };
-  return sampleInOther(a, b) || sampleInOther(b, a);
+  if (!(sampleInOther(a, b) || sampleInOther(b, a))) return false;
+  // A shared point was found. It is an obstruction only if either pairing the sampler
+  // tests (each leaf against the other's clearance-grown disc) shares positive area —
+  // BOTH are asked, since the sampler may have found its point on the pairing that only
+  // touches while missing the one that overlaps.
+  return sectorInteriorsMeet(a, inflateSwing(b, clearance)) || sectorInteriorsMeet(b, inflateSwing(a, clearance));
+}
+
+/** `s` with its radius grown by `by` about the hinge (`s` itself when `by` is 0, exactly). */
+function inflateSwing(s: DoorSwing, by: number): DoorSwing {
+  if (by === 0) return s;
+  const k = (s.radius + by) / s.radius;
+  return {
+    ...s,
+    farJamb: add(s.hinge, mul(sub(s.farJamb, s.hinge), k)),
+    leafEnd: add(s.hinge, mul(sub(s.leafEnd, s.hinge), k)),
+    radius: s.radius + by,
+  };
+}
+
+/** Support function of a swing's closed quarter-disc: max of `p · d` over the sector. */
+function sectorSupport(s: DoorSwing, d: Vec): number {
+  const dot = (p: Point): number => p.x * d.x + p.y * d.y;
+  const h = dot(s.hinge);
+  // The polygon hull (hinge, both jambs), plus the arc's farthest point when `d` points
+  // into the wedge; outside it the arc's maximum is one of its endpoints, already counted.
+  const hull = Math.max(h, dot(s.farJamb), dot(s.leafEnd));
+  return vecInCone(d, sub(s.farJamb, s.hinge), sub(s.leafEnd, s.hinge)) ? Math.max(hull, h + s.radius) : hull;
+}
+
+/**
+ * Do the INTERIORS of two swings' closed quarter-discs meet — an overlap of positive
+ * area, not a touch along a boundary?
+ *
+ * Two convex sets have disjoint interiors iff a line weakly separates them: some unit
+ * direction `d` with `support(a, d) + support(b, −d) <= 0`. That sum is the support
+ * function of the Minkowski difference `a ⊕ −b`, and its minimum over `d` is attained at
+ * the normal of the difference's boundary point nearest the origin. The boundary is built
+ * from edges and arcs of the two sectors, so that normal is one of a finite set: an
+ * edge normal or an arc-end radial of either sector, or the axis from one arc's centre
+ * (a hinge) to a vertex of the other (arc + vertex, arc + arc). Checking all of them, in
+ * both signs, decides the question — no sampling and no tolerance. On an axis-aligned
+ * wall with whole-millimetre positions every candidate is exact in floating point, so a
+ * shared closed jamb evaluates to exactly 0 and is clear.
+ */
+function sectorInteriorsMeet(a: DoorSwing, b: DoorSwing): boolean {
+  const axes: Vec[] = [];
+  for (const s of [a, b]) {
+    for (const v of [sub(s.farJamb, s.hinge), sub(s.leafEnd, s.hinge)]) axes.push(v, normal(v));
+  }
+  for (const v of [b.hinge, b.farJamb, b.leafEnd]) axes.push(sub(v, a.hinge));
+  for (const v of [a.farJamb, a.leafEnd]) axes.push(sub(b.hinge, v));
+  for (const v of axes) {
+    const u = unit(v);
+    if (u.x === 0 && u.y === 0) continue;
+    for (const d of [u, mul(u, -1)]) {
+      if (sectorSupport(a, d) + sectorSupport(b, mul(d, -1)) <= 0) return false;
+    }
+  }
+  return true;
 }
 
 /** Axis-aligned rectangle corners (clockwise) from origin + size. */
