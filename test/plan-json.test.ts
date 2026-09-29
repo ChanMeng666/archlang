@@ -634,3 +634,95 @@ describe("plan-json — G.10: a frame's reflection is projected", () => {
     // refuses because source has no per-furniture `mirror` to receive them.
   });
 });
+
+/**
+ * Backlog 6.3 — the same projection for a reflected DOOR and DIMENSION (`_mirror`): the flag
+ * records the frame's reflection (a sliding door's track, a zero-offset call-out's number
+ * side), is present ONLY when reflected, and its way back is refused like furniture's.
+ * Vertical runs (`_tail`) are deliberately not projected — Plan JSON has no stair/escalator/
+ * elevator members. These tests go red if the flag is dropped from either projection.
+ */
+describe("plan-json — 6.3: a frame's reflection reaches doors and dimensions", () => {
+  const placed = (mirror: string): string => `plan "p" {
+  units mm
+  component c() {
+    wall id=w exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+    room id=r at (0,0) size 4000x3000 label "Room"
+    door id=hd at (1000,0) width 900 wall w swing in
+    door id=sl sliding at (2500,0) width 1200 wall w slide left
+    dim (0,3400)->(4000,3400) offset 300
+    dim (0,3600)->(4000,3600) offset 0
+  }
+  place c() as a at (4000,0)${mirror}
+}`;
+
+  it("marks every door and dimension of a reflected instance, and only those", () => {
+    const flipped = planToJson(placed(" mirror x")).json;
+    const plain = planToJson(placed("")).json;
+    expect(flipped?.openings?.map((o) => o.mirror)).toEqual([true, true]);
+    expect(flipped?.dims?.map((d) => d.mirror)).toEqual([true, true]);
+    // absent — not `false` — when unreflected, so a reflection-free payload is unchanged
+    for (const o of plain?.openings ?? []) expect("mirror" in o).toBe(false);
+    for (const d of plain?.dims ?? []) expect("mirror" in d).toBe(false);
+    // `mirror y` is `rotate 180 mirror x`: the same reflection, the same flag
+    const y = planToJson(placed(" mirror y")).json;
+    expect(y?.openings?.every((o) => o.mirror === true)).toBe(true);
+    expect(y?.dims?.every((d) => d.mirror === true)).toBe(true);
+    // a rotation alone does not reflect
+    const rot = planToJson(placed(" rotate 90")).json;
+    expect(rot?.openings?.some((o) => "mirror" in o)).toBe(false);
+    expect(rot?.dims?.some((d) => "mirror" in d)).toBe(false);
+  });
+
+  it("a doubly-reflected instance composes back to no flag (the frame XOR)", () => {
+    const nested = `plan "p" {
+  units mm
+  component inner() {
+    wall id=w exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+    door id=hd at (1000,0) width 900 wall w swing in
+    dim (0,3400)->(4000,3400) offset 300
+  }
+  component outer() {
+    place inner() as i at (0,0) mirror x
+  }
+  place outer() as o at (0,0) mirror x
+}`;
+    const j = planToJson(nested).json;
+    expect(j?.openings).toHaveLength(1);
+    expect("mirror" in (j?.openings?.[0] ?? {})).toBe(false);
+    expect("mirror" in (j?.dims?.[0] ?? {})).toBe(false);
+  });
+
+  it("refuses the way back with E_JSON_MIRROR at the element's own path", () => {
+    const j = planToJson(placed(" mirror x")).json;
+    if (!j) throw new Error("expected the plan to project");
+    const back = planJsonToArch(j);
+    const msgs = back.diagnostics.filter((d) => d.code === "E_JSON_MIRROR").map((d) => d.message);
+    expect(msgs.some((m) => m.includes("/openings/0/mirror"))).toBe(true);
+    expect(msgs.some((m) => m.includes("/openings/1/mirror"))).toBe(true);
+    expect(msgs.some((m) => m.includes("/dims/0/mirror"))).toBe(true);
+    expect(msgs.some((m) => m.includes("/dims/1/mirror"))).toBe(true);
+    expect(back.source).toBeUndefined();
+    // `mirror: false` is the absent key spelled out, and is accepted; a non-boolean is a type error
+    const plain = planToJson(placed("")).json;
+    const spelled = { ...plain, openings: plain?.openings?.map((o) => ({ ...o, mirror: false })) };
+    expect(planJsonToArch(spelled).diagnostics.map((d) => d.code)).not.toContain("E_JSON_MIRROR");
+    const bad = { ...plain, dims: plain?.dims?.map((d) => ({ ...d, mirror: "yes" })) };
+    expect(planJsonToArch(bad).diagnostics.some((d) => d.message.includes("/dims/0/mirror"))).toBe(true);
+  });
+
+  it("`mirror` is a door's alone: on a window or cased opening it is a shape error", () => {
+    const plain = planToJson(placed("")).json;
+    if (!plain) throw new Error("expected the plan to project");
+    for (const kind of ["window", "opening"] as const) {
+      const payload = { ...plain, openings: [{ kind, x: 1000, y: 0, width: 900, mirror: true }] };
+      const msgs = planJsonToArch(payload).diagnostics;
+      expect(msgs.some((d) => d.message.includes("/openings/0/mirror") && d.code !== "E_JSON_MIRROR")).toBe(true);
+    }
+  });
+
+  it("projects no `_tail`: a vertical run leaves no member in Plan JSON", () => {
+    const j = planToJson(placed(" mirror x")).json as unknown as Record<string, unknown>;
+    expect(Object.keys(j).some((k) => /stair|escalator|elevator|tail/i.test(k))).toBe(false);
+  });
+});

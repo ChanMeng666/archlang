@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://archlang.uk/plan.schema.json",
   "title": "ArchLang Plan",
-  "description": "A floor plan as structured JSON (RPLAN / DStruct2Design convention). Coordinates are millimetres; the origin is top-left with +x right and +y DOWN. Fields marked output-only are produced by planToJson and ignored on input. Scripting (let/for/if/component) and import are not representable — author those in .arch source.",
+  "description": "A floor plan as structured JSON (RPLAN / DStruct2Design convention). Coordinates are millimetres; the origin is top-left with +x right and +y DOWN. Fields marked output-only are produced by planToJson and ignored on input. Scripting (let/for/if/component) and import are not representable — author those in .arch source. Vertical circulation (stair/escalator/elevator) is not projected: Plan JSON has no member for it.",
   "type": "object",
   "required": [
     "plan",
@@ -426,6 +426,10 @@
             ],
             "description": "Which way a sliding-family panel travels to open, along the wall's direction (as `hinge` is). Sliding family only."
           },
+          "mirror": {
+            "type": "boolean",
+            "description": "Door only. True on a door inside a reflecting `place` frame: it records the frame's reflection (a sliding door takes the other track), not the leaf's handedness. Absent otherwise. Output-only: `planFromJson` refuses `true` with E_JSON_MIRROR."
+          },
           "open": {
             "type": "number",
             "minimum": 0,
@@ -606,6 +610,10 @@
           "text": {
             "type": "string",
             "description": "Override text; defaults to the measured length."
+          },
+          "mirror": {
+            "type": "boolean",
+            "description": "True on a dimension inside a reflecting `place` frame: it records the frame's reflection (the side a zero-offset call-out's number reads on). Absent otherwise. Output-only: `planFromJson` refuses `true` with E_JSON_MIRROR."
           }
         }
       }

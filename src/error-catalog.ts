@@ -560,9 +560,9 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   ),
   E_JSON_MIRROR: E(
     "E_JSON_MIRROR",
-    "Plan JSON furniture is `mirror: true`, which `.arch` source cannot state.",
-    "`planToJson` reports `mirror: true` on EVERY fixture inside a reflecting `place` (`mirror x|y`, or a nested composition that reflects) — the flag records the FRAME's reflection, not the glyph's handedness, so a symmetric symbol that draws the same either way carries it too. A `place` frame is the only thing that can reflect a symbol — the grammar has no per-furniture `mirror` — so converting that payload back to source would lose the reflection (a handed family such as `desk` or `sofa_l` would draw unmirrored), and it is refused instead.",
-    "Keep the instance in `.arch` source (the `place … mirror x|y` that produced it), or drop `mirror` from the fixture if the unmirrored symbol is what you want.",
+    "Plan JSON furniture, door or dimension is `mirror: true`, which `.arch` source cannot state.",
+    "`planToJson` reports `mirror: true` on EVERY fixture, door and dimension inside a reflecting `place` (`mirror x|y`, or a nested composition that reflects) — the flag records the FRAME's reflection, not the glyph's handedness, so a symmetric symbol that draws the same either way carries it too. A `place` frame is the only thing that can reflect anything — the grammar has no per-furniture, per-door or per-dimension `mirror` — so converting that payload back to source would lose the reflection (a handed family such as `desk` or `sofa_l` would draw unmirrored, a sliding door would take the other track, a zero-offset dimension's number would read on the other side), and it is refused instead.",
+    "Keep the instance in `.arch` source (the `place … mirror x|y` that produced it), or drop `mirror` from the element if the unreflected drawing is what you want.",
     '{ "furniture": [ { "category": "desk", "x": 0, "y": 0, "width": 1400, "height": 700, "mirror": true } ] }   # error at /furniture/0/mirror',
   ),
   E_LAYOUT_CYCLE: E(
