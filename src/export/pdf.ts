@@ -355,9 +355,6 @@ function collectTexts(scene: Scene): string[] {
 
 /** North arrow + scale bar + title block — PDF parity with the SVG chrome. */
 function drawChrome(doc: any, scene: Scene, ctx: TextCtx): void {
-  // An axonometric carries no plan chrome — see the same guard in `backends/svg.ts`.
-  // `Scene.view` is set only by `toIso`, so every plan drawing is untouched.
-  if (scene.view) return;
   const { theme, sizes, bounds: b } = scene;
   const refDim = sizes.refDim;
   const margin = sizes.margin;

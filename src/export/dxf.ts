@@ -17,7 +17,6 @@
 import type { Point } from "../ast.js";
 import type { LineType, Scene, SceneNode } from "../scene.js";
 import { layerOf } from "../scene.js";
-import { VIEW_LAYER_NAMES } from "../view/paint.js";
 import { minorArcDegrees } from "../geometry.js";
 import { dxfPatternName, isSolidFill } from "../hatches.js";
 // Deterministic number formatting (round to 4dp, no -0).
@@ -188,22 +187,6 @@ const AIA_LAYERS: { name: string; color: number }[] = [
   { name: "C-PROP", color: 6 },
 ];
 
-/**
- * The axonometric view's layers, declared **only on a drawing that uses them**.
- *
- * `V-` is deliberately outside the `A-`/`L-`/`C-` NCS discipline namespace above: a CAD
- * user freezes by discipline, and an illustrative 3D view is not a discipline's drawing —
- * putting an extruded wall on `A-WALL` would make it appear and disappear with the
- * architectural plan it is not part of.
- *
- * They are conditional rather than static because the guard that caught `A-ROOF`'s
- * two-release absence is "declares no dead layer", and three rows a plan drawing can
- * never reach would be exactly that. A plan-view DXF is therefore byte-identical: the
- * table only grows when a `V-` node is present. The names come from `src/view/paint.ts`
- * rather than being retyped here.
- */
-const VIEW_LAYER_COLORS: Record<string, number> = { "V-3D-WALL": 7, "V-3D-FLOR": 8, "V-3D-GLAZ": 5 };
-
 /** Dash definitions (drawing units = mm): name, descriptive text, and pattern.
  *  Positive = dash, negative = gap. Solid CONTINUOUS has an empty pattern. */
 const LTYPES: { name: string; desc: string; pattern: number[] }[] = [
@@ -212,17 +195,6 @@ const LTYPES: { name: string; desc: string; pattern: number[] }[] = [
   { name: "CENTER", desc: "Center", pattern: [400, -100, 100, -100] },
   { name: "HIDDEN", desc: "Hidden", pattern: [100, -100] },
 ];
-
-/** The LAYER rows this drawing declares: the static AIA set, plus any `V-` view layer its
- *  own nodes actually reference (see {@link VIEW_LAYER_COLORS}). */
-function layerRows(nodes: readonly SceneNode[]): { name: string; color: number }[] {
-  const used = new Set(nodes.map(layerOf));
-  const extra = VIEW_LAYER_NAMES.filter((n) => used.has(n)).map((name) => ({
-    name,
-    color: VIEW_LAYER_COLORS[name] ?? 7,
-  }));
-  return [...AIA_LAYERS, ...extra];
-}
 
 function header(layers: readonly { name: string; color: number }[]): string {
   const h: string[] = [];
@@ -322,5 +294,5 @@ export function toDxf(scene: Scene): string {
   b.pair(2, "ENTITIES");
   for (const node of scene.nodes) emit(b, node);
   b.pair(0, "ENDSEC");
-  return header(layerRows(scene.nodes)) + b.toString() + "0\nEOF\n";
+  return header(AIA_LAYERS) + b.toString() + "0\nEOF\n";
 }

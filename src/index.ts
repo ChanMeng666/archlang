@@ -304,12 +304,6 @@ export type {
 // a Scene: `toDxf(scene)` / `toPdf(scene)`; build one with `toScene(ir)` or read
 // `compile().scene`.
 export { toScene } from "./scene-build.js";
-// The opt-in axonometric view: a SIBLING of `toScene` producing the same Scene
-// type, so every backend draws it unchanged. Illustrative only — see `src/view/`.
-export { toIso } from "./view/iso.js";
-export { VIEW_NAMES, isViewName, cameraFor, projectedArea2 } from "./view/camera.js";
-export type { ViewName, Camera, Point3, Projected } from "./view/camera.js";
-export { VIEW_LAYERS, VIEW_LAYER_NAMES } from "./view/paint.js";
 // Positioning axes (定位轴线): the GB/T numbering rules, exposed so a tool can label an
 // axis grid the same way the drawing does (`ir.axes` already carries the labels).
 export { numberAxes, axisLetter, AXIS_LETTERS } from "./axes.js";
@@ -480,7 +474,6 @@ export function compile(source: string, opts: CompileOptions = {}): CompileResul
     opts.overlays ?? null,
     opts.onError ?? null,
     opts.accessible ?? null,
-    opts.view ?? null,
   ]);
   if (!opts.noCache) {
     const hit = cache.get(key);

@@ -15,7 +15,6 @@
 import { parse } from "./parser.js";
 import { resolveAll } from "./ir.js";
 import { toScene } from "./scene-build.js";
-import { toIso } from "./view/iso.js";
 import { renderSvg } from "./backends/svg.js";
 import { renderErrorSvg } from "./backends/error-svg.js";
 import { offsetToLineCol } from "./diagnostics.js";
@@ -65,19 +64,7 @@ export function compileUncached(source: string, opts: CompileOptions): CompileRe
   let scene: Scene | undefined;
   let pages: CompilePage[] | undefined;
   if (resolved && errs.length === 0) {
-    if (opts.view) {
-      // The opt-in axonometric. One drawing of the WHOLE building, so a
-      // multi-storey plan yields no `pages` — its storeys are stacked into this one
-      // Scene rather than issued as a set. `describe()`/`lint()` are untouched above and
-      // never see the option.
-      scene = toIso(
-        resolved.levels.length > 0 ? resolved.levels.map((l) => l.ir) : [resolved.ir],
-        opts.view,
-        opts,
-        runtime,
-      );
-      svg = renderSvg(scene, opts);
-    } else if (resolved.levels.length > 0) {
+    if (resolved.levels.length > 0) {
       pages = resolved.levels.map((l) => {
         const s = toScene(l.ir, opts, runtime);
         return { level: l.level, ...(l.name !== undefined ? { name: l.name } : {}), svg: renderSvg(s, opts), scene: s };

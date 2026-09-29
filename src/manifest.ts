@@ -307,28 +307,9 @@ const SECTION_FLAG: ManifestFlag = {
 };
 
 /**
- * `--view <iso|axon>` — DEPRECATED (removed in 2.0, ADR 0021): render an ILLUSTRATIVE axonometric instead of the plan.
- *
- * On `compile` and `preview` only, and deliberately not on `watch` or `batch`: this is a
- * picture to look at once, not a drawing to iterate on. It is not an export FORMAT — every
- * raster and vector format still applies. Four combinations are refused with exit 3 rather
- * than silently ignored, and `resolveView` (`src/cli/io.ts`) states why each one is: an
- * unknown value, `-f txt`/`--ascii`, `--level` and `--overlay`.
- */
-const VIEW_FLAG: ManifestFlag = {
-  flag: "--view",
-  arg: "<iso|axon>",
-  description:
-    "DEPRECATED (removed in 2.0; ArchLang draws plans) — render an illustrative axonometric of the building instead of the plan (iso = true isometric, axon = the 30/60 plan oblique) — a picture, never a measured drawing: no scale, no title block, no dimensions, and `describe`/`lint` are unaffected",
-};
-
-/**
  * The render pipeline's flag set. `compile` and `watch` share it byte-for-byte
  * because `cmdWatch` re-enters `cmdCompile` on every save — it honors literally
  * everything compile does, so it must declare it (the parser rejects the rest).
- *
- * `--view` is the ONE exception and therefore lives in {@link COMPILE_ONLY_FLAGS}: a
- * watcher exists to re-render a plan you are editing, and an axonometric is not that.
  */
 const COMPILE_FLAGS: ManifestFlag[] = [
   OUT_FLAG,
@@ -348,9 +329,6 @@ const COMPILE_FLAGS: ManifestFlag[] = [
   QUIET_FLAG,
 ];
 
-/** {@link COMPILE_FLAGS} plus `--view`, which `watch` deliberately does not take. */
-const COMPILE_ONLY_FLAGS: ManifestFlag[] = [...COMPILE_FLAGS, VIEW_FLAG];
-
 /**
  * The command table. Keys MUST cover exactly the verbs the CLI's `main()`
  * dispatch handles (the manifest drift test enforces it both ways), and each
@@ -361,7 +339,7 @@ const COMMANDS: ManifestCommand[] = [
   {
     name: "compile",
     summary: "render a plan to SVG/DXF/TXT/PDF/PNG",
-    flags: COMPILE_ONLY_FLAGS,
+    flags: COMPILE_FLAGS,
     input: "<file.arch|-> (Plan JSON with --from-json)",
     output: "file (or stdout with -o -) — with --json and no -o nothing is written",
     examples: [
@@ -386,10 +364,6 @@ const COMMANDS: ManifestCommand[] = [
       {
         cmd: "arch compile house.arch --level 2 -o upper.svg",
         note: "render just the upper storey of a multi-storey plan to one file",
-      },
-      {
-        cmd: "arch compile house.arch --view iso -o house-iso.svg",
-        note: "an illustrative isometric of the whole building (every storey in ONE drawing, so no per-level fan-out)",
       },
     ],
   },
@@ -490,7 +464,6 @@ const COMMANDS: ManifestCommand[] = [
       OVERLAY_FLAG,
       ERROR_SVG_FLAG,
       { ...INSTALL_FLAG, description: "auto-install @resvg/resvg-js if missing, then render" },
-      VIEW_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],

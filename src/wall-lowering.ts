@@ -58,13 +58,8 @@ export interface JoinedWallSet {
  * **Wall set → joined geometry.** `wallBand` → `openingCut` → `joinWalls`, and nothing
  * else: no theme, no paint, no Scene.
  *
- * Split out of {@link lowerWallSet} so the axonometric view (`src/view/`) can
- * consume {@link JoineryResult.outline} — the exact `EdgeLoop[]` the plan view lowers —
- * *before* `emitLoops` narrows it to a `region`/`path`. A 3D extrusion needs the edges,
- * not the primitive: it lifts each one to a side quad and caps the whole loop set at the
- * wall's height, so the third dimension computes no new footprint. Re-deriving the
- * footprint in the view would be a second joinery, and two of those is exactly how a
- * drawing and its own extrusion come to disagree.
+ * Split out of {@link lowerWallSet}; {@link JoineryResult.outline} is the exact `EdgeLoop[]`
+ * the plan lowers, *before* `emitLoops` narrows it to a `region`/`path`.
  *
  * `groupKeys` fixes which fills are produced and in what order; pass `[]` when only the
  * outline is wanted. Returns `null` for a set with no bandable wall, which is what
