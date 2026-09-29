@@ -161,6 +161,28 @@
  * `terrace-row`'s whole-surface row carries BOTH re-measurements above: W5b's SVG (the
  * mirrored sliding doors) and W3b's circulation. Re-measured once on the merged tree; a
  * same-tree sweep with only W3b's `src/` swapped out shows W3b moves `describe()` alone.
+ *
+ * ## `museum-wings`: whole-surface row re-measured for a source edit; the summary row holds
+ *
+ * Case (2)'s cousin, and NOT the compiler: the EXAMPLE changed. `d_east` was `hinge right`
+ * and is now `hinge left`, so the east hall door is the true mirror image of `d_west`
+ * (`east.shell` runs the opposite way, the same word hangs the leaf on the mirrored jamb),
+ * (that consistency shows in `describe --facts symmetry` only once `d_main` is removed — see
+ * `symmetry.test.ts`; with `d_main` present `full` is C1 before and after, and the symmetry
+ * output is byte-identical). Field by field, on the same compiler, before/after:
+ *
+ *   - SVG: exactly two lines move, both `d_east`'s leaf — the leaf `<line>` from
+ *     `(24000,11400)→(22200,11400)` to `(24000,9600)→(22200,9600)` and the swing arc from
+ *     `M 22200,11400 A 1800 1800 0 0 1 24000,9600` to `M 22200,9600 A 1800 1800 0 0 0
+ *     24000,11400` — the hinge jamb flips from the south jamb to the north one. 49072 → 49070
+ *     bytes (the arc's sweep flag and the coordinates' digits); nothing else in the drawing.
+ *   - `describe()`: byte-identical (a door's hinge side is not in `describe()`).
+ *   - `lint()`: byte-identical, no diagnostics either side (the added source is comment lines
+ *     above every diagnostic-free statement, so there is no span to shift).
+ *
+ * So `SEMANTIC_BASELINE`'s `museum-wings` row is unchanged, and only the whole-surface row
+ * here (and `while-byte-identity-baseline.ts`'s, which digests the SVG too) was re-measured,
+ * with the tests' own digest bodies.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -182,7 +204,7 @@ export const BASELINE: [string, string][] = [
   ["library", "5300487bb693592fb244121e84fda89476d19c08732e9ce487e09a5967f52222"],
   ["materials", "5f9cad38f200ee41f25db60bf699ac18a67b7bebc4c07e84316a55a1da86357d"],
   ["museum-wing", "fa89497eceb8e2dc56faeb5b5b9ff29f91c5b21db68cc7895307870f5cce1eba"],
-  ["museum-wings", "2b2e629257f7a47a8d0a8b6fd0b89d36dc54336730920a1c2be36d3e992e09ca"],
+  ["museum-wings", "c9e6818aaac9b452130be0aa7b762a4bd2e4ca9c4eaa56125645f7cee0bf0bb1"], // re-measured, see header
   ["museum", "07f06548d662a7283d4d47136c1e4260662ba0d8115282dd98d1b87134188304"],
   ["one-room", "1a310fb617bfe42e9749d66bddac7b9eb417b843f2525c558f66e6ecb1177b33"],
   ["parametric", "e30cff0f2fb517d5b19723cef6092a9d614ae198a63fd96f7f1b23508ee2c0a3"],

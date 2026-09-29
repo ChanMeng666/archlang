@@ -33,6 +33,11 @@
  * kitchen, bed and bath, doorless rooms of an open plan with no interior wall, lose their
  * walks and their two routes; `test/fixtures/zones-wings.arch` — gal_b and store, doorless
  * rooms of a plan with no partitions, likewise. Only `describe().circulation` moved.
+ *
+ * `examples/museum-wings.arch` re-measured for a SOURCE edit, not a compiler change: `d_east`
+ * now hangs `hinge left` (the mirror of `d_west`). Only the SVG moves — that one door's leaf
+ * and swing arc; `describe()`, `lint()` and `compile().diagnostics` are byte-identical (the
+ * full field-by-field is in `./byte-identity-baseline.ts`, "`museum-wings`: whole-surface row").
  */
 export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/accessible.arch", "a8b70a680754e431524037dc3a936bba2ec7c0e2cba8df0c72a16f45e5d1e27b"],
@@ -52,7 +57,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/library.arch", "1ffc81af5b0e707af1d0c8e18502acea95cc8464234d48e5415e4c7490c99a03"],
   ["examples/materials.arch", "618b6ce2d9036c654b9c9cdf28f73c43417cb20f2a4cc70cea6b618f979b1d43"],
   ["examples/museum-wing.arch", "bcda3bd78b5082aa5e084987b6748ae3c6cba41fe30e28cc70b7dcbc3762af17"],
-  ["examples/museum-wings.arch", "82a0b3a4c478efefb2c43cf5018d14c78e86602d51c367cce95b59f102ff3838"],
+  ["examples/museum-wings.arch", "537847875c1e44d3e472b2318e9d08b22ccde48d0b01f69687f0653b56c76ec7"], // re-measured, see header
   ["examples/museum.arch", "afc31f3ca38ea93b1ff3031a7f89cc3bdf15c6255be5987569f427bcbaaa5fea"],
   ["examples/one-room.arch", "1b4e455d3f64e83a7a8139fb5b4df88b358faf756a80befff46c255e731635a0"],
   ["examples/parametric.arch", "963fd4b30b77d52f0367492e8e7ff13eabb08c9f709fd2100aba7eb67764ca63"],

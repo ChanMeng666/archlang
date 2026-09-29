@@ -272,22 +272,21 @@ suite("symmetry — hand cases", () => {
     ]);
   });
 
-  it("museum-wings: the mirrored wings make shell and rooms D1 x; the door hinges break `full`", () => {
+  it("museum-wings: the mirrored wings make shell and rooms D1 x; the single-leaf `d_main` keeps `full` C1", () => {
     const src = EXAMPLE_FILES["museum-wings.arch"]!;
     const s = sym(src);
     expect(groupOf(s.layers.shell)).toBe("D1 x");
     expect(groupOf(s.layers.rooms)).toBe("D1 x");
     expect(s.layers.shell!.centre).toEqual({ x: 21000, y: 6000 });
-    // `full` is C1, and that is the TRUE answer: `d_main` is one hinged door on the axis,
-    // and `d_west`/`d_east` hinge on opposite jambs (`hinge left` on the west shell's
-    // downward run is its NORTH jamb, `hinge right` on the east one's is its SOUTH jamb).
+    // `d_west`/`d_east` are mirror twins (`east.shell` runs the other way, so `hinge left` on
+    // both hangs the leaf on mirrored jambs). `full` is still C1, and that is the TRUE answer:
+    // `d_main` is ONE hinged leaf on the axis, the example's one deliberate asymmetry.
     expect(groupOf(s.layers.full)).toBe("C1");
-    // Drop the axis door and hinge the west door like its mirror twin: `full` becomes D1 x.
+    // Drop the axis door and the hall doors are the only handed pair left: `full` is D1 x.
     const fixed = src
       .split("\n")
       .filter((l) => !l.includes("door id=d_main"))
-      .join("\n")
-      .replace("wall west.shell  hinge left  swing into hall", "wall west.shell  hinge right swing into hall");
+      .join("\n");
     expect(fixed).not.toBe(src);
     expect(groupOf(sym(fixed).layers.full)).toBe("D1 x");
     // The two wings' galleries repeat at a 6 m step, each wing its own run.
