@@ -81,8 +81,7 @@ import { join, resolve as resolvePath } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint } from "../src/index.js";
 import type { World } from "../src/world.js";
-// The two tables moved to a module of their own when `iso-byte-identity.test.ts` began
-// making the same corpus-wide claim: one measurement, two laws, no retyped hash.
+// The two tables live in a module of their own: one measurement, no retyped hash.
 import { AUTHORS_HEIGHT, BASELINE, SEMANTIC_BASELINE } from "./byte-identity-baseline.js";
 import { type CompilerApi, allStoreysDigestWith, semanticDigestWith } from "./byte-identity-digest.js";
 import { authorsVerticalDatum, heightFreeSource } from "./height-free-source.js";

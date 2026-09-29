@@ -2,12 +2,10 @@
  * The measured byte-identity baseline for the shipped example corpus, importable by more
  * than one law.
  *
- * It lives beside the tests rather than inside one because two of them now make the same
- * corpus-wide claim from different directions: `height-byte-identity.test.ts` says a plan
- * that writes no `height` clause is untouched by the vertical datum, and
- * `iso-byte-identity.test.ts` says a compile that passes no `view` is untouched by the
- * axonometric. A second hand-typed copy of thirty hashes would be a second thing to keep
- * true, and the whole point of these tables is that they are measured once and never
+ * It lives beside the tests rather than inside one so a second corpus-wide law can import it:
+ * `height-byte-identity.test.ts` says a plan that writes no `height` clause is untouched by
+ * the vertical datum. A second hand-typed copy of thirty hashes would be a second thing to
+ * keep true, and the whole point of these tables is that they are measured once and never
  * edited to go green.
  *
  * Both numbers were measured on `f4548db` — the last tree before the datum layer — by a script that
@@ -249,8 +247,8 @@ export const SEMANTIC_BASELINE: [string, string][] = [
  * quietly grows a `height` without being named here fails the no-height group's vacuity
  * guard, and a name here whose plan authors nothing fails its own.
  *
- * Its rows are read differently from the rest by `height-byte-identity.test.ts` and
- * `iso-byte-identity.test.ts`: their `BASELINE`/`SEMANTIC_BASELINE` hashes are checked
+ * Its rows are read differently from the rest by `height-byte-identity.test.ts`: their
+ * `BASELINE`/`SEMANTIC_BASELINE` hashes are checked
  * against the plan's height-free derivation (see this file's header), and the plan AS
  * WRITTEN is held to a stronger law that needs no measurement at all — its drawing must
  * equal the derivation's, byte for byte, on every storey.
