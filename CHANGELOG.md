@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.37.0] - 2026-09-30
+
 ### Added — `describe --facts symmetry,syntax`
 
 - **A plan's symmetry group, and its repeats.** Opt-in (`arch describe --facts symmetry`):
