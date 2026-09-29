@@ -63,7 +63,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - a key route (kitchen → living, bedroom → bath) is measured between the two rooms' whole
     sets of equally good cells, so no reading-order pick inside a room can move it (no shipped
     route changes).
-- 24 of the 30 shipped examples report different circulation numbers (mostly 100–300 mm on a
+- 24 of the 30 shipped examples report different circulation numbers (27 byte-identity rows move:
+  those 24 and three fixtures that carry copies of some of them; mostly 100–300 mm on a
   walk; a room whose centre furniture covers can move by metres, e.g. `courtyard-house`'s dining
   room 12900 → 11500 mm). Behind the oblique portals of `hexagon-pavilion`'s thick drum two
   galleries read 9200/9300 → 9800 mm: consistent with the new rules, but an oblique doorway is
@@ -76,9 +77,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   example moves).
 - **Behaviour change.** `W_CIRCUITOUS_PATH` now names the entrance its ratio is taken from
   (`studio.arch` under `maxDetourRatio: 2`: `The walk from entrance "d_main" to "Bath" is 2.27×
-  the straight-line distance from that entrance (over 2×).`). The ratio itself is unchanged in meaning: the walk from the room's nearest
-  entrance by walk over the straight line from that same entrance, not the least ratio over
-  every entrance.
+  the straight-line distance from that entrance (over 2×).`), so only the message text changes.
+  The ratio is the walk from the room's nearest entrance by walk over the straight line from that
+  same entrance, not the least ratio over every entrance.
 
 ### Fixed — `--overlay circulation` is drawn on the grid the numbers come from
 
@@ -93,7 +94,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `d_east` hung on the wrong jamb, so the two wings' hall doors were not mirror images. It is
   now `hinge left` (the wing is `mirror x`, so the same word mirrors the jamb). Only that one
-  door's leaf and swing arc move in the SVG; `describe()` and `lint()` are unchanged. The
+  door's leaf and swing arc move in the SVG; this fix on its own changes no `describe()` field
+  and no `lint()` result (the circulation numbers of `museum-wings` move under the entry above). The
   single-leaf main door stays, so `describe --facts symmetry` still reports `full` as C1 (shell
   and rooms are D1 x).
 
@@ -340,8 +342,8 @@ shipped examples).
   `TranslationRepeat`, `MirrorRepeat`, `SyntaxFacts`, `SyntaxRoom`); `TransformCtx`.
 - **New optional fields:** `ElementDef.transform` (a plugin's frame action) and
   `RoomCirculation.entranceId` (present only on a plan with more than one entrance).
-- **Plan JSON:** `furniture[].mirror` (`true` only when a reflecting `place` frame carried the
-  piece; absent otherwise).
+- **Plan JSON:** `furniture[].mirror`, `openings[].mirror` (doors only) and `dims[].mirror`
+  (`true` only when a reflecting `place` frame carried the element; absent otherwise).
 - **New diagnostic codes:** `E_INSTANCE_NO_TRANSFORM`, `E_JSON_MIRROR`, `W_WHILE_DEPRECATED`,
   `W_REASSIGN_DEPRECATED`.
 - **Changed meaning:** `AccessEdge.ambiguous` now means the wall-face probe could not decide

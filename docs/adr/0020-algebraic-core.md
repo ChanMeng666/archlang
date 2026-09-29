@@ -179,10 +179,21 @@ one layer up.
   circulation (backlog G.5, a `MIN_PLUS` sum over the entrances), circulation sampled in
   its own snapped frame (E.11's circulation half) and a concave room measured over its
   label-point orbit, picked D4-symmetrically (E.9).
-- **Open.** The equivariance findings this work did **not** close (the nav grid's remaining
-  tie-breaks, E.6–E.8 and E.10, whose measured fixes each move more example digests than
-  was approved; E.11's lint half) stay open in `docs/backlog.md` and are unaffected by
-  anything in this ADR.
+- **Landed (follow-up).** The four raster classes (`raster-tie`, `entrance-seed-walk`,
+  `anchor-far-tie`, `threshold-carve`; backlog E.6-E.8 and E.10) closed with circulation v2:
+  the nav grid breaks its ties by the group, not by the page, and their pins are now laws
+  in `test/equivariance-corpus.test.ts`. Plan JSON carries the frame's reflection on doors
+  and dimensions as it does on furniture (`mirror`, refused on the way back with
+  `E_JSON_MIRROR`; backlog 6.3). `museum-wings.arch`'s east hall door is now the mirror of
+  the west one (backlog 6.8, the drawing error).
+- **Open.** What `test/equivariance-known.ts` still pins: `float-translation` (E.11's lint
+  half: an exact comparison on a resolved coordinate, `W_POCKET_RUN`'s `>= need`, flips under
+  a pure translation), and the two declared conventions, `facing-tie` (a corner or 45°
+  window resolves N/S first) and `dim-tick-hand` (the tick convention). Outside the oracle:
+  an oblique doorway is carved as an L-shaped tunnel (backlog C.5); two owner questions
+  from `museum-wings.arch`'s mirrored main door (backlog 6.8, 6.9); and `while`/reassignment
+  removal, which waits for the next major (backlog 6.7, one plan with the axonometric
+  removal). None is affected by anything in this ADR.
 
 ## Rejected (recorded, not built)
 
@@ -218,7 +229,7 @@ one layer up.
   rubric expects, moving scores for reasons unrelated to plan quality.
 - **Exact projective predicates** (orientation/intersection via projective coordinates).
   Measured bounds with the plain double arithmetic already in use: `orient2d` stays exact
-  to `2²⁵` mm (≈ 33.5 km); homogeneous line intersection is exact only to roughly 103 m
+  to `2²⁵` mm (≈ 33.5 km); homogeneous line intersection is exact only to about 104 m
   (`2^(50/3)` mm). No observed defect motivated adopting exact predicates, and `BigInt` is
   available if a plan is ever measured that needs more precision than either bound gives —
   this is a decision to wait for that evidence, not a claim that no plan could exceed it.
