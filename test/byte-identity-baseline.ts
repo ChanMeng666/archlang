@@ -167,8 +167,9 @@
  * Case (2)'s cousin, and NOT the compiler: the EXAMPLE changed. `d_east` was `hinge right`
  * and is now `hinge left`, so the east hall door is the true mirror image of `d_west`
  * (`east.shell` runs the opposite way, the same word hangs the leaf on the mirrored jamb),
- * and `describe --facts symmetry` can now say the pair is mirror-consistent. Field by field,
- * on the same compiler, before/after:
+ * (that consistency shows in `describe --facts symmetry` only once `d_main` is removed — see
+ * `symmetry.test.ts`; with `d_main` present `full` is C1 before and after, and the symmetry
+ * output is byte-identical). Field by field, on the same compiler, before/after:
  *
  *   - SVG: exactly two lines move, both `d_east`'s leaf — the leaf `<line>` from
  *     `(24000,11400)→(22200,11400)` to `(24000,9600)→(22200,9600)` and the swing arc from

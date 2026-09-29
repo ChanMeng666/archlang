@@ -640,13 +640,31 @@ shell and room layers. `full` was C1 for two reasons, one of them a real drawing
 reflection maps to itself. `full` stays C1 because of `d_main` alone; dropping it makes `full`
 D1 x (pinned in `test/symmetry.test.ts`).
 
-The owner decision was a mirror-image PAIR of leaves at `d_main`. Two 900 mm leaves abutting at
-the centre jamb, hinged on the outer jambs, raise `W_SWING_OBSTRUCTED` ("hinges are 1800 mm
-apart where the two leaves need 1800 mm (0 mm short)"): the leaves' arcs touch at the tip, and
-the rule reads touching as obstructed.
-A 100 mm gap between the leaves (centres 20500 and 21500) lints clean and makes `full` D1 x,
-but it is not a shared jamb. Open: take the gap, or decide that two leaves meeting tip to tip
-are not an obstruction (a rule change).
+The owner decision was a mirror-image PAIR of leaves at `d_main`. Two things stand in the way.
+
+- **The grid snaps the door position, silently.** On `grid 100` the resolver rounds a door's `at`
+  (`Math.round`: `src/ir.ts`, `src/elements/door.ts`, `src/attach.ts`), so 900 mm leaves written
+  at 20550 and 21450 resolve to 20600 and 21500: the "shared jamb" lands at x=21050, 50 mm off
+  the axis, and `full` is C1 whatever lint says. No diagnostic reports the snap (observation).
+  On `grid 100` a shared-jamb pair needs even-hundred leaf widths (two 1000 mm leaves at 20500
+  and 21500 make `full` D1 x), or `grid 50`.
+- **A shared closed jamb reads as an obstruction.** Hinged on the outer jambs, the pair raises
+  `W_SWING_OBSTRUCTED` ("hinges are 1800 mm apart where the two leaves need 1800 mm (0 mm
+  short)"), and so does the 1000 mm variant. The open tips are 1800 mm apart; what meets is
+  the two swing quarter-discs, at the shared CLOSED jamb. The cause is a zero-tolerance closed
+  boundary: `src/geometry.ts` (`hingeGap > rA + rB + clr` quick-reject, `dist <= radius +
+  clearance`, `pointInWedge` accepting cross = 0) with `DEFAULT_RULESET.swingClearanceMm = 0`
+  (`src/lint/ruleset.ts`). A 1 mm separation lints clean: 900 mm leaves at 20500 and 21500
+  (a 100 mm gap) lint clean and make `full` D1 x, but it is not a shared jamb.
+
+Open owner question: treat boundary contact at a shared jamb as clear (strict `<`) for double
+doors, or keep the rule and take the gap variant.
+
+### 6.9 · `W_SWING_OBSTRUCTED`'s narrowing hint is wrong at a shortfall of 0 — `todo`
+
+`narrowTo = gap - radius - clr` (`src/lint/rules/doors.ts`) equals the door's own width when the
+shortfall is 0 mm, so the warning advises "Narrow the door to 900 mm or less" for a 900 mm door.
+It needs a `narrowTo < d.width` guard (drop the hint otherwise). Found via 6.8; not fixed there.
 
 ---
 
