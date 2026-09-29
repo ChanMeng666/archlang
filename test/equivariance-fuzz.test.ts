@@ -28,7 +28,8 @@
  * exactly under every element on a grid-aligned plan, and under a pure translation on any.
  * Any raster violation is NEW.
  *
- * Measured, not assumed: 4 000 cases on four fixed seeds (11, 22, 43, 91) show no raster
+ * Measured once, not assumed (a one-off run; the shipped tests below run 60, 60 and 30 draws):
+ * 4 000 cases on four fixed seeds (11, 22, 43, 91) show no raster
  * violation, where the tree before the tie rules showed one in 1 352 of them (1 076 endpoint
  * ties, 334 far anchor ties, 91 threshold carves, 45 entrance seeds; a case can show more
  * than one).
