@@ -724,28 +724,43 @@ sides) is clear; a 1 mm overlap still warns, "1 mm short" (`test/swing.test.ts`,
   OPPOSITE faces (the closed leaves overlap along the wall), and two leaves back to back on one
   post opening the same way. Leaves are solid, so a shared line is a clash. (On an oblique wall
   the sampler, unchanged, already missed the first of these; that is not new.)
-- With `swingClearanceMm > 0` (`accessibility-advisory`, 150), contact at exactly `radius +
-  clearance` is clear, and a shared-jamb pair still warns: each leaf lies in the other's
-  clearance band. `museum-wings` raises that one warning under the profile, none by default.
+- With `swingClearanceMm > 0` (`accessibility-advisory`, 150), single-point contact at exactly
+  `radius + clearance` is clear. A double door is ONE assembly (lead decision): the clearance
+  keeps independent doors apart, not a pair's two leaves, so a shared-jamb pair
+  (`isDoubleDoorPair`: the far jambs coincide, the closed leaves run away from them along one
+  line, and at clearance 0 the discs meet in that point only) is clear at any clearance. Jambs
+  1 mm apart are two doors and keep the clearance. `museum-wings` lints `[]` under the profile,
+  as on the base, and passes `--strict`.
 - `W_SWING_OBSTRUCTED` against furniture (`sectorIntersectsRect`) is unchanged: exact contact
   with a piece still warns.
 
 Measured: the corpus sweep (every storey's SVG, `describe()`, `lint()`, `compile().diagnostics`,
 the a11y profile's `lint()`, `--facts symmetry`; examples and fixtures) moved 0 of 279 payloads on
-the predicate change alone. No shipped plan reaches the sampler's hit branch at all, under either
-profile, so no example lost a warning. A brute-force cross-check against the original predicate
-(random pairs on axis-aligned and oblique walls, clearance 0 and 150) finds no new collision,
-and every pair the change clears has no area in common and no collinear edge overlap: it is
-single-point contact. The re-measured `museum-wings` rows are explained field by
-field in `test/byte-identity-baseline.ts`.
+the predicate change alone. On the base corpus no plan reached the sampler's hit branch, under
+either profile; on the final tree (counted by instrumenting it) only `museum-wings` does, once,
+its main pair, cleared as single-point contact (and, under the profile, as a pair). So no
+example lost or gained a warning, and every example's default `lint()` is byte-identical. A
+brute-force cross-check against the original predicate (random pairs on axis-aligned and
+oblique walls, clearance 0 and 150) finds no new collision, and every pair the change clears
+has no area in common and no collinear edge overlap: single-point contact, or a double-door
+pair at clearance 150. The re-measured `museum-wings` rows are explained field by field in
+`test/byte-identity-baseline.ts`.
 
 ### 6.9 · `W_SWING_OBSTRUCTED`'s narrowing hint was wrong at a shortfall of 0 — closed
 
 `narrowTo` equalled the door's own width at a shortfall of 0 mm ("Narrow the door to 1000 mm or
-less" for a 1000 mm door). The hint is now offered only for a width strictly under the door's
-(`narrowTo < d.width`, `src/lint/rules/doors.ts`); otherwise it is left out and the other
-remedies stand. Reachable now only through furniture touching the arc exactly; the boundary
-(0 mm short: no hint; 1 mm short: "999 mm or less") is pinned in `test/lint-deficits.test.ts`.
+less" for a 1000 mm door). The formula behind it (`gap − radius − clearance`) was also wrong
+in general: narrowing keeps `at`, so the hinge moves, and on a `grid` the resolver snaps the
+width, so a quoted width could fail to clear. `widestClearingWidth` (`src/lint/rules/doors.ts`)
+now bisects the widths the author can get (multiples of the grid; whole mm without one) for the
+widest narrower leaf whose recomputed swing is clear of everything, the proof the hinge flip
+already had; no such width, no hint. At 0 mm short it quotes 999 mm, at 1 mm short 998 (not
+999, which still touches). Every quoted width in the shipped examples, applied to its door,
+clears it (`test/lint-deficits.test.ts`, corpus-derived). The message's three numbers now agree
+(`deficitMm`, `src/lint/measure.ts`: need rounded up, have rounded down, the shortfall their
+difference), so "1999 mm apart … need 1999 mm (1 mm short)" cannot be printed. Every example's
+default `lint()` is unchanged; under `accessibility-advisory` the swing hints (and one rounded
+distance) of `furnished-flat`, `hillside-villa`, `imports` and `materials` move.
 
 ### 6.10 · A door's `at` snaps to the grid silently — `todo` (observation, no decision)
 
@@ -763,6 +778,18 @@ as two 940 mm doorways, not one ~1940 mm opening, and every room's `bottleneckCl
 1140 mm: the widest way in is a wing's 1200 mm exit, not the main door. A pair of leaves on a
 shared jamb with both open is one opening to anyone walking through. Open: whether (and how)
 the analysis should recognise a pair: shared jamb, same host, both hinged on the outer jambs.
+
+### 6.12 · The swing-overlap sampler misses real overlaps — `todo` (pre-existing, no decision)
+
+`swingsCollide` (`src/geometry.ts`) only ever tests nine points on each leaf's arc against the
+other swing, so an overlap whose shared region holds none of them is not seen. Counterexample:
+A hinged at (300,300), radius 900, wedge 180°–270° (far jamb (−600,300), leaf end
+(300,−600)); B hinged at the origin, radius 1000, first quadrant. They share the square
+[0,300]², about 90,000 mm², and `swingsCollide` says clear, on the base and on this branch
+alike. It also misses segment contact on an oblique wall (the jamb sample's wedge sign lands
+on the wrong side in floating point). `sectorsObstruct` is exact on its own, so a decision
+procedure is within reach, but replacing the detector can add warnings to existing plans:
+that needs its own corpus sweep and a decision. Found by red-team review of 6.8; wording only.
 
 ---
 

@@ -342,10 +342,15 @@
  *     12600, detour 1.41 → 1.4, `d_main` → `d_main_w`; east.g3 the same with `d_main_e`; hall
  *     5700 → 6100, detour 1 → 1.07, `d_main` → `d_main_w` (the entrance left the axis). Under
  *     `--facts symmetry`, `full` is C1 → D1 x about (21000,6000) (`symmetry.test.ts`).
- *   - `lint()` and `compile().diagnostics`: `[]` before and after. (Under
- *     `accessibility-advisory`, `swingClearanceMm` 150, the pair raises `W_SWING_OBSTRUCTED`,
- *     150 mm short, as any shared-jamb pair does inside a clearance band; that profile is not a
- *     pinned surface.)
+ *   - `lint()` and `compile().diagnostics`: `[]` before and after, and `[]` under
+ *     `accessibility-advisory` too: a double door's two leaves are one assembly, clear at any
+ *     swing clearance (`isDoubleDoorPair`).
+ *
+ * The later hint fix (the narrowing width recomputed and proved, the message's numbers rounded
+ * to agree) moves no row here: no example's default `lint()` carries a `W_SWING_OBSTRUCTED`.
+ * It moves only `lint()` under `accessibility-advisory`, which no digest covers, for
+ * `furnished-flat`, `hillside-villa`, `imports` and `materials` (the quoted widths, and one
+ * distance 802 → 801 mm with its shortfall 48 → 49).
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

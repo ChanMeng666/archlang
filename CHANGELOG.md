@@ -15,15 +15,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   next one's hinge. Any real overlap still warns, down to 1 mm, and so does contact along a
   segment (openings overlapping along the wall with opposite swings, or two leaves hung back to
   back on one post).
-- With a swing clearance (`accessibility-advisory`), single-point contact at exactly
-  `radius + clearance` is clear, and a shared-jamb pair still warns, since each leaf lies in the
-  other's clearance band. The furniture half of the rule is unchanged.
-- No shipped example's lint output changes.
+- A double door is one assembly: with a swing clearance (`accessibility-advisory`) its two
+  leaves, sharing a closed jamb, are clear of each other at any clearance. The clearance still
+  applies between independent doors, including two leaves whose jambs are 1 mm apart, and
+  single-point contact at exactly `radius + clearance` is clear. The furniture half of the rule
+  is unchanged.
+- No shipped example's default lint output changes.
 
-### Fixed — `W_SWING_OBSTRUCTED` no longer advises narrowing a door to its own width
+### Fixed — `W_SWING_OBSTRUCTED`'s "narrow the door" hint quotes a width that clears
 
-- At a shortfall of 0 mm the "Narrow the door to … mm or less" hint quoted the door's own width.
-  It is now given only for a width strictly under the door's; otherwise the other remedies stand.
+- The quoted width ignored that narrowing a door keeps its position, so the hinge moves, and
+  that a `grid` snaps a door's width; it could name the door's own width, or a width that did
+  not clear. The hint now quotes the widest narrower width the plan can express whose swing,
+  recomputed, is clear of everything (as the hinge-flip fix already was), and is left out when
+  there is none.
+- The message's numbers now agree: the need is rounded up, the distance available down, and the
+  shortfall is their difference.
+- Under `--profile accessibility-advisory`, the swing hints of `furnished-flat`,
+  `hillside-villa`, `imports` and `materials` quote new widths (one of them also a distance
+  1 mm lower); default lint output is unchanged.
 
 ### Changed — `museum-wings.arch`'s main door is a mirror pair of leaves
 
