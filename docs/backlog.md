@@ -330,7 +330,7 @@ group-invariant key, from a seed point snapped to the frame lattice (E.6 anchor 
 four raster classes are closed: their pins are deleted, their eight `STILL` witnesses are laws
 ("closed classes" in `test/equivariance-corpus.test.ts`), and T2 now compares every circulation
 number under every element — walks, bottlenecks, detours, entrances, key routes, the sealed
-rooms' widest way in. Fuzz: 0 of 4000 random plans (seeds 11/22/43/91) show a raster
+rooms' widest way in. Fuzz (a one-off measurement; the shipped test runs fewer): 0 of 4000 random plans (seeds 11/22/43/91) show a raster
 violation, against 1352 before (1076 `raster-tie`, 334 `anchor-far-tie`, 91 `threshold-carve`,
 45 `entrance-seed-walk`).
 
@@ -689,8 +689,10 @@ Checklist:
       `compile().diagnostics` law over every example and fixture: it must stay green with the
       new codes and NO re-measured row, since no shipped plan uses either form).
       `test/byte-identity-baseline.ts` and the other `*-byte-identity` suites must not move.
-- [ ] **`arch validate --strict`** (`src/cli/commands-analyze.ts`) stops needing the warning to
-      fail a plan using the forms: the error already exits non-zero; drop the special case.
+- [ ] **`arch fix`'s special case** (`src/cli/commands-author.ts`, the `W_WHILE_DEPRECATED`
+      filter that calls `proveWhileFixes`) re-targets the new error code. `arch validate
+      --strict` needs no change: it is the generic warnings-fail, and the error already exits
+      non-zero.
 - [ ] **Prove it:** SHA-256 sweep of `compile`, `describe` and `lint` over every example, and a
       plan using `while` returns the new `E_*` with a span and the rewrite, never throws.
 

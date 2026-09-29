@@ -63,14 +63,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - a key route (kitchen → living, bedroom → bath) is measured between the two rooms' whole
     sets of equally good cells, so no reading-order pick inside a room can move it (no shipped
     route changes).
-- 24 of the 30 shipped examples report different circulation numbers (27 byte-identity rows move:
-  those 24 and three fixtures that carry copies of some of them; mostly 100–300 mm on a
+- 24 of the 30 shipped examples report different circulation numbers (27 byte-identity rows
+  move in `test/while-byte-identity-baseline.ts`: those 24 examples and three test fixtures,
+  `diff-circ-a`, `diff-circ-b` and `zones-wings`; mostly 100–300 mm on a
   walk; a room whose centre furniture covers can move by metres, e.g. `courtyard-house`'s dining
   room 12900 → 11500 mm). Behind the oblique portals of `hexagon-pavilion`'s thick drum two
   galleries read 9200/9300 → 9800 mm: consistent with the new rules, but an oblique doorway is
   still carved as an L-shaped tunnel, so neither value is the opening's own (an open backlog
   item). No default drawing, lint verdict, bottleneck width or other `describe()` field changes;
-  the opt-in `--overlay circulation` drawing moves wherever a walk moved.
+  the opt-in `--overlay circulation` drawing can move on any plan, whether or not a number
+  moved (the drawn cell is the pick inside a tie set, so a pinch marker can shift one cell and a
+  same-length walk can be redrawn; `accessible`, `gallery-l`, `parametric` and `relational`
+  change their overlay with no `describe()` fact moving).
 - **Behaviour change.** A wall thinner than a nav-grid cell now blocks the walk: the grid also
   blocks every cell a wall's centreline passes through, so an 80 mm partition on the 100 mm grid
   can no longer be walked through. A wall of about 142 mm or more is unaffected (no shipped
@@ -87,8 +91,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so on a plan with a `void` the drawn walks and pinch markers could disagree with the reported
   numbers. It now passes the same voids. Plans without a `void` are unaffected by this fix, and
   measured on the shipped examples it changes no overlay drawing: `hillside-villa` and
-  `two-storey` have voids, but none lies across a measured walk. (Their overlays, like every
-  example's, still move wherever a walk moved above.)
+  `two-storey` have voids, but none lies across a measured walk. (Overlays can still move for
+  the tie-set reason above.)
 
 ### Fixed — `examples/museum-wings.arch`: the east hall door is now the mirror of the west one
 
