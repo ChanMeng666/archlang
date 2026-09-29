@@ -32,8 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The message's numbers now agree: the need is rounded up, the distance available down, and the
   shortfall is their difference.
 - Under `--profile accessibility-advisory`, the swing hints of `furnished-flat`,
-  `hillside-villa`, `imports` and `materials` quote new widths (one of them also a distance
-  1 mm lower); default lint output is unchanged.
+  `hillside-villa`, `imports` and `materials` quote new widths (and `hillside-villa`'s two `wc`
+  warnings read 801 mm, 49 mm short, for 802 and 48); default lint output is unchanged.
 
 ### Changed — `museum-wings.arch`'s main door is a mirror pair of leaves
 

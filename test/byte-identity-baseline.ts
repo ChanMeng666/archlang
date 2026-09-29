@@ -349,8 +349,8 @@
  * The later hint fix (the narrowing width recomputed and proved, the message's numbers rounded
  * to agree) moves no row here: no example's default `lint()` carries a `W_SWING_OBSTRUCTED`.
  * It moves only `lint()` under `accessibility-advisory`, which no digest covers, for
- * `furnished-flat`, `hillside-villa`, `imports` and `materials` (the quoted widths, and one
- * distance 802 → 801 mm with its shortfall 48 → 49).
+ * `furnished-flat`, `hillside-villa`, `imports` and `materials` (the quoted widths, and
+ * `hillside-villa`'s two `wc` distances 802 → 801 mm with their shortfalls 48 → 49).
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
