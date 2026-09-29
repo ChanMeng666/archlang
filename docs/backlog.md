@@ -631,14 +631,22 @@ W7 soft-deprecates (`W_WHILE_DEPRECATED`/`W_REASSIGN_DEPRECATED`) and offers a p
 change and stays out of scope until a MAJOR version boundary, by which point the warning
 should have converted most of the corpus that can be converted mechanically.
 
-### 6.8 · `museum-wings.arch`'s wings: D1 at shell/rooms, C1 at `full` — owner question, `todo`
+### 6.8 · `museum-wings.arch`'s wings: D1 at shell/rooms, C1 at `full` — `todo` (the hall doors are fixed; the axis door is the one deliberate asymmetry)
 
-`describe --facts symmetry` (W6a) reports the flagship's two wings as mirror-symmetric (D1)
-at the shell and room layers but only rotationally symmetric (C1) at `full`, because the
-doors hinge on opposite jambs — a real asymmetry the fact correctly reports, not a bug in
-the fact. Open question for the owner: should the wings be redrawn with their doors mirrored
-too, so the building is D1 end to end, or is the hinge asymmetry intentional (handedness of
-approach, fire egress convention)? No code change until that is answered.
+`describe --facts symmetry` reports the flagship's two wings as mirror-symmetric (D1) at the
+shell and room layers. `full` was C1 for two reasons, one of them a real drawing error:
+`d_east` hung on the wrong jamb (fixed: `east.shell` runs the opposite way to `west.shell`, so
+`hinge left` on both is the mirror pair), and `d_main` is a single leaf on the axis, which no
+reflection maps to itself. `full` stays C1 because of `d_main` alone; dropping it makes `full`
+D1 x (pinned in `test/symmetry.test.ts`).
+
+The owner decision was a mirror-image PAIR of leaves at `d_main`. Two 900 mm leaves abutting at
+the centre jamb, hinged on the outer jambs, raise `W_SWING_OBSTRUCTED` ("hinges are 1800 mm
+apart where the two leaves need 1800 mm (0 mm short)"): the leaves' arcs touch at the tip, and
+the rule reads touching as obstructed.
+A 100 mm gap between the leaves (centres 20500 and 21500) lints clean and makes `full` D1 x,
+but it is not a shared jamb. Open: take the gap, or decide that two leaves meeting tip to tip
+are not an obstruction (a rule change).
 
 ---
 

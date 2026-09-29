@@ -33,6 +33,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   plan with no `place` inside a component body is unaffected, measured byte for byte over
   the shipped examples.
 
+### Fixed — `examples/museum-wings.arch`: the east hall door is now the mirror of the west one
+
+- `d_east` hung on the wrong jamb, so the two wings' hall doors were not mirror images. It is
+  now `hinge left` (the wing is `mirror x`, so the same word mirrors the jamb). Only that one
+  door's leaf and swing arc move in the SVG; `describe()` and `lint()` are unchanged. The
+  single-leaf main door stays, so `describe --facts symmetry` still reports `full` as C1 (shell
+  and rooms are D1 x).
+
 ### Deprecated — the axonometric view (`--view`, `compile({ view })`) is removed at 2.0
 
 ArchLang is plan-first ([ADR 0021](docs/adr/0021-plan-first-view-deprecated.md)). Nothing
