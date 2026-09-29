@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // The feature gallery as drafting-sheet cards. Each card is a sheet: a numbered
-// title block (A-101 … A-109), a header that shows a real compiled artifact (an
+// title block (A-101 … A-108), a header that shows a real compiled artifact (an
 // example plan's SVG), then the specification copy. Rows are separated by a
 // dimension line — the drawing detail that says "this is a measured document".
 // (The card__art--poche 45° hatch fallback stays for any future art-less sheet;
@@ -31,9 +31,8 @@ type ExampleName = keyof typeof EXAMPLE_LINKS;
  *  to spell a card that pictures one plan and opens another.
  *  - absent — the plan's own drawing, `/examples/<name>.svg`
  *  - `{ levels }` — the per-storey pages a multi-storey plan compiles to (sync-docs.mjs
- *    writes them beside the whole-plan SVG, under the CLI's own `<stem>.L<n>` law)
- *  - `{ view }` — a committed axonometric render from `npm run gen:example-svgs` */
-type Art = { levels: readonly number[] } | { view: "iso" | "axon" };
+ *    writes them beside the whole-plan SVG, under the CLI's own `<stem>.L<n>` law) */
+type Art = { levels: readonly number[] };
 
 interface Sheet {
   no: string;
@@ -45,10 +44,6 @@ interface Sheet {
    *  sheet, which falls back to wall poché. */
   example?: ExampleName;
   art?: Art;
-  /** One line under the body for a card whose drawing and whose link are not the same
-   *  artifact — today only A-108, where the strip opens the PLAN and the picture comes
-   *  from a flag. Saying so on the card is the honest version, and it teaches the flag. */
-  hint?: string;
 }
 
 /** Every drawing a card shows: its site route and its OWN alt text, both derived from
@@ -58,14 +53,6 @@ interface Sheet {
 function artSrcs(s: Sheet): Array<{ src: string; alt: string }> {
   if (!s.example) return [];
   if (!s.art) return [{ src: `/examples/${s.example}.svg`, alt: `${s.title} — a compiled ArchLang floor plan` }];
-  if ("view" in s.art) {
-    return [
-      {
-        src: `/view/${s.example}-${s.art.view}.svg`,
-        alt: `An axonometric view compiled from ${s.example}.arch — extruded walls with their openings cut`,
-      },
-    ];
-  }
   const { levels } = s.art;
   return levels.map((n) => ({
     src: `/examples/${s.example}.L${n}.svg`,
@@ -132,7 +119,7 @@ const row3: Sheet[] = [
   },
 ];
 
-/** The first 2-column band. */
+/** The last band: three cards on the 3-column grid. */
 const row4: Sheet[] = [
   {
     no: "A-106",
@@ -150,22 +137,8 @@ const row4: Sheet[] = [
       "Four terrace dwellings from one component — 16 rooms, 199.8 m², 16 doors and 18 windows across 22.45 × 9.85 m over the outer faces, written as component unit(w, d, gable) in its own coordinates and then four place statements with mirror x on alternate units. The offsets are a running sum over an array rather than typed coordinates, and an if inside the component puts a side window on the two free gables only. A pinned label is a point like any other, so the mirrored units get their mirrored label positions for free.",
     example: "terrace-row",
   },
-];
-
-/** The second 2-column band. */
-const row5: Sheet[] = [
   {
     no: "A-108",
-    tag: "Axonometric",
-    title: "Heights are a datum, not a drawing",
-    body:
-      "A plan is a horizontal cut, so a height moves no byte of one: the datum is reported by arch describe --json --select heights and drawn nowhere. --view axon spends it on a picture instead — extruded walls with their doors and windows cut, floor plates, both storeys stacked. This plan authors the datum in all three tiers, and the picture above is what it buys: height 2700 for the building, height 3000 on level 2, and a sill 300 head 2400 window in the living room beside a bathroom window that writes sill 1500 and takes the 2100 default head. Adding those clauses left two-storey.svg byte-identical and moved only this render. Elevation accumulates the storeys below, so the first floor sits at 2700, not at 2 x 3000. It is illustrative and nothing measures it either way: describe() and lint() take no --view and never learn it exists, and the view carries no scale bar, no north arrow, no title block and no dimensions, because each of those would make a picture look issuable.",
-    example: "two-storey",
-    art: { view: "axon" },
-    hint: "The strip below opens the plan, not this picture — for the picture, arch compile two-storey.arch --view axon",
-  },
-  {
-    no: "A-109",
     tag: "Materials",
     title: "Poché is the specification",
     body:
@@ -182,8 +155,7 @@ const BANDS: ReadonlyArray<{ rows: Sheet[]; row: string; art: string }> = [
   { rows: showpiece, row: "sheets__row--1", art: "card__art--full" },
   { rows: levels, row: "sheets__row--1", art: "card__art--full" },
   { rows: row3, row: "sheets__row--3", art: "card__art--trio" },
-  { rows: row4, row: "sheets__row--2", art: "card__art--duo" },
-  { rows: row5, row: "sheets__row--2", art: "card__art--duo" },
+  { rows: row4, row: "sheets__row--3", art: "card__art--trio" },
 ];
 </script>
 
@@ -194,7 +166,7 @@ const BANDS: ReadonlyArray<{ rows: Sheet[]; row: string; art: string }> = [
     <div class="dimdiv" role="presentation">
       <span class="dimdiv__tick" />
       <span class="dimdiv__line" />
-      <h2 class="dimdiv__label">Features · Sheets A-101 — A-109</h2>
+      <h2 class="dimdiv__label">Features · Sheets A-101 — A-108</h2>
       <span class="dimdiv__line" />
       <span class="dimdiv__tick" />
     </div>
@@ -229,8 +201,7 @@ const BANDS: ReadonlyArray<{ rows: Sheet[]; row: string; art: string }> = [
           </div>
           <h3 class="card__title">{{ s.title }}</h3>
           <p class="card__body">{{ s.body }}</p>
-          <p v-if="s.hint" class="card__hint">{{ s.hint }}</p>
-          <!-- The file name is VISIBLE, not just an aria-label: nine links reading only
+          <!-- The file name is VISIBLE, not just an aria-label: eight links reading only
                "Open in Playground" on one page collide as accessible names, and naming the
                source is the more useful half anyway. Reads as a title-block row. -->
           <a
@@ -411,7 +382,7 @@ const BANDS: ReadonlyArray<{ rows: Sheet[]; row: string; art: string }> = [
     flex: none;
     width: 100%;
     /* …but not without a ceiling. Unbounded, a 560px-wide phone gives each storey a
-       682px-tall drawing and a 2100px card — four screens of scrolling for one of nine
+       682px-tall drawing and a 2100px card — four screens of scrolling for one of eight
        sheets. Capping the width caps the height with it (these are A3 portrait), and
        narrower viewports are already under the cap, so 375px is unaffected. */
     max-width: 340px;
@@ -458,17 +429,6 @@ const BANDS: ReadonlyArray<{ rows: Sheet[]; row: string; art: string }> = [
   line-height: 1.6;
   color: var(--ink-muted);
 }
-/* The one line that says the drawing above and the link below are not the same
-   artifact. Mono, because the half that matters is a command. */
-.card__hint {
-  margin: -8px 0 0;
-  padding: 0 16px 18px;
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  line-height: 1.55;
-  color: var(--ink-muted);
-}
-
 /* The way into the playground, drawn as the sheet's bottom rule — same shape as the
    hero sheet's Replay row, so a card reads as a drawing with a control strip rather
    than a marketing tile. `margin-top: auto` pins it to the bottom of the flex column

@@ -35,8 +35,7 @@ const PICTURED = [
   "garden-house", // A-105
   "furnished-flat", // A-106
   "terrace-row", // A-107
-  "two-storey", // A-108 — pictured as its AXON render, linked as its plan
-  "materials", // A-109
+  "materials", // A-108
   "garden-loft", // the "Reads its own plans" band
 ] as const;
 
@@ -50,8 +49,8 @@ test.describe("every home-page drawing opens its own plan in the playground", ()
     await page.goto("/");
     const links = page.locator('a[href*="playground.archlang.uk/#z="]');
     const n = await links.count();
-    // hero CTA + hero sheet control + 9 cards + the facts band.
-    expect(n, "the home page must offer a per-plan playground link on every drawing").toBe(12);
+    // hero CTA + hero sheet control + 8 cards + the facts band.
+    expect(n, "the home page must offer a per-plan playground link on every drawing").toBe(11);
 
     const onDisk = new Map(PICTURED.map((name) => [exampleSource(name), name]));
     for (let i = 0; i < n; i++) {
@@ -72,12 +71,11 @@ test.describe("every home-page drawing opens its own plan in the playground", ()
     // The card names its source file on the strip, and every drawing on it is derived from
     // that same key — so "shows X, opens Y" is checkable from the page alone.
     //
-    // A card may carry MORE than one drawing, and not always the plan view: A-102 shows
-    // townhouse's three storey pages (`<stem>.L<n>.svg`) and A-108 shows two-storey's
-    // committed axonometric render (`/view/<stem>-axon.svg`) while still linking the plan.
-    // Both stay welded to the stem — that is what the pattern below enforces.
+    // A card may carry MORE than one drawing: A-102 shows townhouse's three storey pages
+    // (`<stem>.L<n>.svg`). Every drawing stays welded to the stem — that is what the
+    // pattern below enforces.
     const cards = await page.locator(".card").all();
-    expect(cards.length, "the sheet gallery must render its cards").toBe(9);
+    expect(cards.length, "the sheet gallery must render its cards").toBe(8);
     for (const card of cards) {
       const named = (await card.locator(".card__open-file").textContent())?.trim();
       if (!named) continue; // an art-less sheet (none today, but the shape allows it)
@@ -86,7 +84,7 @@ test.describe("every home-page drawing opens its own plan in the playground", ()
         .locator(".card__art img")
         .evaluateAll((els) => els.map((el) => (el as HTMLImageElement).getAttribute("src") ?? ""));
       expect(art.length, `card "${named}" draws nothing`).toBeGreaterThan(0);
-      const derived = new RegExp(`^/(examples/${stem}(\\.L-?\\d+)?|view/${stem}-(iso|axon))\\.svg$`);
+      const derived = new RegExp(`^/examples/${stem}(\\.L-?\\d+)?\\.svg$`);
       for (const src of art) {
         expect(src, `card "${named}" draws ${src}, which is not derived from ${stem}`).toMatch(derived);
       }
@@ -113,8 +111,8 @@ test.describe("every home-page drawing opens its own plan in the playground", ()
     await page.goto("/");
     const imgs = page.locator(".card__art img");
     const n = await imgs.count();
-    // 8 single-drawing cards + A-102's three storeys.
-    expect(n, "the sheet gallery must draw one image per card, and three on A-102").toBe(11);
+    // 7 single-drawing cards + A-102's three storeys.
+    expect(n, "the sheet gallery must draw one image per card, and three on A-102").toBe(10);
     for (let i = 0; i < n; i++) {
       const img = imgs.nth(i);
       const src = await img.getAttribute("src");

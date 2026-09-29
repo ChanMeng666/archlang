@@ -50,14 +50,22 @@ import type { Camera, Projected } from "./camera.js";
 import { projectedArea2 } from "./camera.js";
 import type { Face, FaceKind } from "./extrude.js";
 
-/** The CAD layer each kind of face lands on. Exported so the DXF table is derived, not retyped. */
+/**
+ * The CAD layer each kind of face lands on. Exported so the DXF table is derived, not retyped.
+ *
+ * @deprecated illustrative only; removed in 2.0 — ArchLang draws plans. See ADR 0021.
+ */
 export const VIEW_LAYERS: Record<FaceKind, string> = {
   wall: "V-3D-WALL",
   floor: "V-3D-FLOR",
   glaz: "V-3D-GLAZ",
 };
 
-/** Every `V-` layer the view can emit, in a stable order — the DXF table's source. */
+/**
+ * Every `V-` layer the view can emit, in a stable order — the DXF table's source.
+ *
+ * @deprecated illustrative only; removed in 2.0 — ArchLang draws plans. See ADR 0021.
+ */
 export const VIEW_LAYER_NAMES: readonly string[] = ["V-3D-WALL", "V-3D-FLOR", "V-3D-GLAZ"];
 
 /** A face, projected once: its screen loops and the depth its sort key rounds. Exported

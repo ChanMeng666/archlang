@@ -68,6 +68,18 @@ suite("arch compile --view", () => {
     expect(svg).not.toContain('inkscape:label="A-WALL"');
   });
 
+  it("prints a one-line deprecation notice on stderr, and stdout is the plain SVG", () => {
+    const r = run(["compile", "examples/studio.arch", "--view", "iso", "-o", "-"]);
+    expect(r.status).toBe(0);
+    expect(r.stderr).toContain("--view is deprecated");
+    expect(r.stderr.trim().split(/\r?\n/)).toHaveLength(1);
+    expect(r.stdout.startsWith("<svg")).toBe(true);
+    expect(r.stdout).not.toContain("deprecated");
+    // `--quiet` silences the advisory; a plain plan compile never prints it.
+    expect(run(["compile", "examples/studio.arch", "--view", "iso", "-o", "-", "--quiet"]).stderr).toBe("");
+    expect(run(["compile", "examples/studio.arch", "-o", "-"]).stderr).not.toContain("deprecated");
+  });
+
   it("both presets work and DIFFER", () => {
     const dir = scratch();
     const a = join(dir, "a.svg");

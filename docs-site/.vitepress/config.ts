@@ -258,6 +258,11 @@ const PAGE_META = [
     "ADR 20 — an algebraic core layer",
     "ArchLang states its D4 symmetry group, path semirings and statement printer once each, behind a permanent test oracle that checks every fact against the group law.",
   ],
+  [
+    "/adr/0021-plan-first-view-deprecated",
+    "ADR 21 — plan-first, view deprecated",
+    "ArchLang draws floor plans: the illustrative axonometric view is deprecated and removed at 2.0, and the height datum stays as the input of a future data export.",
+  ],
 ] as const;
 
 type PageMeta = { readonly title: string; readonly description: string };
@@ -593,7 +598,6 @@ export default defineConfig({
           { text: "CLI reference", link: "/cli" },
           { text: "Relational placement", link: "/relational" },
           { text: "Furniture & fixtures", link: "/furniture" },
-          { text: "Axonometric view", link: "/axonometric" },
           { text: "Analysis: describe & lint", link: "/analysis" },
           { text: "The intent contract", link: "/intent" },
           { text: "Error catalog", link: "/errors" },
@@ -645,7 +649,6 @@ export default defineConfig({
           { text: "Language reference", link: "/reference" },
           { text: "Relational placement", link: "/relational" },
           { text: "Furniture & fixtures", link: "/furniture" },
-          { text: "Axonometric view", link: "/axonometric" },
           { text: "Analysis: describe & lint", link: "/analysis" },
           { text: "The intent contract", link: "/intent" },
           { text: "Error catalog", link: "/errors" },

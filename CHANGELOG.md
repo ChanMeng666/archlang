@@ -33,6 +33,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   plan with no `place` inside a component body is unaffected, measured byte for byte over
   the shipped examples.
 
+### Deprecated — the axonometric view (`--view`, `compile({ view })`) is removed at 2.0
+
+ArchLang is plan-first ([ADR 0021](docs/adr/0021-plan-first-view-deprecated.md)). Nothing
+breaks: the view still works and every byte it draws is unchanged, and a plan that never asks
+for it renders, `describe()`s and `lint()`s exactly as before (SHA-256 identical across the
+shipped examples).
+
+- **`arch compile|preview --view`** prints a one-line deprecation notice on stderr (silenced by
+  `--quiet`); stdout, `--json` and the rendered file are untouched, and the manifest, the CLI
+  reference and `llms-full.txt` say so. `SKILL.md` no longer teaches the flag.
+- **Deprecated API:** `CompileOptions.view`, `toIso`, `VIEW_NAMES`, `isViewName`, `cameraFor`,
+  `projectedArea2`, `VIEW_LAYERS`, `VIEW_LAYER_NAMES` and the types `ViewName`, `Camera`,
+  `Point3` and `Projected` carry `@deprecated`. All are removed at 2.0, with `while` and
+  reassignment.
+- **The height datum stays.** `height`, `sill`, `head`, `describe().heights` and the Plan JSON
+  height fields are unchanged; a future data export (IFC), not a drawing, is the path to 3D.
+- The landing page's axonometric card and the docs navigation link are gone; `/axonometric`
+  stays, with a deprecation banner. The four open view findings (backlog V.1 to V.4) are
+  won't-fix.
+
 ### Changed — `while` and reassignment are soft-deprecated; `validate --strict` now enforces it
 
 - **`W_WHILE_DEPRECATED` and `W_REASSIGN_DEPRECATED`**, forwarded from imported modules, flag

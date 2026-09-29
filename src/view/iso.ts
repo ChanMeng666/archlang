@@ -43,6 +43,8 @@ import { orderFaces, paintFaces } from "./paint.js";
  * into ONE Scene, each at its own {@link ResolvedPlan.elevation}, because a building's
  * axonometric is one picture; splitting it per storey would be a set of drawings, which
  * is what the plan view already gives you.
+ *
+ * @deprecated illustrative only; removed in 2.0 — ArchLang draws plans. See ADR 0021.
  */
 export function toIso(
   plans: readonly ResolvedPlan[],

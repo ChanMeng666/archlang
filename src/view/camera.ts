@@ -79,18 +79,35 @@
 
 import type { Point } from "../ast.js";
 
-/** A point in the plan's frame, lifted: plan `x`/`y` in mm, `z` up from the lowest floor. */
+/**
+ * A point in the plan's frame, lifted: plan `x`/`y` in mm, `z` up from the lowest floor.
+ *
+ * @deprecated illustrative only; removed in 2.0 — ArchLang draws plans. See ADR 0021.
+ */
 export interface Point3 {
   x: number;
   y: number;
   z: number;
 }
 
-/** The two presets. There are no free angles — see the module header. */
+/**
+ * The two presets. There are no free angles — see the module header.
+ *
+ * @deprecated illustrative only; removed in 2.0 — ArchLang draws plans. See ADR 0021.
+ */
 export const VIEW_NAMES = ["iso", "axon"] as const;
+/**
+ * A view preset name.
+ *
+ * @deprecated illustrative only; removed in 2.0 — ArchLang draws plans. See ADR 0021.
+ */
 export type ViewName = (typeof VIEW_NAMES)[number];
 
-/** Is `s` one of the two view names? The CLI's and `compile()`'s one gate. */
+/**
+ * Is `s` one of the two view names? The CLI's and `compile()`'s one gate.
+ *
+ * @deprecated illustrative only; removed in 2.0 — ArchLang draws plans. See ADR 0021.
+ */
 export function isViewName(s: string): s is ViewName {
   return (VIEW_NAMES as readonly string[]).includes(s);
 }
@@ -106,7 +123,11 @@ const SQRT3 = Math.sqrt(3);
 /** √6, exactly rounded. */
 const SQRT6 = Math.sqrt(6);
 
-/** A projected point in SVG screen millimetres (`x` right, `y` down). */
+/**
+ * A projected point in SVG screen millimetres (`x` right, `y` down).
+ *
+ * @deprecated illustrative only; removed in 2.0 — ArchLang draws plans. See ADR 0021.
+ */
 export type Projected = Point;
 
 /**
@@ -115,6 +136,8 @@ export type Projected = Point;
  * Both members are pure functions of their three arguments — no state, no tolerance, no
  * accumulated transform — so a face's projection cannot depend on how many faces were
  * projected before it.
+ *
+ * @deprecated illustrative only; removed in 2.0 — ArchLang draws plans. See ADR 0021.
  */
 export interface Camera {
   readonly name: ViewName;
@@ -148,7 +171,11 @@ const AXON: Camera = {
   frontSign: 1,
 };
 
-/** The camera for a view name. Two presets, one lookup, no free angles. */
+/**
+ * The camera for a view name. Two presets, one lookup, no free angles.
+ *
+ * @deprecated illustrative only; removed in 2.0 — ArchLang draws plans. See ADR 0021.
+ */
 export function cameraFor(view: ViewName): Camera {
   return view === "iso" ? ISO : AXON;
 }
@@ -160,6 +187,8 @@ export function cameraFor(view: ViewName): Camera {
  * and the only consumer is a sign test. Screen coordinates run `y` **down**, so a
  * positive value is a *clockwise* loop as the reader sees it — which is the convention
  * {@link Camera.frontSign} is stated in.
+ *
+ * @deprecated illustrative only; removed in 2.0 — ArchLang draws plans. See ADR 0021.
  */
 export function projectedArea2(pts: readonly Projected[]): number {
   let s = 0;

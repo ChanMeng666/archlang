@@ -11,7 +11,7 @@ source (.arch)
                          relational placement (src/layout.ts) → ResolvedPlan
   └─ src/scene-build.ts  toScene() → Scene (src/scene.ts)
        └─ src/wall-lowering.ts  every wall in one joinery pass (geometry/band, intersect, joinery)
-  └─ src/view/           toIso(): the axonometric, a sibling of toScene producing the same Scene
+  └─ src/view/           toIso(): the axonometric, a sibling of toScene (DEPRECATED, ADR 0021)
   └─ src/backends/       svg (default) · png (optional resvg) · ascii · error-svg
   └─ src/export/         dxf · pdf (optional pdfkit)
   └─ src/pipeline.ts     compileUncached(): the one parse→link→resolve→render pipeline

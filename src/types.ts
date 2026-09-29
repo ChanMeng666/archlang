@@ -107,6 +107,8 @@ export interface CompileOptions {
    * option and never learn it exists; nothing derived from the view is reported
    * anywhere. A multi-storey plan renders as ONE drawing of the whole building rather
    * than one page per storey, so `pages` is absent.
+   *
+   * @deprecated illustrative only; removed in 2.0 — ArchLang draws plans. See ADR 0021.
    */
   view?: import("./view/camera.js").ViewName;
   /**
