@@ -73,7 +73,9 @@ describe("manifest — examples", () => {
       for (const e of c.examples) {
         for (const tok of e.cmd.split(/\s+/).filter((t) => t.startsWith("--"))) {
           checked++;
-          expect(declared.has(tok), `example "${e.cmd}" uses ${tok}, which \`arch ${c.name}\` does not declare`).toBe(true);
+          expect(declared.has(tok), `example "${e.cmd}" uses ${tok}, which \`arch ${c.name}\` does not declare`).toBe(
+            true,
+          );
         }
       }
     }
