@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — a double door no longer reads as an obstructed swing
+
+- `W_SWING_OBSTRUCTED` between two doors now needs their swing quarter-discs to overlap with
+  positive area. Two leaves hinged on their outer jambs and meeting at a shared closed jamb (a
+  textbook double door) touch only at that point and lint clean; so does a row of leaves where
+  one's far jamb is the next one's hinge. Any real overlap still warns, down to 1 mm.
+- Contact along a line is clear too, for the same reason (for example two leaves hung back to
+  back on one post). With a swing clearance (`accessibility-advisory`), contact at exactly
+  `radius + clearance` is clear, and a shared-jamb pair still warns, since each leaf lies in the
+  other's clearance band. The furniture half of the rule is unchanged.
+- No shipped example's lint output changes.
+
+### Fixed — `W_SWING_OBSTRUCTED` no longer advises narrowing a door to its own width
+
+- At a shortfall of 0 mm the "Narrow the door to … mm or less" hint quoted the door's own width.
+  It is now given only for a width strictly under the door's; otherwise the other remedies stand.
+
+### Changed — `museum-wings.arch`'s main door is a mirror pair of leaves
+
+- The single 1800 mm leaf on the axis is now two 1000 mm leaves (`d_main_w`, `d_main_e`) meeting
+  at a shared jamb on the hall's axis, each hinged on its outer jamb. With every door a mirror
+  pair, `arch describe --facts symmetry` reports the whole drawing (`full`) as D1 x, not C1.
+- `describe()` for that example moves accordingly: six doors, two main entrances, and a
+  bottleneck clear width of 1140 mm (each leaf is its own 940 mm door to the analysis, so the
+  widest way in is now a wing's 1200 mm exit).
+
 ## [1.37.0] - 2026-09-30
 
 ### Added — `describe --facts symmetry,syntax`

@@ -696,40 +696,55 @@ Checklist:
 - [ ] **Prove it:** SHA-256 sweep of `compile`, `describe` and `lint` over every example, and a
       plan using `while` returns the new `E_*` with a span and the rewrite, never throws.
 
-### 6.8 · `museum-wings.arch`'s wings: D1 at shell/rooms, C1 at `full` — `todo` (the hall doors are fixed; the axis door is the one deliberate asymmetry)
+### 6.8 · `museum-wings.arch`'s `full` layer was C1, and a double door read as obstructed — closed
 
-`describe --facts symmetry` reports the flagship's two wings as mirror-symmetric (D1) at the
-shell and room layers. `full` was C1 for two reasons, one of them a real drawing error:
-`d_east` hung on the wrong jamb (fixed: `east.shell` runs the opposite way to `west.shell`, so
-`hinge left` on both is the mirror pair), and `d_main` is a single leaf on the axis, which no
-reflection maps to itself. `full` stays C1 because of `d_main` alone; dropping it makes `full`
-D1 x (pinned in `test/symmetry.test.ts`).
+`full` was C1 for two reasons: `d_east` hung on the wrong jamb (fixed earlier: `east.shell` runs
+the opposite way to `west.shell`, so `hinge left` on both is the mirror pair) and `d_main` was a
+single leaf on the axis. Owner decision: a mirror-image pair. `d_main` is now `d_main_w` and
+`d_main_e`, two 1000 mm leaves at x=20500 and 21500 hinged on their outer jambs and meeting at a
+shared closed jamb on the axis; `describe --facts symmetry` gives `full` D1 x about (21000,6000)
+and `arch lint` is clean (`test/symmetry.test.ts`, with a C1 control that hangs one leaf on the
+shared jamb).
 
-The owner decision was a mirror-image PAIR of leaves at `d_main`. Two things stand in the way.
+The pair used to raise `W_SWING_OBSTRUCTED` ("0 mm short"): the swing test accepted a closed
+boundary, so two quarter-discs tangent at the shared jamb collided. Owner decision: an
+obstruction is an overlap of positive area. `swingsCollide` (`src/geometry.ts`) keeps its
+sampler as the detector and asks `sectorInteriorsMeet` whether the shared point is more than
+boundary: a weak-separating-axis test over the finite candidate set of the two sectors'
+Minkowski difference, no tolerance. A shared-jamb pair (2×900, 2×1000, every wall direction and
+both swing sides) is clear; a 1 mm overlap still warns, "1 mm short" (`test/swing.test.ts`,
+`test/lint-deficits.test.ts`). Consequences, each pinned:
 
-- **The grid snaps the door position, silently.** On `grid 100` the resolver rounds a door's `at`
-  (`Math.round`: `src/ir.ts`, `src/elements/door.ts`, `src/attach.ts`), so 900 mm leaves written
-  at 20550 and 21450 resolve to 20600 and 21500: the "shared jamb" lands at x=21050, 50 mm off
-  the axis, and `full` is C1 whatever lint says. No diagnostic reports the snap (observation).
-  On `grid 100` a shared-jamb pair needs even-hundred leaf widths (two 1000 mm leaves at 20500
-  and 21500 make `full` D1 x), or `grid 50`.
-- **A shared closed jamb reads as an obstruction.** Hinged on the outer jambs, the pair raises
-  `W_SWING_OBSTRUCTED` ("hinges are 1800 mm apart where the two leaves need 1800 mm (0 mm
-  short)"), and so does the 1000 mm variant. The open tips are 1800 mm apart; what meets is
-  the two swing quarter-discs, at the shared CLOSED jamb. The cause is a zero-tolerance closed
-  boundary: `src/geometry.ts` (`hingeGap > rA + rB + clr` quick-reject, `dist <= radius +
-  clearance`, `pointInWedge` accepting cross = 0) with `DEFAULT_RULESET.swingClearanceMm = 0`
-  (`src/lint/ruleset.ts`). A 1 mm separation lints clean: 900 mm leaves at 20500 and 21500
-  (a 100 mm gap) lint clean and make `full` D1 x, but it is not a shared jamb.
+- Contact along a line is clear too: two leaves 100 mm too close opening to OPPOSITE faces (the
+  closed leaves overlap along the wall), and two leaves back to back on one post opening the
+  same way. Overlapping openings have no rule of their own; this one never meant to be it.
+- With `swingClearanceMm > 0` (`accessibility-advisory`, 150), contact at exactly `radius +
+  clearance` is clear, and a shared-jamb pair still warns: each leaf lies in the other's
+  clearance band. `museum-wings` raises that one warning under the profile, none by default.
+- `W_SWING_OBSTRUCTED` against furniture (`sectorIntersectsRect`) is unchanged: exact contact
+  with a piece still warns.
 
-Open owner question: treat boundary contact at a shared jamb as clear (strict `<`) for double
-doors, or keep the rule and take the gap variant.
+Measured: the corpus sweep (every storey's SVG, `describe()`, `lint()`, `compile().diagnostics`,
+the a11y profile's `lint()`, `--facts symmetry`; examples and fixtures) moved 0 of 279 payloads on
+the predicate change alone. No shipped plan reaches the sampler's hit branch at all, under either
+profile, so no example lost a warning. The re-measured `museum-wings` rows are explained field by
+field in `test/byte-identity-baseline.ts`.
 
-### 6.9 · `W_SWING_OBSTRUCTED`'s narrowing hint is wrong at a shortfall of 0 — `todo`
+### 6.9 · `W_SWING_OBSTRUCTED`'s narrowing hint was wrong at a shortfall of 0 — closed
 
-`narrowTo = gap - radius - clr` (`src/lint/rules/doors.ts`) equals the door's own width when the
-shortfall is 0 mm, so the warning advises "Narrow the door to 900 mm or less" for a 900 mm door.
-It needs a `narrowTo < d.width` guard (drop the hint otherwise). Found via 6.8; not fixed there.
+`narrowTo` equalled the door's own width at a shortfall of 0 mm ("Narrow the door to 1000 mm or
+less" for a 1000 mm door). The hint is now offered only for a width strictly under the door's
+(`narrowTo < d.width`, `src/lint/rules/doors.ts`); otherwise it is left out and the other
+remedies stand. Reachable now only through furniture touching the arc exactly; the boundary
+(0 mm short: no hint; 1 mm short: "999 mm or less") is pinned in `test/lint-deficits.test.ts`.
+
+### 6.10 · A door's `at` snaps to the grid silently — `todo` (observation, no decision)
+
+On `grid 100` the resolver rounds a door's `at` (`Math.round`: `src/ir.ts`,
+`src/elements/door.ts`, `src/attach.ts`), so 900 mm leaves written at 20550 and 21450 resolve to
+20600 and 21500: a double door's "shared jamb" lands at x=21050, 50 mm off an axis at 21000, and
+nothing says so. No diagnostic reports the snap. Found via 6.8, which sidestepped it with even
+1000 mm leaves; behaviour deliberately unchanged.
 
 ---
 
