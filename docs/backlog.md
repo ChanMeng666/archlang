@@ -514,7 +514,7 @@ directions.
 Left open by W9, which made `compile(src, { view })` stop throwing on a wall set its openings
 consume and stop painting an empty ring. None of these throws; each draws or reports wrongly.
 
-**All four are closed by the removal of the view** ([ADR 0021](adr/0021-plan-first-view-deprecated.md), V.5 below, done on branch `feat/remove-view`, parked until 2.0). The text is kept as history.
+**All four are closed by the removal of the view** ([ADR 0021](adr/0021-plan-first-view-deprecated.md), V.5 below, removal prepared for 2.0). The text is kept as history.
 
 ### V.1 · Mixed-height joints interpenetrate and draw in the wrong order — `closed by removal`
 
@@ -544,10 +544,10 @@ it exposes reaches the drawing as an open outline. Found by the W9 red team: 11 
 iso/axon compiles hit it. Its header says a dead-end chain means the classification was
 inconsistent, and closing the chain there would fabricate an edge; start from the classification.
 
-### V.5 · 2.0 removal of the axonometric view (phase B) — `done on branch feat/remove-view`
+### V.5 · 2.0 removal of the axonometric view (phase B) — `done, prepared for 2.0`
 
-Phase A (deprecation) is done ([ADR 0021](adr/0021-plan-first-view-deprecated.md)). Phase B is implemented on `feat/remove-view`
-(parked; it lands at 2.0 with the removal of `while`/reassignment). Deleted:
+Phase A (deprecation) is done ([ADR 0021](adr/0021-plan-first-view-deprecated.md)). Phase B is prepared
+(it lands at 2.0 with the removal of `while`/reassignment). Deleted:
 
 - [x] `src/view/`; the view branch in `pipeline.ts`; `Scene.view`; `CompileOptions.view`.
 - [x] the view branches in `backends/svg.ts`, `export/pdf.ts` and `export/dxf.ts` (the `V-3D-*` layers).

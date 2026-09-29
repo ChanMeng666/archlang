@@ -188,9 +188,6 @@ $ arch preview plan.arch -o plan.png --json
 
 # look at one storey of a multi-storey plan
 $ arch preview house.arch --level 2 -o upper.png --json
-
-# raster an illustrative plan-oblique of the building so a vision model can look at it
-$ arch preview house.arch --view axon -o house-axon.png --json
 ```
 
 ### `arch watch`

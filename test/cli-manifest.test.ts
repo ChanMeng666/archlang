@@ -66,6 +66,20 @@ describe("manifest — examples", () => {
     }
   });
 
+  it("uses only flags the command declares in every example (a removed flag cannot linger)", () => {
+    let checked = 0;
+    for (const c of m.commands) {
+      const declared = new Set(c.flags.map((f) => f.flag));
+      for (const e of c.examples) {
+        for (const tok of e.cmd.split(/\s+/).filter((t) => t.startsWith("--"))) {
+          checked++;
+          expect(declared.has(tok), `example "${e.cmd}" uses ${tok}, which \`arch ${c.name}\` does not declare`).toBe(true);
+        }
+      }
+    }
+    expect(checked, "no flag tokens were checked: the guard is vacuous").toBeGreaterThan(10);
+  });
+
   it("declares each flag once per command", () => {
     for (const c of m.commands) {
       const names = c.flags.map((f) => f.flag);

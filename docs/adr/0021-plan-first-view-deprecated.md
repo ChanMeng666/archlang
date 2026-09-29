@@ -53,7 +53,7 @@ height datum (backlog P3-2).
 
 ## Removal
 
-Phase B is implemented on branch `feat/remove-view` (parked until 2.0): every item below is
+Phase B (removal prepared for 2.0, not yet released): every item below is
 deleted, `describe()`, `lint()`, Plan JSON and the SVG/DXF/PDF bytes of every example are
 SHA-256-identical before and after, and `--view` is now an unknown flag (exit 3). The height datum
 is untouched.

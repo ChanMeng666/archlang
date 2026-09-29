@@ -476,10 +476,6 @@ const COMMANDS: ManifestCommand[] = [
         cmd: "arch preview house.arch --level 2 -o upper.png --json",
         note: "look at one storey of a multi-storey plan",
       },
-      {
-        cmd: "arch preview house.arch --view axon -o house-axon.png --json",
-        note: "raster an illustrative plan-oblique of the building so a vision model can look at it",
-      },
     ],
   },
   {

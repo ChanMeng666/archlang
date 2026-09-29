@@ -1067,7 +1067,7 @@ human signs into).
   what was deliberately not built. `docs/testing.md` gains the new guards in its map and
   `AGENTS.md` a pointer plus the three rules that get broken. No language surface, no site change.
 
-### Removed — BREAKING (2.0): the axonometric view and its API
+### Removed — BREAKING, ships only in 2.0.0 (do not cut a 1.x release from a tree containing this): the axonometric view and its API
 
 The view deprecated above ([ADR 0021](docs/adr/0021-plan-first-view-deprecated.md)) is gone.
 A plan that never asked for it renders, `describe()`s and `lint()`s exactly as before (SHA-256

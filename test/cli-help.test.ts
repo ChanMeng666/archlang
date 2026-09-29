@@ -182,6 +182,17 @@ describe("CLI — unknown command / unknown flag", () => {
     expect(r.stderr).toContain("usage: arch lint");
   }, 30000);
 
+  it("rejects the removed --view flag on compile and preview (2.0 removal of the axonometric)", () => {
+    for (const [cmd, view] of [
+      ["compile", "iso"],
+      ["preview", "axon"],
+    ] as const) {
+      const r = run([cmd, "examples/studio.arch", "--view", view]);
+      expect(r.status, `${cmd} --view ${view}`).toBe(3);
+      expect(r.stderr).toContain('unknown flag "--view"');
+    }
+  }, 30000);
+
   it("rejects a real flag that this command does not take", () => {
     const r = run(["describe", "-", "--strict"], VALID);
     expect(r.status).toBe(3);
