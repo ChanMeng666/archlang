@@ -711,6 +711,16 @@ describe("plan-json — 6.3: a frame's reflection reaches doors and dimensions",
     expect(planJsonToArch(bad).diagnostics.some((d) => d.message.includes("/dims/0/mirror"))).toBe(true);
   });
 
+  it("`mirror` is a door's alone: on a window or cased opening it is a shape error", () => {
+    const plain = planToJson(placed("")).json;
+    if (!plain) throw new Error("expected the plan to project");
+    for (const kind of ["window", "opening"] as const) {
+      const payload = { ...plain, openings: [{ kind, x: 1000, y: 0, width: 900, mirror: true }] };
+      const msgs = planJsonToArch(payload).diagnostics;
+      expect(msgs.some((d) => d.message.includes("/openings/0/mirror") && d.code !== "E_JSON_MIRROR")).toBe(true);
+    }
+  });
+
   it("projects no `_tail`: a vertical run leaves no member in Plan JSON", () => {
     const j = planToJson(placed(" mirror x")).json as unknown as Record<string, unknown>;
     expect(Object.keys(j).some((k) => /stair|escalator|elevator|tail/i.test(k))).toBe(false);

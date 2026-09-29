@@ -590,7 +590,7 @@ Plan JSON already projects a reflecting `place`'s furniture as `mirror: true`
 an agent reading `describe()` alone cannot tell a mirrored piece from an unmirrored one of
 the same kind without also fetching Plan JSON. Small, additive, same key name.
 
-### 6.3 · Plan JSON reflection on dims, doors and vertical runs — `done` (doors, dims), `_tail` not projected
+### 6.3 · Plan JSON reflection on dims, doors and vertical runs — `done` (doors, dims), vertical `_tail`/`_mirror` not projected
 
 **Landed: doors and dimensions project the frame's reflection.** `planToJson` emits
 `mirror: true` on a door or dimension inside a reflecting `place` frame (the IR's `_mirror`),
@@ -602,7 +602,7 @@ takes and which side a zero-offset call-out's number reads on. `planJsonToArch` 
 plan's payload is byte-identical; across `examples/` only `clinic.arch` and `terrace-row.arch`
 (mirrored doors) change, by exactly the added key.
 
-**Not projected: `_tail`.** A placed stair/escalator/elevator's entry edge is IR-internal, and
+**Not projected: the vertical members' `_tail` and `_mirror`.** A placed stair/escalator/elevator's entry edge (`_tail`) and a stair's reflection (`_mirror`, `src/ir.ts`, `src/elements/stair.ts`) are IR-internal, and
 Plan JSON has no vertical-circulation members at all, so there is nothing to attach it to. Adding
 one would be a new payload member, not a flag — a separate decision.
 

@@ -27,7 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the frame's reflection, present only when reflected. Plans without a reflected instance are
   byte-identical; in `examples/` only `clinic` and `terrace-row` gain the key.
 - `planJsonToArch` refuses `mirror: true` on a door or dimension with `E_JSON_MIRROR`, as it
-  already did for furniture — source has no per-element `mirror`. A vertical run's entry edge
+  already did for furniture — source has no per-element `mirror`. `clinic` and `terrace-row`
+  already refused the round trip on their mirrored fixtures, so no example newly fails; `mirror` on
+  a window or cased opening is a shape error. A vertical run's entry edge
   (`_tail`) is not projected: Plan JSON has no stair, escalator or elevator members.
 
 ### Changed — `place` now composes: a component can reference the instances it places itself

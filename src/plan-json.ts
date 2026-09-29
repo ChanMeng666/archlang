@@ -881,7 +881,10 @@ function validateOpening(o: unknown, path: string, val: Validator): void {
   if (!(isStr(o.kind) && OPENING_KINDS.has(o.kind)))
     val.kindErr(`${path}/kind`, `expected "door", "window", or "opening"${isStr(o.kind) ? ` (got "${o.kind}")` : ""}`);
   if (!isNum(o.width)) val.err(`${path}/width`, "expected a number");
-  refuseMirror(o.mirror, path, "a door reflected by a `place` frame", "per-door", val);
+  // `mirror` is a door's alone (only a door carries the IR's `_mirror`), as `sill` is a window's.
+  if (o.mirror !== undefined && o.kind !== "door")
+    val.err(`${path}/mirror`, "only a door has a `mirror` — a window and a cased opening are never reflected");
+  else refuseMirror(o.mirror, path, "a door reflected by a `place` frame", "per-door", val);
   const hasXY = isNum(o.x) && isNum(o.y);
   const hasOn =
     isObj(o.on) && isStr((o.on as Record<string, unknown>).wall) && isStr((o.on as Record<string, unknown>).at);
@@ -1379,7 +1382,7 @@ export const PLAN_JSON_SCHEMA = {
   $id: "https://archlang.uk/plan.schema.json",
   title: "ArchLang Plan",
   description:
-    "A floor plan as structured JSON (RPLAN / DStruct2Design convention). Coordinates are millimetres; the origin is top-left with +x right and +y DOWN. Fields marked output-only are produced by planToJson and ignored on input. Scripting (let/for/if/component) and import are not representable — author those in .arch source.",
+    "A floor plan as structured JSON (RPLAN / DStruct2Design convention). Coordinates are millimetres; the origin is top-left with +x right and +y DOWN. Fields marked output-only are produced by planToJson and ignored on input. Scripting (let/for/if/component) and import are not representable — author those in .arch source. Vertical circulation (stair/escalator/elevator) is not projected: Plan JSON has no member for it.",
   type: "object",
   required: ["plan", "rooms", "walls", "openings", "furniture"],
   additionalProperties: false,
@@ -1552,7 +1555,7 @@ export const PLAN_JSON_SCHEMA = {
           mirror: {
             type: "boolean",
             description:
-              "True on a door inside a reflecting `place` frame: it records the frame's reflection (a sliding door takes the other track), not the leaf's handedness. Absent otherwise. Output-only: `planFromJson` refuses `true` with E_JSON_MIRROR.",
+              "Door only. True on a door inside a reflecting `place` frame: it records the frame's reflection (a sliding door takes the other track), not the leaf's handedness. Absent otherwise. Output-only: `planFromJson` refuses `true` with E_JSON_MIRROR.",
           },
           open: {
             type: "number",
