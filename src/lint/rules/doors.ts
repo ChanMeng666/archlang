@@ -26,7 +26,9 @@ import { approachGapMm, distPointToRect, mm, shortfall } from "../measure.js";
  * recomputed and proved clear of everything. The "narrow the door" remedy quotes the
  * exact width that would clear and **refuses itself** when that width is under the
  * minimum passable one: shrinking a door below its own floor does not solve the
- * conflict, it relocates it into `W_DOOR_CLEARANCE`.
+ * conflict, it relocates it into `W_DOOR_CLEARANCE`. It is left out altogether when that
+ * width is not strictly under the door's own (a shortfall of 0 mm, where the other
+ * remedies stand alone).
  */
 export const swingObstructed: LintRule = {
   name: "swing-obstructed",
@@ -91,9 +93,15 @@ export const swingObstructed: LintRule = {
           `Hang the leaf on the other jamb — \`hinge ${flipped}\`${flipClears ? " (this clears it)" : ""}.`,
           `Open it to the other side of the wall — \`swing ${writtenSwing === "in" ? "out" : "in"}\`.`,
           `Move the door along its wall (\`on <wall> at <pos>\`), or the obstruction — \`arch repair\` computes the smallest clearing shift.`,
-          narrowTo >= min
-            ? `Narrow the door to ${mm(narrowTo)} mm or less, which still clears the ${min} mm minimum.`
-            : `Narrowing the door is not a fix here — the leaf would have to drop to ${mm(narrowTo)} mm, under the ${min} mm minimum passable width.`,
+          // Only a width strictly under the door's own is advice (at a shortfall of 0 the
+          // clearing width IS the door's width, and "narrow it to itself" says nothing).
+          ...(narrowTo >= d.width
+            ? []
+            : [
+                narrowTo >= min
+                  ? `Narrow the door to ${mm(narrowTo)} mm or less, which still clears the ${min} mm minimum.`
+                  : `Narrowing the door is not a fix here — the leaf would have to drop to ${mm(narrowTo)} mm, under the ${min} mm minimum passable width.`,
+              ]),
           // The remedy is named by the property that solves THIS warning (a panel that sweeps nothing)
           // and by statements the author can paste, not as a vague suggestion.
           "Or hang no swinging leaf at all — a `sliding`, `pocket` or `barn` door sweeps nothing, so this warning cannot apply to it (`door pocket on <wall> at <pos> width <mm>`).",

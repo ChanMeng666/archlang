@@ -74,6 +74,53 @@ describe("W_SWING_OBSTRUCTED states the measured deficit", () => {
     const d = one(swingPlan(`furniture box at (2600,2600) size 600x500 label "X"`), "W_SWING_OBSTRUCTED");
     expect(d.hints!.join("\n")).toMatch(/Narrow the door to \d+ mm or less, which still clears the 700 mm minimum/);
   });
+
+  // Backlog 6.9. The leaf is hinged at (3500,4000) and opens up to (3500,3000); a box whose
+  // bottom edge sits at y=3000 on that line touches the arc exactly (0 mm short), and the
+  // width that "clears" it is the door's own 1000 mm — so there is no narrowing advice to give.
+  it("omits the narrow-the-door hint at a shortfall of 0 (it would name the door's own width)", () => {
+    const d = one(swingPlan(`furniture box at (3300,2600) size 200x400 label "X"`), "W_SWING_OBSTRUCTED");
+    expect(d.message).toMatch(/"X" is 1000 mm from the hinge \(0 mm short\)/);
+    const hints = d.hints!.join("\n");
+    expect(hints).not.toMatch(/Narrow the door to/);
+    expect(hints).not.toMatch(/Narrowing the door is not a fix here/);
+    // The other remedies stand.
+    expect(hints).toMatch(/hinge right/);
+    expect(hints).toMatch(/swing out/);
+    expect(hints).toMatch(/leafless `opening`/);
+  });
+
+  it("offers a width 1 mm under the door's own at a shortfall of 1 mm (the boundary)", () => {
+    const d = one(swingPlan(`furniture box at (3300,2600) size 200x401 label "X"`), "W_SWING_OBSTRUCTED");
+    expect(d.message).toMatch(/"X" is 999 mm from the hinge \(1 mm short\)/);
+    expect(d.hints!.join("\n")).toMatch(/Narrow the door to 999 mm or less, which still clears the 700 mm minimum/);
+  });
+});
+
+describe("W_SWING_OBSTRUCTED on a double door (backlog 6.8)", () => {
+  /** Two leaves on the south wall meeting at x=3000, hinged on their outer jambs. */
+  const pair = (width: number, eastAt: number) => `plan "P" {
+    units mm
+    wall id=s exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+    room id=r at (0,0) size 6000x4000 label "Hall"
+    door id=dw at (${3000 - width / 2},4000) width ${width} wall s hinge right swing in
+    door id=de at (${eastAt},4000) width ${width} wall s hinge left  swing in
+  }`;
+
+  it("lints a shared-jamb pair clean — 2×900 and 2×1000", () => {
+    for (const w of [900, 1000]) {
+      expect(lint(pair(w, 3000 + w / 2)), `2×${w}`).toEqual([]);
+    }
+  });
+
+  it("still warns when the leaves overlap by 1 mm, quoting the 1 mm", () => {
+    const d = one(pair(1000, 3499), "W_SWING_OBSTRUCTED");
+    expect(d.message).toBe(
+      `Door swing is obstructed — door "de"'s swing overlaps it — the hinges are 1999 mm apart where the two leaves need 2000 mm (1 mm short).`,
+    );
+    // Narrowing to 999 mm makes the discs tangent, which is clear — the hint is exact.
+    expect(d.hints!.join("\n")).toMatch(/Narrow the door to 999 mm or less/);
+  });
 });
 
 describe("W_SWING_OBSTRUCTED's hinge-flip fix", () => {
