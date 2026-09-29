@@ -426,6 +426,10 @@
             ],
             "description": "Which way a sliding-family panel travels to open, along the wall's direction (as `hinge` is). Sliding family only."
           },
+          "mirror": {
+            "type": "boolean",
+            "description": "True on a door inside a reflecting `place` frame: it records the frame's reflection (a sliding door takes the other track), not the leaf's handedness. Absent otherwise. Output-only: `planFromJson` refuses `true` with E_JSON_MIRROR."
+          },
           "open": {
             "type": "number",
             "minimum": 0,
@@ -606,6 +610,10 @@
           "text": {
             "type": "string",
             "description": "Override text; defaults to the measured length."
+          },
+          "mirror": {
+            "type": "boolean",
+            "description": "True on a dimension inside a reflecting `place` frame: it records the frame's reflection (the side a zero-offset call-out's number reads on). Absent otherwise. Output-only: `planFromJson` refuses `true` with E_JSON_MIRROR."
           }
         }
       }
