@@ -2369,15 +2369,23 @@ The returned `PlanDiff` reports:
 - **`totals`** — floor area and room count before and after.
 - **`summary`** — human-readable one-line sentences describing each change above.
 
-**Matching** is by **id first, then a unique-label rescue**: a room/opening/fixture is paired
-across the two plans by its resolved id; if a room is unmatched by id (positional auto-ids can
-shift when statements are added), it is rescued only when exactly one room on the other side
-carries the same `label`. An `id` here is the element's **resolved id** — the explicit `id=` if
-you wrote one, otherwise the deterministic auto id (e.g. `room_1`).
+**Matching** is by **id**, with two label rules for rooms. An `id` here is the element's
+**resolved id** — the explicit `id=` if you wrote one, otherwise the deterministic auto id
+(e.g. `room_1`), which is positional and shifts when a room is inserted, deleted or reordered
+ahead of it. So a room whose id is an auto id on **both** sides, and whose non-empty `label`
+names exactly one room on **each** side, is paired **by that label first**; every other
+room/opening/fixture is paired by its resolved id; and a room still unmatched is rescued only
+when its label is unique among the unmatched rooms on both sides. A room paired across two
+different ids is reported under its **after** id. Circulation deltas follow the same room
+pairing.
 
 **Noise thresholds** keep sub-perceptual jitter out of the diff: a room counts as *resized* only
 past **0.05 m²** of area drift or **10 mm** on any bbox edge; a circulation change is reported only
 past **250 mm** of walk distance or **50 mm** of pinch width. Differences below these are ignored.
+A room that is measured on one side and sealed by furniture or unmeasured on the other (or
+unmeasured for a different reason) has no `circulation` entry — it has no walk to compare — and
+is reported as a trailing `Walk to …` sentence in `summary` instead, e.g.
+`Walk to bed: 8000 mm (pinch 740 mm) → sealed (widest way in 0 mm)`.
 
 The **`summary` sentences are stable, rendered strings** — their exact wording is a frozen part of
 the API (downstream UIs display them verbatim), so treat them as presentation, not as a parse
