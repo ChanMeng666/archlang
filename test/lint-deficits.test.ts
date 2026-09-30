@@ -303,9 +303,9 @@ describe("W_SWING_OBSTRUCTED's quoted width holds across the shipped examples", 
     },
     now: () => new Date(0),
   });
-  const tally = (ds: ReadonlyArray<{ code: string }>) => {
+  const tally = (ds: ReadonlyArray<{ code?: string }>) => {
     const n = new Map<string, number>();
-    for (const d of ds) n.set(d.code, (n.get(d.code) ?? 0) + 1);
+    for (const d of ds) n.set(d.code ?? "", (n.get(d.code ?? "") ?? 0) + 1);
     return n;
   };
   it("applied to its door, every quoted width clears that door's warning, and an offered one adds nothing", () => {
