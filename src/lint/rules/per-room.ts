@@ -12,6 +12,7 @@ import {
   isKitchen,
   isWetRoom,
   largestPerimeterGap,
+  largestPerimeterGapCircle,
   largestPerimeterGapRing,
   pointInRoomBox,
   pointOnRoomEdge,
@@ -95,11 +96,15 @@ export const perRoomRules: LintRule = {
 
       // A wet room not fully walled in (a partition that stops short leaves it open).
       if (isWetRoom(r)) {
-        // A polygon room is measured around its own ring (any edge angle); a rectangle
-        // keeps the four-sided test, byte-for-byte.
-        const gap = r.poly
-          ? largestPerimeterGapRing(r.poly, ir.walls, rules.tolMm, wallSegs)
-          : largestPerimeterGap(rect, ir.walls, rules.tolMm, wallSegs);
+        // A circle room is measured by angle against concentric arc walls (its `poly` is
+        // only the tessellation, which an arc's chord never backs); a polygon room around
+        // its own ring (any edge angle); a rectangle keeps the four-sided test,
+        // byte-for-byte.
+        const gap = r.circle
+          ? largestPerimeterGapCircle(r.circle.c, r.circle.r, wallSegs, rules.tolMm)
+          : r.poly
+            ? largestPerimeterGapRing(r.poly, ir.walls, rules.tolMm, wallSegs)
+            : largestPerimeterGap(rect, ir.walls, rules.tolMm, wallSegs);
         if (gap > rules.maxUnenclosedMm) {
           out.push({
             severity: "warning",
