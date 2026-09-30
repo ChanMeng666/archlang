@@ -634,10 +634,13 @@ Two fields carry it, and they sit at deliberately different levels:
 ```
 
 **Reachability through a shaft.** A storey is *grounded* when its own access graph has an
-exterior entrance. Reachability then spreads along the connections to a fixpoint: a storey
-joined by a shaft to a reachable storey is itself reachable, and the room that shaft lands
-in becomes an **arrival room** — the floor's entrance, one floor up. `reachable_levels` is
-the answer.
+exterior entrance. Reachability then spreads along the connections to a fixpoint over
+storeys **and rooms**: a shaft carries you on only from a stop whose room you can walk to
+on its own storey — from the front door if the storey is grounded, or from a room another
+live shaft lands in. The rooms it lands in become **arrival rooms** — the floor's entrance,
+one floor up. A stair standing in a store with no door therefore connects nothing, and the
+floor it leads to is not reachable through it. `reachable_levels` is the answer. (A stop
+whose footprint lies in no room still counts as soon as its storey is reachable.)
 
 Two lint rules read that, per storey:
 

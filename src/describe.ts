@@ -46,6 +46,7 @@ import {
   buildDoorAccessGraph,
   DEFAULT_TOL,
   storeyGrounded,
+  buildingRoomReach,
   type AnalyzeOptions,
   type AccessGraph,
   type BBox,
@@ -1262,9 +1263,11 @@ function inZone(member: string | undefined, path: string): boolean {
  * spans two storeys. A storey is *grounded* when it has its own exterior entrance that is
  * a real arrival point — {@link storeyGrounded}, the same predicate `lint` builds its
  * `grounded()` callback from, discounting a door that opens onto an `outdoor balcony`.
- * Reachability then spreads along the shafts. This is deliberately NOT the
- * same thing as this storey's own `access.hasEntrance` below, which stays the honest,
- * undiscounted fact that the floor has an exterior door.
+ * Reachability then spreads along the shafts — room-aware: a shaft carries you on only
+ * from a stop whose room is walkable on its storey ({@link buildingRoomReach}, the same
+ * probe access graph `access` reports), so a stair in a door-less store reaches nothing.
+ * This is deliberately NOT the same thing as this storey's own `access.hasEntrance`
+ * below, which stays the honest, undiscounted fact that the floor has an exterior door.
  */
 function buildVerticalReport(levels: readonly ResolvedLevel[], tol: number): VerticalReport | undefined {
   const inputs = levels.map((l) => ({ level: l.level, ir: l.ir }));
@@ -1274,7 +1277,7 @@ function buildVerticalReport(levels: readonly ResolvedLevel[], tol: number): Ver
     const l = levels.find((x) => x.level === n);
     return l ? storeyGrounded(l.ir, tol) : false;
   };
-  const reach = verticalReach(inputs, grounded);
+  const reach = verticalReach(inputs, grounded, buildingRoomReach(inputs, tol));
   return { connections, reachable_levels: [...reach.reachable].sort((a, b) => a - b) };
 }
 
