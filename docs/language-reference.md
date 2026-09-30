@@ -1473,7 +1473,8 @@ things:
 - `describe()` reports it under `vertical.connections` (see
   [analysis.md](analysis.md#vertical-circulation--the-building-graph-v121));
 - the upper storey is **reachable** — a floor with no exterior door of its own no longer
-  raises `W_NO_ENTRANCE`, because you arrive in the room the shaft lands in;
+  raises `W_NO_ENTRANCE`, because you arrive in the room the shaft lands in (provided the
+  room the shaft starts from is itself reachable: a stair in a door-less store leads nowhere);
 - `validate --graph` counts it as a connector between the rooms it lands in on each floor.
 
 Nothing is inferred from geometry: two flights at the same coordinates with different ids
