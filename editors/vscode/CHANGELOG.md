@@ -12,6 +12,85 @@ are documented here. The format is based on
 > republished**. See [CONTRIBUTING.md → Releasing](../../CONTRIBUTING.md#releasing) for
 > the checklist that keeps the two in sync.
 
+## [0.25.0] - 2026-10-01
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.37.1`** (spans core 1.36.0 to 1.37.1).
+  - **Re-roll refactor action.** A run of statements whose numbers advance by a constant step is
+    offered as a `refactor.rewrite` code action that rewrites it into a proven-equivalent `for` loop
+    (the same engine as `arch reroll`). It is offered only on an explicit refactor request, never on
+    an automatic one, and only for a selection that covers the run.
+  - **Rename and find-references find every use of a name**, including uses inside a placed
+    component.
+  - **`describe --facts symmetry,syntax`** and `mirror: true` on reflected doors and dimensions in
+    Plan JSON reach the editor's `describe` consumers; `place` now composes (a component may
+    reference the instances it places).
+  - **`W_SWING_OBSTRUCTED`** no longer fires on a textbook double door, and its "narrow the door"
+    hint quotes a width that clears.
+  - **Deprecations surface as warnings**: `while`/reassignment carry an advisory
+    (`W_WHILE_DEPRECATED`, `W_REASSIGN_DEPRECATED`); the axonometric view is deprecated.
+  - **Accessible output**: `annotate` + `accessible` make a compiled plan keyboard-reachable.
+
+## [0.24.0] - 2026-09-04
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.35.0`.** The vertical datum layer reaches the
+  editor: `sill`/`head` heights on openings and storey heights parse, complete and diagnose as
+  data (heights draw nothing on the plan). The opt-in axonometric view is a compile option only.
+
+## [0.23.0] - 2026-09-04
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.34.0`.** New advisory `W_DRAWING_OVERFLOW`
+  (a drawing that overflows its sheet) and a `sheet.drawing_fits` key in `describe`.
+- **Completion offers the 129 fixture categories** in a furniture statement's category slot.
+
+## [0.22.0] - 2026-09-03
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.33.0`.** Twelve silent wrong answers fixed
+  (curved-wall circulation, mirrored handed fixtures, lint rules that refused correct drawings);
+  one new advisory code, no language change.
+
+## [0.21.0] - 2026-08-29
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.32.0`.** Twenty-six new fixture families across
+  five domains are valid furniture categories; fourteen fixture symbols are redrawn.
+
+## [0.20.0] - 2026-08-29
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.31.0`.** Outdoor plans: ground surfaces,
+  fences and a site lot line; twenty-one outdoor fixture families; `uses garage` with
+  `W_GARAGE_TOO_NARROW`; and `door garage`, the sixth door kind.
+
+## [0.19.0] - 2026-08-28
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.30.0`.** One zero-dependency wall-joinery pass
+  for every wall; no new syntax.
+
+## [0.18.0] - 2026-08-26
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.29.0`.** New forms: `roof` (the eaves
+  projection line) and `void` (a hole in this storey's floor plate); four new furniture families.
+
+## [0.17.0] - 2026-08-26
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.28.0`.** The room-furniture vocabulary and the
+  glyph layer it is drawn on; furniture-bearing drawings change.
 ## [0.16.0] - 2026-08-25
 
 ### Changed

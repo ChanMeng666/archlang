@@ -48,6 +48,12 @@ Owner decisions and laws that no test fully states. Do not re-propose, re-open o
 
 ## Language & geometry
 
+- **ArchLang is plan-first: it draws 2D plans only** (ADR 0021,
+  `docs/adr/0021-plan-first-view-deprecated.md`). The axonometric view (`src/view/`, `--view`) is
+  deprecated: fix nothing in it, promote it nowhere. It is deleted at the next major together with
+  `while`/reassignment, and that deletion is already prepared (see `docs/backlog.md`) — rebase it,
+  don't redo it. Heights are data (`describe()`, Plan JSON, a future data export such as IFC), never
+  a drawing.
 - **A generator's template can go stale while `check:drift` is green** — the gate proves
   reproducibility, not correctness. Derive from `KEYWORDS`/`RULES`/`buildManifest()`, never retype,
   and give each generator a guard that fails when a source-of-truth entry has no rendering.
