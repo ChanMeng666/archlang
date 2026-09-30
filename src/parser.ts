@@ -129,11 +129,22 @@ class Parser {
   /** Statement-start keywords for recovery resync — fixed keywords + this
    *  registry's element keywords (so plugin elements resync correctly). */
   private readonly statementStarts: ReadonlySet<string>;
+  /** Blocks currently open around the statement being parsed: the plan's own `{` plus
+   *  every enclosing `{ … }` statement body (`for`, `if`, `level`, `zone`, `component`).
+   *  Read by {@link synchronize} to know how many `}` the rest of the file owes them. */
+  private blockDepth = 0;
+  /** `braceSuffix[i]` = count of `}` minus count of `{` in `toks[i..]` (length toks+1). */
+  private readonly braceSuffix: Int32Array;
 
   constructor(
     private toks: Token[],
     private readonly registry: Registry = BUILTIN_REGISTRY,
   ) {
+    this.braceSuffix = new Int32Array(toks.length + 1);
+    for (let i = toks.length - 1; i >= 0; i--) {
+      const type = toks[i]!.type;
+      this.braceSuffix[i] = this.braceSuffix[i + 1]! + (type === "rcurly" ? 1 : type === "lcurly" ? -1 : 0);
+    }
     this.statementStarts = new Set<string>([...FIXED_STATEMENT_STARTS, ...registry.byKeyword.keys()]);
     this.ctx = {
       peek: (o) => this.peek(o),
@@ -174,43 +185,47 @@ class Parser {
 
   /**
    * Recover after a statement error: skip to the next statement start or block
-   * end at the failed statement's own brace depth. `failStart` is the byte offset where the failed statement began; we
-   * only stop at a statement-start keyword *past* it, which both (a) preserves a
-   * next-statement keyword the expression recovery guard refused to consume, and
-   * (b) guarantees forward progress (the failing token itself is always skipped),
-   * so a hard-stuck token can't loop forever.
+   * end at the failed statement's own brace depth. `failStart` is the byte offset
+   * where the failed statement began; we only stop at a statement-start keyword
+   * *past* it, which both (a) preserves a next-statement keyword the expression
+   * recovery guard refused to consume, and (b) guarantees forward progress (the
+   * failing token itself is always skipped), so a hard-stuck token can't loop forever.
+   *
+   * Brace depth: a `}` or a statement keyword is a resync point only at depth 0, so the
+   * `}` of the failed statement's own block (a wall's point list, a `theme` block, a
+   * `for` body whose header failed) does not close the ENCLOSING block — at plan level,
+   * the plan — and the keywords inside that block are not parsed one scope too far out.
+   * Depth counts the `{` the failed statement consumed before failing plus every `{`
+   * skipped here, but ONLY those the rest of the file can still close after closing the
+   * {@link blockDepth} enclosing blocks: an unclosed `{` (a statement cut short with its
+   * `}` missing, or a stray `{` as in `room … {`) is not a block, and treating it as one
+   * would swallow every later statement.
    */
   private synchronize(failStart: number): void {
-    // Failed AT a statement keyword: the statement was cut short (its `}` or its last
-    // clause is missing), so the keyword is the next statement — resume there, whatever
-    // braces the failed statement left open.
-    const here = this.peek();
-    if (here.start > failStart && here.type === "ident" && this.statementStarts.has(here.value)) return;
-    // Otherwise skip the rest of the failed statement brace-balanced. Depth counts the
-    // `{`/`}` it consumed before failing, then every one skipped here; a `}` or a
-    // statement keyword is a resync point only at depth 0. Without this the `}` of the
-    // failed statement's own block (a wall's point list, a `theme` block, a `for` body
-    // whose header failed) would close the ENCLOSING block — at plan level, the plan —
-    // and the keywords inside that block would be parsed one scope too far out.
-    let depth = 0;
-    for (let i = this.pos - 1; i >= 0 && this.toks[i]!.start >= failStart; i--) {
+    let open = 0;
+    for (let i = Math.min(this.pos, this.toks.length) - 1; i >= 0 && this.toks[i]!.start >= failStart; i--) {
       const type = this.toks[i]!.type;
-      if (type === "lcurly") depth++;
-      else if (type === "rcurly") depth--;
+      if (type === "lcurly") open++;
+      else if (type === "rcurly") open--;
     }
-    if (depth < 0) depth = 0;
+    let depth = Math.max(0, Math.min(open, this.closeSurplus(this.pos) - this.blockDepth));
     while (!this.isType("eof")) {
       const t = this.peek();
       if (t.type === "rcurly") {
         if (depth === 0) return;
         depth--;
       } else if (t.type === "lcurly") {
-        depth++;
+        if (this.closeSurplus(this.pos + 1) - this.blockDepth > depth) depth++;
       } else if (depth === 0 && t.start > failStart && t.type === "ident" && this.statementStarts.has(t.value)) {
         return;
       }
       this.next();
     }
+  }
+
+  /** `}` minus `{` over the tokens from index `i` to the end (`i` clamped into range). */
+  private closeSurplus(i: number): number {
+    return this.braceSuffix[Math.max(0, Math.min(i, this.braceSuffix.length - 1))]!;
   }
 
   private isKeyword(kw: string, o = 0): boolean {
@@ -256,6 +271,7 @@ class Parser {
       this.eatKeyword("plan");
       plan.name = this.eatString();
       plan.bodyStart = this.eat("lcurly").end;
+      this.blockDepth = 1;
     } catch (e) {
       if (!(e instanceof ParseError)) throw e;
       this.diagnostics.push({ severity: "error", message: e.message, code: "E_PARSE", span: e.span });
@@ -264,7 +280,10 @@ class Parser {
         if (t.type === "ident" && this.statementStarts.has(t.value)) break;
         this.next();
       }
-      if (this.isType("lcurly")) this.next();
+      if (this.isType("lcurly")) {
+        this.next();
+        this.blockDepth = 1;
+      }
     }
 
     while (!this.isType("rcurly") && !this.isType("eof")) {
@@ -410,10 +429,14 @@ class Parser {
   private checkTrailing(close: Token): void {
     const t = this.peek();
     if (t.type === "eof") return;
+    // The "closed early" hint only when a later `}` exists that could have been the
+    // plan's real close — not for, say, a `// note` written after the last `}`.
+    const laterClose = this.toks.slice(this.pos).some((x) => x.type === "rcurly");
     const message =
       t.type === "ident" && t.value === "plan"
         ? `A second "plan" block after the plan was closed — a file holds one plan, and nothing after its closing "}" is read`
-        : `Unexpected ${describe(t)} after the plan was closed — nothing after the plan's closing "}" is read (an extra "}" may have closed it early)`;
+        : `Unexpected ${describe(t)} after the plan was closed — nothing after the plan's closing "}" is read` +
+          (laterClose ? ` (an extra "}" may have closed it early)` : "");
     this.diagnostics.push({
       severity: "error",
       message,
@@ -1136,25 +1159,30 @@ class Parser {
   private parseBlockBody(components: Map<string, ComponentDef>, selfName?: string): Statement[] {
     this.eat("lcurly");
     const body: Statement[] = [];
-    while (!this.isType("rcurly") && !this.isType("eof")) {
-      const stmtTok = this.peek();
-      try {
-        body.push(this.parseOneBodyStatement(components, selfName));
-      } catch (e) {
-        if (e instanceof ParseError) {
-          this.diagnostics.push({ severity: "error", message: e.message, code: "E_PARSE", span: e.span });
-          this.synchronize(stmtTok.start);
-          body.push({
-            kind: "error",
-            id: "",
-            line: stmtTok.line,
-            message: e.message,
-            span: this.spanFrom(stmtTok.start),
-          });
-        } else {
-          throw e;
+    this.blockDepth++;
+    try {
+      while (!this.isType("rcurly") && !this.isType("eof")) {
+        const stmtTok = this.peek();
+        try {
+          body.push(this.parseOneBodyStatement(components, selfName));
+        } catch (e) {
+          if (e instanceof ParseError) {
+            this.diagnostics.push({ severity: "error", message: e.message, code: "E_PARSE", span: e.span });
+            this.synchronize(stmtTok.start);
+            body.push({
+              kind: "error",
+              id: "",
+              line: stmtTok.line,
+              message: e.message,
+              span: this.spanFrom(stmtTok.start),
+            });
+          } else {
+            throw e;
+          }
         }
       }
+    } finally {
+      this.blockDepth--;
     }
     this.eat("rcurly");
     return body;

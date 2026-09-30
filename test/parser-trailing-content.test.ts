@@ -88,6 +88,17 @@ describe("trailing content after the plan — E_PARSE", () => {
     expect(b.svg).toBe(a.svg);
   });
 
+  it('the "extra `}`" hint appears only when a later `}` could have been the real close', () => {
+    const stray = compile(STRAY, { noCache: true }).diagnostics.find((d) => d.code === "E_PARSE")!;
+    expect(stray.message).toContain('an extra "}" may have closed it early');
+    // `//` is not a comment in ArchLang: after the last `}` it is trailing content, but
+    // nothing suggests the plan was closed early.
+    const slash = 'plan "A" {\n  room id=a at (0,0) size 3000x3000\n}\n// note\n';
+    const d = compile(slash, { noCache: true }).diagnostics.find((x) => x.code === "E_PARSE")!;
+    expect(d.message).toBe(`Unexpected "/" after the plan was closed — nothing after the plan's closing "}" is read`);
+    expect(d.span).toEqual(spanOf(slash, "/"));
+  });
+
   it("a missing closing `}` still reports only the missing brace (no trailing-content error)", () => {
     const src = 'plan "A" {\n  room id=a at (0,0) size 3000x3000\n';
     const errs = compile(src, { noCache: true }).diagnostics.filter((d) => d.severity === "error");

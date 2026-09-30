@@ -1,0 +1,48 @@
+# Parametric plan (v0.8 scripting): a row of studio units generated with a
+# `for` loop over a range, a value-function, an array indexed per unit, a scoped
+# `set` rule, an `if`, and string-interpolated labels. Everything is derived
+# from the constants — change COUNT and the whole row regenerates.
+plan "Parametric — Studio Row" {
+  units mm
+  grid 50
+  scale 1:100
+  north up
+
+  # Plan-level constants (visible everywhere below — plan scope is global).
+  let WALL  = 200
+  let W     = 4000          # unit width
+  let H     = 5000          # unit depth
+  let DOOR  = 900
+  let WIN   = 1600
+  let COUNT = 3             # number of units
+
+  # A value-function (pure closure) — area in square metres.
+  let aream2(w, h) = w * h / 1000000
+
+  # Per-unit names, indexed by the loop variable.
+  let names = ["Studio A", "Studio B", "Studio C"]
+
+  # Entrance doors swing outward throughout this plan (scoped default).
+  set door(swing: out)
+
+  for i in 0..COUNT {
+    let x = i * W
+    wall exterior thickness WALL { (x, 0) (x + W, 0) (x + W, H) (x, H) close }
+    room at (x, 0) size W x H label "{names[i]}"
+    furniture bed   at (x + 300, 300)      size 1500x2000 label "Bed"
+    furniture kitch at (x + W - 1900, 300) size 1600x600  label "Kitchen"
+    door   at (x + W / 2, H) width DOOR wall exterior hinge left
+    window at (x + W / 2, 0) width WIN  wall exterior
+
+    # The end unit carries a per-unit area dimension (computed by the function).
+    # Referenced to the outer face (y = H + WALL/2) so the extension lines start at
+    # the wall and read downward, away from the building.
+    if i == COUNT - 1 {
+      dim (x, H + WALL / 2)->(x + W, H + WALL / 2) offset 600 text "{aream2(W, H)} m² each"
+    }
+  }
+
+  # Overall run, dimensioned above the building: right-to-left so the offset lands
+  # ABOVE the row (outside), and referenced to the outer top face (y = -WALL/2).
+  dim (W * COUNT, 0 - WALL / 2)->(0, 0 - WALL / 2) offset 1300 text "{COUNT} units"
+}

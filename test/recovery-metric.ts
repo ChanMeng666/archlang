@@ -26,6 +26,10 @@
  * - `dropBrace`: one mutant per `}` token, that `}` blanked.
  * - `dropToken`: one mutant per token at index `0, k, 2k, …` (`k` = {@link TOKEN_STRIDE}),
  *   that one token blanked — a stride sample of single-token deletions.
+ * - `insertBrace`: one mutant per statement (as walked above), a stray `{ ` inserted at
+ *   its first byte — the `room … {` habit, and a `{` alone on a line.
+ * - `subToken`: the `dropToken` sample, the token replaced by the non-keyword `zz`
+ *   instead of blanked.
  */
 
 import type { Statement } from "../src/ast.js";
@@ -37,8 +41,8 @@ export interface MetricApi {
   parse: typeof parse;
 }
 
-/** Stride of the `dropToken` sample; chosen so the whole metric runs well under 10 s. */
-export const TOKEN_STRIDE = 19;
+/** Stride of the `dropToken`/`subToken` sample; chosen so the metric test runs in a few seconds. */
+export const TOKEN_STRIDE = 13;
 
 const POSITION_KEY = /^(span|line|col|comments|bodyStart)$|Spans?$/;
 const NESTED_BODY_KEYS = new Set(["body", "then", "else"]);
@@ -51,28 +55,35 @@ function fingerprint(node: object, dropNested: boolean): string {
   });
 }
 
-function walk(stmts: readonly Statement[], out: string[]): void {
+function walk(stmts: readonly Statement[], out: string[], starts: number[]): void {
   for (const s of stmts) {
     out.push(fingerprint(s, true));
+    if (s.span) starts.push(s.span.start);
     const r = s as unknown as Record<string, unknown>;
     for (const k of NESTED_BODY_KEYS) {
       const v = r[k];
-      if (Array.isArray(v)) walk(v as Statement[], out);
+      if (Array.isArray(v)) walk(v as Statement[], out, starts);
     }
   }
 }
 
+function statements(api: MetricApi, src: string): { prints: string[]; starts: number[] } {
+  const { plan } = api.parse(src);
+  const prints: string[] = [];
+  const starts: number[] = [];
+  if (!plan) return { prints, starts };
+  for (const def of plan.components.values()) {
+    prints.push(JSON.stringify({ component: def.name, params: def.params }));
+    if (def.span) starts.push(def.span.start);
+    walk(def.body, prints, starts);
+  }
+  walk(plan.body, prints, starts);
+  return { prints, starts };
+}
+
 /** Every statement fingerprint of `src`'s parse, in walk order (a multiset). */
 export function statementFingerprints(api: MetricApi, src: string): string[] {
-  const { plan } = api.parse(src);
-  const out: string[] = [];
-  if (!plan) return out;
-  for (const def of plan.components.values()) {
-    out.push(JSON.stringify({ component: def.name, params: def.params }));
-    walk(def.body, out);
-  }
-  walk(plan.body, out);
-  return out;
+  return statements(api, src).prints;
 }
 
 /** |a ∩ b| as multisets. */
@@ -102,14 +113,22 @@ export interface ClassResult {
   survival: number;
 }
 
-export type MutationClass = "dropBrace" | "dropToken";
+export const MUTATION_CLASSES = ["dropBrace", "dropToken", "insertBrace", "subToken"] as const;
+export type MutationClass = (typeof MUTATION_CLASSES)[number];
 
-/** The mutants of one class for one source, in token order. */
+/** The mutants of one class for one source, in source order. */
 export function mutants(api: MetricApi, src: string, cls: MutationClass): string[] {
+  if (cls === "insertBrace") {
+    const starts = [...new Set(statements(api, src).starts)].sort((a, b) => a - b);
+    return starts.map((at) => `${src.slice(0, at)}{ ${src.slice(at)}`);
+  }
   const toks = api.lex(src).tokens.filter((t) => t.type !== "eof");
   if (cls === "dropBrace") return toks.filter((t) => t.type === "rcurly").map((t) => blank(src, t));
   const out: string[] = [];
-  for (let i = 0; i < toks.length; i += TOKEN_STRIDE) out.push(blank(src, toks[i]!));
+  for (let i = 0; i < toks.length; i += TOKEN_STRIDE) {
+    const t = toks[i]!;
+    out.push(cls === "dropToken" ? blank(src, t) : `${src.slice(0, t.start)}zz${src.slice(t.end)}`);
+  }
   return out;
 }
 
