@@ -452,9 +452,12 @@ export type RunFinder = (stmts: Statement[], start: number) => RunFound | null;
  * length `len` in `[3, W]` (W = the maximal window of eligible same-kind
  * statements) for which `collectSlots(run)` is non-null and every slot passes
  * {@link isArithmeticProgression}", with that run's `collectSlots` as `slots`
- * — exactly what trying every length from W down to 3 returns
- * (`test/reroll-findrun-oracle.test.ts` pins that equality against the old
- * shrinking search, kept verbatim there as the oracle).
+ * — exactly what trying every length from W down to 3 returns.
+ * `test/reroll-findrun-oracle.test.ts` pins that equality against the old
+ * shrinking search (kept verbatim there as the oracle) on generated sources
+ * and synthetic trees; lemmas 1–3 below are checked there separately, on
+ * the synthetic generator (1, 2) and on generated number lists (3). That is
+ * sampling evidence, not a proof — the argument below is the proof.
  *
  * It is found in ONE forward pass, because the valid lengths are
  * downward-closed (valid at `len` ⇒ valid at every `len' ∈ [2, len]`):

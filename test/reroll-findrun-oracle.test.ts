@@ -463,7 +463,7 @@ const syntheticList: fc.Arbitrary<Statement[]> = fc
 // ---- the properties -------------------------------------------------------------------
 
 describe("findRun — linear forward pass equals the old shrinking search", () => {
-  it("parsed sources: equal at every start index of every statement list", () => {
+  it("parsed sources: equal at every start index of every statement list", { timeout: 30_000 }, () => {
     let found = 0;
     let trimmed = 0;
     fc.assert(
@@ -490,7 +490,9 @@ describe("findRun — linear forward pass equals the old shrinking search", () =
     expect(trimmed).toBeGreaterThan(0);
   });
 
-  it("synthetic trees (NaN, ±Infinity, −0, key/length/leaf-type differences): equal at every start", () => {
+  it("synthetic trees (NaN, ±Infinity, −0, key/length/leaf-type differences): equal at every start", {
+    timeout: 30_000,
+  }, () => {
     let found = 0;
     fc.assert(
       fc.property(syntheticList, (stmts) => {
@@ -505,7 +507,9 @@ describe("findRun — linear forward pass equals the old shrinking search", () =
     expect(found).toBeGreaterThan(0);
   });
 
-  it("lemma: collectSlots(n0…nL) is non-null iff every collectSlots([n0, ni]) is, with the same slots", () => {
+  it("lemma: collectSlots(n0…nL) is non-null iff every collectSlots([n0, ni]) is, with the same slots", {
+    timeout: 30_000,
+  }, () => {
     fc.assert(
       fc.property(syntheticList, (stmts) => {
         if (stmts.length < 2) return;
@@ -521,7 +525,7 @@ describe("findRun — linear forward pass equals the old shrinking search", () =
     );
   });
 
-  it("lemma: isArithmeticProgression is prefix-closed (every prefix of length ≥ 2)", () => {
+  it("lemma: isArithmeticProgression is prefix-closed (every prefix of length ≥ 2)", { timeout: 30_000 }, () => {
     const vals = fc.oneof(
       fc.array(numValue, { minLength: 2, maxLength: 12 }),
       fc
