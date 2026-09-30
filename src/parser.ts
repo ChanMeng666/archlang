@@ -174,16 +174,41 @@ class Parser {
 
   /**
    * Recover after a statement error: skip to the next statement start or block
-   * end. `failStart` is the byte offset where the failed statement began; we
+   * end at the failed statement's own brace depth. `failStart` is the byte offset where the failed statement began; we
    * only stop at a statement-start keyword *past* it, which both (a) preserves a
    * next-statement keyword the expression recovery guard refused to consume, and
    * (b) guarantees forward progress (the failing token itself is always skipped),
    * so a hard-stuck token can't loop forever.
    */
   private synchronize(failStart: number): void {
-    while (!this.isType("rcurly") && !this.isType("eof")) {
+    // Failed AT a statement keyword: the statement was cut short (its `}` or its last
+    // clause is missing), so the keyword is the next statement — resume there, whatever
+    // braces the failed statement left open.
+    const here = this.peek();
+    if (here.start > failStart && here.type === "ident" && this.statementStarts.has(here.value)) return;
+    // Otherwise skip the rest of the failed statement brace-balanced. Depth counts the
+    // `{`/`}` it consumed before failing, then every one skipped here; a `}` or a
+    // statement keyword is a resync point only at depth 0. Without this the `}` of the
+    // failed statement's own block (a wall's point list, a `theme` block, a `for` body
+    // whose header failed) would close the ENCLOSING block — at plan level, the plan —
+    // and the keywords inside that block would be parsed one scope too far out.
+    let depth = 0;
+    for (let i = this.pos - 1; i >= 0 && this.toks[i]!.start >= failStart; i--) {
+      const type = this.toks[i]!.type;
+      if (type === "lcurly") depth++;
+      else if (type === "rcurly") depth--;
+    }
+    if (depth < 0) depth = 0;
+    while (!this.isType("eof")) {
       const t = this.peek();
-      if (t.start > failStart && t.type === "ident" && this.statementStarts.has(t.value)) return;
+      if (t.type === "rcurly") {
+        if (depth === 0) return;
+        depth--;
+      } else if (t.type === "lcurly") {
+        depth++;
+      } else if (depth === 0 && t.start > failStart && t.type === "ident" && this.statementStarts.has(t.value)) {
+        return;
+      }
       this.next();
     }
   }
