@@ -248,8 +248,10 @@ describe("one access policy across storeys: a shaft relays only from a reachable
     const a = reachableAssertion(src);
     expect(a.pass).toBe(false);
     // Both causes are named: the sealed store on the ground floor, and the storey it strands.
+    // The stair IS a shaft from a reachable storey — it is dead, not absent, so the wording
+    // must not claim there is none.
     expect(a.detail).toBe(
-      "reachable: unreachable: store; no way into storey(s): 2 (no exterior door, no shaft from a reachable storey)",
+      "reachable: unreachable: store; no way into storey(s): 2 (no exterior door and no live shaft — a shaft counts only from a room you can reach)",
     );
     // The ground floor has its front door, so the violation is unreachability, not a missing door.
     expect(validateIntent(src, { reachable: true }).violations.map((v) => v.code)).toEqual(["E_INTENT_UNREACHABLE"]);
@@ -333,6 +335,20 @@ describe("one access policy across storeys: a shaft relays only from a reachable
     const control = groundedRelay(false);
     expect(describePlan(control).vertical?.reachable_levels).toEqual([1, 2]);
     expect(noEntrance(control)).toEqual([3]);
+  });
+
+  it("a building with no entrance at all keeps the one base cause — no storey is named twice", () => {
+    // zones-levels: neither storey has a way in and nothing is reachable. The lowest storey
+    // is what "no modeled entrance" already reports, so the storey clause stays out and the
+    // detail and violation code are the pre-storey-check ones, byte for byte.
+    const src = readFileSync("test/fixtures/zones-levels.arch", "utf8");
+    const s = describePlan(src);
+    expect(s.levels?.map((l) => l.access.hasEntrance)).toEqual([false, false]);
+    expect(s.vertical?.reachable_levels).toEqual([]);
+    const a = reachableAssertion(src);
+    expect(a.pass).toBe(false);
+    expect(a.detail).toBe("reachable: no modeled entrance");
+    expect(validateIntent(src, { reachable: true }).violations.map((v) => v.code)).toEqual(["E_INTENT_NO_DOOR"]);
   });
 
   it("a single-storey summary is judged exactly as before (no `levels`, no storey clause)", () => {

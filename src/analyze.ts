@@ -497,6 +497,14 @@ export function accessDigraph(roomIds: readonly string[], edges: readonly Access
  * shaft delivers you into), never entering a node `avoid` names. An avoided extra
  * source is not a source; the exterior is one unless `exterior: false` (a storey with no
  * way in of its own — the exterior node stays walkable THROUGH, it is only not a start).
+ *
+ * Caveat of walking through it: {@link EXTERIOR_NODE} is ONE node for every exterior
+ * connector on the storey. On an ungrounded storey those are the doors
+ * {@link levelIsGrounded} discounted (they open onto an `outdoor balcony`), so two SEPARATE
+ * balconies are one node here: a room whose only way out is a door onto balcony B is
+ * reached from any room with a door onto balcony A. That is the storey's own
+ * `describe().access` graph answering exactly as it does for that storey's facts, and is
+ * kept on purpose; separating balconies needs one node per outdoor surface.
  */
 export function reachFrom(
   g: Digraph<string, unknown>,
@@ -660,7 +668,10 @@ export function storeyGrounded(ir: ResolvedPlan, tol: number): boolean {
  * rooms a shaft lands in — on the `"probe"` access graph that `describe().access` and lint
  * reachability read. The graph is built once; each call is one {@link reachFrom}. With
  * `exterior: false` the exterior node is not a start but stays walkable through, exactly
- * as {@link reachFrom} states.
+ * as {@link reachFrom} states — including its caveat: on an ungrounded storey every
+ * exterior connector is a balcony door and all balconies share the one exterior node, so
+ * two separate balconies are conflated (a stair in a room reachable only from balcony B
+ * counts as reachable from a landing whose bedroom opens onto balcony A).
  */
 export function storeyRoomReach(ir: ResolvedPlan, tol: number): (seeds: StoreySeeds) => ReadonlySet<string> {
   const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
