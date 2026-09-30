@@ -72,7 +72,7 @@ describe("parser recovery metric — floors (may only rise)", () => {
 });
 
 /** Rooms the parser produced, and the error diagnostics — the two halves of recovery. */
-function recovered(src: string): { rooms: string[]; errors: string[] } {
+function recovered(src: string): { rooms: string[]; errors: (string | undefined)[] } {
   const out = compile(src, { noCache: true });
   return {
     rooms: (out.ast?.body ?? []).filter((s) => s.kind === "room").map((s) => s.id),
