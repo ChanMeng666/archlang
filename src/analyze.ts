@@ -149,7 +149,7 @@ export function roomAreaMm2(r: {
   circle?: { c: Point; r: number };
 }): number {
   // A CIRCLE is measured in closed form (πR²) — never from the 48-gon tessellation it
-  // also carries for the grid layer, which understates the area by ~0.1%. See the
+  // also carries for the grid layer, which understates the area by 0.29%. See the
   // exact-vs-chordal note in docs/analysis.md.
   if (r.circle) return Math.PI * r.circle.r * r.circle.r;
   return r.poly ? polygonArea(r.poly) : r.size.w * r.size.h;

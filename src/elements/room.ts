@@ -440,7 +440,7 @@ export const room: ElementDef = {
     // helper: the rectangle's `(w/1000)*(h/1000)` and the polygon's shoelace differ from
     // an `area/1e6` rewrite by an ulp, and an ulp at a `.x5` boundary flips `toFixed(1)`
     // — so a "tidier" single expression would silently move an existing drawing's bytes.
-    // A circle is πR², exact — never the 48-gon the grid layer uses (0.1% short).
+    // A circle is πR², exact — never the 48-gon the grid layer uses (0.29% short).
     const areaM2 = r.circle
       ? ((Math.PI * r.circle.r * r.circle.r) / 1_000_000).toFixed(1)
       : r.poly
