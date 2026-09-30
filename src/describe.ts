@@ -1288,8 +1288,34 @@ function buildVerticalReport(levels: readonly ResolvedLevel[], tol: number): Ver
  * s.totals.floor_area_m2; // 12
  */
 export function describe(source: string, opts: DescribeOptions = {}): SceneSummary {
-  const tol = opts.adjacencyTolMm ?? DEFAULT_TOL;
+  return describeWithAutoIds(source, opts).summary;
+}
+
+/**
+ * @internal {@link describe}, plus the ids of the summary's top-level `rooms[]` whose id was
+ * an assigned positional auto-id (`room_<n>`) rather than author-declared — read from the
+ * SAME resolve, so `diffPlans` needs no second resolve and no guess from the id's spelling.
+ * Not public API: `describe()`'s own output is exactly what it was (the flag never reaches
+ * a `RoomSummary`), and the set is a side channel for the diff alone.
+ */
+export function describeWithAutoIds(
+  source: string,
+  opts: DescribeOptions = {},
+): { summary: SceneSummary; autoRoomIds: ReadonlySet<string> } {
   const { ir, diagnostics, levels } = resolvePlan(source, opts);
+  const autoRoomIds = new Set<string>();
+  if (ir)
+    for (const e of ir.elements) if (e.kind === "room" && (e as RRoom)._idAuthored !== true) autoRoomIds.add(e.id);
+  return { summary: summarizeResolved(ir, diagnostics, levels, opts), autoRoomIds };
+}
+
+function summarizeResolved(
+  ir: ReturnType<typeof resolvePlan>["ir"],
+  diagnostics: Diagnostic[],
+  levels: ReturnType<typeof resolvePlan>["levels"],
+  opts: DescribeOptions,
+): SceneSummary {
+  const tol = opts.adjacencyTolMm ?? DEFAULT_TOL;
 
   if (!ir) {
     return {

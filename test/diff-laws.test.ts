@@ -5,7 +5,7 @@
  *  - **Antisymmetry.** `diffPlans(B, A)` is `diffPlans(A, B)` with every change INVERTED
  *    (added↔removed swapped, before/after swapped, signed deltas negated) — keyed by
  *    `kind:id` so the comparison does not depend on array order. This is what the
- *    `src/diff.ts:86-93` fix (rescue a leftover-before room by label only when the label
+ *    `src/diff.ts` `matchRooms` rescue fix (rescue a leftover-before room by label only when the label
  *    is unique on BOTH sides, not just the after side) makes true: before it, a diff
  *    could rescue a same-labelled pair in one direction and refuse it in the other,
  *    reporting a "resized" room one way and an unrelated "removed"+"added" pair the
@@ -297,7 +297,7 @@ describe("diffPlans — antisymmetry over fast-check-mutated pairs", () => {
     );
   });
 
-  it("an ambiguous same-label rescue is refused symmetrically (the diff.ts:86-93 fix)", () => {
+  it("an ambiguous same-label rescue is refused symmetrically (the diff.ts `matchRooms` rescue fix)", () => {
     const room = (id: string, label: string, x: number, w: number, h: number) =>
       `  room id=${id} at (${x},0) size ${w}x${h} label "${label}"`;
     const planWith = (rooms: string[]) =>
@@ -348,5 +348,175 @@ describe("diffPlans — an empty-string label is never a rescue key", () => {
     // The two full-antisymmetry laws above cover the reverse direction generically;
     // this test pins the specific "" case concretely, by shape.
     checkAntisymmetry(a, b);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Auto-id rooms under insertion, deletion and permutation.
+//
+// `room_<n>` is positional, so an inserted, deleted or reordered room shifts every later
+// auto-id; `diffPlans` pairs a room that is auto-id on both sides and whose label is unique
+// on each side BY LABEL first (src/diff.ts `matchRooms`, pass 1). Such a pair's two ids
+// can differ, and a "resized"/"relabeled" change carries the AFTER side's id — so the
+// `room:id` key the laws above use names a label-paired room by a different id in each
+// direction. That is not an antisymmetry failure but a keying one: the PAIRING is what must
+// invert. So the rooms here are matched pair-wise — an add/remove by its one id; a resize/
+// relabel by its label when one side's change carries a label the other's shares (a label
+// pair), else by its id (an id pair, whose ids are equal by construction). Under this
+// generator (every id auto, every label unique on its side) that match is unambiguous: a
+// label on both sides of an auto-id pair is always consumed by pass 1, so an id pair never
+// carries a label the reverse direction also carries.
+//
+// No entrance is modelled, so `circulation` is null on both sides and the circulation law
+// is vacuous here; `test/diff.test.ts` pins circulation following the pairing.
+// ---------------------------------------------------------------------------
+
+/** Room `i` of a fixed universe of eight: slot `i` of a 4×2 grid of 3000 mm cells, labelled
+ *  `R<i>` or unlabelled, its width optionally reduced. Slots never overlap. */
+interface AutoRoom {
+  i: number;
+  labelled: boolean;
+  shrink: number;
+}
+
+function autoIdPlan(rooms: AutoRoom[]): string {
+  const lines = rooms.map(({ i, labelled, shrink }) => {
+    const at = `(${(i % 4) * 3000},${Math.floor(i / 4) * 3000})`;
+    return `  room at ${at} size ${3000 - shrink}x3000${labelled ? ` label "R${i}"` : ""}`;
+  });
+  return (
+    `plan "P" {\n  units mm\n` +
+    `  wall exterior thickness 200 { (0,0) (12000,0) (12000,6000) (0,6000) close }\n` +
+    `${lines.join("\n")}\n}\n`
+  );
+}
+
+/** The rooms half of the antisymmetry law, matched by pairing (see the block header). */
+function assertRoomsInvertPairwise(ab: RoomChange[], ba: RoomChange[]): void {
+  expect(ba.length, "room change counts differ").toBe(ab.length);
+  const used = new Set<RoomChange>();
+  for (const s of ab) {
+    const inv = invertRoom(s);
+    const free = ba.filter((d) => !used.has(d) && d.change === inv.change);
+    let hit: RoomChange | undefined;
+    if (s.change === "added" || s.change === "removed") hit = free.find((d) => d.id === s.id);
+    else hit = (s.label ? free.find((d) => d.label === s.label) : undefined) ?? free.find((d) => d.id === s.id);
+    expect(hit, `no counterpart for ${s.change} ${s.id} (${s.label ?? "-"})`).toBeDefined();
+    used.add(hit!);
+    // `id` is the after side's in each direction (and so differs for a label pair) and
+    // `label` too for resized/relabeled — compare the rest.
+    const strip = (r: RoomChange): unknown => {
+      const copy: Partial<RoomChange> = { ...r };
+      if (r.change === "resized" || r.change === "relabeled") {
+        delete copy.id;
+        delete copy.label;
+      }
+      return roundFloats(copy);
+    };
+    expect(strip(inv), `mismatch for ${s.change} ${s.id}`).toEqual(strip(hit!));
+  }
+}
+
+describe("diffPlans — auto-id rooms under insertion, deletion and permutation", () => {
+  const roomArb = (i: number) =>
+    fc.record({ i: fc.constant(i), labelled: fc.boolean(), shrink: fc.constantFrom(0, 0, 500, 1000) });
+  const universe = fc.tuple(...[0, 1, 2, 3, 4, 5, 6, 7].map(roomArb));
+  // Two independent shuffled subsets of the universe: rooms inserted, deleted and reordered
+  // between the sides. On side B a room may also lose its label (`unlabelB`) or change width.
+  const pairArb = fc.record({
+    rooms: universe,
+    a: fc.shuffledSubarray([0, 1, 2, 3, 4, 5, 6, 7], { minLength: 1 }),
+    b: fc.shuffledSubarray([0, 1, 2, 3, 4, 5, 6, 7], { minLength: 1 }),
+    unlabelB: fc.array(fc.boolean(), { minLength: 8, maxLength: 8 }),
+    shrinkB: fc.array(fc.constantFrom(0, 0, 0, 500), { minLength: 8, maxLength: 8 }),
+  });
+  const sides = (p: {
+    rooms: AutoRoom[];
+    a: number[];
+    b: number[];
+    unlabelB: boolean[];
+    shrinkB: number[];
+  }): { srcA: string; srcB: string } => ({
+    srcA: autoIdPlan(p.a.map((i) => p.rooms[i]!)),
+    srcB: autoIdPlan(
+      p.b.map((i) => ({
+        ...p.rooms[i]!,
+        labelled: p.rooms[i]!.labelled && !p.unlabelB[i],
+        shrink: p.rooms[i]!.shrink + p.shrinkB[i]!,
+      })),
+    ),
+  });
+
+  it("antisymmetry: diffPlans(B, A) is diffPlans(A, B) inverted, pair by pair", () => {
+    fc.assert(
+      fc.property(pairArb, (p) => {
+        const { srcA, srcB } = sides(p);
+        const ab = diffPlans(srcA, srcB);
+        const ba = diffPlans(srcB, srcA);
+        expect(ab.ok && ba.ok, "a generated plan failed to resolve").toBe(true);
+        assertRoomsInvertPairwise(ab.rooms, ba.rooms);
+        expect(ab.circulation).toEqual([]);
+        expect(ba.circulation).toEqual([]);
+        expect(roundFloats(ba.totals)).toEqual(
+          roundFloats({
+            floorAreaBeforeM2: ab.totals.floorAreaAfterM2,
+            floorAreaAfterM2: ab.totals.floorAreaBeforeM2,
+            roomsBefore: ab.totals.roomsAfter,
+            roomsAfter: ab.totals.roomsBefore,
+          }),
+        );
+      }),
+      { numRuns: 120, seed: 20261001 },
+    );
+  });
+
+  it("a permutation alone is an empty diff whenever every room is labelled", () => {
+    fc.assert(
+      fc.property(
+        fc.shuffledSubarray([0, 1, 2, 3, 4, 5, 6, 7], { minLength: 1 }),
+        fc.func(fc.integer()),
+        (order, rank) => {
+          const rooms = order.map((i) => ({ i, labelled: true, shrink: 0 }));
+          const permuted = [...rooms].sort((x, y) => rank(x.i) - rank(y.i) || x.i - y.i);
+          const d = diffPlans(autoIdPlan(rooms), autoIdPlan(permuted));
+          expect(d.ok).toBe(true);
+          expect(d.rooms).toEqual([]);
+          expect(d.summary).toEqual([]);
+        },
+      ),
+      { numRuns: 60, seed: 20261001 },
+    );
+  });
+
+  it("identity: diffPlans(A, A) is empty for every generated plan", () => {
+    fc.assert(
+      fc.property(pairArb, (p) => {
+        const { srcA, srcB } = sides(p);
+        for (const src of [srcA, srcB]) {
+          const d = diffPlans(src, src);
+          expect(d.ok).toBe(true);
+          expect(d.rooms).toEqual([]);
+          expect(d.openings).toEqual([]);
+          expect(d.furniture).toEqual([]);
+          expect(d.circulation).toEqual([]);
+          expect(d.summary).toEqual([]);
+        }
+      }),
+      { numRuns: 40, seed: 20261001 },
+    );
+  });
+
+  it("an insertion ahead of every room reports exactly one added room, in both directions", () => {
+    fc.assert(
+      fc.property(fc.shuffledSubarray([1, 2, 3, 4, 5, 6, 7], { minLength: 1 }), (order) => {
+        const rest = order.map((i) => ({ i, labelled: true, shrink: 0 }));
+        const withNew = [{ i: 0, labelled: true, shrink: 0 }, ...rest];
+        const fwd = diffPlans(autoIdPlan(rest), autoIdPlan(withNew));
+        expect(fwd.rooms).toEqual([{ id: "room_1", label: "R0", change: "added", areaAfterM2: 9 }]);
+        const back = diffPlans(autoIdPlan(withNew), autoIdPlan(rest));
+        expect(back.rooms).toEqual([{ id: "room_1", label: "R0", change: "removed", areaBeforeM2: 9 }]);
+      }),
+      { numRuns: 30, seed: 20261001 },
+    );
   });
 });
