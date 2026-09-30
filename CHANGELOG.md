@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.37.1] - 2026-09-30
+
 ### Fixed — a double door no longer reads as an obstructed swing
 
 - `W_SWING_OBSTRUCTED` between two doors no longer fires on single-point contact. Two leaves
