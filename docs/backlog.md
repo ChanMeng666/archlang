@@ -572,8 +572,12 @@ with the removal of `while`/reassignment (its own checklist: 6.7), delete:
 - [ ] the `AGENTS.md` rule becomes "Heights draw nothing."; drop the view lines in
       `docs/agents/architecture.md`; rewrite the P3-2 note "The datum now has ONE consumer — the
       axonometric" below.
-- [ ] ripgrep treats `src/plan-json.ts` as binary — sweep it with `grep -a`.
 - [ ] prove it with a SHA-256 byte-identity sweep of `compile`, `describe` and `lint` over every example.
+
+The deletion is already prepared and red-teamed on branch `origin/feat/remove-view` (branched from
+the deprecation merge; byte-identity sweep 810/810; tests pin `--view` → exit 3; a manifest
+example-flag guard). At 2.0: rebase it onto `main`, re-run its sweep, and move its CHANGELOG
+`Removed — BREAKING` block into the 2.0.0 section. Rebase it, do not redo it.
 
 ---
 

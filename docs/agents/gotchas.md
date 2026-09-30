@@ -29,9 +29,6 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   frame before writing it** (`LintContext.frameOf`, `src/lint.ts`), or the machine-applicable edit
   is correct in plan coordinates and wrong once `arch fix` writes it back into the component body.
 
-- **The axonometric view (`src/view/`, `--view`) is deprecated** (`docs/adr/0021-plan-first-view-deprecated.md`):
-  fix nothing in it, promote it nowhere, and keep the height datum out of any removal.
-
 ## Docs & prose
 
 - **A quoted dimension must name its convention or carry a tilde.** A plan with wall thickness has
@@ -71,6 +68,17 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 - **Two actors in one worktree share one checkout.** A reviewer's `git checkout -b probe` silently
   redirects the other's commits. Verify a branch from a separate checkout (or `git -C`), and re-read
   an agent branch's tip with `git rev-parse` before merging it.
+- **A literal NUL byte in a source file makes git and ripgrep treat it as binary** (the diff shows
+  `Bin`, search skips the file). Write `\u0000`.
+- **gitleaks `generic-api-key` flags SHA-256 digest tables keyed by a name containing a key-ish word**
+  (e.g. `accessible`). Allowlist the exact fingerprint per `.gitleaksignore`'s header and hold the
+  file in `test/opaque-literal-guard.test.ts`; never a glob.
+- **In a `.claude/worktrees/*` checkout whose `node_modules` is a junction to the primary,
+  `editors/vscode/test/wrong-core.test.ts` fails by design**, so `npm run check` is fully green only
+  in the primary checkout and a `&&` gate chain stops there. Run gates one by one in a worktree;
+  build/package the extension and the MCP shim only in the primary.
+- **Remove a worktree's `node_modules` junctions with `cmd /c rmdir <path>`** before
+  `git worktree remove --force` or any recursive delete, or the delete follows them into the primary.
 - **A clean auto-merge of a moved function another branch modified is not evidence.** Taking one
   side can silently revert the other's fix with a green suite. Diff the moved body against the newer
   version and run both branches' fixtures together.
