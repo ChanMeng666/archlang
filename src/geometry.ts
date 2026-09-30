@@ -330,6 +330,15 @@ export function swingsCollide(a: DoorSwing, b: DoorSwing, clearance: number): bo
  * wall they close), and at clearance 0 their quarter-discs meet in that one point only. Read
  * within {@link VERTEX_EPS}, the vertex-coincidence tolerance. A pair with any gap at the
  * jamb, however small, is two independent doors.
+ *
+ * Accepted shapes, each deliberately: EQUAL leaves (the textbook pair); UNEQUAL leaves (a
+ * leaf-and-a-half door, e.g. 1000 + 500), since nothing about sharing a latch depends on the
+ * widths; and leaves that open to OPPOSITE faces of the wall from the shared latch (one in,
+ * one out), whose discs lie on either side of the wall line and still meet only at the latch.
+ * What makes all three one assembly is the shared latch jamb itself: the two leaves close
+ * onto each other, so no clearance can separate them without separating the door from
+ * itself. The clearance exists to keep INDEPENDENT doors' swings apart, and it still applies
+ * the moment the jambs part.
  */
 export function isDoubleDoorPair(a: DoorSwing, b: DoorSwing): boolean {
   if (Math.hypot(a.farJamb.x - b.farJamb.x, a.farJamb.y - b.farJamb.y) > VERTEX_EPS) return false;

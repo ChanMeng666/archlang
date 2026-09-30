@@ -61,20 +61,42 @@ describe("W_SWING_OBSTRUCTED states the measured deficit", () => {
     expect(d.hints!.join("\n")).toMatch(/leafless `opening`/);
   });
 
+  // The minimum the hint is measured against is the narrowest door the ruleset PASSES: 760 mm
+  // under the defaults — `minDoorWidthMm` 700 for W_DOOR_CLEARANCE, and 700 mm of clear width
+  // for W_PATH_TOO_NARROW, which a door gives at 760 (the access graph's 60 mm leaf-and-stop
+  // allowance). Narrowing below it would trade this warning for one of those.
   it("REFUSES the narrow-the-door remedy when it would breach the minimum width", () => {
-    // The obstruction reaches to 300 mm of the hinge: narrowing to 300 mm would silence
-    // this warning by creating W_DOOR_CLEARANCE. The hint must say so, not offer it.
+    // The obstruction reaches to 300 mm of the hinge: narrowing that far would silence this
+    // warning by creating W_DOOR_CLEARANCE. The hint must say so, not offer it.
     const d = one(swingPlan(`furniture box at (2000,2600) size 1500x900 label "X"`), "W_SWING_OBSTRUCTED");
     const hints = d.hints!.join("\n");
     expect(hints).toMatch(/Narrowing the door is not a fix here/);
-    expect(hints).toMatch(/under the 700 mm minimum passable width/);
+    expect(hints).toMatch(/under the 760 mm minimum passable width/);
     expect(hints).not.toMatch(/Narrow the door to/);
   });
 
   it("offers the narrow-to width when it stays at or above the minimum", () => {
-    // The obstruction stands ~950 mm off the hinge, so a 700–949 mm leaf still clears.
+    // The obstruction stands ~950 mm off the hinge, so a narrower leaf above 760 mm clears.
     const d = one(swingPlan(`furniture box at (2600,2600) size 600x500 label "X"`), "W_SWING_OBSTRUCTED");
-    expect(d.hints!.join("\n")).toMatch(/Narrow the door to \d+ mm or less, which still clears the 700 mm minimum/);
+    expect(d.hints!.join("\n")).toMatch(/Narrow the door to \d+ mm or less, which still clears the 760 mm minimum/);
+  });
+
+  it("never trades the swing warning for another: the offered width raises nothing new (a11y)", () => {
+    const a11y = { profile: "accessibility-advisory" } as const;
+    const plan = (w: number, furn: string) => swingPlan(furn).replace("width 1000", `width ${w}`);
+    // Offered: a 1200 mm leaf 47 mm short; the widest clearing leaf is above the 960 mm floor
+    // (850 nominal for W_DOOR_CLEARANCE, 900 clear + 60 for W_PATH_TOO_NARROW). Applied, the
+    // plan lints with NO warning at all — not merely without the swing one.
+    const offered = `furniture box at (3300,2500) size 200x200 label "X"`;
+    const d = lint(plan(1200, offered), a11y).find((x) => x.code === "W_SWING_OBSTRUCTED")!;
+    expect(d.hints!.join("\n")).toMatch(/Narrow the door to \d+ mm or less, which still clears the 960 mm minimum/);
+    expect(lint(plan(quoted(d), offered), a11y)).toEqual([]);
+    // Refused (the imports-like case): the widest clearing leaf, 949 mm, is under 960 — and
+    // applying it really would raise W_PATH_TOO_NARROW, which is why it is not offered.
+    const refused = `furniture box at (3300,2800) size 200x100 label "X"`;
+    const r = lint(plan(1000, refused), a11y).find((x) => x.code === "W_SWING_OBSTRUCTED")!;
+    expect(r.hints!.join("\n")).toMatch(/drop to 949 mm, under the 960 mm minimum passable width/);
+    expect(lint(plan(949, refused), a11y).map((x) => x.code)).toEqual(["W_PATH_TOO_NARROW"]);
   });
 
   // Backlog 6.9. The leaf is hinged at (3500,4000) and opens up to (3500,3000); a box whose
@@ -98,7 +120,7 @@ describe("W_SWING_OBSTRUCTED states the measured deficit", () => {
     const src = swingPlan(`furniture box at (3300,2600) size 200x401 label "X"`);
     const d = one(src, "W_SWING_OBSTRUCTED");
     expect(d.message).toMatch(/"X" is 999 mm from the hinge \(1 mm short\)/);
-    expect(d.hints!.join("\n")).toMatch(/Narrow the door to 998 mm or less, which still clears the 700 mm minimum/);
+    expect(d.hints!.join("\n")).toMatch(/Narrow the door to 998 mm or less, which still clears the 760 mm minimum/);
     expect(swingCodes(narrow(src, "door at", 998))).toEqual([]);
     // What `reach − clearance` used to quote does NOT clear: its disc still touches the box.
     expect(swingCodes(narrow(src, "door at", 999))).toHaveLength(1);
@@ -264,10 +286,15 @@ describe("W_DOORWAY_BLOCKED / W_FURN_CLEARANCE state the measured deficit", () =
 describe("W_SWING_OBSTRUCTED's quoted width holds across the shipped examples", () => {
   // Derived from the corpus, not retyped: every narrowing width any example's warning quotes
   // (default rules and the a11y profile), written into that door's own statement, must leave
-  // that door clear. This is what caught a width the resolver's `grid` snap would undo.
+  // that door clear — and an OFFERED width ("Narrow the door to …") must raise no new warning
+  // of any kind. This is what caught a width the resolver's `grid` snap would undo, and a
+  // width that traded the swing warning for W_PATH_TOO_NARROW. A door written in an imported
+  // module (`imports.arch`'s `single(…)`) is rewritten in that module, served through the World.
   const EXAMPLES = resolvePath("examples");
-  const world = {
+  const worldWith = (over: ReadonlyMap<string, string> = new Map()) => ({
     read: (p: string) => {
+      const o = over.get(p);
+      if (o !== undefined) return o;
       try {
         return readFileSync(resolvePath(EXAMPLES, p), "utf8");
       } catch {
@@ -275,29 +302,53 @@ describe("W_SWING_OBSTRUCTED's quoted width holds across the shipped examples", 
       }
     },
     now: () => new Date(0),
+  });
+  const tally = (ds: ReadonlyArray<{ code: string }>) => {
+    const n = new Map<string, number>();
+    for (const d of ds) n.set(d.code, (n.get(d.code) ?? 0) + 1);
+    return n;
   };
-  it("applied to its door, every quoted width clears that door's warning", () => {
+  it("applied to its door, every quoted width clears that door's warning, and an offered one adds nothing", () => {
     let applied = 0;
+    let imported = 0;
+    let offered = 0;
     for (const f of readdirSync(EXAMPLES).filter((x) => x.endsWith(".arch"))) {
       const src = readFileSync(join(EXAMPLES, f), "utf8");
       for (const profile of [undefined, "accessibility-advisory"]) {
-        for (const d of lint(src, { world, profile }).filter((x) => x.code === "W_SWING_OBSTRUCTED")) {
-          const m = /(?:Narrow the door to|would have to drop to) (\d+) mm/.exec(d.hints!.join("\n"));
-          if (!m || d.file || !d.span) continue; // no quoted width, or the door is in an imported module
+        const before = lint(src, { world: worldWith(), profile });
+        for (const d of before.filter((x) => x.code === "W_SWING_OBSTRUCTED")) {
+          const hints = d.hints!.join("\n");
+          const m = /(?:Narrow the door to|would have to drop to) (\d+) mm/.exec(hints);
+          if (!m || !d.span) continue;
           const span = d.span;
-          const stmt = src.slice(span.start, span.end);
-          const next = stmt.replace(/width \d+(\.\d+)?/, `width ${m[1]}`);
+          // The text that holds the door: this file, or the imported module it was written in.
+          const text = d.file === undefined ? src : readFileSync(resolvePath(EXAMPLES, d.file), "utf8");
+          const stmt = text.slice(span.start, span.end);
+          const next = stmt.replace(/\bwidth \S+/, `width ${m[1]}`);
           expect(next, `${f}: ${stmt}`).not.toBe(stmt);
-          const out = src.slice(0, span.start) + next + src.slice(span.end);
-          const still = lint(out, { world, profile }).filter(
-            (x) => x.code === "W_SWING_OBSTRUCTED" && x.span?.start === span.start,
+          const edited = text.slice(0, span.start) + next + text.slice(span.end);
+          const [root, over] =
+            d.file === undefined ? [edited, new Map<string, string>()] : [src, new Map([[d.file, edited]])];
+          const after = lint(root, { world: worldWith(over), profile });
+          const tag = `${f} (${profile ?? "default"}) at width ${m[1]}`;
+          const still = after.filter(
+            (x) => x.code === "W_SWING_OBSTRUCTED" && x.span?.start === span.start && x.file === d.file,
           );
-          expect(still, `${f} (${profile ?? "default"}) at width ${m[1]}`).toEqual([]);
+          expect(still, tag).toEqual([]);
+          if (/Narrow the door to/.test(hints)) {
+            const [was, now] = [tally(before), tally(after)];
+            for (const [code, n] of now) expect(n, `${tag}: new ${code}`).toBeLessThanOrEqual(was.get(code) ?? 0);
+            offered++;
+          }
+          if (d.file !== undefined) imported++;
           applied++;
         }
       }
     }
-    // Not vacuous: the a11y profile raises quoted widths on several shipped examples.
+    // Not vacuous: the a11y profile raises quoted widths on several shipped examples, one of
+    // them on a door written in an imported module, and at least one width is offered.
     expect(applied).toBeGreaterThanOrEqual(5);
+    expect(imported).toBeGreaterThanOrEqual(1);
+    expect(offered).toBeGreaterThanOrEqual(1);
   });
 });

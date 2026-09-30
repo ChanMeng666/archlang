@@ -5,7 +5,7 @@
  */
 
 import { det } from "../../algebra/d4.js";
-import { rectOf } from "../../analyze.js";
+import { connectorClearWidth, DEFAULT_CLEAR_ALLOWANCE_MM, rectOf } from "../../analyze.js";
 import type { Point } from "../../ast.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { doorHingeFlipFix, fixesFrom, pocketRunFix } from "../../fix-producers.js";
@@ -27,8 +27,9 @@ import { approachGapMm, deficitMm, distPointToRect, mm, shortfall } from "../mea
  * of everything. The "narrow the door" remedy is held to the same proof: it quotes the widest
  * narrower leaf whose recomputed swing (hinge moved, since narrowing keeps `at`) is clear of
  * everything ({@link widestClearingWidth}), **refuses itself** when that width is under the
- * minimum passable one (shrinking a door below its own floor does not solve the conflict, it
- * relocates it into `W_DOOR_CLEARANCE`), and is left out when no narrower leaf clears.
+ * narrowest one the ruleset passes ({@link passableDoorWidthMm}: shrinking a door below that
+ * does not solve the conflict, it relocates it into `W_DOOR_CLEARANCE` or
+ * `W_PATH_TOO_NARROW`), and is left out when no narrower leaf clears.
  */
 export const swingObstructed: LintRule = {
   name: "swing-obstructed",
@@ -40,7 +41,7 @@ export const swingObstructed: LintRule = {
       if (s) swings.push({ d, s });
     }
     const clr = rules.swingClearanceMm;
-    const min = rules.minDoorWidthMm;
+    const min = passableDoorWidthMm(rules);
     for (let i = 0; i < swings.length; i++) {
       const { d, s } = swings[i]!;
       /** The measured cause, as prose. */
@@ -93,8 +94,8 @@ export const swingObstructed: LintRule = {
             ? []
             : [
                 narrowTo >= min
-                  ? `Narrow the door to ${mm(narrowTo)} mm or less, which still clears the ${min} mm minimum.`
-                  : `Narrowing the door is not a fix here — the leaf would have to drop to ${mm(narrowTo)} mm, under the ${min} mm minimum passable width.`,
+                  ? `Narrow the door to ${mm(narrowTo)} mm or less, which still clears the ${mm(min)} mm minimum.`
+                  : `Narrowing the door is not a fix here — the leaf would have to drop to ${mm(narrowTo)} mm, under the ${mm(min)} mm minimum passable width.`,
               ]),
           // The remedy is named by the property that solves THIS warning (a panel that sweeps nothing)
           // and by statements the author can paste, not as a vague suggestion.
@@ -107,6 +108,24 @@ export const swingObstructed: LintRule = {
     return out;
   },
 };
+
+/**
+ * The narrowest whole-mm door width the active ruleset passes: it raises neither
+ * `W_DOOR_CLEARANCE` (nominal width under `minDoorWidthMm`) nor, as a route's pinch,
+ * `W_PATH_TOO_NARROW` (clear width under `minPathClearWidthMm`). The clear width comes from
+ * {@link connectorClearWidth} with the allowance the lint's access graph uses, the one
+ * deduction every circulation bottleneck is measured with, so the narrowing hint can never
+ * trade `W_SWING_OBSTRUCTED` for either. (Default ruleset: 760 mm; `accessibility-advisory`:
+ * 960 mm.) Clear width grows with the nominal one, so the upward scan ends.
+ */
+function passableDoorWidthMm(rules: LintContext["rules"]): number {
+  const passes = (w: number): boolean =>
+    w >= rules.minDoorWidthMm &&
+    connectorClearWidth("door", w, DEFAULT_CLEAR_ALLOWANCE_MM) >= rules.minPathClearWidthMm;
+  let w = Math.max(1, Math.ceil(rules.minDoorWidthMm));
+  while (!passes(w)) w++;
+  return w;
+}
 
 /**
  * The widest leaf strictly narrower than `d`'s own whose RECOMPUTED swing `clears` proves

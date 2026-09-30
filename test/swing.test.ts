@@ -230,6 +230,22 @@ describe("swingsCollide", () => {
     }
   });
 
+  it("unequal leaves, and leaves opening to opposite faces from a shared latch, are one assembly too", () => {
+    for (const w of WALLS) {
+      for (const [wa, wb, sa, sb] of [
+        [1000, 500, "in", "in"],
+        [900, 900, "in", "out"],
+        [1000, 600, "out", "in"],
+      ] as const) {
+        const a = leaf(w, 3000 - wa / 2, wa, "start", sa);
+        const b = leaf(w, 3000 + wb / 2, wb, "end", sb);
+        const tag = `${JSON.stringify(w.a)} ${wa}/${wb} ${sa}/${sb}`;
+        expect(isDoubleDoorPair(a, b), tag).toBe(true);
+        expect(swingsCollide(a, b, 150), tag).toBe(false);
+      }
+    }
+  });
+
   it("a pair with a 1 mm gap at the jamb is two independent doors and keeps the clearance", () => {
     for (const w of WALLS) {
       const a = leaf(w, 2500, 1000, "start", "in");
