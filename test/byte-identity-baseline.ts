@@ -349,8 +349,10 @@
  * The later hint fix (the narrowing width recomputed and proved, the message's numbers rounded
  * to agree) moves no row here: no example's default `lint()` carries a `W_SWING_OBSTRUCTED`.
  * It moves only `lint()` under `accessibility-advisory`, which no digest covers, for
- * `furnished-flat`, `hillside-villa`, `imports` and `materials` (the quoted widths, and
- * `hillside-villa`'s two `wc` distances 802 → 801 mm with their shortfalls 48 → 49).
+ * `furnished-flat`, `hillside-villa`, `imports` and `materials` (the quoted widths; the
+ * minimum they are measured against, 850 → 960 mm, the narrowest door that profile passes
+ * without `W_DOOR_CLEARANCE` or `W_PATH_TOO_NARROW`; and `hillside-villa`'s two `wc`
+ * distances 802 → 801 mm with their shortfalls 48 → 49).
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

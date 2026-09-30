@@ -755,8 +755,13 @@ width, so a quoted width could fail to clear. `widestClearingWidth` (`src/lint/r
 now bisects the widths the author can get (multiples of the grid; whole mm without one) for the
 widest narrower leaf whose recomputed swing is clear of everything, the proof the hinge flip
 already had; no such width, no hint. At 0 mm short it quotes 999 mm, at 1 mm short 998 (not
-999, which still touches). Every quoted width in the shipped examples, applied to its door,
-clears it (`test/lint-deficits.test.ts`, corpus-derived). The message's three numbers now agree
+999, which still touches). The width it OFFERS is never below the narrowest door the ruleset
+passes (`passableDoorWidthMm`: no `W_DOOR_CLEARANCE`, and a clear width, by
+`connectorClearWidth` in `src/analyze.ts`, that no route pinches into `W_PATH_TOO_NARROW`;
+760 mm by default, 960 under `accessibility-advisory`); a proved width under that is quoted
+as "not a fix". Every quoted width in the shipped examples, applied to its door (in the file,
+or in the imported module that wrote it), clears that door, and an offered one raises no new
+warning of any kind (`test/lint-deficits.test.ts`, corpus-derived). The message's three numbers now agree
 (`deficitMm`, `src/lint/measure.ts`: need rounded up, have rounded down, the shortfall their
 difference), so "1999 mm apart … need 1999 mm (1 mm short)" cannot be printed. Every example's
 default `lint()` is unchanged; under `accessibility-advisory` the swing hints (and one rounded

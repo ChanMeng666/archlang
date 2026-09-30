@@ -29,11 +29,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   not clear. The hint now quotes the widest narrower width the plan can express whose swing,
   recomputed, is clear of everything (as the hinge-flip fix already was), and is left out when
   there is none.
+- It never trades one warning for another: the minimum it measures against is the narrowest
+  door the ruleset passes without `W_DOOR_CLEARANCE` or, as a route's pinch,
+  `W_PATH_TOO_NARROW` (760 mm by default, 960 mm under `accessibility-advisory`). A clearing
+  width under it is reported as "not a fix here".
 - The message's numbers now agree: the need is rounded up, the distance available down, and the
   shortfall is their difference.
 - Under `--profile accessibility-advisory`, the swing hints of `furnished-flat`,
-  `hillside-villa`, `imports` and `materials` quote new widths (and `hillside-villa`'s two `wc`
-  warnings read 801 mm, 49 mm short, for 802 and 48); default lint output is unchanged.
+  `hillside-villa`, `imports` and `materials` quote new widths against a 960 mm minimum (was
+  850), `imports` and three others now refusing where they offered, and `hillside-villa`'s two
+  `wc` warnings read 801 mm, 49 mm short, for 802 and 48; default lint output is unchanged.
 
 ### Changed — `museum-wings.arch`'s main door is a mirror pair of leaves
 
