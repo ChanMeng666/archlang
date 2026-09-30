@@ -272,10 +272,45 @@ export interface VerticalReach {
   arrivalRooms: Map<number, string[]>;
 }
 
+/**
+ * What one storey's rooms can be walked to from, for {@link verticalReach}'s room-aware
+ * fixpoint: the exterior (when the storey is grounded) and the rooms that live shafts land
+ * in on it. Room ids, source order of first arrival.
+ */
+export interface StoreySeeds {
+  exterior: boolean;
+  rooms: string[];
+}
+
+/**
+ * The rooms of storey `level` a person can walk into from `seeds` — injected by the
+ * caller (`storeyRoomReach` in `analyze.ts`, the probe access graph), because this module
+ * cannot import `analyze.ts` (see {@link roomOfVertical}). Must be monotone in `seeds`
+ * (more seeds never reach fewer rooms), which any graph search is; the fixpoint relies on it.
+ */
+export type StoreyRoomReach = (level: number, seeds: StoreySeeds) => ReadonlySet<string>;
+
+/**
+ * Which storeys are reachable, and where you arrive on them — see {@link VerticalReach}.
+ *
+ * Without `roomReach` a shaft joins its storeys as soon as ANY of them is reachable,
+ * wherever on that storey it stands (the original storey-level fixpoint, unchanged). With
+ * it, the fixpoint runs over `(storey, room)`: a shaft is live only when one of its stops is
+ * ACTIVE — its storey is reachable and the room it stands in is walkable from that storey's
+ * seeds (the exterior if grounded, plus the rooms live shafts land in; a grounded storey
+ * relays too, so a hillside ground floor can carry a shaft on upward). A stair in a
+ * door-less store therefore joins nothing. A stop whose footprint lies in no room
+ * (`room === null`) keeps the storey-level answer: active once its storey is reachable.
+ *
+ * `arrivalRooms` keeps its historical meaning in both modes: rooms on UNGROUNDED storeys
+ * only, so a grounded storey's lint sources never change.
+ */
 export function verticalReach(
   levels: readonly VerticalLevelInput[],
   grounded: (level: number) => boolean,
+  roomReach?: StoreyRoomReach,
 ): VerticalReach {
+  if (roomReach) return roomAwareReach(levels, grounded, roomReach);
   const connections = verticalConnections(levels);
   const reachable = new Set<number>();
   for (const l of levels) if (grounded(l.level)) reachable.add(l.level);
@@ -292,6 +327,79 @@ export function verticalReach(
           grew = true;
         }
         if (grounded(stop.level) || stop.room === null) continue;
+        const list = arrivalRooms.get(stop.level) ?? [];
+        if (!list.includes(stop.room)) {
+          list.push(stop.room);
+          arrivalRooms.set(stop.level, list);
+        }
+      }
+    }
+    if (!grew) break;
+  }
+  return { reachable, arrivalRooms };
+}
+
+/**
+ * The `(storey, room)` Kleene fixpoint behind {@link verticalReach} when a `roomReach` is
+ * given. Same pass structure as the storey-level loop (connections in first-seen order,
+ * stops ascending), so when every stop is active the two produce the same `reachable` and
+ * the same `arrivalRooms`, element for element. Every set only grows — reachable storeys,
+ * per-storey seed rooms, and (by `roomReach`'s monotonicity) the rooms walkable from them —
+ * so the loop terminates at the least fixpoint.
+ */
+function roomAwareReach(
+  levels: readonly VerticalLevelInput[],
+  isGrounded: (level: number) => boolean,
+  roomReach: StoreyRoomReach,
+): VerticalReach {
+  // `grounded` is pure but not cheap (the callers build an access graph per call), and the
+  // loop below asks it once per stop per pass — ask each storey once.
+  const groundedMemo = new Map<number, boolean>();
+  const grounded = (level: number): boolean => {
+    let g = groundedMemo.get(level);
+    if (g === undefined) {
+      g = isGrounded(level);
+      groundedMemo.set(level, g);
+    }
+    return g;
+  };
+  const connections = verticalConnections(levels);
+  const reachable = new Set<number>();
+  for (const l of levels) if (grounded(l.level)) reachable.add(l.level);
+  const arrivalRooms = new Map<number, string[]>();
+  // Rooms live shafts land in, on EVERY storey (grounded ones relay too).
+  const seedRooms = new Map<number, string[]>();
+  // `roomReach` answers, invalidated whenever a storey's seeds grow.
+  const live = new Map<number, ReadonlySet<string>>();
+  const liveOn = (level: number): ReadonlySet<string> => {
+    let s = live.get(level);
+    if (!s) {
+      s = roomReach(level, { exterior: grounded(level), rooms: [...(seedRooms.get(level) ?? [])] });
+      live.set(level, s);
+    }
+    return s;
+  };
+  const active = (stop: VerticalStop): boolean =>
+    reachable.has(stop.level) && (stop.room === null || liveOn(stop.level).has(stop.room));
+
+  for (;;) {
+    let grew = false;
+    for (const c of connections) {
+      if (!c.stops.some(active)) continue;
+      for (const stop of c.stops) {
+        if (!reachable.has(stop.level)) {
+          reachable.add(stop.level);
+          grew = true;
+        }
+        if (stop.room === null) continue;
+        const seeds = seedRooms.get(stop.level) ?? [];
+        if (!seeds.includes(stop.room)) {
+          seeds.push(stop.room);
+          seedRooms.set(stop.level, seeds);
+          live.delete(stop.level);
+          grew = true;
+        }
+        if (grounded(stop.level)) continue;
         const list = arrivalRooms.get(stop.level) ?? [];
         if (!list.includes(stop.room)) {
           list.push(stop.room);

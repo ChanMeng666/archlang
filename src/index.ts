@@ -62,7 +62,14 @@ export {
   verticalsOf,
   VERTICAL_KINDS,
 } from "./vertical.js";
-export type { RVertical, VerticalLevelInput, VerticalObstacle, VerticalReach } from "./vertical.js";
+export type {
+  RVertical,
+  StoreyRoomReach,
+  StoreySeeds,
+  VerticalLevelInput,
+  VerticalObstacle,
+  VerticalReach,
+} from "./vertical.js";
 // Semantic summary: pure source→facts. `describe(source)` returns rooms
 // (areas, bboxes, adjacency), doors (what they connect), windows, and totals —
 // the channel a text-only agent uses to verify a plan without rendering it.

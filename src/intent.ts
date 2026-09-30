@@ -346,12 +346,32 @@ function checkOne(
     }
     case "reachable": {
       const unreachable = summary.access.rooms.filter((r) => !r.reachable).map((r) => r.id);
-      const pass = summary.access.hasEntrance && unreachable.length === 0;
+      // Multi-storey: the top-level `access` is the LOWEST storey only, so every storey must
+      // also have a way in — its own exterior door, or a shaft from a reachable storey
+      // (`vertical.reachable_levels`, the room-aware fixpoint in `src/vertical.ts`).
+      // KNOWN LIMIT: per-room reachability on an upper storey is not checked here. Its
+      // `levels[i].access.rooms[].reachable` counts only exterior doors, not shaft arrivals,
+      // so reading it would fail every stair-served upper floor; answering it needs a new
+      // describe fact (rooms reached per storey from the arrival rooms), deliberately not
+      // added. A single-storey summary has no `levels` and is judged exactly as before.
+      const reachableLevels = new Set(summary.vertical?.reachable_levels ?? []);
+      const cutOff = (summary.levels ?? [])
+        .filter((l) => !reachableLevels.has(l.level) && !l.access.hasEntrance)
+        .map((l) => l.level);
+      const pass = summary.access.hasEntrance && unreachable.length === 0 && cutOff.length === 0;
+      // Each cause that holds, in a fixed order; with no storey cut off this is exactly the
+      // single-storey wording.
+      const causes = !summary.access.hasEntrance
+        ? ["no modeled entrance"]
+        : unreachable.length > 0
+          ? [`unreachable: ${unreachable.join(", ")}`]
+          : [];
+      if (cutOff.length > 0) {
+        causes.push(`no way into storey(s): ${cutOff.join(", ")} (no exterior door, no shaft from a reachable storey)`);
+      }
       const detail = pass
         ? `reachable: all ${summary.access.rooms.length} room(s) reachable`
-        : `reachable: ${
-            !summary.access.hasEntrance ? "no modeled entrance" : `unreachable: ${unreachable.join(", ")}`
-          }`;
+        : `reachable: ${causes.join("; ")}`;
       return { predicate: p, pass, detail };
     }
   }

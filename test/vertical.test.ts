@@ -16,6 +16,8 @@
  */
 
 import { readFileSync, readdirSync } from "node:fs";
+import { join, resolve as resolvePath } from "node:path";
+import fc from "fast-check";
 import { describe as suite, expect, it } from "vitest";
 import {
   BUILTIN_REGISTRY,
@@ -27,12 +29,18 @@ import {
   flightAxis,
   lint,
   resolveAll,
+  type StoreyRoomReach,
+  type VerticalLevelInput,
+  type VerticalReach,
   VERTICAL_KINDS,
   verticalConnections,
+  verticalReach,
   verticalsOf,
 } from "../src/index.js";
+import { buildingRoomReach, DEFAULT_TOL, resolvePlan, storeyGrounded } from "../src/analyze.js";
 import { parse } from "../src/parser.js";
-import type { RStair } from "../src/ir.js";
+import type { ResolvedPlan, RStair } from "../src/ir.js";
+import type { World } from "../src/world.js";
 import { treadCount, TREAD_GOING_MM } from "../src/elements/vertical-glyphs.js";
 
 const SHELL = `wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }`;
@@ -547,5 +555,254 @@ suite("vertical circulation — a balcony door is not an arrival point", () => {
     const s = describePlan(src);
     expect(s.vertical!.reachable_levels).toEqual([1, 2]);
     expect(s.levels![1]!.access.hasEntrance).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// verticalReach: the room-aware fixpoint is an optional refinement of the old one
+// ---------------------------------------------------------------------------
+
+/**
+ * `verticalReach` exactly as it stood before the room-aware `roomReach` parameter existed
+ * (verbatim body, renamed). It is the oracle for the law that the two-argument call is
+ * unchanged, and that the room-aware fixpoint with every room live reproduces it.
+ */
+function oracleVerticalReach(
+  levels: readonly VerticalLevelInput[],
+  grounded: (level: number) => boolean,
+): VerticalReach {
+  const connections = verticalConnections(levels);
+  const reachable = new Set<number>();
+  for (const l of levels) if (grounded(l.level)) reachable.add(l.level);
+  const arrivalRooms = new Map<number, string[]>();
+
+  for (let pass = 0; pass < levels.length + 1; pass++) {
+    let grew = false;
+    for (const c of connections) {
+      const anyReachable = c.levels.some((n) => reachable.has(n));
+      if (!anyReachable) continue;
+      for (const stop of c.stops) {
+        if (!reachable.has(stop.level)) {
+          reachable.add(stop.level);
+          grew = true;
+        }
+        if (grounded(stop.level) || stop.room === null) continue;
+        const list = arrivalRooms.get(stop.level) ?? [];
+        if (!list.includes(stop.room)) {
+          list.push(stop.room);
+          arrivalRooms.set(stop.level, list);
+        }
+      }
+    }
+    if (!grew) break;
+  }
+  return { reachable, arrivalRooms };
+}
+
+/** A reach result with its insertion orders made visible, so `toEqual` is order-strict. */
+const shape = (r: VerticalReach) => ({ reachable: [...r.reachable], arrivalRooms: [...r.arrivalRooms.entries()] });
+
+/** Every room of the storey, whatever the seeds: the callback under which no stop is dead. */
+const allRoomsLive =
+  (levels: readonly VerticalLevelInput[]): StoreyRoomReach =>
+  (level) =>
+    new Set(
+      (levels.find((l) => l.level === level)?.ir.elements ?? []).filter((e) => e.kind === "room").map((e) => e.id),
+    );
+
+interface Spec {
+  grounded: boolean;
+  rooms: boolean[];
+  runs: { id: string; kind: string; cell: number }[];
+  /** Which rooms the exterior reaches, and per room which rooms it reaches — a monotone reach. */
+  fromExterior: boolean[];
+  fromRoom: boolean[][];
+}
+
+/**
+ * A synthetic building: up to four storeys, each a strip of up to three 1000 mm rooms and a
+ * few runs whose centre falls in a room cell or in the empty cell past the strip (`room:
+ * null`). Only the fields `verticalConnections`/`roomOfVertical` read are present.
+ */
+const arbBuilding: fc.Arbitrary<[Spec[], number]> = fc.tuple(
+  fc.array(
+    fc.record({
+      grounded: fc.boolean(),
+      rooms: fc.array(fc.boolean(), { minLength: 3, maxLength: 3 }),
+      runs: fc.array(
+        fc.record({
+          id: fc.constantFrom("a", "b", "c", "d"),
+          kind: fc.constantFrom("stair", "elevator", "escalator"),
+          cell: fc.integer({ min: 0, max: 3 }),
+        }),
+        { maxLength: 4 },
+      ),
+      fromExterior: fc.array(fc.boolean(), { minLength: 3, maxLength: 3 }),
+      fromRoom: fc.array(fc.array(fc.boolean(), { minLength: 3, maxLength: 3 }), { minLength: 3, maxLength: 3 }),
+    }),
+    { minLength: 1, maxLength: 4 },
+  ),
+  fc.integer({ min: -1, max: 1 }),
+);
+
+function synth(specs: Spec[], base: number) {
+  const levels: VerticalLevelInput[] = specs.map((s, i) => {
+    const elements = [
+      ...s.rooms.flatMap((present, k) =>
+        present ? [{ kind: "room", id: `r${k}`, at: { x: k * 1000, y: 0 }, size: { w: 1000, h: 1000 } }] : [],
+      ),
+      ...s.runs.map((r) => ({
+        kind: r.kind,
+        id: r.id,
+        at: { x: r.cell * 1000 + 300, y: 300 },
+        size: { w: 400, h: 400 },
+        ...(r.kind === "elevator" ? {} : { dir: "up" }),
+      })),
+    ];
+    return { level: base + i, ir: { elements } as unknown as ResolvedPlan };
+  });
+  const specOf = (level: number): Spec | undefined => specs[level - base];
+  const grounded = (level: number): boolean => specOf(level)?.grounded ?? false;
+  const roomReach: StoreyRoomReach = (level, seeds) => {
+    const s = specOf(level)!;
+    const out = new Set<string>();
+    const addAll = (row: readonly boolean[]): void => {
+      for (let k = 0; k < row.length; k++) if (row[k] && s.rooms[k]) out.add(`r${k}`);
+    };
+    if (seeds.exterior) addAll(s.fromExterior);
+    for (const id of seeds.rooms) {
+      out.add(id);
+      addAll(s.fromRoom[Number(id.slice(1))]!);
+    }
+    return out;
+  };
+  return { levels, grounded, roomReach };
+}
+
+/**
+ * The room-aware semantics restated as a naive least fixpoint — recompute every storey's
+ * live rooms from scratch each round, fire every connection with an active stop — with no
+ * pass structure, caching or ordering shared with `src/vertical.ts`.
+ */
+function naiveRoomAware(levels: readonly VerticalLevelInput[], grounded: (n: number) => boolean, rr: StoreyRoomReach) {
+  const connections = verticalConnections(levels);
+  const reach = new Set(levels.filter((l) => grounded(l.level)).map((l) => l.level));
+  const seeds = new Map<number, Set<string>>(levels.map((l) => [l.level, new Set<string>()]));
+  for (let changed = true; changed; ) {
+    changed = false;
+    const live = new Map(
+      levels.map((l) => [l.level, rr(l.level, { exterior: grounded(l.level), rooms: [...seeds.get(l.level)!] })]),
+    );
+    for (const c of connections) {
+      const fires = c.stops.some((s) => reach.has(s.level) && (s.room === null || live.get(s.level)!.has(s.room)));
+      if (!fires) continue;
+      for (const s of c.stops) {
+        if (!reach.has(s.level)) {
+          reach.add(s.level);
+          changed = true;
+        }
+        if (s.room !== null && !seeds.get(s.level)!.has(s.room)) {
+          seeds.get(s.level)!.add(s.room);
+          changed = true;
+        }
+      }
+    }
+  }
+  return { reach, seeds };
+}
+
+/** Every multi-storey plan in the corpus, resolved with a World on its own directory. */
+function corpusBuildings(): { name: string; levels: VerticalLevelInput[] }[] {
+  const out: { name: string; levels: VerticalLevelInput[] }[] = [];
+  for (const dir of ["examples", "test/fixtures", "eval/goldens", "eval/fidelity-plans"]) {
+    const abs = resolvePath(dir);
+    const world: World = {
+      read: (p) => {
+        try {
+          return readFileSync(resolvePath(abs, p), "utf8");
+        } catch {
+          return null;
+        }
+      },
+      now: () => new Date(0),
+    };
+    for (const f of readdirSync(abs).filter((n) => n.endsWith(".arch"))) {
+      const { levels } = resolvePlan(readFileSync(join(abs, f), "utf8"), { world });
+      if (levels.length > 1) {
+        out.push({ name: `${dir}/${f}`, levels: levels.map((l) => ({ level: l.level, ir: l.ir })) });
+      }
+    }
+  }
+  return out;
+}
+
+suite("verticalReach — the room-aware fixpoint refines the storey-level one", () => {
+  it("without `roomReach` it IS the old function (fast-check, order-strict)", () => {
+    fc.assert(
+      fc.property(arbBuilding, ([specs, base]) => {
+        const { levels, grounded } = synth(specs, base);
+        expect(shape(verticalReach(levels, grounded))).toEqual(shape(oracleVerticalReach(levels, grounded)));
+      }),
+      { numRuns: 400 },
+    );
+  });
+
+  it("with every room live it reproduces the old answer exactly, arrival order included", () => {
+    fc.assert(
+      fc.property(arbBuilding, ([specs, base]) => {
+        const { levels, grounded } = synth(specs, base);
+        expect(shape(verticalReach(levels, grounded, allRoomsLive(levels)))).toEqual(
+          shape(oracleVerticalReach(levels, grounded)),
+        );
+      }),
+      { numRuns: 400 },
+    );
+  });
+
+  it("with any monotone `roomReach` it is the naive least fixpoint, and never reaches more than the old one", () => {
+    let pruned = 0;
+    fc.assert(
+      fc.property(arbBuilding, ([specs, base]) => {
+        const { levels, grounded, roomReach } = synth(specs, base);
+        const got = verticalReach(levels, grounded, roomReach);
+        const naive = naiveRoomAware(levels, grounded, roomReach);
+        const old = oracleVerticalReach(levels, grounded);
+        expect([...got.reachable].sort()).toEqual([...naive.reach].sort());
+        // arrivalRooms = the seeds of the UNGROUNDED storeys, nothing on a grounded one.
+        for (const l of levels) {
+          const want = grounded(l.level) ? [] : [...naive.seeds.get(l.level)!].sort();
+          expect([...(got.arrivalRooms.get(l.level) ?? [])].sort()).toEqual(want);
+        }
+        for (const n of got.reachable) expect(old.reachable.has(n)).toBe(true);
+        for (const [n, rooms] of got.arrivalRooms) for (const r of rooms) expect(old.arrivalRooms.get(n)).toContain(r);
+        if (got.reachable.size < old.reachable.size) pruned++;
+      }),
+      { numRuns: 400 },
+    );
+    expect(pruned).toBeGreaterThan(0); // the generator really produced dead stops
+  });
+
+  it("on every multi-storey corpus plan: the two-argument call is the old function, and the room-aware one agrees", () => {
+    const corpus = corpusBuildings();
+    expect(corpus.map((c) => c.name)).toEqual(
+      expect.arrayContaining([
+        "examples/garden-house.arch",
+        "examples/hillside-villa.arch",
+        "examples/townhouse.arch",
+        "examples/two-storey.arch",
+        "test/fixtures/zones-levels.arch",
+      ]),
+    );
+    for (const { name, levels } of corpus) {
+      const grounded = (n: number): boolean => {
+        const l = levels.find((x) => x.level === n);
+        return l ? storeyGrounded(l.ir, DEFAULT_TOL) : false;
+      };
+      const old = shape(oracleVerticalReach(levels, grounded));
+      expect(shape(verticalReach(levels, grounded)), name).toEqual(old);
+      // Every corpus shaft stands in a room its storey reaches (or in none, on a storey
+      // nothing reaches), so nothing moves.
+      expect(shape(verticalReach(levels, grounded, buildingRoomReach(levels, DEFAULT_TOL))), name).toEqual(old);
+    }
   });
 });

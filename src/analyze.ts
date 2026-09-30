@@ -33,6 +33,10 @@ import {
 import { classifyLabelUses } from "./vocabulary.js";
 import { bestPaths, type Digraph } from "./algebra/paths.js";
 import { BOOLEAN, MAX_MIN, MIN_PLUS } from "./algebra/semiring.js";
+// Type-only (erased): a value import of `vertical.ts` from here is harmless, but the
+// reverse direction is the cycle `levelIsGrounded`'s comment describes, and keeping this
+// edge type-only keeps the two modules' load order trivially acyclic.
+import type { StoreyRoomReach, StoreySeeds } from "./vertical.js";
 import {
   ANCHOR_BACK_EDGES,
   BACK_EDGE_ROTATE,
@@ -491,14 +495,15 @@ export function accessDigraph(roomIds: readonly string[], edges: readonly Access
 /**
  * The spaces reachable from {@link EXTERIOR_NODE} and from `extraSources` (rooms a
  * shaft delivers you into), never entering a node `avoid` names. An avoided extra
- * source is not a source; the exterior always is.
+ * source is not a source; the exterior is one unless `exterior: false` (a storey with no
+ * way in of its own — the exterior node stays walkable THROUGH, it is only not a start).
  */
 export function reachFrom(
   g: Digraph<string, unknown>,
-  o: { extraSources?: readonly string[]; avoid?(id: string): boolean } = {},
+  o: { extraSources?: readonly string[]; avoid?(id: string): boolean; exterior?: boolean } = {},
 ): ReadonlySet<string> {
   const avoid = o.avoid;
-  const sources: Array<readonly [string, boolean]> = [[EXTERIOR_NODE, true]];
+  const sources: Array<readonly [string, boolean]> = o.exterior === false ? [] : [[EXTERIOR_NODE, true]];
   for (const id of o.extraSources ?? []) if (!avoid?.(id)) sources.push([id, true]);
   const { value } = bestPaths(g, {
     s: BOOLEAN,
@@ -648,6 +653,48 @@ export function storeyGrounded(ir: ResolvedPlan, tol: number): boolean {
   const outdoors = ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor");
   const graph = buildDoorAccessGraph(rooms, doors, tol, undefined, openings);
   return levelIsGrounded(graph, rooms, doors, outdoors);
+}
+
+/**
+ * The rooms of one resolved storey walkable from a set of seeds — the exterior and/or the
+ * rooms a shaft lands in — on the `"probe"` access graph that `describe().access` and lint
+ * reachability read. The graph is built once; each call is one {@link reachFrom}. With
+ * `exterior: false` the exterior node is not a start but stays walkable through, exactly
+ * as {@link reachFrom} states.
+ */
+export function storeyRoomReach(ir: ResolvedPlan, tol: number): (seeds: StoreySeeds) => ReadonlySet<string> {
+  const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
+  const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
+  const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
+  const roomRects = new Map<string, RoomBox>(rooms.map((r) => [r.id, roomBox(r)]));
+  const g = accessDigraph(
+    rooms.map((r) => r.id),
+    connectorEdges(roomRects, [...doors, ...openings], tol, DEFAULT_CLEAR_ALLOWANCE_MM, "probe"),
+  );
+  return (seeds) => reachFrom(g, { exterior: seeds.exterior, extraSources: seeds.rooms });
+}
+
+/**
+ * The {@link StoreyRoomReach} callback for a whole building, as `describe` and `lint` hand
+ * it to `verticalReach`: one {@link storeyRoomReach} per storey, built on first use. The
+ * tolerance is the caller's own, the same one its `grounded()` callback uses. A level the
+ * building does not have reaches nothing.
+ */
+export function buildingRoomReach(
+  levels: readonly { level: number; ir: ResolvedPlan }[],
+  tol: number,
+): StoreyRoomReach {
+  const byLevel = new Map<number, (seeds: StoreySeeds) => ReadonlySet<string>>();
+  return (level, seeds) => {
+    let reach = byLevel.get(level);
+    if (!reach) {
+      const l = levels.find((x) => x.level === level);
+      if (!l) return new Set<string>();
+      reach = storeyRoomReach(l.ir, tol);
+      byLevel.set(level, reach);
+    }
+    return reach(seeds);
+  };
 }
 
 /**

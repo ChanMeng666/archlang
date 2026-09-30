@@ -16,7 +16,7 @@
  * `lint/ruleset.ts` (re-exported here, so the public surface is unchanged).
  */
 
-import { DEFAULT_TOL, resolvePlan, storeyGrounded } from "./analyze.js";
+import { buildingRoomReach, DEFAULT_TOL, resolvePlan, storeyGrounded } from "./analyze.js";
 import type { ResolvedLevel, ResolvedPlan } from "./ir.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import { type BuildingContext, buildLintContext } from "./lint/context.js";
@@ -183,7 +183,9 @@ function buildingContexts(levels: readonly ResolvedLevel[], tolMm: number): Map<
     const l = levels.find((x) => x.level === n);
     return l ? storeyGrounded(l.ir, tolMm ?? DEFAULT_TOL) : false;
   };
-  const reach = verticalReach(inputs, grounded);
+  // Room-aware: a shaft relays only from a stop whose room is walkable on its storey, on
+  // the same tolerance `grounded` uses, so lint and `describe().vertical` agree.
+  const reach = verticalReach(inputs, grounded, buildingRoomReach(inputs, tolMm ?? DEFAULT_TOL));
   const out = new Map<number, BuildingContext>();
   for (const l of levels) {
     out.set(l.level, {

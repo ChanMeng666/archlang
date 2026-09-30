@@ -201,3 +201,143 @@ describe("one access policy: every surface agrees on reachability", () => {
     expect(probed).toBeGreaterThan(0); // the precondition admitted real cases
   }, 120_000);
 });
+
+/**
+ * Multi-storey: reachability is a fixpoint over `(storey, room)`, not over storeys
+ * (`verticalReach` with the room-aware callback, `src/vertical.ts`). A shaft carries you
+ * on only from a stop whose room is walkable on its own storey, and `describe().vertical`,
+ * lint's `W_NO_ENTRANCE` and the intent channel's `reachable` give that one answer.
+ */
+describe("one access policy across storeys: a shaft relays only from a reachable room", () => {
+  const SHELL = `wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }`;
+  const multi = (...levels: string[]): string =>
+    `plan "M" {\n  units mm\n  grid 50\n${levels
+      .map((body, i) => `  level ${i + 1} "L${i + 1}" {\n    ${SHELL}\n${body}\n  }`)
+      .join("\n")}\n}`;
+
+  /** Ground: a hall with the front door, and a store holding the stair — sealed unless `storeDoor`. */
+  const probeGround = (storeDoor: boolean): string => `
+    wall id=store_w partition thickness 100 { (4000,0) (4000,4000) }
+    room id=hall at (0,0) size 4000x4000 label "Hall" uses hall
+    room id=store at (4000,0) size 2000x4000 label "Store" uses storage
+    door id=front on shell at 2000 width 1000 swing into hall
+    ${storeDoor ? "door id=d_store on store_w at 2000 width 900 swing into store" : ""}
+    stair id=s at (4500,500) size 900x2600 dir up`;
+  const probeUpper = `
+    wall id=bed_w partition thickness 100 { (4000,0) (4000,4000) }
+    room id=bed at (0,0) size 4000x4000 label "Bedroom" uses bedroom
+    room id=landing at (4000,0) size 2000x4000 label "Landing" uses circulation
+    door id=d_bed on bed_w at 2000 width 900 swing into bed
+    stair id=s at (4500,500) size 900x2600 dir down`;
+
+  const noEntrance = (src: string): (number | undefined)[] =>
+    lint(src)
+      .filter((d) => d.code === "W_NO_ENTRANCE")
+      .map((d) => d.level);
+  const reachableAssertion = (src: string) =>
+    validateIntent(src, { reachable: true }).assertions.find((a) => a.predicate.kind === "reachable")!;
+
+  it("the probe: a stair in a door-less store reaches nothing — storey 2 is cut off everywhere", () => {
+    const src = multi(probeGround(false), probeUpper);
+    const s = describePlan(src);
+    expect(s.ok).toBe(true);
+    expect(s.vertical?.connections.map((c) => c.stops.map((st) => st.room))).toEqual([["store", "landing"]]);
+    // Was [1, 2]: the storey-level fixpoint joined the storeys wherever the stair stood.
+    expect(s.vertical?.reachable_levels).toEqual([1]);
+    expect(noEntrance(src)).toEqual([2]);
+    const a = reachableAssertion(src);
+    expect(a.pass).toBe(false);
+    // Both causes are named: the sealed store on the ground floor, and the storey it strands.
+    expect(a.detail).toBe(
+      "reachable: unreachable: store; no way into storey(s): 2 (no exterior door, no shaft from a reachable storey)",
+    );
+    // The ground floor has its front door, so the violation is unreachability, not a missing door.
+    expect(validateIntent(src, { reachable: true }).violations.map((v) => v.code)).toEqual(["E_INTENT_UNREACHABLE"]);
+  });
+
+  it("the control: one store↔hall door and the same stair joins the storeys again", () => {
+    const src = multi(probeGround(true), probeUpper);
+    expect(describePlan(src).vertical?.reachable_levels).toEqual([1, 2]);
+    expect(noEntrance(src)).toEqual([]);
+    const a = reachableAssertion(src);
+    expect(a.pass).toBe(true);
+    expect(a.detail).toBe("reachable: all 2 room(s) reachable");
+  });
+
+  /** Three storeys: stair `a` hall→landing, then stair `b` from a study on storey 2 to storey 3. */
+  const relay = (studyDoor: boolean): string =>
+    multi(
+      `
+    room id=hall at (0,0) size 6000x4000 label "Hall" uses hall
+    door id=front on shell at 2000 width 1000 swing into hall
+    stair id=a at (500,500) size 900x2600 dir up`,
+      `
+    wall id=study_w partition thickness 100 { (2000,0) (2000,4000) }
+    room id=landing at (0,0) size 2000x4000 label "Landing" uses circulation
+    room id=study at (2000,0) size 4000x4000 label "Study" uses office
+    ${studyDoor ? "door id=d_study on study_w at 2000 width 900 swing into study" : ""}
+    stair id=a at (500,500) size 900x2600 dir down
+    stair id=b at (4500,500) size 900x2600 dir up`,
+      `
+    room id=attic at (0,0) size 6000x4000 label "Attic" uses storage
+    stair id=b at (4500,500) size 900x2600 dir down`,
+    );
+
+  it("a three-storey relay: storey 3 is reached through storey 2's study only while the study is", () => {
+    const open = relay(true);
+    expect(describePlan(open).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    expect(describePlan(open).vertical?.reachable_levels).toEqual([1, 2, 3]);
+    expect(noEntrance(open)).toEqual([]);
+    expect(reachableAssertion(open).pass).toBe(true);
+
+    const sealed = relay(false);
+    // Storey 2 is still reached (stair `a` lands on the landing); the study is not, so
+    // stair `b` relays nothing and storey 3 has no way in.
+    expect(describePlan(sealed).vertical?.reachable_levels).toEqual([1, 2]);
+    expect(noEntrance(sealed)).toEqual([3]);
+    const a = reachableAssertion(sealed);
+    expect(a.pass).toBe(false);
+    expect(a.detail).toContain("no way into storey(s): 3");
+  });
+
+  /**
+   * A GROUNDED storey relays too: its seeds are the exterior plus the rooms live shafts
+   * land in. Here the ground floor's back room is sealed off from the hall, but stair `b`
+   * comes back down into it from the landing, and lift `c` carries on from it to storey 3.
+   */
+  const groundedRelay = (withB: boolean): string =>
+    multi(
+      `
+    wall id=back_w partition thickness 100 { (4000,0) (4000,4000) }
+    room id=hall at (0,0) size 4000x4000 label "Hall" uses hall
+    room id=back at (4000,0) size 2000x4000 label "Back" uses storage
+    door id=front on shell at 2000 width 1000 swing into hall
+    stair id=a at (500,500) size 900x2600 dir up
+    stair id=b at (4500,500) size 900x2600 dir up
+    elevator id=c at (4500,3200) size 900x600`,
+      `
+    room id=landing at (0,0) size 6000x4000 label "Landing" uses circulation
+    stair id=a at (500,500) size 900x2600 dir down
+    ${withB ? "stair id=b at (4500,500) size 900x2600 dir down" : ""}`,
+      `
+    room id=loft at (0,0) size 6000x4000 label "Loft" uses storage
+    elevator id=c at (4500,3200) size 900x600`,
+    );
+
+  it("a grounded storey relays a shaft that lands in a room its own door cannot reach", () => {
+    const src = groundedRelay(true);
+    expect(describePlan(src).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    expect(describePlan(src).vertical?.reachable_levels).toEqual([1, 2, 3]);
+    expect(noEntrance(src)).toEqual([]);
+    // The control: without `b` nothing arrives in the back room, so lift `c` is dead.
+    const control = groundedRelay(false);
+    expect(describePlan(control).vertical?.reachable_levels).toEqual([1, 2]);
+    expect(noEntrance(control)).toEqual([3]);
+  });
+
+  it("a single-storey summary is judged exactly as before (no `levels`, no storey clause)", () => {
+    const src = tJunction(4100);
+    expect(describePlan(src).levels).toBeUndefined();
+    expect(reachableAssertion(src).detail).toBe("reachable: unreachable: study");
+  });
+});
