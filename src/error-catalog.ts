@@ -572,6 +572,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Break the cycle by giving one of the rooms absolute `at (x,y)` coordinates.",
     "room id=a right-of b size 100x100\nroom id=b left-of a size 100x100   # error: a ↔ b cycle",
   ),
+  E_LAYOUT_UNPLACED: E(
+    "E_LAYOUT_UNPLACED",
+    "A relational room depends on a room that could not be placed.",
+    "The room's reference chain ends at a room that failed (unknown or polygon reference) or runs into a placement cycle, so there is no resolved position to place it against. Only the root cause carries the original error.",
+    "Fix the room it names (give it a valid reference or absolute `at (x,y)`), or place this room with `at (x,y)`.",
+    "room id=e right-of ghost size 100x100\nroom id=f below e size 100x100   # error: e is unplaced",
+  ),
   E_LAYOUT_REF: E(
     "E_LAYOUT_REF",
     "Relational placement references an unknown room.",

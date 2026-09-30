@@ -726,7 +726,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `arch explain <CODE>`.
-**94 errors** (abort rendering) · **52 warnings** (advisory; `validate --strict` fails on them too).
+**95 errors** (abort rendering) · **52 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -778,6 +778,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `E_JSON_SCHEMA` — Plan JSON does not match the schema. **Fix:** Fix the value at the reported JSON path (the message names it, e.g. `/rooms/0/width`); express geometry as concrete numbers, and author scripting/imports in `.arch` source instead.
 - `E_LAYOUT_CYCLE` — Relational room placement forms a cycle. **Fix:** Break the cycle by giving one of the rooms absolute `at (x,y)` coordinates.
 - `E_LAYOUT_REF` — Relational placement references an unknown room. **Fix:** Reference an existing room id, or fix the typo.
+- `E_LAYOUT_UNPLACED` — A relational room depends on a room that could not be placed. **Fix:** Fix the room it names (give it a valid reference or absolute `at (x,y)`), or place this room with `at (x,y)`.
 - `E_LEVEL_DUP` — Two `level` blocks declare the same storey number. **Fix:** Renumber one of them, or merge the two bodies into a single `level` block.
 - `E_LEVEL_MIX` — A drawable statement sits beside `level` blocks. **Fix:** Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`north`/`site`/`dims`/`title`/`axes`/`schedule`/`legend`), `component`/`import` declarations, and the plan-global `let`/`set` stay outside — they apply to every level.
 - `E_LEVEL_NEST` — `level` used inside a block or component. **Fix:** Move the `level` block out to the plan body. To draw the same content on several storeys, put it in a `component` and call it from each level.

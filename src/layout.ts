@@ -86,7 +86,11 @@ export function placeRelational(rooms: RRoom[], snapPt: (p: Point) => Point, dia
   // Absolute rooms are never in this set, so they count as resolved from the
   // start (a relational room may reference an absolute or relational room).
   const unresolved = new Set<string>(rel.map((r) => r.id));
-  const isResolved = (id: string): boolean => byId.has(id) && !unresolved.has(id);
+  // Rooms that could NOT be placed (unknown reference, polygon reference). They leave
+  // `unresolved` so the fixpoint stops revisiting them, but they are NOT resolved: a
+  // dependent must never be placed against their (0,0) placeholder.
+  const failed = new Set<string>();
+  const isResolved = (id: string): boolean => byId.has(id) && !unresolved.has(id) && !failed.has(id);
 
   // Fixpoint: keep placing any room whose reference is resolved. Declaration
   // order within each sweep makes the result deterministic.
@@ -104,6 +108,7 @@ export function placeRelational(rooms: RRoom[], snapPt: (p: Point) => Point, dia
           span: r._rel.span,
         });
         unresolved.delete(r.id); // can't place it; stop revisiting
+        failed.add(r.id);
         changed = true;
         continue;
       }
@@ -121,6 +126,7 @@ export function placeRelational(rooms: RRoom[], snapPt: (p: Point) => Point, dia
             span: r._rel.span,
           });
           unresolved.delete(r.id);
+          failed.add(r.id);
           changed = true;
           continue;
         }
@@ -138,15 +144,40 @@ export function placeRelational(rooms: RRoom[], snapPt: (p: Point) => Point, dia
     }
   }
 
-  // Whatever remains depends (transitively) on itself: a placement cycle.
+  // Whatever remains is stuck for one of two reasons. The reference relation is a
+  // functional graph (each room has at most one reference), so following a leftover
+  // room's single reference either reaches a failed room, closes a cycle through the
+  // room itself, or runs into a cycle it is not on. Only rooms ON a cycle are blamed
+  // as members; a room that merely depends on a failed room or on a cycle gets
+  // `E_LAYOUT_UNPLACED` naming what it is waiting for. Its `at` stays the (0,0)
+  // placeholder: an error plan renders nothing, so that position is never drawn and
+  // there is no safer value to invent.
   for (const r of rel) {
-    if (unresolved.has(r.id)) {
-      diag({
-        severity: "error",
-        message: `Room "${r.id}" is part of a relational placement cycle`,
-        code: "E_LAYOUT_CYCLE",
-        span: r._rel.span,
-      });
+    if (!unresolved.has(r.id)) continue;
+    const walked = new Set<string>([r.id]);
+    let cur: RelRoom = r;
+    for (;;) {
+      const next = cur._rel.ref;
+      if (failed.has(next) || (walked.has(next) && next !== r.id)) {
+        diag({
+          severity: "error",
+          message: `Room "${r.id}" cannot be placed: it depends on "${next}", which is ${failed.has(next) ? "itself unplaced" : "part of a relational placement cycle"}`,
+          code: "E_LAYOUT_UNPLACED",
+          span: r._rel.span,
+        });
+        break;
+      }
+      if (next === r.id) {
+        diag({
+          severity: "error",
+          message: `Room "${r.id}" is part of a relational placement cycle`,
+          code: "E_LAYOUT_CYCLE",
+          span: r._rel.span,
+        });
+        break;
+      }
+      walked.add(next);
+      cur = byId.get(next) as RelRoom;
     }
   }
 }

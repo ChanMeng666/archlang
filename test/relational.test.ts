@@ -123,6 +123,65 @@ describe("relational placement — diagnostics", () => {
     }`;
     expect(codes(src)).toContain("E_LAYOUT_REF");
   });
+
+  // Blame: each diagnostic is (code, room it is about), in declaration order.
+  const blame = (body: string) =>
+    compile(`plan "P" {\n  units mm\n${body}\n}`, { noCache: true })
+      .diagnostics.filter((d) => d.code?.startsWith("E_LAYOUT") || d.code === "E_PLACE_POLY")
+      .map((d) => [d.code, /Room "([^"]+)"/.exec(d.message)?.[1]]);
+
+  it("a dependent of a missing reference is E_LAYOUT_UNPLACED, not placed against (0,0)", () => {
+    expect(blame(`  room id=e right-of zz size 100x100\n  room id=f below e size 100x100`)).toEqual([
+      ["E_LAYOUT_REF", "e"],
+      ["E_LAYOUT_UNPLACED", "f"],
+    ]);
+  });
+
+  it("a dependent of a cycle is not a cycle member", () => {
+    expect(
+      blame(
+        `  room id=g right-of h size 100x100\n  room id=h left-of g size 100x100\n  room id=k below h size 100x100`,
+      ),
+    ).toEqual([
+      ["E_LAYOUT_CYCLE", "g"],
+      ["E_LAYOUT_CYCLE", "h"],
+      ["E_LAYOUT_UNPLACED", "k"],
+    ]);
+  });
+
+  it("a chain of depth 3 off a failed room: every link is UNPLACED (declaration order), the root carries the REF", () => {
+    expect(
+      blame(
+        `  room id=h below g size 100x100\n  room id=g below f size 100x100\n  room id=f below e size 100x100\n  room id=e right-of zz size 100x100`,
+      ),
+    ).toEqual([
+      ["E_LAYOUT_REF", "e"],
+      ["E_LAYOUT_UNPLACED", "h"],
+      ["E_LAYOUT_UNPLACED", "g"],
+      ["E_LAYOUT_UNPLACED", "f"],
+    ]);
+  });
+
+  it("a dependent of a polygon-reference failure is UNPLACED", () => {
+    expect(
+      blame(
+        `  room id=p polygon (0,0) (12000,0) (12000,8000) (6000,8000) (6000,14000) (0,14000)\n  room id=q right-of p size 100x100\n  room id=r below q size 100x100`,
+      ),
+    ).toEqual([
+      ["E_PLACE_POLY", "q"],
+      ["E_LAYOUT_UNPLACED", "r"],
+    ]);
+  });
+
+  it("the unplaced message names the room it waits on", () => {
+    const d = compile(
+      `plan "P" {\n units mm\n room id=e right-of zz size 100x100\n room id=f below e size 100x100\n}`,
+      {
+        noCache: true,
+      },
+    ).diagnostics.find((x) => x.code === "E_LAYOUT_UNPLACED");
+    expect(d?.message).toContain(`depends on "e"`);
+  });
 });
 
 /**
