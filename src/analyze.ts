@@ -30,6 +30,7 @@ import {
   rectRing,
   ringsAdjacent,
 } from "./geometry/polygon.js";
+import { arcAngleOffset, fullCircleArc } from "./geometry/arc.js";
 import { classifyLabelUses } from "./vocabulary.js";
 import { bestPaths, type Digraph } from "./algebra/paths.js";
 import { BOOLEAN, MAX_MIN, MIN_PLUS } from "./algebra/semiring.js";
@@ -651,10 +652,11 @@ export function storeyGrounded(ir: ResolvedPlan, tol: number): boolean {
 }
 
 /**
- * The largest contiguous run (mm) of a room's four edges that is **not** backed by
- * a wall centerline — i.e. how open the room's perimeter is. For each axis-aligned
- * edge, the orthogonal wall segments collinear with it (within `tol`) are clipped
- * to the edge and merged; the worst edge's `edgeLength − coveredLength` is returned.
+ * How open a room's perimeter is (mm): the uncovered length of its WORST edge. For
+ * each of the four axis-aligned edges, the orthogonal wall segments collinear with it
+ * (within `tol`) are clipped to the edge and merged, and that edge's
+ * `edgeLength − coveredLength` is its uncovered total — summed over every gap on the
+ * edge, not the longest contiguous run. The largest per-edge total is returned.
  *
  * Openings (doors/windows) are not split out of wall centerlines — they live in
  * `RWall.openings` and are only subtracted at render time — so a wall carrying a
@@ -734,6 +736,54 @@ export function largestPerimeterGapRing(
     if (gap > worst) worst = gap;
   }
   return worst;
+}
+
+/**
+ * {@link largestPerimeterGap} for a CIRCULAR room (`room circle`, centre `c`, radius
+ * `r`): the length (mm) of its circumference NOT backed by a concentric arc wall —
+ * measured by angle, never by the 48-gon tessellation, so the answer cannot move with
+ * `ARC_STEP_DEG`. (The ring path matches wall centrelines PARALLEL to each facet; an
+ * arc wall enters it only by its chord, which is parallel to no facet, so a fully
+ * walled drum used to read as open by exactly one facet, 2R·sin 3.75°.)
+ *
+ * **What counts.** Only an `arc` wall segment whose centre is within `tol` of `c` and
+ * whose radius is within `tol` of `r` — the circle analogue of "collinear within `tol`".
+ * Each covers the angular interval `|sweep|` long starting at whichever of its endpoints
+ * LEADS in the reference direction (clockwise as drawn, from east — `fullCircleArc`):
+ * `a` for a clockwise arc, `b` for a counter-clockwise one. Intervals wrap at 2π and are
+ * merged, and the gap is `r × (2π − covered)` — ONE figure for the whole circumference
+ * (a circle has no "worst edge"), which is also what the rect/ring versions' per-edge
+ * total becomes when the whole perimeter is one edge.
+ *
+ * **Straight walls never count**, deliberately: a straight run touches a circle in at
+ * most a point (a tangent) or crosses it, so it backs no finite length of the curve.
+ * A circle room ringed by a FACETED polyline wall therefore reads as fully open
+ * (`2πr`) — author the enclosure as `arc` edges (as every shipped circle room does).
+ *
+ * **Floats.** The endpoint angle is `arcAngleOffset`'s one `Math.atan2`, taken about the
+ * ROOM's centre. `atan2` is not exactly rounded across engines, so the result may differ
+ * in the last ulps between platforms; that is ~1e-12 mm on a real radius, and the only
+ * consumer (`W_ROOM_NOT_ENCLOSED`) compares it to a whole-millimetre threshold and prints
+ * `Math.round` of it. No other transcendental call is made: the sweep magnitude is the
+ * arc's own, already solved in closed form.
+ */
+export function largestPerimeterGapCircle(c: Point, r: number, segs: readonly WallSegment[], tol: number): number {
+  // The reference circle: `start` 0 (east), `sweep` +2π, so `arcAngleOffset(ref, p)` is
+  // p's clockwise angle from east about `c`, in [0, 2π).
+  const ref = fullCircleArc(c, r);
+  const full = ref.sweep;
+  const covered: Array<[number, number]> = [];
+  for (const s of segs) {
+    const arc = s.arc;
+    if (!arc) continue;
+    if (Math.hypot(arc.center.x - c.x, arc.center.y - c.y) > tol) continue;
+    if (Math.abs(arc.r - r) > tol) continue;
+    const lo = arcAngleOffset(ref, arc.sweep >= 0 ? arc.a : arc.b);
+    const hi = lo + Math.min(Math.abs(arc.sweep), full);
+    if (hi <= full) covered.push([lo, hi]);
+    else covered.push([lo, full], [0, hi - full]);
+  }
+  return r * (full - mergedLength(covered));
 }
 
 /**
