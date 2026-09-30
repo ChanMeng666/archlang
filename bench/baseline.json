@@ -1,29 +1,57 @@
 {
   "BALANCED": {
-    "compile": 27.689,
-    "parse": 6.522,
-    "resolve": 6.2,
-    "toScene": 8.024,
-    "renderSvg": 2.991,
-    "lint": 7.201,
-    "describe": 5.729
+    "compile": 805.656,
+    "parse": 35.305,
+    "resolve": 20.309,
+    "toScene": 771.66,
+    "renderSvg": 13.108,
+    "lint": 270.649,
+    "describe": 71.837,
+    "circulation": 0.001,
+    "occupancy": 2.994
   },
   "ROOM_HEAVY": {
-    "compile": 17.147,
-    "parse": 7.674,
-    "resolve": 4.459,
-    "toScene": 0.699,
-    "renderSvg": 2.784,
-    "lint": 2.393,
-    "describe": 28.734
+    "compile": 822.182,
+    "parse": 27.4,
+    "resolve": 7.718,
+    "toScene": 874.984,
+    "renderSvg": 12.975,
+    "lint": 1211.458,
+    "describe": 367.676,
+    "circulation": 0.001,
+    "occupancy": 0.357
   },
   "OPENING_HEAVY": {
-    "compile": 51.897,
-    "parse": 6.597,
-    "resolve": 10.188,
-    "toScene": 22.04,
-    "renderSvg": 2.858,
-    "lint": 3.975,
-    "describe": 0.667
+    "compile": 784.647,
+    "parse": 34.234,
+    "resolve": 28.813,
+    "toScene": 609.486,
+    "renderSvg": 11.531,
+    "lint": 15.721,
+    "describe": 6.111,
+    "circulation": 0.001,
+    "occupancy": 0.072
+  },
+  "STUDIO": {
+    "compile": 15.467,
+    "parse": 1.792,
+    "resolve": 1.226,
+    "toScene": 10.037,
+    "renderSvg": 0.507,
+    "lint": 15.948,
+    "describe": 7.796,
+    "circulation": 7.768,
+    "occupancy": 0.519
+  },
+  "MUSEUM": {
+    "compile": 44.121,
+    "parse": 3.81,
+    "resolve": 3.61,
+    "toScene": 28.805,
+    "renderSvg": 2.502,
+    "lint": 280.45,
+    "describe": 234.765,
+    "circulation": 236.994,
+    "occupancy": 30.787
   }
 }
