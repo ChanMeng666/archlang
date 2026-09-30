@@ -130,6 +130,75 @@ ${BATH}`);
     expect(gapMm(off(0, 400))).toBe(Math.round(2 * Math.PI * R)); // another circle
     expect(gapMm(off(400, 0))).toBe(Math.round(2 * Math.PI * R));
   });
+
+  // Red-team M1: an arc admitted within tol but OFF-centre must still close on its
+  // neighbour. The offsets above keep every endpoint on the axis through the room centre,
+  // so an interval hung off one endpoint by the arc's own |sweep| happened to close; an
+  // offset PERPENDICULAR to that axis opened ~2·atan(d/R) at each junction.
+  it.each([
+    [0, 150],
+    [0, 200],
+    [0, -200],
+  ])("two semicircles whose centre is off by (%i,%i) — within tol — still close", (dx, dy) => {
+    const p = (x: number, y: number) => `(${x + dx},${y + dy})`;
+    const src = plan(`  wall id=n partition thickness 200 { ${p(8000, 5000)} arc ${p(2000, 5000)} radius ${R} }
+  wall id=s partition thickness 200 { ${p(2000, 5000)} arc ${p(8000, 5000)} radius ${R} }
+${BATH}`);
+    expect(enclosure(src)).toEqual([]);
+    const { room, segs } = resolved(src);
+    expect(largestPerimeterGapCircle(room.circle!.c, R, segs, TOL)).toBeCloseTo(0, 6);
+  });
+
+  it.each([
+    [140, 140],
+    [-140, 140],
+  ])("four quarter arcs whose centre is off diagonally by (%i,%i) — within tol — still close", (dx, dy) => {
+    const p = (x: number, y: number) => `(${x + dx},${y + dy})`;
+    const src = plan(`  wall id=drum partition thickness 200 {
+    ${p(8000, 5000)}
+    arc ${p(5000, 8000)} radius ${R} cw
+    arc ${p(2000, 5000)} radius ${R} cw
+    arc ${p(5000, 2000)} radius ${R} cw
+    arc ${p(8000, 5000)} radius ${R} cw
+  }
+${BATH}`);
+    expect(enclosure(src)).toEqual([]);
+    const { room, segs } = resolved(src);
+    expect(largestPerimeterGapCircle(room.circle!.c, R, segs, TOL)).toBeCloseTo(0, 6);
+  });
+
+  it("the radius test reads the wall CENTRELINE: a 420 mm drum with its inner face on R backs nothing (documented)", () => {
+    // Centreline at R + 210 > R + tol, exactly as a rect room's wall more than tol off its edge.
+    const src = plan(`  wall id=drum exterior thickness 420 {
+    (8210,5000)
+    arc (1790,5000) radius 3210
+    arc (8210,5000) radius 3210
+  }
+${BATH}`);
+    expect(gapMm(src)).toBe(Math.round(2 * Math.PI * R));
+  });
+
+  it("a diagonal offset of (150,150) is |d| ≈ 212 mm — OUTSIDE the 200 mm tol, so no wall counts", () => {
+    const p = (x: number, y: number) => `(${x + 150},${y + 150})`;
+    const src = plan(`  wall id=n partition thickness 200 { ${p(8000, 5000)} arc ${p(2000, 5000)} radius ${R} }
+  wall id=s partition thickness 200 { ${p(2000, 5000)} arc ${p(8000, 5000)} radius ${R} }
+${BATH}`);
+    expect(gapMm(src)).toBe(Math.round(2 * Math.PI * R));
+  });
+
+  // Red-team m1: an arc whose covered interval CROSSES angle 0 (east) takes the wrap
+  // branch; pin its value exactly so an over-covering wrap cannot pass.
+  it("a covered interval straddling east wraps exactly: the gap across WEST is 2R·atan2(3,4)", () => {
+    // Endpoints at (−4000, ∓3000) from the centre; the wall runs clockwise the LONG way,
+    // through north, east and south, leaving the west 2·atan2(3,4) ≈ 73.74° open.
+    const src = plan(`  wall id=drum partition thickness 200 { (6000,7000) arc (6000,13000) radius 5000 cw major }
+  room id=bath circle at (10000,10000) radius 5000 label "Bath" uses bath`);
+    const want = 2 * 5000 * Math.atan2(3, 4);
+    expect(gapMm(src)).toBe(Math.round(want));
+    const { room, segs } = resolved(src);
+    expect(segs[0]!.arc!.center).toEqual({ x: 10000, y: 10000 });
+    expect(largestPerimeterGapCircle(room.circle!.c, 5000, segs, TOL)).toBeCloseTo(want, 6);
+  });
 });
 
 suite("straight walls never back a circle room (documented)", () => {
