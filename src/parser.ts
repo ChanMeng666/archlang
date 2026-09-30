@@ -364,7 +364,11 @@ class Parser {
     }
     // A missing closing brace is reported but the partial plan is still returned.
     try {
-      this.eat("rcurly");
+      const close = this.eat("rcurly");
+      // A file holds one plan and nothing after it: a stray `}` mid-body, or a second
+      // `plan` block, would otherwise close the plan early and silently drop the tail.
+      // One diagnostic on the first trailing token (comments are trivia, not tokens).
+      this.checkTrailing(close);
     } catch (e) {
       if (e instanceof ParseError) {
         this.diagnostics.push({ severity: "error", message: e.message, code: "E_PARSE", span: e.span });
@@ -374,6 +378,24 @@ class Parser {
     }
     this.checkLevels(plan);
     return plan;
+  }
+
+  /** `E_PARSE` on the first token after the plan's closing `}`, if any. The tail is
+   *  not parsed: the plan is closed, so there is no scope it could belong to. */
+  private checkTrailing(close: Token): void {
+    const t = this.peek();
+    if (t.type === "eof") return;
+    const message =
+      t.type === "ident" && t.value === "plan"
+        ? `A second "plan" block after the plan was closed — a file holds one plan, and nothing after its closing "}" is read`
+        : `Unexpected ${describe(t)} after the plan was closed — nothing after the plan's closing "}" is read (an extra "}" may have closed it early)`;
+    this.diagnostics.push({
+      severity: "error",
+      message,
+      code: "E_PARSE",
+      span: { start: t.start, end: t.end },
+      relatedSpans: [{ span: { start: close.start, end: close.end }, message: "the plan was closed here" }],
+    });
   }
 
   /**
