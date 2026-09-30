@@ -306,6 +306,10 @@ export interface RRoom extends RBase {
   /** Present only when the room used a relational clause (`right-of`/…); its
    *  `at` above is a placeholder until {@link placeRelational} resolves it. */
   _rel?: RelConstraint;
+  /** Set by {@link placeRelational} on a room that ended without a real position (failed,
+   *  unplaced or on a cycle). Survives the instance transform so an enclosing pass treats
+   *  it as unplaced; `checkRoomOverlaps` skips it. Internal; never rendered. */
+  _unplaced?: true;
   /** How the position was authored (`absolute` `at`, `relational` clause, or
    *  `strip` sugar). Internal marker for `describe().freedom`; never rendered. */
   _placement?: RoomPlacement;
@@ -2504,7 +2508,9 @@ function checkPlanDrawable(elements: ResolvedElement[], diagnostics: Diagnostic[
  *  the same overlaps; pairs are emitted in (a,b) order to keep diagnostics
  *  byte-identical to the former double loop. */
 function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diagnostic[]): void {
-  const rooms = elements.filter((e): e is RRoom => e.kind === "room");
+  // A room left unplaced carries a (0,0) placeholder, not geometry: testing it would
+  // report phantom overlaps (quadratic in a chain) on top of the layout error.
+  const rooms = elements.filter((e): e is RRoom => e.kind === "room" && !e._unplaced);
   const roomBox = (r: RRoom): GridBox => ({
     minX: r.at.x,
     minY: r.at.y,

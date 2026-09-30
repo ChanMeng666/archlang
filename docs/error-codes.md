@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**94 errors** · **52 warnings**
+**95 errors** · **52 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -57,6 +57,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_JSON_SCHEMA`](#e_json_schema) | error | Plan JSON does not match the schema. |
 | [`E_LAYOUT_CYCLE`](#e_layout_cycle) | error | Relational room placement forms a cycle. |
 | [`E_LAYOUT_REF`](#e_layout_ref) | error | Relational placement references an unknown room. |
+| [`E_LAYOUT_UNPLACED`](#e_layout_unplaced) | error | A relational room depends on a room that could not be placed. |
 | [`E_LEVEL_DUP`](#e_level_dup) | error | Two `level` blocks declare the same storey number. |
 | [`E_LEVEL_MIX`](#e_level_mix) | error | A drawable statement sits beside `level` blocks. |
 | [`E_LEVEL_NEST`](#e_level_nest) | error | `level` used inside a block or component. |
@@ -740,6 +741,19 @@ room id=b left-of a size 100x100   # error: a ↔ b cycle
 
 ```arch static
 room id=k right-of ghost size 100x100   # error: no room "ghost"
+```
+
+## E_LAYOUT_UNPLACED
+
+*error* — A relational room depends on a room that could not be placed.
+
+**Cause.** The room's reference chain ends at a room that failed (unknown or polygon reference) or runs into a placement cycle, so there is no resolved position to place it against. Only the root cause carries the original error.
+
+**Fix.** Fix the room it names (give it a valid reference or absolute `at (x,y)`), or place this room with `at (x,y)`.
+
+```arch static
+room id=e right-of ghost size 100x100
+room id=f below e size 100x100   # error: e could not be placed
 ```
 
 ## E_LEVEL_DUP
