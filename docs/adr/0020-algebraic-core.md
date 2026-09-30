@@ -185,13 +185,15 @@ one layer up.
   in `test/equivariance-corpus.test.ts`. Plan JSON carries the frame's reflection on doors
   and dimensions as it does on furniture (`mirror`, refused on the way back with
   `E_JSON_MIRROR`; backlog 6.3). `museum-wings.arch`'s east hall door is now the mirror of
-  the west one (backlog 6.8, the drawing error).
+  the west one, and its main door a mirror pair of leaves on a shared jamb, so `full` is D1 x;
+  `W_SWING_OBSTRUCTED` exempts single-point contact, so that pair lints clean (backlog
+  6.8, 6.9).
 - **Open.** What `test/equivariance-known.ts` still pins: `float-translation` (E.11's lint
   half: an exact comparison on a resolved coordinate, `W_POCKET_RUN`'s `>= need`, flips under
   a pure translation), and the two declared conventions, `facing-tie` (a corner or 45°
   window resolves N/S first) and `dim-tick-hand` (the tick convention). Outside the oracle:
-  an oblique doorway is carved as an L-shaped tunnel (backlog C.5); two owner questions
-  from `museum-wings.arch`'s mirrored main door (backlog 6.8, 6.9); and `while`/reassignment
+  an oblique doorway is carved as an L-shaped tunnel (backlog C.5); a door's `at` snapping to
+  the grid without a diagnostic (backlog 6.10); and `while`/reassignment
   removal, which waits for the next major (backlog 6.7, one plan with the axonometric
   removal). None is affected by anything in this ADR.
 

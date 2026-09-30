@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — a double door no longer reads as an obstructed swing
+
+- `W_SWING_OBSTRUCTED` between two doors no longer fires on single-point contact. Two leaves
+  hinged on their outer jambs and meeting at a shared closed jamb (a textbook double door)
+  touch only at that point and lint clean; so does a row of leaves where one's far jamb is the
+  next one's hinge. Any real overlap still warns, down to 1 mm, and so does contact along a
+  segment (openings overlapping along the wall with opposite swings, or two leaves hung back to
+  back on one post).
+- A double door is one assembly: with a swing clearance (`accessibility-advisory`) its two
+  leaves, sharing a closed jamb, are clear of each other at any clearance. The clearance still
+  applies between independent doors, including two leaves whose jambs are 1 mm apart, and
+  single-point contact at exactly `radius + clearance` is clear. The furniture half of the rule
+  is unchanged.
+- No shipped example's default lint output changes.
+
+### Fixed — `W_SWING_OBSTRUCTED`'s "narrow the door" hint quotes a width that clears
+
+- The quoted width ignored that narrowing a door keeps its position, so the hinge moves, and
+  that a `grid` snaps a door's width; it could name the door's own width, or a width that did
+  not clear. The hint now quotes the widest narrower width the plan can express whose swing,
+  recomputed, is clear of everything (as the hinge-flip fix already was), and is left out when
+  there is none.
+- It never trades one warning for another: the minimum it measures against is the narrowest
+  door the ruleset passes without `W_DOOR_CLEARANCE` or, as a route's pinch,
+  `W_PATH_TOO_NARROW` (760 mm by default, 960 mm under `accessibility-advisory`). A clearing
+  width under it is reported as "not a fix here".
+- The message's numbers now agree: the need is rounded up, the distance available down, and the
+  shortfall is their difference.
+- Under `--profile accessibility-advisory`, the swing hints of `furnished-flat`,
+  `hillside-villa`, `imports` and `materials` quote new widths against a 960 mm minimum (was
+  850), `imports` and three others now refusing where they offered, and `hillside-villa`'s two
+  `wc` warnings read 801 mm, 49 mm short, for 802 and 48; default lint output is unchanged.
+
+### Changed — `museum-wings.arch`'s main door is a mirror pair of leaves
+
+- The single 1800 mm leaf on the axis is now two 1000 mm leaves (`d_main_w`, `d_main_e`) meeting
+  at a shared jamb on the hall's axis, each hinged on its outer jamb. With every door a mirror
+  pair, `arch describe --facts symmetry` reports the whole drawing (`full`) as D1 x, not C1.
+- `describe()` for that example moves accordingly: six doors, two main entrances, and a
+  bottleneck clear width of 1140 mm (each leaf is its own 940 mm door to the analysis, so the
+  widest way in is now a wing's 1200 mm exit).
+
 ## [1.37.0] - 2026-09-30
 
 ### Added — `describe --facts symmetry,syntax`

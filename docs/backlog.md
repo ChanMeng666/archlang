@@ -696,40 +696,105 @@ Checklist:
 - [ ] **Prove it:** SHA-256 sweep of `compile`, `describe` and `lint` over every example, and a
       plan using `while` returns the new `E_*` with a span and the rewrite, never throws.
 
-### 6.8 · `museum-wings.arch`'s wings: D1 at shell/rooms, C1 at `full` — `todo` (the hall doors are fixed; the axis door is the one deliberate asymmetry)
+### 6.8 · `museum-wings.arch`'s `full` layer was C1, and a double door read as obstructed — closed
 
-`describe --facts symmetry` reports the flagship's two wings as mirror-symmetric (D1) at the
-shell and room layers. `full` was C1 for two reasons, one of them a real drawing error:
-`d_east` hung on the wrong jamb (fixed: `east.shell` runs the opposite way to `west.shell`, so
-`hinge left` on both is the mirror pair), and `d_main` is a single leaf on the axis, which no
-reflection maps to itself. `full` stays C1 because of `d_main` alone; dropping it makes `full`
-D1 x (pinned in `test/symmetry.test.ts`).
+`full` was C1 for two reasons: `d_east` hung on the wrong jamb (fixed earlier: `east.shell` runs
+the opposite way to `west.shell`, so `hinge left` on both is the mirror pair) and `d_main` was a
+single leaf on the axis. Owner decision: a mirror-image pair. `d_main` is now `d_main_w` and
+`d_main_e`, two 1000 mm leaves at x=20500 and 21500 hinged on their outer jambs and meeting at a
+shared closed jamb on the axis; `describe --facts symmetry` gives `full` D1 x about (21000,6000)
+and `arch lint` is clean (`test/symmetry.test.ts`, with a C1 control that hangs one leaf on the
+shared jamb).
 
-The owner decision was a mirror-image PAIR of leaves at `d_main`. Two things stand in the way.
+The pair used to raise `W_SWING_OBSTRUCTED` ("0 mm short"): the swing test accepted a closed
+boundary, so two quarter-discs tangent at the shared jamb collided. Owner decision: exempt
+single-point contact only. `swingsCollide` (`src/geometry.ts`) keeps its sampler as the
+detector and asks `sectorsObstruct` whether the contact is more than one point: a
+weak-separating-axis test over the finite candidate set of the two sectors' Minkowski
+difference (no separating line: the areas overlap), then, on the separating line, the length
+of the overlap of the two sectors' faces (a segment only where two straight edges lie on it).
+On axis-aligned whole-mm geometry both are exact (a shared jamb sums to 0, its contact has
+length 0); on an oblique wall the jambs agree only to ~1e-13 mm, so both are read within
+`VERTEX_EPS` (1e-6 mm, `src/geometry/polygon.ts`'s vertex-coincidence tolerance), not a new
+epsilon. A shared-jamb pair (2×900, 2×1000, every axis direction, oblique walls, both swing
+sides) is clear; a 1 mm overlap still warns, "1 mm short" (`test/swing.test.ts`,
+`test/lint-deficits.test.ts`). Consequences, each pinned:
 
-- **The grid snaps the door position, silently.** On `grid 100` the resolver rounds a door's `at`
-  (`Math.round`: `src/ir.ts`, `src/elements/door.ts`, `src/attach.ts`), so 900 mm leaves written
-  at 20550 and 21450 resolve to 20600 and 21500: the "shared jamb" lands at x=21050, 50 mm off
-  the axis, and `full` is C1 whatever lint says. No diagnostic reports the snap (observation).
-  On `grid 100` a shared-jamb pair needs even-hundred leaf widths (two 1000 mm leaves at 20500
-  and 21500 make `full` D1 x), or `grid 50`.
-- **A shared closed jamb reads as an obstruction.** Hinged on the outer jambs, the pair raises
-  `W_SWING_OBSTRUCTED` ("hinges are 1800 mm apart where the two leaves need 1800 mm (0 mm
-  short)"), and so does the 1000 mm variant. The open tips are 1800 mm apart; what meets is
-  the two swing quarter-discs, at the shared CLOSED jamb. The cause is a zero-tolerance closed
-  boundary: `src/geometry.ts` (`hingeGap > rA + rB + clr` quick-reject, `dist <= radius +
-  clearance`, `pointInWedge` accepting cross = 0) with `DEFAULT_RULESET.swingClearanceMm = 0`
-  (`src/lint/ruleset.ts`). A 1 mm separation lints clean: 900 mm leaves at 20500 and 21500
-  (a 100 mm gap) lint clean and make `full` D1 x, but it is not a shared jamb.
+- Contact along a segment still warns, as before: two leaves 100 mm too close opening to
+  OPPOSITE faces (the closed leaves overlap along the wall), and two leaves back to back on one
+  post opening the same way. Leaves are solid, so a shared line is a clash. (On an oblique wall
+  the sampler, unchanged, already missed the first of these; that is not new.)
+- With `swingClearanceMm > 0` (`accessibility-advisory`, 150), single-point contact at exactly
+  `radius + clearance` is clear. A double door is ONE assembly (lead decision): the clearance
+  keeps independent doors apart, not a pair's two leaves, so a shared-jamb pair
+  (`isDoubleDoorPair`: the far jambs coincide, the closed leaves run away from them along one
+  line, and at clearance 0 the discs meet in that point only) is clear at any clearance. Jambs
+  1 mm apart are two doors and keep the clearance. `museum-wings` lints `[]` under the profile,
+  as on the base, and passes `--strict`.
+- `W_SWING_OBSTRUCTED` against furniture (`sectorIntersectsRect`) is unchanged: exact contact
+  with a piece still warns.
 
-Open owner question: treat boundary contact at a shared jamb as clear (strict `<`) for double
-doors, or keep the rule and take the gap variant.
+Measured: the corpus sweep (every storey's SVG, `describe()`, `lint()`, `compile().diagnostics`,
+the a11y profile's `lint()`, `--facts symmetry`; examples and fixtures) moved 0 of 279 payloads on
+the predicate change alone. On the base corpus no plan reached the sampler's hit branch, under
+either profile; on the final tree (counted by instrumenting it) only `museum-wings` does, once,
+its main pair, cleared as single-point contact (and, under the profile, as a pair). So no
+example lost or gained a warning, and every example's default `lint()` is byte-identical. A
+brute-force cross-check against the original predicate (random pairs on axis-aligned and
+oblique walls, clearance 0 and 150) finds no new collision, and every pair the change clears
+has no area in common and no collinear edge overlap: single-point contact, or a double-door
+pair at clearance 150. The re-measured `museum-wings` rows are explained field by field in
+`test/byte-identity-baseline.ts`.
 
-### 6.9 · `W_SWING_OBSTRUCTED`'s narrowing hint is wrong at a shortfall of 0 — `todo`
+### 6.9 · `W_SWING_OBSTRUCTED`'s narrowing hint was wrong at a shortfall of 0 — closed
 
-`narrowTo = gap - radius - clr` (`src/lint/rules/doors.ts`) equals the door's own width when the
-shortfall is 0 mm, so the warning advises "Narrow the door to 900 mm or less" for a 900 mm door.
-It needs a `narrowTo < d.width` guard (drop the hint otherwise). Found via 6.8; not fixed there.
+`narrowTo` equalled the door's own width at a shortfall of 0 mm ("Narrow the door to 1000 mm or
+less" for a 1000 mm door). The formula behind it (`gap − radius − clearance`) was also wrong
+in general: narrowing keeps `at`, so the hinge moves, and on a `grid` the resolver snaps the
+width, so a quoted width could fail to clear. `widestClearingWidth` (`src/lint/rules/doors.ts`)
+now bisects the widths the author can get (multiples of the grid; whole mm without one) for the
+widest narrower leaf whose recomputed swing is clear of everything, the proof the hinge flip
+already had; no such width, no hint. At 0 mm short it quotes 999 mm, at 1 mm short 998 (not
+999, which still touches). The width it OFFERS is never below the narrowest door the ruleset
+passes (`passableDoorWidthMm`: no `W_DOOR_CLEARANCE`, and a clear width, by
+`connectorClearWidth` in `src/analyze.ts`, that no route pinches into `W_PATH_TOO_NARROW`;
+760 mm by default, 960 under `accessibility-advisory`); a proved width under that is quoted
+as "not a fix". Every quoted width in the shipped examples, applied to its door (in the file,
+or in the imported module that wrote it), clears that door, and an offered one raises no new
+warning of any kind (`test/lint-deficits.test.ts`, corpus-derived). The message's three numbers now agree
+(`deficitMm`, `src/lint/measure.ts`: need rounded up, have rounded down, the shortfall their
+difference), so "1999 mm apart … need 1999 mm (1 mm short)" cannot be printed. Every example's
+default `lint()` is unchanged; under `accessibility-advisory` the swing hints (and one rounded
+distance) of `furnished-flat`, `hillside-villa`, `imports` and `materials` move.
+
+### 6.10 · A door's `at` snaps to the grid silently — `todo` (observation, no decision)
+
+On `grid 100` the resolver rounds a door's `at` (`Math.round`: `src/ir.ts`,
+`src/elements/door.ts`, `src/attach.ts`), so 900 mm leaves written at 20550 and 21450 resolve to
+20600 and 21500: a double door's "shared jamb" lands at x=21050, 50 mm off an axis at 21000, and
+nothing says so. No diagnostic reports the snap. Found via 6.8, which sidestepped it with even
+1000 mm leaves; behaviour deliberately unchanged.
+
+### 6.11 · The analysis reads a double door as two narrow doors, not one wide opening — `todo` (no code)
+
+`describe()`'s access graph and circulation treat each leaf of a double door as its own door.
+`museum-wings.arch`'s main entrance (two 1000 mm leaves, 940 mm clear each) therefore counts
+as two 940 mm doorways, not one ~1940 mm opening, and every room's `bottleneckClearWidth` is now
+1140 mm: the widest way in is a wing's 1200 mm exit, not the main door. A pair of leaves on a
+shared jamb with both open is one opening to anyone walking through. Open: whether (and how)
+the analysis should recognise a pair: shared jamb, same host, both hinged on the outer jambs.
+
+### 6.12 · The swing-overlap sampler misses real overlaps — `todo` (pre-existing, no decision)
+
+`swingsCollide` (`src/geometry.ts`) only ever tests nine points on each leaf's arc against the
+other swing, so an overlap whose shared region holds none of them is not seen. Counterexample:
+A hinged at (300,300), radius 900, wedge 180°–270° (far jamb (−600,300), leaf end
+(300,−600)); B hinged at the origin, radius 1000, first quadrant. They share the square
+[0,300]², about 90,000 mm², and `swingsCollide` says clear, on the base and on this branch
+alike. It also misses segment contact on an oblique wall (the jamb sample's wedge sign lands
+on the wrong side in floating point). `sectorsObstruct` is exact on its own, so a decision
+procedure is within reach, but replacing the detector can add warnings to existing plans:
+that needs its own corpus sweep and a decision. Found by red-team review of 6.8; wording only.
 
 ---
 

@@ -887,7 +887,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   W_SWING_OBSTRUCTED: W(
     "W_SWING_OBSTRUCTED",
     "Door swing is obstructed.",
-    "The quarter-circle a door leaf sweeps overlaps a piece of furniture/fixture or another door's swing, so the door cannot open fully. The warning states the clear radius the swing needs, what it actually has, and the shortfall.",
+    "The quarter-circle a door leaf sweeps overlaps a piece of furniture/fixture or another door's swing, so the door cannot open fully. Two swings that meet in a single point are clear: a double door's leaves, meeting only at their shared closed jamb, do not obstruct each other. The warning states the clear radius the swing needs, what it actually has, and the shortfall.",
     "Hang the leaf on the other jamb (`hinge left|right`) — a machine-applicable fix when the flipped swing is proved clear; or open it the other way (`swing in|out`), move the door along its wall, move the obstruction (`arch repair`), narrow the leaf to the width the warning quotes (never below the minimum passable width — that relocates the problem into `W_DOOR_CLEARANCE`), hang no swinging leaf at all (a `sliding`, `pocket` or `barn` door sweeps nothing, so this rule cannot apply to it), or make it a leafless `opening`.",
     "door at (4000,1500) width 900 swing in   # lint: leaf sweeps onto the bed",
   ),

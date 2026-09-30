@@ -315,6 +315,44 @@
  * `garage-`, `outdoor-` and `roof-void-byte-identity.test.ts` carry their own copies of some of
  * these rows and moved for exactly these reasons; each was re-measured in the same commit with
  * its own digest body.
+ *
+ * ## `museum-wings`: both rows re-measured — the main door is a mirror pair (backlog 6.8)
+ *
+ * The EXAMPLE changed, on a compiler that alone moves nothing: the same sweep (every storey's
+ * SVG, `describe()`, `lint()`, `compile().diagnostics`, plus `lint()` under
+ * `accessibility-advisory` and `describe --facts symmetry`, over every example and fixture)
+ * run before and after the `W_SWING_OBSTRUCTED` change with the examples untouched moved 0 of
+ * 279 payloads. Then `d_main` (one 1800 mm leaf at x=21000, `hinge left`) became `d_main_w`
+ * and `d_main_e`, two 1000 mm leaves at x=20500 / 21500 hinged on their outer jambs and
+ * meeting at a shared closed jamb on the axis. Field by field, before → after:
+ *
+ *   - SVG (49070 → 49982 bytes): `hall_south`'s cut in the poche path (fill and stroke)
+ *     widens from 20100…21900 to 20000…22000, one gap, no sliver at the shared jamb; the one
+ *     door's opening polygon, leaf `<line>` and swing arc become two, `(20000,11000)` arc to
+ *     `(21000,12000)` and `(22000,11000)` arc to `(21000,12000)`; the `dims auto` south
+ *     chain 20250 | 1800 | 20250 becomes 20150 | 1000 | 1000 | 20150 (its ticks and texts
+ *     move with it). Nothing else in the drawing.
+ *   - `describe()`: `doors` 5 → 6 and the caption's "5 doors … and 1 more" → "6 doors … and 2
+ *     more"; `doors[]`/`access.doors[]`/`entrances`/`placement.elements` carry `d_main_w` and
+ *     `d_main_e` (width 1000, clear 940) for `d_main` (1800, clear 1740); `placement` total
+ *     18 → 19, absolute 12 → 13. The widest route in is now through a wing's 1200 mm exit (clear
+ *     1140), not the 1800 mm main door, so every `access.rooms[].bottleneckClearWidth` and
+ *     `circulation.rooms[].bottleneckClearWidthMm` (nine each) is 1740 → 1140 — each leaf of a
+ *     double door is its own 940 mm door to the analysis. Three walks re-seed: west.g3 13100 →
+ *     12600, detour 1.41 → 1.4, `d_main` → `d_main_w`; east.g3 the same with `d_main_e`; hall
+ *     5700 → 6100, detour 1 → 1.07, `d_main` → `d_main_w` (the entrance left the axis). Under
+ *     `--facts symmetry`, `full` is C1 → D1 x about (21000,6000) (`symmetry.test.ts`).
+ *   - `lint()` and `compile().diagnostics`: `[]` before and after, and `[]` under
+ *     `accessibility-advisory` too: a double door's two leaves are one assembly, clear at any
+ *     swing clearance (`isDoubleDoorPair`).
+ *
+ * The later hint fix (the narrowing width recomputed and proved, the message's numbers rounded
+ * to agree) moves no row here: no example's default `lint()` carries a `W_SWING_OBSTRUCTED`.
+ * It moves only `lint()` under `accessibility-advisory`, which no digest covers, for
+ * `furnished-flat`, `hillside-villa`, `imports` and `materials` (the quoted widths; the
+ * minimum they are measured against, 850 → 960 mm, the narrowest door that profile passes
+ * without `W_DOOR_CLEARANCE` or `W_PATH_TOO_NARROW`; and `hillside-villa`'s two `wc`
+ * distances 802 → 801 mm with their shortfalls 48 → 49).
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -336,7 +374,7 @@ export const BASELINE: [string, string][] = [
   ["library", "614bc84423700e348345a7dd9bbf1e3ff098deacba76f3f62043cc2d7e5c144c"],
   ["materials", "f400204eb2a5b4e189d33ce462c9135d602e21bb050df7dda94e260897d57450"],
   ["museum-wing", "3c797bc54f382cfd1f3975d0e6d5cc49fbb10287fe24ba22b0d24ac321504e13"],
-  ["museum-wings", "7f6ab15da9e5f80f1b59c6d59baa44ec06eaa55ada8a575fe4fdfcfd65bff06b"], // re-measured, see header
+  ["museum-wings", "53f6146cd811ea75b6547cff0601a739cfc042b3b781b37b129a0b2980b258e3"], // re-measured, see header
   ["museum", "07f06548d662a7283d4d47136c1e4260662ba0d8115282dd98d1b87134188304"],
   ["one-room", "153de2406dcdfd537ba6a8495bad8a046f1f75441119333f40c21c3970164431"],
   ["parametric", "e30cff0f2fb517d5b19723cef6092a9d614ae198a63fd96f7f1b23508ee2c0a3"],
@@ -380,7 +418,7 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["library", "f81107388c6547af37b0938ecc06a1f3ab3acbe69916edb7b0c9c76a4c9f3477"],
   ["materials", "e5041b5dd4d5029e77b657823d988604464193e121cd3f4f3a236a72faf5bf9f"],
   ["museum-wing", "95ef06b2e848b83c8d042250431b5c46deed6d8afc3f2c443b343b83e5b6cd6e"],
-  ["museum-wings", "9dc3f416d118e6fdb3669ee96376e4188b3ea67007e99dbc1de725f871cc4be1"],
+  ["museum-wings", "220aa53fd86ecc9546320077450fc93337d5fb85f0af4862fa05aa40c6ffe7d1"], // re-measured, see header
   ["museum", "7ec1245b5a9ae03f813436680f5bb750cc707631703b26e1ecf6f0c1d750d573"],
   ["one-room", "4313ab047cbd42c75be08c6a6c72e3bbe8ee6b1e598a816d722d0aa8655c0551"],
   ["parametric", "5783da773c0493767621e2c063e6da257c660dec2edb5351893f0ad4907afc3a"],

@@ -426,6 +426,17 @@ export interface AccessGraph {
 }
 
 /**
+ * A connector's estimated CLEAR width from its nominal one: an opening keeps its full width
+ * (no leaf); a door loses `clearAllowanceMm` for the leaf and stop, never below 0. The one
+ * deduction behind {@link AccessEdge.estimatedClearWidth}, and so behind every circulation
+ * bottleneck `W_PATH_TOO_NARROW` measures — a rule that asks "would a narrower door pass?"
+ * calls this rather than restating it.
+ */
+export function connectorClearWidth(kind: AccessConnector["kind"], width: number, clearAllowanceMm: number): number {
+  return kind === "opening" ? width : Math.max(0, width - clearAllowanceMm);
+}
+
+/**
  * One {@link AccessEdge} per connector, in connector order. An opening keeps its full
  * width as clear (no leaf); a door loses `clearAllowanceMm` for the leaf and stop.
  * `policy` decides what a connector touching 3+ rooms joins ({@link AmbiguityPolicy}).
@@ -445,7 +456,7 @@ export function connectorEdges(
       kind: c.kind,
       between: [between[0] ?? "", between[1] ?? ""] as [string, string],
       nominalWidth: c.width,
-      estimatedClearWidth: c.kind === "opening" ? c.width : Math.max(0, c.width - clearAllowanceMm),
+      estimatedClearWidth: connectorClearWidth(c.kind, c.width, clearAllowanceMm),
       ...(c.host?.category !== undefined ? { hostCategory: c.host.category } : {}),
       ...(c.host?.wallId !== undefined ? { hostWallId: c.host.wallId } : {}),
       exterior,
