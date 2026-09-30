@@ -753,7 +753,7 @@ room id=k right-of ghost size 100x100   # error: no room "ghost"
 
 ```arch static
 room id=e right-of ghost size 100x100
-room id=f below e size 100x100   # error: e is unplaced
+room id=f below e size 100x100   # error: e could not be placed
 ```
 
 ## E_LEVEL_DUP

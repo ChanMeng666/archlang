@@ -12,6 +12,7 @@ import { compile, describe as describePlan } from "../src/index.js";
  * plan.
  */
 
+const NL = String.fromCharCode(10);
 const svgOf = (src: string) => compile(src, { noCache: true });
 const codes = (src: string) => compile(src, { noCache: true }).diagnostics.map((d) => d.code);
 
@@ -155,11 +156,125 @@ describe("relational placement — diagnostics", () => {
         `  room id=h below g size 100x100\n  room id=g below f size 100x100\n  room id=f below e size 100x100\n  room id=e right-of zz size 100x100`,
       ),
     ).toEqual([
-      ["E_LAYOUT_REF", "e"],
       ["E_LAYOUT_UNPLACED", "h"],
       ["E_LAYOUT_UNPLACED", "g"],
       ["E_LAYOUT_UNPLACED", "f"],
+      ["E_LAYOUT_REF", "e"],
     ]);
+  });
+
+  it("a dependent leading into a cycle names the cycle member reached, not its direct reference", () => {
+    const ds = compile(
+      `plan "P" {
+ units mm
+ room id=k below m size 100x100
+ room id=m below h size 100x100
+ room id=h right-of g size 100x100
+ room id=g left-of h size 100x100
+}`,
+      { noCache: true },
+    ).diagnostics.filter((d) => d.code === "E_LAYOUT_UNPLACED");
+    expect(ds.map((d) => /Room "([^"]+)"/.exec(d.message)?.[1])).toEqual(["k", "m"]);
+    // k's direct reference is m, but the cycle member it reaches is h (m is not a member).
+    expect(ds[0]?.message).toContain('depends on "h"');
+    expect(ds[1]?.message).toContain('depends on "h"');
+  });
+
+  it("a self-reference is a one-room cycle", () => {
+    expect(blame("  room id=a right-of a size 100x100")).toEqual([["E_LAYOUT_CYCLE", "a"]]);
+  });
+
+  it("two independent cycles with tails are blamed separately", () => {
+    expect(
+      blame(
+        [
+          "  room id=t1 below a size 100x100",
+          "  room id=a right-of b size 100x100",
+          "  room id=b left-of a size 100x100",
+          "  room id=t2 below c size 100x100",
+          "  room id=c right-of d size 100x100",
+          "  room id=d left-of c size 100x100",
+        ].join(NL),
+      ),
+    ).toEqual([
+      ["E_LAYOUT_UNPLACED", "t1"],
+      ["E_LAYOUT_CYCLE", "a"],
+      ["E_LAYOUT_CYCLE", "b"],
+      ["E_LAYOUT_UNPLACED", "t2"],
+      ["E_LAYOUT_CYCLE", "c"],
+      ["E_LAYOUT_CYCLE", "d"],
+    ]);
+  });
+
+  it("an unplaced room raises no phantom W_ROOM_OVERLAP (chain of 6 off a missing ref)", () => {
+    const rooms = ["room id=r1 right-of zz size 100x100"];
+    for (let i = 2; i <= 6; i++) rooms.push(`room id=r${i} below r${i - 1} size 100x100`);
+    const cs = codes(`plan "P" {
+ units mm
+${rooms.join(NL)}
+}`);
+    expect(cs.filter((c) => c === "W_ROOM_OVERLAP")).toEqual([]);
+    expect(cs.filter((c) => c === "E_LAYOUT_UNPLACED")).toHaveLength(5);
+  });
+
+  describe("across an instance boundary the unplaced state survives the transform", () => {
+    const layoutBlame = (src: string) =>
+      compile(src, { noCache: true })
+        .diagnostics.filter((d) => d.code?.startsWith("E_LAYOUT") || d.code === "W_ROOM_OVERLAP")
+        .map((d) => [d.code, /Room "([^"]+)"/.exec(d.message)?.[1] ?? null]);
+
+    it("a parent room below a failed room of an instance", () => {
+      expect(
+        layoutBlame(
+          `plan "P" {
+ units mm
+ component C() { room id=e right-of zz size 100x100 }
+ place C() as c1 at (5000,5000)
+ room id=f below c1.e size 100x100
+}`,
+        ),
+      ).toEqual([
+        ["E_LAYOUT_REF", "e"],
+        ["E_LAYOUT_UNPLACED", "f"],
+      ]);
+    });
+
+    it("a parent room below a cyclic room of an instance", () => {
+      expect(
+        layoutBlame(
+          `plan "P" {
+ units mm
+ component C() {
+ room id=g right-of h size 100x100
+ room id=h left-of g size 100x100 }
+ place C() as c1 at (5000,5000)
+ room id=k below c1.h size 100x100
+}`,
+        ),
+      ).toEqual([
+        ["E_LAYOUT_CYCLE", "g"],
+        ["E_LAYOUT_CYCLE", "h"],
+        ["E_LAYOUT_UNPLACED", "k"],
+      ]);
+    });
+
+    it("a nested component: the outer's room below the inner's failed room", () => {
+      expect(
+        layoutBlame(
+          `plan "P" {
+ units mm
+ component I() { room id=e right-of zz size 100x100 }
+ component O() {
+ place I() as i at (0,0)
+ room id=f below i.e size 100x100 }
+ place O() as o at (5000,5000)
+}`,
+        ),
+      ).toEqual([
+        ["E_LAYOUT_REF", "e"],
+        ["E_LAYOUT_UNPLACED", "f"],
+      ]);
+    });
   });
 
   it("a dependent of a polygon-reference failure is UNPLACED", () => {

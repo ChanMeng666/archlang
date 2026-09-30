@@ -6,8 +6,9 @@
  * by **pure arithmetic in dependency order**. This is deliberately NOT an
  * optimizer: each room's position is a closed-form function of its reference
  * room's resolved box, resolved via a topological pass. References form a DAG;
- * a cycle is a user error (`E_LAYOUT_CYCLE`), an unknown reference is
- * `E_LAYOUT_REF`.
+ * a cycle is a user error (`E_LAYOUT_CYCLE`, members only), an unknown reference is
+ * `E_LAYOUT_REF`, a polygon reference `E_PLACE_POLY`, and a room that merely depends on
+ * one of those (directly, along a chain, or into a cycle) `E_LAYOUT_UNPLACED`.
  *
  * Determinism: rooms are processed in declaration order within each pass, and
  * computed coordinates are grid-snapped exactly like absolute ones, so the same
@@ -75,7 +76,13 @@ function place(room: RelRoom, ref: RRoom, snapPt: (p: Point) => Point): void {
  *
  * @param rooms   All resolved rooms, in declaration order.
  * @param snapPt  Grid-snap used for absolute coords (computed coords snap too).
- * @param diag    Sink for `E_LAYOUT_REF` / `E_LAYOUT_CYCLE`.
+ * @param diag    Sink for `E_LAYOUT_REF` / `E_PLACE_POLY` / `E_LAYOUT_UNPLACED` /
+ *                `E_LAYOUT_CYCLE`, emitted in declaration order of the offending room.
+ *
+ * Every room left without a real position (failed, unplaced or on a cycle) is marked
+ * `_unplaced`. The mark survives `room.transform`, so an enclosing plan's pass sees an
+ * instance's unplaced room as unplaced rather than as an absolute room at its placeholder,
+ * and `checkRoomOverlaps` skips such rooms (their `at` is a placeholder, not geometry).
  */
 export function placeRelational(rooms: RRoom[], snapPt: (p: Point) => Point, diag: (d: Diagnostic) => void): void {
   const rel = rooms.filter((r): r is RelRoom => r._rel !== undefined);
@@ -90,7 +97,13 @@ export function placeRelational(rooms: RRoom[], snapPt: (p: Point) => Point, dia
   // `unresolved` so the fixpoint stops revisiting them, but they are NOT resolved: a
   // dependent must never be placed against their (0,0) placeholder.
   const failed = new Set<string>();
-  const isResolved = (id: string): boolean => byId.has(id) && !unresolved.has(id) && !failed.has(id);
+  // A room blocked for a dependent: failed here, or carried in already unplaced by an
+  // instance's own pass (a transformed room has no `_rel`, so it is not in `rel`).
+  const blocked = (id: string): boolean => failed.has(id) || byId.get(id)?._unplaced === true;
+  const isResolved = (id: string): boolean => byId.has(id) && !unresolved.has(id) && !blocked(id);
+  // Layout errors are buffered per room and flushed in declaration order at the end, so
+  // the phases (fixpoint, then leftover walk) cannot invert the order.
+  const pending = new Map<string, Diagnostic>();
 
   // Fixpoint: keep placing any room whose reference is resolved. Declaration
   // order within each sweep makes the result deterministic.
@@ -101,7 +114,7 @@ export function placeRelational(rooms: RRoom[], snapPt: (p: Point) => Point, dia
       if (!unresolved.has(r.id)) continue;
       const ref = byId.get(r._rel.ref);
       if (!ref) {
-        diag({
+        pending.set(r.id, {
           severity: "error",
           message: `Room "${r.id}" is placed relative to unknown room "${r._rel.ref}"`,
           code: "E_LAYOUT_REF",
@@ -119,7 +132,7 @@ export function placeRelational(rooms: RRoom[], snapPt: (p: Point) => Point, dia
         // reference does not have — so this is an error naming the way out, never a
         // guess (ADR 0005).
         if (ref.poly) {
-          diag({
+          pending.set(r.id, {
             severity: "error",
             message: `Room "${r.id}" is placed \`${r._rel.dir} ${r._rel.ref}\`, but "${r._rel.ref}" is a polygon room — relational placement needs a rectangular reference. Place this room with \`at (x,y)\` instead.`,
             code: "E_PLACE_POLY",
@@ -158,17 +171,17 @@ export function placeRelational(rooms: RRoom[], snapPt: (p: Point) => Point, dia
     let cur: RelRoom = r;
     for (;;) {
       const next = cur._rel.ref;
-      if (failed.has(next) || (walked.has(next) && next !== r.id)) {
-        diag({
+      if (blocked(next) || (walked.has(next) && next !== r.id)) {
+        pending.set(r.id, {
           severity: "error",
-          message: `Room "${r.id}" cannot be placed: it depends on "${next}", which is ${failed.has(next) ? "itself unplaced" : "part of a relational placement cycle"}`,
+          message: `Room "${r.id}" cannot be placed: it depends on "${next}", which ${blocked(next) ? "could not be placed (see its own error)" : "is part of a relational placement cycle"}`,
           code: "E_LAYOUT_UNPLACED",
           span: r._rel.span,
         });
         break;
       }
       if (next === r.id) {
-        diag({
+        pending.set(r.id, {
           severity: "error",
           message: `Room "${r.id}" is part of a relational placement cycle`,
           code: "E_LAYOUT_CYCLE",
@@ -179,5 +192,12 @@ export function placeRelational(rooms: RRoom[], snapPt: (p: Point) => Point, dia
       walked.add(next);
       cur = byId.get(next) as RelRoom;
     }
+  }
+
+  for (const r of rel) {
+    const d = pending.get(r.id);
+    if (!d) continue;
+    r._unplaced = true;
+    diag(d);
   }
 }

@@ -807,8 +807,9 @@ room id=kitchen right-of living align top gap 0 size 3000x4000 label "Kitchen"
 room id=bed     below living    align left gap 0 size 5000x3500 label "Bedroom"
 ```
 
-A reference cycle reports [`E_LAYOUT_CYCLE`](error-codes.md); an unknown reference
-reports `E_LAYOUT_REF`. See the dedicated guide page for the placement arithmetic.
+A reference cycle reports [`E_LAYOUT_CYCLE`](error-codes.md) (on the rooms of the cycle only); an unknown
+reference reports `E_LAYOUT_REF`. A room that depends on a room that could not be placed, or on a cycle,
+reports `E_LAYOUT_UNPLACED` naming it. See the dedicated guide page for the placement arithmetic.
 
 ### Polygonal rooms (v1.23)
 

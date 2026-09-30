@@ -577,7 +577,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "A relational room depends on a room that could not be placed.",
     "The room's reference chain ends at a room that failed (unknown or polygon reference) or runs into a placement cycle, so there is no resolved position to place it against. Only the root cause carries the original error.",
     "Fix the room it names (give it a valid reference or absolute `at (x,y)`), or place this room with `at (x,y)`.",
-    "room id=e right-of ghost size 100x100\nroom id=f below e size 100x100   # error: e is unplaced",
+    "room id=e right-of ghost size 100x100\nroom id=f below e size 100x100   # error: e could not be placed",
   ),
   E_LAYOUT_REF: E(
     "E_LAYOUT_REF",
