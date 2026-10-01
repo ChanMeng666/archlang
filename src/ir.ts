@@ -2141,7 +2141,8 @@ function resolveImpl(
   let axes: RAxis[] | undefined;
   if (ast.axes) {
     activeEnv = globalScope.flatten();
-    // A datum beyond the modelling range is reported at its expression and left out.
+    // A datum beyond the modelling range is reported (at its expression, else the block)
+    // and left out.
     const inRange = (list: Expr[], axis: "x" | "y"): number[] =>
       list.flatMap((e) => {
         const v = snap(evalNum(e));
@@ -2618,7 +2619,6 @@ function registerOpenings(elements: ResolvedElement[], walls: RWall[]): void {
   }
 }
 
-/** W_EMPTY_PLAN: the plan resolves but contains nothing drawable. */
 /** The value of largest magnitude beyond {@link MODEL_RANGE_MM}, or undefined when every
  *  value is within it (the first such value on a tie, so the message is deterministic). */
 function farthest(values: readonly number[]): number | undefined {
@@ -2655,9 +2655,9 @@ function outOfRange(what: string, value: number, span: Span | undefined, file?: 
  *   for a dimension line.
  *
  * One diagnostic per element, at its span, non-finite first. The element is then DROPPED
- * (returned here; the caller removes it before openings are registered), so no consumer —
- * the drawing, `describe()`, `lint()`, the grids — ever forms a product from it. `fmt3`'s
- * `"0"` for a non-finite number stays only as a backstop.
+ * (returned here; the caller removes it before openings are registered), so no later stage
+ * (an opening's hole, the overlap check, the sheet fit, the drawing) forms a product from it.
+ * `fmt3`'s `"0"` for a non-finite number stays only as a backstop.
  */
 function checkNumberDomain(
   elements: ResolvedElement[],
@@ -2716,6 +2716,7 @@ function checkNumberDomain(
   return outside;
 }
 
+/** W_EMPTY_PLAN: the plan resolves but contains nothing drawable. */
 function checkPlanDrawable(elements: ResolvedElement[], diagnostics: Diagnostic[]): void {
   const drawable = elements.some(
     (e) =>
