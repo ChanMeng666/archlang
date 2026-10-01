@@ -179,8 +179,10 @@ equivalence oracle holding the old implementation verbatim (`test/reroll-findrun
   gain circulation facts and `hillside-villa` six `W_PATH_TOO_NARROW`; `hexagon-pavilion`'s two
   oblique-portal galleries walk 8800 instead of 9800; intent `reachable` fails a storey with no
   way in; furniture within the body radius plus the distance to the first free cell's centre
-  (400 mm for a 100 mm partition on the 100 mm grid) of a doorway's face leaves the room behind
-  it `blocked`.
+  of a doorway's face leaves the room behind it `blocked`. That distance depends on where the
+  wall falls on the walk grid (0 < δ ≤ one cell), so the threshold is not a constant: 400 mm for
+  a 100 mm partition on the 100 mm grid, 388 mm on a plan with 108 mm cells
+  (`test/carve-inward-walk.test.ts`).
 - **Cost.** One more bound per resource to keep calibrated. The stack budget's table is in
   `src/expr.ts` and goes stale with engines; the rule is what to re-run.
 - **Open** (`docs/backlog.md`, section M): the modelling range and absurd magnitudes, a global

@@ -945,8 +945,9 @@ nine, the sixth `W_PATH_TOO_NARROW` now "The route from "Master Suite" to "Ensui
 door's seed is read as before: sealing it too was measured and rejected, because the
 closed-class witness "a room split by furniture, entered by an opening with a threshold point
 on a line" then measured no circulation room. Consequence, pinned at two cell sizes by
-`test/carve-inward-walk.test.ts`: furniture within R + δ of a doorway's face (400 mm for a
-100 mm partition on the 100 mm grid) leaves the room `blocked`, where a doorway near a room
+`test/carve-inward-walk.test.ts`: furniture within R + δ of a doorway's face leaves the room
+`blocked` (δ depends on where the wall falls on the walk grid, 0 < δ ≤ one cell: R + δ is
+400 mm for a 100 mm partition on the 100 mm grid, 388 mm with 108 mm cells), where a doorway near a room
 corner or with a threshold point on a grid line used to be measured through a tunnel beside
 it. No shipped example has such a doorway. E.10's far-seed question stays open (front-door
 seeds still walk through eroded cells, and the polygon seed branch takes no seal).

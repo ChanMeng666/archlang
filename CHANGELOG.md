@@ -139,8 +139,10 @@ drawn, and a `dim` at 1e308 prints `Infinity` (backlog M.1).
   walk now stops at the room's first eroded floor cell (a halo reaching through a wall stays
   crossable); a front door's seed is read as before.
 - **Behaviour change.** Furniture standing within R + δ of a doorway's face (R the 300 mm body
-  radius, δ the distance from the wall face to the centre of the first free grid cell; R + δ is
-  400 mm for a 100 mm partition on the 100 mm grid) now leaves that room `blocked` in
+  radius, δ the distance from the wall face to the centre of the first free grid cell, which
+  depends on where the wall falls on the walk grid, 0 < δ ≤ one cell; R + δ is 400 mm for a
+  100 mm partition on the 100 mm grid and 388 mm on a plan with 108 mm cells, not a constant)
+  now leaves that room `blocked` in
   `describe().circulation`, with its `widestWayInMm`, and drops its routes. A doorway straight
   along a wall already read this way; one near a room corner, or with a threshold point on a
   grid line, used to be measured through a tunnel beside the doorway with the door's width
