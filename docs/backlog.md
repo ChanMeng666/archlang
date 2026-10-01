@@ -928,20 +928,28 @@ the original report measured over 180 s with no diagnostic). Nested `while`s mul
 number of levels (24 capped levels took about 219 s in the original report; not re-run). Wants
 one evaluation-step budget across the whole resolution, as a catalogued error.
 
-### M.3 · The doorway carve's inward walk steps through eroded cells — `todo`
+### M.3 · The doorway carve's inward walk stepped through eroded cells — closed
 
-A carve's far-seed stamp (E.10's open question) can land several cells from its door, because
-the inward walk (`walkInward`, `src/analyze/circulation.ts`) passes through eroded cells, here a
-stair footprint. On `hillside-villa` level 2 that stamps `d_en2_corr`'s 640 mm onto one cell of
-the passage under the flight, (4950, 4050), and caps the Master Suite at 640 where the passage
-reads 700; it is one of that storey's six `W_PATH_TOO_NARROW`. Re-run: `r_master` walk 9900,
-bottleneck 640, detour 1.81. The narrow fix (stamp only cells that were not free) was measured
-and rejected: it also moves `eval/fidelity-plans/min-bedroom-flat.laundered.arch`'s first route
-(`r_bed` → `r_bath`) bottleneck 740 → 14000, the open-room value, because there the far-seed
-stamp is the door's only width on the route (re-run: 740 today). A proper fix must keep a
-far-seed width wherever it is a route's only door width. Without the artefact hillside's count
-stays nine: the Master Suite's route to its ensuite passes the real 700 mm `d_enm` (stated in
-the source comment; not planted away to prove it).
+A carve's far seed could land several cells from its door, because a connector's inward walk
+(`walkInward`, `src/analyze/circulation.ts`) passed through eroded cells, there a stair
+footprint: on `hillside-villa` level 2 it stamped `d_en2_corr`'s 640 mm onto one cell of the
+passage under the flight, (4950, 4050), and capped the Master Suite at 640 where the passage
+reads 700. The narrow fix (stamp only cells that were not free) was rejected because it also
+moved `eval/fidelity-plans/min-bedroom-flat.laundered.arch`'s first route 740 → 14000.
+
+Closed by stopping a connector's inward walk at the room's first eroded FLOOR cell (`buildGrid`
+records them; an eroded cell under a wall is a halo reaching through it and stays crossable).
+Re-run on the merged tree: `r_master` walk 9900, bottleneck 700, detour 1.81; `arch lint` still
+nine, the sixth `W_PATH_TOO_NARROW` now "The route from "Master Suite" to "Ensuite" squeezes to
+640 mm" through `d_enm`, a real 700 mm door; `min-bedroom-flat`'s route still 740. A FRONT
+door's seed is read as before: sealing it too was measured and rejected, because the
+closed-class witness "a room split by furniture, entered by an opening with a threshold point
+on a line" then measured no circulation room. Consequence, pinned at two cell sizes by
+`test/carve-inward-walk.test.ts`: furniture within R + δ of a doorway's face (400 mm for a
+100 mm partition on the 100 mm grid) leaves the room `blocked`, where a doorway near a room
+corner or with a threshold point on a grid line used to be measured through a tunnel beside
+it. No shipped example has such a doorway. E.10's far-seed question stays open (front-door
+seeds still walk through eroded cells, and the polygon seed branch takes no seal).
 
 ### M.4 · Shaft-reached storeys: what the first cut leaves out — `todo`
 
@@ -954,10 +962,25 @@ person arrives by (ADR 0008's addendum). Left out, each re-run unless noted:
 - Direction of travel is not modelled: `dir` is a per-storey drawing convention, so an escalator
   PAIR (one up, one down) seeds the upper storey at both cars. Re-run on a two-storey probe:
   the upper room is walked from `e_dn`.
-- A landing with no walkable cell in front of it seeds nothing; its rooms read `unreachable`
-  (head against the shell) or `no_threshold` (a covered landing on a door-less storey). A
-  distinct reason would be a schema change (documented in `docs/analysis.md`, pinned by
+- The landing test is now on the plan's geometry, and it is SAMPLED: nine points along the
+  head, about 112 mm apart on a 900 mm flight, each 1 mm beyond it (`LANDING_PROBE_MM`,
+  `src/analyze/circulation.ts`). An obstruction narrower than the spacing can sit unseen
+  between two points, a free slot narrower than it can be missed, and floor 1 mm deep counts
+  as a landing even with a partition 50 mm farther out. A probe one body radius deep was
+  measured and not taken: it seals `two-storey`'s 200 mm upper landing (code comment; not
+  re-run here).
+- The nearest-cell fallback (a landing row with no free cell in some frames starts the walk
+  beside the flight) can add up to two cells of frame spill on its own; the red team measured
+  walks spilling up to 6 cells on random buildings against 4 before. The per-building bounds in
+  `test/shaft-equivariance.test.ts` are measured, not proven.
+- A landing that seeds nothing still reads `unreachable` (head against the shell) or
+  `no_threshold` (a covered landing on a door-less storey); a distinct reason for a sealed
+  landing would be a schema change (documented in `docs/analysis.md`, pinned by
   `test/shaft-circulation.test.ts`).
+- Same-id stops whose footprints do not overlap on the two storeys raise nothing; a lint for
+  them is deferred. (A run drawn along another axis upstairs now takes its own entry edge rather
+  than reading its flight length as the landing width, pinned in
+  `test/shaft-circulation.test.ts`.)
 - Walls are never eroded, so the 400 mm passage under hillside's flight reads 700 (from the
   card's report; not re-run).
 - `two-storey`'s upper landing is a 200 mm strip between the void and the stair head, a
@@ -986,12 +1009,16 @@ person arrives by (ADR 0008's addendum). Left out, each re-run unless noted:
   one storey-removed fixpoint per ungrounded reachable storey: redundant, cheap at dozens of
   storeys (code read).
 
-### M.5 · The equivariance oracle does not cover multi-storey plans — `todo`
+### M.5 · The corpus equivariance oracle does not cover multi-storey plans — `todo` (circulation half has a law)
 
 The corpus suite places every shipped example with no `level` block
 (`test/equivariance-corpus.test.ts`, "the corpus is COMPUTED: every shipped example with no
-`level` block"), so `hillside-villa`, `townhouse`, `two-storey` and the other `level` plans,
-including the new shaft-walked storeys, have no oracle coverage. Re-run: read the test's filter.
+`level` block"), so `hillside-villa`, `townhouse`, `two-storey` and the other `level` plans get
+no geometry, `describe()` or `lint()` oracle. Re-run: read the test's filter. Multi-storey
+CIRCULATION now has its own law, `test/shaft-equivariance.test.ts`: every
+`levels[*].circulation` under each of the eight frames, exact on lattice-aligned grids, within
+measured per-building cell bounds otherwise, and the landing never flips. The rest of a
+`level` plan's facts are still outside any oracle.
 
 ### M.6 · Load-sensitive visual and sheet tests — `todo`
 
@@ -1115,6 +1142,23 @@ Recorded with reasons in ADR 0022; none was built this round.
   reopen G1.
 - Interval-graph layering for `W_DIM_OVERLAP`, regular-path queries on the access graph, bare
   component extraction (MDL), a dataset entropy report: possible, no failure evidence yet.
+
+### M.17 · `spec.llm.md` is 13 characters under its prompt-size cap — `todo`
+
+`test/llm-spec-drift.test.ts` caps the in-memory `renderLlmSpec()` string below 30,000
+characters. Re-measured on the merged tree: 29,987, so the next sentence anyone adds to the spec
+(or to `examples/attached.arch` / `examples/parametric.arch`, which it embeds verbatim) fails the
+suite. The test's comment said "a measured 29,778"; it now records 29,987. This round's
+correction to the stair line had to be written no longer than the line it replaced. Per the
+test's own rules, trim duplication first (its comment names the `door` line, over 1,600
+characters, as the next lever), then argue any raise.
+
+### M.18 · `vitest --maxWorkers=2` alone fails on this repo — `todo` (docs)
+
+The memory-saving rerun a busy machine needs, `npx vitest run --maxWorkers=2`, stops with an
+unhandled error before any test runs; adding `--minWorkers=1` runs it (re-run on
+`test/eval-stats.test.ts`: 5 passed). Worth one line in `docs/testing.md` so an agent told to
+"rerun with `--maxWorkers=2`" does not read the error as a test failure.
 
 ---
 

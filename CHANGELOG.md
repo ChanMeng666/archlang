@@ -130,6 +130,27 @@ drawn, and a `dim` at 1e308 prints `Infinity` (backlog M.1).
   `Walk to bed: 8000 mm (pinch 740 mm) → blocked (widest way in 0 mm)` or `… → unmeasured
   (no_door_route)`. `CirculationChange` is unchanged.
 
+### Fixed — a doorway's carve no longer stamps its width past furniture or a stair
+
+- A connector's carve seeds come from a walk inward from its threshold to the room's first free
+  cell. That walk stepped on through cells the clearance erosion had taken (past a fixture, or
+  a stair's whole footprint), and an L-shaped carve from that far seed could stamp the
+  doorway's width on a cell nowhere near the doorway, or bore through the wall beside it. The
+  walk now stops at the room's first eroded floor cell (a halo reaching through a wall stays
+  crossable); a front door's seed is read as before.
+- **Behaviour change.** Furniture standing within R + δ of a doorway's face (R the 300 mm body
+  radius, δ the distance from the wall face to the centre of the first free grid cell; R + δ is
+  400 mm for a 100 mm partition on the 100 mm grid) now leaves that room `blocked` in
+  `describe().circulation`, with its `widestWayInMm`, and drops its routes. A doorway straight
+  along a wall already read this way; one near a room corner, or with a threshold point on a
+  grid line, used to be measured through a tunnel beside the doorway with the door's width
+  stamped over the pinch. No shipped example has such a doorway.
+- Moved: on `hillside-villa` level 2 the Master Suite's walk bottleneck reads 700 mm, the
+  passage's own width, where this carve's artefact would have read 640; its
+  `W_PATH_TOO_NARROW` is therefore for its route to the Ensuite, not its walk (see the
+  shaft-storey entry below). On level 1 two `--overlay circulation` pinch markers move at the
+  same clear width. Every SVG is byte-identical.
+
 ### Fixed — eval: `proveInfeasible` no longer sums floors
 
 - Several at-least floors on one concept are met by the largest, not their sum; plan-wide floors
@@ -151,14 +172,21 @@ drawn, and a `dim` at 1e308 prints `Infinity` (backlog M.1).
   the storey is reached by it from elsewhere in the building, so a flight that only leaves the
   storey does not count. `entranceId` is the run's id, and `W_PATH_TOO_NARROW`,
   `W_CIRCUITOUS_PATH` and `arch repair`'s circulation guard now cover that floor.
+- Whether there is a landing at the head of the flight is decided on the plan's geometry, not
+  on the walk grid: floor just beyond the head that no wall, void, other run or furniture
+  covers, where a door or opening opens only its own wall. So a storey on a large plan whose
+  grid cell does not divide it no longer reads measured in some `place` frames and
+  `unreachable` in others, and a same-id stair drawn along another axis upstairs no longer
+  reads its flight length as the landing width.
 - Moved: `hillside-villa` level 2, `townhouse` levels 2 and 3, and `two-storey` level 2 gain a
-  circulation model in `describe()`; `hillside-villa` level 2 gains six `W_PATH_TOO_NARROW`
-  (640 mm: five behind 700 mm doors, and the Master Suite's, a known artefact of the walk
-  grid's doorway carve, backlog M.3);
-  the "Two-storey" example in the language reference now reports its upper floor's circulation.
-  Under `accessibility-advisory` (900 mm) the new `W_PATH_TOO_NARROW` are six on
-  `hillside-villa`, six on `townhouse` and three on `two-storey`. Drawings are
-  unchanged, and so is `--overlay circulation`, which still draws nothing on such a storey.
+  circulation model in `describe()`, and `hillside-villa` level 2 gains six
+  `W_PATH_TOO_NARROW` at 640 mm: the walks to Bedroom 2, Bedroom 3 and the three Ensuites,
+  each through a 700 mm door (640 mm clear), and the route from the Master Suite to its Ensuite
+  through `d_enm`, also 700 mm. The "Two-storey" example in the language reference now reports
+  its upper floor's circulation. Under `accessibility-advisory` (900 mm) the new
+  `W_PATH_TOO_NARROW` are six on `hillside-villa`, six on `townhouse` and three on
+  `two-storey`. Drawings are unchanged, and `--overlay circulation` still draws nothing on such
+  a storey.
 
 ### Changed — a doorway's carve no longer depends on carve order
 

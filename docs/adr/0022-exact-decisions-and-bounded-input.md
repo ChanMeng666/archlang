@@ -141,7 +141,13 @@ The metric was written before the recovery change and shows the loss it fixes.
 - **Doorway carve**: every connector's seeds are read from the nav grid as it stood before any
   connector carved, so point order (which a turn reverses) and connector order commute with
   the carve (`buildGrid`, `src/analyze/circulation.ts`; laws in
-  `test/equivariance-corpus.test.ts`).
+  `test/equivariance-corpus.test.ts`). A connector's inward walk to its seed stops at the
+  room's first eroded floor cell, so a carve can no longer stamp a doorway's width past
+  furniture or a stair (`test/carve-inward-walk.test.ts`).
+- **Shaft landings** are decided on the plan's geometry (floor just beyond the head of the
+  flight that nothing covers), not on grid cell centres, so a landing does not read open in one
+  frame and covered in a turned one; multi-storey plans gain an equivariance law
+  (`test/shaft-equivariance.test.ts`).
 - **Relational layout** propagates a failed set: a dependant of a failure or a cycle is
   `E_LAYOUT_UNPLACED`, and only rooms on a cycle are `E_LAYOUT_CYCLE` (`src/layout.ts`,
   `test/relational.test.ts`).
@@ -172,12 +178,14 @@ equivalence oracle holding the old implementation verbatim (`test/reroll-findrun
   diagnostic; a file with trailing content no longer compiles; three examples' upper storeys
   gain circulation facts and `hillside-villa` six `W_PATH_TOO_NARROW`; `hexagon-pavilion`'s two
   oblique-portal galleries walk 8800 instead of 9800; intent `reachable` fails a storey with no
-  way in.
+  way in; furniture within the body radius plus the distance to the first free cell's centre
+  (400 mm for a 100 mm partition on the 100 mm grid) of a doorway's face leaves the room behind
+  it `blocked`.
 - **Cost.** One more bound per resource to keep calibrated. The stack budget's table is in
   `src/expr.ts` and goes stale with engines; the rule is what to re-run.
 - **Open** (`docs/backlog.md`, section M): the modelling range and absurd magnitudes, a global
-  step budget, the carve's inward walk through eroded cells and the far-seed stamp, the limits
-  of shaft-walked storeys, the oracle's exclusion of `level` plans, and the observations the
+  step budget, the far-seed stamp, the limits of shaft-walked storeys (a sampled landing probe
+  among them), the corpus oracle's exclusion of `level` plans, and the observations the
   audit re-verified (formatter precision, half-up grid snap, collation-dependent catalogue
   order, rename and assignment targets, the detour ratio's metric, an occupancy page-order tie,
   `suggestTopology` on upper storeys, an unbounded acute roof mitre).

@@ -72,7 +72,8 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // 1,600 characters, whose per-kind clause prose a machine-readable table would carry
     // better than a sentence.
     //
-    // 30,000 leaves ~222 chars of headroom on a measured 29,778.
+    // 30,000 leaves 13 chars of headroom on a measured 29,987 — below the working margin the
+    // rules above ask for (`docs/backlog.md` M.17: trim before the next addition).
     expect(spec.length).toBeLessThan(30_000);
   });
 });
