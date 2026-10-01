@@ -70,7 +70,7 @@ representative, annotated example:
 | `roomsInclude[].windows` | a required window count for the concept's rooms; optional `facing` (`N`/`S`/`E`/`W`) restricts the count to windows whose host wall faces that **true compass** direction (`describe().windows[].facing` — the page direction read against the plan's [`north`](language-reference.md#plan-settings), so `facing: "S"` means compass south, not "toward the bottom of the page"). `facing` also accepts the five **names** a plan's [`site` block](language-reference.md#site-and-orientation) derives — `street`, `back`, `equator_side`, `sunrise_side`, `sunset_side` — each of which resolves to one of those letters through that plan's own site; see [Symbolic facings](#symbolic-facings-naming-a-direction-instead-of-a-letter) |
 | `totalAreaM2` | a total floor-area band, again with a `source` quote |
 | `adjacency` | interior-door adjacency the brief licenses, `{ conceptA: [conceptB, …] }` — **advisory** |
-| `reachable` | assert every room is reachable from a modeled entrance — **advisory** |
+| `reachable` | assert every room is reachable from a modeled entrance — **advisory**. On a multi-storey plan every storey must also have a way in (its own exterior door, or a stair/lift/escalator from a room you can reach); rooms on upper storeys are not checked one by one |
 
 Every quantitative band carries a `source`: the brief phrase that justified the number.
 When a band fails, the failure message cites it back, so a reader sees both the measured
@@ -176,7 +176,7 @@ exit code):
 |------|-----------|
 | `E_INTENT_NOT_ADJACENT` | a required interior-door adjacency is absent |
 | `E_INTENT_NO_DOOR` | `reachable` was asserted but the plan has no modeled entrance |
-| `E_INTENT_UNREACHABLE` | `reachable` was asserted but some room is cut off |
+| `E_INTENT_UNREACHABLE` | `reachable` was asserted but some room, or a whole storey, is cut off |
 
 Adjacency and reachability are advisory on purpose. One-shot topology — which rooms open
 onto which — is exactly what v1.13's loop tools (`arch fix`, `arch suggest`,

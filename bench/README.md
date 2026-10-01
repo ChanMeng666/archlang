@@ -7,6 +7,21 @@ It compiles deterministically-generated plans (`bench/gen.ts`, no `Math.random`/
 stage (parse / resolve / toScene / renderSvg), times the analysis entry points
 (lint / describe), and runs two **skewed** plans to isolate geometry hotspots.
 
+## Baseline
+
+`bench/baseline.json` is measured on an idle machine with the grid generator below
+(`npx tsx bench/run.ts --json > bench/baseline.json`); regenerate it the same way after any
+generator or methodology change. Timings on a loaded machine move by tens of percent, and one
+machine's absolutes are not another's, so use ratios measured back to back in one session,
+never absolutes across sessions or hosts.
+
+Where the time goes: on the wall-heavy plans the hotspot is the joinery pass
+(`joinWalls`, ADR 0018); `src/geometry/union.ts` is a test oracle and is not on the compile
+path. `lint` on ROOM_HEAVY is dominated by vocabulary matching (`src/vocabulary.ts`:
+`matchVocabulary`, `classifyLabelUses`, `synonymMatchesLabel`, about 88 % inclusive in an
+inspector profile, the same on both layouts); room adjacency and the analysis grids are
+under 1 %.
+
 ## Methodology (fixed 2026-07)
 
 The pipeline stages memoize (lex by content hash, parse by source hash, resolve
@@ -17,19 +32,34 @@ otherwise hit; `lint`/`describe` deliberately run against warm parse/resolve
 caches so their rows isolate the analysis work itself. The generated BALANCED
 plan also carried 100 furniture parse errors (a stale `id=` slot), which made
 its lint/describe rows measure an early bail-out; the generator is fixed.
-Baselines from before this fix are **not comparable**.
+Baselines from before this fix are **not comparable**; nor are those from before the
+generator moved to a grid layout (below).
 
-## Current stage picture (~1000 elements, median ms, one dev machine)
+## Generated layout (what the plans look like)
 
-| Plan | compile | parse | resolve | toScene | renderSvg | lint | describe |
-|------|--------:|------:|--------:|--------:|----------:|-----:|---------:|
-| BALANCED | 25.5 | 6.7 | 5.0 | 7.2 | 2.5 | 7.0 | 5.8 |
-| ROOM_HEAVY | 14.5 | 7.2 | 3.0 | 0.8 | 2.6 | 2.3 | **28.7** |
-| OPENING_HEAVY | 42.4 | 6.5 | 9.3 | **19.5** | 2.5 | 3.8 | 0.5 |
+`bench/gen.ts` lays each element class out as a ⌈√n⌉-column grid, the classes stacked
+as bands, so a ~1000-element plan is roughly square and on the order of 100 m across.
+It used to lay every class out along a line (`x = i·1000`): ROOM_HEAVY was ~1 km long and
+the other two plans 300 to 400 m. Without a sheet the renderer sizes the room font from the
+drawing's reference dimension (`src/scene-build.ts`, `roomFont = refDim·0.03`), so room
+fonts were 9 to 30 m on 800 mm rooms in every case and every label relocated: the
+`toScene` rows measured label placement, not wall lowering. On the old layout
+`relocateLabels` was about 58 % of BALANCED and about 97 % of ROOM_HEAVY `toScene`
+(inspector profile). Element counts per case are unchanged.
 
-The two standout hotspots: `toScene` on opening-heavy plans (the wall
-boolean-union in `src/geometry/union.ts`) and `describe` on room-heavy plans
-(pairwise room adjacency).
+A grid alone was not enough: the font is still a fixed fraction of the drawing, so 300 or
+1000 rooms on one unsheeted drawing cannot hold their labels. Every generated plan
+therefore declares `paper A0 landscape` (no `scale`; the sheet auto-fits one), which sizes
+labels from the paper. With 3000 mm rooms and a font of a few hundred plan millimetres no
+label relocates, and label placement is negligible in every case; an inspector profile of
+BALANCED shows `joinWalls` at over 90 % of the run. ROOM_HEAVY `toScene` dropped by more
+than an order of magnitude.
+
+The lint and describe workload changed shape as well, not only the geometry: 3000 mm rooms
+no longer raise `W_ROOM_TOO_SMALL` (300, 1000 and 4 warnings per plan before), so the
+lint rows now measure a different diagnostic set.
+
+Do not compare anything measured before this layout change with anything after it.
 
 ## Earlier findings (historical)
 

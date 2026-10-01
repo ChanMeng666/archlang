@@ -613,7 +613,12 @@ while i < COUNT {
 - `if <cond> { … } [else { … }]` expands one branch; the condition must be a
   boolean.
 - `while <cond> { … }` repeats until the condition is false; it is capped at
-  10,000 iterations (a runaway loop is reported, not hung).
+  10,000 iterations (a runaway loop is reported, not hung). Separately, one storey
+  (or the plan, when it has no `level`) may expand at most 5,000 elements: past that
+  `E_ELEMENT_LIMIT` is raised once and expansion stops, so a `while` that creates
+  elements without ever finishing reports `E_ELEMENT_LIMIT`, not `E_WHILE_LIMIT`.
+  Likewise `W_ROOM_OVERLAP` lists the first 200 overlapping room pairs and then one
+  summary warning counting the rest.
 
 **`while` is deprecated** (`W_WHILE_DEPRECATED`) and will be removed in a
 future major version: it is the one construct that needs a reassignment to
@@ -807,8 +812,9 @@ room id=kitchen right-of living align top gap 0 size 3000x4000 label "Kitchen"
 room id=bed     below living    align left gap 0 size 5000x3500 label "Bedroom"
 ```
 
-A reference cycle reports [`E_LAYOUT_CYCLE`](error-codes.md); an unknown reference
-reports `E_LAYOUT_REF`. See the dedicated guide page for the placement arithmetic.
+A reference cycle reports [`E_LAYOUT_CYCLE`](error-codes.md) (on the rooms of the cycle only); an unknown
+reference reports `E_LAYOUT_REF`. A room that depends on a room that could not be placed, or on a cycle,
+reports `E_LAYOUT_UNPLACED` naming it. See the dedicated guide page for the placement arithmetic.
 
 ### Polygonal rooms (v1.23)
 
@@ -1473,7 +1479,8 @@ things:
 - `describe()` reports it under `vertical.connections` (see
   [analysis.md](analysis.md#vertical-circulation--the-building-graph-v121));
 - the upper storey is **reachable** — a floor with no exterior door of its own no longer
-  raises `W_NO_ENTRANCE`, because you arrive in the room the shaft lands in;
+  raises `W_NO_ENTRANCE`, because you arrive in the room the shaft lands in (provided the
+  room the shaft starts from is itself reachable: a stair in a door-less store leads nowhere);
 - `validate --graph` counts it as a connector between the rooms it lands in on each floor.
 
 Nothing is inferred from geometry: two flights at the same coordinates with different ids
@@ -1989,8 +1996,9 @@ and a riser, a duct or a column keeps its name as it goes up. Since v1.21 that i
 **operative** for the three [vertical-circulation
 elements](#vertical-circulation--stair-elevator-escalator-v121): a `stair`/`elevator`/
 `escalator` with one id on two storeys is a shaft, so the upper floor is reachable through
-it and needs no exterior door of its own. (For every other element the shared id is still
-just a name.)
+it and needs no exterior door of its own — provided the room the shaft stands in on the
+storey it comes from is itself reachable (a stair in a door-less store leads nowhere). (For
+every other element the shared id is still just a name.)
 
 **One building, one sheet.** `paper`/`scale` are resolved **once for the whole building**,
 from the largest storey: auto-fit cannot hand the small top floor a finer scale than the
@@ -2278,7 +2286,12 @@ graph, and the complete rule list are documented on the
 Distances are measured on a nav grid whose free cells are eroded by a body radius,
 so a walk only passes where a person really fits (through doors and cased openings,
 not through furniture pinches). It is `null` when the plan has no modelled exterior
-entrance — there is nothing to measure a walk from — otherwise a `CirculationModel`:
+entrance — there is nothing to measure a walk from — otherwise a `CirculationModel`. A
+storey with no exterior door that a `stair`/`elevator`/`escalator` reaches from a reachable
+storey is walked from that run instead: its walks start at the landing at the head of the
+flight a person arrived by, and `entranceId` is the run's id (see [Analysis](analysis.md)).
+The top-level `circulation` repeats `levels[0]`'s, so a plan whose lowest storey is reached
+only by a shaft (a basement) has a shaft-walked top-level model too.
 
 ```ts
 interface CirculationModel {
@@ -2368,15 +2381,27 @@ The returned `PlanDiff` reports:
 - **`totals`** — floor area and room count before and after.
 - **`summary`** — human-readable one-line sentences describing each change above.
 
-**Matching** is by **id first, then a unique-label rescue**: a room/opening/fixture is paired
-across the two plans by its resolved id; if a room is unmatched by id (positional auto-ids can
-shift when statements are added), it is rescued only when exactly one room on the other side
-carries the same `label`. An `id` here is the element's **resolved id** — the explicit `id=` if
-you wrote one, otherwise the deterministic auto id (e.g. `room_1`).
+**Matching** is by **id**, with two label rules for rooms. An `id` here is the element's
+**resolved id** — the explicit `id=` if you wrote one, otherwise the deterministic auto id
+(e.g. `room_1`), which is positional and shifts when a room is inserted, deleted or reordered
+ahead of it. So a room whose id is an auto id on **both** sides, and whose non-empty `label`
+names exactly one room on **each** side, is paired **by that label first**; every other
+room/opening/fixture is paired by its resolved id; and a room still unmatched is rescued only
+when its label is unique among the unmatched rooms on both sides. A room paired across two
+different ids is reported under its **after** id. Circulation deltas follow the same room
+pairing. On a multi-storey plan `diffPlans` compares the **lowest storey only**, exactly as
+`describe()`'s top-level `rooms[]` does.
 
 **Noise thresholds** keep sub-perceptual jitter out of the diff: a room counts as *resized* only
 past **0.05 m²** of area drift or **10 mm** on any bbox edge; a circulation change is reported only
 past **250 mm** of walk distance or **50 mm** of pinch width. Differences below these are ignored.
+A room that is measured on one side and blocked by furniture (`circulation.blocked`) or
+unmeasured (`circulation.unmeasured`) on the other — or unmeasured for a different reason — has
+no `circulation` entry, since it has no walk to compare, and is reported as a trailing
+`Walk to …` sentence in `summary` instead, e.g.
+`Walk to bed: 8000 mm (pinch 740 mm) → blocked (widest way in 0 mm)` or
+`Walk to bed: 8000 mm (pinch 740 mm) → unmeasured (no_door_route)`, with the reason code exactly
+as the API spells it.
 
 The **`summary` sentences are stable, rendered strings** — their exact wording is a frozen part of
 the API (downstream UIs display them verbatim), so treat them as presentation, not as a parse

@@ -210,3 +210,54 @@ Measured on the shipped corpus: 24 examples move, only in `describe().circulatio
 detours and key routes; no bottleneck, entrance or sealed room); SVG, `lint()` and
 `compile().diagnostics` are byte-identical. The field-by-field ledger is in the header of
 `test/byte-identity-baseline.ts`.
+
+## Addendum (2026-10): a storey reached only by a shaft walks from the shaft
+
+The decision stands; this replaces "`null` when the plan has no modeled exterior entrance" for
+one case. A storey with no exterior door that a `stair`, `elevator` or `escalator` reaches from a
+reachable storey had no circulation facts, while lint's reachability rule already walked it
+from the room the shaft lands in: on such a storey `W_ROOM_UNREACHABLE` had an entrance and
+`W_PATH_TOO_NARROW`/`W_CIRCUITOUS_PATH` had none. The owner's decision is that **the arriving
+runs are that storey's entrances**:
+
+- a run is an arrival when one of its neighbouring stops (below or above, along its shaft)
+  is reachable — storey and room — in the room-aware building graph with this storey taken
+  out: a property of the building's connectivity, independent of declaration order. A run
+  with no such side is boarded here, not arrived by, and is no entrance;
+- each arriving run seeds the walk at the row of cells in front of the edge a person steps
+  off at: the **head of the flight from that side** — the end opposite where the neighbouring
+  storey boards that run (its tail) — never this storey's own tail, which is where a flight
+  continuing onward is boarded. An escalator is stepped off at that one end only; a lift car
+  at its door side. The run's halo is lifted outside that edge, and the edge is read off the
+  run's tail, so it crosses `place`. With arrival sides both below and above, or a different
+  kind of run on the arriving side, the run's own entry edges are used. Seeds are
+  multi-source exactly as several front doors are, each at the run's width;
+- the rooms a walk is meaningful for are those the doors reach from the arrival rooms, the
+  same search `W_ROOM_UNREACHABLE` runs from on that storey, so a landing with no door out
+  gives every other room `no_door_route`;
+- `entranceId` is the run's id (per room only when several runs arrive), and
+  `W_PATH_TOO_NARROW`/`W_CIRCUITOUS_PATH` and `arch repair`'s circulation guard read it.
+
+The two rules still differ on a storey whose only exterior doors open onto a balcony: its
+`access.hasEntrance` is true, so circulation walks from the balcony door, while
+`W_ROOM_UNREACHABLE` starts from the arrival rooms as well as the exterior. A storey with any
+exterior door walks from it, whatever shafts land there, so every such storey and every
+single-storey plan is byte-identical. The top-level `circulation` repeats `levels[0]`, so it
+moves too when the LOWEST storey is shaft-reached (a basement reached down from the ground
+floor); no shipped example has one.
+
+Whether a landing exists is decided on the plan's geometry (floor just beyond the edge that
+no wall band, void, other run or furniture within a body radius covers), never on cell
+centres, so a landing never reads measured in one frame and sealed in a turned one; given a
+landing, the walk starts in the row of cells in front of the edge, or at the free cells
+nearest it when the grid's phase leaves that row with none. A run drawn along another axis on the storey it is boarded from takes its own entry
+edges. A v1 limit follows from reading the edge off the drawn direction: a landing with no
+floor in front of it seeds nothing, and the storey measures nothing — its rooms read
+`unmeasured: unreachable` (a head against the shell) or `no_threshold` (a landing covered on a
+storey whose room has no doorway). A distinct reason would be a schema change; it is not made
+here.
+
+Measured on the shipped corpus: `hillside-villa`, `townhouse` and `two-storey` move, only in
+their upper storeys' `levels[i].circulation` (null → a model) and in new `W_PATH_TOO_NARROW`
+warnings; the SVG and `compile().diagnostics` are byte-identical. The ledger is in the header
+of `test/byte-identity-baseline.ts`.

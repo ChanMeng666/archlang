@@ -171,10 +171,10 @@ A curve has two truthful descriptions — the circle it is, and a polygon close 
 | The drawn poché fill of a curved wall | **Chordal** — the visible faces stay true arcs |
 
 The chordal ring is inscribed, so it is **conservatively small**: a grid answer never
-claims floor the circle does not have. At 7.5° a chord's sagitta is about `R/1400` — 6 mm on
+claims floor the circle does not have. At 7.5° a chord's sagitta is about `R/467` — 19 mm on
 a 9 m radius — which is well inside the tolerances the circulation rules already work at.
 Where the difference would be visible in a *number a reader trusts*, the exact form is used
-instead; that is why the area is never taken from the ring (a 48-gon is 0.14% short, enough
+instead; that is why the area is never taken from the ring (a 48-gon is 0.29% short, enough
 to move a `toFixed(1)` label).
 
 **One reported fact a curve legitimately lacks.** `adjacent` means "shares a boundary
@@ -634,10 +634,13 @@ Two fields carry it, and they sit at deliberately different levels:
 ```
 
 **Reachability through a shaft.** A storey is *grounded* when its own access graph has an
-exterior entrance. Reachability then spreads along the connections to a fixpoint: a storey
-joined by a shaft to a reachable storey is itself reachable, and the room that shaft lands
-in becomes an **arrival room** — the floor's entrance, one floor up. `reachable_levels` is
-the answer.
+exterior entrance. Reachability then spreads along the connections to a fixpoint over
+storeys **and rooms**: a shaft carries you on only from a stop whose room you can walk to
+on its own storey — from the front door if the storey is grounded, or from a room another
+live shaft lands in. The rooms it lands in become **arrival rooms** — the floor's entrance,
+one floor up. A stair standing in a store with no door therefore connects nothing, and the
+floor it leads to is not reachable through it. `reachable_levels` is the answer. (A stop
+whose footprint lies in no room still counts as soon as its storey is reachable.)
 
 Two lint rules read that, per storey:
 
@@ -669,6 +672,56 @@ cross to reach it stays walkable. A stair has one entry edge — the arrow's tai
 the foot of a `dir up` flight and the head of a `dir down` one, so the same shaft is
 approached from opposite ends on the two storeys it joins. An escalator has both narrow
 ends; a lift car its south edge.
+
+A storey with no exterior door of its own is **walked from the runs that arrive on it**: each
+arriving run is an entrance whose walk starts in the row of cells in front of the edge a
+person steps off at, seeded at the run's width, and the rooms the doors reach are those
+walkable from the arrival rooms — the same rooms `W_ROOM_UNREACHABLE` starts from.
+`levels[i].circulation` carries the run's id as `entranceId`, and
+`W_PATH_TOO_NARROW`/`W_CIRCUITOUS_PATH` measure that floor as they measure a ground floor. A
+storey with a front door — a balcony door included — walks from it, whatever shafts land
+there.
+
+Which runs a person **arrives** by is a property of the building's connectivity, not of
+declaration order: a run's neighbouring stop (on the storey below, or above, along its shaft)
+is an **arrival side** when it is reachable — its storey, and the room it stands in — in the
+same room-aware building graph **with this storey taken out**. A run with no arrival side is
+not an arrival: with `s1` joining levels 1–2 and `s2` levels 2–3, level 3 is reachable only
+through level 2, so nobody arrives on level 2 by `s2` — it is boarded there, and level 2 is
+walked from `s1` alone. (The arrival rooms `W_ROOM_UNREACHABLE` starts from are unchanged.)
+
+The edge stepped off at is the **head of the flight from the arrival side**: arriving from
+below, the end opposite where the storey below boards that run (its arrow's tail), and
+likewise from above. It is not this storey's own tail: on a middle storey whose flight
+climbs on, you arrive at the head of the flight below, not at the foot of the next one. The
+run's halo is lifted there too, so the landing is walkable. An escalator is stepped off at
+that one end only; a lift car at its door side. Direction of travel is not modelled — `dir`
+is a drawing convention per storey — so a pair of escalators, one up and one down, seeds the
+upper storey at both cars. When there are arrival sides both below and
+above (the storey is reachable from either independently), or the neighbouring stop is a
+different kind of run, the walk starts in front of the run's own entry edge(s) instead.
+
+Whether there is a landing at all is decided on the plan's geometry, not on the grid: at
+nine evenly spaced points just beyond the edge, is there floor in the arrival room that no
+wall band (except where a door or opening is cut through that same wall), void, other run, or
+furniture within a body radius covers? The points are 1 mm out and about 112 mm apart on a
+900 mm flight, so it is a sampled test: an obstruction narrower than their spacing can sit
+unseen between two of them, and a slot narrower than it can be missed. On a large plan whose cell does not divide it, the cell centres fall in a
+different place in a turned frame, so a test on cells read the same shallow landing as open
+in one frame and covered in another. Given a landing, the walk starts in the row of cells
+directly in front of the edge, or, when the grid's phase leaves that row with no free cell,
+at the free cells nearest the edge (in front of it or beside the flight, within a body radius
+and a cell or so).
+
+The v1 arrow convention limits this. The arrival edge follows the drawn direction of the
+run, not a search for the room, so a landing with no floor in front of it seeds nothing and
+the storey's model measures nothing. The reason each room then carries is an existing one,
+no new code: a flight whose head lies against the shell wall leaves its rooms `unmeasured` as
+`unreachable`; a landing covered by something else (a `void` at the head of the flight,
+furniture) on a storey whose room has no doorway reads `no_threshold`. Flip the footprint's
+authored coordinates (or the run's `dir`) so the head opens onto the floor. When the run is
+drawn along a different axis on the storey it is boarded from (portrait below, landscape
+above), the head cannot be read on this footprint and the run's own entry edge is used.
 
 ## Freedom — how constrained the plan is
 

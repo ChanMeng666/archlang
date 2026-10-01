@@ -69,7 +69,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   E_CALL_DEPTH: E(
     "E_CALL_DEPTH",
     "Value-function call stack too deep.",
-    "A value-function recurses (directly or mutually) beyond the call-depth limit.",
+    "A value-function recurses (directly or mutually) beyond the call-depth limit, or the evaluation of one expression nests deeper than the evaluator's own bound (a deep recursion whose body is itself deeply nested).",
     "Make the recursion terminate, or rewrite it iteratively with a bounded `while`.",
     "let f(n) = f(n + 1)   # error: never terminates",
   ),
@@ -142,6 +142,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "A dotted name like `west.main` addresses an element INSIDE a `place`d instance. The namespace belongs to the `place`, so a dotted name is only ever a reference — it can never be declared with `id=`, `let`, `as`, or `for`.",
     "Declare the short name and address it from outside as `<instance>.<name>`.",
     "room id=main at (0,0) size 3000x3000   # then, in the plan: furniture bed in west.main centered",
+  ),
+  E_ELEMENT_LIMIT: E(
+    "E_ELEMENT_LIMIT",
+    "The plan expands to too many elements.",
+    "One resolution (the plan, or one storey) expanded past the element cap (5,000), usually a `for` over a huge range or a `while` whose body creates elements but never changes its condition. Expansion stops at the statement that crossed the cap; the elements before it are kept.",
+    "Shrink the range, or make the loop terminate; split a genuinely huge site into storeys or separate plans.",
+    "for i in 0..6000 { column at (i,0) size 1x1 }   # error: more than 5,000 elements",
   ),
   E_FURN_SIZE: E(
     "E_FURN_SIZE",
@@ -540,7 +547,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   E_INTENT_UNREACHABLE: E(
     "E_INTENT_UNREACHABLE",
     "A room cannot be reached from the entrance through modeled doors.",
-    "An intent asserts `reachable: true` and the plan HAS an entrance, but one or more rooms are cut off — no chain of modeled doors reaches them from the exterior.",
+    "An intent asserts `reachable: true` and the plan HAS an entrance, but one or more rooms are cut off — no chain of modeled doors reaches them from the exterior — or, on a multi-storey plan, a whole storey has no way in: no exterior door of its own and no stair, lift or escalator from a room you can reach.",
     "Add interior doors so every room connects back to the entrance. Advisory tier: reported and scored by `validateIntent` but does NOT fail `ok` (gate: false).",
     "door on wall_hall_store width 800   # connect the isolated room",
   ),
@@ -572,6 +579,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Break the cycle by giving one of the rooms absolute `at (x,y)` coordinates.",
     "room id=a right-of b size 100x100\nroom id=b left-of a size 100x100   # error: a ↔ b cycle",
   ),
+  E_LAYOUT_UNPLACED: E(
+    "E_LAYOUT_UNPLACED",
+    "A relational room depends on a room that could not be placed.",
+    "The room's reference chain ends at a room that failed (unknown or polygon reference) or runs into a placement cycle, so there is no resolved position to place it against. Only the root cause carries the original error.",
+    "Fix the room it names (give it a valid reference or absolute `at (x,y)`), or place this room with `at (x,y)`.",
+    "room id=e right-of ghost size 100x100\nroom id=f below e size 100x100   # error: e could not be placed",
+  ),
   E_LAYOUT_REF: E(
     "E_LAYOUT_REF",
     "Relational placement references an unknown room.",
@@ -600,10 +614,17 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Move the `level` block out to the plan body. To draw the same content on several storeys, put it in a `component` and call it from each level.",
     "component c() { level 1 { } }   # error: only allowed at plan level",
   ),
+  E_NON_FINITE: E(
+    "E_NON_FINITE",
+    "A number is too large to be finite.",
+    "A numeric literal, the result of an arithmetic operation (`+ - * / %`), or a quantity the resolver derives from finite dimensions (an element's extent, a room's area, the plan's total area) is beyond what a floating-point number can hold, so it would be infinite. The check is per operation: an overflowing intermediate is refused even if a later `min()` would have clamped it. A literal or arithmetic result is replaced by 0 so the rest of the plan still resolves and reports; a derived quantity is diagnosed at its element and left as computed.",
+    "Use a realistic dimension. A plan is measured in millimetres, and a value above about 1e300 is never a building.",
+    `let k = 1${"0".repeat(60)}\nlet x = k * k * k * k * k * k   # error: 1e360 overflows`,
+  ),
   E_PARSE: E(
     "E_PARSE",
     "The source could not be read: its SHAPE is wrong.",
-    "The lexer or the parser could not make a statement out of the bytes at this span — a missing or misspelled keyword, a value where a keyword belongs, an unterminated string, an unbalanced brace, clauses written in the wrong order. It is the one code that says nothing about what the plan MEANS: resolution never ran here, so no measurement, no geometry and no soundness rule had a chance to speak.",
+    "The lexer or the parser could not make a statement out of the bytes at this span — a missing or misspelled keyword, a value where a keyword belongs, an unterminated string, an unbalanced brace, clauses written in the wrong order, or blocks and expressions nested past the parser's limit (256 levels — far beyond any real plan; the deeper block is skipped, not read). It is the one code that says nothing about what the plan MEANS: resolution never ran here, so no measurement, no geometry and no soundness rule had a chance to speak.",
     "Read the message: it names what was expected and what was found, at a byte span. Compare the statement against `arch spec`'s one line for that keyword — clause ORDER is part of the grammar, not a suggestion. Unlike every other code in this catalog, there is no machine-applicable fix to apply, because the compiler has no reading of the text to correct.",
     "door on w1 at 40% width 900 wall w1   # error: `wall` pairs with the `at (x,y)` form only",
   ),
@@ -689,7 +710,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "`while` exceeded its iteration cap.",
     "A `while` ran more times than the safety cap allows (usually a condition that never becomes false).",
     "Ensure the loop body updates a binding so the condition eventually fails.",
-    "let i = 0\nwhile i < 1 { column at (0,0) size 1x1 }   # error: i never changes",
+    "let i = 0\nwhile i < 1 { let y = i }   # error: i never changes",
   ),
   E_WINDOW_WIDTH: E(
     "E_WINDOW_WIDTH",
@@ -772,7 +793,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   W_ROOM_OVERLAP: W(
     "W_ROOM_OVERLAP",
     "Rooms overlap.",
-    "Two room rectangles intersect.",
+    "Two room rectangles intersect. At most the first 200 overlapping pairs are listed; one final warning counts the rest (`…and N more room pairs overlap`).",
     "Adjust positions/sizes if the overlap is unintended (it is allowed).",
     "room at (0,0) size 2000x2000\nroom at (1000,0) size 2000x2000   # warning",
   ),
@@ -845,7 +866,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   W_NO_ENTRANCE: W(
     "W_NO_ENTRANCE",
     "The plan has no exterior door.",
-    "The plan has rooms and an exterior wall but no door hosted on an exterior wall, so the building cannot be entered.",
+    "The plan has rooms and an exterior wall but no door hosted on an exterior wall, so the building cannot be entered. On a multi-storey plan it is judged per storey: a storey with no exterior door of its own is entered by a `stair`/`elevator`/`escalator` shared with a reachable storey, but only when the room the run stands in there is itself reachable — a stair in a door-less store leads nowhere, and the storey it serves gets this warning.",
     "Add a `door` on an `exterior` wall.",
     "wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }   # lint: no way in",
   ),

@@ -284,6 +284,9 @@ interface Frame0 {
   q(v: number): number;
 }
 
+/** Largest doubled coordinate a layer is measured at (1e4 · 4 · 2e300 stays finite). */
+const MAX_SYMMETRY_COORD = 2e300;
+
 /** The candidate centre (doubled) and the precision of a layer, from its raw points. */
 function frameOf(raw: readonly Rec<Point>[]): Frame0 | null {
   let minX = Infinity,
@@ -295,6 +298,7 @@ function frameOf(raw: readonly Rec<Point>[]): Frame0 | null {
     for (const p of r.pts) {
       const X = 2 * p.x;
       const Y = 2 * p.y;
+      if (!Number.isFinite(X) || !Number.isFinite(Y)) return null;
       if (!Number.isInteger(X) || !Number.isInteger(Y)) exact = false;
       if (X < minX) minX = X;
       if (Y < minY) minY = Y;
@@ -303,6 +307,11 @@ function frameOf(raw: readonly Rec<Point>[]): Frame0 | null {
     }
   }
   if (minX === Infinity) return null;
+  // The working integers are `4p` and, in a non-exact layer, `1e4` times that again, then
+  // `BigInt` of them. A coordinate near the double range overflows those to Infinity/NaN,
+  // and `BigInt(NaN)` throws. Past this magnitude no layer is measured (no drawing is
+  // anywhere near it), so no symmetry fact is reported for it rather than a throw.
+  if (!(Math.max(-minX, -minY, maxX, maxY) <= MAX_SYMMETRY_COORD)) return null;
   return { c2: { x: minX + maxX, y: minY + maxY }, exact, q: quantiser(exact) };
 }
 

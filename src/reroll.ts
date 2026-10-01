@@ -161,8 +161,11 @@ const deepEqual = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSO
  * statements are NOT the same shape modulo numeric literals: a differing key
  * set, a differing non-numeric primitive, or a differing string (a `str`
  * `Expr` is opaque — required byte-for-byte, per v1).
+ *
+ * @internal Exported for `test/reroll-findrun-oracle.test.ts` (the pairwise
+ * lemma {@link findRun} relies on) — not part of the public surface.
  */
-function collectSlots(nodes: unknown[]): number[][] | null {
+export function collectSlots(nodes: unknown[]): number[][] | null {
   const slots: number[][] = [];
   function visit(vs: unknown[]): boolean {
     const v0 = vs[0];
@@ -201,8 +204,11 @@ function collectSlots(nodes: unknown[]): number[][] | null {
  *  `j`, no rounding. A progression that only agrees once printed (`100.1,
  *  100.2, 100.3` — IEEE-754 doubles a fraction of a unit apart) is refused: the
  *  substituted `a + loopVar*d` expression must reproduce the exact `scene`
- *  values the literals did, not merely their displayed form. */
-function isArithmeticProgression(vals: number[]): boolean {
+ *  values the literals did, not merely their displayed form.
+ *
+ *  @internal Exported for `test/reroll-findrun-oracle.test.ts` (prefix
+ *  closure, which {@link findRun} relies on) — not part of the public surface. */
+export function isArithmeticProgression(vals: number[]): boolean {
   if (vals.every((v) => v === vals[0])) return true; // constant — trivially fine, not "differing"
   const d = vals[1]! - vals[0]!;
   for (let j = 0; j < vals.length; j++) {
@@ -430,24 +436,95 @@ function isEligible(s: Statement): boolean {
   return !BLOCK_KINDS.has(s.kind) && s.kind !== "error" && "id" in s && s.id === "";
 }
 
-interface RunFound {
+/** @internal Exported only for `test/reroll-findrun-oracle.test.ts`. */
+export interface RunFound {
   length: number;
   slots: number[][];
 }
 
-/** The longest AP-valid, structurally-uniform run starting exactly at `start`
- *  (trimming from the tail when the maximal structural match's progression
- *  breaks partway through), or `null` if none of length ≥ 3 qualifies. */
-function findRun(stmts: Statement[], start: number): RunFound | null {
+/** @internal The shape of {@link findRun}, so a test can drive {@link rerollWith}
+ *  with an oracle finder. */
+export type RunFinder = (stmts: Statement[], start: number) => RunFound | null;
+
+/**
+ * The longest AP-valid, structurally-uniform run starting exactly at `start`,
+ * or `null` if none of length ≥ 3 qualifies. The contract is "the LONGEST
+ * length `len` in `[3, W]` (W = the maximal window of eligible same-kind
+ * statements) for which `collectSlots(run)` is non-null and every slot passes
+ * {@link isArithmeticProgression}", with that run's `collectSlots` as `slots`
+ * — exactly what trying every length from W down to 3 returns.
+ * `test/reroll-findrun-oracle.test.ts` pins that equality against the old
+ * shrinking search (kept verbatim there as the oracle) on generated sources
+ * and synthetic trees; lemmas 1–3 below are checked there separately, on
+ * the synthetic generator (1, 2) and on generated number lists (3). That is
+ * sampling evidence, not a proof — the argument below is the proof.
+ *
+ * It is found in ONE forward pass, because the valid lengths are
+ * downward-closed (valid at `len` ⇒ valid at every `len' ∈ [2, len]`):
+ *  1. `collectSlots([n0 … nL])` is non-null iff every `collectSlots([n0, ni])`
+ *     is: each check in its `visit` is `n0` vs `ni` (a key set, a string, an
+ *     array length, a primitive `===`, "is a num"), and which branch runs — so
+ *     how the walk descends — is chosen by `n0`'s node alone.
+ *  2. For the same reason the slot SEQUENCE (how many, in what order) is fixed
+ *     by `n0` alone, so slot `k` of the whole run is `[v0, v1, …]` where `vi`
+ *     is slot `k`'s second entry in `collectSlots([n0, ni])`.
+ *  3. {@link isArithmeticProgression} is prefix-closed: a constant list's
+ *     prefix is constant, and a non-constant one's prefix of length ≥ 2 has the
+ *     same `d = v1 − v0` and checks a subset of the same `v0 + j*d === vj`
+ *     terms (or is constant, which also passes).
+ * So each slot keeps two running flags — "constant so far" (`vj === v0`) and
+ * "progression so far" (`v0 + j*d === vj`, the same operands and operation
+ * order as {@link isArithmeticProgression}, `j = 0` included) — and the run
+ * extends one statement at a time until the window ends, a pair fails
+ * structurally, or some slot has neither flag left. The token-count gate and
+ * the comment guard are NOT part of this contract: they run afterwards in
+ * {@link buildCandidate}, which never asks for a shorter run, exactly as
+ * before. Cost: O(run length × statement size) per start, where the shrinking
+ * search was cubic on long non-progression windows.
+ *
+ * @internal Exported for `test/reroll-findrun-oracle.test.ts`.
+ */
+export function findRun(stmts: Statement[], start: number): RunFound | null {
   const first = stmts[start]!;
   if (!isEligible(first)) return null;
-  let end = start + 1;
-  while (end < stmts.length && isEligible(stmts[end]!) && stmts[end]!.kind === first.kind) end++;
-  for (let len = end - start; len >= 3; len--) {
-    const slots = collectSlots(stmts.slice(start, start + len));
-    if (slots?.every(isArithmeticProgression)) return { length: len, slots };
+  // Per slot k: the values seen so far, the step d (fixed at j = 1) and the two
+  // running flags. Allocated at j = 1, when the slot sequence is first known.
+  let slots: number[][] = [];
+  let steps: number[] = [];
+  let constant: boolean[] = [];
+  let progression: boolean[] = [];
+  let len = 1;
+  for (let i = start + 1; i < stmts.length; i++) {
+    const s = stmts[i]!;
+    if (!isEligible(s) || s.kind !== first.kind) break;
+    const pair = collectSlots([first, s]);
+    if (!pair) break;
+    const j = i - start;
+    if (j === 1) {
+      slots = pair.map(([v0, v1]) => [v0!, v1!]);
+      steps = pair.map(([v0, v1]) => v1! - v0!);
+      // `every(v => v === vals[0])` over [v0, v1]: its `v0 === v0` term is implied by
+      // `v1 === v0` (both are false only for NaN), so it is left out.
+      constant = pair.map(([v0, v1]) => v1 === v0);
+      // The j = 0 term is not trivially true: `0 * d` is NaN when d is ±Infinity or NaN.
+      progression = pair.map(([v0, v1], k) => v0! + 0 * steps[k]! === v0 && v0! + 1 * steps[k]! === v1);
+    } else {
+      const next = pair.map(([v0, vj], k) => ({
+        vj: vj!,
+        c: constant[k]! && vj === v0,
+        p: progression[k]! && v0! + j * steps[k]! === vj,
+      }));
+      // Length j+1 (≥ 3 here) is invalid, and (downward-closed) so is every longer one.
+      if (!next.every((n) => n.c || n.p)) break;
+      next.forEach((n, k) => {
+        slots[k]!.push(n.vj);
+        constant[k] = n.c;
+        progression[k] = n.p;
+      });
+    }
+    len = j + 1;
   }
-  return null;
+  return len >= 3 ? { length: len, slots } : null;
 }
 
 /** A structurally-detected, UNPROVEN run: everything {@link RerollSuggestion}
@@ -501,14 +578,14 @@ function buildCandidate(
 /** Detect every candidate run in `plan` — the plan body, every component body,
  *  and every nested `for`/`if`/`while`/`level`/`zone` body. Pure detection,
  *  no proof (see this module's header on why the two are split). */
-function detectCandidates(plan: PlanNode, source: string, bound: Set<string>): Candidate[] {
+function detectCandidates(plan: PlanNode, source: string, bound: Set<string>, find: RunFinder): Candidate[] {
   const comments = lex(source).comments;
   const eol = source.includes("\r\n") ? "\r\n" : "\n";
   const out: Candidate[] = [];
   function scan(stmts: Statement[], depth: number): void {
     let i = 0;
     while (i < stmts.length) {
-      const run = findRun(stmts, i);
+      const run = find(stmts, i);
       if (run) {
         const candidate = buildCandidate(source, comments, eol, stmts, i, run, depth + 1, bound);
         if (candidate) {
@@ -593,9 +670,21 @@ function getBaseline(source: string, opts: RerollOptions): BaselineContext | nul
  * proven equivalent through the same modules.
  */
 export function reroll(source: string, opts: RerollOptions = {}): RerollSuggestion[] {
+  return rerollWith(source, opts, findRun);
+}
+
+/**
+ * {@link reroll} with the run finder supplied by the caller.
+ *
+ * @internal Exported for `test/reroll-findrun-oracle.test.ts`, which runs the
+ * whole pipeline once with {@link findRun} and once with the old shrinking
+ * search (its oracle) and requires identical suggestions. Not part of the
+ * public surface (`src/index.ts` does not re-export it).
+ */
+export function rerollWith(source: string, opts: RerollOptions, find: RunFinder): RerollSuggestion[] {
   const ctx = getBaseline(source, opts);
   if (!ctx) return [];
-  const candidates = detectCandidates(ctx.plan, source, ctx.bound);
+  const candidates = detectCandidates(ctx.plan, source, ctx.bound, find);
   const out: RerollSuggestion[] = [];
   for (const c of candidates) if (proves(source, c.span, c.replacement, ctx.pipelineOpts, ctx.baseline)) out.push(c);
   return out;
@@ -615,7 +704,7 @@ export function reroll(source: string, opts: RerollOptions = {}): RerollSuggesti
 export function rerollInRange(source: string, range: Span, opts: RerollOptions = {}): RerollSuggestion[] {
   const ctx = getBaseline(source, opts);
   if (!ctx) return [];
-  const candidates = detectCandidates(ctx.plan, source, ctx.bound).filter((c) => spansTouch(c.span, range));
+  const candidates = detectCandidates(ctx.plan, source, ctx.bound, findRun).filter((c) => spansTouch(c.span, range));
   const out: RerollSuggestion[] = [];
   for (const c of candidates) if (proves(source, c.span, c.replacement, ctx.pipelineOpts, ctx.baseline)) out.push(c);
   return out;

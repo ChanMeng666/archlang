@@ -41,7 +41,8 @@ import {
   USE_KINDS,
 } from "./ast.js";
 import type { Expr } from "./expr.js";
-import { closest, parseExpr as parseExprPratt } from "./expr.js";
+import type { ExprTokens } from "./expr.js";
+import { closest, MAX_NEST_DEPTH, parseExpr as parseExprPratt } from "./expr.js";
 import type { Theme } from "./theme.js";
 import { isNumericThemeKey, resolveThemeKey, resolveStyleKey } from "./theme.js";
 import { isDisallowedConfigValue } from "./sanitize.js";
@@ -104,14 +105,14 @@ function parseImpl(src: string, registry: Registry): ParseOutcome {
   const lexDiags: Diagnostic[] = lexErrors.map((e) => ({
     severity: "error" as const,
     message: e.message,
-    code: "E_PARSE",
+    code: e.code ?? "E_PARSE",
     span: e.span,
   }));
 
   // parsePlan never throws on user source: it recovers from a malformed header
   // and from per-statement errors, so a PlanNode (possibly partial) is always
   // produced — `CompileResult.ast` is present even on broken input.
-  const p = new Parser(tokens, registry);
+  const p = new Parser(tokens, registry, src);
   const plan = p.parsePlan();
   plan.comments = comments;
   const diagnostics = [...lexDiags, ...p.diagnostics];
@@ -123,9 +124,11 @@ function parseImpl(src: string, registry: Registry): ParseOutcome {
 
 class Parser {
   private pos = 0;
+  /** How many `{ … }` statement blocks enclose the cursor (see {@link MAX_NEST_DEPTH}). */
+  private blockDepth = 0;
   public diagnostics: Diagnostic[] = [];
   /** Facade passed to element parse functions (see registry.ts). */
-  private readonly ctx: ParseCtx;
+  private readonly ctx: ParseCtx & Pick<ExprTokens, "report">;
   /** Statement-start keywords for recovery resync — fixed keywords + this
    *  registry's element keywords (so plugin elements resync correctly). */
   private readonly statementStarts: ReadonlySet<string>;
@@ -133,6 +136,9 @@ class Parser {
   constructor(
     private toks: Token[],
     private readonly registry: Registry = BUILTIN_REGISTRY,
+    /** The source the tokens came from — read only by {@link synchronize}, for the
+     *  leading whitespace of a line (a token's `col` cannot tell a tab from a space). */
+    private readonly src = "",
   ) {
     this.statementStarts = new Set<string>([...FIXED_STATEMENT_STARTS, ...registry.byKeyword.keys()]);
     this.ctx = {
@@ -152,6 +158,7 @@ class Parser {
       parseStringExpr: () => this.parseStringExpr(),
       parseIdOpt: () => this.parseIdOpt(),
       fail: (msg, t) => this.fail(msg, t),
+      report: (code, message, span) => this.diagnostics.push({ severity: "error", message, code, span }),
     };
   }
 
@@ -179,13 +186,117 @@ class Parser {
    * next-statement keyword the expression recovery guard refused to consume, and
    * (b) guarantees forward progress (the failing token itself is always skipped),
    * so a hard-stuck token can't loop forever.
+   *
+   * When the failed statement starts its own line, recovery is guided by its
+   * INDENTATION (as rustc locates an unclosed delimiter) — a local signal that no brace
+   * far away in the file can move:
+   *  - a statement keyword first on its line at the statement's indentation or left of
+   *    it resumes parsing: the failed statement has ended, whether or not its `}` was
+   *    written;
+   *  - a `}` first on its line left of that indentation closes the ENCLOSING block (stop
+   *    before it); at it, it is the failed statement's own closer if the statement left a
+   *    `{` open (consume it and any `else` branches after it, then resume);
+   *  - indentation is compared as whitespace strings ({@link compareIndent}); where a
+   *    tab meets spaces there is no order, and that line stops recovery as before;
+   *  - between those points, `{`/`}` are counted, so the `}` of the failed statement's own
+   *    block on its own line (a wall's points, `theme { … }`) does not close the enclosing
+   *    block, and a keyword inside that block is not parsed one scope too far out;
+   *  - a `{` where a statement should start is stray and skipped alone.
+   * A statement that does not start its line (one-line source, `room … {`) has no
+   * indentation to read and recovers exactly as before: the next keyword or any `}`.
    */
   private synchronize(failStart: number): void {
-    while (!this.isType("rcurly") && !this.isType("eof")) {
+    let s = Math.min(this.pos, this.toks.length - 1);
+    while (s > 0 && this.toks[s - 1]!.start >= failStart) s--;
+    const first = this.toks[s]!;
+    if (first.start !== failStart || !this.startsLine(s)) {
+      while (!this.isType("rcurly") && !this.isType("eof")) {
+        const t = this.peek();
+        if (t.start > failStart && this.isStatementKeyword(t)) return;
+        this.next();
+      }
+      return;
+    }
+    const indent = this.indentOf(first);
+    let depth = 0;
+    for (let i = s; i < Math.min(this.pos, this.toks.length); i++) {
+      const type = this.toks[i]!.type;
+      if (type === "lcurly") depth++;
+      else if (type === "rcurly") depth--;
+    }
+    if (depth < 0) depth = 0;
+    if (this.pos === s && first.type === "lcurly") this.next();
+    while (!this.isType("eof")) {
       const t = this.peek();
-      if (t.start > failStart && t.type === "ident" && this.statementStarts.has(t.value)) return;
+      if (t.start > failStart && this.startsLine(this.pos)) {
+        // Where this line starts relative to the failed statement's line; `undefined`
+        // (mixed tabs/spaces) means no indentation to read, so the previous rule decides:
+        // stop at any `}` or keyword.
+        const rel = compareIndent(this.indentOf(t), indent);
+        if (t.type === "rcurly") {
+          if (rel === undefined || rel < 0) return;
+          if (rel === 0) {
+            if (depth > 0) {
+              this.next();
+              this.skipElseChain();
+            }
+            return;
+          }
+        } else if ((rel === undefined || rel <= 0) && this.isStatementKeyword(t)) {
+          return;
+        }
+      }
+      if (t.type === "rcurly") {
+        if (depth === 0) return;
+        depth--;
+      } else if (t.type === "lcurly") {
+        depth++;
+      } else if (depth === 0 && t.start > failStart && this.isStatementKeyword(t)) {
+        return;
+      }
       this.next();
     }
+  }
+
+  /** The whitespace between the start of `t`'s line and `t` (`t` starts its line). */
+  private indentOf(t: Token): string {
+    let i = t.start;
+    while (i > 0 && (this.src[i - 1] === " " || this.src[i - 1] === "\t")) i--;
+    return this.src.slice(i, t.start);
+  }
+
+  /** After a failed `if` header's own `}`: its `else [if …] { … }` branches belong to the
+   *  failed statement too — skip them, or `else` would be parsed as a statement and its
+   *  block's `}` would close the enclosing block. */
+  private skipElseChain(): void {
+    while (this.isKeyword("else")) {
+      this.next();
+      while (!this.isType("lcurly") && !this.isType("rcurly") && !this.isType("eof")) this.next();
+      if (!this.isType("lcurly")) return;
+      let depth = 0;
+      do {
+        if (this.isType("lcurly")) depth++;
+        else if (this.isType("rcurly")) depth--;
+        this.next();
+      } while (depth > 0 && !this.isType("eof"));
+    }
+  }
+
+  /** Token `i` is the first on its line. */
+  private startsLine(i: number): boolean {
+    return i === 0 || this.toks[i - 1]!.line < this.toks[i]!.line;
+  }
+
+  private isStatementKeyword(t: Token): boolean {
+    return t.type === "ident" && this.statementStarts.has(t.value);
+  }
+
+  /** One `E_PARSE` for the `}`s still owed at end of input — they all share its span. */
+  private missingClose(): void {
+    const t = this.peek();
+    const message = `Expected rcurly but found ${describe(t)}`;
+    if (this.diagnostics.some((d) => d.message === message && d.span?.start === t.start)) return;
+    this.diagnostics.push({ severity: "error", message, code: "E_PARSE", span: { start: t.start, end: t.end } });
   }
 
   private isKeyword(kw: string, o = 0): boolean {
@@ -364,16 +475,41 @@ class Parser {
     }
     // A missing closing brace is reported but the partial plan is still returned.
     try {
-      this.eat("rcurly");
+      const close = this.eat("rcurly");
+      // A file holds one plan and nothing after it: a stray `}` mid-body, or a second
+      // `plan` block, would otherwise close the plan early and silently drop the tail.
+      // One diagnostic on the first trailing token (comments are trivia, not tokens).
+      this.checkTrailing(close);
     } catch (e) {
-      if (e instanceof ParseError) {
-        this.diagnostics.push({ severity: "error", message: e.message, code: "E_PARSE", span: e.span });
-      } else {
-        throw e;
-      }
+      if (!(e instanceof ParseError)) throw e;
+      if (this.isType("eof")) this.missingClose();
+      else this.diagnostics.push({ severity: "error", message: e.message, code: "E_PARSE", span: e.span });
     }
     this.checkLevels(plan);
     return plan;
+  }
+
+  /** `E_PARSE` on the first token after the plan's closing `}`, if any. The tail is
+   *  not parsed: the plan is closed, so there is no scope it could belong to. */
+  private checkTrailing(close: Token): void {
+    const t = this.peek();
+    if (t.type === "eof") return;
+    // The "closed early" hint only when a `}` after this token could have been the
+    // plan's real close — not for, say, a `// note` written after the last `}`.
+    let laterClose = false;
+    for (let i = this.pos + 1; i < this.toks.length && !laterClose; i++) laterClose = this.toks[i]!.type === "rcurly";
+    const message =
+      t.type === "ident" && t.value === "plan"
+        ? `A second "plan" block after the plan was closed — a file holds one plan, and nothing after its closing "}" is read`
+        : `Unexpected ${describe(t)} after the plan was closed — nothing after the plan's closing "}" is read` +
+          (laterClose ? ` (an extra "}" may have closed it early)` : "");
+    this.diagnostics.push({
+      severity: "error",
+      message,
+      code: "E_PARSE",
+      span: { start: t.start, end: t.end },
+      relatedSpans: [{ span: { start: close.start, end: close.end }, message: "the plan was closed here" }],
+    });
   }
 
   /**
@@ -1087,6 +1223,37 @@ class Parser {
 
   /** Parse a `{ … }` block of body statements (with per-statement recovery). */
   private parseBlockBody(components: Map<string, ComponentDef>, selfName?: string): Statement[] {
+    if (this.blockDepth >= MAX_NEST_DEPTH && this.isType("lcurly")) return this.skipTooDeepBlock();
+    this.blockDepth++;
+    try {
+      return this.parseBlockBodyInner(components, selfName);
+    } finally {
+      this.blockDepth--;
+    }
+  }
+
+  /** A block nested past {@link MAX_NEST_DEPTH}: one `E_PARSE` at its `{`, then the whole
+   *  balanced block is skipped by counting braces — iteratively, so the cost is linear and
+   *  the parser recurses no further however deep the source goes. */
+  private skipTooDeepBlock(): Statement[] {
+    const open = this.next();
+    this.diagnostics.push({
+      severity: "error",
+      message: `Blocks are nested too deeply (limit ${MAX_NEST_DEPTH}); this block was not read`,
+      code: "E_PARSE",
+      span: { start: open.start, end: open.end },
+    });
+    let depth = 1;
+    while (depth > 0 && !this.isType("eof")) {
+      const t = this.next();
+      if (t.type === "lcurly") depth++;
+      else if (t.type === "rcurly") depth--;
+    }
+    if (depth > 0) this.missingClose();
+    return [];
+  }
+
+  private parseBlockBodyInner(components: Map<string, ComponentDef>, selfName?: string): Statement[] {
     this.eat("lcurly");
     const body: Statement[] = [];
     while (!this.isType("rcurly") && !this.isType("eof")) {
@@ -1108,6 +1275,13 @@ class Parser {
           throw e;
         }
       }
+    }
+    // A block still open at end of input keeps what it parsed: the missing `}` is
+    // reported (once, however many blocks owe one), and the statement holding this block
+    // survives instead of turning the whole construct into one error node.
+    if (this.isType("eof")) {
+      this.missingClose();
+      return body;
     }
     this.eat("rcurly");
     return body;
@@ -1334,6 +1508,18 @@ class Parser {
 
 /** Room use-kind keywords, for the strip-child `uses` clause. */
 const USE_SET: ReadonlySet<string> = new Set<string>(USE_KINDS);
+
+/**
+ * Line `a`'s indentation relative to line `b`'s, compared as whitespace STRINGS (Python's
+ * rule): `0` same, `-1` left of (a proper prefix), `1` right of (extends it), `undefined`
+ * when neither is a prefix of the other — a tab against spaces has no column order.
+ */
+function compareIndent(a: string, b: string): -1 | 0 | 1 | undefined {
+  if (a === b) return 0;
+  if (b.startsWith(a)) return -1;
+  if (a.startsWith(b)) return 1;
+  return undefined;
+}
 
 function describe(t: Token): string {
   if (t.type === "eof") return "end of input";

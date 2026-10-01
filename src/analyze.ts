@@ -30,9 +30,14 @@ import {
   rectRing,
   ringsAdjacent,
 } from "./geometry/polygon.js";
+import { arcAngleOffset, fullCircleArc } from "./geometry/arc.js";
 import { classifyLabelUses } from "./vocabulary.js";
 import { bestPaths, type Digraph } from "./algebra/paths.js";
 import { BOOLEAN, MAX_MIN, MIN_PLUS } from "./algebra/semiring.js";
+// Type-only (erased): a value import of `vertical.ts` from here is harmless, but the
+// reverse direction is the cycle `levelIsGrounded`'s comment describes, and keeping this
+// edge type-only keeps the two modules' load order trivially acyclic.
+import type { StoreyRoomReach, StoreySeeds } from "./vertical.js";
 import {
   ANCHOR_BACK_EDGES,
   BACK_EDGE_ROTATE,
@@ -145,7 +150,7 @@ export function roomAreaMm2(r: {
   circle?: { c: Point; r: number };
 }): number {
   // A CIRCLE is measured in closed form (πR²) — never from the 48-gon tessellation it
-  // also carries for the grid layer, which understates the area by ~0.1%. See the
+  // also carries for the grid layer, which understates the area by 0.29%. See the
   // exact-vs-chordal note in docs/analysis.md.
   if (r.circle) return Math.PI * r.circle.r * r.circle.r;
   return r.poly ? polygonArea(r.poly) : r.size.w * r.size.h;
@@ -491,14 +496,23 @@ export function accessDigraph(roomIds: readonly string[], edges: readonly Access
 /**
  * The spaces reachable from {@link EXTERIOR_NODE} and from `extraSources` (rooms a
  * shaft delivers you into), never entering a node `avoid` names. An avoided extra
- * source is not a source; the exterior always is.
+ * source is not a source; the exterior is one unless `exterior: false` (a storey with no
+ * way in of its own — the exterior node stays walkable THROUGH, it is only not a start).
+ *
+ * Caveat of walking through it: {@link EXTERIOR_NODE} is ONE node for every exterior
+ * connector on the storey. On an ungrounded storey those are the doors
+ * {@link levelIsGrounded} discounted (they open onto an `outdoor balcony`), so two SEPARATE
+ * balconies are one node here: a room whose only way out is a door onto balcony B is
+ * reached from any room with a door onto balcony A. That is the storey's own
+ * `describe().access` graph answering exactly as it does for that storey's facts, and is
+ * kept on purpose; separating balconies needs one node per outdoor surface.
  */
 export function reachFrom(
   g: Digraph<string, unknown>,
-  o: { extraSources?: readonly string[]; avoid?(id: string): boolean } = {},
+  o: { extraSources?: readonly string[]; avoid?(id: string): boolean; exterior?: boolean } = {},
 ): ReadonlySet<string> {
   const avoid = o.avoid;
-  const sources: Array<readonly [string, boolean]> = [[EXTERIOR_NODE, true]];
+  const sources: Array<readonly [string, boolean]> = o.exterior === false ? [] : [[EXTERIOR_NODE, true]];
   for (const id of o.extraSources ?? []) if (!avoid?.(id)) sources.push([id, true]);
   const { value } = bestPaths(g, {
     s: BOOLEAN,
@@ -651,10 +665,56 @@ export function storeyGrounded(ir: ResolvedPlan, tol: number): boolean {
 }
 
 /**
- * The largest contiguous run (mm) of a room's four edges that is **not** backed by
- * a wall centerline — i.e. how open the room's perimeter is. For each axis-aligned
- * edge, the orthogonal wall segments collinear with it (within `tol`) are clipped
- * to the edge and merged; the worst edge's `edgeLength − coveredLength` is returned.
+ * The rooms of one resolved storey walkable from a set of seeds — the exterior and/or the
+ * rooms a shaft lands in — on the `"probe"` access graph that `describe().access` and lint
+ * reachability read. The graph is built once; each call is one {@link reachFrom}. With
+ * `exterior: false` the exterior node is not a start but stays walkable through, exactly
+ * as {@link reachFrom} states — including its caveat: on an ungrounded storey every
+ * exterior connector is a balcony door and all balconies share the one exterior node, so
+ * two separate balconies are conflated (a stair in a room reachable only from balcony B
+ * counts as reachable from a landing whose bedroom opens onto balcony A).
+ */
+export function storeyRoomReach(ir: ResolvedPlan, tol: number): (seeds: StoreySeeds) => ReadonlySet<string> {
+  const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
+  const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
+  const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
+  const roomRects = new Map<string, RoomBox>(rooms.map((r) => [r.id, roomBox(r)]));
+  const g = accessDigraph(
+    rooms.map((r) => r.id),
+    connectorEdges(roomRects, [...doors, ...openings], tol, DEFAULT_CLEAR_ALLOWANCE_MM, "probe"),
+  );
+  return (seeds) => reachFrom(g, { exterior: seeds.exterior, extraSources: seeds.rooms });
+}
+
+/**
+ * The {@link StoreyRoomReach} callback for a whole building, as `describe` and `lint` hand
+ * it to `verticalReach`: one {@link storeyRoomReach} per storey, built on first use. The
+ * tolerance is the caller's own, the same one its `grounded()` callback uses. A level the
+ * building does not have reaches nothing.
+ */
+export function buildingRoomReach(
+  levels: readonly { level: number; ir: ResolvedPlan }[],
+  tol: number,
+): StoreyRoomReach {
+  const byLevel = new Map<number, (seeds: StoreySeeds) => ReadonlySet<string>>();
+  return (level, seeds) => {
+    let reach = byLevel.get(level);
+    if (!reach) {
+      const l = levels.find((x) => x.level === level);
+      if (!l) return new Set<string>();
+      reach = storeyRoomReach(l.ir, tol);
+      byLevel.set(level, reach);
+    }
+    return reach(seeds);
+  };
+}
+
+/**
+ * How open a room's perimeter is (mm): the uncovered length of its WORST edge. For
+ * each of the four axis-aligned edges, the orthogonal wall segments collinear with it
+ * (within `tol`) are clipped to the edge and merged, and that edge's
+ * `edgeLength − coveredLength` is its uncovered total — summed over every gap on the
+ * edge, not the longest contiguous run. The largest per-edge total is returned.
  *
  * Openings (doors/windows) are not split out of wall centerlines — they live in
  * `RWall.openings` and are only subtracted at render time — so a wall carrying a
@@ -734,6 +794,66 @@ export function largestPerimeterGapRing(
     if (gap > worst) worst = gap;
   }
   return worst;
+}
+
+/**
+ * {@link largestPerimeterGap} for a CIRCULAR room (`room circle`, centre `c`, radius
+ * `r`): the length (mm) of its circumference NOT backed by a concentric arc wall —
+ * measured by angle, never by the 48-gon tessellation, so the answer cannot move with
+ * `ARC_STEP_DEG`. (The ring path matches wall centrelines PARALLEL to each facet; an
+ * arc wall enters it only by its chord, which is parallel to no facet, so a fully
+ * walled drum used to read as open by exactly one facet, 2R·sin 3.75°.)
+ *
+ * **What counts.** Only an `arc` wall segment whose centre is within `tol` of `c` and
+ * whose radius is within `tol` of `r` — the circle analogue of "collinear within `tol`".
+ * Both tests read the wall's CENTRELINE, exactly as the rect path does: an arc wall whose
+ * inner face sits on `r` but whose half-thickness exceeds `tol` (a 420 mm wall has its
+ * centreline at `r + 210`) backs nothing, and the room reads as open all the way round.
+ *
+ * Each admitted arc covers the angular interval between its two ENDPOINTS as seen from
+ * the ROOM's centre `c` — never its own `|sweep|` hung off one endpoint — walked in the
+ * reference direction (clockwise as drawn, from east — `fullCircleArc`): from `a` to `b`
+ * for a clockwise arc, from `b` to `a` for a counter-clockwise one. So when the wall's
+ * centre is off `c` by up to `tol`, two arcs that meet at a vertex still meet in angle
+ * about `c` and the chain closes (the projection the rect/ring paths get from clipping a
+ * parallel wall to the edge). `c` lies inside the arc's circle (the offset is ≤ `tol`,
+ * far below any real radius), so the angle about `c` runs monotonically along the arc
+ * and the interval is exactly the arc's footprint. Intervals wrap at 2π and are merged,
+ * and the gap is `r × (2π − covered)` — ONE figure for the whole circumference (a
+ * circle has no "worst edge"), which is also what the rect/ring versions' per-edge total
+ * becomes when the whole perimeter is one edge.
+ *
+ * **Straight walls never count**, deliberately: a straight run touches a circle in at
+ * most a point (a tangent) or crosses it, so it backs no finite length of the curve.
+ * A circle room ringed by a FACETED polyline wall therefore reads as fully open
+ * (`2πr`) — author the enclosure as `arc` edges (as every shipped circle room does).
+ *
+ * **Floats.** Each endpoint angle is `arcAngleOffset`'s one `Math.atan2` (two per arc),
+ * taken about the ROOM's centre. `atan2` is not exactly rounded across engines, so the
+ * result may differ in the last ulps between platforms; that is ~1e-12 mm on a real
+ * radius, and the only consumer (`W_ROOM_NOT_ENCLOSED`) compares it to a whole-millimetre
+ * threshold and prints `Math.round` of it. No other transcendental call is made.
+ */
+export function largestPerimeterGapCircle(c: Point, r: number, segs: readonly WallSegment[], tol: number): number {
+  // The reference circle: `start` 0 (east), `sweep` +2π, so `arcAngleOffset(ref, p)` is
+  // p's clockwise angle from east about `c`, in [0, 2π).
+  const ref = fullCircleArc(c, r);
+  const full = ref.sweep;
+  const covered: Array<[number, number]> = [];
+  for (const s of segs) {
+    const arc = s.arc;
+    if (!arc) continue;
+    if (Math.hypot(arc.center.x - c.x, arc.center.y - c.y) > tol) continue;
+    if (Math.abs(arc.r - r) > tol) continue;
+    // Walk the arc clockwise: it starts at `a` when it runs clockwise, else at `b`.
+    const cw = arc.sweep >= 0;
+    const lo = arcAngleOffset(ref, cw ? arc.a : arc.b);
+    const end = arcAngleOffset(ref, cw ? arc.b : arc.a);
+    const hi = end < lo ? end + full : end;
+    if (hi <= full) covered.push([lo, hi]);
+    else covered.push([lo, full], [0, hi - full]);
+  }
+  return r * (full - mergedLength(covered));
 }
 
 /**

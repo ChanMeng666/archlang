@@ -263,6 +263,11 @@ const PAGE_META = [
     "ADR 21 — plan-first, view deprecated",
     "ArchLang draws floor plans: the illustrative axonometric view is deprecated and removed at 2.0, and the height datum stays as the input of a future data export.",
   ],
+  [
+    "/adr/0022-exact-decisions-and-bounded-input",
+    "ADR 22 — exact decisions, bounded input",
+    "ArchLang decides its geometry checks exactly where inputs allow, measures cross-engine determinism, and reports every numeric or size bound as a catalogued diagnostic.",
+  ],
 ] as const;
 
 type PageMeta = { readonly title: string; readonly description: string };

@@ -16,14 +16,14 @@
  * `lint/ruleset.ts` (re-exported here, so the public surface is unchanged).
  */
 
-import { DEFAULT_TOL, resolvePlan, storeyGrounded } from "./analyze.js";
+import { buildingRoomReach, DEFAULT_TOL, resolvePlan, storeyGrounded } from "./analyze.js";
 import type { ResolvedLevel, ResolvedPlan } from "./ir.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import { type BuildingContext, buildLintContext } from "./lint/context.js";
 import { ONCE_PER_PLACEMENT_CODES } from "./lint/rules/dims.js";
 import { LINT_RULES } from "./lint/rules/index.js";
 import { DEFAULT_RULESET, LINT_PROFILES, type LintOptions, type LintRuleset } from "./lint/ruleset.js";
-import { verticalConnections, verticalReach } from "./vertical.js";
+import { arrivalRuns, verticalConnections, verticalReach } from "./vertical.js";
 
 export {
   DEFAULT_RULESET,
@@ -183,13 +183,18 @@ function buildingContexts(levels: readonly ResolvedLevel[], tolMm: number): Map<
     const l = levels.find((x) => x.level === n);
     return l ? storeyGrounded(l.ir, tolMm ?? DEFAULT_TOL) : false;
   };
-  const reach = verticalReach(inputs, grounded);
+  // Room-aware: a shaft relays only from a stop whose room is walkable on its storey, on
+  // the same tolerance `grounded` uses, so lint and `describe().vertical` agree.
+  const roomReach = buildingRoomReach(inputs, tolMm ?? DEFAULT_TOL);
+  const reach = verticalReach(inputs, grounded, roomReach);
+  const runs = arrivalRuns(inputs, grounded, roomReach);
   const out = new Map<number, BuildingContext>();
   for (const l of levels) {
     out.set(l.level, {
       multiStorey: true,
       verticalPeerIds: peerIds,
       arrivalRooms: reach.arrivalRooms.get(l.level) ?? [],
+      arrivalShafts: runs.get(l.level) ?? [],
     });
   }
   return out;
@@ -203,7 +208,7 @@ function lintOne(
 ): Diagnostic[] {
   const ctx = buildLintContext(ir, rules, building);
   const out: Diagnostic[] = [];
-  for (const rule of LINT_RULES) out.push(...rule.check(ctx).map(withFixProvenance));
+  for (const rule of LINT_RULES) for (const d of rule.check(ctx)) out.push(withFixProvenance(d));
   return out;
 }
 

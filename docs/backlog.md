@@ -356,6 +356,30 @@ its whole tie set, not the cell-index pick (red-team counterexample: routes[bed>
 Still open by construction: a plan whose extent is not a whole number of cells spills its last
 cell past one edge, so the raster is compared only under translation there.
 
+**Reopened and closed (E.10, carve order).** The symmetric carve still read each threshold
+point's seeds off the LIVE nav mask. A connector's points are visited centre, +d, −d in the
+frame's own axis order, which a turn or flip reverses, so a later point could seed on a cell an
+earlier one had just opened, and which room cell became the far seed (and took the connector's
+width) depended on the frame. Fuzz seed 2065024317 found it (a bottleneck of 700 against 740
+under r90/r180), present on `main`; the red team found the same through connector source order
+(`hexagon-pavilion` plus a second portal into `g_sw`: 8800 or 8200 by which was written first).
+Every connector's seeds are now read once, off the mask as it stood before any connector carved
+(`buildGrid`, `src/analyze/circulation.ts`), so point order and connector order commute with the
+carve. The witness, the twelve-spelling law and a two-order law are in "closed classes"
+(`test/equivariance-corpus.test.ts`). Only `hexagon-pavilion`'s `g_sw`/`g_se` moved, walk
+9800 → 8800 (detour 1.87 → 1.68), re-run here through `arch describe`; the 9800 above was
+itself a product of carve order, and 8800 is the same rule with the order taken out, not a
+measured truth (C.5). The opt-in overlay moved on 14 files with no fact moving outside the
+hexagon (`test/byte-identity-baseline.ts`).
+
+**Open question for the owner (far-seed stamp).** A carve still writes the connector's clear
+width onto its far seed even when that cell was already walkable (`k === far` in `buildGrid`),
+which overrides the room's own furniture pinch, against "a furniture pinch must stay a pinch".
+`nearestPairs` returns `[a, b]`, so the far seed is always the `between[1]` room's seed: the
+exception is asymmetric in the source order of `between`. The closed-class witness's 740 depends
+on it (dropping the exception reads 700 in every frame and flips that test by design), and so
+does `eval/fidelity-plans/min-bedroom-flat.laundered.arch`'s route bottleneck (M.3). Not changed.
+
 ### E.11 · `float-translation` — facts change under a pure translation — `todo` (circulation half closed by W3b)
 
 **Closed for circulation.** A translation re-rounds a curve's tessellation (placed 20 m out, a ring
@@ -465,7 +489,8 @@ straight slit; through a thick wall at an angle — `hexagon-pavilion`'s portals
 drum — the nearest free cells on either side are several cells apart diagonally, and the run is an
 L that tunnels through the masonry beside the opening rather than along it. Which tunnel is carved
 depends on which seeds are chosen, so a rule change moves the walk (g_sw/g_se 9200/9300 → 9800
-under circulation v2) without either value being the opening's. Close by carving along the
+under circulation v2, then 9800 → 8800 when seeds stopped depending on carve order, E.10's
+reopening) without any of those values being the opening's. Close by carving along the
 opening's own axis (the host's normal at the connector) through the band, bounded by the opening's
 width — a measured change for every oblique or curved doorway.
 
@@ -511,6 +536,16 @@ room. A stair landing in an L's unroomed notch therefore gets `W_NO_ENTRANCE` ("
 the building") on a storey the shaft reaches. The rule is right — nothing at the landing is floor to
 arrive in — but the message misleads. Want a message (or code) that says the shaft lands on no room;
 keep the rule. Pinned by `test/vertical-room-shape.test.ts`.
+
+**Widened by room-aware reachability.** `verticalReach` now carries you on only from a room you
+can walk to (`test/access-policy.test.ts`), so a second case reaches the same message: a stair
+standing in a door-less store is a DEAD shaft, and the storey it leads to gets
+`W_NO_ENTRANCE` ("there is no way into the building") although a shaft does land there. The
+message work should cover both: name the shaft and say why it does not count (lands on no room;
+starts in a room nobody can reach). A stop whose footprint lies in no room still keeps the
+storey-level answer, so the notch case above is unchanged. Re-run: a hall with the front door
+plus a door-less store holding the stair, upper floor with no exterior door:
+`reachable_levels` `[1]` and `W_NO_ENTRANCE` on level 2 (was `[1, 2]` and silent).
 
 ### P.2 · `swing into <rectangle room>` on an arc host picks its side off the chord — closed by W5a
 
@@ -635,16 +670,37 @@ rubric failure, not as a generalisation exercise.
 Measured bounds with today's plain double arithmetic: `orient2d` stays exact to `2²⁵` mm;
 homogeneous line intersection is exact only to about 104 m (`2^(50/3)` mm ≈ 104,000 mm). Both cover every plan size the
 language can express today. Revisit only if a shipped plan (not a synthetic stress case)
-measures outside either bound.
+measures outside either bound. Re-examined and kept rejected in
+[ADR 0022](adr/0022-exact-decisions-and-bounded-input.md): the exact decisions this round
+needed were integer or `BigInt` comparisons on the 0.001 mm lattice and squared lengths, which
+rely only on IEEE-exact `+ − × ÷ √`, not on projective predicates. The `2²⁵` mm bound is also
+the candidate modelling range in M.1.
 
-### 6.6 · A trig/hypot cross-engine audit — `todo`
+### 6.6 · A trig/hypot cross-engine audit — measured: no divergence; replacement not motivated
 
 `src/analyze/syntax.ts`'s integration value uses `Math.log2` alongside the existing view and
 geometry code's `Math.hypot`/`Math.atan2` family (`docs/agents/architecture.md`: "the view
-uses no `Math.cos/sin/tan/atan`, not exactly rounded across platforms"). Nobody has swept
-`Math.log2` and the rest of the transcendental surface for the same cross-platform exactness
-risk the view already avoids. Needs a differential run across the CI matrix's platforms
-before it can be called safe, not just assumed so by analogy.
+uses no `Math.cos/sin/tan/atan`, not exactly rounded across platforms"). ECMA-262 fixes only
+`+ − × ÷` and `Math.sqrt`; the rest are implementation-approximated, and CI had pinned digests
+on V8 alone (Node 18/20/22), never on SpiderMonkey or JavaScriptCore.
+
+**Measured.** `npm run digest:engines` (`scripts/engine-digests.ts`) runs the built core in
+Playwright Chromium, Firefox and WebKit and compares each engine's digest of the agent-facing
+output (SVG, `describe()`, `lint()`, diagnostics, after the compiler's rounding) with Node's and
+with the pinned `test/while-byte-identity-baseline.ts`. Over 86 plans (examples with `lib`,
+fixtures, recovery corpus, eval goldens and fidelity plans) × 2 payloads (core and `--facts`)
+plus two transcendental probes: 172 of 172 digests identical in every engine and on Node, and
+Node matched all 39 pinned baseline rows. Measured when the harness landed and re-run on the
+tree with every change of this round merged: `status=clean` both times. Re-run
+`npm run digest:engines` after an engine or Playwright upgrade; the report names the versions
+it ran. The nightly `cross-engine` job re-runs it as an
+advisory signal (it never fails the night) and reports the first divergence.
+
+Decision: replacing `hypot`/`atan2`/`log2` at the decision sites with `+ − × ÷ √` forms is not
+motivated by this data and stays owner-gated until a divergence is measured. Limits: the
+payload compares output bytes after rounding, so a 1-ulp transcendental difference that never
+reaches an exact comparison is invisible by design; and Playwright WebKit on Windows is not
+Safari's JavaScriptCore on Apple hardware. ([ADR 0022](adr/0022-exact-decisions-and-bounded-input.md).)
 
 ### 6.7 · `while` and reassignment removal at 2.0 — `todo`, owner decision: remove at the next MAJOR, no code before then
 
@@ -710,6 +766,10 @@ shared closed jamb on the axis; `describe --facts symmetry` gives `full` D1 x ab
 and `arch lint` is clean (`test/symmetry.test.ts`, with a C1 control that hangs one leaf on the
 shared jamb).
 
+(Superseded in part by 6.12: the sampler described below is no longer the detector;
+`swingsCollide` now decides with the exact `sectorsObstruct` test. The contact semantics
+recorded here are unchanged.)
+
 The pair used to raise `W_SWING_OBSTRUCTED` ("0 mm short"): the swing test accepted a closed
 boundary, so two quarter-discs tangent at the shared jamb collided. Owner decision: exempt
 single-point contact only. `swingsCollide` (`src/geometry.ts`) keeps its sampler as the
@@ -727,7 +787,7 @@ sides) is clear; a 1 mm overlap still warns, "1 mm short" (`test/swing.test.ts`,
 - Contact along a segment still warns, as before: two leaves 100 mm too close opening to
   OPPOSITE faces (the closed leaves overlap along the wall), and two leaves back to back on one
   post opening the same way. Leaves are solid, so a shared line is a clash. (On an oblique wall
-  the sampler, unchanged, already missed the first of these; that is not new.)
+  the sampler, unchanged, already missed the first of these; that is not new. Closed by 6.12.)
 - With `swingClearanceMm > 0` (`accessibility-advisory`, 150), single-point contact at exactly
   `radius + clearance` is clear. A double door is ONE assembly (lead decision): the clearance
   keeps independent doors apart, not a pair's two leaves, so a shared-jamb pair
@@ -787,18 +847,319 @@ as two 940 mm doorways, not one ~1940 mm opening, and every room's `bottleneckCl
 1140 mm: the widest way in is a wing's 1200 mm exit, not the main door. A pair of leaves on a
 shared jamb with both open is one opening to anyone walking through. Open: whether (and how)
 the analysis should recognise a pair: shared jamb, same host, both hinged on the outer jambs.
+The deferred egress facts (M.16) would settle it as a side effect: a max-flow door capacity
+has to merge a pair (`isDoubleDoorPair`) before it can count one.
 
-### 6.12 · The swing-overlap sampler misses real overlaps — `todo` (pre-existing, no decision)
+### 6.12 · The swing-overlap sampler missed real overlaps — closed
 
-`swingsCollide` (`src/geometry.ts`) only ever tests nine points on each leaf's arc against the
-other swing, so an overlap whose shared region holds none of them is not seen. Counterexample:
+`swingsCollide` (`src/geometry.ts`) only ever tested nine points on each leaf's arc against the
+other swing, so an overlap whose shared region held none of them was not seen. Counterexample:
 A hinged at (300,300), radius 900, wedge 180°–270° (far jamb (−600,300), leaf end
 (300,−600)); B hinged at the origin, radius 1000, first quadrant. They share the square
-[0,300]², about 90,000 mm², and `swingsCollide` says clear, on the base and on this branch
-alike. It also misses segment contact on an oblique wall (the jamb sample's wedge sign lands
-on the wrong side in floating point). `sectorsObstruct` is exact on its own, so a decision
-procedure is within reach, but replacing the detector can add warnings to existing plans:
-that needs its own corpus sweep and a decision. Found by red-team review of 6.8; wording only.
+[0,300]², about 90,000 mm², and the sampler said clear. It also missed segment contact on an
+oblique wall. Found by red-team review of 6.8.
+
+Decision (owner-approved): decide with the exact test. After the hinge-gap reject and the double-door
+check, `swingsCollide` now asks `sectorsObstruct` on both clearance pairings, with no sampling.
+`sectorsObstruct` was NOT exact on its own, which the sampler had masked: it stopped at the
+first candidate axis with a support sum `<= VERTEX_EPS`, a separating GAP included, and then
+measured the two faces' overlap along the line without asking whether they were on the same
+line, so two leaves opening away from each other with parallel facing edges "touched" (the
+eval golden `sized-wet-room`'s `d_live`/`d_bed`, 1500 mm apart). Now a gap answers clear and
+the contact length counts only collinear faces. Single-point contact stays clear and segment
+contact a clash (6.8 unchanged).
+
+The narrowing hint's bisection (`widestClearingWidth`) needs being clear to be monotone in
+the width. The geometry is (a narrower leaf, and its clearance-grown disc, nest inside the
+wider one's); the double-door exemption is not: a narrowed leaf whose far jamb lands exactly
+on a THIRD door's latch is a pair at that one width, clear under a clearance while every width
+around it collides, and the bisection could quote it ("500 mm or less" with 201–499 colliding;
+the same on the old predicate). The narrowing probes now read the leaf as an independent door
+(`swingsCollideAsIndependent`); the flip probe and the warning keep the exemption.
+
+What this does NOT make monotone: the bisection's furniture probe. A narrowed leaf is also
+tested against furniture with `sectorIntersectsRect` (`src/lint/rules/doors.ts`), a
+conservative heuristic that is not proven monotone in the width. The hint is provably monotone
+against other swings only; read this closure as "the swing check is exact", not "the narrowing
+hint is provably monotone".
+
+Measured: an instrumented sweep (examples with `lib`, fixtures, recovery corpus, eval goldens
+and fidelity plans; every door pair, every hinge flip and every narrowing width, at
+clearance 0 and 150) found no probe where the sampler and the exact test disagree, and the
+P-sweep (SVG, `describe()`, `lint()`, diagnostics, `accessibility-advisory` lint) moved 0 of
+84 rows. `test/swing-exact.test.ts` pins the counterexample, the gap family, the superset law
+against the frozen old predicate (`test/swing-predicate-v1.ts`), an independent polygon-clipping
+oracle and the bisection against every width.
+
+---
+
+## Found in the robustness programme ([ADR 0022](adr/0022-exact-decisions-and-bounded-input.md))
+
+Defects, limits and deferred capabilities the numbers/parser/predicates/multi-storey work turned
+up and deliberately did not widen into. Each says what was re-run for this entry; where nothing
+was, it says so and names where the observation came from.
+
+### M.1 · Absurd finite magnitudes: a modelling range, and what still runs away — `todo` (owner decision)
+
+The number domain is now closed (`E_NON_FINITE`) and huge coordinates no longer crash the spatial
+index, but a finite value far beyond any building can still exhaust memory or print a non-number.
+Proposal for the owner: a catalogued modelling range of 2²⁵ mm (~33.5 km), the bound under which
+ADR 0020 measured plain-double `orient2d` exact (6.5), checked once at resolve. Re-run on the
+integration tip: a `stair … size 1000000000000x3000` compiles in `describe`/`lint` but `arch
+compile` runs out of heap (the stair's `treadCount` drives a loop in
+`src/elements/vertical-glyphs.ts`); a `dim (1e308,0)->(1e308,1e308)` (written out in digits)
+prints `Infinity` into the SVG with no diagnostic. Not reproduced any more on the tip, so not
+part of this item: a wall to `(1e308,0)`, and a door `1e308` wide (on a 10 m wall) or `1e307`
+wide (on that huge wall), which a tree earlier in the round hung or exhausted memory on, now
+`describe`, `lint` and `compile` in about 0.15 s each. (A door wider than its wall raises no
+diagnostic, a 20000 mm door on a 10000 mm wall included, on `main` too. That is V.3, filed
+`won't fix` with the view, although the plan drawing has it as well and will keep it after the
+view is removed.) Also not audited at huge magnitudes: arc and curve segment counts, hatch and
+pattern line counts, dimension tick counts, the label lattice, `W_SCALE_OVERFLOW`; and the
+symmetry report's roof case (a `roof overhang` at 1e306 did not throw when probed).
+
+### M.2 · A global step budget for element-free nested loops — `todo`
+
+`E_ELEMENT_LIMIT` bounds what a plan creates, `E_WHILE_LIMIT` one loop's iterations, and the
+stack budget nesting; nothing bounds TIME spent in loops that create nothing. Re-run:
+`for i in 0..100000 { for j in 0..1000 { let x = i } }` was still running after 25 s (killed;
+the original report measured over 180 s with no diagnostic). Nested `while`s multiply their
+10,000-iteration caps the same way, and the per-storey element cap makes time linear in the
+number of levels (24 capped levels took about 219 s in the original report; not re-run). Wants
+one evaluation-step budget across the whole resolution, as a catalogued error.
+
+### M.3 · The doorway carve's inward walk stepped through eroded cells — closed
+
+A carve's far seed could land several cells from its door, because a connector's inward walk
+(`walkInward`, `src/analyze/circulation.ts`) passed through eroded cells, there a stair
+footprint: on `hillside-villa` level 2 it stamped `d_en2_corr`'s 640 mm onto one cell of the
+passage under the flight, (4950, 4050), and capped the Master Suite at 640 where the passage
+reads 700. The narrow fix (stamp only cells that were not free) was rejected because it also
+moved `eval/fidelity-plans/min-bedroom-flat.laundered.arch`'s first route 740 → 14000.
+
+Closed by stopping a connector's inward walk at the room's first eroded FLOOR cell (`buildGrid`
+records them; an eroded cell under a wall is a halo reaching through it and stays crossable).
+Re-run on the merged tree: `r_master` walk 9900, bottleneck 700, detour 1.81; `arch lint` still
+nine, the sixth `W_PATH_TOO_NARROW` now "The route from "Master Suite" to "Ensuite" squeezes to
+640 mm" through `d_enm`, a real 700 mm door; `min-bedroom-flat`'s route still 740. A FRONT
+door's seed is read as before: sealing it too was measured and rejected, because the
+closed-class witness "a room split by furniture, entered by an opening with a threshold point
+on a line" then measured no circulation room. Consequence, pinned at two cell sizes by
+`test/carve-inward-walk.test.ts`: furniture within R + δ of a doorway's face leaves the room
+`blocked` (δ depends on where the wall falls on the walk grid, 0 < δ ≤ one cell: R + δ is
+400 mm for a 100 mm partition on the 100 mm grid, 388 mm with 108 mm cells), where a doorway near a room
+corner or with a threshold point on a grid line used to be measured through a tunnel beside
+it. No shipped example has such a doorway. E.10's far-seed question stays open (front-door
+seeds still walk through eroded cells, and the polygon seed branch takes no seal).
+
+### M.4 · Shaft-reached storeys: what the first cut leaves out — `todo`
+
+Circulation now walks a storey reached only by a stair, lift or escalator from the run a
+person arrives by (ADR 0008's addendum). Left out, each re-run unless noted:
+
+- `--overlay circulation` draws nothing there (`computeCirculationOverlay` gets no arrivals and
+  the overlay path has no building context). Re-run: `hillside-villa` level 2's overlay SVG is
+  byte-identical to the plain drawing; level 1's is not.
+- Direction of travel is not modelled: `dir` is a per-storey drawing convention, so an escalator
+  PAIR (one up, one down) seeds the upper storey at both cars. Re-run on a two-storey probe:
+  the upper room is walked from `e_dn`.
+- The landing test is now on the plan's geometry, and it is SAMPLED: nine points along the
+  head, about 112 mm apart on a 900 mm flight, each 1 mm beyond it (`LANDING_PROBE_MM`,
+  `src/analyze/circulation.ts`). An obstruction narrower than the spacing can sit unseen
+  between two points, a free slot narrower than it can be missed, and floor 1 mm deep counts
+  as a landing even with a partition 50 mm farther out. A probe one body radius deep was
+  measured and not taken: it seals `two-storey`'s 200 mm upper landing (code comment; not
+  re-run here).
+- The nearest-cell fallback (a landing row with no free cell in some frames starts the walk
+  beside the flight) can add up to two cells of frame spill on its own; the red team measured
+  walks spilling up to 6 cells on random buildings against 4 before. The per-building bounds in
+  `test/shaft-equivariance.test.ts` are measured, not proven.
+- A landing that seeds nothing still reads `unreachable` (head against the shell) or
+  `no_threshold` (a covered landing on a door-less storey); a distinct reason for a sealed
+  landing would be a schema change (documented in `docs/analysis.md`, pinned by
+  `test/shaft-circulation.test.ts`).
+- Same-id stops whose footprints do not overlap on the two storeys raise nothing; a lint for
+  them is deferred. (A run drawn along another axis upstairs now takes its own entry edge rather
+  than reading its flight length as the landing width, pinned in
+  `test/shaft-circulation.test.ts`.)
+- Walls are never eroded, so the 400 mm passage under hillside's flight reads 700 (from the
+  card's report; not re-run).
+- `two-storey`'s upper landing is a 200 mm strip between the void and the stair head, a
+  one-cell pinch: re-run, the landing reads 900 and every room past it 700, narrower than any
+  door on the way (740, 840).
+- Per-room reachability on an upper storey for intent `reachable` needs a new describe fact (the
+  rooms reached per storey from its arrival rooms); `levels[i].access.rooms[].reachable` counts
+  exterior doors only. Re-run: the intent now fails a storey with no way in, but removing an
+  upper room's only door still passes it.
+- `suggestTopology` reads the lowest storey only (`resolvePlan().ir`) and so never seeds from
+  arrival rooms. Re-run: removing the kitchen door on `two-storey`'s ground floor gets
+  suggestions; removing the upper bath door (`W_ROOM_DISCONNECTED` on level 2) gets none. It
+  also fixes its tolerance at `DEFAULT_TOL` (`src/suggest.ts`), while lint's access graph reads
+  the ruleset's `tolMm`, so under a custom tolerance the two can disagree on what connects
+  (code read).
+- `diffPlans` compares the lowest storey only (documented), so upper storeys are never diffed.
+- An ungrounded storey's balcony doors share one exterior node, so a room opening only onto
+  balcony B counts as reachable from a room opening onto balcony A, and the room-aware fixpoint
+  inherits it (one node per outdoor surface would separate them). On a grounded storey
+  `describe().vertical` relays through a room a shaft lands in, while lint's reachability never
+  starts from it, so lint can call a room the building graph relays through disconnected.
+  `buildingRoomReach` (the callback `describe()` passes to `verticalReach`) is not exported, so
+  a caller of the public `verticalReach` must build its own. (From the card's reports; not
+  re-run.)
+- `describe()`/`lint()` compute the vertical fixpoint and then `arrivalRuns` recomputes it, plus
+  one storey-removed fixpoint per ungrounded reachable storey: redundant, cheap at dozens of
+  storeys (code read).
+
+### M.5 · The corpus equivariance oracle does not cover multi-storey plans — `todo` (circulation half has a law)
+
+The corpus suite places every shipped example with no `level` block
+(`test/equivariance-corpus.test.ts`, "the corpus is COMPUTED: every shipped example with no
+`level` block"), so `hillside-villa`, `townhouse`, `two-storey` and the other `level` plans get
+no geometry, `describe()` or `lint()` oracle. Re-run: read the test's filter. Multi-storey
+CIRCULATION now has its own law, `test/shaft-equivariance.test.ts`: every
+`levels[*].circulation` under each of the eight frames, exact on lattice-aligned grids, within
+measured per-building cell bounds otherwise, and the landing never flips. The rest of a
+`level` plan's facts are still outside any oracle.
+
+### M.6 · Load-sensitive visual and sheet tests — `todo`
+
+`test/visual.test.ts` and `test/sheet.test.ts` hit vitest's 5 s per-test budget under heavy
+machine load and pass alone: the same shape as 4.10, and the same options apply (an explicit
+timeout on the heavy cases, never a raised global `testTimeout`). Observed during this
+programme's gate runs; not reproduced on purpose here.
+
+### M.7 · `diffPlans` follow-ups — `todo`
+
+An insertion plus a newly authored `id=` in the same edit still pairs the wrong rooms: before,
+auto "Hall"; after, auto "Kitchen" plus `id=hall` "Hall". Re-run: the summary reads
+`Relabeled room_1 to "Kitchen"`, `Added Hall`. Fixing it needs the unique-label match to run
+before the id pass whether or not the id is authored, keeping the rule symmetric (antisymmetry
+law). Still silent (from the card's report, not re-run): an entrance added or removed
+(`circulation` null on one side), and a room blocked on both sides with a different
+`widestWayInMm`. There is no `arch diff` command.
+
+### M.8 · The source formatter is lossy past three decimals, and silent when it refuses — `todo`
+
+`format()` prints every literal through `fmt3`, so precision beyond 0.001 mm is dropped and a
+`.0005` rounds by the binary value. Re-run: `room id=a at (0.0004,1.0005) …` formats to
+`at (0, 1.001)`. Separately, `arch fmt` on a file with parse errors (including the newly
+diagnosed trailing content) prints it unchanged and exits 0, so nothing tells the user it
+refused: re-run on a stray-`}` file. Consider a note on stderr or a non-zero exit.
+
+### M.9 · Grid snap rounds half up, so a mirror image snaps differently — `todo`
+
+`Math.round` rounds .5 toward +∞, so snapping is not odd-symmetric. Re-run on `grid 50`: a room
+at x = 25 resolves to 50, at x = −25 to −0 (not −50; the JSON prints `0`). A mirrored drawing
+therefore snaps to a different shape. The same rule makes `fmt2(−x) ≠ −fmt2(x)`: `fmt2(0.125)` is
+`0.13`, `fmt2(−0.125)` is `−0.12` (re-run through `src/num-format.ts`). Changing either moves
+output; it needs a decision and a sweep.
+
+### M.10 · Catalogue order follows the host's collation — `todo`
+
+`ERROR_CODES` (`src/error-catalog.ts`) sorts with `localeCompare`, which follows the host's ICU
+collation, not code-unit order; it feeds `docs/error-codes.md`, `llms-full.txt` and `arch
+manifest --json`. Re-run on one host whose default locale is `zh-CN`: `ERROR_CODES` and the
+same severity-grouped sort by code units differ at 15 of 149 positions (ICU puts
+`E_INTENT_NO_DOOR` before `E_INTENT_NOT_ADJACENT`, code units the reverse), so a host with
+another default collation could reorder a generated file. `dataset/dedup.ts` and
+`dataset/generate.ts` sort with `localeCompare` too. A plain `<` comparison would move the
+generated order once.
+
+### M.11 · LSP rename misses an assignment target — `todo`
+
+`rename` (`src/lsp.ts`) collects references from expressions and instance names, not the name
+on the left of `NAME = expr`. Re-run: renaming `x` to `y` in `let x = 1`, `x = x + 1`,
+`room at (x,0) …` gives `let y = 1`, `x = y + 1`, `room at (y,0) …`. Low priority:
+reassignment is deprecated and removed at 2.0 (6.7).
+
+### M.12 · `detourRatio` divides a 4-connected walk by a straight line — `todo` (observation, no decision)
+
+The walk is measured on the 4-connected nav grid (an L1-like length) and divided by the
+Euclidean line, so a direct diagonal walk reads about √2. Re-run: an empty 8 m × 8 m room
+entered by a door at x = 700 reports walk 7000, detour 1.41. Harmless at the default
+`maxDetourRatio` of 3, misleading for a tight one. Related: C.3.
+
+### M.13 · A polygon room's occupancy seed breaks ties in page order — `todo`
+
+`src/analyze/occupancy.ts` seeds a polygon room's doorway at the nearest free cell with ties
+broken row-major (its own comment says so), the page-order tie the nav grid gave up in E.6–E.10.
+Code read only; no flipped fact has been reproduced, and the occupancy grid is not in the
+equivariance oracle's comparison.
+
+### M.14 · A roof's acute corner is mitred without bound — `todo` (policy, no decision)
+
+`roof overhang` meets two offset faces at their line intersection, so at an acute corner the
+eave runs far past the wall. Re-run: a 10° corner with `roof overhang 600` on a 200 mm wall puts
+the eave apex at (−8002, −700), about 8033 mm from the wall corner, while the wall joinery
+bevels the same corner; lint is silent. Defensible as drafting (the eave is where the faces
+meet); a bevel or a miter limit is a policy choice. The roof keeps its own `meet` rather than
+`meetLines` (`src/geometry/intersect.ts`): unifying them moved about 11 % of decimal
+rectilinear rings by 0.01 in SVG, so it needs its own measured change. `connectorEdges`
+(`src/analyze.ts`) and `PARALLEL_SIN` (`src/geometry/intersect.ts`) are exported but no longer
+imported outside their modules (grep re-run).
+
+### M.15 · Parser recovery and resource-cap follow-ups — `todo`
+
+- `relatedSpans` (the "plan was closed here" note) reach only `arch compile`'s text output, not
+  `--json` or the LSP. Re-run: the `lint --json` diagnostic has no related span.
+- Indentation-guided recovery: a tab meeting spaces has no order, so such lines fall back to
+  the previous rule; when a block header fails and its `}` is also missing, the deeper-indented
+  lines are skipped as its body (pinned in `test/parser-recovery-metric.test.ts`).
+- `relocateLabels` is quadratic in co-located rooms (about 11 s at 5,000 identical rooms, from
+  the card's report); a fix would allow raising `MAX_ELEMENTS`. `E_ELEMENT_LIMIT`'s catalogue
+  text says "5,000" literally; `test/element-cap.test.ts` keeps it equal to `MAX_ELEMENTS`.
+- The shared stack budget (`MAX_STACK_UNITS`, `src/expr.ts`) was measured cold on Node, Node
+  workers and Chromium/Firefox/WebKit workers; the rule (minimum capacity / 1.5) is the thing to
+  re-run when an engine changes, and the table lives in that docstring.
+- `reroll`: a run that `buildCandidate` rejects (a `#` comment inside or after the maximal run)
+  is rescanned from each later start, so detection stays quadratic on that input (about 3.2 s
+  at 800 statements, from the card's report). The linear `findRun` kept these semantics on
+  purpose.
+- Eval `proveInfeasible` never combines a plan-wide floor with a concept's exact count:
+  `{total ≤ 12, every room ≥ 5, exactly 3 bedrooms}` is infeasible but derives no conflict (from
+  the card's report).
+- `W_ROOM_NOT_ENCLOSED` on a circle room says "~18850 mm of its perimeter has no wall" of a drum
+  whose wall is visible but whose centreline lies more than the tolerance off the radius (a
+  420 mm wall with its inner face on R). The rectangular path words a wall off an edge the same
+  way; "not backed by a wall centreline within 200 mm" would be truer.
+
+### M.16 · Deferred capabilities — `deferred` (each needs a consumer)
+
+Recorded with reasons in ADR 0022; none was built this round.
+
+- **Egress facts** (an opt-in `describe --facts egress`): room dominators, a door-disjoint second
+  route, max-flow door capacity (which would also settle 6.11's double door), the capacity left
+  when any single exit fails (a minimum cut), exit separation.
+- **A daylight-ratio fact**: glazing over floor area from the height datum already authored.
+- **Roof ridges from the straight skeleton**: exact on ½ℤ for an integer rectilinear outline,
+  but a roof plan is another drawing and a new language form.
+- **Dimension completeness** (P2-8): which plan lengths no `dim` fixes; a set difference.
+- **A deterministic `ownerOf`** for playground drag-to-edit: which literal owns a coordinate.
+- **Small-scope parameter enumeration**: compile a component over a small parameter grid and
+  report the failing values, worded for that range only.
+- **A clear-width decision by squared comparison**: whether a disc of width w passes a gap is
+  exact with squared distances (`BigInt` for large oblique values); the nav grid quantises it.
+- **A per-brief cluster bootstrap for eval comparisons**: an observation only; it does not
+  reopen G1.
+- Interval-graph layering for `W_DIM_OVERLAP`, regular-path queries on the access graph, bare
+  component extraction (MDL), a dataset entropy report: possible, no failure evidence yet.
+
+### M.17 · `spec.llm.md` is 13 characters under its prompt-size cap — `todo`
+
+`test/llm-spec-drift.test.ts` caps the in-memory `renderLlmSpec()` string below 30,000
+characters. Re-measured on the merged tree: 29,987, so the next sentence anyone adds to the spec
+(or to `examples/attached.arch` / `examples/parametric.arch`, which it embeds verbatim) fails the
+suite. The test's comment said "a measured 29,778"; it now records 29,987. This round's
+correction to the stair line had to be written no longer than the line it replaced. Per the
+test's own rules, trim duplication first (its comment names the `door` line, over 1,600
+characters, as the next lever), then argue any raise.
+
+### M.18 · `vitest --maxWorkers=2` alone fails on this repo — `todo` (docs)
+
+The memory-saving rerun a busy machine needs, `npx vitest run --maxWorkers=2`, stops with an
+unhandled error before any test runs; adding `--minWorkers=1` runs it (re-run on
+`test/eval-stats.test.ts`: 5 passed). Worth one line in `docs/testing.md` so an agent told to
+"rerun with `--maxWorkers=2`" does not read the error as a test failure.
 
 ---
 
@@ -1243,6 +1604,24 @@ bench, restore):
 
 `OPENING_HEAVY` is the worst case *because* 400 disjoint axis-aligned segments is exactly what the
 retired rectangle sweep was fastest at.
+
+**Restated: the deltas stand, the `bench` absolutes do not.** Each row above is a difference on
+the same bench in the same session, so the joinery pass's cost is what it says. But the three
+`bench` ABSOLUTES were measured on the old one-line generated layout (a ~1 km drawing whose
+room font was metres tall), where every label relocated: `relocateLabels` was about 58 % of
+BALANCED and about 97 % of ROOM_HEAVY `toScene` (inspector profile, `bench/README.md`). Do not
+budget against 184.7 ms or 235.4 ms as joinery cost; OPENING_HEAVY was the only clean joinery
+measurement. `bench/gen.ts` now lays plans out on a grid on an A0 sheet, where label placement
+is negligible and `joinWalls` is over 90 % of BALANCED, and `bench/baseline.json` is still the
+old one: regenerate it on an idle machine before quoting fresh absolutes.
+
+**Landed: the constant factors.** `PointInterner` keys its cells with nested integer maps
+instead of template strings, and `chainLoops` computes each edge's undirected key once instead
+of on every sort comparison; the algorithm, iteration order and `pointKey` strings are
+unchanged and the output byte-identical (`test/interner-oracle.test.ts`, the joinery oracles,
+every golden). Measured back to back in one session on a loaded machine (not re-run here):
+`toScene` about 0.55–0.75× on BALANCED and OPENING_HEAVY, `joinWalls` alone about 0.85–0.95×.
+The sweep line and the exact axis-aligned split shortcut remain open.
 
 **Phase profile of `joinWalls`** (measured with temporary instrumentation, since reverted):
 

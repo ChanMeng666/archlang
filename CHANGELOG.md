@@ -7,6 +7,240 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Robustness work on the numbers, the parser, the geometry predicates and multi-storey
+reachability ([ADR 0022](docs/adr/0022-exact-decisions-and-bounded-input.md)). Every moved output
+is named below; anything not named is byte-identical over the shipped examples and test
+fixtures (`test/byte-identity-baseline.ts`, `test/while-byte-identity-baseline.ts`).
+
+### Fixed — inputs that made `compile()` throw, overflow the stack or run out of memory
+
+Every input below used to break `compile()` and now returns a diagnostic or a result. This is
+not a guarantee for every finite input: a stair 10^12 mm long still runs out of memory when
+drawn, and a `dim` at 1e308 prints `Infinity` (backlog M.1).
+
+- **New `E_NON_FINITE`.** A numeric literal too large to be finite (including past a unit
+  suffix and in either half of `WxH`), an arithmetic result that overflows, and a derived
+  quantity that overflows from finite dimensions (an element's extent, a room's area, the total
+  area) are one catalogued error. A literal or arithmetic result is replaced by 0 so the rest of
+  the plan still resolves; a derived quantity is reported at its element. A 400-digit coordinate
+  used to throw `RangeError: Invalid array length`; a `NaN` index can no longer reach an array.
+- **Nesting is bounded.** Blocks and parenthesised expressions nested more than 256 deep are an
+  `E_PARSE` (the too-deep block is skipped), and evaluation and expansion share one stack
+  budget, so a deep recursion, or a recursion whose body is itself deeply nested, is
+  `E_CALL_DEPTH`/`E_RECURSION` instead of a stack overflow. `min` and `max` no longer spread
+  their arguments (200,000 arguments overflowed the stack).
+- **New `E_ELEMENT_LIMIT`.** One storey (or the plan, when it has no `level`) may expand at most
+  5,000 elements; past that the error is raised once and expansion stops at the statement that
+  crossed it.
+- **`W_ROOM_OVERLAP` is capped.** The first 200 overlapping room pairs are listed in the same
+  order as before, then one warning counts the rest (`…and 235 more room pairs overlap (first
+  200 listed)`). A thousand coincident rooms used to produce 499,500 warnings; they now produce
+  201.
+- **Huge finite coordinates.** A room, wall or opening at a finite coordinate of about 1e20 mm
+  or more no longer spins or throws `RangeError: Invalid array length` in the spatial index
+  (cell indices from 2^52 are treated as overflow); a 10^12 mm wall with a door no longer
+  exhausts memory; a plan huge on one axis and thin on the other gets a bounded nav and
+  occupancy grid; symmetry facts are left out, without an error, for a layer whose coordinates
+  overflow the working integers; and a very large layer no longer overflows the stack when its
+  SVG is written.
+- A finite value near the double limit (above about 1e305) prints as a number in a label or the
+  SVG, not as `Infinity`: `let v = (377 * -(477 * 1000…0))` (a 1 and 300 zeros) interpolated
+  into a label as `"{v}"` drew `-Infinity` and now draws `-1.79829e+305`.
+
+### Fixed — the parser no longer drops the rest of a file without saying so
+
+- Content after the plan's closing `}` (a stray `}` mid-body, or a second `plan` block) is now an
+  `E_PARSE` on the first trailing token, with a note pointing at the `}` that closed the plan in
+  `arch compile`'s text output. Before, everything after it was dropped with no diagnostic. An
+  imported module with trailing content raises `E_IMPORT_PARSE` at the import.
+- `format()` (and so `arch fmt`) therefore refuses such a file and returns it unchanged, where it
+  used to rewrite it without the tail.
+- Error recovery reads the file's indentation: after a failed statement that starts its line,
+  parsing resumes at the next statement keyword at or left of that statement's indentation. A bad
+  point inside a wall's `{ … }`, a bad key in a `theme { … }`, a failed `for` header or a stray
+  `{` no longer closes the plan and drops everything after it (a wall with one bad point used to
+  lose the two rooms after it; both now survive, with one `E_PARSE`). A statement that does not
+  start its line, and lines where tabs meet spaces, recover as before.
+- Since a block's own `}` no longer ends the file's plan, a fragment with no `plan` header whose
+  block fails to parse (the catalogue's one-line `site { … }` and `strip … { … }` examples, run
+  bare) can report one or two more `E_PARSE`, ending in `Expected rcurly but found end of
+  input`. Inside a plan the same statement now keeps the rest of the plan: a failed
+  `strip … { room size }` used to drop the rooms after it and add `W_EMPTY_PLAN`.
+
+### Fixed — exact decisions where the geometry is exact
+
+- **Arc radius.** The `arc … radius` check compares endpoints and radius exactly on the
+  0.001 mm lattice (integer arithmetic, not `Math.hypot`, which is not correctly rounded). Exact
+  semicircles whose chord `Math.hypot` over-rounds are no longer refused (`(0,0) arc
+  (3300,5600) radius 3250` raised `E_ARC_RADIUS` and now compiles), and an exact tie is built
+  exactly: centre on the chord midpoint, sweep π, 24
+  chords (one accepted tie used to be built ~1e-6 mm off-centre with 25). The `E_ARC_RADIUS`
+  message's minimum and its fix are the smallest printed radius that passes, also for
+  expression endpoints and on a snapping grid; before, it rounded half the chord to the nearest thousandth and often fell
+  short (16 of 40 sampled chords still failed after the fix; none does now).
+- **Door swings.** `W_SWING_OBSTRUCTED` decides with an exact separating-axis test instead of
+  nine sample points per arc, so a real overlap the sampler missed now warns (two swings sharing
+  about 90,000 mm² read as clear). The exact test needed a fix of its own first, hidden until
+  now behind the sampler: it read a separating gap between two leaves with parallel facing
+  edges as contact; a gap is now clear. The "narrow the door" hint reads the narrowed leaf as an
+  independent door, so it can no longer quote a width that clears only because its far jamb
+  lands on another door's latch. Single-point contact stays clear and segment contact a clash;
+  no shipped example's output changes.
+- **Circle rooms.** `W_ROOM_NOT_ENCLOSED` on a wet `room circle` is measured by angle against
+  concentric `arc` walls (centre and centreline radius within the lint tolerance) instead of the
+  room's 48-gon. A drum fully walled by arcs no longer warns from R ≈ 2294 mm (it reported one
+  facet, ~392 mm at R = 3000, as open); a missing arc reports its true length R·θ (~4712 mm for
+  a missing quarter at R = 3000). Straight walls never count toward a circle room's enclosure,
+  so a wet circle room with no `arc` wall now warns with its whole circumference, and an arc wall
+  whose centreline is more than the tolerance off the room's radius does not count.
+
+### Fixed — relational layout names the room that actually failed
+
+- A room placed against a room that could not be placed (an unknown reference, a polygon
+  reference, or either inside a component instance) reports the new **`E_LAYOUT_UNPLACED`**
+  naming the room it waits on, instead of being placed silently against `(0,0)`.
+  `E_LAYOUT_CYCLE` names only the rooms on the cycle; a room that merely leads into one gets
+  `E_LAYOUT_UNPLACED`. A room that ends unplaced (failed, waiting on a failure, or on a cycle)
+  no longer raises a phantom `W_ROOM_OVERLAP` at its placeholder position: the catalogue's
+  `E_LAYOUT_CYCLE` example (`a` right-of `b`, `b` left-of `a`) loses its "Rooms "a" and "b"
+  overlap" warning. Layout errors come in declaration order. A plan without an `E_LAYOUT_*` or
+  `E_PLACE_POLY` error is unchanged.
+
+### Fixed — a stair is a way up only from a room you can reach
+
+- Vertical reachability is a fixpoint over storeys **and rooms**: a stair, lift or escalator
+  carries you on only from a room you can walk to on its own storey. A stair in a door-less
+  store no longer makes the floor above reachable: `describe().vertical.reachable_levels` drops
+  that storey and lint raises `W_NO_ENTRANCE` there. A stop whose footprint lies in no room keeps
+  the storey-level answer. No shipped example moves.
+- Intent `reachable` on a multi-storey plan fails when a storey has no exterior door and no live
+  shaft (`no way into storey(s): 2 …`); it used to read the lowest storey only, so an upper floor
+  with no stair passed. Per-room reachability on an upper storey is still not checked. The check
+  runs only when the ground floor has an entrance, so a plan with none keeps its single-storey
+  verdict and wording.
+
+### Fixed — `diffPlans` pairs auto-id rooms by label
+
+- Rooms with auto ids (`room_<n>`) pair by a label that is unique on both sides before pairing by
+  id, so inserting, deleting or reordering a room no longer reports its neighbours as moved
+  (inserting a Hall before Kitchen and Bedroom used to read "Hall … left edge −3000 mm, Kitchen
+  … left edge −3000 mm, Added Bedroom"; it is now "Added Hall (9.0 m²)"). An authored `id` stays
+  the key. Circulation deltas follow the room pairing. A room that becomes blocked or unmeasured
+  (or the reverse) used to vanish from the diff; it is now a trailing `summary` sentence such as
+  `Walk to bed: 8000 mm (pinch 740 mm) → blocked (widest way in 0 mm)` or `… → unmeasured
+  (no_door_route)`. `CirculationChange` is unchanged.
+
+### Fixed — a doorway's carve no longer stamps its width past furniture or a stair
+
+- A connector's carve seeds come from a walk inward from its threshold to the room's first free
+  cell. That walk stepped on through cells the clearance erosion had taken (past a fixture, or
+  a stair's whole footprint), and an L-shaped carve from that far seed could stamp the
+  doorway's width on a cell nowhere near the doorway, or bore through the wall beside it. The
+  walk now stops at the room's first eroded floor cell (a halo reaching through a wall stays
+  crossable); a front door's seed is read as before.
+- **Behaviour change.** Furniture standing within R + δ of a doorway's face (R the 300 mm body
+  radius, δ the distance from the wall face to the centre of the first free grid cell, which
+  depends on where the wall falls on the walk grid, 0 < δ ≤ one cell; R + δ is 400 mm for a
+  100 mm partition on the 100 mm grid and 388 mm on a plan with 108 mm cells, not a constant)
+  now leaves that room `blocked` in
+  `describe().circulation`, with its `widestWayInMm`, and drops its routes. A doorway straight
+  along a wall already read this way; one near a room corner, or with a threshold point on a
+  grid line, used to be measured through a tunnel beside the doorway with the door's width
+  stamped over the pinch. No shipped example has such a doorway.
+- Moved: on `hillside-villa` level 2 the Master Suite's walk bottleneck reads 700 mm, the
+  passage's own width, where this carve's artefact would have read 640; its
+  `W_PATH_TOO_NARROW` is therefore for its route to the Ensuite, not its walk (see the
+  shaft-storey entry below). On level 1 two `--overlay circulation` pinch markers move at the
+  same clear width. Every SVG is byte-identical.
+
+### Fixed — eval: `proveInfeasible` no longer sums floors
+
+- Several at-least floors on one concept are met by the largest, not their sum; plan-wide floors
+  take the maximum; concepts one room can satisfy together (bathroom and wet room) are not
+  added; the tightest of several total-area ceilings is the one used and named. A satisfiable
+  brief is no longer reported infeasible. The committed eval results are unchanged.
+
+### Fixed — documented tessellation error
+
+- The 48-gon's sagitta is R/467 (19 mm on a 9 m radius) and its area shortfall 0.29 %; the
+  comments and `docs/analysis.md` said R/1400 and 0.14 %. A law test derives both from the arc
+  step and pins every stated figure. Drawings unchanged.
+
+### Changed — a storey reached only by a shaft has circulation facts
+
+- **Behaviour change.** A storey with no exterior door that a stair, lift or escalator reaches
+  is measured by `describe().levels[i].circulation` (previously `null`). Walks start where a
+  person steps off, at the head of the flight they arrived by; a run counts as an arrival only if
+  the storey is reached by it from elsewhere in the building, so a flight that only leaves the
+  storey does not count. `entranceId` is the run's id, and `W_PATH_TOO_NARROW`,
+  `W_CIRCUITOUS_PATH` and `arch repair`'s circulation guard now cover that floor.
+- Whether there is a landing at the head of the flight is decided on the plan's geometry, not
+  on the walk grid: floor just beyond the head that no wall, void, other run or furniture
+  covers, where a door or opening opens only its own wall. So a storey on a large plan whose
+  grid cell does not divide it no longer reads measured in some `place` frames and
+  `unreachable` in others, and a same-id stair drawn along another axis upstairs no longer
+  reads its flight length as the landing width.
+- Moved: `hillside-villa` level 2, `townhouse` levels 2 and 3, and `two-storey` level 2 gain a
+  circulation model in `describe()`, and `hillside-villa` level 2 gains six
+  `W_PATH_TOO_NARROW` at 640 mm: the walks to Bedroom 2, Bedroom 3 and the three Ensuites,
+  each through a 700 mm door (640 mm clear), and the route from the Master Suite to its Ensuite
+  through `d_enm`, also 700 mm. The "Two-storey" example in the language reference now reports
+  its upper floor's circulation. Under `accessibility-advisory` (900 mm) the new
+  `W_PATH_TOO_NARROW` are six on `hillside-villa`, six on `townhouse` and three on
+  `two-storey`. Drawings are unchanged, and `--overlay circulation` still draws nothing on such
+  a storey.
+
+### Changed — a doorway's carve no longer depends on carve order
+
+- **Behaviour change.** Every connector's threshold seeds are read from the nav grid as it stood
+  before any connector carved, so neither the order a threshold's points are visited in (which
+  a turn or mirror reverses) nor the order connectors are declared changes a walk or a
+  bottleneck. `hexagon-pavilion`'s two galleries behind the oblique drum portals (g_sw, g_se)
+  now walk 8800 mm instead of 9800 (detour 1.68, was 1.87); no other `describe()` fact moves, and
+  SVG and `lint()` are byte-identical. The opt-in `--overlay circulation` drawing moves on 14
+  files with no measured fact moving outside the hexagon: a pinch marker shifts along its slit at
+  the same clear width, or a walk is drawn along a different path of the same length.
+
+### Changed — limits a runaway plan now meets
+
+- **Behaviour change.** A plan that expands past 5,000 elements in one storey stops with
+  `E_ELEMENT_LIMIT` where it used to compile, and a `while` whose body creates elements without
+  ending reports `E_ELEMENT_LIMIT` instead of `E_WHILE_LIMIT` (an element-free runaway `while`
+  still reports `E_WHILE_LIMIT`).
+- **Behaviour change.** Recursion is bounded by the shared stack budget rather than the 512-call
+  cap alone, which the stack could not actually honour: a value function such as `n + sum(n - 1)`
+  is accepted to about 110 calls (`sum(200)` compiled before and is now `E_CALL_DEPTH`), and a
+  component recursing through nested blocks to fewer levels. The budget is measured across
+  Node, Node workers and Chromium, Firefox and WebKit workers, and is the same on every host.
+- **Behaviour change.** An expression or block nested more than 256 deep is an `E_PARSE`.
+
+### Changed — internal, output byte-identical
+
+- One point-to-segment distance; lint reachability and `suggestTopology` reuse the access graph
+  `describe()` builds. The joinery interner keys cells by integers and `chainLoops` computes
+  each edge's key once (backlog 4.1). `arch reroll` finds a run in one linear forward pass
+  instead of a cubic shrinking search, with identical suggestions (400 rooms that are not a
+  progression: 7.6 s → 0.6 s on one machine). Output is byte-identical over every shipped
+  example and fixture.
+- `bench/gen.ts` lays generated plans out on a ⌈√n⌉-column grid on an A0 sheet, so `toScene` no
+  longer measures label placement on a ~1 km drawing. Bench figures from before the change are
+  not comparable, and `bench/baseline.json` is to be regenerated on an idle machine.
+
+### Added
+
+- `verticalReach(levels, grounded, roomReach?)`: an optional third argument makes the fixpoint
+  room-aware; without it the result is unchanged. New exported types `StoreyRoomReach` and
+  `StoreySeeds`. `RRoom` gains two optional internal fields, `_unplaced` and `_idAuthored`
+  (set by the resolver, never rendered or serialised). All additive.
+- New catalogued codes `E_NON_FINITE`, `E_ELEMENT_LIMIT` and `E_LAYOUT_UNPLACED`
+  (`arch explain <CODE>`).
+- `npm run digest:engines` measures cross-engine determinism: the built core runs in Playwright
+  Chromium, Firefox and WebKit and each engine's digests are compared with Node's and the pinned
+  baseline. The nightly `cross-engine` job runs it as an advisory signal. Measured: all 172
+  digests (86 plans × 2 payloads) identical across the three engines and Node.
+- Eval: the live report and its delta show a Wilson 95 % interval beside every rate
+  (`eval/stats.ts`); the offline `eval/results.md` is unchanged.
+
 ## [1.37.1] - 2026-09-30
 
 ### Fixed — a double door no longer reads as an obstructed swing

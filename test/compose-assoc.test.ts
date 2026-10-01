@@ -183,8 +183,9 @@ describe("no level reaches out", () => {
     expect(codes(plan(refs("a.main")))).toEqual([
       ["E_PLACE_REF", "h.b"],
       ["E_LAYOUT_REF", "h.b"],
-      ["W_ROOM_OVERLAP", null],
     ]);
+    // (The room that failed to place is skipped by the overlap check: its `at` is a
+    // placeholder, so the former W_ROOM_OVERLAP here was phantom noise.)
   });
 });
 

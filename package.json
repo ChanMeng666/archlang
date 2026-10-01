@@ -81,6 +81,7 @@
     "gen:font-cjk": "python scripts/gen-font-cjk.py",
     "check": "npm run typecheck && npm run lint && npm run check:test-wiring && npm test",
     "check:drift": "tsx scripts/check-drift.ts",
+    "digest:engines": "tsx scripts/engine-digests.ts",
     "check:test-wiring": "node scripts/check-test-wiring.mjs",
     "lint:ci": "biome ci .",
     "eval": "tsx eval/run.ts",

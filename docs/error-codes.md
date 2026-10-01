@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**94 errors** · **52 warnings**
+**97 errors** · **52 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -28,6 +28,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_DOTTED_DECL`](#e_dotted_decl) | error | A dotted name cannot be declared. |
 | [`E_DUP_ID`](#e_dup_id) | error | Duplicate element id. |
 | [`E_DUP_INSTANCE`](#e_dup_instance) | error | Duplicate `place … as <name>` instance name. |
+| [`E_ELEMENT_LIMIT`](#e_element_limit) | error | The plan expands to too many elements. |
 | [`E_FENCE_CURVED`](#e_fence_curved) | error | A fence cannot have a curved (`arc`) edge. |
 | [`E_FURN_AGAINST`](#e_furn_against) | error | Invalid `against wall` fixture placement. |
 | [`E_FURN_FLUSH`](#e_furn_flush) | error | `flush` on a placement that touches no edge. |
@@ -57,9 +58,11 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_JSON_SCHEMA`](#e_json_schema) | error | Plan JSON does not match the schema. |
 | [`E_LAYOUT_CYCLE`](#e_layout_cycle) | error | Relational room placement forms a cycle. |
 | [`E_LAYOUT_REF`](#e_layout_ref) | error | Relational placement references an unknown room. |
+| [`E_LAYOUT_UNPLACED`](#e_layout_unplaced) | error | A relational room depends on a room that could not be placed. |
 | [`E_LEVEL_DUP`](#e_level_dup) | error | Two `level` blocks declare the same storey number. |
 | [`E_LEVEL_MIX`](#e_level_mix) | error | A drawable statement sits beside `level` blocks. |
 | [`E_LEVEL_NEST`](#e_level_nest) | error | `level` used inside a block or component. |
+| [`E_NON_FINITE`](#e_non_finite) | error | A number is too large to be finite. |
 | [`E_OPENING_ABOVE_WALL`](#e_opening_above_wall) | error | An opening's head is above the wall it is cut in. |
 | [`E_OPENING_WIDTH`](#e_opening_width) | error | Opening must have a positive width. |
 | [`E_OUTDOOR_POLY_DEGENERATE`](#e_outdoor_poly_degenerate) | error | An outdoor ring is degenerate, or a balcony was given one. |
@@ -245,7 +248,7 @@ door on w1 at 40% width 900   # error if no wall id=w1 (or several match)
 
 *error* — Value-function call stack too deep.
 
-**Cause.** A value-function recurses (directly or mutually) beyond the call-depth limit.
+**Cause.** A value-function recurses (directly or mutually) beyond the call-depth limit, or the evaluation of one expression nests deeper than the evaluator's own bound (a deep recursion whose body is itself deeply nested).
 
 **Fix.** Make the recursion terminate, or rewrite it iteratively with a bounded `while`.
 
@@ -386,6 +389,18 @@ room id=a at (1,0) size 1x1   # error: duplicate id "a"
 ```arch static
 place wing() as west at (0,0)
 place wing() as west at (9000,0)   # error: instance "west" already used
+```
+
+## E_ELEMENT_LIMIT
+
+*error* — The plan expands to too many elements.
+
+**Cause.** One resolution (the plan, or one storey) expanded past the element cap (5,000), usually a `for` over a huge range or a `while` whose body creates elements but never changes its condition. Expansion stops at the statement that crossed the cap; the elements before it are kept.
+
+**Fix.** Shrink the range, or make the loop terminate; split a genuinely huge site into storeys or separate plans.
+
+```arch static
+for i in 0..6000 { column at (i,0) size 1x1 }   # error: more than 5,000 elements
 ```
 
 ## E_FENCE_CURVED
@@ -673,7 +688,7 @@ room at (0,0) size 2000x2000 label "Bathroom" uses bath   # supply the missing r
 
 *error* — A room cannot be reached from the entrance through modeled doors.
 
-**Cause.** An intent asserts `reachable: true` and the plan HAS an entrance, but one or more rooms are cut off — no chain of modeled doors reaches them from the exterior.
+**Cause.** An intent asserts `reachable: true` and the plan HAS an entrance, but one or more rooms are cut off — no chain of modeled doors reaches them from the exterior — or, on a multi-storey plan, a whole storey has no way in: no exterior door of its own and no stair, lift or escalator from a room you can reach.
 
 **Fix.** Add interior doors so every room connects back to the entrance. Advisory tier: reported and scored by `validateIntent` but does NOT fail `ok` (gate: false).
 
@@ -742,6 +757,19 @@ room id=b left-of a size 100x100   # error: a ↔ b cycle
 room id=k right-of ghost size 100x100   # error: no room "ghost"
 ```
 
+## E_LAYOUT_UNPLACED
+
+*error* — A relational room depends on a room that could not be placed.
+
+**Cause.** The room's reference chain ends at a room that failed (unknown or polygon reference) or runs into a placement cycle, so there is no resolved position to place it against. Only the root cause carries the original error.
+
+**Fix.** Fix the room it names (give it a valid reference or absolute `at (x,y)`), or place this room with `at (x,y)`.
+
+```arch static
+room id=e right-of ghost size 100x100
+room id=f below e size 100x100   # error: e could not be placed
+```
+
 ## E_LEVEL_DUP
 
 *error* — Two `level` blocks declare the same storey number.
@@ -780,6 +808,19 @@ plan "H" {
 
 ```arch static
 component c() { level 1 { } }   # error: only allowed at plan level
+```
+
+## E_NON_FINITE
+
+*error* — A number is too large to be finite.
+
+**Cause.** A numeric literal, the result of an arithmetic operation (`+ - * / %`), or a quantity the resolver derives from finite dimensions (an element's extent, a room's area, the plan's total area) is beyond what a floating-point number can hold, so it would be infinite. The check is per operation: an overflowing intermediate is refused even if a later `min()` would have clamped it. A literal or arithmetic result is replaced by 0 so the rest of the plan still resolves and reports; a derived quantity is diagnosed at its element and left as computed.
+
+**Fix.** Use a realistic dimension. A plan is measured in millimetres, and a value above about 1e300 is never a building.
+
+```arch static
+let k = 1000000000000000000000000000000000000000000000000000000000000
+let x = k * k * k * k * k * k   # error: 1e360 overflows
 ```
 
 ## E_OPENING_ABOVE_WALL
@@ -859,7 +900,7 @@ outdoor lawn at (0,0) size 0x4000   # error: zero width
 
 *error* — The source could not be read: its SHAPE is wrong.
 
-**Cause.** The lexer or the parser could not make a statement out of the bytes at this span — a missing or misspelled keyword, a value where a keyword belongs, an unterminated string, an unbalanced brace, clauses written in the wrong order. It is the one code that says nothing about what the plan MEANS: resolution never ran here, so no measurement, no geometry and no soundness rule had a chance to speak.
+**Cause.** The lexer or the parser could not make a statement out of the bytes at this span — a missing or misspelled keyword, a value where a keyword belongs, an unterminated string, an unbalanced brace, clauses written in the wrong order, or blocks and expressions nested past the parser's limit (256 levels — far beyond any real plan; the deeper block is skipped, not read). It is the one code that says nothing about what the plan MEANS: resolution never ran here, so no measurement, no geometry and no soundness rule had a chance to speak.
 
 **Fix.** Read the message: it names what was expected and what was found, at a byte span. Compare the statement against `arch spec`'s one line for that keyword — clause ORDER is part of the grammar, not a suggestion. Unlike every other code in this catalog, there is no machine-applicable fix to apply, because the compiler has no reading of the text to correct.
 
@@ -1302,7 +1343,7 @@ wall exterior thickness 0 { (0,0) (1,0) }   # error
 
 ```arch static
 let i = 0
-while i < 1 { column at (0,0) size 1x1 }   # error: i never changes
+while i < 1 { let y = i }   # error: i never changes
 ```
 
 ## E_WINDOW_WIDTH
@@ -1643,7 +1684,7 @@ import "lib.arch" as lib   # warning when lib.arch only declares components
 
 *warning* — The plan has no exterior door.
 
-**Cause.** The plan has rooms and an exterior wall but no door hosted on an exterior wall, so the building cannot be entered.
+**Cause.** The plan has rooms and an exterior wall but no door hosted on an exterior wall, so the building cannot be entered. On a multi-storey plan it is judged per storey: a storey with no exterior door of its own is entered by a `stair`/`elevator`/`escalator` shared with a reachable storey, but only when the room the run stands in there is itself reachable — a stair in a door-less store leads nowhere, and the storey it serves gets this warning.
 
 **Fix.** Add a `door` on an `exterior` wall.
 
@@ -1807,7 +1848,7 @@ window on north_wall at 50% width 1200   # warning: the only window faces N
 
 *warning* — Rooms overlap.
 
-**Cause.** Two room rectangles intersect.
+**Cause.** Two room rectangles intersect. At most the first 200 overlapping pairs are listed; one final warning counts the rest (`…and N more room pairs overlap`).
 
 **Fix.** Adjust positions/sizes if the overlap is unintended (it is allowed).
 

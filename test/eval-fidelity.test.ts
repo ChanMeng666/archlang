@@ -120,6 +120,82 @@ describe("infeasibility is DERIVED, never asserted in prose", () => {
     expect(derivedConflicts(reqs)).toEqual(["A", "B", "C"]);
   });
 
+  it("capacity: several floors on ONE concept are met by the largest, never summed", () => {
+    const reqs: Requirement[] = [
+      { id: "A", kind: "total-area", op: "at-most", m2: 12, quote: "A" },
+      { id: "B", kind: "room-area", concept: "bedroom", op: "at-least", m2: 9, quote: "B" },
+      { id: "C", kind: "room-area", concept: "bedroom", op: "at-least", m2: 10, quote: "C" },
+    ];
+    // One 10 m² bedroom satisfies all three — feasible.
+    expect(proveInfeasible(reqs)).toEqual([]);
+    // Control: the binding floor (10) plus a DISTINCT concept (5) still exceeds 12.
+    const control: Requirement[] = [
+      reqs[0]!,
+      { id: "C", kind: "room-area", concept: "bedroom", op: "at-least", m2: 10, quote: "C" },
+      { id: "K", kind: "room-area", concept: "kitchen", op: "at-least", m2: 5, quote: "K" },
+    ];
+    expect(derivedConflicts(control)).toEqual(["A", "C", "K"]);
+    // The binding floor is named; a tie goes to the first in requirement order.
+    const tie: Requirement[] = [
+      reqs[0]!,
+      { id: "T1", kind: "room-area", concept: "bedroom", op: "at-least", m2: 13, quote: "T1" },
+      { id: "T2", kind: "room-area", concept: "bedroom", op: "at-least", m2: 13, quote: "T2" },
+    ];
+    expect(derivedConflicts(tie)).toEqual(["A", "T1"]);
+  });
+
+  it("capacity: plan-wide floors take the maximum, not the sum", () => {
+    const reqs: Requirement[] = [
+      { id: "A", kind: "total-area", op: "at-most", m2: 12, quote: "A" },
+      { id: "B", kind: "room-area", op: "at-least", m2: 5, quote: "B" },
+      { id: "C", kind: "room-area", op: "at-least", m2: 8, quote: "C" },
+    ];
+    expect(proveInfeasible(reqs)).toEqual([]);
+  });
+
+  it("capacity: concepts one room can satisfy together are not summed (bathroom / wet-room)", () => {
+    const reqs: Requirement[] = [
+      { id: "A", kind: "total-area", op: "at-most", m2: 8, quote: "A" },
+      { id: "B", kind: "room-area", concept: "bathroom", op: "at-least", m2: 5, quote: "B" },
+      { id: "W", kind: "room-area", concept: "wet-room", op: "at-least", m2: 5, quote: "W" },
+    ];
+    // One 6 m² "Bathroom" satisfies both — feasible.
+    expect(proveInfeasible(reqs)).toEqual([]);
+    // Genuinely disjoint concepts still add.
+    const disjoint: Requirement[] = [
+      { id: "A", kind: "total-area", op: "at-most", m2: 12, quote: "A" },
+      { id: "B", kind: "room-area", concept: "bedroom", op: "at-least", m2: 10, quote: "B" },
+      { id: "K", kind: "room-area", concept: "kitchen", op: "at-least", m2: 5, quote: "K" },
+    ];
+    expect(derivedConflicts(disjoint)).toEqual(["A", "B", "K"]);
+  });
+
+  it("capacity: an overlap chain takes the max, and an unrelated concept still adds", () => {
+    // wc~bathroom~wet-room all share the Bathroom room_type: one component, max = 7.
+    const chain: Requirement[] = [
+      { id: "A", kind: "total-area", op: "at-most", m2: 9, quote: "A" },
+      { id: "B", kind: "room-area", concept: "bathroom", op: "at-least", m2: 5, quote: "B" },
+      { id: "W", kind: "room-area", concept: "wet-room", op: "at-least", m2: 6, quote: "W" },
+      { id: "C", kind: "room-area", concept: "wc", op: "at-least", m2: 7, quote: "C" },
+    ];
+    expect(proveInfeasible(chain)).toEqual([]);
+    const plus: Requirement[] = [
+      ...chain,
+      { id: "K", kind: "room-area", concept: "kitchen", op: "at-least", m2: 3, quote: "K" },
+    ];
+    expect(derivedConflicts(plus)).toEqual(["A", "C", "K"]);
+  });
+
+  it("capacity: the TIGHTEST of several total-area ceilings is used and named", () => {
+    const reqs: Requirement[] = [
+      { id: "A", kind: "total-area", op: "at-most", m2: 30, quote: "A" },
+      { id: "T", kind: "total-area", op: "at-most", m2: 12, quote: "T" },
+      { id: "B", kind: "room-area", concept: "bedroom", op: "at-least", m2: 10, quote: "B" },
+      { id: "K", kind: "room-area", concept: "kitchen", op: "at-least", m2: 5, quote: "K" },
+    ];
+    expect(derivedConflicts(reqs)).toEqual(["B", "K", "T"]);
+  });
+
   it("contradiction: a floor above a ceiling on an overlapping scope is a conflict", () => {
     const reqs: Requirement[] = [
       { id: "A", kind: "room-area", op: "at-most", m2: 5, quote: "A" },

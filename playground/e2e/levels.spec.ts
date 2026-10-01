@@ -154,7 +154,8 @@ test.describe("storey switcher", () => {
    * from partial data, which is the exact failure this workstream exists to prevent.
    *
    * `examples/hillside-villa.arch` is the fixture the repo already ships for it: two
-   * storeys, three deliberate lint warnings, ALL of them on level 2.
+   * storeys, nine lint warnings (three deliberate, six upper-floor walk pinches), ALL of
+   * them on level 2.
    */
   test("a quiet storey never claims the BUILDING is sound", async ({ page }) => {
     await page.goto("/");
@@ -165,16 +166,16 @@ test.describe("storey switcher", () => {
     const out = page.locator("#lintOutput");
     await page.locator("#tab-lint").click();
 
-    // Level 1 raises nothing of its own — and three warnings are out of sight.
-    await expect(out.locator(".lint-narrowed")).toContainText("Showing level 1 — 3 more warnings on the other storeys");
+    // Level 1 raises nothing of its own — and nine warnings are out of sight.
+    await expect(out.locator(".lint-narrowed")).toContainText("Showing level 1 — 9 more warnings on the other storeys");
     await expect(out.locator(".empty")).toContainText("Nothing to report on this storey");
     await expect(out.locator(".lintrow")).toHaveCount(0);
     // The claim that must NOT be made from a partial set.
     await expect(out.locator(".ok")).toHaveCount(0);
 
-    // Level 2 owns all three, so nothing is hidden and every row is shown.
+    // Level 2 owns all nine, so nothing is hidden and every row is shown.
     await levelButtons(page).nth(1).click();
-    await expect(out.locator(".lintrow")).toHaveCount(3);
+    await expect(out.locator(".lintrow")).toHaveCount(9);
     await expect(out.locator(".lint-narrowed")).toHaveText("Showing level 2.");
   });
 

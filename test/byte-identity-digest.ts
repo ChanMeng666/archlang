@@ -19,27 +19,21 @@
  */
 
 import { createHash } from "node:crypto";
-import type { compile, describe, lint } from "../src/index.js";
-import type { World } from "../src/world.js";
+import {
+  allStoreysDiagnosticsPayload,
+  allStoreysPayload,
+  digestPayload,
+  semanticPayload,
+  type CompilerApi,
+  type DigestOptions,
+} from "./byte-identity-payload.js";
 
-/** The three surfaces a compiler change can move. */
-export interface CompilerApi {
-  compile: typeof compile;
-  describe: typeof describe;
-  lint: typeof lint;
-}
+// The payload builders (and the two option types) live in `byte-identity-payload.ts`, import-free,
+// so `scripts/engine-digests.ts` can run the very same functions in a browser. This module is the
+// Node half: SHA-256 over the payload string.
+export type { CompilerApi, DigestOptions };
 
-/**
- * What a caller may vary about the compilation itself.
- *
- * `world` exists so a law can cover the examples that `import` — `imports.arch` and
- * `museum-wings.arch` are shipped plans like any other and a sweep that silently skips
- * them is a corpus with a hole in it (a gate is only as strong as its
- * corpus). Nothing else may be varied: the digest bodies below are pinned shapes.
- */
-export interface DigestOptions {
-  world?: World;
-}
+const sha256 = (payload: string): string => createHash("sha256").update(payload, "utf8").digest("hex");
 
 /**
  * SHA-256 over one source's SVG, `describe()` summary and `lint()` diagnostics, joined by a
@@ -47,9 +41,7 @@ export interface DigestOptions {
  * complete document.
  */
 export function digestWith(api: CompilerApi, src: string, opts: DigestOptions = {}): string {
-  const out = api.compile(src, { noCache: true, ...opts });
-  const payload = [out.svg, JSON.stringify(api.describe(src, opts)), JSON.stringify(api.lint(src, opts))].join(" ");
-  return createHash("sha256").update(payload, "utf8").digest("hex");
+  return sha256(digestPayload(api, src, opts));
 }
 
 /**
@@ -63,10 +55,7 @@ export function digestWith(api: CompilerApi, src: string, opts: DigestOptions = 
  * moved only an upper floor cannot pass.
  */
 export function allStoreysDigestWith(api: CompilerApi, src: string, opts: DigestOptions = {}): string {
-  const out = api.compile(src, { noCache: true, ...opts });
-  const drawings = out.pages ? out.pages.map((p) => p.svg) : [out.svg];
-  const payload = [...drawings, JSON.stringify(api.describe(src, opts)), JSON.stringify(api.lint(src, opts))].join(" ");
-  return createHash("sha256").update(payload, "utf8").digest("hex");
+  return sha256(allStoreysPayload(api, src, opts));
 }
 
 /**
@@ -92,8 +81,7 @@ export function allStoreysDigestWith(api: CompilerApi, src: string, opts: Digest
  * baseline for one can be taken in the same pass as a baseline for the other.
  */
 export function semanticDigestWith(api: CompilerApi, src: string, opts: DigestOptions = {}): string {
-  const payload = [JSON.stringify(api.describe(src, opts)), JSON.stringify(api.lint(src, opts))].join(" ");
-  return createHash("sha256").update(payload, "utf8").digest("hex");
+  return sha256(semanticPayload(api, src, opts));
 }
 
 /**
@@ -107,13 +95,5 @@ export function semanticDigestWith(api: CompilerApi, src: string, opts: DigestOp
  * reassignment gets no new diagnostic, not merely an unchanged drawing and summary.
  */
 export function allStoreysDigestWithDiagnostics(api: CompilerApi, src: string, opts: DigestOptions = {}): string {
-  const out = api.compile(src, { noCache: true, ...opts });
-  const drawings = out.pages ? out.pages.map((p) => p.svg) : [out.svg];
-  const payload = [
-    ...drawings,
-    JSON.stringify(api.describe(src, opts)),
-    JSON.stringify(api.lint(src, opts)),
-    JSON.stringify(out.diagnostics),
-  ].join(" ");
-  return createHash("sha256").update(payload, "utf8").digest("hex");
+  return sha256(allStoreysDiagnosticsPayload(api, src, opts));
 }
