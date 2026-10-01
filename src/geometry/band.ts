@@ -190,8 +190,12 @@ export function pointKey(p: Point): string {
  * subtracting coordinates and picking an epsilon.
  */
 export class PointInterner {
-  /** Registered points by CELL, each list in registration order. */
-  private readonly cells = new Map<string, Array<{ p: Point; ord: number }>>();
+  /**
+   * Registered points by CELL, each list in registration order. Keyed by the two integer
+   * cell coordinates, nested, so a lookup allocates no string; `Map` compares with
+   * SameValueZero, so `-0` and `0` are one cell, as they were under the old `"x|y"` text.
+   */
+  private readonly cells = new Map<number, Map<number, Array<{ p: Point; ord: number }>>>();
   private next = 0;
 
   /**
@@ -210,8 +214,10 @@ export class PointInterner {
     const cy = Math.round(p.y * KEY_SCALE);
     let best: { p: Point; ord: number } | null = null;
     for (let dx = -1; dx <= 1; dx++) {
+      const col = this.cells.get(cx + dx);
+      if (!col) continue;
       for (let dy = -1; dy <= 1; dy++) {
-        const list = this.cells.get(`${cx + dx}|${cy + dy}`);
+        const list = col.get(cy + dy);
         if (!list) continue;
         for (const c of list) {
           if (Math.hypot(c.p.x - p.x, c.p.y - p.y) > SNAP_MM) continue;
@@ -222,11 +228,12 @@ export class PointInterner {
     if (best) return best.p;
     // Normalise -0 on the way in so a stored point never carries one.
     const canon: Point = { x: p.x === 0 ? 0 : p.x, y: p.y === 0 ? 0 : p.y };
-    const key = `${cx === 0 ? 0 : cx}|${cy === 0 ? 0 : cy}`;
-    const list = this.cells.get(key);
+    let col = this.cells.get(cx);
+    if (!col) this.cells.set(cx, (col = new Map()));
+    const list = col.get(cy);
     const entry = { p: canon, ord: this.next++ };
     if (list) list.push(entry);
-    else this.cells.set(key, [entry]);
+    else col.set(cy, [entry]);
     return canon;
   }
 
