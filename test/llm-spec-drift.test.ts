@@ -72,8 +72,11 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // 1,600 characters, whose per-kind clause prose a machine-readable table would carry
     // better than a sentence.
     //
-    // 30,000 leaves 13 chars of headroom on a measured 29,987 — below the working margin the
-    // rules above ask for (`docs/backlog.md` M.17: trim before the next addition).
+    // 30,000 leaves 1,157 chars of headroom on a measured 28,843 — above the working margin the
+    // rules above ask for. It came from trimming duplication, not from raising the cap: the
+    // `## Keyword reference` enum bullet now lists only the value words no code span or fence
+    // shows (derived), the CLI/settings blocks lost their alignment padding, and a few
+    // sentences that restated another line were folded into it.
     expect(spec.length).toBeLessThan(30_000);
   });
 });

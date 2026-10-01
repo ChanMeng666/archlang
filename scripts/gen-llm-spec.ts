@@ -90,18 +90,18 @@ export const ELEMENT_GRAMMAR: Record<string, string> = {
   // typed out: this line is prose inside a generator, so a retyped list would document a
   // language that no longer exists while `check:drift` stayed green. `assertDoorEnumsRendered`
   // below is the guard that keeps it interpolated.
-  door: `door [id=<name>] [${DOOR_KINDS.join("|")}] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>] [hinge ${DOOR_ENUMS.hinge.join("|")}|${DOOR_HINGE_NEAR.map((v) => `near ${v}`).join("|")}] [swing ${DOOR_ENUMS.swing.join("|")}|into <roomId>] [slide ${DOOR_ENUMS.slide.join("|")}] [open <0..1>] [head <mm>]   # \`at (x,y)\` must sit on a wall; \`on <wall> at <pos>\` pins it BY CONSTRUCTION (<pos> = an EXPRESSION: mm along the wall, \`<expr>%\`, or \`center\`; a \`%\` ENDS it — parenthesise a modulo) and can never be reported off-wall — prefer it. The trailing \`wall <id|category>\` pairs with the \`at\` form ONLY — after \`on <wall>\` the host is already named, so writing it is a PARSE ERROR. KIND leads; \`hinged\` (default) is identical to omitting it and is the ONLY kind with a swing arc — the rest sweep nothing, so W_SWING_OBSTRUCTED cannot apply to them. \`swing\` DIFFERS BY KIND: hinged = which side the leaf sweeps; barn/bifold = which FACE the panel hangs on / folds toward; sliding/pocket/garage take none. \`garage\` (a sectional/roller door) takes NO clause at all: it parks OVERHEAD, so there is no intermediate \`open\` position to draw and its projection side is DERIVED from which face has floor, never written. That projection is DASHED, the drawing convention for anything above the cut plane. \`hinge\` is hinged-only and \`slide\`/\`open\` sliding-family-only; a wrong pairing REFUSES (E_DOOR_KIND_CLAUSE), as does any non-hinged kind on an \`arc\` wall (E_DOOR_KIND_CURVED). \`slide\` reads along the wall like \`hinge\`; \`open\` is DRAWING-only (nothing measured reads it), [0,1] or E_DOOR_OPEN_RANGE. A \`pocket\` needs its own width + clearance of wall past the slide-side jamb, or W_POCKET_RUN. A jamb closer to a wall CORNER than the wall is thick raises W_DOOR_NEAR_CORNER (arc length on a curve; a free end, a collinear vertex and a tangent junction are not corners). \`head\` trails everything (see the \`height\` setting); no \`sill\` — a doorway starts at the floor`,
-  window: `window [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>] [sill <mm>] [head <mm>]   # placement + \`wall\` clause exactly as door. \`sill\`/\`head\` bound the glazing (see the \`height\` setting); \`sill 0\` is legal (floor-length), sill >= head is E_SILL_ABOVE_HEAD`,
+  door: `door [id=<name>] [${DOOR_KINDS.join("|")}] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>] [hinge ${DOOR_ENUMS.hinge.join("|")}|${DOOR_HINGE_NEAR.map((v) => `near ${v}`).join("|")}] [swing ${DOOR_ENUMS.swing.join("|")}|into <roomId>] [slide ${DOOR_ENUMS.slide.join("|")}] [open <0..1>] [head <mm>]   # \`at (x,y)\` must sit on a wall; \`on <wall> at <pos>\` pins it BY CONSTRUCTION (<pos> = an EXPRESSION: mm along the wall, \`<expr>%\`, or \`center\`; a \`%\` ENDS it — parenthesise a modulo) and can never be reported off-wall — prefer it. The trailing \`wall <id|category>\` pairs with the \`at\` form ONLY — after \`on <wall>\` the host is already named, so writing it is a PARSE ERROR. KIND leads; \`hinged\` (default) is identical to omitting it and is the ONLY kind with a swing arc — the rest sweep nothing, so W_SWING_OBSTRUCTED cannot apply to them. \`swing\` DIFFERS BY KIND: hinged = which side the leaf sweeps; barn/bifold = which FACE the panel hangs on / folds toward; sliding/pocket/garage take none. \`garage\` (a sectional/roller door) takes NO clause at all: it parks OVERHEAD, so there is no \`open\` position to draw and its projection side is DERIVED from which face has floor, never written. That projection is DASHED (above the cut plane). \`hinge\` is hinged-only and \`slide\`/\`open\` sliding-family-only; a wrong pairing REFUSES (E_DOOR_KIND_CLAUSE), as does any non-hinged kind on an \`arc\` wall (E_DOOR_KIND_CURVED). \`slide\` reads along the wall like \`hinge\`; \`open\` is DRAWING-only (nothing measured reads it), [0,1] or E_DOOR_OPEN_RANGE. A \`pocket\` needs its own width + clearance of wall past the slide-side jamb, or W_POCKET_RUN. A jamb closer to a wall CORNER than the wall is thick raises W_DOOR_NEAR_CORNER (arc length on a curve; a free end, a collinear vertex and a tangent junction are not corners). \`head\` trails everything; no \`sill\` — a doorway starts at the floor`,
+  window: `window [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>] [sill <mm>] [head <mm>]   # placement + \`wall\` clause exactly as door. \`sill\`/\`head\` bound the glazing; \`sill 0\` is legal (floor-length), sill >= head is E_SILL_ABOVE_HEAD`,
   opening: `opening [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>] [head <mm>]   # a leaf-less cased opening that still connects the two spaces in the access graph; placement + \`wall\` clause exactly as door. \`head\` defaults to the HOST WALL's height (drawn full height), not a constant; no \`sill\``,
   furniture: `furniture [id=<name>] <category> (at (x,y) | against wall <id|category> [segment <n>] [offset <mm>] [side left|right] | in <roomId> (centered | anchor <a> [flush] [inset <mm>])) [size <W>x<H>] [label "…"] [rotate 0|90|180|270] [in <roomId>]   # \`at\` size is plan W×H; \`against\` size is wall-relative along×depth and derives position+rotation (\`side\` inferred from \`in <roomId>\`); \`rotate\` is \`at\`/\`in\`-only — an \`against\` piece's comes FROM the wall (E_FURN_AGAINST; multi-segment wall ⇒ \`segment <n>\`). These + aliases may omit \`size\` when \`against wall\` (catalogued footprint): ${SIZE_OPTIONAL_FIXTURES.join("/")}. \`anchor <a>\` is ${FURNITURE_ANCHORS.join("|")}; \`inset\` (default 0) pulls it in from that edge, measured from the room rectangle (a wall CENTERLINE); \`flush\` measures from the backing wall's inner FACE instead, so \`anchor bottom flush\` sits on the plaster (it needs an anchored edge: E_FURN_FLUSH on \`centered\`/\`anchor center\`)`,
-  dim: `dim [${DIM_REFS.join("|")}] (x,y)->(x,y) [offset <mm>] [text "…"]   # a dimension line; \`offset\` is OPTIONAL (default 300; 0 on the curve forms). Endpoint ORDER + the offset sign choose which side it lands on (the offset runs along the LEFT normal of from→to), so a reversed pair draws it INSIDE the building — \`W_DIM_INSIDE\`. \`faces\` pushes each endpoint out onto the wall it runs into (outside-to-outside); \`clear\` pulls both in to the inner faces (a clear width). Or skip hand dims entirely with the plan-level \`dims auto\` setting — its \`all\` mode draws the GB/T openings + axis + overall chains outside every dimensioned facade. CURVES: \`dim radius <wallId> [segment <n>]\` (an R leader) and \`dim diameter <roomId>\` (a φ call-out) DERIVE both geometry and text from the named element and also take \`[offset <mm>] [text "…"]\`; \`dims auto\` adds one R per distinct arc + one φ per circular room; chains stay off curved facades`,
+  dim: `dim [${DIM_REFS.join("|")}] (x,y)->(x,y) [offset <mm>] [text "…"]   # \`offset\` is OPTIONAL (default 300; 0 on the curve forms). Endpoint ORDER + the offset sign choose which side it lands on (the offset runs along the LEFT normal of from→to), so a reversed pair draws it INSIDE the building — \`W_DIM_INSIDE\`. \`faces\` pushes each endpoint out onto the wall it runs into (outside-to-outside); \`clear\` pulls both in to the inner faces (a clear width). Or skip hand dims entirely with the plan-level \`dims auto\` setting — its \`all\` mode draws the GB/T openings + axis + overall chains outside every dimensioned facade. CURVES: \`dim radius <wallId> [segment <n>]\` (an R leader) and \`dim diameter <roomId>\` (a φ call-out) DERIVE both geometry and text from the named element and also take \`[offset <mm>] [text "…"]\`; \`dims auto\` adds one R per distinct arc + one φ per circular room; chains stay off curved facades`,
   column: "column [id=<name>] at (x,y) size <W>x<H>",
   stair: `stair [id=<name>] at (x,y) size <W>x<H> dir ${VERTICAL_DIRS.join("|")} [width <mm>]   # a flight: treads, a mid-flight break line, an UP/DN arrow. \`at\` = footprint TOP-LEFT; the flight runs along the LONG axis; \`dir up\` is entered at that axis's larger-coordinate end (arrow points N/W), \`dir down\` at the opposite end (arrow reversed). \`dir\` is declared per storey. MULTI-STOREY: the SAME id on two \`level\` blocks is ONE SHAFT — a \`describe().vertical\` connection: from a room you can reach, it reaches the other storey with no front door (an id on one storey only = \`W_STAIR_UNMATCHED\`)`,
   elevator:
-    "elevator [id=<name>] at (x,y) size <W>x<H>   # a lift shaft: car rectangle + crossed diagonals. No `dir`. Same same-id-on-two-levels shaft identity as `stair`",
+    "elevator [id=<name>] at (x,y) size <W>x<H>   # a lift shaft: car rectangle + crossed diagonals. No `dir`. Same shaft identity as `stair`",
   escalator: `escalator [id=<name>] at (x,y) size <W>x<H> dir ${VERTICAL_DIRS.join("|")}   # a moving stair: chevrons along the run + an UP/DN arrow; both narrow ends are entries. Same shaft identity as \`stair\``,
   roof: `roof (overhang <mm> [wall <id>] | polygon (x,y) (x,y) (x,y) …)   # the eaves line: ONE dashed outline of what oversails. DRAWING-ONLY — no \`describe()\` key, no lint rule — though it does grow the page. \`overhang\` offsets a CLOSED wall ring outward by thickness/2 + <mm>, mitred: the named \`wall\`, else the plan's one closed \`exterior\` wall (none/several = E_ROOF_AMBIGUOUS, unknown/unclosed = E_ROOF_WALL, <= 0 = E_ROOF_OVERHANG). REFUSES rather than approximating — an \`arc\` edge is E_ROOF_CURVED, an offset that crosses itself E_ROOF_SELF_INTERSECT — so write \`polygon\` instead: the ring verbatim, implicitly closed, >= 3 effective vertices (E_ROOF_POLY_DEGENERATE). Not inside a \`component\` (E_ROOF_PLACEMENT)`,
-  void: `void [id=<name>] at (x,y) size <W>x<H>   # a hole in THIS storey's floor (stair well, atrium, double-height room): dashed rectangle + both diagonals, \`at\` = TOP-LEFT. It OBSTRUCTS circulation — you cannot walk across it, though you may stand at its edge — and does NOT reduce the containing room's area; \`describe --json\`'s \`voids[]\` gives the extent to subtract. Rectangle-only (E_VOID_SIZE)`,
+  void: `void [id=<name>] at (x,y) size <W>x<H>   # a hole in THIS storey's floor (stair well, atrium, double-height room): dashed rectangle + both diagonals, \`at\` = TOP-LEFT. It OBSTRUCTS circulation (no walking across it, though you may stand at its edge) and does NOT reduce the containing room's area; \`describe --json\`'s \`voids[]\` gives the extent to subtract. Rectangle-only (E_VOID_SIZE)`,
   outdoor: `outdoor [id=<name>] ${OUTDOOR_KINDS.join("|")} (at (x,y) size <W>x<H> | polygon (x,y) (x,y) (x,y) …) [label "…"] [rail ${RAIL_EDGES.join("|")} …]   # GROUND outside the building: a scale-aware material hatch over a tint (L-PLNT/L-SITE/A-FLOR-BALC). NOT a room — absent from \`rooms[]\`, \`totals.floor_area_m2\`, \`schedule rooms\`, the access graph and Plan JSON — and it obstructs NOTHING (you may walk on any of it, water included). Its facts are \`describe --json\`'s \`outdoor[]\` + \`totals.outdoor_area_m2\`, area by exact shoelace on the ring form. \`label\` draws the name AND the m²; unlabelled ground draws neither. \`rail\` is \`balcony\`-only (E_OUTDOOR_RAIL) and rectangle-only (E_OUTDOOR_POLY_DEGENERATE); omitted, it is DERIVED — every edge with no wall one thickness behind it. W_OUTDOOR_OVERLAPS_ROOM covers a surface over a room's floor, W_BALCONY_NO_DOOR a balcony with no opening within a wall thickness. It grows the page, so a site plan wants \`paper\` (E_OUTDOOR_SIZE, E_OUTDOOR_POLY_SELF_INTERSECT)`,
   fence: `fence [id=<name>] [${FENCE_STYLES.join("|")}] { (x,y) (x,y) … [close] }   # a posted boundary line on L-SITE — dense ticks / a double line / sparse ticks; the style word LEADS and defaults to the first. NOT a thin wall: no thickness, no poché, hosts NO opening, absent from \`describe().walls\` and the access graph (a gate is deferred by name). It draws, it measures (\`fences[]\`: \`length_mm\` + \`closed\`) and it grows the page. An \`arc\` edge is E_FENCE_CURVED — write short straight runs`,
 };
@@ -298,6 +298,9 @@ export const SCRIPTING_KEYWORDS = [
 
 const bullet = (items: readonly string[]): string => items.map((k) => `\`${k}\``).join(", ");
 
+/** Placeholder the draft carries for the derived `Enums / values` bullet (see `renderLlmSpec`). */
+const ENUMS_MARK = "@@ENUMS@@";
+
 /**
  * Drift guard for the door clause vocabularies — the softer half of the same hazard
  * `gen-gbnf.ts` guards. `ELEMENT_GRAMMAR.door` is a prose string, so guard #1 (every
@@ -363,6 +366,22 @@ export function assertVocabRendered(line: string, label: string, values: readonl
 }
 
 /**
+ * Every CODE context of the document — inline spans and fenced blocks — joined, with the
+ * generated `## Keyword reference` section CUT FIRST: its bullets are rendered FROM the
+ * lists being checked, so they are not evidence of anything.
+ */
+function codeContext(doc: string): string {
+  const body = doc.replace(/\n## Keyword reference\n[\s\S]*?(?=\n## )/, "\n");
+  return [
+    ...[...body.matchAll(/`([^`\n]+)`/g)].map((m) => m[1] ?? ""),
+    ...[...body.matchAll(/```[^\n]*\n([\s\S]*?)```/g)].map((m) => m[1] ?? ""),
+  ].join("\n");
+}
+
+/** Hyphen-aware whole-word test of one keyword against {@link codeContext}'s text. */
+const inCode = (code: string, k: string): boolean => new RegExp(`(?<![\\w-])${k}(?![\\w-])`).test(code);
+
+/**
  * Turn {@link SCRIPTING_KEYWORDS}'s membership claim into a CHECK.
  *
  * The list's meaning is "this keyword needs no grammar line because the prose sections
@@ -401,14 +420,8 @@ export function assertScriptingKeywordsTaught(
   what = "SCRIPTING_KEYWORDS",
   remedy = "Either write the syntax into the Scripting section, or give the keyword a STATEMENT_GRAMMAR line.",
 ): void {
-  // Cut the generated keyword-reference bullets: they are rendered FROM the list being
-  // checked, so they are not evidence of anything.
-  const body = doc.replace(/\n## Keyword reference\n[\s\S]*?(?=\n## )/, "\n");
-  const code = [
-    ...[...body.matchAll(/`([^`\n]+)`/g)].map((m) => m[1] ?? ""),
-    ...[...body.matchAll(/```[^\n]*\n([\s\S]*?)```/g)].map((m) => m[1] ?? ""),
-  ].join("\n");
-  const missing = keywords.filter((k) => !new RegExp(`(?<![\\w-])${k}(?![\\w-])`).test(code));
+  const code = codeContext(doc);
+  const missing = keywords.filter((k) => !inCode(code, k));
   if (missing.length > 0) {
     throw new Error(
       `${what} claims the document teaches ${missing.join(", ")}, but ` +
@@ -555,17 +568,15 @@ export function renderLlmSpec(examples: Record<string, string>): string {
     "```text\n" + [...KEYWORDS.element.map((k) => ELEMENT_GRAMMAR[k]), ...statementLines].join("\n") + "\n```";
 
   // The Structure block's settings, rendered FROM `SETTING_GRAMMAR` in `KEYWORDS.attribute`
-  // order and re-padded so the `#` notes line up. Splitting on the table's own `\s{3,}#`
-  // convention is what lets `clauseAtoms` read these lines exactly like the other two
-  // tables'. The comment column is one past the longest form, floored at the width the
-  // page has always used, so adding a short setting cannot re-indent every other line.
+  // order. Splitting on the table's own `\s{3,}#` convention is what lets `clauseAtoms` read
+  // these lines exactly like the other two tables'. The note follows its form after the
+  // minimum three spaces — column alignment is whitespace the prompt budget pays for.
   const settingKeys = KEYWORDS.attribute.filter((k) => k in SETTING_GRAMMAR);
   const settingParts = settingKeys.map((k) => {
     const [form = "", note = ""] = (SETTING_GRAMMAR[k] ?? "").split(/\s{3,}#\s*/);
     return { form, note };
   });
-  const settingCol = Math.max(20, ...settingParts.map((p) => p.form.length + 2));
-  const settingLines = settingParts.map((p) => `  ${p.form.padEnd(settingCol)}# ${p.note}`).join("\n");
+  const settingLines = settingParts.map((p) => `  ${p.form}   # ${p.note}`).join("\n");
 
   // `style <kind>` takes every element kind but one. Printing the RULE rather than the
   // ten-item list is both shorter (this page has a hard budget) and more useful — and it
@@ -585,14 +596,11 @@ export function renderLlmSpec(examples: Record<string, string>): string {
   // Only `commands` + `exitCodes` are read, and the spec never emits a version — pass a
   // constant so this stays pure (no package.json read) for the in-memory drift test.
   const manifest = buildManifest("0.0.0");
-  const width = Math.max(...manifest.commands.map((c) => c.name.length));
   // First sentence only: the spec has a hard size budget (it goes in a system prompt),
   // so a long manifest summary must not silently eat into it.
   const brief = (s: string): string => s.split(". ")[0]!.replace(/\.$/, "");
   const cliLines =
-    "```text\n" +
-    manifest.commands.map((c) => `arch ${c.name.padEnd(width)}  # ${brief(c.summary)}`).join("\n") +
-    "\n```";
+    "```text\n" + manifest.commands.map((c) => `arch ${c.name}  # ${brief(c.summary)}`).join("\n") + "\n```";
   const exitLines = Object.entries(manifest.exitCodes)
     .map(([code, meaning]) => `\`${code}\` ${meaning}`)
     .join(" · ");
@@ -603,7 +611,7 @@ export function renderLlmSpec(examples: Record<string, string>): string {
     return `### \`examples/${name}\`\n\n\`\`\`arch\n${src.replace(/\r\n/g, "\n").replace(/\n+$/, "")}\n\`\`\``;
   }).join("\n\n");
 
-  const doc = `<!-- GENERATED by scripts/gen-llm-spec.ts — do not edit by hand. Run \`npm run gen:spec\`. -->
+  const draft = `<!-- GENERATED by scripts/gen-llm-spec.ts — do not edit by hand. Run \`npm run gen:spec\`. -->
 
 # ArchLang in one prompt
 
@@ -618,9 +626,9 @@ a \`fix\`). This page is everything you need to author it.
 2. **Origin is top-left; +x goes right, +y goes DOWN** (screen/SVG convention — *not* math y-up).
 3. **Coordinates are \`(x, y)\` tuples; sizes are \`WxH\`** (e.g. \`4000x3000\`) or \`<expr> x <expr>\` with spaces.
 4. **Doors and windows must lie ON a wall segment** (on its centerline), or you get a
-   \`W_DOOR_OFF_WALL\` / \`W_WINDOW_OFF_WALL\` warning.
+   \`W_DOOR_OFF_WALL\` / \`W_WINDOW_OFF_WALL\` warning. Attach with \`door on <wall> at <pos>\` — hosted by construction.
 5. **String interpolation is \`"{expr}"\`** inside double quotes (e.g. \`label "Unit {i}"\`).
-6. **\`id=\` comes FIRST — right after the element keyword, before any category word** (\`wall id=w1 exterior …\`, \`furniture id=b1 bed …\`, never \`wall exterior id=w1\`). Ids are unique; omit \`id=\` to auto-generate one, and name a thing only when you reference it.
+6. **\`id=\` comes FIRST — right after the element keyword, before any category word** (\`wall id=w1 exterior …\`, \`furniture id=b1 bed …\`; \`wall exterior id=w1 …\` and \`furniture bed id=b1 …\` are parse errors). Ids are unique; omit \`id=\` to auto-generate one, and name a thing only when you reference it.
 7. **Everything is expand-time and pure** — \`let\`/\`for\`/\`if\`/functions all evaluate during compile.
 
 ## Structure
@@ -664,7 +672,7 @@ ${elementLines}
 (Elements and plan settings are fully specced above; these are the rest.)
 
 - **Settings / control:** ${bullet(KEYWORDS.control)}
-- **Enums / values:** ${bullet(KEYWORDS.enum)}
+${ENUMS_MARK}
 
 ## CLI loop (how an agent drives it)
 
@@ -676,33 +684,30 @@ ${cliLines}
 The flags that matter (the verb list above covers the rest):
 
 \`\`\`bash
-arch compile plan.arch -o out.svg --json    # JSON: { ok, diagnostics, summary }.  -f txt = zero-dep ASCII plan
-echo '<source>' | arch compile - --json     # stdin, no temp file
-arch validate plan.arch --strict --json     # ship-gate: --strict fails on warnings too
-arch fix plan.arch --dry-run --json         # preview/apply the machine-applicable diagnostics[].fixes
-arch validate plan.arch --intent brief.json --feedback --json   # gate on a brief's intent contract (miss → exit 2)
-arch score plan.arch --brief brief.json --json                  # satisfied/total — measures, never gates
+arch compile plan.arch -o out.svg --json  # JSON: { ok, diagnostics, summary }.  -f txt = zero-dep ASCII plan
+echo '<source>' | arch compile - --json  # stdin, no temp file
+arch validate plan.arch --strict --json  # ship-gate: --strict fails on warnings too
+arch fix plan.arch --dry-run --json  # preview/apply the machine-applicable diagnostics[].fixes
+arch validate plan.arch --intent brief.json --feedback --json  # gate on a brief's intent contract (miss → exit 2)
+arch score plan.arch --brief brief.json --json  # satisfied/total — measures, never gates
 \`\`\`
 
 **Self-correction loop:** compile/validate → if \`ok\` is false, read each \`diagnostics[].fix\` (and
-\`line\`/\`col\`/\`span\`), edit the source, recompile. Then \`describe --json\` to confirm the plan matches
-intent (right room count, areas, adjacency) without rendering an image. **Before shipping, gate with
-\`arch validate --strict --json\`** — a plan that lint flags
-(furniture through a wall, a fixture blocking a doorway, a room you can't step into, an unreachable
-room, a walk that squeezes too narrow — \`W_PATH_TOO_NARROW\` — or wanders the long way round —
-\`W_CIRCUITOUS_PATH\`) cannot pass silently.
+\`line\`/\`col\`/\`span\`), edit the source, recompile. Then \`describe --json\` to confirm intent (room count,
+areas, adjacency) without rendering an image. **Before shipping, gate with \`arch validate --strict --json\`**
+— lint flags furniture through a wall, a fixture blocking a doorway, a room you can't step into or
+reach, a walk too narrow (\`W_PATH_TOO_NARROW\`) or circuitous (\`W_CIRCUITOUS_PATH\`); none passes silently.
 
 **Place furniture so it's physically sound:** keep every piece inside its room and off the walls
-(don't cross a wall centerline); back plumbing/kitchen fixtures onto a wall rather than guessing an
-\`at\`; give every room a \`door\`/\`opening\`; and leave
-the doorway approach and the door's swing clear.
+(never cross a wall centerline); back plumbing/kitchen fixtures onto a wall rather than guessing an
+\`at\`; give every room a \`door\`/\`opening\`; leave the doorway approach and the door's swing clear.
 
 **Fix topology from facts, not guesses.** \`arch repair\` corrects furniture but never adds a door or
 window (that is a design choice). When lint reports \`W_ROOM_UNREACHABLE\`, \`W_NO_ENTRANCE\`,
 \`W_BEDROOM_NO_WINDOW\`, or \`W_BATH_VIA_BEDROOM\`, run \`arch suggest --json\` — it returns
 ready-to-paste \`door\`/\`window\` statements (furniture-aware: a door candidate never opens onto a
-wardrobe) that reference a wall only by a stable ref (an authored id or a unique category) or absolute
-coordinates — never a re-bindable positional auto-id — with a rationale; pick one and insert it. If nothing fits, read
+wardrobe), each with a rationale, referencing a wall only by a stable ref (authored id or unique
+category) or absolute coordinates, never a re-bindable positional auto-id; pick one and insert it. If nothing fits, read
 \`describe --json\` (\`access.rooms[].reachable\`, room \`bbox\`/\`adjacent\`, building extent =
 min/max of room boxes) and attach the opening yourself — an exterior entrance into a cut-off living
 space beats routing a bath through a bedroom — then re-\`repair\` and \`validate --strict\`. See
@@ -714,17 +719,29 @@ SKILL.md for the full recipe.
 | --- | --- |
 | Using metres (\`size 4x3\`) | Use millimetres (\`size 4000x3000\`). |
 | Expecting +y to go up | +y goes **down**; a room below another has a larger y. |
-| Door/window floating off its wall | Attach it: \`door on <wall> at <pos>\` — hosted by construction. |
 | Hand-summing room offsets | Lay the row with \`strip\`. |
 | Furniture floated at a guessed \`at\`, or an \`inset\` hand-computed from a wall thickness | Place it \`in <room> anchor <9-point> [flush] [inset]\` or \`against wall <id>\` — closed-form, never names a thickness. |
 | \`size 4000\` (no height) | Sizes are \`WxH\`: \`size 4000x3000\` (or \`W x H\` with spaces). |
-| \`wall exterior id=w1 …\`, \`furniture bed id=b1 …\` | \`id=\` leads: \`wall id=w1 exterior …\`, \`furniture id=b1 bed …\`. After the category it is a parse error. |
 | String math without interpolation | Use \`"{expr}"\`, e.g. \`label "{round(W / 1000)} m"\`. Only the built-ins above and your own \`let f(…)\` are callable — \`aream2\` is NOT built in. |
 
 ## Worked examples
 
 ${exampleBlocks}
 `;
+
+  // `## Keyword reference` lists only the value words (`KEYWORDS.enum`) the rest of the page
+  // does NOT already show inside a code span or fence — a bullet re-listing all of them was
+  // ~650 characters of a hard budget for words the grammar lines spell out in context. The
+  // remainder is DERIVED from the rendered draft, so a new enum word that no line teaches
+  // lands here automatically and an enum word that is taught stops costing a character.
+  const code = codeContext(draft);
+  const untaughtEnums = KEYWORDS.enum.filter((k) => !inCode(code, k));
+  const doc = draft.replace(
+    ENUMS_MARK,
+    untaughtEnums.length > 0
+      ? `- **Enums / values not shown above:** ${bullet(untaughtEnums)}`
+      : "- **Enums / values:** all shown above, in the grammar lines.",
+  );
 
   // The sets the PROSE sections teach rather than a grammar line — same guard, scoped to
   // the whole document because no single line owns them. (`paper`/`orientation`/`north`
