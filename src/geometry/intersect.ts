@@ -28,13 +28,14 @@
  * come out at `4100`, never at `4099.999999999999` — a corner that misses its own
  * integer by an ulp is a point the interner will not fuse with the identical corner
  * arrived at from the other side, and the joinery graph then has two vertices where the
- * drawing has one. The general branch uses the implicit `a·x + b·y = c` Cramer form
- * rather than the parametric one, because the parametric form's multiply-back-out
- * produced `-5700.000000000001`, and the special case removes even that. The roof
- * mitre (`elements/roof.ts`) calls `meetLines` too.
+ * drawing has one. `elements/roof.ts`'s `meet` learned the same lesson one algebraic
+ * step later (it uses the implicit `a·x + b·y = c` Cramer form rather than the
+ * parametric one, because the parametric form's multiply-back-out produced
+ * `-5700.000000000001`); the general branch here uses that same implicit form, and the
+ * special case removes even that.
  *
- * `PARALLEL_SIN` is a scale-free sine test, so a 60 mm jog and a 60 m facade are
- * judged by the same angle.
+ * `PARALLEL_SIN` is deliberately the same `1e-12` policy as `elements/roof.ts` — a
+ * scale-free sine test, so a 60 mm jog and a 60 m facade are judged by the same angle.
  */
 
 import type { Point } from "../ast.js";
@@ -49,7 +50,8 @@ export interface Vec2 {
 
 /**
  * Two directions whose cross product, divided by both lengths, falls below this are
- * parallel. Scale-free by construction.
+ * parallel. Scale-free by construction — the same policy (and the same literal) as
+ * `PARALLEL_SIN` in `elements/roof.ts`.
  */
 export const PARALLEL_SIN = 1e-12;
 
