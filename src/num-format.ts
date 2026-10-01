@@ -4,6 +4,11 @@
  * evaluator and the source formatter — same shape, three precisions. Output strings
  * are byte-pinned by goldens/snapshots, so each call site keeps its exact historical
  * precision and non-finite behaviour.
+ *
+ * Invariant: the language's number domain is closed — the lexer and the evaluator
+ * (`E_NON_FINITE`) never admit a non-finite value, so `fmt3`'s `"0"` for NaN/±Infinity is
+ * unreachable from user source. It stays only as a byte-pinned backstop; it is NOT a way
+ * to represent an overflow, and must not be relied on to hide one.
  */
 
 /**

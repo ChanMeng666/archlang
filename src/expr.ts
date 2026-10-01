@@ -75,9 +75,27 @@ export function typeName(v: Value): string {
   }
 }
 
-/** Coerce a Value to a number, diagnosing a mismatch and yielding 0. */
+/** The one diagnostic for a number that left the finite range (overflow to ±Infinity or a
+ *  NaN). The number domain is CLOSED: every producer substitutes 0 beside this diagnostic, so
+ *  no non-finite value ever reaches geometry, an index or a printed label. */
+export function nonFinite(onError: (d: Diagnostic) => void, span?: Span, what = "Number"): void {
+  onError({
+    severity: "error",
+    message: `${what} is not finite (the result overflows the number range)`,
+    code: "E_NON_FINITE",
+    span,
+  });
+}
+
+/** Coerce a Value to a number, diagnosing a mismatch and yielding 0. A non-finite number
+ *  is refused here too (defence in depth: producers already yield 0 beside their own
+ *  `E_NON_FINITE`, so this fires only for a value that bypassed them). */
 export function asNum(v: Value, onError: (d: Diagnostic) => void, span?: Span): number {
-  if (v.t === "num") return v.v;
+  if (v.t === "num") {
+    if (Number.isFinite(v.v)) return v.v;
+    nonFinite(onError, span);
+    return 0;
+  }
   onError({ severity: "error", message: `Expected a number but got ${typeName(v)}`, code: "E_TYPE", span });
   return 0;
 }
@@ -173,9 +191,45 @@ export interface ParseExprOpts {
   noModulo?: boolean;
 }
 
+/**
+ * The deepest nesting the parser accepts, for statement blocks (`for`/`if`/`zone`/…) and for
+ * expressions alike. Both are recursive descents (and the expander and evaluator recurse over
+ * the result), and a few thousand levels overflow the JS stack — a `RangeError` thrown out of
+ * `compile()`. This limit is ~6x below the lowest depth that overflowed when measured (about
+ * 1,560 levels) and far above any real plan (a handful), so it refuses only pathological
+ * input — with an `E_PARSE` diagnostic, never a throw.
+ */
+export const MAX_NEST_DEPTH = 256;
+
+/** Parser recursion depth of the expression being read (parens, arrays, calls, `if`,
+ *  indexes, unary chains). Module state is safe: parsing is synchronous, and every increment
+ *  is undone in a `finally`. */
+let exprDepth = 0;
+/** AST height of each built node. Parentheses build no node, so {@link exprDepth} bounds
+ *  them; this bounds the height of the TREE (a flat `1+1+…+1` is left-deep), which is what
+ *  the evaluator and every AST walker recurse over. */
+const heights = new WeakMap<object, number>();
+
+const tooDeep = (ts: ExprTokens): never => ts.fail(`Expression is nested too deeply (limit ${MAX_NEST_DEPTH})`);
+
+/** Register a freshly built node's height; refuse it once the tree gets too tall. */
+function sealed<T extends Expr>(ts: ExprTokens, e: T, kids: readonly (Expr | undefined)[]): T {
+  let h = 0;
+  for (const k of kids) h = Math.max(h, (k && heights.get(k)) || 0);
+  if (++h > MAX_NEST_DEPTH) tooDeep(ts);
+  heights.set(e, h);
+  return e;
+}
+
 /** Parse an expression (Pratt / precedence-climbing). */
 export function parseExpr(ts: ExprTokens, opts?: ParseExprOpts): Expr {
-  return parseBin(ts, 1, opts);
+  if (exprDepth >= MAX_NEST_DEPTH) tooDeep(ts);
+  exprDepth++;
+  try {
+    return parseBin(ts, 1, opts);
+  } finally {
+    exprDepth--;
+  }
 }
 
 function parseBin(ts: ExprTokens, minPrec: number, opts?: ParseExprOpts): Expr {
@@ -197,7 +251,7 @@ function parseBin(ts: ExprTokens, minPrec: number, opts?: ParseExprOpts): Expr {
       if (RANGE_PREC < minPrec) break;
       ts.next();
       const right = parseBin(ts, RANGE_PREC + 1, opts);
-      left = { t: "range", lo: left, hi: right, span: spanTo() };
+      left = sealed(ts, { t: "range", lo: left, hi: right, span: spanTo() } as Expr, [left, right]);
       continue;
     }
     if (t.type === "percent" && opts?.noModulo) break;
@@ -205,7 +259,7 @@ function parseBin(ts: ExprTokens, minPrec: number, opts?: ParseExprOpts): Expr {
     if (prec === undefined || prec < minPrec) break;
     ts.next();
     const right = parseBin(ts, prec + 1, opts);
-    left = { t: "bin", op: BIN_OP[t.type]!, l: left, r: right, span: spanTo() };
+    left = sealed(ts, { t: "bin", op: BIN_OP[t.type]!, l: left, r: right, span: spanTo() } as Expr, [left, right]);
   }
   return left;
 }
@@ -215,7 +269,14 @@ function parseUnary(ts: ExprTokens): Expr {
   if (t.type === "minus" || t.type === "plus" || t.type === "bang") {
     ts.next();
     const op = t.type === "minus" ? "-" : t.type === "plus" ? "+" : "!";
-    return { t: "unary", op, e: parseUnary(ts), span: { start: t.start, end: t.end } };
+    if (exprDepth >= MAX_NEST_DEPTH) tooDeep(ts);
+    exprDepth++;
+    try {
+      const e = parseUnary(ts);
+      return sealed(ts, { t: "unary", op, e, span: { start: t.start, end: t.end } } as Expr, [e]);
+    } finally {
+      exprDepth--;
+    }
   }
   return parsePostfix(ts);
 }
@@ -231,7 +292,7 @@ function parsePostfix(ts: ExprTokens): Expr {
     const close = ts.peek();
     if (close.type !== "rbracket") ts.fail(`Expected "]" but found ${describe(close)}`);
     ts.next();
-    e = { t: "index", base: e, idx, span: { start: t.start, end: close.end } };
+    e = sealed(ts, { t: "index", base: e, idx, span: { start: t.start, end: close.end } } as Expr, [e, idx]);
   }
   return e;
 }
@@ -263,7 +324,7 @@ function parseAtom(ts: ExprTokens): Expr {
     const close = ts.peek();
     if (close.type !== "rbracket") ts.fail(`Expected "]" or "," in array but found ${describe(close)}`);
     ts.next();
-    return { t: "arr", items, span: { start: t.start, end: close.end } };
+    return sealed(ts, { t: "arr", items, span: { start: t.start, end: close.end } } as Expr, items);
   }
   if (t.type === "ident") {
     if (t.value === "true" || t.value === "false") {
@@ -284,7 +345,7 @@ function parseAtom(ts: ExprTokens): Expr {
       const close = ts.peek();
       if (close.type !== "rparen") ts.fail(`Expected ")" or "," in call but found ${describe(close)}`);
       ts.next();
-      return { t: "call", callee: t.value, args, span: { start: t.start, end: close.end } };
+      return sealed(ts, { t: "call", callee: t.value, args, span: { start: t.start, end: close.end } } as Expr, args);
     }
     // Recovery guard: a statement-start keyword that begins a new line is almost
     // certainly the next statement (the current one is incomplete) — refuse to
@@ -323,7 +384,11 @@ function parseIfExpr(ts: ExprTokens): Expr {
   eatType(ts, "lcurly");
   const els = parseExpr(ts);
   const close = eatType(ts, "rcurly");
-  return { t: "if", cond, then, else: els, span: { start: kw.start, end: close.end } };
+  return sealed(ts, { t: "if", cond, then, else: els, span: { start: kw.start, end: close.end } } as Expr, [
+    cond,
+    then,
+    els,
+  ]);
 }
 
 /** Parse a string's raw inner source into a template: literal segments split on
@@ -373,7 +438,11 @@ function parseTemplate(raw: string, baseOffset: number, outer: ExprTokens): Expr
     i++;
   }
   if (lit || parts.length === 0) parts.push(lit);
-  return { t: "str", parts, span: { start: baseOffset - 1, end: baseOffset + raw.length + 1 } };
+  return sealed(
+    outer,
+    { t: "str", parts, span: { start: baseOffset - 1, end: baseOffset + raw.length + 1 } } as Expr,
+    parts.map((p) => (typeof p === "string" ? undefined : p)),
+  );
 }
 
 /** An {@link ExprTokens} over a fixed token array (for interpolation sub-parses),
@@ -395,6 +464,9 @@ const NUM0: Value = { t: "num", v: 0 };
 const MAX_RANGE = 100_000;
 /** Safety cap on function-call nesting (guards against runaway recursion). */
 const MAX_CALL_DEPTH = 512;
+/** Safety cap on nested evaluations (see {@link evalExpr}). */
+const MAX_EVAL_NEST = 1200;
+let evalNest = 0;
 
 /** Built-in dispatch is injected by {@link setBuiltinDispatch} (from builtins.ts)
  *  to avoid a static import cycle. Until set, built-in calls are unknown. */
@@ -409,6 +481,30 @@ export function setBuiltinDispatch(fn: typeof builtinDispatch): void {
  *  and yield a safe default so resolution can continue and report everything.
  *  `depth` bounds function-call nesting; callers pass 0. */
 export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, depth = 0): Value {
+  // The evaluator recurses over the tree AND over user calls, so call depth (512) times
+  // expression height (256) is far beyond the JS stack. This second bound counts every
+  // nested evaluation, whichever way it nests, and answers with the call-depth diagnostic.
+  // The limit sits below the ~1,750 nested evaluations measured to overflow, and is
+  // reached by plain recursion only past ~400 calls. Module state is safe: evaluation is
+  // synchronous and the increment is undone in a `finally`.
+  if (evalNest >= MAX_EVAL_NEST) {
+    onError({
+      severity: "error",
+      message: `Evaluation nested too deeply (limit ${MAX_EVAL_NEST})`,
+      code: "E_CALL_DEPTH",
+      span: exprSpan(e),
+    });
+    return NUM0;
+  }
+  evalNest++;
+  try {
+    return evalNode(e, env, onError, depth);
+  } finally {
+    evalNest--;
+  }
+}
+
+function evalNode(e: Expr, env: Env, onError: (d: Diagnostic) => void, depth: number): Value {
   switch (e.t) {
     case "num":
       return { t: "num", v: e.value };
@@ -419,8 +515,11 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, de
       for (const p of e.parts) s += typeof p === "string" ? p : asStr(evalExpr(p, env, onError, depth));
       return { t: "str", v: s };
     }
-    case "arr":
-      return { t: "arr", v: e.items.map((it) => evalExpr(it, env, onError, depth)) };
+    case "arr": {
+      const items: Value[] = [];
+      for (const it of e.items) items.push(evalExpr(it, env, onError, depth));
+      return { t: "arr", v: items };
+    }
     case "fnlit":
       return { t: "fn", params: e.params, body: e.body, closure: env };
     case "ref": {
@@ -479,7 +578,9 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, de
         return NUM0;
       }
       const k = Math.trunc(i);
-      if (k < 0 || k >= base.v.length) {
+      // Written as the negation of "in range" so a NaN index (every comparison false) is
+      // diagnosed as E_INDEX rather than reaching `base.v[NaN]`.
+      if (!(k >= 0 && k < base.v.length)) {
         onError({
           severity: "error",
           message: `Index ${k} out of range for array of length ${base.v.length}`,
@@ -500,7 +601,10 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, de
 }
 
 function evalCall(e: Extract<Expr, { t: "call" }>, env: Env, onError: (d: Diagnostic) => void, depth: number): Value {
-  const args = e.args.map((a) => evalExpr(a, env, onError, depth));
+  // A loop, not `.map`: each nested call would otherwise cost two extra stack frames, and
+  // the stack is what bounds nested evaluation (see `MAX_EVAL_NEST`).
+  const args: Value[] = [];
+  for (const a of e.args) args.push(evalExpr(a, env, onError, depth));
   const callee = env.get(e.callee);
   if (callee && callee.t === "fn") {
     if (args.length !== callee.params.length) {
@@ -552,6 +656,14 @@ function valueEq(a: Value, b: Value): boolean {
   return (a as { v: unknown }).v === (b as { v: unknown }).v;
 }
 
+/** An arithmetic result as a number Value; a non-finite one is diagnosed at the operation's
+ *  span and becomes 0. */
+function finiteNum(v: number, e: Extract<Expr, { t: "bin" }>, onError: (d: Diagnostic) => void): Value {
+  if (Number.isFinite(v)) return { t: "num", v };
+  nonFinite(onError, e.span, `"${e.op}"`);
+  return NUM0;
+}
+
 function evalBin(e: Extract<Expr, { t: "bin" }>, env: Env, onError: (d: Diagnostic) => void, depth: number): Value {
   const op = e.op;
   // Logical operators short-circuit (so the RHS isn't evaluated needlessly).
@@ -579,11 +691,11 @@ function evalBin(e: Extract<Expr, { t: "bin" }>, env: Env, onError: (d: Diagnost
     case ">=":
       return { t: "bool", v: l >= r };
     case "+":
-      return { t: "num", v: l + r };
+      return finiteNum(l + r, e, onError);
     case "-":
-      return { t: "num", v: l - r };
+      return finiteNum(l - r, e, onError);
     case "*":
-      return { t: "num", v: l * r };
+      return finiteNum(l * r, e, onError);
     case "/":
     case "%":
       if (r === 0) {
@@ -595,7 +707,7 @@ function evalBin(e: Extract<Expr, { t: "bin" }>, env: Env, onError: (d: Diagnost
         });
         return NUM0;
       }
-      return { t: "num", v: op === "/" ? l / r : l % r };
+      return finiteNum(op === "/" ? l / r : l % r, e, onError);
     default:
       return NUM0; // unreachable: logical/equality ops returned above
   }

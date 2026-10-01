@@ -69,7 +69,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   E_CALL_DEPTH: E(
     "E_CALL_DEPTH",
     "Value-function call stack too deep.",
-    "A value-function recurses (directly or mutually) beyond the call-depth limit.",
+    "A value-function recurses (directly or mutually) beyond the call-depth limit, or the evaluation of one expression nests deeper than the evaluator's own bound (a deep recursion whose body is itself deeply nested).",
     "Make the recursion terminate, or rewrite it iteratively with a bounded `while`.",
     "let f(n) = f(n + 1)   # error: never terminates",
   ),
@@ -607,10 +607,17 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Move the `level` block out to the plan body. To draw the same content on several storeys, put it in a `component` and call it from each level.",
     "component c() { level 1 { } }   # error: only allowed at plan level",
   ),
+  E_NON_FINITE: E(
+    "E_NON_FINITE",
+    "A number is too large to be finite.",
+    "A numeric literal, or the result of an arithmetic operation (`+ - * / %`), is beyond what a floating-point number can hold, so it would be infinite. ArchLang refuses rather than carrying an infinity (or a NaN) into geometry, an index or a printed label; the offending value is replaced by 0 so the rest of the plan still resolves and reports.",
+    "Use a realistic dimension. A plan is measured in millimetres, and a value above about 1e300 is never a building.",
+    `let k = 1${"0".repeat(60)}\nlet x = k * k * k * k * k * k   # error: 1e360 overflows`,
+  ),
   E_PARSE: E(
     "E_PARSE",
     "The source could not be read: its SHAPE is wrong.",
-    "The lexer or the parser could not make a statement out of the bytes at this span — a missing or misspelled keyword, a value where a keyword belongs, an unterminated string, an unbalanced brace, clauses written in the wrong order. It is the one code that says nothing about what the plan MEANS: resolution never ran here, so no measurement, no geometry and no soundness rule had a chance to speak.",
+    "The lexer or the parser could not make a statement out of the bytes at this span — a missing or misspelled keyword, a value where a keyword belongs, an unterminated string, an unbalanced brace, clauses written in the wrong order, or blocks and expressions nested past the parser's limit (256 levels — far beyond any real plan; the deeper block is skipped, not read). It is the one code that says nothing about what the plan MEANS: resolution never ran here, so no measurement, no geometry and no soundness rule had a chance to speak.",
     "Read the message: it names what was expected and what was found, at a byte span. Compare the statement against `arch spec`'s one line for that keyword — clause ORDER is part of the grammar, not a suggestion. Unlike every other code in this catalog, there is no machine-applicable fix to apply, because the compiler has no reading of the text to correct.",
     "door on w1 at 40% width 900 wall w1   # error: `wall` pairs with the `at (x,y)` form only",
   ),
