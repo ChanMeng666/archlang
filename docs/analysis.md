@@ -695,7 +695,9 @@ below, the end opposite where the storey below boards that run (its arrow's tail
 likewise from above. It is not this storey's own tail: on a middle storey whose flight
 climbs on, you arrive at the head of the flight below, not at the foot of the next one. The
 run's halo is lifted there too, so the landing is walkable. An escalator is stepped off at
-that one end only; a lift car at its door side. When there are arrival sides both below and
+that one end only; a lift car at its door side. Direction of travel is not modelled — `dir`
+is a drawing convention per storey — so a pair of escalators, one up and one down, seeds the
+upper storey at both cars. When there are arrival sides both below and
 above (the storey is reachable from either independently), or the neighbouring stop is a
 different kind of run, the walk starts in front of the run's own entry edge(s) instead.
 
