@@ -272,12 +272,13 @@ jobs:
   # `npm run digest:engines` runs the built core in Playwright chromium/firefox/webkit and
   # compares digests with Node's. It MEASURES: it always exits 0 and prints
   # `status=clean|diverged|incomplete`. continue-on-error keeps even an install hiccup from
-  # turning the night red; a divergence is a finding for the owner, not a regression to gate.
+  # turning the night red; a divergence is a finding for the owner (it updates the pinned issue), not a regression to gate.
   # ---------------------------------------------------------------------------
   cross-engine:
     name: Cross-engine digests (advisory)
     runs-on: ubuntu-latest
     continue-on-error: true
+    timeout-minutes: 30
     outputs:
       status: ${{ steps.digest.outputs.status }}
     steps:
@@ -290,7 +291,29 @@ jobs:
 
       - run: npm ci
 
-      - run: npx playwright install --with-deps chromium firefox webkit
+      # Same mechanism as e2e-prod's cache, keyed on the resolved Playwright version, but a
+      # DIFFERENT key (`-all`): that one holds chromium only, and a hit on it would leave
+      # firefox and webkit missing.
+      - name: Resolve Playwright version
+        id: pw
+        run: |
+          version=$(node -p "require('@playwright/test/package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-all-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      - name: Install browsers (browser + system deps)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Install system deps only (cached browsers)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium firefox webkit
 
       - run: npm run build
 
@@ -344,10 +367,14 @@ jobs:
               .filter(([name, job]) => name !== 'cross-engine' && job.result !== 'success' && job.result !== 'skipped')
               .map(([name, job]) => `- \`${name}\` — **${job.result}**`);
             const advisories = needs.audit?.outputs?.status === 'advisories';
-            // ADVISORY signal: shown when the issue is written for another reason, never a trigger or a failure.
-            const engines = needs['cross-engine']?.outputs?.status ?? 'unknown';
+            // ADVISORY signal, treated like the audit's: a divergence writes/updates the issue but
+            // never fails the run. `incomplete` / `baseline-stale` stay out of the gate (an
+            // infrastructure hiccup or a stale pin is not a finding about the engines); they only
+            // show in the body when the issue is written anyway.
+            const engines = needs['cross-engine']?.outputs?.status || 'unknown';
+            const diverged = engines === 'diverged';
 
-            if (failed.length === 0 && !advisories) {
+            if (failed.length === 0 && !advisories && !diverged) {
               core.info('nightly: all jobs green and no advisories — nothing to report');
               return;
             }
@@ -363,7 +390,7 @@ jobs:
                 ? `## Dependency advisories\n\n${needs.audit.outputs.report}`
                 : '## Dependency advisories\n\nNone at `--audit-level=high` for production dependencies.',
               '',
-              '## Cross-engine determinism (advisory)\n\n`' + engines + '` — see the `engine-digests-report` artifact of [this run](' + run + '). Never fails the night and never opens this issue by itself.',
+              '## Cross-engine determinism (advisory)\n\n`' + engines + '` — see the `engine-digests-report` artifact of [this run](' + run + '). A divergence (not `incomplete`) opens or updates this issue; it never fails the night.',
               '',
               'Advisories alone never fail the workflow; a failed job does. Close this issue once triaged — the next bad night opens a fresh one.',
             ].join('\n');

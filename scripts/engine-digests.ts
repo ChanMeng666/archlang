@@ -18,7 +18,9 @@
  *
  * It ALWAYS exits 0 and writes a Markdown report (`--out <file>`, default
  * `engine-digests-report.md`); the last stdout line is `status=clean|diverged` (`incomplete` when an
- * engine could not be launched, so a missing browser is never reported as agreement). Deciding what
+ * engine could not be launched, hung, or `dist/` is missing, so that is never reported as agreement;
+ * `baseline-stale` when only Node's digests moved off the pinned baseline). It compares OUTPUT
+ * BYTES after the compiler's 2-dp rounding, not transcendental results. Deciding what
  * to do about a divergence — e.g. replacing hypot/atan2/log2 — is a separate, owner-gated decision.
  *
  * Browser location: honours `PLAYWRIGHT_BROWSERS_PATH` as Playwright does.
@@ -29,7 +31,6 @@ import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "
 import { extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium, firefox, webkit, type Browser, type BrowserType } from "@playwright/test";
-import * as core from "../dist/index.js";
 import {
   allStoreysDiagnosticsParts,
   allStoreysDiagnosticsPayload,
@@ -58,11 +59,10 @@ const KINDS: readonly Kind[] = ["core", "facts"];
 /** Per (entry, kind): the digest of the joined payload and one digest per part. */
 interface Measure {
   digest: string;
-  partDigests: string[];
   error?: string;
 }
 
-/** Aimed at sin/cos (hatch angle, glyphs), atan2/hypot (arcs, oblique walls, door tangents), log2 (`--facts syntax`). */
+/** Aimed at sin/cos (hatch angle, glyphs) and atan2/hypot (arcs, oblique walls, door tangents). `Math.log2` (`--facts syntax`, needs k > 2 connected rooms) is reached by the corpus plans, not these two single-system probes. */
 const PROBES: ReadonlyArray<readonly [string, string]> = [
   [
     "probe/oblique-walls.arch",
@@ -148,7 +148,9 @@ function buildCorpus(): Entry[] {
 
 const sha256 = (s: string): string => createHash("sha256").update(s, "utf8").digest("hex");
 
-const API = { compile: core.compile, describe: core.describe, lint: core.lint } as CompilerApi;
+// Loaded inside main(): a missing `dist/` must end in `status=incomplete`, not an unhandled import error.
+let core: typeof import("../dist/index.js");
+let API: CompilerApi;
 
 function nodeMeasure(e: Entry, kind: Kind): { m: Measure; parts: string[] } {
   try {
@@ -156,15 +158,26 @@ function nodeMeasure(e: Entry, kind: Kind): { m: Measure; parts: string[] } {
     const parts = (kind === "core" ? allStoreysDiagnosticsParts : engineProbeParts)(API, e.src, opts);
     const payload = kind === "core" ? allStoreysDiagnosticsPayload(API, e.src, opts) : parts.join(" ");
     if (kind === "core" && payload !== parts.join(" ")) throw new Error("parts.join(' ') != payload on Node");
-    return { m: { digest: sha256(payload), partDigests: parts.map(sha256) }, parts };
+    return { m: { digest: sha256(payload) }, parts };
   } catch (err) {
-    return { m: { digest: "", partDigests: [], error: String(err) }, parts: [] };
+    return { m: { digest: "", error: String(err) }, parts: [] };
   }
 }
 
 // ---------------------------------------------------------------------------------------------
 // Browser side
 // ---------------------------------------------------------------------------------------------
+
+/** One engine's whole evaluate. A hung engine must end the run as `incomplete`, not hang the night. */
+const ENGINE_TIMEOUT_MS = 8 * 60_000;
+
+function withTimeout<T>(p: Promise<T>, ms: number, what: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const t = new Promise<never>((_, rej) => {
+    timer = setTimeout(() => rej(new Error(what)), ms);
+  });
+  return Promise.race([p, t]).finally(() => clearTimeout(timer));
+}
 
 const MIME: Record<string, string> = { ".js": "text/javascript", ".map": "application/json", ".html": "text/html" };
 
@@ -173,7 +186,7 @@ const PAGE_PROGRAM = `
 async ({ origin, nowMs, entries, fns, wantParts }) => {
   const mod = await import(origin + "/dist/index.js");
   const api = { compile: mod.compile, describe: mod.describe, lint: mod.lint };
-  const make = (src) => (0, eval)("(" + src + ")");
+  const make = (src) => (0, eval)("'use strict';(" + src + ")");
   const payloadFn = make(fns.payload);
   const partsFn = { core: make(fns.coreParts), facts: make(fns.factsParts) };
   const enc = new TextEncoder();
@@ -191,11 +204,11 @@ async ({ origin, nowMs, entries, fns, wantParts }) => {
         const parts = partsFn[kind](api, e.src, opts);
         const payload = kind === "core" ? payloadFn(api, e.src, opts) : parts.join(" ");
         if (kind === "core" && payload !== parts.join(" ")) throw new Error("parts.join(' ') != payload in page");
-        const r = { digest: await sha(payload), partDigests: await Promise.all(parts.map(sha)) };
+        const r = { digest: await sha(payload) };
         if (wantParts) r.parts = parts;
         out[key] = r;
       } catch (err) {
-        out[key] = { digest: "", partDigests: [], error: String(err && err.message || err) };
+        out[key] = { digest: "", error: String(err && err.message || err) };
       }
     }
   }
@@ -250,9 +263,14 @@ async function runEngine(type: BrowserType, entries: Entry[], wantParts?: string
       }
       return route.fulfill({ status: 404, body: "not found" });
     });
+    page.setDefaultTimeout(60_000);
     await page.goto(`${ORIGIN}/`);
-    run.results = (await page.evaluate(
-      `(${PAGE_PROGRAM})(${JSON.stringify({ origin: ORIGIN, nowMs: NOW_MS, entries, fns: FNS, wantParts: wantParts ?? null })})`,
+    run.results = (await withTimeout(
+      page.evaluate(
+        `(${PAGE_PROGRAM})(${JSON.stringify({ origin: ORIGIN, nowMs: NOW_MS, entries, fns: FNS, wantParts: wantParts ?? null })})`,
+      ),
+      ENGINE_TIMEOUT_MS,
+      `${type.name()} did not finish in ${ENGINE_TIMEOUT_MS / 1000}s`,
     )) as EngineRun["results"];
   } catch (err) {
     run.error = String((err as Error)?.message ?? err).split("\n")[0];
@@ -296,6 +314,8 @@ function byteContext(a: string, b: string): string {
 const key = (name: string, kind: Kind): string => `${name}|${kind}`;
 
 async function main(): Promise<void> {
+  core = await import("../dist/index.js");
+  API = { compile: core.compile, describe: core.describe, lint: core.lint } as CompilerApi;
   const outArg = process.argv.indexOf("--out");
   const outFile =
     outArg >= 0 && process.argv[outArg + 1]
@@ -373,8 +393,15 @@ async function main(): Promise<void> {
   }
 
   const failedEngines = runs.filter((r) => r.error);
+  // A stale pin (Node != the pinned baseline) is a different finding from a cross-engine divergence.
   const status =
-    divs.length > 0 || baselineProblems.length > 0 ? "diverged" : failedEngines.length > 0 ? "incomplete" : "clean";
+    divs.length > 0
+      ? "diverged"
+      : failedEngines.length > 0
+        ? "incomplete"
+        : baselineProblems.length > 0
+          ? "baseline-stale"
+          : "clean";
 
   // Report
   const L: string[] = [];
@@ -384,7 +411,7 @@ async function main(): Promise<void> {
     "",
   );
   L.push(
-    "`core` = SVG of every page + `describe()` + `lint()` + `compile().diagnostics` (the `while-byte-identity` payload); `facts` = the same plus `describe({facts:[symmetry,syntax]})` (sin/cos/atan2/log2). All engines run the same payload functions from `test/byte-identity-payload.ts` over the built `dist/`.",
+    "This compares the agent-facing OUTPUT BYTES (SVG, `describe()`, `lint()`, diagnostics, after the compiler's 2-decimal rounding), not transcendental agreement: a 1-ulp `Math.cos` difference is invisible here by design, and `Math.hypot`/`atan2` are caught only where they feed an exact comparison or tie. `core` = SVG of every page + `describe()` + `lint()` + `compile().diagnostics` (the `while-byte-identity` payload); `facts` = the same plus `describe({facts:[symmetry,syntax]})` (sin/cos/atan2/log2). All engines run the same payload functions from `test/byte-identity-payload.ts` over the built `dist/`.",
     "",
   );
   L.push(
@@ -441,7 +468,7 @@ async function main(): Promise<void> {
 
 main()
   .catch((err) => {
-    // Advisory by contract: never a non-zero exit, never a missing status line.
+    // Advisory by contract (a missing `dist/` lands here too): never a non-zero exit, never a missing status line.
     console.log(`engine-digests failed: ${String((err as Error)?.stack ?? err)}`);
     console.log("status=incomplete");
   })

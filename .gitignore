@@ -11,8 +11,8 @@ playground/playwright-report/
 playground/blob-report/
 docs-site/test-results/
 docs-site/playwright-report/
-engine-digests-report.md
 docs-site/blob-report/
+engine-digests-report.md
 *.tsbuildinfo
 *.vsix
 # Live eval output is ephemeral (moves with the model/day) — the committed
