@@ -152,7 +152,7 @@ suite("arc radius — property over Pythagorean triples × k", () => {
           for (const [dx, dy] of [
             [p * k * sx, q * k * sy],
             [q * k * sx, p * k * sy],
-          ]) {
+          ] as Array<[number, number]>) {
             const a = { x: 1000, y: -2000 };
             const b = { x: a.x + dx, y: a.y + dy };
             const half = (c * k) / 2;
