@@ -46,6 +46,7 @@ import type { SceneNode } from "../scene.js";
 import { weightWidth } from "../scene.js";
 import type { RRoof, RWall } from "../ir.js";
 import { wallHasArc } from "../geometry.js";
+import { meetLines } from "../geometry/intersect.js";
 import { effectiveVertices, polygonSelfIntersects, polygonSignedArea2 } from "../geometry/polygon.js";
 import { dashedPattern } from "./glyph-lib.js";
 
@@ -60,13 +61,6 @@ import { dashedPattern } from "./glyph-lib.js";
  */
 export const ROOF_LAYER = "A-ROOF";
 
-/**
- * Two faces whose directions differ by less than this SINE are parallel. Scale-free by
- * construction — the test divides the cross product by both lengths — so a 60 mm jog and
- * a 60 m facade are judged by the same angle rather than by an absolute area.
- */
-const PARALLEL_SIN = 1e-12;
-
 /** One offset face: a point on the pushed-out line, and the ORIGINAL edge's direction. */
 interface OffsetLine {
   p: Point;
@@ -75,32 +69,14 @@ interface OffsetLine {
 }
 
 /**
- * Where two offset faces meet — the mitred corner, in closed form.
- *
- * Solved as a 2×2 linear system by Cramer's rule (each line as `a·x + b·y = c`) rather
- * than parametrically. The two are algebraically identical, and the difference is
- * arithmetic: the parametric form computes a ratio and then multiplies it back out, so an
- * axis-aligned rectangle's corner comes out at −5700.000000000001 instead of −5700. Every
- * quantity here is a product of the inputs divided once, so a rectilinear plan — which is
- * most plans — gets its corners EXACT.
- *
- * Parallel lines (two collinear neighbours, or a ring that doubles back) have no
- * intersection, and the honest corner there is the offset of the shared vertex itself,
- * which is exactly `b.p`: `b`'s line was built starting from that vertex.
+ * Where two offset faces meet — the mitred corner, via `meetLines` (closed-form Cramer
+ * solve, exact on a rectilinear ring). Parallel lines (two collinear neighbours, or a
+ * ring that doubles back) have no intersection, and the honest corner there is the
+ * offset of the shared vertex itself, which is exactly `b.p`: `b`'s line was built
+ * starting from that vertex.
  */
 function meet(a: OffsetLine, b: OffsetLine): Point {
-  const la = Math.hypot(a.dx, a.dy);
-  const lb = Math.hypot(b.dx, b.dy);
-  const cross = a.dx * b.dy - a.dy * b.dx;
-  if (la === 0 || lb === 0 || Math.abs(cross) / (la * lb) < PARALLEL_SIN) return { ...b.p };
-  const a1 = a.dy;
-  const b1 = -a.dx;
-  const c1 = a.dy * a.p.x - a.dx * a.p.y;
-  const a2 = b.dy;
-  const b2 = -b.dx;
-  const c2 = b.dy * b.p.x - b.dx * b.p.y;
-  const det = a1 * b2 - a2 * b1;
-  return { x: (c1 * b2 - c2 * b1) / det, y: (a1 * c2 - a2 * c1) / det };
+  return meetLines(a.p, { x: a.dx, y: a.dy }, b.p, { x: b.dx, y: b.dy }) ?? { ...b.p };
 }
 
 /**

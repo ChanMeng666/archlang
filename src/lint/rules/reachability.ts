@@ -14,26 +14,17 @@
  * question one storey up. A single-storey plan has no such source and is unchanged.
  */
 
-import {
-  accessDigraph,
-  connectorEdges,
-  DEFAULT_CLEAR_ALLOWANCE_MM,
-  EXTERIOR_NODE,
-  isBedroom,
-  isWetRoom,
-  pointOnRoomEdge,
-  reachFrom,
-} from "../../analyze.js";
+import { accessDigraph, EXTERIOR_NODE, isBedroom, isWetRoom, pointOnRoomEdge, reachFrom } from "../../analyze.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import type { LintContext, LintRule } from "../context.js";
 
 export const reachability: LintRule = {
   name: "reachability",
-  check({ rooms, connectors, roomRects, rules, labelOf, at, building }: LintContext): Diagnostic[] {
+  check({ rooms, connectors, roomRects, rules, labelOf, at, building, access }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
     const g = accessDigraph(
       rooms.map((r) => r.id),
-      connectorEdges(roomRects, connectors, rules.tolMm, DEFAULT_CLEAR_ALLOWANCE_MM, "probe"),
+      access().edges,
     );
     // A shaft arriving from a reachable storey is this floor's entrance.
     const arrivals = building.arrivalRooms.filter((id) => roomRects.has(id));
