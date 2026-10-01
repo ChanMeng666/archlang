@@ -6,9 +6,9 @@
  *
  * Layout: four bands stacked top to bottom, each a ⌈√n⌉-column grid filled
  * row-major, so the drawing is roughly square (the whole plan is on the order of
- * 100 m across, not a ~1 km line). That matters: the renderer sizes every label
+ * 100 m across; the old line layout ran 300 m to ~1 km). That matters: the renderer sizes every label
  * from the drawing's reference dimension (`max(width, height)`), so a long thin
- * line inflates the room font to tens of metres and relocates EVERY label — the
+ * line inflates the room font to 9 to 30 m on 800 mm rooms and relocates EVERY label — the
  * toScene numbers then measure label placement, not the pass under test.
  *   - walls:     vertical 4000 mm segments, 6000 mm pitch both ways
  *   - openings:  doors/windows placed exactly on wall i  (they host, no warning)

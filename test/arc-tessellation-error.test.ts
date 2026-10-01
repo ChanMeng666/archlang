@@ -14,6 +14,22 @@ const sagittaDivisor = 1 / (1 - Math.cos(Math.PI / n));
 
 const read = (p: string): string => readFileSync(new URL(`../${p}`, import.meta.url), "utf8");
 
+const pct = (areaShortfall * 100).toFixed(2); // "0.29"
+const div = String(Math.round(sagittaDivisor)); // "467"
+const mm = String(Math.round(9000 / sagittaDivisor)); // "19"
+
+/** Prose and comments wrap, so every space in a pattern is written `\s+`. */
+const S = String.raw`\s+`;
+
+/** A miss reports the file and the pattern, never the file's contents. */
+const stated = (file: string, re: RegExp): void => {
+  expect(re.test(read(file)), `${file} must state ${re}`).toBe(true);
+};
+/** A wrong figure left behind: the failure value is the offending text only. */
+const absent = (file: string, re: RegExp): void => {
+  expect(read(file).match(re)?.[0]).toBeUndefined();
+};
+
 describe("arc tessellation error statements", () => {
   it("the step makes a 48-gon", () => {
     expect(n).toBe(48);
@@ -26,34 +42,24 @@ describe("arc tessellation error statements", () => {
     expect(9000 / sagittaDivisor).toBeCloseTo(19.27, 1);
   });
 
-  const pct = `${(areaShortfall * 100).toFixed(2)}%`; // "0.29%"
-  const div = `R/${Math.round(sagittaDivisor)}`; // "R/467"
-  const mm = `${Math.round(9000 / sagittaDivisor)} mm`; // "19 mm"
-
   it("src/geometry/arc.ts states the derived sagitta", () => {
-    const t = read("src/geometry/arc.ts");
-    expect(t).toContain(`r/${Math.round(sagittaDivisor)}`);
-    expect(t).toContain(mm);
-    expect(t).not.toContain("r/1400");
+    stated("src/geometry/arc.ts", new RegExp(`r/${div}\\b[^\\n]*\\(${mm}${S}mm${S}on${S}a${S}9${S}m${S}radius\\)`));
+    absent("src/geometry/arc.ts", /r\/1400/);
   });
 
   it("docs/analysis.md states the derived sagitta and area shortfall", () => {
-    const t = read("docs/analysis.md");
-    expect(t).toContain(`\`${div}\``);
-    expect(t).toContain(`${mm} on\na 9 m radius`);
-    expect(t).toContain(`a 48-gon is ${pct} short`);
-    expect(t).not.toMatch(/R\/1400|0\.14%/);
+    stated("docs/analysis.md", new RegExp(`\`R/${div}\`${S}—${S}${mm}${S}mm${S}on${S}a${S}9${S}m${S}radius`));
+    stated("docs/analysis.md", new RegExp(`a${S}48-gon${S}is${S}${pct}\\s*%${S}short`));
+    absent("docs/analysis.md", /R\/1400|0\.14\s*%/);
   });
 
   it("src/analyze.ts states the derived area shortfall", () => {
-    const t = read("src/analyze.ts");
-    expect(t).toContain(`understates the area by ${pct}`);
-    expect(t).not.toContain("~0.1%");
+    stated("src/analyze.ts", new RegExp(`understates${S}the${S}area${S}by${S}${pct}\\s*%`));
+    absent("src/analyze.ts", /understates\s+the\s+area\s+by\s+~?0\.1\s*%/);
   });
 
   it("src/elements/room.ts states the derived area shortfall", () => {
-    const t = read("src/elements/room.ts");
-    expect(t).toContain(`(${pct} short)`);
-    expect(t).not.toContain("(0.1% short)");
+    stated("src/elements/room.ts", new RegExp(`\\(${pct}\\s*%${S}short\\)`));
+    absent("src/elements/room.ts", /\(0\.1\s*%\s+short\)/);
   });
 });
