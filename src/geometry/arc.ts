@@ -87,14 +87,37 @@ export function minArcRadius(a: Point, b: Point): number {
  *
  * Returns `null` when `r` is smaller than half the chord (no such circle) or the
  * chord is degenerate — the caller raises the diagnostic; this never throws.
+ *
+ * ## The radius test is decided on SQUARED terms, never on a hypot
+ *
+ * `r < c/2` is tested as `4·r² < dx² + dy²`. `+ − × ÷` and `Math.sqrt` are correctly
+ * rounded by IEEE 754; `Math.hypot` is not (V8 returns `6500.000000000001` for the
+ * `(3300, 5600)` chord), so a test on `hypot / 2` refused exact semicircles on a
+ * Pythagorean chord. Exactness bound: with integer-mm endpoint differences
+ * `|dx|, |dy| < 2²⁶` (≈ 67 km) and an integer radius `r < 2²⁶`, every square and the
+ * sum are integers below `2⁵³`, and `4·r²` is a power-of-two scaling, so the verdict is
+ * EXACT. Beyond that bound, or for non-integer (e.g. 0.1 mm) inputs, the terms round:
+ * the verdict is still deterministic, just decided on the rounded squares.
+ *
+ * The EXACT TIE (`4·r² = dx² + dy²`, the semicircle) is built from that same verdict: the
+ * chord is taken as `2r`, so the centre offset is exactly 0 and the sweep exactly π,
+ * whichever way `hypot` rounded — rounding up used to refuse it, rounding down drew a
+ * centre ~1e-6 mm off the midpoint and, for `major`, a 25-chord "semicircle". Off the tie
+ * the chord stays `Math.hypot`, byte-for-byte the construction every accepted arc had
+ * before (`describe()` prints `bbox_outer` unrounded, so even a one-ulp change of chord
+ * would move it); the clamps below keep a near-tie that `hypot` over-rounds a valid
+ * semicircle rather than a NaN.
  */
 export function arcFromChord(a: Point, b: Point, r: number, dir: ArcDir, major: boolean): Arc | null {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
-  const chord = Math.hypot(dx, dy);
-  if (!(chord > 0) || !(r > 0)) return null;
+  const len = Math.hypot(dx, dy);
+  if (!(len > 0) || !(r > 0)) return null;
+  const r2 = r * r;
+  const chord2 = dx * dx + dy * dy;
+  if (4 * r2 < chord2) return null;
+  const chord = 4 * r2 === chord2 ? 2 * r : len;
   const half = chord / 2;
-  if (r < half) return null;
   // Clockwise keeps the centre on the RIGHT of travel; `major` swaps to the other
   // candidate centre (the long way round one way IS the short way round the other).
   // `(-dy, dx)` is 90° clockwise from the travel direction — the same rotation
@@ -103,7 +126,7 @@ export function arcFromChord(a: Point, b: Point, r: number, dir: ArcDir, major: 
   // (where the centre should land on a round number) down at ~1e-13 mm instead of
   // compounding two divisions. Nine orders below `fmt()`'s 0.005 mm, but free.
   const side = (dir === "cw") !== major ? 1 : -1;
-  const h = Math.sqrt(Math.max(0, r * r - half * half));
+  const h = Math.sqrt(Math.max(0, r2 - half * half));
   const k = (side * h) / chord;
   const center = { x: (a.x + b.x) / 2 - dy * k, y: (a.y + b.y) / 2 + dx * k };
   // Magnitude from the chord (exact, no atan2 round-trip): 2·asin(half/r), or its
