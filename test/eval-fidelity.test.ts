@@ -120,6 +120,39 @@ describe("infeasibility is DERIVED, never asserted in prose", () => {
     expect(derivedConflicts(reqs)).toEqual(["A", "B", "C"]);
   });
 
+  it("capacity: several floors on ONE concept are met by the largest, never summed", () => {
+    const reqs: Requirement[] = [
+      { id: "A", kind: "total-area", op: "at-most", m2: 12, quote: "A" },
+      { id: "B", kind: "room-area", concept: "bedroom", op: "at-least", m2: 9, quote: "B" },
+      { id: "C", kind: "room-area", concept: "bedroom", op: "at-least", m2: 10, quote: "C" },
+    ];
+    // One 10 m² bedroom satisfies all three — feasible.
+    expect(proveInfeasible(reqs)).toEqual([]);
+    // Control: the binding floor (10) plus a DISTINCT concept (5) still exceeds 12.
+    const control: Requirement[] = [
+      reqs[0]!,
+      { id: "C", kind: "room-area", concept: "bedroom", op: "at-least", m2: 10, quote: "C" },
+      { id: "K", kind: "room-area", concept: "kitchen", op: "at-least", m2: 5, quote: "K" },
+    ];
+    expect(derivedConflicts(control)).toEqual(["A", "C", "K"]);
+    // The binding floor is named; a tie goes to the first in requirement order.
+    const tie: Requirement[] = [
+      reqs[0]!,
+      { id: "T1", kind: "room-area", concept: "bedroom", op: "at-least", m2: 13, quote: "T1" },
+      { id: "T2", kind: "room-area", concept: "bedroom", op: "at-least", m2: 13, quote: "T2" },
+    ];
+    expect(derivedConflicts(tie)).toEqual(["A", "T1"]);
+  });
+
+  it("capacity: plan-wide floors take the maximum, not the sum", () => {
+    const reqs: Requirement[] = [
+      { id: "A", kind: "total-area", op: "at-most", m2: 12, quote: "A" },
+      { id: "B", kind: "room-area", op: "at-least", m2: 5, quote: "B" },
+      { id: "C", kind: "room-area", op: "at-least", m2: 8, quote: "C" },
+    ];
+    expect(proveInfeasible(reqs)).toEqual([]);
+  });
+
   it("contradiction: a floor above a ceiling on an overlapping scope is a conflict", () => {
     const reqs: Requirement[] = [
       { id: "A", kind: "room-area", op: "at-most", m2: 5, quote: "A" },

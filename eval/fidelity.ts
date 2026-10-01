@@ -324,7 +324,8 @@ const sortUnique = (ids: string[]): string[] => [...new Set(ids)].sort();
  * one room satisfies at most one concept (rubric §2), so the minima of DISTINCT concepts
  * add. If that demand exceeds a stated total-area ceiling, no plan can hold both. The
  * demand is computed two ways — over concept-scoped minima (each multiplied by the count
- * the brief states for that concept) and over a plan-wide "every room at least m" minimum
+ * the brief states for that concept; several floors on one concept count once, at the largest —
+ * ties go to the first in requirement order) and over a plan-wide "every room at least m" minimum
  * multiplied by a stated exact room count — and each way that exceeds the cap is its own
  * proof. The two are never summed: that would double-count a room.
  *
@@ -345,15 +346,22 @@ export function proveInfeasible(requirements: readonly Requirement[]): Infeasibi
   const cap = requirements.find((r) => r.kind === "total-area" && r.op === "at-most");
 
   if (cap !== undefined && cap.kind === "total-area") {
-    // (a) Concept-scoped demand: Σ over distinct concepts of (minimum × stated count).
-    let specific = 0;
-    const specificIds: string[] = [];
+    // (a) Concept-scoped demand: Σ over distinct concepts of (binding floor × stated count).
+    // Several at-least floors on ONE concept are all satisfied by the largest of them, so only
+    // the maximum counts (never the sum). Ties go to the first in requirement order.
+    const byConcept = new Map<string, { floor: Requirement & { kind: "room-area" } }>();
     for (const r of areaFloors) {
       if (r.kind !== "room-area" || r.concept === undefined) continue;
-      const c = counts.find((x) => x.kind === "room-count" && x.concept === r.concept);
+      const cur = byConcept.get(r.concept);
+      if (cur === undefined || r.m2 > cur.floor.m2) byConcept.set(r.concept, { floor: r });
+    }
+    let specific = 0;
+    const specificIds: string[] = [];
+    for (const [concept, { floor }] of byConcept) {
+      const c = counts.find((x) => x.kind === "room-count" && x.concept === concept);
       const n = c !== undefined && c.kind === "room-count" ? c.exact : 1;
-      specific += r.m2 * n;
-      specificIds.push(r.id);
+      specific += floor.m2 * n;
+      specificIds.push(floor.id);
       if (c !== undefined) specificIds.push(c.id);
     }
     if (specificIds.length > 0 && specific > cap.m2) {
@@ -363,23 +371,24 @@ export function proveInfeasible(requirements: readonly Requirement[]): Infeasibi
         reason: `the stated per-room minima demand ${round2(specific)} m² of floor, above the stated ceiling of ${cap.m2} m²`,
       });
     }
-    // (b) Plan-wide demand: "every room at least m" × a stated exact room count.
+    // (b) Plan-wide demand: "every room at least m" × a stated exact room count. The binding
+    // floor is the largest plan-wide one (ties: first in requirement order).
     const planCount = counts.find((x) => x.kind === "room-count" && x.concept === undefined);
-    let wide = 0;
-    const wideIds: string[] = [];
+    let widest: (Requirement & { kind: "room-area" }) | undefined;
     for (const r of areaFloors) {
       if (r.kind !== "room-area" || r.concept !== undefined) continue;
-      const n = planCount !== undefined && planCount.kind === "room-count" ? planCount.exact : 1;
-      wide += r.m2 * n;
-      wideIds.push(r.id);
-      if (planCount !== undefined) wideIds.push(planCount.id);
+      if (widest === undefined || r.m2 > widest.m2) widest = r;
     }
-    if (wideIds.length > 0 && wide > cap.m2) {
-      proofs.push({
-        rule: "capacity",
-        conflicts: sortUnique([...wideIds, cap.id]),
-        reason: `every room being at least its stated minimum demands ${round2(wide)} m² of floor, above the stated ceiling of ${cap.m2} m²`,
-      });
+    if (widest !== undefined) {
+      const n = planCount !== undefined && planCount.kind === "room-count" ? planCount.exact : 1;
+      const wide = widest.m2 * n;
+      if (wide > cap.m2) {
+        proofs.push({
+          rule: "capacity",
+          conflicts: sortUnique([widest.id, ...(planCount !== undefined ? [planCount.id] : []), cap.id]),
+          reason: `every room being at least its stated minimum demands ${round2(wide)} m² of floor, above the stated ceiling of ${cap.m2} m²`,
+        });
+      }
     }
   }
 
