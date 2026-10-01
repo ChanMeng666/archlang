@@ -394,6 +394,23 @@ describe("arrival sides come from the building with the storey taken out", () =>
     expect(codes(yx)).toEqual(codes(xy));
   });
 
+  it("stops drawn along different axes take the fallback: a flight's length is never read as a doorway", () => {
+    // The ground stair is portrait (900 × 2600, boarded at its bottom); the same id upstairs is
+    // drawn landscape (2600 × 900). The head of the portrait flight is its TOP edge, which on
+    // the landscape footprint would be a 2600 mm long side; the upper run's own entry edge
+    // (its `dir down` tail, the left end, 900 mm) is used instead.
+    const src = plan(
+      storey("1", "stair id=st at (1000,1000) size 900x2600 dir up", front) +
+        storey("2", "stair id=st at (1000,1000) size 2600x900 dir down"),
+    );
+    expect(
+      arrivalsOf(src)
+        .runs.get(2)
+        ?.map((a) => [a.run.id, a.edges]),
+    ).toEqual([["st", ["left"]]]);
+    expect(level(src, 2).circulation?.rooms.map((r) => r.bottleneckClearWidthMm)).toEqual([900]);
+  });
+
   it("a storey reachable from below AND above independently takes the documented fallback", () => {
     // Level 2's `x` is reached from level 1 below, and level 3 above is reachable without
     // level 2 (by `y` from the ground): both sides, so the run's own entry edge (its `dir up`
