@@ -42,7 +42,7 @@ import type { Frame } from "./frame.js";
 import { composeFrame, makeFrame, tryTransformElement } from "./frame.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Env, Expr, Value } from "./expr.js";
-import { fmt3, MODEL_RANGE_MM } from "./num-format.js";
+import { fmt3, MODEL_RANGE_MM, maxScaleDenominator, outOfRangeDiagnostic } from "./num-format.js";
 import {
   asBool,
   asNum,
@@ -72,7 +72,7 @@ import { extendBounds, outerFaceBounds, segmentsOfWall, WallGrid } from "./geome
 import type { LevelStamp } from "./chrome-layout.js";
 import { titleRows } from "./chrome-layout.js";
 import type { ResolvedSheet, SheetFitInput } from "./sheet.js";
-import { resolveSheetSpec, usablePlanMm } from "./sheet.js";
+import { paperMm, resolveSheetSpec, scaleDenominator, usablePlanMm } from "./sheet.js";
 import { elevationOf, heightRangeDiagnostic, isDrawableHeight, plansAuthorHeights, STOREY_HEIGHT } from "./datum.js";
 import { planTableRows } from "./sheet-tables.js";
 import type { GridBox } from "./geometry/grid-index.js";
@@ -1769,7 +1769,7 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
       titleRows: titleRows(ast.title, "1:1", stampOf(blocks[0]!)).length,
       tableRows,
     };
-    sheet = resolveSheetSpec(ast.paper, ast.scale, fit, { w: dw, h: dh });
+    sheet = resolveSheetSpec(ast.paper, scaleInRange(ast, shared), fit, { w: dw, h: dh });
     const usable = usablePlanMm(sheet.widthMm, sheet.heightMm, sheet.denom, fit);
     if (!sheet.fits) shared.push(scaleOverflowDiagnostic(ast, sheet, { w, h }, usable));
     else if (!sheet.drawingFits) shared.push(drawingOverflowDiagnostic(ast, sheet, { w: dw, h: dh }, usable));
@@ -1905,8 +1905,21 @@ function resolveImpl(
   let activeEntry: Entry | undefined;
   /** Where resolution diagnostics go: the plan's list, or an instance group's buffer. */
   let diagSink: Diagnostic[] = diagnostics;
+  /** The entry each resolve-time diagnostic is ABOUT, so the number-domain check can drop
+   *  every other diagnostic of an element it drops (one report per element). Keyed by the
+   *  object pushed, which is the object that reaches `diagnostics`. */
+  const ownerOf = new Map<Diagnostic, Entry>();
+  /** The entry a resolved element (local, or carried into plan coordinates) came from. */
+  const entryOf = new Map<ResolvedElement, Entry>();
   const pushDiag = (d: Diagnostic): void => {
-    diagSink.push(activeEntry ? stampProvenance(d, activeEntry.frame, activeEntry.file) : d);
+    const out = activeEntry ? stampProvenance(d, activeEntry.frame, activeEntry.file) : d;
+    diagSink.push(out);
+    if (activeEntry) ownerOf.set(out, activeEntry);
+  };
+  /** Record a relational-placement diagnostic, owned by the room it is about. */
+  const ownRoomDiag = (d: Diagnostic, room: RRoom | undefined): void => {
+    const e = room ? entryOf.get(room) : undefined;
+    if (e) ownerOf.set(d, e);
   };
   const evalNum = (e: Expr): number => asNum(evalExpr(e, activeEnv, pushDiag), pushDiag, exprSpan(e));
   const evalStr = (e: Expr): string => asStr(evalExpr(e, activeEnv, pushDiag));
@@ -1982,6 +1995,7 @@ function resolveImpl(
         ctx.defaults = e.defaults;
         const r = def.resolve(e.node, ctx);
         e.resolved = r;
+        entryOf.set(r, e);
         markPlacement(r, e.node, e.fromStrip === true);
         // Declared zone membership — a `zone` block the element was written inside, or
         // the `place`d instance that expanded it (an instance IS a zone). Set only when
@@ -2026,7 +2040,11 @@ function resolveImpl(
     // `right-of` means the COMPONENT's right — resolving it after the transform would
     // read the page's right instead (ADR 0004 arithmetic, one frame at a time). A
     // descendant's room is a reference only: it carries no `_rel` once transformed.
-    placeRelational(view.rooms, snapPt, (d) => diagSink.push(stampProvenance(d, grp.frame, undefined)));
+    placeRelational(view.rooms, snapPt, (d, room) => {
+      const out = stampProvenance(d, grp.frame, undefined);
+      diagSink.push(out);
+      ownRoomDiag(out, room);
+    });
     const locals = grp.entries.map((e) => e.resolved!);
     const carried: ResolvedElement[] = [];
     // Kinds already refused in THIS instance: a component with ten plugin elements of one
@@ -2070,6 +2088,7 @@ function resolveImpl(
         continue;
       }
       e.resolved = t;
+      entryOf.set(t, e);
       carried.push(t);
     }
     placed.set(grp, { diagnostics: buffer, local: locals, carried });
@@ -2107,19 +2126,40 @@ function resolveImpl(
   placeRelational(
     resolvedElements.filter((e): e is RRoom => e.kind === "room"),
     snapPt,
-    (d: Diagnostic) => diagnostics.push(d),
+    (d: Diagnostic, room?: RRoom) => {
+      diagnostics.push(d);
+      ownRoomDiag(d, room);
+    },
   );
 
   // 3b. The number domain, once every coordinate is final (frames carried, relational rooms
   //     placed): an element whose geometry is non-finite or beyond the modelling range is
   //     reported and DROPPED here, before it can host an opening or reach any consumer.
+  //     An opening hosted on a dropped wall goes with it, silently: its host's report is the
+  //     one report, and an opening cannot be drawn in a wall that is not there. Every OTHER
+  //     diagnostic about a dropped element (its resolve-time errors and warnings) is removed,
+  //     so an element out of range is reported exactly once.
   const outside = checkNumberDomain(resolvedElements, registry, diagnostics);
-  const elements = outside.size > 0 ? resolvedElements.filter((e) => !outside.has(e)) : resolvedElements;
   if (outside.size > 0) {
-    const kept = walls.filter((w) => !outside.has(w));
+    for (const el of resolvedElements) {
+      if ((el.kind === "door" || el.kind === "window" || el.kind === "opening") && el.host) {
+        const host = hostWallOf(el.host, walls);
+        if (host && outside.has(host)) outside.add(el);
+      }
+    }
+    const droppedEntries = new Set<Entry>();
+    for (const e of entries) if (e.resolved && outside.has(e.resolved)) droppedEntries.add(e);
+    let kept = 0;
+    for (const d of diagnostics) {
+      const owner = ownerOf.get(d);
+      if (owner === undefined || !droppedEntries.has(owner)) diagnostics[kept++] = d;
+    }
+    diagnostics.length = kept;
+    const keptWalls = walls.filter((w) => !outside.has(w));
     walls.length = 0;
-    walls.push(...kept);
+    for (const w of keptWalls) walls.push(w);
   }
+  const elements = outside.size > 0 ? resolvedElements.filter((e) => !outside.has(e)) : resolvedElements;
 
   // 3c. Register openings: each hosted door/window voids its wall's solid.
   registerOpenings(elements, walls);
@@ -2312,7 +2352,7 @@ function resolveSheet(
       outdoor: elements.filter((e): e is ROutdoor => e.kind === "outdoor"),
     }),
   };
-  const sheet = resolveSheetSpec(ast.paper, ast.scale, fit, drawn);
+  const sheet = resolveSheetSpec(ast.paper, scaleInRange(ast, diagnostics), fit, drawn);
   const usable = usablePlanMm(sheet.widthMm, sheet.heightMm, sheet.denom, fit);
   // Exactly one of the two, never both. The drawn extent CONTAINS the building, so
   // `fits === false` implies `drawingFits === false`, and the second warning would repeat
@@ -2322,6 +2362,28 @@ function resolveSheet(
   if (!sheet.fits) diagnostics.push(scaleOverflowDiagnostic(ast, sheet, extent, usable));
   else if (!sheet.drawingFits) diagnostics.push(drawingOverflowDiagnostic(ast, sheet, drawn, usable));
   return sheet;
+}
+
+/**
+ * The authored `scale`, or undefined (after one `E_OUT_OF_RANGE`) when its denominator would
+ * put the `paper` sheet, in plan millimetres, past the modelling range — the sheet is then
+ * auto-fitted, so nothing downstream sizes a pen or a font from it. Without `paper` a scale
+ * is a title-block annotation and measures nothing, so it is not held.
+ */
+function scaleInRange(ast: PlanNode, diagnostics: Diagnostic[]): string | undefined {
+  const denom = scaleDenominator(ast.scale);
+  if (!ast.paper || denom === null) return ast.scale;
+  const { w, h } = paperMm(ast.paper.size, ast.paper.orientation);
+  const max = maxScaleDenominator(Math.max(w, h));
+  if (denom <= max) return ast.scale;
+  diagnostics.push(
+    outOfRangeDiagnostic(
+      `\`scale ${ast.scale}\` on ${ast.paper.size} puts the sheet at ${fmt3(denom * Math.max(w, h))} mm, outside the ` +
+        `modelling range of ±${fmt3(MODEL_RANGE_MM)} mm (the largest denominator on ${ast.paper.size} is ${max})`,
+      ast.scaleSpan,
+    ),
+  );
+  return undefined;
 }
 
 /**
@@ -2593,14 +2655,18 @@ function markPlacement(r: ResolvedElement, node: AstElement, fromStrip: boolean)
  * choose among walls that share an id (an `E_DUP_ID` plan), and as the fallback for a host
  * whose id names no wall.
  */
-function registerOpenings(elements: ResolvedElement[], walls: RWall[]): void {
-  const sameSegment = (seg: WallSegment) => (w: RWall) =>
+/** The wall a hosted opening's segment belongs to: by id when that is unique, else the wall
+ *  (among the named ones, or all) that has exactly this segment. */
+function hostWallOf(seg: WallSegment, walls: readonly RWall[]): RWall | undefined {
+  const sameSegment = (w: RWall) =>
     segmentsOfWall(w).some((s) => s.a.x === seg.a.x && s.a.y === seg.a.y && s.b.x === seg.b.x && s.b.y === seg.b.y);
-  const wallOfSegment = (seg: WallSegment): RWall | undefined => {
-    const named = walls.filter((w) => w.id === seg.wallId);
-    if (named.length === 1) return named[0];
-    return (named.length > 1 ? named : walls).find(sameSegment(seg));
-  };
+  const named = walls.filter((w) => w.id === seg.wallId);
+  if (named.length === 1) return named[0];
+  return (named.length > 1 ? named : walls).find(sameSegment);
+}
+
+function registerOpenings(elements: ResolvedElement[], walls: RWall[]): void {
+  const wallOfSegment = (seg: WallSegment): RWall | undefined => hostWallOf(seg, walls);
   for (const el of elements) {
     if ((el.kind === "door" || el.kind === "window" || el.kind === "opening") && el.host) {
       // `kind`/`ownerId`/`sill`/`head` are APPENDED facts: the wall lowering reads
@@ -2630,15 +2696,12 @@ function farthest(values: readonly number[]): number | undefined {
 
 /** The one `E_OUT_OF_RANGE` diagnostic: names the value, the limit and the unit. */
 function outOfRange(what: string, value: number, span: Span | undefined, file?: string): Diagnostic {
-  return {
-    severity: "error",
-    message:
-      `${what} reaches ${fmt3(value)} mm, outside the modelling range of ±${fmt3(MODEL_RANGE_MM)} mm ` +
+  return outOfRangeDiagnostic(
+    `${what} reaches ${fmt3(value)} mm, outside the modelling range of ±${fmt3(MODEL_RANGE_MM)} mm ` +
       `(2^25 mm, about 33.5 km)`,
-    code: "E_OUT_OF_RANGE",
     span,
-    ...(file ? { file } : {}),
-  };
+    file,
+  );
 }
 
 /**

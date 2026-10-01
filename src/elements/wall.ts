@@ -13,7 +13,8 @@ import { arcExtremes, arcFromChord, minArcRadius, smallestSpanningRadius } from 
 import { PointInterner, wallBand } from "../geometry/band.js";
 import { DEFAULT_MATERIAL, hatchesUsed, isKnownMaterial, KNOWN_MATERIALS } from "../hatches.js";
 import { lowerWallSet } from "../wall-lowering.js";
-import { fmt3 } from "../num-format.js";
+import { fmt3, MAX_ANGLE_DEG, MAX_HATCH_SCALE, outOfRangeDiagnostic } from "../num-format.js";
+import { exprSpan } from "../expr.js";
 
 export const wall: ElementDef = {
   kind: "wall",
@@ -177,8 +178,27 @@ export const wall: ElementDef = {
           span: n.span,
         });
       hatchScale = 1;
+    } else if (hatchScale > MAX_HATCH_SCALE) {
+      // Past MAX_HATCH_SCALE a pattern tile can leave the modelling range (see its
+      // derivation); `1e308` drew `width="Infinity"`. Reported and drawn at the default.
+      ctx.diag(
+        outOfRangeDiagnostic(
+          `Wall "${id}" hatch \`scale\` ${fmt3(hatchScale)} is above ${MAX_HATCH_SCALE}, the largest whose pattern tile stays within the modelling range`,
+          (n.materialScale && exprSpan(n.materialScale)) ?? n.span,
+        ),
+      );
+      hatchScale = 1;
     }
-    const hatchAngle = n.materialAngle !== undefined ? ctx.eval(n.materialAngle) : 0;
+    let hatchAngle = n.materialAngle !== undefined ? ctx.eval(n.materialAngle) : 0;
+    if (Math.abs(hatchAngle) > MAX_ANGLE_DEG) {
+      ctx.diag(
+        outOfRangeDiagnostic(
+          `Wall "${id}" hatch \`angle\` ${fmt3(hatchAngle)} degrees is outside ±${fmt3(MAX_ANGLE_DEG)} (2^25, so its sine and cosine stay finite)`,
+          (n.materialAngle && exprSpan(n.materialAngle)) ?? n.span,
+        ),
+      );
+      hatchAngle = 0;
+    }
     // The vertical datum: the authored clause, else the storey's height. NOT
     // grid-snapped — `grid` snaps plan coordinates so rooms line up with each other, and a
     // height shares no axis with them.

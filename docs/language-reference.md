@@ -343,18 +343,27 @@ suffixed literal to its millimetre value (`3.5m` → `3500`).
 ### Modelling range
 
 Every coordinate and length a plan resolves to lies within **±33,554,432 mm** (2²⁵ mm,
-about 33.5 km): every point an element draws to, an opening's centre and width, a wall's
-thickness and arc radii, a dimension's offset, a room's `label … at` anchor, an `axes`
-position and a `site` boundary vertex. It is the range inside which the geometry's integer
+about 33.5 km). What is checked: each element's bounds (the points it reports for the page:
+a rectangle's corners, a ring's vertices, a wall's faces) and the coordinates and lengths
+those do not carry (an opening's centre and width, a wall's thickness and arc radii, a
+dimension's offset, a room's `label … at` anchor), every `axes` position, every `site`
+boundary vertex and the `grid`. It is the range inside which the geometry's integer
 orientation test is exact ([ADR 0020](adr/0020-algebraic-core.md)), and far past any
 building. The check runs on the final plan coordinates, after `place` frames, `strip`s and
 relational placement, so a component placed 40 km away is caught although every number
 written in it is small. An element outside the range is reported once, as `E_OUT_OF_RANGE`
-at its statement, and dropped from the plan, so nothing draws or measures it (the bound is
-`MODEL_RANGE_MM` in `src/num-format.ts`). A number past the floating-point range altogether
-is `E_NON_FINITE`, and a `stair` or `escalator` run longer than about 140 m is
-`E_RUN_TOO_LONG`. A value that is not a length (a `let` binding no element uses, a label's
-text, a hatch `scale`) is not held to the range.
+at its statement (its other diagnostics are withdrawn, and a door, window or opening in a
+dropped wall goes with it), and dropped from the plan, so nothing draws or measures it.
+
+The settings that scale a drawn length are held to domains derived from the range, so the
+drawing they produce stays inside it too: a wall's hatch `scale` is at most 8, a theme
+`lineWeight` at most 128, a `north` bearing or hatch `angle` within ±33,554,432 degrees, and
+on a `paper` plan the `scale` denominator is at most the one that keeps the sheet inside the
+range (1:28220 on A0, 1:112977 on A4). Each is `E_OUT_OF_RANGE` at the value. The bounds are
+`MODEL_RANGE_MM` and its neighbours in `src/num-format.ts`. A number past the floating-point
+range altogether is `E_NON_FINITE`, and a `stair` or `escalator` run longer than about 308 m
+is `E_RUN_TOO_LONG`. A value that draws nothing (a `let` binding no element uses, a label's
+text, a `scale` without `paper`, a storey `level` number) is not held to the range.
 
 ### Arrays & ranges
 
@@ -760,7 +769,8 @@ drawing its own faces inside the poché.
 `insulation`, `tile`, `none`. An unknown material warns and uses the default.
 Hatches are **data-driven**: the SVG emits a tiled `<pattern>` and the DXF a real
 `HATCH` entity. Optionally tune the hatch with `scale <n>` (tile-size multiplier,
-default 1) and `angle <deg>` (extra rotation, default 0):
+default 1, at most 8) and `angle <deg>` (extra rotation, default 0); see
+[Modelling range](#modelling-range):
 
 ```
 wall exterior thickness 250 material brick { … }

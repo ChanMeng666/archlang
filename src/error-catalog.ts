@@ -342,9 +342,9 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   E_RUN_TOO_LONG: E(
     "E_RUN_TOO_LONG",
     "A stair or escalator run is longer than any run the plan draws.",
-    "A `stair` or `escalator` is drawn with one tread line (or chevron) per 280 mm going along its footprint's long side, and at most 500 of them: a run longer than about 140 m — past any built flight or escalator — would be drawn as tens of thousands of lines, so it is refused instead of drawn thinned. Usually a size in the wrong unit (`size 2000x1200` meant, `size 2000000x1200` written).",
+    "A `stair` or `escalator` is drawn with one tread line (or chevron) per 280 mm going along its footprint's long side, and at most 1,100 of them: a run longer than about 308 m — past the longest built escalator and moving walkway — would be drawn as tens of thousands of lines, so it is refused instead of drawn thinned. It holds at any size, inside the modelling range or not. Usually a size in the wrong unit (`size 2000x1200` meant, `size 2000000x1200` written).",
     "Check the footprint's long side; a real run is a few metres. Model a long concourse as a `room` with several runs in it.",
-    "escalator id=e at (0,0) size 200000x1200 dir up   # error: a 200 m run",
+    "escalator id=e at (0,0) size 400000x1200 dir up   # error: a 400 m run",
   ),
   E_VOID_SIZE: E(
     "E_VOID_SIZE",
@@ -630,8 +630,8 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   ),
   E_OUT_OF_RANGE: E(
     "E_OUT_OF_RANGE",
-    "A coordinate or length is outside the modelling range.",
-    "Every coordinate and length a plan resolves to — every point an element draws to, an opening's centre and width, a wall's thickness and arc radii, a dimension's offset, a room's label anchor, an `axes` position, a `site` boundary vertex — must lie within ±33,554,432 mm (2^25 mm, about 33.5 km), the range inside which the geometry's integer predicates are exact. A finite value past it is not a building. The check runs once all `place` frames and relational placements are applied, and the element is reported once, at its span, and dropped from the plan, so nothing downstream draws or measures it.",
+    "A coordinate, length or drawing setting is outside the modelling range.",
+    "Each element's bounds (the points it reports for the page: a rectangle's corners, a ring's vertices, a wall's faces) and the coordinates and lengths those do not carry (an opening's centre and width, a wall's thickness and arc radii, a dimension's offset, a room's label anchor), every `axes` position, every `site` boundary vertex and the `grid` must lie within ±33,554,432 mm (2^25 mm, about 33.5 km), the range inside which the geometry's integer predicates are exact. A finite value past it is not a building. The settings that scale a drawn length are held to domains derived from that range: a wall's hatch `scale` at most 8, a theme `lineWeight` at most 128, a `north` bearing or hatch `angle` within ±33,554,432 degrees, and on a `paper` plan a `scale` denominator small enough that the sheet stays inside the range. An element is checked once its `place` frames and relational placement are applied; it is reported once (its other diagnostics are withdrawn, and an opening in a dropped wall goes with it) and dropped from the plan, so nothing downstream draws or measures it.",
     "Use a realistic dimension. A plan is measured in millimetres (a 30 m wall is `30000`, or `30m`), so a value in the millions is usually a unit slip; a site larger than about 33 km is several plans, not one.",
     "stair id=s at (0,0) size 1000000000000x3000 dir up   # error: a 1e12 mm flight",
   ),

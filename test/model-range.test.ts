@@ -3,8 +3,10 @@
  * (`MODEL_RANGE_MM`, the bound under which ADR 0020 measured plain-double `orient2d` exact).
  * Beyond it an element is ONE `E_OUT_OF_RANGE` at its span and is dropped, never a throw, a
  * hang, or `Infinity`/`NaN` printed into any output. A stair or escalator run is further held
- * to `MAX_RUN_TREADS` (`E_RUN_TOO_LONG`), because the range alone still let one 33.5 km run
- * draw a quarter of a million lines.
+ * to `MAX_RUN_TREADS` (`E_RUN_TOO_LONG`) at every size, because the range alone still let one
+ * footprint inside it draw a quarter of a million lines; and the settings that scale a drawn
+ * length (`north`, hatch `scale`/`angle`, `lineWeight`, `grid`, a `paper` scale) are held to
+ * domains derived from the range.
  *
  * Every case under "the cases that used to run away" failed before this bound: the stair ran
  * `compile()` out of heap, the rest printed a non-number into the SVG or `describe()`.
@@ -13,7 +15,15 @@
 import { describe as suite, expect, it } from "vitest";
 import fc from "fast-check";
 import { compile, describe, ERROR_CATALOG, format, lint, resolve } from "../src/index.js";
-import { MODEL_RANGE_MM } from "../src/num-format.js";
+import {
+  fmtSource,
+  MAX_ANGLE_DEG,
+  MAX_HATCH_SCALE,
+  MAX_LINE_WEIGHT,
+  MODEL_RANGE_MM,
+  maxScaleDenominator,
+} from "../src/num-format.js";
+import { lex } from "../src/lexer.js";
 import { MAX_RUN_TREADS, TREAD_GOING_MM } from "../src/elements/vertical-glyphs.js";
 import { readFileSync } from "node:fs";
 
@@ -186,24 +196,45 @@ suite("the boundary itself", () => {
 });
 
 suite("a stair or escalator run is held to MAX_RUN_TREADS", () => {
-  // treadCount = round(run / 280): 500 up to a 140,139 mm run, 501 from 140,140.
+  // treadCount = round(run / 280): 1,100 up to a 308,139 mm run, 1,101 from 308,140.
   const longest = Math.floor((MAX_RUN_TREADS + 0.5) * TREAD_GOING_MM) - 1;
-  it("the longest drawable run is accepted; one millimetre more is E_RUN_TOO_LONG", () => {
-    expect(longest).toBe(140_139);
+  it("the longest drawable run (about 308 m, past any built moving walkway) is accepted; 1 mm more is not", () => {
+    expect(longest).toBe(308_139);
     for (const kind of ["stair", "escalator"]) {
       expect(surfaces(plan(`${kind} id=s at (0,0) size ${longest}x1200 dir up`)).codes).toEqual([]);
       expect(surfaces(plan(`${kind} id=s at (0,0) size 1200x${longest + 1} dir up`)).codes).toEqual(["E_RUN_TOO_LONG"]);
     }
   }, 60_000);
 
-  it("a run beyond the modelling range is E_OUT_OF_RANGE alone", () => {
+  it("the cap holds INSIDE the modelling range: a 2^26 run centred on the origin (was: 24 MB, or OOM x4)", () => {
+    const L = MODEL_RANGE_MM;
+    for (const kind of ["stair", "escalator"]) {
+      // Every point within ±2^25, so the range check passes; the run is 2^26.
+      expect(surfaces(plan(`${kind} id=s at (-${L},0) size ${2 * L}x1200 dir up`)).codes).toEqual(["E_RUN_TOO_LONG"]);
+      // A run of 2^25 + 280 sitting inside the range.
+      const half = (L + 280) / 2;
+      expect(surfaces(plan(`${kind} id=s at (-${half},0) size ${L + 280}x1200 dir up`)).codes).toEqual([
+        "E_RUN_TOO_LONG",
+      ]);
+    }
+    // Four of them used to fill a 1 GB heap; now they are four errors and no drawing.
+    const four = Array.from(
+      { length: 4 },
+      (_, i) => `escalator id=e${i} at (-${L},${i * 1500}) size ${2 * L}x1200 dir up`,
+    );
+    expect(surfaces(plan(four.join("\n"))).codes).toEqual(Array(4).fill("E_RUN_TOO_LONG"));
+  }, 60_000);
+
+  it("a run that is also beyond the modelling range is ONE E_OUT_OF_RANGE (the run error is withdrawn)", () => {
     expect(surfaces(plan(`stair id=s at (0,0) size ${digits(9)}x1200 dir up`)).codes).toEqual(["E_OUT_OF_RANGE"]);
+    const d = compile(plan(`stair id=s at (0,0) size ${digits(12)}x1200 dir up`), { noCache: true }).diagnostics;
+    expect(d.map((x) => x.code)).toEqual(["E_OUT_OF_RANGE"]);
   });
 
-  it("a layer far past the spread limit still renders (130 runs at the cap: ~130k nodes)", () => {
-    // The old guard for this was `transit-hall` scaled ×1000, which the range now refuses.
+  it("a layer far past the spread limit still renders (60 runs at the cap: ~130k nodes)", () => {
+    // The old guard for this was `transit-hall` scaled x1000, which the range now refuses.
     const runs = Array.from(
-      { length: 130 },
+      { length: 60 },
       (_, i) => `escalator id=e${i} at (0,${i * 1500}) size ${longest}x1200 dir up`,
     ).join("\n");
     const r = compile(plan(runs), { noCache: true });
@@ -212,13 +243,156 @@ suite("a stair or escalator run is held to MAX_RUN_TREADS", () => {
   }, 120_000);
 });
 
+suite("an out-of-range element is reported exactly once", () => {
+  const P = "40000000";
+  /** Every diagnostic compile() returns, any severity. */
+  const all = (src: string) => compile(src, { noCache: true }).diagnostics.map((d) => d.code);
+
+  it("its resolve-time errors and warnings are withdrawn beside E_OUT_OF_RANGE", () => {
+    // Each case below used to be two reports for one element (the second named on the right).
+    expect(all(plan(`wall id=w exterior thickness -${P} { (0,0) (10000,0) }`))).toEqual(["E_OUT_OF_RANGE"]); // E_WALL_THICKNESS
+    expect(all(plan(`${W}\n${R}\ndoor at (${digits(308)},0) width 900`))).toEqual(["E_OUT_OF_RANGE"]); // W_DOOR_OFF_WALL
+    expect(all(plan(R.replace('"Hall"', `"Hall" at (${MODEL_RANGE_MM + 1},0)`)))).toEqual(["E_OUT_OF_RANGE"]); // W_ROOM_LABEL_OUTSIDE
+    // The relational path raises its label warning after placement, from `placeRelational`.
+    expect(
+      all(plan(`room id=a at (0,0) size 3000x3000\nroom id=b right-of a size 3000x3000 label "B" at (${P},0)`)),
+    ).toEqual(["E_OUT_OF_RANGE"]);
+    // Inside a placed instance too.
+    expect(
+      all(plan(`component c() { wall id=w exterior thickness -${P} { (0,0) (1000,0) } }\nplace c() as i at (0,0)`)),
+    ).toEqual(["E_OUT_OF_RANGE"]);
+  });
+
+  it("an in-range element keeps its own diagnostics", () => {
+    expect(all(plan(`wall id=w exterior thickness -200 { (0,0) (10000,0) }`))).toContain("E_WALL_THICKNESS");
+    expect(all(plan(`${W}\n${R}\ndoor at (5000,4000) width 900`))).toContain("W_DOOR_OFF_WALL");
+  });
+
+  it("an opening hosted on a dropped wall goes with it, silently (the wall's report is the one report)", () => {
+    const src = plan(
+      `wall id=w exterior thickness 200 { (0,0) (${P},0) }\ndoor on w at 1000 width 900\nwindow on w at 3000 width 900`,
+    );
+    const r = compile(src, { noCache: true });
+    expect(r.diagnostics.map((d) => d.code)).toEqual(["E_OUT_OF_RANGE"]);
+    expect(r.diagnostics[0]!.message).toContain('wall "w"');
+    const kinds = resolve(r.ast!).ir.elements.map((e) => e.kind);
+    expect(kinds).not.toContain("door");
+    expect(kinds).not.toContain("window");
+    expect(kinds).not.toContain("wall");
+  });
+});
+
+suite("the settings that scale a drawn length are held too", () => {
+  const BIG = digits(308);
+  const B = `${W}\n${R}`;
+  const one = (src: string): string[] => surfaces(src).codes;
+  const spanOf = (src: string): string => {
+    const d = compile(src, { noCache: true }).diagnostics.find((x) => x.code === "E_OUT_OF_RANGE")!;
+    return src.slice(d.span!.start, d.span!.end);
+  };
+
+  it('north: a bearing past ±2^25 degrees (was: rotate(1e+308) and x="NaN")', () => {
+    expect(one(plan(B, `north ${BIG}\n`))).toEqual(["E_OUT_OF_RANGE"]);
+    expect(spanOf(plan(B, `north ${BIG}\n`))).toBe(BIG);
+    expect(one(plan(B, `north ${MAX_ANGLE_DEG}\n`))).toEqual([]);
+    expect(one(plan(B, `north ${MAX_ANGLE_DEG + 1}\n`))).toEqual(["E_OUT_OF_RANGE"]);
+  });
+
+  it('hatch scale above MAX_HATCH_SCALE (was: width="Infinity"), and hatch angle past ±2^25 degrees', () => {
+    const wall = (clause: string) =>
+      plan(`wall id=w exterior thickness 200 material brick ${clause} { (0,0) (10000,0) }\n${R}`);
+    expect(one(wall(`scale ${BIG}`))).toEqual(["E_OUT_OF_RANGE"]);
+    // A bare literal carries no span of its own, so the wall statement is blamed.
+    expect(spanOf(wall(`scale ${BIG}`))).toMatch(/^wall id=w /);
+    expect(one(wall(`scale ${MAX_HATCH_SCALE}`))).toEqual([]);
+    expect(one(wall(`scale ${MAX_HATCH_SCALE + 0.5}`))).toEqual(["E_OUT_OF_RANGE"]);
+    expect(one(wall(`angle ${BIG}`))).toEqual(["E_OUT_OF_RANGE"]);
+    expect(one(wall(`angle ${MAX_ANGLE_DEG}`))).toEqual([]);
+  });
+
+  it('theme lineWeight above MAX_LINE_WEIGHT (was: stroke-width="Infinity")', () => {
+    expect(one(plan(B, `theme { lineWeight: ${BIG} }\n`))).toEqual(["E_OUT_OF_RANGE"]);
+    expect(one(plan(B, `theme { lineWeight: ${MAX_LINE_WEIGHT} }\n`))).toEqual([]);
+    expect(one(plan(B, `theme { lineWeight: ${MAX_LINE_WEIGHT + 1} }\n`))).toEqual(["E_OUT_OF_RANGE"]);
+  });
+
+  it("grid past the range (was: every coordinate snapped to 0, reported as E_ROOM_SIZE)", () => {
+    expect(one(plan(B, `grid ${BIG}\n`))).toEqual(["E_OUT_OF_RANGE"]);
+    expect(one(plan(B, `grid ${MODEL_RANGE_MM}\n`))).not.toContain("E_OUT_OF_RANGE");
+  });
+
+  it("a paper plan's scale denominator that puts the sheet past the range", () => {
+    const max = maxScaleDenominator(1189); // A0's long side
+    expect(max).toBe(28_220);
+    expect(one(plan(B, `paper A0\nscale 1:${max}\n`))).toEqual([]);
+    expect(one(plan(B, `paper A0\nscale 1:${max + 1}\n`))).toEqual(["E_OUT_OF_RANGE"]);
+    expect(spanOf(plan(B, `paper A0\nscale 1:${max + 1}\n`))).toBe(`scale 1:${max + 1}`);
+    // Without paper a scale is a title-block annotation and draws nothing at that size.
+    expect(one(plan(B, `scale 1:${digits(20)}\n`))).toEqual([]);
+  });
+
+  it("the derivations hold: the worst tile and the worst pen stay inside the range", () => {
+    // Reference dimension ≤ 2^26 (see num-format.ts); tile ≤ 4 × 0.013 × it; pen ≤ 0.0028 × it.
+    expect(4 * 0.013 * 2 ** 26 * MAX_HATCH_SCALE).toBeLessThanOrEqual(MODEL_RANGE_MM);
+    expect(0.0028 * 2 ** 26 * MAX_LINE_WEIGHT).toBeLessThanOrEqual(MODEL_RANGE_MM);
+  });
+});
+
+suite("source printers write every finite value so it re-parses to the same double", () => {
+  /** The number a source literal lexes to. */
+  const lexed = (s: string): number => {
+    const toks = lex(s).tokens.filter((t) => t.type === "number");
+    expect(toks).toHaveLength(1);
+    return toks[0]!.num!;
+  };
+
+  it("the integer fmt3 used to move (999999999999740600000 printed as …740700000)", () => {
+    const n = 999999999999740600000;
+    expect(lexed(fmtSource(n))).toBe(n);
+  });
+
+  it("4,000 doubles across 1e12..1e300 round-trip, and format() is idempotent on them", () => {
+    // Above |n| × 1000 = 2^53 every value is printed exactly. Below it the source keeps its
+    // 3 dp (the formatter's own precision, unchanged here), so a sample there is an integer,
+    // which 3 dp carries exactly.
+    // A fixed linear congruential generator: reproducible without a dependency.
+    let state = 20261002;
+    const next = (): number => {
+      state = (state * 1103515245 + 12345) % 2 ** 31;
+      return state / 2 ** 31;
+    };
+    const values: number[] = [];
+    for (let i = 0; i < 4000; i++) {
+      const v = (1 + next() * 9) * 10 ** Math.floor(12 + next() * 289);
+      values.push(v * 1000 > 2 ** 53 ? v : Math.round(v));
+    }
+    const printed = values.map(fmtSource);
+    for (let i = 0; i < values.length; i++) {
+      expect(printed[i]).toMatch(/^\d+(\.\d+)?$/);
+      expect(lexed(printed[i]!)).toBe(values[i]);
+    }
+    const src = plan(printed.map((s, i) => `let v${i} = ${s}`).join("\n"));
+    const once = format(src);
+    for (const s of printed) expect(once).toContain(` = ${s}\n`);
+    expect(format(once)).toBe(once);
+  }, 60_000);
+});
+
 suite("property: random magnitudes up to 1e308 never escape the closed domain", () => {
   const ALLOWED = new Set(["E_OUT_OF_RANGE", "E_NON_FINITE", "E_RUN_TOO_LONG"]);
+  const B = `${W}\n${R}`;
+  // (`grid` is not here: a grid coarser than the plan legitimately snaps it apart, with the
+  // plan's own codes; its domain is pinned in the suite above.)
+  // Each template varies exactly ONE value, so at most one element (or setting) can leave its
+  // domain: the plan is either drawn or refused by exactly one report.
   const kinds: Record<string, (v: string) => string> = {
     roomAt: (v) => plan(`room id=a at (${v},0) size 3000x3000`),
     roomSize: (v) => plan(`room id=a at (0,0) size ${v}x3000`),
     wall: (v) => plan(`wall id=w exterior thickness 200 { (0,0) (${v},0) }\nroom id=a at (0,0) size 3000x3000`),
-    door: (v) => plan(`${W}\n${R}\ndoor on w at 50% width ${v}`),
+    wallThickness: (v) => plan(`wall id=w exterior thickness ${v} { (0,0) (10000,0) }`),
+    door: (v) => plan(`${B}\ndoor on w at 50% width ${v}`),
+    doorAt: (v) => plan(`${B}\ndoor at (${v},0) width 900`),
+    labelAt: (v) => plan(R.replace('"Hall"', `"Hall" at (${v},0)`)),
     stair: (v) => plan(`stair id=s at (0,0) size ${v}x3000 dir up`),
     escalator: (v) => plan(`escalator id=e at (0,0) size 1200x${v} dir down`),
     dim: (v) => plan(`${R}\ndim (0,0)->(${v},0) offset ${v}`),
@@ -229,13 +403,20 @@ suite("property: random magnitudes up to 1e308 never escape the closed domain", 
     roof: (v) => plan(`${W}\nroof polygon (0,0) (${v},0) (${v},8000) (0,8000)`),
     site: (v) => plan(R, `site { street south boundary (0,0) (${v},0) (${v},${v}) (0,${v}) }\n`),
     place: (v) => plan(`component c() { room id=r at (0,0) size 3000x3000 }\nplace c() as i at (${v},0)`),
+    north: (v) => plan(B, `north ${v}\n`),
+    hatchScale: (v) => plan(`wall id=w exterior thickness 200 material brick scale ${v} { (0,0) (10000,0) }\n${R}`),
+    hatchAngle: (v) => plan(`wall id=w exterior thickness 200 material brick angle ${v} { (0,0) (10000,0) }\n${R}`),
+    lineWeight: (v) => plan(B, `theme { lineWeight: ${v} }\n`),
+    paperScale: (v) => plan(B, `paper A3\nscale 1:${v}\n`),
   };
-  // A magnitude as digits: a leading 1-9 then 0..308 zeros, so every decade is reached.
+  // A FINITE magnitude as digits: a leading 1-9 then 0..308 zeros (only 1e308 itself in the
+  // last decade, the largest such literal that is finite), so every decade is reached. A
+  // literal past the doubles is the lexer's per-literal E_NON_FINITE (test/non-finite.test.ts).
   const magnitude = fc
     .tuple(fc.integer({ min: 1, max: 9 }), fc.integer({ min: 0, max: 308 }))
-    .map(([lead, e]) => digits(e, String(lead)));
+    .map(([lead, e]) => digits(e, String(e === 308 ? 1 : lead)));
 
-  it("never throws; no Infinity/NaN in any output; either drawn or a closed-domain code", () => {
+  it("never throws; no Infinity/NaN in any output; drawn, or exactly one closed-domain report", () => {
     let drawn = 0;
     let refused = 0;
     fc.assert(
@@ -245,15 +426,26 @@ suite("property: random magnitudes up to 1e308 never escape the closed domain", 
         if (codes.length === 0) {
           expect(svg.length).toBeGreaterThan(0);
           drawn++;
-        } else refused++;
-        for (const c of codes) expect(ALLOWED.has(c)).toBe(true);
+        } else {
+          refused++;
+          // One varying value, one report, and it is a closed-domain code.
+          expect(codes).toHaveLength(1);
+          expect(ALLOWED.has(codes[0]!)).toBe(true);
+          // Nothing else is said about that element: no other diagnostic lies within its span.
+          const diags = compile(src, { noCache: true }).diagnostics;
+          const d = diags.find((x) => x.severity === "error")!;
+          const inside = diags.filter(
+            (x) => x !== d && x.span && d.span && x.span.start >= d.span.start && x.span.end <= d.span.end,
+          );
+          expect(inside).toEqual([]);
+        }
         expect(() => format(src)).not.toThrow();
         expect(format(src)).not.toMatch(/\de\+\d/);
       }),
-      { seed: 20261002, numRuns: 200 },
+      { seed: 20261002, numRuns: 300 },
     );
     // Not vacuous: the seed reaches both sides of the bound.
-    expect(drawn).toBeGreaterThan(10);
-    expect(refused).toBeGreaterThan(10);
+    expect(drawn).toBeGreaterThan(20);
+    expect(refused).toBeGreaterThan(20);
   }, 60_000);
 });
