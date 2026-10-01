@@ -327,12 +327,21 @@ function axisCells(v: number, cell: number, n: number): [number, number] {
  * (mirrors occupancy.ts' inward seeding), as a sorted set of cell indices. Empty when the
  * doorway's inward run is sealed by furniture, so a blocked doorway simply yields no seed.
  *
+ * `floorEroded` (a connector's threshold, from {@link buildGrid}) seals the rectangle walk at
+ * the room's first eroded FLOOR cell: it stops there and seeds nothing beyond. Without it the
+ * walk stepped on through the eroded cells to whatever free cell lay past them — past a
+ * fixture, or a stair's whole footprint — and the carve from that far seed stamped the
+ * doorway's width on a cell nowhere near the doorway (hillside-villa's landing: `d_en2_corr`'s
+ * 640 on the passage under the flight). The walk still crosses the wall band, eroded or not:
+ * a halo reaching through a wall from furniture in the next room does not stand in the
+ * doorway. A front door's seed is read without it (`null`), as it always was.
+ *
  * The walk starts from EVERY cell whose closed square holds `at` ({@link axisCells}): one
  * cell for a point strictly inside a cell, and then the set is the single cell the walk
  * reaches; two for a point on a lattice line (four at a crossing), and then it holds what
  * each side's walk reaches. Flooring the point to one cell put a doorway on a line on its
  * +x/+y side, so a turned or flipped plan seeded the other side — the same doorway, a walk
- * origin a cell (or, past eroded cells, several) away. The set is the same however the plan
+ * origin a cell (or, across a wall band or eroded cells, several) away. The set is the same however the plan
  * is turned or flipped (backlog E.6/E.7/E.10).
  *
  * A POLYGON room's doorway need not sit on a bounding-box side, so the "step inward
@@ -350,7 +359,15 @@ function axisCells(v: number, cell: number, n: number): [number, number] {
  * narrower one found NOTHING is strictly additive: every seed that already resolved
  * resolves to the same cells, because the scan is by increasing ring.
  */
-function seedCells(g: NavGrid, at: Point, rb: RoomBox, roomIndex: number, tol: number, bandMm = 0): number[] {
+function seedCells(
+  g: NavGrid,
+  at: Point,
+  rb: RoomBox,
+  roomIndex: number,
+  tol: number,
+  bandMm = 0,
+  floorEroded: Uint8Array | null = null,
+): number[] {
   const [x0, x1] = axisCells(at.x - g.minX, g.cell, g.nx);
   const [y0, y1] = axisCells(at.y - g.minY, g.cell, g.ny);
   if (rb.poly) {
@@ -383,7 +400,7 @@ function seedCells(g: NavGrid, at: Point, rb: RoomBox, roomIndex: number, tol: n
   const out = new Set<number>();
   for (let iy = y0; iy <= y1; iy++) {
     for (let ix = x0; ix <= x1; ix++) {
-      const k = walkInward(g, ix, iy, dx, dy, roomIndex);
+      const k = walkInward(g, ix, iy, dx, dy, roomIndex, floorEroded);
       if (k >= 0) out.add(k);
     }
   }
@@ -391,13 +408,25 @@ function seedCells(g: NavGrid, at: Point, rb: RoomBox, roomIndex: number, tol: n
 }
 
 /** {@link seedCells}' rectangle walk from one start cell: step (dx, dy) until the first
- *  free cell of the room, or −1 at the grid's edge. */
-function walkInward(g: NavGrid, ix: number, iy: number, dx: number, dy: number, roomIndex: number): number {
+ *  free cell of the room, or −1 at the grid's edge — or, given `floorEroded`, at the room's
+ *  first eroded floor cell. */
+function walkInward(
+  g: NavGrid,
+  ix: number,
+  iy: number,
+  dx: number,
+  dy: number,
+  roomIndex: number,
+  floorEroded: Uint8Array | null,
+): number {
   for (let step = 0; step < g.nx + g.ny; step++) {
     const sx = clamp(ix + dx * step, 0, g.nx - 1);
     const sy = clamp(iy + dy * step, 0, g.ny - 1);
     const k = sy * g.nx + sx;
-    if (g.roomIdx[k] === roomIndex && g.free[k]) return k;
+    if (g.roomIdx[k] === roomIndex) {
+      if (g.free[k]) return k;
+      if (floorEroded?.[k]) break;
+    }
     const atX = dx === 0 || sx === (dx > 0 ? g.nx - 1 : 0);
     const atY = dy === 0 || sy === (dy > 0 ? g.ny - 1 : 0);
     if (atX && atY) break;
@@ -1312,9 +1341,15 @@ function buildGrid(
   // Walls block (see `rasteriseWallSegments`, which is this pass verbatim and is shared
   // with the residual gate). Doors carve back through below; the furniture-eroded cells
   // collected above stay eroded, because the carve — not this pass — is what reopens.
+  const wallCell = new Uint8Array(nx * ny);
   rasteriseWallSegments(ex, walls, (k) => {
     free[k] = 0;
+    wallCell[k] = 1;
   });
+  // The eroded cells a threshold's inward walk may not cross (`seedCells`): an eroded cell
+  // under a wall is a halo reaching through it, not floor in front of the doorway.
+  const floorEroded = new Uint8Array(nx * ny);
+  for (let k = 0; k < eroded.length; k++) if (eroded[k] && !wallCell[k]) floorEroded[k] = 1;
 
   // Stitch: carve a threshold through the wall band at each internal connector,
   // recording the connector's clear width at the (grid-degenerate) carved cells.
@@ -1343,8 +1378,8 @@ function buildGrid(
     // would run an L along a row inside a room, stamping the doorway's width over cells
     // whose clearance is a furniture pinch.
     const pathsAt = (at: Point): number[][] => {
-      const as = seedCells(before, at, rects[ai]!, ai, tol, c.bandMm);
-      const bs = seedCells(before, at, rects[bi]!, bi, tol, c.bandMm);
+      const as = seedCells(before, at, rects[ai]!, ai, tol, c.bandMm, floorEroded);
+      const bs = seedCells(before, at, rects[bi]!, bi, tol, c.bandMm, floorEroded);
       const out: number[][] = [];
       for (const [a, b] of nearestPairs(g, as, bs)) {
         const xy = carvePath(g, eroded, a, b, true);
