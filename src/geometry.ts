@@ -261,25 +261,25 @@ export function sectorIntersectsRect(s: DoorSwing, r: RectXYWH, clearance: numbe
 }
 
 /**
- * Do two door swings' quarter-discs overlap (within `clearance`)?
+ * Do two door swings' quarter-discs obstruct each other (within `clearance`)?
  *
- * The sampler below is a DETECTOR, not a decision procedure: it tests nine points on each
- * leaf's arc (both jambs included) against the other swing, so it can miss a real overlap
- * whose shared region holds none of those points (backlog 6.12 records a ~90,000 mm²
- * counterexample, missed before and after this rule). When it does find a shared point,
- * {@link sectorsObstruct} decides whether that contact is an obstruction. Contact in exactly
- * ONE POINT is clear: the textbook double door (two leaves hinged on the outer jambs, meeting
- * at the shared closed jamb, discs tangent there) and a row of leaves where one's far jamb is
- * the next one's hinge. Anything more collides: an overlap of area, or contact along a segment,
- * longer than {@link VERTEX_EPS} (1e-6 mm, the tolerance an oblique wall's floating-point
- * jambs need) — two openings overlapping along the wall with opposite swings, two leaves hung
- * back to back on one post: leaves are solid, so a shared line is a clash.
+ * Decided exactly, with no sampling, by {@link sectorsObstruct}: a separating-axis test on the
+ * two closed sectors. (A nine-point arc sampler used to gate it and missed any overlap whose
+ * shared region held none of its points: backlog 6.12, a ~90,000 mm² overlap read as clear.)
+ * Contact in exactly ONE POINT is clear: the textbook double door (two leaves hinged on the
+ * outer jambs, meeting at the shared closed jamb, discs tangent there) and a row of leaves
+ * where one's far jamb is the next one's hinge. Anything more collides: an overlap of area,
+ * or contact along a segment, longer than {@link VERTEX_EPS} (1e-6 mm, the tolerance an
+ * oblique wall's floating-point jambs need) — two openings overlapping along the wall with
+ * opposite swings, two leaves hung back to back on one post: leaves are solid, so a shared
+ * line is a clash.
  *
- * `clearance` inflates the OTHER swing's radius (the sampler's `o.radius + clearance`), so
- * with `clearance > 0` single-point contact at exactly `radius + clearance` is clear, the
- * same rule as at `clearance = 0`. The clearance keeps INDEPENDENT doors apart; the two
- * leaves of one double door ({@link isDoubleDoorPair}) are one assembly and are clear at any
- * clearance.
+ * `clearance` grows the OTHER swing's radius about its hinge ({@link inflateSwing}), and both
+ * pairings are asked — each leaf against the other's grown disc — since one can overlap while
+ * the other only touches. So with `clearance > 0` single-point contact at exactly
+ * `radius + clearance` is clear, the same rule as at `clearance = 0`. The clearance keeps
+ * INDEPENDENT doors apart; the two leaves of one double door ({@link isDoubleDoorPair}) are
+ * one assembly and are clear at any clearance.
  */
 export function swingsCollide(a: DoorSwing, b: DoorSwing, clearance: number): boolean {
   // Quick reject: if the hinges are farther apart than the sum of radii + clearance
@@ -289,26 +289,6 @@ export function swingsCollide(a: DoorSwing, b: DoorSwing, clearance: number): bo
   // Two leaves of one double door: a clearance between them would be a clearance between a
   // door and itself. (At clearance 0 the pair is clear on its own, by single-point contact.)
   if (clearance !== 0 && isDoubleDoorPair(a, b)) return false;
-  // Sample b's wedge arc and test against a's wedge (and vice versa). Conservative.
-  const sampleInOther = (s: DoorSwing, o: DoorSwing): boolean => {
-    const c0 = sub(s.farJamb, s.hinge);
-    const c1 = sub(s.leafEnd, s.hinge);
-    const steps = 8;
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      const vx = c0.x + (c1.x - c0.x) * t;
-      const vy = c0.y + (c1.y - c0.y) * t;
-      const p = add(s.hinge, mul(unit({ x: vx, y: vy }), s.radius));
-      const within = Math.hypot(p.x - o.hinge.x, p.y - o.hinge.y) <= o.radius + clearance;
-      if (within && pointInWedge(p, o)) return true;
-    }
-    return false;
-  };
-  if (!(sampleInOther(a, b) || sampleInOther(b, a))) return false;
-  // A shared point was found. It is an obstruction unless BOTH pairings the sampler tests
-  // (each leaf against the other's clearance-grown disc) meet in at most one point — both
-  // are asked, since the sampler may have found its point on the pairing that only touches
-  // while missing the one that overlaps.
   return sectorsObstruct(a, inflateSwing(b, clearance)) || sectorsObstruct(b, inflateSwing(a, clearance));
 }
 
@@ -371,17 +351,22 @@ function sectorSupport(s: DoorSwing, d: Vec): number {
  * from edges and arcs of the two sectors, so that normal is one of a finite set: an
  * edge normal or an arc-end radial of either sector, or the axis from one arc's centre
  * (a hinge) to a vertex of the other (arc + vertex, arc + arc). Checking all of them, in
- * both signs, decides the question without sampling. No separating line: the interiors
- * overlap. A separating line: whatever the two share lies on it, inside each sector's FACE
- * there (see {@link contactLength}), and it is an obstruction only if those faces overlap
- * along a segment. A shared segment pins the separating line to itself, so the first line
- * found answers for all of them.
+ * both signs, decides the question without sampling. The sum's sign along a separating
+ * direction says which case it is:
+ *
+ * - **below 0 — a gap.** The line strictly separates the sectors: they are disjoint, clear.
+ *   (Any axis with a gap answers; a separating gap anywhere rules out contact everywhere.)
+ * - **0 — contact.** The line touches both: whatever the two share lies on it, inside each
+ *   sector's FACE there (see {@link contactLength}), and it is an obstruction only if those
+ *   faces overlap along a segment. A shared segment pins the separating line to itself, so
+ *   the first touching line found answers for all of them.
+ * - **no separating direction** — the interiors overlap: an obstruction.
  *
  * On an axis-aligned wall with whole-millimetre positions every candidate is exact in
  * floating point, so a shared closed jamb evaluates to exactly 0 and a zero-length contact
- * to exactly 0. On an oblique wall the jambs agree only to ~1e-13 mm, so both are read
- * within {@link VERTEX_EPS} — the repository's own rule for when two vertices are the same
- * vertex — rather than as a fresh epsilon.
+ * to exactly 0. On an oblique wall the jambs agree only to ~1e-13 mm, so the sum and the
+ * contact length are read within {@link VERTEX_EPS} — the repository's own rule for when two
+ * vertices are the same vertex — rather than as a fresh epsilon.
  */
 function sectorsObstruct(a: DoorSwing, b: DoorSwing): boolean {
   const axes: Vec[] = [];
@@ -390,17 +375,20 @@ function sectorsObstruct(a: DoorSwing, b: DoorSwing): boolean {
   }
   for (const v of [b.hinge, b.farJamb, b.leafEnd]) axes.push(sub(v, a.hinge));
   for (const v of [a.farJamb, a.leafEnd]) axes.push(sub(b.hinge, v));
+  /** The first direction whose separating line touches both sectors (sum within VERTEX_EPS of 0). */
+  let touching: { d: Vec; ha: number; hb: number } | null = null;
   for (const v of axes) {
     const u = unit(v);
     if (u.x === 0 && u.y === 0) continue;
     for (const d of [u, mul(u, -1)]) {
-      const nd = mul(d, -1);
       const ha = sectorSupport(a, d);
-      const hb = sectorSupport(b, nd);
-      if (ha + hb <= VERTEX_EPS) return contactLength(a, d, ha, b, nd, hb) > VERTEX_EPS;
+      const hb = sectorSupport(b, mul(d, -1));
+      if (ha + hb < -VERTEX_EPS) return false; // a gap: disjoint
+      if (touching === null && ha + hb <= VERTEX_EPS) touching = { d, ha, hb };
     }
   }
-  return true;
+  if (touching === null) return true; // no separating line: the interiors overlap
+  return contactLength(a, touching.d, touching.ha, b, mul(touching.d, -1), touching.hb) > VERTEX_EPS;
 }
 
 /**
@@ -408,8 +396,15 @@ function sectorsObstruct(a: DoorSwing, b: DoorSwing): boolean {
  * with `b`'s face in direction `nd = −d`, measured along the separating line. A sector's face
  * is a vertex, the arc's one farthest point, or a straight edge (when `d` is that edge's
  * outward normal), so the overlap is a segment only when two straight edges lie on the line.
+ *
+ * The two faces lie on the lines `p · d = ha` and `p · d = −hb`, which are the SAME line only
+ * when `ha + hb` is 0 (within {@link VERTEX_EPS}). Faces on two parallel lines with a gap
+ * between them share no point however far their projections overlap, so they measure 0 —
+ * reading those projections as contact made two leaves opening away from each other, 1.5 m
+ * apart, "collide".
  */
 function contactLength(a: DoorSwing, d: Vec, ha: number, b: DoorSwing, nd: Vec, hb: number): number {
+  if (Math.abs(ha + hb) > VERTEX_EPS) return 0; // not collinear: parallel faces with a gap
   const t = normal(d); // along the separating line
   const face = (s: DoorSwing, dir: Vec, level: number): [number, number] => {
     const pts: Point[] = [s.hinge, s.farJamb, s.leafEnd];

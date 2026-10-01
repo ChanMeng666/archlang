@@ -9,7 +9,14 @@ import { connectorClearWidth, DEFAULT_CLEAR_ALLOWANCE_MM, rectOf } from "../../a
 import type { Point } from "../../ast.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { doorHingeFlipFix, fixesFrom, pocketRunFix } from "../../fix-producers.js";
-import { doorSwing, sectorIntersectsRect, swingsCollide, type DoorSwing, type WallSegment } from "../../geometry.js";
+import {
+  doorSwing,
+  sectorIntersectsRect,
+  swingsCollide,
+  type DoorLike,
+  type DoorSwing,
+  type WallSegment,
+} from "../../geometry.js";
 import { arcOpeningVoid } from "../../geometry/arc-band.js";
 import { type Arc, arcLength, arcTangentAt } from "../../geometry/arc.js";
 import { doorLandingRect, rectsOverlap } from "../../geometry/rect.js";
@@ -138,11 +145,19 @@ function passableDoorWidthMm(rules: LintContext["rules"]): number {
  * the recomputed `doorSwing` accounts for that exactly, where `gap − radius − clearance` did
  * not. A narrower leaf's quarter-disc lies inside the wider one's (the radius shrinks by Δ
  * while the hinge moves Δ/2 along the closed leaf, and the cone's vectors sum inside the
- * cone), so being clear is monotone in the width and a bisection finds the widest. The
+ * cone), and so does its disc grown by the swing clearance (radius `r − Δ + c` about a hinge
+ * Δ/2 away, inside `r + c`). `swingsCollide` decides exactly on those shapes, so a leaf
+ * nested in one clear of every other swing is clear of them too: being clear is monotone in
+ * the width and a bisection finds the widest (`test/swing-exact.test.ts` checks it against
+ * every width). The
  * width returned is one that was TESTED, never an extrapolation, and every narrower one is
  * nested inside it — which is what the hint's "or less" rests on.
  */
-function widestClearingWidth(d: RDoor, grid: number, clears: (s: DoorSwing | null) => boolean): number | null {
+export function widestClearingWidth(
+  d: DoorLike,
+  grid: number,
+  clears: (s: DoorSwing | null) => boolean,
+): number | null {
   const step = grid > 0 ? grid : 1;
   const ok = (k: number): boolean => clears(doorSwing({ ...d, width: k * step }));
   let lo = 1;
