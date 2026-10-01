@@ -354,31 +354,47 @@
  * without `W_DOOR_CLEARANCE` or `W_PATH_TOO_NARROW`; and `hillside-villa`'s two `wc`
  * distances 802 → 801 mm with their shortfalls 48 → 49).
  *
- * ## `hexagon-pavilion`: both rows re-measured — a threshold no longer carves in point order
+ * ## `hexagon-pavilion`: both rows re-measured — a threshold no longer carves in carve order
  *
  * Case (1), the compiler changed, deliberately: an equivariance fault the random-plan oracle
- * found (`test/equivariance-corpus.test.ts`, "closed classes", the carve-order witness). A
+ * found (`test/equivariance-corpus.test.ts`, "closed classes", the carve-order witnesses). A
  * connector's threshold points are visited centre, +d, −d in the frame's own axis order, and
- * each point's seeds were read off the LIVE nav mask, so a later point could seed on a cell an
- * earlier point had just carved open; a turn or flip reverses the ± order and so which cells
- * seed — a turned plan reported a different bottleneck (700 vs 740). Seeds are now read off
- * the mask as it stood before the connector carved anything (`buildGrid`, per connector);
- * nothing else changed. Swept before → after on the same tree (every storey's SVG,
- * `describe()`, `lint()`, `compile().diagnostics` and `lint()` under `accessibility-advisory`,
- * over the examples, `test/fixtures`, `test/recovery-corpus`, `eval/goldens` and
- * `eval/fidelity-plans`, 84 files; a planted walk change was caught by the same sweep first):
- * only `hexagon-pavilion`'s `describe()` moved. Field by field:
+ * each point's seeds were read off the LIVE nav mask, so a point could seed on a cell an
+ * earlier carve had just opened — an earlier point of the same connector (a turn or flip
+ * reverses the ± order: a turned plan reported a bottleneck of 740 against 700) or an earlier
+ * connector (source order: a second drum portal into `g_sw` gave 8800 or 8200 by which was
+ * written first). Every seed is now read off the mask as it stood before ANY connector carved
+ * (`buildGrid`); nothing else changed.
  *
- *   - `circulation.rooms[g_sw]`: walk 9800 → 8800, detour 1.87 → 1.68;
- *   - `circulation.rooms[g_se]`: walk 9800 → 8800, detour 1.87 → 1.68.
+ * Swept before → after on the same tree, 84 files (the examples incl. `lib/`, `test/fixtures`,
+ * `test/recovery-corpus`, `eval/goldens`, `eval/fidelity-plans`), seven digests per file:
+ * every storey's SVG, `describe()`, `lint()`, `compile().diagnostics`, `lint()` under
+ * `accessibility-advisory`, this file's combined digest, and the `--overlay circulation` SVG.
+ * The sweep was shown able to fail first: 1 mm planted on `r_bed1`'s walk, a room only
+ * rectangular plans have, moved `describe()` on 13 files. The result:
  *
- * Bottlenecks (1340), every other room, routes, `blocked`/`unmeasured`, the SVG, `lint()` and
- * `compile().diagnostics` are byte-identical. These are the two galleries behind the OBLIQUE
- * drum portals, whose seeds come from the polygon branch's ring scan: under the live mask the
- * scan found cells earlier threshold points had opened inside the 1200 mm masonry and tunnelled
- * from them. The old 9800 was itself produced by that carve order — "Circulation v2" above
- * already recorded it as rule-consistent, not a correction (backlog C.5) — and the new 8800 is
- * the same rule with the order taken out, not a measured truth either.
+ *   - SVG, `lint()`, `compile().diagnostics` and the accessibility `lint()`: byte-identical on
+ *     all 84 files.
+ *   - `describe()` (and so these rows): moved on `hexagon-pavilion` only. Field by field,
+ *     `circulation.rooms[g_sw]` and `circulation.rooms[g_se]`: walk 9800 → 8800, detour
+ *     1.87 → 1.68. Bottlenecks (1340), every other room, routes and `blocked`/`unmeasured`
+ *     are byte-identical.
+ *   - The `--overlay circulation` SVG (opt-in, pinned by no baseline): moved on 14 files and
+ *     no measured fact moved with it outside the hexagon. `eval/goldens/` anchor-furniture,
+ *     dims-auto-cottage, galley-kitchen, relational-studio, three-bed-2bath, two-bath-flat,
+ *     two-bed-hall; `examples/` aquarium, gallery-l, hillside-villa, library, materials;
+ *     `test/recovery-corpus/materials`: a room's pinch marker moves 100–400 mm along one axis
+ *     at the same `clearMm`, and a room walk or key route is drawn along a different polyline
+ *     of the SAME length with the same two ends (a tie among shortest paths, broken on a grid
+ *     whose carved cells differ). `hexagon-pavilion`: g_sw and g_se are drawn along their new
+ *     8800 walks, and g_ne/g_nw along equal-length (12100) alternatives.
+ *
+ * The two hexagon galleries are the ones behind the OBLIQUE drum portals, whose seeds come
+ * from the polygon branch's ring scan: under the live mask the scan found cells earlier
+ * threshold points had opened inside the 1200 mm masonry and tunnelled from them. The old 9800
+ * was itself produced by that carve order — "Circulation v2" above already recorded it as
+ * rule-consistent, not a correction (backlog C.5) — and the new 8800 is the same rule with the
+ * order taken out, not a measured truth either.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

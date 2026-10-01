@@ -57,12 +57,13 @@
  *       office detour 1.19→1.17 [AE]
  *
  * `examples/hexagon-pavilion.arch` re-measured, with this test's own digest body, for the
- * threshold carve-order fix (a connector's seeds are read off the nav mask as it stood before
- * the connector carved, so the order its threshold points are visited in — which a turn or
- * flip reverses — no longer moves a fact). SVG, `lint()` and `compile().diagnostics` are
- * byte-identical; only `describe().circulation` moved: g_sw and g_se walk 9800 → 8800, detour
- * 1.87 → 1.68 (field by field in `./byte-identity-baseline.ts`, "a threshold no longer carves
- * in point order"). No other example row and no fixture row moved.
+ * threshold carve-order fix (every connector's seeds are read off the nav mask as it stood
+ * before any connector carved, so neither the order a connector's threshold points are
+ * visited in — which a turn or flip reverses — nor the connectors' source order moves a fact).
+ * SVG, `lint()` and `compile().diagnostics` are byte-identical; only `describe().circulation`
+ * moved: g_sw and g_se walk 9800 → 8800, detour 1.87 → 1.68 (field by field, and the 14 files
+ * whose opt-in `--overlay circulation` SVG moved with no fact, in `./byte-identity-baseline.ts`,
+ * "a threshold no longer carves in carve order"). No other example row and no fixture row moved.
  */
 export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/accessible.arch", "a8b70a680754e431524037dc3a936bba2ec7c0e2cba8df0c72a16f45e5d1e27b"],

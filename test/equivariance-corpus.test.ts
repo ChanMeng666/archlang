@@ -43,6 +43,7 @@ import {
   D4_ELEMENTS,
   D4_TEST_ELEMENTS,
   ELIGIBLE_EXAMPLES,
+  EXAMPLE_FILES,
   EXAMPLES_WORLD,
   elementNamed,
   explain,
@@ -508,6 +509,59 @@ describe("closed classes — each former witness is now the law", () => {
     const r1 = p0.rooms.find((r) => r.id === "g.r1");
     expect(r1?.bottleneck).toBe(p0.o1Clear);
     for (const sp of spellings) expect(measure(sp), sp || "(identity)").toEqual(p0);
+  });
+
+  it("threshold-carve: two connectors into one room carve alike in either source order, under every spelling", () => {
+    // Red-team counterexample: a second portal p_sw2 on the hexagon's drum, 942 mm along the
+    // arc from p_sw, into the same gallery. With seeds read off a snapshot taken per connector
+    // (not once before every connector), whichever portal carved second seeded on cells the
+    // first had opened, so g_sw walked 8800 with p_sw written first and 8200 with p_sw2
+    // first. Every seed is now read before any carve.
+    const hex = EXAMPLE_FILES["hexagon-pavilion.arch"]!;
+    const sw = "  opening id=p_sw on drum at 58.333% width 1400";
+    const sw2 = "  opening id=p_sw2 on drum at 61.667% width 1400";
+    expect(hex.split("\n")).toContain(sw);
+    const orders = {
+      "p_sw first": hex.replace(sw, `${sw}\n${sw2}`),
+      "p_sw2 first": hex.replace(sw, `${sw2}\n${sw}`),
+    };
+    const frames = [
+      ...[0, 90, 180, 270].flatMap((r) => ["", " mirror x", " mirror y"].map((m) => `${r ? ` rotate ${r}` : ""}${m}`)),
+    ].map((clauses) => ({ clauses, t: 0 }));
+    frames.push({ clauses: "", t: 20000 }, { clauses: " rotate 90 mirror x", t: 20000 });
+    const measure = (text: string, f: { clauses: string; t: number }) => {
+      const world = makeVirtualWorld({ "h.arch": text });
+      const src = `plan "witness" {\n  units mm\n  grid 50\n  import "h.arch" as c\n  place c() as g at (${f.t},${f.t})${f.clauses}\n}\n`;
+      const s = describePlan(src, { world });
+      return {
+        swEdges: (s.access?.edges ?? [])
+          .filter((e) => e.between.includes("g.g_sw"))
+          .map((e) => e.doorId)
+          .sort(),
+        rooms: (s.circulation?.rooms ?? []).map((r) => ({
+          id: r.roomId,
+          walk: r.walkDistanceMm,
+          bottleneck: r.bottleneckClearWidthMm,
+          detour: r.detourRatio,
+        })),
+        routes: (s.circulation?.routes ?? []).map((r) => ({
+          from: r.fromRoomId,
+          to: r.toRoomId,
+          walk: r.walkDistanceMm,
+          bottleneck: r.bottleneckClearWidthMm,
+        })),
+      };
+    };
+    const ref = measure(orders["p_sw first"], frames[0]!);
+    // Not vacuous: both portals open into g_sw, every gallery is measured, and the second
+    // portal can only shorten g_sw's walk against the shipped plan's single one.
+    expect(ref.swEdges).toEqual(["g.p_sw", "g.p_sw2"]);
+    expect(ref.rooms.length).toBe(7);
+    const shipped = measure(hex, frames[0]!).rooms.find((r) => r.id === "g.g_sw")!;
+    expect(ref.rooms.find((r) => r.id === "g.g_sw")!.walk).toBeLessThanOrEqual(shipped.walk);
+    for (const [order, text] of Object.entries(orders)) {
+      for (const f of frames) expect(measure(text, f), `${order} ${f.clauses || "(identity)"} t=${f.t}`).toEqual(ref);
+    }
   });
 
   it("key routes are measured between TIE SETS, so a page-order pick inside one cannot move them", () => {
