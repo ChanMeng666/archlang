@@ -9,7 +9,7 @@
 
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Value } from "./expr.js";
-import { asStr, setBuiltinDispatch, typeName } from "./expr.js";
+import { asStr, nonFinite, setBuiltinDispatch, typeName } from "./expr.js";
 
 type OnError = (d: Diagnostic) => void;
 type BuiltinFn = (args: Value[], onError: OnError, span?: Span) => Value;
@@ -18,7 +18,11 @@ const num = (v: number): Value => ({ t: "num", v });
 
 /** Coerce one argument to a number, diagnosing a mismatch and yielding 0. */
 function n(v: Value | undefined, onError: OnError, span?: Span): number {
-  if (v && v.t === "num") return v.v;
+  if (v && v.t === "num") {
+    if (Number.isFinite(v.v)) return v.v;
+    nonFinite(onError, span);
+    return 0;
+  }
   onError({
     severity: "error",
     message: `Expected a number but got ${v ? typeName(v) : "nothing"}`,
@@ -49,7 +53,11 @@ const BUILTINS: ReadonlyMap<string, BuiltinFn> = new Map<string, BuiltinFn>([
         e({ severity: "error", message: `"min" needs at least 1 argument`, code: "E_ARITY", span: s });
         return num(0);
       }
-      return num(Math.min(...a.map((v) => n(v, e, s))));
+      // A loop, not `Math.min(...args)`: spreading up to MAX_RANGE (100,000) arguments
+      // overflows the argument limit of some engines (JavaScriptCore caps at 65,536).
+      let m = Infinity;
+      for (const v of a) m = Math.min(m, n(v, e, s));
+      return num(m);
     },
   ],
   [
@@ -59,7 +67,9 @@ const BUILTINS: ReadonlyMap<string, BuiltinFn> = new Map<string, BuiltinFn>([
         e({ severity: "error", message: `"max" needs at least 1 argument`, code: "E_ARITY", span: s });
         return num(0);
       }
-      return num(Math.max(...a.map((v) => n(v, e, s))));
+      let m = -Infinity;
+      for (const v of a) m = Math.max(m, n(v, e, s));
+      return num(m);
     },
   ],
   ["abs", (a, e, s) => (arity("abs", a, 1, e, s) ? num(Math.abs(n(a[0], e, s))) : num(0))],

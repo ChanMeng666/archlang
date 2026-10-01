@@ -4,6 +4,13 @@
  * evaluator and the source formatter — same shape, three precisions. Output strings
  * are byte-pinned by goldens/snapshots, so each call site keeps its exact historical
  * precision and non-finite behaviour.
+ *
+ * Invariant: the EXPRESSION language's number domain is closed — the lexer and the evaluator
+ * (`E_NON_FINITE`, checked per operation) never admit a non-finite value — and so are the
+ * derived quantities the resolver checks (`checkDerivedFinite` in `ir.ts`: an element's extent,
+ * a room's area, the total area). Quantities outside those (any other product a backend or
+ * glyph forms from finite inputs) are not checked. `fmt3`'s `"0"` for NaN/±Infinity is a
+ * byte-pinned backstop for them, NOT a way to represent an overflow, and must not be removed.
  */
 
 /**

@@ -71,12 +71,91 @@ const rad = (deg: number): number => (deg * Math.PI) / 180;
 const deg = (r: number): number => (r * 180) / Math.PI;
 
 /**
- * The smallest radius that can span the chord `a`–`b`: half its length. Below it no
- * circle passes through both endpoints, which is what `E_ARC_RADIUS` reports (and
- * what its machine-applicable fix suggests).
+ * Half the chord `a`–`b`'s length — the geometric minimum radius. Below it no circle
+ * passes through both endpoints, which is what `E_ARC_RADIUS` reports. It is a `hypot`,
+ * so it is for SHOWING the chord, never for deciding: the verdict is
+ * {@link arcRadiusSpans}, and the radius the fix writes is {@link smallestSpanningRadius}.
  */
 export function minArcRadius(a: Point, b: Point): number {
   return Math.hypot(b.x - a.x, b.y - a.y) / 2;
+}
+
+/** Thousandths of a millimetre: the lattice the radius verdict is decided on — the same
+ *  3 dp the source formatter and the `E_ARC_RADIUS` fix print (`fmt3`). */
+const ARC_QUANTUM = 1000;
+
+/**
+ * THE radius verdict, as a sign: `4·r² − |b − a|²` compared with 0 — negative means no
+ * circle of radius `r` spans the chord `a`–`b`, zero is the exact tie (a semicircle).
+ *
+ * Decided EXACTLY, in `BigInt`, on a fixed lattice: each endpoint coordinate and the
+ * radius are quantised to integer thousandths of a millimetre (`Math.round(v · 1000)`)
+ * before squaring. Neither `Math.hypot` (not correctly rounded: V8 gives
+ * `hypot(3300, 5600) = 6500.000000000001`) nor float squares (`(9.3, 12.4)` squares to
+ * `240.25000000000003` against `4 · 7.75² = 240.25`) can then flip a semicircle either
+ * way. Every value written with up to 3 decimals — a literal, or an expression that lands
+ * on one — is decided exactly; a value carrying more decimals is decided at its nearest
+ * 0.001 mm (a 0.0005 mm resolution), still deterministically. A non-finite input, which no
+ * lattice holds, falls back to the plain float comparison.
+ */
+export function arcRadiusCompare(a: Point, b: Point, r: number): -1 | 0 | 1 {
+  const q = [a.x, a.y, b.x, b.y, r].map((v) => Math.round(v * ARC_QUANTUM));
+  if (!q.every(Number.isFinite)) {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const d = 4 * (r * r) - (dx * dx + dy * dy);
+    return d < 0 ? -1 : d > 0 ? 1 : 0;
+  }
+  const [ax, ay, bx, by, R] = q.map((v) => BigInt(v)) as [bigint, bigint, bigint, bigint, bigint];
+  const d = 4n * R * R - ((bx - ax) * (bx - ax) + (by - ay) * (by - ay));
+  return d < 0n ? -1 : d > 0n ? 1 : 0;
+}
+
+/** Is every input exactly a 3 dp value (as a literal like `9.3` parses), i.e. ON the
+ *  lattice {@link arcRadiusCompare} decides on, so its verdict is the geometry's own? */
+function onArcLattice(a: Point, b: Point, r: number): boolean {
+  return [a.x, a.y, b.x, b.y, r].every((v) => Math.round(v * ARC_QUANTUM) / ARC_QUANTUM === v);
+}
+
+/**
+ * Does a circle of radius `r` reach across the chord `a`–`b`? `arcRadiusCompare ≥ 0`.
+ * {@link arcFromChord} decides with the same verdict and the `E_ARC_RADIUS` fix verifies
+ * its suggestion with this, so the two cannot disagree. Says nothing about `r ≤ 0`;
+ * callers rule that out first.
+ */
+export function arcRadiusSpans(a: Point, b: Point, r: number): boolean {
+  return arcRadiusCompare(a, b, r) >= 0;
+}
+
+/**
+ * The smallest radius on the lattice `n · step` (`step` = the precision the fix PRINTS,
+ * or the plan grid when one snaps the radius) that the resolver will accept for the chord
+ * `a`–`b` — what `E_ARC_RADIUS`'s machine-applicable fix writes and its message quotes.
+ *
+ * `effective` maps a candidate to the radius the resolver will actually test once the fix
+ * is applied (printed, re-parsed, grid-snapped), and every candidate is checked through
+ * {@link arcRadiusSpans} — never trusted from the `hypot` it starts at. Rounding half the
+ * chord to the NEAREST printed unit (what the fix used to do) undershoots about half the
+ * time, so applying the fix raised the same error again. The start is `ceil(hypot/2 /
+ * step)`, which is normally the answer or one step above it; the walks down (at most 4
+ * steps) and up (at most 64) only correct that start, and their bounds guarantee
+ * termination whatever `effective` does. If the upward bound were ever exhausted the
+ * caller would get a radius that still fails — the fix-convergence test exists to catch it.
+ */
+export function smallestSpanningRadius(
+  a: Point,
+  b: Point,
+  step: number,
+  effective: (r: number) => number = (r) => r,
+): number {
+  const accepts = (n: number): boolean => {
+    const r = effective(n * step);
+    return r > 0 && arcRadiusSpans(a, b, r);
+  };
+  let n = Math.max(1, Math.ceil(minArcRadius(a, b) / step));
+  for (let i = 0; i < 4 && n > 1 && accepts(n - 1); i++) n--;
+  for (let i = 0; i < 64 && !accepts(n); i++) n++;
+  return n * step;
 }
 
 /**
@@ -87,14 +166,36 @@ export function minArcRadius(a: Point, b: Point): number {
  *
  * Returns `null` when `r` is smaller than half the chord (no such circle) or the
  * chord is degenerate — the caller raises the diagnostic; this never throws.
+ *
+ * ## The radius test is exact, never a hypot
+ *
+ * Whether `r` reaches is {@link arcRadiusCompare}: `4·r²` against `dx² + dy²`, in
+ * `BigInt` on the 0.001 mm lattice. A test on `hypot / 2` refused exact semicircles on
+ * Pythagorean chords (`hypot(3300, 5600)` is `6500.000000000001` on V8), and a test on
+ * float squares does the same on decimal ones (`(9.3, 12.4)` with `r = 7.75`).
+ *
+ * The EXACT TIE (verdict 0 with every input ON the lattice, so the tie is the authored
+ * geometry's, the semicircle) is built from that same verdict: the chord is taken as `2r`,
+ * so the centre offset is exactly 0 and the sweep exactly π, whichever way `hypot`
+ * rounded — rounding up used to refuse it, rounding down drew the centre off the midpoint
+ * (by up to ~5e-4 mm on the chords measured) and, for `major`, a 25-chord "semicircle".
+ * A lattice tie between values that carry more decimals is only a tie at 0.001 mm, so it
+ * keeps the float construction below. Off the tie the chord stays `Math.hypot`, byte-for-byte the construction
+ * every accepted arc had before (`describe()` prints `bbox_outer` unrounded, so even a
+ * one-ulp change of chord would move it). An accepted near-tie whose float half-chord
+ * still exceeds `r` (a value off the lattice, or a `hypot` that over-rounds) is caught by
+ * the clamps below: `h` floors at 0 and `asin` at 1, so it builds the semicircle, never NaN.
  */
 export function arcFromChord(a: Point, b: Point, r: number, dir: ArcDir, major: boolean): Arc | null {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
-  const chord = Math.hypot(dx, dy);
-  if (!(chord > 0) || !(r > 0)) return null;
+  const len = Math.hypot(dx, dy);
+  if (!(len > 0) || !(r > 0)) return null;
+  const verdict = arcRadiusCompare(a, b, r);
+  if (verdict < 0) return null;
+  const r2 = r * r;
+  const chord = verdict === 0 && onArcLattice(a, b, r) ? 2 * r : len;
   const half = chord / 2;
-  if (r < half) return null;
   // Clockwise keeps the centre on the RIGHT of travel; `major` swaps to the other
   // candidate centre (the long way round one way IS the short way round the other).
   // `(-dy, dx)` is 90° clockwise from the travel direction — the same rotation
@@ -103,7 +204,7 @@ export function arcFromChord(a: Point, b: Point, r: number, dir: ArcDir, major: 
   // (where the centre should land on a round number) down at ~1e-13 mm instead of
   // compounding two divisions. Nine orders below `fmt()`'s 0.005 mm, but free.
   const side = (dir === "cw") !== major ? 1 : -1;
-  const h = Math.sqrt(Math.max(0, r * r - half * half));
+  const h = Math.sqrt(Math.max(0, r2 - half * half));
   const k = (side * h) / chord;
   const center = { x: (a.x + b.x) / 2 - dy * k, y: (a.y + b.y) / 2 + dx * k };
   // Magnitude from the chord (exact, no atan2 round-trip): 2·asin(half/r), or its

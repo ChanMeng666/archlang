@@ -250,12 +250,16 @@ describe("S.2 — every refusal in the slot is coded", () => {
     // check a non-finite position walks straight past the range test into
     // `segmentPointAlong` and puts NaN in the drawing. Only an expression can produce
     // one; a literal never could, which is why the guard arrives with this feature.
+    // The number domain is now closed upstream (`E_NON_FINITE`, with 0 substituted), so the
+    // overflow is refused at the multiplication that produces it, before it can reach a
+    // position; `resolveAttachment`'s own finiteness check stays as the backstop.
     const big = "10000000000000000000000000000000000000000";
     const overflow = `let a = ${big}\n  let b = a * a\n  let c = b * b\n  let d = c * c`;
     for (const body of [`${overflow}\n  door on w1 at d width 900`, `${overflow}\n  door on w1 at d - d width 900`]) {
       const { svg, diagnostics } = compile(plan(body), { noCache: true });
-      expect(diagnostics.map((d) => d.code)).toContain("E_ATTACH_POS_RANGE");
+      expect(diagnostics.map((d) => d.code)).toContain("E_NON_FINITE");
       expect(svg).not.toContain("NaN");
+      expect(svg).not.toContain("Infinity");
     }
   });
 });
