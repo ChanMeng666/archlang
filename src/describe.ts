@@ -64,6 +64,7 @@ import { roomSchedule, type ScheduleRow } from "./sheet-tables.js";
 // apply the north rotation is a second place to get it wrong.
 import { deriveSite, planCenterOfRooms, type SiteFacts, toCompass, windowFacingPage } from "./site.js";
 import {
+  type ArrivingRun,
   arrivalRuns,
   type RVertical,
   roomOfVertical,
@@ -936,7 +937,7 @@ function summarize(
   tol: number,
   facts: readonly DescribeFact[] = [],
   /** The runs a shaft-reached storey is walked from — see `computeCirculation`. */
-  arrivals: readonly RVertical[] = [],
+  arrivals: readonly ArrivingRun[] = [],
 ): Omit<SceneSummary, "ok" | "diagnostics"> {
   const roomEls = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const doorEls = ir.elements.filter((e): e is RDoor => e.kind === "door");
@@ -1276,7 +1277,7 @@ function inZone(member: string | undefined, path: string): boolean {
 function buildVerticalReport(
   levels: readonly ResolvedLevel[],
   tol: number,
-): { report: VerticalReport; arrivals: ReadonlyMap<number, readonly RVertical[]> } | undefined {
+): { report: VerticalReport; arrivals: ReadonlyMap<number, readonly ArrivingRun[]> } | undefined {
   const inputs = levels.map((l) => ({ level: l.level, ir: l.ir }));
   const connections = verticalConnections(inputs);
   if (connections.length === 0) return undefined;
@@ -1287,7 +1288,7 @@ function buildVerticalReport(
   const reach = verticalReach(inputs, grounded, buildingRoomReach(inputs, tol));
   return {
     report: { connections, reachable_levels: [...reach.reachable].sort((a, b) => a - b) },
-    arrivals: arrivalRuns(inputs, reach.arrivals),
+    arrivals: arrivalRuns(inputs, reach),
   };
 }
 
@@ -1358,7 +1359,7 @@ function summarizeResolved(
   // runs that arrive on it (its `circulation`).
   const building = levels.length > 0 ? buildVerticalReport(levels, tol) : undefined;
   const vertical = building?.report;
-  const arrivalsOn = (level: number): readonly RVertical[] => building?.arrivals.get(level) ?? [];
+  const arrivalsOn = (level: number): readonly ArrivingRun[] => building?.arrivals.get(level) ?? [];
 
   // Multi-storey: the top-level facts are the LOWEST storey (`levels[0].ir === ir`), and
   // `levels` adds one same-shaped summary per storey. `summarize` is reused verbatim per

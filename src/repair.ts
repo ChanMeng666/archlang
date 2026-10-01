@@ -72,7 +72,7 @@ import {
   type BBox,
 } from "./analyze.js";
 import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
-import { arrivalRuns, type RVertical, verticalReach, verticalsOf } from "./vertical.js";
+import { type ArrivingRun, arrivalRuns, verticalReach, verticalsOf } from "./vertical.js";
 import { doorLandingRect, rectOverlapAmounts, wallIntrusion } from "./geometry/rect.js";
 import { segmentsOfWall, doorSwing, sectorIntersectsRect, type DoorSwing } from "./geometry.js";
 import { DEFAULT_RULESET } from "./lint.js";
@@ -1144,9 +1144,9 @@ function repairPass(source: string, book: SpanBook, record: boolean): RepairResu
               return l ? storeyGrounded(l.ir, DEFAULT_TOL) : false;
             },
             buildingRoomReach(inputs, DEFAULT_TOL),
-          ).arrivals,
+          ),
         )
-      : new Map<number, RVertical[]>();
+      : new Map<number, ArrivingRun[]>();
   const changes: RepairChange[] = [];
   for (const st of storeys) {
     const seenIds = new Set<string>();
@@ -1187,7 +1187,7 @@ function repairStorey(
   book: SpanBook,
   record: boolean,
   /** The shafts this storey is reached by (`computeCirculation`'s `arrivals`). */
-  arrivals: readonly RVertical[] = [],
+  arrivals: readonly ArrivingRun[] = [],
 ): RepairChange[] {
   const spanKeyFor = (id: string): string => `${level ?? ""}|${id}`;
   /** The span to report for `id`. The first round records each statement's ORIGINAL

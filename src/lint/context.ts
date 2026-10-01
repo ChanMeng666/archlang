@@ -10,7 +10,7 @@ import { buildDoorAccessGraph, roomBox } from "../analyze.js";
 import type { Diagnostic } from "../diagnostics.js";
 import { segmentsOfWall, type WallSegment } from "../geometry.js";
 import type { RDoor, RFurniture, ROpening, RRoom, RVoid, RWindow, ResolvedPlan } from "../ir.js";
-import { type RVertical, verticalsOf } from "../vertical.js";
+import { type ArrivingRun, type RVertical, verticalsOf } from "../vertical.js";
 import type { LintRuleset } from "./ruleset.js";
 
 /**
@@ -35,7 +35,7 @@ export interface BuildingContext {
    * unreached storey). A storey with no front door is walked from their landings, so the
    * circulation rules measure it rather than going silent (`circulation-facts.ts`).
    */
-  arrivalShafts: readonly RVertical[];
+  arrivalShafts: readonly ArrivingRun[];
 }
 
 const NO_BUILDING: BuildingContext = {

@@ -186,7 +186,7 @@ function buildingContexts(levels: readonly ResolvedLevel[], tolMm: number): Map<
   // Room-aware: a shaft relays only from a stop whose room is walkable on its storey, on
   // the same tolerance `grounded` uses, so lint and `describe().vertical` agree.
   const reach = verticalReach(inputs, grounded, buildingRoomReach(inputs, tolMm ?? DEFAULT_TOL));
-  const runs = arrivalRuns(inputs, reach.arrivals);
+  const runs = arrivalRuns(inputs, reach);
   const out = new Map<number, BuildingContext>();
   for (const l of levels) {
     out.set(l.level, {
