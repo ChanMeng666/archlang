@@ -1987,7 +1987,9 @@ function routeBetween(
  *
  * A storey with no front door that a shaft reaches (`arrivals`) is walked from where the
  * shafts land: each arriving run is an entrance (its id is `entranceId`), seeded at the
- * landing in front of its entry edge(s) at the run's width, and the rooms the doors reach
+ * landing in front of the edge a person steps off at (the head of the flight from the
+ * arriving side; its own entry edge(s) only when it is arrived by from both sides or from a
+ * different kind of run) at the run's width, and the rooms the doors reach
  * are those walkable from the rooms the runs stand in — the same arrival rooms lint's
  * reachability rule starts from, so the two rules agree on what an entrance is upstairs.
  *

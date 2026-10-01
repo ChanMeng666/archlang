@@ -164,6 +164,11 @@ describe("the superset law: every collision the old sampler found is still a col
 // ---------------------------------------------------------------------------------------
 // An independent oracle: convex polygon clipping of the two sectors (the arc as an inscribed
 // and as a circumscribed polygon, bracketing the true shape), plus straight-edge contact.
+// Its resolution is finite: with 64 chords on a quarter arc each polygon lies within the
+// sagitta R·(1 − cos(Δθ/2)), Δθ = 90°/64, of the true arc, about 0.05 mm on these generators'
+// smallest leaf (R = 600) and under 0.1 mm on the largest. It cannot see a gap or an overlap
+// thinner than that; the hand-built gap cases above (`a separating gap is never contact`) are
+// what pin the exact fix.
 
 function sectorPolygon(s: DoorSwing, circumscribed: boolean, n = 64): Point[] {
   const a0 = Math.atan2(s.farJamb.y - s.hinge.y, s.farJamb.x - s.hinge.x);

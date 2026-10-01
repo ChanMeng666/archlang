@@ -547,7 +547,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   E_INTENT_UNREACHABLE: E(
     "E_INTENT_UNREACHABLE",
     "A room cannot be reached from the entrance through modeled doors.",
-    "An intent asserts `reachable: true` and the plan HAS an entrance, but one or more rooms are cut off — no chain of modeled doors reaches them from the exterior.",
+    "An intent asserts `reachable: true` and the plan HAS an entrance, but one or more rooms are cut off — no chain of modeled doors reaches them from the exterior — or, on a multi-storey plan, a whole storey has no way in: no exterior door of its own and no stair, lift or escalator from a room you can reach.",
     "Add interior doors so every room connects back to the entrance. Advisory tier: reported and scored by `validateIntent` but does NOT fail `ok` (gate: false).",
     "door on wall_hall_store width 800   # connect the isolated room",
   ),
@@ -866,7 +866,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   W_NO_ENTRANCE: W(
     "W_NO_ENTRANCE",
     "The plan has no exterior door.",
-    "The plan has rooms and an exterior wall but no door hosted on an exterior wall, so the building cannot be entered.",
+    "The plan has rooms and an exterior wall but no door hosted on an exterior wall, so the building cannot be entered. On a multi-storey plan it is judged per storey: a storey with no exterior door of its own is entered by a `stair`/`elevator`/`escalator` shared with a reachable storey, but only when the room the run stands in there is itself reachable — a stair in a door-less store leads nowhere, and the storey it serves gets this warning.",
     "Add a `door` on an `exterior` wall.",
     "wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }   # lint: no way in",
   ),
