@@ -624,11 +624,13 @@
  *   - `describe()`, field by field: level 1 (and the top-level copy)
  *     `circulation.rooms[r_terrace].bottleneckClearWidthMm` 1140 → 840. Its walk and detour,
  *     every other room, every route, `blocked`/`unmeasured` and level 2 are byte-identical.
- *     Mechanism: the terrace has two doors. `d_kit_terrace` (2400 mm sliding, 2340 clear)
- *     opens 32 band cells inside the terrace's rectangle, reached through the kitchen at
- *     1140; but the floor behind them is the one-cell strip between the wall and the two sun
- *     loungers, every cell 700 mm (the far seeds now read min(2340, 700)). `d_din_terrace`
- *     (840 clear) opens onto open floor. So the terrace's floor is reached at best at 840,
+ *     Mechanism: the terrace has two doors, and 32 opened cells lie in its rectangle — 24 of
+ *     `d_kit_terrace` (2400 mm sliding, 2340 clear; nav-grid row 82, ix 153–176) and 8 of
+ *     `d_din_terrace` (840 clear; ix 135, rows 88–95). The kitchen door's cells are reached
+ *     through the kitchen at 1140, but the floor behind them is the one-cell strip between the
+ *     wall and the two sun loungers, every cell 700 mm (then read as the far seeds'
+ *     min(2340, 700); their own clearance since the far-seed stamp was dropped).
+ *     `d_din_terrace` opens onto open floor. So the terrace's floor is reached at best at 840,
  *     through the dining door; 1140 was the kitchen door's threshold, not the terrace.
  *   - `lint()` under `accessibility-advisory`: 29 → 30, one insertion and nothing else —
  *     "The walk from the entrance to "Terrace" squeezes to 840 mm (60 mm below the 900 mm
@@ -646,6 +648,24 @@
  * Both rows were re-measured with a script that imports `./byte-identity-digest.ts` and first
  * reproduced the old values on the tree before: whole surface 80285cb2… → 8bc280e3…, summary
  * 759c93ef… → 3d977524….
+ *
+ * ## No far-seed stamp — no row moved
+ *
+ * Case (1), the compiler changed, deliberately (owner-delegated; ADR 0008's far-seed
+ * addendum, "No far-seed stamp"): a carve stamps its door's width only on the cells it opens;
+ * the far seed keeps the room's own clearance. Swept before (`94d7e39`) → after, 265 rows,
+ * seven digests; a 1 mm plant on every walk moved `describe()` on 87 rows first. Result: SVG,
+ * `compile().diagnostics`, `describe()`, `lint()` and accessibility `lint()` byte-identical on
+ * all 265 rows (`min-bedroom-flat`'s route stays 740). The `--overlay circulation` SVG moved on
+ * 27 files, only pinch markers — 90, each at the same `clearMm`, 89 of them now on the door's
+ * opened cells, where the far seed had carried the same width (the 90th, on
+ * `test/fixtures/zones-wings`, an entrance seed 100 mm along). Files: the
+ * `docs/language-reference.md` fence #10; `eval/fidelity-plans/` capped-wet-room.laundered,
+ * two-bed-min-area.faithful; `eval/goldens/` accessible-flat, bungalow, sized-bedrooms,
+ * sized-kitchen-flat, strip-attach-clean, strip-corridor, three-bed-2bath, two-bath-flat,
+ * two-bed-hall; `examples/` aquarium, bungalow, furnished-flat, gallery-l, garden-house,
+ * hillside-villa, library, museum, studio, terrace-row, transit-hall, two-bed;
+ * `test/fixtures/zones-wings`; `test/recovery-corpus/` studio, terrace-row.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

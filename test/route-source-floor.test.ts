@@ -10,8 +10,8 @@ import { describe as describePlan } from "../src/index.js";
  * own clearance. A cell belongs to the room whose rectangle holds its centre, so a doorway's
  * opened wall cells can lie in the from-room; seeded at +Infinity, they let the route step
  * past every cell the door stamped. Whether that happened depended on which side of the room
- * edge the partition's cells fell and on which room was written first (the far seed is always
- * `between[1]`'s): the red team's plan read 14000 with the bath written first and 740 with
+ * edge the partition's cells fell and on which room was written first (the far seed, then
+ * stamped too, is always `between[1]`'s): the red team's plan read 14000 with the bath written first and 740 with
  * the bedroom first. Seeding only the floor makes the opened cells part of the way out, so
  * the door caps the route whatever the order.
  */

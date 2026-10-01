@@ -263,27 +263,29 @@ their upper storeys' `levels[i].circulation` (null → a model) and in new `W_PA
 warnings; the SVG and `compile().diagnostics` are byte-identical. The ledger is in the header
 of `test/byte-identity-baseline.ts`.
 
-## Addendum (2026-10): a cell's width is the minimum of every constraint on it (the far seed)
+## Addendum (2026-10): a door's width lives on the cells its carve opens, and nowhere else (the far seed)
 
-The decision stands; this settles the one stamp that replaced a value instead of narrowing it.
+The decision stands; this settles the stamp a carve wrote on a cell that was already
+walkable. The final rule is the last paragraph of this addendum, **no far-seed stamp**; the
+steps that led to it are recorded because each was measured.
+
 A carve wrote its connector's clear width onto its far seed (the last cell of each carve path,
 always a seed of the `between[1]` room) even though that cell was already walkable, so a
 furniture pinch narrower than the door on that cell was erased: the walk read the door's
 width through a squeeze it could not pass at that width. Because the far seed is always
 `between[1]`'s, the result also depended on which room was written first.
 
-The owner's decision is that **a cell's width is the minimum of every constraint on it**. A
-cell the carve opens has no clearance of its own and reads the connector's width; a far seed
-reads the narrower of the connector's width and the room's own clearance there (the
-furniture distance transform, `centreFreedomToClearWidth`). The door still caps every route
-through it, and the pinch stays a pinch. Dropping the far-seed stamp instead was measured
-and rejected. A key route was then seeded at +Infinity on every free cell of its from-room,
-the cells a carve opened inside that room's rectangle included (a cell belongs to the room
-that holds its centre), and the widest search never reads a source cell's own clearance,
-only a neighbour's. On `min-bedroom-flat` every cell `d_bath` opens lies in the bedroom, so
-the far seed in the bath was the route's only cap, and without it the route bed → bath read
-14000 through a 740 mm door. `test/far-seed-pinch.test.ts` holds the corpus to "no walk or
-key route is wider than the widest door path it must take".
+The first step (owner decision, "a cell's width is the minimum of every constraint on it")
+kept the stamp as the minimum of the connector's width and the room's own clearance there
+(the furniture distance transform, `centreFreedomToClearWidth`), so the pinch stayed a pinch.
+Dropping the stamp outright was measured at that point and rejected: a key route was then
+seeded at +Infinity on every free cell of its from-room, the cells a carve opened inside that
+room's rectangle included (a cell belongs to the room that holds its centre), and the widest
+search never reads a source cell's own clearance, only a neighbour's. On `min-bedroom-flat`
+every cell `d_bath` opens lies in the bedroom, so the far seed in the bath was the route's
+only cap, and without it the route bed → bath read 14000 through a 740 mm door.
+`test/far-seed-pinch.test.ts` holds the corpus to "no walk or key route is wider than the
+widest door path it must take", as a guard.
 
 **A key route starts on its room's floor** (owner-delegated, same window). The same seeding
 let a route escape its door outright: with the from-room's far seed on its own side and every
@@ -306,9 +308,11 @@ a doorway's opened cells inside its rectangle counted: a room whose only door is
 past the threshold read the door's width for a floor reached only through the pinch. A room's
 cells are now its floor, as a route's sources are; a room with no floor cell at all would keep
 the cells it has (it never happens on the corpus or in 1000 random plans). Measured: on the
-shipped corpus one fact moves, `hillside-villa`'s terrace 1140 → 840 — the kitchen's sliding
-door opens onto a 700 mm strip between the wall and two sun loungers, so its floor is reached
-at best through the 840 mm dining door; the accessibility profile gains that walk's
+shipped corpus one fact moves, `hillside-villa`'s terrace 1140 → 840. Of the 32 opened cells
+in its rectangle, 24 are the kitchen's sliding door's (one row) and 8 the dining door's (one
+column); the 1140 was read on a kitchen-door cell, but the floor behind those 24 is a 700 mm
+strip between the wall and two sun loungers, so the floor is reached at best through the
+840 mm dining door; the accessibility profile gains that walk's
 `W_PATH_TOO_NARROW`, and the overlay moves pinch markers on 14 files. In 1000 random plans 7
 facts move, and on a random family of the pinched doorway 151; each is exactly the room's or
 route's best over its floor where it had been the best over its doorway cells, with no walk
@@ -328,8 +332,25 @@ minimum would read the stair a person has just stepped off as a pinch: no walk o
 shaft-reached storey could read wider than one hop beside the run (700 mm), and thirteen
 walks in five corpus files fell to it.
 
-Measured on the shipped corpus: no fact moves. SVG, `describe()`, `lint()` (default and
-`accessibility-advisory`) and `compile().diagnostics` are byte-identical; only the opt-in
-overlay moves, its pinch markers at the same `clearMm`. The closed-class witness of the carve
-order now reads its WC pinch, 700, in every frame. The ledger is in the header of
-`test/byte-identity-baseline.ts`.
+Measured for the minimum rule on the shipped corpus: no fact moves. SVG, `describe()`,
+`lint()` (default and `accessibility-advisory`) and `compile().diagnostics` are
+byte-identical; only the opt-in overlay moves, its pinch markers at the same `clearMm`. The
+closed-class witness of the carve order now reads its WC pinch, 700, in every frame. The
+ledger is in the header of `test/byte-identity-baseline.ts`.
+
+**No far-seed stamp** (owner-delegated, the final rule). Once routes start and rooms are
+reached on the floor, every walk or route through a door crosses at least one cell its carve
+opened — a rasterised wall always blocks a cell between the two rooms' seeds, a thin wall by
+the closed-square touch test — and that cell carries the door's width. The far-seed stamp,
+even as a minimum, could then no longer cap a path THROUGH the door; it capped only paths
+that pass the far seed without using the door, and in one source order only. The red team's
+plan (a 1 m hall narrowed by a cabinet to one free row, a 700 mm door off it into a bedroom,
+a 1000 mm door at its end into a study) read the study 640 — a door its walk never crosses —
+with the bedroom written first, and 700 with the hall first. Far seeds now keep the room's own
+clearance and only opened cells carry a door's width; the pinch and witness tests still read
+min(door, pinch), because a path through the door crosses both. Measured, before (the floor
+rules in place) → after: no fact moves on the shipped corpus, in 1000 random plans, or in the
+pinched-doorway and route-escape families (500 each); `min-bedroom-flat`'s route stays 740 (it
+crosses `d_bath`'s opened column); on a 500-draw family of the phantom plan two studies move,
+each to what the same plan reads without the unused door; the overlay moves 90 pinch markers
+at the same `clearMm` on 27 files, onto the door's opened cells.

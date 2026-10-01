@@ -455,7 +455,7 @@ const RASTER_WITNESSES: ReadonlyArray<{ cls: string; title: string; body: string
     // furniture pinch; carved first, it made that cell its far seed and stamped 740 over it.
     // r1's bottleneck read 700 in P₀ and 740 turned, until seeds were read pre-carve; then
     // 740 in every frame, until a far seed's stamp took the minimum with the cell's own
-    // clearance: now 700 in every frame.
+    // clearance: 700 in every frame — and still 700 now that far seeds are not stamped.
     cls: "threshold-carve",
     title: "a doorway whose threshold points seeded on cells an earlier point had carved",
     body: CARVE_ORDER_BODY,
@@ -508,11 +508,12 @@ describe("closed classes — each former witness is now the law", () => {
       };
     };
     const p0 = measure("");
-    // Not vacuous: r1 is measured, through o1 only, and its bottleneck is the MINIMUM of
-    // every constraint on the way in (backlog E.6–E.10's far-seed question, closed): o1's
-    // clear width and the furniture pinch on o1's far seed in r2, where the two WCs' halos
-    // reach through the 80 mm partition. The far seed's stamp used to REPLACE that pinch with
-    // the door's width; it now takes the minimum, so every spelling reads the pinch.
+    // Not vacuous: r1 is measured, through o1 only, and its bottleneck is the narrowest thing
+    // on the way in (backlog E.6–E.10's far-seed question, closed): the path crosses o1's
+    // opened cells, carrying its clear width, and the furniture pinch on o1's far seed in
+    // r2, where the two WCs' halos reach through the 80 mm partition. A far-seed stamp used
+    // to REPLACE that pinch with the door's width; far seeds are no longer stamped, so every
+    // spelling reads min(o1, pinch).
     const src0 = `plan "witness" {\n  units mm\n  grid 100\n  component c() {\n${CARVE_ORDER_BODY}\n  }\n  place c() as g at (0,0)\n}\n`;
     const { ir } = resolvePlan(src0, {});
     const o1 = describePlan(src0).access?.edges.find((e) => e.doorId === "g.o1");

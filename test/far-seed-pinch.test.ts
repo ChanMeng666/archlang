@@ -5,21 +5,23 @@ import { centreFreedomToClearWidth, DEFAULT_BODY_RADIUS_MM } from "../src/analyz
 import { describe as describePlan, type World } from "../src/index.js";
 
 /**
- * A cell's clear width is the MINIMUM of every constraint on it — including a doorway's far
- * seed, the one room cell a threshold carve stamps although it was already walkable.
+ * A door's width lives on the cells its carve OPENS, and a room cell keeps its own clearance —
+ * the doorway's far seed included.
  *
- * A connector's carve stamps its clear width on the cells it opens and on its FAR seed (the
- * last cell of each carve path, always a seed of the `between[1]` room). That stamp used to
- * REPLACE the cell's own clearance, so a furniture pinch narrower than the door sitting on
- * the far seed was erased: the walk read the door's width through a squeeze it could not
- * pass at that width. It now takes the minimum of the two. Dropping the far-seed stamp
- * instead was measured and rejected. A key route then seeded every free cell of its from-room
- * at +Infinity, the cells a carve opened inside that room's rectangle included, and the widest
- * search never reads a source cell's own clearance; on `min-bedroom-flat` every cell `d_bath`
- * opens lies in the bedroom, so the far seed in the bath was the route's only cap, and without
- * it the route bed → bath read 14000 through a 740 mm door. (A route now starts on its room's
- * floor only — `test/route-source-floor.test.ts` — which makes those opened cells a cap too.)
- * The corpus invariant at the bottom of this file is the guard for that class of regression.
+ * A connector's carve used to stamp its clear width on its FAR seed too (the last cell of
+ * each carve path, always a floor cell of the `between[1]` room). First that stamp REPLACED
+ * the cell's own clearance, so a furniture pinch narrower than the door on the far seed was
+ * erased; then it took the minimum of the two. It is now gone. While a key route still
+ * started on the cells a carve opened inside its from-room, the far seed was sometimes a
+ * door's only cap (`min-bedroom-flat`'s route bed → bath read 14000 through a 740 mm door
+ * without it). Once routes and rooms were read on the FLOOR (`test/route-source-floor.test.ts`
+ * and the floor tests below), every path through a door crosses an opened cell carrying the
+ * door's width, so the stamp could only cap paths that pass the far seed WITHOUT using the
+ * door — and, the far seed being `between[1]`'s, only in one source order (the phantom plan
+ * below). The pinch tests read min(door, pinch) because a path through the door crosses both
+ * the opened cells and the pinched floor, not because anything is stamped on the floor.
+ * The corpus invariant at the bottom of this file is a guard, not a witness: nothing in the
+ * corpus breaks it on this tree or the one before.
  */
 
 const R = DEFAULT_BODY_RADIUS_MM;
@@ -107,7 +109,7 @@ const measure = (src: string) => {
   };
 };
 
-describe("a doorway's far seed keeps the room's own clearance when that is narrower (min of all constraints)", () => {
+describe("a doorway's far seed keeps the room's own clearance (the route reads min(door, pinch))", () => {
   it("a furniture pinch narrower than the door on the far seed is reported, in either source order", () => {
     const ab = flanked(1060, 1840, "ab");
     const m = measure(ab.src);
@@ -116,9 +118,9 @@ describe("a doorway's far seed keeps the room's own clearance when that is narro
     expect(m.between).toEqual(["a", "b"]);
     expect(pinch).toBeLessThan(m.doorClear);
     expect(m.bottleneck).toBe(Math.min(m.doorClear, pinch));
-    // The far seed was always `between[1]`'s, so the stamp was asymmetric in source order:
-    // with `b` written first the seed in the pinch is the NEAR one, never stamped, and the
-    // pinch was always reported. Both orders now read the same.
+    // The far seed is always `between[1]`'s, so a far-seed stamp was asymmetric in source
+    // order: with `b` written first the seed in the pinch is the NEAR one, never stamped, and
+    // the pinch was always reported. With no far-seed stamp both orders read the same.
     const ba = measure(flanked(1060, 1840, "ba").src);
     expect(ba.between).toEqual(["b", "a"]);
     expect(ba.bottleneck).toBe(m.bottleneck);
@@ -131,6 +133,49 @@ describe("a doorway's far seed keeps the room's own clearance when that is narro
     expect(pinch).toBeGreaterThan(m.doorClear);
     expect(m.bottleneck).toBe(m.doorClear);
     expect(measure(flanked(960, 1940, "ba").src).bottleneck).toBe(m.doorClear);
+  });
+});
+
+describe("a door a walk never uses cannot cap it (no far-seed stamp)", () => {
+  // Red team's plan: a 1 m hall `h`, narrowed by a cabinet to one free row, a 700 mm door `d`
+  // off it into `r`, and a 1000 mm door `d2` at its end into the study `e`. `e`'s walk runs
+  // along the hall and never through `d`. When a carve stamped its door's width on its far
+  // seed, `d`'s far seed — a HALL cell on that one free row whenever `h` was written after `r`
+  // — took 640, and `e` read 640 through a door it never crosses; with the rooms the other
+  // way round, 700.
+  const FRAMES = [0, 90, 180, 270].flatMap((r) => ["", " mirror x"].map((m) => `${r ? ` rotate ${r}` : ""}${m}`));
+  const phantom = (hallFirst: boolean, withD: boolean, clauses: string): string => {
+    const r = `    room id=r at (0,1000) size 6000x3000 label "Bed" uses bedroom`;
+    const h = `    room id=h at (0,0) size 6000x1000 label "Hall" uses hall circulation`;
+    return `plan "phantom" {\n  units mm\n  grid 100\n  component c() {
+    wall id=sh exterior thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close }
+    wall id=p1 partition thickness 100 { (0,1000) (6000,1000) }
+    wall id=p2 partition thickness 100 { (6000,0) (6000,4000) }
+${hallFirst ? `${h}\n${r}` : `${r}\n${h}`}
+    room id=e at (6000,0) size 2000x4000 label "Study" uses office
+    door id=front at (0,500) width 1200 wall sh
+${withD ? "    door id=d at (3000,1000) width 700 wall p1\n" : ""}    door id=d2 at (6000,500) width 1000 wall p2
+    furniture id=c cabinet at (2600,100) size 800x400
+  }\n  place c() as g at (0,0)${clauses}\n}\n`;
+  };
+  const read = (src: string) => {
+    const s = describePlan(src);
+    const e = s.circulation?.rooms.find((x) => x.roomId === "g.e");
+    if (!e) throw new Error("the study is not measured");
+    return { s, e: { walk: e.walkDistanceMm, bottleneck: e.bottleneckClearWidthMm, detour: e.detourRatio } };
+  };
+
+  it("the study reads the same with or without the door it never uses, in both source orders and all eight frames", () => {
+    // The reference is the plan WITHOUT `d`: a door no walk to `e` crosses cannot change it.
+    const ref = read(phantom(true, false, "")).e;
+    const withD = read(phantom(false, true, ""));
+    const dClear = withD.s.access?.edges.find((x) => x.doorId === "g.d")?.estimatedClearWidth;
+    // Not vacuous: `d` is narrower than what the study reads, so a stamp of it would show.
+    expect(dClear).toBeLessThan(ref.bottleneck);
+    for (const hallFirst of [true, false]) {
+      for (const f of FRAMES)
+        expect(read(phantom(hallFirst, true, f)).e, `${hallFirst ? "h" : "r"} first${f}`).toEqual(ref);
+    }
   });
 });
 
@@ -249,10 +294,9 @@ describe("corpus invariant: a walk's or route's bottleneck never exceeds the doo
    *
    * Why it is a law for rooms separated by walls: a grid route between walled rooms crosses
    * a sequence of carved connectors, a path in that graph (the grid has no exterior cells),
-   * and each crossing passes a cell stamped with at most that connector's width. A wall
-   * between the two seeds means the carve opens at least one cell, stamped with the door's
-   * width; with none between them the path is the far seed alone, stamped
-   * min(width, own clearance). A walk is seeded only at its entrances, each at that
+   * and each crossing passes a cell stamped with that connector's width: a rasterised wall
+   * blocks at least one cell between the two rooms' seeds, so the carve opens at least one
+   * cell, and that cell carries the door's width. A walk is seeded only at its entrances, each at that
    * entrance's width, so it passes those cells. A key route is seeded at +Infinity on its
    * from-room's FLOOR, never on a cell a carve opened (`test/route-source-floor.test.ts`), so
    * it passes them too. The one way round is open floor: two rooms that meet with no wall

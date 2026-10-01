@@ -1359,16 +1359,15 @@ function buildGrid(
   // recording the connector's clear width at the (grid-degenerate) carved cells.
   const clearAt = new Map<number, number>();
   // Walkable before any threshold is carved: a carve stamps its connector's width on the
-  // cells it OPENS, and on its far seed only as the minimum with the room's own clearance
-  // there (see the stamp below) — never on a room cell it only runs along, whose clearance
-  // is the room's own (a furniture pinch must stay a pinch).
+  // cells it OPENS and nowhere else — never on a room cell, the far seed included, whose
+  // clearance is the room's own (a furniture pinch must stay a pinch; see the stamp below).
   const wasFree = free.slice();
   // Seeds are read off that same pre-carve mask, for EVERY connector. Reading the live mask
   // let a threshold point seed on a cell an earlier carve had just opened — an earlier point
   // of the same connector (they run centre, +d, −d in the frame's own axis order, which a
   // turn or flip reverses) or an earlier connector (source order). Either way which room
-  // cell became a far seed, and took a connector's width, depended on an order the plan
-  // does not mean (a hole in E.10's symmetric carve). With every seed fixed before any
+  // cell became a far seed (which, while far seeds were stamped, took a connector's width)
+  // depended on an order the plan does not mean (a hole in E.10's symmetric carve). With every seed fixed before any
   // carve, opening cells and stamping the narrower width commute: neither point order nor
   // connector order changes the result.
   const before: NavGrid = { ...g, free: wasFree };
@@ -1397,10 +1396,9 @@ function buildGrid(
       return out;
     };
     const apply = (path: number[]): void => {
-      const far = path[path.length - 1];
       for (const k of path) {
         g.free[k] = 1;
-        if (!wasFree[k] || k === far) clearAt.set(k, Math.min(clearAt.get(k) ?? Infinity, c.clear));
+        if (!wasFree[k]) clearAt.set(k, Math.min(clearAt.get(k) ?? Infinity, c.clear));
       }
     };
     // Carve EVERY walkable part of the connector's width, the centre included. Stopping
@@ -1434,25 +1432,27 @@ function buildGrid(
   for (let k = 0; k < free.length; k++) {
     g.clearMm[k] = free[k] ? (D[k]! >= 0 ? centreFreedomToClearWidth(D[k]!, cell, bodyRadius) : BIG) : 0;
   }
-  // A carved doorway is a 1-cell slit the whole path must cross; its real clearance
-  // is the connector's modeled clear width, so stamp that over the slit cells.
+  // A carved doorway is a slit the whole path must cross; its real clearance is the
+  // connector's modeled clear width, so stamp that over the cells the carve OPENED — the
+  // only cells it stamps. Every walk or route through a door crosses at least one of them:
+  // a rasterised wall blocks at least one cell between the two rooms' seeds (a thin wall by
+  // the closed-square touch test in `rasteriseWallSegments`), a walk starts only at
+  // entrances, and a room's cells — where a route starts and arrives — are its floor, never
+  // an opened cell (`buildNav`). So the door caps every route through it.
   //
-  // A cell's width is the MINIMUM of every constraint on it. A cell the carve opened had no
-  // clearance of its own (it was not walkable floor), so it reads the connector's width. A far
-  // seed was already walkable, and the room's clearance field just computed above is a
-  // constraint on it too: it reads the narrower of the two, so the door still caps every
-  // route through it AND a furniture pinch narrower than the door stays a pinch. Replacing
-  // the field there erased such a pinch (backlog E.6–E.10's far-seed question). Dropping
-  // the far-seed stamp instead was measured and rejected: a key route seeds EVERY free cell
-  // of its from-room at +Infinity (`addNearestRoute`), the cells a carve opened inside that
-  // room's rectangle included (a cell belongs to the room holding its centre), and a widest
-  // search never reads a source cell's own clearance — so a door whose opened cells all lie
-  // in the from-room is capped only by its far seed. `min-bedroom-flat`'s route bed → bath
-  // lost that cap (740 → 14000). That was measured while routes still started on opened
-  // cells; they now start on the room's floor only (`opened` below), which makes those cells
-  // a cap too. `test/far-seed-pinch.test.ts` holds the corpus to "no walk or key route is
-  // wider than the widest door path it must take".
-  for (const [k, cw] of clearAt) g.clearMm[k] = wasFree[k] ? Math.min(cw, g.clearMm[k]!) : cw;
+  // The FAR seed (the last cell of each carve path, a floor cell of `between[1]`) keeps the
+  // room's own clearance. It used to take the door's width too — first replacing that
+  // clearance, which erased a furniture pinch narrower than the door, then as the minimum of
+  // the two. Once routes and rooms were read on the floor the stamp could no longer cap a path
+  // THROUGH the door (that path already crosses an opened cell); it capped only paths that
+  // pass the far seed without using the door, and since the far seed is always `between[1]`'s,
+  // by room source order: a 1000 mm way along a hall read the 700 mm door it never used, or not
+  // (backlog E.6–E.10's far-seed question, closed by dropping the stamp). Before the floor rule
+  // the stamp was load-bearing — a route seeded on the opened cells inside its from-room
+  // bypassed them (`min-bedroom-flat`, 740 → 14000) — so the order of those fixes matters.
+  // `test/far-seed-pinch.test.ts` holds the corpus to "no walk or key route is wider than the
+  // widest door path it must take", as a guard.
+  for (const [k, cw] of clearAt) g.clearMm[k] = cw;
 
   // The cells a carve opened: walkable now, not before any connector carved.
   const opened = new Uint8Array(nx * ny);
