@@ -137,6 +137,9 @@ export interface ExprTokens {
    *  Lets the atom parser refuse to swallow the next statement's keyword as a
    *  bare reference when a previous statement is incomplete. */
   isStatementStart?(value: string): boolean;
+  /** Record a NON-fatal catalogued error and carry on (a literal the lexer replaced by 0
+   *  inside a `"{…}"` interpolation). Absent, such an error falls back to {@link fail}. */
+  report?(code: string, message: string, span: Span): void;
 }
 
 // Binary-operator precedence, lowest binds loosest. Range (`..`) sits between
@@ -197,7 +200,10 @@ export interface ParseExprOpts {
  * the result), and a few thousand levels overflow the JS stack — a `RangeError` thrown out of
  * `compile()`. This limit is ~6x below the lowest depth that overflowed when measured (about
  * 1,560 levels) and far above any real plan (a handful), so it refuses only pathological
- * input — with an `E_PARSE` diagnostic, never a throw.
+ * input — with an `E_PARSE` diagnostic, never a throw. One limit serves blocks, parentheses and
+ * tree height, so it also caps a flat chain `a + b + …` at 257 terms (a chain is
+ * left-deep, one binary node per `+`, and the evaluator recurses down it); a longer sum is
+ * written with `for` and an accumulator instead.
  */
 export const MAX_NEST_DEPTH = 256;
 
@@ -425,7 +431,17 @@ function parseTemplate(raw: string, baseOffset: number, outer: ExprTokens): Expr
         lit = "";
       }
       const lr = lex(inner);
-      if (lr.errors.length) outer.fail(lr.errors[0]!.message);
+      // A lexical error with its own code (`E_NON_FINITE`, the literal already replaced by 0)
+      // is reported like it is outside a string, at its span in the original source; any other
+      // lexical error is fatal for the string.
+      const soft = lr.errors.filter((le) => le.code !== undefined);
+      const hard = lr.errors.find((le) => le.code === undefined);
+      if (hard) outer.fail(hard.message);
+      for (const le of soft) {
+        const at = { start: le.span.start + baseOffset + i + 1, end: le.span.end + baseOffset + i + 1 };
+        if (outer.report) outer.report(le.code!, le.message, at);
+        else outer.fail(le.message);
+      }
       const its = tokensOver(lr.tokens, baseOffset + i + 1, outer);
       const ex = parseExpr(its);
       if (its.peek().type !== "eof") outer.fail(`Unexpected ${describe(its.peek())} in interpolation`);
@@ -456,6 +472,7 @@ function tokensOver(toks: Token[], shift: number, outer: ExprTokens): ExprTokens
     peek: (o = 0) => shifted(at(o)),
     next: () => shifted(toks[Math.min(pos++, toks.length - 1)]!),
     fail: (msg) => outer.fail(msg),
+    ...(outer.report ? { report: outer.report } : {}),
   };
 }
 
@@ -464,9 +481,53 @@ const NUM0: Value = { t: "num", v: 0 };
 const MAX_RANGE = 100_000;
 /** Safety cap on function-call nesting (guards against runaway recursion). */
 const MAX_CALL_DEPTH = 512;
-/** Safety cap on nested evaluations (see {@link evalExpr}). */
-const MAX_EVAL_NEST = 1200;
-let evalNest = 0;
+/**
+ * The stack budget shared by the evaluator and the expander (`ir.ts` `expandScope`).
+ *
+ * Both recurse over user structure (expression trees and user calls; blocks and component
+ * instances), and the two nest INSIDE each other — a component body is a stack of blocks, each
+ * evaluating expressions — so a bound on either alone leaves their product free to overflow the
+ * JS stack. One counter measures the whole stack in "evaluation units": one nested evaluation
+ * costs {@link EVAL_UNITS}, one nested expansion frame {@link EXPAND_UNITS}. Crossing
+ * {@link MAX_STACK_UNITS} is a diagnostic (reported once per crossing), never a throw. The
+ * constants come from measured overflow depths on Node's default stack with a COLD JIT (a
+ * fresh process per data point — the first compile in a process is the worst case, frames being
+ * bigger before optimisation) and the budget off: the worst shapes overflowed at ~1,000 nested
+ * evaluations (call-heavy bodies; ~1,300 for deep `1+(…)` bodies) and at ~750 nested expansion
+ * frames (`for` blocks of 250 per component), and warm runs reach ~2,500 and ~1,500. A frame
+ * counts 2 units and the budget is 800 with 200 kept free for the expressions inside a frame,
+ * so the worst measured shape uses at most ~80% of the cold stack. The price: bodied recursion
+ * stops after about 800 / (nested evaluations per call) calls — ~260 for
+ * `n + sum(n - 1)` (`if`, `+` and the call) — where `MAX_CALL_DEPTH` alone allowed 512. A
+ * budget that accepted all 512 would throw on the worst shape above. Module state is safe: both
+ * walks are synchronous and every increment is undone in a `finally`.
+ */
+export const EVAL_UNITS = 1;
+export const EXPAND_UNITS = 2;
+export const MAX_STACK_UNITS = 800;
+/** Units an expansion frame leaves free for the expressions evaluated inside it, so a plan
+ *  too deep to expand is refused by `E_RECURSION` rather than by a cascade of evaluation errors. */
+export const EXPAND_RESERVE = 200;
+let stackUse = 0;
+let reported = { eval: false, expand: false };
+
+/** Reserve `units` of the stack budget; false (nothing reserved) when it would be exceeded. */
+export function enterStack(units: number, reserve = 0): boolean {
+  if (stackUse + units + reserve > MAX_STACK_UNITS) return false;
+  stackUse += units;
+  return true;
+}
+/** Release what {@link enterStack} reserved. */
+export function leaveStack(units: number): void {
+  stackUse -= units;
+  if (stackUse === 0) reported = { eval: false, expand: false };
+}
+/** True exactly once per crossing of the budget, per kind (the flag resets when the stack empties). */
+export function firstOverflow(kind: "eval" | "expand"): boolean {
+  if (reported[kind]) return false;
+  reported[kind] = true;
+  return true;
+}
 
 /** Built-in dispatch is injected by {@link setBuiltinDispatch} (from builtins.ts)
  *  to avoid a static import cycle. Until set, built-in calls are unknown. */
@@ -481,26 +542,22 @@ export function setBuiltinDispatch(fn: typeof builtinDispatch): void {
  *  and yield a safe default so resolution can continue and report everything.
  *  `depth` bounds function-call nesting; callers pass 0. */
 export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, depth = 0): Value {
-  // The evaluator recurses over the tree AND over user calls, so call depth (512) times
-  // expression height (256) is far beyond the JS stack. This second bound counts every
-  // nested evaluation, whichever way it nests, and answers with the call-depth diagnostic.
-  // The limit sits below the ~1,750 nested evaluations measured to overflow, and is
-  // reached by plain recursion only past ~400 calls. Module state is safe: evaluation is
-  // synchronous and the increment is undone in a `finally`.
-  if (evalNest >= MAX_EVAL_NEST) {
-    onError({
-      severity: "error",
-      message: `Evaluation nested too deeply (limit ${MAX_EVAL_NEST})`,
-      code: "E_CALL_DEPTH",
-      span: exprSpan(e),
-    });
+  // See `MAX_STACK_UNITS`: nested evaluation shares one stack budget with expansion.
+  if (!enterStack(EVAL_UNITS)) {
+    if (firstOverflow("eval")) {
+      onError({
+        severity: "error",
+        message: "Evaluation nested too deeply (the recursion or nesting exhausts the evaluator's stack budget)",
+        code: "E_CALL_DEPTH",
+        span: exprSpan(e),
+      });
+    }
     return NUM0;
   }
-  evalNest++;
   try {
     return evalNode(e, env, onError, depth);
   } finally {
-    evalNest--;
+    leaveStack(EVAL_UNITS);
   }
 }
 

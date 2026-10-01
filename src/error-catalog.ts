@@ -617,7 +617,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   E_NON_FINITE: E(
     "E_NON_FINITE",
     "A number is too large to be finite.",
-    "A numeric literal, or the result of an arithmetic operation (`+ - * / %`), is beyond what a floating-point number can hold, so it would be infinite. ArchLang refuses rather than carrying an infinity (or a NaN) into geometry, an index or a printed label; the offending value is replaced by 0 so the rest of the plan still resolves and reports.",
+    "A numeric literal, the result of an arithmetic operation (`+ - * / %`), or a quantity the resolver derives from finite dimensions (an element's extent, a room's area, the plan's total area) is beyond what a floating-point number can hold, so it would be infinite. The check is per operation: an overflowing intermediate is refused even if a later `min()` would have clamped it. A literal or arithmetic result is replaced by 0 so the rest of the plan still resolves and reports; a derived quantity is diagnosed at its element and left as computed.",
     "Use a realistic dimension. A plan is measured in millimetres, and a value above about 1e300 is never a building.",
     `let k = 1${"0".repeat(60)}\nlet x = k * k * k * k * k * k   # error: 1e360 overflows`,
   ),

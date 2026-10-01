@@ -41,6 +41,7 @@ import {
   USE_KINDS,
 } from "./ast.js";
 import type { Expr } from "./expr.js";
+import type { ExprTokens } from "./expr.js";
 import { closest, MAX_NEST_DEPTH, parseExpr as parseExprPratt } from "./expr.js";
 import type { Theme } from "./theme.js";
 import { isNumericThemeKey, resolveThemeKey, resolveStyleKey } from "./theme.js";
@@ -127,7 +128,7 @@ class Parser {
   private blockDepth = 0;
   public diagnostics: Diagnostic[] = [];
   /** Facade passed to element parse functions (see registry.ts). */
-  private readonly ctx: ParseCtx;
+  private readonly ctx: ParseCtx & Pick<ExprTokens, "report">;
   /** Statement-start keywords for recovery resync — fixed keywords + this
    *  registry's element keywords (so plugin elements resync correctly). */
   private readonly statementStarts: ReadonlySet<string>;
@@ -157,6 +158,7 @@ class Parser {
       parseStringExpr: () => this.parseStringExpr(),
       parseIdOpt: () => this.parseIdOpt(),
       fail: (msg, t) => this.fail(msg, t),
+      report: (code, message, span) => this.diagnostics.push({ severity: "error", message, code, span }),
     };
   }
 

@@ -42,7 +42,19 @@ import type { Frame } from "./frame.js";
 import { composeFrame, makeFrame, tryTransformElement } from "./frame.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Env, Expr, Value } from "./expr.js";
-import { asBool, asNum, asStr, closest, evalExpr, exprSpan } from "./expr.js";
+import {
+  asBool,
+  asNum,
+  asStr,
+  closest,
+  enterStack,
+  EXPAND_RESERVE,
+  EXPAND_UNITS,
+  evalExpr,
+  exprSpan,
+  firstOverflow,
+  leaveStack,
+} from "./expr.js";
 import type { Theme } from "./theme.js";
 import type { ResolveCtx, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
@@ -62,7 +74,13 @@ import { planTableRows } from "./sheet-tables.js";
 import type { GridBox } from "./geometry/grid-index.js";
 import { GridIndex } from "./geometry/grid-index.js";
 import { rectsOverlap } from "./geometry/rect.js";
-import { effectiveVertices, polygonSelfIntersects, polygonsOverlap, rectRing } from "./geometry/polygon.js";
+import {
+  effectiveVertices,
+  polygonArea,
+  polygonSelfIntersects,
+  polygonsOverlap,
+  rectRing,
+} from "./geometry/polygon.js";
 import { BUILTIN_NAMES } from "./builtins.js";
 
 export interface RBase {
@@ -978,6 +996,44 @@ function expandScope(
   depth: number,
   ectx: ExpandCtx,
   zone: ZoneFrame = rootZoneFrame(),
+): Entry[] {
+  // Every block and component body is one frame of a recursion the JS stack must hold.
+  // `MAX_DEPTH` bounds component nesting and the parser bounds block nesting, but their PRODUCT
+  // (64 components x 256 blocks) is not bounded by either, so the frames also draw on the
+  // evaluator's shared stack budget; past it the body is not expanded (one diagnostic).
+  if (!enterStack(EXPAND_UNITS, EXPAND_RESERVE)) {
+    if (firstOverflow("expand")) {
+      diagnostics.push(
+        stampProvenance(
+          {
+            severity: "error",
+            message: "Blocks and component instances are nested too deeply to expand; the innermost was skipped",
+            code: "E_RECURSION",
+            span: body[0]?.span,
+          },
+          ectx.frame,
+          ectx.file,
+        ),
+      );
+    }
+    return [];
+  }
+  try {
+    return expandScopeFrame(body, scope, global, components, diagnostics, depth, ectx, zone);
+  } finally {
+    leaveStack(EXPAND_UNITS);
+  }
+}
+
+function expandScopeFrame(
+  body: Statement[],
+  scope: Scope,
+  global: Scope,
+  components: Map<string, ComponentDef>,
+  diagnostics: Diagnostic[],
+  depth: number,
+  ectx: ExpandCtx,
+  zone: ZoneFrame,
 ): Entry[] {
   // Every diagnostic raised while expanding THIS body inherits the body's provenance:
   // which file its spans are measured in, and which placed instance it belongs to.
@@ -2050,6 +2106,7 @@ function resolveImpl(
   registerOpenings(elements, walls);
 
   // 4. Cross-element checks.
+  checkDerivedFinite(elements, registry, diagnostics);
   checkPlanDrawable(elements, diagnostics);
   checkRoomOverlaps(elements, diagnostics);
   checkFurnitureRooms(elements, diagnostics);
@@ -2531,6 +2588,52 @@ function registerOpenings(elements: ResolvedElement[], walls: RWall[]): void {
 }
 
 /** W_EMPTY_PLAN: the plan resolves but contains nothing drawable. */
+/**
+ * The derived half of the closed number domain. The expression language never yields a
+ * non-finite number (`E_NON_FINITE`), but two finite inputs can still overflow once the
+ * resolver combines them: a corner `x + w`, a room's area `w * h`, the plan's total area. Those
+ * values would print as `Infinity` in the drawing and as `null` in `describe()` with no
+ * diagnostic at all. Each is diagnosed here at the authoring element's span. The values are left
+ * AS COMPUTED (not substituted), so the plan is refused by the error rather than silently
+ * reshaped; `fmt3`'s `"0"` for a non-finite number stays only as a backstop.
+ */
+function checkDerivedFinite(elements: ResolvedElement[], registry: Registry, diagnostics: Diagnostic[]): void {
+  let total = 0;
+  for (const el of elements) {
+    const def = registry.byKind.get(el.kind);
+    let what: string | undefined;
+    if (def) {
+      for (const p of def.bounds(el)) {
+        if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) {
+          what = `The extent of ${el.kind} "${el.id}"`;
+          break;
+        }
+      }
+    }
+    if (what === undefined && el.kind === "room") {
+      const r = el as RRoom;
+      const area = r.poly ? polygonArea(r.poly) : r.size.w * r.size.h;
+      if (Number.isFinite(area)) total += area;
+      else what = `The area of room "${r.id}"`;
+    }
+    if (what !== undefined) {
+      diagnostics.push({
+        severity: "error",
+        message: `${what} is not finite (the dimensions overflow the number range)`,
+        code: "E_NON_FINITE",
+        span: (el as { span?: Span }).span,
+      });
+    }
+  }
+  if (!Number.isFinite(total)) {
+    diagnostics.push({
+      severity: "error",
+      message: "The total room area is not finite (the dimensions overflow the number range)",
+      code: "E_NON_FINITE",
+    });
+  }
+}
+
 function checkPlanDrawable(elements: ResolvedElement[], diagnostics: Diagnostic[]): void {
   const drawable = elements.some(
     (e) =>

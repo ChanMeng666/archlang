@@ -726,7 +726,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `arch explain <CODE>`.
-**96 errors** (abort rendering) · **52 warnings** (advisory; `validate --strict` fails on them too).
+**97 errors** (abort rendering) · **52 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 

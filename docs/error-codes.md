@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**96 errors** · **52 warnings**
+**97 errors** · **52 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -814,7 +814,7 @@ component c() { level 1 { } }   # error: only allowed at plan level
 
 *error* — A number is too large to be finite.
 
-**Cause.** A numeric literal, or the result of an arithmetic operation (`+ - * / %`), is beyond what a floating-point number can hold, so it would be infinite. ArchLang refuses rather than carrying an infinity (or a NaN) into geometry, an index or a printed label; the offending value is replaced by 0 so the rest of the plan still resolves and reports.
+**Cause.** A numeric literal, the result of an arithmetic operation (`+ - * / %`), or a quantity the resolver derives from finite dimensions (an element's extent, a room's area, the plan's total area) is beyond what a floating-point number can hold, so it would be infinite. The check is per operation: an overflowing intermediate is refused even if a later `min()` would have clamped it. A literal or arithmetic result is replaced by 0 so the rest of the plan still resolves and reports; a derived quantity is diagnosed at its element and left as computed.
 
 **Fix.** Use a realistic dimension. A plan is measured in millimetres, and a value above about 1e300 is never a building.
 
