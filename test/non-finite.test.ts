@@ -48,6 +48,13 @@ ${ROOM}`),
     ).toEqual(["E_NON_FINITE"]);
   });
 
+  it("a coded and an uncoded lexical error in one interpolation are both reported", () => {
+    const r = compile(wrap(`${ROOM} label "{${BIG} + @}"`), { noCache: true });
+    const got = r.diagnostics.filter((d) => d.severity === "error").map((d) => d.code);
+    expect(got).toContain("E_NON_FINITE");
+    expect(got).toContain("E_PARSE");
+  });
+
   it("both halves of an overflowing WxH dimension are diagnosed", () => {
     // The substituted 0 then makes the room itself degenerate, which is reported as well.
     expect(codes(wrap(`room id=r at (0,0) size ${BIG}x${BIG}`))).toEqual([
@@ -107,15 +114,18 @@ describe("nesting depth", () => {
   const forBlocks = (n: number) => wrap("for i in 0..1 {\n".repeat(n) + ROOM + "\n" + "}\n".repeat(n));
   const parens = (n: number) => wrap(`room id=r at (${"(".repeat(n)}1${")".repeat(n)},0) size 900x900`);
 
-  it("blocks nested to the limit are read; one deeper is one E_PARSE and no throw", () => {
-    expect(codes(forBlocks(MAX_NEST_DEPTH - 1))).toEqual([]);
-    expect(codes(forBlocks(MAX_NEST_DEPTH))).toEqual([]);
-    expect(codes(forBlocks(MAX_NEST_DEPTH + 1))).toEqual(["E_PARSE"]);
-    expect(codes(forBlocks(5_000))).toEqual(["E_PARSE"]);
+  it("blocks: read to the parser limit, expanded to the stack budget, diagnosed beyond — never a throw", () => {
+    // 100 nested blocks are well inside both bounds.
+    expect(codes(forBlocks(100))).toEqual([]);
+    // Up to MAX_NEST_DEPTH the parser reads them, but expansion stops at the stack budget.
+    expect(codes(forBlocks(MAX_NEST_DEPTH))).toEqual(["E_RECURSION"]);
+    // One past the parser limit: that block is skipped (E_PARSE) and the rest still expands.
+    expect(codes(forBlocks(MAX_NEST_DEPTH + 1))).toContain("E_PARSE");
+    expect(codes(forBlocks(5_000))).toContain("E_PARSE");
   });
 
   it("an `if` nested far past the old overflow depth is diagnosed", () => {
-    expect(codes(wrap("if 1 < 2 {\n".repeat(5_000) + ROOM + "\n" + "}\n".repeat(5_000)))).toEqual(["E_PARSE"]);
+    expect(codes(wrap("if 1 < 2 {\n".repeat(5_000) + ROOM + "\n" + "}\n".repeat(5_000)))).toContain("E_PARSE");
   });
 
   it("parenthesised expressions: limit-ish is fine, far above is one E_PARSE", () => {
@@ -143,9 +153,9 @@ describe("nesting depth", () => {
     expect(codes(src)).toContain("E_CALL_DEPTH");
   });
 
-  it("bodied recursion is accepted to ~800 / (3 nested evaluations per call) calls", () => {
+  it("bodied recursion is accepted to ~336 / (3 nested evaluations per call) calls", () => {
     const sum = (n: number) => wrap(`let sum(n) = if n == 0 { 0 } else { n + sum(n - 1) }\nlet z = sum(${n})\n${ROOM}`);
-    expect(codes(sum(200))).toEqual([]);
+    expect(codes(sum(100))).toEqual([]);
     // Past the stack budget it is the call-depth diagnostic, ONCE (not once per evaluation that trips).
     const d = compile(sum(600), { noCache: true }).diagnostics.filter((x) => x.code === "E_CALL_DEPTH");
     expect(d).toHaveLength(1);
@@ -170,6 +180,26 @@ describe("nesting depth", () => {
     }
   });
 
+  it("a budget crossing inside an `if` adds no spurious type error", () => {
+    const src = wrap(`let sum(n) = if n < 1 { 0 } else { n + sum(n - 1) }\nlet z = sum(600)\n${ROOM}`);
+    expect(codes(src)).toEqual(["E_CALL_DEPTH"]);
+    // Same inside deep expansion frames: the only error is the expansion's own.
+    const deep = wrap(
+      `component c(n) { ${"if n > 0 {\n".repeat(120)}if n > 0 { c(n - 1) }\n${"}\n".repeat(120)} }\nc(60)`,
+    );
+    expect([...new Set(codes(deep))]).toEqual(["E_RECURSION"]);
+  });
+
+  it("each independent fault at plan level is reported, not just the first", () => {
+    const sums = wrap(
+      `let sum(n) = if n < 1 { 0 } else { n + sum(n - 1) }\nlet a = sum(600)\nlet b = sum(600)\n${ROOM}`,
+    );
+    expect(codes(sums)).toEqual(["E_CALL_DEPTH", "E_CALL_DEPTH"]);
+    const comp = (name: string) =>
+      `component ${name}(n) { ${"if n > 0 {\n".repeat(120)}if n > 0 { ${name}(n - 1) }\n${"}\n".repeat(120)} }\n${name}(60)\n`;
+    expect(codes(wrap(comp("c") + comp("d"))).filter((c) => c === "E_RECURSION")).toHaveLength(2);
+  });
+
   it("shallow component recursion is untouched", () => {
     expect(codes(wrap(`component c(n) { if n > 0 { c(n - 1) } }\nc(40)\n${ROOM}`))).toEqual([]);
   });
@@ -187,6 +217,15 @@ describe("derived quantities (area, extent) are diagnosed, not printed as Infini
     const E154 = "1" + "0".repeat(154);
     const src = wrap(`room id=r at (0,0) size ${E154}x${E154}\nroom id=q at (${E154},0) size ${E154}x${E154}`);
     expect(codes(src)).toContain("E_NON_FINITE");
+  });
+  it("the total-area diagnostic is spanned at the room that carries it out of range", () => {
+    const E154 = "1" + "0".repeat(154);
+    const src = wrap(`room id=r at (0,0) size ${E154}x${E154}\nroom id=q at (${E154},0) size ${E154}x${E154}`);
+    const d = compile(src, { noCache: true }).diagnostics.filter(
+      (x) => x.code === "E_NON_FINITE" && x.message.startsWith("The total"),
+    );
+    expect(d).toHaveLength(1);
+    expect(src.slice(d[0]!.span!.start, d[0]!.span!.end)).toContain("room id=q");
   });
 });
 

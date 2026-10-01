@@ -46,6 +46,8 @@ import {
   asBool,
   asNum,
   asStr,
+  atStackRoot,
+  BUDGET_SUBSTITUTE,
   closest,
   enterStack,
   EXPAND_RESERVE,
@@ -54,6 +56,7 @@ import {
   exprSpan,
   firstOverflow,
   leaveStack,
+  resetOverflowReports,
 } from "./expr.js";
 import type { Theme } from "./theme.js";
 import type { ResolveCtx, Registry } from "./registry.js";
@@ -1066,6 +1069,9 @@ function expandScopeFrame(
 
   for (const stmt of body) {
     if (ectx.budget.capped) break;
+    // Each statement of the outermost body is an independent fault domain for the stack
+    // budget's once-per-crossing report.
+    if (atStackRoot()) resetOverflowReports();
     switch (stmt.kind) {
       case "let": {
         if (scope.vars.has(stmt.name)) {
@@ -1202,6 +1208,7 @@ function expandScopeFrame(
       }
       case "for": {
         const it = evalIn(stmt.iter);
+        if (it === BUDGET_SUBSTITUTE) break; // already diagnosed by the stack budget
         if (it.t !== "arr") {
           diag({
             severity: "error",
@@ -2599,6 +2606,7 @@ function registerOpenings(elements: ResolvedElement[], walls: RWall[]): void {
  */
 function checkDerivedFinite(elements: ResolvedElement[], registry: Registry, diagnostics: Diagnostic[]): void {
   let total = 0;
+  let totalSpan: Span | undefined;
   for (const el of elements) {
     const def = registry.byKind.get(el.kind);
     let what: string | undefined;
@@ -2613,8 +2621,11 @@ function checkDerivedFinite(elements: ResolvedElement[], registry: Registry, dia
     if (what === undefined && el.kind === "room") {
       const r = el as RRoom;
       const area = r.poly ? polygonArea(r.poly) : r.size.w * r.size.h;
-      if (Number.isFinite(area)) total += area;
-      else what = `The area of room "${r.id}"`;
+      if (Number.isFinite(area)) {
+        total += area;
+        // The room whose area first carries the running total out of range.
+        if (!Number.isFinite(total) && totalSpan === undefined) totalSpan = r.span;
+      } else what = `The area of room "${r.id}"`;
     }
     if (what !== undefined) {
       diagnostics.push({
@@ -2630,6 +2641,7 @@ function checkDerivedFinite(elements: ResolvedElement[], registry: Registry, dia
       severity: "error",
       message: "The total room area is not finite (the dimensions overflow the number range)",
       code: "E_NON_FINITE",
+      span: totalSpan,
     });
   }
 }
