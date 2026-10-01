@@ -570,7 +570,8 @@ suite("vertical circulation — a balcony door is not an arrival point", () => {
 function oracleVerticalReach(
   levels: readonly VerticalLevelInput[],
   grounded: (level: number) => boolean,
-): VerticalReach {
+  // The two fields that existed then; `arrivals` (the shafts behind `arrivalRooms`) came later.
+): Pick<VerticalReach, "reachable" | "arrivalRooms"> {
   const connections = verticalConnections(levels);
   const reachable = new Set<number>();
   for (const l of levels) if (grounded(l.level)) reachable.add(l.level);
@@ -600,7 +601,10 @@ function oracleVerticalReach(
 }
 
 /** A reach result with its insertion orders made visible, so `toEqual` is order-strict. */
-const shape = (r: VerticalReach) => ({ reachable: [...r.reachable], arrivalRooms: [...r.arrivalRooms.entries()] });
+const shape = (r: Pick<VerticalReach, "reachable" | "arrivalRooms">) => ({
+  reachable: [...r.reachable],
+  arrivalRooms: [...r.arrivalRooms.entries()],
+});
 
 /** Every room of the storey, whatever the seeds: the callback under which no stop is dead. */
 const allRoomsLive =
