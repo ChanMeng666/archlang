@@ -533,12 +533,33 @@
  *     (260 mm below the 900 mm minimum)" → "squeezes to 700 mm (200 mm below the 900 mm
  *     minimum)"; its route is not flagged, because its walk still is.
  *   - The `--overlay circulation` SVG (opt-in, pinned by no baseline): level 1 only, two pinch
- *     markers at the same `clearMm` move one axis, each on the entrance side of its doorway —
- *     Powder's 740 (`d_powder`) x 9150 → 9250 at y 2350, Study's 840 (`d_office`) y 1950 →
- *     1650 at x 4150 — because those doorways' carves now seed nearer the doorway. Every walk
- *     and route polyline is unchanged. Level 2's overlay is byte-identical to the plain level-2
+ *     markers at the same `clearMm` move one axis — Powder's 740 x 9150 → 9250 at y 2350,
+ *     Study's 840 y 1950 → 1650 at x 4150. Both have one cause: `d_powder`'s carve no longer
+ *     walks through the halo of the Powder `wc` (flush, in the halo of the door's −d
+ *     threshold point). With that `wc` deleted, the trees before and after draw every level-1
+ *     marker identically, Study's included; Study's marker moves only as a tie-pick among
+ *     equal-clearance cells on a grid whose carved cells differ (the overlay-only class of
+ *     the hexagon section above). Every walk and route polyline is unchanged. Level 2's overlay is byte-identical to the plain level-2
  *     render before and after: the overlay draws nothing on a storey reached only by a shaft
  *     (a pre-existing gap, not this change), so the moved 700 is not drawn.
+ *
+ * No corpus file shows it, but the rule has a second, wider consequence: a doorway with
+ * furniture within R + δ of its face reads `blocked` from that side. R is the body radius
+ * (300 mm); δ is the distance from the wall face to the centre of the first cell the wall
+ * leaves free (100 mm for a 100 mm partition on a 100 mm grid edge; 88 mm for the same wall
+ * on 108 mm cells). A threshold point's inward walk first meets that cell, the furniture's
+ * halo takes it exactly when gap − δ ≤ R, and every walk then stops and seeds nothing. Where
+ * every threshold point's walk was straight, the old carve back was refused anyway and the
+ * room already read `blocked` at the same gap. What changes is a doorway with a point on a
+ * lattice line, or within tolerance of a room corner (whose walk runs diagonally): its walk
+ * stepped through the halo and the furniture to free floor beyond, and an L-shaped carve back
+ * bored through the wall beside the doorway, so the room was measured through that tunnel
+ * with the door's width stamped over the pinch, and its routes with it. The red team's
+ * random-plan probe found 7 such flips per ~436 valid plans per seed. The threshold is
+ * pinned at both cell sizes by `test/carve-inward-walk.test.ts` (blocked at R + δ, with
+ * 0 < `widestWayInMm` < 2R; measured 1 mm further off), beside the landing plan that pins
+ * the far-seed stamp itself. The two plans read differently before the change: the bedroom
+ * past the flight 640 instead of 700, and the bath at 400 mm measured.
  *
  * `hillside-villa.arch`'s comment above `d_en2_corr` was rewritten in the same change (it
  * called the Master Suite's 640 an artefact of the walk grid; it now says the sixth warning
