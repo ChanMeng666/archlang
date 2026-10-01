@@ -10,7 +10,7 @@ import { buildDoorAccessGraph, roomBox } from "../analyze.js";
 import type { Diagnostic } from "../diagnostics.js";
 import { segmentsOfWall, type WallSegment } from "../geometry.js";
 import type { RDoor, RFurniture, ROpening, RRoom, RVoid, RWindow, ResolvedPlan } from "../ir.js";
-import { type RVertical, verticalsOf } from "../vertical.js";
+import { type ArrivingRun, type RVertical, verticalsOf } from "../vertical.js";
 import type { LintRuleset } from "./ruleset.js";
 
 /**
@@ -29,9 +29,21 @@ export interface BuildingContext {
    * Empty when the storey is grounded (it has its own entrance) or is not reached at all.
    */
   arrivalRooms: readonly string[];
+  /**
+   * The vertical runs on THIS storey that a person arrives by — the shafts behind
+   * {@link BuildingContext.arrivalRooms}, under the same rule (empty on a grounded or
+   * unreached storey). A storey with no front door is walked from their landings, so the
+   * circulation rules measure it rather than going silent (`circulation-facts.ts`).
+   */
+  arrivalShafts: readonly ArrivingRun[];
 }
 
-const NO_BUILDING: BuildingContext = { multiStorey: false, verticalPeerIds: new Set(), arrivalRooms: [] };
+const NO_BUILDING: BuildingContext = {
+  multiStorey: false,
+  verticalPeerIds: new Set(),
+  arrivalRooms: [],
+  arrivalShafts: [],
+};
 
 export interface LintContext {
   ir: ResolvedPlan;

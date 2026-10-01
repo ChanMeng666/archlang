@@ -21,7 +21,10 @@
 export function makeNumFmt(scale: number, zeroNonFinite = false): (n: number) => string {
   return (n: number): string => {
     if (zeroNonFinite && !Number.isFinite(n)) return "0";
-    const r = Math.round(n * scale) / scale;
+    let r = Math.round(n * scale) / scale;
+    // A FINITE n whose scaled value overflows (|n| above ~1e305) is already an integer — every
+    // double past 2^52 is — so rounding is a no-op: keep n rather than print `Infinity`.
+    if (!Number.isFinite(r) && Number.isFinite(n)) r = n;
     return Object.is(r, -0) ? "0" : String(r);
   };
 }
