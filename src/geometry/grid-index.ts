@@ -18,6 +18,15 @@ export interface GridBox {
   maxY: number;
 }
 
+/**
+ * The most cells ONE inserted box may occupy before it is kept in the shared
+ * {@link GridIndex} overflow list instead of being bucketed cell by cell. A cell is sized
+ * from the MEDIAN geometry, so a single extreme box (a 10^12 mm wall in a plan of 200 mm
+ * walls) would otherwise be inserted into billions of cells and exhaust memory. No
+ * ordinary plan comes near it: a 100 m wall at a 200 mm cell is 500 cells.
+ */
+export const MAX_CELLS_PER_BOX = 1 << 14;
+
 export class GridIndex<T> {
   readonly cellSize: number;
   /**
@@ -30,6 +39,15 @@ export class GridIndex<T> {
    * from the Map's own ordering.
    */
   private readonly buckets = new Map<number, Map<number, T[]>>();
+  /** Populated buckets (rows across all columns) — what a huge query range is compared to. */
+  private bucketCount = 0;
+  /**
+   * Items whose box spans more than {@link MAX_CELLS_PER_BOX} cells. Every query returns
+   * all of them (after the bucketed items, in insertion order) — still a superset of the
+   * true overlappers, so callers' exact tests keep the answer exact, and the index never
+   * allocates more than O(1) per such item.
+   */
+  private readonly overflow: T[] = [];
 
   constructor(cellSize: number) {
     this.cellSize = cellSize > 0 ? cellSize : 1;
@@ -45,6 +63,14 @@ export class GridIndex<T> {
     const x1 = this.idx(box.maxX);
     const y0 = this.idx(box.minY);
     const y1 = this.idx(box.maxY);
+    // A NaN/infinite extent or an inverted box occupies no cell and was always dropped
+    // silently; keep dropping it rather than letting overflow return it to every query.
+    if (!(Number.isFinite(x0) && Number.isFinite(x1) && Number.isFinite(y0) && Number.isFinite(y1))) return;
+    if (x1 < x0 || y1 < y0) return;
+    if (!((x1 - x0 + 1) * (y1 - y0 + 1) <= MAX_CELLS_PER_BOX)) {
+      this.overflow.push(item);
+      return;
+    }
     for (let cx = x0; cx <= x1; cx++) {
       let col = this.buckets.get(cx);
       if (!col) {
@@ -54,7 +80,10 @@ export class GridIndex<T> {
       for (let cy = y0; cy <= y1; cy++) {
         const b = col.get(cy);
         if (b) b.push(item);
-        else col.set(cy, [item]);
+        else {
+          col.set(cy, [item]);
+          this.bucketCount++;
+        }
       }
     }
   }
@@ -75,15 +104,46 @@ export class GridIndex<T> {
     const x1 = this.idx(box.maxX);
     const y0 = this.idx(box.minY);
     const y1 = this.idx(box.maxY);
-    for (let cx = x0; cx <= x1; cx++) {
-      const col = this.buckets.get(cx);
-      if (!col) continue;
-      for (let cy = y0; cy <= y1; cy++) {
-        const b = col.get(cy);
-        if (!b) continue;
-        for (const item of b) visit(item);
+    if (this.sparse(x0, x1, y0, y1)) {
+      for (const b of this.populated(x0, x1, y0, y1)) for (const item of b) visit(item);
+    } else {
+      for (let cx = x0; cx <= x1; cx++) {
+        const col = this.buckets.get(cx);
+        if (!col) continue;
+        for (let cy = y0; cy <= y1; cy++) {
+          const b = col.get(cy);
+          if (!b) continue;
+          for (const item of b) visit(item);
+        }
       }
     }
+    for (const item of this.overflow) visit(item);
+  }
+
+  /**
+   * True when walking the range cell by cell would visit far more cells than exist —
+   * a query box that is huge next to the cell size. The range is then answered from the
+   * populated buckets instead ({@link populated}), which yields the same buckets in the
+   * same `(cx, cy)` order, so the answer is the same and only the cost is bounded.
+   * (Only OVERFLOW boxes weaken this: they come back after the bucketed items and may be a
+   * looser superset than a cell walk would give, so callers must filter exactly. Joinery's
+   * `dmin` in `contextAt` reads an entry before any such filter — bounded, and no corpus
+   * plan has a box near {@link MAX_CELLS_PER_BOX}.)
+   */
+  private sparse(x0: number, x1: number, y0: number, y1: number): boolean {
+    return !((x1 - x0 + 1) * (y1 - y0 + 1) <= this.bucketCount + 64);
+  }
+
+  /** The populated buckets inside the cell range, in `(cx, cy)` order. */
+  private populated(x0: number, x1: number, y0: number, y1: number): T[][] {
+    const out: T[][] = [];
+    const cols = [...this.buckets.keys()].filter((cx) => cx >= x0 && cx <= x1).sort((a, b) => a - b);
+    for (const cx of cols) {
+      const col = this.buckets.get(cx)!;
+      const rows = [...col.keys()].filter((cy) => cy >= y0 && cy <= y1).sort((a, b) => a - b);
+      for (const cy of rows) out.push(col.get(cy)!);
+    }
+    return out;
   }
 
   /**
@@ -98,20 +158,27 @@ export class GridIndex<T> {
     const y1 = this.idx(box.maxY);
     const seen = new Set<T>();
     const out: T[] = [];
-    for (let cx = x0; cx <= x1; cx++) {
-      const col = this.buckets.get(cx);
-      if (!col) continue;
-      for (let cy = y0; cy <= y1; cy++) {
-        const b = col.get(cy);
-        if (!b) continue;
-        for (const item of b) {
-          if (!seen.has(item)) {
-            seen.add(item);
-            out.push(item);
-          }
+    const take = (b: T[]): void => {
+      for (const item of b) {
+        if (!seen.has(item)) {
+          seen.add(item);
+          out.push(item);
+        }
+      }
+    };
+    if (this.sparse(x0, x1, y0, y1)) {
+      for (const b of this.populated(x0, x1, y0, y1)) take(b);
+    } else {
+      for (let cx = x0; cx <= x1; cx++) {
+        const col = this.buckets.get(cx);
+        if (!col) continue;
+        for (let cy = y0; cy <= y1; cy++) {
+          const b = col.get(cy);
+          if (b) take(b);
         }
       }
     }
+    take(this.overflow);
     return out;
   }
 }

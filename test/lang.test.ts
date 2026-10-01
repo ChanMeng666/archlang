@@ -151,7 +151,7 @@ describe("control flow (T2.3)", () => {
   });
 
   it("while caps a runaway loop with a diagnostic", () => {
-    expect(diags(`plan "P" { while true { column at (0,0) size 1x1 } }`).map((d) => d.code)).toContain("E_WHILE_LIMIT");
+    expect(diags(`plan "P" { while true { let y = 1 } }`).map((d) => d.code)).toContain("E_WHILE_LIMIT");
   });
 
   it("assignment to an undefined name is a diagnostic", () => {
