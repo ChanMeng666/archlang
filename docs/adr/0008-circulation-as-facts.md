@@ -300,6 +300,20 @@ fact moves on the shipped corpus (every digest byte-identical); on a random fami
 red team's plan (500 draws over partition offset and thickness, door, source order and
 frame) 131 routes move, every one from above its door's width to exactly the door's width.
 
+**A room is reached on its floor** (owner-delegated, the same rule on the arriving side). A
+room's walk and bottleneck, and a key route's arrival, were read at the room's best cell, and
+a doorway's opened cells inside its rectangle counted: a room whose only door is pinched just
+past the threshold read the door's width for a floor reached only through the pinch. A room's
+cells are now its floor, as a route's sources are; a room with no floor cell at all would keep
+the cells it has (it never happens on the corpus or in 1000 random plans). Measured: on the
+shipped corpus one fact moves, `hillside-villa`'s terrace 1140 → 840 — the kitchen's sliding
+door opens onto a 700 mm strip between the wall and two sun loungers, so its floor is reached
+at best through the 840 mm dining door; the accessibility profile gains that walk's
+`W_PATH_TOO_NARROW`, and the overlay moves pinch markers on 14 files. In 1000 random plans 7
+facts move, and on a random family of the pinched doorway 151; each is exactly the room's or
+route's best over its floor where it had been the best over its doorway cells, with no walk
+moving.
+
 Two other stamps write a width over a cell's own clearance: a front door's on its seed cells
 and a shaft run's on its landing cells. Both are walk SOURCES, and a source's value is the
 seed value the walk starts at (`sourceClear`), not the cell's clearance, so the same rule

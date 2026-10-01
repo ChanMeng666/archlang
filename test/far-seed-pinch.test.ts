@@ -38,23 +38,30 @@ const distToRect = (px: number, py: number, r: Rect): number =>
  * `order` is the rooms' source order, which is `d.between`'s — and so which room's seed is
  * the carve's FAR seed: `ab` puts it in `b`, at the cabinets.
  */
-const flanked = (lo: number, hi: number, order: "ab" | "ba"): { src: string; cabinets: Rect[] } => {
+const flanked = (
+  lo: number,
+  hi: number,
+  order: "ab" | "ba",
+  /** Which room the front door opens into (default `b`), and, when given, the `place`
+   *  clauses of a component instance `g` the plan is wrapped in (ids then read `g.<id>`). */
+  opts: { frontIn?: "a" | "b"; clauses?: string } = {},
+): { src: string; cabinets: Rect[] } => {
   const cabinets: Rect[] = [
     { x: 3050, y: lo - 360, w: 100, h: 360 },
     { x: 3050, y: hi, w: 100, h: 400 },
   ];
   const ra = `  room id=a at (0,0) size 3000x3000 label "Hall" uses hall circulation`;
   const rb = `  room id=b at (3000,0) size 3000x3000 label "Bed" uses bedroom`;
-  const src = `plan "pinch" {
-  units mm
-  wall id=sh exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
+  const body = `  wall id=sh exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
   wall id=mid partition thickness 100 { (3000,0) (3000,3000) }
 ${order === "ab" ? `${ra}\n${rb}` : `${rb}\n${ra}`}
-  door id=front at (4500,3000) width 900 wall sh
+  door id=front at (${opts.frontIn === "a" ? 1500 : 4500},3000) width 900 wall sh
   door id=d at (3000,1500) width 800 wall mid
-${cabinets.map((c, i) => `  furniture id=c${i} cabinet at (${c.x},${c.y}) size ${c.w}x${c.h}`).join("\n")}
-}
-`;
+${cabinets.map((c, i) => `  furniture id=c${i} cabinet at (${c.x},${c.y}) size ${c.w}x${c.h}`).join("\n")}`;
+  const src =
+    opts.clauses === undefined
+      ? `plan "pinch" {\n  units mm\n${body}\n}\n`
+      : `plan "pinch" {\n  units mm\n  grid 100\n  component c() {\n${body}\n  }\n  place c() as g at (0,0)${opts.clauses}\n}\n`;
   return { src, cabinets };
 };
 
@@ -124,6 +131,34 @@ describe("a doorway's far seed keeps the room's own clearance when that is narro
     expect(pinch).toBeGreaterThan(m.doorClear);
     expect(m.bottleneck).toBe(m.doorClear);
     expect(measure(flanked(960, 1940, "ba").src).bottleneck).toBe(m.doorClear);
+  });
+});
+
+describe("a room is reached on its FLOOR, not on the doorway cells inside its rectangle", () => {
+  // The front door opens into `a`, so `b` is the room behind `d`, and its whole floor is
+  // reached only past the cabinets' pinch just inside the doorway. `d`'s carve opens the
+  // partition's cells, and the column at x = 3050 lies in `b`'s rectangle (a cell belongs to
+  // the room holding its centre): it reads the door's width, and a room read as its BEST
+  // cell took that one, reporting the door (740) for a floor reached only at the pinch.
+  const FRAMES = [0, 90, 180, 270].flatMap((r) => ["", " mirror x"].map((m) => `${r ? ` rotate ${r}` : ""}${m}`));
+
+  it("a room pinched just past its doorway reads the pinch, in both source orders and all eight frames", () => {
+    const { cabinets } = flanked(1060, 1840, "ab");
+    const pinch = doorwayPinch(cabinets);
+    const read = (order: "ab" | "ba", clauses: string) => {
+      const s = describePlan(flanked(1060, 1840, order, { frontIn: "a", clauses }).src);
+      const b = s.circulation?.rooms.find((r) => r.roomId === "g.b");
+      const doorClear = s.access?.edges.find((e) => e.doorId === "g.d")?.estimatedClearWidth;
+      if (!b || doorClear === undefined) throw new Error("room b is not measured through d");
+      return { bottleneck: b.bottleneckClearWidthMm, walk: b.walkDistanceMm, detour: b.detourRatio, doorClear };
+    };
+    const ref = read("ab", "");
+    // Not vacuous: the pinch is narrower than the door, and it is what `b` reads.
+    expect(pinch).toBeLessThan(ref.doorClear);
+    expect(ref.bottleneck).toBe(Math.min(ref.doorClear, pinch));
+    for (const order of ["ab", "ba"] as const) {
+      for (const f of FRAMES) expect(read(order, f), `${order}${f}`).toEqual(ref);
+    }
   });
 });
 

@@ -606,6 +606,46 @@
  * on 43 rows first. Result: all seven digests byte-identical on all 265 rows, the overlay
  * included. The corrected case is not in the corpus; it is pinned by
  * `test/route-source-floor.test.ts`.
+ *
+ * ## `hillside-villa`: both rows re-measured — a room is reached on its floor
+ *
+ * Case (1), the compiler changed, deliberately (owner-delegated; ADR 0008's far-seed
+ * addendum): a room's cells — the ones its walk and bottleneck are read on, and a key route's
+ * target — are its FLOOR, the cells walkable before any threshold was carved. A doorway's
+ * opened wall cells can lie in a room's rectangle (a cell belongs to the room holding its
+ * centre), and a room read at its best cell took them: the door's side of the threshold, not
+ * the floor behind it.
+ *
+ * Swept before (`96bc82a`) → after, 265 rows, seven digests; a 1 mm plant on every walk moved
+ * `describe()` on 87 rows first. The result:
+ *
+ *   - Every storey's SVG, `compile().diagnostics` and the default `lint()`: byte-identical on
+ *     all 265 rows. `describe()`: moved on `hillside-villa` only.
+ *   - `describe()`, field by field: level 1 (and the top-level copy)
+ *     `circulation.rooms[r_terrace].bottleneckClearWidthMm` 1140 → 840. Its walk and detour,
+ *     every other room, every route, `blocked`/`unmeasured` and level 2 are byte-identical.
+ *     Mechanism: the terrace has two doors. `d_kit_terrace` (2400 mm sliding, 2340 clear)
+ *     opens 32 band cells inside the terrace's rectangle, reached through the kitchen at
+ *     1140; but the floor behind them is the one-cell strip between the wall and the two sun
+ *     loungers, every cell 700 mm (the far seeds now read min(2340, 700)). `d_din_terrace`
+ *     (840 clear) opens onto open floor. So the terrace's floor is reached at best at 840,
+ *     through the dining door; 1140 was the kitchen door's threshold, not the terrace.
+ *   - `lint()` under `accessibility-advisory`: 29 → 30, one insertion and nothing else —
+ *     "The walk from the entrance to "Terrace" squeezes to 840 mm (60 mm below the 900 mm
+ *     minimum)." (level 1); the diagnostics after it shift by one index, every field unchanged.
+ *   - The `--overlay circulation` SVG (opt-in, pinned by no baseline): moved on 14 files, only
+ *     pinch markers (22). `hillside-villa`: the terrace's marker 1140 → 840, now at
+ *     `d_din_terrace`; one 940 marker moves to another 940 mm cell. The other 20, on
+ *     `eval/goldens/` accessible-flat, compact-studio, dims-auto-cottage, galley-kitchen,
+ *     relational-studio, sized-office-mix, three-bed-2bath, two-bed-hall; `examples/`
+ *     bungalow, clinic, courtyard-house, furnished-flat; `test/recovery-corpus/clinic`, keep
+ *     their `clearMm` and move along the same doorway: the room's best cell is now a floor
+ *     cell, whose limiting cell is another of the door's equal-width cells. No walk or route
+ *     polyline moves.
+ *
+ * Both rows were re-measured with a script that imports `./byte-identity-digest.ts` and first
+ * reproduced the old values on the tree before: whole surface 80285cb2… → 8bc280e3…, summary
+ * 759c93ef… → 3d977524….
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -621,7 +661,7 @@ export const BASELINE: [string, string][] = [
   ["garden-house", "707e56c4a8992c77ecf5d76a409690c2554f68059e31758bb8712d2b54266654"],
   ["garden-loft", "970f3edf687ae08093993eeb5ec87cc0e63b9dd51e8487202d6d5d3d61b5030b"],
   ["hexagon-pavilion", "67ec85f6b9ed5eeb30380899bc6a5df1d582674616f8dc9121d1b9971546cb5b"],
-  ["hillside-villa", "80285cb2e1a3c09be266f25f5f7ca574243ee9d50a8eb3ee7bc59047a701d8a3"], // re-measured, see header
+  ["hillside-villa", "8bc280e39809952860c4900ca7eecc8d76a8d72a33826088793009165a013e6b"], // re-measured, see header
   ["imports", "9a18b7a2e74117c3c986bbf513055d7ea333dea1451faeb4f9f3429ca23e7e55"],
   ["laneway-house", "ca93975f9180ff845039a79422a4cca1fe683d76a28831cf700efbb8f6d2bea0"],
   ["library", "614bc84423700e348345a7dd9bbf1e3ff098deacba76f3f62043cc2d7e5c144c"],
@@ -665,7 +705,7 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["garden-house", "d41cfe2342e0e0818cc7531e75e08bf7c65fbe0d650d7e6a7f2b4261d3470bb8"],
   ["garden-loft", "ad8935f435045684b7ed9975254dc2daf0357f4eb3735e514e319980ebecf793"],
   ["hexagon-pavilion", "9a3e3666e6e2b09d04a6239c984415ec92ffa487c8aa743fc8506f4bc0f97a61"],
-  ["hillside-villa", "759c93efea4b9bfeffe3f0b4eaf168bdec825e244c3199beaf73251914c943fb"], // re-measured, see header
+  ["hillside-villa", "3d97752400b255d53c901d122d69bddf189cdfb7b6d46455b11b090d0517a686"], // re-measured, see header
   ["imports", "5c75030d46ecbfc8b1e80b40945d17bd13afb68a813a286b9ddfe23252452cbc"],
   ["laneway-house", "9a173beb7f213286b8e0c117d829d126166b93e118f91894ba278005254a5255"],
   ["library", "f81107388c6547af37b0938ecc06a1f3ab3acbe69916edb7b0c9c76a4c9f3477"],
