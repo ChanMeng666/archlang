@@ -4,8 +4,8 @@
 - **Date:** 2026-10
 - **Scope:** the number domain and resource bounds of `compile()`, the parser's handling of
   malformed input, the geometric predicates that decide a diagnostic, multi-storey
-  reachability and circulation, `diffPlans`, and the eval's statistics. One new catalogued
-  error per bound; no language syntax change.
+  reachability and circulation, `diffPlans`, and the eval's statistics. Three new catalogued
+  errors (`E_NON_FINITE`, `E_ELEMENT_LIMIT`, `E_LAYOUT_UNPLACED`); no language syntax change.
 
 ## Context
 
@@ -17,8 +17,9 @@ evacuation, daylight and bidirectional editing — and kept only what lands on a
 defect, a duplicate implementation or a capability someone needs. The axonometric view was
 not studied: it is deprecated ([ADR 0021](0021-plan-first-view-deprecated.md)).
 
-The audit, each finding reproduced through the built CLI before any change, found that the
-places the code already believed correct were the weak ones:
+An audit of the code, then a red-team review that reproduced each finding through the built
+CLI before any change, found that the places the code already believed correct were the weak
+ones:
 
 - **`compile()` threw on user input**, against its contract: a 400-digit literal became
   `Infinity` and then `RangeError: Invalid array length`; a `NaN` index threw a `TypeError`; a
@@ -30,8 +31,9 @@ places the code already believed correct were the weak ones:
 - **Decisions rested on approximations**: the arc-radius check used `Math.hypot`, which is not
   correctly rounded, and refused exact semicircles; the door-swing check sampled nine points
   per arc and missed a 90,000 mm² overlap; a circle room walled by arcs was measured against
-  its 48-gon and read one facet open. The stated tessellation error was wrong by a factor of
-  three, and the bench measured label placement rather than the joinery it was cited for.
+  its 48-gon and read one facet open. The stated tessellation error was understated (R/1400 and
+  0.14 % for R/467 and 0.29 %), and the bench measured label placement rather than the joinery
+  it was cited for.
 - **Fixpoints and orders leaked**: vertical reachability ignored which room a stair stands in;
   intent `reachable` read the lowest storey only; an upper floor had no circulation facts at
   all; a doorway's carve depended on the order its points and connectors were visited;
@@ -66,13 +68,18 @@ one, not by sampling and not by a tolerance chosen after the fact.
   documented, and the result is compared with a whole-millimetre threshold. Pinned by
   `test/circle-enclosure.test.ts`.
 
-### 2. Arithmetic at a decision is `+ − × ÷ √`
+### 2. An exact tie is decided in `+ − × ÷ √`, integers or `BigInt`
 
 ECMA-262 specifies the four operations and `Math.sqrt` exactly; `hypot`, `atan2`, `sin`, `cos`,
-`log2` and `pow` are implementation-approximated. A decision this round introduced uses only
-the exact five (or integers and `BigInt`), and the arc check stopped using `Math.hypot`. The
-existing transcendental calls were NOT swept: whether to replace them is decided by measurement
-(§3), and the measurement did not motivate it.
+`log2` and `pow` are implementation-approximated. Where a verdict turns on an exact tie (an
+arc radius equal to half its chord), this round decides it with exact arithmetic only, and the
+arc check stopped using `Math.hypot` for it. The rule is that narrow, and the other two
+decisions say how they depart from it: the swing test normalises its candidate axes with
+`Math.hypot` (through `unit`) and reads a tie within `VERTEX_EPS`, exact on axis-aligned
+whole-millimetre geometry; the circle-room measure makes two `atan2` calls per arc and compares
+a length with a whole-millimetre threshold. The existing transcendental calls were NOT swept:
+whether to replace them is decided by measurement (§3), and the measurement did not motivate
+it.
 
 ### 3. Determinism across engines is measured, not assumed
 
@@ -87,7 +94,7 @@ reaches an exact comparison is invisible by design; Playwright WebKit on Windows
 
 ### 4. The number domain and every resource bound are catalogued diagnostics
 
-No input makes `compile()` throw, and each bound is one catalogued code raised once, never a
+No input makes `compile()` throw, and each bound is reported by a catalogued code, never a
 silent truncation:
 
 - **`E_NON_FINITE`**: a literal, an arithmetic result or a derived quantity (an element's
@@ -153,8 +160,10 @@ equivalence oracle holding the old implementation verbatim (`test/reroll-findrun
 ## Consequences
 
 - **Good.** `compile()`'s "never throws" contract is now tested against the inputs that broke
-  it. Three diagnostics that sampled or approximated now decide, and the one that still uses
-  `atan2` says so. Cross-engine agreement is a number from a script, watched nightly.
+  it. The arc check decides its tie exactly, the swing check no longer samples, the circle
+  measure no longer depends on the tessellation, and each transcendental call left in them is
+  documented where it is made. Cross-engine agreement is a number from a script, watched
+  nightly.
 - **Cost: behaviour changes**, each in `CHANGELOG.md`: a plan past 5,000 elements per storey,
   a recursion past the stack budget (`n + sum(n - 1)` is accepted to about 110 calls, where the
   512-call cap alone accepted more but could overflow) or nesting past 256 now fails with a
@@ -176,8 +185,9 @@ equivalence oracle holding the old implementation verbatim (`test/reroll-findrun
 - **Exact projective predicates** (backlog 6.5) stay rejected, consistently with this ADR: the
   decisions made exact here needed integers, `BigInt` and squared lengths, which rely only on
   IEEE-exact `+ − × ÷ √`. Plain-double `orient2d` is exact on integer coordinates below 2²⁵ mm
-  (ADR 0020), and adaptive predicates would matter only for non-integer inputs no decision
-  here takes.
+  (ADR 0020). Adaptive predicates would matter for non-integer inputs, and the one decision
+  here that meets them (the swing test on an oblique wall) reads its tie within the existing
+  `VERTEX_EPS` instead, with no observed defect to motivate more.
 - **A whitelist guard on transcendental calls.** About 45 legitimate `sin`/`cos` sites; a guard
   would only freeze exemptions, and no failure was observed.
 - **Rewriting `applyFixes`.** Nobody applies 2,000 fixes at once; 200 take about 22 ms, and the
@@ -221,9 +231,10 @@ equivalence oracle holding the old implementation verbatim (`test/reroll-findrun
 - **`describe().freedom` as a rank**, a fixed-point or rational-number rewrite, and enumerating
   rectangular partitions for the dataset: no defect or consumer motivates them.
 - **Bentley–Ottmann intersection, snap rounding in the interner, a DCEL that derives rooms from
-  walls:** not taken this round. Bentley–Ottmann stays out until measured (backlog 4.1 lists a
-  sweep line as legitimate, but about 1,000 segments is the range where a grid usually wins and
-  that was not measured here), and any joinery change is held to "not one byte moves".
+  walls:** not taken this round. Backlog 4.1 lists a sweep line as a legitimate direction, but
+  whether it beats the grid-bucketed pair scan at the corpus's size (about 1,000 segments at
+  most) was not measured here, so it stays out until it is; any joinery change is held to "not
+  one byte moves".
 
 ## Deferred (each needs a consumer or a measurement)
 

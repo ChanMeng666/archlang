@@ -544,8 +544,8 @@ standing in a door-less store is a DEAD shaft, and the storey it leads to gets
 message work should cover both: name the shaft and say why it does not count (lands on no room;
 starts in a room nobody can reach). A stop whose footprint lies in no room still keeps the
 storey-level answer, so the notch case above is unchanged. Re-run: a hall with the front door
-plus a store holding the stair, upper floor with no door: `reachable_levels` `[1]` and
-`W_NO_ENTRANCE` on level 2 (was `[1, 2]` and silent).
+plus a door-less store holding the stair, upper floor with no exterior door:
+`reachable_levels` `[1]` and `W_NO_ENTRANCE` on level 2 (was `[1, 2]` and silent).
 
 ### P.2 · `swing into <rectangle room>` on an arc host picks its side off the chord — closed by W5a
 

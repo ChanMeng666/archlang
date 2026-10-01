@@ -56,6 +56,11 @@ fixtures (`test/byte-identity-baseline.ts`, `test/while-byte-identity-baseline.t
   `{` no longer closes the plan and drops everything after it (a wall with one bad point used to
   lose the two rooms after it; both now survive, with one `E_PARSE`). A statement that does not
   start its line, and lines where tabs meet spaces, recover as before.
+- Since a block's own `}` no longer ends the file's plan, a fragment with no `plan` header whose
+  block fails to parse (the catalogue's one-line `site { … }` and `strip … { … }` examples, run
+  bare) can report one or two more `E_PARSE`, ending in `Expected rcurly but found end of
+  input`. Inside a plan the same statement now keeps the rest of the plan: a failed
+  `strip … { room size }` used to drop the rooms after it and add `W_EMPTY_PLAN`.
 
 ### Fixed — exact decisions where the geometry is exact
 
@@ -64,8 +69,8 @@ fixtures (`test/byte-identity-baseline.ts`, `test/while-byte-identity-baseline.t
   semicircles are no longer refused (`(0,0) arc (3300,5600) radius 3250`, or `(0,0) arc
   (9.3,12.4) radius 7.75`) and are built exactly: centre on the chord midpoint, sweep π, 24
   chords (one accepted tie used to be built ~1e-6 mm off-centre with 25). The `E_ARC_RADIUS`
-  fix suggests the smallest printed radius that passes, also for expression endpoints and on a
-  snapping grid; before, it rounded half the chord to the nearest thousandth and often fell
+  message's minimum and its fix are the smallest printed radius that passes, also for
+  expression endpoints and on a snapping grid; before, it rounded half the chord to the nearest thousandth and often fell
   short (16 of 40 sampled chords still failed after the fix; none does now).
 - **Door swings.** `W_SWING_OBSTRUCTED` decides with an exact separating-axis test instead of
   nine sample points per arc, so a real overlap the sampler missed now warns (two swings sharing
@@ -89,9 +94,11 @@ fixtures (`test/byte-identity-baseline.ts`, `test/while-byte-identity-baseline.t
   reference, or either inside a component instance) reports the new **`E_LAYOUT_UNPLACED`**
   naming the room it waits on, instead of being placed silently against `(0,0)`.
   `E_LAYOUT_CYCLE` names only the rooms on the cycle; a room that merely leads into one gets
-  `E_LAYOUT_UNPLACED`. Unplaced rooms no longer raise phantom `W_ROOM_OVERLAP`, and layout
-  errors come in declaration order. A plan without an `E_LAYOUT_*` or `E_PLACE_POLY` error is
-  unchanged.
+  `E_LAYOUT_UNPLACED`. A room that ends unplaced (failed, waiting on a failure, or on a cycle)
+  no longer raises a phantom `W_ROOM_OVERLAP` at its placeholder position: the catalogue's
+  `E_LAYOUT_CYCLE` example (`a` right-of `b`, `b` left-of `a`) loses its "Rooms "a" and "b"
+  overlap" warning. Layout errors come in declaration order. A plan without an `E_LAYOUT_*` or
+  `E_PLACE_POLY` error is unchanged.
 
 ### Fixed — a stair is a way up only from a room you can reach
 
@@ -187,7 +194,8 @@ fixtures (`test/byte-identity-baseline.ts`, `test/while-byte-identity-baseline.t
 
 - `verticalReach(levels, grounded, roomReach?)`: an optional third argument makes the fixpoint
   room-aware; without it the result is unchanged. New exported types `StoreyRoomReach` and
-  `StoreySeeds`.
+  `StoreySeeds`. `RRoom` gains two optional internal fields, `_unplaced` and `_idAuthored`
+  (set by the resolver, never rendered or serialised). All additive.
 - New catalogued codes `E_NON_FINITE`, `E_ELEMENT_LIMIT` and `E_LAYOUT_UNPLACED`
   (`arch explain <CODE>`).
 - `npm run digest:engines` measures cross-engine determinism: the built core runs in Playwright
