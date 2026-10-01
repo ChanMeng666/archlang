@@ -48,6 +48,8 @@ export interface RoomClearance {
  */
 const MIN_CELL_MM = 100;
 const MAX_CELLS_ROOM = 25_000;
+/** Hard ceiling on one room's nx·ny, for the thin-and-huge rooms the area budget does not bound. */
+const MAX_GRID_CELLS_ROOM = 250_000;
 
 /**
  * The occupancy-grid cell size (mm) for a room of `areaMm2`. Closed-form, integral and
@@ -89,8 +91,19 @@ export function computeRoomClearances(
     // MIN_CELL_MM. The cell is then stretched to tile the room exactly (cellW/cellH),
     // so the measured areas still sum to the room's own area.
     const cell = roomCellSizeMm(rb.w * rb.h);
-    const nx = Math.max(1, Math.floor(rb.w / cell));
-    const ny = Math.max(1, Math.floor(rb.h / cell));
+    let nx = Math.max(1, Math.floor(rb.w / cell));
+    let ny = Math.max(1, Math.floor(rb.h / cell));
+    // The area budget bounds nx·ny only when both axes span a cell; a room long on one
+    // axis and thin on the other is clamped to 1 on the thin one. Past the hard cap the
+    // grid gets FEWER, larger cells (cellW/cellH below stretch to tile the room exactly,
+    // so areas still sum to the room's). Unreachable for any real room: nx·ny ≤ 25,000.
+    if (nx * ny > MAX_GRID_CELLS_ROOM) {
+      nx = Math.min(nx, MAX_GRID_CELLS_ROOM);
+      ny = Math.min(ny, MAX_GRID_CELLS_ROOM);
+      const s = Math.min(1, Math.sqrt(MAX_GRID_CELLS_ROOM / (nx * ny)));
+      nx = Math.max(1, Math.floor(nx * s));
+      ny = Math.max(1, Math.floor(ny * s));
+    }
     const cellW = rb.w / nx;
     const cellH = rb.h / ny;
     const area1 = (cellW * cellH) / 1_000_000;

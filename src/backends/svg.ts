@@ -319,12 +319,12 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
     // an open box.) So a view emits one group, in collection order. The per-node
     // `layerName` still reaches the DXF export, which has no order to lose.
     out.push(`<g id="V-3D" inkscape:groupmode="layer" inkscape:label="V-3D">`);
-    out.push(...flat);
+    for (const el of flat) out.push(el); // a loop: spreading a whole layer overflows the stack
     out.push("</g>");
   } else {
     for (const [lyr, els] of groups) {
       out.push(`<g id="${lyr}" inkscape:groupmode="layer" inkscape:label="${lyr}">`);
-      out.push(...els);
+      for (const el of els) out.push(el);
       out.push("</g>");
     }
   }

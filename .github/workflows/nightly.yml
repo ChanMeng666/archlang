@@ -266,13 +266,86 @@ jobs:
           if-no-files-found: ignore
 
   # ---------------------------------------------------------------------------
+  # Cross-engine determinism (ADVISORY). ECMA-262 pins + - * / and Math.sqrt but only
+  # approximates sin/cos/atan2/hypot/log2, and the playground runs the core in Firefox
+  # (SpiderMonkey) and Safari (JavaScriptCore) — engines no other job ever compares.
+  # `npm run digest:engines` runs the built core in Playwright chromium/firefox/webkit and
+  # compares digests with Node's. It MEASURES: it always exits 0 and prints
+  # `status=clean|diverged|incomplete`. continue-on-error keeps even an install hiccup from
+  # turning the night red; a divergence is a finding for the owner (it updates the pinned issue), not a regression to gate.
+  # ---------------------------------------------------------------------------
+  cross-engine:
+    name: Cross-engine digests (advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 30
+    outputs:
+      status: ${{ steps.digest.outputs.status }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Same mechanism as e2e-prod's cache, keyed on the resolved Playwright version, but a
+      # DIFFERENT key (`-all`): that one holds chromium only, and a hit on it would leave
+      # firefox and webkit missing.
+      - name: Resolve Playwright version
+        id: pw
+        run: |
+          version=$(node -p "require('@playwright/test/package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-all-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      - name: Install browsers (browser + system deps)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Install system deps only (cached browsers)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium firefox webkit
+
+      - run: npm run build
+
+      - name: Digest every engine
+        id: digest
+        shell: bash
+        run: |
+          npm run digest:engines -- --out engine-digests-report.md | tee engine-digests.log
+          status=$(grep -E '^status=' engine-digests.log | tail -n 1 | cut -d= -f2)
+          echo "status=${status:-incomplete}" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Cross-engine digests — ${status:-incomplete}"
+            head -c 60000 engine-digests-report.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: engine-digests-report
+          path: engine-digests-report.md
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------------
   # One writer for the pinned issue. Folding "advisories found" and "a job failed"
   # into a single always()-job keeps both out of each other's way: two jobs racing to
   # create-or-update the same issue can create it twice.
   # ---------------------------------------------------------------------------
   report:
     name: Report
-    needs: [prod-smoke, audit, secrets, full-matrix, e2e-prod]
+    needs: [prod-smoke, audit, secrets, full-matrix, e2e-prod, cross-engine]
     if: always()
     runs-on: ubuntu-latest
     permissions:
@@ -291,11 +364,17 @@ jobs:
             const { owner, repo } = context.repo;
 
             const failed = Object.entries(needs)
-              .filter(([, job]) => job.result !== 'success' && job.result !== 'skipped')
+              .filter(([name, job]) => name !== 'cross-engine' && job.result !== 'success' && job.result !== 'skipped')
               .map(([name, job]) => `- \`${name}\` — **${job.result}**`);
             const advisories = needs.audit?.outputs?.status === 'advisories';
+            // ADVISORY signal, treated like the audit's: a divergence writes/updates the issue but
+            // never fails the run. `incomplete` / `baseline-stale` stay out of the gate (an
+            // infrastructure hiccup or a stale pin is not a finding about the engines); they only
+            // show in the body when the issue is written anyway.
+            const engines = needs['cross-engine']?.outputs?.status || 'unknown';
+            const diverged = engines === 'diverged';
 
-            if (failed.length === 0 && !advisories) {
+            if (failed.length === 0 && !advisories && !diverged) {
               core.info('nightly: all jobs green and no advisories — nothing to report');
               return;
             }
@@ -310,6 +389,8 @@ jobs:
               advisories
                 ? `## Dependency advisories\n\n${needs.audit.outputs.report}`
                 : '## Dependency advisories\n\nNone at `--audit-level=high` for production dependencies.',
+              '',
+              '## Cross-engine determinism (advisory)\n\n`' + engines + '` — see the `engine-digests-report` artifact of [this run](' + run + '). A divergence (not `incomplete`) opens or updates this issue; it never fails the night.',
               '',
               'Advisories alone never fail the workflow; a failed job does. Close this issue once triaged — the next bad night opens a fresh one.',
             ].join('\n');

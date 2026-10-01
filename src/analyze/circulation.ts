@@ -99,6 +99,8 @@ export const DEFAULT_BODY_RADIUS_MM = 300;
  */
 const MIN_CELL_MM = 100;
 const MAX_CELLS = 250_000;
+/** Hard ceiling on nx·ny, for the thin-and-huge plans the area budget does not bound. */
+const MAX_GRID_CELLS = 2_000_000;
 
 /**
  * The nav-grid cell size (mm) for a plan of `areaMm2` — the one place the whole-plan
@@ -912,9 +914,23 @@ export function navExtent(rooms: readonly RRoom[]): NavExtent | null {
   const H = maxY - minY;
   if (W <= 0 || H <= 0) return null;
 
-  const cell = navCellSizeMm(W * H);
-  const nx = Math.max(1, Math.ceil(W / cell));
-  const ny = Math.max(1, Math.ceil(H / cell));
+  // A non-finite extent has no measurable grid: "unmeasured", like a plan with no room.
+  if (!Number.isFinite(W) || !Number.isFinite(H)) return null;
+  let cell = navCellSizeMm(W * H);
+  // `W * H` can overflow to Infinity for a finite W and H; fall back to the longer side.
+  if (!Number.isFinite(cell)) cell = Math.max(MIN_CELL_MM, Math.max(W, H));
+  let nx = Math.max(1, Math.ceil(W / cell));
+  let ny = Math.max(1, Math.ceil(H / cell));
+  // The area budget bounds nx·ny only when both axes span at least one cell; a plan huge
+  // on one axis and thin on the other is clamped to one cell on the thin axis and so
+  // allocates W/cell cells. Past the hard cap the cell is DOUBLED (a coarser grid, still
+  // one tiling of the same extent) until it fits. Unreachable for every real plan: the
+  // budget keeps nx·ny near MAX_CELLS (250k), far under MAX_GRID_CELLS.
+  while (nx * ny > MAX_GRID_CELLS) {
+    cell *= 2;
+    nx = Math.max(1, Math.ceil(W / cell));
+    ny = Math.max(1, Math.ceil(H / cell));
+  }
   return { minX, minY, maxX, maxY, cell, nx, ny };
 }
 
