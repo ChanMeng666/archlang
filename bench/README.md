@@ -25,41 +25,31 @@ generator moved to a grid layout (below).
 `bench/gen.ts` lays each element class out as a ⌈√n⌉-column grid, the classes stacked
 as bands, so a ~1000-element plan is roughly square and on the order of 100 m across.
 It used to lay every class out along one ~1 km line (`x = i·1000`). That made the
-drawing's reference dimension ~1e6 mm, and the renderer sizes the room font from that
-dimension (`src/scene-build.ts`, `roomFont = refDim·0.03`), so every label was ~30 m
-on an 800 mm room and all of them relocated: the `toScene` rows measured label
+drawing's reference dimension ~1e6 mm, and without a sheet the renderer sizes the room
+font from that dimension (`src/scene-build.ts`, `roomFont = refDim·0.03`), so every label
+was ~30 m on an 800 mm room and all of them relocated: the `toScene` rows measured label
 placement, not wall lowering. Element counts per case are unchanged.
 
-Labels still matter at this scale. The font is a fixed fraction of the drawing, so 300
-or 1000 rooms in one sheet cannot all hold their label and the relocator still runs.
-Measured once with `relocateLabels` stubbed out (scratch only, `toScene` median):
+A grid alone was not enough: the font is still a fixed fraction of the drawing, so 300 or
+1000 rooms on one unsheeted drawing cannot hold their labels, and label placement stayed
+the bulk of `toScene` on BALANCED and ROOM_HEAVY. Every generated plan therefore declares
+`paper A0 landscape` (no `scale`; the sheet auto-fits one), which sizes labels from the
+paper. Measured once with `relocateLabels` stubbed out (scratch only), the label share of
+`toScene` fell from roughly two thirds to about one sixth on BALANCED and stayed
+negligible on OPENING_HEAVY. ROOM_HEAVY `toScene` dropped by more than an order of
+magnitude, and what remains there is mostly the fixed cost of placing 1000 labels.
 
-| Plan | label share, old layout | label share, new layout | `toScene` without labels, new |
-|------|------------------------:|------------------------:|------------------------------:|
-| BALANCED | 65% | 66% | 273 ms |
-| ROOM_HEAVY | 99% | 99% | 3.9 ms |
-| OPENING_HEAVY | 7% | within noise (0%) | 467 ms |
+Do not compare anything measured before this layout change with anything after it.
 
-So read `toScene` on BALANCED and ROOM_HEAVY as label placement plus joinery; the
-label-free column is the joinery pass on its own. `OPENING_HEAVY` is the clean case.
+## Baseline
 
-## Current stage picture (~1000 elements, median ms)
-
-Machine: AMD Ryzen 7 5700U (16 logical), Windows 11, Node 24, tsx from source, with
-other agents running at the same time. These numbers are noisy (repeat runs move by
-tens of percent); compare deltas measured back to back, not absolutes across sessions.
-
-| Plan | compile | parse | resolve | toScene | renderSvg | lint | describe |
-|------|--------:|------:|--------:|--------:|----------:|-----:|---------:|
-| BALANCED | 806 | 35 | 20 | **772** | 13 | 271 | 72 |
-| ROOM_HEAVY | 822 | 27 | 7.7 | **875** | 13 | **1211** | 368 |
-| OPENING_HEAVY | 785 | 34 | 29 | **609** | 12 | 16 | 6.1 |
-
-The standout hotspot is `toScene`: the joinery pass (`joinWalls`, ADR 0018), plus
-label placement on room-dense plans. `src/geometry/union.ts` is a test oracle and is
-not on the compile path. `lint` and `describe` on room-dense plans are the other cost
-(pairwise room adjacency and the analysis grids). `bench/baseline.json` holds the full
-set including STUDIO, MUSEUM, circulation and occupancy.
+`bench/baseline.json` predates the generator change and is **not comparable** to a run of
+the current generator. It must be regenerated on an idle machine
+(`npx tsx bench/run.ts --json > bench/baseline.json`). Timings on a loaded machine move by
+tens of percent, so use ratios measured back to back in one session, never absolutes across
+sessions. The hotspot on the wall-heavy plans is the joinery pass (`joinWalls`, ADR 0018);
+`src/geometry/union.ts` is a test oracle and is not on the compile path. `lint` and
+`describe` on room-dense plans are the other cost (pairwise room adjacency, analysis grids).
 
 ## Earlier findings (historical)
 

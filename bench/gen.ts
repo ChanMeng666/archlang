@@ -16,6 +16,13 @@
  *   - furniture: 500x500 mm chairs at a 1000 mm pitch
  * Element COUNTS are exactly the spec's; only positions are laid out.
  *
+ * Sheet: every plan declares `paper A0 landscape` with no `scale`, so the sheet auto-fits
+ * the finest scale that holds the drawing and label sizes come from the PAPER (a fixed
+ * number of sheet millimetres), not from a fraction of the drawing. Without it the room font
+ * is 3% of the ~100 m drawing and 300 to 1000 rooms cannot hold their labels, so the
+ * relocator dominates toScene. A0 is the largest paper; the auto-fit choice is
+ * deterministic. The plan adds no element, only the sheet chrome.
+ *
  * Counts are configurable so callers can build a *balanced* ~1000-element plan
  * or skew it to isolate a single hotspot (room-overlap O(R^2) vs. the per-
  * opening host-segment scan O(openings * walls)).
@@ -49,7 +56,7 @@ function bandHeight(n: number, pitch: number): number {
 }
 
 export function genPlan(spec: GenSpec): string {
-  const lines: string[] = ['plan "Benchmark" {', "  units mm", "  grid 50", "  north up", ""];
+  const lines: string[] = ['plan "Benchmark" {', "  units mm", "  grid 50", "  paper A0 landscape", "  north up", ""];
 
   const roomsY = bandHeight(spec.walls, WALL_PITCH) + BAND_GAP;
   const furnY = roomsY + bandHeight(spec.rooms, ROOM_PITCH) + BAND_GAP;
