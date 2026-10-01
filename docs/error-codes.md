@@ -688,7 +688,7 @@ room at (0,0) size 2000x2000 label "Bathroom" uses bath   # supply the missing r
 
 *error* — A room cannot be reached from the entrance through modeled doors.
 
-**Cause.** An intent asserts `reachable: true` and the plan HAS an entrance, but one or more rooms are cut off — no chain of modeled doors reaches them from the exterior.
+**Cause.** An intent asserts `reachable: true` and the plan HAS an entrance, but one or more rooms are cut off — no chain of modeled doors reaches them from the exterior — or, on a multi-storey plan, a whole storey has no way in: no exterior door of its own and no stair, lift or escalator from a room you can reach.
 
 **Fix.** Add interior doors so every room connects back to the entrance. Advisory tier: reported and scored by `validateIntent` but does NOT fail `ok` (gate: false).
 
@@ -1684,7 +1684,7 @@ import "lib.arch" as lib   # warning when lib.arch only declares components
 
 *warning* — The plan has no exterior door.
 
-**Cause.** The plan has rooms and an exterior wall but no door hosted on an exterior wall, so the building cannot be entered.
+**Cause.** The plan has rooms and an exterior wall but no door hosted on an exterior wall, so the building cannot be entered. On a multi-storey plan it is judged per storey: a storey with no exterior door of its own is entered by a `stair`/`elevator`/`escalator` shared with a reachable storey, but only when the room the run stands in there is itself reachable — a stair in a door-less store leads nowhere, and the storey it serves gets this warning.
 
 **Fix.** Add a `door` on an `exterior` wall.
 

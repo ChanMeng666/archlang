@@ -696,7 +696,9 @@ export interface SceneSummary {
   /**
    * Circulation facts on a clearance-eroded navigation grid: how far, how wide and
    * how direct the walk is from the entrance to each room, plus key functional
-   * routes. Null when the plan has no modeled exterior entrance. Coarse & advisory —
+   * routes. Null when the plan has no modeled exterior entrance and no stair, lift or
+   * escalator arrives on it from a reachable storey (such a storey is walked from the head
+   * of the arriving flight, `entranceId` = the run's id). Coarse & advisory —
    * facts, never a generated layout (ADR 0008).
    */
   circulation: CirculationModel | null;

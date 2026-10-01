@@ -1996,8 +1996,9 @@ and a riser, a duct or a column keeps its name as it goes up. Since v1.21 that i
 **operative** for the three [vertical-circulation
 elements](#vertical-circulation--stair-elevator-escalator-v121): a `stair`/`elevator`/
 `escalator` with one id on two storeys is a shaft, so the upper floor is reachable through
-it and needs no exterior door of its own. (For every other element the shared id is still
-just a name.)
+it and needs no exterior door of its own — provided the room the shaft stands in on the
+storey it comes from is itself reachable (a stair in a door-less store leads nowhere). (For
+every other element the shared id is still just a name.)
 
 **One building, one sheet.** `paper`/`scale` are resolved **once for the whole building**,
 from the largest storey: auto-fit cannot hand the small top floor a finer scale than the
