@@ -1280,6 +1280,8 @@ export interface PlanNode {
   accDescr?: string;
   /** Theme overrides from the `theme { … }` directive. */
   theme?: Partial<Theme>;
+  /** Byte span of the authored theme `lineWeight` value, for the drawn-pen range check. */
+  lineWeightSpan?: Span;
   /** Named theme base from `theme <name> { … }` (resolved at lowering). */
   themeBase?: string;
   /** Wall colour for `theme from "#color"` — opt-in poché derivation. */

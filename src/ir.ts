@@ -72,7 +72,8 @@ import { extendBounds, outerFaceBounds, segmentsOfWall, WallGrid } from "./geome
 import type { LevelStamp } from "./chrome-layout.js";
 import { titleRows } from "./chrome-layout.js";
 import type { ResolvedSheet, SheetFitInput } from "./sheet.js";
-import { paperMm, resolveSheetSpec, scaleDenominator, usablePlanMm } from "./sheet.js";
+import { drawingBounds, paperMm, renderSizes, resolveSheetSpec, scaleDenominator, usablePlanMm } from "./sheet.js";
+import { hatchOf, hatchTileMm } from "./hatches.js";
 import { elevationOf, heightRangeDiagnostic, isDrawableHeight, plansAuthorHeights, STOREY_HEIGHT } from "./datum.js";
 import { planTableRows } from "./sheet-tables.js";
 import type { GridBox } from "./geometry/grid-index.js";
@@ -242,6 +243,10 @@ export interface RWall extends RBase {
    * never serialized into the Scene/SVG/exports (the `_` prefix keeps it out).
    */
   _heightAuthored?: boolean;
+  /** Byte span of an authored hatch `scale` EXPRESSION (a bare literal has none), so the
+   *  drawn-tile range check (`checkDrawnSizes`) blames the clause. Internal; never in the
+   *  Scene/SVG/exports (the `_` prefix keeps it out). */
+  _hatchScaleSpan?: Span;
   /** Openings (doors/windows) hosted on this wall; subtracted from its solid. */
   openings: Opening[];
   /** True when this wall's `id` was author-declared, not an assigned positional
@@ -2250,6 +2255,10 @@ function resolveImpl(
       registry,
     );
 
+  // 7. The drawn sizes the plan's own settings scale: a wall's hatch tile and the heaviest
+  //    pen, measured on THIS drawing (it needs the sheet, so it runs last).
+  checkDrawnSizes(ast, elements, walls, siteBoundary, sheet, registry, diagnostics);
+
   const ir: ResolvedPlan = {
     name: ast.name,
     units: ast.units,
@@ -2777,6 +2786,58 @@ function checkNumberDomain(
     });
   }
   return outside;
+}
+
+/**
+ * The two drawn sizes a plan's settings scale without bound, held to the modelling range on
+ * THIS drawing: a wall's hatch pattern tile (its hatch `scale` × the drawing's hatch module)
+ * and the heaviest pen (the theme `lineWeight` × the drawing's wall stroke). Both depend on
+ * the drawing's reference dimension, so a coarse `scale 10` is fine on a house and refused only
+ * where the tile really leaves the range; `1e308` used to draw `width="Infinity"` and
+ * `stroke-width="Infinity"`. Sizes come from `renderSizes`, the function `toScene()` draws
+ * with, and the tile from `hatchTileMm`, the markup the pattern is drawn with.
+ *
+ * Skipped (no work, no output) when nothing could exceed it. Inside the range the reference
+ * dimension is at most 2²⁶ mm (the larger side of an extent within ±2²⁵, or 100 mm × a paper
+ * denominator `scaleInRange` holds below 2²⁵ / 297), so with every hatch `scale` ≤ 1 and no
+ * authored `lineWeight` a tile is at most 4 × 0.013 × 2²⁶ mm and the pen 0.0028 × 2²⁶ × 1.1 mm
+ * (1.1 is a built-in theme's heaviest weight), both well inside it.
+ */
+function checkDrawnSizes(
+  ast: PlanNode,
+  elements: readonly ResolvedElement[],
+  walls: readonly RWall[],
+  siteBoundary: readonly Point[] | undefined,
+  sheet: ResolvedSheet | undefined,
+  registry: Registry,
+  diagnostics: Diagnostic[],
+): void {
+  const lw = ast.theme?.lineWeight;
+  if (lw === undefined && !walls.some((w) => w.hatchScale > 1)) return;
+  const b = drawingBounds(elements, siteBoundary, registry);
+  const sizes = renderSizes(sheet, b.maxX - b.minX, b.maxY - b.minY, lw ?? 1);
+  const size = (v: number): string => (Number.isFinite(v) ? `${fmt3(v)} mm` : "a size past the number range");
+  const limit = `the modelling range of ±${fmt3(MODEL_RANGE_MM)} mm (2^25 mm, about 33.5 km)`;
+  if (lw !== undefined && !(Math.abs(sizes.wallStroke) <= MODEL_RANGE_MM)) {
+    diagnostics.push(
+      outOfRangeDiagnostic(
+        `Theme \`lineWeight\` ${fmt3(lw)} draws the heaviest pen at ${size(sizes.wallStroke)} on this drawing, outside ${limit}`,
+        ast.lineWeightSpan,
+      ),
+    );
+  }
+  for (const w of walls) {
+    if (!(w.hatchScale > 1)) continue;
+    const tile = hatchTileMm(hatchOf(w), sizes.hatchGap);
+    if (tile <= MODEL_RANGE_MM) continue;
+    diagnostics.push(
+      outOfRangeDiagnostic(
+        `Wall "${w.id}" hatch \`scale\` ${fmt3(w.hatchScale)} draws a pattern tile of ${size(tile)} on this drawing, outside ${limit}`,
+        w._hatchScaleSpan ?? w.span,
+        w._file,
+      ),
+    );
+  }
 }
 
 /** W_EMPTY_PLAN: the plan resolves but contains nothing drawable. */

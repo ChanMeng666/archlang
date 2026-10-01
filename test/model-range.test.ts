@@ -15,15 +15,9 @@
 import { describe as suite, expect, it } from "vitest";
 import fc from "fast-check";
 import { compile, describe, ERROR_CATALOG, format, lint, resolve } from "../src/index.js";
-import {
-  fmtSource,
-  MAX_ANGLE_DEG,
-  MAX_HATCH_SCALE,
-  MAX_LINE_WEIGHT,
-  MODEL_RANGE_MM,
-  maxScaleDenominator,
-} from "../src/num-format.js";
+import { fmtSource, MAX_ANGLE_DEG, MODEL_RANGE_MM, maxScaleDenominator } from "../src/num-format.js";
 import { lex } from "../src/lexer.js";
+import { GROUND_MATERIALS, hatchTileMm, KNOWN_MATERIALS } from "../src/hatches.js";
 import { MAX_RUN_TREADS, TREAD_GOING_MM } from "../src/elements/vertical-glyphs.js";
 import { readFileSync } from "node:fs";
 
@@ -298,22 +292,55 @@ suite("the settings that scale a drawn length are held too", () => {
     expect(one(plan(B, `north ${MAX_ANGLE_DEG + 1}\n`))).toEqual(["E_OUT_OF_RANGE"]);
   });
 
-  it('hatch scale above MAX_HATCH_SCALE (was: width="Infinity"), and hatch angle past ±2^25 degrees', () => {
-    const wall = (clause: string) =>
-      plan(`wall id=w exterior thickness 200 material brick ${clause} { (0,0) (10000,0) }\n${R}`);
-    expect(one(wall(`scale ${BIG}`))).toEqual(["E_OUT_OF_RANGE"]);
-    // A bare literal carries no span of its own, so the wall statement is blamed.
-    expect(spanOf(wall(`scale ${BIG}`))).toMatch(/^wall id=w /);
-    expect(one(wall(`scale ${MAX_HATCH_SCALE}`))).toEqual([]);
-    expect(one(wall(`scale ${MAX_HATCH_SCALE + 0.5}`))).toEqual(["E_OUT_OF_RANGE"]);
-    expect(one(wall(`angle ${BIG}`))).toEqual(["E_OUT_OF_RANGE"]);
-    expect(one(wall(`angle ${MAX_ANGLE_DEG}`))).toEqual([]);
+  // A wall about 30 km long: the drawing's hatch module and pen grow with it.
+  const FAR = 30_000_000;
+  const farWall = (clause: string) =>
+    plan(`wall id=w exterior thickness 200 material brick ${clause} { (0,0) (${FAR},0) }`);
+  const smallWall = (clause: string) =>
+    plan(`wall id=w exterior thickness 200 material brick ${clause} { (0,0) (10000,0) }\n${R}`);
+
+  it("hatch scale is held by the TILE it draws on this drawing, not as an input cap", () => {
+    // A small plan with a coarse hatch compiles: its tile is metres, not kilometres.
+    expect(one(smallWall("scale 10"))).toEqual([]);
+    expect(one(smallWall("scale 1000"))).toEqual([]);
+    // 1e308 drew width="Infinity"; now it is refused, naming the drawn size and the setting.
+    expect(one(smallWall(`scale ${BIG}`))).toEqual(["E_OUT_OF_RANGE"]);
+    const d = compile(smallWall(`scale ${BIG}`), { noCache: true }).diagnostics[0]!;
+    expect(d.message).toContain("hatch `scale`");
+    expect(d.message).toContain("pattern tile");
+    // A bare literal carries no span of its own, so the wall statement is blamed; an
+    // expression is blamed itself.
+    expect(spanOf(smallWall(`scale ${BIG}`))).toMatch(/^wall id=w /);
+    expect(spanOf(smallWall(`scale ${BIG} / 2`))).toBe(`${BIG} / 2`);
+    // Near the range the same kind of scale crosses 2^25: refused there, legal on the house.
+    expect(one(farWall("scale 1"))).toEqual([]);
+    expect(one(farWall("scale 1000"))).toEqual(["E_OUT_OF_RANGE"]);
+    const far = compile(farWall("scale 1000"), { noCache: true }).diagnostics[0]!;
+    expect(far.message).toMatch(/draws a pattern tile of \d+(\.\d+)? mm on this drawing/);
   });
 
-  it('theme lineWeight above MAX_LINE_WEIGHT (was: stroke-width="Infinity")', () => {
+  it("the tile is read from the pattern markup every material draws", () => {
+    for (const material of [...KNOWN_MATERIALS, ...GROUND_MATERIALS]) {
+      const t = hatchTileMm({ material, scale: 1, angle: 0 }, 100);
+      expect(Number.isFinite(t) && t > 0).toBe(true);
+      expect(hatchTileMm({ material, scale: 2, angle: 0 }, 100)).toBeCloseTo(2 * t, 9);
+    }
+  });
+
+  it("hatch angle past ±2^25 degrees", () => {
+    expect(one(smallWall(`angle ${BIG}`))).toEqual(["E_OUT_OF_RANGE"]);
+    expect(one(smallWall(`angle ${MAX_ANGLE_DEG}`))).toEqual([]);
+  });
+
+  it('theme lineWeight is held by the PEN it draws on this drawing (was: stroke-width="Infinity")', () => {
+    expect(one(plan(B, "theme { lineWeight: 200 }\n"))).toEqual([]);
     expect(one(plan(B, `theme { lineWeight: ${BIG} }\n`))).toEqual(["E_OUT_OF_RANGE"]);
-    expect(one(plan(B, `theme { lineWeight: ${MAX_LINE_WEIGHT} }\n`))).toEqual([]);
-    expect(one(plan(B, `theme { lineWeight: ${MAX_LINE_WEIGHT + 1} }\n`))).toEqual(["E_OUT_OF_RANGE"]);
+    expect(spanOf(plan(B, `theme { lineWeight: ${BIG} }\n`))).toBe(BIG);
+    const nearRange = `wall id=w exterior thickness 200 { (0,0) (${FAR},0) }`;
+    expect(one(plan(nearRange, "theme { lineWeight: 1 }\n"))).toEqual([]);
+    expect(one(plan(nearRange, "theme { lineWeight: 1000 }\n"))).toEqual(["E_OUT_OF_RANGE"]);
+    const d = compile(plan(nearRange, "theme { lineWeight: 1000 }\n"), { noCache: true }).diagnostics[0]!;
+    expect(d.message).toMatch(/lineWeight` 1000 draws the heaviest pen at \d+(\.\d+)? mm on this drawing/);
   });
 
   it("grid past the range (was: every coordinate snapped to 0, reported as E_ROOM_SIZE)", () => {
@@ -329,12 +356,6 @@ suite("the settings that scale a drawn length are held too", () => {
     expect(spanOf(plan(B, `paper A0\nscale 1:${max + 1}\n`))).toBe(`scale 1:${max + 1}`);
     // Without paper a scale is a title-block annotation and draws nothing at that size.
     expect(one(plan(B, `scale 1:${digits(20)}\n`))).toEqual([]);
-  });
-
-  it("the derivations hold: the worst tile and the worst pen stay inside the range", () => {
-    // Reference dimension ≤ 2^26 (see num-format.ts); tile ≤ 4 × 0.013 × it; pen ≤ 0.0028 × it.
-    expect(4 * 0.013 * 2 ** 26 * MAX_HATCH_SCALE).toBeLessThanOrEqual(MODEL_RANGE_MM);
-    expect(0.0028 * 2 ** 26 * MAX_LINE_WEIGHT).toBeLessThanOrEqual(MODEL_RANGE_MM);
   });
 });
 
@@ -442,7 +463,20 @@ suite("property: random magnitudes up to 1e308 never escape the closed domain", 
         expect(() => format(src)).not.toThrow();
         expect(format(src)).not.toMatch(/\de\+\d/);
       }),
-      { seed: 20261002, numRuns: 300 },
+      {
+        seed: 20261002,
+        numRuns: 300,
+        // Always run: a coarse hatch and a heavy pen on a small plan are drawn (they used to be
+        // refused by fixed caps); the same settings at 1e308 are one report, no Infinity.
+        examples: [
+          ["hatchScale", "10"],
+          ["hatchScale", "1000"],
+          ["lineWeight", "200"],
+          ["hatchScale", digits(308)],
+          ["lineWeight", digits(308)],
+          ["north", digits(308)],
+        ],
+      },
     );
     // Not vacuous: the seed reaches both sides of the bound.
     expect(drawn).toBeGreaterThan(20);

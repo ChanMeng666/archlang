@@ -45,14 +45,7 @@ import type { ExprTokens } from "./expr.js";
 import { closest, MAX_NEST_DEPTH, parseExpr as parseExprPratt } from "./expr.js";
 import type { Theme } from "./theme.js";
 import { isNumericThemeKey, resolveThemeKey, resolveStyleKey } from "./theme.js";
-import {
-  fmt3,
-  MAX_ANGLE_DEG,
-  MAX_LINE_WEIGHT,
-  MODEL_RANGE_MM,
-  outOfRangeDiagnostic,
-  plainDigits,
-} from "./num-format.js";
+import { fmt3, MAX_ANGLE_DEG, MODEL_RANGE_MM, outOfRangeDiagnostic, plainDigits } from "./num-format.js";
 import { isDisallowedConfigValue } from "./sanitize.js";
 import { fnv1a } from "./hash.js";
 import { idToken } from "./identity.js";
@@ -324,6 +317,8 @@ class Parser {
   private eatIdent(): Token {
     return this.eat("ident");
   }
+  /** The span of the last theme `lineWeight` value read, handed to the plan by its caller. */
+  private lineWeightSpan: Span | undefined;
   private eatNumber(): number {
     const t = this.eat("number");
     return t.num!;
@@ -443,6 +438,10 @@ class Parser {
             if (r.base !== undefined) plan.themeBase = r.base;
             if (r.from !== undefined) plan.themeFrom = r.from;
             plan.theme = { ...plan.theme, ...r.theme };
+            if (this.lineWeightSpan) {
+              plan.lineWeightSpan = this.lineWeightSpan;
+              this.lineWeightSpan = undefined;
+            }
             break;
           }
           case "style": {
@@ -1012,17 +1011,10 @@ class Parser {
         }
         if (isNumericThemeKey(resolved)) {
           const vt = this.peek();
-          const v = this.eatNumber();
-          // `lineWeight` multiplies every pen; past MAX_LINE_WEIGHT the heaviest one leaves the
-          // modelling range (see its derivation). Reported and left at the default.
-          if (v > MAX_LINE_WEIGHT) {
-            this.diagnostics.push(
-              outOfRangeDiagnostic(
-                `Theme \`${keyTok.value}\` ${fmt3(v)} is above ${MAX_LINE_WEIGHT}, the largest pen multiplier whose heaviest line stays within the modelling range`,
-                { start: vt.start, end: vt.end },
-              ),
-            );
-          } else (theme as Record<string, unknown>)[resolved] = v;
+          (theme as Record<string, unknown>)[resolved] = this.eatNumber();
+          // Where the value was written: the drawn pen it scales is held to the modelling
+          // range after resolve (`checkDrawnSizes`, `src/ir.ts`), which blames this literal.
+          this.lineWeightSpan = { start: vt.start, end: vt.end };
         } else {
           (theme as Record<string, unknown>)[resolved] = this.sanitizedStringValue(keyTok, "theme");
         }

@@ -13,7 +13,7 @@ import { arcExtremes, arcFromChord, minArcRadius, smallestSpanningRadius } from 
 import { PointInterner, wallBand } from "../geometry/band.js";
 import { DEFAULT_MATERIAL, hatchesUsed, isKnownMaterial, KNOWN_MATERIALS } from "../hatches.js";
 import { lowerWallSet } from "../wall-lowering.js";
-import { fmt3, MAX_ANGLE_DEG, MAX_HATCH_SCALE, outOfRangeDiagnostic } from "../num-format.js";
+import { fmt3, MAX_ANGLE_DEG, outOfRangeDiagnostic } from "../num-format.js";
 import { exprSpan } from "../expr.js";
 
 export const wall: ElementDef = {
@@ -178,17 +178,11 @@ export const wall: ElementDef = {
           span: n.span,
         });
       hatchScale = 1;
-    } else if (hatchScale > MAX_HATCH_SCALE) {
-      // Past MAX_HATCH_SCALE a pattern tile can leave the modelling range (see its
-      // derivation); `1e308` drew `width="Infinity"`. Reported and drawn at the default.
-      ctx.diag(
-        outOfRangeDiagnostic(
-          `Wall "${id}" hatch \`scale\` ${fmt3(hatchScale)} is above ${MAX_HATCH_SCALE}, the largest whose pattern tile stays within the modelling range`,
-          (n.materialScale && exprSpan(n.materialScale)) ?? n.span,
-        ),
-      );
-      hatchScale = 1;
     }
+    // A positive scale is held by the TILE it draws, which depends on the whole drawing's
+    // size, so that check runs after resolve (`checkDrawnSizes`, `src/ir.ts`); this is where
+    // it points when the scale was an expression with a span of its own.
+    const hatchScaleSpan = n.materialScale ? exprSpan(n.materialScale) : undefined;
     let hatchAngle = n.materialAngle !== undefined ? ctx.eval(n.materialAngle) : 0;
     if (Math.abs(hatchAngle) > MAX_ANGLE_DEG) {
       ctx.diag(
@@ -219,6 +213,7 @@ export const wall: ElementDef = {
       // Whether that number is the wall's own or the storey's — read only by
       // `E_OPENING_ABOVE_WALL`, so it can name the clause the author actually has to edit.
       ...(n.height !== undefined && isDrawableHeight(height) ? { _heightAuthored: true } : {}),
+      ...(hatchScaleSpan ? { _hatchScaleSpan: hatchScaleSpan } : {}),
       points,
       ...(arcs ? { arcs } : {}),
       closed: n.closed,

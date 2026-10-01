@@ -15,7 +15,7 @@ import type { RenderCtx, Registry, Runtime } from "./registry.js";
 import { BUILTIN_RUNTIME } from "./registry.js";
 import type { RenderSizes, Scene, SceneNode, SceneSheet } from "./scene.js";
 import type { Bounds, Vec, WallSegment } from "./geometry.js";
-import { add, emptyBounds, extendBounds, mul, normal, segmentsOfWall, sub, unit } from "./geometry.js";
+import { add, mul, normal, segmentsOfWall, sub, unit } from "./geometry.js";
 import { arcPointAt, diameterText, radiusText } from "./geometry/arc.js";
 import type { Point } from "./ast.js";
 import { hatchesUsed } from "./hatches.js";
@@ -28,7 +28,7 @@ import { siteBoundaryNodes } from "./site.js";
 import { groundMaterialsUsed, outdoorLabelAnchor, outdoorRing } from "./elements/outdoor.js";
 import { roomLabelAnchor } from "./elements/room.js";
 import { rectRing } from "./geometry/polygon.js";
-import { CHAIN_BASE, CHAIN_STEP, DIM_TEXT_GAP, SHEET_MM, sizesFromPaper } from "./sheet.js";
+import { CHAIN_BASE, CHAIN_STEP, DIM_TEXT_GAP, drawingBounds, renderSizes } from "./sheet.js";
 import { textWidth } from "./text-metrics.js";
 import type { LabelGroup } from "./label-placement.js";
 import { relocateLabels } from "./label-placement.js";
@@ -45,22 +45,7 @@ import { fmt2 as fmtMm } from "./num-format.js";
 
 /** Drawing bounds: each element contributes points via its registry `bounds`. */
 function planBounds(ir: ResolvedPlan, registry: Registry): Bounds {
-  const b = emptyBounds();
-  for (const el of ir.elements) {
-    const def = registry.byKind.get(el.kind);
-    if (!def) continue;
-    for (const p of def.bounds(el)) extendBounds(b, p.x, p.y);
-  }
-  // The lot line is a plan-level DATUM, not an element, so it has no `ElementDef.bounds`
-  // to contribute through — but it is drawn, and a drawn thing outside the page is a
-  // clipped drawing. Absent on every plan that declares no `boundary`, so the extent
-  // (and therefore every derived size) is unchanged for them.
-  for (const p of ir.siteBoundary ?? []) extendBounds(b, p.x, p.y);
-  if (!Number.isFinite(b.minX)) {
-    // Nothing to draw; provide a default frame.
-    return { minX: 0, minY: 0, maxX: 1000, maxY: 1000 };
-  }
-  return b;
+  return drawingBounds(ir.elements, ir.siteBoundary, registry);
 }
 
 /**
@@ -636,20 +621,10 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   //    same 3.5 mm room label a 7 m one does. `refDim` becomes 100 mm of sheet × the
   //    denominator, which makes the `refDim * <fraction>` chrome/tick formulas
   //    downstream read as plain drafting millimetres with no second code path.
-  const refDim = ir.sheet ? SHEET_MM.ref * ir.sheet.denom : Math.max(drawW, drawH, 1);
-  const sizes: RenderSizes = ir.sheet
-    ? sizesFromPaper(ir.sheet, lw)
-    : {
-        refDim,
-        wallStroke: refDim * 0.0028 * lw,
-        thin: refDim * 0.0016 * lw,
-        roomFont: refDim * 0.03,
-        areaFont: refDim * 0.022,
-        dimFont: refDim * 0.02,
-        furnFont: refDim * 0.017,
-        margin: refDim * 0.17,
-        hatchGap: refDim * 0.013,
-      };
+  //    (Both constructors are `renderSizes` in src/sheet.ts, which the resolver also reads to
+  //    hold the drawn hatch tile and pen to the modelling range.)
+  const sizes: RenderSizes = renderSizes(ir.sheet, drawW, drawH, lw);
+  const refDim = sizes.refDim;
 
   // Collect non-wall elements (source order), then lower walls — the canonical op
   // order, so layer-bucketing in a backend reproduces the canonical draw order.

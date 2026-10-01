@@ -27,22 +27,12 @@ export const MODEL_RANGE_MM = 33_554_432;
 /*
  * The settings that are not coordinates or lengths, held to domains derived from the range.
  *
- * Inside the range a drawing's reference dimension is at most 2²⁶ mm: without `paper` it is
- * the larger side of the drawn extent (element bounds and the lot line, each within ±2²⁵),
- * and with `paper` it is 100 mm × the scale denominator, which {@link maxScaleDenominator}
- * holds below 2²⁵ / 297 × 100 ≈ 1.1 × 10⁷. Every bound below keeps what the setting
- * multiplies within the range at that worst case.
+ * Two settings scale a DRAWN length without bound — a wall's hatch `scale` (the pattern tile)
+ * and the theme `lineWeight` (every pen). They are not capped as inputs: the resolver measures
+ * the tile and the pen on the drawing they belong to and refuses only one that leaves the
+ * range (`checkDrawnSizes`, `src/ir.ts`), so a coarse `scale 10` on a house is legal. The
+ * three below are held as values, because no legitimate plan comes near them.
  */
-
-/** The largest hatch `scale`. A pattern tile is at most 4 × the hatch gap (`hatches.ts`),
- *  the gap at most 0.013 × the reference dimension, so a tile is at most
- *  0.052 × 2²⁶ × 8 ≈ 2.8 × 10⁷ mm: inside the range. Shipped plans use at most 3. */
-export const MAX_HATCH_SCALE = 8;
-
-/** The largest theme `lineWeight`. The heaviest pen is 0.0028 × the reference dimension
- *  × the weight (`scene-build.ts`), at most 0.0028 × 2²⁶ × 128 ≈ 2.4 × 10⁷ mm. Shipped
- *  plans use at most 1.3. */
-export const MAX_LINE_WEIGHT = 128;
 
 /** The largest magnitude of an angle in degrees (`north`, a hatch `angle`): the range's own
  *  bound, read in degrees, so `deg × π / 180` and every sine and cosine of it stay finite
