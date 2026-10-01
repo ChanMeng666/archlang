@@ -570,6 +570,32 @@
  * other field unchanged (case (2)). Both rows were re-measured with a script that imports
  * `./byte-identity-digest.ts` and that first reproduced the old values on the tree before the
  * fix: whole surface f93556cb… → 80285cb2…, summary 0bce7b7b… → 759c93ef….
+ *
+ * ## A far seed's width is the minimum of every constraint on it — no row moved
+ *
+ * Case (1), the compiler changed, deliberately (owner decision, backlog E.6–E.10's far-seed
+ * question; ADR 0008's 2026-10 far-seed addendum): a carve's far seed, already walkable, now
+ * reads min(connector width, the room's own clearance there) instead of the connector's width.
+ *
+ * Swept before (`05b1145`) → after, 265 rows (the files of the sweeps above plus
+ * `eval/faults/` and every ```arch fence in the root and `docs/` Markdown), the same seven
+ * digests per row. The sweep was shown able to fail first: planting the rejected variant (no
+ * far-seed stamp at all) moved 32 rows, `min-bedroom-flat.laundered`'s `describe()` among them.
+ * The result:
+ *
+ *   - SVG, `compile().diagnostics`, `describe()`, `lint()`, accessibility `lint()` and the
+ *     combined digest: byte-identical on all 265 rows, so every row of both tables stands.
+ *     Far seeds narrower than their door do occur in the corpus (55 cells on hillside-villa's
+ *     overlay grid alone), but no room's or key route's widest way in passes only through them.
+ *   - The `--overlay circulation` SVG (opt-in, pinned by no baseline): moved on 10 files —
+ *     `eval/goldens/` accessible-flat, anchor-furniture, galley-kitchen; `examples/` clinic,
+ *     hillside-villa, library, museum, studio; `test/recovery-corpus/` clinic, studio. Only
+ *     pinch markers move (32 of them, each diamond with its label), every one at the same
+ *     `clearMm`, from one cell stamped with that width to another; 31 stay on the same
+ *     doorway and one of library's moves to another 940 mm door on the same route. No walk
+ *     or route polyline moves. Cause: a marker is the narrowest cell the widest search
+ *     reached first among equal-clearance cells, and the search's pop order changed where a
+ *     far seed elsewhere now reads narrower (the tie-pick class of the sections above).
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

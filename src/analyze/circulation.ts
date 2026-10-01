@@ -1355,8 +1355,9 @@ function buildGrid(
   // recording the connector's clear width at the (grid-degenerate) carved cells.
   const clearAt = new Map<number, number>();
   // Walkable before any threshold is carved: a carve stamps its connector's width on the
-  // cells it OPENS (and on its far seed, as it always has) — never on a room cell it only
-  // runs along, whose clearance is the room's own (a furniture pinch must stay a pinch).
+  // cells it OPENS, and on its far seed only as the minimum with the room's own clearance
+  // there (see the stamp below) — never on a room cell it only runs along, whose clearance
+  // is the room's own (a furniture pinch must stay a pinch).
   const wasFree = free.slice();
   // Seeds are read off that same pre-carve mask, for EVERY connector. Reading the live mask
   // let a threshold point seed on a cell an earlier carve had just opened — an earlier point
@@ -1431,7 +1432,18 @@ function buildGrid(
   }
   // A carved doorway is a 1-cell slit the whole path must cross; its real clearance
   // is the connector's modeled clear width, so stamp that over the slit cells.
-  for (const [k, cw] of clearAt) g.clearMm[k] = cw;
+  //
+  // A cell's width is the MINIMUM of every constraint on it. A cell the carve opened had no
+  // clearance of its own (it was not walkable floor), so it reads the connector's width. A far
+  // seed was already walkable, and the room's clearance field just computed above is a
+  // constraint on it too: it reads the narrower of the two, so the door still caps every
+  // route through it AND a furniture pinch narrower than the door stays a pinch. Replacing
+  // the field there erased such a pinch (backlog E.6–E.10's far-seed question); dropping
+  // the far-seed stamp instead was measured and rejected — where the two rooms' seeds
+  // touch, the far seed is the only cell a carve stamps, and `min-bedroom-flat`'s route
+  // lost its only door cap (740 → 14000; `test/far-seed-pinch.test.ts` holds the corpus to
+  // "no walk is wider than the doors it passes").
+  for (const [k, cw] of clearAt) g.clearMm[k] = wasFree[k] ? Math.min(cw, g.clearMm[k]!) : cw;
 
   return g;
 }

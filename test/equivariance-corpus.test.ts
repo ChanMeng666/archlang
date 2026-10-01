@@ -22,7 +22,9 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { resolvePlan } from "../src/analyze.js";
+import { rectOf, resolvePlan } from "../src/analyze.js";
+import { centreFreedomToClearWidth, DEFAULT_BODY_RADIUS_MM } from "../src/analyze/circulation.js";
+import { solidFurniture } from "../src/fixtures-catalog.js";
 import { composeFrame, tp } from "../src/frame.js";
 import {
   compile,
@@ -451,7 +453,9 @@ const RASTER_WITNESSES: ReadonlyArray<{ cls: string; title: string; body: string
     // in P₀ and the reverse ± order under r90/r180. Seeded off the LIVE mask, point 2500 seeded
     // on the wall cell point 3100 had just opened, so the r2 cell beside it kept its 700 mm
     // furniture pinch; carved first, it made that cell its far seed and stamped 740 over it.
-    // r1's bottleneck read 700 in P₀ and 740 turned, until seeds were read pre-carve.
+    // r1's bottleneck read 700 in P₀ and 740 turned, until seeds were read pre-carve; then
+    // 740 in every frame, until a far seed's stamp took the minimum with the cell's own
+    // clearance: now 700 in every frame.
     cls: "threshold-carve",
     title: "a doorway whose threshold points seeded on cells an earlier point had carved",
     body: CARVE_ORDER_BODY,
@@ -504,10 +508,50 @@ describe("closed classes — each former witness is now the law", () => {
       };
     };
     const p0 = measure("");
-    // Not vacuous: r1 is measured, through o1 only, and the doorway (not the WCs' pinch)
-    // is its bottleneck — the value the turned plans always read.
+    // Not vacuous: r1 is measured, through o1 only, and its bottleneck is the MINIMUM of
+    // every constraint on the way in (backlog E.6–E.10's far-seed question, closed): o1's
+    // clear width and the furniture pinch on o1's far seed in r2, where the two WCs' halos
+    // reach through the 80 mm partition. The far seed's stamp used to REPLACE that pinch with
+    // the door's width; it now takes the minimum, so every spelling reads the pinch.
+    const src0 = `plan "witness" {\n  units mm\n  grid 100\n  component c() {\n${CARVE_ORDER_BODY}\n  }\n  place c() as g at (0,0)\n}\n`;
+    const { ir } = resolvePlan(src0, {});
+    const o1 = describePlan(src0).access?.edges.find((e) => e.doorId === "g.o1");
+    expect(o1?.between).toEqual(["g.r1", "g.r2"]); // the carve's far seed is r2's
+    // The limiting cell the widest route reports, and its width derived from the mechanism:
+    // free (its centre farther than R from every solid footprint), r2's side of o1, and
+    // `centreFreedomToClearWidth` of its hop count to the nearest eroded in-room cell (the
+    // distance transform is 4-connected over the whole grid: a Manhattan count).
+    const ov = overlayOf(ir!)!;
+    const at = ov.rooms.find((r) => r.roomId === "g.r1")!.pinch!.at;
+    const cell = ov.cellSizeMm;
+    const feet = solidFurniture(ir!.elements.filter((e): e is RFurniture => e.kind === "furniture")).map(rectOf);
+    const eroded = (x: number, y: number): boolean =>
+      x > 0 &&
+      x < 6000 &&
+      y > 0 &&
+      y < 3300 &&
+      feet.some(
+        (f) =>
+          Math.hypot(Math.max(f.x - x, 0, x - f.x - f.w), Math.max(f.y - y, 0, y - f.y - f.h)) <=
+          DEFAULT_BODY_RADIUS_MM,
+      );
+    expect(eroded(at.x, at.y)).toBe(false);
+    expect(at.x).toBeGreaterThan(4000);
+    let hops = 0;
+    while (
+      hops < 60 &&
+      ![...Array(2 * hops + 1).keys()].some((i) => {
+        const dx = i - hops;
+        const dy = hops - Math.abs(dx);
+        return eroded(at.x + dx * cell, at.y + dy * cell) || eroded(at.x + dx * cell, at.y - dy * cell);
+      })
+    )
+      hops++;
+    expect(hops).toBeLessThan(60); // the pinch is furniture's, not the search giving up
+    const pinch = centreFreedomToClearWidth(hops, cell, DEFAULT_BODY_RADIUS_MM);
+    expect(pinch).toBeLessThan(p0.o1Clear!);
     const r1 = p0.rooms.find((r) => r.id === "g.r1");
-    expect(r1?.bottleneck).toBe(p0.o1Clear);
+    expect(r1?.bottleneck).toBe(Math.min(p0.o1Clear!, pinch));
     for (const sp of spellings) expect(measure(sp), sp || "(identity)").toEqual(p0);
   });
 

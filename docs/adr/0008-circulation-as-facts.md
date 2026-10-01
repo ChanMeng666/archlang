@@ -161,7 +161,8 @@ preserves:
   same way, each seed is paired with its nearest seed on the other side, and each pair is
   carved by both L-shaped runs (x-then-y and y-then-x); the axis a threshold spans comes from
   the host wall's direction. A carve stamps the connector's width on the cells it opens and on
-  its far seed, never on a room cell an L-run only passes along.
+  its far seed (there as the minimum with the room's own clearance; see the 2026-10 addendum
+  on the far seed), never on a room cell an L-run only passes along.
 - **Among equidistant cells, the one the walk reaches first, then a group-invariant key** —
   the straight line to the walk's own entrance, the sorted offsets from the room's centre, the
   entrance's source order. Cells that tie on the whole key read the same room facts (walk,
@@ -261,3 +262,38 @@ Measured on the shipped corpus: `hillside-villa`, `townhouse` and `two-storey` m
 their upper storeys' `levels[i].circulation` (null → a model) and in new `W_PATH_TOO_NARROW`
 warnings; the SVG and `compile().diagnostics` are byte-identical. The ledger is in the header
 of `test/byte-identity-baseline.ts`.
+
+## Addendum (2026-10): a cell's width is the minimum of every constraint on it (the far seed)
+
+The decision stands; this settles the one stamp that replaced a value instead of narrowing it.
+A carve wrote its connector's clear width onto its far seed (the last cell of each carve path,
+always a seed of the `between[1]` room) even though that cell was already walkable, so a
+furniture pinch narrower than the door on that cell was erased: the walk read the door's
+width through a squeeze it could not pass at that width. Because the far seed is always
+`between[1]`'s, the result also depended on which room was written first.
+
+The owner's decision is that **a cell's width is the minimum of every constraint on it**. A
+cell the carve opens has no clearance of its own and reads the connector's width; a far seed
+reads the narrower of the connector's width and the room's own clearance there (the
+furniture distance transform, `centreFreedomToClearWidth`). The door still caps every route
+through it, and the pinch stays a pinch. Dropping the far-seed stamp instead was measured
+and rejected: where the two rooms' seeds touch, the far seed is the only cell a carve stamps,
+and `min-bedroom-flat`'s route lost its only door cap (740 → 14000).
+`test/far-seed-pinch.test.ts` holds the corpus to "no walk or key route is wider than the
+widest door path it must take".
+
+Two other stamps replace a seed's own clearance and were measured separately, then left
+alone because the same rule there would measure something else. A front door is seeded at
+its point only, not across its width, so the minimum would read the clearance at one point
+of a wide door: the 3 m garage doors of `garden-house` and `hillside-villa`, with cars parked
+behind them, would read 2300 and 1300 instead of 2940, the dependence on a midpoint's phase
+that carving a connector across its whole width removed. A shaft's landing cells abut the
+run's own footprint, so the minimum would read the stair a person has just stepped off as a
+pinch: no walk on a shaft-reached storey could read wider than one hop beside the run
+(700 mm), and thirteen walks in five corpus files fell to it.
+
+Measured on the shipped corpus: no fact moves. SVG, `describe()`, `lint()` (default and
+`accessibility-advisory`) and `compile().diagnostics` are byte-identical; only the opt-in
+overlay moves, its pinch markers at the same `clearMm`. The closed-class witness of the carve
+order now reads its WC pinch, 700, in every frame. The ledger is in the header of
+`test/byte-identity-baseline.ts`.
