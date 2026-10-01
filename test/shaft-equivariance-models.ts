@@ -115,15 +115,49 @@ export function hillside(s: number): Building {
 
 /** rt-final's dbg3 shell: two storeys, a stair `gap` from the shell corner, no front door
  *  upstairs. */
-export function shell(W: number, D: number, gap: number, portrait: boolean): Building {
+export function shell(W: number, D: number, gap: number, portrait: boolean, upstairs = "", name = ""): Building {
   const [sw, sh] = portrait ? [900, 2600] : [2600, 900];
-  const body = (dir: string, front: boolean) => `
+  const body = (dir: string, front: boolean, extra: string) => `
     wall id=shell exterior thickness 200 { (0,0) (${W},0) (${W},${D}) (0,${D}) close }
     wall id=vx1 partition thickness 100 { (${W / 2},0) (${W / 2},${D}) }
     room id=a at (0,0) size ${W / 2}x${D} label "A" uses hall
     room id=b at (${W / 2},0) size ${W / 2}x${D} label "B" uses living
     door id=dab on vx1 at ${D / 2} width 900 swing into b
     ${front ? `door id=front on shell at ${W + D + W / 4} width 1000 swing into a` : ""}
-    stair id=stair at (${gap},${gap}) size ${sw}x${sh} dir ${dir}`;
-  return { name: `Shell ${W}x${D} gap ${gap}`, storeys: [body("up", true), body("down", false)] };
+    stair id=stair at (${gap},${gap}) size ${sw}x${sh} dir ${dir}
+    ${extra}`;
+  return {
+    name: `Shell ${W}x${D} gap ${gap}${name ? ` ${name}` : ""}`,
+    storeys: [body("up", true, ""), body("down", false, upstairs)],
+  };
 }
+
+/**
+ * rt-final's p3-attack cases: the 120 m × 100 m shell (220 mm cells), the stair's head
+ * (top edge, y = 2000) with something at it upstairs. Each decision about the landing used to
+ * be read off cell centres, so these were measured in some frames and sealed in others.
+ */
+export const P3 = {
+  /** A 450 mm side table beside the landing, covering half the landing row. */
+  halfTable: shell(120000, 100000, 2000, true, "furniture bed at (2000,1200) size 450x700", "side table"),
+  /** A partition whose band covers the head itself: sealed in every frame. */
+  partitionAtHead: shell(
+    120000,
+    100000,
+    2000,
+    true,
+    "wall id=scr partition thickness 100 { (-1000,2000) (3900,2000) }",
+    "partition at head",
+  ),
+  /** A room behind a wall at the head, the wall pierced by a 900 mm opening at the flight. */
+  openingAtHead: shell(
+    120000,
+    100000,
+    2000,
+    true,
+    `wall id=scr partition thickness 100 { (0,2000) (20000,2000) }
+    room id=c at (0,0) size 20000x2000 label "C" uses storage
+    opening id=op on scr at 2450 width 900`,
+    "opening at head",
+  ),
+};

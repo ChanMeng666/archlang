@@ -308,10 +308,6 @@ export interface NavGrid {
    *  refused, obstructed on one side or the other. Read only to give an unmeasured room
    *  an honest reason ({@link UnmeasuredRoom}); never by the routing itself. */
   carved: Set<number>;
-  /** 1 where a room cell is blocked by an OBSTACLE's erosion (furniture, a void, a run) —
-   *  never by a wall. Read only by {@link landingCells}, to tell a landing an obstacle
-   *  covers from one only a wall's raster covers. Absent on a hand-built grid. */
-  eroded?: Uint8Array;
 }
 
 /**
@@ -424,28 +420,24 @@ function centreOf(g: NavGrid, k: number): { x: number; y: number } {
  * arrival edge as well as its entry edges ({@link withArrivalEdges}), so a person can stand
  * where they step off.
  *
- * **The landing row.** The free cells of the ONE row (or column) directly in front of the
- * edge: beyond a `bottom` edge at `y1`, the centres with `y1 < cy ≤ y1 + cell` (`top`
- * mirrors it), within the edge's CLOSED span — a predicate on cell centres, so the same set
- * however the plan is turned or flipped on a lattice-aligned grid.
+ * **Whether there is a landing is decided on the plan, not on the grid.** `open` probes the
+ * plan's geometry just beyond the edge ({@link landingProbe}); a cell that does not divide the
+ * plan (`navCellSizeMm` above 100 mm) puts its centres in different places in a turned or
+ * flipped frame, so reading "is the landing covered?" off cell centres made the same storey
+ * measured in some frames and `unreachable` in others. The probe's points and tests are
+ * what a turn or flip carries onto each other, so the verdict is the same in every frame.
  *
- * **When only a wall's raster covers it.** Whether that row has a free cell is a matter of
- * where the cell centres fall, and a cell that does not divide the plan (`navCellSizeMm`
- * above 100 mm) puts them in a different place in a turned or flipped frame: a landing a
- * few hundred millimetres deep between the flight's head and a wall is free in one frame and
- * inside the wall's raster in another, and the whole storey read `unreachable` in half the
- * frames. So when the row has no free cell, none of its cells is covered by an OBSTACLE
- * (furniture, a void, another run — the eroded cells), and there IS floor in front of the
- * edge — a point just beyond it ({@link LANDING_PROBE_MM}), at one of nine evenly spaced
- * places along it, inside the room and outside every wall's band, a test on the plan's
- * geometry rather than on the grid — the walk starts at the free cells of the room NEAREST
+ * **Where the walk starts, given a landing.** The free cells of the ONE row (or column)
+ * directly in front of the edge: beyond a `bottom` edge at `y1`, the centres with
+ * `y1 < cy ≤ y1 + cell` (`top` mirrors it), within the edge's CLOSED span — a predicate on
+ * cell centres, the same set however the plan is turned or flipped on a lattice-aligned grid.
+ * When the grid's phase leaves that row with no free cell, the free cells of the room NEAREST
  * the edge segment instead: within `ceil(bodyRadius / cell) + 1` cells of it, on its outer
  * side or along the run's flanks (never behind it), every cell at the least distance kept.
- * Distances, half-planes and evenly spaced probes are what a turn or flip preserves.
  *
- * **Sealed.** Otherwise the run seeds nothing: a head against a wall (no floor in front), a
- * landing covered by a void or furniture — exactly as a front door whose doorway is sealed
- * seeds nothing. Sorted by cell index.
+ * **Sealed.** No landing — a head against a wall, under a void, behind furniture — seeds
+ * nothing, exactly as a front door whose doorway is sealed seeds nothing. Sorted by cell
+ * index.
  */
 function landingCells(
   g: NavGrid,
@@ -453,9 +445,8 @@ function landingCells(
   edges: readonly RectEdge[],
   roomIndex: number,
   bodyRadius: number,
-  /** The storey's walls and the arrival room's extent, for the floor-in-front probe. */
-  walls: readonly RWall[],
-  room: RoomBox,
+  /** Is there floor a body can stand on at this plan point (see {@link landingProbe})? */
+  open: (p: Point) => boolean,
 ): number[] {
   const r = verticalRect(v);
   const x0 = r.x;
@@ -477,6 +468,14 @@ function landingCells(
     const at = e === "top" ? y0 : e === "bottom" ? y1 : e === "left" ? x0 : x1;
     const sign = e === "top" || e === "left" ? -1 : 1;
     const [a0, a1] = horizontal ? [x0, x1] : [y0, y1];
+    // Is there a landing at all? Nine evenly spaced points along the edge, just beyond it.
+    let landing = false;
+    for (let i = 0; i <= 8 && !landing; i++) {
+      const q = a0 + ((a1 - a0) * i) / 8;
+      const p = at + sign * LANDING_PROBE_MM;
+      landing = open(horizontal ? { x: q, y: p } : { x: p, y: q });
+    }
+    if (!landing) continue; // sealed
     const [pOrigin, pN, qOrigin, qN] = horizontal ? [g.minY, g.ny, g.minX, g.nx] : [g.minX, g.nx, g.minY, g.ny];
     const cellAt = (ip: number, iq: number): number => (horizontal ? ip * g.nx + iq : iq * g.nx + ip);
     // The landing row: centres beyond the edge by at most one cell, within its closed span.
@@ -485,20 +484,16 @@ function landingCells(
     );
     const rowQ = span(a0, a1, qOrigin, qN, (c) => c >= a0 && c <= a1);
     const row: number[] = [];
-    let obstructed = false;
     for (const ip of rowP) {
       for (const iq of rowQ) {
         const k = cellAt(ip, iq);
-        if (g.roomIdx[k] !== roomIndex) continue;
-        if (g.free[k]) row.push(k);
-        else if (g.eroded?.[k]) obstructed = true;
+        if (g.roomIdx[k] === roomIndex && g.free[k]) row.push(k);
       }
     }
     if (row.length > 0) {
       for (const k of row) out.add(k);
       continue;
     }
-    if (obstructed || !floorInFront(e, at, a0, a1, walls, room)) continue; // sealed
     // The nearest free cells of the room to the edge segment, on its outer side or along
     // the run's flanks (never behind the run), within the reach.
     const reach = (Math.ceil(bodyRadius / g.cell) + 1) * g.cell;
@@ -529,46 +524,58 @@ function landingCells(
   return [...out].sort((a, b) => a - b);
 }
 
-/** How far beyond an arrival edge {@link floorInFront} looks for floor (mm). */
+/** How far beyond an arrival edge {@link landingCells} probes for a landing (mm). */
 const LANDING_PROBE_MM = 1;
 
 /**
- * Is there floor just beyond an arrival edge — at one of nine evenly spaced points along it,
- * {@link LANDING_PROBE_MM} outward: inside the arrival room and outside every wall's band
- * (the same band test `rasteriseWallSegments` blocks a cell centre by)? A test on the plan's
- * geometry, so the same answer in every frame.
+ * The landing test {@link landingCells} probes with, on the plan's geometry (the nav
+ * extent's frame): is point `p` floor a body can stand on in room `roomIndex`? It must be in
+ * that room (the first room whose shape holds it, as the grid assigns a cell), outside every
+ * wall's band unless it lies within a door or opening of its width, farther than the body
+ * radius from every solid furniture footprint, outside every void, and outside every OTHER
+ * vertical run's footprint and the halo it keeps (lifted outside its entry edges) — the
+ * same obstacles the grid erodes, asked of a point instead of a cell centre.
  */
-function floorInFront(
-  e: RectEdge,
-  at: number,
-  a0: number,
-  a1: number,
+function landingProbe(
+  roomIndex: number,
+  rects: readonly RoomBox[],
   walls: readonly RWall[],
-  room: RoomBox,
-): boolean {
-  const horizontal = e === "top" || e === "bottom";
-  const p = at + (e === "top" || e === "left" ? -LANDING_PROBE_MM : LANDING_PROBE_MM);
-  for (let i = 0; i <= 8; i++) {
-    const q = a0 + ((a1 - a0) * i) / 8;
-    const pt = horizontal ? { x: q, y: p } : { x: p, y: q };
-    const inRoom = room.poly ? pointInPolygon(pt.x, pt.y, room.poly) : pointInRect(pt.x, pt.y, room);
-    if (!inRoom) continue;
-    let inWall = false;
+  connectors: ReadonlyArray<RDoor | ROpening>,
+  furniture: readonly RFurniture[],
+  voids: readonly RVoid[],
+  others: readonly RVertical[],
+  bodyRadius: number,
+): (p: Point) => boolean {
+  const solid = solidFurniture(furniture as RFurniture[]).map((f) => rectOf(f));
+  const holes = voids.map((v) => rectOf(v));
+  const runs = verticalObstacles(others);
+  const inBox = (p: Point, rb: RoomBox): boolean =>
+    rb.poly ? pointInPolygon(p.x, p.y, rb.poly) : pointInRect(p.x, p.y, rb);
+  return (p) => {
+    if (rects.findIndex((rb) => inBox(p, rb)) !== roomIndex) return false;
     for (const w of walls) {
       const half = w.thickness / 2;
       const segs = w.closed ? w.points.length : w.points.length - 1;
-      for (let s = 0; s < segs && !inWall; s++) {
+      for (let s = 0; s < segs; s++) {
         const a = w.points[s]!;
         const b = w.points[(s + 1) % w.points.length]!;
         const arc = w.arcs?.[s];
-        const d = arc ? distPointToArc(pt, arc) : distPointToSeg(pt.x, pt.y, a.x, a.y, b.x, b.y);
-        if (d <= half) inWall = true;
+        const d = arc ? distPointToArc(p, arc) : distPointToSeg(p.x, p.y, a.x, a.y, b.x, b.y);
+        if (d > half) continue;
+        // A wall's band is floor where a door or opening is cut through it.
+        const cut = connectors.some((c) => Math.hypot(p.x - c.at.x, p.y - c.at.y) <= c.width / 2);
+        if (!cut) return false;
       }
-      if (inWall) break;
     }
-    if (!inWall) return true;
-  }
-  return false;
+    for (const f of solid) if (distPointToRect(p.x, p.y, f) <= bodyRadius) return false;
+    for (const h of holes) if (pointInRect(p.x, p.y, h)) return false;
+    for (const o of runs) {
+      if (pointInRect(p.x, p.y, o.rect)) return false;
+      if (outsideOpenEdge(p.x, p.y, o.rect, o.open)) continue;
+      if (distPointToRect(p.x, p.y, o.rect) <= bodyRadius) return false;
+    }
+    return true;
+  };
 }
 
 /** The width of a run across the edge a person arrives over — the flight's width, as a
@@ -1225,7 +1232,7 @@ function buildGrid(
   const roomIdx = new Int32Array(nx * ny).fill(-1);
   const eroded = new Uint8Array(nx * ny); // in-room cell blocked by furniture (never carved)
   const carved = new Set<number>();
-  const g: NavGrid = { minX, minY, cell, nx, ny, free, roomIdx, clearMm: new Float64Array(nx * ny), carved, eroded };
+  const g: NavGrid = { minX, minY, cell, nx, ny, free, roomIdx, clearMm: new Float64Array(nx * ny), carved };
   const furnObstacle: number[] = []; // in-room cells eroded by furniture (clearance seeds)
 
   /** Cell-index window covering an mm range, widened by one so a boundary cell centre
@@ -1619,7 +1626,17 @@ function buildNav(
   for (const a of viaShaft ? arrivals : []) {
     const ri = roomIndexById.get(a.roomId);
     if (ri === undefined) continue;
-    const ks = landingCells(g, a.run, a.edges, ri, bodyRadius, walls, rects[ri]!);
+    const open = landingProbe(
+      ri,
+      rects,
+      walls,
+      [...doors, ...openings],
+      furniture,
+      voids,
+      verticals.filter((o) => o.id !== a.run.id),
+      bodyRadius,
+    );
+    const ks = landingCells(g, a.run, a.edges, ri, bodyRadius, open);
     if (ks.length === 0) continue; // that landing is covered; another run's may not be
     const ordinal = entranceSeeds.length;
     entranceSeeds.push(ks);

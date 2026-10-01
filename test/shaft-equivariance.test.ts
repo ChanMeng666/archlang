@@ -15,26 +15,32 @@
  *  - **Not lattice-aligned** (`navCellSizeMm` above 100 mm, the plan not a whole number of
  *    cells): the last cell spills past one edge and a turn moves the spill, so a walk may
  *    differ by whole cells — the known class circulation v2 left open (ADR 0008, "compared
- *    only under translation"). Each building pins the largest difference measured, per
- *    mechanism, never a blanket exclusion: the spill alone (≤ 1–2 cells, bottlenecks
- *    exact), and the landing a wall's raster covers in half the frames
- *    (`landingCells`' nearest-cell fallback: ≤ 3 cells, a bottleneck within one clearance
- *    step).
+ *    only under translation"). The bounds are MEASURED per building and pinned at the
+ *    measured value, never a blanket exclusion and not a proven bound of the mechanism: the
+ *    spill alone moved walks by 1–2 cells here with bottlenecks exact, and where the landing
+ *    row has no free cell in some frames, `landingCells`' nearest-cell fallback starts the
+ *    walk beside the flight in those frames, which can add up to two cells of spill on its
+ *    own (and, on random buildings, the red team measured walks spilling up to 6 cells on
+ *    this rule against 4 before it).
  *
  * And one law for every grid: **the landing never flips**. In every frame the same storeys
  * have a model, the same rooms are measured, and the same rooms are `unmeasured`, for the
- * same reasons. Before `landingCells` stepped past a landing row only a wall's raster covers,
- * the 120 m × 100 m shell (220 mm cells) read `unmeasured: unreachable` upstairs in half the
- * frames.
+ * same reasons. Whether a landing exists is decided on the plan's geometry
+ * (`landingProbe`), never on cell centres: before that, the 120 m × 100 m shell (220 mm
+ * cells) read `unmeasured: unreachable` upstairs in half the frames, and a side table, a
+ * partition at the head or a wall pierced by an opening at the head (the red team's p3
+ * cases, below) flipped too.
  */
 
 import { describe, expect, it } from "vitest";
 import type { CirculationModel } from "../src/analyze/circulation.js";
 import { describe as describePlan } from "../src/index.js";
-import { type Building, FRAMES, hillside, placed, shell, townhouse } from "./shaft-equivariance-models.js";
+import { type Building, FRAMES, hillside, P3, placed, shell, townhouse } from "./shaft-equivariance-models.js";
 
 /** How far one frame may differ from the identity, for one building. */
 interface Bound {
+  /** The identity frame measures the shaft-reached storeys (false: they are sealed). */
+  measured?: boolean;
   /** Largest walk difference, in cells (0: exact). */
   walkCells: number;
   /** Largest bottleneck difference, mm (0: exact). */
@@ -56,9 +62,15 @@ const CASES: ReadonlyArray<[Building, Bound]> = [
   [shell(100000, 80000, 300, true), spill(1)], // 179 mm cells
   [shell(120000, 100000, 200, true), spill(1)], // 220 mm cells
   // 220 mm cells, the stair's head 200 mm off the shell: the landing row lies in the wall's
-  // raster in half the frames, and the walk starts at the nearest free cell instead — one
-  // clearance step (2 · cell) at most narrower on the way past the flight.
-  [shell(120000, 100000, 300, true), { walkCells: 3, bottleneckMm: 2 * 220, exact: false }],
+  // raster in half the frames, and the walk starts at the nearest free cell instead, beside
+  // the flight. Room `b`'s widest way in is then 820 mm, not the 840 mm of its 900 mm door:
+  // the route past the flight crosses a cell one hop from its halo,
+  // centreFreedomToClearWidth(1, 220, 300) = 220 + 600 = 820. So 840 − 820 = 20 mm.
+  [shell(120000, 100000, 300, true), { walkCells: 3, bottleneckMm: 20, exact: false }],
+  // The red team's p3 cases (220 mm cells; see `P3`).
+  [P3.halfTable, spill(1)],
+  [P3.partitionAtHead, { ...spill(0), measured: false }],
+  [P3.openingAtHead, spill(1)],
 ];
 
 const facts = (c: CirculationModel | null) =>
@@ -74,8 +86,11 @@ describe("multi-storey equivariance: a shaft-reached storey under every frame of
     it(`${b.name}: ${bound.exact ? "exactly equal" : `walks within ${bound.walkCells} cell(s)`}; the landing never flips`, () => {
       const runs = FRAMES.map((f) => describePlan(placed(b, f)));
       const id = runs[0]!;
-      // A shaft-reached storey is really measured in the identity frame.
-      expect(id.levels!.slice(1).every((l) => l.circulation !== null && l.circulation.rooms.length > 0)).toBe(true);
+      // A shaft-reached storey is really measured (or, where pinned, really sealed) in the
+      // identity frame.
+      expect(id.levels!.slice(1).every((l) => l.circulation !== null && l.circulation.rooms.length > 0)).toBe(
+        bound.measured ?? true,
+      );
       for (let i = 1; i < runs.length; i++) {
         const frame = FRAMES[i]!.trim();
         for (const l of id.levels!) {

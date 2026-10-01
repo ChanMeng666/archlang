@@ -699,13 +699,15 @@ that one end only; a lift car at its door side. When there are arrival sides bot
 above (the storey is reachable from either independently), or the neighbouring stop is a
 different kind of run, the walk starts in front of the run's own entry edge(s) instead.
 
-The walk starts in the row of cells directly in front of that edge. On a large plan whose
-cell does not divide it, that row can fall inside a wall's raster in one frame and not in a
-turned one, for the same shallow landing; so when the row has no free cell, nothing but a
-wall covers it, and the plan's geometry shows floor just beyond the edge, the walk starts at
-the free cells nearest the edge instead (in front of it or beside the flight, within a body
-radius and a cell or so). The landing then never reads measured in one frame and sealed in
-another.
+Whether there is a landing at all is decided on the plan's geometry, not on the grid: at
+nine evenly spaced points just beyond the edge, is there floor in the arrival room that no
+wall band (short of a door or opening cut through it), void, other run, or furniture within a
+body radius covers? On a large plan whose cell does not divide it, the cell centres fall in a
+different place in a turned frame, so a test on cells read the same shallow landing as open
+in one frame and covered in another. Given a landing, the walk starts in the row of cells
+directly in front of the edge, or, when the grid's phase leaves that row with no free cell,
+at the free cells nearest the edge (in front of it or beside the flight, within a body radius
+and a cell or so).
 
 The v1 arrow convention limits this. The arrival edge follows the drawn direction of the
 run, not a search for the room, so a landing with no floor in front of it seeds nothing and

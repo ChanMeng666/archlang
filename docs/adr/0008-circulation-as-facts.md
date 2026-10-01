@@ -246,11 +246,11 @@ single-storey plan is byte-identical. The top-level `circulation` repeats `level
 moves too when the LOWEST storey is shaft-reached (a basement reached down from the ground
 floor); no shipped example has one.
 
-The landing is the row of cells in front of the edge; when only a wall's raster covers that
-row (a cell that does not divide the plan puts its centres in the wall in some frames) and
-the geometry shows floor just beyond the edge, the walk starts at the free cells nearest the
-edge instead, so a shallow landing never reads measured in one frame and sealed in a turned
-one. A run drawn along another axis on the storey it is boarded from takes its own entry
+Whether a landing exists is decided on the plan's geometry (floor just beyond the edge that
+no wall band, void, other run or furniture within a body radius covers), never on cell
+centres, so a landing never reads measured in one frame and sealed in a turned one; given a
+landing, the walk starts in the row of cells in front of the edge, or at the free cells
+nearest it when the grid's phase leaves that row with none. A run drawn along another axis on the storey it is boarded from takes its own entry
 edges. A v1 limit follows from reading the edge off the drawn direction: a landing with no
 floor in front of it seeds nothing, and the storey measures nothing — its rooms read
 `unmeasured: unreachable` (a head against the shell) or `no_threshold` (a landing covered on a
