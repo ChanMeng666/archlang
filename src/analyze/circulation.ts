@@ -308,6 +308,11 @@ export interface NavGrid {
    *  refused, obstructed on one side or the other. Read only to give an unmeasured room
    *  an honest reason ({@link UnmeasuredRoom}); never by the routing itself. */
   carved: Set<number>;
+  /** 1 on a cell a threshold carve opened — not walkable before any connector carved (a
+   *  wall-band cell), though it may lie inside a room's rectangle. A room's cells — where it
+   *  is reached and where a key route starts — are its floor WITHOUT these (`roomCells`,
+   *  `buildNav`). Absent on a hand-built grid, where nothing was carved. */
+  opened?: Uint8Array;
 }
 
 /**
@@ -889,14 +894,13 @@ export function reachableFromAny(g: NavGrid, sources: number[]): Uint8Array {
   return seen;
 }
 
-/** Per-room maximum of a per-cell value over the room's free cells (−Infinity when a
- *  room has no reached cell). Reads a room's *best* (widest) route in. */
-function perRoomMax(g: NavGrid, vals: Float64Array, nRooms: number): Float64Array {
-  const out = new Float64Array(nRooms).fill(-Infinity);
-  for (let k = 0; k < vals.length; k++) {
-    const ri = g.roomIdx[k]!;
-    if (ri >= 0 && g.free[k] && vals[k]! > out[ri]!) out[ri] = vals[k]!;
-  }
+/** Per-room maximum of a per-cell value over each room's cells — its FLOOR, `roomCells`
+ *  (−Infinity when a room has no reached cell). Reads a room's *best* (widest) route in. */
+function perRoomMax(roomCells: readonly (readonly number[])[], vals: Float64Array): Float64Array {
+  const out = new Float64Array(roomCells.length).fill(-Infinity);
+  roomCells.forEach((cells, ri) => {
+    for (const k of cells) if (vals[k]! > out[ri]!) out[ri] = vals[k]!;
+  });
   return out;
 }
 
@@ -1355,15 +1359,15 @@ function buildGrid(
   // recording the connector's clear width at the (grid-degenerate) carved cells.
   const clearAt = new Map<number, number>();
   // Walkable before any threshold is carved: a carve stamps its connector's width on the
-  // cells it OPENS (and on its far seed, as it always has) — never on a room cell it only
-  // runs along, whose clearance is the room's own (a furniture pinch must stay a pinch).
+  // cells it OPENS and nowhere else — never on a room cell, the far seed included, whose
+  // clearance is the room's own (a furniture pinch must stay a pinch; see the stamp below).
   const wasFree = free.slice();
   // Seeds are read off that same pre-carve mask, for EVERY connector. Reading the live mask
   // let a threshold point seed on a cell an earlier carve had just opened — an earlier point
   // of the same connector (they run centre, +d, −d in the frame's own axis order, which a
   // turn or flip reverses) or an earlier connector (source order). Either way which room
-  // cell became a far seed, and took a connector's width, depended on an order the plan
-  // does not mean (a hole in E.10's symmetric carve). With every seed fixed before any
+  // cell became a far seed (which, while far seeds were stamped, took a connector's width)
+  // depended on an order the plan does not mean (a hole in E.10's symmetric carve). With every seed fixed before any
   // carve, opening cells and stamping the narrower width commute: neither point order nor
   // connector order changes the result.
   const before: NavGrid = { ...g, free: wasFree };
@@ -1392,10 +1396,9 @@ function buildGrid(
       return out;
     };
     const apply = (path: number[]): void => {
-      const far = path[path.length - 1];
       for (const k of path) {
         g.free[k] = 1;
-        if (!wasFree[k] || k === far) clearAt.set(k, Math.min(clearAt.get(k) ?? Infinity, c.clear));
+        if (!wasFree[k]) clearAt.set(k, Math.min(clearAt.get(k) ?? Infinity, c.clear));
       }
     };
     // Carve EVERY walkable part of the connector's width, the centre included. Stopping
@@ -1429,9 +1432,32 @@ function buildGrid(
   for (let k = 0; k < free.length; k++) {
     g.clearMm[k] = free[k] ? (D[k]! >= 0 ? centreFreedomToClearWidth(D[k]!, cell, bodyRadius) : BIG) : 0;
   }
-  // A carved doorway is a 1-cell slit the whole path must cross; its real clearance
-  // is the connector's modeled clear width, so stamp that over the slit cells.
+  // A carved doorway is a slit the whole path must cross; its real clearance is the
+  // connector's modeled clear width, so stamp that over the cells the carve OPENED — the
+  // only cells it stamps. Every walk or route through a door crosses at least one of them:
+  // a rasterised wall blocks at least one cell between the two rooms' seeds (a thin wall by
+  // the closed-square touch test in `rasteriseWallSegments`), a walk starts only at
+  // entrances, and a room's cells — where a route starts and arrives — are its floor, never
+  // an opened cell (`buildNav`). So the door caps every route through it.
+  //
+  // The FAR seed (the last cell of each carve path, a floor cell of `between[1]`) keeps the
+  // room's own clearance. It used to take the door's width too — first replacing that
+  // clearance, which erased a furniture pinch narrower than the door, then as the minimum of
+  // the two. Once routes and rooms were read on the floor the stamp could no longer cap a path
+  // THROUGH the door (that path already crosses an opened cell); it capped only paths that
+  // pass the far seed without using the door, and since the far seed is always `between[1]`'s,
+  // by room source order: a 1000 mm way along a hall read the 700 mm door it never used, or not
+  // (backlog E.6–E.10's far-seed question, closed by dropping the stamp). Before the floor rule
+  // the stamp was load-bearing — a route seeded on the opened cells inside its from-room
+  // bypassed them (`min-bedroom-flat`, 740 → 14000) — so the order of those fixes matters.
+  // `test/far-seed-pinch.test.ts` holds the corpus to "no walk or key route is wider than the
+  // widest door path it must take", as a guard.
   for (const [k, cw] of clearAt) g.clearMm[k] = cw;
+
+  // The cells a carve opened: walkable now, not before any connector carved.
+  const opened = new Uint8Array(nx * ny);
+  for (let k = 0; k < free.length; k++) if (free[k] && !wasFree[k]) opened[k] = 1;
+  g.opened = opened;
 
   return g;
 }
@@ -1657,11 +1683,21 @@ function buildNav(
   // (a page-order tie), so such a room is measured to every widest pole the same scan finds
   // on the ring turned or flipped — the orbit — and its walk is the shortest of them.
   const poles = rects.map((rb) => (rb.poly ? labelPointOrbit(rb.poly).map(snapPoint) : []));
+  // A room is its FLOOR: the cells walkable before any threshold was carved. A cell belongs
+  // to the room whose rectangle holds its centre, so a doorway's opened wall cells can lie in
+  // a room; they read the door's width, and a room read at its best cell took them, reporting
+  // the door for a floor reached only through a narrower pinch just past it. They are the way
+  // in and out (a walk or route crosses them), never where a room is reached or a route
+  // starts. A room with no floor cell at all keeps the cells it has.
+  const openedCells: number[][] = rooms.map(() => []);
   for (let k = 0; k < g.free.length; k++) {
     const ri = g.roomIdx[k]!;
     if (!g.free[k] || ri < 0) continue;
-    roomCells[ri]!.push(k);
+    (g.opened?.[k] ? openedCells : roomCells)[ri]!.push(k);
   }
+  roomCells.forEach((cells, ri) => {
+    if (cells.length === 0) roomCells[ri] = openedCells[ri]!;
+  });
 
   const entranceId = viaShaft ? arrivals[0]!.run.id : access.entrances[0]!;
   const entrancePoint = viaShaft ? entryMidpoint(arrivals[0]!.run, arrivals[0]!.edges[0]!) : atById.get(entranceId);
@@ -2195,7 +2231,7 @@ export function computeCirculation(
   const { dist, from } = bfsNearest(g, sources);
   // Widest route from ANY entrance, each seeded at its own clear width.
   const widest = widestBottleneck(g, sources, sourceClear);
-  const roomWidest = perRoomMax(g, widest, rooms.length); // widest route *into* each room
+  const roomWidest = perRoomMax(roomCells, widest); // widest route *into* each room's floor
   // Name each room's entrance only when there is a choice, so a single-entrance plan's
   // facts keep their bytes.
   const perRoomEntrance = (access.hasEntrance ? access.entrances.length : shafts.length) > 1;
@@ -2252,10 +2288,14 @@ export function computeCirculation(
     if (!found) return;
     const best = found.idx;
     const walkExact = found.hops * g.cell;
-    // Seed from every cell of room A with no cap: you start inside room A, so its own
-    // furniture-crowding must not limit the route — only the doors/corridors between A
-    // and B should.
-    const wide = perRoomMax(g, widestBottleneck(g, roomCells[fromIdx]!, Number.POSITIVE_INFINITY), rooms.length);
+    // Seed from every FLOOR cell of room A (`roomCells`) with no cap: you start inside room
+    // A, so its own furniture-crowding must not limit the route — only the doors/corridors
+    // between A and B should — and arrive on B's floor. A doorway's opened wall cells can lie
+    // in A's rectangle, and the widest search never reads a source's own clearance: seeded at
+    // +Infinity they stepped the route past every cell its door stamped (14000 through a
+    // 740 mm door, or 740, by which room was written first). Not seeded, they are the way out,
+    // and the door caps the route.
+    const wide = perRoomMax(roomCells, widestBottleneck(g, roomCells[fromIdx]!, Number.POSITIVE_INFINITY));
     const straight = found.straight;
     routes.push({
       fromRoomId: rooms[fromIdx]!.id,
