@@ -17,7 +17,7 @@
  * consumes `PlanDiff` verbatim.
  */
 
-import { describe, type DescribeOptions, type RoomSummary } from "./describe.js";
+import { describeWithAutoIds, type DescribeOptions, type RoomSummary, type SceneSummary } from "./describe.js";
 import type { Diagnostic } from "./diagnostics.js";
 
 /** A room's area may drift by this much (m²) before it counts as resized. */
@@ -72,11 +72,51 @@ function edgesOf(b: RoomSummary["bbox"]): { top: number; bottom: number; left: n
   return { top: b.y, bottom: b.y + b.h, left: b.x, right: b.x + b.w };
 }
 
-function matchRooms(before: RoomSummary[], after: RoomSummary[]): Array<[RoomSummary | null, RoomSummary | null]> {
+/** The labels that name exactly one room of `rooms` — ALL of them, authored ids included.
+ *  An empty label is "no label" (see the rescue below) and never counts. */
+function uniqueLabels(rooms: RoomSummary[]): Set<string> {
+  const count = new Map<string, number>();
+  for (const r of rooms) if (r.label) count.set(r.label, (count.get(r.label) ?? 0) + 1);
+  return new Set([...count].filter(([, n]) => n === 1).map(([l]) => l));
+}
+
+function matchRooms(
+  before: RoomSummary[],
+  after: RoomSummary[],
+  autoBefore: ReadonlySet<string>,
+  autoAfter: ReadonlySet<string>,
+): Array<[RoomSummary | null, RoomSummary | null]> {
   const pairs: Array<[RoomSummary | null, RoomSummary | null]> = [];
   const unmatchedAfter = new Map(after.map((r) => [r.id, r]));
+  // Pass 1 — an auto-id is POSITIONAL (`room_<n>` numbers rooms in source order), so it is a
+  // false key the moment a room is inserted or removed ahead of it: matching by it first
+  // paired every later room with its predecessor's successor. When a room's id is auto on
+  // BOTH sides and its non-empty label names exactly one room among ALL rooms on EACH side,
+  // the label is the better key, so those pairs match by label before any id is consulted.
+  // The rule reads both sides identically (auto on both, unique on both), so swapping
+  // "before" and "after" yields the same pairs — the antisymmetry law's precondition.
+  const uniqBefore = uniqueLabels(before);
+  const uniqAfter = uniqueLabels(after);
+  const autoByLabelAfter = new Map<string, RoomSummary>();
+  for (const b of after) if (b.label && uniqAfter.has(b.label) && autoAfter.has(b.id)) autoByLabelAfter.set(b.label, b);
+  // Claimed up front (so no id match below can take an after-room a later label pair
+  // needs), but EMITTED in the id loop below, in `before` order — a plan whose pairing
+  // this pass does not change keeps the change order it had.
+  const labelPartner = new Map<RoomSummary, RoomSummary>();
+  for (const a of before) {
+    if (!a.label || !uniqBefore.has(a.label) || !autoBefore.has(a.id)) continue;
+    const b = autoByLabelAfter.get(a.label);
+    if (!b) continue;
+    labelPartner.set(a, b);
+    unmatchedAfter.delete(b.id);
+  }
   const leftoverBefore: RoomSummary[] = [];
   for (const a of before) {
+    const partner = labelPartner.get(a);
+    if (partner) {
+      pairs.push([a, partner]);
+      continue;
+    }
     const hit = unmatchedAfter.get(a.id);
     if (hit) {
       pairs.push([a, hit]);
@@ -105,6 +145,36 @@ function matchRooms(before: RoomSummary[], after: RoomSummary[]): Array<[RoomSum
   }
   for (const b of unmatchedAfter.values()) pairs.push([null, b]);
   return pairs;
+}
+
+/** One room's circulation verdict, named by the `describe().circulation` key it comes from:
+ *  measured (`rooms[]`), blocked by furniture (`blocked[]`) or not measured, with the
+ *  model's own reason code (`unmeasured[]`). */
+type CirculationState =
+  | { kind: "measured"; walkMm: number; pinchMm: number }
+  | { kind: "blocked"; wayInMm: number }
+  | { kind: "unmeasured"; reason: string };
+
+function circulationStates(c: NonNullable<SceneSummary["circulation"]>): Map<string, CirculationState> {
+  const out = new Map<string, CirculationState>();
+  for (const r of c.rooms)
+    out.set(r.roomId, { kind: "measured", walkMm: r.walkDistanceMm, pinchMm: r.bottleneckClearWidthMm });
+  for (const r of c.blocked ?? []) out.set(r.roomId, { kind: "blocked", wayInMm: r.widestWayInMm });
+  for (const r of c.unmeasured ?? []) out.set(r.roomId, { kind: "unmeasured", reason: r.reason });
+  return out;
+}
+
+/** Same verdict: both measured (their numbers are `CirculationChange`'s business), both
+ *  blocked, or both unmeasured for the same reason. */
+function sameVerdict(a: CirculationState, b: CirculationState): boolean {
+  if (a.kind === "unmeasured" && b.kind === "unmeasured") return a.reason === b.reason;
+  return a.kind === b.kind;
+}
+
+function statePhrase(s: CirculationState, mm: (v: number) => string): string {
+  if (s.kind === "measured") return `${mm(s.walkMm)} (pinch ${mm(s.pinchMm)})`;
+  if (s.kind === "blocked") return `blocked (widest way in ${mm(s.wayInMm)})`;
+  return `unmeasured (${s.reason})`;
 }
 
 /** Structural superset of {@link import("./describe.js").DoorSummary},
@@ -155,8 +225,8 @@ function diffOpenings(
  * if (d.ok) for (const r of d.rooms) console.log(r.id, r.change);
  */
 export function diffPlans(sourceA: string, sourceB: string, opts: DescribeOptions = {}): PlanDiff {
-  const before = describe(sourceA, opts);
-  const after = describe(sourceB, opts);
+  const { summary: before, autoRoomIds: autoBefore } = describeWithAutoIds(sourceA, opts);
+  const { summary: after, autoRoomIds: autoAfter } = describeWithAutoIds(sourceB, opts);
   const base: PlanDiff = {
     ok: before.ok && after.ok,
     diagnostics: [...before.diagnostics, ...after.diagnostics].filter((d) => d.severity === "error"),
@@ -174,7 +244,8 @@ export function diffPlans(sourceA: string, sourceB: string, opts: DescribeOption
   };
   if (!base.ok) return base;
 
-  for (const [a, b] of matchRooms(before.rooms, after.rooms)) {
+  const pairs = matchRooms(before.rooms, after.rooms, autoBefore, autoAfter);
+  for (const [a, b] of pairs) {
     if (a && !b) base.rooms.push({ id: a.id, label: a.label, change: "removed", areaBeforeM2: a.area_m2 });
     else if (!a && b) base.rooms.push({ id: b.id, label: b.label, change: "added", areaAfterM2: b.area_m2 });
     else if (a && b) {
@@ -219,23 +290,47 @@ export function diffPlans(sourceA: string, sourceB: string, opts: DescribeOption
   const mm = (v: number) => `${Math.round(v)} mm`;
   const m2 = (v: number) => `${v.toFixed(1)} m²`;
 
+  // A room's circulation is compared against its MATCHED room (the pairing above), not
+  // whatever room holds the same id on the other side: under a shifted auto-id the same id
+  // names a different room, and comparing by id reported one room's walk against another's.
+  const partnerOf = new Map<string, RoomSummary>();
+  for (const [a, b] of pairs) if (a && b) partnerOf.set(a.id, b);
+  const stateSentences: string[] = [];
+
   if (before.circulation && after.circulation) {
     const afterByRoom = new Map(after.circulation.rooms.map((r) => [r.roomId, r]));
     for (const a of before.circulation.rooms) {
-      const b = afterByRoom.get(a.roomId);
-      if (!b) continue;
+      const partner = partnerOf.get(a.roomId);
+      const b = partner ? afterByRoom.get(partner.id) : undefined;
+      // Not measured on the after side: a state change (blocked/unmeasured), reported below.
+      if (!partner || !b) continue;
       if (
         Math.abs(b.walkDistanceMm - a.walkDistanceMm) > WALK_EPS_MM ||
         Math.abs(b.bottleneckClearWidthMm - a.bottleneckClearWidthMm) > PINCH_EPS_MM
       ) {
         base.circulation.push({
-          roomId: a.roomId,
+          roomId: partner.id,
           walkDistanceBeforeMm: a.walkDistanceMm,
           walkDistanceAfterMm: b.walkDistanceMm,
           bottleneckBeforeMm: a.bottleneckClearWidthMm,
           bottleneckAfterMm: b.bottleneckClearWidthMm,
         });
       }
+    }
+
+    // A matched room that is measured on one side and blocked/unmeasured on the other (or
+    // unmeasured for a different reason) has no `CirculationChange` — that shape is frozen
+    // API and carries two walks, which such a room does not have. It used to vanish from the
+    // diff entirely; it is reported here as a sentence built from each side's own verdict
+    // (`rooms[]`, `blocked[]` or `unmeasured[]`, which are total over the plan's rooms).
+    const beforeState = circulationStates(before.circulation);
+    const afterState = circulationStates(after.circulation);
+    for (const [a, b] of pairs) {
+      if (!a || !b) continue;
+      const sa = beforeState.get(a.id);
+      const sb = afterState.get(b.id);
+      if (!sa || !sb || sameVerdict(sa, sb)) continue;
+      stateSentences.push(`Walk to ${b.id}: ${statePhrase(sa, mm)} → ${statePhrase(sb, mm)}`);
     }
   }
 
@@ -263,6 +358,8 @@ export function diffPlans(sourceA: string, sourceB: string, opts: DescribeOption
       `Walk to ${c.roomId}: ${mm(c.walkDistanceBeforeMm)} → ${mm(c.walkDistanceAfterMm)} (pinch ${mm(c.bottleneckBeforeMm)} → ${mm(c.bottleneckAfterMm)})`,
     );
   }
+  // After the measured deltas, still inside the trailing "Walk to" block.
+  base.summary.push(...stateSentences);
 
   return base;
 }

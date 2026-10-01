@@ -313,6 +313,11 @@ export interface RRoom extends RBase {
   /** How the position was authored (`absolute` `at`, `relational` clause, or
    *  `strip` sugar). Internal marker for `describe().freedom`; never rendered. */
   _placement?: RoomPlacement;
+  /** True when this room's `id` was author-declared, not an assigned positional auto-id
+   *  (`room_<n>`, which shifts when a room is inserted before it). Lets `diffPlans` tell a
+   *  stable id from a positional one without guessing from the id's spelling. Internal:
+   *  set during resolve, never serialized into the Scene/SVG/exports or `describe()`. */
+  _idAuthored?: boolean;
 }
 export interface RDoor extends RBase {
   kind: "door";
@@ -782,7 +787,7 @@ interface Entry {
   env: Env;
   id: string;
   /** True when `node.id` was author-declared (vs an assigned positional auto-id);
-   *  copied onto the resolved wall as {@link RWall._idAuthored}. */
+   *  copied onto the resolved wall/room as {@link RWall._idAuthored}/{@link RRoom._idAuthored}. */
   idAuthored?: boolean;
   /** Active `set` overrides for this element's kind, captured at expansion. */
   defaults?: ReadonlyMap<string, Value>;
@@ -1879,7 +1884,10 @@ function resolveImpl(
         if (r.kind === "wall") {
           r._idAuthored = e.idAuthored === true;
           grpWalls.push(r);
-        } else if (r.kind === "room") grpRooms.push(r);
+        } else if (r.kind === "room") {
+          r._idAuthored = e.idAuthored === true;
+          grpRooms.push(r);
+        }
       }
     }
     activeEntry = undefined;
