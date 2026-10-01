@@ -270,7 +270,13 @@ describe("arithmetic is closed over the finite numbers", () => {
         lint(src);
         return !/Infinity|NaN/.test(r.svg ?? "");
       }),
-      { numRuns: 300 },
+      {
+        // Fixed seed: CI is reproducible. The example is the finite ~-1.8e305 value whose
+        // interpolation printed "-Infinity" (fmt3 scaled it past the double range).
+        seed: 20261001,
+        numRuns: 300,
+        examples: [[`(377 * -(477 * 1${"0".repeat(300)}))`]],
+      },
     );
   });
 });
