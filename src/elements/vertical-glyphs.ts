@@ -16,6 +16,8 @@
  */
 
 import type { Point } from "../ast.js";
+import type { Diagnostic, Span } from "../diagnostics.js";
+import { fmt3 } from "../num-format.js";
 import type { Paint, RenderSizes, SceneNode } from "../scene.js";
 import type { Theme } from "../theme.js";
 import type { RElevator, REscalator, RStair } from "../ir.js";
@@ -66,6 +68,44 @@ export function runFrame(v: RVertical, flightWidth: number): RunFrame {
 /** How many tread divisions a run of `length` mm gets (≥ {@link MIN_TREADS}). */
 export function treadCount(length: number): number {
   return Math.max(MIN_TREADS, Math.round(length / TREAD_GOING_MM));
+}
+
+/**
+ * The most tread divisions one run is drawn with: 1,100 at the {@link TREAD_GOING_MM} going is
+ * a run of about 308 m, past the longest built escalator (about 137 m) and the moving walkways
+ * an `escalator` also models (150 to 300 m). It is a mechanism bound, not a modelling one: the
+ * modelling range alone still let one footprint inside it (`at (-2^25,0) size 2^26x1200`) draw
+ * about 240,000 tread lines, and four such escalators filled a 1 GB heap. Measured AT the cap
+ * (a 308,139 mm run; Node 24, `compile()`, heap growth / SVG): one escalator 17 ms, 4 MB,
+ * 0.21 MB; four 32 ms, 11 MB, 0.84 MB; eight 53 ms, 17 MB, 1.7 MB (a stair draws half the
+ * lines). It bounds ONE run; 500 escalators at the cap took 1.6 s, 0.9 GB and 111 MB, so the
+ * element cap times this one is still not a small drawing (backlog M.2's kind of bound).
+ * A longer run is `E_RUN_TOO_LONG` ({@link runTooLong}), never a silently thinned drawing.
+ */
+export const MAX_RUN_TREADS = 1_100;
+
+/**
+ * `E_RUN_TOO_LONG` for a stair or escalator whose run (its footprint's long side) would be
+ * drawn with more than {@link MAX_RUN_TREADS} divisions, else undefined. It holds at every
+ * size, inside the modelling range or not; a run that is ALSO out of range is reported once,
+ * by `E_OUT_OF_RANGE`, because the resolver drops every other diagnostic of an element it
+ * drops (`checkNumberDomain`, `src/ir.ts`).
+ */
+export function runTooLong(
+  what: string,
+  size: { w: number; h: number },
+  span: Span | undefined,
+): Diagnostic | undefined {
+  const run = Math.max(size.w, size.h);
+  if (treadCount(run) <= MAX_RUN_TREADS) return undefined;
+  return {
+    severity: "error",
+    message:
+      `${what} runs ${fmt3(run)} mm: more than ${MAX_RUN_TREADS} treads at the ${TREAD_GOING_MM} mm going ` +
+      `(about ${fmt3((MAX_RUN_TREADS * TREAD_GOING_MM) / 1000)} m), longer than any run the plan draws`,
+    code: "E_RUN_TOO_LONG",
+    span,
+  };
 }
 
 /** A stroked line node on the run's layer. */

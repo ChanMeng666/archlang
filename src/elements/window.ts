@@ -83,6 +83,11 @@ export const windowEl: ElementDef = {
   },
 
   bounds: () => [],
+  /** Its centre and width (see `door.measures`). */
+  measures(resolved): number[] {
+    const w = resolved as RWindow;
+    return [w.at.x, w.at.y, w.width];
+  },
 
   render(resolved, ctx: RenderCtx): SceneNode[] {
     const wn = resolved as RWindow;

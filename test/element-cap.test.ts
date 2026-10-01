@@ -85,6 +85,16 @@ suite("huge finite coordinates", () => {
   const wall = `plan "H" {\n wall exterior thickness 200 { (0,0) (${E},0) }\n room at (0,0) size 3000x3000\n door at (${H},0) width 900\n}`;
   const box = `plan "H" { units mm grid 1\n wall exterior thickness 200 { (0,0) (${E},0) (${E},${E}) (0,${E}) (0,0) }\n room id=a at (0,0) size ${E}x${E}\n door at (${H},0) width 900\n}`;
 
+  // Both inputs above are now refused by the modelling range before the joinery runs; the
+  // longest wall the range admits still DRAWS, so the joinery's cell sizing is exercised here.
+  const L = String(2 ** 25 - 100); // the 200 mm wall's end face lands exactly on 2^25
+  const edge = `plan "H" {\n wall exterior thickness 200 { (0,0) (${L},0) }\n room at (0,0) size 3000x3000\n door at (${2 ** 24},0) width 900\n}`;
+  it("the longest wall the modelling range admits, with a door, is drawn", () => {
+    const r = compile(edge, { noCache: true });
+    expect(r.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    expect(r.svg.length).toBeGreaterThan(0);
+  }, 120_000);
+
   for (const [name, src] of [
     ["a wall + room + door", wall],
     ["a closed 10^12 box with a door", box],

@@ -42,6 +42,7 @@ import type { Frame } from "./frame.js";
 import { composeFrame, makeFrame, tryTransformElement } from "./frame.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Env, Expr, Value } from "./expr.js";
+import { fmt3, MODEL_RANGE_MM, maxScaleDenominator, outOfRangeDiagnostic } from "./num-format.js";
 import {
   asBool,
   asNum,
@@ -71,7 +72,8 @@ import { extendBounds, outerFaceBounds, segmentsOfWall, WallGrid } from "./geome
 import type { LevelStamp } from "./chrome-layout.js";
 import { titleRows } from "./chrome-layout.js";
 import type { ResolvedSheet, SheetFitInput } from "./sheet.js";
-import { resolveSheetSpec, usablePlanMm } from "./sheet.js";
+import { drawingBounds, paperMm, renderSizes, resolveSheetSpec, scaleDenominator, usablePlanMm } from "./sheet.js";
+import { hatchOf, hatchTileMm } from "./hatches.js";
 import { elevationOf, heightRangeDiagnostic, isDrawableHeight, plansAuthorHeights, STOREY_HEIGHT } from "./datum.js";
 import { planTableRows } from "./sheet-tables.js";
 import type { GridBox } from "./geometry/grid-index.js";
@@ -241,6 +243,10 @@ export interface RWall extends RBase {
    * never serialized into the Scene/SVG/exports (the `_` prefix keeps it out).
    */
   _heightAuthored?: boolean;
+  /** Byte span of an authored hatch `scale` EXPRESSION (a bare literal has none), so the
+   *  drawn-tile range check (`checkDrawnSizes`) blames the clause. Internal; never in the
+   *  Scene/SVG/exports (the `_` prefix keeps it out). */
+  _hatchScaleSpan?: Span;
   /** Openings (doors/windows) hosted on this wall; subtracted from its solid. */
   openings: Opening[];
   /** True when this wall's `id` was author-declared, not an assigned positional
@@ -1768,7 +1774,7 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
       titleRows: titleRows(ast.title, "1:1", stampOf(blocks[0]!)).length,
       tableRows,
     };
-    sheet = resolveSheetSpec(ast.paper, ast.scale, fit, { w: dw, h: dh });
+    sheet = resolveSheetSpec(ast.paper, scaleInRange(ast, shared), fit, { w: dw, h: dh });
     const usable = usablePlanMm(sheet.widthMm, sheet.heightMm, sheet.denom, fit);
     if (!sheet.fits) shared.push(scaleOverflowDiagnostic(ast, sheet, { w, h }, usable));
     else if (!sheet.drawingFits) shared.push(drawingOverflowDiagnostic(ast, sheet, { w: dw, h: dh }, usable));
@@ -1904,8 +1910,21 @@ function resolveImpl(
   let activeEntry: Entry | undefined;
   /** Where resolution diagnostics go: the plan's list, or an instance group's buffer. */
   let diagSink: Diagnostic[] = diagnostics;
+  /** The entry each resolve-time diagnostic is ABOUT, so the number-domain check can drop
+   *  every other diagnostic of an element it drops (one report per element). Keyed by the
+   *  object pushed, which is the object that reaches `diagnostics`. */
+  const ownerOf = new Map<Diagnostic, Entry>();
+  /** The entry a resolved element (local, or carried into plan coordinates) came from. */
+  const entryOf = new Map<ResolvedElement, Entry>();
   const pushDiag = (d: Diagnostic): void => {
-    diagSink.push(activeEntry ? stampProvenance(d, activeEntry.frame, activeEntry.file) : d);
+    const out = activeEntry ? stampProvenance(d, activeEntry.frame, activeEntry.file) : d;
+    diagSink.push(out);
+    if (activeEntry) ownerOf.set(out, activeEntry);
+  };
+  /** Record a relational-placement diagnostic, owned by the room it is about. */
+  const ownRoomDiag = (d: Diagnostic, room: RRoom | undefined): void => {
+    const e = room ? entryOf.get(room) : undefined;
+    if (e) ownerOf.set(d, e);
   };
   const evalNum = (e: Expr): number => asNum(evalExpr(e, activeEnv, pushDiag), pushDiag, exprSpan(e));
   const evalStr = (e: Expr): string => asStr(evalExpr(e, activeEnv, pushDiag));
@@ -1981,6 +2000,7 @@ function resolveImpl(
         ctx.defaults = e.defaults;
         const r = def.resolve(e.node, ctx);
         e.resolved = r;
+        entryOf.set(r, e);
         markPlacement(r, e.node, e.fromStrip === true);
         // Declared zone membership — a `zone` block the element was written inside, or
         // the `place`d instance that expanded it (an instance IS a zone). Set only when
@@ -2025,7 +2045,11 @@ function resolveImpl(
     // `right-of` means the COMPONENT's right — resolving it after the transform would
     // read the page's right instead (ADR 0004 arithmetic, one frame at a time). A
     // descendant's room is a reference only: it carries no `_rel` once transformed.
-    placeRelational(view.rooms, snapPt, (d) => diagSink.push(stampProvenance(d, grp.frame, undefined)));
+    placeRelational(view.rooms, snapPt, (d, room) => {
+      const out = stampProvenance(d, grp.frame, undefined);
+      diagSink.push(out);
+      ownRoomDiag(out, room);
+    });
     const locals = grp.entries.map((e) => e.resolved!);
     const carried: ResolvedElement[] = [];
     // Kinds already refused in THIS instance: a component with ten plugin elements of one
@@ -2069,6 +2093,7 @@ function resolveImpl(
         continue;
       }
       e.resolved = t;
+      entryOf.set(t, e);
       carried.push(t);
     }
     placed.set(grp, { diagnostics: buffer, local: locals, carried });
@@ -2097,26 +2122,59 @@ function resolveImpl(
 
   // 3. IR element list in source order (for rendering), less any element a `place` could
   //    not carry (`E_INSTANCE_NO_TRANSFORM` above).
-  const elements = entries.filter((e) => !dropped.has(e)).map((e) => e.resolved!);
+  const resolvedElements = entries.filter((e) => !dropped.has(e)).map((e) => e.resolved!);
 
   // 3a. Relational placement: rooms positioned with `right-of`/`below`/… get
   //     absolute coordinates here, by pure arithmetic in dependency order
   //     (topological). Rooms with an absolute `at` carry no constraint, so this
   //     is a no-op for them and the manual path stays byte-identical.
   placeRelational(
-    elements.filter((e): e is RRoom => e.kind === "room"),
+    resolvedElements.filter((e): e is RRoom => e.kind === "room"),
     snapPt,
-    (d: Diagnostic) => diagnostics.push(d),
+    (d: Diagnostic, room?: RRoom) => {
+      diagnostics.push(d);
+      ownRoomDiag(d, room);
+    },
   );
 
-  // 3b. Register openings: each hosted door/window voids its wall's solid.
+  // 3b. The number domain, once every coordinate is final (frames carried, relational rooms
+  //     placed): an element whose geometry is non-finite or beyond the modelling range is
+  //     reported and DROPPED here, before it can host an opening or reach any consumer.
+  //     An opening hosted on a dropped wall goes with it, silently: its host's report is the
+  //     one report, and an opening cannot be drawn in a wall that is not there. Every OTHER
+  //     diagnostic about a dropped element (its resolve-time errors and warnings) is removed,
+  //     so an element out of range is reported exactly once.
+  const outside = checkNumberDomain(resolvedElements, registry, diagnostics);
+  if (outside.size > 0) {
+    for (const el of resolvedElements) {
+      if ((el.kind === "door" || el.kind === "window" || el.kind === "opening") && el.host) {
+        const host = hostWallOf(el.host, walls);
+        if (host && outside.has(host)) outside.add(el);
+      }
+    }
+    const droppedEntries = new Set<Entry>();
+    for (const e of entries) if (e.resolved && outside.has(e.resolved)) droppedEntries.add(e);
+    let kept = 0;
+    for (const d of diagnostics) {
+      const owner = ownerOf.get(d);
+      if (owner === undefined || !droppedEntries.has(owner)) diagnostics[kept++] = d;
+    }
+    diagnostics.length = kept;
+    const keptWalls = walls.filter((w) => !outside.has(w));
+    walls.length = 0;
+    for (const w of keptWalls) walls.push(w);
+  }
+  const elements = outside.size > 0 ? resolvedElements.filter((e) => !outside.has(e)) : resolvedElements;
+
+  // 3c. Register openings: each hosted door/window voids its wall's solid.
   registerOpenings(elements, walls);
 
-  // 4. Cross-element checks.
-  checkDerivedFinite(elements, registry, diagnostics);
-  checkPlanDrawable(elements, diagnostics);
+  // 4. Cross-element checks. Drawability and room references read the plan as authored
+  //    (a dropped room is still the room a piece of furniture names, so it raises no
+  //    second error); the overlap check reads only what was kept.
+  checkPlanDrawable(resolvedElements, diagnostics);
   checkRoomOverlaps(elements, diagnostics);
-  checkFurnitureRooms(elements, diagnostics);
+  checkFurnitureRooms(resolvedElements, diagnostics);
 
   // 5. Positioning axes (定位轴线): plan-level datums, not elements. Their positions are
   //    expressions, evaluated here against the plan's GLOBAL bindings — the block is a
@@ -2128,8 +2186,17 @@ function resolveImpl(
   let axes: RAxis[] | undefined;
   if (ast.axes) {
     activeEnv = globalScope.flatten();
-    const xs = ast.axes.x.map((e) => snap(evalNum(e)));
-    const ys = ast.axes.y.map((e) => snap(evalNum(e)));
+    // A datum beyond the modelling range is reported (at its expression, else the block)
+    // and left out.
+    const inRange = (list: Expr[], axis: "x" | "y"): number[] =>
+      list.flatMap((e) => {
+        const v = snap(evalNum(e));
+        if (Math.abs(v) <= MODEL_RANGE_MM) return [v];
+        diagnostics.push(outOfRange(`The \`axes\` ${axis} position`, v, exprSpan(e) ?? ast.axes?.span));
+        return [];
+      });
+    const xs = inRange(ast.axes.x, "x");
+    const ys = inRange(ast.axes.y, "y");
     const labelled = numberAxes(xs, ys);
     if (labelled.length > 0) axes = labelled;
   }
@@ -2146,7 +2213,10 @@ function resolveImpl(
     const ring = ast.site.boundary.map((p) => snapPt({ x: evalNum(p.x), y: evalNum(p.y) }));
     const effective = effectiveVertices(ring);
     const span = ast.site.boundarySpan ?? ast.site.span;
-    if (effective.length < 3) {
+    const far = farthest(ring.flatMap((p) => [p.x, p.y]));
+    if (far !== undefined) {
+      diagnostics.push(outOfRange("The site `boundary`", far, span));
+    } else if (effective.length < 3) {
       diagnostics.push({
         severity: "error",
         message:
@@ -2184,6 +2254,10 @@ function resolveImpl(
       siteBoundary,
       registry,
     );
+
+  // 7. The drawn sizes the plan's own settings scale: a wall's hatch tile and the heaviest
+  //    pen, measured on THIS drawing (it needs the sheet, so it runs last).
+  checkDrawnSizes(ast, elements, walls, siteBoundary, sheet, registry, diagnostics);
 
   const ir: ResolvedPlan = {
     name: ast.name,
@@ -2287,7 +2361,7 @@ function resolveSheet(
       outdoor: elements.filter((e): e is ROutdoor => e.kind === "outdoor"),
     }),
   };
-  const sheet = resolveSheetSpec(ast.paper, ast.scale, fit, drawn);
+  const sheet = resolveSheetSpec(ast.paper, scaleInRange(ast, diagnostics), fit, drawn);
   const usable = usablePlanMm(sheet.widthMm, sheet.heightMm, sheet.denom, fit);
   // Exactly one of the two, never both. The drawn extent CONTAINS the building, so
   // `fits === false` implies `drawingFits === false`, and the second warning would repeat
@@ -2297,6 +2371,28 @@ function resolveSheet(
   if (!sheet.fits) diagnostics.push(scaleOverflowDiagnostic(ast, sheet, extent, usable));
   else if (!sheet.drawingFits) diagnostics.push(drawingOverflowDiagnostic(ast, sheet, drawn, usable));
   return sheet;
+}
+
+/**
+ * The authored `scale`, or undefined (after one `E_OUT_OF_RANGE`) when its denominator would
+ * put the `paper` sheet, in plan millimetres, past the modelling range — the sheet is then
+ * auto-fitted, so nothing downstream sizes a pen or a font from it. Without `paper` a scale
+ * is a title-block annotation and measures nothing, so it is not held.
+ */
+function scaleInRange(ast: PlanNode, diagnostics: Diagnostic[]): string | undefined {
+  const denom = scaleDenominator(ast.scale);
+  if (!ast.paper || denom === null) return ast.scale;
+  const { w, h } = paperMm(ast.paper.size, ast.paper.orientation);
+  const max = maxScaleDenominator(Math.max(w, h));
+  if (denom <= max) return ast.scale;
+  diagnostics.push(
+    outOfRangeDiagnostic(
+      `\`scale ${ast.scale}\` on ${ast.paper.size} puts the sheet at ${fmt3(denom * Math.max(w, h))} mm, outside the ` +
+        `modelling range of ±${fmt3(MODEL_RANGE_MM)} mm (the largest denominator on ${ast.paper.size} is ${max})`,
+      ast.scaleSpan,
+    ),
+  );
+  return undefined;
 }
 
 /**
@@ -2568,14 +2664,18 @@ function markPlacement(r: ResolvedElement, node: AstElement, fromStrip: boolean)
  * choose among walls that share an id (an `E_DUP_ID` plan), and as the fallback for a host
  * whose id names no wall.
  */
-function registerOpenings(elements: ResolvedElement[], walls: RWall[]): void {
-  const sameSegment = (seg: WallSegment) => (w: RWall) =>
+/** The wall a hosted opening's segment belongs to: by id when that is unique, else the wall
+ *  (among the named ones, or all) that has exactly this segment. */
+function hostWallOf(seg: WallSegment, walls: readonly RWall[]): RWall | undefined {
+  const sameSegment = (w: RWall) =>
     segmentsOfWall(w).some((s) => s.a.x === seg.a.x && s.a.y === seg.a.y && s.b.x === seg.b.x && s.b.y === seg.b.y);
-  const wallOfSegment = (seg: WallSegment): RWall | undefined => {
-    const named = walls.filter((w) => w.id === seg.wallId);
-    if (named.length === 1) return named[0];
-    return (named.length > 1 ? named : walls).find(sameSegment(seg));
-  };
+  const named = walls.filter((w) => w.id === seg.wallId);
+  if (named.length === 1) return named[0];
+  return (named.length > 1 ? named : walls).find(sameSegment);
+}
+
+function registerOpenings(elements: ResolvedElement[], walls: RWall[]): void {
+  const wallOfSegment = (seg: WallSegment): RWall | undefined => hostWallOf(seg, walls);
   for (const el of elements) {
     if ((el.kind === "door" || el.kind === "window" || el.kind === "opening") && el.host) {
       // `kind`/`ownerId`/`sill`/`head` are APPENDED facts: the wall lowering reads
@@ -2594,46 +2694,87 @@ function registerOpenings(elements: ResolvedElement[], walls: RWall[]): void {
   }
 }
 
-/** W_EMPTY_PLAN: the plan resolves but contains nothing drawable. */
+/** The value of largest magnitude beyond {@link MODEL_RANGE_MM}, or undefined when every
+ *  value is within it (the first such value on a tie, so the message is deterministic). */
+function farthest(values: readonly number[]): number | undefined {
+  let far: number | undefined;
+  for (const v of values)
+    if (Math.abs(v) > MODEL_RANGE_MM && (far === undefined || Math.abs(v) > Math.abs(far))) far = v;
+  return far;
+}
+
+/** The one `E_OUT_OF_RANGE` diagnostic: names the value, the limit and the unit. */
+function outOfRange(what: string, value: number, span: Span | undefined, file?: string): Diagnostic {
+  return outOfRangeDiagnostic(
+    `${what} reaches ${fmt3(value)} mm, outside the modelling range of ±${fmt3(MODEL_RANGE_MM)} mm ` +
+      `(2^25 mm, about 33.5 km)`,
+    span,
+    file,
+  );
+}
+
 /**
- * The derived half of the closed number domain. The expression language never yields a
- * non-finite number (`E_NON_FINITE`), but two finite inputs can still overflow once the
- * resolver combines them: a corner `x + w`, a room's area `w * h`, the plan's total area. Those
- * values would print as `Infinity` in the drawing and as `null` in `describe()` with no
- * diagnostic at all. Each is diagnosed here at the authoring element's span. The values are left
- * AS COMPUTED (not substituted), so the plan is refused by the error rather than silently
- * reshaped; `fmt3`'s `"0"` for a non-finite number stays only as a backstop.
+ * The number domain of the resolved plan, checked ONCE, after every `place` frame is carried
+ * and every relational room placed, so each value is the element's final plan coordinate.
+ *
+ * - **Non-finite** (`E_NON_FINITE`): the expression language never yields a non-finite number,
+ *   but two finite inputs can still overflow once the resolver combines them — a corner
+ *   `x + w`, a room's area `w * h`.
+ * - **Beyond the modelling range** (`E_OUT_OF_RANGE`): every point an element draws to (its
+ *   `bounds()`, taken from the shape itself) and every coordinate and length it is made of
+ *   (its `measures()`) lies within ±{@link MODEL_RANGE_MM}. A finite value past it is not a
+ *   building, and it is what ran a stair's tread loop out of memory and printed `Infinity`
+ *   for a dimension line.
+ *
+ * One diagnostic per element, at its span, non-finite first. The element is then DROPPED
+ * (returned here; the caller removes it before openings are registered), so no later stage
+ * (an opening's hole, the overlap check, the sheet fit, the drawing) forms a product from it.
+ * `fmt3`'s `"0"` for a non-finite number stays only as a backstop.
  */
-function checkDerivedFinite(elements: ResolvedElement[], registry: Registry, diagnostics: Diagnostic[]): void {
+function checkNumberDomain(
+  elements: ResolvedElement[],
+  registry: Registry,
+  diagnostics: Diagnostic[],
+): Set<ResolvedElement> {
+  const outside = new Set<ResolvedElement>();
   let total = 0;
   let totalSpan: Span | undefined;
   for (const el of elements) {
     const def = registry.byKind.get(el.kind);
+    const pts = def ? def.bounds(el) : [];
+    const values = def?.measures ? def.measures(el) : [];
     let what: string | undefined;
-    if (def) {
-      for (const p of def.bounds(el)) {
-        if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) {
-          what = `The extent of ${el.kind} "${el.id}"`;
-          break;
-        }
-      }
-    }
+    if (pts.some((p) => !Number.isFinite(p.x) || !Number.isFinite(p.y))) what = `The extent of ${el.kind} "${el.id}"`;
+    else if (values.some((v) => !Number.isFinite(v))) what = `A dimension of ${el.kind} "${el.id}"`;
+    let area = 0;
     if (what === undefined && el.kind === "room") {
       const r = el as RRoom;
-      const area = r.poly ? polygonArea(r.poly) : r.size.w * r.size.h;
-      if (Number.isFinite(area)) {
-        total += area;
-        // The room whose area first carries the running total out of range.
-        if (!Number.isFinite(total) && totalSpan === undefined) totalSpan = r.span;
-      } else what = `The area of room "${r.id}"`;
+      area = r.poly ? polygonArea(r.poly) : r.size.w * r.size.h;
+      if (!Number.isFinite(area)) what = `The area of room "${r.id}"`;
     }
+    const span = (el as { span?: Span }).span;
     if (what !== undefined) {
       diagnostics.push({
         severity: "error",
         message: `${what} is not finite (the dimensions overflow the number range)`,
         code: "E_NON_FINITE",
-        span: (el as { span?: Span }).span,
+        span,
+        ...(el._file ? { file: el._file } : {}),
       });
+      outside.add(el);
+      continue;
+    }
+    const far = farthest([...pts.flatMap((p) => [p.x, p.y]), ...values]);
+    if (far !== undefined) {
+      diagnostics.push(outOfRange(`The geometry of ${el.kind} "${el.id}"`, far, span, el._file));
+      outside.add(el);
+      continue;
+    }
+    if (el.kind === "room") {
+      // A backstop: rooms inside the modelling range cannot overflow the sum, but the
+      // check costs nothing and keeps the derived total in the closed domain by itself.
+      total += area;
+      if (!Number.isFinite(total) && totalSpan === undefined) totalSpan = span;
     }
   }
   if (!Number.isFinite(total)) {
@@ -2644,8 +2785,62 @@ function checkDerivedFinite(elements: ResolvedElement[], registry: Registry, dia
       span: totalSpan,
     });
   }
+  return outside;
 }
 
+/**
+ * The two drawn sizes a plan's settings scale without bound, held to the modelling range on
+ * THIS drawing: a wall's hatch pattern tile (its hatch `scale` × the drawing's hatch module)
+ * and the heaviest pen (the theme `lineWeight` × the drawing's wall stroke). Both depend on
+ * the drawing's reference dimension, so a coarse `scale 10` is fine on a house and refused only
+ * where the tile really leaves the range; `1e308` used to draw `width="Infinity"` and
+ * `stroke-width="Infinity"`. Sizes come from `renderSizes`, the function `toScene()` draws
+ * with, and the tile from `hatchTileMm`, the markup the pattern is drawn with.
+ *
+ * Skipped (no work, no output) when nothing could exceed it. Inside the range the reference
+ * dimension is at most 2²⁶ mm (the larger side of an extent within ±2²⁵, or 100 mm × a paper
+ * denominator `scaleInRange` holds below 2²⁵ / 297), so with every hatch `scale` ≤ 1 and no
+ * authored `lineWeight` a tile is at most 4 × 0.013 × 2²⁶ mm and the pen 0.0028 × 2²⁶ × 1.1 mm
+ * (1.1 is a built-in theme's heaviest weight), both well inside it.
+ */
+function checkDrawnSizes(
+  ast: PlanNode,
+  elements: readonly ResolvedElement[],
+  walls: readonly RWall[],
+  siteBoundary: readonly Point[] | undefined,
+  sheet: ResolvedSheet | undefined,
+  registry: Registry,
+  diagnostics: Diagnostic[],
+): void {
+  const lw = ast.theme?.lineWeight;
+  if (lw === undefined && !walls.some((w) => w.hatchScale > 1)) return;
+  const b = drawingBounds(elements, siteBoundary, registry);
+  const sizes = renderSizes(sheet, b.maxX - b.minX, b.maxY - b.minY, lw ?? 1);
+  const size = (v: number): string => (Number.isFinite(v) ? `${fmt3(v)} mm` : "a size past the number range");
+  const limit = `the modelling range of ±${fmt3(MODEL_RANGE_MM)} mm (2^25 mm, about 33.5 km)`;
+  if (lw !== undefined && !(Math.abs(sizes.wallStroke) <= MODEL_RANGE_MM)) {
+    diagnostics.push(
+      outOfRangeDiagnostic(
+        `Theme \`lineWeight\` ${fmt3(lw)} draws the heaviest pen at ${size(sizes.wallStroke)} on this drawing, outside ${limit}`,
+        ast.lineWeightSpan,
+      ),
+    );
+  }
+  for (const w of walls) {
+    if (!(w.hatchScale > 1)) continue;
+    const tile = hatchTileMm(hatchOf(w), sizes.hatchGap);
+    if (tile <= MODEL_RANGE_MM) continue;
+    diagnostics.push(
+      outOfRangeDiagnostic(
+        `Wall "${w.id}" hatch \`scale\` ${fmt3(w.hatchScale)} draws a pattern tile of ${size(tile)} on this drawing, outside ${limit}`,
+        w._hatchScaleSpan ?? w.span,
+        w._file,
+      ),
+    );
+  }
+}
+
+/** W_EMPTY_PLAN: the plan resolves but contains nothing drawable. */
 function checkPlanDrawable(elements: ResolvedElement[], diagnostics: Diagnostic[]): void {
   const drawable = elements.some(
     (e) =>

@@ -32,6 +32,11 @@
 
 import { chromeBandDepth, tableBandDepth } from "./chrome-layout.js";
 import type { RenderSizes } from "./scene.js";
+import type { Point } from "./ast.js";
+import type { Bounds } from "./geometry.js";
+import { emptyBounds, extendBounds } from "./geometry.js";
+import type { ResolvedElement } from "./ir.js";
+import type { Registry } from "./registry.js";
 
 /** The paper sizes ArchLang can draw on. */
 export const PAPER_SIZES = ["A4", "A3", "A2", "A1", "A0"] as const;
@@ -330,4 +335,55 @@ export function sizesFromPaper(sheet: ResolvedSheet, lineWeight: number): Render
     margin: SHEET_MM.margin * d,
     hatchGap: SHEET_MM.hatchGap * d,
   };
+}
+
+/**
+ * The extent a drawing is sized from: every element's `bounds()` and the lot line, or a
+ * default 1000 mm frame when nothing draws. Moved verbatim from `scene-build.ts`'s
+ * `planBounds` so the resolver measures the drawing exactly as `toScene()` will size it.
+ */
+export function drawingBounds(
+  elements: readonly ResolvedElement[],
+  siteBoundary: readonly Point[] | undefined,
+  registry: Registry,
+): Bounds {
+  const b = emptyBounds();
+  for (const el of elements) {
+    const def = registry.byKind.get(el.kind);
+    if (!def) continue;
+    for (const p of def.bounds(el)) extendBounds(b, p.x, p.y);
+  }
+  // The lot line is a plan-level DATUM, not an element, so it has no `ElementDef.bounds`
+  // to contribute through — but it is drawn, and a drawn thing outside the page is a
+  // clipped drawing. Absent on every plan that declares no `boundary`, so the extent
+  // (and therefore every derived size) is unchanged for them.
+  for (const p of siteBoundary ?? []) extendBounds(b, p.x, p.y);
+  if (!Number.isFinite(b.minX)) {
+    // Nothing to draw; provide a default frame.
+    return { minX: 0, minY: 0, maxX: 1000, maxY: 1000 };
+  }
+  return b;
+}
+
+/**
+ * The drawing's {@link RenderSizes}: with a sheet, {@link sizesFromPaper}; without one, the
+ * historical refDim path — every size a fraction of the larger side of the drawn extent.
+ * Moved verbatim from `toScene()` (`scene-build.ts`), whose bytes it decides; the resolver
+ * reads the same function to hold the drawn hatch tile and pen to the modelling range.
+ */
+export function renderSizes(sheet: ResolvedSheet | undefined, drawW: number, drawH: number, lw: number): RenderSizes {
+  const refDim = sheet ? SHEET_MM.ref * sheet.denom : Math.max(drawW, drawH, 1);
+  return sheet
+    ? sizesFromPaper(sheet, lw)
+    : {
+        refDim,
+        wallStroke: refDim * 0.0028 * lw,
+        thin: refDim * 0.0016 * lw,
+        roomFont: refDim * 0.03,
+        areaFont: refDim * 0.022,
+        dimFont: refDim * 0.02,
+        furnFont: refDim * 0.017,
+        margin: refDim * 0.17,
+        hatchGap: refDim * 0.013,
+      };
 }

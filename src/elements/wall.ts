@@ -13,7 +13,8 @@ import { arcExtremes, arcFromChord, minArcRadius, smallestSpanningRadius } from 
 import { PointInterner, wallBand } from "../geometry/band.js";
 import { DEFAULT_MATERIAL, hatchesUsed, isKnownMaterial, KNOWN_MATERIALS } from "../hatches.js";
 import { lowerWallSet } from "../wall-lowering.js";
-import { fmt3 } from "../num-format.js";
+import { fmt3, MAX_ANGLE_DEG, outOfRangeDiagnostic } from "../num-format.js";
+import { exprSpan } from "../expr.js";
 
 export const wall: ElementDef = {
   kind: "wall",
@@ -178,7 +179,20 @@ export const wall: ElementDef = {
         });
       hatchScale = 1;
     }
-    const hatchAngle = n.materialAngle !== undefined ? ctx.eval(n.materialAngle) : 0;
+    // A positive scale is held by the TILE it draws, which depends on the whole drawing's
+    // size, so that check runs after resolve (`checkDrawnSizes`, `src/ir.ts`); this is where
+    // it points when the scale was an expression with a span of its own.
+    const hatchScaleSpan = n.materialScale ? exprSpan(n.materialScale) : undefined;
+    let hatchAngle = n.materialAngle !== undefined ? ctx.eval(n.materialAngle) : 0;
+    if (Math.abs(hatchAngle) > MAX_ANGLE_DEG) {
+      ctx.diag(
+        outOfRangeDiagnostic(
+          `Wall "${id}" hatch \`angle\` ${fmt3(hatchAngle)} degrees is outside ±${fmt3(MAX_ANGLE_DEG)} (2^25, so its sine and cosine stay finite)`,
+          (n.materialAngle && exprSpan(n.materialAngle)) ?? n.span,
+        ),
+      );
+      hatchAngle = 0;
+    }
     // The vertical datum: the authored clause, else the storey's height. NOT
     // grid-snapped — `grid` snaps plan coordinates so rooms line up with each other, and a
     // height shares no axis with them.
@@ -199,6 +213,7 @@ export const wall: ElementDef = {
       // Whether that number is the wall's own or the storey's — read only by
       // `E_OPENING_ABOVE_WALL`, so it can name the clause the author actually has to edit.
       ...(n.height !== undefined && isDrawableHeight(height) ? { _heightAuthored: true } : {}),
+      ...(hatchScaleSpan ? { _hatchScaleSpan: hatchScaleSpan } : {}),
       points,
       ...(arcs ? { arcs } : {}),
       closed: n.closed,
@@ -245,6 +260,14 @@ export const wall: ElementDef = {
       }
     }
     return pts;
+  },
+
+  /** Its thickness and every arc radius: lengths the band's points do not carry as values. */
+  measures(resolved): number[] {
+    const w = resolved as RWall;
+    const out = [w.thickness];
+    for (const a of w.arcs ?? []) if (a) out.push(a.r);
+    return out;
   },
 
   /**

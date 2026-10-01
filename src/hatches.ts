@@ -445,3 +445,18 @@ export function hatchPattern(spec: HatchSpec, base: Omit<HatchCtx, "scale" | "an
   const id = patternId(spec.material, spec.scale, spec.angle);
   return meta.build(id, { ...base, scale: spec.scale, angle: spec.angle });
 }
+
+/**
+ * The drawn size of one pattern tile for a hatch spec at hatch module `gap` (the drawing's
+ * `sizes.hatchGap`): the larger of the `<pattern>`'s width and height. It is read off the
+ * markup {@link hatchPattern} itself emits, through an exact formatter (this is a
+ * measurement, never printed), so it is the tile the drawing gets and not a second table of
+ * tile factors that could drift from the builders. The resolver holds it to the modelling
+ * range; a tile that overflows reads `Infinity` here and is refused there.
+ */
+export function hatchTileMm(spec: HatchSpec, gap: number): number {
+  const markup = hatchPattern(spec, { fmt: String, gap, thin: 0, base: "", line: "" });
+  const m = /^<pattern [^>]*?width="([^"]*)" height="([^"]*)"/.exec(markup);
+  if (!m) return Number.NaN;
+  return Math.max(Number(m[1]), Number(m[2]));
+}

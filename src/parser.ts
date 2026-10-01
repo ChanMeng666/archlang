@@ -45,6 +45,7 @@ import type { ExprTokens } from "./expr.js";
 import { closest, MAX_NEST_DEPTH, parseExpr as parseExprPratt } from "./expr.js";
 import type { Theme } from "./theme.js";
 import { isNumericThemeKey, resolveThemeKey, resolveStyleKey } from "./theme.js";
+import { fmt3, MAX_ANGLE_DEG, MODEL_RANGE_MM, outOfRangeDiagnostic, plainDigits } from "./num-format.js";
 import { isDisallowedConfigValue } from "./sanitize.js";
 import { fnv1a } from "./hash.js";
 import { idToken } from "./identity.js";
@@ -316,6 +317,8 @@ class Parser {
   private eatIdent(): Token {
     return this.eat("ident");
   }
+  /** The span of the last theme `lineWeight` value read, handed to the plan by its caller. */
+  private lineWeightSpan: Span | undefined;
   private eatNumber(): number {
     const t = this.eat("number");
     return t.num!;
@@ -362,10 +365,24 @@ class Parser {
           case "units":
             this.parseUnitsSetting(plan, t);
             break;
-          case "grid":
+          case "grid": {
             this.next();
-            plan.grid = this.eatNumber();
+            const gt = this.peek();
+            const grid = this.eatNumber();
+            // A grid is a length: past the modelling range it would snap every coordinate
+            // to 0 or past the range. Reported here (the setting has no later span) and
+            // neutralised to "no grid".
+            if (grid > MODEL_RANGE_MM) {
+              this.diagnostics.push(
+                outOfRangeDiagnostic(
+                  `The \`grid\` of ${fmt3(grid)} mm is outside the modelling range of ±${fmt3(MODEL_RANGE_MM)} mm (2^25 mm, about 33.5 km)`,
+                  { start: gt.start, end: gt.end },
+                ),
+              );
+              plan.grid = 0;
+            } else plan.grid = grid;
             break;
+          }
           case "paper":
             this.parsePaperSetting(plan, t);
             break;
@@ -421,6 +438,10 @@ class Parser {
             if (r.base !== undefined) plan.themeBase = r.base;
             if (r.from !== undefined) plan.themeFrom = r.from;
             plan.theme = { ...plan.theme, ...r.theme };
+            if (this.lineWeightSpan) {
+              plan.lineWeightSpan = this.lineWeightSpan;
+              this.lineWeightSpan = undefined;
+            }
             break;
           }
           case "style": {
@@ -660,7 +681,10 @@ class Parser {
     const a = this.eatNumber();
     this.eat("colon");
     const b = this.eatNumber();
-    plan.scale = `${a}:${b}`;
+    // `plainDigits` is `String` below 1e21, so every scale that was readable reads the same;
+    // above it `String` wrote `1e+21`, which `scaleDenominator` could not read (the scale was
+    // silently dropped) and `arch fmt` could not re-parse.
+    plan.scale = `${plainDigits(a)}:${plainDigits(b)}`;
     plan.scaleSpan = this.spanFrom(t.start);
   }
 
@@ -856,6 +880,16 @@ class Parser {
     const t = this.peek();
     if (t.type === "number") {
       this.next();
+      // Past MAX_ANGLE_DEG a bearing's `deg × π` overflows and the north arrow draws `NaN`.
+      if (Math.abs(t.num!) > MAX_ANGLE_DEG) {
+        this.diagnostics.push(
+          outOfRangeDiagnostic(
+            `\`north ${fmt3(t.num!)}\` is a bearing of ${fmt3(t.num!)} degrees, outside ±${fmt3(MAX_ANGLE_DEG)} (2^25, so its sine and cosine stay finite)`,
+            { start: t.start, end: t.end },
+          ),
+        );
+        return "up";
+      }
       return { deg: t.num! };
     }
     if (t.type === "ident" && (NORTH_DIRS as readonly string[]).includes(t.value)) {
@@ -976,7 +1010,11 @@ class Parser {
           continue;
         }
         if (isNumericThemeKey(resolved)) {
+          const vt = this.peek();
           (theme as Record<string, unknown>)[resolved] = this.eatNumber();
+          // Where the value was written: the drawn pen it scales is held to the modelling
+          // range after resolve (`checkDrawnSizes`, `src/ir.ts`), which blames this literal.
+          this.lineWeightSpan = { start: vt.start, end: vt.end };
         } else {
           (theme as Record<string, unknown>)[resolved] = this.sanitizedStringValue(keyTok, "theme");
         }

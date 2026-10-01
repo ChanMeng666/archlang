@@ -410,6 +410,12 @@ export const room: ElementDef = {
     return rectCorners(r.at.x, r.at.y, r.size.w, r.size.h);
   },
 
+  /** Its authored label anchor, the one coordinate a room carries outside its floor. */
+  measures(resolved): number[] {
+    const r = resolved as RRoom;
+    return r.labelAt ? [r.labelAt.x, r.labelAt.y] : [];
+  },
+
   render(resolved, ctx: RenderCtx): SceneNode[] {
     const r = resolved as RRoom;
     const { theme, sizes } = ctx;
