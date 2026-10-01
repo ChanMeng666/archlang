@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { compile, describe as describePlan, lint } from "../src/index.js";
 import { MAX_NEST_DEPTH } from "../src/expr.js";
+import { fmt2, fmt3, fmt4 } from "../src/num-format.js";
 
 const wrap = (body: string): string => `plan "p" {\n${body}\n}\n`;
 const ROOM = "room id=r at (0,0) size 900x900";
@@ -229,6 +230,17 @@ describe("derived quantities (area, extent) are diagnosed, not printed as Infini
   });
 });
 
+describe("number formatting of huge finite values", () => {
+  it("a finite value whose scaled form overflows prints as itself, never Infinity", () => {
+    for (const f of [fmt2, fmt3, fmt4]) {
+      expect(f(-1.8e305)).toBe("-1.8e+305");
+      expect(f(1.7e308)).toBe("1.7e+308");
+    }
+    expect(fmt3(Number.POSITIVE_INFINITY)).toBe("0"); // the backstop is unchanged
+    expect(fmt3(1.23456)).toBe("1.235");
+  });
+});
+
 describe("arithmetic is closed over the finite numbers", () => {
   // Random expression trees over literals that include huge ones: the compile either
   // evaluates (no error) or raises only the catalogued arithmetic codes — never a throw.
@@ -270,7 +282,13 @@ describe("arithmetic is closed over the finite numbers", () => {
         lint(src);
         return !/Infinity|NaN/.test(r.svg ?? "");
       }),
-      { numRuns: 300 },
+      {
+        // Fixed seed: CI is reproducible. The example is the finite ~-1.8e305 value whose
+        // interpolation printed "-Infinity" (fmt3 scaled it past the double range).
+        seed: 20261001,
+        numRuns: 300,
+        examples: [[`(377 * -(477 * 1${"0".repeat(300)}))`]],
+      },
     );
   });
 });
