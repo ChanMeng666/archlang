@@ -205,7 +205,7 @@ function lintOne(
 ): Diagnostic[] {
   const ctx = buildLintContext(ir, rules, building);
   const out: Diagnostic[] = [];
-  for (const rule of LINT_RULES) out.push(...rule.check(ctx).map(withFixProvenance));
+  for (const rule of LINT_RULES) for (const d of rule.check(ctx)) out.push(withFixProvenance(d));
   return out;
 }
 
