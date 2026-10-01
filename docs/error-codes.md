@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**96 errors** · **52 warnings**
+**97 errors** · **52 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -62,6 +62,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_LEVEL_DUP`](#e_level_dup) | error | Two `level` blocks declare the same storey number. |
 | [`E_LEVEL_MIX`](#e_level_mix) | error | A drawable statement sits beside `level` blocks. |
 | [`E_LEVEL_NEST`](#e_level_nest) | error | `level` used inside a block or component. |
+| [`E_NON_FINITE`](#e_non_finite) | error | A number is too large to be finite. |
 | [`E_OPENING_ABOVE_WALL`](#e_opening_above_wall) | error | An opening's head is above the wall it is cut in. |
 | [`E_OPENING_WIDTH`](#e_opening_width) | error | Opening must have a positive width. |
 | [`E_OUTDOOR_POLY_DEGENERATE`](#e_outdoor_poly_degenerate) | error | An outdoor ring is degenerate, or a balcony was given one. |
@@ -247,7 +248,7 @@ door on w1 at 40% width 900   # error if no wall id=w1 (or several match)
 
 *error* — Value-function call stack too deep.
 
-**Cause.** A value-function recurses (directly or mutually) beyond the call-depth limit.
+**Cause.** A value-function recurses (directly or mutually) beyond the call-depth limit, or the evaluation of one expression nests deeper than the evaluator's own bound (a deep recursion whose body is itself deeply nested).
 
 **Fix.** Make the recursion terminate, or rewrite it iteratively with a bounded `while`.
 
@@ -809,6 +810,19 @@ plan "H" {
 component c() { level 1 { } }   # error: only allowed at plan level
 ```
 
+## E_NON_FINITE
+
+*error* — A number is too large to be finite.
+
+**Cause.** A numeric literal, the result of an arithmetic operation (`+ - * / %`), or a quantity the resolver derives from finite dimensions (an element's extent, a room's area, the plan's total area) is beyond what a floating-point number can hold, so it would be infinite. The check is per operation: an overflowing intermediate is refused even if a later `min()` would have clamped it. A literal or arithmetic result is replaced by 0 so the rest of the plan still resolves and reports; a derived quantity is diagnosed at its element and left as computed.
+
+**Fix.** Use a realistic dimension. A plan is measured in millimetres, and a value above about 1e300 is never a building.
+
+```arch static
+let k = 1000000000000000000000000000000000000000000000000000000000000
+let x = k * k * k * k * k * k   # error: 1e360 overflows
+```
+
 ## E_OPENING_ABOVE_WALL
 
 *error* — An opening's head is above the wall it is cut in.
@@ -886,7 +900,7 @@ outdoor lawn at (0,0) size 0x4000   # error: zero width
 
 *error* — The source could not be read: its SHAPE is wrong.
 
-**Cause.** The lexer or the parser could not make a statement out of the bytes at this span — a missing or misspelled keyword, a value where a keyword belongs, an unterminated string, an unbalanced brace, clauses written in the wrong order. It is the one code that says nothing about what the plan MEANS: resolution never ran here, so no measurement, no geometry and no soundness rule had a chance to speak.
+**Cause.** The lexer or the parser could not make a statement out of the bytes at this span — a missing or misspelled keyword, a value where a keyword belongs, an unterminated string, an unbalanced brace, clauses written in the wrong order, or blocks and expressions nested past the parser's limit (256 levels — far beyond any real plan; the deeper block is skipped, not read). It is the one code that says nothing about what the plan MEANS: resolution never ran here, so no measurement, no geometry and no soundness rule had a chance to speak.
 
 **Fix.** Read the message: it names what was expected and what was found, at a byte span. Compare the statement against `arch spec`'s one line for that keyword — clause ORDER is part of the grammar, not a suggestion. Unlike every other code in this catalog, there is no machine-applicable fix to apply, because the compiler has no reading of the text to correct.
 

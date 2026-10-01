@@ -60,9 +60,17 @@ export interface Comment {
   text: string;
 }
 
+/** A lexical error. `code` is set only where the error has its own catalogued code
+ *  (`E_NON_FINITE`); the parser maps an absent one to `E_PARSE`. */
+export interface LexError {
+  message: string;
+  span: { start: number; end: number };
+  code?: string;
+}
+
 export interface LexResult {
   tokens: Token[];
-  errors: { message: string; span: { start: number; end: number } }[];
+  errors: LexError[];
   /** Line comments, in source order — trivia for the formatter / tooling. */
   comments: Comment[];
 }
@@ -114,7 +122,7 @@ export function clearLexCache(): void {
 
 function lexImpl(src: string): LexResult {
   const tokens: Token[] = [];
-  const errors: { message: string; span: { start: number; end: number } }[] = [];
+  const errors: LexError[] = [];
   const comments: Comment[] = [];
   let i = 0;
   let line = 1;
@@ -171,6 +179,7 @@ function lexImpl(src: string): LexResult {
   // Scan one numeric literal (digits, optional `.frac`, optional unit suffix)
   // starting at the cursor and fold any suffix into a millimetre value.
   const scanNum = (): number => {
+    const from = i;
     let raw = "";
     while (isDigit(peek())) raw += advance();
     // A "." is a decimal point only when a digit follows; ".." is the range op.
@@ -179,7 +188,18 @@ function lexImpl(src: string): LexResult {
       while (isDigit(peek())) raw += advance();
     }
     const shift = scanUnitSuffix();
-    return parseFloat(shift === null ? raw : shiftDecimalLeft(raw, shift));
+    const value = parseFloat(shift === null ? raw : shiftDecimalLeft(raw, shift));
+    // A literal too large for a double (after the unit shift) parses to Infinity; diagnose it
+    // and substitute 0 so no non-finite number ever enters the expression language.
+    if (!Number.isFinite(value)) {
+      errors.push({
+        message: "Number literal is too large (it does not fit a finite number)",
+        span: { start: from, end: i },
+        code: "E_NON_FINITE",
+      });
+      return 0;
+    }
+    return value;
   };
 
   while (i < src.length) {
