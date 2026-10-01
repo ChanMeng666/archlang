@@ -682,20 +682,30 @@ walkable from the arrival rooms — the same rooms `W_ROOM_UNREACHABLE` starts f
 storey with a front door — a balcony door included — walks from it, whatever shafts land
 there.
 
-The edge stepped off at is the **head of the flight the person came by**: arriving from the
-storey below, the end opposite where that storey's run is boarded (its arrow's tail), and
+Which runs a person **arrives** by is a property of the building's connectivity, not of
+declaration order: a run's neighbouring stop (on the storey below, or above, along its shaft)
+is an **arrival side** when it is reachable — its storey, and the room it stands in — in the
+same room-aware building graph **with this storey taken out**. A run with no arrival side is
+not an arrival: with `s1` joining levels 1–2 and `s2` levels 2–3, level 3 is reachable only
+through level 2, so nobody arrives on level 2 by `s2` — it is boarded there, and level 2 is
+walked from `s1` alone. (The arrival rooms `W_ROOM_UNREACHABLE` starts from are unchanged.)
+
+The edge stepped off at is the **head of the flight from the arrival side**: arriving from
+below, the end opposite where the storey below boards that run (its arrow's tail), and
 likewise from above. It is not this storey's own tail: on a middle storey whose flight
 climbs on, you arrive at the head of the flight below, not at the foot of the next one. The
 run's halo is lifted there too, so the landing is walkable. An escalator is stepped off at
-that one end only; a lift car at its door side. When the arriving end cannot be told — the
-shaft was first boardable both below and above the storey, or the neighbouring stop is a
-different kind of run — the walk starts in front of the run's own entry edge(s) instead.
+that one end only; a lift car at its door side. When there are arrival sides both below and
+above (the storey is reachable from either independently), or the neighbouring stop is a
+different kind of run, the walk starts in front of the run's own entry edge(s) instead.
 
 The v1 arrow convention limits this. The arrival edge follows the drawn direction of the
-run, not a search for the room, so a flight whose arrival edge lies against the shell wall
-has no walkable cell in front of it: the storey's model then measures nothing, and every
-room is listed under `unmeasured` as `unreachable`. Flip the footprint's authored
-coordinates (or the run's `dir`) so the head opens onto the floor.
+run, not a search for the room, so a landing with no walkable cell in front of it seeds
+nothing and the storey's model measures nothing. The reason each room then carries is an
+existing one, no new code: a flight whose head lies against the shell wall leaves its rooms
+`unmeasured` as `unreachable`; a landing covered by something else (a `void` at the head of
+the flight) on a storey whose room has no doorway reads `no_threshold`. Flip the footprint's
+authored coordinates (or the run's `dir`) so the head opens onto the floor.
 
 ## Freedom — how constrained the plan is
 

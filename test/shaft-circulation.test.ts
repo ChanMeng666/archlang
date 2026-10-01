@@ -26,7 +26,7 @@ import { buildDoorAccessGraph, buildingRoomReach, DEFAULT_TOL, resolvePlan, stor
 import { type CirculationModel, computeCirculation } from "../src/analyze/circulation.js";
 import { describe as describePlan, lint, repair } from "../src/index.js";
 import type { RDoor, RFurniture, ROpening, RRoom, RVoid, ResolvedPlan } from "../src/ir.js";
-import { type ArrivingRun, arrivalRuns, entryEdges, verticalReach, verticalsOf } from "../src/vertical.js";
+import { type ArrivingRun, arrivalRuns, entryEdges, verticalsOf } from "../src/vertical.js";
 import type { World } from "../src/world.js";
 
 /** A two-storey shell: a hall with the front door and a stair (`dir groundDir`), a living
@@ -64,12 +64,12 @@ const oneRoom = (dir: "up" | "down", groundDir: "up" | "down" = "up"): string =>
 const arrivalsOf = (src: string) => {
   const { levels } = resolvePlan(src);
   const inputs = levels.map((l) => ({ level: l.level, ir: l.ir }));
-  const reach = verticalReach(
+  const runs = arrivalRuns(
     inputs,
     (n) => storeyGrounded(inputs.find((x) => x.level === n)!.ir, DEFAULT_TOL),
     buildingRoomReach(inputs, DEFAULT_TOL),
   );
-  return { levels, runs: arrivalRuns(inputs, reach) };
+  return { levels, runs };
 };
 
 const level = (src: string, n: number) => {
@@ -217,6 +217,29 @@ describe("a storey reached only by a stair is walked from the landing", () => {
     ]);
   });
 
+  it("PINNED: a landing sealed by a void on a door-less storey reads `no_threshold`", () => {
+    // The same "nothing seeds" outcome as the shell case, under a different existing reason:
+    // this storey's only room has no doorway, so the grid carved no threshold for it.
+    const src = `plan "Head at void" {
+  units mm
+  level 1 "Ground" {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+    room id=hall at (0,0) size 8000x6000 label "Hall" uses hall
+    door id=front on shell at 22000 width 1000 swing into hall
+    stair id=st at (2000,2000) size 1000x3000 dir up
+  }
+  level 2 "Upper" {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+    room id=landing at (0,0) size 8000x6000 label "Landing" uses hall circulation
+    void id=gal at (1500,500) size 2000x1500
+    stair id=st at (2000,2000) size 1000x3000 dir down
+  }
+}`;
+    const c = level(src, 2).circulation!;
+    expect(c.rooms).toEqual([]);
+    expect(c.unmeasured).toEqual([{ roomId: "landing", reason: "no_threshold" }]);
+  });
+
   it("two arriving stairs: every walk is the MIN over them, each room naming its own", () => {
     const src = `plan "Two stairs" {
   units mm
@@ -305,6 +328,85 @@ describe("a landing with no door into the rest of the storey", () => {
   });
 });
 
+// ---- arrival sides: a property of the building's connectivity ------------------------
+
+describe("arrival sides come from the building with the storey taken out", () => {
+  /** A 10 000 × 6000 one-room storey with the given body. */
+  const storey = (name: string, body: string, door = "") => `
+  level ${name} {
+    wall id=shell exterior thickness 200 { (0,0) (10000,0) (10000,6000) (0,6000) close }
+    room id=r${name.split(" ")[0]} at (0,0) size 10000x6000 label "R" uses hall circulation
+    ${door}
+    ${body}
+  }`;
+  const plan = (levels: string) => `plan "Sides" {\n  units mm\n${levels}\n}`;
+  const front = "door id=front on shell at 26000 width 1000 swing into r1";
+
+  it("two-id relay: the flight leaving a storey is not an arrival on it", () => {
+    // `s1` joins levels 1–2, `s2` levels 2–3. Level 3 is reachable only through level 2, so
+    // nobody arrives on level 2 by `s2`: it is boarded there. Level 2 is walked from `s1`'s
+    // head alone, exactly as the one-id building (`st` on all three) walks it.
+    const twoIds = plan(
+      storey("1", "stair id=s1 at (200,1000) size 1000x3000 dir up", front) +
+        storey(
+          "2",
+          "stair id=s1 at (200,1000) size 1000x3000 dir down\n    stair id=s2 at (8800,1000) size 1000x3000 dir up",
+        ) +
+        storey("3", "stair id=s2 at (8800,1000) size 1000x3000 dir down"),
+    );
+    const oneId = plan(
+      storey("1", "stair id=s1 at (200,1000) size 1000x3000 dir up", front) +
+        storey("2", "stair id=s1 at (200,1000) size 1000x3000 dir up") +
+        storey("3", "stair id=s1 at (200,1000) size 1000x3000 dir down"),
+    );
+    const { runs } = arrivalsOf(twoIds);
+    expect([...runs].map(([n, as]) => [n, as.map((a) => [a.run.id, a.edges])])).toEqual([
+      [2, [["s1", ["top"]]]],
+      [3, [["s2", ["top"]]]],
+    ]);
+    expect(level(twoIds, 2).circulation?.entranceId).toBe("s1");
+    expect(level(twoIds, 2).circulation?.rooms).toEqual(level(oneId, 2).circulation?.rooms);
+  });
+
+  // Byte-identical buildings but for the order of two stair lines on the ground floor.
+  const ground = (first: string, second: string) =>
+    storey(
+      "1",
+      `stair id=${first} at ${first === "x" ? "(200,1000)" : "(8800,1000)"} size 1000x3000 dir up
+    stair id=${second} at ${second === "x" ? "(200,1000)" : "(8800,1000)"} size 1000x3000 dir up`,
+      front,
+    );
+  const ordered = (first: string, second: string) =>
+    plan(
+      ground(first, second) +
+        storey("2", "stair id=x at (200,1000) size 1000x3000 dir up") +
+        storey(
+          "3",
+          "stair id=x at (200,1000) size 1000x3000 dir down\n    stair id=y at (8800,1000) size 1000x3000 dir down",
+        ),
+    );
+
+  it("declaration order moves nothing: the same building with two lines swapped measures the same", () => {
+    const xy = ordered("x", "y");
+    const yx = ordered("y", "x");
+    for (const n of [1, 2, 3]) expect(level(yx, n).circulation, `level ${n}`).toEqual(level(xy, n).circulation);
+    const codes = (src: string) => lint(src).map((d) => [d.level, d.code, d.message]);
+    expect(codes(yx)).toEqual(codes(xy));
+  });
+
+  it("a storey reachable from below AND above independently takes the documented fallback", () => {
+    // Level 2's `x` is reached from level 1 below, and level 3 above is reachable without
+    // level 2 (by `y` from the ground): both sides, so the run's own entry edge (its `dir up`
+    // tail, the bottom) is used. Level 3 has two arrivals, each from below alone.
+    const { runs } = arrivalsOf(ordered("x", "y"));
+    expect(runs.get(2)?.map((a) => [a.run.id, a.edges])).toEqual([["x", ["bottom"]]]);
+    expect(runs.get(3)?.map((a) => [a.run.id, a.edges])).toEqual([
+      ["x", ["top"]],
+      ["y", ["top"]],
+    ]);
+  });
+});
+
 // ---- the law: no arrivals ⇒ unchanged, over the corpus ------------------------------
 
 const EXAMPLES = resolvePath("examples");
@@ -366,15 +468,14 @@ describe("law: a storey no shaft arrives on measures exactly as before", () => {
       if (!ir) continue;
       const storeys = levels.length > 0 ? levels : [{ level: 0, ir }];
       const inputs = storeys.map((l) => ({ level: l.level, ir: l.ir }));
-      const reach =
+      const runs =
         levels.length > 0
-          ? verticalReach(
+          ? arrivalRuns(
               inputs,
               (n) => storeyGrounded(inputs.find((x) => x.level === n)!.ir, DEFAULT_TOL),
               buildingRoomReach(inputs, DEFAULT_TOL),
             )
-          : null;
-      const runs = reach ? arrivalRuns(inputs, reach) : new Map<number, ArrivingRun[]>();
+          : new Map<number, ArrivingRun[]>();
       const summary = describePlan(src, { world });
       for (const st of storeys) {
         const without = JSON.stringify(circulationOf(st.ir));

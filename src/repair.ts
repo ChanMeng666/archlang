@@ -72,7 +72,7 @@ import {
   type BBox,
 } from "./analyze.js";
 import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
-import { type ArrivingRun, arrivalRuns, verticalReach, verticalsOf } from "./vertical.js";
+import { type ArrivingRun, arrivalRuns, verticalsOf } from "./vertical.js";
 import { doorLandingRect, rectOverlapAmounts, wallIntrusion } from "./geometry/rect.js";
 import { segmentsOfWall, doorSwing, sectorIntersectsRect, type DoorSwing } from "./geometry.js";
 import { DEFAULT_RULESET } from "./lint.js";
@@ -1137,14 +1137,11 @@ function repairPass(source: string, book: SpanBook, record: boolean): RepairResu
     levels.length > 0
       ? arrivalRuns(
           inputs,
-          verticalReach(
-            inputs,
-            (n) => {
-              const l = inputs.find((x) => x.level === n);
-              return l ? storeyGrounded(l.ir, DEFAULT_TOL) : false;
-            },
-            buildingRoomReach(inputs, DEFAULT_TOL),
-          ),
+          (n) => {
+            const l = inputs.find((x) => x.level === n);
+            return l ? storeyGrounded(l.ir, DEFAULT_TOL) : false;
+          },
+          buildingRoomReach(inputs, DEFAULT_TOL),
         )
       : new Map<number, ArrivingRun[]>();
   const changes: RepairChange[] = [];

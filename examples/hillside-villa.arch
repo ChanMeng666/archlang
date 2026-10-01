@@ -252,7 +252,8 @@ plan "Hillside Villa" {
     # own door, so bedrooms 2 and 3 are walked into through their ensuites, and each
     # ensuite's way in is one of these 700 mm doors. The Master Suite's 640 mm is a known
     # artefact of the walk grid (`d_en2_corr`'s width stamped onto one cell of the passage
-    # past the flight), not a door on its way.
+    # past the flight), not a door on its way; without it the count stays nine, as the Master
+    # Suite's route to its ensuite passes `d_enm` and is reported for that room instead.
     door id=d_en2_corr on en2.wall at 5300 width 700 swing out
     door id=d_en3_corr on en3.wall at 5300 width 700 swing out
 

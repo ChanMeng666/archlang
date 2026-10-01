@@ -359,11 +359,14 @@
  * Case (1), the compiler changed, deliberately (owner-approved). A storey with no exterior
  * door that a shaft reaches used to have `circulation: null` while lint's reachability rule
  * already walked it from the room the stair lands in; `computeCirculation` now takes the
- * arriving runs as that storey's entrances (`arrivals`): each walk starts in the row of
- * cells in front of the edge a person steps off at — the HEAD of the flight they came by,
- * `oppositeSide(tailEdge(run on the storey they came from))` (`arrivalRuns`), never the
- * foot of a flight continuing onward — seeded at the run's width, with the run's halo
- * lifted outside that edge, and the doors are walked from the arrival rooms.
+ * arriving runs as that storey's entrances (`arrivals`). A run arrives on L when a
+ * neighbouring stop of its shaft is reachable (storey and room) in the room-aware building
+ * graph with L taken out (`arrivalRuns`) — order-independent; a run boarded on L for a floor
+ * reachable only through L is no entrance. Each walk starts in the row of cells in front of
+ * the edge a person steps off at — the HEAD of the flight from that side,
+ * `oppositeSide(tailEdge(run on the neighbouring storey))`, never the foot of a flight
+ * continuing onward — seeded at the run's width, with the run's halo lifted outside that
+ * edge, and the doors are walked from the arrival rooms.
  * `hillside-villa`, `townhouse` and `two-storey` move — the three examples with such a
  * storey (`garden-house`'s upper floor has its own balcony door, `access.hasEntrance:
  * true`, and does not move). For every storey of all three the SVG and
@@ -377,7 +380,9 @@
  * `feat/math-robustness`, after a planted label edit was caught by the same sweep: only these
  * three and `test/recovery-corpus/two-storey.arch` (a copy of `two-storey`, no digest pin)
  * moved. `entranceId` is the arriving stair's id; every model has one arrival, so no room
- * carries its own `entranceId`.
+ * carries its own `entranceId`. Outside these tables the same change moves one docs fence:
+ * the "Two-storey" example in `docs/language-reference.md` (its `levels[1].circulation`,
+ * `null` → a model; no test pins a digest of it).
  *
  *     - `two-storey` level 2 (`stair` 900 × 2600; the ground flight is `dir up`, boarded at
  *       its bottom, so you step off at its top edge, y = 1500 — also the upper run's own tail;
@@ -432,11 +437,13 @@
  * below).
  *
  * `hillside-villa.arch`'s comment above `d_en2_corr` was corrected in the same change (it said
- * the plan leaves one warning in; it leaves nine; +590 bytes). Every default-profile
+ * the plan leaves one warning in; it leaves nine; it now also says why the count stays nine
+ * without the carve artefact). Every default-profile
  * diagnostic's span lies above that comment, so no span moved and neither row moved for it:
  * both rows were re-measured, with the tests' own digest bodies, to the same values. Under
  * `accessibility-advisory` (no digest covers it) four of its 29 diagnostics lie below the
- * comment and their spans shift by exactly 590 bytes, every other field unchanged — case (2).
+ * comment and their spans shift uniformly by the bytes added, every other field unchanged —
+ * case (2).
  * `repair()` of the edited file differs only in its echoed source text and those offsets.
  */
 

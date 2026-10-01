@@ -220,15 +220,18 @@ from the room the shaft lands in: on such a storey `W_ROOM_UNREACHABLE` had an e
 `W_PATH_TOO_NARROW`/`W_CIRCUITOUS_PATH` had none. The owner's decision is that **the arriving
 runs are that storey's entrances**:
 
-- each run seeds the walk at the row of cells in front of the edge a person steps off at:
-  the **head of the flight they came by** — arriving from below, the end opposite where the
-  storey below boards that run (its tail), likewise from above — never this storey's own
-  tail, which is where a flight continuing onward is boarded. An escalator is stepped off at
-  that one end only; a lift car at its door side. The run's halo is lifted outside that edge,
-  and the edge is read off the run's tail, so it crosses `place`. Where the arriving end
-  cannot be told (first boardable both below and above, or a different kind of run on the
-  arriving side) the run's own entry edges are used. Seeds are multi-source exactly as
-  several front doors are, each at the run's width;
+- a run is an arrival when one of its neighbouring stops (below or above, along its shaft)
+  is reachable — storey and room — in the room-aware building graph with this storey taken
+  out: a property of the building's connectivity, independent of declaration order. A run
+  with no such side is boarded here, not arrived by, and is no entrance;
+- each arriving run seeds the walk at the row of cells in front of the edge a person steps
+  off at: the **head of the flight from that side** — the end opposite where the neighbouring
+  storey boards that run (its tail) — never this storey's own tail, which is where a flight
+  continuing onward is boarded. An escalator is stepped off at that one end only; a lift car
+  at its door side. The run's halo is lifted outside that edge, and the edge is read off the
+  run's tail, so it crosses `place`. With arrival sides both below and above, or a different
+  kind of run on the arriving side, the run's own entry edges are used. Seeds are
+  multi-source exactly as several front doors are, each at the run's width;
 - the rooms a walk is meaningful for are those the doors reach from the arrival rooms, the
   same search `W_ROOM_UNREACHABLE` runs from on that storey, so a landing with no door out
   gives every other room `no_door_route`;
@@ -243,10 +246,11 @@ single-storey plan is byte-identical. The top-level `circulation` repeats `level
 moves too when the LOWEST storey is shaft-reached (a basement reached down from the ground
 floor); no shipped example has one.
 
-A v1 limit follows from reading the edge off the drawn direction: a flight whose head lies
-against the shell wall has no walkable cell in front of it, and the storey measures nothing
-(every room `unmeasured: unreachable`). A distinct reason would be a schema change; it is not
-made here.
+A v1 limit follows from reading the edge off the drawn direction: a landing with no walkable
+cell in front of it seeds nothing, and the storey measures nothing — its rooms read
+`unmeasured: unreachable` (a head against the shell) or `no_threshold` (a landing covered on a
+storey whose room has no doorway). A distinct reason would be a schema change; it is not made
+here.
 
 Measured on the shipped corpus: `hillside-villa`, `townhouse` and `two-storey` move, only in
 their upper storeys' `levels[i].circulation` (null → a model) and in new `W_PATH_TOO_NARROW`

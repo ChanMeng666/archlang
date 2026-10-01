@@ -1285,10 +1285,11 @@ function buildVerticalReport(
     const l = levels.find((x) => x.level === n);
     return l ? storeyGrounded(l.ir, tol) : false;
   };
-  const reach = verticalReach(inputs, grounded, buildingRoomReach(inputs, tol));
+  const roomReach = buildingRoomReach(inputs, tol);
+  const reach = verticalReach(inputs, grounded, roomReach);
   return {
     report: { connections, reachable_levels: [...reach.reachable].sort((a, b) => a - b) },
-    arrivals: arrivalRuns(inputs, reach),
+    arrivals: arrivalRuns(inputs, grounded, roomReach),
   };
 }
 

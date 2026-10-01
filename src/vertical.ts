@@ -270,22 +270,6 @@ export interface VerticalReach {
   reachable: Set<number>;
   /** Per level: room ids you can arrive in by coming up/down a shaft. Source order. */
   arrivalRooms: Map<number, string[]>;
-  /**
-   * Per level: the ids of the shafts you arrive by — the runs whose landings put a person
-   * in {@link VerticalReach.arrivalRooms}, under exactly the same rule (an UNGROUNDED
-   * storey, a stop standing in a room), in the order they first arrive. Append-only: what
-   * the circulation model walks a door-less storey from.
-   */
-  arrivals: Map<number, string[]>;
-  /**
-   * Per level, per arriving shaft id: the levels of the stops that shaft could be boarded
-   * from at the moment it FIRST delivered a person to this storey (ascending) — a snapshot,
-   * so a stop reached only through this very arrival (the floor above, on a stair climbed
-   * on through) is not mistaken for where the person came from. Append-only:
-   * {@link arrivalRuns} reads which side (below, above) an arrival came from to find the end
-   * of the flight they step off at.
-   */
-  arrivalFrom: Map<number, Map<string, number[]>>;
 }
 
 /**
@@ -326,20 +310,38 @@ export function verticalReach(
   grounded: (level: number) => boolean,
   roomReach?: StoreyRoomReach,
 ): VerticalReach {
-  if (roomReach) return roomAwareReach(levels, grounded, roomReach);
-  const connections = verticalConnections(levels);
+  const { reachable, arrivalRooms } = reachOver(levels, verticalConnections(levels), grounded, roomReach);
+  return { reachable, arrivalRooms };
+}
+
+/** {@link VerticalReach}, plus whether a stop is ACTIVE at the fixpoint — the predicate
+ *  {@link arrivalRuns} asks of a neighbouring stop on a building with one storey taken out. */
+interface ReachState extends VerticalReach {
+  active(stop: VerticalStop): boolean;
+}
+
+/**
+ * The fixpoint behind {@link verticalReach}, over a GIVEN set of connections (the shafts
+ * `verticalConnections` finds, or {@link arrivalRuns}' shafts cut at a removed storey).
+ * Without `roomReach` it is the original storey-level loop and a stop is active once its
+ * storey is reachable; with it, the room-aware `(storey, room)` fixpoint.
+ */
+function reachOver(
+  levels: readonly VerticalLevelInput[],
+  connections: readonly VerticalConnection[],
+  grounded: (level: number) => boolean,
+  roomReach?: StoreyRoomReach,
+): ReachState {
+  if (roomReach) return roomAwareReach(levels, connections, grounded, roomReach);
   const reachable = new Set<number>();
   for (const l of levels) if (grounded(l.level)) reachable.add(l.level);
   const arrivalRooms = new Map<number, string[]>();
-  const arrivals = new Map<number, string[]>();
-  const arrivalFrom = new Map<number, Map<string, number[]>>();
 
   for (let pass = 0; pass < levels.length + 1; pass++) {
     let grew = false;
     for (const c of connections) {
       const anyReachable = c.levels.some((n) => reachable.has(n));
       if (!anyReachable) continue;
-      const boarded = c.levels.filter((n) => reachable.has(n));
       for (const stop of c.stops) {
         if (!reachable.has(stop.level)) {
           reachable.add(stop.level);
@@ -351,113 +353,11 @@ export function verticalReach(
           list.push(stop.room);
           arrivalRooms.set(stop.level, list);
         }
-        noteArrival(arrivals, arrivalFrom, stop.level, c.id, boarded);
       }
     }
     if (!grew) break;
   }
-  return { reachable, arrivalRooms, arrivals, arrivalFrom };
-}
-
-/**
- * One run a person arrives by on a storey, and the edge(s) of its footprint they step off
- * across — where the circulation model starts that storey's walks.
- */
-export interface ArrivingRun {
-  /** The run as drawn on THIS storey. */
-  run: RVertical;
-  /** The footprint edge(s) a person arriving by it steps off across — see {@link arrivalRuns}. */
-  edges: RectEdge[];
-}
-
-/**
- * Per storey, the runs — that storey's OWN elements, in its source order — of the shafts
- * {@link VerticalReach.arrivals} says a person arrives by, each with the edge they step off
- * at: what `computeCirculation` walks a storey with no front door from. `describe`, `lint`
- * and `repair` all build theirs here, so they read one answer.
- *
- * **The arrival edge is the HEAD of the flight a person came by.** Arriving on storey L from
- * a stop below it ({@link VerticalReach.arrivalFrom}), they climbed the flight from L's predecessor stop P, which they
- * boarded at P's tail ({@link tailEdge}); they step off at the opposite end, so the edge on L
- * is `oppositeSide(tailEdge(run on P))` — the same footprint, read on L. From the live stop
- * above, likewise with L's successor stop. It is never L's OWN tail, which is where a flight
- * continuing onward from L is boarded (`townhouse`'s middle storey: arriving up the ground
- * flight, you step off at its head, not at the foot of the next flight up). An escalator is
- * stepped off at that one end only (its other end is where the flight passes the slab); a
- * lift car at its door side, {@link entryEdges}.
- *
- * Where the arriving end cannot be told — the shaft was first boardable both below AND
- * above L, or the neighbouring stop on the arriving side is not drawn as the same kind of
- * run — the edges fall back to the run's own {@link entryEdges} on L.
- */
-export function arrivalRuns(
-  levels: readonly VerticalLevelInput[],
-  reach: Pick<VerticalReach, "arrivals" | "arrivalFrom">,
-): Map<number, ArrivingRun[]> {
-  const connections = new Map(verticalConnections(levels).map((c) => [c.id, c]));
-  const runOn = (level: number, id: string): RVertical | undefined =>
-    levels.find((l) => l.level === level)?.ir.elements.find((e): e is RVertical => isVertical(e) && e.id === id);
-  const out = new Map<number, ArrivingRun[]>();
-  for (const l of levels) {
-    const ids = reach.arrivals.get(l.level);
-    if (!ids || ids.length === 0) continue;
-    out.set(
-      l.level,
-      verticalsOf(l.ir)
-        .filter((v) => ids.includes(v.id))
-        .map((run) => ({
-          run,
-          edges: arrivalEdges(
-            run,
-            l.level,
-            connections.get(run.id),
-            reach.arrivalFrom.get(l.level)?.get(run.id),
-            runOn,
-          ),
-        })),
-    );
-  }
-  return out;
-}
-
-/** {@link arrivalRuns}' edge rule for one run on storey `level`. */
-function arrivalEdges(
-  run: RVertical,
-  level: number,
-  c: VerticalConnection | undefined,
-  from: readonly number[] | undefined,
-  runOn: (level: number, id: string) => RVertical | undefined,
-): RectEdge[] {
-  if (run.kind === "elevator" || !c || !from) return entryEdges(run);
-  const below = from.some((n) => n < level);
-  const above = from.some((n) => n > level);
-  if (below === above) return entryEdges(run); // both sides (or neither): ambiguous
-  const at = c.levels.indexOf(level);
-  const prev = c.levels[below ? at - 1 : at + 1];
-  const src = prev !== undefined ? runOn(prev, run.id) : undefined;
-  if (!src || src.kind !== run.kind) return entryEdges(run);
-  return [oppositeSide(tailEdge(src))];
-}
-
-/** Record shaft `id` as arriving on `level`, once, in first-arrival order, with the stops it
- *  could be boarded from at that first arrival ({@link VerticalReach.arrivalFrom}). */
-function noteArrival(
-  arrivals: Map<number, string[]>,
-  arrivalFrom: Map<number, Map<string, number[]>>,
-  level: number,
-  id: string,
-  boarded: readonly number[],
-): void {
-  const runs = arrivals.get(level) ?? [];
-  if (runs.includes(id)) return;
-  runs.push(id);
-  arrivals.set(level, runs);
-  const from = arrivalFrom.get(level) ?? new Map<string, number[]>();
-  from.set(
-    id,
-    boarded.filter((n) => n !== level),
-  );
-  arrivalFrom.set(level, from);
+  return { reachable, arrivalRooms, active: (stop) => reachable.has(stop.level) };
 }
 
 /**
@@ -470,9 +370,10 @@ function noteArrival(
  */
 function roomAwareReach(
   levels: readonly VerticalLevelInput[],
+  connections: readonly VerticalConnection[],
   isGrounded: (level: number) => boolean,
   roomReach: StoreyRoomReach,
-): VerticalReach {
+): ReachState {
   // `grounded` is pure but not cheap (the callers build an access graph per call), and the
   // loop below asks it once per stop per pass — ask each storey once.
   const groundedMemo = new Map<number, boolean>();
@@ -484,12 +385,9 @@ function roomAwareReach(
     }
     return g;
   };
-  const connections = verticalConnections(levels);
   const reachable = new Set<number>();
   for (const l of levels) if (grounded(l.level)) reachable.add(l.level);
   const arrivalRooms = new Map<number, string[]>();
-  const arrivals = new Map<number, string[]>();
-  const arrivalFrom = new Map<number, Map<string, number[]>>();
   // Rooms live shafts land in, on EVERY storey (grounded ones relay too).
   const seedRooms = new Map<number, string[]>();
   // `roomReach` answers, invalidated whenever a storey's seeds grow.
@@ -509,7 +407,6 @@ function roomAwareReach(
     let grew = false;
     for (const c of connections) {
       if (!c.stops.some(active)) continue;
-      const boarded = c.stops.filter(active).map((s) => s.level);
       for (const stop of c.stops) {
         if (!reachable.has(stop.level)) {
           reachable.add(stop.level);
@@ -529,10 +426,119 @@ function roomAwareReach(
           list.push(stop.room);
           arrivalRooms.set(stop.level, list);
         }
-        noteArrival(arrivals, arrivalFrom, stop.level, c.id, boarded);
       }
     }
     if (!grew) break;
   }
-  return { reachable, arrivalRooms, arrivals, arrivalFrom };
+  return { reachable, arrivalRooms, active };
+}
+
+/**
+ * One run a person arrives by on a storey, and the edge(s) of its footprint they step off
+ * across — where the circulation model starts that storey's walks.
+ */
+export interface ArrivingRun {
+  /** The run as drawn on THIS storey. */
+  run: RVertical;
+  /** The footprint edge(s) a person arriving by it steps off across — see {@link arrivalRuns}. */
+  edges: RectEdge[];
+}
+
+/**
+ * Per UNGROUNDED, reachable storey, the runs (that storey's own elements, source order) a
+ * person ARRIVES by, each with the edge they step off across: what `computeCirculation`
+ * walks a storey with no front door from. `describe`, `lint` and `repair` all build theirs
+ * here, so they read one answer. Pure and order-independent: a property of the building's
+ * connectivity, never of declaration order or of the fixpoint's iteration.
+ *
+ * **Arrival sides.** For a run r standing in a room on storey L, a neighbouring stop of r's
+ * shaft (the stop on the storey below L, or above it) is an arrival side when it is ACTIVE
+ * in the building with L REMOVED — the same room-aware `(storey, room)` reachability
+ * {@link verticalReach} computes, with every shaft cut at L so no shaft relays through it.
+ * So the side is where a person can come FROM without having been on L first. A run with
+ * no arrival side is not an arrival on L — nobody arrives by it: a flight leaving L for a
+ * floor reachable only through L (`s1` up to L, `s2` on up from L) is boarded on L, not
+ * stepped off. `arrivalRooms` is untouched by this; it keeps its own definition.
+ *
+ * **The arrival edge is the HEAD of the flight from that side.** Arriving from the stop
+ * below, a person climbed the flight boarded at that stop's tail ({@link tailEdge}) and
+ * steps off at the opposite end: `oppositeSide(tailEdge(run on the storey below))`, read on
+ * L's footprint; from above, likewise. It is never L's OWN tail, where a flight continuing
+ * onward is boarded (`townhouse`'s middle storey). An escalator is stepped off at that one
+ * end only; a lift car at its door side, {@link entryEdges}.
+ *
+ * Where the end cannot be told — arrival sides both below AND above (a storey reachable
+ * independently from either), or the neighbouring stop not drawn as the same kind of run —
+ * the edges fall back to the run's own {@link entryEdges} on L.
+ */
+export function arrivalRuns(
+  levels: readonly VerticalLevelInput[],
+  isGrounded: (level: number) => boolean,
+  roomReach?: StoreyRoomReach,
+): Map<number, ArrivingRun[]> {
+  const groundedMemo = new Map<number, boolean>();
+  const grounded = (level: number): boolean => {
+    let g = groundedMemo.get(level);
+    if (g === undefined) {
+      g = isGrounded(level);
+      groundedMemo.set(level, g);
+    }
+    return g;
+  };
+  const connections = verticalConnections(levels);
+  const byId = new Map(connections.map((c) => [c.id, c]));
+  const full = reachOver(levels, connections, grounded, roomReach);
+  const runOn = (level: number, id: string): RVertical | undefined =>
+    levels.find((l) => l.level === level)?.ir.elements.find((e): e is RVertical => isVertical(e) && e.id === id);
+  const out = new Map<number, ArrivingRun[]>();
+  for (const l of levels) {
+    if (grounded(l.level) || !full.reachable.has(l.level)) continue;
+    let without: ReachState | undefined;
+    const runs: ArrivingRun[] = [];
+    const seen = new Set<string>();
+    for (const run of verticalsOf(l.ir)) {
+      if (seen.has(run.id)) continue; // one stop per storey, as `verticalConnections` reads it
+      seen.add(run.id);
+      const c = byId.get(run.id);
+      const at = c ? c.levels.indexOf(l.level) : -1;
+      if (!c || at < 0 || c.stops[at]!.room === null) continue;
+      without ??= reachOver(
+        levels.filter((x) => x.level !== l.level),
+        cutAt(connections, l.level),
+        grounded,
+        roomReach,
+      );
+      const below = at > 0 && without.active(c.stops[at - 1]!);
+      const above = at < c.stops.length - 1 && without.active(c.stops[at + 1]!);
+      if (!below && !above) continue; // nobody arrives by it: it is boarded here
+      runs.push({ run, edges: arrivalEdges(run, below, above, runOn(c.levels[below ? at - 1 : at + 1]!, run.id)) });
+    }
+    if (runs.length > 0) out.set(l.level, runs);
+  }
+  return out;
+}
+
+/** Every shaft that stops on `level`, cut there: its stops below and its stops above become
+ *  two shafts (each kept only when it still joins two storeys), so none relays through
+ *  `level`. A shaft with no stop on `level` is kept whole. */
+function cutAt(connections: readonly VerticalConnection[], level: number): VerticalConnection[] {
+  const out: VerticalConnection[] = [];
+  for (const c of connections) {
+    // A shaft with no stop on `level` (a lift serving 1 and 3 only) does not pass through it.
+    if (!c.levels.includes(level)) {
+      out.push(c);
+      continue;
+    }
+    for (const part of [c.stops.filter((s) => s.level < level), c.stops.filter((s) => s.level > level)]) {
+      if (part.length >= 2) out.push({ id: c.id, kind: c.kind, levels: part.map((s) => s.level), stops: part });
+    }
+  }
+  return out;
+}
+
+/** {@link arrivalRuns}' edge rule for one arriving run; `src` is the run on the arriving side. */
+function arrivalEdges(run: RVertical, below: boolean, above: boolean, src: RVertical | undefined): RectEdge[] {
+  if (run.kind === "elevator" || below === above) return entryEdges(run);
+  if (!src || src.kind !== run.kind) return entryEdges(run);
+  return [oppositeSide(tailEdge(src))];
 }

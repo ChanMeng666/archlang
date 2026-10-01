@@ -52,8 +52,10 @@ and two bedrooms whose windows don't face the equator side. The other six are wa
 the top of the stair, the floor's only way in, that squeeze to 640 mm. Five of them are
 real 700 mm doors: each bed stands across its own bedroom's door, so bedrooms 2 and 3 are
 walked into through their en-suites, and every en-suite is entered by a 700 mm door. The
-sixth, the Master Suite's, is a known artefact of the walk grid, not a door on its way.
-Every room is reachable.
+sixth, the Master Suite's, is a known artefact of the walk grid, not a door on its way;
+without it the count would still be nine, because the Master Suite's route to its en-suite
+passes that en-suite's real 700 mm door and would be reported for the room instead. Every
+room is reachable.
 
 <ArchLive :src="EXAMPLES['hillside-villa']" :rows="20" />
 
