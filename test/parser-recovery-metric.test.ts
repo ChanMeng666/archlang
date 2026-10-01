@@ -34,7 +34,21 @@
  * whole remaining file's `}`−`{` balance fixed that but scored 0.519639 on
  * `extraEnd×dropBrace` and 0.831765 on `missingEnd×dropToken` — a fault far away moved
  * a local decision. Hence the two-fault classes: every floor must hold with the end of
- * the file unbalanced too.
+ * the file unbalanced too. The balance-gated rule did score higher on two single-fault
+ * classes (`dropToken` 12364, `subToken` 12370); the indentation rule's 12300/12335 are
+ * below that by design — it is the rule that holds on every class.
+ *
+ * Known trade-offs (designed, not visible to the metric):
+ * - When a block HEADER fails and that block's `}` is also missing, the lines indented
+ *   deeper than the header are skipped as its body, so a statement the previous rule
+ *   resumed at can be lost (`zone id=z {` with no `}`, a `for … bogus {` with no `}`, an
+ *   unclosed wall's `{` followed by deeper-indented rooms) — in exchange for no cascade
+ *   of errors from an orphaned body.
+ * - Every `}` still owed at end of input shares one span, so identical "Expected rcurly
+ *   but found end of input" diagnostics are reported once; the count of owed braces is
+ *   not reported.
+ * - Where a tab meets spaces, indentation has no order and that line falls back to the
+ *   previous rule (stop at any `}` or keyword).
  *
  * The floors may only rise. A red floor is a recovery regression, not a number to re-measure.
  */
@@ -282,5 +296,84 @@ describe("indentation-guided synchronize — a fault far away cannot move a loca
     const out = compile(src, { noCache: true });
     expect(out.ast?.body.map((s) => s.kind)).toEqual(["if"]);
     expect(errorsAt(src)).toEqual([`Expected rcurly but found end of input@${src.length}`]);
+  });
+});
+
+/** Statement kinds/ids, nested bodies in brackets. */
+function shape(src: string): string {
+  const out: string[] = [];
+  const walk = (stmts: readonly { kind: string; id: string }[]) => {
+    for (const s of stmts) {
+      out.push(s.id ? `${s.kind}:${s.id}` : s.kind);
+      const body = (s as { body?: { kind: string; id: string }[] }).body;
+      if (Array.isArray(body)) {
+        out.push("[");
+        walk(body);
+        out.push("]");
+      }
+    }
+  };
+  walk(compile(src, { noCache: true }).ast?.body ?? []);
+  return out.join(" ");
+}
+
+describe("indentation-guided synchronize — tabs against spaces, and `else` branches", () => {
+  const TAB = "\t";
+
+  it("a tab-indented unclosed wall before space-indented rooms: no indentation order, so the previous rule", () => {
+    const src = [
+      'plan "p" {',
+      `${TAB}wall exterior thickness 200 { (0,0) (4000,0) close`,
+      "    room id=a at (0,0) size 3000x3000",
+      "    room id=b at (3000,0) size 3000x3000",
+      "}",
+    ].join("\n");
+    // With a tab counted as one column the rooms looked deeper than the wall and were
+    // skipped as its body; compared as strings, `\t` vs four spaces has no order.
+    expect(shape(src)).toBe("error room:a room:b");
+    expect(errorsAt(src)).toEqual([`Expected rcurly but found "room"@${src.indexOf("room id=a")}`]);
+  });
+
+  it("a tab-indented wall missing its `}` inside a space-indented level does not take the level's `}`", () => {
+    const src = [
+      'plan "p" {',
+      "  level 1 {",
+      `${TAB}${TAB}wall exterior thickness 200 { (0,0) (4000,0) close`,
+      "        room id=a at (0,0) size 3000x3000",
+      "        room id=b at (3000,0) size 3000x3000",
+      "  }",
+      "  level 2 {",
+      "    room id=c at (0,0) size 3000x3000",
+      "  }",
+      "}",
+    ].join("\n");
+    // Counting a tab as one column put the level's `}` (two spaces) at the wall's column
+    // and consumed it as the wall's closer: a bogus E_LEVEL_NEST and a missing `}` at EOF.
+    expect(shape(src)).toBe("level [ error room:a room:b ] level [ room:c ]");
+    expect(errorsAt(src)).toEqual([`Expected rcurly but found "room"@${src.indexOf("room id=a")}`]);
+  });
+
+  const IF_ELSE = (header: string, elseOnOwnLine: boolean) =>
+    [
+      'plan "p" {',
+      `  if ${header} {`,
+      "    room id=a at (0,0) size 3000x3000",
+      ...(elseOnOwnLine ? ["  }", "  else {"] : ["  } else {"]),
+      "    room id=b at (3000,0) size 3000x3000",
+      "  }",
+      "  room id=c at (6000,0) size 3000x3000",
+      "}",
+    ].join("\n");
+
+  it.each([
+    ["an incomplete condition", "1 ==", false, "{", 'Expected a value but found "{"'],
+    ["a stray word after the condition", "1 == 1 bogus", false, "bogus", 'Expected lcurly but found "bogus"'],
+    ["an incomplete condition, `else` on its own line", "1 ==", true, "{", 'Expected a value but found "{"'],
+  ])("a failed `if` header (%s) skips its `else` branch with it", (_name, header, ownLine, at, message) => {
+    const src = IF_ELSE(header, ownLine);
+    // Previously `else` was parsed as a statement ("Unknown statement") and the else
+    // block's `}` closed the plan, dropping room c.
+    expect(shape(src)).toBe("error room:c");
+    expect(errorsAt(src)).toEqual([`${message}@${src.indexOf(at, src.indexOf("  if"))}`]);
   });
 });

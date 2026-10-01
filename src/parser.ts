@@ -111,7 +111,7 @@ function parseImpl(src: string, registry: Registry): ParseOutcome {
   // parsePlan never throws on user source: it recovers from a malformed header
   // and from per-statement errors, so a PlanNode (possibly partial) is always
   // produced — `CompileResult.ast` is present even on broken input.
-  const p = new Parser(tokens, registry);
+  const p = new Parser(tokens, registry, src);
   const plan = p.parsePlan();
   plan.comments = comments;
   const diagnostics = [...lexDiags, ...p.diagnostics];
@@ -133,6 +133,9 @@ class Parser {
   constructor(
     private toks: Token[],
     private readonly registry: Registry = BUILTIN_REGISTRY,
+    /** The source the tokens came from — read only by {@link synchronize}, for the
+     *  leading whitespace of a line (a token's `col` cannot tell a tab from a space). */
+    private readonly src = "",
   ) {
     this.statementStarts = new Set<string>([...FIXED_STATEMENT_STARTS, ...registry.byKeyword.keys()]);
     this.ctx = {
@@ -183,11 +186,14 @@ class Parser {
    * When the failed statement starts its own line, recovery is guided by its
    * INDENTATION (as rustc locates an unclosed delimiter) — a local signal that no brace
    * far away in the file can move:
-   *  - a statement keyword first on its line at the statement's column or left of it
-   *    resumes parsing: the failed statement has ended, whether or not its `}` was written;
-   *  - a `}` first on its line left of that column closes the ENCLOSING block (stop before
-   *    it); at that column it is the failed statement's own closer if the statement left
-   *    a `{` open (consume it, then resume);
+   *  - a statement keyword first on its line at the statement's indentation or left of
+   *    it resumes parsing: the failed statement has ended, whether or not its `}` was
+   *    written;
+   *  - a `}` first on its line left of that indentation closes the ENCLOSING block (stop
+   *    before it); at it, it is the failed statement's own closer if the statement left a
+   *    `{` open (consume it and any `else` branches after it, then resume);
+   *  - indentation is compared as whitespace strings ({@link compareIndent}); where a
+   *    tab meets spaces there is no order, and that line stops recovery as before;
    *  - between those points, `{`/`}` are counted, so the `}` of the failed statement's own
    *    block on its own line (a wall's points, `theme { … }`) does not close the enclosing
    *    block, and a keyword inside that block is not parsed one scope too far out;
@@ -207,7 +213,7 @@ class Parser {
       }
       return;
     }
-    const col = first.col;
+    const indent = this.indentOf(first);
     let depth = 0;
     for (let i = s; i < Math.min(this.pos, this.toks.length); i++) {
       const type = this.toks[i]!.type;
@@ -219,13 +225,20 @@ class Parser {
     while (!this.isType("eof")) {
       const t = this.peek();
       if (t.start > failStart && this.startsLine(this.pos)) {
+        // Where this line starts relative to the failed statement's line; `undefined`
+        // (mixed tabs/spaces) means no indentation to read, so the previous rule decides:
+        // stop at any `}` or keyword.
+        const rel = compareIndent(this.indentOf(t), indent);
         if (t.type === "rcurly") {
-          if (t.col < col) return;
-          if (t.col === col) {
-            if (depth > 0) this.next();
+          if (rel === undefined || rel < 0) return;
+          if (rel === 0) {
+            if (depth > 0) {
+              this.next();
+              this.skipElseChain();
+            }
             return;
           }
-        } else if (t.col <= col && this.isStatementKeyword(t)) {
+        } else if ((rel === undefined || rel <= 0) && this.isStatementKeyword(t)) {
           return;
         }
       }
@@ -238,6 +251,30 @@ class Parser {
         return;
       }
       this.next();
+    }
+  }
+
+  /** The whitespace between the start of `t`'s line and `t` (`t` starts its line). */
+  private indentOf(t: Token): string {
+    let i = t.start;
+    while (i > 0 && (this.src[i - 1] === " " || this.src[i - 1] === "\t")) i--;
+    return this.src.slice(i, t.start);
+  }
+
+  /** After a failed `if` header's own `}`: its `else [if …] { … }` branches belong to the
+   *  failed statement too — skip them, or `else` would be parsed as a statement and its
+   *  block's `}` would close the enclosing block. */
+  private skipElseChain(): void {
+    while (this.isKeyword("else")) {
+      this.next();
+      while (!this.isType("lcurly") && !this.isType("rcurly") && !this.isType("eof")) this.next();
+      if (!this.isType("lcurly")) return;
+      let depth = 0;
+      do {
+        if (this.isType("lcurly")) depth++;
+        else if (this.isType("rcurly")) depth--;
+        this.next();
+      } while (depth > 0 && !this.isType("eof"));
     }
   }
 
@@ -1436,6 +1473,18 @@ class Parser {
 
 /** Room use-kind keywords, for the strip-child `uses` clause. */
 const USE_SET: ReadonlySet<string> = new Set<string>(USE_KINDS);
+
+/**
+ * Line `a`'s indentation relative to line `b`'s, compared as whitespace STRINGS (Python's
+ * rule): `0` same, `-1` left of (a proper prefix), `1` right of (extends it), `undefined`
+ * when neither is a prefix of the other — a tab against spaces has no column order.
+ */
+function compareIndent(a: string, b: string): -1 | 0 | 1 | undefined {
+  if (a === b) return 0;
+  if (b.startsWith(a)) return -1;
+  if (a.startsWith(b)) return 1;
+  return undefined;
+}
 
 function describe(t: Token): string {
   if (t.type === "eof") return "end of input";
