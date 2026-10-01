@@ -62,8 +62,8 @@
  * `describe()` only the upper storeys' `levels[i].circulation` moved, `null` → a model walked
  * from the head of the arriving stair (hillside-villa level 2; townhouse levels 2 and 3;
  * two-storey level 2); `lint()` gains only `W_PATH_TOO_NARROW`, inserted in rule order —
- * six on hillside-villa level 2 (640 mm: five 700 mm doors, and the Master Suite's a known
- * carve artefact on the passage under the flight), none on the other two. hillside-villa's
+ * six on hillside-villa level 2 (640 mm: five 700 mm doors, and the Master Suite's a carve
+ * artefact on the passage under the flight — since removed, below), none on the other two. hillside-villa's
  * corrected source comment shifts no default-profile span (every one lies above it). Every
  * value, field by field, is in `./byte-identity-baseline.ts` ("Circulation on storeys reached
  * only by a shaft"). No fixture row moved.
@@ -76,6 +76,16 @@
  * moved: g_sw and g_se walk 9800 → 8800, detour 1.87 → 1.68 (field by field, and the 14 files
  * whose opt-in `--overlay circulation` SVG moved with no fact, in `./byte-identity-baseline.ts`,
  * "a threshold no longer carves in carve order"). No other example row and no fixture row moved.
+ *
+ * `examples/hillside-villa.arch` re-measured, with this test's own digest body, for the
+ * connector carve fix (a connector's inward walk stops at the room's first eroded floor cell,
+ * so `d_en2_corr` no longer stamps its 640 on the passage under the flight). Every storey's SVG
+ * and `compile().diagnostics` are byte-identical; `describe()` moves only level 2's
+ * r_master bottleneck, 640 → 700; `lint()` keeps nine warnings, the Master Suite's walk
+ * warning replaced by its route to its ensuite through `d_enm` (640, at the same span). The
+ * example's comment above `d_en2_corr` was rewritten in the same change and shifts no
+ * default-profile span. Field by field in `./byte-identity-baseline.ts`, "a connector's inward
+ * walk stops at the room's first eroded cell". No other example row and no fixture row moved.
  */
 export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/accessible.arch", "a8b70a680754e431524037dc3a936bba2ec7c0e2cba8df0c72a16f45e5d1e27b"],
@@ -89,7 +99,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/garden-house.arch", "8ea8fb09514623262787606780e5db8571d1fa7cbe1d48070b5eef0931cde302"],
   ["examples/garden-loft.arch", "a21189336cc1d8160d968e51cf9407137eb8212d1692228325e8f7ff172abbcd"],
   ["examples/hexagon-pavilion.arch", "a6bf86674027eac1e6e68a718e5902c401a461650a90808b177f576f330b7137"],
-  ["examples/hillside-villa.arch", "526818e28a94b247947e083b5c258f0ed93760bd720da51063e6e313ae3d5bad"],
+  ["examples/hillside-villa.arch", "3ce0d2951347a8edde480fa73bce23e5b862264b3454057a25b5c4de02457131"],
   ["examples/imports.arch", "7e44e3f95168fb671437b5d38e8918d72ec74d89636636aac858e7306538a4f4"],
   ["examples/laneway-house.arch", "ef8afb7fa4673499128960f97075509cf41bf8270c9fbaece1f1c640e9679d7a"],
   ["examples/library.arch", "89c83260fd894b5271a0ffba7e6622760298c8ffc996a8139caa416fe7a9ac29"],
