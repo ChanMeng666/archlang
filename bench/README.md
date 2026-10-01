@@ -7,14 +7,13 @@ It compiles deterministically-generated plans (`bench/gen.ts`, no `Math.random`/
 stage (parse / resolve / toScene / renderSvg), times the analysis entry points
 (lint / describe), and runs two **skewed** plans to isolate geometry hotspots.
 
-## Baseline: regenerate it first
+## Baseline
 
-Regenerate `bench/baseline.json` on an idle machine after the generator change
-(`npx tsx bench/run.ts --json > bench/baseline.json`). Until then the committed file is
-stale and the CI bench comment flags most rows. It is stale on more than the layout axis:
-for example its ROOM_HEAVY `lint` row is two orders of magnitude below what current code
-takes. Timings on a loaded machine move by tens of percent, so use ratios measured back to
-back in one session, never absolutes across sessions.
+`bench/baseline.json` is measured on an idle machine with the grid generator below
+(`npx tsx bench/run.ts --json > bench/baseline.json`); regenerate it the same way after any
+generator or methodology change. Timings on a loaded machine move by tens of percent, and one
+machine's absolutes are not another's, so use ratios measured back to back in one session,
+never absolutes across sessions or hosts.
 
 Where the time goes: on the wall-heavy plans the hotspot is the joinery pass
 (`joinWalls`, ADR 0018); `src/geometry/union.ts` is a test oracle and is not on the compile
