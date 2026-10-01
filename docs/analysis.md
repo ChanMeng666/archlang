@@ -701,8 +701,10 @@ different kind of run, the walk starts in front of the run's own entry edge(s) i
 
 Whether there is a landing at all is decided on the plan's geometry, not on the grid: at
 nine evenly spaced points just beyond the edge, is there floor in the arrival room that no
-wall band (short of a door or opening cut through it), void, other run, or furniture within a
-body radius covers? On a large plan whose cell does not divide it, the cell centres fall in a
+wall band (except where a door or opening is cut through that same wall), void, other run, or
+furniture within a body radius covers? The points are 1 mm out and about 112 mm apart on a
+900 mm flight, so it is a sampled test: an obstruction narrower than their spacing can sit
+unseen between two of them, and a slot narrower than it can be missed. On a large plan whose cell does not divide it, the cell centres fall in a
 different place in a turned frame, so a test on cells read the same shallow landing as open
 in one frame and covered in another. Given a landing, the walk starts in the row of cells
 directly in front of the edge, or, when the grid's phase leaves that row with no free cell,

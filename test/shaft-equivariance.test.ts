@@ -71,6 +71,7 @@ const CASES: ReadonlyArray<[Building, Bound]> = [
   [P3.halfTable, spill(1)],
   [P3.partitionAtHead, { ...spill(0), measured: false }],
   [P3.openingAtHead, spill(1)],
+  [P3.perpendicularDoor, { ...spill(0), measured: false }],
 ];
 
 const facts = (c: CirculationModel | null) =>

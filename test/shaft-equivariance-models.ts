@@ -149,6 +149,21 @@ export const P3 = {
     "wall id=scr partition thickness 100 { (-1000,2000) (3900,2000) }",
     "partition at head",
   ),
+  /**
+   * The head butting the TOP shell wall (sealed), with a 900 mm door on a PERPENDICULAR
+   * interior partition beside the flight (x = 1200, 200 mm from the nearest probe point). A
+   * door cuts only its own wall's band, so the landing stays sealed: an earlier probe cut a
+   * disc of the door's half-width round it out of EVERY wall band and read this as open.
+   */
+  perpendicularDoor: shell(
+    120000,
+    100000,
+    100,
+    true,
+    `wall id=px partition thickness 100 { (1200,0) (1200,3000) }
+    door id=dp on px at 300 width 900 swing into a`,
+    "perpendicular door",
+  ),
   /** A room behind a wall at the head, the wall pierced by a 900 mm opening at the flight. */
   openingAtHead: shell(
     120000,

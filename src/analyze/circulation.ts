@@ -67,7 +67,7 @@ import {
   type RoomBox,
 } from "../analyze.js";
 import { pointInRect } from "../geometry/rect.js";
-import { type Arc, arcContainsRay, arcExtremes, distPointToArc } from "../geometry/arc.js";
+import { type Arc, arcAngleOffset, arcContainsRay, arcExtremes, distPointToArc } from "../geometry/arc.js";
 import {
   distToPolygonEdge,
   pointInPolygon,
@@ -524,7 +524,18 @@ function landingCells(
   return [...out].sort((a, b) => a - b);
 }
 
-/** How far beyond an arrival edge {@link landingCells} probes for a landing (mm). */
+/**
+ * How far beyond an arrival edge {@link landingCells} probes for a landing (mm).
+ *
+ * The probe is a SAMPLED test: nine points evenly spaced along the edge (about 112 mm apart
+ * on a 900 mm flight), each this far out. An obstruction narrower than the spacing between
+ * two probe points can sit between them unseen, and a free slot narrower than it can be
+ * missed, reading the landing as sealed. And only this depth is probed: floor 1 mm deep
+ * counts as a landing whatever stands a few millimetres farther out (a partition 50 mm
+ * beyond the head). A probe one body radius deep (a body must fit) was measured and not
+ * taken: it seals `examples/two-storey.arch`'s upper landing — a 200 mm strip between its
+ * gallery void and the stair head — which every shipped measurement reads as walkable.
+ */
 const LANDING_PROBE_MM = 1;
 
 /**
@@ -562,8 +573,16 @@ function landingProbe(
         const arc = w.arcs?.[s];
         const d = arc ? distPointToArc(p, arc) : distPointToSeg(p.x, p.y, a.x, a.y, b.x, b.y);
         if (d > half) continue;
-        // A wall's band is floor where a door or opening is cut through it.
-        const cut = connectors.some((c) => Math.hypot(p.x - c.at.x, p.y - c.at.y) <= c.width / 2);
+        // A wall's band is floor where a door or opening is cut through THIS segment of it:
+        // a connector hosted here, within half its width of it along the segment (arc
+        // length on a curve). Another wall's door never opens this band.
+        const along = (q: Point): number =>
+          arc
+            ? arcAngleOffset(arc, q) * arc.r
+            : ((q.x - a.x) * (b.x - a.x) + (q.y - a.y) * (b.y - a.y)) / Math.hypot(b.x - a.x, b.y - a.y);
+        const cut = connectors.some(
+          (c) => c.host?.wallId === w.id && c.host.index === s && Math.abs(along(p) - along(c.at)) <= c.width / 2,
+        );
         if (!cut) return false;
       }
     }
