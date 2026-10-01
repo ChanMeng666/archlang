@@ -1,0 +1,147 @@
+# A row of four terrace dwellings generated from ONE component, placed and mirrored.
+#
+# A terrace is the same plan four times, so it should be written once. `component` +
+# `place` is how ArchLang says that, and this file is the smallest complete example of
+# the pattern:
+#
+#   component unit(w, d, gable) { … }        one dwelling, authored from (0,0) in its
+#                                            OWN coordinates, parameterised by width
+#   place unit(W1, DEPTH, 1) as u1 at (…)    an addressable INSTANCE — every id inside
+#                                            becomes `u1.<id>`, auto-ids restart per
+#                                            instance, so the four are order-independent
+#   … as u2 at (…) mirror x                  a real reflection: door swings, hinges and
+#                                            the whole fit-out come out mirror-image
+#
+# Three things about the row are worth reading closely.
+#
+# MIRRORING PAIRS THE UNITS. `mirror x` reflects about the INSTANCE's own origin, so a
+# mirrored unit is placed at its FAR x edge — u2 is 5400 wide and placed at 10800, which
+# puts it on 5400…10800. Alternating the mirror is what makes a terrace a terrace: u1 and
+# u2 meet local-x=w to local-x=w, so their bathrooms and kitchen runs back onto one shared
+# party wall, and u2 and u3 meet local-x=0 to local-x=0. The consequence to notice is that
+# the row's two FREE gables are both the local x=0 wall — which is why `gable` is 1 for u1
+# and u4 and 0 for the two in the middle, and why the `if` inside the component puts a side
+# window on that wall and nowhere else.
+#
+# THE OFFSETS ARE ARITHMETIC, NOT TYPING. `widths` is an array and X2/X3/X4 are a running
+# sum of it. `place` cannot go inside a `for` (the `as <name>` is a plain identifier, not
+# an interpolation), so the four lines are unrolled — but change a width and every unit
+# after it moves on its own.
+#
+# THE STAGGER IS ONE COORDINATE. Alternate units sit 600 further from the street, which on
+# this sheet means u2 and u4 are placed at y = 0 and u1 and u3 at y = SETBACK. The party
+# walls still coincide over everything but that 600, so each junction draws the short
+# exterior return a sawtooth terrace actually has.
+#
+# WHY THE PLAN IS THIS PLAN. A row of four is drawn on ONE sheet, so the unit that survives
+# is the one whose rooms are still legible at a quarter of the width — which is a drawing
+# constraint, not an architectural one, and it is worth being honest that it drove the
+# layout. Four rooms, not five: living and kitchen are one front room with the galley run
+# on the party wall, the way a 5.4 m frontage is actually built. Names of one word. Nothing
+# narrower than 1.8 m. The test is not "does it compile" but "does every room still say its
+# own name inside its own walls" — so `arch describe --json` reporting four rooms per unit
+# and the PNG showing sixteen unobstructed labels are the same check, run two ways. Three
+# of the four names are therefore PINNED with `label "…" at (x,y)`, written in the
+# COMPONENT's own coordinates: a pinned label is a point like any other, so `place` carries
+# it through the frame, and the two mirrored units get the mirrored position for free. Get
+# the name right in one unit and it is right in four.
+#
+# `theme blueprint` is a NAMED theme base — a whole cyanotype palette from one word, with
+# no `theme { … }` block to maintain.
+plan "Terrace Row" {
+  units mm
+  # 50, not 100: the partitions are 100 thick and the fit-out is anchored `flush` to
+  # their inner faces, which lands on half-thickness coordinates.
+  grid 50
+  north up
+  dims auto overall
+
+  theme blueprint
+
+  let DEPTH   = 9000            # every unit is the same depth; only the width varies
+  let SETBACK = 600             # the sawtooth: alternate units step back from the street
+  let widths  = [5400, 5400, 6000, 5400]
+
+  let W1 = widths[0]
+  let W2 = widths[1]
+  let W3 = widths[2]
+  let W4 = widths[3]
+
+  # Running sum of the widths — the left edge of each unit in plan coordinates.
+  let X1 = 0
+  let X2 = X1 + W1
+  let X3 = X2 + W2
+  let X4 = X3 + W3
+
+  # ---- one dwelling ---------------------------------------------------------
+  component unit(w, d, gable) {
+    let BACK  = 4000            # the sleeping band, at the back of the plot
+    let HALLD = 1800            # the cross hall between the two bands
+    let BATHW = 2200
+    let BEDW  = w - BATHW
+    let FRONT = d - BACK - HALLD
+
+    wall id=shell    exterior  thickness 250 { (0,0) (w,0) (w,d) (0,d) close }
+    wall id=w_bath   partition thickness 100 { (BEDW,0) (BEDW,BACK) }
+    wall id=w_hall_n partition thickness 100 { (0,BACK) (w,BACK) }
+    wall id=w_hall_s partition thickness 100 { (0,BACK + HALLD) (w,BACK + HALLD) }
+
+    room id=bed    at (0,0)            size BEDW x BACK  label "Bed"    at (1400,800)        uses bedroom
+    room id=bath   at (BEDW,0)         size BATHW x BACK label "Bath"   at (BEDW + 1100,2100) uses bath utility
+    room id=hall   at (0,BACK)         size w x HALLD    label "Hall"   uses hall circulation
+    room id=living at (0,BACK + HALLD) size w x FRONT    label "Living" at (w / 2,6900)     uses living dining kitchen
+
+    # Front door off the street into the front room; the garden door is a slider, so no
+    # leaf sweeps the bedroom floor.
+    door id=front at (1700,d) width 950 wall shell swing into living
+    door id=rear sliding at (1200,0) width 1400 wall shell slide left
+
+    door    id=d_bed  on w_hall_n at 2300 width 800 swing into bed
+    # `on <wall> at <pos>` takes a literal position, so the one opening whose distance
+    # depends on the unit WIDTH is written as a point on the same wall's centreline.
+    door    id=d_bath at (w - 1400,BACK) width 800 wall w_hall_n swing into bath
+    opening id=o_hall on w_hall_s at 900 width 1000
+
+    window id=win_liv  at (600,d)        width 900  wall shell
+    window id=win_liv2 at (w - 900,d)    width 1000 wall shell
+    window id=win_bed  at (BEDW - 450,0) width 800  wall shell
+    window id=win_bath at (w - 500,0)    width 500  wall shell
+
+    # Only the two units with a free gable get a side window — the other two have a
+    # party wall there, and a window in a party wall is not a window.
+    if gable == 1 {
+      window id=win_gable at (0,2100) width 1200 wall shell
+    }
+
+    # Fit-out by anchor: every piece is measured from its room's backing wall FACE
+    # (`flush`), so nothing here writes a coordinate or a half-thickness.
+    furniture id=f_bed  bed      in bed anchor bottom-left flush inset 100 size 1400x1900 label "Bed"
+    furniture id=f_ward wardrobe in bed anchor right        flush size 600x1200
+
+    furniture id=f_shower shower in bath anchor top-left     flush size 900x900
+    furniture id=f_basin  basin  in bath anchor top-right    flush size 600x450
+    furniture id=f_wc     wc     in bath anchor bottom-right flush size 400x700
+
+    furniture id=f_sofa  sofa  in living anchor bottom-left flush size 800x1800 label "Sofa"
+
+    # The galley run rides the party wall: `against` derives position, depth and the
+    # quarter-turn from the wall, and each catalogued fixture brings its own footprint.
+    furniture id=f_sink   kitchen_sink against wall shell segment 1 offset 6300 in living
+    furniture id=f_stove  stove        against wall shell segment 1 offset 7200 in living
+    furniture id=f_fridge fridge       against wall shell segment 1 offset 8100 in living
+  }
+
+  # ---- the row --------------------------------------------------------------
+  # A mirrored instance is placed at its FAR x edge, so u2 covers X2…X2+W2 and u4 covers
+  # X4…X4+W4. u1 and u4 carry the gable flag; u2 and u4 take the sawtooth's front row.
+  place unit(W1, DEPTH, 1) as u1 at (X1, SETBACK)
+  place unit(W2, DEPTH, 0) as u2 at (X2 + W2, 0) mirror x
+  place unit(W3, DEPTH, 0) as u3 at (X3, SETBACK)
+  place unit(W4, DEPTH, 1) as u4 at (X4 + W4, 0) mirror x
+
+  title {
+    project "Four-unit terrace"
+    drawn_by "ArchLang"
+    date "2026-08-16"
+  }
+}
