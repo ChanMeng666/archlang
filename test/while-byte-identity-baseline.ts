@@ -67,6 +67,15 @@
  * corrected source comment shifts no default-profile span (every one lies above it). Every
  * value, field by field, is in `./byte-identity-baseline.ts` ("Circulation on storeys reached
  * only by a shaft"). No fixture row moved.
+ *
+ * `examples/hexagon-pavilion.arch` re-measured, with this test's own digest body, for the
+ * threshold carve-order fix (every connector's seeds are read off the nav mask as it stood
+ * before any connector carved, so neither the order a connector's threshold points are
+ * visited in — which a turn or flip reverses — nor the connectors' source order moves a fact).
+ * SVG, `lint()` and `compile().diagnostics` are byte-identical; only `describe().circulation`
+ * moved: g_sw and g_se walk 9800 → 8800, detour 1.87 → 1.68 (field by field, and the 14 files
+ * whose opt-in `--overlay circulation` SVG moved with no fact, in `./byte-identity-baseline.ts`,
+ * "a threshold no longer carves in carve order"). No other example row and no fixture row moved.
  */
 export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/accessible.arch", "a8b70a680754e431524037dc3a936bba2ec7c0e2cba8df0c72a16f45e5d1e27b"],
@@ -79,7 +88,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/gallery-l.arch", "8904c16f3c22da4f2b82d7a257a02fe2a578494378524a00a62b7fd94a2afa87"],
   ["examples/garden-house.arch", "8ea8fb09514623262787606780e5db8571d1fa7cbe1d48070b5eef0931cde302"],
   ["examples/garden-loft.arch", "a21189336cc1d8160d968e51cf9407137eb8212d1692228325e8f7ff172abbcd"],
-  ["examples/hexagon-pavilion.arch", "8af657a388e70b72f315895d259b270531df758282a3b475d405cce25465a2ed"],
+  ["examples/hexagon-pavilion.arch", "a6bf86674027eac1e6e68a718e5902c401a461650a90808b177f576f330b7137"],
   ["examples/hillside-villa.arch", "526818e28a94b247947e083b5c258f0ed93760bd720da51063e6e313ae3d5bad"],
   ["examples/imports.arch", "7e44e3f95168fb671437b5d38e8918d72ec74d89636636aac858e7306538a4f4"],
   ["examples/laneway-house.arch", "ef8afb7fa4673499128960f97075509cf41bf8270c9fbaece1f1c640e9679d7a"],

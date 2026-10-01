@@ -445,6 +445,48 @@
  * comment and their spans shift uniformly by the bytes added, every other field unchanged —
  * case (2).
  * `repair()` of the edited file differs only in its echoed source text and those offsets.
+ *
+ * ## `hexagon-pavilion`: both rows re-measured — a threshold no longer carves in carve order
+ *
+ * Case (1), the compiler changed, deliberately: an equivariance fault the random-plan oracle
+ * found (`test/equivariance-corpus.test.ts`, "closed classes", the carve-order witnesses). A
+ * connector's threshold points are visited centre, +d, −d in the frame's own axis order, and
+ * each point's seeds were read off the LIVE nav mask, so a point could seed on a cell an
+ * earlier carve had just opened — an earlier point of the same connector (a turn or flip
+ * reverses the ± order: a turned plan reported a bottleneck of 740 against 700) or an earlier
+ * connector (source order: a second drum portal into `g_sw` gave 8800 or 8200 by which was
+ * written first). Every seed is now read off the mask as it stood before ANY connector carved
+ * (`buildGrid`); nothing else changed.
+ *
+ * Swept before → after on the same tree, 84 files (the examples incl. `lib/`, `test/fixtures`,
+ * `test/recovery-corpus`, `eval/goldens`, `eval/fidelity-plans`), seven digests per file:
+ * every storey's SVG, `describe()`, `lint()`, `compile().diagnostics`, `lint()` under
+ * `accessibility-advisory`, this file's combined digest, and the `--overlay circulation` SVG.
+ * The sweep was shown able to fail first: 1 mm planted on `r_bed1`'s walk, a room only
+ * rectangular plans have, moved `describe()` on 13 files. The result:
+ *
+ *   - SVG, `lint()`, `compile().diagnostics` and the accessibility `lint()`: byte-identical on
+ *     all 84 files.
+ *   - `describe()` (and so these rows): moved on `hexagon-pavilion` only. Field by field,
+ *     `circulation.rooms[g_sw]` and `circulation.rooms[g_se]`: walk 9800 → 8800, detour
+ *     1.87 → 1.68. Bottlenecks (1340), every other room, routes and `blocked`/`unmeasured`
+ *     are byte-identical.
+ *   - The `--overlay circulation` SVG (opt-in, pinned by no baseline): moved on 14 files and
+ *     no measured fact moved with it outside the hexagon. `eval/goldens/` anchor-furniture,
+ *     dims-auto-cottage, galley-kitchen, relational-studio, three-bed-2bath, two-bath-flat,
+ *     two-bed-hall; `examples/` aquarium, gallery-l, hillside-villa, library, materials;
+ *     `test/recovery-corpus/materials`: a room's pinch marker moves 100–400 mm along one axis
+ *     at the same `clearMm`, and a room walk or key route is drawn along a different polyline
+ *     of the SAME length with the same two ends (a tie among shortest paths, broken on a grid
+ *     whose carved cells differ). `hexagon-pavilion`: g_sw and g_se are drawn along their new
+ *     8800 walks, and g_ne/g_nw along equal-length (12100) alternatives.
+ *
+ * The two hexagon galleries are the ones behind the OBLIQUE drum portals, whose seeds come
+ * from the polygon branch's ring scan: under the live mask the scan found cells earlier
+ * threshold points had opened inside the 1200 mm masonry and tunnelled from them. The old 9800
+ * was itself produced by that carve order — "Circulation v2" above already recorded it as
+ * rule-consistent, not a correction (backlog C.5) — and the new 8800 is the same rule with the
+ * order taken out, not a measured truth either.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -459,7 +501,7 @@ export const BASELINE: [string, string][] = [
   ["gallery-l", "9cdfa47c8d0f0a1a1d1ecf998877ca4ed2b029289730c028065d9ca5f92af2f1"],
   ["garden-house", "707e56c4a8992c77ecf5d76a409690c2554f68059e31758bb8712d2b54266654"],
   ["garden-loft", "970f3edf687ae08093993eeb5ec87cc0e63b9dd51e8487202d6d5d3d61b5030b"],
-  ["hexagon-pavilion", "7bdf11d0b722ec26ce6f63aae7ce558a3da404529a405d87a387f9ba0e18c344"],
+  ["hexagon-pavilion", "67ec85f6b9ed5eeb30380899bc6a5df1d582674616f8dc9121d1b9971546cb5b"],
   ["hillside-villa", "f93556cb775938c34e3057ac7aa7ae17630afd13a004d5bf7eb98ee7b631420a"], // re-measured, see header
   ["imports", "9a18b7a2e74117c3c986bbf513055d7ea333dea1451faeb4f9f3429ca23e7e55"],
   ["laneway-house", "ca93975f9180ff845039a79422a4cca1fe683d76a28831cf700efbb8f6d2bea0"],
@@ -503,7 +545,7 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["gallery-l", "cef0ee1863a505bb831aa2512ca204547117872a61cf1a1ddd293361f0b688be"],
   ["garden-house", "d41cfe2342e0e0818cc7531e75e08bf7c65fbe0d650d7e6a7f2b4261d3470bb8"],
   ["garden-loft", "ad8935f435045684b7ed9975254dc2daf0357f4eb3735e514e319980ebecf793"],
-  ["hexagon-pavilion", "9d87d6ba7fb3a4cc3a459bc981e6b682d3c0d7926669fae90589b54308f8c5ff"],
+  ["hexagon-pavilion", "9a3e3666e6e2b09d04a6239c984415ec92ffa487c8aa743fc8506f4bc0f97a61"],
   ["hillside-villa", "0bce7b7b1a38edda3bef49063a3fbfe2be0f500b14b8559ffa23005a9b4f2cbb"], // re-measured, see header
   ["imports", "5c75030d46ecbfc8b1e80b40945d17bd13afb68a813a286b9ddfe23252452cbc"],
   ["laneway-house", "9a173beb7f213286b8e0c117d829d126166b93e118f91894ba278005254a5255"],

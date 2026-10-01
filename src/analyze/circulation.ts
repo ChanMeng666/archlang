@@ -1207,6 +1207,15 @@ function buildGrid(
   // cells it OPENS (and on its far seed, as it always has) — never on a room cell it only
   // runs along, whose clearance is the room's own (a furniture pinch must stay a pinch).
   const wasFree = free.slice();
+  // Seeds are read off that same pre-carve mask, for EVERY connector. Reading the live mask
+  // let a threshold point seed on a cell an earlier carve had just opened — an earlier point
+  // of the same connector (they run centre, +d, −d in the frame's own axis order, which a
+  // turn or flip reverses) or an earlier connector (source order). Either way which room
+  // cell became a far seed, and took a connector's width, depended on an order the plan
+  // does not mean (a hole in E.10's symmetric carve). With every seed fixed before any
+  // carve, opening cells and stamping the narrower width commute: neither point order nor
+  // connector order changes the result.
+  const before: NavGrid = { ...g, free: wasFree };
   for (const c of connectors) {
     const ai = roomIndexById.get(c.between[0]);
     const bi = roomIndexById.get(c.between[1]);
@@ -1218,8 +1227,8 @@ function buildGrid(
     // would run an L along a row inside a room, stamping the doorway's width over cells
     // whose clearance is a furniture pinch.
     const pathsAt = (at: Point): number[][] => {
-      const as = seedCells(g, at, rects[ai]!, ai, tol, c.bandMm);
-      const bs = seedCells(g, at, rects[bi]!, bi, tol, c.bandMm);
+      const as = seedCells(before, at, rects[ai]!, ai, tol, c.bandMm);
+      const bs = seedCells(before, at, rects[bi]!, bi, tol, c.bandMm);
       const out: number[][] = [];
       for (const [a, b] of nearestPairs(g, as, bs)) {
         const xy = carvePath(g, eroded, a, b, true);
