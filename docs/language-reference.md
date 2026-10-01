@@ -613,7 +613,12 @@ while i < COUNT {
 - `if <cond> { … } [else { … }]` expands one branch; the condition must be a
   boolean.
 - `while <cond> { … }` repeats until the condition is false; it is capped at
-  10,000 iterations (a runaway loop is reported, not hung).
+  10,000 iterations (a runaway loop is reported, not hung). Separately, one storey
+  (or the plan, when it has no `level`) may expand at most 5,000 elements: past that
+  `E_ELEMENT_LIMIT` is raised once and expansion stops, so a `while` that creates
+  elements without ever finishing reports `E_ELEMENT_LIMIT`, not `E_WHILE_LIMIT`.
+  Likewise `W_ROOM_OVERLAP` lists the first 200 overlapping room pairs and then one
+  summary warning counting the rest.
 
 **`while` is deprecated** (`W_WHILE_DEPRECATED`) and will be removed in a
 future major version: it is the one construct that needs a reassignment to

@@ -143,6 +143,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Declare the short name and address it from outside as `<instance>.<name>`.",
     "room id=main at (0,0) size 3000x3000   # then, in the plan: furniture bed in west.main centered",
   ),
+  E_ELEMENT_LIMIT: E(
+    "E_ELEMENT_LIMIT",
+    "The plan expands to too many elements.",
+    "One resolution (the plan, or one storey) expanded past the element cap (5,000), usually a `for` over a huge range or a `while` whose body creates elements but never changes its condition. Expansion stops at the statement that crossed the cap; the elements before it are kept.",
+    "Shrink the range, or make the loop terminate; split a genuinely huge site into storeys or separate plans.",
+    "for i in 0..6000 { column at (i,0) size 1x1 }   # error: more than 5,000 elements",
+  ),
   E_FURN_SIZE: E(
     "E_FURN_SIZE",
     "Furniture must have a positive size.",
@@ -703,7 +710,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "`while` exceeded its iteration cap.",
     "A `while` ran more times than the safety cap allows (usually a condition that never becomes false).",
     "Ensure the loop body updates a binding so the condition eventually fails.",
-    "let i = 0\nwhile i < 1 { column at (0,0) size 1x1 }   # error: i never changes",
+    "let i = 0\nwhile i < 1 { let y = i }   # error: i never changes",
   ),
   E_WINDOW_WIDTH: E(
     "E_WINDOW_WIDTH",
@@ -786,7 +793,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   W_ROOM_OVERLAP: W(
     "W_ROOM_OVERLAP",
     "Rooms overlap.",
-    "Two room rectangles intersect.",
+    "Two room rectangles intersect. At most the first 200 overlapping pairs are listed; one final warning counts the rest (`…and N more room pairs overlap`).",
     "Adjust positions/sizes if the overlap is unintended (it is allowed).",
     "room at (0,0) size 2000x2000\nroom at (1000,0) size 2000x2000   # warning",
   ),

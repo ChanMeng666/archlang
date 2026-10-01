@@ -14,7 +14,9 @@ import {
 } from "./geometry/arc.js";
 import type { GridBox } from "./geometry/grid-index.js";
 import { GridIndex } from "./geometry/grid-index.js";
-import { VERTEX_EPS } from "./geometry/polygon.js";
+import { VERTEX_EPS, distPointToSegment } from "./geometry/polygon.js";
+
+export { distPointToSegment };
 
 export interface Vec {
   x: number;
@@ -104,20 +106,6 @@ export function dimReadsInside(dm: DimLike, box: Bounds): boolean {
     p.y > box.minY + DIM_INSIDE_EPS &&
     p.y < box.maxY - DIM_INSIDE_EPS
   );
-}
-
-/** Distance from point p to segment ab. */
-export function distPointToSegment(p: Point, a: Point, b: Point): number {
-  const abx = b.x - a.x;
-  const aby = b.y - a.y;
-  const apx = p.x - a.x;
-  const apy = p.y - a.y;
-  const len2 = abx * abx + aby * aby;
-  let t = len2 === 0 ? 0 : (apx * abx + apy * aby) / len2;
-  t = Math.max(0, Math.min(1, t));
-  const cx = a.x + t * abx;
-  const cy = a.y + t * aby;
-  return Math.hypot(p.x - cx, p.y - cy);
 }
 
 /**

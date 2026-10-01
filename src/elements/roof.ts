@@ -87,6 +87,8 @@ interface OffsetLine {
  * Parallel lines (two collinear neighbours, or a ring that doubles back) have no
  * intersection, and the honest corner there is the offset of the shared vertex itself,
  * which is exactly `b.p`: `b`'s line was built starting from that vertex.
+ *
+ * Deliberately NOT `meetLines`: its exact rectilinear shortcut moves fmt2-rounded output for non-integer rings.
  */
 function meet(a: OffsetLine, b: OffsetLine): Point {
   const la = Math.hypot(a.dx, a.dy);

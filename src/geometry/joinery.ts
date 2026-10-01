@@ -493,10 +493,17 @@ function chainLoops(edges: readonly Edge[]): Chain[] {
     if (list) list.push(i);
     else outgoing.set(k, [i]);
   }
+  // Each edge's undirected key, computed at most ONCE and only for edges that share a start
+  // vertex with another (a lone edge is never compared). It is derived from the edge as
+  // passed, not borrowed from the grouping pass: a reversed edge's arc midpoint is a fresh
+  // floating-point evaluation that can round to a different key.
+  const keyOf = new Array<string | undefined>(edges.length);
+  const undirected = (i: number): string => (keyOf[i] ??= undirectedKey(edges[i]!));
   for (const list of outgoing.values()) {
+    if (list.length < 2) continue;
     list.sort((a, b) => {
-      const ka = undirectedKey(edges[a]!);
-      const kb = undirectedKey(edges[b]!);
+      const ka = undirected(a);
+      const kb = undirected(b);
       return ka < kb ? -1 : ka > kb ? 1 : a - b;
     });
   }
