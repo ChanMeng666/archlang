@@ -308,6 +308,11 @@ export interface NavGrid {
    *  refused, obstructed on one side or the other. Read only to give an unmeasured room
    *  an honest reason ({@link UnmeasuredRoom}); never by the routing itself. */
   carved: Set<number>;
+  /** 1 on a cell a threshold carve opened — not walkable before any connector carved (a
+   *  wall-band cell), though it may lie inside a room's rectangle. A key route's sources are
+   *  its from-room's cells WITHOUT these (see `addNearestRoute`). Absent on a hand-built
+   *  grid, where nothing was carved. */
+  opened?: Uint8Array;
 }
 
 /**
@@ -1444,9 +1449,16 @@ function buildGrid(
   // room's rectangle included (a cell belongs to the room holding its centre), and a widest
   // search never reads a source cell's own clearance — so a door whose opened cells all lie
   // in the from-room is capped only by its far seed. `min-bedroom-flat`'s route bed → bath
-  // lost that cap (740 → 14000). `test/far-seed-pinch.test.ts` holds the corpus to "no walk
-  // or key route is wider than the widest door path it must take".
+  // lost that cap (740 → 14000). That was measured while routes still started on opened
+  // cells; they now start on the room's floor only (`opened` below), which makes those cells
+  // a cap too. `test/far-seed-pinch.test.ts` holds the corpus to "no walk or key route is
+  // wider than the widest door path it must take".
   for (const [k, cw] of clearAt) g.clearMm[k] = wasFree[k] ? Math.min(cw, g.clearMm[k]!) : cw;
+
+  // The cells a carve opened: walkable now, not before any connector carved.
+  const opened = new Uint8Array(nx * ny);
+  for (let k = 0; k < free.length; k++) if (free[k] && !wasFree[k]) opened[k] = 1;
+  g.opened = opened;
 
   return g;
 }
@@ -2267,10 +2279,17 @@ export function computeCirculation(
     if (!found) return;
     const best = found.idx;
     const walkExact = found.hops * g.cell;
-    // Seed from every cell of room A with no cap: you start inside room A, so its own
+    // Seed from every FLOOR cell of room A with no cap: you start inside room A, so its own
     // furniture-crowding must not limit the route — only the doors/corridors between A
-    // and B should.
-    const wide = perRoomMax(g, widestBottleneck(g, roomCells[fromIdx]!, Number.POSITIVE_INFINITY), rooms.length);
+    // and B should. Floor means walkable before any threshold was carved: a cell belongs to
+    // the room whose rectangle holds its centre, so a doorway's opened wall cells can lie in
+    // A, and the widest search never reads a source's own clearance — seeded at +Infinity
+    // they stepped the route past every cell its door stamped (14000 through a 740 mm door,
+    // or 740, by which room was written first). Not seeded, they are the way out, and the
+    // door caps the route. A room with no such cell keeps its whole cell set.
+    const floor = roomCells[fromIdx]!.filter((k) => !g.opened?.[k]);
+    const from = floor.length > 0 ? floor : roomCells[fromIdx]!;
+    const wide = perRoomMax(g, widestBottleneck(g, from, Number.POSITIVE_INFINITY), rooms.length);
     const straight = found.straight;
     routes.push({
       fromRoomId: rooms[fromIdx]!.id,

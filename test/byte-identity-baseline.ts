@@ -596,6 +596,16 @@
  *     or route polyline moves. Cause: a marker is the narrowest cell the widest search
  *     reached first among equal-clearance cells, and the search's pop order changed where a
  *     far seed elsewhere now reads narrower (the tie-pick class of the sections above).
+ *
+ * ## A key route starts on its room's floor — nothing moved
+ *
+ * Case (1), the compiler changed, deliberately (ADR 0008's far-seed addendum): a key route's
+ * sources are its from-room's cells that were walkable before any threshold was carved, no
+ * longer the cells a carve opened inside its rectangle. Swept before (`95db8b0`) → after over
+ * the same 265 rows and seven digests; a 1 mm plant on every route's walk moved `describe()`
+ * on 43 rows first. Result: all seven digests byte-identical on all 265 rows, the overlay
+ * included. The corrected case is not in the corpus; it is pinned by
+ * `test/route-source-floor.test.ts`.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

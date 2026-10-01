@@ -13,12 +13,13 @@ import { describe as describePlan, type World } from "../src/index.js";
  * REPLACE the cell's own clearance, so a furniture pinch narrower than the door sitting on
  * the far seed was erased: the walk read the door's width through a squeeze it could not
  * pass at that width. It now takes the minimum of the two. Dropping the far-seed stamp
- * instead was measured and rejected. A key route seeds every free cell of its from-room at
- * +Infinity, the cells a carve opened inside that room's rectangle included, and the widest
+ * instead was measured and rejected. A key route then seeded every free cell of its from-room
+ * at +Infinity, the cells a carve opened inside that room's rectangle included, and the widest
  * search never reads a source cell's own clearance; on `min-bedroom-flat` every cell `d_bath`
- * opens lies in the bedroom, so the far seed in the bath is the route's only cap, and without
- * it the route bed → bath read 14000 through a 740 mm door. The corpus invariant at the
- * bottom of this file is the guard for that regression.
+ * opens lies in the bedroom, so the far seed in the bath was the route's only cap, and without
+ * it the route bed → bath read 14000 through a 740 mm door. (A route now starts on its room's
+ * floor only — `test/route-source-floor.test.ts` — which makes those opened cells a cap too.)
+ * The corpus invariant at the bottom of this file is the guard for that class of regression.
  */
 
 const R = DEFAULT_BODY_RADIUS_MM;
@@ -211,20 +212,19 @@ describe("corpus invariant: a walk's or route's bottleneck never exceeds the doo
    * path between its two rooms over the internal edges (`describe()` does not expose which
    * connectors a walk crossed, so the graph's best path stands in for it).
    *
-   * Why it holds on the corpus, and is NOT a law in general: a grid route between walled
-   * rooms crosses a sequence of carved connectors, a path in that graph (no exterior cells).
-   * A walk is seeded only at its entrances, so it passes every cell each crossing opened or
-   * stamped, each at most that connector's width. A key route is seeded at +Infinity on
-   * EVERY free cell of its from-room, the cells a carve opened inside that room's rectangle
-   * included, and the widest search never reads a source cell's own clearance; so a door is
-   * capped only by its stamped cells OUTSIDE the from-room (opened cells in the other room,
-   * or the far seed when it lies there). Every corpus route has one; a plan whose door puts
-   * all of them in the from-room (the far seed on the from-room's side, every opened cell in
-   * its rectangle) breaks the bound, and none is in the corpus. Limits: it bounds by the BEST door
+   * Why it is a law for rooms separated by walls: a grid route between walled rooms crosses
+   * a sequence of carved connectors, a path in that graph (the grid has no exterior cells),
+   * and each crossing passes a cell stamped with at most that connector's width. A wall
+   * between the two seeds means the carve opens at least one cell, stamped with the door's
+   * width; with none between them the path is the far seed alone, stamped
+   * min(width, own clearance). A walk is seeded only at its entrances, each at that
+   * entrance's width, so it passes those cells. A key route is seeded at +Infinity on its
+   * from-room's FLOOR, never on a cell a carve opened (`test/route-source-floor.test.ts`), so
+   * it passes them too. The one way round is open floor: two rooms that meet with no wall
+   * between them touch outside any connector ({@link OPEN_FLOOR}). Limits: it bounds by the BEST door
    * path, not the one the walk took, so it cannot see a walk capped by the wrong door of two
    * parallel ones; a storey walked from a shaft (no exterior entrance) and `blocked[]`'s
-   * widest way in (a smaller-body re-run, not a door width) are not checked; and rooms that
-   * meet on open floor, with no wall between them, are outside the premise ({@link OPEN_FLOOR}).
+   * widest way in (a smaller-body re-run, not a door width) are not checked.
    */
   it("holds on every storey of the whole corpus", () => {
     const violations: string[] = [];

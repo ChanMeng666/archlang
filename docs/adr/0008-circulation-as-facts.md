@@ -277,13 +277,28 @@ cell the carve opens has no clearance of its own and reads the connector's width
 reads the narrower of the connector's width and the room's own clearance there (the
 furniture distance transform, `centreFreedomToClearWidth`). The door still caps every route
 through it, and the pinch stays a pinch. Dropping the far-seed stamp instead was measured
-and rejected. A key route is seeded at +Infinity on every free cell of its from-room, the
-cells a carve opened inside that room's rectangle included (a cell belongs to the room that
-holds its centre), and the widest search never reads a source cell's own clearance, only a
-neighbour's. On `min-bedroom-flat` every cell `d_bath` opens lies in the bedroom, so the
-far seed in the bath was the route's only cap, and without it the route bed → bath read
+and rejected. A key route was then seeded at +Infinity on every free cell of its from-room,
+the cells a carve opened inside that room's rectangle included (a cell belongs to the room
+that holds its centre), and the widest search never reads a source cell's own clearance,
+only a neighbour's. On `min-bedroom-flat` every cell `d_bath` opens lies in the bedroom, so
+the far seed in the bath was the route's only cap, and without it the route bed → bath read
 14000 through a 740 mm door. `test/far-seed-pinch.test.ts` holds the corpus to "no walk or
 key route is wider than the widest door path it must take".
+
+**A key route starts on its room's floor** (owner-delegated, same window). The same seeding
+let a route escape its door outright: with the from-room's far seed on its own side and every
+opened cell in its rectangle, no stamped cell lay outside the sources, and the red team's
+plan (bath and bedroom meeting at x = 5000, a 100 mm partition on x = 5050, an 800 mm door)
+read bed → bath 14000 with the bath written first and 740 with the bedroom first. A route's
+sources are now the from-room's FLOOR — cells walkable before any threshold was carved — so
+the cells a carve opened are the way out, not a starting point, and the door caps the route
+in either order and every frame (`test/route-source-floor.test.ts`). That makes the corpus
+bound a law for rooms separated by walls. Seeding the opened cells at their own stamp
+instead would read the same; the floor rule says what a route starts on. Walks are seeded
+only at entrances, each at that entrance's width, so they never had this hole. Measured: no
+fact moves on the shipped corpus (every digest byte-identical); on a random family of the
+red team's plan (500 draws over partition offset and thickness, door, source order and
+frame) 131 routes move, every one from above its door's width to exactly the door's width.
 
 Two other stamps write a width over a cell's own clearance: a front door's on its seed cells
 and a shaft run's on its landing cells. Both are walk SOURCES, and a source's value is the
