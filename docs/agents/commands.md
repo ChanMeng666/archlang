@@ -17,6 +17,12 @@
   the preview server and drives that origin instead (nightly uses it with `--grep @prod`).
 - `eval:ci` is the offline authorability gate; `eval:fidelity` is a separate, judge-free corpus
   whose numbers are never compared with it; `eval:live` is paid and owner-only.
+- `npm run digest:engines` (ADVISORY, always exits 0, last line `status=` clean, diverged or incomplete)
+  measures cross-engine determinism: the built `dist/` is run in Playwright chromium, firefox and
+  webkit over examples, fixtures, recovery and eval plans plus transcendental probes, and each
+  engine's `byte-identity-payload.ts` digest is compared with Node's and the pinned
+  `while-byte-identity` baseline; a mismatch names the first differing payload part. It measures,
+  it fixes nothing. Set `PLAYWRIGHT_BROWSERS_PATH` to keep the browsers off the default cache.
 - `gen:font-cjk` needs Python + fonttools + network and sits outside the drift gate.
 - `npm run dev` is `tsup --watch`, not a web server (`playground:dev` / `docs:dev` are the sites).
 
@@ -34,7 +40,8 @@
 
 `codeql.yml` `analyze` gates too (and runs weekly). `nightly.yml`: `prod-smoke`
 (`scripts/smoke.mjs`), `audit` (report-only), `secrets` (gitleaks over full history),
-`full-matrix`, `e2e-prod` (the read-only `@prod` subset against the live sites; its docs half also
+`full-matrix`, `cross-engine` (`digest:engines`, advisory: never fails the night, its report is an
+artifact), `e2e-prod` (the read-only `@prod` subset against the live sites; its docs half also
 detects a stale deploy), and `report` (the single writer of the pinned issue). `deploy.yml` deploys
 both sites on every push to `main`; `release.yml` publishes on a `v*` tag. The `eval-*.yml`
 workflows are manual and owner-only — never dispatch `eval-l2.yml`.

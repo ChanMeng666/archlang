@@ -266,13 +266,63 @@ jobs:
           if-no-files-found: ignore
 
   # ---------------------------------------------------------------------------
+  # Cross-engine determinism (ADVISORY). ECMA-262 pins + - * / and Math.sqrt but only
+  # approximates sin/cos/atan2/hypot/log2, and the playground runs the core in Firefox
+  # (SpiderMonkey) and Safari (JavaScriptCore) — engines no other job ever compares.
+  # `npm run digest:engines` runs the built core in Playwright chromium/firefox/webkit and
+  # compares digests with Node's. It MEASURES: it always exits 0 and prints
+  # `status=clean|diverged|incomplete`. continue-on-error keeps even an install hiccup from
+  # turning the night red; a divergence is a finding for the owner, not a regression to gate.
+  # ---------------------------------------------------------------------------
+  cross-engine:
+    name: Cross-engine digests (advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    outputs:
+      status: ${{ steps.digest.outputs.status }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium firefox webkit
+
+      - run: npm run build
+
+      - name: Digest every engine
+        id: digest
+        shell: bash
+        run: |
+          npm run digest:engines -- --out engine-digests-report.md | tee engine-digests.log
+          status=$(grep -E '^status=' engine-digests.log | tail -n 1 | cut -d= -f2)
+          echo "status=${status:-incomplete}" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Cross-engine digests — ${status:-incomplete}"
+            head -c 60000 engine-digests-report.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: engine-digests-report
+          path: engine-digests-report.md
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------------
   # One writer for the pinned issue. Folding "advisories found" and "a job failed"
   # into a single always()-job keeps both out of each other's way: two jobs racing to
   # create-or-update the same issue can create it twice.
   # ---------------------------------------------------------------------------
   report:
     name: Report
-    needs: [prod-smoke, audit, secrets, full-matrix, e2e-prod]
+    needs: [prod-smoke, audit, secrets, full-matrix, e2e-prod, cross-engine]
     if: always()
     runs-on: ubuntu-latest
     permissions:
@@ -291,9 +341,11 @@ jobs:
             const { owner, repo } = context.repo;
 
             const failed = Object.entries(needs)
-              .filter(([, job]) => job.result !== 'success' && job.result !== 'skipped')
+              .filter(([name, job]) => name !== 'cross-engine' && job.result !== 'success' && job.result !== 'skipped')
               .map(([name, job]) => `- \`${name}\` — **${job.result}**`);
             const advisories = needs.audit?.outputs?.status === 'advisories';
+            // ADVISORY signal: shown when the issue is written for another reason, never a trigger or a failure.
+            const engines = needs['cross-engine']?.outputs?.status ?? 'unknown';
 
             if (failed.length === 0 && !advisories) {
               core.info('nightly: all jobs green and no advisories — nothing to report');
@@ -310,6 +362,8 @@ jobs:
               advisories
                 ? `## Dependency advisories\n\n${needs.audit.outputs.report}`
                 : '## Dependency advisories\n\nNone at `--audit-level=high` for production dependencies.',
+              '',
+              '## Cross-engine determinism (advisory)\n\n`' + engines + '` — see the `engine-digests-report` artifact of [this run](' + run + '). Never fails the night and never opens this issue by itself.',
               '',
               'Advisories alone never fail the workflow; a failed job does. Close this issue once triaged — the next bad night opens a fresh one.',
             ].join('\n');

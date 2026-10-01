@@ -11,6 +11,7 @@ playground/playwright-report/
 playground/blob-report/
 docs-site/test-results/
 docs-site/playwright-report/
+engine-digests-report.md
 docs-site/blob-report/
 *.tsbuildinfo
 *.vsix
