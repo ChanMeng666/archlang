@@ -320,6 +320,19 @@ describe("the pinned classes — each STILL reproduced by a minimal witness", ()
   });
 });
 
+/** The carve-order witness: three rooms in a row, the entrance in r2, r1 reached only through
+ *  `o1`, whose threshold a pair of WCs pinches on both sides of the wall. */
+const CARVE_ORDER_BODY = `    wall id=w_shell exterior thickness 100 { (0,0) (6000,0) (6000,3300) (0,3300) close }
+    wall id=w_v1 partition thickness 80 { (2000,0) (2000,3300) }
+    wall id=w_v2 partition thickness 80 { (4000,0) (4000,3300) }
+    room id=r0 at (0,0) size 2000x3300
+    room id=r1 at (2000,0) size 2000x3300
+    room id=r2 at (4000,0) size 2000x3300
+    door id=o0 hinged on w_shell at 23% width 800
+    door id=o1 hinged on w_v2 at 84% width 800
+    furniture id=f0 wc at (3584,459) size 400x1600
+    furniture id=f1 wc in r1 anchor bottom-right inset 100 size 300x400`;
+
 /**
  * The former witnesses of the four raster classes backlog E.6–E.10 closed, each a plan whose
  * circulation a turn or flip USED to move. Every body is on an aligned nav-grid lattice, so
@@ -432,6 +445,17 @@ const RASTER_WITNESSES: ReadonlyArray<{ cls: string; title: string; body: string
     room id=r_rel left-of r_base align bottom gap 0 size 2000x2000`,
     opts: { grid: 100 },
   },
+  {
+    // Fuzz seed 2065024317 (shrunk): o1's threshold points run 2800, 2900, 2700, … 3100, 2500
+    // in P₀ and the reverse ± order under r90/r180. Seeded off the LIVE mask, point 2500 seeded
+    // on the wall cell point 3100 had just opened, so the r2 cell beside it kept its 700 mm
+    // furniture pinch; carved first, it made that cell its far seed and stamped 740 over it.
+    // r1's bottleneck read 700 in P₀ and 740 turned, until seeds were read pre-carve.
+    cls: "threshold-carve",
+    title: "a doorway whose threshold points seeded on cells an earlier point had carved",
+    body: CARVE_ORDER_BODY,
+    opts: { grid: 100 },
+  },
 ];
 
 /** A raster fact or a lint rule that reads the nav grid. */
@@ -456,6 +480,35 @@ describe("closed classes — each former witness is now the law", () => {
       }
     });
   }
+
+  it("threshold-carve: a doorway's carve does not depend on the order its points are visited — every spelling measures alike", () => {
+    // Every spelling of every D4 element, the non-canonical `mirror y` ones included, placed
+    // at the origin: the facts are per room id, and every one is a rotation/reflection
+    // invariant (walk, bottleneck, detour), so all spellings must agree exactly.
+    const spellings = [0, 90, 180, 270].flatMap((r) =>
+      ["", " mirror x", " mirror y"].map((m) => `${r ? ` rotate ${r}` : ""}${m}`),
+    );
+    const measure = (clauses: string) => {
+      const src = `plan "witness" {\n  units mm\n  grid 100\n  component c() {\n${CARVE_ORDER_BODY}\n  }\n  place c() as g at (0,0)${clauses}\n}\n`;
+      const s = describePlan(src);
+      const o1 = s.access?.edges.find((e) => e.doorId === "g.o1");
+      return {
+        o1Clear: o1?.estimatedClearWidth,
+        rooms: (s.circulation?.rooms ?? []).map((r) => ({
+          id: r.roomId,
+          walk: r.walkDistanceMm,
+          bottleneck: r.bottleneckClearWidthMm,
+          detour: r.detourRatio,
+        })),
+      };
+    };
+    const p0 = measure("");
+    // Not vacuous: r1 is measured, through o1 only, and the doorway (not the WCs' pinch)
+    // is its bottleneck — the value the turned plans always read.
+    const r1 = p0.rooms.find((r) => r.id === "g.r1");
+    expect(r1?.bottleneck).toBe(p0.o1Clear);
+    for (const sp of spellings) expect(measure(sp), sp || "(identity)").toEqual(p0);
+  });
 
   it("key routes are measured between TIE SETS, so a page-order pick inside one cannot move them", () => {
     // Red-team counterexample (card A): the bed's two nearest cells are mirror images about

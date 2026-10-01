@@ -1081,6 +1081,13 @@ function buildGrid(
     const ai = roomIndexById.get(c.between[0]);
     const bi = roomIndexById.get(c.between[1]);
     if (ai === undefined || bi === undefined) continue; // exterior / unknown endpoint
+    // Seeds are read off the mask as it stood BEFORE this connector carved anything. Reading
+    // the live mask let one threshold point's seeds stop at cells an earlier point had just
+    // opened, and the points run centre, +d, −d in the frame's own axis order, which a turn or
+    // flip reverses — so which room cell became a far seed (and took the connector's width)
+    // depended on the frame (a hole in E.10's symmetric carve). With seeds fixed per
+    // connector, opening cells and stamping the narrower width commute: order is irrelevant.
+    const before: NavGrid = { ...g, free: g.free.slice() };
     // Every carve a threshold point opens: each seed on one side to its NEAREST seed on the
     // other (and back), by both L-shaped runs (x-then-y and y-then-x), each kept only if it
     // meets no furniture. Nearest, not every pair: a doorway on a lattice line seeds a
@@ -1088,8 +1095,8 @@ function buildGrid(
     // would run an L along a row inside a room, stamping the doorway's width over cells
     // whose clearance is a furniture pinch.
     const pathsAt = (at: Point): number[][] => {
-      const as = seedCells(g, at, rects[ai]!, ai, tol, c.bandMm);
-      const bs = seedCells(g, at, rects[bi]!, bi, tol, c.bandMm);
+      const as = seedCells(before, at, rects[ai]!, ai, tol, c.bandMm);
+      const bs = seedCells(before, at, rects[bi]!, bi, tol, c.bandMm);
       const out: number[][] = [];
       for (const [a, b] of nearestPairs(g, as, bs)) {
         const xy = carvePath(g, eroded, a, b, true);
