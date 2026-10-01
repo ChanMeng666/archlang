@@ -134,20 +134,25 @@ export function effectiveVertices(pts: readonly Point[]): Point[] {
   return out;
 }
 
-/** Distance from `p` to the segment `a`–`b` (mm). */
-function distToSegment(p: Point, a: Point, b: Point): number {
+/** Distance from point p to segment ab. */
+export function distPointToSegment(p: Point, a: Point, b: Point): number {
   const abx = b.x - a.x;
   const aby = b.y - a.y;
+  const apx = p.x - a.x;
+  const apy = p.y - a.y;
   const len2 = abx * abx + aby * aby;
-  const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * abx + (p.y - a.y) * aby) / len2));
-  return Math.hypot(p.x - (a.x + t * abx), p.y - (a.y + t * aby));
+  let t = len2 === 0 ? 0 : (apx * abx + apy * aby) / len2;
+  t = Math.max(0, Math.min(1, t));
+  const cx = a.x + t * abx;
+  const cy = a.y + t * aby;
+  return Math.hypot(p.x - cx, p.y - cy);
 }
 
 /** Shortest distance from `p` to the polygon's boundary (mm). */
 export function distToPolygonEdge(p: Point, pts: readonly Point[]): number {
   let best = Infinity;
   for (const [a, b] of polygonEdges(pts)) {
-    const d = distToSegment(p, a, b);
+    const d = distPointToSegment(p, a, b);
     if (d < best) best = d;
   }
   return best;
