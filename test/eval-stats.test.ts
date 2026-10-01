@@ -6,24 +6,24 @@ import type { Score } from "../eval/run.js";
 describe("wilson95", () => {
   const near = (k: number, n: number, lo: number, hi: number): void => {
     const w = wilson95(k, n);
-    expect(w.lo).toBeCloseTo(lo, 3);
-    expect(w.hi).toBeCloseTo(hi, 3);
+    expect(w.lo).toBeCloseTo(lo, 4);
+    expect(w.hi).toBeCloseTo(hi, 4);
   };
 
   it("matches known values", () => {
-    near(23, 26, 0.71, 0.96);
-    near(14, 26, 0.355, 0.712);
-    near(3, 26, 0.04, 0.29);
+    near(23, 26, 0.7102, 0.96);
+    near(14, 26, 0.3546, 0.7124);
+    near(3, 26, 0.04, 0.2898);
   });
 
   it("edges never produce NaN and stay inside [0, 1]", () => {
     expect(wilson95(0, 0)).toEqual({ lo: 0, hi: 1 });
     const none = wilson95(0, 10);
     expect(none.lo).toBe(0);
-    expect(none.hi).toBeCloseTo(0.2775, 3);
+    expect(none.hi).toBeCloseTo(0.2775, 4);
     const all = wilson95(10, 10);
     expect(all.hi).toBe(1);
-    expect(all.lo).toBeCloseTo(0.7225, 3);
+    expect(all.lo).toBeCloseTo(0.7225, 4);
     for (const [k, n] of [
       [0, 0],
       [0, 1],

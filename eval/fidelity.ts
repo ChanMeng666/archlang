@@ -56,7 +56,8 @@ import { fileURLToPath } from "node:url";
 import type { RoomSummary, SceneSummary } from "../src/index.js";
 import { describe as describePlan } from "../src/index.js";
 import type { Intent, IntentCode } from "./assertions.js";
-import { roomsMatching } from "./synonyms.js";
+import { synonymMatchesLabel } from "../src/vocabulary.js";
+import { CONCEPTS, roomsMatching } from "./synonyms.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..");
@@ -314,26 +315,47 @@ export interface InfeasibilityProof {
   reason: string;
 }
 
+/**
+ * Whether ONE room could satisfy both concepts under `roomsMatchingConcept`'s semantics
+ * (label, then room_type, then uses), judged CONSERVATIVELY from the table: they overlap if
+ * they share a room_type or a use, or if a label of one token-matches a label of the other
+ * (either direction — a room labelled with the longer wording matches both). A concept absent
+ * from the table overlaps everything. NOT modelled: a room whose label belongs to one concept
+ * while its room_type or uses belong to another (a describe()d room's type follows its label).
+ */
+function conceptsMayOverlap(a: string, b: string): boolean {
+  const ca = CONCEPTS[a];
+  const cb = CONCEPTS[b];
+  if (ca === undefined || cb === undefined) return true;
+  if (ca.roomTypes?.some((t) => cb.roomTypes?.includes(t))) return true;
+  if (ca.uses?.some((u) => cb.uses?.includes(u))) return true;
+  return ca.labels.some((x) => cb.labels.some((y) => synonymMatchesLabel(x, y) || synonymMatchesLabel(y, x)));
+}
+
 const sortUnique = (ids: string[]): string[] => [...new Set(ids)].sort();
 
 /**
  * Derive, arithmetically, every way this requirement set contradicts itself. Returns `[]`
  * for a satisfiable set.
  *
- * **Capacity.** Room floor areas do not overlap (an overlap raises `W_ROOM_OVERLAP`), and
- * one room satisfies at most one concept (rubric §2), so the minima of DISTINCT concepts
- * add. If that demand exceeds a stated total-area ceiling, no plan can hold both. The
- * demand is computed two ways — over concept-scoped minima (each multiplied by the count
- * the brief states for that concept; several floors on one concept count once, at the largest —
- * ties go to the first in requirement order) and over a plan-wide "every room at least m" minimum
- * multiplied by a stated exact room count — and each way that exceeds the cap is its own
- * proof. The two are never summed: that would double-count a room.
+ * **Capacity.** Room floor areas do not overlap (an overlap raises `W_ROOM_OVERLAP`), so the
+ * minima of concepts that no single room can satisfy together add. Fidelity scopes a concept
+ * by a plain filter (a room may match several concepts, e.g. bathroom / wet-room / wc), so
+ * concepts that {@link conceptsMayOverlap} are grouped and a group demands only its largest
+ * (floor × count). If the total exceeds the TIGHTEST stated total-area ceiling, no plan can
+ * hold both. The demand is computed two ways — over concept-scoped minima (each multiplied by
+ * the count the brief states for that concept; several floors on one concept count once, at
+ * the largest; ties go to the first in requirement order) and over a plan-wide "every room at
+ * least m" minimum (the largest such floor) multiplied by a stated exact room count — and each
+ * way that exceeds the cap is its own proof. The two are never summed: that would
+ * double-count a room. A plan-wide floor is never combined with a concept's count.
  *
  * **Contradiction.** An `at-least m` and an `at-most M` whose scopes overlap (same concept,
  * or one of them plan-wide) with `m > M` is unsatisfiable directly.
  *
  * Both rules are sound in the "only reports real conflicts" direction, which is the
- * direction that matters: a brief this function calls infeasible IS infeasible. It is
+ * direction that matters: a brief this function calls infeasible IS infeasible, up to the
+ * overlap model's one stated gap (see {@link conceptsMayOverlap}). It is
  * deliberately NOT complete — it will not notice every impossible brief, only the classes
  * the corpus uses. A corpus entry whose declared conflicts this function cannot derive
  * fails the offline suite rather than being taken on trust.
@@ -343,26 +365,55 @@ export function proveInfeasible(requirements: readonly Requirement[]): Infeasibi
   const areaFloors = requirements.filter((r) => r.kind === "room-area" && r.op === "at-least");
   const areaCeils = requirements.filter((r) => r.kind === "room-area" && r.op === "at-most");
   const counts = requirements.filter((r) => r.kind === "room-count");
-  const cap = requirements.find((r) => r.kind === "total-area" && r.op === "at-most");
+  // The TIGHTEST stated total-area ceiling (ties: first in requirement order).
+  let cap: Requirement | undefined;
+  for (const r of requirements) {
+    if (
+      r.kind === "total-area" &&
+      r.op === "at-most" &&
+      (cap === undefined || (cap.kind === "total-area" && r.m2 < cap.m2))
+    )
+      cap = r;
+  }
 
   if (cap !== undefined && cap.kind === "total-area") {
-    // (a) Concept-scoped demand: Σ over distinct concepts of (binding floor × stated count).
-    // Several at-least floors on ONE concept are all satisfied by the largest of them, so only
-    // the maximum counts (never the sum). Ties go to the first in requirement order.
-    const byConcept = new Map<string, { floor: Requirement & { kind: "room-area" } }>();
+    // (a) Concept-scoped demand. Several at-least floors on ONE concept are met by the largest
+    // (never summed), and concepts whose room sets can overlap (one room matching both, e.g.
+    // bathroom / wet-room / wc) form a component in which a single room serves every concept,
+    // so a component contributes only its largest (floor × count). Only genuinely disjoint
+    // components add. Ties go to the first in requirement order.
+    const byConcept = new Map<string, Requirement & { kind: "room-area" }>();
     for (const r of areaFloors) {
       if (r.kind !== "room-area" || r.concept === undefined) continue;
       const cur = byConcept.get(r.concept);
-      if (cur === undefined || r.m2 > cur.floor.m2) byConcept.set(r.concept, { floor: r });
+      if (cur === undefined || r.m2 > cur.m2) byConcept.set(r.concept, r);
     }
-    let specific = 0;
-    const specificIds: string[] = [];
-    for (const [concept, { floor }] of byConcept) {
+    const names = [...byConcept.keys()];
+    const parent = names.map((_, i) => i);
+    const find = (i: number): number => {
+      let r = i;
+      while (parent[r] !== r) r = parent[r]!;
+      return r;
+    };
+    for (let i = 0; i < names.length; i++)
+      for (let j = i + 1; j < names.length; j++)
+        if (conceptsMayOverlap(names[i]!, names[j]!)) parent[find(j)] = find(i);
+    const best = new Map<number, { demand: number; ids: string[] }>();
+    names.forEach((concept, i) => {
+      const floor = byConcept.get(concept)!;
       const c = counts.find((x) => x.kind === "room-count" && x.concept === concept);
       const n = c !== undefined && c.kind === "room-count" ? c.exact : 1;
-      specific += floor.m2 * n;
-      specificIds.push(floor.id);
-      if (c !== undefined) specificIds.push(c.id);
+      const demand = floor.m2 * n;
+      const root = find(i);
+      const cur = best.get(root);
+      if (cur === undefined || demand > cur.demand)
+        best.set(root, { demand, ids: c !== undefined ? [floor.id, c.id] : [floor.id] });
+    });
+    let specific = 0;
+    const specificIds: string[] = [];
+    for (const { demand, ids } of best.values()) {
+      specific += demand;
+      specificIds.push(...ids);
     }
     if (specificIds.length > 0 && specific > cap.m2) {
       proofs.push({
