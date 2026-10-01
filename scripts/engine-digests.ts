@@ -303,6 +303,11 @@ function esc(s: string): string {
   return JSON.stringify(s).slice(1, -1);
 }
 
+/** A string made safe for one Markdown table cell: backslashes first, then the column bar. */
+function mdCell(s: string): string {
+  return s.replace(/\\/g, "\\\\").replace(/\|/g, "\\|");
+}
+
 /** The first differing code unit of two strings, with a short escaped window around it. */
 function byteContext(a: string, b: string): string {
   let i = 0;
@@ -435,7 +440,7 @@ async function main(): Promise<void> {
   L.push("");
   if (divs.length > 0) {
     L.push("## Divergences", "", "| Engine | Plan | Payload | First differing part |", "| --- | --- | --- | --- |");
-    for (const d of divs) L.push(`| ${d.engine} | \`${d.name}\` | ${d.kind} | ${d.first.replace(/\|/g, "\\|")} |`);
+    for (const d of divs) L.push(`| ${d.engine} | \`${d.name}\` | ${d.kind} | ${mdCell(d.first)} |`);
     L.push("");
   } else L.push("## Divergences", "", failedEngines.length ? "None among the engines that ran." : "None.", "");
   L.push(
