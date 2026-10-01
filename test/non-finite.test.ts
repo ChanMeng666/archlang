@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { compile, describe as describePlan, lint } from "../src/index.js";
 import { MAX_NEST_DEPTH } from "../src/expr.js";
+import { fmt2, fmt3, fmt4 } from "../src/num-format.js";
 
 const wrap = (body: string): string => `plan "p" {\n${body}\n}\n`;
 const ROOM = "room id=r at (0,0) size 900x900";
@@ -226,6 +227,17 @@ describe("derived quantities (area, extent) are diagnosed, not printed as Infini
     );
     expect(d).toHaveLength(1);
     expect(src.slice(d[0]!.span!.start, d[0]!.span!.end)).toContain("room id=q");
+  });
+});
+
+describe("number formatting of huge finite values", () => {
+  it("a finite value whose scaled form overflows prints as itself, never Infinity", () => {
+    for (const f of [fmt2, fmt3, fmt4]) {
+      expect(f(-1.8e305)).toBe("-1.8e+305");
+      expect(f(1.7e308)).toBe("1.7e+308");
+    }
+    expect(fmt3(Number.POSITIVE_INFINITY)).toBe("0"); // the backstop is unchanged
+    expect(fmt3(1.23456)).toBe("1.235");
   });
 });
 
