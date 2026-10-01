@@ -673,6 +673,14 @@ the foot of a `dir up` flight and the head of a `dir down` one, so the same shaf
 approached from opposite ends on the two storeys it joins. An escalator has both narrow
 ends; a lift car its south edge.
 
+A storey with no exterior door of its own is **walked from the runs that arrive on it**: each
+arriving run is an entrance whose walk starts in the row of cells in front of its entry
+edge, seeded at the run's width, and the rooms the doors reach are those walkable from the
+arrival rooms — the same rooms `W_ROOM_UNREACHABLE` starts from. `levels[i].circulation`
+carries the run's id as `entranceId`, and `W_PATH_TOO_NARROW`/`W_CIRCUITOUS_PATH` measure
+that floor as they measure a ground floor. A storey with a front door walks from it,
+whatever shafts land there.
+
 ## Freedom — how constrained the plan is
 
 `describe().freedom` is a **degrees-of-freedom report**: for every placed element,

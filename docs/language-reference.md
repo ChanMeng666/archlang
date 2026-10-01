@@ -2285,7 +2285,10 @@ graph, and the complete rule list are documented on the
 Distances are measured on a nav grid whose free cells are eroded by a body radius,
 so a walk only passes where a person really fits (through doors and cased openings,
 not through furniture pinches). It is `null` when the plan has no modelled exterior
-entrance — there is nothing to measure a walk from — otherwise a `CirculationModel`:
+entrance — there is nothing to measure a walk from — otherwise a `CirculationModel`. A
+storey with no exterior door that a `stair`/`elevator`/`escalator` reaches from a reachable
+storey is walked from that run instead: its walks start at the landing in front of the run's
+entry edge, and `entranceId` is the run's id (see [Analysis](analysis.md)).
 
 ```ts
 interface CirculationModel {

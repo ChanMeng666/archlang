@@ -210,3 +210,26 @@ Measured on the shipped corpus: 24 examples move, only in `describe().circulatio
 detours and key routes; no bottleneck, entrance or sealed room); SVG, `lint()` and
 `compile().diagnostics` are byte-identical. The field-by-field ledger is in the header of
 `test/byte-identity-baseline.ts`.
+
+## Addendum (2026-10): a storey reached only by a shaft walks from the shaft
+
+The decision stands; this replaces "`null` when the plan has no modeled exterior entrance" for
+one case. A storey with no exterior door that a `stair`, `elevator` or `escalator` reaches from a
+reachable storey had no circulation facts, while lint's reachability rule already walked it
+from the room the shaft lands in — two rules disagreeing on what an entrance is upstairs. The
+owner's decision is that **the arriving runs are that storey's entrances**:
+
+- each run seeds the walk at the row of cells in front of its entry edge (the edge whose halo
+  the grid already lifts, carried through `place` by the run's own tail), multi-source exactly
+  as several front doors are, each seed at the run's width;
+- the rooms a walk is meaningful for are those the doors reach from the arrival rooms, the
+  same search `W_ROOM_UNREACHABLE` runs, so a landing with no door out gives every other
+  room `no_door_route`;
+- `entranceId` is the run's id (per room only when several runs arrive), and
+  `W_PATH_TOO_NARROW`/`W_CIRCUITOUS_PATH` and `arch repair`'s circulation guard read it.
+
+A storey with a front door walks from it whatever shafts land there, so every grounded storey
+and every single-storey plan is byte-identical. Measured on the shipped corpus: `hillside-villa`,
+`townhouse` and `two-storey` move, only in their upper storeys' `levels[i].circulation` (null →
+a model) and in new `W_PATH_TOO_NARROW` warnings; the SVG and `compile().diagnostics` are
+byte-identical. The ledger is in the header of `test/byte-identity-baseline.ts`.

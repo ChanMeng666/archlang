@@ -353,6 +353,65 @@
  * minimum they are measured against, 850 → 960 mm, the narrowest door that profile passes
  * without `W_DOOR_CLEARANCE` or `W_PATH_TOO_NARROW`; and `hillside-villa`'s two `wc`
  * distances 802 → 801 mm with their shortfalls 48 → 49).
+ *
+ * ## Circulation on storeys reached only by a shaft: three examples, both rows each
+ *
+ * Case (1), the compiler changed, deliberately (owner-approved). A storey with no exterior
+ * door that a shaft reaches used to have `circulation: null` while lint's reachability rule
+ * already walked it from the room the stair lands in; `computeCirculation` now takes the
+ * arriving runs as that storey's entrances (`arrivals`): each walk starts in the row of
+ * cells in front of the run's entry edge, seeded at the run's width, and the doors are
+ * walked from the arrival rooms. `hillside-villa`, `townhouse` and `two-storey` move — the
+ * three examples with such a storey (`garden-house`'s upper floor has its own balcony door,
+ * `access.hasEntrance: true`, and does not move). For every storey of all three the SVG and
+ * `compile().diagnostics` are byte-identical; the top-level `circulation` (the ground
+ * storey, repeated as `levels[0]`) does not move; in `describe()` the ONLY moved field is
+ * the upper storeys' `levels[i].circulation`, `null` → the model below. Swept per storey
+ * (SVG, `describe()`, `lint()`, `compile().diagnostics`, `lint()` under
+ * `accessibility-advisory`) over every example, fixture, recovery-corpus, eval-golden and
+ * fidelity plan against `feat/math-robustness`, after a planted label edit was caught by the
+ * same sweep: only these three and `test/recovery-corpus/two-storey.arch` (a copy of
+ * `two-storey`, no digest pin) moved. `entranceId` is the arriving stair's id; every model
+ * has one arrival, so no room carries its own `entranceId`.
+ *
+ *     - `two-storey` level 2 (`stair` 900 × 2600 `dir down`: entered across its top edge,
+ *       seeds at y = 1450, x = 150…950; seed width 900): entranceId `stair`; landing walk
+ *       1200, bottleneck 900, detour 1.34; bath 4900 / 700 / 1.14; bed1 4400 / 700 / 1.07;
+ *       bed2 7100 / 700 / 1.41; routes bed1 → bath 7900 / 740 / 1.41, bed2 → bath 5200 / 740 /
+ *       1.66. The 700 is a one-hop clearance cell (`centreFreedomToClearWidth(1)`), narrower
+ *       than any door on the way (740, 840): the landing is the strip between the `gallery`
+ *       void (to y = 1300) and the flight's head (y = 1500).
+ *     - `townhouse` level 2 (`st` 900 × 3200 `dir up`: entered across its bottom edge, seed
+ *       width 900): entranceId `st`; r_landing 2700 / 900 / 1.16; r_bed1 6300 / 740 / 1.44;
+ *       r_bath 3000 / 740 / 1.2; r_bed2 4500 / 740 / 1.34; routes r_bed1 → r_bath 7300 / 740 /
+ *       2.09, r_bed2 → r_bath 6900 / 740 / 2.12. 740 is each 800 mm door's modeled clear width.
+ *     - `townhouse` level 3 (`st` `dir down`: its top edge): entranceId `st`; r_landing 1300 /
+ *       900 / 1.32; r_study 3000 / 740 / 1.19; r_bath 5700 / 740 / 1.4; r_master 8000 / 840 /
+ *       1.24 (its 900 mm door); route r_master → r_bath 6900 / 740 / 2.12.
+ *     - `hillside-villa` level 2 (`stair` 2200 × 1000 `dir down`: landscape, entered across
+ *       its LEFT edge, seeds at x = 4850, y = 2750…3650; seed width 1000): entranceId `stair`;
+ *       r_bed2 2400 / 640 / 1.39; r_bed3 9000 / 640 / 1.48; en2.room 1300 / 640 / 1; en3.room
+ *       7000 / 640 / 1.66; r_master 9900 / 640 / 1.81; en_m.room 10000 / 640 / 1.21; r_landing
+ *       3600 / 1000 / 1.38; r_gallery 7500 / 900 / 1.41; routes r_bed2 → en2.room 1100 / 640 /
+ *       1.09, r_bed3 → en3.room 2000 / 640 / 1.05, r_master → en_m.room 5500 / 640 / 1.3;
+ *       `unmeasured` r_linen `no_threshold` (its door opens onto the flight's flank). 640 is a
+ *       700 mm door's clear width: bedrooms 2 and 3 are walked in through their en-suites'
+ *       700 mm doors, because each bed's body-radius halo covers the bedroom's own doorway,
+ *       which never carves. r_master's 640 is set on the one-cell passage under the flight
+ *       (y = 4050), where one cell, (4950, 4050), carries the 640 mm stamp of `d_en2_corr`'s
+ *       carve — that cell is the far seed the door's inward walk reached by stepping through
+ *       the stair footprint (a pre-existing carve rule; the passage's other cells read 700).
+ *
+ * `lint()`: no `W_CIRCUITOUS_PATH` (the largest new detour is 2.12, under the 3.0 maximum);
+ * new `W_PATH_TOO_NARROW` only, appended per storey after the diagnostics that were already
+ * there, every pre-existing diagnostic unchanged and in its order. Default profile (700 mm):
+ * `hillside-villa` level 2 gains six — Bedroom 2, Bedroom 3, the three Ensuites and Master
+ * Suite, each "squeezes to 640 mm (60 mm below the 700 mm minimum)"; `townhouse` and
+ * `two-storey` gain none. Under `accessibility-advisory` (900 mm, no digest covers it) the
+ * same six read "260 mm below the 900 mm minimum", and `townhouse` gains six (level 2 Bedroom
+ * 1, Bathroom, Bedroom 2 at 740, 160 below; level 3 Study and Shower room at 740, Main bedroom
+ * at 840, 60 below) and `two-storey` three (level 2 Bath, Bedroom 1, Bedroom 2 at 700, 200
+ * below).
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -368,7 +427,7 @@ export const BASELINE: [string, string][] = [
   ["garden-house", "707e56c4a8992c77ecf5d76a409690c2554f68059e31758bb8712d2b54266654"],
   ["garden-loft", "970f3edf687ae08093993eeb5ec87cc0e63b9dd51e8487202d6d5d3d61b5030b"],
   ["hexagon-pavilion", "7bdf11d0b722ec26ce6f63aae7ce558a3da404529a405d87a387f9ba0e18c344"],
-  ["hillside-villa", "9f075ede483ebb255419c4ffb60e62f07d70a6de1f5f571587bd4e6e751a1cae"], // re-measured, see header
+  ["hillside-villa", "f93556cb775938c34e3057ac7aa7ae17630afd13a004d5bf7eb98ee7b631420a"], // re-measured, see header
   ["imports", "9a18b7a2e74117c3c986bbf513055d7ea333dea1451faeb4f9f3429ca23e7e55"],
   ["laneway-house", "ca93975f9180ff845039a79422a4cca1fe683d76a28831cf700efbb8f6d2bea0"],
   ["library", "614bc84423700e348345a7dd9bbf1e3ff098deacba76f3f62043cc2d7e5c144c"],
@@ -383,10 +442,10 @@ export const BASELINE: [string, string][] = [
   ["terrace-row", "d47f75e57df406060420ee7ce6c18f5a7f4250edcf4171b6145df92966076d3f"], // re-measured, see header
   ["themed", "55e8723dd35cc3ec24b73a7bbf8052bea24f1fdaddd6d90012cffb81d7d00057"],
   ["tiny-house", "4530542edaa0793db192ee26cfaa293bc353c3912a5bc42baf4749a5ce5ce010"],
-  ["townhouse", "7a8e8a6e84e53c0df96a85b02b81af6d2b81c5556e6146e36863a72fa845a9d7"],
+  ["townhouse", "6a797e9b826f7af2a3d5bca1c229941c146da32ad4353636539e50362ba1e3f4"], // re-measured, see header
   ["transit-hall", "056a651ef496fa544aabdab8db6b0486ac00b3d4e32da8f8133bc73b6581e2e3"],
   ["two-bed", "ff4ad8858ef6c8fa71a632c9df6c5c489b4661d0ea0b80719f69f0f481c50cd7"],
-  ["two-storey", "12e2c67328c957fcfd9fe245db48d4fde513746afd090e6f2be72e61e5bb9fcc"],
+  ["two-storey", "fe72bee4167641c890d345e936f86157b3d3597726d1acd71fe10525ea700955"], // re-measured, see header
 ];
 
 /**
@@ -412,7 +471,7 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["garden-house", "d41cfe2342e0e0818cc7531e75e08bf7c65fbe0d650d7e6a7f2b4261d3470bb8"],
   ["garden-loft", "ad8935f435045684b7ed9975254dc2daf0357f4eb3735e514e319980ebecf793"],
   ["hexagon-pavilion", "9d87d6ba7fb3a4cc3a459bc981e6b682d3c0d7926669fae90589b54308f8c5ff"],
-  ["hillside-villa", "066363a2120e1409e7fe68708b551468748ae1ce62caaba732b0883556dee7f3"], // re-measured, see header
+  ["hillside-villa", "0bce7b7b1a38edda3bef49063a3fbfe2be0f500b14b8559ffa23005a9b4f2cbb"], // re-measured, see header
   ["imports", "5c75030d46ecbfc8b1e80b40945d17bd13afb68a813a286b9ddfe23252452cbc"],
   ["laneway-house", "9a173beb7f213286b8e0c117d829d126166b93e118f91894ba278005254a5255"],
   ["library", "f81107388c6547af37b0938ecc06a1f3ab3acbe69916edb7b0c9c76a4c9f3477"],
@@ -427,10 +486,10 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["terrace-row", "172aac3cd62b8ccbbdf2d58374fe0535e4657d1344f60c1c7cb825ae3e2a59b8"],
   ["themed", "3644012b9d972af8e0314ce0a210073cc0315127d38a5f6b35220b00c883aff8"],
   ["tiny-house", "63a784b0a353f2a0664dc710ca720364d3b246447972b5bda928c855ea0e18a8"],
-  ["townhouse", "5ecbdea1fb6fbcdc18000019f09c8705d0f27fda0a37d34063568c829cbcb2b2"],
+  ["townhouse", "e20ccc3a689d70b3eef61164bd27c0622e02cd73b348dd3a31c7b195a346757a"], // re-measured, see header
   ["transit-hall", "cc69ca4464febda4baee441c36b8c2a5f8b1b4b3f794b221ffa1261bb78a800e"],
   ["two-bed", "061698b483472d4cee3801c39a6e1f74070037d82c8ea7efa19906388f24a79a"],
-  ["two-storey", "2d38f2f4fd0f50601b80262a37f843b96dc8558d80ea1bc16b2e4640f6288553"],
+  ["two-storey", "4a32d319784e26993659cfe2eb5b05626bea376f9de7c80f63a3c6e3ff171f03"], // re-measured, see header
 ];
 
 /**

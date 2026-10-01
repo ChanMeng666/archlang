@@ -46,10 +46,12 @@ eaves on the upper storey; and a `component` authored once — `ensuite() { … 
 `place`d three times: twice on the bedroom band, the second with `mirror x` so the pair
 face opposite ways, and once more inside the master suite.
 
-`arch lint` still raises three warnings on it, on purpose: a bathroom reachable only
-through a bedroom, and two bedrooms whose windows don't face the equator side. Every
-room is reachable and every doorway clears — the warnings are left in and named in the
-source as the honest cost of a real site, not something the plan was tuned to hide.
+`arch lint` still raises nine warnings on it, on purpose: a bathroom reachable only
+through a bedroom, two bedrooms whose windows don't face the equator side, and six walks on
+the upper floor — measured from the top of the stair, its only way in — that squeeze to
+640 mm: each bed stands across its own bedroom's door, so bedrooms 2 and 3 are walked into
+through their en-suites' 700 mm doors. Every room is reachable — the warnings are left in
+as the honest cost of a real site, not something the plan was tuned to hide.
 
 <ArchLive :src="EXAMPLES['hillside-villa']" :rows="20" />
 
