@@ -372,13 +372,22 @@ itself a product of carve order, and 8800 is the same rule with the order taken 
 measured truth (C.5). The opt-in overlay moved on 14 files with no fact moving outside the
 hexagon (`test/byte-identity-baseline.ts`).
 
-**Open question for the owner (far-seed stamp).** A carve still writes the connector's clear
-width onto its far seed even when that cell was already walkable (`k === far` in `buildGrid`),
-which overrides the room's own furniture pinch, against "a furniture pinch must stay a pinch".
-`nearestPairs` returns `[a, b]`, so the far seed is always the `between[1]` room's seed: the
-exception is asymmetric in the source order of `between`. The closed-class witness's 740 depends
-on it (dropping the exception reads 700 in every frame and flips that test by design), and so
-does `eval/fidelity-plans/min-bedroom-flat.laundered.arch`'s route bottleneck (M.3). Not changed.
+**Closed: no far-seed stamp, and a room is its floor (owner decisions).** A carve wrote the
+connector's clear width onto its far seed even when that cell was already walkable, which
+overrode the room's own furniture pinch, and only for the `between[1]` room, so it depended on
+source order. Three measured steps. (1) A key route starts, and a room is reached, on its floor:
+the cells walkable before any carve, never doorway cells a carve opened inside its rectangle
+(`test/route-source-floor.test.ts`; the red team's 14000-versus-740 route escape). Corpus:
+`hillside-villa`'s `r_terrace` bottleneck 1140 → 840 plus one accessibility-advisory
+`W_PATH_TOO_NARROW`. (2) With that, every path through a door crosses an opened cell carrying its
+width, so the far-seed stamp (first a replacement, then a minimum) could only cap paths that do
+not use the door, in one source order (a phantom plan read 640 against 700); it is dropped, and
+far seeds keep the room's own clearance. (3) The earlier rejection of dropping it
+(`eval/fidelity-plans/min-bedroom-flat.laundered.arch` 740 → 14000) was real only while routes
+started on opened cells. "No walk or key route is wider than the widest door path it must take"
+is a guard (`test/far-seed-pinch.test.ts`; the open-floor `zones-wings` plan is exempt). The
+front-door and shaft-landing stamps are left as they are: changing them would change their seed
+value (garage doors 2940 → 1300 and 2300; landings capped at 700).
 
 ### E.11 · `float-translation` — facts change under a pure translation — `todo` (circulation half closed by W3b)
 
@@ -899,24 +908,34 @@ Defects, limits and deferred capabilities the numbers/parser/predicates/multi-st
 up and deliberately did not widen into. Each says what was re-run for this entry; where nothing
 was, it says so and names where the observation came from.
 
-### M.1 · Absurd finite magnitudes: a modelling range, and what still runs away — `todo` (owner decision)
+### M.1 · Absurd finite magnitudes: a modelling range — closed (what remains is below)
 
-The number domain is now closed (`E_NON_FINITE`) and huge coordinates no longer crash the spatial
-index, but a finite value far beyond any building can still exhaust memory or print a non-number.
-Proposal for the owner: a catalogued modelling range of 2²⁵ mm (~33.5 km), the bound under which
-ADR 0020 measured plain-double `orient2d` exact (6.5), checked once at resolve. Re-run on the
-integration tip: a `stair … size 1000000000000x3000` compiles in `describe`/`lint` but `arch
-compile` runs out of heap (the stair's `treadCount` drives a loop in
-`src/elements/vertical-glyphs.ts`); a `dim (1e308,0)->(1e308,1e308)` (written out in digits)
-prints `Infinity` into the SVG with no diagnostic. Not reproduced any more on the tip, so not
-part of this item: a wall to `(1e308,0)`, and a door `1e308` wide (on a 10 m wall) or `1e307`
-wide (on that huge wall), which a tree earlier in the round hung or exhausted memory on, now
-`describe`, `lint` and `compile` in about 0.15 s each. (A door wider than its wall raises no
-diagnostic, a 20000 mm door on a 10000 mm wall included, on `main` too. That is V.3, filed
-`won't fix` with the view, although the plan drawing has it as well and will keep it after the
-view is removed.) Also not audited at huge magnitudes: arc and curve segment counts, hatch and
-pattern line counts, dimension tick counts, the label lattice, `W_SCALE_OVERFLOW`; and the
-symmetry report's roof case (a `roof overhang` at 1e306 did not throw when probed).
+Closed by a 2²⁵ mm (~33.5 km) modelling range, the bound under which ADR 0020 measured plain-double
+`orient2d` exact (6.5), and a run cap: `E_OUT_OF_RANGE` (`MODEL_RANGE_MM`, `src/num-format.ts`)
+and `E_RUN_TOO_LONG` (`MAX_RUN_TREADS`, 1,100 treads, about 308 m). Pinned by
+`test/model-range.test.ts`. Re-run here: `stair id=s at (0,0) size 1000000000000x3000 dir up` is
+one `E_OUT_OF_RANGE` ("The geometry of stair "s" reaches 1000000000000 mm, outside the modelling
+range of ±33554432 mm"), where `arch compile` used to run out of heap; an escalator `size
+400000x1200` is `E_RUN_TOO_LONG` (more than 1100 treads at the 280 mm going); a `dim`, furniture,
+fence, outdoor surface, lot line, `north`, hatch scale or `lineWeight` at 1e308 no longer prints
+`Infinity`. A coarse `scale 10` hatch on a small plan still compiles: hatch scale and `lineWeight`
+are held by the tile and pen they draw, not by a fixed cap. A door wider than its wall raises no
+diagnostic (V.3, `won't fix` with the view). Remaining, each its own sub-item:
+
+- (a) The total-area `E_NON_FINITE` branch in `checkNumberDomain` is unreachable from source; it
+  stays as a backstop with no source test.
+- (b) The total drawing size across many elements is not bounded (500 escalators at the cap
+  draw about 0.9 GB); it belongs with M.2's global budget.
+- (c) `describe` and `lint` stop at any resolve error, so huge-magnitude tests no longer reach
+  the grid code: any new grid bound needs an in-range test.
+- (d) The source formatter keeps three decimals (exact while |n|·1000 < 2^53), unchanged: sub-mm values
+  round (a thickness of 1e-300 prints 0).
+- (e) A theme passed through the API (`compile({ themes })`, `opts.theme`) can set a `lineWeight`
+  the source-level check never sees (noted at `CompileOptions.theme`).
+- (f) A plan-level `lineWeight` out of range is reported once per storey page on a multi-storey
+  plan.
+- (g) Drawn annotation primitives (door leaf, glazing, dim ticks) may extend slightly past the
+  range on an accepted plan: only bounds and measures are held.
 
 ### M.2 · A global step budget for element-free nested loops — `todo`
 
@@ -949,8 +968,10 @@ on a line" then measured no circulation room. Consequence, pinned at two cell si
 `blocked` (δ depends on where the wall falls on the walk grid, 0 < δ ≤ one cell: R + δ is
 400 mm for a 100 mm partition on the 100 mm grid, 388 mm with 108 mm cells), where a doorway near a room
 corner or with a threshold point on a grid line used to be measured through a tunnel beside
-it. No shipped example has such a doorway. E.10's far-seed question stays open (front-door
-seeds still walk through eroded cells, and the polygon seed branch takes no seal).
+it. No shipped example has such a doorway. The far-seed question (E.6–E.10) is closed. Front-door
+seeds still walk through eroded cells, and the polygon seed branch takes no seal. The R + δ `blocked`
+reading is kept (owner decision): no one can stand in the doorway, and the old reading was the carve
+artefact.
 
 ### M.4 · Shaft-reached storeys: what the first cut leaves out — `todo`
 
@@ -1144,15 +1165,12 @@ Recorded with reasons in ADR 0022; none was built this round.
 - Interval-graph layering for `W_DIM_OVERLAP`, regular-path queries on the access graph, bare
   component extraction (MDL), a dataset entropy report: possible, no failure evidence yet.
 
-### M.17 · `spec.llm.md` is 13 characters under its prompt-size cap — `todo`
+### M.17 · `spec.llm.md` headroom under its prompt-size cap — closed
 
 `test/llm-spec-drift.test.ts` caps the in-memory `renderLlmSpec()` string below 30,000
-characters. Re-measured on the merged tree: 29,987, so the next sentence anyone adds to the spec
-(or to `examples/attached.arch` / `examples/parametric.arch`, which it embeds verbatim) fails the
-suite. The test's comment said "a measured 29,778"; it now records 29,987. This round's
-correction to the stair line had to be written no longer than the line it replaced. Per the
-test's own rules, trim duplication first (its comment names the `door` line, over 1,600
-characters, as the next lever), then argue any raise.
+characters, and the spec had 13 left. The duplication the test's rules name first was trimmed
+(no language fact removed, token sets compared); the cap is unchanged. Re-measured through the
+test's own `renderLlmSpec(exampleSources())`: 28,843, headroom 1,157.
 
 ### M.18 · `vitest --maxWorkers=2` alone fails on this repo — `todo` (docs)
 

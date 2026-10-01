@@ -5,7 +5,8 @@
 - **Scope:** the number domain and resource bounds of `compile()`, the parser's handling of
   malformed input, the geometric predicates that decide a diagnostic, multi-storey
   reachability and circulation, `diffPlans`, and the eval's statistics. Three new catalogued
-  errors (`E_NON_FINITE`, `E_ELEMENT_LIMIT`, `E_LAYOUT_UNPLACED`); no language syntax change.
+  errors (`E_NON_FINITE`, `E_ELEMENT_LIMIT`, `E_LAYOUT_UNPLACED`) and, by the addendum,
+  `E_OUT_OF_RANGE` and `E_RUN_TOO_LONG`; no language syntax change.
 
 ## Context
 
@@ -96,8 +97,8 @@ reaches an exact comparison is invisible by design; Playwright WebKit on Windows
 
 The inputs found to make `compile()` throw, hang or exhaust memory no longer do, and each
 bound is reported by a catalogued code, never a silent truncation. This is not a proof that
-no input can: absurd finite magnitudes still have known exceptions (a stair 10^12 mm long runs
-out of memory when drawn; a `dim` at 1e308 prints `Infinity`), recorded in backlog M.1.
+no input can: the absurd finite magnitudes first left open here (a stair 10^12 mm long, a `dim`
+at 1e308) are closed by the modelling range in the addendum below; what remains is in backlog M.1.
 
 - **`E_NON_FINITE`**: a literal, an arithmetic result or a derived quantity (an element's
   extent, a room's area, the total area) that leaves the finite doubles; a literal or result is
@@ -114,9 +115,9 @@ out of memory when drawn; a `dim` at 1e308 prints `Infinity`), recorded in backl
   cell index of 2^52 or more is overflow (`src/geometry/grid-index.ts`).
 
 Pinned by `test/non-finite.test.ts`, `test/element-cap.test.ts`, `test/grid-index.test.ts` and
-`test/huge-coordinates.test.ts`. A modelling range (proposed: 2²⁵ mm, the bound under which
-ADR 0020 measured `orient2d` exact) and a global evaluation-step budget are left to the owner
-(backlog M.1, M.2).
+`test/huge-coordinates.test.ts`. A modelling range (2²⁵ mm, the bound under which ADR 0020
+measured `orient2d` exact) was left to the owner and is adopted in the addendum below; a global
+evaluation-step budget is still left to the owner (backlog M.2).
 
 ### 5. A parse consumes the whole file, and recovery is measured
 
@@ -185,10 +186,9 @@ equivalence oracle holding the old implementation verbatim (`test/reroll-findrun
   (`test/carve-inward-walk.test.ts`).
 - **Cost.** One more bound per resource to keep calibrated. The stack budget's table is in
   `src/expr.ts` and goes stale with engines; the rule is what to re-run.
-- **Open** (`docs/backlog.md`, section M): the modelling range and absurd magnitudes, a global
-  step budget, the far-seed stamp, the limits of shaft-walked storeys (a sampled landing probe
-  among them), the corpus oracle's exclusion of `level` plans, and the observations the
-  audit re-verified (formatter precision, half-up grid snap, collation-dependent catalogue
+- **Open** (`docs/backlog.md`, section M): a global step budget, the limits of shaft-walked
+  storeys (a sampled landing probe among them), the corpus oracle's exclusion of `level` plans,
+  and the observations the audit re-verified (formatter precision, half-up grid snap, collation-dependent catalogue
   order, rename and assignment targets, the detour ratio's metric, an occupancy page-order tie,
   `suggestTopology` on upper storeys, an unbounded acute roof mitre).
 
@@ -316,3 +316,26 @@ known only second-hand is not.
 This ADR claims no novelty: every technique above is textbook or published, and where the
 research found no precedent for applying one to floor plans it says only that none was found
 in the search.
+
+## Addendum (2026-10-02): the owner's four decisions
+
+The questions this ADR left to the owner are decided. Each is measured in the cited tests; the
+backlog holds the evidence.
+
+1. **A modelling range of 2²⁵ mm is adopted** (`MODEL_RANGE_MM`, `src/num-format.ts`; the new
+   `E_OUT_OF_RANGE`, which refines §4). It is checked once, after `place` frames and relational
+   placement, and reported once per element, which is dropped together with its openings. North,
+   hatch angle, `grid` and a `paper` plan's scale denominator have derived domains. A wall's hatch
+   `scale` and a theme `lineWeight` are held by the tile and the pen they draw, not by a fixed cap,
+   so a coarse `scale 10` on a house stays valid. A `stair`/`escalator` run of more than 1,100
+   treads (about 308 m, `MAX_RUN_TREADS`) is the new `E_RUN_TOO_LONG`. The exceptions §4 listed are
+   closed; the remaining sub-items are in backlog M.1. Pinned by `test/model-range.test.ts`.
+2. **The far-seed stamp is dropped.** A key route starts, and a room is reached, on its floor
+   (the cells walkable before any carve), so every path through a door crosses an opened cell
+   that carries its width and the stamp could only cap paths that do not use the door. ADR 0008
+   has the three measured steps. The front-door and shaft-landing stamps are unchanged.
+3. **The R + δ `blocked` class stays** (Consequences, the doorway carve): furniture within R + δ
+   of a doorway face leaves the room `blocked`. No one can stand in the doorway, and the old
+   reading was the carve artefact. No code change.
+4. **`spec.llm.md` headroom is restored by trimming provable duplication**, the rule the cap's own
+   test states first, with no language fact removed. The cap stays at 30,000 characters.

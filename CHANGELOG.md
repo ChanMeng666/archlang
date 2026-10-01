@@ -14,9 +14,8 @@ fixtures (`test/byte-identity-baseline.ts`, `test/while-byte-identity-baseline.t
 
 ### Fixed — inputs that made `compile()` throw, overflow the stack or run out of memory
 
-Every input below used to break `compile()` and now returns a diagnostic or a result. This is
-not a guarantee for every finite input: a stair 10^12 mm long still runs out of memory when
-drawn, and a `dim` at 1e308 prints `Infinity` (backlog M.1).
+Every input below used to break `compile()` and now returns a diagnostic or a result. The
+absurd finite magnitudes that remained are closed by the modelling range (see Added below).
 
 - **New `E_NON_FINITE`.** A numeric literal too large to be finite (including past a unit
   suffix and in either half of `WxH`), an arithmetic result that overflows, and a derived
@@ -146,12 +145,28 @@ drawn, and a `dim` at 1e308 prints `Infinity` (backlog M.1).
   `describe().circulation`, with its `widestWayInMm`, and drops its routes. A doorway straight
   along a wall already read this way; one near a room corner, or with a threshold point on a
   grid line, used to be measured through a tunnel beside the doorway with the door's width
-  stamped over the pinch. No shipped example has such a doorway.
+  stamped over the pinch. Kept on review (owner decision): no one can stand in the doorway, and
+  the old reading was the carve artefact. No shipped example has such a doorway.
 - Moved: on `hillside-villa` level 2 the Master Suite's walk bottleneck reads 700 mm, the
   passage's own width, where this carve's artefact would have read 640; its
   `W_PATH_TOO_NARROW` is therefore for its route to the Ensuite, not its walk (see the
   shaft-storey entry below). On level 1 two `--overlay circulation` pinch markers move at the
   same clear width. Every SVG is byte-identical.
+
+### Fixed — circulation reads every door, and only doors, at their width
+
+- A threshold carve stamped its door's clear width on the room cell just past it, erasing a
+  furniture pinch narrower than the door there, and capping a walk through a door it never
+  crossed in one room source order (a room read 640 through an unused 700 mm door, or 700). A
+  door's width now lives only on the cells its carve opens, and the room cell beyond keeps its
+  own clearance.
+- A key route starts on its room's floor, not on the doorway cells a carve opened inside it:
+  `bed → bath` read 14000 mm through an 800 mm door with the bath written first, and 740 with
+  the bedroom first. A room is reached on its floor, not on those doorway cells: `hillside-villa`'s
+  terrace reads 840 mm (was 1140), since its sliding kitchen door opens onto a 700 mm strip behind
+  two sun loungers, and `arch lint --profile accessibility-advisory` gains that walk's
+  `W_PATH_TOO_NARROW`. SVG, `compile().diagnostics` and default `lint()` are unchanged
+  everywhere; `--overlay circulation` moves pinch markers between equal-width cells (ADR 0008).
 
 ### Fixed — eval: `proveInfeasible` no longer sums floors
 
@@ -214,6 +229,12 @@ drawn, and a `dim` at 1e308 prints `Infinity` (backlog M.1).
   Node, Node workers and Chromium, Firefox and WebKit workers, and is the same on every host.
 - **Behaviour change.** An expression or block nested more than 256 deep is an `E_PARSE`.
 
+### Changed — `spec.llm.md` headroom
+
+- `spec.llm.md` is condensed to restore working headroom under its 30,000-character prompt cap
+  (now ~28,840; no language fact removed, token sets compared). The keyword reference's enum
+  bullet lists only the value words the page does not otherwise show.
+
 ### Changed — internal, output byte-identical
 
 - One point-to-segment distance; lint reachability and `suggestTopology` reuse the access graph
@@ -228,11 +249,33 @@ drawn, and a `dim` at 1e308 prints `Infinity` (backlog M.1).
 
 ### Added
 
+- **A modelling range: every coordinate and length within ±33,554,432 mm (2²⁵ mm, about
+  33.5 km).** Checked: each element's bounds and the coordinates and lengths they do not carry
+  (an opening's centre and width, a wall's thickness and arc radii, a dimension's offset, a
+  room's label anchor), plus `axes` positions, `site` boundary vertices and `grid`; the check
+  runs after `place` frames and relational placement. Past it is the new `E_OUT_OF_RANGE`,
+  exactly once per element (its other diagnostics are withdrawn), and the element is dropped
+  together with any opening in it.
+- The settings that scale a drawn length are held by what they draw: a wall's hatch `scale` and a
+  theme `lineWeight` are refused only when the pattern tile or the heaviest pen they produce on
+  that drawing would pass the range (or overflow); a coarse `scale 10` on a house is fine.
+  `north` and hatch `angle` stay within ±2²⁵ degrees, `grid` within the range, and a `paper`
+  plan's `scale` denominator small enough that the sheet stays in range. A theme passed through
+  the API is not held by these source-level checks.
+- A `stair`/`escalator` run drawn with more than 1,100 treads (about 308 m) is the new
+  `E_RUN_TOO_LONG`.
+- This closes the known runaways: a 10¹² mm stair no longer runs `compile` out of memory, and a
+  `dim`, furniture, fence, outdoor surface, lot line, `north`, hatch scale or `lineWeight` at
+  1e308 no longer prints `Infinity`/`NaN`. `arch fmt` writes every literal so it re-parses to
+  the same double, and a `scale` denominator of 1e21 or more is read instead of silently dropped.
+- Semver: only input whose drawing leaves the range, a run over 308 m, or a setting outside its
+  domain newly errors. No shipped plan moves.
 - `verticalReach(levels, grounded, roomReach?)`: an optional third argument makes the fixpoint
   room-aware; without it the result is unchanged. New exported types `StoreyRoomReach` and
   `StoreySeeds`. `RRoom` gains two optional internal fields, `_unplaced` and `_idAuthored`
   (set by the resolver, never rendered or serialised). All additive.
-- New catalogued codes `E_NON_FINITE`, `E_ELEMENT_LIMIT` and `E_LAYOUT_UNPLACED`
+- New catalogued codes `E_NON_FINITE`, `E_ELEMENT_LIMIT`, `E_LAYOUT_UNPLACED`,
+  `E_OUT_OF_RANGE` and `E_RUN_TOO_LONG`
   (`arch explain <CODE>`).
 - `npm run digest:engines` measures cross-engine determinism: the built core runs in Playwright
   Chromium, Firefox and WebKit and each engine's digests are compared with Node's and the pinned
