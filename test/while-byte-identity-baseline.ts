@@ -60,9 +60,11 @@
  * addendum): `hillside-villa`, `townhouse` and `two-storey` re-measured with this test's own
  * digest body. In each, every storey's SVG and `compile().diagnostics` are byte-identical; in
  * `describe()` only the upper storeys' `levels[i].circulation` moved, `null` → a model walked
- * from the arriving stair (hillside-villa level 2; townhouse levels 2 and 3; two-storey level
- * 2); `lint()` gains only `W_PATH_TOO_NARROW` — six on hillside-villa level 2 (640 mm, the
- * en-suites' 700 mm doors and the passage under the flight), none on the other two. Every
+ * from the head of the arriving stair (hillside-villa level 2; townhouse levels 2 and 3;
+ * two-storey level 2); `lint()` gains only `W_PATH_TOO_NARROW`, inserted in rule order —
+ * six on hillside-villa level 2 (640 mm: five 700 mm doors, and the Master Suite's a known
+ * carve artefact on the passage under the flight), none on the other two. hillside-villa's
+ * corrected source comment shifts no default-profile span (every one lies above it). Every
  * value, field by field, is in `./byte-identity-baseline.ts` ("Circulation on storeys reached
  * only by a shaft"). No fixture row moved.
  */
@@ -93,7 +95,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/terrace-row.arch", "9ad5fcc128ecca935fa6fd43a6e02f3ecd762a79dcbcd8d6fe9f8718aa8b696e"],
   ["examples/themed.arch", "9395b6c8962d09e72701690c14ce8e12ef7ae1c9f65a1d4827d5f9734c1fcc4c"],
   ["examples/tiny-house.arch", "62b7975513bb50faa6bef4d976e7229c07015b53615d9044d29b2e703bdc9d01"],
-  ["examples/townhouse.arch", "7b1080fb6c92495c1c6731cc56e456b613175773e037a755a812458da96d9e25"],
+  ["examples/townhouse.arch", "ccbbd3ba42b9c6c1f1af683b933819fb935ed8990576e5db853c283089d822c8"],
   ["examples/transit-hall.arch", "27e02c494de9ec1e43a624a85c6ba1aa91f86b58441016b9d7ed83212c28fd05"],
   ["examples/two-bed.arch", "ee833aac25fb9dcb73179acde49407cf065d9dd3c987a388aa362607cffc19d0"],
   ["examples/two-storey.arch", "728bf52318ca4ddc249276bb41c52a98893649c3b33c5d2c042b16d118c812f8"],

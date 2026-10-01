@@ -674,12 +674,28 @@ approached from opposite ends on the two storeys it joins. An escalator has both
 ends; a lift car its south edge.
 
 A storey with no exterior door of its own is **walked from the runs that arrive on it**: each
-arriving run is an entrance whose walk starts in the row of cells in front of its entry
-edge, seeded at the run's width, and the rooms the doors reach are those walkable from the
-arrival rooms — the same rooms `W_ROOM_UNREACHABLE` starts from. `levels[i].circulation`
-carries the run's id as `entranceId`, and `W_PATH_TOO_NARROW`/`W_CIRCUITOUS_PATH` measure
-that floor as they measure a ground floor. A storey with a front door walks from it,
-whatever shafts land there.
+arriving run is an entrance whose walk starts in the row of cells in front of the edge a
+person steps off at, seeded at the run's width, and the rooms the doors reach are those
+walkable from the arrival rooms — the same rooms `W_ROOM_UNREACHABLE` starts from.
+`levels[i].circulation` carries the run's id as `entranceId`, and
+`W_PATH_TOO_NARROW`/`W_CIRCUITOUS_PATH` measure that floor as they measure a ground floor. A
+storey with a front door — a balcony door included — walks from it, whatever shafts land
+there.
+
+The edge stepped off at is the **head of the flight the person came by**: arriving from the
+storey below, the end opposite where that storey's run is boarded (its arrow's tail), and
+likewise from above. It is not this storey's own tail: on a middle storey whose flight
+climbs on, you arrive at the head of the flight below, not at the foot of the next one. The
+run's halo is lifted there too, so the landing is walkable. An escalator is stepped off at
+that one end only; a lift car at its door side. When the arriving end cannot be told — the
+shaft was first boardable both below and above the storey, or the neighbouring stop is a
+different kind of run — the walk starts in front of the run's own entry edge(s) instead.
+
+The v1 arrow convention limits this. The arrival edge follows the drawn direction of the
+run, not a search for the room, so a flight whose arrival edge lies against the shell wall
+has no walkable cell in front of it: the storey's model then measures nothing, and every
+room is listed under `unmeasured` as `unreachable`. Flip the footprint's authored
+coordinates (or the run's `dir`) so the head opens onto the floor.
 
 ## Freedom — how constrained the plan is
 

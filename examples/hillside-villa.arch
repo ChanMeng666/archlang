@@ -245,7 +245,14 @@ plan "Hillside Villa" {
     # deliberately keeps its ONE door, into the master bedroom only: it sits in the
     # building's far corner with no wall on circulation, and a master ensuite reached only
     # through its own bedroom is the conventional case, not a defect — `arch lint` flags it
-    # (`W_BATH_VIA_BEDROOM`) and this is the one warning this plan leaves in, on purpose.
+    # (`W_BATH_VIA_BEDROOM`) and the plan leaves it in. `arch lint` raises nine warnings in
+    # all: that one; `W_ROOM_NOT_EQUATOR_FACING` on bedrooms 2 and 3, whose only windows face
+    # north; and six `W_PATH_TOO_NARROW` on this floor, walked from the top of the stair.
+    # Five are real 700 mm doors (640 mm clear): each bed's clearance covers its bedroom's
+    # own door, so bedrooms 2 and 3 are walked into through their ensuites, and each
+    # ensuite's way in is one of these 700 mm doors. The Master Suite's 640 mm is a known
+    # artefact of the walk grid (`d_en2_corr`'s width stamped onto one cell of the passage
+    # past the flight), not a door on its way.
     door id=d_en2_corr on en2.wall at 5300 width 700 swing out
     door id=d_en3_corr on en3.wall at 5300 width 700 swing out
 

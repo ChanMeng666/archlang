@@ -2287,8 +2287,10 @@ so a walk only passes where a person really fits (through doors and cased openin
 not through furniture pinches). It is `null` when the plan has no modelled exterior
 entrance — there is nothing to measure a walk from — otherwise a `CirculationModel`. A
 storey with no exterior door that a `stair`/`elevator`/`escalator` reaches from a reachable
-storey is walked from that run instead: its walks start at the landing in front of the run's
-entry edge, and `entranceId` is the run's id (see [Analysis](analysis.md)).
+storey is walked from that run instead: its walks start at the landing at the head of the
+flight a person arrived by, and `entranceId` is the run's id (see [Analysis](analysis.md)).
+The top-level `circulation` repeats `levels[0]`'s, so a plan whose lowest storey is reached
+only by a shaft (a basement) has a shaft-walked top-level model too.
 
 ```ts
 interface CirculationModel {

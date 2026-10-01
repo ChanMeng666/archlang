@@ -360,51 +360,69 @@
  * door that a shaft reaches used to have `circulation: null` while lint's reachability rule
  * already walked it from the room the stair lands in; `computeCirculation` now takes the
  * arriving runs as that storey's entrances (`arrivals`): each walk starts in the row of
- * cells in front of the run's entry edge, seeded at the run's width, and the doors are
- * walked from the arrival rooms. `hillside-villa`, `townhouse` and `two-storey` move — the
- * three examples with such a storey (`garden-house`'s upper floor has its own balcony door,
- * `access.hasEntrance: true`, and does not move). For every storey of all three the SVG and
- * `compile().diagnostics` are byte-identical; the top-level `circulation` (the ground
- * storey, repeated as `levels[0]`) does not move; in `describe()` the ONLY moved field is
- * the upper storeys' `levels[i].circulation`, `null` → the model below. Swept per storey
- * (SVG, `describe()`, `lint()`, `compile().diagnostics`, `lint()` under
- * `accessibility-advisory`) over every example, fixture, recovery-corpus, eval-golden and
- * fidelity plan against `feat/math-robustness`, after a planted label edit was caught by the
- * same sweep: only these three and `test/recovery-corpus/two-storey.arch` (a copy of
- * `two-storey`, no digest pin) moved. `entranceId` is the arriving stair's id; every model
- * has one arrival, so no room carries its own `entranceId`.
+ * cells in front of the edge a person steps off at — the HEAD of the flight they came by,
+ * `oppositeSide(tailEdge(run on the storey they came from))` (`arrivalRuns`), never the
+ * foot of a flight continuing onward — seeded at the run's width, with the run's halo
+ * lifted outside that edge, and the doors are walked from the arrival rooms.
+ * `hillside-villa`, `townhouse` and `two-storey` move — the three examples with such a
+ * storey (`garden-house`'s upper floor has its own balcony door, `access.hasEntrance:
+ * true`, and does not move). For every storey of all three the SVG and
+ * `compile().diagnostics` are byte-identical; in `describe()` the ONLY moved field is the
+ * upper storeys' `levels[i].circulation`, `null` → the model below. The top-level
+ * `circulation` repeats `levels[0]`, so it moves only on a plan whose LOWEST storey is
+ * shaft-reached (a basement reached down from a ground floor); in all three examples
+ * `levels[0]` is the grounded ground floor, so it does not move. Swept per storey (SVG,
+ * `describe()`, `lint()`, `compile().diagnostics`, `lint()` under `accessibility-advisory`)
+ * over every example, fixture, recovery-corpus, eval-golden and fidelity plan against
+ * `feat/math-robustness`, after a planted label edit was caught by the same sweep: only these
+ * three and `test/recovery-corpus/two-storey.arch` (a copy of `two-storey`, no digest pin)
+ * moved. `entranceId` is the arriving stair's id; every model has one arrival, so no room
+ * carries its own `entranceId`.
  *
- *     - `two-storey` level 2 (`stair` 900 × 2600 `dir down`: entered across its top edge,
+ *     - `two-storey` level 2 (`stair` 900 × 2600; the ground flight is `dir up`, boarded at
+ *       its bottom, so you step off at its top edge, y = 1500 — also the upper run's own tail;
  *       seeds at y = 1450, x = 150…950; seed width 900): entranceId `stair`; landing walk
  *       1200, bottleneck 900, detour 1.34; bath 4900 / 700 / 1.14; bed1 4400 / 700 / 1.07;
  *       bed2 7100 / 700 / 1.41; routes bed1 → bath 7900 / 740 / 1.41, bed2 → bath 5200 / 740 /
  *       1.66. The 700 is a one-hop clearance cell (`centreFreedomToClearWidth(1)`), narrower
  *       than any door on the way (740, 840): the landing is the strip between the `gallery`
  *       void (to y = 1300) and the flight's head (y = 1500).
- *     - `townhouse` level 2 (`st` 900 × 3200 `dir up`: entered across its bottom edge, seed
- *       width 900): entranceId `st`; r_landing 2700 / 900 / 1.16; r_bed1 6300 / 740 / 1.44;
- *       r_bath 3000 / 740 / 1.2; r_bed2 4500 / 740 / 1.34; routes r_bed1 → r_bath 7300 / 740 /
- *       2.09, r_bed2 → r_bath 6900 / 740 / 2.12. 740 is each 800 mm door's modeled clear width.
- *     - `townhouse` level 3 (`st` `dir down`: its top edge): entranceId `st`; r_landing 1300 /
- *       900 / 1.32; r_study 3000 / 740 / 1.19; r_bath 5700 / 740 / 1.4; r_master 8000 / 840 /
- *       1.24 (its 900 mm door); route r_master → r_bath 6900 / 740 / 2.12.
- *     - `hillside-villa` level 2 (`stair` 2200 × 1000 `dir down`: landscape, entered across
- *       its LEFT edge, seeds at x = 4850, y = 2750…3650; seed width 1000): entranceId `stair`;
- *       r_bed2 2400 / 640 / 1.39; r_bed3 9000 / 640 / 1.48; en2.room 1300 / 640 / 1; en3.room
- *       7000 / 640 / 1.66; r_master 9900 / 640 / 1.81; en_m.room 10000 / 640 / 1.21; r_landing
- *       3600 / 1000 / 1.38; r_gallery 7500 / 900 / 1.41; routes r_bed2 → en2.room 1100 / 640 /
- *       1.09, r_bed3 → en3.room 2000 / 640 / 1.05, r_master → en_m.room 5500 / 640 / 1.3;
- *       `unmeasured` r_linen `no_threshold` (its door opens onto the flight's flank). 640 is a
- *       700 mm door's clear width: bedrooms 2 and 3 are walked in through their en-suites'
- *       700 mm doors, because each bed's body-radius halo covers the bedroom's own doorway,
- *       which never carves. r_master's 640 is set on the one-cell passage under the flight
- *       (y = 4050), where one cell, (4950, 4050), carries the 640 mm stamp of `d_en2_corr`'s
- *       carve — that cell is the far seed the door's inward walk reached by stepping through
- *       the stair footprint (a pre-existing carve rule; the passage's other cells read 700).
+ *     - `townhouse` level 2 (`st` 900 × 3200; arrived up the ground `dir up` flight, so at its
+ *       TOP edge, y = 2600 — not the bottom edge where this storey's own `dir up` run is
+ *       boarded to climb on; seed width 900): entranceId `st`; r_landing 1300 / 900 / 1.32;
+ *       r_bed1 3000 / 740 / 1.19; r_bath 5700 / 740 / 1.4; r_bed2 8000 / 740 / 1.24; routes
+ *       r_bed1 → r_bath 7300 / 740 / 2.09, r_bed2 → r_bath 6900 / 740 / 2.12 (a route runs room
+ *       to room and does not depend on the entrance). 740 is each 800 mm door's modeled clear
+ *       width.
+ *     - `townhouse` level 3 (arrived up level 2's `dir up` run, so at its top edge — also this
+ *       storey's own `dir down` tail): entranceId `st`; r_landing 1300 / 900 / 1.32; r_study
+ *       3000 / 740 / 1.19; r_bath 5700 / 740 / 1.4; r_master 8000 / 840 / 1.24 (its 900 mm
+ *       door); route r_master → r_bath 6900 / 740 / 2.12.
+ *     - `hillside-villa` level 2 (`stair` 2200 × 1000, landscape; the ground flight is `dir
+ *       up`, boarded at its right end, so you step off at the LEFT edge, x = 4900 — also the
+ *       upper run's own tail; seeds at x = 4850, y = 2750…3650; seed width 1000): entranceId
+ *       `stair`; r_bed2 2400 / 640 / 1.39; r_bed3 9000 / 640 / 1.48; en2.room 1300 / 640 / 1;
+ *       en3.room 7000 / 640 / 1.66; r_master 9900 / 640 / 1.81; en_m.room 10000 / 640 / 1.21;
+ *       r_landing 3600 / 1000 / 1.38; r_gallery 7500 / 900 / 1.41; routes r_bed2 → en2.room
+ *       1100 / 640 / 1.09, r_bed3 → en3.room 2000 / 640 / 1.05, r_master → en_m.room 5500 / 640
+ *       / 1.3; `unmeasured` r_linen `no_threshold` (its door opens onto the flight's flank).
+ *       640 is a 700 mm door's clear width: en2 and en3 are entered by their 700 mm corridor
+ *       doors, en_m by its one 700 mm door `d_enm`, and bedrooms 2 and 3 through their
+ *       en-suites, because each bed's body-radius halo covers the bedroom's own doorway, which
+ *       never carves. r_master's 640 is NOT a door on its way: it is set on the one-cell
+ *       passage under the flight (y = 4050), where one cell, (4950, 4050), carries the 640 mm
+ *       stamp of `d_en2_corr`'s carve — the far seed the door's inward walk reached by stepping
+ *       through the stair footprint (a pre-existing carve rule; the passage's other cells read
+ *       700). The narrow fix (no stamp on a far seed that was already free) was measured over
+ *       the whole corpus and rejected: it also moved
+ *       `eval/fidelity-plans/min-bedroom-flat.laundered.arch` (`circulation.routes[0]`'s
+ *       bottleneck 740 → 14000, the open-room value: there the far-seed stamp is the door's
+ *       only width on the route).
  *
  * `lint()`: no `W_CIRCUITOUS_PATH` (the largest new detour is 2.12, under the 3.0 maximum);
- * new `W_PATH_TOO_NARROW` only, appended per storey after the diagnostics that were already
- * there, every pre-existing diagnostic unchanged and in its order. Default profile (700 mm):
+ * new `W_PATH_TOO_NARROW` only, INSERTED at that rule's place in the rule order of each
+ * storey's list (the old list is a subsequence of the new one, not a prefix), every
+ * pre-existing diagnostic unchanged and in its relative order. Default profile (700 mm):
  * `hillside-villa` level 2 gains six — Bedroom 2, Bedroom 3, the three Ensuites and Master
  * Suite, each "squeezes to 640 mm (60 mm below the 700 mm minimum)"; `townhouse` and
  * `two-storey` gain none. Under `accessibility-advisory` (900 mm, no digest covers it) the
@@ -412,6 +430,14 @@
  * 1, Bathroom, Bedroom 2 at 740, 160 below; level 3 Study and Shower room at 740, Main bedroom
  * at 840, 60 below) and `two-storey` three (level 2 Bath, Bedroom 1, Bedroom 2 at 700, 200
  * below).
+ *
+ * `hillside-villa.arch`'s comment above `d_en2_corr` was corrected in the same change (it said
+ * the plan leaves one warning in; it leaves nine; +590 bytes). Every default-profile
+ * diagnostic's span lies above that comment, so no span moved and neither row moved for it:
+ * both rows were re-measured, with the tests' own digest bodies, to the same values. Under
+ * `accessibility-advisory` (no digest covers it) four of its 29 diagnostics lie below the
+ * comment and their spans shift by exactly 590 bytes, every other field unchanged — case (2).
+ * `repair()` of the edited file differs only in its echoed source text and those offsets.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -442,7 +468,7 @@ export const BASELINE: [string, string][] = [
   ["terrace-row", "d47f75e57df406060420ee7ce6c18f5a7f4250edcf4171b6145df92966076d3f"], // re-measured, see header
   ["themed", "55e8723dd35cc3ec24b73a7bbf8052bea24f1fdaddd6d90012cffb81d7d00057"],
   ["tiny-house", "4530542edaa0793db192ee26cfaa293bc353c3912a5bc42baf4749a5ce5ce010"],
-  ["townhouse", "6a797e9b826f7af2a3d5bca1c229941c146da32ad4353636539e50362ba1e3f4"], // re-measured, see header
+  ["townhouse", "40cfee25070c5bb278b1ffae3b6f044c279be13efd4d4fda405143940fa20e63"], // re-measured, see header
   ["transit-hall", "056a651ef496fa544aabdab8db6b0486ac00b3d4e32da8f8133bc73b6581e2e3"],
   ["two-bed", "ff4ad8858ef6c8fa71a632c9df6c5c489b4661d0ea0b80719f69f0f481c50cd7"],
   ["two-storey", "fe72bee4167641c890d345e936f86157b3d3597726d1acd71fe10525ea700955"], // re-measured, see header
@@ -486,7 +512,7 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["terrace-row", "172aac3cd62b8ccbbdf2d58374fe0535e4657d1344f60c1c7cb825ae3e2a59b8"],
   ["themed", "3644012b9d972af8e0314ce0a210073cc0315127d38a5f6b35220b00c883aff8"],
   ["tiny-house", "63a784b0a353f2a0664dc710ca720364d3b246447972b5bda928c855ea0e18a8"],
-  ["townhouse", "e20ccc3a689d70b3eef61164bd27c0622e02cd73b348dd3a31c7b195a346757a"], // re-measured, see header
+  ["townhouse", "9bc2a2a2c7191ab735d4c31486743f6fad161e556e4fd8f678797afb27a74364"], // re-measured, see header
   ["transit-hall", "cc69ca4464febda4baee441c36b8c2a5f8b1b4b3f794b221ffa1261bb78a800e"],
   ["two-bed", "061698b483472d4cee3801c39a6e1f74070037d82c8ea7efa19906388f24a79a"],
   ["two-storey", "4a32d319784e26993659cfe2eb5b05626bea376f9de7c80f63a3c6e3ff171f03"], // re-measured, see header

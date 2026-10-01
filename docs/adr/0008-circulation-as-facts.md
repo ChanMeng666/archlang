@@ -216,20 +216,39 @@ detours and key routes; no bottleneck, entrance or sealed room); SVG, `lint()` a
 The decision stands; this replaces "`null` when the plan has no modeled exterior entrance" for
 one case. A storey with no exterior door that a `stair`, `elevator` or `escalator` reaches from a
 reachable storey had no circulation facts, while lint's reachability rule already walked it
-from the room the shaft lands in — two rules disagreeing on what an entrance is upstairs. The
-owner's decision is that **the arriving runs are that storey's entrances**:
+from the room the shaft lands in: on such a storey `W_ROOM_UNREACHABLE` had an entrance and
+`W_PATH_TOO_NARROW`/`W_CIRCUITOUS_PATH` had none. The owner's decision is that **the arriving
+runs are that storey's entrances**:
 
-- each run seeds the walk at the row of cells in front of its entry edge (the edge whose halo
-  the grid already lifts, carried through `place` by the run's own tail), multi-source exactly
-  as several front doors are, each seed at the run's width;
+- each run seeds the walk at the row of cells in front of the edge a person steps off at:
+  the **head of the flight they came by** — arriving from below, the end opposite where the
+  storey below boards that run (its tail), likewise from above — never this storey's own
+  tail, which is where a flight continuing onward is boarded. An escalator is stepped off at
+  that one end only; a lift car at its door side. The run's halo is lifted outside that edge,
+  and the edge is read off the run's tail, so it crosses `place`. Where the arriving end
+  cannot be told (first boardable both below and above, or a different kind of run on the
+  arriving side) the run's own entry edges are used. Seeds are multi-source exactly as
+  several front doors are, each at the run's width;
 - the rooms a walk is meaningful for are those the doors reach from the arrival rooms, the
-  same search `W_ROOM_UNREACHABLE` runs, so a landing with no door out gives every other
-  room `no_door_route`;
+  same search `W_ROOM_UNREACHABLE` runs from on that storey, so a landing with no door out
+  gives every other room `no_door_route`;
 - `entranceId` is the run's id (per room only when several runs arrive), and
   `W_PATH_TOO_NARROW`/`W_CIRCUITOUS_PATH` and `arch repair`'s circulation guard read it.
 
-A storey with a front door walks from it whatever shafts land there, so every grounded storey
-and every single-storey plan is byte-identical. Measured on the shipped corpus: `hillside-villa`,
-`townhouse` and `two-storey` move, only in their upper storeys' `levels[i].circulation` (null →
-a model) and in new `W_PATH_TOO_NARROW` warnings; the SVG and `compile().diagnostics` are
-byte-identical. The ledger is in the header of `test/byte-identity-baseline.ts`.
+The two rules still differ on a storey whose only exterior doors open onto a balcony: its
+`access.hasEntrance` is true, so circulation walks from the balcony door, while
+`W_ROOM_UNREACHABLE` starts from the arrival rooms as well as the exterior. A storey with any
+exterior door walks from it, whatever shafts land there, so every such storey and every
+single-storey plan is byte-identical. The top-level `circulation` repeats `levels[0]`, so it
+moves too when the LOWEST storey is shaft-reached (a basement reached down from the ground
+floor); no shipped example has one.
+
+A v1 limit follows from reading the edge off the drawn direction: a flight whose head lies
+against the shell wall has no walkable cell in front of it, and the storey measures nothing
+(every room `unmeasured: unreachable`). A distinct reason would be a schema change; it is not
+made here.
+
+Measured on the shipped corpus: `hillside-villa`, `townhouse` and `two-storey` move, only in
+their upper storeys' `levels[i].circulation` (null → a model) and in new `W_PATH_TOO_NARROW`
+warnings; the SVG and `compile().diagnostics` are byte-identical. The ledger is in the header
+of `test/byte-identity-baseline.ts`.
