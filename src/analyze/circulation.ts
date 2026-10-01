@@ -1438,11 +1438,14 @@ function buildGrid(
   // seed was already walkable, and the room's clearance field just computed above is a
   // constraint on it too: it reads the narrower of the two, so the door still caps every
   // route through it AND a furniture pinch narrower than the door stays a pinch. Replacing
-  // the field there erased such a pinch (backlog E.6–E.10's far-seed question); dropping
-  // the far-seed stamp instead was measured and rejected — where the two rooms' seeds
-  // touch, the far seed is the only cell a carve stamps, and `min-bedroom-flat`'s route
-  // lost its only door cap (740 → 14000; `test/far-seed-pinch.test.ts` holds the corpus to
-  // "no walk is wider than the doors it passes").
+  // the field there erased such a pinch (backlog E.6–E.10's far-seed question). Dropping
+  // the far-seed stamp instead was measured and rejected: a key route seeds EVERY free cell
+  // of its from-room at +Infinity (`addNearestRoute`), the cells a carve opened inside that
+  // room's rectangle included (a cell belongs to the room holding its centre), and a widest
+  // search never reads a source cell's own clearance — so a door whose opened cells all lie
+  // in the from-room is capped only by its far seed. `min-bedroom-flat`'s route bed → bath
+  // lost that cap (740 → 14000). `test/far-seed-pinch.test.ts` holds the corpus to "no walk
+  // or key route is wider than the widest door path it must take".
   for (const [k, cw] of clearAt) g.clearMm[k] = wasFree[k] ? Math.min(cw, g.clearMm[k]!) : cw;
 
   return g;
