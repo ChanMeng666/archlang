@@ -289,7 +289,7 @@ export function arcPieces(arc: Arc): Array<{ center: Point; r: number; start: Po
  *
  * Tessellated — a FILL has to be a polygon for every backend (and for the boolean
  * layer), while the visible FACES stay true arcs. That split is deliberate: a 7.5°
- * chord's sagitta is `r(1−cos 3.75°)` ≈ r/1400, well under a hatch tile.
+ * chord's sagitta is `r(1−cos 3.75°)` ≈ r/467 (19 mm on a 9 m radius), well under a hatch tile.
  */
 export function arcBandRing(arc: Arc, thickness: number): Point[] {
   const half = thickness / 2;

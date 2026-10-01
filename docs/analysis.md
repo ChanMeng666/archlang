@@ -171,10 +171,10 @@ A curve has two truthful descriptions — the circle it is, and a polygon close 
 | The drawn poché fill of a curved wall | **Chordal** — the visible faces stay true arcs |
 
 The chordal ring is inscribed, so it is **conservatively small**: a grid answer never
-claims floor the circle does not have. At 7.5° a chord's sagitta is about `R/1400` — 6 mm on
+claims floor the circle does not have. At 7.5° a chord's sagitta is about `R/467` — 19 mm on
 a 9 m radius — which is well inside the tolerances the circulation rules already work at.
 Where the difference would be visible in a *number a reader trusts*, the exact form is used
-instead; that is why the area is never taken from the ring (a 48-gon is 0.14% short, enough
+instead; that is why the area is never taken from the ring (a 48-gon is 0.29% short, enough
 to move a `toFixed(1)` label).
 
 **One reported fact a curve legitimately lacks.** `adjacent` means "shares a boundary
