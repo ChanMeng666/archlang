@@ -2377,15 +2377,19 @@ names exactly one room on **each** side, is paired **by that label first**; ever
 room/opening/fixture is paired by its resolved id; and a room still unmatched is rescued only
 when its label is unique among the unmatched rooms on both sides. A room paired across two
 different ids is reported under its **after** id. Circulation deltas follow the same room
-pairing.
+pairing. On a multi-storey plan `diffPlans` compares the **lowest storey only**, exactly as
+`describe()`'s top-level `rooms[]` does.
 
 **Noise thresholds** keep sub-perceptual jitter out of the diff: a room counts as *resized* only
 past **0.05 m²** of area drift or **10 mm** on any bbox edge; a circulation change is reported only
 past **250 mm** of walk distance or **50 mm** of pinch width. Differences below these are ignored.
-A room that is measured on one side and sealed by furniture or unmeasured on the other (or
-unmeasured for a different reason) has no `circulation` entry — it has no walk to compare — and
-is reported as a trailing `Walk to …` sentence in `summary` instead, e.g.
-`Walk to bed: 8000 mm (pinch 740 mm) → sealed (widest way in 0 mm)`.
+A room that is measured on one side and blocked by furniture (`circulation.blocked`) or
+unmeasured (`circulation.unmeasured`) on the other — or unmeasured for a different reason — has
+no `circulation` entry, since it has no walk to compare, and is reported as a trailing
+`Walk to …` sentence in `summary` instead, e.g.
+`Walk to bed: 8000 mm (pinch 740 mm) → blocked (widest way in 0 mm)` or
+`Walk to bed: 8000 mm (pinch 740 mm) → unmeasured (no_door_route)`, with the reason code exactly
+as the API spells it.
 
 The **`summary` sentences are stable, rendered strings** — their exact wording is a frozen part of
 the API (downstream UIs display them verbatim), so treat them as presentation, not as a parse

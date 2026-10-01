@@ -147,24 +147,25 @@ function matchRooms(
   return pairs;
 }
 
-/** One room's circulation verdict: measured (`rooms[]`), sealed by furniture (`blocked[]`)
- *  or not measured, with the model's own reason (`unmeasured[]`). */
+/** One room's circulation verdict, named by the `describe().circulation` key it comes from:
+ *  measured (`rooms[]`), blocked by furniture (`blocked[]`) or not measured, with the
+ *  model's own reason code (`unmeasured[]`). */
 type CirculationState =
   | { kind: "measured"; walkMm: number; pinchMm: number }
-  | { kind: "sealed"; wayInMm: number }
+  | { kind: "blocked"; wayInMm: number }
   | { kind: "unmeasured"; reason: string };
 
 function circulationStates(c: NonNullable<SceneSummary["circulation"]>): Map<string, CirculationState> {
   const out = new Map<string, CirculationState>();
   for (const r of c.rooms)
     out.set(r.roomId, { kind: "measured", walkMm: r.walkDistanceMm, pinchMm: r.bottleneckClearWidthMm });
-  for (const r of c.blocked ?? []) out.set(r.roomId, { kind: "sealed", wayInMm: r.widestWayInMm });
+  for (const r of c.blocked ?? []) out.set(r.roomId, { kind: "blocked", wayInMm: r.widestWayInMm });
   for (const r of c.unmeasured ?? []) out.set(r.roomId, { kind: "unmeasured", reason: r.reason });
   return out;
 }
 
 /** Same verdict: both measured (their numbers are `CirculationChange`'s business), both
- *  sealed, or both unmeasured for the same reason. */
+ *  blocked, or both unmeasured for the same reason. */
 function sameVerdict(a: CirculationState, b: CirculationState): boolean {
   if (a.kind === "unmeasured" && b.kind === "unmeasured") return a.reason === b.reason;
   return a.kind === b.kind;
@@ -172,7 +173,7 @@ function sameVerdict(a: CirculationState, b: CirculationState): boolean {
 
 function statePhrase(s: CirculationState, mm: (v: number) => string): string {
   if (s.kind === "measured") return `${mm(s.walkMm)} (pinch ${mm(s.pinchMm)})`;
-  if (s.kind === "sealed") return `sealed (widest way in ${mm(s.wayInMm)})`;
+  if (s.kind === "blocked") return `blocked (widest way in ${mm(s.wayInMm)})`;
   return `unmeasured (${s.reason})`;
 }
 
@@ -301,7 +302,7 @@ export function diffPlans(sourceA: string, sourceB: string, opts: DescribeOption
     for (const a of before.circulation.rooms) {
       const partner = partnerOf.get(a.roomId);
       const b = partner ? afterByRoom.get(partner.id) : undefined;
-      // Not measured on the after side: a state change (sealed/unmeasured), reported below.
+      // Not measured on the after side: a state change (blocked/unmeasured), reported below.
       if (!partner || !b) continue;
       if (
         Math.abs(b.walkDistanceMm - a.walkDistanceMm) > WALK_EPS_MM ||
@@ -317,7 +318,7 @@ export function diffPlans(sourceA: string, sourceB: string, opts: DescribeOption
       }
     }
 
-    // A matched room that is measured on one side and sealed/unmeasured on the other (or
+    // A matched room that is measured on one side and blocked/unmeasured on the other (or
     // unmeasured for a different reason) has no `CirculationChange` — that shape is frozen
     // API and carries two walks, which such a room does not have. It used to vanish from the
     // diff entirely; it is reported here as a sentence built from each side's own verdict

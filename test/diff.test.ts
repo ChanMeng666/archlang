@@ -228,31 +228,32 @@ suite("diffPlans — auto-id rooms pair by unique label", () => {
 });
 
 // ---------------------------------------------------------------------------
-// A room that becomes sealed or unmeasured has no walk on one side, so it cannot be a
+// A room that becomes blocked or unmeasured has no walk on one side, so it cannot be a
 // `CirculationChange` (frozen API, two walks). It used to vanish from the diff; it is now a
-// "Walk to" sentence built from each side's own verdict (`rooms[]`/`blocked[]`/`unmeasured[]`).
+// "Walk to" sentence built from each side's own verdict, worded with the API's own vocabulary
+// (`rooms[]`/`blocked[]`/`unmeasured[]` and the `unmeasured` reason codes).
 // ---------------------------------------------------------------------------
 
-suite("diffPlans — rooms that become sealed or unmeasured", () => {
-  // A wardrobe across the inside of `bed`'s only doorway seals it (circulation.blocked).
-  const sealed = circA.replace(/\n}\s*$/, "\n  furniture wardrobe at (4050,400) size 600x1200 in bed\n}\n");
+suite("diffPlans — rooms that become blocked or unmeasured", () => {
+  // A wardrobe across the inside of `bed`'s only doorway blocks it (circulation.blocked).
+  const blocked = circA.replace(/\n}\s*$/, "\n  furniture wardrobe at (4050,400) size 600x1200 in bed\n}\n");
 
-  it("precondition: the wardrobe seals bed", () => {
-    const c = describePlan(sealed).circulation!;
+  it("precondition: the wardrobe blocks bed", () => {
+    const c = describePlan(blocked).circulation!;
     expect(c.blocked?.map((b) => b.roomId)).toEqual(["bed"]);
     expect(c.rooms.map((r) => r.roomId)).not.toContain("bed");
   });
 
-  it("measured → sealed is reported, and so is the reverse", () => {
-    const fwd = diffPlans(circA, sealed);
+  it("measured → blocked is reported, and so is the reverse", () => {
+    const fwd = diffPlans(circA, blocked);
     expect(fwd.ok).toBe(true);
     expect(fwd.circulation).toEqual([]); // no CirculationChange: the frozen shape needs two walks
     expect(fwd.summary.filter((s) => s.startsWith("Walk to "))).toEqual([
-      "Walk to bed: 8000 mm (pinch 740 mm) → sealed (widest way in 0 mm)",
+      "Walk to bed: 8000 mm (pinch 740 mm) → blocked (widest way in 0 mm)",
     ]);
-    const back = diffPlans(sealed, circA);
+    const back = diffPlans(blocked, circA);
     expect(back.summary.filter((s) => s.startsWith("Walk to "))).toEqual([
-      "Walk to bed: sealed (widest way in 0 mm) → 8000 mm (pinch 740 mm)",
+      "Walk to bed: blocked (widest way in 0 mm) → 8000 mm (pinch 740 mm)",
     ]);
   });
 
@@ -269,7 +270,7 @@ suite("diffPlans — rooms that become sealed or unmeasured", () => {
   });
 
   it("state sentences stay inside the trailing Walk-to block", () => {
-    const d = diffPlans(circA, sealed);
+    const d = diffPlans(circA, blocked);
     const firstWalk = d.summary.findIndex((s) => /^Walk to /.test(s));
     expect(firstWalk).toBeGreaterThanOrEqual(0);
     expect(d.summary.slice(firstWalk).every((s) => /^Walk to /.test(s))).toBe(true);
