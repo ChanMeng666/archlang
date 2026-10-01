@@ -27,7 +27,8 @@ export interface GridBox {
  */
 export const MAX_CELLS_PER_BOX = 1 << 14;
 
-/** Cell indices at or beyond this magnitude cannot be stepped one at a time (2^52). */
+/** Cell indices at or beyond this magnitude (2^52) are treated as unsteppable. Integers up to
+ *  2^53 ARE exactly steppable by `cx++`; 2^52 is a conservative margin below that limit. */
 const MAX_SAFE_CELL = 2 ** 52;
 
 function unsafeCells(x0: number, x1: number, y0: number, y1: number): boolean {
@@ -79,9 +80,9 @@ export class GridIndex<T> {
     // silently; keep dropping it rather than letting overflow return it to every query.
     if (!(Number.isFinite(x0) && Number.isFinite(x1) && Number.isFinite(y0) && Number.isFinite(y1))) return;
     if (x1 < x0 || y1 < y0) return;
-    // Past 2^52 a cell index cannot be stepped (`cx++` stops changing it), so the cell
-    // loop below would spin on one bucket until the array overflows. Such a box is
-    // overflow however few cells it nominally spans.
+    // From 2^53 a cell index cannot be stepped (`cx++` stops changing it), so the cell
+    // loop below would spin on one bucket until the array overflows. Indices from 2^52 up
+    // (a conservative margin) make the box overflow however few cells it nominally spans.
     if (unsafeCells(x0, x1, y0, y1) || !((x1 - x0 + 1) * (y1 - y0 + 1) <= MAX_CELLS_PER_BOX)) {
       this.overflow.push(item);
       return;

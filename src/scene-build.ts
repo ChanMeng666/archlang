@@ -725,7 +725,7 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
         })),
       );
     } else {
-      nodes.push(...rendered);
+      for (const pushed of rendered) nodes.push(pushed);
     }
     // Pushed in ELEMENT order, so a plan with no ground produces exactly the group list
     // (and therefore the bytes) it would with no ground support at all.
@@ -765,7 +765,7 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   // feature was warned about, and it is why the two lists are separate rather than one.
   const wallHatches = hatchesUsed(ir.walls);
   const hatches = hatchesUsed(ir.walls, groundMaterialsUsed(outdoorEls));
-  nodes.push(...lowerWallSet(ir.walls, wallHatches, ctxFor("wall")));
+  for (const pushed of lowerWallSet(ir.walls, wallHatches, ctxFor("wall"))) nodes.push(pushed);
 
   // `dims auto …` — synthesize dimension strings (presentation only; never touches
   // the IR, bounds, describe() or lint()). Every chain sits OUTSIDE the building,
@@ -775,7 +775,7 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
     const dimDef = registry.byKind.get("dim");
     if (dimDef) {
       const dimCtx = ctxFor("dim");
-      for (const dm of synthDims(ir, sizes)) nodes.push(...dimDef.render(dm, dimCtx));
+      for (const dm of synthDims(ir, sizes)) for (const pushed of dimDef.render(dm, dimCtx)) nodes.push(pushed);
     }
   }
 
@@ -869,13 +869,13 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   // geometry each backend still redraws). Lowered AFTER any sheet re-anchoring above, so
   // they are drawn wherever the final chrome layout put them; like the overlays below,
   // they are outside the dimension reach and shift nothing.
-  if (chrome.tables) nodes.push(...sheetTableNodes(chrome.tables, theme, sizes));
+  if (chrome.tables) for (const pushed of sheetTableNodes(chrome.tables, theme, sizes)) nodes.push(pushed);
 
   // Opt-in diagnostic overlays (ADR 0008): appended AFTER all nodes and after chrome
   // layout, so the default Scene (no overlays) is byte-identical and the overlay never
   // shifts the page or chrome. Off by default — never on the shipped-SVG path.
   if (opts.overlays?.includes("circulation")) {
-    nodes.push(...circulationOverlayNodes(ir, theme, sizes));
+    for (const pushed of circulationOverlayNodes(ir, theme, sizes)) nodes.push(pushed);
   }
 
   return {
