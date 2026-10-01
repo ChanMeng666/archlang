@@ -13,24 +13,24 @@ a `fix`). This page is everything you need to author it.
 2. **Origin is top-left; +x goes right, +y goes DOWN** (screen/SVG convention — *not* math y-up).
 3. **Coordinates are `(x, y)` tuples; sizes are `WxH`** (e.g. `4000x3000`) or `<expr> x <expr>` with spaces.
 4. **Doors and windows must lie ON a wall segment** (on its centerline), or you get a
-   `W_DOOR_OFF_WALL` / `W_WINDOW_OFF_WALL` warning.
+   `W_DOOR_OFF_WALL` / `W_WINDOW_OFF_WALL` warning. Attach with `door on <wall> at <pos>` — hosted by construction.
 5. **String interpolation is `"{expr}"`** inside double quotes (e.g. `label "Unit {i}"`).
-6. **`id=` comes FIRST — right after the element keyword, before any category word** (`wall id=w1 exterior …`, `furniture id=b1 bed …`, never `wall exterior id=w1`). Ids are unique; omit `id=` to auto-generate one, and name a thing only when you reference it.
+6. **`id=` comes FIRST — right after the element keyword, before any category word** (`wall id=w1 exterior …`, `furniture id=b1 bed …`; `wall exterior id=w1 …` and `furniture bed id=b1 …` are parse errors). Ids are unique; omit `id=` to auto-generate one, and name a thing only when you reference it.
 7. **Everything is expand-time and pure** — `let`/`for`/`if`/functions all evaluate during compile.
 
 ## Structure
 
 ```arch
 plan "Title" {
-  units mm            # required-ish settings come first
-  grid 50             # snap grid in mm
-  paper A3 landscape  # OPTIONAL sheet: A4|A3|A2|A1|A0, landscape|portrait (landscape default)
-  scale 1:50          # drawing scale — OPERATIVE with `paper`, annotation-only without it
-  north up            # up|down|left|right
-  dims auto all       # OPTIONAL auto-dimensioning instead of hand `dim` lines: overall|rooms|walls|all
-  accTitle "…"        # OPTIONAL a11y name → SVG <title> under `compile --accessible`
-  accDescr "…"        # …and description → <desc>, replacing the derived caption. Both plan-level only (E_ACC_PLACEMENT)
-  height 3000         # OPTIONAL storey floor-to-floor in mm — the VERTICAL DATUM, and it DRAWS NOTHING (a plan is a horizontal cut, so heights move no byte). Overridden per storey (`level <n> height`) then per wall (`wall … height`); mm, never grid-snapped, E_HEIGHT_RANGE outside 0–100000, and an opening's `head` above its wall is E_OPENING_ABOVE_WALL. Defaults: 3000 storey, 2100 door head, 900/2100 window sill/head (900 is GB 50352-2019's residential minimum), host-wall height for a cased opening. `describe --json` reports `heights` (storey_height/elevation/per-wall) + `head`/`sill` on the openings, but ONLY if the source wrote one of these clauses somewhere; `arch manifest`'s `datum` has the defaults either way
+  units mm   # required-ish settings come first
+  grid 50   # snap grid in mm
+  paper A3 landscape   # OPTIONAL sheet: A4|A3|A2|A1|A0, landscape|portrait (landscape default)
+  scale 1:50   # drawing scale — OPERATIVE with `paper`, annotation-only without it
+  north up   # up|down|left|right
+  dims auto all   # OPTIONAL auto-dimensioning instead of hand `dim` lines: overall|rooms|walls|all
+  accTitle "…"   # OPTIONAL a11y name → SVG <title> under `compile --accessible`
+  accDescr "…"   # …and description → <desc>, replacing the derived caption. Both plan-level only (E_ACC_PLACEMENT)
+  height 3000   # OPTIONAL storey floor-to-floor in mm — the VERTICAL DATUM, and it DRAWS NOTHING (a plan is a horizontal cut, so heights move no byte). Overridden per storey (`level <n> height`) then per wall (`wall … height`); mm, never grid-snapped, E_HEIGHT_RANGE outside 0–100000, and an opening's `head` above its wall is E_OPENING_ABOVE_WALL. Defaults: 3000 storey, 2100 door head, 900/2100 window sill/head (900 is GB 50352-2019's residential minimum), host-wall height for a cased opening. `describe --json` reports `heights` (storey_height/elevation/per-wall) + `head`/`sill` on the openings, but ONLY if the source wrote one of these clauses somewhere; `arch manifest`'s `datum` has the defaults either way
   # … elements and scripting …
   title { project "…" drawn_by "…" date "…" }
 }
@@ -50,17 +50,17 @@ reports the result as `sheet`. Big plan? `paper A1` + `dims auto all` is the pro
 ```text
 wall [id=<name>] <category> thickness <mm> [material poche|concrete|brick|insulation|tile|none [scale <n>] [angle <deg>]] [height <mm>] { (x,y) (x,y) … [arc (x,y) radius <mm> [cw|ccw] [major]] … [close] }   # category e.g. exterior/partition. NAME IT (`id=`) if any `door on`/`window on`/`furniture against wall`/`dim radius` will reference it. An unlisted material is W_UNKNOWN_MATERIAL + the default hatch; `scale`/`angle`: either order, each once. `close` makes a loop. An `arc` clause makes THAT edge a circular arc from the PREVIOUS vertex (default: the minor arc turning `ccw` AS DRAWN, bulging left of travel; `cw`/`major` pick the other circle / the long way round; R < chord/2 = E_ARC_RADIUS + a fix supplying the minimum). A closed curve is two arcs. Faces draw as TRUE arcs. Openings work: `on <wall> at <pos>` walks RUN length (an arc contributes R·θ, not its chord) and a door's leaf/swing take the TANGENT there; `furniture … against wall` on an arc = E_FURN_AGAINST (use at+rotate). `height` overrides the storey's — see the `height` setting — and is the ceiling an opening's `head` is held to
 room [id=<name>] at (x,y) size <W>x<H> [label "…" [at (x,y)]] [uses living|kitchen|dining|bedroom|bath|wc|hall|circulation|storage|utility|office|entry|garage …]   # OR relational: room [id=…] (right-of|left-of|below|above) <roomId> [align <edge>] [gap <mm>] size <W>x<H> — align is CROSS-axis: top|middle|bottom after right-of|left-of, left|center|right after below|above (middle=center, both OK); wrong axis = E_ROOM_ALIGN_AXIS +fix, non-edge = E_ROOM_ALIGN. OR POLYGONAL: room [id=…] polygon (x,y) (x,y) (x,y) … — an implicitly-closed SIMPLE polygon (>=3 vertices) instead of at+size: exact shoelace area, label at the CENTROID (override: `label "…" at (x,y)`). A crossing or all-collinear ring errors (E_ROOM_POLY_SELF_INTERSECT/E_ROOM_POLY_DEGENERATE); rectangle-only clauses (relational placement, `furniture … in <poly> anchor|centered`) REFUSE it with E_PLACE_POLY — use `at (x,y)` [+ rotate]. OR CIRCULAR: room [id=…] circle at (cx,cy) radius <mm> — area is EXACT πR² (never the tessellation), reported as `floor_circle`; grids/overlap use a 48-gon ring
-door [id=<name>] [hinged|sliding|barn|bifold|pocket|garage] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>] [hinge left|right|near start|near end] [swing in|out|into <roomId>] [slide left|right] [open <0..1>] [head <mm>]   # `at (x,y)` must sit on a wall; `on <wall> at <pos>` pins it BY CONSTRUCTION (<pos> = an EXPRESSION: mm along the wall, `<expr>%`, or `center`; a `%` ENDS it — parenthesise a modulo) and can never be reported off-wall — prefer it. The trailing `wall <id|category>` pairs with the `at` form ONLY — after `on <wall>` the host is already named, so writing it is a PARSE ERROR. KIND leads; `hinged` (default) is identical to omitting it and is the ONLY kind with a swing arc — the rest sweep nothing, so W_SWING_OBSTRUCTED cannot apply to them. `swing` DIFFERS BY KIND: hinged = which side the leaf sweeps; barn/bifold = which FACE the panel hangs on / folds toward; sliding/pocket/garage take none. `garage` (a sectional/roller door) takes NO clause at all: it parks OVERHEAD, so there is no intermediate `open` position to draw and its projection side is DERIVED from which face has floor, never written. That projection is DASHED, the drawing convention for anything above the cut plane. `hinge` is hinged-only and `slide`/`open` sliding-family-only; a wrong pairing REFUSES (E_DOOR_KIND_CLAUSE), as does any non-hinged kind on an `arc` wall (E_DOOR_KIND_CURVED). `slide` reads along the wall like `hinge`; `open` is DRAWING-only (nothing measured reads it), [0,1] or E_DOOR_OPEN_RANGE. A `pocket` needs its own width + clearance of wall past the slide-side jamb, or W_POCKET_RUN. A jamb closer to a wall CORNER than the wall is thick raises W_DOOR_NEAR_CORNER (arc length on a curve; a free end, a collinear vertex and a tangent junction are not corners). `head` trails everything (see the `height` setting); no `sill` — a doorway starts at the floor
-window [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>] [sill <mm>] [head <mm>]   # placement + `wall` clause exactly as door. `sill`/`head` bound the glazing (see the `height` setting); `sill 0` is legal (floor-length), sill >= head is E_SILL_ABOVE_HEAD
+door [id=<name>] [hinged|sliding|barn|bifold|pocket|garage] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>] [hinge left|right|near start|near end] [swing in|out|into <roomId>] [slide left|right] [open <0..1>] [head <mm>]   # `at (x,y)` must sit on a wall; `on <wall> at <pos>` pins it BY CONSTRUCTION (<pos> = an EXPRESSION: mm along the wall, `<expr>%`, or `center`; a `%` ENDS it — parenthesise a modulo) and can never be reported off-wall — prefer it. The trailing `wall <id|category>` pairs with the `at` form ONLY — after `on <wall>` the host is already named, so writing it is a PARSE ERROR. KIND leads; `hinged` (default) is identical to omitting it and is the ONLY kind with a swing arc — the rest sweep nothing, so W_SWING_OBSTRUCTED cannot apply to them. `swing` DIFFERS BY KIND: hinged = which side the leaf sweeps; barn/bifold = which FACE the panel hangs on / folds toward; sliding/pocket/garage take none. `garage` (a sectional/roller door) takes NO clause at all: it parks OVERHEAD, so there is no `open` position to draw and its projection side is DERIVED from which face has floor, never written. That projection is DASHED (above the cut plane). `hinge` is hinged-only and `slide`/`open` sliding-family-only; a wrong pairing REFUSES (E_DOOR_KIND_CLAUSE), as does any non-hinged kind on an `arc` wall (E_DOOR_KIND_CURVED). `slide` reads along the wall like `hinge`; `open` is DRAWING-only (nothing measured reads it), [0,1] or E_DOOR_OPEN_RANGE. A `pocket` needs its own width + clearance of wall past the slide-side jamb, or W_POCKET_RUN. A jamb closer to a wall CORNER than the wall is thick raises W_DOOR_NEAR_CORNER (arc length on a curve; a free end, a collinear vertex and a tangent junction are not corners). `head` trails everything; no `sill` — a doorway starts at the floor
+window [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>] [sill <mm>] [head <mm>]   # placement + `wall` clause exactly as door. `sill`/`head` bound the glazing; `sill 0` is legal (floor-length), sill >= head is E_SILL_ABOVE_HEAD
 opening [id=<name>] (at (x,y) | on <wall> at <pos>) width <mm> [wall <id|category>] [head <mm>]   # a leaf-less cased opening that still connects the two spaces in the access graph; placement + `wall` clause exactly as door. `head` defaults to the HOST WALL's height (drawn full height), not a constant; no `sill`
 furniture [id=<name>] <category> (at (x,y) | against wall <id|category> [segment <n>] [offset <mm>] [side left|right] | in <roomId> (centered | anchor <a> [flush] [inset <mm>])) [size <W>x<H>] [label "…"] [rotate 0|90|180|270] [in <roomId>]   # `at` size is plan W×H; `against` size is wall-relative along×depth and derives position+rotation (`side` inferred from `in <roomId>`); `rotate` is `at`/`in`-only — an `against` piece's comes FROM the wall (E_FURN_AGAINST; multi-segment wall ⇒ `segment <n>`). These + aliases may omit `size` when `against wall` (catalogued footprint): wc/basin/shower/bathtub/kitchen_sink/counter/stove/fridge/bed/double_bed/nightstand/wardrobe/tv_unit/bookshelf/dishwasher/upper_cabinet/washer/dryer/sofa_l/hedge/bbq/bin/mailbox/ev_charger/shed/bidet/urinal/laundry_sink/water_heater/mirror/range_hood/microwave/bar_counter/bunk_bed/crib/dresser/vanity/fireplace/radiator/sideboard/loveseat/chaise/tv/coat_rack/shoe_cabinet/meeting_table/reception_desk/filing_cabinet/locker/pool_table/treadmill. `anchor <a>` is top-left|top|top-right|left|center|right|bottom-left|bottom|bottom-right; `inset` (default 0) pulls it in from that edge, measured from the room rectangle (a wall CENTERLINE); `flush` measures from the backing wall's inner FACE instead, so `anchor bottom flush` sits on the plaster (it needs an anchored edge: E_FURN_FLUSH on `centered`/`anchor center`)
-dim [faces|clear] (x,y)->(x,y) [offset <mm>] [text "…"]   # a dimension line; `offset` is OPTIONAL (default 300; 0 on the curve forms). Endpoint ORDER + the offset sign choose which side it lands on (the offset runs along the LEFT normal of from→to), so a reversed pair draws it INSIDE the building — `W_DIM_INSIDE`. `faces` pushes each endpoint out onto the wall it runs into (outside-to-outside); `clear` pulls both in to the inner faces (a clear width). Or skip hand dims entirely with the plan-level `dims auto` setting — its `all` mode draws the GB/T openings + axis + overall chains outside every dimensioned facade. CURVES: `dim radius <wallId> [segment <n>]` (an R leader) and `dim diameter <roomId>` (a φ call-out) DERIVE both geometry and text from the named element and also take `[offset <mm>] [text "…"]`; `dims auto` adds one R per distinct arc + one φ per circular room; chains stay off curved facades
+dim [faces|clear] (x,y)->(x,y) [offset <mm>] [text "…"]   # `offset` is OPTIONAL (default 300; 0 on the curve forms). Endpoint ORDER + the offset sign choose which side it lands on (the offset runs along the LEFT normal of from→to), so a reversed pair draws it INSIDE the building — `W_DIM_INSIDE`. `faces` pushes each endpoint out onto the wall it runs into (outside-to-outside); `clear` pulls both in to the inner faces (a clear width). Or skip hand dims entirely with the plan-level `dims auto` setting — its `all` mode draws the GB/T openings + axis + overall chains outside every dimensioned facade. CURVES: `dim radius <wallId> [segment <n>]` (an R leader) and `dim diameter <roomId>` (a φ call-out) DERIVE both geometry and text from the named element and also take `[offset <mm>] [text "…"]`; `dims auto` adds one R per distinct arc + one φ per circular room; chains stay off curved facades
 column [id=<name>] at (x,y) size <W>x<H>
 stair [id=<name>] at (x,y) size <W>x<H> dir up|down [width <mm>]   # a flight: treads, a mid-flight break line, an UP/DN arrow. `at` = footprint TOP-LEFT; the flight runs along the LONG axis; `dir up` is entered at that axis's larger-coordinate end (arrow points N/W), `dir down` at the opposite end (arrow reversed). `dir` is declared per storey. MULTI-STOREY: the SAME id on two `level` blocks is ONE SHAFT — a `describe().vertical` connection: from a room you can reach, it reaches the other storey with no front door (an id on one storey only = `W_STAIR_UNMATCHED`)
-elevator [id=<name>] at (x,y) size <W>x<H>   # a lift shaft: car rectangle + crossed diagonals. No `dir`. Same same-id-on-two-levels shaft identity as `stair`
+elevator [id=<name>] at (x,y) size <W>x<H>   # a lift shaft: car rectangle + crossed diagonals. No `dir`. Same shaft identity as `stair`
 escalator [id=<name>] at (x,y) size <W>x<H> dir up|down   # a moving stair: chevrons along the run + an UP/DN arrow; both narrow ends are entries. Same shaft identity as `stair`
 roof (overhang <mm> [wall <id>] | polygon (x,y) (x,y) (x,y) …)   # the eaves line: ONE dashed outline of what oversails. DRAWING-ONLY — no `describe()` key, no lint rule — though it does grow the page. `overhang` offsets a CLOSED wall ring outward by thickness/2 + <mm>, mitred: the named `wall`, else the plan's one closed `exterior` wall (none/several = E_ROOF_AMBIGUOUS, unknown/unclosed = E_ROOF_WALL, <= 0 = E_ROOF_OVERHANG). REFUSES rather than approximating — an `arc` edge is E_ROOF_CURVED, an offset that crosses itself E_ROOF_SELF_INTERSECT — so write `polygon` instead: the ring verbatim, implicitly closed, >= 3 effective vertices (E_ROOF_POLY_DEGENERATE). Not inside a `component` (E_ROOF_PLACEMENT)
-void [id=<name>] at (x,y) size <W>x<H>   # a hole in THIS storey's floor (stair well, atrium, double-height room): dashed rectangle + both diagonals, `at` = TOP-LEFT. It OBSTRUCTS circulation — you cannot walk across it, though you may stand at its edge — and does NOT reduce the containing room's area; `describe --json`'s `voids[]` gives the extent to subtract. Rectangle-only (E_VOID_SIZE)
+void [id=<name>] at (x,y) size <W>x<H>   # a hole in THIS storey's floor (stair well, atrium, double-height room): dashed rectangle + both diagonals, `at` = TOP-LEFT. It OBSTRUCTS circulation (no walking across it, though you may stand at its edge) and does NOT reduce the containing room's area; `describe --json`'s `voids[]` gives the extent to subtract. Rectangle-only (E_VOID_SIZE)
 outdoor [id=<name>] lawn|planting|paving|deck|gravel|water|driveway|patio|balcony (at (x,y) size <W>x<H> | polygon (x,y) (x,y) (x,y) …) [label "…"] [rail top|bottom|left|right|all|none …]   # GROUND outside the building: a scale-aware material hatch over a tint (L-PLNT/L-SITE/A-FLOR-BALC). NOT a room — absent from `rooms[]`, `totals.floor_area_m2`, `schedule rooms`, the access graph and Plan JSON — and it obstructs NOTHING (you may walk on any of it, water included). Its facts are `describe --json`'s `outdoor[]` + `totals.outdoor_area_m2`, area by exact shoelace on the ring form. `label` draws the name AND the m²; unlabelled ground draws neither. `rail` is `balcony`-only (E_OUTDOOR_RAIL) and rectangle-only (E_OUTDOOR_POLY_DEGENERATE); omitted, it is DERIVED — every edge with no wall one thickness behind it. W_OUTDOOR_OVERLAPS_ROOM covers a surface over a room's floor, W_BALCONY_NO_DOOR a balcony with no opening within a wall thickness. It grows the page, so a site plan wants `paper` (E_OUTDOOR_SIZE, E_OUTDOOR_POLY_SELF_INTERSECT)
 fence [id=<name>] [picket|panel|post] { (x,y) (x,y) … [close] }   # a posted boundary line on L-SITE — dense ticks / a double line / sparse ticks; the style word LEADS and defaults to the first. NOT a thin wall: no thickness, no poché, hosts NO opening, absent from `describe().walls` and the access graph (a gate is deferred by name). It draws, it measures (`fences[]`: `length_mm` + `closed`) and it grows the page. An `arc` edge is E_FENCE_CURVED — write short straight runs
 strip <right|left|down|up> at (x,y) gap <mm> [height|width <mm>] { room [id=<id>] size <main>[x<cross>] [label "…"] [uses …] … }   # a row/column of rooms laid end to end: each room's offset is the running sum of the previous extents + gap, and the shared cross dimension is the strip's height (right/left) or width (down/up). Pure sugar — expands to absolute rooms. Plan-level block only
@@ -91,7 +91,7 @@ site { street north|south|east|west [hemisphere north|south] [boundary (x,y) (x,
 (Elements and plan settings are fully specced above; these are the rest.)
 
 - **Settings / control:** `plan`, `component`, `let`, `theme`, `title`, `style`, `import`, `for`, `if`, `while`, `else`, `set`, `strip`, `level`, `zone`, `place`, `axes`, `schedule`, `legend`, `site`
-- **Enums / values:** `up`, `down`, `left`, `right`, `in`, `out`, `mm`, `true`, `false`, `top`, `middle`, `bottom`, `center`, `centered`, `start`, `end`, `top-left`, `top-right`, `bottom-left`, `bottom-right`, `auto`, `overall`, `rooms`, `walls`, `all`, `cw`, `ccw`, `major`, `hinged`, `sliding`, `barn`, `bifold`, `pocket`, `A4`, `A3`, `A2`, `A1`, `A0`, `landscape`, `portrait`, `living`, `kitchen`, `dining`, `bedroom`, `bath`, `wc`, `hall`, `circulation`, `storage`, `utility`, `office`, `entry`, `south`, `east`, `west`, `none`, `lawn`, `planting`, `paving`, `deck`, `gravel`, `water`, `driveway`, `patio`, `balcony`, `picket`, `panel`, `post`, `garage`
+- **Enums / values not shown above:** `true`
 
 ## CLI loop (how an agent drives it)
 
@@ -99,59 +99,56 @@ Every command takes `--json` (structured result on **stdout**, human messages on
 reads source from a file or stdin (`-`). Exit codes: `0` ok · `1` internal / IO error · `2` user-source error (deterministic — fix it, don't blindly retry) · `3` bad usage.
 
 ```text
-arch compile   # render a plan to SVG/DXF/TXT/PDF/PNG
-arch batch     # render many .arch files in one call, concurrently
-arch md        # render every ```arch block in a Markdown file and rewrite to image links
-arch preview   # render a PNG you can look at (zero-install where the optional binary is present)
-arch watch     # recompile on save (interactive)
+arch compile  # render a plan to SVG/DXF/TXT/PDF/PNG
+arch batch  # render many .arch files in one call, concurrently
+arch md  # render every ```arch block in a Markdown file and rewrite to image links
+arch preview  # render a PNG you can look at (zero-install where the optional binary is present)
+arch watch  # recompile on save (interactive)
 arch validate  # parse + resolve + lint, no render (is it valid & sound?)
 arch describe  # semantic facts: rooms, areas, adjacency, what doors connect
-arch score     # continuous intent satisfaction (satisfied/total) as data — the refine-loop reward
-arch lint      # architectural soundness warnings
-arch ast       # parse only (no resolve/render) and print the span-bearing AST as JSON
+arch score  # continuous intent satisfaction (satisfied/total) as data — the refine-loop reward
+arch lint  # architectural soundness warnings
+arch ast  # parse only (no resolve/render) and print the span-bearing AST as JSON
 arch complete  # completion items in scope at a source byte offset (the LSP completion() core)
-arch fmt       # canonical formatting
-arch repair    # explicit source-to-source corrector (furniture out of walls) + change log
-arch fix       # apply the machine-applicable fix suggestions on a plan's diagnostics (bounded fixpoint)
-arch reroll    # offer a proven-equivalent `for` loop for a repeated statement run
-arch suggest   # advisory topology suggestions as data (door/window statements that resolve reachability/window faults)
+arch fmt  # canonical formatting
+arch repair  # explicit source-to-source corrector (furniture out of walls) + change log
+arch fix  # apply the machine-applicable fix suggestions on a plan's diagnostics (bounded fixpoint)
+arch reroll  # offer a proven-equivalent `for` loop for a repeated statement run
+arch suggest  # advisory topology suggestions as data (door/window statements that resolve reachability/window faults)
 arch manifest  # this document: the whole CLI API as structured data
-arch spec      # print the one-prompt language spec (spec.llm.md)
-arch context   # print the full bundled agent context (spec + workflow + CLI + errors)
-arch new       # scaffold a starter .arch
-arch explain   # look up an error code (cause / fix / example)
+arch spec  # print the one-prompt language spec (spec.llm.md)
+arch context  # print the full bundled agent context (spec + workflow + CLI + errors)
+arch new  # scaffold a starter .arch
+arch explain  # look up an error code (cause / fix / example)
 ```
 
 The flags that matter (the verb list above covers the rest):
 
 ```bash
-arch compile plan.arch -o out.svg --json    # JSON: { ok, diagnostics, summary }.  -f txt = zero-dep ASCII plan
-echo '<source>' | arch compile - --json     # stdin, no temp file
-arch validate plan.arch --strict --json     # ship-gate: --strict fails on warnings too
-arch fix plan.arch --dry-run --json         # preview/apply the machine-applicable diagnostics[].fixes
-arch validate plan.arch --intent brief.json --feedback --json   # gate on a brief's intent contract (miss → exit 2)
-arch score plan.arch --brief brief.json --json                  # satisfied/total — measures, never gates
+arch compile plan.arch -o out.svg --json  # JSON: { ok, diagnostics, summary }.  -f txt = zero-dep ASCII plan
+echo '<source>' | arch compile - --json  # stdin, no temp file
+arch validate plan.arch --strict --json  # ship-gate: --strict fails on warnings too
+arch fix plan.arch --dry-run --json  # preview/apply the machine-applicable diagnostics[].fixes
+arch validate plan.arch --intent brief.json --feedback --json  # gate on a brief's intent contract (miss → exit 2)
+arch score plan.arch --brief brief.json --json  # satisfied/total — measures, never gates
 ```
 
 **Self-correction loop:** compile/validate → if `ok` is false, read each `diagnostics[].fix` (and
-`line`/`col`/`span`), edit the source, recompile. Then `describe --json` to confirm the plan matches
-intent (right room count, areas, adjacency) without rendering an image. **Before shipping, gate with
-`arch validate --strict --json`** — a plan that lint flags
-(furniture through a wall, a fixture blocking a doorway, a room you can't step into, an unreachable
-room, a walk that squeezes too narrow — `W_PATH_TOO_NARROW` — or wanders the long way round —
-`W_CIRCUITOUS_PATH`) cannot pass silently.
+`line`/`col`/`span`), edit the source, recompile. Then `describe --json` to confirm intent (room count,
+areas, adjacency) without rendering an image. **Before shipping, gate with `arch validate --strict --json`**
+— lint flags furniture through a wall, a fixture blocking a doorway, a room you can't step into or
+reach, a walk too narrow (`W_PATH_TOO_NARROW`) or circuitous (`W_CIRCUITOUS_PATH`); none passes silently.
 
 **Place furniture so it's physically sound:** keep every piece inside its room and off the walls
-(don't cross a wall centerline); back plumbing/kitchen fixtures onto a wall rather than guessing an
-`at`; give every room a `door`/`opening`; and leave
-the doorway approach and the door's swing clear.
+(never cross a wall centerline); back plumbing/kitchen fixtures onto a wall rather than guessing an
+`at`; give every room a `door`/`opening`; leave the doorway approach and the door's swing clear.
 
 **Fix topology from facts, not guesses.** `arch repair` corrects furniture but never adds a door or
 window (that is a design choice). When lint reports `W_ROOM_UNREACHABLE`, `W_NO_ENTRANCE`,
 `W_BEDROOM_NO_WINDOW`, or `W_BATH_VIA_BEDROOM`, run `arch suggest --json` — it returns
 ready-to-paste `door`/`window` statements (furniture-aware: a door candidate never opens onto a
-wardrobe) that reference a wall only by a stable ref (an authored id or a unique category) or absolute
-coordinates — never a re-bindable positional auto-id — with a rationale; pick one and insert it. If nothing fits, read
+wardrobe), each with a rationale, referencing a wall only by a stable ref (authored id or unique
+category) or absolute coordinates, never a re-bindable positional auto-id; pick one and insert it. If nothing fits, read
 `describe --json` (`access.rooms[].reachable`, room `bbox`/`adjacent`, building extent =
 min/max of room boxes) and attach the opening yourself — an exterior entrance into a cut-off living
 space beats routing a bath through a bedroom — then re-`repair` and `validate --strict`. See
@@ -163,11 +160,9 @@ SKILL.md for the full recipe.
 | --- | --- |
 | Using metres (`size 4x3`) | Use millimetres (`size 4000x3000`). |
 | Expecting +y to go up | +y goes **down**; a room below another has a larger y. |
-| Door/window floating off its wall | Attach it: `door on <wall> at <pos>` — hosted by construction. |
 | Hand-summing room offsets | Lay the row with `strip`. |
 | Furniture floated at a guessed `at`, or an `inset` hand-computed from a wall thickness | Place it `in <room> anchor <9-point> [flush] [inset]` or `against wall <id>` — closed-form, never names a thickness. |
 | `size 4000` (no height) | Sizes are `WxH`: `size 4000x3000` (or `W x H` with spaces). |
-| `wall exterior id=w1 …`, `furniture bed id=b1 …` | `id=` leads: `wall id=w1 exterior …`, `furniture id=b1 bed …`. After the category it is a parse error. |
 | String math without interpolation | Use `"{expr}"`, e.g. `label "{round(W / 1000)} m"`. Only the built-ins above and your own `let f(…)` are callable — `aream2` is NOT built in. |
 
 ## Worked examples
