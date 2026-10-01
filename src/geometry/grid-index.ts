@@ -63,6 +63,10 @@ export class GridIndex<T> {
     const x1 = this.idx(box.maxX);
     const y0 = this.idx(box.minY);
     const y1 = this.idx(box.maxY);
+    // A NaN/infinite extent or an inverted box occupies no cell and was always dropped
+    // silently; keep dropping it rather than letting overflow return it to every query.
+    if (!(Number.isFinite(x0) && Number.isFinite(x1) && Number.isFinite(y0) && Number.isFinite(y1))) return;
+    if (x1 < x0 || y1 < y0) return;
     if (!((x1 - x0 + 1) * (y1 - y0 + 1) <= MAX_CELLS_PER_BOX)) {
       this.overflow.push(item);
       return;
@@ -120,7 +124,11 @@ export class GridIndex<T> {
    * True when walking the range cell by cell would visit far more cells than exist —
    * a query box that is huge next to the cell size. The range is then answered from the
    * populated buckets instead ({@link populated}), which yields the same buckets in the
-   * same `(cx, cy)` order, so the answer is identical and only the cost is bounded.
+   * same `(cx, cy)` order, so the answer is the same and only the cost is bounded.
+   * (Only OVERFLOW boxes weaken this: they come back after the bucketed items and may be a
+   * looser superset than a cell walk would give, so callers must filter exactly. Joinery's
+   * `dmin` in `contextAt` reads an entry before any such filter — bounded, and no corpus
+   * plan has a box near {@link MAX_CELLS_PER_BOX}.)
    */
   private sparse(x0: number, x1: number, y0: number, y1: number): boolean {
     return !((x1 - x0 + 1) * (y1 - y0 + 1) <= this.bucketCount + 64);

@@ -128,6 +128,16 @@ describe("GridIndex extreme extents", () => {
     expect(seen).toEqual(["wall"]);
   });
 
+  it("still drops a NaN, infinite or inverted box exactly as before", () => {
+    const g = new GridIndex<string>(100);
+    g.insert({ minX: NaN, minY: 0, maxX: 10, maxY: 10 }, "nan");
+    g.insert({ minX: 0, minY: 0, maxX: Infinity, maxY: 10 }, "inf");
+    g.insert({ minX: 500, minY: 0, maxX: 10, maxY: 10 }, "inverted");
+    g.insert({ minX: 0, minY: 0, maxX: 10, maxY: 10 }, "ok");
+    expect(g.queryBox({ minX: 0, minY: 0, maxX: 5, maxY: 5 })).toEqual(["ok"]);
+    expect(g.queryBox({ minX: -1e12, minY: -1e12, maxX: 1e12, maxY: 1e12 })).toEqual(["ok"]);
+  });
+
   it("a huge query box returns the populated buckets in the same order as a cell walk", () => {
     const a = new GridIndex<number>(10);
     const b = new GridIndex<number>(10);

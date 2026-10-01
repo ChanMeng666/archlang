@@ -2558,15 +2558,15 @@ function checkPlanDrawable(elements: ResolvedElement[], diagnostics: Diagnostic[
   }
 }
 
-/** W_ROOM_OVERLAP: a spatial grid restricts the pairwise test to rooms sharing a
- *  cell (~O(n) for distributed plans) instead of all O(n²) pairs. Two rooms
- *  overlap ⟹ their boxes intersect ⟹ they share a cell, so this finds exactly
- *  the same overlaps; pairs are emitted in (a,b) order to keep diagnostics
- *  byte-identical to the former double loop. */
 /** How many overlapping room pairs `W_ROOM_OVERLAP` lists before it only counts. 1000 identical
  *  rooms are 499,500 pairs; a list that long is noise and an unbounded allocation. */
 export const MAX_OVERLAP_PAIRS_LISTED = 200;
 
+/** W_ROOM_OVERLAP: a spatial grid restricts the pairwise test to rooms sharing a
+ *  cell (~O(n) for distributed plans) instead of all O(n²) pairs. Two rooms
+ *  overlap ⟹ their boxes intersect ⟹ they share a cell, so this finds exactly
+ *  the same overlaps; pairs are emitted in (a,b) order to keep diagnostics
+ *  byte-identical to the former double loop (up to {@link MAX_OVERLAP_PAIRS_LISTED}). */
 function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diagnostic[]): void {
   // A room left unplaced carries a (0,0) placeholder, not geometry: testing it would
   // report phantom overlaps (quadratic in a chain) on top of the layout error.
