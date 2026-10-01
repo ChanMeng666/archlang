@@ -691,8 +691,9 @@ with the pinned `test/while-byte-identity-baseline.ts`. Over 86 plans (examples 
 fixtures, recovery corpus, eval goldens and fidelity plans) × 2 payloads (core and `--facts`)
 plus two transcendental probes: 172 of 172 digests identical in every engine and on Node, and
 Node matched all 39 pinned baseline rows. Measured when the harness landed and re-run on the
-tree with every change of this round merged (Node 24.15 in-process; Chromium 153, Firefox 155,
-WebKit 26.6): `status=clean` both times. The nightly `cross-engine` job re-runs it as an
+tree with every change of this round merged: `status=clean` both times. Re-run
+`npm run digest:engines` after an engine or Playwright upgrade; the report names the versions
+it ran. The nightly `cross-engine` job re-runs it as an
 advisory signal (it never fails the night) and reports the first divergence.
 
 Decision: replacing `hypot`/`atan2`/`log2` at the decision sites with `+ − × ÷ √` forms is not
@@ -1029,7 +1030,7 @@ output; it needs a decision and a sweep.
 
 `ERROR_CODES` (`src/error-catalog.ts`) sorts with `localeCompare`, which follows the host's ICU
 collation, not code-unit order; it feeds `docs/error-codes.md`, `llms-full.txt` and `arch
-manifest --json`. Re-run on one Node 24 host (default locale `zh-CN`): `ERROR_CODES` and the
+manifest --json`. Re-run on one host whose default locale is `zh-CN`: `ERROR_CODES` and the
 same severity-grouped sort by code units differ at 15 of 149 positions (ICU puts
 `E_INTENT_NO_DOOR` before `E_INTENT_NOT_ADJACENT`, code units the reverse), so a host with
 another default collation could reorder a generated file. `dataset/dedup.ts` and
@@ -1099,7 +1100,8 @@ imported outside their modules (grep re-run).
 Recorded with reasons in ADR 0022; none was built this round.
 
 - **Egress facts** (an opt-in `describe --facts egress`): room dominators, a door-disjoint second
-  route, max-flow door capacity (which would also settle 6.11's double door), exit separation.
+  route, max-flow door capacity (which would also settle 6.11's double door), the capacity left
+  when any single exit fails (a minimum cut), exit separation.
 - **A daylight-ratio fact**: glazing over floor area from the height datum already authored.
 - **Roof ridges from the straight skeleton**: exact on ½ℤ for an integer rectilinear outline,
   but a roof plan is another drawing and a new language form.
@@ -1107,6 +1109,10 @@ Recorded with reasons in ADR 0022; none was built this round.
 - **A deterministic `ownerOf`** for playground drag-to-edit: which literal owns a coordinate.
 - **Small-scope parameter enumeration**: compile a component over a small parameter grid and
   report the failing values, worded for that range only.
+- **A clear-width decision by squared comparison**: whether a disc of width w passes a gap is
+  exact with squared distances (`BigInt` for large oblique values); the nav grid quantises it.
+- **A per-brief cluster bootstrap for eval comparisons**: an observation only; it does not
+  reopen G1.
 - Interval-graph layering for `W_DIM_OVERLAP`, regular-path queries on the access graph, bare
   component extraction (MDL), a dataset entropy report: possible, no failure evidence yet.
 

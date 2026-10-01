@@ -12,7 +12,11 @@ reachability ([ADR 0022](docs/adr/0022-exact-decisions-and-bounded-input.md)). E
 is named below; anything not named is byte-identical over the shipped examples and test
 fixtures (`test/byte-identity-baseline.ts`, `test/while-byte-identity-baseline.ts`).
 
-### Fixed — no input makes `compile()` throw, hang on its own numbers, or run out of memory
+### Fixed — inputs that made `compile()` throw, overflow the stack or run out of memory
+
+Every input below used to break `compile()` and now returns a diagnostic or a result. This is
+not a guarantee for every finite input: a stair 10^12 mm long still runs out of memory when
+drawn, and a `dim` at 1e308 prints `Infinity` (backlog M.1).
 
 - **New `E_NON_FINITE`.** A numeric literal too large to be finite (including past a unit
   suffix and in either half of `WxH`), an arithmetic result that overflows, and a derived
@@ -40,7 +44,8 @@ fixtures (`test/byte-identity-baseline.ts`, `test/while-byte-identity-baseline.t
   overflow the working integers; and a very large layer no longer overflows the stack when its
   SVG is written.
 - A finite value near the double limit (above about 1e305) prints as a number in a label or the
-  SVG, not as `Infinity`: an interpolated `-1.8e305` read `-Infinity`, now `-1.79829e+305`.
+  SVG, not as `Infinity`: `let v = (377 * -(477 * 1000…0))` (a 1 and 300 zeros) interpolated
+  into a label as `"{v}"` drew `-Infinity` and now draws `-1.79829e+305`.
 
 ### Fixed — the parser no longer drops the rest of a file without saying so
 
@@ -66,8 +71,9 @@ fixtures (`test/byte-identity-baseline.ts`, `test/while-byte-identity-baseline.t
 
 - **Arc radius.** The `arc … radius` check compares endpoints and radius exactly on the
   0.001 mm lattice (integer arithmetic, not `Math.hypot`, which is not correctly rounded). Exact
-  semicircles are no longer refused (`(0,0) arc (3300,5600) radius 3250`, or `(0,0) arc
-  (9.3,12.4) radius 7.75`) and are built exactly: centre on the chord midpoint, sweep π, 24
+  semicircles whose chord `Math.hypot` over-rounds are no longer refused (`(0,0) arc
+  (3300,5600) radius 3250` raised `E_ARC_RADIUS` and now compiles), and an exact tie is built
+  exactly: centre on the chord midpoint, sweep π, 24
   chords (one accepted tie used to be built ~1e-6 mm off-centre with 25). The `E_ARC_RADIUS`
   message's minimum and its fix are the smallest printed radius that passes, also for
   expression endpoints and on a snapping grid; before, it rounded half the chord to the nearest thousandth and often fell

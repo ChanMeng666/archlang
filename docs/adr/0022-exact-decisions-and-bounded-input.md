@@ -94,8 +94,10 @@ reaches an exact comparison is invisible by design; Playwright WebKit on Windows
 
 ### 4. The number domain and every resource bound are catalogued diagnostics
 
-No input makes `compile()` throw, and each bound is reported by a catalogued code, never a
-silent truncation:
+The inputs found to make `compile()` throw, hang or exhaust memory no longer do, and each
+bound is reported by a catalogued code, never a silent truncation. This is not a proof that
+no input can: absurd finite magnitudes still have known exceptions (a stair 10^12 mm long runs
+out of memory when drawn; a `dim` at 1e308 prints `Infinity`), recorded in backlog M.1.
 
 - **`E_NON_FINITE`**: a literal, an arithmetic result or a derived quantity (an element's
   extent, a room's area, the total area) that leaves the finite doubles; a literal or result is
@@ -240,7 +242,7 @@ equivalence oracle holding the old implementation verbatim (`test/reroll-findrun
 
 - **Egress facts** (opt-in `describe --facts egress`): room dominators, a door-disjoint second
   route, integer max-flow door capacity (which would also settle backlog 6.11's double door),
-  exit separation. Fits ADR 0005 as facts, but has no consumer and is nearly constant on houses.
+  the capacity left when any single exit fails (a minimum cut), exit separation. Fits ADR 0005 as facts, but has no consumer and is nearly constant on houses.
 - **A daylight-ratio fact** from the height datum (glazing over floor area); no consumer, and
   the default for an unauthored height is undecided.
 - **Roof ridges from the straight skeleton.** For an integer rectilinear outline the skeleton
@@ -253,6 +255,12 @@ equivalence oracle holding the old implementation verbatim (`test/reroll-findrun
   ambiguous or derived; only a unique owner auto-applied, proven with `diffPlans`).
 - **Small-scope parameter enumeration**: compile a component over a small parameter grid and
   report the exact failing values, worded for that range only.
+- **A clear-width decision by squared comparison**: whether a disc of width w passes a gap is
+  decidable exactly with squared distances (and `BigInt` for large oblique values), where the
+  nav grid quantises it today; no failure has been traced to the quantisation.
+- **A per-brief cluster bootstrap for eval comparisons**: an observation only. Resampling the
+  closed G1 comparison by brief widens its interval to include zero; G1 is not reopened, and the
+  live report's Wilson intervals (§7) are the change this round made for small samples.
 - **Smaller candidates without failure evidence yet**: interval-graph layering for
   `W_DIM_OVERLAP`, regular path queries over the access graph, bare-call component extraction,
   grammar-constrained decoding beyond the GBNF, a certified label point, a dataset entropy
@@ -265,8 +273,8 @@ known only second-hand is not.
 
 - **ECMA-262** (the Number type and `Math` object): the four operations and `Math.sqrt` are
   correctly rounded; the other `Math` functions are implementation-approximated. The engines'
-  own implementations were read: V8's `ieee754.cc`, SpiderMonkey's `Math.cpp`, JavaScriptCore's
-  `MathCommon.h`.
+  own implementations were read: V8's `src/base/ieee754.cc`, SpiderMonkey's `js/src/jsmath.cpp`,
+  JavaScriptCore's `Source/JavaScriptCore/runtime/MathCommon.h`.
 - **Shewchuk**, adaptive-precision geometric predicates, and the `robust-predicates` package
   (Unlicense): considered for §1 and not needed on integer inputs (6.5 above).
 - **Miller**, "Adding Error Bars to Evals" (arXiv 2411.00640), and **Brown, Cai & DasGupta
