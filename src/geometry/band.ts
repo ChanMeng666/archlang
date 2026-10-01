@@ -229,7 +229,10 @@ export class PointInterner {
     // Normalise -0 on the way in so a stored point never carries one.
     const canon: Point = { x: p.x === 0 ? 0 : p.x, y: p.y === 0 ? 0 : p.y };
     let col = this.cells.get(cx);
-    if (!col) this.cells.set(cx, (col = new Map()));
+    if (!col) {
+      col = new Map();
+      this.cells.set(cx, col);
+    }
     const list = col.get(cy);
     const entry = { p: canon, ord: this.next++ };
     if (list) list.push(entry);

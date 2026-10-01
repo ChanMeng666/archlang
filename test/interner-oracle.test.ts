@@ -85,11 +85,13 @@ const coord = fc.oneof(
 );
 const point = fc.record({ x: coord, y: coord });
 // Draw indices into a small pool so sequences revisit earlier registrations and their neighbours.
-const sequence = fc.array(point, { minLength: 1, maxLength: 12 }).chain((pool) =>
-  fc
-    .array(fc.integer({ min: 0, max: pool.length - 1 }), { minLength: 1, maxLength: 60 })
-    .map((ix) => ix.map((i) => ({ ...pool[i]! }))),
-);
+const sequence = fc
+  .array(point, { minLength: 1, maxLength: 12 })
+  .chain((pool) =>
+    fc
+      .array(fc.integer({ min: 0, max: pool.length - 1 }), { minLength: 1, maxLength: 60 })
+      .map((ix) => ix.map((i) => ({ ...pool[i]! }))),
+  );
 
 describe("PointInterner agrees with its string-keyed predecessor", () => {
   it("returns the identical object sequence", () => {
@@ -109,8 +111,21 @@ describe("PointInterner agrees with its string-keyed predecessor", () => {
   });
 
   it("fuses -0 with 0 and NaN with NaN exactly as before", () => {
-    expect(diverges([{ x: 0, y: 0 }, { x: -0, y: -0 }, { x: -0.004, y: 0.004 }])).toBe(-1);
-    expect(diverges([{ x: NaN, y: 1 }, { x: NaN, y: 1 }, { x: 1, y: NaN }, { x: NaN, y: NaN }])).toBe(-1);
+    expect(
+      diverges([
+        { x: 0, y: 0 },
+        { x: -0, y: -0 },
+        { x: -0.004, y: 0.004 },
+      ]),
+    ).toBe(-1);
+    expect(
+      diverges([
+        { x: NaN, y: 1 },
+        { x: NaN, y: 1 },
+        { x: 1, y: NaN },
+        { x: NaN, y: NaN },
+      ]),
+    ).toBe(-1);
     const i = new PointInterner();
     const z = i.get({ x: 0, y: 0 });
     expect(i.get({ x: -0, y: -0 })).toBe(z);
