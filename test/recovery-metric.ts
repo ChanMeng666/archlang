@@ -30,6 +30,15 @@
  *   its first byte — the `room … {` habit, and a `{` alone on a line.
  * - `subToken`: the `dropToken` sample, the token replaced by the non-keyword `zz`
  *   instead of blanked.
+ * - `extraEnd`: one mutant, a second `}` appended after the plan (the doubled-close habit).
+ * - `missingEnd`: one mutant, the plan's final `}` blanked.
+ *
+ * Two-fault classes — a local fault on top of an unbalanced END, because a recovery rule
+ * that reads the brace balance of the whole remaining file is moved by a fault far away:
+ * `extraEnd×dropBrace`, `extraEnd×dropToken`, `extraEnd×insertBrace`,
+ * `missingEnd×dropBrace` (every `}` but the last), `missingEnd×dropToken` and
+ * `missingEnd×insertBrace` — the single-fault mutants of the first class, each with the
+ * end fault applied afterwards.
  */
 
 import type { Statement } from "../src/ast.js";
@@ -113,11 +122,46 @@ export interface ClassResult {
   survival: number;
 }
 
-export const MUTATION_CLASSES = ["dropBrace", "dropToken", "insertBrace", "subToken"] as const;
+export const MUTATION_CLASSES = [
+  "dropBrace",
+  "dropToken",
+  "insertBrace",
+  "subToken",
+  "extraEnd",
+  "missingEnd",
+  "extraEnd×dropBrace",
+  "extraEnd×dropToken",
+  "extraEnd×insertBrace",
+  "missingEnd×dropBrace",
+  "missingEnd×dropToken",
+  "missingEnd×insertBrace",
+] as const;
 export type MutationClass = (typeof MUTATION_CLASSES)[number];
+type LocalClass = "dropBrace" | "dropToken" | "insertBrace" | "subToken";
+
+const extraEnd = (src: string): string => `${src}\n}\n`;
+
+/** The source with its LAST `}` token blanked (the plan's own close, in a clean file). */
+function missingEnd(api: MetricApi, src: string): string {
+  const closes = api.lex(src).tokens.filter((t) => t.type === "rcurly");
+  const last = closes[closes.length - 1];
+  return last ? blank(src, last) : src;
+}
 
 /** The mutants of one class for one source, in source order. */
 export function mutants(api: MetricApi, src: string, cls: MutationClass): string[] {
+  if (cls === "extraEnd") return [extraEnd(src)];
+  if (cls === "missingEnd") return [missingEnd(api, src)];
+  const [end, local] = cls.includes("×") ? (cls.split("×") as [string, LocalClass]) : [undefined, cls as LocalClass];
+  let out = localMutants(api, src, local);
+  // Every `}` but the plan's own: dropping that one too is just `missingEnd`.
+  if (end === "missingEnd" && local === "dropBrace") out = out.slice(0, -1);
+  if (end === "extraEnd") return out.map(extraEnd);
+  if (end === "missingEnd") return out.map((m) => missingEnd(api, m));
+  return out;
+}
+
+function localMutants(api: MetricApi, src: string, cls: LocalClass): string[] {
   if (cls === "insertBrace") {
     const starts = [...new Set(statements(api, src).starts)].sort((a, b) => a - b);
     return starts.map((at) => `${src.slice(0, at)}{ ${src.slice(at)}`);
