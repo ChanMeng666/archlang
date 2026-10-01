@@ -41,7 +41,8 @@ import {
   USE_KINDS,
 } from "./ast.js";
 import type { Expr } from "./expr.js";
-import { closest, parseExpr as parseExprPratt } from "./expr.js";
+import type { ExprTokens } from "./expr.js";
+import { closest, MAX_NEST_DEPTH, parseExpr as parseExprPratt } from "./expr.js";
 import type { Theme } from "./theme.js";
 import { isNumericThemeKey, resolveThemeKey, resolveStyleKey } from "./theme.js";
 import { isDisallowedConfigValue } from "./sanitize.js";
@@ -104,7 +105,7 @@ function parseImpl(src: string, registry: Registry): ParseOutcome {
   const lexDiags: Diagnostic[] = lexErrors.map((e) => ({
     severity: "error" as const,
     message: e.message,
-    code: "E_PARSE",
+    code: e.code ?? "E_PARSE",
     span: e.span,
   }));
 
@@ -123,9 +124,11 @@ function parseImpl(src: string, registry: Registry): ParseOutcome {
 
 class Parser {
   private pos = 0;
+  /** How many `{ … }` statement blocks enclose the cursor (see {@link MAX_NEST_DEPTH}). */
+  private blockDepth = 0;
   public diagnostics: Diagnostic[] = [];
   /** Facade passed to element parse functions (see registry.ts). */
-  private readonly ctx: ParseCtx;
+  private readonly ctx: ParseCtx & Pick<ExprTokens, "report">;
   /** Statement-start keywords for recovery resync — fixed keywords + this
    *  registry's element keywords (so plugin elements resync correctly). */
   private readonly statementStarts: ReadonlySet<string>;
@@ -155,6 +158,7 @@ class Parser {
       parseStringExpr: () => this.parseStringExpr(),
       parseIdOpt: () => this.parseIdOpt(),
       fail: (msg, t) => this.fail(msg, t),
+      report: (code, message, span) => this.diagnostics.push({ severity: "error", message, code, span }),
     };
   }
 
@@ -1219,6 +1223,37 @@ class Parser {
 
   /** Parse a `{ … }` block of body statements (with per-statement recovery). */
   private parseBlockBody(components: Map<string, ComponentDef>, selfName?: string): Statement[] {
+    if (this.blockDepth >= MAX_NEST_DEPTH && this.isType("lcurly")) return this.skipTooDeepBlock();
+    this.blockDepth++;
+    try {
+      return this.parseBlockBodyInner(components, selfName);
+    } finally {
+      this.blockDepth--;
+    }
+  }
+
+  /** A block nested past {@link MAX_NEST_DEPTH}: one `E_PARSE` at its `{`, then the whole
+   *  balanced block is skipped by counting braces — iteratively, so the cost is linear and
+   *  the parser recurses no further however deep the source goes. */
+  private skipTooDeepBlock(): Statement[] {
+    const open = this.next();
+    this.diagnostics.push({
+      severity: "error",
+      message: `Blocks are nested too deeply (limit ${MAX_NEST_DEPTH}); this block was not read`,
+      code: "E_PARSE",
+      span: { start: open.start, end: open.end },
+    });
+    let depth = 1;
+    while (depth > 0 && !this.isType("eof")) {
+      const t = this.next();
+      if (t.type === "lcurly") depth++;
+      else if (t.type === "rcurly") depth--;
+    }
+    if (depth > 0) this.missingClose();
+    return [];
+  }
+
+  private parseBlockBodyInner(components: Map<string, ComponentDef>, selfName?: string): Statement[] {
     this.eat("lcurly");
     const body: Statement[] = [];
     while (!this.isType("rcurly") && !this.isType("eof")) {

@@ -726,7 +726,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `arch explain <CODE>`.
-**96 errors** (abort rendering) · **52 warnings** (advisory; `validate --strict` fails on them too).
+**97 errors** (abort rendering) · **52 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -783,6 +783,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `E_LEVEL_DUP` — Two `level` blocks declare the same storey number. **Fix:** Renumber one of them, or merge the two bodies into a single `level` block.
 - `E_LEVEL_MIX` — A drawable statement sits beside `level` blocks. **Fix:** Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`north`/`site`/`dims`/`title`/`axes`/`schedule`/`legend`), `component`/`import` declarations, and the plan-global `let`/`set` stay outside — they apply to every level.
 - `E_LEVEL_NEST` — `level` used inside a block or component. **Fix:** Move the `level` block out to the plan body. To draw the same content on several storeys, put it in a `component` and call it from each level.
+- `E_NON_FINITE` — A number is too large to be finite. **Fix:** Use a realistic dimension. A plan is measured in millimetres, and a value above about 1e300 is never a building.
 - `E_OPENING_ABOVE_WALL` — An opening's head is above the wall it is cut in. **Fix:** Lower the `head` to the wall's height (the fix does exactly that), or raise the wall with `wall … height`.
 - `E_OPENING_WIDTH` — Opening must have a positive width. **Fix:** Give the opening a positive `width`.
 - `E_OUTDOOR_POLY_DEGENERATE` — An outdoor ring is degenerate, or a balcony was given one. **Fix:** Give the ring at least 3 corners that are not all on one line. For a balcony, use `at (x,y) size WxH`; a polygonal balcony is deferred by name, not supported.
