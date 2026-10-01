@@ -282,13 +282,30 @@ export function sectorIntersectsRect(s: DoorSwing, r: RectXYWH, clearance: numbe
  * one assembly and are clear at any clearance.
  */
 export function swingsCollide(a: DoorSwing, b: DoorSwing, clearance: number): boolean {
+  return swingsCollideAs(a, b, clearance, true);
+}
+
+/**
+ * {@link swingsCollide} for two doors taken as INDEPENDENT: no double-door exemption, so the
+ * clearance applies even between leaves that share a latch jamb. It is a pure function of the
+ * two shapes, so a leaf nested inside a clear one is clear too — the monotonicity the
+ * narrowing hint's bisection needs (`widestClearingWidth`, `src/lint/rules/doors.ts`), which
+ * the exemption breaks: a narrowed leaf can share a latch with a THIRD door at one isolated
+ * width, clear there while every width around it collides. At `clearance = 0` the two
+ * predicates agree (the exemption only lifts a clearance).
+ */
+export function swingsCollideAsIndependent(a: DoorSwing, b: DoorSwing, clearance: number): boolean {
+  return swingsCollideAs(a, b, clearance, false);
+}
+
+function swingsCollideAs(a: DoorSwing, b: DoorSwing, clearance: number, pairsExempt: boolean): boolean {
   // Quick reject: if the hinges are farther apart than the sum of radii + clearance
   // the discs cannot meet.
   const hingeGap = Math.hypot(a.hinge.x - b.hinge.x, a.hinge.y - b.hinge.y);
   if (hingeGap > a.radius + b.radius + clearance) return false;
   // Two leaves of one double door: a clearance between them would be a clearance between a
   // door and itself. (At clearance 0 the pair is clear on its own, by single-point contact.)
-  if (clearance !== 0 && isDoubleDoorPair(a, b)) return false;
+  if (pairsExempt && clearance !== 0 && isDoubleDoorPair(a, b)) return false;
   return sectorsObstruct(a, inflateSwing(b, clearance)) || sectorsObstruct(b, inflateSwing(a, clearance));
 }
 

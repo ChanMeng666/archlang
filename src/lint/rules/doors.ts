@@ -13,6 +13,7 @@ import {
   doorSwing,
   sectorIntersectsRect,
   swingsCollide,
+  swingsCollideAsIndependent,
   type DoorLike,
   type DoorSwing,
   type WallSegment,
@@ -74,14 +75,19 @@ export const swingObstructed: LintRule = {
       /** Is this swing provably clear of every piece and every OTHER door's swing —
        *  including doors earlier in the list, which this rule does not warn about but
        *  which a remedy could newly collide with? The one proof every quoted remedy
-       *  (the hinge flip, the narrowed width) is held to. */
-      const clearOf = (sw: DoorSwing | null): boolean =>
-        sw !== null &&
-        !furniture.some((f) => sectorIntersectsRect(sw, rectOf(f), clr)) &&
-        swings.every((o) => o.d === d || !swingsCollide(sw, o.s, clr));
+       *  (the hinge flip, the narrowed width) is held to. A narrowed leaf is read as an
+       *  independent door ({@link swingsCollideAsIndependent}): it has left any latch it
+       *  shared, and a double door it would form with a third door at one exact width is a
+       *  coincidence the bisection must not land on. */
+      const clearOf =
+        (collide: typeof swingsCollide) =>
+        (sw: DoorSwing | null): boolean =>
+          sw !== null &&
+          !furniture.some((f) => sectorIntersectsRect(sw, rectOf(f), clr)) &&
+          swings.every((o) => o.d === d || !collide(sw, o.s, clr));
       const flipped = d.hinge === "left" ? "right" : "left";
-      const flipClears = clearOf(doorSwing({ ...d, hinge: flipped }));
-      const narrowTo = widestClearingWidth(d, ir.grid, clearOf);
+      const flipClears = clearOf(swingsCollide)(doorSwing({ ...d, hinge: flipped }));
+      const narrowTo = widestClearingWidth(d, ir.grid, clearOf(swingsCollideAsIndependent));
       // The swing as WRITTEN: `door.transform` flips `swing` under a reflecting frame, so a
       // mirrored instance's plan-space swing is the opposite of its source clause.
       const g = frameOf(d);
@@ -146,12 +152,16 @@ function passableDoorWidthMm(rules: LintContext["rules"]): number {
  * not. A narrower leaf's quarter-disc lies inside the wider one's (the radius shrinks by Δ
  * while the hinge moves Δ/2 along the closed leaf, and the cone's vectors sum inside the
  * cone), and so does its disc grown by the swing clearance (radius `r − Δ + c` about a hinge
- * Δ/2 away, inside `r + c`). `swingsCollide` decides exactly on those shapes, so a leaf
- * nested in one clear of every other swing is clear of them too: being clear is monotone in
- * the width and a bisection finds the widest (`test/swing-exact.test.ts` checks it against
- * every width). The
- * width returned is one that was TESTED, never an extrapolation, and every narrower one is
- * nested inside it — which is what the hint's "or less" rests on.
+ * Δ/2 away, inside `r + c`). {@link swingsCollideAsIndependent} decides exactly on those
+ * shapes, so a leaf nested in one clear of every other swing is clear of them too: being
+ * clear is monotone in the width and a bisection finds the widest (`test/swing-exact.test.ts`
+ * checks it against every width). That is why the caller does not grant the double-door
+ * exemption here: with it, a narrowed leaf that happens to share a latch with a third door
+ * is clear at that one width while the widths around it collide, and the bisection could
+ * quote it. (The furniture half, `sectorIntersectsRect`, is a conservative heuristic, not an
+ * exact test; this argument does not cover it.) The width returned is one that was TESTED,
+ * never an extrapolation, and every narrower one is nested inside it — which is what the
+ * hint's "or less" rests on.
  */
 export function widestClearingWidth(
   d: DoorLike,

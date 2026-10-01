@@ -1,7 +1,13 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import type { Point } from "../src/ast.js";
-import { doorSwing, swingsCollide, type DoorLike, type DoorSwing } from "../src/geometry.js";
+import {
+  doorSwing,
+  swingsCollide,
+  swingsCollideAsIndependent,
+  type DoorLike,
+  type DoorSwing,
+} from "../src/geometry.js";
 import { lint } from "../src/index.js";
 import { widestClearingWidth } from "../src/lint/rules/doors.js";
 import { swingsCollideV1 } from "./swing-predicate-v1.js";
@@ -266,6 +272,25 @@ describe("the decision agrees with an independent oracle (polygon clipping + edg
 // ---------------------------------------------------------------------------------------
 // `widestClearingWidth`: a bisection, sound only if being clear is monotone in the width.
 
+/** Every candidate width's verdict, and what a correct search returns: the top of the run of
+ *  clearing widths that starts at the narrowest (so "or less" holds), or null. */
+function bruteForce(d: DoorLike, grid: number, clears: (s: DoorSwing | null) => boolean) {
+  const step = grid > 0 ? grid : 1;
+  const hi = Math.ceil(d.width / step) - 1;
+  const ok: boolean[] = [];
+  for (let k = 1; k <= hi; k++) ok.push(clears(doorSwing({ ...d, width: k * step })));
+  const firstFail = ok.indexOf(false);
+  const monotone = firstFail < 0 || !ok.slice(firstFail).some(Boolean);
+  const top = firstFail < 0 ? hi : firstFail; // k of the last width of the clearing run
+  return { monotone, expected: top >= 1 ? top * step : null };
+}
+
+/** The rule's narrowing proof against swings only: each other door read as independent. */
+const independentOf =
+  (others: DoorSwing[], clr: number) =>
+  (s: DoorSwing | null): boolean =>
+    s !== null && others.every((o) => !swingsCollideAsIndependent(s, o, clr));
+
 describe("the narrowing hint's bisection equals a brute force over every width", () => {
   it("over random doors among 1–3 other swings, on and off a grid, at clearance 0 and 150", () => {
     fc.assert(
@@ -276,21 +301,64 @@ describe("the narrowing hint's bisection equals a brute force over every width",
         fc.constantFrom(0, 50, 100),
         fc.constantFrom(0, 150),
         ([d, others], grid, clr) => {
-          const os = others.map((o) => doorSwing(o)!);
-          const clears = (s: DoorSwing | null): boolean => s !== null && os.every((o) => !swingsCollide(s, o, clr));
-          const step = grid > 0 ? grid : 1;
-          const hi = Math.ceil(d.width / step) - 1;
-          const ok: boolean[] = [];
-          for (let k = 1; k <= hi; k++) ok.push(clears(doorSwing({ ...d, width: k * step })));
-          // Monotone: once a width fails, every wider one fails too.
-          const firstFail = ok.indexOf(false);
-          if (firstFail >= 0 && ok.slice(firstFail).some(Boolean)) return false;
-          const widest = firstFail < 0 ? hi : firstFail; // k of the last clearing width
-          const expected = widest >= 1 ? widest * step : null;
-          return widestClearingWidth(d, grid, clears) === expected;
+          const clears = independentOf(
+            others.map((o) => doorSwing(o)!),
+            clr,
+          );
+          const { monotone, expected } = bruteForce(d, grid, clears);
+          return monotone && widestClearingWidth(d, grid, clears) === expected;
         },
       ),
       { numRuns: 400, seed: 20261001 },
+    );
+  });
+
+  // A narrowed leaf whose far jamb lands EXACTLY on a third door's latch jamb is, at that one
+  // width, a double door with it. With the double-door exemption that width is clear under a
+  // clearance while every width around it collides, and the bisection could quote it: "narrow
+  // to 500 mm or less" with 201–499 mm all colliding. Read as independent doors, it is not.
+  const host = { a: { x: -2000, y: 0 }, b: { x: 8000, y: 0 }, thickness: 100 };
+  const family = [0, 50, 100].flatMap((grid) =>
+    [900, 1000, 1100, 1200].flatMap((dw) =>
+      [600, 700, 800, 900].flatMap((cw) =>
+        [500, 600, 700, 800].filter((pw) => pw < dw).map((pw) => ({ grid, dw, cw, pw })),
+      ),
+    ),
+  );
+
+  it("is exact on the shared-latch family, where the exemption would make it non-monotone", () => {
+    let exemptBreaksIt = 0;
+    for (const { grid, dw, cw, pw } of family) {
+      // `d` at x=1000 hinged left; at width `pw` its far jamb meets C's latch at 1000 + pw/2.
+      const d: DoorLike = { at: { x: 1000, y: 0 }, width: dw, hinge: "left", swing: "in", host };
+      const c = doorSwing({ at: { x: 1000 + pw / 2 + cw / 2, y: 0 }, width: cw, hinge: "right", swing: "in", host })!;
+      const tag = `grid ${grid} d ${dw} C ${cw} latch at width ${pw}`;
+      const exempt = bruteForce(d, grid, (s) => s !== null && !swingsCollide(s, c, 150));
+      if (!exempt.monotone) exemptBreaksIt++;
+      const clears = independentOf([c], 150);
+      const { monotone, expected } = bruteForce(d, grid, clears);
+      expect(monotone, tag).toBe(true);
+      expect(widestClearingWidth(d, grid, clears), tag).toBe(expected);
+    }
+    // The family really does exercise the exemption: with it, every case is non-monotone.
+    expect(exemptBreaksIt).toBe(family.length);
+  });
+
+  it("the lint hint quotes the clearing run, not the isolated shared-latch width", () => {
+    // `d` (1000 mm) overlaps c; narrowed to 500 mm its far jamb sits on c's latch at x=1250.
+    const src = [
+      'plan "latch" {',
+      "  units mm",
+      "  wall w thickness 100 { (-2000,0) (8000,0) }",
+      "  door id=d at (1000,0) width 1000 wall w hinge left swing in",
+      "  door id=c at (1650,0) width 800 wall w hinge right swing in",
+      "}",
+    ].join("\n");
+    const swing = lint(src, { profile: "accessibility-advisory" }).filter((x) => x.code === "W_SWING_OBSTRUCTED");
+    expect(swing).toHaveLength(1);
+    expect(swing[0]!.message).toContain(`door "c"'s swing overlaps it`);
+    expect(swing[0]!.hints).toContain(
+      "Narrowing the door is not a fix here — the leaf would have to drop to 200 mm, under the 960 mm minimum passable width.",
     );
   });
 });
