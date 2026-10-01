@@ -71,12 +71,55 @@ const rad = (deg: number): number => (deg * Math.PI) / 180;
 const deg = (r: number): number => (r * 180) / Math.PI;
 
 /**
- * The smallest radius that can span the chord `a`–`b`: half its length. Below it no
- * circle passes through both endpoints, which is what `E_ARC_RADIUS` reports (and
- * what its machine-applicable fix suggests).
+ * Half the chord `a`–`b`'s length — the geometric minimum radius. Below it no circle
+ * passes through both endpoints, which is what `E_ARC_RADIUS` reports. It is a `hypot`,
+ * so it is for SHOWING the chord, never for deciding: the verdict is
+ * {@link arcRadiusSpans}, and the radius the fix writes is {@link smallestSpanningRadius}.
  */
 export function minArcRadius(a: Point, b: Point): number {
   return Math.hypot(b.x - a.x, b.y - a.y) / 2;
+}
+
+/**
+ * Does a circle of radius `r` reach across the chord `a`–`b`? THE radius predicate —
+ * `4·r² ≥ dx² + dy²`, on squares rather than a `hypot` (see {@link arcFromChord} for the
+ * exactness bound). {@link arcFromChord} decides with it and the `E_ARC_RADIUS` fix
+ * verifies its suggestion with it, so the two cannot disagree. Says nothing about `r ≤ 0`;
+ * callers rule that out first.
+ */
+export function arcRadiusSpans(a: Point, b: Point, r: number): boolean {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  return !(4 * (r * r) < dx * dx + dy * dy);
+}
+
+/**
+ * The smallest radius on the lattice `n · step` (`step` = the precision the fix PRINTS,
+ * or the plan grid when one snaps the radius) that the resolver will accept for the chord
+ * `a`–`b` — what `E_ARC_RADIUS`'s machine-applicable fix writes and its message quotes.
+ *
+ * `effective` maps a candidate to the radius the resolver will actually test once the fix
+ * is applied (printed, re-parsed, grid-snapped), and every candidate is checked through
+ * {@link arcRadiusSpans} — never trusted from the `hypot` it starts at. Rounding half the
+ * chord to the NEAREST printed unit (what the fix used to do) undershoots about half the
+ * time, so applying the fix raised the same error again. The `hypot` start is within an
+ * ulp or two of the true half-chord, so each walk below takes a step or two at most; both
+ * are bounded so a pathological `effective` cannot spin.
+ */
+export function smallestSpanningRadius(
+  a: Point,
+  b: Point,
+  step: number,
+  effective: (r: number) => number = (r) => r,
+): number {
+  const accepts = (n: number): boolean => {
+    const r = effective(n * step);
+    return r > 0 && arcRadiusSpans(a, b, r);
+  };
+  let n = Math.max(1, Math.ceil(minArcRadius(a, b) / step));
+  for (let i = 0; i < 4 && n > 1 && accepts(n - 1); i++) n--;
+  for (let i = 0; i < 64 && !accepts(n); i++) n++;
+  return n * step;
 }
 
 /**
@@ -115,7 +158,7 @@ export function arcFromChord(a: Point, b: Point, r: number, dir: ArcDir, major: 
   if (!(len > 0) || !(r > 0)) return null;
   const r2 = r * r;
   const chord2 = dx * dx + dy * dy;
-  if (4 * r2 < chord2) return null;
+  if (!arcRadiusSpans(a, b, r)) return null;
   const chord = 4 * r2 === chord2 ? 2 * r : len;
   const half = chord / 2;
   // Clockwise keeps the centre on the RIGHT of travel; `major` swaps to the other

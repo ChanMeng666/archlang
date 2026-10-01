@@ -9,7 +9,7 @@ import type { SceneNode } from "../scene.js";
 import type { RWall } from "../ir.js";
 import { segmentFaceExtremes, segmentsOfWall } from "../geometry.js";
 import type { Arc } from "../geometry/arc.js";
-import { arcExtremes, arcFromChord, minArcRadius } from "../geometry/arc.js";
+import { arcExtremes, arcFromChord, minArcRadius, smallestSpanningRadius } from "../geometry/arc.js";
 import { PointInterner, wallBand } from "../geometry/band.js";
 import { DEFAULT_MATERIAL, hatchesUsed, isKnownMaterial, KNOWN_MATERIALS } from "../hatches.js";
 import { lowerWallSet } from "../wall-lowering.js";
@@ -311,12 +311,21 @@ function resolveArcs(n: WallNode, id: string, points: Point[], ctx: ResolveCtx):
     const r = ctx.snap(rv) || rv;
     const arc = arcFromChord(a, b, r, spec.dir ?? "ccw", spec.major === true);
     if (!arc) {
-      const min = minArcRadius(a, b);
+      // `half` is shown (the chord); `min` is what the fix writes: the smallest radius at
+      // the printed precision — or on the grid, when the plan snaps radii — that passes the
+      // SAME predicate once printed, re-parsed and snapped, so applying it always clears
+      // this error (rounding `half` to nearest used to fail about half the time).
+      const half = minArcRadius(a, b);
+      const printed = (v: number): number => {
+        const p = Number(fmt3(v));
+        return ctx.snap(p) || p;
+      };
+      const min = half > 0 ? smallestSpanningRadius(a, b, ctx.grid >= 0.001 ? ctx.grid : 0.001, printed) : 0;
       ctx.diag({
         severity: "error",
         message:
           r > 0
-            ? `Wall "${id}" has an arc edge of radius ${fmt3(r)} spanning a ${fmt3(min * 2)} mm chord — no circle of that radius passes through both endpoints (the minimum is ${fmt3(min)})`
+            ? `Wall "${id}" has an arc edge of radius ${fmt3(r)} spanning a ${fmt3(half * 2)} mm chord — no circle of that radius passes through both endpoints (the minimum is ${fmt3(min)})`
             : `Wall "${id}" has an arc edge with a non-positive radius`,
         code: "E_ARC_RADIUS",
         span: spec.span ?? n.span,

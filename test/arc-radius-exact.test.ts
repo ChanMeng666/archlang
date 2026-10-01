@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe as suite, expect, it, vi } from "vitest";
-import { compile } from "../src/index.js";
+import { applyFixes, compile } from "../src/index.js";
 import { parse } from "../src/parser.js";
 import { resolve } from "../src/ir.js";
 import { arcFromChord, arcSteps, arcTessellate } from "../src/geometry/arc.js";
@@ -200,5 +200,98 @@ suite("arc radius — property over Pythagorean triples × k", () => {
         expect(arcErrors(wallSrc(O, b, (c * k) / 2)), `k=${k}`).toBe(0);
         expect(arcErrors(wallSrc(O, b, (c * k) / 2 - 1)), `k=${k}`).toBe(1);
       }
+  });
+});
+
+suite("arc radius — the `arc-radius-min` fix always clears the error", () => {
+  // The fix used to write `fmt3(hypot / 2)` — half the chord rounded to the NEAREST
+  // thousandth — which lands below the true minimum about half the time on an irrational
+  // half-chord, so `arch fix` re-raised the error it had just "fixed". It now writes the
+  // smallest printed radius that passes the resolver's own predicate. Checked here in
+  // EXACT BigInt arithmetic on the printed text: S (in thousandths) spans, S − 1 does not
+  // — i.e. never more than one printed unit above the true half-chord.
+  const thousandths = (s: string): bigint => {
+    const [i = "0", f = ""] = s.replace("-", "").split(".");
+    const v = BigInt(i + f.padEnd(3, "0"));
+    return s.startsWith("-") ? -v : v;
+  };
+  const spansExact = (S: bigint, dx: number, dy: number): boolean =>
+    4n * S * S >= 1_000_000n * (BigInt(dx) * BigInt(dx) + BigInt(dy) * BigInt(dy));
+
+  /** Compile `src`, take its one `E_ARC_RADIUS`, apply the fix, and return the radius it wrote. */
+  const applyArcFix = (src: string): string => {
+    const d = compile(src, { noCache: true }).diagnostics.filter((x) => x.code === "E_ARC_RADIUS");
+    expect(d, src).toHaveLength(1);
+    const fix = d[0]!.fixes?.find((f) => f.fixId === "arc-radius-min");
+    expect(fix, src).toBeDefined();
+    const fixed = applyFixes(src, [fix!]).output;
+    expect(arcErrors(fixed), `${src}\n→\n${fixed}`).toBe(0);
+    const written = /radius (-?[\d.]+)/.exec(fixed.slice(fixed.indexOf("arc (")))![1]!;
+    // Message, hint and fix quote one number.
+    expect(d[0]!.message).toContain(`the minimum is ${written})`);
+    expect(d[0]!.hints?.[0]).toBe(`The radius must be at least half the chord: ${written}.`);
+    return written;
+  };
+
+  // Seeded, so a failure names a reproducible case.
+  let seed = 0x5eed1234;
+  const rnd = (): number => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = seed;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const ri = (lo: number, hi: number): number => lo + Math.floor(rnd() * (hi - lo + 1));
+
+  it("random integer chords (any span, any quadrant): the fix clears, and is the smallest printed radius", () => {
+    let n = 0;
+    for (let i = 0; i < 400; i++) {
+      const span = [100, 1000, 30000, 200000][i % 4]!;
+      const a = { x: ri(-20000, 20000), y: ri(-20000, 20000) };
+      let dx = 0;
+      let dy = 0;
+      while (dx === 0 && dy === 0) {
+        dx = ri(-span, span);
+        dy = ri(-span, span);
+      }
+      const b = { x: a.x + dx, y: a.y + dy };
+      const tooSmall = Math.max(1, Math.floor(Math.hypot(dx, dy) / 4));
+      const S = thousandths(applyArcFix(wallSrc(a, b, tooSmall, i % 2 ? " cw" : " ccw major")));
+      expect(spansExact(S, dx, dy), `${dx},${dy}`).toBe(true);
+      expect(spansExact(S - 1n, dx, dy), `${dx},${dy}`).toBe(false);
+      n++;
+    }
+    expect(n).toBe(400);
+  });
+
+  it("Pythagorean chords × k: the fix writes exactly c·k/2 (an exact tie), whichever way hypot rounds", () => {
+    for (const [p, q, c] of [
+      [3, 4, 5],
+      [33, 56, 65],
+      [20, 21, 29],
+      [7, 24, 25],
+    ] as const)
+      for (let k = 1; k <= 1000; k += k < 20 ? 1 : 53) {
+        const written = applyArcFix(wallSrc(O, { x: p * k, y: q * k }, 1));
+        expect(Number(written), `k=${k}`).toBe((c * k) / 2);
+      }
+  });
+
+  it("on a snapping grid the fix writes a grid multiple the snap keeps, and it still clears", () => {
+    // `grid 100` snaps the radius too: a 3 dp minimum such as 3535.534 snapped DOWN to 3500
+    // and failed again. The fix walks the grid lattice instead, through the same snap.
+    for (const [dx, dy] of [
+      [5000, 5000],
+      [7000, 3100],
+      [12300, 6700],
+    ] as const) {
+      const src = `plan "p" {\n  grid 100\n  wall id=w exterior thickness 200 { (0,0) arc (${dx},${dy}) radius 100 }\n}\n`;
+      const written = Number(applyArcFix(src));
+      expect(written % 100, `${dx},${dy}`).toBe(0);
+      // The smallest grid multiple that spans.
+      expect(4 * written * written >= dx * dx + dy * dy).toBe(true);
+      expect(4 * (written - 100) ** 2 < dx * dx + dy * dy).toBe(true);
+    }
   });
 });
