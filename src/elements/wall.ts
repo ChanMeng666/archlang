@@ -315,12 +315,16 @@ function resolveArcs(n: WallNode, id: string, points: Point[], ctx: ResolveCtx):
       // the printed precision — or on the grid, when the plan snaps radii — that passes the
       // SAME predicate once printed, re-parsed and snapped, so applying it always clears
       // this error (rounding `half` to nearest used to fail about half the time).
+      // The fix also rewrites the end point as printed (`fmt3`), so the minimum is solved
+      // for THAT chord — the one the resolver will see after the fix — not the authored one
+      // (an expression end point can carry more than 3 decimals).
       const half = minArcRadius(a, b);
+      const bFixed = ctx.snapPt({ x: Number(fmt3(b.x)), y: Number(fmt3(b.y)) });
       const printed = (v: number): number => {
         const p = Number(fmt3(v));
         return ctx.snap(p) || p;
       };
-      const min = half > 0 ? smallestSpanningRadius(a, b, ctx.grid >= 0.001 ? ctx.grid : 0.001, printed) : 0;
+      const min = half > 0 ? smallestSpanningRadius(a, bFixed, ctx.grid >= 0.001 ? ctx.grid : 0.001, printed) : 0;
       ctx.diag({
         severity: "error",
         message:

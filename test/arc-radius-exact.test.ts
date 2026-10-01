@@ -9,12 +9,12 @@ import type { SceneNode } from "../src/scene.js";
 import { pathArcs } from "./path-prim.js";
 
 /**
- * The `arc … radius R` validity test is decided on exact squared terms, `4·r² < dx² + dy²`,
- * never on `Math.hypot`, which V8 does not round correctly: `Math.hypot(3300, 5600)` is
- * `6500.000000000001`, so testing `r < hypot / 2` refused an exact semicircle (chord 6500,
- * radius 3250) with `E_ARC_RADIUS`. Integer inputs keep every square below 2^53, so the
- * verdict here is exact, and the construction reads the same squares, so an accepted tie
- * builds a real semicircle rather than a NaN centre.
+ * The `arc … radius R` validity test is decided EXACTLY — `4·R²` against `DX² + DY²` in
+ * BigInt, on endpoints and radius quantised to 0.001 mm — never on `Math.hypot`, which V8
+ * does not round correctly (`Math.hypot(3300, 5600)` is `6500.000000000001`, so testing
+ * `r < hypot / 2` refused an exact semicircle), nor on float squares, which flip decimal
+ * semicircles the same way (`(9.3, 12.4)` squares to `240.25000000000003` against
+ * `4 · 7.75² = 240.25`). An accepted tie builds a real semicircle rather than a NaN centre.
  */
 
 const wallSrc = (a: Point, b: Point, r: number, tail = ""): string =>
@@ -139,7 +139,7 @@ suite("arc radius — property over Pythagorean triples × k", () => {
     ["cw", true],
   ] as const;
 
-  it("radius exactly chord/2 is always accepted and is the exact semicircle; chord/2 − ε always refused", () => {
+  it("radius exactly chord/2 is always accepted and is the exact semicircle; one 0.001 mm quantum below always refused", () => {
     let accepted = 0;
     for (const [p, q, c] of triples)
       for (const k of KS)
@@ -161,10 +161,15 @@ suite("arc radius — property over Pythagorean triples × k", () => {
               expect(arc, `${JSON.stringify({ a, b, half, dir, major })}`).not.toBeNull();
               expect(arc!.center).toEqual({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
               expect(Math.abs(arc!.sweep)).toBe(Math.PI);
-              // ε = one ulp below, and a whole millimetre below: both describe no circle.
-              const below = half - half * Number.EPSILON;
-              expect(arcFromChord(a, b, below, dir, major)).toBeNull();
+              // One lattice quantum (0.001 mm) below, and a whole millimetre below: no circle.
+              expect(arcFromChord(a, b, half - 0.001, dir, major)).toBeNull();
               expect(arcFromChord(a, b, half - 1, dir, major)).toBeNull();
+              // One ULP below is under the 0.0005 mm resolution: decided as the tie, and
+              // built through the clamps — a finite semicircle, never NaN.
+              const ulp = arcFromChord(a, b, half - half * Number.EPSILON, dir, major);
+              expect(ulp).not.toBeNull();
+              expect(Number.isFinite(ulp!.center.x) && Number.isFinite(ulp!.center.y)).toBe(true);
+              expect(Math.abs(Math.abs(ulp!.sweep) - Math.PI)).toBeLessThan(1e-6);
               accepted++;
             }
           }
@@ -293,5 +298,75 @@ suite("arc radius — the `arc-radius-min` fix always clears the error", () => {
       expect(4 * written * written >= dx * dx + dy * dy).toBe(true);
       expect(4 * (written - 100) ** 2 < dx * dx + dy * dy).toBe(true);
     }
+  });
+
+  it("expression end points with more than 3 decimals: the fix still clears", () => {
+    // The fix rewrites the end point as printed (3 dp), which moves the chord of an
+    // expression end point such as `20000/7`; the minimum is solved for the PRINTED chord.
+    let n = 0;
+    for (let i = 0; i < 300; i++) {
+      const frac = (): string => `${ri(-30000, 30000)}/${[3, 7, 9, 11, 13, 17][ri(0, 5)]}`;
+      const src = `plan "p" {\n  wall id=w exterior thickness 200 { (${frac()}, ${frac()}) arc (${frac()}, ${frac()}) radius 1${i % 2 ? " cw" : ""} }\n}\n`;
+      const d = compile(src, { noCache: true }).diagnostics.filter((x) => x.code === "E_ARC_RADIUS");
+      if (d.length === 0) continue; // a chord under 2 mm: radius 1 already spans it
+      applyArcFix(src);
+      n++;
+    }
+    expect(n).toBeGreaterThan(290);
+  });
+});
+
+suite("arc radius — decimal semicircles are decided exactly, on the 0.001 mm lattice", () => {
+  // Float squares are not exact for decimals: (9.3, 12.4) squares to 240.25000000000003
+  // against 4 · 7.75² = 240.25, which refused a true semicircle and offered "7.751".
+  const th = (v: number): string => {
+    const s = String(Math.abs(v)).padStart(4, "0");
+    const out = `${s.slice(0, -3)}.${s.slice(-3)}`.replace(/\.?0+$/, "");
+    return `${v < 0 ? "-" : ""}${out}`;
+  };
+  const decSrc = (ax: number, ay: number, bx: number, by: number, r: number, tail = ""): string =>
+    `plan "p" {\n  wall id=w exterior thickness 2 { (${th(ax)},${th(ay)}) arc (${th(bx)},${th(by)}) radius ${th(r)}${tail} }\n}\n`;
+
+  it.each([
+    ["(0,0) → (9.3,12.4) radius 7.75", decSrc(0, 0, 9300, 12400, 7750)],
+    ["(0,0) → (1.83,2.44) radius 1.525", decSrc(0, 0, 1830, 2440, 1525)],
+    ["(0,0) → (0.294,0.392) radius 0.245", decSrc(0, 0, 294, 392, 245)],
+  ])("%s is accepted as the exact semicircle", (_name, src) => {
+    expect(arcErrors(src)).toBe(0);
+    const arc = wallArc(src)!;
+    expect(arc.center).toEqual({ x: (arc.a.x + arc.b.x) / 2, y: (arc.a.y + arc.b.y) / 2 });
+    expect(Math.abs(arc.sweep)).toBe(Math.PI);
+  });
+
+  it("Pythagorean ties × k at 1, 2 and 3 dp: every tie accepted, one quantum short refused", () => {
+    let cases = 0;
+    for (const unit of [100, 10, 1]) // thousandths per step: 0.1, 0.01, 0.001 mm
+      for (const [p, q, c] of [
+        [3, 4, 5],
+        [5, 12, 13],
+        [8, 15, 17],
+        [20, 21, 29],
+        [33, 56, 65],
+      ] as const)
+        for (let k = 1; k <= 200; k += k < 30 ? 1 : 17) {
+          if ((c * k * unit) % 2 !== 0) continue; // the half-chord must sit on the lattice
+          const ax = ((k * 37) % 50) * unit - 900;
+          const ay = ((k * 53) % 70) * unit + 400;
+          for (const [sx, sy, swap] of [
+            [1, 1, false],
+            [-1, 1, true],
+            [1, -1, true],
+            [-1, -1, false],
+          ] as const) {
+            const dx = (swap ? q : p) * k * unit * sx;
+            const dy = (swap ? p : q) * k * unit * sy;
+            const R = (c * k * unit) / 2;
+            const tail = sx > 0 ? " cw" : " ccw major";
+            expect(arcErrors(decSrc(ax, ay, ax + dx, ay + dy, R, tail)), `${unit} ${p},${q} k=${k}`).toBe(0);
+            expect(arcErrors(decSrc(ax, ay, ax + dx, ay + dy, R - 1, tail)), `${unit} ${p},${q} k=${k}`).toBe(1);
+            cases++;
+          }
+        }
+    expect(cases).toBeGreaterThan(1000);
   });
 });
