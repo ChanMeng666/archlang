@@ -468,8 +468,9 @@ export interface ArrivingRun {
  * end only; a lift car at its door side, {@link entryEdges}.
  *
  * Where the end cannot be told — arrival sides both below AND above (a storey reachable
- * independently from either), or the neighbouring stop not drawn as the same kind of run —
- * the edges fall back to the run's own {@link entryEdges} on L.
+ * independently from either), or the neighbouring stop not drawn as the same kind of run, or
+ * drawn with its flight along the other axis ({@link runAxis}: a portrait stair below, a
+ * landscape one above) — the edges fall back to the run's own {@link entryEdges} on L.
  */
 export function arrivalRuns(
   levels: readonly VerticalLevelInput[],
@@ -540,5 +541,9 @@ function cutAt(connections: readonly VerticalConnection[], level: number): Verti
 function arrivalEdges(run: RVertical, below: boolean, above: boolean, src: RVertical | undefined): RectEdge[] {
   if (run.kind === "elevator" || below === above) return entryEdges(run);
   if (!src || src.kind !== run.kind) return entryEdges(run);
+  // The head is read on THIS storey's footprint, so the two stops must draw the flight along
+  // the same axis; otherwise the opposite of the other stop's tail is a long side of this
+  // footprint (a flight's length read as a doorway).
+  if (runAxis(src) !== runAxis(run)) return entryEdges(run);
   return [oppositeSide(tailEdge(src))];
 }

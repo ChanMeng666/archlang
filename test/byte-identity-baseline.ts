@@ -422,14 +422,18 @@
  *       the whole corpus and rejected: it also moved
  *       `eval/fidelity-plans/min-bedroom-flat.laundered.arch` (`circulation.routes[0]`'s
  *       bottleneck 740 → 14000, the open-room value: there the far-seed stamp is the door's
- *       only width on the route).
+ *       only width on the route). The artefact no longer ships: a connector's inward walk
+ *       now stops at the room's first eroded cell, so `d_en2_corr` never seeds past the
+ *       flight and r_master reads 9900 / 700 / 1.81 (see "a connector's inward walk stops
+ *       at the room's first eroded cell" below, which leaves that eval plan unmoved).
  *
  * `lint()`: no `W_CIRCUITOUS_PATH` (the largest new detour is 2.12, under the 3.0 maximum);
  * new `W_PATH_TOO_NARROW` only, INSERTED at that rule's place in the rule order of each
  * storey's list (the old list is a subsequence of the new one, not a prefix), every
  * pre-existing diagnostic unchanged and in its relative order. Default profile (700 mm):
  * `hillside-villa` level 2 gains six — Bedroom 2, Bedroom 3, the three Ensuites and Master
- * Suite, each "squeezes to 640 mm (60 mm below the 700 mm minimum)"; `townhouse` and
+ * Suite, each "squeezes to 640 mm (60 mm below the 700 mm minimum)" (the Master Suite's
+ * walk warning was later replaced by its route's, below); `townhouse` and
  * `two-storey` gain none. Under `accessibility-advisory` (900 mm, no digest covers it) the
  * same six read "260 mm below the 900 mm minimum", and `townhouse` gains six (level 2 Bedroom
  * 1, Bathroom, Bedroom 2 at 740, 160 below; level 3 Study and Shower room at 740, Main bedroom
@@ -438,7 +442,7 @@
  *
  * `hillside-villa.arch`'s comment above `d_en2_corr` was corrected in the same change (it said
  * the plan leaves one warning in; it leaves nine; it now also says why the count stays nine
- * without the carve artefact). Every default-profile
+ * without the carve artefact; it was rewritten again when the artefact went, below). Every default-profile
  * diagnostic's span lies above that comment, so no span moved and neither row moved for it:
  * both rows were re-measured, with the tests' own digest bodies, to the same values. Under
  * `accessibility-advisory` (no digest covers it) four of its 29 diagnostics lie below the
@@ -487,6 +491,85 @@
  * was itself produced by that carve order — "Circulation v2" above already recorded it as
  * rule-consistent, not a correction (backlog C.5) — and the new 8800 is the same rule with the
  * order taken out, not a measured truth either.
+ *
+ * ## `hillside-villa`: both rows re-measured — a connector's inward walk stops at the room's first eroded cell
+ *
+ * Case (1), the compiler changed, deliberately: the carve artefact "Circulation on storeys
+ * reached only by a shaft" above recorded as r_master's 640. A connector's carve seeds come
+ * from `seedCells`, which walks inward from each threshold point to the room's first free
+ * cell. That walk stepped on through cells the clearance erosion had taken — past a fixture,
+ * or a stair's whole footprint — and the carve from the far seed stamped the doorway's width
+ * on a cell nowhere near the doorway. `buildGrid` now records each room's eroded FLOOR cells
+ * (an eroded cell under a wall is a halo reaching through it and stays crossable), and a
+ * connector's walk stops at the first of them, seeding nothing beyond. A front door's seed
+ * is read as before. Sealing it too was measured and rejected: the closed-class witness "a
+ * room split by furniture, entered by an opening with a threshold point on a line"
+ * (`test/equivariance-corpus.test.ts`) then measured zero circulation rooms.
+ *
+ * Swept before → after on the same tree, 254 rows (the 84 files of the hexagon sweep above,
+ * plus every ```arch fence under `docs/`), the same seven digests per row. The sweep was
+ * shown able to fail first: 1 mm planted on `r_bed1`'s walk moved `describe()` on 14 files.
+ * The result:
+ *
+ *   - SVG and `compile().diagnostics`: byte-identical on all 254 rows.
+ *   - `describe()`, `lint()`, accessibility `lint()` and the overlay: moved on
+ *     `hillside-villa` only. `eval/fidelity-plans/min-bedroom-flat.laundered.arch`, which the
+ *     narrow fix rejected above moved, is byte-identical in every column.
+ *   - `describe()`, field by field: level 2 `circulation.rooms[r_master].bottleneckClearWidthMm`
+ *     640 → 700 — the width the section above measured on the passage's other cells. Its walk
+ *     (9900) and detour (1.81), every other room, every route (r_master → en_m.room 5500 / 640 /
+ *     1.3 included) and `unmeasured` are byte-identical; level 1 is byte-identical.
+ *   - `lint()`, default profile (700 mm): still nine. "The walk from the entrance to "Master
+ *     Suite" squeezes to 640 mm (60 mm below the 700 mm minimum)." is gone, and "The route
+ *     from "Master Suite" to "Ensuite" squeezes to 640 mm (60 mm below the 700 mm minimum)."
+ *     takes its place at the same line, column and span (the room's own, 13163–13330): a key
+ *     route is flagged for its from-room only when the room's walk was not
+ *     (`src/lint/rules/circulation-facts.ts`), and the route is `d_enm`'s, a real 700 mm door.
+ *     Route warnings follow every walk warning, so it now comes sixth of the six, after the
+ *     three Ensuites, where the walk warning came between the second and third. Every other
+ *     diagnostic is unchanged.
+ *   - `lint()` under `accessibility-advisory` (900 mm, no digest covers it): still 29 (nine
+ *     `W_PATH_TOO_NARROW`). Only the Master Suite's walk message moved: "squeezes to 640 mm
+ *     (260 mm below the 900 mm minimum)" → "squeezes to 700 mm (200 mm below the 900 mm
+ *     minimum)"; its route is not flagged, because its walk still is.
+ *   - The `--overlay circulation` SVG (opt-in, pinned by no baseline): level 1 only, two pinch
+ *     markers at the same `clearMm` move one axis — Powder's 740 x 9150 → 9250 at y 2350,
+ *     Study's 840 y 1950 → 1650 at x 4150. Both have one cause: `d_powder`'s carve no longer
+ *     walks through the halo of the Powder `wc` (flush, in the halo of the door's −d
+ *     threshold point). With that `wc` deleted, the trees before and after draw every level-1
+ *     marker identically, Study's included; Study's marker moves only as a tie-pick among
+ *     equal-clearance cells on a grid whose carved cells differ (the overlay-only class of
+ *     the hexagon section above). Every walk and route polyline is unchanged. Level 2's overlay is byte-identical to the plain level-2
+ *     render before and after: the overlay draws nothing on a storey reached only by a shaft
+ *     (a pre-existing gap, not this change), so the moved 700 is not drawn.
+ *
+ * No corpus file shows it, but the rule has a second, wider consequence: a doorway with
+ * furniture within R + δ of its face reads `blocked` from that side. R is the body radius
+ * (300 mm); δ is the distance from the wall face to the centre of the first cell the wall
+ * leaves free (100 mm for a 100 mm partition on a 100 mm grid edge; 88 mm for the same wall
+ * on 108 mm cells). A threshold point's inward walk first meets that cell, the furniture's
+ * halo takes it exactly when gap − δ ≤ R, and every walk then stops and seeds nothing. Where
+ * every threshold point's walk was straight, the old carve back was refused anyway and the
+ * room already read `blocked` at the same gap. What changes is a doorway with a point on a
+ * lattice line, or within tolerance of a room corner (whose walk runs diagonally): its walk
+ * stepped through the halo and the furniture to free floor beyond, and an L-shaped carve back
+ * bored through the wall beside the doorway, so the room was measured through that tunnel
+ * with the door's width stamped over the pinch, and its routes with it. The red team's
+ * random-plan probe found 7 such flips per ~436 valid plans per seed. The threshold is
+ * pinned at both cell sizes by `test/carve-inward-walk.test.ts` (blocked at R + δ, with
+ * 0 < `widestWayInMm` < 2R; measured 1 mm further off), beside the landing plan that pins
+ * the far-seed stamp itself. The two plans read differently before the change: the bedroom
+ * past the flight 640 instead of 700, and the bath at 400 mm measured.
+ *
+ * `hillside-villa.arch`'s comment above `d_en2_corr` was rewritten in the same change (it
+ * called the Master Suite's 640 an artefact of the walk grid; it now says the sixth warning
+ * is that room's route through `d_enm`). It is 87 bytes and one line shorter. Every
+ * default-profile span lies above it, so both rows measure the same with the old comment or
+ * the new; under `accessibility-advisory` the four diagnostics below it — `W_SWING_OBSTRUCTED`
+ * and `W_DOOR_CLEARANCE` on lines 257 and 258 — shift by exactly −87 bytes and −1 line, every
+ * other field unchanged (case (2)). Both rows were re-measured with a script that imports
+ * `./byte-identity-digest.ts` and that first reproduced the old values on the tree before the
+ * fix: whole surface f93556cb… → 80285cb2…, summary 0bce7b7b… → 759c93ef….
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -502,7 +585,7 @@ export const BASELINE: [string, string][] = [
   ["garden-house", "707e56c4a8992c77ecf5d76a409690c2554f68059e31758bb8712d2b54266654"],
   ["garden-loft", "970f3edf687ae08093993eeb5ec87cc0e63b9dd51e8487202d6d5d3d61b5030b"],
   ["hexagon-pavilion", "67ec85f6b9ed5eeb30380899bc6a5df1d582674616f8dc9121d1b9971546cb5b"],
-  ["hillside-villa", "f93556cb775938c34e3057ac7aa7ae17630afd13a004d5bf7eb98ee7b631420a"], // re-measured, see header
+  ["hillside-villa", "80285cb2e1a3c09be266f25f5f7ca574243ee9d50a8eb3ee7bc59047a701d8a3"], // re-measured, see header
   ["imports", "9a18b7a2e74117c3c986bbf513055d7ea333dea1451faeb4f9f3429ca23e7e55"],
   ["laneway-house", "ca93975f9180ff845039a79422a4cca1fe683d76a28831cf700efbb8f6d2bea0"],
   ["library", "614bc84423700e348345a7dd9bbf1e3ff098deacba76f3f62043cc2d7e5c144c"],
@@ -546,7 +629,7 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["garden-house", "d41cfe2342e0e0818cc7531e75e08bf7c65fbe0d650d7e6a7f2b4261d3470bb8"],
   ["garden-loft", "ad8935f435045684b7ed9975254dc2daf0357f4eb3735e514e319980ebecf793"],
   ["hexagon-pavilion", "9a3e3666e6e2b09d04a6239c984415ec92ffa487c8aa743fc8506f4bc0f97a61"],
-  ["hillside-villa", "0bce7b7b1a38edda3bef49063a3fbfe2be0f500b14b8559ffa23005a9b4f2cbb"], // re-measured, see header
+  ["hillside-villa", "759c93efea4b9bfeffe3f0b4eaf168bdec825e244c3199beaf73251914c943fb"], // re-measured, see header
   ["imports", "5c75030d46ecbfc8b1e80b40945d17bd13afb68a813a286b9ddfe23252452cbc"],
   ["laneway-house", "9a173beb7f213286b8e0c117d829d126166b93e118f91894ba278005254a5255"],
   ["library", "f81107388c6547af37b0938ecc06a1f3ab3acbe69916edb7b0c9c76a4c9f3477"],

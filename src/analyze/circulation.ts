@@ -67,7 +67,7 @@ import {
   type RoomBox,
 } from "../analyze.js";
 import { pointInRect } from "../geometry/rect.js";
-import { type Arc, arcContainsRay, arcExtremes, distPointToArc } from "../geometry/arc.js";
+import { type Arc, arcAngleOffset, arcContainsRay, arcExtremes, distPointToArc } from "../geometry/arc.js";
 import {
   distToPolygonEdge,
   pointInPolygon,
@@ -327,12 +327,21 @@ function axisCells(v: number, cell: number, n: number): [number, number] {
  * (mirrors occupancy.ts' inward seeding), as a sorted set of cell indices. Empty when the
  * doorway's inward run is sealed by furniture, so a blocked doorway simply yields no seed.
  *
+ * `floorEroded` (a connector's threshold, from {@link buildGrid}) seals the rectangle walk at
+ * the room's first eroded FLOOR cell: it stops there and seeds nothing beyond. Without it the
+ * walk stepped on through the eroded cells to whatever free cell lay past them — past a
+ * fixture, or a stair's whole footprint — and the carve from that far seed stamped the
+ * doorway's width on a cell nowhere near the doorway (hillside-villa's landing: `d_en2_corr`'s
+ * 640 on the passage under the flight). The walk still crosses the wall band, eroded or not:
+ * a halo reaching through a wall from furniture in the next room does not stand in the
+ * doorway. A front door's seed is read without it (`null`), as it always was.
+ *
  * The walk starts from EVERY cell whose closed square holds `at` ({@link axisCells}): one
  * cell for a point strictly inside a cell, and then the set is the single cell the walk
  * reaches; two for a point on a lattice line (four at a crossing), and then it holds what
  * each side's walk reaches. Flooring the point to one cell put a doorway on a line on its
  * +x/+y side, so a turned or flipped plan seeded the other side — the same doorway, a walk
- * origin a cell (or, past eroded cells, several) away. The set is the same however the plan
+ * origin a cell (or, across a wall band or eroded cells, several) away. The set is the same however the plan
  * is turned or flipped (backlog E.6/E.7/E.10).
  *
  * A POLYGON room's doorway need not sit on a bounding-box side, so the "step inward
@@ -350,7 +359,15 @@ function axisCells(v: number, cell: number, n: number): [number, number] {
  * narrower one found NOTHING is strictly additive: every seed that already resolved
  * resolves to the same cells, because the scan is by increasing ring.
  */
-function seedCells(g: NavGrid, at: Point, rb: RoomBox, roomIndex: number, tol: number, bandMm = 0): number[] {
+function seedCells(
+  g: NavGrid,
+  at: Point,
+  rb: RoomBox,
+  roomIndex: number,
+  tol: number,
+  bandMm = 0,
+  floorEroded: Uint8Array | null = null,
+): number[] {
   const [x0, x1] = axisCells(at.x - g.minX, g.cell, g.nx);
   const [y0, y1] = axisCells(at.y - g.minY, g.cell, g.ny);
   if (rb.poly) {
@@ -383,7 +400,7 @@ function seedCells(g: NavGrid, at: Point, rb: RoomBox, roomIndex: number, tol: n
   const out = new Set<number>();
   for (let iy = y0; iy <= y1; iy++) {
     for (let ix = x0; ix <= x1; ix++) {
-      const k = walkInward(g, ix, iy, dx, dy, roomIndex);
+      const k = walkInward(g, ix, iy, dx, dy, roomIndex, floorEroded);
       if (k >= 0) out.add(k);
     }
   }
@@ -391,13 +408,25 @@ function seedCells(g: NavGrid, at: Point, rb: RoomBox, roomIndex: number, tol: n
 }
 
 /** {@link seedCells}' rectangle walk from one start cell: step (dx, dy) until the first
- *  free cell of the room, or −1 at the grid's edge. */
-function walkInward(g: NavGrid, ix: number, iy: number, dx: number, dy: number, roomIndex: number): number {
+ *  free cell of the room, or −1 at the grid's edge — or, given `floorEroded`, at the room's
+ *  first eroded floor cell. */
+function walkInward(
+  g: NavGrid,
+  ix: number,
+  iy: number,
+  dx: number,
+  dy: number,
+  roomIndex: number,
+  floorEroded: Uint8Array | null,
+): number {
   for (let step = 0; step < g.nx + g.ny; step++) {
     const sx = clamp(ix + dx * step, 0, g.nx - 1);
     const sy = clamp(iy + dy * step, 0, g.ny - 1);
     const k = sy * g.nx + sx;
-    if (g.roomIdx[k] === roomIndex && g.free[k]) return k;
+    if (g.roomIdx[k] === roomIndex) {
+      if (g.free[k]) return k;
+      if (floorEroded?.[k]) break;
+    }
     const atX = dx === 0 || sx === (dx > 0 ? g.nx - 1 : 0);
     const atY = dy === 0 || sy === (dy > 0 ? g.ny - 1 : 0);
     if (atX && atY) break;
@@ -413,72 +442,188 @@ function centreOf(g: NavGrid, k: number): { x: number; y: number } {
 }
 
 /**
- * Where a person steps off an arriving shaft: the free cells of room `roomIndex` in the ONE
- * row (or column) of cells directly in front of each of the run's ARRIVAL edges — the head
- * of the flight they came by (`arrivalRuns` in `vertical.ts`, read off the run's `_tail`
- * through `place`, so a turned or mirrored flight is stepped off at the image of its
- * authored end). The nav grid lifts the run's body-radius halo outside its arrival edge as
- * well as its entry edges ({@link withArrivalEdges}), so that strip is walkable: a person
- * can stand where they step off, as at the foot of a flight they are about to climb.
+ * Where a person steps off an arriving shaft: free cells of room `roomIndex` at each of the
+ * run's ARRIVAL edges — the head of the flight they came by (`arrivalRuns` in `vertical.ts`,
+ * read off the run's `_tail` through `place`, so a turned or mirrored flight is stepped off at
+ * the image of its authored end). The nav grid lifts the run's body-radius halo outside its
+ * arrival edge as well as its entry edges ({@link withArrivalEdges}), so a person can stand
+ * where they step off.
  *
- * "In front of" is a predicate on cell centres, so it is the same set however the plan is
- * turned or flipped on a lattice-aligned grid: beyond a `bottom` edge at `y1`, the centres
- * with `y1 < cy ≤ y1 + cell` (`top` mirrors it, `y0 − cell ≤ cy < y0`), and along the edge
- * the centres within its CLOSED span. A cell in that strip that is not free — another
- * obstacle stands on the landing — is no seed, and a run whose whole strip is covered seeds
- * nothing: its landing is sealed, exactly as a front door whose doorway is sealed seeds
- * nothing. Sorted by cell index.
+ * **Whether there is a landing is decided on the plan, not on the grid.** `open` probes the
+ * plan's geometry just beyond the edge ({@link landingProbe}); a cell that does not divide the
+ * plan (`navCellSizeMm` above 100 mm) puts its centres in different places in a turned or
+ * flipped frame, so reading "is the landing covered?" off cell centres made the same storey
+ * measured in some frames and `unreachable` in others. The probe's points and tests are
+ * what a turn or flip carries onto each other, so the verdict is the same in every frame.
+ *
+ * **Where the walk starts, given a landing.** The free cells of the ONE row (or column)
+ * directly in front of the edge: beyond a `bottom` edge at `y1`, the centres with
+ * `y1 < cy ≤ y1 + cell` (`top` mirrors it), within the edge's CLOSED span — a predicate on
+ * cell centres, the same set however the plan is turned or flipped on a lattice-aligned grid.
+ * When the grid's phase leaves that row with no free cell, the free cells of the room NEAREST
+ * the edge segment instead: within `ceil(bodyRadius / cell) + 1` cells of it, on its outer
+ * side or along the run's flanks (never behind it), every cell at the least distance kept.
+ *
+ * **Sealed.** No landing — a head against a wall, under a void, behind furniture — seeds
+ * nothing, exactly as a front door whose doorway is sealed seeds nothing. Sorted by cell
+ * index.
  */
-function landingCells(g: NavGrid, v: RVertical, edges: readonly RectEdge[], roomIndex: number): number[] {
+function landingCells(
+  g: NavGrid,
+  v: RVertical,
+  edges: readonly RectEdge[],
+  roomIndex: number,
+  bodyRadius: number,
+  /** Is there floor a body can stand on at this plan point (see {@link landingProbe})? */
+  open: (p: Point) => boolean,
+): number[] {
   const r = verticalRect(v);
-  const cx = (ix: number): number => g.minX + (ix + 0.5) * g.cell;
-  const cy = (iy: number): number => g.minY + (iy + 0.5) * g.cell;
-  /** The cell indices along one axis whose centres satisfy `ok`, scanned over the window
-   *  the mm range [lo, hi] covers widened by one cell (the exact test runs per index). */
-  const span = (
-    lo: number,
-    hi: number,
-    origin: number,
-    n: number,
-    c: (i: number) => number,
-    ok: (v: number) => boolean,
-  ) => {
-    const out: number[] = [];
-    const i0 = Math.max(0, Math.floor((lo - origin) / g.cell) - 1);
-    const i1 = Math.min(n - 1, Math.ceil((hi - origin) / g.cell) + 1);
-    for (let i = i0; i <= i1; i++) if (ok(c(i))) out.push(i);
-    return out;
-  };
   const x0 = r.x;
   const x1 = r.x + r.w;
   const y0 = r.y;
   const y1 = r.y + r.h;
-  const along = (a: number, b: number) => (t: number) => t >= a && t <= b;
+  /** Cell indices along one axis whose centres satisfy `ok`, over the window [lo, hi]
+   *  widened by one cell (the exact test runs per index). */
+  const span = (lo: number, hi: number, origin: number, n: number, ok: (c: number) => boolean): number[] => {
+    const out: number[] = [];
+    const i0 = Math.max(0, Math.floor((lo - origin) / g.cell) - 1);
+    const i1 = Math.min(n - 1, Math.ceil((hi - origin) / g.cell) + 1);
+    for (let i = i0; i <= i1; i++) if (ok(origin + (i + 0.5) * g.cell)) out.push(i);
+    return out;
+  };
   const out = new Set<number>();
   for (const e of edges) {
-    let xs: number[];
-    let ys: number[];
-    if (e === "bottom" || e === "top") {
-      xs = span(x0, x1, g.minX, g.nx, cx, along(x0, x1));
-      ys =
-        e === "bottom"
-          ? span(y1, y1 + g.cell, g.minY, g.ny, cy, (t) => t > y1 && t <= y1 + g.cell)
-          : span(y0 - g.cell, y0, g.minY, g.ny, cy, (t) => t >= y0 - g.cell && t < y0);
-    } else {
-      ys = span(y0, y1, g.minY, g.ny, cy, along(y0, y1));
-      xs =
-        e === "right"
-          ? span(x1, x1 + g.cell, g.minX, g.nx, cx, (t) => t > x1 && t <= x1 + g.cell)
-          : span(x0 - g.cell, x0, g.minX, g.nx, cx, (t) => t >= x0 - g.cell && t < x0);
+    const horizontal = e === "top" || e === "bottom";
+    const at = e === "top" ? y0 : e === "bottom" ? y1 : e === "left" ? x0 : x1;
+    const sign = e === "top" || e === "left" ? -1 : 1;
+    const [a0, a1] = horizontal ? [x0, x1] : [y0, y1];
+    // Is there a landing at all? Nine evenly spaced points along the edge, just beyond it.
+    let landing = false;
+    for (let i = 0; i <= 8 && !landing; i++) {
+      const q = a0 + ((a1 - a0) * i) / 8;
+      const p = at + sign * LANDING_PROBE_MM;
+      landing = open(horizontal ? { x: q, y: p } : { x: p, y: q });
     }
-    for (const iy of ys) {
-      for (const ix of xs) {
-        const k = iy * g.nx + ix;
-        if (g.roomIdx[k] === roomIndex && g.free[k]) out.add(k);
+    if (!landing) continue; // sealed
+    const [pOrigin, pN, qOrigin, qN] = horizontal ? [g.minY, g.ny, g.minX, g.nx] : [g.minX, g.nx, g.minY, g.ny];
+    const cellAt = (ip: number, iq: number): number => (horizontal ? ip * g.nx + iq : iq * g.nx + ip);
+    // The landing row: centres beyond the edge by at most one cell, within its closed span.
+    const rowP = span(at - g.cell, at + g.cell, pOrigin, pN, (c) =>
+      sign < 0 ? c >= at - g.cell && c < at : c > at && c <= at + g.cell,
+    );
+    const rowQ = span(a0, a1, qOrigin, qN, (c) => c >= a0 && c <= a1);
+    const row: number[] = [];
+    for (const ip of rowP) {
+      for (const iq of rowQ) {
+        const k = cellAt(ip, iq);
+        if (g.roomIdx[k] === roomIndex && g.free[k]) row.push(k);
       }
     }
+    if (row.length > 0) {
+      for (const k of row) out.add(k);
+      continue;
+    }
+    // The nearest free cells of the room to the edge segment, on its outer side or along
+    // the run's flanks (never behind the run), within the reach.
+    const reach = (Math.ceil(bodyRadius / g.cell) + 1) * g.cell;
+    const far = e === "top" ? y1 : e === "bottom" ? y0 : e === "left" ? x1 : x0;
+    const lo = sign < 0 ? at - reach : Math.max(far, at - reach);
+    const hi = sign < 0 ? Math.min(far, at + reach) : at + reach;
+    const perp = span(lo, hi, pOrigin, pN, (c) => c >= lo && c <= hi);
+    const along = span(a0 - reach, a1 + reach, qOrigin, qN, (c) => c >= a0 - reach && c <= a1 + reach);
+    let best: number[] = [];
+    let bestD = Number.POSITIVE_INFINITY;
+    for (const ip of perp) {
+      for (const iq of along) {
+        const k = cellAt(ip, iq);
+        if (g.roomIdx[k] !== roomIndex || !g.free[k]) continue;
+        const c = centreOf(g, k);
+        const dp = Math.abs((horizontal ? c.y : c.x) - at);
+        const q = horizontal ? c.x : c.y;
+        const dq = q < a0 ? a0 - q : q > a1 ? q - a1 : 0;
+        const d = Math.hypot(dp, dq);
+        if (d < bestD) {
+          bestD = d;
+          best = [k];
+        } else if (d === bestD) best.push(k);
+      }
+    }
+    for (const k of best) out.add(k);
   }
   return [...out].sort((a, b) => a - b);
+}
+
+/**
+ * How far beyond an arrival edge {@link landingCells} probes for a landing (mm).
+ *
+ * The probe is a SAMPLED test: nine points evenly spaced along the edge (about 112 mm apart
+ * on a 900 mm flight), each this far out. An obstruction narrower than the spacing between
+ * two probe points can sit between them unseen, and a free slot narrower than it can be
+ * missed, reading the landing as sealed. And only this depth is probed: floor 1 mm deep
+ * counts as a landing whatever stands a few millimetres farther out (a partition 50 mm
+ * beyond the head). A probe one body radius deep (a body must fit) was measured and not
+ * taken: it seals `examples/two-storey.arch`'s upper landing — a 200 mm strip between its
+ * gallery void and the stair head — which every shipped measurement reads as walkable.
+ */
+const LANDING_PROBE_MM = 1;
+
+/**
+ * The landing test {@link landingCells} probes with, on the plan's geometry (the nav
+ * extent's frame): is point `p` floor a body can stand on in room `roomIndex`? It must be in
+ * that room (the first room whose shape holds it, as the grid assigns a cell), outside every
+ * wall's band unless it lies within a door or opening of its width, farther than the body
+ * radius from every solid furniture footprint, outside every void, and outside every OTHER
+ * vertical run's footprint and the halo it keeps (lifted outside its entry edges) — the
+ * same obstacles the grid erodes, asked of a point instead of a cell centre.
+ */
+function landingProbe(
+  roomIndex: number,
+  rects: readonly RoomBox[],
+  walls: readonly RWall[],
+  connectors: ReadonlyArray<RDoor | ROpening>,
+  furniture: readonly RFurniture[],
+  voids: readonly RVoid[],
+  others: readonly RVertical[],
+  bodyRadius: number,
+): (p: Point) => boolean {
+  const solid = solidFurniture(furniture as RFurniture[]).map((f) => rectOf(f));
+  const holes = voids.map((v) => rectOf(v));
+  const runs = verticalObstacles(others);
+  const inBox = (p: Point, rb: RoomBox): boolean =>
+    rb.poly ? pointInPolygon(p.x, p.y, rb.poly) : pointInRect(p.x, p.y, rb);
+  return (p) => {
+    if (rects.findIndex((rb) => inBox(p, rb)) !== roomIndex) return false;
+    for (const w of walls) {
+      const half = w.thickness / 2;
+      const segs = w.closed ? w.points.length : w.points.length - 1;
+      for (let s = 0; s < segs; s++) {
+        const a = w.points[s]!;
+        const b = w.points[(s + 1) % w.points.length]!;
+        const arc = w.arcs?.[s];
+        const d = arc ? distPointToArc(p, arc) : distPointToSeg(p.x, p.y, a.x, a.y, b.x, b.y);
+        if (d > half) continue;
+        // A wall's band is floor where a door or opening is cut through THIS segment of it:
+        // a connector hosted here, within half its width of it along the segment (arc
+        // length on a curve). Another wall's door never opens this band.
+        const along = (q: Point): number =>
+          arc
+            ? arcAngleOffset(arc, q) * arc.r
+            : ((q.x - a.x) * (b.x - a.x) + (q.y - a.y) * (b.y - a.y)) / Math.hypot(b.x - a.x, b.y - a.y);
+        const cut = connectors.some(
+          (c) => c.host?.wallId === w.id && c.host.index === s && Math.abs(along(p) - along(c.at)) <= c.width / 2,
+        );
+        if (!cut) return false;
+      }
+    }
+    for (const f of solid) if (distPointToRect(p.x, p.y, f) <= bodyRadius) return false;
+    for (const h of holes) if (pointInRect(p.x, p.y, h)) return false;
+    for (const o of runs) {
+      if (pointInRect(p.x, p.y, o.rect)) return false;
+      if (outsideOpenEdge(p.x, p.y, o.rect, o.open)) continue;
+      if (distPointToRect(p.x, p.y, o.rect) <= bodyRadius) return false;
+    }
+    return true;
+  };
 }
 
 /** The width of a run across the edge a person arrives over — the flight's width, as a
@@ -1196,9 +1341,15 @@ function buildGrid(
   // Walls block (see `rasteriseWallSegments`, which is this pass verbatim and is shared
   // with the residual gate). Doors carve back through below; the furniture-eroded cells
   // collected above stay eroded, because the carve — not this pass — is what reopens.
+  const wallCell = new Uint8Array(nx * ny);
   rasteriseWallSegments(ex, walls, (k) => {
     free[k] = 0;
+    wallCell[k] = 1;
   });
+  // The eroded cells a threshold's inward walk may not cross (`seedCells`): an eroded cell
+  // under a wall is a halo reaching through it, not floor in front of the doorway.
+  const floorEroded = new Uint8Array(nx * ny);
+  for (let k = 0; k < eroded.length; k++) if (eroded[k] && !wallCell[k]) floorEroded[k] = 1;
 
   // Stitch: carve a threshold through the wall band at each internal connector,
   // recording the connector's clear width at the (grid-degenerate) carved cells.
@@ -1227,8 +1378,8 @@ function buildGrid(
     // would run an L along a row inside a room, stamping the doorway's width over cells
     // whose clearance is a furniture pinch.
     const pathsAt = (at: Point): number[][] => {
-      const as = seedCells(before, at, rects[ai]!, ai, tol, c.bandMm);
-      const bs = seedCells(before, at, rects[bi]!, bi, tol, c.bandMm);
+      const as = seedCells(before, at, rects[ai]!, ai, tol, c.bandMm, floorEroded);
+      const bs = seedCells(before, at, rects[bi]!, bi, tol, c.bandMm, floorEroded);
       const out: number[][] = [];
       for (const [a, b] of nearestPairs(g, as, bs)) {
         const xy = carvePath(g, eroded, a, b, true);
@@ -1529,7 +1680,17 @@ function buildNav(
   for (const a of viaShaft ? arrivals : []) {
     const ri = roomIndexById.get(a.roomId);
     if (ri === undefined) continue;
-    const ks = landingCells(g, a.run, a.edges, ri);
+    const open = landingProbe(
+      ri,
+      rects,
+      walls,
+      [...doors, ...openings],
+      furniture,
+      voids,
+      verticals.filter((o) => o.id !== a.run.id),
+      bodyRadius,
+    );
+    const ks = landingCells(g, a.run, a.edges, ri, bodyRadius, open);
     if (ks.length === 0) continue; // that landing is covered; another run's may not be
     const ordinal = entranceSeeds.length;
     entranceSeeds.push(ks);
