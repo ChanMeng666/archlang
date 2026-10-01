@@ -780,6 +780,23 @@ export interface ResolvedPlan {
 const MAX_DEPTH = 64;
 /** Safety cap on `while` iterations (deterministic guard against runaway loops). */
 const MAX_ITERATIONS = 10_000;
+/**
+ * Cap on the elements ONE resolution expands (the root plan plus every `place`d instance
+ * and component call it contains; each storey is its own resolution, so it is per storey).
+ * Every element statement and every room a `strip` yields counts one, however it got
+ * there (loop body, component, `place`); `let`/`set`/control flow count none. Past it
+ * `E_ELEMENT_LIMIT` is raised once and expansion stops, so a runaway `for`/`while` yields
+ * a diagnostic instead of an out-of-memory crash.
+ *
+ * Measured curve (identical overlapping rooms, after the room-overlap fix; compile +
+ * describe + lint; loaded machine, 4 GB heap):
+ *   1k rooms 0.43 + 0.12 + 0.40 s, 73 MB;  2k 1.3 + 0.3 + 0.7 s, 91 MB;
+ *   5k 11 + 1.8 + 2.4 s, 187 MB;  10k: compile alone > 300 s (killed).
+ * The cost is superlinear (label relocation is quadratic in rooms sharing space), not
+ * memory — so the cap sits where a runaway still finishes in seconds (~5x the bench plan).
+ * The corpus maximum is ~130 per storey and the bench plan ~1004.
+ */
+export const MAX_ELEMENTS = 5_000;
 
 /** An element flattened out of the body, paired with the env its exprs use. */
 interface Entry {
@@ -833,6 +850,16 @@ interface ExpandCtx {
    * {@link ResolvedPlan._executedWhileSpans}).
    */
   executedWhiles: Set<string>;
+  /** The element budget, shared BY REFERENCE across every recursive call (components,
+   *  `place`d instances, loop bodies) of one resolution. See {@link MAX_ELEMENTS}. */
+  budget: ElementBudget;
+}
+
+/** Elements counted so far in one resolution, and whether the cap was hit (sticky: once
+ *  set, every loop and statement list stops expanding). */
+interface ElementBudget {
+  count: number;
+  capped: boolean;
 }
 
 /** The key {@link ExpandCtx.executedWhiles} records a `while` statement under — its own
@@ -965,7 +992,24 @@ function expandScope(
   /** Evaluate an expression against this scope's currently-visible bindings. */
   const evalIn = (e: Expr): Value => evalExpr(e, scope.flatten(), diag);
 
+  /** Count one element toward the budget; false (after ONE E_ELEMENT_LIMIT at `at`) once
+   *  the cap is crossed. */
+  const spend = (at: { span?: Span }): boolean => {
+    const b = ectx.budget;
+    if (b.capped) return false;
+    if (++b.count <= MAX_ELEMENTS) return true;
+    b.capped = true;
+    diag({
+      severity: "error",
+      message: `Plan expands to more than ${MAX_ELEMENTS} elements — expansion stopped (a loop that never ends, or far too many iterations?)`,
+      code: "E_ELEMENT_LIMIT",
+      ...(at.span ? { span: at.span } : {}),
+    });
+    return false;
+  };
+
   for (const stmt of body) {
+    if (ectx.budget.capped) break;
     switch (stmt.kind) {
       case "let": {
         if (scope.vars.has(stmt.name)) {
@@ -1089,6 +1133,7 @@ function expandScope(
               snap: ectx.snap,
               seenInstances: ectx.seenInstances,
               executedWhiles: ectx.executedWhiles,
+              budget: ectx.budget,
             },
             // No label: the instance NAME is already the heading a reader wants, and
             // inventing one ("wing instance") would print the same text for every
@@ -1111,6 +1156,7 @@ function expandScope(
           break;
         }
         for (const item of it.v) {
+          if (ectx.budget.capped) break;
           const child = new Scope(scope);
           child.vars.set(stmt.varName, item);
           out.push(...expandScope(stmt.body, child, global, components, diagnostics, depth, ectx, zone));
@@ -1127,7 +1173,7 @@ function expandScope(
       }
       case "while": {
         let n = 0;
-        while (asBool(evalIn(stmt.cond), diag, exprSpan(stmt.cond))) {
+        while (!ectx.budget.capped && asBool(evalIn(stmt.cond), diag, exprSpan(stmt.cond))) {
           if (n++ >= MAX_ITERATIONS) {
             diag({
               severity: "error",
@@ -1158,6 +1204,7 @@ function expandScope(
         // are closed-form (running sum of extents + gap); the resulting rooms flow
         // through room.resolve exactly like hand-authored `room at (x,y) size WxH`.
         for (const child of stripRooms(stmt, evalIn, diag)) {
+          if (!spend(stmt)) break;
           out.push({
             node: child,
             env: scope.flatten(),
@@ -1201,6 +1248,7 @@ function expandScope(
         break;
       default:
         // An element: snapshot the scope's visible bindings + active set-defaults.
+        if (!spend(stmt)) break;
         out.push({ node: stmt, env: scope.flatten(), id: "", defaults: scope.effectiveSet(stmt.kind), ...prov });
     }
   }
@@ -1750,7 +1798,7 @@ function resolveImpl(
     ast.components,
     diagnostics,
     0,
-    { snap, seenInstances: new Set<string>(), executedWhiles },
+    { snap, seenInstances: new Set<string>(), executedWhiles, budget: { count: 0, capped: false } },
     zoneFrame,
   );
 
@@ -2515,6 +2563,10 @@ function checkPlanDrawable(elements: ResolvedElement[], diagnostics: Diagnostic[
  *  overlap ⟹ their boxes intersect ⟹ they share a cell, so this finds exactly
  *  the same overlaps; pairs are emitted in (a,b) order to keep diagnostics
  *  byte-identical to the former double loop. */
+/** How many overlapping room pairs `W_ROOM_OVERLAP` lists before it only counts. 1000 identical
+ *  rooms are 499,500 pairs; a list that long is noise and an unbounded allocation. */
+export const MAX_OVERLAP_PAIRS_LISTED = 200;
+
 function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diagnostic[]): void {
   // A room left unplaced carries a (0,0) placeholder, not geometry: testing it would
   // report phantom overlaps (quadratic in a chain) on top of the layout error.
@@ -2531,11 +2583,14 @@ function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diagnostic[
   rooms.forEach((r, i) => {
     rgrid.insert(roomBox(r), i);
   });
-  const overlaps: [number, number][] = [];
-  const seenPair = new Set<string>();
+  // Memory is O(n): no global pair set, no global sort. Room `a` is handled in ascending
+  // order and its partners `b > a` ascending, so the (a,b) emission order is exactly the
+  // former sorted order. Past MAX_OVERLAP_PAIRS_LISTED a pair is only counted.
+  let found = 0;
   rooms.forEach((r1, a) => {
-    for (const b of rgrid.queryBox(roomBox(r1))) {
-      if (b <= a) continue; // each unordered pair once, with a < b
+    const partners = rgrid.queryBox(roomBox(r1)).filter((b) => b > a);
+    partners.sort((p, q) => p - q);
+    for (const b of partners) {
       const r2 = rooms[b]!;
       const b1 = { x: r1.at.x, y: r1.at.y, w: r1.size.w, h: r1.size.h };
       const b2 = { x: r2.at.x, y: r2.at.y, w: r2.size.w, h: r2.size.h };
@@ -2546,22 +2601,23 @@ function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diagnostic[
         r1.poly || r2.poly
           ? rectsOverlap(b1, b2) && polygonsOverlap(r1.poly ?? rectRing(b1), r2.poly ?? rectRing(b2))
           : rectsOverlap(b1, b2);
-      if (overlapping) {
-        const key = `${a},${b}`;
-        if (!seenPair.has(key)) {
-          seenPair.add(key);
-          overlaps.push([a, b]);
-        }
+      if (!overlapping) continue;
+      found++;
+      if (found <= MAX_OVERLAP_PAIRS_LISTED) {
+        diagnostics.push({
+          severity: "warning",
+          message: `Rooms "${r1.id}" and "${r2.id}" overlap`,
+          code: "W_ROOM_OVERLAP",
+          span: r2.span,
+        });
       }
     }
   });
-  overlaps.sort((p, q) => p[0] - q[0] || p[1] - q[1]);
-  for (const [a, b] of overlaps) {
+  if (found > MAX_OVERLAP_PAIRS_LISTED) {
     diagnostics.push({
       severity: "warning",
-      message: `Rooms "${rooms[a]!.id}" and "${rooms[b]!.id}" overlap`,
+      message: `…and ${found - MAX_OVERLAP_PAIRS_LISTED} more room pairs overlap (first ${MAX_OVERLAP_PAIRS_LISTED} listed)`,
       code: "W_ROOM_OVERLAP",
-      span: rooms[b]!.span,
     });
   }
 }

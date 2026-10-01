@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**95 errors** · **52 warnings**
+**96 errors** · **52 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -28,6 +28,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_DOTTED_DECL`](#e_dotted_decl) | error | A dotted name cannot be declared. |
 | [`E_DUP_ID`](#e_dup_id) | error | Duplicate element id. |
 | [`E_DUP_INSTANCE`](#e_dup_instance) | error | Duplicate `place … as <name>` instance name. |
+| [`E_ELEMENT_LIMIT`](#e_element_limit) | error | The plan expands to too many elements. |
 | [`E_FENCE_CURVED`](#e_fence_curved) | error | A fence cannot have a curved (`arc`) edge. |
 | [`E_FURN_AGAINST`](#e_furn_against) | error | Invalid `against wall` fixture placement. |
 | [`E_FURN_FLUSH`](#e_furn_flush) | error | `flush` on a placement that touches no edge. |
@@ -387,6 +388,18 @@ room id=a at (1,0) size 1x1   # error: duplicate id "a"
 ```arch static
 place wing() as west at (0,0)
 place wing() as west at (9000,0)   # error: instance "west" already used
+```
+
+## E_ELEMENT_LIMIT
+
+*error* — The plan expands to too many elements.
+
+**Cause.** One resolution (the plan, or one storey) expanded past the element cap (5,000), usually a `for` over a huge range or a `while` whose body creates elements but never changes its condition. Expansion stops at the statement that crossed the cap; the elements before it are kept.
+
+**Fix.** Shrink the range, or make the loop terminate; split a genuinely huge site into storeys or separate plans.
+
+```arch static
+for i in 0..6000 { column at (i,0) size 1x1 }   # error: more than 5,000 elements
 ```
 
 ## E_FENCE_CURVED
@@ -1316,7 +1329,7 @@ wall exterior thickness 0 { (0,0) (1,0) }   # error
 
 ```arch static
 let i = 0
-while i < 1 { column at (0,0) size 1x1 }   # error: i never changes
+while i < 1 { let y = i }   # error: i never changes
 ```
 
 ## E_WINDOW_WIDTH
@@ -1821,7 +1834,7 @@ window on north_wall at 50% width 1200   # warning: the only window faces N
 
 *warning* — Rooms overlap.
 
-**Cause.** Two room rectangles intersect.
+**Cause.** Two room rectangles intersect. At most the first 200 overlapping pairs are listed; one final warning counts the rest (`…and N more room pairs overlap`).
 
 **Fix.** Adjust positions/sizes if the overlap is unintended (it is allowed).
 

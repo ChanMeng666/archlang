@@ -726,7 +726,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `arch explain <CODE>`.
-**95 errors** (abort rendering) · **52 warnings** (advisory; `validate --strict` fails on them too).
+**96 errors** (abort rendering) · **52 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -749,6 +749,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `E_DOTTED_DECL` — A dotted name cannot be declared. **Fix:** Declare the short name and address it from outside as `<instance>.<name>`.
 - `E_DUP_ID` — Duplicate element id. **Fix:** Rename one of them, or drop the explicit id to auto-generate a unique one.
 - `E_DUP_INSTANCE` — Duplicate `place … as <name>` instance name. **Fix:** Give each instance its own name (`as west` / `as east`).
+- `E_ELEMENT_LIMIT` — The plan expands to too many elements. **Fix:** Shrink the range, or make the loop terminate; split a genuinely huge site into storeys or separate plans.
 - `E_FENCE_CURVED` — A fence cannot have a curved (`arc`) edge. **Fix:** Approximate the curve with short straight runs, which is what a fence built on a curve actually is.
 - `E_FURN_AGAINST` — Invalid `against wall` fixture placement. **Fix:** Name an existing wall id, add `segment <n>` for multi-segment walls, give `side left|right`, keep the segment axis-aligned, and drop any explicit `rotate`.
 - `E_FURN_FLUSH` — `flush` on a placement that touches no edge. **Fix:** Anchor the piece to the edge you want it flush with (`anchor bottom flush`, `anchor top-left flush`), or drop `flush` and keep it centred.
