@@ -84,7 +84,11 @@ function place(room: RelRoom, ref: RRoom, snapPt: (p: Point) => Point): void {
  * instance's unplaced room as unplaced rather than as an absolute room at its placeholder,
  * and `checkRoomOverlaps` skips such rooms (their `at` is a placeholder, not geometry).
  */
-export function placeRelational(rooms: RRoom[], snapPt: (p: Point) => Point, diag: (d: Diagnostic) => void): void {
+export function placeRelational(
+  rooms: RRoom[],
+  snapPt: (p: Point) => Point,
+  diag: (d: Diagnostic, room?: RRoom) => void,
+): void {
   const rel = rooms.filter((r): r is RelRoom => r._rel !== undefined);
   if (rel.length === 0) return;
 
@@ -150,7 +154,7 @@ export function placeRelational(rooms: RRoom[], snapPt: (p: Point) => Point, dia
         // where the test would have been not merely unhelpful but wrong. Same predicate
         // the absolute path uses, imported rather than restated.
         const outside = rectLabelOutsideDiag(r);
-        if (outside) diag(outside);
+        if (outside) diag(outside, r);
         unresolved.delete(r.id);
         changed = true;
       }
@@ -198,6 +202,6 @@ export function placeRelational(rooms: RRoom[], snapPt: (p: Point) => Point, dia
     const d = pending.get(r.id);
     if (!d) continue;
     r._unplaced = true;
-    diag(d);
+    diag(d, r);
   }
 }

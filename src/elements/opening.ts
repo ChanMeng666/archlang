@@ -91,6 +91,11 @@ export const opening: ElementDef = {
   },
 
   bounds: () => [],
+  /** Its centre and width (see `door.measures`). */
+  measures(resolved): number[] {
+    const o = resolved as ROpening;
+    return [o.at.x, o.at.y, o.width];
+  },
 
   render(resolved): SceneNode[] {
     const op = resolved as ROpening;

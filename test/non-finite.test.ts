@@ -208,25 +208,19 @@ describe("nesting depth", () => {
 
 describe("derived quantities (area, extent) are diagnosed, not printed as Infinity", () => {
   const E160 = "1" + "0".repeat(160);
-  it("a room whose area overflows is one E_NON_FINITE at the room (values left as computed)", () => {
+  it("a room whose area overflows is one E_NON_FINITE at the room (non-finite precedes the range)", () => {
     const src = wrap(`room id=r at (0,0) size ${E160}x${E160}`);
     expect(codes(src)).toEqual(["E_NON_FINITE"]);
     const d = compile(src, { noCache: true }).diagnostics.find((x) => x.code === "E_NON_FINITE")!;
     expect(src.slice(d.span!.start, d.span!.end)).toContain("room id=r");
   });
-  it("two finite areas whose total overflows are diagnosed", () => {
+  it("two finite areas whose total would overflow are each out of the modelling range first", () => {
+    // These used to reach the total-area E_NON_FINITE. Each room is now refused by the range
+    // (`test/model-range.test.ts`) and dropped, and rooms inside the range cannot overflow the
+    // sum, so the total-area check stays only as a backstop no source reaches.
     const E154 = "1" + "0".repeat(154);
     const src = wrap(`room id=r at (0,0) size ${E154}x${E154}\nroom id=q at (${E154},0) size ${E154}x${E154}`);
-    expect(codes(src)).toContain("E_NON_FINITE");
-  });
-  it("the total-area diagnostic is spanned at the room that carries it out of range", () => {
-    const E154 = "1" + "0".repeat(154);
-    const src = wrap(`room id=r at (0,0) size ${E154}x${E154}\nroom id=q at (${E154},0) size ${E154}x${E154}`);
-    const d = compile(src, { noCache: true }).diagnostics.filter(
-      (x) => x.code === "E_NON_FINITE" && x.message.startsWith("The total"),
-    );
-    expect(d).toHaveLength(1);
-    expect(src.slice(d[0]!.span!.start, d[0]!.span!.end)).toContain("room id=q");
+    expect(codes(src)).toEqual(["E_OUT_OF_RANGE", "E_OUT_OF_RANGE"]);
   });
 });
 

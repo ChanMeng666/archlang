@@ -198,6 +198,14 @@ export interface ElementDef {
   resolve(node: AstElement, ctx: ResolveCtx): ResolvedElement;
   /** Points this element contributes to the drawing bounds. */
   bounds(resolved: ResolvedElement): Point[];
+  /**
+   * Every resolved coordinate and length of this element that {@link bounds} does not
+   * already list (an opening's centre and width, a wall's thickness and arc radii, a
+   * dimension's offset, a room's label anchor). The resolver holds these and the bounds to
+   * the modelling range (`MODEL_RANGE_MM`, `E_OUT_OF_RANGE`). Optional: without it only the
+   * bounds are checked.
+   */
+  measures?(resolved: ResolvedElement): number[];
   /** Emit positioned drawing primitives for this element (the Scene IR). */
   render(resolved: ResolvedElement, ctx: RenderCtx): SceneNode[];
   /** Parameter schema — one source for the LSP (hover/completion/signature) and
@@ -295,6 +303,8 @@ export function registerElement(def: ElementDef): ElementDef {
   }
   if (def.transform !== undefined && typeof def.transform !== "function")
     throw new TypeError("registerElement: def.transform must be a function when given");
+  if (def.measures !== undefined && typeof def.measures !== "function")
+    throw new TypeError("registerElement: def.measures must be a function when given");
   return def;
 }
 

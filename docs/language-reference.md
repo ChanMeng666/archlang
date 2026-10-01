@@ -30,7 +30,8 @@ are pure, text-only, and image-free — see [Analysis: describe & lint](analysis
 This reference tracks the current language; for the exact version and per-release
 history see [`CHANGELOG.md`](../CHANGELOG.md).
 
-- **Unit:** millimetres (integers recommended).
+- **Unit:** millimetres (integers recommended), within ±33,554,432 mm (see
+  [Modelling range](#modelling-range)).
 - **Coordinate system:** origin top-left, **+x** right, **+y** down (matches SVG).
 - **Comments:** `#` to end of line.
 - **Strings:** double-quoted; `\"`, `\\`, `\n` escapes supported, plus `{…}`
@@ -338,6 +339,34 @@ suffix must sit **immediately** after the digits with no space (`3m`, not
 carry its own suffix (`3mx4m`, `3.5mx4200`, `30cmx40cm`). There is deliberately
 **no area unit** (`m²`); areas come from `describe()`. The formatter normalises a
 suffixed literal to its millimetre value (`3.5m` → `3500`).
+
+### Modelling range
+
+Every coordinate and length a plan resolves to lies within **±33,554,432 mm** (2²⁵ mm,
+about 33.5 km). What is checked: each element's bounds (the points it reports for the page:
+a rectangle's corners, a ring's vertices, a wall's faces) and the coordinates and lengths
+those do not carry (an opening's centre and width, a wall's thickness and arc radii, a
+dimension's offset, a room's `label … at` anchor), every `axes` position, every `site`
+boundary vertex and the `grid`. It is the range inside which the geometry's integer
+orientation test is exact ([ADR 0020](adr/0020-algebraic-core.md)), and far past any
+building. The check runs on the final plan coordinates, after `place` frames, `strip`s and
+relational placement, so a component placed 40 km away is caught although every number
+written in it is small. An element outside the range is reported once, as `E_OUT_OF_RANGE`
+at its statement (its other diagnostics are withdrawn, and a door, window or opening in a
+dropped wall goes with it), and dropped from the plan, so nothing draws or measures it.
+
+The settings that scale a drawn length are held too, so the drawing they produce stays
+inside the range. A wall's hatch `scale` and a theme `lineWeight` are held by what they draw
+on THIS drawing: the pattern tile (the hatch module, a fraction of the drawing's size, × the
+scale) and the heaviest pen (likewise × the weight) must stay inside the range, so a coarse
+`scale 10` on a house is fine and only a tile or pen past 33.5 km is refused. A `north`
+bearing or hatch `angle` must lie within ±33,554,432 degrees, and on a `paper` plan the
+`scale` denominator at most the one that keeps the sheet inside the range (1:28220 on A0,
+1:112977 on A4). Each is `E_OUT_OF_RANGE` at the value. The bounds are `MODEL_RANGE_MM` and
+its neighbours in `src/num-format.ts`. A number past the floating-point
+range altogether is `E_NON_FINITE`, and a `stair` or `escalator` run longer than about 308 m
+is `E_RUN_TOO_LONG`. A value that draws nothing (a `let` binding no element uses, a label's
+text, a `scale` without `paper`, a storey `level` number) is not held to the range.
 
 ### Arrays & ranges
 
@@ -743,7 +772,8 @@ drawing its own faces inside the poché.
 `insulation`, `tile`, `none`. An unknown material warns and uses the default.
 Hatches are **data-driven**: the SVG emits a tiled `<pattern>` and the DXF a real
 `HATCH` entity. Optionally tune the hatch with `scale <n>` (tile-size multiplier,
-default 1) and `angle <deg>` (extra rotation, default 0):
+default 1; its drawn tile must stay inside the [modelling range](#modelling-range)) and
+`angle <deg>` (extra rotation, default 0):
 
 ```
 wall exterior thickness 250 material brick { … }

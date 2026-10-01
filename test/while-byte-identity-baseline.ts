@@ -86,6 +86,14 @@
  * example's comment above `d_en2_corr` was rewritten in the same change and shifts no
  * default-profile span. Field by field in `./byte-identity-baseline.ts`, "a connector's inward
  * walk stops at the room's first eroded cell". No other example row and no fixture row moved.
+ *
+ * `examples/hillside-villa.arch` re-measured again, with this test's own digest body (the
+ * script first reproduced the old row on the tree before), for "a room is reached on its
+ * floor": a room's best cell no longer counts the doorway cells a carve opened inside its
+ * rectangle. Every storey's SVG, `compile().diagnostics` and the default `lint()` are
+ * byte-identical; `describe()` moves only level 1's `r_terrace` bottleneck, 1140 → 840.
+ * Field by field in `./byte-identity-baseline.ts`, "a room is reached on its floor". No other
+ * example row and no fixture row moved.
  */
 export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/accessible.arch", "a8b70a680754e431524037dc3a936bba2ec7c0e2cba8df0c72a16f45e5d1e27b"],
@@ -99,7 +107,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/garden-house.arch", "8ea8fb09514623262787606780e5db8571d1fa7cbe1d48070b5eef0931cde302"],
   ["examples/garden-loft.arch", "a21189336cc1d8160d968e51cf9407137eb8212d1692228325e8f7ff172abbcd"],
   ["examples/hexagon-pavilion.arch", "a6bf86674027eac1e6e68a718e5902c401a461650a90808b177f576f330b7137"],
-  ["examples/hillside-villa.arch", "3ce0d2951347a8edde480fa73bce23e5b862264b3454057a25b5c4de02457131"],
+  ["examples/hillside-villa.arch", "53e4eb4c095734866e1d784fa87b4377b43a94b04003e6146c104fef226a3c49"], // re-measured, see header
   ["examples/imports.arch", "7e44e3f95168fb671437b5d38e8918d72ec74d89636636aac858e7306538a4f4"],
   ["examples/laneway-house.arch", "ef8afb7fa4673499128960f97075509cf41bf8270c9fbaece1f1c640e9679d7a"],
   ["examples/library.arch", "89c83260fd894b5271a0ffba7e6622760298c8ffc996a8139caa416fe7a9ac29"],

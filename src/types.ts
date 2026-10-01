@@ -114,6 +114,7 @@ export interface CompileOptions {
   /**
    * Theme overrides applied on top of the plan's `theme { … }` directive and
    * the built-in defaults (these win). Any subset of keys may be supplied.
+   * A theme passed here is not held by the source-level range checks (`lineWeight`).
    */
   theme?: Partial<import("./theme.js").Theme>;
   /**

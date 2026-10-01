@@ -9,7 +9,7 @@
  */
 
 import type { Expr } from "./expr.js";
-import { fmt3 as numStr } from "./num-format.js";
+import { fmtSource as numStr } from "./num-format.js";
 
 const BIN_PREC: Record<string, number> = {
   "||": 1,

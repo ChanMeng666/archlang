@@ -16,7 +16,7 @@ import { parse } from "./parser.js";
 import { isNumericThemeKey, styleKeyFor, type Theme } from "./theme.js";
 import { concat, type Doc, hardline, indent, join, printDoc } from "./doc.js";
 /** Deterministic number → string (trim to 3 dp, non-finite → "0"). */
-import { fmt3 as numStr } from "./num-format.js";
+import { fmtSource as numStr } from "./num-format.js";
 // Expression re-emission lives in one place (shared with the fix producers) so
 // the formatter and `arch fix` render an expression byte-identically.
 import { exprToSource as exprStr } from "./expr-source.js";
