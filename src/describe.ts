@@ -64,6 +64,7 @@ import { roomSchedule, type ScheduleRow } from "./sheet-tables.js";
 // apply the north rotation is a second place to get it wrong.
 import { deriveSite, planCenterOfRooms, type SiteFacts, toCompass, windowFacingPage } from "./site.js";
 import {
+  arrivalRuns,
   type RVertical,
   roomOfVertical,
   type VerticalConnection,
@@ -934,6 +935,8 @@ function summarize(
   ir: ResolvedPlan,
   tol: number,
   facts: readonly DescribeFact[] = [],
+  /** The runs a shaft-reached storey is walked from — see `computeCirculation`. */
+  arrivals: readonly RVertical[] = [],
 ): Omit<SceneSummary, "ok" | "diagnostics"> {
   const roomEls = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const doorEls = ir.elements.filter((e): e is RDoor => e.kind === "door");
@@ -1107,6 +1110,7 @@ function summarize(
     undefined,
     verticalEls,
     voidEls,
+    arrivals,
   );
 
   // Drawing extent: union of wall points and sized-element rectangles.
@@ -1269,7 +1273,10 @@ function inZone(member: string | undefined, path: string): boolean {
  * This is deliberately NOT the same thing as this storey's own `access.hasEntrance`
  * below, which stays the honest, undiscounted fact that the floor has an exterior door.
  */
-function buildVerticalReport(levels: readonly ResolvedLevel[], tol: number): VerticalReport | undefined {
+function buildVerticalReport(
+  levels: readonly ResolvedLevel[],
+  tol: number,
+): { report: VerticalReport; arrivals: ReadonlyMap<number, readonly RVertical[]> } | undefined {
   const inputs = levels.map((l) => ({ level: l.level, ir: l.ir }));
   const connections = verticalConnections(inputs);
   if (connections.length === 0) return undefined;
@@ -1278,7 +1285,10 @@ function buildVerticalReport(levels: readonly ResolvedLevel[], tol: number): Ver
     return l ? storeyGrounded(l.ir, tol) : false;
   };
   const reach = verticalReach(inputs, grounded, buildingRoomReach(inputs, tol));
-  return { connections, reachable_levels: [...reach.reachable].sort((a, b) => a - b) };
+  return {
+    report: { connections, reachable_levels: [...reach.reachable].sort((a, b) => a - b) },
+    arrivals: arrivalRuns(inputs, reach.arrivals),
+  };
 }
 
 /**
@@ -1342,6 +1352,14 @@ function summarizeResolved(
     };
   }
 
+  // Vertical connections are a BUILDING fact: they only exist across storeys, so they
+  // are computed once from the whole level set and never per level — and BEFORE the
+  // storeys are summarised, because a storey reached only by a shaft is walked from the
+  // runs that arrive on it (its `circulation`).
+  const building = levels.length > 0 ? buildVerticalReport(levels, tol) : undefined;
+  const vertical = building?.report;
+  const arrivalsOn = (level: number): readonly RVertical[] => building?.arrivals.get(level) ?? [];
+
   // Multi-storey: the top-level facts are the LOWEST storey (`levels[0].ir === ir`), and
   // `levels` adds one same-shaped summary per storey. `summarize` is reused verbatim per
   // level, so a storey's facts can never be computed a second, different way.
@@ -1350,17 +1368,14 @@ function summarizeResolved(
       ? levels.map((l) => ({
           level: l.level,
           ...(l.name !== undefined ? { name: l.name } : {}),
-          ...summarize(l.ir, tol, opts.facts),
+          ...summarize(l.ir, tol, opts.facts, arrivalsOn(l.level)),
         }))
       : undefined;
 
-  // Vertical connections are a BUILDING fact: they only exist across storeys, so they
-  // are computed once from the whole level set and never per level.
-  const vertical = levels.length > 0 ? buildVerticalReport(levels, tol) : undefined;
-
   return {
     ok: true,
-    ...summarize(ir, tol, opts.facts),
+    // The lowest storey's arrivals, so the top level still repeats `levels[0]` exactly.
+    ...summarize(ir, tol, opts.facts, levels.length > 0 ? arrivalsOn(levels[0]!.level) : []),
     ...(perLevel ? { levels: perLevel } : {}),
     ...(vertical ? { vertical } : {}),
     diagnostics,

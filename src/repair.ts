@@ -65,12 +65,14 @@ import {
   rectInRoomBox,
   type RectEdge,
   resolvePlan,
+  buildingRoomReach,
+  storeyGrounded,
   rotateForBackEdge,
   wallBackedEdges,
   type BBox,
 } from "./analyze.js";
 import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
-import { verticalsOf } from "./vertical.js";
+import { arrivalRuns, type RVertical, verticalReach, verticalsOf } from "./vertical.js";
 import { doorLandingRect, rectOverlapAmounts, wallIntrusion } from "./geometry/rect.js";
 import { segmentsOfWall, doorSwing, sectorIntersectsRect, type DoorSwing } from "./geometry.js";
 import { DEFAULT_RULESET } from "./lint.js";
@@ -1128,6 +1130,23 @@ function repairPass(source: string, book: SpanBook, record: boolean): RepairResu
   // every storey's rewrites land in the same source and are printed once at the end.
   const storeys: Array<{ level?: number; ir: ResolvedPlan }> =
     levels.length > 0 ? levels.map((l) => ({ level: l.level, ir: l.ir })) : [{ ir }];
+  // The shafts each storey is reached by, as `describe()` and lint read them, so a storey
+  // with no front door is guarded on the walks its circulation facts report.
+  const inputs = levels.map((l) => ({ level: l.level, ir: l.ir }));
+  const arrivals =
+    levels.length > 0
+      ? arrivalRuns(
+          inputs,
+          verticalReach(
+            inputs,
+            (n) => {
+              const l = inputs.find((x) => x.level === n);
+              return l ? storeyGrounded(l.ir, DEFAULT_TOL) : false;
+            },
+            buildingRoomReach(inputs, DEFAULT_TOL),
+          ).arrivals,
+        )
+      : new Map<number, RVertical[]>();
   const changes: RepairChange[] = [];
   for (const st of storeys) {
     const seenIds = new Set<string>();
@@ -1140,6 +1159,7 @@ function repairPass(source: string, book: SpanBook, record: boolean): RepairResu
         seenIds,
         book,
         record,
+        st.level !== undefined ? (arrivals.get(st.level) ?? []) : [],
       ),
     );
   }
@@ -1166,6 +1186,8 @@ function repairStorey(
   notedIds: Set<string>,
   book: SpanBook,
   record: boolean,
+  /** The shafts this storey is reached by (`computeCirculation`'s `arrivals`). */
+  arrivals: readonly RVertical[] = [],
 ): RepairChange[] {
   const spanKeyFor = (id: string): string => `${level ?? ""}|${id}`;
   /** The span to report for `id`. The first round records each statement's ORIGINAL
@@ -1302,7 +1324,8 @@ function repairStorey(
   // A furniture move is rejected if it would newly squeeze any room's entrance walk
   // (or a key route) below the lint threshold. Static geometry (rooms/walls/doors) is
   // hoisted; only the movable furniture varies, so a candidate check is one circulation
-  // compute. The guard is active only when there is an entrance to measure a walk from.
+  // compute. The guard is active only when there is an entrance to measure a walk from —
+  // a front door, or on a storey without one, a shaft arriving from a reachable storey.
   const minPathClear = DEFAULT_RULESET.minPathClearWidthMm;
   const roomEls = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const openingEls = ir.elements.filter((e): e is ROpening => e.kind === "opening");
@@ -1310,7 +1333,7 @@ function repairStorey(
   // Furniture NOT under repair's control (against-wall / scripted / expression-placed)
   // stays put; the movable pieces contribute their live position instead.
   const staticFurniture = occupants.filter((o) => !o.piece).map((o) => irFurniture[o.ord]!);
-  const guardActive = access.hasEntrance;
+  const guardActive = access.hasEntrance || arrivals.length > 0;
   const labelOf = new Map(roomEls.map((r) => [r.id, r.label ?? r.id]));
 
   /** Circulation for the current arrangement, with piece `overrideIdx` at `pos`. */
@@ -1336,6 +1359,7 @@ function repairStorey(
       undefined,
       verticalsOf(ir),
       ir.elements.filter((e): e is RVoid => e.kind === "void"),
+      arrivals,
     );
   };
   // Baseline circulation of the starting arrangement; updated in place as pieces move so

@@ -29,9 +29,21 @@ export interface BuildingContext {
    * Empty when the storey is grounded (it has its own entrance) or is not reached at all.
    */
   arrivalRooms: readonly string[];
+  /**
+   * The vertical runs on THIS storey that a person arrives by — the shafts behind
+   * {@link BuildingContext.arrivalRooms}, under the same rule (empty on a grounded or
+   * unreached storey). A storey with no front door is walked from their landings, so the
+   * circulation rules measure it rather than going silent (`circulation-facts.ts`).
+   */
+  arrivalShafts: readonly RVertical[];
 }
 
-const NO_BUILDING: BuildingContext = { multiStorey: false, verticalPeerIds: new Set(), arrivalRooms: [] };
+const NO_BUILDING: BuildingContext = {
+  multiStorey: false,
+  verticalPeerIds: new Set(),
+  arrivalRooms: [],
+  arrivalShafts: [],
+};
 
 export interface LintContext {
   ir: ResolvedPlan;

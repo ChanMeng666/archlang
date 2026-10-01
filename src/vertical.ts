@@ -270,6 +270,13 @@ export interface VerticalReach {
   reachable: Set<number>;
   /** Per level: room ids you can arrive in by coming up/down a shaft. Source order. */
   arrivalRooms: Map<number, string[]>;
+  /**
+   * Per level: the ids of the shafts you arrive by — the runs whose landings put a person
+   * in {@link VerticalReach.arrivalRooms}, under exactly the same rule (an UNGROUNDED
+   * storey, a stop standing in a room), in the order they first arrive. Append-only: what
+   * the circulation model walks a door-less storey from.
+   */
+  arrivals: Map<number, string[]>;
 }
 
 /**
@@ -315,6 +322,7 @@ export function verticalReach(
   const reachable = new Set<number>();
   for (const l of levels) if (grounded(l.level)) reachable.add(l.level);
   const arrivalRooms = new Map<number, string[]>();
+  const arrivals = new Map<number, string[]>();
 
   for (let pass = 0; pass < levels.length + 1; pass++) {
     let grew = false;
@@ -332,11 +340,43 @@ export function verticalReach(
           list.push(stop.room);
           arrivalRooms.set(stop.level, list);
         }
+        noteArrival(arrivals, stop.level, c.id);
       }
     }
     if (!grew) break;
   }
-  return { reachable, arrivalRooms };
+  return { reachable, arrivalRooms, arrivals };
+}
+
+/**
+ * Per storey, the runs — that storey's OWN elements, in its source order — of the shafts
+ * {@link VerticalReach.arrivals} says a person arrives by: what `computeCirculation` walks
+ * a storey with no front door from. `describe` and `lint` both build theirs here, so the
+ * two read one answer.
+ */
+export function arrivalRuns(
+  levels: readonly VerticalLevelInput[],
+  arrivals: ReadonlyMap<number, readonly string[]>,
+): Map<number, RVertical[]> {
+  const out = new Map<number, RVertical[]>();
+  for (const l of levels) {
+    const ids = arrivals.get(l.level);
+    if (!ids || ids.length === 0) continue;
+    out.set(
+      l.level,
+      verticalsOf(l.ir).filter((v) => ids.includes(v.id)),
+    );
+  }
+  return out;
+}
+
+/** Record shaft `id` as arriving on `level`, once, in first-arrival order. */
+function noteArrival(arrivals: Map<number, string[]>, level: number, id: string): void {
+  const runs = arrivals.get(level) ?? [];
+  if (!runs.includes(id)) {
+    runs.push(id);
+    arrivals.set(level, runs);
+  }
 }
 
 /**
@@ -367,6 +407,7 @@ function roomAwareReach(
   const reachable = new Set<number>();
   for (const l of levels) if (grounded(l.level)) reachable.add(l.level);
   const arrivalRooms = new Map<number, string[]>();
+  const arrivals = new Map<number, string[]>();
   // Rooms live shafts land in, on EVERY storey (grounded ones relay too).
   const seedRooms = new Map<number, string[]>();
   // `roomReach` answers, invalidated whenever a storey's seeds grow.
@@ -405,9 +446,10 @@ function roomAwareReach(
           list.push(stop.room);
           arrivalRooms.set(stop.level, list);
         }
+        noteArrival(arrivals, stop.level, c.id);
       }
     }
     if (!grew) break;
   }
-  return { reachable, arrivalRooms };
+  return { reachable, arrivalRooms, arrivals };
 }

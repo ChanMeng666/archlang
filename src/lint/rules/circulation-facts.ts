@@ -38,6 +38,10 @@ function circulationOf(ctx: LintContext): CirculationModel | null {
     undefined,
     ctx.verticals,
     ctx.voids,
+    // A storey with no front door is walked from the shafts that arrive on it, so these
+    // rules measure it instead of going silent while reachability already treats those
+    // landings as the storey's way in.
+    ctx.building.arrivalShafts,
   );
   modelCache.set(ctx, model);
   return model;

@@ -23,7 +23,7 @@ import { type BuildingContext, buildLintContext } from "./lint/context.js";
 import { ONCE_PER_PLACEMENT_CODES } from "./lint/rules/dims.js";
 import { LINT_RULES } from "./lint/rules/index.js";
 import { DEFAULT_RULESET, LINT_PROFILES, type LintOptions, type LintRuleset } from "./lint/ruleset.js";
-import { verticalConnections, verticalReach } from "./vertical.js";
+import { arrivalRuns, verticalConnections, verticalReach } from "./vertical.js";
 
 export {
   DEFAULT_RULESET,
@@ -186,12 +186,14 @@ function buildingContexts(levels: readonly ResolvedLevel[], tolMm: number): Map<
   // Room-aware: a shaft relays only from a stop whose room is walkable on its storey, on
   // the same tolerance `grounded` uses, so lint and `describe().vertical` agree.
   const reach = verticalReach(inputs, grounded, buildingRoomReach(inputs, tolMm ?? DEFAULT_TOL));
+  const runs = arrivalRuns(inputs, reach.arrivals);
   const out = new Map<number, BuildingContext>();
   for (const l of levels) {
     out.set(l.level, {
       multiStorey: true,
       verticalPeerIds: peerIds,
       arrivalRooms: reach.arrivalRooms.get(l.level) ?? [],
+      arrivalShafts: runs.get(l.level) ?? [],
     });
   }
   return out;
