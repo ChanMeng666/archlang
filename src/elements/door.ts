@@ -418,6 +418,11 @@ export const door: ElementDef = {
   },
 
   bounds: () => [],
+  /** Its centre and width: a door adds nothing to the bounds, but it is still geometry. */
+  measures(resolved): number[] {
+    const d = resolved as RDoor;
+    return [d.at.x, d.at.y, d.width];
+  },
 
   /**
    * Opening cover + leaf line + swing arc. The swing geometry (hinge, leaf,

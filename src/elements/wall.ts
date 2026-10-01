@@ -247,6 +247,14 @@ export const wall: ElementDef = {
     return pts;
   },
 
+  /** Its thickness and every arc radius: lengths the band's points do not carry as values. */
+  measures(resolved): number[] {
+    const w = resolved as RWall;
+    const out = [w.thickness];
+    for (const a of w.arcs ?? []) if (a) out.push(a.r);
+    return out;
+  },
+
   /**
    * One wall, drawn through the same joinery every wall set goes through.
    *

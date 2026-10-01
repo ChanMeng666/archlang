@@ -30,7 +30,8 @@ are pure, text-only, and image-free — see [Analysis: describe & lint](analysis
 This reference tracks the current language; for the exact version and per-release
 history see [`CHANGELOG.md`](../CHANGELOG.md).
 
-- **Unit:** millimetres (integers recommended).
+- **Unit:** millimetres (integers recommended), within ±33,554,432 mm (see
+  [Modelling range](#modelling-range)).
 - **Coordinate system:** origin top-left, **+x** right, **+y** down (matches SVG).
 - **Comments:** `#` to end of line.
 - **Strings:** double-quoted; `\"`, `\\`, `\n` escapes supported, plus `{…}`
@@ -338,6 +339,22 @@ suffix must sit **immediately** after the digits with no space (`3m`, not
 carry its own suffix (`3mx4m`, `3.5mx4200`, `30cmx40cm`). There is deliberately
 **no area unit** (`m²`); areas come from `describe()`. The formatter normalises a
 suffixed literal to its millimetre value (`3.5m` → `3500`).
+
+### Modelling range
+
+Every coordinate and length a plan resolves to lies within **±33,554,432 mm** (2²⁵ mm,
+about 33.5 km): every point an element draws to, an opening's centre and width, a wall's
+thickness and arc radii, a dimension's offset, a room's `label … at` anchor, an `axes`
+position and a `site` boundary vertex. It is the range inside which the geometry's integer
+orientation test is exact ([ADR 0020](adr/0020-algebraic-core.md)), and far past any
+building. The check runs on the final plan coordinates, after `place` frames, `strip`s and
+relational placement, so a component placed 40 km away is caught although every number
+written in it is small. An element outside the range is reported once, as `E_OUT_OF_RANGE`
+at its statement, and dropped from the plan, so nothing draws or measures it (the bound is
+`MODEL_RANGE_MM` in `src/num-format.ts`). A number past the floating-point range altogether
+is `E_NON_FINITE`, and a `stair` or `escalator` run longer than about 140 m is
+`E_RUN_TOO_LONG`. A value that is not a length (a `let` binding no element uses, a label's
+text, a hatch `scale`) is not held to the range.
 
 ### Arrays & ranges
 

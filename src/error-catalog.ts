@@ -339,6 +339,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Drop `width` to fill the footprint, or give a value between 0 and the footprint's short side.",
     "stair id=s at (0,0) size 900x2600 dir up width 1200   # error: cross extent is 900",
   ),
+  E_RUN_TOO_LONG: E(
+    "E_RUN_TOO_LONG",
+    "A stair or escalator run is longer than any run the plan draws.",
+    "A `stair` or `escalator` is drawn with one tread line (or chevron) per 280 mm going along its footprint's long side, and at most 500 of them: a run longer than about 140 m — past any built flight or escalator — would be drawn as tens of thousands of lines, so it is refused instead of drawn thinned. Usually a size in the wrong unit (`size 2000x1200` meant, `size 2000000x1200` written).",
+    "Check the footprint's long side; a real run is a few metres. Model a long concourse as a `room` with several runs in it.",
+    "escalator id=e at (0,0) size 200000x1200 dir up   # error: a 200 m run",
+  ),
   E_VOID_SIZE: E(
     "E_VOID_SIZE",
     "A floor void must have a positive size.",
@@ -617,9 +624,16 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   E_NON_FINITE: E(
     "E_NON_FINITE",
     "A number is too large to be finite.",
-    "A numeric literal, the result of an arithmetic operation (`+ - * / %`), or a quantity the resolver derives from finite dimensions (an element's extent, a room's area, the plan's total area) is beyond what a floating-point number can hold, so it would be infinite. The check is per operation: an overflowing intermediate is refused even if a later `min()` would have clamped it. A literal or arithmetic result is replaced by 0 so the rest of the plan still resolves and reports; a derived quantity is diagnosed at its element and left as computed.",
+    "A numeric literal, the result of an arithmetic operation (`+ - * / %`), or a quantity the resolver derives from finite dimensions (an element's extent, a room's area, the plan's total area) is beyond what a floating-point number can hold, so it would be infinite. The check is per operation: an overflowing intermediate is refused even if a later `min()` would have clamped it. A literal or arithmetic result is replaced by 0 so the rest of the plan still resolves and reports; an element whose derived quantity overflows is diagnosed at its element and dropped from the plan, so nothing downstream measures it.",
     "Use a realistic dimension. A plan is measured in millimetres, and a value above about 1e300 is never a building.",
     `let k = 1${"0".repeat(60)}\nlet x = k * k * k * k * k * k   # error: 1e360 overflows`,
+  ),
+  E_OUT_OF_RANGE: E(
+    "E_OUT_OF_RANGE",
+    "A coordinate or length is outside the modelling range.",
+    "Every coordinate and length a plan resolves to — every point an element draws to, an opening's centre and width, a wall's thickness and arc radii, a dimension's offset, a room's label anchor, an `axes` position, a `site` boundary vertex — must lie within ±33,554,432 mm (2^25 mm, about 33.5 km), the range inside which the geometry's integer predicates are exact. A finite value past it is not a building. The check runs once all `place` frames and relational placements are applied, and the element is reported once, at its span, and dropped from the plan, so nothing downstream draws or measures it.",
+    "Use a realistic dimension. A plan is measured in millimetres (a 30 m wall is `30000`, or `30m`), so a value in the millions is usually a unit slip; a site larger than about 33 km is several plans, not one.",
+    "stair id=s at (0,0) size 1000000000000x3000 dir up   # error: a 1e12 mm flight",
   ),
   E_PARSE: E(
     "E_PARSE",

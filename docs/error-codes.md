@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**97 errors** · **52 warnings**
+**99 errors** · **52 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -65,6 +65,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_NON_FINITE`](#e_non_finite) | error | A number is too large to be finite. |
 | [`E_OPENING_ABOVE_WALL`](#e_opening_above_wall) | error | An opening's head is above the wall it is cut in. |
 | [`E_OPENING_WIDTH`](#e_opening_width) | error | Opening must have a positive width. |
+| [`E_OUT_OF_RANGE`](#e_out_of_range) | error | A coordinate or length is outside the modelling range. |
 | [`E_OUTDOOR_POLY_DEGENERATE`](#e_outdoor_poly_degenerate) | error | An outdoor ring is degenerate, or a balcony was given one. |
 | [`E_OUTDOOR_POLY_SELF_INTERSECT`](#e_outdoor_poly_self_intersect) | error | An outdoor ring crosses itself. |
 | [`E_OUTDOOR_RAIL`](#e_outdoor_rail) | error | A `rail` clause on something that is not a balcony, or an unknown edge word. |
@@ -89,6 +90,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_ROOM_POLY_SELF_INTERSECT`](#e_room_poly_self_intersect) | error | Polygon room intersects itself. |
 | [`E_ROOM_RADIUS`](#e_room_radius) | error | Circular room needs a positive radius. |
 | [`E_ROOM_SIZE`](#e_room_size) | error | Room must have a positive size. |
+| [`E_RUN_TOO_LONG`](#e_run_too_long) | error | A stair or escalator run is longer than any run the plan draws. |
 | [`E_SILL_ABOVE_HEAD`](#e_sill_above_head) | error | A window's sill sits at or above its head. |
 | [`E_SITE_BOUNDARY_DEGENERATE`](#e_site_boundary_degenerate) | error | The site `boundary` encloses no lot. |
 | [`E_SITE_BOUNDARY_SELF_INTERSECT`](#e_site_boundary_self_intersect) | error | The site `boundary` crosses itself. |
@@ -814,7 +816,7 @@ component c() { level 1 { } }   # error: only allowed at plan level
 
 *error* — A number is too large to be finite.
 
-**Cause.** A numeric literal, the result of an arithmetic operation (`+ - * / %`), or a quantity the resolver derives from finite dimensions (an element's extent, a room's area, the plan's total area) is beyond what a floating-point number can hold, so it would be infinite. The check is per operation: an overflowing intermediate is refused even if a later `min()` would have clamped it. A literal or arithmetic result is replaced by 0 so the rest of the plan still resolves and reports; a derived quantity is diagnosed at its element and left as computed.
+**Cause.** A numeric literal, the result of an arithmetic operation (`+ - * / %`), or a quantity the resolver derives from finite dimensions (an element's extent, a room's area, the plan's total area) is beyond what a floating-point number can hold, so it would be infinite. The check is per operation: an overflowing intermediate is refused even if a later `min()` would have clamped it. A literal or arithmetic result is replaced by 0 so the rest of the plan still resolves and reports; an element whose derived quantity overflows is diagnosed at its element and dropped from the plan, so nothing downstream measures it.
 
 **Fix.** Use a realistic dimension. A plan is measured in millimetres, and a value above about 1e300 is never a building.
 
@@ -846,6 +848,18 @@ wall id=w1 exterior thickness 200 height 2200 { (0,0) (4000,0) close }
 
 ```arch static
 opening at (0,0) width 0   # error
+```
+
+## E_OUT_OF_RANGE
+
+*error* — A coordinate or length is outside the modelling range.
+
+**Cause.** Every coordinate and length a plan resolves to — every point an element draws to, an opening's centre and width, a wall's thickness and arc radii, a dimension's offset, a room's label anchor, an `axes` position, a `site` boundary vertex — must lie within ±33,554,432 mm (2^25 mm, about 33.5 km), the range inside which the geometry's integer predicates are exact. A finite value past it is not a building. The check runs once all `place` frames and relational placements are applied, and the element is reported once, at its span, and dropped from the plan, so nothing downstream draws or measures it.
+
+**Fix.** Use a realistic dimension. A plan is measured in millimetres (a 30 m wall is `30000`, or `30m`), so a value in the millions is usually a unit slip; a site larger than about 33 km is several plans, not one.
+
+```arch static
+stair id=s at (0,0) size 1000000000000x3000 dir up   # error: a 1e12 mm flight
 ```
 
 ## E_OUTDOOR_POLY_DEGENERATE
@@ -1142,6 +1156,18 @@ room circle at (5000,5000) radius 0   # error: no floor
 
 ```arch static
 room at (0,0) size 0x4000   # error: width is 0
+```
+
+## E_RUN_TOO_LONG
+
+*error* — A stair or escalator run is longer than any run the plan draws.
+
+**Cause.** A `stair` or `escalator` is drawn with one tread line (or chevron) per 280 mm going along its footprint's long side, and at most 500 of them: a run longer than about 140 m — past any built flight or escalator — would be drawn as tens of thousands of lines, so it is refused instead of drawn thinned. Usually a size in the wrong unit (`size 2000x1200` meant, `size 2000000x1200` written).
+
+**Fix.** Check the footprint's long side; a real run is a few metres. Model a long concourse as a `room` with several runs in it.
+
+```arch static
+escalator id=e at (0,0) size 200000x1200 dir up   # error: a 200 m run
 ```
 
 ## E_SILL_ABOVE_HEAD

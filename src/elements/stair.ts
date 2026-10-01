@@ -16,7 +16,7 @@ import type { SceneNode } from "../scene.js";
 import type { RStair } from "../ir.js";
 import { rectCorners } from "../geometry.js";
 import { flightAxis, tailEdge } from "../vertical.js";
-import { stairGlyph } from "./vertical-glyphs.js";
+import { runTooLong, stairGlyph } from "./vertical-glyphs.js";
 
 /** Parse the mandatory `dir up|down` clause shared by `stair` and `escalator`. */
 export function parseVerticalDir(ctx: ParseCtx, keyword: string): VerticalDir {
@@ -93,6 +93,8 @@ export const stair: ElementDef = {
         width = cross;
       }
     }
+    const long = runTooLong(`Stair "${id}"`, size, n.span);
+    if (long) ctx.diag(long);
     return { kind: "stair", id, at, size, dir: n.dir, width, span: n.span };
   },
 

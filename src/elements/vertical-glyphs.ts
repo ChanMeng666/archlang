@@ -16,6 +16,8 @@
  */
 
 import type { Point } from "../ast.js";
+import type { Diagnostic, Span } from "../diagnostics.js";
+import { fmt3, MODEL_RANGE_MM } from "../num-format.js";
 import type { Paint, RenderSizes, SceneNode } from "../scene.js";
 import type { Theme } from "../theme.js";
 import type { RElevator, REscalator, RStair } from "../ir.js";
@@ -66,6 +68,37 @@ export function runFrame(v: RVertical, flightWidth: number): RunFrame {
 /** How many tread divisions a run of `length` mm gets (≥ {@link MIN_TREADS}). */
 export function treadCount(length: number): number {
   return Math.max(MIN_TREADS, Math.round(length / TREAD_GOING_MM));
+}
+
+/**
+ * The most tread divisions one run is drawn with: 500 at the {@link TREAD_GOING_MM} going is
+ * a 140 m run, past any built flight or escalator. The modelling range alone does not bound
+ * the drawing: one stair 2²⁵ mm long drew about 120,000 tread lines (12 MB of SVG), one
+ * escalator twice that, and four such escalators filled a 1 GB heap. A longer run is
+ * `E_RUN_TOO_LONG` ({@link runTooLong}), never a silently thinned drawing.
+ */
+export const MAX_RUN_TREADS = 500;
+
+/**
+ * `E_RUN_TOO_LONG` for a stair or escalator whose run (its footprint's long side) would be
+ * drawn with more than {@link MAX_RUN_TREADS} divisions, else undefined. A run beyond the
+ * modelling range is left to `E_OUT_OF_RANGE`, so one element gets one error for it.
+ */
+export function runTooLong(
+  what: string,
+  size: { w: number; h: number },
+  span: Span | undefined,
+): Diagnostic | undefined {
+  const run = Math.max(size.w, size.h);
+  if (run > MODEL_RANGE_MM || treadCount(run) <= MAX_RUN_TREADS) return undefined;
+  return {
+    severity: "error",
+    message:
+      `${what} runs ${fmt3(run)} mm: more than ${MAX_RUN_TREADS} treads at the ${TREAD_GOING_MM} mm going ` +
+      `(about ${fmt3((MAX_RUN_TREADS * TREAD_GOING_MM) / 1000)} m), longer than any run the plan draws`,
+    code: "E_RUN_TOO_LONG",
+    span,
+  };
 }
 
 /** A stroked line node on the run's layer. */

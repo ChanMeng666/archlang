@@ -42,6 +42,7 @@ import type { Frame } from "./frame.js";
 import { composeFrame, makeFrame, tryTransformElement } from "./frame.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Env, Expr, Value } from "./expr.js";
+import { fmt3, MODEL_RANGE_MM } from "./num-format.js";
 import {
   asBool,
   asNum,
@@ -2097,26 +2098,38 @@ function resolveImpl(
 
   // 3. IR element list in source order (for rendering), less any element a `place` could
   //    not carry (`E_INSTANCE_NO_TRANSFORM` above).
-  const elements = entries.filter((e) => !dropped.has(e)).map((e) => e.resolved!);
+  const resolvedElements = entries.filter((e) => !dropped.has(e)).map((e) => e.resolved!);
 
   // 3a. Relational placement: rooms positioned with `right-of`/`below`/… get
   //     absolute coordinates here, by pure arithmetic in dependency order
   //     (topological). Rooms with an absolute `at` carry no constraint, so this
   //     is a no-op for them and the manual path stays byte-identical.
   placeRelational(
-    elements.filter((e): e is RRoom => e.kind === "room"),
+    resolvedElements.filter((e): e is RRoom => e.kind === "room"),
     snapPt,
     (d: Diagnostic) => diagnostics.push(d),
   );
 
-  // 3b. Register openings: each hosted door/window voids its wall's solid.
+  // 3b. The number domain, once every coordinate is final (frames carried, relational rooms
+  //     placed): an element whose geometry is non-finite or beyond the modelling range is
+  //     reported and DROPPED here, before it can host an opening or reach any consumer.
+  const outside = checkNumberDomain(resolvedElements, registry, diagnostics);
+  const elements = outside.size > 0 ? resolvedElements.filter((e) => !outside.has(e)) : resolvedElements;
+  if (outside.size > 0) {
+    const kept = walls.filter((w) => !outside.has(w));
+    walls.length = 0;
+    walls.push(...kept);
+  }
+
+  // 3c. Register openings: each hosted door/window voids its wall's solid.
   registerOpenings(elements, walls);
 
-  // 4. Cross-element checks.
-  checkDerivedFinite(elements, registry, diagnostics);
-  checkPlanDrawable(elements, diagnostics);
+  // 4. Cross-element checks. Drawability and room references read the plan as authored
+  //    (a dropped room is still the room a piece of furniture names, so it raises no
+  //    second error); the overlap check reads only what was kept.
+  checkPlanDrawable(resolvedElements, diagnostics);
   checkRoomOverlaps(elements, diagnostics);
-  checkFurnitureRooms(elements, diagnostics);
+  checkFurnitureRooms(resolvedElements, diagnostics);
 
   // 5. Positioning axes (定位轴线): plan-level datums, not elements. Their positions are
   //    expressions, evaluated here against the plan's GLOBAL bindings — the block is a
@@ -2128,8 +2141,16 @@ function resolveImpl(
   let axes: RAxis[] | undefined;
   if (ast.axes) {
     activeEnv = globalScope.flatten();
-    const xs = ast.axes.x.map((e) => snap(evalNum(e)));
-    const ys = ast.axes.y.map((e) => snap(evalNum(e)));
+    // A datum beyond the modelling range is reported at its expression and left out.
+    const inRange = (list: Expr[], axis: "x" | "y"): number[] =>
+      list.flatMap((e) => {
+        const v = snap(evalNum(e));
+        if (Math.abs(v) <= MODEL_RANGE_MM) return [v];
+        diagnostics.push(outOfRange(`The \`axes\` ${axis} position`, v, exprSpan(e) ?? ast.axes?.span));
+        return [];
+      });
+    const xs = inRange(ast.axes.x, "x");
+    const ys = inRange(ast.axes.y, "y");
     const labelled = numberAxes(xs, ys);
     if (labelled.length > 0) axes = labelled;
   }
@@ -2146,7 +2167,10 @@ function resolveImpl(
     const ring = ast.site.boundary.map((p) => snapPt({ x: evalNum(p.x), y: evalNum(p.y) }));
     const effective = effectiveVertices(ring);
     const span = ast.site.boundarySpan ?? ast.site.span;
-    if (effective.length < 3) {
+    const far = farthest(ring.flatMap((p) => [p.x, p.y]));
+    if (far !== undefined) {
+      diagnostics.push(outOfRange("The site `boundary`", far, span));
+    } else if (effective.length < 3) {
       diagnostics.push({
         severity: "error",
         message:
@@ -2595,45 +2619,90 @@ function registerOpenings(elements: ResolvedElement[], walls: RWall[]): void {
 }
 
 /** W_EMPTY_PLAN: the plan resolves but contains nothing drawable. */
+/** The value of largest magnitude beyond {@link MODEL_RANGE_MM}, or undefined when every
+ *  value is within it (the first such value on a tie, so the message is deterministic). */
+function farthest(values: readonly number[]): number | undefined {
+  let far: number | undefined;
+  for (const v of values)
+    if (Math.abs(v) > MODEL_RANGE_MM && (far === undefined || Math.abs(v) > Math.abs(far))) far = v;
+  return far;
+}
+
+/** The one `E_OUT_OF_RANGE` diagnostic: names the value, the limit and the unit. */
+function outOfRange(what: string, value: number, span: Span | undefined, file?: string): Diagnostic {
+  return {
+    severity: "error",
+    message:
+      `${what} reaches ${fmt3(value)} mm, outside the modelling range of ±${fmt3(MODEL_RANGE_MM)} mm ` +
+      `(2^25 mm, about 33.5 km)`,
+    code: "E_OUT_OF_RANGE",
+    span,
+    ...(file ? { file } : {}),
+  };
+}
+
 /**
- * The derived half of the closed number domain. The expression language never yields a
- * non-finite number (`E_NON_FINITE`), but two finite inputs can still overflow once the
- * resolver combines them: a corner `x + w`, a room's area `w * h`, the plan's total area. Those
- * values would print as `Infinity` in the drawing and as `null` in `describe()` with no
- * diagnostic at all. Each is diagnosed here at the authoring element's span. The values are left
- * AS COMPUTED (not substituted), so the plan is refused by the error rather than silently
- * reshaped; `fmt3`'s `"0"` for a non-finite number stays only as a backstop.
+ * The number domain of the resolved plan, checked ONCE, after every `place` frame is carried
+ * and every relational room placed, so each value is the element's final plan coordinate.
+ *
+ * - **Non-finite** (`E_NON_FINITE`): the expression language never yields a non-finite number,
+ *   but two finite inputs can still overflow once the resolver combines them — a corner
+ *   `x + w`, a room's area `w * h`.
+ * - **Beyond the modelling range** (`E_OUT_OF_RANGE`): every point an element draws to (its
+ *   `bounds()`, taken from the shape itself) and every coordinate and length it is made of
+ *   (its `measures()`) lies within ±{@link MODEL_RANGE_MM}. A finite value past it is not a
+ *   building, and it is what ran a stair's tread loop out of memory and printed `Infinity`
+ *   for a dimension line.
+ *
+ * One diagnostic per element, at its span, non-finite first. The element is then DROPPED
+ * (returned here; the caller removes it before openings are registered), so no consumer —
+ * the drawing, `describe()`, `lint()`, the grids — ever forms a product from it. `fmt3`'s
+ * `"0"` for a non-finite number stays only as a backstop.
  */
-function checkDerivedFinite(elements: ResolvedElement[], registry: Registry, diagnostics: Diagnostic[]): void {
+function checkNumberDomain(
+  elements: ResolvedElement[],
+  registry: Registry,
+  diagnostics: Diagnostic[],
+): Set<ResolvedElement> {
+  const outside = new Set<ResolvedElement>();
   let total = 0;
   let totalSpan: Span | undefined;
   for (const el of elements) {
     const def = registry.byKind.get(el.kind);
+    const pts = def ? def.bounds(el) : [];
+    const values = def?.measures ? def.measures(el) : [];
     let what: string | undefined;
-    if (def) {
-      for (const p of def.bounds(el)) {
-        if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) {
-          what = `The extent of ${el.kind} "${el.id}"`;
-          break;
-        }
-      }
-    }
+    if (pts.some((p) => !Number.isFinite(p.x) || !Number.isFinite(p.y))) what = `The extent of ${el.kind} "${el.id}"`;
+    else if (values.some((v) => !Number.isFinite(v))) what = `A dimension of ${el.kind} "${el.id}"`;
+    let area = 0;
     if (what === undefined && el.kind === "room") {
       const r = el as RRoom;
-      const area = r.poly ? polygonArea(r.poly) : r.size.w * r.size.h;
-      if (Number.isFinite(area)) {
-        total += area;
-        // The room whose area first carries the running total out of range.
-        if (!Number.isFinite(total) && totalSpan === undefined) totalSpan = r.span;
-      } else what = `The area of room "${r.id}"`;
+      area = r.poly ? polygonArea(r.poly) : r.size.w * r.size.h;
+      if (!Number.isFinite(area)) what = `The area of room "${r.id}"`;
     }
+    const span = (el as { span?: Span }).span;
     if (what !== undefined) {
       diagnostics.push({
         severity: "error",
         message: `${what} is not finite (the dimensions overflow the number range)`,
         code: "E_NON_FINITE",
-        span: (el as { span?: Span }).span,
+        span,
+        ...(el._file ? { file: el._file } : {}),
       });
+      outside.add(el);
+      continue;
+    }
+    const far = farthest([...pts.flatMap((p) => [p.x, p.y]), ...values]);
+    if (far !== undefined) {
+      diagnostics.push(outOfRange(`The geometry of ${el.kind} "${el.id}"`, far, span, el._file));
+      outside.add(el);
+      continue;
+    }
+    if (el.kind === "room") {
+      // A backstop: rooms inside the modelling range cannot overflow the sum, but the
+      // check costs nothing and keeps the derived total in the closed domain by itself.
+      total += area;
+      if (!Number.isFinite(total) && totalSpan === undefined) totalSpan = span;
     }
   }
   if (!Number.isFinite(total)) {
@@ -2644,6 +2713,7 @@ function checkDerivedFinite(elements: ResolvedElement[], registry: Registry, dia
       span: totalSpan,
     });
   }
+  return outside;
 }
 
 function checkPlanDrawable(elements: ResolvedElement[], diagnostics: Diagnostic[]): void {

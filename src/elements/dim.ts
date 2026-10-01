@@ -267,6 +267,11 @@ export const dim: ElementDef = {
     return [dm.from, dm.to];
   },
 
+  /** Its offset, which moves the drawn line off the measured points. */
+  measures(resolved): number[] {
+    return [(resolved as RDim).offset];
+  },
+
   render(resolved, ctx: RenderCtx): SceneNode[] {
     const dm = resolved as RDim;
     const { theme, sizes, fmt } = ctx;
