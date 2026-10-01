@@ -42,6 +42,7 @@ import {
 } from "./assertions.js";
 import { SYNONYMS_VERSION } from "./synonyms.js";
 import { l1Pipeline } from "./l1.js";
+import { wilson95 } from "./stats.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..");
@@ -444,11 +445,28 @@ function renderL1Block(l0: Summary, l1: L1Overlay): string[] {
   ];
 }
 
+/** `Wilson 95 % lo–hi %` for k of n, whole percents (outward-rounded so the label never narrows it). */
+function wilsonLabel(k: number, n: number): string {
+  const { lo, hi } = wilson95(k, n);
+  return `Wilson 95 % ${Math.floor(lo * 100)}–${Math.ceil(hi * 100)} %`;
+}
+
 /** Render the scorecard as Markdown. The optional `l1` overlay (live `--l1` only) adds an
  *  "After deterministic repair (L1)" block and a per-row `L1` column; without it the output
  *  is byte-identical to the plain scorecard. */
-function renderResults(results: Score[], summary: Summary, mode: string, l1?: L1Overlay): string {
+export function renderResults(
+  results: Score[],
+  summary: Summary,
+  mode: string,
+  l1?: L1Overlay,
+  opts: { intervals?: boolean } = {},
+): string {
   const pct = (n: number): string => `${Math.round((n / summary.total) * 100)}%`;
+  // Live only: a Wilson 95 % interval beside each rate (off for the committed offline scorecard).
+  const rate = (k: number): string =>
+    opts.intervals
+      ? `${k}/${summary.total} (${pct(k)}; ${wilsonLabel(k, summary.total)})`
+      : `${k}/${summary.total} (${pct(k)})`;
   // Compact per-dimension subscores, e.g. `R1 L0.67 A– Adj1` (– = dimension unasserted).
   const sub = (n: number | null | undefined): string =>
     n === null || n === undefined ? "–" : `${Math.round(n * 100) / 100}`;
@@ -499,9 +517,9 @@ function renderResults(results: Score[], summary: Summary, mode: string, l1?: L1
           "",
         ]
       : []),
-    `- **Valid (compiles):** ${summary.valid}/${summary.total} (${pct(summary.valid)})`,
-    `- **Intent match (semantic):** ${summary.semanticPass}/${summary.total} (${pct(summary.semanticPass)})`,
-    `- **Sound (lint-clean):** ${summary.sound}/${summary.total} (${pct(summary.sound)})`,
+    `- **Valid (compiles):** ${rate(summary.valid)}`,
+    `- **Intent match (semantic):** ${rate(summary.semanticPass)}`,
+    `- **Sound (lint-clean):** ${rate(summary.sound)}`,
     "",
     ...(l1 ? renderL1Block(summary, l1) : []),
     "Subscores per row: **R**ooms · **L**abels · **A**rea · **Adj**acency (– = unasserted; adjacency/reachability score but never gate).",
@@ -513,7 +531,7 @@ function renderResults(results: Score[], summary: Summary, mode: string, l1?: L1
   ].join("\n");
 }
 
-type Summary = {
+export type Summary = {
   total: number;
   valid: number;
   semanticPass: number;
@@ -523,7 +541,7 @@ type Summary = {
 };
 
 /** A recorded live baseline (`eval/live-baseline.json`) to compare a fresh run against. */
-interface Baseline extends Summary {
+export interface Baseline extends Summary {
   provider?: string;
   model?: string;
   date?: string;
@@ -662,10 +680,13 @@ export class LiveLedger {
 }
 
 /** A "Delta vs baseline" Markdown section: each headline metric as baseline → now (±). */
-function renderDelta(base: Baseline, s: Summary): string {
+export function renderDelta(base: Baseline, s: Summary, opts: { intervals?: boolean } = {}): string {
   const line = (name: string, b: number, n: number): string => {
     const d = n - b;
-    return `- **${name}:** ${b} → ${n} (${d > 0 ? `+${d}` : `${d}`})`;
+    const ci = opts.intervals
+      ? `; baseline ${b}/${base.total} (${wilsonLabel(b, base.total)}), now ${n}/${s.total} (${wilsonLabel(n, s.total)})`
+      : "";
+    return `- **${name}:** ${b} → ${n} (${d > 0 ? `+${d}` : `${d}`})${ci}`;
   };
   const who = base.provider ? `${base.provider} · ${base.model ?? "?"} · ${base.date ?? "?"}` : "recorded run";
   const note =
@@ -784,9 +805,11 @@ async function main(): Promise<void> {
   const pinned = provider === "anthropic" ? "temp 0" : `seed ${OPENAI_SEED}`;
   const fp = ledger.systemFingerprint ? ` · fp ${ledger.systemFingerprint}` : "";
   const l1Tag = l1Mode ? " · +L1" : "";
-  let md = renderResults(results, summary, `live (${provider} · ${model} · ${pinned}${fp}${l1Tag})`, l1);
+  let md = renderResults(results, summary, `live (${provider} · ${model} · ${pinned}${fp}${l1Tag})`, l1, {
+    intervals: true,
+  });
   const baseline = readBaseline();
-  if (baseline) md += renderDelta(baseline, summary);
+  if (baseline) md += renderDelta(baseline, summary, { intervals: true });
   md = LIVE_HEADER + md;
   writeFileSync(resolve(ROOT, LIVE_RESULTS), md);
   process.stdout.write(md + "\n");
