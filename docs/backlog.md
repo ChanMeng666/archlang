@@ -788,17 +788,40 @@ as two 940 mm doorways, not one ~1940 mm opening, and every room's `bottleneckCl
 shared jamb with both open is one opening to anyone walking through. Open: whether (and how)
 the analysis should recognise a pair: shared jamb, same host, both hinged on the outer jambs.
 
-### 6.12 · The swing-overlap sampler misses real overlaps — `todo` (pre-existing, no decision)
+### 6.12 · The swing-overlap sampler missed real overlaps — closed
 
-`swingsCollide` (`src/geometry.ts`) only ever tests nine points on each leaf's arc against the
-other swing, so an overlap whose shared region holds none of them is not seen. Counterexample:
+`swingsCollide` (`src/geometry.ts`) only ever tested nine points on each leaf's arc against the
+other swing, so an overlap whose shared region held none of them was not seen. Counterexample:
 A hinged at (300,300), radius 900, wedge 180°–270° (far jamb (−600,300), leaf end
 (300,−600)); B hinged at the origin, radius 1000, first quadrant. They share the square
-[0,300]², about 90,000 mm², and `swingsCollide` says clear, on the base and on this branch
-alike. It also misses segment contact on an oblique wall (the jamb sample's wedge sign lands
-on the wrong side in floating point). `sectorsObstruct` is exact on its own, so a decision
-procedure is within reach, but replacing the detector can add warnings to existing plans:
-that needs its own corpus sweep and a decision. Found by red-team review of 6.8; wording only.
+[0,300]², about 90,000 mm², and the sampler said clear. It also missed segment contact on an
+oblique wall. Found by red-team review of 6.8.
+
+Decision (owner-approved): decide with the exact test. After the hinge-gap reject and the double-door
+check, `swingsCollide` now asks `sectorsObstruct` on both clearance pairings, with no sampling.
+`sectorsObstruct` was NOT exact on its own, which the sampler had masked: it stopped at the
+first candidate axis with a support sum `<= VERTEX_EPS`, a separating GAP included, and then
+measured the two faces' overlap along the line without asking whether they were on the same
+line, so two leaves opening away from each other with parallel facing edges "touched" (the
+eval golden `sized-wet-room`'s `d_live`/`d_bed`, 1500 mm apart). Now a gap answers clear and
+the contact length counts only collinear faces. Single-point contact stays clear and segment
+contact a clash (6.8 unchanged).
+
+The narrowing hint's bisection (`widestClearingWidth`) needs being clear to be monotone in
+the width. The geometry is (a narrower leaf, and its clearance-grown disc, nest inside the
+wider one's); the double-door exemption is not: a narrowed leaf whose far jamb lands exactly
+on a THIRD door's latch is a pair at that one width, clear under a clearance while every width
+around it collides, and the bisection could quote it ("500 mm or less" with 201–499 colliding;
+the same on the old predicate). The narrowing probes now read the leaf as an independent door
+(`swingsCollideAsIndependent`); the flip probe and the warning keep the exemption.
+
+Measured: an instrumented sweep (examples with `lib`, fixtures, recovery corpus, eval goldens
+and fidelity plans; every door pair, every hinge flip and every narrowing width, at
+clearance 0 and 150) found no probe where the sampler and the exact test disagree, and the
+P-sweep (SVG, `describe()`, `lint()`, diagnostics, `accessibility-advisory` lint) moved 0 of
+84 rows. `test/swing-exact.test.ts` pins the counterexample, the gap family, the superset law
+against the frozen old predicate (`test/swing-predicate-v1.ts`), an independent polygon-clipping
+oracle and the bisection against every width.
 
 ---
 
