@@ -699,13 +699,27 @@ that one end only; a lift car at its door side. When there are arrival sides bot
 above (the storey is reachable from either independently), or the neighbouring stop is a
 different kind of run, the walk starts in front of the run's own entry edge(s) instead.
 
+Whether there is a landing at all is decided on the plan's geometry, not on the grid: at
+nine evenly spaced points just beyond the edge, is there floor in the arrival room that no
+wall band (except where a door or opening is cut through that same wall), void, other run, or
+furniture within a body radius covers? The points are 1 mm out and about 112 mm apart on a
+900 mm flight, so it is a sampled test: an obstruction narrower than their spacing can sit
+unseen between two of them, and a slot narrower than it can be missed. On a large plan whose cell does not divide it, the cell centres fall in a
+different place in a turned frame, so a test on cells read the same shallow landing as open
+in one frame and covered in another. Given a landing, the walk starts in the row of cells
+directly in front of the edge, or, when the grid's phase leaves that row with no free cell,
+at the free cells nearest the edge (in front of it or beside the flight, within a body radius
+and a cell or so).
+
 The v1 arrow convention limits this. The arrival edge follows the drawn direction of the
-run, not a search for the room, so a landing with no walkable cell in front of it seeds
-nothing and the storey's model measures nothing. The reason each room then carries is an
-existing one, no new code: a flight whose head lies against the shell wall leaves its rooms
-`unmeasured` as `unreachable`; a landing covered by something else (a `void` at the head of
-the flight) on a storey whose room has no doorway reads `no_threshold`. Flip the footprint's
-authored coordinates (or the run's `dir`) so the head opens onto the floor.
+run, not a search for the room, so a landing with no floor in front of it seeds nothing and
+the storey's model measures nothing. The reason each room then carries is an existing one,
+no new code: a flight whose head lies against the shell wall leaves its rooms `unmeasured` as
+`unreachable`; a landing covered by something else (a `void` at the head of the flight,
+furniture) on a storey whose room has no doorway reads `no_threshold`. Flip the footprint's
+authored coordinates (or the run's `dir`) so the head opens onto the floor. When the run is
+drawn along a different axis on the storey it is boarded from (portrait below, landscape
+above), the head cannot be read on this footprint and the run's own entry edge is used.
 
 ## Freedom — how constrained the plan is
 
