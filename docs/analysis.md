@@ -699,13 +699,23 @@ that one end only; a lift car at its door side. When there are arrival sides bot
 above (the storey is reachable from either independently), or the neighbouring stop is a
 different kind of run, the walk starts in front of the run's own entry edge(s) instead.
 
+The walk starts in the row of cells directly in front of that edge. On a large plan whose
+cell does not divide it, that row can fall inside a wall's raster in one frame and not in a
+turned one, for the same shallow landing; so when the row has no free cell, nothing but a
+wall covers it, and the plan's geometry shows floor just beyond the edge, the walk starts at
+the free cells nearest the edge instead (in front of it or beside the flight, within a body
+radius and a cell or so). The landing then never reads measured in one frame and sealed in
+another.
+
 The v1 arrow convention limits this. The arrival edge follows the drawn direction of the
-run, not a search for the room, so a landing with no walkable cell in front of it seeds
-nothing and the storey's model measures nothing. The reason each room then carries is an
-existing one, no new code: a flight whose head lies against the shell wall leaves its rooms
-`unmeasured` as `unreachable`; a landing covered by something else (a `void` at the head of
-the flight) on a storey whose room has no doorway reads `no_threshold`. Flip the footprint's
-authored coordinates (or the run's `dir`) so the head opens onto the floor.
+run, not a search for the room, so a landing with no floor in front of it seeds nothing and
+the storey's model measures nothing. The reason each room then carries is an existing one,
+no new code: a flight whose head lies against the shell wall leaves its rooms `unmeasured` as
+`unreachable`; a landing covered by something else (a `void` at the head of the flight,
+furniture) on a storey whose room has no doorway reads `no_threshold`. Flip the footprint's
+authored coordinates (or the run's `dir`) so the head opens onto the floor. When the run is
+drawn along a different axis on the storey it is boarded from (portrait below, landscape
+above), the head cannot be read on this footprint and the run's own entry edge is used.
 
 ## Freedom — how constrained the plan is
 
