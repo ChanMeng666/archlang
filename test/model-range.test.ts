@@ -461,6 +461,26 @@ suite("a plan-level setting out of range is reported once per plan, not once per
     });
   }
 
+  it("a statement expanded on several storeys is reported on each, with its level (red team p5)", () => {
+    const placed = plan(
+      `component c() { room id=z at (${P},0) size 3000x3000 }\n` +
+        `level 0 {\n${R}\nplace c() as i at (0,0)\n}\nlevel 1 {\n${R}\nplace c() as i at (0,0)\n}`,
+    );
+    const bare = plan(
+      `component c() { room id=z at (${P},0) size 3000x3000 }\nlevel 0 {\n${R}\nc()\n}\nlevel 1 {\n${R}\nc()\n}`,
+    );
+    const viaLet = plan(
+      `let far = ${P}\nlevel 0 {\n${R}\nroom id=b at (far,0) size 3000x3000\n}\nlevel 1 {\n${R}\nroom id=b at (far,0) size 3000x3000\n}`,
+    );
+    for (const src of [placed, bare, viaLet]) {
+      const errs = compile(src, { noCache: true }).diagnostics.filter((d) => d.severity === "error");
+      expect(errs.map((d) => [d.code, d.level])).toEqual([
+        ["E_OUT_OF_RANGE", 0],
+        ["E_OUT_OF_RANGE", 1],
+      ]);
+    }
+  });
+
   it("a storey's own out-of-range element is still reported on its storey", () => {
     const src = plan(`level 0 {\n${R}\n}\nlevel 1 {\n${R}\nroom id=far at (${P},0) size 3000x3000\n}`);
     const errs = compile(src, { noCache: true }).diagnostics.filter((d) => d.severity === "error");

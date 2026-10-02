@@ -311,6 +311,9 @@ export const roof: ElementDef = {
     return (resolved as RRoof).ring.map((p) => ({ ...p }));
   },
 
+  /** At most 1 primitive (the drawing budget, `MAX_DRAW_UNITS`): its dashed outline. */
+  drawCost: () => 1,
+
   render(resolved, ctx: RenderCtx): SceneNode[] {
     const r = resolved as RRoof;
     if (r.ring.length < 3) return [];

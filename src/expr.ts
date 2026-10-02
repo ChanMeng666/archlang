@@ -117,6 +117,17 @@ export function asBool(v: Value, onError: (d: Diagnostic) => void, span?: Span):
 /** Coerce a Value to a string for interpolation/labels. Numbers/bools stringify
  *  deterministically; arrays render as `[a, b]`. Never errors. */
 export function asStr(v: Value): string {
+  // Printing an array builds a new string: its length is measured and charged to the step
+  // budget (`MAX_EVAL_STEPS`) BEFORE it is built, so an array of large strings cannot
+  // allocate past the budget (1,100 references to a 1 Mi-character string threw
+  // `RangeError: Invalid string length`). A string, number or boolean allocates nothing
+  // new of any size.
+  if (v.t === "arr") chargeSteps(printedLength(v));
+  return printValue(v);
+}
+
+/** The string {@link asStr} returns, with no charge (the caller has charged its length). */
+function printValue(v: Value): string {
   switch (v.t) {
     case "str":
       return v.v;
@@ -125,13 +136,35 @@ export function asStr(v: Value): string {
     case "bool":
       return v.v ? "true" : "false";
     case "arr":
-      // An item printed is a step (`MAX_EVAL_STEPS`): printing a large array in a loop is
-      // work proportional to its length.
-      chargeSteps(v.v.length);
-      return `[${v.v.map(asStr).join(", ")}]`;
+      return `[${v.v.map(printValue).join(", ")}]`;
     case "fn":
     case "builtin":
       return "<function>";
+  }
+}
+
+/**
+ * The length {@link printValue} will return, measured without building it. Each array item
+ * walked is itself a step, so an array nested in itself many times over (whose printed form
+ * doubles per level) is stopped by the walk, before any length is summed.
+ */
+function printedLength(v: Value): number {
+  switch (v.t) {
+    case "str":
+      return v.v.length;
+    case "num":
+      return fmtNum(v.v).length;
+    case "bool":
+      return v.v ? 4 : 5;
+    case "arr": {
+      chargeSteps(v.v.length);
+      let n = 2 + 2 * Math.max(0, v.v.length - 1);
+      for (const x of v.v) n += printedLength(x);
+      return n;
+    }
+    case "fn":
+    case "builtin":
+      return 10;
   }
 }
 
@@ -588,9 +621,16 @@ export function firstOverflow(kind: "eval" | "expand"): boolean {
  * - an expression node evaluated (every {@link evalExpr} entry, which is every call too);
  * - a statement executed and a `for`/`while` iteration started (`ir.ts` `expandScope`);
  * - a value produced or walked: a range item, a character a string template appends, an
- *   array item `str()`/interpolation prints or `==` compares;
+ *   array item `str()`/interpolation prints or `==` compares, a character two strings of
+ *   one length compare;
  * - a binding copied: a scope snapshot (`ir.ts` `Scope.flatten`) and a call's closure copy
- *   cost one step per binding, because both copy the whole visible environment.
+ *   cost one step per binding, because both copy the whole visible environment;
+ * - a cell of a "did you mean" hint's edit distance, and a diagnostic raised during
+ *   evaluation ({@link DIAGNOSTIC_STEPS}).
+ *
+ * Whatever builds a string is charged BEFORE it builds it (`asStr` measures an array's printed
+ * length first; a template charges each part before appending it), so no surface can allocate
+ * a string past the budget.
  *
  * Counting nodes alone was not enough: a statement in a scope with many bindings, a closure
  * copy per call and a doubling string cost work proportional to a size, and each would
@@ -602,10 +642,10 @@ export function firstOverflow(kind: "eval" | "expand"): boolean {
  * {@link MAX_EVAL_STEPS} was set by measurement (`test/step-budget.test.ts` pins both
  * margins). Over the corpus (examples with `lib`, test fixtures, the recovery corpus, eval
  * goldens, faults and fidelity plans, every `arch` fence of the docs) the median plan spends
- * 25 steps and the largest that compiles 4,974 (`terrace-row`, four placed instances): the
+ * 79 steps and the largest that compiles 4,974 (`terrace-row`, four placed instances): the
  * bound is 1,005 times that. The catalogue's demonstrations of the other caps spend more by
- * construction (a `while` at its 10,000 iterations 260,026, a range at its 100,000 items
- * 200,014) and still reach their own cap first, 19 times under it. The bound is not set
+ * construction (a `while` at its 10,000 iterations 260,090, a range at its 100,000 items
+ * 200,078) and still reach their own cap first, 19 times under it. The bound is not set
  * higher because time to reach it is linear in it: on Node 24 M.2's nested loops reach it in
  * about 1 s cold (a loop iteration is about 2 µs and 14 steps), three nested capped `while`s
  * in 0.7 s, recursion that branches in 0.3 s.
@@ -616,6 +656,14 @@ export function firstOverflow(kind: "eval" | "expand"): boolean {
  * `resolve()`. Every evaluator frame it unwinds releases its stack units in `finally`.
  */
 export const MAX_EVAL_STEPS = 5_000_000;
+
+/**
+ * What one diagnostic raised during evaluation costs: a retained object with its formatted
+ * message and spans, a few hundred bytes. Charged where the resolver records it, so a
+ * runaway loop that raises one per iteration is held to tens of thousands of reports, not
+ * hundreds of thousands (an unknown name in M.2's nested loops raised 326,000 in 4.5 s).
+ */
+export const DIAGNOSTIC_STEPS = 64;
 
 /** Where the statement being executed was written, for the {@link StepLimitSignal}'s report. */
 export interface StepSite {
@@ -716,9 +764,18 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, de
       case "str": {
         let s = "";
         for (const p of e.parts) {
-          const part = typeof p === "string" ? p : asStr(evalExpr(p, env, onError, depth));
-          // A character appended is a step: a template can double a string per iteration.
-          chargeSteps(part.length);
+          // A character appended is a step, charged BEFORE the append: a template can double
+          // a string per iteration. An array's printed form is charged by `asStr` before it
+          // is built; a string, number or boolean part exists already, so only the append
+          // is new work.
+          if (typeof p === "string") {
+            chargeSteps(p.length);
+            s += p;
+            continue;
+          }
+          const v = evalExpr(p, env, onError, depth);
+          const part = asStr(v);
+          if (v.t !== "arr") chargeSteps(part.length);
           s += part;
         }
         return { t: "str", v: s };
@@ -869,6 +926,8 @@ function valueEq(a: Value, b: Value): boolean {
     return a.v.length === b.v.length && a.v.every((x, i) => valueEq(x, b.v[i]!));
   }
   if (a.t === "fn" || a.t === "builtin") return a === b;
+  // Two strings of one length compare character by character: a character is a step.
+  if (a.t === "str" && b.t === "str" && a.v.length === b.v.length) chargeSteps(a.v.length);
   // num/bool/str compare by primitive value.
   return (a as { v: unknown }).v === (b as { v: unknown }).v;
 }
@@ -938,6 +997,11 @@ function describe(t: Token): string {
 
 /** Nearest candidate within a small edit distance, for "did you mean" hints. */
 export function closest(name: string, candidates: string[]): string | null {
+  // The edit-distance search is |name| x |candidate| cells per candidate: each cell is an
+  // evaluation step (`MAX_EVAL_STEPS`), so a hint raised in a runaway loop is paid for.
+  let cells = 0;
+  for (const c of candidates) cells += (name.length + 1) * (c.length + 1);
+  chargeSteps(cells);
   let best: string | null = null;
   let bestDist = Infinity;
   for (const c of candidates) {

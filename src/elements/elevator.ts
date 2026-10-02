@@ -57,6 +57,9 @@ export const elevator: ElementDef = {
     return rectCorners(e.at.x, e.at.y, e.size.w, e.size.h);
   },
 
+  /** At most 3 primitives (the drawing budget, `MAX_DRAW_UNITS`): the car and its two diagonals (`elevatorGlyph`). */
+  drawCost: () => 3,
+
   render(resolved, ctx: RenderCtx): SceneNode[] {
     return elevatorGlyph(resolved as RElevator, ctx.theme, ctx.sizes);
   },

@@ -51,6 +51,7 @@ import {
   BUDGET_SUBSTITUTE,
   chargeSteps,
   closest,
+  DIAGNOSTIC_STEPS,
   enterStack,
   EXPAND_RESERVE,
   EXPAND_UNITS,
@@ -830,75 +831,6 @@ const MAX_ITERATIONS = 10_000;
  */
 export const MAX_ELEMENTS = 5_000;
 
-/**
- * The fixed part of every element's drawing estimate: at least what any glyph whose
- * primitive count does not grow with its size draws. Measured: the largest is a fixture's
- * (`upper_cabinet`, 67 primitives with its 64 divisions), then a fence segment's 63, which
- * `fence`'s own `drawCost` counts per segment; `test/drawing-budget.test.ts` holds every kind
- * and fixture category to it.
- */
-export const DRAW_UNITS_PER_ELEMENT = 72;
-
-/**
- * The drawing budget: the most drawing primitives one plan may be estimated at, summed over
- * EVERY storey (the pages are all held at once). An element is estimated at
- * {@link DRAW_UNITS_PER_ELEMENT}, plus one per point its `bounds()` reports, plus its
- * `drawCost()` (a run's treads, a fence's posts): an upper bound on what `render()` emits
- * for it. Text is not counted here: every character a label prints was produced by the
- * evaluator, which charges it to the step budget (`MAX_EVAL_STEPS`, `src/expr.ts`).
- * Past it the plan is `E_DRAWING_LIMIT` before `toScene()` runs.
- *
- * Measured (Node 24, `compile()`, heap held after it): a drawn primitive costs 0.75 to
- * 1.2 KB with its share of the SVG text. Before the budget, 500 escalators at the tread cap
- * (1.1 million primitives) took 0.82 GB and 105 MB of SVG, and 4,990 cabinets on each of two
- * storeys 0.53 GB. Just under it, the heaviest shapes measured (175 escalators at the cap,
- * 2 × 2,630 cabinets, 100 fences of 60 long segments, 4,991 cabinets on one storey) hold 0.30
- * to 0.38 GB and each completes under a 512 MB heap cap. The corpus's largest plan is
- * estimated at 10,727 (`hillside-villa`, two storeys), 37 times under the budget; the
- * estimate is held above what is drawn by `test/drawing-budget.test.ts`.
- */
-export const MAX_DRAW_UNITS = 400_000;
-
-/** One element's drawing estimate (see {@link MAX_DRAW_UNITS}). */
-export function drawUnits(el: ResolvedElement, registry: Registry): number {
-  const def = registry.byKind.get(el.kind);
-  if (!def) return DRAW_UNITS_PER_ELEMENT;
-  return DRAW_UNITS_PER_ELEMENT + def.bounds(el).length + (def.drawCost?.(el) ?? 0);
-}
-
-/**
- * `E_DRAWING_LIMIT` when the storeys' elements, summed in drawing order (ascending storeys,
- * each in element order), are estimated past {@link MAX_DRAW_UNITS}; at the element whose
- * estimate crosses it, tagged with its storey's level. Undefined within the budget.
- */
-function drawBudget(
-  storeys: readonly { elements: readonly ResolvedElement[]; level?: number }[],
-  registry: Registry,
-): Diagnostic | undefined {
-  let total = 0;
-  let over: { el: ResolvedElement; level?: number } | undefined;
-  for (const s of storeys) {
-    for (const el of s.elements) {
-      total += drawUnits(el, registry);
-      if (over === undefined && total > MAX_DRAW_UNITS) over = { el, level: s.level };
-    }
-  }
-  if (over === undefined) return undefined;
-  const { el, level } = over;
-  const span = (el as { span?: Span }).span;
-  return {
-    severity: "error",
-    message:
-      `The drawing is estimated at ${fmt3(total)} primitives, past the budget of ${MAX_DRAW_UNITS} a plan may draw ` +
-      `(crossed at ${el.kind} "${el.id}"); a drawing this large would exhaust memory — split it into ` +
-      "separate plans, or draw fewer or shorter runs",
-    code: "E_DRAWING_LIMIT",
-    ...(span ? { span } : {}),
-    ...(el._file ? { file: el._file } : {}),
-    ...(level !== undefined ? { level } : {}),
-  };
-}
-
 /** An element flattened out of the body, paired with the env its exprs use. */
 interface Entry {
   node: AstElement;
@@ -1126,7 +1058,12 @@ function expandScopeFrame(
 ): Entry[] {
   // Every diagnostic raised while expanding THIS body inherits the body's provenance:
   // which file its spans are measured in, and which placed instance it belongs to.
-  const diag = (d: Diagnostic) => diagnostics.push(stampProvenance(d, ectx.frame, ectx.file));
+  const diag = (d: Diagnostic) => {
+    // A diagnostic is retained work: charged to the step budget, so a loop raising one per
+    // iteration is stopped before its reports fill memory (`DIAGNOSTIC_STEPS`).
+    chargeSteps(DIAGNOSTIC_STEPS);
+    diagnostics.push(stampProvenance(d, ectx.frame, ectx.file));
+  };
   const out: Entry[] = [];
   /** Element/statement entries carry the same provenance, for resolve-time diagnostics. */
   const prov = {
@@ -1844,6 +1781,11 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
   const shared: Diagnostic[] = [];
 
   let sheet: ResolvedSheet | undefined;
+  // The step budget is one counter for the whole compile, so on a `paper` plan the geometry
+  // probes below and the drawn pass that follows count into the same total: the probes
+  // evaluate every storey once and the drawn pass a second time, and the drawn pass starts
+  // where the probes stopped. A probe that crosses the budget ends the resolution there.
+  let probeSteps = 0;
   if (ast.paper) {
     let w = 0;
     let h = 0;
@@ -1856,10 +1798,9 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
     // largest any page occupies. Reserving the ground floor's would let a taller schedule
     // upstairs run off the paper the fit rule just approved.
     let tableRows = 0;
-    // The probes spend the step budget as the storeys will (the sheet changes no evaluation),
-    // so a probe that crosses it is where the plan stops: the plan is refused with what the
-    // geometry pass found, rather than evaluated a second time to the same crossing.
-    let probeSteps = 0;
+    // A probe that crosses the step budget is where the plan stops: it is refused with what
+    // the geometry pass found (every storey up to and including the crossing; the sheet,
+    // which needs every storey, is never derived), rather than evaluated again.
     const probes: { b: LevelNode; ir: ResolvedPlan; diagnostics: Diagnostic[] }[] = [];
     for (const b of blocks) {
       const probe = resolveCached(levelPlanFor(ast, b, true), registry, world, {
@@ -1908,7 +1849,7 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
   // The evaluation-step budget is one counter across the building: each storey starts where
   // the one below it stopped, and once a storey crosses it the storeys above are not
   // evaluated at all (they resolve to no elements and raise nothing).
-  let steps = 0;
+  let steps = probeSteps;
   let stopped = false;
   const levels: ResolvedLevel[] = blocks.map((b) => {
     if (stopped) return unresolvedLevel(ast, b, stampOf(b));
@@ -1933,8 +1874,8 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
     };
   });
 
-  // Once per PLAN, not per page: the theme's pen, and the drawing budget over every storey.
-  // Neither runs on a plan the step budget stopped (its storeys hold no elements).
+  // Once per PLAN, not per page: the theme's pen (the drawing budget is the pipeline's).
+  // It does not run on a plan the step budget stopped (its storeys hold no elements).
   const planWide: Diagnostic[] = [];
   if (!stopped) {
     const lw = ast.theme?.lineWeight;
@@ -1942,16 +1883,18 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
       const pen = lineWeightOutOfRange(levels, lw, ast.lineWeightSpan, registry);
       if (pen) planWide.push(pen);
     }
-    const over = drawBudget(
-      levels.map((l) => ({ elements: l.ir.elements, level: l.level })),
-      registry,
-    );
-    if (over) planWide.push(over);
   }
 
   return {
     ir: levels[0]!.ir,
-    diagnostics: [...shared, ...oncePerPlan(levels.map((l) => l.diagnostics)), ...planWide],
+    diagnostics: [
+      ...shared,
+      ...oncePerPlan(
+        levels.map((l) => l.diagnostics),
+        ast,
+      ),
+      ...planWide,
+    ],
     levels,
   };
 }
@@ -1987,45 +1930,59 @@ function stoppedLevels(
       diagnostics: p.diagnostics.map((d) => ({ ...d, level: b.level })),
     };
   });
-  return { ir: levels[0]!.ir, diagnostics: oncePerPlan(levels.map((l) => l.diagnostics)), levels };
+  return {
+    ir: levels[0]!.ir,
+    diagnostics: oncePerPlan(
+      levels.map((l) => l.diagnostics),
+      ast,
+    ),
+    levels,
+  };
 }
 
-/** The codes a plan-level setting reports when its value is out of range. */
-const PLAN_SETTING_RANGE_CODES: ReadonlySet<string> = new Set(["E_OUT_OF_RANGE", "E_HEIGHT_RANGE"]);
+/**
+ * The spans of the plan-level SETTINGS a storey evaluates on its own behalf: the `axes`
+ * block, the `site` block and the plan `height`. A report inside one of them is about the
+ * plan, whichever storey raised it. (`north`, `grid` and a `paper` scale are reported by the
+ * parser or the shared sheet, once already; a theme `lineWeight` once by
+ * {@link lineWeightOutOfRange}.)
+ */
+function planSettingSpans(ast: PlanNode): Span[] {
+  const spans: Span[] = [];
+  if (ast.axes?.span) spans.push(ast.axes.span);
+  if (ast.site?.span) spans.push(ast.site.span);
+  if (ast.heightSpan) spans.push(ast.heightSpan);
+  return spans;
+}
 
 /**
- * The storeys' diagnostics in drawing order, with an out-of-range report that EVERY storey
- * raised identically kept once, untagged, where it first appears. Such a report is about a
- * plan-level setting every storey shares (an `axes` position, the `site` boundary, the plan's
- * `height`) or a plan-wide statement every storey repeats, so it is one fact about the plan,
- * not one per page. Anything a storey raised on its own is untouched.
+ * The storeys' diagnostics in drawing order, with a report raised INSIDE a plan-level
+ * setting (see {@link planSettingSpans}) kept once, untagged, where it first appears: every
+ * storey evaluates the same setting against the same plan-level bindings, so it is one fact
+ * about the plan, not one per page. Everything else keeps one report per storey with its
+ * level, including a statement written once and expanded on several storeys (a component
+ * placed on two floors is two placements, each reported on its own floor).
  */
-function oncePerPlan(perStorey: readonly Diagnostic[][]): Diagnostic[] {
+function oncePerPlan(perStorey: readonly Diagnostic[][], ast: PlanNode): Diagnostic[] {
   const all = perStorey.flat();
-  if (perStorey.length < 2 || !all.some((d) => PLAN_SETTING_RANGE_CODES.has(d.code ?? ""))) return all;
-  const keyOf = (d: Diagnostic): string => {
-    const { level: _level, ...rest } = d;
-    return JSON.stringify(rest);
-  };
-  const keysOf = perStorey.map(
-    (ds) => new Set(ds.filter((d) => PLAN_SETTING_RANGE_CODES.has(d.code ?? "")).map(keyOf)),
-  );
-  const everywhere = new Set([...keysOf[0]!].filter((k) => keysOf.every((ks) => ks.has(k))));
-  if (everywhere.size === 0) return all;
+  const settings = planSettingSpans(ast);
+  if (perStorey.length < 2 || settings.length === 0) return all;
+  const inSetting = (d: Diagnostic): boolean =>
+    d.file === undefined &&
+    d.span !== undefined &&
+    settings.some((s) => d.span!.start >= s.start && d.span!.end <= s.end);
   const seen = new Set<string>();
   const out: Diagnostic[] = [];
   for (const d of all) {
-    if (!PLAN_SETTING_RANGE_CODES.has(d.code ?? "")) {
+    if (!inSetting(d)) {
       out.push(d);
       continue;
     }
-    const k = keyOf(d);
-    if (!everywhere.has(k)) out.push(d);
-    else if (!seen.has(k)) {
-      seen.add(k);
-      const { level: _level, ...plan } = d;
-      out.push(plan);
-    }
+    const { level: _level, ...plan } = d;
+    const k = JSON.stringify(plan);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(plan);
   }
   return out;
 }
@@ -2225,6 +2182,7 @@ function resolveBody(
   /** The entry a resolved element (local, or carried into plan coordinates) came from. */
   const entryOf = new Map<ResolvedElement, Entry>();
   const pushDiag = (d: Diagnostic): void => {
+    chargeSteps(DIAGNOSTIC_STEPS);
     const out = activeEntry ? stampProvenance(d, activeEntry.frame, activeEntry.file) : d;
     diagSink.push(out);
     if (activeEntry) ownerOf.set(out, activeEntry);
@@ -2572,13 +2530,6 @@ function resolveBody(
   //    A storey of a multi-storey plan leaves the pen to `resolveLevelsImpl`, which reports a
   //    plan-level `lineWeight` once for the building rather than once per page.
   checkDrawnSizes(ast, elements, walls, siteBoundary, sheet, registry, diagnostics, extras.level === undefined);
-
-  // 8. The drawing budget, before anything is drawn: one storey here, the whole building in
-  //    `resolveLevelsImpl` (the budget is one total across every page).
-  if (extras.level === undefined) {
-    const over = drawBudget([{ elements }], registry);
-    if (over) diagnostics.push(over);
-  }
 
   const ir: ResolvedPlan = {
     name: ast.name,

@@ -66,9 +66,10 @@ export const escalator: ElementDef = {
   render(resolved, ctx: RenderCtx): SceneNode[] {
     return escalatorGlyph(resolved as REscalator, ctx.theme, ctx.sizes);
   },
-  /** Two chevron strokes per tread division (`escalatorGlyph`), for the drawing budget. */
+  /** Two chevron strokes per tread division plus three (`escalatorGlyph`: the footprint and
+   *  the four-stroke arrow, less the one division that draws no chevron), for the drawing budget. */
   drawCost(resolved): number {
-    return 2 * runTreads(resolved as REscalator);
+    return 2 * runTreads(resolved as REscalator) + 3;
   },
   /** The frame's action on an escalator (`frame.ts`'s `transformElement` calls this). */
   transform(resolved, t: TransformCtx): REscalator {

@@ -22,6 +22,12 @@ import {
   rotateForBackEdge,
 } from "../fixture-orientation.js";
 import { mod360 } from "../algebra/d4.js";
+import { DEFAULT_THEME } from "../theme.js";
+import { renderSizes } from "../sheet.js";
+
+/** Canonical pens for counting a glyph's primitives (a count never depends on the pens);
+ *  built on first use, so loading this module calls nothing in another. */
+let countSizes: ReturnType<typeof renderSizes> | undefined;
 
 const ANCHOR_SET: ReadonlySet<string> = new Set<FurnitureAnchor>(FURNITURE_ANCHORS);
 
@@ -293,6 +299,25 @@ export const furniture: ElementDef = {
   bounds(resolved): Point[] {
     const f = resolved as RFurniture;
     return rectCorners(f.at.x, f.at.y, f.size.w, f.size.h);
+  },
+
+  /**
+   * The primitives this piece draws, for the drawing budget (`MAX_DRAW_UNITS`): its symbol is
+   * drawn once into a throwaway list, at its own footprint, by the very `fixtureGlyph` that
+   * `render` calls, and counted. A glyph's count depends on the footprint (cabinet
+   * divisions, a hedge's shrubs) and never on the pens, so canonical pens are used. The
+   * count is at most 67 (a cabinet run's 64 divisions); an uncatalogued word draws its
+   * labelled rectangle (2).
+   */
+  drawCost(resolved): number {
+    const f = resolved as RFurniture;
+    const deg = f.rotate ?? 0;
+    const swap = deg === 90 || deg === 270;
+    const pw = swap ? f.size.h : f.size.w;
+    const ph = swap ? f.size.w : f.size.h;
+    const rect = { x: f.at.x, y: f.at.y, w: pw, h: ph };
+    countSizes ??= renderSizes(undefined, 1000, 1000, 1);
+    return fixtureGlyph(f.category, rect, DEFAULT_THEME, countSizes)?.length ?? 2;
   },
 
   render(resolved, ctx: RenderCtx): SceneNode[] {

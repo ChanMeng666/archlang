@@ -81,6 +81,15 @@ function synthDims(ir: ResolvedPlan, sizes: RenderSizes): RDim[] {
 }
 
 /**
+ * How many dimensions `dims auto` will draw on this storey, for the drawing budget
+ * (`src/draw-budget.ts`): the same {@link synthDims} the drawing calls. The pens only move
+ * a chain outward or flip a number's side, never add or remove a dimension, so any pens do.
+ */
+export function autoDimCount(ir: ResolvedPlan): number {
+  return ir.autoDims ? synthDims(ir, renderSizes(ir.sheet, 1000, 1000, 1)).length : 0;
+}
+
+/**
  * `dims auto` for CURVES — the GB/T 50104 convention for anything round: a linear chain
  * cannot describe an arc, so a curve is dimensioned by its RADIUS and a circle by its
  * DIAMETER.

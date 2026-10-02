@@ -16,6 +16,7 @@ import { parse } from "./parser.js";
 import { lineWeightOutOfRange, resolveAll } from "./ir.js";
 import type { PlanResolution } from "./ir.js";
 import { planTheme, toScene } from "./scene-build.js";
+import { drawBudgetDiagnostic } from "./draw-budget.js";
 import type { PlanNode } from "./ast.js";
 import { toIso } from "./view/iso.js";
 import { renderSvg } from "./backends/svg.js";
@@ -84,6 +85,13 @@ export function compileUncached(source: string, opts: CompileOptions): CompileRe
   // source's is; only the compile draws, so only the compile checks it.
   const pen = plan && resolved ? apiLineWeightOutOfRange(plan, resolved, opts, runtime) : undefined;
   if (pen) diagnostics.push(pen);
+  // The drawing budget, before anything is drawn: estimated over every storey, and only for a
+  // plan that would otherwise be drawn (an error already draws nothing).
+  if (plan && resolved && !diagnostics.some((d) => d.severity === "error")) {
+    const storeys = resolved.levels.length > 0 ? resolved.levels : [{ ir: resolved.ir }];
+    const over = drawBudgetDiagnostic(storeys, registry, plan.headerSpan);
+    if (over) diagnostics.push(over);
+  }
 
   const errs = diagnostics.filter((d) => d.severity === "error");
   const errors = errs.map((d) => toLegacy(source, d));

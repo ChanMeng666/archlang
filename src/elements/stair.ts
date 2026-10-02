@@ -106,9 +106,10 @@ export const stair: ElementDef = {
   render(resolved, ctx: RenderCtx): SceneNode[] {
     return stairGlyph(resolved as RStair, ctx.theme, ctx.sizes);
   },
-  /** One tread line per division (`stairGlyph`), for the drawing budget. */
+  /** At most one tread line per division plus eight (`stairGlyph`: the footprint, the two
+   *  break lines, the two band edges and the four-stroke arrow), for the drawing budget. */
   drawCost(resolved): number {
-    return runTreads(resolved as RStair);
+    return runTreads(resolved as RStair) + 8;
   },
   /**
    * The frame's action on a stair (`frame.ts`'s `transformElement` calls this). The tail is

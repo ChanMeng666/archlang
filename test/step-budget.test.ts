@@ -11,6 +11,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve as resolvePath } from "node:path";
 import { describe as suite, expect, it } from "vitest";
+import * as A from "../src/index.js";
 import { compile, describe, ERROR_CATALOG, lint, makeVirtualWorld } from "../src/index.js";
 import { MAX_EVAL_STEPS } from "../src/expr.js";
 import { clearResolveCache, evaluationSteps, resolveAll } from "../src/ir.js";
@@ -92,6 +93,94 @@ suite("the shapes that used to run away", () => {
     expect(cs.length).toBeGreaterThan(0);
     expect(cs.every((c) => ["E_ELEMENT_LIMIT", "E_STEP_LIMIT", "E_DRAWING_LIMIT"].includes(c))).toBe(true);
   }, 60_000);
+});
+
+suite("a string is charged before it is built, on every public surface", () => {
+  // A 1 Mi-character string (16 doublings of 16 characters), referenced N times in an array,
+  // then printed: printing allocates N Mi characters. Charged after building, 1,100
+  // references threw `RangeError: Invalid string length` out of every API below in 25 ms,
+  // and 500 held 530 MB before the budget noticed.
+  const doubled = `  let s = "xxxxxxxxxxxxxxxx"\n  let k = 0\n  while k < 16 {\n    s = "{s}{s}"\n    k = k + 1\n  }`;
+  const arrstr = (n: number): string =>
+    plan(
+      `${ROOM}\n${doubled}\n  let a = [${Array.from({ length: n }, () => "s").join(", ")}]\n  let t = str(a)\n  let u = "{t}"`,
+    );
+  const sources: Record<string, string> = {
+    "an array of 1,100 references to a 1 Mi-character string, printed": arrstr(1100),
+    "the same array interpolated straight into a label": plan(
+      `${ROOM}\n${doubled}\n  let a = [${Array.from({ length: 1100 }, () => "s").join(", ")}]\n  room at (4000,0) size 3000x3000 label "{a}"`,
+    ),
+    "an array nested in itself 40 times, printed": plan(
+      `${ROOM}\n  let a = [1, 2]\n  let k = 0\n  while k < 40 {\n    a = [a, a]\n    k = k + 1\n  }\n  let t = str(a)`,
+    ),
+    "a 1 Mi-character string compared with itself in a loop": plan(
+      `${ROOM}\n${doubled}\n  let t = "{s}"\n  for i in 0..100000 { let e = s == t }`,
+    ),
+    "an unknown name in M.2's nested loops (a hint per iteration)": plan(
+      `${ROOM}\n  for i in 0..100000 { for j in 0..1000 { let x = nope } }`,
+    ),
+    "a recursion that calls itself twice, in the plan height": plan(
+      ROOM,
+      "  let f(n) = if n < 2 { 1 } else { f(n - 1) + f(n - 2) }\n  height f(40)\n",
+    ),
+  };
+  // Every public entry point that resolves a source. None may throw, and the ones that report
+  // diagnostics report E_STEP_LIMIT.
+  const calls: Record<string, (s: string) => unknown> = {
+    compile: (s) => A.compile(s, { noCache: true }),
+    compileTheme: (s) => A.compile(s, { noCache: true, theme: { lineWeight: 1e308 } }),
+    compileOverlay: (s) => A.compile(s, { noCache: true, overlays: ["circulation"] }),
+    describe: (s) => A.describe(s),
+    lint: (s) => A.lint(s),
+    repair: (s) => A.repair(s),
+    format: (s) => A.format(s),
+    suggestTopology: (s) => A.suggestTopology(s),
+    diffPlans: (s) => A.diffPlans(s, s.replace("3000x3000", "3000x3001")),
+    reroll: (s) => A.reroll(s),
+    hover: (s) => {
+      for (let o = 0; o < s.length; o += 29) A.hover(s, o);
+    },
+    completion: (s) => {
+      for (let o = 0; o < s.length; o += 31) A.completion(s, o);
+    },
+    definition: (s) => {
+      for (let o = 0; o < s.length; o += 37) A.definition(s, o);
+    },
+    signatureHelp: (s) => {
+      for (let o = 0; o < s.length; o += 41) A.signatureHelp(s, o);
+    },
+    codeActions: (s) => A.codeActions(s, { start: 0, end: s.length }),
+    refactorActions: (s) => A.refactorActions(s, { start: 0, end: s.length }),
+    resolve: (s) => {
+      const r = A.compile(s, { noCache: true });
+      if (r.ast) A.resolve(r.ast);
+    },
+    astToJson: (s) => {
+      const r = A.compile(s, { noCache: true });
+      if (r.ast) A.astToJson(r.ast);
+    },
+  };
+  for (const [name, src] of Object.entries(sources)) {
+    it(`${name}: no API throws, and compile() reports E_STEP_LIMIT`, () => {
+      for (const [api, call] of Object.entries(calls)) {
+        expect(() => call(src), api).not.toThrow();
+      }
+      const errs = A.compile(src, { noCache: true }).diagnostics.filter((d) => d.severity === "error");
+      expect(errs.map((d) => d.code)).toContain("E_STEP_LIMIT");
+      expect(errs.filter((d) => d.code === "E_STEP_LIMIT")).toHaveLength(1);
+    }, 120_000);
+  }
+
+  it("the heap a refused string plan holds stays small (500 and 1,100 references)", () => {
+    for (const n of [500, 1100]) {
+      const before = process.memoryUsage().heapUsed;
+      const r = A.compile(arrstr(n), { noCache: true });
+      const grown = process.memoryUsage().heapUsed - before;
+      expect(r.diagnostics.map((d) => d.code)).toContain("E_STEP_LIMIT");
+      // Generous for GC timing; before the fix 500 references held 530 MB.
+      expect(grown).toBeLessThan(100 * 1024 * 1024);
+    }
+  }, 120_000);
 });
 
 suite("one counter across the whole resolution", () => {

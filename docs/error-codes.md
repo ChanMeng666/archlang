@@ -373,12 +373,12 @@ room id=main at (0,0) size 3000x3000   # then, in the plan: furniture bed in wes
 
 *error* — The drawing is larger than any plan may draw.
 
-**Cause.** Before anything is drawn, every element is estimated at the drawing primitives it will emit (a fixed glyph, one per point of its outline, and the part that grows with its size: a run's tread lines, a fence's posts), summed over every storey because a multi-storey plan holds all its pages at once. Past 400,000 the drawing would take hundreds of megabytes, so the plan is refused, at the element whose estimate crosses the budget. Usually a loop that repeats long runs or large fixtures far more often than meant.
+**Cause.** Before anything is drawn, `compile()` estimates the drawing primitives every element will emit (an upper bound per kind: a room 3, a door 5, a run one or two lines per tread, a fixture its own symbol), plus one per point of its outline and what `dims auto`, the axes and the margin tables add, summed over every storey because a multi-storey plan holds all its pages at once. Past 300,000 the drawing would take hundreds of megabytes, so the plan is refused, at the element whose estimate crosses the budget. Usually a loop that repeats long runs or large fixtures far more often than meant. `describe` and `lint` draw nothing and are not held by it.
 
 **Fix.** Draw fewer or shorter runs, shrink the loop, or split the building into separate plans.
 
 ```arch static
-for i in 0..200 { escalator at (0, i * 2000) size 300000x1200 dir up }   # error: about 444,000 primitives
+for i in 0..200 { escalator at (0, i * 2000) size 300000x1200 dir up }   # error: 429,800 units
 ```
 
 ## E_DUP_ID
@@ -1269,7 +1269,7 @@ stair id=s at (0,0) size 900x2600 dir up width 1200   # error: cross extent is 9
 
 *error* — Evaluation did more work than any plan needs.
 
-**Cause.** One counter measures the work the whole resolution does (every storey, component instance and import): an expression evaluated, a statement run, a loop iteration, a value produced, a binding copied. Past 5,000,000 steps evaluation stops at the statement that crossed the budget and the plan draws nothing. Each loop's own caps hold (`E_RANGE_LIMIT`, `E_WHILE_LIMIT`, `E_ELEMENT_LIMIT`), but loops nested in loops, recursion that calls itself twice and a string that doubles multiply inside them.
+**Cause.** One counter measures the work the whole resolution does (every storey, component instance and import): an expression evaluated, a statement run, a loop iteration, a value or character produced (charged before it is built), a binding copied, a diagnostic raised. Past 5,000,000 steps evaluation stops at the statement that crossed the budget and the plan draws nothing. Each loop's own caps hold (`E_RANGE_LIMIT`, `E_WHILE_LIMIT`, `E_ELEMENT_LIMIT`), but loops nested in loops, recursion that calls itself twice and a string that doubles multiply inside them.
 
 **Fix.** Remove the inner loop or the doubling, compute the value directly, or split the plan.
 

@@ -416,6 +416,9 @@ export const room: ElementDef = {
     return r.labelAt ? [r.labelAt.x, r.labelAt.y] : [];
   },
 
+  /** At most 3 primitives (the drawing budget, `MAX_DRAW_UNITS`): its floor (a polygon or a true circle), its name and its area. */
+  drawCost: () => 3,
+
   render(resolved, ctx: RenderCtx): SceneNode[] {
     const r = resolved as RRoom;
     const { theme, sizes } = ctx;

@@ -195,6 +195,14 @@ export interface ElementDef {
   parse(ctx: ParseCtx): AstElement;
   /** Auto-id prefix (e.g. "room", or a wall/furniture's category). */
   idPrefix(node: AstElement): string;
+  /**
+   * Resolve one statement. Every expression it evaluates through `ctx` is charged to the
+   * plan's evaluation-step budget (`MAX_EVAL_STEPS`, `E_STEP_LIMIT`). A plugin that calls
+   * `compile()` (or `resolve()`) from in here starts a nested resolution with a FRESH budget
+   * of its own: its work is not charged to the outer plan, and the outer budget resumes when
+   * it returns. A step-limit crossing in the outer plan unwinds through this method; do not
+   * catch what you did not throw.
+   */
   resolve(node: AstElement, ctx: ResolveCtx): ResolvedElement;
   /** Points this element contributes to the drawing bounds. */
   bounds(resolved: ResolvedElement): Point[];
@@ -207,12 +215,13 @@ export interface ElementDef {
    */
   measures?(resolved: ResolvedElement): number[];
   /**
-   * How many drawing primitives {@link render} emits BEYOND a fixed-size glyph: the part
-   * that grows with the element's size (a run's treads, a fence's posts). The resolver sums
-   * every element's estimate over the whole building and refuses a plan past the drawing
-   * budget before anything is drawn (`MAX_DRAW_UNITS`, `E_DRAWING_LIMIT`). Optional: without
-   * it an element is estimated at the fixed bound plus one per point it reports in
-   * {@link bounds}, which covers any glyph whose count does not grow with its size.
+   * An upper bound on the drawing primitives {@link render} emits for this element (a room
+   * 3, a run its treads plus its arrow, a fixture its glyph). `compile()` sums every
+   * element's estimate, plus one unit per point it reports in {@link bounds}, over the whole
+   * building and refuses a plan past the drawing budget before anything is drawn
+   * (`MAX_DRAW_UNITS`, `E_DRAWING_LIMIT`, `src/draw-budget.ts`). Optional: without it an
+   * element is estimated at `DEFAULT_DRAW_COST` (72), which covers a fixed-size glyph; a kind
+   * whose drawing grows with its size must declare it.
    */
   drawCost?(resolved: ResolvedElement): number;
   /** Emit positioned drawing primitives for this element (the Scene IR). */

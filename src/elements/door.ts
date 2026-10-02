@@ -430,6 +430,9 @@ export const door: ElementDef = {
    * (SVG, DXF, PDF) now serializes the same `arc` primitive rather than
    * re-deriving it.
    */
+  /** At most 5 primitives (the drawing budget, `MAX_DRAW_UNITS`): the opening cover, then a leaf and its swing arc, or at most four panel strokes for a sliding, barn, bifold, pocket or garage door. */
+  drawCost: () => 5,
+
   render(resolved, ctx: RenderCtx): SceneNode[] {
     const dr = resolved as RDoor;
     const seg = dr.host;

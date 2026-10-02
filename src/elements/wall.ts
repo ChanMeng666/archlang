@@ -283,6 +283,9 @@ export const wall: ElementDef = {
    * segment. Those drew a face straight through the wall's own corners, and through any
    * neighbouring wall's solid, and subtracted no opening. See ADR 0018.
    */
+  /** At most 2 primitives (the drawing budget, `MAX_DRAW_UNITS`): a wall shares the plan's one poche pass, so at most its material's fill and the face line. */
+  drawCost: () => 2,
+
   render(resolved, ctx: RenderCtx): SceneNode[] {
     const w = resolved as RWall;
     return lowerWallSet([w], hatchesUsed([w]), ctx);

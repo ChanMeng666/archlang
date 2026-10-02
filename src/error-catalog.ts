@@ -349,9 +349,9 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   E_DRAWING_LIMIT: E(
     "E_DRAWING_LIMIT",
     "The drawing is larger than any plan may draw.",
-    "Before anything is drawn, every element is estimated at the drawing primitives it will emit (a fixed glyph, one per point of its outline, and the part that grows with its size: a run's tread lines, a fence's posts), summed over every storey because a multi-storey plan holds all its pages at once. Past 400,000 the drawing would take hundreds of megabytes, so the plan is refused, at the element whose estimate crosses the budget. Usually a loop that repeats long runs or large fixtures far more often than meant.",
+    "Before anything is drawn, `compile()` estimates the drawing primitives every element will emit (an upper bound per kind: a room 3, a door 5, a run one or two lines per tread, a fixture its own symbol), plus one per point of its outline and what `dims auto`, the axes and the margin tables add, summed over every storey because a multi-storey plan holds all its pages at once. Past 300,000 the drawing would take hundreds of megabytes, so the plan is refused, at the element whose estimate crosses the budget. Usually a loop that repeats long runs or large fixtures far more often than meant. `describe` and `lint` draw nothing and are not held by it.",
     "Draw fewer or shorter runs, shrink the loop, or split the building into separate plans.",
-    "for i in 0..200 { escalator at (0, i * 2000) size 300000x1200 dir up }   # error: about 444,000 primitives",
+    "for i in 0..200 { escalator at (0, i * 2000) size 300000x1200 dir up }   # error: 429,800 units",
   ),
   E_VOID_SIZE: E(
     "E_VOID_SIZE",
@@ -659,7 +659,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   E_STEP_LIMIT: E(
     "E_STEP_LIMIT",
     "Evaluation did more work than any plan needs.",
-    "One counter measures the work the whole resolution does (every storey, component instance and import): an expression evaluated, a statement run, a loop iteration, a value produced, a binding copied. Past 5,000,000 steps evaluation stops at the statement that crossed the budget and the plan draws nothing. Each loop's own caps hold (`E_RANGE_LIMIT`, `E_WHILE_LIMIT`, `E_ELEMENT_LIMIT`), but loops nested in loops, recursion that calls itself twice and a string that doubles multiply inside them.",
+    "One counter measures the work the whole resolution does (every storey, component instance and import): an expression evaluated, a statement run, a loop iteration, a value or character produced (charged before it is built), a binding copied, a diagnostic raised. Past 5,000,000 steps evaluation stops at the statement that crossed the budget and the plan draws nothing. Each loop's own caps hold (`E_RANGE_LIMIT`, `E_WHILE_LIMIT`, `E_ELEMENT_LIMIT`), but loops nested in loops, recursion that calls itself twice and a string that doubles multiply inside them.",
     "Remove the inner loop or the doubling, compute the value directly, or split the plan.",
     "for i in 0..100000 { for j in 0..1000 { let x = i } }   # error: 100 million iterations",
   ),

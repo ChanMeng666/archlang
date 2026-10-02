@@ -86,6 +86,9 @@ export const voidEl: ElementDef = {
     return rectCorners(v.at.x, v.at.y, v.size.w, v.size.h);
   },
 
+  /** At most 3 primitives (the drawing budget, `MAX_DRAW_UNITS`): its outline and the two diagonals that mark a hole in the floor. */
+  drawCost: () => 3,
+
   render(resolved, ctx: RenderCtx): SceneNode[] {
     const v = resolved as RVoid;
     const { theme, sizes } = ctx;
