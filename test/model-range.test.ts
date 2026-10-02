@@ -407,13 +407,16 @@ suite("a `lineWeight` from the compile options is held like the source's", () =>
 
   it("a theme registered in opts.themes and selected by `theme <name>` is held too", () => {
     const src = plan(B, "theme heavy\n");
-    const r = compile(src, { noCache: true, themes: [{ name: "heavy", theme: { lineWeight: 1e308 } }] });
+    const r = compile(src, {
+      noCache: true,
+      themes: [{ kind: "theme" as const, name: "heavy", theme: { lineWeight: 1e308 } }],
+    });
     expect(errorsOf(r)).toEqual(["E_OUT_OF_RANGE"]);
     expect(r.diagnostics[0]!.message).toContain('the theme "heavy"');
     // A source `lineWeight` overrides the registered one, and is what is checked.
     const own = compile(plan(B, "theme heavy {\n  lineWeight: 1\n}\n"), {
       noCache: true,
-      themes: [{ name: "heavy", theme: { lineWeight: 1e308 } }],
+      themes: [{ kind: "theme" as const, name: "heavy", theme: { lineWeight: 1e308 } }],
     });
     expect(errorsOf(own)).toEqual([]);
   });
