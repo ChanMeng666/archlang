@@ -202,10 +202,10 @@ describe("glyphs-batch2 — degenerate footprints", () => {
       const nodes = glyph(category, r);
       const where = `${category} at ${r.w}x${r.h}`;
       // Every repeat count here is aspect-derived, and an aspect is unbounded: without the
-      // clamps the 10000 x 10 case asks for thousands of lines in one symbol. The ceiling is the
-      // rug at its clamp: body + band + 16 fringe ticks at each end.
+      // clamps the 10000 x 10 case asks for thousands of lines in one symbol. The ceiling is a
+      // SQUARE rug at its clamp: body + band + 10 fringe ticks on each of its four ends.
       expect(nodes.length, where).toBeGreaterThanOrEqual(5);
-      expect(nodes.length, where).toBeLessThanOrEqual(34);
+      expect(nodes.length, where).toBeLessThanOrEqual(42);
       for (const n of nodes) {
         if (n.prim.t === "circle" || n.prim.t === "arc") {
           expect(Number.isFinite(n.prim.r), `${where}: radius`).toBe(true);
@@ -259,6 +259,37 @@ describe("the rug is an UNDERLAY in its linework too: detail pen only, fringe of
       if (horizontal) expect([Math.min(...by), Math.max(...by)]).toEqual([r.y, r.y + r.h]);
       else expect([Math.min(...bx), Math.max(...bx)]).toEqual([r.x, r.x + r.w]);
     }
+  });
+});
+
+describe("a SQUARE rug has no long axis, so it is fringed on all four ends", () => {
+  it.each([1000, 400, 2400, 1])("at %i x %i the fringe is the same on every end, and clear of the corners", (s) => {
+    const r = { x: 300, y: -200, w: s, h: s };
+    const nodes = glyph("rug", r);
+    const body = nodes[0]!;
+    if (body.prim.t !== "polygon") throw new Error("the rug body is a polygon");
+    const bx = body.prim.pts.map((p) => p.x);
+    const by = body.prim.pts.map((p) => p.y);
+    const ticks = nodes.flatMap((n) => (n.prim.t === "line" ? [n.prim] : []));
+    const onEnd = (pred: (p: { a: Point; b: Point }) => boolean): number => ticks.filter(pred).length;
+    const left = onEnd((t) => Math.min(t.a.x, t.b.x) === r.x);
+    const right = onEnd((t) => Math.max(t.a.x, t.b.x) === r.x + r.w);
+    const top = onEnd((t) => Math.min(t.a.y, t.b.y) === r.y);
+    const bottom = onEnd((t) => Math.max(t.a.y, t.b.y) === r.y + r.h);
+    expect(left).toBeGreaterThan(0);
+    expect([left, right, top, bottom]).toEqual([left, left, left, left]);
+    expect(left * 4).toBe(ticks.length);
+    // Each tick stands off its own end of the body, inside the body's span along that end, so no
+    // two fringes cross in a corner.
+    for (const t of ticks) {
+      if (t.a.y === t.b.y) expect(t.a.y > Math.min(...by) && t.a.y < Math.max(...by)).toBe(true);
+      else expect(t.a.x > Math.min(...bx) && t.a.x < Math.max(...bx)).toBe(true);
+    }
+  });
+
+  it("…while a rug a hair off square keeps the two-end fringe of its long axis", () => {
+    const lines = glyph("rug", { x: 0, y: 0, w: 1001, h: 1000 }).filter((n) => n.prim.t === "line");
+    for (const n of lines) if (n.prim.t === "line") expect(n.prim.a.y).toBe(n.prim.b.y);
   });
 });
 

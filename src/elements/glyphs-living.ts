@@ -374,10 +374,12 @@ export function drawChair(r: Rect, g: GlyphCtx): SceneNode[] {
  * how a bar stool reads from above.
  *
  * The seat is a solid white disc (it is upholstered, like the dining chair's seat) in the outline
- * pen — the symbol's outline and its first node; the footrest ring is detail, drawn at nearly the
- * full footprint, a clear band outside the seat, so the two never merge into one heavy line at
- * 1:100. There is no seam ring inside the seat: three nested circles read as a target, not a
- * seat.
+ * pen — the symbol's outline and its first node; the footrest ring is detail, drawn AT the
+ * footprint's radius, because the footrest is the widest part of a stool: the symbol's extent is
+ * the footprint's, which is also the extent every consumer of the drawing (room-label placement
+ * among them) measures it by. It stands a clear band outside the seat, so the two never merge
+ * into one heavy line at 1:100. There is no seam ring inside the seat: three nested circles read
+ * as a target, not a seat.
  *
  * **Both are CONCENTRIC true circles, and the concentricity is the constraint, not a
  * preference.** `furniture.render()` rotates the node LIST in place: a ring of three or four
@@ -393,7 +395,7 @@ export function drawStool(r: Rect, g: GlyphCtx): SceneNode[] {
   // A negative extent (the fuzz feeds one) would give a negative radius; collapse onto the centre.
   const rad = Math.max(0, short(r) / 2);
   g.dot(c, rad * 0.76, g.basin, "thin");
-  g.ring(c, rad * 0.96, "extraThin");
+  g.ring(c, rad, "extraThin");
   return g.nodes;
 }
 
@@ -491,36 +493,45 @@ export function drawTvUnit(r: Rect, g: GlyphCtx): SceneNode[] {
  *
  * The fringe hangs off the two SHORT ends — the ends of the rug's own long axis, whichever that
  * is on the page, so a runner authored 2400x800 and one authored 800x2400 are the same drawing
- * turned. The woven body stops short of those ends by the fringe's length and the ticks run
- * from it to the footprint's edge, so the fringe lies OUTSIDE the weave, as a real one does, and
- * still inside the rectangle every lint rule measures. Square corners: a rug is cut, not eased.
+ * turned. A SQUARE rug has no long axis, so it is fringed on all four ends: that is what keeps
+ * the catalog's `symmetric: true` honest — the drawing maps onto itself under every quarter-turn
+ * and mirror, where picking two ends would hand it an axis the footprint does not have. The
+ * woven body stops short of the fringed ends by the fringe's length and the ticks run from it to
+ * the footprint's edge, so the fringe lies OUTSIDE the weave, as a real one does, and still
+ * inside the rectangle every lint rule measures. Square corners: a rug is cut, not eased.
  *
  * The fringe pitch is a twentieth of the rug's length, so the tick count is the short side over
  * that — a near-square rug gets a full fringe, a runner a short one — clamped to `[3, 16]` per
- * end, which also swallows the `0/0` a degenerate rect produces.
+ * end (`[3, 10]` on a square rug, which fringes twice as many ends), which also swallows the
+ * `0/0` a degenerate rect produces.
  *
- * Prim count: `2 + 2 × ticks`, i.e. 30 at a typical 2000x1400 and 34 at the clamp.
+ * Prim count: `2 + ends × ticks`, i.e. 30 at a typical 2000x1400, 34 at the two-end clamp and 42
+ * on a square rug.
  */
 export function drawRug(r: Rect, g: GlyphCtx): SceneNode[] {
   const s = short(r);
-  const horizontal = r.w >= r.h;
-  const long = horizontal ? r.w : r.h;
+  const square = r.w === r.h;
+  // Which ends carry a fringe: the two ends of the long axis, or all four on a square.
+  const sides = square || r.w > r.h;
+  const ends = square || r.h > r.w;
+  const long = Math.max(r.w, r.h);
   const fringe = long * 0.035;
-  const body: Rect = horizontal
-    ? { x: r.x + fringe, y: r.y, w: r.w - 2 * fringe, h: r.h }
-    : { x: r.x, y: r.y + fringe, w: r.w, h: r.h - 2 * fringe };
+  const fx = sides ? fringe : 0;
+  const fy = ends ? fringe : 0;
+  const body: Rect = { x: r.x + fx, y: r.y + fy, w: r.w - 2 * fx, h: r.h - 2 * fy };
   g.poly(rectPoly(body), "none", "extraThin");
   g.poly(rectPoly(insetRect(body, 0.08)), "none", "extraThin");
 
-  const ticks = clampCount(s / (long * 0.05), 3, 16);
+  const ticks = clampCount(s / (long * 0.05), 3, square ? 10 : 16);
   for (let i = 0; i < ticks; i++) {
     const t = (i + 0.5) / ticks;
-    if (horizontal) {
-      const y = r.y + r.h * t;
+    if (sides) {
+      const y = body.y + body.h * t;
       g.seg({ x: r.x, y }, { x: r.x + fringe, y }, "extraThin");
       g.seg({ x: r.x + r.w - fringe, y }, { x: r.x + r.w, y }, "extraThin");
-    } else {
-      const x = r.x + r.w * t;
+    }
+    if (ends) {
+      const x = body.x + body.w * t;
       g.seg({ x, y: r.y }, { x, y: r.y + fringe }, "extraThin");
       g.seg({ x, y: r.y + r.h - fringe }, { x, y: r.y + r.h }, "extraThin");
     }

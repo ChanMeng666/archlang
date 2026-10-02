@@ -41,6 +41,9 @@ import type { Point } from "../src/ast.js";
 import type { RenderSizes, SceneNode } from "../src/scene.js";
 import type { Rect } from "../src/elements/glyph-lib.js";
 import { CANONICAL_FIXTURES, fixtureGlyph, hasFixtureGlyph } from "../src/elements/fixtures-glyphs.js";
+import * as living from "../src/elements/glyphs-living.js";
+import { glyphCtx } from "../src/elements/glyph-lib.js";
+import { fixtureSpec } from "../src/fixtures-catalog.js";
 import { rotateNode } from "../src/elements/furniture.js";
 import { marksEqual, mirrorNode } from "../src/elements/glyph-chirality.js";
 import { pathExtentPoints } from "./glyph-extent.js";
@@ -361,7 +364,7 @@ describe("glyphs-living — the stool is rotation-symmetric", () => {
     // two never merge into one heavy line at 1:100.
     expect(nodes[1]!.paint.fill).toBe("none");
     expect(nodes[1]!.lineWeight).toBe("extraThin");
-    expect(circles[1]!.r).toBeCloseTo(192, 9); // 0.96 of the radius
+    expect(circles[1]!.r).toBe(200); // the FULL radius: the footrest is the widest part of a stool
     expect(circles[1]!.r - circles[0]!.r).toBeGreaterThan(0.1 * 200);
   });
 });
@@ -452,20 +455,51 @@ describe("glyphs-living — the two tables are a hard top and one inner line, wi
     };
     expect(corner("coffee_table")).toBeGreaterThan(2 * corner("table"));
   });
+});
 
-  it.each(["coffee_table", "table"])(
-    "%s maps onto itself under a quarter-turn and a mirror (the catalog's `symmetric`)",
-    (category) => {
-      const r = { x: 500, y: 700, w: 1000, h: 1000 };
+describe("glyphs-living — every `symmetric` family in this module is D4-invariant on a square footprint", () => {
+  /**
+   * The module's families, DERIVED: a catalogued word belongs here when one of the module's own
+   * exported `draw*` functions draws exactly what the dispatch draws for it. The `symmetric` set
+   * is then read off the catalog flag — so a new family in this module that carries the flag is
+   * tested here without anyone remembering to add it.
+   */
+  const PROBE: Rect = { x: 37, y: 11, w: 1300, h: 900 };
+  const drawers = Object.entries(living).filter(
+    (e): e is [string, (r: Rect, g: ReturnType<typeof glyphCtx>) => SceneNode[]] =>
+      e[0].startsWith("draw") && typeof e[1] === "function",
+  );
+  const inModule = (category: string): boolean => {
+    const want = JSON.stringify(glyph(category, PROBE));
+    return drawers.some(([, draw]) => JSON.stringify(draw(PROBE, glyphCtx(DEFAULT_THEME, SIZES))) === want);
+  };
+  const SYMMETRIC = CANONICAL_FIXTURES.filter((c) => fixtureSpec(c)?.symmetric === true && inModule(c));
+
+  it("finds the module's symmetric families (the sweep below is not vacuous)", () => {
+    for (const c of ["coffee_table", "table", "dining_table", "stool", "rug", "coat_rack"]) {
+      expect(SYMMETRIC, c).toContain(c);
+    }
+  });
+
+  const SQUARES: readonly Rect[] = [
+    { x: 500, y: 700, w: 1000, h: 1000 },
+    { x: -250, y: 90, w: 400, h: 400 },
+    { x: 1234.5, y: 678.25, w: 2400, h: 2400 },
+    { x: 3, y: 5, w: 1, h: 1 },
+  ];
+
+  const invariantOnSquares = (category: string): void => {
+    for (const r of SQUARES) {
       const c = { x: r.x + r.w / 2, y: r.y + r.h / 2 };
       const n = glyph(category, r);
+      const at = `${category} ${r.w}x${r.h}`;
       for (const deg of [90, 180, 270]) {
         expect(
           marksEqual(
             n,
             n.map((x) => rotateNode(x, c, deg)),
           ),
-          `${deg}`,
+          `${at} turned ${deg}`,
         ).toBe(true);
       }
       expect(
@@ -473,9 +507,31 @@ describe("glyphs-living — the two tables are a hard top and one inner line, wi
           n,
           n.map((x) => mirrorNode(x, c.x)),
         ),
+        `${at} mirrored`,
       ).toBe(true);
-    },
+    }
+  };
+
+  /**
+   * A KNOWN DEFECT, pinned rather than skipped: the dining chair's backrest is a stadium
+   * (`roundedRectPath` with a radius of half its depth), and `roundedRectPath` drops a used-up
+   * straight run only on EXACT float equality — so at some absolute positions a chair gains a
+   * sub-micron straight edge between its end arcs and a turned chair does not. The drawing is
+   * the same; the canonical spelling `marksEqual` compares is not, so the table reads as handed
+   * there. `it.fails` turns red the day the helper compares with a tolerance — delete this entry
+   * then.
+   */
+  const KNOWN_DEFECT: ReadonlySet<string> = new Set(["dining_table"]);
+
+  it.each(SYMMETRIC.filter((c) => !KNOWN_DEFECT.has(c)))(
+    "%s maps onto itself under every quarter-turn and a mirror",
+    invariantOnSquares,
   );
+
+  for (const category of SYMMETRIC.filter((c) => KNOWN_DEFECT.has(c))) {
+    it.fails(`${category} does not yet (a float-equality edge in roundedRectPath; see KNOWN_DEFECT)`, () =>
+      invariantOnSquares(category));
+  }
 });
 
 describe("glyphs-living — the bench's boards", () => {
