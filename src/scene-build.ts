@@ -27,6 +27,7 @@ import { axesNodes } from "./axes.js";
 import { siteBoundaryNodes } from "./site.js";
 import { groundMaterialsUsed, outdoorLabelAnchor, outdoorRing } from "./elements/outdoor.js";
 import { roomLabelAnchor } from "./elements/room.js";
+import { isUnderlay } from "./fixtures-catalog.js";
 import { rectRing } from "./geometry/polygon.js";
 import { CHAIN_BASE, CHAIN_STEP, DIM_TEXT_GAP, drawingBounds, renderSizes } from "./sheet.js";
 import { textWidth } from "./text-metrics.js";
@@ -46,6 +47,30 @@ import { fmt2 as fmtMm } from "./num-format.js";
 /** Drawing bounds: each element contributes points via its registry `bounds`. */
 function planBounds(ir: ResolvedPlan, registry: Registry): Bounds {
   return drawingBounds(ir.elements, ir.siteBoundary, registry);
+}
+
+const isUnderlayPiece = (el: ResolvedPlan["elements"][number]): boolean =>
+  el.kind === "furniture" && isUnderlay((el as RFurniture).category);
+
+/**
+ * The order {@link toScene} renders elements in: SOURCE order, except that every
+ * {@link isUnderlay} fixture (a rug) is moved to just before the plan's first piece of
+ * furniture — a stable partition of the furniture, underlays first, each half in source order.
+ *
+ * A rug is the floor finish the sofa and the coffee table stand ON, so it must paint under
+ * them whichever was written first: the furniture pass draws its nodes in collection order, and
+ * `furniture sofa …` then `furniture rug …` (`examples/garden-house.arch`) drew the rug's lines
+ * straight across the sofa. Every element before the first piece of furniture is not furniture,
+ * so it keeps its place; every other element keeps its relative order. Elements on other passes
+ * are bucketed by pass in every backend, so only the furniture pass can see the move.
+ *
+ * A plan with no underlay gets `elements` itself back — the same array, so the same bytes.
+ */
+function renderOrder(elements: ResolvedPlan["elements"]): ResolvedPlan["elements"] {
+  if (!elements.some(isUnderlayPiece)) return elements;
+  const first = elements.findIndex((el) => el.kind === "furniture");
+  const rest = elements.filter((el) => !isUnderlayPiece(el));
+  return [...rest.slice(0, first), ...elements.filter(isUnderlayPiece), ...rest.slice(first)];
 }
 
 /** Resolve `theme <name>` to its colours: per-call registered themes win over built-in THEMES.
@@ -652,7 +677,8 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   const sizes: RenderSizes = renderSizes(ir.sheet, drawW, drawH, lw);
   const refDim = sizes.refDim;
 
-  // Collect non-wall elements (source order), then lower walls — the canonical op
+  // Collect non-wall elements (source order, underlays first among the furniture — see
+  // `renderOrder`), then lower walls — the canonical op
   // order, so layer-bucketing in a backend reproduces the canonical draw order.
   // Each kind gets its styled theme when `style <kind>` applies, else the base ctx.
   // Will the wall lowering below actually void the wall solid at every opening? ALWAYS:
@@ -688,7 +714,7 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   const primaried = new Set<string>();
   /** How many unnamed rooms have been seen, so the next one can be told from them. */
   let unnamedRooms = 0;
-  for (const el of ir.elements) {
+  for (const el of renderOrder(ir.elements)) {
     if (el.kind === "wall") continue;
     const def = registry.byKind.get(el.kind);
     if (!def) continue;

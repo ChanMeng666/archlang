@@ -486,9 +486,10 @@ export function drawTvUnit(r: Rect, g: GlyphCtx): SceneNode[] {
  *
  * **It is an underlay, and both halves of that sentence follow from it.** A rug is an
  * {@link import("../fixtures-catalog.js").FixtureSpec.underlay} — the sofa and the coffee table
- * stand ON it — so it is the one fixture whose symbol must not occlude another. With no fill
- * there is no paint order to get wrong: a `rug` written after the `sofa` cannot paint over it,
- * which is a stronger guarantee than a z-index and costs nothing. And it is the one symbol with
+ * stand ON it — so it is the one fixture whose symbol must not occlude another. With no fill it
+ * hides nothing, and `toScene` renders every underlay before the rest of the furniture
+ * (`renderOrder` in `scene-build.ts`), so a `rug` written after the `sofa` still lies under the
+ * sofa's fill rather than drawing its lines across the seat. And it is the one symbol with
  * NO outline-weight line: drawn in the outline ink, a rug's edge runs straight through the
  * seating that stands on it and competes with every outline in the room. In the detail pen and
  * tone it reads as what it is — a floor finish — and the furniture drawn over it stays on top.

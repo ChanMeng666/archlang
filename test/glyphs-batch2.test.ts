@@ -10,11 +10,12 @@
  * The rest is not routine, and it is why this file exists rather than four more rows in
  * `glyphs-living.test.ts`:
  *
- * **1. The rug paints NO fill, and that is a correctness property, not a style.** An underlay
- * is drawn under other furniture, so if it filled, the drawing would depend on the order the
- * two statements were written in — `rug` after `sofa` would paint over the sofa, and the same
- * plan with the lines swapped would look right. The assertion walks every primitive, so a
- * later edit that gives one of them a body fill fails here rather than in a screenshot.
+ * **1. The rug paints NO fill, and it draws FIRST.** An underlay is drawn under other furniture:
+ * `toScene` renders every underlay before the rest of the furniture whatever the source order,
+ * so `rug` after `sofa` and `rug` before `sofa` are the same bytes, and with no fill the rug can
+ * hide nothing even where no piece stands on it. Both halves are asserted below — the fill law
+ * walks every primitive, so a later edit that gives one of them a body fill fails here rather
+ * than in a screenshot.
  *
  * **2. `underlay` is proved by its CONSEQUENCES, in both directions.** Three rules read the
  * flag, and each one is asserted with the counterexample beside it: the exemption must not be
@@ -434,19 +435,69 @@ describe("the rug is drawn UNFILLED, so paint order cannot matter", () => {
   });
 
   it("the sofa it is written after survives, whichever order the two are written in", () => {
-    // The consequence the law above buys, stated end to end: an unfilled rug drawn LAST
-    // cannot occlude, so the sofa's own linework is byte-identical either way round.
+    // The consequence the law above and the underlay render order buy together, stated end to
+    // end: the rug is drawn FIRST whichever statement came first, so the two documents are the
+    // same bytes — the sofa's fill lies over the rug's lines in both.
     const body = (first: string, second: string): string =>
       `plan "P" { units mm room id=r at (0,0) size 6000x5000 label "R" ${first} ${second} }`;
     const rug = "furniture rug at (500,500) size 3000x2200";
     const sofa = "furniture sofa at (800,1200) size 2000x900";
     const rugFirst = compile(body(rug, sofa), { noCache: true }).svg;
     const sofaFirst = compile(body(sofa, rug), { noCache: true }).svg;
-    // The two documents differ only in the order of the furniture group's own children…
-    expect(rugFirst).not.toBe(sofaFirst);
-    // …and every line of each is present in the other, so nothing was painted over.
-    const lines = (s: string): string[] => s.split("\n").sort();
-    expect(lines(rugFirst)).toEqual(lines(sofaFirst));
+    expect(sofaFirst).toBe(rugFirst);
+  });
+});
+
+describe("underlay z-order — a rug draws before every other piece of furniture", () => {
+  /** The ids of the furniture-pass nodes of `src`'s scene, one entry per run of equal ids. */
+  const furnitureRuns = (src: string): string[] => {
+    const plan = parse(src).plan;
+    if (!plan) throw new Error("parse failed");
+    const runs: string[] = [];
+    for (const n of toScene(resolve(plan).ir, { annotate: true }).nodes) {
+      if (n.layer !== "furniture" || n.elementId === undefined) continue;
+      if (runs[runs.length - 1] !== n.elementId) runs.push(n.elementId);
+    }
+    return runs;
+  };
+  const room = 'room id=r at (0,0) size 6000x5000 label "R"';
+  const plan = (...lines: string[]): string => `plan "Z" {\n  units mm\n  ${room}\n  ${lines.join("\n  ")}\n}`;
+  const RUG = "furniture id=rug rug at (500,500) size 3000x2200";
+  const SOFA = "furniture id=sofa sofa at (800,1200) size 2000x900";
+  const TABLE = "furniture id=tbl coffee_table at (1500,2300) size 1000x500";
+
+  it("sofa-then-rug and rug-then-sofa both emit the rug's nodes first, each node once", () => {
+    expect(furnitureRuns(plan(RUG, SOFA))).toEqual(["rug", "sofa"]);
+    expect(furnitureRuns(plan(SOFA, RUG))).toEqual(["rug", "sofa"]);
+    // Two underlays keep their own source order; everything else keeps its own.
+    const CARPET = "furniture id=mat carpet at (3600,3000) size 1600x1200";
+    expect(furnitureRuns(plan(SOFA, CARPET, TABLE, RUG))).toEqual(["mat", "rug", "sofa", "tbl"]);
+  });
+
+  it("a plan without an underlay draws its furniture in source order", () => {
+    expect(furnitureRuns(plan(SOFA, TABLE))).toEqual(["sofa", "tbl"]);
+    expect(furnitureRuns(plan(TABLE, SOFA))).toEqual(["tbl", "sofa"]);
+  });
+
+  it("annotate still marks exactly one primary node per piece — the rug's outline", () => {
+    const svg = compile(plan(SOFA, RUG), { annotate: true, noCache: true }).svg;
+    for (const id of ["rug", "sofa"]) {
+      const marked = svg.split("\n").filter((l) => l.includes(`data-arch-id="${id}"`));
+      expect(marked.length, id).toBeGreaterThan(1);
+      expect(
+        marked.filter((l) => l.includes("data-arch-primary")),
+        id,
+      ).toHaveLength(1);
+      expect(marked[0], `${id}: the first node is the primary`).toContain("data-arch-primary");
+    }
+    // …and in the document the rug's nodes precede the sofa's.
+    expect(svg.indexOf('data-arch-id="rug"')).toBeLessThan(svg.indexOf('data-arch-id="sofa"'));
+  });
+
+  it("the move is a drawing fact — describe() still lists the furniture in source order", () => {
+    const ids = (src: string): string[] => describeSource(src).furniture.map((f) => f.id);
+    expect(ids(plan(SOFA, RUG))).toEqual(["sofa", "rug"]);
+    expect(ids(plan(RUG, SOFA))).toEqual(["rug", "sofa"]);
   });
 });
 
