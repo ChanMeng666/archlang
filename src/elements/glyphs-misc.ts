@@ -152,17 +152,24 @@ export function drawOfficeChair(r: Rect, g: GlyphCtx): SceneNode[] {
 }
 
 /**
- * The bookshelf: a carcass, the back panel, a divider between bays, and a row of book spines in
- * each bay.
+ * The bookshelf: a carcass, the back panel, a divider between bays, and a block of three book
+ * spines in each bay.
  *
  * The run reads off the footprint's own LONG axis, not off the page, so a stack turned 90 degrees
  * draws the same bays rather than a grid. The divider count is derived from the aspect — one per
- * 1.5 depths of length — and clamped to 8, because a 10000x1 fuzz rect would otherwise ask for
- * six thousand lines; each bay carries three spines, centred and symmetric about the bay, so the
- * piece has no hand. The back is the TOP edge for a run drawn the usual way, and the LEFT edge for
- * one stood on end; the open face is the other side of the back panel.
+ * 1.5 depths of length — and clamped (8 along a wall, 5 for a stack stood on end), because a 10000x1
+ * fuzz rect would otherwise ask for six thousand lines.
  *
- * Prim count: `2 + dividers + 3 x (dividers + 1)`, i.e. 13 at the catalogued 900x300.
+ * **Two constructions, and both are mirror-symmetric** — a bookshelf has no hand, and `place …
+ * mirror` must not flip one. A run drawn the usual way (wider than deep) is a wall unit: the back
+ * panel is a line `0.14` of the depth in from the TOP edge, and the books stand in front of it. A
+ * run stood on end (deeper than wide) has no wall to stand against, so it is read as a free-standing
+ * DOUBLE-SIDED stack: the back panel is the long centre line, and a block of books stands on each side of it, the
+ * two sides mirror images of one another. Putting the back on the left edge instead would make the
+ * drawing handed, which `describe --facts symmetry` would report as a change of hand.
+ *
+ * Prim count: `2 + dividers + 3 x sides x (dividers + 1)` with `sides` 1 along a wall and 2 stood on
+ * end, i.e. 13 at the catalogued 900x300, and at most 37 (wall) or 43 (stack) at the clamps.
  */
 export function drawBookshelf(r: Rect, g: GlyphCtx): SceneNode[] {
   const s = shortSide(r);
@@ -170,35 +177,46 @@ export function drawBookshelf(r: Rect, g: GlyphCtx): SceneNode[] {
   const horizontal = r.w >= r.h;
   const long = horizontal ? r.w : r.h;
   const short = horizontal ? r.h : r.w;
-  const n = clamp(Math.floor(long / short / 1.5), 1, 8);
-  // (u, v): u along the run, v across it from the back.
-  const at = (u: number, v: number): Point => (horizontal ? { x: r.x + u, y: r.y + v } : { x: r.x + v, y: r.y + u });
-  const back = short * 0.14;
+  const n = clamp(Math.floor(long / short / 1.5), 1, horizontal ? 8 : 5);
+  // (u, v): u along the run; v across it from the back panel — for a stack, signed from the centre line.
+  const cx = r.x + r.w / 2;
+  const at = (u: number, v: number): Point => (horizontal ? { x: r.x + u, y: r.y + v } : { x: cx + v, y: r.y + u });
+  const back = horizontal ? short * 0.14 : 0;
   g.seg(at(0, back), at(long, back), "extraThin");
   for (let i = 1; i <= n; i++) {
     const u = (long * i) / (n + 1);
-    g.seg(at(u, 0), at(u, short), "extraThin");
+    if (horizontal) g.seg(at(u, 0), at(u, short), "extraThin");
+    else g.seg({ x: r.x, y: r.y + u }, { x: r.x + r.w, y: r.y + u }, "extraThin");
   }
-  // The books: one block per bay, standing off the back panel a gap in from the dividers, split
-  // into three spines.
+  // The books: one block per bay on each side of the back panel, a gap in from the dividers, split
+  // into three spines. Along a wall the block runs from the panel to half the depth; on a stack it
+  // runs 0.29 of the width out from the centre line on both sides.
   const bay = long / (n + 1);
   const gap = short * 0.07;
+  const sides: readonly (readonly [number, number, number])[] = horizontal
+    ? [[1, back + gap, back + short * 0.5]]
+    : [
+        [-1, gap, gap + short * 0.29],
+        [1, gap, gap + short * 0.29],
+      ];
   for (let i = 0; i <= n; i++) {
     const u0 = bay * i + gap;
     const u1 = bay * (i + 1) - gap;
-    const a = at(u0, back + gap);
-    const b = at(u1, back + short * 0.5);
-    g.path(
-      roundedRectPath(
-        { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) },
-        short * 0.015,
-      ),
-      g.basin,
-      "extraThin",
-    );
-    for (const f of [1 / 3, 2 / 3]) {
-      const u = u0 + (u1 - u0) * f;
-      g.seg(at(u, back + gap), at(u, back + short * 0.5), "extraThin");
+    for (const [side, v0, v1] of sides) {
+      const a = at(u0, side * v0);
+      const b = at(u1, side * v1);
+      g.path(
+        roundedRectPath(
+          { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) },
+          short * 0.015,
+        ),
+        g.basin,
+        "extraThin",
+      );
+      for (const f of [1 / 3, 2 / 3]) {
+        const u = u0 + (u1 - u0) * f;
+        g.seg(at(u, side * v0), at(u, side * v1), "extraThin");
+      }
     }
   }
   return g.nodes;
@@ -411,40 +429,53 @@ const CHAIR_PITCH = 2.2;
 const CHAIR_TUCK = 0.3;
 
 /**
- * A dining-style chair whose VISIBLE part is `box`, its backrest along the `back` edge, built
- * back-on-top and quarter-turned into place.
+ * Draw a dining chair `w` wide whose VISIBLE part is `vis` deep, centred at `c + off`, with its
+ * backrest along the `back` edge. `tuck` is the fraction of the chair's FULL depth hidden under a
+ * table in front of it (0 for a free-standing chair): the seat runs to the visible part's front
+ * edge with square corners there, and every proportion is taken off the full depth so a tucked
+ * chair and a free one have the same backrest.
  *
- * Mirrors `chairInto` in `glyphs-living.ts` (the pilot dining chair) construction for
- * construction: a white rounded seat set in from the sides, square-fronted where it runs under a
- * table, and a pill-ended backrest bar 12% of the FULL depth along the back edge. It is mirrored
- * rather than imported because that module owns it and is edited alongside this one; the second
- * caller for it in `glyph-lib.ts` is the planting module's outdoor table, and it moves there then.
+ * **An exact copy of `chairAt` in `glyphs-living.ts`** (the pilot dining chair), statement for
+ * statement, so a meeting table's chairs are the dining table's chairs byte for byte. The chair is
+ * built ONCE, back-on-top about the origin, its left and right edges at exactly `-` and `+` the
+ * same half-width (so it is its own mirror image by construction), and then placed by an EXACT
+ * quarter-turn — a swap and a negation of the local coordinates, no rotation arithmetic — added to
+ * the offset before the centre. It is copied rather than imported because `glyphs-living.ts` owns it
+ * and is edited alongside this file; by the helper policy it moves to `glyph-lib.ts` verbatim, from
+ * both files at once, when the outdoor table needs it as well.
  */
-function chairInto(g: GlyphCtx, box: Rect, back: "top" | "right" | "bottom" | "left", tuck: number): void {
-  const deg = back === "top" ? 0 : back === "right" ? 90 : back === "bottom" ? 180 : 270;
-  const sideways = deg === 90 || deg === 270;
-  const c = centerOf(box);
-  const w = sideways ? box.h : box.w;
-  const vis = sideways ? box.w : box.h;
+function chairAt(
+  g: GlyphCtx,
+  c: Point,
+  off: Point,
+  back: "top" | "right" | "bottom" | "left",
+  w: number,
+  vis: number,
+  tuck: number,
+): void {
   const full = vis / (1 - tuck);
-  const r: Rect = { x: c.x - w / 2, y: c.y - vis / 2, w, h: vis };
   const from = g.nodes.length;
-  const sr = Math.min(w, full) * 0.12;
-  const seat: Rect = { x: r.x + w * 0.06, y: r.y + full * 0.08, w: w * 0.88, h: vis - full * 0.08 };
+  const s = Math.min(w, full);
+  const y0 = -vis / 2;
+  const sr = s * 0.12;
+  const sw = w * 0.44;
+  const seatTop = y0 + full * 0.08;
+  const seat: Rect = { x: -sw, y: seatTop, w: 2 * sw, h: vis / 2 - seatTop };
   g.path(roundedRectPath(seat, tuck > 0 ? [sr, sr, 0, 0] : sr), g.basin);
-  const bar: Rect = { x: r.x, y: r.y, w, h: full * 0.12 };
+  const bar: Rect = { x: -w / 2, y: y0, w, h: full * 0.12 };
   g.path(roundedRectPath(bar, bar.h / 2), g.body);
-  if (deg === 0) return;
-  const turn = (p: Point): Point => {
-    const dx = p.x - c.x;
-    const dy = p.y - c.y;
-    return deg === 90
-      ? { x: c.x - dy, y: c.y + dx }
-      : deg === 180
-        ? { x: c.x - dx, y: c.y - dy }
-        : { x: c.x + dy, y: c.y - dx };
+  const place = (p: Point): Point => {
+    const q =
+      back === "top"
+        ? p
+        : back === "right"
+          ? { x: -p.y, y: p.x }
+          : back === "bottom"
+            ? { x: -p.x, y: -p.y }
+            : { x: p.y, y: -p.x };
+    return { x: c.x + (off.x + q.x), y: c.y + (off.y + q.y) };
   };
-  for (let i = from; i < g.nodes.length; i++) g.nodes[i] = mapSceneNode(g.nodes[i]!, turn, false);
+  for (let i = from; i < g.nodes.length; i++) g.nodes[i] = mapSceneNode(g.nodes[i]!, place, false);
 }
 
 /**
@@ -476,39 +507,34 @@ export function drawMeetingTable(r: Rect, g: GlyphCtx): SceneNode[] {
   g.path(roundedRectPath(insetRect(top, 0.04), st * 0.1), "none", "extraThin");
 
   const horizontal = r.w >= r.h;
-  const runStart = horizontal ? top.x : top.y;
   const runLen = horizontal ? top.w : top.h;
   const perSide = clampCount(runLen / (CHAIR_PITCH * band), 1, 6);
-  const cd = band;
   const cw = band * 0.9;
-  const vis = cd * (1 - CHAIR_TUCK);
-  const at = (along: number, back: "top" | "bottom" | "left" | "right"): void => {
-    const box: Rect =
-      back === "top"
-        ? { x: along - cw / 2, y: top.y - vis, w: cw, h: vis }
-        : back === "bottom"
-          ? { x: along - cw / 2, y: top.y + top.h, w: cw, h: vis }
-          : back === "left"
-            ? { x: top.x - vis, y: along - cw / 2, w: vis, h: cw }
-            : { x: top.x + top.w, y: along - cw / 2, w: vis, h: cw };
-    chairInto(g, box, back, CHAIR_TUCK);
-  };
+  const vis = band * (1 - CHAIR_TUCK); // a chair is a band deep; this much shows
+  // Every chair is placed by its centre's OFFSET from the footprint centre, exactly as the dining
+  // table does: counterpart chairs get exactly negated or swapped offsets (`along(n-1-i)` is
+  // `-along(i)`, an integer numerator negating), and the two sides share one `+-(half + vis/2)`. So
+  // a mirror, a half-turn and, on a square, a quarter-turn carry each chair onto a chair built from
+  // the very same numbers, not onto one that took a different rounding path.
+  const C = centerOf(r);
+  const out = (half: number): number => half + vis / 2;
+  const along = (i: number): number => (runLen * (2 * i + 1 - perSide)) / (2 * perSide);
   for (let i = 0; i < perSide; i++) {
-    const along = runStart + (runLen * (i + 0.5)) / perSide;
+    const u = along(i);
     if (horizontal) {
-      at(along, "top");
-      at(along, "bottom");
+      chairAt(g, C, { x: u, y: -out(top.h / 2) }, "top", cw, vis, CHAIR_TUCK);
+      chairAt(g, C, { x: u, y: out(top.h / 2) }, "bottom", cw, vis, CHAIR_TUCK);
     } else {
-      at(along, "left");
-      at(along, "right");
+      chairAt(g, C, { x: -out(top.w / 2), y: u }, "left", cw, vis, CHAIR_TUCK);
+      chairAt(g, C, { x: out(top.w / 2), y: u }, "right", cw, vis, CHAIR_TUCK);
     }
   }
   if (horizontal) {
-    at(top.y + top.h / 2, "left");
-    at(top.y + top.h / 2, "right");
+    chairAt(g, C, { x: -out(top.w / 2), y: 0 }, "left", cw, vis, CHAIR_TUCK);
+    chairAt(g, C, { x: out(top.w / 2), y: 0 }, "right", cw, vis, CHAIR_TUCK);
   } else {
-    at(top.x + top.w / 2, "top");
-    at(top.x + top.w / 2, "bottom");
+    chairAt(g, C, { x: 0, y: -out(top.h / 2) }, "top", cw, vis, CHAIR_TUCK);
+    chairAt(g, C, { x: 0, y: out(top.h / 2) }, "bottom", cw, vis, CHAIR_TUCK);
   }
   return g.nodes;
 }
@@ -616,7 +642,7 @@ export function drawReceptionDesk(r: Rect, g: GlyphCtx): SceneNode[] {
   // The staff chair, in the open quadrant, its back to the far side.
   const cs = Math.max(0, Math.min(r.h * 0.34, r.w * 0.14));
   const cc = { x: x0 + r.w * 0.62, y: runY + (y1 - runY) * 0.58 };
-  chairInto(g, { x: cc.x - cs / 2, y: cc.y - cs / 2, w: cs, h: cs }, "bottom", 0);
+  chairAt(g, cc, { x: 0, y: 0 }, "bottom", cs, cs, 0);
   return g.nodes;
 }
 

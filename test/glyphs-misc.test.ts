@@ -225,6 +225,25 @@ const handed = (fn: Draw, r: Rect): boolean => {
   );
 };
 
+/**
+ * The handedness sweep `test/glyph-chirality.test.ts` pins every family against `main` on: seven
+ * footprints at three absolute positions. A mirror-symmetric symbol must read symmetric at ALL of
+ * them — an ulp in a derived coordinate depends on where the piece stands, and an ulp that changes
+ * a glyph's STRUCTURE (a zero-length edge on one side and not the other) once made a symmetric
+ * office chair read as handed at x = 0 and not at x = 100.
+ */
+const SWEEP_SIZES: readonly (readonly [number, number])[] = [
+  [1000, 600],
+  [1000, 1000],
+  [600, 1800],
+  [1800, 600],
+  [640, 640],
+  [777, 777],
+  [555, 900],
+  [555, 555],
+];
+const SWEEP_OFFSETS: readonly number[] = [0, 100, 1000];
+
 /** The straight segments among `nodes`. */
 type Seg = { a: Point; b: Point; dashed: boolean; node: SceneNode };
 const segs = (nodes: readonly SceneNode[]): Seg[] =>
@@ -308,6 +327,20 @@ describe("glyphs-misc — what each symbol draws", () => {
     for (const fn of [drawDesk, drawOfficeChair]) {
       for (const n of draw(fn, R).filter((x) => x.lineType === "dashed")) {
         expect(n.paint.dash).toEqual(dashedPattern(sizes));
+      }
+    }
+  });
+});
+
+describe("glyphs-misc — handedness at every footprint and position", () => {
+  // Only the desk (its pedestal) and the reception desk (its return) have a hand; every other symbol
+  // here is its own mirror image wherever it stands, at any size.
+  const HANDED_HERE = new Set(["desk", "reception_desk"]);
+
+  it.each(GLYPHS)("%s keeps its hand at every swept footprint and offset", (name, fn) => {
+    for (const [w, h] of SWEEP_SIZES) {
+      for (const o of SWEEP_OFFSETS) {
+        expect(handed(fn, { x: o, y: o, w, h }), `${name} ${w}x${h} at ${o}`).toBe(HANDED_HERE.has(name));
       }
     }
   });
@@ -461,22 +494,24 @@ describe("glyphs-misc — the bookshelf", () => {
     expect(dividers({ x: 0, y: 0, w: 1000, h: 900 })).toBe(1);
   });
 
-  it("clamps to eight dividers at the ceiling (10000x10 asks for six hundred)", () => {
+  it("clamps at the ceiling (10000x10 asks for six hundred): eight along a wall, five for a stack on end", () => {
     expect(dividers({ x: 0, y: 0, w: 10000, h: 10 })).toBe(8);
-    expect(dividers({ x: 0, y: 0, w: 10, h: 10000 })).toBe(8);
     expect(dividers({ x: 0, y: 0, w: 10000, h: 1 })).toBe(8);
+    expect(dividers({ x: 0, y: 0, w: 10, h: 10000 })).toBe(5);
   });
 
-  it("puts a block of three book spines in every bay, and no more than 48 primitives anywhere", () => {
-    for (const r of [
-      { x: 0, y: 0, w: 900, h: 300 },
-      { x: 0, y: 0, w: 10000, h: 10 },
-      { x: 0, y: 0, w: 1000, h: 1000 },
-    ]) {
+  it("puts a block of three book spines in every bay (on each side of a stack), within 48 primitives", () => {
+    for (const [r, sides] of [
+      [{ x: 0, y: 0, w: 900, h: 300 }, 1],
+      [{ x: 0, y: 0, w: 10000, h: 10 }, 1],
+      [{ x: 0, y: 0, w: 1000, h: 1000 }, 1],
+      [{ x: 0, y: 0, w: 300, h: 900 }, 2],
+      [{ x: 0, y: 0, w: 10, h: 10000 }, 2],
+    ] as const) {
       const n = draw(drawBookshelf, r);
       const bays = dividers(r) + 1;
-      // carcass + back line + dividers + (block + 2 spines) a bay
-      expect(n, `${r.w}x${r.h}`).toHaveLength(2 + dividers(r) + 3 * bays);
+      // carcass + back line + dividers + (block + 2 spines) a bay on each side
+      expect(n, `${r.w}x${r.h}`).toHaveLength(2 + dividers(r) + 3 * sides * bays);
       expect(n.length).toBeLessThanOrEqual(PRIM_BUDGET);
     }
   });
@@ -499,11 +534,44 @@ describe("glyphs-misc — the bookshelf", () => {
     for (const b of n.slice(2).filter((x) => x.prim.t === "path")) expect(extent(b).y0).toBeGreaterThan(back);
   });
 
-  it("has no hand", () => {
-    // At the catalogued footprint (a run along the wall) it is symmetric. Stood on end the back is
-    // the LEFT edge, so that drawing is deliberately handed — the same rule as every back-on-a-side symbol.
-    expect(handed(drawBookshelf, { x: 0, y: 0, w: 900, h: 300 })).toBe(false);
-    expect(handed(drawBookshelf, { x: 0, y: 0, w: 300, h: 900 })).toBe(true);
+  it("has no hand, along a wall or stood on end", () => {
+    // `main` drew a bookshelf symmetric at every footprint, and `describe --facts symmetry` reports
+    // a change of hand as a change of the plan: so the stack stood on end is drawn double-sided,
+    // its back panel the long centre line and its books on both sides, never with the back on one edge.
+    for (const [w, h] of [
+      [900, 300],
+      [1000, 1000],
+      [300, 900],
+      [600, 1800],
+      [555, 900],
+      [10, 10000],
+    ] as const) {
+      expect(handed(drawBookshelf, { x: 100, y: 100, w, h }), `${w}x${h}`).toBe(false);
+    }
+  });
+
+  it("draws a stack stood on end DOUBLE-SIDED: the back panel is the centre line, books on both sides", () => {
+    const r: Rect = { x: 100, y: 200, w: 300, h: 900 };
+    const n = draw(drawBookshelf, r);
+    const centre = r.x + r.w / 2;
+    const back = n[1]!.prim as Extract<SceneNode["prim"], { t: "line" }>;
+    expect(back.a.x).toBeCloseTo(centre, 9);
+    expect(back.b.x).toBeCloseTo(centre, 9);
+    expect(Math.abs(back.b.y - back.a.y)).toBeCloseTo(r.h, 9);
+    // Every block stands clear of the centre line, and there are as many on one side as the other.
+    const blocks = n.slice(2).filter((x) => x.prim.t === "path");
+    const left = blocks.filter((b) => extent(b).x1 < centre);
+    const right = blocks.filter((b) => extent(b).x0 > centre);
+    expect(left.length).toBe(right.length);
+    expect(left.length + right.length).toBe(blocks.length);
+    expect(left.length).toBe(dividers(r) + 1);
+    // …and each block's mirror image is on the other side, the same distance out.
+    for (const b of left) {
+      const e = extent(b);
+      expect(
+        right.some((o) => Math.abs(extent(o).x0 - (2 * centre - e.x1)) < 1e-6 && Math.abs(extent(o).y0 - e.y0) < 1e-6),
+      ).toBe(true);
+    }
   });
 
   it("stays inside the footprint at both clamp ends", () => {
@@ -789,6 +857,20 @@ describe("glyphs-misc — the meeting table's chairs", () => {
           (e.y0 + e.y1) / 2 - top.y1,
         );
       expect(dist(back)).toBeGreaterThan(dist(seat));
+    }
+  });
+
+  it("draws the dining table's chairs byte for byte (the same band, pitch and construction)", () => {
+    // `chairAt` here is a statement-for-statement copy of the pilot's, and the placement is the
+    // pilot's offsets-from-the-centre scheme: wherever the two tables seat the same number of chairs
+    // — up to four a side — every chair node is identical, not merely close.
+    for (const r of [
+      { x: 0, y: 0, w: 2400, h: 1200 },
+      { x: 500, y: 700, w: 2000, h: 2000 },
+      { x: 0, y: 0, w: 1200, h: 2400 },
+      { x: 100, y: 100, w: 3000, h: 1500 },
+    ]) {
+      expect(draw(drawMeetingTable, r).slice(2), `${r.w}x${r.h}`).toEqual(draw(drawDiningTable, r).slice(2));
     }
   });
 
