@@ -179,6 +179,11 @@ function primKey(prim: ScenePrim): string {
  * start edge and both directions. Travelling an edge backwards leaves from its other end and
  * flips its sweep, which is what a reflection does to it. The loop's closing edge is present
  * by the `path` contract, so the vertex list is `start` followed by each edge's `to`.
+ *
+ * Minimising over both directions QUOTIENTS WINDING, and that is only safe for a path whose
+ * loops are separate outlines. A multi-loop path with a HOLE (filled nonzero, the hole wound
+ * the other way) would need a winding-aware key — reversing one loop there changes what is
+ * filled. No glyph emits one today; give a glyph a holed path and this key has to change first.
  */
 function loopKey(lp: PathLoop): string {
   const n = lp.edges.length;

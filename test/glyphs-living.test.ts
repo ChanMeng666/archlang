@@ -301,6 +301,52 @@ describe("glyphs-living — the dining table's chairs", () => {
     }
   });
 
+  it("maps onto itself under a half-turn and a mirror at any size and absolute position", () => {
+    // The backrest bars are stadiums; their shape must not depend on which ulp path a chair's
+    // position took (the reported failure: a half-turn at 1000x1000 and 3000x1500). Placed the
+    // way `furniture.render()` places a piece: `x = cx − w/2` with `cx = at + w/2`.
+    for (const [w, h] of [
+      [1000, 1000],
+      [3000, 1500],
+      [2400, 2000],
+      [1800, 1000],
+      [640, 640],
+      [777, 777],
+      [555, 900],
+      [1, 1],
+      [400, 400],
+      [2400, 2400],
+    ] as const) {
+      for (const o of [0, 100, 1000, 12345.678]) {
+        const c = { x: o + w / 2, y: o + h / 2 };
+        const n = glyph("dining_table", { x: c.x - w / 2, y: c.y - h / 2, w, h });
+        const where = `${w}x${h} at ${o}`;
+        expect(
+          marksEqual(
+            n,
+            n.map((x) => rotateNode(x, c, 180)),
+          ),
+          `${where} half-turn`,
+        ).toBe(true);
+        expect(
+          marksEqual(
+            n,
+            n.map((x) => mirrorNode(x, c.x)),
+          ),
+          `${where} mirror`,
+        ).toBe(true);
+        if (w === h)
+          expect(
+            marksEqual(
+              n,
+              n.map((x) => rotateNode(x, c, 90)),
+            ),
+            `${where} quarter-turn`,
+          ).toBe(true);
+      }
+    }
+  });
+
   it("the square four-seater maps onto itself under a quarter-turn and a mirror (the catalog's `symmetric`)", () => {
     const r = { x: 500, y: 700, w: 2400, h: 2400 };
     const c = { x: r.x + r.w / 2, y: r.y + r.h / 2 };
