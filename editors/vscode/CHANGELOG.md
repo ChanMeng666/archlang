@@ -12,6 +12,17 @@ are documented here. The format is based on
 > republished**. See [CONTRIBUTING.md → Releasing](../../CONTRIBUTING.md#releasing) for
 > the checklist that keeps the two in sync.
 
+## [0.27.0] - 2026-10-03
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.39.0`** (visual-polish release: the plan
+  symbols, doors, windows and ground hatches are redrawn).
+  - The extension draws nothing, so the redraw reaches it only through the drawing budget: the
+    redrawn symbols emit more primitives (a window's drawing cost is 4 → 6), so a plan close to
+    the budget can report **`E_DRAWING_LIMIT`** sooner. Diagnostics are otherwise byte-identical
+    over every shipped example and test fixture; hover and completion are unchanged.
+
 ## [0.26.0] - 2026-10-02
 
 ### Changed
