@@ -91,7 +91,7 @@ import { verticalsOf } from "../src/vertical.js";
 import { northQuarterTurns } from "../src/describe.js";
 import type { Diagnostic, FixSuggestion, Span } from "../src/diagnostics.js";
 import { formatPlan } from "../src/format.js";
-import { type Frame, makeFrame, tp, transformDeg, transformRect } from "../src/frame.js";
+import { type Frame, det, makeFrame, tp, transformDeg, transformRect } from "../src/frame.js";
 import {
   compile,
   DEFAULT_RULESET,
@@ -1195,8 +1195,15 @@ export function sceneGroups(scene: Scene): Map<string, { kind: string; part?: st
   return out;
 }
 
-/** Carry a primitive through a frame. */
+/**
+ * Carry a primitive through a frame. A REFLECTING frame (`det < 0`) reverses orientation, so
+ * every arc's `sweep` flips — on an `arc` primitive and on a `path`'s arc edges — exactly as
+ * `glyph-lib.ts`'s `mapSceneNode` does for a mirrored glyph; the canonical form below reads
+ * the sweep, so a prediction that kept it would draw the arc's complement side.
+ */
 export function transformPrim(f: Frame, p: ScenePrim): ScenePrim {
+  const flips = det(f) < 0;
+  const sweepOf = (sweep: 0 | 1): 0 | 1 => (flips ? (sweep === 0 ? 1 : 0) : sweep);
   switch (p.t) {
     case "polygon":
       return { t: "polygon", pts: p.pts.map((x) => tp(f, x)) };
@@ -1212,12 +1219,12 @@ export function transformPrim(f: Frame, p: ScenePrim): ScenePrim {
           edges: l.edges.map((e) =>
             e.t === "line"
               ? { t: "line" as const, to: tp(f, e.to) }
-              : { ...e, to: tp(f, e.to), center: tp(f, e.center) },
+              : { ...e, to: tp(f, e.to), center: tp(f, e.center), sweep: sweepOf(e.sweep) },
           ),
         })),
       };
     case "arc":
-      return { ...p, center: tp(f, p.center), start: tp(f, p.start), end: tp(f, p.end) };
+      return { ...p, center: tp(f, p.center), start: tp(f, p.start), end: tp(f, p.end), sweep: sweepOf(p.sweep) };
     case "circle":
       return { ...p, center: tp(f, p.center) };
     case "text":
@@ -1245,7 +1252,9 @@ const undirected = (a: Point, b: Point): string => {
  * same outline comes back as one loop pinched at the tangent point instead of two, so the
  * straight run and the arc are cut there on one side only. Same ink, different bookkeeping.
  */
-type Edge = { t: "line"; a: Point; b: Point } | { t: "arc"; a: Point; b: Point; center: Point; r: number };
+type Edge =
+  | { t: "line"; a: Point; b: Point }
+  | { t: "arc"; a: Point; b: Point; center: Point; r: number; sweep: 0 | 1 };
 
 function canonEdgeSet(edges: readonly Edge[]): string[] {
   const out: string[] = [];
@@ -1275,14 +1284,18 @@ function canonEdgeSet(edges: readonly Edge[]): string[] {
       lines.set(key, list);
     } else {
       const key = `${pt(e.center)}r${q(e.r)}`;
-      const u = { x: e.a.x - e.center.x, y: e.a.y - e.center.y };
-      const v = { x: e.b.x - e.center.x, y: e.b.y - e.center.y };
-      const sweep = Math.atan2(u.x * v.y - u.y * v.x, u.x * v.x + u.y * v.y);
-      // Start the (minor) interval at whichever endpoint it leaves in the +angle sense.
-      const from = sweep >= 0 ? u : v;
-      const s = (Math.atan2(from.y, from.x) + TAU) % TAU;
+      // The interval is read off the arc's SWEEP flag, not off its endpoints alone: two
+      // endpoints bound two arcs, and for an exact semicircle (a scallop, a lobe, a pill's end)
+      // the two are the same size, so only the flag says which side is drawn. Sweep 1 runs in
+      // the +angle sense (screen y-down), so the interval starts at `a`; sweep 0 runs the other
+      // way, so it starts at `b`.
+      const aa = Math.atan2(e.a.y - e.center.y, e.a.x - e.center.x);
+      const ab = Math.atan2(e.b.y - e.center.y, e.b.x - e.center.x);
+      const from = e.sweep === 1 ? aa : ab;
+      const span = (((e.sweep === 1 ? ab - aa : aa - ab) % TAU) + TAU) % TAU;
+      const s = (from + TAU) % TAU;
       const entry = arcs.get(key) ?? { center: e.center, r: e.r, ivs: [] };
-      entry.ivs.push([s, s + Math.abs(sweep)]);
+      entry.ivs.push([s, s + span]);
       arcs.set(key, entry);
     }
   }
@@ -1317,11 +1330,36 @@ function canonEdgeSet(edges: readonly Edge[]): string[] {
       out.push(`circle@${key}`);
       continue;
     }
-    // Keep each merged arc once: the copy whose start lies in [0, 2π).
-    for (const [a, b] of merged) {
-      if (a >= TAU - 1e-12 || a < 0) continue;
-      const p = (ang: number): Point => ({ x: center.x + r * Math.cos(ang), y: center.y + r * Math.sin(ang) });
-      out.push(`arc@${key}:${undirected(p(a), p(b))}a${q(b - a)}`);
+    // Measure the arcs from a point of the circle NO arc covers, so no arc straddles the angle
+    // origin and each comes out exactly once. Taking "the copy whose start lies in [0, 2π)" off
+    // the unrolled list instead was seam-sensitive: two pieces meeting exactly at angle 0 kept
+    // the piece starting at 0 BESIDE the merged run that already contains it, and whether a
+    // float landed on 0 or a hair under 2π decided which spelling came out — so the same ink
+    // canonicalised two ways (a semicircle cut at its apex on the +x axis, a pill's end, an
+    // oval's vertex). The unrolled line's coverage is EXACT on [2π, 4π) — every interval and
+    // every wrap is represented there — so the end of a maximal run that lands in that window
+    // is a genuinely uncovered point; one always exists when the circle is not covered.
+    const gap = (merged.find(([, b]) => b >= TAU && b < 2 * TAU) ?? merged[0]!)[1];
+    const rel = ivs
+      .map(([a, b]): [number, number] => {
+        const s = (((a - gap) % TAU) + TAU) % TAU;
+        return [s, s + (b - a)];
+      })
+      .sort((x, y) => x[0] - y[0]);
+    const runs: [number, number][] = [];
+    for (const [a, b] of rel) {
+      const last = runs[runs.length - 1];
+      if (last && a <= last[1] + 1e-9) last[1] = Math.max(last[1], b);
+      else runs.push([a, b]);
+    }
+    for (const [a, b] of runs) {
+      const p = (ang: number): Point => ({
+        x: center.x + r * Math.cos(ang + gap),
+        y: center.y + r * Math.sin(ang + gap),
+      });
+      // The midpoint names the SIDE: two arcs with the same endpoints and span (the two halves
+      // of a circle cut by a diameter) differ only there.
+      out.push(`arc@${key}:${undirected(p(a), p(b))}m${pt(p((a + b) / 2))}a${q(b - a)}`);
     }
   }
   return out.sort();
@@ -1332,13 +1370,15 @@ const ringToEdges = (ring: readonly Point[]): Edge[] =>
 
 function pathEdges(l: {
   start: Point;
-  edges: readonly ({ t: "line"; to: Point } | { t: "arc"; to: Point; center: Point; r: number })[];
+  edges: readonly ({ t: "line"; to: Point } | { t: "arc"; to: Point; center: Point; r: number; sweep: 0 | 1 })[];
 }): Edge[] {
   const out: Edge[] = [];
   let prev = l.start;
   for (const e of l.edges) {
     out.push(
-      e.t === "line" ? { t: "line", a: prev, b: e.to } : { t: "arc", a: prev, b: e.to, center: e.center, r: e.r },
+      e.t === "line"
+        ? { t: "line", a: prev, b: e.to }
+        : { t: "arc", a: prev, b: e.to, center: e.center, r: e.r, sweep: e.sweep },
     );
     prev = e.to;
   }
@@ -1358,8 +1398,10 @@ export function canonPrim(p: ScenePrim): string {
       return `line|${undirected(p.a, p.b)}`;
     case "path":
       return `path|${canonEdgeSet(p.loops.flatMap(pathEdges)).join(" ")}`;
+    // Through the same sweep-aware interval rule as a path's arc edge, so a door swing (or a
+    // scallop) drawn on the other side of its chord is a different mark.
     case "arc":
-      return `arc|${pt(p.center)}r${q(p.r)}|${undirected(p.start, p.end)}`;
+      return `arc|${canonEdgeSet([{ t: "arc", a: p.start, b: p.end, center: p.center, r: p.r, sweep: p.sweep }]).join(" ")}`;
     case "circle":
       return `circle|${pt(p.center)}r${q(p.r)}`;
     case "text":

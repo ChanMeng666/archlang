@@ -34,6 +34,7 @@ import { resolve } from "../src/ir.js";
 import { parse } from "../src/parser.js";
 import { toScene } from "../src/scene-build.js";
 import type { Scene, SceneNode } from "../src/scene.js";
+import { pathExtentPoints } from "./glyph-extent.js";
 import { weightWidth } from "../src/scene.js";
 import { CANONICAL_FIXTURES, hasFixtureGlyph } from "../src/elements/fixtures-glyphs.js";
 import type { Rect } from "../src/elements/glyph-lib.js";
@@ -146,6 +147,9 @@ function boundingPoints(n: SceneNode): Point[] {
       }
       return out;
     }
+    // A curved outline: its vertices and its arcs' axis extremes, exactly (`glyph-extent.ts`).
+    case "path":
+      return pathExtentPoints(p);
     default:
       throw new Error(`a fixture glyph emitted an unexpected primitive: ${p.t}`);
   }
@@ -179,6 +183,13 @@ function canonical(n: SceneNode): string {
       return `circle[${pt(p.center)} ${f(p.r)}]`;
     case "arc":
       return `arc[${pt(p.center)} ${f(p.r)} ${pt(p.start)} ${pt(p.end)} ${p.sweep}]`;
+    case "path":
+      return `path[${p.loops
+        .map(
+          (lp) =>
+            `${pt(lp.start)}${lp.edges.map((e) => (e.t === "arc" ? ` a${pt(e.to)}@${pt(e.center)}r${f(e.r)}s${e.sweep}` : ` l${pt(e.to)}`)).join("")}`,
+        )
+        .join(" | ")}]`;
     default:
       throw new Error(`unexpected primitive ${p.t}`);
   }
@@ -555,7 +566,8 @@ describe("glyphs-misc — the meeting table's chairs", () => {
     const dining = draw(drawDiningTable, r).map((n) => n.prim.t);
     expect(meeting).not.toEqual(dining);
     expect(meeting.slice(2).every((t) => t === "circle")).toBe(true);
-    expect(dining.slice(2).every((t) => t === "polygon")).toBe(true);
+    // A dining chair is a seat and a backrest bar, both curved outlines (`path`).
+    expect(dining.slice(2).every((t) => t === "path")).toBe(true);
   });
 });
 

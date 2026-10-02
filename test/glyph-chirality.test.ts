@@ -35,6 +35,8 @@ import { parse } from "../src/parser.js";
 import { resolve } from "../src/ir.js";
 import { toScene } from "../src/scene-build.js";
 import type { RenderSizes, SceneNode } from "../src/scene.js";
+import { mapSceneNode } from "../src/elements/glyph-lib.js";
+import { pathExtentPoints } from "./glyph-extent.js";
 
 /** Real pen sizes, taken from a real scene rather than invented — as the glyph suites do. */
 const SIZES: RenderSizes = toScene(
@@ -322,42 +324,18 @@ function spanX(nodes: readonly SceneNode[]): [number, number] {
     if (p.t === "polygon") for (const q of p.pts) xs.push(q.x);
     else if (p.t === "line") xs.push(p.a.x, p.b.x);
     else if (p.t === "circle") xs.push(p.center.x - p.r, p.center.x + p.r);
+    else if (p.t === "path") for (const q of pathExtentPoints(p)) xs.push(q.x);
   }
   return [Math.min(...xs), Math.max(...xs)];
 }
 
-/** Slide a node along x — the plain instance's drawing onto the mirrored footprint. */
+/** Slide a node along x — the plain instance's drawing onto the mirrored footprint. Through the
+ *  shared `mapSceneNode`, so every primitive kind a glyph draws (a curved `path` too) moves. */
 function translateX(n: SceneNode, dx: number): SceneNode {
-  const t = (p: { x: number; y: number }) => ({ x: p.x + dx, y: p.y });
-  const prim = n.prim;
-  switch (prim.t) {
-    case "polygon":
-      return { ...n, prim: { ...prim, pts: prim.pts.map(t) } };
-    case "line":
-      return { ...n, prim: { ...prim, a: t(prim.a), b: t(prim.b) } };
-    case "circle":
-      return { ...n, prim: { ...prim, center: t(prim.center) } };
-    default:
-      return n;
-  }
+  return mapSceneNode(n, (p) => ({ x: p.x + dx, y: p.y }), false);
 }
 
 /** A 180° turn about `(cx, cy)` — exact, and only used to spell out what `mirror y` is. */
 function rotate180(n: SceneNode, cx: number, cy: number): SceneNode {
-  const rp = (p: { x: number; y: number }) => ({ x: 2 * cx - p.x, y: 2 * cy - p.y });
-  const prim = n.prim;
-  switch (prim.t) {
-    case "polygon":
-      return { ...n, prim: { ...prim, pts: prim.pts.map(rp) } };
-    case "line":
-      return { ...n, prim: { ...prim, a: rp(prim.a), b: rp(prim.b) } };
-    case "text":
-      return { ...n, prim: { ...prim, at: rp(prim.at) } };
-    case "circle":
-      return { ...n, prim: { ...prim, center: rp(prim.center) } };
-    case "arc":
-      return { ...n, prim: { ...prim, center: rp(prim.center), start: rp(prim.start), end: rp(prim.end) } };
-    default:
-      return n;
-  }
+  return mapSceneNode(n, (p) => ({ x: 2 * cx - p.x, y: 2 * cy - p.y }), false);
 }

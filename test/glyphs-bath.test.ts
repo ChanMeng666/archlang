@@ -28,6 +28,7 @@ import { resolve } from "../src/ir.js";
 import { toScene } from "../src/scene-build.js";
 import { compile } from "../src/index.js";
 import type { Scene, SceneNode } from "../src/scene.js";
+import { pathExtentPoints } from "./glyph-extent.js";
 import type { Rect } from "../src/elements/glyph-lib.js";
 import { glyphCtx } from "../src/elements/glyph-lib.js";
 import {
@@ -78,6 +79,8 @@ function pointsOf(n: SceneNode): { x: number; y: number }[] {
       { x: p.center.x, y: p.center.y + p.r },
     ];
   if (p.t === "arc") return [p.start, p.end, p.center];
+  // A curved outline (the WC's cistern, bowl and seat): vertices and arc extremes, no centres.
+  if (p.t === "path") return pathExtentPoints(p);
   return [];
 }
 
@@ -99,7 +102,7 @@ const FOOTPRINTS: Record<string, Rect> = {
 describe("glyphs-bath — the drawn content of each symbol", () => {
   // The exact primitive budget of each symbol, and what each one buys.
   const COUNTS: Record<string, number> = {
-    wc: 5, // cistern · lid lip · bowl · seat · flush button
+    wc: 6, // cistern · bowl · seat opening · 2 hinge ticks · flush button
     basin: 5, // slab · bowl · inner bowl · tap block · spout
     shower: 6, // tray · rim · 2 diagonals · drain ring · waste
     bathtub: 4, // outer rim · well · tap · waste
@@ -313,19 +316,19 @@ describe("glyphs-bath — the three symbols added in v1.32", () => {
    * a bidet drift into a WC one primitive at a time and stay green the whole way.
    */
 
-  it("a bidet is a WC without a cistern — the back band is a third of the width, not all of it", () => {
+  it("a bidet is a WC without a cistern — the back band is a third of the width, not most of it", () => {
     const r: Rect = { x: 0, y: 0, w: 400, h: 700 };
     const backOf = (nodes: SceneNode[]): number => {
-      // The widest polygon touching the top edge: a WC's cistern spans the footprint, a
-      // bidet's tap block does not.
+      // The widest filled shape touching the top edge: a WC's cistern spans 85% of the width
+      // (a rounded box, so it is a `path`), a bidet's tap block does not.
       const spans = nodes
-        .filter((n) => n.prim.t === "polygon")
-        .map((n) => (n.prim as { t: "polygon"; pts: { x: number; y: number }[] }).pts)
+        .filter((n) => n.prim.t === "polygon" || n.prim.t === "path")
+        .map((n) => pointsOf(n))
         .filter((pts) => Math.min(...pts.map((p) => p.y)) <= r.y + 1)
         .map((pts) => Math.max(...pts.map((p) => p.x)) - Math.min(...pts.map((p) => p.x)));
       return Math.max(0, ...spans);
     };
-    expect(backOf(draw(drawWc, r))).toBe(r.w);
+    expect(backOf(draw(drawWc, r))).toBeCloseTo(r.w * 0.85, 9);
     expect(backOf(draw(drawBidet, r))).toBeLessThanOrEqual(r.w * 0.35);
   });
 

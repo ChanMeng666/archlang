@@ -23,6 +23,7 @@ import { rotateNode } from "../src/elements/furniture.js";
 import { toScene } from "../src/scene-build.js";
 import type { Point } from "../src/ast.js";
 import type { SceneNode } from "../src/scene.js";
+import { pathExtentPoints } from "./glyph-extent.js";
 import { glyphCtx } from "../src/elements/glyph-lib.js";
 import type { GlyphCtx, Rect } from "../src/elements/glyph-lib.js";
 import {
@@ -119,8 +120,10 @@ const SHAPES: readonly Rect[] = [
  * only when no symbol exists, so a glyph that lettered itself would double the label on
  * every plan. `region` and `hatch` are excluded because `rotateNode` cannot turn a hatch
  * (its pattern angle lives in pattern space) and would silently pass one through unrotated.
+ * `path` — a closed outline of lines and minor arcs (`GlyphCtx.path`) — is allowed: it is how a
+ * glyph draws a true curve, and `rotateNode`/`mirrorNode` carry it exactly.
  */
-const ALLOWED_PRIMS = new Set(["polygon", "line", "circle"]);
+const ALLOWED_PRIMS = new Set(["polygon", "line", "circle", "path"]);
 
 /** Every point a primitive's extent touches — a circle contributing its bounding corners. */
 function extentOf(n: SceneNode): Point[] {
@@ -135,6 +138,8 @@ function extentOf(n: SceneNode): Point[] {
         { x: p.center.x - p.r, y: p.center.y - p.r },
         { x: p.center.x + p.r, y: p.center.y + p.r },
       ];
+    case "path":
+      return pathExtentPoints(p);
     default:
       // Reached only if a glyph starts emitting a primitive `ALLOWED_PRIMS` also rejects;
       // the assertion there fires first and names it.

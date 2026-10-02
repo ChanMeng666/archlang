@@ -37,6 +37,7 @@ import { resolve } from "../src/ir.js";
 import { parse } from "../src/parser.js";
 import { toScene } from "../src/scene-build.js";
 import type { Scene, SceneNode } from "../src/scene.js";
+import { pathExtentPoints } from "./glyph-extent.js";
 import { weightWidth } from "../src/scene.js";
 import { CANONICAL_FIXTURES, hasFixtureGlyph } from "../src/elements/fixtures-glyphs.js";
 import { fixtureSpec } from "../src/fixtures-catalog.js";
@@ -152,7 +153,7 @@ const R: Rect = { x: 1000, y: 2000, w: 1600, h: 700 };
  * are pinned separately below.
  */
 const EXPECTED_PRIMS: Readonly<Record<string, number>> = {
-  tree: 3,
+  tree: 26, // scalloped canopy + 8 branches × (stem + 2 twigs) + trunk
   conifer: 3,
   shrub: 11,
   hedge: 13,
@@ -182,9 +183,11 @@ const EXPECTED_PRIMS: Readonly<Record<string, number>> = {
  * hedge: it is the only RUN here, its outline is a chain of scallops down both faces, and a
  * chain is inherently as long as the thing it outlines. Its count is `2n + 3` with `n` clamped
  * to 16, so 35 is its hard ceiling and the clamp — not the budget — is what bounds it. The
- * carve is by NAME rather than a blanket raise, so the other twenty keep the tighter number.
+ * TREE is the other carve: its canopy is one path, but its eight forked branches are 24 lines,
+ * a FIXED 26 at every footprint. The carves are by NAME rather than a blanket raise, so the
+ * other nineteen keep the tighter number.
  */
-const budget = (name: string): number => (name === "hedge" ? 35 : 15);
+const budget = (name: string): number => (name === "hedge" ? 35 : name === "tree" ? 26 : 15);
 
 const TAU = Math.PI * 2;
 
@@ -227,6 +230,9 @@ function boundingPoints(n: SceneNode): Point[] {
       }
       return out;
     }
+    // A curved outline: its vertices and its arcs' axis extremes, exactly (`glyph-extent.ts`).
+    case "path":
+      return pathExtentPoints(p);
     default:
       throw new Error(`a fixture glyph emitted an unexpected primitive: ${p.t}`);
   }
@@ -274,6 +280,20 @@ function canonical(n: SceneNode): string {
       return `circle[${pt(p.center)} ${f(p.r)}]`;
     case "arc":
       return `arc[${pt(p.center)} ${f(p.r)} ${pt(p.start)} ${pt(p.end)} ${p.sweep}]`;
+    // A path loop is normalised the way a polygon's ring is — to start at its smallest edge
+    // token — and nothing more: the direction of travel is kept, so a mirrored loop still fails.
+    case "path":
+      return `path[${p.loops
+        .map((lp) => {
+          const verts = [lp.start, ...lp.edges.map((e) => e.to)];
+          const keys = lp.edges.map(
+            (e, i) => `${pt(verts[i]!)}${e.t === "arc" ? `a${pt(e.center)}r${f(e.r)}s${e.sweep}` : "l"}`,
+          );
+          let start = 0;
+          for (let i = 1; i < keys.length; i++) if (keys[i]! < keys[start]!) start = i;
+          return [...keys.slice(start), ...keys.slice(0, start)].join(" ");
+        })
+        .join(" | ")}]`;
     default:
       throw new Error(`unexpected primitive ${p.t}`);
   }
@@ -483,9 +503,8 @@ describe("glyphs-outdoor — the catalog's claims about these symbols are true",
 });
 
 describe("glyphs-outdoor — the planting reads through", () => {
-  it("draws every canopy unfilled, so the ground under it is not painted out", () => {
+  it("draws the conifer's and the pergola's canopies unfilled, so the ground under them is not painted out", () => {
     for (const [name, fn] of [
-      ["tree", drawTree],
       ["conifer", drawConifer],
       ["pergola", drawPergola],
     ] as const) {
@@ -493,6 +512,12 @@ describe("glyphs-outdoor — the planting reads through", () => {
         if (n.prim.t === "polygon") expect(n.paint.fill, `${name} canopy fill`).toBe("none");
       }
     }
+  });
+
+  it("fills the TREE's crown with the lawn tint, so a ground hatch is masked under it", () => {
+    const [canopy] = draw(drawTree, R);
+    expect(canopy!.prim.t).toBe("path");
+    expect(canopy!.paint.fill).toBe(theme.lawn);
   });
 
   it("draws the shrub and the hedge from ARCS alone — there is no shape to fill", () => {
@@ -526,32 +551,44 @@ describe("glyphs-outdoor — the planting reads through", () => {
   });
 });
 
-describe("glyphs-outdoor — the tree and the conifer are one construction, one number apart", () => {
-  it("draws a canopy, a crown ring and a trunk for both", () => {
-    for (const fn of [drawTree, drawConifer]) {
-      expect(draw(fn, R).map((n) => n.prim.t)).toEqual(["polygon", "circle", "circle"]);
-    }
+describe("glyphs-outdoor — the tree and the conifer", () => {
+  const c = { x: R.x + R.w / 2, y: R.y + R.h / 2 };
+  const crown = Math.min(R.w, R.h) * 0.48;
+
+  it("draws the tree as a scalloped canopy, eight forked branches and a trunk", () => {
+    const n = draw(drawTree, R);
+    expect(n.map((x) => x.prim.t)).toEqual(["path", ...Array(24).fill("line"), "circle"]);
+    expect(n[0]!.lineWeight).toBe("thin");
+    for (const b of n.slice(1, 25)) expect(b.lineWeight).toBe("extraThin");
+    // The trunk is a solid disc in the outline ink.
+    expect(n[25]!.lineWeight).toBe("thin");
+    expect(n[25]!.paint.fill).toBe(n[25]!.paint.stroke);
   });
 
-  it("gives the conifer the deeper notches — that IS the difference between them", () => {
-    const c = { x: R.x + R.w / 2, y: R.y + R.h / 2 };
-    const inner = (fn: Draw): number => {
-      const pts = (draw(fn, R)[0]!.prim as Extract<SceneNode["prim"], { t: "polygon" }>).pts;
-      return Math.min(...pts.map((p) => Math.hypot(p.x - c.x, p.y - c.y)));
-    };
-    const outer = (fn: Draw): number => {
-      const pts = (draw(fn, R)[0]!.prim as Extract<SceneNode["prim"], { t: "polygon" }>).pts;
-      return Math.max(...pts.map((p) => Math.hypot(p.x - c.x, p.y - c.y)));
-    };
-    expect(outer(drawTree)).toBeCloseTo(outer(drawConifer), 9);
-    expect(inner(drawConifer)).toBeLessThan(inner(drawTree) * 0.7);
+  it("scallops the canopy into SIXTEEN lobes — a multiple of four is what makes it symmetric", () => {
+    const canopy = draw(drawTree, R)[0]!.prim;
+    if (canopy.t !== "path") throw new Error("the canopy is a path");
+    const lp = canopy.loops[0]!;
+    // The cusps are the vertices on the cusp circle (0.82 of the crown); every lobe is curved.
+    const cusps = [lp.start, ...lp.edges.map((e) => e.to)]
+      .slice(0, -1)
+      .filter((p) => Math.abs(Math.hypot(p.x - c.x, p.y - c.y) - crown * 0.82) < 1e-6);
+    expect(cusps).toHaveLength(16);
+    expect(lp.edges.every((e) => e.t === "arc")).toBe(true);
+    // …reaching out to the crown on the axes and diagonals, never past it.
+    const far = Math.max(...pathExtentPoints(canopy).map((p) => Math.hypot(p.x - c.x, p.y - c.y)));
+    expect(far).toBeLessThanOrEqual(crown + 1e-9);
+    expect(far).toBeGreaterThan(crown * 0.95);
   });
 
-  it("gives both canopies sixteen vertices — a multiple of four is what makes them symmetric", () => {
-    for (const fn of [drawTree, drawConifer]) {
-      const pts = (draw(fn, R)[0]!.prim as Extract<SceneNode["prim"], { t: "polygon" }>).pts;
-      expect(pts).toHaveLength(16);
-    }
+  it("keeps the conifer's sixteen-point star, notched far deeper than the tree's scallops", () => {
+    const n = draw(drawConifer, R);
+    expect(n.map((x) => x.prim.t)).toEqual(["polygon", "circle", "circle"]);
+    const pts = (n[0]!.prim as Extract<SceneNode["prim"], { t: "polygon" }>).pts;
+    expect(pts).toHaveLength(16);
+    const d = pts.map((p) => Math.hypot(p.x - c.x, p.y - c.y));
+    expect(Math.min(...d)).toBeLessThan(Math.max(...d) * 0.5);
+    expect(Math.max(...d)).toBeCloseTo(crown, 9);
   });
 });
 
@@ -860,7 +897,7 @@ describe("glyphs-outdoor — through the compiler", () => {
     expect(svg).not.toContain(">Shed<");
     expect(svg).toContain(">Garden<");
     // The charger's cable is the arc no fallback ever emitted; the tree's canopy is a
-    // polygon with no fill.
+    // scalloped path filled with the lawn tint.
     expect(svg).toContain('<path d="M ');
     expect(svg).toContain("<circle ");
   });

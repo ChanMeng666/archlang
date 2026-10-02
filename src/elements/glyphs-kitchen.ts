@@ -474,7 +474,7 @@ export function drawWaterHeater(r: Rect, g: GlyphCtx): SceneNode[] {
   const s = shortSide(r);
   const rad = s * 0.38;
   const c: Point = { x: r.x + r.w / 2, y: r.y + r.h - s * 0.5 };
-  g.dot(c, rad, g.body);
+  g.dot(c, rad, g.body, "thin");
   g.ring(c, rad * 0.62, "extraThin");
   for (const f of [-0.3, 0.3]) {
     const x = c.x + rad * f;

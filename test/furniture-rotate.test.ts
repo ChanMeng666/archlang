@@ -6,6 +6,7 @@ import { compile } from "../src/index.js";
 import { format } from "../src/format.js";
 import { rotateNode } from "../src/elements/furniture.js";
 import type { SceneNode } from "../src/scene.js";
+import { pathExtentPoints } from "./glyph-extent.js";
 
 /**
  * Quarter-turn furniture rotation. The symbol is drawn in its "back-on-top" frame
@@ -24,7 +25,7 @@ const wc = (rot: string) =>
  * any glyph drawn with a curve or a dot: a `circle` or an `arc` could sit metres outside
  * the footprint and the loop would never look at it. The arms mirror `pointsOf` in
  * `src/backends/ascii.ts` — an arc is bounded by its start/end/centre, a circle by the
- * corners of its bounding square.
+ * corners of its bounding square, a curved `path` by its vertices and arc extremes.
  */
 const furnPoints = (src: string): { x: number; y: number }[] => {
   const scene = toScene(resolve(parse(src).plan!).ir);
@@ -37,6 +38,8 @@ const furnPoints = (src: string): { x: number; y: number }[] => {
     else if (p.t === "arc") pts.push(p.start, p.end, p.center);
     else if (p.t === "circle")
       pts.push({ x: p.center.x - p.r, y: p.center.y - p.r }, { x: p.center.x + p.r, y: p.center.y + p.r });
+    // A curved outline: its drawn curve (vertices and arc extremes) — ascii's rule for a path.
+    else if (p.t === "path") pts.push(...pathExtentPoints(p));
   }
   return pts;
 };

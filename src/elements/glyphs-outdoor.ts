@@ -16,12 +16,13 @@
  *   are `symmetric`, which for a tree or a parasol is not a simplification but the truth:
  *   a canopy in plan has no front.
  *
- * - **Planting is drawn UNFILLED.** A tree, a shrub and a pergola all sit *over* ground
- *   that has to keep reading through them — a path, a terrace, a parking bay. So their
- *   canopies are `"none"`-filled outlines, and the pergola is dashed all the way round for
- *   the same reason `upper_cabinet` is: it is above the cut plane. The pieces that stand ON
- *   the ground and hide it (a shed, a barbecue, a bin) carry `g.body` as every indoor
- *   symbol does.
+ * - **What is over the ground is not filled as a solid.** A shrub and a pergola sit *over*
+ *   ground that has to keep reading through them — a path, a terrace, a parking bay — so they
+ *   are `"none"`-filled outlines, and the pergola is dashed all the way round for the same
+ *   reason `upper_cabinet` is: it is above the cut plane. A tree's crown is the exception: it
+ *   is filled with `theme.lawn`, which masks the ground hatch under it so the crown reads as
+ *   one clean canopy. The pieces that stand ON the ground and hide it (a shed, a barbecue, a
+ *   bin) carry `g.body` as every indoor symbol does.
  *
  * Otherwise this module obeys exactly the contract the five domain modules before it do,
  * and it is worth restating because it is what makes a symbol survive contact with a real
@@ -43,9 +44,10 @@
  */
 
 import type { Point } from "../ast.js";
-import type { SceneNode } from "../scene.js";
+import type { PathEdge, PathLoop, SceneNode } from "../scene.js";
 import type { GlyphCtx, Rect } from "./glyph-lib.js";
 import {
+  bulgeArc,
   centerOf,
   clamp,
   dashedPoly,
@@ -128,20 +130,63 @@ function dirDeg(r: Rect, du: number, dv: number): number {
 // Planting
 
 /**
- * A broadleaf tree: a softly scalloped canopy, the crown ring inside it, and the trunk.
+ * A closed SCALLOPED ring: `lobes` circular lobes round `c`, lobe `j` centred on bearing
+ * `j × 360 / lobes` and bulging out to `apex(j)` from the centre, consecutive lobes meeting at
+ * cusps on the circle of radius `cusp`. Each lobe is a {@link bulgeArc} (split at its apex when
+ * it passes 120°), so the outline is a true curve — a `path`, not a star polygon.
  *
- * The canopy is UNFILLED — a tree overhangs a path, a lawn or a parking bay, and all three
- * have to keep reading underneath it. Sixteen vertices at a 22.5-degree pitch, so the symbol
- * maps onto itself under every quarter-turn (see {@link starPoly}); the catalog's
- * `symmetric: true` for this category is therefore a fact about the drawing, not a
- * convenience.
+ * Drawn clockwise from the cusp before lobe 0. With `lobes` a multiple of four and `apex` a
+ * function of `j mod 2`, the ring maps onto itself under every quarter-turn and every mirror of
+ * the square (D4), which is what the planting families' `symmetric: true` claims.
+ */
+function scallopPath(c: Point, lobes: number, cusp: number, apex: (j: number) => number): PathLoop {
+  const step = 360 / lobes;
+  const cuspAt = (j: number): Point => polar(c, cusp, (j - 0.5) * step);
+  const start = cuspAt(0);
+  const edges: PathEdge[] = [];
+  const mid = cusp * Math.cos((step / 2) * (Math.PI / 180)); // the chord's distance from c
+  for (let j = 0; j < lobes; j++) {
+    const to = j === lobes - 1 ? start : cuspAt(j + 1);
+    edges.push(...bulgeArc(j === 0 ? start : cuspAt(j), to, apex(j) - mid));
+  }
+  return { start, edges };
+}
+
+/**
+ * A broadleaf tree: a scalloped CANOPY, eight forked branches, and the trunk.
+ *
+ * - **Canopy** (outline pen, filled with `theme.lawn`): sixteen lobes on cusps at 0.82 of the
+ *   crown radius. The eight on the axes and diagonals ask for the full radius and are held to
+ *   semicircles (0.96 of it); the eight between them reach 0.9 — a period-2 pattern, so the
+ *   crown reads as foliage rather than a gear and still has the square's symmetry. Filled, so a
+ *   ground hatch under a tree is masked by the crown instead of showing through it; `lawn`
+ *   because a crown is planting, and in `mono` it is white like every tint, which leaves the
+ *   outline to carry the symbol.
+ * - **Branches** (detail pen): eight from 0.12 to 0.42 of the crown radius on the axes and
+ *   diagonals, each forking symmetrically into two twigs that reach 0.62.
+ * - **Trunk**: an outline-ink disc at the centre.
+ *
+ * Every mark is placed on the eight D4 bearings or symmetrically about them, so the symbol maps
+ * onto itself under every quarter-turn and mirror — the catalog's `symmetric: true` for this
+ * category is a fact about the drawing (`test/glyphs-outdoor.test.ts` proves it).
+ *
+ * Prim count: 26.
  */
 export function drawTree(r: Rect, g: GlyphCtx): SceneNode[] {
   const c = centerOf(r);
-  const rad = shortSide(r) * 0.48;
-  g.poly(starPoly(c, 8, rad, rad * 0.86), "none");
-  g.ring(c, rad * 0.34, "extraThin");
-  g.dot(c, rad * 0.12);
+  // Floored at 0, so a negative extent (the fuzz feeds one) collapses the tree onto its centre.
+  const rad = Math.max(0, shortSide(r) * 0.48);
+  g.path(
+    scallopPath(c, 16, rad * 0.82, (j) => (j % 2 === 0 ? rad : rad * 0.9)),
+    g.theme.lawn,
+  );
+  for (let k = 0; k < 8; k++) {
+    const b = k * 45;
+    const fork = polar(c, rad * 0.42, b);
+    g.seg(polar(c, rad * 0.12, b), fork, "extraThin");
+    for (const t of [-1, 1]) g.seg(fork, polar(c, rad * 0.62, b + t * 12), "extraThin");
+  }
+  g.dot(c, rad * 0.05, undefined, "thin");
   return g.nodes;
 }
 
@@ -743,8 +788,8 @@ export function drawShed(r: Rect, g: GlyphCtx): SceneNode[] {
 export function drawClothesline(r: Rect, g: GlyphCtx): SceneNode[] {
   const { long, short } = axes(r);
   const post = Math.min(short * 0.2, long * 0.05);
-  g.dot(alongPt(r, 0.06, 0), post);
-  g.dot(alongPt(r, 0.94, 0), post);
+  g.dot(alongPt(r, 0.06, 0), post, undefined, "thin");
+  g.dot(alongPt(r, 0.94, 0), post, undefined, "thin");
   for (const v of [-0.28, 0, 0.28]) g.seg(alongPt(r, 0.06, v), alongPt(r, 0.94, v), "extraThin");
   return g.nodes;
 }
