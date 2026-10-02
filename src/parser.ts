@@ -342,8 +342,10 @@ class Parser {
     // we skip to the opening brace (or the first statement keyword) and parse the
     // body anyway, so a partial tree is still produced.
     try {
-      this.eatKeyword("plan");
-      plan.name = this.eatString();
+      const kw = this.eatKeyword("plan");
+      const name = this.eat("string");
+      plan.name = name.value;
+      plan.headerSpan = { start: kw.start, end: name.end };
       plan.bodyStart = this.eat("lcurly").end;
     } catch (e) {
       if (!(e instanceof ParseError)) throw e;

@@ -58,6 +58,9 @@ export const column: ElementDef = {
     return rectCorners(c.at.x, c.at.y, c.size.w, c.size.h);
   },
 
+  /** At most 1 primitive (the drawing budget, `MAX_DRAW_UNITS`): its filled section. */
+  drawCost: () => 1,
+
   render(resolved, ctx: RenderCtx): SceneNode[] {
     const c = resolved as RColumn;
     const { theme, sizes } = ctx;

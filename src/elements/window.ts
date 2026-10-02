@@ -89,6 +89,9 @@ export const windowEl: ElementDef = {
     return [w.at.x, w.at.y, w.width];
   },
 
+  /** At most 4 primitives (the drawing budget, `MAX_DRAW_UNITS`): the opening cover, two glazing lines and the sill line. */
+  drawCost: () => 4,
+
   render(resolved, ctx: RenderCtx): SceneNode[] {
     const wn = resolved as RWindow;
     const seg = wn.host;

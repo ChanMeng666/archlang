@@ -1282,6 +1282,9 @@ export interface PlanNode {
   theme?: Partial<Theme>;
   /** Byte span of the authored theme `lineWeight` value, for the drawn-pen range check. */
   lineWeightSpan?: Span;
+  /** Byte span of the `plan "…"` header: where a plan-level fact with no source span of its
+   *  own is reported (a `lineWeight` passed through the compile options). */
+  headerSpan?: Span;
   /** Named theme base from `theme <name> { … }` (resolved at lowering). */
   themeBase?: string;
   /** Wall colour for `theme from "#color"` — opt-in poché derivation. */

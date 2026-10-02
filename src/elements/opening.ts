@@ -97,6 +97,9 @@ export const opening: ElementDef = {
     return [o.at.x, o.at.y, o.width];
   },
 
+  /** At most 1 primitive (the drawing budget, `MAX_DRAW_UNITS`): the opening cover. */
+  drawCost: () => 1,
+
   render(resolved): SceneNode[] {
     const op = resolved as ROpening;
     const seg = op.host;

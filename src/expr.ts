@@ -117,6 +117,17 @@ export function asBool(v: Value, onError: (d: Diagnostic) => void, span?: Span):
 /** Coerce a Value to a string for interpolation/labels. Numbers/bools stringify
  *  deterministically; arrays render as `[a, b]`. Never errors. */
 export function asStr(v: Value): string {
+  // Printing an array builds a new string: its length is measured and charged to the step
+  // budget (`MAX_EVAL_STEPS`) BEFORE it is built, so an array of large strings cannot
+  // allocate past the budget (1,100 references to a 1 Mi-character string threw
+  // `RangeError: Invalid string length`). A string, number or boolean allocates nothing
+  // new of any size.
+  if (v.t === "arr") chargeSteps(printedLength(v));
+  return printValue(v);
+}
+
+/** A scalar's printed form (anything but an array). */
+function printScalar(v: Value): string {
   switch (v.t) {
     case "str":
       return v.v;
@@ -125,11 +136,61 @@ export function asStr(v: Value): string {
     case "bool":
       return v.v ? "true" : "false";
     case "arr":
-      return `[${v.v.map(asStr).join(", ")}]`;
+      return ""; // unreachable: arrays are walked by the callers
     case "fn":
     case "builtin":
       return "<function>";
   }
+}
+
+/**
+ * The string {@link asStr} returns, with no charge (the caller has charged its length):
+ * `[a, b]`, recursively. Walked with an explicit stack, never the JS one: an array nested
+ * 10,000 deep (`a = [a, 2]` in a loop) overflowed the call stack and threw `RangeError:
+ * Maximum call stack size exceeded` out of `compile()`. Depth costs nothing here but its
+ * items, which {@link printedLength} has already charged.
+ */
+function printValue(v: Value): string {
+  if (v.t !== "arr") return printScalar(v);
+  const out: string[] = ["["];
+  const stack: { items: Value[]; i: number }[] = [{ items: v.v, i: 0 }];
+  while (stack.length > 0) {
+    const top = stack[stack.length - 1]!;
+    if (top.i >= top.items.length) {
+      out.push("]");
+      stack.pop();
+      continue;
+    }
+    if (top.i > 0) out.push(", ");
+    const x = top.items[top.i++]!;
+    if (x.t === "arr") {
+      out.push("[");
+      stack.push({ items: x.v, i: 0 });
+    } else out.push(printScalar(x));
+  }
+  return out.join("");
+}
+
+/**
+ * The length {@link printValue} will return, measured without building it, with the same
+ * explicit stack. Each array item walked is a step, so an array nested in itself many times
+ * over (whose printed form doubles per level) is stopped by the walk before any length is
+ * summed.
+ */
+function printedLength(v: Value): number {
+  if (v.t !== "arr") return printScalar(v).length;
+  let n = 0;
+  const stack: Value[][] = [v.v];
+  while (stack.length > 0) {
+    const items = stack.pop()!;
+    chargeSteps(items.length);
+    n += 2 + 2 * Math.max(0, items.length - 1);
+    for (const x of items) {
+      if (x.t === "arr") stack.push(x.v);
+      else n += x.t === "str" ? x.v.length : printScalar(x).length;
+    }
+  }
+  return n;
 }
 
 /** Deterministic number → string (trim to 3 dp, non-finite → "0"). */
@@ -570,6 +631,129 @@ export function firstOverflow(kind: "eval" | "expand"): boolean {
   return true;
 }
 
+/**
+ * The evaluation-step budget: ONE deterministic counter across a whole resolution (every
+ * storey, component instance, import, function call and loop iteration), so a plan that
+ * creates nothing can still not run without bound. `E_ELEMENT_LIMIT` bounds what a plan
+ * creates, `E_WHILE_LIMIT` one loop and the stack budget nesting; nested loops, recursion
+ * that branches and string doubling multiply inside all three.
+ *
+ * ## The unit
+ *
+ * One step is one unit of evaluator work whose cost is bounded by a constant, charged where
+ * the work is done, so the time to reach the budget is bounded whatever shape spends it:
+ *
+ * - an expression node evaluated (every {@link evalExpr} entry, which is every call too);
+ * - a statement executed and a `for`/`while` iteration started (`ir.ts` `expandScope`);
+ * - a value produced or walked: a range item, a character a string template appends, an
+ *   array item `str()`/interpolation prints or `==` compares, a character two strings of
+ *   one length compare;
+ * - a binding copied: a scope snapshot (`ir.ts` `Scope.flatten`) and a call's closure copy
+ *   cost one step per binding, because both copy the whole visible environment;
+ * - a cell of a "did you mean" hint's edit distance, and a diagnostic raised during
+ *   evaluation ({@link DIAGNOSTIC_STEPS}).
+ *
+ * Whatever builds a string is charged BEFORE it builds it (`asStr` measures an array's printed
+ * length first; a template charges each part before appending it), so no surface can allocate
+ * a string past the budget. The walks over a value (`printedLength`, `printValue`, `valueEq`)
+ * use an explicit stack, so an array nested 100,000 deep costs its items, never the JS stack.
+ *
+ * Counting nodes alone was not enough: a statement in a scope with many bindings, a closure
+ * copy per call and a doubling string cost work proportional to a size, and each would
+ * otherwise spend seconds on a handful of steps (the doubling string threw
+ * `RangeError: Invalid string length` out of `compile()`).
+ *
+ * ## The bound
+ *
+ * {@link MAX_EVAL_STEPS} was set by measurement (`test/step-budget.test.ts` pins both
+ * margins). Over the corpus (examples with `lib`, test fixtures, the recovery corpus, eval
+ * goldens, faults and fidelity plans, every `arch` fence of the docs) the median plan spends
+ * 79 steps and the largest that compiles 4,974 (`terrace-row`, four placed instances): the
+ * bound is 1,005 times that. The catalogue's demonstrations of the other caps spend more by
+ * construction (a `while` at its 10,000 iterations 260,090, a range at its 100,000 items
+ * 200,078) and still reach their own cap first, 19 times under it. The bound is not set
+ * higher because time to reach it is linear in it: on Node 24 M.2's nested loops reach it in
+ * about 1 s cold (a loop iteration is about 2 µs and 14 steps), three nested capped `while`s
+ * in 0.7 s, recursion that branches in 0.3 s.
+ *
+ * Past it the resolution stops (`E_STEP_LIMIT`, reported once, at the statement that
+ * crossed it). The crossing unwinds with an internal signal ({@link StepLimitSignal}) that
+ * `ir.ts` catches inside the resolution and turns into the diagnostic; it never leaves
+ * `resolve()`. Every evaluator frame it unwinds releases its stack units in `finally`.
+ */
+export const MAX_EVAL_STEPS = 5_000_000;
+
+/**
+ * What one diagnostic raised during evaluation costs: a retained object with its formatted
+ * message and spans, a few hundred bytes. Charged where the resolver records it, so a
+ * runaway loop that raises one per iteration is held to tens of thousands of reports, not
+ * hundreds of thousands (an unknown name in M.2's nested loops raised 326,000 in 4.5 s).
+ */
+export const DIAGNOSTIC_STEPS = 64;
+
+/** Where the statement being executed was written, for the {@link StepLimitSignal}'s report. */
+export interface StepSite {
+  span?: Span;
+  /** The imported file the span is measured in (absent = the compiled source). */
+  file?: string;
+  /** Opaque provenance the resolver re-stamps the report with (the `place` frame). */
+  frame?: unknown;
+}
+
+/** The meter of the resolution in progress, or null outside one (then nothing is counted).
+ *  The site is held field by field so marking a statement allocates nothing. */
+interface StepMeter {
+  used: number;
+  limit: number;
+  span: Span | undefined;
+  file: string | undefined;
+  frame: unknown;
+}
+let meter: StepMeter | null = null;
+
+/** Thrown when a resolution spends past its step budget; caught by the resolution itself. */
+export class StepLimitSignal {
+  constructor(readonly at: StepSite) {}
+}
+
+/** Charge `n` steps to the active meter; past its limit, unwind with a {@link StepLimitSignal}. */
+export function chargeSteps(n: number): void {
+  if (meter === null) return;
+  meter.used += n;
+  if (meter.used > meter.limit) throw new StepLimitSignal({ span: meter.span, file: meter.file, frame: meter.frame });
+}
+
+/** Record the statement now executing (the site a crossing is reported at). */
+export function stepSite(span: Span | undefined, file?: string, frame?: unknown): void {
+  if (meter !== null) {
+    meter.span = span;
+    meter.file = file;
+    meter.frame = frame;
+  }
+}
+
+/**
+ * Run `fn` with a fresh meter starting at `used` steps (what earlier storeys of the same
+ * resolution spent), restoring whatever meter was active before. Returns the steps used in
+ * total, and the signal when the budget was crossed.
+ */
+export function withStepMeter<T>(
+  used: number,
+  fn: () => T,
+): { value: T; used: number } | { signal: StepLimitSignal; used: number } {
+  const outer = meter;
+  const m: StepMeter = { used, limit: MAX_EVAL_STEPS, span: undefined, file: undefined, frame: undefined };
+  meter = m;
+  try {
+    return { value: fn(), used: m.used };
+  } catch (e) {
+    if (e instanceof StepLimitSignal) return { signal: e, used: m.used };
+    throw e;
+  } finally {
+    meter = outer;
+  }
+}
+
 /** Built-in dispatch is injected by {@link setBuiltinDispatch} (from builtins.ts)
  *  to avoid a static import cycle. Until set, built-in calls are unknown. */
 let builtinDispatch: ((name: string, args: Value[], onError: (d: Diagnostic) => void, span?: Span) => Value) | null =
@@ -583,6 +767,8 @@ export function setBuiltinDispatch(fn: typeof builtinDispatch): void {
  *  and yield a safe default so resolution can continue and report everything.
  *  `depth` bounds function-call nesting; callers pass 0. */
 export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, depth = 0): Value {
+  // One step per node evaluated (see `MAX_EVAL_STEPS`), taken before any stack unit.
+  chargeSteps(1);
   // See `MAX_STACK_UNITS`: nested evaluation shares one stack budget with expansion.
   if (!enterStack(EVAL_UNITS)) {
     if (firstOverflow("eval")) {
@@ -603,7 +789,21 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, de
         return { t: "bool", v: e.value };
       case "str": {
         let s = "";
-        for (const p of e.parts) s += typeof p === "string" ? p : asStr(evalExpr(p, env, onError, depth));
+        for (const p of e.parts) {
+          // A character appended is a step, charged BEFORE the append: a template can double
+          // a string per iteration. An array's printed form is charged by `asStr` before it
+          // is built; a string, number or boolean part exists already, so only the append
+          // is new work.
+          if (typeof p === "string") {
+            chargeSteps(p.length);
+            s += p;
+            continue;
+          }
+          const v = evalExpr(p, env, onError, depth);
+          const part = asStr(v);
+          if (v.t !== "arr") chargeSteps(part.length);
+          s += part;
+        }
         return { t: "str", v: s };
       }
       case "arr": {
@@ -643,6 +843,7 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, de
         const items: Value[] = [];
         let n = 0;
         for (let v = lo; v < hi; v += 1) {
+          chargeSteps(1);
           if (n++ >= MAX_RANGE) {
             onError({
               severity: "error",
@@ -719,6 +920,8 @@ function evalCall(e: Extract<Expr, { t: "call" }>, env: Env, onError: (d: Diagno
       });
       return NUM0;
     }
+    // The closure is copied per call: a binding copied is a step (see `MAX_EVAL_STEPS`).
+    chargeSteps(callee.closure.size);
     const callEnv: Env = new Map(callee.closure);
     callee.params.forEach((p, i) => {
       callEnv.set(p, args[i] ?? NUM0);
@@ -740,15 +943,31 @@ function evalCall(e: Extract<Expr, { t: "call" }>, env: Env, onError: (d: Diagno
 }
 
 /** Structural equality across Value kinds (cross-type compares unequal;
- *  functions compare by identity). */
-function valueEq(a: Value, b: Value): boolean {
-  if (a.t !== b.t) return false;
-  if (a.t === "arr" && b.t === "arr") {
-    return a.v.length === b.v.length && a.v.every((x, i) => valueEq(x, b.v[i]!));
+ *  functions compare by identity). Walked with an explicit stack in the order the
+ *  recursive form visited (each array's items left to right, stopping at the first
+ *  difference), so a deeply nested array cannot overflow the JS stack. */
+function valueEq(a0: Value, b0: Value): boolean {
+  const stack: [Value, Value][] = [[a0, b0]];
+  while (stack.length > 0) {
+    const [a, b] = stack.pop()!;
+    if (a.t !== b.t) return false;
+    if (a.t === "arr" && b.t === "arr") {
+      if (a.v.length !== b.v.length) return false;
+      // An item compared is a step (`MAX_EVAL_STEPS`).
+      chargeSteps(a.v.length);
+      for (let i = a.v.length - 1; i >= 0; i--) stack.push([a.v[i]!, b.v[i]!]);
+      continue;
+    }
+    if (a.t === "fn" || a.t === "builtin") {
+      if (a !== b) return false;
+      continue;
+    }
+    // Two strings of one length compare character by character: a character is a step.
+    if (a.t === "str" && b.t === "str" && a.v.length === b.v.length) chargeSteps(a.v.length);
+    // num/bool/str compare by primitive value.
+    if ((a as { v: unknown }).v !== (b as { v: unknown }).v) return false;
   }
-  if (a.t === "fn" || a.t === "builtin") return a === b;
-  // num/bool/str compare by primitive value.
-  return (a as { v: unknown }).v === (b as { v: unknown }).v;
+  return true;
 }
 
 /** An arithmetic result as a number Value; a non-finite one is diagnosed at the operation's
@@ -816,6 +1035,11 @@ function describe(t: Token): string {
 
 /** Nearest candidate within a small edit distance, for "did you mean" hints. */
 export function closest(name: string, candidates: string[]): string | null {
+  // The edit-distance search is |name| x |candidate| cells per candidate: each cell is an
+  // evaluation step (`MAX_EVAL_STEPS`), so a hint raised in a runaway loop is paid for.
+  let cells = 0;
+  for (const c of candidates) cells += (name.length + 1) * (c.length + 1);
+  chargeSteps(cells);
   let best: string | null = null;
   let bestDist = Infinity;
   for (const c of candidates) {
