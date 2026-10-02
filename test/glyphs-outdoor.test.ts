@@ -474,6 +474,48 @@ describe("glyphs-outdoor — the catalog's claims about these symbols are true",
     ).toBe(false);
   });
 
+  it("a mirror-symmetric symbol stays symmetric WHEREVER it sits — the symmetry probe's question", () => {
+    // `analyze/symmetry.ts` asks each placed piece "are you your own mirror image?" at its real
+    // plan position, so an answer that flips with the position moves `describe --facts
+    // symmetry` for a decorative reason. The trap is a mirrored PAIR built as two separate
+    // stadiums (a chair's arms, a washing line's cross-arms): `roundedRectPath` can leave a
+    // sub-ulp straight run on one twin and not the other, depending on the coordinates. Here
+    // every family that is mirror-symmetric at all is asked at many positions and aspects; the
+    // bicycle and the motorcycle only stood on end, where the mirror runs along their length.
+    const OFFSETS = Array.from({ length: 12 }, (_, i) => ({
+      x: ((i * 7919.37) % 20000) - 3000 + i * 0.137,
+      y: ((i * 104729.11) % 30000) - 5000 + i * 0.291,
+    }));
+    const SIZES: readonly (readonly [number, number])[] = [
+      [500, 500],
+      [1000, 600],
+      [1234, 567],
+      [1600, 900],
+      [2400, 1800],
+      [4000, 3000],
+      [600, 1700],
+      [567, 1234],
+    ];
+    const HANDED = new Set(["mailbox", "ev_charger"]);
+    for (const [name, fn] of GLYPHS) {
+      if (HANDED.has(name)) continue;
+      for (const [w, h] of SIZES) {
+        if ((name === "bicycle" || name === "motorcycle") && w >= h) continue;
+        for (const o of OFFSETS) {
+          const r: Rect = { x: o.x, y: o.y, w, h };
+          const nodes = draw(fn, r);
+          expect(
+            marksEqual(
+              nodes,
+              nodes.map((n) => mirrorNode(n, r.x + r.w / 2)),
+            ),
+            `${name} ${w}x${h} at (${o.x.toFixed(3)}, ${o.y.toFixed(3)})`,
+          ).toBe(true);
+        }
+      }
+    }
+  });
+
   it("the check is not vacuous — a directional symbol fails it", () => {
     // `shed` is `directional`, and the proof that the assertion above says something is that
     // running it on this symbol goes red: the doors are on one face and the ridge runs one way.

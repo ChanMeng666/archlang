@@ -121,6 +121,21 @@ function axisOval(r: Rect, a: number, b: number, ra: number, rb: number): PathLo
   return axes(r).horizontal ? ovalPath(p.x, p.y, ra, rb) : ovalPath(p.x, p.y, rb, ra);
 }
 
+/**
+ * `n` reflected across the footprint's vertical centre line (`across`) or its horizontal one —
+ * the far twin of a mirrored PAIR (a chair's two arms, a washing line's two cross-arms).
+ *
+ * A pair built as two separate stadiums is not reliably a mirror pair: `roundedRectPath` leaves a
+ * sub-ulp straight run wherever `x1 - r` and `x0 + r` round apart, which depends on where the
+ * piece sits, so one twin can carry an extra degenerate edge the other lacks — and the symmetry
+ * probe (`analyze/symmetry.ts`) then calls a symmetric symbol handed at some positions. A twin
+ * made by reflection has the same edges by construction. The point map is `mirrorNode`'s.
+ */
+function mirroredTwin(n: SceneNode, r: Rect, across: boolean): SceneNode {
+  const c = centerOf(r);
+  return mapSceneNode(n, (p) => (across ? { x: c.x + (c.x - p.x), y: p.y } : { x: p.x, y: c.y + (c.y - p.y) }), true);
+}
+
 /** A stadium (both ends fully round) filling `rect` — a tyre, a bar, a handle. */
 const pill = (rect: Rect): PathLoop => roundedRectPath(rect, shortSide(rect) / 2);
 
@@ -465,8 +480,11 @@ export function drawOutdoorChair(r: Rect, g: GlyphCtx): SceneNode[] {
   const seat = insetRectSides(r, 0.13, 0.13, 0.08, 0.04);
   g.path(roundedRectPath(seat, s * 0.1), g.basin);
   g.path(pill({ x: r.x, y: r.y, w: r.w, h: r.h * 0.13 }), g.body);
-  for (const x of [r.x, r.x + r.w * 0.89])
-    g.path(pill({ x, y: r.y + r.h * 0.06, w: r.w * 0.11, h: r.h * 0.84 }), g.body);
+  // The right arm is the left one REFLECTED, not a second stadium built at its own x: two
+  // stadiums built apart can differ by a sub-ulp straight run, and that difference alone would
+  // make the chair read as handed to the symmetry probe at some positions.
+  g.path(pill({ x: r.x, y: r.y + r.h * 0.06, w: r.w * 0.11, h: r.h * 0.84 }), g.body);
+  g.nodes.push(mirroredTwin(g.nodes[g.nodes.length - 1]!, r, true));
   for (const f of [0.4, 0.6, 0.8]) {
     const y = r.y + r.h * f;
     g.seg({ x: seat.x, y }, { x: seat.x + seat.w, y }, "extraThin");
@@ -931,10 +949,10 @@ export function drawClothesline(r: Rect, g: GlyphCtx): SceneNode[] {
   const { long: L, short: S } = axes(r);
   const arm = Math.min(L * 0.012, S * 0.05);
   const post = Math.min(S * 0.07, L * 0.02);
-  for (const a of [0.05, 0.95]) {
-    g.path(pill(axisRect(r, L * a - arm, L * a + arm, -S * 0.42, S * 0.42)), g.body);
-    g.dot(axisPt(r, L * a, 0), post, undefined, "thin");
-  }
+  // The far cross-arm is the near one reflected end for end (see {@link mirroredTwin}).
+  g.path(pill(axisRect(r, L * 0.05 - arm, L * 0.05 + arm, -S * 0.42, S * 0.42)), g.body);
+  g.nodes.push(mirroredTwin(g.nodes[g.nodes.length - 1]!, r, axes(r).horizontal));
+  for (const a of [0.05, 0.95]) g.dot(axisPt(r, L * a, 0), post, undefined, "thin");
   for (const b of [-0.3, -0.1, 0.1, 0.3]) g.seg(axisPt(r, L * 0.05, S * b), axisPt(r, L * 0.95, S * b), "extraThin");
   return g.nodes;
 }
