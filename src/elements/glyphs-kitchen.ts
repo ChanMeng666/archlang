@@ -27,12 +27,14 @@
  *
  * ## Handedness
  *
- * The symmetric appliances stay mirror-symmetric (a hob's burners are the one exception: the
- * large pair stands on one diagonal and the small pair on the other, as every drafted range
- * block draws it, so the hob — and the stove, island and range that carry one — are handed). A
- * sink with a drainer, a washer with its dial, a microwave with its keypad and an island with
- * its hob or bowl at one end are handed too, deliberately: the drawing says which end the
- * feature is on, and a mirrored `place` mirrors it.
+ * A redraw changes drawings, never facts: `describe --facts symmetry` reads whether a symbol has
+ * a mirror axis, so a symbol that was mirror-symmetric stays so. The sink, the stove, the oven
+ * (range included), the fridge, the dishwasher, the dryer and the rest are drawn symmetric about
+ * their centre line at EVERY aspect — a hob's two large burners stand side by side on the back
+ * row, a sink's drainers come in pairs, one either side of the bowls. The three that were
+ * handed before stay handed: a washer with its dial, a microwave with its keypad and an island
+ * with its hob or bowl at one end say which end the feature is on, and a mirrored `place`
+ * mirrors them.
  *
  * Symbols draw with their back (the side placed against a wall) along the TOP edge;
  * `furniture.render()` quarter-turns the result about the footprint centre. Every function
@@ -98,13 +100,14 @@ function dashedRing(g: GlyphCtx, center: Point, r: number, weight: GlyphWeight =
 }
 
 /**
- * Four burners on a 2 × 2 grid inside `area`: the LARGE pair on one diagonal (top-left and
- * bottom-right) and the SMALL pair on the other, each a ring — or, drawn `double`, two
- * concentric rings, the outer the pan support and the inner the flame.
+ * Four burners on a 2 × 2 grid inside `area`: the LARGE pair along the back row and the SMALL
+ * pair along the front row, each a ring — or, drawn `double`, two concentric rings, the outer the
+ * pan support and the inner the flame.
  *
- * It is the arrangement every drafted range block uses (the two sizes sit on the diagonals so
- * no two large burners crowd one another), which is also why it is handed. The radii are keyed
- * to the smaller half-cell, so the burners clear one another and the area's edge at any aspect.
+ * Large at the back and small at the front is how a four-zone hob is laid out for the cook (the
+ * big pans stay clear of the knobs), and, side by side in a row, no two sizes can make the hob
+ * handed: the arrangement is mirror-symmetric about the centre line. The radii are keyed to the
+ * smaller half-cell, so the burners clear one another and the area's edge at any aspect.
  *
  * Prim count: 4, or 8 when `double`.
  */
@@ -114,9 +117,9 @@ function drawBurners(g: GlyphCtx, area: Rect, double: boolean): void {
   const m = Math.min(cw, ch);
   const burners: readonly (readonly [number, number, number])[] = [
     [0.5, 0.5, 0.4],
-    [1.5, 0.5, 0.29],
+    [1.5, 0.5, 0.4],
     [0.5, 1.5, 0.29],
-    [1.5, 1.5, 0.4],
+    [1.5, 1.5, 0.29],
   ];
   for (const [i, j, k] of burners) {
     const c: Point = { x: area.x + cw * i, y: area.y + ch * j };
@@ -154,55 +157,66 @@ function tap(g: GlyphCtx, base: Point, radius: number, spoutTo: number): void {
 
 /**
  * A sink unit: the worktop, one bowl or two with a waste each, a **drainer board** with its
- * grooves, and the tap with its spout at the back.
+ * grooves on each side once the run is wide enough, and the tap with its spout at the back.
+ *
+ * **Mirror-symmetric at every aspect**, so a redraw cannot move `describe --facts symmetry`: the
+ * bowls are centred as a group, a second bowl joins at aspect 2 or over, and drainers come in
+ * PAIRS, one either side — the double-drainer sink, which is what a symmetric sink with a board is.
+ * A bowl is never wider than 1.25 times its own depth, so a long run is never one trough: the
+ * width the bowls do not take goes to a drainer on each side once that is at least 35% of the
+ * bowl's depth, and to plain worktop either side of the group until then (at most 90% of the
+ * depth, so a very long run keeps worktop at its ends rather than a plank of grooves).
  *
  * The layout is read off the footprint, on the evidence-not-guess rule the range and the island
- * follow: a run at least 1.2 times as wide as it is deep (the catalogued 800 x 600 is 1.33) is a
- * sink with a drainer, narrower is a bowl alone; a run at least 2.4 times as wide takes a second
- * bowl. Neither is invented — the alternative is one drawing that is wrong for half the sinks
- * anyone draws.
+ * follow. On the 600-deep run: 600 and 800 wide is one bowl on a worktop (the catalogued 800 x 600
+ * is 1.33), 1100 to 1199 wide is one bowl between two drainers, 1200 to 1700 is two bowls, and a
+ * longer run is two bowls between two drainers.
  *
  * - **Worktop** (body fill, outline pen): the first node.
  * - **Bowls** (white, outline pen): rounded rectangles, corners 10% of the bowl, inside a rim 7%
  *   of the short side wide and below a tap deck 20% of the depth, each with a waste disc.
- * - **Drainer** (detail pen): a recessed board on the right, 30% of the width, and five grooves
- *   running toward the bowl. It is the one handed part of the symbol, on purpose.
- * - **Tap** (detail pen): a base ring on the deck, centred over the bowls, and its spout.
+ * - **Drainers** (detail pen): a recessed board each side, with four grooves running toward the
+ *   bowls.
+ * - **Tap** (detail pen): a base ring on the deck, centred over the group, and its spout.
  *
  * Every measure is a fraction of a footprint axis or of the short side, and every inset is a
  * multiple of the short side, so nothing escapes a 10000 x 10 rect.
  *
- * Prim count: 5 (a bowl alone), 11 (bowl and drainer), 13 (two bowls and a drainer).
+ * Prim count: 5 (one bowl), 7 (two), 15 (one between drainers), 17 (two between drainers).
  */
 export function drawKitchenSink(r: Rect, g: GlyphCtx): SceneNode[] {
   const s = shortSide(r);
   g.poly(rectPoly(r), g.body);
 
-  const drainer = r.w * 10 >= r.h * 12;
-  const bowls = r.w * 10 >= r.h * 24 ? 2 : 1;
+  const bowls = r.w * 10 >= r.h * 20 ? 2 : 1;
   const m = s * 0.07;
   const gap = s * 0.06;
-  const ix0 = r.x + m;
   const iw = r.w - 2 * m;
   const top = r.y + r.h * 0.2;
   const bh = r.y + r.h - m - top;
-  const dw = drainer ? iw * 0.3 : 0;
-  const zone = iw - dw - (drainer ? gap : 0);
-  const bw = (zone - (bowls - 1) * gap) / bowls;
+  const bw = Math.min(bh * 1.25, (iw - (bowls - 1) * gap) / bowls);
+  const used = bowls * bw + (bowls - 1) * gap;
+  const room = (iw - used) / 2 - gap;
+  const drainer = room >= bh * 0.35;
+  const dw = drainer ? Math.min(room, bh * 0.9) : 0;
+  const total = used + (drainer ? 2 * (dw + gap) : 0);
+  const x0 = r.x + (r.w - total) / 2;
+  const bx0 = x0 + (drainer ? dw + gap : 0);
 
-  for (let k = 0; k < bowls; k++) sinkBowl(g, { x: ix0 + k * (bw + gap), y: top, w: bw, h: bh });
+  for (let k = 0; k < bowls; k++) sinkBowl(g, { x: bx0 + k * (bw + gap), y: top, w: bw, h: bh });
 
   if (drainer) {
-    const board: Rect = { x: ix0 + zone + gap, y: top, w: dw, h: bh };
-    g.path(roundedRectPath(board, shortSide(board) * 0.08), "none", "extraThin");
-    for (let k = 1; k <= 5; k++) {
-      const y = board.y + (bh * k) / 6;
-      g.seg({ x: board.x + dw * 0.12, y }, { x: board.x + dw * 0.88, y }, "extraThin");
+    for (const x of [x0, x0 + total - dw]) {
+      const board: Rect = { x, y: top, w: dw, h: bh };
+      g.path(roundedRectPath(board, shortSide(board) * 0.08), "none", "extraThin");
+      for (let k = 1; k <= 4; k++) {
+        const y = board.y + (bh * k) / 5;
+        g.seg({ x: board.x + dw * 0.12, y }, { x: board.x + dw * 0.88, y }, "extraThin");
+      }
     }
   }
 
-  const tapX = ix0 + zone / 2;
-  const base = { x: tapX, y: r.y + r.h * 0.105 };
+  const base = { x: r.x + r.w / 2, y: r.y + r.h * 0.105 };
   tap(g, base, s * 0.035, bowls === 1 ? top + bh * 0.2 : r.y + r.h * 0.19);
   return g.nodes;
 }
@@ -239,14 +253,13 @@ export function drawCounter(r: Rect, g: GlyphCtx): SceneNode[] {
 }
 
 /**
- * A hob: the slab, the glass plate let into it, four burners on the diagonals and the row of
- * control knobs along the front.
+ * A hob: the slab, the glass plate let into it, four burners — the large pair along the back, the
+ * small pair in front — and the row of control knobs along the front. Mirror-symmetric.
  *
  * - **Slab** (body fill, outline pen): the cooker — the first node.
  * - **Plate** (detail pen): the cooking surface, a rounded rectangle 6% of the short side in from
  *   the sides and the back and ending at 74% of the depth.
- * - **Burners** (detail pen): {@link drawBurners} with two concentric rings each — the large pair
- *   on the back-left / front-right diagonal and the small pair on the other.
+ * - **Burners** (detail pen): {@link drawBurners} with two concentric rings each.
  * - **Knobs** (detail pen): four discs along the front band, evenly spread.
  *
  * Prim count: 14.
@@ -314,7 +327,8 @@ export function drawFridge(r: Rect, g: GlyphCtx): SceneNode[] {
  * - **Knobs** (detail pen): three discs on the control band.
  * - **Window** (white, detail pen): the door's glass, a rounded rectangle.
  * - **Handle** (outline pen): a bar across the front.
- * - **Hob** (detail pen), range only: {@link drawBurners} with one ring each, back half.
+ * - **Hob** (detail pen), range only: {@link drawBurners} with one ring each, back half. The range is
+ *   mirror-symmetric, like the oven, so a redraw leaves `describe --facts symmetry` where it was.
  *
  * Every offset from an edge is a fraction of the SHORT side, never of the axis it sits on —
  * so a knob 0.1 of the short side down from the back edge cannot escape a 10000 x 10
@@ -517,9 +531,11 @@ export function drawWasher(r: Rect, g: GlyphCtx): SceneNode[] {
  *
  * - **Carcass** (body fill, outline pen): corners eased 2% of the short side — the first node.
  * - **Strip** (white, detail pen): {@link controlStrip}, with one dial ring in its centre.
- * - **Drum** (outline pen + detail pen): a ring 31% of the short side in radius at 58% of the
- *   depth, and the gasket ring at 84% of it.
- * - **Filter slot** (detail pen): a short rounded slot centred on the front band.
+ * - **Drum** (outline pen + detail pen): a ring 29% of the short side in radius at 55% of the
+ *   depth, and the gasket ring at 80% of it.
+ * - **Filter slot** (detail pen): a short rounded slot centred on the front band, clear of the
+ *   drum ring by at least 3% of the short side — at 93% of the depth, where the first draft's 92%
+ *   left a 6 mm sliver between two lines.
  *
  * Mirror-symmetric about the centre line. Prim count: 6.
  */
@@ -530,14 +546,14 @@ export function drawDryer(r: Rect, g: GlyphCtx): SceneNode[] {
   const strip = controlStrip(g, r);
   g.ring({ x: r.x + r.w / 2, y: strip.y + strip.h / 2 }, Math.min(strip.h * 0.3, s * 0.04), "extraThin");
 
-  const drum = Math.min(s * 0.31, r.h * 0.33, r.w * 0.45);
-  const c: Point = { x: r.x + r.w / 2, y: r.y + r.h * 0.58 };
+  const drum = Math.min(s * 0.29, r.h * 0.3, r.w * 0.45);
+  const c: Point = { x: r.x + r.w / 2, y: r.y + r.h * 0.55 };
   g.ring(c, drum);
   g.ring(c, drum * 0.8, "extraThin");
   const slotW = r.w * 0.3;
   const slotH = s * 0.04;
   g.path(
-    roundedRectPath({ x: r.x + (r.w - slotW) / 2, y: r.y + r.h * 0.92 - slotH / 2, w: slotW, h: slotH }, slotH / 2),
+    roundedRectPath({ x: r.x + (r.w - slotW) / 2, y: r.y + r.h * 0.93 - slotH / 2, w: slotW, h: slotH }, slotH / 2),
     "none",
     "extraThin",
   );

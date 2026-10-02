@@ -215,16 +215,10 @@ describe("fixture symbols — the eight shipped families (re-blessed when redraw
       </g>
       <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
       <polygon points="300,300 1100,300 1100,900 300,900" fill="#f4f2ee" stroke="#6c6864" stroke-width="4.8"/>
-      <path d="M 385.8,420 L 763.4,420 A 43.8 43.8 0 0 1 807.2,463.8 L 807.2,814.2 A 43.8 43.8 0 0 1 763.4,858 L 385.8,858 A 43.8 43.8 0 0 1 342,814.2 L 342,463.8 A 43.8 43.8 0 0 1 385.8,420 Z" fill="#ffffff" stroke="#6c6864" stroke-width="4.8"/>
-      <circle cx="574.6" cy="639" r="28.47" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
-      <path d="M 860.38,420 L 1040.82,420 A 17.18 17.18 0 0 1 1058,437.18 L 1058,840.82 A 17.18 17.18 0 0 1 1040.82,858 L 860.38,858 A 17.18 17.18 0 0 1 843.2,840.82 L 843.2,437.18 A 17.18 17.18 0 0 1 860.38,420 Z" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="868.98" y1="493" x2="1032.22" y2="493" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="868.98" y1="566" x2="1032.22" y2="566" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="868.98" y1="639" x2="1032.22" y2="639" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="868.98" y1="712" x2="1032.22" y2="712" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="868.98" y1="785" x2="1032.22" y2="785" stroke="#a8a29a" stroke-width="3.47"/>
-      <circle cx="574.6" cy="363" r="21" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="574.6" y1="384" x2="574.6" y2="507.6" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 470.05,420 L 929.95,420 A 43.8 43.8 0 0 1 973.75,463.8 L 973.75,814.2 A 43.8 43.8 0 0 1 929.95,858 L 470.05,858 A 43.8 43.8 0 0 1 426.25,814.2 L 426.25,463.8 A 43.8 43.8 0 0 1 470.05,420 Z" fill="#ffffff" stroke="#6c6864" stroke-width="4.8"/>
+      <circle cx="700" cy="639" r="28.47" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
+      <circle cx="700" cy="363" r="21" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="700" y1="384" x2="700" y2="507.6" stroke="#a8a29a" stroke-width="3.47"/>
       </g>
       <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
       <text x="1500" y="1182" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
@@ -272,12 +266,12 @@ describe("fixture symbols — the eight shipped families (re-blessed when redraw
       <path d="M 351,336 L 849,336 A 15 15 0 0 1 864,351 L 864,729 A 15 15 0 0 1 849,744 L 351,744 A 15 15 0 0 1 336,729 L 336,351 A 15 15 0 0 1 351,336 Z" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
       <circle cx="474.12" cy="444.12" r="76.7" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
       <circle cx="474.12" cy="444.12" r="42.19" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
-      <circle cx="725.88" cy="444.12" r="55.61" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
-      <circle cx="725.88" cy="444.12" r="30.59" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
+      <circle cx="725.88" cy="444.12" r="76.7" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
+      <circle cx="725.88" cy="444.12" r="42.19" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
       <circle cx="474.12" cy="635.88" r="55.61" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
       <circle cx="474.12" cy="635.88" r="30.59" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
-      <circle cx="725.88" cy="635.88" r="76.7" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
-      <circle cx="725.88" cy="635.88" r="42.19" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
+      <circle cx="725.88" cy="635.88" r="55.61" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
+      <circle cx="725.88" cy="635.88" r="30.59" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
       <circle cx="420" cy="837" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="3.47"/>
       <circle cx="540" cy="837" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="3.47"/>
       <circle cx="660" cy="837" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="3.47"/>

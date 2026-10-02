@@ -66,8 +66,9 @@ type Draw = (r: Rect, g: GlyphCtx) => SceneNode[];
  * branches have their own describe.
  */
 const GLYPHS: readonly (readonly [category: string, draw: Draw, prims: number])[] = [
-  // worktop · bowl · its waste · tap ring · spout. REF is square, so no drainer: a run at least
-  // 1.2 times as wide as it is deep adds the drainer board and its five grooves (11).
+  // worktop · bowl · its waste · tap ring · spout. REF is square, so one bowl and no drainer: a
+  // wider run puts a drainer board with four grooves either side of the bowl (15), and a run
+  // twice as wide as it is deep takes a second bowl (7, or 17 between two drainers).
   ["kitchen_sink", drawKitchenSink, 5],
   // worktop · upstand line · front-edge line. REF is one module, so no division ticks.
   ["counter", drawCounter, 3],
@@ -414,22 +415,28 @@ describe("glyphs-kitchen — the dashed-overhead convention", () => {
 });
 
 describe("glyphs-kitchen — round things are round", () => {
-  it("a hob's burners are true circles, in concentric pairs, the large pair on one diagonal", () => {
+  it("a hob's burners are true circles, in concentric pairs, the large pair along the back", () => {
     const nodes = drawStove(REF, ctx());
     const rings = nodes.filter((n) => n.prim.t === "circle" && n.paint.fill === "none");
     expect(rings, "four burners, two rings each").toHaveLength(8);
     const radii = [...new Set(rings.map((n) => (n.prim as { r: number }).r))].sort((a, b) => a - b);
     expect(radii.length, "large and small, outer and inner").toBe(4);
-    // The outer rings: two large, two small. The large pair sits on ONE diagonal — back-left to
-    // front-right — and the small pair on the other.
+    // The outer rings: two large, two small. The large pair stands side by side on the BACK row
+    // and the small pair on the front row, so the hob is mirror-symmetric about the centre line.
     const outer = rings
       .filter((n) => (n.prim as { r: number }).r >= radii[2]!)
       .map((n) => n.prim as { center: Point; r: number });
     expect(outer).toHaveLength(4);
     const large = outer.filter((p) => p.r === radii[3]!);
+    const small = outer.filter((p) => p.r === radii[2]!);
     expect(large).toHaveLength(2);
-    const [a, b] = large as [(typeof large)[0], (typeof large)[0]];
-    expect(Math.sign(a.center.x - b.center.x)).toBe(Math.sign(a.center.y - b.center.y));
+    expect(small).toHaveLength(2);
+    expect(large[0]!.center.y).toBe(large[1]!.center.y);
+    expect(small[0]!.center.y).toBe(small[1]!.center.y);
+    expect(large[0]!.center.y, "the large pair is at the back").toBeLessThan(small[0]!.center.y);
+    const cx = REF.x + REF.w / 2;
+    expect(large[0]!.center.x + large[1]!.center.x).toBeCloseTo(2 * cx, 9);
+    expect(small[0]!.center.x + small[1]!.center.x).toBeCloseTo(2 * cx, 9);
     // The four knobs are filled discs in a row along the front band.
     const knobs = nodes.filter((n) => n.prim.t === "circle" && n.paint.fill !== "none");
     expect(knobs).toHaveLength(4);
@@ -454,13 +461,18 @@ describe("glyphs-kitchen — round things are round", () => {
     expect(drawWasher(REF, ctx())).not.toEqual(drawDryer(REF, ctx()));
   });
 
-  it("a sink's bowls are eased rectangles with a waste each, beside a grooved drainer", () => {
+  it("a sink's bowls are eased rectangles with a waste each, between two grooved drainers", () => {
     const g = ctx();
     const nodes = drawKitchenSink({ x: 0, y: 0, w: 1800, h: 600 }, g);
-    // Two bowls (thin white paths), the drainer board (a detail path) and the slab (a rectangle).
+    // Two bowls (thin white paths), a drainer board either side (detail paths) and the slab (a rectangle).
     const bowls = nodes.filter((n) => n.prim.t === "path" && n.lineWeight === "thin");
     expect(bowls).toHaveLength(2);
     for (const b of bowls) expect(b.paint.fill).toBe(g.basin);
+    const boards = nodes.filter((n) => n.prim.t === "path" && n.lineWeight === "extraThin");
+    expect(boards, "a drainer each side").toHaveLength(2);
+    for (const b of boards) expect(b.paint.fill).toBe("none");
+    // Four grooves on each board.
+    expect(nodes.filter((n) => n.prim.t === "line" && n.lineWeight === "extraThin")).toHaveLength(2 * 4 + 1);
     expect(nodes.filter((n) => n.prim.t === "polygon").map((n) => (n.prim as { pts: Point[] }).pts.length)).toEqual([
       4,
     ]);
@@ -487,13 +499,30 @@ describe("glyphs-kitchen — the aspect branches", () => {
   // threshold. Each branch is a real appliance, so each is pinned from BOTH sides — a
   // one-sided check would pass a rule that had silently collapsed to one branch.
 
-  it("a sink run takes a drainer at aspect 1.2 and a second bowl at 2.4", () => {
+  it("a sink run takes a second bowl at aspect 2, and a drainer each side once the bowls leave room", () => {
     const n = (w: number): number => drawKitchenSink({ x: 0, y: 0, w, h: 600 }, ctx()).length;
-    expect(n(719)).toBe(5); // 1.198 — a bowl and its tap
-    expect(n(720)).toBe(11); // 1.2 — the same, and a drainer with five grooves
-    expect(n(800)).toBe(11); // the catalogued 800 x 600
-    expect(n(1439)).toBe(11); // 2.398 — still one bowl
-    expect(n(1440)).toBe(13); // 2.4 — two bowls and a drainer
+    expect(n(600)).toBe(5); // a bowl and its tap
+    expect(n(800)).toBe(5); // the catalogued 800 x 600 — a centred bowl on a worktop
+    expect(n(1000)).toBe(5); // still too little room for a drainer either side
+    expect(n(1100)).toBe(15); // one bowl between two four-groove drainers
+    expect(n(1199)).toBe(15); // 1.998 — still one bowl
+    expect(n(1200)).toBe(7); // 2.0 — two bowls, which take the whole width
+    expect(n(1500)).toBe(7);
+    expect(n(1800)).toBe(17); // two bowls between two drainers
+    expect(n(10000)).toBe(17); // the drainers are capped; a long run keeps worktop at its ends
+  });
+
+  it("a sink bowl is never a trough — at most 1.25 times as wide as it is deep, at any run", () => {
+    for (const w of [600, 720, 800, 913, 1000, 1100, 1200, 1440, 1800, 3000, 10000]) {
+      const r: Rect = { x: 0, y: 0, w, h: w === 913 ? 438 : 600 };
+      for (const n of drawKitchenSink(r, ctx())) {
+        if (n.prim.t !== "path" || n.lineWeight !== "thin") continue;
+        const pts = extentOf(n);
+        const bw = Math.max(...pts.map((p) => p.x)) - Math.min(...pts.map((p) => p.x));
+        const bh = Math.max(...pts.map((p) => p.y)) - Math.min(...pts.map((p) => p.y));
+        expect(bw / bh, `${r.w}x${r.h}: bowl ${bw.toFixed(0)} x ${bh.toFixed(0)}`).toBeLessThanOrEqual(1.25 + 1e-9);
+      }
+    }
   });
 
   it("a wide oven is a range: four burners on top of the six-primitive oven", () => {
@@ -550,14 +579,15 @@ describe("glyphs-kitchen — the aspect branches", () => {
 });
 
 describe("glyphs-kitchen — which symbols are handed", () => {
-  // Mirror symmetry is a property of the DRAWING, asked at the footprint it is drawn at.
-  // The handed ones are handed on purpose — a hob's large burners stand on one diagonal, a sink
-  // has its drainer on one side, a washer its dial, a microwave its keypad and an island its
-  // fitting at one end — and every other symbol must stay symmetric, because
-  // `test/glyph-chirality.test.ts` and `describe --facts symmetry` read it.
+  // Mirror symmetry is a property of the DRAWING, asked at the footprint it is drawn at, and
+  // `describe --facts symmetry` reads it: a symbol that was symmetric on `main` must still be, or a
+  // plan with mirrored kitchens changes from `D1 axis x` to `C1`. So a redraw adds no handedness.
+  // Only the three that already had it keep it — a washer's dial, a microwave's keypad, an island's
+  // fitting at one end.
   const catalogued: Record<string, Rect> = {
     kitchen_sink: { x: 0, y: 0, w: 800, h: 600 },
     stove: REF,
+    oven: { x: 0, y: 0, w: 1000, h: 600 },
     washer: REF,
     microwave: { x: 0, y: 0, w: 500, h: 400 },
     island: { x: 0, y: 0, w: 1800, h: 900 },
@@ -571,13 +601,16 @@ describe("glyphs-kitchen — which symbols are handed", () => {
     counter: REF,
     upper_cabinet: { x: 0, y: 0, w: 600, h: 350 },
   };
-  const drawOf = (c: string): Draw => GLYPHS.find(([name]) => name === c)![1];
+  const drawOf = (c: string): Draw => (c === "oven" ? drawOven : GLYPHS.find(([name]) => name === c)![1]);
 
-  it.each(["kitchen_sink", "stove", "washer", "microwave", "island"])("%s is handed", (c) => {
+  it.each(["washer", "microwave", "island"])("%s is handed", (c) => {
     expect(mirrorSymmetric(drawOf(c), catalogued[c]!)).toBe(false);
   });
 
   it.each([
+    "kitchen_sink",
+    "stove",
+    "oven",
     "fridge",
     "dishwasher",
     "dryer",
@@ -591,10 +624,48 @@ describe("glyphs-kitchen — which symbols are handed", () => {
     expect(mirrorSymmetric(drawOf(c), catalogued[c]!)).toBe(true);
   });
 
-  it("a bowl-only sink and a plain oven are symmetric; a drainer or a hob is what hands them", () => {
-    expect(mirrorSymmetric(drawKitchenSink, REF)).toBe(true);
-    expect(mirrorSymmetric(drawOven, REF)).toBe(true);
-    expect(mirrorSymmetric(drawOven, { x: 0, y: 0, w: 1000, h: 600 })).toBe(false);
+  it("the sink, the stove and the oven stay symmetric at every threshold where their drawing changes", () => {
+    const at = (w: number, h = 600): Rect => ({ x: 0, y: 0, w, h });
+    // The sink: a centred bowl, drainers either side (1100), a second bowl (1200), drainers again (1800),
+    // the capped drainer on an absurd run, and the awkward 913 x 438 and a tall one.
+    for (const r of [at(600), at(720), at(800), at(1000), at(1100), at(1199), at(1200), at(1500), at(1800), at(3000)]) {
+      expect(mirrorSymmetric(drawKitchenSink, r), `kitchen_sink ${r.w}x${r.h}`).toBe(true);
+    }
+    for (const r of [at(913, 438), at(400, 800), at(10000, 10), at(1, 1), at(10, 10000)]) {
+      expect(mirrorSymmetric(drawKitchenSink, r), `kitchen_sink ${r.w}x${r.h}`).toBe(true);
+    }
+    // The stove: square, wide and tall.
+    for (const r of [at(600), at(900), at(600, 900), at(10000, 10)]) {
+      expect(mirrorSymmetric(drawStove, r), `stove ${r.w}x${r.h}`).toBe(true);
+    }
+    // The oven either side of the range threshold (aspect 1.6), and well past it.
+    for (const r of [at(600), at(959), at(960), at(1000), at(2000)]) {
+      expect(mirrorSymmetric(drawOven, r), `oven ${r.w}x${r.h}`).toBe(true);
+    }
+  });
+
+  it("an island's hob is the handed part: the burners are symmetric, the end they are at is not", () => {
+    expect(mirrorSymmetric(drawIsland, { x: 0, y: 0, w: 1800, h: 900 })).toBe(false);
+    expect(mirrorSymmetric(drawIsland, { x: 0, y: 0, w: 1000, h: 900 })).toBe(false);
+  });
+});
+
+describe("glyphs-kitchen — nothing crowds its neighbour (design spec D8)", () => {
+  it("the dryer's filter slot and its control strip each stand clear of the drum ring by 3% of the short side", () => {
+    const nodes = drawDryer(REF, ctx());
+    const drum = nodes.find((n) => n.prim.t === "circle" && n.lineWeight === "thin")!.prim as {
+      center: Point;
+      r: number;
+    };
+    const ys = (n: SceneNode): number[] => extentOf(n).map((p) => p.y);
+    const strip = nodes[1]!;
+    const slot = nodes[nodes.length - 1]!;
+    const slotGap = Math.min(...ys(slot)) - (drum.center.y + drum.r);
+    const stripGap = drum.center.y - drum.r - Math.max(...ys(strip));
+    expect(slotGap, "slot to drum ring").toBeGreaterThanOrEqual(REF.h * 0.03);
+    expect(stripGap, "drum ring to control strip").toBeGreaterThanOrEqual(REF.h * 0.03);
+    // …and the slot is still inside the carcass with room to spare at the front edge.
+    expect(REF.y + REF.h - Math.max(...ys(slot))).toBeGreaterThanOrEqual(REF.h * 0.03);
   });
 });
 

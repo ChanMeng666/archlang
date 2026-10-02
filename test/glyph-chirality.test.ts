@@ -195,8 +195,21 @@ describe("a symbol with no handedness is not perturbed", () => {
     ["bench", "1800x600"],
     ["wc", "400x700"],
     ["shower", "900x900"],
+    // The kitchen's three that a redraw must keep symmetric — `describe --facts symmetry` reads
+    // handedness, so a stove, a sink or an oven that turned handed would move a semantic fact on
+    // every plan with mirrored kitchens. Each at its catalogued footprint and at the thresholds
+    // where its drawing changes (the sink's drainers and second bowl, the oven's hob).
+    ["stove", "600x600"],
+    ["stove", "900x600"],
+    ["kitchen_sink", "800x600"],
+    ["kitchen_sink", "1100x600"],
+    ["kitchen_sink", "1200x600"],
+    ["kitchen_sink", "1800x600"],
+    ["oven", "600x600"],
+    ["oven", "960x600"],
+    ["oven", "1000x600"],
   ] as const) {
-    it(`a mirrored \`${category}\` is byte-identical to the plain one`, () => {
+    it(`a mirrored \`${category}\` (${size}) is byte-identical to the plain one`, () => {
       expect(svgOf(paired(category, "x", size))).toBe(svgOf(paired(category, "", size)));
       expect(svgOf(paired(category, "y", size))).toBe(svgOf(paired(category, "", size, 180)));
     });
@@ -255,11 +268,8 @@ describe("the handedness survey", () => {
   /**
    * The families whose plan symbol has NO vertical mirror axis at its catalogued footprint,
    * measured by reflecting the drawing rather than read off a flag. `sofa_l` is the one
-   * originally reported; the other twenty-one are what looking rather than assuming
-   * turned up. Three of them are handed since the kitchen redraw, each on purpose: the
-   * `kitchen_sink` (its drainer board stands on one side of the bowl), the `stove` and the `oven`
-   * at its range footprint (a hob puts its two large burners on one diagonal and its two small
-   * ones on the other, as every drafted range block does).
+   * originally reported; the other eighteen are what looking rather than assuming
+   * turned up.
    *
    * This is a RECORD of the survey, not the mechanism — `mirrorGlyph` derives handedness per
    * drawing, per footprint, so nothing reads this list. Redraw a symbol and it may move: that
@@ -268,12 +278,9 @@ describe("the handedness survey", () => {
    */
   const HANDED = [
     "bathtub",
-    "kitchen_sink",
-    "stove",
     "bed",
     "double_bed",
     "desk",
-    "oven",
     "island",
     "washer",
     "sofa_l",
@@ -300,7 +307,7 @@ describe("the handedness survey", () => {
     );
   };
 
-  it("twenty-two of the 83 shipped families are handed at their catalogued footprint", () => {
+  it("nineteen of the 83 shipped families are handed at their catalogued footprint", () => {
     const found = CANONICAL_FIXTURES.filter((c) => {
       const fp = defaultFootprint(c);
       return handedAt(c, fp?.along ?? 1000, fp?.depth ?? 600);
