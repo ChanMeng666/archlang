@@ -5,7 +5,9 @@
  * version bump) so wall poché survives to CAD as a real hatch, not just boundary
  * lines. Pure, synchronous, zero-dep: DXF is plain text, so this needs no
  * external library and ships in the core. Build a Scene with
- * `toScene(resolve(ast).ir)` (or `compile().scene`).
+ * `toScene(resolve(ast).ir)` (or `compile().scene`). `compile().scene` is the guarded route:
+ * `compile()` refuses a drawing past the drawing budget (`E_DRAWING_LIMIT`) before building the
+ * Scene, and `toScene()` on a resolved IR does not.
  *
  * The geometry is NOT re-derived here: door arcs, window panes, and
  * dimension ticks are the very `ScenePrim`s the elements produced. Each primitive

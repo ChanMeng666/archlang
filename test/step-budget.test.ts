@@ -183,6 +183,69 @@ suite("a string is charged before it is built, on every public surface", () => {
   }, 120_000);
 });
 
+suite("a deeply nested array is walked without the JS stack", () => {
+  // `a = [a, 2]` in a loop nests an array 10,000 or 100,000 deep. Printing it (`str`, a
+  // template, a label) or comparing it recursed once per level and threw `RangeError: Maximum
+  // call stack size exceeded` out of compile(), describe() and lint() in tens of milliseconds.
+  // The walks now use an explicit stack: depth costs only the items walked, which the step
+  // budget charges, so a plan either compiles or stops with E_STEP_LIMIT.
+  const nest = (n: number, item = "[a, 2]"): string =>
+    n <= 10_000
+      ? `  let a = [1]\n  let j = 0\n  while j < ${n} {\n    a = ${item}\n    j = j + 1\n  }`
+      : `  let a = [1]\n  for j in 0..${n} { a = ${item} }`;
+  const known = new Set(A.ERROR_CODES as readonly string[]);
+  for (const n of [10_000, 100_000]) {
+    const cases: Record<string, string> = {
+      "str(a)": plan(`${ROOM}\n${nest(n)}\n  let t = str(a)`),
+      '"{a}" with nine items a level': plan(`${ROOM}\n${nest(n, "[a, 2, 3, 4, 5, 6, 7, 8, 9]")}\n  let t = "{a}"`),
+      "a == b (the same array)": plan(`${ROOM}\n${nest(n)}\n  let b = a\n  let e = a == b`),
+      "a == b (two equal copies)": plan(
+        `${ROOM}\n${nest(n)}\n  let b = [1]\n  for j in 0..${n} { b = [b, 2] }\n  let e = a == b`,
+      ),
+    };
+    for (const [name, src] of Object.entries(cases)) {
+      it(`${n} deep, ${name}: no API throws, every diagnostic is catalogued`, () => {
+        for (const [api, call] of Object.entries({
+          compile: () => A.compile(src, { noCache: true }),
+          describe: () => A.describe(src),
+          lint: () => A.lint(src),
+          repair: () => A.repair(src),
+          format: () => A.format(src),
+        })) {
+          expect(call, api).not.toThrow();
+        }
+        for (const d of A.compile(src, { noCache: true }).diagnostics)
+          expect(known.has(d.code ?? ""), d.code).toBe(true);
+      }, 120_000);
+    }
+  }
+
+  it("a label printing a 10,000-deep array compiles; 100,000 deep compiles too", () => {
+    for (const n of [10_000, 100_000]) {
+      const src = plan(`${ROOM}\n${nest(n)}\n  room at (4000,0) size 3000x3000 label "{a}"`);
+      expect(() => A.compile(src, { noCache: true })).not.toThrow();
+      expect(A.compile(src, { noCache: true }).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    }
+  }, 120_000);
+
+  it("the iterative walks print and compare exactly as the recursive ones did", () => {
+    const src = plan(
+      `${ROOM}\n${nest(3)}\n  room id=l at (4000,0) size 3000x3000 label "{a} {[1, [2, [true, 3]], []]}"`,
+    );
+    const r = A.compile(src, { noCache: true });
+    expect(r.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    const labelOf = (s: string, id: string): string | undefined =>
+      (A.describe(s) as unknown as { rooms: { id: string; label?: string }[] }).rooms.find((x) => x.id === id)?.label;
+    expect(labelOf(src, "l")).toBe("[[[[1], 2], 2], 2] [1, [2, [true, 3]], []]");
+    const eq = (l: string, rr: string): string | undefined =>
+      labelOf(plan(`${ROOM}\n  let e = ${l} == ${rr}\n  room id=q at (4000,0) size 3000x3000 label "{e}"`), "q");
+    expect(eq("[1, [2, 3]]", "[1, [2, 3]]")).toBe("true");
+    expect(eq("[1, [2, 3]]", "[1, [2, 4]]")).toBe("false");
+    expect(eq("[1, [2, 3]]", "[1, [2]]")).toBe("false");
+    expect(eq("[[1], 2]", "[1, 2]")).toBe("false");
+  });
+});
+
 suite("one counter across the whole resolution", () => {
   // A loop whose step cost is linear in its iterations, split into chunks because a range
   // holds at most 100,000 items. The model is MEASURED from the evaluator (a plan, one more

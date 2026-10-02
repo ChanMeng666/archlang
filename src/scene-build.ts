@@ -48,12 +48,6 @@ function planBounds(ir: ResolvedPlan, registry: Registry): Bounds {
   return drawingBounds(ir.elements, ir.siteBoundary, registry);
 }
 
-/**
- * Build the {@link Scene} for a resolved plan. The theme is merged + sanitized
- * once here and baked into node paint; it is also carried on the Scene for the
- * page chrome (north/scale/title). `opts.width` does not affect the Scene (it is
- * an SVG-only attribute) — only `opts.theme` participates.
- */
 /** Resolve `theme <name>` to its colours: per-call registered themes win over built-in THEMES.
  *  Exported so the axonometric view (`src/view/iso.ts`) runs the SAME cascade rather than a
  *  second copy of it — a theme resolved two ways is two ways for a colour to be wrong. */
@@ -604,6 +598,19 @@ export function planTheme(ir: ResolvedPlan, opts: CompileOptions, runtime: Runti
   return { preStyle, theme };
 }
 
+/**
+ * Build the {@link Scene} for a resolved plan. The theme is merged + sanitized
+ * once here and baked into node paint; it is also carried on the Scene for the
+ * page chrome (north/scale/title). `opts.width` does not affect the Scene (it is
+ * an SVG-only attribute) — only `opts.theme` participates.
+ *
+ * **`compile()` is the guarded entry point.** It refuses, before calling this, a plan whose
+ * drawing is estimated past the drawing budget (`E_DRAWING_LIMIT`, `MAX_DRAW_UNITS`,
+ * `src/draw-budget.ts`) and a `lineWeight` from the options whose pen leaves the modelling
+ * range. This function applies neither: a caller who draws a resolved IR directly
+ * (`toScene(resolve(ast).ir)`) takes that budget on, and 500 escalators at the tread cap
+ * drawn this way make 1.1 million nodes and about 240 MB. Use `compile().scene`.
+ */
 export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Runtime = BUILTIN_RUNTIME): Scene {
   const registry = runtime.registry;
 

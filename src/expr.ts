@@ -126,8 +126,8 @@ export function asStr(v: Value): string {
   return printValue(v);
 }
 
-/** The string {@link asStr} returns, with no charge (the caller has charged its length). */
-function printValue(v: Value): string {
+/** A scalar's printed form (anything but an array). */
+function printScalar(v: Value): string {
   switch (v.t) {
     case "str":
       return v.v;
@@ -136,7 +136,7 @@ function printValue(v: Value): string {
     case "bool":
       return v.v ? "true" : "false";
     case "arr":
-      return `[${v.v.map(printValue).join(", ")}]`;
+      return ""; // unreachable: arrays are walked by the callers
     case "fn":
     case "builtin":
       return "<function>";
@@ -144,28 +144,53 @@ function printValue(v: Value): string {
 }
 
 /**
- * The length {@link printValue} will return, measured without building it. Each array item
- * walked is itself a step, so an array nested in itself many times over (whose printed form
- * doubles per level) is stopped by the walk, before any length is summed.
+ * The string {@link asStr} returns, with no charge (the caller has charged its length):
+ * `[a, b]`, recursively. Walked with an explicit stack, never the JS one: an array nested
+ * 10,000 deep (`a = [a, 2]` in a loop) overflowed the call stack and threw `RangeError:
+ * Maximum call stack size exceeded` out of `compile()`. Depth costs nothing here but its
+ * items, which {@link printedLength} has already charged.
+ */
+function printValue(v: Value): string {
+  if (v.t !== "arr") return printScalar(v);
+  const out: string[] = ["["];
+  const stack: { items: Value[]; i: number }[] = [{ items: v.v, i: 0 }];
+  while (stack.length > 0) {
+    const top = stack[stack.length - 1]!;
+    if (top.i >= top.items.length) {
+      out.push("]");
+      stack.pop();
+      continue;
+    }
+    if (top.i > 0) out.push(", ");
+    const x = top.items[top.i++]!;
+    if (x.t === "arr") {
+      out.push("[");
+      stack.push({ items: x.v, i: 0 });
+    } else out.push(printScalar(x));
+  }
+  return out.join("");
+}
+
+/**
+ * The length {@link printValue} will return, measured without building it, with the same
+ * explicit stack. Each array item walked is a step, so an array nested in itself many times
+ * over (whose printed form doubles per level) is stopped by the walk before any length is
+ * summed.
  */
 function printedLength(v: Value): number {
-  switch (v.t) {
-    case "str":
-      return v.v.length;
-    case "num":
-      return fmtNum(v.v).length;
-    case "bool":
-      return v.v ? 4 : 5;
-    case "arr": {
-      chargeSteps(v.v.length);
-      let n = 2 + 2 * Math.max(0, v.v.length - 1);
-      for (const x of v.v) n += printedLength(x);
-      return n;
+  if (v.t !== "arr") return printScalar(v).length;
+  let n = 0;
+  const stack: Value[][] = [v.v];
+  while (stack.length > 0) {
+    const items = stack.pop()!;
+    chargeSteps(items.length);
+    n += 2 + 2 * Math.max(0, items.length - 1);
+    for (const x of items) {
+      if (x.t === "arr") stack.push(x.v);
+      else n += x.t === "str" ? x.v.length : printScalar(x).length;
     }
-    case "fn":
-    case "builtin":
-      return 10;
   }
+  return n;
 }
 
 /** Deterministic number → string (trim to 3 dp, non-finite → "0"). */
@@ -630,7 +655,8 @@ export function firstOverflow(kind: "eval" | "expand"): boolean {
  *
  * Whatever builds a string is charged BEFORE it builds it (`asStr` measures an array's printed
  * length first; a template charges each part before appending it), so no surface can allocate
- * a string past the budget.
+ * a string past the budget. The walks over a value (`printedLength`, `printValue`, `valueEq`)
+ * use an explicit stack, so an array nested 100,000 deep costs its items, never the JS stack.
  *
  * Counting nodes alone was not enough: a statement in a scope with many bindings, a closure
  * copy per call and a doubling string cost work proportional to a size, and each would
@@ -917,19 +943,31 @@ function evalCall(e: Extract<Expr, { t: "call" }>, env: Env, onError: (d: Diagno
 }
 
 /** Structural equality across Value kinds (cross-type compares unequal;
- *  functions compare by identity). */
-function valueEq(a: Value, b: Value): boolean {
-  if (a.t !== b.t) return false;
-  if (a.t === "arr" && b.t === "arr") {
-    // An item compared is a step (`MAX_EVAL_STEPS`).
-    if (a.v.length === b.v.length) chargeSteps(a.v.length);
-    return a.v.length === b.v.length && a.v.every((x, i) => valueEq(x, b.v[i]!));
+ *  functions compare by identity). Walked with an explicit stack in the order the
+ *  recursive form visited (each array's items left to right, stopping at the first
+ *  difference), so a deeply nested array cannot overflow the JS stack. */
+function valueEq(a0: Value, b0: Value): boolean {
+  const stack: [Value, Value][] = [[a0, b0]];
+  while (stack.length > 0) {
+    const [a, b] = stack.pop()!;
+    if (a.t !== b.t) return false;
+    if (a.t === "arr" && b.t === "arr") {
+      if (a.v.length !== b.v.length) return false;
+      // An item compared is a step (`MAX_EVAL_STEPS`).
+      chargeSteps(a.v.length);
+      for (let i = a.v.length - 1; i >= 0; i--) stack.push([a.v[i]!, b.v[i]!]);
+      continue;
+    }
+    if (a.t === "fn" || a.t === "builtin") {
+      if (a !== b) return false;
+      continue;
+    }
+    // Two strings of one length compare character by character: a character is a step.
+    if (a.t === "str" && b.t === "str" && a.v.length === b.v.length) chargeSteps(a.v.length);
+    // num/bool/str compare by primitive value.
+    if ((a as { v: unknown }).v !== (b as { v: unknown }).v) return false;
   }
-  if (a.t === "fn" || a.t === "builtin") return a === b;
-  // Two strings of one length compare character by character: a character is a step.
-  if (a.t === "str" && b.t === "str" && a.v.length === b.v.length) chargeSteps(a.v.length);
-  // num/bool/str compare by primitive value.
-  return (a as { v: unknown }).v === (b as { v: unknown }).v;
+  return true;
 }
 
 /** An arithmetic result as a number Value; a non-finite one is diagnosed at the operation's
