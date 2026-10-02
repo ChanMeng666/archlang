@@ -4,7 +4,7 @@ import type { FurnitureAnchor, FurnitureNode, FurniturePlace, Point } from "../a
 import { FURNITURE_ANCHORS } from "../ast.js";
 import type { Span } from "../diagnostics.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
-import type { SceneNode } from "../scene.js";
+import type { RenderSizes, SceneNode } from "../scene.js";
 import type { FurnitureAuthored, RFurniture, RRoom } from "../ir.js";
 import { rectCorners, segmentsOfWall, unit, normal, add, mul, sub, length } from "../geometry.js";
 import { pointInPolygon } from "../geometry/polygon.js";
@@ -23,11 +23,20 @@ import {
 } from "../fixture-orientation.js";
 import { mod360 } from "../algebra/d4.js";
 import { DEFAULT_THEME } from "../theme.js";
-import { renderSizes } from "../sheet.js";
 
-/** Canonical pens for counting a glyph's primitives (a count never depends on the pens);
- *  built on first use, so loading this module calls nothing in another. */
-let countSizes: ReturnType<typeof renderSizes> | undefined;
+/** Canonical pens for counting a glyph's primitives: a count never depends on the pens, so
+ *  any will do. A literal, so the element layer stays out of the sheet layer's load graph. */
+const COUNT_SIZES: RenderSizes = {
+  refDim: 1000,
+  wallStroke: 2.8,
+  thin: 1.6,
+  roomFont: 30,
+  areaFont: 22,
+  dimFont: 20,
+  furnFont: 17,
+  margin: 170,
+  hatchGap: 13,
+};
 
 const ANCHOR_SET: ReadonlySet<string> = new Set<FurnitureAnchor>(FURNITURE_ANCHORS);
 
@@ -316,8 +325,7 @@ export const furniture: ElementDef = {
     const pw = swap ? f.size.h : f.size.w;
     const ph = swap ? f.size.w : f.size.h;
     const rect = { x: f.at.x, y: f.at.y, w: pw, h: ph };
-    countSizes ??= renderSizes(undefined, 1000, 1000, 1);
-    return fixtureGlyph(f.category, rect, DEFAULT_THEME, countSizes)?.length ?? 2;
+    return fixtureGlyph(f.category, rect, DEFAULT_THEME, COUNT_SIZES)?.length ?? 2;
   },
 
   render(resolved, ctx: RenderCtx): SceneNode[] {
