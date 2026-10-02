@@ -32,21 +32,21 @@
  * `transformElement` already does. A `sliding` door's track choice is neither: it is
  * `slide` times the normal, so it reads `RDoor._mirror` (see that case).
  *
- * ## The dash convention: DASHED MEANS ABOVE THE CUT PLANE
+ * ## The drawing language — the same as a hinged door's
  *
- * This module's three older dashed rules (`barn`'s two wall faces, `bifold`'s opening
- * line) dash for a different reason — they redraw an edge the leaf covers — and they
- * carry a raw `paint.dash` with no named line type, which is safe only because nothing
- * there names one.
+ * - **A panel is a leaf**: a slab (a thin closed rectangle) filled with the page colour and
+ *   stroked at the leaf pen, `thin × 1.3` — the pen `door.render` draws a hinged leaf with.
+ * - **A visible guide is solid and fine**: a bypass door's floor tracks take the extra-thin
+ *   pen a hinged door's swing does. A jamb tick is `thin`.
+ * - **DASHED MEANS ABOVE THE CUT PLANE, OR HIDDEN** — the convention the rest of the drawing
+ *   follows (`upper_cabinet`, `roof`, `void`). Here that is a `garage` panel's overhead
+ *   projection, a `barn` door's top-hung track and a `bifold`'s head track (both above the
+ *   cut), and a `pocket`'s cavity (inside the wall). A dash is never decoration: a hinged
+ *   door's swing at floor level is drawn solid for the same reason.
  *
- * `garage`'s overhead projection is the other kind, and it settles the convention the
- * rest of the drawing already follows: **a dashed outline means a thing that is above
- * the horizontal cut a floor plan is taken at.** `upper_cabinet` dashes for that reason,
- * `roof` and `void` ship with it, and a garage panel parked overhead is exactly the same
- * statement. Those all draw with {@link dashedPattern} and set `lineType: "dashed"` AND a
- * matching `paint.dash`, because the SVG serializer follows the name and the PDF
- * serializer follows the number; the garage projection does the same, and is therefore
- * the one node in this file that carries a named line type.
+ * Every dashed node draws with {@link dashedPattern} and sets `lineType: "dashed"` AND the
+ * matching `paint.dash`, because the SVG serializer follows the name, the PDF serializer the
+ * number and the DXF one the line type — a raw dash with no name read as a solid line in CAD.
  */
 
 import type { Point } from "../ast.js";
@@ -55,6 +55,7 @@ import type { Theme } from "../theme.js";
 import type { RenderSizes } from "../scene.js";
 import type { RDoor } from "../ir.js";
 import { add, mul, normal, sub } from "../geometry.js";
+import { weightWidth } from "../scene.js";
 import { dashedPattern } from "./glyph-lib.js";
 
 /** What {@link renderDoorPanels} needs from the render context and the host geometry. */
@@ -112,17 +113,34 @@ export function renderDoorPanels(dr: RDoor, ctx: PanelCtx): SceneNode[] {
   // matching `doorSwing`'s own leaf direction, so the two words never disagree.
   const face = dr.swing === "in" ? n : mul(n, -1);
 
+  // A panel is a leaf, so it takes the hinged leaf's pen (`door.render`'s slab).
   const leaf = (pts: Point[]): SceneNode => ({
     layer: "doors",
     prim: { t: "polygon", pts },
-    paint: { fill: theme.opening, stroke: theme.doorLeaf, width: sizes.thin },
+    paint: { fill: theme.opening, stroke: theme.doorLeaf, width: sizes.thin * 1.3 },
   });
-  const rule = (a: Point, b: Point, dash?: [number, number]): SceneNode => ({
+  // A visible edge that is not a leaf: a jamb tick.
+  const rule = (a: Point, b: Point): SceneNode => ({
     layer: "doors",
     prim: { t: "line", a, b },
-    paint: { stroke: theme.doorLeaf, width: sizes.thin, ...(dash ? { dash } : {}) },
+    paint: { stroke: theme.doorLeaf, width: sizes.thin },
   });
-  const dashes: [number, number] = [sizes.thin * 4, sizes.thin * 3];
+  // A guide at floor level (a bypass door's tracks): visible, so solid, and the finest pen
+  // — the same weight as a hinged door's swing.
+  const guide = (a: Point, b: Point): SceneNode => ({
+    layer: "doors",
+    prim: { t: "line", a, b },
+    paint: { stroke: theme.doorLeaf, width: weightWidth("extraThin", sizes) },
+    lineWeight: "extraThin",
+  });
+  // Above the cut plane or hidden inside the wall: dashed, NAMED, and handed the matching
+  // pattern — SVG follows the name, PDF the number, DXF the line type.
+  const unseen = (a: Point, b: Point): SceneNode => ({
+    layer: "doors",
+    prim: { t: "line", a, b },
+    paint: { stroke: theme.doorLeaf, width: sizes.thin, dash: dashedPattern(sizes) },
+    lineType: "dashed",
+  });
 
   switch (kind) {
     // Two bypass panels on two tracks. Each is a little longer than half the opening
@@ -141,27 +159,29 @@ export function renderDoorPanels(dr: RDoor, ctx: PanelCtx): SceneNode[] {
       const movingRest = add(add(dr.at, mul(d, -sd * (hw - pl / 2))), mul(n, -off * track));
       const movingC = add(movingRest, mul(d, sd * travel * open));
       return [
-        rule(add(add(dr.at, mul(d, -hw)), mul(n, off)), add(add(dr.at, mul(d, hw)), mul(n, off))),
-        rule(add(add(dr.at, mul(d, -hw)), mul(n, -off)), add(add(dr.at, mul(d, hw)), mul(n, -off))),
+        guide(add(add(dr.at, mul(d, -hw)), mul(n, off)), add(add(dr.at, mul(d, hw)), mul(n, off))),
+        guide(add(add(dr.at, mul(d, -hw)), mul(n, -off)), add(add(dr.at, mul(d, hw)), mul(n, -off))),
         leaf(orientedRect(fixedC, d, pl / 2, pt / 2)),
         leaf(orientedRect(movingC, d, pl / 2, pt / 2)),
       ];
     }
-    // A surface-slider: the leaf hangs OUTSIDE the wall on the `swing` face and runs
-    // on a track that overshoots the far jamb by a full door width (the room it needs
-    // to park). Both wall faces are redrawn dashed across the reveal, because the
-    // opening itself is a real hole that this leaf covers from outside.
+    // A surface-slider: the leaf hangs OUTSIDE the wall on the `swing` face from a track
+    // that overshoots the far jamb by a full door width (the room it needs to park).
+    //
+    // The track is top-hung, above the cut plane: dashed, and drawn on the panel's own axis
+    // (the panel hangs from it), BEFORE the panel, whose fill masks the stretch the panel
+    // hangs on. What shows is the track either side of the panel — the run it travels.
+    // Nothing bridges the reveal: the wall is severed here exactly as at every other
+    // doorway, and a dashed head line across it (this kind once drew one at each face)
+    // re-closed the gap — the reason a cased `opening` dropped its own.
     case "barn": {
       const pt = 0.35 * t;
       const off = t / 2 + 0.1 * t + pt / 2;
-      const trackOff = t / 2 + 0.05 * t;
       const panelC = add(add(dr.at, mul(face, off)), mul(d, sd * w * open));
       return [
-        rule(add(add(dr.at, mul(d, -hw)), mul(n, t / 2)), add(add(dr.at, mul(d, hw)), mul(n, t / 2)), dashes),
-        rule(add(add(dr.at, mul(d, -hw)), mul(n, -t / 2)), add(add(dr.at, mul(d, hw)), mul(n, -t / 2)), dashes),
-        rule(
-          add(add(dr.at, mul(d, -sd * hw)), mul(face, trackOff)),
-          add(add(dr.at, mul(d, sd * (hw + w))), mul(face, trackOff)),
+        unseen(
+          add(add(dr.at, mul(d, -sd * hw)), mul(face, off)),
+          add(add(dr.at, mul(d, sd * (hw + w))), mul(face, off)),
         ),
         leaf(orientedRect(panelC, d, (1.1 * w) / 2, pt / 2)),
       ];
@@ -186,7 +206,8 @@ export function renderDoorPanels(dr: RDoor, ctx: PanelCtx): SceneNode[] {
         return { x: v.x / len, y: v.y / len };
       };
       return [
-        rule(add(dr.at, mul(d, -hw)), add(dr.at, mul(d, hw)), dashes),
+        // The head track the leaves hang from, across the opening: above the cut.
+        unseen(add(dr.at, mul(d, -hw)), add(dr.at, mul(d, hw))),
         leaf(orientedRect(mid(a, f), unit(a, f), L / 2, pt / 2)),
         leaf(orientedRect(mid(f, g), unit(f, g), L / 2, pt / 2)),
         {
@@ -197,7 +218,7 @@ export function renderDoorPanels(dr: RDoor, ctx: PanelCtx): SceneNode[] {
       ];
     }
     // A pocket: the panel is IN the wall, and the cavity it disappears into is drawn
-    // as two thin lines running one full door width past the slide-side jamb. The
+    // as two hidden (dashed) lines running one full door width past the slide-side jamb. The
     // wall has to be long enough to hold it — that is `W_POCKET_RUN`, which measures
     // exactly this run and is the only soundness fact this feature ships.
     case "pocket": {
@@ -207,8 +228,8 @@ export function renderDoorPanels(dr: RDoor, ctx: PanelCtx): SceneNode[] {
       const far = add(jamb, mul(d, sd * w));
       const panelC = add(dr.at, mul(d, sd * w * open));
       return [
-        rule(add(jamb, mul(n, pt / 2)), add(far, mul(n, pt / 2))),
-        rule(add(jamb, mul(n, -pt / 2)), add(far, mul(n, -pt / 2))),
+        unseen(add(jamb, mul(n, pt / 2)), add(far, mul(n, pt / 2))),
+        unseen(add(jamb, mul(n, -pt / 2)), add(far, mul(n, -pt / 2))),
         leaf(orientedRect(panelC, d, hw - inset, pt / 2)),
       ];
     }

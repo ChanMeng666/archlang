@@ -239,7 +239,12 @@ export function renderAscii(scene: Scene, opts: AsciiOptions = {}): string {
     // node on the old `windows` pass used to draw).
     const ch =
       node.layer === "doors" || node.layer === "openings" ? g.door : node.layer === "windows" ? g.window : null;
-    if (ch === null || node.prim.t !== "polygon") continue; // the cover polygon only
+    // The cover polygon only — and the cover is the opening's one UNSTROKED polygon. Every
+    // other polygon on these passes is drawn ink with a stroke (a hinged leaf slab, a
+    // sliding/barn/bifold/pocket/garage panel, a garage door's overhead projection, a
+    // window sill), and its axis is not the doorway: read as one, a leaf standing open in
+    // the room or a projection parked across a garage carved a row of `·` through the floor.
+    if (ch === null || node.prim.t !== "polygon" || node.paint.stroke !== undefined) continue;
     const p = node.prim.pts;
     if (p.length < 4) continue;
     const a = midpoint(p[0]!, p[3]!); // jamb A (mid of the two "start" corners)

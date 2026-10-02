@@ -369,8 +369,11 @@ suite("a door on a curve swings off the TANGENT at its own position", () => {
 
   it("takes the leaf direction from the tangent, not from the chord", () => {
     const scene = compile(src).scene!;
-    const leaf = scene.nodes.find((n) => n.layer === "doors" && n.prim.t === "line")!;
-    const p = leaf.prim as { a: { x: number; y: number }; b: { x: number; y: number } };
+    // The leaf is a slab: the doors-layer polygon WITH a stroke (the cover has none), whose
+    // first edge is the open-leaf radius, hinge → tip — the line the leaf used to be.
+    const leaf = scene.nodes.find((n) => n.layer === "doors" && n.prim.t === "polygon" && n.paint.stroke)!;
+    const pts = (leaf.prim as { pts: { x: number; y: number }[] }).pts;
+    const p = { a: pts[0]!, b: pts[1]! };
     // The door sits at the arc's south point (6000,6000); the tangent there is horizontal,
     // so the hinge-to-leaf-tip line (perpendicular to the tangent) must be VERTICAL. On the
     // chord — which is also horizontal here — the two would coincide, so the test uses the
