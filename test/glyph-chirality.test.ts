@@ -255,7 +255,7 @@ describe("the handedness survey", () => {
   /**
    * The families whose plan symbol has NO vertical mirror axis at its catalogued footprint,
    * measured by reflecting the drawing rather than read off a flag. `sofa_l` is the one
-   * originally reported; the other eighteen are what looking rather than assuming
+   * originally reported; the other seventeen are what looking rather than assuming
    * turned up.
    *
    * This is a RECORD of the survey, not the mechanism — `mirrorGlyph` derives handedness per
@@ -281,7 +281,6 @@ describe("the handedness survey", () => {
     "mirror",
     "microwave",
     "chaise",
-    "shoe_cabinet",
     "reception_desk",
   ];
 
@@ -294,7 +293,7 @@ describe("the handedness survey", () => {
     );
   };
 
-  it("nineteen of the 83 shipped families are handed at their catalogued footprint", () => {
+  it("eighteen of the 83 shipped families are handed at their catalogued footprint", () => {
     const found = CANONICAL_FIXTURES.filter((c) => {
       const fp = defaultFootprint(c);
       return handedAt(c, fp?.along ?? 1000, fp?.depth ?? 600);

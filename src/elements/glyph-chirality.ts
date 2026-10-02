@@ -39,9 +39,9 @@
  * So {@link mirrorGlyph} asks the drawing instead: reflect the marks, and keep the
  * reflection only if it is a different drawing. A symbol with a vertical mirror axis
  * therefore renders **byte-identical** whether its instance was reflected or not, at every
- * footprint, with nothing to maintain. Nineteen of the 83 shipped families are handed at
- * their catalogued footprints; `test/glyph-chirality.test.ts` enumerates them, as a record
- * of the survey rather than as the mechanism.
+ * footprint, with nothing to maintain. Which shipped families are handed at their catalogued
+ * footprints is enumerated by `test/glyph-chirality.test.ts`, as a record of the survey rather
+ * than as the mechanism — a redraw can move a family in or out of that list.
  *
  * "A different drawing" is measured at the finest precision any backend serializes —
  * {@link fmt4}, the DXF formatter — so "symmetric" means exactly "would emit the same
