@@ -995,7 +995,7 @@ arc contributes its arc length `R·θ` — not its chord — so `at 50%` lands h
 wall *as walked*. An absolute `at (x,y)` is attributed to the curve by its distance to the
 arc itself. A door's leaf and swing are taken from the **tangent at the doorway**, so
 `hinge left|right` keeps its usual meaning (relative to the direction of travel along the
-wall, which on an arc is the direction the arc turns); a window's pane runs along that
+wall, which on an arc is the direction the arc turns); a window's panes run along that
 tangent with its jambs radial.
 
 **What a curve looks like.** The two visible faces are emitted as **true arcs** — SVG `A`
@@ -1106,7 +1106,10 @@ door [id=<id>] [<kind>] at (x,y) width <mm> [wall <ref>] [hinge left|right|near 
 door [id=<id>] [<kind>] on <wall> at <pos> width <mm> [hinge …] [swing …] [slide …] [open …]
 ```
 
-Drawn as an opening in the host wall plus a leaf and a quarter-circle swing arc.
+Drawn as an opening in the host wall, the open leaf as a thin **slab** (about 40 mm,
+never more than 6% of the door's width) standing at its hinge jamb, and the
+quarter-circle swing as a **solid** fine arc — on a plan a dash means above the cut
+plane or hidden, and the path a leaf sweeps at floor level is neither.
 `wall <ref>` pins the door to a wall by `id` or `kind`; otherwise the nearest
 wall hosts it. `hinge` is relative to the wall's direction. Defaults: `hinge
 left`, `swing in`.
@@ -1161,12 +1164,16 @@ A bare **kind** word may lead the statement, after any `id=` — the same shape 
 
 | kind | what is drawn in the reveal | swing arc? |
 | --- | --- | --- |
-| `hinged` *(default)* | leaf + quarter-circle swing arc | yes |
-| `sliding` | two bypass panels on two tracks | no |
-| `barn` | a surface-hung panel on a track that overruns the far jamb | no |
-| `bifold` | two folding leaves and the fold hinge | no |
-| `pocket` | a panel and the wall cavity it slides into | no |
+| `hinged` *(default)* | leaf slab + solid quarter-circle swing arc | yes |
+| `sliding` | two bypass panels on two fine tracks | no |
+| `barn` | a surface-hung panel on its **dashed** top-hung track, which overruns the far jamb | no |
+| `bifold` | two folding leaves, the fold hinge and the **dashed** head track | no |
+| `pocket` | a panel and the **dashed** (hidden) wall cavity it slides into | no |
 | `garage` *(v1.31)* | a sectional panel in the reveal, plus its **dashed** overhead projection | no |
+
+Every panel is a slab drawn with the same pen as a hinged leaf, and a dash is never
+decoration: it marks what is above the cut plane (a track, a parked garage panel) or
+hidden inside the wall (a pocket's cavity).
 
 `hinged` is the default **and writing it is identical to omitting it** — a plan
 that names no kind compiles to exactly the bytes it always did.
@@ -1266,8 +1273,14 @@ window [id=<id>] at (x,y) width <mm> [wall <ref>]
 window [id=<id>] on <wall> at <pos> width <mm>
 ```
 
-An opening with the standard double-line glazing symbol. The `on <wall> at <pos>`
-attachment form works exactly as for doors.
+An opening drawn the way a window block is: both wall faces carried across it,
+**double glazing** (two panes centred in the wall, a quarter of its thickness apart),
+and a **sill** standing proud of the exterior face. Which face is exterior is read off
+the plan, never guessed: one wall thickness off each face, the side with no room floor
+is outside — the same probe a `garage` door makes to find its floor side. A window with
+floor on both faces (an interior window) or on neither (a free-standing wall) has no
+outside and draws no sill. The `on <wall> at <pos>` attachment form works exactly as
+for doors.
 
 ### Opening (v1.3)
 
