@@ -516,6 +516,51 @@ describe("glyphs-outdoor — the catalog's claims about these symbols are true",
     }
   });
 
+  it("a symmetric family keeps its WHOLE symmetry wherever it sits — every turn, both mirrors", () => {
+    // The catalog's `symmetric` claim, asked the way a plan asks it: at real positions. A family
+    // built from separately-made parts (a patio table's chairs, each with its own backrest
+    // stadium) can map onto itself at the origin and not at (12345.67, …), because a sub-ulp
+    // straight run lands on some parts and not others. Both mirrors and the half-turn hold at any
+    // aspect; the quarter-turns on a square, or at any aspect for the six built from the centre.
+    const RADIAL = new Set(["tree", "conifer", "shrub", "umbrella", "trampoline", "fire_pit"]);
+    const OFFSETS: readonly (readonly [number, number])[] = [
+      [0, 0],
+      [100, 100],
+      [1000, 1000],
+      [12345.67, 12345.67],
+      [12345.67, 100],
+    ];
+    const SIZES: readonly (readonly [number, number])[] = [
+      [1000, 1000],
+      [1200, 1200],
+      [2400, 2400],
+      [1600, 700],
+      [1300, 1200],
+      [2000, 1500],
+      [700, 1600],
+    ];
+    for (const [name, fn] of SYMMETRIC) {
+      for (const [w, h] of SIZES) {
+        for (const [ox, oy] of OFFSETS) {
+          const r: Rect = { x: ox, y: oy, w, h };
+          const c: Point = { x: r.x + r.w / 2, y: r.y + r.h / 2 };
+          const nodes = draw(fn, r);
+          const maps: [string, (n: SceneNode) => SceneNode][] = [
+            ["mirror x", (n) => mirrorNode(n, c.x)],
+            ["mirror y", (n) => mapSceneNode(n, (p) => ({ x: p.x, y: c.y + (c.y - p.y) }), true)],
+            ["turn 180", (n) => rotateNode(n, c, 180)],
+          ];
+          if (w === h || RADIAL.has(name)) {
+            maps.push(["turn 90", (n) => rotateNode(n, c, 90)], ["turn 270", (n) => rotateNode(n, c, 270)]);
+          }
+          for (const [what, m] of maps) {
+            expect(marksEqual(nodes, nodes.map(m)), `${name} ${w}x${h} at (${ox}, ${oy}): ${what}`).toBe(true);
+          }
+        }
+      }
+    }
+  });
+
   it("the check is not vacuous — a directional symbol fails it", () => {
     // `shed` is `directional`, and the proof that the assertion above says something is that
     // running it on this symbol goes red: the doors are on one face and the ridge runs one way.

@@ -432,16 +432,42 @@ export function drawOutdoorTable(r: Rect, g: GlyphCtx): SceneNode[] {
 
   const cw = band * 0.9;
   const vis = band * (1 - PATIO_TUCK);
+  // ONE chair is drawn — back on top, centred on the top's upper edge — and every other chair is
+  // that chair carried by an exact isometry: a quarter-turn about the table's centre (the very
+  // arithmetic `furniture.render()` turns a whole symbol by), then a shift along its side. Chairs
+  // built one by one are not reliably images of each other: a backrest stadium can carry a
+  // sub-ulp straight run that depends on where it sits, so the symbol would stop mapping onto
+  // itself under its own quarter-turn at some positions.
+  const from = g.nodes.length;
+  chairInto(g, { x: c.x - cw / 2, y: top.y - vis, w: cw, h: vis }, "top", PATIO_TUCK);
+  const proto = g.nodes.splice(from);
+  // On a non-square top the side chairs stand off the top's own half-width, not its half-depth.
+  const reach = (top.w - top.h) / 2;
+  const turned =
+    (deg: 0 | 90 | 180 | 270, tx: number, ty: number) =>
+    (p: Point): Point => {
+      const dx = p.x - c.x;
+      const dy = p.y - c.y;
+      const q =
+        deg === 0
+          ? p
+          : deg === 90
+            ? { x: c.x - dy, y: c.y + dx }
+            : deg === 180
+              ? { x: c.x - dx, y: c.y - dy }
+              : { x: c.x + dy, y: c.y - dx };
+      return { x: q.x + tx, y: q.y + ty };
+    };
   const at = (along: number, back: "top" | "bottom" | "left" | "right"): void => {
-    const box: Rect =
+    const map =
       back === "top"
-        ? { x: along - cw / 2, y: top.y - vis, w: cw, h: vis }
-        : back === "bottom"
-          ? { x: along - cw / 2, y: top.y + top.h, w: cw, h: vis }
-          : back === "left"
-            ? { x: top.x - vis, y: along - cw / 2, w: vis, h: cw }
-            : { x: top.x + top.w, y: along - cw / 2, w: vis, h: cw };
-    chairInto(g, box, back, PATIO_TUCK);
+        ? turned(0, along - c.x, 0)
+        : back === "right"
+          ? turned(90, reach, along - c.y)
+          : back === "bottom"
+            ? turned(180, along - c.x, 0)
+            : turned(270, -reach, along - c.y);
+    for (const n of proto) g.nodes.push(mapSceneNode(n, map, false));
   };
   if (round) {
     at(c.x, "top");
