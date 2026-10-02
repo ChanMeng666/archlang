@@ -76,10 +76,11 @@ import type { PathEdge, PathLoop, SceneNode } from "../scene.js";
 import type { GlyphCtx, Rect } from "./glyph-lib.js";
 import {
   centerOf,
+  chairAt,
   clamp,
+  clampCount,
   insetRect,
   insetRectXY,
-  mapSceneNode,
   rectPoly,
   roundedRectPath,
   shortSide,
@@ -91,20 +92,6 @@ import {
  * follows.
  */
 const short = shortSide;
-
-/**
- * A repeat count derived from an aspect ratio, rounded and clamped to `[lo, hi]`.
- *
- * The NaN guard is the whole reason this is a function, and it now comes from `glyph-lib`'s
- * {@link clamp}: a zero-area footprint makes the aspect `0/0`, `Math.round(NaN)` is `NaN`, and
- * that clamp lands `NaN` on `lo` instead of passing it through to a loop bound. `Infinity` (a
- * zero-HEIGHT footprint) needs no special case — `Math.round(Infinity)` is `Infinity` and the
- * clamp pins it to `hi`, which is the right answer: an infinitely wide sofa gets the maximum
- * number of cushions.
- */
-function clampCount(v: number, lo: number, hi: number): number {
-  return clamp(Math.round(v), lo, hi);
-}
 
 /** Corner radius of an upholstered piece, as a fraction of its short side (design spec D10). */
 const UPHOLSTERY_RADIUS = 0.07;
@@ -299,56 +286,6 @@ export function drawDiningTable(r: Rect, g: GlyphCtx): SceneNode[] {
     chairAt(g, C, { x: 0, y: out(top.h / 2) }, "bottom", cw, vis, CHAIR_TUCK);
   }
   return g.nodes;
-}
-
-/**
- * Draw a dining chair `w` wide whose VISIBLE part is `vis` deep, centred at `c + off`, with its
- * backrest along the `back` edge. `tuck` is the fraction of the chair's FULL depth hidden under a
- * table in front of it (0 for a free-standing chair): the seat runs to the visible part's front
- * edge with square corners there, and every proportion is taken off the full depth so a tucked
- * chair and a free one have the same backrest.
- *
- * The chair is built ONCE, back-on-top about the origin, its left and right edges at exactly
- * `∓` the same half-widths (so it is its own mirror image by construction), and then placed by
- * an EXACT quarter-turn — a swap and a negation of the local coordinates, no rotation arithmetic
- * — added to the offset before the centre. A table's four sides are one chair, not four copies
- * that each took their own rounding path.
- */
-function chairAt(
-  g: GlyphCtx,
-  c: Point,
-  off: Point,
-  back: "top" | "right" | "bottom" | "left",
-  w: number,
-  vis: number,
-  tuck: number,
-): void {
-  const full = vis / (1 - tuck);
-  const from = g.nodes.length;
-  const s = Math.min(w, full);
-  const y0 = -vis / 2;
-  // The seat: a rounded square, white (it is upholstered), set in from the sides and tucked
-  // under the backrest; its front corners are square when it runs on under a table.
-  const sr = s * 0.12;
-  const sw = w * 0.44;
-  const seatTop = y0 + full * 0.08;
-  const seat: Rect = { x: -sw, y: seatTop, w: 2 * sw, h: vis / 2 - seatTop };
-  g.path(roundedRectPath(seat, tuck > 0 ? [sr, sr, 0, 0] : sr), g.basin);
-  // The backrest: a bar 12% of the full depth along the back edge, full width, pill-ended.
-  const bar: Rect = { x: -w / 2, y: y0, w, h: full * 0.12 };
-  g.path(roundedRectPath(bar, bar.h / 2), g.body);
-  const place = (p: Point): Point => {
-    const q =
-      back === "top"
-        ? p
-        : back === "right"
-          ? { x: -p.y, y: p.x }
-          : back === "bottom"
-            ? { x: -p.x, y: -p.y }
-            : { x: p.y, y: -p.x };
-    return { x: c.x + (off.x + q.x), y: c.y + (off.y + q.y) };
-  };
-  for (let i = from; i < g.nodes.length; i++) g.nodes[i] = mapSceneNode(g.nodes[i]!, place, false);
 }
 
 /**

@@ -40,25 +40,17 @@ import type { GlyphCtx, Rect } from "./glyph-lib.js";
 import {
   bulgeArc,
   centerOf,
+  chairAt,
   clamp,
+  clampCount,
   dashedPoly,
   insetRect,
-  mapSceneNode,
+  polar,
   rectPoly,
   roundedRectPath,
+  scallopPath,
   shortSide,
 } from "./glyph-lib.js";
-
-/**
- * The point at `deg` (screen degrees: 0 = +x, 90 = +y, i.e. DOWN) and radius `rad` about `c`.
- *
- * Local on purpose: this module and the planting symbols are the only ones that reach for
- * trigonometry at all, so there is no second caller to consolidate it with.
- */
-function polar(c: Point, rad: number, deg: number): Point {
-  const a = (deg * Math.PI) / 180;
-  return { x: c.x + rad * Math.cos(a), y: c.y + rad * Math.sin(a) };
-}
 
 /**
  * The desk: the top with its edge bevel, the modesty panel across its back, the drawer pedestal
@@ -223,26 +215,6 @@ export function drawBookshelf(r: Rect, g: GlyphCtx): SceneNode[] {
 }
 
 /**
- * One lobe-ring outline: `lobes` circular lobes round `c`, lobe `j` centred on bearing
- * `j × 360 / lobes` and bulging out to `apex(j)`, consecutive lobes meeting at cusps on the circle
- * of radius `cusp`. The planting symbols' scallop (`glyphs-outdoor.ts`), restated here for the
- * plant at its small scale; with a lobe count that is a multiple of four and an `apex` that is a
- * function of `j mod 2` it maps onto itself under every quarter-turn and mirror of the square.
- */
-function lobeRing(c: Point, lobes: number, cusp: number, apex: (j: number) => number): PathLoop {
-  const step = 360 / lobes;
-  const cuspAt = (j: number): Point => polar(c, cusp, (j - 0.5) * step);
-  const start = cuspAt(0);
-  const edges: PathEdge[] = [];
-  const mid = cusp * Math.cos((step / 2) * (Math.PI / 180));
-  for (let j = 0; j < lobes; j++) {
-    const to = j === lobes - 1 ? start : cuspAt(j + 1);
-    edges.push(...bulgeArc(j === 0 ? start : cuspAt(j), to, apex(j) - mid));
-  }
-  return { start, edges };
-}
-
-/**
  * The potted plant: a scalloped crown of foliage over its pot, the pot ring, and the leaf ribs.
  *
  * - **Foliage** (outline pen, filled with `theme.lawn`, as a tree's crown is): eight lobes in the
@@ -261,7 +233,7 @@ export function drawPlant(r: Rect, g: GlyphCtx): SceneNode[] {
   const c = centerOf(r);
   const rad = Math.max(0, shortSide(r) * 0.48);
   g.path(
-    lobeRing(c, 8, rad * 0.78, (j) => (j % 2 === 0 ? rad : rad * 0.88)),
+    scallopPath(c, 8, rad * 0.78, (j) => (j % 2 === 0 ? rad : rad * 0.88)),
     g.theme.lawn,
   );
   g.ring(c, rad * 0.42, "extraThin");
@@ -408,75 +380,12 @@ export function drawSunLounger(r: Rect, g: GlyphCtx): SceneNode[] {
 // the two large objects a room is given over to. Appended at the foot of the file for the same
 // reason they are appended to `FIXTURE_FAMILIES`: that table's order is the LEGEND's order.
 
-/**
- * A repeat count derived from an aspect ratio, rounded and clamped to `[lo, hi]` — the same
- * guard `glyphs-living.ts` states at length, restated here because two of the symbols below
- * derive a count and `clamp` alone does not round.
- *
- * The NaN case is what makes it a function rather than an expression: a zero-area footprint
- * makes an aspect `0/0`, `Math.round(NaN)` is `NaN`, and {@link clamp} lands that on `lo`
- * instead of passing it into a loop bound.
- */
-function clampCount(v: number, lo: number, hi: number): number {
-  return clamp(Math.round(v), lo, hi);
-}
-
 /** The chair-zone band of a meeting table, as a fraction of the footprint's short side. */
 const MEETING_BAND = 0.22;
 /** The spacing of the chairs along a side, in chair-zone bands (the pilot dining table's pitch). */
 const CHAIR_PITCH = 2.2;
 /** The fraction of a chair's depth tucked under the table top. */
 const CHAIR_TUCK = 0.3;
-
-/**
- * Draw a dining chair `w` wide whose VISIBLE part is `vis` deep, centred at `c + off`, with its
- * backrest along the `back` edge. `tuck` is the fraction of the chair's FULL depth hidden under a
- * table in front of it (0 for a free-standing chair): the seat runs to the visible part's front
- * edge with square corners there, and every proportion is taken off the full depth so a tucked
- * chair and a free one have the same backrest.
- *
- * **An exact copy of `chairAt` in `glyphs-living.ts`** (the pilot dining chair), statement for
- * statement, so a meeting table's chairs are the dining table's chairs byte for byte. The chair is
- * built ONCE, back-on-top about the origin, its left and right edges at exactly `-` and `+` the
- * same half-width (so it is its own mirror image by construction), and then placed by an EXACT
- * quarter-turn — a swap and a negation of the local coordinates, no rotation arithmetic — added to
- * the offset before the centre. It is copied rather than imported because `glyphs-living.ts` owns it
- * and is edited alongside this file; by the helper policy it moves to `glyph-lib.ts` verbatim, from
- * both files at once, when the outdoor table needs it as well.
- */
-function chairAt(
-  g: GlyphCtx,
-  c: Point,
-  off: Point,
-  back: "top" | "right" | "bottom" | "left",
-  w: number,
-  vis: number,
-  tuck: number,
-): void {
-  const full = vis / (1 - tuck);
-  const from = g.nodes.length;
-  const s = Math.min(w, full);
-  const y0 = -vis / 2;
-  const sr = s * 0.12;
-  const sw = w * 0.44;
-  const seatTop = y0 + full * 0.08;
-  const seat: Rect = { x: -sw, y: seatTop, w: 2 * sw, h: vis / 2 - seatTop };
-  g.path(roundedRectPath(seat, tuck > 0 ? [sr, sr, 0, 0] : sr), g.basin);
-  const bar: Rect = { x: -w / 2, y: y0, w, h: full * 0.12 };
-  g.path(roundedRectPath(bar, bar.h / 2), g.body);
-  const place = (p: Point): Point => {
-    const q =
-      back === "top"
-        ? p
-        : back === "right"
-          ? { x: -p.y, y: p.x }
-          : back === "bottom"
-            ? { x: -p.x, y: -p.y }
-            : { x: p.y, y: -p.x };
-    return { x: c.x + (off.x + q.x), y: c.y + (off.y + q.y) };
-  };
-  for (let i = from; i < g.nodes.length; i++) g.nodes[i] = mapSceneNode(g.nodes[i]!, place, false);
-}
 
 /**
  * The meeting table: an eased boardroom top inside a chair-zone band, with the pilot dining

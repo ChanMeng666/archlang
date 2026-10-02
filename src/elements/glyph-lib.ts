@@ -620,6 +620,113 @@ export function clamp(v: number, lo: number, hi: number): number {
 }
 
 /**
+ * A repeat count derived from an aspect ratio, rounded and clamped to `[lo, hi]`.
+ *
+ * The NaN guard is the whole reason this is a function, and it comes from {@link clamp}: a
+ * zero-area footprint makes the aspect `0/0`, `Math.round(NaN)` is `NaN`, and that clamp lands
+ * `NaN` on `lo` instead of passing it through to a loop bound. `Infinity` (a zero-HEIGHT
+ * footprint) needs no special case — `Math.round(Infinity)` is `Infinity` and the clamp pins it
+ * to `hi`, which is the right answer: an infinitely wide sofa gets the maximum number of
+ * cushions. Moved here verbatim from `glyphs-living.ts` and `glyphs-misc.ts`, which each had it.
+ */
+export function clampCount(v: number, lo: number, hi: number): number {
+  return clamp(Math.round(v), lo, hi);
+}
+
+/**
+ * The point at `deg` (screen degrees: 0 = +x, 90 = +y, i.e. DOWN) and radius `rad` about `c`.
+ *
+ * Fixed-step polar points for the symbols that are radial by nature (the planting, the plant, a
+ * parasol's ribs, a trampoline's springs); moved here verbatim from `glyphs-misc.ts` and
+ * `glyphs-outdoor.ts`, which each had it.
+ */
+export function polar(c: Point, rad: number, deg: number): Point {
+  const a = (deg * Math.PI) / 180;
+  return { x: c.x + rad * Math.cos(a), y: c.y + rad * Math.sin(a) };
+}
+
+/**
+ * A closed SCALLOPED ring: `lobes` circular lobes round `c`, lobe `j` centred on bearing
+ * `phase + j × 360 / lobes` and bulging out to `apex(j)` from the centre, consecutive lobes
+ * meeting at cusps on the circle of radius `cusp`. Each lobe is a {@link bulgeArc} (split at its
+ * apex when it passes 120°), so the outline is a true curve — a `path`, not a star polygon.
+ *
+ * Drawn clockwise from the cusp before lobe 0. With `lobes` a multiple of four, `phase` a
+ * multiple of half a lobe and `apex` a function of `j mod 2`, the ring maps onto itself under
+ * every quarter-turn and every mirror of the square (D4), which is what the planting families'
+ * and the plant's `symmetric: true` claims. `phase` defaults to 0, the tree's.
+ *
+ * Moved here verbatim from `glyphs-outdoor.ts` (the tree, the shrub); `glyphs-misc.ts`'s plant
+ * had a copy without the `phase` parameter, which is this function at `phase = 0` byte for byte
+ * (adding `0` to a nonzero double is exact).
+ */
+export function scallopPath(c: Point, lobes: number, cusp: number, apex: (j: number) => number, phase = 0): PathLoop {
+  const step = 360 / lobes;
+  const cuspAt = (j: number): Point => polar(c, cusp, (j - 0.5) * step + phase);
+  const start = cuspAt(0);
+  const edges: PathEdge[] = [];
+  const mid = cusp * Math.cos((step / 2) * (Math.PI / 180)); // the chord's distance from c
+  for (let j = 0; j < lobes; j++) {
+    const to = j === lobes - 1 ? start : cuspAt(j + 1);
+    edges.push(...bulgeArc(j === 0 ? start : cuspAt(j), to, apex(j) - mid));
+  }
+  return { start, edges };
+}
+
+/**
+ * Draw a dining chair `w` wide whose VISIBLE part is `vis` deep, centred at `c + off`, with its
+ * backrest along the `back` edge. `tuck` is the fraction of the chair's FULL depth hidden under a
+ * table in front of it (0 for a free-standing chair): the seat runs to the visible part's front
+ * edge with square corners there, and every proportion is taken off the full depth so a tucked
+ * chair and a free one have the same backrest.
+ *
+ * The chair is built ONCE, back-on-top about the origin, its left and right edges at exactly
+ * `∓` the same half-widths (so it is its own mirror image by construction), and then placed by
+ * an EXACT quarter-turn — a swap and a negation of the local coordinates, no rotation arithmetic
+ * — added to the offset before the centre. A table's four sides are one chair, not four copies
+ * that each took their own rounding path.
+ *
+ * The pilot dining chair, shared so a `meeting_table`'s chairs are a `dining_table`'s byte for
+ * byte; moved here verbatim from `glyphs-living.ts` and `glyphs-misc.ts`, which each had it.
+ */
+export function chairAt(
+  g: GlyphCtx,
+  c: Point,
+  off: Point,
+  back: "top" | "right" | "bottom" | "left",
+  w: number,
+  vis: number,
+  tuck: number,
+): void {
+  const full = vis / (1 - tuck);
+  const from = g.nodes.length;
+  const s = Math.min(w, full);
+  const y0 = -vis / 2;
+  // The seat: a rounded square, white (it is upholstered), set in from the sides and tucked
+  // under the backrest; its front corners are square when it runs on under a table.
+  const sr = s * 0.12;
+  const sw = w * 0.44;
+  const seatTop = y0 + full * 0.08;
+  const seat: Rect = { x: -sw, y: seatTop, w: 2 * sw, h: vis / 2 - seatTop };
+  g.path(roundedRectPath(seat, tuck > 0 ? [sr, sr, 0, 0] : sr), g.basin);
+  // The backrest: a bar 12% of the full depth along the back edge, full width, pill-ended.
+  const bar: Rect = { x: -w / 2, y: y0, w, h: full * 0.12 };
+  g.path(roundedRectPath(bar, bar.h / 2), g.body);
+  const place = (p: Point): Point => {
+    const q =
+      back === "top"
+        ? p
+        : back === "right"
+          ? { x: -p.y, y: p.x }
+          : back === "bottom"
+            ? { x: -p.x, y: -p.y }
+            : { x: p.y, y: -p.x };
+    return { x: c.x + (off.x + q.x), y: c.y + (off.y + q.y) };
+  };
+  for (let i = from; i < g.nodes.length; i++) g.nodes[i] = mapSceneNode(g.nodes[i]!, place, false);
+}
+
+/**
  * A closed polygon drawn with a DASHED outline.
  *
  * {@link GlyphCtx} has a dashed `seg` but no dashed `poly`, and an overhead piece — a wall

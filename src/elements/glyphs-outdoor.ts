@@ -59,20 +59,12 @@ import {
   insetRectSides,
   mapSceneNode,
   ovalPath,
+  polar,
   rectPoly,
   roundedRectPath,
+  scallopPath,
   shortSide,
 } from "./glyph-lib.js";
-
-/**
- * The point at `deg` (screen degrees: 0 = +x, 90 = +y, i.e. DOWN) and radius `rad` about
- * `c`. Local for the same reason `glyphs-misc.ts`'s copy is: the two modules are the only
- * ones that reach for trigonometry, and a shared helper would be one import for one line.
- */
-function polar(c: Point, rad: number, deg: number): Point {
-  const a = (deg * Math.PI) / 180;
-  return { x: c.x + rad * Math.cos(a), y: c.y + rad * Math.sin(a) };
-}
 
 /**
  * A closed star ring: `lobes` outer points at `rOuter` alternating with `lobes` inner points at
@@ -141,30 +133,6 @@ const pill = (rect: Rect): PathLoop => roundedRectPath(rect, shortSide(rect) / 2
 
 // ---------------------------------------------------------------------------
 // Planting
-
-/**
- * A closed SCALLOPED ring: `lobes` circular lobes round `c`, lobe `j` centred on bearing
- * `phase + j × 360 / lobes` and bulging out to `apex(j)` from the centre, consecutive lobes
- * meeting at cusps on the circle of radius `cusp`. Each lobe is a {@link bulgeArc} (split at its
- * apex when it passes 120°), so the outline is a true curve — a `path`, not a star polygon.
- *
- * Drawn clockwise from the cusp before lobe 0. With `lobes` a multiple of four, `phase` a
- * multiple of half a lobe and `apex` a function of `j mod 2`, the ring maps onto itself under
- * every quarter-turn and every mirror of the square (D4), which is what the planting families'
- * `symmetric: true` claims. `phase` defaults to 0, the tree's.
- */
-function scallopPath(c: Point, lobes: number, cusp: number, apex: (j: number) => number, phase = 0): PathLoop {
-  const step = 360 / lobes;
-  const cuspAt = (j: number): Point => polar(c, cusp, (j - 0.5) * step + phase);
-  const start = cuspAt(0);
-  const edges: PathEdge[] = [];
-  const mid = cusp * Math.cos((step / 2) * (Math.PI / 180)); // the chord's distance from c
-  for (let j = 0; j < lobes; j++) {
-    const to = j === lobes - 1 ? start : cuspAt(j + 1);
-    edges.push(...bulgeArc(j === 0 ? start : cuspAt(j), to, apex(j) - mid));
-  }
-  return { start, edges };
-}
 
 /**
  * A broadleaf tree: a scalloped CANOPY, eight forked branches, and the trunk.
@@ -366,11 +334,13 @@ const PATIO_TUCK = 0.3;
  * edge, `tuck` of its full depth hidden under a table: a rounded white seat and a pill-ended
  * backrest bar 12% of the depth.
  *
- * A MIRROR of `glyphs-living.ts`'s `chairInto` — the pilot's dining chair — kept local rather
- * than imported because that one is private to its module, and the design programme asked the
- * patio table to draw in exactly the dining table's chair language. The proportions are the
- * pilot's, number for number; built back-on-top and quarter-turned into place through
- * `mapSceneNode`, the rotation `furniture.render()` itself uses.
+ * The pilot dining chair's proportions, number for number (`glyph-lib.ts`'s `chairAt`, which the
+ * dining and meeting tables share), because the design programme asked the patio table to draw
+ * in exactly the dining table's chair language. It is a separate construction rather than a call
+ * to `chairAt`: it is placed by its visible BOX and laid out from the box's corner, where
+ * `chairAt` is laid out about the chair's own centre, so the two take different rounding paths
+ * and swapping one for the other would move the patio table's bytes. Built back-on-top and
+ * quarter-turned into place through `mapSceneNode`, the rotation `furniture.render()` itself uses.
  */
 function chairInto(g: GlyphCtx, box: Rect, back: "top" | "right" | "bottom" | "left", tuck: number): void {
   const deg = back === "top" ? 0 : back === "right" ? 90 : back === "bottom" ? 180 : 270;
