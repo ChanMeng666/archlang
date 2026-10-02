@@ -116,23 +116,24 @@ Three columns need a word of explanation:
 | Kind (and aliases) | Symbol | Footprint | Facing | Wall |
 |---|---|---|---|---|
 | `wc` · `toilet` | a rounded cistern across the back with its flush button, a four-centre **oval** bowl in front, the seat opening and two hinge ticks | 400 × 700 | derived | ✓ |
-| `basin` · `lavatory` | vanity slab with an inset oval bowl, tap block, spout and drain — **two bowls** on a long enough slab | 600 × 450 | derived | ✓ |
-| `shower` | tray with an inset rim, both diagonals across the inner tray, and a centre drain | 900 × 900 | symmetric | ✓ |
-| `bathtub` · `tub` · `bath` | eased rim, an inset well, the tap at the head end and the waste on the centreline | 1700 × 700 | derived | ✓ |
-| `bidet` | bowl with its rim, a small tap block at the back, the spout and the waste — a `wc` with no cistern | 400 × 700 | derived | ✓ |
-| `urinal` | the back plate on the wall and a **half** bowl hanging off it, with its rim and waste | 400 × 350 | derived | ✓ |
-| `mirror` | the glass, with five 45° reflection ticks across it | 900 × 50 | derived | ✓ |
+| `basin` · `lavatory` | a rounded vanity top with an inset four-centre **oval** bowl and its floor line, a tap and spout at the back and the waste — **two bowls** on a long enough slab | 600 × 450 | derived | ✓ |
+| `shower` | a rounded tray with its floor let into the rim, four falls running from the corners to the waste, and the waste — a ring with a disc in it | 900 × 900 | symmetric | ✓ |
+| `bathtub` · `tub` · `bath` | a rounded rim and an inset well whose **foot end is a near half-circle** and whose head end is nearly square, two taps on the head deck and the waste beside them | 1700 × 700 | derived | ✓ |
+| `bidet` | an oval bowl with its rim, a small tap deck standing on the bowl's rear edge with its tap and jet, and the waste — a `wc` with no cistern | 400 × 700 | derived | ✓ |
+| `urinal` | a **U** bowl run to the wall face — square at the back, a semicircle at the front — with its rim, the flush plate across its back and the waste | 400 × 350 | derived | ✓ |
+| `mirror` | the glass, with a run of 45° reflection ticks across it — one per four depths of length, three to twelve | 900 × 50 | derived | ✓ |
 
-The tub's rim is deliberately **uneven** — thicker at the tap end than at the foot — so
-the drawing says which end you get in at. `lavatory` is the one alias that differs from
+The tub is deliberately **uneven** — a deep deck at the tap end, a shallow rim at the foot, and
+a well that is square at one end and round at the other — so the drawing says which end you get in
+at. `lavatory` is the one alias that differs from
 its head: it does **not** count as a wet fixture for
 [`W_ROOM_NO_FIXTURE`](error-codes.md), which has always been true of it, while `basin`
 does.
 
-`urinal` is the only symbol in the catalogue drawn as **half** a shape, and that is the
-honest plan of it: a wall-hung urinal has no back — the wall is its back — so the chord
-across the top of the bowl *is* the wall face, and the symbol runs to the very edge of
-its footprint where every other bath fixture leaves a margin.
+`urinal` is the only symbol in the catalogue drawn as a **U** against its wall, and that is
+the honest plan of it: a wall-hung urinal has no back — the wall is its back — so the top of the
+bowl *is* the wall face, with square back corners, and the symbol runs to the very edge of its
+footprint where every other bath fixture leaves a margin.
 
 `mirror` and `bidet` are both `requiresWall`, for the two different reasons that flag
 covers. A bidet is plumbed. A mirror hangs off the wall by definition — the
@@ -144,21 +145,21 @@ not, because a mirror over a console table does not make a room a bathroom.
 
 | Kind (and aliases) | Symbol | Footprint | Facing | Wall |
 |---|---|---|---|---|
-| `kitchen_sink` · `sink` | counter slab, **two** eased bowls each with a drain, and a tap with its spout at the back | 800 × 600 | derived | ✓ |
-| `counter` · `worktop` | slab with a nosing line inside the front edge and one division tick per 600 mm base-cabinet module | 600 × 600 | derived | ✓ |
-| `stove` · `hob` · `cooktop` | slab with four burners as concentric rings and the control rail across the front | 600 × 600 | derived | ✓ |
-| `fridge` · `refrigerator` | carcass, the door face, the compartment split — **across the width or the depth, by aspect** — and the handle bar | 600 × 650 | derived | ✓ |
-| `oven` | carcass, three control knobs on the back edge, and the door with its window and handle bar — **plus four burners when the footprint is wide enough to be a range** | — | free | |
-| `dishwasher` | carcass, two basket lines across the tub, and the door leaf on the front with its control strip and handle | 600 × 600 | derived | ✓ |
-| `island` | eased worktop, the seating overhang along the front with cabinet ticks under it, and — **by aspect** — a hob or a sink at one end | — | free | |
-| `upper_cabinet` · `wall_cabinet` | carcass, one door split per 600 mm module and a hinge tick at each end, drawn **entirely dashed** | 600 × 350 | derived | ✓ |
-| `washer` · `washing_machine` | carcass, the control panel across the back with two knobs, and the drum with a **white porthole** | 600 × 600 | derived | ✓ |
-| `dryer` | the same carcass, with **three chords** across the drum where the washer has its porthole | 600 × 600 | derived | ✓ |
-| `laundry_sink` · `laundry_tub` | slab with **one** deep double-rimmed bowl, its waste, and the tap block | 600 × 500 | derived | ✓ |
-| `water_heater` · `boiler` | the cylinder in plan, its inner shell, and two pipe ticks running back to the wall | 600 × 600 | derived | ✓ |
-| `range_hood` | the hood outline with a fan ring, four blade radials and a hub, drawn **entirely dashed** | 900 × 500 | derived | ✓ |
-| `microwave` | carcass, the door window over the left three-quarters, and three buttons down the panel on the right | 500 × 400 | derived | |
-| `bar_counter` | the worktop over the back of the footprint, the overhang line, and **one stool per ~1.2 counter-depths of run**, capped at eight | 1800 × 600 | derived | |
+| `kitchen_sink` · `sink` | counter slab, a centred rounded bowl with a waste, a tap ring with its spout at the back — **two bowls** from aspect 2, and a **drainer board with four grooves on each side** once the run leaves room for them; symmetric at every size | 800 × 600 | derived | ✓ |
+| `counter` · `worktop` | slab with an upstand line near the back, a front-edge line near the front and one division tick per 600 mm base-cabinet module between them | 600 × 600 | derived | ✓ |
+| `stove` · `hob` · `cooktop` | slab with the glass hob plate, four burners as concentric rings — **the large pair along the back, the small pair in front** — and a row of four control knobs along the front | 600 × 600 | derived | ✓ |
+| `fridge` · `refrigerator` | carcass, the door's face line across the front, the handle bar — and, **by aspect**, a vertical door split when it is a side-by-side | 600 × 650 | derived | ✓ |
+| `oven` | carcass, three control knobs on the back edge, and the door with its glass window and handle bar — **plus four burners when the footprint is wide enough to be a range** | — | free | |
+| `dishwasher` | carcass, the tub's inset panel with two rack rails, the control strip across the door, and the handle bar | 600 × 600 | derived | ✓ |
+| `island` | worktop, the line the seating overhang starts at along the front, and — **by aspect** — a hob plate with four burners or a sink bowl with its tap at one end | — | free | |
+| `upper_cabinet` · `wall_cabinet` | the outline, a door-face line across the front band and one door split per 600 mm module, drawn **entirely dashed** | 600 × 350 | derived | ✓ |
+| `washer` · `washing_machine` | carcass, the control strip across the back with its dial and button, and the door ring with a **white porthole** | 600 × 600 | derived | ✓ |
+| `dryer` | the same carcass, its dial on the centre line, an **empty** drum with a gasket ring inside it where the washer has its porthole, and the lint-filter slot across the front | 600 × 600 | derived | ✓ |
+| `laundry_sink` · `laundry_tub` | slab with **one** deep bowl, the step down to its floor, its waste, and a tap ring with its spout | 600 × 500 | derived | ✓ |
+| `water_heater` · `boiler` | the cylinder in plan, its jacket ring, and two pipe stubs running back to the wall | 600 × 600 | derived | ✓ |
+| `range_hood` | the hood outline with a fan ring, four blade radials and a hub ring, drawn **entirely dashed** | 900 × 500 | derived | ✓ |
+| `microwave` | carcass, the door frame and its glass window over the left three-quarters, and the keypad strip with three buttons on the right | 500 × 400 | derived | |
+| `bar_counter` | the worktop over the back of the footprint, the overhang line, and **one stool seat per ~1.2 counter-depths of run**, capped at eight | 1800 × 600 | derived | |
 
 `washer` and `dryer` are the same box at the same size and stand side by side in most
 utility rooms, so they are drawn to differ by *shape*: a glyph carries no text, so a
@@ -174,19 +175,20 @@ island still derives no rotation and still never trips
 with its own symbol; the stools drawn *inside* a `bar_counter` are a different piece with
 a different footprint.
 
-**Three symbols read their own footprint and draw a different appliance either side of a
+**Four symbols read their own footprint and draw a different appliance either side of a
 threshold**, because the fixture word alone cannot tell them apart and inventing one
-answer would be wrong for half the plans that use it. A `fridge` at aspect 1.4 or over
-splits down its width (a side-by-side) and below it across its depth (a freezer drawer);
-an `oven` at aspect 1.6 or over is a **range** and gains a hob; an `island` at aspect 1.8
-or over takes a hob at one end rather than a sink. Give the piece an explicit `size` to
-choose.
+answer would be wrong for half the plans that use it. A `kitchen_sink` at aspect 2 or over
+takes a second bowl and, once the bowls leave room for them, a drainer board on each side (never a
+single trough — a bowl is at most 1.25 times as wide as it is deep); a `fridge` at aspect 1.4 or
+over splits its door down the width (a side-by-side) and below it draws one door; an `oven` at
+aspect 1.6 or over is a **range** and gains a hob; an `island` at aspect 1.8 or over takes a
+hob at one end rather than a sink. Give the piece an explicit `size` to choose.
 
 `range_hood` is the second symbol here drawn entirely dashed, and it makes the convention
 the drawing's rather than one glyph's: **a dashed outline means a thing above the cut
 plane** — `upper_cabinet`, `roof`, `void`, the outdoor `pergola` and a garage door's
 projection all say the same. The two kitchen ones are told apart by what is inside: a
-cabinet's door splits run edge to edge, a hood's fan is a ring about the centre.
+cabinet's door line and splits run edge to edge, a hood's fan is a ring about the centre.
 
 ### Bedroom
 
@@ -399,12 +401,12 @@ half the plans.
 
 | Kind | Primitives (main → v1.32) | What it gained |
 |---|---|---|
-| `island` | 2 → 7 / 9 | an eased worktop, a seating overhang with cabinet ticks under it, and **by aspect** either a hob or a sink bowl |
-| `upper_cabinet` | 2 → 3 / 5 / 6 | a door split per 600 mm module and a hinge tick at each end of the back edge — a dashed empty rectangle is a `void`, this is cabinetry |
-| `dishwasher` | 3 → 7 | two basket lines across the tub, and a door leaf with its control strip and handle |
-| `oven` | 4 → 8 / 12 | three knobs, a door seam, a window and a handle bar; **at aspect 1.6 or over it is a range** and gains four burners |
-| `fridge` | 4 → 5 | a door face line, a handle bar, and a compartment split placed by aspect — down the width of a side-by-side, across the depth of an upright |
-| `washer` | 4 → 7 | a control panel with two knobs and a white porthole at the drum's centre, so it is no longer `dryer`'s box |
+| `island` | 2 → 6 / 11 | a worktop with the line the seating overhang starts at, and **by aspect** either a hob plate with four burners or a sink bowl with its tap |
+| `upper_cabinet` | 2 → 2 / 4 / 5 | a dashed door-face line across the front band and, past two modules, a door split per 600 mm module edge to edge — a dashed empty rectangle is a `void`, this is cabinetry |
+| `dishwasher` | 3 → 6 | the tub's inset panel with two rack rails, a control strip across the door, and a handle bar |
+| `oven` | 4 → 6 / 10 | three knobs, a glass window and a handle bar; **at aspect 1.6 or over it is a range** and gains four burners |
+| `fridge` | 4 → 3 / 4 | a door-face line and a handle bar, and a vertical door split only on a side-by-side (aspect 1.4 or over) — an upright's freezer drawer is behind its one door and is not seen from above |
+| `washer` | 4 → 6 | a control strip with a dial and a button, and a door ring with a white porthole at the drum's centre, so it is no longer `dryer`'s box |
 | `coffee_table` | 2 → 6 / 7 | legs and a lower shelf |
 | `table` | 2 → 6 / 7 | legs and supports, and a leaf seam on a long enough top |
 | `stool` | 2 → 3 | a **concentric** third circle — a ring of foot dots would map onto itself under a quarter-turn and move the bytes for a drawing nobody can tell apart |

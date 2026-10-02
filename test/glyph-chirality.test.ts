@@ -197,8 +197,21 @@ describe("a symbol with no handedness is not perturbed", () => {
     ["bench", "1800x600"],
     ["wc", "400x700"],
     ["shower", "900x900"],
+    // The kitchen's three that a redraw must keep symmetric — `describe --facts symmetry` reads
+    // handedness, so a stove, a sink or an oven that turned handed would move a semantic fact on
+    // every plan with mirrored kitchens. Each at its catalogued footprint and at the thresholds
+    // where its drawing changes (the sink's drainers and second bowl, the oven's hob).
+    ["stove", "600x600"],
+    ["stove", "900x600"],
+    ["kitchen_sink", "800x600"],
+    ["kitchen_sink", "1100x600"],
+    ["kitchen_sink", "1200x600"],
+    ["kitchen_sink", "1800x600"],
+    ["oven", "600x600"],
+    ["oven", "960x600"],
+    ["oven", "1000x600"],
   ] as const) {
-    it(`a mirrored \`${category}\` is byte-identical to the plain one`, () => {
+    it(`a mirrored \`${category}\` (${size}) is byte-identical to the plain one`, () => {
       expect(svgOf(paired(category, "x", size))).toBe(svgOf(paired(category, "", size)));
       expect(svgOf(paired(category, "y", size))).toBe(svgOf(paired(category, "", size, 180)));
     });

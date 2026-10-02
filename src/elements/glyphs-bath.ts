@@ -1,12 +1,18 @@
 /**
- * Bathroom plan symbols: the WC, the basin, the shower tray and the tub.
+ * Bathroom plan symbols: the WC, the basin, the shower tray, the tub, the bidet, the urinal and
+ * the mirror.
  *
- * These four were the Phase-0 verbatim move out of `fixtures-glyphs.ts`; this pass gives
- * them the fidelity a drafted symbol needs — a seat inside the bowl, a tap that is a tap
- * rather than a tick, a tray with a rim, a tub with a turned head rim — following
- * `door-panels.ts`'s model: **real closed-form geometry, every measure a fraction of the
- * host footprint, no absolute millimetre anywhere.** That is what lets one symbol read at
- * legend-swatch size and at 1:50 on an A1 sheet without a second size tier.
+ * Every symbol is drawn in the visual-polish language the pilot `wc` set: the OUTLINE of a piece
+ * in the `thin` pen (drawn in the derived symbol ink), every DETAIL inside it — a bowl's rim, a
+ * tap, a drain, the falls of a tray — in the `extraThin` pen, and TRUE curves (`ovalPath`,
+ * `roundedRectPath`) wherever the real thing is round: a bowl is a four-centre oval and a tub's
+ * foot end is an arc, not a 24-gon. The vocabulary, in the order a bathroom reads it:
+ *
+ * - **A hard carcass is `g.body`; a bowl, a tray floor or a seat is `g.basin`** (white). A drawn
+ *   piece therefore reads from its lines alone in `mono`, where every tint is white.
+ * - **Real closed-form geometry, every measure a fraction of the host footprint, no absolute
+ *   millimetre anywhere.** That is what lets one symbol read at legend-swatch size and at 1:50
+ *   on an A1 sheet without a second size tier.
  *
  * Two conventions the whole file obeys:
  *
@@ -14,58 +20,24 @@
  *   TOP edge of `r`; `furniture.render()` quarter-turns the finished nodes about the
  *   footprint centre (and hands us a pre-swapped `r` for 90°/270°, so the turned symbol
  *   still fills the declared `w x h`). Nothing here knows about rotation.
- * - **Circles are circles.** A drain, a flush button, a waste: a true `circle` prim, not a
+ * - **Circles are circles.** A drain, a flush button, a tap: a true `circle` prim, not a
  *   tessellated ring. It is crisper at every zoom and lowers to a native `CIRCLE` entity in
- *   the DXF export. Only shapes that must be FILLED as a soft outline (the bowls, the tub
- *   rim) stay polygons, because that is the one thing a stroked circle cannot be here.
+ *   the DXF export.
  *
- * Every radius is a fraction of `min(r.w, r.h)` and every circle's offset from the edge it
- * sits near is at least that fraction, so a symbol stays inside its own footprint at any
- * aspect ratio — including the 1 x 10000 and 10000 x 1 rects the fuzz corpus feeds it.
- * Pure and deterministic: no clock, no randomness, no state.
+ * Every radius is a fraction of `min(r.w, r.h)` and every inset from the edge it sits near is at
+ * least that fraction, so a symbol stays inside its own footprint at any aspect ratio —
+ * including the 1 x 10000 and 10000 x 1 rects the fuzz corpus feeds it. Pure and deterministic:
+ * no clock, no randomness, no state; the curve builders are closed-form.
+ *
+ * Mirror symmetry: the `wc`, the `basin`, the `shower`, the `bidet` and the `urinal` are
+ * symmetric about their centre line (`test/glyph-chirality.test.ts` holds a mirrored `wc` and
+ * `shower` to the plain one's exact bytes). The `bathtub` is handed — its taps are at one end —
+ * and so is the `mirror`, whose reflection ticks all lean the same way.
  */
 
-import type { Point } from "../ast.js";
 import type { SceneNode } from "../scene.js";
 import type { GlyphCtx, Rect } from "./glyph-lib.js";
-import {
-  ellipsePoly,
-  insetRect,
-  insetRectSides,
-  ovalPath,
-  rectPoly,
-  roundedRectPath,
-  roundedRectPoly,
-} from "./glyph-lib.js";
-
-/** A concentric copy of an ellipse, scaled by `k` about its own centre. */
-function innerEllipse(cx: number, cy: number, rx: number, ry: number, k: number) {
-  return ellipsePoly(cx, cy, rx * k, ry * k);
-}
-
-/**
- * The LOWER half of an ellipse, closed by the chord across its top — the bowl of a piece that
- * hangs off a wall and is cut away by it.
- *
- * A `g.arcSeg` would be the obvious spelling and is the wrong one: every backend lowers an
- * arc with the SVG large-arc flag pinned to `0`, so a sweep of exactly 180 degrees sits on the
- * boundary of what that flag can express, and the shape has to be FILLED anyway — which a
- * stroked arc cannot be. So it is a polygon, tessellated at the same fixed step
- * {@link ellipsePoly} uses, and the closing chord is the rim against the wall rather than a
- * seam that needs hiding.
- *
- * Screen axes: `y` grows DOWN, so angles 0..π sweep the half BELOW `cy`, which is the half
- * that projects into the room from a back edge along the top.
- */
-function halfEllipseDown(cx: number, cy: number, rx: number, ry: number): Point[] {
-  const n = 12;
-  const pts: Point[] = [];
-  for (let i = 0; i <= n; i++) {
-    const a = (Math.PI * i) / n;
-    pts.push({ x: cx + rx * Math.cos(a), y: cy + ry * Math.sin(a) });
-  }
-  return pts;
-}
+import { clamp, insetRect, ovalPath, rectPoly, roundedRectPath, shortSide } from "./glyph-lib.js";
 
 /**
  * The WC: the cistern along the back with its flush button, the bowl in front of it, the seat
@@ -116,92 +88,129 @@ export function drawWc(r: Rect, g: GlyphCtx): SceneNode[] {
 }
 
 /**
- * Vanity slab with an inset oval bowl, its tap block and spout — **or two bowls** when the
- * slab is at least 2.2 times as wide as it is deep.
+ * A basin: a vanity top (a rounded rectangle) with an oval bowl let into it, a tap at the back
+ * and a waste — **or two bowls** when the slab is at least 2.2 times as wide as it is deep.
+ *
+ * - **Top** (body fill, outline pen): corners eased to 6% of the short side — the first node.
+ * - **Bowl** (white, outline pen): a four-centre oval ({@link ovalPath}) inset 12% of its cell
+ *   from the sides, spanning 24%–92% of the depth, so a tap deck is left behind it.
+ * - **Floor** (white, detail pen): the same oval drawn in by a rim a fifth of the bowl's short
+ *   semi-axis wide — the line that says "a bowl with a depth", not a flat dish.
+ * - **Tap and waste** (detail pen): a disc on the centre line at the back, a short spout stub
+ *   running to the bowl's rim, and a disc on the bowl centre.
  *
  * The double branch is the vanity convention from the reference plans: a run long enough for
- * two basins is drawn with two, at the quarter points (0.28 / 0.72 of the width) rather than
- * as one enormous oval.
+ * two basins is drawn with two, each in its own half of the width, rather than as one enormous
+ * oval. Every bowl is centred in its half, so the symbol is mirror-symmetric either way.
  *
  * The threshold is aspect ratio 2.2, and it is written `w * 10 >= h * 22` for two reasons.
  * A multiplication rather than `w / h` means a zero-depth rect picks a branch instead of
  * dividing; and the INTEGER pair rather than `2.2 * h` is because 2.2 is not representable —
  * `2.2 * 100` is `220.00000000000003`, so a 220 x 100 slab, the round number an author would
  * actually type at the boundary, would have fallen on the single-bowl side of its own rule.
+ *
+ * Prim count: 6 for one bowl, 11 for two.
  */
 export function drawBasin(r: Rect, g: GlyphCtx): SceneNode[] {
-  g.poly(rectPoly(r), g.body);
+  const s = shortSide(r);
+  g.path(roundedRectPath(r, s * 0.06), g.body);
 
   const double = r.w * 10 >= r.h * 22;
-  const centres = double ? [0.28, 0.72] : [0.5];
-  const rx = r.w * (double ? 0.16 : 0.34);
-  const ry = r.h * 0.32;
-  const bowlCy = r.y + r.h * 0.56;
-  // The tap is 0.10 of the width, capped against the DEPTH so a long vanity run does not
-  // grow a tap the size of a bowl. On a 600x400 basin the cap never binds.
-  const tapW = Math.min(r.w * 0.1, r.h * 0.25);
-  const tapH = r.h * 0.1;
-  const tapY = r.y + r.h * 0.03;
+  const cell = r.w / (double ? 2 : 1);
+  const rx = cell * 0.38;
+  const ry = r.h * 0.34;
+  const bowlCy = r.y + r.h * 0.58;
+  const rim = Math.min(rx, ry) * 0.2;
+  const tapY = r.y + r.h * 0.115;
 
-  for (const f of centres) {
-    const cx = r.x + r.w * f;
-    g.poly(ellipsePoly(cx, bowlCy, rx, ry), g.basin);
-    g.poly(innerEllipse(cx, bowlCy, rx, ry, 0.8), g.basin, "extraThin");
-    g.poly(
-      [
-        { x: cx - tapW / 2, y: tapY },
-        { x: cx + tapW / 2, y: tapY },
-        { x: cx + tapW / 2, y: tapY + tapH },
-        { x: cx - tapW / 2, y: tapY + tapH },
-      ],
-      g.body,
-    );
-    // The spout reaches from the block into the bowl, stopping short of its centre.
-    g.seg({ x: cx, y: tapY + tapH }, { x: cx, y: bowlCy - ry * 0.4 }, "extraThin");
+  for (let k = 0; k < (double ? 2 : 1); k++) {
+    const cx = r.x + cell * (k + 0.5);
+    g.path(ovalPath(cx, bowlCy, rx, ry), g.basin);
+    g.path(ovalPath(cx, bowlCy, rx - rim, ry - rim), g.basin, "extraThin");
+    g.dot({ x: cx, y: tapY }, s * 0.035);
+    g.seg({ x: cx, y: tapY }, { x: cx, y: r.y + r.h * 0.31 }, "extraThin");
+    g.dot({ x: cx, y: bowlCy + ry * 0.1 }, s * 0.03);
   }
   return g.nodes;
 }
 
 /**
- * Tray outline, an inset rim, the two diagonals corner-to-corner of the INNER tray, and a
- * concentric drain.
+ * A shower tray: the rim, the floor let into it, the falls to the waste, and the waste.
  *
- * The diagonals stop at the rim rather than the tray edge, which is what stops them reading
- * as an X drawn over a box. Every measure is symmetric about both axes and the rim is
- * {@link insetRect}'s even band, so the silhouette is unchanged by a quarter turn — which is
- * the catalog's claim about this fixture, not an accident of the numbers.
+ * - **Tray** (body fill, outline pen): corners eased to 4% of the short side — the rim.
+ * - **Floor** (white, detail pen): inset 6% of the short side all round.
+ * - **Falls** (detail pen): four short strokes from the floor's corners towards the waste,
+ *   stopping at its ring — the convention that says "this floor slopes to a drain" and keeps
+ *   the diagonals from reading as an X drawn over a box.
+ * - **Waste** (detail pen): a ring with a disc in it, on the centre.
+ *
+ * Every measure is symmetric about both axes and the rim is an even band, so the silhouette is
+ * unchanged by a quarter turn — which is the catalog's claim about this fixture, not an
+ * accident of the numbers — and a mirrored shower is the plain one's exact bytes.
+ *
+ * Prim count: 8.
  */
 export function drawShower(r: Rect, g: GlyphCtx): SceneNode[] {
   const cx = r.x + r.w / 2;
   const cy = r.y + r.h / 2;
-  const unit = Math.min(r.w, r.h);
-  g.poly(rectPoly(r), g.basin);
-  const inner = insetRect(r, 0.08);
-  g.poly(rectPoly(inner), g.basin, "extraThin");
-  g.seg({ x: inner.x, y: inner.y }, { x: inner.x + inner.w, y: inner.y + inner.h }, "extraThin");
-  g.seg({ x: inner.x + inner.w, y: inner.y }, { x: inner.x, y: inner.y + inner.h }, "extraThin");
-  g.ring({ x: cx, y: cy }, unit * 0.05);
-  g.dot({ x: cx, y: cy }, unit * 0.018, g.stroke, "extraThin");
+  const s = shortSide(r);
+  g.path(roundedRectPath(r, s * 0.04), g.body);
+  const floor = insetRect(r, 0.06);
+  g.path(roundedRectPath(floor, s * 0.02), g.basin, "extraThin");
+
+  const ringR = s * 0.055;
+  // Each fall runs from just inside a floor corner to the waste's ring, along the diagonal.
+  const lead = s * 0.03;
+  for (const [fx, fy] of [
+    [floor.x, floor.y],
+    [floor.x + floor.w, floor.y],
+    [floor.x + floor.w, floor.y + floor.h],
+    [floor.x, floor.y + floor.h],
+  ] as const) {
+    const dx = cx - fx;
+    const dy = cy - fy;
+    const len = Math.hypot(dx, dy);
+    const ux = len > 0 ? dx / len : 0;
+    const uy = len > 0 ? dy / len : 0;
+    g.seg({ x: fx + ux * lead, y: fy + uy * lead }, { x: cx - ux * ringR, y: cy - uy * ringR }, "extraThin");
+  }
+  g.ring({ x: cx, y: cy }, ringR, "extraThin");
+  g.dot({ x: cx, y: cy }, s * 0.02);
   return g.nodes;
 }
 
 /**
- * Eased outer rim, an asymmetrically inset well, the tap at the head and the waste on the
- * centreline.
+ * A bathtub: the rim (the whole tub), the well let into it, two taps on the deck at the head and
+ * the waste in the well beside them.
  *
- * The head end is the -x end of the footprint (where the shipped symbol has always put its
- * tap), and its rim is 0.18 of the length against the foot's 0.10 — the turned deck a tub
- * carries its taps on. Drawing the well concentric, as the previous body did, made the tub
- * read as a tray with a border; the uneven rim is what says which end you get in at.
+ * - **Rim** (body fill, outline pen): corners eased to 8% of the short side — the first node.
+ * - **Well** (white, outline pen): inset 9% of the short side from the sides and the foot and
+ *   20% from the head, where the deck carries the taps. Its corners are NOT alike: the head end
+ *   is nearly square (14% of the well's depth) and the foot end is rounded to 42% of it, nearly
+ *   a half-circle — the shape that says which end you lie at.
+ * - **Taps** (detail pen): two discs on the head deck, stacked across the tub.
+ * - **Waste** (detail pen): a ring with a disc in it, at the head end of the well.
+ *
+ * The head is the -x end of the footprint (where the shipped symbol has always put its taps), so
+ * the symbol is handed and a mirrored `place` mirrors it. Every inset is a multiple of the SHORT
+ * side, so the well never meets the rim at any aspect.
+ *
+ * Prim count: 6.
  */
 export function drawBathtub(r: Rect, g: GlyphCtx): SceneNode[] {
+  const s = shortSide(r);
   const cy = r.y + r.h / 2;
-  const unit = Math.min(r.w, r.h);
-  g.poly(roundedRectPoly(r, unit * 0.18), g.body);
-  const well = insetRectSides(r, 0.18, 0.1, 0.12, 0.12);
-  g.poly(roundedRectPoly(well, Math.min(well.w, well.h) * 0.12), g.basin);
-  g.dot({ x: r.x + r.w * 0.07, y: cy }, unit * 0.05);
-  g.ring({ x: r.x + r.w * 0.62, y: cy }, unit * 0.04, "extraThin");
+  g.path(roundedRectPath(r, s * 0.08), g.body);
+
+  const well: Rect = { x: r.x + s * 0.2, y: r.y + s * 0.09, w: r.w - s * 0.29, h: r.h - s * 0.18 };
+  const head = well.h * 0.14;
+  const foot = well.h * 0.42;
+  g.path(roundedRectPath(well, [head, foot, foot, head]), g.basin);
+
+  for (const dy of [-1, 1]) g.dot({ x: r.x + s * 0.1, y: cy + dy * s * 0.12 }, s * 0.035);
+  const drain = { x: well.x + s * 0.15, y: cy };
+  g.ring(drain, s * 0.045, "extraThin");
+  g.dot(drain, s * 0.015);
   return g.nodes;
 }
 
@@ -211,91 +220,114 @@ export function drawBathtub(r: Rect, g: GlyphCtx): SceneNode[] {
 // this file's reading order follows that table's, and that table's order is the legend's.
 
 /**
- * A bidet: the bowl with its rim, the tap block at the back, its spout, and the waste.
+ * A bidet: the bowl with its rim, the tap deck on the bowl's rear rim, its jet and the waste.
  *
  * Read it against {@link drawWc}, because that is the only symbol it can be confused with and
- * the drawing has to settle it at a glance. A WC's back is a CISTERN — a band across the full
- * width, a fifth of the depth deep, with a flush button on it. A bidet has no cistern at all;
- * its back carries a small tap block a third of the width, and its bowl reaches nearly to the
- * back edge because there is nothing behind it. The other tell is the waste: a bidet's is on
- * the bowl centre, where a WC has none drawn.
+ * the drawing has to settle it at a glance. A WC's back is a CISTERN — a band across most of
+ * the width, a quarter of the depth deep, with a flush button on it. A bidet has no cistern at
+ * all; its back carries a small tap deck a third of the width and an eighth of the depth,
+ * standing ON the rim of a bowl that reaches nearly to the back edge. The other tell is the
+ * waste: a bidet's is on the bowl centre, where a WC has none drawn.
  *
- * The bowl is an ellipse with its rim at 0.76 rather than the WC seat's 0.78 — not a
- * decorative difference but a consequence: a bidet's rim is proportionally wider because the
- * bowl is shallower, and drawing the two identically would leave the rim as the one place the
- * symbols agreed.
+ * - **Bowl** (white, outline pen): a four-centre oval 86% of the width — the first node.
+ * - **Rim** (white, detail pen): the inner oval, a wider ring at the back where the jet is.
+ * - **Tap deck** (body fill, outline pen): a rounded block over the bowl's back rim, a tap disc
+ *   on it and a short jet stub running forward.
+ * - **Waste** (detail pen): a disc on the bowl centre.
+ *
+ * Mirror-symmetric about the centre line. Prim count: 6.
  */
 export function drawBidet(r: Rect, g: GlyphCtx): SceneNode[] {
   const cx = r.x + r.w / 2;
-  const unit = Math.min(r.w, r.h);
-  const tapW = Math.min(r.w * 0.3, r.h * 0.3);
-  const tapH = r.h * 0.1;
-  g.poly(rectPoly({ x: cx - tapW / 2, y: r.y + r.h * 0.04, w: tapW, h: tapH }), g.body);
+  const s = shortSide(r);
 
-  const bowlCy = r.y + r.h * 0.58;
-  const bowlRx = r.w * 0.42;
-  const bowlRy = r.h * 0.38;
-  g.poly(ellipsePoly(cx, bowlCy, bowlRx, bowlRy), g.basin);
-  g.poly(innerEllipse(cx, bowlCy, bowlRx, bowlRy, 0.76), g.basin, "extraThin");
-  g.seg({ x: cx, y: r.y + r.h * 0.14 }, { x: cx, y: bowlCy - bowlRy * 0.5 }, "extraThin");
-  g.dot({ x: cx, y: bowlCy }, unit * 0.05);
+  const bowlCy = r.y + r.h * 0.545;
+  const rx = r.w * 0.43;
+  const ry = r.h * 0.42;
+  g.path(ovalPath(cx, bowlCy, rx, ry), g.basin);
+  const ring = Math.min(rx * 2 * 0.14, ry * 0.3);
+  g.path(ovalPath(cx, bowlCy + ring * 0.5, rx - ring, ry - ring * 1.5), g.basin, "extraThin");
+
+  const deckW = Math.min(r.w / 3, r.h * 0.5);
+  const deckH = r.h * 0.12;
+  const deckY = r.y + r.h * 0.03;
+  g.path(roundedRectPath({ x: cx - deckW / 2, y: deckY, w: deckW, h: deckH }, Math.min(deckW, deckH) * 0.22), g.body);
+  const tapY = deckY + deckH * 0.5;
+  g.dot({ x: cx, y: tapY }, s * 0.035);
+  g.seg({ x: cx, y: deckY + deckH }, { x: cx, y: bowlCy - ry + ring * 2.2 }, "extraThin");
+  g.dot({ x: cx, y: bowlCy + ring * 0.5 }, s * 0.04);
   return g.nodes;
 }
 
 /**
- * A urinal: the back plate on the wall, the half-bowl hanging off it, its rim, and the waste.
+ * A urinal: the bowl on the wall, its rim, the flush plate across its back and the waste.
  *
- * This is the only fixture in the catalogue that is drawn as HALF a shape, and that is the
- * honest plan of it: a wall-hung urinal has no back at all — the wall is its back — so a
- * closed ellipse would draw a rim that does not exist and would read as a small basin. The
- * chord across the top of {@link halfEllipseDown} IS the wall face, which is why the symbol
- * runs to the very top edge of its footprint while every other bath fixture leaves a margin.
+ * This is the only fixture in the catalogue drawn as a U against its wall, and that is the honest
+ * plan of it: a wall-hung urinal has no back at all — the wall is its back — so the bowl runs to
+ * the very top edge of its footprint with square back corners and a rounded front, where a closed
+ * oval would draw a rim that does not exist and would read as a small basin.
  *
- * The back plate over it is the flush pipe and bracket in one band. It is what tells the
- * symbol from a `basin` at legend size, where a half-bowl and a shallow oval converge.
+ * - **Bowl** (white, outline pen): a rounded rectangle 88% of the width with its two FRONT corners
+ *   at half the width — a semicircular front on straight sides — the first node.
+ * - **Plate** (body fill, outline pen): the flush pipe and bracket, a band across the back of the
+ *   bowl 13% of the depth deep and exactly as wide as the rim below it. It is what tells the symbol
+ *   from a `basin` at legend size, where a U and a shallow oval converge.
+ * - **Rim** (white, detail pen): the same U drawn in by 12% of the bowl's short side at the sides
+ *   and the front, and hung from the plate's bottom edge — its top edge IS that edge, so no rim
+ *   line pokes out either side of the plate and none runs a few millimetres under it.
+ * - **Waste** (detail pen): a disc on the centre line, in the bowl's rounded front.
+ *
+ * Mirror-symmetric about the centre line. Prim count: 4.
  */
 export function drawUrinal(r: Rect, g: GlyphCtx): SceneNode[] {
   const cx = r.x + r.w / 2;
-  const unit = Math.min(r.w, r.h);
-  g.poly(rectPoly({ x: r.x + r.w * 0.14, y: r.y, w: r.w * 0.72, h: r.h * 0.16 }), g.body);
-
-  // The bowl's chord is the plate's own bottom edge, so the two are one object. A chord set
-  // below it leaves a sliver of floor between them and the plate reads as a shelf.
-  const cy = r.y + r.h * 0.16;
-  const rx = r.w * 0.44;
-  const ry = r.h * 0.8;
-  g.poly(halfEllipseDown(cx, cy, rx, ry), g.basin);
-  g.poly(halfEllipseDown(cx, cy, rx * 0.74, ry * 0.74), g.basin, "extraThin");
-  g.dot({ x: cx, y: cy + ry * 0.62 }, unit * 0.05);
+  const s = shortSide(r);
+  const bowl: Rect = { x: r.x + r.w * 0.06, y: r.y, w: r.w * 0.88, h: r.h * 0.97 };
+  const front = Math.min(bowl.w / 2, bowl.h * 0.7);
+  g.path(roundedRectPath(bowl, [0, 0, front, front]), g.basin);
+  const wall = shortSide(bowl) * 0.12;
+  const plateH = r.h * 0.13;
+  const inner: Rect = { x: bowl.x + wall, y: r.y + plateH, w: bowl.w - 2 * wall, h: bowl.h - plateH - wall };
+  const innerFront = Math.max(0, front - wall);
+  g.path(roundedRectPath(inner, [0, 0, innerFront, innerFront]), g.basin, "extraThin");
+  g.poly(rectPoly({ x: inner.x, y: r.y, w: inner.w, h: plateH }), g.body);
+  g.dot({ x: cx, y: r.y + r.h * 0.6 }, s * 0.045);
   return g.nodes;
 }
 
 /**
- * A wall-hung mirror: the glass, and three short reflection ticks across it.
+ * A wall-hung mirror: the glass, and a run of reflection ticks across it.
  *
  * The catalogued footprint is 900 x 50 — a mirror has essentially no depth, which is the
  * whole drawing problem. A 50 mm band is a line at any real plan scale, and a line on a wall
  * is already what a wall looks like, so the symbol needs a mark that survives being 18 times
- * longer than it is deep. The ticks are that mark: five strokes at 45 degrees, the
- * convention for a reflective surface on a section or elevation, borrowed here because
- * nothing else fits in the band. Five rather than three, and each nearly filling the band's
- * depth, because the first draft's three short marks disappeared entirely when the sheet was
- * looked at — a symbol nobody can see is the labelled rectangle with extra steps.
+ * longer than it is deep. The ticks are that mark: strokes at 45 degrees, the convention for a
+ * reflective surface on a section or elevation, borrowed here because nothing else fits in the
+ * band — and any detail that does not CROSS the band (an inset frame, a centre line) closes
+ * up into the outline at 1:100, where a 50 mm slab is narrower than two of its own pen widths.
+ *
+ * The tick count follows the run, one per four depths of length clamped to `[3, 12]`, so a long
+ * mirror keeps the rhythm a short one has and a legend swatch still gets three. The ticks all lean
+ * the same way, which is why the symbol is handed: a mirrored `place` mirrors them.
  *
  * The glass is filled `g.basin` (white) rather than `g.body`, so the mirror reads as a void in
  * the wall run instead of as another cabinet stuck to it.
  *
- * The tick half-length is capped at `0.09 * r.w` as well as at the short side, and that cap is
- * what makes containment hold rather than nearly hold: the outer ticks sit at 0.1 and 0.9 of
- * the width, so a half-length keyed to `min(w, h)` alone escapes the ends the moment the
- * footprint is TALLER than it is wide — which the fuzz corpus's 1 x 10000 rect is.
+ * The tick half-length is capped at half a pitch as well as at 45% of the depth, and that cap is
+ * what makes containment hold rather than nearly hold: a half-length keyed to `min(w, h)` alone
+ * escapes the ends the moment the footprint is TALLER than it is wide — which the fuzz corpus's
+ * 1 x 10000 rect is.
+ *
+ * Prim count: `1 + ticks`, 6 at the catalogued 900 x 50.
  */
 export function drawMirror(r: Rect, g: GlyphCtx): SceneNode[] {
   g.poly(rectPoly(r), g.basin);
-  const d = Math.min(Math.min(r.w, r.h) * 0.45, r.w * 0.09, r.h * 0.45);
+  const n = clamp(Math.round(r.w / (4 * r.h)), 3, 12);
+  const pitch = r.w / n;
+  const d = Math.min(r.h * 0.45, pitch * 0.25);
   const cy = r.y + r.h / 2;
-  for (const f of [0.1, 0.3, 0.5, 0.7, 0.9]) {
-    const x = r.x + r.w * f;
+  for (let k = 0; k < n; k++) {
+    const x = r.x + pitch * (k + 0.5);
     g.seg({ x: x - d, y: cy + d }, { x: x + d, y: cy - d }, "extraThin");
   }
   return g.nodes;
