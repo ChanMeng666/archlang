@@ -557,15 +557,32 @@ suite("doors — the drawing language", () => {
     Math.hypot(pts[3]!.x - pts[0]!.x, pts[3]!.y - pts[0]!.y);
 
   it("draws the open leaf as a slab lying INSIDE the swing's own sector, on every hand and face", () => {
+    // An ARC host is the weakest case: the leaf and its thickness are laid off the tangent
+    // at the doorway, so the heel and tip carry rounding the straight cases do not.
+    const onArc = [
+      'plan "Arc" {',
+      "  units mm",
+      "  wall id=w exterior thickness 200 { (0,0) arc (12000,0) radius 6000 (12000,-3000) (0,-3000) close }",
+      "  door id=d on w at 30% width 900 hinge left swing out",
+      "}",
+    ].join("\n");
     const cases = [
-      "door id=d on mid at 50% width 900 hinge left swing in",
-      "door id=d on mid at 50% width 900 hinge left swing out",
-      "door id=d on mid at 50% width 900 hinge right swing in",
-      "door id=d on mid at 50% width 900 hinge right swing out",
-      "door id=d on mid at 30% width 700",
+      plan("door id=d on mid at 50% width 900 hinge left swing in"),
+      plan("door id=d on mid at 50% width 900 hinge left swing out"),
+      plan("door id=d on mid at 50% width 900 hinge right swing in"),
+      plan("door id=d on mid at 50% width 900 hinge right swing out"),
+      plan("door id=d on mid at 30% width 700"),
+      onArc,
     ];
-    for (const c of cases) {
-      const src = plan(c);
+    // A point may sit this far (mm) outside the sector and still count as on it: the slab
+    // is built from `doorSwing`'s own points, so a corner ON a bounding radius is exact in
+    // real arithmetic and ~1e-13 mm off it in doubles on a curved host.
+    const EPS = 1e-6;
+    for (const src of cases) {
+      const c = src
+        .split("\n")
+        .find((l) => l.includes("door id=d"))!
+        .trim();
       const s = doorSwing(doorsOf(src).find((x) => x.id === "d")!)!;
       const { nodes } = nodesOf(src);
       // cover, slab, arc — in that order.
@@ -581,13 +598,16 @@ suite("doors — the drawing language", () => {
       const rel = (p: { x: number; y: number }) => ({ x: p.x - s.hinge.x, y: p.y - s.hinge.y });
       const open = rel(s.leafEnd);
       const closed = rel(s.farJamb);
+      // Signed distance of `v` from the radius `edge`, positive toward the sector's inside.
+      const inside = (edge: { x: number; y: number }, other: { x: number; y: number }, v: { x: number; y: number }) =>
+        (cr(edge, v) / Math.hypot(edge.x, edge.y)) * Math.sign(cr(edge, other));
       for (const p of pts) {
         const v = rel(p);
         // Within the radius (the tip corner is ON the swing circle) …
-        expect(Math.hypot(v.x, v.y), c).toBeLessThanOrEqual(s.radius + 1e-6);
+        expect(Math.hypot(v.x, v.y), c).toBeLessThanOrEqual(s.radius + EPS);
         // … and inside the quarter-disc's cone, between the open and the closed leaf.
-        expect(Math.sign(cr(open, v)) * Math.sign(cr(open, closed)), c).toBeGreaterThanOrEqual(0);
-        expect(Math.sign(cr(closed, v)) * Math.sign(cr(closed, open)), c).toBeGreaterThanOrEqual(0);
+        expect(inside(open, closed, v), c).toBeGreaterThanOrEqual(-EPS);
+        expect(inside(closed, open, v), c).toBeGreaterThanOrEqual(-EPS);
       }
     }
   });
