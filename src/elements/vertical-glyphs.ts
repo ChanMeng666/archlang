@@ -13,6 +13,13 @@
  * of the four orientations {@link import("../vertical.js").entryEdges} chose, so no symbol
  * repeats the orientation arithmetic. Pure, closed-form, no trigonometry — output stays
  * byte-stable.
+ *
+ * Tone follows the fixture symbols' rule (`elements/glyph-lib.ts`): the OUTLINE — the
+ * footprint and the direction arrow — is drawn in the derived symbol ink
+ * (`symbolInk(furnitureStroke, wallStroke)`), and the interior DETAIL — treads, the break
+ * line, a lift car's cross, an escalator's chevrons — in `furnitureStroke`. Every width is
+ * the thin pen, as before; only the colours follow the hierarchy, so a stair never reads
+ * paler than the sofa beside it.
  */
 
 import type { Point } from "../ast.js";
@@ -23,6 +30,10 @@ import type { Theme } from "../theme.js";
 import type { RElevator, REscalator, RStair } from "../ir.js";
 import { rectCorners } from "../geometry.js";
 import { dirLabel, runAxis, type RVertical, tailEdge } from "../vertical.js";
+import { symbolInk } from "./glyph-lib.js";
+
+/** The outline tone of a vertical-circulation symbol: the fixtures' derived symbol ink. */
+const inkOf = (theme: Theme): string => symbolInk(theme.furnitureStroke, theme.wallStroke);
 
 /** Nominal going (tread depth) in mm — the spacing tread lines are drawn at. */
 export const TREAD_GOING_MM = 280;
@@ -123,11 +134,12 @@ function line(a: Point, b: Point, layerName: string, paint: Paint): SceneNode {
 
 /**
  * The direction arrow: a shaft along the centreline from near the entry edge to near the
- * far end, with a two-stroke head. Plus the `UP`/`DN` word at the tail, in the first
- * tread cell — the conventional place to read a flight's direction from.
+ * far end, with a two-stroke head, in the symbol ink. Plus the `UP`/`DN` word at the tail,
+ * in the first tread cell — the conventional place to read a flight's direction from — in
+ * the stair's label colour (`annotation`, which `style stair { label … }` sets).
  */
 function arrow(f: RunFrame, label: string, layerName: string, theme: Theme, sizes: RenderSizes): SceneNode[] {
-  const stroke: Paint = { stroke: theme.annotation, width: sizes.thin, fill: "none" };
+  const stroke: Paint = { stroke: inkOf(theme), width: sizes.thin, fill: "none" };
   const step = f.length / treadCount(f.length);
   const tail = Math.min(step * 1.2, f.length * 0.3);
   const head = f.length - Math.min(step * 0.4, f.length * 0.12);
@@ -159,7 +171,7 @@ function footprint(v: RVertical, layerName: string, theme: Theme, sizes: RenderS
     layer: "furniture",
     layerName,
     prim: { t: "polygon", pts: rectCorners(v.at.x, v.at.y, v.size.w, v.size.h) },
-    paint: { fill: theme.furnitureFill, stroke: theme.furnitureStroke, width: sizes.thin },
+    paint: { fill: theme.furnitureFill, stroke: inkOf(theme), width: sizes.thin },
   };
 }
 

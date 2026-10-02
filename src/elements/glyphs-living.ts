@@ -318,84 +318,86 @@ export function drawDiningTable(r: Rect, g: GlyphCtx): SceneNode[] {
   g.path(roundedRectPath(insetRect(top, 0.03), st * 0.008), "none", "extraThin");
 
   const horizontal = r.w >= r.h;
-  const runStart = horizontal ? top.x : top.y;
   const runLen = horizontal ? top.w : top.h;
   const perSide = clampCount(runLen / (CHAIR_PITCH * band), 1, 4);
-  const cd = band; // a chair's full depth
   const cw = band * 0.9;
-  const vis = cd * (1 - CHAIR_TUCK);
-  // A chair whose BACK is on `back`, its visible part standing in the band off the top's edge.
-  const at = (along: number, back: "top" | "bottom" | "left" | "right"): void => {
-    const box: Rect =
-      back === "top"
-        ? { x: along - cw / 2, y: top.y - vis, w: cw, h: vis }
-        : back === "bottom"
-          ? { x: along - cw / 2, y: top.y + top.h, w: cw, h: vis }
-          : back === "left"
-            ? { x: top.x - vis, y: along - cw / 2, w: vis, h: cw }
-            : { x: top.x + top.w, y: along - cw / 2, w: vis, h: cw };
-    chairInto(g, box, back, CHAIR_TUCK);
-  };
+  const vis = band * (1 - CHAIR_TUCK); // a chair is a band deep; this much shows
+  // Every chair is placed by its centre's OFFSET from the footprint centre, and counterpart
+  // chairs get exactly negated or swapped offsets: `along(n−1−i)` is `−along(i)` exactly (an
+  // integer numerator negates), and the two sides of the table share one `±(half + vis/2)`. So
+  // a mirror, a half-turn and — on a square — a quarter-turn carry each chair onto a chair
+  // built from the very same numbers, not onto one that took a different rounding path.
+  const C = centerOf(r);
+  const out = (half: number): number => half + vis / 2;
+  const along = (i: number): number => (runLen * (2 * i + 1 - perSide)) / (2 * perSide);
   for (let i = 0; i < perSide; i++) {
-    const along = runStart + (runLen * (i + 0.5)) / perSide;
+    const u = along(i);
     if (horizontal) {
-      at(along, "top");
-      at(along, "bottom");
+      chairAt(g, C, { x: u, y: -out(top.h / 2) }, "top", cw, vis, CHAIR_TUCK);
+      chairAt(g, C, { x: u, y: out(top.h / 2) }, "bottom", cw, vis, CHAIR_TUCK);
     } else {
-      at(along, "left");
-      at(along, "right");
+      chairAt(g, C, { x: -out(top.w / 2), y: u }, "left", cw, vis, CHAIR_TUCK);
+      chairAt(g, C, { x: out(top.w / 2), y: u }, "right", cw, vis, CHAIR_TUCK);
     }
   }
   if (horizontal) {
-    at(top.y + top.h / 2, "left");
-    at(top.y + top.h / 2, "right");
+    chairAt(g, C, { x: -out(top.w / 2), y: 0 }, "left", cw, vis, CHAIR_TUCK);
+    chairAt(g, C, { x: out(top.w / 2), y: 0 }, "right", cw, vis, CHAIR_TUCK);
   } else {
-    at(top.x + top.w / 2, "top");
-    at(top.x + top.w / 2, "bottom");
+    chairAt(g, C, { x: 0, y: -out(top.h / 2) }, "top", cw, vis, CHAIR_TUCK);
+    chairAt(g, C, { x: 0, y: out(top.h / 2) }, "bottom", cw, vis, CHAIR_TUCK);
   }
   return g.nodes;
 }
 
 /**
- * Draw a dining chair whose visible footprint is `box`, with its backrest along the `back`
- * edge. `tuck` is the fraction of the chair's FULL depth hidden under a table in front of it
- * (0 for a free-standing chair): the box is the visible part only, the seat runs to the box's
- * front edge with square corners there, and every proportion is taken off the full depth so a
- * tucked chair and a free one have the same backrest.
+ * Draw a dining chair `w` wide whose VISIBLE part is `vis` deep, centred at `c + off`, with its
+ * backrest along the `back` edge. `tuck` is the fraction of the chair's FULL depth hidden under a
+ * table in front of it (0 for a free-standing chair): the seat runs to the visible part's front
+ * edge with square corners there, and every proportion is taken off the full depth so a tucked
+ * chair and a free one have the same backrest.
  *
- * Built back-on-top in a local frame and then quarter-turned into place with the exact
- * rotation `furniture.render()` uses (`mapSceneNode`), so the four sides of a table are one
- * chair turned rather than four hand-mirrored copies.
+ * The chair is built ONCE, back-on-top about the origin, its left and right edges at exactly
+ * `∓` the same half-widths (so it is its own mirror image by construction), and then placed by
+ * an EXACT quarter-turn — a swap and a negation of the local coordinates, no rotation arithmetic
+ * — added to the offset before the centre. A table's four sides are one chair, not four copies
+ * that each took their own rounding path.
  */
-function chairInto(g: GlyphCtx, box: Rect, back: "top" | "right" | "bottom" | "left", tuck: number): void {
-  const deg = back === "top" ? 0 : back === "right" ? 90 : back === "bottom" ? 180 : 270;
-  const sideways = deg === 90 || deg === 270;
-  const c = centerOf(box);
-  const w = sideways ? box.h : box.w;
-  const vis = sideways ? box.w : box.h;
+function chairAt(
+  g: GlyphCtx,
+  c: Point,
+  off: Point,
+  back: "top" | "right" | "bottom" | "left",
+  w: number,
+  vis: number,
+  tuck: number,
+): void {
   const full = vis / (1 - tuck);
-  const r: Rect = { x: c.x - w / 2, y: c.y - vis / 2, w, h: vis };
   const from = g.nodes.length;
   const s = Math.min(w, full);
+  const y0 = -vis / 2;
   // The seat: a rounded square, white (it is upholstered), set in from the sides and tucked
   // under the backrest; its front corners are square when it runs on under a table.
   const sr = s * 0.12;
-  const seat: Rect = { x: r.x + w * 0.06, y: r.y + full * 0.08, w: w * 0.88, h: vis - full * 0.08 };
+  const sw = w * 0.44;
+  const seatTop = y0 + full * 0.08;
+  const seat: Rect = { x: -sw, y: seatTop, w: 2 * sw, h: vis / 2 - seatTop };
   g.path(roundedRectPath(seat, tuck > 0 ? [sr, sr, 0, 0] : sr), g.basin);
-  // The backrest: a bar 12% of the depth along the back edge, full width, pill-ended.
-  const bar: Rect = { x: r.x, y: r.y, w, h: full * 0.12 };
+  // The backrest: a bar 12% of the full depth along the back edge, full width, pill-ended.
+  const bar: Rect = { x: -w / 2, y: y0, w, h: full * 0.12 };
   g.path(roundedRectPath(bar, bar.h / 2), g.body);
-  if (deg === 0) return;
-  const turn = (p: Point): Point => {
-    const dx = p.x - c.x;
-    const dy = p.y - c.y;
-    return deg === 90
-      ? { x: c.x - dy, y: c.y + dx }
-      : deg === 180
-        ? { x: c.x - dx, y: c.y - dy }
-        : { x: c.x + dy, y: c.y - dx };
+  const place = (p: Point): Point => {
+    const q =
+      back === "top"
+        ? p
+        : back === "right"
+          ? { x: -p.y, y: p.x }
+          : back === "bottom"
+            ? { x: -p.x, y: -p.y }
+            : { x: p.y, y: -p.x };
+    return { x: c.x + (off.x + q.x), y: c.y + (off.y + q.y) };
   };
-  for (let i = from; i < g.nodes.length; i++) g.nodes[i] = mapSceneNode(g.nodes[i]!, turn, false);
+  for (let i = from; i < g.nodes.length; i++) g.nodes[i] = mapSceneNode(g.nodes[i]!, place, false);
 }
 
 /**
@@ -414,7 +416,7 @@ function chairInto(g: GlyphCtx, box: Rect, back: "top" | "right" | "bottom" | "l
  * Prim count: 2.
  */
 export function drawChair(r: Rect, g: GlyphCtx): SceneNode[] {
-  chairInto(g, r, "top", 0);
+  chairAt(g, centerOf(r), { x: 0, y: 0 }, "top", r.w, r.h, 0);
   return g.nodes;
 }
 

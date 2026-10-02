@@ -29,14 +29,16 @@ import { describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";
 import { CANONICAL_FIXTURES, fixtureGlyph } from "../src/elements/fixtures-glyphs.js";
 import { marksEqual, mirrorNode } from "../src/elements/glyph-chirality.js";
-import { defaultFootprint } from "../src/fixtures-catalog.js";
+import { defaultFootprint, fixtureSpec } from "../src/fixtures-catalog.js";
 import { DEFAULT_THEME } from "../src/theme.js";
+import { rotateNode } from "../src/elements/furniture.js";
 import { parse } from "../src/parser.js";
 import { resolve } from "../src/ir.js";
 import { toScene } from "../src/scene-build.js";
 import type { RenderSizes, SceneNode } from "../src/scene.js";
 import { mapSceneNode } from "../src/elements/glyph-lib.js";
 import { pathExtentPoints } from "./glyph-extent.js";
+import { SURVEY_FOOTPRINTS, SURVEY_OFFSETS, surveyHandedness } from "./handedness-survey.js";
 
 /** Real pen sizes, taken from a real scene rather than invented — as the glyph suites do. */
 const SIZES: RenderSizes = toScene(
@@ -326,6 +328,189 @@ describe("the handedness survey", () => {
     }
     expect(handedAt("fridge", 600, 1000)).toBe(false);
     expect(handedAt("fridge", 1000, 600)).toBe(true);
+  });
+});
+
+/**
+ * The EXTENDED handedness survey, pinned against `main`.
+ *
+ * Measured on `main` @ 22bce44 (v1.38.0 + agent docs) — the checkout every visual-polish branch
+ * forks from — with `npx tsx test/handedness-survey.ts D:/github_repository/archlang`, which
+ * runs `analyze/symmetry.ts`'s own predicate (`marksEqual` against the glyph's mirror image, at
+ * unit pens, the rect placed at `cx − w/2`) over every family x seven footprints x three
+ * absolute positions. A row is `SURVEY_FOOTPRINTS` in order — catalogue, square, portrait 1:3,
+ * landscape 3:1, 640, 777, 555x900 — each as three characters for `at (0,0)`, `(100,100)`,
+ * `(1000,1000)`: `H` handed, `.` not.
+ *
+ * THE RULE (visual-polish programme): a family may never GAIN handedness at a cell where `main`
+ * was symmetric — a redraw that does has put an asymmetric mark (or an ulp-dependent structure)
+ * into a symmetric symbol, which flips `describe --facts symmetry` and mirrored-`place` bytes. A
+ * family MAY lose handedness only by being listed in {@link LOST_HANDEDNESS} with the reason its
+ * old handed mark was decorative. Never re-measure this table to green the test.
+ */
+const HANDED_ON_MAIN: Readonly<Record<string, string>> = {
+  wc: "... ... ... ... ... ... ...",
+  basin: "... ... ... ... ... ... ...",
+  shower: "... ... ... ... ... ... ...",
+  bathtub: "HHH HHH HHH HHH HHH HHH HHH",
+  kitchen_sink: "... ... ... ... ... ... ...",
+  counter: "... ... ... ... ... ... ...",
+  stove: "... ... ... ... ... ... ...",
+  fridge: "... ... ... HHH ... ... ...",
+  bed: "HHH HHH HHH HHH HHH HHH HHH",
+  double_bed: "HHH HHH HHH HHH HHH HHH HHH",
+  nightstand: "... ... ... ... ... ... ...",
+  wardrobe: "... ... ... ... ... ... ...",
+  sofa: "... ... ... ... ... ... ...",
+  armchair: "... ... ... ... ... ... ...",
+  coffee_table: "... ... ... ... ... ... ...",
+  tv_unit: "... ... ... ... ... ... ...",
+  table: "... ... ... ... ... ... ...",
+  dining_table: "... ... ... ... ... ... ...",
+  chair: "... ... ... ... ... ... ...",
+  stool: "... ... ... ... ... ... ...",
+  bench: "... ... ... ... ... ... ...",
+  desk: "HHH HHH HHH HHH HHH HHH HHH",
+  office_chair: "... ... ... ... ... ... ...",
+  bookshelf: "... ... ... ... ... ... ...",
+  oven: "... ... ... ... ... ... ...",
+  dishwasher: "... ... ... ... ... ... ...",
+  island: "HHH HHH HHH HHH HHH HHH HHH",
+  upper_cabinet: "... ... ... ... ... ... ...",
+  washer: "HHH HHH HHH HHH HHH HHH HHH",
+  dryer: "... ... ... ... ... ... ...",
+  plant: "... ... ... ... ... ... ...",
+  car: "... ... ... ... ... ... ...",
+  rug: "... ... ... ... ... ... ...",
+  sofa_l: "HHH HHH HHH HHH HHH HHH HHH",
+  piano: "HHH HHH HHH HHH HHH HHH HHH",
+  sun_lounger: "... ... ... ... ... ... ...",
+  tree: "... ... ... ... ... ... ...",
+  conifer: "... ... ... ... ... ... ...",
+  shrub: "HHH HHH HHH HHH HHH HHH HHH",
+  hedge: "... ... ... HHH ... ... ...",
+  bbq: "HHH HHH HHH HHH HHH HHH HHH",
+  outdoor_table: "... ... ... ... ... ... ...",
+  outdoor_chair: "... ... ... ... ... ... ...",
+  umbrella: "... ... ... ... ... ... ...",
+  bicycle: "HHH HHH HHH HHH HHH HHH HHH",
+  motorcycle: "HHH HHH ... HHH HHH HHH ...",
+  hot_tub: "... ... ... ... ... ... ...",
+  swing: "... ... ... ... ... ... ...",
+  trampoline: "... ... ... ... ... ... ...",
+  bin: "... ... ... ... ... ... ...",
+  mailbox: "HHH HHH HHH HHH HHH HHH HHH",
+  ev_charger: "HHH HHH HHH HHH HHH HHH HHH",
+  pergola: "... ... ... ... ... ... ...",
+  sandpit: "... ... ... ... ... ... ...",
+  fire_pit: "... ... ... ... ... ... ...",
+  shed: "... ... ... ... ... ... ...",
+  clothesline: "... ... ... ... ... ... ...",
+  bidet: "... ... ... ... ... ... ...",
+  urinal: "... ... ... ... ... ... ...",
+  laundry_sink: "... ... ... ... ... ... ...",
+  water_heater: "... ... ... ... ... ... ...",
+  mirror: "HHH HHH HHH HHH HHH HHH HHH",
+  range_hood: "... ... ... ... ... ... ...",
+  microwave: "HHH HHH HHH HHH HHH HHH HHH",
+  bar_counter: "... ... ... ... ... ... ...",
+  bunk_bed: "... ... ... ... ... ... ...",
+  crib: "... ... ... ... ... ... ...",
+  dresser: "... ... ... ... ... ... ...",
+  vanity: "... ... ... ... ... ... ...",
+  fireplace: "... ... ... ... ... ... ...",
+  radiator: "... ... ... ... ... ... ...",
+  sideboard: "... ... ... ... ... ... ...",
+  loveseat: "... ... ... ... ... ... ...",
+  chaise: "HHH HHH HHH HHH HHH HHH HHH",
+  tv: "... ... ... ... ... ... ...",
+  coat_rack: "... ... ... ... ... ... ...",
+  shoe_cabinet: "HHH HHH HHH HHH HHH HHH HHH",
+  meeting_table: "... ... ... ... ... ... ...",
+  reception_desk: "HHH HHH HHH HHH HHH HHH HHH",
+  filing_cabinet: "... ... ... ... ... ... ...",
+  locker: "... ... ... ... ... ... ...",
+  pool_table: "... ... ... ... ... ... ...",
+  treadmill: "... ... ... ... ... ... ...",
+};
+
+/**
+ * Families allowed to have LOST handedness relative to {@link HANDED_ON_MAIN}, each with the
+ * reason its old handed mark was decorative rather than meaningful. Empty: nothing has lost any.
+ */
+const LOST_HANDEDNESS: Readonly<Record<string, string>> = {};
+
+describe("the extended handedness survey, pinned against main", () => {
+  const api = { CANONICAL_FIXTURES, fixtureGlyph, marksEqual, mirrorNode, defaultFootprint, DEFAULT_THEME };
+
+  it("covers every family, every footprint and every offset", () => {
+    expect(Object.keys(HANDED_ON_MAIN)).toEqual([...CANONICAL_FIXTURES]);
+    const cells = SURVEY_FOOTPRINTS.length * SURVEY_OFFSETS.length;
+    for (const [c, row] of Object.entries(HANDED_ON_MAIN)) expect(row.replace(/ /g, ""), c).toHaveLength(cells);
+  });
+
+  it("no family GAINS handedness where main was symmetric, and none loses it unlisted", () => {
+    const now = surveyHandedness(api);
+    const gained: string[] = [];
+    const lost: string[] = [];
+    for (const c of CANONICAL_FIXTURES) {
+      const was = HANDED_ON_MAIN[c]!;
+      const is = now[c]!;
+      for (let i = 0; i < was.length; i++) {
+        if (was[i] === "." && is[i] === "H") gained.push(`${c} @ cell ${i}`);
+        if (was[i] === "H" && is[i] === "." && !(c in LOST_HANDEDNESS)) lost.push(`${c} @ cell ${i}`);
+      }
+    }
+    expect(gained, "a symmetric family became HANDED — never allowed").toEqual([]);
+    expect(lost, "a family lost handedness — list it in LOST_HANDEDNESS with its reason").toEqual([]);
+  });
+
+  it("the `symmetric` PILOT families are quarter-turn invariant too, at squares and offsets", () => {
+    // The mirror survey above cannot see a quarter-turn defect, and a catalogued `S` family must
+    // map onto itself under one. Measured on main with the same sweep, three S families already
+    // fail it there — `rug` and `pool_table` (their long-axis detail picks a side on a square)
+    // and `shrub` (deliberately irregular) — so this pins only the visual-polish PILOTS.
+    const PILOTS = ["sofa", "loveseat", "armchair", "chair", "dining_table", "bed", "double_bed", "wc", "tree"];
+    const symmetricPilots = PILOTS.filter((c) => fixtureSpec(c)?.symmetric === true);
+    expect(symmetricPilots).toEqual(["dining_table", "tree"]);
+    for (const c of symmetricPilots) {
+      for (const s of [1, 400, 640, 777, 1000, 1500, 2400]) {
+        for (const o of [0, 100, 1000]) {
+          const cc = { x: o + s / 2, y: o + s / 2 };
+          const nodes = fixtureGlyph(c, { x: cc.x - s / 2, y: cc.y - s / 2, w: s, h: s }, DEFAULT_THEME, SIZES)!;
+          for (const deg of [90, 180, 270]) {
+            expect(
+              marksEqual(
+                nodes,
+                nodes.map((n) => rotateNode(n, cc, deg)),
+              ),
+              `${c} ${s}x${s} at ${o} r${deg}`,
+            ).toBe(true);
+          }
+        }
+      }
+    }
+  });
+
+  it("is not vacuous: one asymmetric mark in a symmetric family is seen at every cell", () => {
+    const planted = {
+      ...api,
+      fixtureGlyph: (...args: Parameters<typeof fixtureGlyph>) => {
+        const nodes = fixtureGlyph(...args);
+        if (args[0] !== "sofa" || !nodes) return nodes;
+        const r = args[1];
+        // A tick in the left third only — a mark with no mirror partner.
+        return [
+          ...nodes,
+          {
+            ...nodes[0]!,
+            prim: { t: "line" as const, a: { x: r.x + r.w * 0.2, y: r.y }, b: { x: r.x + r.w * 0.2, y: r.y + r.h } },
+          },
+        ];
+      },
+    };
+    expect(HANDED_ON_MAIN.sofa).not.toContain("H");
+    expect(surveyHandedness(planted).sofa).not.toContain(".");
   });
 });
 
