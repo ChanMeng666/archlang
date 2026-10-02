@@ -505,10 +505,26 @@ describe("fixture symbols — the outdoor tranche (re-blessed when redrawn)", ()
       </g>
       <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
       <polygon points="300,300 2300,300 2300,1700 300,1700" fill="none" stroke="#6c6864" stroke-width="4.8" stroke-dasharray="28.8 19.2"/>
-      <circle cx="412" cy="412" r="84" fill="#a8a29a" stroke="#a8a29a" stroke-width="3.47"/>
-      <circle cx="2188" cy="412" r="84" fill="#a8a29a" stroke="#a8a29a" stroke-width="3.47"/>
-      <circle cx="2188" cy="1588" r="84" fill="#a8a29a" stroke="#a8a29a" stroke-width="3.47"/>
-      <circle cx="412" cy="1588" r="84" fill="#a8a29a" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="633.33" y1="1000" x2="633.33" y2="300" stroke="#a8a29a" stroke-width="3.47" stroke-dasharray="28.8 19.2"/>
+      <line x1="633.33" y1="1000" x2="633.33" y2="1700" stroke="#a8a29a" stroke-width="3.47" stroke-dasharray="28.8 19.2"/>
+      <line x1="966.67" y1="1000" x2="966.67" y2="300" stroke="#a8a29a" stroke-width="3.47" stroke-dasharray="28.8 19.2"/>
+      <line x1="966.67" y1="1000" x2="966.67" y2="1700" stroke="#a8a29a" stroke-width="3.47" stroke-dasharray="28.8 19.2"/>
+      <line x1="1300" y1="1000" x2="1300" y2="300" stroke="#a8a29a" stroke-width="3.47" stroke-dasharray="28.8 19.2"/>
+      <line x1="1300" y1="1000" x2="1300" y2="1700" stroke="#a8a29a" stroke-width="3.47" stroke-dasharray="28.8 19.2"/>
+      <line x1="1633.33" y1="1000" x2="1633.33" y2="300" stroke="#a8a29a" stroke-width="3.47" stroke-dasharray="28.8 19.2"/>
+      <line x1="1633.33" y1="1000" x2="1633.33" y2="1700" stroke="#a8a29a" stroke-width="3.47" stroke-dasharray="28.8 19.2"/>
+      <line x1="1966.67" y1="1000" x2="1966.67" y2="300" stroke="#a8a29a" stroke-width="3.47" stroke-dasharray="28.8 19.2"/>
+      <line x1="1966.67" y1="1000" x2="1966.67" y2="1700" stroke="#a8a29a" stroke-width="3.47" stroke-dasharray="28.8 19.2"/>
+      <line x1="1300" y1="650" x2="300" y2="650" stroke="#a8a29a" stroke-width="3.47" stroke-dasharray="28.8 19.2"/>
+      <line x1="1300" y1="650" x2="2300" y2="650" stroke="#a8a29a" stroke-width="3.47" stroke-dasharray="28.8 19.2"/>
+      <line x1="1300" y1="1000" x2="300" y2="1000" stroke="#a8a29a" stroke-width="3.47" stroke-dasharray="28.8 19.2"/>
+      <line x1="1300" y1="1000" x2="2300" y2="1000" stroke="#a8a29a" stroke-width="3.47" stroke-dasharray="28.8 19.2"/>
+      <line x1="1300" y1="1350" x2="300" y2="1350" stroke="#a8a29a" stroke-width="3.47" stroke-dasharray="28.8 19.2"/>
+      <line x1="1300" y1="1350" x2="2300" y2="1350" stroke="#a8a29a" stroke-width="3.47" stroke-dasharray="28.8 19.2"/>
+      <polygon points="370,370 454,370 454,454 370,454" fill="#6c6864" stroke="#6c6864" stroke-width="4.8"/>
+      <polygon points="2146,370 2230,370 2230,454 2146,454" fill="#6c6864" stroke="#6c6864" stroke-width="4.8"/>
+      <polygon points="2146,1546 2230,1546 2230,1630 2146,1630" fill="#6c6864" stroke="#6c6864" stroke-width="4.8"/>
+      <polygon points="370,1546 454,1546 454,1630 370,1630" fill="#6c6864" stroke="#6c6864" stroke-width="4.8"/>
       </g>
       <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
       <text x="1500" y="1902" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
@@ -529,9 +545,13 @@ describe("fixture symbols — the outdoor tranche (re-blessed when redrawn)", ()
       <polygon points="0,0 3000,0 3000,2400 0,2400" fill="#fbfaf7"/>
       </g>
       <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
-      <polygon points="300,300 2700,300 2700,2100 300,2100" fill="#f4f2ee" stroke="#6c6864" stroke-width="4.8"/>
-      <line x1="444" y1="1200" x2="2556" y2="1200" stroke="#a8a29a" stroke-width="3.47" stroke-dasharray="28.8 19.2"/>
-      <line x1="1140" y1="1992" x2="1860" y2="1992" stroke="#a8a29a" stroke-width="3.47"/>
+      <polygon points="300,300 2700,300 2700,2100 300,2100" fill="#ffffff" stroke="#6c6864" stroke-width="4.8"/>
+      <polygon points="1932,2100 2700,2100 2700,300 300,300 300,2100 1068,2100 1068,1992 408,1992 408,408 2592,408 2592,1992 1932,1992" fill="#f4f2ee" stroke="#6c6864" stroke-width="4.8"/>
+      <polygon points="1068,1560 1119.84,1560 1119.84,1992 1068,1992" fill="#ffffff" stroke="#6c6864" stroke-width="4.8"/>
+      <polygon points="1880.16,1560 1932,1560 1932,1992 1880.16,1992" fill="#ffffff" stroke="#6c6864" stroke-width="4.8"/>
+      <path d="M 1500,1992 A 432 432 0 0 0 1068,1560" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 1500,1992 A 432 432 0 0 1 1932,1560" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="408" y1="1200" x2="2592" y2="1200" stroke="#a8a29a" stroke-width="3.47" stroke-dasharray="28.8 19.2"/>
       </g>
       <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
       <text x="300" y="2142" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
@@ -552,17 +572,19 @@ describe("fixture symbols — the outdoor tranche (re-blessed when redrawn)", ()
       <polygon points="0,0 3000,0 3000,2400 0,2400" fill="#fbfaf7"/>
       </g>
       <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
-      <polygon points="1416,300 1448.15,306.39 1475.4,324.6 1493.61,351.85 1500,384 1500,816 1493.61,848.15 1475.4,875.4 1448.15,893.61 1416,900 384,900 351.85,893.61 324.6,875.4 306.39,848.15 300,816 300,384 306.39,351.85 324.6,324.6 351.85,306.39 384,300" fill="#f4f2ee" stroke="#6c6864" stroke-width="4.8"/>
-      <polygon points="1260,348 1452,348 1452,852 1260,852" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="1260" y1="600" x2="1452" y2="600" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="588" y1="384" x2="588" y2="780" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="780" y1="384" x2="780" y2="780" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="972" y1="384" x2="972" y2="780" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="396" y1="483" x2="1164" y2="483" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="396" y1="582" x2="1164" y2="582" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="396" y1="681" x2="1164" y2="681" stroke="#a8a29a" stroke-width="3.47"/>
-      <circle cx="492" cy="840" r="36" fill="#a8a29a" stroke="#a8a29a" stroke-width="3.47"/>
-      <circle cx="1044" cy="840" r="36" fill="#a8a29a" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 600,300 L 1200,300 A 60 60 0 0 1 1260,360 L 1260,840 A 60 60 0 0 1 1200,900 L 600,900 A 60 60 0 0 1 540,840 L 540,360 A 60 60 0 0 1 600,300 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="4.8"/>
+      <path d="M 324,372 L 540,372 L 540,828 L 324,828 A 24 24 0 0 1 300,804 L 300,396 A 24 24 0 0 1 324,372 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="4.8"/>
+      <path d="M 1260,372 L 1476,372 A 24 24 0 0 1 1500,396 L 1500,804 A 24 24 0 0 1 1476,828 L 1260,828 L 1260,372 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="4.8"/>
+      <path d="M 610.56,396 L 1189.44,396 A 12.96 12.96 0 0 1 1202.4,408.96 L 1202.4,707.04 A 12.96 12.96 0 0 1 1189.44,720 L 610.56,720 A 12.96 12.96 0 0 1 597.6,707.04 L 597.6,408.96 A 12.96 12.96 0 0 1 610.56,396 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="684" y1="396" x2="684" y2="720" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="770.4" y1="396" x2="770.4" y2="720" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="856.8" y1="396" x2="856.8" y2="720" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="943.2" y1="396" x2="943.2" y2="720" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1029.6" y1="396" x2="1029.6" y2="720" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1116" y1="396" x2="1116" y2="720" stroke="#a8a29a" stroke-width="3.47"/>
+      <circle cx="756" cy="810" r="21" fill="#a8a29a" stroke="#a8a29a" stroke-width="3.47"/>
+      <circle cx="900" cy="810" r="21" fill="#a8a29a" stroke="#a8a29a" stroke-width="3.47"/>
+      <circle cx="1044" cy="810" r="21" fill="#a8a29a" stroke="#a8a29a" stroke-width="3.47"/>
       </g>
       <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
       <text x="1500" y="1182" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>

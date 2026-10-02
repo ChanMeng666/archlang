@@ -255,8 +255,11 @@ describe("the handedness survey", () => {
   /**
    * The families whose plan symbol has NO vertical mirror axis at its catalogued footprint,
    * measured by reflecting the drawing rather than read off a flag. `sofa_l` is the one
-   * originally reported; the other eighteen are what looking rather than assuming
-   * turned up.
+   * originally reported; the others are what looking rather than assuming turned up.
+   *
+   * `shrub` and `bbq` left the list with the outdoor redraw, each for a reason in its drawing:
+   * the shrub is now a cloud of eight equal lobes on the D4 bearings (it was an irregular cloud),
+   * and the barbecue a gas grill with a shelf EACH side (it had one, on the right).
    *
    * This is a RECORD of the survey, not the mechanism — `mirrorGlyph` derives handedness per
    * drawing, per footprint, so nothing reads this list. Redraw a symbol and it may move: that
@@ -272,8 +275,6 @@ describe("the handedness survey", () => {
     "washer",
     "sofa_l",
     "piano",
-    "shrub",
-    "bbq",
     "bicycle",
     "motorcycle",
     "mailbox",
@@ -294,7 +295,7 @@ describe("the handedness survey", () => {
     );
   };
 
-  it("nineteen of the 83 shipped families are handed at their catalogued footprint", () => {
+  it("exactly the recorded families are handed at their catalogued footprint", () => {
     const found = CANONICAL_FIXTURES.filter((c) => {
       const fp = defaultFootprint(c);
       return handedAt(c, fp?.along ?? 1000, fp?.depth ?? 600);
@@ -303,11 +304,13 @@ describe("the handedness survey", () => {
   });
 
   it("handedness is a property of the DRAWING, not of the family — which is why it is derived", () => {
-    // Five families are handed at one aspect ratio and symmetric at another, because their
+    // Some families are handed at one aspect ratio and symmetric at another, because their
     // detail is tiled and the tile COUNT comes from the footprint. A per-family flag cannot
     // express that; asking the drawing can. This is the case that settled the design, so it
-    // is pinned rather than described.
-    for (const c of ["counter", "upper_cabinet", "hedge"]) {
+    // is pinned rather than described. (`hedge` was one: its scallops alternated in size, so
+    // an even count was handed. It is now one band of uniform scallops, symmetric at every
+    // aspect — `test/glyphs-outdoor.test.ts` holds it there.)
+    for (const c of ["counter", "upper_cabinet"]) {
       expect(handedAt(c, 1000, 600), `${c} @ 1000x600`).toBe(false);
       expect(handedAt(c, 2000, 500), `${c} @ 2000x500`).toBe(true);
     }

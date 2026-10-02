@@ -265,12 +265,12 @@ twin. So a reflecting instance frame hands the glyph its own chirality instead, 
 mirror image. Turn it with `rotate` where a quarter-turn is what you want; reach for
 `place … mirror` when you want the mirror-image piece.
 
-**Handedness is DERIVED from the drawing, not declared per family.** Nineteen of the 83
+**Handedness is DERIVED from the drawing, not declared per family.** Seventeen of the 83
 shipped families have no vertical mirror axis (`bed`, `desk`, `bathtub`, `island`, `washer`,
-`microwave`, `mirror`, `chaise`, `shoe_cabinet`, `reception_desk`, `piano`, `sofa_l`, `bbq`,
-`shrub`, `bicycle`, `motorcycle`, `mailbox`, `ev_charger`, `double_bed`) at their catalogued
+`microwave`, `mirror`, `chaise`, `shoe_cabinet`, `reception_desk`, `piano`, `sofa_l`,
+`bicycle`, `motorcycle`, `mailbox`, `ev_charger`, `double_bed`) at their catalogued
 footprints. Handedness is a property of the drawing rather than of the family, though:
-`counter`, `fridge`, `upper_cabinet`, `hedge` and `motorcycle` are handed at some footprints
+`counter`, `fridge`, `upper_cabinet` and `motorcycle` are handed at some footprints
 and symmetric at others, because their detail is tiled and the tile count comes from the
 aspect ratio — which a per-family flag simply cannot express. **A symbol that has a mirror
 axis renders byte-identical whether its instance was reflected or not**, at every footprint;
@@ -327,33 +327,35 @@ like every other symbol's depth, so `rotate 90` parks it across a garage.
 ### Outdoor
 
 Twenty-one families for what a site plan draws once the drawing leaves the building. They
-live in their own module (`src/elements/glyphs-outdoor.ts`) and follow one rule the indoor
-tables do not: **planting is drawn unfilled**, because a canopy overhangs ground — a path, a
-terrace, a parking bay — that has to keep reading through it.
+live in their own module (`src/elements/glyphs-outdoor.ts`), drawn in the indoor symbols' line
+language (outline in the symbol ink, detail in the fine pen, true curves), and follow one rule
+the indoor tables do not: **planting is a canopy that masks the ground** — the tree, the
+conifer, the shrub and the hedge are each one closed outline **filled with the lawn tint**, so
+the ground hatch under them is painted out and the crown reads as one mass.
 
 | Kind (and aliases) | Symbol | Footprint | Facing | Wall |
 |---|---|---|---|---|
 | `tree` · `deciduous_tree` | a canopy scalloped into sixteen lobes and **filled with the lawn tint** (it masks the ground hatch under it), eight forked branches and the trunk | — | symmetric | |
-| `conifer` · `pine` | a sixteen-point star canopy notched deep, so it reads as needled, over the crown ring and the trunk | — | symmetric | |
-| `shrub` · `bush` | a lumpy cloud of eight overlapping lobes, **unfilled**, with three short interior arcs for foliage | — | symmetric | |
-| `hedge` | a scalloped band — a chain of overlapping arcs down **both** faces, a half-scallop closing each end, one dashed centreline, and **no box** | 2000 × 600 | free | |
-| `bbq` · `grill` · `barbecue` | the body with a **cross** grid of grill bars, the side shelf down the right, and two wheels on the front edge | 1200 × 600 | derived | |
-| `outdoor_table` · `patio_table` | round or eased-rectangular top with four chairs hugging the footprint edges | — | symmetric | |
-| `outdoor_chair` · `patio_chair` | a seat, a back band and an inset cushion, with **slats** across the back and an armrest each side | — | free | |
-| `umbrella` · `parasol` | an eight-segment canopy with the pole at the centre | — | symmetric | |
-| `bicycle` · `bike` | two wheels at a quarter and three quarters of the run, the four-tube **diamond frame** between them, the saddle and the bars | — | free | |
-| `motorcycle` | the two wheels with the body slung between them | — | free | |
-| `hot_tub` · `spa` | the shell, the water inside it, and the four seats round the rim | — | symmetric | |
-| `swing` · `swing_set` | the beam down the long axis, a leg at each end, and two seats | — | free | |
-| `trampoline` | the frame, the mat, and twelve springs across the narrow band between them | — | symmetric | |
-| `bin` · `wheelie_bin` | the body, the lid line at the hinged edge, and the two wheels under it | 600 × 700 | derived | |
+| `conifer` · `pine` | a sixteen-point needled star canopy (notched to 0.6 of the crown) in the lawn tint, eight spokes and the tree's trunk | — | symmetric | |
+| `shrub` · `bush` | a closed cloud of eight equal lobes in the lawn tint, with a smaller cloud of foliage inside | — | symmetric | |
+| `hedge` | ONE continuous band in the lawn tint, **both** faces scalloped and both ends rounded, with the hidden stem line dashed down its middle, and **no box** | 2000 × 600 | free | |
+| `bbq` · `grill` · `barbecue` | a gas grill: the firebox with its barred grate, a **shelf each side**, and three control knobs on the front | 1200 × 600 | derived | |
+| `outdoor_table` · `patio_table` | the dining table's language — the top inside a chair band, chairs tucked under it — round with four chairs when near-square, rectangular with chairs down the sides otherwise, and the parasol hole | — | symmetric | |
+| `outdoor_chair` · `patio_chair` | the dining chair's seat and backrest with an **arm** down each side and slat joints across the seat | — | free | |
+| `umbrella` · `parasol` | an eight-panel canopy sagging between its ribs, the ribs, and the pole | — | symmetric | |
+| `bicycle` · `bike` | from above: two narrow **tyres** in line, the frame between them, the saddle, the handlebar across the front tyre, and the cranks with their pedals | — | free | |
+| `motorcycle` | from above: the two tyres (the rear wider), the body narrowing to tail and headstock over them, the seat, the tank, and the handlebar with its mirrors | — | free | |
+| `hot_tub` · `spa` | the rounded shell, the water, the moulded bench round a sunken footwell, and a seat division mid-side | — | symmetric | |
+| `swing` · `swing_set` | the top beam, an A-frame splaying to two feet at each end, and two seats hung on their chains | — | free | |
+| `trampoline` | the padded frame, the mat, and twenty-four springs across the narrow band between them | — | symmetric | |
+| `bin` · `wheelie_bin` | the body, its lid, the handle along the hinged back edge, and the grip at the front | 600 × 700 | derived | |
 | `mailbox` · `letterbox` | the box with its flap, and the flag beside it | 400 × 300 | derived | |
-| `ev_charger` | the pedestal against the back edge with the cable — a **true arc** — hanging off it | 400 × 300 | derived | |
-| `pergola` | the overhead frame on four posts, drawn **entirely dashed** and unfilled | — | symmetric | |
-| `sandpit` · `sandbox` | the eased kerb with five stipple dots for sand | — | symmetric | |
-| `fire_pit` | the rim, the bowl, and a four-lobed flame inside it | — | symmetric | |
-| `shed` · `garden_shed` | the carcass, a **dashed** roof ridge, and the door tick on the front | 2400 × 1800 | derived | |
-| `clothesline` · `washing_line` | a post at each end of the run with three lines strung between | — | free | |
+| `ev_charger` | the pedestal against the back edge with its display, and the cable — a **true arc** — with its plug | 400 × 300 | derived | |
+| `pergola` | the overhead frame and a rafter grid, **dashed** and unfilled, on four **solid** posts | — | symmetric | |
+| `sandpit` · `sandbox` | the timber frame, a plain sand field, and a corner seat board in each corner | — | symmetric | |
+| `fire_pit` | the stone surround with its joints, the fire bowl, four logs and the embers | — | symmetric | |
+| `shed` · `garden_shed` | the walls with a pair of doors swung in from the front, the floor, and a **dashed** roof ridge | 2400 × 1800 | derived | |
+| `clothesline` · `washing_line` | a T-post at each end of the run with four lines strung between the arms | — | free | |
 
 **Nothing out here carries `requiresWall`, and that is a decision.** The flag means services —
 supply, waste, venting, or hanging off a wall by definition — and
@@ -366,17 +368,17 @@ as on a wall. Outdoors the wall is the exception.
 **`bbq` is the only outdoor kind with a frontal clearance** (900 mm — the standing room a cook
 needs at an open grill). The hot tub deliberately has none: it is symmetric, so it has no front
 to measure one from. The barbecue's back is the **top** edge, this module's convention — the
-shelf is on the right and the wheels are on the bottom, so the top is the edge clear of both
-and the one that goes against a wall or fence.
+knobs are on the bottom, where the cook stands, so the top is the edge that goes against a wall
+or fence.
 
-Three of the outdoor symbols are drawn from **arcs alone**, with no closed shape to fill:
-`shrub` and `hedge` (planting reads through, and a box around a hedge makes it read as a tray),
-and the outer half of every lobe only — a face scallop draws 120° of its circle, not the whole
-thing, or the run reads as a chain of overlapping rings.
+The `shrub` and the `hedge` are each **one closed loop of arcs** — no straight run and no box
+(a box around a hedge makes it read as a tray), and no gap between the arcs, which is what lets
+them carry the lawn tint.
 
-Three of them are drawn **dashed**, and it is the same convention every time — *above the cut
-plane*, the rule `upper_cabinet` follows indoors and the one `roof` and `void` ship: the whole
-`pergola` outline, and the `shed`'s roof ridge.
+The **dashed** marks follow one convention every time — *above the cut plane or hidden*, the
+rule `upper_cabinet` follows indoors and the one `roof` and `void` ship: the `pergola`'s frame
+and rafters (its posts are cut, so they are solid), the `shed`'s roof ridge, and the `hedge`'s
+stem line under its foliage.
 
 The five `directional` kinds (`bbq`, `bin`, `mailbox`, `ev_charger`, `shed`) are the ones you
 would write `against wall` or `anchor` about, and they are also the five that carry a footprint —

@@ -5,29 +5,33 @@
  * The shared drawing contract is the same one the five indoor modules are held to, and it is
  * re-asserted here rather than imported because a contract that lives in one file and is
  * checked in another is a contract nobody reads: nothing leaves its own footprint (an arc is
- * SAMPLED along its sweep, not reduced to its endpoints), every arc stays minor, two pen
- * weights and no third, no text primitive, deterministic geometry, and a finite drawing at
- * every degenerate aspect the fuzz and the `hasFixtureGlyph` probe can ask for.
+ * SAMPLED along its sweep, not reduced to its endpoints), every arc stays minor and every
+ * curved-outline arc within 120°, two pen weights and no third, no text primitive, deterministic
+ * geometry, and a finite drawing at every degenerate aspect the fuzz and the `hasFixtureGlyph`
+ * probe can ask for.
  *
  * Three things are specific to this module and are what the per-family suites below are for.
  *
- * **1. Ten of the twenty-one claim `symmetric: true`, and the claim is PROVED.** Orientation
+ * **1. Eleven of the twenty-one claim `symmetric: true`, and the claim is PROVED.** Orientation
  * reasoning reads that flag — a symmetric category never gets a derived quarter-turn and
  * never trips `W_FIXTURE_BACK_TO_ROOM` — so an unproved claim is a fact about the language
  * that the drawing contradicts. Each one is turned by the real `rotateNode` and compared
- * against itself. The comparison normalises a polygon's CYCLIC START (a quarter-turn maps a
- * 16-point star's vertex `i` to vertex `i+4`, so the same ring comes back as a rotated list)
- * but nothing else — a moved vertex, a changed radius or a dropped node still fails.
+ * against itself, and reflected by the real `mirrorNode` and compared again: a symbol in plan
+ * with no front has the square's whole symmetry group (D4), not just its rotations. The
+ * comparisons normalise a polygon's or a loop's CYCLIC START (a quarter-turn maps a star's
+ * vertex `i` to vertex `i+8`, so the same ring comes back as a rotated list) but nothing else —
+ * a moved vertex, a changed radius or a dropped node still fails.
  *
- * **2. Six of them are `directional`, and that is a claim about the drawing too.** A
+ * **2. Five of them are `directional`, and that is a claim about the drawing too.** A
  * `directional` symbol must actually differ end-to-end along its depth, or the derived
  * quarter-turn is advice a reader cannot check. Each is asserted to draw something nearer its
  * back edge that is not mirrored at the front.
  *
- * **3. The planting is UNFILLED.** A canopy overhangs a path or a bay that has to read
- * through it, and the pergola is dashed for the `upper_cabinet` reason (above the cut plane).
- * Both are pinned, because a fill is exactly the kind of thing a later refactor adds without
- * noticing what it hides.
+ * **3. The planting MASKS the ground; the pergola does not.** A tree, a conifer, a shrub and a
+ * hedge are each ONE closed outline filled with the lawn tint, so a ground hatch under them is
+ * painted out; the pergola is above the cut plane, so it is dashed and unfilled for the
+ * `upper_cabinet` reason. Both are pinned, because a fill is exactly the kind of thing a later
+ * refactor changes without noticing what it hides or shows.
  */
 
 import { describe, expect, it } from "vitest";
@@ -37,13 +41,15 @@ import { resolve } from "../src/ir.js";
 import { parse } from "../src/parser.js";
 import { toScene } from "../src/scene-build.js";
 import type { Scene, SceneNode } from "../src/scene.js";
-import { pathExtentPoints } from "./glyph-extent.js";
+import { arcEdgeSweep, arcEdgesOf, pathExtentPoints } from "./glyph-extent.js";
 import { weightWidth } from "../src/scene.js";
 import { CANONICAL_FIXTURES, hasFixtureGlyph } from "../src/elements/fixtures-glyphs.js";
 import { fixtureSpec } from "../src/fixtures-catalog.js";
 import type { Rect } from "../src/elements/glyph-lib.js";
-import { glyphCtx } from "../src/elements/glyph-lib.js";
+import { glyphCtx, mapSceneNode } from "../src/elements/glyph-lib.js";
+import { marksEqual, mirrorNode } from "../src/elements/glyph-chirality.js";
 import { rotateNode } from "../src/elements/furniture.js";
+import { drawChair } from "../src/elements/glyphs-living.js";
 import {
   drawBbq,
   drawBicycle,
@@ -145,49 +151,53 @@ const ALL_NAMES: readonly string[] = [
 /** A generic footprint: off the origin, wider than deep, no round-number aspect. */
 const R: Rect = { x: 1000, y: 2000, w: 1600, h: 700 };
 
+/** A square footprint: the rectangle-built symmetric symbols are invariant on one. */
+const SQ: Rect = { x: 500, y: 900, w: 1200, h: 1200 };
+
 /**
  * Primitive counts at {@link R}. Exact, per family, for the reason every glyph suite pins
  * them: a count is the cheapest statement of "this symbol is still the drawing it was", and
  * it fails on an accidentally-duplicated node that no containment or weight check would see.
- * The hedge's is aspect-dependent (its scallop count comes from the ratio), so its clamp ends
- * are pinned separately below.
+ * Three are aspect-dependent and are pinned at their clamps separately below: the patio table's
+ * chairs (four a side and one each end here), the pergola's rafters (eight across and three
+ * along here) and the hedge's scallops (which live INSIDE its one outline node).
  */
 const EXPECTED_PRIMS: Readonly<Record<string, number>> = {
   tree: 26, // scalloped canopy + 8 branches × (stem + 2 twigs) + trunk
-  conifer: 3,
-  shrub: 11,
-  hedge: 13,
-  bbq: 11,
-  outdoor_table: 5,
-  outdoor_chair: 9,
-  umbrella: 10,
-  bicycle: 8,
-  motorcycle: 4,
-  hot_tub: 6,
-  swing: 5,
-  trampoline: 14,
-  bin: 4,
-  mailbox: 3,
-  ev_charger: 3,
-  pergola: 5,
-  sandpit: 6,
-  fire_pit: 3,
-  shed: 3,
-  clothesline: 5,
+  conifer: 10, // star canopy + 8 spokes + trunk
+  shrub: 2, // the cloud + its inner foliage cloud
+  hedge: 2, // the scalloped band + the stem line
+  bbq: 13, // firebox + 2 shelves + grate + 6 bars + 3 knobs
+  outdoor_table: 23, // top + bevel + parasol hole + 10 chairs × (seat + backrest)
+  outdoor_chair: 7, // seat + backrest + 2 arms + 3 slats
+  umbrella: 10, // canopy + 8 ribs + pole
+  bicycle: 8, // 2 tyres + frame + saddle + handlebar + crank + 2 pedals
+  motorcycle: 8, // 2 tyres + body + seat + tank + handlebar + 2 mirrors
+  hot_tub: 7, // shell + water + footwell + 4 seat divisions
+  swing: 11, // beam + 4 legs + 2 seats + 4 chain hangers
+  trampoline: 26, // frame + mat + 24 springs
+  bin: 4, // body + lid + handle + grip
+  mailbox: 3, // box + flap + flag
+  ev_charger: 4, // pedestal + display + cable + plug
+  pergola: 27, // frame + (8 + 3 rafters) × 2 halves + 4 posts
+  sandpit: 6, // frame + sand + 4 corner seats
+  fire_pit: 15, // surround + bowl + 8 joints + 4 logs + embers
+  shed: 7, // floor + walls + 2 leaves + 2 swings + ridge
+  clothesline: 8, // 2 cross-arms + 2 posts + 4 lines
 };
 
 /**
- * The primitive ceiling for one family.
- *
- * Every glyph in this module keeps the ~2–15 budget the five indoor modules keep, EXCEPT the
- * hedge: it is the only RUN here, its outline is a chain of scallops down both faces, and a
- * chain is inherently as long as the thing it outlines. Its count is `2n + 3` with `n` clamped
- * to 16, so 35 is its hard ceiling and the clamp — not the budget — is what bounds it. The
- * TREE is the other carve: its canopy is one path, but its eight forked branches are 24 lines,
- * a FIXED 26 at every footprint. The carves are by NAME rather than a blanket raise, so the
- * other nineteen keep the tighter number.
+ * The primitive ceiling for one family — its own worst case at any footprint, by NAME rather
+ * than a blanket raise, so a family that grows is caught by its own number. Four families have
+ * a count that depends on the footprint or is large by nature: the tree's 24 branch lines and
+ * the trampoline's 24 springs are FIXED at 26; the patio table's chairs are clamped at four a
+ * side (23); the pergola's rafters at nine across a long run, each drawn as two halves (29).
+ * Every other family keeps the
+ * ~2–15 budget the indoor modules keep, and all of them are well inside the 48 the design
+ * programme aims for.
  */
-const budget = (name: string): number => (name === "hedge" ? 35 : name === "tree" ? 26 : 15);
+const CEILING: Readonly<Record<string, number>> = { tree: 26, trampoline: 26, outdoor_table: 23, pergola: 29 };
+const budget = (name: string): number => CEILING[name] ?? 15;
 
 const TAU = Math.PI * 2;
 
@@ -204,7 +214,7 @@ function arcSweep(p: Extract<SceneNode["prim"], { t: "arc" }>): number {
 /**
  * Points that bound one primitive. An arc is SAMPLED along its sweep — start/end/centre bound
  * the chord, and the drawn curve bulges away from it, which is exactly where a containment
- * bug hides. Anything that is not one of the four primitives a glyph may emit throws, which
+ * bug hides. Anything that is not one of the five primitives a glyph may emit throws, which
  * is what makes "no text primitive" a consequence of this helper rather than a second
  * assertion nobody updates.
  */
@@ -257,7 +267,7 @@ function expectInside(nodes: SceneNode[], r: Rect, what: string): void {
  *
  * A polygon's vertex list is normalised to start at its lexicographically smallest point.
  * That is the ONE normalisation this file makes, and it is needed rather than convenient: a
- * quarter-turn maps a 16-point star's vertex `i` onto vertex `i + 4`, so a genuinely
+ * quarter-turn maps a 32-point star's vertex `i` onto vertex `i + 8`, so a genuinely
  * rotation-invariant ring comes back as the same cycle read from a different place. Nothing
  * else is normalised — the direction of travel is preserved (a rotation cannot reverse it),
  * so a mirrored or re-ordered ring still fails.
@@ -298,6 +308,11 @@ function canonical(n: SceneNode): string {
       throw new Error(`unexpected primitive ${p.t}`);
   }
 }
+
+const pathOf = (n: SceneNode): Extract<SceneNode["prim"], { t: "path" }> => {
+  if (n.prim.t !== "path") throw new Error(`expected a path, got a ${n.prim.t}`);
+  return n.prim;
+};
 
 describe("glyphs-outdoor — what each symbol draws", () => {
   it("every category dispatches to a drawn symbol, aliases included", () => {
@@ -354,16 +369,33 @@ describe("glyphs-outdoor — what each symbol draws", () => {
 
   it("uses both weights: an outline in thin, interior detail in extraThin", () => {
     for (const [name, fn] of GLYPHS) {
-      const weights = new Set(draw(fn, R).map((n) => n.lineWeight));
+      const nodes = draw(fn, R);
+      const weights = new Set(nodes.map((n) => n.lineWeight));
       expect(weights, `${name} draws detail below its outline`).toEqual(new Set(["thin", "extraThin"]));
+      // …and the FIRST node — the one a consumer makes the element's primary — is outline.
+      expect(nodes[0]!.lineWeight, `${name} leads with its outline`).toBe("thin");
     }
   });
 
-  it("keeps every arc a MINOR one — the large-arc flag is pinned to 0 in every backend", () => {
+  it("strokes each tone in its own ink: outline in the symbol ink, detail in furnitureStroke", () => {
+    const g = glyphCtx(theme, sizes);
     for (const [name, fn] of GLYPHS) {
       for (const n of draw(fn, R)) {
-        if (n.prim.t !== "arc") continue;
-        expect(Math.abs(arcSweep(n.prim)), `${name} arc sweep`).toBeLessThanOrEqual(Math.PI + 1e-9);
+        expect(n.paint.stroke, `${name} ${n.lineWeight} stroke`).toBe(n.lineWeight === "thin" ? g.ink : g.stroke);
+      }
+    }
+  });
+
+  it("keeps every arc a MINOR one, and every curved-outline arc within 120°", () => {
+    for (const [name, fn] of GLYPHS) {
+      for (const n of draw(fn, R)) {
+        if (n.prim.t === "arc")
+          expect(Math.abs(arcSweep(n.prim)), `${name} arc sweep`).toBeLessThanOrEqual(Math.PI + 1e-9);
+        if (n.prim.t === "path") {
+          for (const { from, e } of arcEdgesOf(n.prim)) {
+            expect(Math.abs(arcEdgeSweep(from, e)), `${name} path arc`).toBeLessThanOrEqual((2 * Math.PI) / 3 + 1e-9);
+          }
+        }
       }
     }
   });
@@ -378,24 +410,22 @@ describe("glyphs-outdoor — what each symbol draws", () => {
 });
 
 describe("glyphs-outdoor — the catalog's claims about these symbols are true", () => {
-  /** A square footprint: the rectangle-built symmetric symbols are invariant on one. */
-  const SQ: Rect = { x: 500, y: 900, w: 1200, h: 1200 };
-
   /**
-   * NINE of the ten `symmetric: true` families, with the footprint each is proved on. The five
+   * The eleven `symmetric: true` families, with the footprint each is proved on. The seven
    * radial ones hold at ANY aspect (they are built from the centre and the short side, both of
    * which a quarter-turn preserves); the four rectangle-built ones hold on a square, which is
    * the honest scope of the claim — `coffee_table` is symmetric on the same terms. (`island`
-   * used to be named here too. It stopped being `symmetric` when its symbol gained
-   * a seating overhang along one side; see `fixtures-catalog.ts`.)
+   * used to be named here too. It stopped being `symmetric` when its symbol gained a seating
+   * overhang along one side; see `fixtures-catalog.ts`.)
    *
-   * `shrub` is the tenth and is deliberately ABSENT: its outline is an irregular cloud, so it
-   * does not map onto itself vertex for vertex. That is a change to what this file proves, not
-   * to what the catalog claims — see the group below.
+   * `shrub` used to be absent: its outline was an irregular cloud that only balanced its mass
+   * about the centre. It is now a cloud of eight equal lobes on the D4 bearings, so it is proved
+   * here vertex for vertex like the tree.
    */
   const SYMMETRIC: readonly (readonly [string, Draw, Rect])[] = [
     ["tree", drawTree, R],
     ["conifer", drawConifer, R],
+    ["shrub", drawShrub, R],
     ["umbrella", drawUmbrella, R],
     ["trampoline", drawTrampoline, R],
     ["fire_pit", drawFirePit, R],
@@ -420,9 +450,33 @@ describe("glyphs-outdoor — the catalog's claims about these symbols are true",
     }
   });
 
+  it("…and onto itself under a mirror, so it has the square's whole symmetry, not just its turns", () => {
+    // `marksEqual` quotients exactly the re-spellings a reflection makes (a ring read the other
+    // way round, an arc's ends swapped) and nothing else; `mirrorNode` is the reflection a
+    // mirrored `place` applies to a symbol.
+    for (const [name, fn, rect] of SYMMETRIC) {
+      const nodes = draw(fn, rect);
+      expect(
+        marksEqual(
+          nodes,
+          nodes.map((n) => mirrorNode(n, rect.x + rect.w / 2)),
+        ),
+        `${name} mirrored`,
+      ).toBe(true);
+    }
+    // Not vacuous: the mailbox carries its flag on one side, and the mirror sees it.
+    const box = draw(drawMailbox, R);
+    expect(
+      marksEqual(
+        box,
+        box.map((n) => mirrorNode(n, R.x + R.w / 2)),
+      ),
+    ).toBe(false);
+  });
+
   it("the check is not vacuous — a directional symbol fails it", () => {
     // `shed` is `directional`, and the proof that the assertion above says something is that
-    // running it on this symbol goes red: the ridge and the door tick are not mirrored.
+    // running it on this symbol goes red: the doors are on one face and the ridge runs one way.
     const centre: Point = { x: SQ.x + SQ.w / 2, y: SQ.y + SQ.h / 2 };
     const original = draw(drawShed, SQ).map(canonical).sort();
     const turned = draw(drawShed, SQ)
@@ -455,34 +509,6 @@ describe("glyphs-outdoor — the catalog's claims about these symbols are true",
     }
   });
 
-  it("the shrub has no favoured side, which is what its `symmetric` flag actually claims", () => {
-    // The catalog flag means the piece has no distinguishable BACK — a fact about bushes —
-    // and NOT that the drawing is invariant vertex for vertex. The first draft of this symbol
-    // was four equal circles at a 90-degree pitch, which satisfied the stronger property and
-    // read as a flower; the cloud that replaced it is irregular on purpose.
-    //
-    // So the honest, still-checkable property is that no side of the outline carries the
-    // mass: the centroid of every sampled point sits essentially on the footprint centre.
-    // The eight lobe bearings are a fixed table, so this is a real constraint on that table —
-    // skew it and this fails.
-    expect(fixtureSpec("shrub")?.symmetric).toBe(true);
-    for (const rect of [R, SQ, { x: 0, y: 0, w: 900, h: 900 }]) {
-      const pts = draw(drawShrub, rect).flatMap(boundingPoints);
-      const cx = pts.reduce((a, p) => a + p.x, 0) / pts.length;
-      const cy = pts.reduce((a, p) => a + p.y, 0) / pts.length;
-      const off = Math.hypot(cx - (rect.x + rect.w / 2), cy - (rect.y + rect.h / 2)) / Math.min(rect.w, rect.h);
-      expect(off, `shrub ${rect.w}x${rect.h} centroid offset`).toBeLessThan(0.03);
-    }
-    // Not vacuous, and honest about its own scope: a `shed` — which IS directional — puts a
-    // ninth of its short side between the two. (This is a mass-balance check, not a general
-    // symmetric/directional discriminator: a `bbq`'s mass is nearly centred too, and what
-    // makes IT directional is a shelf and two wheels, which no centroid can see.)
-    const pts = draw(drawShed, SQ).flatMap(boundingPoints);
-    const cx = pts.reduce((a, p) => a + p.x, 0) / pts.length;
-    const cy = pts.reduce((a, p) => a + p.y, 0) / pts.length;
-    expect(Math.hypot(cx - (SQ.x + SQ.w / 2), cy - (SQ.y + SQ.h / 2)) / SQ.w).toBeGreaterThan(0.03);
-  });
-
   it("nothing out here requires a wall, and nothing is an underlay", () => {
     // Both are decisions with consequences elsewhere (`W_FIXTURE_FLOATING` on one side,
     // the walkability grids on the other), so they are pinned rather than left to a comment.
@@ -502,44 +528,68 @@ describe("glyphs-outdoor — the catalog's claims about these symbols are true",
   });
 });
 
-describe("glyphs-outdoor — the planting reads through", () => {
-  it("draws the conifer's and the pergola's canopies unfilled, so the ground under them is not painted out", () => {
+describe("glyphs-outdoor — the planting masks the ground, the pergola does not", () => {
+  it("draws every planting canopy as ONE closed outline filled with the lawn tint", () => {
     for (const [name, fn] of [
+      ["tree", drawTree],
       ["conifer", drawConifer],
-      ["pergola", drawPergola],
+      ["shrub", drawShrub],
+      ["hedge", drawHedge],
     ] as const) {
-      for (const n of draw(fn, R)) {
-        if (n.prim.t === "polygon") expect(n.paint.fill, `${name} canopy fill`).toBe("none");
-      }
+      const [canopy] = draw(fn, R);
+      expect(["path", "polygon"], `${name} canopy is a closed shape`).toContain(canopy!.prim.t);
+      expect(canopy!.paint.fill, `${name} canopy fill`).toBe(theme.lawn);
+      expect(canopy!.lineWeight, `${name} canopy is outline`).toBe("thin");
     }
   });
 
-  it("fills the TREE's crown with the lawn tint, so a ground hatch is masked under it", () => {
-    const [canopy] = draw(drawTree, R);
-    expect(canopy!.prim.t).toBe("path");
-    expect(canopy!.paint.fill).toBe(theme.lawn);
-  });
-
-  it("draws the shrub and the hedge from ARCS alone — there is no shape to fill", () => {
-    // Both were rewritten away from closed shapes: the shrub was four circles, the hedge was
-    // circles inside a rectangle, and the rectangle is the thing that made it read as a tray.
-    // Neither emits a polygon now, which is a stronger statement than "the fill is none".
+  it("closes the shrub's and the hedge's outlines with arcs alone — no gap, no straight run", () => {
+    // Both used to be loose rows of separate arcs that did not close (the shrub's cloud was
+    // eight open arcs, the hedge a chain of overlapping circles), so neither could carry a fill.
+    // Now each is one loop whose every edge is a curve and whose last edge lands on its start.
     for (const [name, fn] of [
       ["shrub", drawShrub],
       ["hedge", drawHedge],
     ] as const) {
-      const kinds = new Set(draw(fn, R).map((n) => n.prim.t));
-      expect([...kinds].sort(), `${name} primitive kinds`).toEqual(name === "hedge" ? ["arc", "line"] : ["arc"]);
+      const lp = pathOf(draw(fn, R)[0]!).loops[0]!;
+      expect(lp.edges.length, `${name} has edges`).toBeGreaterThan(4);
+      expect(
+        lp.edges.every((e) => e.t === "arc"),
+        `${name} every edge is a curve`,
+      ).toBe(true);
+      const last = lp.edges[lp.edges.length - 1]!.to;
+      expect(last.x).toBeCloseTo(lp.start.x, 9);
+      expect(last.y).toBeCloseTo(lp.start.y, 9);
     }
   });
 
-  it("dashes the pergola all the way round — it is above the cut plane", () => {
+  it("dashes the pergola's frame and rafters — they are above the cut plane — and not its posts", () => {
     const nodes = draw(drawPergola, R);
     const outline = nodes[0]!;
     expect(outline.lineType).toBe("dashed");
+    expect(outline.paint.fill, "the terrace under it reads through").toBe("none");
     expect(outline.paint.dash, "the named type and the raw pattern agree").toEqual([sizes.thin * 6, sizes.thin * 4]);
-    // …and the four posts are not dashed: only the overhead frame is above the cut.
-    for (const n of nodes.slice(1)) expect(n.lineType).toBeUndefined();
+    // The rafters are dashed detail; the four posts are what the cut passes through: solid ink.
+    const rafters = nodes.filter((n) => n.prim.t === "line");
+    expect(rafters.length).toBeGreaterThan(0);
+    for (const n of rafters) {
+      expect(n.lineType).toBe("dashed");
+      expect(n.lineWeight).toBe("extraThin");
+    }
+    const posts = nodes.slice(1).filter((n) => n.prim.t === "polygon");
+    expect(posts).toHaveLength(4);
+    for (const n of posts) {
+      expect(n.lineType).toBeUndefined();
+      expect(n.paint.fill).toBe(glyphCtx(theme, sizes).ink);
+    }
+  });
+
+  it("clamps the pergola's rafters to nine a direction, and grids a square the same both ways", () => {
+    const lines = (r: Rect): number => draw(drawPergola, r).filter((n) => n.prim.t === "line").length;
+    // Three each way on a square, each in two halves running out from the centre line.
+    expect(lines(SQ)).toBe(12);
+    expect(lines({ x: 0, y: 0, w: 10000, h: 10 })).toBe(24);
+    expect(draw(drawPergola, { x: 0, y: 0, w: 10, h: 10000 })).toHaveLength(budget("pergola"));
   });
 
   it("dashes the shed's ridge for the same reason, and only the ridge", () => {
@@ -551,7 +601,7 @@ describe("glyphs-outdoor — the planting reads through", () => {
   });
 });
 
-describe("glyphs-outdoor — the tree and the conifer", () => {
+describe("glyphs-outdoor — the tree, the conifer and the shrub", () => {
   const c = { x: R.x + R.w / 2, y: R.y + R.h / 2 };
   const crown = Math.min(R.w, R.h) * 0.48;
 
@@ -566,8 +616,7 @@ describe("glyphs-outdoor — the tree and the conifer", () => {
   });
 
   it("scallops the canopy into SIXTEEN lobes — a multiple of four is what makes it symmetric", () => {
-    const canopy = draw(drawTree, R)[0]!.prim;
-    if (canopy.t !== "path") throw new Error("the canopy is a path");
+    const canopy = pathOf(draw(drawTree, R)[0]!);
     const lp = canopy.loops[0]!;
     // The cusps are the vertices on the cusp circle (0.82 of the crown); every lobe is curved.
     const cusps = [lp.start, ...lp.edges.map((e) => e.to)]
@@ -581,93 +630,117 @@ describe("glyphs-outdoor — the tree and the conifer", () => {
     expect(far).toBeGreaterThan(crown * 0.95);
   });
 
-  it("keeps the conifer's sixteen-point star, notched far deeper than the tree's scallops", () => {
+  it("draws the conifer as a SIXTEEN-point needled star, eight spokes and the tree's own trunk", () => {
     const n = draw(drawConifer, R);
-    expect(n.map((x) => x.prim.t)).toEqual(["polygon", "circle", "circle"]);
+    expect(n.map((x) => x.prim.t)).toEqual(["polygon", ...Array(8).fill("line"), "circle"]);
     const pts = (n[0]!.prim as Extract<SceneNode["prim"], { t: "polygon" }>).pts;
-    expect(pts).toHaveLength(16);
+    expect(pts, "sixteen tips and sixteen notches").toHaveLength(32);
     const d = pts.map((p) => Math.hypot(p.x - c.x, p.y - c.y));
-    expect(Math.min(...d)).toBeLessThan(Math.max(...d) * 0.5);
     expect(Math.max(...d)).toBeCloseTo(crown, 9);
+    expect(Math.min(...d), "notched to 0.6 of the crown").toBeCloseTo(crown * 0.6, 9);
+    // The spokes are detail and run out toward the tips; the trunk is the tree's, mark for mark.
+    for (const s of n.slice(1, 9)) expect(s.lineWeight).toBe("extraThin");
+    const trunk = n[9]!;
+    const treeTrunk = draw(drawTree, R)[25]!;
+    expect(trunk.prim).toEqual(treeTrunk.prim);
+    expect(trunk.paint).toEqual(treeTrunk.paint);
+    expect(trunk.lineWeight).toBe("thin");
+  });
+
+  it("draws the shrub as an eight-lobe cloud reaching the crown, with a smaller cloud of foliage inside", () => {
+    const n = draw(drawShrub, R);
+    expect(n.map((x) => x.prim.t)).toEqual(["path", "path"]);
+    const outer = pathOf(n[0]!);
+    const far = Math.max(...pathExtentPoints(outer).map((p) => Math.hypot(p.x - c.x, p.y - c.y)));
+    expect(far).toBeCloseTo(crown, 6);
+    // Eight cusps on the cusp circle (0.78 of the crown) — eight big lobes against the tree's
+    // sixteen small ones.
+    const lp = outer.loops[0]!;
+    const cusps = [lp.start, ...lp.edges.map((e) => e.to)]
+      .slice(0, -1)
+      .filter((p) => Math.abs(Math.hypot(p.x - c.x, p.y - c.y) - crown * 0.78) < 1e-6);
+    expect(cusps).toHaveLength(8);
+    // The inner cloud is detail and is not filled, so it never hides the outline it sits in.
+    expect(n[1]!.lineWeight).toBe("extraThin");
+    expect(n[1]!.paint.fill).toBe("none");
   });
 });
 
-describe("glyphs-outdoor — the hedge's scalloped outline", () => {
-  /** Lobes PER FACE: the node list is `2n` arcs + 2 end caps + 1 dashed centreline. */
-  const lobes = (r: Rect): number => (draw(drawHedge, r).length - 3) / 2;
+describe("glyphs-outdoor — the hedge's scalloped band", () => {
+  /** The band's scallops per face: the loop's vertices on one face of the core, less one. */
+  const lobes = (r: Rect): number => {
+    const horizontal = r.w >= r.h;
+    const short = Math.min(r.w, r.h);
+    const core = (horizontal ? r.y + r.h / 2 : r.x + r.w / 2) - short * 0.32;
+    const lp = pathOf(draw(drawHedge, r)[0]!).loops[0]!;
+    const on = [lp.start, ...lp.edges.map((e) => e.to)]
+      .slice(0, -1)
+      .filter((p) => Math.abs((horizontal ? p.y : p.x) - core) < 1e-6 * Math.max(1, short));
+    return on.length - 1;
+  };
 
-  it("draws two scalloped faces, two end caps and one dashed centreline — and no box", () => {
+  it("draws ONE closed scalloped band and a dashed stem line — and no box", () => {
     const nodes = draw(drawHedge, R);
-    const arcs = nodes.filter((n) => n.prim.t === "arc");
-    const lines = nodes.filter((n) => n.prim.t === "line");
+    expect(nodes.map((n) => n.prim.t)).toEqual(["path", "line"]);
     expect(
       nodes.filter((n) => n.prim.t === "polygon"),
       "no rectangle around the run",
     ).toHaveLength(0);
-    expect(arcs).toHaveLength(nodes.length - 1);
-    expect(lines).toHaveLength(1);
-    expect(lines[0]!.lineType, "the centreline is dashed").toBe("dashed");
-    expect(lines[0]!.lineWeight).toBe("extraThin");
-    // Every arc is the outline, so every arc is `thin`.
-    for (const a of arcs) expect(a.lineWeight).toBe("thin");
+    // The stem line is under the foliage — hidden — so it is dashed detail.
+    expect(nodes[1]!.lineType).toBe("dashed");
+    expect(nodes[1]!.lineWeight).toBe("extraThin");
   });
 
-  it("derives the lobe count from the aspect ratio — two per depth of run", () => {
-    // The catalogued footprint, 2000 along x 600 deep: 3.33 depths, so seven lobes a face.
-    expect(lobes({ x: 0, y: 0, w: 2000, h: 600 })).toBe(7);
-    expect(lobes({ x: 0, y: 0, w: 600, h: 2000 })).toBe(7); // …and the same run stood on end
+  it("derives the scallop count from the run — one per 0.7 depths of face", () => {
+    // The catalogued footprint, 2000 along x 600 deep: a face of 2000 − 0.64 × 600 = 1616,
+    // which is 3.85 scallops of 420 — four a face.
+    expect(lobes({ x: 0, y: 0, w: 2000, h: 600 })).toBe(4);
+    expect(lobes({ x: 0, y: 0, w: 600, h: 2000 })).toBe(4); // …and the same run stood on end
   });
 
-  it("clamps to three at the floor and sixteen at the ceiling", () => {
-    expect(lobes({ x: 0, y: 0, w: 1000, h: 1000 })).toBe(3);
-    // 10000x10 asks for two thousand; the clamp is what bounds the primitive count.
-    expect(lobes({ x: 0, y: 0, w: 10000, h: 10 })).toBe(16);
-    expect(lobes({ x: 0, y: 0, w: 10, h: 10000 })).toBe(16);
-    expect(draw(drawHedge, { x: 0, y: 0, w: 10000, h: 10 })).toHaveLength(35);
-  });
-
-  it("puts each lobe's apex exactly ON the run's face, from either side", () => {
-    // A lobe centred one radius inside the face has its apex on the face. That is what makes
-    // the outline touch the footprint edge without crossing it, at every scallop.
-    const r: Rect = { x: 100, y: 200, w: 2000, h: 600 };
-    const arcs = draw(drawHedge, r)
-      .filter((n) => n.prim.t === "arc")
-      .map((n) => n.prim as Extract<SceneNode["prim"], { t: "arc" }>);
-    const top = arcs.filter((a) => a.center.y < r.y + r.h / 2 - 1);
-    const bottom = arcs.filter((a) => a.center.y > r.y + r.h / 2 + 1);
-    expect(top.length, "lobes on the top face").toBe(7);
-    expect(bottom.length, "lobes on the bottom face").toBe(7);
-    for (const a of top) expect(a.center.y - a.r).toBeCloseTo(r.y, 6);
-    for (const a of bottom) expect(a.center.y + a.r).toBeCloseTo(r.y + r.h, 6);
-  });
-
-  it("alternates the lobe radius, so consecutive bumps differ", () => {
-    const r: Rect = { x: 0, y: 0, w: 2000, h: 600 };
-    const top = draw(drawHedge, r)
-      .filter((n) => n.prim.t === "arc")
-      .map((n) => n.prim as Extract<SceneNode["prim"], { t: "arc" }>)
-      .filter((a) => a.center.y < r.h / 2)
-      .sort((a, b) => a.center.x - b.center.x);
-    expect(new Set(top.map((a) => Math.round(a.r))).size, "two distinct radii").toBe(2);
-    expect(top[1]!.r).toBeCloseTo(top[0]!.r * 0.85, 6);
-  });
-
-  it("overlaps consecutive lobes, so the scallops fuse into one outline", () => {
-    // Each arc spans ~1.97 radii along the run against a pitch of 1.0, so neighbours overlap.
-    // A gap here is what would turn the cloud back into a row of separate bumps.
-    const r: Rect = { x: 0, y: 0, w: 2000, h: 600 };
-    const top = draw(drawHedge, r)
-      .filter((n) => n.prim.t === "arc")
-      .map((n) => n.prim as Extract<SceneNode["prim"], { t: "arc" }>)
-      .filter((a) => a.center.y < r.h / 2)
-      .sort((a, b) => a.center.x - b.center.x);
-    for (let i = 1; i < top.length; i++) {
-      const gap = top[i]!.center.x - top[i - 1]!.center.x;
-      expect(gap, `lobes ${i - 1}-${i} overlap`).toBeLessThan(top[i]!.r + top[i - 1]!.r);
+  it("clamps to one at the floor and thirty at the ceiling, so one node never grows unbounded", () => {
+    expect(lobes({ x: 0, y: 0, w: 1000, h: 1000 })).toBe(1);
+    // 10000x10 asks for over a thousand; the clamp bounds the outline's edges, not just its nodes.
+    for (const r of [
+      { x: 0, y: 0, w: 10000, h: 10 },
+      { x: 0, y: 0, w: 10, h: 10000 },
+    ]) {
+      expect(lobes(r)).toBe(30);
+      expect(pathOf(draw(drawHedge, r)[0]!).loops[0]!.edges.length).toBeLessThanOrEqual(2 * 30 + 4);
     }
   });
 
-  it("keeps every arc minor and inside the footprint at any aspect", () => {
+  it("puts every scallop's crown exactly ON a face, and each rounded end exactly ON an end", () => {
+    // The scallops bulge 0.18 of the depth out of a core 0.64 deep, so their crowns land on the
+    // footprint's faces; each end cap is a semicircle that reaches the footprint's end.
+    for (const r of [
+      { x: 100, y: 200, w: 2000, h: 600 },
+      { x: 100, y: 200, w: 600, h: 2000 },
+    ]) {
+      const pts = pathExtentPoints(pathOf(draw(drawHedge, r)[0]!));
+      expect(Math.min(...pts.map((p) => p.x))).toBeCloseTo(r.x, 6);
+      expect(Math.max(...pts.map((p) => p.x))).toBeCloseTo(r.x + r.w, 6);
+      expect(Math.min(...pts.map((p) => p.y))).toBeCloseTo(r.y, 6);
+      expect(Math.max(...pts.map((p) => p.y))).toBeCloseTo(r.y + r.h, 6);
+    }
+  });
+
+  it("is mirror-symmetric both along and across the run", () => {
+    // Uniform scallops on both faces: a clipped hedge has no handedness. (The old chain
+    // alternated its lobe sizes, so it was handed whenever a face had an even count.)
+    const r: Rect = { x: 0, y: 0, w: 2000, h: 500 };
+    const n = draw(drawHedge, r);
+    expect(
+      marksEqual(
+        n,
+        n.map((x) => mirrorNode(x, r.w / 2)),
+      ),
+    ).toBe(true);
+    const flipY = (x: SceneNode): SceneNode => rotateNode(mirrorNode(x, r.w / 2), { x: r.w / 2, y: r.h / 2 }, 180);
+    expect(marksEqual(n, n.map(flipY))).toBe(true);
+  });
+
+  it("keeps every arc within 120° and inside the footprint at any aspect", () => {
     for (const r of [
       { x: 500, y: 500, w: 2000, h: 600 },
       { x: 500, y: 500, w: 1000, h: 1000 },
@@ -677,8 +750,8 @@ describe("glyphs-outdoor — the hedge's scalloped outline", () => {
     ]) {
       const nodes = draw(drawHedge, r);
       expectInside(nodes, r, `hedge ${r.w}x${r.h}`);
-      for (const n of nodes) {
-        if (n.prim.t === "arc") expect(Math.abs(arcSweep(n.prim))).toBeLessThanOrEqual(Math.PI + 1e-9);
+      for (const { from, e } of arcEdgesOf(pathOf(nodes[0]!))) {
+        expect(Math.abs(arcEdgeSweep(from, e))).toBeLessThanOrEqual((2 * Math.PI) / 3 + 1e-9);
       }
     }
   });
@@ -690,151 +763,244 @@ describe("glyphs-outdoor — the pieces that read off their own long axis", () =
 
   it("draws the same object turned, not a different one", () => {
     // A bicycle across a path and one along it are the same bicycle: same primitive kinds,
-    // same count. This is the `drawBookshelf` rule applied to three more symbols.
+    // same count. This is the `drawBookshelf` rule applied to five more symbols.
     for (const [name, fn] of [
       ["bicycle", drawBicycle],
       ["motorcycle", drawMotorcycle],
       ["swing", drawSwing],
       ["clothesline", drawClothesline],
+      ["hedge", drawHedge],
     ] as const) {
-      const a = draw(fn, LONG).map((n) => n.prim.t);
-      const b = draw(fn, TALL).map((n) => n.prim.t);
-      expect(b, `${name} turned on end`).toEqual(a);
+      const a = draw(fn, LONG);
+      const b = draw(fn, TALL);
+      expect(
+        b.map((n) => n.prim.t),
+        `${name} turned on end`,
+      ).toEqual(a.map((n) => n.prim.t));
+      // Same geometry too: the tall drawing IS the long one turned a quarter about the centre
+      // (up to a mirror, which a run stood on end is) — so they are each other's reflection in
+      // the diagonal.
+      const diag = (n: SceneNode): SceneNode => mapSceneNode(n, (p) => ({ x: p.y, y: p.x }), true);
+      expect(marksEqual(b, a.map(diag)), `${name} is the same object stood on end`).toBe(true);
     }
   });
 
-  it("puts the bicycle's two wheels at a quarter and three quarters of the run", () => {
-    const wheels = draw(drawBicycle, LONG)
-      .filter((n) => n.prim.t === "circle")
-      .map((n) => n.prim as Extract<SceneNode["prim"], { t: "circle" }>);
-    expect(wheels).toHaveLength(2);
-    expect(wheels[0]!.r).toBeCloseTo(wheels[1]!.r, 9);
-    expect(wheels[0]!.center.y).toBeCloseTo(LONG.h / 2, 9);
-    expect(wheels[1]!.center.y).toBeCloseTo(LONG.h / 2, 9);
-    expect(wheels[0]!.center.x).toBeCloseTo(LONG.x + LONG.w * 0.25, 9);
-    expect(wheels[1]!.center.x).toBeCloseTo(LONG.x + LONG.w * 0.75, 9);
-  });
-
-  it("draws a four-tube diamond frame between the hubs, under the wheels", () => {
-    // Two rings and a stick read as a trolley; the frame is what says bicycle. All four tubes
-    // are `extraThin` so they sit under the wheels rather than competing with them.
+  it("puts the bicycle's two tyres in line on its centre line, narrow, at the two ends of the run", () => {
     const nodes = draw(drawBicycle, LONG);
-    expect(nodes.map((n) => n.prim.t)).toEqual(["circle", "circle", "line", "line", "line", "line", "line", "line"]);
-    const tubes = nodes.slice(2, 6);
-    for (const t of tubes) expect(t.lineWeight).toBe("extraThin");
-    // …and the saddle and the bars are `thin`, so they read over the frame.
-    for (const t of nodes.slice(6)) expect(t.lineWeight).toBe("thin");
-    // Every tube sits between the hubs along the run, and above the centreline or on it.
-    for (const t of tubes) {
-      const p = t.prim as Extract<SceneNode["prim"], { t: "line" }>;
-      for (const q of [p.a, p.b]) {
-        expect(q.x).toBeGreaterThanOrEqual(LONG.x + LONG.w * 0.25 - 1e-6);
-        expect(q.x).toBeLessThanOrEqual(LONG.x + LONG.w * 0.75 + 1e-6);
-        expect(q.y).toBeLessThanOrEqual(LONG.y + LONG.h / 2 + 1e-6);
-      }
+    const [rear, front] = nodes.slice(0, 2).map((n) => pathExtentPoints(pathOf(n)));
+    for (const [t, lo, hi] of [
+      [rear!, 0.03, 0.41],
+      [front!, 0.59, 0.97],
+    ] as const) {
+      const xs = t.map((p) => p.x);
+      const ys = t.map((p) => p.y);
+      expect(Math.min(...xs)).toBeCloseTo(LONG.w * lo, 6);
+      expect(Math.max(...xs)).toBeCloseTo(LONG.w * hi, 6);
+      // A tyre is a slim slot on the centre line — a tenth of the width at most.
+      expect(Math.max(...ys) - Math.min(...ys)).toBeLessThanOrEqual(LONG.h * 0.1 + 1e-9);
+      expect((Math.max(...ys) + Math.min(...ys)) / 2).toBeCloseTo(LONG.h / 2, 9);
     }
   });
 
-  it("takes the wheel radius from whichever limb is smaller, and stays inside either way", () => {
-    // Width limb: a long, thin rack. 0.42 x 600 = 252 beats 0.24 x 1800 = 432.
-    const wide = draw(drawBicycle, LONG).filter((n) => n.prim.t === "circle");
-    expect((wide[0]!.prim as Extract<SceneNode["prim"], { t: "circle" }>).r).toBeCloseTo(600 * 0.42, 9);
-    // Length limb: a short, fat one. 0.24 x 600 = 144 beats 0.42 x 600 = 252, and it is the
-    // limb that keeps a hub at 25% of the run from reaching past the end.
+  it("puts the handlebar ACROSS the front tyre and the saddle over the rear one", () => {
+    const nodes = draw(drawBicycle, LONG);
+    const bar = pathExtentPoints(pathOf(nodes[4]!));
+    const saddle = pathExtentPoints(pathOf(nodes[3]!));
+    const span = (pts: Point[], k: "x" | "y"): number =>
+      Math.max(...pts.map((p) => p[k])) - Math.min(...pts.map((p) => p[k]));
+    expect(span(bar, "y"), "the bar spans most of the width").toBeGreaterThan(LONG.h * 0.8);
+    expect(Math.min(...bar.map((p) => p.x))).toBeGreaterThan(LONG.w * 0.59);
+    expect(Math.max(...saddle.map((p) => p.x))).toBeLessThan(LONG.w * 0.41);
+    // The cranks and pedals are the detail pen.
+    for (const n of nodes.slice(5)) expect(n.lineWeight).toBe("extraThin");
+  });
+
+  it("holds a short, fat bicycle's tyres to a slot, and stays inside", () => {
     const r: Rect = { x: 0, y: 0, w: 600, h: 600 };
-    const fat = draw(drawBicycle, r).filter((n) => n.prim.t === "circle");
-    expect((fat[0]!.prim as Extract<SceneNode["prim"], { t: "circle" }>).r).toBeCloseTo(600 * 0.24, 9);
+    const tyre = pathExtentPoints(pathOf(draw(drawBicycle, r)[0]!));
+    expect(Math.max(...tyre.map((p) => p.y)) - Math.min(...tyre.map((p) => p.y))).toBeCloseTo(600 * 0.06, 9);
     expectInside(draw(drawBicycle, r), r, "bicycle 600x600");
   });
+
+  it("draws the motorcycle's tyres first and its body over them, widest at the tank", () => {
+    const nodes = draw(drawMotorcycle, LONG);
+    expect(nodes.slice(0, 3).map((n) => n.prim.t)).toEqual(["path", "path", "path"]);
+    const body = pathExtentPoints(pathOf(nodes[2]!));
+    const width = Math.max(...body.map((p) => p.y)) - Math.min(...body.map((p) => p.y));
+    expect(width).toBeGreaterThanOrEqual(LONG.h * 0.48 - 1e-6);
+    expect(width).toBeLessThan(LONG.h * 0.56);
+  });
 });
 
-describe("glyphs-outdoor — the two pieces that had to stop looking like something else", () => {
-  it("gives the patio chair slats and armrests, so it is neither a `chair` nor a `bin`", () => {
+describe("glyphs-outdoor — the garden furniture", () => {
+  it("gives the patio chair arms and slats, so it is neither a `chair` nor a `bin`", () => {
     const nodes = draw(drawOutdoorChair, R);
-    // Seat, back band and inset cushion is the `chair` construction it is built on.
-    expect(nodes.slice(0, 3).map((n) => n.prim.t)).toEqual(["polygon", "polygon", "polygon"]);
-    for (const n of nodes.slice(0, 3)) expect(n.paint.fill).toBe(theme.furnitureFill);
-    // Four slats across the back band and an armrest each side — six `extraThin` lines, none
-    // of which a `bin` has, and none of which a `chair` has either.
-    const lines = nodes.slice(3);
-    expect(lines).toHaveLength(6);
-    for (const n of lines) expect(n.prim.t).toBe("line");
-    for (const n of lines) expect(n.lineWeight).toBe("extraThin");
-    // The slats sit INSIDE the back band; the armrests hang below it, one each side.
-    const backBottom = R.y + R.h * 0.2;
-    const slats = lines.slice(0, 4).map((n) => n.prim as Extract<SceneNode["prim"], { t: "line" }>);
-    for (const sl of slats) expect(sl.b.y).toBeLessThanOrEqual(backBottom + 1e-6);
-    const arms = lines.slice(4).map((n) => n.prim as Extract<SceneNode["prim"], { t: "line" }>);
-    expect(arms[0]!.a.x).toBeLessThan(R.x + R.w / 2);
-    expect(arms[1]!.a.x).toBeGreaterThan(R.x + R.w / 2);
-    for (const a of arms) expect(a.a.y).toBeGreaterThan(backBottom);
-    // And it draws nothing a `bin` draws: no filled wheel dots.
-    expect(nodes.filter((n) => n.prim.t === "circle")).toHaveLength(0);
-    expect(draw(drawBin, R).filter((n) => n.prim.t === "circle")).toHaveLength(2);
+    // Seat (white), backrest and two arms (body): the outline pen.
+    expect(nodes.slice(0, 4).map((n) => n.prim.t)).toEqual(["path", "path", "path", "path"]);
+    expect(nodes[0]!.paint.fill).toBe(theme.opening);
+    for (const n of nodes.slice(1, 4)) expect(n.paint.fill).toBe(theme.furnitureFill);
+    // The backrest is on the BACK (top) edge; the arms run down each side.
+    const back = pathExtentPoints(pathOf(nodes[1]!));
+    expect(Math.max(...back.map((p) => p.y))).toBeLessThanOrEqual(R.y + R.h * 0.13 + 1e-6);
+    const arms = nodes.slice(2, 4).map((n) => pathExtentPoints(pathOf(n)));
+    expect(Math.max(...arms[0]!.map((p) => p.x))).toBeLessThan(R.x + R.w * 0.2);
+    expect(Math.min(...arms[1]!.map((p) => p.x))).toBeGreaterThan(R.x + R.w * 0.8);
+    // Three slat joints across the seat, in the detail pen.
+    const slats = nodes.slice(4);
+    expect(slats).toHaveLength(3);
+    for (const n of slats) {
+      expect(n.prim.t).toBe("line");
+      expect(n.lineWeight).toBe("extraThin");
+    }
+    // The pilot dining chair is two nodes; this is seven.
+    expect(drawChair(R, glyphCtx(theme, sizes))).toHaveLength(2);
   });
 
-  it("gives the barbecue a CROSS grid, a shelf and wheels, so it is not a radiator", () => {
+  it("seats the patio table in the dining table's language: top first, chairs tucked in the band", () => {
+    const r: Rect = { x: 0, y: 0, w: 2400, h: 1200 };
+    const nodes = draw(drawOutdoorTable, r);
+    const band = 1200 * 0.22;
+    // The top, its bevel and the parasol hole, then (seat, backrest) per chair.
+    expect(nodes[0]!.paint.fill).toBe(theme.furnitureFill);
+    expect(nodes[2]!.prim.t).toBe("circle");
+    const chairs = nodes.slice(3);
+    expect(chairs.length % 2).toBe(0);
+    // Every chair's ink is inside the band round the top, never on the top itself.
+    const top = { x: band, y: band, w: 2400 - 2 * band, h: 1200 - 2 * band };
+    for (const n of chairs) {
+      for (const p of boundingPoints(n)) {
+        const insideTop =
+          p.x > top.x + 1e-6 && p.x < top.x + top.w - 1e-6 && p.y > top.y + 1e-6 && p.y < top.y + top.h - 1e-6;
+        expect(insideTop, "a chair stands off the top").toBe(false);
+      }
+    }
+    // Chairs per long side from the pilot's 2.2-band pitch (three here: 1872 of top over bands of
+    // 264), plus one at each end.
+    expect(chairs.length / 2).toBe(2 * 3 + 2);
+  });
+
+  it("draws a near-square patio table ROUND, with one chair to a side", () => {
+    const nodes = draw(drawOutdoorTable, SQ);
+    expect(nodes[0]!.prim.t, "a true circle on a square").toBe("circle");
+    expect(nodes).toHaveLength(2 + 2 * 4); // top + hole + 4 chairs
+    const oval = draw(drawOutdoorTable, { x: 0, y: 0, w: 1300, h: 1200 });
+    expect(oval[0]!.prim.t, "a four-centre oval when the sides differ").toBe("path");
+  });
+
+  it("gives the barbecue a firebox, two shelves, a barred grate and knobs at the FRONT", () => {
     const nodes = draw(drawBbq, R);
-    const lines = nodes
+    // The firebox leads (the outline), the middle three fifths at full depth; a shelf each side.
+    const box = pathExtentPoints(pathOf(nodes[0]!));
+    expect(Math.min(...box.map((p) => p.x))).toBeCloseTo(R.x + R.w * 0.2, 6);
+    expect(Math.max(...box.map((p) => p.x))).toBeCloseTo(R.x + R.w * 0.8, 6);
+    for (const n of nodes.slice(1, 3)) expect(n.paint.fill).toBe(theme.furnitureFill);
+    // The grate is white, and its six bars run front to back.
+    expect(nodes[3]!.paint.fill).toBe(theme.opening);
+    const bars = nodes
       .filter((n) => n.prim.t === "line")
       .map((n) => n.prim as Extract<SceneNode["prim"], { t: "line" }>);
-    const vertical = lines.filter((l) => Math.abs(l.a.x - l.b.x) < 1e-9);
-    const horizontal = lines.filter((l) => Math.abs(l.a.y - l.b.y) < 1e-9);
-    // Three bars each way is the grid; the fourth horizontal is the shelf's own line. Bars in
-    // BOTH directions are what tell a grill from a run of parallel lines.
-    expect(vertical, "grill bars across the run").toHaveLength(3);
-    expect(horizontal, "grill bars along it, plus the shelf line").toHaveLength(4);
-    // The shelf is a band down the right-hand fifth, in the basin colour.
-    const shelf = nodes[1]!.prim as Extract<SceneNode["prim"], { t: "polygon" }>;
-    expect(nodes[1]!.paint.fill).toBe(theme.opening);
-    expect(Math.min(...shelf.pts.map((p) => p.x))).toBeGreaterThan(R.x + R.w * 0.7);
-    // Two wheels, on the FRONT (bottom) edge — which with the shelf on the right is what
-    // leaves the top edge clear, and the top edge is the back this category faces at a wall.
-    const wheels = nodes
+    expect(bars).toHaveLength(6);
+    for (const b of bars) expect(b.a.x).toBeCloseTo(b.b.x, 9);
+    // Three knobs on the FRONT band — what makes the top edge the back this category faces at a wall.
+    const knobs = nodes
       .filter((n) => n.prim.t === "circle")
       .map((n) => n.prim as Extract<SceneNode["prim"], { t: "circle" }>);
-    expect(wheels).toHaveLength(2);
-    for (const w of wheels) expect(w.center.y).toBeGreaterThan(R.y + R.h * 0.75);
+    expect(knobs).toHaveLength(3);
+    for (const k of knobs) expect(k.center.y).toBeGreaterThan(R.y + R.h * 0.75);
     expect(fixtureSpec("bbq")?.directional).toBe(true);
+    // A shelf each side: mirror-symmetric, so not handed.
+    expect(
+      marksEqual(
+        nodes,
+        nodes.map((n) => mirrorNode(n, R.x + R.w / 2)),
+      ),
+    ).toBe(true);
+  });
+
+  it("gives the bin its handle at the BACK and its grip at the front", () => {
+    const nodes = draw(drawBin, R);
+    const handle = pathExtentPoints(pathOf(nodes[2]!));
+    expect(Math.max(...handle.map((p) => p.y))).toBeLessThan(R.y + R.h * 0.2);
+    const grip = nodes[3]!.prim as Extract<SceneNode["prim"], { t: "line" }>;
+    expect(grip.a.y).toBeGreaterThan(R.y + R.h * 0.8);
+  });
+
+  it("draws the shed's walls as one band with a door opening, and a pair of doors swung inward", () => {
+    const r: Rect = { x: 0, y: 0, w: 2400, h: 1800 };
+    const nodes = draw(drawShed, r);
+    expect(nodes.map((n) => n.prim.t)).toEqual(["polygon", "polygon", "polygon", "polygon", "arc", "arc", "line"]);
+    // The floor is the outline, white; the walls are one body-filled band.
+    expect(nodes[0]!.paint.fill).toBe(theme.opening);
+    expect(nodes[1]!.paint.fill).toBe(theme.furnitureFill);
+    // The two swings meet at the centre of the opening, on the FRONT (bottom) wall, and are minor.
+    const swings = nodes.slice(4, 6).map((n) => n.prim as Extract<SceneNode["prim"], { t: "arc" }>);
+    for (const a of swings) {
+      expect(a.start.x).toBeCloseTo(1200, 9);
+      expect(a.center.y).toBeGreaterThan(r.h * 0.9);
+      expect(Math.abs(arcSweep(a))).toBeCloseTo(Math.PI / 2, 9);
+    }
+    // A pair of doors keeps the shed mirror-symmetric (not handed).
+    expect(
+      marksEqual(
+        nodes,
+        nodes.map((n) => mirrorNode(n, r.w / 2)),
+      ),
+    ).toBe(true);
   });
 });
 
-describe("glyphs-outdoor — the trampoline and the fire pit do not read alike", () => {
-  it("gives the trampoline a narrow spring band and twelve springs", () => {
+describe("glyphs-outdoor — the round things do not read alike", () => {
+  it("gives the trampoline a narrow sprung band: frame, mat at 0.8, twenty-four springs", () => {
     const nodes = draw(drawTrampoline, R);
-    const rings = nodes.filter((n) => n.prim.t === "circle").map((n) => n.prim as { r: number });
+    const discs = nodes.filter((n) => n.prim.t === "circle").map((n) => n.prim as { r: number });
     const springs = nodes.filter((n) => n.prim.t === "line");
-    expect(rings).toHaveLength(2);
-    expect(springs).toHaveLength(12);
-    expect(rings[1]!.r).toBeCloseTo(rings[0]!.r * 0.8, 9);
+    expect(discs).toHaveLength(2);
+    expect(springs).toHaveLength(24);
+    expect(discs[1]!.r).toBeCloseTo(discs[0]!.r * 0.8, 9);
+    for (const s of springs) expect(s.lineWeight).toBe("extraThin");
   });
 
-  it("gives the fire pit a spiky flame instead of spokes", () => {
+  it("gives the fire pit a wide stone band with joints, logs and embers instead", () => {
     const nodes = draw(drawFirePit, R);
-    expect(nodes.map((n) => n.prim.t)).toEqual(["circle", "circle", "polygon"]);
-    const flame = nodes[2]!.prim as Extract<SceneNode["prim"], { t: "polygon" }>;
-    expect(flame.pts).toHaveLength(8);
-    expect(nodes[2]!.paint.fill).toBe("none");
+    expect(nodes.map((n) => n.prim.t)).toEqual([
+      "circle",
+      "circle",
+      ...Array(8).fill("line"),
+      ...Array(4).fill("path"),
+      "circle",
+    ]);
+    const [surround, bowl] = nodes.map((n) => n.prim as { r: number });
+    expect(bowl!.r).toBeCloseTo(surround!.r * 0.68, 9);
+  });
+
+  it("gives the parasol a sagging eight-panel canopy, not a straight octagon", () => {
+    const canopy = pathOf(draw(drawUmbrella, R)[0]!);
+    const lp = canopy.loops[0]!;
+    expect(lp.edges.every((e) => e.t === "arc")).toBe(true);
+    // Every panel bows INWARD of its chord: the arc's centre lies outside the canopy.
+    const c = { x: R.x + R.w / 2, y: R.y + R.h / 2 };
+    const crown = Math.min(R.w, R.h) * 0.48;
+    for (const e of lp.edges)
+      if (e.t === "arc") expect(Math.hypot(e.center.x - c.x, e.center.y - c.y)).toBeGreaterThan(crown);
   });
 });
 
 describe("glyphs-outdoor — the EV charger's cable", () => {
   const nodes = draw(drawEvCharger, R);
 
-  it("draws a pedestal, a true arc and the plug", () => {
-    expect(nodes.map((n) => n.prim.t)).toEqual(["polygon", "arc", "circle"]);
+  it("draws a pedestal with its display, a true arc and the plug", () => {
+    expect(nodes.map((n) => n.prim.t)).toEqual(["path", "path", "arc", "circle"]);
   });
 
   it("bows the cable into the FRONT half, below the pedestal", () => {
-    const arc = nodes[1]!.prim as Extract<SceneNode["prim"], { t: "arc" }>;
-    const pedestal = nodes[0]!.prim as Extract<SceneNode["prim"], { t: "polygon" }>;
-    const pedestalBottom = Math.max(...pedestal.pts.map((p) => p.y));
+    const arc = nodes[2]!.prim as Extract<SceneNode["prim"], { t: "arc" }>;
+    const pedestalBottom = Math.max(...pathExtentPoints(pathOf(nodes[0]!)).map((p) => p.y));
     expect(arc.center.y).toBeGreaterThan(pedestalBottom);
     expect(arc.center.y + arc.r).toBeLessThanOrEqual(R.y + R.h + 1e-6);
   });
 
   it("keeps it a minor arc of 140 degrees", () => {
-    const arc = nodes[1]!.prim as Extract<SceneNode["prim"], { t: "arc" }>;
+    const arc = nodes[2]!.prim as Extract<SceneNode["prim"], { t: "arc" }>;
     expect(Math.abs(arcSweep(arc))).toBeCloseTo((140 * Math.PI) / 180, 9);
   });
 });
@@ -896,8 +1062,7 @@ describe("glyphs-outdoor — through the compiler", () => {
     // could only come from the fallback path is the proof the fallback is gone.
     expect(svg).not.toContain(">Shed<");
     expect(svg).toContain(">Garden<");
-    // The charger's cable is the arc no fallback ever emitted; the tree's canopy is a
-    // scalloped path filled with the lawn tint.
+    // The canopies, tyres and shelves are curved paths; the trampoline is true circles.
     expect(svg).toContain('<path d="M ');
     expect(svg).toContain("<circle ");
   });
