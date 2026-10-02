@@ -908,7 +908,7 @@ Defects, limits and deferred capabilities the numbers/parser/predicates/multi-st
 up and deliberately did not widen into. Each says what was re-run for this entry; where nothing
 was, it says so and names where the observation came from.
 
-### M.1 · Absurd finite magnitudes: a modelling range — closed (what remains is below)
+### M.1 · Absurd finite magnitudes: a modelling range — closed (every sub-item decided)
 
 Closed by a 2²⁵ mm (~33.5 km) modelling range, the bound under which ADR 0020 measured plain-double
 `orient2d` exact (6.5), and a run cap: `E_OUT_OF_RANGE` (`MODEL_RANGE_MM`, `src/num-format.ts`)
@@ -920,32 +920,77 @@ range of ±33554432 mm"), where `arch compile` used to run out of heap; an escal
 fence, outdoor surface, lot line, `north`, hatch scale or `lineWeight` at 1e308 no longer prints
 `Infinity`. A coarse `scale 10` hatch on a small plan still compiles: hatch scale and `lineWeight`
 are held by the tile and pen they draw, not by a fixed cap. A door wider than its wall raises no
-diagnostic (V.3, `won't fix` with the view). Remaining, each its own sub-item:
+diagnostic (V.3, `won't fix` with the view). The sub-items, all decided (the owner delegated them;
+ADR 0022's second addendum):
 
-- (a) The total-area `E_NON_FINITE` branch in `checkNumberDomain` is unreachable from source; it
-  stays as a backstop with no source test.
-- (b) The total drawing size across many elements is not bounded (500 escalators at the cap
-  draw about 0.9 GB); it belongs with M.2's global budget.
+- (a) **Won't fix.** The total-area `E_NON_FINITE` branch in `checkNumberDomain` is unreachable from
+  source (rooms inside the modelling range cannot overflow the sum); it stays as a backstop with no
+  source test.
+- (b) **Closed** by a drawing budget (`MAX_DRAW_UNITS`, 400,000, `src/ir.ts`; the new
+  `E_DRAWING_LIMIT`). Measured per element at its worst (Node 24, scene nodes): an escalator at the
+  tread cap 2,203 (two chevron strokes per tread), a stair 1,103; every other kind is a fixed glyph:
+  an `upper_cabinet` 67 (its 64 divisions are capped), a fence segment 63 (60 posts, capped), a
+  hedge 35, every other fixture category 20 or fewer, a dim 6, a room 2 to 3; dims ticks, hatch
+  patterns (one pattern per material), axes (one bubble per authored position) and columns do not
+  grow with size. So the treads dominate, and the element and storey counts multiply everything
+  else: 4,990 cabinets drew 330,000 nodes in 0.39 GB, and two such storeys 0.53 GB. Every element is
+  estimated before rendering at 72 (the fixed-glyph bound) plus one per point of its `bounds()` plus
+  its `drawCost()` (a run's treads, held at 1,100; a fence's posts per segment), summed over every
+  storey; past the budget the plan is refused at the element that crossed it. Re-run: 500
+  escalators at the cap (0.82 GB and 105 MB of SVG before) are one `E_DRAWING_LIMIT` in 16 ms with
+  6 MB of heap; just under the budget, 175 escalators, 2 × 2,630 cabinets, 100 fences of 60 long
+  segments and 4,991 cabinets on one storey hold 0.30 to 0.38 GB and each completes under a 512 MB
+  heap cap. The corpus maximum is 10,727 (`hillside-villa`), 37 times under. The estimate is held
+  above the drawing for every kind, every fixture category and every corpus plan by
+  `test/drawing-budget.test.ts`.
 - (c) `describe` and `lint` stop at any resolve error, so huge-magnitude tests no longer reach
   the grid code: any new grid bound needs an in-range test.
-- (d) The source formatter keeps three decimals (exact while |n|·1000 < 2^53), unchanged: sub-mm values
-  round (a thickness of 1e-300 prints 0).
-- (e) A theme passed through the API (`compile({ themes })`, `opts.theme`) can set a `lineWeight`
-  the source-level check never sees (noted at `CompileOptions.theme`).
-- (f) A plan-level `lineWeight` out of range is reported once per storey page on a multi-storey
-  plan.
-- (g) Drawn annotation primitives (door leaf, glazing, dim ticks) may extend slightly past the
-  range on an accepted plan: only bounds and measures are held.
+- (d) **Won't fix.** `arch fmt` canonicalises a literal below |n|·1000 ≤ 2^53 to 0.001 mm. That is
+  the language's resolution, the same lattice the exact arc-radius check decides on (ADR 0022 §1),
+  so a sub-micrometre literal printing 0 (a thickness of 1e-300) is by design.
+- (e) **Closed.** A `lineWeight` passed through `compile()`'s options (`opts.theme`, or a theme in
+  `opts.themes` the plan selects and does not override) is held to the drawn-pen rule the source's
+  is, as one `E_OUT_OF_RANGE` at the `plan "…"` header saying the value came from the compile
+  options; a value that is not a finite number is reported without being printed. Before, 1e308
+  drew `stroke-width` past the range with no diagnostic. Pinned by `test/model-range.test.ts`
+  (API and source bisect to the same weight).
+- (f) **Closed.** A plan-level setting out of range is reported once per plan: a theme
+  `lineWeight` once (at the first storey whose pen leaves the range), and an `axes` position, the
+  `site` boundary and the plan `height` once, untagged, where every storey used to repeat it.
+  `north`, `grid` and a `paper` scale were already reported once (the parser, and the shared
+  sheet).
+- (g) **Won't fix.** Drawn annotation primitives (a door leaf, glazing, dimension ticks) may extend
+  slightly past the range on an accepted plan: they are finite, and only bounds and measures are
+  held.
 
-### M.2 · A global step budget for element-free nested loops — `todo`
+### M.2 · A global step budget for element-free nested loops — closed
 
 `E_ELEMENT_LIMIT` bounds what a plan creates, `E_WHILE_LIMIT` one loop's iterations, and the
-stack budget nesting; nothing bounds TIME spent in loops that create nothing. Re-run:
-`for i in 0..100000 { for j in 0..1000 { let x = i } }` was still running after 25 s (killed;
-the original report measured over 180 s with no diagnostic). Nested `while`s multiply their
-10,000-iteration caps the same way, and the per-storey element cap makes time linear in the
-number of levels (24 capped levels took about 219 s in the original report; not re-run). Wants
-one evaluation-step budget across the whole resolution, as a catalogued error.
+stack budget nesting; nothing bounded the work done in loops that create nothing. Closed by one
+evaluation-step budget across the whole resolution (`MAX_EVAL_STEPS`, 5,000,000,
+`src/expr.ts`; the new `E_STEP_LIMIT`). The unit is chosen by mechanism, so the time to reach the
+budget is bounded whatever shape spends it: a step is an expression node evaluated, a statement
+executed, a loop iteration, a value produced or walked (a range item, a character a template
+appends, an array item printed or compared) or a binding copied (a scope snapshot, a call's
+closure). Counting nodes alone was measured insufficient: a doubling string spent seconds (and
+threw `RangeError: Invalid string length` out of `compile()`) on a handful of nodes. One counter
+runs across every storey, so a storey starts where the one below it stopped; it is memoised with
+the storey, so the verdict does not depend on the caches.
+
+Measured over the corpus (examples with `lib`, test fixtures, the recovery corpus, eval goldens,
+faults and fidelity plans, every `arch` fence of the docs; 278 plans): median 25 steps, p90 648,
+the largest plan that compiles 4,974 (`terrace-row`); the bound is 1,005 times that. The
+catalogue's demonstrations of the other caps spend more by construction (the `E_WHILE_LIMIT`
+demo 260,026, `E_RANGE_LIMIT` 200,014, `E_ELEMENT_LIMIT` 86,015) and still reach their own cap
+first, 19 times under. A higher bound costs time linearly (a nested-loop iteration is about 2 µs
+and 14 steps). Re-run (Node 24, `compile()`, cold process): `for i in 0..100000 { for j in 0..1000
+{ let x = i } }` (killed after 40 s before) is one `E_STEP_LIMIT` in 0.96 s; three nested capped
+`while`s in 0.66 s (with the innermost loop's own `E_WHILE_LIMIT`s before it); `f(40)` of a
+recursion that calls itself twice (killed after 40 s) in 0.26 s; a doubling string (a `RangeError`
+before) in 6 ms; 24 storeys of capped loops (each storey's `E_ELEMENT_LIMIT`, then the drawing
+budget) in 1.1 s. Pinned by `test/step-budget.test.ts` (both margins over the corpus, a plan just
+under the budget compiles and ten iterations more does not, two storeys that fit alone cross it
+together).
 
 ### M.3 · The doorway carve's inward walk stepped through eroded cells — closed
 

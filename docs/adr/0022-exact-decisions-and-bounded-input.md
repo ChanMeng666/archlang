@@ -5,8 +5,9 @@
 - **Scope:** the number domain and resource bounds of `compile()`, the parser's handling of
   malformed input, the geometric predicates that decide a diagnostic, multi-storey
   reachability and circulation, `diffPlans`, and the eval's statistics. Three new catalogued
-  errors (`E_NON_FINITE`, `E_ELEMENT_LIMIT`, `E_LAYOUT_UNPLACED`) and, by the addendum,
-  `E_OUT_OF_RANGE` and `E_RUN_TOO_LONG`; no language syntax change.
+  errors (`E_NON_FINITE`, `E_ELEMENT_LIMIT`, `E_LAYOUT_UNPLACED`) and, by the addenda,
+  `E_OUT_OF_RANGE`, `E_RUN_TOO_LONG`, `E_STEP_LIMIT` and `E_DRAWING_LIMIT`; no language syntax
+  change.
 
 ## Context
 
@@ -339,3 +340,44 @@ backlog holds the evidence.
    reading was the carve artefact. No code change.
 4. **`spec.llm.md` headroom is restored by trimming provable duplication**, the rule the cap's own
    test states first, with no language fact removed. The cap stays at 30,000 characters.
+
+## Second addendum (2026-10-02): the delegated decisions
+
+The owner delegated what the first addendum left open (backlog M.1's sub-items and M.2). Each
+is measured in the cited tests; the backlog holds the measurements.
+
+1. **A `lineWeight` from the compile options is held like the source's.** `opts.theme`, or a
+   theme in `opts.themes` the plan selects and does not override, is held to the drawn-pen rule
+   by `compile()` (the pipeline, on the theme the drawing will use: `planTheme`,
+   `src/scene-build.ts`). The value has no source span, so the one `E_OUT_OF_RANGE` is placed at
+   the `plan "…"` header (`PlanNode.headerSpan`) and says the value came from the compile options;
+   a value that is not a finite number is reported without being printed. `describe()` and
+   `lint()` take no theme. Pinned by `test/model-range.test.ts`: the API and the source refuse at
+   the same weight.
+2. **A plan-level setting out of range is reported once per plan.** A theme `lineWeight` is
+   checked once over the building (at the first storey whose pen leaves the range), and an
+   out-of-range report every storey raised identically (an `axes` position, the `site` boundary,
+   the plan `height`) is kept once, untagged. `north`, `grid` and a `paper` scale already were.
+3. **One evaluation-step budget across the whole resolution** (`MAX_EVAL_STEPS`, 5,000,000,
+   `src/expr.ts`; `E_STEP_LIMIT`), a count and never a time, so `compile()` stays deterministic.
+   A step is a unit of evaluator work bounded by a constant: an expression node, a statement, a
+   loop iteration, a value produced or walked, a binding copied. The counter runs across every
+   storey (a storey starts where the one below stopped, and that start is part of the storey's
+   memo key), and the crossing unwinds inside `resolve()` with an internal signal, so the plan
+   resolves to no elements with `E_STEP_LIMIT` at the statement that crossed it. The bound is
+   1,005 times the largest corpus plan that compiles and 19 times the catalogue's largest demo of
+   another cap; M.2's nested loops reach it in about a second. Pinned by
+   `test/step-budget.test.ts`.
+4. **One drawing budget over every storey, before rendering** (`MAX_DRAW_UNITS`, 400,000,
+   `src/ir.ts`; `E_DRAWING_LIMIT`, a new code because the total is across every kind, not one
+   run). Each element is estimated at a fixed-glyph bound (72) plus one per point of its
+   `bounds()` plus its `drawCost()` (`ElementDef`, optional: a run's treads, a fence's posts). The
+   treads dominate; the element and storey counts multiply the rest. Just under the budget the
+   heaviest shapes measured hold under 0.4 GB; 500 escalators at the tread cap, 0.82 GB before,
+   are refused in milliseconds. Pinned by `test/drawing-budget.test.ts`, which also holds the
+   estimate above the drawing for every kind, fixture category and corpus plan.
+5. **Won't fix, recorded.** The total-area `E_NON_FINITE` branch stays as an unreachable
+   backstop. `arch fmt`'s 0.001 mm canonical form below |n|·1000 ≤ 2^53 is the language's
+   resolution (the lattice §1's arc check decides on), so a sub-micrometre literal printing 0 is by
+   design. Annotation primitives (a door leaf, glazing, dimension ticks) may reach slightly past the
+   range on an accepted plan; they are finite, and only bounds and measures are held.
