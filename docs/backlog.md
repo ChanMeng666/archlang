@@ -974,6 +974,12 @@ ADR 0022's second addendum):
 - (g) **Won't fix.** Drawn annotation primitives (a door leaf, glazing, dimension ticks) may extend
   slightly past the range on an accepted plan: they are finite, and only bounds and measures are
   held.
+- (h) **Documented, not guarded.** The drawing budget is applied by `compile()`. `toScene()` is
+  public and draws whatever resolved IR it is handed: `toScene(resolve(ast).ir)` on 500
+  escalators at the tread cap made 1.1 million nodes and 238 MB with no diagnostic (red team). Its
+  JSDoc and the DXF, PDF and PNG exporters' docstrings now say that `compile().scene` is the
+  guarded route and that a caller drawing a resolved IR directly takes the budget on. No throw
+  was added: `toScene` returns a Scene, and a refusal there would need a channel it does not have.
 
 ### M.2 · A global step budget for element-free nested loops — closed
 
@@ -988,7 +994,13 @@ binding copied (a scope snapshot, a call's closure), an edit-distance cell of a 
 hint, and a diagnostic raised (64). Anything that builds a string is charged BEFORE it builds it:
 printing an array measures its length first, so 1,100 references to a 1 Mi-character string no
 longer throw `RangeError: Invalid string length` out of `compile`, `describe`, `lint`, `repair`,
-the language services or `resolve` (the red team's B1). Counting nodes alone was measured
+the language services or `resolve` (the red team's B1). The value walks that print or compare an
+array (`asStr`, `valueEq`) use an explicit stack, not the JS one: an array nested 10,000 or
+100,000 deep (`a = [a, 2]` in a loop) threw `RangeError: Maximum call stack size exceeded` out of
+`compile`, `describe` and `lint` on every earlier version, and is now walked item by item, each item
+a step (the red team's M3; no new code: depth is not a resource once the walk is iterative, so such
+a plan compiles or stops with `E_STEP_LIMIT`). Expressions stay bounded by the parser's nesting
+limit; copying a closure or a scope snapshot is shallow. Counting nodes alone was measured
 insufficient: a doubling string spent seconds on a handful of nodes, and an unknown name in M.2's
 loops raised 326,000 diagnostics in 4.5 s before diagnostics were charged (now 15,857 in 0.2 s).
 One counter runs across every storey (a storey starts where the one below stopped, and on a
@@ -1244,6 +1256,20 @@ The memory-saving rerun a busy machine needs, `npx vitest run --maxWorkers=2`, s
 unhandled error before any test runs; adding `--minWorkers=1` runs it (re-run on
 `test/eval-stats.test.ts`: 5 passed). Worth one line in `docs/testing.md` so an agent told to
 "rerun with `--maxWorkers=2`" does not read the error as a test failure.
+
+### M.19 · Quadratic passes the two budgets do not see — `todo` (measured by the red team)
+
+The step budget counts the evaluator and the drawing budget the primitives drawn; three passes
+that run after both cost more than either counts, each within the element cap:
+
+- `W_ROOM_OVERLAP` on 5,000 coincident rooms takes 9.7 s (11.7 s on `main`): the pair test is
+  O(n²) when every room shares one grid cell, and it is not charged to any budget.
+- Label placement is O(G²) per storey in the labels sharing space: a 9-storey plan of 4,760
+  rooms a storey, inside the drawing budget, compiles in 52.9 s (60.7 s on `main`). Wants a
+  spatial index for the obstacle search (research item E3).
+- `lint` (12.9 s) and `describe` (2.6 s) on one room labelled with a 600,000-character string
+  (a 100,000-deep array printed into it, within the step budget): the label's cost is linear
+  per rule that reads it, and the string is only charged once, when it is built.
 
 ---
 

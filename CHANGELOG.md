@@ -53,7 +53,10 @@ absurd finite magnitudes that remained are closed by the modelling range (see Ad
   `str()`, threw `RangeError: Invalid string length` out of `compile()`, `describe()`, `lint()`
   and every language service, and is now the same error: a string's length is charged before it
   is built. A diagnostic raised in a runaway loop is charged too, so an unknown name in nested
-  loops stops at about 16,000 reports instead of 326,000. The report is at the statement that
+  loops stops at about 16,000 reports instead of 326,000. An array nested 10,000 or 100,000 deep
+  (`a = [a, 2]` in a loop) printed with `str()`, interpolated or compared with `==` threw
+  `RangeError: Maximum call stack size exceeded`; it is now walked without the JS stack and
+  compiles. The report is at the statement that
   crossed the budget (in the imported file, for a component's body) and the plan draws nothing.
   A step is a count, never a time, so the result is deterministic.
 - **New `E_DRAWING_LIMIT`.** Before anything is drawn, `compile()` estimates the primitives every
@@ -63,7 +66,8 @@ absurd finite magnitudes that remained are closed by the modelling range (see Ad
   500 escalators at the tread cap took 0.82 GB of memory and 105 MB of SVG, and are now refused in
   milliseconds; the densest shapes just under the budget hold under 0.2 GB and run under a 512 MB
   heap. A 24-storey tower of 200 flats a floor (about 108,000) compiles. `describe()` and `lint()`
-  draw nothing and are not held by it.
+  draw nothing and are not held by it, and neither is `toScene()` called on a resolved IR
+  directly: `compile().scene` is the guarded route.
 - A `lineWeight` passed through `compile()`'s options (`theme`, or a theme registered in `themes`
   that the plan selects) is held like the source's: past the drawn-pen bound it is one
   `E_OUT_OF_RANGE` at the `plan "…"` header saying the value came from the compile options, where

@@ -365,7 +365,8 @@ is measured in the cited tests; the backlog holds the measurements.
    A step is a unit of evaluator work bounded by a constant: an expression node, a statement, a
    loop iteration, a value or character produced, a binding copied, a hint's edit-distance cell, a
    diagnostic raised. Whatever builds a string is charged before it builds it, so no surface can
-   allocate past the budget. The counter runs across every storey (a storey starts where the one
+   allocate past the budget, and the walks over a value (printing, `==`) use an explicit stack, so
+   an array nested 100,000 deep costs its items, never the JS stack. The counter runs across every storey (a storey starts where the one
    below stopped, a `paper` plan's geometry probes and drawn pass count into one total, and the
    start is part of the storey's memo key), and the crossing unwinds inside `resolve()` with an
    internal signal, so the plan resolves to no elements with `E_STEP_LIMIT` at the statement that
