@@ -605,4 +605,26 @@ describe("glyph-lib — a path glyph under the eight frame transforms", () => {
       ),
     ).toBe(false);
   });
+
+  it("no glyph draws a path arc over 120°, at any footprint", () => {
+    let seen = 0;
+    for (const c of CANONICAL_FIXTURES) {
+      for (const [w, h] of [
+        [400, 700],
+        [2000, 900],
+        [2400, 2400],
+        [10000, 10],
+        [10, 10000],
+        [1, 1],
+      ] as const) {
+        for (const n of fixtureGlyph(c, { x: 0, y: 0, w, h }, DEFAULT_THEME, sceneOf().sizes)!) {
+          for (const { from, e } of arcs(n)) {
+            seen++;
+            expect(Math.abs(arcEdgeSweep(from, e)), `${c} ${w}x${h}`).toBeLessThanOrEqual(TWO_THIRDS_PI + 1e-9);
+          }
+        }
+      }
+    }
+    expect(seen, "the sweep must actually see path arcs").toBeGreaterThan(100);
+  });
 });

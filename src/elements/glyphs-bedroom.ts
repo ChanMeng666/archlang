@@ -38,46 +38,80 @@
 
 import type { SceneNode } from "../scene.js";
 import type { GlyphCtx, Rect } from "./glyph-lib.js";
-import { clamp, dashedPoly, insetRect, rectPoly, roundedRectPoly } from "./glyph-lib.js";
+import { clamp, dashedPoly, insetRect, rectPoly, roundedRectPath, roundedRectPoly } from "./glyph-lib.js";
 
 /** Mattress aspect (`w / h`) at or above which the bed gets two pillows. See the header. */
 const PILLOW_TWO_ASPECT = 0.6;
 
 /**
- * The bed: mattress, headboard band at the head, pillow(s), and the turned-down sheet.
+ * The bed: the mattress, the headboard across the head, the pillow(s), and the duvet with its
+ * turned-down band and one folded corner.
  *
  * Shared by `bed` and `double_bed` — see the header for why the pillow count is a property of
  * the footprint rather than of the category name.
+ *
+ * - **Mattress + headboard** (body fill, the outline pen): the headboard is a band 4.5% of the
+ *   length across the head, its top corners on the mattress's own slight radius.
+ * - **Pillows** (white, detail pen): 42% of the width × 18% of the length each, a pillow-height
+ *   × 0.3 corner radius, 3% of the length below the headboard — two on a double, one on a single.
+ * - **Duvet** (detail pen): from 30% of the length to the foot, standing in from the sides and
+ *   the foot by 3% of the short side so its edge never lies on the mattress outline. Its head
+ *   carries the TURNED-DOWN band (white, 10% of the length) and its foot-right corner is
+ *   FOLDED back at 45°: the corner is cut off the duvet and its flap (white — the underside)
+ *   lies reflected across the fold. That fold is the one handed mark in the symbol, on purpose:
+ *   it is the convention that says "a bed, made", and a mirrored `place` mirrors it.
+ *
+ * Prim count: `5 + pillows`, i.e. 7 for a double and 6 for a single.
  */
 function drawBedFrame(r: Rect, g: GlyphCtx): SceneNode[] {
-  // Mattress, then the headboard as a band across the back. Both take the body fill: the
-  // headboard reads as a band because of its outline, not because of a second colour.
-  g.poly(rectPoly(r), g.body);
-  g.poly(rectPoly({ x: r.x, y: r.y, w: r.w, h: r.h * 0.06 }), g.body);
+  const s = Math.min(r.w, r.h);
+  const rad = s * 0.015;
+  g.path(roundedRectPath(r, rad), g.body);
+  g.path(roundedRectPath({ x: r.x, y: r.y, w: r.w, h: r.h * 0.045 }, [rad, rad, 0, 0]), g.body);
 
-  // Pillows sit just clear of the headboard band, drawn in the light (basin) fill so they
-  // read against the mattress. The corner radius is a fraction of the pillow's own height,
-  // so a pillow stays pillow-shaped whatever the bed's proportions.
-  const pillowH = r.h * 0.14;
-  const pillowY = r.y + r.h * 0.09;
+  const pillowH = r.h * 0.18;
+  const pillowY = r.y + r.h * 0.075;
   const pillow = (x: number, w: number): void =>
-    g.poly(roundedRectPoly({ x, y: pillowY, w, h: pillowH }, pillowH * 0.35), g.basin);
+    g.path(roundedRectPath({ x, y: pillowY, w, h: pillowH }, pillowH * 0.3), g.basin, "extraThin");
   if (r.h > 0 && r.w / r.h >= PILLOW_TWO_ASPECT) {
-    // Two, symmetric: 0.09 margin, 0.38 pillow, 0.06 gap, 0.38 pillow, 0.09 margin.
-    const pw = r.w * 0.38;
-    pillow(r.x + r.w * 0.09, pw);
-    pillow(r.x + r.w * 0.53, pw);
+    // Two, symmetric: three equal margins round two pillows of 0.42 of the width.
+    const pw = r.w * 0.42;
+    const m = (r.w - 2 * pw) / 3;
+    pillow(r.x + m, pw);
+    pillow(r.x + 2 * m + pw, pw);
   } else {
     pillow(r.x + r.w * 0.2, r.w * 0.6);
   }
 
-  // The turned-down sheet: two full-width rules with a fold diagonal running back from the
-  // right edge between them — the coverlet convention on a drafted plan.
-  const yTop = r.y + r.h * 0.32;
-  const yBot = r.y + r.h * 0.36;
-  g.seg({ x: r.x, y: yTop }, { x: r.x + r.w, y: yTop }, "extraThin");
-  g.seg({ x: r.x, y: yBot }, { x: r.x + r.w, y: yBot }, "extraThin");
-  g.seg({ x: r.x + r.w, y: yTop }, { x: r.x + r.w * 0.78, y: yBot }, "extraThin");
+  // The duvet, its folded foot-right corner, the turned-down band and the flap.
+  const di = s * 0.03;
+  const xl = r.x + di;
+  const xr = r.x + r.w - di;
+  const yt = r.y + r.h * 0.3;
+  const yb = r.y + r.h - di;
+  // The fold is 16% of the short side, held to what the duvet has room for.
+  const t = Math.max(0, Math.min(s * 0.16, (xr - xl) * 0.5, (yb - yt) * 0.5));
+  g.poly(
+    [
+      { x: xl, y: yt },
+      { x: xr, y: yt },
+      { x: xr, y: yb - t },
+      { x: xr - t, y: yb },
+      { x: xl, y: yb },
+    ],
+    g.body,
+    "extraThin",
+  );
+  g.poly(rectPoly({ x: xl, y: yt, w: xr - xl, h: r.h * 0.1 }), g.basin, "extraThin");
+  g.poly(
+    [
+      { x: xr, y: yb - t },
+      { x: xr - t, y: yb },
+      { x: xr - t, y: yb - t },
+    ],
+    g.basin,
+    "extraThin",
+  );
   return g.nodes;
 }
 

@@ -115,7 +115,7 @@ Three columns need a word of explanation:
 
 | Kind (and aliases) | Symbol | Footprint | Facing | Wall |
 |---|---|---|---|---|
-| `wc` · `toilet` | cistern across the back with its lid lip and flush button, bowl and seat ring in front | 400 × 700 | derived | ✓ |
+| `wc` · `toilet` | a rounded cistern across the back with its flush button, a four-centre **oval** bowl in front, the seat opening and two hinge ticks | 400 × 700 | derived | ✓ |
 | `basin` · `lavatory` | vanity slab with an inset oval bowl, tap block, spout and drain — **two bowls** on a long enough slab | 600 × 450 | derived | ✓ |
 | `shower` | tray with an inset rim, both diagonals across the inner tray, and a centre drain | 900 × 900 | symmetric | ✓ |
 | `bathtub` · `tub` · `bath` | eased rim, an inset well, the tap at the head end and the waste on the centreline | 1700 × 700 | derived | ✓ |
@@ -192,7 +192,7 @@ cabinet's door splits run edge to edge, a hood's fan is a ring about the centre.
 
 | Kind (and aliases) | Symbol | Footprint | Facing | Wall |
 |---|---|---|---|---|
-| `bed` | mattress, headboard band at the head, **one or two pillows**, and the turned-down sheet with its fold diagonal | 1500 × 2000 | derived | |
+| `bed` | mattress, headboard band at the head, **one or two pillows**, and the duvet with its turned-down band and **one folded corner** at the foot | 1500 × 2000 | derived | |
 | `double_bed` | the same drawing — its wider footprint is what earns it the second pillow | 1800 × 2000 | derived | |
 | `nightstand` · `bedside_table` | carcass and top, the **lamp standing in the back third**, and the drawer front with its handle on the room side | 450 × 400 | derived | |
 | `wardrobe` · `robe` · `closet` | carcass, the hanging rail at mid-depth with its **clothes-hanger scallops**, and the centre door split | 1800 × 600 | derived | |
@@ -213,13 +213,13 @@ no gap and no overlap at any size.
 
 | Kind (and aliases) | Symbol | Footprint | Facing | Wall |
 |---|---|---|---|---|
-| `sofa` · `couch` | eased body, a back band along the rear edge, an arm at each end, and the cushion divisions between them | — | free | |
-| `armchair` | eased body, a **true arc** for the curved back, and the seat cushion | — | free | |
+| `sofa` · `couch` | rounded body, an arm at each end running the full depth, and a row of back and seat **cushions** — one per 0.62 depths of seat, up to four | — | free | |
+| `armchair` | the `sofa` construction with **one** cushion and broader arms | — | free | |
 | `coffee_table` | **rounded** top and inner edge, four legs, and a tray line across it once it is longer than 1.6 : 1 | — | symmetric | |
 | `tv_unit` | carcass, the screen against the back edge, the shelf line, and the drawer bank with its handle on the room side | 1500 × 450 | derived | |
 | `table` | **square** top and inset edge, four legs, and a board line **along** its length once it is longer than 1.6 : 1 | — | symmetric | |
-| `dining_table` | the table inside a chair-zone band, **with the chairs drawn in it** | — | symmetric | |
-| `chair` | seat, back band along the rear edge, the cushion, and an armrest each side once the seat is wide enough | — | free | |
+| `dining_table` | the table inside a chair-zone band, **with the chairs tucked under it** | — | symmetric | |
+| `chair` | a rounded upholstered seat and a pill-ended **backrest bar** along the rear edge | — | free | |
 | `stool` · `barstool` | a round seat with no back — **three concentric true circles** about the footprint centre | — | symmetric | |
 | `bench` | slab with its slats running **lengthwise** along whichever axis is longer, and a support across each end | — | free | |
 | `fireplace` | the chimney breast with the firebox opening cut into its **room** face and three flame ticks inside it | 1200 × 400 | derived | |
@@ -241,8 +241,8 @@ a front) but still carries no services, so floating one as a room divider raises
 
 **A `loveseat` is a `sofa` with its cushion count pinned.** Both draw from one construction,
 so the pair cannot drift apart; what separates them is the number of seats, which is the fact
-the two words actually carry. A `sofa` reads its aspect and draws three cushions on a 1500 mm
-footprint; a `loveseat` draws two on any footprint.
+the two words actually carry. A `sofa` reads the length of its seat and draws three cushions
+on a 2000 × 900 footprint; a `loveseat` draws two on any footprint.
 
 **A `tv` and a `tv_unit` are different kinds, not synonyms.** A media console is 450 mm deep
 and a wall-mounted panel is 80, so a plan that draws the first where the second belongs has
@@ -333,13 +333,13 @@ terrace, a parking bay — that has to keep reading through it.
 
 | Kind (and aliases) | Symbol | Footprint | Facing | Wall |
 |---|---|---|---|---|
-| `tree` · `deciduous_tree` | softly scalloped canopy over the crown ring and the trunk, **unfilled** | — | symmetric | |
-| `conifer` · `pine` | the same canopy with the notches cut deeper, so it reads as needled | — | symmetric | |
+| `tree` · `deciduous_tree` | a canopy scalloped into sixteen lobes and **filled with the lawn tint** (it masks the ground hatch under it), eight forked branches and the trunk | — | symmetric | |
+| `conifer` · `pine` | a sixteen-point star canopy notched deep, so it reads as needled, over the crown ring and the trunk | — | symmetric | |
 | `shrub` · `bush` | a lumpy cloud of eight overlapping lobes, **unfilled**, with three short interior arcs for foliage | — | symmetric | |
 | `hedge` | a scalloped band — a chain of overlapping arcs down **both** faces, a half-scallop closing each end, one dashed centreline, and **no box** | 2000 × 600 | free | |
 | `bbq` · `grill` · `barbecue` | the body with a **cross** grid of grill bars, the side shelf down the right, and two wheels on the front edge | 1200 × 600 | derived | |
 | `outdoor_table` · `patio_table` | round or eased-rectangular top with four chairs hugging the footprint edges | — | symmetric | |
-| `outdoor_chair` · `patio_chair` | the `chair` construction — seat, back band, inset cushion — with **slats** across the back and an armrest each side | — | free | |
+| `outdoor_chair` · `patio_chair` | a seat, a back band and an inset cushion, with **slats** across the back and an armrest each side | — | free | |
 | `umbrella` · `parasol` | an eight-segment canopy with the pole at the centre | — | symmetric | |
 | `bicycle` · `bike` | two wheels at a quarter and three quarters of the run, the four-tube **diamond frame** between them, the saddle and the bars | — | free | |
 | `motorcycle` | the two wheels with the body slung between them | — | free | |
@@ -492,9 +492,10 @@ cut plane" — a kind is dashed because of what it is.
 declares the whole **eating zone**: the table is the inner rectangle inside a chair-zone
 band, and the seats are drawn in that band. That is the dimension a plan needs to check —
 a table you cannot pull a chair out of is not a table that fits — so a 1200 mm table is
-authored as roughly 2400 mm of footprint. The seat count comes from the aspect, plus one
-at each short end when the table is under 2:1 (a square table seats its ends; a refectory
-bench does not).
+authored as roughly 2400 mm of footprint. Each long side seats one chair per 2.2 band
+depths of table, up to four, and each end seats one; a chair is tucked under the top by 30%
+of its depth, so the seats meet the table rather than float beside it. A square table seats
+one a side — the four-seater — and stays the same drawing under a quarter-turn.
 
 **The ASCII plan shows none of this.** `arch compile -f txt` (and `arch preview --ascii`)
 reduces each piece to a **single uppercase letter** at its centre — the first letter of

@@ -566,7 +566,8 @@ describe("glyphs-misc — the meeting table's chairs", () => {
     const dining = draw(drawDiningTable, r).map((n) => n.prim.t);
     expect(meeting).not.toEqual(dining);
     expect(meeting.slice(2).every((t) => t === "circle")).toBe(true);
-    expect(dining.slice(2).every((t) => t === "polygon")).toBe(true);
+    // A dining chair is a seat and a backrest bar, both curved outlines (`path`).
+    expect(dining.slice(2).every((t) => t === "path")).toBe(true);
   });
 });
 

@@ -37,7 +37,8 @@
  * ## Group 4 — the outdoor tranche, on the same terms again.
  *
  * Four of the twenty-one site symbols, chosen because each one pins a DIFFERENT property of that
- * module rather than a fourth drawing: `tree` is unfilled planting, `pergola` is dashed all the
+ * module rather than a fourth drawing: `tree` is a curved (`path`) canopy filled with the lawn
+ * tint, `pergola` is dashed all the
  * way round, `shed` mixes a filled carcass with a dashed ridge, and `bbq` is the one outdoor kind
  * with a catalogued footprint AND a frontal clearance. Re-blessable, and each diff read first.
  */
@@ -107,11 +108,12 @@ describe("fixture symbols — the eight shipped families (re-blessed when redraw
       <polygon points="0,0 3000,0 3000,2400 0,2400" fill="#fbfaf7"/>
       </g>
       <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
-      <polygon points="300,300 700,300 700,454 300,454" fill="#f4f2ee" stroke="#6c6864" stroke-width="4.8"/>
-      <line x1="324" y1="346.2" x2="676" y2="346.2" stroke="#a8a29a" stroke-width="3.47"/>
-      <polygon points="660,737.92 654.55,802.92 638.56,863.5 613.14,915.52 580,955.43 541.41,980.52 500,989.08 458.59,980.52 420,955.43 386.86,915.52 361.44,863.5 345.45,802.92 340,737.92 345.45,672.92 361.44,612.34 386.86,560.32 420,520.41 458.59,495.32 500,486.76 541.41,495.32 580,520.41 613.14,560.32 638.56,612.34 654.55,672.92" fill="#ffffff" stroke="#6c6864" stroke-width="4.8"/>
-      <polygon points="624.8,737.92 620.55,788.62 608.08,835.87 588.25,876.45 562.4,907.58 532.3,927.15 500,933.82 467.7,927.15 437.6,907.58 411.75,876.45 391.92,835.87 379.45,788.62 375.2,737.92 379.45,687.22 391.92,639.97 411.75,599.39 437.6,568.26 467.7,548.69 500,542.02 532.3,548.69 562.4,568.26 588.25,599.39 608.08,639.97 620.55,687.22" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
-      <circle cx="500" cy="377" r="20" fill="#a8a29a" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 353.52,300 L 646.48,300 A 23.52 23.52 0 0 1 670,323.52 L 670,444.48 A 23.52 23.52 0 0 1 646.48,468 L 353.52,468 A 23.52 23.52 0 0 1 330,444.48 L 330,323.52 A 23.52 23.52 0 0 1 353.52,300 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="4.8"/>
+      <path d="M 500,961.5 A 121.51 121.51 0 0 1 397.02,904.48 A 373.97 373.97 0 0 1 397.02,507.52 A 121.51 121.51 0 0 1 500,450.5 A 121.51 121.51 0 0 1 602.98,507.52 A 373.97 373.97 0 0 1 602.98,904.48 A 121.51 121.51 0 0 1 500,961.5 Z" fill="#ffffff" stroke="#6c6864" stroke-width="4.8"/>
+      <path d="M 500,923.1 A 91.53 91.53 0 0 1 422.01,879.49 A 294.71 294.71 0 0 1 422.01,570.91 A 91.53 91.53 0 0 1 500,527.3 A 91.53 91.53 0 0 1 577.99,570.91 A 294.71 294.71 0 0 1 577.99,879.49 A 91.53 91.53 0 0 1 500,923.1 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="432" y1="482.83" x2="432" y2="512.47" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="568" y1="482.83" x2="568" y2="512.47" stroke="#a8a29a" stroke-width="3.47"/>
+      <circle cx="500" cy="384" r="16" fill="#a8a29a" stroke="#a8a29a" stroke-width="3.47"/>
       </g>
       <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
       <text x="1500" y="1182" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
@@ -456,13 +458,36 @@ describe("fixture symbols — the outdoor tranche (re-blessed when redrawn)", ()
       <polygon points="0,0 3000,0 3000,2400 0,2400" fill="#fbfaf7"/>
       </g>
       <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
-      <polygon points="2652,1500 2415.31,1879.13 2314.59,2314.59 1879.13,2415.31 1500,2652 1120.87,2415.31 685.41,2314.59 584.69,1879.13 348,1500 584.69,1120.87 685.41,685.41 1120.87,584.69 1500,348 1879.13,584.69 2314.59,685.41 2415.31,1120.87" fill="none" stroke="#6c6864" stroke-width="4.8"/>
-      <circle cx="1500" cy="1500" r="391.68" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
-      <circle cx="1500" cy="1500" r="138.24" fill="#a8a29a" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 2426.49,1315.71 A 184.29 184.29 0 0 1 2610.78,1500 A 184.29 184.29 0 0 1 2426.49,1684.29 A 209.1 209.1 0 0 1 2457.88,1896.77 A 209.1 209.1 0 0 1 2285.44,2024.81 A 184.29 184.29 0 0 1 2285.44,2285.44 A 184.29 184.29 0 0 1 2024.81,2285.44 A 209.1 209.1 0 0 1 1896.77,2457.88 A 209.1 209.1 0 0 1 1684.29,2426.49 A 184.29 184.29 0 0 1 1500,2610.78 A 184.29 184.29 0 0 1 1315.71,2426.49 A 209.1 209.1 0 0 1 1103.23,2457.88 A 209.1 209.1 0 0 1 975.19,2285.44 A 184.29 184.29 0 0 1 714.56,2285.44 A 184.29 184.29 0 0 1 714.56,2024.81 A 209.1 209.1 0 0 1 542.12,1896.77 A 209.1 209.1 0 0 1 573.51,1684.29 A 184.29 184.29 0 0 1 389.22,1500 A 184.29 184.29 0 0 1 573.51,1315.71 A 209.1 209.1 0 0 1 542.12,1103.23 A 209.1 209.1 0 0 1 714.56,975.19 A 184.29 184.29 0 0 1 714.56,714.56 A 184.29 184.29 0 0 1 975.19,714.56 A 209.1 209.1 0 0 1 1103.23,542.12 A 209.1 209.1 0 0 1 1315.71,573.51 A 184.29 184.29 0 0 1 1500,389.22 A 184.29 184.29 0 0 1 1684.29,573.51 A 209.1 209.1 0 0 1 1896.77,542.12 A 209.1 209.1 0 0 1 2024.81,714.56 A 184.29 184.29 0 0 1 2285.44,714.56 A 184.29 184.29 0 0 1 2285.44,975.19 A 209.1 209.1 0 0 1 2457.88,1103.23 A 209.1 209.1 0 0 1 2426.49,1315.71 Z" fill="#eef3e7" stroke="#6c6864" stroke-width="4.8"/>
+      <line x1="1638.24" y1="1500" x2="1983.84" y2="1500" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1983.84" y1="1500" x2="2198.63" y2="1351.5" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1983.84" y1="1500" x2="2198.63" y2="1648.5" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1597.75" y1="1597.75" x2="1842.13" y2="1842.13" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1842.13" y1="1842.13" x2="2099.01" y2="1889" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1842.13" y1="1842.13" x2="1889" y2="2099.01" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1500" y1="1638.24" x2="1500" y2="1983.84" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1500" y1="1983.84" x2="1648.5" y2="2198.63" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1500" y1="1983.84" x2="1351.5" y2="2198.63" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1402.25" y1="1597.75" x2="1157.87" y2="1842.13" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1157.87" y1="1842.13" x2="1111" y2="2099.01" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1157.87" y1="1842.13" x2="900.99" y2="1889" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1361.76" y1="1500" x2="1016.16" y2="1500" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1016.16" y1="1500" x2="801.37" y2="1648.5" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1016.16" y1="1500" x2="801.37" y2="1351.5" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1402.25" y1="1402.25" x2="1157.87" y2="1157.87" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1157.87" y1="1157.87" x2="900.99" y2="1111" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1157.87" y1="1157.87" x2="1111" y2="900.99" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1500" y1="1361.76" x2="1500" y2="1016.16" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1500" y1="1016.16" x2="1351.5" y2="801.37" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1500" y1="1016.16" x2="1648.5" y2="801.37" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1597.75" y1="1402.25" x2="1842.13" y2="1157.87" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1842.13" y1="1157.87" x2="1889" y2="900.99" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1842.13" y1="1157.87" x2="2099.01" y2="1111" stroke="#a8a29a" stroke-width="3.47"/>
+      <circle cx="1500" cy="1500" r="57.6" fill="#6c6864" stroke="#6c6864" stroke-width="4.8"/>
       </g>
       <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
-      <text x="300" y="222" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
-      <text x="300" y="321" font-size="66" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">7.2 m²</text>
+      <text x="1500" y="222" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
+      <text x="1500" y="321" font-size="66" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">7.2 m²</text>
       </g>
       <g><polygon points="2865,-415.5 2797.5,-199.5 2865,-246.75 2932.5,-199.5" fill="#333333" transform="rotate(0 2865 -280.5)"/><text x="2865" y="-477.9" font-size="78" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
       <g><rect x="0" y="2850" width="250" height="42" fill="#333333"/><rect x="250" y="2850" width="250" height="42" fill="none" stroke="#333333" stroke-width="4.8"/><text x="0" y="2952" font-size="60" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="500" y="2952" font-size="60" fill="#333333" text-anchor="middle" dominant-baseline="central">0.5 m</text></g>

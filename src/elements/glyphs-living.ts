@@ -76,7 +76,9 @@ import {
   easedRing,
   insetRect,
   insetRectSides,
+  mapSceneNode,
   rectPoly,
+  roundedRectPath,
   roundedRectPoly,
   shortSide,
 } from "./glyph-lib.js";
@@ -102,118 +104,89 @@ function clampCount(v: number, lo: number, hi: number): number {
   return clamp(Math.round(v), lo, hi);
 }
 
+/** Corner radius of an upholstered piece, as a fraction of its short side (design spec D10). */
+const UPHOLSTERY_RADIUS = 0.07;
+
+/** Depth of a seat's back band (frame + back cushions), as a fraction of the depth. */
+const SEAT_BACK_BAND = 0.2;
+
 /**
- * The sofa construction, with the cushion count handed IN: an eased body, a back band along
- * the rear edge, an arm at each end, and `divisions` lines cutting the seat into
- * `divisions + 1` cushions.
+ * The upholstered-seat construction shared by the sofa, the loveseat and the armchair, with
+ * the cushion count and the arm width handed IN.
  *
- * The arms and the divisions are what make it read as a sofa rather than a long box — an
- * outlined rectangle with a line across the back is a bench. Both arm bands are filled in the
- * body colour over a body-coloured shell, so what shows is their OUTLINE; that is deliberate,
- * and it is the same trick the bathtub's inner well uses in reverse.
+ * Read back to front: a rounded BODY (the frame, body fill, the outline), an ARM at each end
+ * running the full depth with its outer corners on the body's own radius, a row of `cushions`
+ * rounded BACK CUSHIONS in the back band, and the same number of SEAT CUSHIONS in front of
+ * them. The cushions are the soft surfaces, so they take the `basin` (white) fill and the
+ * detail pen, and they stand a small gap off each other and off the arms — so no cushion edge
+ * ever lies on top of the outline it sits inside (a detail line drawn over an outline thins it).
  *
- * The count is a PARAMETER because {@link drawLoveseat} is the same piece of furniture with
- * two seats rather than three-or-more — a two-seater is not a different construction, and
- * drawing it from a second one would let the pair drift apart in ways that carry no meaning.
- * {@link drawSofa} derives its count from the aspect and passes it here, which is what keeps
- * every shipped sofa on the bytes it had: the body of this function is the old
- * `drawSofa` verbatim.
+ * Every horizontal measure is a fraction of the width, every vertical one of the depth, and the
+ * gaps and radii of the short side; the arm width is additionally held to a quarter of the width,
+ * so a footprint with no width (the fuzz feeds one) draws nothing outside itself.
  *
- * Prim count: `5 + divisions`.
+ * Prim count: `3 + 2 × cushions`.
  */
-function sofaBody(r: Rect, g: GlyphCtx, divisions: number): SceneNode[] {
+function seatBody(r: Rect, g: GlyphCtx, cushions: number, armWidth: number): SceneNode[] {
+  const s = short(r);
   const x1 = r.x + r.w;
   const y1 = r.y + r.h;
-  const backY = r.y + r.h * 0.18;
-  const frontY = r.y + r.h * 0.9;
-  const armW = r.w * 0.12;
-  const armTop = r.y + r.h * 0.1;
+  const rad = s * UPHOLSTERY_RADIUS;
+  const gap = s * 0.018;
+  const armW = Math.min(armWidth, r.w * 0.25);
   const innerL = r.x + armW;
   const innerR = x1 - armW;
 
-  g.poly(roundedRectPoly(r, short(r) * 0.1), g.body);
-  for (const [ax0, ax1] of [
-    [r.x, innerL],
-    [innerR, x1],
-  ] as const) {
-    g.poly(
-      [
-        { x: ax0, y: armTop },
-        { x: ax1, y: armTop },
-        { x: ax1, y: y1 },
-        { x: ax0, y: y1 },
-      ],
-      g.body,
-    );
-  }
-  // Drawn across the FULL width, over the arms: the back cushion runs behind them.
-  g.seg({ x: r.x, y: backY }, { x: x1, y: backY }, "extraThin");
+  g.path(roundedRectPath(r, rad), g.body);
+  // The arms: the outer corners ride the body's radius, the inner FRONT corner is eased to
+  // read as the rounded arm end, and the inner back corner is square where it meets the back.
+  const armEase = Math.min(rad, armW * 0.45);
+  g.path(roundedRectPath({ x: r.x, y: r.y, w: armW, h: r.h }, [rad, 0, armEase, rad]), g.body);
+  g.path(roundedRectPath({ x: innerR, y: r.y, w: armW, h: r.h }, [0, rad, rad, armEase]), g.body);
 
-  for (let i = 0; i < divisions; i++) {
-    const cx = innerL + ((innerR - innerL) * (i + 1)) / (divisions + 1);
-    g.seg({ x: cx, y: backY }, { x: cx, y: frontY }, "extraThin");
+  // The cushion row spans the gap-inset space between the arms; `n` equal cushions, `gap` apart.
+  const rowX = innerL + gap;
+  const rowW = innerR - innerL - 2 * gap;
+  const cw = (rowW - (cushions - 1) * gap) / cushions;
+  const backTop = r.y + r.h * 0.05;
+  const backBot = r.y + r.h * SEAT_BACK_BAND;
+  const seatTop = backBot + gap;
+  const seatBot = y1 - r.h * 0.045;
+  for (let i = 0; i < cushions; i++) {
+    const x = rowX + i * (cw + gap);
+    g.path(roundedRectPath({ x, y: backTop, w: cw, h: backBot - backTop }, s * 0.035), g.basin, "extraThin");
   }
-  g.seg({ x: innerL, y: frontY }, { x: innerR, y: frontY }, "extraThin");
+  for (let i = 0; i < cushions; i++) {
+    const x = rowX + i * (cw + gap);
+    g.path(roundedRectPath({ x, y: seatTop, w: cw, h: seatBot - seatTop }, s * 0.045), g.basin, "extraThin");
+  }
   return g.nodes;
 }
 
 /**
- * The sofa: {@link sofaBody} with its cushion divisions read off the footprint's aspect, so
- * the 2.3:1 sofa the catalogue's default footprint describes gets the conventional three.
+ * The sofa: {@link seatBody} with arms 8% of the width — held to `[0.12, 0.22]` of the depth so a
+ * long sofa's arms do not swell and a short one's do not vanish — and one seat cushion per 0.62
+ * depths of seat, `[1, 4]`, so the catalogue's 2.2:1 sofa gets the conventional three.
  *
- * Prim count: `5 + divisions`, i.e. 7 at the common 2.3:1 aspect and 11 at the clamp.
+ * Prim count: `3 + 2 × cushions`, i.e. 9 at the common 2000x900 and 11 at the clamp.
  */
 export function drawSofa(r: Rect, g: GlyphCtx): SceneNode[] {
-  return sofaBody(r, g, clampCount((r.w / r.h) * 0.9, 2, 6));
+  const armW = clamp(r.w * 0.08, r.h * 0.12, r.h * 0.22);
+  const seatW = r.w - 2 * Math.min(armW, r.w * 0.25);
+  return seatBody(r, g, clampCount(seatW / (0.62 * r.h), 1, 4), armW);
 }
 
 /**
- * The armchair: an eased body, a TRUE arc for the curved back, and the seat cushion.
+ * The armchair: the sofa's anatomy with ONE cushion and broader arms, 16% of the width each.
  *
- * The back is a real `arc` primitive rather than a faceted polygon — round things stay round
- * at any zoom, and every backend (SVG `A`, native DXF `ARC`) already lowers one. Its radius
- * is SOLVED from the chord and the sagitta rather than picked: `R = (a^2 + s^2) / 2s`.
+ * It used to be a body with a true-arc back; it is now drawn from {@link seatBody} like the
+ * sofa beside it, because an armchair IS a one-seat sofa and a living room whose armchair and
+ * sofa are drawn in two languages reads as two drawings.
  *
- * **Both of the clamps below hold something down that the drawing cannot show.** The sagitta
- * is capped at `0.9 x a` because `GlyphCtx.arcSeg` accepts MINOR arcs only — every backend
- * pins the SVG large-arc flag to 0, and `s < a` is exactly the condition for the sweep to
- * stay under a half turn, so on a tall footprint an uncapped sagitta would make the export
- * silently draw the arc's COMPLEMENT. The chord is capped at `0.55 x h` because an arc's
- * CENTRE is a defining point, not a construction aid: `pointsOf` in `src/backends/ascii.ts`
- * bounds an arc by `[start, end, center]`, so a shallow arc across a wide footprint would put
- * the centre metres below the chair and drag the plan's extents with it. Capped, the centre
- * lands at worst `0.88 x h` down — inside the footprint at every aspect, which is the law
- * `test/glyphs-living.test.ts` asserts and the reason a wide armchair gets a chord narrower
- * than its box rather than a centre outside it.
- *
- * Prim count: 3.
+ * Prim count: 5.
  */
 export function drawArmchair(r: Rect, g: GlyphCtx): SceneNode[] {
-  const s = short(r);
-  g.poly(roundedRectPoly(r, s * 0.18), g.body);
-
-  const halfChord = Math.min(r.w * 0.4, r.h * 0.55);
-  const chordY = r.y + r.h * 0.3;
-  const mx = r.x + r.w / 2;
-  const sag = Math.min(r.h * 0.22, halfChord * 0.9);
-  // A zero-area footprint has no arc to draw; radius 0 keeps the node finite and in place.
-  const radius = sag > 0 ? (halfChord * halfChord + sag * sag) / (2 * sag) : 0;
-  // Centre sits BELOW the chord (screen +y), so the arc bows up toward the back edge, and
-  // left-to-right over the top is the increasing-angle direction: sweep 1.
-  g.arcSeg(
-    { x: mx, y: chordY - sag + radius },
-    radius,
-    { x: mx - halfChord, y: chordY },
-    { x: mx + halfChord, y: chordY },
-    1,
-  );
-
-  g.poly(
-    roundedRectPoly({ x: r.x + r.w * 0.12, y: r.y + r.h * 0.38, w: r.w * 0.76, h: r.h * 0.5 }, s * 0.12),
-    g.body,
-    "extraThin",
-  );
-  return g.nodes;
+  return seatBody(r, g, 1, r.w * 0.16);
 }
 
 /**
@@ -305,103 +278,145 @@ export function drawTable(r: Rect, g: GlyphCtx): SceneNode[] {
   return g.nodes;
 }
 
+/** The chair-zone band of a dining table, as a fraction of the footprint's short side. */
+const DINING_BAND = 0.22;
+
+/** The spacing of a dining table's chairs along a side, in chair-zone bands (see `drawDiningTable`). */
+const CHAIR_PITCH = 2.2;
+
 /**
- * The dining table: the table itself inside a chair-zone band, with the chairs drawn in it.
+ * The fraction of a dining chair's depth that is tucked under the table top. Only the part in
+ * front of the table edge is drawn, so a seat meets the top instead of floating beside it.
+ */
+const CHAIR_TUCK = 0.3;
+
+/**
+ * The dining table: the top inside a chair-zone band, and the chairs tucked under it.
  *
  * **The declared footprint is the whole eating zone, chairs included** — see the module
- * header for why. The band is `0.22 x min(w, h)` on all four sides and each seat is a
- * `0.45 x 0.45` square of that band's depth, centred in it, so a seat can never spill out of
- * the declared rectangle at any aspect.
+ * header for why. The band is `0.22 × min(w, h)` on all four sides; a chair is a band deep and
+ * nine tenths of one wide, and {@link CHAIR_TUCK} of it is under the top, so it never floats
+ * detached from the table and never reaches past the footprint.
  *
- * Seats are laid along the two LONG edges, `clamp(round(aspect x 1.2), 1, 8)` per side, plus
- * one at each SHORT end when the aspect is under 2. That boundary is the difference between
- * a table you sit at the ends of and a refectory bench you do not: a square table seats 1+1
- * per side and 1+1 on the ends (the four-seater), a 2:1 or longer table seats only its sides.
+ * Seats per LONG side: one per {@link CHAIR_PITCH} bands of top length, `[1, 4]`; plus ONE at
+ * each end. The pitch is chosen so that a SQUARE top seats exactly one per side —
+ * `0.56 / (2.2 × 0.22)` is 1.16 — which is what keeps the catalog's `symmetric: true` honest: a
+ * square table maps onto itself under a quarter-turn. A 2:1 footprint (`3.2` pitches of top)
+ * seats three a side, a 1.2:1 one two.
  *
- * Prim count: `2 + chairs`, i.e. 6 for the square four-seater and 18 at the clamp.
+ * Draw order: the top FIRST — it is the symbol's outline and the node a consumer makes
+ * clickable — then its bevel, then each chair's visible part, whose seat ends exactly on the
+ * table's edge.
+ *
+ * Prim count: `2 + 2 × chairs`, i.e. 10 for the square four-seater and 22 at the clamp.
  */
 export function drawDiningTable(r: Rect, g: GlyphCtx): SceneNode[] {
-  const band = short(r) * 0.22;
+  const band = short(r) * DINING_BAND;
   const top: Rect = { x: r.x + band, y: r.y + band, w: r.w - 2 * band, h: r.h - 2 * band };
-  g.poly(rectPoly(top), g.body);
-  g.poly(rectPoly(insetRect(top, 0.08)), "none", "extraThin");
+  const st = short(top);
+  g.path(roundedRectPath(top, st * 0.012), g.body);
+  g.path(roundedRectPath(insetRect(top, 0.03), st * 0.008), "none", "extraThin");
 
   const horizontal = r.w >= r.h;
-  const aspect = horizontal ? r.w / r.h : r.h / r.w;
-  const perSide = clampCount(aspect * 1.2, 1, 8);
-  const seat = band * 0.45;
-  const chair = (cx: number, cy: number): void => {
-    g.poly(roundedRectPoly({ x: cx - seat / 2, y: cy - seat / 2, w: seat, h: seat }, seat * 0.3), g.body, "extraThin");
-  };
-
   const runStart = horizontal ? top.x : top.y;
   const runLen = horizontal ? top.w : top.h;
+  const perSide = clampCount(runLen / (CHAIR_PITCH * band), 1, 4);
+  const cd = band; // a chair's full depth
+  const cw = band * 0.9;
+  const vis = cd * (1 - CHAIR_TUCK);
+  // A chair whose BACK is on `back`, its visible part standing in the band off the top's edge.
+  const at = (along: number, back: "top" | "bottom" | "left" | "right"): void => {
+    const box: Rect =
+      back === "top"
+        ? { x: along - cw / 2, y: top.y - vis, w: cw, h: vis }
+        : back === "bottom"
+          ? { x: along - cw / 2, y: top.y + top.h, w: cw, h: vis }
+          : back === "left"
+            ? { x: top.x - vis, y: along - cw / 2, w: vis, h: cw }
+            : { x: top.x + top.w, y: along - cw / 2, w: vis, h: cw };
+    chairInto(g, box, back, CHAIR_TUCK);
+  };
   for (let i = 0; i < perSide; i++) {
     const along = runStart + (runLen * (i + 0.5)) / perSide;
     if (horizontal) {
-      chair(along, r.y + band / 2);
-      chair(along, r.y + r.h - band / 2);
+      at(along, "top");
+      at(along, "bottom");
     } else {
-      chair(r.x + band / 2, along);
-      chair(r.x + r.w - band / 2, along);
+      at(along, "left");
+      at(along, "right");
     }
   }
-  // `NaN < 2` is false, so a zero-area footprint takes the no-end-chairs branch rather than
-  // needing a second guard.
-  if (aspect < 2) {
-    if (horizontal) {
-      chair(r.x + band / 2, r.y + r.h / 2);
-      chair(r.x + r.w - band / 2, r.y + r.h / 2);
-    } else {
-      chair(r.x + r.w / 2, r.y + band / 2);
-      chair(r.x + r.w / 2, r.y + r.h - band / 2);
-    }
+  if (horizontal) {
+    at(top.y + top.h / 2, "left");
+    at(top.y + top.h / 2, "right");
+  } else {
+    at(top.x + top.w / 2, "top");
+    at(top.x + top.w / 2, "bottom");
   }
   return g.nodes;
 }
 
 /**
- * The dining chair: seat, back band along the rear edge, the cushion, and — on a seat wide
- * enough to have them — an armrest each side.
+ * Draw a dining chair whose visible footprint is `box`, with its backrest along the `back`
+ * edge. `tuck` is the fraction of the chair's FULL depth hidden under a table in front of it
+ * (0 for a free-standing chair): the box is the visible part only, the seat runs to the box's
+ * front edge with square corners there, and every proportion is taken off the full depth so a
+ * tucked chair and a free one have the same backrest.
  *
- * The armrests are what make it read as a chair rather than as a small box with a line across
- * it, which is what the three-primitive version was at plan scale. They are drawn only when
- * the seat is at least {@link ARMREST_ASPECT} as wide as it is deep: a chair narrower than
- * that has no room between its cushion and its edge, and drawing them anyway would put two
- * lines through the cushion. So the count is 5 or 3, not a fixed number.
- *
- * It is deliberately NOT the outdoor chair: `glyphs-outdoor.ts`'s `drawOutdoorChair` is this
- * same construction plus SLATS across the back, and the slats are the whole difference — an
- * outdoor chair is slatted and a dining chair is upholstered. Nor is it the office chair,
- * which is round and has a true-arc back.
- *
- * Prim count: `3 + (armrests ? 2 : 0)`.
+ * Built back-on-top in a local frame and then quarter-turned into place with the exact
+ * rotation `furniture.render()` uses (`mapSceneNode`), so the four sides of a table are one
+ * chair turned rather than four hand-mirrored copies.
  */
-export function drawChair(r: Rect, g: GlyphCtx): SceneNode[] {
-  const s = short(r);
-  g.poly(roundedRectPoly(r, s * 0.15), g.body);
-  g.poly(roundedRectPoly({ x: r.x, y: r.y, w: r.w, h: r.h * 0.18 }, s * 0.08), g.body);
-  // The cushion is deliberately narrow — 0.56 of the width, not 0.72 — so it does not crowd
-  // the body outline it sits inside, and so the armrests have somewhere to be. The first draft
-  // ran it to 0.86 and the symbol read as three nested boxes.
-  g.poly(
-    roundedRectPoly({ x: r.x + r.w * 0.22, y: r.y + r.h * 0.34, w: r.w * 0.56, h: r.h * 0.5 }, s * 0.1),
-    g.body,
-    "extraThin",
-  );
-  // `NaN >= x` is false, so a zero-area footprint takes the no-armrest branch rather than
-  // needing a second guard.
-  if (r.w >= r.h * ARMREST_ASPECT) {
-    for (const f of [0.12, 0.88]) {
-      const x = r.x + r.w * f;
-      g.seg({ x, y: r.y + r.h * 0.28 }, { x, y: r.y + r.h * 0.86 }, "extraThin");
-    }
-  }
-  return g.nodes;
+function chairInto(g: GlyphCtx, box: Rect, back: "top" | "right" | "bottom" | "left", tuck: number): void {
+  const deg = back === "top" ? 0 : back === "right" ? 90 : back === "bottom" ? 180 : 270;
+  const sideways = deg === 90 || deg === 270;
+  const c = centerOf(box);
+  const w = sideways ? box.h : box.w;
+  const vis = sideways ? box.w : box.h;
+  const full = vis / (1 - tuck);
+  const r: Rect = { x: c.x - w / 2, y: c.y - vis / 2, w, h: vis };
+  const from = g.nodes.length;
+  const s = Math.min(w, full);
+  // The seat: a rounded square, white (it is upholstered), set in from the sides and tucked
+  // under the backrest; its front corners are square when it runs on under a table.
+  const sr = s * 0.12;
+  const seat: Rect = { x: r.x + w * 0.06, y: r.y + full * 0.08, w: w * 0.88, h: vis - full * 0.08 };
+  g.path(roundedRectPath(seat, tuck > 0 ? [sr, sr, 0, 0] : sr), g.basin);
+  // The backrest: a bar 12% of the depth along the back edge, full width, pill-ended.
+  const bar: Rect = { x: r.x, y: r.y, w, h: full * 0.12 };
+  g.path(roundedRectPath(bar, bar.h / 2), g.body);
+  if (deg === 0) return;
+  const turn = (p: Point): Point => {
+    const dx = p.x - c.x;
+    const dy = p.y - c.y;
+    return deg === 90
+      ? { x: c.x - dy, y: c.y + dx }
+      : deg === 180
+        ? { x: c.x - dx, y: c.y - dy }
+        : { x: c.x + dy, y: c.y - dx };
+  };
+  for (let i = from; i < g.nodes.length; i++) g.nodes[i] = mapSceneNode(g.nodes[i]!, turn, false);
 }
 
-/** Seat aspect (`w / h`) at or above which {@link drawChair} draws its two armrests. */
-const ARMREST_ASPECT = 0.7;
+/**
+ * The dining chair: a rounded upholstered SEAT (white) and a pill-ended BACKREST bar along the
+ * back edge, 12% of the depth, drawn over the seat's back.
+ *
+ * Two primitives, and that is the drawing: a chair at plan scale is a seat and a back, and the
+ * armrest lines and inner cushion the previous symbol carried read as three nested boxes at
+ * 1:100. The seat is the outline (first node); the backrest overlaps it, as the real one stands
+ * over the seat's back edge. The same construction, turned and tucked, is every chair round a
+ * {@link drawDiningTable}.
+ *
+ * It is deliberately NOT the outdoor chair (`drawOutdoorChair`, slatted) nor the office chair
+ * (round, with a true-arc back).
+ *
+ * Prim count: 2.
+ */
+export function drawChair(r: Rect, g: GlyphCtx): SceneNode[] {
+  chairInto(g, r, "top", 0);
+  return g.nodes;
+}
 
 /**
  * The stool: a round seat with no back, so its symbol is rotation-symmetric.
@@ -782,22 +797,22 @@ export function drawSideboard(r: Rect, g: GlyphCtx): SceneNode[] {
 }
 
 /**
- * The loveseat / two-seater: {@link sofaBody} with its cushion count PINNED at one division,
- * so it draws exactly two seats whatever its footprint.
+ * The loveseat / two-seater: the sofa's {@link seatBody} with its cushion count PINNED at two,
+ * whatever its footprint.
  *
  * That is the whole difference from {@link drawSofa}, and stating it as a pinned count rather
  * than as a second construction is the point: a two-seater IS a sofa, and a reader who can
  * tell the two symbols apart is reading the number of cushions, which is the fact the category
- * carries. `sofa` derives its count from the aspect and would draw three on this footprint;
+ * carries. `sofa` derives its count from the length of its seat and draws more on a long one;
  * `loveseat` draws two on any.
  *
  * Free-standing and NOT `directional`, like every other seat in the catalogue: a two-seater
  * floated with its back to the room is a room divider, not a defect.
  *
- * Prim count: 6.
+ * Prim count: 7.
  */
 export function drawLoveseat(r: Rect, g: GlyphCtx): SceneNode[] {
-  return sofaBody(r, g, 1);
+  return seatBody(r, g, 2, clamp(r.w * 0.08, r.h * 0.12, r.h * 0.22));
 }
 
 /**

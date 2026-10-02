@@ -28,7 +28,15 @@
 import type { Point } from "../ast.js";
 import type { SceneNode } from "../scene.js";
 import type { GlyphCtx, Rect } from "./glyph-lib.js";
-import { ellipsePoly, insetRect, insetRectSides, rectPoly, roundedRectPoly } from "./glyph-lib.js";
+import {
+  ellipsePoly,
+  insetRect,
+  insetRectSides,
+  ovalPath,
+  rectPoly,
+  roundedRectPath,
+  roundedRectPoly,
+} from "./glyph-lib.js";
 
 /** A concentric copy of an ellipse, scaled by `k` about its own centre. */
 function innerEllipse(cx: number, cy: number, rx: number, ry: number, k: number) {
@@ -60,34 +68,50 @@ function halfEllipseDown(cx: number, cy: number, rx: number, ry: number): Point[
 }
 
 /**
- * Cistern across the back with its lid lip and flush button, bowl and seat in front.
+ * The WC: the cistern along the back with its flush button, the bowl in front of it, the seat
+ * opening inside the bowl, and the two seat hinges.
  *
- * The seat is the 0.78 ring inside the bowl — the detail that separates a WC from "an
- * ellipse", and the reason the inner outline is drawn in the bowl's own fill rather than
- * left unfilled: it is one edge on a solid, not a second basin.
+ * - **Cistern** (body fill, outline pen): a rounded rectangle 85% of the width × 24% of the
+ *   depth against the back edge — the first node, and the one band `test/fixture-orientation`
+ *   finds on the wall side.
+ * - **Bowl** (white, outline pen): a FOUR-CENTRE OVAL ({@link ovalPath}) 80% of the width ×
+ *   73% of the depth, drawn after the cistern and overlapping its front edge, as the real bowl
+ *   stands in front of it. A true curve, not a 24-gon.
+ * - **Seat opening** (white, detail pen): the inner oval, the ring 12% of the bowl's width at the
+ *   sides and the front and twice that at the back, where the seat is hinged.
+ * - **Hinges and flush button** (detail pen): two short ticks on the back of the ring and one
+ *   small disc on the cistern.
+ *
+ * Mirror-symmetric about the centre line by construction — `test/glyph-chirality.test.ts`
+ * holds a mirrored WC to the plain one's exact bytes.
+ *
+ * Prim count: 6.
  */
 export function drawWc(r: Rect, g: GlyphCtx): SceneNode[] {
   const cx = r.x + r.w / 2;
-  const cisH = r.h * 0.22;
   const unit = Math.min(r.w, r.h);
-  g.poly(
-    [
-      { x: r.x, y: r.y },
-      { x: r.x + r.w, y: r.y },
-      { x: r.x + r.w, y: r.y + cisH },
-      { x: r.x, y: r.y + cisH },
-    ],
-    g.body,
-  );
-  // The lid's back lip: a seam across the cistern, clear of the button below it.
-  const lipY = r.y + cisH * 0.3;
-  g.seg({ x: r.x + r.w * 0.06, y: lipY }, { x: r.x + r.w * 0.94, y: lipY }, "extraThin");
-  const bowlCy = r.y + cisH + (r.h - cisH) * 0.52;
-  const bowlRx = r.w * 0.4;
-  const bowlRy = (r.h - cisH) * 0.46;
-  g.poly(ellipsePoly(cx, bowlCy, bowlRx, bowlRy), g.basin);
-  g.poly(innerEllipse(cx, bowlCy, bowlRx, bowlRy, 0.78), g.basin, "extraThin");
-  g.dot({ x: cx, y: r.y + cisH / 2 }, unit * 0.05);
+  const cisW = r.w * 0.85;
+  const cisH = r.h * 0.24;
+  g.path(roundedRectPath({ x: cx - cisW / 2, y: r.y, w: cisW, h: cisH }, Math.min(cisW, cisH) * 0.14), g.body);
+
+  const bowlTop = r.y + r.h * 0.215;
+  const bowlBot = r.y + r.h * 0.945;
+  const bowlCy = (bowlTop + bowlBot) / 2;
+  const rx = r.w * 0.4;
+  const ry = (bowlBot - bowlTop) / 2;
+  g.path(ovalPath(cx, bowlCy, rx, ry), g.basin);
+  // The ring: `ring` at the sides and the front, `2 × ring` at the back.
+  const ring = Math.min(rx * 2 * 0.12, ry * 0.3);
+  g.path(ovalPath(cx, bowlCy + ring * 0.5, rx - ring, ry - ring * 1.5), g.basin, "extraThin");
+
+  // The hinges: two ticks on the back of the ring, clear of the cistern's front edge.
+  const hy0 = r.y + cisH + (bowlCy - ry + ring * 2 - r.y - cisH) * 0.25;
+  const hy1 = r.y + cisH + (bowlCy - ry + ring * 2 - r.y - cisH) * 0.75;
+  for (const f of [-0.17, 0.17]) {
+    const x = cx + r.w * f;
+    g.seg({ x, y: hy0 }, { x, y: hy1 }, "extraThin");
+  }
+  g.dot({ x: cx, y: r.y + cisH * 0.5 }, unit * 0.04);
   return g.nodes;
 }
 

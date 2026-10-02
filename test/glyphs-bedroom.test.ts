@@ -44,6 +44,8 @@ import {
 import { CANONICAL_FIXTURES, hasFixtureGlyph } from "../src/elements/fixtures-glyphs.js";
 import { dashedPattern } from "../src/elements/glyph-lib.js";
 import type { SceneNode } from "../src/scene.js";
+import { DEFAULT_THEME } from "../src/theme.js";
+import { pathExtentPoints } from "./glyph-extent.js";
 
 const BASE = toScene(resolve(parse(`plan "G" { units mm room id=r at (0,0) size 8000x8000 label "R" }`).plan!).ir);
 
@@ -66,6 +68,8 @@ function coverPoints(nodes: readonly SceneNode[]): { x: number; y: number }[] {
     else if (p.t === "line") pts.push(p.a, p.b);
     else if (p.t === "arc" || p.t === "circle")
       pts.push({ x: p.center.x - p.r, y: p.center.y - p.r }, { x: p.center.x + p.r, y: p.center.y + p.r });
+    // A curved outline: its vertices and its arcs' axis extremes (never a centre — see the helper).
+    else if (p.t === "path") pts.push(...pathExtentPoints(p));
     else throw new Error(`bedroom glyphs emit no "${p.t}" primitive`);
   }
   return pts;
@@ -130,18 +134,27 @@ const F2_CASES: readonly (readonly [string, Draw, Rect, number])[] = [
 ];
 
 describe("bedroom glyphs — the bed", () => {
-  it("draws mattress, headboard, two pillows and the turned-down sheet", () => {
+  it("draws mattress, headboard, two pillows, the duvet, its turned-down band and the folded corner", () => {
     const n = draw(drawBed, DOUBLE);
-    expect(kinds(n)).toEqual(["polygon", "polygon", "polygon", "polygon", "line", "line", "line"]);
-    // Bodies at outline weight, the sheet rules and the fold at detail weight.
-    expect(n.slice(0, 4).map((x) => x.lineWeight)).toEqual(["thin", "thin", "thin", "thin"]);
-    expect(n.slice(4).map((x) => x.lineWeight)).toEqual(["extraThin", "extraThin", "extraThin"]);
+    expect(kinds(n)).toEqual(["path", "path", "path", "path", "polygon", "polygon", "polygon"]);
+    // The mattress and headboard are the outline; pillows, duvet, band and flap are detail.
+    expect(n.map((x) => x.lineWeight)).toEqual([
+      "thin",
+      "thin",
+      "extraThin",
+      "extraThin",
+      "extraThin",
+      "extraThin",
+      "extraThin",
+    ]);
+    // The soft surfaces read white: the pillows, the turned-down band and the flap.
+    expect([2, 3, 5, 6].map((i) => n[i]!.paint.fill)).toEqual(Array(4).fill(DEFAULT_THEME.opening));
   });
 
   it("drops to a single centred pillow on a single mattress", () => {
     const n = draw(drawBed, SINGLE);
     expect(n).toHaveLength(6);
-    expect(kinds(n)).toEqual(["polygon", "polygon", "polygon", "line", "line", "line"]);
+    expect(kinds(n)).toEqual(["path", "path", "path", "polygon", "polygon", "polygon"]);
   });
 
   it("switches at aspect 0.6 — 1200 mm on a 2000-long bed, the single/double split", () => {
@@ -158,15 +171,27 @@ describe("bedroom glyphs — the bed", () => {
     expect(draw(drawBed, DOUBLE)).toEqual(draw(drawDoubleBed, DOUBLE));
   });
 
-  it("puts the pillows at the head (the back edge) and the sheet below them", () => {
+  it("puts the pillows at the head (the back edge) and the duvet below them", () => {
     const n = draw(drawBed, DOUBLE);
-    const pillowY = Math.max(
-      ...n.slice(2, 4).flatMap((p) => (p.prim.t === "polygon" ? p.prim.pts.map((q) => q.y) : [])),
-    );
-    const sheetY = Math.min(...n.slice(4).flatMap((s) => (s.prim.t === "line" ? [s.prim.a.y, s.prim.b.y] : [])));
-    expect(pillowY).toBeLessThan(sheetY);
-    // Both live in the top half — the head is the top edge, which is what `rotate` turns.
-    expect(sheetY).toBeLessThan(DOUBLE.y + DOUBLE.h / 2);
+    const pillowY = Math.max(...coverPoints(n.slice(2, 4)).map((q) => q.y));
+    const duvetY = Math.min(...coverPoints(n.slice(4, 5)).map((q) => q.y));
+    expect(pillowY).toBeLessThan(duvetY);
+    // The duvet's head is at 30% of the length and the pillows sit above it.
+    expect(duvetY).toBeCloseTo(DOUBLE.y + DOUBLE.h * 0.3, 9);
+  });
+
+  it("folds ONE corner of the duvet back at 45° — at the foot, on the right — which makes it handed", () => {
+    const n = draw(drawBed, DOUBLE);
+    const flap = n.at(-1)!;
+    if (flap.prim.t !== "polygon") throw new Error("the flap is a triangle");
+    expect(flap.prim.pts).toHaveLength(3);
+    const xs = flap.prim.pts.map((q) => q.x);
+    const ys = flap.prim.pts.map((q) => q.y);
+    expect(Math.min(...xs)).toBeGreaterThan(DOUBLE.x + DOUBLE.w / 2); // right half
+    expect(Math.min(...ys)).toBeGreaterThan(DOUBLE.y + DOUBLE.h * 0.8); // at the foot
+    // A right isosceles triangle: the fold line is at 45°.
+    const [a, b] = flap.prim.pts;
+    expect(Math.abs(b!.x - a!.x)).toBeCloseTo(Math.abs(b!.y - a!.y), 9);
   });
 
   it("stays inside its footprint at both pillow counts", () => {
@@ -319,6 +344,10 @@ describe("bedroom glyphs — shared laws", () => {
         for (const n of nodes) {
           if (n.prim.t === "circle" || n.prim.t === "arc")
             expect(Number.isFinite(n.prim.r) && n.prim.r >= 0, `${name} ${R.w}x${R.h}: radius`).toBe(true);
+          if (n.prim.t === "path")
+            for (const lp of n.prim.loops)
+              for (const e of lp.edges)
+                if (e.t === "arc") expect(Number.isFinite(e.r) && e.r >= 0, `${name} ${R.w}x${R.h}: radius`).toBe(true);
         }
       }
     }

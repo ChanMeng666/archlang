@@ -70,11 +70,13 @@ describe("the shared back-edge ⇄ quarter-turn mapping", () => {
   });
 
   it("agrees with the rendered symbol: rotate 180 puts the WC cistern on the south edge", () => {
-    // The cistern is the band across the back; with rotate 180 its polygon must sit in
-    // the SOUTHERN fifth of the footprint (y 1000..1700 → band at y ≥ 1546).
+    // The cistern is the band across the back; with rotate 180 its outline must sit in the
+    // SOUTHERN quarter of the footprint (y 1000..1700 → the 24%-deep cistern at y ≥ 1532). It is
+    // the symbol's only body-filled shape, a rounded box drawn as a `<path>` (its `d` lists the
+    // same `x,y` pairs a polygon's points do, plus the arcs' radii, which carry no comma).
     const src = `plan "P" { units mm room id=r at (0,0) size 4000x4000 furniture wc at (1000,1000) size 400x700 rotate 180 }`;
     const svg = compile(src, { noCache: true }).svg;
-    const band = svg.match(/<polygon points="([^"]*)" fill="#f4f2ee"[^>]*\/>/g)!.at(-1)!;
+    const band = svg.match(/<(?:polygon points|path d)="([^"]*)" fill="#f4f2ee"[^>]*\/>/g)!.at(-1)!;
     const ys = [...band.matchAll(/[\d.]+,([\d.]+)/g)].map((m) => Number(m[1]));
     expect(Math.min(...ys)).toBeGreaterThan(1500);
     expect(Math.max(...ys)).toBeCloseTo(1700, 6);

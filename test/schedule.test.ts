@@ -295,10 +295,14 @@ describe("legend — derived closed-form from what the drawing paints", () => {
   it("draws the real fixture glyph in the swatch, never a stand-in box", () => {
     const src = shell(`  legend\n  furniture wc at (1000,2000) size 400x700\n`);
     const s = sceneOf(src);
-    const legendGlyph = s.nodes.filter((n) => n.layer === "annotations" && n.prim.t === "polygon");
-    // A WC glyph is a cistern polygon + a bowl ellipse polygon, so the legend row carries
-    // more polygons than the bare frame + swatch box would.
+    const legendGlyph = s.nodes.filter(
+      (n) => n.layer === "annotations" && (n.prim.t === "polygon" || n.prim.t === "path"),
+    );
+    // A WC glyph is a cistern, a bowl and a seat — closed curved outlines (`path`) — so the
+    // legend row carries more closed shapes than the bare frame + swatch box would, and at
+    // least one of them is a curve no stand-in box would draw.
     expect(legendGlyph.length).toBeGreaterThan(2);
+    expect(legendGlyph.some((n) => n.prim.t === "path")).toBe(true);
     expect(tableText(src)).toContain("wc");
   });
 });
