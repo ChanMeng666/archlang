@@ -186,9 +186,11 @@ function primBBox(prim: ScenePrim): BBox | null {
       return null;
     case "region":
       return bboxOfPoints(prim.loops.flat());
-    // Like `region`, a `path` is the unioned wall solid and is never asked about here
-    // (the caller substitutes per-segment wall rectangles). Boxed by its vertices plus
-    // each arc's MIDPOINT, so a bulge is not lost if it ever is asked.
+    // A `path` is either the unioned wall solid — never asked about here, the caller
+    // substitutes per-segment wall rectangles — or a fixture glyph's curved outline (a WC
+    // bowl, a cushion, a tree canopy), which IS an obstacle like any furniture polygon.
+    // Boxed by its vertices plus each arc's MIDPOINT, so a bulge between two vertices is
+    // not lost.
     case "path": {
       const pts: Point[] = [];
       for (const lp of prim.loops) {

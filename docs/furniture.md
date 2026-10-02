@@ -426,9 +426,11 @@ how it is used, not a texture — which is the only kind of line that survives b
 ink — `furnitureStroke` mixed three sevenths of the way toward the wall ink, so it reads at
 4.5:1 or better on the room fill in every shipped theme — and its DETAIL (cushion joints,
 pillows, burners, drains) with the finest pen, 0.13 mm on a sheet, in `furnitureStroke`
-itself. `style furniture { stroke "#…" }` sets the detail tone and the outline follows it in
-the same hue; a named colour (`stroke "teal"`) is used for both. The labelled rectangle of an
-uncatalogued word is not a symbol and keeps `furnitureStroke`.
+itself. Stairs, lifts and escalators follow the same rule. On the plan, `style furniture
+{ stroke "#…" }` sets the detail tone and the outline follows it in the same hue, and a named
+colour (`stroke "teal"`) is used for both; the legend's swatches are drawn in the plan's theme
+and do not pick up a `style furniture` override. The labelled rectangle of an uncatalogued
+word is not a symbol and keeps `furnitureStroke`.
 
 **Back on top.** Every symbol is drawn with the side that goes against a wall along the
 **top** edge of its footprint, then quarter-turned about the footprint centre. So
