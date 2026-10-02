@@ -20,6 +20,8 @@ import { compile, describe as describePlan, lint, planToJson, toDxf } from "../s
 import { renderAscii } from "../src/backends/ascii.js";
 import { OUTDOOR_KINDS } from "../src/ast.js";
 import { pointInPolygon } from "../src/geometry/polygon.js";
+import { GROUND_MATERIALS, hatchPattern, hatchTileMm } from "../src/hatches.js";
+import { EXTRA_THIN_RATIO } from "../src/scene.js";
 
 const plan = (body: string): string => `plan "Ground" {\n  units mm\n${body}\n}\n`;
 
@@ -320,6 +322,70 @@ describe("outdoor — the separation from `room` is total", () => {
 // ---------------------------------------------------------------------------
 // 5 — the legend
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// 4b — the ground patterns themselves
+// ---------------------------------------------------------------------------
+
+describe("outdoor — the ground hatches are the drawing's finest, palest layer", () => {
+  /** A hatch context with round numbers and an exact formatter, so the markup can be read back. */
+  const ctx = { fmt: (n: number) => String(n), gap: 100, thin: 18, base: "#base", line: "#line" };
+  const pattern = (m: string): string => hatchPattern({ material: m, scale: 1, angle: 0 }, ctx);
+  /** The finest pen, by the same arithmetic `weightWidth("extraThin", …)` uses. */
+  const hairline = (ctx.thin * EXTRA_THIN_RATIO[0]) / EXTRA_THIN_RATIO[1];
+
+  it("strokes every ground pattern at the extraThin hairline, and paints no background", () => {
+    // The hairline is DERIVED from the pen ramp, never a literal: move the ramp and the ground
+    // follows. A background rectangle would cover the tint the surface draws under its hatch.
+    for (const m of GROUND_MATERIALS) {
+      const svg = pattern(m);
+      expect(svg, `${m} paints no background`).not.toContain("<rect");
+      const widths = [...svg.matchAll(/stroke-width="([^"]+)"/g)].map((x) => Number(x[1]));
+      for (const w of widths) expect(w, `${m} stroke`).toBeCloseTo(hairline, 9);
+      // …and every dot is no heavier than a hairline across.
+      const radii = [...svg.matchAll(/<circle [^>]*r="([^"]+)" fill="#line"/g)].map((x) => Number(x[1]));
+      for (const r of radii) expect(2 * r, `${m} dot`).toBeLessThanOrEqual(2 * hairline + 1e-9);
+    }
+  });
+
+  it("keeps every mark inside its own tile, so a tile seam cuts nothing", () => {
+    // Water is the one exception by construction: its waves run edge to edge, ending exactly
+    // where the next tile's begin, which is what makes them continuous.
+    for (const m of GROUND_MATERIALS.filter((g) => g !== "water")) {
+      const svg = pattern(m);
+      const tile = /^<pattern [^>]*?width="([^"]*)" height="([^"]*)"/.exec(svg)!;
+      const [w, h] = [Number(tile[1]), Number(tile[2])];
+      const inside = (x: number, y: number, what: string): void => {
+        expect(x, `${m} ${what} x`).toBeGreaterThanOrEqual(-1e-9);
+        expect(x, `${m} ${what} x`).toBeLessThanOrEqual(w + 1e-9);
+        expect(y, `${m} ${what} y`).toBeGreaterThanOrEqual(-1e-9);
+        expect(y, `${m} ${what} y`).toBeLessThanOrEqual(h + 1e-9);
+      };
+      for (const c of svg.matchAll(/<circle cx="([^"]+)" cy="([^"]+)" r="([^"]+)"/g)) {
+        const [x, y, r] = [Number(c[1]), Number(c[2]), Number(c[3])];
+        inside(x - r, y - r, "circle");
+        inside(x + r, y + r, "circle");
+      }
+      for (const l of svg.matchAll(/<line x1="([^"]+)" y1="([^"]+)" x2="([^"]+)" y2="([^"]+)"/g)) {
+        inside(Number(l[1]), Number(l[2]), "line");
+        inside(Number(l[3]), Number(l[4]), "line");
+      }
+      for (const d of svg.matchAll(/<path d="([^"]+)"/g)) {
+        for (const p of d[1]!.matchAll(/[ML]([-\d.e]+),([-\d.e]+)/g)) inside(Number(p[1]), Number(p[2]), "path");
+      }
+    }
+  });
+
+  it("sizes the module patterns to the drawing: a 600 mm slab and a 150 mm board at 1:100", () => {
+    // On a sheet the hatch module is 1.2 sheet-mm × the denominator — 120 mm of plan at 1:100.
+    expect(hatchTileMm({ material: "paving", scale: 1, angle: 0 }, 120)).toBeCloseTo(600, 9);
+    const deck = pattern("deck");
+    // Four boards a tile: the long joints are 1.25 modules apart.
+    const ys = [...deck.matchAll(/M0,([\d.]+) L/g)].map((x) => Number(x[1]));
+    expect(ys).toHaveLength(4);
+    for (let i = 1; i < ys.length; i++) expect(ys[i]! - ys[i - 1]!).toBeCloseTo(ctx.gap * 1.25, 9);
+  });
+});
 
 describe("outdoor — the legend gains a row per ground material used", () => {
   const legendRows = (src: string): string[] => {
