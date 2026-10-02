@@ -255,8 +255,11 @@ describe("the handedness survey", () => {
   /**
    * The families whose plan symbol has NO vertical mirror axis at its catalogued footprint,
    * measured by reflecting the drawing rather than read off a flag. `sofa_l` is the one
-   * originally reported; the other eighteen are what looking rather than assuming
-   * turned up.
+   * originally reported; the other twenty-one are what looking rather than assuming
+   * turned up. Three of them are handed since the kitchen redraw, each on purpose: the
+   * `kitchen_sink` (its drainer board stands on one side of the bowl), the `stove` and the `oven`
+   * at its range footprint (a hob puts its two large burners on one diagonal and its two small
+   * ones on the other, as every drafted range block does).
    *
    * This is a RECORD of the survey, not the mechanism — `mirrorGlyph` derives handedness per
    * drawing, per footprint, so nothing reads this list. Redraw a symbol and it may move: that
@@ -265,9 +268,12 @@ describe("the handedness survey", () => {
    */
   const HANDED = [
     "bathtub",
+    "kitchen_sink",
+    "stove",
     "bed",
     "double_bed",
     "desk",
+    "oven",
     "island",
     "washer",
     "sofa_l",
@@ -294,7 +300,7 @@ describe("the handedness survey", () => {
     );
   };
 
-  it("nineteen of the 83 shipped families are handed at their catalogued footprint", () => {
+  it("twenty-two of the 83 shipped families are handed at their catalogued footprint", () => {
     const found = CANONICAL_FIXTURES.filter((c) => {
       const fp = defaultFootprint(c);
       return handedAt(c, fp?.along ?? 1000, fp?.depth ?? 600);
