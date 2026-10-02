@@ -362,8 +362,11 @@ scale) and the heaviest pen (likewise × the weight) must stay inside the range,
 `scale 10` on a house is fine and only a tile or pen past 33.5 km is refused. A `north`
 bearing or hatch `angle` must lie within ±33,554,432 degrees, and on a `paper` plan the
 `scale` denominator at most the one that keeps the sheet inside the range (1:28220 on A0,
-1:112977 on A4). Each is `E_OUT_OF_RANGE` at the value. The bounds are `MODEL_RANGE_MM` and
-its neighbours in `src/num-format.ts`. A number past the floating-point
+1:112977 on A4). Each is `E_OUT_OF_RANGE` at the value. A `lineWeight` passed through
+`compile()`'s options (`theme`, or a registered theme the plan selects) is held to the same
+rule and reported at the `plan "…"` header, since it has no source span. A plan-level setting
+out of range is reported once for the plan, not once per storey page. The bounds are
+`MODEL_RANGE_MM` and its neighbours in `src/num-format.ts`. A number past the floating-point
 range altogether is `E_NON_FINITE`, and a `stair` or `escalator` run longer than about 308 m
 is `E_RUN_TOO_LONG`. A value that draws nothing (a `let` binding no element uses, a label's
 text, a `scale` without `paper`, a storey `level` number) is not held to the range.
@@ -648,6 +651,20 @@ while i < COUNT {
   elements without ever finishing reports `E_ELEMENT_LIMIT`, not `E_WHILE_LIMIT`.
   Likewise `W_ROOM_OVERLAP` lists the first 200 overlapping room pairs and then one
   summary warning counting the rest.
+- Two budgets hold what those per-loop and per-storey caps multiply. Evaluation as a
+  whole (every storey, component and import together) is held to 5,000,000 steps,
+  where a step is an expression evaluated, a statement run, a loop iteration, a value
+  or character produced (charged before it is built), a binding copied or a diagnostic
+  raised: loops nested in loops, a recursion that calls itself twice, or a string that
+  doubles stop with `E_STEP_LIMIT` at the statement that crossed the budget, in about a
+  second. And before anything is drawn, `compile` estimates the drawing over every
+  storey (an upper bound per kind: a room 3 primitives, a door 5, a run one or two lines
+  per tread, a fixture its own symbol, plus one per point of each outline and what
+  `dims auto`, the axes and the tables add): past 300,000 the plan is
+  `E_DRAWING_LIMIT`, which keeps the largest drawing under about 0.35 GB of memory.
+  `describe` and `lint` draw nothing and are not held by it. The largest shipped
+  example spends under 5,000 steps and is estimated at under 5,000; a 24-storey
+  tower of 200 flats a floor is estimated at about 108,000.
 
 **`while` is deprecated** (`W_WHILE_DEPRECATED`) and will be removed in a
 future major version: it is the one construct that needs a reassignment to

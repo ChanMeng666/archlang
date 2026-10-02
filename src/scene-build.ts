@@ -48,12 +48,6 @@ function planBounds(ir: ResolvedPlan, registry: Registry): Bounds {
   return drawingBounds(ir.elements, ir.siteBoundary, registry);
 }
 
-/**
- * Build the {@link Scene} for a resolved plan. The theme is merged + sanitized
- * once here and baked into node paint; it is also carried on the Scene for the
- * page chrome (north/scale/title). `opts.width` does not affect the Scene (it is
- * an SVG-only attribute) — only `opts.theme` participates.
- */
 /** Resolve `theme <name>` to its colours: per-call registered themes win over built-in THEMES.
  *  Exported so the axonometric view (`src/view/iso.ts`) runs the SAME cascade rather than a
  *  second copy of it — a theme resolved two ways is two ways for a colour to be wrong. */
@@ -78,6 +72,15 @@ function synthDims(ir: ResolvedPlan, sizes: RenderSizes): RDim[] {
   }
   if (ir.autoDims === "walls" || ir.autoDims === "all") synthWallDims(ir, sizes, dims);
   return dims;
+}
+
+/**
+ * How many dimensions `dims auto` will draw on this storey, for the drawing budget
+ * (`src/draw-budget.ts`): the same {@link synthDims} the drawing calls. The pens only move
+ * a chain outward or flip a number's side, never add or remove a dimension, so any pens do.
+ */
+export function autoDimCount(ir: ResolvedPlan): number {
+  return ir.autoDims ? synthDims(ir, renderSizes(ir.sheet, 1000, 1000, 1)).length : 0;
 }
 
 /**
@@ -582,6 +585,32 @@ function elementLabelOf(el: ResolvedPlan["elements"][number]): { label: string; 
   return undefined;
 }
 
+/**
+ * The plan's theme cascade below per-element `style` (`preStyle`) and the page theme with
+ * `CompileOptions.theme` on top (`theme`, sanitized once). One function, so the drawing and
+ * the pipeline's check of a `lineWeight` passed through the API read the same pen.
+ */
+export function planTheme(ir: ResolvedPlan, opts: CompileOptions, runtime: Runtime): { preStyle: Theme; theme: Theme } {
+  const base = themeBaseLookup(ir.themeBase, runtime);
+  const themeFromLayer = ir.themeFrom ? derivePoche(ir.themeFrom) : undefined;
+  const preStyle = mergeTheme(DEFAULT_THEME, base, themeFromLayer, ir.theme);
+  const theme = sanitizeTheme(mergeTheme(preStyle, opts.theme));
+  return { preStyle, theme };
+}
+
+/**
+ * Build the {@link Scene} for a resolved plan. The theme is merged + sanitized
+ * once here and baked into node paint; it is also carried on the Scene for the
+ * page chrome (north/scale/title). `opts.width` does not affect the Scene (it is
+ * an SVG-only attribute) — only `opts.theme` participates.
+ *
+ * **`compile()` is the guarded entry point.** It refuses, before calling this, a plan whose
+ * drawing is estimated past the drawing budget (`E_DRAWING_LIMIT`, `MAX_DRAW_UNITS`,
+ * `src/draw-budget.ts`) and a `lineWeight` from the options whose pen leaves the modelling
+ * range. This function applies neither: a caller who draws a resolved IR directly
+ * (`toScene(resolve(ast).ir)`) takes that budget on, and 500 escalators at the tread cap
+ * drawn this way make 1.1 million nodes and about 240 MB. Use `compile().scene`.
+ */
 export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Runtime = BUILTIN_RUNTIME): Scene {
   const registry = runtime.registry;
 
@@ -591,10 +620,7 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   // `preStyle` holds everything below `style`/`opts.theme`; sanitize is applied
   // exactly once per produced theme (no double-escaping), and `opts.theme` is the
   // last layer in BOTH paths so it always wins — even over a per-element style.
-  const base = themeBaseLookup(ir.themeBase, runtime);
-  const themeFromLayer = ir.themeFrom ? derivePoche(ir.themeFrom) : undefined;
-  const preStyle = mergeTheme(DEFAULT_THEME, base, themeFromLayer, ir.theme);
-  const theme = sanitizeTheme(mergeTheme(preStyle, opts.theme));
+  const { preStyle, theme } = planTheme(ir, opts, runtime);
 
   // Per-element styled themes (`style <kind> { … }`), each sanitized once. Absent
   // styles → every element reuses `theme` (identity) → byte-identical output.

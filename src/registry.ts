@@ -195,6 +195,14 @@ export interface ElementDef {
   parse(ctx: ParseCtx): AstElement;
   /** Auto-id prefix (e.g. "room", or a wall/furniture's category). */
   idPrefix(node: AstElement): string;
+  /**
+   * Resolve one statement. Every expression it evaluates through `ctx` is charged to the
+   * plan's evaluation-step budget (`MAX_EVAL_STEPS`, `E_STEP_LIMIT`). A plugin that calls
+   * `compile()` (or `resolve()`) from in here starts a nested resolution with a FRESH budget
+   * of its own: its work is not charged to the outer plan, and the outer budget resumes when
+   * it returns. A step-limit crossing in the outer plan unwinds through this method; do not
+   * catch what you did not throw.
+   */
   resolve(node: AstElement, ctx: ResolveCtx): ResolvedElement;
   /** Points this element contributes to the drawing bounds. */
   bounds(resolved: ResolvedElement): Point[];
@@ -206,6 +214,16 @@ export interface ElementDef {
    * bounds are checked.
    */
   measures?(resolved: ResolvedElement): number[];
+  /**
+   * An upper bound on the drawing primitives {@link render} emits for this element (a room
+   * 3, a run its treads plus its arrow, a fixture its glyph). `compile()` sums every
+   * element's estimate, plus one unit per point it reports in {@link bounds}, over the whole
+   * building and refuses a plan past the drawing budget before anything is drawn
+   * (`MAX_DRAW_UNITS`, `E_DRAWING_LIMIT`, `src/draw-budget.ts`). Optional: without it an
+   * element is estimated at `DEFAULT_DRAW_COST` (72), which covers a fixed-size glyph; a kind
+   * whose drawing grows with its size must declare it.
+   */
+  drawCost?(resolved: ResolvedElement): number;
   /** Emit positioned drawing primitives for this element (the Scene IR). */
   render(resolved: ResolvedElement, ctx: RenderCtx): SceneNode[];
   /** Parameter schema — one source for the LSP (hover/completion/signature) and
@@ -305,6 +323,8 @@ export function registerElement(def: ElementDef): ElementDef {
     throw new TypeError("registerElement: def.transform must be a function when given");
   if (def.measures !== undefined && typeof def.measures !== "function")
     throw new TypeError("registerElement: def.measures must be a function when given");
+  if (def.drawCost !== undefined && typeof def.drawCost !== "function")
+    throw new TypeError("registerElement: def.drawCost must be a function when given");
   return def;
 }
 

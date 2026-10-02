@@ -721,7 +721,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `arch explain <CODE>`.
-**99 errors** (abort rendering) · **52 warnings** (advisory; `validate --strict` fails on them too).
+**101 errors** (abort rendering) · **52 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -742,6 +742,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `E_DOOR_OPEN_RANGE` — `open` must be between 0 and 1. **Fix:** Give `open` a fraction in `[0,1]`; `arch fix` clamps it to the nearer end for you. Omit it entirely for the default 0.5.
 - `E_DOOR_WIDTH` — Door must have a positive width. **Fix:** Give the door a positive `width`.
 - `E_DOTTED_DECL` — A dotted name cannot be declared. **Fix:** Declare the short name and address it from outside as `<instance>.<name>`.
+- `E_DRAWING_LIMIT` — The drawing is larger than any plan may draw. **Fix:** Draw fewer or shorter runs, shrink the loop, or split the building into separate plans.
 - `E_DUP_ID` — Duplicate element id. **Fix:** Rename one of them, or drop the explicit id to auto-generate a unique one.
 - `E_DUP_INSTANCE` — Duplicate `place … as <name>` instance name. **Fix:** Give each instance its own name (`as west` / `as east`).
 - `E_ELEMENT_LIMIT` — The plan expands to too many elements. **Fix:** Shrink the range, or make the loop terminate; split a genuinely huge site into storeys or separate plans.
@@ -813,6 +814,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 - `E_SITE_DUP` — Two `site` blocks in one plan. **Fix:** Delete one of the blocks, or merge their fields into a single `site { … }`. The first block is the one that takes effect.
 - `E_SITE_NO_STREET` — A `site` block declares no `street`. **Fix:** Add `street north`, `south`, `east` or `west` inside the block. `hemisphere` is the optional field (it defaults to `north`).
 - `E_STAIR_WIDTH` — Stair flight `width` is outside the footprint. **Fix:** Drop `width` to fill the footprint, or give a value between 0 and the footprint's short side.
+- `E_STEP_LIMIT` — Evaluation did more work than any plan needs. **Fix:** Remove the inner loop or the doubling, compute the value directly, or split the plan.
 - `E_STRIP_NEST` — Illegal `strip` nesting. **Fix:** Move the `strip` to the plan body, alongside the other elements.
 - `E_STRIP_SIZE` — Room in a `strip` is missing a size. **Fix:** Give the room a `size <main>` (main-axis extent) plus either a strip `height`/`width` or its own `size <main>x<cross>`.
 - `E_TYPE` — Type mismatch. **Fix:** Convert or supply the expected type.

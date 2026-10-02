@@ -423,6 +423,12 @@ export const outdoor: ElementDef = {
     return rectCorners(o.at.x, o.at.y, o.size.w, o.size.h);
   },
 
+  /** At most five primitives (tint, hatch, edge, name, area) and, per railed side, its two
+   *  rails and at most `MAX_RAIL_POSTS + 1` post ticks (`railNodes`), for the drawing budget. */
+  drawCost(resolved): number {
+    return 5 + (2 + MAX_RAIL_POSTS + 1) * ((resolved as ROutdoor).rail?.length ?? 0);
+  },
+
   render(resolved, ctx: RenderCtx): SceneNode[] {
     const o = resolved as ROutdoor;
     const { theme, sizes } = ctx;
@@ -556,6 +562,9 @@ export const outdoor: ElementDef = {
  * from the drawing's, so two balconies of the same size rail identically wherever they
  * sit on the sheet.
  */
+/** The most post divisions one railed edge is drawn with (`railNodes` draws one more tick). */
+const MAX_RAIL_POSTS = 24;
+
 function railNodes(o: ROutdoor, side: RailSide, ctx: RenderCtx, layer: string): SceneNode[] {
   const { theme, sizes } = ctx;
   const [a, b] = edgeEndpoints(o.at, o.size, side);
@@ -580,7 +589,7 @@ function railNodes(o: ROutdoor, side: RailSide, ctx: RenderCtx, layer: string): 
   });
   const nodes: SceneNode[] = [line(off(0)), line(off(depth))];
 
-  const posts = Math.max(2, Math.min(24, Math.round(len / 1200)));
+  const posts = Math.max(2, Math.min(MAX_RAIL_POSTS, Math.round(len / 1200)));
   for (let i = 0; i <= posts; i++) {
     const t = (len * i) / posts;
     const p0 = { x: a.x + ux * t, y: a.y + uy * t };

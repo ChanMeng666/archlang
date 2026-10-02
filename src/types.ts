@@ -114,7 +114,10 @@ export interface CompileOptions {
   /**
    * Theme overrides applied on top of the plan's `theme { … }` directive and
    * the built-in defaults (these win). Any subset of keys may be supplied.
-   * A theme passed here is not held by the source-level range checks (`lineWeight`).
+   * A `lineWeight` passed here (or by a theme in {@link themes} the plan selects) is held to
+   * the same drawn-pen rule as the source's: past it, `compile()` reports `E_OUT_OF_RANGE`
+   * at the plan header (the value has no source span), once per plan, and draws nothing.
+   * `describe()` and `lint()` take no theme and are unaffected.
    */
   theme?: Partial<import("./theme.js").Theme>;
   /**

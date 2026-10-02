@@ -70,6 +70,14 @@ export function treadCount(length: number): number {
   return Math.max(MIN_TREADS, Math.round(length / TREAD_GOING_MM));
 }
 
+/** The tread divisions {@link stairGlyph}/{@link escalatorGlyph} draw for `v`: the count
+ *  of its run frame's length (the frame's width does not change it), for the drawing
+ *  budget's estimate (`ElementDef.drawCost`). Held at {@link MAX_RUN_TREADS}: a longer run is
+ *  already `E_RUN_TOO_LONG` and is never drawn, so it is not reported a second time. */
+export function runTreads(v: RVertical): number {
+  return Math.min(treadCount(runFrame(v, 0).length), MAX_RUN_TREADS);
+}
+
 /**
  * The most tread divisions one run is drawn with: 1,100 at the {@link TREAD_GOING_MM} going is
  * a run of about 308 m, past the longest built escalator (about 137 m) and the moving walkways

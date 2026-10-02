@@ -5,8 +5,9 @@
 - **Scope:** the number domain and resource bounds of `compile()`, the parser's handling of
   malformed input, the geometric predicates that decide a diagnostic, multi-storey
   reachability and circulation, `diffPlans`, and the eval's statistics. Three new catalogued
-  errors (`E_NON_FINITE`, `E_ELEMENT_LIMIT`, `E_LAYOUT_UNPLACED`) and, by the addendum,
-  `E_OUT_OF_RANGE` and `E_RUN_TOO_LONG`; no language syntax change.
+  errors (`E_NON_FINITE`, `E_ELEMENT_LIMIT`, `E_LAYOUT_UNPLACED`) and, by the addenda,
+  `E_OUT_OF_RANGE`, `E_RUN_TOO_LONG`, `E_STEP_LIMIT` and `E_DRAWING_LIMIT`; no language syntax
+  change.
 
 ## Context
 
@@ -339,3 +340,54 @@ backlog holds the evidence.
    reading was the carve artefact. No code change.
 4. **`spec.llm.md` headroom is restored by trimming provable duplication**, the rule the cap's own
    test states first, with no language fact removed. The cap stays at 30,000 characters.
+
+## Second addendum (2026-10-02): the delegated decisions
+
+The owner delegated what the first addendum left open (backlog M.1's sub-items and M.2). Each
+is measured in the cited tests; the backlog holds the measurements.
+
+1. **A `lineWeight` from the compile options is held like the source's.** `opts.theme`, or a
+   theme in `opts.themes` the plan selects and does not override, is held to the drawn-pen rule
+   by `compile()` (the pipeline, on the theme the drawing will use: `planTheme`,
+   `src/scene-build.ts`). The value has no source span, so the one `E_OUT_OF_RANGE` is placed at
+   the `plan "…"` header (`PlanNode.headerSpan`) and says the value came from the compile options;
+   a value that is not a finite number is reported without being printed. `describe()` and
+   `lint()` take no theme. Pinned by `test/model-range.test.ts`: the API and the source refuse at
+   the same weight.
+2. **A plan-level setting out of range is reported once per plan.** A theme `lineWeight` is
+   checked once over the building (at the first storey whose pen leaves the range), and a report
+   raised inside the `axes` block, the `site` block or the plan's `height` is kept once,
+   untagged. Nothing else is collapsed: a statement written once and expanded on several storeys
+   (a component placed on two floors) is reported on each, with its level. `north`, `grid` and a
+   `paper` scale already were reported once.
+3. **One evaluation-step budget across the whole resolution** (`MAX_EVAL_STEPS`, 5,000,000,
+   `src/expr.ts`; `E_STEP_LIMIT`), a count and never a time, so `compile()` stays deterministic.
+   A step is a unit of evaluator work bounded by a constant: an expression node, a statement, a
+   loop iteration, a value or character produced, a binding copied, a hint's edit-distance cell, a
+   diagnostic raised. Whatever builds a string is charged before it builds it, so no surface can
+   allocate past the budget, and the walks over a value (printing, `==`) use an explicit stack, so
+   an array nested 100,000 deep costs its items, never the JS stack. The counter runs across every storey (a storey starts where the one
+   below stopped, a `paper` plan's geometry probes and drawn pass count into one total, and the
+   start is part of the storey's memo key), and the crossing unwinds inside `resolve()` with an
+   internal signal, so the plan resolves to no elements with `E_STEP_LIMIT` at the statement that
+   crossed it. A plugin's nested `compile()` runs under a fresh budget of its own. The bound is
+   1,005 times the largest corpus plan that compiles (the margin is measured against plans that
+   compile; the catalogue's demonstrations of the other caps are 19 times under it); M.2's nested
+   loops reach it in about a second. Pinned by `test/step-budget.test.ts`.
+4. **One drawing budget over every storey, before rendering** (`MAX_DRAW_UNITS`, 300,000,
+   `src/draw-budget.ts`; `E_DRAWING_LIMIT`, a new code because the total is across every kind,
+   not one run), checked by `compile()` only: `describe()` and `lint()` draw nothing. The estimate
+   is a tight upper bound per kind: each `ElementDef` declares its `drawCost` (a room 3, a door 5,
+   a run its treads, a fixture its own glyph, counted), plus one unit per point of its `bounds()`,
+   plus each storey's plan-wide passes (`dims auto`, axes, the lot line, the tables); a kind with
+   none is 72. A first version charged a flat 72 per element and refused real buildings, which is
+   why the estimate is held from both sides: at or above what is drawn for every kind, fixture
+   category and corpus plan, and its primitive part at most four times what is drawn over the
+   corpus. The budget is derived from memory: each kind's densest shape at 300,000 units held at
+   most 186 MB after collection and peaked at most 330 MB, and every one ran under a 512 MB heap.
+   Pinned by `test/drawing-budget.test.ts`.
+5. **Won't fix, recorded.** The total-area `E_NON_FINITE` branch stays as an unreachable
+   backstop. `arch fmt`'s 0.001 mm canonical form below |n|·1000 ≤ 2^53 is the language's
+   resolution (the lattice §1's arc check decides on), so a sub-micrometre literal printing 0 is by
+   design. Annotation primitives (a door leaf, glazing, dimension ticks) may reach slightly past the
+   range on an accepted plan; they are finite, and only bounds and measures are held.

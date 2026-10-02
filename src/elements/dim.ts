@@ -272,6 +272,9 @@ export const dim: ElementDef = {
     return [(resolved as RDim).offset];
   },
 
+  /** At most 6 primitives (the drawing budget, `MAX_DRAW_UNITS`): two witness lines, the dimension line, two ticks and the value. */
+  drawCost: () => 6,
+
   render(resolved, ctx: RenderCtx): SceneNode[] {
     const dm = resolved as RDim;
     const { theme, sizes, fmt } = ctx;

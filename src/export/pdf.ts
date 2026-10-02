@@ -9,7 +9,9 @@
  * (`/Encoding /WinAnsiEncoding`) silently dropped or remapped them.
  * `pdfkit` is an OPTIONAL dependency, lazy-`import()`ed so the zero-dep core never
  * hard-requires it; a clear error is thrown if it is absent. Async + Node-oriented
- * — NOT part of `compile()`. Build a Scene with `toScene(ir)` or `compile().scene`.
+ * — NOT part of `compile()`. Build a Scene with `toScene(ir)` or `compile().scene`. The latter
+ * is the guarded route: `compile()` refuses a drawing past the drawing budget
+ * (`E_DRAWING_LIMIT`) before building the Scene, and `toScene()` on a resolved IR does not.
  *
  * Coordinates: ArchLang is mm, top-left origin, +y down — pdfkit's user space is
  * the same orientation, so we map the viewBox by translating by its top-left and

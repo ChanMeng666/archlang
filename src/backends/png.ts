@@ -11,7 +11,9 @@
  * supplied, so text rasterizes identically on any machine/runner regardless of
  * which fonts happen to be installed — the precondition for the visual-regression
  * goldens (T6.4). Node-only (resvg is a native binding) and async — NOT part of
- * `compile()`. Build a Scene with `toScene(ir)` or `compile().scene`.
+ * `compile()`. Build a Scene with `toScene(ir)` or `compile().scene`. The latter is the
+ * guarded route: `compile()` refuses a drawing past the drawing budget (`E_DRAWING_LIMIT`)
+ * before building the Scene, and `toScene()` on a resolved IR does not.
  */
 
 import type { CompileOptions } from "../types.js";
