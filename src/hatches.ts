@@ -455,7 +455,7 @@ const META: Record<string, HatchMeta> = {
     natural: 0,
     dxfPattern: "GRAVEL",
     build: (id, c) => {
-      const w = c.gap * 4.2 * c.scale;
+      const w = c.gap * 5 * c.scale;
       const hl = hairline(c);
       const stones = GRAVEL_STONES.map(
         ([fx, fy, fr]) =>
