@@ -422,9 +422,12 @@ const HANDED_ON_MAIN: Readonly<Record<string, string>> = {
 
 /**
  * Families allowed to have LOST handedness relative to {@link HANDED_ON_MAIN}, each with the
- * reason its old handed mark was decorative rather than meaningful. Empty: nothing has lost any.
+ * reason its old handed mark was decorative rather than meaningful.
  */
-const LOST_HANDEDNESS: Readonly<Record<string, string>> = {};
+const LOST_HANDEDNESS: Readonly<Record<string, string>> = {
+  shoe_cabinet:
+    "its one-way tilt diagonals were decoration that read as cross-bracing; the redraw is carcass, splits and centred pulls",
+};
 
 describe("the extended handedness survey, pinned against main", () => {
   const api = { CANONICAL_FIXTURES, fixtureGlyph, marksEqual, mirrorNode, defaultFootprint, DEFAULT_THEME };

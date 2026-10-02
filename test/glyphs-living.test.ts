@@ -558,26 +558,7 @@ describe("glyphs-living — every `symmetric` family in this module is D4-invari
     }
   };
 
-  /**
-   * A KNOWN DEFECT, pinned rather than skipped: the dining chair's backrest is a stadium
-   * (`roundedRectPath` with a radius of half its depth), and `roundedRectPath` drops a used-up
-   * straight run only on EXACT float equality — so at some absolute positions a chair gains a
-   * sub-micron straight edge between its end arcs and a turned chair does not. The drawing is
-   * the same; the canonical spelling `marksEqual` compares is not, so the table reads as handed
-   * there. `it.fails` turns red the day the helper compares with a tolerance — delete this entry
-   * then.
-   */
-  const KNOWN_DEFECT: ReadonlySet<string> = new Set(["dining_table"]);
-
-  it.each(SYMMETRIC.filter((c) => !KNOWN_DEFECT.has(c)))(
-    "%s maps onto itself under every quarter-turn and a mirror",
-    invariantOnSquares,
-  );
-
-  for (const category of SYMMETRIC.filter((c) => KNOWN_DEFECT.has(c))) {
-    it.fails(`${category} does not yet (a float-equality edge in roundedRectPath; see KNOWN_DEFECT)`, () =>
-      invariantOnSquares(category));
-  }
+  it.each(SYMMETRIC)("%s maps onto itself under every quarter-turn and a mirror", invariantOnSquares);
 });
 
 describe("glyphs-living — the bench's boards", () => {
