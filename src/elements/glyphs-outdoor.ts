@@ -13,7 +13,7 @@
  *   ("supply/waste/venting runs in the wall") is simply false about it. Five of the
  *   twenty-one are `directional` — a shed's door, a barbecue's controls, a mailbox's flap, a
  *   charger's pedestal and a bin's handle all have a back worth turning to something — and
- *   eleven are `symmetric`, which for a tree or a parasol is not a simplification but the
+ *   ten are `symmetric`, which for a tree or a parasol is not a simplification but the
  *   truth: a canopy in plan has no front.
  *
  * - **Planting is a canopy, and a canopy masks the ground.** The tree, the conifer, the shrub

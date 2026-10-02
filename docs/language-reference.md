@@ -1692,7 +1692,7 @@ outdoor [id=<id>] <kind> polygon (x,y) (x,y) (x,y) … [label "…"]
 
 The ground a building sits on: a lawn, a planting bed, paving, a deck, gravel, water, a
 driveway, a patio, or a balcony. Nine kinds, each drawn as a **scale-aware material hatch
-over a flat tint**.
+over a flat tint** (a `balcony`: tint and railing, no hatch).
 
 | Kind | Hatch | CAD layer |
 |------|-------|-----------|
@@ -1857,9 +1857,9 @@ plan statement.
 | `post` | one line, sparsely posted |
 
 The post pitch is derived per segment from that segment's own length and clamped, so two
-identical fences draw identically wherever they sit on the sheet. Where two runs meet, a
-`panel`'s double line is mitred and the corner gets ONE post tick along the bisector, rather
-than two crossing ones.
+identical fences draw identically wherever they sit on the sheet. Where two runs meet, the
+corner gets ONE post tick along the bisector in every style, rather than two crossing ones, and a
+`panel`'s double line is mitred; a turn sharper than about 139° keeps each run's own square end.
 
 **A fence is not a thin wall.** It has no thickness and no poché, it **hosts no opening**
 (`door on <fence>` finds no such wall, because a fence is not in the wall list at all), it

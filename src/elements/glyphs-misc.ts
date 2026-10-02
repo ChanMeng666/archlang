@@ -217,9 +217,10 @@ export function drawBookshelf(r: Rect, g: GlyphCtx): SceneNode[] {
 /**
  * The potted plant: a scalloped crown of foliage over its pot, the pot ring, and the leaf ribs.
  *
- * - **Foliage** (outline pen, filled with `theme.lawn`, as a tree's crown is): eight lobes in the
- *   tree's [1, 0.9] radius pattern, so the crown reads as foliage and not as a gear.
- * - **Pot**: a ring at 0.45 of the crown radius, with the stem dot at the centre.
+ * - **Foliage** (outline pen, filled with `theme.lawn`, as a tree's crown is): eight lobes
+ *   alternating the full radius and 0.88 of it (the tree's alternation), so the crown reads as
+ *   foliage and not as a gear.
+ * - **Pot**: a ring at 0.42 of the crown radius, with the stem dot at the centre.
  * - **Ribs**: eight `extraThin` strokes from the pot out to just short of the lobe cusps, one on each
  *   of the eight bearings.
  *

@@ -27,12 +27,11 @@
  * ## The dash convention
  *
  * A dashed factory sets `lineType: "dashed"` **and** a `paint.dash` equal to the pattern
- * that named type resolves to. It deliberately does NOT reuse `door-panels.ts`'s local
- * `[thin*4, thin*3]`: that module sets `paint.dash` alone and never names a line type, so
- * nothing there can disagree. Here, naming a type and handing a *different* raw pattern
- * would make the SVG (which follows the name) and the PDF (which follows the number) draw
- * two different dashes from one node — the precise cross-backend divergence this project
- * keeps finding. One pattern, both fields.
+ * that named type resolves to — {@link dashedPattern}, which `door-panels.ts` draws its hidden
+ * and overhead lines with too. Naming a type and handing a *different* raw pattern would make
+ * the SVG (which follows the name) and the PDF (which follows the number) draw two different
+ * dashes from one node — the precise cross-backend divergence this project keeps finding. One
+ * pattern, both fields.
  *
  * ## Tone follows weight (the symbol ink)
  *

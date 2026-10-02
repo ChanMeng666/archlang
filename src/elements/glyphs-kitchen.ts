@@ -29,9 +29,10 @@
  *
  * A redraw changes drawings, never facts: `describe --facts symmetry` reads whether a symbol has
  * a mirror axis, so a symbol that was mirror-symmetric stays so. The sink, the stove, the oven
- * (range included), the fridge, the dishwasher, the dryer and the rest are drawn symmetric about
- * their centre line at EVERY aspect — a hob's two large burners stand side by side on the back
- * row, a sink's drainers come in pairs, one either side of the bowls. The three that were
+ * (range included), the dishwasher, the dryer and the rest are drawn symmetric about their centre
+ * line at EVERY aspect — a hob's two large burners stand side by side on the back row, a sink's
+ * drainers come in pairs, one either side of the bowls; the fridge is symmetric as an upright
+ * and handed as a side-by-side, whose handle sits off-centre on the larger door. The three that were
  * handed before stay handed: a washer with its dial, a microwave with its keypad and an island
  * with its hob or bowl at one end say which end the feature is on, and a mirrored `place`
  * mirrors them.
@@ -169,8 +170,8 @@ function tap(g: GlyphCtx, base: Point, radius: number, spoutTo: number): void {
  *
  * The layout is read off the footprint, on the evidence-not-guess rule the range and the island
  * follow. On the 600-deep run: 600 and 800 wide is one bowl on a worktop (the catalogued 800 x 600
- * is 1.33), 1100 to 1199 wide is one bowl between two drainers, 1200 to 1700 is two bowls, and a
- * longer run is two bowls between two drainers.
+ * is 1.33), about 1010 to 1199 wide is one bowl between two drainers, 1200 to about 1590 is two
+ * bowls, and a longer run is two bowls between two drainers.
  *
  * - **Worktop** (body fill, outline pen): the first node.
  * - **Bowls** (white, outline pen): rounded rectangles, corners 10% of the bowl, inside a rim 7%
@@ -709,8 +710,8 @@ export function drawMicrowave(r: Rect, g: GlyphCtx): SceneNode[] {
 }
 
 /**
- * A bar counter: the top, the line the seating overhang starts at, and one stool per roughly
- * 1.2 counter-depths of run.
+ * A bar counter: the top, the line the seating overhang starts at, and 1.2 stools per
+ * counter-depth of run.
  *
  * The stools are the point. A bar drawn as a slab with a nosing is a `counter`, and the
  * language already has that word; what makes a bar a bar is that you sit at it. Deriving the
