@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.38.0] - 2026-10-02
+
 Robustness work on the numbers, the parser, the geometry predicates and multi-storey
 reachability ([ADR 0022](docs/adr/0022-exact-decisions-and-bounded-input.md)). Every moved output
 is named below; anything not named is byte-identical over the shipped examples and test
