@@ -200,6 +200,157 @@ describe("fence — the drawing", () => {
 });
 
 // ---------------------------------------------------------------------------
+// 4b — corners: one mitre, one tick
+// ---------------------------------------------------------------------------
+
+describe("fence — where two runs meet", () => {
+  type Seg = { a: { x: number; y: number }; b: { x: number; y: number } };
+  /** The fence's line nodes, the post depth, and which of them are ticks (short) vs runs. */
+  const draw = (body: string): { runs: Seg[]; ticks: Seg[]; depth: number } => {
+    const { scene } = compile(plan(body), { noCache: true });
+    const depth = scene!.sizes.thin * 7;
+    const lines = scene!.nodes
+      .filter((n) => n.layerName === "L-SITE" && n.prim.t === "line")
+      .map((n) => n.prim as Seg & { t: "line" });
+    const len = (l: Seg): number => Math.hypot(l.b.x - l.a.x, l.b.y - l.a.y);
+    return {
+      runs: lines.filter((l) => len(l) > 20 * depth),
+      ticks: lines.filter((l) => len(l) <= 20 * depth),
+      depth,
+    };
+  };
+  const near = (p: { x: number; y: number }, q: { x: number; y: number }, eps = 1e-6): boolean =>
+    Math.hypot(p.x - q.x, p.y - q.y) < eps;
+  const mid = (l: Seg) => ({ x: (l.a.x + l.b.x) / 2, y: (l.a.y + l.b.y) / 2 });
+  /** Distance from `p` to the infinite line through `l`. */
+  const offLine = (p: { x: number; y: number }, l: Seg): number => {
+    const dx = l.b.x - l.a.x;
+    const dy = l.b.y - l.a.y;
+    return Math.abs((p.x - l.a.x) * dy - (p.y - l.a.y) * dx) / Math.hypot(dx, dy);
+  };
+
+  /**
+   * Every panel line runs PARALLEL to its own run, a full depth off it, on ONE side. This is the
+   * assertion a wrong-signed mitre trips: flipping the mitre only swaps which offset line meets
+   * which at a corner, so the corner points alone cannot see it — but a run's free end keeps its
+   * own normal, and a flipped mitre at the other end skews the line across the run.
+   */
+  const expectParallel = (runs: Seg[], centre: Seg[], depth: number): void => {
+    runs.forEach((l, i) => {
+      const run = centre[Math.floor(i / 2)]!;
+      const side = (p: { x: number; y: number }): number =>
+        (run.b.x - run.a.x) * (p.y - run.a.y) - (run.b.y - run.a.y) * (p.x - run.a.x);
+      expect(offLine(l.a, run), `line ${i} start is a depth off its run`).toBeCloseTo(depth, 6);
+      expect(offLine(l.b, run), `line ${i} end is a depth off its run`).toBeCloseTo(depth, 6);
+      expect(Math.sign(side(l.a)), `line ${i} stays on one side of its run`).toBe(Math.sign(side(l.b)));
+    });
+  };
+
+  it("mitres a square corner: each panel line stops exactly where the next run's begins", () => {
+    const { runs, depth } = draw(`  fence panel { (0,0) (9000,0) (9000,6000) }`);
+    expect(runs).toHaveLength(4);
+    expectParallel(
+      runs,
+      [
+        { a: { x: 0, y: 0 }, b: { x: 9000, y: 0 } },
+        { a: { x: 9000, y: 0 }, b: { x: 9000, y: 6000 } },
+      ],
+      depth,
+    );
+    // The left normal of the first run is +y and of the second −x, so the mitre is (−1, 1):
+    // the two offset lines meet at (9000 ∓ d, ± d), a full depth off BOTH runs.
+    const inner = { x: 9000 - depth, y: depth };
+    const outer = { x: 9000 + depth, y: -depth };
+    const ends = runs.slice(0, 2).map((l) => l.b);
+    const starts = runs.slice(2).map((l) => l.a);
+    for (const p of [inner, outer]) {
+      expect(
+        ends.some((q) => near(q, p)),
+        `the first run ends at (${p.x}, ${p.y})`,
+      ).toBe(true);
+      expect(
+        starts.some((q) => near(q, p)),
+        `the second run starts at (${p.x}, ${p.y})`,
+      ).toBe(true);
+    }
+  });
+
+  it("mitres an acute corner too, with the meeting point a full depth off both runs", () => {
+    // A 120° turn (a 60° corner) — well inside the mitre limit.
+    const { runs, depth } = draw(`  fence panel { (0,0) (9000,0) (6000,5196) }`);
+    expect(runs).toHaveLength(4);
+    const first: Seg = { a: { x: 0, y: 0 }, b: { x: 9000, y: 0 } };
+    const second: Seg = { a: { x: 9000, y: 0 }, b: { x: 6000, y: 5196 } };
+    expectParallel(runs, [first, second], depth);
+    for (const end of runs.slice(0, 2).map((l) => l.b)) {
+      expect(
+        runs.slice(2).some((l) => near(l.a, end)),
+        "the runs share the mitre point",
+      ).toBe(true);
+      expect(offLine(end, first)).toBeCloseTo(depth, 6);
+      expect(offLine(end, second)).toBeCloseTo(depth, 6);
+    }
+  });
+
+  it("keeps each run's own square end past the mitre limit (MITRE_MIN), rather than a runaway spike", () => {
+    // A ~174° turn: the mitre would stand ~20 depths off the vertex. Each run ends square.
+    const { runs, depth } = draw(`  fence panel { (0,0) (9000,0) (0,1000) }`);
+    expect(runs).toHaveLength(4);
+    for (const end of runs.slice(0, 2).map((l) => l.b)) {
+      expect(end.x).toBeCloseTo(9000, 6);
+      expect(Math.abs(end.y)).toBeCloseTo(depth, 6);
+    }
+    // No line reaches more than a couple of depths past the vertex.
+    for (const l of [...runs]) for (const p of [l.a, l.b]) expect(p.x).toBeLessThanOrEqual(9000 + 2 * depth);
+  });
+
+  it("posts ONE tick at a shared corner, along its bisector — not one from each run", () => {
+    for (const style of ["picket", "panel", "post"]) {
+      const { ticks, depth } = draw(`  fence ${style} { (0,0) (9000,0) (9000,6000) }`);
+      const atCorner = ticks.filter((t) => near(mid(t), { x: 9000, y: 0 }, 1e-6));
+      expect(atCorner, `${style}: one tick at the corner`).toHaveLength(1);
+      // Along the bisector: its ends lie on the diagonal through the corner, |mitre| × depth out.
+      const t = atCorner[0]!;
+      expect(Math.abs(t.a.x - 9000)).toBeCloseTo(depth, 6);
+      expect(Math.abs(t.a.y)).toBeCloseTo(depth, 6);
+      expect(Math.sign(t.a.x - 9000)).toBe(-Math.sign(t.a.y));
+    }
+  });
+
+  it("closes a ring: every corner — the start included — gets one tick and a mitred panel", () => {
+    const { runs, ticks } = draw(`  fence panel { (0,0) (9000,0) (9000,6000) (0,6000) close }`);
+    expect(runs).toHaveLength(8);
+    for (const v of [
+      { x: 0, y: 0 },
+      { x: 9000, y: 0 },
+      { x: 9000, y: 6000 },
+      { x: 0, y: 6000 },
+    ]) {
+      expect(
+        ticks.filter((t) => near(mid(t), v)),
+        `one tick at (${v.x}, ${v.y})`,
+      ).toHaveLength(1);
+    }
+    // Every panel line's end is some line's start: the two outlines close on themselves.
+    for (const l of runs) expect(runs.some((m) => m !== l && near(m.a, l.b))).toBe(true);
+  });
+
+  it("draws a straight two-point run exactly as before: square ticks at both ends", () => {
+    const { runs, ticks, depth } = draw(`  fence panel { (0,0) (9000,0) }`);
+    expect(runs).toHaveLength(2);
+    for (const v of [
+      { x: 0, y: 0 },
+      { x: 9000, y: 0 },
+    ]) {
+      const t = ticks.filter((k) => near(mid(k), v));
+      expect(t).toHaveLength(1);
+      expect(t[0]!.a.x).toBeCloseTo(v.x, 9);
+      expect(Math.abs(t[0]!.a.y)).toBeCloseTo(depth, 9);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // 5 — the curved refusal
 // ---------------------------------------------------------------------------
 

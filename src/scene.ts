@@ -229,9 +229,12 @@ export type ScenePrim =
    * A hatched (poché) region: closed loops filled with a named material pattern,
    * scaled and rotated. The SVG backend bakes `scale`→tile size and `angle`→
    * `patternTransform`; the DXF backend emits a real `HATCH` entity. `origin` is
-   * the optional pattern anchor (defaults to the drawing origin).
+   * the optional pattern anchor (defaults to the drawing origin) and `zoom` an optional
+   * scale of the tile about it (default 1): the SVG backend honours both — they re-frame the
+   * one shared `<pattern>` for a single region (a legend swatch) without a second pattern —
+   * and a node that sets neither draws exactly as it always has.
    */
-  | { t: "hatch"; region: Point[][]; material: string; scale: number; angle: number; origin?: Point }
+  | { t: "hatch"; region: Point[][]; material: string; scale: number; angle: number; origin?: Point; zoom?: number }
   /** A text label. `value` is the raw (unescaped) string; backends escape on emit. */
   | {
       t: "text";

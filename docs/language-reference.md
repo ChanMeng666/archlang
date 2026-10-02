@@ -1696,14 +1696,14 @@ over a flat tint**.
 
 | Kind | Hatch | CAD layer |
 |------|-------|-----------|
-| `lawn` | angled turf tufts | `L-PLNT` |
-| `planting` | dots on a staggered grid | `L-PLNT` |
-| `paving` | running-bond slabs | `L-SITE` |
-| `patio` | running-bond slabs (a patio *is* paved — one material, one legend row) | `L-SITE` |
-| `deck` | parallel boards | `L-SITE` |
-| `gravel` | scattered stones | `L-SITE` |
-| `water` | wave lines | `L-SITE` |
-| `driveway` | fine bitumen speckle | `L-SITE` |
+| `lawn` | sparse turf tufts — the palest ground | `L-PLNT` |
+| `planting` | a mulch stipple of bark chips and crumbs | `L-PLNT` |
+| `paving` | a square slab joint grid (600 mm at 1:100) | `L-SITE` |
+| `patio` | the same slab grid (a patio *is* paved — one material, one legend row) | `L-SITE` |
+| `deck` | boards (150 mm at 1:100) with staggered butt joints | `L-SITE` |
+| `gravel` | scattered stones as small rings, with grit | `L-SITE` |
+| `water` | gentle waves, alternate lines out of phase | `L-SITE` |
+| `driveway` | a fine, sparse bitumen speckle | `L-SITE` |
 | `balcony` | no hatch — a plain tint and a railing | `A-FLOR-BALC` |
 
 Three CAD layers, not one, because a CAD user freezes by trade: planting is the landscape
@@ -1713,7 +1713,9 @@ plate rather than of the site at all.
 **The hatches are scale-aware.** Every pattern dimension steps off the drawing's reference
 dimension, so a pattern is the same size *on the sheet* at 1:50 and at 1:200 — which is
 what a drafting hatch is for. (Fixed pixel sizes, the obvious shortcut, dissolve or clot
-as the scale changes.) `gravel`'s scatter comes from a frozen table, never a random
+as the scale changes.) Every ground stroke is the drawing's finest pen — the `extraThin` width
+the symbols' detail uses — so the ground is the palest layer of the plan. The irregular
+patterns (`lawn`, `planting`, `gravel`, `driveway`) come from frozen tables, never a random
 number: `compile()` is deterministic.
 
 #### It is not a room, and it obstructs nothing
@@ -1855,7 +1857,9 @@ plan statement.
 | `post` | one line, sparsely posted |
 
 The post pitch is derived per segment from that segment's own length and clamped, so two
-identical fences draw identically wherever they sit on the sheet.
+identical fences draw identically wherever they sit on the sheet. Where two runs meet, a
+`panel`'s double line is mitred and the corner gets ONE post tick along the bisector, rather
+than two crossing ones.
 
 **A fence is not a thin wall.** It has no thickness and no poché, it **hosts no opening**
 (`door on <fence>` finds no such wall, because a fence is not in the wall list at all), it
