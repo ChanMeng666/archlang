@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.39.0] - 2026-10-03
+
 ### Changed — the plan symbols, doors, windows and ground are redrawn
 
 Drawings only: `describe()`, `lint()` and `compile().diagnostics` are byte-identical over every
