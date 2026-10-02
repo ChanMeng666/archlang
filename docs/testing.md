@@ -97,14 +97,17 @@ the test's own `digest()` body verbatim for the baseline. A new height-authoring
 - **An SVG + `describe()` + `lint()` sweep carries no parse- or resolve-stage diagnostic.** When a
   change can reach the resolver, add `compile().diagnostics` as a fourth payload.
 - **The byte-identity sweep** (the "did anything move?" check for a change that must not move a
-  plan): per storey, six payloads (SVG, `compile().diagnostics`, `describe()`, `lint()` with the
-  default ruleset, `lint()` with `profile: "accessibility-advisory"`, the `--overlay circulation`
-  SVG), hashed together as one digest by `test/byte-identity-digest.ts` over
-  `test/byte-identity-payload.ts`. Corpus: `examples/` (incl. `lib`), `test/fixtures`,
-  `test/recovery-corpus`, the eval goldens, `fidelity-plans` and faults, AND every `arch` fence in
-  `docs/`, README, SKILL and spec. The "before" side is a `git archive` of the integration tip, never
-  a rebuilt working tree; plant a change first, and cross-check with a differently-shaped second
-  measurement.
+  plan): hash EACH payload separately per storey and per corpus row — the SVG, `compile().diagnostics`,
+  `describe()`, `lint()` with the default ruleset, `lint()` with `profile: "accessibility-advisory"`,
+  and the `--overlay circulation` SVG — so a move names the payload that moved. Also compute the
+  repo's combined digest, `allStoreysDigestWithDiagnostics` in `test/byte-identity-digest.ts` (over
+  `allStoreysDiagnosticsPayload` in `test/byte-identity-payload.ts`), which is what the baseline files
+  pin. It hashes only: every page's SVG in `pages[]` order, `describe()`, `lint()` (default ruleset)
+  and `compile().diagnostics`, joined by single spaces — not the accessibility profile or the
+  overlay. Corpus: `examples/` (incl. `lib`), `test/fixtures`, `test/recovery-corpus`, the eval
+  goldens, `fidelity-plans` and faults, AND every `arch` fence in `docs/`, README, SKILL and spec.
+  The "before" side is a `git archive` of the integration tip, never a rebuilt working tree; plant a
+  change first, and cross-check with a differently-shaped second measurement.
 - **Zero corpus movement is not evidence the new path ran.** Instrument it with a counter, show which
   examples reach it, then remove the counter.
 
