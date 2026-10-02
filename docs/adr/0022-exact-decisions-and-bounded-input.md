@@ -355,27 +355,36 @@ is measured in the cited tests; the backlog holds the measurements.
    `lint()` take no theme. Pinned by `test/model-range.test.ts`: the API and the source refuse at
    the same weight.
 2. **A plan-level setting out of range is reported once per plan.** A theme `lineWeight` is
-   checked once over the building (at the first storey whose pen leaves the range), and an
-   out-of-range report every storey raised identically (an `axes` position, the `site` boundary,
-   the plan `height`) is kept once, untagged. `north`, `grid` and a `paper` scale already were.
+   checked once over the building (at the first storey whose pen leaves the range), and a report
+   raised inside the `axes` block, the `site` block or the plan's `height` is kept once,
+   untagged. Nothing else is collapsed: a statement written once and expanded on several storeys
+   (a component placed on two floors) is reported on each, with its level. `north`, `grid` and a
+   `paper` scale already were reported once.
 3. **One evaluation-step budget across the whole resolution** (`MAX_EVAL_STEPS`, 5,000,000,
    `src/expr.ts`; `E_STEP_LIMIT`), a count and never a time, so `compile()` stays deterministic.
    A step is a unit of evaluator work bounded by a constant: an expression node, a statement, a
-   loop iteration, a value produced or walked, a binding copied. The counter runs across every
-   storey (a storey starts where the one below stopped, and that start is part of the storey's
-   memo key), and the crossing unwinds inside `resolve()` with an internal signal, so the plan
-   resolves to no elements with `E_STEP_LIMIT` at the statement that crossed it. The bound is
-   1,005 times the largest corpus plan that compiles and 19 times the catalogue's largest demo of
-   another cap; M.2's nested loops reach it in about a second. Pinned by
-   `test/step-budget.test.ts`.
-4. **One drawing budget over every storey, before rendering** (`MAX_DRAW_UNITS`, 400,000,
-   `src/ir.ts`; `E_DRAWING_LIMIT`, a new code because the total is across every kind, not one
-   run). Each element is estimated at a fixed-glyph bound (72) plus one per point of its
-   `bounds()` plus its `drawCost()` (`ElementDef`, optional: a run's treads, a fence's posts). The
-   treads dominate; the element and storey counts multiply the rest. Just under the budget the
-   heaviest shapes measured hold under 0.4 GB; 500 escalators at the tread cap, 0.82 GB before,
-   are refused in milliseconds. Pinned by `test/drawing-budget.test.ts`, which also holds the
-   estimate above the drawing for every kind, fixture category and corpus plan.
+   loop iteration, a value or character produced, a binding copied, a hint's edit-distance cell, a
+   diagnostic raised. Whatever builds a string is charged before it builds it, so no surface can
+   allocate past the budget. The counter runs across every storey (a storey starts where the one
+   below stopped, a `paper` plan's geometry probes and drawn pass count into one total, and the
+   start is part of the storey's memo key), and the crossing unwinds inside `resolve()` with an
+   internal signal, so the plan resolves to no elements with `E_STEP_LIMIT` at the statement that
+   crossed it. A plugin's nested `compile()` runs under a fresh budget of its own. The bound is
+   1,005 times the largest corpus plan that compiles (the margin is measured against plans that
+   compile; the catalogue's demonstrations of the other caps are 19 times under it); M.2's nested
+   loops reach it in about a second. Pinned by `test/step-budget.test.ts`.
+4. **One drawing budget over every storey, before rendering** (`MAX_DRAW_UNITS`, 300,000,
+   `src/draw-budget.ts`; `E_DRAWING_LIMIT`, a new code because the total is across every kind,
+   not one run), checked by `compile()` only: `describe()` and `lint()` draw nothing. The estimate
+   is a tight upper bound per kind: each `ElementDef` declares its `drawCost` (a room 3, a door 5,
+   a run its treads, a fixture its own glyph, counted), plus one unit per point of its `bounds()`,
+   plus each storey's plan-wide passes (`dims auto`, axes, the lot line, the tables); a kind with
+   none is 72. A first version charged a flat 72 per element and refused real buildings, which is
+   why the estimate is held from both sides: at or above what is drawn for every kind, fixture
+   category and corpus plan, and its primitive part at most four times what is drawn over the
+   corpus. The budget is derived from memory: each kind's densest shape at 300,000 units held at
+   most 186 MB after collection and peaked at most 330 MB, and every one ran under a 512 MB heap.
+   Pinned by `test/drawing-budget.test.ts`.
 5. **Won't fix, recorded.** The total-area `E_NON_FINITE` branch stays as an unreachable
    backstop. `arch fmt`'s 0.001 mm canonical form below |n|·1000 ≤ 2^53 is the language's
    resolution (the lattice §1's arc check decides on), so a sub-micrometre literal printing 0 is by

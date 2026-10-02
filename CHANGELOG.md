@@ -49,15 +49,21 @@ absurd finite magnitudes that remained are closed by the modelling range (see Ad
   resolution, every storey, component and import together, stops loops nested in loops, a
   recursion that calls itself twice and a string that doubles. `for i in 0..100000 { for j in
   0..1000 { let x = i } }` was still running after 40 s and is now one `E_STEP_LIMIT` in about a
-  second; a string doubled in a `while` threw `RangeError: Invalid string length` out of
-  `compile()` and is now the same error. The report is at the statement that crossed the budget
-  (in the imported file, for a component's body) and the plan draws nothing. A step is a count,
-  never a time, so the result is deterministic.
-- **New `E_DRAWING_LIMIT`.** Before anything is drawn, every element is estimated at the drawing
-  primitives it will emit (a fixed glyph, one per point of its outline, its tread lines or fence
-  posts) and the estimate is summed over every storey; past 400,000 the plan is refused at the
-  element that crossed it. 500 escalators at the tread cap took 0.82 GB of memory and 105 MB of
-  SVG, and are now refused in milliseconds; a plan just under the budget holds under 0.4 GB.
+  second; a string doubled in a `while`, or an array of references to a long string printed with
+  `str()`, threw `RangeError: Invalid string length` out of `compile()`, `describe()`, `lint()`
+  and every language service, and is now the same error: a string's length is charged before it
+  is built. A diagnostic raised in a runaway loop is charged too, so an unknown name in nested
+  loops stops at about 16,000 reports instead of 326,000. The report is at the statement that
+  crossed the budget (in the imported file, for a component's body) and the plan draws nothing.
+  A step is a count, never a time, so the result is deterministic.
+- **New `E_DRAWING_LIMIT`.** Before anything is drawn, `compile()` estimates the primitives every
+  storey will draw: an upper bound per kind (a room 3, a door 5, a run one or two lines per tread,
+  a fixture its own symbol), one per point of each outline, and what `dims auto`, the axes and the
+  tables add. Past 300,000 over all storeys the plan is refused at the element that crossed it.
+  500 escalators at the tread cap took 0.82 GB of memory and 105 MB of SVG, and are now refused in
+  milliseconds; the densest shapes just under the budget hold under 0.2 GB and run under a 512 MB
+  heap. A 24-storey tower of 200 flats a floor (about 108,000) compiles. `describe()` and `lint()`
+  draw nothing and are not held by it.
 - A `lineWeight` passed through `compile()`'s options (`theme`, or a theme registered in `themes`
   that the plan selects) is held like the source's: past the drawn-pen bound it is one
   `E_OUT_OF_RANGE` at the `plan "…"` header saying the value came from the compile options, where
@@ -247,12 +253,13 @@ absurd finite magnitudes that remained are closed by the modelling range (see Ad
   Node, Node workers and Chromium, Firefox and WebKit workers, and is the same on every host.
 - **Behaviour change.** An expression or block nested more than 256 deep is an `E_PARSE`.
 - **Behaviour change.** A plan whose evaluation passes 5,000,000 steps (`E_STEP_LIMIT`) or whose
-  drawing is estimated past 400,000 primitives over all its storeys (`E_DRAWING_LIMIT`) stops
-  with that error where it used to run on or exhaust memory. The largest shipped example spends
-  under 5,000 steps and is estimated at under 11,000; no shipped plan moves.
+  drawing is estimated past 300,000 over all its storeys (`E_DRAWING_LIMIT`) stops with that
+  error where it used to run on or exhaust memory. The largest shipped example spends under 5,000
+  steps and is estimated at under 5,000; no shipped plan moves.
 - **Behaviour change.** A plan-level setting out of range on a multi-storey plan (a theme
   `lineWeight`, an `axes` position, the `site` boundary, the plan `height`) is reported once
-  instead of once per storey.
+  instead of once per storey. A statement expanded on several storeys (a component placed on two
+  floors) still reports on each.
 
 ### Changed — `spec.llm.md` headroom
 
@@ -302,9 +309,9 @@ absurd finite magnitudes that remained are closed by the modelling range (see Ad
 - New catalogued codes `E_NON_FINITE`, `E_ELEMENT_LIMIT`, `E_LAYOUT_UNPLACED`,
   `E_OUT_OF_RANGE`, `E_RUN_TOO_LONG`, `E_STEP_LIMIT` and `E_DRAWING_LIMIT`
   (`arch explain <CODE>`).
-- `ElementDef.drawCost?(resolved)`: an optional plugin hook returning how many drawing primitives
-  an element emits beyond a fixed-size glyph (the part that grows with its size), read by the
-  drawing budget. `PlanNode.headerSpan` (the `plan "…"` header's span) is new and optional.
+- `ElementDef.drawCost?(resolved)`: an optional plugin hook returning an upper bound on the
+  drawing primitives an element's `render()` emits, read by the drawing budget (a kind without it
+  is estimated at 72). `PlanNode.headerSpan` (the `plan "…"` header's span) is new and optional.
   Both additive.
 - `npm run digest:engines` measures cross-engine determinism: the built core runs in Playwright
   Chromium, Firefox and WebKit and each engine's digests are compared with Node's and the pinned

@@ -926,23 +926,33 @@ ADR 0022's second addendum):
 - (a) **Won't fix.** The total-area `E_NON_FINITE` branch in `checkNumberDomain` is unreachable from
   source (rooms inside the modelling range cannot overflow the sum); it stays as a backstop with no
   source test.
-- (b) **Closed** by a drawing budget (`MAX_DRAW_UNITS`, 400,000, `src/ir.ts`; the new
-  `E_DRAWING_LIMIT`). Measured per element at its worst (Node 24, scene nodes): an escalator at the
-  tread cap 2,203 (two chevron strokes per tread), a stair 1,103; every other kind is a fixed glyph:
-  an `upper_cabinet` 67 (its 64 divisions are capped), a fence segment 63 (60 posts, capped), a
-  hedge 35, every other fixture category 20 or fewer, a dim 6, a room 2 to 3; dims ticks, hatch
-  patterns (one pattern per material), axes (one bubble per authored position) and columns do not
-  grow with size. So the treads dominate, and the element and storey counts multiply everything
-  else: 4,990 cabinets drew 330,000 nodes in 0.39 GB, and two such storeys 0.53 GB. Every element is
-  estimated before rendering at 72 (the fixed-glyph bound) plus one per point of its `bounds()` plus
-  its `drawCost()` (a run's treads, held at 1,100; a fence's posts per segment), summed over every
-  storey; past the budget the plan is refused at the element that crossed it. Re-run: 500
-  escalators at the cap (0.82 GB and 105 MB of SVG before) are one `E_DRAWING_LIMIT` in 16 ms with
-  6 MB of heap; just under the budget, 175 escalators, 2 × 2,630 cabinets, 100 fences of 60 long
-  segments and 4,991 cabinets on one storey hold 0.30 to 0.38 GB and each completes under a 512 MB
-  heap cap. The corpus maximum is 10,727 (`hillside-villa`), 37 times under. The estimate is held
-  above the drawing for every kind, every fixture category and every corpus plan by
-  `test/drawing-budget.test.ts`.
+- (b) **Closed** by a drawing budget (`MAX_DRAW_UNITS`, 300,000, `src/draw-budget.ts`; the new
+  `E_DRAWING_LIMIT`), checked by `compile()` before `toScene()` (`describe` and `lint` draw
+  nothing and are not held by it). Measured per element at its worst (Node 24, scene nodes): an
+  escalator at the tread cap 2,203 (two chevron strokes per tread), a stair 1,103; a cabinet run
+  67 (its 64 divisions are capped), a fence segment 63 (60 posts, capped), a railed balcony side
+  27, a hedge 35, every other fixture category 20 or fewer, a dim 6, a door 5, a window 4, a room
+  3, a column, an opening and a roof 1; the whole wall set is one poché fill per material and one
+  face, whatever the wall count. Plan-wide, `dims auto` draws a 6-primitive dimension per chain
+  span, an `axes` position 3, a schedule row 4. So the treads dominate, and element and storey
+  counts multiply the rest. The estimate is a tight upper bound per kind: each `ElementDef`
+  declares its `drawCost` (room 3, door 5, window 4, dim 6, wall 2, run treads plus its arrow,
+  fence posts per segment, a balcony's rails; a fixture counts its own glyph, drawn once into a
+  throwaway list), plus one unit per point of its `bounds()` (the vertices a path carries), plus
+  each storey's plan-wide passes (`dims auto` counted by the same `synthDims`, axes, the lot line,
+  the tables); a kind with no `drawCost` (a plugin's) is 72. It is held at or above what is drawn
+  for every kind, every fixture category and every corpus plan, and its primitive part at most four
+  times what is drawn over the corpus (`test/drawing-budget.test.ts`). The first version charged a
+  flat 72 per element and refused real buildings (the red team's 24-storey tower of 200 flats was
+  estimated at 1,132,704 for 29,352 primitives drawn); it is now 108,120. The budget was set from
+  memory: each kind's densest shape scaled to about 300,000 units and run under a 512 MB heap cap
+  held 44 to 186 MB after collection (windows the densest, 0.62 KB a unit) and peaked at 104 to
+  330 MB before it (cabinet runs, 1.1 KB a unit); every one completed (table at
+  `MAX_DRAW_UNITS`). Re-run: 500 escalators at the cap (0.82 GB and 105 MB of SVG before) are one
+  `E_DRAWING_LIMIT` in milliseconds; the tower's three variants (with walls and doors, rooms only,
+  six storeys) and two storeys of 3,000 rooms compile; 24 storeys of 5,000 rooms (840,000 units)
+  are refused, where they would take minutes of label placement (nine storeys of 4,760 took 71 s).
+  The corpus maximum is 4,781 (`hillside-villa`), 63 times under.
 - (c) `describe` and `lint` stop at any resolve error, so huge-magnitude tests no longer reach
   the grid code: any new grid bound needs an in-range test.
 - (d) **Won't fix.** `arch fmt` canonicalises a literal below |n|·1000 ≤ 2^53 to 0.001 mm. That is
@@ -955,8 +965,10 @@ ADR 0022's second addendum):
   drew `stroke-width` past the range with no diagnostic. Pinned by `test/model-range.test.ts`
   (API and source bisect to the same weight).
 - (f) **Closed.** A plan-level setting out of range is reported once per plan: a theme
-  `lineWeight` once (at the first storey whose pen leaves the range), and an `axes` position, the
-  `site` boundary and the plan `height` once, untagged, where every storey used to repeat it.
+  `lineWeight` once (at the first storey whose pen leaves the range), and a report raised inside
+  the `axes` block, the `site` block or the plan's `height` once, untagged, where every storey
+  used to repeat it. Only those spans are collapsed: a statement written once and expanded on
+  several storeys (a component placed on two floors) keeps one report per storey with its level.
   `north`, `grid` and a `paper` scale were already reported once (the parser, and the shared
   sheet).
 - (g) **Won't fix.** Drawn annotation primitives (a door leaf, glazing, dimension ticks) may extend
@@ -971,26 +983,35 @@ evaluation-step budget across the whole resolution (`MAX_EVAL_STEPS`, 5,000,000,
 `src/expr.ts`; the new `E_STEP_LIMIT`). The unit is chosen by mechanism, so the time to reach the
 budget is bounded whatever shape spends it: a step is an expression node evaluated, a statement
 executed, a loop iteration, a value produced or walked (a range item, a character a template
-appends, an array item printed or compared) or a binding copied (a scope snapshot, a call's
-closure). Counting nodes alone was measured insufficient: a doubling string spent seconds (and
-threw `RangeError: Invalid string length` out of `compile()`) on a handful of nodes. One counter
-runs across every storey, so a storey starts where the one below it stopped; it is memoised with
-the storey, so the verdict does not depend on the caches.
+appends, an array item printed or compared, a character two equal-length strings compare), a
+binding copied (a scope snapshot, a call's closure), an edit-distance cell of a "did you mean"
+hint, and a diagnostic raised (64). Anything that builds a string is charged BEFORE it builds it:
+printing an array measures its length first, so 1,100 references to a 1 Mi-character string no
+longer throw `RangeError: Invalid string length` out of `compile`, `describe`, `lint`, `repair`,
+the language services or `resolve` (the red team's B1). Counting nodes alone was measured
+insufficient: a doubling string spent seconds on a handful of nodes, and an unknown name in M.2's
+loops raised 326,000 diagnostics in 4.5 s before diagnostics were charged (now 15,857 in 0.2 s).
+One counter runs across every storey (a storey starts where the one below stopped, and on a
+`paper` plan the geometry probes and the drawn pass count into the same total); the start is part
+of each storey's memo key, so the verdict does not depend on the caches. A plugin's `resolve()`
+that calls `compile()` runs that nested compile under a fresh budget of its own.
 
-Measured over the corpus (examples with `lib`, test fixtures, the recovery corpus, eval goldens,
-faults and fidelity plans, every `arch` fence of the docs; 278 plans): median 25 steps, p90 648,
-the largest plan that compiles 4,974 (`terrace-row`); the bound is 1,005 times that. The
-catalogue's demonstrations of the other caps spend more by construction (the `E_WHILE_LIMIT`
-demo 260,026, `E_RANGE_LIMIT` 200,014, `E_ELEMENT_LIMIT` 86,015) and still reach their own cap
+Measured over the corpus: every tracked `.arch` file (90: examples with `lib`, test fixtures,
+the recovery corpus, eval goldens, faults and fidelity plans) and every `arch` fence of every
+tracked Markdown file and `llms*.txt` (188), 278 sources, of which 114 compile without error:
+median 79 steps, p90 648, the largest that compiles 4,974 (`terrace-row`); the bound is 1,005
+times that (accepted by the owner's delegate: the margin is measured against plans that compile).
+The catalogue's demonstrations of the other caps spend more by construction (the `E_WHILE_LIMIT`
+demo 260,090, `E_RANGE_LIMIT` 200,078, `E_ELEMENT_LIMIT` 86,079) and still reach their own cap
 first, 19 times under. A higher bound costs time linearly (a nested-loop iteration is about 2 µs
-and 14 steps). Re-run (Node 24, `compile()`, cold process): `for i in 0..100000 { for j in 0..1000
-{ let x = i } }` (killed after 40 s before) is one `E_STEP_LIMIT` in 0.96 s; three nested capped
-`while`s in 0.66 s (with the innermost loop's own `E_WHILE_LIMIT`s before it); `f(40)` of a
-recursion that calls itself twice (killed after 40 s) in 0.26 s; a doubling string (a `RangeError`
-before) in 6 ms; 24 storeys of capped loops (each storey's `E_ELEMENT_LIMIT`, then the drawing
-budget) in 1.1 s. Pinned by `test/step-budget.test.ts` (both margins over the corpus, a plan just
-under the budget compiles and ten iterations more does not, two storeys that fit alone cross it
-together).
+and 14 steps). Re-run (Node 24, `compile()`): M.2's `for i in 0..100000 { for j in 0..1000 { let
+x = i } }` (killed after 40 s before) is one `E_STEP_LIMIT` in about 1 s cold; three nested
+capped `while`s in 0.7 s (with the innermost loop's own `E_WHILE_LIMIT`s before it); `f(40)` of
+a recursion that calls itself twice (killed after 40 s) in 0.3 s; a doubling string (a
+`RangeError` before) in milliseconds; 24 storeys of capped loops (each storey's
+`E_ELEMENT_LIMIT`) in about 1 s. Pinned by `test/step-budget.test.ts` (every public API on the
+string-building shapes, both margins over the corpus, a plan just under the budget compiles and
+ten iterations more does not, two storeys that fit alone cross it together).
 
 ### M.3 · The doorway carve's inward walk stepped through eroded cells — closed
 
