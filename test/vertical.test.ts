@@ -42,6 +42,8 @@ import { parse } from "../src/parser.js";
 import type { ResolvedPlan, RStair } from "../src/ir.js";
 import type { World } from "../src/world.js";
 import { treadCount, TREAD_GOING_MM } from "../src/elements/vertical-glyphs.js";
+import { symbolInk } from "../src/elements/glyph-lib.js";
+import { DEFAULT_THEME } from "../src/theme.js";
 
 const SHELL = `wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }`;
 
@@ -228,6 +230,37 @@ suite("vertical circulation — the plan symbols", () => {
     const byY = new Map<number, number>();
     for (const p of apexes) byY.set(p.b.y, (byY.get(p.b.y) ?? 0) + 1);
     expect([...byY.values()].filter((n) => n === 2).length).toBeGreaterThan(1);
+  });
+
+  it("tone follows the symbol hierarchy: outline and arrow in the symbol ink, detail in furnitureStroke", () => {
+    // The same rule the fixture glyphs follow (`elements/glyph-lib.ts`), so a stair never reads
+    // paler than the sofa beside it. Widths are untouched — every line is the thin pen.
+    const ink = symbolInk(DEFAULT_THEME.furnitureStroke, DEFAULT_THEME.wallStroke);
+    const detail = DEFAULT_THEME.furnitureStroke;
+    expect(ink).not.toBe(detail);
+    // The stair (x 0..900): the arrow is every line with an end on the centreline, x = 450.
+    const stair = layerNodes(plan(`stair id=s at (0,0) size 900x2600 dir up`), "A-FLOR-STRS");
+    const onAxis = (n: (typeof stair)[number]): boolean =>
+      n.prim.t === "line" && (n.prim.a.x === 450 || n.prim.b.x === 450);
+    expect(stair.find((n) => n.prim.t === "polygon")!.paint.stroke).toBe(ink);
+    const arrow = stair.filter(onAxis);
+    expect(arrow).toHaveLength(3); // shaft + two barbs
+    for (const n of arrow) expect(n.paint.stroke).toBe(ink);
+    const treads = stair.filter((n) => n.prim.t === "line" && !onAxis(n));
+    expect(treads.length).toBeGreaterThan(2);
+    for (const n of treads) expect(n.paint.stroke).toBe(detail);
+    // The UP word keeps the label colour.
+    expect(stair.find((n) => n.prim.t === "text")!.paint.fill).toBe(DEFAULT_THEME.annotation);
+    // The lift: the car outline in ink, its cross in the detail tone.
+    const lift = layerNodes(plan(`elevator id=lift at (1000,1000) size 1600x1600`), "A-FLOR-EVTR");
+    expect(lift.find((n) => n.prim.t === "polygon")!.paint.stroke).toBe(ink);
+    for (const n of lift.filter((x) => x.prim.t === "line")) expect(n.paint.stroke).toBe(detail);
+    // The escalator: footprint in ink, chevrons in the detail tone.
+    const esc = layerNodes(plan(`escalator id=e at (0,0) size 1200x4000 dir up`), "A-FLOR-STRS");
+    expect(esc.find((n) => n.prim.t === "polygon")!.paint.stroke).toBe(ink);
+    const chevrons = esc.filter((n) => n.prim.t === "line" && n.prim.a.x !== 600 && n.prim.b.x === 600);
+    expect(chevrons.length).toBeGreaterThan(2);
+    for (const n of chevrons) expect(n.paint.stroke).toBe(detail);
   });
 
   it("the going is the documented nominal and the divisions scale with the run", () => {

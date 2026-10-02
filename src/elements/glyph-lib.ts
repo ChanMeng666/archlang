@@ -406,26 +406,30 @@ export function roundedRectPath(r: Rect, radius: number | CornerRadii): PathLoop
   const y0 = r.y;
   const x1 = r.x + r.w;
   const y1 = r.y + r.h;
+  // Which straight runs exist is decided from the RADII and the extents alone — a run is
+  // absent exactly when its two corner radii use the whole side — with sums, because IEEE
+  // addition commutes and a mirror or a half-turn only swaps the two radii of a side. It is
+  // never decided by comparing derived coordinates: `x1 - tr` and `x0 + tl` can differ by an
+  // ulp, which once gave a stadium a zero-length edge on one side and not on its mirror image,
+  // and so made a symmetric symbol read as handed (`glyph-chirality.ts`).
+  const top = tl + tr !== r.w;
+  const right = tr + br !== r.h;
+  const bottom = br + bl !== r.w;
+  const left = bl + tl !== r.h;
   const start: Point = { x: x0 + tl, y: y0 };
   const edges: PathEdge[] = [];
-  let cur = start;
-  const line = (to: Point): void => {
-    if (to.x !== cur.x || to.y !== cur.y) edges.push({ t: "line", to });
-    cur = to;
-  };
-  const corner = (rad: number, to: Point, center: Point): void => {
-    if (rad > 0) edges.push({ t: "arc", to, center, r: rad, sweep: 1 });
-    cur = to;
-  };
-  line({ x: x1 - tr, y: y0 });
-  corner(tr, { x: x1, y: y0 + tr }, { x: x1 - tr, y: y0 + tr });
-  line({ x: x1, y: y1 - br });
-  corner(br, { x: x1 - br, y: y1 }, { x: x1 - br, y: y1 - br });
-  line({ x: x0 + bl, y: y1 });
-  corner(bl, { x: x0, y: y1 - bl }, { x: x0 + bl, y: y1 - bl });
-  line({ x: x0, y: y0 + tl });
-  if (tl > 0) edges.push({ t: "arc", to: start, center: { x: x0 + tl, y: y0 + tl }, r: tl, sweep: 1 });
-  else if (edges.length === 0 || cur.x !== start.x || cur.y !== start.y) edges.push({ t: "line", to: start });
+  if (top) edges.push({ t: "line", to: { x: x1 - tr, y: y0 } });
+  if (tr > 0) edges.push({ t: "arc", to: { x: x1, y: y0 + tr }, center: { x: x1 - tr, y: y0 + tr }, r: tr, sweep: 1 });
+  if (right) edges.push({ t: "line", to: { x: x1, y: y1 - br } });
+  if (br > 0) edges.push({ t: "arc", to: { x: x1 - br, y: y1 }, center: { x: x1 - br, y: y1 - br }, r: br, sweep: 1 });
+  if (bottom) edges.push({ t: "line", to: { x: x0 + bl, y: y1 } });
+  if (bl > 0) edges.push({ t: "arc", to: { x: x0, y: y1 - bl }, center: { x: x0 + bl, y: y1 - bl }, r: bl, sweep: 1 });
+  // The loop closes on `start` itself: through the top-left arc, or — with a sharp top-left
+  // corner — through the left run, whose end `(x0, y0 + 0)` is `start`'s `(x0 + 0, y0)`.
+  if (tl > 0) {
+    if (left) edges.push({ t: "line", to: { x: x0, y: y0 + tl } });
+    edges.push({ t: "arc", to: start, center: { x: x0 + tl, y: y0 + tl }, r: tl, sweep: 1 });
+  } else if (left || edges.length === 0) edges.push({ t: "line", to: start });
   return { start, edges };
 }
 
