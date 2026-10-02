@@ -29,8 +29,9 @@
  * apart, clamped), so a divider never lands on a hanger and the count is the same at every pen.
  * The rail is DASHED and so is nothing else in the piece: it stands above the horizontal cut a
  * plan is taken at and behind a closed door, which is the one meaning a dash has in this drawing.
- * The hangers are short `extraThin` strokes across it, 70% of the depth long — a garment seen from
- * above is a line, not a shape.
+ * The hangers are short `extraThin` strokes across it, 70% of the depth long (held to 0.75 of the
+ * bay's width, which only binds on a deep, narrow carcass) — a garment seen from above is a line,
+ * not a shape.
  *
  * Pure and deterministic: closed-form arithmetic on `(rect, theme, sizes)`, no clock, no
  * randomness, and no trig — every curve is a `roundedRectPath` or a `bulgeArc`, which are closed
@@ -170,6 +171,9 @@ const WARDROBE_MAX_BAYS = 5;
 /** Hangers: one per this many depths of rail, so their spacing follows the piece, not the pen. */
 const WARDROBE_HANGER_PITCH = 0.2;
 
+/** Half a hanger is held to this fraction of its bay's width (a hanger is at most 0.75 of a bay long). */
+const WARDROBE_HANGER_BAY = 0.375;
+
 /** The fraction of a bay's width the rail stops short of each divider. */
 const WARDROBE_RAIL_INSET = 0.06;
 
@@ -183,8 +187,9 @@ const WARDROBE_RAIL_INSET = 0.06;
  * - **Bays**: `round(w / (0.875 d))` held to `[1, 5]` — see {@link WARDROBE_DOOR_PITCH}. A
  *   divider is the carcass's own partition, so it runs the full depth.
  * - **Rail**: one per bay at mid-depth, DASHED — above the cut plane and behind a closed door.
- * - **Hangers**: short `extraThin` strokes ACROSS the rail, 70% of the depth, `round(rail /
- *   (0.2 d))` per bay held to `[3, 5]`, spread evenly so every bay is symmetric about its middle.
+ * - **Hangers**: short `extraThin` strokes ACROSS the rail, 70% of the depth (held to 0.75 of the bay's
+ *   width, which only binds on a deep, narrow carcass), `round(rail / (0.2 d))` per bay held to
+ *   `[3, 5]`, spread evenly so every bay is symmetric about its middle.
  *
  * Prim count: `2 + (bays - 1) + bays + hangers`, i.e. 19 at the catalogued 1800x600 (3 bays of 4)
  * and 36 at the clamp (5 bays of 5 hangers).
@@ -204,7 +209,9 @@ export function drawWardrobe(r: Rect, g: GlyphCtx): SceneNode[] {
   }
 
   const railY = r.y + r.h / 2;
-  const half = r.h * 0.35;
+  // Half a hanger: 35% of the depth, but never more than 0.375 of a bay (a hanger no longer than 0.75 of
+  // its bay's width), so a deep, narrow carcass draws hangers across its rail and not a grille.
+  const half = Math.min(r.h * 0.35, bayW * WARDROBE_HANGER_BAY);
   for (let b = 0; b < bays; b++) {
     const x0 = r.x + bayW * (b + WARDROBE_RAIL_INSET);
     const x1 = r.x + bayW * (b + 1 - WARDROBE_RAIL_INSET);

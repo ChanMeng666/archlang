@@ -320,8 +320,30 @@ describe("bedroom glyphs — the wardrobe", () => {
     expect(hangersOf(rect(12000, 600))).toHaveLength(5 * 5);
   });
 
+  it("holds a hanger to 0.75 of its bay, so a deep, narrow carcass draws hangers and not a grille", () => {
+    // `hillside-villa.arch` has `wardrobe size 550x1800`: the back is the SHORT edge, so one bay
+    // 550 wide and 1800 deep. Unclamped, 70% of the depth is a 1260 mm stroke across a 484 mm rail.
+    const R = rect(550, 1800);
+    const rails = dashedOf(R);
+    expect(rails).toHaveLength(1);
+    const railLen = rails[0]!.b.x - rails[0]!.a.x;
+    const hangers = hangersOf(R);
+    expect(hangers.length).toBeGreaterThanOrEqual(3);
+    for (const h of hangers) {
+      const len = Math.abs(h.b.y - h.a.y);
+      expect(len, "no longer than 0.75 of the bay").toBeLessThanOrEqual(550 * 0.75 + 1e-9);
+      expect(len, "shorter than the rail they hang from").toBeLessThan(railLen);
+      expect((h.a.y + h.b.y) / 2, "still centred on the rail").toBeCloseTo(R.y + R.h / 2, 9);
+    }
+    // …and it does not bind where the bay is as wide as the depth (the catalogued 1800x600 and 1200x600,
+    // 600 mm bays): 70% of the depth stays 70%. It only trims a hanger that would be wider than its bay.
+    for (const w of [1800, 1200]) {
+      for (const h of hangersOf(rect(w, 600))) expect(Math.abs(h.b.y - h.a.y)).toBeCloseTo(600 * 0.7, 9);
+    }
+  });
+
   it("is symmetric about its vertical axis — a robe has no hand", () => {
-    for (const R of [ROBE, rect(1400, 600), rect(2400, 600), rect(600, 600)]) {
+    for (const R of [ROBE, rect(1400, 600), rect(2400, 600), rect(600, 600), rect(550, 1800)]) {
       expect(handed(drawWardrobe, R), `${R.w}x${R.h}`).toBe(false);
     }
   });
@@ -481,6 +503,36 @@ describe("bedroom glyphs — the v1.32 families draw what they claim", () => {
     const start = CANONICAL_FIXTURES.indexOf(names[0]!);
     expect(start).toBeGreaterThanOrEqual(0);
     expect(CANONICAL_FIXTURES.slice(start, start + names.length)).toEqual(names);
+  });
+
+  it("stays symmetric at every swept footprint and absolute position (an ulp must not make a hand)", () => {
+    // The bed alone is handed (its folded corner). Everything else must read symmetric wherever it
+    // stands: `describe --facts symmetry` reports a symbol's hand, so a lost or gained one is a
+    // change to the plan's facts, not to its drawing.
+    const sweep: readonly (readonly [number, number])[] = [
+      [1000, 600],
+      [1000, 1000],
+      [600, 1800],
+      [1800, 600],
+      [640, 640],
+      [777, 777],
+      [555, 900],
+      [555, 555],
+    ];
+    for (const [name, fn] of [
+      ["nightstand", drawNightstand],
+      ["wardrobe", drawWardrobe],
+      ["bunk_bed", drawBunkBed],
+      ["crib", drawCrib],
+      ["dresser", drawDresser],
+      ["vanity", drawVanity],
+    ] as const) {
+      for (const [w, h] of sweep) {
+        for (const o of [0, 100, 1000]) {
+          expect(handed(fn, { x: o, y: o, w, h }), `${name} ${w}x${h} at ${o}`).toBe(false);
+        }
+      }
+    }
   });
 
   it("none of the bedroom symbols has a hand: each maps onto its own mirror image", () => {
