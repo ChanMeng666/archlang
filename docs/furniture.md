@@ -145,9 +145,9 @@ not, because a mirror over a console table does not make a room a bathroom.
 
 | Kind (and aliases) | Symbol | Footprint | Facing | Wall |
 |---|---|---|---|---|
-| `kitchen_sink` · `sink` | counter slab, a rounded bowl with a waste, a **drainer board with five grooves** beside it, and a tap ring with its spout at the back — **two bowls** on a long run, **no drainer** on a square one | 800 × 600 | derived | ✓ |
+| `kitchen_sink` · `sink` | counter slab, a centred rounded bowl with a waste, a tap ring with its spout at the back — **two bowls** from aspect 2, and a **drainer board with four grooves on each side** once the run leaves room for them; symmetric at every size | 800 × 600 | derived | ✓ |
 | `counter` · `worktop` | slab with an upstand line near the back, a front-edge line near the front and one division tick per 600 mm base-cabinet module between them | 600 × 600 | derived | ✓ |
-| `stove` · `hob` · `cooktop` | slab with the glass hob plate, four burners as concentric rings — **the large pair on one diagonal, the small pair on the other** — and a row of four control knobs along the front | 600 × 600 | derived | ✓ |
+| `stove` · `hob` · `cooktop` | slab with the glass hob plate, four burners as concentric rings — **the large pair along the back, the small pair in front** — and a row of four control knobs along the front | 600 × 600 | derived | ✓ |
 | `fridge` · `refrigerator` | carcass, the door's face line across the front, the handle bar — and, **by aspect**, a vertical door split when it is a side-by-side | 600 × 650 | derived | ✓ |
 | `oven` | carcass, three control knobs on the back edge, and the door with its glass window and handle bar — **plus four burners when the footprint is wide enough to be a range** | — | free | |
 | `dishwasher` | carcass, the tub's inset panel with two rack rails, the control strip across the door, and the handle bar | 600 × 600 | derived | ✓ |
@@ -177,9 +177,10 @@ a different footprint.
 
 **Four symbols read their own footprint and draw a different appliance either side of a
 threshold**, because the fixture word alone cannot tell them apart and inventing one
-answer would be wrong for half the plans that use it. A `kitchen_sink` at aspect 1.2 or over
-gains its drainer board and at 2.4 or over a second bowl; a `fridge` at aspect 1.4 or over
-splits its door down the width (a side-by-side) and below it draws one door; an `oven` at
+answer would be wrong for half the plans that use it. A `kitchen_sink` at aspect 2 or over
+takes a second bowl and, once the bowls leave room for them, a drainer board on each side (never a
+single trough — a bowl is at most 1.25 times as wide as it is deep); a `fridge` at aspect 1.4 or
+over splits its door down the width (a side-by-side) and below it draws one door; an `oven` at
 aspect 1.6 or over is a **range** and gains a hob; an `island` at aspect 1.8 or over takes a
 hob at one end rather than a sink. Give the piece an explicit `size` to choose.
 
@@ -266,14 +267,11 @@ twin. So a reflecting instance frame hands the glyph its own chirality instead, 
 mirror image. Turn it with `rotate` where a quarter-turn is what you want; reach for
 `place … mirror` when you want the mirror-image piece.
 
-**Handedness is DERIVED from the drawing, not declared per family.** Twenty-two of the 83
-shipped families have no vertical mirror axis (`bed`, `desk`, `bathtub`, `kitchen_sink`, `stove`,
-`oven`, `island`, `washer`, `microwave`, `mirror`, `chaise`, `shoe_cabinet`, `reception_desk`,
-`piano`, `sofa_l`, `bbq`, `shrub`, `bicycle`, `motorcycle`, `mailbox`, `ev_charger`,
-`double_bed`) at their catalogued footprints. The kitchen's three are handed on purpose: a sink's
-drainer stands on one side of its bowl, and a hob puts its two large burners on one diagonal and
-its two small ones on the other, as every drafted range block does (`oven` is handed only as a
-range, which is the footprint that carries a hob). Handedness is a property of the drawing rather than of the family, though:
+**Handedness is DERIVED from the drawing, not declared per family.** Nineteen of the 83
+shipped families have no vertical mirror axis (`bed`, `desk`, `bathtub`, `island`, `washer`,
+`microwave`, `mirror`, `chaise`, `shoe_cabinet`, `reception_desk`, `piano`, `sofa_l`, `bbq`,
+`shrub`, `bicycle`, `motorcycle`, `mailbox`, `ev_charger`, `double_bed`) at their catalogued
+footprints. Handedness is a property of the drawing rather than of the family, though:
 `counter`, `fridge`, `upper_cabinet`, `hedge` and `motorcycle` are handed at some footprints
 and symmetric at others, because their detail is tiled and the tile count comes from the
 aspect ratio — which a per-family flag simply cannot express. **A symbol that has a mirror
@@ -403,12 +401,12 @@ half the plans.
 
 | Kind | Primitives (main → v1.32) | What it gained |
 |---|---|---|
-| `island` | 2 → 7 / 9 | an eased worktop, a seating overhang with cabinet ticks under it, and **by aspect** either a hob or a sink bowl |
-| `upper_cabinet` | 2 → 3 / 5 / 6 | a door split per 600 mm module and a hinge tick at each end of the back edge — a dashed empty rectangle is a `void`, this is cabinetry |
-| `dishwasher` | 3 → 7 | two basket lines across the tub, and a door leaf with its control strip and handle |
-| `oven` | 4 → 8 / 12 | three knobs, a door seam, a window and a handle bar; **at aspect 1.6 or over it is a range** and gains four burners |
-| `fridge` | 4 → 5 | a door face line, a handle bar, and a compartment split placed by aspect — down the width of a side-by-side, across the depth of an upright |
-| `washer` | 4 → 7 | a control panel with two knobs and a white porthole at the drum's centre, so it is no longer `dryer`'s box |
+| `island` | 2 → 6 / 11 | a worktop with the line the seating overhang starts at, and **by aspect** either a hob plate with four burners or a sink bowl with its tap |
+| `upper_cabinet` | 2 → 2 / 4 / 5 | a dashed door-face line across the front band and, past two modules, a door split per 600 mm module edge to edge — a dashed empty rectangle is a `void`, this is cabinetry |
+| `dishwasher` | 3 → 6 | the tub's inset panel with two rack rails, a control strip across the door, and a handle bar |
+| `oven` | 4 → 6 / 10 | three knobs, a glass window and a handle bar; **at aspect 1.6 or over it is a range** and gains four burners |
+| `fridge` | 4 → 3 / 4 | a door-face line and a handle bar, and a vertical door split only on a side-by-side (aspect 1.4 or over) — an upright's freezer drawer is behind its one door and is not seen from above |
+| `washer` | 4 → 6 | a control strip with a dial and a button, and a door ring with a white porthole at the drum's centre, so it is no longer `dryer`'s box |
 | `coffee_table` | 2 → 6 / 7 | legs and a lower shelf |
 | `table` | 2 → 6 / 7 | legs and supports, and a leaf seam on a long enough top |
 | `stool` | 2 → 3 | a **concentric** third circle — a ring of foot dots would map onto itself under a quarter-turn and move the bytes for a drawing nobody can tell apart |
