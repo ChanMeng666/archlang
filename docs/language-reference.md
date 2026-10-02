@@ -1771,6 +1771,10 @@ centreline, or to the outer face).
 answers. `rail none` is a real instruction (a Juliet slab drawn without its balustrade),
 not the same as omitting the clause.
 
+Each railed edge draws the slab edge, an inner rail line just inside it, and its posts. Where
+two railed edges meet at a corner, each inner rail stops on the other's line, so the corner
+closes cleanly instead of the two rails crossing in a small square.
+
 On any other kind, `rail` is [`E_OUTDOOR_RAIL`](error-codes.md#e_outdoor_rail) — refused,
 never silently ignored.
 

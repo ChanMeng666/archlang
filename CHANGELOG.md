@@ -42,16 +42,28 @@ dimensions, axes and the sheet chrome do not move a byte, and no room label move
 - **Ground.** The seven ground hatches are redrawn at the finest pen (turf tufts, mulch stipple,
   staggered deck boards, a 600 mm paving grid, irregular gravel, gentle water); pattern ids and DXF
   pattern names are unchanged. A ground material's legend swatch is framed on its pattern's own
-  marks; wall-material swatches and every plan surface are untouched. A `fence`'s panel corners
-  are mitred and every style posts one tick on a shared corner, along the bisector; a turn sharper
-  than about 139° keeps each run's square end.
+  marks; wall-material swatches and every plan surface are untouched. To frame it, the SVG
+  backend now honours a `hatch` primitive's `origin` and new `zoom`, which it used to ignore (no
+  shipped primitive set `origin` before); the DXF and PDF exports still ignore both. A `fence`'s
+  panel corners are mitred and every style posts one tick on a shared corner, along the
+  bisector; a turn sharper than about 139° keeps each run's square end. Where two railed edges of
+  a `balcony` meet, each inner rail now stops on the other's line instead of crossing it.
 - **`-f txt`:** a non-hinged door's panels no longer carve `·` rows into the text plan; the doorway
   is read from the opening's cover alone, so every door kind prints the same (hinged doors, and
   the ASCII goldens, are unchanged).
 - **Handedness lost, so symmetry can grow.** `shoe_cabinet`, `shrub`, `hedge` (its 3:1 run),
   `bbq` and `bicycle` (stood on end) no longer have a handed detail, so a mirrored `place` of one
   draws the same bytes as the unmirrored piece, and `describe --facts symmetry` can report MORE
-  symmetry for a plan that uses them. No family became handed.
+  symmetry for a plan that uses them. No family became handed: a pinned sweep of 19 × 19
+  footprints at three positions (`test/handedness-grid-baseline.ts`) finds no cell where a family
+  is handed and `main` was not.
+- **Handedness is read tie-robustly.** Whether a symbol has a mirror axis is still decided at the
+  0.0001 mm the DXF writes, but each coordinate is first nudged 1e-7 mm off the `x.xxxx5`
+  rounding ties. Integer millimetres times a three-decimal fraction land exactly on one, and a
+  mark and its mirror partner a few ulps apart could round to opposite sides — so the redrawn
+  `kitchen_sink`, `dresser` and `car` read as handed at some sizes and positions (a sink at
+  1800 × 555, a car at 555 × 1000), dropping a plan's mirror axis from `describe --facts
+  symmetry`. Over the shipped examples and fixtures nothing moves.
 
 ## [1.38.0] - 2026-10-02
 
