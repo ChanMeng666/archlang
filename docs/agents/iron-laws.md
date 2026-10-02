@@ -48,6 +48,16 @@ Owner decisions and laws that no test fully states. Do not re-propose, re-open o
 
 ## Language & geometry
 
+- **The modelling range is 2^25 mm** (`MODEL_RANGE_MM`, `docs/adr/0022-exact-decisions-and-bounded-input.md`):
+  past it an element is `E_OUT_OF_RANGE`. Do not widen it to suit an input.
+- **Budgets are counts, never time, and every input returns a diagnostic**, never a hang or a throw
+  (`E_STEP_LIMIT`, `E_DRAWING_LIMIT`). Never replace one with a wall-clock timeout.
+- **Circulation**: furniture within R + δ of a doorway's face reads the room `blocked` (kept; no one can
+  stand in the doorway). There is no far-seed stamp: routes start and rooms are reached on the
+  room's floor, and a door's width lives only on the cells its carve opened.
+- **The `spec.llm.md` size cap is raised only after provable duplication is trimmed**; the rules are
+  in `test/llm-spec-drift.test.ts`.
+
 - **ArchLang is plan-first: it draws 2D plans only** (ADR 0021,
   `docs/adr/0021-plan-first-view-deprecated.md`). The axonometric view (`src/view/`, `--view`) is
   deprecated: fix nothing in it, promote it nowhere. It is deleted at the next major together with

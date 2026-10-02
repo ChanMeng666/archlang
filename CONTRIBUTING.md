@@ -281,8 +281,8 @@ low.
 
 ### CI drift gates (regenerate before you push)
 
-**Nine generators** produce **twenty-three artifacts**, and CI drift-checks all of them in a single
-`npm run check:drift` step. The run prints its own total (`✓ all 23 generated artifacts are in sync
+The generators produce the artifacts below, and CI drift-checks all of them in a single
+`npm run check:drift` step. The run prints its own total (`✓ all N generated artifacts are in sync
 with their sources`), so read the count there rather than from this page. The authoritative list is
 the `GENERATORS` table in `scripts/check-drift.ts` — this table mirrors it:
 
@@ -296,7 +296,7 @@ the `GENERATORS` table in `scripts/check-drift.ts` — this table mirrors it:
 | `grammars/archlang.gbnf` | `gen:gbnf` | `src/grammar/tokens.ts` |
 | `schemas/plan.schema.json` | `gen:plan-schema` | `PLAN_JSON_SCHEMA` |
 | `schemas/intent.schema.json` | `gen:intent-schema` | `INTENT_JSON_SCHEMA` |
-| the thirteen `examples/*.svg` the README embeds | `gen:example-svgs` | the matching `examples/*.arch` (list: `README_SVGS`) |
+| the `examples/*.svg` the README embeds, plus the axonometric renders | `gen:example-svgs` | the matching `examples/*.arch` (lists: `README_SVGS`, `VIEW_SVGS`) |
 
 Whenever a generator's source changes, run `npm run gen:all` to regenerate every artifact in
 dependency order (`gen:spec` before `gen:llms`, which consumes it) and commit the output;

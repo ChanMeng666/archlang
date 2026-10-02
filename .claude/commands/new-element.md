@@ -23,13 +23,21 @@ goes through `src/elements/defs.ts`.
    `Diagnostic` with a byte `span` and a catalogued `E_*`/`W_*` code in `src/error-catalog.ts`
    (a test enforces every raised code has an entry), never thrown.
 
-4. **Add unit tests in `test/`** covering parse, resolve, and render for the new element.
+4. **Declare `drawCost` and the range inputs.** `drawCost(resolved)` is an upper bound on the
+   primitives `render()` emits (`src/draw-budget.ts`; without it the kind is estimated at
+   `DEFAULT_DRAW_COST`, wrong for anything that grows with its size); `test/drawing-budget.test.ts`
+   checks estimate >= drawn. `bounds()` must list every point drawn and `measures()` every other
+   coordinate or length (an opening's width, a thickness, a radius, an offset), because the
+   resolver holds both to `MODEL_RANGE_MM` (`E_OUT_OF_RANGE`). Any loop the element runs is
+   charged to the step budget (`src/expr.ts`) or capped by a constant, before it allocates.
 
-5. **`npm run gen:all`** — if the element introduces new tokens/keywords, the generated spec,
+5. **Add unit tests in `test/`** covering parse, resolve, and render for the new element.
+
+6. **`npm run gen:all`** — if the element introduces new tokens/keywords, the generated spec,
    grammars, GBNF, and schemas must pick them up. (Regeneration is source-driven; never hand-edit
    the generated artifacts — see `/regen`.)
 
-6. **Run `/verify-loop`** — `npm run check` + `npm run check:drift` must be green.
+7. **Run `/verify-loop`** — `npm run check` + `npm run check:drift` must be green.
 
 ## Remember
 

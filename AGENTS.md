@@ -20,8 +20,14 @@ npm run gen:all       # every gen:* generator
   `src/cli.ts`+`src/cli/`; environment via the `World` seam; numbers via `src/num-format.ts`; never
   mutate the memoised parse-stage `PlanNode` (clone). Zero runtime deps.
 - User-source errors are returned as a `Diagnostic` (byte `span` + catalogued `E_*`/`W_*`), never thrown.
-- New element = one `src/elements/` module registered in `defs.ts`, no switch. New fixture category =
-  a `FIXTURE_FAMILIES` row + a `CATALOG` entry; a drawn symbol ignores its `label`.
+- `compile()` is bounded: every input returns within the step budget and the drawing budget. Charge
+  new evaluator work to the step meter BEFORE allocating (`MAX_EVAL_STEPS`, `E_STEP_LIMIT`,
+  `src/expr.ts`); budgets are counts, never time. Every coordinate/length stays within
+  `MODEL_RANGE_MM` (`src/num-format.ts`, `E_OUT_OF_RANGE`).
+- New element = one `src/elements/` module registered in `defs.ts`, no switch; it declares
+  `drawCost` (an upper bound on what it draws) and `bounds()`/`measures()` covering every coordinate
+  and length it draws. New fixture category = a `FIXTURE_FAMILIES` row + a `CATALOG` entry; a drawn
+  symbol ignores its `label`.
 - Never hand-edit `dist/` or a generated file; run `gen:*`. Drift-green proves reproducibility, not
   correctness: derive generator templates from the source of truth, never retype.
 - A derived position comes from the shape, never its bounding box or centroid.

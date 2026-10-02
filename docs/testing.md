@@ -96,6 +96,15 @@ the test's own `digest()` body verbatim for the baseline. A new height-authoring
   them — hash every storey, and count storeys, not files.
 - **An SVG + `describe()` + `lint()` sweep carries no parse- or resolve-stage diagnostic.** When a
   change can reach the resolver, add `compile().diagnostics` as a fourth payload.
+- **The byte-identity sweep** (the "did anything move?" check for a change that must not move a
+  plan): per storey, six payloads (SVG, `compile().diagnostics`, `describe()`, `lint()` with the
+  default ruleset, `lint()` with `profile: "accessibility-advisory"`, the `--overlay circulation`
+  SVG), hashed together as one digest by `test/byte-identity-digest.ts` over
+  `test/byte-identity-payload.ts`. Corpus: `examples/` (incl. `lib`), `test/fixtures`,
+  `test/recovery-corpus`, the eval goldens, `fidelity-plans` and faults, AND every `arch` fence in
+  `docs/`, README, SKILL and spec. The "before" side is a `git archive` of the integration tip, never
+  a rebuilt working tree; plant a change first, and cross-check with a differently-shaped second
+  measurement.
 - **Zero corpus movement is not evidence the new path ran.** Instrument it with a counter, show which
   examples reach it, then remove the counter.
 
@@ -108,5 +117,7 @@ the test's own `digest()` body verbatim for the baseline. A new height-authoring
   compressed expectations are capability-gated.
 - `test/roof.test.ts`'s PDF export (a dynamic `import("pdfkit")`) can time out under heavy parallel
   load. Do not raise the global `testTimeout` (`docs/backlog.md` 4.10).
+- `npx vitest run --maxWorkers=N` alone errors before any test runs; add `--minWorkers=1`. Under
+  heavy load visual/sheet/roof tests can time out: rerun the file alone first.
 - `scripts/coverage-zero-report.mjs` lists modules at zero coverage; CLI modules appear there because
   `test/cli*.test.ts` spawn the real `arch` in a child process.
