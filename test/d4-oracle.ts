@@ -1317,10 +1317,33 @@ function canonEdgeSet(edges: readonly Edge[]): string[] {
       out.push(`circle@${key}`);
       continue;
     }
-    // Keep each merged arc once: the copy whose start lies in [0, 2π).
-    for (const [a, b] of merged) {
-      if (a >= TAU - 1e-12 || a < 0) continue;
-      const p = (ang: number): Point => ({ x: center.x + r * Math.cos(ang), y: center.y + r * Math.sin(ang) });
+    // Measure the arcs from a point of the circle NO arc covers, so no arc straddles the angle
+    // origin and each comes out exactly once. Taking "the copy whose start lies in [0, 2π)" off
+    // the unrolled list instead was seam-sensitive: two pieces meeting exactly at angle 0 kept
+    // the piece starting at 0 BESIDE the merged run that already contains it, and whether a
+    // float landed on 0 or a hair under 2π decided which spelling came out — so the same ink
+    // canonicalised two ways (a semicircle cut at its apex on the +x axis, a pill's end, an
+    // oval's vertex). The unrolled line's coverage is EXACT on [2π, 4π) — every interval and
+    // every wrap is represented there — so the end of a maximal run that lands in that window
+    // is a genuinely uncovered point; one always exists when the circle is not covered.
+    const gap = (merged.find(([, b]) => b >= TAU && b < 2 * TAU) ?? merged[0]!)[1];
+    const rel = ivs
+      .map(([a, b]): [number, number] => {
+        const s = (((a - gap) % TAU) + TAU) % TAU;
+        return [s, s + (b - a)];
+      })
+      .sort((x, y) => x[0] - y[0]);
+    const runs: [number, number][] = [];
+    for (const [a, b] of rel) {
+      const last = runs[runs.length - 1];
+      if (last && a <= last[1] + 1e-9) last[1] = Math.max(last[1], b);
+      else runs.push([a, b]);
+    }
+    for (const [a, b] of runs) {
+      const p = (ang: number): Point => ({
+        x: center.x + r * Math.cos(ang + gap),
+        y: center.y + r * Math.sin(ang + gap),
+      });
       out.push(`arc@${key}:${undirected(p(a), p(b))}a${q(b - a)}`);
     }
   }
