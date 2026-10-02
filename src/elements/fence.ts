@@ -71,6 +71,19 @@ const POST_PITCH: Readonly<Record<FenceStyle, number>> = {
 const MIN_POSTS = 1;
 const MAX_POSTS = 60;
 
+/** The post divisions of one segment `len` mm long (`render` draws `n + 1` ticks). */
+function postCount(len: number, style: FenceStyle): number {
+  return Math.max(MIN_POSTS, Math.min(MAX_POSTS, Math.round(len / POST_PITCH[style])));
+}
+
+/** The segments a fence draws: consecutive points, plus the closing one of a closed ring. */
+function fenceSegments(f: RFence): Array<[Point, Point]> {
+  const segs: Array<[Point, Point]> = [];
+  for (let i = 0; i + 1 < f.points.length; i++) segs.push([f.points[i]!, f.points[i + 1]!]);
+  if (f.closed && f.points.length > 2) segs.push([f.points[f.points.length - 1]!, f.points[0]!]);
+  return segs;
+}
+
 export const fence: ElementDef = {
   kind: "fence",
   keyword: "fence",
@@ -165,6 +178,15 @@ export const fence: ElementDef = {
     return (resolved as RFence).points.map((p) => ({ ...p }));
   },
 
+  /** Per drawn segment: its run line(s) and its `postCount + 1` ticks (`render`), for the
+   *  drawing budget. A segment `render` skips (zero length) is counted all the same. */
+  drawCost(resolved): number {
+    const f = resolved as RFence;
+    let n = 0;
+    for (const [a, b] of fenceSegments(f)) n += 3 + postCount(Math.hypot(b.x - a.x, b.y - a.y), f.style);
+    return n;
+  },
+
   render(resolved, ctx: RenderCtx): SceneNode[] {
     const f = resolved as RFence;
     const { theme, sizes } = ctx;
@@ -177,9 +199,7 @@ export const fence: ElementDef = {
       paint: { fill: "none", stroke: theme.outdoorStroke, width: weightWidth(weight, sizes) },
     });
 
-    const segs: Array<[Point, Point]> = [];
-    for (let i = 0; i + 1 < f.points.length; i++) segs.push([f.points[i]!, f.points[i + 1]!]);
-    if (f.closed && f.points.length > 2) segs.push([f.points[f.points.length - 1]!, f.points[0]!]);
+    const segs = fenceSegments(f);
 
     // Post depth: how far a tick stands off the run, each side.
     //
@@ -218,7 +238,7 @@ export const fence: ElementDef = {
         nodes.push(line(a, b, "thin"));
       }
 
-      const n = Math.max(MIN_POSTS, Math.min(MAX_POSTS, Math.round(len / POST_PITCH[f.style])));
+      const n = postCount(len, f.style);
       for (let i = 0; i <= n; i++) {
         const t = (len * i) / n;
         const p = { x: a.x + ux * t, y: a.y + uy * t };

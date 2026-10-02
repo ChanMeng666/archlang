@@ -206,6 +206,15 @@ export interface ElementDef {
    * bounds are checked.
    */
   measures?(resolved: ResolvedElement): number[];
+  /**
+   * How many drawing primitives {@link render} emits BEYOND a fixed-size glyph: the part
+   * that grows with the element's size (a run's treads, a fence's posts). The resolver sums
+   * every element's estimate over the whole building and refuses a plan past the drawing
+   * budget before anything is drawn (`MAX_DRAW_UNITS`, `E_DRAWING_LIMIT`). Optional: without
+   * it an element is estimated at the fixed bound plus one per point it reports in
+   * {@link bounds}, which covers any glyph whose count does not grow with its size.
+   */
+  drawCost?(resolved: ResolvedElement): number;
   /** Emit positioned drawing primitives for this element (the Scene IR). */
   render(resolved: ResolvedElement, ctx: RenderCtx): SceneNode[];
   /** Parameter schema — one source for the LSP (hover/completion/signature) and
@@ -305,6 +314,8 @@ export function registerElement(def: ElementDef): ElementDef {
     throw new TypeError("registerElement: def.transform must be a function when given");
   if (def.measures !== undefined && typeof def.measures !== "function")
     throw new TypeError("registerElement: def.measures must be a function when given");
+  if (def.drawCost !== undefined && typeof def.drawCost !== "function")
+    throw new TypeError("registerElement: def.drawCost must be a function when given");
   return def;
 }
 

@@ -16,7 +16,7 @@ import type { SceneNode } from "../scene.js";
 import type { RStair } from "../ir.js";
 import { rectCorners } from "../geometry.js";
 import { flightAxis, tailEdge } from "../vertical.js";
-import { runTooLong, stairGlyph } from "./vertical-glyphs.js";
+import { runTooLong, runTreads, stairGlyph } from "./vertical-glyphs.js";
 
 /** Parse the mandatory `dir up|down` clause shared by `stair` and `escalator`. */
 export function parseVerticalDir(ctx: ParseCtx, keyword: string): VerticalDir {
@@ -105,6 +105,10 @@ export const stair: ElementDef = {
 
   render(resolved, ctx: RenderCtx): SceneNode[] {
     return stairGlyph(resolved as RStair, ctx.theme, ctx.sizes);
+  },
+  /** One tread line per division (`stairGlyph`), for the drawing budget. */
+  drawCost(resolved): number {
+    return runTreads(resolved as RStair);
   },
   /**
    * The frame's action on a stair (`frame.ts`'s `transformElement` calls this). The tail is

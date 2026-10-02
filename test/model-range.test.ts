@@ -359,6 +359,112 @@ suite("the settings that scale a drawn length are held too", () => {
   });
 });
 
+suite("a `lineWeight` from the compile options is held like the source's", () => {
+  const B = `${W}\n${R}`;
+  const FAR = 30_000_000;
+  const one = (src: string): string[] => surfaces(src).codes;
+  const errorsOf = (r: ReturnType<typeof compile>): string[] =>
+    r.diagnostics.filter((d) => d.severity === "error").map((d) => d.code ?? "<uncoded>");
+  const svgOf = (r: ReturnType<typeof compile>): string => (r.pages ? r.pages.map((p) => p.svg) : [r.svg]).join("\n");
+
+  it("opts.theme lineWeight 1e308: one E_OUT_OF_RANGE at the plan header, no Infinity (was: drawn, unchecked)", () => {
+    const src = plan(B);
+    const r = compile(src, { noCache: true, theme: { lineWeight: 1e308 } });
+    expect(errorsOf(r)).toEqual(["E_OUT_OF_RANGE"]);
+    expect(r.svg).toBe("");
+    const d = r.diagnostics.find((x) => x.code === "E_OUT_OF_RANGE")!;
+    // No source span of its own: the plan header carries it, and the message says where it came from.
+    expect(src.slice(d.span!.start, d.span!.end)).toBe('plan "P"');
+    expect(d.message).toContain("compile options");
+    expect(d.message).toContain("lineWeight` 1e+308");
+    expect(json(r.diagnostics)).not.toMatch(NON_NUMBER);
+    expect(d.message).not.toMatch(NON_NUMBER);
+    // The source path is untouched: the same plan without the option draws.
+    expect(errorsOf(compile(src, { noCache: true }))).toEqual([]);
+  });
+
+  it("the API and the source decide at the same weight (bisected to the boundary)", () => {
+    const near = `wall id=w exterior thickness 200 { (0,0) (${FAR},0) }`;
+    const apiOk = (lw: number): boolean =>
+      errorsOf(compile(plan(near), { noCache: true, theme: { lineWeight: lw } })).length === 0;
+    let lo = 1;
+    let hi = 1_000_000;
+    expect(apiOk(lo) && !apiOk(hi)).toBe(true);
+    while (hi - lo > 1) {
+      const mid = Math.floor((lo + hi) / 2);
+      if (apiOk(mid)) lo = mid;
+      else hi = mid;
+    }
+    // Just under the bound compiles and draws; one more is refused.
+    const under = compile(plan(near), { noCache: true, theme: { lineWeight: lo } });
+    expect(errorsOf(under)).toEqual([]);
+    expect(svgOf(under)).not.toMatch(NON_NUMBER);
+    expect(svgOf(under).length).toBeGreaterThan(0);
+    // The source's `lineWeight` turns at exactly the same weight.
+    expect(one(plan(near, `theme { lineWeight: ${lo} }\n`))).toEqual([]);
+    expect(one(plan(near, `theme { lineWeight: ${hi} }\n`))).toEqual(["E_OUT_OF_RANGE"]);
+  });
+
+  it("a theme registered in opts.themes and selected by `theme <name>` is held too", () => {
+    const src = plan(B, "theme heavy\n");
+    const r = compile(src, { noCache: true, themes: [{ name: "heavy", theme: { lineWeight: 1e308 } }] });
+    expect(errorsOf(r)).toEqual(["E_OUT_OF_RANGE"]);
+    expect(r.diagnostics[0]!.message).toContain('the theme "heavy"');
+    // A source `lineWeight` overrides the registered one, and is what is checked.
+    const own = compile(plan(B, "theme heavy {\n  lineWeight: 1\n}\n"), {
+      noCache: true,
+      themes: [{ name: "heavy", theme: { lineWeight: 1e308 } }],
+    });
+    expect(errorsOf(own)).toEqual([]);
+  });
+
+  it("a value that is not a finite number is reported without printing it as one", () => {
+    for (const lw of [Number.NaN, Number.POSITIVE_INFINITY, "heavy" as unknown as number]) {
+      const r = compile(plan(B), { noCache: true, theme: { lineWeight: lw } });
+      expect(errorsOf(r)).toEqual(["E_OUT_OF_RANGE"]);
+      expect(r.diagnostics[0]!.message).toContain("not a finite number");
+      expect(r.diagnostics[0]!.message).not.toMatch(NON_NUMBER);
+    }
+  });
+
+  it("on a multi-storey plan it is reported once, not once per page", () => {
+    const src = plan(`level 0 {\n${B}\n}\nlevel 1 {\n${B}\n}\nlevel 2 {\n${B}\n}`);
+    const r = compile(src, { noCache: true, theme: { lineWeight: 1e308 } });
+    expect(errorsOf(r)).toEqual(["E_OUT_OF_RANGE"]);
+  });
+});
+
+suite("a plan-level setting out of range is reported once per plan, not once per storey", () => {
+  const P = "40000000";
+  const three = (head: string): string => plan(`level 0 {\n${R}\n}\nlevel 1 {\n${R}\n}\nlevel 2 {\n${R}\n}`, head);
+  const cases: Record<string, [string, string]> = {
+    "theme lineWeight (was: one per page)": [three(`theme { lineWeight: ${digits(308)} }\n`), "E_OUT_OF_RANGE"],
+    "an axes position (was: one per page)": [three(`axes { x at 0, ${P} y at 0, 8000 }\n`), "E_OUT_OF_RANGE"],
+    "the site boundary (was: one per page)": [
+      three(`site { street south boundary (0,0) (${P},0) (${P},${P}) (0,${P}) }\n`),
+      "E_OUT_OF_RANGE",
+    ],
+    "the plan height (was: one per page)": [three("height 200000\n"), "E_HEIGHT_RANGE"],
+    "a paper scale": [three(`paper A0\nscale 1:${maxScaleDenominator(1189) + 1}\n`), "E_OUT_OF_RANGE"],
+    north: [three(`north ${digits(308)}\n`), "E_OUT_OF_RANGE"],
+    grid: [three(`grid ${digits(308)}\n`), "E_OUT_OF_RANGE"],
+  };
+  for (const [name, [src, code]] of Object.entries(cases)) {
+    it(name, () => {
+      const r = compile(src, { noCache: true });
+      const errs = r.diagnostics.filter((d) => d.severity === "error");
+      expect(errs.map((d) => d.code)).toEqual([code]);
+      expect(json(r.diagnostics)).not.toMatch(NON_NUMBER);
+    });
+  }
+
+  it("a storey's own out-of-range element is still reported on its storey", () => {
+    const src = plan(`level 0 {\n${R}\n}\nlevel 1 {\n${R}\nroom id=far at (${P},0) size 3000x3000\n}`);
+    const errs = compile(src, { noCache: true }).diagnostics.filter((d) => d.severity === "error");
+    expect(errs.map((d) => [d.code, d.level])).toEqual([["E_OUT_OF_RANGE", 1]]);
+  });
+});
+
 suite("source printers write every finite value so it re-parses to the same double", () => {
   /** The number a source literal lexes to. */
   const lexed = (s: string): number => {
@@ -429,6 +535,9 @@ suite("property: random magnitudes up to 1e308 never escape the closed domain", 
     hatchAngle: (v) => plan(`wall id=w exterior thickness 200 material brick angle ${v} { (0,0) (10000,0) }\n${R}`),
     lineWeight: (v) => plan(B, `theme { lineWeight: ${v} }\n`),
     paperScale: (v) => plan(B, `paper A3\nscale 1:${v}\n`),
+    // A plan-level setting on a multi-storey plan: still one report, not one per storey.
+    lineWeightStoreys: (v) => plan(`level 0 {\n${B}\n}\nlevel 1 {\n${B}\n}`, `theme { lineWeight: ${v} }\n`),
+    axesStoreys: (v) => plan(`level 0 {\n${R}\n}\nlevel 1 {\n${R}\n}`, `axes { x at 0, ${v} y at 0, 8000 }\n`),
   };
   // A FINITE magnitude as digits: a leading 1-9 then 0..308 zeros (only 1e308 itself in the
   // last decade, the largest such literal that is finite), so every decade is reached. A
@@ -475,6 +584,8 @@ suite("property: random magnitudes up to 1e308 never escape the closed domain", 
           ["hatchScale", digits(308)],
           ["lineWeight", digits(308)],
           ["north", digits(308)],
+          ["lineWeightStoreys", digits(308)],
+          ["axesStoreys", "40000000"],
         ],
       },
     );

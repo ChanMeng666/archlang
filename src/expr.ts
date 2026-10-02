@@ -125,6 +125,9 @@ export function asStr(v: Value): string {
     case "bool":
       return v.v ? "true" : "false";
     case "arr":
+      // An item printed is a step (`MAX_EVAL_STEPS`): printing a large array in a loop is
+      // work proportional to its length.
+      chargeSteps(v.v.length);
       return `[${v.v.map(asStr).join(", ")}]`;
     case "fn":
     case "builtin":
@@ -570,6 +573,113 @@ export function firstOverflow(kind: "eval" | "expand"): boolean {
   return true;
 }
 
+/**
+ * The evaluation-step budget: ONE deterministic counter across a whole resolution (every
+ * storey, component instance, import, function call and loop iteration), so a plan that
+ * creates nothing can still not run without bound. `E_ELEMENT_LIMIT` bounds what a plan
+ * creates, `E_WHILE_LIMIT` one loop and the stack budget nesting; nested loops, recursion
+ * that branches and string doubling multiply inside all three.
+ *
+ * ## The unit
+ *
+ * One step is one unit of evaluator work whose cost is bounded by a constant, charged where
+ * the work is done, so the time to reach the budget is bounded whatever shape spends it:
+ *
+ * - an expression node evaluated (every {@link evalExpr} entry, which is every call too);
+ * - a statement executed and a `for`/`while` iteration started (`ir.ts` `expandScope`);
+ * - a value produced or walked: a range item, a character a string template appends, an
+ *   array item `str()`/interpolation prints or `==` compares;
+ * - a binding copied: a scope snapshot (`ir.ts` `Scope.flatten`) and a call's closure copy
+ *   cost one step per binding, because both copy the whole visible environment.
+ *
+ * Counting nodes alone was not enough: a statement in a scope with many bindings, a closure
+ * copy per call and a doubling string cost work proportional to a size, and each would
+ * otherwise spend seconds on a handful of steps (the doubling string threw
+ * `RangeError: Invalid string length` out of `compile()`).
+ *
+ * ## The bound
+ *
+ * {@link MAX_EVAL_STEPS} was set by measurement (`test/step-budget.test.ts` pins both
+ * margins). Over the corpus (examples with `lib`, test fixtures, the recovery corpus, eval
+ * goldens, faults and fidelity plans, every `arch` fence of the docs) the median plan spends
+ * 25 steps and the largest that compiles 4,974 (`terrace-row`, four placed instances): the
+ * bound is 1,005 times that. The catalogue's demonstrations of the other caps spend more by
+ * construction (a `while` at its 10,000 iterations 260,026, a range at its 100,000 items
+ * 200,014) and still reach their own cap first, 19 times under it. The bound is not set
+ * higher because time to reach it is linear in it: on Node 24 M.2's nested loops reach it in
+ * about 1 s cold (a loop iteration is about 2 µs and 14 steps), three nested capped `while`s
+ * in 0.7 s, recursion that branches in 0.3 s.
+ *
+ * Past it the resolution stops (`E_STEP_LIMIT`, reported once, at the statement that
+ * crossed it). The crossing unwinds with an internal signal ({@link StepLimitSignal}) that
+ * `ir.ts` catches inside the resolution and turns into the diagnostic; it never leaves
+ * `resolve()`. Every evaluator frame it unwinds releases its stack units in `finally`.
+ */
+export const MAX_EVAL_STEPS = 5_000_000;
+
+/** Where the statement being executed was written, for the {@link StepLimitSignal}'s report. */
+export interface StepSite {
+  span?: Span;
+  /** The imported file the span is measured in (absent = the compiled source). */
+  file?: string;
+  /** Opaque provenance the resolver re-stamps the report with (the `place` frame). */
+  frame?: unknown;
+}
+
+/** The meter of the resolution in progress, or null outside one (then nothing is counted).
+ *  The site is held field by field so marking a statement allocates nothing. */
+interface StepMeter {
+  used: number;
+  limit: number;
+  span: Span | undefined;
+  file: string | undefined;
+  frame: unknown;
+}
+let meter: StepMeter | null = null;
+
+/** Thrown when a resolution spends past its step budget; caught by the resolution itself. */
+export class StepLimitSignal {
+  constructor(readonly at: StepSite) {}
+}
+
+/** Charge `n` steps to the active meter; past its limit, unwind with a {@link StepLimitSignal}. */
+export function chargeSteps(n: number): void {
+  if (meter === null) return;
+  meter.used += n;
+  if (meter.used > meter.limit) throw new StepLimitSignal({ span: meter.span, file: meter.file, frame: meter.frame });
+}
+
+/** Record the statement now executing (the site a crossing is reported at). */
+export function stepSite(span: Span | undefined, file?: string, frame?: unknown): void {
+  if (meter !== null) {
+    meter.span = span;
+    meter.file = file;
+    meter.frame = frame;
+  }
+}
+
+/**
+ * Run `fn` with a fresh meter starting at `used` steps (what earlier storeys of the same
+ * resolution spent), restoring whatever meter was active before. Returns the steps used in
+ * total, and the signal when the budget was crossed.
+ */
+export function withStepMeter<T>(
+  used: number,
+  fn: () => T,
+): { value: T; used: number } | { signal: StepLimitSignal; used: number } {
+  const outer = meter;
+  const m: StepMeter = { used, limit: MAX_EVAL_STEPS, span: undefined, file: undefined, frame: undefined };
+  meter = m;
+  try {
+    return { value: fn(), used: m.used };
+  } catch (e) {
+    if (e instanceof StepLimitSignal) return { signal: e, used: m.used };
+    throw e;
+  } finally {
+    meter = outer;
+  }
+}
+
 /** Built-in dispatch is injected by {@link setBuiltinDispatch} (from builtins.ts)
  *  to avoid a static import cycle. Until set, built-in calls are unknown. */
 let builtinDispatch: ((name: string, args: Value[], onError: (d: Diagnostic) => void, span?: Span) => Value) | null =
@@ -583,6 +693,8 @@ export function setBuiltinDispatch(fn: typeof builtinDispatch): void {
  *  and yield a safe default so resolution can continue and report everything.
  *  `depth` bounds function-call nesting; callers pass 0. */
 export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, depth = 0): Value {
+  // One step per node evaluated (see `MAX_EVAL_STEPS`), taken before any stack unit.
+  chargeSteps(1);
   // See `MAX_STACK_UNITS`: nested evaluation shares one stack budget with expansion.
   if (!enterStack(EVAL_UNITS)) {
     if (firstOverflow("eval")) {
@@ -603,7 +715,12 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, de
         return { t: "bool", v: e.value };
       case "str": {
         let s = "";
-        for (const p of e.parts) s += typeof p === "string" ? p : asStr(evalExpr(p, env, onError, depth));
+        for (const p of e.parts) {
+          const part = typeof p === "string" ? p : asStr(evalExpr(p, env, onError, depth));
+          // A character appended is a step: a template can double a string per iteration.
+          chargeSteps(part.length);
+          s += part;
+        }
         return { t: "str", v: s };
       }
       case "arr": {
@@ -643,6 +760,7 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, de
         const items: Value[] = [];
         let n = 0;
         for (let v = lo; v < hi; v += 1) {
+          chargeSteps(1);
           if (n++ >= MAX_RANGE) {
             onError({
               severity: "error",
@@ -719,6 +837,8 @@ function evalCall(e: Extract<Expr, { t: "call" }>, env: Env, onError: (d: Diagno
       });
       return NUM0;
     }
+    // The closure is copied per call: a binding copied is a step (see `MAX_EVAL_STEPS`).
+    chargeSteps(callee.closure.size);
     const callEnv: Env = new Map(callee.closure);
     callee.params.forEach((p, i) => {
       callEnv.set(p, args[i] ?? NUM0);
@@ -744,6 +864,8 @@ function evalCall(e: Extract<Expr, { t: "call" }>, env: Env, onError: (d: Diagno
 function valueEq(a: Value, b: Value): boolean {
   if (a.t !== b.t) return false;
   if (a.t === "arr" && b.t === "arr") {
+    // An item compared is a step (`MAX_EVAL_STEPS`).
+    if (a.v.length === b.v.length) chargeSteps(a.v.length);
     return a.v.length === b.v.length && a.v.every((x, i) => valueEq(x, b.v[i]!));
   }
   if (a.t === "fn" || a.t === "builtin") return a === b;

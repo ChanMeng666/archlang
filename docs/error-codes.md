@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**99 errors** · **52 warnings**
+**101 errors** · **52 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -26,6 +26,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_DOOR_OPEN_RANGE`](#e_door_open_range) | error | `open` must be between 0 and 1. |
 | [`E_DOOR_WIDTH`](#e_door_width) | error | Door must have a positive width. |
 | [`E_DOTTED_DECL`](#e_dotted_decl) | error | A dotted name cannot be declared. |
+| [`E_DRAWING_LIMIT`](#e_drawing_limit) | error | The drawing is larger than any plan may draw. |
 | [`E_DUP_ID`](#e_dup_id) | error | Duplicate element id. |
 | [`E_DUP_INSTANCE`](#e_dup_instance) | error | Duplicate `place … as <name>` instance name. |
 | [`E_ELEMENT_LIMIT`](#e_element_limit) | error | The plan expands to too many elements. |
@@ -97,6 +98,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_SITE_DUP`](#e_site_dup) | error | Two `site` blocks in one plan. |
 | [`E_SITE_NO_STREET`](#e_site_no_street) | error | A `site` block declares no `street`. |
 | [`E_STAIR_WIDTH`](#e_stair_width) | error | Stair flight `width` is outside the footprint. |
+| [`E_STEP_LIMIT`](#e_step_limit) | error | Evaluation did more work than any plan needs. |
 | [`E_STRIP_NEST`](#e_strip_nest) | error | Illegal `strip` nesting. |
 | [`E_STRIP_SIZE`](#e_strip_size) | error | Room in a `strip` is missing a size. |
 | [`E_TYPE`](#e_type) | error | Type mismatch. |
@@ -365,6 +367,18 @@ door at (0,0) width 0   # error
 
 ```arch static
 room id=main at (0,0) size 3000x3000   # then, in the plan: furniture bed in west.main centered
+```
+
+## E_DRAWING_LIMIT
+
+*error* — The drawing is larger than any plan may draw.
+
+**Cause.** Before anything is drawn, every element is estimated at the drawing primitives it will emit (a fixed glyph, one per point of its outline, and the part that grows with its size: a run's tread lines, a fence's posts), summed over every storey because a multi-storey plan holds all its pages at once. Past 400,000 the drawing would take hundreds of megabytes, so the plan is refused, at the element whose estimate crosses the budget. Usually a loop that repeats long runs or large fixtures far more often than meant.
+
+**Fix.** Draw fewer or shorter runs, shrink the loop, or split the building into separate plans.
+
+```arch static
+for i in 0..200 { escalator at (0, i * 2000) size 300000x1200 dir up }   # error: about 444,000 primitives
 ```
 
 ## E_DUP_ID
@@ -1249,6 +1263,18 @@ plan "H" {
 
 ```arch static
 stair id=s at (0,0) size 900x2600 dir up width 1200   # error: cross extent is 900
+```
+
+## E_STEP_LIMIT
+
+*error* — Evaluation did more work than any plan needs.
+
+**Cause.** One counter measures the work the whole resolution does (every storey, component instance and import): an expression evaluated, a statement run, a loop iteration, a value produced, a binding copied. Past 5,000,000 steps evaluation stops at the statement that crossed the budget and the plan draws nothing. Each loop's own caps hold (`E_RANGE_LIMIT`, `E_WHILE_LIMIT`, `E_ELEMENT_LIMIT`), but loops nested in loops, recursion that calls itself twice and a string that doubles multiply inside them.
+
+**Fix.** Remove the inner loop or the doubling, compute the value directly, or split the plan.
+
+```arch static
+for i in 0..100000 { for j in 0..1000 { let x = i } }   # error: 100 million iterations
 ```
 
 ## E_STRIP_NEST

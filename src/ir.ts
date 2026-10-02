@@ -49,6 +49,7 @@ import {
   asStr,
   atStackRoot,
   BUDGET_SUBSTITUTE,
+  chargeSteps,
   closest,
   enterStack,
   EXPAND_RESERVE,
@@ -57,7 +58,11 @@ import {
   exprSpan,
   firstOverflow,
   leaveStack,
+  MAX_EVAL_STEPS,
   resetOverflowReports,
+  type StepLimitSignal,
+  stepSite,
+  withStepMeter,
 } from "./expr.js";
 import type { Theme } from "./theme.js";
 import type { ResolveCtx, Registry } from "./registry.js";
@@ -825,6 +830,75 @@ const MAX_ITERATIONS = 10_000;
  */
 export const MAX_ELEMENTS = 5_000;
 
+/**
+ * The fixed part of every element's drawing estimate: at least what any glyph whose
+ * primitive count does not grow with its size draws. Measured: the largest is a fixture's
+ * (`upper_cabinet`, 67 primitives with its 64 divisions), then a fence segment's 63, which
+ * `fence`'s own `drawCost` counts per segment; `test/drawing-budget.test.ts` holds every kind
+ * and fixture category to it.
+ */
+export const DRAW_UNITS_PER_ELEMENT = 72;
+
+/**
+ * The drawing budget: the most drawing primitives one plan may be estimated at, summed over
+ * EVERY storey (the pages are all held at once). An element is estimated at
+ * {@link DRAW_UNITS_PER_ELEMENT}, plus one per point its `bounds()` reports, plus its
+ * `drawCost()` (a run's treads, a fence's posts): an upper bound on what `render()` emits
+ * for it. Text is not counted here: every character a label prints was produced by the
+ * evaluator, which charges it to the step budget (`MAX_EVAL_STEPS`, `src/expr.ts`).
+ * Past it the plan is `E_DRAWING_LIMIT` before `toScene()` runs.
+ *
+ * Measured (Node 24, `compile()`, heap held after it): a drawn primitive costs 0.75 to
+ * 1.2 KB with its share of the SVG text. Before the budget, 500 escalators at the tread cap
+ * (1.1 million primitives) took 0.82 GB and 105 MB of SVG, and 4,990 cabinets on each of two
+ * storeys 0.53 GB. Just under it, the heaviest shapes measured (175 escalators at the cap,
+ * 2 × 2,630 cabinets, 100 fences of 60 long segments, 4,991 cabinets on one storey) hold 0.30
+ * to 0.38 GB and each completes under a 512 MB heap cap. The corpus's largest plan is
+ * estimated at 10,727 (`hillside-villa`, two storeys), 37 times under the budget; the
+ * estimate is held above what is drawn by `test/drawing-budget.test.ts`.
+ */
+export const MAX_DRAW_UNITS = 400_000;
+
+/** One element's drawing estimate (see {@link MAX_DRAW_UNITS}). */
+export function drawUnits(el: ResolvedElement, registry: Registry): number {
+  const def = registry.byKind.get(el.kind);
+  if (!def) return DRAW_UNITS_PER_ELEMENT;
+  return DRAW_UNITS_PER_ELEMENT + def.bounds(el).length + (def.drawCost?.(el) ?? 0);
+}
+
+/**
+ * `E_DRAWING_LIMIT` when the storeys' elements, summed in drawing order (ascending storeys,
+ * each in element order), are estimated past {@link MAX_DRAW_UNITS}; at the element whose
+ * estimate crosses it, tagged with its storey's level. Undefined within the budget.
+ */
+function drawBudget(
+  storeys: readonly { elements: readonly ResolvedElement[]; level?: number }[],
+  registry: Registry,
+): Diagnostic | undefined {
+  let total = 0;
+  let over: { el: ResolvedElement; level?: number } | undefined;
+  for (const s of storeys) {
+    for (const el of s.elements) {
+      total += drawUnits(el, registry);
+      if (over === undefined && total > MAX_DRAW_UNITS) over = { el, level: s.level };
+    }
+  }
+  if (over === undefined) return undefined;
+  const { el, level } = over;
+  const span = (el as { span?: Span }).span;
+  return {
+    severity: "error",
+    message:
+      `The drawing is estimated at ${fmt3(total)} primitives, past the budget of ${MAX_DRAW_UNITS} a plan may draw ` +
+      `(crossed at ${el.kind} "${el.id}"); a drawing this large would exhaust memory — split it into ` +
+      "separate plans, or draw fewer or shorter runs",
+    code: "E_DRAWING_LIMIT",
+    ...(span ? { span } : {}),
+    ...(el._file ? { file: el._file } : {}),
+    ...(level !== undefined ? { level } : {}),
+  };
+}
+
 /** An element flattened out of the body, paired with the env its exprs use. */
 interface Entry {
   node: AstElement;
@@ -967,7 +1041,13 @@ class Scope {
   flatten(): Env {
     const m: Env = new Map();
     const chain: Scope[] = [];
-    for (let s: Scope | undefined = this; s; s = s.parent) chain.push(s);
+    let copied = 0;
+    for (let s: Scope | undefined = this; s; s = s.parent) {
+      chain.push(s);
+      copied += s.vars.size;
+    }
+    // A binding copied is an evaluation step (`MAX_EVAL_STEPS`, `src/expr.ts`).
+    chargeSteps(copied);
     for (let i = chain.length - 1; i >= 0; i--) for (const [k, v] of chain[i]!.vars) m.set(k, v);
     return m;
   }
@@ -1078,6 +1158,11 @@ function expandScopeFrame(
     // Each statement of the outermost body is an independent fault domain for the stack
     // budget's once-per-crossing report.
     if (atStackRoot()) resetOverflowReports();
+    // A statement executed is an evaluation step, and the site a crossing is reported at
+    // (`MAX_EVAL_STEPS`, `src/expr.ts`). A loop re-marks itself before each iteration, so
+    // a crossing on an iteration names the loop, not the last statement of its body.
+    stepSite(stmt.span, ectx.file, ectx.frame);
+    chargeSteps(1);
     switch (stmt.kind) {
       case "let": {
         if (scope.vars.has(stmt.name)) {
@@ -1226,6 +1311,8 @@ function expandScopeFrame(
         }
         for (const item of it.v) {
           if (ectx.budget.capped) break;
+          stepSite(stmt.span, ectx.file, ectx.frame);
+          chargeSteps(1);
           const child = new Scope(scope);
           child.vars.set(stmt.varName, item);
           out.push(...expandScope(stmt.body, child, global, components, diagnostics, depth, ectx, zone));
@@ -1242,7 +1329,11 @@ function expandScopeFrame(
       }
       case "while": {
         let n = 0;
-        while (!ectx.budget.capped && asBool(evalIn(stmt.cond), diag, exprSpan(stmt.cond))) {
+        while (!ectx.budget.capped) {
+          // Each test of the condition starts an iteration (one step, at the loop).
+          stepSite(stmt.span, ectx.file, ectx.frame);
+          chargeSteps(1);
+          if (!asBool(evalIn(stmt.cond), diag, exprSpan(stmt.cond))) break;
           if (n++ >= MAX_ITERATIONS) {
             diag({
               severity: "error",
@@ -1556,6 +1647,12 @@ interface ResolveExtras {
    * which is exactly right for a single-storey plan.
    */
   heightsAuthored?: boolean;
+  /**
+   * The evaluation steps the storeys below this one already spent (`MAX_EVAL_STEPS`,
+   * `src/expr.ts`): the budget is one counter across the whole building, so a storey starts
+   * where the one below it stopped. Absent = 0, the single-storey plan and the lowest storey.
+   */
+  stepsBefore?: number;
 }
 
 /** A value-based key for {@link ResolveExtras}, so the memo hits across calls (an
@@ -1570,7 +1667,9 @@ function extrasKey(extras: ResolveExtras | undefined): string {
   // elevations are different resolutions, and a memo that could not tell them apart would
   // hand the upper floor the ground floor's facts.
   const h = `E${extras.elevation ?? 0}/${extras.heightsAuthored === undefined ? "-" : extras.heightsAuthored ? 1 : 0}`;
-  return `${l}|${s}|${h}`;
+  // Where the step counter starts decides whether the storey crosses the budget, so it is
+  // part of what the resolution is a function of.
+  return `${l}|${s}|${h}|T${extras.stepsBefore ?? 0}`;
 }
 
 export function resolve(
@@ -1757,8 +1856,20 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
     // largest any page occupies. Reserving the ground floor's would let a taller schedule
     // upstairs run off the paper the fit rule just approved.
     let tableRows = 0;
+    // The probes spend the step budget as the storeys will (the sheet changes no evaluation),
+    // so a probe that crosses it is where the plan stops: the plan is refused with what the
+    // geometry pass found, rather than evaluated a second time to the same crossing.
+    let probeSteps = 0;
+    const probes: { b: LevelNode; ir: ResolvedPlan; diagnostics: Diagnostic[] }[] = [];
     for (const b of blocks) {
-      const probe = resolveCached(levelPlanFor(ast, b, true), registry, world, { level: stampOf(b) });
+      const probe = resolveCached(levelPlanFor(ast, b, true), registry, world, {
+        level: stampOf(b),
+        stepsBefore: probeSteps,
+      });
+      probes.push({ b, ...probe });
+      const spent = stepsOf(probe.ir);
+      if (spent.exhausted) return stoppedLevels(ast, blocks, probes, stampOf);
+      probeSteps = spent.used;
       const e = outerExtent(probe.ir, registry);
       w = Math.max(w, e.building.w);
       h = Math.max(h, e.building.h);
@@ -1794,14 +1905,24 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
   // dimension exists.
   const heightsAuthored = plansAuthorHeights(ast);
   const heightsBelow: number[] = [];
+  // The evaluation-step budget is one counter across the building: each storey starts where
+  // the one below it stopped, and once a storey crosses it the storeys above are not
+  // evaluated at all (they resolve to no elements and raise nothing).
+  let steps = 0;
+  let stopped = false;
   const levels: ResolvedLevel[] = blocks.map((b) => {
+    if (stopped) return unresolvedLevel(ast, b, stampOf(b));
     const extras: ResolveExtras = {
       level: stampOf(b),
       ...(sheet ? { sheet } : {}),
       elevation: elevationOf(heightsBelow),
       heightsAuthored,
+      stepsBefore: steps,
     };
     const { ir, diagnostics } = resolveCached(levelPlanFor(ast, b, false), registry, world, extras);
+    const spent = stepsOf(ir);
+    steps = spent.used;
+    stopped = spent.exhausted;
     heightsBelow.push(ir.storeyHeight);
     return {
       level: b.level,
@@ -1812,11 +1933,101 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
     };
   });
 
+  // Once per PLAN, not per page: the theme's pen, and the drawing budget over every storey.
+  // Neither runs on a plan the step budget stopped (its storeys hold no elements).
+  const planWide: Diagnostic[] = [];
+  if (!stopped) {
+    const lw = ast.theme?.lineWeight;
+    if (lw !== undefined) {
+      const pen = lineWeightOutOfRange(levels, lw, ast.lineWeightSpan, registry);
+      if (pen) planWide.push(pen);
+    }
+    const over = drawBudget(
+      levels.map((l) => ({ elements: l.ir.elements, level: l.level })),
+      registry,
+    );
+    if (over) planWide.push(over);
+  }
+
   return {
     ir: levels[0]!.ir,
-    diagnostics: [...shared, ...levels.flatMap((l) => l.diagnostics)],
+    diagnostics: [...shared, ...oncePerPlan(levels.map((l) => l.diagnostics)), ...planWide],
     levels,
   };
+}
+
+/** A storey left unevaluated because a storey below it crossed the step budget. */
+function unresolvedLevel(ast: PlanNode, b: LevelNode, stamp: LevelStamp): ResolvedLevel {
+  return {
+    level: b.level,
+    ...(b.name !== undefined ? { name: b.name } : {}),
+    ir: unresolvedPlan(levelPlanFor(ast, b, false), { level: stamp }),
+    diagnostics: [],
+  };
+}
+
+/**
+ * The resolution of a multi-storey plan whose geometry pass (the shared-sheet probes)
+ * crossed the step budget: the probed storeys as they resolved, up to and including the one
+ * that crossed it, and the storeys above it unevaluated.
+ */
+function stoppedLevels(
+  ast: PlanNode,
+  blocks: readonly LevelNode[],
+  probes: readonly { b: LevelNode; ir: ResolvedPlan; diagnostics: Diagnostic[] }[],
+  stampOf: (b: LevelNode) => LevelStamp,
+): PlanResolution {
+  const levels: ResolvedLevel[] = blocks.map((b, i) => {
+    const p = probes[i];
+    if (!p) return unresolvedLevel(ast, b, stampOf(b));
+    return {
+      level: b.level,
+      ...(b.name !== undefined ? { name: b.name } : {}),
+      ir: p.ir,
+      diagnostics: p.diagnostics.map((d) => ({ ...d, level: b.level })),
+    };
+  });
+  return { ir: levels[0]!.ir, diagnostics: oncePerPlan(levels.map((l) => l.diagnostics)), levels };
+}
+
+/** The codes a plan-level setting reports when its value is out of range. */
+const PLAN_SETTING_RANGE_CODES: ReadonlySet<string> = new Set(["E_OUT_OF_RANGE", "E_HEIGHT_RANGE"]);
+
+/**
+ * The storeys' diagnostics in drawing order, with an out-of-range report that EVERY storey
+ * raised identically kept once, untagged, where it first appears. Such a report is about a
+ * plan-level setting every storey shares (an `axes` position, the `site` boundary, the plan's
+ * `height`) or a plan-wide statement every storey repeats, so it is one fact about the plan,
+ * not one per page. Anything a storey raised on its own is untouched.
+ */
+function oncePerPlan(perStorey: readonly Diagnostic[][]): Diagnostic[] {
+  const all = perStorey.flat();
+  if (perStorey.length < 2 || !all.some((d) => PLAN_SETTING_RANGE_CODES.has(d.code ?? ""))) return all;
+  const keyOf = (d: Diagnostic): string => {
+    const { level: _level, ...rest } = d;
+    return JSON.stringify(rest);
+  };
+  const keysOf = perStorey.map(
+    (ds) => new Set(ds.filter((d) => PLAN_SETTING_RANGE_CODES.has(d.code ?? "")).map(keyOf)),
+  );
+  const everywhere = new Set([...keysOf[0]!].filter((k) => keysOf.every((ks) => ks.has(k))));
+  if (everywhere.size === 0) return all;
+  const seen = new Set<string>();
+  const out: Diagnostic[] = [];
+  for (const d of all) {
+    if (!PLAN_SETTING_RANGE_CODES.has(d.code ?? "")) {
+      out.push(d);
+      continue;
+    }
+    const k = keyOf(d);
+    if (!everywhere.has(k)) out.push(d);
+    else if (!seen.has(k)) {
+      seen.add(k);
+      const { level: _level, ...plan } = d;
+      out.push(plan);
+    }
+  }
+  return out;
 }
 
 /** The memoized single-plan resolution (the historical `resolve`). */
@@ -1838,6 +2049,38 @@ function resolveCached(
   return out;
 }
 
+/**
+ * What one resolution spent of the evaluation-step budget (`MAX_EVAL_STEPS`, `src/expr.ts`),
+ * counted from the steps the storeys below it spent; `exhausted` when it crossed the budget
+ * and stopped. Kept beside the IR rather than on it, so no serialisation can see it.
+ */
+interface StepsSpent {
+  used: number;
+  exhausted: boolean;
+}
+const stepsSpent = new WeakMap<ResolvedPlan, StepsSpent>();
+
+/** The steps a resolved plan's resolution left the counter at (0 for a plan from elsewhere). */
+function stepsOf(ir: ResolvedPlan): StepsSpent {
+  return stepsSpent.get(ir) ?? { used: 0, exhausted: false };
+}
+
+/** The evaluation steps a whole resolution spent (every storey). Internal: for the tests
+ *  that pin the budget against the corpus; not part of the public surface. */
+export function evaluationSteps(res: PlanResolution): number {
+  const top = res.levels.length > 0 ? res.levels[res.levels.length - 1]!.ir : res.ir;
+  let used = stepsOf(top).used;
+  // A storey left unevaluated above a crossing carries no count; the crossing storey's does.
+  for (const l of res.levels) used = Math.max(used, stepsOf(l.ir).used);
+  return used;
+}
+
+/**
+ * One resolution under the evaluation-step budget. Past the budget the resolution stops
+ * where it is: the diagnostics raised so far are kept, `E_STEP_LIMIT` is added at the
+ * statement that crossed it, and the plan resolves to no elements (an error draws nothing,
+ * and `describe()`/`lint()` stop at it), so nothing downstream works on a half-evaluated body.
+ */
 function resolveImpl(
   ast: PlanNode,
   registry: Registry = BUILTIN_REGISTRY,
@@ -1845,6 +2088,71 @@ function resolveImpl(
   extras: ResolveExtras = {},
 ): { ir: ResolvedPlan; diagnostics: Diagnostic[] } {
   const diagnostics: Diagnostic[] = [];
+  const run = withStepMeter(extras.stepsBefore ?? 0, () => resolveBody(ast, registry, world, extras, diagnostics));
+  if ("value" in run) {
+    stepsSpent.set(run.value.ir, { used: run.used, exhausted: false });
+    return run.value;
+  }
+  diagnostics.push(stepLimitDiagnostic(run.signal));
+  const ir = unresolvedPlan(ast, extras);
+  stepsSpent.set(ir, { used: run.used, exhausted: true });
+  return { ir, diagnostics };
+}
+
+/** The one `E_STEP_LIMIT`, at the statement that crossed the budget. */
+function stepLimitDiagnostic(signal: StepLimitSignal): Diagnostic {
+  const at = signal.at;
+  return stampProvenance(
+    {
+      severity: "error",
+      message:
+        `Evaluation stopped after ${MAX_EVAL_STEPS} steps — the plan's loops, calls or strings do more work ` +
+        "than any plan needs (a loop nested in a loop, recursion that branches, or a string that doubles?)",
+      code: "E_STEP_LIMIT",
+      ...(at.span ? { span: at.span } : {}),
+    },
+    at.frame as Frame | undefined,
+    at.file,
+  );
+}
+
+/**
+ * The plan a resolution that was stopped returns: its settings and no elements. It is never
+ * drawn (it comes with an error) and `describe()`/`lint()` stop at the error, so it only has
+ * to be a well-formed {@link ResolvedPlan}.
+ */
+function unresolvedPlan(ast: PlanNode, extras: ResolveExtras): ResolvedPlan {
+  return {
+    name: ast.name,
+    units: ast.units,
+    grid: ast.grid,
+    scale: ast.scale,
+    north: ast.north,
+    autoDims: ast.autoDims,
+    ...(extras.level ? { level: extras.level.level } : {}),
+    ...(extras.level?.name !== undefined ? { levelName: extras.level.name } : {}),
+    title: ast.title,
+    accTitle: ast.accTitle,
+    accDescr: ast.accDescr,
+    theme: ast.theme,
+    themeBase: ast.themeBase,
+    themeFrom: ast.themeFrom,
+    styles: ast.styles,
+    storeyHeight: STOREY_HEIGHT,
+    elevation: extras.elevation ?? 0,
+    _heightsAuthored: extras.heightsAuthored ?? plansAuthorHeights(ast),
+    elements: [],
+    walls: [],
+  };
+}
+
+function resolveBody(
+  ast: PlanNode,
+  registry: Registry,
+  world: World,
+  extras: ResolveExtras,
+  diagnostics: Diagnostic[],
+): { ir: ResolvedPlan; diagnostics: Diagnostic[] } {
   const g = ast.grid;
   const snap = (v: number) => (g > 0 ? Math.round(v / g) * g : v);
   const snapPt = (p: Point): Point => ({ x: snap(p.x), y: snap(p.y) });
@@ -1952,6 +2260,7 @@ function resolveImpl(
   // grid would silently redraw a section nobody asked for.
   let storeyHeight = STOREY_HEIGHT;
   if (ast.height !== undefined) {
+    stepSite(ast.heightSpan);
     activeEnv = globalScope.flatten();
     const h = evalNum(ast.height);
     if (isDrawableHeight(h)) storeyHeight = h;
@@ -1996,6 +2305,7 @@ function resolveImpl(
         if (e.node.kind !== def.kind) continue;
         activeEnv = e.env;
         activeEntry = e;
+        stepSite(e.node.span, e.file, e.frame);
         ctx.id = e.id;
         ctx.defaults = e.defaults;
         const r = def.resolve(e.node, ctx);
@@ -2185,6 +2495,7 @@ function resolveImpl(
   //    `ir.axes` stays absent and the drawing is byte-identical.
   let axes: RAxis[] | undefined;
   if (ast.axes) {
+    stepSite(ast.axes.span);
     activeEnv = globalScope.flatten();
     // A datum beyond the modelling range is reported (at its expression, else the block)
     // and left out.
@@ -2209,6 +2520,7 @@ function resolveImpl(
   //     the `room polygon` precedent applied one layer up.
   let siteBoundary: Point[] | undefined;
   if (ast.site?.boundary) {
+    stepSite(ast.site.boundarySpan ?? ast.site.span);
     activeEnv = globalScope.flatten();
     const ring = ast.site.boundary.map((p) => snapPt({ x: evalNum(p.x), y: evalNum(p.y) }));
     const effective = effectiveVertices(ring);
@@ -2257,7 +2569,16 @@ function resolveImpl(
 
   // 7. The drawn sizes the plan's own settings scale: a wall's hatch tile and the heaviest
   //    pen, measured on THIS drawing (it needs the sheet, so it runs last).
-  checkDrawnSizes(ast, elements, walls, siteBoundary, sheet, registry, diagnostics);
+  //    A storey of a multi-storey plan leaves the pen to `resolveLevelsImpl`, which reports a
+  //    plan-level `lineWeight` once for the building rather than once per page.
+  checkDrawnSizes(ast, elements, walls, siteBoundary, sheet, registry, diagnostics, extras.level === undefined);
+
+  // 8. The drawing budget, before anything is drawn: one storey here, the whole building in
+  //    `resolveLevelsImpl` (the budget is one total across every page).
+  if (extras.level === undefined) {
+    const over = drawBudget([{ elements }], registry);
+    if (over) diagnostics.push(over);
+  }
 
   const ir: ResolvedPlan = {
     name: ast.name,
@@ -2811,20 +3132,14 @@ function checkDrawnSizes(
   sheet: ResolvedSheet | undefined,
   registry: Registry,
   diagnostics: Diagnostic[],
+  checkPen: boolean,
 ): void {
   const lw = ast.theme?.lineWeight;
   if (lw === undefined && !walls.some((w) => w.hatchScale > 1)) return;
   const b = drawingBounds(elements, siteBoundary, registry);
   const sizes = renderSizes(sheet, b.maxX - b.minX, b.maxY - b.minY, lw ?? 1);
-  const size = (v: number): string => (Number.isFinite(v) ? `${fmt3(v)} mm` : "a size past the number range");
-  const limit = `the modelling range of ±${fmt3(MODEL_RANGE_MM)} mm (2^25 mm, about 33.5 km)`;
-  if (lw !== undefined && !(Math.abs(sizes.wallStroke) <= MODEL_RANGE_MM)) {
-    diagnostics.push(
-      outOfRangeDiagnostic(
-        `Theme \`lineWeight\` ${fmt3(lw)} draws the heaviest pen at ${size(sizes.wallStroke)} on this drawing, outside ${limit}`,
-        ast.lineWeightSpan,
-      ),
-    );
+  if (checkPen && lw !== undefined && !(Math.abs(sizes.wallStroke) <= MODEL_RANGE_MM)) {
+    diagnostics.push(penOutOfRange(lw, sizes.wallStroke, ast.lineWeightSpan));
   }
   for (const w of walls) {
     if (!(w.hatchScale > 1)) continue;
@@ -2832,12 +3147,64 @@ function checkDrawnSizes(
     if (tile <= MODEL_RANGE_MM) continue;
     diagnostics.push(
       outOfRangeDiagnostic(
-        `Wall "${w.id}" hatch \`scale\` ${fmt3(w.hatchScale)} draws a pattern tile of ${size(tile)} on this drawing, outside ${limit}`,
+        `Wall "${w.id}" hatch \`scale\` ${fmt3(w.hatchScale)} draws a pattern tile of ${drawnSize(tile)} on this drawing, outside ${DRAWN_LIMIT}`,
         w._hatchScaleSpan ?? w.span,
         w._file,
       ),
     );
   }
+}
+
+/** How the drawn-size checks name the range they hold a size to. */
+const DRAWN_LIMIT = `the modelling range of ±${fmt3(MODEL_RANGE_MM)} mm (2^25 mm, about 33.5 km)`;
+
+/** A drawn size for a message: millimetres, or a phrase when it left the finite numbers. */
+function drawnSize(v: number): string {
+  return Number.isFinite(v) ? `${fmt3(v)} mm` : "a size past the number range";
+}
+
+/**
+ * The `E_OUT_OF_RANGE` for a theme `lineWeight` whose heaviest pen leaves the range. `from`
+ * says where a value with no source span came from (the compile options), and the report is
+ * then placed at the plan header.
+ */
+function penOutOfRange(lw: number, stroke: number, span: Span | undefined, from?: string): Diagnostic {
+  // A value from the API may be anything; only a finite number is printed as one.
+  const value = typeof lw === "number" && Number.isFinite(lw) ? fmt3(lw) : "that is not a finite number";
+  return outOfRangeDiagnostic(
+    `Theme \`lineWeight\` ${value}${from ? ` (${from})` : ""} draws the heaviest pen at ${drawnSize(stroke)} on this drawing, outside ${DRAWN_LIMIT}`,
+    span,
+  );
+}
+
+/**
+ * The heaviest pen a `lineWeight` draws on one resolved storey: the wall stroke of the same
+ * {@link renderSizes} `toScene()` draws with, measured on the same drawing bounds.
+ */
+function heaviestPen(ir: ResolvedPlan, lw: number, registry: Registry): number {
+  const b = drawingBounds(ir.elements, ir.siteBoundary, registry);
+  return renderSizes(ir.sheet, b.maxX - b.minX, b.maxY - b.minY, lw).wallStroke;
+}
+
+/**
+ * Hold a `lineWeight` to the drawn-pen rule once per PLAN: on a multi-storey plan the first
+ * storey (in drawing order) whose heaviest pen leaves the range is reported, tagged with its
+ * level, rather than once per page. Returns undefined when every page's pen is in range.
+ */
+export function lineWeightOutOfRange(
+  storeys: readonly { ir: ResolvedPlan; level?: number }[],
+  lw: number,
+  span: Span | undefined,
+  registry: Registry,
+  from?: string,
+): Diagnostic | undefined {
+  for (const s of storeys) {
+    const stroke = heaviestPen(s.ir, lw, registry);
+    if (Math.abs(stroke) <= MODEL_RANGE_MM) continue;
+    const d = penOutOfRange(lw, stroke, span, from);
+    return s.level !== undefined ? { ...d, level: s.level } : d;
+  }
+  return undefined;
 }
 
 /** W_EMPTY_PLAN: the plan resolves but contains nothing drawable. */

@@ -15,7 +15,7 @@ import type { REscalator } from "../ir.js";
 import { rectCorners } from "../geometry.js";
 import { tailEdge } from "../vertical.js";
 import { parseVerticalDir } from "./stair.js";
-import { escalatorGlyph, runTooLong } from "./vertical-glyphs.js";
+import { escalatorGlyph, runTooLong, runTreads } from "./vertical-glyphs.js";
 
 export const escalator: ElementDef = {
   kind: "escalator",
@@ -65,6 +65,10 @@ export const escalator: ElementDef = {
 
   render(resolved, ctx: RenderCtx): SceneNode[] {
     return escalatorGlyph(resolved as REscalator, ctx.theme, ctx.sizes);
+  },
+  /** Two chevron strokes per tread division (`escalatorGlyph`), for the drawing budget. */
+  drawCost(resolved): number {
+    return 2 * runTreads(resolved as REscalator);
   },
   /** The frame's action on an escalator (`frame.ts`'s `transformElement` calls this). */
   transform(resolved, t: TransformCtx): REscalator {

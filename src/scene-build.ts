@@ -582,6 +582,19 @@ function elementLabelOf(el: ResolvedPlan["elements"][number]): { label: string; 
   return undefined;
 }
 
+/**
+ * The plan's theme cascade below per-element `style` (`preStyle`) and the page theme with
+ * `CompileOptions.theme` on top (`theme`, sanitized once). One function, so the drawing and
+ * the pipeline's check of a `lineWeight` passed through the API read the same pen.
+ */
+export function planTheme(ir: ResolvedPlan, opts: CompileOptions, runtime: Runtime): { preStyle: Theme; theme: Theme } {
+  const base = themeBaseLookup(ir.themeBase, runtime);
+  const themeFromLayer = ir.themeFrom ? derivePoche(ir.themeFrom) : undefined;
+  const preStyle = mergeTheme(DEFAULT_THEME, base, themeFromLayer, ir.theme);
+  const theme = sanitizeTheme(mergeTheme(preStyle, opts.theme));
+  return { preStyle, theme };
+}
+
 export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Runtime = BUILTIN_RUNTIME): Scene {
   const registry = runtime.registry;
 
@@ -591,10 +604,7 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   // `preStyle` holds everything below `style`/`opts.theme`; sanitize is applied
   // exactly once per produced theme (no double-escaping), and `opts.theme` is the
   // last layer in BOTH paths so it always wins — even over a per-element style.
-  const base = themeBaseLookup(ir.themeBase, runtime);
-  const themeFromLayer = ir.themeFrom ? derivePoche(ir.themeFrom) : undefined;
-  const preStyle = mergeTheme(DEFAULT_THEME, base, themeFromLayer, ir.theme);
-  const theme = sanitizeTheme(mergeTheme(preStyle, opts.theme));
+  const { preStyle, theme } = planTheme(ir, opts, runtime);
 
   // Per-element styled themes (`style <kind> { … }`), each sanitized once. Absent
   // styles → every element reuses `theme` (identity) → byte-identical output.

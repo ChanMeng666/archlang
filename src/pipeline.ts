@@ -13,8 +13,10 @@
  */
 
 import { parse } from "./parser.js";
-import { resolveAll } from "./ir.js";
-import { toScene } from "./scene-build.js";
+import { lineWeightOutOfRange, resolveAll } from "./ir.js";
+import type { PlanResolution } from "./ir.js";
+import { planTheme, toScene } from "./scene-build.js";
+import type { PlanNode } from "./ast.js";
 import { toIso } from "./view/iso.js";
 import { renderSvg } from "./backends/svg.js";
 import { renderErrorSvg } from "./backends/error-svg.js";
@@ -34,6 +36,33 @@ function toLegacy(source: string, d: Diagnostic): CompileError {
   return { message: d.message, line, col };
 }
 
+/**
+ * `E_OUT_OF_RANGE` when the `lineWeight` the drawing will use came from the compile options
+ * (`opts.theme`, or a theme registered in `opts.themes` that the plan selects and does not
+ * override) and its heaviest pen leaves the modelling range, by the rule the source's
+ * `lineWeight` is held to (`checkDrawnSizes`, `src/ir.ts`). The value has no source span, so
+ * it is reported at the plan header. A built-in theme's weight is bounded and a source
+ * `lineWeight` is checked by the resolver, so neither is re-checked here.
+ */
+function apiLineWeightOutOfRange(
+  plan: PlanNode,
+  resolved: PlanResolution,
+  opts: CompileOptions,
+  runtime: Runtime,
+): Diagnostic | undefined {
+  const ir = resolved.ir;
+  let from: string | undefined;
+  if (opts.theme?.lineWeight !== undefined) from = "from the compile options' `theme`";
+  else if (ir.theme?.lineWeight === undefined) {
+    const reg = runtime.themes?.find((t) => t.name === ir.themeBase);
+    if (reg?.theme.lineWeight !== undefined) from = `from the theme "${reg.name}" in the compile options' \`themes\``;
+  }
+  if (from === undefined) return undefined;
+  const lw = planTheme(ir, opts, runtime).theme.lineWeight;
+  const storeys = resolved.levels.length > 0 ? resolved.levels : [{ ir }];
+  return lineWeightOutOfRange(storeys, lw, plan.headerSpan, runtime.registry, from);
+}
+
 export function compileUncached(source: string, opts: CompileOptions): CompileResult {
   // Per-call registry (built-ins + plugins) and runtime — fresh each compile, no
   // global mutation. Absent plugins/backend collapse to the built-in behavior.
@@ -51,6 +80,10 @@ export function compileUncached(source: string, opts: CompileOptions): CompileRe
   const linked = plan ? link(plan, world, registry) : null;
   const resolved = linked ? resolveAll(linked.plan, registry, world) : null;
   const diagnostics: Diagnostic[] = [...parseDiags, ...(linked?.diagnostics ?? []), ...(resolved?.diagnostics ?? [])];
+  // A `lineWeight` that comes from the compile options is held to the drawn-pen rule the
+  // source's is; only the compile draws, so only the compile checks it.
+  const pen = plan && resolved ? apiLineWeightOutOfRange(plan, resolved, opts, runtime) : undefined;
+  if (pen) diagnostics.push(pen);
 
   const errs = diagnostics.filter((d) => d.severity === "error");
   const errors = errs.map((d) => toLegacy(source, d));
