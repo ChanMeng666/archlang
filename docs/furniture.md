@@ -2,7 +2,7 @@
 
 `furniture` places a piece of furniture or a built-in fixture into a plan. Every
 catalogued kind draws a **real plan symbol** — a WC with a cistern and a seat, a bed
-with a headboard and pillows, a wardrobe with hanging scallops — in the same drawing
+with a headboard and pillows, a wardrobe with its hanging rail and hangers — in the same drawing
 vocabulary as the door arcs and window panes. Anything ArchLang doesn't know still
 renders as a **labelled rectangle**, which is the escape hatch for a piece the
 catalogue has no word for.
@@ -194,20 +194,23 @@ cabinet's door splits run edge to edge, a hood's fan is a ring about the centre.
 |---|---|---|---|---|
 | `bed` | mattress, headboard band at the head, **one or two pillows**, and the duvet with its turned-down band and **one folded corner** at the foot | 1500 × 2000 | derived | |
 | `double_bed` | the same drawing — its wider footprint is what earns it the second pillow | 1800 × 2000 | derived | |
-| `nightstand` · `bedside_table` | carcass and top, the **lamp standing in the back third**, and the drawer front with its handle on the room side | 450 × 400 | derived | |
-| `wardrobe` · `robe` · `closet` | carcass, the hanging rail at mid-depth with its **clothes-hanger scallops**, and the centre door split | 1800 × 600 | derived | |
-| `bunk_bed` | lower mattress with its pillow at the head, the upper bunk **dashed** over it, and the ladder rungs at the foot | 1000 × 2000 | derived | |
-| `crib` · `cot` | carcass, the mattress inside it, and the **rail bars down both long faces** | 700 × 1300 | derived | |
-| `dresser` · `chest_of_drawers` | carcass with the drawer band, its two splits and a handle in each of the three drawers, all on the room side | 1200 × 500 | derived | |
-| `vanity` · `dressing_table` | top, the mirror band **dashed** across the wall side, and the stool in front of it | 1200 × 500 | derived | |
+| `nightstand` · `bedside_table` | carcass and the top's edge bevel, the **lamp standing in the back third** (a white shade with the bulb ring inside it), and the drawer front with its pull on the room side | 450 × 400 | derived | |
+| `wardrobe` · `robe` · `closet` | carcass, the door-front line near the front face, a divider between **door bays**, and in every bay the hanging rail at mid-depth (**dashed** — hidden inside the closed cabinet) with short hanger strokes across it | 1800 × 600 | derived | |
+| `bunk_bed` | the bed's frame and headboard band, the lower mattress with its pillow at the head, the upper bunk and its guard rail **dashed** over it, and the ladder at the foot | 1000 × 2000 | derived | |
+| `crib` · `cot` | carcass, the mattress inside it with its blanket and turned-down band, and the **rail bars down both long faces** | 700 × 1300 | derived | |
+| `dresser` · `chest_of_drawers` | carcass and, on the room side, a row of **drawer fronts** (one per 0.8 depths of width) each with its pull | 1200 × 500 | derived | |
+| `vanity` · `dressing_table` | top, the mirror band **dashed** across the wall side, a drawer pedestal with its pull at each end, and the stool between them | 1200 × 500 | derived | |
 
 None of these carries `requiresWall` — a bed needs no pipe — but all four are
 **directional**, because the symbol has a back worth turning toward a wall. That is what
 lets `anchor top` derive `rotate 0` for a bed and put its headboard where you meant it.
 
-The wardrobe's scallops **tile** the rail: their count comes from the carcass aspect and
-the radius is then half a cell, so consecutive semicircles meet exactly, end to end, with
-no gap and no overlap at any size.
+The wardrobe is drawn the way a joiner's plan draws one. Its **door bays** are a fraction rule
+read off the footprint — one per 0.875 depths of width, so a 1800 × 600 robe gets three 600 mm
+doors — and each bay holds its own **dashed** rail (above the cut plane and behind a closed
+door, the one thing a dash means) with a run of hanger strokes across it, three to five a bay.
+Nothing else in the piece is dashed, and the counts depend on the footprint alone, never on the
+pen.
 
 ### Living & dining
 
@@ -293,18 +296,18 @@ which is how it goes on a drawing anyway.
 
 | Kind (and aliases) | Symbol | Footprint | Facing | Wall |
 |---|---|---|---|---|
-| `desk` | slab with the modesty panel across its back, the working edge stepped in, a **drawer pedestal** on the right and the cable grommet | — | free | |
-| `office_chair` | round seat, a **true arc** back over it, and an armrest each side | — | free | |
-| `bookshelf` · `bookcase` · `shelf` | carcass with its shelf bays ticked off along the run, read from the footprint's own long axis | 900 × 300 | derived | |
-| `plant` · `planter` | pot as a true circle, foliage as a ring of eight radials at a 45° pitch | — | symmetric | |
-| `car` | body, cabin, the two screens, and a wing mirror each side | — | free | |
-| `sun_lounger` · `lounger` | eased body, the raised backrest at the head end, and four to six transverse slats | — | free | |
-| `meeting_table` | a long eased top inside a chair band, with the chairs drawn as **rings** — the `dining_table` rule, in swivel chairs | 2400 × 1200 | symmetric | |
-| `reception_desk` | an **L** counter — a run along the back with a return down the left — its two nosings, and the chair inside the L | 2400 × 900 | derived | |
-| `filing_cabinet` | narrow carcass and top, three drawer lines across it, and the pull on the front edge | 450 × 600 | derived | |
-| `locker` | a run of narrow doors at a clamped count, each with a vent tick on the room face | 1200 × 450 | derived | |
-| `pool_table` | eased frame, the cloth inside it, and **six pockets** — four at the corners, two on the long rails | 2500 × 1400 | symmetric | |
-| `treadmill` | frame, the console band at the wall end, the belt, and the two side rails | 800 × 1800 | derived | |
+| `desk` | top with its edge bevel and the modesty panel across its back, the **drawer pedestal** on the right drawn **dashed** (it is under the top), and the monitor standing at the back | — | free | |
+| `office_chair` | a rounded white seat, a **crescent** back of two true arcs, an armrest each side, and the five-star base **dashed** under the seat | — | free | |
+| `bookshelf` · `bookcase` · `shelf` | carcass, the back panel, a divider per bay and a block of three book spines in each bay, read from the footprint's own long axis | 900 × 300 | derived | |
+| `plant` · `planter` | a scalloped crown of eight lobes in the tree's pattern, filled with the planting tint, over the pot ring, with eight ribs and the stem | — | symmetric | |
+| `car` | body rounded at both ends, the bonnet and boot panels, the windscreen and rear window as white trapezoids with the roof between them, a pillar line each side, and a wing mirror each side — inside the footprint | — | free | |
+| `sun_lounger` · `lounger` | frame and three white cushion panels — the raised back with its headrest at the head end, the seat, and the leg rest | — | free | |
+| `meeting_table` | a long eased top inside a chair band, with the `dining_table` chairs tucked under it, backrests out — up to six a side and one at each end | 2400 × 1200 | symmetric | |
+| `reception_desk` | an **L** counter — a run along the back with a return down the left, its corners filleted but the reflex corner left sharp — the transaction ledge on the visitor faces, a nosing on each staff face, and the chair inside the L | 2400 × 900 | derived | |
+| `filing_cabinet` | narrow carcass and the top's edge bevel, three drawer lines across it, and the pull on the front edge | 450 × 600 | derived | |
+| `locker` | a run of narrow doors at a clamped count, the door-front line near the front face, and a pull on each door | 1200 × 450 | derived | |
+| `pool_table` | the rail, the cushion band inside it, the cloth, and **six pockets** — four at the corners, two on the long rails | 2500 × 1400 | symmetric | |
+| `treadmill` | frame, the console at the wall end with its display, the two side platforms, and the belt between them as a stadium | 800 × 1800 | derived | |
 
 A `sun_lounger` is aimed at the sun, and ArchLang has no sun model — the `site` layer names an
 aspect, not a daylight measurement — so nothing here derives which way it points and nothing
@@ -313,8 +316,8 @@ warns about it. Say so with `rotate`.
 The six commercial kinds take the drawing out of a house. Two things about them are decided
 rather than obvious. **`meeting_table` follows `dining_table`'s rule that the footprint includes
 its chairs** — the dimension a plan needs to check is the one you cannot pull a chair out of —
-so a 2400 mm table is authored as roughly 3000 mm of footprint; it is drawn with an eased top
-and ring seats, which is what tells it from the square-topped dining table at a glance. And
+so a 2400 mm table is authored as roughly 3000 mm of footprint; it is drawn with an eased top,
+which is what tells it from the square-topped dining table at a glance. And
 **`treadmill` carries the largest `clearanceMm` in the catalogue, 900 mm**, because the run-off
 space behind a user is the one thing a gym plan can be wrong about in a way that matters;
 `dresser`, `vanity` and `filing_cabinet` carry 600, for a drawer or a chair.
@@ -478,12 +481,15 @@ at the category word, because the shape is the honest datum:
   conventional 1200 mm single/double split, so `furniture bed … size 1500x2000` draws the
   double it plainly is and a `double_bed` squeezed to 900 draws the single it has become.
 
-**A dashed outline means ABOVE THE CUT PLANE, and three fixture symbols use it.** A floor plan
+**A dashed outline means ABOVE THE CUT PLANE, or HIDDEN inside a closed piece.** A floor plan
 is a horizontal section, so anything that sits above the cut is drawn dashed — present, but not
 cut — and unfilled, so whatever it overhangs still reads through it. `upper_cabinet` is dashed
 in its entirety because a wall cabinet hangs above the counter; a `bunk_bed`'s **upper deck** is
 dashed for the same reason, and drawing it solid would claim the room has two mattresses of
-floor area; a `vanity`'s **mirror band** is dashed because the mirror stands on the table. It is
+floor area; a `vanity`'s **mirror band** is dashed because the mirror stands on the table. A part
+of a piece is dashed on the same terms: a `wardrobe`'s **hanging rail** (above the cut, behind its
+closed doors), a `desk`'s **drawer pedestal** (under the top) and an `office_chair`'s **five-star
+base** (under the seat) are drawn dashed over the surface that hides them. It is
 the same convention `roof`, `void` and the outdoor `pergola` and `shed` ridge follow, through
 one shared `dashedPattern()` helper. There is no syntax for saying "draw this piece above the
 cut plane" — a kind is dashed because of what it is.

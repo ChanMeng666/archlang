@@ -1304,8 +1304,8 @@ furniture <kind> [id=<id>] in <room> anchor <a> [flush] [inset <mm>] [size <w>x<
 ```
 
 A piece of furniture or a built-in fixture. Every **catalogued** kind draws a real
-plan symbol — a WC with a cistern, a bed with a headboard, a wardrobe with hanging
-scallops — and ignores any `label`. Any other kind falls back to a schematic
+plan symbol — a WC with a cistern, a bed with a headboard, a wardrobe with its hanging
+rail and hangers — and ignores any `label`. Any other kind falls back to a schematic
 **labelled rectangle**, which is the escape hatch for something ArchLang has no
 symbol for. The catalogue is `arch manifest --json`'s `fixtureCategories`, and every
 kind is documented with its symbol, footprint and facing in
