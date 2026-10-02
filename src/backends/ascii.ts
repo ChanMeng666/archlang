@@ -77,11 +77,27 @@ function pointsOf(prim: ScenePrim): Point[] {
       return [prim.a, prim.b];
     case "region":
       return prim.loops.flat();
+    // Its vertices plus each arc's APEX — the drawn curve, never an arc's centre. A path is a
+    // closed outline, so the centre is a construction point: a four-centre oval's side arcs
+    // (a fixture glyph's WC bowl) are centred OUTSIDE the shape, and boxing them would drag a
+    // furniture marker off its symbol. The `arc` case below keeps its centre — a door swing's
+    // centre is its hinge, which is drawn. Same rule as `label-placement.ts`'s `primBBox`.
     case "path":
-      return prim.loops.flatMap((lp) => [
-        lp.start,
-        ...lp.edges.flatMap((e) => (e.t === "arc" ? [e.to, e.center] : [e.to])),
-      ]);
+      return prim.loops.flatMap((lp) => {
+        const pts: Point[] = [lp.start];
+        let from = lp.start;
+        for (const e of lp.edges) {
+          if (e.t === "arc") {
+            const mx = from.x + e.to.x - 2 * e.center.x;
+            const my = from.y + e.to.y - 2 * e.center.y;
+            const len = Math.hypot(mx, my);
+            if (len > 0) pts.push({ x: e.center.x + (mx / len) * e.r, y: e.center.y + (my / len) * e.r });
+          }
+          pts.push(e.to);
+          from = e.to;
+        }
+        return pts;
+      });
     case "hatch":
       return prim.region.flat();
     case "arc":

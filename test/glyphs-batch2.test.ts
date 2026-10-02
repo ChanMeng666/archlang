@@ -43,6 +43,7 @@ import { toScene } from "../src/scene-build.js";
 import { DEFAULT_THEME } from "../src/theme.js";
 import type { Point } from "../src/ast.js";
 import type { RenderSizes, SceneNode } from "../src/scene.js";
+import { pathExtentPoints } from "./glyph-extent.js";
 import type { Rect } from "../src/elements/glyph-lib.js";
 import { fixtureGlyph, hasFixtureGlyph } from "../src/elements/fixtures-glyphs.js";
 import { defaultFootprint, isUnderlay, solidFurniture } from "../src/fixtures-catalog.js";
@@ -85,6 +86,9 @@ function pointsOf(n: SceneNode): Point[] {
       const apex = len > 0 ? [{ x: p.center.x + (dx / len) * p.r, y: p.center.y + (dy / len) * p.r }] : [];
       return [p.start, p.end, p.center, ...apex];
     }
+    // A curved outline: its vertices and its arcs' axis extremes, exactly (`glyph-extent.ts`).
+    case "path":
+      return pathExtentPoints(p);
     default:
       throw new Error(`a batch-2 glyph emitted an unexpected primitive: ${p.t}`);
   }

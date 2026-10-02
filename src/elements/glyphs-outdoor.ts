@@ -743,8 +743,8 @@ export function drawShed(r: Rect, g: GlyphCtx): SceneNode[] {
 export function drawClothesline(r: Rect, g: GlyphCtx): SceneNode[] {
   const { long, short } = axes(r);
   const post = Math.min(short * 0.2, long * 0.05);
-  g.dot(alongPt(r, 0.06, 0), post);
-  g.dot(alongPt(r, 0.94, 0), post);
+  g.dot(alongPt(r, 0.06, 0), post, undefined, "thin");
+  g.dot(alongPt(r, 0.94, 0), post, undefined, "thin");
   for (const v of [-0.28, 0, 0.28]) g.seg(alongPt(r, 0.06, v), alongPt(r, 0.94, v), "extraThin");
   return g.nodes;
 }

@@ -430,7 +430,7 @@ const ARMREST_ASPECT = 0.7;
 export function drawStool(r: Rect, g: GlyphCtx): SceneNode[] {
   const c = { x: r.x + r.w / 2, y: r.y + r.h / 2 };
   const rad = short(r) / 2;
-  g.dot(c, rad, g.body);
+  g.dot(c, rad, g.body, "thin");
   g.ring(c, rad * 0.62, "extraThin");
   g.ring(c, rad * 0.24, "extraThin");
   return g.nodes;
