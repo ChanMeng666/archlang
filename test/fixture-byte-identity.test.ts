@@ -424,14 +424,11 @@ describe("fixture symbols — the second tranche (re-blessed when redrawn)", () 
       <polygon points="0,0 3000,0 3000,2400 0,2400" fill="#fbfaf7"/>
       </g>
       <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
-      <polygon points="860,300 913.58,310.66 958.99,341.01 989.34,386.42 1000,440 1000,2060 989.34,2113.58 958.99,2158.99 913.58,2189.34 860,2200 440,2200 386.42,2189.34 341.01,2158.99 310.66,2113.58 300,2060 300,440 310.66,386.42 341.01,341.01 386.42,310.66 440,300" fill="#f4f2ee" stroke="#6c6864" stroke-width="4.8"/>
-      <polygon points="860,395 892.15,401.39 919.4,419.6 937.61,446.85 944,479 944,805 937.61,837.15 919.4,864.4 892.15,882.61 860,889 440,889 407.85,882.61 380.6,864.4 362.39,837.15 356,805 356,479 362.39,446.85 380.6,419.6 407.85,401.39 440,395" fill="#f4f2ee" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="370" y1="1060" x2="930" y2="1060" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="370" y1="1257.6" x2="930" y2="1257.6" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="370" y1="1455.2" x2="930" y2="1455.2" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="370" y1="1652.8" x2="930" y2="1652.8" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="370" y1="1850.4" x2="930" y2="1850.4" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="370" y1="2048" x2="930" y2="2048" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 356,300 L 944,300 A 56 56 0 0 1 1000,356 L 1000,2144 A 56 56 0 0 1 944,2200 L 356,2200 A 56 56 0 0 1 300,2144 L 300,356 A 56 56 0 0 1 356,300 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="4.8"/>
+      <path d="M 391,366.5 L 909,366.5 A 28 28 0 0 1 937,394.5 L 937,861 A 28 28 0 0 1 909,889 L 391,889 A 28 28 0 0 1 363,861 L 363,394.5 A 28 28 0 0 1 391,366.5 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 391,917.5 L 909,917.5 A 28 28 0 0 1 937,945.5 L 937,1336 A 28 28 0 0 1 909,1364 L 391,1364 A 28 28 0 0 1 363,1336 L 363,945.5 A 28 28 0 0 1 391,917.5 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 391,1392.5 L 909,1392.5 A 28 28 0 0 1 937,1420.5 L 937,2105.5 A 28 28 0 0 1 909,2133.5 L 391,2133.5 A 28 28 0 0 1 363,2105.5 L 363,1420.5 A 28 28 0 0 1 391,1392.5 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 480.32,414 L 819.68,414 A 14 14 0 0 1 833.68,428 L 833.68,495 A 14 14 0 0 1 819.68,509 L 480.32,509 A 14 14 0 0 1 466.32,495 L 466.32,428 A 14 14 0 0 1 480.32,414 Z" fill="#f4f2ee" stroke="#a8a29a" stroke-width="3.47"/>
       </g>
       <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
       <text x="1500" y="1182" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
