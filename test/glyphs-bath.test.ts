@@ -408,7 +408,7 @@ describe("glyphs-bath — the three symbols added in v1.32", () => {
     expect(backOf(draw(drawWc, r))).toBeCloseTo(r.w * 0.85, 9);
     const bidet = backOf(draw(drawBidet, r));
     expect(bidet).toBeGreaterThan(0);
-    expect(bidet).toBeLessThanOrEqual(r.w * 0.4);
+    expect(bidet).toBeLessThanOrEqual(r.w * 0.35);
   });
 
   it("a bidet's bowl is the first node and its tap deck stands on the bowl's rear rim", () => {
@@ -431,6 +431,28 @@ describe("glyphs-bath — the three symbols added in v1.32", () => {
     expect(new Set(verts.filter((p) => Math.abs(p.y - r.y) < 1e-9).map((p) => p.x)).size).toBe(2);
     expect(loop.edges.filter((e) => e.t === "arc")).toHaveLength(2); // the two front corners
     expect(Math.max(...pointsOf(bowl).map((p) => p.y))).toBeGreaterThan(r.y + r.h * 0.9);
+  });
+
+  it("a urinal's flush plate sits exactly on its rim — as wide as the rim, hung from its top edge, no stubs", () => {
+    // The first draft's plate was narrower than the rim and 4.8 mm short of its top line, so the rim
+    // poked out both sides of the plate as stubs and a hairline ran under its bottom edge.
+    for (const r of [
+      { x: 0, y: 0, w: 400, h: 350 },
+      { x: 100, y: 50, w: 500, h: 500 },
+      { x: 0, y: 0, w: 300, h: 600 },
+    ]) {
+      const nodes = draw(drawUrinal, r);
+      const [, rim, plate] = nodes as [SceneNode, SceneNode, SceneNode];
+      const xs = (n: SceneNode): number[] => pointsOf(n).map((p) => p.x);
+      const ys = (n: SceneNode): number[] => pointsOf(n).map((p) => p.y);
+      expect(Math.min(...xs(plate))).toBeCloseTo(Math.min(...xs(rim)), 9);
+      expect(Math.max(...xs(plate))).toBeCloseTo(Math.max(...xs(rim)), 9);
+      expect(Math.max(...ys(plate)), "the plate's bottom edge IS the rim's top edge").toBeCloseTo(
+        Math.min(...ys(rim)),
+        9,
+      );
+      expect(Math.min(...ys(plate)), "the plate is on the wall face").toBe(r.y);
+    }
   });
 
   it("a mirror keeps its reflection ticks inside an 18:1 sliver, and inside a 1:200 one", () => {

@@ -225,7 +225,7 @@ export function drawBathtub(r: Rect, g: GlyphCtx): SceneNode[] {
  * Read it against {@link drawWc}, because that is the only symbol it can be confused with and
  * the drawing has to settle it at a glance. A WC's back is a CISTERN — a band across most of
  * the width, a quarter of the depth deep, with a flush button on it. A bidet has no cistern at
- * all; its back carries a small tap deck barely a third of the width and an eighth of the depth,
+ * all; its back carries a small tap deck a third of the width and an eighth of the depth,
  * standing ON the rim of a bowl that reaches nearly to the back edge. The other tell is the
  * waste: a bidet's is on the bowl centre, where a WC has none drawn.
  *
@@ -248,7 +248,7 @@ export function drawBidet(r: Rect, g: GlyphCtx): SceneNode[] {
   const ring = Math.min(rx * 2 * 0.14, ry * 0.3);
   g.path(ovalPath(cx, bowlCy + ring * 0.5, rx - ring, ry - ring * 1.5), g.basin, "extraThin");
 
-  const deckW = Math.min(r.w * 0.36, r.h * 0.5);
+  const deckW = Math.min(r.w / 3, r.h * 0.5);
   const deckH = r.h * 0.12;
   const deckY = r.y + r.h * 0.03;
   g.path(roundedRectPath({ x: cx - deckW / 2, y: deckY, w: deckW, h: deckH }, Math.min(deckW, deckH) * 0.22), g.body);
@@ -269,10 +269,12 @@ export function drawBidet(r: Rect, g: GlyphCtx): SceneNode[] {
  *
  * - **Bowl** (white, outline pen): a rounded rectangle 88% of the width with its two FRONT corners
  *   at half the width — a semicircular front on straight sides — the first node.
- * - **Rim** (white, detail pen): the same shape drawn in by 12% of the bowl's short side.
- * - **Plate** (body fill, outline pen): the flush pipe and bracket, a band 56% of the width and
- *   13% of the depth over the bowl's back. It is what tells the symbol from a `basin` at legend
- *   size, where a U and a shallow oval converge.
+ * - **Plate** (body fill, outline pen): the flush pipe and bracket, a band across the back of the
+ *   bowl 13% of the depth deep and exactly as wide as the rim below it. It is what tells the symbol
+ *   from a `basin` at legend size, where a U and a shallow oval converge.
+ * - **Rim** (white, detail pen): the same U drawn in by 12% of the bowl's short side at the sides
+ *   and the front, and hung from the plate's bottom edge — its top edge IS that edge, so no rim
+ *   line pokes out either side of the plate and none runs a few millimetres under it.
  * - **Waste** (detail pen): a disc on the centre line, in the bowl's rounded front.
  *
  * Mirror-symmetric about the centre line. Prim count: 4.
@@ -284,16 +286,11 @@ export function drawUrinal(r: Rect, g: GlyphCtx): SceneNode[] {
   const front = Math.min(bowl.w / 2, bowl.h * 0.7);
   g.path(roundedRectPath(bowl, [0, 0, front, front]), g.basin);
   const wall = shortSide(bowl) * 0.12;
-  const inner: Rect = { x: bowl.x + wall, y: bowl.y + wall, w: bowl.w - 2 * wall, h: bowl.h - 2 * wall };
+  const plateH = r.h * 0.13;
+  const inner: Rect = { x: bowl.x + wall, y: r.y + plateH, w: bowl.w - 2 * wall, h: bowl.h - plateH - wall };
   const innerFront = Math.max(0, front - wall);
   g.path(roundedRectPath(inner, [0, 0, innerFront, innerFront]), g.basin, "extraThin");
-
-  const plateW = r.w * 0.56;
-  const plateH = r.h * 0.13;
-  g.path(
-    roundedRectPath({ x: cx - plateW / 2, y: r.y, w: plateW, h: plateH }, [0, 0, plateH * 0.25, plateH * 0.25]),
-    g.body,
-  );
+  g.poly(rectPoly({ x: inner.x, y: r.y, w: inner.w, h: plateH }), g.body);
   g.dot({ x: cx, y: r.y + r.h * 0.6 }, s * 0.045);
   return g.nodes;
 }
