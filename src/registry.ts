@@ -127,6 +127,17 @@ export interface RenderCtx {
    * than silently drawing a passage over solid wall.
    */
   openingsVoided?: boolean;
+  /**
+   * Is there room FLOOR at `p` on the storey being drawn? Asked of every room's own shape
+   * (its ring when it has one), after relational placement and after every `place` frame
+   * — the drawing's rooms, not the partial list a resolver sees.
+   *
+   * A window asks it one wall thickness off each face to find its EXTERIOR side — the face
+   * with no floor — the probe `windowFacingPage` (`src/site.ts`) makes. Optional because
+   * this interface is append-only: absent means "unknown", and an element must then draw
+   * nothing that depends on the answer.
+   */
+  floorAt?(p: Point): boolean;
 }
 
 /**

@@ -1,5 +1,7 @@
 import { describe as vDescribe, expect, it } from "vitest";
 import { describe } from "../src/describe.js";
+import { compile } from "../src/index.js";
+import type { SceneNode } from "../src/scene.js";
 
 /**
  * **A window's outward side comes from a local probe, not from the plan's centre.**
@@ -126,5 +128,90 @@ vDescribe("window facing: the host-room rule is untouched", () => {
 }`;
     const s = describe(src);
     expect(s.windows.map((w) => `${w.id}:${w.facing}`)).toEqual(["w_w:W", "w_e:E", "w_n:N", "w_s:S"]);
+  });
+});
+
+/**
+ * **The drawn window: double glazing, and a sill on the EXTERIOR face — decided by the same
+ * probe.** A sill is a fact about which face is outside, so it is drawn only where the plan
+ * says: one wall thickness off each face, the side with no floor is outside. The courtyard
+ * fixtures above are exactly the cases a bounding-box guess gets backwards; a window with
+ * floor on both faces (interior) or on neither (a free-standing wall) has no outside and
+ * draws no sill.
+ */
+vDescribe("window drawing: double glazing, and a sill only on the probed exterior face", () => {
+  const nodesOf = (src: string, id: string): SceneNode[] => {
+    const r = compile(src, { annotate: true, noCache: true });
+    expect(r.errors.map((e) => e.message)).toEqual([]);
+    return r.scene!.nodes.filter((n) => n.elementId === id);
+  };
+  /** The sill is the window's one STROKED polygon (the cover is unstroked). */
+  const sillPts = (nodes: SceneNode[]): { x: number; y: number }[] | null => {
+    const sills = nodes.filter((n) => n.prim.t === "polygon" && n.paint.stroke !== undefined);
+    expect(sills.length).toBeLessThanOrEqual(1);
+    return sills[0] ? (sills[0].prim as { pts: { x: number; y: number }[] }).pts : null;
+  };
+  const STUDIO = `plan "Studio" {
+  units mm
+  wall exterior thickness 200 { (0,0) (7000,0) (7000,6000) (0,6000) close }
+  room id=r_living at (0,0) size 7000x6000 label "Living"
+  window id=w_w at (0,2000)    width 1500 wall exterior
+  window id=w_e at (7000,1500) width 1200 wall exterior
+  window id=w_n at (3000,0)    width 1200 wall exterior
+  window id=w_s at (3000,6000) width 1200 wall exterior
+}`;
+
+  it("glazes with TWO panes, centred on the wall a quarter of its thickness apart", () => {
+    const r = compile(STUDIO, { annotate: true, noCache: true });
+    const panes = r.scene!.nodes.filter(
+      (n) => n.elementId === "w_n" && n.prim.t === "line" && n.paint.stroke === r.scene!.theme.windowPane,
+    );
+    expect(panes.map((n) => (n.prim as { a: { y: number } }).a.y).sort((a, b) => a - b)).toEqual([-25, 25]);
+  });
+
+  it("puts the sill outside each face of a rectangular shell — W, E, N and S", () => {
+    const outside: Record<string, (p: { x: number; y: number }) => boolean> = {
+      w_w: (p) => p.x <= -100,
+      w_e: (p) => p.x >= 7100,
+      w_n: (p) => p.y <= -100,
+      w_s: (p) => p.y >= 6100,
+    };
+    for (const [id, isOut] of Object.entries(outside)) {
+      const pts = sillPts(nodesOf(STUDIO, id));
+      expect(pts, id).not.toBeNull();
+      for (const p of pts!) expect(isOut(p), `${id} ${p.x},${p.y}`).toBe(true);
+    }
+  });
+
+  it("puts a courtyard window's sill on the COURTYARD face, where a bbox guess puts it indoors", () => {
+    // Both fixtures: floor to the north of the court wall, the open court to the south.
+    const hostless = sillPts(nodesOf(HOSTLESS, "w_court"));
+    expect(hostless).not.toBeNull();
+    for (const p of hostless!) expect(p.y).toBeGreaterThanOrEqual(4000 + 300); // 600 mm wall
+    const ring = sillPts(nodesOf(POLY_RING, "w_court"));
+    expect(ring).not.toBeNull();
+    for (const p of ring!) expect(p.y).toBeGreaterThanOrEqual(4000 + 100); // 200 mm wall
+  });
+
+  it("draws no sill where there is no outside: an interior window, a free-standing wall", () => {
+    const interior = `plan "interior" {
+  units mm
+  wall id=mid partition thickness 600 { (0,4000) (12000,4000) }
+  room id=r_north at (0,0)    size 12000x3700 label "North"
+  room id=r_south at (0,4300) size 12000x5700 label "South"
+  window id=w at (6000,4000) width 1200 wall partition
+}`;
+    const free = `plan "free" {
+  units mm
+  wall id=free partition thickness 200 { (5000,2000) (9000,2000) }
+  room id=r at (0,6000) size 12000x4000 label "Hall"
+  window id=w at (7000,2000) width 1200 wall partition
+}`;
+    for (const src of [interior, free]) {
+      const nodes = nodesOf(src, "w");
+      expect(sillPts(nodes)).toBeNull();
+      // …and the window is otherwise whole: cover, two faces, two panes.
+      expect(nodes.map((n) => n.prim.t)).toEqual(["polygon", "line", "line", "line", "line"]);
+    }
   });
 });

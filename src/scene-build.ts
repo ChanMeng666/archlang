@@ -660,7 +660,10 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   // so the floor runs continuously through each passage and only the capped jambs are
   // drawn. `RenderCtx.openingsVoided` stays, and stays true, because the interface is
   // append-only and a hand-built `RenderCtx` must keep its safe opaque default.
-  const baseCtx: RenderCtx = { theme, sizes, bounds: b, fmt: fmtMm, openingsVoided: true };
+  // `floorAt` reads each room's own ring (`pointInRoomBox`), as `thicknessSideFlipped` does.
+  const floorBoxes = ir.elements.filter((el): el is RRoom => el.kind === "room").map(roomBox);
+  const floorAt = (p: Point): boolean => floorBoxes.some((r) => pointInRoomBox(p, r));
+  const baseCtx: RenderCtx = { theme, sizes, bounds: b, fmt: fmtMm, openingsVoided: true, floorAt };
   const ctxFor = (kind: string): RenderCtx => {
     const st = styledByKind.get(kind);
     return st ? { ...baseCtx, theme: st } : baseCtx;
