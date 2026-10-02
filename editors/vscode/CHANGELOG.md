@@ -12,6 +12,23 @@ are documented here. The format is based on
 > republished**. See [CONTRIBUTING.md → Releasing](../../CONTRIBUTING.md#releasing) for
 > the checklist that keeps the two in sync.
 
+## [0.26.0] - 2026-10-02
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.38.0`** (robustness release).
+  - **Seven new diagnostics** (`arch explain <CODE>`): `E_NON_FINITE`, `E_ELEMENT_LIMIT`,
+    `E_LAYOUT_UNPLACED`, `E_OUT_OF_RANGE`, `E_RUN_TOO_LONG`, `E_STEP_LIMIT` and
+    `E_DRAWING_LIMIT`. Inputs that used to throw, overflow the stack or run out of memory now
+    return one of them; coordinates and lengths are held to a 2^25 mm modelling range.
+  - **Content after the plan's closing `}`** (a stray `}` or a second `plan` block) is an
+    `E_PARSE` on the first trailing token instead of being dropped silently.
+  - **`W_SWING_OBSTRUCTED`** decides door-swing clashes exactly; **`E_ARC_RADIUS`** accepts exact
+    semicircles and its fix writes a radius that passes; **`W_ROOM_NOT_ENCLOSED`** on a wet
+    `room circle` is measured against its `arc` walls.
+  - **Circulation facts**: a storey reached only by a shaft now has them, a stair is a way up
+    only from a reachable room, and a door's width applies only on the cells it opens.
+
 ## [0.25.0] - 2026-10-01
 
 ### Changed
