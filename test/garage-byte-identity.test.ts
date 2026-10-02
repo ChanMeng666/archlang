@@ -62,6 +62,9 @@
  * now also carries a {@link semanticDigestWith} pin — the same payload with the SVG removed.
  * Those numbers are unchanged from the original measurement and are expected to stay that
  * way through any drawing change whatsoever. If one of THEM moves, the finding is real.
+ *
+ * Re-measured for the visual-polish symbol redraw: SVG only, describe/lint/diagnostics unchanged
+ * (substitution check reproduces the old digests).
  */
 
 import { readFileSync } from "node:fs";
@@ -149,16 +152,16 @@ const ROOT = join(HERE, "..");
 // SVG and lint() byte-identical, only describe().circulation moved — each field, and the
 // rule that moved it, in ./byte-identity-baseline.ts ("Circulation v2").
 const BASELINE: Readonly<Record<string, string>> = {
-  "studio.arch": "20a7659eb5c0ae250d1b91e0a7c53cff9dc2fd8908365a40e679bbf97e91751d",
-  "laneway-house.arch": "ca93975f9180ff845039a79422a4cca1fe683d76a28831cf700efbb8f6d2bea0",
-  "bungalow.arch": "88ab68abfc47345fdef7098506116ad93fcbab466415837d5db99dc1542d8851",
+  "studio.arch": "daacc21fb471e0d7d29c88191b838607a07b3f73e82a0508d42a8cbd8184bef3",
+  "laneway-house.arch": "f9c3b29a51508234ab6f8426be062f3087f482cfa2b124ba75fdab150b4d18bc",
+  "bungalow.arch": "9990304f76493e86abee175aeab14cd21040601b86cd73e175150884d36ed8b9",
   // Re-measured for the `overhead` flag. Its SOURCE gained two statements —
   // a `range_hood` over the stove and a `mirror` over the basin, the two correct drawings
   // the missing flag had kept out of the flagship — so this plan is a different building
   // and both its digests move. See the SEMANTIC_BASELINE note for the proof that the CODE
   // is innocent: the pre-`overhead` source reproduces the OLD hexes exactly under the NEW compiler.
-  "furnished-flat.arch": "78513fb8a5182104e2a22b69580fa952a2ff2f11839162241ebfe40839047d80",
-  "two-bed.arch": "ff4ad8858ef6c8fa71a632c9df6c5c489b4661d0ea0b80719f69f0f481c50cd7",
+  "furnished-flat.arch": "889f4246f5e98f589952d5e20e0acdfd6057f542e0620c8d20bce01dd17c88f0",
+  "two-bed.arch": "e2df66666ea707a11618a9b718820fe12998123d03e6f2cd5ab4698539eac1d5",
 };
 
 /**
