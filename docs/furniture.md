@@ -298,7 +298,7 @@ which is how it goes on a drawing anyway.
 |---|---|---|---|---|
 | `desk` | top with its edge bevel and the modesty panel across its back, the **drawer pedestal** on the right drawn **dashed** (it is under the top), and the monitor standing at the back | — | free | |
 | `office_chair` | a rounded white seat, a **crescent** back of two true arcs, an armrest each side, and the five-star base **dashed** under the seat | — | free | |
-| `bookshelf` · `bookcase` · `shelf` | carcass, the back panel, a divider per bay and a block of three book spines in each bay, read from the footprint's own long axis | 900 × 300 | derived | |
+| `bookshelf` · `bookcase` · `shelf` | carcass, the back panel, a divider per bay and a block of three book spines in each bay, read from the footprint's own long axis; stood on end it is a **double-sided** stack — the back panel is the long centre line and books stand on both sides | 900 × 300 | derived | |
 | `plant` · `planter` | a scalloped crown of eight lobes in the tree's pattern, filled with the planting tint, over the pot ring, with eight ribs and the stem | — | symmetric | |
 | `car` | body rounded at both ends, the bonnet and boot panels, the windscreen and rear window as white trapezoids with the roof between them, a pillar line each side, and a wing mirror each side — inside the footprint | — | free | |
 | `sun_lounger` · `lounger` | frame and three white cushion panels — the raised back with its headrest at the head end, the seat, and the leg rest | — | free | |
