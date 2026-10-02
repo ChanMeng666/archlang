@@ -31,7 +31,7 @@
 import type { Point } from "./ast.js";
 import type { Bounds } from "./geometry.js";
 import type { HatchSpec } from "./hatches.js";
-import { hatchesUsed, patternId } from "./hatches.js";
+import { groundSwatchFrame, hatchesUsed, patternId } from "./hatches.js";
 import type { ROutdoor, RFurniture, RRoom } from "./ir.js";
 import { groundMaterialsUsed } from "./elements/outdoor.js";
 import type { RenderSizes, SceneNode } from "./scene.js";
@@ -726,9 +726,20 @@ function legendNodes(t: LegendTableBox, theme: Theme, sizes: RenderSizes, out: S
       // Fill with the very pattern the walls use (the id is already in `scene.hatches`,
       // so the SVG `<defs>` carries it and the DXF gets a real HATCH entity).
       const hp = e.hatch;
+      // A GROUND pattern's tile is bigger than the swatch, so the swatch re-frames it to show
+      // the pattern's own marks (`groundSwatchFrame`); a wall material keeps the drawing's
+      // anchoring, byte for byte.
+      const frame = groundSwatchFrame(hp, sizes.hatchGap, { x: box.x + box.w / 2, y: box.y + box.h / 2 });
       out.push({
         layer: "annotations",
-        prim: { t: "hatch", region: [loop], material: hp.material, scale: hp.scale, angle: hp.angle },
+        prim: {
+          t: "hatch",
+          region: [loop],
+          material: hp.material,
+          scale: hp.scale,
+          angle: hp.angle,
+          ...(frame ? { origin: frame.origin, zoom: frame.zoom } : {}),
+        },
         paint: { fill: `url(#${patternId(hp.material, hp.scale, hp.angle)})`, fillRule: "nonzero" },
       });
       d.frame(box.x, box.y, box.w, box.h);

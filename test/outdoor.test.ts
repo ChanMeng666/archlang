@@ -410,6 +410,47 @@ describe("outdoor — the legend gains a row per ground material used", () => {
     expect(rows).toContain("poche");
     expect(rows).not.toContain("grass");
   });
+
+  it("frames each GROUND swatch on its pattern's own marks, and leaves wall swatches and the plan alone", () => {
+    // A ground tile is bigger than a swatch, so a swatch anchored at the drawing origin showed
+    // whatever happened to fall in it — the paving swatch missed both 600 mm joints. Each ground
+    // swatch now carries an `origin` (and, for turf and water, a `zoom`) that puts a chosen
+    // point of the tile at the swatch centre; a wall swatch and every surface on the plan carry
+    // neither, so their bytes are what they were.
+    const kinds = ["lawn", "planting", "paving", "deck", "gravel", "water", "driveway"];
+    const body = kinds.map((k, i) => `  outdoor ${k} at (${i * 5000},9000) size 4000x3000`).join("\n");
+    const src = `plan "L" {\n  units mm\n  paper A1 landscape\n  scale 1:100\n  legend\n${BOX}\n${ROOM}\n${body}\n}\n`;
+    const { scene, svg } = compile(src, { noCache: true });
+    const hatches = scene!.nodes.filter((n) => n.prim.t === "hatch");
+    const swatches = hatches.filter((n) => n.layer === "annotations");
+    const onPlan = hatches.filter((n) => n.layer !== "annotations");
+    expect(swatches.length).toBe(GROUND_MATERIALS.length + 1);
+    for (const n of onPlan) {
+      const p = n.prim as Extract<typeof n.prim, { t: "hatch" }>;
+      expect(p.origin, `${p.material} on the plan`).toBeUndefined();
+      expect(p.zoom, `${p.material} on the plan`).toBeUndefined();
+    }
+    for (const n of swatches) {
+      const p = n.prim as Extract<typeof n.prim, { t: "hatch" }>;
+      if (p.material === "poche") {
+        expect(p.origin).toBeUndefined();
+        expect(p.zoom).toBeUndefined();
+        continue;
+      }
+      expect(p.origin, `${p.material} swatch is re-framed`).toBeDefined();
+      // The paving swatch puts its tile CENTRE — where both joints cross — at the swatch centre.
+      if (p.material === "paving") {
+        const box = p.region[0]!;
+        const cx = (Math.min(...box.map((q) => q.x)) + Math.max(...box.map((q) => q.x))) / 2;
+        const cy = (Math.min(...box.map((q) => q.y)) + Math.max(...box.map((q) => q.y))) / 2;
+        const tile = hatchTileMm({ material: "paving", scale: 1, angle: 0 }, scene!.sizes.hatchGap);
+        expect(p.origin!.x + (p.zoom ?? 1) * (tile / 2)).toBeCloseTo(cx, 6);
+        expect(p.origin!.y + (p.zoom ?? 1) * (tile / 2)).toBeCloseTo(cy, 6);
+      }
+    }
+    // The SVG re-frames exactly the seven ground swatches, by a transform on their own path.
+    expect((svg.match(/<path d="[^"]*" transform="translate\(/g) ?? []).length).toBe(GROUND_MATERIALS.length);
+  });
 });
 
 // ---------------------------------------------------------------------------

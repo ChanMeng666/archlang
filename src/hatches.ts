@@ -551,8 +551,60 @@ export function hatchPattern(spec: HatchSpec, base: Omit<HatchCtx, "scale" | "an
  * range; a tile that overflows reads `Infinity` here and is refused there.
  */
 export function hatchTileMm(spec: HatchSpec, gap: number): number {
+  const t = hatchTileSize(spec, gap);
+  return Math.max(t.w, t.h);
+}
+
+/**
+ * The drawn width and height of one pattern tile for a hatch spec at hatch module `gap`, read
+ * off the markup {@link hatchPattern} emits (the same measurement as {@link hatchTileMm}, both
+ * extents). `NaN` for a markup with no readable tile.
+ */
+export function hatchTileSize(spec: HatchSpec, gap: number): { w: number; h: number } {
   const markup = hatchPattern(spec, { fmt: String, gap, thin: 0, base: "", line: "" });
   const m = /^<pattern [^>]*?width="([^"]*)" height="([^"]*)"/.exec(markup);
-  if (!m) return Number.NaN;
-  return Math.max(Number(m[1]), Number(m[2]));
+  if (!m) return { w: Number.NaN, h: Number.NaN };
+  return { w: Number(m[1]), h: Number(m[2]) };
+}
+
+/**
+ * How a LEGEND swatch frames each ground pattern: `focus` is the point of the tile (as fractions
+ * of its width and height) put at the swatch's centre, and `zoom` the scale the tile is drawn at
+ * inside the swatch.
+ *
+ * A ground pattern's module is a real-world one (a 600 mm slab, a 150 mm board, turf tufts a
+ * few per square metre), so its tile is bigger than a legend swatch, and a swatch that simply
+ * shows whatever falls inside it at the drawing's origin is often blank: the slab grid missed
+ * both joints. Each row below picks the window that shows the pattern's own marks — the slab
+ * joints crossing, two boards and a butt joint, two tufts — and shrinks the tile only where
+ * no window at full size holds two of them (the turf and the waves). The plan's own surfaces
+ * are untouched: this is read by the legend alone, and a wall material is never re-framed.
+ */
+const GROUND_SWATCH_FRAME: Readonly<Record<GroundMaterial, { zoom: number; focus: readonly [number, number] }>> = {
+  grass: { zoom: 0.8, focus: [0.41, 0.2] },
+  planting: { zoom: 1, focus: [0.5, 0.5] },
+  paving: { zoom: 1, focus: [0.5, 0.5] },
+  deck: { zoom: 1, focus: [0.6, 0.5] },
+  gravel: { zoom: 1, focus: [0.5, 0.5] },
+  water: { zoom: 0.55, focus: [0.5, 0.5] },
+  tarmac: { zoom: 1, focus: [0.5, 0.5] },
+};
+
+/**
+ * The pattern `origin` and `zoom` a legend swatch centred at `centre` fills a ground material
+ * with (see {@link GROUND_SWATCH_FRAME}) — or `null` for a wall material, whose swatch keeps the
+ * drawing's own anchoring.
+ */
+export function groundSwatchFrame(
+  spec: HatchSpec,
+  gap: number,
+  centre: { x: number; y: number },
+): { origin: { x: number; y: number }; zoom: number } | null {
+  if (!isGroundMaterial(spec.material)) return null;
+  const f = GROUND_SWATCH_FRAME[spec.material];
+  const t = hatchTileSize(spec, gap);
+  return {
+    origin: { x: centre.x - f.zoom * f.focus[0] * t.w, y: centre.y - f.zoom * f.focus[1] * t.h },
+    zoom: f.zoom,
+  };
 }
