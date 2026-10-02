@@ -220,24 +220,24 @@ pen.
 |---|---|---|---|---|
 | `sofa` · `couch` | rounded body, an arm at each end running the full depth, and a row of back and seat **cushions** — one per 0.62 depths of seat, up to four | — | free | |
 | `armchair` | the `sofa` construction with **one** cushion and broader arms | — | free | |
-| `coffee_table` | **rounded** top and inner edge, four legs, and a tray line across it once it is longer than 1.6 : 1 | — | symmetric | |
-| `tv_unit` | carcass, the screen against the back edge, the shelf line, and the drawer bank with its handle on the room side | 1500 × 450 | derived | |
-| `table` | **square** top and inset edge, four legs, and a board line **along** its length once it is longer than 1.6 : 1 | — | symmetric | |
+| `coffee_table` | **hard** top with softly eased corners and a **white inset panel** (the glass or tray) a tenth of the short side in; no legs — they are under the top | — | symmetric | |
+| `tv_unit` | carcass, the door splits and one pull per door on the room side, and the **television** standing on its back edge — a slim panel on a foot plate | 1500 × 450 | derived | |
+| `table` | **hard** top and one bevel line just inside it — exactly the `dining_table`'s top, without the chairs; no legs — they are under the top | — | symmetric | |
 | `dining_table` | the table inside a chair-zone band, **with the chairs tucked under it** | — | symmetric | |
 | `chair` | a rounded upholstered seat and a pill-ended **backrest bar** along the rear edge | — | free | |
-| `stool` · `barstool` | a round seat with no back — **three concentric true circles** about the footprint centre | — | symmetric | |
-| `bench` | slab with its slats running **lengthwise** along whichever axis is longer, and a support across each end | — | free | |
-| `fireplace` | the chimney breast with the firebox opening cut into its **room** face and three flame ticks inside it | 1200 × 400 | derived | |
-| `radiator` | a shallow slab with its fins ticked across the depth, at a clamped pitch | 1000 × 100 | derived | |
-| `sideboard` · `buffet` | carcass and top, the door splits along the run, and one handle per door on the room edge | 1600 × 450 | derived | |
+| `stool` · `barstool` | a round **white seat** and the **footrest ring** standing proud of it at the full footprint — two concentric true circles about the footprint centre | — | symmetric | |
+| `bench` | slab with its board joints running **lengthwise** along whichever axis is longer | — | free | |
+| `fireplace` | the chimney **breast** against the wall, the **hearth** slab in front of it, and the splayed **firebox** cut into the breast's room face, with its grate | 1200 × 400 | derived | |
+| `radiator` | a shallow slab with its fins ticked across the depth inside the casing, at a clamped pitch | 1000 × 100 | derived | |
+| `sideboard` · `buffet` | carcass, the door splits along the run, and one pull per door on the room edge | 1600 × 450 | derived | |
 | `loveseat` · `sofa_2` | the `sofa` construction with its cushion count **pinned at two seats**, whatever the footprint | 1500 × 850 | free | |
-| `chaise` | an eased body with a back down **one long side** and a raised head across the top | 1600 × 800 | free | |
-| `tv` | the wall bracket with the screen panel hanging off it — **not** the `tv_unit`, which is a carcass | 1200 × 80 | derived | |
-| `coat_rack` | the post as two concentric circles with four hooks at a 90° pitch round it | 400 × 400 | symmetric | |
-| `shoe_cabinet` | slim carcass, the door splits, and a **tilt line** in each door leaning toward the room | 800 × 300 | derived | |
-| `sofa_l` · `corner_sofa` | an L: the back run along the rear edge, the return down the **left**, cushions along both, and the fourth quadrant left as open floor | 2600 × 1600 | free | |
-| `rug` · `carpet` | outer and inner borders with a fringe at each short end — the **only unfilled symbol** | — | symmetric | |
-| `piano` · `grand_piano` | the keyboard across the back, the straight spine down the left, and the bent side sweeping round to the tail | — | free | |
+| `chaise` | the `sofa` construction with **one** arm (the left) and the other end **open**: a row of back cushions and one long seat cushion you lie along | 1600 × 800 | free | |
+| `tv` | a slim panel on the room face and the wall bracket behind it — **not** the `tv_unit`, which is a carcass | 1200 × 80 | derived | |
+| `coat_rack` | a round base, the pole, and four hook arms on the diagonals, each ending in a knob | 400 × 400 | symmetric | |
+| `shoe_cabinet` | slim carcass, the door splits, and a long **finger-pull** along the front of each door | 800 × 300 | derived | |
+| `sofa_l` · `corner_sofa` | the `sofa` construction round an L: the back run along the rear edge, the return down the **left**, a **square corner seat**, an arm at each free end, and the fourth quadrant left as open floor | 2600 × 1600 | free | |
+| `rug` · `carpet` | a woven body with a border band inside it and a fringe off each short end (all four on a square rug) — the **only unfilled symbol**, drawn entirely in the detail pen | — | symmetric | |
+| `piano` · `grand_piano` | a **grand**: the keyboard across the back, the straight bass side down the right, a round tail, the concave bent side and the treble shoulder (tangent arcs throughout) with the lid line inside; a bench in front of the keys when the footprint is at least 1.3 widths deep | — | free | |
 
 `sofa`, `armchair`, `chair`, `bench`, `sofa_l`, `loveseat` and `chaise` are deliberately
 **free**: seating is arranged, not installed, so ArchLang neither derives a rotation for them
@@ -252,15 +252,16 @@ on a 2000 × 900 footprint; a `loveseat` draws two on any footprint.
 **A `tv` and a `tv_unit` are different kinds, not synonyms.** A media console is 450 mm deep
 and a wall-mounted panel is 80, so a plan that draws the first where the second belongs has
 taken 370 mm of walkway away. Both are `directional`, and the symbols differ: the console has a
-carcass, drawer splits and a screen band at the back; the panel has a bracket and nothing else.
+carcass, door splits and pulls on the room side, and a television standing on its back edge; the
+mounted panel is a slim slab on the room face and the bracket behind it, and nothing else.
 
 **`fireplace` and `radiator` are not `requiresWall`, and both are genuinely serviced.** That
 flag means the piece cannot work without a wall *behind* it, and neither of these can be
 flagged without warning on a normal drawing: a radiator is as often fed from the floor as from
 the wall and lives under a window, and a free-standing stove in the middle of a room is a plan
 someone drew on purpose. Both are `directional` instead, which is the claim the drawing can
-back: a fireplace's opening faces the room, and a radiator's fins run from its back face to its
-front.
+back: a fireplace's firebox opens onto the room with its hearth in front of it, and a radiator's
+fins run across it, from the back toward the front.
 
 **`sofa_l`'s return is always on the LEFT, and there is no right-handed twin — but
 `place … mirror` now draws one.** A `sofa_l_r` category was rejected rather than forgotten:
@@ -270,10 +271,10 @@ twin. So a reflecting instance frame hands the glyph its own chirality instead, 
 mirror image. Turn it with `rotate` where a quarter-turn is what you want; reach for
 `place … mirror` when you want the mirror-image piece.
 
-**Handedness is DERIVED from the drawing, not declared per family.** Nineteen of the 83
+**Handedness is DERIVED from the drawing, not declared per family.** Eighteen of the 83
 shipped families have no vertical mirror axis (`bed`, `desk`, `bathtub`, `island`, `washer`,
-`microwave`, `mirror`, `chaise`, `shoe_cabinet`, `reception_desk`, `piano`, `sofa_l`, `bbq`,
-`shrub`, `bicycle`, `motorcycle`, `mailbox`, `ev_charger`, `double_bed`) at their catalogued
+`microwave`, `mirror`, `chaise`, `reception_desk`, `piano`, `sofa_l`, `bbq`, `shrub`,
+`bicycle`, `motorcycle`, `mailbox`, `ev_charger`, `double_bed`) at their catalogued
 footprints. Handedness is a property of the drawing rather than of the family, though:
 `counter`, `fridge`, `upper_cabinet`, `hedge` and `motorcycle` are handed at some footprints
 and symmetric at others, because their detail is tiled and the tile count comes from the
@@ -400,7 +401,8 @@ drawing of anything; several were not even distinguishable from each other (`cof
 The primitive counts below are measured, not estimated, at three footprints — 900 × 900,
 2400 × 700 and 1800 × 600 — because several symbols read their own aspect and draw a different
 piece of equipment either side of a threshold rather than inventing one answer that is wrong for
-half the plans.
+half the plans. The `coffee_table`, `table`, `stool`, `bench` and `tv_unit` rows show those
+symbols as they are drawn now: a later redraw replaced their v1.32 detail.
 
 | Kind | Primitives (main → v1.32) | What it gained |
 |---|---|---|
@@ -410,12 +412,12 @@ half the plans.
 | `oven` | 4 → 6 / 10 | three knobs, a glass window and a handle bar; **at aspect 1.6 or over it is a range** and gains four burners |
 | `fridge` | 4 → 3 / 4 | a door-face line and a handle bar, and a vertical door split only on a side-by-side (aspect 1.4 or over) — an upright's freezer drawer is behind its one door and is not seen from above |
 | `washer` | 4 → 6 | a control strip with a dial and a button, and a door ring with a white porthole at the drum's centre, so it is no longer `dryer`'s box |
-| `coffee_table` | 2 → 6 / 7 | legs and a lower shelf |
-| `table` | 2 → 6 / 7 | legs and supports, and a leaf seam on a long enough top |
-| `stool` | 2 → 3 | a **concentric** third circle — a ring of foot dots would map onto itself under a quarter-turn and move the bytes for a drawing nobody can tell apart |
-| `bench` | 3 → 7 / 8 | slats and legs |
+| `coffee_table` | 2 → 2 | a hard top with softly eased corners and a white inset panel — no legs, which are under the top |
+| `table` | 2 → 2 | the `dining_table`'s hard top and bevel line — no legs and no leaf seam |
+| `stool` | 2 → 2 | a white seat and the footrest ring at the full footprint, **concentric** — a ring of foot dots would map onto itself under a quarter-turn and move the bytes for a drawing nobody can tell apart |
+| `bench` | 3 → 6 / 5 | board joints running lengthwise — no legs, which are under the seat |
 | `chair` | 3 → 5 | a seat, a back and armrests |
-| `tv_unit` | 3 → 6 | drawer splits and a plinth |
+| `tv_unit` | 3 → 6 / 8 | door splits and pulls on the room side, and the television standing on its back edge |
 | `nightstand` | 3 → 6 | a drawer split and a pull |
 | `desk` | 3 → 7 | a pedestal with drawer splits, and a modesty panel |
 
@@ -458,7 +460,9 @@ every one of them declines a check rather than adding one.
 - **It is drawn with no fill at all** — the only symbol in the catalogue that is. That is not
   a style choice: if it filled, a `rug` written *after* the sofa standing on it would paint
   over the sofa, and the same plan with the two lines swapped would look right. With nothing
-  to paint over, there is no source order to get wrong.
+  to paint over, there is no source order to get wrong. Every line of it is also in the
+  **detail pen** — it has no outline-weight edge — so where a `rug` written after a piece runs
+  across it, its lines stay subordinate to the outlines of the furniture standing on it.
 - **A piece standing on it is not an overlap.** `W_FURNITURE_OVERLAP` skips an
   underlay-and-not-an-underlay pair. Two rugs overlapping *each other* still warn — one rug
   half over another is a drawing mistake, and nothing about walking on them says otherwise.

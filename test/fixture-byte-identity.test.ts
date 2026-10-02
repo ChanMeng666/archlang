@@ -335,22 +335,36 @@ describe("fixture symbols — the second tranche (re-blessed when redrawn)", () 
       <polygon points="0,0 3000,0 3000,2400 0,2400" fill="#fbfaf7"/>
       </g>
       <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
-      <polygon points="2216,300 2248.15,306.39 2275.4,324.6 2293.61,351.85 2300,384 2300,1616 2293.61,1648.15 2275.4,1675.4 2248.15,1693.61 2216,1700 384,1700 351.85,1693.61 324.6,1675.4 306.39,1648.15 300,1616 300,384 306.39,351.85 324.6,324.6 351.85,306.39 384,300" fill="none" stroke="#6c6864" stroke-width="4.8"/>
-      <polygon points="2129.76,398 2157.41,403.5 2180.84,419.16 2196.5,442.59 2202,470.24 2202,1529.76 2196.5,1557.41 2180.84,1580.84 2157.41,1596.5 2129.76,1602 470.24,1602 442.59,1596.5 419.16,1580.84 403.5,1557.41 398,1529.76 398,470.24 403.5,442.59 419.16,419.16 442.59,403.5 470.24,398" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="300" y1="400" x2="370" y2="400" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="2230" y1="400" x2="2300" y2="400" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="300" y1="600" x2="370" y2="600" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="2230" y1="600" x2="2300" y2="600" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="300" y1="800" x2="370" y2="800" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="2230" y1="800" x2="2300" y2="800" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="300" y1="1000" x2="370" y2="1000" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="2230" y1="1000" x2="2300" y2="1000" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="300" y1="1200" x2="370" y2="1200" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="2230" y1="1200" x2="2300" y2="1200" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="300" y1="1400" x2="370" y2="1400" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="2230" y1="1400" x2="2300" y2="1400" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="300" y1="1600" x2="370" y2="1600" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="2230" y1="1600" x2="2300" y2="1600" stroke="#a8a29a" stroke-width="3.47"/>
+      <polygon points="370,300 2230,300 2230,1700 370,1700" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
+      <polygon points="482,412 2118,412 2118,1588 482,1588" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="300" y1="350" x2="370" y2="350" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="2230" y1="350" x2="2300" y2="350" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="300" y1="450" x2="370" y2="450" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="2230" y1="450" x2="2300" y2="450" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="300" y1="550" x2="370" y2="550" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="2230" y1="550" x2="2300" y2="550" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="300" y1="650" x2="370" y2="650" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="2230" y1="650" x2="2300" y2="650" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="300" y1="750" x2="370" y2="750" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="2230" y1="750" x2="2300" y2="750" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="300" y1="850" x2="370" y2="850" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="2230" y1="850" x2="2300" y2="850" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="300" y1="950" x2="370" y2="950" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="2230" y1="950" x2="2300" y2="950" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="300" y1="1050" x2="370" y2="1050" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="2230" y1="1050" x2="2300" y2="1050" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="300" y1="1150" x2="370" y2="1150" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="2230" y1="1150" x2="2300" y2="1150" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="300" y1="1250" x2="370" y2="1250" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="2230" y1="1250" x2="2300" y2="1250" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="300" y1="1350" x2="370" y2="1350" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="2230" y1="1350" x2="2300" y2="1350" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="300" y1="1450" x2="370" y2="1450" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="2230" y1="1450" x2="2300" y2="1450" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="300" y1="1550" x2="370" y2="1550" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="2230" y1="1550" x2="2300" y2="1550" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="300" y1="1650" x2="370" y2="1650" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="2230" y1="1650" x2="2300" y2="1650" stroke="#a8a29a" stroke-width="3.47"/>
       </g>
       <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
       <text x="1500" y="1902" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
@@ -371,12 +385,20 @@ describe("fixture symbols — the second tranche (re-blessed when redrawn)", () 
       <polygon points="0,0 3000,0 3000,2400 0,2400" fill="#fbfaf7"/>
       </g>
       <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
-      <polygon points="300,460 312.18,398.77 346.86,346.86 398.77,312.18 460,300 2740,300 2801.23,312.18 2853.14,346.86 2887.82,398.77 2900,460 2900,1036 2887.82,1097.23 2853.14,1149.14 2801.23,1183.82 2740,1196 1210,1196 1210,1740 1197.82,1801.23 1163.14,1853.14 1111.23,1887.82 1050,1900 460,1900 398.77,1887.82 346.86,1853.14 312.18,1801.23 300,1740" fill="#f4f2ee" stroke="#6c6864" stroke-width="4.8"/>
-      <line x1="300" y1="540" x2="2900" y2="540" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="638" y1="300" x2="638" y2="1900" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="1773.33" y1="540" x2="1773.33" y2="1196" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="2336.67" y1="540" x2="2336.67" y2="1196" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="638" y1="1548" x2="1210" y2="1548" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 300,362.72 A 62.72 62.72 0 0 1 362.72,300 L 2837.28,300 A 62.72 62.72 0 0 1 2900,362.72 L 2900,1133.28 A 62.72 62.72 0 0 1 2837.28,1196 L 1196,1196 L 1196,1837.28 A 62.72 62.72 0 0 1 1133.28,1900 L 362.72,1900 A 62.72 62.72 0 0 1 300,1837.28 L 300,362.72 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="4.8"/>
+      <path d="M 2738.72,300 L 2837.28,300 A 62.72 62.72 0 0 1 2900,362.72 L 2900,1133.28 A 62.72 62.72 0 0 1 2837.28,1196 L 2801.44,1196 A 62.72 62.72 0 0 1 2738.72,1133.28 L 2738.72,300 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="4.8"/>
+      <path d="M 300,1738.72 L 1133.28,1738.72 A 62.72 62.72 0 0 1 1196,1801.44 L 1196,1837.28 A 62.72 62.72 0 0 1 1133.28,1900 L 362.72,1900 A 62.72 62.72 0 0 1 300,1837.28 L 300,1738.72 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="4.8"/>
+      <path d="M 376.16,344.8 L 1124.32,344.8 A 31.36 31.36 0 0 1 1155.68,376.16 L 1155.68,447.84 A 31.36 31.36 0 0 1 1124.32,479.2 L 376.16,479.2 A 31.36 31.36 0 0 1 344.8,447.84 L 344.8,376.16 A 31.36 31.36 0 0 1 376.16,344.8 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 376.16,495.33 L 447.84,495.33 A 31.36 31.36 0 0 1 479.2,526.69 L 479.2,1124.32 A 31.36 31.36 0 0 1 447.84,1155.68 L 376.16,1155.68 A 31.36 31.36 0 0 1 344.8,1124.32 L 344.8,526.69 A 31.36 31.36 0 0 1 376.16,495.33 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 1203.17,344.8 L 1646.62,344.8 A 31.36 31.36 0 0 1 1677.98,376.16 L 1677.98,447.84 A 31.36 31.36 0 0 1 1646.62,479.2 L 1203.17,479.2 A 31.36 31.36 0 0 1 1171.81,447.84 L 1171.81,376.16 A 31.36 31.36 0 0 1 1203.17,344.8 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 1725.47,344.8 L 2168.93,344.8 A 31.36 31.36 0 0 1 2200.29,376.16 L 2200.29,447.84 A 31.36 31.36 0 0 1 2168.93,479.2 L 1725.47,479.2 A 31.36 31.36 0 0 1 1694.11,447.84 L 1694.11,376.16 A 31.36 31.36 0 0 1 1725.47,344.8 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 2247.78,344.8 L 2691.23,344.8 A 31.36 31.36 0 0 1 2722.59,376.16 L 2722.59,447.84 A 31.36 31.36 0 0 1 2691.23,479.2 L 2247.78,479.2 A 31.36 31.36 0 0 1 2216.42,447.84 L 2216.42,376.16 A 31.36 31.36 0 0 1 2247.78,344.8 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 376.16,1171.81 L 447.84,1171.81 A 31.36 31.36 0 0 1 479.2,1203.17 L 479.2,1691.23 A 31.36 31.36 0 0 1 447.84,1722.59 L 376.16,1722.59 A 31.36 31.36 0 0 1 344.8,1691.23 L 344.8,1203.17 A 31.36 31.36 0 0 1 376.16,1171.81 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 535.65,495.33 L 1115.36,495.33 A 40.32 40.32 0 0 1 1155.68,535.65 L 1155.68,1115.36 A 40.32 40.32 0 0 1 1115.36,1155.68 L 535.65,1155.68 A 40.32 40.32 0 0 1 495.33,1115.36 L 495.33,535.65 A 40.32 40.32 0 0 1 535.65,495.33 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 1212.13,495.33 L 1637.66,495.33 A 40.32 40.32 0 0 1 1677.98,535.65 L 1677.98,1115.36 A 40.32 40.32 0 0 1 1637.66,1155.68 L 1212.13,1155.68 A 40.32 40.32 0 0 1 1171.81,1115.36 L 1171.81,535.65 A 40.32 40.32 0 0 1 1212.13,495.33 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 1734.43,495.33 L 2159.97,495.33 A 40.32 40.32 0 0 1 2200.29,535.65 L 2200.29,1115.36 A 40.32 40.32 0 0 1 2159.97,1155.68 L 1734.43,1155.68 A 40.32 40.32 0 0 1 1694.11,1115.36 L 1694.11,535.65 A 40.32 40.32 0 0 1 1734.43,495.33 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 2256.74,495.33 L 2682.27,495.33 A 40.32 40.32 0 0 1 2722.59,535.65 L 2722.59,1115.36 A 40.32 40.32 0 0 1 2682.27,1155.68 L 2256.74,1155.68 A 40.32 40.32 0 0 1 2216.42,1115.36 L 2216.42,535.65 A 40.32 40.32 0 0 1 2256.74,495.33 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 535.65,1171.81 L 1115.36,1171.81 A 40.32 40.32 0 0 1 1155.68,1212.13 L 1155.68,1682.27 A 40.32 40.32 0 0 1 1115.36,1722.59 L 535.65,1722.59 A 40.32 40.32 0 0 1 495.33,1682.27 L 495.33,1212.13 A 40.32 40.32 0 0 1 535.65,1171.81 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
       </g>
       <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
       <text x="1500" y="2142" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
@@ -397,13 +419,32 @@ describe("fixture symbols — the second tranche (re-blessed when redrawn)", () 
       <polygon points="0,0 3000,0 3000,2400 0,2400" fill="#fbfaf7"/>
       </g>
       <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
-      <polygon points="300,300 1800,300 1794.44,534.12 1777.76,697.75 1750.02,840.14 1711.29,968.21 1661.67,1084.58 1601.29,1190.38 1530.25,1286.15 1448.67,1372.09 1356.59,1448.23 1253.98,1514.53 1140.62,1570.89 1015.94,1617.2 878.72,1653.35 726.16,1679.24 550.84,1694.81 300,1700" fill="#f4f2ee" stroke="#6c6864" stroke-width="4.8"/>
-      <polygon points="360,328 1620,328 1620,468 360,468" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="612" y1="328" x2="612" y2="468" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="864" y1="328" x2="864" y2="468" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="1116" y1="328" x2="1116" y2="468" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="1368" y1="328" x2="1368" y2="468" stroke="#a8a29a" stroke-width="3.47"/>
-      <line x1="390" y1="552" x2="900" y2="1504" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 300,300 L 1800,300 L 1800,1325 A 375 375 0 0 1 1523.16,1686.92 A 375 375 0 0 1 1101.39,1514.48 A 1425 1425 0 0 0 435.39,925.73 A 224 224 0 0 1 300,720 L 300,300 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="4.8"/>
+      <path d="M 349,580 L 1751,580 L 1751,1325 A 326 326 0 0 1 1510.33,1639.63 A 326 326 0 0 1 1143.67,1489.72 A 1474 1474 0 0 0 454.77,880.72 A 175 175 0 0 1 349,720 L 349,580 Z" fill="none" stroke="#a8a29a" stroke-width="3.47"/>
+      <path d="M 412.5,342 L 1687.5,342 L 1687.5,482 L 412.5,482 L 412.5,342 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="465.63" y1="342" x2="465.63" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="518.75" y1="342" x2="518.75" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="571.88" y1="342" x2="571.88" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="625" y1="342" x2="625" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="678.13" y1="342" x2="678.13" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="731.25" y1="342" x2="731.25" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="784.38" y1="342" x2="784.38" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="837.5" y1="342" x2="837.5" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="890.63" y1="342" x2="890.63" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="943.75" y1="342" x2="943.75" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="996.88" y1="342" x2="996.88" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1050" y1="342" x2="1050" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1103.13" y1="342" x2="1103.13" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1156.25" y1="342" x2="1156.25" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1209.38" y1="342" x2="1209.38" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1262.5" y1="342" x2="1262.5" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1315.63" y1="342" x2="1315.63" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1368.75" y1="342" x2="1368.75" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1421.88" y1="342" x2="1421.88" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1475" y1="342" x2="1475" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1528.13" y1="342" x2="1528.13" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1581.25" y1="342" x2="1581.25" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
+      <line x1="1634.38" y1="342" x2="1634.38" y2="482" stroke="#a8a29a" stroke-width="3.47"/>
       </g>
       <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
       <text x="1950" y="1182" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
