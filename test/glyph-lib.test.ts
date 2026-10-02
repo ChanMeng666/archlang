@@ -28,6 +28,7 @@ import type { PathLoop, Scene, SceneNode } from "../src/scene.js";
 import type { Point } from "../src/ast.js";
 import {
   bulgeArc,
+  type CornerRadii,
   dashedPattern,
   ellipsePoly,
   glyphCtx,
@@ -502,6 +503,127 @@ describe("glyph-lib — bulgeArc", () => {
   it("is a straight edge on a zero chord or a zero sagitta", () => {
     expect(bulgeArc({ x: 0, y: 0 }, { x: 10, y: 0 }, 0)).toEqual([{ t: "line", to: { x: 10, y: 0 } }]);
     expect(bulgeArc({ x: 3, y: 3 }, { x: 3, y: 3 }, 5)).toEqual([{ t: "line", to: { x: 3, y: 3 } }]);
+  });
+});
+
+describe("glyph-lib — the curve builders are exact under a mirror and a half-turn", () => {
+  /**
+   * Footprints placed the way `analyze/symmetry.ts`'s `handed()` and `furniture.render()` place
+   * them — the rect's `x` is `cx − w/2` with `cx = at + w/2`, which is where an ulp creeps in —
+   * at the reproduction sizes (an office chair at 640, 777 and 555) and absolute offsets.
+   */
+  const SIDES = [640, 777, 555, 900, 1000, 3000, 1500, 0.3];
+  const OFFSETS = [0, 100, 1000, 12345.678];
+  const rects: { x: number; y: number; w: number; h: number }[] = [];
+  for (const o of OFFSETS)
+    for (const s of SIDES)
+      for (const [fw, fh] of [
+        [0.12, 1],
+        [0.16, 0.8],
+        [1, 1],
+        [1, 0.12],
+        [0.08, 0.5],
+      ] as const) {
+        const w = s * fw;
+        const h = s * fh;
+        const cx = o + w / 2;
+        const cy = o + h / 2;
+        rects.push({ x: cx - w / 2, y: cy - h / 2, w, h });
+      }
+  const radiiFor = (r: { w: number; h: number }): (number | CornerRadii)[] => [
+    1e12, // held to half the short side: a stadium, or a circle on a square
+    Math.min(r.w, r.h) / 2,
+    Math.min(r.w, r.h) * 0.12,
+    [r.w / 2, r.w / 2, 0, 0],
+    [Math.min(r.w, r.h) * 0.1, Math.min(r.w, r.h) * 0.4, Math.min(r.w, r.h) * 0.5, 0],
+  ];
+  const mirrorRadii = (k: number | CornerRadii): number | CornerRadii =>
+    typeof k === "number" ? k : [k[1], k[0], k[3], k[2]];
+  const halfTurnRadii = (k: number | CornerRadii): number | CornerRadii =>
+    typeof k === "number" ? k : [k[2], k[3], k[0], k[1]];
+  const edgesOf = (n: SceneNode): number => (n.prim.t === "path" ? n.prim.loops[0]!.edges.length : -1);
+
+  /**
+   * A pair of shapes a glyph draws at mirrored POSITIONS — a left and a right armrest, a back
+   * and a front bar — each computed from the footprint the way glyph code computes it (a
+   * fraction of `w` from the left edge), never as the reflection of the other. Two different
+   * absolute positions take two different ulp paths; the reflection of one must still be the
+   * other, edge for edge, or the symbol reads as handed.
+   */
+  const pairs: { a: { x: number; y: number; w: number; h: number }; b: (typeof rects)[number]; c: Point }[] = [];
+  for (const o of OFFSETS)
+    for (const s of SIDES)
+      for (const [f0, fw, g0, gh] of [
+        [0.06, 0.12, 0.1, 0.8], // armrests
+        [0.02, 0.16, 0.02, 0.96],
+        [0.1, 0.35, 0.3, 0.4],
+      ] as const) {
+        const cx = o + s / 2;
+        const cy = o + s / 2;
+        const F = { x: cx - s / 2, y: cy - s / 2, w: s, h: s };
+        const a = { x: F.x + F.w * f0, y: F.y + F.h * g0, w: F.w * fw, h: F.h * gh };
+        const b = { x: F.x + F.w * (1 - f0 - fw), y: F.y + F.h * g0, w: F.w * fw, h: F.h * gh };
+        pairs.push({ a, b, c: { x: cx, y: cy } });
+      }
+
+  it("roundedRectPath: the mirror image of one of a mirrored pair IS the other, edge for edge", () => {
+    let checked = 0;
+    for (const { a, b, c } of pairs) {
+      for (const k of radiiFor(a)) {
+        const mirrored = mirrorNode(pathNode(roundedRectPath(a, k)), c.x);
+        const want = pathNode(roundedRectPath(b, mirrorRadii(k)));
+        const where = `${a.x},${a.y} ${a.w}x${a.h} | ${b.x} r=${JSON.stringify(k)}`;
+        expect(edgesOf(mirrored), where).toBe(edgesOf(want));
+        expect(marksEqual([mirrored], [want]), where).toBe(true);
+        checked++;
+      }
+    }
+    expect(checked).toBe(pairs.length * 5);
+  });
+
+  it("roundedRectPath: …and so is the half-turn of one of a pair turned about the footprint centre", () => {
+    for (const { a, b, c } of pairs) {
+      // `b` is `a` reflected left-right; the half-turn of `a` is `b` reflected top-bottom, which
+      // for these vertically centred pairs is `b` drawn at `a`'s height turned upside down.
+      const flippedB = { x: b.x, y: 2 * c.y - a.y - a.h, w: b.w, h: b.h };
+      for (const k of radiiFor(a)) {
+        const turned = rotateNode(pathNode(roundedRectPath(a, k)), c, 180);
+        const want = pathNode(roundedRectPath(flippedB, halfTurnRadii(k)));
+        const where = `${a.x},${a.y} ${a.w}x${a.h} r=${JSON.stringify(k)}`;
+        expect(edgesOf(turned), where).toBe(edgesOf(want));
+        expect(marksEqual([turned], [want]), where).toBe(true);
+      }
+    }
+  });
+
+  it("a stadium and a circle emit no degenerate edge at any size or position", () => {
+    for (const r of rects) {
+      const lp = roundedRectPath(r, 1e12);
+      // A stadium is two straight runs and four quarter arcs; a circle (a square) four arcs.
+      const lines = lp.edges.filter((e) => e.t === "line").length;
+      expect(lines, `${r.w}x${r.h}`).toBe(r.w === r.h ? 0 : 2);
+      expect(lp.edges.filter((e) => e.t === "arc")).toHaveLength(r.w > 0 && r.h > 0 ? 4 : 0);
+    }
+  });
+
+  it("ovalPath and a bulge loop are mirror- and half-turn-exact too", () => {
+    for (const r of rects) {
+      const c = { x: r.x + r.w / 2, y: r.y + r.h / 2 };
+      const oval = pathNode(ovalPath(c.x, c.y, r.w * 0.4, r.h * 0.36));
+      expect(marksEqual([oval], [mirrorNode(oval, c.x)]), `${r.w}x${r.h}`).toBe(true);
+      expect(marksEqual([oval], [rotateNode(oval, c, 180)]), `${r.w}x${r.h}`).toBe(true);
+      const a = { x: r.x, y: r.y + r.h };
+      const b = { x: r.x + r.w, y: r.y + r.h };
+      const top = { x: c.x, y: r.y };
+      // Non-round fractions on purpose: with 0.2 / 0.1 the two side lobes' radius is EXACTLY
+      // 0.11415 at a 0.3 footprint — a 4-decimal rounding boundary, which the `fmt4` quantum of
+      // `marksEqual` splits by an ulp. That is a property of the quantum, not of the builder.
+      const lobe = pathNode({
+        start: a,
+        edges: [...bulgeArc(a, b, -r.h * 0.2137), ...bulgeArc(b, top, r.w * 0.1093), ...bulgeArc(top, a, r.w * 0.1093)],
+      });
+      expect(marksEqual([lobe], [mirrorNode(lobe, c.x)]), `lobe ${r.w}x${r.h}`).toBe(true);
+    }
   });
 });
 
