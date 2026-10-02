@@ -5,7 +5,8 @@
 ```
 source (.arch)
   └─ src/lexer.ts        → Token[] (byte spans)
-  └─ src/parser.ts       → PlanNode (src/ast.ts); recovers, never throws; memoised by content
+  └─ src/parser.ts       → PlanNode (src/ast.ts); recovers, never throws (recovery is guided by
+                         the failed statement's indentation); memoised by content
   └─ src/import.ts       links `import`s through the World seam (the one I/O phase)
   └─ src/ir.ts           resolve(): scripting, grid snap, auto-ids, host openings,
                          relational placement (src/layout.ts) → ResolvedPlan
@@ -51,8 +52,11 @@ source (.arch)
 
 - `describe.ts` semantic summary · `lint.ts` + `lint/` soundness rules · `analyze.ts` +
   `analyze/` shared resolve + circulation/occupancy grids
-- `geometry.ts` door-swing quarter-disc shared by `door.render()` and `W_SWING_OBSTRUCTED`
-- `geometry/` band, intersect, joinery (the wall outline); `union.ts`/`clipper.ts` are test oracles only
+- `geometry.ts` `doorSwing` (the leaf's sector) shared by `door.render()` and `W_SWING_OBSTRUCTED`;
+  `sectorsObstruct` is the exact two-sector test (separating axes, no sampling)
+- `geometry/` band, intersect, joinery (the wall outline); `union.ts`/`clipper.ts` are test oracles only;
+  `arc.ts` decides an arc's radius check exactly, in `BigInt` on the 0.001 mm lattice, never on
+  `hypot`
 - `elements/fixtures-glyphs.ts` dispatch + the single-source `FIXTURE_FAMILIES`;
   `elements/glyph-lib.ts` shared drawing helpers (a helper moves here verbatim on its second
   caller); `elements/glyphs-*.ts` the art by domain; `fixtures-catalog.ts` the semantics
@@ -60,6 +64,19 @@ source (.arch)
   flat, read only via `solidFurniture()`)
 - `vocabulary.ts` room-label matching · `intent.ts` + `intent-concepts.ts` intent channel (shared
   with `eval/`)
+- `expr.ts` holds the evaluation step meter (`MAX_EVAL_STEPS`): one step per node evaluated, per
+  binding copied, per item compared, taken before the allocation it pays for; `ir.ts` stops the
+  resolution at the crossing with one `E_STEP_LIMIT`
+- `num-format.ts` also owns `MODEL_RANGE_MM` and `fmtSource` (prints a number so it re-parses to the same double);
+  `ir.ts` `checkNumberDomain` (elements' `bounds()` + `measures()`) and `checkDrawnSizes` (hatch tile,
+  pen) hold the resolved plan to the range once, after frames are carried; an element past it is
+  reported once and dropped
+- `draw-budget.ts` pre-render drawing estimate over every storey (`MAX_DRAW_UNITS`, each element's
+  `drawCost` + its `bounds()` points + the plan-wide passes); run by `compile()` only, and only when
+  no error is already present, so `describe()`/`lint()` never see it
+- `sheet.ts` `drawingBounds` + `renderSizes` are shared by `scene-build.ts` and the resolver (so a
+  size is checked on the drawing that is drawn); `scene-build.ts` `planTheme()` is the one theme
+  cascade shared by the drawing and the pipeline's `lineWeight` check
 - `site.ts` compass/facing (`windowFacingPage` probes the window's own wall) · `vertical.ts`
   stair/elevator/escalator semantics and the shaft graph · `datum.ts` heights
 - `sheet.ts`, `axes.ts`, `sheet-tables.ts` paper, axis grid, margin tables
@@ -78,6 +95,12 @@ source (.arch)
   element's own `resolve()` fix text and Plan JSON's decompiler
 - `analyze/symmetry.ts` a plan's D4 ⋉ Z² stabiliser and its repeats · `analyze/syntax.ts`
   space-syntax depths/RA/RRA/integration on the access graph — both opt-in `describe --facts`
+- `analyze/circulation.ts` the walking model on a nav grid. A door's width lives only on the cells
+  its carve opened; routes start, and rooms are reached, on the room's floor (the cells walkable
+  before any carve). A storey with no front door is seeded at the arrival head of each arriving
+  run; whether a landing exists is decided on the plan's geometry (`landingProbe`), not on cells.
+  `vertical.ts` `arrivalRuns`: a run's neighbouring stop is an arrival side when it is reachable
+  with that storey removed
 - `while-deprecation.ts` the `W_WHILE_DEPRECATED`/`W_REASSIGN_DEPRECATED` advisory warnings ·
   `while-fix.ts` the proven `while`→`for` rewrite `arch fix` offers, kept out of `compile()`
   itself on purpose (see its header) · `reroll.ts` the proven re-roll of a run in arithmetic
@@ -87,6 +110,13 @@ source (.arch)
 - `pipeline.ts` the ONE `compileUncached()` (parse→link→resolve→render), extracted verbatim from
   `index.ts` so `compile()`'s memo-cache wrapper and `reroll.ts`'s twin-compile proof obligation
   call the same function and can never drift apart
+
+- `scripts/engine-digests.ts` (`npm run digest:engines`) cross-engine determinism measurement;
+  `eval/stats.ts` Wilson intervals, used by live reports only
+- Test harness modules importable without vitest, so an older `src/` can be measured with the same
+  body: `test/byte-identity-payload.ts` (the payload builders, also shipped into browsers by the
+  engine script), `test/byte-identity-digest.ts` (hashes them), `test/recovery-metric.ts` (parser
+  recovery survival), `test/shaft-equivariance-models.ts` (multi-storey buildings placed in a D4 frame)
 
 ## Layout
 

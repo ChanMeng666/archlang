@@ -6,8 +6,17 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 ## Core
 
 - **Door `hinge left/right` is relative to the wall's traversal direction**, not the screen, so it
-  flips with the order of a wall's points. The swing quarter-disc is `doorSwing` in `geometry.ts`,
+  flips with the order of a wall's points. The leaf's sector is `doorSwing` in `geometry.ts`,
   shared by `door.render()` and `W_SWING_OBSTRUCTED` — keep both on that one helper.
+- **`E_DRAWING_LIMIT` exists only in `compile()`, and only when no other error is present**
+  (`src/pipeline.ts`). `describe()`/`lint()` never report it, and a catalogue fence wrapped as a
+  fragment shows only `E_PARSE`. `toScene(resolve(ast).ir)` bypasses the drawing budget; `compile()`
+  is the guarded route.
+- **`describe()`/`lint()` stop at any resolve error** (`resolvePlan` in `src/analyze.ts` returns no
+  IR), so a huge-magnitude test never reaches the analysis grids. Pin a new grid bound with an
+  in-range test.
+- **Circulation seeds**: the front-door and shaft-landing seeds keep their stamp of the connector's
+  width on purpose; changing them changes their seed value. Carve far seeds are not stamped.
 - **A diagnostic's `span` may point into an imported module**; `Diagnostic.file` then names it and
   `applyFixes` skips any fix carrying `file`. Any new consumer of `diagnostics[].fixes` must honour
   `file`, or it splices a module's byte offsets into the importer.
@@ -59,6 +68,10 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   and gate on a marker only the new build has, never a status code.
 
 ## Tooling & process
+
+- **`npx vitest run --maxWorkers=N` errors in this repo unless `--minWorkers=1` is also given.**
+- **Under heavy machine load the visual, sheet and roof tests can time out.** Rerun the file alone
+  before suspecting the code.
 
 - **(Typecheck) A file's compiler options come from the program compiling it.** A root test that
   imports a workspace module pulls it into the root program (`noUncheckedIndexedAccess` on), and
