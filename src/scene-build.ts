@@ -10,7 +10,7 @@
  */
 
 import type { CompileOptions } from "./types.js";
-import type { ResolvedPlan, ROutdoor, RRoom, RDim, RFurniture } from "./ir.js";
+import type { ResolvedPlan, ROutdoor, RRoom, RDim, RFurniture, RVoid } from "./ir.js";
 import type { RenderCtx, Registry, Runtime } from "./registry.js";
 import { BUILTIN_RUNTIME } from "./registry.js";
 import type { RenderSizes, Scene, SceneNode, SceneSheet } from "./scene.js";
@@ -661,7 +661,11 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   // drawn. `RenderCtx.openingsVoided` stays, and stays true, because the interface is
   // append-only and a hand-built `RenderCtx` must keep its safe opaque default.
   // `floorAt` reads each room's own ring (`pointInRoomBox`), as `thicknessSideFlipped` does.
-  const floorBoxes = ir.elements.filter((el): el is RRoom => el.kind === "room").map(roomBox);
+  // A `void` (a stair well, a double-height space) counts too: it has no floor on THIS
+  // storey, but it is inside the building, so a window onto one does not look outside.
+  const floorBoxes = ir.elements
+    .filter((el): el is RRoom | RVoid => el.kind === "room" || el.kind === "void")
+    .map(roomBox);
   const floorAt = (p: Point): boolean => floorBoxes.some((r) => pointInRoomBox(p, r));
   const baseCtx: RenderCtx = { theme, sizes, bounds: b, fmt: fmtMm, openingsVoided: true, floorAt };
   const ctxFor = (kind: string): RenderCtx => {

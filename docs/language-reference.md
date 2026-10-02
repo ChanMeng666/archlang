@@ -1276,10 +1276,11 @@ window [id=<id>] on <wall> at <pos> width <mm>
 An opening drawn the way a window block is: both wall faces carried across it,
 **double glazing** (two panes centred in the wall, a quarter of its thickness apart),
 and a **sill** standing proud of the exterior face. Which face is exterior is read off
-the plan, never guessed: one wall thickness off each face, the side with no room floor
-is outside — the same probe a `garage` door makes to find its floor side. A window with
-floor on both faces (an interior window) or on neither (a free-standing wall) has no
-outside and draws no sill. The `on <wall> at <pos>` attachment form works exactly as
+the plan, never guessed: one wall thickness off the wall's centreline on each side (half
+a thickness clear of each face), the side with no room floor — and no `void`, which is
+inside the building too — is outside: the same probe a `garage` door makes to find its
+floor side. A window with the inside on both sides (an interior window, or one onto a
+void) or on neither (a free-standing wall) has no outside and draws no sill. The `on <wall> at <pos>` attachment form works exactly as
 for doors.
 
 ### Opening (v1.3)

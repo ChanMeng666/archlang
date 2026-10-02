@@ -214,4 +214,31 @@ vDescribe("window drawing: double glazing, and a sill only on the probed exterio
       expect(nodes.map((n) => n.prim.t)).toEqual(["polygon", "line", "line", "line", "line"]);
     }
   });
+
+  it("counts a `void` as INSIDE: no sill into a stair well, a sill outside a double-height space", () => {
+    // Room | partition | void: a void has no floor on this storey, but it is not outside —
+    // a sill projecting into the stair well would be a window looking out of the building.
+    const ontoVoid = `plan "well" {
+  units mm
+  wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+  wall id=mid partition thickness 200 { (4000,0) (4000,6000) }
+  room id=r at (0,0) size 4000x6000 label "Room"
+  void at (4000,0) size 4000x6000
+  window id=w at (4000,3000) width 1200 wall mid
+}`;
+    expect(sillPts(nodesOf(ontoVoid, "w"))).toBeNull();
+    // A double-height space against the shell: inside on the void side, nothing on the
+    // other, so the sill goes on the OUTSIDE face (y < -100) — not nowhere, as it would if
+    // the void read as outside too.
+    const doubleHeight = `plan "atrium" {
+  units mm
+  wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+  void at (0,0) size 8000x3000
+  room id=r at (0,3000) size 8000x3000 label "Gallery"
+  window id=w at (4000,0) width 1200 wall shell
+}`;
+    const pts = sillPts(nodesOf(doubleHeight, "w"));
+    expect(pts).not.toBeNull();
+    for (const p of pts!) expect(p.y).toBeLessThanOrEqual(-100);
+  });
 });

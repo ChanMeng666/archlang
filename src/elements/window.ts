@@ -31,12 +31,14 @@ const SILL_HORN = 0.2;
  * The unit normal pointing OUT of the building at a window, or `null` when the plan does
  * not say which way that is.
  *
- * Outside is the face with no floor on it, found by the probe `windowFacingPage`
- * (`src/site.ts`) and a garage door's panel side make: one wall thickness off each face —
- * which clears the solid, so a hit is floor and not wall — asked of every room's own shape.
- * Never a bounding box or a centroid, which name the wrong face on a courtyard or an L.
+ * Outside is the side with no floor on it, found by the probe `windowFacingPage`
+ * (`src/site.ts`) and a garage door's panel side make: one wall thickness off the wall's
+ * CENTRELINE on each side — half a thickness clear of each face, so a hit is floor and not
+ * wall — asked of every room's own shape (and every `void`'s, which is inside the building
+ * though it has no floor on this storey). Never a bounding box or a centroid, which name
+ * the wrong face on a courtyard or an L.
  *
- * Floor on BOTH faces is an interior window and on NEITHER a free-standing wall: neither
+ * Inside on BOTH sides is an interior window and on NEITHER a free-standing wall: neither
  * has an outside, so neither gets a sill. Nor does a window drawn by a caller that cannot
  * answer the question (`RenderCtx.floorAt` absent).
  */
@@ -126,11 +128,23 @@ export const windowEl: ElementDef = {
     return { kind: "window", id, at, width, host, ...heights(host), span: n.span };
   },
 
+  // Empty on purpose: the sill stands only 0.2t proud of the wall face, which the page margin
+  // already absorbs, and widening the bounds would move every page viewBox and sheet fit.
   bounds: () => [],
-  /** Its centre and width (see `door.measures`). */
+  /**
+   * Its centre and width (see `door.measures`), plus how far it DRAWS from them — the wall
+   * faces at t/2 and the sill nose at t/2 + `SILL_PROJECTION`·t off the centreline, the
+   * horns `SILL_HORN`·t past each jamb — so the modelling-range check covers every drawn
+   * coordinate. `along + across` bounds any drawn point's offset from `at` on each axis at
+   * any wall angle. (The cover's pen-width overhang is a pen, held by `checkDrawnSizes`.)
+   */
   measures(resolved): number[] {
     const w = resolved as RWindow;
-    return [w.at.x, w.at.y, w.width];
+    const t = w.host?.thickness ?? 0;
+    const across = t / 2 + SILL_PROJECTION * t;
+    const along = w.width / 2 + SILL_HORN * t;
+    const r = along + across;
+    return [w.at.x, w.at.y, w.width, across, along, w.at.x - r, w.at.x + r, w.at.y - r, w.at.y + r];
   },
 
   /** At most 6 primitives (the drawing budget, `MAX_DRAW_UNITS`): the opening cover, the two wall-face lines, the two glazing lines and the exterior sill. */
