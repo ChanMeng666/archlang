@@ -32,9 +32,10 @@
  * A per-family `chiral` flag was considered and rejected for the reason a `sofa_l_r`
  * *category* was rejected: it puts the fix in a table that every future handed symbol has
  * to be remembered in. It is also not expressible there. Five of the shipped families
- * (`counter`, `fridge`, `upper_cabinet`, `hedge`, `motorcycle`) are handed at some
+ * (`counter`, `fridge`, `upper_cabinet`, `bicycle`, `motorcycle`) are handed at some
  * footprints and symmetric at others, because their detail is tiled and the tile COUNT
- * comes from the aspect ratio — a single flag is simply the wrong shape for that fact.
+ * comes from the aspect ratio, or is drawn along the footprint's own long axis — a single
+ * flag is simply the wrong shape for that fact (`test/handedness-grid-baseline.ts`).
  *
  * So {@link mirrorGlyph} asks the drawing instead: reflect the marks, and keep the
  * reflection only if it is a different drawing. A symbol with a vertical mirror axis
@@ -43,11 +44,19 @@
  * footprints is enumerated by `test/glyph-chirality.test.ts`, as a record of the survey rather
  * than as the mechanism — a redraw can move a family in or out of that list.
  *
- * "A different drawing" is measured at the finest precision any backend serializes —
- * {@link fmt4}, the DXF formatter — so "symmetric" means exactly "would emit the same
- * bytes", and there is no tolerance constant of this module's own invention. Float noise
- * from the glyph layer's own `cos`/`sin` sits seven orders below that quantum, which is
- * why an EXACT comparison would call 63 of the 83 families handed and be useless.
+ * "A different drawing" is measured at the finest precision any backend serializes — the
+ * 0.0001 mm of {@link fmt4}, the DXF formatter — read through {@link keyNum}, which first
+ * nudges every value down by {@link TIE_NUDGE} (1e-7 mm). The nudge is not a tolerance on
+ * the drawing; it moves the ROUNDING BOUNDARY off the decimal ties. Integer millimetres times
+ * the glyphs' three-decimal fractions land exactly on `x.xxxx5` (a sink's drain at 630.13125,
+ * a drawer front at 1474.00375), and there a mark and its mirror partner — computed along
+ * different paths, a few ulps apart — rounded to opposite sides, so a symmetric symbol read as
+ * handed at some footprints and positions and flipped `describe --facts symmetry`. Shifted by
+ * 1e-7 (far above an ulp of any modelled coordinate, far below any real handed detail), both
+ * round the same way; a value would have to sit within an ulp of `x.xxxx5 + 1e-7` to straddle
+ * the new boundary, which no fraction-of-the-footprint arithmetic produces. Float noise from
+ * the glyph layer's own `cos`/`sin` sits seven orders below the quantum, which is why an EXACT
+ * comparison would call 63 of the 83 families handed and be useless.
  *
  * Pure and deterministic: no clock, no randomness, no trig.
  */
@@ -125,7 +134,13 @@ function nodeKey(n: SceneNode): string {
   return `${n.layer}|${n.layerName ?? ""}|${p}|${n.lineWeight ?? ""}|${n.lineType ?? ""}|${primKey(n.prim)}`;
 }
 
-const pt = (p: Point): string => `${fmt4(p.x)},${fmt4(p.y)}`;
+/** How far every keyed number is moved off the `x.xxxx5` rounding ties first — see the header. */
+const TIE_NUDGE = 1e-7;
+
+/** A number as the handedness key reads it: {@link fmt4} after the {@link TIE_NUDGE}. */
+const keyNum = (v: number): string => fmt4(v - TIE_NUDGE);
+
+const pt = (p: Point): string => `${keyNum(p.x)},${keyNum(p.y)}`;
 
 /** The lexicographically smallest spelling of a closed ring — over every start point and
  *  both directions of travel, which is what makes it invariant under a reflection. */
@@ -149,15 +164,15 @@ function primKey(prim: ScenePrim): string {
     case "line":
       return `line ${[pt(prim.a), pt(prim.b)].sort().join(" ")}`;
     case "circle":
-      return `circle ${pt(prim.center)} ${fmt4(prim.r)}`;
+      return `circle ${pt(prim.center)} ${keyNum(prim.r)}`;
     // The same curve traced the other way round: normalise to `sweep 0` by swapping the
     // endpoints, which is exactly what a reflection does to an arc.
     case "arc": {
       const ends = prim.sweep === 0 ? [prim.start, prim.end] : [prim.end, prim.start];
-      return `arc ${pt(prim.center)} ${fmt4(prim.r)} ${ends.map(pt).join(" ")}`;
+      return `arc ${pt(prim.center)} ${keyNum(prim.r)} ${ends.map(pt).join(" ")}`;
     }
     case "text":
-      return `text ${pt(prim.at)} ${fmt4(prim.size)} ${prim.anchor} ${prim.rotate ?? 0} ${prim.value}`;
+      return `text ${pt(prim.at)} ${keyNum(prim.size)} ${prim.anchor} ${prim.rotate ?? 0} ${prim.value}`;
     case "region":
       return `region ${prim.loops.map(ringKey).sort().join(" | ")}`;
     // A path is a set of closed loops, and a reflection re-spells each one exactly as it does a
@@ -169,7 +184,7 @@ function primKey(prim: ScenePrim): string {
     case "path":
       return `path ${prim.loops.map(loopKey).sort().join(" | ")}`;
     case "hatch":
-      return `hatch ${prim.material} ${fmt4(prim.scale)} ${fmt4(prim.angle)} ${prim.region.map(ringKey).sort().join(" | ")}`;
+      return `hatch ${prim.material} ${keyNum(prim.scale)} ${keyNum(prim.angle)} ${prim.region.map(ringKey).sort().join(" | ")}`;
   }
 }
 
@@ -189,7 +204,7 @@ function loopKey(lp: PathLoop): string {
   const n = lp.edges.length;
   const verts = [lp.start, ...lp.edges.map((e) => e.to)];
   const tail = (e: PathEdge, flip: boolean): string =>
-    e.t === "line" ? "l" : `a${pt(e.center)}r${fmt4(e.r)}s${flip ? 1 - e.sweep : e.sweep}`;
+    e.t === "line" ? "l" : `a${pt(e.center)}r${keyNum(e.r)}s${flip ? 1 - e.sweep : e.sweep}`;
   const fwd: string[] = [];
   const rev: string[] = [];
   for (let i = 0; i < n; i++) fwd.push(`${pt(verts[i]!)}${tail(lp.edges[i]!, false)}`);

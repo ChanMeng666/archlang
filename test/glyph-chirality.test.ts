@@ -26,7 +26,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { compile } from "../src/index.js";
+import { compile, describe as describeSource } from "../src/index.js";
 import { CANONICAL_FIXTURES, fixtureGlyph } from "../src/elements/fixtures-glyphs.js";
 import { marksEqual, mirrorNode } from "../src/elements/glyph-chirality.js";
 import { defaultFootprint, fixtureSpec } from "../src/fixtures-catalog.js";
@@ -38,7 +38,8 @@ import { toScene } from "../src/scene-build.js";
 import type { RenderSizes, SceneNode } from "../src/scene.js";
 import { mapSceneNode } from "../src/elements/glyph-lib.js";
 import { pathExtentPoints } from "./glyph-extent.js";
-import { SURVEY_FOOTPRINTS, SURVEY_OFFSETS, surveyHandedness } from "./handedness-survey.js";
+import { GRID_ON_MAIN } from "./handedness-grid-baseline.js";
+import { GRID_SIDES, SURVEY_FOOTPRINTS, SURVEY_OFFSETS, surveyGrid, surveyHandedness } from "./handedness-survey.js";
 
 /** Real pen sizes, taken from a real scene rather than invented — as the glyph suites do. */
 const SIZES: RenderSizes = toScene(
@@ -337,8 +338,11 @@ describe("the handedness survey", () => {
  * The EXTENDED handedness survey, pinned against `main`.
  *
  * Measured on `main` @ 22bce44 (v1.38.0 + agent docs) — the checkout every visual-polish branch
- * forks from — with `npx tsx test/handedness-survey.ts D:/github_repository/archlang`, which
- * runs `analyze/symmetry.ts`'s own predicate (`marksEqual` against the glyph's mirror image, at
+ * forks from — with `npx tsx test/handedness-survey.ts <a git archive of it>`, and re-measured
+ * there with the TIE-ROBUST key this branch ships (that extract with only `glyph-chirality.ts`'s
+ * key changed: `fmt4` after a 1e-7 mm nudge off the `x.xxxx5` rounding ties), so main and the
+ * tip are read by the same instrument; on main the table came out identical to the first
+ * measurement, cell for cell. The survey runs `analyze/symmetry.ts`'s own predicate (`marksEqual` against the glyph's mirror image, at
  * unit pens, the rect placed at `cx − w/2`) over every family x seven footprints x three
  * absolute positions. A row is `SURVEY_FOOTPRINTS` in order — catalogue, square, portrait 1:3,
  * landscape 3:1, 640, 777, 555x900 — each as three characters for `at (0,0)`, `(100,100)`,
@@ -522,6 +526,99 @@ describe("the extended handedness survey, pinned against main", () => {
     };
     expect(HANDED_ON_MAIN.sofa).not.toContain("H");
     expect(surveyHandedness(planted).sofa).not.toContain(".");
+  });
+});
+
+/**
+ * The 19 x 19 handedness GRID, pinned against `main` ({@link GRID_ON_MAIN}).
+ *
+ * The 7-footprint survey above samples too few sizes to see a rounding TIE: integer millimetres
+ * times a glyph's three-decimal fraction land exactly on `x.xxxx5` (the sink's drain at 630.13125
+ * on 1800 x 555), and before the handedness key was made tie-robust such a mark and its mirror
+ * partner rounded to opposite sides, so `kitchen_sink`, `dresser` and `car` read as handed at
+ * grid cells where main was symmetric — and `describe --facts symmetry` lost an axis for a plan
+ * with a twin pair at mirrored positions (the test at the foot of this block). Every family, every
+ * footprint in `GRID_SIDES` squared, at the three offsets: about ten seconds.
+ */
+describe("the handedness grid, pinned against main", () => {
+  const api = { CANONICAL_FIXTURES, fixtureGlyph, marksEqual, mirrorNode, defaultFootprint, DEFAULT_THEME };
+  const cells = SURVEY_OFFSETS.length * GRID_SIDES.length * GRID_SIDES.length;
+  const bits = (v: "all" | "none" | readonly string[]): string =>
+    v === "all" ? "H".repeat(cells) : v === "none" ? ".".repeat(cells) : v.join("");
+  /** `family @ WxH at (o,o)` for every cell where `now` is handed and main was not, and vice versa. */
+  const compare = (now: Record<string, "all" | "none" | readonly string[]>) => {
+    const gained: string[] = [];
+    const lost = new Set<string>();
+    for (const c of CANONICAL_FIXTURES) {
+      const was = bits(GRID_ON_MAIN[c]!);
+      const is = bits(now[c]!);
+      for (let i = 0; i < cells; i++) {
+        const o = SURVEY_OFFSETS[Math.floor(i / GRID_SIDES.length ** 2)];
+        const w = GRID_SIDES[Math.floor(i / GRID_SIDES.length) % GRID_SIDES.length];
+        const h = GRID_SIDES[i % GRID_SIDES.length];
+        if (was[i] === "." && is[i] === "H") gained.push(`${c} @ ${w}x${h} at ${o}`);
+        if (was[i] === "H" && is[i] === ".") lost.add(c);
+      }
+    }
+    return { gained, lost: [...lost].sort() };
+  };
+
+  it("covers every family, and every partial entry is a full grid", () => {
+    expect(Object.keys(GRID_ON_MAIN)).toEqual([...CANONICAL_FIXTURES]);
+    for (const [c, v] of Object.entries(GRID_ON_MAIN)) expect(bits(v), c).toHaveLength(cells);
+  });
+
+  it("no family GAINS handedness at any grid cell where main was symmetric; losses are the listed ones", () => {
+    const { gained, lost } = compare(surveyGrid(api));
+    expect(gained, "a symmetric family became HANDED — never allowed").toEqual([]);
+    expect(lost).toEqual(Object.keys(LOST_HANDEDNESS).sort());
+  }, 60_000);
+
+  it("is not vacuous: a mark off by a hundredth of a millimetre on one side is seen as a gain", () => {
+    // A mirror partner one-hundredth of a millimetre out — the shape a rounding tie used to
+    // produce, made large enough that no key can absorb it — on the sink alone.
+    const planted = {
+      ...api,
+      CANONICAL_FIXTURES: ["kitchen_sink"],
+      fixtureGlyph: (...args: Parameters<typeof fixtureGlyph>) => {
+        const nodes = fixtureGlyph(...args);
+        if (!nodes) return nodes;
+        const r = args[1];
+        return [
+          ...nodes,
+          {
+            ...nodes[0]!,
+            prim: { t: "circle" as const, center: { x: r.x + r.w * 0.25 + 0.01, y: r.y + r.h / 2 }, r: 1 },
+          },
+          { ...nodes[0]!, prim: { t: "circle" as const, center: { x: r.x + r.w * 0.75, y: r.y + r.h / 2 }, r: 1 } },
+        ];
+      },
+    };
+    const now = surveyGrid(planted);
+    expect(bits(now.kitchen_sink!)).not.toContain(".");
+  });
+
+  it("a twin pair at mirrored positions keeps its mirror axis (the tie cases, end to end)", () => {
+    const plan = (c: string, w: number, h: number, a: number, b: number, y: number): string =>
+      [
+        'plan "R" {',
+        "  units mm",
+        '  room id=a at (0,0) size 4000x3000 label "A"',
+        '  room id=b at (4000,0) size 4000x3000 label "B"',
+        `  furniture ${c} at (${a},${y}) size ${w}x${h}`,
+        `  furniture ${c} at (${b},${y}) size ${w}x${h}`,
+        "}",
+      ].join("\n");
+    const full = (src: string) => describeSource(src, { facts: ["symmetry"] }).symmetry?.layers.full;
+    for (const src of [
+      plan("kitchen_sink", 1800, 555, 1000, 5200, 1000),
+      plan("dresser", 1800, 555, 1000, 5200, 1000),
+      plan("car", 555, 1000, 0, 7445, 0),
+      plan("car", 555, 1000, 100, 7345, 100),
+      plan("car", 555, 1000, 1000, 6445, 1000),
+    ]) {
+      expect(full(src), src).toMatchObject({ group: "D1", axis: "x" });
+    }
   });
 });
 

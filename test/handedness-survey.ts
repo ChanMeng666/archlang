@@ -13,7 +13,8 @@
  * No runtime imports — every function it needs is handed in as {@link HandednessApi} — so the
  * same body measures any checkout. To re-measure (prints the table literal):
  *
- *     npx tsx test/handedness-survey.ts <checkout-root>
+ *     npx tsx test/handedness-survey.ts <checkout-root>          # the 7-footprint survey
+ *     npx tsx test/handedness-survey.ts <checkout-root> --grid   # the 19 x 19 grid
  */
 
 import type { SceneNode } from "../src/scene.js";
@@ -93,6 +94,50 @@ export function surveyHandedness(api: HandednessApi): Record<string, string> {
   return out;
 }
 
+/**
+ * The footprint sides of the GRID sweep: every width x every depth, 19 x 19. Round sizes, the
+ * odd ones the 7-footprint survey uses (333, 555, 777, 1111), and the catalogue's range up to
+ * 3 m. The odd sides are the point: integer millimetres times a glyph's three-decimal fraction
+ * land on the `x.xxxx5` rounding ties the handedness key has to survive (`glyph-chirality.ts`).
+ */
+export const GRID_SIDES: readonly number[] = [
+  300, 333, 400, 450, 500, 555, 600, 700, 777, 800, 900, 1000, 1111, 1200, 1500, 1800, 2000, 2400, 3000,
+];
+
+/**
+ * The grid sweep, one entry per family: for each offset in {@link SURVEY_OFFSETS} order, one row
+ * per width in {@link GRID_SIDES} order, one character per depth in the same order — `H` handed,
+ * `.` not — collapsed to `"all"` / `"none"` when every cell agrees. The predicate is
+ * {@link surveyHandedness}'s, cell for cell.
+ */
+export function surveyGrid(api: HandednessApi): Record<string, "all" | "none" | readonly string[]> {
+  const out: Record<string, "all" | "none" | readonly string[]> = {};
+  for (const c of api.CANONICAL_FIXTURES) {
+    const rows: string[] = [];
+    for (const o of SURVEY_OFFSETS) {
+      for (const w of GRID_SIDES) {
+        let row = "";
+        for (const h of GRID_SIDES) {
+          const cx = o + w / 2;
+          const cy = o + h / 2;
+          const nodes = api.fixtureGlyph(c, { x: cx - w / 2, y: cy - h / 2, w, h }, api.DEFAULT_THEME, HAND_SIZES);
+          const handed =
+            nodes !== null &&
+            !api.marksEqual(
+              nodes,
+              nodes.map((n) => api.mirrorNode(n, cx)),
+            );
+          row += handed ? "H" : ".";
+        }
+        rows.push(row);
+      }
+    }
+    const all = rows.join("");
+    out[c] = /^H+$/.test(all) ? "all" : /^\.+$/.test(all) ? "none" : rows;
+  }
+  return out;
+}
+
 // The re-measuring entry point. Guarded so importing this module (as the test does) runs nothing.
 if (typeof process !== "undefined" && /handedness-survey\.ts$/.test(process.argv[1] ?? "")) {
   const { resolve } = await import("node:path");
@@ -105,13 +150,20 @@ if (typeof process !== "undefined" && /handedness-survey\.ts$/.test(process.argv
     import(/* @vite-ignore */ url("src/fixtures-catalog.ts")),
     import(/* @vite-ignore */ url("src/theme.ts")),
   ]);
-  const table = surveyHandedness({
+  const api: HandednessApi = {
     CANONICAL_FIXTURES: glyphs.CANONICAL_FIXTURES,
     fixtureGlyph: glyphs.fixtureGlyph,
     marksEqual: chirality.marksEqual,
     mirrorNode: chirality.mirrorNode,
     defaultFootprint: catalog.defaultFootprint,
     DEFAULT_THEME: theme.DEFAULT_THEME,
-  });
-  for (const [c, row] of Object.entries(table)) console.log(`  ${c}: "${row}",`);
+  };
+  if (process.argv.includes("--grid")) {
+    for (const [c, v] of Object.entries(surveyGrid(api))) {
+      if (typeof v === "string") console.log(`  ${c}: "${v}",`);
+      else console.log(`  ${c}: [\n${v.map((r) => `    "${r}",`).join("\n")}\n  ],`);
+    }
+  } else {
+    for (const [c, row] of Object.entries(surveyHandedness(api))) console.log(`  ${c}: "${row}",`);
+  }
 }
