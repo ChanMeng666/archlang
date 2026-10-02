@@ -1843,7 +1843,9 @@ plan statement.
 | `post` | one line, sparsely posted |
 
 The post pitch is derived per segment from that segment's own length and clamped, so two
-identical fences draw identically wherever they sit on the sheet.
+identical fences draw identically wherever they sit on the sheet. Where two runs meet, a
+`panel`'s double line is mitred and the corner gets ONE post tick along the bisector, rather
+than two crossing ones.
 
 **A fence is not a thin wall.** It has no thickness and no poché, it **hosts no opening**
 (`door on <fence>` finds no such wall, because a fence is not in the wall list at all), it
