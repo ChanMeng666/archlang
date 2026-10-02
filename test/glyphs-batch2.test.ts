@@ -118,7 +118,7 @@ const CASES: readonly (readonly [string, Rect, number])[] = [
   ["rug", { x: 1000, y: 1000, w: 2000, h: 1400 }, 16], // 2 borders + 7 fringe ticks per end
   ["sofa_l", { x: 1000, y: 1000, w: 2600, h: 1600 }, 6], // body + 2 backrests + 2 + 1 cushions
   ["piano", { x: 1000, y: 1000, w: 1500, h: 1400 }, 7], // body + keyboard + 4 key ticks + lid
-  ["sun_lounger", { x: 1000, y: 1000, w: 700, h: 1900 }, 8], // body + backrest + 6 slats
+  ["sun_lounger", { x: 1000, y: 1000, w: 700, h: 1900 }, 5], // frame + 3 cushion panels + headrest
 ];
 
 const ALL_NAMES = ["rug", "carpet", "sofa_l", "corner_sofa", "piano", "grand_piano", "sun_lounger", "lounger"];
