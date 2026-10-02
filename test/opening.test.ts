@@ -237,8 +237,10 @@ describe("interior doorway rendering — the same white-band fix", () => {
     expect(cover.paint.fill).toBe("none");
     const pts = cover.prim.t === "polygon" ? cover.prim.pts : [];
     expect([...new Set(pts.map((p) => p.x))].sort((a, b) => a - b)).toEqual([3950, 4050]);
-    // The leaf + swing arc are untouched by this fix.
+    // The leaf + swing arc are untouched by this fix: one stroked leaf slab (the cover is
+    // the door's only UNSTROKED polygon) and one arc, and no loose line.
     expect(on(s, "doors").filter((n) => n.prim.t === "arc")).toHaveLength(1);
-    expect(on(s, "doors").filter((n) => n.prim.t === "line")).toHaveLength(1);
+    expect(on(s, "doors").filter((n) => n.prim.t === "polygon" && n.paint.stroke)).toHaveLength(1);
+    expect(on(s, "doors").filter((n) => n.prim.t === "line")).toHaveLength(0);
   });
 });

@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the plan symbols, doors, windows and ground are redrawn
+
+Drawings only: `describe()`, `lint()` and `compile().diagnostics` are byte-identical over every
+shipped example and test fixture, and every `SEMANTIC_BASELINE` is unchanged. Walls, rooms,
+dimensions, axes and the sheet chrome do not move a byte, and no room label moves.
+
+- **One visual hierarchy.** A symbol's OUTLINE is the thin pen in a derived symbol ink —
+  `furnitureStroke` mixed 3/7 toward the wall ink (`#6c6864` on the default theme, 5.29:1 on the
+  room fill), so it follows every theme and a `style furniture { stroke … }` override; its DETAIL
+  is the extra-thin pen, now 13/18 of the thin pen — the ISO 128 0.13 mm hairline on a sheet (was
+  0.55 ×, about 0.1 mm), which also thins the sheet tables' hairlines. Curves are true arcs
+  (four-centre ovals, rounded corners) rather than polygons. Stairs, lifts and escalators take
+  the outline ink.
+- **Doors.** A hinged leaf is a slab about 40 mm thick (at most 6% of the width) inside the swing
+  sector, and the swing arc is solid at the extra-thin pen. A dash now always means above the cut
+  plane or hidden: a barn door's track, a bifold's head track, a pocket's cavity and a garage
+  door's projection.
+- **Windows.** Double glazing — two panes centred on the wall — and a sill nose on the EXTERIOR
+  face, decided by probing one wall thickness off each face for room floor; no sill where both
+  or neither face has floor. A window's drawing cost is 4 → 6.
+- **Every fixture family redrawn** in that language: bath (an oval WC bowl under its cistern, a
+  tub with a deep tap deck and a round foot), kitchen and utility (a hob of two large and two small
+  burners, drainer boards beside the sink bowls, a range at aspect 1.6, a bar counter's stools),
+  bedroom (pillows, a turned-down duvet with one folded corner, a wardrobe's dashed hanging rail
+  and hangers), living (cushioned seating, dining chairs tucked under the table, a grand piano of
+  tangent arcs), office and misc (a desk's dashed pedestal, an office chair's dashed star base, a
+  car seen from above) and outdoor (scalloped tree, shrub and hedge canopies filled with the lawn
+  tint, a two-shelf barbecue). Primitive counts changed with them, so a plan close to the drawing
+  budget can reach `E_DRAWING_LIMIT` sooner.
+- **A rug draws under the furniture standing on it**, whatever order the statements are in: every
+  `underlay` fixture renders before the rest of the furniture. A plan with no underlay is
+  byte-identical.
+- **Ground.** The seven ground hatches are redrawn at the finest pen (turf tufts, mulch stipple,
+  staggered deck boards, a 600 mm paving grid, irregular gravel, gentle water); pattern ids and DXF
+  pattern names are unchanged. A ground material's legend swatch is framed on its pattern's own
+  marks; wall-material swatches and every plan surface are untouched. To frame it, the SVG
+  backend now honours a `hatch` primitive's `origin` and new `zoom`, which it used to ignore (no
+  shipped primitive set `origin` before); the DXF and PDF exports still ignore both. A `fence`'s
+  panel corners are mitred and every style posts one tick on a shared corner, along the
+  bisector; a turn sharper than about 139° keeps each run's square end. Where two railed edges of
+  a `balcony` meet, each inner rail now stops on the other's line instead of crossing it.
+- **`-f txt`:** a non-hinged door's panels no longer carve `·` rows into the text plan; the doorway
+  is read from the opening's cover alone, so every door kind prints the same (hinged doors, and
+  the ASCII goldens, are unchanged).
+- **Handedness lost, so symmetry can grow.** `shoe_cabinet`, `shrub`, `hedge` (its 3:1 run),
+  `bbq` and `bicycle` (stood on end) no longer have a handed detail, so a mirrored `place` of one
+  draws the same bytes as the unmirrored piece, and `describe --facts symmetry` can report MORE
+  symmetry for a plan that uses them. No family became handed: a pinned sweep of 19 × 19
+  footprints at three positions (`test/handedness-grid-baseline.ts`) finds no cell where a family
+  is handed and `main` was not.
+- **Handedness is read tie-robustly.** Whether a symbol has a mirror axis is still decided at the
+  0.0001 mm the DXF writes, but each coordinate is first nudged 1e-7 mm off the `x.xxxx5`
+  rounding ties. Integer millimetres times a three-decimal fraction land exactly on one, and a
+  mark and its mirror partner a few ulps apart could round to opposite sides — so the redrawn
+  `kitchen_sink`, `dresser` and `car` read as handed at some sizes and positions (a sink at
+  1800 × 555, a car at 555 × 1000), dropping a plan's mirror axis from `describe --facts
+  symmetry`. Over the shipped examples and fixtures nothing moves.
+
 ## [1.38.0] - 2026-10-02
 
 Robustness work on the numbers, the parser, the geometry predicates and multi-storey

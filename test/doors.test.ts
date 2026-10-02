@@ -40,6 +40,8 @@ import {
 } from "../src/index.js";
 import { doorSwing } from "../src/geometry.js";
 import { dashedPattern } from "../src/elements/glyph-lib.js";
+import { weightWidth } from "../src/scene.js";
+import type { SceneNode } from "../src/scene.js";
 import { DOOR_KINDS, DOOR_KIND_CLAUSES } from "../src/grammar/tokens.js";
 import type { RDoor } from "../src/ir.js";
 import { parse } from "../src/parser.js";
@@ -157,14 +159,30 @@ suite("doors — the four kind-independent invariants", () => {
   });
 
   it("the opening cover polygon is still emitted — the ASCII/DXF backends locate the doorway by it", () => {
-    const covers = (src: string): number =>
-      compile(src, { noCache: true }).scene!.nodes.filter((n) => n.layer === "doors" && n.prim.t === "polygon").length;
-    // Every kind emits the cover first, so the count never drops below the hinged one's.
-    const base = covers(hinged);
-    for (const k of DOOR_KINDS)
-      expect(covers(plan(`door id=d ${k} on mid at 50% width 900`)), k).toBeGreaterThanOrEqual(base);
+    // Every kind emits the cover FIRST, and it is the door's ONE unstroked polygon: a
+    // leaf slab, a panel and a projection are all polygons too, but drawn ink, stroked.
+    // (Pinned per door, by its annotate id, so the plan's front door cannot stand in.)
+    for (const k of DOOR_KINDS) {
+      const scene = compile(plan(`door id=d ${k} on mid at 50% width 900`), { annotate: true, noCache: true }).scene!;
+      const own = scene.nodes.filter((n) => n.elementId === "d");
+      expect(own[0]?.prim.t, k).toBe("polygon");
+      expect(own[0]?.paint.stroke, k).toBeUndefined();
+      expect(own.filter((n) => n.prim.t === "polygon" && n.paint.stroke === undefined).length, k).toBe(1);
+    }
     // And the doorway still reads in the zero-dep text plan.
     expect(renderAscii(compile(pocket, { annotate: true, noCache: true }).scene!).length).toBeGreaterThan(0);
+  });
+
+  it("the text plan draws the DOORWAY, never the leaf: every kind reads exactly as a hinged door does", () => {
+    // The ASCII backend carves an opening from its cover alone. Before it was keyed on the
+    // cover, it read EVERY doors-pass polygon as one — so a leaf slab standing open in the
+    // room, a barn panel outside the wall or a garage projection parked across the floor
+    // each carved a row of `·` through the plan. The doorway is kind-independent, so the
+    // text plan is too.
+    const txt = (k: string): string =>
+      renderAscii(compile(plan(`door id=d ${k} on mid at 50% width 900`), { annotate: true, noCache: true }).scene!);
+    const base = txt("hinged");
+    for (const k of DOOR_KINDS) expect(txt(k), k).toBe(base);
   });
 
   it("the walk-through landing rule still fires on a sliding door — only the SWING rule stops", () => {
@@ -499,6 +517,156 @@ suite("doors — every kind draws, within the shipped primitive budget", () => {
     // it would round-trip straight into `E_DOOR_KIND_CLAUSE`.
     expect(o.hinge).toBeUndefined();
     expect(o.swing).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 5b — the drawing language: a slab leaf, a solid swing, dashes only for the unseen
+// ---------------------------------------------------------------------------
+
+/**
+ * How a door is DRAWN, as CAD door blocks and ISO 128 practice draw one: the open leaf is a
+ * thin slab, not a line; the swing is a solid fine line; and a dash means above the cut
+ * plane or hidden, never "this is a door". The swing MODEL (`doorSwing`) is untouched, so
+ * every geometric fact below is asserted against it.
+ */
+suite("doors — the drawing language", () => {
+  /** A paper plan, so the pens are a known number of sheet millimetres × the scale. */
+  const sheet = (scale: number, door: string): string =>
+    [
+      'plan "Leaf" {',
+      "  units mm",
+      "  paper A3 landscape",
+      `  scale 1:${scale}`,
+      "  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }",
+      '  room id=r at (0,0) size 6000x4000 label "R"',
+      `  ${door}`,
+      "}",
+    ].join("\n");
+  const nodesOf = (src: string) => {
+    const r = compile(src, { annotate: true, noCache: true });
+    expect(r.errors.map((e) => e.message)).toEqual([]);
+    return { nodes: r.scene!.nodes.filter((n) => n.elementId === "d"), sizes: r.scene!.sizes };
+  };
+  const slabOf = (nodes: SceneNode[]): { x: number; y: number }[] => {
+    const slab = nodes.filter((n) => n.prim.t === "polygon" && n.paint.stroke !== undefined);
+    expect(slab).toHaveLength(1);
+    return (slab[0]!.prim as { pts: { x: number; y: number }[] }).pts;
+  };
+  const thickness = (pts: { x: number; y: number }[]): number =>
+    Math.hypot(pts[3]!.x - pts[0]!.x, pts[3]!.y - pts[0]!.y);
+
+  it("draws the open leaf as a slab lying INSIDE the swing's own sector, on every hand and face", () => {
+    // An ARC host is the weakest case: the leaf and its thickness are laid off the tangent
+    // at the doorway, so the heel and tip carry rounding the straight cases do not.
+    const onArc = [
+      'plan "Arc" {',
+      "  units mm",
+      "  wall id=w exterior thickness 200 { (0,0) arc (12000,0) radius 6000 (12000,-3000) (0,-3000) close }",
+      "  door id=d on w at 30% width 900 hinge left swing out",
+      "}",
+    ].join("\n");
+    const cases = [
+      plan("door id=d on mid at 50% width 900 hinge left swing in"),
+      plan("door id=d on mid at 50% width 900 hinge left swing out"),
+      plan("door id=d on mid at 50% width 900 hinge right swing in"),
+      plan("door id=d on mid at 50% width 900 hinge right swing out"),
+      plan("door id=d on mid at 30% width 700"),
+      onArc,
+    ];
+    // A point may sit this far (mm) outside the sector and still count as on it: the slab
+    // is built from `doorSwing`'s own points, so a corner ON a bounding radius is exact in
+    // real arithmetic and ~1e-13 mm off it in doubles on a curved host.
+    const EPS = 1e-6;
+    for (const src of cases) {
+      const c = src
+        .split("\n")
+        .find((l) => l.includes("door id=d"))!
+        .trim();
+      const s = doorSwing(doorsOf(src).find((x) => x.id === "d")!)!;
+      const { nodes } = nodesOf(src);
+      // cover, slab, arc — in that order.
+      expect(
+        nodes.map((n) => n.prim.t),
+        c,
+      ).toEqual(["polygon", "polygon", "arc"]);
+      const pts = slabOf(nodes);
+      // Its first edge IS the swing's open-leaf radius (the line the leaf used to be).
+      expect(pts[0], c).toEqual(s.hinge);
+      expect(pts[1], c).toEqual(s.leafEnd);
+      const cr = (u: { x: number; y: number }, v: { x: number; y: number }): number => u.x * v.y - u.y * v.x;
+      const rel = (p: { x: number; y: number }) => ({ x: p.x - s.hinge.x, y: p.y - s.hinge.y });
+      const open = rel(s.leafEnd);
+      const closed = rel(s.farJamb);
+      // Signed distance of `v` from the radius `edge`, positive toward the sector's inside.
+      const inside = (edge: { x: number; y: number }, other: { x: number; y: number }, v: { x: number; y: number }) =>
+        (cr(edge, v) / Math.hypot(edge.x, edge.y)) * Math.sign(cr(edge, other));
+      for (const p of pts) {
+        const v = rel(p);
+        // Within the radius (the tip corner is ON the swing circle) …
+        expect(Math.hypot(v.x, v.y), c).toBeLessThanOrEqual(s.radius + EPS);
+        // … and inside the quarter-disc's cone, between the open and the closed leaf.
+        expect(inside(open, closed, v), c).toBeGreaterThanOrEqual(-EPS);
+        expect(inside(closed, open, v), c).toBeGreaterThanOrEqual(-EPS);
+      }
+    }
+  });
+
+  it("is about 40 mm thick, never thinner than two leaf pens, never more than 6% of the door", () => {
+    // 1:50 — the thin pen is 0.18 × 50 = 9 mm, so two leaf pens (2 × 1.3 × 9 = 23.4) are
+    // under the 40 mm nominal, and 6% of 900 (54) is over it: 40.
+    const at50 = nodesOf(sheet(50, "door id=d on shell at 3000 width 900"));
+    expect(at50.sizes.thin).toBeCloseTo(9, 9);
+    expect(thickness(slabOf(at50.nodes))).toBeCloseTo(40, 9);
+    // 1:100 — the pen doubles, and 2 × 1.3 × 18 = 46.8 keeps a pen of white in the slab.
+    const at100 = nodesOf(sheet(100, "door id=d on shell at 3000 width 900"));
+    expect(thickness(slabOf(at100.nodes))).toBeCloseTo(46.8, 9);
+    // A 600 mm door caps at 6% of its width: 36, under the 40 nominal.
+    const narrow = nodesOf(sheet(50, "door id=d on shell at 3000 width 600"));
+    expect(thickness(slabOf(narrow.nodes))).toBeCloseTo(36, 9);
+  });
+
+  it("draws the swing SOLID, at the extra-thin pen the ramp names, in the leaf colour", () => {
+    const r = compile(plan("door id=d on mid at 50% width 900"), { annotate: true, noCache: true });
+    const arc = r.scene!.nodes.find((n) => n.elementId === "d" && n.prim.t === "arc")!;
+    expect(arc.paint.dash).toBeUndefined();
+    expect(arc.lineType).toBeUndefined();
+    expect(arc.lineWeight).toBe("extraThin");
+    // The PDF serializer reads `paint.width` and nothing else, so it must be the number
+    // the named weight resolves to.
+    expect(arc.paint.width).toBe(weightWidth("extraThin", r.scene!.sizes));
+    expect(arc.paint.stroke).toBe(r.scene!.theme.doorLeaf);
+  });
+
+  it("dashes only what is above the cut plane or hidden — and always by NAME", () => {
+    // hinged: the swing is at floor level. sliding: the panels and tracks are visible.
+    // barn: the top-hung track. bifold: the head track. pocket: the two cavity lines inside
+    // the wall. garage: the overhead projection.
+    const expected: Record<string, number> = { hinged: 0, sliding: 0, barn: 1, bifold: 1, pocket: 2, garage: 1 };
+    for (const k of DOOR_KINDS) {
+      const { nodes, sizes } = nodesOf(plan(`door id=d ${k} on mid at 50% width 900`));
+      const dashed = nodes.filter((n) => n.paint.dash !== undefined || n.lineType !== undefined);
+      expect(dashed.length, k).toBe(expected[k]);
+      for (const n of dashed) {
+        // SVG follows the name, PDF the number, DXF the line type: all three must agree.
+        expect(n.lineType, k).toBe("dashed");
+        expect(n.paint.dash, k).toEqual(dashedPattern(sizes));
+      }
+    }
+  });
+
+  it("strokes every panel at the hinged leaf's pen", () => {
+    for (const k of DOOR_KINDS) {
+      const { nodes, sizes } = nodesOf(plan(`door id=d ${k} on mid at 50% width 900`));
+      const leaves = nodes.filter(
+        (n) => n.prim.t === "polygon" && n.paint.stroke !== undefined && n.lineType === undefined,
+      );
+      expect(leaves.length, k).toBeGreaterThan(0);
+      for (const n of leaves) {
+        expect(n.paint.width, k).toBeCloseTo(sizes.thin * 1.3, 9);
+        expect(n.paint.fill, k).not.toBe("none");
+      }
+    }
   });
 });
 

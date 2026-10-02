@@ -995,7 +995,7 @@ arc contributes its arc length `R·θ` — not its chord — so `at 50%` lands h
 wall *as walked*. An absolute `at (x,y)` is attributed to the curve by its distance to the
 arc itself. A door's leaf and swing are taken from the **tangent at the doorway**, so
 `hinge left|right` keeps its usual meaning (relative to the direction of travel along the
-wall, which on an arc is the direction the arc turns); a window's pane runs along that
+wall, which on an arc is the direction the arc turns); a window's panes run along that
 tangent with its jambs radial.
 
 **What a curve looks like.** The two visible faces are emitted as **true arcs** — SVG `A`
@@ -1106,7 +1106,10 @@ door [id=<id>] [<kind>] at (x,y) width <mm> [wall <ref>] [hinge left|right|near 
 door [id=<id>] [<kind>] on <wall> at <pos> width <mm> [hinge …] [swing …] [slide …] [open …]
 ```
 
-Drawn as an opening in the host wall plus a leaf and a quarter-circle swing arc.
+Drawn as an opening in the host wall, the open leaf as a thin **slab** (about 40 mm,
+never more than 6% of the door's width) standing at its hinge jamb, and the
+quarter-circle swing as a **solid** fine arc — on a plan a dash means above the cut
+plane or hidden, and the path a leaf sweeps at floor level is neither.
 `wall <ref>` pins the door to a wall by `id` or `kind`; otherwise the nearest
 wall hosts it. `hinge` is relative to the wall's direction. Defaults: `hinge
 left`, `swing in`.
@@ -1161,12 +1164,16 @@ A bare **kind** word may lead the statement, after any `id=` — the same shape 
 
 | kind | what is drawn in the reveal | swing arc? |
 | --- | --- | --- |
-| `hinged` *(default)* | leaf + quarter-circle swing arc | yes |
-| `sliding` | two bypass panels on two tracks | no |
-| `barn` | a surface-hung panel on a track that overruns the far jamb | no |
-| `bifold` | two folding leaves and the fold hinge | no |
-| `pocket` | a panel and the wall cavity it slides into | no |
+| `hinged` *(default)* | leaf slab + solid quarter-circle swing arc | yes |
+| `sliding` | two bypass panels on two fine tracks | no |
+| `barn` | a surface-hung panel on its **dashed** top-hung track, which overruns the far jamb | no |
+| `bifold` | two folding leaves, the fold hinge and the **dashed** head track | no |
+| `pocket` | a panel and the **dashed** (hidden) wall cavity it slides into | no |
 | `garage` *(v1.31)* | a sectional panel in the reveal, plus its **dashed** overhead projection | no |
+
+Every panel is a slab drawn with the same pen as a hinged leaf, and a dash is never
+decoration: it marks what is above the cut plane (a track, a parked garage panel) or
+hidden inside the wall (a pocket's cavity).
 
 `hinged` is the default **and writing it is identical to omitting it** — a plan
 that names no kind compiles to exactly the bytes it always did.
@@ -1266,8 +1273,15 @@ window [id=<id>] at (x,y) width <mm> [wall <ref>]
 window [id=<id>] on <wall> at <pos> width <mm>
 ```
 
-An opening with the standard double-line glazing symbol. The `on <wall> at <pos>`
-attachment form works exactly as for doors.
+An opening drawn the way a window block is: both wall faces carried across it,
+**double glazing** (two panes centred in the wall, a quarter of its thickness apart),
+and a **sill** standing proud of the exterior face. Which face is exterior is read off
+the plan, never guessed: one wall thickness off the wall's centreline on each side (half
+a thickness clear of each face), the side with no room floor — and no `void`, which is
+inside the building too — is outside: the same probe a `garage` door makes to find its
+floor side. A window with the inside on both sides (an interior window, or one onto a
+void) or on neither (a free-standing wall) has no outside and draws no sill. The `on <wall> at <pos>` attachment form works exactly as
+for doors.
 
 ### Opening (v1.3)
 
@@ -1304,8 +1318,8 @@ furniture <kind> [id=<id>] in <room> anchor <a> [flush] [inset <mm>] [size <w>x<
 ```
 
 A piece of furniture or a built-in fixture. Every **catalogued** kind draws a real
-plan symbol — a WC with a cistern, a bed with a headboard, a wardrobe with hanging
-scallops — and ignores any `label`. Any other kind falls back to a schematic
+plan symbol — a WC with a cistern, a bed with a headboard, a wardrobe with its hanging
+rail and hangers — and ignores any `label`. Any other kind falls back to a schematic
 **labelled rectangle**, which is the escape hatch for something ArchLang has no
 symbol for. The catalogue is `arch manifest --json`'s `fixtureCategories`, and every
 kind is documented with its symbol, footprint and facing in
@@ -1678,18 +1692,18 @@ outdoor [id=<id>] <kind> polygon (x,y) (x,y) (x,y) … [label "…"]
 
 The ground a building sits on: a lawn, a planting bed, paving, a deck, gravel, water, a
 driveway, a patio, or a balcony. Nine kinds, each drawn as a **scale-aware material hatch
-over a flat tint**.
+over a flat tint** (a `balcony`: tint and railing, no hatch).
 
 | Kind | Hatch | CAD layer |
 |------|-------|-----------|
-| `lawn` | angled turf tufts | `L-PLNT` |
-| `planting` | dots on a staggered grid | `L-PLNT` |
-| `paving` | running-bond slabs | `L-SITE` |
-| `patio` | running-bond slabs (a patio *is* paved — one material, one legend row) | `L-SITE` |
-| `deck` | parallel boards | `L-SITE` |
-| `gravel` | scattered stones | `L-SITE` |
-| `water` | wave lines | `L-SITE` |
-| `driveway` | fine bitumen speckle | `L-SITE` |
+| `lawn` | sparse turf tufts — the palest ground | `L-PLNT` |
+| `planting` | a mulch stipple of bark chips and crumbs | `L-PLNT` |
+| `paving` | a square slab joint grid (600 mm at 1:100) | `L-SITE` |
+| `patio` | the same slab grid (a patio *is* paved — one material, one legend row) | `L-SITE` |
+| `deck` | boards (150 mm at 1:100) with staggered butt joints | `L-SITE` |
+| `gravel` | scattered stones as small rings, with grit | `L-SITE` |
+| `water` | gentle waves, alternate lines out of phase | `L-SITE` |
+| `driveway` | a fine, sparse bitumen speckle | `L-SITE` |
 | `balcony` | no hatch — a plain tint and a railing | `A-FLOR-BALC` |
 
 Three CAD layers, not one, because a CAD user freezes by trade: planting is the landscape
@@ -1699,7 +1713,9 @@ plate rather than of the site at all.
 **The hatches are scale-aware.** Every pattern dimension steps off the drawing's reference
 dimension, so a pattern is the same size *on the sheet* at 1:50 and at 1:200 — which is
 what a drafting hatch is for. (Fixed pixel sizes, the obvious shortcut, dissolve or clot
-as the scale changes.) `gravel`'s scatter comes from a frozen table, never a random
+as the scale changes.) Every ground stroke is the drawing's finest pen — the `extraThin` width
+the symbols' detail uses — so the ground is the palest layer of the plan. The irregular
+patterns (`lawn`, `planting`, `gravel`, `driveway`) come from frozen tables, never a random
 number: `compile()` is deterministic.
 
 #### It is not a room, and it obstructs nothing
@@ -1754,6 +1770,10 @@ centreline, or to the outer face).
 `right` — repeatable, or comma-separated — plus `all` and `none`, the two whole-rectangle
 answers. `rail none` is a real instruction (a Juliet slab drawn without its balustrade),
 not the same as omitting the clause.
+
+Each railed edge draws the slab edge, an inner rail line just inside it, and its posts. Where
+two railed edges meet at a corner, each inner rail stops on the other's line, so the corner
+closes cleanly instead of the two rails crossing in a small square.
 
 On any other kind, `rail` is [`E_OUTDOOR_RAIL`](error-codes.md#e_outdoor_rail) — refused,
 never silently ignored.
@@ -1841,7 +1861,9 @@ plan statement.
 | `post` | one line, sparsely posted |
 
 The post pitch is derived per segment from that segment's own length and clamped, so two
-identical fences draw identically wherever they sit on the sheet.
+identical fences draw identically wherever they sit on the sheet. Where two runs meet, the
+corner gets ONE post tick along the bisector in every style, rather than two crossing ones, and a
+`panel`'s double line is mitred; a turn sharper than about 139° keeps each run's own square end.
 
 **A fence is not a thin wall.** It has no thickness and no poché, it **hosts no opening**
 (`door on <fence>` finds no such wall, because a fence is not in the wall list at all), it

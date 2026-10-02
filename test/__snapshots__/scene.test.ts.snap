@@ -295,31 +295,39 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     {
       "layer": "doors",
       "paint": {
+        "fill": "#ffffff",
         "stroke": "#555555",
         "width": 14.976000000000003,
       },
       "prim": {
-        "a": {
-          "x": 3500,
-          "y": 6000,
-        },
-        "b": {
-          "x": 3500,
-          "y": 5000,
-        },
-        "t": "line",
+        "pts": [
+          {
+            "x": 3500,
+            "y": 6000,
+          },
+          {
+            "x": 3500,
+            "y": 5000,
+          },
+          {
+            "x": 3460,
+            "y": 5000.800320256256,
+          },
+          {
+            "x": 3460,
+            "y": 6000,
+          },
+        ],
+        "t": "polygon",
       },
     },
     {
       "layer": "doors",
+      "lineWeight": "extraThin",
       "paint": {
-        "dash": [
-          46.080000000000005,
-          34.56,
-        ],
         "fill": "none",
         "stroke": "#555555",
-        "width": 11.520000000000001,
+        "width": 8.32,
       },
       "prim": {
         "center": {
@@ -396,31 +404,39 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     {
       "layer": "doors",
       "paint": {
+        "fill": "#ffffff",
         "stroke": "#555555",
         "width": 14.976000000000003,
       },
       "prim": {
-        "a": {
-          "x": 6800,
-          "y": 3000,
-        },
-        "b": {
-          "x": 6800,
-          "y": 2200,
-        },
-        "t": "line",
+        "pts": [
+          {
+            "x": 6800,
+            "y": 3000,
+          },
+          {
+            "x": 6800,
+            "y": 2200,
+          },
+          {
+            "x": 6760,
+            "y": 2201.000625782473,
+          },
+          {
+            "x": 6760,
+            "y": 3000,
+          },
+        ],
+        "t": "polygon",
       },
     },
     {
       "layer": "doors",
+      "lineWeight": "extraThin",
       "paint": {
-        "dash": [
-          46.080000000000005,
-          34.56,
-        ],
         "fill": "none",
         "stroke": "#555555",
-        "width": 11.520000000000001,
+        "width": 8.32,
       },
       "prim": {
         "center": {
@@ -470,31 +486,39 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     {
       "layer": "doors",
       "paint": {
+        "fill": "#ffffff",
         "stroke": "#555555",
         "width": 14.976000000000003,
       },
       "prim": {
-        "a": {
-          "x": 4200,
-          "y": 4400,
-        },
-        "b": {
-          "x": 4200,
-          "y": 3600,
-        },
-        "t": "line",
+        "pts": [
+          {
+            "x": 4200,
+            "y": 4400,
+          },
+          {
+            "x": 4200,
+            "y": 3600,
+          },
+          {
+            "x": 4240,
+            "y": 3601.000625782473,
+          },
+          {
+            "x": 4240,
+            "y": 4400,
+          },
+        ],
+        "t": "polygon",
       },
     },
     {
       "layer": "doors",
+      "lineWeight": "extraThin",
       "paint": {
-        "dash": [
-          46.080000000000005,
-          34.56,
-        ],
         "fill": "none",
         "stroke": "#555555",
-        "width": 11.520000000000001,
+        "width": 8.32,
       },
       "prim": {
         "center": {
@@ -585,11 +609,11 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
       "prim": {
         "a": {
-          "x": 0,
+          "x": 25,
           "y": 2750,
         },
         "b": {
-          "x": 0,
+          "x": 25,
           "y": 1250,
         },
         "t": "line",
@@ -598,6 +622,53 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
     {
       "layer": "windows",
       "paint": {
+        "stroke": "#3a6ea5",
+        "width": 11.520000000000001,
+      },
+      "prim": {
+        "a": {
+          "x": -25,
+          "y": 2750,
+        },
+        "b": {
+          "x": -25,
+          "y": 1250,
+        },
+        "t": "line",
+      },
+    },
+    {
+      "layer": "windows",
+      "paint": {
+        "fill": "none",
+        "stroke": "#1b1b1b",
+        "width": 11.520000000000001,
+      },
+      "prim": {
+        "pts": [
+          {
+            "x": -100,
+            "y": 2790,
+          },
+          {
+            "x": -140,
+            "y": 2790,
+          },
+          {
+            "x": -140,
+            "y": 1210,
+          },
+          {
+            "x": -100,
+            "y": 1210,
+          },
+        ],
+        "t": "polygon",
+      },
+    },
+    {
+      "layer": "windows",
+      "paint": {
         "fill": "#ffffff",
       },
       "prim": {
@@ -666,14 +737,61 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
       "prim": {
         "a": {
-          "x": 7000,
+          "x": 6975,
           "y": 900,
         },
         "b": {
-          "x": 7000,
+          "x": 6975,
           "y": 2100,
         },
         "t": "line",
+      },
+    },
+    {
+      "layer": "windows",
+      "paint": {
+        "stroke": "#3a6ea5",
+        "width": 11.520000000000001,
+      },
+      "prim": {
+        "a": {
+          "x": 7025,
+          "y": 900,
+        },
+        "b": {
+          "x": 7025,
+          "y": 2100,
+        },
+        "t": "line",
+      },
+    },
+    {
+      "layer": "windows",
+      "paint": {
+        "fill": "none",
+        "stroke": "#1b1b1b",
+        "width": 11.520000000000001,
+      },
+      "prim": {
+        "pts": [
+          {
+            "x": 7100,
+            "y": 860,
+          },
+          {
+            "x": 7140,
+            "y": 860,
+          },
+          {
+            "x": 7140,
+            "y": 2140,
+          },
+          {
+            "x": 7100,
+            "y": 2140,
+          },
+        ],
+        "t": "polygon",
       },
     },
     {
@@ -747,22 +865,69 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
       "prim": {
         "a": {
-          "x": 7000,
+          "x": 6975,
           "y": 4850,
         },
         "b": {
-          "x": 7000,
+          "x": 6975,
           "y": 5550,
         },
         "t": "line",
       },
     },
     {
+      "layer": "windows",
+      "paint": {
+        "stroke": "#3a6ea5",
+        "width": 11.520000000000001,
+      },
+      "prim": {
+        "a": {
+          "x": 7025,
+          "y": 4850,
+        },
+        "b": {
+          "x": 7025,
+          "y": 5550,
+        },
+        "t": "line",
+      },
+    },
+    {
+      "layer": "windows",
+      "paint": {
+        "fill": "none",
+        "stroke": "#1b1b1b",
+        "width": 11.520000000000001,
+      },
+      "prim": {
+        "pts": [
+          {
+            "x": 7100,
+            "y": 4810,
+          },
+          {
+            "x": 7140,
+            "y": 4810,
+          },
+          {
+            "x": 7140,
+            "y": 5590,
+          },
+          {
+            "x": 7100,
+            "y": 5590,
+          },
+        ],
+        "t": "polygon",
+      },
+    },
+    {
       "layer": "furniture",
       "lineWeight": "thin",
       "paint": {
         "fill": "#f4f2ee",
-        "stroke": "#a8a29a",
+        "stroke": "#6c6864",
         "width": 11.520000000000001,
       },
       "prim": {
@@ -792,235 +957,504 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "lineWeight": "thin",
       "paint": {
         "fill": "#ffffff",
-        "stroke": "#a8a29a",
+        "stroke": "#6c6864",
         "width": 11.520000000000001,
       },
       "prim": {
-        "pts": [
+        "loops": [
           {
-            "x": 636.08,
-            "y": 406,
-          },
-          {
-            "x": 644.4684208374429,
-            "y": 407.6685606473526,
-          },
-          {
-            "x": 651.5797806436092,
-            "y": 412.4202193563909,
-          },
-          {
-            "x": 656.3314393526474,
-            "y": 419.53157916255725,
-          },
-          {
-            "x": 658,
-            "y": 427.92,
-          },
-          {
-            "x": 658,
-            "y": 744.08,
-          },
-          {
-            "x": 656.3314393526474,
-            "y": 752.4684208374429,
-          },
-          {
-            "x": 651.5797806436092,
-            "y": 759.5797806436092,
-          },
-          {
-            "x": 644.4684208374429,
-            "y": 764.3314393526474,
-          },
-          {
-            "x": 636.08,
-            "y": 766,
-          },
-          {
-            "x": 405.92,
-            "y": 766,
-          },
-          {
-            "x": 397.53157916255725,
-            "y": 764.3314393526474,
-          },
-          {
-            "x": 390.4202193563909,
-            "y": 759.5797806436092,
-          },
-          {
-            "x": 385.6685606473526,
-            "y": 752.4684208374429,
-          },
-          {
-            "x": 384,
-            "y": 744.08,
-          },
-          {
-            "x": 384,
-            "y": 427.92,
-          },
-          {
-            "x": 385.6685606473526,
-            "y": 419.53157916255725,
-          },
-          {
-            "x": 390.4202193563909,
-            "y": 412.4202193563909,
-          },
-          {
-            "x": 397.53157916255725,
-            "y": 407.6685606473526,
-          },
-          {
-            "x": 405.92,
-            "y": 406,
+            "edges": [
+              {
+                "t": "line",
+                "to": {
+                  "x": 929.95,
+                  "y": 370,
+                },
+              },
+              {
+                "center": {
+                  "x": 929.95,
+                  "y": 413.8,
+                },
+                "r": 43.800000000000004,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 973.75,
+                  "y": 413.8,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 973.75,
+                  "y": 764.2,
+                },
+              },
+              {
+                "center": {
+                  "x": 929.95,
+                  "y": 764.2,
+                },
+                "r": 43.800000000000004,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 929.95,
+                  "y": 808,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 470.05,
+                  "y": 808,
+                },
+              },
+              {
+                "center": {
+                  "x": 470.05,
+                  "y": 764.2,
+                },
+                "r": 43.800000000000004,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 426.25,
+                  "y": 764.2,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 426.25,
+                  "y": 413.8,
+                },
+              },
+              {
+                "center": {
+                  "x": 470.05,
+                  "y": 413.8,
+                },
+                "r": 43.800000000000004,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 470.05,
+                  "y": 370,
+                },
+              },
+            ],
+            "start": {
+              "x": 470.05,
+              "y": 370,
+            },
           },
         ],
-        "t": "polygon",
+        "t": "path",
       },
     },
     {
       "layer": "furniture",
       "lineWeight": "extraThin",
-      "paint": {
-        "fill": "#f4f2ee",
-        "stroke": "#a8a29a",
-        "width": 6.336000000000001,
-      },
-      "prim": {
-        "center": {
-          "x": 521,
-          "y": 586,
-        },
-        "r": 32.879999999999995,
-        "t": "circle",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "thin",
       "paint": {
         "fill": "#ffffff",
         "stroke": "#a8a29a",
-        "width": 11.520000000000001,
-      },
-      "prim": {
-        "pts": [
-          {
-            "x": 994.08,
-            "y": 406,
-          },
-          {
-            "x": 1002.4684208374429,
-            "y": 407.6685606473526,
-          },
-          {
-            "x": 1009.5797806436092,
-            "y": 412.4202193563909,
-          },
-          {
-            "x": 1014.3314393526474,
-            "y": 419.53157916255725,
-          },
-          {
-            "x": 1016,
-            "y": 427.92,
-          },
-          {
-            "x": 1016,
-            "y": 744.08,
-          },
-          {
-            "x": 1014.3314393526474,
-            "y": 752.4684208374429,
-          },
-          {
-            "x": 1009.5797806436092,
-            "y": 759.5797806436092,
-          },
-          {
-            "x": 1002.4684208374429,
-            "y": 764.3314393526474,
-          },
-          {
-            "x": 994.08,
-            "y": 766,
-          },
-          {
-            "x": 763.92,
-            "y": 766,
-          },
-          {
-            "x": 755.5315791625571,
-            "y": 764.3314393526474,
-          },
-          {
-            "x": 748.4202193563908,
-            "y": 759.5797806436092,
-          },
-          {
-            "x": 743.6685606473526,
-            "y": 752.4684208374429,
-          },
-          {
-            "x": 742,
-            "y": 744.08,
-          },
-          {
-            "x": 742,
-            "y": 427.92,
-          },
-          {
-            "x": 743.6685606473526,
-            "y": 419.53157916255725,
-          },
-          {
-            "x": 748.4202193563908,
-            "y": 412.4202193563909,
-          },
-          {
-            "x": 755.5315791625571,
-            "y": 407.6685606473526,
-          },
-          {
-            "x": 763.92,
-            "y": 406,
-          },
-        ],
-        "t": "polygon",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "extraThin",
-      "paint": {
-        "fill": "#f4f2ee",
-        "stroke": "#a8a29a",
-        "width": 6.336000000000001,
-      },
-      "prim": {
-        "center": {
-          "x": 879,
-          "y": 586,
-        },
-        "r": 32.879999999999995,
-        "t": "circle",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "thin",
-      "paint": {
-        "fill": "#a8a29a",
-        "stroke": "#a8a29a",
-        "width": 11.520000000000001,
+        "width": 8.32,
       },
       "prim": {
         "center": {
           "x": 700,
-          "y": 286,
+          "y": 589,
+        },
+        "r": 28.470000000000002,
+        "t": "circle",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "none",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "center": {
+          "x": 700,
+          "y": 313,
+        },
+        "r": 21.000000000000004,
+        "t": "circle",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "a": {
+          "x": 700,
+          "y": 334,
+        },
+        "b": {
+          "x": 700,
+          "y": 457.6,
+        },
+        "t": "line",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "thin",
+      "paint": {
+        "fill": "#f4f2ee",
+        "stroke": "#6c6864",
+        "width": 11.520000000000001,
+      },
+      "prim": {
+        "pts": [
+          {
+            "x": 1200,
+            "y": 250,
+          },
+          {
+            "x": 1800,
+            "y": 250,
+          },
+          {
+            "x": 1800,
+            "y": 850,
+          },
+          {
+            "x": 1200,
+            "y": 850,
+          },
+        ],
+        "t": "polygon",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "a": {
+          "x": 1200,
+          "y": 277,
+        },
+        "b": {
+          "x": 1800,
+          "y": 277,
+        },
+        "t": "line",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "a": {
+          "x": 1200,
+          "y": 814,
+        },
+        "b": {
+          "x": 1800,
+          "y": 814,
+        },
+        "t": "line",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "thin",
+      "paint": {
+        "fill": "#f4f2ee",
+        "stroke": "#6c6864",
+        "width": 11.520000000000001,
+      },
+      "prim": {
+        "pts": [
+          {
+            "x": 1950,
+            "y": 250,
+          },
+          {
+            "x": 2550,
+            "y": 250,
+          },
+          {
+            "x": 2550,
+            "y": 850,
+          },
+          {
+            "x": 1950,
+            "y": 850,
+          },
+        ],
+        "t": "polygon",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "none",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "loops": [
+          {
+            "edges": [
+              {
+                "t": "line",
+                "to": {
+                  "x": 2499,
+                  "y": 286,
+                },
+              },
+              {
+                "center": {
+                  "x": 2499,
+                  "y": 301,
+                },
+                "r": 15,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 2514,
+                  "y": 301,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 2514,
+                  "y": 679,
+                },
+              },
+              {
+                "center": {
+                  "x": 2499,
+                  "y": 679,
+                },
+                "r": 15,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 2499,
+                  "y": 694,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 2001,
+                  "y": 694,
+                },
+              },
+              {
+                "center": {
+                  "x": 2001,
+                  "y": 679,
+                },
+                "r": 15,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 1986,
+                  "y": 679,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 1986,
+                  "y": 301,
+                },
+              },
+              {
+                "center": {
+                  "x": 2001,
+                  "y": 301,
+                },
+                "r": 15,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 2001,
+                  "y": 286,
+                },
+              },
+            ],
+            "start": {
+              "x": 2001,
+              "y": 286,
+            },
+          },
+        ],
+        "t": "path",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "none",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "center": {
+          "x": 2124.12,
+          "y": 394.12,
+        },
+        "r": 76.704,
+        "t": "circle",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "none",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "center": {
+          "x": 2124.12,
+          "y": 394.12,
+        },
+        "r": 42.1872,
+        "t": "circle",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "none",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "center": {
+          "x": 2375.88,
+          "y": 394.12,
+        },
+        "r": 76.704,
+        "t": "circle",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "none",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "center": {
+          "x": 2375.88,
+          "y": 394.12,
+        },
+        "r": 42.1872,
+        "t": "circle",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "none",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "center": {
+          "x": 2124.12,
+          "y": 585.88,
+        },
+        "r": 55.61039999999999,
+        "t": "circle",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "none",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "center": {
+          "x": 2124.12,
+          "y": 585.88,
+        },
+        "r": 30.58572,
+        "t": "circle",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "none",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "center": {
+          "x": 2375.88,
+          "y": 585.88,
+        },
+        "r": 55.61039999999999,
+        "t": "circle",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "none",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "center": {
+          "x": 2375.88,
+          "y": 585.88,
+        },
+        "r": 30.58572,
+        "t": "circle",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "#a8a29a",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "center": {
+          "x": 2070,
+          "y": 787,
         },
         "r": 18,
         "t": "circle",
@@ -1030,19 +1464,51 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "layer": "furniture",
       "lineWeight": "extraThin",
       "paint": {
+        "fill": "#a8a29a",
         "stroke": "#a8a29a",
-        "width": 6.336000000000001,
+        "width": 8.32,
       },
       "prim": {
-        "a": {
-          "x": 700,
-          "y": 286,
+        "center": {
+          "x": 2190,
+          "y": 787,
         },
-        "b": {
-          "x": 700,
-          "y": 418,
+        "r": 18,
+        "t": "circle",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "#a8a29a",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "center": {
+          "x": 2310,
+          "y": 787,
         },
-        "t": "line",
+        "r": 18,
+        "t": "circle",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "#a8a29a",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "center": {
+          "x": 2430,
+          "y": 787,
+        },
+        "r": 18,
+        "t": "circle",
       },
     },
     {
@@ -1050,29 +1516,101 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "lineWeight": "thin",
       "paint": {
         "fill": "#f4f2ee",
-        "stroke": "#a8a29a",
+        "stroke": "#6c6864",
         "width": 11.520000000000001,
       },
       "prim": {
-        "pts": [
+        "loops": [
           {
-            "x": 1200,
-            "y": 250,
-          },
-          {
-            "x": 1800,
-            "y": 250,
-          },
-          {
-            "x": 1800,
-            "y": 850,
-          },
-          {
-            "x": 1200,
-            "y": 850,
+            "edges": [
+              {
+                "t": "line",
+                "to": {
+                  "x": 3288,
+                  "y": 250,
+                },
+              },
+              {
+                "center": {
+                  "x": 3288,
+                  "y": 262,
+                },
+                "r": 12,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 3300,
+                  "y": 262,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 3300,
+                  "y": 888,
+                },
+              },
+              {
+                "center": {
+                  "x": 3288,
+                  "y": 888,
+                },
+                "r": 12,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 3288,
+                  "y": 900,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 2712,
+                  "y": 900,
+                },
+              },
+              {
+                "center": {
+                  "x": 2712,
+                  "y": 888,
+                },
+                "r": 12,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 2700,
+                  "y": 888,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 2700,
+                  "y": 262,
+                },
+              },
+              {
+                "center": {
+                  "x": 2712,
+                  "y": 262,
+                },
+                "r": 12,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 2712,
+                  "y": 250,
+                },
+              },
+            ],
+            "start": {
+              "x": 2712,
+              "y": 250,
+            },
           },
         ],
-        "t": "polygon",
+        "t": "path",
       },
     },
     {
@@ -1080,280 +1618,16 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "lineWeight": "extraThin",
       "paint": {
         "stroke": "#a8a29a",
-        "width": 6.336000000000001,
-      },
-      "prim": {
-        "a": {
-          "x": 1200,
-          "y": 742,
-        },
-        "b": {
-          "x": 1800,
-          "y": 742,
-        },
-        "t": "line",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "thin",
-      "paint": {
-        "fill": "#f4f2ee",
-        "stroke": "#a8a29a",
-        "width": 11.520000000000001,
-      },
-      "prim": {
-        "pts": [
-          {
-            "x": 1950,
-            "y": 250,
-          },
-          {
-            "x": 2550,
-            "y": 250,
-          },
-          {
-            "x": 2550,
-            "y": 850,
-          },
-          {
-            "x": 1950,
-            "y": 850,
-          },
-        ],
-        "t": "polygon",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "thin",
-      "paint": {
-        "fill": "none",
-        "stroke": "#a8a29a",
-        "width": 11.520000000000001,
-      },
-      "prim": {
-        "center": {
-          "x": 2130,
-          "y": 430,
-        },
-        "r": 96,
-        "t": "circle",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "extraThin",
-      "paint": {
-        "fill": "none",
-        "stroke": "#a8a29a",
-        "width": 6.336000000000001,
-      },
-      "prim": {
-        "center": {
-          "x": 2130,
-          "y": 430,
-        },
-        "r": 57.599999999999994,
-        "t": "circle",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "thin",
-      "paint": {
-        "fill": "none",
-        "stroke": "#a8a29a",
-        "width": 11.520000000000001,
-      },
-      "prim": {
-        "center": {
-          "x": 2130,
-          "y": 670,
-        },
-        "r": 96,
-        "t": "circle",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "extraThin",
-      "paint": {
-        "fill": "none",
-        "stroke": "#a8a29a",
-        "width": 6.336000000000001,
-      },
-      "prim": {
-        "center": {
-          "x": 2130,
-          "y": 670,
-        },
-        "r": 57.599999999999994,
-        "t": "circle",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "thin",
-      "paint": {
-        "fill": "none",
-        "stroke": "#a8a29a",
-        "width": 11.520000000000001,
-      },
-      "prim": {
-        "center": {
-          "x": 2370,
-          "y": 430,
-        },
-        "r": 96,
-        "t": "circle",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "extraThin",
-      "paint": {
-        "fill": "none",
-        "stroke": "#a8a29a",
-        "width": 6.336000000000001,
-      },
-      "prim": {
-        "center": {
-          "x": 2370,
-          "y": 430,
-        },
-        "r": 57.599999999999994,
-        "t": "circle",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "thin",
-      "paint": {
-        "fill": "none",
-        "stroke": "#a8a29a",
-        "width": 11.520000000000001,
-      },
-      "prim": {
-        "center": {
-          "x": 2370,
-          "y": 670,
-        },
-        "r": 96,
-        "t": "circle",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "extraThin",
-      "paint": {
-        "fill": "none",
-        "stroke": "#a8a29a",
-        "width": 6.336000000000001,
-      },
-      "prim": {
-        "center": {
-          "x": 2370,
-          "y": 670,
-        },
-        "r": 57.599999999999994,
-        "t": "circle",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "extraThin",
-      "paint": {
-        "stroke": "#a8a29a",
-        "width": 6.336000000000001,
-      },
-      "prim": {
-        "a": {
-          "x": 1950,
-          "y": 802,
-        },
-        "b": {
-          "x": 2550,
-          "y": 802,
-        },
-        "t": "line",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "thin",
-      "paint": {
-        "fill": "#f4f2ee",
-        "stroke": "#a8a29a",
-        "width": 11.520000000000001,
-      },
-      "prim": {
-        "pts": [
-          {
-            "x": 2700,
-            "y": 250,
-          },
-          {
-            "x": 3300,
-            "y": 250,
-          },
-          {
-            "x": 3300,
-            "y": 900,
-          },
-          {
-            "x": 2700,
-            "y": 900,
-          },
-        ],
-        "t": "polygon",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "extraThin",
-      "paint": {
-        "fill": "none",
-        "stroke": "#a8a29a",
-        "width": 6.336000000000001,
-      },
-      "prim": {
-        "pts": [
-          {
-            "x": 2730,
-            "y": 280,
-          },
-          {
-            "x": 3270,
-            "y": 280,
-          },
-          {
-            "x": 3270,
-            "y": 870,
-          },
-          {
-            "x": 2730,
-            "y": 870,
-          },
-        ],
-        "t": "polygon",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "extraThin",
-      "paint": {
-        "stroke": "#a8a29a",
-        "width": 6.336000000000001,
+        "width": 8.32,
       },
       "prim": {
         "a": {
           "x": 2700,
-          "y": 770,
+          "y": 809,
         },
         "b": {
           "x": 3300,
-          "y": 770,
+          "y": 809,
         },
         "t": "line",
       },
@@ -1362,36 +1636,17 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "layer": "furniture",
       "lineWeight": "thin",
       "paint": {
-        "stroke": "#a8a29a",
-        "width": 11.520000000000001,
-      },
-      "prim": {
-        "a": {
-          "x": 2700,
-          "y": 445,
-        },
-        "b": {
-          "x": 3300,
-          "y": 445,
-        },
-        "t": "line",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "thin",
-      "paint": {
-        "stroke": "#a8a29a",
+        "stroke": "#6c6864",
         "width": 11.520000000000001,
       },
       "prim": {
         "a": {
           "x": 2904,
-          "y": 841.5,
+          "y": 854.5,
         },
         "b": {
           "x": 3096,
-          "y": 841.5,
+          "y": 854.5,
         },
         "t": "line",
       },
@@ -1401,93 +1656,101 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "lineWeight": "thin",
       "paint": {
         "fill": "#f4f2ee",
-        "stroke": "#a8a29a",
+        "stroke": "#6c6864",
         "width": 11.520000000000001,
       },
       "prim": {
-        "pts": [
+        "loops": [
           {
-            "x": 2260,
-            "y": 4300,
-          },
-          {
-            "x": 2294.441508912858,
-            "y": 4306.8508420739845,
-          },
-          {
-            "x": 2323.639610306789,
-            "y": 4326.360389693211,
-          },
-          {
-            "x": 2343.149157926016,
-            "y": 4355.558491087142,
-          },
-          {
-            "x": 2350,
-            "y": 4390,
-          },
-          {
-            "x": 2350,
-            "y": 5110,
-          },
-          {
-            "x": 2343.149157926016,
-            "y": 5144.441508912858,
-          },
-          {
-            "x": 2323.639610306789,
-            "y": 5173.639610306789,
-          },
-          {
-            "x": 2294.441508912858,
-            "y": 5193.1491579260155,
-          },
-          {
-            "x": 2260,
-            "y": 5200,
-          },
-          {
-            "x": 440,
-            "y": 5200,
-          },
-          {
-            "x": 405.55849108714193,
-            "y": 5193.1491579260155,
-          },
-          {
-            "x": 376.3603896932107,
-            "y": 5173.639610306789,
-          },
-          {
-            "x": 356.8508420739842,
-            "y": 5144.441508912858,
-          },
-          {
-            "x": 350,
-            "y": 5110,
-          },
-          {
-            "x": 350,
-            "y": 4390,
-          },
-          {
-            "x": 356.85084207398415,
-            "y": 4355.558491087142,
-          },
-          {
-            "x": 376.3603896932107,
-            "y": 4326.360389693211,
-          },
-          {
-            "x": 405.5584910871419,
-            "y": 4306.8508420739845,
-          },
-          {
-            "x": 440,
-            "y": 4300,
+            "edges": [
+              {
+                "t": "line",
+                "to": {
+                  "x": 2287,
+                  "y": 4300,
+                },
+              },
+              {
+                "center": {
+                  "x": 2287,
+                  "y": 4363,
+                },
+                "r": 63.00000000000001,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 2350,
+                  "y": 4363,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 2350,
+                  "y": 5137,
+                },
+              },
+              {
+                "center": {
+                  "x": 2287,
+                  "y": 5137,
+                },
+                "r": 63.00000000000001,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 2287,
+                  "y": 5200,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 413,
+                  "y": 5200,
+                },
+              },
+              {
+                "center": {
+                  "x": 413,
+                  "y": 5137,
+                },
+                "r": 63.00000000000001,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 350,
+                  "y": 5137,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 350,
+                  "y": 4363,
+                },
+              },
+              {
+                "center": {
+                  "x": 413,
+                  "y": 4363,
+                },
+                "r": 63.00000000000001,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 413,
+                  "y": 4300,
+                },
+              },
+            ],
+            "start": {
+              "x": 413,
+              "y": 4300,
+            },
           },
         ],
-        "t": "polygon",
+        "t": "path",
       },
     },
     {
@@ -1495,29 +1758,88 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "lineWeight": "thin",
       "paint": {
         "fill": "#f4f2ee",
-        "stroke": "#a8a29a",
+        "stroke": "#6c6864",
         "width": 11.520000000000001,
       },
       "prim": {
-        "pts": [
+        "loops": [
           {
-            "x": 350,
-            "y": 4390,
-          },
-          {
-            "x": 590,
-            "y": 4390,
-          },
-          {
-            "x": 590,
-            "y": 5200,
-          },
-          {
-            "x": 350,
-            "y": 5200,
+            "edges": [
+              {
+                "t": "line",
+                "to": {
+                  "x": 510,
+                  "y": 4300,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 510,
+                  "y": 5137,
+                },
+              },
+              {
+                "center": {
+                  "x": 447,
+                  "y": 5137,
+                },
+                "r": 63.00000000000001,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 447,
+                  "y": 5200,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 413,
+                  "y": 5200,
+                },
+              },
+              {
+                "center": {
+                  "x": 413,
+                  "y": 5137,
+                },
+                "r": 63.00000000000001,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 350,
+                  "y": 5137,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 350,
+                  "y": 4363,
+                },
+              },
+              {
+                "center": {
+                  "x": 413,
+                  "y": 4363,
+                },
+                "r": 63.00000000000001,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 413,
+                  "y": 4300,
+                },
+              },
+            ],
+            "start": {
+              "x": 413,
+              "y": 4300,
+            },
           },
         ],
-        "t": "polygon",
+        "t": "path",
       },
     },
     {
@@ -1525,440 +1847,88 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "lineWeight": "thin",
       "paint": {
         "fill": "#f4f2ee",
-        "stroke": "#a8a29a",
+        "stroke": "#6c6864",
         "width": 11.520000000000001,
       },
       "prim": {
-        "pts": [
+        "loops": [
           {
-            "x": 2110,
-            "y": 4390,
-          },
-          {
-            "x": 2350,
-            "y": 4390,
-          },
-          {
-            "x": 2350,
-            "y": 5200,
-          },
-          {
-            "x": 2110,
-            "y": 5200,
-          },
-        ],
-        "t": "polygon",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "extraThin",
-      "paint": {
-        "stroke": "#a8a29a",
-        "width": 6.336000000000001,
-      },
-      "prim": {
-        "a": {
-          "x": 350,
-          "y": 4462,
-        },
-        "b": {
-          "x": 2350,
-          "y": 4462,
-        },
-        "t": "line",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "extraThin",
-      "paint": {
-        "stroke": "#a8a29a",
-        "width": 6.336000000000001,
-      },
-      "prim": {
-        "a": {
-          "x": 1096.6666666666667,
-          "y": 4462,
-        },
-        "b": {
-          "x": 1096.6666666666667,
-          "y": 5110,
-        },
-        "t": "line",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "extraThin",
-      "paint": {
-        "stroke": "#a8a29a",
-        "width": 6.336000000000001,
-      },
-      "prim": {
-        "a": {
-          "x": 1603.3333333333335,
-          "y": 4462,
-        },
-        "b": {
-          "x": 1603.3333333333335,
-          "y": 5110,
-        },
-        "t": "line",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "extraThin",
-      "paint": {
-        "stroke": "#a8a29a",
-        "width": 6.336000000000001,
-      },
-      "prim": {
-        "a": {
-          "x": 590,
-          "y": 5110,
-        },
-        "b": {
-          "x": 2110,
-          "y": 5110,
-        },
-        "t": "line",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "thin",
-      "paint": {
-        "fill": "#f4f2ee",
-        "stroke": "#a8a29a",
-        "width": 11.520000000000001,
-      },
-      "prim": {
-        "pts": [
-          {
-            "x": 4300,
-            "y": 300,
-          },
-          {
-            "x": 5800,
-            "y": 300,
-          },
-          {
-            "x": 5800,
-            "y": 2300,
-          },
-          {
-            "x": 4300,
-            "y": 2300,
+            "edges": [
+              {
+                "t": "line",
+                "to": {
+                  "x": 2287,
+                  "y": 4300,
+                },
+              },
+              {
+                "center": {
+                  "x": 2287,
+                  "y": 4363,
+                },
+                "r": 63.00000000000001,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 2350,
+                  "y": 4363,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 2350,
+                  "y": 5137,
+                },
+              },
+              {
+                "center": {
+                  "x": 2287,
+                  "y": 5137,
+                },
+                "r": 63.00000000000001,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 2287,
+                  "y": 5200,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 2253,
+                  "y": 5200,
+                },
+              },
+              {
+                "center": {
+                  "x": 2253,
+                  "y": 5137,
+                },
+                "r": 63.00000000000001,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 2190,
+                  "y": 5137,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 2190,
+                  "y": 4300,
+                },
+              },
+            ],
+            "start": {
+              "x": 2190,
+              "y": 4300,
+            },
           },
         ],
-        "t": "polygon",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "thin",
-      "paint": {
-        "fill": "#f4f2ee",
-        "stroke": "#a8a29a",
-        "width": 11.520000000000001,
-      },
-      "prim": {
-        "pts": [
-          {
-            "x": 4300,
-            "y": 300,
-          },
-          {
-            "x": 5800,
-            "y": 300,
-          },
-          {
-            "x": 5800,
-            "y": 420,
-          },
-          {
-            "x": 4300,
-            "y": 420,
-          },
-        ],
-        "t": "polygon",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "thin",
-      "paint": {
-        "fill": "#ffffff",
-        "stroke": "#a8a29a",
-        "width": 11.520000000000001,
-      },
-      "prim": {
-        "pts": [
-          {
-            "x": 4907,
-            "y": 480,
-          },
-          {
-            "x": 4944.5029763717785,
-            "y": 487.4598058138939,
-          },
-          {
-            "x": 4976.2964645562815,
-            "y": 508.70353544371835,
-          },
-          {
-            "x": 4997.540194186106,
-            "y": 540.4970236282212,
-          },
-          {
-            "x": 5005,
-            "y": 578,
-          },
-          {
-            "x": 5005,
-            "y": 662,
-          },
-          {
-            "x": 4997.540194186106,
-            "y": 699.5029763717788,
-          },
-          {
-            "x": 4976.2964645562815,
-            "y": 731.2964645562816,
-          },
-          {
-            "x": 4944.5029763717785,
-            "y": 752.5401941861061,
-          },
-          {
-            "x": 4907,
-            "y": 760,
-          },
-          {
-            "x": 4533,
-            "y": 760,
-          },
-          {
-            "x": 4495.4970236282215,
-            "y": 752.5401941861061,
-          },
-          {
-            "x": 4463.7035354437185,
-            "y": 731.2964645562816,
-          },
-          {
-            "x": 4442.459805813894,
-            "y": 699.5029763717788,
-          },
-          {
-            "x": 4435,
-            "y": 662,
-          },
-          {
-            "x": 4435,
-            "y": 578,
-          },
-          {
-            "x": 4442.459805813894,
-            "y": 540.4970236282212,
-          },
-          {
-            "x": 4463.7035354437185,
-            "y": 508.70353544371835,
-          },
-          {
-            "x": 4495.4970236282215,
-            "y": 487.4598058138939,
-          },
-          {
-            "x": 4533,
-            "y": 480,
-          },
-        ],
-        "t": "polygon",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "thin",
-      "paint": {
-        "fill": "#ffffff",
-        "stroke": "#a8a29a",
-        "width": 11.520000000000001,
-      },
-      "prim": {
-        "pts": [
-          {
-            "x": 5567,
-            "y": 480,
-          },
-          {
-            "x": 5604.5029763717785,
-            "y": 487.4598058138939,
-          },
-          {
-            "x": 5636.2964645562815,
-            "y": 508.70353544371835,
-          },
-          {
-            "x": 5657.540194186106,
-            "y": 540.4970236282212,
-          },
-          {
-            "x": 5665,
-            "y": 578,
-          },
-          {
-            "x": 5665,
-            "y": 662,
-          },
-          {
-            "x": 5657.540194186106,
-            "y": 699.5029763717788,
-          },
-          {
-            "x": 5636.2964645562815,
-            "y": 731.2964645562816,
-          },
-          {
-            "x": 5604.5029763717785,
-            "y": 752.5401941861061,
-          },
-          {
-            "x": 5567,
-            "y": 760,
-          },
-          {
-            "x": 5193,
-            "y": 760,
-          },
-          {
-            "x": 5155.4970236282215,
-            "y": 752.5401941861061,
-          },
-          {
-            "x": 5123.7035354437185,
-            "y": 731.2964645562816,
-          },
-          {
-            "x": 5102.459805813894,
-            "y": 699.5029763717788,
-          },
-          {
-            "x": 5095,
-            "y": 662,
-          },
-          {
-            "x": 5095,
-            "y": 578,
-          },
-          {
-            "x": 5102.459805813894,
-            "y": 540.4970236282212,
-          },
-          {
-            "x": 5123.7035354437185,
-            "y": 508.70353544371835,
-          },
-          {
-            "x": 5155.4970236282215,
-            "y": 487.4598058138939,
-          },
-          {
-            "x": 5193,
-            "y": 480,
-          },
-        ],
-        "t": "polygon",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "extraThin",
-      "paint": {
-        "stroke": "#a8a29a",
-        "width": 6.336000000000001,
-      },
-      "prim": {
-        "a": {
-          "x": 4300,
-          "y": 940,
-        },
-        "b": {
-          "x": 5800,
-          "y": 940,
-        },
-        "t": "line",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "extraThin",
-      "paint": {
-        "stroke": "#a8a29a",
-        "width": 6.336000000000001,
-      },
-      "prim": {
-        "a": {
-          "x": 4300,
-          "y": 1020,
-        },
-        "b": {
-          "x": 5800,
-          "y": 1020,
-        },
-        "t": "line",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "extraThin",
-      "paint": {
-        "stroke": "#a8a29a",
-        "width": 6.336000000000001,
-      },
-      "prim": {
-        "a": {
-          "x": 5800,
-          "y": 940,
-        },
-        "b": {
-          "x": 5470,
-          "y": 1020,
-        },
-        "t": "line",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "thin",
-      "paint": {
-        "fill": "#ffffff",
-        "stroke": "#a8a29a",
-        "width": 11.520000000000001,
-      },
-      "prim": {
-        "pts": [
-          {
-            "x": 6000,
-            "y": 5000,
-          },
-          {
-            "x": 6900,
-            "y": 5000,
-          },
-          {
-            "x": 6900,
-            "y": 5900,
-          },
-          {
-            "x": 6000,
-            "y": 5900,
-          },
-        ],
-        "t": "polygon",
+        "t": "path",
       },
     },
     {
@@ -1967,25 +1937,1023 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "paint": {
         "fill": "#ffffff",
         "stroke": "#a8a29a",
-        "width": 6.336000000000001,
+        "width": 8.32,
+      },
+      "prim": {
+        "loops": [
+          {
+            "edges": [
+              {
+                "t": "line",
+                "to": {
+                  "x": 1033.1,
+                  "y": 4345,
+                },
+              },
+              {
+                "center": {
+                  "x": 1033.1,
+                  "y": 4376.5,
+                },
+                "r": 31.500000000000004,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 1064.6,
+                  "y": 4376.5,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 1064.6,
+                  "y": 4448.5,
+                },
+              },
+              {
+                "center": {
+                  "x": 1033.1,
+                  "y": 4448.5,
+                },
+                "r": 31.500000000000004,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 1033.1,
+                  "y": 4480,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 557.7,
+                  "y": 4480,
+                },
+              },
+              {
+                "center": {
+                  "x": 557.7,
+                  "y": 4448.5,
+                },
+                "r": 31.500000000000004,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 526.2,
+                  "y": 4448.5,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 526.2,
+                  "y": 4376.5,
+                },
+              },
+              {
+                "center": {
+                  "x": 557.7,
+                  "y": 4376.5,
+                },
+                "r": 31.500000000000004,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 557.7,
+                  "y": 4345,
+                },
+              },
+            ],
+            "start": {
+              "x": 557.7,
+              "y": 4345,
+            },
+          },
+        ],
+        "t": "path",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "#ffffff",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "loops": [
+          {
+            "edges": [
+              {
+                "t": "line",
+                "to": {
+                  "x": 1587.7000000000003,
+                  "y": 4345,
+                },
+              },
+              {
+                "center": {
+                  "x": 1587.7000000000003,
+                  "y": 4376.5,
+                },
+                "r": 31.500000000000004,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 1619.2000000000003,
+                  "y": 4376.5,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 1619.2000000000003,
+                  "y": 4448.5,
+                },
+              },
+              {
+                "center": {
+                  "x": 1587.7000000000003,
+                  "y": 4448.5,
+                },
+                "r": 31.500000000000004,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 1587.7000000000003,
+                  "y": 4480,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 1112.3000000000002,
+                  "y": 4480,
+                },
+              },
+              {
+                "center": {
+                  "x": 1112.3000000000002,
+                  "y": 4448.5,
+                },
+                "r": 31.500000000000004,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 1080.8000000000002,
+                  "y": 4448.5,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 1080.8000000000002,
+                  "y": 4376.5,
+                },
+              },
+              {
+                "center": {
+                  "x": 1112.3000000000002,
+                  "y": 4376.5,
+                },
+                "r": 31.500000000000004,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 1112.3000000000002,
+                  "y": 4345,
+                },
+              },
+            ],
+            "start": {
+              "x": 1112.3000000000002,
+              "y": 4345,
+            },
+          },
+        ],
+        "t": "path",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "#ffffff",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "loops": [
+          {
+            "edges": [
+              {
+                "t": "line",
+                "to": {
+                  "x": 2142.3,
+                  "y": 4345,
+                },
+              },
+              {
+                "center": {
+                  "x": 2142.3,
+                  "y": 4376.5,
+                },
+                "r": 31.500000000000004,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 2173.8,
+                  "y": 4376.5,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 2173.8,
+                  "y": 4448.5,
+                },
+              },
+              {
+                "center": {
+                  "x": 2142.3,
+                  "y": 4448.5,
+                },
+                "r": 31.500000000000004,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 2142.3,
+                  "y": 4480,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 1666.9,
+                  "y": 4480,
+                },
+              },
+              {
+                "center": {
+                  "x": 1666.9,
+                  "y": 4448.5,
+                },
+                "r": 31.500000000000004,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 1635.4,
+                  "y": 4448.5,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 1635.4,
+                  "y": 4376.5,
+                },
+              },
+              {
+                "center": {
+                  "x": 1666.9,
+                  "y": 4376.5,
+                },
+                "r": 31.500000000000004,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 1666.9,
+                  "y": 4345,
+                },
+              },
+            ],
+            "start": {
+              "x": 1666.9,
+              "y": 4345,
+            },
+          },
+        ],
+        "t": "path",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "#ffffff",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "loops": [
+          {
+            "edges": [
+              {
+                "t": "line",
+                "to": {
+                  "x": 1024.1,
+                  "y": 4496.2,
+                },
+              },
+              {
+                "center": {
+                  "x": 1024.1,
+                  "y": 4536.7,
+                },
+                "r": 40.5,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 1064.6,
+                  "y": 4536.7,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 1064.6,
+                  "y": 5119,
+                },
+              },
+              {
+                "center": {
+                  "x": 1024.1,
+                  "y": 5119,
+                },
+                "r": 40.5,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 1024.1,
+                  "y": 5159.5,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 566.7,
+                  "y": 5159.5,
+                },
+              },
+              {
+                "center": {
+                  "x": 566.7,
+                  "y": 5119,
+                },
+                "r": 40.5,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 526.2,
+                  "y": 5119,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 526.2,
+                  "y": 4536.7,
+                },
+              },
+              {
+                "center": {
+                  "x": 566.7,
+                  "y": 4536.7,
+                },
+                "r": 40.5,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 566.7,
+                  "y": 4496.2,
+                },
+              },
+            ],
+            "start": {
+              "x": 566.7,
+              "y": 4496.2,
+            },
+          },
+        ],
+        "t": "path",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "#ffffff",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "loops": [
+          {
+            "edges": [
+              {
+                "t": "line",
+                "to": {
+                  "x": 1578.7000000000003,
+                  "y": 4496.2,
+                },
+              },
+              {
+                "center": {
+                  "x": 1578.7000000000003,
+                  "y": 4536.7,
+                },
+                "r": 40.5,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 1619.2000000000003,
+                  "y": 4536.7,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 1619.2000000000003,
+                  "y": 5119,
+                },
+              },
+              {
+                "center": {
+                  "x": 1578.7000000000003,
+                  "y": 5119,
+                },
+                "r": 40.5,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 1578.7000000000003,
+                  "y": 5159.5,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 1121.3000000000002,
+                  "y": 5159.5,
+                },
+              },
+              {
+                "center": {
+                  "x": 1121.3000000000002,
+                  "y": 5119,
+                },
+                "r": 40.5,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 1080.8000000000002,
+                  "y": 5119,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 1080.8000000000002,
+                  "y": 4536.7,
+                },
+              },
+              {
+                "center": {
+                  "x": 1121.3000000000002,
+                  "y": 4536.7,
+                },
+                "r": 40.5,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 1121.3000000000002,
+                  "y": 4496.2,
+                },
+              },
+            ],
+            "start": {
+              "x": 1121.3000000000002,
+              "y": 4496.2,
+            },
+          },
+        ],
+        "t": "path",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "#ffffff",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "loops": [
+          {
+            "edges": [
+              {
+                "t": "line",
+                "to": {
+                  "x": 2133.3,
+                  "y": 4496.2,
+                },
+              },
+              {
+                "center": {
+                  "x": 2133.3,
+                  "y": 4536.7,
+                },
+                "r": 40.5,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 2173.8,
+                  "y": 4536.7,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 2173.8,
+                  "y": 5119,
+                },
+              },
+              {
+                "center": {
+                  "x": 2133.3,
+                  "y": 5119,
+                },
+                "r": 40.5,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 2133.3,
+                  "y": 5159.5,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 1675.9,
+                  "y": 5159.5,
+                },
+              },
+              {
+                "center": {
+                  "x": 1675.9,
+                  "y": 5119,
+                },
+                "r": 40.5,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 1635.4,
+                  "y": 5119,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 1635.4,
+                  "y": 4536.7,
+                },
+              },
+              {
+                "center": {
+                  "x": 1675.9,
+                  "y": 4536.7,
+                },
+                "r": 40.5,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 1675.9,
+                  "y": 4496.2,
+                },
+              },
+            ],
+            "start": {
+              "x": 1675.9,
+              "y": 4496.2,
+            },
+          },
+        ],
+        "t": "path",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "thin",
+      "paint": {
+        "fill": "#f4f2ee",
+        "stroke": "#6c6864",
+        "width": 11.520000000000001,
+      },
+      "prim": {
+        "loops": [
+          {
+            "edges": [
+              {
+                "t": "line",
+                "to": {
+                  "x": 5777.5,
+                  "y": 300,
+                },
+              },
+              {
+                "center": {
+                  "x": 5777.5,
+                  "y": 322.5,
+                },
+                "r": 22.5,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5800,
+                  "y": 322.5,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 5800,
+                  "y": 2277.5,
+                },
+              },
+              {
+                "center": {
+                  "x": 5777.5,
+                  "y": 2277.5,
+                },
+                "r": 22.5,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5777.5,
+                  "y": 2300,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 4322.5,
+                  "y": 2300,
+                },
+              },
+              {
+                "center": {
+                  "x": 4322.5,
+                  "y": 2277.5,
+                },
+                "r": 22.5,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 4300,
+                  "y": 2277.5,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 4300,
+                  "y": 322.5,
+                },
+              },
+              {
+                "center": {
+                  "x": 4322.5,
+                  "y": 322.5,
+                },
+                "r": 22.5,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 4322.5,
+                  "y": 300,
+                },
+              },
+            ],
+            "start": {
+              "x": 4322.5,
+              "y": 300,
+            },
+          },
+        ],
+        "t": "path",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "thin",
+      "paint": {
+        "fill": "#f4f2ee",
+        "stroke": "#6c6864",
+        "width": 11.520000000000001,
+      },
+      "prim": {
+        "loops": [
+          {
+            "edges": [
+              {
+                "t": "line",
+                "to": {
+                  "x": 5777.5,
+                  "y": 300,
+                },
+              },
+              {
+                "center": {
+                  "x": 5777.5,
+                  "y": 322.5,
+                },
+                "r": 22.5,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5800,
+                  "y": 322.5,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 5800,
+                  "y": 390,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 4300,
+                  "y": 390,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 4300,
+                  "y": 322.5,
+                },
+              },
+              {
+                "center": {
+                  "x": 4322.5,
+                  "y": 322.5,
+                },
+                "r": 22.5,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 4322.5,
+                  "y": 300,
+                },
+              },
+            ],
+            "start": {
+              "x": 4322.5,
+              "y": 300,
+            },
+          },
+        ],
+        "t": "path",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "#ffffff",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "loops": [
+          {
+            "edges": [
+              {
+                "t": "line",
+                "to": {
+                  "x": 4902,
+                  "y": 450,
+                },
+              },
+              {
+                "center": {
+                  "x": 4902,
+                  "y": 558,
+                },
+                "r": 108,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5010,
+                  "y": 558,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 5010,
+                  "y": 702,
+                },
+              },
+              {
+                "center": {
+                  "x": 4902,
+                  "y": 702,
+                },
+                "r": 108,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 4902,
+                  "y": 810,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 4488,
+                  "y": 810,
+                },
+              },
+              {
+                "center": {
+                  "x": 4488,
+                  "y": 702,
+                },
+                "r": 108,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 4380,
+                  "y": 702,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 4380,
+                  "y": 558,
+                },
+              },
+              {
+                "center": {
+                  "x": 4488,
+                  "y": 558,
+                },
+                "r": 108,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 4488,
+                  "y": 450,
+                },
+              },
+            ],
+            "start": {
+              "x": 4488,
+              "y": 450,
+            },
+          },
+        ],
+        "t": "path",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "#ffffff",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "loops": [
+          {
+            "edges": [
+              {
+                "t": "line",
+                "to": {
+                  "x": 5612,
+                  "y": 450,
+                },
+              },
+              {
+                "center": {
+                  "x": 5612,
+                  "y": 558,
+                },
+                "r": 108,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5720,
+                  "y": 558,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 5720,
+                  "y": 702,
+                },
+              },
+              {
+                "center": {
+                  "x": 5612,
+                  "y": 702,
+                },
+                "r": 108,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5612,
+                  "y": 810,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 5198,
+                  "y": 810,
+                },
+              },
+              {
+                "center": {
+                  "x": 5198,
+                  "y": 702,
+                },
+                "r": 108,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5090,
+                  "y": 702,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 5090,
+                  "y": 558,
+                },
+              },
+              {
+                "center": {
+                  "x": 5198,
+                  "y": 558,
+                },
+                "r": 108,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5198,
+                  "y": 450,
+                },
+              },
+            ],
+            "start": {
+              "x": 5198,
+              "y": 450,
+            },
+          },
+        ],
+        "t": "path",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "#f4f2ee",
+        "stroke": "#a8a29a",
+        "width": 8.32,
       },
       "prim": {
         "pts": [
           {
-            "x": 6072,
-            "y": 5072,
+            "x": 4345,
+            "y": 900,
           },
           {
-            "x": 6828,
-            "y": 5072,
+            "x": 5755,
+            "y": 900,
           },
           {
-            "x": 6828,
-            "y": 5828,
+            "x": 5755,
+            "y": 2015,
           },
           {
-            "x": 6072,
-            "y": 5828,
+            "x": 5515,
+            "y": 2255,
+          },
+          {
+            "x": 4345,
+            "y": 2255,
           },
         ],
         "t": "polygon",
@@ -1995,17 +2963,277 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "layer": "furniture",
       "lineWeight": "extraThin",
       "paint": {
+        "fill": "#ffffff",
         "stroke": "#a8a29a",
-        "width": 6.336000000000001,
+        "width": 8.32,
+      },
+      "prim": {
+        "pts": [
+          {
+            "x": 4345,
+            "y": 900,
+          },
+          {
+            "x": 5755,
+            "y": 900,
+          },
+          {
+            "x": 5755,
+            "y": 1100,
+          },
+          {
+            "x": 4345,
+            "y": 1100,
+          },
+        ],
+        "t": "polygon",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "#ffffff",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "pts": [
+          {
+            "x": 5755,
+            "y": 2015,
+          },
+          {
+            "x": 5515,
+            "y": 2255,
+          },
+          {
+            "x": 5515,
+            "y": 2015,
+          },
+        ],
+        "t": "polygon",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "thin",
+      "paint": {
+        "fill": "#f4f2ee",
+        "stroke": "#6c6864",
+        "width": 11.520000000000001,
+      },
+      "prim": {
+        "loops": [
+          {
+            "edges": [
+              {
+                "t": "line",
+                "to": {
+                  "x": 6864,
+                  "y": 5000,
+                },
+              },
+              {
+                "center": {
+                  "x": 6864,
+                  "y": 5036,
+                },
+                "r": 36,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 6900,
+                  "y": 5036,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 6900,
+                  "y": 5864,
+                },
+              },
+              {
+                "center": {
+                  "x": 6864,
+                  "y": 5864,
+                },
+                "r": 36,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 6864,
+                  "y": 5900,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 6036,
+                  "y": 5900,
+                },
+              },
+              {
+                "center": {
+                  "x": 6036,
+                  "y": 5864,
+                },
+                "r": 36,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 6000,
+                  "y": 5864,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 6000,
+                  "y": 5036,
+                },
+              },
+              {
+                "center": {
+                  "x": 6036,
+                  "y": 5036,
+                },
+                "r": 36,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 6036,
+                  "y": 5000,
+                },
+              },
+            ],
+            "start": {
+              "x": 6036,
+              "y": 5000,
+            },
+          },
+        ],
+        "t": "path",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "#ffffff",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "loops": [
+          {
+            "edges": [
+              {
+                "t": "line",
+                "to": {
+                  "x": 6828,
+                  "y": 5054,
+                },
+              },
+              {
+                "center": {
+                  "x": 6828,
+                  "y": 5072,
+                },
+                "r": 18,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 6846,
+                  "y": 5072,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 6846,
+                  "y": 5828,
+                },
+              },
+              {
+                "center": {
+                  "x": 6828,
+                  "y": 5828,
+                },
+                "r": 18,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 6828,
+                  "y": 5846,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 6072,
+                  "y": 5846,
+                },
+              },
+              {
+                "center": {
+                  "x": 6072,
+                  "y": 5828,
+                },
+                "r": 18,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 6054,
+                  "y": 5828,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 6054,
+                  "y": 5072,
+                },
+              },
+              {
+                "center": {
+                  "x": 6072,
+                  "y": 5072,
+                },
+                "r": 18,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 6072,
+                  "y": 5054,
+                },
+              },
+            ],
+            "start": {
+              "x": 6072,
+              "y": 5054,
+            },
+          },
+        ],
+        "t": "path",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "stroke": "#a8a29a",
+        "width": 8.32,
       },
       "prim": {
         "a": {
-          "x": 6072,
-          "y": 5072,
+          "x": 6073.091883092036,
+          "y": 5073.091883092036,
         },
         "b": {
-          "x": 6828,
-          "y": 5828,
+          "x": 6414.998214331266,
+          "y": 5414.998214331266,
         },
         "t": "line",
       },
@@ -2015,34 +3243,72 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "lineWeight": "extraThin",
       "paint": {
         "stroke": "#a8a29a",
-        "width": 6.336000000000001,
+        "width": 8.32,
       },
       "prim": {
         "a": {
-          "x": 6828,
-          "y": 5072,
+          "x": 6826.908116907964,
+          "y": 5073.091883092036,
         },
         "b": {
-          "x": 6072,
-          "y": 5828,
+          "x": 6485.001785668734,
+          "y": 5414.998214331266,
         },
         "t": "line",
       },
     },
     {
       "layer": "furniture",
-      "lineWeight": "thin",
+      "lineWeight": "extraThin",
+      "paint": {
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "a": {
+          "x": 6826.908116907964,
+          "y": 5826.908116907964,
+        },
+        "b": {
+          "x": 6485.001785668734,
+          "y": 5485.001785668734,
+        },
+        "t": "line",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "a": {
+          "x": 6073.091883092036,
+          "y": 5826.908116907964,
+        },
+        "b": {
+          "x": 6414.998214331266,
+          "y": 5485.001785668734,
+        },
+        "t": "line",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
       "paint": {
         "fill": "none",
         "stroke": "#a8a29a",
-        "width": 11.520000000000001,
+        "width": 8.32,
       },
       "prim": {
         "center": {
           "x": 6450,
           "y": 5450,
         },
-        "r": 45,
+        "r": 49.5,
         "t": "circle",
       },
     },
@@ -2052,14 +3318,14 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "paint": {
         "fill": "#a8a29a",
         "stroke": "#a8a29a",
-        "width": 6.336000000000001,
+        "width": 8.32,
       },
       "prim": {
         "center": {
           "x": 6450,
           "y": 5450,
         },
-        "r": 16.2,
+        "r": 18,
         "t": "circle",
       },
     },
@@ -2068,29 +3334,101 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "lineWeight": "thin",
       "paint": {
         "fill": "#f4f2ee",
-        "stroke": "#a8a29a",
+        "stroke": "#6c6864",
         "width": 11.520000000000001,
       },
       "prim": {
-        "pts": [
+        "loops": [
           {
-            "x": 5200,
-            "y": 4450,
-          },
-          {
-            "x": 5800,
-            "y": 4450,
-          },
-          {
-            "x": 5800,
-            "y": 4900,
-          },
-          {
-            "x": 5200,
-            "y": 4900,
+            "edges": [
+              {
+                "t": "line",
+                "to": {
+                  "x": 5773,
+                  "y": 4450,
+                },
+              },
+              {
+                "center": {
+                  "x": 5773,
+                  "y": 4477,
+                },
+                "r": 27,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5800,
+                  "y": 4477,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 5800,
+                  "y": 4873,
+                },
+              },
+              {
+                "center": {
+                  "x": 5773,
+                  "y": 4873,
+                },
+                "r": 27,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5773,
+                  "y": 4900,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 5227,
+                  "y": 4900,
+                },
+              },
+              {
+                "center": {
+                  "x": 5227,
+                  "y": 4873,
+                },
+                "r": 27,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5200,
+                  "y": 4873,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 5200,
+                  "y": 4477,
+                },
+              },
+              {
+                "center": {
+                  "x": 5227,
+                  "y": 4477,
+                },
+                "r": 27,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5227,
+                  "y": 4450,
+                },
+              },
+            ],
+            "start": {
+              "x": 5227,
+              "y": 4450,
+            },
           },
         ],
-        "t": "polygon",
+        "t": "path",
       },
     },
     {
@@ -2098,109 +3436,99 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "lineWeight": "thin",
       "paint": {
         "fill": "#ffffff",
-        "stroke": "#a8a29a",
+        "stroke": "#6c6864",
         "width": 11.520000000000001,
       },
       "prim": {
-        "pts": [
+        "loops": [
           {
-            "x": 5704,
-            "y": 4702,
-          },
-          {
-            "x": 5697.04886856297,
-            "y": 4739.269942494763,
-          },
-          {
-            "x": 5676.669182372026,
-            "y": 4774,
-          },
-          {
-            "x": 5644.2497833620555,
-            "y": 4803.823376490863,
-          },
-          {
-            "x": 5602,
-            "y": 4826.707658144959,
-          },
-          {
-            "x": 5552.799085200914,
-            "y": 4841.093318985626,
-          },
-          {
-            "x": 5500,
-            "y": 4846,
-          },
-          {
-            "x": 5447.200914799086,
-            "y": 4841.093318985626,
-          },
-          {
-            "x": 5398,
-            "y": 4826.707658144959,
-          },
-          {
-            "x": 5355.7502166379445,
-            "y": 4803.823376490863,
-          },
-          {
-            "x": 5323.330817627974,
-            "y": 4774,
-          },
-          {
-            "x": 5302.95113143703,
-            "y": 4739.269942494763,
-          },
-          {
-            "x": 5296,
-            "y": 4702,
-          },
-          {
-            "x": 5302.95113143703,
-            "y": 4664.730057505237,
-          },
-          {
-            "x": 5323.330817627974,
-            "y": 4630,
-          },
-          {
-            "x": 5355.7502166379445,
-            "y": 4600.176623509137,
-          },
-          {
-            "x": 5398,
-            "y": 4577.292341855041,
-          },
-          {
-            "x": 5447.200914799086,
-            "y": 4562.906681014374,
-          },
-          {
-            "x": 5500,
-            "y": 4558,
-          },
-          {
-            "x": 5552.799085200914,
-            "y": 4562.906681014374,
-          },
-          {
-            "x": 5602,
-            "y": 4577.292341855041,
-          },
-          {
-            "x": 5644.2497833620555,
-            "y": 4600.176623509137,
-          },
-          {
-            "x": 5676.669182372026,
-            "y": 4630,
-          },
-          {
-            "x": 5697.04886856297,
-            "y": 4664.730057505237,
+            "edges": [
+              {
+                "center": {
+                  "x": 5607.825305560997,
+                  "y": 4711,
+                },
+                "r": 120.17469443900355,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5674.788928905429,
+                  "y": 4810.788928905429,
+                },
+              },
+              {
+                "center": {
+                  "x": 5500,
+                  "y": 4550.319152497339,
+                },
+                "r": 313.68084750266144,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5325.211071094571,
+                  "y": 4810.788928905429,
+                },
+              },
+              {
+                "center": {
+                  "x": 5392.174694439003,
+                  "y": 4711,
+                },
+                "r": 120.17469443900355,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5272,
+                  "y": 4711,
+                },
+              },
+              {
+                "center": {
+                  "x": 5392.174694439003,
+                  "y": 4711,
+                },
+                "r": 120.17469443900355,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5325.211071094571,
+                  "y": 4611.211071094571,
+                },
+              },
+              {
+                "center": {
+                  "x": 5500,
+                  "y": 4871.680847502661,
+                },
+                "r": 313.68084750266144,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5674.788928905429,
+                  "y": 4611.211071094571,
+                },
+              },
+              {
+                "center": {
+                  "x": 5607.825305560997,
+                  "y": 4711,
+                },
+                "r": 120.17469443900355,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5728,
+                  "y": 4711,
+                },
+              },
+            ],
+            "start": {
+              "x": 5728,
+              "y": 4711,
+            },
           },
         ],
-        "t": "polygon",
+        "t": "path",
       },
     },
     {
@@ -2209,442 +3537,507 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "paint": {
         "fill": "#ffffff",
         "stroke": "#a8a29a",
-        "width": 6.336000000000001,
+        "width": 8.32,
       },
       "prim": {
-        "pts": [
+        "loops": [
           {
-            "x": 5663.2,
-            "y": 4702,
-          },
-          {
-            "x": 5657.639094850376,
-            "y": 4731.815953995811,
-          },
-          {
-            "x": 5641.335345897621,
-            "y": 4759.6,
-          },
-          {
-            "x": 5615.399826689644,
-            "y": 4783.458701192691,
-          },
-          {
-            "x": 5581.6,
-            "y": 4801.766126515968,
-          },
-          {
-            "x": 5542.239268160732,
-            "y": 4813.274655188501,
-          },
-          {
-            "x": 5500,
-            "y": 4817.2,
-          },
-          {
-            "x": 5457.760731839268,
-            "y": 4813.274655188501,
-          },
-          {
-            "x": 5418.4,
-            "y": 4801.766126515968,
-          },
-          {
-            "x": 5384.600173310356,
-            "y": 4783.458701192691,
-          },
-          {
-            "x": 5358.664654102379,
-            "y": 4759.6,
-          },
-          {
-            "x": 5342.360905149624,
-            "y": 4731.815953995811,
-          },
-          {
-            "x": 5336.8,
-            "y": 4702,
-          },
-          {
-            "x": 5342.360905149624,
-            "y": 4672.184046004189,
-          },
-          {
-            "x": 5358.664654102379,
-            "y": 4644.4,
-          },
-          {
-            "x": 5384.600173310356,
-            "y": 4620.541298807309,
-          },
-          {
-            "x": 5418.4,
-            "y": 4602.233873484032,
-          },
-          {
-            "x": 5457.760731839268,
-            "y": 4590.725344811499,
-          },
-          {
-            "x": 5500,
-            "y": 4586.8,
-          },
-          {
-            "x": 5542.239268160732,
-            "y": 4590.725344811499,
-          },
-          {
-            "x": 5581.6,
-            "y": 4602.233873484032,
-          },
-          {
-            "x": 5615.399826689644,
-            "y": 4620.541298807309,
-          },
-          {
-            "x": 5641.335345897621,
-            "y": 4644.4,
-          },
-          {
-            "x": 5657.639094850376,
-            "y": 4672.184046004189,
+            "edges": [
+              {
+                "center": {
+                  "x": 5604.876179148291,
+                  "y": 4711,
+                },
+                "r": 92.52382085170846,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5653.634103518303,
+                  "y": 4789.634103518303,
+                },
+              },
+              {
+                "center": {
+                  "x": 5500,
+                  "y": 4541.86145617751,
+                },
+                "r": 291.5385438224898,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5346.365896481697,
+                  "y": 4789.634103518303,
+                },
+              },
+              {
+                "center": {
+                  "x": 5395.123820851709,
+                  "y": 4711,
+                },
+                "r": 92.52382085170846,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5302.6,
+                  "y": 4711,
+                },
+              },
+              {
+                "center": {
+                  "x": 5395.123820851709,
+                  "y": 4711,
+                },
+                "r": 92.52382085170846,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5346.365896481697,
+                  "y": 4632.365896481697,
+                },
+              },
+              {
+                "center": {
+                  "x": 5500,
+                  "y": 4880.13854382249,
+                },
+                "r": 291.5385438224898,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5653.634103518303,
+                  "y": 4632.365896481697,
+                },
+              },
+              {
+                "center": {
+                  "x": 5604.876179148291,
+                  "y": 4711,
+                },
+                "r": 92.52382085170846,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5697.4,
+                  "y": 4711,
+                },
+              },
+            ],
+            "start": {
+              "x": 5697.4,
+              "y": 4711,
+            },
           },
         ],
-        "t": "polygon",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "thin",
-      "paint": {
-        "fill": "#f4f2ee",
-        "stroke": "#a8a29a",
-        "width": 11.520000000000001,
-      },
-      "prim": {
-        "pts": [
-          {
-            "x": 5470,
-            "y": 4463.5,
-          },
-          {
-            "x": 5530,
-            "y": 4463.5,
-          },
-          {
-            "x": 5530,
-            "y": 4508.5,
-          },
-          {
-            "x": 5470,
-            "y": 4508.5,
-          },
-        ],
-        "t": "polygon",
+        "t": "path",
       },
     },
     {
       "layer": "furniture",
       "lineWeight": "extraThin",
-      "paint": {
-        "stroke": "#a8a29a",
-        "width": 6.336000000000001,
-      },
-      "prim": {
-        "a": {
-          "x": 5500,
-          "y": 4508.5,
-        },
-        "b": {
-          "x": 5500,
-          "y": 4644.4,
-        },
-        "t": "line",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "thin",
-      "paint": {
-        "fill": "#f4f2ee",
-        "stroke": "#a8a29a",
-        "width": 11.520000000000001,
-      },
-      "prim": {
-        "pts": [
-          {
-            "x": 5700,
-            "y": 5900,
-          },
-          {
-            "x": 5300,
-            "y": 5900,
-          },
-          {
-            "x": 5300,
-            "y": 5746,
-          },
-          {
-            "x": 5700,
-            "y": 5746,
-          },
-        ],
-        "t": "polygon",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "extraThin",
-      "paint": {
-        "stroke": "#a8a29a",
-        "width": 6.336000000000001,
-      },
-      "prim": {
-        "a": {
-          "x": 5676,
-          "y": 5853.8,
-        },
-        "b": {
-          "x": 5324,
-          "y": 5853.8,
-        },
-        "t": "line",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "thin",
-      "paint": {
-        "fill": "#ffffff",
-        "stroke": "#a8a29a",
-        "width": 11.520000000000001,
-      },
-      "prim": {
-        "pts": [
-          {
-            "x": 5340,
-            "y": 5462.08,
-          },
-          {
-            "x": 5345.451867793749,
-            "y": 5397.07500863205,
-          },
-          {
-            "x": 5361.43593539449,
-            "y": 5336.5,
-          },
-          {
-            "x": 5386.862915010152,
-            "y": 5284.483060837187,
-          },
-          {
-            "x": 5420,
-            "y": 5244.5690595855,
-          },
-          {
-            "x": 5458.588952783597,
-            "y": 5219.478069469237,
-          },
-          {
-            "x": 5500,
-            "y": 5210.92,
-          },
-          {
-            "x": 5541.411047216403,
-            "y": 5219.478069469237,
-          },
-          {
-            "x": 5580,
-            "y": 5244.5690595855,
-          },
-          {
-            "x": 5613.137084989848,
-            "y": 5284.483060837187,
-          },
-          {
-            "x": 5638.56406460551,
-            "y": 5336.5,
-          },
-          {
-            "x": 5654.548132206251,
-            "y": 5397.07500863205,
-          },
-          {
-            "x": 5660,
-            "y": 5462.08,
-          },
-          {
-            "x": 5654.548132206251,
-            "y": 5527.0849913679485,
-          },
-          {
-            "x": 5638.56406460551,
-            "y": 5587.66,
-          },
-          {
-            "x": 5613.137084989848,
-            "y": 5639.676939162813,
-          },
-          {
-            "x": 5580,
-            "y": 5679.5909404144995,
-          },
-          {
-            "x": 5541.411047216403,
-            "y": 5704.681930530763,
-          },
-          {
-            "x": 5500,
-            "y": 5713.24,
-          },
-          {
-            "x": 5458.588952783597,
-            "y": 5704.681930530763,
-          },
-          {
-            "x": 5420,
-            "y": 5679.5909404144995,
-          },
-          {
-            "x": 5386.862915010152,
-            "y": 5639.676939162813,
-          },
-          {
-            "x": 5361.43593539449,
-            "y": 5587.66,
-          },
-          {
-            "x": 5345.451867793749,
-            "y": 5527.084991367949,
-          },
-        ],
-        "t": "polygon",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "extraThin",
-      "paint": {
-        "fill": "#ffffff",
-        "stroke": "#a8a29a",
-        "width": 6.336000000000001,
-      },
-      "prim": {
-        "pts": [
-          {
-            "x": 5375.2,
-            "y": 5462.08,
-          },
-          {
-            "x": 5379.452456879124,
-            "y": 5411.376106733,
-          },
-          {
-            "x": 5391.920029607702,
-            "y": 5364.1276,
-          },
-          {
-            "x": 5411.753073707919,
-            "y": 5323.554387453006,
-          },
-          {
-            "x": 5437.6,
-            "y": 5292.4214664766905,
-          },
-          {
-            "x": 5467.699383171205,
-            "y": 5272.850494186006,
-          },
-          {
-            "x": 5500,
-            "y": 5266.1752,
-          },
-          {
-            "x": 5532.300616828795,
-            "y": 5272.850494186006,
-          },
-          {
-            "x": 5562.4,
-            "y": 5292.4214664766905,
-          },
-          {
-            "x": 5588.246926292081,
-            "y": 5323.554387453006,
-          },
-          {
-            "x": 5608.079970392298,
-            "y": 5364.1276,
-          },
-          {
-            "x": 5620.547543120876,
-            "y": 5411.376106733,
-          },
-          {
-            "x": 5624.8,
-            "y": 5462.08,
-          },
-          {
-            "x": 5620.547543120876,
-            "y": 5512.783893267,
-          },
-          {
-            "x": 5608.079970392298,
-            "y": 5560.0324,
-          },
-          {
-            "x": 5588.246926292081,
-            "y": 5600.605612546994,
-          },
-          {
-            "x": 5562.4,
-            "y": 5631.738533523309,
-          },
-          {
-            "x": 5532.300616828795,
-            "y": 5651.309505813994,
-          },
-          {
-            "x": 5500,
-            "y": 5657.9848,
-          },
-          {
-            "x": 5467.699383171205,
-            "y": 5651.309505813994,
-          },
-          {
-            "x": 5437.6,
-            "y": 5631.738533523309,
-          },
-          {
-            "x": 5411.753073707919,
-            "y": 5600.605612546994,
-          },
-          {
-            "x": 5391.920029607702,
-            "y": 5560.0324,
-          },
-          {
-            "x": 5379.452456879124,
-            "y": 5512.783893267,
-          },
-        ],
-        "t": "polygon",
-      },
-    },
-    {
-      "layer": "furniture",
-      "lineWeight": "thin",
       "paint": {
         "fill": "#a8a29a",
         "stroke": "#a8a29a",
-        "width": 11.520000000000001,
+        "width": 8.32,
       },
       "prim": {
         "center": {
           "x": 5500,
-          "y": 5823,
+          "y": 4501.75,
         },
-        "r": 20,
+        "r": 15.750000000000002,
+        "t": "circle",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "a": {
+          "x": 5500,
+          "y": 4501.75,
+        },
+        "b": {
+          "x": 5500,
+          "y": 4589.5,
+        },
+        "t": "line",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "#a8a29a",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "center": {
+          "x": 5500,
+          "y": 4726.3,
+        },
+        "r": 13.5,
+        "t": "circle",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "thin",
+      "paint": {
+        "fill": "#f4f2ee",
+        "stroke": "#6c6864",
+        "width": 11.520000000000001,
+      },
+      "prim": {
+        "loops": [
+          {
+            "edges": [
+              {
+                "t": "line",
+                "to": {
+                  "x": 5353.52,
+                  "y": 5900,
+                },
+              },
+              {
+                "center": {
+                  "x": 5353.52,
+                  "y": 5876.48,
+                },
+                "r": 23.520000000000003,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5330,
+                  "y": 5876.48,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 5330,
+                  "y": 5755.52,
+                },
+              },
+              {
+                "center": {
+                  "x": 5353.52,
+                  "y": 5755.52,
+                },
+                "r": 23.520000000000003,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5353.52,
+                  "y": 5732,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 5646.48,
+                  "y": 5732,
+                },
+              },
+              {
+                "center": {
+                  "x": 5646.48,
+                  "y": 5755.52,
+                },
+                "r": 23.520000000000003,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5670,
+                  "y": 5755.52,
+                },
+              },
+              {
+                "t": "line",
+                "to": {
+                  "x": 5670,
+                  "y": 5876.48,
+                },
+              },
+              {
+                "center": {
+                  "x": 5646.48,
+                  "y": 5876.48,
+                },
+                "r": 23.520000000000003,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5646.48,
+                  "y": 5900,
+                },
+              },
+            ],
+            "start": {
+              "x": 5646.48,
+              "y": 5900,
+            },
+          },
+        ],
+        "t": "path",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "thin",
+      "paint": {
+        "fill": "#ffffff",
+        "stroke": "#6c6864",
+        "width": 11.520000000000001,
+      },
+      "prim": {
+        "loops": [
+          {
+            "edges": [
+              {
+                "center": {
+                  "x": 5500,
+                  "y": 5360.0077973704065,
+                },
+                "r": 121.5077973704064,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5602.981756773415,
+                  "y": 5295.518243226585,
+                },
+              },
+              {
+                "center": {
+                  "x": 5286.031201425868,
+                  "y": 5494,
+                },
+                "r": 373.96879857413217,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5602.981756773415,
+                  "y": 5692.481756773415,
+                },
+              },
+              {
+                "center": {
+                  "x": 5500,
+                  "y": 5627.9922026295935,
+                },
+                "r": 121.5077973704064,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5500,
+                  "y": 5749.5,
+                },
+              },
+              {
+                "center": {
+                  "x": 5500,
+                  "y": 5627.9922026295935,
+                },
+                "r": 121.5077973704064,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5397.018243226585,
+                  "y": 5692.481756773415,
+                },
+              },
+              {
+                "center": {
+                  "x": 5713.968798574132,
+                  "y": 5494,
+                },
+                "r": 373.96879857413217,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5397.018243226585,
+                  "y": 5295.518243226585,
+                },
+              },
+              {
+                "center": {
+                  "x": 5500,
+                  "y": 5360.0077973704065,
+                },
+                "r": 121.5077973704064,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5500,
+                  "y": 5238.5,
+                },
+              },
+            ],
+            "start": {
+              "x": 5500,
+              "y": 5238.5,
+            },
+          },
+        ],
+        "t": "path",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "#ffffff",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "loops": [
+          {
+            "edges": [
+              {
+                "center": {
+                  "x": 5500,
+                  "y": 5368.432348144858,
+                },
+                "r": 91.53234814485768,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5577.986740525985,
+                  "y": 5320.513259474015,
+                },
+              },
+              {
+                "center": {
+                  "x": 5326.890145541672,
+                  "y": 5474.8,
+                },
+                "r": 294.70985445832787,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5577.986740525985,
+                  "y": 5629.086740525985,
+                },
+              },
+              {
+                "center": {
+                  "x": 5500,
+                  "y": 5581.167651855142,
+                },
+                "r": 91.53234814485768,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5500,
+                  "y": 5672.7,
+                },
+              },
+              {
+                "center": {
+                  "x": 5500,
+                  "y": 5581.167651855142,
+                },
+                "r": 91.53234814485768,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5422.013259474015,
+                  "y": 5629.086740525985,
+                },
+              },
+              {
+                "center": {
+                  "x": 5673.109854458328,
+                  "y": 5474.8,
+                },
+                "r": 294.70985445832787,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5422.013259474015,
+                  "y": 5320.513259474015,
+                },
+              },
+              {
+                "center": {
+                  "x": 5500,
+                  "y": 5368.432348144858,
+                },
+                "r": 91.53234814485768,
+                "sweep": 1,
+                "t": "arc",
+                "to": {
+                  "x": 5500,
+                  "y": 5276.900000000001,
+                },
+              },
+            ],
+            "start": {
+              "x": 5500,
+              "y": 5276.900000000001,
+            },
+          },
+        ],
+        "t": "path",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "a": {
+          "x": 5568,
+          "y": 5717.175,
+        },
+        "b": {
+          "x": 5568,
+          "y": 5687.525,
+        },
+        "t": "line",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "a": {
+          "x": 5432,
+          "y": 5717.175,
+        },
+        "b": {
+          "x": 5432,
+          "y": 5687.525,
+        },
+        "t": "line",
+      },
+    },
+    {
+      "layer": "furniture",
+      "lineWeight": "extraThin",
+      "paint": {
+        "fill": "#a8a29a",
+        "stroke": "#a8a29a",
+        "width": 8.32,
+      },
+      "prim": {
+        "center": {
+          "x": 5500,
+          "y": 5816,
+        },
+        "r": 16,
         "t": "circle",
       },
     },

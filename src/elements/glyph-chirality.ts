@@ -32,29 +32,38 @@
  * A per-family `chiral` flag was considered and rejected for the reason a `sofa_l_r`
  * *category* was rejected: it puts the fix in a table that every future handed symbol has
  * to be remembered in. It is also not expressible there. Five of the shipped families
- * (`counter`, `fridge`, `upper_cabinet`, `hedge`, `motorcycle`) are handed at some
+ * (`counter`, `fridge`, `upper_cabinet`, `bicycle`, `motorcycle`) are handed at some
  * footprints and symmetric at others, because their detail is tiled and the tile COUNT
- * comes from the aspect ratio — a single flag is simply the wrong shape for that fact.
+ * comes from the aspect ratio, or is drawn along the footprint's own long axis — a single
+ * flag is simply the wrong shape for that fact (`test/handedness-grid-baseline.ts`).
  *
  * So {@link mirrorGlyph} asks the drawing instead: reflect the marks, and keep the
  * reflection only if it is a different drawing. A symbol with a vertical mirror axis
  * therefore renders **byte-identical** whether its instance was reflected or not, at every
- * footprint, with nothing to maintain. Nineteen of the 83 shipped families are handed at
- * their catalogued footprints; `test/glyph-chirality.test.ts` enumerates them, as a record
- * of the survey rather than as the mechanism.
+ * footprint, with nothing to maintain. Which shipped families are handed at their catalogued
+ * footprints is enumerated by `test/glyph-chirality.test.ts`, as a record of the survey rather
+ * than as the mechanism — a redraw can move a family in or out of that list.
  *
- * "A different drawing" is measured at the finest precision any backend serializes —
- * {@link fmt4}, the DXF formatter — so "symmetric" means exactly "would emit the same
- * bytes", and there is no tolerance constant of this module's own invention. Float noise
- * from the glyph layer's own `cos`/`sin` sits seven orders below that quantum, which is
- * why an EXACT comparison would call 63 of the 83 families handed and be useless.
+ * "A different drawing" is measured at the finest precision any backend serializes — the
+ * 0.0001 mm of {@link fmt4}, the DXF formatter — read through {@link keyNum}, which first
+ * nudges every value down by {@link TIE_NUDGE} (1e-7 mm). The nudge is not a tolerance on
+ * the drawing; it moves the ROUNDING BOUNDARY off the decimal ties. Integer millimetres times
+ * the glyphs' three-decimal fractions land exactly on `x.xxxx5` (a sink's drain at 630.13125,
+ * a drawer front at 1474.00375), and there a mark and its mirror partner — computed along
+ * different paths, a few ulps apart — rounded to opposite sides, so a symmetric symbol read as
+ * handed at some footprints and positions and flipped `describe --facts symmetry`. Shifted by
+ * 1e-7 (far above an ulp of any modelled coordinate, far below any real handed detail), both
+ * round the same way; a value would have to sit within an ulp of `x.xxxx5 + 1e-7` to straddle
+ * the new boundary, which no fraction-of-the-footprint arithmetic produces. Float noise from
+ * the glyph layer's own `cos`/`sin` sits seven orders below the quantum, which is why an EXACT
+ * comparison would call 63 of the 83 families handed and be useless.
  *
  * Pure and deterministic: no clock, no randomness, no trig.
  */
 
 import type { Point } from "../ast.js";
 import { fmt4 } from "../num-format.js";
-import type { SceneNode, ScenePrim } from "../scene.js";
+import type { PathEdge, PathLoop, SceneNode, ScenePrim } from "../scene.js";
 import { mapSceneNode } from "./glyph-lib.js";
 
 /**
@@ -125,7 +134,13 @@ function nodeKey(n: SceneNode): string {
   return `${n.layer}|${n.layerName ?? ""}|${p}|${n.lineWeight ?? ""}|${n.lineType ?? ""}|${primKey(n.prim)}`;
 }
 
-const pt = (p: Point): string => `${fmt4(p.x)},${fmt4(p.y)}`;
+/** How far every keyed number is moved off the `x.xxxx5` rounding ties first — see the header. */
+const TIE_NUDGE = 1e-7;
+
+/** A number as the handedness key reads it: {@link fmt4} after the {@link TIE_NUDGE}. */
+const keyNum = (v: number): string => fmt4(v - TIE_NUDGE);
+
+const pt = (p: Point): string => `${keyNum(p.x)},${keyNum(p.y)}`;
 
 /** The lexicographically smallest spelling of a closed ring — over every start point and
  *  both directions of travel, which is what makes it invariant under a reflection. */
@@ -149,30 +164,57 @@ function primKey(prim: ScenePrim): string {
     case "line":
       return `line ${[pt(prim.a), pt(prim.b)].sort().join(" ")}`;
     case "circle":
-      return `circle ${pt(prim.center)} ${fmt4(prim.r)}`;
+      return `circle ${pt(prim.center)} ${keyNum(prim.r)}`;
     // The same curve traced the other way round: normalise to `sweep 0` by swapping the
     // endpoints, which is exactly what a reflection does to an arc.
     case "arc": {
       const ends = prim.sweep === 0 ? [prim.start, prim.end] : [prim.end, prim.start];
-      return `arc ${pt(prim.center)} ${fmt4(prim.r)} ${ends.map(pt).join(" ")}`;
+      return `arc ${pt(prim.center)} ${keyNum(prim.r)} ${ends.map(pt).join(" ")}`;
     }
     case "text":
-      return `text ${pt(prim.at)} ${fmt4(prim.size)} ${prim.anchor} ${prim.rotate ?? 0} ${prim.value}`;
+      return `text ${pt(prim.at)} ${keyNum(prim.size)} ${prim.anchor} ${prim.rotate ?? 0} ${prim.value}`;
     case "region":
       return `region ${prim.loops.map(ringKey).sort().join(" | ")}`;
-    // A path's loops each start somewhere definite and its edges carry radii, so it is
-    // compared as written apart from the sweep normalisation above. No fixture glyph emits
-    // one; this keeps the function total rather than claiming a canonical form it has no
-    // caller to justify.
+    // A path is a set of closed loops, and a reflection re-spells each one exactly as it does a
+    // polygon's ring: the loop starts at the mirrored point and runs the other way round, which
+    // also flips every arc's sweep. So each loop is keyed like {@link ringKey} — its smallest
+    // spelling over every start edge and both directions of travel — and the loops as a set.
+    // Fixture glyphs draw their curves this way (`GlyphCtx.path`), so this is load-bearing: a
+    // literal comparison would call every symmetric curved symbol handed and mirror its bytes.
     case "path":
-      return `path ${prim.loops
-        .map(
-          (lp) =>
-            `${pt(lp.start)}>${lp.edges.map((e) => (e.t === "line" ? `l${pt(e.to)}` : `a${pt(e.to)}${pt(e.center)}${fmt4(e.r)}${e.sweep}`)).join("")}`,
-        )
-        .sort()
-        .join(" | ")}`;
+      return `path ${prim.loops.map(loopKey).sort().join(" | ")}`;
     case "hatch":
-      return `hatch ${prim.material} ${fmt4(prim.scale)} ${fmt4(prim.angle)} ${prim.region.map(ringKey).sort().join(" | ")}`;
+      return `hatch ${prim.material} ${keyNum(prim.scale)} ${keyNum(prim.angle)} ${prim.region.map(ringKey).sort().join(" | ")}`;
   }
+}
+
+/**
+ * The smallest spelling of one closed `path` loop: one token per edge — the vertex it leaves,
+ * then `l` for a straight edge or the arc's centre, radius and sweep — minimised over every
+ * start edge and both directions. Travelling an edge backwards leaves from its other end and
+ * flips its sweep, which is what a reflection does to it. The loop's closing edge is present
+ * by the `path` contract, so the vertex list is `start` followed by each edge's `to`.
+ *
+ * Minimising over both directions QUOTIENTS WINDING, and that is only safe for a path whose
+ * loops are separate outlines. A multi-loop path with a HOLE (filled nonzero, the hole wound
+ * the other way) would need a winding-aware key — reversing one loop there changes what is
+ * filled. No glyph emits one today; give a glyph a holed path and this key has to change first.
+ */
+function loopKey(lp: PathLoop): string {
+  const n = lp.edges.length;
+  const verts = [lp.start, ...lp.edges.map((e) => e.to)];
+  const tail = (e: PathEdge, flip: boolean): string =>
+    e.t === "line" ? "l" : `a${pt(e.center)}r${keyNum(e.r)}s${flip ? 1 - e.sweep : e.sweep}`;
+  const fwd: string[] = [];
+  const rev: string[] = [];
+  for (let i = 0; i < n; i++) fwd.push(`${pt(verts[i]!)}${tail(lp.edges[i]!, false)}`);
+  for (let i = n - 1; i >= 0; i--) rev.push(`${pt(verts[i + 1]!)}${tail(lp.edges[i]!, true)}`);
+  let best: string | undefined;
+  for (const seq of [fwd, rev]) {
+    for (let i = 0; i < seq.length; i++) {
+      const k = [...seq.slice(i), ...seq.slice(0, i)].join(" ");
+      if (best === undefined || k < best) best = k;
+    }
+  }
+  return best ?? pt(lp.start);
 }

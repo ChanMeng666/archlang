@@ -10,11 +10,12 @@
  * The rest is not routine, and it is why this file exists rather than four more rows in
  * `glyphs-living.test.ts`:
  *
- * **1. The rug paints NO fill, and that is a correctness property, not a style.** An underlay
- * is drawn under other furniture, so if it filled, the drawing would depend on the order the
- * two statements were written in — `rug` after `sofa` would paint over the sofa, and the same
- * plan with the lines swapped would look right. The assertion walks every primitive, so a
- * later edit that gives one of them a body fill fails here rather than in a screenshot.
+ * **1. The rug paints NO fill, and it draws FIRST.** An underlay is drawn under other furniture:
+ * `toScene` renders every underlay before the rest of the furniture whatever the source order,
+ * so `rug` after `sofa` and `rug` before `sofa` are the same bytes, and with no fill the rug can
+ * hide nothing even where no piece stands on it. Both halves are asserted below — the fill law
+ * walks every primitive, so a later edit that gives one of them a body fill fails here rather
+ * than in a screenshot.
  *
  * **2. `underlay` is proved by its CONSEQUENCES, in both directions.** Three rules read the
  * flag, and each one is asserted with the counterexample beside it: the exemption must not be
@@ -42,7 +43,8 @@ import { resolve } from "../src/ir.js";
 import { toScene } from "../src/scene-build.js";
 import { DEFAULT_THEME } from "../src/theme.js";
 import type { Point } from "../src/ast.js";
-import type { RenderSizes, SceneNode } from "../src/scene.js";
+import type { PathEdge, RenderSizes, SceneNode } from "../src/scene.js";
+import { pathExtentPoints } from "./glyph-extent.js";
 import type { Rect } from "../src/elements/glyph-lib.js";
 import { fixtureGlyph, hasFixtureGlyph } from "../src/elements/fixtures-glyphs.js";
 import { defaultFootprint, isUnderlay, solidFurniture } from "../src/fixtures-catalog.js";
@@ -85,6 +87,9 @@ function pointsOf(n: SceneNode): Point[] {
       const apex = len > 0 ? [{ x: p.center.x + (dx / len) * p.r, y: p.center.y + (dy / len) * p.r }] : [];
       return [p.start, p.end, p.center, ...apex];
     }
+    // A curved outline: its vertices and its arcs' axis extremes, exactly (`glyph-extent.ts`).
+    case "path":
+      return pathExtentPoints(p);
     default:
       throw new Error(`a batch-2 glyph emitted an unexpected primitive: ${p.t}`);
   }
@@ -111,10 +116,10 @@ function expectInside(nodes: SceneNode[], r: Rect, what: string): void {
  * grand, a 700 x 1900 lounger.
  */
 const CASES: readonly (readonly [string, Rect, number])[] = [
-  ["rug", { x: 1000, y: 1000, w: 2000, h: 1400 }, 16], // 2 borders + 7 fringe ticks per end
-  ["sofa_l", { x: 1000, y: 1000, w: 2600, h: 1600 }, 6], // body + 2 backrests + 2 + 1 cushions
-  ["piano", { x: 1000, y: 1000, w: 1500, h: 1400 }, 7], // body + keyboard + 4 key ticks + lid
-  ["sun_lounger", { x: 1000, y: 1000, w: 700, h: 1900 }, 8], // body + backrest + 6 slats
+  ["rug", { x: 1000, y: 1000, w: 2000, h: 1400 }, 30], // body + border band + 14 fringe ticks per end
+  ["sofa_l", { x: 1000, y: 1000, w: 2600, h: 1600 }, 14], // body + 2 arms + (2 + 3 + 1) back + (1 + 3 + 1) seat
+  ["piano", { x: 1000, y: 1000, w: 1500, h: 1400 }, 26], // case + lid + keyboard + 23 key ticks
+  ["sun_lounger", { x: 1000, y: 1000, w: 700, h: 1900 }, 5], // frame + 3 cushion panels + headrest
 ];
 
 const ALL_NAMES = ["rug", "carpet", "sofa_l", "corner_sofa", "piano", "grand_piano", "sun_lounger", "lounger"];
@@ -133,7 +138,10 @@ describe("glyphs-batch2 — the drawing contract", () => {
   it.each(CASES)("%s uses only the two glyph pen weights, and outlines at least one in thin", (category, r) => {
     const weights = glyph(category, r).map((n) => n.lineWeight);
     for (const w of weights) expect(["thin", "extraThin"]).toContain(w);
-    expect(weights, `${category} must have an outline`).toContain("thin");
+    // The one exemption is the rug, deliberately: it is an UNDERLAY, and an outline-weight edge
+    // would run straight through the seating that stands on it. Its own law is pinned below.
+    if (category === "rug") expect(weights.every((w) => w === "extraThin")).toBe(true);
+    else expect(weights, `${category} must have an outline`).toContain("thin");
   });
 
   it.each(CASES)("%s emits no text primitive and draws on the furniture layer", (category, r) => {
@@ -195,9 +203,10 @@ describe("glyphs-batch2 — degenerate footprints", () => {
       const nodes = glyph(category, r);
       const where = `${category} at ${r.w}x${r.h}`;
       // Every repeat count here is aspect-derived, and an aspect is unbounded: without the
-      // clamps the 10000 x 10 case asks for thousands of lines in one symbol.
+      // clamps the 10000 x 10 case asks for thousands of lines in one symbol. The ceiling is a
+      // SQUARE rug at its clamp: body + band + 10 fringe ticks on each of its four ends.
       expect(nodes.length, where).toBeGreaterThanOrEqual(5);
-      expect(nodes.length, where).toBeLessThanOrEqual(20);
+      expect(nodes.length, where).toBeLessThanOrEqual(42);
       for (const n of nodes) {
         if (n.prim.t === "circle" || n.prim.t === "arc") {
           expect(Number.isFinite(n.prim.r), `${where}: radius`).toBe(true);
@@ -205,6 +214,204 @@ describe("glyphs-batch2 — degenerate footprints", () => {
       }
       expectInside(nodes, r, where);
     }
+  });
+});
+
+describe("the rug is an UNDERLAY in its linework too: detail pen only, fringe off the two short ends", () => {
+  it("every line is the detail pen in the detail tone — no outline-weight edge to cut through a sofa", () => {
+    for (const r of [
+      { x: 0, y: 0, w: 2000, h: 1400 },
+      { x: 0, y: 0, w: 800, h: 2400 },
+    ]) {
+      for (const n of glyph("rug", r)) {
+        expect(n.lineWeight).toBe("extraThin");
+        expect(n.paint.stroke).toBe(DEFAULT_THEME.furnitureStroke);
+      }
+    }
+  });
+
+  it("the fringe hangs off the SHORT ends only, outside the woven body, and turns with the long axis", () => {
+    for (const r of [
+      { x: 100, y: 200, w: 2400, h: 800 },
+      { x: 100, y: 200, w: 800, h: 2400 },
+    ]) {
+      const nodes = glyph("rug", r);
+      const body = nodes[0]!;
+      if (body.prim.t !== "polygon") throw new Error("the rug body is a polygon");
+      const horizontal = r.w >= r.h;
+      const ticks = nodes.flatMap((n) => (n.prim.t === "line" ? [n.prim] : []));
+      expect(ticks.length).toBeGreaterThan(0);
+      expect(ticks.length % 2).toBe(0);
+      const bx = body.prim.pts.map((p) => p.x);
+      const by = body.prim.pts.map((p) => p.y);
+      for (const t of ticks) {
+        // Each tick runs ALONG the long axis, from the body's end to the footprint's edge.
+        if (horizontal) {
+          expect(t.a.y).toBe(t.b.y);
+          const [lo, hi] = [Math.min(t.a.x, t.b.x), Math.max(t.a.x, t.b.x)];
+          expect(lo === r.x ? hi === Math.min(...bx) : hi === r.x + r.w && lo === Math.max(...bx)).toBe(true);
+        } else {
+          expect(t.a.x).toBe(t.b.x);
+          const [lo, hi] = [Math.min(t.a.y, t.b.y), Math.max(t.a.y, t.b.y)];
+          expect(lo === r.y ? hi === Math.min(...by) : hi === r.y + r.h && lo === Math.max(...by)).toBe(true);
+        }
+      }
+      // …and the body spans the full SHORT side: no fringe on the long edges.
+      if (horizontal) expect([Math.min(...by), Math.max(...by)]).toEqual([r.y, r.y + r.h]);
+      else expect([Math.min(...bx), Math.max(...bx)]).toEqual([r.x, r.x + r.w]);
+    }
+  });
+});
+
+describe("a SQUARE rug has no long axis, so it is fringed on all four ends", () => {
+  it.each([1000, 400, 2400, 1])("at %i x %i the fringe is the same on every end, and clear of the corners", (s) => {
+    const r = { x: 300, y: -200, w: s, h: s };
+    const nodes = glyph("rug", r);
+    const body = nodes[0]!;
+    if (body.prim.t !== "polygon") throw new Error("the rug body is a polygon");
+    const bx = body.prim.pts.map((p) => p.x);
+    const by = body.prim.pts.map((p) => p.y);
+    const ticks = nodes.flatMap((n) => (n.prim.t === "line" ? [n.prim] : []));
+    const onEnd = (pred: (p: { a: Point; b: Point }) => boolean): number => ticks.filter(pred).length;
+    const left = onEnd((t) => Math.min(t.a.x, t.b.x) === r.x);
+    const right = onEnd((t) => Math.max(t.a.x, t.b.x) === r.x + r.w);
+    const top = onEnd((t) => Math.min(t.a.y, t.b.y) === r.y);
+    const bottom = onEnd((t) => Math.max(t.a.y, t.b.y) === r.y + r.h);
+    expect(left).toBeGreaterThan(0);
+    expect([left, right, top, bottom]).toEqual([left, left, left, left]);
+    expect(left * 4).toBe(ticks.length);
+    // Each tick stands off its own end of the body, inside the body's span along that end, so no
+    // two fringes cross in a corner.
+    for (const t of ticks) {
+      if (t.a.y === t.b.y) expect(t.a.y > Math.min(...by) && t.a.y < Math.max(...by)).toBe(true);
+      else expect(t.a.x > Math.min(...bx) && t.a.x < Math.max(...bx)).toBe(true);
+    }
+  });
+
+  it("…while a rug a hair off square keeps the two-end fringe of its long axis", () => {
+    const lines = glyph("rug", { x: 0, y: 0, w: 1001, h: 1000 }).filter((n) => n.prim.t === "line");
+    for (const n of lines) if (n.prim.t === "line") expect(n.prim.a.y).toBe(n.prim.b.y);
+  });
+});
+
+describe("the L-sofa is the sofa's anatomy wrapped round the corner", () => {
+  const r = { x: 0, y: 0, w: 2600, h: 1600 };
+  const D = Math.min(1600 * 0.56, 2600 * 0.35); // both runs' depth: 896
+
+  it("has an arm at each FREE end, and a square white corner seat between the two back bands", () => {
+    const nodes = glyph("sofa_l", r);
+    const [, armTop, armRet] = nodes;
+    const box = (n: SceneNode) => {
+      const ps = pointsOf(n);
+      return {
+        x0: Math.min(...ps.map((p) => p.x)),
+        x1: Math.max(...ps.map((p) => p.x)),
+        y0: Math.min(...ps.map((p) => p.y)),
+        y1: Math.max(...ps.map((p) => p.y)),
+      };
+    };
+    // The back run's arm is at its right-hand end, the full depth of the run…
+    expect(box(armTop!)).toMatchObject({ x1: r.x + r.w, y0: r.y });
+    expect(box(armTop!).y1).toBeCloseTo(r.y + D, 9);
+    // …the return's at its foot.
+    expect(box(armRet!)).toMatchObject({ x0: r.x, y1: r.y + r.h });
+    expect(box(armRet!).x1).toBeCloseTo(r.x + D, 9);
+    // The seats: white, detail pen; exactly one of them is square, and it sits in the corner.
+    const seats = nodes.filter((n) => n.paint.fill === DEFAULT_THEME.opening).map(box);
+    const square = seats.filter((b) => Math.abs(b.x1 - b.x0 - (b.y1 - b.y0)) < 1e-6 && b.x1 - b.x0 > D * 0.5);
+    expect(square).toHaveLength(1);
+    expect(square[0]!.x1).toBeLessThan(r.x + D);
+    expect(square[0]!.y1).toBeLessThan(r.y + D);
+  });
+
+  it("no two cushions overlap — the corner's back cushions pinwheel", () => {
+    const boxes = glyph("sofa_l", r)
+      .filter((n) => n.paint.fill === DEFAULT_THEME.opening)
+      .map((n) => {
+        const ps = pointsOf(n);
+        return [
+          Math.min(...ps.map((p) => p.x)),
+          Math.max(...ps.map((p) => p.x)),
+          Math.min(...ps.map((p) => p.y)),
+          Math.max(...ps.map((p) => p.y)),
+        ] as const;
+      });
+    for (let i = 0; i < boxes.length; i++)
+      for (let j = i + 1; j < boxes.length; j++) {
+        const [a, b] = [boxes[i]!, boxes[j]!];
+        const overlap = a[0] < b[1] - 1e-6 && b[0] < a[1] - 1e-6 && a[2] < b[3] - 1e-6 && b[2] < a[3] - 1e-6;
+        expect(overlap, `cushions ${i} and ${j}`).toBe(false);
+      }
+  });
+});
+
+describe("the piano is a grand: a tangent-continuous case, the keyboard at the back, a bench when it fits", () => {
+  /** The unit tangent leaving / arriving at each end of a path edge, `from` the previous vertex. */
+  const tangents = (from: Point, e: PathEdge): [Point, Point] => {
+    if (e.t === "line") {
+      const l = Math.hypot(e.to.x - from.x, e.to.y - from.y);
+      const u = { x: (e.to.x - from.x) / l, y: (e.to.y - from.y) / l };
+      return [u, u];
+    }
+    // Perpendicular to the radius, turned with the sweep (1 = clockwise on the page, y down).
+    const t = (p: Point): Point => {
+      const rx = (p.x - e.center.x) / e.r;
+      const ry = (p.y - e.center.y) / e.r;
+      return e.sweep === 1 ? { x: -ry, y: rx } : { x: ry, y: -rx };
+    };
+    return [t(from), t(e.to)];
+  };
+
+  it.each([
+    [1500, 1400],
+    [1400, 1400],
+    [1500, 2000],
+    [1600, 1000],
+    [1300, 2400],
+  ])("the case outline at %ix%i has no kink: every edge leaves the way the last one arrived", (w, h) => {
+    const n = glyph("piano", { x: 0, y: 0, w, h })[0]!;
+    if (n.prim.t !== "path") throw new Error("the piano case is a path");
+    const lp = n.prim.loops[0]!;
+    let from = lp.start;
+    let arrive: Point | undefined;
+    let corners = 0;
+    for (const e of lp.edges) {
+      const [leave, next] = tangents(from, e);
+      if (arrive) {
+        const turn = Math.abs(arrive.x * leave.y - arrive.y * leave.x);
+        if (turn > 1e-6) corners++;
+        else expect(arrive.x * leave.x + arrive.y * leave.y, "a junction reverses").toBeGreaterThan(0);
+      }
+      arrive = next;
+      from = e.to;
+    }
+    // The only corners are the two square ones at the keyboard: front ↔ bass side, cheek ↔ front
+    // (the loop's first edge leaves from the second, so it is not counted here).
+    expect(corners).toBe(1);
+    expect(n.prim.loops[0]!.edges.some((e) => e.t === "arc")).toBe(true);
+  });
+
+  it("puts the keyboard across the BACK, white, with its keys ticked off", () => {
+    const r = { x: 0, y: 0, w: 1500, h: 1400 };
+    const nodes = glyph("piano", r);
+    const kb = nodes[2]!;
+    expect([kb.paint.fill, kb.lineWeight]).toEqual([DEFAULT_THEME.opening, "extraThin"]);
+    expect(Math.max(...pointsOf(kb).map((p) => p.y))).toBeLessThan(r.y + r.h * 0.2);
+    const keys = nodes.filter((n) => n.prim.t === "line");
+    expect(keys.length).toBeGreaterThanOrEqual(8);
+    for (const k of keys) if (k.prim.t === "line") expect(k.prim.a.x).toBe(k.prim.b.x);
+  });
+
+  it("draws the bench in front of the keys only when the footprint is at least 1.3 widths deep", () => {
+    const benches = (w: number, h: number): number =>
+      glyph("piano", { x: 0, y: 0, w, h }).filter((n) => n.prim.t === "path").length - 3;
+    expect(benches(1500, 1400)).toBe(0); // every piano the examples place is all piano
+    expect(benches(1500, 1940)).toBe(0);
+    expect(benches(1500, 1950)).toBe(2); // the bench frame and its pad
+    const nodes = glyph("piano", { x: 0, y: 0, w: 1500, h: 2000 });
+    const frame = nodes.at(-2)!;
+    const caseTop = Math.min(...pointsOf(nodes[0]!).map((p) => p.y));
+    expect(Math.max(...pointsOf(frame).map((p) => p.y))).toBeLessThan(caseTop);
   });
 });
 
@@ -228,19 +435,69 @@ describe("the rug is drawn UNFILLED, so paint order cannot matter", () => {
   });
 
   it("the sofa it is written after survives, whichever order the two are written in", () => {
-    // The consequence the law above buys, stated end to end: an unfilled rug drawn LAST
-    // cannot occlude, so the sofa's own linework is byte-identical either way round.
+    // The consequence the law above and the underlay render order buy together, stated end to
+    // end: the rug is drawn FIRST whichever statement came first, so the two documents are the
+    // same bytes — the sofa's fill lies over the rug's lines in both.
     const body = (first: string, second: string): string =>
       `plan "P" { units mm room id=r at (0,0) size 6000x5000 label "R" ${first} ${second} }`;
     const rug = "furniture rug at (500,500) size 3000x2200";
     const sofa = "furniture sofa at (800,1200) size 2000x900";
     const rugFirst = compile(body(rug, sofa), { noCache: true }).svg;
     const sofaFirst = compile(body(sofa, rug), { noCache: true }).svg;
-    // The two documents differ only in the order of the furniture group's own children…
-    expect(rugFirst).not.toBe(sofaFirst);
-    // …and every line of each is present in the other, so nothing was painted over.
-    const lines = (s: string): string[] => s.split("\n").sort();
-    expect(lines(rugFirst)).toEqual(lines(sofaFirst));
+    expect(sofaFirst).toBe(rugFirst);
+  });
+});
+
+describe("underlay z-order — a rug draws before every other piece of furniture", () => {
+  /** The ids of the furniture-pass nodes of `src`'s scene, one entry per run of equal ids. */
+  const furnitureRuns = (src: string): string[] => {
+    const plan = parse(src).plan;
+    if (!plan) throw new Error("parse failed");
+    const runs: string[] = [];
+    for (const n of toScene(resolve(plan).ir, { annotate: true }).nodes) {
+      if (n.layer !== "furniture" || n.elementId === undefined) continue;
+      if (runs[runs.length - 1] !== n.elementId) runs.push(n.elementId);
+    }
+    return runs;
+  };
+  const room = 'room id=r at (0,0) size 6000x5000 label "R"';
+  const plan = (...lines: string[]): string => `plan "Z" {\n  units mm\n  ${room}\n  ${lines.join("\n  ")}\n}`;
+  const RUG = "furniture id=rug rug at (500,500) size 3000x2200";
+  const SOFA = "furniture id=sofa sofa at (800,1200) size 2000x900";
+  const TABLE = "furniture id=tbl coffee_table at (1500,2300) size 1000x500";
+
+  it("sofa-then-rug and rug-then-sofa both emit the rug's nodes first, each node once", () => {
+    expect(furnitureRuns(plan(RUG, SOFA))).toEqual(["rug", "sofa"]);
+    expect(furnitureRuns(plan(SOFA, RUG))).toEqual(["rug", "sofa"]);
+    // Two underlays keep their own source order; everything else keeps its own.
+    const CARPET = "furniture id=mat carpet at (3600,3000) size 1600x1200";
+    expect(furnitureRuns(plan(SOFA, CARPET, TABLE, RUG))).toEqual(["mat", "rug", "sofa", "tbl"]);
+  });
+
+  it("a plan without an underlay draws its furniture in source order", () => {
+    expect(furnitureRuns(plan(SOFA, TABLE))).toEqual(["sofa", "tbl"]);
+    expect(furnitureRuns(plan(TABLE, SOFA))).toEqual(["tbl", "sofa"]);
+  });
+
+  it("annotate still marks exactly one primary node per piece — the rug's outline", () => {
+    const svg = compile(plan(SOFA, RUG), { annotate: true, noCache: true }).svg;
+    for (const id of ["rug", "sofa"]) {
+      const marked = svg.split("\n").filter((l) => l.includes(`data-arch-id="${id}"`));
+      expect(marked.length, id).toBeGreaterThan(1);
+      expect(
+        marked.filter((l) => l.includes("data-arch-primary")),
+        id,
+      ).toHaveLength(1);
+      expect(marked[0], `${id}: the first node is the primary`).toContain("data-arch-primary");
+    }
+    // …and in the document the rug's nodes precede the sofa's.
+    expect(svg.indexOf('data-arch-id="rug"')).toBeLessThan(svg.indexOf('data-arch-id="sofa"'));
+  });
+
+  it("the move is a drawing fact — describe() still lists the furniture in source order", () => {
+    const ids = (src: string): string[] => describeSource(src).furniture.map((f) => f.id);
+    expect(ids(plan(SOFA, RUG))).toEqual(["sofa", "rug"]);
+    expect(ids(plan(RUG, SOFA))).toEqual(["rug", "sofa"]);
   });
 });
 

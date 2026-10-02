@@ -10,7 +10,7 @@
  */
 
 import type { CompileOptions } from "./types.js";
-import type { ResolvedPlan, ROutdoor, RRoom, RDim, RFurniture } from "./ir.js";
+import type { ResolvedPlan, ROutdoor, RRoom, RDim, RFurniture, RVoid } from "./ir.js";
 import type { RenderCtx, Registry, Runtime } from "./registry.js";
 import { BUILTIN_RUNTIME } from "./registry.js";
 import type { RenderSizes, Scene, SceneNode, SceneSheet } from "./scene.js";
@@ -27,6 +27,7 @@ import { axesNodes } from "./axes.js";
 import { siteBoundaryNodes } from "./site.js";
 import { groundMaterialsUsed, outdoorLabelAnchor, outdoorRing } from "./elements/outdoor.js";
 import { roomLabelAnchor } from "./elements/room.js";
+import { isUnderlay } from "./fixtures-catalog.js";
 import { rectRing } from "./geometry/polygon.js";
 import { CHAIN_BASE, CHAIN_STEP, DIM_TEXT_GAP, drawingBounds, renderSizes } from "./sheet.js";
 import { textWidth } from "./text-metrics.js";
@@ -46,6 +47,30 @@ import { fmt2 as fmtMm } from "./num-format.js";
 /** Drawing bounds: each element contributes points via its registry `bounds`. */
 function planBounds(ir: ResolvedPlan, registry: Registry): Bounds {
   return drawingBounds(ir.elements, ir.siteBoundary, registry);
+}
+
+const isUnderlayPiece = (el: ResolvedPlan["elements"][number]): boolean =>
+  el.kind === "furniture" && isUnderlay((el as RFurniture).category);
+
+/**
+ * The order {@link toScene} renders elements in: SOURCE order, except that every
+ * {@link isUnderlay} fixture (a rug) is moved to just before the plan's first piece of
+ * furniture — a stable partition of the furniture, underlays first, each half in source order.
+ *
+ * A rug is the floor finish the sofa and the coffee table stand ON, so it must paint under
+ * them whichever was written first: the furniture pass draws its nodes in collection order, and
+ * `furniture sofa …` then `furniture rug …` (`examples/garden-house.arch`) drew the rug's lines
+ * straight across the sofa. Every element before the first piece of furniture is not furniture,
+ * so it keeps its place; every other element keeps its relative order. Elements on other passes
+ * are bucketed by pass in every backend, so only the furniture pass can see the move.
+ *
+ * A plan with no underlay gets `elements` itself back — the same array, so the same bytes.
+ */
+function renderOrder(elements: ResolvedPlan["elements"]): ResolvedPlan["elements"] {
+  if (!elements.some(isUnderlayPiece)) return elements;
+  const first = elements.findIndex((el) => el.kind === "furniture");
+  const rest = elements.filter((el) => !isUnderlayPiece(el));
+  return [...rest.slice(0, first), ...elements.filter(isUnderlayPiece), ...rest.slice(first)];
 }
 
 /** Resolve `theme <name>` to its colours: per-call registered themes win over built-in THEMES.
@@ -652,7 +677,8 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   const sizes: RenderSizes = renderSizes(ir.sheet, drawW, drawH, lw);
   const refDim = sizes.refDim;
 
-  // Collect non-wall elements (source order), then lower walls — the canonical op
+  // Collect non-wall elements (source order, underlays first among the furniture — see
+  // `renderOrder`), then lower walls — the canonical op
   // order, so layer-bucketing in a backend reproduces the canonical draw order.
   // Each kind gets its styled theme when `style <kind>` applies, else the base ctx.
   // Will the wall lowering below actually void the wall solid at every opening? ALWAYS:
@@ -660,7 +686,14 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   // so the floor runs continuously through each passage and only the capped jambs are
   // drawn. `RenderCtx.openingsVoided` stays, and stays true, because the interface is
   // append-only and a hand-built `RenderCtx` must keep its safe opaque default.
-  const baseCtx: RenderCtx = { theme, sizes, bounds: b, fmt: fmtMm, openingsVoided: true };
+  // `floorAt` reads each room's own ring (`pointInRoomBox`), as `thicknessSideFlipped` does.
+  // A `void` (a stair well, a double-height space) counts too: it has no floor on THIS
+  // storey, but it is inside the building, so a window onto one does not look outside.
+  const floorBoxes = ir.elements
+    .filter((el): el is RRoom | RVoid => el.kind === "room" || el.kind === "void")
+    .map(roomBox);
+  const floorAt = (p: Point): boolean => floorBoxes.some((r) => pointInRoomBox(p, r));
+  const baseCtx: RenderCtx = { theme, sizes, bounds: b, fmt: fmtMm, openingsVoided: true, floorAt };
   const ctxFor = (kind: string): RenderCtx => {
     const st = styledByKind.get(kind);
     return st ? { ...baseCtx, theme: st } : baseCtx;
@@ -681,7 +714,7 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   const primaried = new Set<string>();
   /** How many unnamed rooms have been seen, so the next one can be told from them. */
   let unnamedRooms = 0;
-  for (const el of ir.elements) {
+  for (const el of renderOrder(ir.elements)) {
     if (el.kind === "wall") continue;
     const def = registry.byKind.get(el.kind);
     if (!def) continue;

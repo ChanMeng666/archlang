@@ -10,7 +10,8 @@ import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "
 import type { SceneNode } from "../scene.js";
 import type { RDoor, RRoom } from "../ir.js";
 import type { Value } from "../expr.js";
-import type { WallSegment } from "../geometry.js";
+import type { DoorSwing, WallSegment } from "../geometry.js";
+import { weightWidth } from "../scene.js";
 import { add, doorSwing, mul, nearestWallNote, normal, segmentDirAt, sub, unit, wallFaceProbes } from "../geometry.js";
 import { pointInPolygon, pointOnPolygonEdge } from "../geometry/polygon.js";
 import type { DoorClauseName, DoorKind } from "../grammar/tokens.js";
@@ -161,6 +162,53 @@ function roomSideOf(at: Point, host: WallSegment | null, rooms: readonly RRoom[]
 
 /** `open` when the author writes none — the drawn rest position of a sliding-family panel. */
 const DEFAULT_OPEN = 0.5;
+
+/**
+ * How thick an open hinged leaf is DRAWN, mm: a real interior leaf is 35–45 mm, and every
+ * door block in a CAD library draws it as a slab of about that, not as a line.
+ */
+const LEAF_SLAB_MM = 40;
+/**
+ * The slab's ceiling as a fraction of the door width, so a narrow door never draws a
+ * leaf that reads as a wall: 54 mm on a 900 mm door, 36 mm on a 600 mm cupboard door.
+ * It is the ceiling, so it wins over the floor below.
+ */
+const LEAF_SLAB_MAX_FRACTION = 0.06;
+
+/**
+ * The thickness an open hinged leaf is drawn at: {@link LEAF_SLAB_MM}, but never thinner
+ * than TWO leaf pens — the stroke is centred on each long edge, so that is what leaves one
+ * pen of white between them and keeps the slab reading as a slab rather than as one fat
+ * line once a 1:100 sheet (or a large unscaled drawing) widens the pen — and never thicker
+ * than {@link LEAF_SLAB_MAX_FRACTION} of the door's width.
+ */
+export function leafSlabThickness(width: number, leafPen: number): number {
+  return Math.min(Math.max(LEAF_SLAB_MM, 2 * leafPen), LEAF_SLAB_MAX_FRACTION * width);
+}
+
+/**
+ * The open leaf as a closed slab, built from {@link doorSwing}'s own points so it can never
+ * disagree with the sector `W_SWING_OBSTRUCTED`, `repair()` and the symmetry probe read.
+ *
+ * `[hinge, leafEnd, tip, heel]`: the first edge IS the swing's open-leaf radius (the line the
+ * leaf used to be drawn as), and the thickness `t` is laid off toward the FAR jamb — the
+ * inside of the quarter-disc, which is where a leaf's thickness sits when it stands open
+ * against its hinge jamb. The fourth corner `heel` is on the closed-leaf radius; the third,
+ * `tip`, is put ON the swing circle (`√(r² − t²)` along the leaf, `t` across), so every
+ * corner lies in the closed sector and the drawn leaf never pokes past the arc it sweeps.
+ * The tip edge is therefore a chord of that circle, a fraction of a millimetre off square.
+ */
+function leafSlab(s: DoorSwing, t: number): Point[] {
+  const r = s.radius;
+  // Unit vectors along the open leaf and along the closed one, read off the swing's own
+  // points (both radii are exactly `r` long by construction). A zero-width door (already
+  // `E_DOOR_WIDTH`) collapses to its hinge rather than dividing by zero.
+  const k = r === 0 ? 0 : 1 / r;
+  const out = mul(sub(s.leafEnd, s.hinge), k);
+  const across = mul(sub(s.farJamb, s.hinge), k);
+  const reach = Math.sqrt(Math.max(r * r - t * t, 0));
+  return [s.hinge, s.leafEnd, add(add(s.hinge, mul(out, reach)), mul(across, t)), add(s.hinge, mul(across, t))];
+}
 
 /** Clamp `v` into `[0,1]`. */
 const clamp01 = (v: number): number => Math.min(Math.max(v, 0), 1);
@@ -425,12 +473,11 @@ export const door: ElementDef = {
   },
 
   /**
-   * Opening cover + leaf line + swing arc. The swing geometry (hinge, leaf,
-   * far jamb, minor-arc orientation) is computed **here, once** — every backend
-   * (SVG, DXF, PDF) now serializes the same `arc` primitive rather than
-   * re-deriving it.
+   * Opening cover + leaf slab + swing arc. The swing geometry (hinge, leaf,
+   * far jamb, minor-arc orientation) is computed **once**, by `doorSwing` — every backend
+   * (SVG, DXF, PDF) serializes the same `arc` primitive rather than re-deriving it.
    */
-  /** At most 5 primitives (the drawing budget, `MAX_DRAW_UNITS`): the opening cover, then a leaf and its swing arc, or at most four panel strokes for a sliding, barn, bifold, pocket or garage door. */
+  /** At most 5 primitives (the drawing budget, `MAX_DRAW_UNITS`): the opening cover, then a leaf slab and its swing arc, or at most four panel strokes for a sliding, barn, bifold, pocket or garage door. */
   drawCost: () => 5,
 
   render(resolved, ctx: RenderCtx): SceneNode[] {
@@ -477,11 +524,18 @@ export const door: ElementDef = {
     // Leaf + minor-arc geometry is shared with the swing-clearance lint rule.
     const swing = doorSwing(dr);
     if (swing) {
+      // The open leaf is a SLAB (see `leafSlab`), filled with the page colour so the floor
+      // tint does not read through it, and stroked at the leaf pen.
+      const leafPen = sizes.thin * 1.3;
       nodes.push({
         layer: "doors",
-        prim: { t: "line", a: swing.hinge, b: swing.leafEnd },
-        paint: { stroke: theme.doorLeaf, width: sizes.thin * 1.3 },
+        prim: { t: "polygon", pts: leafSlab(swing, leafSlabThickness(dr.width, leafPen)) },
+        paint: { fill: theme.opening, stroke: theme.doorLeaf, width: leafPen },
       });
+      // The swing is a SOLID fine line. A dash means above the cut plane or hidden (an
+      // `upper_cabinet`, a `roof`, a garage door's overhead projection), and the path a
+      // leaf sweeps at floor level is neither. The named weight carries the pen ramp to
+      // the SVG serializer, `paint.width` the same number to the PDF one.
       nodes.push({
         layer: "doors",
         prim: {
@@ -492,7 +546,8 @@ export const door: ElementDef = {
           end: swing.farJamb,
           sweep: swing.sweep,
         },
-        paint: { fill: "none", stroke: theme.doorLeaf, width: sizes.thin, dash: [sizes.thin * 4, sizes.thin * 3] },
+        paint: { fill: "none", stroke: theme.doorLeaf, width: weightWidth("extraThin", sizes) },
+        lineWeight: "extraThin",
       });
     }
     return nodes;

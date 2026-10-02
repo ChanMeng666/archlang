@@ -666,40 +666,43 @@
  * two-bed-hall; `examples/` aquarium, bungalow, furnished-flat, gallery-l, garden-house,
  * hillside-villa, library, museum, studio, terrace-row, transit-hall, two-bed;
  * `test/fixtures/zones-wings`; `test/recovery-corpus/` studio, terrace-row.
+ *
+ * Re-measured for the visual-polish symbol redraw: SVG only, describe/lint/diagnostics unchanged
+ * (substitution check reproduces the old digests).
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
 export const BASELINE: [string, string][] = [
-  ["accessible", "5602b128c5e8df74a5d3d85b1eb5d1b8778c4dfa03eafd39c62cade55d472d4f"],
-  ["aquarium", "736e20a429113534d882ccb8fa88187227ad7bdc7e6c95f55a70c2e0917d5768"],
-  ["attached", "b4aaf0c67e584a88f9eca8c35a525bf58e1b3054774c75e681cec2e03576f805"],
-  ["bungalow", "88ab68abfc47345fdef7098506116ad93fcbab466415837d5db99dc1542d8851"],
-  ["clinic", "1d20a7330af3826897fcdfd3771a948c13b4f3ae45b8844400bdb53657005926"],
-  ["courtyard-house", "8cc94cede4106e5d53afb9806307783b5bc02fd5dbc616821cb6bb194db3055d"],
-  ["furnished-flat", "78513fb8a5182104e2a22b69580fa952a2ff2f11839162241ebfe40839047d80"],
-  ["gallery-l", "9cdfa47c8d0f0a1a1d1ecf998877ca4ed2b029289730c028065d9ca5f92af2f1"],
-  ["garden-house", "707e56c4a8992c77ecf5d76a409690c2554f68059e31758bb8712d2b54266654"],
-  ["garden-loft", "970f3edf687ae08093993eeb5ec87cc0e63b9dd51e8487202d6d5d3d61b5030b"],
-  ["hexagon-pavilion", "67ec85f6b9ed5eeb30380899bc6a5df1d582674616f8dc9121d1b9971546cb5b"],
-  ["hillside-villa", "8bc280e39809952860c4900ca7eecc8d76a8d72a33826088793009165a013e6b"], // re-measured, see header
-  ["imports", "9a18b7a2e74117c3c986bbf513055d7ea333dea1451faeb4f9f3429ca23e7e55"],
-  ["laneway-house", "ca93975f9180ff845039a79422a4cca1fe683d76a28831cf700efbb8f6d2bea0"],
-  ["library", "614bc84423700e348345a7dd9bbf1e3ff098deacba76f3f62043cc2d7e5c144c"],
-  ["materials", "f400204eb2a5b4e189d33ce462c9135d602e21bb050df7dda94e260897d57450"],
-  ["museum-wing", "3c797bc54f382cfd1f3975d0e6d5cc49fbb10287fe24ba22b0d24ac321504e13"],
-  ["museum-wings", "53f6146cd811ea75b6547cff0601a739cfc042b3b781b37b129a0b2980b258e3"], // re-measured, see header
-  ["museum", "07f06548d662a7283d4d47136c1e4260662ba0d8115282dd98d1b87134188304"],
-  ["one-room", "153de2406dcdfd537ba6a8495bad8a046f1f75441119333f40c21c3970164431"],
-  ["parametric", "e30cff0f2fb517d5b19723cef6092a9d614ae198a63fd96f7f1b23508ee2c0a3"],
-  ["relational", "c3eab06b8184405f6c2a89edd04ce75ffbf97956cc0aa6d0d9780ad7495d6b7b"],
-  ["studio", "20a7659eb5c0ae250d1b91e0a7c53cff9dc2fd8908365a40e679bbf97e91751d"],
-  ["terrace-row", "d47f75e57df406060420ee7ce6c18f5a7f4250edcf4171b6145df92966076d3f"], // re-measured, see header
-  ["themed", "55e8723dd35cc3ec24b73a7bbf8052bea24f1fdaddd6d90012cffb81d7d00057"],
-  ["tiny-house", "4530542edaa0793db192ee26cfaa293bc353c3912a5bc42baf4749a5ce5ce010"],
-  ["townhouse", "40cfee25070c5bb278b1ffae3b6f044c279be13efd4d4fda405143940fa20e63"], // re-measured, see header
-  ["transit-hall", "056a651ef496fa544aabdab8db6b0486ac00b3d4e32da8f8133bc73b6581e2e3"],
-  ["two-bed", "ff4ad8858ef6c8fa71a632c9df6c5c489b4661d0ea0b80719f69f0f481c50cd7"],
-  ["two-storey", "fe72bee4167641c890d345e936f86157b3d3597726d1acd71fe10525ea700955"], // re-measured, see header
+  ["accessible", "9ca87c1c9c2cb8cb4afb8428c3ea8120c134c8b0af2fd30ece8ef922fc2bb1a7"],
+  ["aquarium", "f89c3bf506d7737046e0412e5bc3ebfc7bbf4c9e6fb2c81c6a5a59ede302aa19"],
+  ["attached", "5a6374e3fec477aa55bc8e94586d4c60501608a2764830d6ee32c2b61d66d055"],
+  ["bungalow", "9990304f76493e86abee175aeab14cd21040601b86cd73e175150884d36ed8b9"],
+  ["clinic", "e4492637c288b3f9352d944d031d8b123cef6fa522646f60e664e873c9d1236b"],
+  ["courtyard-house", "41f6ff56cc47f383795c0c9c11585de2d9846546d4fd3c96c2637a0ef2cd0447"],
+  ["furnished-flat", "889f4246f5e98f589952d5e20e0acdfd6057f542e0620c8d20bce01dd17c88f0"],
+  ["gallery-l", "af339b015babaa7a4cfa6fe45e4afe01a2643674f883f441b3066af686bc5601"],
+  ["garden-house", "7c226b8593064a3bc782b5cfa01b5b79bcb46d0aa61120fd00cb535f36541a66"],
+  ["garden-loft", "bcbf52e5d8b7875906721d8367552e463d642428516530d733c8b9feb29c2f9f"],
+  ["hexagon-pavilion", "22030edea2fcaddfdc5d94d776849a8065bd287196664967e3f415285b0458cc"],
+  ["hillside-villa", "393e29e7126ce38cb2749a1ef8bdf57c4f54903e6b332a3406767020059afcb9"], // re-measured, see header
+  ["imports", "3490c17b19f31dfc3a82ce20a2218a4e8f48f0fd979a2c88f23e6a7ddfd75b00"],
+  ["laneway-house", "f9c3b29a51508234ab6f8426be062f3087f482cfa2b124ba75fdab150b4d18bc"],
+  ["library", "51d1c1a151192315fa19c2fa526ca9192ce84abdd9e6084c4dff4d30aed1c086"],
+  ["materials", "de930c93e3cdfc023d78e20f4ca10d0ff3be5ed11492cb856d9679da613de8df"],
+  ["museum-wing", "5caaeb9a2e06e070098d50b54b252c7a54721e13af82e055f76aa947d52d4f56"],
+  ["museum-wings", "fa6b137f9739cae7edd27642d604ed8d2fa08f034f57851d05cb9c292b187885"], // re-measured, see header
+  ["museum", "6e7cee1fa1ea32375d2b17a5872726d33b304815f85c423e41c68765f48ba24a"],
+  ["one-room", "006f9e2008584250fa6aa645769f01ad4ad3dcc5053d76c1c4fa963c6dbc3283"],
+  ["parametric", "b8055080fe56197849ab4624be16eed46510ac467de6218df59f093979e8235c"],
+  ["relational", "776f94d7f8a94ebf78b752697fa433cf49a05b1e4309430e8725a71e15780354"],
+  ["studio", "daacc21fb471e0d7d29c88191b838607a07b3f73e82a0508d42a8cbd8184bef3"],
+  ["terrace-row", "5c7a1b1380f8ca14f6927a1fefa481ffba57deb85deee79fc83930863bbab898"], // re-measured, see header
+  ["themed", "b6ba97d9000126e4355dd8c4a853c19fb8aa8790be0603dedf3e10fb1620cccf"],
+  ["tiny-house", "2c025f9656c85121ccb84b6a73c085501e4ddcfe0f043c325c64384ba21deda1"],
+  ["townhouse", "e2d1a4cdec5e46edfd6d697efdda877062d80d155b65a97d7de371a96c10ab46"], // re-measured, see header
+  ["transit-hall", "e584d228e637e8783bdc626da4246ddbaf073e25f6834bec047349bf2d755340"],
+  ["two-bed", "e2df66666ea707a11618a9b718820fe12998123d03e6f2cd5ab4698539eac1d5"],
+  ["two-storey", "8c1d0f225d7e5b8147913097ffd8be4513a11e9878653d2b234bfcdac0bdd762"], // re-measured, see header
 ];
 
 /**

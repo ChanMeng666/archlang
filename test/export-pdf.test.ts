@@ -239,6 +239,7 @@ const RICH = `plan "Rich" {
   room id=b circle at (4300,2000) radius 1200 label "Drum"
   door at (3000,2000) width 900 wall partition hinge left swing in
   opening at (1500,0) width 900 wall exterior
+  door pocket at (4500,0) width 700 wall exterior slide right
   dims auto
 }`;
 
@@ -552,7 +553,7 @@ describe("PDF export", () => {
 
       const ops = pageOps(await toPdf(s));
       expect(ops, "no Bezier op — the arc/circle/path primitives did not reach the page").toMatch(/ c\n/);
-      expect(ops, "no dash array — a dashed opening or door leaf was drawn solid").toMatch(/\[[\d.]+ [\d.]+\] 0 d/);
+      expect(ops, "no dash array — a dashed (hidden) pocket cavity was drawn solid").toMatch(/\[[\d.]+ [\d.]+\] 0 d/);
       expect(ops, "no mitre-limit op — an acute wall joint can spike in print").toMatch(/[\d.]+ M\n/);
       expect(pageOps(await toPdf(capped)), "no square line cap").toContain("2 J");
       expect(pdfStrings(await toPdf(s))).toEqual(expect.arrayContaining(["Left", "Drum"]));

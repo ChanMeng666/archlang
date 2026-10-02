@@ -67,6 +67,13 @@ const POST_PITCH: Readonly<Record<FenceStyle, number>> = {
   post: 1800,
 };
 
+/**
+ * The smallest `1 + n₁·n₂` (one plus the cosine of the turn) a corner is mitred at — a turn of
+ * about 139°. Sharper, the mitre point runs off toward infinity, so each run keeps its own
+ * square end there instead.
+ */
+const MITRE_MIN = 0.25;
+
 /** Ticks per segment are clamped into this range, whatever the arithmetic says. */
 const MIN_POSTS = 1;
 const MAX_POSTS = 60;
@@ -199,7 +206,11 @@ export const fence: ElementDef = {
       paint: { fill: "none", stroke: theme.outdoorStroke, width: weightWidth(weight, sizes) },
     });
 
-    const segs = fenceSegments(f);
+    // Zero-length segments draw nothing and do not break a corner: the two runs either side of
+    // a doubled point still meet there.
+    const segs = fenceSegments(f).filter(([a, b]) => Math.hypot(b.x - a.x, b.y - a.y) > 0);
+    // A closed ring's first and last segments meet at its start point.
+    const ring = f.closed && f.points.length > 2 && segs.length > 1;
 
     // Post depth: how far a tick stands off the run, each side.
     //
@@ -212,24 +223,45 @@ export const fence: ElementDef = {
     // 1% of a short run's length, which read as a plain line with pixel noise on it.
     const depth = sizes.thin * 7;
 
-    for (const [a, b] of segs) {
+    // The left normal of each run — the tick axis.
+    const normals = segs.map(([a, b]) => {
       const len = Math.hypot(b.x - a.x, b.y - a.y);
-      if (len <= 0) continue;
+      return { x: -(b.y - a.y) / len, y: (b.x - a.x) / len };
+    });
+    // Where the two runs meeting at a corner put their offset: the MITRE, `(n₁ + n₂) / (1 + n₁·n₂)`
+    // per unit of depth — the point a panel's two offset lines meet at, and the half-length of
+    // the one tick that stands across the corner along its bisector. Past a ~140° turn the mitre
+    // runs away, so a corner that sharp keeps each run's own square end instead (`null`).
+    const mitre = (i: number, j: number): Point | null => {
+      const p = normals[i]!;
+      const q = normals[j]!;
+      const k = 1 + p.x * q.x + p.y * q.y;
+      return k > MITRE_MIN ? { x: (p.x + q.x) / k, y: (p.y + q.y) / k } : null;
+    };
+
+    for (let i = 0; i < segs.length; i++) {
+      const [a, b] = segs[i]!;
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
       const ux = (b.x - a.x) / len;
       const uy = (b.y - a.y) / len;
-      // Left normal of the run — the tick axis.
-      const nx = -uy;
-      const ny = ux;
+      const nx = normals[i]!.x;
+      const ny = normals[i]!.y;
+      const prev = i > 0 ? i - 1 : ring ? segs.length - 1 : -1;
+      const next = i < segs.length - 1 ? i + 1 : ring ? 0 : -1;
+      const own = { x: nx, y: ny };
+      const atStart = (prev >= 0 ? mitre(prev, i) : null) ?? own;
+      const atEnd = (next >= 0 ? mitre(i, next) : null) ?? own;
 
       if (f.style === "panel") {
         // Two thin parallel lines: the panel read in plan. Offset by the full tick depth
         // so the pair is unambiguously a pair — at 40% of it the two lines merged into
-        // one at every scale a site plan is actually drawn at.
+        // one at every scale a site plan is actually drawn at. Each end stops on the corner's
+        // mitre, so two runs meet in a clean corner instead of overshooting each other.
         for (const s of [-1, 1]) {
           nodes.push(
             line(
-              { x: a.x + nx * depth * s, y: a.y + ny * depth * s },
-              { x: b.x + nx * depth * s, y: b.y + ny * depth * s },
+              { x: a.x + atStart.x * depth * s, y: a.y + atStart.y * depth * s },
+              { x: b.x + atEnd.x * depth * s, y: b.y + atEnd.y * depth * s },
               "extraThin",
             ),
           );
@@ -238,14 +270,27 @@ export const fence: ElementDef = {
         nodes.push(line(a, b, "thin"));
       }
 
-      const n = postCount(len, f.style);
-      for (let i = 0; i <= n; i++) {
-        const t = (len * i) / n;
-        const p = { x: a.x + ux * t, y: a.y + uy * t };
+      // The ticks: the run's start and its interior posts, square to the run — except a start
+      // shared with the run before, which takes ONE tick along the corner's bisector rather
+      // than one from each run crossing in an X. The far end is the next run's start, so only
+      // an open run's last segment draws its end tick here.
+      const tick = (p: Point, d: Point): void => {
         nodes.push(
-          line({ x: p.x - nx * depth, y: p.y - ny * depth }, { x: p.x + nx * depth, y: p.y + ny * depth }, "extraThin"),
+          line(
+            { x: p.x - d.x * depth, y: p.y - d.y * depth },
+            { x: p.x + d.x * depth, y: p.y + d.y * depth },
+            "extraThin",
+          ),
         );
+      };
+      const n = postCount(len, f.style);
+      for (let k = 0; k < n; k++) {
+        const t = (len * k) / n;
+        tick({ x: a.x + ux * t, y: a.y + uy * t }, k === 0 ? atStart : own);
       }
+      // (`len · n / n`, not `b`: the same arithmetic as every other post, so a straight run's
+      // last tick lands on exactly the bytes it always has.)
+      if (next < 0) tick({ x: a.x + ux * ((len * n) / n), y: a.y + uy * ((len * n) / n) }, own);
     }
     return nodes;
   },

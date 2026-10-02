@@ -132,3 +132,18 @@ aa6da412c4355a333198e3d6c94bebb4478b2aa7:test/height-byte-identity.test.ts:gener
 # ---------------------------------------------------------------------------------------
 
 1f58e6090cdb6db444dabb0be4660ee77df099f8:test/while-byte-identity-baseline.ts:generic-api-key:16
+# ---------------------------------------------------------------------------------------
+# 2026-10-03 — two findings, rule `generic-api-key`, the same false positive as the blocks above,
+# from re-measuring the whole-surface digests for the visual-polish symbol redraw. Opened and read.
+#
+#   test/byte-identity-baseline.ts:676 at 5ca445c9
+#   test/while-byte-identity-baseline.ts:102 at 5ca445c9
+#
+#           `["accessible", "9ca87c1c…<56 more hex>"]` and
+#           `["examples/accessible.arch", "7d17249d…<56 more hex>"]` — MEASURED SHA-256
+#           BYTE-IDENTITY BASELINES of public output (SVG + `describe()` + `lint()`, and with
+#           `compile().diagnostics`), keyed by `accessible`, which contains the rule's key-ish
+#           word "access". Nothing else in either table trips it.
+# ---------------------------------------------------------------------------------------
+5ca445c904b47aca761044fef9689d7fe1b77c94:test/byte-identity-baseline.ts:generic-api-key:676
+5ca445c904b47aca761044fef9689d7fe1b77c94:test/while-byte-identity-baseline.ts:generic-api-key:102

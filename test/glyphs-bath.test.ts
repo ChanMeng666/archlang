@@ -16,6 +16,9 @@
  *    "finite" is a consequence rather than a hope — but a stray division would land here.
  * 4. **Deterministic.** Two calls with the same inputs are deep-equal. `compile()` is
  *    byte-stable and these are on its path.
+ * 5. **The visual-polish language.** The first node is the OUTLINE (thin pen); a curve is a `path`
+ *    or a `circle`, never a tessellated polygon; the symmetric pieces are mirror-symmetric and the
+ *    two handed ones (the tub, the mirror) are not.
  *
  * The prim counts are pinned as exact numbers, not ranges. They are the cheapest possible
  * statement of "this symbol still has its seat / its tap / its rim", and a count that moves
@@ -28,8 +31,10 @@ import { resolve } from "../src/ir.js";
 import { toScene } from "../src/scene-build.js";
 import { compile } from "../src/index.js";
 import type { Scene, SceneNode } from "../src/scene.js";
+import { pathExtentPoints } from "./glyph-extent.js";
 import type { Rect } from "../src/elements/glyph-lib.js";
 import { glyphCtx } from "../src/elements/glyph-lib.js";
+import { marksEqual, mirrorNode } from "../src/elements/glyph-chirality.js";
 import {
   drawBasin,
   drawBathtub,
@@ -78,6 +83,8 @@ function pointsOf(n: SceneNode): { x: number; y: number }[] {
       { x: p.center.x, y: p.center.y + p.r },
     ];
   if (p.t === "arc") return [p.start, p.end, p.center];
+  // A curved outline (the WC's cistern, bowl and seat): vertices and arc extremes, no centres.
+  if (p.t === "path") return pathExtentPoints(p);
   return [];
 }
 
@@ -99,12 +106,12 @@ const FOOTPRINTS: Record<string, Rect> = {
 describe("glyphs-bath — the drawn content of each symbol", () => {
   // The exact primitive budget of each symbol, and what each one buys.
   const COUNTS: Record<string, number> = {
-    wc: 5, // cistern · lid lip · bowl · seat · flush button
-    basin: 5, // slab · bowl · inner bowl · tap block · spout
-    shower: 6, // tray · rim · 2 diagonals · drain ring · waste
-    bathtub: 4, // outer rim · well · tap · waste
-    bidet: 5, // tap block · bowl · rim · spout · waste
-    urinal: 4, // back plate · half bowl · rim · waste
+    wc: 6, // cistern · bowl · seat opening · 2 hinge ticks · flush button
+    basin: 6, // top · bowl · floor · tap · spout · waste
+    shower: 8, // tray · floor · 4 falls · drain ring · waste
+    bathtub: 6, // rim · well · 2 taps · drain ring · waste
+    bidet: 6, // bowl · rim · tap deck · tap · jet · waste
+    urinal: 4, // bowl · rim · flush plate · waste
     mirror: 6, // glass · 5 reflection ticks
   };
 
@@ -114,8 +121,8 @@ describe("glyphs-bath — the drawn content of each symbol", () => {
     });
   }
 
-  it("a wide vanity draws TWO bowls — nine primitives, not five", () => {
-    expect(draw(drawBasin, { x: 0, y: 0, w: 1600, h: 500 })).toHaveLength(9);
+  it("a wide vanity draws TWO bowls — eleven primitives, not six", () => {
+    expect(draw(drawBasin, { x: 0, y: 0, w: 1600, h: 500 })).toHaveLength(11);
   });
 
   it("every node names a glyph weight, and both weights are in use across the module", () => {
@@ -144,11 +151,73 @@ describe("glyphs-bath — the drawn content of each symbol", () => {
     const circles = (name: string, f: Draw): number =>
       draw(f, FOOTPRINTS[name]!).filter((n) => n.prim.t === "circle").length;
     expect(circles("wc", drawWc)).toBe(1); // the flush button
+    expect(circles("basin", drawBasin)).toBe(2); // the tap and the waste
     expect(circles("shower", drawShower)).toBe(2); // drain ring + waste
-    expect(circles("bathtub", drawBathtub)).toBe(2); // tap + waste
-    expect(circles("bidet", drawBidet)).toBe(1); // the waste on the bowl centre
+    expect(circles("bathtub", drawBathtub)).toBe(4); // two taps + drain ring + waste
+    expect(circles("bidet", drawBidet)).toBe(2); // the tap and the waste on the bowl centre
     expect(circles("urinal", drawUrinal)).toBe(1); // the waste
     expect(circles("mirror", drawMirror)).toBe(0); // a mirror has no round detail at all
+  });
+
+  it("the outline comes first, in the thin pen — it is the node `data-arch-primary` is read from", () => {
+    for (const [name, f] of GLYPHS) {
+      const first = draw(f, FOOTPRINTS[name]!)[0]!;
+      expect(first.lineWeight, `${name}: the first node is the outline`).toBe("thin");
+      expect(["polygon", "path"], `${name}: the outline is a closed shape`).toContain(first.prim.t);
+    }
+  });
+
+  it("a curve is a `path` or a `circle` — no symbol tessellates one into a polygon", () => {
+    // The old bowls were 24-gons. Anything left that is a polygon must be genuinely straight-edged:
+    // four points, and in this module only the mirror's glass.
+    for (const [name, f] of GLYPHS) {
+      for (const n of draw(f, FOOTPRINTS[name]!)) {
+        if (n.prim.t === "polygon") expect(n.prim.pts, `${name}: a polygon is a plain rectangle`).toHaveLength(4);
+      }
+    }
+    expect(draw(drawBasin, FOOTPRINTS.basin!).filter((n) => n.prim.t === "path")).toHaveLength(3);
+  });
+});
+
+describe("glyphs-bath — mirror symmetry", () => {
+  // `test/glyph-chirality.test.ts` holds a mirrored wc and shower to the plain one's exact bytes
+  // through the compiler; this asks the DRAWING, for every piece, at its catalogued footprint.
+  const mirrorSymmetric = (name: string, f: Draw): boolean => {
+    const r = FOOTPRINTS[name]!;
+    const nodes = draw(f, r);
+    return marksEqual(
+      nodes,
+      nodes.map((n) => mirrorNode(n, r.x + r.w / 2)),
+    );
+  };
+
+  it("the wc, basin, shower, bidet and urinal have a vertical mirror axis", () => {
+    for (const [name, f] of GLYPHS) {
+      if (name === "bathtub" || name === "mirror") continue;
+      expect(mirrorSymmetric(name, f), `${name} must stay mirror-symmetric`).toBe(true);
+    }
+  });
+
+  it("the tub (taps at one end) and the mirror (ticks that lean one way) are handed", () => {
+    expect(mirrorSymmetric("bathtub", drawBathtub)).toBe(false);
+    expect(mirrorSymmetric("mirror", drawMirror)).toBe(false);
+  });
+
+  it("a basin and a double vanity are symmetric at every aspect, not only the catalogued one", () => {
+    for (const r of [
+      { x: 0, y: 0, w: 900, h: 450 },
+      { x: 0, y: 0, w: 1600, h: 500 },
+      { x: 0, y: 0, w: 2400, h: 500 },
+    ]) {
+      const nodes = draw(drawBasin, r);
+      expect(
+        marksEqual(
+          nodes,
+          nodes.map((n) => mirrorNode(n, r.w / 2)),
+        ),
+        `${r.w}x${r.h}`,
+      ).toBe(true);
+    }
   });
 });
 
@@ -212,8 +281,8 @@ describe("glyphs-bath — the double-basin branch", () => {
   const at = (w: number, h: number): number => draw(drawBasin, { x: 0, y: 0, w, h }).length;
 
   it("switches at exactly aspect ratio 2.2", () => {
-    expect(at(219, 100)).toBe(5); // 2.19 — one bowl
-    expect(at(221, 100)).toBe(9); // 2.21 — two bowls
+    expect(at(219, 100)).toBe(6); // 2.19 — one bowl
+    expect(at(221, 100)).toBe(11); // 2.21 — two bowls
   });
 
   it("the boundary itself is on the double side — the float form got this wrong", () => {
@@ -221,25 +290,31 @@ describe("glyphs-bath — the double-basin branch", () => {
     // round number an author types AT the threshold, to the single-bowl branch. The integer
     // form `w * 10 >= h * 22` is what makes the rule mean what it says.
     expect(220 >= 2.2 * 100).toBe(false); // the trap, stated
-    expect(at(220, 100)).toBe(9); // the rule, as written
+    expect(at(220, 100)).toBe(11); // the rule, as written
   });
 
   it("puts the two bowls at the quarter points, clear of each other and of the ends", () => {
     const r: Rect = { x: 0, y: 0, w: 1600, h: 500 };
-    const bowls = draw(drawBasin, r)
-      .filter((n) => n.prim.t === "polygon" && n.prim.pts.length === 24)
+    const nodes = draw(drawBasin, r);
+    // A bowl is a thin-pen WHITE path; its floor is the same oval in the detail pen, so the
+    // outline-pen paths in the basin fill are exactly the bowls.
+    const basinFill = glyphCtx(theme, sizes).basin;
+    const bowls = nodes
+      .filter((n) => n.prim.t === "path" && n.lineWeight === "thin" && n.paint.fill === basinFill)
       .map((n) => {
-        const pts = (n.prim as { t: "polygon"; pts: { x: number; y: number }[] }).pts;
-        const xs = pts.map((p) => p.x);
+        const xs = pathExtentPoints(n.prim as Extract<typeof n.prim, { t: "path" }>).map((p) => p.x);
         return { min: Math.min(...xs), max: Math.max(...xs) };
       });
-    // Two bowls, each with its 0.8 inner ring: four 24-gons.
-    expect(bowls).toHaveLength(4);
-    const left = bowls[0]!;
-    const right = bowls[2]!;
+    expect(bowls).toHaveLength(2);
+    const [left, right] = bowls as [{ min: number; max: number }, { min: number; max: number }];
+    expect((left.min + left.max) / 2).toBeCloseTo(r.w * 0.25, 6);
+    expect((right.min + right.max) / 2).toBeCloseTo(r.w * 0.75, 6);
     expect(left.min).toBeGreaterThan(r.x);
     expect(right.max).toBeLessThan(r.x + r.w);
     expect(left.max).toBeLessThan(right.min); // they do not touch
+    // Each bowl is the same width: 76% of its own half.
+    expect(left.max - left.min).toBeCloseTo(r.w * 0.5 * 0.76, 6);
+    expect(right.max - right.min).toBeCloseTo(r.w * 0.5 * 0.76, 6);
   });
 
   it("a zero-depth slab picks a branch instead of dividing by zero", () => {
@@ -312,40 +387,78 @@ describe("glyphs-bath — the three symbols added in v1.32", () => {
    * so each is pinned against that piece rather than against itself. A count alone would let
    * a bidet drift into a WC one primitive at a time and stay green the whole way.
    */
+  const extentOf = (n: SceneNode): { min: number; max: number; top: number } => {
+    const pts = pointsOf(n);
+    const xs = pts.map((p) => p.x);
+    return { min: Math.min(...xs), max: Math.max(...xs), top: Math.min(...pts.map((p) => p.y)) };
+  };
 
-  it("a bidet is a WC without a cistern — the back band is a third of the width, not all of it", () => {
+  it("a bidet is a WC without a cistern — its back block is a third of the width, not most of it", () => {
     const r: Rect = { x: 0, y: 0, w: 400, h: 700 };
+    const g = glyphCtx(theme, sizes);
+    // The widest BODY-filled shape (a cistern, a tap deck) standing in the back fifth.
     const backOf = (nodes: SceneNode[]): number => {
-      // The widest polygon touching the top edge: a WC's cistern spans the footprint, a
-      // bidet's tap block does not.
       const spans = nodes
-        .filter((n) => n.prim.t === "polygon")
-        .map((n) => (n.prim as { t: "polygon"; pts: { x: number; y: number }[] }).pts)
-        .filter((pts) => Math.min(...pts.map((p) => p.y)) <= r.y + 1)
-        .map((pts) => Math.max(...pts.map((p) => p.x)) - Math.min(...pts.map((p) => p.x)));
+        .filter((n) => n.prim.t === "path" && n.paint.fill === g.body)
+        .map(extentOf)
+        .filter((e) => e.top <= r.y + r.h * 0.2)
+        .map((e) => e.max - e.min);
       return Math.max(0, ...spans);
     };
-    expect(backOf(draw(drawWc, r))).toBe(r.w);
-    expect(backOf(draw(drawBidet, r))).toBeLessThanOrEqual(r.w * 0.35);
+    expect(backOf(draw(drawWc, r))).toBeCloseTo(r.w * 0.85, 9);
+    const bidet = backOf(draw(drawBidet, r));
+    expect(bidet).toBeGreaterThan(0);
+    expect(bidet).toBeLessThanOrEqual(r.w * 0.35);
   });
 
-  it("a urinal's bowl is a HALF shape closed on the wall face", () => {
-    // The wall is the piece's back, so the bowl runs to the very top edge of the footprint
-    // and its rim there is a straight chord — which is what a closed ellipse would not be.
+  it("a bidet's bowl is the first node and its tap deck stands on the bowl's rear rim", () => {
+    const r: Rect = { x: 0, y: 0, w: 400, h: 700 };
+    const [bowl, , deck] = draw(drawBidet, r) as [SceneNode, SceneNode, SceneNode];
+    const bowlTop = Math.min(...pointsOf(bowl).map((p) => p.y));
+    const deckBottom = Math.max(...pointsOf(deck).map((p) => p.y));
+    expect(deckBottom, "the deck overlaps the bowl's rim rather than floating behind it").toBeGreaterThan(bowlTop);
+  });
+
+  it("a urinal's bowl is a U closed on the wall face — square back corners, a rounded front", () => {
+    // The wall is the piece's back, so the bowl runs to the very top edge of the footprint with
+    // its two back corners square — which a closed oval would not be.
     const r: Rect = { x: 0, y: 0, w: 400, h: 350 };
-    const bowl = draw(drawUrinal, r).filter((n) => n.prim.t === "polygon")[1]!;
-    const pts = (bowl.prim as { t: "polygon"; pts: { x: number; y: number }[] }).pts;
-    const top = Math.min(...pts.map((p) => p.y));
-    // Exactly two vertices sit on the chord; a full ellipse of the same extents has none
-    // sharing a y with only one other.
-    expect(pts.filter((p) => Math.abs(p.y - top) < 1e-9)).toHaveLength(2);
-    expect(Math.max(...pts.map((p) => p.y))).toBeGreaterThan(r.y + r.h * 0.9);
+    const bowl = draw(drawUrinal, r)[0]!;
+    expect(bowl.prim.t).toBe("path");
+    const loop = (bowl.prim as Extract<SceneNode["prim"], { t: "path" }>).loops[0]!;
+    const verts = [loop.start, ...loop.edges.map((e) => e.to)];
+    // Two DISTINCT corners on the wall face (the closing edge returns to the start point).
+    expect(new Set(verts.filter((p) => Math.abs(p.y - r.y) < 1e-9).map((p) => p.x)).size).toBe(2);
+    expect(loop.edges.filter((e) => e.t === "arc")).toHaveLength(2); // the two front corners
+    expect(Math.max(...pointsOf(bowl).map((p) => p.y))).toBeGreaterThan(r.y + r.h * 0.9);
+  });
+
+  it("a urinal's flush plate sits exactly on its rim — as wide as the rim, hung from its top edge, no stubs", () => {
+    // The first draft's plate was narrower than the rim and 4.8 mm short of its top line, so the rim
+    // poked out both sides of the plate as stubs and a hairline ran under its bottom edge.
+    for (const r of [
+      { x: 0, y: 0, w: 400, h: 350 },
+      { x: 100, y: 50, w: 500, h: 500 },
+      { x: 0, y: 0, w: 300, h: 600 },
+    ]) {
+      const nodes = draw(drawUrinal, r);
+      const [, rim, plate] = nodes as [SceneNode, SceneNode, SceneNode];
+      const xs = (n: SceneNode): number[] => pointsOf(n).map((p) => p.x);
+      const ys = (n: SceneNode): number[] => pointsOf(n).map((p) => p.y);
+      expect(Math.min(...xs(plate))).toBeCloseTo(Math.min(...xs(rim)), 9);
+      expect(Math.max(...xs(plate))).toBeCloseTo(Math.max(...xs(rim)), 9);
+      expect(Math.max(...ys(plate)), "the plate's bottom edge IS the rim's top edge").toBeCloseTo(
+        Math.min(...ys(rim)),
+        9,
+      );
+      expect(Math.min(...ys(plate)), "the plate is on the wall face").toBe(r.y);
+    }
   });
 
   it("a mirror keeps its reflection ticks inside an 18:1 sliver, and inside a 1:200 one", () => {
-    // The cap that makes this hold is `0.09 * r.w`, not the short side: the outer ticks sit
-    // at 0.1 and 0.9 of the width, so a half-length keyed to `min(w, h)` walks off the ends
-    // the moment the footprint is taller than it is wide.
+    // The cap that makes this hold is half a pitch, not the short side: the outer ticks sit a
+    // half pitch from the ends, so a half-length keyed to `min(w, h)` walks off the ends the
+    // moment the footprint is taller than it is wide.
     for (const r of [
       { x: 0, y: 0, w: 900, h: 50 },
       { x: 0, y: 0, w: 50, h: 10000 },
@@ -356,6 +469,37 @@ describe("glyphs-bath — the three symbols added in v1.32", () => {
         expect(p.y).toBeGreaterThanOrEqual(r.y);
         expect(p.y).toBeLessThanOrEqual(r.y + r.h);
       }
+    }
+  });
+
+  it("a mirror's tick count follows its run — one per four depths, in [3, 12]", () => {
+    const ticks = (w: number, h: number): number => draw(drawMirror, { x: 0, y: 0, w, h }).length - 1;
+    expect(ticks(900, 50)).toBe(5); // the catalogued mirror
+    expect(ticks(1800, 50)).toBe(9);
+    expect(ticks(3000, 50)).toBe(12); // the cap
+    expect(ticks(100000, 50)).toBe(12);
+    expect(ticks(400, 200)).toBe(3); // the floor — a legend swatch still gets a rhythm
+    expect(ticks(10000, 0)).toBe(12); // a zero depth is the cap, not a division by zero
+    expect(ticks(0, 0)).toBe(3); // and 0/0 is the floor, not a NaN loop bound
+  });
+});
+
+describe("glyphs-bath — the tub", () => {
+  it("the foot end is rounder than the head end, and the taps and the drain are at the head", () => {
+    const r = FOOTPRINTS.bathtub!;
+    const nodes = draw(drawBathtub, r);
+    const well = nodes[1]!.prim as Extract<SceneNode["prim"], { t: "path" }>;
+    const mid = r.x + r.w / 2;
+    const radii = (side: (x: number) => boolean): number[] =>
+      well.loops[0]!.edges.flatMap((e) => (e.t === "arc" && side(e.center.x) ? [e.r] : []));
+    const head = radii((x) => x < mid);
+    const foot = radii((x) => x >= mid);
+    expect(head).toHaveLength(2);
+    expect(foot).toHaveLength(2);
+    expect(Math.max(...head)).toBeLessThan(Math.min(...foot));
+    // The two taps and the drain's ring and waste all sit in the head half.
+    for (const n of nodes.filter((n) => n.prim.t === "circle")) {
+      expect((n.prim as { center: { x: number } }).center.x, "taps and drain are at the head").toBeLessThan(mid);
     }
   });
 });

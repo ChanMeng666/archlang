@@ -26,17 +26,20 @@ const codes = (src: string): string[] => compile(src).diagnostics.map((d) => d.c
 
 /**
  * The points the door's LEAF and SWING ARC are drawn from — which side of the wall the
- * door opens onto. The opening's own polygon is excluded: it straddles the wall by a
- * half thickness on both faces and so says nothing about the swing.
+ * door opens onto. The leaf is a slab (a stroked polygon); the opening's own cover — the
+ * door's one UNSTROKED polygon — is excluded: it straddles the wall by a half thickness on
+ * both faces and so says nothing about the swing.
  */
 function swingPoints(src: string): { x: number; y: number }[] {
   const scene = compile(src).scene;
   const pts: { x: number; y: number }[] = [];
-  const walk = (p: SceneNode["prim"]): void => {
+  const walk = (n: SceneNode): void => {
+    const p = n.prim;
     if (p.t === "line") pts.push(p.a, p.b);
     else if (p.t === "arc") pts.push(p.center, p.start, p.end);
+    else if (p.t === "polygon" && n.paint.stroke !== undefined) pts.push(...p.pts);
   };
-  for (const n of scene?.nodes ?? []) if (n.layer === "doors") walk(n.prim);
+  for (const n of scene?.nodes ?? []) if (n.layer === "doors") walk(n);
   return pts;
 }
 
@@ -76,7 +79,9 @@ describe("door `swing into <room>` asks the room's floor, not its bounding box",
     ["reversed", "(0,8000) (8000,8000) (8000,6000) (2000,6000) (2000,0) (0,0)"],
   ])("sweeps onto the floor side whichever way the wall is traversed (%s)", (_name, ring) => {
     const pts = swingPoints(onARealEdgeOffTheBbox(ring));
-    expect(pts.length).toBeGreaterThan(0);
+    // The arc's centre, start and end, and the leaf slab's four corners — so the side is
+    // read off the drawn leaf as well as the swing, not off the arc alone.
+    expect(pts.length).toBe(7);
     expect(Math.max(...pts.map((p) => p.x))).toBeLessThanOrEqual(2000);
   });
 

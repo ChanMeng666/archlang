@@ -2,7 +2,7 @@
 
 `furniture` places a piece of furniture or a built-in fixture into a plan. Every
 catalogued kind draws a **real plan symbol** — a WC with a cistern and a seat, a bed
-with a headboard and pillows, a wardrobe with hanging scallops — in the same drawing
+with a headboard and pillows, a wardrobe with its hanging rail and hangers — in the same drawing
 vocabulary as the door arcs and window panes. Anything ArchLang doesn't know still
 renders as a **labelled rectangle**, which is the escape hatch for a piece the
 catalogue has no word for.
@@ -115,24 +115,25 @@ Three columns need a word of explanation:
 
 | Kind (and aliases) | Symbol | Footprint | Facing | Wall |
 |---|---|---|---|---|
-| `wc` · `toilet` | cistern across the back with its lid lip and flush button, bowl and seat ring in front | 400 × 700 | derived | ✓ |
-| `basin` · `lavatory` | vanity slab with an inset oval bowl, tap block, spout and drain — **two bowls** on a long enough slab | 600 × 450 | derived | ✓ |
-| `shower` | tray with an inset rim, both diagonals across the inner tray, and a centre drain | 900 × 900 | symmetric | ✓ |
-| `bathtub` · `tub` · `bath` | eased rim, an inset well, the tap at the head end and the waste on the centreline | 1700 × 700 | derived | ✓ |
-| `bidet` | bowl with its rim, a small tap block at the back, the spout and the waste — a `wc` with no cistern | 400 × 700 | derived | ✓ |
-| `urinal` | the back plate on the wall and a **half** bowl hanging off it, with its rim and waste | 400 × 350 | derived | ✓ |
-| `mirror` | the glass, with five 45° reflection ticks across it | 900 × 50 | derived | ✓ |
+| `wc` · `toilet` | a rounded cistern across the back with its flush button, a four-centre **oval** bowl in front, the seat opening and two hinge ticks | 400 × 700 | derived | ✓ |
+| `basin` · `lavatory` | a rounded vanity top with an inset four-centre **oval** bowl and its floor line, a tap and spout at the back and the waste — **two bowls** on a long enough slab | 600 × 450 | derived | ✓ |
+| `shower` | a rounded tray with its floor let into the rim, four falls running from the corners to the waste, and the waste — a ring with a disc in it | 900 × 900 | symmetric | ✓ |
+| `bathtub` · `tub` · `bath` | a rounded rim and an inset well whose **foot end is a near half-circle** and whose head end is nearly square, two taps on the head deck and the waste beside them | 1700 × 700 | derived | ✓ |
+| `bidet` | an oval bowl with its rim, a small tap deck standing on the bowl's rear edge with its tap and jet, and the waste — a `wc` with no cistern | 400 × 700 | derived | ✓ |
+| `urinal` | a **U** bowl run to the wall face — square at the back, a semicircle at the front — with its rim, the flush plate across its back and the waste | 400 × 350 | derived | ✓ |
+| `mirror` | the glass, with a run of 45° reflection ticks across it — one per four depths of length, three to twelve | 900 × 50 | derived | ✓ |
 
-The tub's rim is deliberately **uneven** — thicker at the tap end than at the foot — so
-the drawing says which end you get in at. `lavatory` is the one alias that differs from
-its head: it does **not** count as a wet fixture for
+The tub is deliberately **uneven** — a deep deck at the tap end, a shallow rim at the foot, and
+a well that is nearly square at one end and round at the other — so the drawing says which end
+you get in at. `lavatory` is one of only two aliases that differ from their head (`sink`, which
+also counts as wet, is the other): it does **not** count as a wet fixture for
 [`W_ROOM_NO_FIXTURE`](error-codes.md), which has always been true of it, while `basin`
 does.
 
-`urinal` is the only symbol in the catalogue drawn as **half** a shape, and that is the
-honest plan of it: a wall-hung urinal has no back — the wall is its back — so the chord
-across the top of the bowl *is* the wall face, and the symbol runs to the very edge of
-its footprint where every other bath fixture leaves a margin.
+`urinal` is the only symbol in the catalogue drawn as a **U** against its wall, and that is
+the honest plan of it: a wall-hung urinal has no back — the wall is its back — so the top of the
+bowl *is* the wall face, with square back corners, and its bowl runs to the very back edge of
+its footprint, where every other bath fixture's bowl stands clear of it.
 
 `mirror` and `bidet` are both `requiresWall`, for the two different reasons that flag
 covers. A bidet is plumbed. A mirror hangs off the wall by definition — the
@@ -144,21 +145,21 @@ not, because a mirror over a console table does not make a room a bathroom.
 
 | Kind (and aliases) | Symbol | Footprint | Facing | Wall |
 |---|---|---|---|---|
-| `kitchen_sink` · `sink` | counter slab, **two** eased bowls each with a drain, and a tap with its spout at the back | 800 × 600 | derived | ✓ |
-| `counter` · `worktop` | slab with a nosing line inside the front edge and one division tick per 600 mm base-cabinet module | 600 × 600 | derived | ✓ |
-| `stove` · `hob` · `cooktop` | slab with four burners as concentric rings and the control rail across the front | 600 × 600 | derived | ✓ |
-| `fridge` · `refrigerator` | carcass, the door face, the compartment split — **across the width or the depth, by aspect** — and the handle bar | 600 × 650 | derived | ✓ |
-| `oven` | carcass, three control knobs on the back edge, and the door with its window and handle bar — **plus four burners when the footprint is wide enough to be a range** | — | free | |
-| `dishwasher` | carcass, two basket lines across the tub, and the door leaf on the front with its control strip and handle | 600 × 600 | derived | ✓ |
-| `island` | eased worktop, the seating overhang along the front with cabinet ticks under it, and — **by aspect** — a hob or a sink at one end | — | free | |
-| `upper_cabinet` · `wall_cabinet` | carcass, one door split per 600 mm module and a hinge tick at each end, drawn **entirely dashed** | 600 × 350 | derived | ✓ |
-| `washer` · `washing_machine` | carcass, the control panel across the back with two knobs, and the drum with a **white porthole** | 600 × 600 | derived | ✓ |
-| `dryer` | the same carcass, with **three chords** across the drum where the washer has its porthole | 600 × 600 | derived | ✓ |
-| `laundry_sink` · `laundry_tub` | slab with **one** deep double-rimmed bowl, its waste, and the tap block | 600 × 500 | derived | ✓ |
-| `water_heater` · `boiler` | the cylinder in plan, its inner shell, and two pipe ticks running back to the wall | 600 × 600 | derived | ✓ |
-| `range_hood` | the hood outline with a fan ring, four blade radials and a hub, drawn **entirely dashed** | 900 × 500 | derived | ✓ |
-| `microwave` | carcass, the door window over the left three-quarters, and three buttons down the panel on the right | 500 × 400 | derived | |
-| `bar_counter` | the worktop over the back of the footprint, the overhang line, and **one stool per ~1.2 counter-depths of run**, capped at eight | 1800 × 600 | derived | |
+| `kitchen_sink` · `sink` | counter slab, a centred rounded bowl with a waste, a tap ring with its spout at the back — **two bowls** from aspect 2, and a **drainer board with four grooves on each side** once the run leaves room for them; symmetric at every size | 800 × 600 | derived | ✓ |
+| `counter` · `worktop` | slab with an upstand line near the back, a front-edge line near the front and a division tick at every 600 mm base-cabinet module boundary between them (none on a run shorter than two modules) | 600 × 600 | derived | ✓ |
+| `stove` · `hob` · `cooktop` | slab with the glass hob plate, four burners as concentric rings — **the large pair along the back, the small pair in front** — and a row of four control knobs along the front | 600 × 600 | derived | ✓ |
+| `fridge` · `refrigerator` | carcass, the door's face line across the front, the handle bar — and, **by aspect**, a vertical door split when it is a side-by-side | 600 × 650 | derived | ✓ |
+| `oven` | carcass, three control knobs on the back edge, and the door with its glass window and handle bar — **plus four burners when the footprint is wide enough to be a range**, its knobs moving to a rail under the hob | — | free | |
+| `dishwasher` | carcass, the tub's inset panel with two rack rails, the control strip across the door, and the handle bar | 600 × 600 | derived | ✓ |
+| `island` | worktop, the line the seating overhang starts at along the front, and — **by aspect** — a hob plate with four burners or a sink bowl with its tap at one end | — | free | |
+| `upper_cabinet` · `wall_cabinet` | the outline, a door-face line across the front band and a door split at every 600 mm module boundary (none on a run shorter than two modules), drawn **entirely dashed** | 600 × 350 | derived | ✓ |
+| `washer` · `washing_machine` | carcass, the control strip across the back with its dial and button, and the door ring with a **white porthole** | 600 × 600 | derived | ✓ |
+| `dryer` | the same carcass, its dial on the centre line, an **empty** drum with a gasket ring inside it where the washer has its porthole, and the lint-filter slot across the front | 600 × 600 | derived | ✓ |
+| `laundry_sink` · `laundry_tub` | slab with **one** deep bowl, the step down to its floor, its waste, and a tap ring with its spout | 600 × 500 | derived | ✓ |
+| `water_heater` · `boiler` | the cylinder in plan, its jacket ring, and two pipe stubs running back to the wall | 600 × 600 | derived | ✓ |
+| `range_hood` | the hood outline with a fan ring, four blade radials and a hub ring, drawn **entirely dashed** | 900 × 500 | derived | ✓ |
+| `microwave` | carcass, the door frame and its glass window over the left three-quarters, and the keypad strip with three buttons on the right | 500 × 400 | derived | |
+| `bar_counter` | the worktop over the back of the footprint, the overhang line, and **1.2 stool seats per counter-depth of run**, one to eight | 1800 × 600 | derived | |
 
 `washer` and `dryer` are the same box at the same size and stand side by side in most
 utility rooms, so they are drawn to differ by *shape*: a glyph carries no text, so a
@@ -174,88 +175,95 @@ island still derives no rotation and still never trips
 with its own symbol; the stools drawn *inside* a `bar_counter` are a different piece with
 a different footprint.
 
-**Three symbols read their own footprint and draw a different appliance either side of a
+**Four symbols read their own footprint and draw a different appliance either side of a
 threshold**, because the fixture word alone cannot tell them apart and inventing one
-answer would be wrong for half the plans that use it. A `fridge` at aspect 1.4 or over
-splits down its width (a side-by-side) and below it across its depth (a freezer drawer);
-an `oven` at aspect 1.6 or over is a **range** and gains a hob; an `island` at aspect 1.8
-or over takes a hob at one end rather than a sink. Give the piece an explicit `size` to
-choose.
+answer would be wrong for half the plans that use it. A `kitchen_sink` at aspect 2 or over
+takes a second bowl, and whenever the bowls leave room — one bowl from about aspect 1.7, two
+from about 2.7 — a drainer board on each side (never a single trough — a bowl is at most 1.25
+times as wide as it is deep); a `fridge` at aspect 1.4 or
+over splits its door down the width (a side-by-side) and below it draws one door; an `oven` at
+aspect 1.6 or over is a **range** and gains a hob; an `island` at aspect 1.8 or over takes a
+hob at one end rather than a sink. Give the piece an explicit `size` to choose.
 
 `range_hood` is the second symbol here drawn entirely dashed, and it makes the convention
 the drawing's rather than one glyph's: **a dashed outline means a thing above the cut
 plane** — `upper_cabinet`, `roof`, `void`, the outdoor `pergola` and a garage door's
 projection all say the same. The two kitchen ones are told apart by what is inside: a
-cabinet's door splits run edge to edge, a hood's fan is a ring about the centre.
+cabinet's door line and splits run edge to edge, a hood's fan is a ring about the centre.
 
 ### Bedroom
 
 | Kind (and aliases) | Symbol | Footprint | Facing | Wall |
 |---|---|---|---|---|
-| `bed` | mattress, headboard band at the head, **one or two pillows**, and the turned-down sheet with its fold diagonal | 1500 × 2000 | derived | |
-| `double_bed` | the same drawing — its wider footprint is what earns it the second pillow | 1800 × 2000 | derived | |
-| `nightstand` · `bedside_table` | carcass and top, the **lamp standing in the back third**, and the drawer front with its handle on the room side | 450 × 400 | derived | |
-| `wardrobe` · `robe` · `closet` | carcass, the hanging rail at mid-depth with its **clothes-hanger scallops**, and the centre door split | 1800 × 600 | derived | |
-| `bunk_bed` | lower mattress with its pillow at the head, the upper bunk **dashed** over it, and the ladder rungs at the foot | 1000 × 2000 | derived | |
-| `crib` · `cot` | carcass, the mattress inside it, and the **rail bars down both long faces** | 700 × 1300 | derived | |
-| `dresser` · `chest_of_drawers` | carcass with the drawer band, its two splits and a handle in each of the three drawers, all on the room side | 1200 × 500 | derived | |
-| `vanity` · `dressing_table` | top, the mirror band **dashed** across the wall side, and the stool in front of it | 1200 × 500 | derived | |
+| `bed` | mattress, headboard band at the head, **one or two pillows**, and the duvet with its turned-down band and **one folded corner** at the foot | 1500 × 2000 | derived | |
+| `double_bed` | the same drawing — two pillows from a mattress aspect of 0.6, so at their catalogued sizes both draw two | 1800 × 2000 | derived | |
+| `nightstand` · `bedside_table` | carcass and the top's edge bevel, the **lamp standing toward the back** (a white shade with the bulb ring inside it), and the drawer front with its pull on the room side | 450 × 400 | derived | |
+| `wardrobe` · `robe` · `closet` | carcass, the door-front line near the front face, a divider between **door bays**, and in every bay the hanging rail at mid-depth (**dashed** — hidden inside the closed cabinet) with short hanger strokes across it | 1800 × 600 | derived | |
+| `bunk_bed` | the bed's frame and headboard band, the lower mattress with its pillow at the head, the upper bunk and its guard rail **dashed** over it, and the ladder at the foot | 1000 × 2000 | derived | |
+| `crib` · `cot` | carcass, the mattress inside it with its blanket and turned-down band, and the **rail bars down both long faces** | 700 × 1300 | derived | |
+| `dresser` · `chest_of_drawers` | carcass and, on the room side, a row of **drawer fronts** (one per 0.8 depths of width) each with its pull | 1200 × 500 | derived | |
+| `vanity` · `dressing_table` | top, the mirror band **dashed** across the wall side, a drawer pedestal with its pull at each end, and the stool between them | 1200 × 500 | derived | |
 
-None of these carries `requiresWall` — a bed needs no pipe — but all four are
+None of these carries `requiresWall` — a bed needs no pipe — but all eight are
 **directional**, because the symbol has a back worth turning toward a wall. That is what
 lets `anchor top` derive `rotate 0` for a bed and put its headboard where you meant it.
 
-The wardrobe's scallops **tile** the rail: their count comes from the carcass aspect and
-the radius is then half a cell, so consecutive semicircles meet exactly, end to end, with
-no gap and no overlap at any size.
+The wardrobe is drawn the way a joiner's plan draws one. Its **door bays** are a fraction rule
+read off the footprint — one per 0.875 depths of width, so a 1800 × 600 robe gets three 600 mm
+doors — and each bay holds its own **dashed** rail (above the cut plane and behind a closed
+door, the one thing a dash means) with a run of hanger strokes across it, three to five a bay.
+Nothing else in the piece is dashed, and the counts depend on the footprint alone, never on the
+pen.
 
 ### Living & dining
 
 | Kind (and aliases) | Symbol | Footprint | Facing | Wall |
 |---|---|---|---|---|
-| `sofa` · `couch` | eased body, a back band along the rear edge, an arm at each end, and the cushion divisions between them | — | free | |
-| `armchair` | eased body, a **true arc** for the curved back, and the seat cushion | — | free | |
-| `coffee_table` | **rounded** top and inner edge, four legs, and a tray line across it once it is longer than 1.6 : 1 | — | symmetric | |
-| `tv_unit` | carcass, the screen against the back edge, the shelf line, and the drawer bank with its handle on the room side | 1500 × 450 | derived | |
-| `table` | **square** top and inset edge, four legs, and a board line **along** its length once it is longer than 1.6 : 1 | — | symmetric | |
-| `dining_table` | the table inside a chair-zone band, **with the chairs drawn in it** | — | symmetric | |
-| `chair` | seat, back band along the rear edge, the cushion, and an armrest each side once the seat is wide enough | — | free | |
-| `stool` · `barstool` | a round seat with no back — **three concentric true circles** about the footprint centre | — | symmetric | |
-| `bench` | slab with its slats running **lengthwise** along whichever axis is longer, and a support across each end | — | free | |
-| `fireplace` | the chimney breast with the firebox opening cut into its **room** face and three flame ticks inside it | 1200 × 400 | derived | |
-| `radiator` | a shallow slab with its fins ticked across the depth, at a clamped pitch | 1000 × 100 | derived | |
-| `sideboard` · `buffet` | carcass and top, the door splits along the run, and one handle per door on the room edge | 1600 × 450 | derived | |
+| `sofa` · `couch` | rounded body, an arm at each end running the full depth, and a row of back and seat **cushions** — one per 0.62 depths of seat, up to four | — | free | |
+| `armchair` | the `sofa` construction with **one** cushion and broader arms | — | free | |
+| `coffee_table` | **hard** top with softly eased corners and a **white inset panel** (the glass or tray) a tenth of the short side in; no legs — they are under the top | — | symmetric | |
+| `tv_unit` | carcass, the door splits and one pull per door on the room side, and the **television** standing on its back edge — a slim panel on a foot plate | 1500 × 450 | derived | |
+| `table` | **hard** top and one bevel line just inside it — exactly the `dining_table`'s top, without the chairs; no legs — they are under the top | — | symmetric | |
+| `dining_table` | the table inside a chair-zone band, **with the chairs tucked under it** | — | symmetric | |
+| `chair` | a rounded upholstered seat and a pill-ended **backrest bar** along the rear edge | — | free | |
+| `stool` · `barstool` | a round **white seat** and the **footrest ring** standing proud of it at the full footprint — two concentric true circles about the footprint centre | — | symmetric | |
+| `bench` | slab with its board joints running **lengthwise** along whichever axis is longer | — | free | |
+| `fireplace` | the chimney **breast** against the wall, the **hearth** slab in front of it, and the splayed **firebox** cut into the breast's room face, with its grate | 1200 × 400 | derived | |
+| `radiator` | a shallow slab with its fins ticked across the depth inside the casing, at a clamped pitch | 1000 × 100 | derived | |
+| `sideboard` · `buffet` | carcass, the door splits along the run, and one pull per door on the room edge | 1600 × 450 | derived | |
 | `loveseat` · `sofa_2` | the `sofa` construction with its cushion count **pinned at two seats**, whatever the footprint | 1500 × 850 | free | |
-| `chaise` | an eased body with a back down **one long side** and a raised head across the top | 1600 × 800 | free | |
-| `tv` | the wall bracket with the screen panel hanging off it — **not** the `tv_unit`, which is a carcass | 1200 × 80 | derived | |
-| `coat_rack` | the post as two concentric circles with four hooks at a 90° pitch round it | 400 × 400 | symmetric | |
-| `shoe_cabinet` | slim carcass, the door splits, and a **tilt line** in each door leaning toward the room | 800 × 300 | derived | |
-| `sofa_l` · `corner_sofa` | an L: the back run along the rear edge, the return down the **left**, cushions along both, and the fourth quadrant left as open floor | 2600 × 1600 | free | |
-| `rug` · `carpet` | outer and inner borders with a fringe at each short end — the **only unfilled symbol** | — | symmetric | |
-| `piano` · `grand_piano` | the keyboard across the back, the straight spine down the left, and the bent side sweeping round to the tail | — | free | |
+| `chaise` | the `sofa` construction with **one** arm (the left) and the other end **open**: a row of back cushions and one long seat cushion you lie along | 1600 × 800 | free | |
+| `tv` | a slim panel on the room face and the wall bracket behind it — **not** the `tv_unit`, which is a carcass | 1200 × 80 | derived | |
+| `coat_rack` | a round base, the pole, and four hook arms on the diagonals, each ending in a knob | 400 × 400 | symmetric | |
+| `shoe_cabinet` | slim carcass, the door splits, and a long **finger-pull** along the front of each door | 800 × 300 | derived | |
+| `sofa_l` · `corner_sofa` | the `sofa` construction round an L: the back run along the rear edge, the return down the **left**, a **square corner seat**, an arm at each free end, and the fourth quadrant left as open floor | 2600 × 1600 | free | |
+| `rug` · `carpet` | a woven body with a border band inside it and a fringe off each short end (all four on a square rug) — unfilled, and the **only symbol drawn entirely in the detail pen** | — | symmetric | |
+| `piano` · `grand_piano` | a **grand**: the keyboard across the back, the straight bass side down the right, a round tail, the concave bent side and the treble shoulder (tangent arcs throughout) with the lid line inside; a bench in front of the keys when the footprint is at least 1.3 widths deep | — | free | |
 
 `sofa`, `armchair`, `chair`, `bench`, `sofa_l`, `loveseat` and `chaise` are deliberately
 **free**: seating is arranged, not installed, so ArchLang neither derives a rotation for them
-nor warns when one faces the room. `tv_unit` is the exception in this group — it is directional (a media wall has
-a front) but still carries no services, so floating one as a room divider raises nothing.
+nor warns when one faces the room. `tv_unit`, `tv`, `sideboard` and `shoe_cabinet` are the
+exception — each is directional (each has a front) but still carries no services, so floating
+one as a room divider raises nothing.
 
 **A `loveseat` is a `sofa` with its cushion count pinned.** Both draw from one construction,
 so the pair cannot drift apart; what separates them is the number of seats, which is the fact
-the two words actually carry. A `sofa` reads its aspect and draws three cushions on a 1500 mm
-footprint; a `loveseat` draws two on any footprint.
+the two words actually carry. A `sofa` reads the length of its seat and draws three cushions
+on a 2000 × 900 footprint; a `loveseat` draws two on any footprint.
 
 **A `tv` and a `tv_unit` are different kinds, not synonyms.** A media console is 450 mm deep
 and a wall-mounted panel is 80, so a plan that draws the first where the second belongs has
 taken 370 mm of walkway away. Both are `directional`, and the symbols differ: the console has a
-carcass, drawer splits and a screen band at the back; the panel has a bracket and nothing else.
+carcass, door splits and pulls on the room side, and a television standing on its back edge; the
+mounted panel is a slim slab on the room face and the bracket behind it, and nothing else.
 
 **`fireplace` and `radiator` are not `requiresWall`, and both are genuinely serviced.** That
 flag means the piece cannot work without a wall *behind* it, and neither of these can be
 flagged without warning on a normal drawing: a radiator is as often fed from the floor as from
 the wall and lives under a window, and a free-standing stove in the middle of a room is a plan
 someone drew on purpose. Both are `directional` instead, which is the claim the drawing can
-back: a fireplace's opening faces the room, and a radiator's fins run from its back face to its
-front.
+back: a fireplace's firebox opens onto the room with its hearth in front of it, and a radiator's
+fins run across it, from the back toward the front.
 
 **`sofa_l`'s return is always on the LEFT, and there is no right-handed twin — but
 `place … mirror` now draws one.** A `sofa_l_r` category was rejected rather than forgotten:
@@ -265,15 +273,17 @@ twin. So a reflecting instance frame hands the glyph its own chirality instead, 
 mirror image. Turn it with `rotate` where a quarter-turn is what you want; reach for
 `place … mirror` when you want the mirror-image piece.
 
-**Handedness is DERIVED from the drawing, not declared per family.** Nineteen of the 83
+**Handedness is DERIVED from the drawing, not declared per family.** Sixteen of the 83
 shipped families have no vertical mirror axis (`bed`, `desk`, `bathtub`, `island`, `washer`,
-`microwave`, `mirror`, `chaise`, `shoe_cabinet`, `reception_desk`, `piano`, `sofa_l`, `bbq`,
-`shrub`, `bicycle`, `motorcycle`, `mailbox`, `ev_charger`, `double_bed`) at their catalogued
-footprints. Handedness is a property of the drawing rather than of the family, though:
-`counter`, `fridge`, `upper_cabinet`, `hedge` and `motorcycle` are handed at some footprints
-and symmetric at others, because their detail is tiled and the tile count comes from the
-aspect ratio — which a per-family flag simply cannot express. **A symbol that has a mirror
-axis renders byte-identical whether its instance was reflected or not**, at every footprint;
+`microwave`, `mirror`, `chaise`, `reception_desk`, `piano`, `sofa_l`,
+`bicycle`, `motorcycle`, `mailbox`, `ev_charger`, `double_bed`) at their catalogued
+footprints (1000 × 600 for the five that have none). Handedness is a property of the drawing
+rather than of the family, though:
+`counter`, `fridge`, `upper_cabinet`, `bicycle` and `motorcycle` are handed at some
+footprints and symmetric at others — the first three because their detail is tiled by aspect,
+the bikes because they are drawn along their own long axis — which a per-family flag simply
+cannot express. **A symbol that has a mirror axis renders byte-identical whether its instance
+was reflected or not**, at every footprint;
 see `src/elements/glyph-chirality.ts` and `test/glyph-chirality.test.ts`.
 
 **Its footprint is the whole bounding rectangle, empty quadrant included**, which is what
@@ -293,18 +303,18 @@ which is how it goes on a drawing anyway.
 
 | Kind (and aliases) | Symbol | Footprint | Facing | Wall |
 |---|---|---|---|---|
-| `desk` | slab with the modesty panel across its back, the working edge stepped in, a **drawer pedestal** on the right and the cable grommet | — | free | |
-| `office_chair` | round seat, a **true arc** back over it, and an armrest each side | — | free | |
-| `bookshelf` · `bookcase` · `shelf` | carcass with its shelf bays ticked off along the run, read from the footprint's own long axis | 900 × 300 | derived | |
-| `plant` · `planter` | pot as a true circle, foliage as a ring of eight radials at a 45° pitch | — | symmetric | |
-| `car` | body, cabin, the two screens, and a wing mirror each side | — | free | |
-| `sun_lounger` · `lounger` | eased body, the raised backrest at the head end, and four to six transverse slats | — | free | |
-| `meeting_table` | a long eased top inside a chair band, with the chairs drawn as **rings** — the `dining_table` rule, in swivel chairs | 2400 × 1200 | symmetric | |
-| `reception_desk` | an **L** counter — a run along the back with a return down the left — its two nosings, and the chair inside the L | 2400 × 900 | derived | |
-| `filing_cabinet` | narrow carcass and top, three drawer lines across it, and the pull on the front edge | 450 × 600 | derived | |
-| `locker` | a run of narrow doors at a clamped count, each with a vent tick on the room face | 1200 × 450 | derived | |
-| `pool_table` | eased frame, the cloth inside it, and **six pockets** — four at the corners, two on the long rails | 2500 × 1400 | symmetric | |
-| `treadmill` | frame, the console band at the wall end, the belt, and the two side rails | 800 × 1800 | derived | |
+| `desk` | top with its edge bevel and the modesty panel across its back, the **drawer pedestal** on the right drawn **dashed** (it is under the top), and the monitor standing at the back | — | free | |
+| `office_chair` | a rounded white seat, a **crescent** back of two true arcs, an armrest each side, and the five-star base **dashed** under the seat | — | free | |
+| `bookshelf` · `bookcase` · `shelf` | carcass, the back panel, a divider between bays and a block of three book spines in each bay, read from the footprint's own long axis; stood on end it is a **double-sided** stack — the back panel is the long centre line and books stand on both sides | 900 × 300 | derived | |
+| `plant` · `planter` | a scalloped crown of eight lobes, alternately long and short as a tree's are, filled with the planting tint, over the pot ring, with eight ribs and the stem | — | symmetric | |
+| `car` | body rounded at both ends, the bonnet and boot panels, the windscreen and rear window as white trapezoids with the roof between them, a pillar line each side, and a wing mirror each side — inside the footprint | — | free | |
+| `sun_lounger` · `lounger` | frame and three white cushion panels — the raised back with its headrest at the head end, the seat, and the leg rest | — | free | |
+| `meeting_table` | a long eased top inside a chair band, with the `dining_table` chairs tucked under it, backrests out — up to six a side and one at each end | 2400 × 1200 | symmetric | |
+| `reception_desk` | an **L** counter — a run along the back with a return down the left, its corners filleted but the reflex corner left sharp — the transaction ledge on the visitor faces, a nosing on each staff face, and the chair inside the L | 2400 × 900 | derived | |
+| `filing_cabinet` | narrow carcass and the top's edge bevel, three drawer lines across it, and the pull on the front edge | 450 × 600 | derived | |
+| `locker` | a run of narrow doors at a clamped count, the door-front line near the front face, and a pull on each door | 1200 × 450 | derived | |
+| `pool_table` | the rail, the cushion band inside it, the cloth, and **six pockets** — four at the corners, two on the long rails | 2500 × 1400 | symmetric | |
+| `treadmill` | frame, the console at the wall end with its display, the two side platforms, and the belt between them as a stadium | 800 × 1800 | derived | |
 
 A `sun_lounger` is aimed at the sun, and ArchLang has no sun model — the `site` layer names an
 aspect, not a daylight measurement — so nothing here derives which way it points and nothing
@@ -313,8 +323,8 @@ warns about it. Say so with `rotate`.
 The six commercial kinds take the drawing out of a house. Two things about them are decided
 rather than obvious. **`meeting_table` follows `dining_table`'s rule that the footprint includes
 its chairs** — the dimension a plan needs to check is the one you cannot pull a chair out of —
-so a 2400 mm table is authored as roughly 3000 mm of footprint; it is drawn with an eased top
-and ring seats, which is what tells it from the square-topped dining table at a glance. And
+so a 2400 mm table is authored as roughly 3000 mm of footprint; it is drawn with an eased top,
+which is what tells it from the square-topped dining table at a glance. And
 **`treadmill` carries the largest `clearanceMm` in the catalogue, 900 mm**, because the run-off
 space behind a user is the one thing a gym plan can be wrong about in a way that matters;
 `dresser`, `vanity` and `filing_cabinet` carry 600, for a drawer or a chair.
@@ -327,33 +337,35 @@ like every other symbol's depth, so `rotate 90` parks it across a garage.
 ### Outdoor
 
 Twenty-one families for what a site plan draws once the drawing leaves the building. They
-live in their own module (`src/elements/glyphs-outdoor.ts`) and follow one rule the indoor
-tables do not: **planting is drawn unfilled**, because a canopy overhangs ground — a path, a
-terrace, a parking bay — that has to keep reading through it.
+live in their own module (`src/elements/glyphs-outdoor.ts`), drawn in the indoor symbols' line
+language (outline in the symbol ink, detail in the fine pen, true curves), and follow one rule
+the indoor tables do not: **planting is a canopy that masks the ground** — the tree, the
+conifer, the shrub and the hedge are each one closed outline **filled with the lawn tint**, so
+the ground hatch under them is painted out and the crown reads as one mass.
 
 | Kind (and aliases) | Symbol | Footprint | Facing | Wall |
 |---|---|---|---|---|
-| `tree` · `deciduous_tree` | softly scalloped canopy over the crown ring and the trunk, **unfilled** | — | symmetric | |
-| `conifer` · `pine` | the same canopy with the notches cut deeper, so it reads as needled | — | symmetric | |
-| `shrub` · `bush` | a lumpy cloud of eight overlapping lobes, **unfilled**, with three short interior arcs for foliage | — | symmetric | |
-| `hedge` | a scalloped band — a chain of overlapping arcs down **both** faces, a half-scallop closing each end, one dashed centreline, and **no box** | 2000 × 600 | free | |
-| `bbq` · `grill` · `barbecue` | the body with a **cross** grid of grill bars, the side shelf down the right, and two wheels on the front edge | 1200 × 600 | derived | |
-| `outdoor_table` · `patio_table` | round or eased-rectangular top with four chairs hugging the footprint edges | — | symmetric | |
-| `outdoor_chair` · `patio_chair` | the `chair` construction — seat, back band, inset cushion — with **slats** across the back and an armrest each side | — | free | |
-| `umbrella` · `parasol` | an eight-segment canopy with the pole at the centre | — | symmetric | |
-| `bicycle` · `bike` | two wheels at a quarter and three quarters of the run, the four-tube **diamond frame** between them, the saddle and the bars | — | free | |
-| `motorcycle` | the two wheels with the body slung between them | — | free | |
-| `hot_tub` · `spa` | the shell, the water inside it, and the four seats round the rim | — | symmetric | |
-| `swing` · `swing_set` | the beam down the long axis, a leg at each end, and two seats | — | free | |
-| `trampoline` | the frame, the mat, and twelve springs across the narrow band between them | — | symmetric | |
-| `bin` · `wheelie_bin` | the body, the lid line at the hinged edge, and the two wheels under it | 600 × 700 | derived | |
+| `tree` · `deciduous_tree` | a canopy scalloped into sixteen lobes and **filled with the lawn tint** (it masks the ground hatch under it), eight forked branches and the trunk | — | symmetric | |
+| `conifer` · `pine` | a sixteen-point needled star canopy (notched to 0.6 of the crown) in the lawn tint, eight spokes and the tree's trunk | — | symmetric | |
+| `shrub` · `bush` | a closed cloud of eight equal lobes in the lawn tint, with a smaller cloud of foliage inside | — | symmetric | |
+| `hedge` | ONE continuous band in the lawn tint, **both** faces scalloped and both ends rounded, with the hidden stem line dashed down its middle, and **no box** | 2000 × 600 | free | |
+| `bbq` · `grill` · `barbecue` | a gas grill: the firebox with its barred grate, a **shelf each side**, and three control knobs on the front | 1200 × 600 | derived | |
+| `outdoor_table` · `patio_table` | the dining table's language — the top inside a chair band, chairs tucked under it — round with four chairs when near-square, rectangular with chairs down the sides otherwise, and the parasol hole | — | symmetric | |
+| `outdoor_chair` · `patio_chair` | the dining chair's seat and backrest with an **arm** down each side and slat joints across the seat | — | free | |
+| `umbrella` · `parasol` | an eight-panel canopy sagging between its ribs, the ribs, and the pole | — | symmetric | |
+| `bicycle` · `bike` | from above: two narrow **tyres** in line, the frame between them, the saddle, the handlebar across the front tyre, and the cranks with their pedals | — | free | |
+| `motorcycle` | from above: the two tyres (the rear wider), the body narrowing to tail and headstock over them, the seat, the tank, and the handlebar with its mirrors | — | free | |
+| `hot_tub` · `spa` | the rounded shell, the water, the moulded bench round a sunken footwell, and a seat division mid-side | — | symmetric | |
+| `swing` · `swing_set` | the top beam, an A-frame splaying to two feet at each end, and two seats hung on their chains | — | free | |
+| `trampoline` | the padded frame, the mat, and twenty-four springs across the narrow band between them | — | symmetric | |
+| `bin` · `wheelie_bin` | the body, its lid, the handle along the hinged back edge, and the grip at the front | 600 × 700 | derived | |
 | `mailbox` · `letterbox` | the box with its flap, and the flag beside it | 400 × 300 | derived | |
-| `ev_charger` | the pedestal against the back edge with the cable — a **true arc** — hanging off it | 400 × 300 | derived | |
-| `pergola` | the overhead frame on four posts, drawn **entirely dashed** and unfilled | — | symmetric | |
-| `sandpit` · `sandbox` | the eased kerb with five stipple dots for sand | — | symmetric | |
-| `fire_pit` | the rim, the bowl, and a four-lobed flame inside it | — | symmetric | |
-| `shed` · `garden_shed` | the carcass, a **dashed** roof ridge, and the door tick on the front | 2400 × 1800 | derived | |
-| `clothesline` · `washing_line` | a post at each end of the run with three lines strung between | — | free | |
+| `ev_charger` | the pedestal against the back edge with its display, and the cable — a **true arc** — with its plug | 400 × 300 | derived | |
+| `pergola` | the overhead frame and a rafter grid, **dashed** and unfilled, on four **solid** posts | — | symmetric | |
+| `sandpit` · `sandbox` | the timber frame, a plain sand field, and a corner seat board in each corner | — | symmetric | |
+| `fire_pit` | the stone surround with its joints, the fire bowl, four logs and the embers | — | symmetric | |
+| `shed` · `garden_shed` | the walls with a pair of doors swung in from the front, the floor, and a **dashed** roof ridge | 2400 × 1800 | derived | |
+| `clothesline` · `washing_line` | a T-post at each end of the run with four lines strung between the arms | — | free | |
 
 **Nothing out here carries `requiresWall`, and that is a decision.** The flag means services —
 supply, waste, venting, or hanging off a wall by definition — and
@@ -366,61 +378,36 @@ as on a wall. Outdoors the wall is the exception.
 **`bbq` is the only outdoor kind with a frontal clearance** (900 mm — the standing room a cook
 needs at an open grill). The hot tub deliberately has none: it is symmetric, so it has no front
 to measure one from. The barbecue's back is the **top** edge, this module's convention — the
-shelf is on the right and the wheels are on the bottom, so the top is the edge clear of both
-and the one that goes against a wall or fence.
+knobs are on the bottom, where the cook stands, so the top is the edge that goes against a wall
+or fence.
 
-Three of the outdoor symbols are drawn from **arcs alone**, with no closed shape to fill:
-`shrub` and `hedge` (planting reads through, and a box around a hedge makes it read as a tray),
-and the outer half of every lobe only — a face scallop draws 120° of its circle, not the whole
-thing, or the run reads as a chain of overlapping rings.
+The `shrub` and the `hedge` are each **one closed loop of arcs** — no straight run and no box
+(a box around a hedge makes it read as a tray), and no gap between the arcs, which is what lets
+them carry the lawn tint.
 
-Three of them are drawn **dashed**, and it is the same convention every time — *above the cut
-plane*, the rule `upper_cabinet` follows indoors and the one `roof` and `void` ship: the whole
-`pergola` outline, and the `shed`'s roof ridge.
+The **dashed** marks follow one convention every time — *above the cut plane or hidden*, the
+rule `upper_cabinet` follows indoors and the one `roof` and `void` ship: the `pergola`'s frame
+and rafters (its posts are cut, so they are solid), the `shed`'s roof ridge, and the `hedge`'s
+stem line under its foliage.
 
 The five `directional` kinds (`bbq`, `bin`, `mailbox`, `ev_charger`, `shed`) are the ones you
-would write `against wall` or `anchor` about, and they are also the five that carry a footprint —
-so `furniture shed against wall fence` needs no `size`. `outdoor_chair` is deliberately **free**,
-for the reason every other seat in the catalogue is: seating is arranged, not installed.
-
-### What changed in v1.32
-
-Twenty-six families were added — eight in Bath and Kitchen & utility, eighteen across Bedroom,
-Living & dining and Office & misc — and **fourteen symbols that already existed were redrawn**.
-Each of the fourteen still read as a rectangle with a line in it, which at plan scale is not a
-drawing of anything; several were not even distinguishable from each other (`coffee_table` and
-`table` differed only by a corner radius of 0.12 against 0.08 on the same two primitives, and
-`washer` and `dryer` were the same box at the same size).
-
-The primitive counts below are measured, not estimated, at three footprints — 900 × 900,
-2400 × 700 and 1800 × 600 — because several symbols read their own aspect and draw a different
-piece of equipment either side of a threshold rather than inventing one answer that is wrong for
-half the plans.
-
-| Kind | Primitives (main → v1.32) | What it gained |
-|---|---|---|
-| `island` | 2 → 7 / 9 | an eased worktop, a seating overhang with cabinet ticks under it, and **by aspect** either a hob or a sink bowl |
-| `upper_cabinet` | 2 → 3 / 5 / 6 | a door split per 600 mm module and a hinge tick at each end of the back edge — a dashed empty rectangle is a `void`, this is cabinetry |
-| `dishwasher` | 3 → 7 | two basket lines across the tub, and a door leaf with its control strip and handle |
-| `oven` | 4 → 8 / 12 | three knobs, a door seam, a window and a handle bar; **at aspect 1.6 or over it is a range** and gains four burners |
-| `fridge` | 4 → 5 | a door face line, a handle bar, and a compartment split placed by aspect — down the width of a side-by-side, across the depth of an upright |
-| `washer` | 4 → 7 | a control panel with two knobs and a white porthole at the drum's centre, so it is no longer `dryer`'s box |
-| `coffee_table` | 2 → 6 / 7 | legs and a lower shelf |
-| `table` | 2 → 6 / 7 | legs and supports, and a leaf seam on a long enough top |
-| `stool` | 2 → 3 | a **concentric** third circle — a ring of foot dots would map onto itself under a quarter-turn and move the bytes for a drawing nobody can tell apart |
-| `bench` | 3 → 7 / 8 | slats and legs |
-| `chair` | 3 → 5 | a seat, a back and armrests |
-| `tv_unit` | 3 → 6 | drawer splits and a plinth |
-| `nightstand` | 3 → 6 | a drawer split and a pull |
-| `desk` | 3 → 7 | a pedestal with drawer splits, and a modesty panel |
-
-Every one of them is **structural detail rather than decoration** — what the piece is made of and
-how it is used, not a texture — which is the only kind of line that survives being printed at
-1:50. The redraw moves bytes on eighteen of the shipped example drawings and moves nothing else:
-`describe()` and `lint()` are SHA-256 identical on all thirty, and the changed lines all sit on
-`A-FURN` or on the `A-ANNO` legend swatches that are drawn from the same symbols.
+would write `against wall` or `anchor` about, and with the `hedge` (a run, 2000 × 600) they are
+the six that carry a footprint — so `furniture shed against wall fence` needs no `size`.
+`outdoor_chair` is deliberately **free**, for the reason every other seat in the catalogue is:
+seating is arranged, not installed.
 
 ## How a symbol is drawn
+
+**Two tones, two pens.** A symbol's OUTLINE is drawn with the thin pen in a derived symbol
+ink — `furnitureStroke` mixed three sevenths of the way toward the wall ink, so it reads at
+4.5:1 or better on the room fill in every shipped theme — and its DETAIL (cushion joints,
+pillows, burners, drains) with the finest pen, 0.13 mm on a sheet, in `furnitureStroke`
+itself. Stairs, lifts and escalators follow the same two tones, but every line of them is the
+thin pen. On the plan, `style furniture { stroke "#…" }` sets the detail tone and the outline
+follows it in the same hue, and a named
+colour (`stroke "teal"`) is used for both; the legend's swatches are drawn in the plan's theme
+and do not pick up a `style furniture` override. The labelled rectangle of an uncatalogued
+word is not a symbol and keeps `furnitureStroke`.
 
 **Back on top.** Every symbol is drawn with the side that goes against a wall along the
 **top** edge of its footprint, then quarter-turned about the footprint centre. So
@@ -437,13 +424,17 @@ still draws a rectangle with its name in it, which is how you annotate something
 has no symbol for.
 
 **A `rug` is an UNDERLAY, and it is the only kind that is.** An underlay lies flat on the
-floor: furniture stands on it and people walk over it. Four rules read that one fact, and
-every one of them declines a check rather than adding one.
+floor: furniture stands on it and people walk over it. The drawing honours that in two ways,
+and four rules read the same fact — every one of them declining a check rather than adding one.
 
-- **It is drawn with no fill at all** — the only symbol in the catalogue that is. That is not
-  a style choice: if it filled, a `rug` written *after* the sofa standing on it would paint
-  over the sofa, and the same plan with the two lines swapped would look right. With nothing
-  to paint over, there is no source order to get wrong.
+- **It is drawn first, under every other piece of furniture**, whatever order the statements
+  are in: a `rug` written *after* the sofa standing on it renders exactly as if it had been
+  written before, so the sofa's body covers the rug's lines instead of the lines running across
+  the seat. Two rugs keep their own order.
+- **It is drawn with no fill at all** — the only floor-level symbol that is (`upper_cabinet` and
+  `range_hood`, above the cut, are the others) — so it hides nothing even where no piece stands
+  on it, and every line of it is in the **detail pen**: it has no outline-weight edge, so it
+  reads as a floor finish, subordinate to the furniture's outlines.
 - **A piece standing on it is not an overlap.** `W_FURNITURE_OVERLAP` skips an
   underlay-and-not-an-underlay pair. Two rugs overlapping *each other* still warn — one rug
   half over another is a drawing mistake, and nothing about walking on them says otherwise.
@@ -459,7 +450,8 @@ on has no bearing on whether it is drawn inside the plaster. The **door** rules
 (`W_SWING_OBSTRUCTED`, `W_DOORWAY_BLOCKED`) do not yet know about underlays either, so a rug
 in a doorway is still reported today.
 
-**Two symbols read their own footprint and change what they draw.** Neither branch looks
+**Several symbols read their own footprint and change what they draw** (`fridge`, `oven`,
+`island`, `kitchen_sink` and `outdoor_table` too); two worth spelling out follow. No branch looks
 at the category word, because the shape is the honest datum:
 
 - **`basin`** draws **two** bowls, at the quarter points, once the slab is at least
@@ -470,12 +462,15 @@ at the category word, because the shape is the honest datum:
   conventional 1200 mm single/double split, so `furniture bed … size 1500x2000` draws the
   double it plainly is and a `double_bed` squeezed to 900 draws the single it has become.
 
-**A dashed outline means ABOVE THE CUT PLANE, and three fixture symbols use it.** A floor plan
+**A dashed outline means ABOVE THE CUT PLANE, or HIDDEN inside a closed piece.** A floor plan
 is a horizontal section, so anything that sits above the cut is drawn dashed — present, but not
 cut — and unfilled, so whatever it overhangs still reads through it. `upper_cabinet` is dashed
 in its entirety because a wall cabinet hangs above the counter; a `bunk_bed`'s **upper deck** is
 dashed for the same reason, and drawing it solid would claim the room has two mattresses of
-floor area; a `vanity`'s **mirror band** is dashed because the mirror stands on the table. It is
+floor area; a `vanity`'s **mirror band** is dashed because the mirror stands on the table. A part
+of a piece is dashed on the same terms: a `wardrobe`'s **hanging rail** (above the cut, behind its
+closed doors), a `desk`'s **drawer pedestal** (under the top) and an `office_chair`'s **five-star
+base** (under the seat) are drawn dashed over the surface that hides them. It is
 the same convention `roof`, `void` and the outdoor `pergola` and `shed` ridge follow, through
 one shared `dashedPattern()` helper. There is no syntax for saying "draw this piece above the
 cut plane" — a kind is dashed because of what it is.
@@ -484,9 +479,10 @@ cut plane" — a kind is dashed because of what it is.
 declares the whole **eating zone**: the table is the inner rectangle inside a chair-zone
 band, and the seats are drawn in that band. That is the dimension a plan needs to check —
 a table you cannot pull a chair out of is not a table that fits — so a 1200 mm table is
-authored as roughly 2400 mm of footprint. The seat count comes from the aspect, plus one
-at each short end when the table is under 2:1 (a square table seats its ends; a refectory
-bench does not).
+authored as roughly 2400 mm of footprint. Each long side seats one chair per 2.2 band
+depths of table, up to four, and each end seats one; a chair is tucked under the top by 30%
+of its depth, so the seats meet the table rather than float beside it. A square table seats
+one a side — the four-seater — and stays the same drawing under a quarter-turn.
 
 **The ASCII plan shows none of this.** `arch compile -f txt` (and `arch preview --ascii`)
 reduces each piece to a **single uppercase letter** at its centre — the first letter of

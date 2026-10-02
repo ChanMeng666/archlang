@@ -74,6 +74,9 @@
  * pin over the SUMMARY half alone (`semanticDigestWith`: the same payload with the SVG
  * removed). Those numbers are the original measurement, unchanged, and a drawing change can
  * never move them. If one of THEM moves, the finding is real.
+ *
+ * Re-measured for the visual-polish symbol redraw: SVG only, describe/lint/diagnostics unchanged
+ * (substitution check reproduces the old digests).
  */
 
 import { createHash } from "node:crypto";
@@ -184,10 +187,10 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
 // SVG and lint() byte-identical, only describe().circulation moved — each field, and the
 // rule that moved it, in ./byte-identity-baseline.ts ("Circulation v2").
 const BASELINE: [string, string][] = [
-  ["laneway-house", "367200dbbc7e8ee407fbdef3e9d77b9b10589845c7ee8e95d7c902e7fe6d003d"],
-  ["studio", "2068a9622c25b95311df4206d8950bf34cafa10dc5a69551bc4bdd653d27cf1f"],
-  ["gallery-l", "fd7ee33e2787e3f5099ed6b533111754aa8b62761d3540940414c94822cac4f6"],
-  ["aquarium", "dea2576514cb91386b1b0bb17cdb5318fdfc501f7501ae607a8363822c04837d"],
+  ["laneway-house", "e961c05bae73c9f6d3cf9b97c620bef1d44eab691f213a6a290ecc3ea35d7d9c"],
+  ["studio", "a673da24ae4ecee5a7de64e34efbf5f24df2cf6bfb85d4d8e79bcfd54c7a1acb"],
+  ["gallery-l", "62d46c232a2666d1febda3e427785419f4773eb15372258e0e41f6bfd53c1f74"],
+  ["aquarium", "8b9cf5972a4ba21a5601c87042ef2be69ded3b525ea63f248e9f5619a4300d72"],
 ];
 
 /** The SUMMARY half of the same law — see the header. Re-measured once, for `aquarium`, because its rooms were wrong. */

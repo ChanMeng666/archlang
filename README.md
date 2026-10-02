@@ -503,7 +503,7 @@ the trampoline. The ground is drawn and measured but is emphatically not floor a
 </table>
 
 **And one that is here for its furniture** — the drawn symbol catalogue in a single plan,
-from the WC's seat ring to the wardrobe's hanger scallops. Twenty-six kinds; not one of them
+from the WC's seat ring to the wardrobe's hanging rail. Twenty-six kinds; not one of them
 carries a `label`, and most carry no `size` either:
 
 <div align="center">

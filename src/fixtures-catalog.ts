@@ -366,7 +366,8 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   //
   // None is `underlay`: a rug is walked ON, and none of these is.
 
-  // Planting — drawn unfilled, because a canopy overhangs ground that has to read through.
+  // Planting — each canopy is one closed outline filled with the lawn tint, so the ground hatch
+  // under it is painted out and the crown reads as one mass.
   tree: { requiresWall: false, symmetric: true },
   deciduous_tree: { requiresWall: false, symmetric: true },
   conifer: { requiresWall: false, symmetric: true },

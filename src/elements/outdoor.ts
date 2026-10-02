@@ -574,10 +574,23 @@ function railNodes(o: ROutdoor, side: RailSide, ctx: RenderCtx, layer: string): 
   const uy = (b.y - a.y) / len;
   const n = SIDE_NORMAL[side];
   // The balustrade sits just INSIDE the slab edge, which is where a railing is built.
-  const depth = Math.min(len / 8, sizes.thin * 6);
+  const depth = railDepth(o, side, sizes.thin);
   const off = (d: number): [Point, Point] => [
     { x: a.x - n.x * d, y: a.y - n.y * d },
     { x: b.x - n.x * d, y: b.y - n.y * d },
+  ];
+  // Where the next side round a corner is railed too, the inner rail stops on THAT rail's line
+  // rather than running on to the slab edge, so two railed sides meet in a clean corner instead
+  // of crossing in a small square. (Its own `depth` is the neighbour's offset: the corner is
+  // where the two inner lines intersect.)
+  const [before, after] = RAIL_NEIGHBOURS[side];
+  const rails = o.rail ?? [];
+  const from = rails.includes(before) ? railDepth(o, before, sizes.thin) : 0;
+  const to = rails.includes(after) ? railDepth(o, after, sizes.thin) : 0;
+  const [i0, i1] = off(depth);
+  const inner: [Point, Point] = [
+    { x: i0.x + ux * from, y: i0.y + uy * from },
+    { x: i1.x - ux * to, y: i1.y - uy * to },
   ];
   const width = weightWidth("extraThin", sizes);
   const line = (p: [Point, Point]): SceneNode => ({
@@ -587,7 +600,7 @@ function railNodes(o: ROutdoor, side: RailSide, ctx: RenderCtx, layer: string): 
     lineWeight: "extraThin",
     paint: { fill: "none", stroke: theme.outdoorStroke, width },
   });
-  const nodes: SceneNode[] = [line(off(0)), line(off(depth))];
+  const nodes: SceneNode[] = [line(off(0)), line(from === 0 && to === 0 ? [i0, i1] : inner)];
 
   const posts = Math.max(2, Math.min(MAX_RAIL_POSTS, Math.round(len / 1200)));
   for (let i = 0; i <= posts; i++) {
@@ -598,6 +611,23 @@ function railNodes(o: ROutdoor, side: RailSide, ctx: RenderCtx, layer: string): 
   }
   return nodes;
 }
+
+/** How far inside the slab edge a side's inner rail runs: an eighth of the side, at most six pens. */
+function railDepth(o: ROutdoor, side: RailSide, thin: number): number {
+  const len = side === "top" || side === "bottom" ? o.size.w : o.size.h;
+  return Math.min(len / 8, thin * 6);
+}
+
+/**
+ * The sides a rail meets at its START and its END corner, in {@link edgeEndpoints}'s page order
+ * (a horizontal side runs left to right, a vertical one top to bottom).
+ */
+const RAIL_NEIGHBOURS: Readonly<Record<RailSide, readonly [RailSide, RailSide]>> = {
+  top: ["left", "right"],
+  bottom: ["left", "right"],
+  left: ["top", "bottom"],
+  right: ["top", "bottom"],
+};
 
 /** The two endpoints of one rectangle edge, in page order (smaller coordinate first). */
 function edgeEndpoints(at: Point, size: { w: number; h: number }, side: RailSide): [Point, Point] {

@@ -11,8 +11,10 @@
  * bounding square, because a glyph drawn with a curve is exactly where a `pts`-only check
  * goes quietly vacuous (the same hole `test/furniture-rotate.test.ts` closed in `furnPoints`).
  * The arc CENTRE is in that set on purpose: `pointsOf` in `src/backends/ascii.ts` bounds an
- * arc by `[start, end, center]`, so an armchair whose back-arc centre sat below its box would
- * drag the ASCII plan's extents with it. That is the clamp `drawArmchair` documents.
+ * arc by `[start, end, center]`, so a glyph arc whose centre sat outside its box would drag the
+ * ASCII plan's extents with it. A `path` (the curved outlines) contributes its vertices and its
+ * arcs' axis extremes but NOT its centres — on a closed outline the centre is a construction
+ * point, and ascii's `pointsOf` reads a path's curve, not its centres (`test/glyph-extent.ts`).
  *
  * **2. Repeat counts are clamped, at absurd aspects included.** A sofa's cushion divisions
  * and a dining table's chairs are derived from the footprint's aspect, which is unbounded.
@@ -39,7 +41,12 @@ import type { Point } from "../src/ast.js";
 import type { RenderSizes, SceneNode } from "../src/scene.js";
 import type { Rect } from "../src/elements/glyph-lib.js";
 import { CANONICAL_FIXTURES, fixtureGlyph, hasFixtureGlyph } from "../src/elements/fixtures-glyphs.js";
+import * as living from "../src/elements/glyphs-living.js";
+import { glyphCtx } from "../src/elements/glyph-lib.js";
+import { fixtureSpec } from "../src/fixtures-catalog.js";
 import { rotateNode } from "../src/elements/furniture.js";
+import { marksEqual, mirrorNode } from "../src/elements/glyph-chirality.js";
+import { pathExtentPoints } from "./glyph-extent.js";
 
 /** Real pen sizes, taken from a real scene rather than invented. */
 const SIZES: RenderSizes = toScene(
@@ -81,6 +88,8 @@ function pointsOf(n: SceneNode): Point[] {
       const apex = len > 0 ? [{ x: p.center.x + (dx / len) * p.r, y: p.center.y + (dy / len) * p.r }] : [];
       return [p.start, p.end, p.center, ...apex];
     }
+    case "path":
+      return pathExtentPoints(p);
     default:
       throw new Error(`a living-room glyph emitted an unexpected primitive: ${p.t}`);
   }
@@ -108,28 +117,28 @@ function expectInside(nodes: SceneNode[], r: Rect, what: string): void {
  * is that the COMMON case draws the number of pieces the module's doc comment claims.
  */
 const CASES: readonly (readonly [string, Rect, number])[] = [
-  ["sofa", { x: 1000, y: 1000, w: 2100, h: 900 }, 7], // aspect 2.33 → 2 divisions
-  ["armchair", { x: 1000, y: 1000, w: 900, h: 850 }, 3],
-  // The redraws. Every count below moved because the symbol gained STRUCTURE — legs,
-  // supports, armrests, drawer splits — not decoration; what each one gained and why is in the
-  // module's own doc comment, and the drawing-specific laws are pinned in their own describes
-  // further down rather than left to these numbers.
-  ["coffee_table", { x: 1000, y: 1000, w: 1200, h: 600 }, 7], // 2 + 4 legs + the tray line (2:1)
-  ["table", { x: 1000, y: 1000, w: 1200, h: 800 }, 6], // 2 + 4 legs, no leaf line at 1.5:1
-  ["dining_table", { x: 1000, y: 1000, w: 2400, h: 2400 }, 6], // 1 per side + 2 ends = 4 chairs
-  ["chair", { x: 1000, y: 1000, w: 450, h: 450 }, 5], // 3 + 2 armrests
-  ["stool", { x: 1000, y: 1000, w: 400, h: 400 }, 3], // seat, seat edge, pedestal foot
-  ["bench", { x: 1000, y: 1000, w: 1500, h: 400 }, 6], // 1 + 3 slats + 2 end supports
-  ["tv_unit", { x: 1000, y: 1000, w: 1500, h: 450 }, 6], // + 2 drawer splits + the handle
+  // The visual-polish redraw: body + two arms + one back and one seat cushion per seat.
+  ["sofa", { x: 1000, y: 1000, w: 2100, h: 900 }, 9], // seat 1764 / (0.62 × 900) → 3 cushions
+  ["armchair", { x: 1000, y: 1000, w: 900, h: 850 }, 5], // the same anatomy, one cushion
+  // The visual-polish redraws. Each count is the drawing in the module's doc comment; the
+  // drawing-specific laws are pinned in their own describes further down rather than left to
+  // these numbers.
+  ["coffee_table", { x: 1000, y: 1000, w: 1200, h: 600 }, 2], // top + white inset panel
+  ["table", { x: 1000, y: 1000, w: 1200, h: 800 }, 2], // top + bevel (the dining table's top)
+  ["dining_table", { x: 1000, y: 1000, w: 2400, h: 2400 }, 10], // top + bevel + 4 chairs × (seat, back)
+  ["chair", { x: 1000, y: 1000, w: 450, h: 450 }, 2], // seat + backrest bar
+  ["stool", { x: 1000, y: 1000, w: 400, h: 400 }, 2], // seat + footrest ring
+  ["bench", { x: 1000, y: 1000, w: 1500, h: 400 }, 4], // slab + 3 board joints (400/1500 × 12 = 3.2)
+  ["tv_unit", { x: 1000, y: 1000, w: 1500, h: 450 }, 8], // carcass + 2 splits + 3 pulls + TV foot + panel
   // The living additions, at their catalogued footprints.
-  ["fireplace", { x: 1000, y: 1000, w: 1200, h: 400 }, 5],
-  ["radiator", { x: 1000, y: 1000, w: 1000, h: 100 }, 9], // 1 + 8 fins at 10:1
-  ["sideboard", { x: 1000, y: 1000, w: 1600, h: 450 }, 9], // 2 + 3 splits + 4 handles
-  ["loveseat", { x: 1000, y: 1000, w: 1500, h: 850 }, 6], // the sofa body at a PINNED 1 division
-  ["chaise", { x: 1000, y: 1000, w: 1600, h: 800 }, 6],
-  ["tv", { x: 1000, y: 1000, w: 1200, h: 80 }, 4],
-  ["coat_rack", { x: 1000, y: 1000, w: 400, h: 400 }, 6],
-  ["shoe_cabinet", { x: 1000, y: 1000, w: 800, h: 300 }, 6], // 1 + 2 splits + 3 tilt lines
+  ["fireplace", { x: 1000, y: 1000, w: 1200, h: 400 }, 4], // breast+hearth, seam, firebox, grate
+  ["radiator", { x: 1000, y: 1000, w: 1000, h: 100 }, 14], // 1 + 13 fins (1000 / 75 = 13.3)
+  ["sideboard", { x: 1000, y: 1000, w: 1600, h: 450 }, 8], // carcass + 3 splits + 4 pulls
+  ["loveseat", { x: 1000, y: 1000, w: 1500, h: 850 }, 7], // the sofa body at a PINNED two cushions
+  ["chaise", { x: 1000, y: 1000, w: 1600, h: 800 }, 6], // body + arm + 3 back cushions + the seat
+  ["tv", { x: 1000, y: 1000, w: 1200, h: 80 }, 2], // panel + bracket
+  ["coat_rack", { x: 1000, y: 1000, w: 400, h: 400 }, 10], // base + 4 arms + 4 knobs + pole
+  ["shoe_cabinet", { x: 1000, y: 1000, w: 800, h: 300 }, 6], // carcass + 2 splits + 3 pulls
 ];
 
 describe("glyphs-living — the drawing contract", () => {
@@ -186,77 +195,176 @@ describe("glyphs-living — through the compiler, at all four quarter-turns", ()
   });
 });
 
-describe("glyphs-living — the sofa's cushion divisions", () => {
-  /** The division lines actually emitted: the vertical segments between the arms. */
-  const divisions = (r: Rect): number =>
-    glyph("sofa", r).filter((n) => n.prim.t === "line" && n.prim.a.x === n.prim.b.x).length;
+describe("glyphs-living — the sofa's cushions", () => {
+  /** The cushions actually emitted: the white (basin) shapes come in back + seat pairs. */
+  const cushions = (category: string, r: Rect): number =>
+    glyph(category, r).filter((n) => n.paint.fill === DEFAULT_THEME.opening).length / 2;
 
-  it("a square sofa clamps DOWN to the two-division floor", () => {
-    // round(1 × 0.9) = 1, below the floor of 2.
-    expect(divisions({ x: 0, y: 0, w: 900, h: 900 })).toBe(2);
-    expect(glyph("sofa", { x: 0, y: 0, w: 900, h: 900 })).toHaveLength(7);
+  it("one seat cushion per 0.62 depths of seat, between the arms", () => {
+    // arms = clamp(0.08 w, 0.12 d, 0.22 d); seat = w − 2 arms; n = round(seat / 0.62 d).
+    expect(cushions("sofa", { x: 0, y: 0, w: 1500, h: 900 })).toBe(2); // 1260 / 558 = 2.3
+    expect(cushions("sofa", { x: 0, y: 0, w: 1800, h: 900 })).toBe(3); // 1512 / 558 = 2.7
+    expect(cushions("sofa", { x: 0, y: 0, w: 2100, h: 900 })).toBe(3); // 1764 / 558 = 3.2
+    expect(cushions("sofa", { x: 0, y: 0, w: 2400, h: 900 })).toBe(4); // 2016 / 558 = 3.6
   });
 
-  it("divisions track the aspect between the clamps", () => {
-    expect(divisions({ x: 0, y: 0, w: 2100, h: 900 })).toBe(2); // 2.33 × 0.9 = 2.1
-    expect(divisions({ x: 0, y: 0, w: 3600, h: 900 })).toBe(4); // 4 × 0.9 = 3.6
-    expect(divisions({ x: 0, y: 0, w: 5400, h: 900 })).toBe(5); // 6 × 0.9 = 5.4
-  });
-
-  it("a wide sofa clamps UP to six, and an absurd one is still six", () => {
-    expect(divisions({ x: 0, y: 0, w: 6300, h: 900 })).toBe(6); // 7 × 0.9 = 6.3
-    expect(divisions({ x: 0, y: 0, w: 63000, h: 900 })).toBe(6); // 70 × 0.9 = 63
+  it("clamps to one cushion at the bottom and four at the top, and an absurd sofa is still four", () => {
+    expect(cushions("sofa", { x: 0, y: 0, w: 900, h: 900 })).toBe(1);
+    expect(cushions("sofa", { x: 0, y: 0, w: 63000, h: 900 })).toBe(4);
     const absurd = { x: 0, y: 0, w: 10000, h: 10 };
-    expect(divisions(absurd)).toBe(6); // 1000 × 0.9 = 900
+    expect(cushions("sofa", absurd)).toBe(4);
     expect(glyph("sofa", absurd)).toHaveLength(11);
     expectInside(glyph("sofa", absurd), absurd, "absurd sofa");
+  });
+
+  it("draws the body first as the outline, then two full-depth arms, then the cushions", () => {
+    const r = { x: 0, y: 0, w: 2100, h: 900 };
+    const n = glyph("sofa", r);
+    expect(n.map((x) => x.prim.t)).toEqual(Array(9).fill("path"));
+    expect(n.slice(0, 3).map((x) => [x.paint.fill, x.lineWeight])).toEqual(
+      Array(3).fill([DEFAULT_THEME.furnitureFill, "thin"]),
+    );
+    expect(n.slice(3).every((x) => x.paint.fill === DEFAULT_THEME.opening && x.lineWeight === "extraThin")).toBe(true);
+    // Each arm runs the full depth of the footprint.
+    for (const arm of n.slice(1, 3)) {
+      const ys = pointsOf(arm).map((p) => p.y);
+      expect(Math.min(...ys)).toBeCloseTo(r.y, 9);
+      expect(Math.max(...ys)).toBeCloseTo(r.y + r.h, 9);
+    }
+  });
+
+  it("is mirror-symmetric — a sofa has no hand", () => {
+    const r = { x: 0, y: 0, w: 2400, h: 900 };
+    const n = glyph("sofa", r);
+    expect(
+      marksEqual(
+        n,
+        n.map((x) => mirrorNode(x, r.w / 2)),
+      ),
+    ).toBe(true);
   });
 });
 
 describe("glyphs-living — the dining table's chairs", () => {
-  /** The seats actually emitted: everything after the table top and its inset edge. */
-  const chairs = (r: Rect): number => glyph("dining_table", r).length - 2;
+  /** The chairs actually emitted: two shapes each (seat, backrest) after the top and its bevel. */
+  const chairs = (r: Rect): number => (glyph("dining_table", r).length - 2) / 2;
 
   it("a square table seats one per side plus both ends — the four-seater", () => {
     expect(chairs({ x: 0, y: 0, w: 2400, h: 2400 })).toBe(4);
   });
 
-  it("chairs per LONG side track the aspect", () => {
-    expect(chairs({ x: 0, y: 0, w: 3000, h: 2000 })).toBe(6); // 1.5 × 1.2 = 1.8 → 2/side + 2 ends
-    expect(chairs({ x: 0, y: 0, w: 6000, h: 2000 })).toBe(8); // 3 × 1.2 = 3.6 → 4/side, no ends
-    expect(chairs({ x: 0, y: 0, w: 10000, h: 2000 })).toBe(12); // 5 × 1.2 = 6 → 6/side, no ends
-  });
-
-  it("the short-end chairs appear strictly BELOW aspect 2", () => {
-    // Same 2 chairs per long side either side of the boundary; only the ends move.
-    expect(chairs({ x: 0, y: 0, w: 3990, h: 2000 })).toBe(6); // aspect 1.995 → ends drawn
-    expect(chairs({ x: 0, y: 0, w: 4000, h: 2000 })).toBe(4); // aspect 2.000 → no ends
+  it("chairs per LONG side track the top's length, and every table has one at each end", () => {
+    // band = 0.22 × short side; one chair per 2.2 bands of top length, [1, 4], plus two ends.
+    expect(chairs({ x: 0, y: 0, w: 2400, h: 2000 })).toBe(6); // top 1520 / 968 = 1.6 → 2/side
+    expect(chairs({ x: 0, y: 0, w: 2000, h: 1000 })).toBe(8); // top 1560 / 484 = 3.2 → 3/side
+    expect(chairs({ x: 0, y: 0, w: 3000, h: 2000 })).toBe(6); // top 2120 / 968 = 2.2 → 2/side
+    expect(chairs({ x: 0, y: 0, w: 6000, h: 2000 })).toBe(10); // top 5120 / 968 = 5.3 → 4/side (clamped)
+    expect(chairs({ x: 0, y: 0, w: 10000, h: 2000 })).toBe(10);
   });
 
   it("a portrait table is the landscape one turned — the long edges are found, not assumed", () => {
     expect(chairs({ x: 0, y: 0, w: 2000, h: 3000 })).toBe(6);
-    expect(chairs({ x: 0, y: 0, w: 2000, h: 6000 })).toBe(8);
+    expect(chairs({ x: 0, y: 0, w: 2000, h: 6000 })).toBe(10);
   });
 
-  it("an absurd aspect clamps at eight per side and stays inside the footprint", () => {
+  it("an absurd aspect clamps at four per side and stays inside the footprint", () => {
     const absurd = { x: 0, y: 0, w: 10000, h: 10 };
-    expect(chairs(absurd)).toBe(16); // 1000 × 1.2 → clamped to 8 per long side, no ends
+    expect(chairs(absurd)).toBe(10);
     expectInside(glyph("dining_table", absurd), absurd, "absurd dining table");
   });
 
-  it("every seat is drawn inside the chair-zone band, never on the table", () => {
+  it("draws the top FIRST (the outline), and every chair in the band, meeting the table's edge", () => {
     // Band = 0.22 × min(w,h) = 440 on a 3000 × 2000 table; the top is the inner rectangle.
     const r = { x: 0, y: 0, w: 3000, h: 2000 };
     const band = 440;
-    const seats = glyph("dining_table", r).slice(2);
-    expect(seats).toHaveLength(6);
+    const top = { x0: r.x + band, y0: r.y + band, x1: r.x + r.w - band, y1: r.y + r.h - band };
+    const nodes = glyph("dining_table", r);
+    expect(nodes[0]!.paint.fill).toBe(DEFAULT_THEME.furnitureFill);
+    expect(nodes[0]!.lineWeight).toBe("thin");
+    const eps = 1e-6;
+    const seats = nodes.slice(2);
+    expect(seats).toHaveLength(12);
     for (const s of seats) {
-      const pts = pointsOf(s);
-      const onTable = pts.every(
-        (p) => p.x > r.x + band && p.x < r.x + r.w - band && p.y > r.y + band && p.y < r.y + r.h - band,
-      );
-      expect(onTable, "a seat was drawn on the table top").toBe(false);
+      for (const p of pointsOf(s)) {
+        const onTable = p.x > top.x0 + eps && p.x < top.x1 - eps && p.y > top.y0 + eps && p.y < top.y1 - eps;
+        expect(onTable, "a chair was drawn on the table top").toBe(false);
+      }
     }
+    // Never floating: every seat (the white shape of each pair) touches the table's edge.
+    for (const s of seats.filter((n) => n.paint.fill === DEFAULT_THEME.opening)) {
+      const touches = pointsOf(s).some(
+        (p) =>
+          ((Math.abs(p.y - top.y0) < eps || Math.abs(p.y - top.y1) < eps) && p.x >= top.x0 && p.x <= top.x1) ||
+          ((Math.abs(p.x - top.x0) < eps || Math.abs(p.x - top.x1) < eps) && p.y >= top.y0 && p.y <= top.y1),
+      );
+      expect(touches, "a seat floats detached from the table").toBe(true);
+    }
+  });
+
+  it("maps onto itself under a half-turn and a mirror at any size and absolute position", () => {
+    // The backrest bars are stadiums; their shape must not depend on which ulp path a chair's
+    // position took (the reported failure: a half-turn at 1000x1000 and 3000x1500). Placed the
+    // way `furniture.render()` places a piece: `x = cx − w/2` with `cx = at + w/2`.
+    for (const [w, h] of [
+      [1000, 1000],
+      [3000, 1500],
+      [2400, 2000],
+      [1800, 1000],
+      [640, 640],
+      [777, 777],
+      [555, 900],
+      [1, 1],
+      [400, 400],
+      [2400, 2400],
+    ] as const) {
+      for (const o of [0, 100, 1000, 12345.678]) {
+        const c = { x: o + w / 2, y: o + h / 2 };
+        const n = glyph("dining_table", { x: c.x - w / 2, y: c.y - h / 2, w, h });
+        const where = `${w}x${h} at ${o}`;
+        expect(
+          marksEqual(
+            n,
+            n.map((x) => rotateNode(x, c, 180)),
+          ),
+          `${where} half-turn`,
+        ).toBe(true);
+        expect(
+          marksEqual(
+            n,
+            n.map((x) => mirrorNode(x, c.x)),
+          ),
+          `${where} mirror`,
+        ).toBe(true);
+        if (w === h)
+          expect(
+            marksEqual(
+              n,
+              n.map((x) => rotateNode(x, c, 90)),
+            ),
+            `${where} quarter-turn`,
+          ).toBe(true);
+      }
+    }
+  });
+
+  it("the square four-seater maps onto itself under a quarter-turn and a mirror (the catalog's `symmetric`)", () => {
+    const r = { x: 500, y: 700, w: 2400, h: 2400 };
+    const c = { x: r.x + r.w / 2, y: r.y + r.h / 2 };
+    const n = glyph("dining_table", r);
+    for (const deg of [90, 180, 270])
+      expect(
+        marksEqual(
+          n,
+          n.map((x) => rotateNode(x, c, deg)),
+        ),
+        `${deg}`,
+      ).toBe(true);
+    expect(
+      marksEqual(
+        n,
+        n.map((x) => mirrorNode(x, c.x)),
+      ),
+    ).toBe(true);
   });
 });
 
@@ -281,25 +389,29 @@ describe("glyphs-living — the stool is rotation-symmetric", () => {
     }
   });
 
-  it("is THREE concentric circles — seat, seat edge, pedestal foot", () => {
-    // The third circle is what the redraw added, and the concentricity is what makes the
-    // quarter-turn byte-identical rather than merely indistinguishable. The obvious alternative
-    // — a ring of three or four foot dots — maps onto itself as a SET while each node lands
-    // where its neighbour was, so the bytes would move; the two tests above would fail and the
-    // shipped goldens would move for a drawing nobody can tell apart.
+  it("is TWO concentric circles — the white seat, and the footrest ring standing proud of it", () => {
+    // The concentricity is what makes the quarter-turn byte-identical rather than merely
+    // indistinguishable. The obvious alternative — a ring of three or four foot dots — maps onto
+    // itself as a SET while each node lands where its neighbour was, so the bytes would move; the
+    // two tests above would fail and the shipped goldens would move for a drawing nobody can tell
+    // apart.
     const nodes = glyph("stool", { x: 100, y: 200, w: 400, h: 400 });
-    expect(nodes).toHaveLength(3);
+    expect(nodes).toHaveLength(2);
     const circles = nodes.map((n) => {
       if (n.prim.t !== "circle") throw new Error("a stool must be drawn with true circles");
       return n.prim;
     });
     for (const c of circles) expect(c.center).toEqual({ x: 300, y: 400 });
-    expect(circles[0]!.r).toBe(200);
-    expect(circles[1]!.r).toBeCloseTo(124, 9);
-    expect(circles[2]!.r).toBeCloseTo(48, 9);
-    // Strictly nested, so the drawing never has two rings on top of each other.
-    expect(circles[1]!.r).toBeLessThan(circles[0]!.r);
-    expect(circles[2]!.r).toBeLessThan(circles[1]!.r);
+    // The seat: upholstered (white), the outline pen, first — the symbol's primary node.
+    expect(nodes[0]!.paint.fill).toBe(DEFAULT_THEME.opening);
+    expect(nodes[0]!.lineWeight).toBe("thin");
+    expect(circles[0]!.r).toBeCloseTo(152, 9); // 0.76 of the radius
+    // The footrest: an unfilled detail ring OUTSIDE the seat, a clear band away from it, so the
+    // two never merge into one heavy line at 1:100.
+    expect(nodes[1]!.paint.fill).toBe("none");
+    expect(nodes[1]!.lineWeight).toBe("extraThin");
+    expect(circles[1]!.r).toBe(200); // the FULL radius: the footrest is the widest part of a stool
+    expect(circles[1]!.r - circles[0]!.r).toBeGreaterThan(0.1 * 200);
   });
 });
 
@@ -319,11 +431,16 @@ describe("glyphs-living — degenerate footprints", () => {
       const where = `${category} at ${r.w}x${r.h}`;
       // A clamped repeat count is what keeps this bounded: an unclamped aspect-derived
       // count would emit hundreds of lines into the 10000 × 10 case.
+      // The ceiling is the dining table at its clamp: top + bevel + 10 chairs × 2.
       expect(nodes.length, where).toBeGreaterThanOrEqual(2);
-      expect(nodes.length, where).toBeLessThanOrEqual(20);
+      expect(nodes.length, where).toBeLessThanOrEqual(22);
       for (const n of nodes) {
         if (n.prim.t === "circle" || n.prim.t === "arc") {
           expect(Number.isFinite(n.prim.r), `${where}: radius`).toBe(true);
+        }
+        if (n.prim.t === "path") {
+          for (const lp of n.prim.loops)
+            for (const e of lp.edges) if (e.t === "arc") expect(Number.isFinite(e.r), `${where}: radius`).toBe(true);
         }
       }
       expectInside(nodes, r, where);
@@ -332,121 +449,172 @@ describe("glyphs-living — degenerate footprints", () => {
 });
 
 // ---------------------------------------------------------------------------
-// ── the six redraws and the eight new living families ──
+// ── the redrawn tables, bench and cabinets, and the eight living families ──
 
-describe("glyphs-living — the redrawn tables carry legs, and a leaf line only when elongated", () => {
-  const legs = (category: string, r: Rect): number => glyph(category, r).filter((n) => n.prim.t === "circle").length;
-  const lines = (category: string, r: Rect): number => glyph(category, r).filter((n) => n.prim.t === "line").length;
+describe("glyphs-living — the two tables are a hard top and one inner line, with nothing under them", () => {
+  const ASPECTS: readonly Rect[] = [
+    { x: 0, y: 0, w: 1200, h: 600 },
+    { x: 0, y: 0, w: 600, h: 1200 },
+    { x: 0, y: 0, w: 900, h: 900 },
+    { x: 0, y: 0, w: 10000, h: 10 },
+    { x: 0, y: 0, w: 1, h: 1 },
+  ];
 
-  it.each(["coffee_table", "table"])("%s draws exactly four legs at any aspect", (category) => {
-    for (const r of [
-      { x: 0, y: 0, w: 1200, h: 600 },
-      { x: 0, y: 0, w: 600, h: 1200 },
-      { x: 0, y: 0, w: 900, h: 900 },
-      { x: 0, y: 0, w: 10000, h: 10 },
-      { x: 0, y: 0, w: 1, h: 1 },
-    ]) {
-      expect(legs(category, r), `${category} ${r.w}x${r.h}`).toBe(4);
+  it.each(["coffee_table", "table"])("%s draws no corner dots and no leaf line, at any aspect", (category) => {
+    // A table's legs are UNDER its top, and four dots at the corners read as drains on a slab.
+    for (const r of ASPECTS) {
+      const kinds = glyph(category, r).map((n) => n.prim.t);
+      expect(kinds, `${category} ${r.w}x${r.h}`).toEqual(["path", "path"]);
     }
   });
 
-  it("the legs sit INSIDE the top, symmetrically about its centre", () => {
-    const r = { x: 100, y: 200, w: 1200, h: 600 };
-    const circles = glyph("table", r).flatMap((n) => (n.prim.t === "circle" ? [n.prim] : []));
-    expect(circles).toHaveLength(4);
-    for (const c of circles) {
-      expect(c.center.x).toBeGreaterThan(r.x);
-      expect(c.center.x).toBeLessThan(r.x + r.w);
-      expect(c.center.y).toBeGreaterThan(r.y);
-      expect(c.center.y).toBeLessThan(r.y + r.h);
-    }
-    // Two either side of each centreline: the leg placement is a rectangle, not a drift.
-    const cx = r.x + r.w / 2;
-    const cy = r.y + r.h / 2;
-    expect(circles.filter((c) => c.center.x < cx)).toHaveLength(2);
-    expect(circles.filter((c) => c.center.y < cy)).toHaveLength(2);
-    // …and every leg is the same size, so none of them reads as something else.
-    for (const c of circles) expect(c.r).toBeCloseTo(circles[0]!.r, 9);
+  it("the table is the dining table's top exactly: a hard top and an unfilled bevel 3% in", () => {
+    const r = { x: 100, y: 200, w: 1600, h: 900 };
+    const [top, bevel] = glyph("table", r);
+    expect([top!.paint.fill, top!.lineWeight]).toEqual([DEFAULT_THEME.furnitureFill, "thin"]);
+    expect([bevel!.paint.fill, bevel!.lineWeight]).toEqual(["none", "extraThin"]);
+    const xs = pointsOf(bevel!).map((p) => p.x);
+    expect(Math.min(...xs)).toBeCloseTo(r.x + 900 * 0.03, 9); // keyed to the SHORT side
+    // A dining table whose inner top is this rectangle draws these two nodes first.
+    const band = 0.22 / (1 - 2 * 0.22); // the dining band as a fraction of the TOP's short side
+    const dining = glyph("dining_table", {
+      x: r.x - 900 * band,
+      y: r.y - 900 * band,
+      w: r.w + 2 * 900 * band,
+      h: r.h + 2 * 900 * band,
+    });
+    const key = (n: SceneNode): string => JSON.stringify(pointsOf(n).map((p) => [p.x.toFixed(6), p.y.toFixed(6)]));
+    expect(key(dining[0]!)).toBe(key(top!));
+    expect(key(dining[1]!)).toBe(key(bevel!));
   });
 
-  it("the leaf/tray line appears strictly ABOVE aspect 1.6, on both categories", () => {
-    // A square-ish top has one surface; a long one reads as two. The boundary is measured by
-    // counting the LINES actually emitted, so the assertion cannot agree with a wrong formula.
-    expect(lines("table", { x: 0, y: 0, w: 1590, h: 1000 })).toBe(0);
-    expect(lines("table", { x: 0, y: 0, w: 1610, h: 1000 })).toBe(1);
-    expect(lines("coffee_table", { x: 0, y: 0, w: 1590, h: 1000 })).toBe(0);
-    expect(lines("coffee_table", { x: 0, y: 0, w: 1610, h: 1000 })).toBe(1);
-    // …and it is found off the footprint's OWN long axis, not off the page.
-    expect(lines("table", { x: 0, y: 0, w: 1000, h: 1610 })).toBe(1);
-    expect(lines("coffee_table", { x: 0, y: 0, w: 1000, h: 1610 })).toBe(1);
-  });
-
-  it("the two tables' leaf lines run on OPPOSITE axes, which is what tells them apart", () => {
-    // A refectory table's boards run WITH its length; a tray's division runs ACROSS it. Same
-    // footprint, two perpendicular lines — so the symbols never draw the same line in the same
-    // place at the same aspect.
-    const r = { x: 0, y: 0, w: 2000, h: 800 };
-    const lineOf = (category: string) => {
-      const n = glyph(category, r).find((x) => x.prim.t === "line");
-      if (!n || n.prim.t !== "line") throw new Error(`${category} drew no leaf line`);
-      return n.prim;
+  it("the coffee table is told from it by a softer corner and a WHITE inset panel a tenth in", () => {
+    const r = { x: 0, y: 0, w: 1200, h: 600 };
+    const [top, panel] = glyph("coffee_table", r);
+    expect(top!.paint.fill).toBe(DEFAULT_THEME.furnitureFill);
+    expect([panel!.paint.fill, panel!.lineWeight]).toEqual([DEFAULT_THEME.opening, "extraThin"]);
+    expect(Math.min(...pointsOf(panel!).map((p) => p.y))).toBeCloseTo(60, 9); // 0.1 × the short side
+    const corner = (category: string): number => {
+      const n = glyph(category, r)[0]!;
+      if (n.prim.t !== "path") throw new Error("a table top is a path");
+      return n.prim.loops[0]!.edges.flatMap((e) => (e.t === "arc" ? [e.r] : []))[0]!;
     };
-    const t = lineOf("table");
-    const c = lineOf("coffee_table");
-    expect(t.a.y, "the table's board line runs along the length").toBeCloseTo(t.b.y, 9);
-    expect(c.a.x, "the coffee table's tray line runs across it").toBeCloseTo(c.b.x, 9);
+    expect(corner("coffee_table")).toBeGreaterThan(2 * corner("table"));
   });
 });
 
-describe("glyphs-living — the bench's slats and end supports", () => {
-  const segs = (r: Rect) => glyph("bench", r).flatMap((n) => (n.prim.t === "line" ? [n.prim] : []));
+describe("glyphs-living — every `symmetric` family in this module is D4-invariant on a square footprint", () => {
+  /**
+   * The module's families, DERIVED: a catalogued word belongs here when one of the module's own
+   * exported `draw*` functions draws exactly what the dispatch draws for it. The `symmetric` set
+   * is then read off the catalog flag — so a new family in this module that carries the flag is
+   * tested here without anyone remembering to add it.
+   */
+  const PROBE: Rect = { x: 37, y: 11, w: 1300, h: 900 };
+  const drawers = Object.entries(living).filter(
+    (e): e is [string, (r: Rect, g: ReturnType<typeof glyphCtx>) => SceneNode[]] =>
+      e[0].startsWith("draw") && typeof e[1] === "function",
+  );
+  const inModule = (category: string): boolean => {
+    const want = JSON.stringify(glyph(category, PROBE));
+    return drawers.some(([, draw]) => JSON.stringify(draw(PROBE, glyphCtx(DEFAULT_THEME, SIZES))) === want);
+  };
+  const SYMMETRIC = CANONICAL_FIXTURES.filter((c) => fixtureSpec(c)?.symmetric === true && inModule(c));
 
-  it("draws a clamped run of slats plus exactly two end supports", () => {
-    // 1500x400: short/long = 0.267, x12 = 3.2 → 3 slats, then the two supports.
-    const s = segs({ x: 0, y: 0, w: 1500, h: 400 });
-    expect(s).toHaveLength(5);
-    // The slats run LENGTHWISE (constant y on a landscape bench); the supports run across it.
-    expect(s.filter((p) => p.a.y === p.b.y)).toHaveLength(3);
-    expect(s.filter((p) => p.a.x === p.b.x)).toHaveLength(2);
+  it("finds the module's symmetric families (the sweep below is not vacuous)", () => {
+    for (const c of ["coffee_table", "table", "dining_table", "stool", "rug", "coat_rack"]) {
+      expect(SYMMETRIC, c).toContain(c);
+    }
   });
 
-  it("clamps the slat count at both ends, so 10000x10 is not a hatch", () => {
-    expect(segs({ x: 0, y: 0, w: 10000, h: 10 })).toHaveLength(4); // 2 slats (floor) + 2 supports
-    expect(segs({ x: 0, y: 0, w: 900, h: 900 })).toHaveLength(7); // 5 slats (ceiling) + 2 supports
+  const SQUARES: readonly Rect[] = [
+    { x: 500, y: 700, w: 1000, h: 1000 },
+    { x: -250, y: 90, w: 400, h: 400 },
+    { x: 1234.5, y: 678.25, w: 2400, h: 2400 },
+    { x: 3, y: 5, w: 1, h: 1 },
+  ];
+
+  const invariantOnSquares = (category: string): void => {
+    for (const r of SQUARES) {
+      const c = { x: r.x + r.w / 2, y: r.y + r.h / 2 };
+      const n = glyph(category, r);
+      const at = `${category} ${r.w}x${r.h}`;
+      for (const deg of [90, 180, 270]) {
+        expect(
+          marksEqual(
+            n,
+            n.map((x) => rotateNode(x, c, deg)),
+          ),
+          `${at} turned ${deg}`,
+        ).toBe(true);
+      }
+      expect(
+        marksEqual(
+          n,
+          n.map((x) => mirrorNode(x, c.x)),
+        ),
+        `${at} mirrored`,
+      ).toBe(true);
+    }
+  };
+
+  it.each(SYMMETRIC)("%s maps onto itself under every quarter-turn and a mirror", invariantOnSquares);
+});
+
+describe("glyphs-living — the bench's boards", () => {
+  const segs = (r: Rect) => glyph("bench", r).flatMap((n) => (n.prim.t === "line" ? [n.prim] : []));
+
+  it("draws a clamped run of board joints running LENGTHWISE, and nothing across them", () => {
+    // 1500x400: short/long = 0.267, x12 = 3.2 → 3 joints. No end supports: a support is under the
+    // seat, and a solid line across the boards would say the opposite.
+    const s = segs({ x: 0, y: 0, w: 1500, h: 400 });
+    expect(s).toHaveLength(3);
+    expect(s.filter((p) => p.a.y === p.b.y)).toHaveLength(3);
+    // Each joint runs the full length of the slab.
+    for (const p of s) expect(Math.abs(p.b.x - p.a.x)).toBeCloseTo(1500, 9);
+  });
+
+  it("clamps the joint count at both ends, so 10000x10 is not a hatch", () => {
+    expect(segs({ x: 0, y: 0, w: 10000, h: 10 })).toHaveLength(2); // the floor
+    expect(segs({ x: 0, y: 0, w: 900, h: 900 })).toHaveLength(5); // the ceiling
   });
 
   it("reads its own long axis: a bench stood on end draws the same object", () => {
     const flat = segs({ x: 0, y: 0, w: 1500, h: 400 });
     const tall = segs({ x: 0, y: 0, w: 400, h: 1500 });
     expect(tall).toHaveLength(flat.length);
-    // …with the roles of the two axes swapped, which is what "the same object turned" means.
     expect(tall.filter((p) => p.a.x === p.b.x)).toHaveLength(3);
-    expect(tall.filter((p) => p.a.y === p.b.y)).toHaveLength(2);
   });
 });
 
-describe("glyphs-living — the chair's armrests are conditional, not decorative", () => {
-  const arms = (r: Rect): number => glyph("chair", r).filter((n) => n.prim.t === "line").length;
-
-  it("a normal seat gets two; a seat too narrow to hold them gets none", () => {
-    expect(arms({ x: 0, y: 0, w: 450, h: 450 })).toBe(2);
-    // The branch is a `>=`, so 0.7 exactly takes the armrests and a hair under takes none.
-    expect(arms({ x: 0, y: 0, w: 350, h: 500 })).toBe(2);
-    expect(arms({ x: 0, y: 0, w: 349, h: 500 })).toBe(0);
-    expect(arms({ x: 0, y: 0, w: 300, h: 500 })).toBe(0);
+describe("glyphs-living — the dining chair is a seat and a backrest", () => {
+  it("draws the white seat first, then a pill-ended backrest bar along the back edge", () => {
+    const r = { x: 100, y: 200, w: 450, h: 450 };
+    const [seat, back] = glyph("chair", r);
+    expect(seat!.paint.fill).toBe(DEFAULT_THEME.opening);
+    expect(back!.paint.fill).toBe(DEFAULT_THEME.furnitureFill);
+    const by = pointsOf(back!).map((p) => p.y);
+    expect(Math.min(...by)).toBeCloseTo(r.y, 9); // on the back edge
+    expect(Math.max(...by)).toBeCloseTo(r.y + r.h * 0.12, 9); // 12% of the depth
+    const sy = pointsOf(seat!).map((p) => p.y);
+    expect(Math.max(...sy)).toBeCloseTo(r.y + r.h, 9); // the seat runs to the front
+    // Pill-ended: the bar's ends are half-circles of half its depth.
+    if (back!.prim.t !== "path") throw new Error("the backrest is a path");
+    for (const e of back!.prim.loops[0]!.edges) if (e.t === "arc") expect(e.r).toBeCloseTo((r.h * 0.12) / 2, 9);
   });
 
-  it("flanks the seat, one each side of the centreline", () => {
-    const r = { x: 100, y: 200, w: 450, h: 450 };
-    const xs = glyph("chair", r).flatMap((n) => (n.prim.t === "line" ? [n.prim.a.x] : []));
-    expect(xs).toHaveLength(2);
-    const cx = r.x + r.w / 2;
-    expect(xs.some((x) => x < cx)).toBe(true);
-    expect(xs.some((x) => x > cx)).toBe(true);
+  it("is mirror-symmetric", () => {
+    const n = glyph("chair", { x: 0, y: 0, w: 500, h: 500 });
+    expect(
+      marksEqual(
+        n,
+        n.map((x) => mirrorNode(x, 250)),
+      ),
+    ).toBe(true);
   });
 
   it("is NOT the outdoor chair: no slats across its back", () => {
-    // `drawOutdoorChair` is this construction plus four slats, and the slats are the whole
+    // `drawOutdoorChair` is a seat-and-back construction plus slats, and the slats are the whole
     // difference between an upholstered dining chair and a slatted patio one.
     const chair = glyph("chair", { x: 0, y: 0, w: 450, h: 450 });
     const patio = glyph("outdoor_chair", { x: 0, y: 0, w: 450, h: 450 });
@@ -455,18 +623,22 @@ describe("glyphs-living — the chair's armrests are conditional, not decorative
 });
 
 describe("glyphs-living — the tv_unit says which side the room is on", () => {
-  it("puts the screen at the BACK and the drawer splits + handle at the FRONT", () => {
+  it("stands the television at the BACK and puts the pulls on the FRONT", () => {
     const r = { x: 0, y: 0, w: 1500, h: 450 };
     const nodes = glyph("tv_unit", r);
-    expect(nodes).toHaveLength(6);
-    const screen = nodes[1]!;
-    if (screen.prim.t !== "polygon") throw new Error("the screen is a polygon");
-    expect(Math.max(...screen.prim.pts.map((p) => p.y))).toBeLessThan(r.y + r.h * 0.25);
-    // Every drawer split and the handle live below the shelf line, in the half facing the room.
-    const shelfY = r.y + r.h * 0.52;
-    const below = nodes.slice(3).flatMap((n) => (n.prim.t === "line" ? [n.prim.a.y, n.prim.b.y] : []));
-    expect(below).toHaveLength(6);
-    for (const y of below) expect(y).toBeGreaterThanOrEqual(shelfY);
+    expect(nodes).toHaveLength(8);
+    // The last two nodes are the television: its foot plate (white, detail) and its panel (body,
+    // outline), both in the back half of the carcass — the edge the unit goes against a wall on.
+    const [foot, panel] = nodes.slice(-2);
+    expect([foot!.paint.fill, foot!.lineWeight]).toEqual([DEFAULT_THEME.opening, "extraThin"]);
+    expect([panel!.paint.fill, panel!.lineWeight]).toEqual([DEFAULT_THEME.furnitureFill, "thin"]);
+    for (const n of [foot!, panel!]) {
+      expect(Math.max(...pointsOf(n).map((p) => p.y))).toBeLessThan(r.y + r.h * 0.45);
+    }
+    // The pulls — the horizontal lines — are all at the front, 86% of the way to it.
+    const pulls = nodes.flatMap((n) => (n.prim.t === "line" && n.prim.a.y === n.prim.b.y ? [n.prim] : []));
+    expect(pulls).toHaveLength(3);
+    for (const p of pulls) expect(p.a.y).toBeCloseTo(r.y + r.h * 0.86, 9);
   });
 
   it("is a different symbol from the wall-mounted `tv`, at the same footprint", () => {
@@ -478,85 +650,126 @@ describe("glyphs-living — the tv_unit says which side the room is on", () => {
 });
 
 describe("glyphs-living — the loveseat is a sofa with its cushion count PINNED", () => {
-  const divisions = (category: string, r: Rect): number =>
-    glyph(category, r).filter((n) => n.prim.t === "line" && n.prim.a.x === n.prim.b.x).length;
+  const seats = (category: string, r: Rect): number =>
+    glyph(category, r).filter((n) => n.paint.fill === DEFAULT_THEME.opening).length / 2;
 
-  it("draws exactly one division — two seats — at every aspect", () => {
+  it("draws exactly two seats at every aspect", () => {
     for (const r of [
       { x: 0, y: 0, w: 1500, h: 850 },
       { x: 0, y: 0, w: 900, h: 900 },
       { x: 0, y: 0, w: 6000, h: 900 },
       { x: 0, y: 0, w: 10000, h: 10 },
     ]) {
-      expect(divisions("loveseat", r), `${r.w}x${r.h}`).toBe(1);
-      expect(glyph("loveseat", r)).toHaveLength(6);
+      expect(seats("loveseat", r), `${r.w}x${r.h}`).toBe(2);
+      expect(glyph("loveseat", r)).toHaveLength(7);
     }
   });
 
-  it("…while the `sofa` on the SAME footprint reads its aspect and draws more", () => {
+  it("…while the `sofa` on the SAME footprint reads its seat length and draws more", () => {
     const wide = { x: 0, y: 0, w: 6000, h: 900 };
-    expect(divisions("sofa", wide)).toBeGreaterThan(divisions("loveseat", wide));
+    expect(seats("sofa", wide)).toBeGreaterThan(seats("loveseat", wide));
   });
 
-  it("is the same CONSTRUCTION: a sofa clamped to one division is byte-identical to it", () => {
-    // The two share `sofaBody`, which is what stops them drifting apart. A 900x900 sofa clamps
-    // DOWN to two divisions, so it cannot be used here; the check that matters is that every
-    // primitive of the loveseat also appears, in order, in a sofa of the same footprint minus
-    // its extra division lines.
+  it("is the same CONSTRUCTION: a sofa whose seat holds two cushions IS the loveseat, byte for byte", () => {
+    // The two share `seatBody` and the arm rule, which is what stops them drifting apart.
     const r = { x: 0, y: 0, w: 1500, h: 850 };
-    const love = glyph("loveseat", r);
-    const sofa = glyph("sofa", r);
-    expect(love.slice(0, 4)).toEqual(sofa.slice(0, 4)); // body, both arms, back band
-    expect(love.at(-1)).toEqual(sofa.at(-1)); // the front seat line
+    expect(seats("sofa", r)).toBe(2);
+    expect(glyph("loveseat", r)).toEqual(glyph("sofa", r));
   });
 });
 
-describe("glyphs-living — the two symbols that must say which way they face", () => {
-  it("the fireplace's opening is on the ROOM side, not the wall side", () => {
+describe("glyphs-living — the symbols that must say which way they face", () => {
+  it("the fireplace's firebox opens onto the ROOM side and narrows toward the wall", () => {
     const r = { x: 0, y: 0, w: 1200, h: 400 };
-    const box = glyph("fireplace", r)[1]!;
+    const nodes = glyph("fireplace", r);
+    const box = nodes[2]!;
     if (box.prim.t !== "polygon") throw new Error("the firebox is a polygon");
-    const ys = box.prim.pts.map((p) => p.y);
-    expect(Math.min(...ys), "the opening starts past the halfway line").toBeGreaterThan(r.y + r.h / 2);
-    expect(Math.max(...ys)).toBeLessThanOrEqual(r.y + r.h);
+    expect(box.paint.fill).toBe(DEFAULT_THEME.opening);
+    const pts = box.prim.pts;
+    const ys = pts.map((p) => p.y);
+    const front = Math.max(...ys);
+    const back = Math.min(...ys);
+    const widthAt = (y: number): number => {
+      const xs = pts.filter((p) => p.y === y).map((p) => p.x);
+      return Math.max(...xs) - Math.min(...xs);
+    };
+    // The mouth is the WIDE edge and it is the nearer the room; the splayed sides close in behind.
+    expect(widthAt(front)).toBeGreaterThan(widthAt(back));
+    expect(front).toBeGreaterThan(r.y + r.h / 2);
+    // …and the hearth in front of it reaches the footprint's front edge, narrower than the breast.
+    const outline = nodes[0]!;
+    if (outline.prim.t !== "polygon") throw new Error("the breast and hearth are one polygon");
+    const atFront = outline.prim.pts.filter((p) => p.y === r.y + r.h).map((p) => p.x);
+    expect(atFront).toHaveLength(2);
+    expect(Math.min(...atFront)).toBeGreaterThan(r.x);
+    expect(Math.max(...atFront)).toBeLessThan(r.x + r.w);
   });
 
-  it("the shoe cabinet's tilt lines all lean the SAME way, toward the front", () => {
-    const r = { x: 0, y: 0, w: 800, h: 300 };
-    const tilts = glyph("shoe_cabinet", r).flatMap((n) =>
-      n.prim.t === "line" && n.prim.a.y !== n.prim.b.y && n.prim.a.x !== n.prim.b.x ? [n.prim] : [],
-    );
-    expect(tilts).toHaveLength(3);
-    for (const t of tilts) {
-      // Down-and-to-the-right in every bay: a door that falls out toward the room.
-      expect(t.b.x).toBeGreaterThan(t.a.x);
-      expect(t.b.y).toBeGreaterThan(t.a.y);
+  it.each([
+    ["sideboard", { x: 0, y: 0, w: 1600, h: 450 }, 4, 0.86],
+    ["shoe_cabinet", { x: 0, y: 0, w: 800, h: 300 }, 3, 0.82],
+  ] as const)("the %s's pulls are all on the front edge, one per door", (category, r, doors, at) => {
+    const lines = glyph(category, r).flatMap((n) => (n.prim.t === "line" ? [n.prim] : []));
+    const pulls = lines.filter((p) => p.a.y === p.b.y);
+    expect(pulls).toHaveLength(doors);
+    for (const p of pulls) expect(p.a.y).toBeCloseTo(r.y + r.h * at, 9);
+    // Every other line is a full-depth door split; there are no diagonals.
+    const splits = lines.filter((p) => p.a.x === p.b.x);
+    expect(splits).toHaveLength(doors - 1);
+    expect(splits.length + pulls.length).toBe(lines.length);
+  });
+
+  it("a shoe cabinet's pull runs twice the share of its door a sideboard's does", () => {
+    // Tilt-out bins with a finger-pull along the top: that, at a hall's depth, is the difference.
+    const pullShare = (category: string, r: Rect, doors: number): number => {
+      const p = glyph(category, r).find((n) => n.prim.t === "line" && n.prim.a.y === n.prim.b.y)!;
+      if (p.prim.t !== "line") throw new Error("a pull is a line");
+      return Math.abs(p.prim.b.x - p.prim.a.x) / (r.w / doors);
+    };
+    expect(pullShare("shoe_cabinet", { x: 0, y: 0, w: 800, h: 300 }, 3)).toBeCloseTo(0.5, 9);
+    expect(pullShare("sideboard", { x: 0, y: 0, w: 1600, h: 450 }, 4)).toBeCloseTo(0.26, 9);
+  });
+
+  it("the wall-mounted tv's panel is on the FRONT edge and stays slim however deep it is authored", () => {
+    for (const r of [
+      { x: 0, y: 0, w: 1200, h: 80 },
+      { x: 0, y: 0, w: 1200, h: 300 },
+    ]) {
+      const [panel, bracket] = glyph("tv", r);
+      const py = pointsOf(panel!).map((p) => p.y);
+      expect(Math.max(...py)).toBeCloseTo(r.y + r.h, 9);
+      expect(Math.max(...py) - Math.min(...py)).toBeLessThanOrEqual(Math.min(r.h * 0.55, r.w * 0.06) + 1e-9);
+      // The bracket reaches from the wall to the panel's back face, centred.
+      const by = pointsOf(bracket!).map((p) => p.y);
+      expect(Math.min(...by)).toBe(r.y);
+      expect(Math.max(...by)).toBeCloseTo(Math.min(...py), 9);
     }
-  });
-
-  it("the sideboard's handles are all on the front edge", () => {
-    const r = { x: 0, y: 0, w: 1600, h: 450 };
-    const handles = glyph("sideboard", r).flatMap((n) =>
-      n.prim.t === "line" && n.prim.a.y === n.prim.b.y ? [n.prim] : [],
-    );
-    expect(handles).toHaveLength(4);
-    for (const h of handles) expect(h.a.y).toBeCloseTo(r.y + r.h * 0.88, 9);
   });
 });
 
 describe("glyphs-living — the radiator's and sideboard's counts are clamped", () => {
   const fins = (r: Rect): number => glyph("radiator", r).length - 1;
-  const sideboardParts = (r: Rect): number => glyph("sideboard", r).length - 2;
+  const sideboardParts = (r: Rect): number => glyph("sideboard", r).length - 1;
 
-  it("fins run [4, 12], reached honestly at both ends", () => {
-    expect(fins({ x: 0, y: 0, w: 400, h: 400 })).toBe(4); // aspect 1 → 0.83, clamped up
-    expect(fins({ x: 0, y: 0, w: 1000, h: 100 })).toBe(8); // 10 / 1.2 = 8.33
-    expect(fins({ x: 0, y: 0, w: 1500, h: 100 })).toBe(12); // 12.5, the ceiling reached honestly
-    expect(fins({ x: 0, y: 0, w: 10000, h: 10 })).toBe(12); // 833, clamped down
+  it("fins run [4, 20] at one per 0.75 depths, reached honestly at both ends", () => {
+    expect(fins({ x: 0, y: 0, w: 400, h: 400 })).toBe(4); // 1.33, clamped up
+    expect(fins({ x: 0, y: 0, w: 1000, h: 100 })).toBe(13); // 13.3
+    expect(fins({ x: 0, y: 0, w: 1500, h: 100 })).toBe(20); // 20, the ceiling reached honestly
+    expect(fins({ x: 0, y: 0, w: 10000, h: 10 })).toBe(20); // 1333, clamped down
   });
 
-  it("doors run [2, 5], and the splits and handles both follow the count", () => {
-    // `doors - 1` splits plus `doors` handles, so the total is `2 x doors - 1`.
+  it("the fins are detail ticks inside the casing: they never touch its long faces", () => {
+    const r = { x: 0, y: 0, w: 1000, h: 100 };
+    for (const n of glyph("radiator", r).slice(1)) {
+      if (n.prim.t !== "line") throw new Error("a fin is a line");
+      expect(n.lineWeight).toBe("extraThin");
+      expect(Math.min(n.prim.a.y, n.prim.b.y)).toBeGreaterThan(r.y);
+      expect(Math.max(n.prim.a.y, n.prim.b.y)).toBeLessThan(r.y + r.h);
+    }
+  });
+
+  it("doors run [2, 5], and the splits and pulls both follow the count", () => {
+    // `doors - 1` splits plus `doors` pulls, so the total is `2 x doors - 1`.
     expect(sideboardParts({ x: 0, y: 0, w: 450, h: 450 })).toBe(3); // 2 doors, clamped up
     expect(sideboardParts({ x: 0, y: 0, w: 1600, h: 450 })).toBe(7); // 4 doors
     expect(sideboardParts({ x: 0, y: 0, w: 10000, h: 10 })).toBe(9); // 5 doors, clamped down
@@ -564,39 +777,52 @@ describe("glyphs-living — the radiator's and sideboard's counts are clamped", 
 });
 
 describe("glyphs-living — the coat rack is rotation-symmetric as a SET", () => {
-  it("maps onto itself under every quarter-turn", () => {
+  it("maps onto itself under every quarter-turn and a mirror", () => {
     // The catalog claims `symmetric: true`, which orientation reasoning reads — so prove it
     // against the real `rotateNode` rather than by inspection. Note the weaker claim than the
-    // stool's: the SET is invariant, the node LIST is not, because a turn carries hook `i` onto
-    // hook `i + 1`.
+    // stool's: the SET is invariant, the node LIST is not, because a turn carries arm `i` onto
+    // arm `i + 1`.
     const r: Rect = { x: 1000, y: 2000, w: 400, h: 400 };
     const centre = { x: r.x + r.w / 2, y: r.y + r.h / 2 };
-    const key = (n: SceneNode): string => {
-      if (n.prim.t !== "circle") throw new Error("a coat rack is drawn with true circles");
-      return `${n.prim.center.x.toFixed(6)},${n.prim.center.y.toFixed(6)},${n.prim.r.toFixed(6)}`;
-    };
-    const original = glyph("coat_rack", r).map(key).sort();
+    const n = glyph("coat_rack", r);
     for (const deg of [90, 180, 270]) {
-      const turned = glyph("coat_rack", r)
-        .map((n) => rotateNode(n, centre, deg))
-        .map(key)
-        .sort();
-      expect(turned, `coat rack at ${deg} degrees`).toEqual(original);
+      expect(
+        marksEqual(
+          n,
+          n.map((x) => rotateNode(x, centre, deg)),
+        ),
+        `coat rack at ${deg} degrees`,
+      ).toBe(true);
     }
+    expect(
+      marksEqual(
+        n,
+        n.map((x) => mirrorNode(x, centre.x)),
+      ),
+    ).toBe(true);
   });
 
-  it("is four hooks round two concentric rings", () => {
+  it("is a base, a pole, and four arms on the diagonals each ending in a knob", () => {
     const r: Rect = { x: 0, y: 0, w: 400, h: 400 };
-    const circles = glyph("coat_rack", r).flatMap((n) => (n.prim.t === "circle" ? [n.prim] : []));
-    expect(circles).toHaveLength(6);
     const c = { x: 200, y: 200 };
+    const nodes = glyph("coat_rack", r);
+    const circles = nodes.flatMap((n) => (n.prim.t === "circle" ? [n.prim] : []));
+    const arms = nodes.flatMap((n) => (n.prim.t === "line" ? [n.prim] : []));
+    expect(circles).toHaveLength(6);
+    expect(arms).toHaveLength(4);
+    // The base (first, the outline) and the pole (last, a solid ink disc) are concentric.
     expect(circles[0]!.center).toEqual(c);
-    expect(circles[1]!.center).toEqual(c);
-    // The four hooks are all the same distance out and all the same size.
-    const hooks = circles.slice(2);
-    for (const h of hooks) {
-      expect(Math.hypot(h.center.x - c.x, h.center.y - c.y)).toBeCloseTo(200 * 0.72, 6);
-      expect(h.r).toBeCloseTo(hooks[0]!.r, 9);
+    expect(circles[5]!.center).toEqual(c);
+    expect(nodes.at(-1)!.paint.fill).toBe(nodes.at(-1)!.paint.stroke);
+    // The arms run out on the diagonals, past the base, and the knobs sit on their ends.
+    for (const a of arms) {
+      expect(Math.abs(a.b.x - c.x)).toBeCloseTo(Math.abs(a.b.y - c.y), 9);
+      expect(Math.hypot(a.b.x - c.x, a.b.y - c.y)).toBeGreaterThan(circles[0]!.r);
+    }
+    const knobs = circles.slice(1, 5);
+    for (const k of knobs) {
+      expect(Math.hypot(k.center.x - c.x, k.center.y - c.y)).toBeCloseTo(200 * 0.86, 6);
+      expect(k.r).toBeCloseTo(knobs[0]!.r, 9);
     }
   });
 });

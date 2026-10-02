@@ -155,10 +155,21 @@ function serialize(node: SceneNode, sizes: RenderSizes): string {
       return `<path d="${regionPath(prim.loops)}"${pathPaint(paint, width, dash)}/>`;
     case "path":
       return `<path d="${loopsPath(prim.loops)}"${pathPaint(paint, width, dash)}/>`;
-    case "hatch":
+    case "hatch": {
       // Filled with the material `<pattern>` (its id encodes scale/angle); `paint`
       // already carries the `url(#…)` fill + nonzero rule, so this matches a region fill.
-      return `<path d="${regionPath(prim.region)}"${pathPaint(paint, width, dash)}/>`;
+      if (prim.origin === undefined && (prim.zoom === undefined || prim.zoom === 1)) {
+        return `<path d="${regionPath(prim.region)}"${pathPaint(paint, width, dash)}/>`;
+      }
+      // Re-framed (a legend swatch): a `userSpaceOnUse` pattern tiles from the origin of the
+      // user space of the element that references it, so the region is carried INTO the
+      // frame whose origin is `origin` and whose unit is `zoom`, and a transform carries it
+      // back — the same ink on the page, the tile anchored and scaled for this region alone.
+      const o = prim.origin ?? { x: 0, y: 0 };
+      const z = prim.zoom ?? 1;
+      const local = prim.region.map((loop) => loop.map((p) => ({ x: (p.x - o.x) / z, y: (p.y - o.y) / z })));
+      return `<path d="${regionPath(local)}" transform="translate(${fmt(o.x)} ${fmt(o.y)}) scale(${fmt(z)})"${pathPaint(paint, width, dash)}/>`;
+    }
     case "arc":
       return `<path d="M ${pt(prim.start)} A ${fmt(prim.r)} ${fmt(prim.r)} 0 0 ${prim.sweep} ${pt(prim.end)}"${pathPaint(paint, width, dash)}/>`;
     case "circle":
