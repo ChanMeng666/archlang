@@ -53,7 +53,8 @@ diff's bounding box lands where the geometry changed.
 | Docs tripwires | `docs-table-pipes`, `docs-fences`, `docs-flags`, `readme-permalink`, `docs-examples-figures`, `docs-page-meta`, `playground-examples-rows` | fix the prose from the tool's answer, never the plan to suit the prose; never widen a killed-claim regex; regenerate a permalink with `scripts/gen-permalink.mjs` |
 | Byte-identity digests | `roof-void-byte-identity`, `height-byte-identity`, `iso-byte-identity` (baseline `test/byte-identity-baseline.ts`), `site`, `doors` | a finding to explain before anything is re-measured (see below) |
 | Model-vs-truth gates | `circulation-hand-derived`, `nav-grid-residual`, `joinery-oracle`, `joinery-pipeline` | a real defect. Never re-bless a number, add a tolerance, enlarge a radius or drop an example |
-| Fixture symbol snapshots | `fixture-byte-identity` | group 1 (PERMANENT) red is always a bug; groups 2–3 are re-blessable only with each diff explained |
+| Fixture symbol snapshots | `fixture-byte-identity` | group 1 (PERMANENT) red is always a bug; groups 2–4 are re-blessable only with each diff explained (scope `-u`, see `docs/agents/gotchas.md`) |
+| Handedness and symmetry of the drawing | `glyph-chirality` (the `HANDED` record, the survey `HANDED_ON_MAIN` and the grid `test/handedness-grid-baseline.ts`, both measured on the tree before the symbol redraw), the per-module D4 sweeps in `glyphs-*`, `equivariance-scene` | a symbol that GAINED handedness, or a `symmetric` family that stopped mapping onto itself, is a drawing defect: fix the glyph. A handed mark removed as decoration goes in `LOST_HANDEDNESS` with its reason. Never re-measure to green (see below) |
 | Property/fuzz | `escape-fuzz`, `fuzz`, `security`, `dataset` | a shrunk counterexample is pinned as a regression case; never delete a pin |
 | Public surface | `public-surface` | re-export the named type from `src/index.ts` |
 
@@ -62,7 +63,14 @@ compiler change: a diagnostic's `span` shifts by the bytes added above it. Diff 
 field by field — if only `span`s moved, uniformly, and the SVG did not, re-measure and record the
 reason in the baseline file's header. Anything else is a compiler change and must be explained. Copy
 the test's own `digest()` body verbatim for the baseline. A new height-authoring example goes in
-`AUTHORS_HEIGHT` only.
+`AUTHORS_HEIGHT` only. A drawing change moves only the SVG part of a row: prove it by putting the
+old SVG back into the new payload and reproducing the old digest, then re-measure the row.
+
+**Re-measuring the handedness baselines** is legitimate only when the instrument changes (the
+handedness key in `src/elements/glyph-chirality.ts`), never because a glyph moved. Read both sides
+with the same key: `git archive` the baseline tree, patch only that file's key to the new one,
+and run `npx tsx test/handedness-survey.ts <extract>` (add `--grid` for the grid); it prints the
+table literal. Record the measured tree and the patch in the baseline's header.
 
 ## 4. Adding a test
 

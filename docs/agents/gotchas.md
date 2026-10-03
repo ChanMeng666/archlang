@@ -38,6 +38,32 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   frame before writing it** (`LintContext.frameOf`, `src/lint.ts`), or the machine-applicable edit
   is correct in plan coordinates and wrong once `arch fix` writes it back into the component body.
 
+## Drawing (symbols)
+
+- **`describe --facts symmetry` reads the glyph art.** A furniture piece's `hand` comes from
+  `handed()` (`src/analyze/symmetry.ts`), which asks the drawn symbol whether it differs from its
+  mirror image. Symptom: a drawing-only change moves a `describe` fact. Fix the glyph; never
+  special-case the fact.
+- **A symmetric glyph can read handed at some sizes and positions only.** A shape decided by
+  comparing derived coordinates (a stadium, radius half its short side, grows a zero-length edge on one
+  side by an ulp), or a mark and its mirror partner straddling a `fmt4` tie (integer mm × a
+  three-decimal fraction lands on `x.xxxx5`). Symptom: handed at one absolute position or
+  footprint and not another (why `test/handedness-survey.ts` sweeps offsets). Fix: decide structure from radii and extents (`roundedRectPath`); the key is
+  tie-robust (`keyNum`), so a baseline and a tip are compared only with the same key.
+- **The default `furnitureStroke`/`furnitureFill` cannot change**: the unknown-word labelled
+  rectangle paints with them, and it is a group-1 permanent pin in
+  `test/fixture-byte-identity.test.ts`. A darker outline is derived (`symbolInk`), not a new default.
+- **`vitest -u` on `test/fixture-byte-identity.test.ts` rewrites every failing inline snapshot in
+  the file, group 1 included.** Scope it: `-u -t "re-blessed when redrawn"`, then confirm group 1
+  is untouched in the diff.
+- **`npm run check:drift` regenerates in place.** A red run leaves the regenerated artifacts
+  (`examples/*.svg` after any rendering change) modified in the working tree. Read the diff, then
+  commit them or `git checkout --` them; do not mistake them for your own edits.
+- **A `.gitleaksignore` fingerprint names a commit.** A re-measured digest row keyed by a key-ish
+  word (`accessible`) is allowlisted at the branch commit that introduced it, so the branch must
+  land by a merge commit: a squash or rebase re-creates the line in a new commit and the nightly
+  full-history scan flags it again.
+
 ## Docs & prose
 
 - **A quoted dimension must name its convention or carry a tilde.** A plan with wall thickness has
