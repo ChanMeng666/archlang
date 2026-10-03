@@ -1153,8 +1153,36 @@ alone and fails the pin table as `NEW`; a P₀ with one storey's door widened fa
 storey alone. Re-run: `npx vitest run test/equivariance-storeys.test.ts
 test/equivariance-storeys-scaled.test.ts test/equivariance-storeys-head.test.ts`.
 
+**What it cannot see, because `describe()` does not carry it.** A door's entry is `id`,
+`between`, `width` and `head`: no swing, hinge or position. A window's is `id`, `room`,
+`width`, `facing`, `sill` and `head`: no position. A defect in how a frame carries either is
+seen only if a lint rule happens to measure it. Measured by planting a defect in `src/` in a
+scratch worktree and running the three storey suites (16 buildings):
+
+- `swing: el.swing` in `door.transform` (`src/elements/door.ts`; the swing no longer flips
+  under a reflection) is caught on 1 building of 16. `hillside-villa` fails only through
+  `lint.swing-obstructed` (and its `.fixes`), on both storeys, under the four reflections.
+  The other 15 stay green.
+- A window's `at` shifted +100 mm in `window.transform` (`src/elements/window.ts`) is caught
+  nowhere: all 42 tests green, T0 included, though P₀'s windows resolve 100 mm off P's
+  (`two-storey`: `w_living` at (5000,0) in P, `g.w_living` at (5100,0) in P₀).
+
+Both need T3, which compares the drawn door leaf and swing arc and the window's glazing.
+
+**The roof is nearly unobserved.** A roof is drawing-only and reaches the facts only through
+the drawing bounds. Removing each shipped example's one `roof` line leaves every storey's
+facts and lint, `vertical`, and the building's diagnostics unchanged in `garden-house`,
+`townhouse` and `two-storey`, in P and in P₀. In `hillside-villa` it changes only the sheet
+fit: with the roof every storey reads `drawing_fits: false` and the building raises
+`W_DRAWING_OVERFLOW` (the 700 mm eaves overflow A2 at 1:50); without it neither appears.
+Those are sheet facts, compared only under the elements that keep the axes. So the roof
+surgery is checked by facts only there, and otherwise only by not raising
+`E_ROOF_PLACEMENT`: a roof carried wrongly by a quarter-turn would go unseen. Pinned by
+"the roof is nearly unobserved" in `test/equivariance-storeys.test.ts`.
+
 **Still open:** T3, each storey's drawn scene under the group (`compareScenes` on a fixed
-sheet, as `test/equivariance-scene.test.ts` does for one storey).
+sheet, as `test/equivariance-scene.test.ts` does for one storey). It would also close the
+door, window and roof blind spots above.
 
 ### M.6 · Load-sensitive visual and sheet tests — `todo`
 

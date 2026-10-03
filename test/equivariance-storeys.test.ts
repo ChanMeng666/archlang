@@ -119,6 +119,46 @@ describe("the per-storey oracle's own construction", () => {
     expect(storeyWrapper(named("hillside-villa.arch").src, null).src).toContain("roof overhang 700 wall g.shell");
   });
 
+  it("the roof is nearly unobserved: removing it moves no fact but hillside-villa's sheet fit", () => {
+    // A roof is drawing-only (no describe() key, no lint rule); it reaches the facts only
+    // through the drawing bounds. So the roof surgery is checked by the absence of
+    // E_ROOF_PLACEMENT above, and by facts only where the eaves move the sheet fit: in
+    // hillside-villa the 700 mm eaves overflow the A2 sheet. Those facts are gated
+    // (`sheet`, compared under the elements that keep the axes), so a roof carried wrongly
+    // under a quarter-turn would be seen by no fact here: that needs the scene (T3).
+    const view = (src: string) =>
+      [...observeBuilding(storeyWrapper(src, null).src).storeys].map(([level, o]) => ({
+        level,
+        summary: o.summary,
+        lint: o.lint,
+      }));
+    for (const c of SHIPPED_BUILDINGS) {
+      const roofs = parse(c.src)
+        .plan!.body.flatMap((l) => (l.kind === "level" ? l.body.filter((x) => x.kind === "roof") : []))
+        .map((r) => r.span!);
+      expect(roofs.length, c.name).toBe(1);
+      const bare = roofs.reduceRight((src, r) => src.slice(0, r.start) + src.slice(r.end), c.src);
+      const [withRoof, without] = [view(c.src), view(bare)];
+      if (c.name !== "hillside-villa.arch") {
+        expect(without, c.name).toEqual(withRoof);
+        continue;
+      }
+      for (const [i, s] of withRoof.entries()) {
+        expect(s.summary.sheet?.drawing_fits, `L${s.level}`).toBe(false);
+        expect(without[i]!.summary.sheet?.drawing_fits, `L${s.level}`).toBeUndefined();
+        const { sheet: _a, ...rest } = s.summary;
+        const { sheet: _b, ...restBare } = without[i]!.summary;
+        expect(restBare, `L${s.level}`).toEqual(rest);
+        expect(without[i]!.lint, `L${s.level}`).toEqual(s.lint);
+      }
+      const unowned = (src: string) =>
+        observeBuilding(storeyWrapper(src, null).src)
+          .summary.diagnostics.filter((d) => d.level === undefined)
+          .map((d) => d.code);
+      expect([unowned(c.src), unowned(bare)]).toEqual([["W_DRAWING_OVERFLOW"], []]);
+    }
+  });
+
   it('the models are the shaft suite\'s buildings: P₀ describes every storey as `placed(b, "", 0)` does', () => {
     const comp = (s: string) => s.replace(/"component":"(?:storey_|s)(\d+)"/g, '"component":"$1"');
     for (const [i, b] of MODEL_BUILDINGS.entries()) {
@@ -129,8 +169,10 @@ describe("the per-storey oracle's own construction", () => {
     }
   });
 
-  it("the gates are open: every shipped storey is lattice-aligned and measured, so its raster is compared under every element", () => {
-    for (const c of SHIPPED_BUILDINGS) {
+  it("the gates are open: every shipped and 1× model storey is lattice-aligned and measured, so its raster is compared under every element", () => {
+    // The 1× models too: a model edit that broke alignment would otherwise close the raster
+    // gate on them silently, and their circulation would be compared under the translation only.
+    for (const c of CASES) {
       for (const [level, o] of observeBuilding(storeyWrapper(c.src, null).src).storeys) {
         expect(gateFacts(o).aligned, `${c.name} L${level}`).toBe(true);
         expect(o.summary.circulation?.rooms.length ?? 0, `${c.name} L${level}`).toBeGreaterThan(0);
