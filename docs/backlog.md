@@ -80,7 +80,7 @@ advisory itself is against the **UI server** (`--ui`), which nothing here starts
 `vitest run`.
 
 Against that, (b) costs more than it first looked: it is `vitest` **2.1.9 → 5.0.0, three majors**,
-across 203 test files and four workspaces, with the snapshot-format risk that carries in a repository
+across 281 test files (re-measured 2026-10-03; 203 when written) and four workspaces, with the snapshot-format risk that carries in a repository
 that treats a moved golden as a finding to explain rather than a diff to bless. It does **not** clear
 `esbuild` (tsup's node, see above), and it **splits** the `vite` tree that `vitepress@1.6.4` currently
 shares, so (c) gets no better either. Five of seven advisories clear, all of them dev-only.
@@ -115,8 +115,28 @@ transitive tree; **the shim needs no version bump for this**, because its own `p
 byte-unchanged and a consumer resolves its own transitive tree from the published manifest, not from
 this lockfile.
 
+**(a) was re-run 2026-10-03, again lockfile-only.** Trigger 1 above had fired in between —
+`npm audit --omit=dev` reported 4 (1 low, 3 moderate: `dompurify`, `fast-uri`, `hono`,
+`ip-address`) — and every one of them cleared with a plain `npm audit fix` (npm 11.18.0, the
+version `release.yml` pins, so the diff carries no lockfile-format churn), a 64-line
+`package-lock.json` diff, every manifest byte-unchanged:
+
+```
+before:  20 vulnerabilities (2 critical, 9 high, 8 moderate, 1 low)   --omit=dev: 4
+after:   13 vulnerabilities (2 critical, 7 high, 4 moderate)          --omit=dev: 0
+```
+
+Moves, all patch or minor: `brace-expansion` 2.1.4→2.1.7 and 5.0.9→5.0.12 (three nodes),
+`dompurify` 3.4.14→3.4.16, `fast-uri` 3.1.7→3.1.8, `hono` 4.13.5→4.13.12, `ip-address`
+10.7.0→10.7.3, `markdown-it` 14.2.0→14.3.2, `undici` 7.29.0→7.30.0. No output byte moved: the
+byte-identity suites in `npm run check` pass unchanged. The vsce chain in the table below is new and
+is **not** (a) despite npm's `fixAvailable: true`: `braces` has no fixed release (`<=3.0.3` is every
+version), and the only route around it is `@vscode/vsce` 4.0.0, outside the manifest's `^3.2.1` —
+3.9.2 is the newest stable 3.x.
+
 **A correction to (b) that the next agent needs: `vitest` 5 will NOT clear the `esbuild` advisory.**
-npm reports `esbuild`'s `fixAvailable` as `vitest@5.0.0`, but that only reaches
+npm 10 reports `esbuild`'s `fixAvailable` as `vitest@5.0.0` (`5.0.3` on 2026-10-03; npm 11.18.0
+reports `false` for `esbuild` and `vite`), but that only reaches
 `node_modules/vite/node_modules/esbuild@0.21.5`. The **other** node in the advisory,
 `node_modules/esbuild@0.27.7`, is **tsup's** — and `tsup@8.5.1`, the latest 8, pins `esbuild ^0.27.0`,
 which cannot reach the fixed `0.28.1`. So that one has **no fix at any version of tsup 8** and is a
@@ -127,10 +147,12 @@ jump, and `vitepress@1.6.4` pins `vite ^5.4.14` — it shares the one hoisted `v
 vitest 2 today, but `vitest` 5 wants `vite` 8, so (b) will **split** that tree rather than fix
 `vitepress`. (c) clears only on a `vitepress` release.
 
-**Residual after (a), grouped by why — 7 advisories:**
+**Residual after (a), grouped by why — 13 advisories (re-measured 2026-10-03; 7 on 2026-09-04),
+all dev-only:**
 
 | root | sev | why it stays |
 |---|---|---|
+| `@vscode/vsce`, `secretlint`, `globby`, `fast-glob`, `micromatch`, `braces` | high | `braces` has no fixed release; clears only via the `@vscode/vsce` 4 MAJOR (`editors/vscode` packaging) |
 | `vitest`, `@vitest/coverage-v8` | critical | needs the `vitest` 5 MAJOR — job (b) |
 | `vite` | high | ditto (via `vitest` 2's `vite ^5.0.0`) |
 | `@vitest/mocker`, `vite-node` | moderate | ditto |
