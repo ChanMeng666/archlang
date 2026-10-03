@@ -1153,16 +1153,23 @@ therefore snaps to a different shape. The same rule makes `fmt2(−x) ≠ −fmt
 `0.13`, `fmt2(−0.125)` is `−0.12` (re-run through `src/num-format.ts`). Changing either moves
 output; it needs a decision and a sweep.
 
-### M.10 · Catalogue order follows the host's collation — `todo`
+### M.10 · Catalogue order followed ICU collation, not code units — closed
 
-`ERROR_CODES` (`src/error-catalog.ts`) sorts with `localeCompare`, which follows the host's ICU
-collation, not code-unit order; it feeds `docs/error-codes.md`, `llms-full.txt` and `arch
-manifest --json`. Re-run on one host whose default locale is `zh-CN`: `ERROR_CODES` and the
-same severity-grouped sort by code units differ at 15 of 149 positions (ICU puts
-`E_INTENT_NO_DOOR` before `E_INTENT_NOT_ADJACENT`, code units the reverse), so a host with
-another default collation could reorder a generated file. `dataset/dedup.ts` and
-`dataset/generate.ts` sort with `localeCompare` too. A plain `<` comparison would move the
-generated order once.
+`ERROR_CODES` (`src/error-catalog.ts`) sorted with `localeCompare`, which reads the host's ICU
+collation; it feeds `docs/error-codes.md`, `llms-full.txt` and `arch manifest --json`. Re-measured
+on the closing tree (153 codes, Node ICU 77.1): the severity-grouped order and the same order by
+code units differ at 20 positions, under `en-US` as much as `zh-CN`, `de`, `sv` and `ja`. So the
+cause was not one locale: ICU ranks `_` below every letter, code units put it after `A`–`Z`
+(`E_INTENT_NOT_ADJACENT` vs `E_INTENT_NO_DOOR`). The committed order matched every ICU locale
+tried, but would not survive a build whose collation data differs.
+
+Closed by a plain code-unit comparison inside each severity group, pinned by
+`test/error-catalog-order.test.ts` (fails on the old comparator). `gen:all` moved the generated
+order once: `docs/error-codes.md` and `llms-full.txt`, each a pure permutation of its lines.
+`dataset/dedup.ts` and `dataset/generate.ts` still sort with `localeCompare`: no committed artifact
+reads them, but `generate.ts` orders the keys of the published `report.json`, which cannot be
+checked without regenerating the dataset. `dedup.ts` compares labels already folded to `[a-z ]`,
+where the two orders agree.
 
 ### M.11 · LSP rename misses an assignment target — `todo`
 

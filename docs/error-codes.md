@@ -45,10 +45,10 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_IMPORT_PARSE`](#e_import_parse) | error | Imported module has a parse error. |
 | [`E_INDEX`](#e_index) | error | Array index out of range. |
 | [`E_INSTANCE_NO_TRANSFORM`](#e_instance_no_transform) | error | A plugin element inside a `place`d component has no `transform()`. |
+| [`E_INTENT_NOT_ADJACENT`](#e_intent_not_adjacent) | error | Two rooms the brief wants adjacent share no interior door. |
 | [`E_INTENT_NO_DOOR`](#e_intent_no_door) | error | The plan has no modeled entrance, so `reachable` cannot hold. |
 | [`E_INTENT_NO_SITE`](#e_intent_no_site) | error | An intent asserts a SYMBOLIC window facing against a plan with no `site`. |
 | [`E_INTENT_NO_WINDOW`](#e_intent_no_window) | error | A room the brief wants a window in has too few. |
-| [`E_INTENT_NOT_ADJACENT`](#e_intent_not_adjacent) | error | Two rooms the brief wants adjacent share no interior door. |
 | [`E_INTENT_ROOM_AREA`](#e_intent_room_area) | error | A named room's floor area is outside the brief's band. |
 | [`E_INTENT_ROOM_COUNT`](#e_intent_room_count) | error | The plan's room count does not match the brief. |
 | [`E_INTENT_ROOM_MISSING`](#e_intent_room_missing) | error | A room the brief names is absent from the plan. |
@@ -66,11 +66,11 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_NON_FINITE`](#e_non_finite) | error | A number is too large to be finite. |
 | [`E_OPENING_ABOVE_WALL`](#e_opening_above_wall) | error | An opening's head is above the wall it is cut in. |
 | [`E_OPENING_WIDTH`](#e_opening_width) | error | Opening must have a positive width. |
-| [`E_OUT_OF_RANGE`](#e_out_of_range) | error | A coordinate, length or drawing setting is outside the modelling range. |
 | [`E_OUTDOOR_POLY_DEGENERATE`](#e_outdoor_poly_degenerate) | error | An outdoor ring is degenerate, or a balcony was given one. |
 | [`E_OUTDOOR_POLY_SELF_INTERSECT`](#e_outdoor_poly_self_intersect) | error | An outdoor ring crosses itself. |
 | [`E_OUTDOOR_RAIL`](#e_outdoor_rail) | error | A `rail` clause on something that is not a balcony, or an unknown edge word. |
 | [`E_OUTDOOR_SIZE`](#e_outdoor_size) | error | An outdoor surface must have a positive size. |
+| [`E_OUT_OF_RANGE`](#e_out_of_range) | error | A coordinate, length or drawing setting is outside the modelling range. |
 | [`E_PARSE`](#e_parse) | error | The source could not be read: its SHAPE is wrong. |
 | [`E_PLACE_POLY`](#e_place_poly) | error | A rectangle-only placement clause aimed at a polygon room. |
 | [`E_PLACE_REF`](#e_place_ref) | error | Furniture placed in an unknown or non-absolute room. |
@@ -119,19 +119,19 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_DIM_INSIDE`](#w_dim_inside) | warning | A hand-written dimension line lands inside the building. |
 | [`W_DIM_NO_WALL`](#w_dim_no_wall) | warning | A `dim faces`/`dim clear` endpoint has no wall to measure to. |
 | [`W_DIM_OVERLAP`](#w_dim_overlap) | warning | Two hand-written dimensions are drawn on top of each other. |
+| [`W_DOORWAY_BLOCKED`](#w_doorway_blocked) | warning | A doorway's landing is blocked. |
 | [`W_DOOR_CLEARANCE`](#w_door_clearance) | warning | Door is narrower than the minimum clear width. |
 | [`W_DOOR_NEAR_CORNER`](#w_door_near_corner) | warning | A door leaves less wall between its jamb and a corner than the wall is thick. |
 | [`W_DOOR_OFF_WALL`](#w_door_off_wall) | warning | Door does not lie on any wall. |
-| [`W_DOORWAY_BLOCKED`](#w_doorway_blocked) | warning | A doorway's landing is blocked. |
 | [`W_DRAWING_OVERFLOW`](#w_drawing_overflow) | warning | The whole drawing does not fit the declared paper, even though the building does. |
 | [`W_DUP_ACC_METADATA`](#w_dup_acc_metadata) | warning | Duplicate `accTitle`/`accDescr`. |
 | [`W_EMPTY_PLAN`](#w_empty_plan) | warning | Empty plan. |
 | [`W_FIXTURE_BACK_TO_ROOM`](#w_fixture_back_to_room) | warning | A fixture stands against a wall but faces the wrong way. |
 | [`W_FIXTURE_FLOATING`](#w_fixture_floating) | warning | A plumbing/kitchen fixture is not against a wall. |
 | [`W_FIXTURE_WRONG_ROOM`](#w_fixture_wrong_room) | warning | Fixture is not inside its declared room. |
-| [`W_FURN_CLEARANCE`](#w_furn_clearance) | warning | A fixture's use-space is blocked. |
 | [`W_FURNITURE_OVERLAP`](#w_furniture_overlap) | warning | Two pieces of furniture overlap. |
 | [`W_FURNITURE_WALL_COLLISION`](#w_furniture_wall_collision) | warning | Furniture penetrates a wall. |
+| [`W_FURN_CLEARANCE`](#w_furn_clearance) | warning | A fixture's use-space is blocked. |
 | [`W_GARAGE_TOO_NARROW`](#w_garage_too_narrow) | warning | A garage is too narrow to park in. |
 | [`W_GLYPH_UNSUPPORTED`](#w_glyph_unsupported) | warning | PDF/PNG text has characters no embedded font can draw. |
 | [`W_HATCH_SCALE`](#w_hatch_scale) | warning | Hatch scale must be positive; using 1. |
@@ -145,10 +145,10 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_REASSIGN_DEPRECATED`](#w_reassign_deprecated) | warning | Reassignment (`NAME = expr`) is deprecated and will be removed in a future major version. |
 | [`W_ROOM_DISCONNECTED`](#w_room_disconnected) | warning | Room has no door — it can't be entered. |
 | [`W_ROOM_LABEL_OUTSIDE`](#w_room_label_outside) | warning | A room's explicit label anchor falls outside the room. |
-| [`W_ROOM_NO_CLEAR_PATH`](#w_room_no_clear_path) | warning | A room cannot be entered or crossed. |
-| [`W_ROOM_NO_FIXTURE`](#w_room_no_fixture) | warning | Bathroom or kitchen has no fixtures. |
 | [`W_ROOM_NOT_ENCLOSED`](#w_room_not_enclosed) | warning | Bathroom is not fully enclosed. |
 | [`W_ROOM_NOT_EQUATOR_FACING`](#w_room_not_equator_facing) | warning | A habitable room has windows, but none faces the equator side. |
+| [`W_ROOM_NO_CLEAR_PATH`](#w_room_no_clear_path) | warning | A room cannot be entered or crossed. |
+| [`W_ROOM_NO_FIXTURE`](#w_room_no_fixture) | warning | Bathroom or kitchen has no fixtures. |
 | [`W_ROOM_OVERLAP`](#w_room_overlap) | warning | Rooms overlap. |
 | [`W_ROOM_TOO_SMALL`](#w_room_too_small) | warning | Room is implausibly small. |
 | [`W_ROOM_UNREACHABLE`](#w_room_unreachable) | warning | Room cannot be reached from the entrance. |
@@ -601,6 +601,18 @@ component c() { gazebo at (0,0) }   # `gazebo` is a plugin kind with no transfor
 place c() as g at (5000,0)   # error: cannot be placed
 ```
 
+## E_INTENT_NOT_ADJACENT
+
+*error* — Two rooms the brief wants adjacent share no interior door.
+
+**Cause.** An intent `adjacency` edge names two concepts (e.g. hall ↔ bathroom) that are not joined by an interior door or cased opening in the plan's modeled connectivity.
+
+**Fix.** Add a `door` (or `opening`) on the wall the two rooms share so they are directly connected. Advisory tier: this is scored and reported by `validateIntent` but does NOT fail `ok` (gate: false) — one-shot topology is what the loop tools address.
+
+```arch static
+door on wall_hall_bath width 800   # connect the hall to the bathroom
+```
+
 ## E_INTENT_NO_DOOR
 
 *error* — The plan has no modeled entrance, so `reachable` cannot hold.
@@ -638,18 +650,6 @@ plan "H" {
 
 ```arch static
 window on north at 40% width 1200   # light the bedroom
-```
-
-## E_INTENT_NOT_ADJACENT
-
-*error* — Two rooms the brief wants adjacent share no interior door.
-
-**Cause.** An intent `adjacency` edge names two concepts (e.g. hall ↔ bathroom) that are not joined by an interior door or cased opening in the plan's modeled connectivity.
-
-**Fix.** Add a `door` (or `opening`) on the wall the two rooms share so they are directly connected. Advisory tier: this is scored and reported by `validateIntent` but does NOT fail `ok` (gate: false) — one-shot topology is what the loop tools address.
-
-```arch static
-door on wall_hall_bath width 800   # connect the hall to the bathroom
 ```
 
 ## E_INTENT_ROOM_AREA
@@ -864,18 +864,6 @@ wall id=w1 exterior thickness 200 height 2200 { (0,0) (4000,0) close }
 opening at (0,0) width 0   # error
 ```
 
-## E_OUT_OF_RANGE
-
-*error* — A coordinate, length or drawing setting is outside the modelling range.
-
-**Cause.** Each element's bounds (the points it reports for the page: a rectangle's corners, a ring's vertices, a wall's faces) and the coordinates and lengths those do not carry (an opening's centre and width, a wall's thickness and arc radii, a dimension's offset, a room's label anchor), every `axes` position, every `site` boundary vertex and the `grid` must lie within ±33,554,432 mm (2^25 mm, about 33.5 km), the range inside which the geometry's integer predicates are exact. A finite value past it is not a building. The settings that scale a drawn length are held too: a wall's hatch `scale` and a theme `lineWeight` by what they DRAW on this drawing (the pattern tile and the heaviest pen, which grow with the drawing's size, must stay inside the range, so a coarse `scale 10` on a house is fine), a `north` bearing or hatch `angle` within ±33,554,432 degrees, and on a `paper` plan a `scale` denominator small enough that the sheet stays inside the range. An element is checked once its `place` frames and relational placement are applied; it is reported once (its other diagnostics are withdrawn, and an opening in a dropped wall goes with it) and dropped from the plan, so nothing downstream draws or measures it.
-
-**Fix.** Use a realistic dimension. A plan is measured in millimetres (a 30 m wall is `30000`, or `30m`), so a value in the millions is usually a unit slip; a site larger than about 33 km is several plans, not one.
-
-```arch static
-stair id=s at (0,0) size 1000000000000x3000 dir up   # error: a 1e12 mm flight
-```
-
 ## E_OUTDOOR_POLY_DEGENERATE
 
 *error* — An outdoor ring is degenerate, or a balcony was given one.
@@ -922,6 +910,18 @@ outdoor deck at (0,0) size 3000x2000 rail all   # error: a deck has no railing
 
 ```arch static
 outdoor lawn at (0,0) size 0x4000   # error: zero width
+```
+
+## E_OUT_OF_RANGE
+
+*error* — A coordinate, length or drawing setting is outside the modelling range.
+
+**Cause.** Each element's bounds (the points it reports for the page: a rectangle's corners, a ring's vertices, a wall's faces) and the coordinates and lengths those do not carry (an opening's centre and width, a wall's thickness and arc radii, a dimension's offset, a room's label anchor), every `axes` position, every `site` boundary vertex and the `grid` must lie within ±33,554,432 mm (2^25 mm, about 33.5 km), the range inside which the geometry's integer predicates are exact. A finite value past it is not a building. The settings that scale a drawn length are held too: a wall's hatch `scale` and a theme `lineWeight` by what they DRAW on this drawing (the pattern tile and the heaviest pen, which grow with the drawing's size, must stay inside the range, so a coarse `scale 10` on a house is fine), a `north` bearing or hatch `angle` within ±33,554,432 degrees, and on a `paper` plan a `scale` denominator small enough that the sheet stays inside the range. An element is checked once its `place` frames and relational placement are applied; it is reported once (its other diagnostics are withdrawn, and an opening in a dropped wall goes with it) and dropped from the plan, so nothing downstream draws or measures it.
+
+**Fix.** Use a realistic dimension. A plan is measured in millimetres (a 30 m wall is `30000`, or `30m`), so a value in the millions is usually a unit slip; a site larger than about 33 km is several plans, not one.
+
+```arch static
+stair id=s at (0,0) size 1000000000000x3000 dir up   # error: a 1e12 mm flight
 ```
 
 ## E_PARSE
@@ -1520,6 +1520,19 @@ dim (0,-100)->(7000,-100) offset -300 text "7000"
 dim (0,-100)->(4000,-100) offset -300 text "4000"   # warning: both in the same tier
 ```
 
+## W_DOORWAY_BLOCKED
+
+*warning* — A doorway's landing is blocked.
+
+**Cause.** A piece of furniture/fixture sits in the clear landing space immediately on either side of a door opening, so you cannot pass through the doorway even when the leaf is open. This is the approach path, distinct from the leaf's swing arc (`W_SWING_OBSTRUCTED`). The warning states the landing depth required, the depth actually left, and the shortfall.
+
+**Fix.** Move the obstruction clear of the opening by the shortfall the warning quotes (`arch repair` computes the smallest clearing shift), shrink it by that much on the axis facing the door, or move the door along its wall so its landing misses it.
+
+```arch static
+door at (6000,3000) width 800
+furniture wc at (5800,3050) size 700x400   # lint: WC blocks the doorway
+```
+
 ## W_DOOR_CLEARANCE
 
 *warning* — Door is narrower than the minimum clear width.
@@ -1555,19 +1568,6 @@ door on w1 at 4400 width 900   # lint: a 150 mm nib on a 250 mm wall
 
 ```arch static
 door at (9999,9999) width 900   # warning: not on a wall
-```
-
-## W_DOORWAY_BLOCKED
-
-*warning* — A doorway's landing is blocked.
-
-**Cause.** A piece of furniture/fixture sits in the clear landing space immediately on either side of a door opening, so you cannot pass through the doorway even when the leaf is open. This is the approach path, distinct from the leaf's swing arc (`W_SWING_OBSTRUCTED`). The warning states the landing depth required, the depth actually left, and the shortfall.
-
-**Fix.** Move the obstruction clear of the opening by the shortfall the warning quotes (`arch repair` computes the smallest clearing shift), shrink it by that much on the axis facing the door, or move the door along its wall so its landing misses it.
-
-```arch static
-door at (6000,3000) width 800
-furniture wc at (5800,3050) size 700x400   # lint: WC blocks the doorway
 ```
 
 ## W_DRAWING_OVERFLOW
@@ -1645,19 +1645,6 @@ furniture wc at (3000,3000) size 400x700   # lint: no wall behind it
 furniture wc at (100,100) size 400x700 in bath   # lint: not inside "bath"
 ```
 
-## W_FURN_CLEARANCE
-
-*warning* — A fixture's use-space is blocked.
-
-**Cause.** The activity clearance directly in front of a fixture (WC, basin, sink, counter, stove…) is intruded by a free-standing piece of furniture, so the fixture can't be used comfortably. Other plumbing/kitchen fixtures are ignored, so a compact bathroom/kitchen run does not trip this. The warning states the catalogued clearance, the depth actually left, and the shortfall.
-
-**Fix.** Move or shrink the obstructing furniture by the shortfall the warning quotes, turn the fixture so its front faces clear floor (its back must stay on a wall), or move the fixture to a wall run with the clearance free in front of it.
-
-```arch static
-furniture stove at (0,0) size 600x600
-furniture sofa at (0,650) size 2000x900   # lint: sofa blocks the stove front
-```
-
 ## W_FURNITURE_OVERLAP
 
 *warning* — Two pieces of furniture overlap.
@@ -1681,6 +1668,19 @@ furniture bed  at (1000,500) size 1500x2000   # lint: overlaps the sofa
 
 ```arch static
 furniture sofa at (350,2300) size 2000x900   # lint: crosses the partition at y3000
+```
+
+## W_FURN_CLEARANCE
+
+*warning* — A fixture's use-space is blocked.
+
+**Cause.** The activity clearance directly in front of a fixture (WC, basin, sink, counter, stove…) is intruded by a free-standing piece of furniture, so the fixture can't be used comfortably. Other plumbing/kitchen fixtures are ignored, so a compact bathroom/kitchen run does not trip this. The warning states the catalogued clearance, the depth actually left, and the shortfall.
+
+**Fix.** Move or shrink the obstructing furniture by the shortfall the warning quotes, turn the fixture so its front faces clear floor (its back must stay on a wall), or move the fixture to a wall run with the clearance free in front of it.
+
+```arch static
+furniture stove at (0,0) size 600x600
+furniture sofa at (0,650) size 2000x900   # lint: sofa blocks the stove front
 ```
 
 ## W_GARAGE_TOO_NARROW
@@ -1846,30 +1846,6 @@ room id=r at (0,0) size 3000x3000   # lint: no door on its perimeter
 room polygon (0,0) (6000,0) (6000,6000) (0,6000) label "Hall" at (9000,9000)   # warning
 ```
 
-## W_ROOM_NO_CLEAR_PATH
-
-*warning* — A room cannot be entered or crossed.
-
-**Cause.** Furniture, fixtures, door swings and their clearances fill the room so densely that a person stepping through a door/opening has no clear floor path into the usable space — the room is technically reachable but physically blocked.
-
-**Fix.** Open up the layout: move or shrink the furniture nearest the door so there is a continuous walkable strip from each entrance into the room.
-
-```arch static
-furniture shower at (5000,3000) size 2000x2000   # lint: fills the bathroom against its only door
-```
-
-## W_ROOM_NO_FIXTURE
-
-*warning* — Bathroom or kitchen has no fixtures.
-
-**Cause.** A room labelled as a bathroom or kitchen contains no plumbing/kitchen fixture (WC, basin, shower, sink, counter…), so it is drawn as an empty box.
-
-**Fix.** Place the expected fixtures — e.g. import `lib/fixtures.arch` and add a `wc`, `basin`, `shower`, or `kitchen_sink`.
-
-```arch static
-room at (4000,4000) size 3000x2000 label "Bath"   # lint: no fixtures inside
-```
-
 ## W_ROOM_NOT_ENCLOSED
 
 *warning* — Bathroom is not fully enclosed.
@@ -1894,6 +1870,30 @@ wall partition thickness 100 { (4000,0) (4000,4000) }   # lint: stops short, bat
 site { street north }   # equator side is S
 room id=liv at (0,0) size 4000x3000 label "Living"
 window on north_wall at 50% width 1200   # warning: the only window faces N
+```
+
+## W_ROOM_NO_CLEAR_PATH
+
+*warning* — A room cannot be entered or crossed.
+
+**Cause.** Furniture, fixtures, door swings and their clearances fill the room so densely that a person stepping through a door/opening has no clear floor path into the usable space — the room is technically reachable but physically blocked.
+
+**Fix.** Open up the layout: move or shrink the furniture nearest the door so there is a continuous walkable strip from each entrance into the room.
+
+```arch static
+furniture shower at (5000,3000) size 2000x2000   # lint: fills the bathroom against its only door
+```
+
+## W_ROOM_NO_FIXTURE
+
+*warning* — Bathroom or kitchen has no fixtures.
+
+**Cause.** A room labelled as a bathroom or kitchen contains no plumbing/kitchen fixture (WC, basin, shower, sink, counter…), so it is drawn as an empty box.
+
+**Fix.** Place the expected fixtures — e.g. import `lib/fixtures.arch` and add a `wc`, `basin`, `shower`, or `kitchen_sink`.
+
+```arch static
+room at (4000,4000) size 3000x2000 label "Bath"   # lint: no fixtures inside
 ```
 
 ## W_ROOM_OVERLAP

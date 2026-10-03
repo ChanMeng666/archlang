@@ -1117,10 +1117,11 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   ),
 });
 
-/** All catalog codes, sorted (errors then warnings, alphabetically within). */
+/** All catalog codes, sorted (errors then warnings, by UTF-16 code unit within — never
+ *  `localeCompare`, whose ICU collation is host data and puts `_` before letters). */
 export const ERROR_CODES: readonly string[] = Object.keys(ERROR_CATALOG).sort((a, b) => {
   const sev = (c: string): number => (ERROR_CATALOG[c]!.severity === "error" ? 0 : 1);
-  return sev(a) - sev(b) || a.localeCompare(b);
+  return sev(a) - sev(b) || (a < b ? -1 : a > b ? 1 : 0);
 });
 
 /** Render a catalog entry as a plain-text block for `arch explain`, or null. */
