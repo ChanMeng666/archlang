@@ -181,6 +181,33 @@ interface Tagged {
   splits: Array<{ t: number; p: Point }>;
 }
 
+/**
+ * {@link pointKey} of a point, built at most once per point OBJECT for one `joinWalls` call.
+ *
+ * Every vertex the later phases key is an interned object, and each is keyed many times
+ * over - by the grouping, by `sameDirection`, by the chainer, by the canonical rotation and
+ * the final sort. A key is two roundings, two integer-to-text conversions and a
+ * concatenation, and a freshly built string must be hashed again by every `Map` it meets;
+ * the memo returns the SAME string, already hashed. It is a cache and not a decision:
+ * `pointKey` is a total function of the coordinates and points are never mutated, so the
+ * text is identical either way (`test/joinery-split-oracle.test.ts`). It is per call - a
+ * `Map` owned by `joinWalls` - so nothing outlives the call.
+ */
+export type KeyOf = (p: Point) => string;
+
+/** A fresh per-call {@link KeyOf}. Exported for `test/joinery-split-oracle.test.ts` only. */
+export function keyMemo(): KeyOf {
+  const memo = new Map<Point, string>();
+  return (p) => {
+    let k = memo.get(p);
+    if (k === undefined) {
+      k = pointKey(p);
+      memo.set(p, k);
+    }
+    return k;
+  };
+}
+
 const byTag = (a: Tagged, b: Tagged): number =>
   a.kind - b.kind || a.owner - b.owner || a.loopIndex - b.loopIndex || a.edgeIndex - b.edgeIndex;
 
@@ -204,11 +231,24 @@ function paramOf(e: Edge, p: Point): number {
   return dot2(sub2(p, e.a), d) / len2;
 }
 
-/** Every candidate crossing point of two edges, as raw (un-interned) points. */
-function crossPoints(a: Edge, b: Edge): Point[] {
+/**
+ * Every candidate crossing point of two edges, as raw (un-interned) points.
+ *
+ * Exported for `test/joinery-split-oracle.test.ts` only, which runs it against the form it
+ * had before the axis-aligned shortcut below and compares the bits.
+ */
+export function crossPoints(a: Edge, b: Edge): Point[] {
   if (a.t === "line" && b.t === "line") {
     const d = sub2(a.b, a.a);
     const e = sub2(b.b, b.a);
+    // A vertical x horizontal pair, answered before `parallel` - the general path's own
+    // answer, reached without two square roots. For such a pair `parallel` is always false
+    // (the cross product is the product of the two non-zero lengths, so the sine is 1 - or
+    // NaN on an overflow, which also reads as not parallel), and `meetLines` then takes this
+    // same pair of tests on this same `d`/`e` and returns this same point with no arithmetic
+    // at all. Pinned bit for bit by `test/joinery-split-oracle.test.ts`.
+    if (d.x === 0 && d.y !== 0 && e.y === 0 && e.x !== 0) return [{ x: a.a.x, y: b.a.y }];
+    if (d.y === 0 && d.x !== 0 && e.x === 0 && e.y !== 0) return [{ x: b.a.x, y: a.a.y }];
     if (parallel(d, e)) {
       // Collinear (not merely parallel): split each at the other's interior endpoints.
       // Two disjoint parallel runs share no point and fall out of the interval test below.
@@ -343,9 +383,8 @@ function splitAll(universe: Tagged[], intern: PointInterner): Tagged[] {
  * split guarantees that every other band is either disjoint from the sub-edge (one
  * winding test at the midpoint answers both sides) or COINCIDENT with it (its material
  * side is then read off that edge's own direction, since `band.ts` orients every loop
- * material-on-`+perp`). That is sound for other bands and it is exactly how the
- * `coincident` set below is used. It is NOT sound for the sub-edge's OWN band, because a
- * band may overlap itself — an acute corner between a bulging arc and a straight run
+ * material-on-`+perp`). That is sound for other bands, but it is NOT sound for the
+ * sub-edge's OWN band, because a band may overlap itself — an acute corner between a bulging arc and a straight run
  * buries part of its own boundary inside its own solid, and there the true windings are
  * 2 and 1 rather than 1 and 0, so the edge must be dropped and the analytic rule keeps
  * it. (Nor can the winding be decomposed into "everything else, plus one for the
@@ -354,8 +393,8 @@ function splitAll(universe: Tagged[], intern: PointInterner): Tagged[] {
  * truth is 1 and 0.) The offset asks the whole question at once and cannot disagree with
  * itself.
  *
- * The COINCIDENCE grouping is still what the phase is built on, for two other reasons:
- * it deduplicates a face two walls share into one emitted edge, and it collapses N
+ * The COINCIDENCE grouping is still what the phase is built on, for two reasons: it
+ * deduplicates a face two walls share into one emitted edge, and it collapses N
  * coincident sub-edges into one pair of readings instead of N.
  * ------------------------------------------------------------------------- */
 
@@ -387,10 +426,18 @@ const byOwnership = (a: JoineryWall, b: JoineryWall): number => b.thickness - a.
  * answer and the rest need no winding test — which matters, because the winding walk is
  * this layer's hottest loop.
  *
- * A cut wins over every wall: a doorway is a hole, and a hole is not owned.
+ * A cut wins over every wall: a doorway is a hole, and a hole is not owned. Whether ANY
+ * cut contains the point is all that is asked of the cuts, so they are walked straight
+ * out of the index's cells: a cut met in two cells is asked twice and answers the same,
+ * and the order they come in cannot change an "any". (That walk used to go through
+ * `queryBox`, which builds a `Set` and an array per probe only to de-duplicate them.)
  */
-function ownerAt(p: Point, wallsNear: readonly JoineryWall[], cutsNear: readonly JoineryCut[]): Owner {
-  for (const c of cutsNear) if (loopWinding(c.loop, p) !== 0) return null;
+function ownerAt(p: Point, wallsNear: readonly JoineryWall[], cuts: GridIndex<JoineryCut>): Owner {
+  let inCut = false;
+  cuts.forEach({ minX: p.x, minY: p.y, maxX: p.x, maxY: p.y }, (c) => {
+    if (!inCut && loopWinding(c.loop, p) !== 0) inCut = true;
+  });
+  if (inCut) return null;
   for (const w of wallsNear) if (bandContains(w, p)) return w;
   return null;
 }
@@ -404,41 +451,31 @@ const edgeDist = (p: Point, e: Edge): number =>
   e.t === "arc" ? distPointToArc(p, e.arc) : distPointToSegment(p, edgeStart(e), edgeEnd(e));
 
 /**
- * One band or cut whose boundary is COINCIDENT with a group of sub-edges, and the side of
- * the group's representative its material lies on.
- */
-interface Coincident {
-  /** `0` = a wall band, `1` = an opening cut. */
-  kind: 0 | 1;
-  /** The wall's or cut's `index`. */
-  owner: number;
-  /** `true` when this owner's material is on `+perp` of the REPRESENTATIVE's direction. */
-  plusSide: boolean;
-}
-
-/**
  * A set of sub-edges that are geometrically the same curve — the unit everything after
  * the split works on.
  *
- * Grouping by {@link undirectedKey} does the deduplication (a face two walls share is one
- * group, emitted once) AND yields the coincidence set the exact classification needs, in
- * one pass. The representative is the member with the smallest tag, so the group's
- * direction is a function of the caller's own indices.
+ * Grouping by {@link undirectedKey} is the deduplication: a face two walls share is one
+ * group, classified once and emitted once. The representative is the member with the
+ * smallest tag, so the group's direction is a function of the caller's own indices.
+ *
+ * (Each group used to carry the set of walls and cuts coincident with it, and the side
+ * each one's material lay on. Nothing ever read it - classification probes both sides
+ * of `rep` instead, for the reason the phase header gives - so it was dropped as dead
+ * work; the probes, and therefore the output, never depended on it.)
  */
-interface EdgeGroup {
-  key: string;
+export interface EdgeGroup {
   rep: Edge;
   mid: Point;
-  coincident: Coincident[];
 }
 
 /**
- * Does `e` run the same way round as `rep`? For two arcs the SWEEP SIGN decides — a full
- * circle has `a === b`, so comparing start points would be meaningless there.
+ * An edge's two endpoint keys in code-unit order - the order `Array.prototype.sort()`
+ * gives strings, without allocating an array to sort.
  */
-function sameDirection(rep: Edge, e: Edge): boolean {
-  if (rep.t === "arc" && e.t === "arc") return Math.sign(rep.arc.sweep) === Math.sign(e.arc.sweep);
-  return pointKey(edgeStart(e)) === pointKey(edgeStart(rep));
+function endKeys(e: Edge, key: KeyOf): [string, string] {
+  const ks = key(edgeStart(e));
+  const ke = key(edgeEnd(e));
+  return ks < ke ? [ks, ke] : [ke, ks];
 }
 
 /**
@@ -454,11 +491,55 @@ function sameDirection(rep: Edge, e: Edge): boolean {
  * midpoint deduplicates one of them away and leaves half a circle where the drawing has
  * a whole one.
  */
-function undirectedKey(e: Edge): string {
-  const [k1, k2] = [pointKey(edgeStart(e)), pointKey(edgeEnd(e))].sort();
+function undirectedKey(e: Edge, key: KeyOf): string {
+  const [k1, k2] = endKeys(e, key);
   if (e.t === "line") return `L|${k1}|${k2}`;
+  // The midpoint is a fresh object every time, so it is keyed directly, not memoised.
   const mid = pointKey(arcPointAt(e.arc, 0.5));
-  return `A|${k1}|${k2}|${mid}|${pointKey(e.arc.center)}|${Math.round(e.arc.r * 1e6)}|${Math.round(Math.abs(e.arc.sweep) * 1e9)}`;
+  return `A|${k1}|${k2}|${mid}|${key(e.arc.center)}|${Math.round(e.arc.r * 1e6)}|${Math.round(Math.abs(e.arc.sweep) * 1e9)}`;
+}
+
+/**
+ * The edges grouped by {@link undirectedKey}, in order of each group's first member, which
+ * is its representative.
+ *
+ * A LINE's key is `L|k1|k2`, and since a point key holds exactly one `|` (an integer's text
+ * never contains one), two line keys are equal exactly when their `(k1, k2)` pairs are. So
+ * lines are grouped through two nested maps on the memoised, already hashed endpoint keys
+ * and the concatenated key is never built: the same partition, without a fresh string to
+ * hash per sub-edge. An arc's key carries its curve as well and is used whole; it starts
+ * `A|`, so it never equals a line's and the two kinds can live in separate maps.
+ *
+ * Exported for `test/joinery-split-oracle.test.ts` only, which runs it against the single
+ * string-keyed map it replaced and compares the groups.
+ */
+export function groupEdges(edges: readonly Edge[], key: KeyOf): EdgeGroup[] {
+  const groups: EdgeGroup[] = [];
+  const lineGroups = new Map<string, Map<string, EdgeGroup>>();
+  const arcGroups = new Map<string, EdgeGroup>();
+  for (const e of edges) {
+    let row: Map<string, EdgeGroup>;
+    let k: string;
+    if (e.t === "line") {
+      const [k1, k2] = endKeys(e, key);
+      let r = lineGroups.get(k1);
+      if (!r) {
+        r = new Map();
+        lineGroups.set(k1, r);
+      }
+      row = r;
+      k = k2;
+    } else {
+      row = arcGroups;
+      k = undirectedKey(e, key);
+    }
+    if (!row.has(k)) {
+      const g = { rep: e, mid: edgeMid(e) };
+      row.set(k, g);
+      groups.push(g);
+    }
+  }
+  return groups;
 }
 
 /* ---------------------------------------------------------------------------
@@ -485,10 +566,10 @@ const turn = (a: Vec2, b: Vec2): number => Math.atan2(cross2(a, b), dot2(a, b));
  * sorted by undirected key, so the loop set — and the order it comes out in — is a
  * function of the edges alone.
  */
-function chainLoops(edges: readonly Edge[]): Chain[] {
+function chainLoops(edges: readonly Edge[], key: KeyOf): Chain[] {
   const outgoing = new Map<string, number[]>();
   for (let i = 0; i < edges.length; i++) {
-    const k = pointKey(edgeStart(edges[i]!));
+    const k = key(edgeStart(edges[i]!));
     const list = outgoing.get(k);
     if (list) list.push(i);
     else outgoing.set(k, [i]);
@@ -498,7 +579,7 @@ function chainLoops(edges: readonly Edge[]): Chain[] {
   // passed, not borrowed from the grouping pass: a reversed edge's arc midpoint is a fresh
   // floating-point evaluation that can round to a different key.
   const keyOf = new Array<string | undefined>(edges.length);
-  const undirected = (i: number): string => (keyOf[i] ??= undirectedKey(edges[i]!));
+  const undirected = (i: number): string => (keyOf[i] ??= undirectedKey(edges[i]!, key));
   for (const list of outgoing.values()) {
     if (list.length < 2) continue;
     list.sort((a, b) => {
@@ -530,8 +611,8 @@ function chainLoops(edges: readonly Edge[]): Chain[] {
     return best;
   };
 
-  for (const key of startKeys) {
-    for (const seed of outgoing.get(key) ?? []) {
+  for (const start of startKeys) {
+    for (const seed of outgoing.get(start) ?? []) {
       if (used[seed]) continue;
       const loop: EdgeLoop = [];
       let cur: number | null = seed;
@@ -541,8 +622,8 @@ function chainLoops(edges: readonly Edge[]): Chain[] {
         used[cur] = true;
         const e = edges[cur]!;
         loop.push(e);
-        const endKey = pointKey(edgeEnd(e));
-        if (endKey === key) {
+        const endKey = key(edgeEnd(e));
+        if (endKey === start) {
           closed = true;
           break;
         }
@@ -567,10 +648,10 @@ function mergeableLines(a: Edge, b: Edge): boolean {
 }
 
 /** Are two consecutive edges arcs of the SAME circle, turning the same way? */
-function mergeableArcs(a: Edge, b: Edge): boolean {
+function mergeableArcs(a: Edge, b: Edge, key: KeyOf): boolean {
   if (a.t !== "arc" || b.t !== "arc") return false;
   return (
-    pointKey(a.arc.center) === pointKey(b.arc.center) &&
+    key(a.arc.center) === key(b.arc.center) &&
     Math.abs(a.arc.r - b.arc.r) < 1e-9 &&
     Math.sign(a.arc.sweep) === Math.sign(b.arc.sweep)
   );
@@ -597,25 +678,25 @@ function mergeEdges(a: Edge, b: Edge): Edge {
  * middle keeps a seam at an arbitrary point, and the loop's byte output would depend on
  * where the walk began.
  */
-function mergeInner(loop: EdgeLoop): EdgeLoop {
+function mergeInner(loop: EdgeLoop, key: KeyOf): EdgeLoop {
   if (loop.length < 2) return loop;
   const out: EdgeLoop = [];
   for (const e of loop) {
     const prev = out[out.length - 1];
-    if (prev && (mergeableLines(prev, e) || mergeableArcs(prev, e))) out[out.length - 1] = mergeEdges(prev, e);
+    if (prev && (mergeableLines(prev, e) || mergeableArcs(prev, e, key))) out[out.length - 1] = mergeEdges(prev, e);
     else out.push(e);
   }
   return out;
 }
 
 /** {@link mergeInner}, plus the wrap-around join. Only valid on a CLOSED chain. */
-function mergeRuns(loop: EdgeLoop): EdgeLoop {
-  const out = mergeInner(loop);
+function mergeRuns(loop: EdgeLoop, key: KeyOf): EdgeLoop {
+  const out = mergeInner(loop, key);
   // Wrap-around: the last edge may continue into the first.
   while (out.length > 2) {
     const last = out[out.length - 1]!;
     const first = out[0]!;
-    if (!mergeableLines(last, first) && !mergeableArcs(last, first)) break;
+    if (!mergeableLines(last, first) && !mergeableArcs(last, first, key)) break;
     // A full circle must not be merged away into a zero-sweep nothing: two half-turns of
     // the same circle ARE the loop, and joining them leaves one edge with no room to be
     // both the start and the end of itself.
@@ -629,12 +710,12 @@ function mergeRuns(loop: EdgeLoop): EdgeLoop {
 }
 
 /** Rotate a loop so it begins at its lexicographically smallest vertex key. */
-function canonicalRotation(loop: EdgeLoop): EdgeLoop {
+function canonicalRotation(loop: EdgeLoop, key: KeyOf): EdgeLoop {
   if (loop.length < 2) return loop;
   let at = 0;
-  let best = pointKey(edgeStart(loop[0]!));
+  let best = key(edgeStart(loop[0]!));
   for (let i = 1; i < loop.length; i++) {
-    const k = pointKey(edgeStart(loop[i]!));
+    const k = key(edgeStart(loop[i]!));
     if (k < best) {
       best = k;
       at = i;
@@ -658,13 +739,13 @@ function canonicalRotation(loop: EdgeLoop): EdgeLoop {
  * the canonical rotation, which is only meaningful on a cycle. So an unclosed chain is
  * passed through with its inner merges only, exactly as computed.
  */
-function finishLoops(chains: Chain[]): EdgeLoop[] {
+function finishLoops(chains: Chain[], key: KeyOf): EdgeLoop[] {
   const out = chains
-    .map((c) => (c.closed ? canonicalRotation(mergeRuns(c.edges)) : mergeInner(c.edges)))
+    .map((c) => (c.closed ? canonicalRotation(mergeRuns(c.edges, key), key) : mergeInner(c.edges, key)))
     .filter((l) => l.length > 0 && Math.abs(loopArea(l)) >= MIN_LOOP_AREA);
   out.sort((a, b) => {
-    const ka = pointKey(edgeStart(a[0]!));
-    const kb = pointKey(edgeStart(b[0]!));
+    const ka = key(edgeStart(a[0]!));
+    const kb = key(edgeStart(b[0]!));
     return ka < kb ? -1 : ka > kb ? 1 : Math.abs(loopArea(b)) - Math.abs(loopArea(a));
   });
   return out;
@@ -744,29 +825,15 @@ export function joinWalls(
   if (universe.length === 0) return empty;
 
   const pieces = splitAll(universe, intern);
+  const key = keyMemo();
 
   // GROUP the sub-edges by canonical key. This is the deduplication (a face two walls
-  // share is emitted once) AND the coincidence detection the exact classification needs,
-  // in one pass — which is why it happens BEFORE classification and not after it.
-  const edgeGroups: EdgeGroup[] = [];
-  const byKey = new Map<string, EdgeGroup>();
-  // Every sub-edge's canonical key, computed ONCE. Building one is not cheap for an arc
-  // (six quantised fields, one of them a midpoint that costs a trig evaluation).
-  const pieceKeys = pieces.map((t) => undirectedKey(t.edge));
-  for (let pi = 0; pi < pieces.length; pi++) {
-    const t = pieces[pi]!;
-    const key = pieceKeys[pi]!;
-    let g = byKey.get(key);
-    if (!g) {
-      g = { key, rep: t.edge, mid: edgeMid(t.edge), coincident: [] };
-      byKey.set(key, g);
-      edgeGroups.push(g);
-    }
-    const plusSide = sameDirection(g.rep, t.edge);
-    if (!g.coincident.some((c) => c.kind === t.kind && c.owner === t.owner && c.plusSide === plusSide)) {
-      g.coincident.push({ kind: t.kind, owner: t.owner, plusSide });
-    }
-  }
+  // share is emitted once) and it happens BEFORE classification, so N coincident sub-edges
+  // cost one pair of readings rather than N.
+  const edgeGroups = groupEdges(
+    pieces.map((t) => t.edge),
+    key,
+  );
 
   // Spatial index over each wall's BAND EDGES, so the containment question reaches only
   // the walls actually near the point. Indexing the wall's whole bbox instead is what
@@ -774,9 +841,18 @@ export function joinWalls(
   // midpoint wound every wall in the plan.
   const reachOf = (w: JoineryWall): number => (w.thickness / 2) * REACH_FACTOR;
   const edgeBoxes: GridBox[] = [];
-  const entries: Array<{ wall: JoineryWall; edge: Edge; reach: number }> = [];
+  const entries: Array<{ wall: JoineryWall; edge: Edge; reach: number; slot: number }> = [];
+  // One SLOT per distinct wall `index`, so `contextAt` can de-duplicate candidate walls by
+  // index with a stamp array instead of a `Set` per group. Keyed by the index VALUE, as the
+  // `Set` was, so two walls that shared an index would still collapse to the first one met.
+  const slotOf = new Map<number, number>();
   for (const w of wallsSorted) {
     const reach = reachOf(w);
+    let slot = slotOf.get(w.index);
+    if (slot === undefined) {
+      slot = slotOf.size;
+      slotOf.set(w.index, slot);
+    }
     for (const l of w.loops) {
       for (const e of l) {
         const b = edgeBBox(e);
@@ -785,7 +861,7 @@ export function joinWalls(
         const g = reach + SNAP_MM * 4;
         const box = { minX: b.minX - g, minY: b.minY - g, maxX: b.maxX + g, maxY: b.maxY + g };
         edgeBoxes.push(box);
-        entries.push({ wall: w, edge: e, reach: g });
+        entries.push({ wall: w, edge: e, reach: g, slot });
       }
     }
   }
@@ -812,16 +888,19 @@ export function joinWalls(
    * what the group's coincident members are - so including it would collapse the offset
    * to nothing on every ordinary edge.
    */
+  // `seen[slot] === query` marks a wall already taken by the current `contextAt` call.
+  const seen = new Int32Array(slotOf.size).fill(-1);
+  let query = 0;
   const contextAt = (mid: Point, cap: number): { walls: JoineryWall[]; dmin: number } => {
-    const seen = new Set<number>();
+    const stamp = query++;
     const walls: JoineryWall[] = [];
     let dmin = Number.POSITIVE_INFINITY;
     wallIndex.forEach(pointBox(mid), (i) => {
       const en = entries[i]!;
       const d = edgeDist(mid, en.edge);
       if (d >= SNAP_MM && d < dmin) dmin = d;
-      if (d > en.reach || seen.has(en.wall.index)) return;
-      seen.add(en.wall.index);
+      if (d > en.reach || seen[en.slot] === stamp) return;
+      seen[en.slot] = stamp;
       walls.push(en.wall);
     });
     cutIndex.forEach(pointBox(mid), (c) => {
@@ -847,7 +926,7 @@ export function joinWalls(
     const n = perp(edgeTangentAt(g.rep, g.mid));
     const read = (sign: 1 | -1): Owner => {
       const p = { x: g.mid.x + sign * n.x * d, y: g.mid.y + sign * n.y * d };
-      return ownerAt(p, ctx.walls, cutIndex.queryBox(pointBox(p)));
+      return ownerAt(p, ctx.walls, cutIndex);
     };
     return { edge: g.rep, plus: read(1), minus: read(-1) };
   });
@@ -863,10 +942,22 @@ export function joinWalls(
     outlineEdges.push(inPlus ? c.edge : reverseEdge(c.edge));
   }
 
+  const outline = finishLoops(chainLoops(outlineEdges, key), key);
+
   // FILL of group g: exactly one side owned BY THAT GROUP. A thinner wall's cap buried in
   // a thicker wall of another material therefore belongs to the thicker one, and two
   // groups' fills tile without overlapping.
   const fills = groups.map((group) => {
+    // When every side of every edge reads the same for "owned by `group`" as for "owned",
+    // this pass keeps and directs exactly the edges the outline pass did, in the same
+    // order (a reversed one as a fresh but equal object), and chaining reads only the
+    // edges' values. So the outline's loops ARE this fill - the common case of a
+    // single-material plan, which no longer chains the same edges twice. The arrays are
+    // copied so the two results share none; the edges were always shared.
+    const asOutline = classified.every(
+      (c) => (c.plus?.group === group) === (c.plus !== null) && (c.minus?.group === group) === (c.minus !== null),
+    );
+    if (asOutline) return { group, loops: outline.map((l) => l.slice()) };
     const kept: Edge[] = [];
     for (const c of classified) {
       const inPlus = c.plus?.group === group;
@@ -874,10 +965,10 @@ export function joinWalls(
       if (inPlus === inMinus) continue;
       kept.push(inPlus ? c.edge : reverseEdge(c.edge));
     }
-    return { group, loops: finishLoops(chainLoops(kept)) };
+    return { group, loops: finishLoops(chainLoops(kept, key), key) };
   });
 
-  return { outline: finishLoops(chainLoops(outlineEdges)), fills };
+  return { outline, fills };
 }
 
 /**
