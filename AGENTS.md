@@ -34,8 +34,8 @@ npm run gen:all       # every gen:* generator
 - Every new language form ships a byte-identity law pinned by test (SHA-256 of SVG + `describe()` +
   `lint()` over the examples). Never bless a golden to green a suite.
 - Heights draw nothing; `--view` measures nothing (`describe()`/`lint()` never learn it).
-- A drawing change never moves `describe()`/`lint()`; a glyph never gains handedness
-  (`test/glyph-chirality.test.ts`).
+- A drawing change never moves `describe()`/`lint()` over the corpus; a glyph never gains
+  handedness and a loss is allow-listed (`test/glyph-chirality.test.ts`).
 - `npm run check` does not typecheck `test/`; `typecheck:all` does.
 - A clean auto-merge of a MOVED function another branch MODIFIED is not evidence: diff the moved
   body, run both branches' fixtures together.

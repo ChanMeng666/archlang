@@ -12,6 +12,9 @@ paths:
   - "src/elements/outdoor.ts"
   - "src/elements/vertical-glyphs.ts"
   - "src/hatches.ts"
+  - "src/fixtures-catalog.ts"
+  - "src/elements/furniture.ts"
+  - "src/sheet-tables.ts"
 ---
 
 # Drawing a symbol
@@ -33,14 +36,16 @@ The drawing language and why: `docs/adr/0023-plan-symbol-drawing-language.md`.
   on its second caller. Build a mirrored or turned part by exact reflection or a coordinate swap
   (as `chairAt` does), never by float rotation; decide a shape's structure from radii and extents,
   never from derived coordinates.
-- A `symmetric` family stays exact under every quarter-turn and mirror of a square (the module's
-  D4 sweep). No glyph ever GAINS handedness: run `test/glyph-chirality.test.ts`; a decorative
-  loss goes in its `LOST_HANDEDNESS` with the reason. Re-measuring its baselines:
-  `docs/testing.md` §3.
+- Target: a `symmetric` family is exact under every quarter-turn and mirror of a square.
+  `pool_table` is a known exception (see the backlog). Pinned for the pilots in
+  `test/glyph-chirality.test.ts` and by the module's own sweep where one exists; add the family to
+  it. No glyph ever GAINS handedness: run `test/glyph-chirality.test.ts`; a decorative loss goes
+  in its `LOST_HANDEDNESS` with the reason. Re-measuring its baselines: `docs/testing.md` §3.
 - Ground-material work never re-frames or restyles a wall material's hatch.
 - Look at it: `npm run cli -- compile <plan> -f png -s 3 -o <scratch>/x.png`, crop to the symbol,
   and compare on a `paper` plan at `scale 1:50` and `scale 1:100` and under each `theme`
   (`blueprint`, `mono`, `dark`, `presentation` and the default).
-- A redraw moves SVG only: `describe()`, `lint()` and diagnostics stay byte-identical. The goldens
+- A redraw moves SVG only: over the corpus `describe()`, `lint()` and diagnostics stay
+  byte-identical (the symmetry-fact exception: ADR 0023, decision 7). The goldens
   it moves and how to update them: `docs/testing.md` §2–3. Never `-u` group 1 of
   `test/fixture-byte-identity.test.ts`.

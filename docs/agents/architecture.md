@@ -65,10 +65,8 @@ source (.arch)
 - `elements/glyph-lib.ts` `glyphCtx`: tone follows weight (`tone`: `thin` → the derived `ink`,
   `symbolInk`; `extraThin` → `furnitureStroke`); the curve builders emit `path` loops of ≤ 120° arcs.
   `vertical-glyphs.ts` outlines in the same ink
-- `elements/glyph-chirality.ts` derives a symbol's handedness from its marks (`marksEqual`, numbers
-  read through the tie-robust `keyNum`); `mirrorGlyph` reflects a mirrored instance only when handed,
-  and `analyze/symmetry.ts` `handed()` asks the same question, so `describe --facts symmetry` reads
-  the glyph art
+- `elements/glyph-chirality.ts` a symbol's handedness, derived from its marks (`marksEqual`); read by
+  `mirrorGlyph` and by `analyze/symmetry.ts` `handed()`
 - `scene-build.ts` `renderOrder()` draws `underlay` fixtures before the other furniture;
   `RenderCtx.floorAt` (`registry.ts`) answers "inside the building?" from rooms and voids, the probe
   that puts a window's sill on the side with no floor

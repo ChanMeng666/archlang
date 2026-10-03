@@ -38,7 +38,8 @@ inside one symbol. The outline is the first node a glyph emits, which makes it t
 
 **3. True curves.** A round outline is a `path` of straight edges and minor arcs, each at most
 120° (`roundedRectPath`, `ovalPath` — the four-centre oval — and `bulgeArc`), which every
-backend lowers natively (SVG `A`, a PDF arc, a DXF `ARC`). The tessellated helpers stay in
+SVG and DXF draw as true arcs (SVG `A`, a DXF `ARC`; PDF
+lowers them to Béziers). The tessellated helpers stay in
 `glyph-lib.ts`, and no glyph draws with them.
 
 **4. A dash means hidden or above the cut plane, never decoration.** An upper cabinet, a range
@@ -61,13 +62,17 @@ hue, and leaves the defaults alone: the labelled rectangle an unknown word draws
 move. Vertical-circulation outlines use the same ink (`src/elements/vertical-glyphs.ts`).
 
 **7. What a redraw may move.** A drawing change moves SVG (and the PNG/ASCII goldens and
-`examples/*.svg` that follow it) and nothing else: `describe()`, `lint()` and
-`compile().diagnostics` stay byte-identical. A symbol may never GAIN handedness at a footprint
-where it was symmetric; it may lose it only through `LOST_HANDEDNESS` with the reason its old
-handed mark was decorative (`test/glyph-chirality.test.ts`, against the survey and grid
-measured on the tree before the redraw). A family catalogued `symmetric` stays exact under
-every quarter-turn and mirror of a square footprint (the per-module D4 sweeps in
-`test/glyphs-*.test.ts`).
+`examples/*.svg` that follow it); over the corpus `describe()`, `lint()` and
+`compile().diagnostics` stay byte-identical. The one fact a drawing can move is the opt-in
+`describe --facts symmetry`, because a piece's `hand` is read off its drawn symbol: a symbol may
+never GAIN handedness where it was symmetric, and it may lose it only through `LOST_HANDEDNESS`
+with the reason its old handed mark was decorative (`test/glyph-chirality.test.ts`). Such a loss
+can legitimately move that fact: two unmirrored copies of the family standing in mirror
+positions no longer break the reflection with their `hand`, so the plan gains an axis. The target for a family catalogued `symmetric` is exactness under every
+quarter-turn and mirror of a square footprint; `pool_table` is a known exception (`docs/backlog.md`
+D.6). It is pinned for the pilots in `test/glyph-chirality.test.ts` and by each module's sweep
+where one exists (`glyphs-living`, `glyphs-outdoor`, and `plant`/`meeting_table` in
+`glyphs-misc`).
 
 ## Alternatives rejected
 
@@ -87,9 +92,9 @@ every quarter-turn and mirror of a square footprint (the per-module D4 sweeps in
 - The example SVGs, the scene and snapshot suites, the PNG goldens and the SVG-bearing
   byte-identity rows moved once; each re-measured row was proved SVG-only.
 - A symmetric symbol can read handed through an ulp or a decimal rounding tie alone, which
-  flips `describe --facts symmetry`. Shape builders decide structure from radii and extents,
-  never from derived coordinates, and the handedness key reads numbers through `keyNum` (a
-  1e-7 mm nudge off the `fmt4` ties).
-- Redraws are held by the survey, the grid baseline, the D4 sweeps and the containment checks,
+  flips `describe --facts symmetry`. That is why shape builders decide structure from radii and
+  extents, never from derived coordinates, and why the handedness key reads numbers through
+  `keyNum` (a 1e-7 mm nudge off the `fmt4` ties).
+- Redraws are held by the handedness survey and grid, the D4 sweeps and the containment checks,
   not by eye alone; the working checklist is `.claude/rules/glyphs.md`.
 - Open items found during the redraw are in `docs/backlog.md`, section D.

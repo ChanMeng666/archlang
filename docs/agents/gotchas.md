@@ -40,19 +40,14 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 
 ## Drawing (symbols)
 
-- **`describe --facts symmetry` reads the glyph art.** A furniture piece's `hand` comes from
-  `handed()` (`src/analyze/symmetry.ts`), which asks the drawn symbol whether it differs from its
-  mirror image. Symptom: a drawing-only change moves a `describe` fact. Fix the glyph; never
-  special-case the fact.
-- **A symmetric glyph can read handed at some sizes and positions only.** A shape decided by
-  comparing derived coordinates (a stadium, radius half its short side, grows a zero-length edge on one
-  side by an ulp), or a mark and its mirror partner straddling a `fmt4` tie (integer mm × a
-  three-decimal fraction lands on `x.xxxx5`). Symptom: handed at one absolute position or
-  footprint and not another (why `test/handedness-survey.ts` sweeps offsets). Fix: decide structure from radii and extents (`roundedRectPath`); the key is
-  tie-robust (`keyNum`), so a baseline and a tip are compared only with the same key.
-- **The default `furnitureStroke`/`furnitureFill` cannot change**: the unknown-word labelled
-  rectangle paints with them, and it is a group-1 permanent pin in
-  `test/fixture-byte-identity.test.ts`. A darker outline is derived (`symbolInk`), not a new default.
+- **A drawing-only change moves `describe --facts symmetry`.** A piece's `hand` is read off its
+  drawn symbol. Unless it is an allow-listed loss of handedness, fix the glyph, never the fact
+  (`docs/adr/0023-plan-symbol-drawing-language.md`, decision 7).
+- **A symmetric glyph reads handed at one footprint or position and not another.** Cause: a
+  structure decided by an ulp, or a mark and its mirror straddling a `fmt4` tie (compounded
+  fractions of the footprint land on `x.xxxx5`). Remedy: `.claude/rules/glyphs.md`; why: ADR 0023.
+- **Changing the default `furnitureStroke`/`furnitureFill` turns group 1 of
+  `test/fixture-byte-identity.test.ts` red** — always a bug (ADR 0023, decision 6).
 - **`vitest -u` on `test/fixture-byte-identity.test.ts` rewrites every failing inline snapshot in
   the file, group 1 included.** Scope it: `-u -t "re-blessed when redrawn"`, then confirm group 1
   is untouched in the diff.
