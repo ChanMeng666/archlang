@@ -1273,6 +1273,78 @@ that run after both cost more than either counts, each within the element cap:
 
 ---
 
+## Found in the symbol redraw ([ADR 0023](adr/0023-plan-symbol-drawing-language.md))
+
+Things the plan-symbol redraw turned up and deliberately did not widen into. Each was re-run on
+`main` for this entry through the CLI or the source named in it.
+
+### D.1 · `garden-house` seats its tables twice — `todo`
+
+`dining_table` and `outdoor_table` draw their own chairs (`chairAt`, `glyphs-living.ts`;
+`glyphs-outdoor.ts`), and `examples/garden-house.arch` still places four separate `chair`s round
+its dining table and four `outdoor_chair`s round its patio table. Re-run: a plan holding just the
+kitchen's `dining_table at (10200,10800) size 1600x900` and its four chairs, compiled
+`-f png -s 3`, draws eight tucked chairs on the table and the four free ones 200 mm beyond it.
+Remove the separate chairs (or swap each table for a `table`); either moves the example's goldens.
+
+### D.2 · `hillside-villa`'s piano faces its keyboard into the wall — `todo`
+
+A `piano` draws its keyboard along the top edge. `examples/hillside-villa.arch` places it
+`at (3200,4400) size 1300x1300` with no `rotate`, so the keys sit 100 mm off the 200 mm
+`w_l1_band_w` face at y = 4300, and the square footprint is too shallow for the bench (it needs a
+depth of 1.3 widths). Re-run: that wall, room and piano alone, `-f png -s 2`. A `rotate` (and a
+deeper footprint for the bench) in the example fixes it.
+
+### D.3 · Ground-material legend swatches still show few marks — `todo`
+
+The swatch frame (`GROUND_SWATCH_FRAME`, `src/hatches.ts`) put each pattern's own marks in view,
+but at swatch size they are few. Re-run: `examples/garden-house.arch -f png -s 6`, cropped to the
+legend: `grass` shows two tufts, `gravel` three marks, `tarmac` three dots. A
+denser swatch needs a smaller `zoom` per material, which is a judgement per pattern.
+
+### D.4 · Fence ticks and window sills draw outside `bounds()` — `declared`
+
+`fence.bounds()` is the run's points, and every post tick stands `7 × thin` either side of the run;
+a corner tick lies along the bisector, past both runs. Re-run: `fence picket { (0,0) (6000,0)
+(6000,4000) }` draws ticks to y = −67.2 and the corner tick from (6067.2, −67.2) to
+(5932.8, 67.2). `window.bounds()` is empty on purpose (its comment); the sill stands 0.2 t proud
+of the outside face, and `window.measures()` covers it. The page margin absorbs both today.
+
+### D.5 · A hatch's `origin`/`zoom` is honoured by SVG only — `todo`
+
+`toDxf` writes a `HATCH` from the material, scale and angle and drops `origin` and `zoom`
+(`src/export/dxf.ts`); PDF fills every hatch with the solid poché base, so neither applies there.
+Re-run: `examples/garden-house.arch -f dxf` carries the legend and 23 `HATCH` entities on level 1,
+so its ground swatches tile from the drawing origin at full size, the framing the SVG swatch was
+moved off. A plugin's hatch with an `origin` is affected the same way.
+
+### D.6 · `pool_table` is catalogued `symmetric` but is not quarter-turn exact — `todo`
+
+On a square footprint its rail, cushion and pockets follow the long axis, so a quarter-turn is a
+different drawing; mirror and half-turn are exact. Re-run: `fixtureGlyph("pool_table", …)` against
+`rotateNode(…, 90)` under `marksEqual`, for squares of 1–2400 mm at offsets 0, 100 and 1000:
+false at every one. No D4 sweep covers it (`glyphs-misc.test.ts` sweeps `plant` and
+`meeting_table`). `rug` and `shrub`, which failed the same sweep before the redraw, now pass. With
+`requiresWall: false` and no `directional`, the flag changes no orientation decision; drop it or
+make the square drawing D4-exact.
+
+### D.7 · A sheet-table hairline is a different width in SVG and PDF — `todo`
+
+`rule(…, hairline)` in `src/sheet-tables.ts` sets `paint.width = thin × 0.5` and
+`lineWeight: "extraThin"`. SVG follows the weight (`thin × 13/18`), PDF the width. Re-run:
+`examples/garden-house.arch` SVG, around the legend: 18 (thin) and 13 (hairline) only; the PDF
+backend reads `paint.width` (`src/export/pdf.ts`), so it draws 9. Set the width from
+`weightWidth("extraThin", sizes)`, which moves PDF only.
+
+### D.8 · The before/after specimen tool lives outside the repo — `todo` (a want)
+
+Judging a redraw needs every family drawn old against new at one footprint, at 1:50 and 1:100
+and in each theme. The tool used for this redraw was never committed; `scripts/` has no
+equivalent. Consider promoting a `scripts/specimen` that takes two checkouts and writes one PNG
+sheet, kept outside `check:drift`.
+
+---
+
 ## Wave 5 — deferred by name in v1.28.0 / v1.29.0
 
 Each of these was **named in `CHANGELOG.md` at the time it was skipped**, not quietly omitted, so
