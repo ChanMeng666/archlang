@@ -38,6 +38,27 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   frame before writing it** (`LintContext.frameOf`, `src/lint.ts`), or the machine-applicable edit
   is correct in plan coordinates and wrong once `arch fix` writes it back into the component body.
 
+## Drawing (symbols)
+
+- **A drawing-only change moves `describe --facts symmetry`.** A piece's `hand` is read off its
+  drawn symbol. Unless it is an allow-listed loss of handedness, fix the glyph, never the fact
+  (`docs/adr/0023-plan-symbol-drawing-language.md`, decision 7).
+- **A symmetric glyph reads handed at one footprint or position and not another.** Cause: a
+  structure decided by an ulp, or a mark and its mirror straddling a `fmt4` tie (compounded
+  fractions of the footprint land on `x.xxxx5`). Remedy: `.claude/rules/glyphs.md`; why: ADR 0023.
+- **Changing the default `furnitureStroke`/`furnitureFill` turns group 1 of
+  `test/fixture-byte-identity.test.ts` red** — always a bug (ADR 0023, decision 6).
+- **`vitest -u` on `test/fixture-byte-identity.test.ts` rewrites every failing inline snapshot in
+  the file, group 1 included.** Scope it: `-u -t "re-blessed when redrawn"`, then confirm group 1
+  is untouched in the diff.
+- **`npm run check:drift` regenerates in place.** A red run leaves the regenerated artifacts
+  (`examples/*.svg` after any rendering change) modified in the working tree. Read the diff, then
+  commit them or `git checkout --` them; do not mistake them for your own edits.
+- **A `.gitleaksignore` fingerprint names a commit.** A re-measured digest row keyed by a key-ish
+  word (`accessible`) is allowlisted at the branch commit that introduced it, so the branch must
+  land by a merge commit: a squash or rebase re-creates the line in a new commit and the nightly
+  full-history scan flags it again.
+
 ## Docs & prose
 
 - **A quoted dimension must name its convention or carry a tilde.** A plan with wall thickness has

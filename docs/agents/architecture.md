@@ -61,7 +61,18 @@ source (.arch)
   `elements/glyph-lib.ts` shared drawing helpers (a helper moves here verbatim on its second
   caller); `elements/glyphs-*.ts` the art by domain; `fixtures-catalog.ts` the semantics
   (`requiresWall` = services only, `directional` = has a back to turn to a wall, `underlay` = lies
-  flat, read only via `solidFurniture()`)
+  flat, read only via `solidFurniture()`). Drawing language: `docs/adr/0023-plan-symbol-drawing-language.md`
+- `elements/glyph-lib.ts` `glyphCtx`: tone follows weight (`tone`: `thin` → the derived `ink`,
+  `symbolInk`; `extraThin` → `furnitureStroke`); the curve builders emit `path` loops of ≤ 120° arcs.
+  `vertical-glyphs.ts` outlines in the same ink
+- `elements/glyph-chirality.ts` a symbol's handedness, derived from its marks (`marksEqual`); read by
+  `mirrorGlyph` and by `analyze/symmetry.ts` `handed()`
+- `scene-build.ts` `renderOrder()` draws `underlay` fixtures before the other furniture;
+  `RenderCtx.floorAt` (`registry.ts`) answers "inside the building?" from rooms and voids, the probe
+  that puts a window's sill on the side with no floor
+- hatch prim `origin`/`zoom` (`scene.ts`) re-frame one region's tile, honoured by SVG (and so PNG) only; set by
+  the legend's ground swatches (`hatches.ts` `groundSwatchFrame`, `sheet-tables.ts`)
+- `backends/ascii.ts` pass 2 carves an opening from its one unstroked cover polygon only
 - `vocabulary.ts` room-label matching · `intent.ts` + `intent-concepts.ts` intent channel (shared
   with `eval/`)
 - `expr.ts` holds the evaluation step meter (`MAX_EVAL_STEPS`): one step per node evaluated, per

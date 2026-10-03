@@ -47,8 +47,9 @@
  * "A different drawing" is measured at the finest precision any backend serializes — the
  * 0.0001 mm of {@link fmt4}, the DXF formatter — read through {@link keyNum}, which first
  * nudges every value down by {@link TIE_NUDGE} (1e-7 mm). The nudge is not a tolerance on
- * the drawing; it moves the ROUNDING BOUNDARY off the decimal ties. Integer millimetres times
- * the glyphs' three-decimal fractions land exactly on `x.xxxx5` (a sink's drain at 630.13125,
+ * the drawing; it moves the ROUNDING BOUNDARY off the decimal ties. Compounded fractions — a
+ * fraction of an inset of a fraction of the footprint — carry five or more decimals and can
+ * land exactly on `x.xxxx5` (a sink's drain at 630.13125,
  * a drawer front at 1474.00375), and there a mark and its mirror partner — computed along
  * different paths, a few ulps apart — rounded to opposite sides, so a symmetric symbol read as
  * handed at some footprints and positions and flipped `describe --facts symmetry`. Shifted by

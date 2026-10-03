@@ -268,6 +268,11 @@ const PAGE_META = [
     "ADR 22 — exact decisions, bounded input",
     "ArchLang decides its geometry checks exactly where inputs allow, measures cross-engine determinism, and reports every numeric or size bound as a catalogued diagnostic.",
   ],
+  [
+    "/adr/0023-plan-symbol-drawing-language",
+    "ADR 23 — the plan-symbol drawing language",
+    "How ArchLang draws its plan symbols: a pen and tone hierarchy, a derived outline ink, true arcs, dashes for hidden lines, and no shadows or new handedness.",
+  ],
 ] as const;
 
 type PageMeta = { readonly title: string; readonly description: string };
