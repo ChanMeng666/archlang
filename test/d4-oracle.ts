@@ -30,6 +30,10 @@
  * printed by `formatPlan` from a synthesized AST whose settings are copied off the example,
  * so the sheet, `north`, `site` and `dims auto` are shared.
  *
+ * A multi-storey plan cannot be imported whole (its `level` blocks would be dropped), so it
+ * is built differently — every storey a component, every storey placed by the same g — and
+ * compared storey by storey with the same machinery: see "Multi-storey buildings" below.
+ *
  * ## What is compared, and why some things are not
  *
  * {@link summaryFacts} splits `describe()` into keyed facts, each tagged with how the group
@@ -83,11 +87,11 @@
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve as resolvePath, sep } from "node:path";
-import type { NorthDir, PlaceNode, PlaceRotate, PlanNode, Point } from "../src/ast.js";
-import { buildDoorAccessGraph, DEFAULT_TOL, resolvePlan } from "../src/analyze.js";
+import type { LevelNode, NorthDir, PlaceNode, PlaceRotate, PlanNode, Point, RoofNode } from "../src/ast.js";
+import { buildDoorAccessGraph, buildingRoomReach, DEFAULT_TOL, resolvePlan, storeyGrounded } from "../src/analyze.js";
 import { type CirculationOverlay, computeCirculationOverlay, navExtent } from "../src/analyze/circulation.js";
-import type { RDoor, RFurniture, ROpening, RVoid } from "../src/ir.js";
-import { verticalsOf } from "../src/vertical.js";
+import type { RDoor, RFurniture, ROpening, ResolvedLevel, RVoid } from "../src/ir.js";
+import { arrivalRuns, verticalConnections, verticalReach, verticalsOf } from "../src/vertical.js";
 import { northQuarterTurns } from "../src/describe.js";
 import type { Diagnostic, FixSuggestion, Span } from "../src/diagnostics.js";
 import { formatPlan } from "../src/format.js";
@@ -108,7 +112,7 @@ import {
   toCompass,
   type World,
 } from "../src/index.js";
-import { buildLintContext } from "../src/lint/context.js";
+import { type BuildingContext, buildLintContext } from "../src/lint/context.js";
 import { LINT_RULES, reconcileSharedFixes } from "../src/lint.js";
 import { parse } from "../src/parser.js";
 
@@ -1479,7 +1483,55 @@ const unprefix = (v: unknown): unknown =>
  * must be byte-for-byte the same.
  */
 function t0View(obs: Observation, side: "P" | "P0", rel: string): Record<string, unknown> {
-  const s = JSON.parse(JSON.stringify(obs.summary)) as Record<string, unknown> & SceneSummary;
+  const ast = side === "P" ? astOf(rel) : parse(obs.src).plan;
+  const sheet = new Set([ast?.paperSpan, ast?.scaleSpan].filter((x) => x).map((x) => `${x!.start}-${x!.end}`));
+  const parseWarnings =
+    side === "P"
+      ? new Set(
+          parse(obs.src)
+            .diagnostics.filter((d) => d.severity === "warning")
+            .map((d) => `${d.code}@${d.span?.start}-${d.span?.end}`),
+        )
+      : new Set<string>();
+  return t0Normalise(obs.summary, obs.lint, {
+    sheet,
+    drop: (d) => parseWarnings.has(`${d.code}@${d.span?.start}-${d.span?.end}`),
+    unprefix: side === "P0",
+  });
+}
+
+/** What one side of a T0 comparison has by construction, so it can be taken out. */
+interface T0Side {
+  /** The byte spans of THIS side's own `paper`/`scale` statements (a sheet verdict's anchor). */
+  sheet: ReadonlySet<string>;
+  /** A diagnostic this side has by construction and the other cannot. */
+  drop?: (d: Diagnostic) => boolean;
+  /** Carry a byte offset into THIS side's root source to the other side's (identity when absent). */
+  offset?: (o: number) => number;
+  /** Strip the instance prefix (the placed side). */
+  unprefix: boolean;
+}
+
+/** A diagnostic's T0 view: code, severity, span (raw offsets, or `sheet`), level, fix edits. */
+function t0Diag(d: Diagnostic, side: T0Side): Record<string, unknown> {
+  const at = (sp: Span, file: string | undefined): [number, number] =>
+    file === undefined && side.offset ? [side.offset(sp.start), side.offset(sp.end)] : [sp.start, sp.end];
+  return {
+    code: d.code ?? null,
+    severity: d.severity,
+    span:
+      d.span === undefined
+        ? null
+        : d.file === undefined && side.sheet.has(`${d.span.start}-${d.span.end}`)
+          ? "sheet"
+          : at(d.span, d.file),
+    level: d.level ?? null,
+    fixes: (d.fixes ?? []).map((f) => f.edits.map((e) => ({ span: at(e.span, f.file ?? d.file), newText: e.newText }))),
+  };
+}
+
+function t0Normalise(summary: SceneSummary, lint: Observation["lint"], side: T0Side): Record<string, unknown> {
+  const s = JSON.parse(JSON.stringify(summary)) as Record<string, unknown> & SceneSummary;
   delete s.instances;
   delete s.axes;
   for (const r of s.rooms) {
@@ -1500,36 +1552,13 @@ function t0View(obs: Observation, side: "P" | "P0", rel: string): Record<string,
   // P draws ungrouped is grouped under the instance in P₀.
   for (const row of s.schedule ?? [])
     if ((row as { zone?: string }).zone === INSTANCE) delete (row as { zone?: string }).zone;
-  const ast = side === "P" ? astOf(rel) : parse(obs.src).plan;
-  const sheet = new Set([ast?.paperSpan, ast?.scaleSpan].filter((x) => x).map((x) => `${x!.start}-${x!.end}`));
-  const parseWarnings =
-    side === "P"
-      ? new Set(
-          parse(obs.src)
-            .diagnostics.filter((d) => d.severity === "warning")
-            .map((d) => `${d.code}@${d.span?.start}-${d.span?.end}`),
-        )
-      : new Set<string>();
-  const diagView = (d: Diagnostic) => ({
-    code: d.code ?? null,
-    severity: d.severity,
-    span:
-      d.span === undefined
-        ? null
-        : d.file === undefined && sheet.has(`${d.span.start}-${d.span.end}`)
-          ? "sheet"
-          : [d.span.start, d.span.end],
-    level: d.level ?? null,
-    fixes: (d.fixes ?? []).map((f) => f.edits.map((e) => ({ span: [e.span.start, e.span.end], newText: e.newText }))),
-  });
+  const diagView = (d: Diagnostic) => t0Diag(d, side);
   const out: Record<string, unknown> = {
     ...s,
-    diagnostics: s.diagnostics
-      .filter((d) => !parseWarnings.has(`${d.code}@${d.span?.start}-${d.span?.end}`))
-      .map(diagView),
+    diagnostics: s.diagnostics.filter((d) => !side.drop?.(d)).map(diagView),
   };
-  for (const r of obs.lint) out[`lint.${r.name}`] = r.diags.map(diagView);
-  return side === "P0" ? (unprefix(out) as Record<string, unknown>) : out;
+  for (const r of lint) out[`lint.${r.name}`] = r.diags.map(diagView);
+  return side.unprefix ? (unprefix(out) as Record<string, unknown>) : out;
 }
 
 /**
@@ -1689,6 +1718,421 @@ export function witnessCase(
   const scenes = witnessPair(body, g, { ...opts, fixedSheet: true });
   vs.push(...compareScenes(sceneOf(scenes.p0, world), sceneOf(scenes.gP, world), f));
   return { vs, ctx: caseContext(obs0, obsG, g, f, vs) };
+}
+
+// ---------------------------------------------------------------------------
+// Multi-storey buildings: every storey a component, every storey placed by ONE g
+// ---------------------------------------------------------------------------
+
+/**
+ * The shipped examples the whole-file construction cannot see: every one WITH a `level`
+ * block. COMPUTED, the complement of {@link ELIGIBLE_EXAMPLES}, never a retyped list.
+ */
+export const MULTI_STOREY_EXAMPLES: readonly string[] = SHIPPED_EXAMPLES.filter(
+  (rel) => levelBlocks(astOf(rel)).length > 0,
+);
+
+/** One `level` block of a source, located by its bytes. */
+interface StoreyCut {
+  level: number;
+  /** `level` keyword … the block's closing `}` (exclusive): the statement's span. */
+  start: number;
+  end: number;
+  /** The block's opening `{`. */
+  open: number;
+  /** `level 2 "First floor" height 3000` — the header, verbatim. */
+  header: string;
+  /** The component the body becomes. */
+  name: string;
+  /** The body's own `roof` statements, which stay in the `level` block: each one's span and
+   *  its text there (a `wall <id>` names the PLACED wall, `g.<id>`). */
+  roofs: { start: number; end: number; text: string }[];
+}
+
+function storeyCuts(src: string): StoreyCut[] {
+  const { plan } = parse(src);
+  if (!plan) throw new Error("storeyCuts: the source does not parse");
+  return plan.body
+    .filter((s): s is LevelNode => s.kind === "level")
+    .map((l) => {
+      const { start, end } = l.span!;
+      // The header's `{`: the first one outside the storey name's string literal.
+      let open = -1;
+      let quoted = false;
+      for (let i = start; i < end && open < 0; i++) {
+        if (src[i] === '"') quoted = !quoted;
+        else if (!quoted && src[i] === "{") open = i;
+      }
+      if (open < 0 || src[end - 1] !== "}") throw new Error(`storeyCuts: level ${l.level} has no { … } block`);
+      const name = `storey_${l.level < 0 ? `m${-l.level}` : l.level}`;
+      if (plan.components.has(name)) throw new Error(`storeyCuts: the plan already declares ${name}`);
+      const roofs = l.body
+        .filter((x): x is RoofNode => x.kind === "roof")
+        .map((x) => {
+          // A `roof polygon` is written in storey coordinates that a `place` frame would not
+          // carry from outside the component: not expressible this way, so say so.
+          if (x.polygon) throw new Error(`storeyCuts: level ${l.level}'s \`roof polygon\` cannot ride a place frame`);
+          const text = src.slice(x.span!.start, x.span!.end);
+          const named = x.wall === undefined ? text : text.replace(/(\bwall\s+)(\S+)/, `$1${INSTANCE}.$2`);
+          if (x.wall !== undefined && named === text) throw new Error(`storeyCuts: no \`wall ${x.wall}\` in ${text}`);
+          return { ...x.span!, text: named };
+        });
+      return { level: l.level, start, end, open, header: src.slice(start, open).trimEnd(), name, roofs };
+    });
+}
+
+/** A per-storey wrapper and the map from its byte offsets back to the source's. */
+export interface StoreyWrapper {
+  src: string;
+  /** A byte offset into {@link src} carried to the same byte of the source it was cut from. */
+  toSource(offset: number): number;
+}
+
+/**
+ * P₀ (`g === null`) or gP for a multi-storey source, by BYTE-PRESERVING surgery: every
+ * `level N … { body }` becomes `component storey_N() { body }` in place — its body, and
+ * every byte before, between and after the blocks (settings, `let`s, `set`s, components,
+ * `site`, `axes`, `title`, comments), copied verbatim — and the plan closes with one
+ * `level N … { place storey_N() as g at (t, t) rotate r mirror m }` per storey, its header
+ * verbatim, every storey placed by the SAME g (as `./shaft-equivariance-models.ts` builds
+ * a building).
+ *
+ * Why not the corpus's whole-file import: a whole-file import drops `level` blocks, and an
+ * IMPORTED component does not see its module's plan-global `let`s (`townhouse`'s storeys
+ * are written in `W`, `D`, `SPINE`…), while an inline one sees the root's. So the storeys
+ * are inline, and both sides are the SAME text up to the closing `level` lines: every span
+ * inside a storey is the same byte offset in P₀ and in gP, and {@link StoreyWrapper.toSource}
+ * maps it onto the source P for T0.
+ *
+ * `north`, when given, replaces the value of the plan's one `north` line (the co-rotated
+ * variant); a diagnostic span into the root compares as line/column (`normSpan`), so the
+ * edit moves no fact.
+ */
+export function storeyWrapper(source: string, g: GroupElement | null, opts: { north?: NorthDir } = {}): StoreyWrapper {
+  let src = source;
+  if (opts.north !== undefined) {
+    const line = /^([ \t]*north[ \t]+)\S+/m;
+    if ((src.match(new RegExp(line.source, "gm")) ?? []).length !== 1)
+      throw new Error("storeyWrapper: co-rotating north needs exactly one `north` line");
+    src = src.replace(line, `$1${typeof opts.north === "object" ? opts.north.deg : opts.north}`);
+  }
+  const cuts = storeyCuts(src);
+  if (cuts.length === 0) throw new Error("storeyWrapper: no level block");
+  const close = src.lastIndexOf("}");
+  const t = g?.translate ? translationFor(parse(src).plan!.grid) : 0;
+  const clauses = `${g?.rotate ? ` rotate ${g.rotate}` : ""}${g?.mirror ? ` mirror ${g.mirror}` : ""}`;
+  // A roof belongs to the BUILDING (`E_ROOF_PLACEMENT` refuses one inside a component), so
+  // it is blanked out of its storey's body — same length, newlines kept, so no offset moves —
+  // and written into the storey's `level` block, where the language puts it: verbatim, but
+  // for a `wall <id>`, which there names the placed wall `g.<id>`.
+  let body = src;
+  for (const r of cuts.flatMap((c) => c.roofs)) {
+    body = body.slice(0, r.start) + body.slice(r.start, r.end).replace(/[^\n]/g, " ") + body.slice(r.end);
+  }
+  // Each copied chunk: the wrapper offset it starts at, and the source offset it came from.
+  const chunks: { at: number; from: number }[] = [];
+  let out = "";
+  const copy = (a: number, b: number): void => {
+    chunks.push({ at: out.length, from: a });
+    out += body.slice(a, b);
+  };
+  let cursor = 0;
+  for (const c of cuts) {
+    copy(cursor, c.start);
+    out += `component ${c.name}() `;
+    copy(c.open, c.end);
+    cursor = c.end;
+  }
+  copy(cursor, close);
+  for (const c of cuts) {
+    const roofs = c.roofs.map((r) => `\n    ${r.text}`).join("");
+    out += `  ${c.header} {\n    place ${c.name}() as ${INSTANCE} at (${t}, ${t})${clauses}${roofs}\n  }\n`;
+  }
+  copy(close, src.length);
+  return {
+    src: out,
+    toSource(o) {
+      let k = chunks[0]!;
+      for (const ch of chunks) if (ch.at <= o) k = ch;
+      return k.from + (o - k.at);
+    },
+  };
+}
+
+/**
+ * The multi-storey test source of a building given as level BODIES (the shaft models): a
+ * plain `level` plan — what `./shaft-equivariance-models.ts`'s `placed()` places, written
+ * the way an author would, so the SAME surgery as the shipped examples turns it into P₀.
+ */
+export function levelPlanOf(name: string, storeys: readonly string[]): string {
+  const levels = storeys.map((body, i) => `  level ${i + 1} {${body}\n  }`).join("\n");
+  return `plan "${name}" {\n  units mm\n${levels}\n}\n`;
+}
+
+/**
+ * {@link BuildingContext} per storey, as `lint()` builds it (`buildingContexts`,
+ * `src/lint.ts`, not exported): which runs are shafts, and where a door-less storey is
+ * arrived on. Retyped from the source, so `test/equivariance-storeys.test.ts` holds the
+ * fold built on it to `lint()` itself, storey by storey.
+ */
+function buildingContextsOf(levels: readonly ResolvedLevel[], tol: number): Map<number, BuildingContext> {
+  const inputs = levels.map((l) => ({ level: l.level, ir: l.ir }));
+  const connections = verticalConnections(inputs);
+  const peerIds = new Set(connections.map((c) => c.id));
+  const grounded = (n: number): boolean => {
+    const l = levels.find((x) => x.level === n);
+    return l ? storeyGrounded(l.ir, tol) : false;
+  };
+  const roomReach = buildingRoomReach(inputs, tol);
+  const reach = verticalReach(inputs, grounded, roomReach);
+  const runs = arrivalRuns(inputs, grounded, roomReach);
+  return new Map(
+    levels.map((l) => [
+      l.level,
+      {
+        multiStorey: true,
+        verticalPeerIds: peerIds,
+        arrivalRooms: reach.arrivalRooms.get(l.level) ?? [],
+        arrivalShafts: runs.get(l.level) ?? [],
+      },
+    ]),
+  );
+}
+
+/**
+ * {@link lintByRule} for a multi-storey plan: every storey's rules over its own context
+ * WITH the building's (shafts, arrivals), each diagnostic tagged with its `level`, and the
+ * shared-statement post-pass over the whole building — so each rule's output, storey by
+ * storey, is exactly the slice of `lint()` it contributes.
+ */
+export function lintStoreysByRule(
+  levels: readonly ResolvedLevel[],
+): Map<number, { name: string; diags: Diagnostic[] }[]> {
+  const building = buildingContextsOf(levels, DEFAULT_RULESET.tolMm);
+  const ctxs = levels.map((l) => ({
+    level: l.level,
+    ctx: buildLintContext(l.ir, DEFAULT_RULESET, building.get(l.level)),
+  }));
+  const out = new Map<number, { name: string; diags: Diagnostic[] }[]>(levels.map((l) => [l.level, []]));
+  for (const r of LINT_RULES) {
+    const raised = ctxs.flatMap(({ level, ctx }) => r.check(ctx).map((d) => ({ ...withFixProvenance(d), level })));
+    const kept = reconcileSharedFixes(raised, levels);
+    for (const l of levels) out.get(l.level)!.push({ name: r.name, diags: kept.filter((d) => d.level === l.level) });
+  }
+  return out;
+}
+
+/** Everything the oracle reads off one compiled multi-storey source. */
+export interface BuildingObservation {
+  src: string;
+  /** The whole plan's `describe()`. */
+  summary: SceneSummary;
+  /**
+   * One {@link Observation} per storey, ascending: the storey's `describe().levels[i]` as a
+   * summary (with the whole plan's `ok`, and the diagnostics tagged with this level), its
+   * resolved plan, and its slice of every rule — so every single-storey fact kind, gate and
+   * class applies to a storey unchanged.
+   */
+  storeys: Map<number, Observation>;
+}
+
+const observedBuildings = new Map<string, BuildingObservation>();
+
+export function observeBuilding(src: string, world: World = EXAMPLES_WORLD): BuildingObservation {
+  const hit = world === EXAMPLES_WORLD ? observedBuildings.get(src) : undefined;
+  if (hit) return hit;
+  const summary = describe(src, { world });
+  const { levels } = resolvePlan(src, { world });
+  const lint = lintStoreysByRule(levels);
+  const storeys = new Map<number, Observation>();
+  for (const l of summary.levels ?? []) {
+    const { level, name: _name, ...facts } = l;
+    const storey: SceneSummary = {
+      ...facts,
+      ok: summary.ok,
+      diagnostics: summary.diagnostics.filter((d) => d.level === level),
+    };
+    const ir = levels.find((x) => x.level === level)?.ir ?? null;
+    storeys.set(level, { src, summary: storey, ir, lint: lint.get(level) ?? [] });
+  }
+  const obs = { src, summary, storeys };
+  if (world === EXAMPLES_WORLD) {
+    if (observedBuildings.size >= 256) observedBuildings.delete(observedBuildings.keys().next().value!);
+    observedBuildings.set(src, obs);
+  }
+  return obs;
+}
+
+/** The pin scope of one storey of a building (`townhouse.arch@L2`), and of the building itself. */
+export const storeyScope = (building: string, level: number): string => `${building}@L${level}`;
+export const buildingScope = (building: string): string => `${building}@building`;
+
+/**
+ * The facts that belong to the BUILDING, not to a storey: whether it resolves, its storeys
+ * (number and name, in page order), `describe().vertical` (every shaft's stops — level,
+ * `dir`, the room it lands in — and the reachable storeys), and the diagnostics no storey
+ * owns, the sheet's gated as in {@link summaryFacts}. All invariant: a shaft's `dir` is
+ * authored per storey, and a stop's room is an id.
+ */
+export function buildingFacts(obs: BuildingObservation, gate: { sheet: boolean }): Facts {
+  const f: Facts = new Map();
+  const s = obs.summary;
+  const inv = (k: string, value: unknown): void => void f.set(k, { kind: "inv", value });
+  inv("ok", s.ok);
+  inv(
+    "levels.order",
+    (s.levels ?? []).map((l) => ({ level: l.level, name: l.name ?? null })),
+  );
+  inv("vertical", s.vertical ?? null);
+  const sheetSpans = sheetStatementSpans(obs.src);
+  const onSheet = (d: Diagnostic): boolean =>
+    d.file === undefined && d.span !== undefined && sheetSpans.has(`${d.span.start}-${d.span.end}`);
+  const unowned = s.diagnostics.filter((d) => d.level === undefined);
+  const plain = unowned.filter((d) => !onSheet(d));
+  inv(
+    "diagnostics",
+    plain.map((d) => projectDiag(d, obs.src)),
+  );
+  inv(
+    "diagnostics.fixes",
+    plain.map((d) => projectFixes(d, obs.src)),
+  );
+  if (gate.sheet) {
+    inv(
+      "diagnostics.sheet",
+      unowned.filter(onSheet).map((d) => projectDiag(d, obs.src)),
+    );
+  }
+  return f;
+}
+
+/** The building as an {@link Observation}, for a {@link CaseContext} of its own scope. */
+const asObservation = (b: BuildingObservation): Observation => ({ src: b.src, summary: b.summary, ir: null, lint: [] });
+
+/**
+ * One P₀ → gP comparison of a building: every storey through {@link compareObservations},
+ * gated by THAT storey's lattice and sheet, plus the {@link buildingFacts}. Keyed by
+ * {@link storeyScope}/{@link buildingScope}; a storey present on one side only is reported
+ * as the building's `levels.order`.
+ */
+export function compareBuildings(
+  name: string,
+  b0: BuildingObservation,
+  bG: BuildingObservation,
+  g: GroupElement,
+  f: Frame,
+  northG: NorthDir,
+  coNorth: boolean,
+): Map<string, { vs: Violation[]; ctx: CaseContext }> {
+  const out = new Map<string, { vs: Violation[]; ctx: CaseContext }>();
+  for (const [level, o0] of b0.storeys) {
+    const oG = bG.storeys.get(level);
+    if (!oG) continue;
+    const vs = compareObservations(o0, oG, f, northG, gateFor(g, f, { ...gateFacts(o0), coNorth }));
+    out.set(storeyScope(name, level), { vs, ctx: caseContext(o0, oG, g, f, vs) });
+  }
+  const sheet = !swapsAxes(f);
+  const vs = diffFacts(expectFacts(buildingFacts(b0, { sheet }), f, northG), canonFacts(buildingFacts(bG, { sheet })));
+  out.set(buildingScope(name), { vs, ctx: caseContext(asObservation(b0), asObservation(bG), g, f, vs) });
+  return out;
+}
+
+/** The elements a building is run with: all eight of D4 but the identity (P₀ IS the
+ *  identity), and the translation. */
+export const BUILDING_ELEMENTS: readonly GroupElement[] = D4_TEST_ELEMENTS.filter((g) => g.name !== "e");
+
+/**
+ * Tiers T1 + T2 for one multi-storey source: P₀ against every {@link BUILDING_ELEMENTS} gP
+ * (north fixed), then — for a plan with a `site`, the one input a compass-class rule reads —
+ * every proper rotation with north turned with it (`+N`). Runs keyed by scope; `null` when
+ * P₀ does not resolve (T0 owns that).
+ */
+export function runBuildingFacts(
+  name: string,
+  source: string,
+  world: World = EXAMPLES_WORLD,
+): Map<string, Run[]> | null {
+  const ast = parse(source).plan!;
+  const b0 = observeBuilding(storeyWrapper(source, null).src, world);
+  if (!b0.summary.ok) return null;
+  const runs = new Map<string, Run[]>();
+  const run = (tag: string, g: GroupElement, north: NorthDir, coNorth: boolean): void => {
+    const f = frameFor(g, ast.grid);
+    const bG = observeBuilding(storeyWrapper(source, g, coNorth ? { north } : {}).src, world);
+    for (const [where, { vs, ctx }] of compareBuildings(name, b0, bG, g, f, north, coNorth)) {
+      runs.set(where, [...(runs.get(where) ?? []), { tag, vs, ctx }]);
+    }
+  };
+  for (const g of BUILDING_ELEMENTS) run(g.name, g, ast.north, false);
+  if (ast.site !== undefined) {
+    for (const g of D4_ELEMENTS.filter((x) => !x.mirror && x.rotate !== 0)) {
+      run(`${g.name}+N`, g, rotateNorth(ast.north, g.rotate / 90), true);
+    }
+  }
+  return runs;
+}
+
+/**
+ * T0 for a multi-storey source: is P₀ (every storey a component, placed at the origin) a
+ * faithful proxy for P itself? Per storey, the {@link t0View} normalisation (instance
+ * prefix, stamps and zone; P₀'s spans carried back onto P's bytes by
+ * {@link StoreyWrapper.toSource}); for the building, its storeys, `vertical` (unprefixed)
+ * and the diagnostics no storey owns. Keyed by scope, like {@link runBuildingFacts}.
+ */
+export function t0BuildingViolations(
+  name: string,
+  source: string,
+  opts: { world?: World; plant?: (p0: string) => string } = {},
+): Map<string, Violation[]> {
+  const world = opts.world ?? EXAMPLES_WORLD;
+  const built = storeyWrapper(source, null);
+  // `plant` edits P₀ (the control that shows T0 can fail); the offset map is the unplanted one.
+  const w = { ...built, src: opts.plant ? opts.plant(built.src) : built.src };
+  const p = observeBuilding(source, world);
+  const p0 = observeBuilding(w.src, world);
+  const out = new Map<string, Violation[]>();
+  if (p.summary.ok !== p0.summary.ok) {
+    const codes = (o: BuildingObservation) =>
+      o.summary.diagnostics
+        .filter((d) => d.severity === "error")
+        .map((d) => d.code)
+        .join(",");
+    out.set(buildingScope(name), [
+      { key: "ok", path: "ok", expected: `${p.summary.ok} ${codes(p)}`, actual: `${p0.summary.ok} ${codes(p0)}` },
+    ]);
+    return out;
+  }
+  const sheetOf = (src: string): Set<string> => sheetStatementSpans(src);
+  const sideP: T0Side = { sheet: sheetOf(source), unprefix: false };
+  const sideP0: T0Side = { sheet: sheetOf(w.src), offset: w.toSource, unprefix: true };
+  const compare = (where: string, a: Record<string, unknown>, b: Record<string, unknown>): void => {
+    const vs: Violation[] = [];
+    for (const key of [...new Set([...Object.keys(a), ...Object.keys(b)])].sort()) {
+      const e = stable(a[key]);
+      const x = stable(b[key]);
+      if (e !== x) vs.push({ key, path: key, expected: e, actual: x });
+    }
+    out.set(where, vs);
+  };
+  for (const level of new Set([...p.storeys.keys(), ...p0.storeys.keys()])) {
+    const a = p.storeys.get(level);
+    const b = p0.storeys.get(level);
+    compare(
+      storeyScope(name, level),
+      a ? t0Normalise(a.summary, a.lint, sideP) : {},
+      b ? t0Normalise(b.summary, b.lint, sideP0) : {},
+    );
+  }
+  const building = (o: BuildingObservation, side: T0Side): Record<string, unknown> => {
+    const v = {
+      levels: (o.summary.levels ?? []).map((l) => ({ level: l.level, name: l.name ?? null })),
+      vertical: o.summary.vertical ?? null,
+      diagnostics: o.summary.diagnostics.filter((d) => d.level === undefined).map((d) => t0Diag(d, side)),
+    };
+    return side.unprefix ? (unprefix(v) as Record<string, unknown>) : v;
+  };
+  compare(buildingScope(name), building(p, sideP), building(p0, sideP0));
+  return out;
 }
 
 // ---------------------------------------------------------------------------

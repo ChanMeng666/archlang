@@ -71,6 +71,7 @@ import {
   wrapperSource,
 } from "./d4-oracle.js";
 import { type ClassName, KNOWN, KNOWN_CLASSES } from "./equivariance-known.js";
+import { scopeBuilding, STOREY_BUILDING_NAMES } from "./equivariance-storeys-cases.js";
 
 /** Generous: the heaviest example runs a dozen full describe() + lint() passes. */
 const SLOW = 120_000;
@@ -156,10 +157,16 @@ describe("the oracle's own construction", () => {
     expect(vs).toContain("windows[].facing");
   });
 
-  it("every pin names a known class and a corpus example, with a why and what closes it", () => {
+  it("every pin names a known class and a corpus example (or a storey of a building), with a why and what closes it", () => {
     for (const row of KNOWN) {
       expect(Object.keys(KNOWN_CLASSES)).toContain(row.cls);
-      for (const w of typeof row.where === "string" ? [row.where] : row.where) expect(ELIGIBLE_EXAMPLES).toContain(w);
+      for (const w of typeof row.where === "string" ? [row.where] : row.where) {
+        // A multi-storey pin is scoped `<building>@L<n>` / `<building>@building`
+        // (`test/equivariance-storeys.test.ts`).
+        const building = scopeBuilding(w);
+        if (building !== null) expect(STOREY_BUILDING_NAMES).toContain(building);
+        else expect(ELIGIBLE_EXAMPLES).toContain(w);
+      }
       expect(row.why.length).toBeGreaterThan(10);
       expect(row.closesWith.length).toBeGreaterThan(5);
     }

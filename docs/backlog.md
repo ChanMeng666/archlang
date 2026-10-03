@@ -1131,16 +1131,80 @@ person arrives by (ADR 0008's addendum). Left out, each re-run unless noted:
   one storey-removed fixpoint per ungrounded reachable storey: redundant, cheap at dozens of
   storeys (code read).
 
-### M.5 · The corpus equivariance oracle does not cover multi-storey plans — `todo` (circulation half has a law)
+### M.5 · The corpus equivariance oracle does not cover multi-storey plans — closed for `describe()`/`lint()` (T0–T2); the drawing (T3) is still open
 
 The corpus suite places every shipped example with no `level` block
 (`test/equivariance-corpus.test.ts`, "the corpus is COMPUTED: every shipped example with no
-`level` block"), so `hillside-villa`, `townhouse`, `two-storey` and the other `level` plans get
-no geometry, `describe()` or `lint()` oracle. Re-run: read the test's filter. Multi-storey
-CIRCULATION now has its own law, `test/shaft-equivariance.test.ts`: every
-`levels[*].circulation` under each of the eight frames, exact on lattice-aligned grids, within
-measured per-building cell bounds otherwise, and the landing never flips. The rest of a
-`level` plan's facts are still outside any oracle.
+`level` block"), because a whole-file import drops `level` blocks. Multi-storey circulation
+has its own law (`test/shaft-equivariance.test.ts`); the rest of a `level` plan's facts now
+do too: `test/equivariance-storeys.test.ts` (shipped examples and the 1× shaft models) and
+`test/equivariance-storeys-{scaled,head}.test.ts` (the scaled shaft models, split for wall
+time), on `test/d4-oracle.ts`'s "Multi-storey buildings" section.
+
+**Construction.** Byte-preserving surgery on the source: each `level N … { body }` becomes
+`component storey_N() { body }` in place, and the plan closes with one
+`level N … { place storey_N() as g at (t,t) rotate r mirror m }` per storey, every storey
+placed by the same g. Not a whole-file import, which drops the levels; and not an imported
+component, which does not see its own module's plan-global `let`s (`townhouse`'s storeys are
+written in `W`, `SPINE`, …): `import "m.arch": s1` where `m.arch` declares `let W = 5000` and
+`s1` uses `W` gives `E_UNKNOWN_REF Unknown name "W"`, while the same component written inline
+sees the root's `let`. Not judged here whether that is intended. A storey's `roof` stays in its
+`level` block (inside a component it is `E_ROOF_PLACEMENT`, by design: a roof belongs to the
+building), its `wall <id>` naming the placed `g.<id>`.
+
+**What is compared.** Per storey, `describe().levels[i]` with the storey's diagnostics, and
+each lint rule's slice of that storey (run with the building's shaft context and checked to
+equal `lint()`), through the corpus's own `compareObservations`: fact kinds, rule classes and
+gates, with the gates set per storey. Per building, `levels` (number, name), `vertical` and
+the diagnostics no storey owns. Every one of the eight D4 elements and the translation; for a
+plan with a `site`, the three rotations again with `north` turned too. T0 (P₀ against P,
+P₀'s spans mapped back onto P's bytes) is clean for every case. Left out, with the corpus's
+reasons: the top-level facts (they repeat `levels[0]`), `axes` (a plan setting that does not
+turn), and the scene. The scaled models' raster is compared only under the translation (their
+cell does not divide the plan); the shaft suite owns it under turns and flips.
+
+**Covered:** all four shipped `level` examples (`garden-house`, `hillside-villa`,
+`townhouse`, `two-storey`, every storey lattice-aligned) and all twelve buildings of
+`test/shaft-equivariance.test.ts`. **Not expressible this way:** a `roof polygon` (written in
+storey coordinates, outside the component a `place` frame would carry; none shipped).
+
+**Findings: none.** No violation under any element, on any storey or building, so no pin is
+added. The suites show they can fail: r270 observed against r90's prediction is red on every
+storey; one storey placed `rotate 90` in a building placed `rotate 180` is red on that storey
+alone and fails the pin table as `NEW`; a P₀ with one storey's door widened fails T0 on that
+storey alone. Re-run: `npx vitest run test/equivariance-storeys.test.ts
+test/equivariance-storeys-scaled.test.ts test/equivariance-storeys-head.test.ts`.
+
+**What it cannot see, because `describe()` does not carry it.** A door's entry is `id`,
+`between`, `width` and `head`: no swing, hinge or position. A window's is `id`, `room`,
+`width`, `facing`, `sill` and `head`: no position. A defect in how a frame carries either is
+seen only if a lint rule happens to measure it. Measured by planting a defect in `src/` in a
+scratch worktree and running the three storey suites (16 buildings):
+
+- `swing: el.swing` in `door.transform` (`src/elements/door.ts`; the swing no longer flips
+  under a reflection) is caught on 1 building of 16. `hillside-villa` fails only through
+  `lint.swing-obstructed` (and its `.fixes`), on both storeys, under the four reflections.
+  The other 15 stay green.
+- A window's `at` shifted +100 mm in `window.transform` (`src/elements/window.ts`) is caught
+  nowhere: all 42 tests green, T0 included, though P₀'s windows resolve 100 mm off P's
+  (`two-storey`: `w_living` at (5000,0) in P, `g.w_living` at (5100,0) in P₀).
+
+Both need T3, which compares the drawn door leaf and swing arc and the window's glazing.
+
+**The roof is nearly unobserved.** A roof is drawing-only and reaches the facts only through
+the drawing bounds. Removing each shipped example's one `roof` line leaves every storey's
+facts and lint, `vertical`, and the building's diagnostics unchanged in `garden-house`,
+`townhouse` and `two-storey`, in P and in P₀. In `hillside-villa` it changes only the sheet
+fit: with the roof every storey reads `drawing_fits: false` and the building raises
+`W_DRAWING_OVERFLOW` (the 700 mm eaves overflow A2 at 1:50); without it neither appears.
+Those are sheet facts, compared only under the elements that keep the axes. So the roof
+surgery is checked by facts only there, and otherwise only by not raising
+`E_ROOF_PLACEMENT`: a roof carried wrongly by a quarter-turn would go unseen. Pinned by
+"the roof is nearly unobserved" in `test/equivariance-storeys.test.ts`.
+
+**Still open:** T3, each storey's drawn scene under the group (`compareScenes` on a fixed
+sheet, as `test/equivariance-scene.test.ts` does for one storey). It would also close the
+door, window and roof blind spots above.
 
 ### M.6 · Load-sensitive visual and sheet tests — `todo`
 
