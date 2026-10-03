@@ -1835,22 +1835,91 @@ of on every sort comparison; the algorithm, iteration order and `pointKey` strin
 unchanged and the output byte-identical (`test/interner-oracle.test.ts`, the joinery oracles,
 every golden). Measured back to back in one session on a loaded machine (not re-run here):
 `toScene` about 0.55–0.75× on BALANCED and OPENING_HEAVY, `joinWalls` alone about 0.85–0.95×.
-The sweep line and the exact axis-aligned split shortcut remain open.
 
-**Phase profile of `joinWalls`** (measured with temporary instrumentation, since reverted):
+**That profile no longer holds; re-measured 2026-10-03 before choosing what to change.** The
+earlier table (split 61.5 ms, about 45 % of the pass) predates the constant factors above. On the
+same OPENING_HEAVY input, timed as `joinWalls` alone (inputs built once, compiled JS, temporary
+phase instrumentation since reverted), the split was about **21–27 %** of the pass, and grouping
+plus chaining together were larger:
 
-| plan | split | classify | index | chain | keys |
+| OPENING_HEAVY, ms per call | split | group | index | classify | chain |
 |---|---|---|---|---|---|
-| OPENING_HEAVY | 61.5 ms | 29.1 | 17.0 | 16.7 | 9.6 |
-| `library` | 5.4 ms | 3.2 | 1.6 | 1.1 | 0.9 |
+| before | 7.9 | 7.7 | 1.5 | 8.8 | 11.4 |
+| after (landed below) | 8.7 | 2.4 | 1.6 | 7.7 | 4.3 |
 
-Split is the largest phase at ~45% of the pass, so halving it recovers about 11% of `toScene`.
-There is no single hot spot to delete.
+Phase attribution in a garbage-collected run is fuzzy: a collection is billed to whichever phase
+triggers it, which is why `split` reads slightly higher "after" here. With a forced collection
+before each call (all absolutes inflate), split read 14.2–16.3 ms before and 9.6–12.2 after.
+Compare shapes, not single cells.
+
+**What the split's pair scan actually does** (OPENING_HEAVY, per call): 4,000 edges, 7,600
+candidate pairs, and **every** candidate's boxes overlap: the grid hands out the true overlap
+set, with no false positives to remove. All 7,600 pairs are axis-aligned (6,400 vertical x
+horizontal, 1,200 collinear). 8,800 interner lookups. The scan's cost is the interner and the
+per-pair overhead, not the crossing arithmetic.
+
+**Landed 2026-10-03: the second round** (`src/geometry/joinery.ts`). Same algorithm, same
+iteration order, same emitted floats. Proven by `test/joinery-split-oracle.test.ts`, which keeps
+each replaced form verbatim, runs old against new over every example storey and generated wall
+sets, and compares with `Object.is`, so −0 and one ulp both count. Each of its blocks was shown
+to fail on a planted defect, and counts the inputs that reached the new path. Also checked
+outside the suite: main's and this `joinWalls` were bit-identical on all 320 calls `compile()`
+makes over 107 corpus sources (plan view and every `--view`), and on 3,000 generated inputs; a
+planted one-ulp change was caught in 189 of the 320.
+
+- *Per-call point-key memo.* `pointKey` was rebuilt for the same interned vertex by grouping,
+  chaining, rotation and the final sort; a `Map<Point, string>` owned by the call returns the
+  same string, already hashed.
+- *Lines grouped through nested maps.* `L|k1|k2` equality is exactly `(k1, k2)` equality, since
+  a point key holds one `|`, so the concatenated key is never built. Arcs keep the full key.
+  `[k1, k2].sort()` became one comparison (`<` is the code-unit order `sort()` uses).
+- *An unread field removed.* Each group carried a `coincident` set (and called `sameDirection`
+  to fill it) that nothing ever read; classification probes both sides instead.
+- *Probe allocations.* A probe asked `queryBox` for the cuts, which builds a `Set` and an array
+  only to deduplicate; whether ANY cut contains the probe is all that is asked, so it walks the
+  cells directly. `contextAt`'s per-group `Set` became a stamp array keyed by wall-index slot.
+- *The fill that IS the outline.* When every side of every edge reads the same for "owned by g"
+  as for "owned", the fill would rebuild the outline's edges one for one and chain them again;
+  it takes the outline's loops in fresh arrays instead. That is every single-material plan,
+  OPENING_HEAVY and BALANCED included. Multi-material plans keep the general pass.
+- *The axis-aligned split shortcut.* A vertical x horizontal pair returns `(v.x, h.y)` before
+  `parallel`. Exact because `parallel` is always false for such a pair and `meetLines` already
+  returned that point with no arithmetic; all it saves is `parallel`'s two square roots. It is
+  worth **2–6 % of the split, about 1 % of the pass** (final code with and without it, six
+  rounds, one of which went the other way). That is small but real and exact. The item's
+  premise that this pair needed a "general line–line solve" was already untrue.
+
+Measured back to back in one session on a cloud VM (`origin/main` d4a9a3f against this change,
+interleaved): `joinWalls` alone **0.58–0.71×** on OPENING_HEAVY (six rounds, median about 0.65)
+and 0.65–0.70× on BALANCED; `npx tsx bench/run.ts --json` `toScene` **0.70–0.73×** on
+OPENING_HEAVY and 0.70–0.78× on BALANCED (three rounds); real plans `museum` 0.64–0.77× and
+`library` (multi-material, so no fill reuse) 0.75–0.90×. Ratios only: `bench/baseline.json` was
+not regenerated and must be on an idle machine.
+
+**Tried and rejected, with the evidence:**
+
+- *A sweep line instead of the grid pair scan.* The grid's candidates already ARE the
+  box-overlap pairs (7,600 of 7,600 overlap), so a sweep cannot cut the pair count, only the
+  index build (about 1.6 ms). A one-dimensional sweep would test every pair that overlaps on its
+  axis: **348,000** along x and **234,000** along y on OPENING_HEAVY (BALANCED: 167,010 and
+  107,950 against 4,800). That is 30–46× the pair work to save the build. Not built. Only a
+  two-dimensional structure could compete, and the grid is one.
+- *Skip re-interning a collinear pair's endpoints* (they are interned objects already). Measured
+  4–5 % of the split, inside the whole call's noise, and its exactness rests on an interner
+  invariant (`intern.get(p) === p` for an interned `p`), not on a local equality. Not landed.
+- *An explicit comparator for the chainer's `startKeys` sort.* The default `sort()` was a
+  visible line in the profile (about 6 %), but an explicit code-unit comparator measured the same:
+  the cost is the comparisons, not the comparator. Not landed.
+
+**Still open, if anyone returns to this.** After the round above, the profile is flat: GC (about
+17 %), the chainer's `startKeys` string sort, interner lookups (renormalising the universe plus
+the split's 8,800), and the classify probes' winding walks. None is a single hot spot; each
+needs an argument as careful as the ones above.
 
 **The constraint, and it is the whole point of the item.** Any fix must stay **INSIDE the one
-algorithm**. Legitimate directions: an exact axis-aligned shortcut within the split phase (a
-horizontal/vertical pair needs no general line–line solve), a sweep line instead of the
-grid-bucketed pair scan, fewer allocations per group, a cheaper `undirectedKey`. **Never a second
+algorithm**. Legitimate directions: an exact axis-aligned shortcut within the split phase,
+fewer allocations per group, a cheaper `undirectedKey` (all three landed above); a sweep line
+was measured and rejected above. **Never a second
 pipeline** — a rectilinear fast path would reintroduce exactly the three-paths structure ADR 0018
 removed, and the four defects that came with it. That the joinery's rectilinear outline is
 vertex-identical to the old rectangle boolean's (reversed and rotated) makes the shortcut *look*
