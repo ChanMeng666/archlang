@@ -44,7 +44,6 @@ is to be started until its question is answered; the entry named holds the evide
 | M.9 | Should grid snap and `fmt2` round half away from zero, so a mirror image snaps alike? It moves output. |
 | M.14 | Should a roof's acute corner be bevelled or miter-limited, and at what limit? |
 | D.7 | One hairline for the whole sheet? The title block's rules would move in every example. |
-| `bench/baseline.json` | Not a decision but a chore that needs an idle machine: see `bench/README.md`. |
 
 ---
 

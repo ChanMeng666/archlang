@@ -15,10 +15,11 @@ generator or methodology change. Timings on a loaded machine move by tens of per
 machine's absolutes are not another's, so use ratios measured back to back in one session,
 never absolutes across sessions or hosts.
 
-The committed baseline predates the joinery, room-overlap, label-placement, vocabulary and
-room-adjacency speed-ups, so the PR bench comment reads faster than the code is against
-itself. Regenerating it needs an idle machine: three runs on a desktop at about 40 % load put
-BALANCED `compile` anywhere from 67 to 96 ms, which is why it was not regenerated then.
+The committed baseline is the per-stage median of five such runs, taken after the joinery,
+room-overlap, label-placement, vocabulary and room-adjacency speed-ups. The five agreed to
+within about 10 % on the heavy rows (the sub-5 ms rows move more). The same machine at about
+40 % load put BALANCED `compile` anywhere from 67 to 96 ms, so check the spread of a few runs
+before trusting a new one.
 
 Where the time goes: on the wall-heavy plans the hotspot is the joinery pass
 (`joinWalls`, ADR 0018); `src/geometry/union.ts` is a test oracle and is not on the compile
