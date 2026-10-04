@@ -25,7 +25,10 @@ import { describe, expect, it } from "vitest";
 import { rectOf, resolvePlan } from "../src/analyze.js";
 import { centreFreedomToClearWidth, DEFAULT_BODY_RADIUS_MM } from "../src/analyze/circulation.js";
 import { solidFurniture } from "../src/fixtures-catalog.js";
-import { composeFrame, tp } from "../src/frame.js";
+import { SIDE_NORMAL, sideOfNormal } from "../src/algebra/d4.js";
+import { measureExtent, probeSide, SIDE_AXIS, type Side, SIDES } from "../src/facade.js";
+import { composeFrame, type Frame, tp } from "../src/frame.js";
+import { type Bounds, distPointToWallSegment, segmentsOfWall, type WallSegment } from "../src/geometry.js";
 import {
   compile,
   describe as describePlan,
@@ -34,9 +37,10 @@ import {
   makeVirtualWorld,
   registerElement,
 } from "../src/index.js";
-import { levelBlocks, type RFurniture } from "../src/ir.js";
+import { levelBlocks, type ResolvedPlan, type RFurniture, type RWall } from "../src/ir.js";
 import { LINT_RULES } from "../src/lint.js";
 import { entryEdges, verticalsOf } from "../src/vertical.js";
+import type { World } from "../src/world.js";
 import {
   astOf,
   canonPrim,
@@ -51,6 +55,7 @@ import {
   explain,
   idOfKey,
   frameFor,
+  type GroupElement,
   latticeAligned,
   lin,
   type Observed,
@@ -63,6 +68,7 @@ import {
   runFacts,
   SHIPPED_EXAMPLES,
   sceneOf,
+  storeyWrapper,
   t0BuildingScenes,
   t0BuildingViolations,
   t0Violations,
@@ -319,42 +325,6 @@ const WITNESSES: Record<ClassName, [string, () => void][]> = {
       },
     ],
   ],
-  "facade-probe-order": [
-    [
-      "STILL ends a `dims auto` chain on a different wall once the storey is placed at the identity",
-      () => {
-        // The right facade's probe point (6000, 2000) is 0 mm from the 300 mm shell AND from
-        // the placed side wall (100 mm, x = 6000). P lists the instance's wall first and ends
-        // the bottom overall chain on its face (6050: -150..6050 = 6200); P₀, the storey
-        // placed at the origin, lists g.shell first (6150: 6300).
-        const src = `plan "witness" {
-  units mm
-  grid 50
-  dims auto overall
-  component side() {
-    wall id=w partition thickness 100 { (0,0) (0,2000) }
-  }
-  level 1 {
-    wall id=shell exterior thickness 300 { (0,0) (6000,0) (6000,4000) (0,4000) close }
-    room id=r at (0,0) size 6000x4000
-    place side() as s at (6000,1000)
-  }
-}
-`;
-        const [run] = t0BuildingScenes("witness", src).get("witness@L1")!;
-        expect(run!.vs.map((v) => v.key)).toEqual(["scene.dims"]);
-        const v = run!.vs[0]!;
-        expect(v.expected).toContain('"value":"6200"');
-        expect(v.actual).toContain('"value":"6300"');
-        const covering = (Object.keys(KNOWN_CLASSES) as ClassName[]).filter((k) =>
-          KNOWN_CLASSES[k].covers(v, run!.ctx!),
-        );
-        expect(covering).toEqual(["facade-probe-order"]);
-        // The facts do not see it: `dims auto` is drawing-only.
-        expect([...t0BuildingViolations("witness", src).values()].flat()).toEqual([]);
-      },
-    ],
-  ],
 };
 
 describe("the pinned classes — each STILL reproduced by a minimal witness", () => {
@@ -511,6 +481,161 @@ const RASTER_WITNESSES: ReadonlyArray<{ cls: string; title: string; body: string
 /** A raster fact or a lint rule that reads the nav grid. */
 const isRaster = (path: string): boolean =>
   path.startsWith("circulation") || /^lint\.(room-no-clear-path|path-too-narrow|circuitous-path)/.test(path);
+
+/** The E.17 witness: a 300 mm shell, and a 100 mm wall placed from a nested component on the
+ *  line of its right face. */
+const PROBE_WITNESS = `plan "witness" {
+  units mm
+  grid 50
+  dims auto overall
+  component side() {
+    wall id=w partition thickness 100 { (0,0) (0,2000) }
+  }
+  level 1 {
+    wall id=shell exterior thickness 300 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+    room id=r at (0,0) size 6000x4000
+    place side() as s at (6000,1000)
+  }
+}
+`;
+
+type Probe = (walls: RWall[], ext: Bounds, side: Side) => { line: number; half: number } | null;
+
+/**
+ * The rule `probeSide` had before backlog E.17 closed — the FIRST of the equidistant parallel
+ * segments in `walls` order — kept only as the control that shows the order law can fail.
+ */
+const firstWins: Probe = (walls, ext, side) => {
+  const horiz = SIDE_AXIS[side] === "h";
+  const cross = side === "bottom" ? ext.maxY : side === "top" ? ext.minY : side === "left" ? ext.minX : ext.maxX;
+  const mid = horiz ? (ext.minX + ext.maxX) / 2 : (ext.minY + ext.maxY) / 2;
+  const p = horiz ? { x: mid, y: cross } : { x: cross, y: mid };
+  let best: WallSegment | null = null;
+  let bestDist = Infinity;
+  for (const w of walls) {
+    for (const s of segmentsOfWall(w)) {
+      if (s.arc || (horiz ? s.a.y !== s.b.y : s.a.x !== s.b.x) || (s.a.x === s.b.x && s.a.y === s.b.y)) continue;
+      const d = distPointToWallSegment(p, s);
+      if (d < bestDist) {
+        bestDist = d;
+        best = s;
+      }
+    }
+  }
+  if (!best || bestDist > Math.max(best.thickness, 1)) return null;
+  return { line: horiz ? best.a.y : best.a.x, half: best.thickness / 2 };
+};
+
+const IDENTITY = frameFor(elementNamed("e"), 0);
+
+/** Every permutation of a handful of walls; for more, as listed, reversed and every rotation. */
+function orderings(walls: readonly RWall[]): RWall[][] {
+  if (walls.length <= 5) {
+    if (walls.length <= 1) return [[...walls]];
+    return walls.flatMap((w, i) => orderings([...walls.slice(0, i), ...walls.slice(i + 1)]).map((r) => [w, ...r]));
+  }
+  const out = [[...walls].reverse()];
+  for (let k = 0; k < walls.length; k++) out.push([...walls.slice(k), ...walls.slice(0, k)]);
+  return out;
+}
+
+/** The facades of `ir` whose `probe` answer depends on the order of its walls. */
+function orderSplit(ir: ResolvedPlan, probe: Probe): Side[] {
+  const ext = measureExtent(ir);
+  if (!ext) return [];
+  const os = orderings(ir.walls);
+  return SIDES.filter((side) => new Set(os.map((ws) => JSON.stringify(probe(ws, ext, side)))).size > 1);
+}
+
+/** `probe`'s answer on every facade of `ir`, carried by `f` onto the facade it maps to. */
+function probesThrough(ir: ResolvedPlan, probe: Probe, f: Frame): string {
+  const ext = measureExtent(ir);
+  if (!ext) return "no extent";
+  const out = {} as Record<Side, unknown>;
+  for (const side of SIDES) {
+    const pr = probe(ir.walls, ext, side);
+    const to = sideOfNormal(lin(f, SIDE_NORMAL[side]))!;
+    const at = pr && tp(f, SIDE_AXIS[side] === "h" ? { x: 0, y: pr.line } : { x: pr.line, y: 0 });
+    out[to] = at && pr && { line: SIDE_AXIS[to] === "h" ? at.y : at.x, half: pr.half };
+  }
+  return JSON.stringify(SIDES.map((s) => [s, out[s]]));
+}
+
+/** One case of the facade-probe law: P's IR per storey (0 = a plan without levels), and gP's
+ *  per group element, with g's frame. */
+interface ProbeCase {
+  name: string;
+  generated: boolean;
+  p: Map<number, ResolvedPlan>;
+  gp: [GroupElement, Frame, Map<number, ResolvedPlan>][];
+}
+
+function irsOf(src: string, world: World = EXAMPLES_WORLD): Map<number, ResolvedPlan> {
+  const { ir, levels } = resolvePlan(src, { world });
+  if (levels.length > 0) return new Map(levels.map((l) => [l.level, l.ir]));
+  expect(ir, src.slice(0, 200)).not.toBeNull();
+  return new Map([[0, ir!]]);
+}
+
+/**
+ * The cases: every shipped example and the witness (a building placed storey by storey with
+ * `storeyWrapper`, a plain plan whole with `wrapperSource`), and generated ties — a facade
+ * wall placed from a nested component (so P and P₀ list it on opposite sides of the shell)
+ * on a tie with an inline one, at 0 mm (on the shell's own line) and at ±d.
+ */
+function probeCases(): ProbeCase[] {
+  const out: ProbeCase[] = [];
+  const building = (name: string, src: string, grid: number): void => {
+    out.push({
+      name,
+      generated: false,
+      p: irsOf(src),
+      gp: D4_TEST_ELEMENTS.map((g) => [g, frameFor(g, grid), irsOf(storeyWrapper(src, g).src)]),
+    });
+  };
+  for (const rel of SHIPPED_EXAMPLES) {
+    const grid = astOf(rel).grid;
+    if (levelBlocks(astOf(rel)).length > 0) building(rel, EXAMPLE_FILES[rel]!, grid);
+    else
+      out.push({
+        name: rel,
+        generated: false,
+        p: irsOf(EXAMPLE_FILES[rel]!),
+        gp: D4_TEST_ELEMENTS.map((g) => [g, frameFor(g, grid), irsOf(wrapperSource(rel, g))]),
+      });
+  }
+  building("witness", PROBE_WITNESS, 50);
+  const gen = (name: string, side: string, body: string): void => {
+    const root = `plan "gen" {\n  units mm\n  grid 50\n  ${side}\n${body}\n}\n`;
+    const declare = `${side}\n  component c() {\n${body}\n  }`;
+    out.push({
+      name: `gen:${name}`,
+      generated: true,
+      p: irsOf(root),
+      gp: D4_TEST_ELEMENTS.map((g) => [g, frameFor(g, 50), irsOf(witnessPair("", g, { declare }).gP)]),
+    });
+  };
+  const room = "    room id=r at (0,0) size 6000x4000";
+  // At 0 mm: a closed shell of thickness T and a placed wall of thickness t on its right line.
+  for (const T of [100, 200, 300])
+    for (const t of [50, 100, 200, 300, 400])
+      gen(
+        `on-line T${T} t${t}`,
+        `component side() {\n    wall id=w partition thickness ${t} { (0,0) (0,2000) }\n  }`,
+        `    wall id=shell exterior thickness ${T} { (0,0) (6000,0) (6000,4000) (0,4000) close }\n${room}\n    place side() as s at (6000,1000)`,
+      );
+  // At ±d: the shell open on the right, an inline wall d inside the probe line and a placed
+  // one d outside it (faces level where t1 = t2 + 4d).
+  for (const d of [50, 100])
+    for (const t1 of [100, 200, 300])
+      for (const t2 of [100, 200, 300])
+        gen(
+          `off-line d${d} t${t1}/${t2}`,
+          `component side() {\n    wall id=w partition thickness ${t2} { (0,0) (0,4000) }\n  }`,
+          `    wall id=shell exterior thickness 200 { (6000,0) (0,0) (0,4000) (6000,4000) }\n${room}\n    wall id=a partition thickness ${t1} { (${6000 - d},0) (${6000 - d},4000) }\n    place side() as s at (${6000 + d},0)`,
+        );
+  return out;
+}
 
 /** Closed classes: each former `STILL …` witness, inverted into the law it was waiting for. */
 describe("closed classes — each former witness is now the law", () => {
@@ -1037,5 +1162,87 @@ describe("closed classes — each former witness is now the law", () => {
     for (const spelling of ["-0", "-z", "0 * -1", "-1 * 0", "0 / -5", "-(z)"]) {
       expect(compile(plan(spelling), { noCache: true }).svg, spelling).toBe(zero.svg);
     }
+  });
+  it("facade-probe-order (backlog E.17): the former witness — a storey placed at the identity draws the storey's own chains", () => {
+    // The right facade's probe point (6000, 2000) is 0 mm from the 300 mm shell AND from the
+    // placed side wall (100 mm, x = 6000). P lists the instance's wall first, P₀ (the storey
+    // placed at the origin) lists g.shell first. Both now end on the outermost face (6150),
+    // and so does the same wall written inline: -150..6150, 6300 three ways.
+    const [run] = t0BuildingScenes("witness", PROBE_WITNESS).get("witness@L1")!;
+    expect(run!.vs.map((v) => v.key)).toEqual([]);
+    const inline = PROBE_WITNESS.replace(
+      "place side() as s at (6000,1000)",
+      "wall id=w partition thickness 100 { (6000,1000) (6000,3000) }",
+    );
+    expect(inline).not.toBe(PROBE_WITNESS);
+    for (const src of [PROBE_WITNESS, inline, storeyWrapper(PROBE_WITNESS, null).src]) {
+      const svg = compile(src, { noCache: true }).pages![0]!.svg;
+      expect(svg).toContain(">6300<");
+      expect(svg).not.toContain(">6200<");
+    }
+    expect([...t0BuildingViolations("witness", PROBE_WITNESS).values()].flat()).toEqual([]);
+  });
+
+  it(
+    "facade-probe-order (backlog E.17): no facade's answer depends on wall order or on the frame — over the corpus and generated ties — and the first-wins rule fails both",
+    () => {
+      // Every case: the plan P as written, and P placed by each element of the group (and the
+      // translation), storey by storey. The law: under `probeSide`, (1) every ordering of each
+      // IR's walls gives every facade the same answer, and (2) gP's answer on g(side) is g of
+      // P's answer on `side` — P itself, not P₀, so the identity placement is held to the
+      // plan as written. The control is the rule before the fix: it must break both.
+      const cases = probeCases();
+      expect(cases.filter((c) => c.generated).length).toBe(3 * 5 + 2 * 3 * 3);
+      expect(cases.filter((c) => !c.generated).length).toBe(SHIPPED_EXAMPLES.length + 1);
+      // Every storey of every case has a probed facade to compare (none reads "no wall").
+      for (const c of cases)
+        for (const [level, ir] of c.p)
+          expect(probesThrough(ir, probeSide, IDENTITY), `${c.name}@${level}`).toContain('"half"');
+      const breaks = (probe: Probe) => {
+        const order: string[] = [];
+        const frame: string[] = [];
+        for (const c of cases) {
+          for (const [level, ir] of c.p)
+            for (const side of orderSplit(ir, probe)) order.push(`${c.name}@${level} ${side}`);
+          for (const [g, f, levels] of c.gp) {
+            for (const [level, ir] of levels) {
+              const want = probesThrough(c.p.get(level)!, probe, f);
+              const got = probesThrough(ir, probe, IDENTITY);
+              if (want !== got) frame.push(`${c.name}@${level} ${g.name}: ${want} -> ${got}`);
+            }
+          }
+        }
+        return { order, frame };
+      };
+      expect(breaks(probeSide)).toEqual({ order: [], frame: [] });
+      const old = breaks(firstWins);
+      // Not vacuous: the shipped storey and the witness that pinned the class, and generated
+      // ties at 0 mm and at a distance, each split by the order the old rule read.
+      expect(old.order).toContain("hillside-villa.arch@2 right");
+      expect(old.order).toContain("witness@1 right");
+      expect(old.order.filter((k) => k.startsWith("gen:")).length).toBeGreaterThan(10);
+      expect(old.frame.some((k) => k.startsWith("hillside-villa.arch@2 e:"))).toBe(true);
+      expect(old.frame.some((k) => k.startsWith("witness@1 e:"))).toBe(true);
+      expect(old.frame.filter((k) => k.startsWith("gen:")).length).toBeGreaterThan(10);
+    },
+    SLOW,
+  );
+
+  it("facade-probe-order (backlog E.17): a tie the face cannot break is broken by thickness, and a tie both leave is one answer", () => {
+    // Two facade walls 50 mm either side of the probe line, faces level at 6100: the inner one
+    // 300 mm thick (5950 + 150), the outer 100 mm (6050 + 50). Thicker wins, either order.
+    const ext = { minX: 0, minY: 0, maxX: 6000, maxY: 4000 };
+    const at = (id: string, x: number, t: number): RWall =>
+      resolvePlan(`plan "t" {\n  units mm\n  wall id=${id} partition thickness ${t} { (${x},0) (${x},4000) }\n}\n`).ir!
+        .walls[0]!;
+    const inner = at("a", 5950, 300);
+    const outer = at("b", 6050, 100);
+    expect(probeSide([inner, outer], ext, "right")).toEqual({ line: 5950, half: 150 });
+    expect(probeSide([outer, inner], ext, "right")).toEqual({ line: 5950, half: 150 });
+    // The control reads the order.
+    expect(firstWins([outer, inner], ext, "right")).toEqual({ line: 6050, half: 50 });
+    // Level faces AND equal thickness is the same line: whichever is kept, the same answer.
+    const twin = at("c", 6050, 100);
+    expect(probeSide([outer, twin], ext, "right")).toEqual(probeSide([twin, outer], ext, "right"));
   });
 });
