@@ -350,7 +350,7 @@ describe("PDF export", () => {
     expect(near(hair)).toBeGreaterThan(0);
     expect(near(thin * 0.5)).toBe(0);
     // …and the SVG strokes its lines at that width too, and none at half the thin pen.
-    const svgWidths = [...svg.matchAll(/<line [^>]*stroke-width="([\d.]+)"/g)].map((m) => Number(m[1]));
+    const svgWidths = [...svg.matchAll(/<line [^<>]*stroke-width="([\d.]+)"/g)].map((m) => Number(m[1]));
     expect(svgWidths.filter((x) => Math.abs(x - hair) < 0.01).length).toBeGreaterThan(0);
     expect(svgWidths.filter((x) => Math.abs(x - thin * 0.5) < 0.01).length).toBe(0);
   });
