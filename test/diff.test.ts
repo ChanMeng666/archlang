@@ -134,9 +134,9 @@ suite("diffPlans — circulation deltas (entrance-bearing fixtures)", () => {
 
 // ---------------------------------------------------------------------------
 // Positional auto-ids. `room_<n>` numbers rooms in source order, so inserting, deleting or
-// reordering a room shifts every later auto-id: the id is a false key. A room whose id is
-// auto on BOTH sides and whose label names exactly one room on EACH side pairs by label
-// before any id is consulted (src/diff.ts `matchRooms`, pass 1).
+// reordering a room shifts every later auto-id: the id is a false key. A room whose label
+// names exactly one room on EACH side pairs by label before any id is consulted, unless its
+// id is authored on both sides (src/diff.ts `matchRooms`, passes 0 and 1).
 // ---------------------------------------------------------------------------
 
 const autoPlan = (rooms: string[]): string =>
@@ -206,6 +206,53 @@ suite("diffPlans — auto-id rooms pair by unique label", () => {
     expect(d.rooms).toHaveLength(2);
   });
 
+  // backlog M.7: an insertion plus a newly authored `id=` in the same edit. The id authored
+  // on ONE side only is no stable key, so the unique label pairs the old auto-id Hall with
+  // the new `id=hall` Hall, and the inserted Kitchen is the one added. Before the fix pass 1
+  // read labels only for rooms auto on both sides, so the positional room_1 paired Hall with
+  // Kitchen: `Relabeled room_1 to "Kitchen"`, `Added Hall`.
+  it("M.7: an insertion plus a newly authored id= keeps Hall and adds Kitchen", () => {
+    const kitchenAtHall = `  room at (0,0) size 3000x3000 label "Kitchen"`;
+    const hallMoved = `  room id=hall at (3000,0) size 3000x3000 label "Hall"`;
+    const fwd = diffPlans(autoPlan([HALL]), autoPlan([kitchenAtHall, hallMoved]));
+    expect(fwd.ok).toBe(true);
+    expect(fwd.rooms).toEqual([
+      {
+        id: "hall",
+        label: "Hall",
+        change: "resized",
+        areaBeforeM2: 9,
+        areaAfterM2: 9,
+        edges: { top: 0, bottom: 0, left: 3000, right: 3000 },
+      },
+      { id: "room_1", label: "Kitchen", change: "added", areaAfterM2: 9 },
+    ]);
+    expect(fwd.summary).toEqual(["Hall +0.0 m²; left edge +3000 mm", "Added Kitchen (9.0 m²)"]);
+    const back = diffPlans(autoPlan([kitchenAtHall, hallMoved]), autoPlan([HALL]));
+    expect(back.summary).toEqual(["Hall +0.0 m²; left edge -3000 mm", "Removed Kitchen (9.0 m²)"]);
+  });
+
+  it("M.7: Hall kept in place under a new id= while Kitchen is inserted is one added room", () => {
+    const hallAuthored = `  room id=hall at (0,0) size 3000x3000 label "Hall"`;
+    const d = diffPlans(autoPlan([HALL]), autoPlan([KITCHEN, hallAuthored]));
+    expect(d.ok).toBe(true);
+    expect(d.rooms).toEqual([{ id: "room_1", label: "Kitchen", change: "added", areaAfterM2: 9 }]);
+    expect(d.summary).toEqual(["Added Kitchen (9.0 m²)"]);
+  });
+
+  it("an id authored on both sides outranks a unique label", () => {
+    // Labels swapped between two authored ids: two relabels, never a cross-id pairing.
+    const r = (id: string, x: number, label: string) => `  room id=${id} at (${x},0) size 3000x3000 label "${label}"`;
+    const d = diffPlans(
+      autoPlan([r("a", 0, "Hall"), r("b", 3000, "Kitchen")]),
+      autoPlan([r("a", 0, "Kitchen"), r("b", 3000, "Hall")]),
+    );
+    expect(d.rooms).toEqual([
+      { id: "a", label: "Kitchen", change: "relabeled" },
+      { id: "b", label: "Hall", change: "relabeled" },
+    ]);
+  });
+
   it("circulation follows the room pairing, not a shifted auto-id", () => {
     // diff-circ-a's two rooms without ids, then with their statements swapped: the auto-ids
     // swap (Living room_1 ↔ Bedroom room_1) and the plan does not change. Comparing walks by
@@ -267,6 +314,43 @@ suite("diffPlans — rooms that become blocked or unmeasured", () => {
     expect(diffPlans(noDoor, circA).summary).toContain(
       "Walk to bed: unmeasured (no_door_route) → 8000 mm (pinch 740 mm)",
     );
+  });
+
+  // backlog M.7: two verdicts the diff used to treat as "the same" although they differ.
+  it("M.7: blocked on both sides with a different widest way in is reported", () => {
+    // Shifted 250 mm into bed, the wardrobe still seals the doorway but leaves a 200 mm way in.
+    const wider = circA.replace(/\n}\s*$/, "\n  furniture wardrobe at (4300,400) size 600x1200 in bed\n}\n");
+    expect(describePlan(wider).circulation!.blocked).toEqual([{ roomId: "bed", widestWayInMm: 200 }]);
+    expect(describePlan(blocked).circulation!.blocked).toEqual([{ roomId: "bed", widestWayInMm: 0 }]);
+    const fwd = diffPlans(blocked, wider);
+    expect(fwd.ok).toBe(true);
+    expect(fwd.rooms).toEqual([]);
+    expect(fwd.furniture).toEqual([]);
+    expect(fwd.circulation).toEqual([]);
+    expect(fwd.summary).toEqual(["Walk to bed: blocked (widest way in 0 mm) → blocked (widest way in 200 mm)"]);
+    expect(diffPlans(wider, blocked).summary).toEqual([
+      "Walk to bed: blocked (widest way in 200 mm) → blocked (widest way in 0 mm)",
+    ]);
+  });
+
+  it("M.7: an entrance added or removed reports each matched room's walk against no model", () => {
+    const noEntrance = circA.replace(/^\s*door id=d_main .*$/m, "");
+    expect(describePlan(noEntrance).circulation).toBeNull();
+    const fwd = diffPlans(circA, noEntrance);
+    expect(fwd.ok).toBe(true);
+    expect(fwd.circulation).toEqual([]);
+    expect(fwd.summary).toEqual([
+      "Removed door d_main",
+      "Walk to living: 2300 mm (pinch 940 mm) → no circulation model",
+      "Walk to bed: 8000 mm (pinch 740 mm) → no circulation model",
+    ]);
+    expect(diffPlans(noEntrance, circA).summary).toEqual([
+      "Added door d_main (1000 mm)",
+      "Walk to living: no circulation model → 2300 mm (pinch 940 mm)",
+      "Walk to bed: no circulation model → 8000 mm (pinch 740 mm)",
+    ]);
+    // No model on either side is no change.
+    expect(diffPlans(noEntrance, noEntrance).summary).toEqual([]);
   });
 
   it("state sentences stay inside the trailing Walk-to block", () => {

@@ -2453,11 +2453,13 @@ The returned `PlanDiff` reports:
 **Matching** is by **id**, with two label rules for rooms. An `id` here is the element's
 **resolved id** — the explicit `id=` if you wrote one, otherwise the deterministic auto id
 (e.g. `room_1`), which is positional and shifts when a room is inserted, deleted or reordered
-ahead of it. So a room whose id is an auto id on **both** sides, and whose non-empty `label`
-names exactly one room on **each** side, is paired **by that label first**; every other
-room/opening/fixture is paired by its resolved id; and a room still unmatched is rescued only
-when its label is unique among the unmatched rooms on both sides. A room paired across two
-different ids is reported under its **after** id. Circulation deltas follow the same room
+ahead of it. Rooms pair in this order: an `id=` you wrote on **both** sides pairs first,
+whatever the labels say; then a room whose non-empty `label` names exactly one room on
+**each** side is paired **by that label** — whether its id is auto or written on one side
+only, since neither says which room it was before; then every other room/opening/fixture is
+paired by its resolved id; and a room still unmatched is rescued only when its label is
+unique among the unmatched rooms on both sides. A room paired across two different ids is
+reported under its **after** id (an id change alone is not a change). Circulation deltas follow the same room
 pairing. On a multi-storey plan `diffPlans` compares the **lowest storey only**, exactly as
 `describe()`'s top-level `rooms[]` does.
 
@@ -2470,7 +2472,10 @@ no `circulation` entry, since it has no walk to compare, and is reported as a tr
 `Walk to …` sentence in `summary` instead, e.g.
 `Walk to bed: 8000 mm (pinch 740 mm) → blocked (widest way in 0 mm)` or
 `Walk to bed: 8000 mm (pinch 740 mm) → unmeasured (no_door_route)`, with the reason code exactly
-as the API spells it.
+as the API spells it. The same sentence reports a room blocked on both sides whose widest way in
+moved past the 50 mm pinch threshold (`… blocked (widest way in 0 mm) → blocked (widest way in
+200 mm)`), and every matched room when one side has no circulation model at all (an entrance
+added or removed): `Walk to bed: 8000 mm (pinch 740 mm) → no circulation model`.
 
 The **`summary` sentences are stable, rendered strings** — their exact wording is a frozen part of
 the API (downstream UIs display them verbatim), so treat them as presentation, not as a parse

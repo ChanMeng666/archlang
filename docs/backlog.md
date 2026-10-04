@@ -1213,15 +1213,25 @@ machine load and pass alone: the same shape as 4.10, and the same options apply 
 timeout on the heavy cases, never a raised global `testTimeout`). Observed during this
 programme's gate runs; not reproduced on purpose here.
 
-### M.7 · `diffPlans` follow-ups — `todo`
+### M.7 · `diffPlans` follow-ups — closed
 
-An insertion plus a newly authored `id=` in the same edit still pairs the wrong rooms: before,
-auto "Hall"; after, auto "Kitchen" plus `id=hall` "Hall". Re-run: the summary reads
-`Relabeled room_1 to "Kitchen"`, `Added Hall`. Fixing it needs the unique-label match to run
-before the id pass whether or not the id is authored, keeping the rule symmetric (antisymmetry
-law). Still silent (from the card's report, not re-run): an entrance added or removed
-(`circulation` null on one side), and a room blocked on both sides with a different
-`widestWayInMm`. There is no `arch diff` command.
+An insertion plus a newly authored `id=` in the same edit paired the wrong rooms: before, auto
+"Hall"; after, auto "Kitchen" plus `id=hall` "Hall". Re-run: `Relabeled room_1 to "Kitchen"`,
+`Added Hall`. The entry's proposed fix (the unique-label pass for every room, authored or not)
+was incomplete: it re-pairs an `id=` authored on both sides by label, failing the `id=room_3`
+pin in `test/diff.test.ts` and the `planSpec` antisymmetry law. Closed in `src/diff.ts`
+`matchRooms`: an id authored on both sides pairs first (pass 0), then a label unique on each
+side pairs whatever the ids (pass 1); both read the two sides identically, so antisymmetry
+holds. The case now reads `Added Kitchen (9.0 m²)`.
+
+The two "still silent" cases both reproduced (`diffPlans` returned an empty summary for the
+second) and are now `Walk to …` sentences, no new field or change kind: a room blocked on both
+sides whose `widestWayInMm` moves past the 50 mm pinch floor, and each matched room against
+`no circulation model` when one side's `circulation` is null. Pinned in `test/diff.test.ts`
+(`M.7:` cases); `test/diff-laws.test.ts` runs the laws over mixed authored/auto ids with
+unique and repeated labels, where "a kept room is never reported" fails on the old matching
+(antisymmetry and identity do not: the old rule was symmetric, just wrong). There is no
+`arch diff` command.
 
 ### M.8 · The source formatter is lossy past three decimals, and silent when it refuses — `todo`
 
