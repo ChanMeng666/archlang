@@ -1185,10 +1185,14 @@ time), on `test/d4-oracle.ts`'s "Multi-storey buildings" section.
 `component storey_N() { body }` in place, and the plan closes with one
 `level N … { place storey_N() as g at (t,t) rotate r mirror m }` per storey, every storey
 placed by the same g. Not a whole-file import, which drops the levels; and not an imported
-component, which does not see its own module's plan-global `let`s (`townhouse`'s storeys are
-written in `W`, `SPINE`, …): `import "m.arch": s1` where `m.arch` declares `let W = 5000` and
-`s1` uses `W` gives `E_UNKNOWN_REF Unknown name "W"`, while the same component written inline
-sees the root's `let`. Not judged here whether that is intended. A storey's `roof` stays in its
+component, which at the time did not see its own module's plan-global `let`s (`townhouse`'s
+storeys are written in `W`, `SPINE`, …): `import "m.arch": s1` where `m.arch` declares
+`let W = 5000` and `s1` uses `W` gave `E_UNKNOWN_REF Unknown name "W"`, while the same
+component written inline sees the root's `let`. Judged since by the owner as a defect and fixed:
+an imported component now falls back to its own module's plan-level `let`s after every name it
+saw before (the root's `let` still wins), so that repro draws the inline form's room
+(`test/import-module-lets.test.ts`; the language reference's component Scope bullet). The oracle's
+inline construction is unchanged. A storey's `roof` stays in its
 `level` block (inside a component it is `E_ROOF_PLACEMENT`, by design: a roof belongs to the
 building), its `wall <id>` naming the placed `g.<id>`.
 

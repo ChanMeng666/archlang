@@ -469,6 +469,11 @@ bath(3000, 0)
 
 - **Scope:** a component body sees its **parameters**, its own `let`s, and the
   **plan-level** `let`s (plan scope is global) — but not the caller's locals.
+  For an **imported** component, "the plan" it was written against is its own
+  module: a name none of those bind (nor a built-in) resolves against the
+  module's plan-level `let`s and value-functions, evaluated in the module's own
+  scope. The importing plan's `let` wins when both define a name, and the
+  module's `let`s are not exported — see [imports](#a-module-keeps-its-own-lets).
 - Auto-assigned ids stay unique across instantiations (the whole drawing is
   numbered per kind), so two `bath(...)` calls yield `room_1`/`room_2`, etc.
 - Infinite recursion is bounded and reported as an error.
@@ -605,6 +610,45 @@ Two rules follow from "one drawing is issued on one sheet at one scale":
 The module's own `component`s stay available to its body, so a file may call its
 private helpers even though the importer knows only the file's name. Parametric
 components keep the named form: `import "lib/fixtures.arch": wc, basin`.
+
+#### A module keeps its own `let`s
+
+A component imported by name
+(`import "m.arch": s1`), or one the whole-file component calls, sees the
+plan-level `let`s and value-functions of the module it was written in, so a
+library component written against a module constant keeps working when it is
+imported:
+
+```
+# m.arch
+plan "m" {
+  units mm
+  let W = 5000
+  component s1() { room id=r at (0,0) size W x 3000 }
+}
+```
+
+`import "m.arch": s1` then `place s1() as g at (0,0)` draws the 5000 mm room,
+exactly as the same component written inline beside a `let W = 5000` would.
+
+- **The module is the last place a name is looked up.** Its parameters, its body's
+  own `let`s, the **importing plan's** `let`s and the built-ins all come first,
+  so where the importer also defines `W`, the importer's wins (as it always has —
+  this rule only gives a meaning to a name that used to be
+  [`E_UNKNOWN_REF`](error-codes.md#e_unknown_ref)), and a module `let` named like
+  a built-in (`min`, `max`, …) does not replace it inside the component.
+- **The module's `let`s are not exported.** The importer's own statements, and
+  components the importer declares, cannot see them.
+- **Each component sees the module it was written in.** A component that `m.arch`
+  itself imports from `n.arch` sees `n.arch`'s `let`s, not `m.arch`'s.
+- **They are the module's top-level bindings, evaluated in the module's scope:**
+  its top-level `let`s (and reassignments, and those inside a top-level `zone`
+  or the control flow that reaches them) as they stand at the end of its top
+  level; a `level` block's `let`s belong to that storey. They are evaluated only
+  when a component first needs one, and a `let` that fails there reports the
+  same diagnostic it does in the module, naming the module's `file`.
+- The whole-file component itself is unchanged: its body runs the module's `let`s
+  as its own statements, as before.
 
 **A diagnostic raised inside an imported body names its file.** Its `span` is
 measured in *that* module, so `Diagnostic.file` says which one, and

@@ -53,6 +53,27 @@ export type Value =
 
 export type Env = Map<string, Value>;
 
+/**
+ * Where a name an {@link Env} does NOT bind is looked up before it is reported unknown: an
+ * imported component's body falls back to its own module's plan-level `let`s (`ir.ts`,
+ * `moduleFallback`). Held beside the map, never in it, so every name the env binds — a
+ * parameter, a local, a root plan `let`, a built-in — wins, and a lookup that succeeds
+ * without it evaluates, copies and charges exactly what it did before it existed: only a
+ * lookup that would otherwise be `E_UNKNOWN_REF` / `E_UNKNOWN_FN` ever consults it.
+ */
+export type EnvFallback = (name: string) => Value | undefined;
+const fallbacks = new WeakMap<Env, EnvFallback>();
+
+/** Give `env` a {@link EnvFallback} (an env snapshot of a scope that has one). */
+export function setEnvFallback(env: Env, fallback: EnvFallback): void {
+  fallbacks.set(env, fallback);
+}
+
+/** `env`'s binding of `name`, else its fallback's, else undefined. */
+function lookup(env: Env, name: string): Value | undefined {
+  return env.get(name) ?? fallbacks.get(env)?.(name);
+}
+
 /** The source span of an expression, when it carries one (for diagnostics). */
 export function exprSpan(e: Expr): Span | undefined {
   return "span" in e ? e.span : undefined;
@@ -723,6 +744,11 @@ export function chargeSteps(n: number): void {
   if (meter.used > meter.limit) throw new StepLimitSignal({ span: meter.span, file: meter.file, frame: meter.frame });
 }
 
+/** The statement now executing, or undefined outside a resolution. */
+export function currentStepSite(): StepSite | undefined {
+  return meter === null ? undefined : { span: meter.span, file: meter.file, frame: meter.frame };
+}
+
 /** Record the statement now executing (the site a crossing is reported at). */
 export function stepSite(span: Span | undefined, file?: string, frame?: unknown): void {
   if (meter !== null) {
@@ -814,7 +840,7 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, de
       case "fnlit":
         return { t: "fn", params: e.params, body: e.body, closure: env };
       case "ref": {
-        const v = env.get(e.name);
+        const v = lookup(env, e.name);
         if (v === undefined) {
           const hint = closest(e.name, [...env.keys()]);
           onError({
@@ -901,7 +927,7 @@ function evalCall(e: Extract<Expr, { t: "call" }>, env: Env, onError: (d: Diagno
   // the stack is what bounds nested evaluation (see `MAX_EVAL_NEST`).
   const args: Value[] = [];
   for (const a of e.args) args.push(evalExpr(a, env, onError, depth));
-  const callee = env.get(e.callee);
+  const callee = lookup(env, e.callee);
   if (callee && callee.t === "fn") {
     if (args.length !== callee.params.length) {
       onError({
@@ -923,6 +949,9 @@ function evalCall(e: Extract<Expr, { t: "call" }>, env: Env, onError: (d: Diagno
     // The closure is copied per call: a binding copied is a step (see `MAX_EVAL_STEPS`).
     chargeSteps(callee.closure.size);
     const callEnv: Env = new Map(callee.closure);
+    // A function written in an imported component's body keeps the body's fallback.
+    const fallback = fallbacks.get(callee.closure);
+    if (fallback) fallbacks.set(callEnv, fallback);
     callee.params.forEach((p, i) => {
       callEnv.set(p, args[i] ?? NUM0);
     });

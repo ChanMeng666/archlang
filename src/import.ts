@@ -56,6 +56,61 @@ function resolveSpec(spec: string, baseDir: string): { path: string } | { error:
 
 type CompMap = Map<string, ComponentDef>;
 
+/**
+ * The statements that bind a module's plan-level names, keyed by each component the module
+ * DECLARES (see {@link moduleBindings}). A side table rather than a field, so a linked
+ * `ComponentDef` keeps exactly the keys it had; it is filled once per link, from the parsed
+ * module, and read by the resolver.
+ */
+const bindingsByDef = new WeakMap<ComponentDef, Statement[]>();
+
+/**
+ * The plan-level binding statements of the module `def` was declared in, when it came in
+ * through an `import` and that module binds anything: its top-level `let`s and
+ * reassignments, the control flow that can reach them, and those inside a top-level `zone`
+ * (a zone is not a scope). Its body falls back to the names they bind, evaluated in the
+ * module's own scope (`ir.ts` `moduleFallback`) — "the plan" an imported component was
+ * written against is its own module. Undefined for a component declared in the compiled
+ * source and for the synthetic whole-file component, whose body runs those statements itself.
+ */
+export function moduleBindings(def: ComponentDef): Statement[] | undefined {
+  return bindingsByDef.get(def);
+}
+
+/**
+ * {@link moduleBindings} of one module body — the body the whole-file component is built
+ * from, less every statement that draws, declares a default or places: what is left is
+ * what binds a plan-level name, in source order. A `level` block is dropped as it is for
+ * the whole-file component (its `let`s are the storey's, not the plan's).
+ */
+function bindingsOf(body: Statement[]): Statement[] {
+  const out: Statement[] = [];
+  for (const s of body) {
+    switch (s.kind) {
+      case "let":
+      case "assign":
+        out.push(s);
+        break;
+      case "zone":
+        out.push(...bindingsOf(s.body));
+        break;
+      case "for":
+      case "while": {
+        const inner = bindingsOf(s.body);
+        if (inner.length > 0) out.push({ ...s, body: inner });
+        break;
+      }
+      case "if": {
+        const then = bindingsOf(s.then);
+        const els = s.else ? bindingsOf(s.else) : [];
+        if (then.length > 0 || els.length > 0) out.push({ ...s, then, ...(els.length > 0 ? { else: els } : {}) });
+        break;
+      }
+    }
+  }
+  return out;
+}
+
 /** One loaded module: the components it exports, plus the whole-file body it *is*. */
 interface Module {
   comps: CompMap;
@@ -158,7 +213,12 @@ function loadModule(
   // its machine-applicable fix) from being applied to the wrong file — see
   // `Diagnostic.file` and `applyFixes`.
   const comps: CompMap = new Map();
-  for (const [k, def] of plan?.components ?? []) comps.set(k, { ...def, file: path });
+  const bindings = plan ? bindingsOf(plan.body) : [];
+  for (const [k, def] of plan?.components ?? []) {
+    const linked: ComponentDef = { ...def, file: path };
+    if (bindings.some((s) => s.kind === "let")) bindingsByDef.set(linked, bindings);
+    comps.set(k, linked);
+  }
   if (plan) {
     for (const imp of plan.imports) mergeImport(comps, imp, dirOf(path), world, registry, diagnostics, stack, cache);
   }
