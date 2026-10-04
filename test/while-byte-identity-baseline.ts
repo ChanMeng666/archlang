@@ -113,6 +113,14 @@
  * message's measured numbers) move; level 2's SVG is byte-identical. Field by field in
  * `./byte-identity-baseline.ts`, "the example stopped seating its tables twice". No other
  * example row and no fixture row moved.
+ *
+ * `examples/hillside-villa.arch` re-measured, with this test's own digest body, for backlog D.2:
+ * the example's SOURCE changed (its `piano` moved beside the bay, turned `rotate 270` and given
+ * a 1600x1200 footprint that holds the bench); the compiler did not. Level 1's SVG (the piano
+ * only), `describe()` (the piano's `rotate`, three bottlenecks 940 → 1100) and `lint()` (five
+ * spans, +11 bytes) move; level 2's SVG and `compile().diagnostics` are byte-identical. Field by
+ * field in `./byte-identity-baseline.ts`, "the piano turns its keyboard to the room". No other
+ * example row and no fixture row moved.
  */
 export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/accessible.arch", "7d17249d81b43f1ff5b17c6b1219750bbdd695599f31e66fb298be9facc7c169"],
@@ -126,7 +134,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/garden-house.arch", "a359a2c2b3136a43f5887cd10c184f0d4e6577fcdd57ab1fee49b8709059931b"], // re-measured, see header
   ["examples/garden-loft.arch", "1fbeaf41b1f1b981f274a1501ed870bb6b3ebc2ec377bd15e588e78cbd07ab7b"],
   ["examples/hexagon-pavilion.arch", "293447ab543aa86945af475e440ff85cddb8070f3330d6887e94f5e344d4c216"],
-  ["examples/hillside-villa.arch", "233b1b68ac50ff026ca0299f4083191dfdc557556f99ca6b78483d9ba515a4ad"], // re-measured, see header
+  ["examples/hillside-villa.arch", "8321d132254774bd2aa79bf88cd9e9fd36a3f452a8f2af8eeae7cae4a95ff675"], // re-measured, see header
   ["examples/imports.arch", "dbbdb95881775e34e5abecc72a52bc72160af81a5883ddced18bbf3d7f1a7f2c"],
   ["examples/laneway-house.arch", "2315eb23382b52aa784930c332c00083b7d9931c4620a46b8b710c75e4c1195e"],
   ["examples/library.arch", "5c4913bdc5e2960d6cac2203cdb775ed56179c232550efe893a1dfab492d3215"],

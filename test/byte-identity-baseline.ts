@@ -716,6 +716,27 @@
  * rastered over one fixed window differ only within x ∈ [2880, 3420] ∪ [3680, 6620] ∪
  * [10280, 12820], y ∈ [8880, 15900] ∪ [33440, 40440] mm: the chairs, the label and the legend
  * (its frame, and its rows from the removed one down).
+ *
+ * ## `hillside-villa`: both rows re-measured — the piano turns its keyboard to the room
+ *
+ * The example SOURCE changed and the compiler did not (backlog D.2). The living room's
+ * `piano at (3200,4400) size 1300x1300` stood with its keyboard 100 mm off the north wall, on
+ * a square footprint too shallow for the bench. It is now `at (3000,8700) size 1600x1200
+ * rotate 270`, by the east wall beside the bay: keyboard to the west, a depth of 1.33 widths
+ * so the bench is drawn, 125 mm off the east wall face and 175 mm off the south one. Field by
+ * field, ground storey only — level 2's SVG and `compile().diagnostics` are byte-identical:
+ *
+ *   - **SVG (level 1).** Only the piano's primitives: the old glyph's are gone and the new
+ *     one's (with the bench's two) are drawn, ink within x ∈ [3036, 4593], y ∈ [8700, 9900].
+ *   - **`describe()`.** The piano gains `rotate: 270`. It no longer stands in the mouth of the
+ *     living/dining opening, so three bottlenecks widen 940 → 1100 mm: `r_living`, `r_dining`
+ *     and the kitchen → dining route. No walk distance moves.
+ *   - **`lint()`.** The same nine warnings, field for field, but for a uniform span shift of
+ *     +11 on the five diagnostics below the piano line: the bytes ` rotate 270` added.
+ *
+ * Swept over all 273 corpus plans as above: no other row moved. The PNG golden's changed
+ * pixels lie within x ∈ [2971, 4665], y ∈ [4351, 5780] ∪ [8639, 9963] mm: where the piano
+ * stood and where it stands.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -731,7 +752,7 @@ export const BASELINE: [string, string][] = [
   ["garden-house", "d0ba18e7bdeb8c6bec7344e88a36b18e99927beaa0baf52e6bf71faf6aba6606"], // re-measured, see header
   ["garden-loft", "bcbf52e5d8b7875906721d8367552e463d642428516530d733c8b9feb29c2f9f"],
   ["hexagon-pavilion", "22030edea2fcaddfdc5d94d776849a8065bd287196664967e3f415285b0458cc"],
-  ["hillside-villa", "d8ec896b04651d4824a0afd3a05cd815e476e6f45169b4edb1992a1b3f45befb"], // re-measured, see header
+  ["hillside-villa", "0313a5001d36b509d377fc1855be6243efbc6475c9d774f7519ca4d1ead3129a"], // re-measured, see header
   ["imports", "3490c17b19f31dfc3a82ce20a2218a4e8f48f0fd979a2c88f23e6a7ddfd75b00"],
   ["laneway-house", "f9c3b29a51508234ab6f8426be062f3087f482cfa2b124ba75fdab150b4d18bc"],
   ["library", "51d1c1a151192315fa19c2fa526ca9192ce84abdd9e6084c4dff4d30aed1c086"],
@@ -775,7 +796,7 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["garden-house", "89466ed2864b0161919158114a71bef855bb6ad9b50157992eed30290a943e3f"], // re-measured, see header
   ["garden-loft", "ad8935f435045684b7ed9975254dc2daf0357f4eb3735e514e319980ebecf793"],
   ["hexagon-pavilion", "9a3e3666e6e2b09d04a6239c984415ec92ffa487c8aa743fc8506f4bc0f97a61"],
-  ["hillside-villa", "3d97752400b255d53c901d122d69bddf189cdfb7b6d46455b11b090d0517a686"], // re-measured, see header
+  ["hillside-villa", "37b805898d18e43af1e5f78224c4467e1792420fb49f99dbc9f96bd7d29c3221"], // re-measured, see header
   ["imports", "5c75030d46ecbfc8b1e80b40945d17bd13afb68a813a286b9ddfe23252452cbc"],
   ["laneway-house", "9a173beb7f213286b8e0c117d829d126166b93e118f91894ba278005254a5255"],
   ["library", "f81107388c6547af37b0938ecc06a1f3ab3acbe69916edb7b0c9c76a4c9f3477"],

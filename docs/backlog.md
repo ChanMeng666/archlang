@@ -1541,14 +1541,6 @@ byte moved, and each replaced pass is compared with its old form, kept verbatim,
 Things the plan-symbol redraw turned up and deliberately did not widen into. Each was re-run on
 `main` for this entry through the CLI or the source named in it.
 
-### D.2 · `hillside-villa`'s piano faces its keyboard into the wall — `todo`
-
-A `piano` draws its keyboard along the top edge. `examples/hillside-villa.arch` places it
-`at (3200,4400) size 1300x1300` with no `rotate`, so the keys sit 100 mm off the 200 mm
-`w_l1_band_w` face at y = 4300, and the square footprint is too shallow for the bench (it needs a
-depth of 1.3 widths). Re-run: that wall, room and piano alone, `-f png -s 2`. A `rotate` (and a
-deeper footprint for the bench) in the example fixes it.
-
 ### D.3 · Ground-material legend swatches still show few marks — `todo`
 
 The swatch frame (`GROUND_SWATCH_FRAME`, `src/hatches.ts`) put each pattern's own marks in view,

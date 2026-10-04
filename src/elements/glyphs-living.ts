@@ -756,7 +756,7 @@ function grandLoop(gc: GrandCase, x0: number, x1: number, yTop: number, t: numbe
  * `[8, 24]`.
  *
  * **The bench** is drawn only when the footprint allows it — depth at least 1.3 × width — so a
- * near-square footprint (every piano the examples place) is all piano and a long one holds the
+ * near-square footprint is all piano and a long one holds the
  * piano and its player: the case keeps a depth of at least its width behind a bench zone of 0.3 ×
  * width, and the bench is half the width across, centred on the keys.
  *
