@@ -35,6 +35,7 @@ import {
   type PlanDiff,
   type RoomChange,
 } from "../src/diff.js";
+import { describe as describePlan } from "../src/describe.js";
 import { planSpec, renderPlan, type PlanSpec } from "./arbitrary-plan.js";
 
 const fx = (name: string) => readFileSync(join(__dirname, "fixtures", name), "utf8");
@@ -355,8 +356,8 @@ describe("diffPlans — an empty-string label is never a rescue key", () => {
 // Auto-id rooms under insertion, deletion and permutation.
 //
 // `room_<n>` is positional, so an inserted, deleted or reordered room shifts every later
-// auto-id; `diffPlans` pairs a room that is auto-id on both sides and whose label is unique
-// on each side BY LABEL first (src/diff.ts `matchRooms`, pass 1). Such a pair's two ids
+// auto-id; `diffPlans` pairs a room whose label is unique on each side BY LABEL first, unless
+// its id is authored on both sides (src/diff.ts `matchRooms`, passes 0 and 1). Such a pair's two ids
 // can differ, and a "resized"/"relabeled" change carries the AFTER side's id — so the
 // `room:id` key the laws above use names a label-paired room by a different id in each
 // direction. That is not an antisymmetry failure but a keying one: the PAIRING is what must
@@ -517,6 +518,167 @@ describe("diffPlans — auto-id rooms under insertion, deletion and permutation"
         expect(back.rooms).toEqual([{ id: "room_1", label: "R0", change: "removed", areaBeforeM2: 9 }]);
       }),
       { numRuns: 30, seed: 20261001 },
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Mixed authored and auto ids, unique and repeated labels (backlog M.7).
+//
+// The generator above has every id auto and every label unique, the one shape in which
+// "label first only when auto on both sides" and "label first" agree, so it could not see
+// an insertion plus a newly authored `id=` pairing the wrong rooms. Here each room of the
+// same eight-slot universe carries an authored id `r<i>` or none, and no label, its own
+// label `R<i>`, or one of two shared labels; side B may toggle the id between authored and
+// auto (an `id=` added or dropped) and change the label. Every pair `diffPlans` forms has
+// an equal id or an equal label on both sides (pass 0 and the id loop pair equal ids, pass 1
+// and the rescue equal labels), so a resize is matched to its counterpart by either key with
+// equal content; a relabel (labels differ) only by id.
+// ---------------------------------------------------------------------------
+
+type LabelMode = "none" | "own" | "Dup" | "Twin";
+interface MixedRoom {
+  i: number;
+  authored: boolean;
+  label: LabelMode;
+  shrink: number;
+}
+
+function mixedPlan(rooms: MixedRoom[]): string {
+  const lines = rooms.map(({ i, authored, label, shrink }) => {
+    const at = `(${(i % 4) * 3000},${Math.floor(i / 4) * 3000})`;
+    const text = label === "none" ? "" : ` label "${label === "own" ? `R${i}` : label}"`;
+    return `  room${authored ? ` id=r${i}` : ""} at ${at} size ${3000 - shrink}x3000${text}`;
+  });
+  return (
+    `plan "P" {\n  units mm\n` +
+    `  wall exterior thickness 200 { (0,0) (12000,0) (12000,6000) (0,6000) close }\n` +
+    `${lines.join("\n")}\n}\n`
+  );
+}
+
+/** The rooms half of the antisymmetry law over pairs that may cross ids (see above). */
+function assertMixedRoomsInvert(ab: RoomChange[], ba: RoomChange[]): void {
+  expect(ba.length, "room change counts differ").toBe(ab.length);
+  const strip = (r: RoomChange): unknown => {
+    const copy: Partial<RoomChange> = { ...r };
+    if (r.change === "resized" || r.change === "relabeled") {
+      delete copy.id;
+      delete copy.label;
+    }
+    return roundFloats(copy);
+  };
+  // Key-order- and `undefined`-insensitive, like `toEqual`.
+  const canon = (v: unknown): string =>
+    JSON.stringify(v, (_k, x: unknown) =>
+      x && typeof x === "object" && !Array.isArray(x)
+        ? Object.fromEntries(Object.entries(x).sort(([p], [q]) => (p < q ? -1 : p > q ? 1 : 0)))
+        : x,
+    );
+  const used = new Set<RoomChange>();
+  for (const s of ab) {
+    const inv = invertRoom(s);
+    const fits = (d: RoomChange): boolean =>
+      !used.has(d) && d.change === inv.change && canon(strip(d)) === canon(strip(inv));
+    let hit = ba.find((d) => fits(d) && d.id === s.id);
+    if (!hit && s.change === "resized" && s.label) hit = ba.find((d) => fits(d) && d.label === s.label);
+    expect(hit, `no inverted counterpart for ${s.change} ${s.id} (${s.label ?? "-"})`).toBeDefined();
+    used.add(hit!);
+  }
+}
+
+const labelModeArb = fc.constantFrom<LabelMode>("none", "own", "own", "Dup", "Twin");
+const mixedRoomArb = (i: number) =>
+  fc.record({ i: fc.constant(i), authored: fc.boolean(), label: labelModeArb, shrink: fc.constantFrom(0, 0, 500) });
+const mixedPairArb = fc.record({
+  rooms: fc.tuple(...[0, 1, 2, 3, 4, 5, 6, 7].map(mixedRoomArb)),
+  a: fc.shuffledSubarray([0, 1, 2, 3, 4, 5, 6, 7], { minLength: 1 }),
+  b: fc.shuffledSubarray([0, 1, 2, 3, 4, 5, 6, 7], { minLength: 1 }),
+  toggleIdB: fc.array(fc.boolean(), { minLength: 8, maxLength: 8 }),
+  labelB: fc.array(fc.option(labelModeArb, { freq: 3 }), { minLength: 8, maxLength: 8 }),
+  shrinkB: fc.array(fc.constantFrom(0, 0, 0, 500), { minLength: 8, maxLength: 8 }),
+});
+type MixedPair = typeof mixedPairArb extends fc.Arbitrary<infer T> ? T : never;
+const mixedSides = (p: MixedPair): { srcA: string; srcB: string } => ({
+  srcA: mixedPlan(p.a.map((i) => p.rooms[i]!)),
+  srcB: mixedPlan(
+    p.b.map((i) => ({
+      i,
+      authored: p.rooms[i]!.authored !== p.toggleIdB[i],
+      label: p.labelB[i] ?? p.rooms[i]!.label,
+      shrink: p.rooms[i]!.shrink + p.shrinkB[i]!,
+    })),
+  ),
+});
+
+describe("diffPlans — mixed authored/auto ids, unique and repeated labels", () => {
+  it("antisymmetry: diffPlans(B, A) is diffPlans(A, B) inverted, pair by pair", () => {
+    fc.assert(
+      fc.property(mixedPairArb, (p) => {
+        const { srcA, srcB } = mixedSides(p);
+        const ab = diffPlans(srcA, srcB);
+        const ba = diffPlans(srcB, srcA);
+        expect(ab.ok && ba.ok, "a generated plan failed to resolve").toBe(true);
+        assertMixedRoomsInvert(ab.rooms, ba.rooms);
+        expect(roundFloats(ba.totals)).toEqual(
+          roundFloats({
+            floorAreaBeforeM2: ab.totals.floorAreaAfterM2,
+            floorAreaAfterM2: ab.totals.floorAreaBeforeM2,
+            roomsBefore: ab.totals.roomsAfter,
+            roomsAfter: ab.totals.roomsBefore,
+          }),
+        );
+      }),
+      { numRuns: 200, seed: 20261003 },
+    );
+  });
+
+  it("identity: diffPlans(A, A) is empty for every generated plan", () => {
+    fc.assert(
+      fc.property(mixedPairArb, (p) => {
+        const { srcA, srcB } = mixedSides(p);
+        for (const src of [srcA, srcB]) {
+          const d = diffPlans(src, src);
+          expect(d.ok).toBe(true);
+          expect(d.rooms).toEqual([]);
+          expect(d.summary).toEqual([]);
+        }
+      }),
+      { numRuns: 60, seed: 20261003 },
+    );
+  });
+
+  it("a room kept unchanged under a uniquely-held label is never reported, whatever its id does", () => {
+    // Side B inserts, deletes and reorders rooms and adds or drops `id=` freely, but every
+    // room holds its own label and keeps its geometry, so a room on both sides is kept and
+    // must appear in no change. (A room on one side only may still pair positionally with
+    // another such room, as a move plus relabel — the diff cannot tell that from an add
+    // plus a remove, and this law does not ask it to.) Under the old matching, a kept room
+    // that gained or lost an `id=` fell back to its positional id and paired with a stranger.
+    fc.assert(
+      fc.property(mixedPairArb, (p) => {
+        const own = (i: number, authored: boolean): MixedRoom => ({ i, authored, label: "own", shrink: 0 });
+        const srcA = mixedPlan(p.a.map((i) => own(i, p.rooms[i]!.authored)));
+        const srcB = mixedPlan(p.b.map((i) => own(i, p.rooms[i]!.authored !== p.toggleIdB[i])));
+        const d = diffPlans(srcA, srcB);
+        expect(d.ok).toBe(true);
+        const kept = new Set(p.a.filter((i) => p.b.includes(i)).map((i) => `R${i}`));
+        const ids = (s: string) =>
+          new Set(
+            describePlan(s)
+              .rooms.filter((r) => kept.has(r.label ?? ""))
+              .map((r) => r.id),
+          );
+        const [keptA, keptB] = [ids(srcA), ids(srcB)];
+        // A change names a kept room when it carries its label, or (removed) its A-side id
+        // or (otherwise) its B-side id — the id each change kind reports under.
+        const touched = d.rooms.filter(
+          (r) => kept.has(r.label ?? "") || (r.change === "removed" ? keptA : keptB).has(r.id),
+        );
+        expect(touched).toEqual([]);
+        expect(d.rooms.length).toBeLessThanOrEqual(p.a.length + p.b.length - 2 * kept.size);
+      }),
+      { numRuns: 120, seed: 20261003 },
     );
   });
 });

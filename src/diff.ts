@@ -24,6 +24,10 @@ import type { Diagnostic } from "./diagnostics.js";
 const AREA_EPS_M2 = 0.05;
 /** A bbox edge may drift by this much (mm) before it counts as resized. */
 const EDGE_EPS_MM = 10;
+/** A walk may drift by this much (mm) before it counts as a circulation change. */
+const WALK_EPS_MM = 250;
+/** A clear width (a pinch, or a blocked room's widest way in) may drift by this much (mm). */
+const PINCH_EPS_MM = 50;
 
 export interface RoomChange {
   id: string;
@@ -88,33 +92,48 @@ function matchRooms(
 ): Array<[RoomSummary | null, RoomSummary | null]> {
   const pairs: Array<[RoomSummary | null, RoomSummary | null]> = [];
   const unmatchedAfter = new Map(after.map((r) => [r.id, r]));
-  // Pass 1 — an auto-id is POSITIONAL (`room_<n>` numbers rooms in source order), so it is a
-  // false key the moment a room is inserted or removed ahead of it: matching by it first
-  // paired every later room with its predecessor's successor. When a room's id is auto on
-  // BOTH sides and its non-empty label names exactly one room among ALL rooms on EACH side,
-  // the label is the better key, so those pairs match by label before any id is consulted.
-  // The rule reads both sides identically (auto on both, unique on both), so swapping
-  // "before" and "after" yields the same pairs — the antisymmetry law's precondition.
+  // Pass 0 — an id AUTHORED on both sides is the author's own stable key: it pairs first,
+  // whatever the labels say (relabelling `id=room_3` from "Bedroom" to "Study" while adding
+  // a new "Bedroom" is a relabel plus an add, not a swap). Authored-on-both is a property of
+  // the pair, read identically from either side.
+  const authoredAfter = new Map<string, RoomSummary>();
+  for (const b of after) if (!autoAfter.has(b.id)) authoredAfter.set(b.id, b);
+  const partner = new Map<RoomSummary, RoomSummary>();
+  const claimed = new Set<RoomSummary>();
+  for (const a of before) {
+    const b = autoBefore.has(a.id) ? undefined : authoredAfter.get(a.id);
+    if (!b) continue;
+    partner.set(a, b);
+    claimed.add(b);
+  }
+  // Pass 1 — every other id may be a false key. An auto-id is POSITIONAL (`room_<n>` numbers
+  // rooms in source order), so it shifts the moment a room is inserted or removed ahead of
+  // it; and an id authored on ONE side only says nothing about which room it was before
+  // (adding `id=hall` to "Hall" while inserting "Kitchen" ahead of it gave the old room_1
+  // to Kitchen). So a room left by pass 0 whose non-empty label names exactly one room among
+  // ALL rooms on EACH side pairs by that label before any id is consulted — auto or authored.
+  // Both conditions read both sides identically, so swapping "before" and "after" yields the
+  // same pairs — the antisymmetry law's precondition.
   const uniqBefore = uniqueLabels(before);
   const uniqAfter = uniqueLabels(after);
-  const autoByLabelAfter = new Map<string, RoomSummary>();
-  for (const b of after) if (b.label && uniqAfter.has(b.label) && autoAfter.has(b.id)) autoByLabelAfter.set(b.label, b);
-  // Claimed up front (so no id match below can take an after-room a later label pair
-  // needs), but EMITTED in the id loop below, in `before` order — a plan whose pairing
-  // this pass does not change keeps the change order it had.
-  const labelPartner = new Map<RoomSummary, RoomSummary>();
+  const byLabelAfter = new Map<string, RoomSummary>();
+  for (const b of after) if (b.label && uniqAfter.has(b.label) && !claimed.has(b)) byLabelAfter.set(b.label, b);
   for (const a of before) {
-    if (!a.label || !uniqBefore.has(a.label) || !autoBefore.has(a.id)) continue;
-    const b = autoByLabelAfter.get(a.label);
+    if (partner.has(a) || !a.label || !uniqBefore.has(a.label)) continue;
+    const b = byLabelAfter.get(a.label);
     if (!b) continue;
-    labelPartner.set(a, b);
-    unmatchedAfter.delete(b.id);
+    partner.set(a, b);
+    claimed.add(b);
   }
+  // Both passes claim up front (so no id match below can take an after-room a pair needs),
+  // but pairs are EMITTED in the id loop below, in `before` order — a plan whose pairing
+  // these passes do not change keeps the change order it had.
+  for (const b of claimed) unmatchedAfter.delete(b.id);
   const leftoverBefore: RoomSummary[] = [];
   for (const a of before) {
-    const partner = labelPartner.get(a);
-    if (partner) {
-      pairs.push([a, partner]);
+    const p = partner.get(a);
+    if (p) {
+      pairs.push([a, p]);
       continue;
     }
     const hit = unmatchedAfter.get(a.id);
@@ -149,13 +168,20 @@ function matchRooms(
 
 /** One room's circulation verdict, named by the `describe().circulation` key it comes from:
  *  measured (`rooms[]`), blocked by furniture (`blocked[]`) or not measured, with the
- *  model's own reason code (`unmeasured[]`). */
+ *  model's own reason code (`unmeasured[]`) — or, when that side's `circulation` is null
+ *  (no modeled entrance), no model at all. */
 type CirculationState =
   | { kind: "measured"; walkMm: number; pinchMm: number }
   | { kind: "blocked"; wayInMm: number }
-  | { kind: "unmeasured"; reason: string };
+  | { kind: "unmeasured"; reason: string }
+  | { kind: "none" };
 
-function circulationStates(c: NonNullable<SceneSummary["circulation"]>): Map<string, CirculationState> {
+const NO_MODEL: CirculationState = { kind: "none" };
+
+/** Every room's verdict on one side; `null` when that side has no circulation model, so
+ *  each room reads {@link NO_MODEL}. */
+function circulationStates(c: SceneSummary["circulation"]): Map<string, CirculationState> | null {
+  if (!c) return null;
   const out = new Map<string, CirculationState>();
   for (const r of c.rooms)
     out.set(r.roomId, { kind: "measured", walkMm: r.walkDistanceMm, pinchMm: r.bottleneckClearWidthMm });
@@ -165,16 +191,19 @@ function circulationStates(c: NonNullable<SceneSummary["circulation"]>): Map<str
 }
 
 /** Same verdict: both measured (their numbers are `CirculationChange`'s business), both
- *  blocked, or both unmeasured for the same reason. */
+ *  blocked with the widest way in within the pinch noise floor, both unmeasured for the
+ *  same reason, or both without a model. */
 function sameVerdict(a: CirculationState, b: CirculationState): boolean {
   if (a.kind === "unmeasured" && b.kind === "unmeasured") return a.reason === b.reason;
+  if (a.kind === "blocked" && b.kind === "blocked") return Math.abs(b.wayInMm - a.wayInMm) <= PINCH_EPS_MM;
   return a.kind === b.kind;
 }
 
 function statePhrase(s: CirculationState, mm: (v: number) => string): string {
   if (s.kind === "measured") return `${mm(s.walkMm)} (pinch ${mm(s.pinchMm)})`;
   if (s.kind === "blocked") return `blocked (widest way in ${mm(s.wayInMm)})`;
-  return `unmeasured (${s.reason})`;
+  if (s.kind === "unmeasured") return `unmeasured (${s.reason})`;
+  return "no circulation model";
 }
 
 /** Structural superset of {@link import("./describe.js").DoorSummary},
@@ -284,8 +313,6 @@ export function diffPlans(sourceA: string, sourceB: string, opts: DescribeOption
   }
   for (const f of afterFurn.values()) base.furniture.push({ id: f.id, category: f.category, change: "added" });
 
-  const WALK_EPS_MM = 250;
-  const PINCH_EPS_MM = 50;
   const name = (id: string, label?: string) => label ?? id;
   const mm = (v: number) => `${Math.round(v)} mm`;
   const m2 = (v: number) => `${v.toFixed(1)} m²`;
@@ -317,18 +344,22 @@ export function diffPlans(sourceA: string, sourceB: string, opts: DescribeOption
         });
       }
     }
+  }
 
-    // A matched room that is measured on one side and blocked/unmeasured on the other (or
-    // unmeasured for a different reason) has no `CirculationChange` — that shape is frozen
-    // API and carries two walks, which such a room does not have. It used to vanish from the
-    // diff entirely; it is reported here as a sentence built from each side's own verdict
-    // (`rooms[]`, `blocked[]` or `unmeasured[]`, which are total over the plan's rooms).
-    const beforeState = circulationStates(before.circulation);
-    const afterState = circulationStates(after.circulation);
+  // A matched room whose verdict differs — measured on one side and blocked/unmeasured on
+  // the other, unmeasured for a different reason, blocked on both with a different widest
+  // way in, or with no circulation model at all on one side (an entrance added or removed)
+  // — has no `CirculationChange`: that shape is frozen API and carries two walks, which such
+  // a room does not have. It used to vanish from the diff entirely; it is reported here as a
+  // sentence built from each side's own verdict (`rooms[]`, `blocked[]` or `unmeasured[]`,
+  // which are total over the plan's rooms whenever `circulation` is non-null).
+  const beforeState = circulationStates(before.circulation);
+  const afterState = circulationStates(after.circulation);
+  if (beforeState || afterState) {
     for (const [a, b] of pairs) {
       if (!a || !b) continue;
-      const sa = beforeState.get(a.id);
-      const sb = afterState.get(b.id);
+      const sa = beforeState ? beforeState.get(a.id) : NO_MODEL;
+      const sb = afterState ? afterState.get(b.id) : NO_MODEL;
       if (!sa || !sb || sameVerdict(sa, sb)) continue;
       stateSentences.push(`Walk to ${b.id}: ${statePhrase(sa, mm)} → ${statePhrase(sb, mm)}`);
     }
