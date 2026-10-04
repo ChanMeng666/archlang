@@ -576,18 +576,32 @@ export function hatchTileSize(spec: HatchSpec, gap: number): { w: number; h: num
  * few per square metre), so its tile is bigger than a legend swatch, and a swatch that simply
  * shows whatever falls inside it at the drawing's origin is often blank: the slab grid missed
  * both joints. Each row below picks the window that shows the pattern's own marks — the slab
- * joints crossing, two boards and a butt joint, two tufts — and shrinks the tile only where
- * no window at full size holds two of them (the turf and the waves). The plan's own surfaces
- * are untouched: this is read by the legend alone, and a wall material is never re-framed.
+ * joints crossing, two boards and a butt joint — and shrinks the tile only where no window at
+ * full size reads as the material (the waves, and the three scatters below). The plan's own
+ * surfaces are untouched: this is read by the legend alone, and a wall material is never
+ * re-framed.
+ *
+ * A SCATTER (turf tufts, gravel, the tarmac speckle) reads as its material only by showing
+ * several marks, and its `zoom` follows from its own tile. A swatch is 3.267 × 1.7 hatch
+ * modules on a sheet (`sheet-tables.ts`: the swatch column less its padding, by 0.6 of a row),
+ * so a tile `t` modules square carrying `n` marks puts `n × 5.553 / (zoom × t)²` of them in a
+ * swatch, and `zoom = √(n × 5.553 / (t² × N))` shows `N`:
+ *
+ *   - `gravel`  n = 16, t = 5,   N = 8 → 0.667
+ *   - `tarmac`  n = 5,  t = 2.6, N = 8 → 0.717
+ *   - `grass`   n = 4,  t = 6,   N = 6 → 0.321 (the fewest that read as turf: a tuft is three
+ *     strokes, and at N = 8 they close up into a tick)
+ *
+ * `test/outdoor.test.ts` counts the marks each swatch holds, on a sheet and off one.
  */
 const GROUND_SWATCH_FRAME: Readonly<Record<GroundMaterial, { zoom: number; focus: readonly [number, number] }>> = {
-  grass: { zoom: 0.8, focus: [0.41, 0.2] },
+  grass: { zoom: 0.32, focus: [0.5, 0.5] },
   planting: { zoom: 1, focus: [0.5, 0.5] },
   paving: { zoom: 1, focus: [0.5, 0.5] },
   deck: { zoom: 1, focus: [0.6, 0.5] },
-  gravel: { zoom: 1, focus: [0.5, 0.5] },
+  gravel: { zoom: 0.67, focus: [0.5, 0.5] },
   water: { zoom: 0.55, focus: [0.5, 0.5] },
-  tarmac: { zoom: 1, focus: [0.5, 0.5] },
+  tarmac: { zoom: 0.72, focus: [0.5, 0.5] },
 };
 
 /**

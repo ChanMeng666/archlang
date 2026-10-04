@@ -1541,13 +1541,6 @@ byte moved, and each replaced pass is compared with its old form, kept verbatim,
 Things the plan-symbol redraw turned up and deliberately did not widen into. Each was re-run on
 `main` for this entry through the CLI or the source named in it.
 
-### D.3 · Ground-material legend swatches still show few marks — `todo`
-
-The swatch frame (`GROUND_SWATCH_FRAME`, `src/hatches.ts`) put each pattern's own marks in view,
-but at swatch size they are few. Re-run: `examples/garden-house.arch -f png -s 6`, cropped to the
-legend: `grass` shows two tufts, `gravel` three marks, `tarmac` three dots. A
-denser swatch needs a smaller `zoom` per material, which is a judgement per pattern.
-
 ### D.4 · Fence ticks and window sills draw outside `bounds()` — `declared`
 
 `fence.bounds()` is the run's points, and every post tick stands `7 × thin` either side of the run;

@@ -121,6 +121,13 @@
  * spans, +11 bytes) move; level 2's SVG and `compile().diagnostics` are byte-identical. Field by
  * field in `./byte-identity-baseline.ts`, "the piano turns its keyboard to the room". No other
  * example row and no fixture row moved.
+ *
+ * `examples/garden-house.arch` re-measured, with this test's own digest body, for backlog D.3:
+ * the legend's `grass`, `gravel` and `tarmac` swatches draw their pattern at a smaller zoom.
+ * Only level 1's SVG moves (three swatch fills); the old SVG put back into the new payload
+ * reproduces the old row, so `describe()`, `lint()` and `compile().diagnostics` are
+ * byte-identical. Field by field in `./byte-identity-baseline.ts`, "three legend swatches show
+ * more marks". No other example row and no fixture row moved.
  */
 export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/accessible.arch", "7d17249d81b43f1ff5b17c6b1219750bbdd695599f31e66fb298be9facc7c169"],
@@ -131,7 +138,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/courtyard-house.arch", "c143144408b02775b6343eee9dbda3420a7947df651195bed024768620715335"],
   ["examples/furnished-flat.arch", "12473e1ca6aaacf6adea0da3c46565d93a14a8396700eed2f8d70dd90d73957a"],
   ["examples/gallery-l.arch", "0f52fc12ee4cf93c8d7c106be8a5a49c8b78c3a66cd9afabd00149d57f47802c"],
-  ["examples/garden-house.arch", "a359a2c2b3136a43f5887cd10c184f0d4e6577fcdd57ab1fee49b8709059931b"], // re-measured, see header
+  ["examples/garden-house.arch", "78af129f024f23540fc2ea037bd3ba8f5eb8875098303ee5899ce5a8fe4715d8"], // re-measured, see header
   ["examples/garden-loft.arch", "1fbeaf41b1f1b981f274a1501ed870bb6b3ebc2ec377bd15e588e78cbd07ab7b"],
   ["examples/hexagon-pavilion.arch", "293447ab543aa86945af475e440ff85cddb8070f3330d6887e94f5e344d4c216"],
   ["examples/hillside-villa.arch", "8321d132254774bd2aa79bf88cd9e9fd36a3f452a8f2af8eeae7cae4a95ff675"], // re-measured, see header

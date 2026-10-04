@@ -737,6 +737,19 @@
  * Swept over all 273 corpus plans as above: no other row moved. The PNG golden's changed
  * pixels lie within x ∈ [2971, 4665], y ∈ [4351, 5780] ∪ [8639, 9963] mm: where the piano
  * stood and where it stands.
+ *
+ * ## `garden-house`'s whole-surface row re-measured: three legend swatches show more marks
+ *
+ * Case (1), the compiler changed, in the drawing only (backlog D.3). The legend's `grass`,
+ * `gravel` and `tarmac` swatches draw their pattern at a smaller `zoom` (`GROUND_SWATCH_FRAME`,
+ * `src/hatches.ts`: 0.8 → 0.32, 1 → 0.67, 1 → 0.72), so each holds seven to nine marks instead
+ * of two to four. Field by field: level 1's SVG moves exactly three `<path>`s, those three
+ * swatches' re-framed fills; no surface on the plan moves. Level 2's SVG, `describe()`,
+ * `lint()` and `compile().diagnostics` are byte-identical: the old level-1 SVG put back into
+ * the new payload reproduces the old row, and the `SEMANTIC_BASELINE` row below did not move.
+ * Swept over all 273 corpus plans as above: no other row moved — `garden-house` is the one
+ * plan that draws a legend over those three materials. The PNG golden's changed pixels lie
+ * within x ∈ [3959, 4382], y ∈ [27618, 29418] mm, the swatch column from `grass` to `tarmac`.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -749,7 +762,7 @@ export const BASELINE: [string, string][] = [
   ["courtyard-house", "41f6ff56cc47f383795c0c9c11585de2d9846546d4fd3c96c2637a0ef2cd0447"],
   ["furnished-flat", "889f4246f5e98f589952d5e20e0acdfd6057f542e0620c8d20bce01dd17c88f0"],
   ["gallery-l", "af339b015babaa7a4cfa6fe45e4afe01a2643674f883f441b3066af686bc5601"],
-  ["garden-house", "d0ba18e7bdeb8c6bec7344e88a36b18e99927beaa0baf52e6bf71faf6aba6606"], // re-measured, see header
+  ["garden-house", "ade0cdc23758924a0dbc9fec12e549ea826bb874ce8ed94e7b8e2ce26bc25af7"], // re-measured, see header
   ["garden-loft", "bcbf52e5d8b7875906721d8367552e463d642428516530d733c8b9feb29c2f9f"],
   ["hexagon-pavilion", "22030edea2fcaddfdc5d94d776849a8065bd287196664967e3f415285b0458cc"],
   ["hillside-villa", "0313a5001d36b509d377fc1855be6243efbc6475c9d774f7519ca4d1ead3129a"], // re-measured, see header

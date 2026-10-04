@@ -600,11 +600,11 @@
 <polygon points="3954,27233 4346,27233 4346,27437 3954,27437" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="4454" y="27335" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">deck</text>
 <line x1="3900" y1="27505" x2="6600" y2="27505" stroke="#333333" stroke-width="13"/>
-<path d="M 50.2,16.5 L 540.2,16.5 L 540.2,271.5 L 50.2,271.5 Z" transform="translate(3913.84 27559.8) scale(0.8)" fill="url(#hatch-grass)" fill-rule="nonzero"/>
+<path d="M -252.5,41.25 L 972.5,41.25 L 972.5,678.75 L -252.5,678.75 Z" transform="translate(4034.8 27559.8) scale(0.32)" fill="url(#hatch-grass)" fill-rule="nonzero"/>
 <polygon points="3954,27573 4346,27573 4346,27777 3954,27777" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="4454" y="27675" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">grass</text>
 <line x1="3900" y1="27845" x2="6600" y2="27845" stroke="#333333" stroke-width="13"/>
-<path d="M 104,198 L 496,198 L 496,402 L 104,402 Z" transform="translate(3850 27715) scale(1)" fill="url(#hatch-gravel)" fill-rule="nonzero"/>
+<path d="M 7.46,147.76 L 592.54,147.76 L 592.54,452.24 L 7.46,452.24 Z" transform="translate(3949 27814) scale(0.67)" fill="url(#hatch-gravel)" fill-rule="nonzero"/>
 <polygon points="3954,27913 4346,27913 4346,28117 3954,28117" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="4454" y="28015" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">gravel</text>
 <line x1="3900" y1="28185" x2="6600" y2="28185" stroke="#333333" stroke-width="13"/>
@@ -620,7 +620,7 @@
 <polygon points="3954,28933 4346,28933 4346,29137 3954,29137" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="4454" y="29035" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">poche</text>
 <line x1="3900" y1="29205" x2="6600" y2="29205" stroke="#333333" stroke-width="13"/>
-<path d="M -40,54 L 352,54 L 352,258 L -40,258 Z" transform="translate(3994 29219) scale(1)" fill="url(#hatch-tarmac)" fill-rule="nonzero"/>
+<path d="M -116.22,14.33 L 428.22,14.33 L 428.22,297.67 L -116.22,297.67 Z" transform="translate(4037.68 29262.68) scale(0.72)" fill="url(#hatch-tarmac)" fill-rule="nonzero"/>
 <polygon points="3954,29273 4346,29273 4346,29477 3954,29477" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="4454" y="29375" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">tarmac</text>
 <line x1="3900" y1="29545" x2="6600" y2="29545" stroke="#333333" stroke-width="13"/>
