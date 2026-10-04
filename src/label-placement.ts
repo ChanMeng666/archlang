@@ -51,6 +51,7 @@ import { segmentRectangle, segmentsOfWall } from "./geometry.js";
 import { arcTessellate } from "./geometry/arc.js";
 import type { BBox } from "./geometry/rect.js";
 import { overlap1d } from "./geometry/rect.js";
+import { GridIndex } from "./geometry/grid-index.js";
 import { pointInPolygon, polygonBounds, rectInsidePolygon } from "./geometry/polygon.js";
 import { ROOF_LAYER } from "./elements/roof.js";
 import { OUTDOOR_LAYERS } from "./elements/outdoor.js";
@@ -238,21 +239,154 @@ function primBBox(prim: ScenePrim): BBox | null {
   }
 }
 
-/** Fraction of `rect`'s own area buried in any of `boxes` (summed, so a doubly-covered
+/**
+ * Boxes a label can be buried in, indexed so a query visits only the boxes it can touch.
+ *
+ * A query returns EXACTLY the float the plain loop `for (const b of boxes) sum +=
+ * overlapArea(rect, b)` returns (that loop is kept verbatim as the oracle in
+ * `test/label-placement-oracle.test.ts`): the same nonzero terms, added in the same index
+ * order. Only terms that are exactly `+0` are skipped, and `s + 0 === s` for every partial
+ * sum here (all terms are ≥ 0, so no sum is ever `-0`). A term is nonzero only when both
+ * overlaps are, i.e. when the two boxes share an interior point, and then they share a grid
+ * cell (`floor(v / cell)` is monotone). That argument needs finite numbers whose differences
+ * stay finite (so that a zero factor never meets an infinite one): a box or query outside
+ * {@link GRID_SAFE} is visited on every query, or answered by the plain loop.
+ *
+ * Exported for that oracle only; not part of the public surface.
+ */
+export class BoxSums {
+  readonly boxes: BBox[] = [];
+  private readonly cell: number;
+  /** Built on the first query that needs it (a small plan never does), then kept current. */
+  private grid: GridIndex<number> | undefined;
+  /** Boxes the grid cannot hold soundly: visited by every query. */
+  private readonly loose: number[] = [];
+  /** Scratch for a query's hits, reused (a typed array sorts numerically without a comparator). */
+  private hits = new Int32Array(64);
+  /** `seen[i] === stamp` when box `i` is already among this query's hits. */
+  private seen = new Int32Array(64);
+  private stamp = 0;
+
+  constructor(cell: number) {
+    this.cell = cell;
+  }
+
+  push(b: BBox): void {
+    this.boxes.push(b);
+    if (this.grid) this.index(this.boxes.length - 1);
+  }
+
+  private index(i: number): void {
+    const b = this.boxes[i]!;
+    if (gridSafe(b)) this.grid!.insert({ minX: b.x, minY: b.y, maxX: b.x + b.w, maxY: b.y + b.h }, i);
+    else this.loose.push(i);
+  }
+
+  /** `base` plus the overlap area of `rect` with every box from index `from` on, in index
+   *  order — the plain loop's running sum continued from where it stood after `from` boxes. */
+  sum(rect: BBox, from = 0, base = 0): number {
+    const boxes = this.boxes;
+    let sum = base;
+    // A short tail is cheaper to walk than to look up; either way the terms are the same.
+    if (boxes.length - from <= DIRECT_TAIL || !gridSafe(rect)) {
+      for (let i = from; i < boxes.length; i++) sum += overlapArea(rect, boxes[i]!);
+      return sum;
+    }
+    if (!this.grid) {
+      this.grid = new GridIndex<number>(this.cell);
+      for (let i = 0; i < boxes.length; i++) this.index(i);
+    }
+    let n = 0;
+    let hits = this.hits;
+    if (this.seen.length < boxes.length) {
+      const grown = new Int32Array(Math.max(boxes.length, this.seen.length * 2));
+      grown.set(this.seen);
+      this.seen = grown;
+    }
+    const seen = this.seen;
+    if (this.stamp === 0x7fffffff) {
+      seen.fill(0);
+      this.stamp = 0;
+    }
+    const stamp = ++this.stamp;
+    const take = (i: number): void => {
+      // A box in several of the cells is visited once per cell; it is summed once.
+      if (i < from || seen[i] === stamp) return;
+      seen[i] = stamp;
+      if (n === hits.length) {
+        const grown = new Int32Array(hits.length * 2);
+        grown.set(hits);
+        hits = grown;
+      }
+      hits[n++] = i;
+    };
+    this.grid.forEach({ minX: rect.x, minY: rect.y, maxX: rect.x + rect.w, maxY: rect.y + rect.h }, take);
+    for (const i of this.loose) take(i);
+    this.hits = hits;
+    for (const i of hits.subarray(0, n).sort()) sum += overlapArea(rect, boxes[i]!);
+    return sum;
+  }
+}
+
+/** How many trailing boxes {@link BoxSums.sum} walks directly rather than through the grid. */
+const DIRECT_TAIL = 32;
+
+/** Coordinates the grid argument in {@link BoxSums} holds for: finite, and small enough that
+ *  the difference of two of them is finite too. */
+const GRID_SAFE = 1e300;
+
+function gridSafe(b: BBox): boolean {
+  const x1 = b.x + b.w;
+  const y1 = b.y + b.h;
+  return (
+    Math.abs(b.x) <= GRID_SAFE && Math.abs(b.y) <= GRID_SAFE && Math.abs(x1) <= GRID_SAFE && Math.abs(y1) <= GRID_SAFE
+  );
+}
+
+/** Mean half-perimeter of the boxes (≥ 1): the grid's cell. Speed only — any cell gives the
+ *  same sums. */
+function meanExtent(boxes: readonly BBox[]): number {
+  let s = 0;
+  let n = 0;
+  for (const b of boxes) {
+    if (!gridSafe(b)) continue;
+    s += (Math.abs(b.w) + Math.abs(b.h)) / 2;
+    n++;
+  }
+  const m = n > 0 ? s / n : 1;
+  return m >= 1 ? m : 1;
+}
+
+/** Fraction of `rect`'s own area that a raw overlap `sum` is (summed, so a doubly-covered
  *  patch counts twice — exactly what makes a crowded spot score worse than a busy one). */
-function buried(rect: BBox, boxes: readonly BBox[]): number {
+function buried(rect: BBox, sum: number): number {
   const area = rect.w * rect.h;
   if (!(area > 0)) return 0;
-  let sum = 0;
-  for (const b of boxes) sum += overlapArea(rect, b);
   return sum / area;
 }
 
-/** How badly a text box at `rect` is crowded: what it is buried in, weighted. Drawn
- *  geometry is bad; another room's already-placed name is 40× worse, because two names
- *  on top of each other is the one failure a reader cannot decode. */
-function crowding(rect: BBox, obstacles: readonly BBox[], placed: readonly BBox[]): number {
-  return W_OBSTACLE * buried(rect, obstacles) + W_PLACED * buried(rect, placed);
+/** How badly a text box is crowded: what it is buried in, weighted. Drawn geometry is bad;
+ *  another room's already-placed name is 40× worse, because two names on top of each other
+ *  is the one failure a reader cannot decode. */
+function crowding(b: { obstacles: number; placed: number }): number {
+  return W_OBSTACLE * b.obstacles + W_PLACED * b.placed;
+}
+
+/**
+ * One place a label was tried, remembered across groups with the same signature (the same
+ * text box, anchor and ring: a pile of identical rooms). Its obstacle sum is fixed, and its
+ * placed-label sum is the plain loop's running sum over the first `placedN` placed labels,
+ * so a later group continues it over the labels placed since instead of starting again.
+ */
+interface Probe {
+  obstacles?: number;
+  placed: number;
+  placedN: number;
+}
+
+/** Bit-exact text of a number (`-0` kept apart from `0`). */
+function numKey(v: number): string {
+  return Object.is(v, -0) ? "-0" : String(v);
 }
 
 /**
@@ -280,7 +414,7 @@ export function relocateLabels(
   const own = new Set<number>();
   for (const g of groups) for (let i = g.from; i < g.to; i++) own.add(i);
 
-  const obstacles: BBox[] = [];
+  const obstacleList: BBox[] = [];
   // Walls come from the IR, per segment. The lowered wall nodes are a UNIONED region
   // whose bounding box is the entire building — true, useless, and it would make every
   // label in the plan read as colliding.
@@ -292,7 +426,7 @@ export function relocateLabels(
       const run = s.arc ? arcTessellate(s.arc) : [s.a, s.b];
       for (let k = 0; k + 1 < run.length; k++) {
         const b = bboxOfPoints(segmentRectangle(run[k]!, run[k + 1]!, s.thickness));
-        if (b) obstacles.push(inflate(b, clear));
+        if (b) obstacleList.push(inflate(b, clear));
       }
     }
   }
@@ -322,10 +456,30 @@ export function relocateLabels(
     // for, so a room label does move off a terrace's name.
     if (n.layer !== "labels" && n.layerName !== undefined && OUTDOOR_LAYERS.includes(n.layerName)) continue;
     const b = primBBox(n.prim);
-    if (b) obstacles.push(inflate(b, clear));
+    if (b) obstacleList.push(inflate(b, clear));
   }
 
-  const placed: BBox[] = [];
+  const obstacles = new BoxSums(meanExtent(obstacleList));
+  for (const b of obstacleList) obstacles.push(b);
+  // The placed labels' grid is sized from the label texts as drawn now (speed only).
+  const labelBoxes: BBox[] = [];
+  for (const g of groups) {
+    for (let i = g.from; i < g.to; i++) {
+      const n = nodes[i]!;
+      const b = n.layer === "labels" && n.prim.t === "text" ? primBBox(n.prim) : null;
+      if (b) labelBoxes.push(b);
+    }
+  }
+  const placed = new BoxSums(meanExtent(labelBoxes));
+  const probes = new Map<string, Probe[]>();
+  /** The fractions of `rect` buried in obstacles and in placed labels, the placed sum
+   *  continued from where `probe` last stood. */
+  const crowd = (rect: BBox, probe: Probe): { obstacles: number; placed: number } => {
+    probe.obstacles ??= obstacles.sum(rect);
+    probe.placed = placed.sum(rect, probe.placedN, probe.placed);
+    probe.placedN = placed.boxes.length;
+    return { obstacles: buried(rect, probe.obstacles), placed: buried(rect, probe.placed) };
+  };
   for (const g of groups) {
     const texts: number[] = [];
     for (let i = g.from; i < g.to; i++) {
@@ -349,27 +503,40 @@ export function relocateLabels(
       continue;
     }
 
-    if (buried(rect0, obstacles) + buried(rect0, placed) <= COLLIDE_MIN) {
+    const { ring, anchor } = g;
+    // Probe 0 is the trigger, 1 the incumbent, 2 + k the k-th lattice point.
+    let sig = `${numKey(rect0.x)},${numKey(rect0.y)},${numKey(rect0.w)},${numKey(rect0.h)}|${numKey(anchor.x)},${numKey(anchor.y)}|`;
+    for (const p of ring) sig += `${numKey(p.x)},${numKey(p.y)};`;
+    let mine = probes.get(sig);
+    if (!mine) {
+      mine = [];
+      probes.set(sig, mine);
+    }
+    const probe = (k: number): Probe => (mine[k] ??= { placed: 0, placedN: 0 });
+
+    const trigger = crowd(rect0, probe(0));
+    if (trigger.obstacles + trigger.placed <= COLLIDE_MIN) {
       placed.push(rect0);
       continue;
     }
 
-    const { ring, anchor } = g;
     const bb = polygonBounds(ring);
     const diag = Math.max(1, Math.hypot(bb.w, bb.h));
-    const score = (p: Point, preference: number): number => {
+    const score = (p: Point, preference: number, k: number): number => {
       const rect = shiftBBox(rect0, p.x - anchor.x, p.y - anchor.y);
-      return preference + (rectInsidePolygon(rect, ring) ? 0 : W_OUTSIDE) + crowding(rect, obstacles, placed);
+      return preference + (rectInsidePolygon(rect, ring) ? 0 : W_OUTSIDE) + crowding(crowd(rect, probe(k)));
     };
 
     // The incumbent is candidate zero and carries preference 0, so it wins every tie.
     let best = anchor;
-    let bestScore = score(anchor, 0);
+    let bestScore = score(anchor, 0, 1);
+    let k = 2;
     for (const fy of FRACTIONS) {
       for (const fx of FRACTIONS) {
         const p: Point = { x: bb.x + bb.w * fx, y: bb.y + bb.h * fy };
+        const slot = k++;
         if (!pointInPolygon(p.x, p.y, ring)) continue;
-        const s = score(p, 1 + (Math.hypot(p.x - anchor.x, p.y - anchor.y) / diag) * W_DISTANCE);
+        const s = score(p, 1 + (Math.hypot(p.x - anchor.x, p.y - anchor.y) / diag) * W_DISTANCE, slot);
         if (s < bestScore) {
           bestScore = s;
           best = p;

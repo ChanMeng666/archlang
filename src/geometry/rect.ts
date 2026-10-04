@@ -63,6 +63,123 @@ export function rectsOverlap(a: BBox, b: BBox): boolean {
   return ox > 1 && oy > 1;
 }
 
+/**
+ * How many unordered pairs of `boxes` {@link rectsOverlap} holds for: the same number a double
+ * loop over every pair counts, in O(n log n) — or `undefined` if a coordinate is not finite (the
+ * argument below needs finite values; the caller then counts pairs itself).
+ *
+ * The derivation, float for float. With `hi = x + w` (the same sum `rectOverlapAmounts`
+ * forms), `ox = fl(min(hiA, hiB) − max(xA, xB))`. Rounding is monotone, so `ox` is the least of
+ * the four `fl(hi − lo)` and `ox > 1` holds exactly when all four do. Two of them are the boxes'
+ * own widths: a box with `fl(hi − x) ≤ 1` (likewise in y) overlaps nothing, so only the m boxes
+ * that pass both are counted. For those, "A ends within 1 of B's start", `Lx(A,B) =
+ * !(fl(hiA − xB) > 1)`, cannot hold both ways: `fl(r) ≤ 1` means `r ≤ 1 + 2⁻⁵³` and `fl(r) > 1`
+ * means `r > 1 + 2⁻⁵³`, and the two cross differences sum to the two own widths. So the pairs
+ * that fail on x are exactly the ORDERED pairs with `Lx`, and by inclusion–exclusion
+ *
+ *   overlapping = C(m,2) − #Lx − #Ly + #(Lx(A,B) ∧ Ly(A,B)) + #(Lx(A,B) ∧ Ly(B,A))
+ *
+ * over ordered pairs (an unordered pair failing both axes has one x-order and one y-order).
+ * `Lx(A,B)` falls as `hiA` grows and rises as `xB` grows, so for each A the B it holds for are a
+ * suffix of the boxes sorted by `x` (found by binary search with the predicate itself, so ties
+ * and rounding are the predicate's own), and `Ly(B,A)` a prefix of those sorted by `hi`. Each
+ * term is then a one- or two-dimensional dominance count (a Fenwick tree over ranks).
+ */
+export function countOverlappingRectPairs(boxes: readonly BBox[]): number | undefined {
+  const lx: number[] = [];
+  const hx: number[] = [];
+  const ly: number[] = [];
+  const hy: number[] = [];
+  for (const b of boxes) {
+    const x1 = b.x + b.w;
+    const y1 = b.y + b.h;
+    if (!(Number.isFinite(b.x) && Number.isFinite(b.y) && Number.isFinite(x1) && Number.isFinite(y1))) return undefined;
+    if (!(x1 - b.x > 1 && y1 - b.y > 1)) continue;
+    lx.push(b.x);
+    hx.push(x1);
+    ly.push(b.y);
+    hy.push(y1);
+  }
+  const m = lx.length;
+  // Ranks: position in the order of a key (ties in any fixed order — the predicates depend on
+  // values only, so equal values always fall on the same side of a cut).
+  const order = (key: number[]): number[] => {
+    const idx = Array.from({ length: m }, (_, i) => i);
+    idx.sort((a, b) => key[a]! - key[b]!);
+    return idx;
+  };
+  const byLx = order(lx);
+  const byLy = order(ly);
+  const byHy = order(hy);
+  const sortedLx = byLx.map((i) => lx[i]!);
+  const sortedLy = byLy.map((i) => ly[i]!);
+  const sortedHy = byHy.map((i) => hy[i]!);
+  const rankLy = new Array<number>(m);
+  const rankHy = new Array<number>(m);
+  byLy.forEach((i, r) => {
+    rankLy[i] = r;
+  });
+  byHy.forEach((i, r) => {
+    rankHy[i] = r;
+  });
+  /** First index of `sorted` where `holds` turns true (it is false then true along `sorted`). */
+  const firstTrue = (sorted: number[], holds: (v: number) => boolean): number => {
+    let lo = 0;
+    let hi = sorted.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if (holds(sorted[mid]!)) hi = mid;
+      else lo = mid + 1;
+    }
+    return lo;
+  };
+  // Per box A: B with Lx(A,B) are byLx[cutX..]; with Ly(A,B) are ranks rankLy ≥ cutY; with
+  // Ly(B,A) are ranks rankHy < cutHy.
+  const cutX = new Array<number>(m);
+  const cutY = new Array<number>(m);
+  const cutHy = new Array<number>(m);
+  let notX = 0;
+  let notY = 0;
+  for (let a = 0; a < m; a++) {
+    const ha = hx[a]!;
+    const va = hy[a]!;
+    const la = ly[a]!;
+    cutX[a] = firstTrue(sortedLx, (l) => !(ha - l > 1));
+    cutY[a] = firstTrue(sortedLy, (l) => !(va - l > 1));
+    cutHy[a] = firstTrue(sortedHy, (h) => h - la > 1);
+    notX += m - cutX[a]!;
+    notY += m - cutY[a]!;
+  }
+  // Two-dimensional counts: sweep the boxes A by cutX descending, adding each B whose x-rank
+  // is at least the cut, then count the added B by their y-rank.
+  const queries = Array.from({ length: m }, (_, i) => i).sort((a, b) => cutX[b]! - cutX[a]!);
+  const treeLy = new Array<number>(m + 1).fill(0);
+  const treeHy = new Array<number>(m + 1).fill(0);
+  const add = (tree: number[], r: number): void => {
+    for (let i = r + 1; i <= m; i += i & -i) tree[i]!++;
+  };
+  /** How many added ranks are below `r`. */
+  const below = (tree: number[], r: number): number => {
+    let s = 0;
+    for (let i = r; i > 0; i -= i & -i) s += tree[i]!;
+    return s;
+  };
+  let next = m - 1;
+  let added = 0;
+  let both = 0;
+  for (const a of queries) {
+    while (next >= cutX[a]!) {
+      const b = byLx[next--]!;
+      add(treeLy, rankLy[b]!);
+      add(treeHy, rankHy[b]!);
+      added++;
+    }
+    both += added - below(treeLy, cutY[a]!);
+    both += below(treeHy, cutHy[a]!);
+  }
+  return (m * (m - 1)) / 2 - notX - notY + both;
+}
+
 /** Is the point inside the rect (closed bounds — edges count as inside)? */
 export function pointInRect(px: number, py: number, r: BBox): boolean {
   return px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h;
