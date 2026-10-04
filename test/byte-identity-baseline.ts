@@ -669,6 +669,23 @@
  *
  * Re-measured for the visual-polish symbol redraw: SVG only, describe/lint/diagnostics unchanged
  * (substitution check reproduces the old digests).
+ *
+ * ## `hillside-villa`'s whole-surface row re-measured: `dims auto` ends on the outermost face
+ *
+ * Case (1), the compiler changed, in the drawing only (backlog E.17, `facade-probe-order`).
+ * Level 2's right facade has two parallel walls equidistant from its probe point (13800, 5100):
+ * the 300 mm shell and the `en_m` ensuite's 100 mm wall, both on x = 13800. `probeSide` kept
+ * whichever `ir.walls` listed first (the ensuite's, outer face 13850); it now keeps the
+ * outermost face (the shell's, 13950), where the walls are drawn. Field by field: level 2's
+ * SVG moves only the right-corner tick of the bottom and top `dims auto` chains, x 13850 →
+ * 13950 (the closing spans 5850 → 5950 and 1550 → 1650, both overalls 14000 → 14100, each
+ * number re-centred 50 mm right). Level 1's SVG, `describe()`, `lint()` and
+ * `compile().diagnostics` are byte-identical: the old level-2 SVG put back into the new
+ * payload reproduces the old row, and the `SEMANTIC_BASELINE` row below did not move. Swept
+ * over all 272 corpus plans (every storey; SVG, `describe()`, both `lint()` profiles,
+ * diagnostics): the only other drawing that moved is the E.17 witness fence in
+ * `docs/backlog.md`, the same tie. The PNG golden's changed pixels lie within
+ * x ∈ [6658, 14017], y ∈ [−990, −197] ∪ [10330, 11176] mm, the two chain bands.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -684,7 +701,7 @@ export const BASELINE: [string, string][] = [
   ["garden-house", "7c226b8593064a3bc782b5cfa01b5b79bcb46d0aa61120fd00cb535f36541a66"],
   ["garden-loft", "bcbf52e5d8b7875906721d8367552e463d642428516530d733c8b9feb29c2f9f"],
   ["hexagon-pavilion", "22030edea2fcaddfdc5d94d776849a8065bd287196664967e3f415285b0458cc"],
-  ["hillside-villa", "393e29e7126ce38cb2749a1ef8bdf57c4f54903e6b332a3406767020059afcb9"], // re-measured, see header
+  ["hillside-villa", "d8ec896b04651d4824a0afd3a05cd815e476e6f45169b4edb1992a1b3f45befb"], // re-measured, see header
   ["imports", "3490c17b19f31dfc3a82ce20a2218a4e8f48f0fd979a2c88f23e6a7ddfd75b00"],
   ["laneway-house", "f9c3b29a51508234ab6f8426be062f3087f482cfa2b124ba75fdab150b4d18bc"],
   ["library", "51d1c1a151192315fa19c2fa526ca9192ce84abdd9e6084c4dff4d30aed1c086"],

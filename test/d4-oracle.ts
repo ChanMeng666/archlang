@@ -113,7 +113,6 @@ import {
   toCompass,
   type World,
 } from "../src/index.js";
-import { measureExtent, probeSide, type Side, SIDES } from "../src/facade.js";
 import { type BuildingContext, buildLintContext } from "../src/lint/context.js";
 import { LINT_RULES, reconcileSharedFixes } from "../src/lint.js";
 import { parse } from "../src/parser.js";
@@ -822,30 +821,6 @@ export function windowOnTie(obs: Observation, windowId: string): boolean {
   const arc = h.arc;
   const t = arc ? { x: -(w.at.y - arc.center.y), y: w.at.x - arc.center.x } : { x: h.b.x - h.a.x, y: h.b.y - h.a.y };
   return Math.abs(Math.abs(t.x) - Math.abs(t.y)) <= 1e-6 * Math.hypot(t.x, t.y);
-}
-
-/**
- * The facades whose `dims auto` reference wall depends on the ORDER of `ir.walls`:
- * `probeSide` (`src/facade.ts`) keeps the first of the parallel segments nearest the
- * facade's probe point, so where two of them tie at different thicknesses the list order
- * picks the outer face every chain on that side is offset from and ends on. Measured
- * with `probeSide` itself, over the walls in their order and reversed — never a retyped
- * copy of its probe point.
- */
-export function facadeProbeOrderSensitive(obs: Observation): Side[] {
-  const ir = obs.ir;
-  const ext = ir ? measureExtent(ir) : null;
-  if (!ir || !ext) return [];
-  const reversed = [...ir.walls].reverse();
-  return SIDES.filter((side) => stable(probeSide(ir.walls, ext, side)) !== stable(probeSide(reversed, ext, side)));
-}
-
-/** Each facade's `dims auto` reference wall line and half thickness (`probeSide`). */
-export function facadeProbes(obs: Observation): string {
-  const ir = obs.ir;
-  const ext = ir ? measureExtent(ir) : null;
-  if (!ir || !ext) return "null";
-  return stable(Object.fromEntries(SIDES.map((side) => [side, probeSide(ir.walls, ext, side)])));
 }
 
 /** Everything a class's `covers` may consult about one (P₀, gP) case. */

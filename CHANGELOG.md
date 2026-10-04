@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — `dims auto` no longer reads the order walls are listed in
+
+- **A facade's chains end where the drawn building ends.** Where two parallel walls of different
+  thickness were equally near a facade's midpoint, `dims auto` offset and ended that facade's
+  chains on whichever wall came first in the resolved list. A `place` changes that order, so
+  placing a storey could move its chains. The tie is now decided by the outermost face, then
+  the thicker wall. `examples/hillside-villa.arch` level 2 changes: its overall chains read
+  14100 (the walls drawn span -150..13950), not 14000. Drawing only: `describe()`, `lint()`
+  and `compile().diagnostics` are byte-identical over every shipped example, fixture, eval
+  plan and docs fence, and no other example's drawing moved.
+
 ## [1.39.0] - 2026-10-03
 
 ### Changed — the plan symbols, doors, windows and ground are redrawn

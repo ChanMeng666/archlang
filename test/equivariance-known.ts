@@ -26,10 +26,10 @@
  * predicates alone.
  */
 
-import { type CaseContext, facadeProbeOrderSensitive, facadeProbes, type Violation, windowOnTie } from "./d4-oracle.js";
+import { type CaseContext, type Violation, windowOnTie } from "./d4-oracle.js";
 
 /** Every pinned class. */
-export type ClassName = "facing-tie" | "float-translation" | "dim-tick-hand" | "facade-probe-order";
+export type ClassName = "facing-tie" | "float-translation" | "dim-tick-hand";
 
 export interface KnownClass {
   /** `defect`: a later change closes it. `declared`: a convention, never a defect. */
@@ -61,6 +61,10 @@ const idOf = (key: string): string => /\[([^\]]*)\]/.exec(key)?.[1] ?? "";
  * `entrance-seed-walk`, `anchor-far-tie`, `threshold-carve`) are closed. Their witnesses
  * are the law now ("closed classes" in `test/equivariance-corpus.test.ts`); a raster
  * violation of any size is NEW.
+ *
+ * So is `facade-probe-order` (backlog E.17): `probeSide` decides equidistant facade walls by
+ * the outermost face, then the thicker wall, never by `ir.walls` order, so a placed storey
+ * draws the `dims auto` chains the storey itself draws. A `scene.dims` violation at T0 is NEW.
  */
 export const KNOWN_CLASSES: Readonly<Record<ClassName, KnownClass>> = {
   "facing-tie": {
@@ -89,21 +93,6 @@ export const KNOWN_CLASSES: Readonly<Record<ClassName, KnownClass>> = {
       "a dimension's 45° station tick is a slash of fixed page sense relative to the line — a drafting convention like a hatch angle — so a reflected dim draws the other diagonal",
     covers: (v, c) => c.reflects && v.path === "scene.dim[].ticks",
   },
-  "facade-probe-order": {
-    status: "defect",
-    law: "composition",
-    site: "src/facade.ts probeSide (`d < bestDist`: the FIRST of the equidistant parallel segments wins) over `ir.walls`, whose order a `place` changes (root: instance walls first; inside an instance: nested-instance walls last)",
-    summary:
-      "`dims auto` offsets and ends every chain on a facade at the outer face of the wall `probeSide` finds nearest the facade's midpoint; where two parallel walls of different thickness tie there, `ir.walls` order picks one, and placing the storey reorders `ir.walls` — so the identity placement draws different chains (hillside-villa L2: the 100 mm ensuite wall in P, the 300 mm shell in P₀)",
-    // T0 only (the identity), only the id-less `dims auto` layer, and only where the
-    // mechanism is present: a facade whose probe the wall order decides, decided
-    // differently in P (`obs0`) and P₀ (`obsG`).
-    covers: (v, c) =>
-      c.g.name === "e" &&
-      v.path === "scene.dims" &&
-      facadeProbeOrderSensitive(c.obs0).length > 0 &&
-      facadeProbes(c.obs0) !== facadeProbes(c.obsG),
-  },
 };
 
 /** One pinned violation (or a cross product of them). */
@@ -128,8 +117,6 @@ const CLOSES: Readonly<Record<ClassName, string>> = {
   "float-translation":
     "compare resolved coordinates in lint through a snapped relative frame, as the nav grid now does",
   "dim-tick-hand": "never — declared drafting convention; the pin moves only if the tick convention does",
-  "facade-probe-order":
-    "break `probeSide`'s tie by a wall-order-free rule (e.g. the outermost face among the tied segments), so the probe no longer reads `ir.walls` order",
 };
 
 const DIM_REFLECTED_2 = ["mx", "r90mx"] as const;
@@ -197,13 +184,5 @@ export const KNOWN: readonly KnownViolation[] = [
     cls: "dim-tick-hand",
     why: "the ground floor's one hand-written dim (dim_1) draws its 45° station ticks along dir + n, a fixed page slash; the mirror image is the other diagonal (a drafting convention, like a hatch angle)",
     closesWith: CLOSES["dim-tick-hand"],
-  },
-  {
-    where: "hillside-villa.arch@L2",
-    g: "T0",
-    path: "scene.dims",
-    cls: "facade-probe-order",
-    why: "the right facade's probe point (13800, 5100) is 0 mm from both the shell (300 mm) and the en_m ensuite's own wall (100 mm, x = 13800 over y 4200..6800); P lists the instance walls first and takes the ensuite wall (outer face 13850), P₀ lists g.shell first (13950) — so every chain ending on that facade reads 100 mm different (overall 14000 in P, 14100 in P₀; the drawn walls span -150..13950)",
-    closesWith: CLOSES["facade-probe-order"],
   },
 ];

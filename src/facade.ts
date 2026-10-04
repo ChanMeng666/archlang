@@ -216,12 +216,24 @@ export function measureExtent(ir: ResolvedPlan): Bounds | null {
  * nearest-segment idiom `openingRect` in `scene-build.ts` uses. Returns its centerline coordinate
  * and half thickness, or null when that side has no wall (then the caller falls back
  * to the extent itself — never a crash).
+ *
+ * Equidistant segments (`d === bestDist`, the same exact comparison that finds the
+ * nearest) are decided by the OUTERMOST face, then the thicker wall — never by
+ * `walls` order, which a `place` changes. The face is signed along the side's outward
+ * normal and thickness is frame-free, so the pick commutes with every D4 frame and
+ * translation. Two segments still tied share face and thickness, hence line and half:
+ * the same answer, whichever is kept. Outermost is also what makes the dimension true —
+ * the chains end where the drawn building ends.
  */
 export function probeSide(walls: RWall[], ext: Bounds, side: Side): { line: number; half: number } | null {
   const horiz = SIDE_AXIS[side] === "h";
   const cross = side === "bottom" ? ext.maxY : side === "top" ? ext.minY : side === "left" ? ext.minX : ext.maxX;
   const mid = horiz ? (ext.minX + ext.maxX) / 2 : (ext.minY + ext.maxY) / 2;
   const p: Point = horiz ? { x: mid, y: cross } : { x: cross, y: mid };
+  // Signed so that "outermost" is always "largest", whichever way the side faces.
+  const face = (s: WallSegment): number => SIDE_OUT[side] * (horiz ? s.a.y : s.a.x) + s.thickness / 2;
+  const outranks = (s: WallSegment, b: WallSegment): boolean =>
+    face(s) > face(b) || (face(s) === face(b) && s.thickness > b.thickness);
   let best: WallSegment | null = null;
   let bestDist = Infinity;
   for (const w of walls) {
@@ -234,7 +246,7 @@ export function probeSide(walls: RWall[], ext: Bounds, side: Side): { line: numb
       if (isH && isV) continue; // degenerate
       if (horiz ? !isH : !isV) continue; // not parallel to this facade
       const d = distPointToWallSegment(p, s);
-      if (d < bestDist) {
+      if (d < bestDist || (d === bestDist && best !== null && outranks(s, best))) {
         bestDist = d;
         best = s;
       }

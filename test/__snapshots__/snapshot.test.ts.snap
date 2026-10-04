@@ -4935,11 +4935,11 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <line x1="8042.43" y1="10542.43" x2="7957.57" y2="10457.57" stroke="#0E5484" stroke-width="9"/>
 <text x="6800" y="10587.5" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 6800 10587.5)">2400</text>
 <line x1="8000" y1="10350" x2="8000" y2="10500" stroke="#0E5484" stroke-width="6.3"/>
-<line x1="13850" y1="10350" x2="13850" y2="10500" stroke="#0E5484" stroke-width="6.3"/>
-<line x1="8000" y1="10500" x2="13850" y2="10500" stroke="#0E5484" stroke-width="9"/>
+<line x1="13950" y1="10350" x2="13950" y2="10500" stroke="#0E5484" stroke-width="6.3"/>
+<line x1="8000" y1="10500" x2="13950" y2="10500" stroke="#0E5484" stroke-width="9"/>
 <line x1="8042.43" y1="10542.43" x2="7957.57" y2="10457.57" stroke="#0E5484" stroke-width="9"/>
-<line x1="13892.43" y1="10542.43" x2="13807.57" y2="10457.57" stroke="#0E5484" stroke-width="9"/>
-<text x="10925" y="10587.5" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 10925 10587.5)">5850</text>
+<line x1="13992.43" y1="10542.43" x2="13907.57" y2="10457.57" stroke="#0E5484" stroke-width="9"/>
+<text x="10975" y="10587.5" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 10975 10587.5)">5950</text>
 <line x1="0" y1="10350" x2="0" y2="10775" stroke="#0E5484" stroke-width="6.3"/>
 <line x1="4000" y1="10350" x2="4000" y2="10775" stroke="#0E5484" stroke-width="6.3"/>
 <line x1="0" y1="10775" x2="4000" y2="10775" stroke="#0E5484" stroke-width="9"/>
@@ -4965,11 +4965,11 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <line x1="13842.43" y1="10817.43" x2="13757.57" y2="10732.57" stroke="#0E5484" stroke-width="9"/>
 <text x="11900" y="10862.5" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 11900 10862.5)">3800</text>
 <line x1="-150" y1="10350" x2="-150" y2="11050" stroke="#0E5484" stroke-width="6.3"/>
-<line x1="13850" y1="10350" x2="13850" y2="11050" stroke="#0E5484" stroke-width="6.3"/>
-<line x1="-150" y1="11050" x2="13850" y2="11050" stroke="#0E5484" stroke-width="9"/>
+<line x1="13950" y1="10350" x2="13950" y2="11050" stroke="#0E5484" stroke-width="6.3"/>
+<line x1="-150" y1="11050" x2="13950" y2="11050" stroke="#0E5484" stroke-width="9"/>
 <line x1="-107.57" y1="11092.43" x2="-192.43" y2="11007.57" stroke="#0E5484" stroke-width="9"/>
-<line x1="13892.43" y1="11092.43" x2="13807.57" y2="11007.57" stroke="#0E5484" stroke-width="9"/>
-<text x="6850" y="11137.5" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 6850 11137.5)">14000</text>
+<line x1="13992.43" y1="11092.43" x2="13907.57" y2="11007.57" stroke="#0E5484" stroke-width="9"/>
+<text x="6900" y="11137.5" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 6900 11137.5)">14100</text>
 <line x1="-150" y1="-150" x2="-300" y2="-150" stroke="#0E5484" stroke-width="6.3"/>
 <line x1="-150" y1="6300" x2="-300" y2="6300" stroke="#0E5484" stroke-width="6.3"/>
 <line x1="-300" y1="-150" x2="-300" y2="6300" stroke="#0E5484" stroke-width="9"/>
@@ -5036,12 +5036,12 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <line x1="12257.57" y1="-342.43" x2="12342.43" y2="-257.57" stroke="#0E5484" stroke-width="9"/>
 <line x1="10857.57" y1="-342.43" x2="10942.43" y2="-257.57" stroke="#0E5484" stroke-width="9"/>
 <text x="11600" y="-387.5" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 11600 -387.5)">1400</text>
-<line x1="13850" y1="-150" x2="13850" y2="-300" stroke="#0E5484" stroke-width="6.3"/>
+<line x1="13950" y1="-150" x2="13950" y2="-300" stroke="#0E5484" stroke-width="6.3"/>
 <line x1="12300" y1="-150" x2="12300" y2="-300" stroke="#0E5484" stroke-width="6.3"/>
-<line x1="13850" y1="-300" x2="12300" y2="-300" stroke="#0E5484" stroke-width="9"/>
-<line x1="13807.57" y1="-342.43" x2="13892.43" y2="-257.57" stroke="#0E5484" stroke-width="9"/>
+<line x1="13950" y1="-300" x2="12300" y2="-300" stroke="#0E5484" stroke-width="9"/>
+<line x1="13907.57" y1="-342.43" x2="13992.43" y2="-257.57" stroke="#0E5484" stroke-width="9"/>
 <line x1="12257.57" y1="-342.43" x2="12342.43" y2="-257.57" stroke="#0E5484" stroke-width="9"/>
-<text x="13075" y="-387.5" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 13075 -387.5)">1550</text>
+<text x="13125" y="-387.5" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 13125 -387.5)">1650</text>
 <line x1="4000" y1="-50" x2="4000" y2="-575" stroke="#0E5484" stroke-width="6.3"/>
 <line x1="0" y1="-150" x2="0" y2="-575" stroke="#0E5484" stroke-width="6.3"/>
 <line x1="4000" y1="-575" x2="0" y2="-575" stroke="#0E5484" stroke-width="9"/>
@@ -5066,12 +5066,12 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <line x1="13757.57" y1="-617.43" x2="13842.43" y2="-532.57" stroke="#0E5484" stroke-width="9"/>
 <line x1="9957.57" y1="-617.43" x2="10042.43" y2="-532.57" stroke="#0E5484" stroke-width="9"/>
 <text x="11900" y="-662.5" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 11900 -662.5)">3800</text>
-<line x1="13850" y1="-150" x2="13850" y2="-850" stroke="#0E5484" stroke-width="6.3"/>
+<line x1="13950" y1="-150" x2="13950" y2="-850" stroke="#0E5484" stroke-width="6.3"/>
 <line x1="-150" y1="-150" x2="-150" y2="-850" stroke="#0E5484" stroke-width="6.3"/>
-<line x1="13850" y1="-850" x2="-150" y2="-850" stroke="#0E5484" stroke-width="9"/>
-<line x1="13807.57" y1="-892.43" x2="13892.43" y2="-807.57" stroke="#0E5484" stroke-width="9"/>
+<line x1="13950" y1="-850" x2="-150" y2="-850" stroke="#0E5484" stroke-width="9"/>
+<line x1="13907.57" y1="-892.43" x2="13992.43" y2="-807.57" stroke="#0E5484" stroke-width="9"/>
 <line x1="-192.43" y1="-892.43" x2="-107.57" y2="-807.57" stroke="#0E5484" stroke-width="9"/>
-<text x="6850" y="-937.5" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 6850 -937.5)">14000</text>
+<text x="6900" y="-937.5" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 6900 -937.5)">14100</text>
 <line x1="2050" y1="2650" x2="2050" y2="2550" stroke="#0E5484" stroke-width="9"/>
 <line x1="2092.43" y1="2607.57" x2="2007.57" y2="2692.43" stroke="#0E5484" stroke-width="9"/>
 <line x1="2092.43" y1="2507.57" x2="2007.57" y2="2592.43" stroke="#0E5484" stroke-width="9"/>

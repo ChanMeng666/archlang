@@ -473,19 +473,24 @@ clinic's T1–T3 runs, vacuous until then, surfaced only existing classes (`rast
 deleted; the witness is now the law (`test/equivariance-corpus.test.ts`, "closed classes";
 `test/compose-assoc.test.ts`).
 
-### E.17 · `facade-probe-order` — placing a storey moves its `dims auto` chains — `todo`
+### E.17 · `facade-probe-order` — placing a storey moved its `dims auto` chains — closed
 
-Found by the multi-storey drawing's T0 (M.5): `hillside-villa.arch`'s upper floor, placed at the
-identity, draws different `dims auto` chains from the example itself. `probeSide`
-(`src/facade.ts`) takes each facade's reference wall as the parallel segment nearest the
-facade's midpoint, keeping the FIRST on a tie (`d < bestDist`), and `ir.walls` order changes
-under `place`: at the root an instance's walls come first, inside an instance a nested
-instance's come last. On that storey the right facade's probe point (13800, 5100) is 0 mm
-from both the shell (written `thickness 250`, resolved 300 mm on the 100 mm grid) and the
-`en_m` ensuite's own 100 mm wall; the example takes the ensuite wall (outer face 13850), the
-placed storey the shell (13950, where the walls are drawn). Every chain ending on that facade moves 100 mm: the overall reads 14000 on the shipped
-page (`arch compile examples/hillside-villa.arch`, `L2`) against 14100 placed. Drawing-only:
-no fact moves. Repro, through the CLI:
+Found by the multi-storey drawing's T0 (M.5). `probeSide` (`src/facade.ts`) takes each facade's
+reference wall as the parallel segment nearest the facade's midpoint, and kept the FIRST of
+equidistant segments, so `ir.walls` order — which a `place` changes — picked between two walls
+of different thickness. `hillside-villa.arch`'s level 2 right facade has two: the shell and the
+`en_m` ensuite's 100 mm wall, both on x = 13800. The shipped page took the ensuite's face (13850)
+and drew the overall chain as 14000, while the walls drawn span -150..13950.
+
+Equidistant segments are now decided by the OUTERMOST face, then the thicker wall, never by
+list order. The face is signed along the side's outward normal and thickness has no frame, so
+the pick commutes with every D4 frame and translation. Two segments with the same face and
+thickness have the same line and half, so the answer is the same whichever is kept. The tie is
+the existing exact `d === bestDist`, with no new tolerance. The shipped hillside-villa L2 page
+changed (owner decision): the bottom and top chains end at 13950, and both overalls read 14100.
+That page and the witness below are the only drawings in the corpus that moved. No
+`describe()` or `lint()` output moved. The witness now draws `6300` with the `place` and with
+the same wall written inline:
 
 ```arch static
 plan "witness" {
@@ -503,15 +508,9 @@ plan "witness" {
 }
 ```
 
-`arch compile witness.arch -o w.svg` draws the overall chain as `6200`. With the `place` line
-written as `wall id=w partition thickness 100 { (6000,1000) (6000,3000) }`, the same walls
-(outer faces -150 and 6150) draw `6300`. Pinned at `hillside-villa.arch@L2`, `T0`,
-`scene.dims`; the predicate asks `probeSide` itself whether a facade's answer depends on wall
-order (`facadeProbeOrderSensitive`, `test/d4-oracle.ts`) and whether P and P₀ answer it
-differently. Witness: `test/equivariance-corpus.test.ts`. None of the 26 single-storey
-examples has an order-sensitive facade. Close by breaking the tie without reading list order
-(for example, the outermost face among the tied segments); that changes the shipped
-hillside-villa L2 page.
+Pin deleted; the witness is now the law ("closed classes" in `test/equivariance-corpus.test.ts`).
+No facade's answer depends on wall order or on the frame, over the corpus and 33 generated ties,
+and the first-wins rule is shown to fail both.
 
 ## Circulation findings (found while landing W3b)
 
@@ -1268,16 +1267,18 @@ construction changes is taken out: the `g.` prefix, every `span` carried back on
 `zone: "g"`. Each group is compared as a multiset, because the roof is emitted at a
 different position in the node list (it moves out of the component), which the SVG does not
 draw. Clean on 34 of 35 storeys; the SVG is byte-identical after unprefixing on 8 of the 9
-shipped storeys. The ninth is a finding.
+shipped storeys. The ninth was a finding, E.17, since closed: T0 is now clean on all 35.
 
-**Findings on the unplanted tree.** Two, both pinned in `test/equivariance-known.ts`:
+**Findings on the unplanted tree.** Two, both pinned in `test/equivariance-known.ts` when
+this tier landed; the second is now closed:
 
 - `dim-tick-hand` (E.15, `declared`): `hillside-villa.arch@L1`, `g.dim_1`'s ticks under the
   four reflections. Re-run with `npx vitest run test/equivariance-storeys-scene.test.ts -t
   hillside`.
-- `facade-probe-order` (E.17, new, `todo`, a composition defect): `hillside-villa.arch@L2`,
-  `T0`, `scene.dims`. The `dims auto` chains end on a different wall once the storey is
-  placed: 14000 on the shipped page, 14100 placed.
+- `facade-probe-order` (E.17, a composition defect, since closed): `hillside-villa.arch@L2`,
+  `T0`, `scene.dims`. The `dims auto` chains ended on a different wall once the storey was
+  placed: 14000 on the shipped page, 14100 placed. Both now read 14100, and T0 is clean on
+  every storey.
 
 No `facing-tie` (E.5) appears: it is a `describe()` fact, and no storey has a window on a
 tie.
