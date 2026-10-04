@@ -63,6 +63,8 @@ import {
   runFacts,
   SHIPPED_EXAMPLES,
   sceneOf,
+  t0BuildingScenes,
+  t0BuildingViolations,
   t0Violations,
   toObserved,
   type WitnessOptions,
@@ -314,6 +316,42 @@ const WITNESSES: Record<ClassName, [string, () => void][]> = {
         // are exact: the declared class is the tick hand alone.
         expect(vs.map((v) => v.key).filter((k) => k.startsWith("scene.dim"))).toEqual(["scene.dim[g.dim_1].ticks"]);
         expect(KNOWN_CLASSES["dim-tick-hand"].status).toBe("declared");
+      },
+    ],
+  ],
+  "facade-probe-order": [
+    [
+      "STILL ends a `dims auto` chain on a different wall once the storey is placed at the identity",
+      () => {
+        // The right facade's probe point (6000, 2000) is 0 mm from the 300 mm shell AND from
+        // the placed side wall (100 mm, x = 6000). P lists the instance's wall first and ends
+        // the bottom overall chain on its face (6050: -150..6050 = 6200); P₀, the storey
+        // placed at the origin, lists g.shell first (6150: 6300).
+        const src = `plan "witness" {
+  units mm
+  grid 50
+  dims auto overall
+  component side() {
+    wall id=w partition thickness 100 { (0,0) (0,2000) }
+  }
+  level 1 {
+    wall id=shell exterior thickness 300 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+    room id=r at (0,0) size 6000x4000
+    place side() as s at (6000,1000)
+  }
+}
+`;
+        const [run] = t0BuildingScenes("witness", src).get("witness@L1")!;
+        expect(run!.vs.map((v) => v.key)).toEqual(["scene.dims"]);
+        const v = run!.vs[0]!;
+        expect(v.expected).toContain('"value":"6200"');
+        expect(v.actual).toContain('"value":"6300"');
+        const covering = (Object.keys(KNOWN_CLASSES) as ClassName[]).filter((k) =>
+          KNOWN_CLASSES[k].covers(v, run!.ctx!),
+        );
+        expect(covering).toEqual(["facade-probe-order"]);
+        // The facts do not see it: `dims auto` is drawing-only.
+        expect([...t0BuildingViolations("witness", src).values()].flat()).toEqual([]);
       },
     ],
   ],

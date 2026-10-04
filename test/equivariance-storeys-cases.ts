@@ -90,13 +90,22 @@ export function scopeBuilding(where: string): string | null {
 }
 
 /**
+ * The tiers a building's pins are held in, each its own scope: the facts (`T0`, `T1` —
+ * T1 + T2) and the drawing (`T0-scene`, `T3`; `test/equivariance-storeys-scene.test.ts`).
+ * A pin's tier is read off it: `g` is `T0` at the identity, and a `scene.` path is drawn.
+ */
+export type StoreyTier = "T0" | "T1" | "T0-scene" | "T3";
+
+/**
  * The corpus suite's two-way pin assertion, over every scope of one building at once: an
  * observed violation no row pins is NEW, a row of this building no longer observed is FIXED,
  * and every pinned violation's class must account for it (the audit).
  */
-export function assertBuildingPinned(name: string, tier: "T0" | "T1", runs: ReadonlyMap<string, readonly Run[]>): void {
+export function assertBuildingPinned(name: string, tier: StoreyTier, runs: ReadonlyMap<string, readonly Run[]>): void {
+  const identity = tier === "T0" || tier === "T0-scene";
+  const drawn = tier === "T0-scene" || tier === "T3";
   const scope = (o: Pick<Observed, "where" | "g" | "path" | "id">): boolean =>
-    scopeBuilding(o.where) === name && (tier === "T0") === (o.g === "T0");
+    scopeBuilding(o.where) === name && identity === (o.g === "T0") && drawn === o.path.startsWith("scene.");
   const all = [...runs].flatMap(([where, rs]) => rs.map((r) => ({ where, r })));
   const observed = all.flatMap(({ where, r }) => toObserved(where, r.tag, r.vs));
   const { added, vanished } = pinDiff(KNOWN, observed, scope);

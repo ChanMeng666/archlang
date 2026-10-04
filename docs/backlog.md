@@ -473,6 +473,46 @@ clinic's T1–T3 runs, vacuous until then, surfaced only existing classes (`rast
 deleted; the witness is now the law (`test/equivariance-corpus.test.ts`, "closed classes";
 `test/compose-assoc.test.ts`).
 
+### E.17 · `facade-probe-order` — placing a storey moves its `dims auto` chains — `todo`
+
+Found by the multi-storey drawing's T0 (M.5): `hillside-villa.arch`'s upper floor, placed at the
+identity, draws different `dims auto` chains from the example itself. `probeSide`
+(`src/facade.ts`) takes each facade's reference wall as the parallel segment nearest the
+facade's midpoint, keeping the FIRST on a tie (`d < bestDist`), and `ir.walls` order changes
+under `place`: at the root an instance's walls come first, inside an instance a nested
+instance's come last. On that storey the right facade's probe point (13800, 5100) is 0 mm
+from both the shell (written `thickness 250`, resolved 300 mm on the 100 mm grid) and the
+`en_m` ensuite's own 100 mm wall; the example takes the ensuite wall (outer face 13850), the
+placed storey the shell (13950, where the walls are drawn). Every chain ending on that facade moves 100 mm: the overall reads 14000 on the shipped
+page (`arch compile examples/hillside-villa.arch`, `L2`) against 14100 placed. Drawing-only:
+no fact moves. Repro, through the CLI:
+
+```arch static
+plan "witness" {
+  units mm
+  grid 50
+  dims auto overall
+  component side() {
+    wall id=w partition thickness 100 { (0,0) (0,2000) }
+  }
+  level 1 {
+    wall id=shell exterior thickness 300 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+    room id=r at (0,0) size 6000x4000
+    place side() as s at (6000,1000)
+  }
+}
+```
+
+`arch compile witness.arch -o w.svg` draws the overall chain as `6200`. With the `place` line
+written as `wall id=w partition thickness 100 { (6000,1000) (6000,3000) }`, the same walls
+(outer faces -150 and 6150) draw `6300`. Pinned at `hillside-villa.arch@L2`, `T0`,
+`scene.dims`; the predicate asks `probeSide` itself whether a facade's answer depends on wall
+order (`facadeProbeOrderSensitive`, `test/d4-oracle.ts`) and whether P and P₀ answer it
+differently. Witness: `test/equivariance-corpus.test.ts`. None of the 26 single-storey
+examples has an order-sensitive facade. Close by breaking the tie without reading list order
+(for example, the outermost face among the tied segments); that changes the shipped
+hillside-villa L2 page.
+
 ## Circulation findings (found while landing W3b)
 
 Pre-existing defects and one owner decision that W3b and its red-team review ran into; none was in
@@ -1131,7 +1171,7 @@ person arrives by (ADR 0008's addendum). Left out, each re-run unless noted:
   one storey-removed fixpoint per ungrounded reachable storey: redundant, cheap at dozens of
   storeys (code read).
 
-### M.5 · The corpus equivariance oracle does not cover multi-storey plans — closed for `describe()`/`lint()` (T0–T2); the drawing (T3) is still open
+### M.5 · The corpus equivariance oracle does not cover multi-storey plans — closed (T0–T3)
 
 The corpus suite places every shipped example with no `level` block
 (`test/equivariance-corpus.test.ts`, "the corpus is COMPUTED: every shipped example with no
@@ -1168,8 +1208,8 @@ cell does not divide the plan); the shaft suite owns it under turns and flips.
 `test/shaft-equivariance.test.ts`. **Not expressible this way:** a `roof polygon` (written in
 storey coordinates, outside the component a `place` frame would carry; none shipped).
 
-**Findings: none.** No violation under any element, on any storey or building, so no pin is
-added. The suites show they can fail: r270 observed against r90's prediction is red on every
+**Findings (T0–T2): none.** No violation under any element, on any storey or building, so no
+pin is added. The suites show they can fail: r270 observed against r90's prediction is red on every
 storey; one storey placed `rotate 90` in a building placed `rotate 180` is red on that storey
 alone and fails the pin table as `NEW`; a P₀ with one storey's door widened fails T0 on that
 storey alone. Re-run: `npx vitest run test/equivariance-storeys.test.ts
@@ -1189,7 +1229,8 @@ scratch worktree and running the three storey suites (16 buildings):
   nowhere: all 42 tests green, T0 included, though P₀'s windows resolve 100 mm off P's
   (`two-storey`: `w_living` at (5000,0) in P, `g.w_living` at (5100,0) in P₀).
 
-Both need T3, which compares the drawn door leaf and swing arc and the window's glazing.
+Both need T3, which compares the drawn door leaf and swing arc and the window's glazing (both
+closed below).
 
 **The roof is nearly unobserved.** A roof is drawing-only and reaches the facts only through
 the drawing bounds. Removing each shipped example's one `roof` line leaves every storey's
@@ -1199,12 +1240,80 @@ fit: with the roof every storey reads `drawing_fits: false` and the building rai
 `W_DRAWING_OVERFLOW` (the 700 mm eaves overflow A2 at 1:50); without it neither appears.
 Those are sheet facts, compared only under the elements that keep the axes. So the roof
 surgery is checked by facts only there, and otherwise only by not raising
-`E_ROOF_PLACEMENT`: a roof carried wrongly by a quarter-turn would go unseen. Pinned by
-"the roof is nearly unobserved" in `test/equivariance-storeys.test.ts`.
+`E_ROOF_PLACEMENT`: a roof carried wrongly by a quarter-turn would go unseen by the facts.
+Pinned by "the roof is nearly unobserved" in `test/equivariance-storeys.test.ts`.
 
-**Still open:** T3, each storey's drawn scene under the group (`compareScenes` on a fixed
-sheet, as `test/equivariance-scene.test.ts` does for one storey). It would also close the
-door, window and roof blind spots above.
+**T3, the drawing: closed.** `test/equivariance-storeys-scene.test.ts`, on
+`test/d4-oracle.ts`'s "Multi-storey buildings, tier T3". Every storey's scene, P₀ against
+every gP (the eight D4 elements but the identity, and the translation), through the
+single-storey tier's `compareScenes`: the same `sceneGroups` split (a hand-written dim as
+`.line`, `.ticks`, `.text`), the same canonical form, the same fixed sheet (A0, 1:100: the
+source's own `paper`/`scale` blanked and the fixed sheet stated, before the storey surgery,
+so P₀ and gP still differ only in their closing `level` lines), and the same exclusions for
+the same reasons: the label pass, hatches, every text but a hand-written dim's number, and
+the `dims auto` chains. North is held fixed, as the single-storey T3 holds it. A storey's
+roof stays in its `level` block, so its group is `roof_1`, unprefixed. All sixteen buildings
+(the four shipped examples and the twelve shaft models); drawing is cheap, so one file runs
+them all in about 5 s. The case context a pin's class reads is built only for a run with a
+violation.
+
+T0 for the drawing (`t0BuildingScenes`) compares P with P₀ on P's own sheet, storey by
+storey, over every node and every scene key, the T3 exclusions included. What the
+construction changes is taken out: the `g.` prefix, every `span` carried back onto P's bytes
+(a relocated roof's span included, now that `toSource` maps it), and a schedule row's
+`zone: "g"`. Each group is compared as a multiset, because the roof is emitted at a
+different position in the node list (it moves out of the component), which the SVG does not
+draw. Clean on 34 of 35 storeys; the SVG is byte-identical after unprefixing on 8 of the 9
+shipped storeys. The ninth is a finding.
+
+**Findings on the unplanted tree.** Two, both pinned in `test/equivariance-known.ts`:
+
+- `dim-tick-hand` (E.15, `declared`): `hillside-villa.arch@L1`, `g.dim_1`'s ticks under the
+  four reflections. Re-run with `npx vitest run test/equivariance-storeys-scene.test.ts -t
+  hillside`.
+- `facade-probe-order` (E.17, new, `todo`, a composition defect): `hillside-villa.arch@L2`,
+  `T0`, `scene.dims`. The `dims auto` chains end on a different wall once the storey is
+  placed: 14000 on the shipped page, 14100 placed.
+
+No `facing-tie` (E.5) appears: it is a `describe()` fact, and no storey has a window on a
+tie.
+
+**The blind spots, closed.** Re-run M.5's plants in a scratch copy of `src/` (never
+committed), each against the scene suite and the three facts suites (16 buildings):
+
+- `swing: el.swing` in `door.transform`: the scene tier catches 16 of 16 buildings, every
+  storey, under the four reflections, as `scene.door[]` on every hinged door. The facts
+  tier still catches only `hillside-villa` (through `lint.swing-obstructed`).
+- A window's `at` +100 mm in `window.transform`: 4 of 4 buildings with windows (the twelve
+  models have none), every storey, under r90, r180, r270, mx, r90mx and r270mx as
+  `scene.window[]` and `scene.walls` (the cut moves). r180mx, a reflection in y, carries +x
+  to +x, so the shift commutes with it. T0 catches it too, on every storey (P's windows do
+  not move, P₀'s do), and so does `scene.dims` wherever an openings chain measures them.
+  Facts: 0 of 16.
+- A roof carried wrongly under a quarter-turn (constructed: `offsetRingOutward`,
+  `src/elements/roof.ts`, pushes faces that are vertical on the page 100 mm further): 4 of 4
+  roofs, each building's top storey only, under exactly r90, r270, r90mx and r270mx, as
+  `scene.roof[roof_1]`. Facts: 0 of 16.
+- The stair's break-line hand (own plant: the `_mirror` XOR dropped from `stair.transform`,
+  E.3 reopened): 16 of 16 buildings, every storey, under the four reflections, as
+  `scene.stair[]`. Facts: 0 of 16.
+- A dim's side (own plant: `offset: el.offset` in `dim.transform`, no negation under a
+  reflection): `hillside-villa@L1` `g.dim_1` (`.line` and `.text`) under the four
+  reflections, the corpus's only hand-written dim on a storey. Facts catch it there too,
+  through `lint.dim-inside`.
+
+**Controls kept as tests** (no `src/` change): r270 observed against r90's prediction is
+red on every storey of every shipped building; one storey placed `rotate 90` in a building
+placed `rotate 180` is red on that storey alone and fails the pin table as `NEW`; in gP's
+source, a door's swing (`townhouse` L2 `d_bed1`, under r90mx), a door's hinge (L1
+`d_front`, mx), a window's position (L2 `n_bed1` +100 mm, r90) and the roof's overhang
+(r90) are each red on their storey and element alone while the facts tier stays green there;
+a P₀ whose L2 window is moved 100 mm fails the drawing's T0 on L2 alone.
+
+**Not compared, with reasons:** the north co-rotated variant (`+N`): north draws only page
+chrome, which is not a compared group, and the single-storey T3 does not run it either. A
+`roof polygon` is still not expressible this way (none shipped). T0 on the fixed sheet is
+not run separately: T0 states that the construction draws the shipped pages.
 
 ### M.6 · Load-sensitive visual and sheet tests — `todo`
 

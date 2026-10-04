@@ -32,7 +32,8 @@
  *
  * A multi-storey plan cannot be imported whole (its `level` blocks would be dropped), so it
  * is built differently — every storey a component, every storey placed by the same g — and
- * compared storey by storey with the same machinery: see "Multi-storey buildings" below.
+ * compared storey by storey with the same machinery, its drawing included: see
+ * "Multi-storey buildings" below.
  *
  * ## What is compared, and why some things are not
  *
@@ -112,6 +113,7 @@ import {
   toCompass,
   type World,
 } from "../src/index.js";
+import { measureExtent, probeSide, type Side, SIDES } from "../src/facade.js";
 import { type BuildingContext, buildLintContext } from "../src/lint/context.js";
 import { LINT_RULES, reconcileSharedFixes } from "../src/lint.js";
 import { parse } from "../src/parser.js";
@@ -820,6 +822,30 @@ export function windowOnTie(obs: Observation, windowId: string): boolean {
   const arc = h.arc;
   const t = arc ? { x: -(w.at.y - arc.center.y), y: w.at.x - arc.center.x } : { x: h.b.x - h.a.x, y: h.b.y - h.a.y };
   return Math.abs(Math.abs(t.x) - Math.abs(t.y)) <= 1e-6 * Math.hypot(t.x, t.y);
+}
+
+/**
+ * The facades whose `dims auto` reference wall depends on the ORDER of `ir.walls`:
+ * `probeSide` (`src/facade.ts`) keeps the first of the parallel segments nearest the
+ * facade's probe point, so where two of them tie at different thicknesses the list order
+ * picks the outer face every chain on that side is offset from and ends on. Measured
+ * with `probeSide` itself, over the walls in their order and reversed — never a retyped
+ * copy of its probe point.
+ */
+export function facadeProbeOrderSensitive(obs: Observation): Side[] {
+  const ir = obs.ir;
+  const ext = ir ? measureExtent(ir) : null;
+  if (!ir || !ext) return [];
+  const reversed = [...ir.walls].reverse();
+  return SIDES.filter((side) => stable(probeSide(ir.walls, ext, side)) !== stable(probeSide(reversed, ext, side)));
+}
+
+/** Each facade's `dims auto` reference wall line and half thickness (`probeSide`). */
+export function facadeProbes(obs: Observation): string {
+  const ir = obs.ir;
+  const ext = ir ? measureExtent(ir) : null;
+  if (!ir || !ext) return "null";
+  return stable(Object.fromEntries(SIDES.map((side) => [side, probeSide(ir.walls, ext, side)])));
 }
 
 /** Everything a class's `covers` may consult about one (P₀, gP) case. */
@@ -1784,7 +1810,8 @@ function storeyCuts(src: string): StoreyCut[] {
 /** A per-storey wrapper and the map from its byte offsets back to the source's. */
 export interface StoreyWrapper {
   src: string;
-  /** A byte offset into {@link src} carried to the same byte of the source it was cut from. */
+  /** A byte offset into {@link src} carried to the same byte of the source it was cut from
+   *  (a relocated `roof` statement's start and end to its own statement's in the source). */
   toSource(offset: number): number;
 }
 
@@ -1844,14 +1871,25 @@ export function storeyWrapper(source: string, g: GroupElement | null, opts: { no
     cursor = c.end;
   }
   copy(cursor, close);
+  // A relocated roof's text: where it sits in the wrapper and the statement it came from.
+  // `wall g.<id>` makes it longer than the source statement, so only its two ENDS map
+  // exactly (a statement span's start and end are all a span ever names).
+  const roofAt: { at: number; end: number; from: number; fromEnd: number }[] = [];
   for (const c of cuts) {
-    const roofs = c.roofs.map((r) => `\n    ${r.text}`).join("");
-    out += `  ${c.header} {\n    place ${c.name}() as ${INSTANCE} at (${t}, ${t})${clauses}${roofs}\n  }\n`;
+    out += `  ${c.header} {\n    place ${c.name}() as ${INSTANCE} at (${t}, ${t})${clauses}`;
+    for (const r of c.roofs) {
+      out += "\n    ";
+      roofAt.push({ at: out.length, end: out.length + r.text.length, from: r.start, fromEnd: r.end });
+      out += r.text;
+    }
+    out += "\n  }\n";
   }
   copy(close, src.length);
   return {
     src: out,
     toSource(o) {
+      const roof = roofAt.find((r) => r.at <= o && o <= r.end);
+      if (roof) return o === roof.end ? roof.fromEnd : Math.min(roof.from + (o - roof.at), roof.fromEnd);
       let k = chunks[0]!;
       for (const ch of chunks) if (ch.at <= o) k = ch;
       return k.from + (o - k.at);
@@ -2132,6 +2170,181 @@ export function t0BuildingViolations(
     return side.unprefix ? (unprefix(v) as Record<string, unknown>) : v;
   };
   compare(buildingScope(name), building(p, sideP), building(p0, sideP0));
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// Multi-storey buildings, tier T3: each storey's drawn scene
+// ---------------------------------------------------------------------------
+
+/**
+ * A multi-storey source on {@link FIXED_SHEET}: its own `paper`/`scale` statements blanked
+ * (same length, so no offset moves) and the fixed sheet stated first in the plan body. A
+ * `level` plan's sheet is the building's (every storey is drawn on it), so this is the
+ * same sheet the single-storey T3 draws on; applied to the SOURCE, before the storey
+ * surgery, so P₀ and every gP inherit it and still differ only in their closing `level`
+ * lines.
+ */
+export function withFixedSheetStoreys(src: string): string {
+  const plan = parse(src).plan;
+  if (!plan) throw new Error("withFixedSheetStoreys: the source does not parse");
+  let out = src;
+  for (const sp of [plan.paperSpan, plan.scaleSpan]) {
+    if (sp) out = out.slice(0, sp.start) + out.slice(sp.start, sp.end).replace(/[^\n]/g, " ") + out.slice(sp.end);
+  }
+  const open = /^plan\s+"[^"]*"\s*\{/m.exec(out);
+  if (!open) throw new Error('withFixedSheetStoreys: no `plan "…" {` to anchor the sheet on');
+  const at = open.index + open[0].length;
+  const sheet = `\n  paper ${FIXED_SHEET.paper.size} ${FIXED_SHEET.paper.orientation}\n  scale ${FIXED_SHEET.scale}`;
+  return out.slice(0, at) + sheet + out.slice(at);
+}
+
+/** Every storey's annotated Scene of a `level` source, by level (tier T3), or a thrown
+ *  error naming why there is none. */
+export function storeyScenes(src: string, world: World = EXAMPLES_WORLD): Map<number, Scene> {
+  const out = compile(src, { world, annotate: true });
+  if (!out.pages) throw new Error(`no pages: ${out.errors.map((e) => e.message).join("; ") || "not a level plan"}`);
+  return new Map(out.pages.map((p) => [p.level, p.scene]));
+}
+
+/**
+ * Tier T3 for one multi-storey source: every storey's scene, P₀ against every
+ * {@link BUILDING_ELEMENTS} gP, through {@link compareScenes} — the single-storey tier's
+ * comparison unchanged (the same {@link sceneGroups} split, canonical form, exclusions and
+ * fixed sheet), one storey's page at a time, every storey carried by the same g. North is
+ * held fixed, as `runScenes` holds it: the north arrow is page chrome, not a compared group
+ * (measured: turning `north` alone moves no compared group on any shipped storey). A storey
+ * drawn on one side only is reported on
+ * the building as `scene.pages`. Runs keyed by scope; `null` when P₀ does not compile (T0
+ * owns that).
+ */
+export function runBuildingScenes(
+  name: string,
+  source: string,
+  world: World = EXAMPLES_WORLD,
+): Map<string, Run[]> | null {
+  const grid = parse(source).plan!.grid;
+  const sheet = withFixedSheetStoreys(source);
+  const src0 = storeyWrapper(sheet, null).src;
+  if (compile(src0, { world }).errors.length > 0) return null;
+  const s0 = storeyScenes(src0, world);
+  // The case context is what a pin's class is asked about, so it is built only for a run
+  // that HAS a violation (`pinAudit` skips a run without one): the observations it reads
+  // re-run describe() and lint(), which on the scaled models costs far more than the scene.
+  const b0 = (): BuildingObservation => observeBuilding(storeyWrapper(source, null).src, world);
+  const runs = new Map<string, Run[]>();
+  const push = (where: string, run: Run): void => void runs.set(where, [...(runs.get(where) ?? []), run]);
+  for (const g of BUILDING_ELEMENTS) {
+    const f = frameFor(g, grid);
+    const sG = storeyScenes(storeyWrapper(sheet, g).src, world);
+    const bG = (): BuildingObservation => observeBuilding(storeyWrapper(source, g).src, world);
+    for (const [level, scene0] of s0) {
+      const sceneG = sG.get(level);
+      if (!sceneG) continue;
+      const vs = compareScenes(scene0, sceneG, f);
+      const ctx = vs.length > 0 ? caseContext(b0().storeys.get(level)!, bG().storeys.get(level)!, g, f, vs) : undefined;
+      push(storeyScope(name, level), { tag: g.name, vs, ...(ctx ? { ctx } : {}) });
+    }
+    const pages = (s: Map<number, Scene>) => stable([...s.keys()]);
+    const vs: Violation[] =
+      pages(s0) === pages(sG)
+        ? []
+        : [{ key: "scene.pages", path: "scene.pages", expected: pages(s0), actual: pages(sG) }];
+    const ctx = vs.length > 0 ? caseContext(asObservation(b0()), asObservation(bG()), g, f, vs) : undefined;
+    push(buildingScope(name), { tag: g.name, vs, ...(ctx ? { ctx } : {}) });
+  }
+  return runs;
+}
+
+/**
+ * One scene, normalised for T0 and split into comparable keys. Every node is kept — the
+ * labels, hatches, every text and the `dims auto` chains that T3 leaves out, because T0
+ * compares at the IDENTITY, where page order is no excuse — grouped by the element that
+ * drew it (`scene.<kind>[<id>]`), the wall fabric as `scene.walls`, and every other
+ * id-less node by its layer (`scene.<layer>`: `dims` is the `dims auto` chains); each
+ * group a multiset of nodes, since paint order across statements is not drawn (the SVG
+ * backend emits by layer). Every other scene key (`sizes`, `bounds`, `chrome`, `title`, …)
+ * is one key `scene.<key>`. What the two sides differ in by CONSTRUCTION is taken out: on
+ * the placed side the `g.` prefix (`unprefix`), every `span` carried back onto the
+ * source's bytes (`toSource`), and the instance's own zone on a schedule row (`zone: "g"`;
+ * an instance is a zone — `t0Normalise` drops the same stamp).
+ */
+function t0SceneView(scene: Scene, side: { placed: false } | { placed: true; toSource(o: number): number }) {
+  const norm = (v: unknown, key?: string): unknown => {
+    if (Array.isArray(v)) return v.map((x) => norm(x));
+    if (!v || typeof v !== "object") return v;
+    const o = v as Record<string, unknown>;
+    if (side.placed && key === "span" && typeof o.start === "number" && typeof o.end === "number") {
+      return { ...o, start: side.toSource(o.start), end: side.toSource(o.end as number) };
+    }
+    return Object.fromEntries(
+      Object.entries(o)
+        .filter(([k, x]) => !(side.placed && k === "zone" && x === INSTANCE))
+        .map(([k, x]) => [k, norm(x, k)]),
+    );
+  };
+  const view = (side.placed ? unprefix(norm(scene)) : norm(scene)) as Scene;
+  const out = new Map<string, string[]>();
+  const { nodes, ...rest } = view;
+  for (const [k, v] of Object.entries(rest)) out.set(`scene.${k}`, [stable(v)]);
+  for (const n of nodes) {
+    const key =
+      n.elementId !== undefined
+        ? `scene.${n.elementKind ?? "?"}[${n.elementId}]`
+        : WALL_LAYERS.has(n.layer)
+          ? "scene.walls"
+          : `scene.${n.layer}`;
+    out.set(key, [...(out.get(key) ?? []), stable(n)]);
+  }
+  for (const v of out.values()) v.sort();
+  return out;
+}
+
+/**
+ * T0 for a multi-storey DRAWING: does P₀ (every storey a component, placed at the origin)
+ * draw what P draws, storey by storey, on P's own sheet? Every node and every scene key,
+ * after {@link t0SceneView}'s normalisation; a violation names the group, with the nodes
+ * one side has and the other lacks. Runs tagged `T0`, keyed by scope; a run with a
+ * violation carries the identity's case context with P as `obs0` and P₀ as `obsG`, so
+ * its pin's class is audited like any other. `plant` edits P₀ (the control that shows it
+ * can fail). Not on the fixed sheet: this is the claim that the construction draws the
+ * shipped example's own pages.
+ */
+export function t0BuildingScenes(
+  name: string,
+  source: string,
+  opts: { world?: World; plant?: (p0: string) => string } = {},
+): Map<string, Run[]> {
+  const world = opts.world ?? EXAMPLES_WORLD;
+  const built = storeyWrapper(source, null);
+  const src0 = opts.plant ? opts.plant(built.src) : built.src;
+  const sP = storeyScenes(source, world);
+  const sP0 = storeyScenes(src0, world);
+  const e = elementNamed("e");
+  const f = frameFor(e, parse(source).plan!.grid);
+  const out = new Map<string, Run[]>();
+  for (const level of new Set([...sP.keys(), ...sP0.keys()])) {
+    const a = sP.get(level);
+    const b = sP0.get(level);
+    const va = a ? t0SceneView(a, { placed: false }) : new Map<string, string[]>();
+    const vb = b ? t0SceneView(b, { placed: true, toSource: built.toSource }) : new Map<string, string[]>();
+    const vs: Violation[] = [];
+    for (const key of [...new Set([...va.keys(), ...vb.keys()])].sort()) {
+      const inP = va.get(key) ?? [];
+      const inP0 = vb.get(key) ?? [];
+      if (stable(inP) === stable(inP0)) continue;
+      vs.push({
+        key,
+        path: generalize(key),
+        expected: multisetMinus(inP, inP0).join(" ; "),
+        actual: multisetMinus(inP0, inP).join(" ; "),
+      });
+    }
+    const oP = (): Observation | undefined => observeBuilding(source, world).storeys.get(level);
+    const oP0 = (): Observation | undefined => observeBuilding(src0, world).storeys.get(level);
+    const ctx = vs.length > 0 && oP() && oP0() ? caseContext(oP()!, oP0()!, e, f, vs) : undefined;
+    out.set(storeyScope(name, level), [{ tag: "T0", vs, ...(ctx ? { ctx } : {}) }]);
+  }
   return out;
 }
 
