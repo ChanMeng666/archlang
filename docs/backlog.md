@@ -1541,15 +1541,6 @@ byte moved, and each replaced pass is compared with its old form, kept verbatim,
 Things the plan-symbol redraw turned up and deliberately did not widen into. Each was re-run on
 `main` for this entry through the CLI or the source named in it.
 
-### D.1 · `garden-house` seats its tables twice — `todo`
-
-`dining_table` and `outdoor_table` draw their own chairs (`chairAt`, `glyphs-living.ts`;
-`glyphs-outdoor.ts`), and `examples/garden-house.arch` still places four separate `chair`s round
-its dining table and four `outdoor_chair`s round its patio table. Re-run: a plan holding just the
-kitchen's `dining_table at (10200,10800) size 1600x900` and its four chairs, compiled
-`-f png -s 3`, draws eight tucked chairs on the table and the four free ones 200 mm beyond it.
-Remove the separate chairs (or swap each table for a `table`); either moves the example's goldens.
-
 ### D.2 · `hillside-villa`'s piano faces its keyboard into the wall — `todo`
 
 A `piano` draws its keyboard along the top edge. `examples/hillside-villa.arch` places it

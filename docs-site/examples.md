@@ -86,7 +86,7 @@ The garage is the other track meeting the first. `room … uses garage` classifi
 needs), and its door is [`door garage`](/reference#door-kinds-v1-25) — the sixth kind,
 which takes no clause at all and puts a **dashed** overhead projection inside the garage.
 Which side that is is derived rather than written: the resolver asks which face has
-*floor*, and the driveway on the other face is ground, not floor. Fifteen of the
+*floor*, and the driveway on the other face is ground, not floor. Fourteen of the
 twenty-one outdoor fixture families furnish the garden, all at their catalogued
 footprints and none of them labelled.
 

@@ -279,7 +279,10 @@ const BASELINE: [string, string][] = [
   ["examples/courtyard-house.arch", "c143144408b02775b6343eee9dbda3420a7947df651195bed024768620715335"],
   ["examples/furnished-flat.arch", "12473e1ca6aaacf6adea0da3c46565d93a14a8396700eed2f8d70dd90d73957a"],
   ["examples/gallery-l.arch", "0f52fc12ee4cf93c8d7c106be8a5a49c8b78c3a66cd9afabd00149d57f47802c"],
-  ["examples/garden-house.arch", "36d99115620aed5aa6731f66a03187824e029fe54f33cb8a2e9c7bfe721764c9"],
+  // Re-measured because the EXAMPLE changed (backlog D.1, its doubled chairs removed), not the
+  // compiler: the same row, with the same digest body, as `./while-byte-identity-baseline.ts`,
+  // whose header has the reason.
+  ["examples/garden-house.arch", "a359a2c2b3136a43f5887cd10c184f0d4e6577fcdd57ab1fee49b8709059931b"],
   ["examples/garden-loft.arch", "1fbeaf41b1f1b981f274a1501ed870bb6b3ebc2ec377bd15e588e78cbd07ab7b"],
   ["examples/hexagon-pavilion.arch", "293447ab543aa86945af475e440ff85cddb8070f3330d6887e94f5e344d4c216"],
   // Re-measured for the facade-probe fix (level 2's `dims auto` chains only): the same row,

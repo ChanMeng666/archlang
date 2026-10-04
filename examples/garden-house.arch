@@ -5,7 +5,7 @@
 # house is actually issued as, which is the whole point of the v1.31 surfaces: `site …
 # boundary` puts the lot line on the sheet, nine `outdoor` ground materials say what every
 # square metre outside the walls IS, `fence` posts the pool enclosure and the street
-# frontage, and 15 of the 21 outdoor fixture families furnish the garden the way the
+# frontage, and 14 of the 21 outdoor fixture families furnish the garden the way the
 # kitchen fixtures furnish a kitchen.
 #
 # READ THESE THREE FACTS BEFORE READING THE DRAWING. A ground surface is NOT a room: it is
@@ -130,10 +130,6 @@ plan "Garden House" {
     furniture stove        against wall w_e1 offset 1600 in r_kitchen
     furniture fridge       against wall w_e1 offset 2500 in r_kitchen
     furniture dining_table at (10200,10800) size 1600x900 in r_kitchen
-    furniture chair at (10300,10100) size 500x500 rotate 180 in r_kitchen
-    furniture chair at (11100,10100) size 500x500 rotate 180 in r_kitchen
-    furniture chair at (10300,11800) size 500x500 in r_kitchen
-    furniture chair at (11100,11800) size 500x500 in r_kitchen
 
     furniture car at (15400,5900) size 1900x4300 in r_garage
     furniture bicycle at (18300,6200) size 600x1700 in r_garage
@@ -171,14 +167,10 @@ plan "Garden House" {
 
     # ---- The garden ----
     #
-    # Fifteen of the twenty-one outdoor families. Nothing here is `requiresWall`: outdoors
+    # Fourteen of the twenty-one outdoor families. Nothing here is `requiresWall`: outdoors
     # the wall is the exception, and a fixture standing in the middle of a lawn is the
     # normal arrangement rather than a floating one.
     furniture outdoor_table at (2700,14400) size 1600x900
-    furniture outdoor_chair at (2900,13800) size 500x500 rotate 180
-    furniture outdoor_chair at (3700,13800) size 500x500 rotate 180
-    furniture outdoor_chair at (2900,15400) size 500x500
-    furniture outdoor_chair at (3700,15400) size 500x500
     furniture umbrella      at (4900,14400) size 900x900
     furniture bbq           at (6000,13900) size 700x600
 
