@@ -1478,7 +1478,8 @@ The step budget counts the evaluator and the drawing budget the primitives drawn
 that run after both cost more than either counts, each within the element cap. Re-measured
 (Node 22, built `dist/`, a fresh process per run, `main` and the fix alternated); no output
 byte moved, and each replaced pass is compared with its old form, kept verbatim, by an oracle
-(`test/room-overlap-oracle.test.ts`, `test/label-placement-oracle.test.ts`).
+(`test/room-overlap-oracle.test.ts`, `test/label-placement-oracle.test.ts`,
+`test/vocabulary-matcher-oracle.test.ts`, `test/room-adjacency-oracle.test.ts`).
 
 - **Closed: `W_ROOM_OVERLAP`.** 5,000 coincident rooms emit 201 diagnostics (200 pairs listed,
   then "…and 12,497,300 more"), so the output is bounded and only the count was quadratic.
@@ -1502,20 +1503,26 @@ byte moved, and each replaced pass is compared with its old form, kept verbatim,
   6.4–6.8 s (12.9–13.2 s before), and 76.8 million of the 101.8 million terms they sum are
   nonzero. Bounding that would change which label wins (a cap on the labels considered, or a
   different sum), so it is a drawing decision; not built.
-- **Open: a long label.** One room labelled with a 500,003-character string (a 100,000-deep
-  array printed into it): `lint` 10.0–10.5 s, `describe` 1.9 s, `compile` 0.2 s, unchanged
-  here. Where it goes (profiled): `classifyLabelUses` (`src/vocabulary.ts`) makes 26 `synonymMatchesLabel`
-  passes over the label, each re-normalising and re-splitting it (about 100,000 tokens) and
-  building a `new RegExp` per token for the numeric-suffix test; `describe` classifies the
+- **Closed: a long label.** One room labelled with a 500,003-character string (a 100,000-deep
+  array printed into it, about 100,000 tokens). `classifyLabelUses` (`src/vocabulary.ts`)
+  made 26 `synonymMatchesLabel` passes over the label, each re-normalising and re-splitting it
+  and building a `new RegExp` per token for the numeric-suffix test; `describe` classifies the
   label once, `lint` six times (every rule asking `isBedroom`/`isWetRoom`/… re-classifies).
-  Byte-identical fixes, outside this item's scope: test the suffix by character codes instead
-  of a per-token `RegExp` (measured on a scratch build: `lint` 3.2–3.6 s, `describe`
-  0.78–0.96 s, `test/vocabulary-equivalence.test.ts` green), normalise and split the label
-  once per classification, and memoise `classifyLabelUses` per string within one call. What is
-  left is linear in the label; a length cap is a language decision.
-- **Found: `describe`'s room adjacency.** `summarize` (`src/describe.ts`) tests
-  `roomsAdjacent` for every ordered room pair: about 0.6 s of the 0.9 s `describe` still takes
-  on 5,000 coincident rooms. Not touched here.
+  The label is now split once per classification, the table's words once at load, and the
+  suffix is read by UTF-16 code unit (the old `^<word>[0-9]+$` had no flags: ASCII digits
+  only, shown equal on every code unit). CLI, `main` → fix: `lint` 11.4–11.6 s → 0.57–0.64 s,
+  `describe` 2.3–2.4 s → 0.43–0.47 s. What is left is linear in the label: six classifications
+  cost about 150 ms of that `lint`, the rest is the evaluator building the string. Memoising
+  `classifyLabelUses` within one call is not built: `roomUses`'s callers (`src/analyze.ts`,
+  the lint rules) would have to carry a per-call memo, and a module-level one would outlive
+  the call. A length cap is a language decision.
+- **Closed: `describe`'s room adjacency.** `summarize` (`src/describe.ts`) tested
+  `roomsAdjacent` for every ordered room pair. `roomAdjacency` asks the same predicate only of
+  the pairs a broad phase cannot rule out (two rectangles: an edge within `tol` of the facing
+  one, found in sorted key lists; a polygon or circle side: ring bounds within `tol`), in
+  element order. 5,000 coincident rooms share no edge and ask for no pair: `describe`
+  1.26–1.39 s → 0.34–0.40 s (`lint` 2.3 s → 1.3 s, through the shorter classification). Still quadratic where the answer is: n coincident polygon rooms
+  are all adjacent to one another, n² ids in the output.
 
 ---
 

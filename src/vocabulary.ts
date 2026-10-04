@@ -28,22 +28,49 @@ export function normalizeLabel(s: string): string {
   return s.toLowerCase().replace(/[-_/]/g, " ").replace(/\s+/g, " ").trim();
 }
 
-const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/** A string's tokens: its {@link normalizeLabel} form split on spaces, empties dropped. */
+const tokensOf = (s: string): string[] => normalizeLabel(s).split(" ").filter(Boolean);
+
+/** One synonym token, with whether a fused numeric suffix may follow it. */
+interface SynToken {
+  readonly tok: string;
+  /** The token is one or more ASCII lowercase letters (`/^[a-z]+$/`). */
+  readonly suffixable: boolean;
+}
+
+/** A synonym's tokens, each tagged once with {@link SynToken.suffixable}. */
+function synTokens(syn: string): SynToken[] {
+  return tokensOf(syn).map((tok) => {
+    let suffixable = true;
+    for (let k = 0; k < tok.length; k++) {
+      const c = tok.charCodeAt(k);
+      if (c < 0x61 || c > 0x7a) suffixable = false;
+    }
+    return { tok, suffixable };
+  });
+}
 
 /** Does one label token satisfy one synonym token? Exact, or the synonym followed by
  *  a fused numeric suffix ("bedroom" ⇢ "bedroom2"); a spaced suffix ("Bedroom 2",
- *  "Unit A") falls out for free as a separate, ignored token in the subsequence walk. */
-function tokenEq(synTok: string, labTok: string): boolean {
-  if (labTok === synTok) return true;
-  return /^[a-z]+$/.test(synTok) && new RegExp(`^${escapeRegExp(synTok)}[0-9]+$`).test(labTok);
+ *  "Unit A") falls out for free as a separate, ignored token in the subsequence walk.
+ *
+ *  The suffix is read by UTF-16 code unit, as the former `^<syn>[0-9]+$` (no flags) read
+ *  it: one or more of `0`–`9` up to the end of the token, and nothing else — no full-width,
+ *  Arabic-Indic or superscript digit (`test/vocabulary-matcher-oracle.test.ts`). */
+function tokenEq(st: SynToken, labTok: string): boolean {
+  if (labTok === st.tok) return true;
+  const n = st.tok.length;
+  if (!st.suffixable || labTok.length <= n || !labTok.startsWith(st.tok)) return false;
+  for (let k = n; k < labTok.length; k++) {
+    const c = labTok.charCodeAt(k);
+    if (c < 0x30 || c > 0x39) return false;
+  }
+  return true;
 }
 
-/** Whole-word (token-bounded) subsequence match: every synonym token appears, in
- *  order, as a whole label token — so "hall" matches "Entrance Hall" but NOT
- *  "Hallmark", and "Bedroom 2" still matches "bedroom". */
-export function synonymMatchesLabel(syn: string, label: string): boolean {
-  const synToks = normalizeLabel(syn).split(" ").filter(Boolean);
-  const labToks = normalizeLabel(label).split(" ").filter(Boolean);
+/** The subsequence walk over already-split tokens: every synonym token appears, in
+ *  order, as a whole label token. */
+function tokensMatch(synToks: readonly SynToken[], labToks: readonly string[]): boolean {
   if (synToks.length === 0) return false;
   let i = 0;
   for (const lt of labToks) {
@@ -51,6 +78,13 @@ export function synonymMatchesLabel(syn: string, label: string): boolean {
     if (st !== undefined && tokenEq(st, lt)) i++;
   }
   return i === synToks.length;
+}
+
+/** Whole-word (token-bounded) subsequence match: every synonym token appears, in
+ *  order, as a whole label token — so "hall" matches "Entrance Hall" but NOT
+ *  "Hallmark", and "Bedroom 2" still matches "bedroom". */
+export function synonymMatchesLabel(syn: string, label: string): boolean {
+  return tokensMatch(synTokens(syn), tokensOf(label));
 }
 
 /**
@@ -81,8 +115,27 @@ export interface VocabMatch {
  * alias advisory). Returns `null` when no word matches.
  */
 export function matchVocabulary(label: string, vocab: VocabEntry): VocabMatch | null {
-  for (const word of vocab.canonical) if (synonymMatchesLabel(word, label)) return { word, canonical: true };
-  for (const word of vocab.aliases) if (synonymMatchesLabel(word, label)) return { word, canonical: false };
+  return matchPrepared(tokensOf(label), prepareEntry(vocab));
+}
+
+/** A {@link VocabEntry} with each word's tokens prepared, in the table's order. */
+interface PreparedEntry {
+  readonly canonical: readonly (readonly [string, SynToken[]])[];
+  readonly aliases: readonly (readonly [string, SynToken[]])[];
+}
+
+function prepareEntry(vocab: VocabEntry): PreparedEntry {
+  return {
+    canonical: vocab.canonical.map((w) => [w, synTokens(w)] as const),
+    aliases: vocab.aliases.map((w) => [w, synTokens(w)] as const),
+  };
+}
+
+/** {@link matchVocabulary} over a label already split into tokens: the same words tried
+ *  in the same order, so the same first match. */
+function matchPrepared(labToks: readonly string[], vocab: PreparedEntry): VocabMatch | null {
+  for (const [word, toks] of vocab.canonical) if (tokensMatch(toks, labToks)) return { word, canonical: true };
+  for (const [word, toks] of vocab.aliases) if (tokensMatch(toks, labToks)) return { word, canonical: false };
   return null;
 }
 
@@ -127,6 +180,12 @@ export const USE_VOCABULARY = Object.freeze({
   garage: { canonical: ["garage"], aliases: ["carport", "car port", "parking"] },
 }) satisfies Record<string, VocabEntry>;
 
+/** {@link USE_VOCABULARY} with its words' tokens prepared once, when this module loads: a
+ *  constant derived from a constant, never a cache filled by a call. */
+const PREPARED_USE = Object.freeze(
+  Object.fromEntries(Object.entries(USE_VOCABULARY).map(([k, v]) => [k, prepareEntry(v)])),
+) as Readonly<Record<keyof typeof USE_VOCABULARY, PreparedEntry>>;
+
 /** One alias-sourced classification: a use kind inferred from a non-canonical (indirect)
  *  vocabulary word, carried so `W_ALIAS_MATCH` can name what it inferred and from what. */
 export interface AliasMatch {
@@ -163,31 +222,33 @@ export function classifyLabelUses(text: string): LabelClassification {
     uses.push(kind);
     if (!m.canonical) aliases.push({ kind, word: m.word });
   };
+  // Normalised and split once for every entry below, not once per word.
+  const toks = tokensOf(text);
 
-  const bedroom = matchVocabulary(text, USE_VOCABULARY.bedroom);
+  const bedroom = matchPrepared(toks, PREPARED_USE.bedroom);
   if (bedroom) add("bedroom", bedroom);
 
   // Wet room: bath OR WC words detect it; a WC word discriminates it to a WC.
-  const bath = matchVocabulary(text, USE_VOCABULARY.bath);
-  const wc = matchVocabulary(text, USE_VOCABULARY.wc);
+  const bath = matchPrepared(toks, PREPARED_USE.bath);
+  const wc = matchPrepared(toks, PREPARED_USE.wc);
   if (wc) add("wc", wc);
   else if (bath) add("bath", bath);
 
-  const kitchen = matchVocabulary(text, USE_VOCABULARY.kitchen);
+  const kitchen = matchPrepared(toks, PREPARED_USE.kitchen);
   if (kitchen) add("kitchen", kitchen);
 
   // Entry and hall are mutually exclusive; entry wins.
-  const entry = matchVocabulary(text, USE_VOCABULARY.entry);
+  const entry = matchPrepared(toks, PREPARED_USE.entry);
   if (entry) add("entry", entry);
   else {
-    const hall = matchVocabulary(text, USE_VOCABULARY.hall);
+    const hall = matchPrepared(toks, PREPARED_USE.hall);
     if (hall) add("hall", hall);
   }
 
   // Last, so every classification that existed before this kind did keeps its emission
   // position in the `uses` array — that array reaches `describe --json`, and re-ordering it
   // would be a behaviour change for every consumer for no gain.
-  const garage = matchVocabulary(text, USE_VOCABULARY.garage);
+  const garage = matchPrepared(toks, PREPARED_USE.garage);
   if (garage) add("garage", garage);
 
   return { uses, aliases };
@@ -196,5 +257,5 @@ export function classifyLabelUses(text: string): LabelClassification {
 /** Whether a label's text reads as a living or dining space by the `living` use
  *  vocabulary — the circulation layer's classifier (former `LIVING_DINING_RE`). */
 export function matchesLivingDining(text: string): boolean {
-  return matchVocabulary(text, USE_VOCABULARY.living) !== null;
+  return matchPrepared(tokensOf(text), PREPARED_USE.living) !== null;
 }
