@@ -156,7 +156,7 @@ plan "Hillside Villa" {
     furniture coffee_table  at (1300,7200) size 1000x500  in r_living
     furniture armchair      at (3200,5750) size 900x850  rotate 270 in r_living
     furniture plant         at (300,4400)  size 600x600  in r_living
-    furniture piano          at (3200,4400) size 1300x1300 in r_living
+    furniture piano          at (3000,8700) size 1600x1200 rotate 270 in r_living
     furniture tv_unit against wall w_liv_din offset 3000 in r_living
 
     furniture dining_table at (5600,6800) size 2000x1000 in r_dining

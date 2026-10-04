@@ -414,7 +414,7 @@ describe("outdoor — the legend gains a row per ground material used", () => {
   it("frames each GROUND swatch on its pattern's own marks, and leaves wall swatches and the plan alone", () => {
     // A ground tile is bigger than a swatch, so a swatch anchored at the drawing origin showed
     // whatever happened to fall in it — the paving swatch missed both 600 mm joints. Each ground
-    // swatch now carries an `origin` (and, for turf and water, a `zoom`) that puts a chosen
+    // swatch now carries an `origin` (and, where its tile is shrunk, a `zoom`) that puts a chosen
     // point of the tile at the swatch centre; a wall swatch and every surface on the plan carry
     // neither, so their bytes are what they were.
     const kinds = ["lawn", "planting", "paving", "deck", "gravel", "water", "driveway"];
@@ -450,6 +450,58 @@ describe("outdoor — the legend gains a row per ground material used", () => {
     }
     // The SVG re-frames exactly the seven ground swatches, by a transform on their own path.
     expect((svg.match(/<path d="[^"]*" transform="translate\(/g) ?? []).length).toBe(GROUND_MATERIALS.length);
+  });
+
+  it("a scatter swatch (turf, gravel, tarmac) holds six to twelve of its pattern's marks", () => {
+    // A legend swatch reads as its material only by showing several marks: at the plan's own
+    // tile size the turf swatch held two tufts, the gravel three marks and the tarmac four
+    // specks. The marks are read off the `<pattern>` markup the drawing emits (a circle's
+    // centre; a tuft's middle blade's foot), tiled from the swatch's own `origin` at its own
+    // `zoom`, and counted where the centre falls inside the swatch box.
+    const SCATTER = ["grass", "gravel", "tarmac"] as const;
+    const marksOf = (material: string, gap: number): { pts: [number, number][]; w: number; h: number } => {
+      const markup = hatchPattern({ material, scale: 1, angle: 0 }, { fmt: String, gap, thin: 1, base: "", line: "" });
+      const tile = /^<pattern [^>]*?width="([^"]*)" height="([^"]*)"/.exec(markup)!;
+      const pts: [number, number][] = [];
+      for (const m of markup.matchAll(/<circle cx="([^"]+)" cy="([^"]+)"/g)) pts.push([Number(m[1]), Number(m[2])]);
+      for (const m of markup.matchAll(/<path d="M[^ ]+ L[^ ]+ M([^,]+),([^ ]+) /g))
+        pts.push([Number(m[1]), Number(m[2])]);
+      return { pts, w: Number(tile[1]), h: Number(tile[2]) };
+    };
+    const body = `  outdoor lawn at (0,9000) size 4000x3000\n  outdoor gravel at (5000,9000) size 4000x3000\n  outdoor driveway at (10000,9000) size 4000x3000`;
+    for (const sheet of ["  paper A1 landscape\n  scale 1:100\n", "  paper A2 landscape\n  scale 1:50\n", ""]) {
+      const src = `plan "L" {\n  units mm\n${sheet}  legend\n${BOX}\n${ROOM}\n${body}\n}\n`;
+      const { scene } = compile(src, { noCache: true });
+      const gap = scene!.sizes.hatchGap;
+      const counted: string[] = [];
+      for (const n of scene!.nodes) {
+        if (n.prim.t !== "hatch" || n.layer !== "annotations") continue;
+        const p = n.prim;
+        if (!(SCATTER as readonly string[]).includes(p.material)) continue;
+        const { pts, w, h } = marksOf(p.material, gap);
+        // The control: the reader found this pattern's marks at all (a tile of none counts none).
+        expect(pts.length, `${p.material} marks per tile`).toBeGreaterThanOrEqual(4);
+        const zoom = p.zoom ?? 1;
+        const xs = p.region[0]!.map((q) => q.x);
+        const ys = p.region[0]!.map((q) => q.y);
+        const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+        let inside = 0;
+        for (let k = Math.floor((x0 - p.origin!.x) / (zoom * w)) - 1; (k - 1) * zoom * w + p.origin!.x < x1; k++) {
+          for (let l = Math.floor((y0 - p.origin!.y) / (zoom * h)) - 1; (l - 1) * zoom * h + p.origin!.y < y1; l++) {
+            for (const [px, py] of pts) {
+              const x = p.origin!.x + zoom * (px + k * w);
+              const y = p.origin!.y + zoom * (py + l * h);
+              if (x > x0 && x < x1 && y > y0 && y < y1) inside++;
+            }
+          }
+        }
+        const where = `${p.material} swatch, ${sheet ? sheet.trim().replace(/\s+/g, " ") : "no sheet"}`;
+        expect(inside, where).toBeGreaterThanOrEqual(6);
+        expect(inside, where).toBeLessThanOrEqual(12);
+        counted.push(p.material);
+      }
+      expect(counted.sort()).toEqual([...SCATTER]);
+    }
   });
 });
 

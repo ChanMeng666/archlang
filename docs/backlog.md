@@ -32,6 +32,22 @@ it.
 
 ---
 
+## Awaiting an owner decision
+
+Each of these changes shipped output or tooling in a way the code cannot choose for itself. None
+is to be started until its question is answered; the entry named holds the evidence.
+
+| Item | The question |
+|---|---|
+| 3.1 (b) | Take the `vitest` 2 → 5 major now, or keep waiting on the entry's triggers? |
+| M.8 | Should `format()` keep more than three decimals, and should `arch fmt` say so (stderr, exit code) when it refuses a file with parse errors? |
+| M.9 | Should grid snap and `fmt2` round half away from zero, so a mirror image snaps alike? It moves output. |
+| M.14 | Should a roof's acute corner be bevelled or miter-limited, and at what limit? |
+| D.7 | One hairline for the whole sheet? The title block's rules would move in every example. |
+| `bench/baseline.json` | Not a decision but a chore that needs an idle machine: see `bench/README.md`. |
+
+---
+
 ## Wave 3 — hygiene, freshness, and the missing example
 
 ### 3.1 · Nightly is red — and NOT for the reason this entry said (issue #66) — `todo`
@@ -1541,30 +1557,6 @@ byte moved, and each replaced pass is compared with its old form, kept verbatim,
 Things the plan-symbol redraw turned up and deliberately did not widen into. Each was re-run on
 `main` for this entry through the CLI or the source named in it.
 
-### D.1 · `garden-house` seats its tables twice — `todo`
-
-`dining_table` and `outdoor_table` draw their own chairs (`chairAt`, `glyphs-living.ts`;
-`glyphs-outdoor.ts`), and `examples/garden-house.arch` still places four separate `chair`s round
-its dining table and four `outdoor_chair`s round its patio table. Re-run: a plan holding just the
-kitchen's `dining_table at (10200,10800) size 1600x900` and its four chairs, compiled
-`-f png -s 3`, draws eight tucked chairs on the table and the four free ones 200 mm beyond it.
-Remove the separate chairs (or swap each table for a `table`); either moves the example's goldens.
-
-### D.2 · `hillside-villa`'s piano faces its keyboard into the wall — `todo`
-
-A `piano` draws its keyboard along the top edge. `examples/hillside-villa.arch` places it
-`at (3200,4400) size 1300x1300` with no `rotate`, so the keys sit 100 mm off the 200 mm
-`w_l1_band_w` face at y = 4300, and the square footprint is too shallow for the bench (it needs a
-depth of 1.3 widths). Re-run: that wall, room and piano alone, `-f png -s 2`. A `rotate` (and a
-deeper footprint for the bench) in the example fixes it.
-
-### D.3 · Ground-material legend swatches still show few marks — `todo`
-
-The swatch frame (`GROUND_SWATCH_FRAME`, `src/hatches.ts`) put each pattern's own marks in view,
-but at swatch size they are few. Re-run: `examples/garden-house.arch -f png -s 6`, cropped to the
-legend: `grass` shows two tufts, `gravel` three marks, `tarmac` three dots. A
-denser swatch needs a smaller `zoom` per material, which is a judgement per pattern.
-
 ### D.4 · Fence ticks and window sills draw outside `bounds()` — `declared`
 
 `fence.bounds()` is the run's points, and every post tick stands `7 × thin` either side of the run;
@@ -1591,16 +1583,20 @@ false at every one. No D4 sweep covers it (`glyphs-misc.test.ts` sweeps `plant` 
 `requiresWall: false` and no `directional`, the flag changes no orientation decision; drop it or
 make the square drawing D4-exact.
 
-### D.7 · The sheet draws two different hairlines, and SVG and PDF disagree on one — `todo`
+### D.7 · The sheet draws two different hairlines — `todo` (an owner decision)
 
-A sheet-table rule (`rule(…, hairline)`, `src/sheet-tables.ts`) sets `paint.width = thin × 0.5`
-and `lineWeight: "extraThin"`, so SVG, which follows the weight, draws it at `thin × 13/18` and
-PDF, which reads `paint.width` (`src/export/pdf.ts`), at `thin × 0.5`. The title block's row rules
-are drawn outside the Scene at `thin × 0.5` in both backends (`src/backends/svg.ts`,
-`src/export/pdf.ts`). Re-run: `examples/garden-house.arch` level 1 SVG has `thin` 18, the legend's
-hairlines at 13 and the four title-block rules at 9; the PDF backend draws all of them at 9.
-One hairline for the sheet (`weightWidth("extraThin", sizes)` everywhere) moves the PDF tables and
-both backends' title block.
+A sheet-table hairline (`rule(…, hairline)`, `src/sheet-tables.ts`) is `extraThin`,
+`thin × 13/18`; the title block's row rules are drawn outside the Scene at `thin × 0.5`
+(`src/backends/svg.ts`, `src/export/pdf.ts`). Re-run: `examples/garden-house.arch` level 1 has
+`thin` 18, the schedule's and the legend's hairlines at 13 and the four title-block rules at 9, in
+the SVG and in the PDF alike. One hairline for the sheet (`weightWidth("extraThin", sizes)` for
+the title block too) moves the SVG and the PDF of every plan with a title block, so it is the
+owner's call.
+
+- **Closed: SVG and PDF disagreed on the table hairline.** The rule carried
+  `paint.width = thin × 0.5` beside `lineWeight: "extraThin"`; SVG follows the weight and PDF
+  reads `paint.width`, so the PDF drew the tables' hairlines at 9. The rule now carries the width
+  its weight resolves to (`weightWidth`); no SVG moved.
 
 ### D.8 · The before/after specimen tool lives outside the repo — `todo` (a want)
 

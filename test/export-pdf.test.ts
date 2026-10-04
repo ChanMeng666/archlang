@@ -72,6 +72,7 @@ import { resolve } from "../src/ir.js";
 import { parse } from "../src/parser.js";
 import { toScene } from "../src/scene-build.js";
 import { toPdf } from "../src/export/pdf.js";
+import { EXTRA_THIN_RATIO } from "../src/scene.js";
 
 async function hasPdfkit(): Promise<boolean> {
   try {
@@ -332,6 +333,26 @@ describe("PDF export", () => {
     expect(bytes).not.toContain("/Subtype /Image");
     // …and the label really is text, not outlined into paths.
     expect(pdfStrings(pdf)).toContain("Room");
+  });
+
+  it("draws a sheet table's hairline row rule at the extraThin width, as the SVG does", async () => {
+    // The PDF reads `paint.width`; the SVG follows `lineWeight`. A schedule's row rule carried
+    // `thin × 0.5` beside `extraThin` (`thin × 13/18`), so the two exports disagreed. No `paper`,
+    // so no title block: nothing else on this page is drawn at half the thin pen.
+    const src = `plan "T" {\n  units mm\n  schedule rooms\n  wall id=w exterior thickness 200 { (0,0) (8000,0) (8000,3000) (0,3000) close }\n  room id=a at (0,0) size 4000x3000 label "A"\n  room id=b at (4000,0) size 4000x3000 label "B"\n}\n`;
+    const { svg, scene: s } = compile(src, { noCache: true });
+    const thin = s!.sizes.thin;
+    const hair = (thin * EXTRA_THIN_RATIO[0]) / EXTRA_THIN_RATIO[1];
+    const rules = s!.nodes.filter((n) => n.layer === "annotations" && n.lineWeight === "extraThin");
+    expect(rules.length, "the fixture must draw a hairline row rule").toBeGreaterThan(0);
+    const widths = [...pageOps(await toPdf(s!)).matchAll(/^([\d.]+) w$/gm)].map((m) => Number(m[1]));
+    const near = (w: number) => widths.filter((x) => Math.abs(x - w) < thin * 0.01).length;
+    expect(near(hair)).toBeGreaterThan(0);
+    expect(near(thin * 0.5)).toBe(0);
+    // …and the SVG strokes its lines at that width too, and none at half the thin pen.
+    const svgWidths = [...svg.matchAll(/<line [^<>]*stroke-width="([\d.]+)"/g)].map((m) => Number(m[1]));
+    expect(svgWidths.filter((x) => Math.abs(x - hair) < 0.01).length).toBeGreaterThan(0);
+    expect(svgWidths.filter((x) => Math.abs(x - thin * 0.5) < 0.01).length).toBe(0);
   });
 
   it("embeds a Unicode font so labels outside WinAnsiEncoding survive", async () => {

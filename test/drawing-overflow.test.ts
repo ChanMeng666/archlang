@@ -211,7 +211,7 @@ suite("4.9 — it does not claim the page grew, and the corpus proves it", () =>
    * `courtyard-house` raises the warning — its `roof overhang 600` puts the eaves at
    * 17500 × 13000 against 35350 × 12910 mm of drawing area, 90 mm over — and its page comes
    * out **exactly A3**, because the 15 mm reserved sheet margin absorbs it. Only
-   * `garden-house`, whose 22 × 22 m lot line overruns by 4050 mm, is issued larger.
+   * `garden-house`, whose 22 × 22 m lot line overruns by 3710 mm, is issued larger.
    */
   it("courtyard-house warns AND is issued exactly paper-sized", () => {
     const [, src, world] = exampleNamed("courtyard-house");
@@ -222,12 +222,12 @@ suite("4.9 — it does not claim the page grew, and the corpus proves it", () =>
     expect(sheet.grown).toBe(false);
   });
 
-  it("garden-house warns AND is issued about 1% taller than its A2", () => {
+  it("garden-house warns AND is issued about 0.2% taller than its A2", () => {
     const [, src, world] = exampleNamed("garden-house");
     expect(codesOf(src, world)).toContain("W_DRAWING_OVERFLOW");
     const sheet = compile(src, { world, noCache: true }).scene!.sheet!;
     expect(sheet.grown).toBe(true);
-    expect(sheet.page.h / (sheet.heightMm * sheet.denom) - 1).toBeCloseTo(0.0101, 4);
+    expect(sheet.page.h / (sheet.heightMm * sheet.denom) - 1).toBeCloseTo(0.002, 4);
   });
 
   it("exactly these shipped examples report the residual", () => {

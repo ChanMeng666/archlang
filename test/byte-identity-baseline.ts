@@ -686,6 +686,70 @@
  * diagnostics): the only other drawing that moved is the E.17 witness fence in
  * `docs/backlog.md`, the same tie. The PNG golden's changed pixels lie within
  * x ∈ [6658, 14017], y ∈ [−990, −197] ∪ [10330, 11176] mm, the two chain bands.
+ *
+ * ## `garden-house`: both rows re-measured — the example stopped seating its tables twice
+ *
+ * Case (2)'s sibling: the example SOURCE changed and the compiler did not (backlog D.1).
+ * `dining_table` and `outdoor_table` draw their own chairs, and the example also placed four
+ * `chair`s round the one and four `outdoor_chair`s round the other; those eight lines are gone
+ * (and its two comments now count fourteen outdoor families). Field by field, ground storey
+ * only — the first floor's SVG is byte-identical:
+ *
+ *   - **SVG (level 1).** The eight chairs' primitives are gone; the "Kitchen/Dining" label
+ *     and its area move from y = 9030/9415 to 9855/10240, label placement no longer having the
+ *     chairs to avoid; the legend loses its `outdoor_chair` row (`chair` stays: the study has
+ *     one), so the table and the page are one 340 mm row shorter (page height 42425 → 42085).
+ *   - **`describe()`.** `furniture[]` loses the eight entries and the auto-ids after them
+ *     renumber (`car_19` → `car_15` … `shrub_48` → `shrub_40`); `freedom` counts 48 → 40
+ *     (absolute 38 → 30). The removed chairs were obstacles, so two walks move: `r_kitchen`
+ *     3800 → 4100 mm (detour 1.33 → 1.46) and the kitchen → living route 9500 → 7800 mm
+ *     (1.29 → 1.11); every bottleneck is unchanged. The sheet's `W_DRAWING_OVERFLOW` message
+ *     quotes the taller drawing area the shorter legend leaves: 17950 → 18290 mm, over by
+ *     4050 → 3710 mm (`test/drawing-overflow.test.ts` re-measured with it).
+ *   - **`lint()`.** The one deliberate warning (`W_ROOM_NOT_EQUATOR_FACING`, Bedroom 2) is
+ *     unchanged but for its span, 12627 → 12104: the 523 bytes removed above it. No new
+ *     warning.
+ *
+ * Swept over all 273 corpus plans (every storey; SVG, `describe()`, both `lint()` profiles,
+ * diagnostics, the circulation overlay): no other row moved. The PNG golden is a shorter page
+ * (561 × 401 → 561 × 398 px), so it cannot be diffed pixel for pixel; the old and new SVG
+ * rastered over one fixed window differ only within x ∈ [2880, 3420] ∪ [3680, 6620] ∪
+ * [10280, 12820], y ∈ [8880, 15900] ∪ [33440, 40440] mm: the chairs, the label and the legend
+ * (its frame, and its rows from the removed one down).
+ *
+ * ## `hillside-villa`: both rows re-measured — the piano turns its keyboard to the room
+ *
+ * The example SOURCE changed and the compiler did not (backlog D.2). The living room's
+ * `piano at (3200,4400) size 1300x1300` stood with its keyboard 100 mm off the north wall, on
+ * a square footprint too shallow for the bench. It is now `at (3000,8700) size 1600x1200
+ * rotate 270`, by the east wall beside the bay: keyboard to the west, a depth of 1.33 widths
+ * so the bench is drawn, 125 mm off the east wall face and 175 mm off the south one. Field by
+ * field, ground storey only — level 2's SVG and `compile().diagnostics` are byte-identical:
+ *
+ *   - **SVG (level 1).** Only the piano's primitives: the old glyph's are gone and the new
+ *     one's (with the bench's two) are drawn, ink within x ∈ [3036, 4593], y ∈ [8700, 9900].
+ *   - **`describe()`.** The piano gains `rotate: 270`. It no longer stands in the mouth of the
+ *     living/dining opening, so three bottlenecks widen 940 → 1100 mm: `r_living`, `r_dining`
+ *     and the kitchen → dining route. No walk distance moves.
+ *   - **`lint()`.** The same nine warnings, field for field, but for a uniform span shift of
+ *     +11 on the five diagnostics below the piano line: the bytes ` rotate 270` added.
+ *
+ * Swept over all 273 corpus plans as above: no other row moved. The PNG golden's changed
+ * pixels lie within x ∈ [2971, 4665], y ∈ [4351, 5780] ∪ [8639, 9963] mm: where the piano
+ * stood and where it stands.
+ *
+ * ## `garden-house`'s whole-surface row re-measured: three legend swatches show more marks
+ *
+ * Case (1), the compiler changed, in the drawing only (backlog D.3). The legend's `grass`,
+ * `gravel` and `tarmac` swatches draw their pattern at a smaller `zoom` (`GROUND_SWATCH_FRAME`,
+ * `src/hatches.ts`: 0.8 → 0.32, 1 → 0.67, 1 → 0.72), so each holds seven to nine marks instead
+ * of two to four. Field by field: level 1's SVG moves exactly three `<path>`s, those three
+ * swatches' re-framed fills; no surface on the plan moves. Level 2's SVG, `describe()`,
+ * `lint()` and `compile().diagnostics` are byte-identical: the old level-1 SVG put back into
+ * the new payload reproduces the old row, and the `SEMANTIC_BASELINE` row below did not move.
+ * Swept over all 273 corpus plans as above: no other row moved — `garden-house` is the one
+ * plan that draws a legend over those three materials. The PNG golden's changed pixels lie
+ * within x ∈ [3959, 4382], y ∈ [27618, 29418] mm, the swatch column from `grass` to `tarmac`.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -698,10 +762,10 @@ export const BASELINE: [string, string][] = [
   ["courtyard-house", "41f6ff56cc47f383795c0c9c11585de2d9846546d4fd3c96c2637a0ef2cd0447"],
   ["furnished-flat", "889f4246f5e98f589952d5e20e0acdfd6057f542e0620c8d20bce01dd17c88f0"],
   ["gallery-l", "af339b015babaa7a4cfa6fe45e4afe01a2643674f883f441b3066af686bc5601"],
-  ["garden-house", "7c226b8593064a3bc782b5cfa01b5b79bcb46d0aa61120fd00cb535f36541a66"],
+  ["garden-house", "ade0cdc23758924a0dbc9fec12e549ea826bb874ce8ed94e7b8e2ce26bc25af7"], // re-measured, see header
   ["garden-loft", "bcbf52e5d8b7875906721d8367552e463d642428516530d733c8b9feb29c2f9f"],
   ["hexagon-pavilion", "22030edea2fcaddfdc5d94d776849a8065bd287196664967e3f415285b0458cc"],
-  ["hillside-villa", "d8ec896b04651d4824a0afd3a05cd815e476e6f45169b4edb1992a1b3f45befb"], // re-measured, see header
+  ["hillside-villa", "0313a5001d36b509d377fc1855be6243efbc6475c9d774f7519ca4d1ead3129a"], // re-measured, see header
   ["imports", "3490c17b19f31dfc3a82ce20a2218a4e8f48f0fd979a2c88f23e6a7ddfd75b00"],
   ["laneway-house", "f9c3b29a51508234ab6f8426be062f3087f482cfa2b124ba75fdab150b4d18bc"],
   ["library", "51d1c1a151192315fa19c2fa526ca9192ce84abdd9e6084c4dff4d30aed1c086"],
@@ -742,10 +806,10 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["courtyard-house", "fe1c1009bf87d63b2e9dc77fb870ad43cc2a0957376e4ad3c2192ce5bab5ac0a"],
   ["furnished-flat", "c55ce2b43dd4acf0eec4eada9ee456c799bf4188f6f1a2f6d32a8cb691424fc4"],
   ["gallery-l", "cef0ee1863a505bb831aa2512ca204547117872a61cf1a1ddd293361f0b688be"],
-  ["garden-house", "d41cfe2342e0e0818cc7531e75e08bf7c65fbe0d650d7e6a7f2b4261d3470bb8"],
+  ["garden-house", "89466ed2864b0161919158114a71bef855bb6ad9b50157992eed30290a943e3f"], // re-measured, see header
   ["garden-loft", "ad8935f435045684b7ed9975254dc2daf0357f4eb3735e514e319980ebecf793"],
   ["hexagon-pavilion", "9a3e3666e6e2b09d04a6239c984415ec92ffa487c8aa743fc8506f4bc0f97a61"],
-  ["hillside-villa", "3d97752400b255d53c901d122d69bddf189cdfb7b6d46455b11b090d0517a686"], // re-measured, see header
+  ["hillside-villa", "37b805898d18e43af1e5f78224c4467e1792420fb49f99dbc9f96bd7d29c3221"], // re-measured, see header
   ["imports", "5c75030d46ecbfc8b1e80b40945d17bd13afb68a813a286b9ddfe23252452cbc"],
   ["laneway-house", "9a173beb7f213286b8e0c117d829d126166b93e118f91894ba278005254a5255"],
   ["library", "f81107388c6547af37b0938ecc06a1f3ab3acbe69916edb7b0c9c76a4c9f3477"],
