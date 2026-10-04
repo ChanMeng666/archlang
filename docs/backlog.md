@@ -32,6 +32,22 @@ it.
 
 ---
 
+## Awaiting an owner decision
+
+Each of these changes shipped output or tooling in a way the code cannot choose for itself. None
+is to be started until its question is answered; the entry named holds the evidence.
+
+| Item | The question |
+|---|---|
+| 3.1 (b) | Take the `vitest` 2 → 5 major now, or keep waiting on the entry's triggers? |
+| M.8 | Should `format()` keep more than three decimals, and should `arch fmt` say so (stderr, exit code) when it refuses a file with parse errors? |
+| M.9 | Should grid snap and `fmt2` round half away from zero, so a mirror image snaps alike? It moves output. |
+| M.14 | Should a roof's acute corner be bevelled or miter-limited, and at what limit? |
+| D.7 | One hairline for the whole sheet? The title block's rules would move in every example. |
+| `bench/baseline.json` | Not a decision but a chore that needs an idle machine: see `bench/README.md`. |
+
+---
+
 ## Wave 3 — hygiene, freshness, and the missing example
 
 ### 3.1 · Nightly is red — and NOT for the reason this entry said (issue #66) — `todo`
