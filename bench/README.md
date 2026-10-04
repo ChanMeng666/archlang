@@ -15,12 +15,17 @@ generator or methodology change. Timings on a loaded machine move by tens of per
 machine's absolutes are not another's, so use ratios measured back to back in one session,
 never absolutes across sessions or hosts.
 
+The committed baseline predates the joinery, room-overlap, label-placement, vocabulary and
+room-adjacency speed-ups, so the PR bench comment reads faster than the code is against
+itself. Regenerating it needs an idle machine: three runs on a desktop at about 40 % load put
+BALANCED `compile` anywhere from 67 to 96 ms, which is why it was not regenerated then.
+
 Where the time goes: on the wall-heavy plans the hotspot is the joinery pass
 (`joinWalls`, ADR 0018); `src/geometry/union.ts` is a test oracle and is not on the compile
-path. `lint` on ROOM_HEAVY is dominated by vocabulary matching (`src/vocabulary.ts`:
-`matchVocabulary`, `classifyLabelUses`, `synonymMatchesLabel`, about 88 % inclusive in an
-inspector profile, the same on both layouts); room adjacency and the analysis grids are
-under 1 %.
+path. `lint` on ROOM_HEAVY is no longer dominated by vocabulary matching: the label is split
+once per classification and the numeric suffix is read by character code
+(`src/vocabulary.ts`), which took that row to a small fraction of what it was. Profile again
+before naming a hotspot there.
 
 ## Methodology (fixed 2026-07)
 

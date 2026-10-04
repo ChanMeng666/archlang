@@ -1477,7 +1477,7 @@ unhandled error before any test runs; adding `--minWorkers=1` runs it (re-run on
 `test/eval-stats.test.ts`: 5 passed). Worth one line in `docs/testing.md` so an agent told to
 "rerun with `--maxWorkers=2`" does not read the error as a test failure.
 
-### M.19 · Quadratic passes the two budgets do not see — partly closed
+### M.19 · Quadratic passes the two budgets do not see — closed (two residuals kept by decision)
 
 The step budget counts the evaluator and the drawing budget the primitives drawn; three passes
 that run after both cost more than either counts, each within the element cap. Re-measured
@@ -1496,7 +1496,10 @@ byte moved, and each replaced pass is compared with its old form, kept verbatim,
   `describe` for zero diagnostics (identical rings never test as overlapping), now 1.1–1.3 s.
   Still quadratic, because the answer is: n DISTINCT polygon rooms sharing one cell are n²
   distinct exact ring tests. A bound there is a language decision (e.g. stop counting past a
-  cap and word the summary "…and more than N"); not built.
+  cap and word the summary "…and more than N"); not built. **Owner decision: keep it.** The
+  input is a constructed pile, the cost is bounded by the element cap (seconds, not
+  unbounded), and a cap would change a shipped diagnostic's text for it. Reopen only against
+  a real plan that pays this cost.
 - **Reduced: label placement.** Each probe's sum over obstacles and placed labels now asks a
   grid for the boxes it can touch, and groups with the same text box, anchor and ring continue
   a remembered running sum instead of rescanning (`BoxSums`, `src/label-placement.ts`). The
@@ -1507,7 +1510,9 @@ byte moved, and each replaced pass is compared with its old form, kept verbatim,
   What stays is the exact ordered sum itself: 5,000 DISTINCT rooms 1 mm apart compile in
   6.4–6.8 s (12.9–13.2 s before), and 76.8 million of the 101.8 million terms they sum are
   nonzero. Bounding that would change which label wins (a cap on the labels considered, or a
-  different sum), so it is a drawing decision; not built.
+  different sum), so it is a drawing decision; not built. **Owner decision: keep it**, for
+  the same reasons: which label wins is shipped drawing behaviour, and only a constructed
+  pile of thousands of mutually overlapping labels pays for the exact sum.
 - **Closed: a long label.** One room labelled with a 500,003-character string (a 100,000-deep
   array printed into it, about 100,000 tokens). `classifyLabelUses` (`src/vocabulary.ts`)
   made 26 `synonymMatchesLabel` passes over the label, each re-normalising and re-splitting it

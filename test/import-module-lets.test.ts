@@ -282,7 +282,9 @@ const BASELINE: [string, string][] = [
   ["examples/garden-house.arch", "36d99115620aed5aa6731f66a03187824e029fe54f33cb8a2e9c7bfe721764c9"],
   ["examples/garden-loft.arch", "1fbeaf41b1f1b981f274a1501ed870bb6b3ebc2ec377bd15e588e78cbd07ab7b"],
   ["examples/hexagon-pavilion.arch", "293447ab543aa86945af475e440ff85cddb8070f3330d6887e94f5e344d4c216"],
-  ["examples/hillside-villa.arch", "d83fe8d9cab201ecb26135fa67f37945313fdf706f692ada83ed39ddfe8b481b"],
+  // Re-measured for the facade-probe fix (level 2's `dims auto` chains only): the same row,
+  // with the same digest body, as `./while-byte-identity-baseline.ts`, whose header has the reason.
+  ["examples/hillside-villa.arch", "233b1b68ac50ff026ca0299f4083191dfdc557556f99ca6b78483d9ba515a4ad"],
   ["examples/imports.arch", "dbbdb95881775e34e5abecc72a52bc72160af81a5883ddced18bbf3d7f1a7f2c"],
   ["examples/laneway-house.arch", "2315eb23382b52aa784930c332c00083b7d9931c4620a46b8b710c75e4c1195e"],
   ["examples/library.arch", "5c4913bdc5e2960d6cac2203cdb775ed56179c232550efe893a1dfab492d3215"],
