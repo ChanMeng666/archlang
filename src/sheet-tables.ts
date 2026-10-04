@@ -34,6 +34,7 @@ import type { HatchSpec } from "./hatches.js";
 import { groundSwatchFrame, hatchesUsed, patternId } from "./hatches.js";
 import type { ROutdoor, RFurniture, RRoom } from "./ir.js";
 import { groundMaterialsUsed } from "./elements/outdoor.js";
+import { weightWidth } from "./scene.js";
 import type { RenderSizes, SceneNode } from "./scene.js";
 import type { Theme } from "./theme.js";
 import { FIXTURE_CATEGORIES, fixtureGlyph, hasFixtureGlyph } from "./elements/fixtures-glyphs.js";
@@ -522,7 +523,7 @@ function drawer(theme: Theme, sizes: RenderSizes, out: SceneNode[]) {
       out.push({
         layer: "annotations",
         prim: { t: "line", a, b },
-        paint: { stroke: ink, width: sizes.thin * (hairline ? 0.5 : 1) },
+        paint: { stroke: ink, width: weightWidth(hairline ? "extraThin" : "thin", sizes) },
         lineWeight: hairline ? "extraThin" : "thin",
       });
     },

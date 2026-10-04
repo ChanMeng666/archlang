@@ -9,6 +9,7 @@ import { parse } from "../src/parser.js";
 import { resolve } from "../src/ir.js";
 import type { RRoom } from "../src/ir.js";
 import type { Scene, SceneNode } from "../src/scene.js";
+import { weightWidth } from "../src/scene.js";
 import { DESCRIBE_KEYS } from "../src/cli/commands-analyze.js";
 
 /**
@@ -289,6 +290,18 @@ describe("legend — derived closed-form from what the drawing paints", () => {
     for (const sw of swatches) {
       const id = (sw.paint.fill ?? "").replace(/^url\(#|\)$/g, "");
       expect(svg).toContain(`<pattern id="${id}"`);
+    }
+  });
+
+  it("every table line carries the width its weight resolves to, so SVG and PDF agree", () => {
+    // SVG strokes a node by its `lineWeight`; PDF reads `paint.width`. A hairline row rule said
+    // `extraThin` and carried `thin × 0.5`, so the two exports drew it at different widths.
+    for (const src of [fixture("schedule-sheet.arch"), shell("  schedule rooms\n  legend\n")]) {
+      const s = sceneOf(src);
+      const weighted = s.nodes.filter((n) => n.layer === "annotations" && n.lineWeight !== undefined);
+      // The control: both weights are present, so the hairline branch is what is measured.
+      expect(new Set(weighted.map((n) => n.lineWeight))).toEqual(new Set(["thin", "extraThin"]));
+      for (const n of weighted) expect(n.paint.width).toBe(weightWidth(n.lineWeight!, s.sizes));
     }
   });
 
