@@ -84,7 +84,7 @@ import { elevationOf, heightRangeDiagnostic, isDrawableHeight, plansAuthorHeight
 import { planTableRows } from "./sheet-tables.js";
 import type { GridBox } from "./geometry/grid-index.js";
 import { GridIndex } from "./geometry/grid-index.js";
-import { rectsOverlap } from "./geometry/rect.js";
+import { countOverlappingRectPairs, rectsOverlap } from "./geometry/rect.js";
 import {
   effectiveVertices,
   polygonArea,
@@ -3190,12 +3190,23 @@ function checkPlanDrawable(elements: ResolvedElement[], diagnostics: Diagnostic[
  *  rooms are 499,500 pairs; a list that long is noise and an unbounded allocation. */
 export const MAX_OVERLAP_PAIRS_LISTED = 200;
 
-/** W_ROOM_OVERLAP: a spatial grid restricts the pairwise test to rooms sharing a
- *  cell (~O(n) for distributed plans) instead of all O(n²) pairs. Two rooms
- *  overlap ⟹ their boxes intersect ⟹ they share a cell, so this finds exactly
- *  the same overlaps; pairs are emitted in (a,b) order to keep diagnostics
- *  byte-identical to the former double loop (up to {@link MAX_OVERLAP_PAIRS_LISTED}). */
-function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diagnostic[]): void {
+/** W_ROOM_OVERLAP: the overlapping room pairs, listed in (a,b) order up to
+ *  {@link MAX_OVERLAP_PAIRS_LISTED} and then only counted — the same diagnostics, byte for byte,
+ *  as the double loop over every pair (`test/room-overlap-oracle.test.ts` keeps that loop and
+ *  the grid pass that replaced it, and compares all three).
+ *
+ *  Nothing here is quadratic in a pile of identical rooms. Whether two rooms overlap depends
+ *  only on their geometry (`at`, `size`, `poly`), so rooms with value-identical geometry form
+ *  one CLASS and each pair of classes is tested once; a spatial grid over the classes restricts
+ *  the tests to classes sharing a cell (two rooms overlap ⟹ their boxes intersect ⟹ they share
+ *  a cell). The listing then walks rooms `a` in order and takes the partners `b > a` from the
+ *  overlapping classes' member lists, stopping at the cap. Past the cap only the count is
+ *  needed: rectangle pairs are counted in O(n log n) by {@link countOverlappingRectPairs}, and
+ *  pairs with a polygon room by class (a pile of n coincident polygon rooms is one test). What
+ *  stays quadratic is what the answer is made of: n DISTINCT polygon rooms that all share a
+ *  cell are n² distinct exact tests. Rooms reaching this check are finite (`checkNumberDomain`
+ *  drops the rest first). */
+export function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diagnostic[]): void {
   // A room left unplaced carries a (0,0) placeholder, not geometry: testing it would
   // report phantom overlaps (quadratic in a chain) on top of the layout error.
   const rooms = elements.filter((e): e is RRoom => e.kind === "room" && !e._unplaced);
@@ -3207,38 +3218,115 @@ function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diagnostic[
   });
   let rext = 0;
   for (const r of rooms) rext += r.size.w + r.size.h;
-  const rgrid = new GridIndex<number>(rooms.length > 0 ? Math.max(rext / (rooms.length * 2), 1) : 1);
+  const cell = rooms.length > 0 ? Math.max(rext / (rooms.length * 2), 1) : 1;
+
+  // Classes: first member's index order, members ascending. The key is the numbers' bit
+  // patterns (so -0 is not 0), so two rooms in one class are the same numbers and every test
+  // answers the same for both.
+  const keyOf = (r: RRoom): string => {
+    let k = bitsKey(r.at.x) + bitsKey(r.at.y) + bitsKey(r.size.w) + bitsKey(r.size.h);
+    if (r.poly) {
+      k += "|";
+      for (const p of r.poly) k += bitsKey(p.x) + bitsKey(p.y);
+    }
+    return k;
+  };
+  const classIds = new Map<string, number>();
+  const classOf: number[] = [];
+  const members: number[][] = [];
   rooms.forEach((r, i) => {
-    rgrid.insert(roomBox(r), i);
+    const k = keyOf(r);
+    let c = classIds.get(k);
+    if (c === undefined) {
+      c = members.length;
+      classIds.set(k, c);
+      members.push([]);
+    }
+    members[c]!.push(i);
+    classOf.push(c);
   });
-  // Memory is O(n): no global pair set, no global sort. Room `a` is handled in ascending
-  // order and its partners `b > a` ascending, so the (a,b) emission order is exactly the
-  // former sorted order. Past MAX_OVERLAP_PAIRS_LISTED a pair is only counted.
-  let found = 0;
-  rooms.forEach((r1, a) => {
-    const partners = rgrid.queryBox(roomBox(r1)).filter((b) => b > a);
-    partners.sort((p, q) => p - q);
-    for (const b of partners) {
-      const r2 = rooms[b]!;
-      const b1 = { x: r1.at.x, y: r1.at.y, w: r1.size.w, h: r1.size.h };
-      const b2 = { x: r2.at.x, y: r2.at.y, w: r2.size.w, h: r2.size.h };
-      // A polygon room is tested EXACTLY (its own ring against the other's), never by
-      // its bounding box — an L and the room tucked into its notch have overlapping
-      // boxes and disjoint floors, and a bbox answer there would be a plain lie.
-      const overlapping =
-        r1.poly || r2.poly
-          ? rectsOverlap(b1, b2) && polygonsOverlap(r1.poly ?? rectRing(b1), r2.poly ?? rectRing(b2))
-          : rectsOverlap(b1, b2);
-      if (!overlapping) continue;
-      found++;
-      if (found <= MAX_OVERLAP_PAIRS_LISTED) {
-        diagnostics.push({
-          severity: "warning",
-          message: `Rooms "${r1.id}" and "${r2.id}" overlap`,
-          code: "W_ROOM_OVERLAP",
-          span: r2.span,
-        });
+  const rep = (c: number): RRoom => rooms[members[c]![0]!]!;
+  const cgrid = new GridIndex<number>(cell);
+  members.forEach((_, c) => {
+    cgrid.insert(roomBox(rep(c)), c);
+  });
+  const overlapping = (r1: RRoom, r2: RRoom): boolean => {
+    const b1 = { x: r1.at.x, y: r1.at.y, w: r1.size.w, h: r1.size.h };
+    const b2 = { x: r2.at.x, y: r2.at.y, w: r2.size.w, h: r2.size.h };
+    // A polygon room is tested EXACTLY (its own ring against the other's), never by
+    // its bounding box — an L and the room tucked into its notch have overlapping
+    // boxes and disjoint floors, and a bbox answer there would be a plain lie.
+    return r1.poly || r2.poly
+      ? rectsOverlap(b1, b2) && polygonsOverlap(r1.poly ?? rectRing(b1), r2.poly ?? rectRing(b2))
+      : rectsOverlap(b1, b2);
+  };
+  /** The classes overlapping class `c` (itself included when its members overlap one
+   *  another), ascending; computed once per class. Both tests are symmetric in their
+   *  arguments, so a class pair's answer does not depend on which side asked. */
+  const partnerClasses: (number[] | undefined)[] = [];
+  const partnersOf = (c: number): number[] => {
+    let list = partnerClasses[c];
+    if (!list) {
+      list = cgrid
+        .queryBox(roomBox(rep(c)))
+        .filter((d) => {
+          // A class of one has no pair inside it; a lower class already listed has the answer.
+          if (d === c) return members[c]!.length > 1 && overlapping(rep(c), rep(c));
+          const known = d < c ? partnerClasses[d] : undefined;
+          return known ? includesSorted(known, c) : overlapping(rep(Math.min(c, d)), rep(Math.max(c, d)));
+        })
+        .sort((p, q) => p - q);
+      partnerClasses[c] = list;
+    }
+    return list;
+  };
+  const report = (r1: RRoom, r2: RRoom): void => {
+    diagnostics.push({
+      severity: "warning",
+      message: `Rooms "${r1.id}" and "${r2.id}" overlap`,
+      code: "W_ROOM_OVERLAP",
+      span: r2.span,
+    });
+  };
+
+  // The listing: room `a` in ascending order, its partners `b > a` ascending — exactly the
+  // former double loop's emission order.
+  let listed = 0;
+  for (let a = 0; a < rooms.length && listed < MAX_OVERLAP_PAIRS_LISTED; a++) {
+    const need = MAX_OVERLAP_PAIRS_LISTED - listed;
+    const bs: number[] = [];
+    for (const d of partnersOf(classOf[a]!)) {
+      const ms = members[d]!;
+      // First member after `a` (members are ascending), then at most `need` of them.
+      let lo = 0;
+      let hi = ms.length;
+      while (lo < hi) {
+        const mid = (lo + hi) >>> 1;
+        if (ms[mid]! > a) hi = mid;
+        else lo = mid + 1;
       }
+      for (let k = lo; k < ms.length && k < lo + need; k++) bs.push(ms[k]!);
+    }
+    bs.sort((p, q) => p - q);
+    for (let k = 0; k < bs.length && k < need; k++) report(rooms[a]!, rooms[bs[k]!]!);
+    listed += Math.min(bs.length, need);
+  }
+  if (listed < MAX_OVERLAP_PAIRS_LISTED) return;
+
+  // The count: every class pair once, rectangle pairs by sorting.
+  const sizeOf = (c: number): number => members[c]!.length;
+  const rectCount = countOverlappingRectPairs(
+    rooms.filter((r) => !r.poly).map((r) => ({ x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h })),
+  );
+  let found = rectCount ?? 0;
+  members.forEach((_, c) => {
+    const poly = rep(c).poly !== undefined;
+    if (!poly && rectCount !== undefined) return;
+    for (const d of partnersOf(c)) {
+      if (d === c) found += (sizeOf(c) * (sizeOf(c) - 1)) / 2;
+      // A rectangle partner of a polygon class is counted from the polygon's side only.
+      else if (d > c ? poly || rep(d).poly === undefined : poly && rep(d).poly === undefined)
+        found += sizeOf(c) * sizeOf(d);
     }
   });
   if (found > MAX_OVERLAP_PAIRS_LISTED) {
@@ -3248,6 +3336,28 @@ function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diagnostic[
       code: "W_ROOM_OVERLAP",
     });
   }
+}
+
+const BITS = new Float64Array(1);
+const BITS16 = new Uint16Array(BITS.buffer);
+
+/** A number's exact bit pattern as four UTF-16 code units: equal keys are equal doubles
+ *  (`-0` and `0` apart). Cheaper than printing it. */
+function bitsKey(v: number): string {
+  BITS[0] = v;
+  return String.fromCharCode(BITS16[0]!, BITS16[1]!, BITS16[2]!, BITS16[3]!);
+}
+
+/** Does the ascending `list` hold `v`? */
+function includesSorted(list: readonly number[], v: number): boolean {
+  let lo = 0;
+  let hi = list.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (list[mid]! < v) lo = mid + 1;
+    else hi = mid;
+  }
+  return list[lo] === v;
 }
 
 /** E_FURN_ROOM: a fixture's `in <roomId>` must name a real room (fail fast on an

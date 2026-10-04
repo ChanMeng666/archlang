@@ -1297,8 +1297,11 @@ imported outside their modules (grep re-run).
 - Indentation-guided recovery: a tab meeting spaces has no order, so such lines fall back to
   the previous rule; when a block header fails and its `}` is also missing, the deeper-indented
   lines are skipped as its body (pinned in `test/parser-recovery-metric.test.ts`).
-- `relocateLabels` is quadratic in co-located rooms (about 11 s at 5,000 identical rooms, from
-  the card's report); a fix would allow raising `MAX_ELEMENTS`. `E_ELEMENT_LIMIT`'s catalogue
+- `relocateLabels` was quadratic in co-located rooms (about 11 s at 5,000 identical rooms, from
+  the card's report). Identical rooms now continue a remembered sum (M.19): that plan compiles
+  in 0.74–0.85 s, down from 7.0–7.3 s. Distinct rooms whose labels all overlap are still
+  quadratic in the labels, because the exact sum has that many nonzero terms (M.19), so this
+  alone does not justify raising `MAX_ELEMENTS`. `E_ELEMENT_LIMIT`'s catalogue
   text says "5,000" literally; `test/element-cap.test.ts` keeps it equal to `MAX_ELEMENTS`.
 - The shared stack budget (`MAX_STACK_UNITS`, `src/expr.ts`) was measured cold on Node, Node
   workers and Chromium/Firefox/WebKit workers; the rule (minimum capacity / 1.5) is the thing to
@@ -1350,19 +1353,50 @@ unhandled error before any test runs; adding `--minWorkers=1` runs it (re-run on
 `test/eval-stats.test.ts`: 5 passed). Worth one line in `docs/testing.md` so an agent told to
 "rerun with `--maxWorkers=2`" does not read the error as a test failure.
 
-### M.19 · Quadratic passes the two budgets do not see — `todo` (measured by the red team)
+### M.19 · Quadratic passes the two budgets do not see — partly closed
 
 The step budget counts the evaluator and the drawing budget the primitives drawn; three passes
-that run after both cost more than either counts, each within the element cap:
+that run after both cost more than either counts, each within the element cap. Re-measured
+(Node 22, built `dist/`, a fresh process per run, `main` and the fix alternated); no output
+byte moved, and each replaced pass is compared with its old form, kept verbatim, by an oracle
+(`test/room-overlap-oracle.test.ts`, `test/label-placement-oracle.test.ts`).
 
-- `W_ROOM_OVERLAP` on 5,000 coincident rooms takes 9.7 s (11.7 s on `main`): the pair test is
-  O(n²) when every room shares one grid cell, and it is not charged to any budget.
-- Label placement is O(G²) per storey in the labels sharing space: a 9-storey plan of 4,760
-  rooms a storey, inside the drawing budget, compiles in 52.9 s (60.7 s on `main`). Wants a
-  spatial index for the obstacle search (research item E3).
-- `lint` (12.9 s) and `describe` (2.6 s) on one room labelled with a 600,000-character string
-  (a 100,000-deep array printed into it, within the step budget): the label's cost is linear
-  per rule that reads it, and the string is only charged once, when it is built.
+- **Closed: `W_ROOM_OVERLAP`.** 5,000 coincident rooms emit 201 diagnostics (200 pairs listed,
+  then "…and 12,497,300 more"), so the output is bounded and only the count was quadratic.
+  Rooms with value-identical geometry are now one class tested once, the listing stops at the
+  cap, and rectangle pairs past it are counted exactly in O(n log n)
+  (`countOverlappingRectPairs`, `src/geometry/rect.ts`). Compile of that plan 7.0–7.3 s →
+  0.74–0.85 s (the rest is label placement and `describe`, below). A second shape the red team
+  did not report was worse: 2,000 coincident L-shaped polygon rooms took 17.8–18.1 s in
+  `describe` for zero diagnostics (identical rings never test as overlapping), now 1.1–1.3 s.
+  Still quadratic, because the answer is: n DISTINCT polygon rooms sharing one cell are n²
+  distinct exact ring tests. A bound there is a language decision (e.g. stop counting past a
+  cap and word the summary "…and more than N"); not built.
+- **Reduced: label placement.** Each probe's sum over obstacles and placed labels now asks a
+  grid for the boxes it can touch, and groups with the same text box, anchor and ring continue
+  a remembered running sum instead of rescanning (`BoxSums`, `src/label-placement.ts`). The
+  sums are the same floats: the same nonzero terms in the same order. 5,000 identical rooms:
+  255,000 terms summed in all, against about 637 million. Nine storeys of 4,760 rooms
+  (labels wider than the rooms, so each overlaps about 100 others): 31.5–32.1 s → 8.8–9.4 s;
+  one storey sums 20.6 million terms (11.2 million nonzero) against 577.6 million.
+  What stays is the exact ordered sum itself: 5,000 DISTINCT rooms 1 mm apart compile in
+  6.4–6.8 s (12.9–13.2 s before), and 76.8 million of the 101.8 million terms they sum are
+  nonzero. Bounding that would change which label wins (a cap on the labels considered, or a
+  different sum), so it is a drawing decision; not built.
+- **Open: a long label.** One room labelled with a 500,003-character string (a 100,000-deep
+  array printed into it): `lint` 10.0–10.5 s, `describe` 1.9 s, `compile` 0.2 s, unchanged
+  here. Where it goes (profiled): `classifyLabelUses` (`src/vocabulary.ts`) makes 26 `synonymMatchesLabel`
+  passes over the label, each re-normalising and re-splitting it (about 100,000 tokens) and
+  building a `new RegExp` per token for the numeric-suffix test; `describe` classifies the
+  label once, `lint` six times (every rule asking `isBedroom`/`isWetRoom`/… re-classifies).
+  Byte-identical fixes, outside this item's scope: test the suffix by character codes instead
+  of a per-token `RegExp` (measured on a scratch build: `lint` 3.2–3.6 s, `describe`
+  0.78–0.96 s, `test/vocabulary-equivalence.test.ts` green), normalise and split the label
+  once per classification, and memoise `classifyLabelUses` per string within one call. What is
+  left is linear in the label; a length cap is a language decision.
+- **Found: `describe`'s room adjacency.** `summarize` (`src/describe.ts`) tests
+  `roomsAdjacent` for every ordered room pair: about 0.6 s of the 0.9 s `describe` still takes
+  on 5,000 coincident rooms. Not touched here.
 
 ---
 
