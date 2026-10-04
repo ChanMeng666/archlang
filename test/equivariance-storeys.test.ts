@@ -20,7 +20,8 @@
  *
  * Every violation is held to `test/equivariance-known.ts` in both directions, by scope
  * (`townhouse.arch@L2`, `townhouse.arch@building`), and audited by its class predicate.
- * The scaled shaft models are `test/equivariance-storeys-{scaled,head}.test.ts` (split for wall time).
+ * The scaled shaft models are `test/equivariance-storeys-{scaled,head}.test.ts` (split for wall time);
+ * each storey's DRAWING (T0 and T3) is `test/equivariance-storeys-scene.test.ts`.
  */
 
 import { describe, expect, it } from "vitest";
@@ -125,7 +126,8 @@ describe("the per-storey oracle's own construction", () => {
     // E_ROOF_PLACEMENT above, and by facts only where the eaves move the sheet fit: in
     // hillside-villa the 700 mm eaves overflow the A2 sheet. Those facts are gated
     // (`sheet`, compared under the elements that keep the axes), so a roof carried wrongly
-    // under a quarter-turn would be seen by no fact here: that needs the scene (T3).
+    // under a quarter-turn would be seen by no fact here: the scene sees it
+    // (`test/equivariance-storeys-scene.test.ts`).
     const view = (src: string) =>
       [...observeBuilding(storeyWrapper(src, null).src).storeys].map(([level, o]) => ({
         level,
