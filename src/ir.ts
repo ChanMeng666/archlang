@@ -36,12 +36,13 @@ import type {
   WindowNode,
 } from "./ast.js";
 import type { DoorHinge, DoorKind, DoorSlideDir, DoorSwingDir } from "./grammar/tokens.js";
+import { moduleBindings } from "./import.js";
 import { placeRelational } from "./layout.js";
 import { numberAxes } from "./axes.js";
 import type { Frame } from "./frame.js";
 import { composeFrame, makeFrame, tryTransformElement } from "./frame.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
-import type { Env, Expr, Value } from "./expr.js";
+import type { Env, EnvFallback, Expr, Value } from "./expr.js";
 import { fmt3, MODEL_RANGE_MM, maxScaleDenominator, outOfRangeDiagnostic } from "./num-format.js";
 import {
   asBool,
@@ -51,6 +52,7 @@ import {
   BUDGET_SUBSTITUTE,
   chargeSteps,
   closest,
+  currentStepSite,
   DIAGNOSTIC_STEPS,
   enterStack,
   EXPAND_RESERVE,
@@ -61,6 +63,7 @@ import {
   leaveStack,
   MAX_EVAL_STEPS,
   resetOverflowReports,
+  setEnvFallback,
   type StepLimitSignal,
   stepSite,
   withStepMeter,
@@ -886,6 +889,73 @@ interface ExpandCtx {
   /** The element budget, shared BY REFERENCE across every recursive call (components,
    *  `place`d instances, loop bodies) of one resolution. See {@link MAX_ELEMENTS}. */
   budget: ElementBudget;
+  /** Imported modules' plan-level `let`s, shared BY REFERENCE across one resolution. */
+  modules: ModuleEnvs;
+}
+
+/**
+ * The plan-level bindings of every imported module one resolution has needed so far (see
+ * {@link moduleFallback}), keyed by the module's binding statements, plus the built-in
+ * scope a module's own scope sits on (the same one the plan's sits on).
+ */
+interface ModuleEnvs {
+  builtins: Scope;
+  envs: Map<Statement[], Env>;
+}
+
+/**
+ * The fallback an imported component's body looks a name up in when no parameter, no `let`
+ * of its own, no root plan `let` and no built-in binds it: its own module's plan-level
+ * `let`s (and value-functions), evaluated in the module's own scope — "the plan" a component
+ * was written against is its module. Undefined for a component of the compiled source and
+ * for one whose module binds nothing.
+ *
+ * Additive by construction: it is consulted only by a lookup that would otherwise report
+ * `E_UNKNOWN_REF` / `E_UNKNOWN_FN` (`src/expr.ts`), so the root's `let` still wins over the
+ * module's, and the importer's own statements — which carry no fallback — never see it.
+ *
+ * The module's binding statements (`moduleBindings`, `src/import.ts`: its top level less
+ * everything that draws) run LAZILY, on the first such lookup and once per resolution,
+ * through the same `expandScope` that runs them when the module is compiled or imported
+ * whole: so each step is charged before its work, and a `let` that fails reports the same
+ * catalogued diagnostic it does in the module, with the module's `file` and a span in it.
+ * A module nobody looks into costs nothing and reports nothing.
+ */
+function moduleFallback(comp: ComponentDef, diagnostics: Diagnostic[], ectx: ExpandCtx): EnvFallback | undefined {
+  const bindings = moduleBindings(comp);
+  if (!bindings) return undefined;
+  const { modules } = ectx;
+  const file = comp.file;
+  return (name) => {
+    let env = modules.envs.get(bindings);
+    if (env === undefined) {
+      // The statement that looked the name up stays the site a step-budget crossing is
+      // reported at once the module has run (a crossing INSIDE it names the module's `let`).
+      const site = currentStepSite();
+      const scope = new Scope(modules.builtins);
+      expandScope(
+        bindings,
+        scope,
+        scope,
+        new Map(),
+        diagnostics,
+        0,
+        {
+          ...(file !== undefined ? { file } : {}),
+          snap: ectx.snap,
+          seenInstances: new Set<string>(),
+          executedWhiles: new Set<string>(),
+          budget: { count: 0, capped: false },
+          modules,
+        },
+        rootZoneFrame(),
+      );
+      env = scope.flatten();
+      modules.envs.set(bindings, env);
+      if (site) stepSite(site.span, site.file, site.frame);
+    }
+    return env.get(name);
+  };
 }
 
 /** Elements counted so far in one resolution, and whether the cap was hit (sticky: once
@@ -960,6 +1030,9 @@ class Scope {
   readonly vars = new Map<string, Value>();
   /** Active `set <kind>(…)` overrides declared in THIS scope. */
   readonly sets = new Map<ElementKind, ReadonlyMap<string, Value>>();
+  /** Where a name no scope of the chain binds is looked up (an imported component's
+   *  module `let`s, see {@link moduleFallback}); the nearest one in the chain applies. */
+  fallback?: EnvFallback;
   constructor(readonly parent?: Scope) {}
 
   /** The nearest scope (this or an ancestor) that declares `name`. */
@@ -974,13 +1047,16 @@ class Scope {
     const m: Env = new Map();
     const chain: Scope[] = [];
     let copied = 0;
+    let fallback: EnvFallback | undefined;
     for (let s: Scope | undefined = this; s; s = s.parent) {
       chain.push(s);
       copied += s.vars.size;
+      fallback ??= s.fallback;
     }
     // A binding copied is an evaluation step (`MAX_EVAL_STEPS`, `src/expr.ts`).
     chargeSteps(copied);
     for (let i = chain.length - 1; i >= 0; i--) for (const [k, v] of chain[i]!.vars) m.set(k, v);
+    if (fallback) setEnvFallback(m, fallback);
     return m;
   }
 
@@ -1166,11 +1242,13 @@ function expandScopeFrame(
         const argVals: Value[] = comp.params.map((_, i) =>
           stmt.args[i] !== undefined ? evalIn(stmt.args[i]) : { t: "num", v: 0 },
         );
-        // Component scope = plan global + params; its lets are local.
+        // Component scope = plan global + params; its lets are local. An imported
+        // component falls back to its own module's `let`s.
         const childScope = new Scope(global);
         comp.params.forEach((p, i) => {
           childScope.vars.set(p, argVals[i]!);
         });
+        childScope.fallback = moduleFallback(comp, diagnostics, ectx);
         // A LEGACY bare call is TRANSPARENT to zones as it is to coordinates and ids: it
         // splices its body into the caller verbatim, so it pushes no zone segment. Only
         // its statements' spans differ — they belong to the file the component was
@@ -1200,6 +1278,7 @@ function expandScopeFrame(
         comp.params.forEach((p, i) => {
           childScope.vars.set(p, argVals[i]!);
         });
+        childScope.fallback = moduleFallback(comp, diagnostics, ectx);
         // **A `place`d instance IS a zone.** `as west` already names an addressable group
         // of elements with its own id namespace, which is exactly what a `zone` block
         // declares — so the instance pushes its own segment onto the zone frame and every
@@ -1224,6 +1303,7 @@ function expandScopeFrame(
               seenInstances: ectx.seenInstances,
               executedWhiles: ectx.executedWhiles,
               budget: ectx.budget,
+              modules: ectx.modules,
             },
             // No label: the instance NAME is already the heading a reader wants, and
             // inventing one ("wing instance") would print the same text for every
@@ -2132,7 +2212,13 @@ function resolveBody(
     ast.components,
     diagnostics,
     0,
-    { snap, seenInstances: new Set<string>(), executedWhiles, budget: { count: 0, capped: false } },
+    {
+      snap,
+      seenInstances: new Set<string>(),
+      executedWhiles,
+      budget: { count: 0, capped: false },
+      modules: { builtins: builtinScope, envs: new Map() },
+    },
     zoneFrame,
   );
 
