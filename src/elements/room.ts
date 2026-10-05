@@ -455,6 +455,8 @@ export const room: ElementDef = {
       : r.poly
         ? (polygonArea(r.poly) / 1_000_000).toFixed(1)
         : ((r.size.w / 1000) * (r.size.h / 1000)).toFixed(1);
+    // The name, then the area figure: `wrapLabels` (`src/label-placement.ts`) reads a
+    // room's two text nodes in this order when the name is too wide for one line.
     if (r.label) {
       nodes.push({
         layer: "labels",

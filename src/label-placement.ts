@@ -58,6 +58,7 @@ import { OUTDOOR_LAYERS } from "./elements/outdoor.js";
 import type { ResolvedPlan } from "./ir.js";
 import type { RenderSizes, SceneNode, ScenePrim } from "./scene.js";
 import { textWidth } from "./text-metrics.js";
+import { balancedLines, fewestLines, LABEL_LINE_PITCH, textExtent } from "./text-layout.js";
 
 /**
  * One labelled area and the node range it contributed to the Scene. `toScene` records it
@@ -77,6 +78,8 @@ export interface LabelGroup {
   anchor: Point;
   /** An authored `label "…" at (x,y)` — the author's decision, never overruled. */
   fixed: boolean;
+  /** The name may wrap onto several lines ({@link wrapLabels}) — a room's, not a surface's. */
+  wrap?: true;
   /** Index of the element's first node in the Scene's node list. */
   from: number;
   /** Index one past its last. */
@@ -227,8 +230,7 @@ function primBBox(prim: ScenePrim): BBox | null {
       return bboxOfPoints([prim.start, prim.end, prim.center, mid]);
     }
     case "text": {
-      const w = textWidth(prim.value, prim.size);
-      const h = prim.size;
+      const { w, h } = textExtent(prim);
       const rot = ((prim.rotate ?? 0) * Math.PI) / 180;
       const c = Math.abs(Math.cos(rot));
       const s = Math.abs(Math.sin(rot));
@@ -390,6 +392,172 @@ function numKey(v: number): string {
 }
 
 /**
+ * Every wall segment's band, grown by `clear` — what a label must stay off of a wall.
+ *
+ * Per segment, from the IR: the lowered wall nodes are a UNIONED region whose bounding box
+ * is the entire building — true, useless, and it would make every label in the plan read as
+ * colliding. Shared by the wrap step and the relocation, so "fits between the walls" and
+ * "collides with a wall" are measured against the very same boxes.
+ */
+function wallBands(ir: ResolvedPlan, clear: number): BBox[] {
+  const bands: BBox[] = [];
+  for (const w of ir.walls) {
+    for (const s of segmentsOfWall(w)) {
+      // A CURVED edge is banded along its own tessellation rather than boxed whole: one
+      // box round a quarter arc would claim the entire square it turns through, most of
+      // which is the room the label is trying to sit in.
+      const run = s.arc ? arcTessellate(s.arc) : [s.a, s.b];
+      for (let k = 0; k + 1 < run.length; k++) {
+        const b = bboxOfPoints(segmentRectangle(run[k]!, run[k + 1]!, s.thickness));
+        if (b) bands.push(inflate(b, clear));
+      }
+    }
+  }
+  return bands;
+}
+
+/**
+ * The x-interval of `ring` along the horizontal line at `y` that contains `x` — or `null`
+ * when `x` is not on the ring's floor there. Half-open crossings (`(a.y > y) !== (b.y > y)`),
+ * the same rule `pointInPolygon` counts with, so a horizontal edge never counts twice.
+ */
+function chordAt(ring: readonly Point[], x: number, y: number): [number, number] | null {
+  const xs: number[] = [];
+  for (let i = 0; i < ring.length; i++) {
+    const a = ring[i]!;
+    const b = ring[(i + 1) % ring.length]!;
+    if (a.y > y !== b.y > y) xs.push(a.x + ((y - a.y) * (b.x - a.x)) / (b.y - a.y));
+  }
+  xs.sort((p, q) => p - q);
+  for (let i = 0; i + 1 < xs.length; i += 2) if (xs[i]! <= x && x <= xs[i + 1]!) return [xs[i]!, xs[i + 1]!];
+  return null;
+}
+
+/**
+ * The wall-free run, along the strip a line of text `h` tall centred on `y` occupies, that
+ * contains `x` — `[lo, hi]`, or `null` when there is none. The floor is the intersection of
+ * the ring's chords along the strip's top, middle and bottom (exact for a rectangle, and for
+ * any ring whose sides are straight across the strip); a wall band crossing the strip cuts
+ * the run, and one standing on `x` itself leaves none.
+ */
+function freeRun(
+  ring: readonly Point[],
+  bands: GridIndex<BBox>,
+  x: number,
+  y: number,
+  h: number,
+): [number, number] | null {
+  const y0 = y - h / 2;
+  const y1 = y + h / 2;
+  let lo = -Infinity;
+  let hi = Infinity;
+  for (const yy of [y0, y, y1]) {
+    const c = chordAt(ring, x, yy);
+    if (!c) return null;
+    lo = Math.max(lo, c[0]);
+    hi = Math.min(hi, c[1]);
+  }
+  let blocked = false;
+  bands.forEach({ minX: lo, minY: y0, maxX: hi, maxY: y1 }, (b) => {
+    if (!(b.y < y1 && b.y + b.h > y0)) return;
+    const bx1 = b.x + b.w;
+    if (bx1 <= x) lo = Math.max(lo, bx1);
+    else if (b.x >= x) hi = Math.min(hi, b.x);
+    else blocked = true;
+  });
+  return blocked || !(hi > lo) ? null : [lo, hi];
+}
+
+/** The length of a run (0 for none). */
+const runLength = (r: [number, number] | null): number => (r ? r[1] - r[0] : 0);
+
+/** A text `w` wide centred on `x` lies within the run. */
+const centredIn = (r: [number, number] | null, x: number, w: number): boolean =>
+  r !== null && x - w / 2 >= r[0] && x + w / 2 <= r[1];
+
+/** How many line counts past the fewest the wrap step tries before it keeps one line. */
+const WRAP_TRIES = 3;
+
+/**
+ * Wrap a room's name onto several lines when it does not fit its room on one and a
+ * wrapped form does — the step `toScene` runs just before {@link relocateLabels}.
+ *
+ * Only a group marked `wrap` (a room's) with a name is considered, and only its TWO text
+ * nodes are touched: the name (first) and the area figure (second), the order `room.render`
+ * emits them in. "Fits" is measured by {@link freeRun} — on the room's own floor, clear of the
+ * wall bands the relocation itself steers by — at the drawing's label size:
+ *
+ * - **The one-line name fits** its row's run (anywhere along it: the relocation slides a label
+ *   along its row) → nothing is touched, so its bytes are exactly as before.
+ * - Otherwise the fewest-line balanced breaks ({@link fewestLines}, {@link balancedLines})
+ *   are tried, up to {@link WRAP_TRIES} line counts. A form fits when every line fits its
+ *   own row's run centred where it is drawn, and the area figure, now under the last line, is
+ *   no worse off than it was under the one-line name: it still fits if it did, and its run is
+ *   no shorter if it did not (so it is never pushed into a wall).
+ * - **No wrapped form fits** → nothing is touched: a label that overflows on one line is
+ *   not made worse by stacking it.
+ *
+ * A wrapped name keeps its `at` (the middle of its lines is where the one-line name was
+ * centred) and gains a `block`; the area figure moves down by half the added height, so it
+ * stays one line-gap under the last line. A `label … at (x,y)` group wraps the same way
+ * about its pinned anchor. The name as data never changes — only the drawn lines.
+ */
+export function wrapLabels(
+  nodes: SceneNode[],
+  groups: readonly LabelGroup[],
+  ir: ResolvedPlan,
+  sizes: RenderSizes,
+): void {
+  let bands: GridIndex<BBox> | undefined;
+  for (const g of groups) {
+    if (!g.wrap) continue;
+    const texts: number[] = [];
+    for (let i = g.from; i < g.to; i++) {
+      const n = nodes[i]!;
+      if (n.layer === "labels" && n.prim.t === "text") texts.push(i);
+    }
+    if (texts.length !== 2) continue;
+    const nameNode = nodes[texts[0]!]!;
+    const areaNode = nodes[texts[1]!]!;
+    const name = nameNode.prim;
+    const area = areaNode.prim;
+    if (name.t !== "text" || area.t !== "text" || name.block || name.rotate !== undefined) continue;
+    if (!bands) {
+      const list = wallBands(ir, sizes.roomFont * CLEARANCE);
+      bands = new GridIndex<BBox>(meanExtent(list));
+      for (const b of list) bands.insert({ minX: b.x, minY: b.y, maxX: b.x + b.w, maxY: b.y + b.h }, b);
+    }
+    const x = name.at.x;
+    const run = (y: number, h: number): [number, number] | null => freeRun(g.ring, bands!, x, y, h);
+    const row = run(name.at.y, name.size);
+    // Fits on one line (or stands on no floor at all, which no wrap can mend): untouched.
+    if (!row || textWidth(name.value, name.size) <= runLength(row)) continue;
+
+    const pitch = name.size * LABEL_LINE_PITCH;
+    const areaW = textWidth(area.value, area.size);
+    const areaRow = run(area.at.y, area.size);
+    const areaFitted = centredIn(areaRow, x, areaW);
+    // The widest a line centred on the anchor can be on the one-line row: where to start counting.
+    const first = Math.max(2, fewestLines(name.value, name.size, 2 * Math.min(x - row[0], row[1] - x)));
+    for (let n = first; n < first + WRAP_TRIES; n++) {
+      const lines = balancedLines(name.value, n);
+      if (!lines) break;
+      const mid = (n - 1) / 2;
+      const fits = lines.every((line, i) =>
+        centredIn(run(name.at.y + (i - mid) * pitch, name.size), x, textWidth(line, name.size)),
+      );
+      if (!fits) continue;
+      const drop = mid * pitch;
+      const areaRun = run(area.at.y + drop, area.size);
+      if (areaFitted ? !centredIn(areaRun, x, areaW) : runLength(areaRun) < runLength(areaRow)) continue;
+      nodes[texts[0]!] = { ...nameNode, prim: { ...name, block: { lines, pitch } } };
+      nodes[texts[1]!] = { ...areaNode, prim: { ...area, at: { x: area.at.x, y: area.at.y + drop } } };
+      break;
+    }
+  }
+}
+
+/**
  * Move each labelled area's name + area text off whatever is drawn under it.
  *
  * Mutates `nodes` in place (replacing, never editing, the text nodes it moves), which is
@@ -414,22 +582,8 @@ export function relocateLabels(
   const own = new Set<number>();
   for (const g of groups) for (let i = g.from; i < g.to; i++) own.add(i);
 
-  const obstacleList: BBox[] = [];
-  // Walls come from the IR, per segment. The lowered wall nodes are a UNIONED region
-  // whose bounding box is the entire building — true, useless, and it would make every
-  // label in the plan read as colliding.
-  for (const w of ir.walls) {
-    for (const s of segmentsOfWall(w)) {
-      // A CURVED edge is banded along its own tessellation rather than boxed whole: one
-      // box round a quarter arc would claim the entire square it turns through, most of
-      // which is the room the label is trying to sit in.
-      const run = s.arc ? arcTessellate(s.arc) : [s.a, s.b];
-      for (let k = 0; k + 1 < run.length; k++) {
-        const b = bboxOfPoints(segmentRectangle(run[k]!, run[k + 1]!, s.thickness));
-        if (b) obstacleList.push(inflate(b, clear));
-      }
-    }
-  }
+  // Walls come from the IR, per segment (`wallBands`).
+  const obstacleList: BBox[] = wallBands(ir, clear);
   // Everything else that is already drawn: furniture and its labels, door leaves and
   // swings, window panes, opening covers, stair/elevator symbols, axis bubbles and —
   // the reason this pass runs where it does — the `dims auto` numbers. `floor` is what

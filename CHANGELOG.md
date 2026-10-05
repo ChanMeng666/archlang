@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — a room name too wide for its room wraps onto several lines
+
+- **A long name in a narrow room no longer runs through the walls.** When a room's name does
+  not fit between its walls on one line at the drawing's label size, and a wrapped form does,
+  it is drawn on the fewest lines that fit, as balanced as possible. Breaks fall only at
+  spaces, and a separator such as the `/` of `Living / Kitchen` stays with the line before it.
+  The area figure stays directly under the last line, the label pass moves name and area as
+  one block, and `label "…" at (x,y)` still pins it. A name that fits neither way (a single
+  word wider than its room) is left on one line, as before. No new syntax and no new
+  diagnostic.
+- **Behaviour change: drawings whose room names did not fit will change.** In the shipped
+  corpus these are `examples/clinic.arch` ("Accessible WC", and its recovery-corpus copy) and
+  five eval plans; every other drawing is byte-identical. Names, facts and diagnostics do not change: `describe()`,
+  `lint()`, `compile().diagnostics`, the room schedule and `annotate`'s `data-arch-label` and
+  accessible name all carry the one-line name, over every shipped example, fixture, eval plan
+  and docs fence.
+- **For embedders.** A wrapped name is still ONE `<text>` element with the same attributes,
+  now holding one `<tspan x y>` per line; its text content is the lines with no separator, so
+  read the name from `data-arch-label`. The DXF draws one `TEXT` entity per line and the PDF
+  one string per line, at the positions the SVG's `<tspan>`s give.
+
 ## [1.40.0] - 2026-10-05
 
 ### Fixed — `repair()` never returns a source worse than its input

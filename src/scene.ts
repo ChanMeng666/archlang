@@ -247,6 +247,16 @@ export type ScenePrim =
       weight?: number;
       /** Rotation in degrees about `at` (e.g. dimension text along its line). */
       rotate?: number;
+      /**
+       * A name WRAPPED onto several lines (`relocateLabels`' wrap step, `src/label-placement.ts`):
+       * `lines` drawn `pitch` apart and centred on `at`, which stays where the one-line text
+       * would have been centred. `value` keeps the whole one-line name, so whatever reads a
+       * text node's string (the ASCII backend, a font planner) still reads the name. Never set
+       * together with `rotate`. Every backend places the lines through `textLines`
+       * (`src/text-layout.ts`), so none of them can disagree about where a line goes; a node
+       * without it draws exactly as before.
+       */
+      block?: { lines: readonly string[]; pitch: number };
     };
 
 /**

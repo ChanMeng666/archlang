@@ -32,7 +32,7 @@ import { rectRing } from "./geometry/polygon.js";
 import { CHAIN_BASE, CHAIN_STEP, DIM_TEXT_GAP, drawingBounds, renderSizes } from "./sheet.js";
 import { textWidth } from "./text-metrics.js";
 import type { LabelGroup } from "./label-placement.js";
-import { relocateLabels } from "./label-placement.js";
+import { relocateLabels, wrapLabels } from "./label-placement.js";
 import { legendEntries, roomSchedule, sheetTableNodes } from "./sheet-tables.js";
 import { circulationOverlayNodes } from "./overlays/circulation.js";
 import { captionForPlan } from "./describe.js";
@@ -769,6 +769,7 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
         ring: r.poly ?? rectRing({ x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h }),
         anchor: roomLabelAnchor(r),
         fixed: r.labelAt !== undefined,
+        wrap: true,
         from: groupStart,
         to: nodes.length,
       });
@@ -835,6 +836,11 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   // whose box is genuinely buried, so a plan whose labels are already clear keeps its
   // exact previous bytes. It runs before the sheet tables and the opt-in overlays, so
   // neither can influence where a label lands.
+  //
+  // First, a room name too wide for its room on one line is wrapped onto several, when a
+  // wrapped form fits (`wrapLabels`) — so the relocation below moves, and steers every later
+  // label around, the block as it is actually drawn. A name that fits is not touched.
+  wrapLabels(nodes, labelGroups, ir, sizes);
   relocateLabels(nodes, labelGroups, ir, sizes);
 
   // Opt-in sheet tables (`schedule rooms` / `legend`) — derived closed-form from the plan

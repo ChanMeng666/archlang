@@ -47,6 +47,7 @@ import { RENDER_PASSES } from "../scene.js";
 import type { Theme } from "../theme.js";
 import { layoutChrome, type TitleRow } from "../chrome-layout.js";
 import { plainText } from "../text-safe.js";
+import { textLines } from "../text-layout.js";
 import { northBearingDeg } from "../algebra/d4.js";
 import { BUNDLED_FONT_FAMILY, bundledFontPath, glyphDiagnostics, planFonts } from "../backends/font.js";
 import type { Diagnostic } from "../diagnostics.js";
@@ -213,16 +214,20 @@ function drawNode(doc: any, node: SceneNode, theme: Theme, ctx: TextCtx): void {
       applyPaint(doc, paint, theme);
       break;
     case "text":
-      drawText(
-        doc,
-        ctx,
-        prim.at,
-        prim.value,
-        prim.size,
-        prim.anchor,
-        prim.rotate,
-        fillColor(paint, theme) ?? "#000000",
-      );
+      // One call per drawn line (`textLines`): a wrapped name's lines land where the SVG's
+      // `<tspan>`s and the DXF's TEXT entities do.
+      for (const line of textLines(prim)) {
+        drawText(
+          doc,
+          ctx,
+          line.at,
+          line.value,
+          prim.size,
+          prim.anchor,
+          prim.rotate,
+          fillColor(paint, theme) ?? "#000000",
+        );
+      }
       break;
     default: {
       // Exhaustiveness guard. A `ScenePrim` with no case here used to be dropped in

@@ -862,6 +862,18 @@ nudge included; it is a plan coordinate, so it means the same thing under a rela
 clause as under `at`. A pin off the room's own floor is advisory
 [`W_ROOM_LABEL_OUTSIDE`](error-codes.md), never an error.
 
+**A name too wide for its room wraps.** When the name does not fit between the room's walls
+on one line at the drawing's label size, and it does fit broken onto several, it is drawn on
+several: the fewest lines that fit, as evenly balanced as possible, broken only at spaces.
+A separator word such as the `/` of `"Living / Kitchen"` stays on the line before the break
+(`Living /` · `Kitchen`); a word is never split, hyphenated, abbreviated, shrunk or turned.
+The area figure stays directly under the last line, and a `label … at (x,y)` pin still places
+the block. A name that fits on one line is drawn exactly as before, and one that fits neither
+way — a single word wider than its room — stays on one line. Only the drawing wraps: the name
+in `describe()`, `lint()`, diagnostics, the room schedule and `annotate`'s `data-arch-label`
+is the one-line string you wrote. Fit is judged at the label size, so a name that wraps on a
+display drawing may fit on one line on a sheet, whose text is smaller.
+
 **Room purpose — `uses` (v1.3).** Tag a room with one or more space kinds so the
 analysis layer knows what it *is* without guessing from the label:
 

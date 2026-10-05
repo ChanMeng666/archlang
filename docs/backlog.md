@@ -1734,6 +1734,41 @@ lint does not flag, and it is what sets off every move on the villa and on furni
 the mover layer-aware would change `repair()` results on plans that are not worse today, so it
 needs its own decision.
 
+## Room labels (found downstream, 2026-10-05)
+
+### L.1 · A room name too wide for its room ran through the walls — closed
+
+Found by ArchCanvas's showcase (compiled at 1.40.0). A room's name was one line of text, so in
+a narrow room a long name ran through both walls and, at the edge of a plan, over the dimension
+chains, with no way to fix it short of renaming the room. (No earlier entry recorded it; the
+"area label wider than a room under ~2.2 m" limitation was searched for here and is not in
+this file.)
+
+**Closed by wrapping as a placement fallback** (`wrapLabels`, `src/label-placement.ts`; the
+breaker is `src/text-layout.ts`). When the one-line name does not fit its room's wall-free run
+at the drawing's label size (the shared `textWidth` estimate, against the wall bands the
+relocation steers by), the fewest-line, most balanced break that fits is drawn instead: breaks
+at spaces only, a separator word (`/`) kept on the line before. A name that fits is untouched,
+so the corpus moved only where a name did not fit: `clinic` and five eval plans, drawing only.
+`test/label-wrap.test.ts` holds the law against the previous implementation over the corpus
+and generated plans.
+
+### L.2 · What still overflows, by design — `declared`
+
+- **A single word wider than its room** (or a name none of whose wrapped forms fits): drawn on
+  one line as before, since stacking it would not make it fit. That includes the downstream
+  "Accessible WC" witness at ≈380 mm text in a 2225 mm clear room: "Accessible" alone is
+  2355 mm by the estimate (10 × 0.62 em), so it stays one line. The estimate is deliberately
+  generous; a real-font measure would fit it, and is out of reach without shipping a font.
+- **The area figure never wraps.** It is a number and its unit, which no break should split.
+  It is drawn under the name and overflows a room narrower than itself (≈7 characters at
+  0.73 of the name's size, about 1.2 m on a display drawing). A wrapped name never pushes it
+  into a wall it did not touch before.
+- **Fit is judged on the row through the label's anchor**, so a name that would fit one line
+  in a wider part of a polygon room may still wrap; and at most three line counts (the fewest
+  and the next two) are tried, which bounds the work on any input.
+- **An `outdoor` surface's name does not wrap**; only a room's does.
+
 ## A11y of the compiled drawing (found downstream, 2026-09-13)
 
 v1.36.0 made an element a named control; the first consumer to wire a real screen reader to the

@@ -128,13 +128,20 @@
  * reproduces the old row, so `describe()`, `lint()` and `compile().diagnostics` are
  * byte-identical. Field by field in `./byte-identity-baseline.ts`, "three legend swatches show
  * more marks". No other example row and no fixture row moved.
+ *
+ * `examples/clinic.arch` re-measured, with this test's own digest body, for room-name wrapping:
+ * "Accessible WC" is too wide for its room on one line and is drawn as "Accessible" / "WC"
+ * (`wrapLabels`, `src/label-placement.ts`). Only that name and its area figure move; the old
+ * SVG put back into the new payload reproduces the old row, so `describe()`, `lint()` and
+ * `compile().diagnostics` are byte-identical. Field by field in `./byte-identity-baseline.ts`,
+ * "a room name too wide for its room wraps". No other example row and no fixture row moved.
  */
 export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/accessible.arch", "7d17249d81b43f1ff5b17c6b1219750bbdd695599f31e66fb298be9facc7c169"],
   ["examples/aquarium.arch", "cd69652d35d177efcacfbb73fe1d8b5b05a78702aac0d48305120a8d29efaf61"],
   ["examples/attached.arch", "ce39e349037a98b01516a72737bf9ea14a6f410ec295913efe84708753481761"],
   ["examples/bungalow.arch", "b841a0cee3ddba6e29c5ca17fb0f22a382d9409f3b0cd2c3f1ad6c6848e2dbde"],
-  ["examples/clinic.arch", "f97b4e5d19662e220c8b95752d14ff5d1cf111525ed7c6b86feacecb0f8c8cb8"],
+  ["examples/clinic.arch", "00678e5081cf6e5c9a7d6691a5fd5925af80b484f494e37662cc1ed58c882254"],
   ["examples/courtyard-house.arch", "c143144408b02775b6343eee9dbda3420a7947df651195bed024768620715335"],
   ["examples/furnished-flat.arch", "12473e1ca6aaacf6adea0da3c46565d93a14a8396700eed2f8d70dd90d73957a"],
   ["examples/gallery-l.arch", "0f52fc12ee4cf93c8d7c106be8a5a49c8b78c3a66cd9afabd00149d57f47802c"],
