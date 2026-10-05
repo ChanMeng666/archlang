@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — `repair()` never returns a source worse than its input
+
+- **A repaired source no longer gains a hard conflict.** `repair()` could push a piece into
+  another that it may not move (overlap separation yields only to earlier pieces), or park a
+  cycling piece inside a wall. On `examples/hillside-villa.arch` it moved `armchair#7` onto the
+  `tv_unit` (`W_FURNITURE_OVERLAP` on level 1). The result is now checked against the input:
+  no new `W_FURNITURE_OVERLAP`, `W_FURNITURE_WALL_COLLISION`, `W_DOORWAY_BLOCKED` or
+  `W_SWING_OBSTRUCTED` instance. A piece whose move would add one is left in place and
+  reported in `unresolved` ("moving it to (x,y) would overlap "…" … — left in place").
+  `repair()` stays idempotent.
+- **Behaviour change.** Only `repair()` results that used to contain such a conflict change.
+  In the shipped examples these are `hillside-villa` (`armchair#7` is no longer moved) and
+  `furnished-flat` (`sofa_l#3`, `coffee_table#4` and `sun_lounger#6` are no longer moved).
+  `compile()`, `describe()` and `lint()` are byte-identical.
+
 ### Fixed — `dims auto` no longer reads the order walls are listed in
 
 - **A facade's chains end where the drawn building ends.** Where two parallel walls of different

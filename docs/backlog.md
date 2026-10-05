@@ -1685,6 +1685,55 @@ turned to it. Deferred by name in v1.28.0. Related but not the same as 3.15 abov
 *measuring* against a curved wall, not drawing at an angle); both are instances of the fixture
 layer knowing only rectangles.
 
+## Repair findings (found downstream, 2026-10-05)
+
+### R.1 · `repair()` could move a piece INTO a hard conflict the input did not have — closed
+
+Found by ArchCanvas, which applies any `repair()` pass that still compiles. On the
+`examples/hillside-villa.arch` that shipped in 1.36.0–1.39.0 (the piano at `(3200,4400)`),
+1.36.0 declined `armchair#7` ("would pinch the walk to "Living" below 700 mm") and the
+repaired source had no `W_FURNITURE_OVERLAP`. 1.37.0 to 1.39.0 moved it to `(3600,5800)` and
+shipped `Furniture "tv_unit" overlaps "armchair".` (level 1). The bisect to 1.37.0 holds.
+
+**The diagnosis was half right.** The pinch guard did stop refusing the move. Under 1.36 the
+move left `r_living` unreachable (bottleneck 0); under 1.37's nearest-entrance walk it is 940 mm
+either way. Nothing after that guard checked the new position. But the cause is not 1.37:
+overlap separation yields only to EARLIER pieces (`computeOverlapPush` is given `earlierThan`),
+so a piece can be pushed into a LATER piece repair may not move (`tv_unit_10` is
+`against wall`). A piece parked on its cycle's canonical member can also be parked inside a
+wall. The pinch guard had been hiding the bug on the villa by accident. On `main`'s villa (the
+piano moved in `3da5563`), 1.36.0 makes the same bad move, and `examples/furnished-flat.arch`
+gained three conflicts on every version measured. Over generated plans `main` made 156 of 2000
+(seed 42) and 242 of 3000 (seed 7) worse.
+
+**Closed by a law, not a threshold.** `repair()` never returns a source that is worse than its
+input. "Worse" means it holds a *hard conflict* the input did not, keyed by who is in it:
+two same-layer pieces overlapping (`W_FURNITURE_OVERLAP`), a piece through a wall
+(`W_FURNITURE_WALL_COLLISION`), a piece in a door's landing (`W_DOORWAY_BLOCKED`), or a piece in
+a door's swing (`W_SWING_OBSTRUCTED`). It is a subset test, not a count: clearing an overlap by
+putting the piece into a wall is worse. `hardConflictsOf` (`src/repair.ts`) uses each lint
+rule's own predicate. A run's RESULT is checked against its input. Each piece that moved into a
+new conflict is pinned where the input has it and the run is repeated. The note names where
+repair would have put it and what that would hit. The result is checked rather than each pass,
+because a round may pass through a conflict a later round clears. The checked runs are iterated
+to their cycle so `repair(repair(s)) === repair(s)` still holds. Only results that contained a
+new conflict move: the villa and furnished-flat in the corpus, and exactly the 156/242 generated
+plans above. `compile()`/`describe()`/`lint()` of every corpus plan are byte-identical. Pinned by
+`test/repair-no-worse.test.ts` (fails on `main`); SANDWICH in `test/repair.test.ts` now declines.
+
+**Order-dependent, by design and now visibly so.** Overlap separation moves the later piece, so
+the result depends on source order. The check can therefore decline a move another order would
+have placed safely. The witness in `test/repair-no-worse.test.ts` declines `b` when `a` is
+written first; written the other way, `a` yields into open floor and the overlap clears.
+
+**Left open.** The census leaves out `W_FIXTURE_WRONG_ROOM`, `W_FIXTURE_FLOATING` and
+`W_FIXTURE_BACK_TO_ROOM`: those are a piece's relation to its own room or wall, not a collision
+with something else. Also, repair's overlap mover ignores the cut-plane layer that
+`W_FURNITURE_OVERLAP` honours, so it "separates" a sofa from the rug under it. That is a fault
+lint does not flag, and it is what sets off every move on the villa and on furnished-flat. Making
+the mover layer-aware would change `repair()` results on plans that are not worse today, so it
+needs its own decision.
+
 ## A11y of the compiled drawing (found downstream, 2026-09-13)
 
 v1.36.0 made an element a named control; the first consumer to wire a real screen reader to the

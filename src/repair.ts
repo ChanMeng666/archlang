@@ -27,6 +27,10 @@
  * on that cycle's canonical member and reported — repair never guesses among equal
  * options, and never lets which of them it ships depend on where it started.
  *
+ * **The result is never worse than the input**: it holds no hard conflict (an overlap, a
+ * piece through a wall, in a door's landing or in its swing) the input did not. A piece
+ * whose move would add one is left where it stands and reported — see `checkedRun`.
+ *
  * That pass is run to a **cycle** and the cycle's canonical member is what ships, so
  * `repair(repair(s))` equals `repair(s)` byte for byte. See {@link repair} for why one
  * pass does not have that property and why the remedy cannot be closed-form.
@@ -73,10 +77,16 @@ import {
 } from "./analyze.js";
 import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
 import { type ArrivingRun, arrivalRuns, verticalsOf } from "./vertical.js";
-import { doorLandingRect, rectOverlapAmounts, wallIntrusion } from "./geometry/rect.js";
+import {
+  doorLandingRect,
+  rectOverlapAmounts,
+  rectsOverlap,
+  wallIntrusion,
+  wallIntrusionDepth,
+} from "./geometry/rect.js";
 import { segmentsOfWall, doorSwing, sectorIntersectsRect, type DoorSwing } from "./geometry.js";
 import { DEFAULT_RULESET } from "./lint.js";
-import { defaultFootprint, orientationMatters, requiresWall } from "./fixtures-catalog.js";
+import { cutPlaneLayer, defaultFootprint, orientationMatters, requiresWall } from "./fixtures-catalog.js";
 import type { ResolvedPlan, RWall, RDoor, RRoom, ROpening, RFurniture, RVoid } from "./ir.js";
 import type { ComponentDef, FurnitureAnchor, FurnitureNode, FurniturePlace, PlanNode, Statement } from "./ast.js";
 import type { Span } from "./diagnostics.js";
@@ -873,6 +883,108 @@ function firstNewPinch(before: CirculationModel | null, after: CirculationModel 
   return null;
 }
 
+/** Pieces held where the input has them, keyed `${level}|${resolved id}` → the note. */
+type Pins = Map<string, string>;
+
+/** One hard conflict: the resolved ids it involves, and how to say a move would cause it. */
+interface HardConflict {
+  refs: string[];
+  /** The clause after "would", told from the side of the piece `ref`. */
+  would: (ref: string) => string;
+}
+
+/**
+ * Every **hard conflict** in one storey's arrangement, keyed by the identities involved —
+ * the faults `repair` exists to clear, each decided by the predicate its lint rule calls,
+ * so a key the input lacks is a lint warning the input lacks:
+ *
+ *   * `overlap|a|b` — two pieces on one cut-plane layer overlapping (`W_FURNITURE_OVERLAP`);
+ *   * `wall|a` — a piece into a wall solid past the slack (`W_FURNITURE_WALL_COLLISION`);
+ *   * `doorway|d|a` — a piece in door `d`'s clear landing (`W_DOORWAY_BLOCKED`);
+ *   * `swing|d|a` — a piece in door `d`'s swing, with clearance (`W_SWING_OBSTRUCTED`).
+ *
+ * `test/repair-conflicts.ts` re-derives the same census from the lint side, independently.
+ */
+function hardConflictsOf(furniture: RFurniture[], walls: RWall[], doors: RDoor[]): Map<string, HardConflict> {
+  const out = new Map<string, HardConflict>();
+  const rect = (f: RFurniture): BBox => ({ x: f.at.x, y: f.at.y, w: f.size.w, h: f.size.h });
+  for (let i = 0; i < furniture.length; i++)
+    for (let j = i + 1; j < furniture.length; j++) {
+      const a = furniture[i]!;
+      const b = furniture[j]!;
+      if (cutPlaneLayer(a.category) !== cutPlaneLayer(b.category) || !rectsOverlap(rect(a), rect(b))) continue;
+      const [p, q] = a.id < b.id ? [a.id, b.id] : [b.id, a.id];
+      out.set(`overlap|${p}|${q}`, { refs: [p, q], would: (me) => `overlap "${me === p ? q : p}"` });
+    }
+  const segs = walls.flatMap((w) => segmentsOfWall(w));
+  const openings = walls.flatMap((w) => w.openings);
+  for (const f of furniture)
+    if (segs.some((s) => wallIntrusionDepth(rect(f), s, openings) > SLACK_MM))
+      out.set(`wall|${f.id}`, { refs: [f.id], would: () => "push it into a wall" });
+  for (const d of doors) {
+    const landing = doorLandingRect(d, DEFAULT_RULESET.doorwayLandingMm);
+    const swing = doorSwing(d);
+    for (const f of furniture) {
+      if (landing && rectsOverlap(landing, rect(f)))
+        out.set(`doorway|${d.id}|${f.id}`, {
+          refs: [f.id],
+          would: () => `block the clear approach through door "${d.id}"`,
+        });
+      if (swing && sectorIntersectsRect(swing, rect(f), DEFAULT_RULESET.swingClearanceMm))
+        out.set(`swing|${d.id}|${f.id}`, { refs: [f.id], would: () => `put it in door "${d.id}"'s swing` });
+    }
+  }
+  return out;
+}
+
+/** A whole source's hard conflicts (every storey, keys prefixed `${level}|`), and where
+ *  each piece stands — what {@link culpritsOf} compares a run's result against. */
+interface SourceConflicts {
+  conflicts: Map<string, HardConflict & { level: string }>;
+  at: Map<string, { x: number; y: number }>;
+}
+
+function sourceConflicts(source: string): SourceConflicts {
+  const { ir, levels } = resolvePlan(source);
+  const conflicts: SourceConflicts["conflicts"] = new Map();
+  const at: SourceConflicts["at"] = new Map();
+  const storeys: Array<{ level?: number; ir: ResolvedPlan }> =
+    levels.length > 0 ? levels.map((l) => ({ level: l.level, ir: l.ir })) : ir ? [{ ir }] : [];
+  for (const st of storeys) {
+    const level = `${st.level ?? ""}`;
+    const furniture = st.ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
+    for (const f of furniture) at.set(`${level}|${f.id}`, f.at);
+    const doors = st.ir.elements.filter((e): e is RDoor => e.kind === "door");
+    for (const [k, c] of hardConflictsOf(furniture, st.ir.walls, doors))
+      conflicts.set(`${level}|${k}`, { ...c, level });
+  }
+  return { conflicts, at };
+}
+
+/**
+ * The pieces to pin: each one that MOVED (its position in `after` is not the one in
+ * `before`) and is party to a conflict `after` has and `before` did not, with the note
+ * that says where repair would have put it and what that would hit. A conflict nobody
+ * moved into cannot be new — walls, doors and the pieces repair may not rewrite stand still.
+ */
+function culpritsOf(before: SourceConflicts, after: SourceConflicts): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const [k, c] of [...after.conflicts].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
+    if (before.conflicts.has(k)) continue;
+    for (const ref of c.refs) {
+      const key = `${c.level}|${ref}`;
+      const from = before.at.get(key);
+      const to = after.at.get(key);
+      if (!from || !to || (from.x === to.x && from.y === to.y) || out.has(key)) continue;
+      out.set(
+        key,
+        `moving it to (${to.x},${to.y}) would ${c.would(ref)}, which the plan does not have now — left in place; adjust manually`,
+      );
+    }
+  }
+  return out;
+}
+
 /**
  * How many times {@link repair} may re-run its own pass while looking for the cycle it
  * settles in.
@@ -935,6 +1047,68 @@ type SpanBook = Map<string, Span>;
  */
 export function repair(source: string): RepairResult {
   const book: SpanBook = new Map();
+  // Each step is a CHECKED run (see {@link checkedRun}), and the steps are iterated to
+  // their own cycle for the same reason the passes are: pinning a piece where the author
+  // put it while its neighbours move on leaves an arrangement in which a second call can
+  // find a clean move the first could not, so one checked run is not its own fixpoint.
+  // A run that pinned nothing IS one — it is the plain run, idempotent by the law above —
+  // so only a plan the no-worse check actually touched takes a second step.
+  return settleOrbit(
+    source,
+    book,
+    (src, first) => checkedRun(src, book, first),
+    "repair's no-worse runs did not settle",
+  );
+}
+
+/**
+ * One run of the passes, held to **THE NO-WORSE LAW**: the source it returns has no hard
+ * conflict its input did not ({@link hardConflictsOf} — no new `W_FURNITURE_OVERLAP`,
+ * `W_FURNITURE_WALL_COLLISION`, `W_DOORWAY_BLOCKED` or `W_SWING_OBSTRUCTED` instance).
+ *
+ * The movers each clear ONE fault while looking at part of the room: overlap separation
+ * yields to EARLIER pieces only, so a piece can be pushed into a LATER one repair may not
+ * move (an `against wall` piece); a piece parked on its cycle's canonical member can be
+ * parked inside a wall; and the circulation guard, which used to refuse some of those
+ * moves for an unrelated reason, is not a collision check. So the run's RESULT is checked
+ * against its input, and each piece that moved into a NEW conflict is pinned where the
+ * input has it and the run repeated. It is the result that is checked, not each pass: an
+ * intermediate round may pass through a conflict a later round clears, and refusing that
+ * would decline repairs that end clean. Pins only grow, and a run with every moved piece
+ * pinned returns the input's positions, so this terminates.
+ */
+function checkedRun(source: string, book: SpanBook, record: boolean): { r: RepairResult; settled: boolean } {
+  const before = sourceConflicts(source);
+  const pins: Pins = new Map();
+  for (;;) {
+    const r = settleOrbit(
+      source,
+      book,
+      (src, first) => ({ r: repairPass(src, book, record && first, pins), settled: false }),
+      "repair's passes did not settle",
+    );
+    let grew = false;
+    for (const [k, why] of culpritsOf(before, sourceConflicts(r.source)))
+      if (!pins.has(k)) {
+        pins.set(k, why);
+        grew = true;
+      }
+    if (!grew) return { r, settled: pins.size === 0 };
+  }
+}
+
+/**
+ * Iterate `step` from `source` until the source it emits repeats, and return that cycle's
+ * canonical member (the lexicographically smallest source) with the change log composed
+ * along the chain that reached it. A step that reports `settled` is its own fixpoint, so
+ * its output ends the orbit without being stepped again.
+ */
+function settleOrbit(
+  source: string,
+  book: SpanBook,
+  step: (src: string, first: boolean) => { r: RepairResult; settled: boolean },
+  unsettled: string,
+): RepairResult {
   const rounds: RepairResult[] = [];
   // Source text → the round that produced it. The caller's own source is round −1, so a
   // pass that hands it straight back is a cycle of one and returns untouched.
@@ -943,12 +1117,16 @@ export function repair(source: string): RepairResult {
   let start = 0;
   let end = -1;
   for (let i = 0; i < MAX_ROUNDS; i++) {
-    const r = repairPass(cur, book, i === 0);
+    const { r, settled } = step(cur, i === 0);
     rounds.push(r);
     const prev = seen.get(r.source);
     if (prev !== undefined) {
       start = prev + 1; // the cycle runs from the first sighting to this repeat
       end = i;
+      break;
+    }
+    if (settled) {
+      start = end = i;
       break;
     }
     seen.set(r.source, i);
@@ -981,7 +1159,7 @@ export function repair(source: string): RepairResult {
   if (bounded)
     push({
       id: "plan",
-      reason: `repair's passes did not settle within ${MAX_ROUNDS} rounds — the plan keeps the canonical arrangement of the ones they reached; place the pieces reported above by hand`,
+      reason: `${unsettled} within ${MAX_ROUNDS} rounds — the plan keeps the canonical arrangement of the ones they reached; place the pieces reported above by hand`,
     });
   return {
     source: canon,
@@ -1088,7 +1266,7 @@ function cycleNotes(members: string[], book: SpanBook): RepairNote[] {
  * reported; a piece that returns to a position it has already held is parked on the
  * canonical member of the cycle it is walking, and reported.
  */
-function repairPass(source: string, book: SpanBook, record: boolean): RepairResult {
+function repairPass(source: string, book: SpanBook, record: boolean, pins: Pins): RepairResult {
   const unresolved: RepairNote[] = [];
   const noted = new Set<string>();
   /**
@@ -1157,6 +1335,7 @@ function repairPass(source: string, book: SpanBook, record: boolean): RepairResu
         book,
         record,
         st.level !== undefined ? (arrivals.get(st.level) ?? []) : [],
+        pins,
       ),
     );
   }
@@ -1185,6 +1364,8 @@ function repairStorey(
   record: boolean,
   /** The shafts this storey is reached by (`computeCirculation`'s `arrivals`). */
   arrivals: readonly ArrivingRun[] = [],
+  /** Pieces {@link repair}'s no-worse check holds where they stand, keyed `${level}|${id}`. */
+  pins: Pins = new Map(),
 ): RepairChange[] {
   const spanKeyFor = (id: string): string => `${level ?? ""}|${id}`;
   /** The span to report for `id`. The first round records each statement's ORIGINAL
@@ -1313,6 +1494,13 @@ function repairStorey(
       reasons: [],
       stuck: false,
     };
+    // Held by the no-worse check: it stays a live occupant the others yield to, but it
+    // does not move, and the note says where repair would have put it and what that hit.
+    const pin = pins.get(spanKeyFor(rf.id));
+    if (pin !== undefined) {
+      p.stuck = true;
+      note(p.id, pin, spanOf(p.id, f.span));
+    }
     pieces.push(p);
     occupants.push({ ...base, id: site.id, piece: p });
   });
