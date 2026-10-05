@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.40.0] - 2026-10-05
+
 ### Fixed — `repair()` never returns a source worse than its input
 
 - **A repaired source no longer gains a hard conflict.** `repair()` could push a piece into
@@ -32,6 +34,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   14100 (the walls drawn span -150..13950), not 14000. Drawing only: `describe()`, `lint()`
   and `compile().diagnostics` are byte-identical over every shipped example, fixture, eval
   plan and docs fence, and no other example's drawing moved.
+
+### Added — an imported component sees its own module's plan-level `let`s
+
+- **A component imported from a module resolves names against that module.** A component
+  imported from module M (by name, or called from a whole-file `import ... as` body) now
+  resolves a name that no parameter, no body `let`, no root plan `let` and no built-in binds
+  against M's own plan-level `let`s and value-functions, evaluated lazily in M's own scope.
+  Before, such a name was `E_UNKNOWN_REF` / `E_UNKNOWN_FN`, so a component could not be moved
+  into a module together with the constants it reads.
+- **No plan that compiles today changes.** The fallback is consulted only by a lookup that
+  would otherwise fail. The root plan's `let` still wins, and M's `let`s are not exported to
+  the importer. Diagnostics raised while evaluating M's bindings carry M's file and span, and
+  the work is charged to the step budget.
+
+### Fixed — `diffPlans` pairs the right rooms after an insertion
+
+- **An inserted room plus a newly authored `id=` no longer pairs the wrong rooms.** The
+  unique-label pass only ran for rooms that were auto-id on both sides, so a positional
+  `room_1` could pair the old Hall with an inserted Kitchen. An id authored on both sides now
+  pairs first; every other room pairs by a label unique on each side before ids are consulted.
+  Both passes read the two sides identically, so `diffPlans(a, b)` and `diffPlans(b, a)` stay
+  mirror images.
+- **Two circulation changes no longer read as unchanged:** a room blocked on both sides whose
+  widest way in moves past the 50 mm pinch floor, and every matched room when one side has no
+  circulation model (an entrance added or removed). Both are `Walk to` summary sentences; no
+  new field and no new change kind.
+
+### Fixed — `ERROR_CODES` order no longer depends on the host
+
+- `ERROR_CODES` sorted within each severity group with `localeCompare`, which reads the host's
+  ICU collation, so the order of the exported list, `docs/error-codes.md`, `llms-full.txt` and
+  `arch manifest --json` was host data. It now compares UTF-16 code units, keeping the
+  errors-then-warnings grouping. The generated order moves once (20 of 153 positions, a pure
+  permutation); no code is added, removed or renamed.
+
+### Fixed — PDF: sheet-table hairlines match the SVG
+
+- A schedule or legend rule carried a paint width of half the thin pen beside the `extraThin`
+  line weight. The SVG followed the weight and the PDF followed the width, so the same table
+  was ruled at two thicknesses. The rule now carries the width its weight resolves to: on
+  `examples/garden-house.arch` level 1 at 1:100 the PDF's table hairlines go from 0.09 mm to
+  0.13 mm on the sheet. No SVG, `describe()`, `lint()` or `compile().diagnostics` moved. The
+  title block's own row rules are unchanged.
+
+### Fixed — scatter ground swatches show enough marks to read
+
+- In a legend, the `grass`, `gravel` and `tarmac` swatches showed two to four marks at the
+  plan's own tile size. Each now takes a smaller swatch zoom derived from its own tile, so a
+  swatch shows six to twelve marks at 1:100, at 1:50 and off a sheet. Only the legend swatch
+  framing changes: a ground surface on the plan and a wall material's swatch are drawn as
+  before. Drawing only, and only `examples/garden-house.arch` level 1 moves among the shipped
+  examples.
+
+### Changed — two shipped examples
+
+- **`examples/garden-house.arch` seats its tables once.** `dining_table` and `outdoor_table`
+  draw their own chairs, and the example also placed eight separate ones; those are removed.
+  Its `describe()` loses eight furniture entries and two walks change, because the chairs were
+  obstacles.
+- **`examples/hillside-villa.arch`: the piano faces its keyboard into the room.** It moves
+  beside the bay (`at (3000,8700) size 1600x1200 rotate 270`), which also widens three
+  bottlenecks from 940 to 1100 mm. The compiler did not change for either example.
+
+### Changed — internal, output byte-identical
+
+- `joinWalls` is about a third faster (memoised point keys, nested maps instead of joined
+  string keys, a direct cut-index walk; backlog 4.1).
+- `W_ROOM_OVERLAP` no longer counts pairs quadratically past its 200-pair listing cap, and
+  label relocation sums each probe over a grid of the boxes it can touch (backlog M.19, M.15).
+- `describe()` and `lint()` split a label once per classification instead of once per
+  vocabulary word, and room adjacency asks its predicate only of pairs a broad phase cannot
+  rule out.
+- Each replaced pass is kept verbatim as a test oracle and compared with the new one bit for
+  bit. No golden, snapshot or baseline moved for these changes.
 
 ## [1.39.0] - 2026-10-03
 

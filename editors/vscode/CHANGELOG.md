@@ -12,6 +12,18 @@ are documented here. The format is based on
 > republished**. See [CONTRIBUTING.md → Releasing](../../CONTRIBUTING.md#releasing) for
 > the checklist that keeps the two in sync.
 
+## [0.28.0] - 2026-10-05
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.40.0`.**
+  - A component imported from a module now resolves a name against that module's own
+    plan-level `let`s and value-functions, so a file that the core accepts no longer shows
+    `E_UNKNOWN_REF` / `E_UNKNOWN_FN` on such a name. No file that was clean before gains a
+    diagnostic.
+  - `ERROR_CODES` is ordered by code unit instead of the host's collation. The codes
+    themselves, hover and completion are unchanged.
+
 ## [0.27.0] - 2026-10-03
 
 ### Changed
