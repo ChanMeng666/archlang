@@ -166,18 +166,31 @@ describe("arch repair", () => {
     furniture id=b widget at (400,200) size 1100x600 in r0
   }`;
 
-  it.each([
-    ["a piece with no on-grid seat between two walls", SQUEEZE, "f0"],
-    ["a wall push and an overlap separation that undo each other", SANDWICH, "b"],
-  ])("settles %s instead of ping-ponging", (_what, src, id) => {
-    const r1 = repair(src);
+  it("settles a piece with no on-grid seat between two walls instead of ping-ponging", () => {
+    const r1 = repair(SQUEEZE);
     expect(repair(r1.source).source).toBe(r1.source);
     // …and it says so: a piece it could not seat is never left looking settled.
-    const note = r1.unresolved.find((u) => u.id === id);
+    const note = r1.unresolved.find((u) => u.id === "f0");
     expect(note?.reason).toContain("cycles between 2 positions");
     // The change log describes the source the caller got back — never a move that
     // source does not contain.
     for (const c of r1.changes) expect(c.from).not.toEqual(c.to);
+  });
+
+  it("does not settle a wall push and an overlap separation by trading one fault for another", () => {
+    // The cycle's canonical seat is y = 100 — 50 mm inside the top wall. Shipping it
+    // cleared the overlap with `a` by putting `b` into a wall it was not in: a
+    // `W_FURNITURE_WALL_COLLISION` the input did not have. The no-worse law refuses that
+    // trade, so `b` stays where the author put it (still on `a`, as the input was) and the
+    // note says where repair would have put it and what that would have hit.
+    const r1 = repair(SANDWICH);
+    expect(repair(r1.source).source).toBe(r1.source);
+    expect(r1.changed).toBe(false);
+    expect(r1.source).toBe(SANDWICH);
+    const note = r1.unresolved.find((u) => u.id === "b");
+    expect(note?.reason).toBe(
+      "moving it to (400,100) would push it into a wall, which the plan does not have now — left in place; adjust manually",
+    );
   });
 
   it("keeps the canonical seat of a cycle, whichever end it is handed", () => {
