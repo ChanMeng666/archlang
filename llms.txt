@@ -19,7 +19,7 @@ of the project for large language models and AI agents.
 - [SKILL.md](https://github.com/chanmeng666/archlang/blob/main/SKILL.md): the agent skill — how to drive ArchLang via the CLI
 - [AGENTS.md](https://github.com/chanmeng666/archlang/blob/main/AGENTS.md): how AI agents should work in this repo
 - [CONTRIBUTING](https://github.com/chanmeng666/archlang/blob/main/CONTRIBUTING.md): development setup and contribution workflow
-- [CHANGELOG](https://github.com/chanmeng666/archlang/blob/main/CHANGELOG.md): version history
+- [CHANGELOG](https://github.com/chanmeng666/archlang/blob/main/CHANGELOG.md): version history and release notes, read before a version bump; also shipped inside the npm package as `CHANGELOG.md`
 
 ## Machine-native artifacts (served at the docs-site root)
 
