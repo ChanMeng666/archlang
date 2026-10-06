@@ -24,7 +24,7 @@
  */
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, join, resolve as resolvePath } from "node:path";
+import { dirname, join, relative, resolve as resolvePath, sep } from "node:path";
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 import { segmentRectangle, segmentsOfWall } from "../src/geometry.js";
@@ -220,6 +220,10 @@ function law(name: string, src: string, world: World, t: Tally): void {
   if (!any) expect(after.drawings, name).toEqual(before.drawings);
 }
 
+/** A corpus file's name as the moved-drawings list spells it: repo-relative, `/`-separated on
+ *  every platform (Windows paths use `\`). */
+const nameOf = (p: string): string => relative(ROOT, p).split(sep).join("/");
+
 function corpus(): { name: string; src: string; world: World }[] {
   const out: { name: string; src: string; world: World }[] = [];
   const worldFor = (dir: string): World => ({
@@ -242,7 +246,7 @@ function corpus(): { name: string; src: string; world: World }[] {
   };
   for (const d of ["examples", "test/fixtures", "test/recovery-corpus", "eval"])
     for (const p of walk(join(ROOT, d), (f) => f.endsWith(".arch")))
-      out.push({ name: p.slice(ROOT.length + 1), src: readFileSync(p, "utf8"), world: worldFor(dirname(p)) });
+      out.push({ name: nameOf(p), src: readFileSync(p, "utf8"), world: worldFor(dirname(p)) });
   const md = [
     ...walk(join(ROOT, "docs"), (f) => f.endsWith(".md")),
     ...readdirSync(ROOT)
@@ -251,7 +255,7 @@ function corpus(): { name: string; src: string; world: World }[] {
   ];
   for (const p of md)
     for (const b of extractArchBlocks(readFileSync(p, "utf8")))
-      out.push({ name: `${p.slice(ROOT.length + 1)}#${b.index}`, src: b.source, world: NULL_WORLD });
+      out.push({ name: `${nameOf(p)}#${b.index}`, src: b.source, world: NULL_WORLD });
   return out;
 }
 
