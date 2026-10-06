@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.41.0] - 2026-10-06
+
 ### Changed — a room name too wide for its room wraps onto several lines
 
 - **A long name in a narrow room no longer runs through the walls.** When a room's name does
