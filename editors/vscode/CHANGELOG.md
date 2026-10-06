@@ -12,6 +12,16 @@ are documented here. The format is based on
 > republished**. See [CONTRIBUTING.md → Releasing](../../CONTRIBUTING.md#releasing) for
 > the checklist that keeps the two in sync.
 
+## [0.29.0] - 2026-10-06
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.41.0`** (a room name too wide for its room
+  now wraps onto several lines).
+  - The extension draws nothing, so the change does not reach the editor: diagnostics, hover
+    and completion are byte-identical over every shipped example and test fixture. The
+    rebundle keeps the extension's language services at the published core.
+
 ## [0.28.0] - 2026-10-05
 
 ### Changed
