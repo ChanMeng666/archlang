@@ -342,12 +342,67 @@ ${sheet}  wall exterior thickness 200 { (0,0) (12460,0) (12460,6000) (0,6000) cl
   room id=lk at (6675,0) size 5785x6000 label "Living / Kitchen"
 }`;
 
+/** One `<tag …>…</tag>` (or self-closing `<tag …/>`) of an SVG string. */
+interface Element {
+  /** The opening tag, `<` to `>`. */
+  open: string;
+  /** What lies between the opening and the closing tag ("" when self-closing). */
+  inner: string;
+  /** The whole element. */
+  whole: string;
+}
+
+/**
+ * Every `<tag>` element of `svg`, in document order — found by an `indexOf` scan, never a regular
+ * expression, so the cost is linear however many times the drawing repeats a tag. The backends
+ * escape `<`, `>` and `"` inside text and attribute values, and a `<text>` or `<tspan>` never
+ * nests its own tag, so the next `>` ends an opening tag and the next `</tag>` ends its element.
+ */
+function elements(svg: string, tag: string): Element[] {
+  const out: Element[] = [];
+  const close = `</${tag}>`;
+  for (let i = 0; ; ) {
+    const start = svg.indexOf(`<${tag}`, i);
+    if (start < 0) return out;
+    const next = svg[start + tag.length + 1];
+    // `<text` is also the start of `<textPath`: only a space, `>` or `/` ends the name.
+    if (next !== " " && next !== ">" && next !== "/") {
+      i = start + 1;
+      continue;
+    }
+    const gt = svg.indexOf(">", start);
+    if (gt < 0) return out;
+    const open = svg.slice(start, gt + 1);
+    if (svg[gt - 1] === "/") {
+      out.push({ open, inner: "", whole: open });
+      i = gt + 1;
+      continue;
+    }
+    const end = svg.indexOf(close, gt);
+    if (end < 0) return out;
+    out.push({ open, inner: svg.slice(gt + 1, end), whole: svg.slice(start, end + close.length) });
+    i = end + close.length;
+  }
+}
+
+/** The value of attribute `name` on an opening tag, or undefined — an `indexOf` scan. */
+function attr(open: string, name: string): string | undefined {
+  const key = ` ${name}="`;
+  const at = open.indexOf(key);
+  if (at < 0) return undefined;
+  const from = at + key.length;
+  const end = open.indexOf('"', from);
+  return end < 0 ? undefined : open.slice(from, end);
+}
+
 /** Every room name drawn in an SVG: the `<text>` and its lines. */
 function drawnNames(svg: string): { text: string; lines: string[] }[] {
-  return [...svg.matchAll(/<text\b[^>]*font-weight="600"[^>]*>(.*?)<\/text>/g)].map((m) => {
-    const tspans = [...m[1]!.matchAll(/<tspan\b[^>]*>([^<]*)<\/tspan>/g)].map((s) => s[1]!);
-    return { text: m[0]!, lines: tspans.length > 0 ? tspans : [m[1]!] };
-  });
+  return elements(svg, "text")
+    .filter((e) => attr(e.open, "font-weight") === "600")
+    .map((e) => {
+      const tspans = elements(e.inner, "tspan").map((t) => t.inner);
+      return { text: e.whole, lines: tspans.length > 0 ? tspans : [e.inner] };
+    });
 }
 
 describe("the downstream witnesses", () => {
@@ -402,15 +457,24 @@ describe("the downstream witnesses", () => {
 describe("annotate: the name is data, only the drawing wraps", () => {
   it("data-arch-label and the accessible name carry the one-line name; one <text> per name", () => {
     const { svg } = compile(WITNESS(), { noCache: true, annotate: true, accessible: true });
-    const floor = svg.match(/<polygon [^>]*data-arch-id="b3"[^>]*>/)![0];
+    const floor = elements(svg, "polygon").find((e) => attr(e.open, "data-arch-id") === "b3")!.open;
     expect(floor).toContain('data-arch-label="Bedroom 3"');
     expect(floor).toContain('aria-label="Room Bedroom 3"');
-    const texts = [...svg.matchAll(/<text [^>]*data-arch-id="b3"[^>]*>(.*?)<\/text>/g)];
+    const texts = elements(svg, "text").filter((e) => attr(e.open, "data-arch-id") === "b3");
     // The name and the area figure — two elements, as before, and the name holds both lines.
     expect(texts).toHaveLength(2);
-    expect(texts[0]![0]).toContain('data-arch-label="Bedroom 3"');
-    expect(texts[0]![0]).toContain('aria-hidden="true"');
-    expect(texts[0]![1]).toMatch(/^<tspan x="[^"]+" y="[^"]+">Bedroom<\/tspan><tspan x="[^"]+" y="[^"]+">3<\/tspan>$/);
+    expect(texts[0]!.whole).toContain('data-arch-label="Bedroom 3"');
+    expect(texts[0]!.whole).toContain('aria-hidden="true"');
+    // Its content is exactly two `<tspan x y>` lines, "Bedroom" then "3", and nothing else.
+    const lines = elements(texts[0]!.inner, "tspan");
+    expect(lines.map((t) => t.inner)).toEqual(["Bedroom", "3"]);
+    expect(lines.map((t) => t.whole).join("")).toBe(texts[0]!.inner);
+    for (const t of lines) {
+      const x = attr(t.open, "x");
+      const y = attr(t.open, "y");
+      expect(x && y).toBeTruthy();
+      expect(t.open).toBe(`<tspan x="${x}" y="${y}">`);
+    }
   });
 });
 
@@ -419,11 +483,13 @@ describe("the backends agree on a wrapped name", () => {
   const drawn = () => {
     const { scene, svg } = compile(WITNESS(), { noCache: true });
     const name = drawnNames(svg).find((n) => n.text.includes("Bedroom"))!;
-    const tspans = [...name.text.matchAll(/<tspan x="([^"]+)" y="([^"]+)">([^<]*)<\/tspan>/g)].map((m) => ({
-      value: m[3]!,
-      x: Number(m[1]),
-      y: Number(m[2]),
-    }));
+    const tspans = elements(name.text, "tspan").map((t) => {
+      const x = attr(t.open, "x")!;
+      const y = attr(t.open, "y")!;
+      // Exactly `<tspan x y>`: no other attribute rides a line.
+      expect(t.open).toBe(`<tspan x="${x}" y="${y}">`);
+      return { value: t.inner, x: Number(x), y: Number(y) };
+    });
     return { scene, tspans };
   };
 
