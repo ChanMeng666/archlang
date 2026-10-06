@@ -2111,6 +2111,56 @@ say plainly in `AGENTS.md` that the suite has one load-sensitive case, since a n
 reproduce on a quiet machine is worse than a documented one. **Do not raise the global
 `testTimeout`** — that hides every future instance of the same shape.
 
+### 4.11 · `arch watch` missed a save made after its banner — closed
+
+**Symptom.** On 2026-10-06, `test/cli-commands.test.ts` → "`watch -o <file> --json` still writes
+the artifact on every save" failed on `main` (CI run 37437084059, job "Node 22") with
+`timed out after 90000ms waiting for: a recompile carrying Bravissimo`. The commit touched no code,
+and a re-run passed. The test had already waited for the first output, the first envelope and the
+`Ctrl+C to stop` banner, so the watcher was supposedly armed.
+
+**Cause: a product defect. The save was never seen.** `cmdWatch` armed `fs.watchFile` and then
+printed the banner, on the premise in its comment that `watchFile` "takes its baseline `stat` when
+it is called". It does not. libuv's `uv_fs_poll_start` queues that `stat` on the threadpool and
+returns, and the first result becomes the baseline whenever it lands. A save made before then is
+folded into the baseline and never reported. Measured on Node 22.22.0 with plain `node`, no tsx and
+no vitest: a different-length write in the same tick as `watchFile()` was missed 47 times in 50. In
+the end-to-end test, the save comes after the banner has crossed a pipe and the test's 50 ms poll.
+So the miss needs that `stat` to be delayed by tens of milliseconds, which CPU contention on a CI
+runner can do. The other two explanations were ruled out. The payloads differ in length, so the
+change is visible to `size` alone. `cmdCompile` writes synchronously before it emits, and `peek`
+re-reads the file. In every reproduced failure the banner was already on stderr.
+
+**Reproduction**, by running the single test with `npx vitest run … -t "still writes the artifact"`
+on an unmodified `HEAD`, Node 22.22.0, in 8 concurrent copies at a time, alongside 24 busy-loop
+`node` processes on 4 cores:
+
+| tree | runs | failures |
+|---|---|---|
+| `HEAD` (`fs.watchFile`) | 80 | **14**, all with the CI message verbatim |
+| this fix (`watchPath`) | 80 | **0** |
+| `HEAD` again, after the fix's run | 80 | **14**, all with the CI message verbatim |
+
+The first `HEAD` run partly overlapped the widening runs below, which added load. The third row
+ran alone, under exactly the conditions of the second, and failed just as often. The fix's run
+ran from a separate worktree of the change, so neither tree tested the other's code.
+
+Widening the window gives the deterministic proof. Four `crypto.pbkdf2` jobs of about 1.5 s,
+queued just before arming, occupy the threadpool. The old tree then fails 3 runs in 3 with the
+CI message, and the fixed tree, with the same insertion, passes 3 in 3.
+
+**Fix.** `watchPath` (`src/cli/commands-render.ts`) takes a synchronous `statSync` baseline inside
+the call and polls every 300 ms. It compares device, inode, mode, size, and mtime and ctime in
+nanoseconds. `test/watch-arming.test.ts` now asserts on `watchPath(` and adds three behavioural
+cases. With the stat source and the timer injected, a save between arming and the first poll is
+reported, and so is a file vanishing and coming back. Against the real filesystem, a save in the
+same tick as arming is reported. That last case failed 2 runs in 3 when `watchPath` was swapped
+back to `fs.watchFile`. **No budget, timeout or retry changed.**
+
+**What is still uncertain.** Why the failure showed only on the Node 22 leg is unknown. One run on
+one leg is not evidence of a version difference. The mechanism above is the same on 18, 20 and 22,
+and nothing in the code path is version-specific.
+
 ### 4.1 · Joinery pass performance — `todo`
 
 `toScene` got roughly **3× slower** when v1.30 replaced the three wall-lowering paths with one

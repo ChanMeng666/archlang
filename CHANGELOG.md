@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — `arch watch` could still miss the first save after it said it was watching
+
+- **The readiness banner now means the watcher has its baseline.** `arch watch` used
+  `fs.watchFile`, which does not take its baseline `stat` when it is called: it queues that
+  `stat` on the libuv threadpool and returns. So `watching … (Ctrl+C to stop)` could be printed,
+  and a save made, before the baseline existed. The baseline then already held the save, and
+  no recompile came. This is the same miss that an earlier release fixed by printing the banner
+  after the watcher is armed. That fix assumed the baseline was taken on the call, and it was
+  not. A loaded machine widens the window: on Node 22, the end-to-end test failed 28 times in
+  160 loaded runs before this fix and 0 times in 80 after it, and it failed once on `main`'s CI. The watcher now polls through a small internal
+  `watchPath`, whose baseline is a synchronous `statSync` taken before the banner. It compares
+  what `fs.watchFile` compared (device, inode, mode, size, and mtime and ctime in nanoseconds),
+  every 300 ms as before. A file that disappears or comes back still counts as a change.
+  `test/watch-arming.test.ts` builds the losing interleaving with the stat source injected,
+  instead of waiting for the timing to go wrong.
+
 ### Changed — the npm package ships its release notes
 
 - **`CHANGELOG.md` is now in the tarball.** It was never in `package.json`'s `files` list, so an

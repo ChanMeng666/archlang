@@ -4,7 +4,7 @@
  * monolithic `src/cli.ts` (mechanical; behavior unchanged).
  */
 
-import { writeFileSync, watchFile } from "node:fs";
+import { statSync, writeFileSync } from "node:fs";
 import { resolve as resolvePath, dirname, basename } from "node:path";
 import { cpus } from "node:os";
 import { describe, diagnosticToJson, ERROR_CATALOG, extractArchBlocks, rewriteMarkdown } from "../index.js";
@@ -354,17 +354,23 @@ export async function cmdWatch(args: Args): Promise<CommandResult> {
   // becoming resident over a path that does not exist would watch nothing forever.
   if (!input || input === "-") return usageError("watch needs a file path");
   await cmdCompile(args);
-  // ARM THE WATCHER BEFORE ANNOUNCING IT. `watchFile` takes its baseline `stat` when it
-  // is called, so any save landing between the banner and this line is folded into that
-  // baseline and never produces a change event — silently, and only for the first save.
-  // The banner is what a human (and this project's own end-to-end test) treats as "ready",
-  // so printing it first makes the readiness signal true a moment before it is: edit fast
-  // enough after starting `arch watch` and your first save is ignored.
+  // ARM THE WATCHER BEFORE ANNOUNCING IT. A save landing between the banner and the
+  // watcher's baseline `stat` is folded into that baseline and never produces a change
+  // event — silently, and only for the first save. The banner is what a human (and this
+  // project's own end-to-end test) treats as "ready", so it must not be printed until the
+  // baseline exists: edit fast enough after a premature banner and your first save is
+  // ignored.
   //
-  // Reproduced deterministically by widening the window: a 1.5 s delay inserted here makes
-  // `test/cli-commands.test.ts`'s watch case fail every time, and `test/watch-arming.test.ts`
-  // now pins the ordering so the window cannot be reopened.
-  watchFile(resolvePath(input), { interval: 300 }, () => {
+  // `watchPath` takes that baseline synchronously, inside the call. Node's `fs.watchFile`
+  // did NOT, although an earlier fix here assumed it did: it queues its first `stat` on
+  // the libuv threadpool and returns, so the banner below could still be printed before
+  // the baseline was taken — see `watchPath`.
+  //
+  // Reproduced deterministically by widening the window: a 1.5 s delay inserted here made
+  // `test/cli-commands.test.ts`'s watch case fail every time, and so did keeping the libuv
+  // threadpool busy for 1.5 s across a `watchFile` call. `test/watch-arming.test.ts`
+  // pins the ordering and the synchronous baseline, so the window cannot be reopened.
+  watchPath(resolvePath(input), 300, () => {
     // Nothing reads a re-compile's exit code — the process's own code is decided by the
     // signal that ends it — so the failure is reported and the watch continues.
     void cmdCompile(args).catch((e: unknown) => {
@@ -373,6 +379,62 @@ export async function cmdWatch(args: Args): Promise<CommandResult> {
   });
   process.stderr.write(`watching ${input} … (Ctrl+C to stop)\n`);
   return RESIDENT;
+}
+
+/** The two things a watch needs from its environment — injected so a test can drive the interleaving. */
+export interface WatchIO {
+  /** A fingerprint of the file's current state, or `undefined` when it cannot be stat'ed. */
+  stat: (path: string) => string | undefined;
+  /** Run `tick` every `ms` until the returned function is called. */
+  every: (ms: number, tick: () => void) => () => void;
+}
+
+const nodeWatchIO: WatchIO = {
+  stat: (path) => {
+    try {
+      // The fields of libuv's own comparison that a save can move, at nanosecond
+      // precision: a same-size save in the same millisecond still moves `mtimeNs` or
+      // `ctimeNs`, and an editor's write-and-rename save moves `ino`.
+      const s = statSync(path, { bigint: true });
+      return `${s.dev}:${s.ino}:${s.mode}:${s.size}:${s.mtimeNs}:${s.ctimeNs}`;
+    } catch {
+      return undefined;
+    }
+  },
+  every: (ms, tick) => {
+    const t = setInterval(tick, ms);
+    return () => clearInterval(t);
+  },
+};
+
+/**
+ * Call `onChange` whenever `path` changes, polling every `intervalMs`; returns a stop function.
+ *
+ * The BASELINE IS TAKEN SYNCHRONOUSLY, before this returns, so "the watcher is armed" is
+ * true the moment the call is. That is the whole reason this exists instead of
+ * `fs.watchFile`: libuv's `uv_fs_poll_start` queues its first `stat` on the threadpool and
+ * returns, and that first result becomes the baseline whenever it lands. A save made after
+ * `watchFile` returned but before that `stat` ran was folded into the baseline and never
+ * reported — on Node 22, a save in the same tick as the call was missed 47 times in 50 —
+ * and under CPU contention the `stat` could land after a caller had already seen the banner
+ * and saved.
+ *
+ * A disappearing or reappearing file is a change too (the recompile then reports it), as it
+ * was under `watchFile`.
+ */
+export function watchPath(
+  path: string,
+  intervalMs: number,
+  onChange: () => void,
+  io: WatchIO = nodeWatchIO,
+): () => void {
+  let last = io.stat(path);
+  return io.every(intervalMs, () => {
+    const now = io.stat(path);
+    if (now === last) return;
+    last = now;
+    onChange();
+  });
 }
 
 // ---------------------------------------------------------------------------
