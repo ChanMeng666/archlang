@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the npm package ships its release notes
+
+- **`CHANGELOG.md` is now in the tarball.** It was never in `package.json`'s `files` list, so an
+  installed copy had no release notes: an agent bumping the dependency in a sandbox reads
+  `node_modules`, and for 1.41.0 had to work out from a tarball diff that a wrapped room name's
+  text content runs its lines together. The whole file ships, about 537 KB unpacked and 207 KB
+  gzipped (the unpacked package grows from about 8.19 MB to 8.73 MB); no other file is added or
+  removed. `README.md` gains one line saying where the notes are, installed and on the web, and
+  `test/npm-tarball.test.ts` pins the package-root file list from `npm pack --dry-run --json`.
+
 ## [1.41.0] - 2026-10-06
 
 ### Changed — a room name too wide for its room wraps onto several lines

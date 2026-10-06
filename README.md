@@ -689,6 +689,7 @@ compact editor that re-renders as you type) and `theme=blueprint|dark|mono|prese
 - **[SKILL.md](SKILL.md)** — the agent Skill: the `spec → compile → fix → describe → validate` loop.
 - **[Language Reference](docs/language-reference.md)** · **[Error catalog](docs/error-codes.md)** · **[The intent contract](docs/intent.md)** · **[ADRs](docs/adr)**
 - **[AGENTS.md](AGENTS.md)** — orientation for AI agents working *in* this repo.
+- **[Release notes](https://github.com/ChanMeng666/archlang/blob/main/CHANGELOG.md)** — every version, including what changes for code that embeds or parses the output. Installed, they are at `node_modules/@chanmeng666/archlang/CHANGELOG.md`; each tag's section is also its [GitHub Release](https://github.com/ChanMeng666/archlang/releases).
 
 ## 🤝 Contributing
 
