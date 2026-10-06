@@ -25,6 +25,7 @@ import { dxfPatternName, isSolidFill } from "../hatches.js";
 // Deterministic number formatting (round to 4dp, no -0).
 import { fmt4 as num } from "../num-format.js";
 import { plainText } from "../text-safe.js";
+import { textLines } from "../text-layout.js";
 
 /** Map a Scene line type to a DXF LTYPE name; undefined (or continuous) → BYLAYER. */
 function dxfLineType(t: LineType | undefined): string | undefined {
@@ -312,7 +313,9 @@ function emit(b: DxfBuilder, node: SceneNode): void {
       b.circle(layer, prim.center, prim.r, lt);
       break;
     case "text":
-      b.text(layer, prim.at, prim.size, prim.value, lt);
+      // A TEXT entity is one line, so a wrapped name is one entity per line, at the
+      // positions every backend reads from `textLines`.
+      for (const line of textLines(prim)) b.text(layer, line.at, prim.size, line.value, lt);
       break;
   }
 }

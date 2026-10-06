@@ -750,6 +750,20 @@
  * Swept over all 273 corpus plans as above: no other row moved — `garden-house` is the one
  * plan that draws a legend over those three materials. The PNG golden's changed pixels lie
  * within x ∈ [3959, 4382], y ∈ [27618, 29418] mm, the swatch column from `grass` to `tarmac`.
+ *
+ * ## `clinic`'s whole-surface row re-measured: a room name too wide for its room wraps
+ *
+ * Case (1), the compiler changed, in the drawing only. A room name that does not fit its room
+ * on one line at the drawing's label size is drawn on several when a wrapped form fits
+ * (`wrapLabels`, `src/label-placement.ts`). In `clinic` that is the accessible WC: "Accessible
+ * WC" at 350 mm is 2821 mm wide by the shared estimate, the room's wall-free run 2745 mm. Field
+ * by field: the SVG moves exactly two `<text>`s — the name becomes one `<text>` (same x, y and
+ * attributes) holding `<tspan>`s "Accessible" (y 8870) and "WC" (y 9290), and the area figure
+ * moves from y 9465 to 9675. `describe()`, `lint()` and `compile().diagnostics` are
+ * byte-identical: the old SVG put back into the new payload reproduces the old row, and the
+ * `SEMANTIC_BASELINE` row did not move. Swept over all 274 corpus plans (every storey; SVG,
+ * `describe()`, both `lint()` profiles, diagnostics, the circulation overlay, the annotated
+ * accessible SVG): no other example row moved.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -758,7 +772,7 @@ export const BASELINE: [string, string][] = [
   ["aquarium", "f89c3bf506d7737046e0412e5bc3ebfc7bbf4c9e6fb2c81c6a5a59ede302aa19"],
   ["attached", "5a6374e3fec477aa55bc8e94586d4c60501608a2764830d6ee32c2b61d66d055"],
   ["bungalow", "9990304f76493e86abee175aeab14cd21040601b86cd73e175150884d36ed8b9"],
-  ["clinic", "e4492637c288b3f9352d944d031d8b123cef6fa522646f60e664e873c9d1236b"],
+  ["clinic", "0eca2334d5986ce27ad5a0fa4455c1f1ad70308ccf2aec1750d4f12ca731a908"],
   ["courtyard-house", "41f6ff56cc47f383795c0c9c11585de2d9846546d4fd3c96c2637a0ef2cd0447"],
   ["furnished-flat", "889f4246f5e98f589952d5e20e0acdfd6057f542e0620c8d20bce01dd17c88f0"],
   ["gallery-l", "af339b015babaa7a4cfa6fe45e4afe01a2643674f883f441b3066af686bc5601"],

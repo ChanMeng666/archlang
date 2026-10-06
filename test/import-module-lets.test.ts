@@ -269,13 +269,22 @@ suite("a module `let` that fails reports as it does in the module", () => {
  * The byte-identity law. Digests measured on `main`'s `src/` at `25c053d` (`git archive`, the
  * same digest body); the module's new names can only ever be reached by a lookup that failed
  * there, so not one row may move. A move is a finding, never a re-measure.
+ *
+ * Seven rows re-measured for a DRAWING change, not this rule: a room name too wide for its room
+ * on one line is now drawn on several when that fits (`wrapLabels`, `src/label-placement.ts`).
+ * `examples/clinic.arch` and `test/recovery-corpus/clinic.arch` ("Accessible WC"),
+ * `eval/fidelity-plans/wide-doorways.{faithful,laundered}.arch` ("Wet Room"),
+ * `eval/goldens/core-and-shell.arch` ("Circulation Core"), `three-bed-2bath.arch` ("Master
+ * Bedroom", "Main Bathroom") and `two-bed-hall.arch` ("Kitchen / Living"). In each only that
+ * room's name and area figure move: the old SVG put back into the new payload reproduces the
+ * old row, so `describe()`, `lint()` and `compile().diagnostics` are byte-identical.
  */
 const BASELINE: [string, string][] = [
   ["examples/accessible.arch", "7d17249d81b43f1ff5b17c6b1219750bbdd695599f31e66fb298be9facc7c169"],
   ["examples/aquarium.arch", "cd69652d35d177efcacfbb73fe1d8b5b05a78702aac0d48305120a8d29efaf61"],
   ["examples/attached.arch", "ce39e349037a98b01516a72737bf9ea14a6f410ec295913efe84708753481761"],
   ["examples/bungalow.arch", "b841a0cee3ddba6e29c5ca17fb0f22a382d9409f3b0cd2c3f1ad6c6848e2dbde"],
-  ["examples/clinic.arch", "f97b4e5d19662e220c8b95752d14ff5d1cf111525ed7c6b86feacecb0f8c8cb8"],
+  ["examples/clinic.arch", "00678e5081cf6e5c9a7d6691a5fd5925af80b484f494e37662cc1ed58c882254"],
   ["examples/courtyard-house.arch", "c143144408b02775b6343eee9dbda3420a7947df651195bed024768620715335"],
   ["examples/furnished-flat.arch", "12473e1ca6aaacf6adea0da3c46565d93a14a8396700eed2f8d70dd90d73957a"],
   ["examples/gallery-l.arch", "0f52fc12ee4cf93c8d7c106be8a5a49c8b78c3a66cd9afabd00149d57f47802c"],
@@ -320,7 +329,7 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/zones-levels.arch", "2ee9feeb3f6ca7c09e51eee71ffb78272b3b09be7ccdccbf87a38a4ee1234cae"],
   ["test/fixtures/zones-wings.arch", "9375f1e04051120bf1d5734fe7a99a7dd828926d08993da28ec5b3d02a20591c"],
   ["test/recovery-corpus/attached.arch", "ce39e349037a98b01516a72737bf9ea14a6f410ec295913efe84708753481761"],
-  ["test/recovery-corpus/clinic.arch", "f97b4e5d19662e220c8b95752d14ff5d1cf111525ed7c6b86feacecb0f8c8cb8"],
+  ["test/recovery-corpus/clinic.arch", "00678e5081cf6e5c9a7d6691a5fd5925af80b484f494e37662cc1ed58c882254"],
   ["test/recovery-corpus/materials.arch", "115a724fe9b7036c5d8e1ae2d7fc087126df41d9adbe390a97cbb80354b83c64"],
   ["test/recovery-corpus/parametric.arch", "50542aff6a0a3f03bb8e1ff9ba69d10d721d81bc78c7b7147b10acdab77e25fd"],
   ["test/recovery-corpus/studio.arch", "6f0c677cc5c7bc15b4cea1faee4d61bf30e4e775aa96c2efb2f374f773047362"],
@@ -334,7 +343,7 @@ const BASELINE: [string, string][] = [
   ["eval/goldens/attach-openings.arch", "a71997936ccd603733d51d8d40127e8d839f56352b9d287b19761ddc4d6f69ff"],
   ["eval/goldens/bungalow.arch", "8a78708cb2e3a68c804503f21636760a10f5f2340ade7c466504bce97cb0a75e"],
   ["eval/goldens/compact-studio.arch", "cf52c97f1d5f7d7c4828cab6b822c751be4cb23593b74b2ade0cbcbfe3f78f5e"],
-  ["eval/goldens/core-and-shell.arch", "40b00cd8da00864d73b04b6eff3c5e0d753680f189a96a6cdd7c2c4cf4dd9cb3"],
+  ["eval/goldens/core-and-shell.arch", "ee86c508e1afad580a2cfc0a09130a81da7f1bcc0dc41de18325a3687731e6fe"],
   ["eval/goldens/dims-auto-cottage.arch", "5948ff7eef4ac6ddb90dcc8f411133ca2c58d656e302dcf3a573843618364556"],
   ["eval/goldens/galley-kitchen.arch", "b190809df967d7008c95e68134df884f1d95426299a87e6da36b9d7eb92ac183"],
   ["eval/goldens/l-shaped-flat.arch", "a87ad704ec87c54f4f2a769f2c98ec037c4a48f9927c06616644b7df3972ce9c"],
@@ -349,9 +358,9 @@ const BASELINE: [string, string][] = [
   ["eval/goldens/sized-wet-room.arch", "f977bf5849035621b9fabebc46a859581ffc564d6e43862662e2933e03778870"],
   ["eval/goldens/strip-attach-clean.arch", "90ec59f876aea6ca2cd1db41eaac638a54f0f2da4b57dcd3e6c2ac3ca9eef549"],
   ["eval/goldens/strip-corridor.arch", "952b90cc7e2f66db3ece1fa383032457ded46a74e8a7c3ad0e709d176f80aef1"],
-  ["eval/goldens/three-bed-2bath.arch", "c433244610d18871277c1ee659cde25a7a9b91a1d29dbb9902c6894031d39d78"],
+  ["eval/goldens/three-bed-2bath.arch", "fb3a329ff7e13622c37232e9291a685742dea56ecb1bbc52a658286e8175e36d"],
   ["eval/goldens/two-bath-flat.arch", "87afccf4cf0338d2b61f0e9d97024cbca84d89c986fb809fd0b47c4ae8299e69"],
-  ["eval/goldens/two-bed-hall.arch", "d28a5b164c15cf277aa020a82dd93d6e0bfa01851048eb75e040d0182d285dc5"],
+  ["eval/goldens/two-bed-hall.arch", "d27f20f9dfdba3ba2b1db2f331f6b4f41d5da3f7b4de10a6ae72421787f516bd"],
   [
     "eval/fidelity-plans/capped-wet-room.laundered.arch",
     "13f306ba9dd2912b7bce5ffcdf71946a3af8fe27d5e98e1206e4c989389cbceb",
@@ -382,11 +391,11 @@ const BASELINE: [string, string][] = [
   ],
   [
     "eval/fidelity-plans/wide-doorways.faithful.arch",
-    "1bdc549f425a786a0cf0f3649178bab9aacc216001e2944005ad62419cb8fe84",
+    "26cd985bcb4bf37c46cf22b7676da9f53f3266deb76609fe264055512d4914fa",
   ],
   [
     "eval/fidelity-plans/wide-doorways.laundered.arch",
-    "192e258da46d5321cd065074be863a6b048df7a5550c2fdb0adaeb2823fe32ed",
+    "c640e8f23a213e4cff89a19c79013cdc0690903cb0973f03764f08c1fe37bc19",
   ],
   ["eval/faults/blocked-doorway.arch", "63f8d3830c9a0842409d7354ea44389e89fa4e1ddfb71e51f551d1c296ef3092"],
   ["eval/faults/combined.arch", "7f51d2ddae2283191f52a932f9a4683ab2fe2ae51f73b4720c4fc54a2acba260"],

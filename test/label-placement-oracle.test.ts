@@ -17,7 +17,13 @@
  * labels) are compiled; each block counts the groups that were searched and moved, the calls
  * long enough to reach the grid, and the groups that shared a signature with an earlier one.
  *
- * The oracle's only additions are the `tally` counters, which read and change nothing.
+ * The oracle's only additions are the `tally` counters, which read and change nothing. Its one
+ * edit: a text box is measured by the shared `textExtent` (`src/text-layout.ts`) rather than
+ * `textWidth(value, size)` by `size`, because a room name may now be WRAPPED onto several lines before
+ * the pass runs (`wrapLabels`). How big a label is is the pass's INPUT, not the search under
+ * test, and for a one-line text the two measures are the same expression — so every call
+ * without a wrapped name replays exactly as before, and the wrapped ones are counted
+ * (`Reach.wrapped`) so the comparison is shown to cover them.
  */
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
@@ -37,7 +43,7 @@ import type { ResolvedPlan } from "../src/ir.js";
 import { BoxSums, CLEARANCE, COLLIDE_MIN, FRACTIONS, type LabelGroup, relocateLabels } from "../src/label-placement.js";
 import { extractArchBlocks } from "../src/markdown.js";
 import type { RenderSizes, SceneNode, ScenePrim } from "../src/scene.js";
-import { textWidth } from "../src/text-metrics.js";
+import { textExtent } from "../src/text-layout.js";
 import type { World } from "../src/world.js";
 import { NULL_WORLD } from "../src/world.js";
 
@@ -186,8 +192,7 @@ function primBBox(prim: ScenePrim): BBox | null {
       return bboxOfPoints([prim.start, prim.end, prim.center, mid]);
     }
     case "text": {
-      const w = textWidth(prim.value, prim.size);
-      const h = prim.size;
+      const { w, h } = textExtent(prim);
       const rot = ((prim.rotate ?? 0) * Math.PI) / 180;
       const c = Math.abs(Math.cos(rot));
       const s = Math.abs(Math.sin(rot));
@@ -384,11 +389,13 @@ interface Reach {
   placedGridCalls: number;
   /** Searched groups whose signature an earlier searched group of the same call had. */
   repeats: number;
+  /** Groups whose name reached the pass wrapped onto several lines. */
+  wrapped: number;
 }
 
 /** Replay every recorded call through the oracle; fail on the first node that differs. */
 function replay(label: string): Reach {
-  const reach: Reach = { calls: 0, searched: 0, moved: 0, gridCalls: 0, placedGridCalls: 0, repeats: 0 };
+  const reach: Reach = { calls: 0, searched: 0, moved: 0, gridCalls: 0, placedGridCalls: 0, repeats: 0, wrapped: 0 };
   for (const c of calls.splice(0)) {
     const s0 = tally.searched;
     const m0 = tally.moved;
@@ -405,6 +412,12 @@ function replay(label: string): Reach {
     // `DIRECT_TAIL` (32) boxes or fewer are walked without the grid.
     if (tally.obstacles > 32 || c.groups.length > 33) reach.gridCalls++;
     if (c.groups.length > 33) reach.placedGridCalls++;
+    for (const g of c.groups) {
+      for (let i = g.from; i < g.to; i++) {
+        const p = c.before[i]!.prim;
+        if (p.t === "text" && p.block) reach.wrapped++;
+      }
+    }
     const seen = new Set<string>();
     for (const g of c.groups) {
       const key = JSON.stringify([g.anchor, g.ring, g.to - g.from]);
@@ -472,6 +485,7 @@ describe("relocateLabels: the indexed pass against the full scan", () => {
     expect(r.calls).toBeGreaterThan(0);
     expect(r.moved).toBeGreaterThan(20);
     expect(r.gridCalls).toBeGreaterThan(0);
+    expect(r.wrapped).toBeGreaterThan(0);
   }, 300_000);
 
   const degenerate: Record<string, string> = {
@@ -494,6 +508,15 @@ describe("relocateLabels: the indexed pass against the full scan", () => {
         `  for i in 0..150 { room at (0,0) size 4000x3000 label "Living" }\n` +
         `  furniture bed at (1000,1000) size 1600x2000\n  furniture sofa at (2400,400) size 1400x800`,
     ),
+    // Names too wide for their rooms on one line, wrapped before the pass sees them: narrow
+    // walled rooms, piled, with fixed ones among them and furniture to be moved off.
+    "wrapped names among walls and furniture": plan(
+      `  wall exterior thickness 200 { (0,0) (12000,0) (12000,6000) (0,6000) close }\n` +
+        `  for i in 1..6 { wall partition thickness 200 { (i*2000,0) (i*2000,6000) } }\n` +
+        `  for i in 0..6 { for k in 0..12 { room at (i*2000,0) size 2000x6000 label "Bedroom {i} Suite" } }\n` +
+        `  for i in 0..6 { for k in 0..6 { room at (i*2000,0) size 2000x6000 label "Sleeping {k}" at (i*2000+1000,2000) } }\n` +
+        `  for i in 0..6 { furniture bed at (i*2000+300,2400) size 1400x2000 }`,
+    ),
     "two storeys of the same pile": plan(
       `  level 1 { for i in 0..120 { room at (0,0) size 4000x3000 label "Room" } }\n` +
         `  level 2 { for i in 0..120 { room at (i, 0) size 4000x3000 label "Room" } }`,
@@ -511,6 +534,7 @@ describe("relocateLabels: the indexed pass against the full scan", () => {
       expect(r.searched, name).toBeGreaterThan(30);
       expect(r.moved, name).toBeGreaterThan(30);
       expect(r.gridCalls, name).toBeGreaterThan(0);
+      if (name.startsWith("wrapped")) expect(r.wrapped, name).toBeGreaterThan(30);
     }, 300_000);
   }
 

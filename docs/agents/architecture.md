@@ -91,8 +91,9 @@ source (.arch)
 - `site.ts` compass/facing (`windowFacingPage` probes the window's own wall) · `vertical.ts`
   stair/elevator/escalator semantics and the shaft graph · `datum.ts` heights
 - `sheet.ts`, `axes.ts`, `sheet-tables.ts` paper, axis grid, margin tables
-- `label-placement.ts` moves room labels off obstacles, after walls and dims · `text-metrics.ts`
-  the single text-width estimate
+- `label-placement.ts` wraps a room name too wide for its room, then moves room labels off
+  obstacles, after walls and dims · `text-metrics.ts` the single text-width estimate ·
+  `text-layout.ts` the name line breaker and where each line of a text is drawn (every backend)
 - `frame.ts` the `place` transform (signed-permutation matrix, no trig); each element carries
   itself across through `ElementDef.transform` (a `TransformCtx` facade), and a plugin kind
   without one is refused inside a `place` (`E_INSTANCE_NO_TRANSFORM`), never thrown

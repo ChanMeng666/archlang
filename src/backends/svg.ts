@@ -27,6 +27,7 @@ const pt = (p: Point): string => `${fmt(p.x)},${fmt(p.y)}`;
  *  error-card backend and `sanitizeTheme` so every escaping site behaves alike. */
 export { xmlText as xml } from "../text-safe.js";
 import { xmlText as xml } from "../text-safe.js";
+import { textLines } from "../text-layout.js";
 import { northBearingDeg } from "../algebra/d4.js";
 
 /**
@@ -178,7 +179,15 @@ function serialize(node: SceneNode, sizes: RenderSizes): string {
       const weight = prim.weight !== undefined ? ` font-weight="${prim.weight}"` : "";
       const transform =
         prim.rotate !== undefined ? ` transform="rotate(${fmt(prim.rotate)} ${fmt(prim.at.x)} ${fmt(prim.at.y)})"` : "";
-      return `<text x="${fmt(prim.at.x)}" y="${fmt(prim.at.y)}" font-size="${fmt(prim.size)}" fill="${paint.fill ?? "none"}" text-anchor="${prim.anchor}" dominant-baseline="${prim.baseline}"${weight}${transform}>${xml(prim.value)}</text>`;
+      // A wrapped name stays ONE `<text>` (one node an embedder can find, hide or restyle),
+      // its lines as `<tspan>`s at absolute positions from `textLines` — the positions the
+      // PDF and DXF backends draw at too.
+      const body = prim.block
+        ? textLines(prim)
+            .map((l) => `<tspan x="${fmt(l.at.x)}" y="${fmt(l.at.y)}">${xml(l.value)}</tspan>`)
+            .join("")
+        : xml(prim.value);
+      return `<text x="${fmt(prim.at.x)}" y="${fmt(prim.at.y)}" font-size="${fmt(prim.size)}" fill="${paint.fill ?? "none"}" text-anchor="${prim.anchor}" dominant-baseline="${prim.baseline}"${weight}${transform}>${body}</text>`;
     }
   }
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { compile, renderAscii, renderErrorSvg, toDxf } from "../src/index.js";
 import type { Diagnostic } from "../src/index.js";
+import { textLines } from "../src/text-layout.js";
 
 /**
  * Output-escaping fuzz (workstream WS-G).
@@ -120,6 +121,9 @@ const ALLOWED_TAGS = new Set([
   "path",
   "polygon",
   "text",
+  // One line of a room name wrapped onto several (`textLines`, `src/text-layout.ts`); its
+  // content is the escaped payload like any `<text>`'s.
+  "tspan",
   "title",
   "desc",
 ]);
@@ -468,8 +472,12 @@ describe("escaping fuzz — DXF export", () => {
         expect(ASCII_UNSAFE.test(dxf.replace(/\n/g, ""))).toBe(false);
         expect(dxf.includes("\r")).toBe(false);
         if (site === "roomLabel") {
-          // Structural injection would show up as extra entities.
-          expect(dxfEntityCount(dxf)).toBe(baseCount);
+          // Structural injection would show up as extra entities. A name too wide for its room
+          // is drawn one TEXT per line, so the lines the SCENE itself wraps it into are the
+          // only extra entities allowed — the payload cannot add one of its own.
+          let wrapped = 0;
+          for (const n of scene.nodes) if (n.prim.t === "text") wrapped += textLines(n.prim).length - 1;
+          expect(dxfEntityCount(dxf)).toBe(baseCount + wrapped);
         }
         expect(toDxf(scene)).toBe(dxf); // determinism
       }),
