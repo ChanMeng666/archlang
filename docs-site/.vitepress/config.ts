@@ -273,6 +273,11 @@ const PAGE_META = [
     "ADR 23 — the plan-symbol drawing language",
     "How ArchLang draws its plan symbols: a pen and tone hierarchy, a derived outline ink, true arcs, dashes for hidden lines, and no shadows or new handedness.",
   ],
+  [
+    "/adr/0024-finish-as-explicit-transform",
+    "ADR 24 — finish is an explicit transform",
+    "arch finish adds the sheet statements a plan lacks (paper, scale, dimensions, title, schedule, legend) as an explicit source transform, never inside compile.",
+  ],
 ] as const;
 
 type PageMeta = { readonly title: string; readonly description: string };

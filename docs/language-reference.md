@@ -2480,6 +2480,41 @@ statement) — so a scripted collision can never read as a clean run. Every entr
 or note, carries the statement's byte `span`. A wall-anchored fixture is also an
 *obstacle*: a movable piece placed after it is separated off it.
 
+### Completing the sheet — `arch finish`
+
+A sound plan is not yet a drawing sheet: `paper`, `scale`, `dims auto`, `title`,
+`schedule rooms` and `legend` are all optional. `arch finish plan.arch` adds the ones the
+plan lacks, as a second **explicit, opt-in** source-to-source transform (see
+[ADR 0024](adr/0024-finish-as-explicit-transform.md)). `compile` never does this on its own.
+
+It fills only what is missing and deletes nothing:
+
+| Statement | Added when | What is written |
+|---|---|---|
+| `paper` + `scale` | the plan has neither | the finest of 1:50, 1:100, 1:200, 1:500 that fits a sheet from A4 to A1, on the smallest such sheet, landscape first; A0 only when A4 to A1 hold nothing |
+| `paper` | the plan has only a `scale` | the smallest sheet that holds the drawing at that scale |
+| `scale` | the plan has only a `paper` | the finest standard scale at which the drawing fits that paper |
+| `dims auto` | the plan has no `dims auto` and no `dim` line | `all`, or `overall` when the short facade is under 60 mm on paper |
+| `schedule rooms` | the plan has no `schedule` and has rooms | `schedule rooms` |
+| `legend` | the plan has no `legend` and has a material or a fixture to list | `legend` |
+| `title` | the plan has no `title` and has a name | `title { project "<the plan's name>" }`, with no date and no author |
+
+An authored `dim`, `axes`, `north` or title block is never rewritten. The fit is the compiler's
+own rule (the one behind `describe().sheet.fits`), measured on the largest storey of a
+multi-storey plan. Comments and formatting survive, because the statements are inserted into
+the source rather than the plan being re-printed.
+
+An authored sheet is kept. If the drawing would not fit it with every statement added,
+`finish` leaves out the tables first, then `dims auto`, then the title, and names each one in
+`unresolved`. `--reissue` lets it replace `paper` and `scale` instead (and nothing else).
+
+Run it after lint is clean. The result is checked before it is returned: if it would not
+compile, or would raise a diagnostic the plan did not have, nothing is changed and
+`unresolved` says why. Running it twice changes nothing the second time. Like `arch fix` it
+rewrites the file in place, prints the diff on stderr, and takes `--dry-run`, `--backup` and
+`-o`. From the library: `finish(source, { reissue?, only?, world? })` returns
+`{ source, changes, unresolved, changed }`.
+
 ### Comparing two plans — `diffPlans`
 
 Where `describe(source)` turns **one** plan into facts, `diffPlans(sourceA, sourceB, opts?)`

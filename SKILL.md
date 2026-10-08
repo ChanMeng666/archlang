@@ -61,7 +61,13 @@ npx @chanmeng666/archlang help
    several pieces, expression coordinates, an `against wall` anchor) is reported there with the fault
    and why, never silently skipped. `changed: false` with a non-empty `unresolved` means *you* edit
    the source.
-10. **Show the user:** `arch preview plan.arch -o plan.png` renders a PNG (`--install` fetches the
+10. **Finish the sheet:** once lint is clean, run `arch finish plan.arch --dry-run --json`, then
+   without `--dry-run` to apply. It adds the sheet statements the plan lacks — `paper`, `scale`,
+   `dims auto`, `title`, `schedule rooms`, `legend` — on the smallest sheet the drawing fits. It
+   fills only what is missing and deletes nothing. Read `unresolved`: a statement it left out is
+   named there with the reason (`--reissue` lets it replace a `paper`/`scale` the drawing does
+   not fit).
+11. **Show the user:** `arch preview plan.arch -o plan.png` renders a PNG (`--install` fetches the
    optional renderer if missing).
 
 ## Write it right the first time (placement sugar — the preferred path)
@@ -277,6 +283,7 @@ arch lint plan.arch --code W_NO_ENTRANCE --json   # display filter only — neve
 arch validate plan.arch --strict --json           # parse + resolve + lint; --strict fails on warnings (the ship gate)
 arch validate plan.arch --graph g.json --json     # also check interior-door adjacency against an intended graph
 arch repair plan.arch -o fixed.arch    # geometric corrector: furniture out of walls/doorways/swings + change log
+arch finish plan.arch --dry-run --json # after lint is clean: preview the sheet statements it would add (drop --dry-run to apply)
 arch fmt plan.arch --write             # canonical formatting
 arch batch a.arch b.arch -f svg --json # render many plans/variants at once → results[]
 arch preview plan.arch -o plan.png     # render a PNG to SHOW the user (--install fetches resvg if missing)

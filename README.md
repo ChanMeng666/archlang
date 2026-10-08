@@ -289,7 +289,9 @@ the way in**, and how circuitous the route is — with advisory lint for a too-t
 
 **Facts and advice — never an invisible auto-arranger** ([ADR 0005](docs/adr/0005-no-invisible-architect.md)).
 `arch repair` is the one *explicit* corrector: it pushes furniture out of walls, doorways and swing
-arcs, and emits a change log you review.
+arcs, and emits a change log you review. `arch finish` is the explicit sheet step
+([ADR 0024](docs/adr/0024-finish-as-explicit-transform.md)): it adds the `paper`, `scale`,
+`dims auto`, `title`, `schedule rooms` and `legend` a plan lacks, and deletes nothing.
 
 </details>
 
