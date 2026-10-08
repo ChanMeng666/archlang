@@ -415,7 +415,7 @@ function structuredData(route: string, url: string, title: string, description: 
 export default defineConfig({
   title: "ArchLang",
   description:
-    "A small declarative language that compiles to professional SVG floor plans — like Typst/LaTeX, but for architecture.",
+    "A deterministic DSL and compiler for floor plans: write (or have an LLM write) .arch source and it compiles to SVG/DXF/PDF with linting and geometric validation — diffable, version-controllable, reproducible.",
   // Declared so the crawler, the screen reader and the hyphenation engine all agree.
   lang: "en-GB",
   // `<title>` per page = "<PAGE_META title> — ArchLang". `/` opts out (titleTemplate:

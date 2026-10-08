@@ -1,11 +1,3 @@
-<!-- AGENT-FIRST NOTICE -->
-> [!IMPORTANT]
-> ### 🤖 Read this with your AI agent — don't read it by hand.
-> This repo is written agent-first. Point Claude Code, GitHub Copilot, Cursor, or any agent at it:
-> *"Read the README and AGENTS.md, then help me run / extend this."*
-> Structure + [`AGENTS.md`](AGENTS.md) are optimized for agent comprehension.
-<!-- /AGENT-FIRST NOTICE -->
-
 <div align="center">
 
 <picture>
@@ -13,11 +5,11 @@
   <img src="./brand/archlang-wordmark-black.svg" alt="ArchLang" width="440" />
 </picture>
 
-### Floor plans as code — compiled to SVG, DXF and PDF.
+### Floor plans as code — text in, a precise architectural drawing out.
 
-**An open-source (MIT) DSL for floor plans that compiles `.arch` source to SVG/DXF/PDF with linting
-and geometric validation — diffable, reproducible, and LLM-writable.** Text in, a precise
-architectural drawing out: deterministic, zero-dependency, and built so an
+**A deterministic DSL and compiler for floor plans: write (or have an LLM write) `.arch` source and
+it compiles to SVG/DXF/PDF with linting and geometric validation — diffable, version-controllable,
+reproducible.** Open source (MIT). Zero-dependency, and built so an
 **AI agent can verify its own plan without ever looking at an image**.
 
 [![npm](https://img.shields.io/npm/v/@chanmeng666/archlang?style=flat-square&logo=npm&color=CB3837)](https://www.npmjs.com/package/@chanmeng666/archlang)
@@ -31,6 +23,29 @@ architectural drawing out: deterministic, zero-dependency, and built so an
 **[▶ Live Playground](https://playground.archlang.uk)** · **[📖 Docs](https://archlang.uk)** · **[⌨ CLI reference](https://archlang.uk/cli)** · **[📦 npm](https://www.npmjs.com/package/@chanmeng666/archlang)** · **[🧩 VS Code](https://marketplace.visualstudio.com/items?itemName=ChanMeng.archlang)**
 
 </div>
+
+## Use it from your coding agent
+
+```bash
+npx skills add ChanMeng666/archlang                      # the ArchLang skill, for any agent that reads skills
+claude mcp add archlang -- npx -y @chanmeng666/archlang-mcp   # or the MCP server (Claude Code shown)
+/plugin marketplace add ChanMeng666/archlang                # or, inside Claude Code: the skill + MCP server as one plugin
+/plugin install archlang@archlang
+```
+
+Then ask in plain language; the agent writes the `.arch`, compiles it, and checks it with `lint` and `describe`:
+
+- *"Design a one-bedroom flat of about 54 m²: a 32 m² living/kitchen, a 10 m² bedroom and a 10 m² bathroom, with the front door on the north wall."*
+- *"Draw a two-storey, two-bedroom house, 8 m × 6 m, with a stair linking the floors, and give me one SVG per storey."*
+- *"Export that plan as DXF."*
+
+<!-- AGENT-FIRST NOTICE -->
+> [!IMPORTANT]
+> ### 🤖 Read this with your AI agent — don't read it by hand.
+> This repo is written agent-first. Point Claude Code, GitHub Copilot, Cursor, or any agent at it:
+> *"Read the README and AGENTS.md, then help me run / extend this."*
+> Structure + [`AGENTS.md`](AGENTS.md) are optimized for agent comprehension.
+<!-- /AGENT-FIRST NOTICE -->
 
 ## 👀 See it
 

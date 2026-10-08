@@ -1,0 +1,17 @@
+{
+  "name": "archlang",
+  "description": "ArchLang: write floor plans as code, compiled and checked by a deterministic compiler.",
+  "owner": {
+    "name": "Chan Meng",
+    "url": "https://github.com/ChanMeng666"
+  },
+  "plugins": [
+    {
+      "name": "archlang",
+      "source": "./",
+      "description": "The archlang skill and MCP server: author .arch floor plans and compile them to SVG/DXF/PDF with linting and geometric validation.",
+      "homepage": "https://archlang.uk",
+      "license": "MIT"
+    }
+  ]
+}
