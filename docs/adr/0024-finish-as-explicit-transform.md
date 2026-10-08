@@ -1,6 +1,6 @@
 # 24. Finishing a sheet is an explicit source transform
 
-- **Status:** Accepted
+- **Status:** Accepted — **decision 7 superseded by [ADR 0025](0025-furnish-as-explicit-transform.md)**
 - **Date:** 2026-10
 - **Relates to:** [ADR 0005](0005-no-invisible-architect.md) and
   [ADR 0006](0006-solver-as-explicit-transform.md) (compile renders what is written; a
@@ -69,6 +69,10 @@ A statement is inserted only at a line boundary, in the file's own indentation a
 A result that breaks the never-worse law is not returned. The whole stage is rolled back and
 the reason goes in `unresolved`. A plan that needs nothing comes back byte-identical with
 `changed: false`.
+
+> **Superseded (2026-10).** The `furnish` stage exists: see
+> [ADR 0025](0025-furnish-as-explicit-transform.md). A full run is `furnish`, then `sheet`, and
+> `--only furnish` runs that stage. The paragraph below is the record of the first version.
 
 **7. Stages.** `finish` is built as stages so that `--only` can select one. This version has one
 stage, `sheet`. A `furnish` stage (placing the furniture a room's use implies) is planned.

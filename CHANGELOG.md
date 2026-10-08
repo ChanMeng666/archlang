@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `arch finish` furnishes the rooms a plan left empty
+
+- **`finish` gains a `furnish` stage: furniture by room use, in rooms that hold none.** A full
+  run is now `furnish`, then `sheet`, because the legend lists the furniture; `--only furnish`
+  and `--only sheet` run one stage. It is an explicit source transform
+  (`docs/adr/0025-furnish-as-explicit-transform.md`, which supersedes the word "auto-furnish"
+  in ADR 0005 for transforms only): `compile()` still never adds a piece, and a plan nobody runs
+  `finish` on renders as before.
+- **Fill only.** A room that holds any furniture is not touched, and nothing authored is moved,
+  resized or deleted. A plan whose rooms are all furnished comes back byte-identical.
+- **The pieces come from a public table, `FURNISH_TABLE`,** keyed by the room's `uses` (or its
+  label): bedroom, living, dining, office, kitchen, bath, wc and utility. Every word is one the
+  fixture catalogue already has. `docs/furniture.md` prints the table. A room of any other use
+  is left alone.
+- **Placement is relative.** A services fixture is written `against wall <id> offset …`, a
+  free-standing piece `in <room> anchor … flush size WxH rotate …`. `finish` never writes
+  `at (x,y)`.
+- **Never worse, room by room.** A room's pieces are kept only when the plan still compiles and
+  raises no diagnostic code and no furniture conflict it did not have. When a required piece has
+  no such position the room is left empty and reported in `unresolved` with its `room` and the
+  blocking `codes`. One run makes at most `1 + 13 × rooms` compile checks.
+- **Scope.** Rectangular rooms of single-storey plans. A polygon room, and every empty room of
+  a plan with `level` blocks, is reported in `unresolved` and left as it is.
+- **The MCP `finish` tool takes `only`.** New exports: `FURNISH_TABLE`, `FINISH_STAGE_ORDER`,
+  and the types `FurnishItem`, `FurnishPlacement`. `FinishChange` gains `room`; `FinishNote`
+  gains `room` and `codes`; `FinishStatement` gains `"furniture"`.
+
 ### Added — `arch finish` completes a plan's drawing sheet
 
 - **`arch finish <file|->` and `finish(source, opts?)` add the sheet statements a plan lacks.**
@@ -28,8 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   A second run changes nothing. A source that does not compile is returned untouched (exit `2`).
 - **The CLI follows `arch fix`.** In place by default, a unified diff on stderr, `--dry-run`,
   `--backup`, `-o`, `--json` (`{ ok, changed, changes, unresolved, wrote, target, diff, source }`).
-  `--only sheet|furnish` selects a stage; only `sheet` exists, and `--only furnish` is a usage
-  error (exit `3`) that says so.
+  `--only sheet|furnish` selects a stage.
 - **The MCP shim gains a `finish` tool** (`source`, optional `reissue`), and `SKILL.md`'s loop
   gains the step "once lint is clean, run `arch finish`".
 - **New exports:** `finish`, `FINISH_STAGES`, `FINISH_STAGES_AVAILABLE`, and the types

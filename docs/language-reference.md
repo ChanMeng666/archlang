@@ -2480,14 +2480,21 @@ statement) — so a scripted collision can never read as a clean run. Every entr
 or note, carries the statement's byte `span`. A wall-anchored fixture is also an
 *obstacle*: a movable piece placed after it is separated off it.
 
-### Completing the sheet — `arch finish`
+### Completing the drawing — `arch finish`
 
-A sound plan is not yet a drawing sheet: `paper`, `scale`, `dims auto`, `title`,
-`schedule rooms` and `legend` are all optional. `arch finish plan.arch` adds the ones the
-plan lacks, as a second **explicit, opt-in** source-to-source transform (see
-[ADR 0024](adr/0024-finish-as-explicit-transform.md)). `compile` never does this on its own.
+A sound plan is not yet a complete drawing. Rooms may hold no furniture, and `paper`, `scale`,
+`dims auto`, `title`, `schedule rooms` and `legend` are all optional. `arch finish plan.arch`
+adds what the plan lacks, as a second **explicit, opt-in** source-to-source transform.
+`compile` never does this on its own. It runs two stages, and `--only furnish` or
+`--only sheet` runs one:
 
-It fills only what is missing and deletes nothing:
+1. **`furnish`** puts furniture in each rectangular room that holds none, by the room's use
+   ([ADR 0025](adr/0025-furnish-as-explicit-transform.md)). The pieces per use, the placement
+   forms and the limits are in [Furniture & Fixtures](furniture.md).
+2. **`sheet`** adds the sheet statements ([ADR 0024](adr/0024-finish-as-explicit-transform.md)).
+   It runs second because the legend lists the furniture.
+
+The sheet stage fills only what is missing and deletes nothing:
 
 | Statement | Added when | What is written |
 |---|---|---|
@@ -2513,7 +2520,8 @@ compile, or would raise a diagnostic the plan did not have, nothing is changed a
 `unresolved` says why. Running it twice changes nothing the second time. Like `arch fix` it
 rewrites the file in place, prints the diff on stderr, and takes `--dry-run`, `--backup` and
 `-o`. From the library: `finish(source, { reissue?, only?, world? })` returns
-`{ source, changes, unresolved, changed }`.
+`{ source, changes, unresolved, changed }`. A `furnish` change carries the `room` it was written
+for, and a room left empty is an `unresolved` note with that `room` and the blocking `codes`.
 
 ### Comparing two plans — `diffPlans`
 

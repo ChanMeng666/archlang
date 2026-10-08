@@ -278,6 +278,11 @@ const PAGE_META = [
     "ADR 24 — finish is an explicit transform",
     "arch finish adds the sheet statements a plan lacks (paper, scale, dimensions, title, schedule, legend) as an explicit source transform, never inside compile.",
   ],
+  [
+    "/adr/0025-furnish-as-explicit-transform",
+    "ADR 25 — furnish is an explicit transform",
+    "arch finish furnishes the rooms a plan left empty, by room use, as an explicit source transform: fill-only, relative placement, never worse, never inside compile.",
+  ],
 ] as const;
 
 type PageMeta = { readonly title: string; readonly description: string };
