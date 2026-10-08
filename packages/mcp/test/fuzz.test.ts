@@ -34,7 +34,7 @@ const TOOLS: Array<{ name: string; params: string[] }> = [
   { name: "validate", params: ["source", "strict", "graph", "intent"] },
   { name: "score", params: ["source", "brief"] },
   { name: "repair", params: ["source"] },
-  { name: "finish", params: ["source", "reissue"] },
+  { name: "finish", params: ["source", "only", "reissue"] },
   { name: "fix", params: ["source", "unsafe"] },
   { name: "suggest", params: ["source"] },
   { name: "complete", params: ["source", "at"] },

@@ -390,19 +390,23 @@ export function createServer(): McpServer {
   server.registerTool(
     "finish",
     {
-      title: "Finish the drawing sheet",
+      title: "Finish the drawing",
       description:
-        "The explicit sheet-completion transform (ADR 0024): add the sheet statements the plan lacks — `paper`, `scale`, `dims auto`, `title`, `schedule rooms`, `legend` — choosing the finest standard scale on the smallest sheet that holds the drawing. It fills only what is missing and deletes nothing; `reissue:true` may REPLACE `paper`/`scale` (only those) when the drawing does not fit them. Run it once `lint` is clean. Returns { ok, changed, changes, unresolved, source }; a plan that does not compile comes back untouched with `ok:false`, and a result that would raise a new diagnostic is rolled back with the reason in `unresolved`.",
+        "The explicit completion transform (ADR 0024, ADR 0025), in two stages. `furnish`: put furniture, by room use, in each rectangular room that holds none (single-storey plans; a furnished room is never touched; placement is `against wall` / `in <room> anchor`, never absolute). `sheet`: add the sheet statements the plan lacks — `paper`, `scale`, `dims auto`, `title`, `schedule rooms`, `legend` — choosing the finest standard scale on the smallest sheet that holds the drawing. It fills only what is missing and deletes nothing; `only` runs one stage; `reissue:true` may REPLACE `paper`/`scale` (only those) when the drawing does not fit them. Run it once `lint` is clean. Returns { ok, changed, changes, unresolved, source }; a plan that does not compile comes back untouched with `ok:false`, and a room or a sheet that would raise a new diagnostic is left as it was with the reason in `unresolved`.",
       inputSchema: {
         source: z.string().describe("ArchLang source to finish."),
+        only: z
+          .enum(["sheet", "furnish"])
+          .optional()
+          .describe("Run only this stage. Default: `furnish`, then `sheet`."),
         reissue: z
           .boolean()
           .optional()
           .describe("Allow `paper` and `scale` to be replaced when the drawing does not fit the authored sheet."),
       },
     },
-    async ({ source, reissue }) => {
-      const r = finish(source, reissue ? { reissue: true } : {});
+    async ({ source, only, reissue }) => {
+      const r = finish(source, { ...(only ? { only } : {}), ...(reissue ? { reissue: true } : {}) });
       const ok = errorCount(compile(source, { noCache: true }).diagnostics) === 0;
       return json({ ok, changed: r.changed, changes: r.changes, unresolved: r.unresolved, source: r.source });
     },

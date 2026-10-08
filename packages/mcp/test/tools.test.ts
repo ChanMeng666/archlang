@@ -164,7 +164,7 @@ describe("finish tool", () => {
     expect(out.ok).toBe(true);
     expect(out.changed).toBe(true);
     const changes = out.changes as Array<{ stage: string; kind: string; statement: string; text: string }>;
-    expect(changes.every((c) => c.stage === "sheet" && c.kind === "added")).toBe(true);
+    expect(changes.every((c) => c.kind === "added")).toBe(true);
     expect(changes.map((c) => c.statement)).toContain("paper");
     const finished = out.source as string;
     expect(finished).toContain("paper A");
@@ -188,13 +188,39 @@ describe("finish tool", () => {
     const client = await connect();
     const tight = CLEAN.replace("{\n", "{\n  paper A4\n  scale 1:5\n");
     expect(tight).not.toBe(CLEAN);
-    const kept = await call(client, "finish", { source: tight });
+    const kept = await call(client, "finish", { source: tight, only: "sheet" });
     expect(kept.changed).toBe(false);
     expect(kept.source).toBe(tight);
     expect((kept.unresolved as Array<{ reason: string }>).length).toBeGreaterThan(0);
     const reissued = await call(client, "finish", { source: tight, reissue: true });
     expect(reissued.changed).toBe(true);
     expect((reissued.changes as Array<{ kind: string }>).some((c) => c.kind === "replaced")).toBe(true);
+  });
+
+  it("`only` runs one stage: `furnish` writes furniture and no sheet statement, `sheet` the reverse", async () => {
+    const client = await connect();
+    const empty = `plan "Empty" {
+  units mm
+  wall id=w exterior thickness 200 { (0,0) (4200,0) (4200,3600) (0,3600) close }
+  room id=r at (0,0) size 4200x3600 label "Bedroom" uses bedroom
+  door id=d on w at 85% width 900 swing in
+}
+`;
+    const furnished = await call(client, "finish", { source: empty, only: "furnish" });
+    const fc = furnished.changes as Array<{ stage: string; statement: string; room?: string }>;
+    expect(furnished.changed).toBe(true);
+    expect(fc.every((c) => c.stage === "furnish" && c.statement === "furniture" && c.room === "r")).toBe(true);
+    expect(furnished.source as string).toContain("furniture bed in r anchor");
+    expect(furnished.source as string).not.toContain("paper");
+    const sheeted = await call(client, "finish", { source: empty, only: "sheet" });
+    expect((sheeted.changes as Array<{ stage: string }>).every((c) => c.stage === "sheet")).toBe(true);
+    expect(sheeted.source as string).not.toContain("furniture");
+    const both = await call(client, "finish", { source: empty });
+    const stages = (both.changes as Array<{ stage: string }>).map((c) => c.stage);
+    expect(stages.lastIndexOf("furnish")).toBeLessThan(stages.indexOf("sheet"));
+    expect(stages).toContain("furnish");
+    const bad = await client.callTool({ name: "finish", arguments: { source: empty, only: "roof" } });
+    expect(bad.isError).toBe(true);
   });
 
   it("a plan that does not compile comes back untouched with `ok:false`", async () => {
