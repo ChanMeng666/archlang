@@ -54,7 +54,7 @@ export const reachability: LintRule = {
             ...at(r),
             message: `Bathroom "${labelOf(r)}" is reachable only through a bedroom.`,
             hints: [
-              "Connect it to a hall or living space — or, if it is an en-suite, add a second bathroom or WC off circulation.",
+              "Connect it to a hall or living space — or, if it is an en-suite, add a second bathroom or WC on the same storey that is reached without passing through a bedroom.",
             ],
           });
         }

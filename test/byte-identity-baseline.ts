@@ -776,13 +776,15 @@
  * and keeps the other eight in order, byte for byte; every storey's SVG, `describe()` and
  * `compile().diagnostics` are byte-identical. Proved by putting that diagnostic back at its
  * old index in the new payload: it reproduces both old rows. The example's comment above
- * `d_en2_corr` was corrected in the same change (it said lint flags `en_m`); it lies below
- * every diagnostic's span, so no span moved.
+ * `d_en2_corr` was corrected in the same change (it said lint flags `en_m`), adding 91 bytes.
+ * It lies below every default-profile diagnostic's span, so those spans are unmoved. Four
+ * `accessibility-advisory` diagnostics on level 2 sit below it (`W_SWING_OBSTRUCTED` × 2,
+ * `W_DOOR_CLEARANCE` × 2) and their spans shift with the comment; no pinned digest hashes
+ * that profile.
  *
- * Swept over all 272 corpus plans (every storey; SVG, `describe()`, both `lint()` profiles,
- * `compile().diagnostics`, `suggestTopology`): no other example row moved. Outside this table,
- * five `eval/fidelity-plans` rows keep their `W_BATH_VIA_BEDROOM` — each plan's only wet room
- * is behind a bedroom — with a reworded hint (`test/import-module-lets.test.ts`).
+ * Outside this table, five `eval/fidelity-plans` rows keep their `W_BATH_VIA_BEDROOM` — each
+ * plan's only wet room is behind a bedroom — with a reworded hint
+ * (`test/import-module-lets.test.ts`).
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

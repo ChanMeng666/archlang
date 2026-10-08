@@ -280,8 +280,9 @@ suite("a module `let` that fails reports as it does in the module", () => {
  * old row, so `describe()`, `lint()` and `compile().diagnostics` are byte-identical.
  *
  * Six rows re-measured for a LINT change, not this rule: `W_BATH_VIA_BEDROOM` no longer names
- * an en-suite on a storey with another wet room off circulation, and its hint says so
- * ("… add a second bathroom or WC off circulation."). In every row the SVG, `describe()` and
+ * an en-suite on a storey with another wet room reached without passing through a bedroom,
+ * and its hint says so ("… add a second bathroom or WC on the same storey that is reached
+ * without passing through a bedroom."). In every row the SVG, `describe()` and
  * `compile().diagnostics` are byte-identical and no other diagnostic moves:
  *   - `examples/hillside-villa.arch`: `lint()` loses that one diagnostic (the master ensuite,
  *     span 2564); put back at its old index in the new payload it reproduces the old row.
@@ -382,15 +383,15 @@ const BASELINE: [string, string][] = [
   ],
   [
     "eval/fidelity-plans/min-bedroom-flat.faithful.arch",
-    "66fe2ee27ad498d0a99483e523e590319e15b9a755ab5f921e0cc7d8b4b80823",
+    "641537a356cc1050ab3a8b34f7e559c918fef2fcd8579fffb55aa06bb2e6a129",
   ],
   [
     "eval/fidelity-plans/min-bedroom-flat.laundered.arch",
-    "e83cd90262027f1ab48b63c1146ca28d57ded3688868441c2beee314b6b84510",
+    "2d3b2e1659d3e596dc592520281a1778f1968935524c2775c556553dd9dd14cc",
   ],
   [
     "eval/fidelity-plans/over-programmed-flat.laundered.arch",
-    "232e52e7b40bbc61056ad151aab520eef9c990809e4823486f2a1b5a2f384e8d",
+    "244ae14696b5169c1815404545328f29d98cd837f2ff8b0690d1d46c2e5724d4",
   ],
   [
     "eval/fidelity-plans/two-bed-min-area.faithful.arch",
@@ -402,11 +403,11 @@ const BASELINE: [string, string][] = [
   ],
   [
     "eval/fidelity-plans/wide-doorways.faithful.arch",
-    "94450d315bfb09f55e1a1da173e389068a9d9eb952768141e016af4e399d51c7",
+    "a50fbccea8e54010c730082613d2cbf84ba5f1c905b25e40d3cb7780063669d6",
   ],
   [
     "eval/fidelity-plans/wide-doorways.laundered.arch",
-    "0a36564a8ef135ad797517e0ab4f45fd1d074b69287ee1a1ff7f2aa08c46c25f",
+    "2562071a690981fbd4ae086586d45ebc667208d07e6c3651abd608f199176a5a",
   ],
   ["eval/faults/blocked-doorway.arch", "63f8d3830c9a0842409d7354ea44389e89fa4e1ddfb71e51f551d1c296ef3092"],
   ["eval/faults/combined.arch", "7f51d2ddae2283191f52a932f9a4683ab2fe2ae51f73b4720c4fc54a2acba260"],

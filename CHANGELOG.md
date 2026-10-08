@@ -18,7 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bedroom; then every one behind a bedroom is named, as before. A WC counts as that other
   room. The check is per storey, like the rest of `lint`: a WC downstairs does not excuse a
   first floor whose only bathroom is an en-suite. `arch suggest` follows the same definition,
-  and the hint now reads "add a second bathroom or WC off circulation".
+  and the hint now reads "add a second bathroom or WC on the same storey that is reached
+  without passing through a bedroom".
   `examples/hillside-villa.arch` lints with eight warnings instead of nine.
 
 ### Fixed — `arch watch` could still miss the first save after it said it was watching
