@@ -204,14 +204,10 @@ suite("furnish law — never worse: no error, no new diagnostic code, no new fur
 
   it("a refused room names the code that blocked it, and the pieces of the other rooms stay", () => {
     // Every check that adds a bed is refused; the bathroom's pieces are judged on their own.
-    const real = (s: string): FurnishCodes => {
+    const r = furnishStage(FLAT, {}, (s): FurnishCodes => {
       const m = codes(s, undefined);
+      if (s.includes("furniture bed ")) m.set("W_TEST_BLOCK", 1);
       return { errors: false, codes: m };
-    };
-    const r = furnishStage(FLAT, {}, (s) => {
-      const c = real(s);
-      if (s.includes("furniture bed ")) c.codes.set("W_TEST_BLOCK", 1);
-      return c;
     });
     const note = r.unresolved.find((u) => u.room === "r_bed")!;
     expect(note.codes).toEqual(["W_TEST_BLOCK"]);
