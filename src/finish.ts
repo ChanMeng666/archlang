@@ -35,10 +35,12 @@ import type { PlanNode, TitleNode } from "./ast.js";
 import { type AnalyzeOptions, resolvePlan } from "./analyze.js";
 import { titleRows } from "./chrome-layout.js";
 import type { Span } from "./diagnostics.js";
+import { escapeStr } from "./expr-source.js";
 import { Data } from "./fix-apply.js";
 import { type ResolvedPlan, type RFurniture, type ROutdoor, type RRoom, sheetExtents } from "./ir.js";
 import { lex, type Token } from "./lexer.js";
 import { lint } from "./lint.js";
+import { fmt3 } from "./num-format.js";
 import { parse } from "./parser.js";
 import { compileUncached } from "./pipeline.js";
 import { BUILTIN_REGISTRY, createRegistry, type Registry } from "./registry.js";
@@ -221,6 +223,19 @@ interface Extras {
   legend: boolean;
 }
 
+/**
+ * `s` as an ArchLang string literal, written by the language's own escaper
+ * (`escapeStr`) — or null when the lexer would not read that literal back as exactly `s`.
+ * `JSON.stringify` is not that escaper: the lexer knows the newline escape and takes any
+ * other escaped character literally, so JSON's tab and unicode escapes do not round-trip.
+ */
+function stringLiteral(s: string): string | null {
+  const text = `"${escapeStr(s)}"`;
+  const { tokens, errors } = lex(text);
+  const [tok, end] = tokens;
+  return errors.length === 0 && tok?.type === "string" && tok.value === s && end?.type === "eof" ? text : null;
+}
+
 // ---------------------------------------------------------------------------
 // the sheet stage
 // ---------------------------------------------------------------------------
@@ -243,9 +258,11 @@ function sheetStage(source: string, env: AnalyzeOptions, reissue: boolean, memo:
   const handDims = m.storeys.some((ir) => ir.elements.some((e) => e.kind === "dim"));
   const hasRooms = m.storeys.some((ir) => ir.elements.some((e) => e.kind === "room"));
   const name = plan.name.trim();
+  // The name as a string literal that lexes back to exactly the name, or null.
+  const project = stringLiteral(plan.name);
   const want: Extras = {
     dims: plan.autoDims === undefined && !handDims,
-    title: plan.title === undefined && name !== "",
+    title: plan.title === undefined && name !== "" && project !== null,
     schedule: plan.schedule === undefined && hasRooms,
     // A legend's caption is one row; a table of nothing but its caption is not added.
     legend: plan.legend !== true && tableRows(m, false, true) > 1,
@@ -261,6 +278,13 @@ function sheetStage(source: string, env: AnalyzeOptions, reissue: boolean, memo:
       stage: "sheet",
       statement: "title",
       reason: "the plan has no name to put in a title block — name the plan, or write the `title` yourself",
+    });
+
+  if (plan.title === undefined && name !== "" && project === null)
+    unresolved.push({
+      stage: "sheet",
+      statement: "title",
+      reason: "the plan's name cannot be written back as a string literal — write the `title` yourself",
     });
 
   // --- the fit rule, on a candidate set of statements -------------------------
@@ -401,7 +425,7 @@ function sheetStage(source: string, env: AnalyzeOptions, reissue: boolean, memo:
   const paperText = paper ? `paper ${paper.size} ${paper.orientation}` : "";
   const scaleText = denom !== undefined ? `scale 1:${denom}` : "";
   const sheetWhy = (): string =>
-    `the finest standard scale that fits the smallest sheet: the drawing measures ${Math.round(m.drawn.w)}×${Math.round(m.drawn.h)} mm`;
+    `the finest standard scale that fits the smallest sheet: the drawing measures ${fmt3(m.drawn.w)}×${fmt3(m.drawn.h)} mm`;
 
   if (paper && plan.paper && plan.paperSpan) {
     if (paper.size !== plan.paper.size || paper.orientation !== plan.paper.orientation)
@@ -443,10 +467,7 @@ function sheetStage(source: string, env: AnalyzeOptions, reissue: boolean, memo:
   if (add.legend)
     edits.addSetting("legend", "legend", "the sheet has no legend for the materials and symbols it draws");
   if (add.title)
-    edits.addTitle(
-      `title { project ${JSON.stringify(plan.name)} }`,
-      "the sheet has no title block; the project is the plan's own name",
-    );
+    edits.addTitle(`title { project ${project} }`, "the sheet has no title block; the project is the plan's own name");
 
   if (edits.changes.length === 0) return untouched(source, unresolved);
 
@@ -514,12 +535,19 @@ class Edits {
   /** Replacements and the two inserts that sit beside an authored statement. */
   private readonly spliced: Array<[start: number, end: number, bytes: string]> = [];
   private readonly settings: string[] = [];
-  private title: [at: number, bytes: string] | null = null;
+  private title: string | null = null;
   private readonly eol: string;
+  /** The indentation of the plan's own line, which its closing brace shares. */
+  private readonly outer: string;
   private readonly indent: string;
-  /** Where the settings go: a line end, or the opening brace with a `tail` after them. */
-  private readonly header: { at: number; tail: string };
-  private readonly closing: { at: number; lead: string } | null;
+  /**
+   * Where the settings go: after a line (the leading settings, or the brace line when
+   * nothing but a comment follows the brace), or `beside` the brace — then they replace the
+   * blanks between it and whatever shares its line, and push that down a line.
+   */
+  private readonly header: { at: number; end: number; beside: boolean };
+  /** The closing brace: its offset, and where the blanks before it on its line begin. */
+  private readonly closing: { at: number; blanks: number; alone: boolean } | null;
 
   constructor(
     private readonly source: string,
@@ -529,15 +557,16 @@ class Edits {
     const toks = lex(source).tokens;
     const open = toks.findIndex((t) => t.type === "lcurly" && t.end === plan.bodyStart);
     const body = toks.slice(open + 1);
-    const first = body[0];
-    const openLine = toks[open]?.line;
-    this.indent = first && first.type !== "eof" && first.line !== openLine ? this.indentAt(first.start) : "  ";
+    const brace = plan.bodyStart!;
+    this.outer = /^[ \t]*/.exec(source.slice(this.lineStart(brace)))![0];
 
-    // The leading run of settings, and the plan's closing brace.
+    // The leading run of settings (it may begin on the brace's own line), the first
+    // statement that starts a line (the body's indentation), and the closing brace.
     let depth = 0;
     let last: Token | null = null; // last token of the settings run
-    let inRun = first !== undefined && first.line !== openLine;
-    let prevLine = openLine;
+    let inRun = true;
+    let prevLine = toks[open]?.line;
+    let indent: string | null = null;
     let close: Token | null = null;
     for (const t of body) {
       if (t.type === "eof") break;
@@ -545,7 +574,10 @@ class Edits {
         close = t;
         break;
       }
-      if (inRun && depth === 0 && t.line !== prevLine && !(t.type === "ident" && SETTING_WORDS.has(t.value))) {
+      const startsLine = t.line !== prevLine;
+      if (startsLine && depth === 0 && indent === null) indent = this.indentAt(t.start);
+      const startsStatement = startsLine || t === body[0];
+      if (inRun && depth === 0 && startsStatement && !(t.type === "ident" && SETTING_WORDS.has(t.value))) {
         inRun = false;
       }
       if (inRun) last = t;
@@ -553,43 +585,59 @@ class Edits {
       else if (t.type === "rcurly") depth--;
       prevLine = t.line;
     }
+    this.indent = indent ?? `${this.outer}  `;
     // A run that ends on the closing brace's own line has no line end of its own.
     if (last && close && close.line === last.line) last = null;
-    if (last) this.header = { at: this.lineEnd(last.end), tail: "" };
-    else {
-      // No settings run: straight after the opening brace, pushing whatever shares its
-      // line (other than a comment) down onto a line of its own.
-      const brace = plan.bodyStart!;
-      const rest = source.slice(brace, this.lineEnd(brace));
-      const at = brace + (rest.length - rest.trimStart().length);
-      this.header = BLANK_OR_COMMENT.test(rest)
-        ? { at: this.lineEnd(brace), tail: "" }
-        : { at, tail: `${this.eol}${this.indent}` };
-    }
+    const rest = source.slice(brace, this.lineEnd(brace));
+    if (last) this.header = { at: this.lineEnd(last.end), end: this.lineEnd(last.end), beside: false };
+    else if (BLANK_OR_COMMENT.test(rest))
+      this.header = { at: this.lineEnd(brace), end: this.lineEnd(brace), beside: false };
+    else this.header = { at: brace, end: brace + (rest.length - rest.trimStart().length), beside: true };
     if (!close) this.closing = null;
     else {
-      const start = this.lineStart(close.start);
-      const alone = BLANK.test(source.slice(start, close.start));
-      this.closing = alone ? { at: start, lead: "" } : { at: close.start, lead: this.eol };
+      const before = source.slice(this.lineStart(close.start), close.start);
+      this.closing = {
+        at: close.start,
+        blanks: close.start - (before.length - before.trimEnd().length),
+        alone: BLANK.test(before),
+      };
     }
   }
 
   /** Apply the recorded edits and return the new source. */
   render(): string {
+    const { eol, indent, outer, header, closing } = this;
+    const ops = [...this.spliced];
+    const settings = this.settings.map((t) => `${eol}${indent}${t}`).join("");
+    const title = this.title;
+    if (closing && this.emptyBody()) {
+      // `{}` / `{ }`: one edit lays the body out — settings, title, then the brace.
+      if (settings !== "" || title !== null)
+        ops.push([
+          header.at,
+          closing.at,
+          `${settings}${title !== null ? `${eol}${indent}${title}` : ""}${eol}${outer}`,
+        ]);
+    } else {
+      // Beside the brace the settings replace the blanks and push the rest down a line.
+      if (settings !== "") ops.push([header.at, header.end, header.beside ? `${settings}${eol}${indent}` : settings]);
+      if (title !== null && closing) {
+        const start = this.lineStart(closing.at);
+        if (closing.alone) ops.push([start, start, `${indent}${title}${eol}`]);
+        else ops.push([closing.blanks, closing.at, `${eol}${indent}${title}${eol}${outer}`]);
+      }
+    }
     const data = new Data(this.source);
     // Inserts first, replacements last: an insert on the boundary of a span the table has
     // already replaced is an overlap, and the other order is not.
-    const inserts = this.spliced.filter(([start, end]) => start === end);
-    for (const [at, , bytes] of inserts) data.replaceRange(at, at, bytes);
-    // The settings go in as ONE insertion, in the order they were added, so the tail that
-    // pushes shared content down a line follows the last of them.
-    if (this.settings.length > 0) {
-      const { at, tail } = this.header;
-      data.replaceRange(at, at, this.settings.map((t) => `${this.eol}${this.indent}${t}`).join("") + tail);
-    }
-    if (this.title) data.replaceRange(this.title[0], this.title[0], this.title[1]);
-    for (const [start, end, bytes] of this.spliced) if (start !== end) data.replaceRange(start, end, bytes);
+    for (const [start, end, bytes] of ops) if (start === end) data.replaceRange(start, end, bytes);
+    for (const [start, end, bytes] of ops) if (start !== end) data.replaceRange(start, end, bytes);
     return data.render();
+  }
+
+  /** Does nothing but blanks stand between the two braces, on one line? */
+  private emptyBody(): boolean {
+    return this.closing !== null && BLANK.test(this.source.slice(this.plan.bodyStart!, this.closing.at));
   }
 
   replace(statement: FinishStatement, span: Span, text: string, reason: string): void {
@@ -623,7 +671,10 @@ class Edits {
     if (p && BLANK_OR_COMMENT.test(this.source.slice(p.end, this.lineEnd(p.end)))) {
       const lead = this.source.slice(this.lineStart(p.start), p.start);
       const at = this.lineEnd(p.end);
-      this.spliced.push([at, at, `${this.eol}${BLANK.test(lead) ? lead : this.indent}${text}`]);
+      // `paper` is the last leading setting: the settings block starts at this same
+      // offset, so `scale` goes in at its head rather than racing it for the position.
+      if (!this.header.beside && at === this.header.at) this.settings.unshift(text);
+      else this.spliced.push([at, at, `${this.eol}${BLANK.test(lead) ? lead : this.indent}${text}`]);
       this.added("scale", at, text, reason);
       return;
     }
@@ -638,10 +689,9 @@ class Edits {
 
   /** The title block, as the plan's last statement. */
   addTitle(text: string, reason: string): void {
-    const c = this.closing;
-    if (!c) return;
-    this.title = [c.at, `${c.lead}${this.indent}${text}${this.eol}`];
-    this.added("title", c.at, text, reason);
+    if (!this.closing) return;
+    this.title = text;
+    this.added("title", this.closing.at, text, reason);
   }
 
   private added(statement: FinishStatement, at: number, text: string, reason: string): void {

@@ -42,7 +42,7 @@ function child(e: Expr, min: number): string {
 }
 
 /** Escape a literal string segment back to ArchLang source form. */
-function escapeStr(s: string): string {
+export function escapeStr(s: string): string {
   return s
     .replace(/\\/g, "\\\\")
     .replace(/"/g, '\\"')
