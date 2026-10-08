@@ -14,7 +14,14 @@
  * question one storey up. A single-storey plan has no such source and is unchanged.
  */
 
-import { accessDigraph, EXTERIOR_NODE, isBedroom, isWetRoom, pointOnRoomEdge, reachFrom } from "../../analyze.js";
+import {
+  accessDigraph,
+  EXTERIOR_NODE,
+  isBedroom,
+  pointOnRoomEdge,
+  reachFrom,
+  wetRoomsOnlyViaBedroom,
+} from "../../analyze.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import type { LintContext, LintRule } from "../context.js";
 
@@ -35,16 +42,19 @@ export const reachability: LintRule = {
     if (g.out(EXTERIOR_NODE).length > 0 || arrivals.length > 0) {
       const reachAll = reachFrom(g, { extraSources: arrivals });
       const reachNoBed = reachFrom(g, { extraSources: arrivals, avoid: isBedroomId });
+      // Per storey, as every rule here runs: a wet room on another floor excuses nothing.
+      const viaBedroom = wetRoomsOnlyViaBedroom(rooms, reachAll, reachNoBed);
       for (const r of rooms) {
-        // A wet room reachable from the entrance only by passing through a bedroom.
-        if (isWetRoom(r) && reachAll.has(r.id) && !reachNoBed.has(r.id)) {
+        // A wet room reachable from the entrance only by passing through a bedroom, on a
+        // storey with no wet room that avoids one.
+        if (viaBedroom.has(r.id)) {
           out.push({
             severity: "warning",
             code: "W_BATH_VIA_BEDROOM",
             ...at(r),
             message: `Bathroom "${labelOf(r)}" is reachable only through a bedroom.`,
             hints: [
-              "Connect it to a hall or living space — or, if it is an en-suite, add a second bathroom off circulation.",
+              "Connect it to a hall or living space — or, if it is an en-suite, add a second bathroom or WC off circulation.",
             ],
           });
         }

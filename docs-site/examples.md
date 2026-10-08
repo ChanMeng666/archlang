@@ -46,9 +46,10 @@ eaves on the upper storey; and a `component` authored once — `ensuite() { … 
 `place`d three times: twice on the bedroom band, the second with `mirror x` so the pair
 face opposite ways, and once more inside the master suite.
 
-`arch lint` raises nine warnings on it, all on the upper floor. Three are left in on
-purpose, as the honest cost of a real site: a bathroom reachable only through a bedroom,
-and two bedrooms whose windows don't face the equator side. The other six squeeze to
+`arch lint` raises eight warnings on it, all on the upper floor. Two are left in on
+purpose, as the honest cost of a real site: two bedrooms whose windows don't face the
+equator side. (The master en-suite, reached only through its bedroom, is not one: the
+other two en-suites also open off the landing.) The other six squeeze to
 640 mm, each at a real 700 mm door. Five are walks from the top of the stair, the floor's
 only way in: each bed stands across its own bedroom's door, so bedrooms 2 and 3 are walked
 into through their en-suites, and every en-suite is entered by a 700 mm door. The sixth is

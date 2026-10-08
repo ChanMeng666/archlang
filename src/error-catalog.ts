@@ -922,8 +922,8 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   W_BATH_VIA_BEDROOM: W(
     "W_BATH_VIA_BEDROOM",
     "Bathroom is reachable only through a bedroom.",
-    "Every door path from the entrance to this bathroom/WC passes through a bedroom. That is fine for a private en-suite, but a dwelling's main bathroom should open off circulation (a hall or living space), not a bedroom.",
-    "Add a door connecting the bathroom to a hall/living space, or route circulation so it is not reached only via a bedroom.",
+    "Every door path from the entrance to this bathroom/WC passes through a bedroom, and no other bathroom/WC on the storey avoids one. A private en-suite is fine — and is not flagged — once another bathroom or WC on the same storey opens off circulation (a hall or living space).",
+    "Add a door connecting the bathroom to a hall/living space, or — if it is an en-suite — add a second bathroom or WC off circulation on the same storey.",
     "door id=d_bath at (5200,4000) width 800 wall partition   # lint: bath only off the bedroom",
   ),
   W_ROOM_NOT_ENCLOSED: W(

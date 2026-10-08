@@ -1438,9 +1438,9 @@ outdoor balcony at (2000,7200) size 4000x1600   # warning: no opening within rea
 
 *warning* — Bathroom is reachable only through a bedroom.
 
-**Cause.** Every door path from the entrance to this bathroom/WC passes through a bedroom. That is fine for a private en-suite, but a dwelling's main bathroom should open off circulation (a hall or living space), not a bedroom.
+**Cause.** Every door path from the entrance to this bathroom/WC passes through a bedroom, and no other bathroom/WC on the storey avoids one. A private en-suite is fine — and is not flagged — once another bathroom or WC on the same storey opens off circulation (a hall or living space).
 
-**Fix.** Add a door connecting the bathroom to a hall/living space, or route circulation so it is not reached only via a bedroom.
+**Fix.** Add a door connecting the bathroom to a hall/living space, or — if it is an en-suite — add a second bathroom or WC off circulation on the same storey.
 
 ```arch static
 door id=d_bath at (5200,4000) width 800 wall partition   # lint: bath only off the bedroom

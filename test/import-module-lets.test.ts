@@ -278,6 +278,17 @@ suite("a module `let` that fails reports as it does in the module", () => {
  * Bedroom", "Main Bathroom") and `two-bed-hall.arch` ("Kitchen / Living"). In each only that
  * room's name and area figure move: the old SVG put back into the new payload reproduces the
  * old row, so `describe()`, `lint()` and `compile().diagnostics` are byte-identical.
+ *
+ * Six rows re-measured for a LINT change, not this rule: `W_BATH_VIA_BEDROOM` no longer names
+ * an en-suite on a storey with another wet room off circulation, and its hint says so
+ * ("… add a second bathroom or WC off circulation."). In every row the SVG, `describe()` and
+ * `compile().diagnostics` are byte-identical and no other diagnostic moves:
+ *   - `examples/hillside-villa.arch`: `lint()` loses that one diagnostic (the master ensuite,
+ *     span 2564); put back at its old index in the new payload it reproduces the old row.
+ *   - `eval/fidelity-plans/min-bedroom-flat.{faithful,laundered}.arch`,
+ *     `over-programmed-flat.laundered.arch` and `wide-doorways.{faithful,laundered}.arch`:
+ *     each plan's only wet room is behind a bedroom, so the warning stays; only its `hints[0]`
+ *     sentence moves. The old sentence put back into the new payload reproduces the old row.
  */
 const BASELINE: [string, string][] = [
   ["examples/accessible.arch", "7d17249d81b43f1ff5b17c6b1219750bbdd695599f31e66fb298be9facc7c169"],
@@ -297,7 +308,7 @@ const BASELINE: [string, string][] = [
   // Re-measured for the facade-probe fix (level 2's `dims auto` chains only), and again because
   // the EXAMPLE changed (backlog D.2, its piano turned and moved): the same row, with the same
   // digest body, as `./while-byte-identity-baseline.ts`, whose header has the reasons.
-  ["examples/hillside-villa.arch", "8321d132254774bd2aa79bf88cd9e9fd36a3f452a8f2af8eeae7cae4a95ff675"],
+  ["examples/hillside-villa.arch", "8b5d8ea072adfd62d22490b37c32e441219f35544be23182b62aac1aac431e41"],
   ["examples/imports.arch", "dbbdb95881775e34e5abecc72a52bc72160af81a5883ddced18bbf3d7f1a7f2c"],
   ["examples/laneway-house.arch", "2315eb23382b52aa784930c332c00083b7d9931c4620a46b8b710c75e4c1195e"],
   ["examples/library.arch", "5c4913bdc5e2960d6cac2203cdb775ed56179c232550efe893a1dfab492d3215"],
@@ -371,15 +382,15 @@ const BASELINE: [string, string][] = [
   ],
   [
     "eval/fidelity-plans/min-bedroom-flat.faithful.arch",
-    "590ade3a659fa03f5ae682e3b9e8d80e1a64054ead7f0236dd77f246d606b486",
+    "66fe2ee27ad498d0a99483e523e590319e15b9a755ab5f921e0cc7d8b4b80823",
   ],
   [
     "eval/fidelity-plans/min-bedroom-flat.laundered.arch",
-    "21265d4380b6c8746393a54aaa0d08c0ec404c5f1eddf1efadbbe5986dcd2c31",
+    "e83cd90262027f1ab48b63c1146ca28d57ded3688868441c2beee314b6b84510",
   ],
   [
     "eval/fidelity-plans/over-programmed-flat.laundered.arch",
-    "5e31cac66e4b11da558747166c4ede37ba3c9bb2c7d187fd59413de69babc9eb",
+    "232e52e7b40bbc61056ad151aab520eef9c990809e4823486f2a1b5a2f384e8d",
   ],
   [
     "eval/fidelity-plans/two-bed-min-area.faithful.arch",
@@ -391,11 +402,11 @@ const BASELINE: [string, string][] = [
   ],
   [
     "eval/fidelity-plans/wide-doorways.faithful.arch",
-    "26cd985bcb4bf37c46cf22b7676da9f53f3266deb76609fe264055512d4914fa",
+    "94450d315bfb09f55e1a1da173e389068a9d9eb952768141e016af4e399d51c7",
   ],
   [
     "eval/fidelity-plans/wide-doorways.laundered.arch",
-    "c640e8f23a213e4cff89a19c79013cdc0690903cb0973f03764f08c1fe37bc19",
+    "0a36564a8ef135ad797517e0ab4f45fd1d074b69287ee1a1ff7f2aa08c46c25f",
   ],
   ["eval/faults/blocked-doorway.arch", "63f8d3830c9a0842409d7354ea44389e89fa4e1ddfb71e51f551d1c296ef3092"],
   ["eval/faults/combined.arch", "7f51d2ddae2283191f52a932f9a4683ab2fe2ae51f73b4720c4fc54a2acba260"],

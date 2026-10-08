@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — `W_BATH_VIA_BEDROOM` no longer flags an en-suite beside a bathroom off circulation
+
+- **The warning is about a storey's bathroom provision, not one room.** It fired on every
+  bathroom or WC reachable only through a bedroom, and its own hint offered a way out — "if it
+  is an en-suite, add a second bathroom off circulation" — that the rule never checked. A plan
+  with a family bathroom off the hall and an en-suite off the master bedroom, which is what a
+  brief asking for an en-suite describes, was left with a warning no edit could clear. It now
+  fires only when **no** bathroom or WC on the storey is reachable without passing through a
+  bedroom; then every one behind a bedroom is named, as before. A WC counts as that other
+  room. The check is per storey, like the rest of `lint`: a WC downstairs does not excuse a
+  first floor whose only bathroom is an en-suite. `arch suggest` follows the same definition,
+  and the hint now reads "add a second bathroom or WC off circulation".
+  `examples/hillside-villa.arch` lints with eight warnings instead of nine.
+
 ### Fixed — `arch watch` could still miss the first save after it said it was watching
 
 - **The readiness banner now means the watcher has its baseline.** `arch watch` used

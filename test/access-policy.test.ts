@@ -67,7 +67,10 @@ function verdicts(src: string) {
     .filter((u) => u.reason === "no_door_route")
     .map((u) => u.roomId);
   const intent = validateIntent(src, { reachable: true });
-  return { s, unreachable, withConnector, lintUnreachable, bathViaBedroom, noDoorRoute, intent };
+  const suggestedBaths = suggestTopology(src)
+    .filter((x) => x.code === "W_BATH_VIA_BEDROOM")
+    .map((x) => x.roomId);
+  return { s, unreachable, withConnector, lintUnreachable, bathViaBedroom, suggestedBaths, noDoorRoute, intent };
 }
 
 /** The agreement law, stated once for every plan below. */
@@ -79,6 +82,10 @@ function assertAgree(src: string): void {
   expect(v.lintUnreachable, src).toEqual(v.unreachable.filter(v.withConnector));
   // …and never calls a room describe() cannot reach "reachable only through a bedroom".
   for (const id of v.bathViaBedroom) expect(v.unreachable, src).not.toContain(id);
+  // suggestTopology proposes a way out only for a bathroom lint flags (it may have no
+  // candidate to offer, so it names a subset) — an en-suite beside a wet room off
+  // circulation is spared by both.
+  for (const id of v.suggestedBaths) expect(v.bathViaBedroom, src).toContain(id);
   // circulation's `no_door_route` names exactly the rooms the access graph cannot reach —
   // even where the raster leaks into one through a partition thinner than a cell (backlog
   // C.1): circulation gates every walk on the door route.
@@ -156,6 +163,22 @@ describe("one access policy: every surface agrees on reachability", () => {
         .map((x) => x.roomId),
     ).toEqual(["den"]);
     assertAgree(west);
+    // A WC off the hall on the same storey: the bathroom behind the bedroom is an en-suite
+    // beside a wet room that avoids every bedroom, and neither surface names it.
+    const withWc = west.replace(
+      `room id=hall  at (0,3000) size 8000x3000 label "Hall"`,
+      `wall id=wcw partition thickness 100 { (6000,3000) (6000,6000) }
+  room id=hall  at (0,3000) size 6000x3000 label "Hall"
+  room id=wc    at (6000,3000) size 2000x3000 label "WC"
+  door id=d_wc  at (6000,4500) width 800 wall wcw`,
+    );
+    expect(withWc).not.toBe(west);
+    const vc = verdicts(withWc)!;
+    expect(vc.s.access.rooms.map((r) => r.id)).toContain("wc");
+    expect(vc.unreachable).toEqual([]);
+    expect(vc.bathViaBedroom).toEqual([]);
+    expect(vc.suggestedBaths).toEqual([]);
+    assertAgree(withWc);
   });
 
   it("offset T-junctions at every position along the cross wall", () => {
