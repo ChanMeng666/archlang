@@ -62,6 +62,7 @@ import {
   backedEdgeList,
   backEdgeForRotate,
   buildDoorAccessGraph,
+  type AnalyzeOptions,
   DEFAULT_TOL,
   FIXTURE_WALL_TOL_MM,
   innerFaceOfRoomEdge,
@@ -887,7 +888,7 @@ function firstNewPinch(before: CirculationModel | null, after: CirculationModel 
 type Pins = Map<string, string>;
 
 /** One hard conflict: the resolved ids it involves, and how to say a move would cause it. */
-interface HardConflict {
+export interface HardConflict {
   refs: string[];
   /** The clause after "would", told from the side of the piece `ref`. */
   would: (ref: string) => string;
@@ -939,13 +940,13 @@ function hardConflictsOf(furniture: RFurniture[], walls: RWall[], doors: RDoor[]
 
 /** A whole source's hard conflicts (every storey, keys prefixed `${level}|`), and where
  *  each piece stands — what {@link culpritsOf} compares a run's result against. */
-interface SourceConflicts {
+export interface SourceConflicts {
   conflicts: Map<string, HardConflict & { level: string }>;
   at: Map<string, { x: number; y: number }>;
 }
 
-function sourceConflicts(source: string): SourceConflicts {
-  const { ir, levels } = resolvePlan(source);
+export function sourceConflicts(source: string, opts: AnalyzeOptions = {}): SourceConflicts {
+  const { ir, levels } = resolvePlan(source, opts);
   const conflicts: SourceConflicts["conflicts"] = new Map();
   const at: SourceConflicts["at"] = new Map();
   const storeys: Array<{ level?: number; ir: ResolvedPlan }> =
