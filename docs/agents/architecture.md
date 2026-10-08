@@ -119,6 +119,9 @@ source (.arch)
   progression into a `for` loop (`arch reroll`, `reroll()`, the LSP's `refactorActions`)
 - `plan-json.ts` Plan JSON · `diagnostic-json.ts` · `repair.ts` (geometric corrector) vs
   `fix-apply.ts` (`arch fix`; skips a fix carrying `file`) · `manifest.ts` the CLI contract
+- `finish.ts` the sheet-completion transform (`arch finish`, `docs/adr/0024-finish-as-explicit-transform.md`):
+  span inserts through `fix-apply.ts`'s `Data`, the fit decided by `sheet.ts` `fitsOnSheet` on
+  `ir.ts` `sheetExtents`; stages are `FINISH_STAGES`, of which only `sheet` exists
 - `pipeline.ts` the ONE `compileUncached()` (parse→link→resolve→render), extracted verbatim from
   `index.ts` so `compile()`'s memo-cache wrapper and `reroll.ts`'s twin-compile proof obligation
   call the same function and can never drift apart

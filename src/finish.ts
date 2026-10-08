@@ -214,7 +214,7 @@ function tableRows(m: Measured, schedule: boolean, legend: boolean): number {
 }
 
 /** Which of the four non-sheet statements a candidate carries (authored or to be added). */
-interface Furniture {
+interface Extras {
   dims: boolean;
   title: boolean;
   schedule: boolean;
@@ -243,7 +243,7 @@ function sheetStage(source: string, env: AnalyzeOptions, reissue: boolean, memo:
   const handDims = m.storeys.some((ir) => ir.elements.some((e) => e.kind === "dim"));
   const hasRooms = m.storeys.some((ir) => ir.elements.some((e) => e.kind === "room"));
   const name = plan.name.trim();
-  const want: Furniture = {
+  const want: Extras = {
     dims: plan.autoDims === undefined && !handDims,
     title: plan.title === undefined && name !== "",
     schedule: plan.schedule === undefined && hasRooms,
@@ -264,14 +264,14 @@ function sheetStage(source: string, env: AnalyzeOptions, reissue: boolean, memo:
     });
 
   // --- the fit rule, on a candidate set of statements -------------------------
-  const has: Furniture = {
+  const has: Extras = {
     dims: plan.autoDims !== undefined,
     title: plan.title !== undefined,
     schedule: plan.schedule !== undefined,
     legend: plan.legend === true,
   };
   const newTitle: TitleNode = { project: plan.name, line: 0 };
-  const fits = (paper: PaperSpec, denom: number, add: Furniture): boolean => {
+  const fits = (paper: PaperSpec, denom: number, add: Extras): boolean => {
     const { w, h } = paperMm(paper.size, paper.orientation);
     const title = plan.title ?? (add.title ? newTitle : undefined);
     const input = {
@@ -287,14 +287,14 @@ function sheetStage(source: string, env: AnalyzeOptions, reissue: boolean, memo:
     );
   };
   /** The smallest sheet that holds the drawing at `denom`: A4→A1 (or A0 alone), landscape first. */
-  const smallestSheet = (denom: number, add: Furniture, sizes: readonly PaperSpec["size"][]): PaperSpec | null => {
+  const smallestSheet = (denom: number, add: Extras, sizes: readonly PaperSpec["size"][]): PaperSpec | null => {
     for (const size of sizes)
       for (const orientation of PAPER_ORIENTATIONS)
         if (fits({ size, orientation }, denom, add)) return { size, orientation };
     return null;
   };
   /** The finest standard scale on the smallest usual sheet; A0 only when A4–A1 hold none. */
-  const chooseSheet = (add: Furniture): { paper: PaperSpec; denom: number } | null => {
+  const chooseSheet = (add: Extras): { paper: PaperSpec; denom: number } | null => {
     for (const sizes of [USUAL_SIZES, ["A0"] as const])
       for (const denom of AUTO_SCALE_DENOMINATORS) {
         const paper = smallestSheet(denom, add, sizes);
@@ -302,16 +302,16 @@ function sheetStage(source: string, env: AnalyzeOptions, reissue: boolean, memo:
       }
     return null;
   };
-  const finestScale = (paper: PaperSpec, add: Furniture): number | null =>
+  const finestScale = (paper: PaperSpec, add: Extras): number | null =>
     AUTO_SCALE_DENOMINATORS.find((d) => fits(paper, d, add)) ?? null;
 
   // Statements are given up in this order when an AUTHORED sheet cannot hold them all.
-  const none: Furniture = { dims: false, title: false, schedule: false, legend: false };
-  const tiers: Furniture[] = [want, { ...want, schedule: false, legend: false }, { ...none, title: want.title }, none];
+  const none: Extras = { dims: false, title: false, schedule: false, legend: false };
+  const tiers: Extras[] = [want, { ...want, schedule: false, legend: false }, { ...none, title: want.title }, none];
 
   // --- decide ---------------------------------------------------------------
   const authoredDenom = scaleDenominator(plan.scale);
-  let add: Furniture = want;
+  let add: Extras = want;
   let paper: PaperSpec | undefined; // the paper to WRITE (added or replaced)
   let denom: number | undefined; // the scale to WRITE
   let operative: number | undefined = authoredDenom ?? undefined; // the scale `dims` is chosen at
@@ -353,7 +353,7 @@ function sheetStage(source: string, env: AnalyzeOptions, reissue: boolean, memo:
   } else if (plan.paper) {
     // The author chose the paper (and perhaps the scale): keep it while the drawing fits.
     const authored = plan.paper;
-    const at = (t: Furniture): number | null =>
+    const at = (t: Extras): number | null =>
       authoredDenom !== null ? (fits(authored, authoredDenom, t) ? authoredDenom : null) : finestScale(authored, t);
     const candidates = reissue ? tiers.slice(0, 1) : tiers;
     const tier = candidates.find((t) => at(t) !== null);
