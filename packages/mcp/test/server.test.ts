@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import pkg from "../package.json" with { type: "json" };
+import serverJson from "../server.json" with { type: "json" };
 import { SHIM_VERSION } from "../src/server.js";
 // The transport harness + the shared `.arch` fixtures live in ./helpers.ts, so the
 // tool-coverage, resource, lockstep and fuzz suites all drive one server the same way.
@@ -12,6 +13,10 @@ describe("archlang mcp server", () => {
     expect(tools).toEqual(
       ["compile", "complete", "describe", "finish", "fix", "lint", "repair", "score", "suggest", "validate"].sort(),
     );
+    // The registry description is hand-written (no generator), so it is held to the tools
+    // the server actually registers: every one is named in it.
+    for (const tool of tools)
+      expect(serverJson.description.toLowerCase(), `server.json omits "${tool}"`).toContain(tool);
     const resources = (await client.listResources()).resources.map((r) => r.uri).sort();
     expect(resources).toEqual([
       "archlang://context",
