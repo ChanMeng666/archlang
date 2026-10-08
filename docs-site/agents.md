@@ -14,6 +14,21 @@ it matches intent without ever looking at an image** — token-cheap and in any 
 > a replacement; the core stays zero-dependency. See
 > [ADR 0012](/adr/0012-mcp-shim-discoverability).
 
+## Install into your coding agent
+
+```bash
+npx skills add ChanMeng666/archlang                      # the ArchLang skill, for any agent that reads skills
+claude mcp add archlang -- npx -y @chanmeng666/archlang-mcp   # or the MCP server (Claude Code shown)
+/plugin marketplace add ChanMeng666/archlang                # or, inside Claude Code: the skill + MCP server as one plugin
+/plugin install archlang@archlang
+```
+
+Then ask in plain language; the agent writes the `.arch`, compiles it, and checks it with `lint` and `describe`:
+
+- *"Design a one-bedroom flat of about 54 m²: a 32 m² living/kitchen, a 10 m² bedroom and a 10 m² bathroom, with the front door on the north wall."*
+- *"Draw a two-storey, two-bedroom house, 8 m × 6 m, with a stair linking the floors, and give me one SVG per storey."*
+- *"Export that plan as DXF."*
+
 ## Zero-install
 
 ```bash
