@@ -77,7 +77,9 @@ describe("arch finish — the write boundary", () => {
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j).toMatchObject({ ok: true, changed: true, wrote: false, target: file, unresolved: [] });
-    expect(j.changes.map((c: { statement: string }) => c.statement)).toEqual([
+    const sheet = j.changes.filter((c: { stage: string }) => c.stage === "sheet");
+    expect(j.changes.length).toBeGreaterThan(sheet.length);
+    expect(sheet.map((c: { statement: string }) => c.statement)).toEqual([
       "paper",
       "scale",
       "dims",
@@ -116,7 +118,7 @@ describe("arch finish — the write boundary", () => {
   it("`--reissue` replaces a paper the drawing does not fit", () => {
     const tight = BARE.replace("  north up\n", "  paper A4\n  scale 1:10\n  north up\n");
     writeFileSync(file, tight, "utf8");
-    const kept = JSON.parse(run(["finish", file, "--dry-run", "--json"]).stdout);
+    const kept = JSON.parse(run(["finish", file, "--only", "sheet", "--dry-run", "--json"]).stdout);
     expect(kept.changed).toBe(false);
     expect(kept.unresolved[0].reason).toContain("--reissue");
     const r = JSON.parse(run(["finish", file, "--reissue", "--json"]).stdout);
@@ -139,11 +141,14 @@ describe("arch finish — exit codes", () => {
     expect(readFileSync(file, "utf8")).toBe(broken);
   }, 30000);
 
-  it("`--only furnish` is a usage error that says the stage is not available yet — never a silent no-op", () => {
-    const r = run(["finish", file, "--only", "furnish"]);
-    expect(r.status).toBe(3);
-    expect(r.stderr).toContain("--only furnish is not available yet");
-    expect(r.stdout).toBe("");
+  it("`--only furnish` runs the furnish stage and writes no sheet statement", () => {
+    const r = run(["finish", file, "--only", "furnish", "--dry-run", "--json"]);
+    expect(r.status).toBe(0);
+    const j = JSON.parse(r.stdout);
+    expect(j.changed).toBe(true);
+    expect(j.changes.every((c: { stage: string; statement: string }) => c.stage === "furnish")).toBe(true);
+    expect(j.diff).toContain("+  furniture sofa in r anchor");
+    expect(j.source).not.toContain("paper");
     expect(readFileSync(file, "utf8")).toBe(BARE);
   }, 30000);
 

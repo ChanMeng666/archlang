@@ -468,14 +468,14 @@ $ arch fix plan.arch -o fixed.arch --unsafe --json
 
 ### `arch finish`
 
-add the sheet statements a plan lacks (paper, scale, dims auto, title, schedule rooms, legend); deletes nothing
+furnish the rooms that hold no furniture, then add the sheet statements a plan lacks (paper, scale, dims auto, title, schedule rooms, legend); deletes nothing
 
 **Input:** `<file.arch|->` · **Output:** finished source (to the input file or -o) + a unified diff and change log on stderr
 
 | Flag | Does |
 | --- | --- |
 | `--out, -o <file\|->` | output file for the finished source, or '-' for stdout (default: rewrite the input file in place) |
-| `--only <sheet\|furnish>` | run only this stage (available: sheet; default: every available stage) |
+| `--only <sheet\|furnish>` | run only this stage (available: sheet, furnish; default: furnish, then sheet) |
 | `--reissue` | allow `paper` and `scale` (nothing else) to be replaced when the drawing does not fit the authored sheet |
 | `--dry-run` | compute the result but do not write it (the diff preview still prints) |
 | `--backup` | before rewriting a file in place, save the original bytes to &lt;file&gt;.bak |
@@ -485,11 +485,14 @@ add the sheet statements a plan lacks (paper, scale, dims auto, title, schedule 
 **Examples**
 
 ```bash
-# preview the sheet statements `finish` would add: `changes[]`, `unresolved[]` and the `diff`
+# preview the furniture and sheet statements `finish` would add: `changes[]`, `unresolved[]` and the `diff`
 $ arch finish plan.arch --dry-run --json
 
-# complete the sheet in place once lint is clean, keeping the original as plan.arch.bak
+# complete the drawing in place once lint is clean, keeping the original as plan.arch.bak
 $ arch finish plan.arch --backup
+
+# preview only the furniture: one `furniture` statement per piece, and each room left empty with the reason
+$ arch finish plan.arch --only furnish --dry-run --json
 
 # also replace a paper/scale the drawing does not fit, leaving the input untouched
 $ arch finish plan.arch --reissue -o issued.arch

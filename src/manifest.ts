@@ -34,7 +34,7 @@ import { ERROR_CODES, ERROR_CATALOG } from "./error-catalog.js";
 import { LINT_PROFILE_NAMES, LINT_PROFILES, DEFAULT_RULESET } from "./lint.js";
 import { FIXTURE_CATEGORIES } from "./elements/fixtures-glyphs.js";
 import { DESCRIBE_FACTS } from "./describe.js";
-import { FINISH_STAGES, FINISH_STAGES_AVAILABLE } from "./finish.js";
+import { FINISH_STAGE_ORDER, FINISH_STAGES, FINISH_STAGES_AVAILABLE } from "./finish.js";
 import { CASED_OPENING_HEAD, DOOR_HEAD, MAX_HEIGHT, STOREY_HEIGHT, WINDOW_HEAD, WINDOW_SILL } from "./datum.js";
 
 export interface ManifestFlag {
@@ -739,7 +739,7 @@ const COMMANDS: ManifestCommand[] = [
   {
     name: "finish",
     summary:
-      "add the sheet statements a plan lacks (paper, scale, dims auto, title, schedule rooms, legend); deletes nothing",
+      "furnish the rooms that hold no furniture, then add the sheet statements a plan lacks (paper, scale, dims auto, title, schedule rooms, legend); deletes nothing",
     flags: [
       {
         ...OUT_FLAG,
@@ -749,7 +749,7 @@ const COMMANDS: ManifestCommand[] = [
       {
         flag: "--only",
         arg: `<${FINISH_STAGES.join("|")}>`,
-        description: `run only this stage (available: ${FINISH_STAGES_AVAILABLE.join(", ")}; default: every available stage)`,
+        description: `run only this stage (available: ${FINISH_STAGES_AVAILABLE.join(", ")}; default: ${FINISH_STAGE_ORDER.join(", then ")})`,
       },
       {
         flag: "--reissue",
@@ -769,11 +769,15 @@ const COMMANDS: ManifestCommand[] = [
     examples: [
       {
         cmd: "arch finish plan.arch --dry-run --json",
-        note: "preview the sheet statements `finish` would add: `changes[]`, `unresolved[]` and the `diff`",
+        note: "preview the furniture and sheet statements `finish` would add: `changes[]`, `unresolved[]` and the `diff`",
       },
       {
         cmd: "arch finish plan.arch --backup",
-        note: "complete the sheet in place once lint is clean, keeping the original as plan.arch.bak",
+        note: "complete the drawing in place once lint is clean, keeping the original as plan.arch.bak",
+      },
+      {
+        cmd: "arch finish plan.arch --only furnish --dry-run --json",
+        note: "preview only the furniture: one `furniture` statement per piece, and each room left empty with the reason",
       },
       {
         cmd: "arch finish plan.arch --reissue -o issued.arch",

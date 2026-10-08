@@ -340,17 +340,18 @@ export async function cmdFix(args: Args): Promise<number> {
 }
 
 /**
- * `arch finish` — add the sheet statements a plan lacks (`paper`, `scale`, `dims auto`,
- * `title`, `schedule rooms`, `legend`): the explicit transform of ADR 0024, and nothing a
- * `compile` ever does on its own. It fills what is missing and deletes nothing; `--reissue`
- * lets it replace `paper`/`scale` (only those) when the drawing does not fit them.
+ * `arch finish` — furnish the rooms that hold no furniture (ADR 0025), then add the sheet
+ * statements a plan lacks (`paper`, `scale`, `dims auto`, `title`, `schedule rooms`,
+ * `legend`; ADR 0024): explicit transforms, and nothing a `compile` ever does on its own. It
+ * fills what is missing and deletes nothing; `--reissue` lets it replace `paper`/`scale`
+ * (only those) when the drawing does not fit them. `--only` runs one stage.
  *
  * The write conventions are `arch fix`'s, because this is the same destructive act: the
  * default target is the input file itself, so a unified diff of exactly what would be
  * written goes to stderr (and into `--json` as `diff`), `--dry-run` never writes, and
  * `--backup` saves the original to `<target>.bak`. A plan that does not compile is
- * returned untouched with exit 2. `--only furnish` is refused (exit 3): that stage is
- * planned, and a flag that quietly did nothing would read as "nothing to furnish".
+ * returned untouched with exit 2. A stage name this version does not run is refused
+ * (exit 3): a flag that quietly did nothing would read as "nothing to do".
  */
 export function cmdFinish(args: Args): number {
   const input = args._[0];

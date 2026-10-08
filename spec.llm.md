@@ -113,7 +113,7 @@ arch complete  # completion items in scope at a source byte offset (the LSP comp
 arch fmt  # canonical formatting
 arch repair  # explicit source-to-source corrector (furniture out of walls) + change log
 arch fix  # apply the machine-applicable fix suggestions on a plan's diagnostics (bounded fixpoint)
-arch finish  # add the sheet statements a plan lacks (paper, scale, dims auto, title, schedule rooms, legend); deletes nothing
+arch finish  # furnish the rooms that hold no furniture, then add the sheet statements a plan lacks (paper, scale, dims auto, title, schedule rooms, legend); deletes nothing
 arch reroll  # offer a proven-equivalent `for` loop for a repeated statement run
 arch suggest  # advisory topology suggestions as data (door/window statements that resolve reachability/window faults)
 arch manifest  # this document: the whole CLI API as structured data
