@@ -14,9 +14,10 @@
  * a position is never derived from a bounding box.
  *
  * **Never worse, per room.** A room's pieces are kept only when the plan with them compiles
- * and raises no diagnostic code (compile + lint, as a multiset) and no hard furniture
- * conflict it did not have before that room. Otherwise the next candidate is tried; when a
- * required piece cannot be placed the room is left empty and reported.
+ * and raises no diagnostic code (compile + lint under the default ruleset and under every
+ * named profile, as multisets) and no hard furniture conflict it did not have before that
+ * room. Otherwise the next candidate is tried; when a required piece cannot be placed its
+ * use is left out whole, and a room with no use left is left empty. Both are reported.
  *
  * **Bounded.** The candidate order is fixed, and the number of compile checks is at most
  * {@link furnishCheckBound} — linear in the rooms. There is no search loop and no randomness.
@@ -34,12 +35,12 @@ import {
   type RectEdge,
   rotateForBackEdge,
 } from "./fixture-orientation.js";
-import { defaultFootprint, fixtureSpec, frontClearanceMm, zoneFixtureCategories } from "./fixtures-catalog.js";
+import { defaultFootprint, frontClearanceMm, zoneFixtureCategories } from "./fixtures-catalog.js";
 import { doorSwing, normal, sectorIntersectsRect, segmentsOfWall, sub, unit, type WallSegment } from "./geometry.js";
 import { type BBox, doorLandingRect, rectsOverlap } from "./geometry/rect.js";
 import type { RDoor, RFurniture, ROpening, ResolvedPlan, RRoom, RWall, RWindow } from "./ir.js";
 import { lex } from "./lexer.js";
-import { DEFAULT_RULESET } from "./lint.js";
+import { DEFAULT_RULESET, LINT_PROFILES } from "./lint.js";
 import { fmtSource } from "./num-format.js";
 import { parse } from "./parser.js";
 import { BUILTIN_REGISTRY, createRegistry } from "./registry.js";
@@ -88,7 +89,11 @@ const zoned = (zone: ReadonlySet<string>, required: boolean, category: string, .
 /**
  * What goes in a room, by use. Every word is one `src/fixtures-catalog.ts` already has; the
  * wet-room and kitchen rows are read through the catalogue's own zones. A use with no row
- * (`hall`, `circulation`, `entry`, `storage`, `garage`) is never furnished.
+ * (`hall`, `circulation`, `entry`, `storage`, `garage`, `utility`) is never furnished.
+ *
+ * The rows describe the rooms of a DWELLING. `utility` has no row because the tag does not
+ * say laundry: a plant room carries it too. A room larger than {@link MAX_ROOM_AREA_M2} is
+ * not a dwelling room whatever its tag says, and is reported instead of furnished.
  */
 export const FURNISH_TABLE: Readonly<Partial<Record<UseKind, readonly FurnishItem[]>>> = Object.freeze({
   bedroom: [
@@ -153,7 +158,6 @@ export const FURNISH_TABLE: Readonly<Partial<Record<UseKind, readonly FurnishIte
   ],
   bath: [...zoned(wet, true, "wc"), ...zoned(wet, true, "basin"), ...zoned(wet, false, "bathtub", "shower")],
   wc: [...zoned(wet, true, "wc"), ...zoned(wet, true, "basin")],
-  utility: fixtureSpec("washer")?.footprint ? [{ category: "washer", required: true, place: "wall" }] : [],
 });
 
 /** Placement detail that is not part of the public table. */
@@ -196,8 +200,15 @@ export const MAX_CHECKS_PER_ROOM = 13;
 /** The most compile checks one run of the stage makes on a plan with `rooms` rooms. */
 export const furnishCheckBound = (rooms: number): number => 1 + rooms * MAX_CHECKS_PER_ROOM;
 
+/** The largest floor a room may have and still be furnished from the table, in m². */
+export const MAX_ROOM_AREA_M2 = 100;
+
+/** The default ruleset and every named profile: a position is pruned by the strictest of them. */
+const RULESETS = [DEFAULT_RULESET, ...Object.values(LINT_PROFILES).map((p) => ({ ...DEFAULT_RULESET, ...p }))];
 /** How deep a door's clear approach is kept, each side of its wall. */
-const LANDING_MM = Math.max(DEFAULT_RULESET.doorwayLandingMm, 450);
+const LANDING_MM = Math.max(...RULESETS.map((r) => r.doorwayLandingMm));
+/** How far off a door's swing a piece is kept. */
+const SWING_MM = Math.max(...RULESETS.map((r) => r.swingClearanceMm));
 /** How far off a room edge an opening's point may sit and still be on that edge. */
 const ON_EDGE_MM = 200;
 /** How far off a wall a `centre` piece stands when the middle of the room is not free. */
@@ -211,7 +222,21 @@ const EPS = 0.5;
 /** The diagnostic codes of a source, as `finish` measures them. */
 export interface FurnishCodes {
   errors: boolean;
-  codes: Map<string, number>;
+  /** compile's codes, and lint's under the default ruleset. */
+  codes: ReadonlyMap<string, number>;
+  /** lint's codes under each named profile that differs from the default. */
+  profiles?: ReadonlyMap<string, ReadonlyMap<string, number>>;
+}
+
+/** The codes `after` has more of than `before`, under the default ruleset or any profile. */
+export function gainedCodes(before: FurnishCodes, after: FurnishCodes): string[] {
+  const out = new Set<string>();
+  const more = (was: ReadonlyMap<string, number> | undefined, now: ReadonlyMap<string, number>): void => {
+    for (const [code, n] of now) if (n > (was?.get(code) ?? 0)) out.add(code);
+  };
+  more(before.codes, after.codes);
+  for (const [profile, now] of after.profiles ?? []) more(before.profiles?.get(profile), now);
+  return [...out].sort();
 }
 
 export interface FurnishStageResult extends FinishResult {
@@ -306,8 +331,8 @@ export function furnishStage(
   const refusal = (candidate: string): string[] | null => {
     checks++;
     const after = codesOf(candidate);
-    const gained = [...after.codes].filter(([code, n]) => n > (before.codes.get(code) ?? 0)).map(([code]) => code);
-    if (gained.length > 0) return gained.sort();
+    const gained = gainedCodes(before, after);
+    if (gained.length > 0) return gained;
     if (after.errors) return ["E_PARSE"];
     for (const k of sourceConflicts(candidate, env).conflicts.keys())
       if (!conflicts.has(k)) return [CONFLICT_CODE[k.split("|")[1] ?? ""] ?? "W_FURNITURE_OVERLAP"];
@@ -349,60 +374,117 @@ export function furnishStage(
       );
       continue;
     }
-    const items = itemsFor(uses);
-    const site = new Site(room, walls, segs, passages, doors, windows);
-    let budget = MAX_CHECKS_PER_ROOM;
-
-    // First proposal: the first candidate of every piece that clears the room's geometry.
-    const first: Placed[] = [];
-    let missing: FurnishItem | null = null;
-    for (const item of items) {
-      const [c] = site.candidates(item, first);
-      if (c) first.push(c);
-      else if (item.required) {
-        missing = item;
-        break;
-      }
-    }
-    if (missing) {
+    if ((room.size.w * room.size.h) / 1e6 > MAX_ROOM_AREA_M2) {
       note(
         room,
-        `no position for the required \`${missing.category}\` in "${room.id}" clears its walls, its doors and the pieces before it — the room was left empty`,
+        `"${room.id}" is larger than ${MAX_ROOM_AREA_M2} m² — the furnish table describes dwelling rooms, so the room was left as it is`,
       );
       continue;
     }
-    if (first.length === 0) continue;
+    let groups = groupsFor(uses);
+    const relational = room._placement === "relational";
+    if (relational) {
+      // `in <room> anchor` needs a room with authored `at` coordinates (E_PLACE_REF);
+      // `against wall` does not. Decided here, before any compile check.
+      const anchored = groups.flatMap((g) => g.items).find((i) => i.required && i.place !== "wall");
+      if (anchored) {
+        note(
+          room,
+          `"${room.id}" was not furnished — a relational room has no fixed \`at\` to anchor in, and its \`${anchored.category}\` is placed \`in <room> anchor\`; give the room \`at (x,y)\` coordinates`,
+        );
+        continue;
+      }
+      groups = groups.map((g) => ({
+        use: g.use,
+        items: g.items.filter((i) => i.place === "wall"),
+      }));
+    }
+    const site = new Site(room, walls, segs, passages, doors, windows, !relational);
+    let budget = MAX_CHECKS_PER_ROOM;
+    const nowhere = (item: FurnishItem): string =>
+      site.walled === 0 && item.place !== "centre"
+        ? `"${room.id}" has no wall behind any of its edges to stand the required \`${item.category}\` against`
+        : `no position for the required \`${item.category}\` in "${room.id}" clears its walls, its doors and the pieces before it${
+            site.named === 0 && item.place === "wall"
+              ? `, and no wall behind it has an \`id=\` of its own for \`against wall\` to name`
+              : ""
+          }`;
+    /** The uses left out of a room that was furnished: each is reported, never scattered. */
+    const leftOut = (dropped: readonly Dropped[]): void => {
+      for (const d of dropped)
+        note(
+          room,
+          d.codes
+            ? `the ${d.use} pieces were left out of "${room.id}" — they would raise ${d.codes.join(", ")}, which the plan does not have now (the required \`${d.item.category}\` has no position that avoids it)`
+            : `the ${d.use} pieces were left out of "${room.id}" — ${nowhere(d.item)}`,
+          d.codes ?? undefined,
+        );
+    };
+
+    // First proposal: use by use, the first candidate of every piece that clears the room's
+    // geometry. A use whose required piece has no position is left out whole.
+    const first: Placed[] = [];
+    const absent: Dropped[] = [];
+    for (const g of groups) {
+      const mine: Placed[] = [];
+      let missing: FurnishItem | null = null;
+      for (const [i, item] of g.items.entries()) {
+        const [c] = site.candidates(item, g.use, [...first, ...mine], followers(g.items, i));
+        if (c) mine.push(c);
+        else if (item.required) {
+          missing = item;
+          break;
+        }
+      }
+      if (missing) absent.push({ use: g.use, item: missing, codes: null });
+      else first.push(...mine);
+    }
+    if (first.length === 0) {
+      if (absent[0]) note(room, `${nowhere(absent[0].item)} — the room was left empty`);
+      continue;
+    }
     budget--;
     let blocking = refusal(render(first.map((p) => p.text)));
     if (blocking === null) {
       accept(room, uses, first);
+      leftOut(absent);
       continue;
     }
 
     // Refused: place the pieces one at a time, each kept only when the plan stays no worse.
+    // A use whose required piece is refused is left out whole.
     const kept: Placed[] = [];
-    let failed: FurnishItem | null = null;
-    for (const item of items) {
-      let ok = false;
-      let tries = MAX_CHECKS_PER_PIECE;
-      for (const c of site.candidates(item, kept)) {
-        if (tries === 0 || budget === 0) break;
-        tries--;
-        budget--;
-        const why = refusal(render([...kept, c].map((p) => p.text)));
-        if (why === null) {
-          kept.push(c);
-          ok = true;
+    const dropped: Dropped[] = [];
+    for (const g of groups) {
+      const mine: Placed[] = [];
+      let failed: FurnishItem | null = null;
+      let why: string[] | null = null;
+      for (const [i, item] of g.items.entries()) {
+        let ok = false;
+        let tries = MAX_CHECKS_PER_PIECE;
+        for (const c of site.candidates(item, g.use, [...kept, ...mine], followers(g.items, i))) {
+          if (tries === 0 || budget === 0) break;
+          tries--;
+          budget--;
+          const refused = refusal(render([...kept, ...mine, c].map((p) => p.text)));
+          if (refused === null) {
+            mine.push(c);
+            ok = true;
+            break;
+          }
+          why = refused;
+          blocking = refused;
+        }
+        if (!ok && item.required) {
+          failed = item;
           break;
         }
-        blocking = why;
       }
-      if (!ok && item.required) {
-        failed = item;
-        break;
-      }
+      if (failed) dropped.push({ use: g.use, item: failed, codes: why });
+      else kept.push(...mine);
     }
-    if (failed || kept.length === 0) {
+    if (kept.length === 0) {
+      const failed = dropped[0]?.item;
       note(
         room,
         `furnishing "${room.id}" would raise ${blocking.join(", ")}, which the plan does not have now${failed ? ` (the required \`${failed.category}\` has no position that avoids it)` : ""} — the room was left empty`,
@@ -411,6 +493,7 @@ export function furnishStage(
       continue;
     }
     accept(room, uses, kept);
+    leftOut(dropped);
   }
 
   if (lines.length === 0) return none(unresolved, checks, todo.length);
@@ -426,7 +509,18 @@ export function furnishStage(
   };
 }
 
-/** A room's uses that have a row in the table, the use with the largest required footprint first. */
+/** A use left out of a room: the required piece that had no position, and the codes that refused it. */
+interface Dropped {
+  use: UseKind;
+  item: FurnishItem;
+  codes: string[] | null;
+}
+
+/**
+ * A room's uses that have a row in the table: the uses with a wall run first, so the run
+ * gets a whole wall before a free-standing piece claims it, then the larger required
+ * footprint first.
+ */
 function usesOf(room: RRoom): UseKind[] {
   const weight = (u: UseKind): number =>
     (FURNISH_TABLE[u] ?? [])
@@ -437,23 +531,35 @@ function usesOf(room: RRoom): UseKind[] {
       }, 0);
   return [...roomUses(room)]
     .filter((u) => (FURNISH_TABLE[u]?.length ?? 0) > 0)
-    .map((u, i) => ({ u, i, w: weight(u) }))
-    .sort((a, b) => b.w - a.w || a.i - b.i)
+    .map((u, i) => ({
+      u,
+      i,
+      w: weight(u),
+      free: (FURNISH_TABLE[u] ?? []).some((x) => x.place === "wall") ? 0 : 1,
+    }))
+    .sort((a, b) => a.free - b.free || b.w - a.w || a.i - b.i)
     .map((x) => x.u);
 }
 
-/** The pieces a set of uses asks for: the union, each catalogue word once, capped. */
-function itemsFor(uses: readonly UseKind[]): FurnishItem[] {
+/** The pieces a set of uses asks for, use by use: the union, each catalogue word once, capped. */
+function groupsFor(uses: readonly UseKind[]): Array<{ use: UseKind; items: FurnishItem[] }> {
   const seen = new Set<string>();
-  const out: FurnishItem[] = [];
-  for (const u of uses)
-    for (const item of FURNISH_TABLE[u] ?? []) {
-      if (seen.has(item.category)) continue;
+  const out: Array<{ use: UseKind; items: FurnishItem[] }> = [];
+  for (const use of uses) {
+    const items: FurnishItem[] = [];
+    for (const item of FURNISH_TABLE[use] ?? []) {
+      if (seen.has(item.category) || seen.size >= MAX_PIECES_PER_ROOM) continue;
       seen.add(item.category);
-      out.push(item);
+      items.push(item);
     }
-  return out.slice(0, MAX_PIECES_PER_ROOM);
+    if (items.length > 0) out.push({ use, items });
+  }
+  return out;
 }
+
+/** The required pieces after `items[i]` that must stand in its run: it is placed where they fit. */
+const followers = (items: readonly FurnishItem[], i: number): FurnishItem[] =>
+  items.slice(i + 1).filter((f) => f.required && DETAIL[f.category]?.run === true);
 
 function footprints(category: string, item: FurnishItem): ReadonlyArray<readonly [number, number]> {
   if (item.sizes && category === item.category) return item.sizes;
@@ -475,9 +581,14 @@ function emptyRooms(ir: ResolvedPlan): RRoom[] {
 // one room's geometry
 // ---------------------------------------------------------------------------
 
+/** A piece before `candidates` gives it the use that asked for it. */
+type Unowned = Omit<Placed, "use">;
+
 /** One proposed piece. */
 interface Placed {
   item: FurnishItem;
+  /** The use whose row asked for it. */
+  use: UseKind;
   text: string;
   rect: BBox;
   /** The floor kept clear in front of it, or null. */
@@ -509,7 +620,13 @@ interface Edge {
   /** The wall segment behind the edge, or null. */
   seg: WallSegment | null;
   /** How `against wall` names that segment, or null when the source cannot. */
-  ref: { id: string; segment: number | null; side: "left" | "right"; from: number; sign: 1 | -1 } | null;
+  ref: {
+    id: string;
+    segment: number | null;
+    side: "left" | "right";
+    from: number;
+    sign: 1 | -1;
+  } | null;
   /** The clear run along the edge, between the faces of the two walls it meets. */
   lo: number;
   hi: number;
@@ -526,6 +643,11 @@ interface Edge {
 class Site {
   private readonly clear: { x0: number; y0: number; x1: number; y1: number };
   private readonly edges: Edge[];
+  private readonly all: Edge[];
+  /** How many of the four edges have a wall behind them. */
+  readonly walled: number;
+  /** How many of those walls a statement can name: an authored `id=` no other wall shares. */
+  readonly named: number;
 
   constructor(
     private readonly room: RRoom,
@@ -534,6 +656,8 @@ class Site {
     private readonly passages: ReadonlyArray<RDoor | ROpening>,
     private readonly doors: readonly RDoor[],
     windows: readonly RWindow[],
+    /** Can a piece be written `in <room> anchor`? Not in a relational room. */
+    private readonly anchors: boolean,
   ) {
     const rect: BBox = { x: room.at.x, y: room.at.y, w: room.size.w, h: room.size.h };
     const x1 = rect.x + rect.w;
@@ -583,6 +707,9 @@ class Site {
       };
     });
     // Walls with no door first, then with no window, then the longer; the fixed order breaks a tie.
+    this.all = all;
+    this.walled = all.filter((e) => e.seg !== null).length;
+    this.named = all.filter((e) => e.ref !== null).length;
     this.edges = all
       .filter((e) => e.seg !== null)
       .map((e, i) => ({ e, i }))
@@ -596,50 +723,96 @@ class Site {
       .map((p) => p.e);
   }
 
-  /** Every position for `item` that clears the room's geometry and `placed`, in the fixed order. */
-  candidates(item: FurnishItem, placed: readonly Placed[]): Placed[] {
+  /**
+   * Every position for `item` that clears the room's geometry and `placed`, in the fixed
+   * order. A `run` piece stands next to the last wall piece of its OWN use and nowhere else,
+   * so a use's run is one unbroken row; a piece with `after` is offered only where each of
+   * those can then join the run.
+   */
+  candidates(item: FurnishItem, use: UseKind, placed: readonly Placed[], after: readonly FurnishItem[] = []): Placed[] {
     const out: Placed[] = [];
     for (const category of [item.category, ...(item.or ?? [])]) {
       const detail = DETAIL[category] ?? {};
       for (const [along, depth] of footprints(category, item)) {
         const here: Placed[] = [];
         const late: Placed[] = [];
-        const offer = (p: Placed | null, e: Edge | null): void => {
-          if (!p || !this.fits(p, placed)) return;
-          const glazed = e?.windows.some(([lo, hi]) => Math.min(hi, p.hi) - Math.max(lo, p.lo) > 1);
-          if (!glazed) here.push(p);
+        const offer = (made: Unowned | null, windowOn: boolean): void => {
+          if (!made) return;
+          const p: Placed = { ...made, use };
+          if (!this.fits(p, placed)) return;
+          if (!(windowOn && this.glazed(p))) here.push(p);
           else if (!detail.tall) late.push(p);
         };
         if (item.place === "centre") {
           const wide = this.clear.x1 - this.clear.x0 >= this.clear.y1 - this.clear.y0;
           for (const turned of wide ? [false, true] : [true, false])
-            offer(this.centred(item, category, along, depth, turned), null);
+            offer(this.centred(item, category, along, depth, turned), false);
           // The middle is some door's swing: stand it off the middle of a wall instead.
-          for (const e of this.edges) offer(this.anchored(item, category, e, 1, along, depth, OFF_WALL_MM), null);
+          for (const e of this.edges) offer(this.anchored(item, category, e, 1, along, depth, OFF_WALL_MM), false);
         } else if (item.place === "front") {
           const behind = placed[placed.length - 1];
           const e = behind?.middle ? this.edges.find((x) => x.edge === behind.edge) : undefined;
           if (behind && e)
-            offer(this.anchored(item, category, e, 1, along, depth, behind.depth + (detail.gap ?? 0)), e);
+            offer(this.anchored(item, category, e, 1, along, depth, behind.depth + (detail.gap ?? 0)), true);
         } else {
-          const behind = placed[placed.length - 1];
-          const next = detail.run && behind?.against ? this.edges.find((x) => x.edge === behind.edge) : undefined;
-          if (next) {
-            offer(this.against(item, category, next, behind!.hi + along / 2, along, depth), next);
-            offer(this.against(item, category, next, behind!.lo - along / 2, along, depth), next);
-          }
-          for (const e of this.edges)
-            for (const slot of detail.middle ? ([1, 0, 2] as const) : ([0, 2, 1] as const)) {
-              if (item.place === "wall" && e.ref) {
-                const c = slot === 0 ? e.segLo + along / 2 : slot === 2 ? e.segHi - along / 2 : (e.segLo + e.segHi) / 2;
-                offer(this.against(item, category, e, c, along, depth), e);
-              } else offer(this.anchored(item, category, e, slot, along, depth, 0), e);
+          const mate = detail.run
+            ? [...placed].reverse().find((q) => q.item.place === "wall" && q.use === use)
+            : undefined;
+          const next = mate?.against ? this.edges.find((x) => x.edge === mate.edge) : undefined;
+          if (mate) {
+            // Only `against wall … offset` can say "next to it": an anchored mate has no run.
+            if (next) {
+              offer(this.against(item, category, next, mate.hi + along / 2, along, depth), true);
+              offer(this.against(item, category, next, mate.lo - along / 2, along, depth), true);
             }
+          } else {
+            const at = (e: Edge, slot: 0 | 1 | 2): void => {
+              // A wall no statement can name: the fixture is written in the anchored form.
+              if (item.place !== "wall" || !e.ref) {
+                if (this.anchors) offer(this.anchored(item, category, e, slot, along, depth, 0), true);
+                return;
+              }
+              const c = slot === 0 ? e.segLo + along / 2 : slot === 2 ? e.segHi - along / 2 : (e.segLo + e.segHi) / 2;
+              offer(this.against(item, category, e, c, along, depth), true);
+            };
+            // A `middle` piece tries the middle of every wall before any corner.
+            if (detail.middle) for (const e of this.edges) at(e, 1);
+            for (const e of this.edges)
+              for (const slot of detail.middle ? ([0, 2] as const) : ([0, 2, 1] as const)) at(e, slot);
+          }
         }
         out.push(...here, ...late);
       }
     }
-    return out;
+    if (after.length === 0) return out;
+    return out.filter((c) => {
+      const row = [...placed, c];
+      for (const f of after) {
+        const [n] = this.candidates(f, use, row);
+        if (!n) return false;
+        row.push(n);
+      }
+      return true;
+    });
+  }
+
+  /** Is the piece against a wall under a window — the wall behind it, or the one beside a corner? */
+  private glazed(p: Placed): boolean {
+    const r = p.rect;
+    const c = this.clear;
+    return this.all.some((e) => {
+      const off =
+        e.edge === "top"
+          ? r.y - c.y0
+          : e.edge === "bottom"
+            ? c.y1 - (r.y + r.h)
+            : e.edge === "left"
+              ? r.x - c.x0
+              : c.x1 - (r.x + r.w);
+      if (p.edge !== e.edge && Math.abs(off) > 1) return false;
+      const [lo, hi] = e.horizontal ? [r.x, r.x + r.w] : [r.y, r.y + r.h];
+      return e.windows.some(([a, b]) => Math.min(b, hi) - Math.max(a, lo) > 1);
+    });
   }
 
   /** `against wall <id> offset <mm>`: a services fixture centred at `c` along the edge. */
@@ -650,7 +823,7 @@ class Site {
     c: number,
     along: number,
     depth: number,
-  ): Placed | null {
+  ): Unowned | null {
     const ref = e.ref;
     if (!ref || !e.seg) return null;
     const offset = Math.round((c - ref.from) * ref.sign);
@@ -677,7 +850,7 @@ class Site {
     along: number,
     depth: number,
     inset: number,
-  ): Placed | null {
+  ): Unowned | null {
     const start = slot === 0 ? e.lo : slot === 2 ? e.hi - along : e.mid - along / 2;
     const face =
       e.edge === "top"
@@ -701,7 +874,7 @@ class Site {
   }
 
   /** `in <room> anchor center`: the long side along the room's long side unless `turned`. */
-  private centred(item: FurnishItem, category: string, along: number, depth: number, turned: boolean): Placed {
+  private centred(item: FurnishItem, category: string, along: number, depth: number, turned: boolean): Unowned {
     const [w, h] = turned ? [depth, along] : [along, depth];
     const r = this.room;
     const rect: BBox = { x: r.at.x + r.size.w / 2 - w / 2, y: r.at.y + r.size.h / 2 - h / 2, w, h };
@@ -724,7 +897,7 @@ class Site {
     lo: number,
     along: number,
     depth: number,
-  ): Placed {
+  ): Unowned {
     const clear = Math.max(frontClearanceMm(category), DETAIL[category]?.front ?? 0);
     const strip: BBox | null =
       clear <= 0
@@ -757,7 +930,7 @@ class Site {
     }
     for (const d of this.doors) {
       const swing = doorSwing(d);
-      if (swing && sectorIntersectsRect(swing, p.rect, DEFAULT_RULESET.swingClearanceMm)) return false;
+      if (swing && sectorIntersectsRect(swing, p.rect, SWING_MM)) return false;
     }
     return true;
   }

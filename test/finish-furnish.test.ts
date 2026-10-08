@@ -18,6 +18,8 @@ import {
   finish,
   format,
   FURNISH_TABLE,
+  LINT_PROFILE_NAMES,
+  LINT_PROFILES,
   lint,
 } from "../src/index.js";
 import { sourceConflicts } from "../src/repair.js";
@@ -352,8 +354,8 @@ suite("furnish law — scope: rectangular rooms of a single-storey plan", () => 
   });
 });
 
-suite("furnish law — a room with several uses gets the union, the largest use first", () => {
-  it("a studio gets the bed before the sofa before the kitchen run, each word once", () => {
+suite("furnish law — a room with several uses gets the union: the wall run first, then the largest use", () => {
+  it("a studio gets the kitchen run, then the bed before the sofa, each word once", () => {
     const src = `plan "Studio" {
   units mm
   wall id=w exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
@@ -366,7 +368,7 @@ suite("furnish law — a room with several uses gets the union, the largest use 
     const words = r.changes.map((c) => c.text.split(" ")[1]!);
     expect(new Set(words).size).toBe(words.length);
     expect(words.indexOf("bed")).toBeLessThan(words.indexOf("sofa"));
-    expect(words.indexOf("sofa")).toBeLessThan(words.indexOf("kitchen_sink"));
+    expect(words.indexOf("kitchen_sink")).toBe(0);
     expect(words.length).toBeLessThanOrEqual(MAX_PIECES_PER_ROOM);
     expect(gainedBy(src, r.source, undefined)).toEqual([]);
   });
@@ -493,7 +495,7 @@ suite("furnish law — generated rows of rooms: fixpoint, never worse, pure inse
           }
         }
       }),
-      { numRuns: 60 },
+      { numRuns: 60, seed: 20261009 },
     );
     expect(furnished, "the property never furnished a room").toBeGreaterThan(20);
     expect(refused, "the property never met a room it had to leave empty").toBeGreaterThan(0);
@@ -505,7 +507,7 @@ suite("furnish — the table is built from words the catalogue has, and the docs
   const rows = Object.entries(FURNISH_TABLE) as Array<[UseKind, (typeof FURNISH_TABLE)[UseKind] & object]>;
 
   it("every word is catalogued, and a `wall` piece has a catalogued footprint", () => {
-    expect(rows.length).toBeGreaterThanOrEqual(8);
+    expect(rows.length).toBeGreaterThanOrEqual(7);
     for (const [use, items] of rows) {
       expect(USE_KINDS).toContain(use);
       expect(items.length).toBeGreaterThan(0);
@@ -542,5 +544,165 @@ suite("furnish — the table is built from words the catalogue has, and the docs
     expect(head).toBeGreaterThan(0);
     expect(doc.slice(head + 2, head + 2 + expected.length)).toEqual(expected);
     expect(doc[head + 2 + expected.length]).toBe("");
+  });
+});
+
+suite("furnish law — never worse under EVERY lint profile", () => {
+  const profileCodes = (src: string, profile: string): Map<string, number> => {
+    const out = new Map<string, number>();
+    for (const d of lint(src, { world, profile })) out.set(d.code ?? "", (out.get(d.code ?? "") ?? 0) + 1);
+    return out;
+  };
+  const CORPUS: Array<[string, string]> = [
+    ...NAMES.map((n): [string, string] => [n, srcOf(n)]),
+    ["test/fixtures/diff-a", readFileSync("test/fixtures/diff-a.arch", "utf8")],
+  ];
+
+  it("there is a profile stricter than the default on door clearances", () => {
+    expect(LINT_PROFILE_NAMES.length).toBeGreaterThan(1);
+    expect(LINT_PROFILE_NAMES.some((p) => (LINT_PROFILES[p]!.swingClearanceMm ?? 0) > 0)).toBe(true);
+  });
+
+  for (const [name, src] of CORPUS)
+    it(`${name}: no profile gains a lint code`, () => {
+      const r = finish(src, { world, only: "furnish" });
+      for (const profile of LINT_PROFILE_NAMES) {
+        const was = profileCodes(src, profile);
+        const gained = [...profileCodes(r.source, profile)].filter(([c, n]) => n > (was.get(c) ?? 0)).map(([c]) => c);
+        expect(gained, `${profile}:\n${r.changes.map((c) => c.text).join("\n")}`).toEqual([]);
+      }
+    }, 120000);
+});
+
+suite("furnish law — a relational room has no fixed `at` to anchor in", () => {
+  const REL = `plan "Rel" {
+  units mm
+  wall id=w exterior thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close }
+  wall id=p partition thickness 100 { (5000,0) (5000,4000) }
+  room id=hall at (0,0) size 5000x4000 label "Hall" uses hall
+  room id=side right-of hall align top gap 0 size 3000x4000 label "Bedroom" uses bedroom
+  door id=d on w at 2000 width 1000 swing in
+  opening id=o on p at 2000 width 1000
+}
+`;
+
+  it("a room that needs an anchored piece is reported before any compile check", () => {
+    expect(errorsOf(REL)).toEqual([]);
+    let calls = 0;
+    const r = furnishStage(REL, {}, (s) => {
+      calls++;
+      return { errors: false, codes: codes(s, undefined) };
+    });
+    expect(r.source).toBe(REL);
+    expect(r.checks).toBe(0);
+    expect(calls).toBe(1); // the measure of the source itself
+    expect(r.unresolved).toEqual([expect.objectContaining({ stage: "furnish", room: "side" })]);
+    expect(r.unresolved[0]!.reason).toContain("a relational room has no fixed `at` to anchor in");
+    expect(r.unresolved[0]!.codes).toBeUndefined();
+  });
+
+  it("a relational room whose pieces all go `against wall` is furnished", () => {
+    const src = REL.replace(`label "Bedroom" uses bedroom`, `label "Bathroom" uses wc`);
+    const r = finish(src, { only: "furnish" });
+    expect(r.unresolved).toEqual([]);
+    expect(r.changes.map((c) => c.text.split(" ")[1])).toEqual(["wc", "basin"]);
+    for (const c of r.changes) expect(c.text).toContain(" against wall ");
+    expect(gainedBy(src, r.source, undefined)).toEqual([]);
+  });
+
+  it("the shipped relational golden: `bed` is named with the true reason", () => {
+    const src = readFileSync("eval/goldens/relational-studio.arch", "utf8");
+    const r = finish(src, { only: "furnish" });
+    const note = r.unresolved.find((u) => u.room === "bed")!;
+    expect(note.reason).toContain("relational");
+    expect(note.reason).not.toContain("E_PLACE_REF");
+  });
+});
+
+suite("furnish law — a use's wall run is placed first and stays together", () => {
+  const OPEN = `plan "Open plan" {
+  units mm
+  wall id=w exterior thickness 200 { (0,0) (9000,0) (9000,6000) (0,6000) close }
+  room id=r at (0,0) size 9000x6000 label "Great room" uses living dining kitchen
+  door id=d1 on w at 900 width 1000 swing in
+  window id=g1 on w at 19500 width 3000
+}
+`;
+  const run = (texts: string[]): Array<{ word: string; wall: string; offset: number }> =>
+    texts
+      .filter((t) => t.includes(" against wall "))
+      .map((t) => {
+        const m = /^furniture (\w+) against wall (\w+(?: segment \d+)?) offset (\d+) /.exec(t)!;
+        return { word: m[1]!, wall: m[2]!, offset: Number(m[3]) };
+      });
+
+  it("sink, stove and fridge sit on one wall, each touching the next", () => {
+    const r = finish(OPEN, { only: "furnish" });
+    const texts = r.changes.map((c) => c.text);
+    const k = run(texts);
+    expect(k.map((p) => p.word)).toEqual(["kitchen_sink", "stove", "fridge"]);
+    expect(new Set(k.map((p) => p.wall)).size).toBe(1);
+    const sorted = [...k].sort((a, b) => a.offset - b.offset);
+    const half = (w: string): number => defaultFootprint(w)!.along / 2;
+    for (let i = 1; i < sorted.length; i++)
+      expect(sorted[i]!.offset - sorted[i - 1]!.offset).toBe(half(sorted[i]!.word) + half(sorted[i - 1]!.word));
+    // The run is written before the free-standing pieces.
+    expect(texts.findIndex((t) => t.includes(" against wall "))).toBe(0);
+    expect(texts.some((t) => t.startsWith("furniture sofa "))).toBe(true);
+    expect(gainedBy(OPEN, r.source, undefined)).toEqual([]);
+  });
+
+  it("a use whose run cannot be placed whole is left out and named; the other uses stay", () => {
+    // Every check that adds a stove is refused: the kitchen goes, the sofa stays.
+    const r = furnishStage(OPEN, {}, (s) => {
+      const m = codes(s, undefined);
+      if (s.includes("furniture stove ")) m.set("W_TEST_BLOCK", 1);
+      return { errors: false, codes: m };
+    });
+    const words = r.changes.map((c) => c.text.split(" ")[1]);
+    expect(words).toContain("sofa");
+    for (const w of ["kitchen_sink", "stove", "fridge"]) expect(words).not.toContain(w);
+    const note = r.unresolved.find((u) => u.room === "r")!;
+    expect(note.reason).toContain("kitchen");
+    expect(note.codes).toEqual(["W_TEST_BLOCK"]);
+  });
+});
+
+suite("furnish — smaller placement rules", () => {
+  it("a bed is not put in a corner whose other wall has a window over it, when another position is free", () => {
+    const src = FLAT.replace(
+      "window id=win_bed on w_ext at 2100 width 1600",
+      "window id=win_bed on w_ext at 3200 width 1200",
+    );
+    expect(errorsOf(src)).toEqual([]);
+    const bed = finish(src, { only: "furnish" }).changes.find((c) => c.text.startsWith("furniture bed "))!;
+    expect(bed.text).not.toMatch(/anchor (top|top-right) /);
+  });
+
+  it("a utility room is left alone: `uses utility` does not say laundry", () => {
+    expect(FURNISH_TABLE.utility).toBeUndefined();
+    for (const [name, id] of [
+      ["aquarium", "plant"],
+      ["library", "r_plant"],
+    ] as const) {
+      const r = finish(srcOf(name), { world, only: "furnish" });
+      expect(r.changes.filter((c) => c.room === id)).toEqual([]);
+      expect(r.changes.map((c) => c.text.split(" ")[1])).not.toContain("washer");
+    }
+  }, 120000);
+
+  it("a room far larger than a dwelling room is reported, not given a sofa", () => {
+    const r = finish(srcOf("aquarium"), { world, only: "furnish" });
+    expect(r.changes.filter((c) => c.room === "reef" || c.room === "kelp" || c.room === "shop")).toEqual([]);
+    expect(r.unresolved.find((u) => u.room === "reef")!.reason).toContain("dwelling");
+  }, 120000);
+
+  it("a room with no wall behind any edge says so", () => {
+    const src = `plan "Bare" {\n  units mm\n  room id=r at (0,0) size 4000x4000 label "Bedroom" uses bedroom\n}\n`;
+    expect(errorsOf(src)).toEqual([]);
+    const r = finish(src, { only: "furnish" });
+    expect(r.source).toBe(src);
+    expect(r.unresolved[0]!.reason).toContain("no wall");
+    expect(r.unresolved[0]!.reason).not.toContain("clears its walls");
   });
 });

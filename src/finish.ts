@@ -40,10 +40,10 @@ import { titleRows } from "./chrome-layout.js";
 import type { Span } from "./diagnostics.js";
 import { escapeStr } from "./expr-source.js";
 import { Data } from "./fix-apply.js";
-import { furnishStage } from "./furnish.js";
+import { type FurnishCodes, furnishStage, gainedCodes } from "./furnish.js";
 import { type ResolvedPlan, type RFurniture, type ROutdoor, type RRoom, sheetExtents } from "./ir.js";
 import { lex, type Token } from "./lexer.js";
-import { lint } from "./lint.js";
+import { LINT_PROFILES, lint } from "./lint.js";
 import { fmt3 } from "./num-format.js";
 import { parse } from "./parser.js";
 import { compileUncached } from "./pipeline.js";
@@ -138,12 +138,6 @@ const untouched = (source: string, unresolved: FinishNote[]): StageRun => ({
 type Op = readonly [start: number, end: number, bytes: string];
 type StageRun = FinishResult & { ops: readonly Op[] };
 
-/**
- * How many times the stages are run in turn before `finish` gives up on a plan that keeps
- * changing. A plan settles in two: the second round is the one that changes nothing.
- */
-const MAX_ROUNDS = 4;
-
 /** Where an offset of a stage's OUTPUT stood in its input. */
 function mapBack(pos: number, ops: readonly Op[]): number {
   let delta = 0;
@@ -161,9 +155,9 @@ function mapBack(pos: number, ops: readonly Op[]): number {
  * Finish a plan. See the module header for the contract; `opts.world`/`opts.plugins` are
  * the ones `compile()` takes, so a plan with `import`s is measured on the same modules.
  *
- * The fixpoint law is held by construction as well as by test: the stages are run in turn
- * until a whole round changes nothing, so the result is one `finish` would itself leave
- * alone. A plan that has not settled after {@link MAX_ROUNDS} rounds is returned untouched.
+ * The fixpoint law is held by construction as well as by test: the stages run once, in
+ * order, and each is then run on the result. A result any stage would edit again is not
+ * returned; the source comes back untouched.
  */
 export function finish(source: string, opts: FinishOptions = {}): FinishResult {
   if (opts.only !== undefined && !FINISH_STAGES_AVAILABLE.includes(opts.only)) {
@@ -214,31 +208,30 @@ export function finish(source: string, opts: FinishOptions = {}): FinishResult {
   };
   let current = source;
   const changes: FinishChange[] = [];
-  let unresolved: FinishNote[] = [];
-  for (let round = 0; round < MAX_ROUNDS; round++) {
-    let moved = false;
-    // The notes of the round that settles are the ones a fresh run on the result gives.
-    unresolved = [];
-    for (const stage of stages) {
-      const r = run(stage, current);
-      for (const n of r.unresolved) unresolved.push(n.span ? { ...n, span: original(n.span) } : n);
-      if (!r.changed) continue;
-      moved = true;
-      for (const c of r.changes) changes.push({ ...c, span: original(c.span) });
-      history.push(r.ops);
-      current = r.source;
-    }
-    if (!moved)
-      return changes.length > 0
-        ? { source: current, changes, unresolved, changed: true }
-        : result(untouched(source, unresolved));
+  const unresolved: FinishNote[] = [];
+  for (const stage of stages) {
+    const r = run(stage, current);
+    for (const n of r.unresolved) unresolved.push(n.span ? { ...n, span: original(n.span) } : n);
+    if (!r.changed) continue;
+    for (const c of r.changes) changes.push({ ...c, span: original(c.span) });
+    history.push(r.ops);
+    current = r.source;
   }
-  return result(
-    untouched(source, [
-      ...unresolved,
-      { stage: last, reason: `the \`${last}\` stage did not settle on its own result — nothing was changed` },
-    ]),
-  );
+  if (changes.length === 0) return result(untouched(source, unresolved));
+  // The self-check: a result a stage would itself edit again is not finished, so it is not
+  // returned as one.
+  const unsettled = stages.find((stage) => run(stage, current).changed);
+  if (unsettled !== undefined)
+    return result(
+      untouched(source, [
+        ...unresolved,
+        {
+          stage: unsettled,
+          reason: `the \`${unsettled}\` stage did not settle on its own result — nothing was changed`,
+        },
+      ]),
+    );
+  return { source: current, changes, unresolved, changed: true };
 }
 
 /** A stage's run without its edit list — the public shape. */
@@ -253,24 +246,31 @@ const result = ({ source, changes, unresolved, changed }: StageRun): FinishResul
 // what the plan has, and what its sheet has to hold
 // ---------------------------------------------------------------------------
 
-interface Codes {
-  errors: boolean;
-  codes: Map<string, number>;
-}
+type Codes = FurnishCodes;
 /** One `finish` call measures each source once: the result it checks is the input it settles on. */
 type CodesMemo = Map<string, Codes>;
 
-/** The diagnostic codes of a source — compile's and lint's — as a multiset. */
+/** The named lint profiles that change a threshold: the never-worse law holds under each. */
+const STRICTER_PROFILES = Object.keys(LINT_PROFILES).filter((p) => Object.keys(LINT_PROFILES[p]!).length > 0);
+
+/**
+ * The diagnostic codes of a source as multisets: compile's with lint's under the default
+ * ruleset, and lint's under every profile that differs from it.
+ */
 function codesOf(source: string, env: AnalyzeOptions, memo: CodesMemo): Codes {
   const hit = memo.get(source);
   if (hit) return hit;
   const compiled = compileUncached(source, env);
-  const codes = new Map<string, number>();
-  for (const d of [...compiled.diagnostics, ...lint(source, env)]) {
-    const k = d.code ?? "";
-    codes.set(k, (codes.get(k) ?? 0) + 1);
-  }
-  const out = { errors: compiled.diagnostics.some((d) => d.severity === "error"), codes };
+  const count = (diags: ReadonlyArray<{ code?: string }>): Map<string, number> => {
+    const m = new Map<string, number>();
+    for (const d of diags) m.set(d.code ?? "", (m.get(d.code ?? "") ?? 0) + 1);
+    return m;
+  };
+  const codes = count([...compiled.diagnostics, ...lint(source, env)]);
+  const errors = compiled.diagnostics.some((d) => d.severity === "error");
+  const profiles = new Map<string, Map<string, number>>();
+  if (!errors) for (const profile of STRICTER_PROFILES) profiles.set(profile, count(lint(source, { ...env, profile })));
+  const out: Codes = { errors, codes, profiles };
   memo.set(source, out);
   return out;
 }
@@ -585,9 +585,9 @@ function sheetStage(source: string, env: AnalyzeOptions, reissue: boolean, memo:
   }
   const after = codesOf(out, env, memo);
   if (after.errors) return refuse("the finished plan would not compile");
-  const gained = [...after.codes].filter(([code, n]) => n > (before.codes.get(code) ?? 0)).map(([code]) => code);
+  const gained = gainedCodes(before, after);
   if (gained.length > 0)
-    return refuse(`the finished plan would raise ${gained.sort().join(", ")}, which the plan does not have now`);
+    return refuse(`the finished plan would raise ${gained.join(", ")}, which the plan does not have now`);
   const wroteSheet = edits.changes.some((c) => c.statement === "paper" || c.statement === "scale");
   if (wroteSheet && (after.codes.has("W_SCALE_OVERFLOW") || after.codes.has("W_DRAWING_OVERFLOW")))
     return refuse("the chosen sheet would still overflow");
