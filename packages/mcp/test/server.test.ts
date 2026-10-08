@@ -10,7 +10,7 @@ describe("archlang mcp server", () => {
     const client = await connect();
     const tools = (await client.listTools()).tools.map((t) => t.name).sort();
     expect(tools).toEqual(
-      ["compile", "complete", "describe", "fix", "lint", "repair", "score", "suggest", "validate"].sort(),
+      ["compile", "complete", "describe", "finish", "fix", "lint", "repair", "score", "suggest", "validate"].sort(),
     );
     const resources = (await client.listResources()).resources.map((r) => r.uri).sort();
     expect(resources).toEqual([

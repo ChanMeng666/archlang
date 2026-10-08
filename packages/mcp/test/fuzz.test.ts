@@ -23,7 +23,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { call, connect, TINY } from "./helpers.js";
 
-/** Bounded so the whole file stays well under ~30s: 9 tools × NUM_RUNS calls. */
+/** Bounded so the whole file stays well under ~30s: 10 tools × NUM_RUNS calls. */
 const NUM_RUNS = 25;
 
 /** Every tool the server registers, with the param names its schema declares. */
@@ -34,6 +34,7 @@ const TOOLS: Array<{ name: string; params: string[] }> = [
   { name: "validate", params: ["source", "strict", "graph", "intent"] },
   { name: "score", params: ["source", "brief"] },
   { name: "repair", params: ["source"] },
+  { name: "finish", params: ["source", "reissue"] },
   { name: "fix", params: ["source", "unsafe"] },
   { name: "suggest", params: ["source"] },
   { name: "complete", params: ["source", "at"] },
