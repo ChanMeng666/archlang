@@ -534,7 +534,8 @@ flat furnished with twenty-nine of the thirty-six kinds across all five domains,
 `arch finish plan.arch` furnishes the rooms that hold no furniture, then completes the sheet
 (`--only furnish` runs the first step alone). It is an explicit source transform
 ([ADR 0025](adr/0025-furnish-as-explicit-transform.md)): `compile` never adds a piece. The room's
-use comes from `uses`, else from its label. A room with several uses gets the union.
+use comes from `uses`, else from its label. A room with several uses gets the union, the wall
+fixtures first. The table describes the rooms of a dwelling.
 
 | Room use | Pieces, in the order they are placed |
 |---|---|
@@ -545,11 +546,16 @@ use comes from `uses`, else from its label. A room with several uses gets the un
 | `kitchen` | `kitchen_sink` · `stove` · `fridge` (optional) |
 | `bath` | `wc` · `basin` · `bathtub` or `shower` (optional) |
 | `wc` | `wc` · `basin` |
-| `utility` | `washer` |
 
 Sizes are along the wall × into the room, in mm; a piece with no size uses its catalogued
-footprint. A room of any other use (`hall`, `circulation`, `entry`, `storage`, `garage`) or of
-no known use is left alone.
+footprint. A room of any other use (`hall`, `circulation`, `entry`, `storage`, `garage`,
+`utility`) or of no known use is left alone: `utility` does not say laundry, and a plant room
+carries the tag too. A room larger than 100 m² is not a dwelling room; it is named in
+`unresolved` and left as it is.
+
+A use's wall fixtures form one run: the stove next to the sink, the fridge next to the stove, on
+one wall. A use whose required pieces cannot be placed together is left out whole and named in
+`unresolved`.
 
 - **Fill only.** A room that holds any piece is not touched. Nothing authored is moved, resized
   or deleted.

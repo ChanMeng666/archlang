@@ -18,18 +18,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fill only.** A room that holds any furniture is not touched, and nothing authored is moved,
   resized or deleted. A plan whose rooms are all furnished comes back byte-identical.
 - **The pieces come from a public table, `FURNISH_TABLE`,** keyed by the room's `uses` (or its
-  label): bedroom, living, dining, office, kitchen, bath, wc and utility. Every word is one the
-  fixture catalogue already has. `docs/furniture.md` prints the table. A room of any other use
-  is left alone.
+  label): bedroom, living, dining, office, kitchen, bath and wc. Every word is one the fixture
+  catalogue already has. `docs/furniture.md` prints the table. It describes dwelling rooms: a
+  room of any other use (`utility` included) is left alone, and a room over 100 m² is reported
+  and left as it is. A use's wall fixtures form one run on one wall; in a room with several
+  uses the run is placed first, and a use that cannot be placed whole is left out and reported.
 - **Placement is relative.** A services fixture is written `against wall <id> offset …`, a
   free-standing piece `in <room> anchor … flush size WxH rotate …`. `finish` never writes
   `at (x,y)`.
 - **Never worse, room by room.** A room's pieces are kept only when the plan still compiles and
-  raises no diagnostic code and no furniture conflict it did not have. When a required piece has
+  raises no diagnostic code and no furniture conflict it did not have, under the default lint
+  ruleset and under every named profile. When a required piece has
   no such position the room is left empty and reported in `unresolved` with its `room` and the
   blocking `codes`. One run makes at most `1 + 13 × rooms` compile checks.
 - **Scope.** Rectangular rooms of single-storey plans. A polygon room, and every empty room of
-  a plan with `level` blocks, is reported in `unresolved` and left as it is.
+  a plan with `level` blocks, is reported in `unresolved` and left as it is. A room placed
+  relationally (`right-of`, `below`, …) gets wall fixtures only, and is reported when its use
+  needs an anchored piece.
 - **The MCP `finish` tool takes `only`.** New exports: `FURNISH_TABLE`, `FINISH_STAGE_ORDER`,
   and the types `FurnishItem`, `FurnishPlacement`. `FinishChange` gains `room`; `FinishNote`
   gains `room` and `codes`; `FinishStatement` gains `"furniture"`.
