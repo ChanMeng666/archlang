@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { buildManifest, MANIFEST_COMMAND_NAMES } from "../src/index.js";
+import { buildManifest, FINISH_STAGES, FINISH_STAGES_AVAILABLE, MANIFEST_COMMAND_NAMES } from "../src/index.js";
 import { FIXTURE_CATEGORIES } from "../src/elements/fixtures-glyphs.js";
 
 /**
@@ -29,6 +29,28 @@ describe("manifest — content", () => {
     expect(m.formats.find((f) => f.id === "svg")?.zeroDep).toBe(true);
     expect(m.formats.find((f) => f.id === "txt")?.zeroDep).toBe(true);
     expect(m.formats.find((f) => f.id === "png")?.optionalDep).toBe("@resvg/resvg-js");
+  });
+
+  it("documents `finish` with its write flags and the stages `--only` takes", () => {
+    const finish = m.commands.find((c) => c.name === "finish")!;
+    expect(finish.input).toBe("<file.arch|->");
+    expect(finish.flags.map((f) => f.flag)).toEqual([
+      "--out",
+      "--only",
+      "--reissue",
+      "--dry-run",
+      "--backup",
+      "--json",
+      "--quiet",
+    ]);
+    // The stage list is FINISH_STAGES, interpolated — never a second copy of it.
+    const only = finish.flags.find((f) => f.flag === "--only")!;
+    expect(only.arg).toBe(`<${FINISH_STAGES.join("|")}>`);
+    for (const stage of FINISH_STAGES_AVAILABLE) expect(only.description).toContain(stage);
+    // The write flags are `fix`'s, word for word: one mutation boundary, one description.
+    const fix = m.commands.find((c) => c.name === "fix")!;
+    for (const flag of ["--dry-run", "--backup"])
+      expect(finish.flags.find((f) => f.flag === flag)).toEqual(fix.flags.find((f) => f.flag === flag));
   });
 
   it("exposes elements, lint profiles, fixture categories, and error codes", () => {
