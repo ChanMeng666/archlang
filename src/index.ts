@@ -246,7 +246,8 @@ export { repair } from "./repair.js";
 export type { RepairResult, RepairChange, RepairNote } from "./repair.js";
 // Explicit opt-in sheet completion (ADR 0024): adds the sheet statements a plan lacks
 // (`paper`, `scale`, `dims auto`, `title`, `schedule rooms`, `legend`); never part of compile().
-export { finish, FINISH_STAGES, FINISH_STAGES_AVAILABLE } from "./finish.js";
+export { finish, FINISH_STAGE_ORDER, FINISH_STAGES, FINISH_STAGES_AVAILABLE } from "./finish.js";
+export { FURNISH_TABLE, type FurnishItem, type FurnishPlacement } from "./furnish.js";
 export type {
   FinishOptions,
   FinishResult,

@@ -20,7 +20,9 @@ import { type CompilerApi, allStoreysDigestWith, semanticDigestWith } from "./by
 import { heightFreeSource } from "./height-free-source.js";
 
 /**
- * `finish()` — the sheet stage (`docs/adr/0024-finish-as-explicit-transform.md`).
+ * `finish()` — the sheet stage (`docs/adr/0024-finish-as-explicit-transform.md`). The
+ * furnish stage is pinned in `test/finish-furnish.test.ts`; the laws over the examples
+ * below run both stages, and a case about one sheet decision asks for `only: "sheet"`.
  *
  * The six laws are named in the suite titles below. The corpus is every shipped example,
  * read from the directory rather than listed, so a new example is covered without an edit
@@ -117,7 +119,7 @@ suite("finish law 2 — never worse: no error and no new diagnostic code", () =>
     // lands between the keyword and its argument. The check has to catch that.
     const src = `plan "Wrapped" {\n  units mm\n  north\n  up\n${SHELL}\n}\n`;
     expect(errorsOf(src)).toEqual([]);
-    const r = finish(src);
+    const r = finish(src, { only: "sheet" });
     expect(r.source).toBe(src);
     expect(r.changed).toBe(false);
     expect(r.changes).toEqual([]);
@@ -125,7 +127,7 @@ suite("finish law 2 — never worse: no error and no new diagnostic code", () =>
   });
 });
 
-suite("finish law 3 — an already-sheeted plan is a byte no-op", () => {
+suite("finish law 3 — an already-sheeted plan is a byte no-op for the sheet stage", () => {
   const SHEETED = NAMES.filter((n) => {
     const s = srcOf(n);
     return ["paper ", "scale ", "schedule ", "legend", "title "].every((w) => new RegExp(`^\\s*${w}`, "m").test(s));
@@ -138,10 +140,11 @@ suite("finish law 3 — an already-sheeted plan is a byte no-op", () => {
   for (const name of SHEETED)
     it(`${name}: comes back byte-identical, changed: false`, () => {
       const src = srcOf(name);
-      const r = finish(src, { world });
+      const r = finish(src, { world, only: "sheet" });
       expect(r.source).toBe(src);
       expect(r.changed).toBe(false);
       expect(r.changes).toEqual([]);
+      expect(finish(src, { world }).changes.filter((c) => c.stage === "sheet")).toEqual([]);
     });
 
   it("a multi-storey plan that finish has completed is a byte no-op, pages and all", () => {
@@ -151,7 +154,7 @@ suite("finish law 3 — an already-sheeted plan is a byte no-op", () => {
       const again = finish(done, { world });
       expect(again.source).toBe(done);
       expect(again.changed).toBe(false);
-      expect(again.unresolved).toEqual([]);
+      expect(again.unresolved.filter((u) => u.stage === "sheet")).toEqual([]);
     }
   });
 });
@@ -225,7 +228,7 @@ suite("finish law 6 — a source that does not compile is returned untouched", (
 
 suite("finish — fill only what is missing, delete nothing", () => {
   it("a bare plan gains all six statements, on a sheet it fits", () => {
-    const r = finish(BARE);
+    const r = finish(BARE, { only: "sheet" });
     expect(r.changes.map((c) => c.statement)).toEqual(["paper", "scale", "dims", "schedule", "legend", "title"]);
     expect(r.changes.every((c) => c.kind === "added" && c.stage === "sheet")).toBe(true);
     expect(r.source).toContain("  paper A4 landscape\n  scale 1:50\n  dims auto all\n  schedule rooms\n  legend\n");
@@ -375,7 +378,7 @@ suite("finish — an authored sheet is kept unless reissue is asked for", () => 
 `;
 
   it("without reissue nothing is added and the misfit is reported", () => {
-    const r = finish(TIGHT);
+    const r = finish(TIGHT, { only: "sheet" });
     expect(r.source).toBe(TIGHT);
     expect(r.changed).toBe(false);
     expect(r.unresolved.some((u) => u.statement === "paper" && u.reason.includes("--reissue"))).toBe(true);
@@ -417,21 +420,25 @@ suite("finish — an authored sheet is kept unless reissue is asked for", () => 
 });
 
 suite("finish — stages", () => {
-  it("declares sheet and furnish, and implements sheet only", () => {
+  it("declares sheet and furnish, and implements both", () => {
     expect([...FINISH_STAGES]).toEqual(["sheet", "furnish"]);
-    expect([...FINISH_STAGES_AVAILABLE]).toEqual(["sheet"]);
+    expect([...FINISH_STAGES_AVAILABLE].sort()).toEqual([...FINISH_STAGES].sort());
   });
 
-  it("`only: sheet` is the default behaviour", () => {
-    expect(finish(BARE, { only: "sheet" })).toEqual(finish(BARE));
+  it("`only: sheet` writes no furniture, and `only: furnish` no sheet statement", () => {
+    const sheet = finish(BARE, { only: "sheet" });
+    expect(sheet.changed).toBe(true);
+    expect(sheet.changes.every((c) => c.stage === "sheet" && c.statement !== "furniture")).toBe(true);
+    const furnish = finish(BARE, { only: "furnish" });
+    expect(furnish.changed).toBe(true);
+    expect(furnish.changes.every((c) => c.stage === "furnish" && c.statement === "furniture")).toBe(true);
   });
 
-  it("`only: furnish` changes nothing and says the stage is not available yet", () => {
-    const r = finish(BARE, { only: "furnish" });
+  it("a stage this version does not know changes nothing and says so", () => {
+    const r = finish(BARE, { only: "landscape" as never });
     expect(r.source).toBe(BARE);
     expect(r.changed).toBe(false);
-    expect(r.unresolved).toEqual([expect.objectContaining({ stage: "furnish" })]);
-    expect(r.unresolved[0]!.reason).toContain("not available yet");
+    expect(r.unresolved[0]!.reason).toContain("not available");
   });
 
   it("is deterministic", () => {

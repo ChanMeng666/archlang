@@ -463,7 +463,7 @@ describe("finish — round-trip", () => {
         // A roll-back is all or nothing (it does fire here: a sheet can crowd two
         // hand-written `dim` lines into `W_DIM_OVERLAP`), and it always says why.
         const rolledBack = r.unresolved.some((u) => u.reason.includes("rolled back"));
-        if (rolledBack) expect(r.source).toBe(src);
+        if (rolledBack) expect(r.changes.filter((c) => c.stage === "sheet")).toEqual([]);
       }),
       { numRuns: 100 },
     );

@@ -1,6 +1,9 @@
 /**
- * `finish()` — make a plan a complete DRAWING SHEET by adding the sheet statements its
- * author left out (`docs/adr/0024-finish-as-explicit-transform.md`).
+ * `finish()` — make a plan a complete DRAWING: the furniture its empty rooms imply (the
+ * `furnish` stage, `src/furnish.ts`, `docs/adr/0025-furnish-as-explicit-transform.md`), then
+ * the sheet statements its author left out (the `sheet` stage, below,
+ * `docs/adr/0024-finish-as-explicit-transform.md`). Furniture goes first because the
+ * legend lists it.
  *
  * An explicit source-to-source transform, like `repair` and `arch fix`, and for the same
  * reason (ADR 0005/0006): `compile()` renders what is written. Nothing here runs inside
@@ -37,6 +40,7 @@ import { titleRows } from "./chrome-layout.js";
 import type { Span } from "./diagnostics.js";
 import { escapeStr } from "./expr-source.js";
 import { Data } from "./fix-apply.js";
+import { furnishStage } from "./furnish.js";
 import { type ResolvedPlan, type RFurniture, type ROutdoor, type RRoom, sheetExtents } from "./ir.js";
 import { lex, type Token } from "./lexer.js";
 import { lint } from "./lint.js";
@@ -56,17 +60,19 @@ import {
 } from "./sheet.js";
 import { planTableRows } from "./sheet-tables.js";
 
-/** The stages `finish` is made of. Only `sheet` is implemented; `furnish` is planned. */
+/** The stages `finish` is made of, as `--only` names them. */
 export const FINISH_STAGES = ["sheet", "furnish"] as const;
 export type FinishStage = (typeof FINISH_STAGES)[number];
 /** The stages this version can run. */
-export const FINISH_STAGES_AVAILABLE: readonly FinishStage[] = ["sheet"];
+export const FINISH_STAGES_AVAILABLE: readonly FinishStage[] = ["sheet", "furnish"];
+/** The order a full run takes them in: the legend's rows depend on the furniture. */
+export const FINISH_STAGE_ORDER: readonly FinishStage[] = ["furnish", "sheet"];
 
-/** The sheet statements `finish` may write. */
-export type FinishStatement = "paper" | "scale" | "dims" | "title" | "schedule" | "legend";
+/** The statements `finish` may write: the six sheet statements, and `furniture`. */
+export type FinishStatement = "paper" | "scale" | "dims" | "title" | "schedule" | "legend" | "furniture";
 
 export interface FinishOptions extends AnalyzeOptions {
-  /** Run only this stage. Default: every available stage. */
+  /** Run only this stage. Default: every stage, `furnish` then `sheet`. */
   only?: FinishStage;
   /**
    * Allow `paper` and `scale` — and nothing else — to be REPLACED when the drawing does
@@ -88,12 +94,18 @@ export interface FinishChange {
   /** Where in the ORIGINAL source: an empty span at the insertion point, or the replaced range. */
   span: Span;
   reason: string;
+  /** The room a `furniture` statement was written for (the `furnish` stage only). */
+  room?: string;
 }
 
 export interface FinishNote {
   stage: FinishStage;
   /** The statement the note is about, when it is about one. */
   statement?: FinishStatement;
+  /** The room the note is about, when the `furnish` stage left one empty. */
+  room?: string;
+  /** The diagnostic codes furnishing that room would have raised. */
+  codes?: string[];
   reason: string;
   /** The authored statement the note points at, when there is one. */
   span?: Span;
@@ -114,40 +126,128 @@ const SHORT_FACADE_MM = 60;
 /** Sheets tried before A0, smallest first; A0 is the last resort at every scale. */
 const USUAL_SIZES = PAPER_SIZES.filter((s) => s !== "A0");
 
-const untouched = (source: string, unresolved: FinishNote[]): FinishResult => ({
+const untouched = (source: string, unresolved: FinishNote[]): StageRun => ({
   source,
   changes: [],
   unresolved,
   changed: false,
+  ops: [],
 });
+
+/** One edit of a stage, in the coordinates of the source that stage was given. */
+type Op = readonly [start: number, end: number, bytes: string];
+type StageRun = FinishResult & { ops: readonly Op[] };
+
+/**
+ * How many times the stages are run in turn before `finish` gives up on a plan that keeps
+ * changing. A plan settles in two: the second round is the one that changes nothing.
+ */
+const MAX_ROUNDS = 4;
+
+/** Where an offset of a stage's OUTPUT stood in its input. */
+function mapBack(pos: number, ops: readonly Op[]): number {
+  let delta = 0;
+  for (const [start, end, bytes] of [...ops].sort((p, q) => p[0] - q[0] || p[1] - q[1])) {
+    const at = start + delta;
+    if (pos < at) break;
+    if (pos < at + bytes.length) return start;
+    if (pos === at + bytes.length && bytes.length > 0) return end;
+    delta += bytes.length - (end - start);
+  }
+  return pos - delta;
+}
 
 /**
  * Finish a plan. See the module header for the contract; `opts.world`/`opts.plugins` are
  * the ones `compile()` takes, so a plan with `import`s is measured on the same modules.
+ *
+ * The fixpoint law is held by construction as well as by test: the stages are run in turn
+ * until a whole round changes nothing, so the result is one `finish` would itself leave
+ * alone. A plan that has not settled after {@link MAX_ROUNDS} rounds is returned untouched.
  */
 export function finish(source: string, opts: FinishOptions = {}): FinishResult {
   if (opts.only !== undefined && !FINISH_STAGES_AVAILABLE.includes(opts.only)) {
-    return untouched(source, [
-      { stage: opts.only, reason: `the \`${opts.only}\` stage is not available yet — only \`sheet\` is implemented` },
-    ]);
+    return result(
+      untouched(source, [
+        {
+          stage: opts.only,
+          reason: `the \`${opts.only}\` stage is not available — this version runs: ${FINISH_STAGES_AVAILABLE.join(", ")}`,
+        },
+      ]),
+    );
   }
   const env: AnalyzeOptions = {
     ...(opts.world ? { world: opts.world } : {}),
     ...(opts.plugins ? { plugins: opts.plugins } : {}),
   };
   const memo: CodesMemo = new Map();
-  const r = sheetStage(source, env, opts.reissue === true, memo);
-  if (!r.changed) return r;
-  // The fixpoint law, held by construction as well as by test: a result the stage would
-  // itself edit again is not a finished sheet, so it is not returned as one.
-  if (sheetStage(r.source, env, opts.reissue === true, memo).changed) {
-    return untouched(source, [
-      ...r.unresolved,
-      { stage: "sheet", reason: "the sheet stage did not settle on its own result — nothing was changed" },
-    ]);
+  const stages = opts.only !== undefined ? [opts.only] : FINISH_STAGE_ORDER;
+  const last = stages[stages.length - 1]!;
+  if (codesOf(source, env, memo).errors)
+    return result(
+      untouched(source, [
+        { stage: last, reason: "the plan does not compile — fix its errors first; nothing was changed" },
+      ]),
+    );
+  const run = (stage: FinishStage, src: string): StageRun => {
+    if (stage === "sheet") return sheetStage(src, env, opts.reissue === true, memo);
+    const r = furnishStage(src, env, (s) => codesOf(s, env, memo));
+    return {
+      source: r.source,
+      changes: r.changes,
+      unresolved: r.unresolved,
+      changed: r.changed,
+      ops: r.insert ? [[r.insert.at, r.insert.at, r.insert.text]] : [],
+    };
+  };
+
+  // Spans are reported in the caller's source: each one is carried back through the edits
+  // of every stage that ran before the one that produced it.
+  const history: Array<readonly Op[]> = [];
+  const original = (span: Span): Span => {
+    let { start, end } = span;
+    for (let i = history.length - 1; i >= 0; i--) {
+      start = mapBack(start, history[i]!);
+      end = mapBack(end, history[i]!);
+    }
+    return { start, end: Math.max(start, end) };
+  };
+  let current = source;
+  const changes: FinishChange[] = [];
+  let unresolved: FinishNote[] = [];
+  for (let round = 0; round < MAX_ROUNDS; round++) {
+    let moved = false;
+    // The notes of the round that settles are the ones a fresh run on the result gives.
+    unresolved = [];
+    for (const stage of stages) {
+      const r = run(stage, current);
+      for (const n of r.unresolved) unresolved.push(n.span ? { ...n, span: original(n.span) } : n);
+      if (!r.changed) continue;
+      moved = true;
+      for (const c of r.changes) changes.push({ ...c, span: original(c.span) });
+      history.push(r.ops);
+      current = r.source;
+    }
+    if (!moved)
+      return changes.length > 0
+        ? { source: current, changes, unresolved, changed: true }
+        : result(untouched(source, unresolved));
   }
-  return r;
+  return result(
+    untouched(source, [
+      ...unresolved,
+      { stage: last, reason: `the \`${last}\` stage did not settle on its own result — nothing was changed` },
+    ]),
+  );
 }
+
+/** A stage's run without its edit list — the public shape. */
+const result = ({ source, changes, unresolved, changed }: StageRun): FinishResult => ({
+  source,
+  changes,
+  unresolved,
+  changed,
+});
 
 // ---------------------------------------------------------------------------
 // what the plan has, and what its sheet has to hold
@@ -240,7 +340,7 @@ function stringLiteral(s: string): string | null {
 // the sheet stage
 // ---------------------------------------------------------------------------
 
-function sheetStage(source: string, env: AnalyzeOptions, reissue: boolean, memo: CodesMemo): FinishResult {
+function sheetStage(source: string, env: AnalyzeOptions, reissue: boolean, memo: CodesMemo): StageRun {
   const registry = env.plugins?.length ? createRegistry(env.plugins) : BUILTIN_REGISTRY;
   const before = codesOf(source, env, memo);
   const { plan } = parse(source, registry);
@@ -472,7 +572,7 @@ function sheetStage(source: string, env: AnalyzeOptions, reissue: boolean, memo:
   if (edits.changes.length === 0) return untouched(source, unresolved);
 
   // --- the never-worse law ----------------------------------------------------
-  const refuse = (why: string): FinishResult =>
+  const refuse = (why: string): StageRun =>
     untouched(source, [
       ...unresolved,
       { stage: "sheet", reason: `${why} — the sheet stage was rolled back and nothing was changed` },
@@ -495,7 +595,7 @@ function sheetStage(source: string, env: AnalyzeOptions, reissue: boolean, memo:
   for (const k of sourceConflicts(out, env).conflicts.keys())
     if (!was.has(k)) return refuse("the finished plan would have a furniture conflict the plan does not have now");
 
-  return { source: out, changes: edits.changes, unresolved, changed: true };
+  return { source: out, changes: edits.changes, unresolved, changed: true, ops: edits.ops };
 }
 
 // ---------------------------------------------------------------------------
@@ -532,6 +632,8 @@ const BLANK_OR_COMMENT = /^[ \t]*(#.*)?$/;
  */
 class Edits {
   readonly changes: FinishChange[] = [];
+  /** The edits `render` applied, against the original source. */
+  ops: Array<[start: number, end: number, bytes: string]> = [];
   /** Replacements and the two inserts that sit beside an authored statement. */
   private readonly spliced: Array<[start: number, end: number, bytes: string]> = [];
   private readonly settings: string[] = [];
@@ -627,6 +729,7 @@ class Edits {
         else ops.push([closing.blanks, closing.at, `${eol}${indent}${title}${eol}${outer}`]);
       }
     }
+    this.ops = ops;
     const data = new Data(this.source);
     // Inserts first, replacements last: an insert on the boundary of a span the table has
     // already replaced is an overlap, and the other order is not.
