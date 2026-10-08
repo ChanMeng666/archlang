@@ -7,9 +7,11 @@ import {
   FINISH_STAGES,
   FINISH_STAGES_AVAILABLE,
   finish,
+  format,
   lint,
   type FinishResult,
 } from "../src/index.js";
+import { parse } from "../src/parser.js";
 import { sourceConflicts } from "../src/repair.js";
 import { PAPER_SIZES } from "../src/sheet.js";
 import type { World } from "../src/world.js";
@@ -435,4 +437,81 @@ suite("finish — stages", () => {
   it("is deterministic", () => {
     expect(finish(BARE)).toEqual(finish(BARE));
   });
+});
+
+suite("finish — where the statements land (edge layouts)", () => {
+  const trailingBlanks = (s: string): string[] => s.split(/\r?\n/).filter((l) => /[ \t]$/.test(l));
+  const EDGES: Record<string, string> = {
+    "paper is the last leading setting": `plan "Last" {\n  units mm\n  north up\n  paper A3\n${SHELL}\n}\n`,
+    "a setting on the brace line": `plan "X" { paper A4 landscape\n  units mm\n${SHELL}\n}\n`,
+    "a statement on the brace line": `plan "Y" { wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }\n  room id=r at (0,0) size 6000x4000 label "Room" uses living\n}\n`,
+    "one line": `plan "One" { units mm ${SHELL.replace(/\n\s*/g, " ")} }`,
+    "an empty body": `plan "E" {}`,
+    "an empty body with a blank": `  plan "E" { }\n`,
+    "an empty body over two lines": `plan "E" {\n}\n`,
+  };
+
+  it("`scale` is the line directly below its `paper`, before the other settings", () => {
+    const r = finish(EDGES["paper is the last leading setting"]!);
+    expect(r.source).toContain("  paper A3\n  scale 1:50\n  dims auto all\n  schedule rooms\n  legend\n");
+  });
+
+  it("settings follow the authored leading settings when one sits on the brace line", () => {
+    const r = finish(EDGES["a setting on the brace line"]!);
+    expect(r.source).toContain(`plan "X" { paper A4 landscape\n  scale 1:50\n  units mm\n  dims auto all\n`);
+  });
+
+  it("an empty body gets its settings, then the title, then a brace on the plan's own indent", () => {
+    const body = (pad: string): string =>
+      ["paper A4 landscape", "scale 1:50", "dims auto overall", `title { project "E" }`]
+        .map((l) => `${pad}  ${l}\n`)
+        .join("");
+    expect(finish(EDGES["an empty body"]!).source).toBe(`plan "E" {\n${body("")}}`);
+    expect(finish(EDGES["an empty body with a blank"]!).source).toBe(`  plan "E" {\n${body("  ")}  }\n`);
+    expect(finish(EDGES["an empty body over two lines"]!).source).toBe(`plan "E" {\n${body("")}}\n`);
+  });
+
+  for (const [what, src] of Object.entries(EDGES))
+    it(`${what}: compiles, leaves no trailing whitespace, and is a fixpoint — also after fmt`, () => {
+      const r = finish(src);
+      expect(r.changed).toBe(true);
+      expect(errorsOf(r.source)).toEqual([]);
+      expect(trailingBlanks(r.source)).toEqual([]);
+      expect(finish(r.source).source).toBe(r.source);
+      const formatted = format(r.source);
+      const again = finish(formatted);
+      expect(again.source).toBe(formatted);
+      expect(again.changed).toBe(false);
+    });
+
+  for (const name of NAMES)
+    it(`${name}: fmt, then finish, is a no-op on a finished plan`, () => {
+      const formatted = format(finish(srcOf(name), { world }).source);
+      const again = finish(formatted, { world });
+      expect(again.source).toBe(formatted);
+      expect(again.changed).toBe(false);
+    }, 120000);
+});
+
+suite("finish — the title's project is the plan's name, exactly", () => {
+  const lit = (s: string): string => `"${s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n")}"`;
+  const NAMES_TO_KEEP = [
+    "Tab\there",
+    'Quote "q"',
+    "Back\\slash",
+    "Two\nlines",
+    "Çatı — 屋頂",
+    "C:\\new\\table",
+    "bell\u0007 and del\u007f",
+  ];
+  for (const name of NAMES_TO_KEEP)
+    it(`round-trips ${JSON.stringify(name)}`, () => {
+      const src = `plan ${lit(name)} {\n  units mm\n${SHELL}\n}\n`;
+      expect(parse(src).plan?.name).toBe(name);
+      const r = finish(src);
+      expect(r.changes.map((c) => c.statement)).toContain("title");
+      expect(parse(r.source).plan?.title?.project).toBe(name);
+      expect(errorsOf(r.source)).toEqual([]);
+      expect(finish(r.source).source).toBe(r.source);
+    });
 });
