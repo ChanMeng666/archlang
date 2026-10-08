@@ -1815,7 +1815,7 @@ function tableRowsOf(ir: ResolvedPlan): number {
  * no wall band — the joinery is a rendering concern and this runs in `resolve()`, which
  * `describe()` and `lint()` both go through.
  */
-function sheetExtents(
+export function sheetExtents(
   elements: readonly ResolvedElement[],
   walls: readonly RWall[],
   siteBoundary: readonly Point[] | undefined,

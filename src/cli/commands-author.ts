@@ -1,6 +1,6 @@
 /**
  * The authoring/transform commands — `ast`, `complete`, `fmt`, `repair`, `fix`,
- * `suggest`. They parse/format/correct source (the syntactic `fix` and the geometric
+ * `finish`, `suggest`. They parse/format/correct source (the syntactic `fix` and the geometric
  * `repair` are a hard boundary; see ADR 0006/0011). Split out of the former
  * monolithic `src/cli.ts` (mechanical; behavior unchanged).
  */
@@ -12,6 +12,9 @@ import {
   lint,
   format,
   repair,
+  finish,
+  FINISH_STAGES,
+  FINISH_STAGES_AVAILABLE,
   applyFixes,
   rankFixes,
   reroll,
@@ -21,7 +24,7 @@ import {
   diagnosticToJson,
   unifiedDiff,
 } from "../index.js";
-import type { Diagnostic, FixSuggestion } from "../index.js";
+import type { Diagnostic, FinishStage, FixSuggestion } from "../index.js";
 // `arch ast` parses without resolving/rendering; parse() is not on the public
 // surface, so the CLI reaches for it directly (as it does resolvePlan).
 import { parse } from "../parser.js";
@@ -39,8 +42,10 @@ import {
   makeNodeWorld,
   readInput,
   usageError,
+  usageErrorFor,
   withSource,
 } from "./io.js";
+import { closest } from "../expr.js";
 
 // ---------------------------------------------------------------------------
 // ast / complete
@@ -329,6 +334,115 @@ export async function cmdFix(args: Args): Promise<number> {
           `✓ ${input} → ${target} (${applied.length} fix${applied.length === 1 ? "" : "es"}, ${passes} pass${passes === 1 ? "" : "es"})\n`,
         );
       if (unresolved.length) process.stderr.write(`  unresolved: ${unresolved.join(", ")}\n`);
+    }
+  }
+  return ok ? EXIT.OK : EXIT.USER;
+}
+
+/**
+ * `arch finish` — add the sheet statements a plan lacks (`paper`, `scale`, `dims auto`,
+ * `title`, `schedule rooms`, `legend`): the explicit transform of ADR 0024, and nothing a
+ * `compile` ever does on its own. It fills what is missing and deletes nothing; `--reissue`
+ * lets it replace `paper`/`scale` (only those) when the drawing does not fit them.
+ *
+ * The write conventions are `arch fix`'s, because this is the same destructive act: the
+ * default target is the input file itself, so a unified diff of exactly what would be
+ * written goes to stderr (and into `--json` as `diff`), `--dry-run` never writes, and
+ * `--backup` saves the original to `<target>.bak`. A plan that does not compile is
+ * returned untouched with exit 2. `--only furnish` is refused (exit 3): that stage is
+ * planned, and a flag that quietly did nothing would read as "nothing to furnish".
+ */
+export function cmdFinish(args: Args): number {
+  const input = args._[0];
+  if (!input) return usageError("finish needs an input file (use a path or `-` for stdin)");
+  let only: FinishStage | undefined;
+  if (args.only !== undefined) {
+    const stage = FINISH_STAGES.find((s) => s === args.only);
+    if (!stage) {
+      const hint = closest(String(args.only), [...FINISH_STAGES]);
+      return usageErrorFor(
+        "finish",
+        `unknown stage "${args.only}" for --only — expected one of: ${FINISH_STAGES.join(", ")}` +
+          (hint ? ` (did you mean "${hint}"?)` : ""),
+      );
+    }
+    if (!FINISH_STAGES_AVAILABLE.includes(stage))
+      return usageErrorFor(
+        "finish",
+        `--only ${stage} is not available yet — this version implements: ${FINISH_STAGES_AVAILABLE.join(", ")}`,
+      );
+    only = stage;
+  }
+  let source: string;
+  try {
+    source = readInput(input);
+  } catch {
+    return ioError(`cannot read ${input}`, args.json);
+  }
+
+  const world = makeNodeWorld(baseDirOf(input));
+  const errors = compile(source, { noCache: true, world }).diagnostics.filter((d) => d.severity === "error");
+  const ok = errors.length === 0;
+  const r = finish(source, { world, ...(only ? { only } : {}), ...(args.reissue ? { reissue: true } : {}) });
+
+  const target = args.o ?? (input === "-" ? "-" : input);
+  const wrote = r.changed && !args.dryRun;
+  const diff = r.changed
+    ? unifiedDiff(source, r.source, `a/${input === "-" ? "stdin" : input}`, `b/${target === "-" ? "stdout" : target}`)
+    : "";
+
+  // `--backup`: only a real file that already exists has anything to lose.
+  let backup: string | undefined;
+  if (wrote && target !== "-" && args.backup) {
+    const path = resolvePath(target);
+    if (existsSync(path)) {
+      try {
+        writeFileSync(`${path}.bak`, readFileSync(path, "utf8"), "utf8");
+        backup = `${target}.bak`;
+      } catch (e) {
+        return ioError((e as Error).message, args.json);
+      }
+    }
+  }
+  if (wrote && target !== "-") {
+    try {
+      writeFileSync(resolvePath(target), r.source, "utf8");
+    } catch (e) {
+      return ioError((e as Error).message, args.json);
+    }
+  }
+
+  if (args.json) {
+    // `wrote`/`target`/`backup`/`diff` as in `arch fix`; `source` as in `arch repair`, so a
+    // caller on stdin (or previewing with `--dry-run`) has the result without a second call.
+    const out: Record<string, unknown> = {
+      ok,
+      changed: r.changed,
+      changes: r.changes,
+      unresolved: r.unresolved,
+      wrote,
+      target,
+    };
+    if (!ok) out.diagnostics = errors.map((d) => diagnosticToJson(source, d));
+    if (backup) out.backup = backup;
+    if (diff) out.diff = diff;
+    out.source = r.source;
+    emitJson(out);
+  } else {
+    if (!ok) emitDiagnosticsHuman(source, errors, args.quiet);
+    if (target === "-" && !args.dryRun) process.stdout.write(r.source);
+    if (!args.quiet) {
+      if (diff) process.stderr.write(diff);
+      for (const c of r.changes)
+        process.stderr.write(`  ${c.kind} ${c.from ? `${c.from} → ` : ""}${c.text} — ${c.reason}\n`);
+      for (const u of r.unresolved) process.stderr.write(`  ⚠ ${u.statement ? `${u.statement}: ` : ""}${u.reason}\n`);
+      if (backup) process.stderr.write(`  backup: ${backup}\n`);
+      if (!r.changed) process.stderr.write("  (no changes)\n");
+      else if (args.dryRun) process.stderr.write("  (dry run — nothing written)\n");
+      else if (target !== "-")
+        process.stderr.write(
+          `✓ ${input} → ${target} (${r.changes.length} statement${r.changes.length === 1 ? "" : "s"})\n`,
+        );
     }
   }
   return ok ? EXIT.OK : EXIT.USER;

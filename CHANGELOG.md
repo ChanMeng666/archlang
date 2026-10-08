@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `arch finish` completes a plan's drawing sheet
+
+- **`arch finish <file|->` and `finish(source, opts?)` add the sheet statements a plan lacks.**
+  For each of `paper`, `scale`, `dims auto`, `title`, `schedule rooms` and `legend`, the statement
+  is added only when the plan has none. Nothing is deleted, and an authored `dim`, `axes`, `north`
+  or title block is never rewritten. It is an explicit source-to-source transform
+  (`docs/adr/0024-finish-as-explicit-transform.md`): `compile()`, the grammar, `describe()` and
+  `lint()` are unchanged, and a plan nobody runs it on renders as before.
+- **The sheet is the smallest that holds the drawing.** `finish` picks the finest of 1:50, 1:100,
+  1:200 and 1:500 that fits a sheet from A4 to A1 (A0 only when those hold nothing), landscape
+  first, using the compiler's own fit rule on the largest storey. `dims auto` is `all`, or
+  `overall` when the short facade is under 60 mm on paper. The title block is
+  `title { project "<plan name>" }`; no date or author is invented.
+- **An authored sheet is kept unless `--reissue` is passed.** If the drawing does not fit it,
+  `finish` leaves out the tables, then `dims auto`, then the title, and reports each in
+  `unresolved`. `--reissue` may replace `paper` and `scale`, and nothing else.
+- **The result is checked before it is returned.** If it would not compile, or would raise a
+  diagnostic code the plan did not have, the whole step is rolled back and `unresolved` says why.
+  A second run changes nothing. A source that does not compile is returned untouched (exit `2`).
+- **The CLI follows `arch fix`.** In place by default, a unified diff on stderr, `--dry-run`,
+  `--backup`, `-o`, `--json` (`{ ok, changed, changes, unresolved, wrote, target, diff, source }`).
+  `--only sheet|furnish` selects a stage; only `sheet` exists, and `--only furnish` is a usage
+  error (exit `3`) that says so.
+- **The MCP shim gains a `finish` tool** (`source`, optional `reissue`), and `SKILL.md`'s loop
+  gains the step "once lint is clean, run `arch finish`".
+- **New exports:** `finish`, `FINISH_STAGES`, `FINISH_STAGES_AVAILABLE`, and the types
+  `FinishOptions`, `FinishResult`, `FinishChange`, `FinishNote`, `FinishStage`, `FinishStatement`.
+
 ### Fixed — `W_BATH_VIA_BEDROOM` no longer flags an en-suite beside a bathroom off circulation
 
 - **The warning is about a storey's bathroom provision, not one room.** It fired on every

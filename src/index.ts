@@ -244,6 +244,17 @@ export type { LintOptions, LintRuleset } from "./lint.js";
 // Explicit opt-in source-to-source corrector (ADR 0006): never part of compile().
 export { repair } from "./repair.js";
 export type { RepairResult, RepairChange, RepairNote } from "./repair.js";
+// Explicit opt-in sheet completion (ADR 0024): adds the sheet statements a plan lacks
+// (`paper`, `scale`, `dims auto`, `title`, `schedule rooms`, `legend`); never part of compile().
+export { finish, FINISH_STAGES, FINISH_STAGES_AVAILABLE } from "./finish.js";
+export type {
+  FinishOptions,
+  FinishResult,
+  FinishChange,
+  FinishNote,
+  FinishStage,
+  FinishStatement,
+} from "./finish.js";
 // CLI capability manifest: the whole `arch` API surface as structured data,
 // for agent discovery (`arch manifest --json`). Pure; assembles existing exports.
 export { buildManifest, MANIFEST_COMMAND_NAMES, EXPORT_FORMATS } from "./manifest.js";

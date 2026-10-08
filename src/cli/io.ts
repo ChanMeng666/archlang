@@ -84,10 +84,14 @@ export interface Args {
   charset?: string;
   /** `--unsafe`: (fix) widen the applied-fix gate to also apply `maybe-incorrect` fixes. */
   unsafe?: boolean;
-  /** `--dry-run`: (fix) compute the result but never write it. */
+  /** `--dry-run`: (fix/finish) compute the result but never write it. */
   dryRun?: boolean;
-  /** `--backup`: (fix) save the original bytes to `<target>.bak` before overwriting in place. */
+  /** `--backup`: (fix/finish) save the original bytes to `<target>.bak` before overwriting in place. */
   backup?: boolean;
+  /** `--only <sheet|furnish>`: (finish) run only this stage. */
+  only?: string;
+  /** `--reissue`: (finish) allow `paper`/`scale` to be replaced when the drawing does not fit them. */
+  reissue?: boolean;
   /** `--from-json`: (compile) read the input as Plan JSON (RPLAN shape), not `.arch`. */
   fromJson?: boolean;
   /** `--graph <file>`: (validate) also check adjacency against an intended graph. */
@@ -171,6 +175,8 @@ export const FLAG_KEYS: Record<string, FlagSpec> = {
   "--graph": { key: "graph", kind: "string" },
   "--intent": { key: "intent", kind: "string" },
   "--brief": { key: "brief", kind: "string" },
+  "--only": { key: "only", kind: "string" },
+  "--reissue": { key: "reissue", kind: "boolean" },
   "--from-json": { key: "fromJson", kind: "boolean" },
   "--feedback": { key: "feedback", kind: "boolean" },
   "--ascii": { key: "ascii", kind: "boolean" },

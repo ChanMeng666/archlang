@@ -22,6 +22,7 @@ import {
   diagnosticToJson,
   type Diagnostic,
   feedbackForResult,
+  finish,
   type FixSuggestion,
   intentFromJson,
   type IntentCheckResult,
@@ -383,6 +384,27 @@ export function createServer(): McpServer {
       }
       const ok = errorCount(compile(current, { noCache: true }).diagnostics) === 0;
       return json({ ok, passes, applied, skipped, source: current });
+    },
+  );
+
+  server.registerTool(
+    "finish",
+    {
+      title: "Finish the drawing sheet",
+      description:
+        "The explicit sheet-completion transform (ADR 0024): add the sheet statements the plan lacks — `paper`, `scale`, `dims auto`, `title`, `schedule rooms`, `legend` — choosing the finest standard scale on the smallest sheet that holds the drawing. It fills only what is missing and deletes nothing; `reissue:true` may REPLACE `paper`/`scale` (only those) when the drawing does not fit them. Run it once `lint` is clean. Returns { ok, changed, changes, unresolved, source }; a plan that does not compile comes back untouched with `ok:false`, and a result that would raise a new diagnostic is rolled back with the reason in `unresolved`.",
+      inputSchema: {
+        source: z.string().describe("ArchLang source to finish."),
+        reissue: z
+          .boolean()
+          .optional()
+          .describe("Allow `paper` and `scale` to be replaced when the drawing does not fit the authored sheet."),
+      },
+    },
+    async ({ source, reissue }) => {
+      const r = finish(source, reissue ? { reissue: true } : {});
+      const ok = errorCount(compile(source, { noCache: true }).diagnostics) === 0;
+      return json({ ok, changed: r.changed, changes: r.changes, unresolved: r.unresolved, source: r.source });
     },
   );
 
