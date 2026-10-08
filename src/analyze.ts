@@ -525,6 +525,26 @@ export function reachFrom(
 }
 
 /**
+ * The wet rooms `W_BATH_VIA_BEDROOM` names on one storey: reachable (`reachAll`), but not
+ * without passing through a bedroom (`reachNoBed`) — and only when NO wet room on the
+ * storey is reachable without one. The fault is a storey whose whole bathroom provision
+ * sits behind a bedroom; an en-suite beside a bathroom or WC off circulation is the
+ * conventional case and is not named. A WC counts as that other room because
+ * {@link isWetRoom} is the one wet-room classification there is (`bath` or `wc`).
+ *
+ * The one definition `lint` and `suggestTopology` share, so they cannot disagree.
+ */
+export function wetRoomsOnlyViaBedroom(
+  rooms: ReadonlyArray<{ label?: string; id: string; uses?: UseKind[] }>,
+  reachAll: ReadonlySet<string>,
+  reachNoBed: ReadonlySet<string>,
+): ReadonlySet<string> {
+  const wet = rooms.filter(isWetRoom);
+  if (wet.some((r) => reachNoBed.has(r.id))) return new Set();
+  return new Set(wet.filter((r) => reachAll.has(r.id)).map((r) => r.id));
+}
+
+/**
  * Build the {@link AccessGraph} from the resolved rooms + doors. Pure and
  * deterministic, on the `"probe"` policy. Depth is unit-weight `MIN_PLUS` from the
  * single {@link EXTERIOR_NODE} (breadth-first, neighbours in door source order); the

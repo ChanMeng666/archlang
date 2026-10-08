@@ -36,6 +36,7 @@ import {
   reachFrom,
   rectOf,
   resolvePlan,
+  wetRoomsOnlyViaBedroom,
   type AnalyzeOptions,
 } from "./analyze.js";
 import type { BBox } from "./geometry/rect.js";
@@ -447,9 +448,10 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
   // ---- W_BATH_VIA_BEDROOM: a wet room reachable only through a bedroom ----
   // Mirrors src/lint/rules/reachability.ts: build the door/opening room graph, then
   // compare reach-all vs reach-excluding-bedrooms from the exterior. A wet room in
-  // the first set but not the second is en-suite-trapped. Propose a door on a wall it
-  // shares with a non-bedroom space that still reaches the entrance (preferred), with
-  // exterior-wall doors as a fallback. Only runs when an entrance exists.
+  // the first set but not the second is en-suite-trapped — unless another wet room avoids
+  // every bedroom (`wetRoomsOnlyViaBedroom`, the definition the lint rule uses). Propose a
+  // door on a wall it shares with a non-bedroom space that still reaches the entrance
+  // (preferred), with exterior-wall doors as a fallback. Only runs when an entrance exists.
   // The same `"probe"` graph and search as the lint rule.
   const g = accessDigraph(
     rooms.map((r) => r.id),
@@ -462,8 +464,9 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
   if (g.out(EXTERIOR_NODE).length > 0) {
     const reachAll = reachFrom(g);
     const reachNoBed = reachFrom(g, { avoid: isBedroomId });
+    const viaBedroom = wetRoomsOnlyViaBedroom(rooms, reachAll, reachNoBed);
     for (const room of rectRooms) {
-      if (!isWetRoom(room) || !reachAll.has(room.id) || reachNoBed.has(room.id)) continue;
+      if (!viaBedroom.has(room.id)) continue;
       const rect = rectOf(room);
       const label = room.label ?? room.id;
       const preferred: RawCandidate[] = [];

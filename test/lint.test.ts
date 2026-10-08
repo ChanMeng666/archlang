@@ -117,6 +117,50 @@ describe("lint — architectural-soundness rules (v1.1)", () => {
     expect(codes(offHall)).not.toContain("W_BATH_VIA_BEDROOM");
   });
 
+  // A hall with three rooms off it in a row: `west`, the master bedroom, and an en-suite whose
+  // only door is the master's. What `west` is, and where its door is, decides the verdict.
+  const suite = (westLabel: string, westDoor = "at (1500,2000) width 800 wall p_hall"): string => `plan "Suite" {
+    units mm
+    grid 50
+    wall id=ext exterior thickness 200 { (0,0) (9000,0) (9000,7000) (0,7000) close }
+    wall id=p_hall partition thickness 100 { (0,2000) (9000,2000) }
+    wall id=p_a partition thickness 100 { (3000,2000) (3000,7000) }
+    wall id=p_b partition thickness 100 { (6000,2000) (6000,7000) }
+    room id=hall   at (0,0)       size 9000x2000 label "Hall"
+    room id=west   at (0,2000)    size 3000x5000 label "${westLabel}"
+    room id=master at (3000,2000) size 3000x5000 label "Master Bedroom"
+    room id=ens    at (6000,2000) size 3000x5000 label "En-suite"
+    door id=entry    on ext at 4500 width 1000
+    door id=d_west   ${westDoor}
+    door id=d_master at (4500,2000) width 900 wall p_hall
+    door id=d_ens    at (6000,4500) width 800 wall p_b
+    window id=w_m at (4500,7000) width 1200 wall ext
+  }`;
+  const viaBedroom = (src: string): string[] =>
+    lint(src)
+      .filter((d) => d.code === "W_BATH_VIA_BEDROOM")
+      .map((d) => d.message);
+
+  it("W_BATH_VIA_BEDROOM is silent on an en-suite when another bathroom opens off circulation", () => {
+    expect(viaBedroom(suite("Family Bathroom"))).toEqual([]);
+  });
+
+  it("… and the control: the same plan without the family bathroom warns on the en-suite", () => {
+    expect(viaBedroom(suite("Study"))).toEqual([`Bathroom "En-suite" is reachable only through a bedroom.`]);
+  });
+
+  it("… a WC off circulation counts as that other wet room", () => {
+    expect(viaBedroom(suite("WC"))).toEqual([]);
+  });
+
+  it("W_BATH_VIA_BEDROOM on every wet room when none avoids a bedroom", () => {
+    // The family bathroom's only door now opens off the master bedroom too.
+    expect(viaBedroom(suite("Family Bathroom", "at (3000,4500) width 800 wall p_a"))).toEqual([
+      `Bathroom "Family Bathroom" is reachable only through a bedroom.`,
+      `Bathroom "En-suite" is reachable only through a bedroom.`,
+    ]);
+  });
+
   it("W_ROOM_NOT_ENCLOSED when a partition stops short of a wet room's edge", () => {
     const open = `plan "P" {
       units mm

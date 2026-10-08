@@ -764,6 +764,27 @@
  * `SEMANTIC_BASELINE` row did not move. Swept over all 274 corpus plans (every storey; SVG,
  * `describe()`, both `lint()` profiles, diagnostics, the circulation overlay, the annotated
  * accessible SVG): no other example row moved.
+ *
+ * ## `hillside-villa`: both rows re-measured — an en-suite beside a bathroom off circulation is not flagged
+ *
+ * Case (1), the compiler changed, in `lint()` only. `W_BATH_VIA_BEDROOM` now fires only on a
+ * storey with NO wet room reachable without passing through a bedroom
+ * (`wetRoomsOnlyViaBedroom`, `src/analyze.ts`). On level 2 the two bedroom-band ensuites open
+ * off the landing, so the master ensuite `en_m` — one door, into the Master Suite — is no
+ * longer named. Field by field: `lint()` loses exactly that one diagnostic
+ * (`W_BATH_VIA_BEDROOM`, span 2564, `Bathroom "Ensuite" is reachable only through a bedroom.`)
+ * and keeps the other eight in order, byte for byte; every storey's SVG, `describe()` and
+ * `compile().diagnostics` are byte-identical. Proved by putting that diagnostic back at its
+ * old index in the new payload: it reproduces both old rows. The example's comment above
+ * `d_en2_corr` was corrected in the same change (it said lint flags `en_m`), adding 91 bytes.
+ * It lies below every default-profile diagnostic's span, so those spans are unmoved. Four
+ * `accessibility-advisory` diagnostics on level 2 sit below it (`W_SWING_OBSTRUCTED` × 2,
+ * `W_DOOR_CLEARANCE` × 2) and their spans shift with the comment; no pinned digest hashes
+ * that profile.
+ *
+ * Outside this table, five `eval/fidelity-plans` rows keep their `W_BATH_VIA_BEDROOM` — each
+ * plan's only wet room is behind a bedroom — with a reworded hint
+ * (`test/import-module-lets.test.ts`).
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -779,7 +800,7 @@ export const BASELINE: [string, string][] = [
   ["garden-house", "ade0cdc23758924a0dbc9fec12e549ea826bb874ce8ed94e7b8e2ce26bc25af7"], // re-measured, see header
   ["garden-loft", "bcbf52e5d8b7875906721d8367552e463d642428516530d733c8b9feb29c2f9f"],
   ["hexagon-pavilion", "22030edea2fcaddfdc5d94d776849a8065bd287196664967e3f415285b0458cc"],
-  ["hillside-villa", "0313a5001d36b509d377fc1855be6243efbc6475c9d774f7519ca4d1ead3129a"], // re-measured, see header
+  ["hillside-villa", "42682351711edca91747acfeb3ecfb4a36c87e6e06d88c8f1889d044b1d5b6c4"], // re-measured, see header
   ["imports", "3490c17b19f31dfc3a82ce20a2218a4e8f48f0fd979a2c88f23e6a7ddfd75b00"],
   ["laneway-house", "f9c3b29a51508234ab6f8426be062f3087f482cfa2b124ba75fdab150b4d18bc"],
   ["library", "51d1c1a151192315fa19c2fa526ca9192ce84abdd9e6084c4dff4d30aed1c086"],
@@ -823,7 +844,7 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["garden-house", "89466ed2864b0161919158114a71bef855bb6ad9b50157992eed30290a943e3f"], // re-measured, see header
   ["garden-loft", "ad8935f435045684b7ed9975254dc2daf0357f4eb3735e514e319980ebecf793"],
   ["hexagon-pavilion", "9a3e3666e6e2b09d04a6239c984415ec92ffa487c8aa743fc8506f4bc0f97a61"],
-  ["hillside-villa", "37b805898d18e43af1e5f78224c4467e1792420fb49f99dbc9f96bd7d29c3221"], // re-measured, see header
+  ["hillside-villa", "a1a2580d09e7f798019f76a2896c74c2fa1a1d4c3354acd00189f541b5ed01e8"], // re-measured, see header
   ["imports", "5c75030d46ecbfc8b1e80b40945d17bd13afb68a813a286b9ddfe23252452cbc"],
   ["laneway-house", "9a173beb7f213286b8e0c117d829d126166b93e118f91894ba278005254a5255"],
   ["library", "f81107388c6547af37b0938ecc06a1f3ab3acbe69916edb7b0c9c76a4c9f3477"],

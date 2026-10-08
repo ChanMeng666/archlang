@@ -831,7 +831,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 
 - `W_ALIAS_MATCH` — A room's use was inferred from an indirect alias, not stated. **Fix:** Add an explicit `uses …` to the room stating the inferred function — the machine-applicable fix inserts it for you. This pins the classification without changing the room's `describe()` type.
 - `W_BALCONY_NO_DOOR` — A balcony with no way onto it. **Fix:** Add a door (or a full-height window) on the wall the balcony hangs off — the usual fix — or move the balcony to the facade that already has one.
-- `W_BATH_VIA_BEDROOM` — Bathroom is reachable only through a bedroom. **Fix:** Add a door connecting the bathroom to a hall/living space, or route circulation so it is not reached only via a bedroom.
+- `W_BATH_VIA_BEDROOM` — Bathroom is reachable only through a bedroom. **Fix:** Connect it to a hall or living space — or, if it is an en-suite, add a second bathroom or WC on the same storey that is reached without passing through a bedroom.
 - `W_BEDROOM_NO_WINDOW` — Bedroom has no window. **Fix:** Add a `window` on an exterior wall of the room.
 - `W_CIRCUITOUS_PATH` — A room is reached by a very roundabout path. **Fix:** Add a more direct connection — a door or a hall — so the room is not reached the long way round.
 - `W_CJK_FONT_MISSING` — PDF/PNG text has CJK characters, but the optional CJK font package is not installed. **Fix:** Install the font package (`npm install @chanmeng666/archlang-font-cjk`), or render to SVG, which uses the viewer's fonts.
