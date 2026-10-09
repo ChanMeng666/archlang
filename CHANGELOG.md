@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The Claude Code plugin is a slim subfolder, `plugins/archlang/`.** The plugin root used to be the repo root, whose 11 MB font the plugin directory rejects (5 MiB per file). `marketplace.json` now installs `./plugins/archlang`: the manifest plus the five skills, which `npm run gen:plugin` copies from the root `SKILL.md` and `skills/` (drift-gated). `npx skills add` is unchanged.
+
 ## [1.42.1] - 2026-10-09
 
 ### Fixed — `arch finish` no longer leaves a plan bare when one sheet statement is refused

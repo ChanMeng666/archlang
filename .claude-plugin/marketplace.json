@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "archlang",
-      "source": "./",
+      "source": "./plugins/archlang",
       "description": "The archlang skill and MCP server: author .arch floor plans and compile them to SVG/DXF/PDF with linting and geometric validation.",
       "homepage": "https://archlang.uk",
       "license": "MIT"
