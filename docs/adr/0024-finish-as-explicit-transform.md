@@ -1,6 +1,7 @@
 # 24. Finishing a sheet is an explicit source transform
 
-- **Status:** Accepted — **decision 7 superseded by [ADR 0025](0025-furnish-as-explicit-transform.md)**
+- **Status:** Accepted — **decision 7 superseded by [ADR 0025](0025-furnish-as-explicit-transform.md)**;
+  **the all-or-nothing roll-back of decision 6 amended (2026-10)**
 - **Date:** 2026-10
 - **Relates to:** [ADR 0005](0005-no-invisible-architect.md) and
   [ADR 0006](0006-solver-as-explicit-transform.md) (compile renders what is written; a
@@ -70,6 +71,18 @@ A result that breaks the never-worse law is not returned. The whole stage is rol
 the reason goes in `unresolved`. A plan that needs nothing comes back byte-identical with
 `changed: false`.
 
+> *Amended 2026-10.* The law is unchanged and still absolute; the roll-back is no longer all or
+> nothing. `dims auto all` on a plan with an opening no chain reaches raises the advisory
+> `W_OPENING_NOT_DIMENSIONED`, and the stage then wrote no `paper`, `scale`, `title`, schedule or
+> legend either. The sheet stage now degrades. When the whole set of statements is refused it
+> tries, in this fixed order, `dims auto overall` in place of `dims auto all`, then no
+> `dims auto`. If neither passes it builds the set up one statement at a time (`paper` with
+> `scale`, the title, `schedule rooms`, `legend`, then `dims auto all` and `dims auto overall`)
+> and keeps each one the plan passes the check with. Every statement left out is an `unresolved`
+> note with the `codes` it would have raised. The search is bounded: at most nine candidates are
+> checked after the input (`SHEET_MAX_CHECKS`, `src/finish.ts`). The stage is rolled back whole
+> only when no statement passes on its own. The law is checked under every lint profile.
+
 > **Superseded (2026-10).** The `furnish` stage exists: see
 > [ADR 0025](0025-furnish-as-explicit-transform.md). A full run is `furnish`, then `sheet`, and
 > `--only furnish` runs that stage. The paragraph below is the record of the first version.
@@ -101,6 +114,9 @@ on, so no byte-identity baseline moves.
 - The roll-back is all or nothing. A sheet can crowd two hand-written `dim` lines into
   `W_DIM_OVERLAP`; `finish` then changes nothing and says so. Retrying with fewer statements
   is not done in this version.
+
+  > *Amended 2026-10.* It is done now: see the amendment under decision 6. In this case the
+  > sheet is left out and reported, and the title and the tables are still written.
 - A plan with an authored sheet the drawing already overflows is left alone unless `--reissue`
   is passed.
 
