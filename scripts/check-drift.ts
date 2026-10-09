@@ -11,7 +11,7 @@
 import { execSync } from "node:child_process";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { pluginSkillFiles } from "./gen-plugin.js";
+import { PLUGIN_MANIFEST, pluginSkillFiles } from "./gen-plugin.js";
 import { README_SVGS, VIEW_SVGS, svgPath } from "./gen-example-svgs.js";
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
@@ -47,7 +47,7 @@ const GENERATORS: readonly { script: string; artifacts: readonly string[] }[] = 
   // Imported, never retyped: the curated README drawing list lives in the generator, so a
   // name added there is drift-gated here with no second edit (and cannot be forgotten).
   { script: "gen:example-svgs", artifacts: [...README_SVGS.map(svgPath), ...VIEW_SVGS.map((v) => v.dest)] },
-  { script: "gen:plugin", artifacts: pluginSkillFiles().map((f) => f.dest) },
+  { script: "gen:plugin", artifacts: [...pluginSkillFiles().map((f) => f.dest), PLUGIN_MANIFEST] },
 ];
 
 const ALL_ARTIFACTS = GENERATORS.flatMap((g) => g.artifacts);

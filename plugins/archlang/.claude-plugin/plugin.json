@@ -8,11 +8,22 @@
   "homepage": "https://archlang.uk",
   "repository": "https://github.com/ChanMeng666/archlang",
   "license": "MIT",
-  "keywords": ["floor-plan", "architecture", "dsl", "svg", "dxf", "cad"],
+  "keywords": [
+    "floor-plan",
+    "architecture",
+    "dsl",
+    "svg",
+    "dxf",
+    "cad"
+  ],
   "mcpServers": {
     "archlang": {
       "command": "npx",
-      "args": ["-y", "@chanmeng666/archlang-mcp"]
+      "args": [
+        "-y",
+        "@chanmeng666/archlang-mcp@0.2.24"
+      ]
     }
-  }
+  },
+  "version": "1.42.1"
 }

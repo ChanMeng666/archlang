@@ -13,6 +13,7 @@
       "!docs-site/.vitepress/theme/arch-highlight.js",
       "!spec.llm.md",
       "!docs/error-codes.md",
+      "!plugins/archlang/.claude-plugin/plugin.json",
       "!schemas/plan.schema.json",
       "!schemas/intent.schema.json",
       // …and their docs-site copies (sync-docs.mjs copyFileSync — must stay byte-identical
