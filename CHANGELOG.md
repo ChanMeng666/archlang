@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — four task skills beside the `archlang` skill
+
+- **`skills/<name>/SKILL.md`: `archlang-brief-to-plan`, `archlang-edit-plan`, `archlang-export`
+  and `archlang-review-plan`.** Each is a short workflow of CLI calls for one job. None restates
+  the language: each sends the agent to `arch spec` and `arch <cmd> --help`. A test checks every
+  command and flag a skill names against the CLI manifest.
+- **Installing them.** `npx skills add ChanMeng666/archlang` still installs the `archlang` skill
+  alone, because that tool stops at a root `SKILL.md`; add `--full-depth` for all five. The
+  Claude Code plugin scans `skills/` by default. The skills ship in the npm package under
+  `skills/`, and the root `SKILL.md` lists them, so `arch context` and `llms-full.txt` gain that
+  short section.
+
+### Added — a docs page of floor plans written by AI agents
+
+- **`/gallery` on the docs site** shows eleven plans, each written by a Claude model from the
+  one-paragraph brief printed above it and completed with one `arch finish`; nothing is edited
+  by hand. They are selected examples, not a benchmark. The sources live in `docs/gallery/` and
+  are not part of `examples/` or of any pinned corpus.
+
 ## [1.42.0] - 2026-10-09
 
 ### Added — `arch finish` furnishes the rooms a plan left empty
