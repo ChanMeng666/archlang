@@ -1,0 +1,42 @@
+plan "Narrow Plot House" {
+  units mm
+  grid 50
+  north up
+  paper A2 portrait
+  scale 1:50
+  dims auto all
+  schedule rooms
+  legend
+
+  wall id=w_n exterior thickness 200 { (100,100) (5400,100) }
+  wall id=w_e exterior thickness 200 { (5400,100) (5400,15900) }
+  wall id=w_s exterior thickness 200 { (5400,15900) (100,15900) }
+  wall id=w_w exterior thickness 200 { (100,15900) (100,100) }
+  wall id=w_liv partition thickness 100 { (100,5300) (5400,5300) }
+  wall id=w_col partition thickness 100 { (1300,5300) (1300,15900) }
+  wall id=w_k partition thickness 100 { (1300,8300) (5400,8300) }
+  wall id=w_b partition thickness 100 { (1300,10300) (5400,10300) }
+
+  room id=r_living at (100,100) size 5300x5200 label "Living" uses living
+  room id=r_hall at (100,5300) size 1200x10600 label "Hall" uses hall
+  room id=r_kitchen at (1300,5300) size 4100x3000 label "Kitchen" uses kitchen
+  room id=r_bath at (1300,8300) size 4100x2000 label "Bath" uses bath
+  room id=r_bed at (1300,10300) size 4100x5600 label "Bedroom" uses bedroom
+
+  # front door on the south short end into the hall (hall is x100-1300)
+  door id=d_front on w_s at 4600 width 900 swing into r_hall
+  window on w_n at 50% width 2000
+  window on w_s at 1800 width 1600
+  door on w_liv at 700 width 900 swing into r_living
+  door on w_col at 1500 width 900 swing into r_kitchen
+  door on w_col at 4000 width 800 swing into r_bath
+  door on w_col at 8500 width 900 swing into r_bed
+  furniture kitchen_sink against wall w_e offset 6000 side left in r_kitchen
+  furniture counter against wall w_e offset 7300 side left in r_kitchen
+  furniture wc against wall w_e offset 8700 side left in r_bath
+  furniture basin against wall w_e offset 9600 side left in r_bath
+  furniture bed against wall w_s offset 1500 in r_bed
+  furniture sofa in r_living anchor right flush size 900x2000 rotate 90
+  furniture coffee_table in r_living anchor right flush inset 1300 size 600x1000 rotate 90
+  title { project "Narrow Plot House" }
+}

@@ -1,0 +1,1 @@
+Design a two-storey house of about 140 m² in total across both floors. Ground floor: entrance hall with the staircase, a living room of at least 22 m², a kitchen/dining room of at least 18 m², and a WC. First floor: a landing at the top of the stairs, three bedrooms of at least 10 m² each, and a family bathroom. Both floors share the same footprint. Every bedroom needs a window.

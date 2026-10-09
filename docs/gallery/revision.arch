@@ -1,0 +1,75 @@
+# Two-bedroom flat, 10.0 m x 7.0 m = 70 m2 (revised: open-plan living/kitchen + second shower room)
+plan "Two-Bedroom Flat - Revised" {
+  units mm
+  grid 50
+  north up
+  paper A3 landscape
+  scale 1:50
+  dims auto all
+  schedule rooms
+  legend
+
+  room id=r_living at (0,0)       size 4600x7000 label "Living / Kitchen" uses living kitchen dining
+  room id=r_hall   at (4600,2800) size 5400x1200 label "Hall"             uses hall
+  room id=r_bed2   at (4600,0)    size 3400x2800 label "Bedroom 2"        uses bedroom
+  room id=r_bath   at (8000,0)    size 2000x2800 label "Bathroom"         uses bath
+  room id=r_main   at (4600,4000) size 3800x3000 label "Main Bedroom"     uses bedroom
+  room id=r_shower at (8400,4000) size 1600x3000 label "Shower Room"      uses bath
+
+  wall id=w_north exterior thickness 200 { (0,0) (10000,0) }
+  wall id=w_south exterior thickness 200 { (0,7000) (10000,7000) }
+  wall id=w_west  exterior thickness 200 { (0,0) (0,7000) }
+  wall id=w_east  exterior thickness 200 { (10000,0) (10000,7000) }
+
+  wall id=w_lv partition thickness 100 { (4600,0) (4600,7000) }
+  wall id=w_hn partition thickness 100 { (4600,2800) (10000,2800) }
+  wall id=w_hs partition thickness 100 { (4600,4000) (10000,4000) }
+  wall id=w_b2 partition thickness 100 { (8000,0) (8000,2800) }
+  wall id=w_mb partition thickness 100 { (8400,4000) (8400,7000) }
+
+  # Entrance at the east end of the hall
+  door id=d_entry on w_east at 3400 width 1000 hinge near start swing into r_hall
+  # Hall -> open-plan room
+  opening id=o_living on w_lv at 3400 width 900
+  door id=d_bed2   on w_hn at 800  width 900 swing into r_bed2
+  door id=d_bath   on w_hn at 4000 width 800 swing into r_bath
+  door id=d_main   on w_hs at 800  width 900 swing into r_main
+  door id=d_shower on w_hs at 4350 width 800 swing into r_shower
+
+  window on w_west  at 1800 width 1800
+  window on w_west  at 5300 width 1200
+  window on w_north at 2300 width 1600
+  window on w_north at 6300 width 1400
+  window on w_north at 9000 width 600
+  window on w_south at 6000 width 1400
+  window on w_east  at 5300 width 600
+
+  # Open-plan living / dining / kitchen
+  furniture sofa     at (300,700)   size 900x2200  label "Sofa"
+  furniture tv_unit  at (4150,1000) size 400x1600  label "TV" rotate 90
+  furniture table    at (1700,3300) size 1600x900  label "Dining"
+  furniture fridge       at (150,6250)  size 700x650 rotate 180
+  furniture counter      at (850,6300)  size 1200x600 rotate 180
+  furniture kitchen_sink at (2050,6300) size 800x600 rotate 180
+  furniture stove        at (2850,6300) size 600x600 rotate 180
+  furniture counter      at (3450,6300) size 1000x600 rotate 180
+
+  # Bedroom 2
+  furniture bed      in r_bed2 anchor top-right flush size 1500x2000 label "Bed"
+  furniture wardrobe in r_bed2 anchor top-left flush  size 600x1500
+
+  # Main bedroom
+  furniture double_bed in r_main anchor bottom-right flush size 1600x2000 label "Bed"
+  furniture wardrobe   in r_main anchor bottom-left flush  size 600x1800
+
+  # Bathroom
+  furniture bathtub in r_bath anchor top-left flush     size 1700x750
+  furniture wc      in r_bath anchor right flush        size 650x400
+  furniture basin   in r_bath anchor bottom-right flush size 500x450
+
+  # Shower room
+  furniture shower in r_shower anchor bottom-left flush  size 900x900
+  furniture wc     in r_shower anchor bottom-right flush size 400x650
+  furniture basin  in r_shower anchor left flush         size 450x500
+  title { project "Two-Bedroom Flat - Revised" }
+}

@@ -39,6 +39,8 @@ Then ask in plain language; the agent writes the `.arch`, compiles it, and check
 - *"Draw a two-storey, two-bedroom house, 8 m × 6 m, with a stair linking the floors, and give me one SVG per storey."*
 - *"Export that plan as DXF."*
 
+See [floor plans agents wrote from one-paragraph briefs](https://archlang.uk/gallery), each with its brief and source.
+
 <!-- AGENT-FIRST NOTICE -->
 > [!IMPORTANT]
 > ### 🤖 Read this with your AI agent — don't read it by hand.

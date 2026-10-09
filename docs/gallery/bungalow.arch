@@ -1,0 +1,75 @@
+# Single-storey three-bedroom bungalow, 12.8 m x 8.6 m = 110.08 m2.
+plan "Three-Bedroom Bungalow" {
+  units mm
+  grid 50
+  north up
+  paper A2 landscape
+  scale 1:50
+  dims auto all
+  schedule rooms
+  legend
+
+  # West wing: one open-plan room. East wing: service/master row, hall, bedroom row.
+  room id=r_living  at (0,0)        size 5200x8600 label "Kitchen / Dining / Living" uses living kitchen dining
+  room id=r_utility at (5200,0)     size 1600x3800 label "Utility"    uses utility
+  room id=r_ensuite at (6800,0)     size 1800x3800 label "En-suite"   uses bath
+  room id=r_master  at (8600,0)     size 4200x3800 label "Master Bedroom" uses bedroom
+  room id=r_hall    at (5200,3800)  size 7600x1500 label "Entrance Hall" uses entry hall
+  room id=r_bed2    at (5200,5300)  size 3100x3300 label "Bedroom 2"  uses bedroom
+  room id=r_bath    at (8300,5300)  size 1400x3300 label "Bathroom"   uses bath
+  room id=r_bed3    at (9700,5300)  size 3100x3300 label "Bedroom 3"  uses bedroom
+
+  wall id=w_n exterior thickness 200 { (0,0) (12800,0) }
+  wall id=w_e exterior thickness 200 { (12800,0) (12800,8600) }
+  wall id=w_s exterior thickness 200 { (0,8600) (12800,8600) }
+  wall id=w_w exterior thickness 200 { (0,0) (0,8600) }
+
+  wall id=p_liv partition thickness 100 { (5200,0) (5200,8600) }
+  wall id=p_top partition thickness 100 { (5200,3800) (12800,3800) }
+  wall id=p_bot partition thickness 100 { (5200,5300) (12800,5300) }
+  wall id=p_ue  partition thickness 100 { (6800,0) (6800,3800) }
+  wall id=p_em  partition thickness 100 { (8600,0) (8600,3800) }
+  wall id=p_b1  partition thickness 100 { (8300,5300) (8300,8600) }
+  wall id=p_b2  partition thickness 100 { (9700,5300) (9700,8600) }
+
+  # Entrance on the east facade into the hall.
+  door id=d_entry on w_e at 4550 width 1000 swing into r_hall
+  opening id=o_hall_living on p_liv at 4550 width 1000
+  door id=d_utility on p_liv at 1900 width 800 swing into r_utility
+  door id=d_master  on p_top at 5500 width 900 swing into r_master
+  door id=d_ensuite on p_em  at 1900 width 800 swing into r_ensuite
+  door id=d_bed2    on p_bot at 1550 width 900 swing into r_bed2
+  door id=d_bath    on p_bot at 3800 width 800 swing into r_bath
+  door id=d_bed3    on p_bot at 6050 width 900 swing into r_bed3
+
+  window id=win_master  on w_n at 10700 width 1600
+  window id=win_ensuite on w_n at 7700  width 600
+  window id=win_utility on w_n at 6000  width 600
+  window id=win_kitchen on w_n at 3200  width 1400
+  window id=win_living_w on w_w at 5800 width 2000
+  window id=win_living_s on w_s at 2600 width 2400
+  window id=win_bed2    on w_s at 6750  width 1400
+  window id=win_bath    on w_s at 9000  width 600
+  window id=win_bed3    on w_s at 11250 width 1400
+
+  furniture counter in r_living anchor top-left flush size 600x3000 label "Kitchen"
+  furniture table   in r_living centered size 900x1600 label "Dining"
+  furniture sofa    in r_living anchor bottom-left flush inset 300 size 900x2200 label "Sofa"
+
+  furniture washer in r_utility anchor top-right flush size 600x600
+
+  furniture shower in r_ensuite anchor top-left flush size 900x900
+  furniture wc     in r_ensuite anchor bottom-left flush size 400x700
+  furniture basin  in r_ensuite anchor bottom-right flush size 500x400
+
+  furniture double_bed in r_master anchor right flush size 2000x1800
+
+  furniture bed in r_bed2 anchor bottom-left flush size 1500x2000
+  furniture bed in r_bed3 anchor bottom-right flush size 1500x2000
+
+  furniture shower in r_bath anchor bottom-left flush size 900x900
+  furniture wc     in r_bath anchor bottom-right flush size 400x700
+  furniture basin  in r_bath anchor right flush size 400x500
+
+  title { project "Three-Bedroom Bungalow" drawn_by "ArchLang" date "2026-10-09" }
+}

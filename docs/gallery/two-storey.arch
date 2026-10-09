@@ -1,0 +1,93 @@
+# Two-storey house, 10.0 m x 7.0 m footprint on both floors = 70 m2 per floor, 140 m2 total.
+plan "Two-Storey House" {
+  units mm
+  grid 50
+  north up
+  paper A3 landscape
+  scale 1:50
+  dims auto all
+  schedule rooms
+  legend
+
+  let W = 10000   # footprint width
+  let D = 7000    # footprint depth
+  let MID = 4500  # spine wall between the main rooms and the hall/landing band
+  let SVC = 8000  # west face of the WC / bathroom
+
+  level 0 "Ground Floor" {
+    room id=r_living  at (0, 0)      size 5500x4500 label "Living Room"    uses living
+    room id=r_kitchen at (5500, 0)   size 4500x4500 label "Kitchen/Dining" uses kitchen dining
+    room id=r_hall    at (0, MID)    size 8000x2500 label "Entrance Hall"  uses hall entry
+    room id=r_wc      at (SVC, MID)  size 2000x2500 label "WC"             uses wc
+
+    wall id=w_north exterior thickness 200 { (0, 0) (W, 0) }
+    wall id=w_east  exterior thickness 200 { (W, 0) (W, D) }
+    wall id=w_south exterior thickness 200 { (0, D) (W, D) }
+    wall id=w_west  exterior thickness 200 { (0, 0) (0, D) }
+    wall id=w_mid   partition thickness 100 { (0, MID) (W, MID) }
+    wall id=w_lk    partition thickness 100 { (5500, 0) (5500, MID) }
+    wall id=w_wc    partition thickness 100 { (SVC, MID) (SVC, D) }
+
+    door id=d_entry   on w_south at 5500 width 1000 swing into r_hall
+    door id=d_living  on w_mid   at 4700 width 900  swing into r_living
+    door id=d_kitchen on w_mid   at 6500 width 900  swing into r_kitchen
+    door id=d_wc      on w_wc    at 1250 width 800  swing into r_wc
+    opening id=o_lk   on w_lk    at 2250 width 1200
+
+    window on w_north at 2750 width 1800
+    window on w_west  at 2250 width 1500
+    window on w_north at 7750 width 1500
+    window on w_east  at 2250 width 1500
+    window on w_east  at 5750 width 600
+    window on w_west  at 5200 width 900
+
+    stair id=s_main at (100, 5900) size 3600x1000 dir up
+
+    furniture wc    in r_wc anchor top-right    flush size 400x700
+    furniture basin in r_wc anchor bottom-right flush size 500x400
+
+    furniture counter      in r_kitchen anchor top-right    flush size 1800x600
+    furniture kitchen_sink at (7300, 100) size 800x600 in r_kitchen
+    furniture stove        in r_kitchen anchor right        flush size 600x600
+    furniture fridge       in r_kitchen anchor bottom-right flush size 700x700 rotate 180
+    furniture table        at (6700, 1900) size 1400x900 label "Dining" in r_kitchen
+  }
+
+  level 1 "First Floor" {
+    room id=r_bed1    at (0, 0)     size 3400x4500 label "Bedroom 1" uses bedroom
+    room id=r_bed2    at (3400, 0)  size 3300x4500 label "Bedroom 2" uses bedroom
+    room id=r_bed3    at (6700, 0)  size 3300x4500 label "Bedroom 3" uses bedroom
+    room id=r_landing at (0, MID)   size 8000x2500 label "Landing"   uses circulation
+    room id=r_bath    at (SVC, MID) size 2000x2500 label "Bathroom"  uses bath
+
+    wall id=w_north exterior thickness 200 { (0, 0) (W, 0) }
+    wall id=w_east  exterior thickness 200 { (W, 0) (W, D) }
+    wall id=w_south exterior thickness 200 { (0, D) (W, D) }
+    wall id=w_west  exterior thickness 200 { (0, 0) (0, D) }
+    wall id=w_mid   partition thickness 100 { (0, MID) (W, MID) }
+    wall id=w_b12   partition thickness 100 { (3400, 0) (3400, MID) }
+    wall id=w_b23   partition thickness 100 { (6700, 0) (6700, MID) }
+    wall id=w_bath  partition thickness 100 { (SVC, MID) (SVC, D) }
+
+    door id=d_bed1 on w_mid  at 1700 width 900 swing into r_bed1
+    door id=d_bed2 on w_mid  at 5050 width 900 swing into r_bed2
+    door id=d_bed3 on w_mid  at 7350 width 900 swing into r_bed3
+    door id=d_bath on w_bath at 1250 width 800 swing into r_bath
+
+    window on w_north at 1700 width 1500
+    window on w_north at 5050 width 1500
+    window on w_north at 8350 width 1500
+    window on w_east  at 5750 width 600
+    window on w_south at 5500 width 1200
+
+    stair id=s_main at (100, 5900) size 3600x1000 dir down
+
+    furniture double_bed in r_bed1 anchor top-left flush size 1600x2000
+    furniture double_bed in r_bed2 anchor top-left flush size 1600x2000
+    furniture bed        in r_bed3 anchor top-right flush size 1000x2000
+    furniture bathtub in r_bath anchor top-right    flush size 700x1700
+    furniture wc      in r_bath anchor bottom-right flush size 700x400 rotate 90
+    furniture basin   in r_bath anchor top-left     flush size 500x400
+  }
+  title { project "Two-Storey House" }
+}

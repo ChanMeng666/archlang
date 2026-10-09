@@ -1,0 +1,13 @@
+[
+  { "id": "studio", "title": "Studio flat", "model": "Claude Fable" },
+  { "id": "one-bed", "title": "One-bedroom flat", "model": "Claude Fable" },
+  { "id": "two-bed", "title": "Two-bedroom flat", "model": "Claude Opus" },
+  { "id": "bungalow", "title": "Three-bedroom bungalow", "model": "Claude Opus" },
+  { "id": "l-shape", "title": "L-shaped house", "model": "Claude Opus" },
+  { "id": "narrow-plot", "title": "House on a narrow plot", "model": "Claude Sonnet" },
+  { "id": "two-storey", "title": "Two-storey house", "model": "Claude Opus" },
+  { "id": "family-house", "title": "Four-bedroom family house", "model": "Claude Opus" },
+  { "id": "family-of-four", "title": "A home for a family of four", "model": "Claude Fable" },
+  { "id": "courtyard", "title": "U-shaped courtyard house", "model": "Claude Haiku" },
+  { "id": "revision", "title": "A flat, then a change request", "model": "Claude Opus" }
+]

@@ -1,0 +1,1 @@
+Design a two-bedroom flat of about 75 m². Rooms: a hall, a living room of at least 20 m², a separate kitchen of at least 9 m², a main bedroom of at least 13 m², a second bedroom of at least 9 m², and one bathroom. Every room opens off the hall. Every bedroom and the living room need a window.

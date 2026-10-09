@@ -1,0 +1,1 @@
+Design a one-bedroom flat of about 50 m². Rooms: an entrance hall, a living room with an open kitchen area, a separate kitchen is NOT wanted, one bedroom of at least 12 m², and one bathroom. The bedroom and the bathroom both open off the hall. The bedroom and the living room each need a window.
