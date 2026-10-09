@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **The MCP server as a one-click `.mcpb` bundle** (Claude Desktop extension; the file Smithery publishes for local stdio servers). `npm run build:mcpb` bundles `packages/mcp` with the SDK and the core into one self-contained `dist-mcpb/archlang-mcp-<version>.mcpb`, with a `manifest.json` generated from the package metadata and the server's own `tools/list`; `npm run prove:mcpb` unpacks it outside the repo and drives it over stdio. The release workflow attaches it to the GitHub Release, best-effort and last.
+
 ### Changed
 
 - **The Claude Code plugin passes the directory's checks.** The manifest pins the MCP launcher to an exact version (`npx -y @chanmeng666/archlang-mcp@<version>`, not the unpinned package), carries a `version` (the core's), and ships a 1024 px `.claude-plugin/icon.png` rendered from the plum mark on a light tile. `npm run gen:plugin` stamps the version and the pin from the package manifests and `check:drift` gates them, so a release bump cannot leave them stale.

@@ -103,6 +103,8 @@
     "playground:build": "npm run build && npm -w archlang-playground run build",
     "docs:build:only": "npm -w docs-site run build",
     "mcp:build:only": "npm -w packages/mcp run build",
+    "build:mcpb": "npm run build && tsx packages/mcp/scripts/build-mcpb.ts",
+    "prove:mcpb": "tsx packages/mcp/scripts/prove-mcpb.ts",
     "playground:build:only": "npm -w playground run build",
     "vscode:build:only": "npm -w editors/vscode run build",
     "build:workspaces": "npm run docs:build:only && npm run playground:build:only && npm run mcp:build:only && npm run vscode:build:only",

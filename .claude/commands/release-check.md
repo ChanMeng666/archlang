@@ -89,3 +89,15 @@ you observed. Do NOT push anything — this command only verifies.
      the bundle. Search the bundle with a literal matcher, never a regex.
   3. Upload the HIGHEST un-uploaded `.vsix` (`.vsix` files are gitignored and several can pile up).
   4. The gallery lags an upload by minutes; a disagreeing probe means wait and re-probe.
+- **MCPB bundle / Smithery (human step; no credential in CI).** `release.yml` builds
+  `archlang-mcp-<mcp version>.mcpb` (`npm run build:mcpb`, proven with `npm run prove:mcpb`) and attaches
+  it to the GitHub Release, best-effort. To list it on Smithery (<https://smithery.ai/docs/build/publish>,
+  "Local (MCPB Bundle)"), download that asset (or build it) and, logged in to Smithery:
+
+  ```bash
+  smithery mcp publish ./archlang-mcp-<version>.mcpb -n <your-org>/<server-id>
+  ```
+
+  `-n` is the Smithery namespace/server id, fixed on the first publish. The bundle is the only input;
+  the bundle's `manifest.json` is generated, never committed. A change to the shim version needs a new
+  bundle and a re-publish.
