@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.42.1] - 2026-10-09
+
 ### Fixed — `arch finish` no longer leaves a plan bare when one sheet statement is refused
 
 - **The sheet stage degrades instead of rolling everything back.** `finish` never returns a plan
@@ -40,6 +42,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   one-paragraph brief printed above it and completed with one `arch finish`; nothing is edited
   by hand. They are selected examples, not a benchmark. The sources live in `docs/gallery/` and
   are not part of `examples/` or of any pinned corpus.
+
+### Changed — the MCP shim is 0.2.24
+
+- **`@chanmeng666/archlang-mcp` 0.2.24** pins the core at `^1.42.1` and re-bakes
+  `llms-full.txt`, which gained the task-skills section. No tool changes.
 
 ## [1.42.0] - 2026-10-09
 
