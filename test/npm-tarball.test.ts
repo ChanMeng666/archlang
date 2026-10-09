@@ -64,9 +64,13 @@ describe("npm tarball (npm pack --dry-run)", () => {
     ]);
   });
 
-  it("ships nothing outside the root files, dist/ and examples/", () => {
-    const strays = paths.filter((p) => p.includes("/") && !/^(dist|examples)\//.test(p));
+  it("ships nothing outside the root files, dist/, examples/ and the task skills", () => {
+    const strays = paths.filter(
+      (p) => p.includes("/") && !/^(dist|examples)\//.test(p) && !/^skills\/[a-z0-9-]+\/SKILL\.md$/.test(p),
+    );
     expect(strays).toEqual([]);
+    // The task skills ship beside the root SKILL.md that points at them.
+    expect(paths.filter((p) => p.startsWith("skills/")).length).toBeGreaterThan(0);
   });
 
   it("ships the whole CHANGELOG.md, byte for byte", () => {

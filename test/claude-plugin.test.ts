@@ -1,10 +1,10 @@
 /**
  * The Claude Code plugin manifests are hand-written JSON that must keep pointing at things that
- * exist: the plugin exposes the ROOT `SKILL.md` (one source of truth, via `"skills": ["."]`) and
- * the published MCP package. No version is written in either file — the manifest omits it so it
+ * exist: the plugin exposes the ROOT `SKILL.md` (one source of truth, via `"skills": ["."]`), the
+ * task skills under `skills/` and the published MCP package. No version is written in either file — the manifest omits it so it
  * cannot drift from `package.json`.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -18,9 +18,18 @@ describe(".claude-plugin manifests", () => {
   it("plugin.json exposes the root SKILL.md without duplicating it", () => {
     expect(plugin.skills).toEqual(["."]);
     expect(existsSync(resolve("SKILL.md"))).toBe(true);
-    expect(existsSync(resolve("skills"))).toBe(false);
     expect(skillName).toBe("archlang");
     expect(plugin.name).toBe(skillName);
+  });
+
+  it("the task skills load from the default skills/ scan, which the `skills` key adds to", () => {
+    // Claude Code scans `skills/<name>/SKILL.md` by default and a manifest `skills` key ADDS to
+    // that scan, so `["."]` (the root skill) plus the directory is the whole set. Listing
+    // `./skills/` as well would name each task skill twice.
+    const dirs = readdirSync(resolve("skills"));
+    expect(dirs.length).toBeGreaterThan(0);
+    for (const d of dirs) expect(existsSync(resolve("skills", d, "SKILL.md")), `skills/${d}/SKILL.md`).toBe(true);
+    expect(dirs).not.toContain(skillName);
   });
 
   it("plugin.json declares the published MCP server and writes no version", () => {

@@ -1,6 +1,6 @@
 {
   "name": "archlang",
-  "description": "ArchLang: a deterministic DSL and compiler for floor plans. Gives the agent the archlang skill (author, compile, lint and verify .arch plans through the CLI) and the ArchLang MCP server.",
+  "description": "ArchLang: a deterministic DSL and compiler for floor plans. Gives the agent the archlang skill (author, compile, lint and verify .arch plans through the CLI), four task skills (brief to plan, edit, export, review) and the ArchLang MCP server.",
   "author": {
     "name": "Chan Meng",
     "url": "https://github.com/ChanMeng666"

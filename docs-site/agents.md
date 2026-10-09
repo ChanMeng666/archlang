@@ -23,6 +23,17 @@ claude mcp add archlang -- npx -y @chanmeng666/archlang-mcp   # or the MCP serve
 /plugin install archlang@archlang
 ```
 
+`npx skills add ChanMeng666/archlang` installs the `archlang` skill: the full workflow, and the one
+to start from. The repository also holds four task skills, short checklists for one job each. Add
+`--full-depth` to that command to install them too; the Claude Code plugin loads all five.
+
+- `archlang-brief-to-plan`: write a new plan from a written brief and check it against the brief.
+- `archlang-edit-plan`: change an existing `.arch` with the smallest edit, then re-verify.
+- `archlang-export`: deliver SVG, PNG, PDF or DXF files, with paper size, scale and storeys.
+- `archlang-review-plan`: check a plan (lint profiles, the intent gate, suggestions) without editing it.
+
+To see what agents produce from a one-paragraph brief, open the [agent gallery](/gallery).
+
 Then ask in plain language; the agent writes the `.arch`, compiles it, and checks it with `lint` and `describe`:
 
 - *"Design a one-bedroom flat of about 54 m²: a 32 m² living/kitchen, a 10 m² bedroom and a 10 m² bathroom, with the front door on the north wall."*
