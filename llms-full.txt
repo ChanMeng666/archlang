@@ -603,6 +603,17 @@ MCP-native hosts — prefer the CLI when you have a shell; it costs nothing in c
 Treat the CLI as the source of truth — author, render, and verify through it rather than reasoning
 about SVG by hand.
 
+## Task skills
+
+Four short skills sit in `skills/` beside this file, one job each
+(`npx skills add ChanMeng666/archlang --full-depth` installs them with this one). Each is a
+checklist of CLI calls and holds no language reference of its own:
+
+- `archlang-brief-to-plan`: write a new plan from a written brief and check it against the brief.
+- `archlang-edit-plan`: change an existing `.arch` with the smallest edit, then re-verify.
+- `archlang-export`: deliver SVG, PNG, PDF or DXF files, with paper size, scale and storeys.
+- `archlang-review-plan`: check a plan (lint profiles, the intent gate, suggestions) without editing it.
+
 ---
 
 ## 3. CLI reference

@@ -1,0 +1,67 @@
+# One-bedroom flat, ~51 m² gross-internal (room boxes measured to wall centrelines).
+# Hall is the hub: entrance from the south, bedroom to the north, bathroom to the
+# west, open-plan living/kitchen to the east. No separate kitchen.
+plan "One-Bed Flat" {
+  units mm
+  grid 50
+  paper A3 landscape
+  scale 1:50
+  north up
+  dims auto all
+  schedule rooms
+  legend
+
+  # Rooms (centreline boxes)
+  room id=r_bed    at (0,0)       size 3500x3600 label "Bedroom"          uses bedroom
+  room id=r_bath   at (0,3600)    size 1700x2800 label "Bathroom"         uses bath
+  room id=r_hall   at (1700,3600) size 1800x2800 label "Hall"             uses entry
+  room id=r_living at (3500,0)    size 4500x6400 label "Living / Kitchen" uses living
+
+  # Exterior shell
+  wall id=w_north exterior thickness 250 { (0,0) (8000,0) }
+  wall id=w_east  exterior thickness 250 { (8000,0) (8000,6400) }
+  wall id=w_south exterior thickness 250 { (0,6400) (8000,6400) }
+  wall id=w_west  exterior thickness 250 { (0,0) (0,6400) }
+
+  # Partitions
+  wall id=w_p1 partition thickness 100 { (3500,0) (3500,6400) }     # bed+hall | living
+  wall id=w_p2 partition thickness 100 { (0,3600) (3500,3600) }     # bedroom | bath+hall
+  wall id=w_p3 partition thickness 100 { (1700,3600) (1700,6400) }  # bath | hall
+
+  # Doors
+  door id=d_entry on w_south at 2600 width 900 hinge near start swing into r_hall
+  door id=d_bed   on w_p2    at 2600 width 800 hinge near start swing into r_bed
+  door id=d_bath  on w_p3    at 1400 width 800 hinge near start swing into r_bath
+  opening id=o_living on w_p1 at 5000 width 1200
+
+  # Windows
+  window id=win_bed    on w_west  at 1800 width 1500
+  window id=win_bath   on w_west  at 5000 width 600  sill 1500
+  window id=win_liv_n  on w_north at 5750 width 1500
+  window id=win_liv_e  on w_east  at 2000 width 1800
+
+  # Bedroom
+  furniture double_bed in r_bed anchor top flush size 1600x2000
+  furniture nightstand in r_bed anchor top-left flush inset 100 size 500x400
+  furniture wardrobe   in r_bed anchor bottom-left flush size 1800x600
+
+  # Bathroom
+  furniture shower in r_bath anchor top-left flush size 900x900
+  furniture wc     against wall w_west  offset 5100 size 700x400 in r_bath
+  furniture basin  against wall w_south offset 1000 size 600x450 in r_bath
+
+  # Hall
+  furniture shoe_cabinet in r_hall anchor top-left inset 100 size 350x800
+
+  # Living / open kitchen (kitchen run along the north wall)
+  # (`offset` is the piece's centre along the wall)
+  furniture kitchen_sink against wall w_north offset 4000 size 800x600 in r_living
+  furniture stove        against wall w_north offset 4800 size 600x600 in r_living
+  furniture counter      against wall w_north offset 6000 size 1600x600 in r_living
+  furniture fridge       against wall w_north offset 7450 size 700x700 in r_living
+  furniture sofa    in r_living anchor right inset 300 size 900x2000
+  furniture tv_unit in r_living anchor left  inset 100 size 400x1500
+  furniture table   in r_living anchor bottom inset 600 size 1400x800 label "Dining"
+
+  title { project "One-Bed Flat" drawn_by "ArchLang" date "2026-10-09" }
+}

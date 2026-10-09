@@ -1,0 +1,122 @@
+# Family house for four — single storey, ~120 m² (14.0 m x 8.6 m on wall centrelines).
+# Brief: two adults + two school-age kids, one adult works from home every day, the family
+# cooks a lot. So: three bedrooms, a dedicated office with its own door, and a large kitchen
+# (15.2 m²) with an island, open to the living/dining room and separately reachable from the hall.
+plan "Family House" {
+  units mm
+  grid 50
+  paper A3 landscape
+  scale 1:100
+  north up
+  dims auto all
+  schedule rooms
+  legend
+
+  # ---- shell + partitions ------------------------------------------------------
+  wall id=shell     exterior  thickness 200 { (0,0) (14000,0) (14000,8600) (0,8600) close }
+  wall id=w_kit_w   partition thickness 100 { (6800,0) (6800,4000) }
+  wall id=w_off_w   partition thickness 100 { (10600,0) (10600,4000) }
+  wall id=w_hall_n  partition thickness 100 { (0,4000) (14000,4000) }
+  wall id=w_hall_s  partition thickness 100 { (0,5200) (12600,5200) }
+  wall id=w_entry_w partition thickness 100 { (12600,4000) (12600,8600) }
+  wall id=w_bed1_e  partition thickness 100 { (3400,5200) (3400,8600) }
+  wall id=w_bath_e  partition thickness 100 { (5400,5200) (5400,8600) }
+  wall id=w_lau_e   partition thickness 100 { (7000,5200) (7000,8600) }
+  wall id=w_bed2_e  partition thickness 100 { (9800,5200) (9800,8600) }
+
+  # ---- rooms -------------------------------------------------------------------
+  # Garden band (north): the day rooms. Street band (south): bedrooms and wet rooms.
+  room id=r_living  at (0,0)        size 6800x4000 label "Living / Dining" uses living dining
+  room id=r_kitchen at (6800,0)     size 3800x4000 label "Kitchen"         uses kitchen
+  room id=r_office  at (10600,0)    size 3400x4000 label "Office"          uses office
+  room id=r_hall    at (0,4000)     size 12600x1200 label "Hall"           uses hall circulation
+  room id=r_entry   at (12600,4000) size 1400x4600 label "Entry"           uses entry
+  room id=r_bed1    at (0,5200)     size 3400x3400 label "Main Bedroom"    uses bedroom
+  room id=r_bath    at (3400,5200)  size 2000x3400 label "Bathroom"        uses bath
+  room id=r_laundry at (5400,5200)  size 1600x3400 label "Laundry"         uses utility
+  room id=r_bed2    at (7000,5200)  size 2800x3400 label "Bedroom 2"       uses bedroom
+  room id=r_bed3    at (9800,5200)  size 2800x3400 label "Bedroom 3"       uses bedroom
+
+  # ---- doors + openings --------------------------------------------------------
+  door id=d_front at (14000,4700) width 1000 wall shell hinge left swing in
+  door id=d_garden sliding at (2000,0) width 2000 wall shell slide left
+
+  opening id=o_entry   on w_entry_w at 600  width 900
+  opening id=o_living  on w_hall_n  at 3400 width 1800
+  opening id=o_kitchen on w_hall_n  at 8700 width 1200
+  opening id=o_livkit  on w_kit_w   at 3100 width 1400
+
+  door id=d_office  on w_hall_n at 11600 width 900 hinge near start swing into r_office
+  door id=d_bed1    on w_hall_s at 2800  width 900 hinge near start swing into r_bed1
+  door id=d_bath    on w_hall_s at 4400  width 800 hinge near start swing into r_bath
+  door id=d_laundry bifold on w_hall_s at 6200 width 800
+  door id=d_bed2    on w_hall_s at 7600  width 900 hinge near start swing into r_bed2
+  door id=d_bed3    on w_hall_s at 10400 width 900 hinge near start swing into r_bed3
+
+  # ---- windows -----------------------------------------------------------------
+  window id=n_living  at (4900,0)     width 1800 wall shell
+  window id=w_living  at (0,2000)     width 1800 wall shell
+  window id=n_kitchen at (8700,0)     width 1800 wall shell
+  window id=n_office  at (12300,0)    width 1800 wall shell
+  window id=e_office  at (14000,2000) width 1400 wall shell
+  window id=e_entry   at (14000,7000) width 800  wall shell
+  window id=s_bed3    at (11100,8600) width 1600 wall shell
+  window id=s_bed2    at (8300,8600)  width 1600 wall shell
+  window id=s_lau     at (6200,8600)  width 800  wall shell
+  window id=s_bath    at (4400,8600)  width 800  wall shell
+  window id=s_bed1    at (1700,8600)  width 1800 wall shell
+  window id=w_bed1    at (0,5900)     width 1000 wall shell
+  window id=w_hall    at (0,4600)     width 800  wall shell
+
+  # ---- furniture ---------------------------------------------------------------
+  # Living / dining
+  furniture sofa    at (700,1400)  size 2200x900  label "Sofa"
+  furniture tv_unit at (700,3450)  size 1600x450  label "TV" rotate 180
+  furniture table   at (4300,1400) size 1800x1000 label "Dining"
+
+  # Kitchen: a full run under the north window plus an island.
+  # `offset` is the piece's CENTRE along the run; sizes are along x depth.
+  furniture fridge       against wall shell segment 0 offset 7350 size 900x700 in r_kitchen
+  furniture stove        against wall shell segment 0 offset 8150 size 600x600 in r_kitchen
+  furniture kitchen_sink against wall shell segment 0 offset 8950 size 900x600 in r_kitchen
+  furniture dishwasher   against wall shell segment 0 offset 9750 size 600x600 in r_kitchen
+  furniture counter      against wall shell segment 0 offset 10300 size 400x600 in r_kitchen
+  furniture table        in r_kitchen centered size 1600x800 label "Island"
+
+  # Office
+  furniture desk      in r_office anchor top  flush size 1600x800 label "Desk"
+  furniture bookshelf in r_office anchor left flush size 300x1800
+
+  # Main bedroom
+  furniture double_bed against wall shell segment 2 offset 11950 size 1500x2000 in r_bed1
+  furniture wardrobe   against wall shell segment 3 offset 1100  size 1800x600  in r_bed1
+
+  # Bathroom
+  furniture wc      against wall w_bed1_e offset 1500 size 400x700 in r_bath
+  furniture basin   in r_bath anchor right  flush size 450x600
+  furniture bathtub in r_bath anchor bottom flush size 1700x750
+
+  # Laundry
+  furniture washer       against wall shell segment 2 offset 8200 size 600x600 in r_laundry
+  furniture dryer        against wall shell segment 2 offset 7400 size 600x600 in r_laundry
+  furniture laundry_sink in r_laundry anchor right flush size 450x600
+
+  # Kids' bedrooms: bed under the window, desk by the door, wardrobe on the side wall.
+  furniture bed      against wall shell    segment 2 offset 6300 size 1000x2000 in r_bed2
+  furniture wardrobe against wall w_bed2_e offset 2300 size 1800x600 in r_bed2
+  furniture desk     in r_bed2 anchor top-right flush size 1000x600 label "Desk"
+
+  furniture bed      against wall shell     segment 2 offset 3500 size 1000x2000 in r_bed3
+  furniture wardrobe against wall w_entry_w offset 3500 size 1800x600 in r_bed3
+  furniture desk     in r_bed3 anchor top-right flush size 1000x600 label "Desk"
+
+  # Entry
+  furniture shoe_cabinet in r_entry anchor bottom flush size 1000x350
+  furniture coat_rack    at (12650,5400) size 350x600
+
+  title {
+    project "Family House — 120 m²"
+    drawn_by "ArchLang"
+    date "2026-10-09"
+  }
+}

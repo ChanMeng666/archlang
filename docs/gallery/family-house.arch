@@ -1,0 +1,106 @@
+# Single-storey four-bedroom family house, 16.0 m x 10.0 m = 160 m2.
+# North band (4.6 m deep): living, entrance hall, WC/utility, kitchen, dining.
+# Central corridor (1.2 m). South band (4.2 m deep): study, 3 bedrooms, bath/en-suite, master.
+plan "Four-Bedroom Family House" {
+  units mm
+  grid 50
+  paper A3 landscape
+  scale 1:100
+  north up
+  dims auto all
+  schedule rooms
+  legend
+
+  # --- North band ---
+  room id=r_living  at (0,0)        size 5600x4600 label "Living Room"   uses living
+  room id=r_hall    at (5600,0)     size 2000x4600 label "Entrance Hall" uses entry
+  room id=r_wc      at (7600,0)     size 2200x2000 label "WC"            uses wc
+  room id=r_utility at (7600,2000)  size 2200x2600 label "Utility"       uses utility
+  room id=r_kitchen at (9800,0)     size 3400x4600 label "Kitchen"       uses kitchen
+  room id=r_dining  at (13200,0)    size 2800x4600 label "Dining Room"   uses dining
+
+  # --- Corridor ---
+  room id=r_corr    at (0,4600)     size 16000x1200 label "Corridor"     uses circulation
+
+  # --- South band ---
+  room id=r_study   at (0,5800)     size 2400x4200 label "Study"         uses office
+  room id=r_bed2    at (2400,5800)  size 2600x4200 label "Bedroom 2"     uses bedroom
+  room id=r_bed3    at (5000,5800)  size 2600x4200 label "Bedroom 3"     uses bedroom
+  room id=r_bed4    at (7600,5800)  size 2600x4200 label "Bedroom 4"     uses bedroom
+  room id=r_bath    at (10200,5800) size 2200x2200 label "Bathroom"      uses bath
+  room id=r_ensuite at (10200,8000) size 2200x2000 label "En-suite"      uses bath
+  room id=r_master  at (12400,5800) size 3600x4200 label "Master Bedroom" uses bedroom
+
+  # --- Exterior shell ---
+  wall id=w_north exterior thickness 200 { (0,0) (16000,0) }
+  wall id=w_east  exterior thickness 200 { (16000,0) (16000,10000) }
+  wall id=w_south exterior thickness 200 { (0,10000) (16000,10000) }
+  wall id=w_west  exterior thickness 200 { (0,0) (0,10000) }
+
+  # --- Partitions ---
+  wall id=p_cn partition thickness 100 { (0,4600) (16000,4600) }
+  wall id=p_cs partition thickness 100 { (0,5800) (16000,5800) }
+  wall id=p_lh partition thickness 100 { (5600,0) (5600,4600) }
+  wall id=p_hw partition thickness 100 { (7600,0) (7600,4600) }
+  wall id=p_wu partition thickness 100 { (7600,2000) (9800,2000) }
+  wall id=p_uk partition thickness 100 { (9800,0) (9800,4600) }
+  wall id=p_kd partition thickness 100 { (13200,0) (13200,4600) }
+  wall id=p_s1 partition thickness 100 { (2400,5800) (2400,10000) }
+  wall id=p_s2 partition thickness 100 { (5000,5800) (5000,10000) }
+  wall id=p_s3 partition thickness 100 { (7600,5800) (7600,10000) }
+  wall id=p_s4 partition thickness 100 { (10200,5800) (10200,10000) }
+  wall id=p_s5 partition thickness 100 { (12400,5800) (12400,10000) }
+  wall id=p_be partition thickness 100 { (10200,8000) (12400,8000) }
+
+  # --- Doors and openings ---
+  door id=d_front   on w_north at 6600 width 1000 swing into r_hall
+  opening id=o_hall on p_cn at 6600 width 1400
+  door id=d_living  on p_lh at 3000 width 900 swing into r_living
+  door id=d_wc      on p_hw at 1000 width 800 swing into r_wc
+  door id=d_utility on p_cn at 8700 width 800 swing into r_utility
+  door id=d_kitchen on p_cn at 11500 width 900 swing into r_kitchen
+  opening id=o_kd   on p_kd at 2300 width 1600
+  door id=d_study   on p_cs at 1200 width 900 swing into r_study
+  door id=d_bed2    on p_cs at 3700 width 900 swing into r_bed2
+  door id=d_bed3    on p_cs at 6300 width 900 swing into r_bed3
+  door id=d_bed4    on p_cs at 8900 width 900 swing into r_bed4
+  door id=d_bath    on p_cs at 11300 width 800 swing into r_bath
+  door id=d_master  on p_cs at 13400 width 900 swing into r_master
+  door id=d_ensuite on p_s5 at 3400 width 800 swing into r_ensuite
+
+  # --- Windows ---
+  window on w_north at 2800 width 2400
+  window on w_west  at 2300 width 1600
+  window on w_north at 8700 width 600
+  window on w_north at 11500 width 1600
+  window on w_north at 14600 width 1600
+  window on w_east  at 2300 width 1600
+  window on w_east  at 7900 width 1600
+  window on w_south at 1200 width 1400
+  window on w_south at 3700 width 1400
+  window on w_south at 6300 width 1400
+  window on w_south at 8900 width 1400
+  window on w_south at 11300 width 600
+  window on w_south at 14200 width 1800
+
+  # --- Furniture ---
+  furniture sofa        in r_living  anchor top flush size 2200x900 label "Sofa"
+  furniture table       in r_dining  centered size 900x1600 label "Dining"
+  furniture counter     in r_kitchen anchor top flush size 3000x600
+  furniture fridge      in r_kitchen anchor left flush size 700x700
+  furniture washer      in r_utility anchor top-left flush size 600x600
+  furniture wc          in r_wc      anchor top-right flush size 400x700
+  furniture basin       in r_wc      anchor bottom-right flush size 500x400
+  furniture desk        in r_study   anchor bottom-left flush size 700x1400 label "Desk"
+  furniture bed         in r_bed2    anchor bottom-left flush size 1000x2000
+  furniture bed         in r_bed3    anchor bottom-left flush size 1000x2000
+  furniture bed         in r_bed4    anchor bottom-left flush size 1000x2000
+  furniture double_bed  in r_master  anchor right flush size 2000x1800
+  furniture bathtub     in r_bath    anchor bottom flush size 1700x750
+  furniture wc          in r_bath    anchor top-right flush size 400x700
+  furniture shower      in r_ensuite anchor top-left flush size 800x800
+  furniture wc          in r_ensuite anchor bottom-left flush size 400x700
+  furniture basin       in r_ensuite anchor top-right flush size 500x400
+
+  title { project "Four-Bedroom Family House" drawn_by "ArchLang" date "2026-10-09" }
+}

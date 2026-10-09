@@ -24,6 +24,11 @@ adr/index.md
 # canonical source's git history and read by .vitepress/config.ts's transformItems.
 .vitepress/lastmod.json
 
+# Agent-gallery drawings, raw sources and the data module <AgentPlan> renders from,
+# regenerated from docs/gallery/ by sync-docs.mjs.
+public/gallery/
+.vitepress/theme/gallery-data.js
+
 # Example-gallery SVGs + the live-widget source data are regenerated from
 # examples/*.arch by sync-docs.mjs.
 public/examples/

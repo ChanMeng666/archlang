@@ -104,6 +104,11 @@ const PAGE_META = [
     "How an AI agent drives ArchLang end to end from the CLI: one context bundle, JSON output, exit codes, and checking a plan against a brief without an image.",
   ],
   [
+    "/gallery",
+    "Floor plans written by AI agents",
+    "Eleven floor plans, each written by an AI agent from a one-paragraph brief: the brief as given, the ArchLang source the agent delivered, and the compiled drawing.",
+  ],
+  [
     "/relational",
     "Relational placement",
     "Place a room relative to another with right-of, left-of, above or below. ArchLang resolves the absolute coordinates by arithmetic, in dependency order.",
@@ -629,6 +634,7 @@ export default defineConfig({
         text: "AI Agents",
         items: [
           { text: "Use it from an agent", link: "/agents" },
+          { text: "Plans written by agents", link: "/gallery" },
           { text: "One-page spec", link: "/spec" },
           { text: "CLI reference", link: "/cli" },
         ],
@@ -660,6 +666,7 @@ export default defineConfig({
         text: "For AI agents",
         items: [
           { text: "Use it from an agent", link: "/agents" },
+          { text: "Plans written by agents", link: "/gallery" },
           { text: "One-page spec", link: "/spec" },
         ],
       },

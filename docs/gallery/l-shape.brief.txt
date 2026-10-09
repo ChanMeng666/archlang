@@ -1,0 +1,1 @@
+Design a single-storey two-bedroom house of about 90 m² whose outline is an L shape (not a rectangle): one wing holds the living room and kitchen, the other wing holds the two bedrooms and the bathroom, and a hall sits at the corner joining the wings. The living room is at least 22 m², the kitchen at least 10 m², each bedroom at least 11 m². Every bedroom needs a window.

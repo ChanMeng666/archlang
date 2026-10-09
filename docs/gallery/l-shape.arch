@@ -1,0 +1,70 @@
+# L-shaped single-storey two-bedroom house, about 90 m².
+# East wing (y 0..3800, x 6400..17300): living + kitchen.
+# South wing (x 0..6400, y 0..7600): bathroom, two bedrooms.
+# The hall sits in the corner block where the two wings meet.
+plan "L-Shaped Two-Bedroom House" {
+  units mm
+  grid 100
+  north up
+  paper A3 landscape
+  scale 1:50
+  dims auto all
+  schedule rooms
+  legend
+
+  # Corner block + east wing (top band)
+  room id=r_bath    at (0,0)     size 2000x3800 label "Bathroom"  uses bath
+  room id=r_hall    at (2000,0)  size 4400x3800 label "Hall"      uses hall
+  room id=r_living  at (6400,0)  size 7000x3800 label "Living"    uses living
+  room id=r_kitchen at (13400,0) size 3900x3800 label "Kitchen"   uses kitchen
+
+  # South wing
+  room id=r_bed1 at (0,3800)    size 3200x3800 label "Bedroom 1" uses bedroom
+  room id=r_bed2 at (3200,3800) size 3200x3800 label "Bedroom 2" uses bedroom
+
+  # Exterior shell: an L outline, one wall per straight run
+  wall id=w_n  exterior thickness 200 { (0,0) (17300,0) }
+  wall id=w_e  exterior thickness 200 { (17300,0) (17300,3800) }
+  wall id=w_s1 exterior thickness 200 { (17300,3800) (6400,3800) }
+  wall id=w_e2 exterior thickness 200 { (6400,3800) (6400,7600) }
+  wall id=w_s2 exterior thickness 200 { (6400,7600) (0,7600) }
+  wall id=w_w  exterior thickness 200 { (0,7600) (0,0) }
+
+  # Partitions
+  wall id=p_bath partition thickness 100 { (2000,0) (2000,3800) }
+  wall id=p_hl   partition thickness 100 { (6400,0) (6400,3800) }
+  wall id=p_lk   partition thickness 100 { (13400,0) (13400,3800) }
+  wall id=p_mid  partition thickness 100 { (0,3800) (6400,3800) }
+  wall id=p_beds partition thickness 100 { (3200,3800) (3200,7600) }
+
+  # Doors and openings
+  door id=d_main on w_n at 4200 width 1000 swing into r_hall
+  opening id=o_living on p_hl at 1900 width 1200
+  opening id=o_kitchen on p_lk at 1900 width 1200
+  door id=d_bath on p_bath at 1900 width 800 swing into r_bath
+  door id=d_bed1 on p_mid at 2600 width 800 swing into r_bed1
+  door id=d_bed2 on p_mid at 4800 width 900 swing into r_bed2
+
+  # Windows
+  window id=win_bed1  on w_s2 at 4800 width 1400
+  window id=win_bed1w on w_w  at 1900 width 1200
+  window id=win_bed2  on w_s2 at 1600 width 1400
+  window id=win_bed2e on w_e2 at 1900 width 1200
+  window id=win_liv   on w_s1 at 7400 width 2400
+  window id=win_livn  on w_n  at 11200 width 1600
+  window id=win_kit   on w_e  at 1900 width 1400
+  window id=win_bath  on w_n  at 1000 width 600
+
+  # Furniture
+  furniture bed      in r_bed1 anchor left flush size 2000x1500 label "Bed"
+  furniture bed      in r_bed2 anchor right flush size 2000x1500 label "Bed"
+  furniture wc       in r_bath anchor top-left flush size 400x700
+  furniture shower   in r_bath anchor bottom-left flush size 900x900
+  furniture basin    in r_bath anchor left flush size 450x500
+  furniture counter  in r_kitchen anchor top-left flush size 2400x600
+  furniture stove    in r_kitchen anchor top-right flush size 600x600
+  furniture fridge   in r_kitchen anchor bottom flush size 700x700
+  furniture sofa     in r_living anchor bottom flush size 2200x900 label "Sofa"
+
+  title { project "L-Shaped Two-Bedroom House" drawn_by "ArchLang" date "2026-10-09" }
+}
