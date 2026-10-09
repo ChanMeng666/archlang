@@ -1492,6 +1492,49 @@ unhandled error before any test runs; adding `--minWorkers=1` runs it (re-run on
 `test/eval-stats.test.ts`: 5 passed). Worth one line in `docs/testing.md` so an agent told to
 "rerun with `--maxWorkers=2`" does not read the error as a test failure.
 
+### M.20 · Intent concept `dining-room` is not a table key, so a room labelled "Dining" misses it — `todo` (needs an owner-approved `SYNONYMS_VERSION` bump)
+
+`CONCEPTS` (`src/intent-concepts.ts`) has `dining` but no `dining-room`, so `dining-room` is an
+UNKNOWN concept and takes the literal fallback in `roomsMatchingConcept`: it matches the label
+"Dining Room" but not "Dining". Re-run: a one-room plan labelled "Dining", intent
+`{"roomsInclude":[{"concept":"dining-room"}]}`, `arch score <plan> --brief <intent> --json`
+gives `satisfied: 0` and `E_INTENT_ROOM_MISSING`; the same plan against `dining` satisfies. The
+fix is a table change (a `dining-room` key or alias), which bumps `SYNONYMS_VERSION`; the
+version is pinned by a test and the eval scores through the same table, so the bump is the
+owner's call.
+
+### M.21 · `format()` writes the plan name with `JSON.stringify`, which the lexer cannot read back — `todo`
+
+The lexer knows only the escapes `\n`, `\"` and `\\` (`src/lexer.ts`, the string-literal
+branch), but `src/format.ts` prints the plan name, level names, zone labels, import specs and
+title fields through `JSON.stringify`, which also emits `\t`, `\r`, `\uXXXX` and the like.
+Re-run: `plan "A<TAB>B"` through `arch fmt` prints `"A\tB"`, which reads back as `AtB`
+(`arch describe --json` `plan`). `arch finish` already uses the language's own escaper;
+`format()` should too.
+
+### M.22 · `finish` furnish stage: what it leaves alone — `todo` (limits, not defects)
+
+`src/furnish.ts` furnishes single-storey plans, rectangular rooms with an authored `id=` of
+their own, and only a room that holds no furniture. Each of these is reported in `unresolved`
+and left as it is:
+
+- polygon and circular rooms, and any plan with `level` storeys;
+- rooms inside a component instance (no statement in the plan body can name them);
+- rooms over `MAX_ROOM_AREA_M2`;
+- a room that already holds any furniture (fill-only: it is never topped up);
+- relational rooms with no fixed `at`.
+
+A kitchen run additionally needs a wall with an `id=` of its own for `against wall` to name;
+without one the required piece has no position and the use is left out.
+
+### M.23 · Default PNG export of a large sheet is over 2000 px on a side — `todo`
+
+`arch compile -f png` at the default raster scale writes `examples/museum.arch` at 3179 x 2245
+and `examples/studio.arch` at 9648 x 10214, and some image readers refuse an image over 2000 px
+on a side. `-s <n>` lowers it (`studio.arch` at `-s 0.25` is 2412 x 2553). Re-run:
+`node dist/cli.js compile examples/museum.arch -f png -o out.png`, then read the width and
+height from the PNG header (bytes 16-23).
+
 ### M.19 · Quadratic passes the two budgets do not see — closed (two residuals kept by decision)
 
 The step budget counts the evaluator and the drawing budget the primitives drawn; three passes

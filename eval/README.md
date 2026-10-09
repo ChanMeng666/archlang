@@ -113,6 +113,8 @@ numbers live in `live-baseline.json`; the L1 numbers are recorded there as refer
 > predicted 45–60% band, L1 intent was identical (18/26), and all 8 area assertions passed
 > again (Gate G2's residual-0 verdict re-confirmed). Any future language-surface change to
 > `spec.llm.md` re-opens this question and needs the same owner-approved re-measurement.
+> `spec.llm.md` has since gained the `arch finish` line and `live-baseline.json` has not been
+> re-measured, so no rate may be compared across it until the owner does.
 
 ## How to run
 
