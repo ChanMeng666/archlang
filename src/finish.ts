@@ -23,8 +23,9 @@
  *
  *   1. **Fixpoint** — `finish(finish(s).source).source === finish(s).source`.
  *   2. **Never worse** — the result has no compile error and no diagnostic code (compile +
- *      lint, as a multiset) the input did not have, and no new hard furniture conflict;
- *      otherwise the whole stage is rolled back and the reason reported in `unresolved`.
+ *      lint under every profile, as a multiset) the input did not have, and no new hard
+ *      furniture conflict. A statement that would break this is left out and reported in
+ *      `unresolved`; the sheet stage writes the rest (see {@link sheetStage}).
  *   3. **A sheet finish chose fits** — whenever `paper` or `scale` was written the result
  *      raises neither `W_SCALE_OVERFLOW` nor `W_DRAWING_OVERFLOW`.
  *   4. **A source that does not compile is returned untouched.**
@@ -104,7 +105,7 @@ export interface FinishNote {
   statement?: FinishStatement;
   /** The room the note is about, when the `furnish` stage left one empty. */
   room?: string;
-  /** The diagnostic codes furnishing that room would have raised. */
+  /** The diagnostic codes furnishing that room, or writing that sheet statement, would have raised. */
   codes?: string[];
   reason: string;
   /** The authored statement the note points at, when there is one. */
@@ -184,7 +185,7 @@ export function finish(source: string, opts: FinishOptions = {}): FinishResult {
       ]),
     );
   const run = (stage: FinishStage, src: string): StageRun => {
-    if (stage === "sheet") return sheetStage(src, env, opts.reissue === true, memo);
+    if (stage === "sheet") return sheetStage(src, env, opts.reissue === true, (s) => codesOf(s, env, memo));
     const r = furnishStage(src, env, (s) => codesOf(s, env, memo));
     return {
       source: r.source,
@@ -257,7 +258,7 @@ const STRICTER_PROFILES = Object.keys(LINT_PROFILES).filter((p) => Object.keys(L
  * The diagnostic codes of a source as multisets: compile's with lint's under the default
  * ruleset, and lint's under every profile that differs from it.
  */
-function codesOf(source: string, env: AnalyzeOptions, memo: CodesMemo): Codes {
+export function codesOf(source: string, env: AnalyzeOptions, memo: CodesMemo): Codes {
   const hit = memo.get(source);
   if (hit) return hit;
   const compiled = compileUncached(source, env);
@@ -340,9 +341,24 @@ function stringLiteral(s: string): string | null {
 // the sheet stage
 // ---------------------------------------------------------------------------
 
-function sheetStage(source: string, env: AnalyzeOptions, reissue: boolean, memo: CodesMemo): StageRun {
+/**
+ * The sheet stage. `codes` measures a source (`finish` passes {@link codesOf} over its memo);
+ * it is called once for the input and at most {@link SHEET_MAX_CHECKS} times after that.
+ *
+ * When the whole set of statements breaks the never-worse law the stage degrades instead of
+ * giving up: `dims auto all` falls back to `dims auto overall`, then to no `dims auto`; if
+ * that is not enough, the statements are tried one at a time in a fixed order and each one
+ * that passes is kept. What was left out is reported in `unresolved`, with the codes it
+ * would have raised.
+ */
+export function sheetStage(
+  source: string,
+  env: AnalyzeOptions,
+  reissue: boolean,
+  codes: (source: string) => Codes,
+): StageRun {
   const registry = env.plugins?.length ? createRegistry(env.plugins) : BUILTIN_REGISTRY;
-  const before = codesOf(source, env, memo);
+  const before = codes(source);
   const { plan } = parse(source, registry);
   const resolved = resolvePlan(source, env);
   if (before.errors || !plan || !resolved.ir || plan.bodyStart === undefined) {
@@ -520,83 +536,241 @@ function sheetStage(source: string, env: AnalyzeOptions, reissue: boolean, memo:
   }
   if (denom !== undefined) operative = denom;
 
-  // --- write ----------------------------------------------------------------
-  const edits = new Edits(source, plan);
+  // --- write: one candidate set of statements, as edits -------------------------
   const paperText = paper ? `paper ${paper.size} ${paper.orientation}` : "";
   const scaleText = denom !== undefined ? `scale 1:${denom}` : "";
   const sheetWhy = (): string =>
     `the finest standard scale that fits the smallest sheet: the drawing measures ${fmt3(m.drawn.w)}×${fmt3(m.drawn.h)} mm`;
+  const short = Math.min(m.building.w, m.building.h);
+  /** The chains a candidate's `dims auto` draws: `all`, or `overall` on a short facade. */
+  const dimsAt = (sheet: boolean): DimsPick => {
+    const at = sheet ? operative : (authoredDenom ?? undefined);
+    return at !== undefined && short / at < SHORT_FACADE_MM
+      ? {
+          mode: "overall",
+          reason: `the plan has no dimensions; the short facade is under ${SHORT_FACADE_MM} mm on paper at 1:${at}, so only the overall chain is drawn`,
+        }
+      : { mode: "all", reason: "the plan has no dimensions" };
+  };
+  const write = (pick: Pick): Edits => {
+    const edits = new Edits(source, plan);
+    if (pick.sheet) {
+      if (paper && plan.paper && plan.paperSpan) {
+        if (paper.size !== plan.paper.size || paper.orientation !== plan.paper.orientation)
+          edits.replace("paper", plan.paperSpan, paperText, "the drawing does not fit the authored sheet (`reissue`)");
+      } else if (paper)
+        edits.addPaper(
+          paperText,
+          denom !== undefined ? sheetWhy() : `the smallest sheet that holds the drawing at \`scale ${plan.scale}\``,
+        );
 
-  if (paper && plan.paper && plan.paperSpan) {
-    if (paper.size !== plan.paper.size || paper.orientation !== plan.paper.orientation)
-      edits.replace("paper", plan.paperSpan, paperText, "the drawing does not fit the authored sheet (`reissue`)");
-  } else if (paper)
-    edits.addPaper(
-      paperText,
-      denom !== undefined ? sheetWhy() : `the smallest sheet that holds the drawing at \`scale ${plan.scale}\``,
-    );
-
-  if (denom !== undefined && plan.scale !== undefined && plan.scaleSpan) {
-    if (denom !== authoredDenom)
-      edits.replace(
-        "scale",
-        plan.scaleSpan,
-        scaleText,
-        "the drawing does not fit any sheet at the authored scale (`reissue`)",
+      if (denom !== undefined && plan.scale !== undefined && plan.scaleSpan) {
+        if (denom !== authoredDenom)
+          edits.replace(
+            "scale",
+            plan.scaleSpan,
+            scaleText,
+            "the drawing does not fit any sheet at the authored scale (`reissue`)",
+          );
+      } else if (denom !== undefined)
+        edits.addScale(
+          scaleText,
+          plan.paper && !paper
+            ? `the finest standard scale at which the drawing fits the authored \`paper ${plan.paper.size} ${plan.paper.orientation}\``
+            : sheetWhy(),
+        );
+    }
+    if (pick.dims) edits.addSetting("dims", `dims auto ${pick.dims.mode}`, pick.dims.reason);
+    if (pick.schedule) edits.addSetting("schedule", "schedule rooms", "the sheet has no room schedule");
+    if (pick.legend)
+      edits.addSetting("legend", "legend", "the sheet has no legend for the materials and symbols it draws");
+    if (pick.title)
+      edits.addTitle(
+        `title { project ${project} }`,
+        "the sheet has no title block; the project is the plan's own name",
       );
-  } else if (denom !== undefined)
-    edits.addScale(
-      scaleText,
-      plan.paper && !paper
-        ? `the finest standard scale at which the drawing fits the authored \`paper ${plan.paper.size} ${plan.paper.orientation}\``
-        : sheetWhy(),
-    );
+    return edits;
+  };
 
-  if (add.dims) {
-    const short = Math.min(m.building.w, m.building.h);
-    const overall = operative !== undefined && short / operative < SHORT_FACADE_MM;
-    edits.addSetting(
-      "dims",
-      `dims auto ${overall ? "overall" : "all"}`,
-      overall
-        ? `the plan has no dimensions; the short facade is under ${SHORT_FACADE_MM} mm on paper at 1:${operative}, so only the overall chain is drawn`
-        : "the plan has no dimensions",
-    );
+  // --- the never-worse law, asked of one candidate ------------------------------
+  let was: ReadonlyMap<string, unknown> | undefined;
+  /** Each distinct candidate is measured once: at most {@link SHEET_MAX_CHECKS} of them. */
+  const tried = new Map<string, Verdict>();
+  const check = (edits: Edits): Verdict => {
+    let out: string;
+    try {
+      out = edits.render();
+    } catch {
+      return { ok: false, why: "the edits could not be placed in the source", codes: [] };
+    }
+    const hit = tried.get(out);
+    if (hit) return hit;
+    const verdict = ((): Verdict => {
+      const after = codes(out);
+      if (after.errors) return { ok: false, why: "the finished plan would not compile", codes: [] };
+      const gained = gainedCodes(before, after);
+      if (gained.length > 0)
+        return {
+          ok: false,
+          why: `the finished plan would raise ${gained.join(", ")}, which the plan does not have now`,
+          codes: gained,
+        };
+      const wroteSheet = edits.changes.some((c) => c.statement === "paper" || c.statement === "scale");
+      if (wroteSheet && (after.codes.has("W_SCALE_OVERFLOW") || after.codes.has("W_DRAWING_OVERFLOW")))
+        return { ok: false, why: "the chosen sheet would still overflow", codes: [] };
+      was ??= sourceConflicts(source, env).conflicts;
+      for (const k of sourceConflicts(out, env).conflicts.keys())
+        if (!was.has(k))
+          return {
+            ok: false,
+            why: "the finished plan would have a furniture conflict the plan does not have now",
+            codes: [],
+          };
+      return { ok: true, out };
+    })();
+    tried.set(out, verdict);
+    return verdict;
+  };
+  const done = (edits: Edits, out: string, left: FinishNote[]): StageRun => ({
+    source: out,
+    changes: edits.changes,
+    unresolved: [...unresolved, ...left],
+    changed: true,
+    ops: edits.ops,
+  });
+  /** A statement the stage left out, and the refusal(s) that left it out. */
+  const leftOut = (
+    statement: FinishStatement,
+    tries: ReadonlyArray<readonly [string, Refusal]>,
+    instead = "",
+  ): FinishNote => {
+    const found = [...new Set(tries.flatMap(([, r]) => r.codes))].sort();
+    return {
+      stage: "sheet",
+      statement,
+      ...(found.length > 0 ? { codes: found } : {}),
+      reason: `${tries.map(([text, r]) => `\`${text}\` was not added — with it ${r.why}`).join("; ")}${instead}`,
+    };
+  };
+  const OVERALL_INSTEAD = "; `dims auto overall` was added instead";
+  /** `dims auto overall` as the fallback for a refused `dims auto all`. */
+  const overallAfter = (refused: Refusal): DimsPick => ({
+    mode: "overall",
+    reason: `the plan has no dimensions; \`dims auto all\` was refused (${refused.codes.join(", ") || refused.why}), so only the overall chain is drawn`,
+  });
+
+  // --- the whole set first ------------------------------------------------------
+  const full: Pick = {
+    sheet: paper !== undefined || denom !== undefined,
+    dims: add.dims ? dimsAt(true) : null,
+    schedule: add.schedule,
+    legend: add.legend,
+    title: add.title,
+  };
+  const whole = write(full);
+  if (whole.changes.length === 0) return untouched(source, unresolved);
+  const first = check(whole);
+  if (first.ok) return done(whole, first.out, []);
+
+  // --- degrade, step 1: `dims auto` is the usual cause --------------------------
+  // `all`, then `overall`, then none — with every other statement still in.
+  if (full.dims) {
+    const tries: Array<readonly [string, Refusal]> = [[`dims auto ${full.dims.mode}`, first]];
+    if (full.dims.mode === "all") {
+      const edits = write({ ...full, dims: overallAfter(first) });
+      const v = check(edits);
+      if (v.ok) return done(edits, v.out, [leftOut("dims", tries, OVERALL_INSTEAD)]);
+      tries.push(["dims auto overall", v]);
+    }
+    const edits = write({ ...full, dims: null });
+    // `dims auto` was the only statement missing: nothing is left to write.
+    if (edits.changes.length === 0) return untouched(source, [...unresolved, leftOut("dims", tries)]);
+    const v = check(edits);
+    if (v.ok) return done(edits, v.out, [leftOut("dims", tries)]);
   }
-  if (add.schedule) edits.addSetting("schedule", "schedule rooms", "the sheet has no room schedule");
-  if (add.legend)
-    edits.addSetting("legend", "legend", "the sheet has no legend for the materials and symbols it draws");
-  if (add.title)
-    edits.addTitle(`title { project ${project} }`, "the sheet has no title block; the project is the plan's own name");
 
-  if (edits.changes.length === 0) return untouched(source, unresolved);
-
-  // --- the never-worse law ----------------------------------------------------
-  const refuse = (why: string): StageRun =>
-    untouched(source, [
-      ...unresolved,
-      { stage: "sheet", reason: `${why} — the sheet stage was rolled back and nothing was changed` },
-    ]);
-  let out: string;
-  try {
-    out = edits.render();
-  } catch {
-    return refuse("the edits could not be placed in the source");
+  // --- degrade, step 2: build the set up one statement at a time ----------------
+  // In a fixed order — the sheet, the title, the two tables, `dims auto` — a statement is
+  // kept when the plan with it (and everything kept so far) passes the check.
+  let kept: Pick = { sheet: false, dims: null, schedule: false, legend: false, title: false };
+  let best: { edits: Edits; out: string } | null = null;
+  const left: FinishNote[] = [];
+  const attempt = (pick: Pick): Verdict | null => {
+    const edits = write(pick);
+    if (edits.changes.length === (best?.edits.changes.length ?? 0)) return null; // it writes nothing
+    const v = check(edits);
+    if (v.ok) {
+      kept = pick;
+      best = { edits, out: v.out };
+    }
+    return v;
+  };
+  if (full.sheet) {
+    const v = attempt({ ...kept, sheet: true });
+    if (v && !v.ok)
+      left.push(
+        leftOut(paper ? "paper" : "scale", [[[paperText, scaleText].filter((t) => t !== "").join("` / `"), v]]),
+      );
   }
-  const after = codesOf(out, env, memo);
-  if (after.errors) return refuse("the finished plan would not compile");
-  const gained = gainedCodes(before, after);
-  if (gained.length > 0)
-    return refuse(`the finished plan would raise ${gained.join(", ")}, which the plan does not have now`);
-  const wroteSheet = edits.changes.some((c) => c.statement === "paper" || c.statement === "scale");
-  if (wroteSheet && (after.codes.has("W_SCALE_OVERFLOW") || after.codes.has("W_DRAWING_OVERFLOW")))
-    return refuse("the chosen sheet would still overflow");
-  const was = sourceConflicts(source, env).conflicts;
-  for (const k of sourceConflicts(out, env).conflicts.keys())
-    if (!was.has(k)) return refuse("the finished plan would have a furniture conflict the plan does not have now");
-
-  return { source: out, changes: edits.changes, unresolved, changed: true, ops: edits.ops };
+  for (const [statement, text] of [
+    ["title", "title"],
+    ["schedule", "schedule rooms"],
+    ["legend", "legend"],
+  ] as const) {
+    if (!full[statement]) continue;
+    const v = attempt({ ...kept, [statement]: true });
+    if (v && !v.ok) left.push(leftOut(statement, [[text, v]]));
+  }
+  if (full.dims) {
+    const natural = dimsAt(kept.sheet);
+    const tries: Array<readonly [string, Refusal]> = [];
+    const v = attempt({ ...kept, dims: natural });
+    if (v && !v.ok) {
+      tries.push([`dims auto ${natural.mode}`, v]);
+      if (natural.mode === "all") {
+        const w = attempt({ ...kept, dims: overallAfter(v) });
+        if (w && !w.ok) tries.push(["dims auto overall", w]);
+      }
+    }
+    if (tries.length > 0) left.push(leftOut("dims", tries, kept.dims ? OVERALL_INSTEAD : ""));
+  }
+  const settled = best as { edits: Edits; out: string } | null;
+  if (settled) return done(settled.edits, settled.out, left);
+  // No statement passes even on its own: the stage changes nothing.
+  return untouched(source, [
+    ...unresolved,
+    { stage: "sheet", reason: `${first.why} — the sheet stage was rolled back and nothing was changed` },
+  ]);
 }
+
+/** `dims auto all` or `dims auto overall`, and the reason reported with it. */
+interface DimsPick {
+  mode: "all" | "overall";
+  reason: string;
+}
+/** One candidate: which of the stage's statements it writes. `sheet` is `paper` with `scale`. */
+interface Pick {
+  sheet: boolean;
+  dims: DimsPick | null;
+  schedule: boolean;
+  legend: boolean;
+  title: boolean;
+}
+interface Refusal {
+  ok: false;
+  why: string;
+  /** The diagnostic codes the candidate would have gained (empty for any other refusal). */
+  codes: string[];
+}
+type Verdict = { ok: true; out: string } | Refusal;
+
+/**
+ * The most candidates one run of the sheet stage measures (a compile, a lint per ruleset and
+ * a furniture-conflict pass each), beyond the one measurement of its input: the whole set,
+ * `dims auto overall`, no `dims auto`; then the sheet, the title, the two tables, `dims auto`
+ * and `dims auto overall`, each on its own.
+ */
+export const SHEET_MAX_CHECKS = 9;
 
 // ---------------------------------------------------------------------------
 // where a statement goes

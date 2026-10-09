@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — `arch finish` no longer leaves a plan bare when one sheet statement is refused
+
+- **The sheet stage degrades instead of rolling everything back.** `finish` never returns a plan
+  with a diagnostic code the input did not have. Until now one refused statement cost all six:
+  on a plan where `dims auto all` reports `W_OPENING_NOT_DIMENSIONED` (an opening on an angled
+  or curved wall, or on a face that is not the outline), no `paper`, `scale`, `title`,
+  `schedule rooms` or `legend` was written either. The stage now tries `dims auto overall`, then
+  no `dims auto`; if that is not enough it keeps each statement the plan passes the check with,
+  in a fixed order. Each statement left out is an `unresolved` note with the `codes` it would
+  have raised. The search checks at most nine candidates. Nothing is changed only when no
+  statement passes on its own.
+- **No other output moves.** A plan the stage did not roll back before gets the same bytes, the
+  same `changes` and the same `unresolved` as in 1.42.0. The never-worse law is unchanged and is
+  now also pinned by test under every lint profile.
+
 ### Added — four task skills beside the `archlang` skill
 
 - **`skills/<name>/SKILL.md`: `archlang-brief-to-plan`, `archlang-edit-plan`, `archlang-export`

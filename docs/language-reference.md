@@ -2515,9 +2515,14 @@ An authored sheet is kept. If the drawing would not fit it with every statement 
 `finish` leaves out the tables first, then `dims auto`, then the title, and names each one in
 `unresolved`. `--reissue` lets it replace `paper` and `scale` instead (and nothing else).
 
-Run it after lint is clean. The result is checked before it is returned: if it would not
-compile, or would raise a diagnostic the plan did not have, nothing is changed and
-`unresolved` says why. Running it twice changes nothing the second time. Like `arch fix` it
+Run it after lint is clean. The result is checked before it is returned: it never has a
+compile error, or a diagnostic code under any lint profile, that the plan did not have. A
+sheet statement that would break that is left out and named in `unresolved` with the `codes`
+it would have raised, and the rest are still written. `dims auto all` steps down to
+`dims auto overall` first, for example when an opening on an angled or curved wall is on no
+chain (`W_OPENING_NOT_DIMENSIONED`), and is left out only when that is refused too. Nothing is
+changed only when no statement passes on its own. Running it twice changes nothing the second
+time. Like `arch fix` it
 rewrites the file in place, prints the diff on stderr, and takes `--dry-run`, `--backup` and
 `-o`. From the library: `finish(source, { reissue?, only?, world? })` returns
 `{ source, changes, unresolved, changed }`. A `furnish` change carries the `room` it was written
