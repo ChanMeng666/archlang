@@ -15,6 +15,7 @@ docs-site/blob-report/
 engine-digests-report.md
 *.tsbuildinfo
 *.vsix
+dist-mcpb/
 # Live eval output is ephemeral (moves with the model/day) — the committed
 # scorecard is eval/results.md; the live headline lives in eval/live-baseline.json.
 eval/results.live.md

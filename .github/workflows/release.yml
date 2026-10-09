@@ -240,3 +240,23 @@ jobs:
             --notes-file release-notes.md \
             --verify-tag
           echo "::notice::Created GitHub Release $TAG from its CHANGELOG.md section."
+
+      # The Claude Desktop extension / Smithery bundle (`archlang-mcp-<mcp version>.mcpb`),
+      # attached to the Release so there is a stable download URL. Strictly an add-on, so it is
+      # LAST (after npm, the registry and the Release: nothing it does can undo or block them) and
+      # `continue-on-error` (a failure here is a yellow step, never a red release). No secret and
+      # no Smithery credential: the owner publishes the same file to Smithery by hand
+      # (`.claude/commands/release-check.md`). It is built from source and run once over stdio
+      # before upload, so a bundle that does not start is never attached.
+      - name: Attach the MCPB bundle to the GitHub Release
+        if: ${{ success() && startsWith(github.ref, 'refs/tags/v') }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          npm run build:mcpb
+          npm run prove:mcpb
+          gh release upload "$TAG" dist-mcpb/*.mcpb --clobber
+          # Both: the strict-valid Claude Desktop extension and the Smithery variant.
+          echo "::notice::Attached the MCPB bundles to GitHub Release $TAG."

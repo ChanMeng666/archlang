@@ -33,6 +33,8 @@ claude mcp add archlang -- npx -y @chanmeng666/archlang-mcp   # or the MCP serve
 /plugin install archlang@archlang
 ```
 
+Claude Desktop: each [GitHub Release](https://github.com/ChanMeng666/archlang/releases) carries the MCP server as a one-click `.mcpb` extension (`archlang-mcp-<version>.mcpb`), built by `npm run build:mcpb`.
+
 Then ask in plain language; the agent writes the `.arch`, compiles it, and checks it with `lint` and `describe`:
 
 - *"Design a one-bedroom flat of about 54 m²: a 32 m² living/kitchen, a 10 m² bedroom and a 10 m² bathroom, with the front door on the north wall."*
