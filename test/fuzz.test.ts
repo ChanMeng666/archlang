@@ -460,8 +460,9 @@ describe("finish — round-trip", () => {
         expect(i, "finish() dropped or rewrote an authored byte").toBe(src.length);
         expect(r.changed).toBe(r.source !== src);
         expect(r.changes.every((c) => c.kind === "added")).toBe(true);
-        // A roll-back is all or nothing (it does fire here: a sheet can crowd two
-        // hand-written `dim` lines into `W_DIM_OVERLAP`), and it always says why.
+        // The sheet stage leaves out a statement that would raise a code (a sheet can
+        // crowd two hand-written `dim` lines into `W_DIM_OVERLAP`) and writes the rest; it
+        // reports a roll-back only when it wrote nothing at all.
         const rolledBack = r.unresolved.some((u) => u.reason.includes("rolled back"));
         if (rolledBack) expect(r.changes.filter((c) => c.stage === "sheet")).toEqual([]);
       }),
