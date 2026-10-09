@@ -1,6 +1,6 @@
 {
   "name": "@chanmeng666/archlang",
-  "version": "1.41.0",
+  "version": "1.42.0",
   "description": "An open-source DSL and compiler for floor plans: write .arch source and compile it to SVG, DXF or PDF with linting and geometric validation.",
   "keywords": [
     "architecture",

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.42.0] - 2026-10-09
+
 ### Added — `arch finish` furnishes the rooms a plan left empty
 
 - **`finish` gains a `furnish` stage: furniture by room use, in rooms that hold none.** A full
@@ -106,6 +108,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gzipped (the unpacked package grows from about 8.19 MB to 8.73 MB); no other file is added or
   removed. `README.md` gains one line saying where the notes are, installed and on the web, and
   `test/npm-tarball.test.ts` pins the package-root file list from `npm pack --dry-run --json`.
+
+### Changed — the repository installs into a coding agent, and the MCP shim is 0.2.23
+
+- **The repository is a Claude Code plugin.** `.claude-plugin/plugin.json` and
+  `.claude-plugin/marketplace.json` expose the root `SKILL.md` and the published MCP server as
+  one plugin (`/plugin marketplace add ChanMeng666/archlang`, then
+  `/plugin install archlang@archlang`). Neither manifest writes a version, and
+  `test/claude-plugin.test.ts` pins what they point at.
+- **`README.md` and the docs site's agents page open with the install block** (`npx skills add`,
+  `claude mcp add`, the plugin) and three example requests. The one-line description in
+  `README.md`, `llms.txt`, the docs site and the guide now reads "a deterministic DSL and
+  compiler for floor plans", and `package.json`'s `homepage` is `https://archlang.uk`.
+- **`@chanmeng666/archlang-mcp` 0.2.23** carries the `finish` tool, pins the core at `^1.42.0`,
+  and its `server.json` description names the tools the server has.
+- **`docs/backlog.md` records four open limits** found while authoring plans through an agent
+  (M.20–M.23): the intent concept `dining-room`, `format()`'s string escapes, what the furnish
+  stage leaves alone, and the default PNG size of a large sheet.
 
 ## [1.41.0] - 2026-10-06
 
