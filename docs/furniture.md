@@ -529,6 +529,45 @@ exactly this reason. `examples/furnished-flat.arch` is the worked example: a two
 flat furnished with twenty-nine of the thirty-six kinds across all five domains,
 `arch validate --strict` clean.
 
+## Furnishing empty rooms — `arch finish`
+
+`arch finish plan.arch` furnishes the rooms that hold no furniture, then completes the sheet
+(`--only furnish` runs the first step alone). It is an explicit source transform
+([ADR 0025](adr/0025-furnish-as-explicit-transform.md)): `compile` never adds a piece. The room's
+use comes from `uses`, else from its label. A room with several uses gets the union, the wall
+fixtures first. The table describes the rooms of a dwelling.
+
+| Room use | Pieces, in the order they are placed |
+|---|---|
+| `bedroom` | `bed` 1500 × 2000, then 900 × 2000 · `wardrobe` 1800 × 600, then 1200 × 600 (optional) |
+| `living` | `sofa` 2000 × 900, then 1600 × 900 · `coffee_table` 1000 × 600 (optional) |
+| `dining` | `dining_table` 1800 × 1500, then 1400 × 1300 |
+| `office` | `desk` 1400 × 700, then 1200 × 600 · `office_chair` 500 × 500 (optional) |
+| `kitchen` | `kitchen_sink` · `stove` · `fridge` (optional) |
+| `bath` | `wc` · `basin` · `bathtub` or `shower` (optional) |
+| `wc` | `wc` · `basin` |
+
+Sizes are along the wall × into the room, in mm; a piece with no size uses its catalogued
+footprint. A room of any other use (`hall`, `circulation`, `entry`, `storage`, `garage`,
+`utility`) or of no known use is left alone: `utility` does not say laundry, and a plant room
+carries the tag too. A room larger than 100 m² is not a dwelling room; it is named in
+`unresolved` and left as it is.
+
+A use's wall fixtures form one run: the stove next to the sink, the fridge next to the stove, on
+one wall. A use whose required pieces cannot be placed together is left out whole and named in
+`unresolved`.
+
+- **Fill only.** A room that holds any piece is not touched. Nothing authored is moved, resized
+  or deleted.
+- **Relative placement.** A services fixture is written `against wall <id> offset …`; a
+  free-standing piece `in <room> anchor … flush size WxH rotate …`. Never `at (x,y)`.
+- **Never worse.** A room's pieces are kept only when the plan still compiles and raises no
+  diagnostic it did not have. Otherwise the next position is tried. When a required piece has no
+  position, the room is left empty and named in `unresolved` with the code that blocked it. An
+  optional piece that does not fit is left out.
+- **Scope.** Rectangular rooms of single-storey plans. A polygon room, and a plan with `level`
+  blocks, are reported in `unresolved` and left as they are.
+
 ## Furniture-aware lint rules
 
 Placing fixtures meaningfully lets `arch lint` reason about habitability. The

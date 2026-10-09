@@ -3,6 +3,7 @@ import fc from "fast-check";
 import {
   applyFixes,
   compile,
+  finish,
   format,
   lint,
   rankFixes,
@@ -413,6 +414,74 @@ describe("repair — round-trip", () => {
       }),
       { numRuns: 60 },
     );
+  });
+});
+
+describe("finish — round-trip", () => {
+  // The generated plans vary exactly what the sheet stage reads: some declare `paper`
+  // (never a `scale`), some `dims auto`, some hand-written `dim` lines, none a title.
+  const codesOf = (src: string): Map<string, number> => {
+    const out = new Map<string, number>();
+    for (const d of [...compile(src, { noCache: true }).diagnostics, ...lint(src)])
+      out.set(d.code ?? "", (out.get(d.code ?? "") ?? 0) + 1);
+    return out;
+  };
+
+  it("is a fixpoint — finish(finish(s)) === finish(s), with and without reissue", () => {
+    fc.assert(
+      fc.property(archPlan, fc.boolean(), (src, reissue) => {
+        const once = finish(src, { reissue });
+        const twice = finish(once.source, { reissue });
+        expect(twice.source, `finish is not idempotent on:\n\n${src}\n\nfirst pass gave:\n\n${once.source}`).toBe(
+          once.source,
+        );
+        expect(twice.changed).toBe(false);
+        // The law holds by design, not because the settle check papered over a miss.
+        expect(once.unresolved.map((u) => u.reason).join("\n")).not.toContain("did not settle");
+      }),
+      { numRuns: 150 },
+    );
+  });
+
+  it("is never worse — no error, no new diagnostic code, no authored byte lost", () => {
+    fc.assert(
+      fc.property(archPlan, (src) => {
+        const r = finish(src);
+        expect(
+          errorsOf(r.source).map((e) => `${e.code ?? "<parse>"}: ${e.message}`),
+          `finish() turned a clean plan into one that does not compile:\n\n${r.source}`,
+        ).toEqual([]);
+        const before = codesOf(src);
+        const gained = [...codesOf(r.source)].filter(([c, n]) => n > (before.get(c) ?? 0)).map(([c]) => c);
+        expect(gained, `finish() added diagnostics to:\n\n${src}`).toEqual([]);
+        // Fill-only: with no `reissue`, the input is a subsequence of the output.
+        let i = 0;
+        for (let j = 0; j < r.source.length && i < src.length; j++) if (src[i] === r.source[j]) i++;
+        expect(i, "finish() dropped or rewrote an authored byte").toBe(src.length);
+        expect(r.changed).toBe(r.source !== src);
+        expect(r.changes.every((c) => c.kind === "added")).toBe(true);
+        // A roll-back is all or nothing (it does fire here: a sheet can crowd two
+        // hand-written `dim` lines into `W_DIM_OVERLAP`), and it always says why.
+        const rolledBack = r.unresolved.some((u) => u.reason.includes("rolled back"));
+        if (rolledBack) expect(r.changes.filter((c) => c.stage === "sheet")).toEqual([]);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  it("a sheet it writes holds the drawing, and it writes one for most plans", () => {
+    let wrote = 0;
+    fc.assert(
+      fc.property(archPlan, (src) => {
+        const r = finish(src);
+        if (!r.changes.some((c) => c.statement === "paper" || c.statement === "scale")) return;
+        wrote++;
+        const after = codesOf(r.source);
+        expect(after.has("W_SCALE_OVERFLOW") || after.has("W_DRAWING_OVERFLOW"), r.source).toBe(false);
+      }),
+      { numRuns: 100 },
+    );
+    expect(wrote, "the property never reached a plan finish wrote a sheet for").toBeGreaterThan(20);
   });
 });
 

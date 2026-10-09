@@ -136,6 +136,7 @@ arch complete  # completion items in scope at a source byte offset (the LSP comp
 arch fmt  # canonical formatting
 arch repair  # explicit source-to-source corrector (furniture out of walls) + change log
 arch fix  # apply the machine-applicable fix suggestions on a plan's diagnostics (bounded fixpoint)
+arch finish  # furnish the rooms that hold no furniture, then add the sheet statements a plan lacks (paper, scale, dims auto, title, schedule rooms, legend); deletes nothing
 arch reroll  # offer a proven-equivalent `for` loop for a repeated statement run
 arch suggest  # advisory topology suggestions as data (door/window statements that resolve reachability/window faults)
 arch manifest  # this document: the whole CLI API as structured data
@@ -349,7 +350,15 @@ npx @chanmeng666/archlang help
    several pieces, expression coordinates, an `against wall` anchor) is reported there with the fault
    and why, never silently skipped. `changed: false` with a non-empty `unresolved` means *you* edit
    the source.
-10. **Show the user:** `arch preview plan.arch -o plan.png` renders a PNG (`--install` fetches the
+10. **Finish the drawing:** once lint is clean, run `arch finish plan.arch --dry-run --json`, then
+   without `--dry-run` to apply. It first furnishes each rectangular room that holds no furniture,
+   by the room's use (single-storey plans; a furnished room is never touched), then adds the sheet
+   statements the plan lacks — `paper`, `scale`, `dims auto`, `title`, `schedule rooms`,
+   `legend` — on the smallest sheet the drawing fits. It fills only what is missing and deletes
+   nothing. Read `unresolved`: a room it left empty or a statement it left out is named there
+   with the reason (`--only furnish`/`--only sheet` runs one step; `--reissue` lets it replace a
+   `paper`/`scale` the drawing does not fit).
+11. **Show the user:** `arch preview plan.arch -o plan.png` renders a PNG (`--install` fetches the
    optional renderer if missing).
 
 ## Write it right the first time (placement sugar — the preferred path)
@@ -565,6 +574,7 @@ arch lint plan.arch --code W_NO_ENTRANCE --json   # display filter only — neve
 arch validate plan.arch --strict --json           # parse + resolve + lint; --strict fails on warnings (the ship gate)
 arch validate plan.arch --graph g.json --json     # also check interior-door adjacency against an intended graph
 arch repair plan.arch -o fixed.arch    # geometric corrector: furniture out of walls/doorways/swings + change log
+arch finish plan.arch --dry-run --json # after lint is clean: preview the furniture and sheet statements it would add (drop --dry-run to apply)
 arch fmt plan.arch --write             # canonical formatting
 arch batch a.arch b.arch -f svg --json # render many plans/variants at once → results[]
 arch preview plan.arch -o plan.png     # render a PNG to SHOW the user (--install fetches resvg if missing)
@@ -680,6 +690,11 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
   - input: <file.arch|-> → output: fixed source (to the input file or -o) + a unified diff and change log on stderr
   - flags: `--out|-o <file|->` output file for the fixed source, or '-' for stdout (default: rewrite the input file in place) · `--unsafe` also apply `maybe-incorrect` fixes (default: machine-applicable only) · `--dry-run` compute the result but do not write it (the diff preview still prints) · `--backup` before rewriting a file in place, save the original bytes to <file>.bak · `--force` keep a pass even if it raises the error count · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `arch fix plan.arch --dry-run` — preview the exact unified diff `fix` would write, changing nothing on disk
+
+**`arch finish`** — furnish the rooms that hold no furniture, then add the sheet statements a plan lacks (paper, scale, dims auto, title, schedule rooms, legend); deletes nothing
+  - input: <file.arch|-> → output: finished source (to the input file or -o) + a unified diff and change log on stderr
+  - flags: `--out|-o <file|->` output file for the finished source, or '-' for stdout (default: rewrite the input file in place) · `--only <sheet|furnish>` run only this stage (available: sheet, furnish; default: furnish, then sheet) · `--reissue` allow `paper` and `scale` (nothing else) to be replaced when the drawing does not fit the authored sheet · `--dry-run` compute the result but do not write it (the diff preview still prints) · `--backup` before rewriting a file in place, save the original bytes to <file>.bak · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+  - example: `arch finish plan.arch --dry-run --json` — preview the furniture and sheet statements `finish` would add: `changes[]`, `unresolved[]` and the `diff`
 
 **`arch reroll`** — offer a proven-equivalent `for` loop for a repeated statement run
   - input: <file.arch|-> → output: suggestions (JSON or a summary), or the rewritten file with --write
@@ -831,7 +846,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `arch expla
 
 - `W_ALIAS_MATCH` — A room's use was inferred from an indirect alias, not stated. **Fix:** Add an explicit `uses …` to the room stating the inferred function — the machine-applicable fix inserts it for you. This pins the classification without changing the room's `describe()` type.
 - `W_BALCONY_NO_DOOR` — A balcony with no way onto it. **Fix:** Add a door (or a full-height window) on the wall the balcony hangs off — the usual fix — or move the balcony to the facade that already has one.
-- `W_BATH_VIA_BEDROOM` — Bathroom is reachable only through a bedroom. **Fix:** Add a door connecting the bathroom to a hall/living space, or route circulation so it is not reached only via a bedroom.
+- `W_BATH_VIA_BEDROOM` — Bathroom is reachable only through a bedroom. **Fix:** Connect it to a hall or living space — or, if it is an en-suite, add a second bathroom or WC on the same storey that is reached without passing through a bedroom.
 - `W_BEDROOM_NO_WINDOW` — Bedroom has no window. **Fix:** Add a `window` on an exterior wall of the room.
 - `W_CIRCUITOUS_PATH` — A room is reached by a very roundabout path. **Fix:** Add a more direct connection — a door or a hall — so the room is not reached the long way round.
 - `W_CJK_FONT_MISSING` — PDF/PNG text has CJK characters, but the optional CJK font package is not installed. **Fix:** Install the font package (`npm install @chanmeng666/archlang-font-cjk`), or render to SVG, which uses the viewer's fonts.

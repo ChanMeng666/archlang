@@ -946,6 +946,13 @@ Every code is documented — with cause, fix, and example — in the
 mode each diagnostic already prints its catalogued `= fix:` line, so the lookup is
 usually unnecessary.)
 
+`W_BATH_VIA_BEDROOM` is about a storey's bathroom provision, not one room: it fires on
+every bathroom or WC reachable only through a bedroom when **no** bathroom or WC on that
+storey is reachable from the entrance without passing through one. An en-suite beside a
+family bathroom — or just a WC — that is reached without crossing a bedroom (off the hall,
+say) is the conventional case and is not flagged. The check runs per storey, so a WC on
+the ground floor does not excuse a first floor whose only bathroom is an en-suite.
+
 Narrow a noisy report with `--code` or `--severity` — on `lint` and on `validate`:
 
 ```

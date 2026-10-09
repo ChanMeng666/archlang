@@ -7,6 +7,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `arch finish` furnishes the rooms a plan left empty
+
+- **`finish` gains a `furnish` stage: furniture by room use, in rooms that hold none.** A full
+  run is now `furnish`, then `sheet`, because the legend lists the furniture; `--only furnish`
+  and `--only sheet` run one stage. It is an explicit source transform
+  (`docs/adr/0025-furnish-as-explicit-transform.md`, which supersedes the word "auto-furnish"
+  in ADR 0005 for transforms only): `compile()` still never adds a piece, and a plan nobody runs
+  `finish` on renders as before.
+- **Fill only.** A room that holds any furniture is not touched, and nothing authored is moved,
+  resized or deleted. A plan whose rooms are all furnished comes back byte-identical.
+- **The pieces come from a public table, `FURNISH_TABLE`,** keyed by the room's `uses` (or its
+  label): bedroom, living, dining, office, kitchen, bath and wc. Every word is one the fixture
+  catalogue already has. `docs/furniture.md` prints the table. It describes dwelling rooms: a
+  room of any other use (`utility` included) is left alone, and a room over 100 m² is reported
+  and left as it is. A use's wall fixtures form one run on one wall; in a room with several
+  uses the run is placed first, and a use that cannot be placed whole is left out and reported.
+- **Placement is relative.** A services fixture is written `against wall <id> offset …`, a
+  free-standing piece `in <room> anchor … flush size WxH rotate …`. `finish` never writes
+  `at (x,y)`.
+- **Never worse, room by room.** A room's pieces are kept only when the plan still compiles and
+  raises no diagnostic code and no furniture conflict it did not have, under the default lint
+  ruleset and under every named profile. When a required piece has
+  no such position the room is left empty and reported in `unresolved` with its `room` and the
+  blocking `codes`. One run makes at most `1 + 13 × rooms` compile checks.
+- **Scope.** Rectangular rooms of single-storey plans. A polygon room, and every empty room of
+  a plan with `level` blocks, is reported in `unresolved` and left as it is. A room placed
+  relationally (`right-of`, `below`, …) gets wall fixtures only, and is reported when its use
+  needs an anchored piece.
+- **The MCP `finish` tool takes `only`.** New exports: `FURNISH_TABLE`, `FINISH_STAGE_ORDER`,
+  and the types `FurnishItem`, `FurnishPlacement`. `FinishChange` gains `room`; `FinishNote`
+  gains `room` and `codes`; `FinishStatement` gains `"furniture"`.
+
+### Added — `arch finish` completes a plan's drawing sheet
+
+- **`arch finish <file|->` and `finish(source, opts?)` add the sheet statements a plan lacks.**
+  For each of `paper`, `scale`, `dims auto`, `title`, `schedule rooms` and `legend`, the statement
+  is added only when the plan has none. Nothing is deleted, and an authored `dim`, `axes`, `north`
+  or title block is never rewritten. It is an explicit source-to-source transform
+  (`docs/adr/0024-finish-as-explicit-transform.md`): `compile()`, the grammar, `describe()` and
+  `lint()` are unchanged, and a plan nobody runs it on renders as before.
+- **The sheet is the smallest that holds the drawing.** `finish` picks the finest of 1:50, 1:100,
+  1:200 and 1:500 that fits a sheet from A4 to A1 (A0 only when those hold nothing), landscape
+  first, using the compiler's own fit rule on the largest storey. `dims auto` is `all`, or
+  `overall` when the short facade is under 60 mm on paper. The title block is
+  `title { project "<plan name>" }`; no date or author is invented.
+- **An authored sheet is kept unless `--reissue` is passed.** If the drawing does not fit it,
+  `finish` leaves out the tables, then `dims auto`, then the title, and reports each in
+  `unresolved`. `--reissue` may replace `paper` and `scale`, and nothing else.
+- **The result is checked before it is returned.** If it would not compile, or would raise a
+  diagnostic code the plan did not have, the whole step is rolled back and `unresolved` says why.
+  A second run changes nothing. A source that does not compile is returned untouched (exit `2`).
+- **The CLI follows `arch fix`.** In place by default, a unified diff on stderr, `--dry-run`,
+  `--backup`, `-o`, `--json` (`{ ok, changed, changes, unresolved, wrote, target, diff, source }`).
+  `--only sheet|furnish` selects a stage.
+- **The MCP shim gains a `finish` tool** (`source`, optional `reissue`), and `SKILL.md`'s loop
+  gains the step "once lint is clean, run `arch finish`".
+- **New exports:** `finish`, `FINISH_STAGES`, `FINISH_STAGES_AVAILABLE`, and the types
+  `FinishOptions`, `FinishResult`, `FinishChange`, `FinishNote`, `FinishStage`, `FinishStatement`.
+
+### Fixed — `W_BATH_VIA_BEDROOM` no longer flags an en-suite beside a bathroom off circulation
+
+- **The warning is about a storey's bathroom provision, not one room.** It fired on every
+  bathroom or WC reachable only through a bedroom, and its own hint offered a way out — "if it
+  is an en-suite, add a second bathroom off circulation" — that the rule never checked. A plan
+  with a family bathroom off the hall and an en-suite off the master bedroom, which is what a
+  brief asking for an en-suite describes, was left with a warning no edit could clear. It now
+  fires only when **no** bathroom or WC on the storey is reachable without passing through a
+  bedroom; then every one behind a bedroom is named, as before. A WC counts as that other
+  room. The check is per storey, like the rest of `lint`: a WC downstairs does not excuse a
+  first floor whose only bathroom is an en-suite. `arch suggest` follows the same definition,
+  and the hint now reads "add a second bathroom or WC on the same storey that is reached
+  without passing through a bedroom".
+  `examples/hillside-villa.arch` lints with eight warnings instead of nine.
+
 ### Fixed — `arch watch` could still miss the first save after it said it was watching
 
 - **The readiness banner now means the watcher has its baseline.** `arch watch` used

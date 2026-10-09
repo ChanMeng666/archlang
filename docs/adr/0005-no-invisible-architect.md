@@ -1,7 +1,14 @@
 # 5. Design intelligence is facts + advisory lint, not an invisible architect
 
-- **Status:** Accepted
+- **Status:** Accepted — **superseded in part by [ADR 0025](0025-furnish-as-explicit-transform.md)**
 - **Date:** 2026-06 (v1.3 planning)
+
+> **Superseded in part (2026-10).** [ADR 0025](0025-furnish-as-explicit-transform.md) allows
+> furnishing an empty room as an **explicit source transform** (the `furnish` stage of
+> `arch finish`, on the seam [ADR 0006](0006-solver-as-explicit-transform.md) defines). That
+> retires one word of the Decision below: "auto-furnish" in the list of what the core may not do
+> no longer forbids the transform. It still binds `compile()`, which never adds a piece the
+> source does not state. Everything else in this ADR stands as written.
 
 ## Context
 

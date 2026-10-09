@@ -273,6 +273,16 @@ const PAGE_META = [
     "ADR 23 — the plan-symbol drawing language",
     "How ArchLang draws its plan symbols: a pen and tone hierarchy, a derived outline ink, true arcs, dashes for hidden lines, and no shadows or new handedness.",
   ],
+  [
+    "/adr/0024-finish-as-explicit-transform",
+    "ADR 24 — finish is an explicit transform",
+    "arch finish adds the sheet statements a plan lacks (paper, scale, dimensions, title, schedule, legend) as an explicit source transform, never inside compile.",
+  ],
+  [
+    "/adr/0025-furnish-as-explicit-transform",
+    "ADR 25 — furnish is an explicit transform",
+    "arch finish furnishes the rooms a plan left empty, by room use, as an explicit source transform: fill-only, relative placement, never worse, never inside compile.",
+  ],
 ] as const;
 
 type PageMeta = { readonly title: string; readonly description: string };
@@ -415,7 +425,7 @@ function structuredData(route: string, url: string, title: string, description: 
 export default defineConfig({
   title: "ArchLang",
   description:
-    "A small declarative language that compiles to professional SVG floor plans — like Typst/LaTeX, but for architecture.",
+    "A deterministic DSL and compiler for floor plans: write (or have an LLM write) .arch source and it compiles to SVG/DXF/PDF with linting and geometric validation — diffable, version-controllable, reproducible.",
   // Declared so the crawler, the screen reader and the hyphenation engine all agree.
   lang: "en-GB",
   // `<title>` per page = "<PAGE_META title> — ArchLang". `/` opts out (titleTemplate:

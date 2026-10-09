@@ -7,9 +7,9 @@ const hero = EXAMPLES["one-room"];
 
 # What is ArchLang?
 
-ArchLang is a small declarative language that compiles to a professional SVG floor
-plan — think Typst/LaTeX, but for architecture. You describe a plan in plain text;
-the compiler produces a clean, deterministic drawing.
+ArchLang is a deterministic DSL and compiler for floor plans. You describe a plan in
+plain text; the compiler produces a clean, deterministic drawing in SVG, DXF or PDF,
+with linting and geometric validation.
 
 **Edit the source below** and watch it recompile live — this runs the real compiler
 in your browser. It is the whole of

@@ -165,6 +165,52 @@ describe("suggestTopology — W_BATH_VIA_BEDROOM", () => {
   });
 });
 
+// A hall with three rooms off it in a row: `west`, the master bedroom, and an en-suite whose
+// only door is the master's. What `west` is, and where its door is, decides the verdict.
+const suite = (westLabel: string, westDoor = "at (1500,2000) width 800 wall p_hall"): string => `plan "Suite" {
+  units mm
+  grid 50
+  wall id=ext exterior thickness 200 { (0,0) (9000,0) (9000,7000) (0,7000) close }
+  wall id=p_hall partition thickness 100 { (0,2000) (9000,2000) }
+  wall id=p_a partition thickness 100 { (3000,2000) (3000,7000) }
+  wall id=p_b partition thickness 100 { (6000,2000) (6000,7000) }
+  room id=hall   at (0,0)       size 9000x2000 label "Hall"
+  room id=west   at (0,2000)    size 3000x5000 label "${westLabel}"
+  room id=master at (3000,2000) size 3000x5000 label "Master Bedroom"
+  room id=ens    at (6000,2000) size 3000x5000 label "En-suite"
+  door id=entry    on ext at 4500 width 1000
+  door id=d_west   ${westDoor}
+  door id=d_master at (4500,2000) width 900 wall p_hall
+  door id=d_ens    at (6000,4500) width 800 wall p_b
+  window id=w_m at (4500,7000) width 1200 wall ext
+}`;
+
+describe("suggestTopology — W_BATH_VIA_BEDROOM spares an en-suite beside a bathroom off circulation", () => {
+  const lintRooms = (src: string): number => lint(src).filter((d) => d.code === "W_BATH_VIA_BEDROOM").length;
+  const suggested = (src: string): string[] =>
+    suggestTopology(src)
+      .filter((x) => x.code === "W_BATH_VIA_BEDROOM")
+      .map((x) => x.roomId);
+
+  it("a family bathroom (or a WC) off the hall: neither lint nor suggest names the en-suite", () => {
+    for (const label of ["Family Bathroom", "WC"]) {
+      expect(lintRooms(suite(label)), label).toBe(0);
+      expect(suggested(suite(label)), label).toEqual([]);
+    }
+  });
+
+  it("no other wet room: both name the en-suite (the control that shows both ran)", () => {
+    expect(lintRooms(suite("Study"))).toBe(1);
+    expect(suggested(suite("Study"))).toEqual(["ens"]);
+  });
+
+  it("two wet rooms, both behind the bedroom: both name both", () => {
+    const src = suite("Family Bathroom", "at (3000,4500) width 800 wall p_a");
+    expect(lintRooms(src)).toBe(2);
+    expect(suggested(src)).toEqual(["west", "ens"]);
+  });
+});
+
 // The `faulty` unreachable-bedroom shape, but a wardrobe stands against the `part`
 // partition (the living↔bedroom wall), INSIDE the bedroom's door-approach strip and
 // over the naive mid-wall site. A furniture-aware door builder must slide the partition

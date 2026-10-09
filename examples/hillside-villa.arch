@@ -244,9 +244,10 @@ plan "Hillside Villa" {
     # run-length 5300), so each reads as a shared/guest bath as well as an ensuite. `en_m`
     # deliberately keeps its ONE door, into the master bedroom only: it sits in the
     # building's far corner with no wall on circulation, and a master ensuite reached only
-    # through its own bedroom is the conventional case, not a defect — `arch lint` flags it
-    # (`W_BATH_VIA_BEDROOM`) and the plan leaves it in. `arch lint` raises nine warnings in
-    # all: that one; `W_ROOM_NOT_EQUATOR_FACING` on bedrooms 2 and 3, whose only windows face
+    # through its own bedroom is the conventional case, not a defect — and `arch lint` does
+    # not flag it (`W_BATH_VIA_BEDROOM`), because en2 and en3 are bathrooms on this storey
+    # reached off the landing without passing through a bedroom. `arch lint` raises eight
+    # warnings in all: `W_ROOM_NOT_EQUATOR_FACING` on bedrooms 2 and 3, whose only windows face
     # north; and six `W_PATH_TOO_NARROW` on this floor, each a real 700 mm door (640 mm
     # clear). Five are walks from the top of the stair: each bed's clearance covers its
     # bedroom's own door, so bedrooms 2 and 3 are walked into through their ensuites, and

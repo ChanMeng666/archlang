@@ -589,6 +589,41 @@ suite("vertical circulation — a balcony door is not an arrival point", () => {
     expect(s.vertical!.reachable_levels).toEqual([1, 2]);
     expect(s.levels![1]!.access.hasEntrance).toBe(true);
   });
+
+  it("the en-suite exemption is per storey: a WC off the ground-floor hall does not excuse the bathroom upstairs", () => {
+    // With the balcony the upper storey is entered at the landing (the shaft's arrival room).
+    // Move the bathroom's door off the landing and onto the bedroom: a true en-suite.
+    const base = balconyHouse(WITH_BALCONY);
+    const ensuite = base.replace(
+      `door id=d_bath on p_h at 4500  width 800 swing into bath`,
+      `door id=d_bath on p_v at 2000  width 800 swing into bath`,
+    );
+    expect(ensuite).not.toBe(base);
+    const viaBedroom = (src: string): number => lint(src).filter((d) => d.code === "W_BATH_VIA_BEDROOM").length;
+    expect(viaBedroom(ensuite)).toBe(1);
+    // A WC off the hall one storey down changes nothing upstairs.
+    const wcBelow = ensuite.replace(
+      `room id=hall at (0,0) size 6000x6000 label "Hall" uses hall entry`,
+      `wall id=p_wc partition thickness 100 { (4000,0) (4000,6000) }
+    room id=hall at (0,0) size 4000x6000 label "Hall" uses hall entry
+    room id=wc at (4000,0) size 2000x6000 label "WC" uses wc
+    door id=d_wc on p_wc at 3000 width 800 swing into wc`,
+    );
+    expect(wcBelow).not.toBe(ensuite);
+    expect(describePlan(wcBelow).levels![0]!.access.rooms.find((r) => r.id === "wc")?.reachable).toBe(true);
+    expect(viaBedroom(wcBelow)).toBe(1);
+    // The same WC on the bathroom's own storey, off the landing, does.
+    const wcBeside = ensuite.replace(
+      `room id=landing at (0,0)       size 6000x2000 label "Landing"  uses circulation`,
+      `wall id=p_wc partition thickness 100 { (4000,0) (4000,2000) }
+    room id=landing at (0,0)       size 4000x2000 label "Landing"  uses circulation
+    room id=wc      at (4000,0)    size 2000x2000 label "WC"       uses wc
+    door id=d_wc on p_wc at 1000 width 800 swing into wc`,
+    );
+    expect(wcBeside).not.toBe(ensuite);
+    expect(describePlan(wcBeside).levels![1]!.access.rooms.find((r) => r.id === "wc")?.reachable).toBe(true);
+    expect(viaBedroom(wcBeside)).toBe(0);
+  });
 });
 
 // ---------------------------------------------------------------------------
