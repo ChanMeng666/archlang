@@ -18,9 +18,10 @@
  * only here and in CI, and a pinned npx keeps the lockfile and the install small.
  */
 import { spawnSync } from "node:child_process";
-import { copyFileSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { copyFileSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { deflateRawSync } from "node:zlib";
 
 /** Pinned MCPB CLI (published well before this pin; bump deliberately). */
 export const MCPB_CLI_VERSION = "2.1.2";
@@ -36,6 +37,7 @@ const ICON = join(REPO, "plugins", "archlang", ".claude-plugin", "icon.png");
 export interface McpbTool {
   name: string;
   description?: string;
+  inputSchema?: Record<string, unknown>;
 }
 
 interface PackageMeta {
@@ -73,7 +75,12 @@ function parseAuthor(a: string): { name: string; email?: string; url?: string } 
  * The manifest, as a pure function of the package metadata, `server.json` and the
  * server's real tool list. Key order is fixed, so the output is byte-stable.
  */
-export function buildManifest(pkg: PackageMeta, serverJson: ServerJsonMeta, tools: McpbTool[]) {
+export function buildManifest(
+  pkg: PackageMeta,
+  serverJson: ServerJsonMeta,
+  tools: McpbTool[],
+  opts: { inputSchemas?: boolean } = {},
+) {
   const author = parseAuthor(pkg.author);
   if (serverJson.websiteUrl) author.url = serverJson.websiteUrl;
   return {
@@ -94,7 +101,12 @@ export function buildManifest(pkg: PackageMeta, serverJson: ServerJsonMeta, tool
       entry_point: "server/index.js",
       mcp_config: { command: "node", args: ["${__dirname}/server/index.js"] },
     },
-    tools: tools.map((t) => ({ name: t.name, description: oneLine(t.description ?? t.name) })),
+    tools: tools.map((t) => ({
+      name: t.name,
+      description: oneLine(t.description ?? t.name),
+      // Smithery's API requires each tool to carry an `inputSchema`; `mcpb validate` rejects the key.
+      ...(opts.inputSchemas ? { inputSchema: t.inputSchema ?? { type: "object" } } : {}),
+    })),
     keywords: pkg.keywords ?? [],
     license: pkg.license,
     compatibility: { platforms: ["darwin", "win32", "linux"], runtimes: { node: pkg.engines.node } },
@@ -102,6 +114,74 @@ export function buildManifest(pkg: PackageMeta, serverJson: ServerJsonMeta, tool
 }
 
 const readJson = <T>(p: string): T => JSON.parse(readFileSync(p, "utf8")) as T;
+
+const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  return c >>> 0;
+});
+const crc32 = (b: Buffer): number => {
+  let c = 0xffffffff;
+  for (const x of b) c = (CRC_TABLE[(c ^ x) & 0xff] as number) ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+};
+
+/**
+ * A minimal, dependency-free zip writer (deflate, fixed 2020-01-01 timestamp, sorted
+ * entries, so the bytes are a pure function of the contents). Used for the Smithery
+ * variant, which `mcpb pack` cannot produce because it validates the manifest strictly.
+ */
+export function zipFiles(files: Array<{ name: string; data: Buffer }>): Buffer {
+  const DOS_DATE = ((2020 - 1980) << 9) | (1 << 5) | 1;
+  const parts: Buffer[] = [];
+  const central: Buffer[] = [];
+  let offset = 0;
+  for (const f of [...files].sort((a, b) => (a.name < b.name ? -1 : 1))) {
+    const name = Buffer.from(f.name, "utf8");
+    const comp = deflateRawSync(f.data);
+    const crc = crc32(f.data);
+    const h = Buffer.alloc(30);
+    h.writeUInt32LE(0x04034b50, 0);
+    h.writeUInt16LE(20, 4);
+    h.writeUInt16LE(0x0800, 6); // UTF-8 names
+    h.writeUInt16LE(8, 8); // deflate
+    h.writeUInt16LE(DOS_DATE, 12);
+    h.writeUInt32LE(crc, 14);
+    h.writeUInt32LE(comp.length, 18);
+    h.writeUInt32LE(f.data.length, 22);
+    h.writeUInt16LE(name.length, 26);
+    parts.push(h, name, comp);
+    const c = Buffer.alloc(46);
+    c.writeUInt32LE(0x02014b50, 0);
+    c.writeUInt16LE(20, 4);
+    c.writeUInt16LE(20, 6);
+    c.writeUInt16LE(0x0800, 8);
+    c.writeUInt16LE(8, 10);
+    c.writeUInt16LE(DOS_DATE, 14);
+    c.writeUInt32LE(crc, 16);
+    c.writeUInt32LE(comp.length, 20);
+    c.writeUInt32LE(f.data.length, 24);
+    c.writeUInt16LE(name.length, 28);
+    c.writeUInt32LE(offset, 42);
+    central.push(c, name);
+    offset += h.length + name.length + comp.length;
+  }
+  const dir = Buffer.concat(central);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0);
+  end.writeUInt16LE(files.length, 8);
+  end.writeUInt16LE(files.length, 10);
+  end.writeUInt32LE(dir.length, 12);
+  end.writeUInt32LE(offset, 16);
+  return Buffer.concat([...parts, dir, end]);
+}
+
+/** Every file under `root`, as forward-slash relative names. */
+function walk(root: string, dir = root): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? walk(root, join(dir, e.name)) : [relative(root, join(dir, e.name)).split(/[\\/]/).join("/")],
+  );
+}
 
 /** The resource copy list, extracted from `copy-resources.mjs` (the one place it is written). */
 function resourceList(): Array<{ src: string; dest: string }> {
@@ -123,7 +203,11 @@ async function listBundledTools(entry: string): Promise<McpbTool[]> {
   await client.connect(new StdioClientTransport({ command: process.execPath, args: [entry] }));
   try {
     const { tools } = await client.listTools();
-    return tools.map((t) => ({ name: t.name, description: t.description }));
+    return tools.map((t) => ({
+      name: t.name,
+      description: t.description,
+      inputSchema: t.inputSchema as Record<string, unknown>,
+    }));
   } finally {
     await client.close();
   }
@@ -179,6 +263,15 @@ async function main(): Promise<void> {
     });
     if (r.status !== 0) throw new Error(`mcpb ${args[0]} failed (exit ${r.status})`);
   }
+  // The Smithery variant: same files, but the manifest's tools carry `inputSchema`.
+  const smithery = join(OUT_ROOT, `archlang-mcp-${pkg.version}.smithery.mcpb`);
+  const variant = buildManifest(pkg, serverJson, tools, { inputSchemas: true });
+  const entries = walk(stage)
+    .filter((n) => n !== "manifest.json")
+    .map((n) => ({ name: n, data: readFileSync(join(stage, n)) }));
+  entries.push({ name: "manifest.json", data: Buffer.from(`${JSON.stringify(variant, null, 2)}\n`) });
+  writeFileSync(smithery, zipFiles(entries));
+  console.log(`build-mcpb: ${smithery} (${statSync(smithery).size} bytes)`);
   console.log(`build-mcpb: ${out} (${statSync(out).size} bytes, ${tools.length} tools)`);
 }
 

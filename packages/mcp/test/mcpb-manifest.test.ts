@@ -8,8 +8,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { inflateRawSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
-import { buildManifest, MANIFEST_VERSION } from "../scripts/build-mcpb.js";
+import { buildManifest, MANIFEST_VERSION, zipFiles } from "../scripts/build-mcpb.js";
 import { connect } from "./helpers.js";
 
 const MCP = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -64,6 +65,39 @@ describe("MCPB manifest generator", () => {
     expect(JSON.stringify(buildManifest(pkg, serverJson, tools))).toBe(
       JSON.stringify(buildManifest(pkg, serverJson, tools)),
     );
+  });
+
+  it("the strict manifest has no inputSchema; the Smithery variant carries the server's, per tool", async () => {
+    const client = await connect();
+    const { tools } = await client.listTools();
+    const live = tools.map((t) => ({ name: t.name, description: t.description, inputSchema: t.inputSchema }));
+    const strict = buildManifest(pkg, serverJson, live);
+    for (const t of strict.tools) expect("inputSchema" in t).toBe(false);
+    const variant = buildManifest(pkg, serverJson, live, { inputSchemas: true });
+    expect(variant.tools.length).toBe(tools.length);
+    variant.tools.forEach((t, i) => {
+      const schema = (t as { inputSchema?: unknown }).inputSchema;
+      expect(typeof schema).toBe("object");
+      expect(schema).toEqual(tools[i]?.inputSchema);
+    });
+    // Everything but the tools' schemas is identical.
+    expect({ ...variant, tools: 0 }).toEqual({ ...strict, tools: 0 });
+  });
+
+  it("zipFiles writes a readable archive (entries inflate back, deterministic)", () => {
+    const files = [
+      { name: "b/two.txt", data: Buffer.from("two two two two") },
+      { name: "a.txt", data: Buffer.from("one") },
+    ];
+    const z = zipFiles(files);
+    expect(zipFiles(files).equals(z)).toBe(true);
+    expect(z.readUInt32LE(z.length - 22)).toBe(0x06054b50);
+    expect(z.readUInt16LE(z.length - 22 + 10)).toBe(2);
+    // First local entry is the lexicographically first name.
+    const nameLen = z.readUInt16LE(26);
+    expect(z.subarray(30, 30 + nameLen).toString()).toBe("a.txt");
+    const csize = z.readUInt32LE(18);
+    expect(inflateRawSync(z.subarray(30 + nameLen, 30 + nameLen + csize)).toString()).toBe("one");
   });
 
   it("takes its icon from the Claude plugin's approved square PNG", () => {

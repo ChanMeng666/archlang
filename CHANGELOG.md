@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **The MCP server as a one-click `.mcpb` bundle** (Claude Desktop extension; the file Smithery publishes for local stdio servers). `npm run build:mcpb` bundles `packages/mcp` with the SDK and the core into one self-contained `dist-mcpb/archlang-mcp-<version>.mcpb`, with a `manifest.json` generated from the package metadata and the server's own `tools/list`; `npm run prove:mcpb` unpacks it outside the repo and drives it over stdio. The release workflow attaches it to the GitHub Release, best-effort and last.
+- **The MCP server as a one-click `.mcpb` bundle** (Claude Desktop extension; the file Smithery publishes for local stdio servers). `npm run build:mcpb` bundles `packages/mcp` with the SDK and the core into one self-contained `dist-mcpb/archlang-mcp-<version>.mcpb`, with a `manifest.json` generated from the package metadata and the server's own `tools/list`; `npm run prove:mcpb` unpacks it outside the repo and drives it over stdio. A second file, `*.smithery.mcpb`, adds each tool's `inputSchema` to the manifest (Smithery requires it, `mcpb validate` rejects it). The release workflow attaches both to the GitHub Release, best-effort and last.
 
 ### Changed
 

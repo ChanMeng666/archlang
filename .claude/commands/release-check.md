@@ -91,13 +91,17 @@ you observed. Do NOT push anything — this command only verifies.
   4. The gallery lags an upload by minutes; a disagreeing probe means wait and re-probe.
 - **MCPB bundle / Smithery (human step; no credential in CI).** `release.yml` builds
   `archlang-mcp-<mcp version>.mcpb` (`npm run build:mcpb`, proven with `npm run prove:mcpb`) and attaches
-  it to the GitHub Release, best-effort. To list it on Smithery (<https://smithery.ai/docs/build/publish>,
-  "Local (MCPB Bundle)"), download that asset (or build it) and, logged in to Smithery:
+  it to the GitHub Release, best-effort, together with `archlang-mcp-<version>.smithery.mcpb`. The
+  `.smithery` variant exists because Smithery's API requires an `inputSchema` on every manifest tool
+  while `mcpb validate` rejects that key, so one manifest cannot satisfy both: the plain file is the
+  Claude Desktop extension, the variant is only for Smithery. To list a release on Smithery
+  (<https://smithery.ai/docs/build/publish>), download the variant (or run `npm run build:mcpb` in the
+  primary checkout) and:
 
   ```bash
-  smithery mcp publish ./archlang-mcp-<version>.mcpb -n <your-org>/<server-id>
+  npx @smithery/cli@4.11.1 auth login   # once; browser approval, no key to type
+  npx @smithery/cli@4.11.1 mcp publish dist-mcpb/archlang-mcp-<version>.smithery.mcpb -n chanmeng-dev/archlang
   ```
 
-  `-n` is the Smithery namespace/server id, fixed on the first publish. The bundle is the only input;
-  the bundle's `manifest.json` is generated, never committed. A change to the shim version needs a new
-  bundle and a re-publish.
+  The namespace/server id is `chanmeng-dev/archlang`. A new shim version needs a new bundle and a
+  re-publish; the manifests are generated, never committed.

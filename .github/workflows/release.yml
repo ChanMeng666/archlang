@@ -258,4 +258,5 @@ jobs:
           npm run build:mcpb
           npm run prove:mcpb
           gh release upload "$TAG" dist-mcpb/*.mcpb --clobber
-          echo "::notice::Attached the MCPB bundle to GitHub Release $TAG."
+          # Both: the strict-valid Claude Desktop extension and the Smithery variant.
+          echo "::notice::Attached the MCPB bundles to GitHub Release $TAG."
