@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The Claude Code plugin passes the directory's checks.** The manifest pins the MCP launcher to an exact version (`npx -y @chanmeng666/archlang-mcp@<version>`, not the unpinned package), carries a `version` (the core's), and ships a 1024 px `.claude-plugin/icon.png` rendered from the plum mark on a light tile. `npm run gen:plugin` stamps the version and the pin from the package manifests and `check:drift` gates them, so a release bump cannot leave them stale.
+
 - **The Claude Code plugin is a slim subfolder, `plugins/archlang/`.** The plugin root used to be the repo root, whose 11 MB font the plugin directory rejects (5 MiB per file). `marketplace.json` now installs `./plugins/archlang`: the manifest plus the five skills, which `npm run gen:plugin` copies from the root `SKILL.md` and `skills/` (drift-gated). `npx skills add` is unchanged.
 
 ## [1.42.1] - 2026-10-09
