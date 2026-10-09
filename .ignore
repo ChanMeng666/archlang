@@ -17,6 +17,7 @@ editors/archlang.tmLanguage.json
 playground/src/arch-language.js
 docs-site/.vitepress/theme/arch-highlight.js
 examples/**/*.svg
+plugins/archlang/skills/
 package-lock.json
 
 # Docs-site build output and pages copied in by docs-site/sync-docs.mjs
