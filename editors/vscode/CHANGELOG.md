@@ -12,6 +12,16 @@ are documented here. The format is based on
 > republished**. See [CONTRIBUTING.md → Releasing](../../CONTRIBUTING.md#releasing) for
 > the checklist that keeps the two in sync.
 
+## [0.30.0] - 2026-10-09
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.42.0`** (`arch finish`, and
+  `W_BATH_VIA_BEDROOM` no longer flags an en-suite beside a bathroom off circulation).
+  - The release adds no grammar, keyword or diagnostic code, and `finish` is a CLI and library
+    transform the extension does not call. The rebundle keeps the extension's language
+    services at the published core.
+
 ## [0.29.0] - 2026-10-06
 
 ### Changed
