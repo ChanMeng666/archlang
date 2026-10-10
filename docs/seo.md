@@ -154,18 +154,40 @@ cannot police the words and should not try; framing and attribution are the leve
 ## 8. Off-site
 
 Third-party mentions correlate with being cited by an answer engine far more strongly than backlinks
-do, so off-site work belongs to this surface even though no file here expresses it. **Nothing is
-published to a third party by an agent.** Drafts live in the private growth repository under
-`marketing/offsite/`, with the manual submission guide at `marketing/launches/runbook-2026-09.md`;
-the owner posts. Opened 2026-09-14 from the owner's account, awaiting maintainers:
+do, so off-site work belongs to this surface even though no file here expresses it. **No post or
+outreach is published to a third party by an agent.** Drafts live in the private growth repository
+under `marketing/offsite/`, with the manual submission guide at
+`marketing/launches/runbook-2026-09.md`; the owner posts. Opened 2026-09-14 from the owner's
+account, awaiting maintainers:
 
 | List | Pull request |
 |---|---|
-| punkpeye/awesome-mcp-servers | [#14383](https://github.com/punkpeye/awesome-mcp-servers/pull/14383) |
+| punkpeye/awesome-mcp-servers | [#14383](https://github.com/punkpeye/awesome-mcp-servers/pull/14383) — waits on the Glama badge (below) |
 | osama-ata/Awesome-AECO | [#13](https://github.com/osama-ata/Awesome-AECO/pull/13) |
 | Daviidro/awesome-aec-mcp | [#1](https://github.com/Daviidro/awesome-aec-mcp/pull/1) |
 | steven2358/awesome-generative-ai | [#1375](https://github.com/steven2358/awesome-generative-ai/pull/1375) |
 | semlinker/awesome-typescript | [#192](https://github.com/semlinker/awesome-typescript/pull/192) |
+
+**Registries and directories are a different class from posts**: a listing is how an agent finds
+the tool. On 2026-10-10 the owner had an agent submit them through the owner's own logged-in
+browser, one platform at a time and each on explicit request. That is the boundary: an agent never
+creates an account, types a credential, accepts terms, passes a CAPTCHA or pays; those stay with the
+owner. State on 2026-10-10 (the site, not this table, is the truth for what is live):
+
+| Where | State | Kept current by |
+|---|---|---|
+| Official MCP registry (`io.github.ChanMeng666/archlang-mcp`) | live | `release.yml` on a `v*` tag |
+| [Context7](https://context7.com/chanmeng666/archlang) | live | parsed from the public repository |
+| [Smithery](https://smithery.ai/servers/chanmeng-dev/archlang) | live | a manual re-publish per shim version (`/release-check`) |
+| Claude plugin directory (claude.ai) | submitted by the owner, in review | reads `plugins/archlang/`; the push-updates webhook it offered is not set up |
+| mcpservers.org | submitted, in review | — |
+| Glama | submitted, in review | once approved: a Dockerfile, claim the server, then its badge on #14383 |
+| mcp.so | not listed: submission is paid | — |
+| VS Code Marketplace (`ChanMeng.archlang`) | live | the owner's web upload (`/release-check`) |
+
+**Two lists forbid AI-authored submissions** — `travisvn/awesome-claude-skills` and
+`hesreallyhim/awesome-claude-code`. An agent never opens a pull request or issue there; only the
+owner can, by hand.
 
 **Wikidata is on HOLD.** Items were drafted for both projects and deliberately not submitted:
 notability needs an independent source, and an item created without one is deleted rather than

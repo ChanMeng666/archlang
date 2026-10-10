@@ -1946,6 +1946,35 @@ switch the rule off for two files that must keep it. A finding that CI never see
 If a future filesystem-mode scan is wanted as a gate, the answer is a per-finding fingerprint in
 `.gitleaksignore`, not a path in `.gitleaks.toml`.
 
+## Registry listings (opened 2026-10-10)
+
+The state of each listing is the table in `docs/seo.md` § 8. These are what is still owed.
+
+### O.1 · Glama is in review, and the awesome-mcp-servers pull request waits on it — `todo` (BLOCKED on a third party)
+
+The server was submitted to Glama on 2026-10-10 and is pending its review; the result arrives by
+e-mail to the owner. `punkpeye/awesome-mcp-servers` #14383 cannot merge without a Glama badge on the
+entry — its triage bot has asked twice. Once Glama approves: give it a Dockerfile for the stdio
+server, claim the server from the owner's account, then add the badge to the entry in #14383. The
+owner logs in; an agent may drive the rest on request.
+
+### O.2 · The release workflow's bundle step has never run on a tag — `todo` (verify at the next release)
+
+`release.yml` ends with `build:mcpb`, `prove:mcpb` and `gh release upload dist-mcpb/*.mcpb`, under
+`continue-on-error`. It was merged after the last tag, so it has run only locally. At the next tag,
+open the run rather than trusting its colour — a failure there is a yellow step on a green run — and
+confirm the GitHub Release carries both `archlang-mcp-<version>.mcpb` and the `.smithery.mcpb`
+variant. Then re-publish the variant to Smithery (`/release-check`); nothing does that
+automatically.
+
+### O.3 · How the Claude plugin directory learns of a new version is unverified — `todo`
+
+The plugin was submitted from `plugins/archlang/` on 2026-10-10 and is in review. The directory
+offered a "push updates" webhook, which was dismissed and is not set up. Whether the listing follows
+`main` without it, or needs a resubmission after each release, has not been observed; settle it at
+the first release after the listing is approved. The directory holds a pinned-`npx` server for a
+policy review, and may ask for a privacy-policy page, which the sites do not have.
+
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)
 
 ### N.1 · The nav row needs 1152px, and the hamburger persists until then — `todo` (a WANT, not a bug)

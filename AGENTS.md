@@ -52,6 +52,7 @@ npm run gen:all       # every gen:* generator
 `src/index.ts` public surface · `docs/adr/` decisions · `docs/backlog.md` open work · `.claude/rules/` path-scoped rules (auto-loaded).
 `docs/agents/`: `architecture.md` (pipeline, module map) · `gotchas.md` (traps) · `iron-laws.md`
 (owner decisions) · `commands.md` (CI, scripts). `docs/testing.md`: red guards, golden policy.
+`docs/seo.md` § 8: where the project is listed and who may submit.
 A root `.ignore` hides CHANGELOG, generated files and goldens from ripgrep; name the path to search them.
 Authoring `.arch` (not contributing): `spec.llm.md`, `SKILL.md`.
 
