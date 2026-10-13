@@ -1,0 +1,101 @@
+# A single-storey classroom block: three 60 m2 classrooms on a 2 m corridor, with the
+# entrance lobby, a staff prep room, a store, pupil WCs, an accessible WC and a plant room
+# along the service side.
+#
+# Teaching rooms are the same room three times, so the furniture is written ONCE as a loop
+# over the room's west edge — `let X = i * 7500` is the only thing that differs between
+# classrooms — and the plan keeps the three rooms in step by construction. Each room has:
+#
+#   a teacher's desk on the north wall, facing a class of twelve tables in three columns,
+#   a bookshelf run along the corridor wall, and a door at the EAST end of that wall,
+#   so the leaf swings away from the tables and the entry path stays clear of them.
+#
+# Schools are exactly where the `accessibility-advisory` profile is not optional, so the
+# plan is written to pass it: 1000 mm door leaves, a 2000 mm corridor, the door end of every
+# classroom left clear of tables, and an accessible WC with its door on the corridor. It is
+# also lint-clean under the default ruleset.
+plan "Classroom Block" {
+  units mm
+  grid 50
+  paper A2 landscape
+  scale 1:100
+  north up
+  dims auto all
+  schedule rooms
+  schedule openings
+  notes "All dimensions in millimetres. Do not scale from this drawing."
+  notes "Classroom net areas exclude the corridor and the lobby."
+
+  title { project "Classroom Block" drawn_by "ArchLang" date "2026-10-14" number "A-301" revision "A" }
+
+  let CW = 7500   # classroom width
+
+  # ---- shell and partitions ---------------------------------------------------
+  wall id=shell exterior thickness 250 { (0,0) (22500,0) (22500,14000) (0,14000) close }
+  wall id=w_cn partition thickness 150 { (0,8000) (22500,8000) }
+  wall id=w_cs partition thickness 150 { (0,10000) (22500,10000) }
+  wall id=w_c1 partition thickness 150 { (7500,0) (7500,8000) }
+  wall id=w_c2 partition thickness 150 { (15000,0) (15000,8000) }
+  wall id=w_s1 partition thickness 150 { (5000,10000) (5000,14000) }
+  wall id=w_s2 partition thickness 150 { (9500,10000) (9500,14000) }
+  wall id=w_s3 partition thickness 150 { (12500,10000) (12500,14000) }
+  wall id=w_s4 partition thickness 150 { (17000,10000) (17000,14000) }
+  wall id=w_s5 partition thickness 150 { (19500,10000) (19500,14000) }
+
+  # ---- rooms ------------------------------------------------------------------
+  zone teaching "Teaching" {
+    room id=r_c1 at (0,0)     size 7500x8000 label "Classroom 1" uses office
+    room id=r_c2 at (7500,0)  size 7500x8000 label "Classroom 2" uses office
+    room id=r_c3 at (15000,0) size 7500x8000 label "Classroom 3" uses office
+  }
+  zone service "Service" {
+    room id=r_corr  at (0,8000)      size 22500x2000 label "Corridor" uses circulation
+    room id=r_lobby at (0,10000)     size 5000x4000  label "Entrance Lobby" uses entry
+    room id=r_prep  at (5000,10000)  size 4500x4000  label "Staff Prep" uses office
+    room id=r_store at (9500,10000)  size 3000x4000  label "Store" uses storage
+    room id=r_wcp   at (12500,10000) size 4500x4000  label "Pupil WCs" uses wc
+    room id=r_wca   at (17000,10000) size 2500x4000  label "Accessible WC" uses wc
+    room id=r_plant at (19500,10000) size 3000x4000  label "Plant Room" uses utility
+  }
+
+  # ---- doors ------------------------------------------------------------------
+  door id=d_front at (2500,14000) width 1400 wall shell hinge left swing in
+  opening id=o_lobby on w_cs at 2500 width 1500
+  door id=d_c1 on w_cn at 6700 width 1000 swing into r_c1
+  door id=d_c2 on w_cn at 14200 width 1000 swing into r_c2
+  door id=d_c3 on w_cn at 21700 width 1000 swing into r_c3
+  door id=d_prep on w_cs at 7250 width 1000 swing into r_prep
+  door id=d_store on w_cs at 11000 width 1000 swing into r_store
+  door id=d_wcp on w_cs at 14750 width 1000 swing into r_wcp
+  door id=d_wca on w_cs at 18250 width 1000 swing into r_wca
+  door id=d_plant on w_cs at 21000 width 1000 swing into r_plant
+
+  # ---- windows: one wide glazed bay per classroom, north-lit ------------------
+  window at (3750,0) width 3000 wall shell
+  window at (11250,0) width 3000 wall shell
+  window at (18750,0) width 3000 wall shell
+  window at (0,4000) width 2000 wall shell
+  window at (22500,4000) width 2000 wall shell
+  window at (7250,14000) width 1800 wall shell
+  window at (14750,14000) width 1400 wall shell
+
+  # ---- fit-out ----------------------------------------------------------------
+  for i in 0..3 {
+    let X = i * CW
+    furniture desk at (X + 3000, 500) size 1600x800 label "Teacher"
+    furniture bookshelf at (X + 1500, 7450) size 3000x400 label "Books" rotate 180
+    for c in 0..3 {
+      for r in 0..4 {
+        furniture table at (X + 1200 + c * 1800, 2100 + r * 1300) size 1200x600
+      }
+    }
+  }
+  furniture desk in r_prep anchor bottom-right inset 400 size 1600x800 label "Desk"
+  furniture shelf in r_store anchor bottom inset 300 size 2000x500 label "Shelving"
+  furniture wc against wall shell segment 2 offset 9500 in r_wcp
+  furniture wc against wall shell segment 2 offset 8000 in r_wcp
+  furniture wc against wall shell segment 2 offset 6500 in r_wcp
+  furniture wc against wall shell segment 2 offset 4250 in r_wca
+  furniture basin against wall w_s4 offset 3000 in r_wcp
+  furniture basin against wall w_s5 offset 2000 in r_wca
+}

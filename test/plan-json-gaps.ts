@@ -13,6 +13,15 @@ export const CANNOT_ROUND_TRIP: Record<string, { because: string; proof: RegExp 
     because: "sheet layer — `paper` + `schedule` + `notes` (the title block's `number`/`revision` DO round-trip)",
     proof: /^\s*paper\b/m,
   },
+  "small-office.arch": {
+    because: "sheet layer — `paper` + `schedule` + `notes`; and `zone`",
+    proof: /^\s*paper\b/m,
+  },
+  "corner-cafe.arch": { because: "sheet layer — `paper` + `schedule` + `legend`; and `zone`", proof: /^\s*paper\b/m },
+  "classroom-block.arch": {
+    because: "sheet layer — `paper` + `schedule` + `notes`; and `zone`",
+    proof: /^\s*paper\b/m,
+  },
   // --- the style layer: `theme`/`style` select paint, which the JSON does not carry -
   "themed.arch": { because: "style layer — `theme`", proof: /^\s*theme\b/m },
   "gallery-l.arch": { because: "style layer — `theme`; and the sheet layer — `paper`", proof: /^\s*theme\b/m },

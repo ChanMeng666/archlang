@@ -1,0 +1,83 @@
+# A 15 x 10 m neighbourhood cafe: a dining room for eighteen, a servery, a kitchen, a store and
+# one accessible customer WC.
+#
+# A cafe is two buildings in one plan — a front of house the public walks, and a back of
+# house they never see — and the plan makes that split legible three ways:
+#
+#   zones      `front` and `back` group the schedule's subtotals, and cost no geometry
+#   doors      the public enters the dining room by a 1200 leaf; staff reach the kitchen
+#              only THROUGH the servery, and the goods door on the east wall opens onto the
+#              kitchen alone
+#   fit-out    every seat is a catalogue `table` + `chair` pair laid by `for`, the servery
+#              counter is backed onto the wall it serves, and the kitchen line (sink,
+#              stove, fridge) is `against wall` so each piece derives its own footprint
+#
+# `legend` lists the hatch and the fixture categories actually placed; `schedule rooms`
+# totals the floor. Clean under both lint profiles.
+plan "Corner Cafe" {
+  units mm
+  grid 50
+  paper A3 landscape
+  scale 1:100
+  north up
+  dims auto all
+  schedule rooms
+  legend
+
+  # ---- shell and partitions ---------------------------------------------------
+  wall id=shell exterior thickness 200 { (0,0) (15000,0) (15000,10000) (0,10000) close }
+  # The spine between front and back of house, with the partitions that hang off it.
+  wall id=w_e partition thickness 100 { (9000,0) (9000,10000) }
+  wall id=w_k partition thickness 100 { (9000,4000) (15000,4000) }
+  wall id=w_s partition thickness 100 { (9000,7000) (15000,7000) }
+  wall id=w_wc partition thickness 100 { (12000,7000) (12000,10000) }
+
+  # ---- rooms ------------------------------------------------------------------
+  zone front "Front of house" {
+    room id=r_dining at (0,0)       size 9000x10000 label "Dining" uses dining
+    room id=r_wc     at (9000,7000) size 3000x3000  label "Accessible WC" uses wc
+  }
+  zone back "Back of house" {
+    room id=r_kitchen at (9000,0)     size 6000x4000 label "Kitchen" uses kitchen
+    room id=r_servery at (9000,4000)  size 6000x3000 label "Servery" uses kitchen
+    room id=r_store   at (12000,7000) size 3000x3000 label "Store" uses storage
+  }
+
+  # ---- doors ------------------------------------------------------------------
+  door id=d_front at (4500,10000) width 1200 wall shell hinge left swing in
+  door id=d_pass on w_e at 6450 width 1000 hinge near end swing into r_servery
+  door id=d_kitchen on w_k at 1500 width 1000 swing into r_kitchen
+  door id=d_store on w_s at 4500 width 1000 swing into r_store
+  door id=d_wc on w_e at 8500 width 1000 swing into r_wc
+  door id=d_goods at (15000,2000) width 1000 wall shell swing out
+
+  # ---- windows ----------------------------------------------------------------
+  window at (2000,0) width 2000 wall shell
+  window at (6500,0) width 2000 wall shell
+  window at (0,2500) width 2400 wall shell
+  window at (0,7500) width 2400 wall shell
+  window at (1800,10000) width 2000 wall shell
+  window at (7200,10000) width 1800 wall shell
+  window at (10500,0) width 1400 wall shell
+  window at (13500,0) width 1400 wall shell
+
+  # ---- fit-out ----------------------------------------------------------------
+  # A grid of two-tops: a 800 x 800 table with a chair at each of two sides.
+  for i in 0..3 {
+    for j in 0..3 {
+      furniture table at (1800 + i * 2400, 1400 + j * 2200) size 800x800 label "T{i * 3 + j + 1}"
+      furniture chair at (1950 + i * 2400, 700 + j * 2200) size 450x450
+      furniture chair at (1950 + i * 2400, 2250 + j * 2200) size 450x450
+    }
+  }
+  furniture bench in r_dining anchor left inset 100 size 500x2400 label "Bench"
+  furniture plant in r_dining anchor top-right inset 300 size 500x500
+
+  furniture bar_counter against wall w_e offset 4950 size 1400x600 in r_servery
+  furniture upper_cabinet against wall w_k offset 4500 size 1400x350 in r_servery
+  furniture kitchen_sink against wall shell segment 0 offset 11000 in r_kitchen
+  furniture stove against wall shell segment 0 offset 12600 in r_kitchen
+  furniture fridge against wall shell segment 0 offset 14000 in r_kitchen
+  furniture wc against wall w_s offset 1500 in r_wc
+  furniture basin against wall w_wc offset 1500 in r_wc
+}

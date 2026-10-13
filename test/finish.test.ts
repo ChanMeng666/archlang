@@ -360,9 +360,9 @@ suite("finish law 4 — no core path moved: every example renders, describes and
   const measured = (name: string): string => (authorsHeight.has(name) ? heightFreeSource(srcOf(name)) : srcOf(name));
 
   it("covers the whole baseline", () => {
-    // 31 since `sheet-notes` was added (a new row, not a re-measured one).
-    expect(BASELINE.length).toBe(31);
-    expect(SEMANTIC_BASELINE.length).toBe(31);
+    // 31 since `sheet-notes` was added (a new row, not a re-measured one); 34 with the office, cafe and classroom.
+    expect(BASELINE.length).toBe(34);
+    expect(SEMANTIC_BASELINE.length).toBe(34);
   });
 
   for (const [name, sha] of BASELINE)

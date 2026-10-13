@@ -194,7 +194,9 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/aquarium.arch", "bd7b2666cb68c863d7a89064d0b96710e130cc2163ba426750ca1b76f8e22ba0"],
   ["examples/attached.arch", "ce39e349037a98b01516a72737bf9ea14a6f410ec295913efe84708753481761"],
   ["examples/bungalow.arch", "1e374f87b266082707aa4e0baa263a2f2784ddc75eba8aeec94e5049f97d84ae"],
+  ["examples/classroom-block.arch", "ebc0980ed917903edb1326185314716e4ceba136f7635f0f623f57dd665a9886"], // first measurement, added with the example
   ["examples/clinic.arch", "2713e28ea3bfb3409f54cab4fac70402777397fbc0414ac91fd22a13093b6a9d"],
+  ["examples/corner-cafe.arch", "80f015667ee308b0114411abf462f7e8ff1137f0680565cc0898dbaac5e49750"], // first measurement, added with the example
   ["examples/courtyard-house.arch", "91c2a44265e69f983cf775eed28aa33e0aa5888334ad13856662a15fefa68169"],
   ["examples/furnished-flat.arch", "12473e1ca6aaacf6adea0da3c46565d93a14a8396700eed2f8d70dd90d73957a"],
   ["examples/gallery-l.arch", "83bfc4e12622ae307469b173ce83a27b9dcb5aafd661fa004a8330f58c14e4e4"],
@@ -213,6 +215,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/parametric.arch", "50542aff6a0a3f03bb8e1ff9ba69d10d721d81bc78c7b7147b10acdab77e25fd"],
   ["examples/relational.arch", "78396bc038b0198f2ed2952cc6169d0c810ffeb4149d04ba3203aa397a16cabd"],
   ["examples/sheet-notes.arch", "90e7d0ad148524bd71ba014f2b3849737034c6a23f27bf6f5a40ea800c20eaa1"], // re-measured, see header
+  ["examples/small-office.arch", "d1ad040c172e5ae6643bebec52e5e3613fa99b185238dfc1733a39346bb63c3e"], // first measurement, added with the example
   ["examples/studio.arch", "6f0c677cc5c7bc15b4cea1faee4d61bf30e4e775aa96c2efb2f374f773047362"],
   ["examples/terrace-row.arch", "93825c78af4638012261cfa52b8645ff1bfcb2859f4d65a4595a1a8505a40424"],
   ["examples/themed.arch", "94ea6112f46d9827b260dbfee48cfe1a5fe694d78256bfb70dc12a85be7532a0"],

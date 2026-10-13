@@ -31,6 +31,9 @@ import aquarium from "../../examples/aquarium.arch?raw";
 import library from "../../examples/library.arch?raw";
 import transitHall from "../../examples/transit-hall.arch?raw";
 import clinic from "../../examples/clinic.arch?raw";
+import smallOffice from "../../examples/small-office.arch?raw";
+import cornerCafe from "../../examples/corner-cafe.arch?raw";
+import classroomBlock from "../../examples/classroom-block.arch?raw";
 import galleryL from "../../examples/gallery-l.arch?raw";
 import hexagonPavilion from "../../examples/hexagon-pavilion.arch?raw";
 import terraceRow from "../../examples/terrace-row.arch?raw";
@@ -186,6 +189,24 @@ const EXAMPLE_ROWS = [
     "An outpatient wing whose six consulting rooms are one component placed six times, rather than six copies.",
   ],
   [
+    "small-office",
+    "Small Office (workplace)",
+    "Public buildings",
+    "A 225 m² office on a spine corridor: open workspace, meeting rooms, break room and an accessible WC, issued with tagged openings.",
+  ],
+  [
+    "corner-cafe",
+    "Corner Cafe (front and back)",
+    "Public buildings",
+    "A 15 x 10 m cafe split into front and back of house: a dining room for eighteen, a servery, a kitchen and a store.",
+  ],
+  [
+    "classroom-block",
+    "Classroom Block (school)",
+    "Public buildings",
+    "A single-storey school block: three 60 m² classrooms on a 2 m corridor, with lobby, staff prep, pupil WCs and an accessible WC.",
+  ],
+  [
     "gallery-l",
     "Gallery L (polygons)",
     "Geometry & experiments",
@@ -262,6 +283,9 @@ const SOURCES: Record<string, string> = {
   library,
   "transit-hall": transitHall,
   clinic,
+  "small-office": smallOffice,
+  "corner-cafe": cornerCafe,
+  "classroom-block": classroomBlock,
   "gallery-l": galleryL,
   "hexagon-pavilion": hexagonPavilion,
   "terrace-row": terraceRow,

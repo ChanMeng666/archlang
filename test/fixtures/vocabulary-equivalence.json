@@ -813,6 +813,68 @@
       "room_type": "Entrance"
     }
   ],
+  "examples/classroom-block.arch": [
+    {
+      "id": "r_c1",
+      "label": "Classroom 1",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_c2",
+      "label": "Classroom 2",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_c3",
+      "label": "Classroom 3",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_corr",
+      "label": "Corridor",
+      "uses": ["circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_lobby",
+      "label": "Entrance Lobby",
+      "uses": ["entry"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_prep",
+      "label": "Staff Prep",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_store",
+      "label": "Store",
+      "uses": ["storage"],
+      "room_type": "Storage"
+    },
+    {
+      "id": "r_wcp",
+      "label": "Pupil WCs",
+      "uses": ["wc"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_wca",
+      "label": "Accessible WC",
+      "uses": ["wc"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_plant",
+      "label": "Plant Room",
+      "uses": ["utility"],
+      "room_type": "Storage"
+    }
+  ],
   "examples/clinic.arch": [
     {
       "id": "r_wait",
@@ -891,6 +953,38 @@
       "label": "Consult 6",
       "uses": ["office"],
       "room_type": "StudyRoom"
+    }
+  ],
+  "examples/corner-cafe.arch": [
+    {
+      "id": "r_dining",
+      "label": "Dining",
+      "uses": ["dining"],
+      "room_type": "DiningRoom"
+    },
+    {
+      "id": "r_wc",
+      "label": "Accessible WC",
+      "uses": ["wc"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_kitchen",
+      "label": "Kitchen",
+      "uses": ["kitchen"],
+      "room_type": "Kitchen"
+    },
+    {
+      "id": "r_servery",
+      "label": "Servery",
+      "uses": ["kitchen"],
+      "room_type": "Kitchen"
+    },
+    {
+      "id": "r_store",
+      "label": "Store",
+      "uses": ["storage"],
+      "room_type": "Storage"
     }
   ],
   "examples/courtyard-house.arch": [
@@ -1653,6 +1747,62 @@
       "label": "Study",
       "uses": ["office"],
       "room_type": "StudyRoom"
+    }
+  ],
+  "examples/small-office.arch": [
+    {
+      "id": "r_open",
+      "label": "Team Workspace",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_manager",
+      "label": "Manager",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_meet1",
+      "label": "Meeting 1",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_meet2",
+      "label": "Meeting 2",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_spine",
+      "label": "Corridor",
+      "uses": ["circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_recep",
+      "label": "Reception",
+      "uses": ["entry"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_break",
+      "label": "Break Room",
+      "uses": ["kitchen", "dining"],
+      "room_type": "Kitchen"
+    },
+    {
+      "id": "r_wc",
+      "label": "Accessible WC",
+      "uses": ["wc"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_comms",
+      "label": "Comms",
+      "uses": ["utility"],
+      "room_type": "Storage"
     }
   ],
   "examples/studio.arch": [

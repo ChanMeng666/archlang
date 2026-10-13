@@ -272,7 +272,9 @@ describe("room-name wrapping against the previous implementation", () => {
       'eval/goldens/three-bed-2bath.arch: "Main Bathroom" → "Main" / "Bathroom"',
       'eval/goldens/three-bed-2bath.arch: "Master Bedroom" → "Master" / "Bedroom"',
       'eval/goldens/two-bed-hall.arch: "Kitchen / Living" → "Kitchen /" / "Living"',
+      'examples/classroom-block.arch: "Accessible WC" → "Accessible" / "WC"',
       'examples/clinic.arch: "Accessible WC" → "Accessible" / "WC"',
+      'examples/corner-cafe.arch: "Accessible WC" → "Accessible" / "WC"',
       'test/recovery-corpus/clinic.arch: "Accessible WC" → "Accessible" / "WC"',
     ]);
     expect(t.knockOns).toBe(0);

@@ -1,0 +1,97 @@
+# A small professional-services office: one open workspace, a manager's room, two meeting
+# rooms, a break room, reception, a comms room and an accessible WC, all on a
+# 1800 mm spine corridor.
+#
+# It is the WORKPLACE counterpart of the dwellings in this folder — no bedrooms, no kitchen
+# triangle — and it shows the sheet statements a contractor reads first:
+#
+#   schedule rooms       NO. · NAME · AREA, grouped by the two zones below
+#   schedule openings    D01… / W01… tags and the DOOR & WINDOW SCHEDULE, derived from the
+#                        walls, never typed
+#   notes "…"            the general notes, numbered in source order
+#
+# The spine is a real room (`uses circulation`) so every door lands on a space the
+# reachability and path-width lint can measure. The WC door is 1000 wide and the room is
+# deep enough to turn a wheelchair — the accessible-WC rule in
+# `--profile accessibility-advisory`.
+plan "Small Office" {
+  units mm
+  grid 50
+  paper A2 landscape
+  scale 1:100
+  north up
+  dims auto all
+  schedule rooms
+  schedule openings
+  notes "All dimensions in millimetres. Do not scale from this drawing."
+  notes "Room areas are taken to wall centrelines."
+  notes "Fire-rated door to the comms room to be confirmed by the engineer."
+
+  title { project "Small Office" drawn_by "ArchLang" date "2026-10-14" number "A-201" revision "A" }
+
+  # ---- shell and partitions ---------------------------------------------------
+  wall id=shell exterior thickness 200 { (0,0) (18000,0) (18000,12500) (0,12500) close }
+  # The two corridor walls run the full width; the cross walls stop on them.
+  wall id=w_cn partition thickness 100 { (0,6000) (18000,6000) }
+  wall id=w_cs partition thickness 100 { (0,7800) (18000,7800) }
+  wall id=w_n1 partition thickness 100 { (10500,0) (10500,6000) }
+  wall id=w_n2 partition thickness 100 { (14000,0) (14000,6000) }
+  wall id=w_s1 partition thickness 100 { (4500,7800) (4500,12500) }
+  wall id=w_s2 partition thickness 100 { (9500,7800) (9500,12500) }
+  wall id=w_s3 partition thickness 100 { (11500,7800) (11500,12500) }
+  wall id=w_s4 partition thickness 100 { (13500,7800) (13500,12500) }
+
+  # ---- rooms ------------------------------------------------------------------
+  zone work "Workspace" {
+    room id=r_open    at (0,0)        size 10500x6000 label "Team Workspace" uses office
+    room id=r_manager at (10500,0)    size 3500x6000  label "Manager" uses office
+    room id=r_meet1   at (14000,0)    size 4000x6000  label "Meeting 1" uses office
+    room id=r_meet2   at (13500,7800) size 4500x4700  label "Meeting 2" uses office
+  }
+  zone support "Support" {
+    room id=r_spine   at (0,6000)     size 18000x1800 label "Corridor" uses circulation
+    room id=r_recep   at (0,7800)     size 4500x4700  label "Reception" uses entry
+    room id=r_break   at (4500,7800)  size 5000x4700  label "Break Room" uses kitchen dining
+    room id=r_wc      at (9500,7800)  size 2000x4700  label "Accessible WC" uses wc
+    room id=r_comms   at (11500,7800) size 2000x4700  label "Comms" uses utility
+  }
+
+  # ---- doors ------------------------------------------------------------------
+  door id=d_front at (2250,12500) width 1200 wall shell hinge left swing in
+  opening id=o_recep on w_cs at 2250 width 1500
+  door id=d_open on w_cn at 6000 width 1200 swing into r_open
+  door id=d_mgr on w_cn at 12250 width 1000 swing into r_manager
+  door id=d_m1 on w_cn at 16000 width 1000 swing into r_meet1
+  door id=d_break on w_cs at 7000 width 1000 swing into r_break
+  door id=d_wc on w_cs at 10500 width 1000 swing into r_wc
+  door id=d_comms on w_cs at 12500 width 1000 swing into r_comms
+  door id=d_m2 on w_cs at 15750 width 1000 swing into r_meet2
+
+  # ---- windows ----------------------------------------------------------------
+  window at (2500,0) width 2000 wall shell
+  window at (6500,0) width 2000 wall shell
+  window at (10000,0) width 2000 wall shell
+  window at (12250,0) width 1400 wall shell
+  window at (16000,0) width 2000 wall shell
+  window at (18000,3000) width 2000 wall shell
+  window at (18000,10000) width 2000 wall shell
+  window at (7000,12500) width 1800 wall shell
+  window at (15750,12500) width 1800 wall shell
+  window at (0,3000) width 2000 wall shell
+
+  # ---- fit-out ----------------------------------------------------------------
+  for i in 0..3 {
+    furniture desk at (600 + i * 3200, 800) size 1600x800 label "Desk {i + 1}"
+    furniture desk at (600 + i * 3200, 3600) size 1600x800 label "Desk {i + 4}"
+  }
+  furniture meeting_table in r_meet1 centered size 2600x1200 label "Meeting table"
+  furniture meeting_table in r_meet2 centered size 2600x1200 label "Meeting table"
+  furniture desk in r_manager anchor top inset 600 size 1600x800 label "Desk"
+  furniture reception_desk in r_recep anchor top inset 800 size 2200x800 label "Reception"
+  furniture kitchen_sink against wall w_s2 offset 1200 in r_break
+  furniture counter against wall w_s2 offset 2400 in r_break
+  furniture fridge against wall w_s2 offset 3600 in r_break
+  furniture table in r_break centered size 1800x900 label "Table"
+  furniture wc against wall shell segment 2 offset 7500 in r_wc
+  furniture basin against wall w_s3 offset 2200 in r_wc
+}

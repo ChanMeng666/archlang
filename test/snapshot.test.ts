@@ -52,6 +52,11 @@ describe("golden SVG snapshots", () => {
     // quarter-turn or the `against wall` footprint default would show up as a string
     // diff. No other shipped example draws more than a handful.
     "furnished-flat.arch",
+    // The three non-dwelling plans: a workplace, a cafe and a school block, each on a sheet
+    // with margin tables (the office and school also with the openings schedule and notes).
+    "small-office.arch",
+    "corner-cafe.arch",
+    "classroom-block.arch",
   ]) {
     it(`renders ${name} deterministically`, () => {
       const { svg, errors } = compile(example(name), { noCache: true });
