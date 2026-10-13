@@ -817,8 +817,8 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <circle cx="19148.7" cy="12000" r="13.5" fill="#a8a29a" stroke="#a8a29a" stroke-width="13"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
-<path d="M -125,-125 L 1500,-125 L 1500,125 L 125,125 L 125,3000 L -125,3000 Z M -125,14125 L -125,5000 L 125,5000 L 125,7925 L 6200,7925 L 6200,8075 L 125,8075 L 125,9925 L 1750,9925 L 1750,10075 L 125,10075 L 125,13875 L 1800,13875 L 1800,14125 Z M 10500,10075 L 9575,10075 L 9575,13875 L 12425,13875 L 12425,10075 L 11500,10075 L 11500,9925 L 14250,9925 L 14250,10075 L 12575,10075 L 12575,13875 L 13725,13875 L 13725,12475 L 13775,12475 L 13775,13875 L 15225,13875 L 15225,12475 L 15275,12475 L 15275,13875 L 16925,13875 L 16925,10075 L 15250,10075 L 15250,9925 L 17750,9925 L 17750,10075 L 17075,10075 L 17075,13875 L 19425,13875 L 19425,10075 L 18750,10075 L 18750,9925 L 20500,9925 L 20500,10075 L 19575,10075 L 19575,13875 L 20500,13875 L 20500,14125 L 8150,14125 L 8150,13875 L 9425,13875 L 9425,10075 L 7750,10075 L 7750,9925 L 10500,9925 Z M 13500,-125 L 16500,-125 L 16500,125 L 15075,125 L 15075,7925 L 21200,7925 L 21200,8075 L 14700,8075 L 14700,7925 L 14925,7925 L 14925,125 L 13500,125 Z M 13700,7925 L 13700,8075 L 7200,8075 L 7200,7925 L 7425,7925 L 7425,125 L 6000,125 L 6000,-125 L 9000,-125 L 9000,125 L 7575,125 L 7575,7925 Z M 21000,-125 L 22625,-125 L 22625,3000 L 22375,3000 L 22375,125 L 21000,125 Z M 21500,10075 L 21500,9925 L 22375,9925 L 22375,8075 L 22200,8075 L 22200,7925 L 22375,7925 L 22375,5000 L 22625,5000 L 22625,12500 L 22375,12500 L 22375,10075 Z M 21500,13875 L 22375,13875 L 22375,13500 L 22625,13500 L 22625,14125 L 21500,14125 Z M 3200,13875 L 4925,13875 L 4925,10075 L 3250,10075 L 3250,9925 L 6750,9925 L 6750,10075 L 5075,10075 L 5075,13875 L 6350,13875 L 6350,14125 L 3200,14125 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<path d="M -125,-125 L 1500,-125 L 1500,125 L 125,125 L 125,3000 L -125,3000 Z M -125,14125 L -125,5000 L 125,5000 L 125,7925 L 6200,7925 L 6200,8075 L 125,8075 L 125,9925 L 1750,9925 L 1750,10075 L 125,10075 L 125,13875 L 1800,13875 L 1800,14125 Z M 10500,10075 L 9575,10075 L 9575,13875 L 12425,13875 L 12425,10075 L 11500,10075 L 11500,9925 L 14250,9925 L 14250,10075 L 12575,10075 L 12575,13875 L 13725,13875 L 13725,12475 L 13775,12475 L 13775,13875 L 15225,13875 L 15225,12475 L 15275,12475 L 15275,13875 L 16925,13875 L 16925,10075 L 15250,10075 L 15250,9925 L 17750,9925 L 17750,10075 L 17075,10075 L 17075,13875 L 19425,13875 L 19425,10075 L 18750,10075 L 18750,9925 L 20500,9925 L 20500,10075 L 19575,10075 L 19575,13875 L 20500,13875 L 20500,14125 L 8150,14125 L 8150,13875 L 9425,13875 L 9425,10075 L 7750,10075 L 7750,9925 L 10500,9925 Z M 13500,-125 L 16500,-125 L 16500,125 L 15075,125 L 15075,7925 L 21200,7925 L 21200,8075 L 14700,8075 L 14700,7925 L 14925,7925 L 14925,125 L 13500,125 Z M 13700,7925 L 13700,8075 L 7200,8075 L 7200,7925 L 7425,7925 L 7425,125 L 6000,125 L 6000,-125 L 9000,-125 L 9000,125 L 7575,125 L 7575,7925 Z M 21000,-125 L 22625,-125 L 22625,3000 L 22375,3000 L 22375,125 L 21000,125 Z M 21500,10075 L 21500,9925 L 22375,9925 L 22375,8075 L 22200,8075 L 22200,7925 L 22375,7925 L 22375,5000 L 22625,5000 L 22625,12500 L 22375,12500 L 22375,10075 Z M 21500,13875 L 22375,13875 L 22375,13500 L 22625,13500 L 22625,14125 L 21500,14125 Z M 3200,13875 L 4925,13875 L 4925,10075 L 3250,10075 L 3250,9925 L 6750,9925 L 6750,10075 L 5075,10075 L 5075,13875 L 6350,13875 L 6350,14125 L 3200,14125 Z" fill="none" stroke="#1b1b1b" stroke-width="50" stroke-linejoin="miter" stroke-miterlimit="4"/>
+<path d="M -125,-125 L 1500,-125 L 1500,125 L 125,125 L 125,3000 L -125,3000 Z M -125,14125 L -125,5000 L 125,5000 L 125,7925 L 6200,7925 L 6200,8075 L 125,8075 L 125,9925 L 1750,9925 L 1750,10075 L 125,10075 L 125,13875 L 1800,13875 L 1800,14125 Z M 10500,10075 L 9575,10075 L 9575,13875 L 12425,13875 L 12425,10075 L 11500,10075 L 11500,9925 L 14250,9925 L 14250,10075 L 12575,10075 L 12575,13875 L 13675,13875 L 13675,12425 L 13825,12425 L 13825,13875 L 15175,13875 L 15175,12425 L 15325,12425 L 15325,13875 L 16925,13875 L 16925,10075 L 15250,10075 L 15250,9925 L 17750,9925 L 17750,10075 L 17075,10075 L 17075,13875 L 19425,13875 L 19425,10075 L 18750,10075 L 18750,9925 L 20500,9925 L 20500,10075 L 19575,10075 L 19575,13875 L 22375,13875 L 22375,13500 L 22625,13500 L 22625,14125 L 8150,14125 L 8150,13875 L 9425,13875 L 9425,10075 L 7750,10075 L 7750,9925 L 10500,9925 Z M 13500,-125 L 16500,-125 L 16500,125 L 15075,125 L 15075,7925 L 21200,7925 L 21200,8075 L 14700,8075 L 14700,7925 L 14925,7925 L 14925,125 L 13500,125 Z M 13700,7925 L 13700,8075 L 7200,8075 L 7200,7925 L 7425,7925 L 7425,125 L 6000,125 L 6000,-125 L 9000,-125 L 9000,125 L 7575,125 L 7575,7925 Z M 21000,-125 L 22625,-125 L 22625,3000 L 22375,3000 L 22375,125 L 21000,125 Z M 21500,10075 L 21500,9925 L 22375,9925 L 22375,9500 L 22625,9500 L 22625,12500 L 22375,12500 L 22375,10075 Z M 22200,7925 L 22375,7925 L 22375,5000 L 22625,5000 L 22625,8500 L 22375,8500 L 22375,8075 L 22200,8075 Z M 3200,13875 L 4925,13875 L 4925,10075 L 3250,10075 L 3250,9925 L 6750,9925 L 6750,10075 L 5075,10075 L 5075,13875 L 6350,13875 L 6350,14125 L 3200,14125 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M -125,-125 L 1500,-125 L 1500,125 L 125,125 L 125,3000 L -125,3000 Z M -125,14125 L -125,5000 L 125,5000 L 125,7925 L 6200,7925 L 6200,8075 L 125,8075 L 125,9925 L 1750,9925 L 1750,10075 L 125,10075 L 125,13875 L 1800,13875 L 1800,14125 Z M 10500,10075 L 9575,10075 L 9575,13875 L 12425,13875 L 12425,10075 L 11500,10075 L 11500,9925 L 14250,9925 L 14250,10075 L 12575,10075 L 12575,13875 L 13675,13875 L 13675,12425 L 13825,12425 L 13825,13875 L 15175,13875 L 15175,12425 L 15325,12425 L 15325,13875 L 16925,13875 L 16925,10075 L 15250,10075 L 15250,9925 L 17750,9925 L 17750,10075 L 17075,10075 L 17075,13875 L 19425,13875 L 19425,10075 L 18750,10075 L 18750,9925 L 20500,9925 L 20500,10075 L 19575,10075 L 19575,13875 L 22375,13875 L 22375,13500 L 22625,13500 L 22625,14125 L 8150,14125 L 8150,13875 L 9425,13875 L 9425,10075 L 7750,10075 L 7750,9925 L 10500,9925 Z M 13500,-125 L 16500,-125 L 16500,125 L 15075,125 L 15075,7925 L 21200,7925 L 21200,8075 L 14700,8075 L 14700,7925 L 14925,7925 L 14925,125 L 13500,125 Z M 13700,7925 L 13700,8075 L 7200,8075 L 7200,7925 L 7425,7925 L 7425,125 L 6000,125 L 6000,-125 L 9000,-125 L 9000,125 L 7575,125 L 7575,7925 Z M 21000,-125 L 22625,-125 L 22625,3000 L 22375,3000 L 22375,125 L 21000,125 Z M 21500,10075 L 21500,9925 L 22375,9925 L 22375,9500 L 22625,9500 L 22625,12500 L 22375,12500 L 22375,10075 Z M 22200,7925 L 22375,7925 L 22375,5000 L 22625,5000 L 22625,8500 L 22375,8500 L 22375,8075 L 22200,8075 Z M 3200,13875 L 4925,13875 L 4925,10075 L 3250,10075 L 3250,9925 L 6750,9925 L 6750,10075 L 5075,10075 L 5075,13875 L 6350,13875 L 6350,14125 L 3200,14125 Z" fill="none" stroke="#1b1b1b" stroke-width="50" stroke-linejoin="miter" stroke-miterlimit="4"/>
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
 <polygon points="3200,13875 1800,13875 1800,14125 3200,14125" fill="none"/>
@@ -848,9 +848,9 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <polygon points="20500,10075 21500,10075 21500,9925 20500,9925" fill="none"/>
 <polygon points="20500,10000 20500,11000 20546.8,10998.9 20546.8,10000" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
 <path d="M 20500,11000 A 1000 1000 0 0 0 21500,10000" fill="none" stroke="#555555" stroke-width="13"/>
-<polygon points="21500,13875 20500,13875 20500,14125 21500,14125" fill="none"/>
-<polygon points="21500,14000 21500,15000 21453.2,14998.9 21453.2,14000" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
-<path d="M 21500,15000 A 1000 1000 0 0 1 20500,14000" fill="none" stroke="#555555" stroke-width="13"/>
+<polygon points="22375,8500 22375,9500 22625,9500 22625,8500" fill="none"/>
+<polygon points="22500,8500 23500,8500 23498.9,8546.8 22500,8546.8" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
+<path d="M 23500,8500 A 1000 1000 0 0 1 22500,9500" fill="none" stroke="#555555" stroke-width="13"/>
 <polygon points="1750,10075 3250,10075 3250,9925 1750,9925" fill="none"/>
 </g>
 <g id="A-GLAZ" inkscape:groupmode="layer" inkscape:label="A-GLAZ">
@@ -916,8 +916,8 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <text x="14750" y="12315" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">18.0 m²</text>
 <text x="18250" y="10730" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600"><tspan x="18250" y="10520">Accessible</tspan><tspan x="18250" y="10940">WC</tspan></text>
 <text x="18250" y="11325" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">10.0 m²</text>
-<text x="21000" y="11330" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Plant Room</text>
-<text x="21000" y="11715" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
+<text x="21000" y="11930" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Plant Room</text>
+<text x="21000" y="12315" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
 </g>
 <g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
 <line x1="-125" y1="14125" x2="-125" y2="14425" stroke="#0E5484" stroke-width="12.6"/>
@@ -945,23 +945,11 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <line x1="8234.85" y1="14509.85" x2="8065.15" y2="14340.15" stroke="#0E5484" stroke-width="18"/>
 <text x="7250" y="14600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 7250 14600)">1800</text>
 <line x1="8150" y1="14125" x2="8150" y2="14425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="20500" y1="14125" x2="20500" y2="14425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="8150" y1="14425" x2="20500" y2="14425" stroke="#0E5484" stroke-width="18"/>
-<line x1="8234.85" y1="14509.85" x2="8065.15" y2="14340.15" stroke="#0E5484" stroke-width="18"/>
-<line x1="20584.85" y1="14509.85" x2="20415.15" y2="14340.15" stroke="#0E5484" stroke-width="18"/>
-<text x="14325" y="14600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 14325 14600)">12350</text>
-<line x1="20500" y1="14125" x2="20500" y2="14425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="21500" y1="14125" x2="21500" y2="14425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="20500" y1="14425" x2="21500" y2="14425" stroke="#0E5484" stroke-width="18"/>
-<line x1="20584.85" y1="14509.85" x2="20415.15" y2="14340.15" stroke="#0E5484" stroke-width="18"/>
-<line x1="21584.85" y1="14509.85" x2="21415.15" y2="14340.15" stroke="#0E5484" stroke-width="18"/>
-<text x="21000" y="14600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 21000 14600)">1000</text>
-<line x1="21500" y1="14125" x2="21500" y2="14425" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="22625" y1="14125" x2="22625" y2="14425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="21500" y1="14425" x2="22625" y2="14425" stroke="#0E5484" stroke-width="18"/>
-<line x1="21584.85" y1="14509.85" x2="21415.15" y2="14340.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="8150" y1="14425" x2="22625" y2="14425" stroke="#0E5484" stroke-width="18"/>
+<line x1="8234.85" y1="14509.85" x2="8065.15" y2="14340.15" stroke="#0E5484" stroke-width="18"/>
 <line x1="22709.85" y1="14509.85" x2="22540.15" y2="14340.15" stroke="#0E5484" stroke-width="18"/>
-<text x="22062.5" y="14600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 22062.5 14600)">1125</text>
+<text x="15387.5" y="14600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 15387.5 14600)">14475</text>
 <line x1="0" y1="14125" x2="0" y2="14975" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="5000" y1="14125" x2="5000" y2="14975" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="0" y1="14975" x2="5000" y2="14975" stroke="#0E5484" stroke-width="18"/>
@@ -1166,12 +1154,24 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <line x1="23009.85" y1="4915.15" x2="22840.15" y2="5084.85" stroke="#0E5484" stroke-width="18"/>
 <line x1="23009.85" y1="2915.15" x2="22840.15" y2="3084.85" stroke="#0E5484" stroke-width="18"/>
 <text x="23100" y="4000" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 23100 4000)">2000</text>
-<line x1="22625" y1="12500" x2="22925" y2="12500" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="22625" y1="8500" x2="22925" y2="8500" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="22625" y1="5000" x2="22925" y2="5000" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="22925" y1="12500" x2="22925" y2="5000" stroke="#0E5484" stroke-width="18"/>
-<line x1="23009.85" y1="12415.15" x2="22840.15" y2="12584.85" stroke="#0E5484" stroke-width="18"/>
+<line x1="22925" y1="8500" x2="22925" y2="5000" stroke="#0E5484" stroke-width="18"/>
+<line x1="23009.85" y1="8415.15" x2="22840.15" y2="8584.85" stroke="#0E5484" stroke-width="18"/>
 <line x1="23009.85" y1="4915.15" x2="22840.15" y2="5084.85" stroke="#0E5484" stroke-width="18"/>
-<text x="23100" y="8750" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 23100 8750)">7500</text>
+<text x="23100" y="6750" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 23100 6750)">3500</text>
+<line x1="22625" y1="9500" x2="22925" y2="9500" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="22625" y1="8500" x2="22925" y2="8500" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="22925" y1="9500" x2="22925" y2="8500" stroke="#0E5484" stroke-width="18"/>
+<line x1="23009.85" y1="9415.15" x2="22840.15" y2="9584.85" stroke="#0E5484" stroke-width="18"/>
+<line x1="23009.85" y1="8415.15" x2="22840.15" y2="8584.85" stroke="#0E5484" stroke-width="18"/>
+<text x="23100" y="9000" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 23100 9000)">1000</text>
+<line x1="22625" y1="12500" x2="22925" y2="12500" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="22625" y1="9500" x2="22925" y2="9500" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="22925" y1="12500" x2="22925" y2="9500" stroke="#0E5484" stroke-width="18"/>
+<line x1="23009.85" y1="12415.15" x2="22840.15" y2="12584.85" stroke="#0E5484" stroke-width="18"/>
+<line x1="23009.85" y1="9415.15" x2="22840.15" y2="9584.85" stroke="#0E5484" stroke-width="18"/>
+<text x="23100" y="11000" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 23100 11000)">3000</text>
 <line x1="22625" y1="13500" x2="22925" y2="13500" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="22625" y1="12500" x2="22925" y2="12500" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="22925" y1="13500" x2="22925" y2="12500" stroke="#0E5484" stroke-width="18"/>
@@ -1208,10 +1208,6 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <line x1="24109.85" y1="14040.15" x2="23940.15" y2="14209.85" stroke="#0E5484" stroke-width="18"/>
 <line x1="24109.85" y1="-209.85" x2="23940.15" y2="-40.15" stroke="#0E5484" stroke-width="18"/>
 <text x="24200" y="7000" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 24200 7000)">14250</text>
-<line x1="13725" y1="13062.5" x2="13775" y2="13062.5" stroke="#0E5484" stroke-width="18"/>
-<line x1="13809.85" y1="13147.35" x2="13640.15" y2="12977.65" stroke="#0E5484" stroke-width="18"/>
-<line x1="13859.85" y1="13147.35" x2="13690.15" y2="12977.65" stroke="#0E5484" stroke-width="18"/>
-<text x="14055" y="13062.5" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 14055 13062.5)">50</text>
 <line x1="5350" y1="8075" x2="5350" y2="7925" stroke="#0E5484" stroke-width="18"/>
 <line x1="5434.85" y1="7990.15" x2="5265.15" y2="8159.85" stroke="#0E5484" stroke-width="18"/>
 <line x1="5434.85" y1="7840.15" x2="5265.15" y2="8009.85" stroke="#0E5484" stroke-width="18"/>
@@ -1240,8 +1236,8 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <text x="17330" y="9505" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">D08</text>
 <circle cx="20080" cy="9505" r="320" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="20080" y="9505" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">D09</text>
-<circle cx="21920" cy="13455" r="320" fill="none" stroke="#333333" stroke-width="18"/>
-<text x="21920" y="13455" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">D10</text>
+<circle cx="21955" cy="8080" r="320" fill="none" stroke="#333333" stroke-width="18"/>
+<text x="21955" y="8080" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">D10</text>
 <polygon points="760,225 1400,225 1400,625 760,625" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="1080" y="425" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W01</text>
 <polygon points="8260,225 8900,225 8900,625 8260,625" fill="none" stroke="#333333" stroke-width="18"/>
@@ -1254,8 +1250,8 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <text x="21955" y="4000" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W05</text>
 <polygon points="5610,13375 6250,13375 6250,13775 5610,13775" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="5930" y="13575" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W06</text>
-<polygon points="21635,12000 22275,12000 22275,12400 21635,12400" fill="none" stroke="#333333" stroke-width="18"/>
-<text x="21955" y="12200" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W07</text>
+<polygon points="21635,12800 22275,12800 22275,13200 21635,13200" fill="none" stroke="#333333" stroke-width="18"/>
+<text x="21955" y="13000" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W07</text>
 <polygon points="-125,19710 3475,19710 3475,25490 -125,25490" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="-53" y="19880" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">ROOM SCHEDULE</text>
 <line x1="-125" y1="20050" x2="3475" y2="20050" stroke="#333333" stroke-width="18"/>
@@ -1384,7 +1380,7 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <text x="8938" y="23280" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">left</text>
 <line x1="3775" y1="23110" x2="9425" y2="23110" stroke="#333333" stroke-width="13"/>
 <text x="4050" y="23620" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">D10</text>
-<text x="4438" y="23620" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">exterior / Plant Room</text>
+<text x="4438" y="23620" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">exterior / Corridor</text>
 <text x="7912" y="23620" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1000</text>
 <text x="8138" y="23620" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">hinged</text>
 <text x="8938" y="23620" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">right</text>
@@ -1438,8 +1434,8 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <text x="10075" y="20220" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">All dimensions in millimetres. Do not scale from this</text>
 <text x="10075" y="20560" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">drawing.</text>
 <text x="9928" y="20900" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">2.</text>
-<text x="10075" y="20900" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Classroom doors are 1000 mm leaves; the plant room has an</text>
-<text x="10075" y="21240" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">outward-opening exit.</text>
+<text x="10075" y="20900" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Classroom doors are 1000 mm leaves; a second exit closes</text>
+<text x="10075" y="21240" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">the east end of the corridor.</text>
 <text x="9928" y="21580" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">3.</text>
 <text x="10075" y="21580" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Pupil WC cubicle partitions are 1500 mm deep.</text>
 </g>
@@ -10929,8 +10925,8 @@ exports[`golden SVG snapshots > renders practice-office.arch deterministically 1
 <circle cx="11473.7" cy="10000" r="13.5" fill="#a8a29a" stroke="#a8a29a" stroke-width="13"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
-<path d="M -100,-100 L 1500,-100 L 1500,100 L 100,100 L 100,2000 L -100,2000 Z M -100,12600 L -100,4000 L 100,4000 L 100,5950 L 5400,5950 L 5400,6050 L 100,6050 L 100,7750 L 1500,7750 L 1500,7850 L 100,7850 L 100,12400 L 1650,12400 L 1650,12600 Z M 10000,-100 L 11550,-100 L 11550,100 L 10550,100 L 10550,5950 L 11750,5950 L 11750,6050 L 6600,6050 L 6600,5950 L 10450,5950 L 10450,100 L 10000,100 Z M 10050,7750 L 10050,7850 L 9350,7850 L 9350,12400 L 11750,12400 L 11750,7850 L 11050,7850 L 11050,7750 L 12150,7750 L 12150,7850 L 11850,7850 L 11850,12400 L 13450,12400 L 13450,7850 L 13150,7850 L 13150,7750 L 15250,7750 L 15250,7850 L 13550,7850 L 13550,12400 L 16000,12400 L 16000,12600 L 7900,12600 L 7900,12400 L 9250,12400 L 9250,7850 L 7500,7850 L 7500,7750 Z M 12750,5950 L 13950,5950 L 13950,100 L 12950,100 L 12950,-100 L 15000,-100 L 15000,100 L 14050,100 L 14050,5950 L 15500,5950 L 15500,6050 L 12750,6050 Z M 16250,7750 L 17900,7750 L 17900,6050 L 16500,6050 L 16500,5950 L 17900,5950 L 17900,4000 L 18100,4000 L 18100,8500 L 17900,8500 L 17900,7850 L 16250,7850 Z M 17000,-100 L 18100,-100 L 18100,2000 L 17900,2000 L 17900,100 L 17000,100 Z M 17800,12400 L 17900,12400 L 17900,12200 L 18100,12200 L 18100,12600 L 17800,12600 Z M 17900,10500 L 18100,10500 L 18100,11200 L 17900,11200 Z M 2850,12400 L 4450,12400 L 4450,7850 L 3000,7850 L 3000,7750 L 6500,7750 L 6500,7850 L 4550,7850 L 4550,12400 L 6100,12400 L 6100,12600 L 2850,12600 Z M 3500,-100 L 5500,-100 L 5500,100 L 3500,100 Z M 7500,-100 L 8000,-100 L 8000,100 L 7500,100 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<path d="M -100,-100 L 1500,-100 L 1500,100 L 100,100 L 100,2000 L -100,2000 Z M -100,12600 L -100,4000 L 100,4000 L 100,5950 L 5400,5950 L 5400,6050 L 100,6050 L 100,7750 L 1500,7750 L 1500,7850 L 100,7850 L 100,12400 L 1650,12400 L 1650,12600 Z M 10000,-100 L 11550,-100 L 11550,100 L 10550,100 L 10550,5950 L 11750,5950 L 11750,6050 L 6600,6050 L 6600,5950 L 10450,5950 L 10450,100 L 10000,100 Z M 10050,7750 L 10050,7850 L 9350,7850 L 9350,12400 L 11750,12400 L 11750,7850 L 11050,7850 L 11050,7750 L 12150,7750 L 12150,7850 L 11850,7850 L 11850,12400 L 13450,12400 L 13450,7850 L 13150,7850 L 13150,7750 L 15250,7750 L 15250,7850 L 13550,7850 L 13550,12400 L 16000,12400 L 16000,12600 L 7900,12600 L 7900,12400 L 9250,12400 L 9250,7850 L 7500,7850 L 7500,7750 Z M 12750,5950 L 13950,5950 L 13950,100 L 12950,100 L 12950,-100 L 15000,-100 L 15000,100 L 14050,100 L 14050,5950 L 15500,5950 L 15500,6050 L 12750,6050 Z M 16250,7750 L 17900,7750 L 17900,6050 L 16500,6050 L 16500,5950 L 17900,5950 L 17900,4000 L 18100,4000 L 18100,8500 L 17900,8500 L 17900,7850 L 16250,7850 Z M 17000,-100 L 18100,-100 L 18100,2000 L 17900,2000 L 17900,100 L 17000,100 Z M 17800,12400 L 17900,12400 L 17900,12200 L 18100,12200 L 18100,12600 L 17800,12600 Z M 17900,10500 L 18100,10500 L 18100,11200 L 17900,11200 Z M 2850,12400 L 4450,12400 L 4450,7850 L 3000,7850 L 3000,7750 L 6500,7750 L 6500,7850 L 4550,7850 L 4550,12400 L 6100,12400 L 6100,12600 L 2850,12600 Z M 3500,-100 L 5500,-100 L 5500,100 L 3500,100 Z M 7500,-100 L 8000,-100 L 8000,100 L 7500,100 Z" fill="none" stroke="#1b1b1b" stroke-width="50" stroke-linejoin="miter" stroke-miterlimit="4"/>
+<path d="M -100,-100 L 1500,-100 L 1500,100 L 100,100 L 100,2000 L -100,2000 Z M -100,12600 L -100,4000 L 100,4000 L 100,5950 L 5400,5950 L 5400,6050 L 100,6050 L 100,7750 L 1500,7750 L 1500,7850 L 100,7850 L 100,12400 L 1650,12400 L 1650,12600 Z M 10000,-100 L 11550,-100 L 11550,100 L 10550,100 L 10550,5950 L 11750,5950 L 11750,6050 L 6600,6050 L 6600,5950 L 10450,5950 L 10450,100 L 10000,100 Z M 10050,7750 L 10050,7850 L 9350,7850 L 9350,12400 L 11750,12400 L 11750,7850 L 11050,7850 L 11050,7750 L 12150,7750 L 12150,7850 L 11850,7850 L 11850,12400 L 13450,12400 L 13450,7850 L 13150,7850 L 13150,7750 L 15250,7750 L 15250,7850 L 13550,7850 L 13550,12400 L 16000,12400 L 16000,12600 L 7900,12600 L 7900,12400 L 9250,12400 L 9250,7850 L 7500,7850 L 7500,7750 Z M 12750,5950 L 13950,5950 L 13950,100 L 12950,100 L 12950,-100 L 15000,-100 L 15000,100 L 14050,100 L 14050,5950 L 15500,5950 L 15500,6050 L 12750,6050 Z M 16250,7750 L 17900,7750 L 17900,7400 L 18100,7400 L 18100,8500 L 17900,8500 L 17900,7850 L 16250,7850 Z M 16500,5950 L 17900,5950 L 17900,4000 L 18100,4000 L 18100,6400 L 17900,6400 L 17900,6050 L 16500,6050 Z M 17000,-100 L 18100,-100 L 18100,2000 L 17900,2000 L 17900,100 L 17000,100 Z M 17800,12400 L 17900,12400 L 17900,10500 L 18100,10500 L 18100,12600 L 17800,12600 Z M 2850,12400 L 4450,12400 L 4450,7850 L 3000,7850 L 3000,7750 L 6500,7750 L 6500,7850 L 4550,7850 L 4550,12400 L 6100,12400 L 6100,12600 L 2850,12600 Z M 3500,-100 L 5500,-100 L 5500,100 L 3500,100 Z M 7500,-100 L 8000,-100 L 8000,100 L 7500,100 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M -100,-100 L 1500,-100 L 1500,100 L 100,100 L 100,2000 L -100,2000 Z M -100,12600 L -100,4000 L 100,4000 L 100,5950 L 5400,5950 L 5400,6050 L 100,6050 L 100,7750 L 1500,7750 L 1500,7850 L 100,7850 L 100,12400 L 1650,12400 L 1650,12600 Z M 10000,-100 L 11550,-100 L 11550,100 L 10550,100 L 10550,5950 L 11750,5950 L 11750,6050 L 6600,6050 L 6600,5950 L 10450,5950 L 10450,100 L 10000,100 Z M 10050,7750 L 10050,7850 L 9350,7850 L 9350,12400 L 11750,12400 L 11750,7850 L 11050,7850 L 11050,7750 L 12150,7750 L 12150,7850 L 11850,7850 L 11850,12400 L 13450,12400 L 13450,7850 L 13150,7850 L 13150,7750 L 15250,7750 L 15250,7850 L 13550,7850 L 13550,12400 L 16000,12400 L 16000,12600 L 7900,12600 L 7900,12400 L 9250,12400 L 9250,7850 L 7500,7850 L 7500,7750 Z M 12750,5950 L 13950,5950 L 13950,100 L 12950,100 L 12950,-100 L 15000,-100 L 15000,100 L 14050,100 L 14050,5950 L 15500,5950 L 15500,6050 L 12750,6050 Z M 16250,7750 L 17900,7750 L 17900,7400 L 18100,7400 L 18100,8500 L 17900,8500 L 17900,7850 L 16250,7850 Z M 16500,5950 L 17900,5950 L 17900,4000 L 18100,4000 L 18100,6400 L 17900,6400 L 17900,6050 L 16500,6050 Z M 17000,-100 L 18100,-100 L 18100,2000 L 17900,2000 L 17900,100 L 17000,100 Z M 17800,12400 L 17900,12400 L 17900,10500 L 18100,10500 L 18100,12600 L 17800,12600 Z M 2850,12400 L 4450,12400 L 4450,7850 L 3000,7850 L 3000,7750 L 6500,7750 L 6500,7850 L 4550,7850 L 4550,12400 L 6100,12400 L 6100,12600 L 2850,12600 Z M 3500,-100 L 5500,-100 L 5500,100 L 3500,100 Z M 7500,-100 L 8000,-100 L 8000,100 L 7500,100 Z" fill="none" stroke="#1b1b1b" stroke-width="50" stroke-linejoin="miter" stroke-miterlimit="4"/>
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
 <polygon points="2850,12400 1650,12400 1650,12600 2850,12600" fill="none"/>
@@ -10957,9 +10953,9 @@ exports[`golden SVG snapshots > renders practice-office.arch deterministically 1
 <polygon points="15250,7850 16250,7850 16250,7750 15250,7750" fill="none"/>
 <polygon points="15250,7800 15250,8800 15296.8,8798.9 15296.8,7800" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
 <path d="M 15250,8800 A 1000 1000 0 0 0 16250,7800" fill="none" stroke="#555555" stroke-width="13"/>
-<polygon points="17900,11200 17900,12200 18100,12200 18100,11200" fill="none"/>
-<polygon points="18000,11200 19000,11200 18998.9,11246.8 18000,11246.8" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
-<path d="M 19000,11200 A 1000 1000 0 0 1 18000,12200" fill="none" stroke="#555555" stroke-width="13"/>
+<polygon points="17900,6400 17900,7400 18100,7400 18100,6400" fill="none"/>
+<polygon points="18000,6400 19000,6400 18998.9,6446.8 18000,6446.8" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
+<path d="M 19000,6400 A 1000 1000 0 0 1 18000,7400" fill="none" stroke="#555555" stroke-width="13"/>
 <polygon points="1500,7850 3000,7850 3000,7750 1500,7750" fill="none"/>
 </g>
 <g id="A-GLAZ" inkscape:groupmode="layer" inkscape:label="A-GLAZ">
@@ -11303,36 +11299,36 @@ exports[`golden SVG snapshots > renders practice-office.arch deterministically 1
 <line x1="18484.85" y1="3915.15" x2="18315.15" y2="4084.85" stroke="#0E5484" stroke-width="18"/>
 <line x1="18484.85" y1="1915.15" x2="18315.15" y2="2084.85" stroke="#0E5484" stroke-width="18"/>
 <text x="18575" y="3000" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 18575 3000)">2000</text>
-<line x1="18100" y1="8500" x2="18400" y2="8500" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="18100" y1="6400" x2="18400" y2="6400" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="18100" y1="4000" x2="18400" y2="4000" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="18400" y1="8500" x2="18400" y2="4000" stroke="#0E5484" stroke-width="18"/>
-<line x1="18484.85" y1="8415.15" x2="18315.15" y2="8584.85" stroke="#0E5484" stroke-width="18"/>
+<line x1="18400" y1="6400" x2="18400" y2="4000" stroke="#0E5484" stroke-width="18"/>
+<line x1="18484.85" y1="6315.15" x2="18315.15" y2="6484.85" stroke="#0E5484" stroke-width="18"/>
 <line x1="18484.85" y1="3915.15" x2="18315.15" y2="4084.85" stroke="#0E5484" stroke-width="18"/>
-<text x="18575" y="6250" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 18575 6250)">4500</text>
+<text x="18575" y="5200" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 18575 5200)">2400</text>
+<line x1="18100" y1="7400" x2="18400" y2="7400" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="18100" y1="6400" x2="18400" y2="6400" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="18400" y1="7400" x2="18400" y2="6400" stroke="#0E5484" stroke-width="18"/>
+<line x1="18484.85" y1="7315.15" x2="18315.15" y2="7484.85" stroke="#0E5484" stroke-width="18"/>
+<line x1="18484.85" y1="6315.15" x2="18315.15" y2="6484.85" stroke="#0E5484" stroke-width="18"/>
+<text x="18575" y="6900" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 18575 6900)">1000</text>
+<line x1="18100" y1="8500" x2="18400" y2="8500" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="18100" y1="7400" x2="18400" y2="7400" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="18400" y1="8500" x2="18400" y2="7400" stroke="#0E5484" stroke-width="18"/>
+<line x1="18484.85" y1="8415.15" x2="18315.15" y2="8584.85" stroke="#0E5484" stroke-width="18"/>
+<line x1="18484.85" y1="7315.15" x2="18315.15" y2="7484.85" stroke="#0E5484" stroke-width="18"/>
+<text x="18575" y="7950" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 18575 7950)">1100</text>
 <line x1="18100" y1="10500" x2="18400" y2="10500" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="18100" y1="8500" x2="18400" y2="8500" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="18400" y1="10500" x2="18400" y2="8500" stroke="#0E5484" stroke-width="18"/>
 <line x1="18484.85" y1="10415.15" x2="18315.15" y2="10584.85" stroke="#0E5484" stroke-width="18"/>
 <line x1="18484.85" y1="8415.15" x2="18315.15" y2="8584.85" stroke="#0E5484" stroke-width="18"/>
 <text x="18575" y="9500" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 18575 9500)">2000</text>
-<line x1="18100" y1="11200" x2="18400" y2="11200" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="18100" y1="10500" x2="18400" y2="10500" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="18400" y1="11200" x2="18400" y2="10500" stroke="#0E5484" stroke-width="18"/>
-<line x1="18484.85" y1="11115.15" x2="18315.15" y2="11284.85" stroke="#0E5484" stroke-width="18"/>
-<line x1="18484.85" y1="10415.15" x2="18315.15" y2="10584.85" stroke="#0E5484" stroke-width="18"/>
-<text x="18575" y="10850" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 18575 10850)">700</text>
-<line x1="18100" y1="12200" x2="18400" y2="12200" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="18100" y1="11200" x2="18400" y2="11200" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="18400" y1="12200" x2="18400" y2="11200" stroke="#0E5484" stroke-width="18"/>
-<line x1="18484.85" y1="12115.15" x2="18315.15" y2="12284.85" stroke="#0E5484" stroke-width="18"/>
-<line x1="18484.85" y1="11115.15" x2="18315.15" y2="11284.85" stroke="#0E5484" stroke-width="18"/>
-<text x="18575" y="11700" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 18575 11700)">1000</text>
 <line x1="18100" y1="12600" x2="18400" y2="12600" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="18100" y1="12200" x2="18400" y2="12200" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="18400" y1="12600" x2="18400" y2="12200" stroke="#0E5484" stroke-width="18"/>
+<line x1="18100" y1="10500" x2="18400" y2="10500" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="18400" y1="12600" x2="18400" y2="10500" stroke="#0E5484" stroke-width="18"/>
 <line x1="18484.85" y1="12515.15" x2="18315.15" y2="12684.85" stroke="#0E5484" stroke-width="18"/>
-<line x1="18484.85" y1="12115.15" x2="18315.15" y2="12284.85" stroke="#0E5484" stroke-width="18"/>
-<text x="18575" y="12400" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 18575 12400)">400</text>
+<line x1="18484.85" y1="10415.15" x2="18315.15" y2="10584.85" stroke="#0E5484" stroke-width="18"/>
+<text x="18575" y="11550" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 18575 11550)">2100</text>
 <line x1="18100" y1="6000" x2="18950" y2="6000" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="18100" y1="0" x2="18950" y2="0" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="18950" y1="6000" x2="18950" y2="0" stroke="#0E5484" stroke-width="18"/>
@@ -11383,8 +11379,8 @@ exports[`golden SVG snapshots > renders practice-office.arch deterministically 1
 <text x="11730" y="7330" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">D07</text>
 <circle cx="14830" cy="7330" r="320" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="14830" y="7330" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">D08</text>
-<circle cx="17480" cy="10780" r="320" fill="none" stroke="#333333" stroke-width="18"/>
-<text x="17480" y="10780" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">D09</text>
+<circle cx="17480" cy="5980" r="320" fill="none" stroke="#333333" stroke-width="18"/>
+<text x="17480" y="5980" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">D09</text>
 <polygon points="2180,200 2820,200 2820,600 2180,600" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="2500" y="400" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W01</text>
 <polygon points="6180,200 6820,200 6820,600 6180,600" fill="none" stroke="#333333" stroke-width="18"/>
@@ -11523,7 +11519,7 @@ exports[`golden SVG snapshots > renders practice-office.arch deterministically 1
 <text x="8963" y="21415" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">left</text>
 <line x1="3800" y1="21245" x2="9450" y2="21245" stroke="#333333" stroke-width="13"/>
 <text x="4075" y="21755" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">D09</text>
-<text x="4463" y="21755" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">exterior / Meeting 2</text>
+<text x="4463" y="21755" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">exterior / Corridor</text>
 <text x="7937" y="21755" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1000</text>
 <text x="8163" y="21755" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">hinged</text>
 <text x="8963" y="21755" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">right</text>

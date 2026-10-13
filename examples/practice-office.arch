@@ -66,8 +66,8 @@ plan "Practice Office" {
   door id=d_wc on w_cs at 10550 width 1000 swing into r_spine
   door id=d_comms on w_cs at 12650 width 1000 swing into r_comms
   door id=d_m2 on w_cs at 15750 width 1000 swing into r_meet2
-  # A second way out: Meeting 2 has an outward-opening door onto the east side, so no room is a dead end.
-  door id=d_meet2_out at (18000,11700) width 1000 wall shell swing out
+  # A second way out: an outward-opening door closes the east end of the spine, so no room is a dead end.
+  door id=d_east at (18000,6900) width 1000 wall shell swing out
 
   # ---- windows ----------------------------------------------------------------
   window at (2500,0) width 2000 wall shell

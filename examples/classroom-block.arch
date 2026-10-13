@@ -24,7 +24,7 @@ plan "Classroom Block" {
   schedule rooms
   schedule openings
   notes "All dimensions in millimetres. Do not scale from this drawing."
-  notes "Classroom doors are 1000 mm leaves; the plant room has an outward-opening exit."
+  notes "Classroom doors are 1000 mm leaves; a second exit closes the east end of the corridor."
   notes "Pupil WC cubicle partitions are 1500 mm deep."
 
   title { project "Classroom Block" drawn_by "ArchLang" date "2026-10-14" number "A-301" revision "A" }
@@ -43,8 +43,8 @@ plan "Classroom Block" {
   wall id=w_s4 partition thickness 150 { (17000,10000) (17000,14000) }
   wall id=w_s5 partition thickness 150 { (19500,10000) (19500,14000) }
   # Cubicle partitions between the three pupil pans (pans at x 13000, 14500, 16000).
-  wall id=w_cub1 partition thickness 50 { (13750,12500) (13750,14000) }
-  wall id=w_cub2 partition thickness 50 { (15250,12500) (15250,14000) }
+  wall id=w_cub1 partition thickness 150 { (13750,12500) (13750,14000) }
+  wall id=w_cub2 partition thickness 150 { (15250,12500) (15250,14000) }
 
   # ---- rooms ------------------------------------------------------------------
   zone teaching "Teaching" {
@@ -73,8 +73,8 @@ plan "Classroom Block" {
   door id=d_wcp on w_cs at 14750 width 1000 swing into r_wcp
   door id=d_wca on w_cs at 18250 width 1000 swing into r_corr
   door id=d_plant on w_cs at 21000 width 1000 swing into r_plant
-  # The corridor is 22.5 m long: a second exit, through the plant room to the south side, so no classroom is a dead end.
-  door id=d_plant_out at (21000,14000) width 1000 wall shell swing out
+  # The corridor is 22.5 m long: a second exit closes its east end, so no classroom is a dead end.
+  door id=d_east at (22500,9000) width 1000 wall shell swing out
 
   # ---- windows: one wide glazed bay per classroom, north-lit ------------------
   window at (3750,0) width 4500 wall shell

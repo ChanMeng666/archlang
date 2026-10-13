@@ -1,5 +1,5 @@
 # A 15 x 10 m neighbourhood cafe: a dining room for eighteen, a servery, a kitchen, a store and
-# one accessible customer WC.
+# one customer WC.
 #
 # A cafe is two buildings in one plan — a front of house the public walks, and a back of
 # house they never see — and the plan makes that split legible three ways:
@@ -8,7 +8,7 @@
 #   doors      the public enters the dining room by a 1200 leaf; staff reach the kitchen
 #              only THROUGH the servery, and the goods door on the east wall opens onto the
 #              kitchen alone; the dining room orders through a cased opening in the servery
-#              wall, and the accessible WC opens off its own lobby, never the dining room
+#              wall, and the customer WC opens off its own lobby, never the dining room
 #   fit-out    every seat is a catalogue `table` + `chair` pair laid by `for`, the servery
 #              counter is backed onto the wall it serves, and the kitchen line (sink,
 #              stove, fridge) is `against wall` so each piece derives its own footprint

@@ -497,9 +497,9 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         ["8c16911c1bfb24f05f97b69b48666a3d6bba913f133e535c15a98df45ceca22e", "aquarium"],
         ["8894023b744a155aad52d1ca28b7836ad1c9d63d1665e82f6b835c8d8e480f3b", "attached"],
         ["c512ccc1711f22b6046175a9ef358ad5b2d95a481448c61bf95196714e990187", "bungalow"],
-        ["199a77a78b29d131019b6e03df440cdf6c20aa4f777910474dfacf7cc57981d7", "classroom-block"], // first measurement, added with the example
+        ["cbf505c9f38de1bce32a5f6256b035a3a5cb35df068f411621db590234da0685", "classroom-block"], // first measurement, added with the example
         ["8f1860697479247a76d029ed309957a97660716904b948956bbe76b6bd46873c", "clinic"],
-        ["9d47bffb86afce509baa45e95d68ee11407d490c11a08eeb40572568665b4b14", "corner-cafe"], // first measurement, added with the example
+        ["3cc20ad5137b43a2a40e416d38e649cf25527afe66dc0672b14f566a3f2f3257", "corner-cafe"], // first measurement, added with the example
         ["85385abf1ba670c9ba8362ed21773cd8567ce233ce276914cf428689bf4a938e", "courtyard-house"],
         ["603c773d4df5b0e984b6505af56c8d7a49f128b6f690273f4553a2b629a48d73", "furnished-flat"],
         ["6680a2b84429d16bf60bed5d240dbf498fa920c9aa99c2cf91a44362ea5d14b1", "gallery-l"],
@@ -518,7 +518,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         ["aa3345f2ba982f844e25108a7908a6f60a8ed295b574248fb895b54bb5599c27", "parametric"],
         ["e0ee4c353a512b03833dc5271ea20a22bd5117e6f8a5b812037c45816dcb4ef5", "relational"],
         ["d58bfbf0a25a5b70b7bdfdd1a8ef7b0fb8912f88ebb5cf631da3efe8268015e4", "sheet-notes"], // first measurement, added with the example
-        ["25e1e5be7ce23db2825f4333ea9fdb85b7715e0ae826d779380148994ed3267a", "practice-office"], // first measurement, added with the example
+        ["2ee5f9d3aba27fe4db572ab912c46013a452f4edf0cbbfd1066a3561fd84019b", "practice-office"], // first measurement, added with the example
         ["147ce7e23f6f2a403d2d269cc0e68b678cab850e0d3a641287ef50bced7c76d3", "studio"],
         ["e4ce4942694b6939c8885bd302dbf2fe53f7903025fe86a11e5dfd8cf63f1764", "terrace-row"],
         ["9da982b56530f0ec0c1b313fe8be64e5346f71bc4d098244664f164a02029a09", "themed"],

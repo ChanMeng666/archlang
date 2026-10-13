@@ -41,6 +41,8 @@ const world: World = {
 const ALLOWED: Record<string, string> = {
   "bungalow.arch:W02": "every candidate place is taken; the tag keeps its first choice (furniture:path)",
   "bungalow.arch:W03": "every candidate place is taken; the tag keeps its first choice (furniture:path)",
+  "classroom-block.arch:D10":
+    "every candidate place is taken: the exit closes a 2 m corridor end, so no clear wall remains beside either jamb; the tag keeps its first choice (doors:arc,doors:polygon,poche)",
   "courtyard-house.arch:W06":
     "every candidate place is taken; the tag keeps its first choice (furniture:circle,furniture:path)",
   "courtyard-house.arch:W11":
@@ -58,6 +60,8 @@ const ALLOWED: Record<string, string> = {
     "every candidate place is taken; the tag keeps its first choice (furniture:line,furniture:polygon)",
   "museum-wings.arch:D05": "every candidate place is taken; the tag keeps its first choice (poche)",
   "museum-wings.arch:D06": "every candidate place is taken; the tag keeps its first choice (axes:line,poche)",
+  "practice-office.arch:D09":
+    "every candidate place is taken: the exit closes a 1.8 m corridor end, so no clear wall remains beside either jamb; the tag keeps its first choice (poche)",
   "terrace-row.arch:D02":
     "every candidate place is taken; the tag keeps its first choice (furniture:line,furniture:path,poche)",
   "terrace-row.arch:W03":

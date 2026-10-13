@@ -474,10 +474,10 @@ accessible WC takes a 1000 mm door that swings out into the corridor, a second e
 A neighbourhood cafe — **6 rooms, 150 m², 7 doors, 8 windows** at `scale 1:100` on
 `paper A3 landscape`, 15.2 × 10.2 m to the outer faces. A cafe is two buildings in one plan:
 a front of house the public walks and a back of house they never see. Two
-[zones](/reference#zones-wings-and-departments-v1-22), `front` (100.5 m²) and `back` (49.5 m²),
+[zones](/reference#zones-wings-and-departments-v1-22), `front` (101.1 m²) and `back` (48.9 m²),
 split the schedule's subtotals at no cost in geometry; the public enters the 90 m² dining
 room by a 1200 mm leaf, staff reach the kitchen only through the servery, a cased opening in the servery wall lets the dining room order across the counter, the
-accessible WC opens off its own lobby rather than the dining room, and a goods door on
+customer WC opens off its own lobby rather than the dining room, and a goods door on
 the east wall opens onto the kitchen alone. The nine two-tops are a pair of nested `for`
 loops over the catalogue `table` and `chair`, and the kitchen line (sink, stove, fridge) is
 `against wall` so each piece derives its own footprint. `legend` lists the fixture categories

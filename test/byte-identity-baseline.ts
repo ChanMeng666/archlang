@@ -912,7 +912,7 @@ export const BASELINE: [string, string][] = [
   ["aquarium", "6f1cab74108929fc86d11ec8f8b82a437237398da8ccc9017da0384fe38af878"],
   ["attached", "5a6374e3fec477aa55bc8e94586d4c60501608a2764830d6ee32c2b61d66d055"],
   ["bungalow", "4385f60b8dae41c7f1b5e8b14f52171242bcfeb378602c2523c843dcfba8c4dc"],
-  ["classroom-block", "6b56ee2e900aa0abf9b2fbcb2d02920d1532f23e5656aed52432564ac19a5d64"], // first measurement, added with the example
+  ["classroom-block", "bcf2fa040ef568b192056d412d57e25118fc488112dc8c3707932f2d3ac3f3af"], // first measurement, added with the example
   ["clinic", "ab7fb5f7e1d006ebedb4c851753523b2d55704e821329056d81b520b34f13c3d"],
   ["corner-cafe", "142a1fd5750cad03bb7d20057ab9f115568b5acb5623d4395f0bda37f33e0ebe"], // first measurement, added with the example
   ["courtyard-house", "aeb8e2e52f34552fceb7a5715f9b7a730624183c51a7c1eb8f5d1abd7ad68af4"],
@@ -931,7 +931,7 @@ export const BASELINE: [string, string][] = [
   ["museum", "9ea9489fcbfea83974bb42884299390e2db37e3fcca7b6a658741d3cdd08e352"],
   ["one-room", "006f9e2008584250fa6aa645769f01ad4ad3dcc5053d76c1c4fa963c6dbc3283"],
   ["parametric", "b8055080fe56197849ab4624be16eed46510ac467de6218df59f093979e8235c"],
-  ["practice-office", "c4a1f82b497bc07949b390485b89f70af09164db3623b55d71a8d0b6f8fe3dde"], // first measurement, added with the example
+  ["practice-office", "d2dc82e7f4b5901e4a975bbed9f42e7b0ac7d70175e906aa67f1307b036b966f"], // first measurement, added with the example
   ["relational", "776f94d7f8a94ebf78b752697fa433cf49a05b1e4309430e8725a71e15780354"],
   ["sheet-notes", "5613c91f3afa00f15548a362f71354d55ba1f25a5214605595760e6e3ec83aef"], // re-measured, see header
   ["studio", "daacc21fb471e0d7d29c88191b838607a07b3f73e82a0508d42a8cbd8184bef3"],
@@ -960,7 +960,7 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["aquarium", "299f0e348e915d0f4f7aac16a047f708cc7003f3103892b10f46ee945a6b477c"],
   ["attached", "df08961c92bc1d8412dd0f5ff7e9282c35b283e5a007b4192323005a6c564d0f"],
   ["bungalow", "93a7bbad33a456a3f9a72b8ec7e0ccc116c3ea777b464149a6c40d0328e3d48d"],
-  ["classroom-block", "d8995e45a500ffac8756f3307a28b9fe7343c976b482f9777a525e262cccfddb"], // first measurement, added with the example
+  ["classroom-block", "b79c14ae70291d8a7671a4285fb9112ecb20248ff4129aa25de7be0e3122102d"], // first measurement, added with the example
   ["clinic", "87a31334de932023821bb2a29a4a8b7f81b46f2c6a06283a00e4c4a0856d1e10"],
   ["corner-cafe", "db96181f32dd6093f641a612a3c6baf393b5b7c31cc26132d960e38d96bc7322"], // first measurement, added with the example
   ["courtyard-house", "fe1c1009bf87d63b2e9dc77fb870ad43cc2a0957376e4ad3c2192ce5bab5ac0a"],
@@ -979,7 +979,7 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["museum", "7ec1245b5a9ae03f813436680f5bb750cc707631703b26e1ecf6f0c1d750d573"],
   ["one-room", "4313ab047cbd42c75be08c6a6c72e3bbe8ee6b1e598a816d722d0aa8655c0551"],
   ["parametric", "5783da773c0493767621e2c063e6da257c660dec2edb5351893f0ad4907afc3a"],
-  ["practice-office", "b358d3279fdf29db1f3b4c02f2cf14208fc54e6917778b56bfa8d2297a7e2da2"], // first measurement, added with the example
+  ["practice-office", "617a994c8efdfeb3c44d704336128a08673fe98964cb7d5a348efa70dd63e4bd"], // first measurement, added with the example
   ["relational", "d31bd84bfcb7bfce8d662470f8828144f55ef3e4117924af898587706bf46293"],
   ["sheet-notes", "a26a55ae94a0b036450096f6f6c496594a76c8d3ac61da07a47c8145b785ac87"], // added with the example, see header
   ["studio", "540245f5c6c0f523e13b455cad9bcfc3c6d21cf96ca953ce1bbfa3d547345208"],
