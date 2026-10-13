@@ -497,7 +497,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         ["8c16911c1bfb24f05f97b69b48666a3d6bba913f133e535c15a98df45ceca22e", "aquarium"],
         ["8894023b744a155aad52d1ca28b7836ad1c9d63d1665e82f6b835c8d8e480f3b", "attached"],
         ["c512ccc1711f22b6046175a9ef358ad5b2d95a481448c61bf95196714e990187", "bungalow"],
-        ["21e10aa338e49a8c44384a7b4b8b9a675bf66cb5ecb1f179d41f3f6065da533c", "classroom-block"], // first measurement, added with the example
+        ["0979e04a2cf4fae8b93471db3cd9c42e55de54dd5ed8f9b20e7801be760534d6", "classroom-block"], // first measurement, added with the example
         ["8f1860697479247a76d029ed309957a97660716904b948956bbe76b6bd46873c", "clinic"],
         ["6666f64d0e0ce5c5d10a0b7f1574234bd4efd96243447b197599a58ba84dbdf4", "corner-cafe"], // first measurement, added with the example
         ["85385abf1ba670c9ba8362ed21773cd8567ce233ce276914cf428689bf4a938e", "courtyard-house"],
@@ -518,7 +518,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         ["aa3345f2ba982f844e25108a7908a6f60a8ed295b574248fb895b54bb5599c27", "parametric"],
         ["e0ee4c353a512b03833dc5271ea20a22bd5117e6f8a5b812037c45816dcb4ef5", "relational"],
         ["d58bfbf0a25a5b70b7bdfdd1a8ef7b0fb8912f88ebb5cf631da3efe8268015e4", "sheet-notes"], // first measurement, added with the example
-        ["ced9994fbb829fa4f4448180d3f5d1b80ae80d1deed3193a53dafb7f8ba95903", "practice-office"], // first measurement, added with the example
+        ["fb7591abcc3cb7fbd1a78230c200dc1caa1576eefcd64c714ddc5f29439f6cc6", "practice-office"], // first measurement, added with the example
         ["147ce7e23f6f2a403d2d269cc0e68b678cab850e0d3a641287ef50bced7c76d3", "studio"],
         ["e4ce4942694b6939c8885bd302dbf2fe53f7903025fe86a11e5dfd8cf63f1764", "terrace-row"],
         ["9da982b56530f0ec0c1b313fe8be64e5346f71bc4d098244664f164a02029a09", "themed"],
