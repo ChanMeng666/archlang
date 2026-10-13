@@ -194,9 +194,9 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/aquarium.arch", "bd7b2666cb68c863d7a89064d0b96710e130cc2163ba426750ca1b76f8e22ba0"],
   ["examples/attached.arch", "ce39e349037a98b01516a72737bf9ea14a6f410ec295913efe84708753481761"],
   ["examples/bungalow.arch", "1e374f87b266082707aa4e0baa263a2f2784ddc75eba8aeec94e5049f97d84ae"],
-  ["examples/classroom-block.arch", "c0cfdc6c5c2494158390a01b390821758138b280a99d4dfb64860971e9ae03a6"], // first measurement, added with the example
+  ["examples/classroom-block.arch", "6a146adf9ff1c59e63e1b780e16427934d39629c8f02ce52f98b2bba043c33fa"], // first measurement, added with the example
   ["examples/clinic.arch", "2713e28ea3bfb3409f54cab4fac70402777397fbc0414ac91fd22a13093b6a9d"],
-  ["examples/corner-cafe.arch", "2fe716112a6b8ea668f0ad1c076981da170d8fecdac98f0c39357e8d1b9234fa"], // first measurement, added with the example
+  ["examples/corner-cafe.arch", "444e53d9cf9fff1e5955111d72b7737007bd0cd593b06ec2f021fbbbde2ddbf1"], // first measurement, added with the example
   ["examples/courtyard-house.arch", "91c2a44265e69f983cf775eed28aa33e0aa5888334ad13856662a15fefa68169"],
   ["examples/furnished-flat.arch", "12473e1ca6aaacf6adea0da3c46565d93a14a8396700eed2f8d70dd90d73957a"],
   ["examples/gallery-l.arch", "83bfc4e12622ae307469b173ce83a27b9dcb5aafd661fa004a8330f58c14e4e4"],
@@ -213,7 +213,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/museum.arch", "7635661a9e48d26588950f7c4c902b7961f2e28bc50025e55b20f2053a5a67d3"],
   ["examples/one-room.arch", "050d5beb84aff06312d933a3b16de45f4b98cac0aa2d25efba6ed0234f45e4ca"],
   ["examples/parametric.arch", "50542aff6a0a3f03bb8e1ff9ba69d10d721d81bc78c7b7147b10acdab77e25fd"],
-  ["examples/practice-office.arch", "52037baf27780aa75cd44358c2c6a12b040fb9a8dd93f7ff5921e3b83627f0f9"], // first measurement, added with the example
+  ["examples/practice-office.arch", "37f6f4e529e4b19b5665050ac0dd338fc13f62edcb598152dede582fb5083c38"], // first measurement, added with the example
   ["examples/relational.arch", "78396bc038b0198f2ed2952cc6169d0c810ffeb4149d04ba3203aa397a16cabd"],
   ["examples/sheet-notes.arch", "90e7d0ad148524bd71ba014f2b3849737034c6a23f27bf6f5a40ea800c20eaa1"], // re-measured, see header
   ["examples/studio.arch", "6f0c677cc5c7bc15b4cea1faee4d61bf30e4e775aa96c2efb2f374f773047362"],

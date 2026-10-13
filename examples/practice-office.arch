@@ -37,8 +37,8 @@ plan "Practice Office" {
   wall id=w_n1 partition thickness 100 { (10500,0) (10500,6000) }
   wall id=w_n2 partition thickness 100 { (14000,0) (14000,6000) }
   wall id=w_s1 partition thickness 100 { (4500,7800) (4500,12500) }
-  wall id=w_s2 partition thickness 100 { (9500,7800) (9500,12500) }
-  wall id=w_s3 partition thickness 100 { (11500,7800) (11500,12500) }
+  wall id=w_s2 partition thickness 100 { (9300,7800) (9300,12500) }
+  wall id=w_s3 partition thickness 100 { (11800,7800) (11800,12500) }
   wall id=w_s4 partition thickness 100 { (13500,7800) (13500,12500) }
 
   # ---- rooms ------------------------------------------------------------------
@@ -51,9 +51,9 @@ plan "Practice Office" {
   zone support "Support" {
     room id=r_spine   at (0,6000)     size 18000x1800 label "Corridor" uses circulation
     room id=r_recep   at (0,7800)     size 4500x4700  label "Reception" uses entry
-    room id=r_break   at (4500,7800)  size 5000x4700  label "Break Room" uses kitchen dining
-    room id=r_wc      at (9500,7800)  size 2000x4700  label "Accessible WC" uses wc
-    room id=r_comms   at (11500,7800) size 2000x4700  label "Comms" uses utility
+    room id=r_break   at (4500,7800)  size 4800x4700  label "Break Room" uses kitchen dining
+    room id=r_wc      at (9300,7800)  size 2500x4700  label "Accessible WC" uses wc
+    room id=r_comms   at (11800,7800) size 1700x4700  label "Comms" uses utility
   }
 
   # ---- doors ------------------------------------------------------------------
@@ -63,8 +63,8 @@ plan "Practice Office" {
   door id=d_mgr on w_cn at 12250 width 1000 swing into r_manager
   door id=d_m1 on w_cn at 16000 width 1000 swing into r_meet1
   door id=d_break on w_cs at 7000 width 1000 swing into r_break
-  door id=d_wc on w_cs at 10500 width 1000 swing into r_spine
-  door id=d_comms on w_cs at 12500 width 1000 swing into r_comms
+  door id=d_wc on w_cs at 10550 width 1000 swing into r_spine
+  door id=d_comms on w_cs at 12650 width 1000 swing into r_comms
   door id=d_m2 on w_cs at 15750 width 1000 swing into r_meet2
   # A second way out: Meeting 2 has an outward-opening door onto the east side, so no room is a dead end.
   door id=d_meet2_out at (18000,11700) width 1000 wall shell swing out
@@ -78,7 +78,7 @@ plan "Practice Office" {
   window at (18000,3000) width 2000 wall shell
   window at (18000,9500) width 2000 wall shell
   window at (7000,12500) width 1800 wall shell
-  window at (15750,12500) width 1800 wall shell
+  window at (16900,12500) width 1800 wall shell
   window at (0,3000) width 2000 wall shell
 
   # ---- fit-out ----------------------------------------------------------------
@@ -94,6 +94,6 @@ plan "Practice Office" {
   furniture counter against wall w_s2 offset 2400 in r_break
   furniture fridge against wall w_s2 offset 3600 in r_break
   furniture table in r_break centered size 1800x900 label "Table"
-  furniture wc against wall shell segment 2 offset 7500 in r_wc
+  furniture wc against wall shell segment 2 offset 7450 in r_wc
   furniture basin against wall w_s3 offset 2200 in r_wc
 }

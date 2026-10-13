@@ -31,20 +31,20 @@ plan "Corner Cafe" {
   wall id=w_e partition thickness 100 { (9000,0) (9000,10000) }
   wall id=w_k partition thickness 100 { (9000,4000) (15000,4000) }
   wall id=w_s partition thickness 100 { (9000,7000) (15000,7000) }
-  wall id=w_wc partition thickness 100 { (12500,7000) (12500,10000) }
-  # The WC does not open off the dining room: a one metre lobby sits between them.
-  wall id=w_lb partition thickness 100 { (10700,7000) (10700,10000) }
+  wall id=w_wc partition thickness 100 { (12700,7000) (12700,10000) }
+  # The WC does not open off the dining room: a small lobby sits between them.
+  wall id=w_lb partition thickness 100 { (11000,7000) (11000,10000) }
 
   # ---- rooms ------------------------------------------------------------------
   zone front "Front of house" {
     room id=r_dining at (0,0)       size 9000x10000 label "Dining" uses dining
-    room id=r_lobby  at (9000,7000) size 1700x3000  label "Lobby" uses circulation
-    room id=r_wc     at (10700,7000) size 1800x3000 label "WC" uses wc
+    room id=r_lobby  at (9000,7000) size 2000x3000  label "Lobby" uses circulation
+    room id=r_wc     at (11000,7000) size 1700x3000 label "WC" uses wc
   }
   zone back "Back of house" {
     room id=r_kitchen at (9000,0)     size 6000x4000 label "Kitchen" uses kitchen
     room id=r_servery at (9000,4000)  size 6000x3000 label "Servery" uses kitchen
-    room id=r_store   at (12500,7000) size 2500x3000 label "Store" uses storage
+    room id=r_store   at (12700,7000) size 2300x3000 label "Store" uses storage
   }
 
   # ---- doors ------------------------------------------------------------------
@@ -84,6 +84,6 @@ plan "Corner Cafe" {
   furniture kitchen_sink against wall shell segment 0 offset 11000 in r_kitchen
   furniture stove against wall shell segment 0 offset 12600 in r_kitchen
   furniture fridge against wall shell segment 0 offset 14000 in r_kitchen
-  furniture wc against wall w_s offset 2600 in r_wc
+  furniture wc against wall w_s offset 2900 in r_wc
   furniture basin against wall w_wc offset 1500 in r_wc
 }

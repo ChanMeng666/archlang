@@ -83,7 +83,7 @@ plan "Classroom Block" {
   window at (0,4000) width 2000 wall shell
   window at (22500,4000) width 2000 wall shell
   window at (7250,14000) width 1800 wall shell
-  window at (22000,14000) width 700 wall shell
+  window at (22500,13000) width 1000 wall shell
 
   # ---- fit-out ----------------------------------------------------------------
   for i in 0..3 {
