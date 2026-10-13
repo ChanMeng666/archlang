@@ -101,7 +101,7 @@ const EXAMPLES = [
   "sheet-notes.arch",
   // The three table-bearing starter plans (rooms schedule + openings schedule or legend):
   // each opts in, so each needs a golden that pins its tables.
-  "small-office.arch",
+  "practice-office.arch",
   "corner-cafe.arch",
   "classroom-block.arch",
 ];

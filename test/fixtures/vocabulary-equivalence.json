@@ -963,8 +963,14 @@
       "room_type": "DiningRoom"
     },
     {
+      "id": "r_lobby",
+      "label": "Lobby",
+      "uses": ["circulation"],
+      "room_type": "Entrance"
+    },
+    {
       "id": "r_wc",
-      "label": "Accessible WC",
+      "label": "WC",
       "uses": ["wc"],
       "room_type": "Bathroom"
     },
@@ -1749,9 +1755,9 @@
       "room_type": "StudyRoom"
     }
   ],
-  "examples/small-office.arch": [
+  "examples/practice-office.arch": [
     {
-      "id": "r_open",
+      "id": "r_team",
       "label": "Team Workspace",
       "uses": ["office"],
       "room_type": "StudyRoom"

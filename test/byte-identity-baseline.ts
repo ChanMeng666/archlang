@@ -912,9 +912,9 @@ export const BASELINE: [string, string][] = [
   ["aquarium", "6f1cab74108929fc86d11ec8f8b82a437237398da8ccc9017da0384fe38af878"],
   ["attached", "5a6374e3fec477aa55bc8e94586d4c60501608a2764830d6ee32c2b61d66d055"],
   ["bungalow", "4385f60b8dae41c7f1b5e8b14f52171242bcfeb378602c2523c843dcfba8c4dc"],
-  ["classroom-block", "f9de369126b1173a24f74bfd42db8c9f8e2bf9d13f0ea6c854226acc44fca44c"], // first measurement, added with the example
+  ["classroom-block", "88836597d04c5d7cd651d3d0f148311ca45ac1c33793dbbeb93571f10ca6e1c9"], // first measurement, added with the example
   ["clinic", "ab7fb5f7e1d006ebedb4c851753523b2d55704e821329056d81b520b34f13c3d"],
-  ["corner-cafe", "a094f2a7fe11eec6f963dc7556cc555f869774bf1d3466d14c1739bc503a63aa"], // first measurement, added with the example
+  ["corner-cafe", "d9be3d58828b303da73055567e113422f588fada7c75a5baa12a8810f43682ff"], // first measurement, added with the example
   ["courtyard-house", "aeb8e2e52f34552fceb7a5715f9b7a730624183c51a7c1eb8f5d1abd7ad68af4"],
   ["furnished-flat", "889f4246f5e98f589952d5e20e0acdfd6057f542e0620c8d20bce01dd17c88f0"],
   ["gallery-l", "129f74f2511f818d4b76d1d5d956a23b6619080a4712524f4b90f110b36dd1a9"],
@@ -931,9 +931,9 @@ export const BASELINE: [string, string][] = [
   ["museum", "9ea9489fcbfea83974bb42884299390e2db37e3fcca7b6a658741d3cdd08e352"],
   ["one-room", "006f9e2008584250fa6aa645769f01ad4ad3dcc5053d76c1c4fa963c6dbc3283"],
   ["parametric", "b8055080fe56197849ab4624be16eed46510ac467de6218df59f093979e8235c"],
+  ["practice-office", "b3005f5d0363d3ad2513f088b2656c632b21e34f02cd66a6ed350f0ed3cb6b5e"], // first measurement, added with the example
   ["relational", "776f94d7f8a94ebf78b752697fa433cf49a05b1e4309430e8725a71e15780354"],
   ["sheet-notes", "5613c91f3afa00f15548a362f71354d55ba1f25a5214605595760e6e3ec83aef"], // re-measured, see header
-  ["small-office", "4903d1e0f8935d5e83046f2bba1b930f4d8e5ca580b375e5b9add73006c960d8"], // first measurement, added with the example
   ["studio", "daacc21fb471e0d7d29c88191b838607a07b3f73e82a0508d42a8cbd8184bef3"],
   ["terrace-row", "5c7a1b1380f8ca14f6927a1fefa481ffba57deb85deee79fc83930863bbab898"], // re-measured, see header
   ["themed", "b6ba97d9000126e4355dd8c4a853c19fb8aa8790be0603dedf3e10fb1620cccf"],
@@ -960,9 +960,9 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["aquarium", "299f0e348e915d0f4f7aac16a047f708cc7003f3103892b10f46ee945a6b477c"],
   ["attached", "df08961c92bc1d8412dd0f5ff7e9282c35b283e5a007b4192323005a6c564d0f"],
   ["bungalow", "93a7bbad33a456a3f9a72b8ec7e0ccc116c3ea777b464149a6c40d0328e3d48d"],
-  ["classroom-block", "1034d2531917be9e66857821dc0449fe2bf6ee8f04aa19cea43dc12fb7fd3dbe"], // first measurement, added with the example
+  ["classroom-block", "63ae6560ed41c0e64430335abf7d6238494d50bb8b0b42922f844ffc9469dc04"], // first measurement, added with the example
   ["clinic", "87a31334de932023821bb2a29a4a8b7f81b46f2c6a06283a00e4c4a0856d1e10"],
-  ["corner-cafe", "68a795a2c60762c6e3cf772c784418b3f7255e16185d34cfdbf3fad23d1109ab"], // first measurement, added with the example
+  ["corner-cafe", "86ccd493893b084c5253191b26bc1357dd2bf96dec5aee8e32d0131b2a5a1cee"], // first measurement, added with the example
   ["courtyard-house", "fe1c1009bf87d63b2e9dc77fb870ad43cc2a0957376e4ad3c2192ce5bab5ac0a"],
   ["furnished-flat", "c55ce2b43dd4acf0eec4eada9ee456c799bf4188f6f1a2f6d32a8cb691424fc4"],
   ["gallery-l", "cef0ee1863a505bb831aa2512ca204547117872a61cf1a1ddd293361f0b688be"],
@@ -979,9 +979,9 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["museum", "7ec1245b5a9ae03f813436680f5bb750cc707631703b26e1ecf6f0c1d750d573"],
   ["one-room", "4313ab047cbd42c75be08c6a6c72e3bbe8ee6b1e598a816d722d0aa8655c0551"],
   ["parametric", "5783da773c0493767621e2c063e6da257c660dec2edb5351893f0ad4907afc3a"],
+  ["practice-office", "a34a37faacef18d2eab8bca1167e7ab5a559db618b009dc212e2edccbdb05c9a"], // first measurement, added with the example
   ["relational", "d31bd84bfcb7bfce8d662470f8828144f55ef3e4117924af898587706bf46293"],
   ["sheet-notes", "a26a55ae94a0b036450096f6f6c496594a76c8d3ac61da07a47c8145b785ac87"], // added with the example, see header
-  ["small-office", "60b502bcb0638aadb5a6e17722cdae45eae604683cb513ab92f2788496ce2472"], // first measurement, added with the example
   ["studio", "540245f5c6c0f523e13b455cad9bcfc3c6d21cf96ca953ce1bbfa3d547345208"],
   ["terrace-row", "172aac3cd62b8ccbbdf2d58374fe0535e4657d1344f60c1c7cb825ae3e2a59b8"],
   ["themed", "3644012b9d972af8e0314ce0a210073cc0315127d38a5f6b35220b00c883aff8"],

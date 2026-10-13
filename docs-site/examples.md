@@ -452,9 +452,9 @@ the default ruleset.
 
 <ArchLive :src="EXAMPLES['clinic']" :rows="30" />
 
-### Small Office
+### Practice Office
 
-A small professional-services office — **9 rooms, 225 m², 8 doors, 10 windows**, 18.2 × 12.7 m
+A small professional-services office — **9 rooms, 225 m², 9 doors, 10 windows**, 18.2 × 12.7 m
 to the outer faces, issued on `paper A2 landscape` at `scale 1:100`. An open workspace, a
 manager's room and two meeting rooms hang off a 1800 mm spine corridor that is a real room
 (`uses circulation`), so every door lands on a space the reachability and path-width lint can
@@ -464,19 +464,20 @@ kitchen triangle — and it carries the sheet statements a contractor reads firs
 `schedule rooms` totals the floor by zone (129.15 m² of workspace, 95.85 m² of support),
 `schedule openings` tags every door and window and keys them to the
 **DOOR & WINDOW SCHEDULE**, and three `notes` fill the numbered **NOTES** table. The
-accessible WC takes a 1000 mm door, and the plan is clean under
+accessible WC takes a 1000 mm door that swings out into the corridor, a second exit closes the east end of the spine so no room is a dead end, and the plan is clean under
 `archlang lint --profile accessibility-advisory` as well as the default ruleset.
 
-<ArchLive :src="EXAMPLES['small-office']" :rows="30" />
+<ArchLive :src="EXAMPLES['practice-office']" :rows="30" />
 
 ### Corner Cafe
 
-A neighbourhood cafe — **5 rooms, 150 m², 6 doors, 8 windows** at `scale 1:100` on
+A neighbourhood cafe — **6 rooms, 150 m², 7 doors, 8 windows** at `scale 1:100` on
 `paper A3 landscape`, 15.2 × 10.2 m to the outer faces. A cafe is two buildings in one plan:
 a front of house the public walks and a back of house they never see. Two
-[zones](/reference#zones-wings-and-departments-v1-22), `front` (99 m²) and `back` (51 m²),
+[zones](/reference#zones-wings-and-departments-v1-22), `front` (100.5 m²) and `back` (49.5 m²),
 split the schedule's subtotals at no cost in geometry; the public enters the 90 m² dining
-room by a 1200 mm leaf, staff reach the kitchen only through the servery, and a goods door on
+room by a 1200 mm leaf, staff reach the kitchen only through the servery, a cased opening in the servery wall lets the dining room order across the counter, the
+accessible WC opens off its own lobby rather than the dining room, and a goods door on
 the east wall opens onto the kitchen alone. The nine two-tops are a pair of nested `for`
 loops over the catalogue `table` and `chair`, and the kitchen line (sink, stove, fridge) is
 `against wall` so each piece derives its own footprint. `legend` lists the fixture categories
@@ -486,13 +487,14 @@ actually placed. Clean under both lint profiles.
 
 ### Classroom Block
 
-A single-storey school block — **10 rooms, 315 m², 9 doors, 7 windows** at `scale 1:100` on
+A single-storey school block — **10 rooms, 315 m², 10 doors, 7 windows** at `scale 1:100` on
 `paper A2 landscape`, 22.75 × 14.25 m to the outer faces. Three 60 m² classrooms open off a
 2000 mm corridor; the lobby, a staff prep room, a store, pupil WCs, an accessible WC and a
 plant room line the service side. The three teaching rooms are the same room, so their
 furniture is written once as a loop over the classroom width (`let X = i * CW`): a teacher's
 desk, twelve tables in three columns and a bookshelf run, with each door at the east end of
-the corridor wall so the leaf swings away from the tables. The zones split the floor into
+the corridor wall so the leaf swings away from the tables. A second exit closes the east
+end of the 22.5 m corridor, so no classroom is a dead end. The zones split the floor into
 180 m² of `teaching` and 135 m² of `service`, `schedule openings` tags every door and window,
 and the plan is written to pass `archlang lint --profile accessibility-advisory` as well as
 the default ruleset.

@@ -31,7 +31,7 @@ import aquarium from "../../examples/aquarium.arch?raw";
 import library from "../../examples/library.arch?raw";
 import transitHall from "../../examples/transit-hall.arch?raw";
 import clinic from "../../examples/clinic.arch?raw";
-import smallOffice from "../../examples/small-office.arch?raw";
+import practiceOffice from "../../examples/practice-office.arch?raw";
 import cornerCafe from "../../examples/corner-cafe.arch?raw";
 import classroomBlock from "../../examples/classroom-block.arch?raw";
 import galleryL from "../../examples/gallery-l.arch?raw";
@@ -189,8 +189,8 @@ const EXAMPLE_ROWS = [
     "An outpatient wing whose six consulting rooms are one component placed six times, rather than six copies.",
   ],
   [
-    "small-office",
-    "Small Office (workplace)",
+    "practice-office",
+    "Practice Office (workplace)",
     "Public buildings",
     "A 225 m² office on a spine corridor: open workspace, meeting rooms, break room and an accessible WC, issued with tagged openings.",
   ],
@@ -283,7 +283,7 @@ const SOURCES: Record<string, string> = {
   library,
   "transit-hall": transitHall,
   clinic,
-  "small-office": smallOffice,
+  "practice-office": practiceOffice,
   "corner-cafe": cornerCafe,
   "classroom-block": classroomBlock,
   "gallery-l": galleryL,

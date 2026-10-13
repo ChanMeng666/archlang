@@ -54,7 +54,7 @@ describe("golden SVG snapshots", () => {
     "furnished-flat.arch",
     // The three non-dwelling plans: a workplace, a cafe and a school block, each on a sheet
     // with margin tables (the office and school also with the openings schedule and notes).
-    "small-office.arch",
+    "practice-office.arch",
     "corner-cafe.arch",
     "classroom-block.arch",
   ]) {

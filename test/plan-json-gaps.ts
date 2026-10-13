@@ -13,7 +13,7 @@ export const CANNOT_ROUND_TRIP: Record<string, { because: string; proof: RegExp 
     because: "sheet layer — `paper` + `schedule` + `notes` (the title block's `number`/`revision` DO round-trip)",
     proof: /^\s*paper\b/m,
   },
-  "small-office.arch": {
+  "practice-office.arch": {
     because: "sheet layer — `paper` + `schedule` + `notes`; and `zone`",
     proof: /^\s*paper\b/m,
   },

@@ -575,9 +575,9 @@ exports[`golden SVG snapshots > renders bungalow.arch deterministically 1`] = `
 `;
 
 exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="594mm" height="420mm" viewBox="-18450 -9060 59400 42000" font-family="Helvetica, Arial, sans-serif">
+"<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="594mm" height="420mm" viewBox="-18450 -8890 59400 42000" font-family="Helvetica, Arial, sans-serif">
 <defs><pattern id="poche" patternUnits="userSpaceOnUse" width="120" height="120" patternTransform="rotate(45)"><rect width="120" height="120" fill="#e9e4db"/><line x1="0" y1="0" x2="0" y2="120" stroke="#b9b1a4" stroke-width="12.6"/></pattern></defs>
-<rect x="-18450" y="-9060" width="59400" height="42000" fill="#ffffff"/>
+<rect x="-18450" y="-8890" width="59400" height="42000" fill="#ffffff"/>
 <g id="A-FLOR" inkscape:groupmode="layer" inkscape:label="A-FLOR">
 <polygon points="0,0 7500,0 7500,8000 0,8000" fill="#fbfaf7"/>
 <polygon points="7500,0 15000,0 15000,8000 7500,8000" fill="#fbfaf7"/>
@@ -817,8 +817,8 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <circle cx="19148.7" cy="12000" r="13.5" fill="#a8a29a" stroke="#a8a29a" stroke-width="13"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
-<path d="M -125,-125 L 2250,-125 L 2250,125 L 125,125 L 125,3000 L -125,3000 Z M -125,14125 L -125,5000 L 125,5000 L 125,7925 L 6200,7925 L 6200,8075 L 125,8075 L 125,9925 L 1750,9925 L 1750,10075 L 125,10075 L 125,13875 L 1800,13875 L 1800,14125 Z M 10500,10075 L 9575,10075 L 9575,13875 L 12425,13875 L 12425,10075 L 11500,10075 L 11500,9925 L 14250,9925 L 14250,10075 L 12575,10075 L 12575,13875 L 14050,13875 L 14050,14125 L 8150,14125 L 8150,13875 L 9425,13875 L 9425,10075 L 7750,10075 L 7750,9925 L 10500,9925 Z M 12750,-125 L 17250,-125 L 17250,125 L 15075,125 L 15075,7925 L 21200,7925 L 21200,8075 L 14700,8075 L 14700,7925 L 14925,7925 L 14925,125 L 12750,125 Z M 13700,7925 L 13700,8075 L 7200,8075 L 7200,7925 L 7425,7925 L 7425,125 L 5250,125 L 5250,-125 L 9750,-125 L 9750,125 L 7575,125 L 7575,7925 Z M 15250,10075 L 15250,9925 L 17750,9925 L 17750,10075 L 17075,10075 L 17075,13875 L 19425,13875 L 19425,10075 L 18750,10075 L 18750,9925 L 20500,9925 L 20500,10075 L 19575,10075 L 19575,13875 L 22375,13875 L 22375,10075 L 21500,10075 L 21500,9925 L 22375,9925 L 22375,8075 L 22200,8075 L 22200,7925 L 22375,7925 L 22375,5000 L 22625,5000 L 22625,14125 L 15450,14125 L 15450,13875 L 16925,13875 L 16925,10075 Z M 20250,-125 L 22625,-125 L 22625,3000 L 22375,3000 L 22375,125 L 20250,125 Z M 3200,13875 L 4925,13875 L 4925,10075 L 3250,10075 L 3250,9925 L 6750,9925 L 6750,10075 L 5075,10075 L 5075,13875 L 6350,13875 L 6350,14125 L 3200,14125 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<path d="M -125,-125 L 2250,-125 L 2250,125 L 125,125 L 125,3000 L -125,3000 Z M -125,14125 L -125,5000 L 125,5000 L 125,7925 L 6200,7925 L 6200,8075 L 125,8075 L 125,9925 L 1750,9925 L 1750,10075 L 125,10075 L 125,13875 L 1800,13875 L 1800,14125 Z M 10500,10075 L 9575,10075 L 9575,13875 L 12425,13875 L 12425,10075 L 11500,10075 L 11500,9925 L 14250,9925 L 14250,10075 L 12575,10075 L 12575,13875 L 14050,13875 L 14050,14125 L 8150,14125 L 8150,13875 L 9425,13875 L 9425,10075 L 7750,10075 L 7750,9925 L 10500,9925 Z M 12750,-125 L 17250,-125 L 17250,125 L 15075,125 L 15075,7925 L 21200,7925 L 21200,8075 L 14700,8075 L 14700,7925 L 14925,7925 L 14925,125 L 12750,125 Z M 13700,7925 L 13700,8075 L 7200,8075 L 7200,7925 L 7425,7925 L 7425,125 L 5250,125 L 5250,-125 L 9750,-125 L 9750,125 L 7575,125 L 7575,7925 Z M 15250,10075 L 15250,9925 L 17750,9925 L 17750,10075 L 17075,10075 L 17075,13875 L 19425,13875 L 19425,10075 L 18750,10075 L 18750,9925 L 20500,9925 L 20500,10075 L 19575,10075 L 19575,13875 L 22375,13875 L 22375,10075 L 21500,10075 L 21500,9925 L 22375,9925 L 22375,8075 L 22200,8075 L 22200,7925 L 22375,7925 L 22375,5000 L 22625,5000 L 22625,14125 L 15450,14125 L 15450,13875 L 16925,13875 L 16925,10075 Z M 20250,-125 L 22625,-125 L 22625,3000 L 22375,3000 L 22375,125 L 20250,125 Z M 3200,13875 L 4925,13875 L 4925,10075 L 3250,10075 L 3250,9925 L 6750,9925 L 6750,10075 L 5075,10075 L 5075,13875 L 6350,13875 L 6350,14125 L 3200,14125 Z" fill="none" stroke="#1b1b1b" stroke-width="50" stroke-linejoin="miter" stroke-miterlimit="4"/>
+<path d="M -125,-125 L 1500,-125 L 1500,125 L 125,125 L 125,3000 L -125,3000 Z M -125,14125 L -125,5000 L 125,5000 L 125,7925 L 6200,7925 L 6200,8075 L 125,8075 L 125,9925 L 1750,9925 L 1750,10075 L 125,10075 L 125,13875 L 1800,13875 L 1800,14125 Z M 10500,10075 L 9575,10075 L 9575,13875 L 12425,13875 L 12425,10075 L 11500,10075 L 11500,9925 L 14250,9925 L 14250,10075 L 12575,10075 L 12575,13875 L 13725,13875 L 13725,12475 L 13775,12475 L 13775,13875 L 15225,13875 L 15225,12475 L 15275,12475 L 15275,13875 L 16925,13875 L 16925,10075 L 15250,10075 L 15250,9925 L 17750,9925 L 17750,10075 L 17075,10075 L 17075,13875 L 19425,13875 L 19425,10075 L 18750,10075 L 18750,9925 L 20500,9925 L 20500,10075 L 19575,10075 L 19575,13875 L 20300,13875 L 20300,14125 L 8150,14125 L 8150,13875 L 9425,13875 L 9425,10075 L 7750,10075 L 7750,9925 L 10500,9925 Z M 13500,-125 L 16500,-125 L 16500,125 L 15075,125 L 15075,7925 L 21200,7925 L 21200,8075 L 14700,8075 L 14700,7925 L 14925,7925 L 14925,125 L 13500,125 Z M 13700,7925 L 13700,8075 L 7200,8075 L 7200,7925 L 7425,7925 L 7425,125 L 6000,125 L 6000,-125 L 9000,-125 L 9000,125 L 7575,125 L 7575,7925 Z M 21000,-125 L 22625,-125 L 22625,3000 L 22375,3000 L 22375,125 L 21000,125 Z M 21500,10075 L 21500,9925 L 22375,9925 L 22375,9500 L 22625,9500 L 22625,14125 L 21700,14125 L 21700,13875 L 22375,13875 L 22375,10075 Z M 22200,7925 L 22375,7925 L 22375,5000 L 22625,5000 L 22625,8500 L 22375,8500 L 22375,8075 L 22200,8075 Z M 3200,13875 L 4925,13875 L 4925,10075 L 3250,10075 L 3250,9925 L 6750,9925 L 6750,10075 L 5075,10075 L 5075,13875 L 6350,13875 L 6350,14125 L 3200,14125 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M -125,-125 L 1500,-125 L 1500,125 L 125,125 L 125,3000 L -125,3000 Z M -125,14125 L -125,5000 L 125,5000 L 125,7925 L 6200,7925 L 6200,8075 L 125,8075 L 125,9925 L 1750,9925 L 1750,10075 L 125,10075 L 125,13875 L 1800,13875 L 1800,14125 Z M 10500,10075 L 9575,10075 L 9575,13875 L 12425,13875 L 12425,10075 L 11500,10075 L 11500,9925 L 14250,9925 L 14250,10075 L 12575,10075 L 12575,13875 L 13725,13875 L 13725,12475 L 13775,12475 L 13775,13875 L 15225,13875 L 15225,12475 L 15275,12475 L 15275,13875 L 16925,13875 L 16925,10075 L 15250,10075 L 15250,9925 L 17750,9925 L 17750,10075 L 17075,10075 L 17075,13875 L 19425,13875 L 19425,10075 L 18750,10075 L 18750,9925 L 20500,9925 L 20500,10075 L 19575,10075 L 19575,13875 L 20300,13875 L 20300,14125 L 8150,14125 L 8150,13875 L 9425,13875 L 9425,10075 L 7750,10075 L 7750,9925 L 10500,9925 Z M 13500,-125 L 16500,-125 L 16500,125 L 15075,125 L 15075,7925 L 21200,7925 L 21200,8075 L 14700,8075 L 14700,7925 L 14925,7925 L 14925,125 L 13500,125 Z M 13700,7925 L 13700,8075 L 7200,8075 L 7200,7925 L 7425,7925 L 7425,125 L 6000,125 L 6000,-125 L 9000,-125 L 9000,125 L 7575,125 L 7575,7925 Z M 21000,-125 L 22625,-125 L 22625,3000 L 22375,3000 L 22375,125 L 21000,125 Z M 21500,10075 L 21500,9925 L 22375,9925 L 22375,9500 L 22625,9500 L 22625,14125 L 21700,14125 L 21700,13875 L 22375,13875 L 22375,10075 Z M 22200,7925 L 22375,7925 L 22375,5000 L 22625,5000 L 22625,8500 L 22375,8500 L 22375,8075 L 22200,8075 Z M 3200,13875 L 4925,13875 L 4925,10075 L 3250,10075 L 3250,9925 L 6750,9925 L 6750,10075 L 5075,10075 L 5075,13875 L 6350,13875 L 6350,14125 L 3200,14125 Z" fill="none" stroke="#1b1b1b" stroke-width="50" stroke-linejoin="miter" stroke-miterlimit="4"/>
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
 <polygon points="3200,13875 1800,13875 1800,14125 3200,14125" fill="none"/>
@@ -843,32 +843,35 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <polygon points="14250,10000 14250,11000 14296.8,10998.9 14296.8,10000" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
 <path d="M 14250,11000 A 1000 1000 0 0 0 15250,10000" fill="none" stroke="#555555" stroke-width="13"/>
 <polygon points="17750,10075 18750,10075 18750,9925 17750,9925" fill="none"/>
-<polygon points="17750,10000 17750,11000 17796.8,10998.9 17796.8,10000" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
-<path d="M 17750,11000 A 1000 1000 0 0 0 18750,10000" fill="none" stroke="#555555" stroke-width="13"/>
+<polygon points="17750,10000 17750,9000 17796.8,9001.1 17796.8,10000" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
+<path d="M 17750,9000 A 1000 1000 0 0 1 18750,10000" fill="none" stroke="#555555" stroke-width="13"/>
 <polygon points="20500,10075 21500,10075 21500,9925 20500,9925" fill="none"/>
 <polygon points="20500,10000 20500,11000 20546.8,10998.9 20546.8,10000" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
 <path d="M 20500,11000 A 1000 1000 0 0 0 21500,10000" fill="none" stroke="#555555" stroke-width="13"/>
+<polygon points="22375,8500 22375,9500 22625,9500 22625,8500" fill="none"/>
+<polygon points="22500,9500 21500,9500 21501.1,9453.2 22500,9453.2" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
+<path d="M 21500,9500 A 1000 1000 0 0 1 22500,8500" fill="none" stroke="#555555" stroke-width="13"/>
 <polygon points="1750,10075 3250,10075 3250,9925 1750,9925" fill="none"/>
 </g>
 <g id="A-GLAZ" inkscape:groupmode="layer" inkscape:label="A-GLAZ">
-<polygon points="2250,175 5250,175 5250,-175 2250,-175" fill="#ffffff"/>
-<line x1="2250" y1="125" x2="5250" y2="125" stroke="#1b1b1b" stroke-width="18"/>
-<line x1="2250" y1="-125" x2="5250" y2="-125" stroke="#1b1b1b" stroke-width="18"/>
-<line x1="2250" y1="31.25" x2="5250" y2="31.25" stroke="#3a6ea5" stroke-width="18"/>
-<line x1="2250" y1="-31.25" x2="5250" y2="-31.25" stroke="#3a6ea5" stroke-width="18"/>
-<polygon points="2200,-125 2200,-175 5300,-175 5300,-125" fill="none" stroke="#1b1b1b" stroke-width="18"/>
-<polygon points="9750,175 12750,175 12750,-175 9750,-175" fill="#ffffff"/>
-<line x1="9750" y1="125" x2="12750" y2="125" stroke="#1b1b1b" stroke-width="18"/>
-<line x1="9750" y1="-125" x2="12750" y2="-125" stroke="#1b1b1b" stroke-width="18"/>
-<line x1="9750" y1="31.25" x2="12750" y2="31.25" stroke="#3a6ea5" stroke-width="18"/>
-<line x1="9750" y1="-31.25" x2="12750" y2="-31.25" stroke="#3a6ea5" stroke-width="18"/>
-<polygon points="9700,-125 9700,-175 12800,-175 12800,-125" fill="none" stroke="#1b1b1b" stroke-width="18"/>
-<polygon points="17250,175 20250,175 20250,-175 17250,-175" fill="#ffffff"/>
-<line x1="17250" y1="125" x2="20250" y2="125" stroke="#1b1b1b" stroke-width="18"/>
-<line x1="17250" y1="-125" x2="20250" y2="-125" stroke="#1b1b1b" stroke-width="18"/>
-<line x1="17250" y1="31.25" x2="20250" y2="31.25" stroke="#3a6ea5" stroke-width="18"/>
-<line x1="17250" y1="-31.25" x2="20250" y2="-31.25" stroke="#3a6ea5" stroke-width="18"/>
-<polygon points="17200,-125 17200,-175 20300,-175 20300,-125" fill="none" stroke="#1b1b1b" stroke-width="18"/>
+<polygon points="1500,175 6000,175 6000,-175 1500,-175" fill="#ffffff"/>
+<line x1="1500" y1="125" x2="6000" y2="125" stroke="#1b1b1b" stroke-width="18"/>
+<line x1="1500" y1="-125" x2="6000" y2="-125" stroke="#1b1b1b" stroke-width="18"/>
+<line x1="1500" y1="31.25" x2="6000" y2="31.25" stroke="#3a6ea5" stroke-width="18"/>
+<line x1="1500" y1="-31.25" x2="6000" y2="-31.25" stroke="#3a6ea5" stroke-width="18"/>
+<polygon points="1450,-125 1450,-175 6050,-175 6050,-125" fill="none" stroke="#1b1b1b" stroke-width="18"/>
+<polygon points="9000,175 13500,175 13500,-175 9000,-175" fill="#ffffff"/>
+<line x1="9000" y1="125" x2="13500" y2="125" stroke="#1b1b1b" stroke-width="18"/>
+<line x1="9000" y1="-125" x2="13500" y2="-125" stroke="#1b1b1b" stroke-width="18"/>
+<line x1="9000" y1="31.25" x2="13500" y2="31.25" stroke="#3a6ea5" stroke-width="18"/>
+<line x1="9000" y1="-31.25" x2="13500" y2="-31.25" stroke="#3a6ea5" stroke-width="18"/>
+<polygon points="8950,-125 8950,-175 13550,-175 13550,-125" fill="none" stroke="#1b1b1b" stroke-width="18"/>
+<polygon points="16500,175 21000,175 21000,-175 16500,-175" fill="#ffffff"/>
+<line x1="16500" y1="125" x2="21000" y2="125" stroke="#1b1b1b" stroke-width="18"/>
+<line x1="16500" y1="-125" x2="21000" y2="-125" stroke="#1b1b1b" stroke-width="18"/>
+<line x1="16500" y1="31.25" x2="21000" y2="31.25" stroke="#3a6ea5" stroke-width="18"/>
+<line x1="16500" y1="-31.25" x2="21000" y2="-31.25" stroke="#3a6ea5" stroke-width="18"/>
+<polygon points="16450,-125 16450,-175 21050,-175 21050,-125" fill="none" stroke="#1b1b1b" stroke-width="18"/>
 <polygon points="175,5000 175,3000 -175,3000 -175,5000" fill="#ffffff"/>
 <line x1="125" y1="5000" x2="125" y2="3000" stroke="#1b1b1b" stroke-width="18"/>
 <line x1="-125" y1="5000" x2="-125" y2="3000" stroke="#1b1b1b" stroke-width="18"/>
@@ -887,12 +890,12 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <line x1="8150" y1="13968.75" x2="6350" y2="13968.75" stroke="#3a6ea5" stroke-width="18"/>
 <line x1="8150" y1="14031.25" x2="6350" y2="14031.25" stroke="#3a6ea5" stroke-width="18"/>
 <polygon points="8200,14125 8200,14175 6300,14175 6300,14125" fill="none" stroke="#1b1b1b" stroke-width="18"/>
-<polygon points="15450,13825 14050,13825 14050,14175 15450,14175" fill="#ffffff"/>
-<line x1="15450" y1="13875" x2="14050" y2="13875" stroke="#1b1b1b" stroke-width="18"/>
-<line x1="15450" y1="14125" x2="14050" y2="14125" stroke="#1b1b1b" stroke-width="18"/>
-<line x1="15450" y1="13968.75" x2="14050" y2="13968.75" stroke="#3a6ea5" stroke-width="18"/>
-<line x1="15450" y1="14031.25" x2="14050" y2="14031.25" stroke="#3a6ea5" stroke-width="18"/>
-<polygon points="15500,14125 15500,14175 14000,14175 14000,14125" fill="none" stroke="#1b1b1b" stroke-width="18"/>
+<polygon points="21700,13825 20300,13825 20300,14175 21700,14175" fill="#ffffff"/>
+<line x1="21700" y1="13875" x2="20300" y2="13875" stroke="#1b1b1b" stroke-width="18"/>
+<line x1="21700" y1="14125" x2="20300" y2="14125" stroke="#1b1b1b" stroke-width="18"/>
+<line x1="21700" y1="13968.75" x2="20300" y2="13968.75" stroke="#3a6ea5" stroke-width="18"/>
+<line x1="21700" y1="14031.25" x2="20300" y2="14031.25" stroke="#3a6ea5" stroke-width="18"/>
+<polygon points="21750,14125 21750,14175 20250,14175 20250,14125" fill="none" stroke="#1b1b1b" stroke-width="18"/>
 </g>
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
 <text x="3750" y="1530" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Classroom 1</text>
@@ -911,8 +914,8 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <text x="11000" y="12315" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
 <text x="14750" y="11930" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Pupil WCs</text>
 <text x="14750" y="12315" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">18.0 m²</text>
-<text x="18250" y="12530" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600"><tspan x="18250" y="12320">Accessible</tspan><tspan x="18250" y="12740">WC</tspan></text>
-<text x="18250" y="13125" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">10.0 m²</text>
+<text x="18250" y="10730" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600"><tspan x="18250" y="10520">Accessible</tspan><tspan x="18250" y="10940">WC</tspan></text>
+<text x="18250" y="11325" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">10.0 m²</text>
 <text x="21000" y="11930" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Plant Room</text>
 <text x="21000" y="12315" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
 </g>
@@ -942,23 +945,23 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <line x1="8234.85" y1="14509.85" x2="8065.15" y2="14340.15" stroke="#0E5484" stroke-width="18"/>
 <text x="7250" y="14600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 7250 14600)">1800</text>
 <line x1="8150" y1="14125" x2="8150" y2="14425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="14050" y1="14125" x2="14050" y2="14425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="8150" y1="14425" x2="14050" y2="14425" stroke="#0E5484" stroke-width="18"/>
+<line x1="20300" y1="14125" x2="20300" y2="14425" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="8150" y1="14425" x2="20300" y2="14425" stroke="#0E5484" stroke-width="18"/>
 <line x1="8234.85" y1="14509.85" x2="8065.15" y2="14340.15" stroke="#0E5484" stroke-width="18"/>
-<line x1="14134.85" y1="14509.85" x2="13965.15" y2="14340.15" stroke="#0E5484" stroke-width="18"/>
-<text x="11100" y="14600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 11100 14600)">5900</text>
-<line x1="14050" y1="14125" x2="14050" y2="14425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="15450" y1="14125" x2="15450" y2="14425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="14050" y1="14425" x2="15450" y2="14425" stroke="#0E5484" stroke-width="18"/>
-<line x1="14134.85" y1="14509.85" x2="13965.15" y2="14340.15" stroke="#0E5484" stroke-width="18"/>
-<line x1="15534.85" y1="14509.85" x2="15365.15" y2="14340.15" stroke="#0E5484" stroke-width="18"/>
-<text x="14750" y="14600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 14750 14600)">1400</text>
-<line x1="15450" y1="14125" x2="15450" y2="14425" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="20384.85" y1="14509.85" x2="20215.15" y2="14340.15" stroke="#0E5484" stroke-width="18"/>
+<text x="14225" y="14600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 14225 14600)">12150</text>
+<line x1="20300" y1="14125" x2="20300" y2="14425" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="21700" y1="14125" x2="21700" y2="14425" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="20300" y1="14425" x2="21700" y2="14425" stroke="#0E5484" stroke-width="18"/>
+<line x1="20384.85" y1="14509.85" x2="20215.15" y2="14340.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="21784.85" y1="14509.85" x2="21615.15" y2="14340.15" stroke="#0E5484" stroke-width="18"/>
+<text x="21000" y="14600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 21000 14600)">1400</text>
+<line x1="21700" y1="14125" x2="21700" y2="14425" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="22625" y1="14125" x2="22625" y2="14425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="15450" y1="14425" x2="22625" y2="14425" stroke="#0E5484" stroke-width="18"/>
-<line x1="15534.85" y1="14509.85" x2="15365.15" y2="14340.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="21700" y1="14425" x2="22625" y2="14425" stroke="#0E5484" stroke-width="18"/>
+<line x1="21784.85" y1="14509.85" x2="21615.15" y2="14340.15" stroke="#0E5484" stroke-width="18"/>
 <line x1="22709.85" y1="14509.85" x2="22540.15" y2="14340.15" stroke="#0E5484" stroke-width="18"/>
-<text x="19037.5" y="14600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 19037.5 14600)">7175</text>
+<text x="22162.5" y="14600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 22162.5 14600)">925</text>
 <line x1="0" y1="14125" x2="0" y2="14975" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="5000" y1="14125" x2="5000" y2="14975" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="0" y1="14975" x2="5000" y2="14975" stroke="#0E5484" stroke-width="18"/>
@@ -1055,48 +1058,48 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <line x1="-1609.85" y1="-40.15" x2="-1440.15" y2="-209.85" stroke="#0E5484" stroke-width="18"/>
 <line x1="-1609.85" y1="14209.85" x2="-1440.15" y2="14040.15" stroke="#0E5484" stroke-width="18"/>
 <text x="-1700" y="7000" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(90 -1700 7000)">14250</text>
-<line x1="2250" y1="-125" x2="2250" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="1500" y1="-125" x2="1500" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="-125" y1="-125" x2="-125" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="2250" y1="-425" x2="-125" y2="-425" stroke="#0E5484" stroke-width="18"/>
-<line x1="2165.15" y1="-509.85" x2="2334.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="1500" y1="-425" x2="-125" y2="-425" stroke="#0E5484" stroke-width="18"/>
+<line x1="1415.15" y1="-509.85" x2="1584.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
 <line x1="-209.85" y1="-509.85" x2="-40.15" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
-<text x="1062.5" y="-600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 1062.5 -600)">2375</text>
-<line x1="5250" y1="-125" x2="5250" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="2250" y1="-125" x2="2250" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="5250" y1="-425" x2="2250" y2="-425" stroke="#0E5484" stroke-width="18"/>
-<line x1="5165.15" y1="-509.85" x2="5334.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
-<line x1="2165.15" y1="-509.85" x2="2334.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
-<text x="3750" y="-600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 3750 -600)">3000</text>
-<line x1="9750" y1="-125" x2="9750" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="5250" y1="-125" x2="5250" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="9750" y1="-425" x2="5250" y2="-425" stroke="#0E5484" stroke-width="18"/>
-<line x1="9665.15" y1="-509.85" x2="9834.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
-<line x1="5165.15" y1="-509.85" x2="5334.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
-<text x="7500" y="-600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 7500 -600)">4500</text>
-<line x1="12750" y1="-125" x2="12750" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="9750" y1="-125" x2="9750" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="12750" y1="-425" x2="9750" y2="-425" stroke="#0E5484" stroke-width="18"/>
-<line x1="12665.15" y1="-509.85" x2="12834.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
-<line x1="9665.15" y1="-509.85" x2="9834.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
-<text x="11250" y="-600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 11250 -600)">3000</text>
-<line x1="17250" y1="-125" x2="17250" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="12750" y1="-125" x2="12750" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="17250" y1="-425" x2="12750" y2="-425" stroke="#0E5484" stroke-width="18"/>
-<line x1="17165.15" y1="-509.85" x2="17334.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
-<line x1="12665.15" y1="-509.85" x2="12834.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
-<text x="15000" y="-600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 15000 -600)">4500</text>
-<line x1="20250" y1="-125" x2="20250" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="17250" y1="-125" x2="17250" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="20250" y1="-425" x2="17250" y2="-425" stroke="#0E5484" stroke-width="18"/>
-<line x1="20165.15" y1="-509.85" x2="20334.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
-<line x1="17165.15" y1="-509.85" x2="17334.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
-<text x="18750" y="-600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 18750 -600)">3000</text>
+<text x="687.5" y="-600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 687.5 -600)">1625</text>
+<line x1="6000" y1="-125" x2="6000" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="1500" y1="-125" x2="1500" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="6000" y1="-425" x2="1500" y2="-425" stroke="#0E5484" stroke-width="18"/>
+<line x1="5915.15" y1="-509.85" x2="6084.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="1415.15" y1="-509.85" x2="1584.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
+<text x="3750" y="-600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 3750 -600)">4500</text>
+<line x1="9000" y1="-125" x2="9000" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="6000" y1="-125" x2="6000" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="9000" y1="-425" x2="6000" y2="-425" stroke="#0E5484" stroke-width="18"/>
+<line x1="8915.15" y1="-509.85" x2="9084.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="5915.15" y1="-509.85" x2="6084.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
+<text x="7500" y="-600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 7500 -600)">3000</text>
+<line x1="13500" y1="-125" x2="13500" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="9000" y1="-125" x2="9000" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="13500" y1="-425" x2="9000" y2="-425" stroke="#0E5484" stroke-width="18"/>
+<line x1="13415.15" y1="-509.85" x2="13584.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="8915.15" y1="-509.85" x2="9084.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
+<text x="11250" y="-600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 11250 -600)">4500</text>
+<line x1="16500" y1="-125" x2="16500" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="13500" y1="-125" x2="13500" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="16500" y1="-425" x2="13500" y2="-425" stroke="#0E5484" stroke-width="18"/>
+<line x1="16415.15" y1="-509.85" x2="16584.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="13415.15" y1="-509.85" x2="13584.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
+<text x="15000" y="-600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 15000 -600)">3000</text>
+<line x1="21000" y1="-125" x2="21000" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="16500" y1="-125" x2="16500" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="21000" y1="-425" x2="16500" y2="-425" stroke="#0E5484" stroke-width="18"/>
+<line x1="20915.15" y1="-509.85" x2="21084.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="16415.15" y1="-509.85" x2="16584.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
+<text x="18750" y="-600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 18750 -600)">4500</text>
 <line x1="22625" y1="-125" x2="22625" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="20250" y1="-125" x2="20250" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="22625" y1="-425" x2="20250" y2="-425" stroke="#0E5484" stroke-width="18"/>
+<line x1="21000" y1="-125" x2="21000" y2="-425" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="22625" y1="-425" x2="21000" y2="-425" stroke="#0E5484" stroke-width="18"/>
 <line x1="22540.15" y1="-509.85" x2="22709.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
-<line x1="20165.15" y1="-509.85" x2="20334.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
-<text x="21437.5" y="-600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 21437.5 -600)">2375</text>
+<line x1="20915.15" y1="-509.85" x2="21084.85" y2="-340.15" stroke="#0E5484" stroke-width="18"/>
+<text x="21812.5" y="-600" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 21812.5 -600)">1625</text>
 <line x1="5000" y1="-125" x2="5000" y2="-975" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="0" y1="-125" x2="0" y2="-975" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="5000" y1="-975" x2="0" y2="-975" stroke="#0E5484" stroke-width="18"/>
@@ -1163,12 +1166,24 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <line x1="23009.85" y1="4915.15" x2="22840.15" y2="5084.85" stroke="#0E5484" stroke-width="18"/>
 <line x1="23009.85" y1="2915.15" x2="22840.15" y2="3084.85" stroke="#0E5484" stroke-width="18"/>
 <text x="23100" y="4000" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 23100 4000)">2000</text>
-<line x1="22625" y1="14125" x2="22925" y2="14125" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="22625" y1="8500" x2="22925" y2="8500" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="22625" y1="5000" x2="22925" y2="5000" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="22925" y1="14125" x2="22925" y2="5000" stroke="#0E5484" stroke-width="18"/>
-<line x1="23009.85" y1="14040.15" x2="22840.15" y2="14209.85" stroke="#0E5484" stroke-width="18"/>
+<line x1="22925" y1="8500" x2="22925" y2="5000" stroke="#0E5484" stroke-width="18"/>
+<line x1="23009.85" y1="8415.15" x2="22840.15" y2="8584.85" stroke="#0E5484" stroke-width="18"/>
 <line x1="23009.85" y1="4915.15" x2="22840.15" y2="5084.85" stroke="#0E5484" stroke-width="18"/>
-<text x="23100" y="9562.5" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 23100 9562.5)">9125</text>
+<text x="23100" y="6750" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 23100 6750)">3500</text>
+<line x1="22625" y1="9500" x2="22925" y2="9500" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="22625" y1="8500" x2="22925" y2="8500" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="22925" y1="9500" x2="22925" y2="8500" stroke="#0E5484" stroke-width="18"/>
+<line x1="23009.85" y1="9415.15" x2="22840.15" y2="9584.85" stroke="#0E5484" stroke-width="18"/>
+<line x1="23009.85" y1="8415.15" x2="22840.15" y2="8584.85" stroke="#0E5484" stroke-width="18"/>
+<text x="23100" y="9000" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 23100 9000)">1000</text>
+<line x1="22625" y1="14125" x2="22925" y2="14125" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="22625" y1="9500" x2="22925" y2="9500" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="22925" y1="14125" x2="22925" y2="9500" stroke="#0E5484" stroke-width="18"/>
+<line x1="23009.85" y1="14040.15" x2="22840.15" y2="14209.85" stroke="#0E5484" stroke-width="18"/>
+<line x1="23009.85" y1="9415.15" x2="22840.15" y2="9584.85" stroke="#0E5484" stroke-width="18"/>
+<text x="23100" y="11812.5" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 23100 11812.5)">4625</text>
 <line x1="22625" y1="8000" x2="23475" y2="8000" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="22625" y1="0" x2="23475" y2="0" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="23475" y1="8000" x2="23475" y2="0" stroke="#0E5484" stroke-width="18"/>
@@ -1193,14 +1208,18 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <line x1="24109.85" y1="14040.15" x2="23940.15" y2="14209.85" stroke="#0E5484" stroke-width="18"/>
 <line x1="24109.85" y1="-209.85" x2="23940.15" y2="-40.15" stroke="#0E5484" stroke-width="18"/>
 <text x="24200" y="7000" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 24200 7000)">14250</text>
+<line x1="13725" y1="13062.5" x2="13775" y2="13062.5" stroke="#0E5484" stroke-width="18"/>
+<line x1="13809.85" y1="13147.35" x2="13640.15" y2="12977.65" stroke="#0E5484" stroke-width="18"/>
+<line x1="13859.85" y1="13147.35" x2="13690.15" y2="12977.65" stroke="#0E5484" stroke-width="18"/>
+<text x="14055" y="13062.5" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 14055 13062.5)">50</text>
 <line x1="5350" y1="8075" x2="5350" y2="7925" stroke="#0E5484" stroke-width="18"/>
 <line x1="5434.85" y1="7990.15" x2="5265.15" y2="8159.85" stroke="#0E5484" stroke-width="18"/>
 <line x1="5434.85" y1="7840.15" x2="5265.15" y2="8009.85" stroke="#0E5484" stroke-width="18"/>
 <text x="5350" y="7567.5" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 5350 7567.5)">150</text>
-<line x1="6337.5" y1="125" x2="6337.5" y2="-125" stroke="#0E5484" stroke-width="18"/>
-<line x1="6422.35" y1="40.15" x2="6252.65" y2="209.85" stroke="#0E5484" stroke-width="18"/>
-<line x1="6422.35" y1="-209.85" x2="6252.65" y2="-40.15" stroke="#0E5484" stroke-width="18"/>
-<text x="6337.5" y="482.5" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 6337.5 482.5)">250</text>
+<line x1="6712.5" y1="125" x2="6712.5" y2="-125" stroke="#0E5484" stroke-width="18"/>
+<line x1="6797.35" y1="40.15" x2="6627.65" y2="209.85" stroke="#0E5484" stroke-width="18"/>
+<line x1="6797.35" y1="-209.85" x2="6627.65" y2="-40.15" stroke="#0E5484" stroke-width="18"/>
+<text x="6712.5" y="482.5" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 6712.5 482.5)">250</text>
 </g>
 <g id="A-ANNO" inkscape:groupmode="layer" inkscape:label="A-ANNO">
 <circle cx="3620" cy="13455" r="320" fill="none" stroke="#333333" stroke-width="18"/>
@@ -1221,20 +1240,22 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <text x="17330" y="9505" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">D08</text>
 <circle cx="20080" cy="9505" r="320" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="20080" y="9505" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">D09</text>
-<polygon points="1510,225 2150,225 2150,625 1510,625" fill="none" stroke="#333333" stroke-width="18"/>
-<text x="1830" y="425" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W01</text>
-<polygon points="9010,225 9650,225 9650,625 9010,625" fill="none" stroke="#333333" stroke-width="18"/>
-<text x="9330" y="425" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W02</text>
-<polygon points="16510,225 17150,225 17150,625 16510,625" fill="none" stroke="#333333" stroke-width="18"/>
-<text x="16830" y="425" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W03</text>
+<circle cx="21955" cy="9920" r="320" fill="none" stroke="#333333" stroke-width="18"/>
+<text x="21955" y="9920" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">D10</text>
+<polygon points="760,225 1400,225 1400,625 760,625" fill="none" stroke="#333333" stroke-width="18"/>
+<text x="1080" y="425" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W01</text>
+<polygon points="8260,225 8900,225 8900,625 8260,625" fill="none" stroke="#333333" stroke-width="18"/>
+<text x="8580" y="425" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W02</text>
+<polygon points="15760,225 16400,225 16400,625 15760,625" fill="none" stroke="#333333" stroke-width="18"/>
+<text x="16080" y="425" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W03</text>
 <polygon points="225,3800 865,3800 865,4200 225,4200" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="545" y="4000" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W04</text>
 <polygon points="21635,3800 22275,3800 22275,4200 21635,4200" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="21955" y="4000" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W05</text>
 <polygon points="5610,13375 6250,13375 6250,13775 5610,13775" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="5930" y="13575" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W06</text>
-<polygon points="13310,13375 13950,13375 13950,13775 13310,13775" fill="none" stroke="#333333" stroke-width="18"/>
-<text x="13630" y="13575" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W07</text>
+<polygon points="20680,13375 21320,13375 21320,13775 20680,13775" fill="none" stroke="#333333" stroke-width="18"/>
+<text x="21000" y="13575" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W07</text>
 <polygon points="-125,19710 3475,19710 3475,25490 -125,25490" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="-53" y="19880" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">ROOM SCHEDULE</text>
 <line x1="-125" y1="20050" x2="3475" y2="20050" stroke="#333333" stroke-width="18"/>
@@ -1296,18 +1317,18 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <line x1="-125" y1="25150" x2="3475" y2="25150" stroke="#333333" stroke-width="18"/>
 <text x="-53" y="25320" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">TOTAL</text>
 <text x="3403" y="25320" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central" font-weight="600">315.00</text>
-<polygon points="3775,19710 9425,19710 9425,25830 3775,25830" fill="none" stroke="#333333" stroke-width="18"/>
+<polygon points="3775,19710 9425,19710 9425,26170 3775,26170" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="3888" y="19880" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">DOOR &amp; WINDOW SCHEDULE</text>
 <line x1="3775" y1="20050" x2="9425" y2="20050" stroke="#333333" stroke-width="18"/>
 <text x="4050" y="20220" font-size="152" fill="#888888" text-anchor="middle" dominant-baseline="central" font-weight="600">TAG</text>
 <text x="4438" y="20220" font-size="152" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">ROOM(S)</text>
-<line x1="4325" y1="20050" x2="4325" y2="25830" stroke="#333333" stroke-width="13"/>
+<line x1="4325" y1="20050" x2="4325" y2="26170" stroke="#333333" stroke-width="13"/>
 <text x="7912" y="20220" font-size="152" fill="#888888" text-anchor="end" dominant-baseline="central" font-weight="600">WIDTH</text>
-<line x1="7325" y1="20050" x2="7325" y2="25830" stroke="#333333" stroke-width="13"/>
+<line x1="7325" y1="20050" x2="7325" y2="26170" stroke="#333333" stroke-width="13"/>
 <text x="8138" y="20220" font-size="152" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">TYPE</text>
-<line x1="8025" y1="20050" x2="8025" y2="25830" stroke="#333333" stroke-width="13"/>
+<line x1="8025" y1="20050" x2="8025" y2="26170" stroke="#333333" stroke-width="13"/>
 <text x="8938" y="20220" font-size="152" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">HAND</text>
-<line x1="8825" y1="20050" x2="8825" y2="25830" stroke="#333333" stroke-width="13"/>
+<line x1="8825" y1="20050" x2="8825" y2="26170" stroke="#333333" stroke-width="13"/>
 <line x1="3775" y1="20390" x2="9425" y2="20390" stroke="#333333" stroke-width="18"/>
 <text x="4050" y="20560" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">D01</text>
 <text x="4438" y="20560" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">exterior / Entrance ...</text>
@@ -1354,7 +1375,7 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <text x="4438" y="22940" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Corridor / Accessibl...</text>
 <text x="7912" y="22940" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1000</text>
 <text x="8138" y="22940" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">hinged</text>
-<text x="8938" y="22940" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">left</text>
+<text x="8938" y="22940" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">right</text>
 <line x1="3775" y1="22770" x2="9425" y2="22770" stroke="#333333" stroke-width="13"/>
 <text x="4050" y="23280" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">D09</text>
 <text x="4438" y="23280" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Corridor / Plant Room</text>
@@ -1362,56 +1383,65 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <text x="8138" y="23280" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">hinged</text>
 <text x="8938" y="23280" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">left</text>
 <line x1="3775" y1="23110" x2="9425" y2="23110" stroke="#333333" stroke-width="13"/>
-<text x="4050" y="23620" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W01</text>
-<text x="4438" y="23620" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Classroom 1</text>
-<text x="7912" y="23620" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">3000</text>
-<text x="8138" y="23620" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">window</text>
-<text x="8938" y="23620" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">-</text>
+<text x="4050" y="23620" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">D10</text>
+<text x="4438" y="23620" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">exterior / Corridor</text>
+<text x="7912" y="23620" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1000</text>
+<text x="8138" y="23620" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">hinged</text>
+<text x="8938" y="23620" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">right</text>
 <line x1="3775" y1="23450" x2="9425" y2="23450" stroke="#333333" stroke-width="13"/>
-<text x="4050" y="23960" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W02</text>
-<text x="4438" y="23960" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Classroom 2</text>
-<text x="7912" y="23960" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">3000</text>
+<text x="4050" y="23960" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W01</text>
+<text x="4438" y="23960" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Classroom 1</text>
+<text x="7912" y="23960" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">4500</text>
 <text x="8138" y="23960" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">window</text>
 <text x="8938" y="23960" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">-</text>
 <line x1="3775" y1="23790" x2="9425" y2="23790" stroke="#333333" stroke-width="13"/>
-<text x="4050" y="24300" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W03</text>
-<text x="4438" y="24300" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Classroom 3</text>
-<text x="7912" y="24300" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">3000</text>
+<text x="4050" y="24300" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W02</text>
+<text x="4438" y="24300" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Classroom 2</text>
+<text x="7912" y="24300" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">4500</text>
 <text x="8138" y="24300" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">window</text>
 <text x="8938" y="24300" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">-</text>
 <line x1="3775" y1="24130" x2="9425" y2="24130" stroke="#333333" stroke-width="13"/>
-<text x="4050" y="24640" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W04</text>
-<text x="4438" y="24640" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Classroom 1</text>
-<text x="7912" y="24640" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">2000</text>
+<text x="4050" y="24640" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W03</text>
+<text x="4438" y="24640" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Classroom 3</text>
+<text x="7912" y="24640" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">4500</text>
 <text x="8138" y="24640" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">window</text>
 <text x="8938" y="24640" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">-</text>
 <line x1="3775" y1="24470" x2="9425" y2="24470" stroke="#333333" stroke-width="13"/>
-<text x="4050" y="24980" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W05</text>
-<text x="4438" y="24980" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Classroom 3</text>
+<text x="4050" y="24980" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W04</text>
+<text x="4438" y="24980" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Classroom 1</text>
 <text x="7912" y="24980" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">2000</text>
 <text x="8138" y="24980" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">window</text>
 <text x="8938" y="24980" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">-</text>
 <line x1="3775" y1="24810" x2="9425" y2="24810" stroke="#333333" stroke-width="13"/>
-<text x="4050" y="25320" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W06</text>
-<text x="4438" y="25320" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Staff Prep</text>
-<text x="7912" y="25320" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1800</text>
+<text x="4050" y="25320" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W05</text>
+<text x="4438" y="25320" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Classroom 3</text>
+<text x="7912" y="25320" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">2000</text>
 <text x="8138" y="25320" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">window</text>
 <text x="8938" y="25320" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">-</text>
 <line x1="3775" y1="25150" x2="9425" y2="25150" stroke="#333333" stroke-width="13"/>
-<text x="4050" y="25660" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W07</text>
-<text x="4438" y="25660" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Pupil WCs</text>
-<text x="7912" y="25660" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1400</text>
+<text x="4050" y="25660" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W06</text>
+<text x="4438" y="25660" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Staff Prep</text>
+<text x="7912" y="25660" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1800</text>
 <text x="8138" y="25660" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">window</text>
 <text x="8938" y="25660" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">-</text>
 <line x1="3775" y1="25490" x2="9425" y2="25490" stroke="#333333" stroke-width="13"/>
-<polygon points="9725,19710 17075,19710 17075,21070 9725,21070" fill="none" stroke="#333333" stroke-width="18"/>
+<text x="4050" y="26000" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W07</text>
+<text x="4438" y="26000" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Plant Room</text>
+<text x="7912" y="26000" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1400</text>
+<text x="8138" y="26000" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">window</text>
+<text x="8938" y="26000" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">-</text>
+<line x1="3775" y1="25830" x2="9425" y2="25830" stroke="#333333" stroke-width="13"/>
+<polygon points="9725,19710 17075,19710 17075,21750 9725,21750" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="9872" y="19880" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">NOTES</text>
 <line x1="9725" y1="20050" x2="17075" y2="20050" stroke="#333333" stroke-width="18"/>
 <text x="9928" y="20220" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1.</text>
 <text x="10075" y="20220" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">All dimensions in millimetres. Do not scale from this</text>
 <text x="10075" y="20560" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">drawing.</text>
 <text x="9928" y="20900" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">2.</text>
-<text x="10075" y="20900" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Classroom net areas exclude the corridor and the lobby.</text>
+<text x="10075" y="20900" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Classroom doors are 1000 mm leaves; the corridor ends on</text>
+<text x="10075" y="21240" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">an outward-opening exit.</text>
+<text x="9928" y="21580" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">3.</text>
+<text x="10075" y="21580" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Pupil WC cubicle partitions are 1500 mm deep.</text>
 </g>
 <g><polygon points="22175,-1400 21950,-680 22175,-837.5 22400,-680" fill="#333333" transform="rotate(0 22175 -950)"/><text x="22175" y="-1608" font-size="260" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
 <g><rect x="-125" y="16450" width="1000" height="140" fill="#333333"/><rect x="875" y="16450" width="1000" height="140" fill="none" stroke="#333333" stroke-width="18"/><text x="-125" y="16790" font-size="200" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="1875" y="16790" font-size="200" fill="#333333" text-anchor="middle" dominant-baseline="central">2 m</text></g>
@@ -2296,10 +2326,11 @@ exports[`golden SVG snapshots > renders corner-cafe.arch deterministically 1`] =
 <rect x="-13500" y="-6910" width="42000" height="29700" fill="#ffffff"/>
 <g id="A-FLOR" inkscape:groupmode="layer" inkscape:label="A-FLOR">
 <polygon points="0,0 9000,0 9000,10000 0,10000" fill="#fbfaf7"/>
-<polygon points="9000,7000 12000,7000 12000,10000 9000,10000" fill="#fbfaf7"/>
+<polygon points="9000,7000 10700,7000 10700,10000 9000,10000" fill="#fbfaf7"/>
+<polygon points="10700,7000 12500,7000 12500,10000 10700,10000" fill="#fbfaf7"/>
 <polygon points="9000,0 15000,0 15000,4000 9000,4000" fill="#fbfaf7"/>
 <polygon points="9000,4000 15000,4000 15000,7000 9000,7000" fill="#fbfaf7"/>
-<polygon points="12000,7000 15000,7000 15000,10000 12000,10000" fill="#fbfaf7"/>
+<polygon points="12500,7000 15000,7000 15000,10000 12500,10000" fill="#fbfaf7"/>
 </g>
 <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
 <path d="M 1809.6,1400 L 2590.4,1400 A 9.6 9.6 0 0 1 2600,1409.6 L 2600,2190.4 A 9.6 9.6 0 0 1 2590.4,2200 L 1809.6,2200 A 9.6 9.6 0 0 1 1800,2190.4 L 1800,1409.6 A 9.6 9.6 0 0 1 1809.6,1400 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
@@ -2371,11 +2402,10 @@ exports[`golden SVG snapshots > renders corner-cafe.arch deterministically 1`] =
 <line x1="8450" y1="449.2" x2="8450" y2="382" stroke="#a8a29a" stroke-width="13"/>
 <line x1="8521.28" y1="478.72" x2="8568.79" y2="431.21" stroke="#a8a29a" stroke-width="13"/>
 <circle cx="8450" cy="550" r="14.4" fill="#6c6864" stroke="#6c6864" stroke-width="18"/>
-<polygon points="9050,5650 9050,4250 9422,4250 9422,5650" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
-<line x1="9302" y1="5650" x2="9302" y2="4250" stroke="#a8a29a" stroke-width="13"/>
-<circle cx="9530" cy="5416.67" r="84" fill="#ffffff" stroke="#6c6864" stroke-width="18"/>
-<circle cx="9530" cy="4950" r="84" fill="#ffffff" stroke="#6c6864" stroke-width="18"/>
-<circle cx="9530" cy="4483.33" r="84" fill="#ffffff" stroke="#6c6864" stroke-width="18"/>
+<polygon points="9050,5450 9050,4250 9422,4250 9422,5450" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
+<line x1="9302" y1="5450" x2="9302" y2="4250" stroke="#a8a29a" stroke-width="13"/>
+<circle cx="9530" cy="5150" r="84" fill="#ffffff" stroke="#6c6864" stroke-width="18"/>
+<circle cx="9530" cy="4550" r="84" fill="#ffffff" stroke="#6c6864" stroke-width="18"/>
 <polygon points="12800,4050 14200,4050 14200,4400 12800,4400" fill="none" stroke="#6c6864" stroke-width="18" stroke-dasharray="108 72"/>
 <line x1="12800" y1="4344" x2="14200" y2="4344" stroke="#a8a29a" stroke-width="13" stroke-dasharray="108 72"/>
 <line x1="13400" y1="4050" x2="13400" y2="4400" stroke="#a8a29a" stroke-width="13" stroke-dasharray="108 72"/>
@@ -2402,42 +2432,46 @@ exports[`golden SVG snapshots > renders corner-cafe.arch deterministically 1`] =
 <path d="M 13712,100 L 14288,100 A 12 12 0 0 1 14300,112 L 14300,738 A 12 12 0 0 1 14288,750 L 13712,750 A 12 12 0 0 1 13700,738 L 13700,112 A 12 12 0 0 1 13712,100 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
 <line x1="13700" y1="659" x2="14300" y2="659" stroke="#a8a29a" stroke-width="13"/>
 <line x1="13904" y1="704.5" x2="14096" y2="704.5" stroke="#6c6864" stroke-width="18"/>
-<path d="M 10353.52,7050 L 10646.48,7050 A 23.52 23.52 0 0 1 10670,7073.52 L 10670,7194.48 A 23.52 23.52 0 0 1 10646.48,7218 L 10353.52,7218 A 23.52 23.52 0 0 1 10330,7194.48 L 10330,7073.52 A 23.52 23.52 0 0 1 10353.52,7050 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
-<path d="M 10500,7711.5 A 121.51 121.51 0 0 1 10397.02,7654.48 A 373.97 373.97 0 0 1 10397.02,7257.52 A 121.51 121.51 0 0 1 10500,7200.5 A 121.51 121.51 0 0 1 10602.98,7257.52 A 373.97 373.97 0 0 1 10602.98,7654.48 A 121.51 121.51 0 0 1 10500,7711.5 Z" fill="#ffffff" stroke="#6c6864" stroke-width="18"/>
-<path d="M 10500,7673.1 A 91.53 91.53 0 0 1 10422.01,7629.49 A 294.71 294.71 0 0 1 10422.01,7320.91 A 91.53 91.53 0 0 1 10500,7277.3 A 91.53 91.53 0 0 1 10577.99,7320.91 A 294.71 294.71 0 0 1 10577.99,7629.49 A 91.53 91.53 0 0 1 10500,7673.1 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="13"/>
-<line x1="10432" y1="7232.83" x2="10432" y2="7262.48" stroke="#a8a29a" stroke-width="13"/>
-<line x1="10568" y1="7232.83" x2="10568" y2="7262.48" stroke="#a8a29a" stroke-width="13"/>
-<circle cx="10500" cy="7134" r="16" fill="#a8a29a" stroke="#a8a29a" stroke-width="13"/>
-<path d="M 11950,8227 L 11950,8773 A 27 27 0 0 1 11923,8800 L 11527,8800 A 27 27 0 0 1 11500,8773 L 11500,8227 A 27 27 0 0 1 11527,8200 L 11923,8200 A 27 27 0 0 1 11950,8227 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
-<path d="M 11689,8728 A 120.17 120.17 0 0 1 11589.21,8674.79 A 313.68 313.68 0 0 1 11589.21,8325.21 A 120.17 120.17 0 0 1 11689,8272 A 120.17 120.17 0 0 1 11788.79,8325.21 A 313.68 313.68 0 0 1 11788.79,8674.79 A 120.17 120.17 0 0 1 11689,8728 Z" fill="#ffffff" stroke="#6c6864" stroke-width="18"/>
-<path d="M 11689,8697.4 A 92.52 92.52 0 0 1 11610.37,8653.63 A 291.54 291.54 0 0 1 11610.37,8346.37 A 92.52 92.52 0 0 1 11689,8302.6 A 92.52 92.52 0 0 1 11767.63,8346.37 A 291.54 291.54 0 0 1 11767.63,8653.63 A 92.52 92.52 0 0 1 11689,8697.4 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="13"/>
-<circle cx="11898.25" cy="8500" r="15.75" fill="#a8a29a" stroke="#a8a29a" stroke-width="13"/>
-<line x1="11898.25" y1="8500" x2="11810.5" y2="8500" stroke="#a8a29a" stroke-width="13"/>
-<circle cx="11673.7" cy="8500" r="13.5" fill="#a8a29a" stroke="#a8a29a" stroke-width="13"/>
+<path d="M 11453.52,7050 L 11746.48,7050 A 23.52 23.52 0 0 1 11770,7073.52 L 11770,7194.48 A 23.52 23.52 0 0 1 11746.48,7218 L 11453.52,7218 A 23.52 23.52 0 0 1 11430,7194.48 L 11430,7073.52 A 23.52 23.52 0 0 1 11453.52,7050 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
+<path d="M 11600,7711.5 A 121.51 121.51 0 0 1 11497.02,7654.48 A 373.97 373.97 0 0 1 11497.02,7257.52 A 121.51 121.51 0 0 1 11600,7200.5 A 121.51 121.51 0 0 1 11702.98,7257.52 A 373.97 373.97 0 0 1 11702.98,7654.48 A 121.51 121.51 0 0 1 11600,7711.5 Z" fill="#ffffff" stroke="#6c6864" stroke-width="18"/>
+<path d="M 11600,7673.1 A 91.53 91.53 0 0 1 11522.01,7629.49 A 294.71 294.71 0 0 1 11522.01,7320.91 A 91.53 91.53 0 0 1 11600,7277.3 A 91.53 91.53 0 0 1 11677.99,7320.91 A 294.71 294.71 0 0 1 11677.99,7629.49 A 91.53 91.53 0 0 1 11600,7673.1 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="13"/>
+<line x1="11532" y1="7232.83" x2="11532" y2="7262.48" stroke="#a8a29a" stroke-width="13"/>
+<line x1="11668" y1="7232.83" x2="11668" y2="7262.48" stroke="#a8a29a" stroke-width="13"/>
+<circle cx="11600" cy="7134" r="16" fill="#a8a29a" stroke="#a8a29a" stroke-width="13"/>
+<path d="M 12450,8227 L 12450,8773 A 27 27 0 0 1 12423,8800 L 12027,8800 A 27 27 0 0 1 12000,8773 L 12000,8227 A 27 27 0 0 1 12027,8200 L 12423,8200 A 27 27 0 0 1 12450,8227 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
+<path d="M 12189,8728 A 120.17 120.17 0 0 1 12089.21,8674.79 A 313.68 313.68 0 0 1 12089.21,8325.21 A 120.17 120.17 0 0 1 12189,8272 A 120.17 120.17 0 0 1 12288.79,8325.21 A 313.68 313.68 0 0 1 12288.79,8674.79 A 120.17 120.17 0 0 1 12189,8728 Z" fill="#ffffff" stroke="#6c6864" stroke-width="18"/>
+<path d="M 12189,8697.4 A 92.52 92.52 0 0 1 12110.37,8653.63 A 291.54 291.54 0 0 1 12110.37,8346.37 A 92.52 92.52 0 0 1 12189,8302.6 A 92.52 92.52 0 0 1 12267.63,8346.37 A 291.54 291.54 0 0 1 12267.63,8653.63 A 92.52 92.52 0 0 1 12189,8697.4 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="13"/>
+<circle cx="12398.25" cy="8500" r="15.75" fill="#a8a29a" stroke="#a8a29a" stroke-width="13"/>
+<line x1="12398.25" y1="8500" x2="12310.5" y2="8500" stroke="#a8a29a" stroke-width="13"/>
+<circle cx="12173.7" cy="8500" r="13.5" fill="#a8a29a" stroke="#a8a29a" stroke-width="13"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
-<path d="M -100,-100 L 1000,-100 L 1000,100 L 100,100 L 100,1300 L -100,1300 Z M -100,10100 L -100,8700 L 100,8700 L 100,9900 L 800,9900 L 800,10100 Z M -100,3700 L 100,3700 L 100,6300 L -100,6300 Z M 10000,3950 L 10000,4050 L 9050,4050 L 9050,5950 L 8950,5950 L 8950,100 L 7500,100 L 7500,-100 L 9800,-100 L 9800,100 L 9050,100 L 9050,3950 Z M 11000,3950 L 14900,3950 L 14900,2500 L 15100,2500 L 15100,10100 L 8100,10100 L 8100,9900 L 8950,9900 L 8950,9000 L 9050,9000 L 9050,9900 L 11950,9900 L 11950,7050 L 9050,7050 L 9050,8000 L 8950,8000 L 8950,6950 L 13000,6950 L 13000,7050 L 12050,7050 L 12050,9900 L 14900,9900 L 14900,7050 L 14000,7050 L 14000,6950 L 14900,6950 L 14900,4050 L 11000,4050 Z M 11200,-100 L 12800,-100 L 12800,100 L 11200,100 Z M 14200,-100 L 15100,-100 L 15100,1500 L 14900,1500 L 14900,100 L 14200,100 Z M 2800,10100 L 2800,9900 L 3900,9900 L 3900,10100 Z M 3000,-100 L 5500,-100 L 5500,100 L 3000,100 Z M 5100,10100 L 5100,9900 L 6300,9900 L 6300,10100 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<path d="M -100,-100 L 1000,-100 L 1000,100 L 100,100 L 100,1300 L -100,1300 Z M -100,10100 L -100,8700 L 100,8700 L 100,9900 L 800,9900 L 800,10100 Z M -100,3700 L 100,3700 L 100,6300 L -100,6300 Z M 10000,3950 L 10000,4050 L 9050,4050 L 9050,5950 L 8950,5950 L 8950,100 L 7500,100 L 7500,-100 L 9800,-100 L 9800,100 L 9050,100 L 9050,3950 Z M 11000,3950 L 14900,3950 L 14900,2500 L 15100,2500 L 15100,10100 L 8100,10100 L 8100,9900 L 8950,9900 L 8950,9000 L 9050,9000 L 9050,9900 L 11950,9900 L 11950,7050 L 9050,7050 L 9050,8000 L 8950,8000 L 8950,6950 L 13000,6950 L 13000,7050 L 12050,7050 L 12050,9900 L 14900,9900 L 14900,7050 L 14000,7050 L 14000,6950 L 14900,6950 L 14900,4050 L 11000,4050 Z M 11200,-100 L 12800,-100 L 12800,100 L 11200,100 Z M 14200,-100 L 15100,-100 L 15100,1500 L 14900,1500 L 14900,100 L 14200,100 Z M 2800,10100 L 2800,9900 L 3900,9900 L 3900,10100 Z M 3000,-100 L 5500,-100 L 5500,100 L 3000,100 Z M 5100,10100 L 5100,9900 L 6300,9900 L 6300,10100 Z" fill="none" stroke="#1b1b1b" stroke-width="50" stroke-linejoin="miter" stroke-miterlimit="4"/>
+<path d="M -100,-100 L 1000,-100 L 1000,100 L 100,100 L 100,1300 L -100,1300 Z M -100,10100 L -100,8700 L 100,8700 L 100,9900 L 800,9900 L 800,10100 Z M -100,3700 L 100,3700 L 100,6300 L -100,6300 Z M 10000,3950 L 10000,4050 L 9050,4050 L 9050,4250 L 8950,4250 L 8950,100 L 7500,100 L 7500,-100 L 9800,-100 L 9800,100 L 9050,100 L 9050,3950 Z M 10650,7050 L 9050,7050 L 9050,8700 L 8950,8700 L 8950,6800 L 9050,6800 L 9050,6950 L 13000,6950 L 13000,7050 L 12550,7050 L 12550,9900 L 14900,9900 L 14900,7050 L 14000,7050 L 14000,6950 L 14900,6950 L 14900,4050 L 11000,4050 L 11000,3950 L 14900,3950 L 14900,3750 L 15100,3750 L 15100,10100 L 8100,10100 L 8100,9900 L 8950,9900 L 8950,9700 L 9050,9700 L 9050,9900 L 10650,9900 L 10650,8400 L 10750,8400 L 10750,9900 L 12450,9900 L 12450,7050 L 10750,7050 L 10750,7400 L 10650,7400 Z M 11200,-100 L 15100,-100 L 15100,1500 L 14900,1500 L 14900,100 L 11200,100 Z M 14900,2500 L 15100,2500 L 15100,2850 L 14900,2850 Z M 2800,10100 L 2800,9900 L 3900,9900 L 3900,10100 Z M 3000,-100 L 5500,-100 L 5500,100 L 3000,100 Z M 5100,10100 L 5100,9900 L 6300,9900 L 6300,10100 Z M 8950,5450 L 9050,5450 L 9050,5800 L 8950,5800 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M -100,-100 L 1000,-100 L 1000,100 L 100,100 L 100,1300 L -100,1300 Z M -100,10100 L -100,8700 L 100,8700 L 100,9900 L 800,9900 L 800,10100 Z M -100,3700 L 100,3700 L 100,6300 L -100,6300 Z M 10000,3950 L 10000,4050 L 9050,4050 L 9050,4250 L 8950,4250 L 8950,100 L 7500,100 L 7500,-100 L 9800,-100 L 9800,100 L 9050,100 L 9050,3950 Z M 10650,7050 L 9050,7050 L 9050,8700 L 8950,8700 L 8950,6800 L 9050,6800 L 9050,6950 L 13000,6950 L 13000,7050 L 12550,7050 L 12550,9900 L 14900,9900 L 14900,7050 L 14000,7050 L 14000,6950 L 14900,6950 L 14900,4050 L 11000,4050 L 11000,3950 L 14900,3950 L 14900,3750 L 15100,3750 L 15100,10100 L 8100,10100 L 8100,9900 L 8950,9900 L 8950,9700 L 9050,9700 L 9050,9900 L 10650,9900 L 10650,8400 L 10750,8400 L 10750,9900 L 12450,9900 L 12450,7050 L 10750,7050 L 10750,7400 L 10650,7400 Z M 11200,-100 L 15100,-100 L 15100,1500 L 14900,1500 L 14900,100 L 11200,100 Z M 14900,2500 L 15100,2500 L 15100,2850 L 14900,2850 Z M 2800,10100 L 2800,9900 L 3900,9900 L 3900,10100 Z M 3000,-100 L 5500,-100 L 5500,100 L 3000,100 Z M 5100,10100 L 5100,9900 L 6300,9900 L 6300,10100 Z M 8950,5450 L 9050,5450 L 9050,5800 L 8950,5800 Z" fill="none" stroke="#1b1b1b" stroke-width="50" stroke-linejoin="miter" stroke-miterlimit="4"/>
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
 <polygon points="5100,9900 3900,9900 3900,10100 5100,10100" fill="none"/>
 <polygon points="5100,10000 5100,8800 5053.2,8800.91 5053.2,10000" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
 <path d="M 5100,8800 A 1200 1200 0 0 0 3900,10000" fill="none" stroke="#555555" stroke-width="13"/>
-<polygon points="8950,5950 8950,6950 9050,6950 9050,5950" fill="none"/>
-<polygon points="9000,6950 10000,6950 9998.9,6903.2 9000,6903.2" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
-<path d="M 10000,6950 A 1000 1000 0 0 0 9000,5950" fill="none" stroke="#555555" stroke-width="13"/>
+<polygon points="8950,5800 8950,6800 9050,6800 9050,5800" fill="none"/>
+<polygon points="9000,6800 10000,6800 9998.9,6753.2 9000,6753.2" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
+<path d="M 10000,6800 A 1000 1000 0 0 0 9000,5800" fill="none" stroke="#555555" stroke-width="13"/>
 <polygon points="10000,4050 11000,4050 11000,3950 10000,3950" fill="none"/>
 <polygon points="10000,4000 10000,3000 10046.8,3001.1 10046.8,4000" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
 <path d="M 10000,3000 A 1000 1000 0 0 1 11000,4000" fill="none" stroke="#555555" stroke-width="13"/>
 <polygon points="13000,7050 14000,7050 14000,6950 13000,6950" fill="none"/>
 <polygon points="13000,7000 13000,8000 13046.8,7998.9 13046.8,7000" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
 <path d="M 13000,8000 A 1000 1000 0 0 0 14000,7000" fill="none" stroke="#555555" stroke-width="13"/>
-<polygon points="8950,8000 8950,9000 9050,9000 9050,8000" fill="none"/>
-<polygon points="9000,8000 10000,8000 9998.9,8046.8 9000,8046.8" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
-<path d="M 10000,8000 A 1000 1000 0 0 1 9000,9000" fill="none" stroke="#555555" stroke-width="13"/>
+<polygon points="8950,8700 8950,9700 9050,9700 9050,8700" fill="none"/>
+<polygon points="9000,8700 10000,8700 9998.9,8746.8 9000,8746.8" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
+<path d="M 10000,8700 A 1000 1000 0 0 1 9000,9700" fill="none" stroke="#555555" stroke-width="13"/>
+<polygon points="10650,7400 10650,8400 10750,8400 10750,7400" fill="none"/>
+<polygon points="10700,7400 9700,7400 9701.1,7446.8 10700,7446.8" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
+<path d="M 9700,7400 A 1000 1000 0 0 0 10700,8400" fill="none" stroke="#555555" stroke-width="13"/>
 <polygon points="14900,1500 14900,2500 15100,2500 15100,1500" fill="none"/>
 <polygon points="15000,1500 16000,1500 15998.9,1546.8 15000,1546.8" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
 <path d="M 16000,1500 A 1000 1000 0 0 1 15000,2500" fill="none" stroke="#555555" stroke-width="13"/>
+<polygon points="8950,4250 8950,5450 9050,5450 9050,4250" fill="none"/>
 </g>
 <g id="A-GLAZ" inkscape:groupmode="layer" inkscape:label="A-GLAZ">
 <polygon points="1000,150 3000,150 3000,-150 1000,-150" fill="#ffffff"/>
@@ -2482,24 +2516,26 @@ exports[`golden SVG snapshots > renders corner-cafe.arch deterministically 1`] =
 <line x1="9800" y1="25" x2="11200" y2="25" stroke="#3a6ea5" stroke-width="18"/>
 <line x1="9800" y1="-25" x2="11200" y2="-25" stroke="#3a6ea5" stroke-width="18"/>
 <polygon points="9760,-100 9760,-140 11240,-140 11240,-100" fill="none" stroke="#1b1b1b" stroke-width="18"/>
-<polygon points="12800,150 14200,150 14200,-150 12800,-150" fill="#ffffff"/>
-<line x1="12800" y1="100" x2="14200" y2="100" stroke="#1b1b1b" stroke-width="18"/>
-<line x1="12800" y1="-100" x2="14200" y2="-100" stroke="#1b1b1b" stroke-width="18"/>
-<line x1="12800" y1="25" x2="14200" y2="25" stroke="#3a6ea5" stroke-width="18"/>
-<line x1="12800" y1="-25" x2="14200" y2="-25" stroke="#3a6ea5" stroke-width="18"/>
-<polygon points="12760,-100 12760,-140 14240,-140 14240,-100" fill="none" stroke="#1b1b1b" stroke-width="18"/>
+<polygon points="14850,2850 14850,3750 15150,3750 15150,2850" fill="#ffffff"/>
+<line x1="14900" y1="2850" x2="14900" y2="3750" stroke="#1b1b1b" stroke-width="18"/>
+<line x1="15100" y1="2850" x2="15100" y2="3750" stroke="#1b1b1b" stroke-width="18"/>
+<line x1="14975" y1="2850" x2="14975" y2="3750" stroke="#3a6ea5" stroke-width="18"/>
+<line x1="15025" y1="2850" x2="15025" y2="3750" stroke="#3a6ea5" stroke-width="18"/>
+<polygon points="15100,2810 15140,2810 15140,3790 15100,3790" fill="none" stroke="#1b1b1b" stroke-width="18"/>
 </g>
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
 <text x="3150" y="4930" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Dining</text>
 <text x="3150" y="5315" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">90.0 m²</text>
-<text x="10500" y="8880" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600"><tspan x="10500" y="8670">Accessible</tspan><tspan x="10500" y="9090">WC</tspan></text>
-<text x="10500" y="9475" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">9.0 m²</text>
+<text x="10105" y="9330" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Lobby</text>
+<text x="10105" y="9715" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">5.1 m²</text>
+<text x="11330" y="8430" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">WC</text>
+<text x="11330" y="8815" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">5.4 m²</text>
 <text x="12000" y="1930" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Kitchen</text>
 <text x="12000" y="2315" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">24.0 m²</text>
 <text x="12000" y="5430" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Servery</text>
 <text x="12000" y="5815" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">18.0 m²</text>
-<text x="13500" y="8430" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Store</text>
-<text x="13500" y="8815" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">9.0 m²</text>
+<text x="13750" y="8430" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Store</text>
+<text x="13750" y="8815" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">7.5 m²</text>
 </g>
 <g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
 <line x1="-100" y1="10100" x2="-100" y2="10400" stroke="#0E5484" stroke-width="12.6"/>
@@ -2551,17 +2587,23 @@ exports[`golden SVG snapshots > renders corner-cafe.arch deterministically 1`] =
 <line x1="9084.85" y1="11034.85" x2="8915.15" y2="10865.15" stroke="#0E5484" stroke-width="18"/>
 <text x="4500" y="11125" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 4500 11125)">9000</text>
 <line x1="9000" y1="10100" x2="9000" y2="10950" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="12000" y1="10100" x2="12000" y2="10950" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="9000" y1="10950" x2="12000" y2="10950" stroke="#0E5484" stroke-width="18"/>
+<line x1="10700" y1="10100" x2="10700" y2="10950" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="9000" y1="10950" x2="10700" y2="10950" stroke="#0E5484" stroke-width="18"/>
 <line x1="9084.85" y1="11034.85" x2="8915.15" y2="10865.15" stroke="#0E5484" stroke-width="18"/>
-<line x1="12084.85" y1="11034.85" x2="11915.15" y2="10865.15" stroke="#0E5484" stroke-width="18"/>
-<text x="10500" y="11125" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 10500 11125)">3000</text>
-<line x1="12000" y1="10100" x2="12000" y2="10950" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="10784.85" y1="11034.85" x2="10615.15" y2="10865.15" stroke="#0E5484" stroke-width="18"/>
+<text x="9850" y="11125" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 9850 11125)">1700</text>
+<line x1="10700" y1="10100" x2="10700" y2="10950" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="12500" y1="10100" x2="12500" y2="10950" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="10700" y1="10950" x2="12500" y2="10950" stroke="#0E5484" stroke-width="18"/>
+<line x1="10784.85" y1="11034.85" x2="10615.15" y2="10865.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="12584.85" y1="11034.85" x2="12415.15" y2="10865.15" stroke="#0E5484" stroke-width="18"/>
+<text x="11600" y="11125" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 11600 11125)">1800</text>
+<line x1="12500" y1="10100" x2="12500" y2="10950" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="15000" y1="10100" x2="15000" y2="10950" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="12000" y1="10950" x2="15000" y2="10950" stroke="#0E5484" stroke-width="18"/>
-<line x1="12084.85" y1="11034.85" x2="11915.15" y2="10865.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="12500" y1="10950" x2="15000" y2="10950" stroke="#0E5484" stroke-width="18"/>
+<line x1="12584.85" y1="11034.85" x2="12415.15" y2="10865.15" stroke="#0E5484" stroke-width="18"/>
 <line x1="15084.85" y1="11034.85" x2="14915.15" y2="10865.15" stroke="#0E5484" stroke-width="18"/>
-<text x="13500" y="11125" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 13500 11125)">3000</text>
+<text x="13750" y="11125" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 13750 11125)">2500</text>
 <line x1="-100" y1="10100" x2="-100" y2="11500" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="15100" y1="10100" x2="15100" y2="11500" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="-100" y1="11500" x2="15100" y2="11500" stroke="#0E5484" stroke-width="18"/>
@@ -2658,42 +2700,36 @@ exports[`golden SVG snapshots > renders corner-cafe.arch deterministically 1`] =
 <line x1="11115.15" y1="-484.85" x2="11284.85" y2="-315.15" stroke="#0E5484" stroke-width="18"/>
 <line x1="9715.15" y1="-484.85" x2="9884.85" y2="-315.15" stroke="#0E5484" stroke-width="18"/>
 <text x="10500" y="-575" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 10500 -575)">1400</text>
-<line x1="12800" y1="-100" x2="12800" y2="-400" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="11200" y1="-100" x2="11200" y2="-400" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="12800" y1="-400" x2="11200" y2="-400" stroke="#0E5484" stroke-width="18"/>
-<line x1="12715.15" y1="-484.85" x2="12884.85" y2="-315.15" stroke="#0E5484" stroke-width="18"/>
-<line x1="11115.15" y1="-484.85" x2="11284.85" y2="-315.15" stroke="#0E5484" stroke-width="18"/>
-<text x="12000" y="-575" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 12000 -575)">1600</text>
-<line x1="14200" y1="-100" x2="14200" y2="-400" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="12800" y1="-100" x2="12800" y2="-400" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="14200" y1="-400" x2="12800" y2="-400" stroke="#0E5484" stroke-width="18"/>
-<line x1="14115.15" y1="-484.85" x2="14284.85" y2="-315.15" stroke="#0E5484" stroke-width="18"/>
-<line x1="12715.15" y1="-484.85" x2="12884.85" y2="-315.15" stroke="#0E5484" stroke-width="18"/>
-<text x="13500" y="-575" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 13500 -575)">1400</text>
 <line x1="15100" y1="-100" x2="15100" y2="-400" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="14200" y1="-100" x2="14200" y2="-400" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="15100" y1="-400" x2="14200" y2="-400" stroke="#0E5484" stroke-width="18"/>
+<line x1="11200" y1="-100" x2="11200" y2="-400" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="15100" y1="-400" x2="11200" y2="-400" stroke="#0E5484" stroke-width="18"/>
 <line x1="15015.15" y1="-484.85" x2="15184.85" y2="-315.15" stroke="#0E5484" stroke-width="18"/>
-<line x1="14115.15" y1="-484.85" x2="14284.85" y2="-315.15" stroke="#0E5484" stroke-width="18"/>
-<text x="14650" y="-575" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 14650 -575)">900</text>
+<line x1="11115.15" y1="-484.85" x2="11284.85" y2="-315.15" stroke="#0E5484" stroke-width="18"/>
+<text x="13150" y="-575" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 13150 -575)">3900</text>
 <line x1="9000" y1="-100" x2="9000" y2="-950" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="0" y1="-100" x2="0" y2="-950" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="9000" y1="-950" x2="0" y2="-950" stroke="#0E5484" stroke-width="18"/>
 <line x1="8915.15" y1="-1034.85" x2="9084.85" y2="-865.15" stroke="#0E5484" stroke-width="18"/>
 <line x1="-84.85" y1="-1034.85" x2="84.85" y2="-865.15" stroke="#0E5484" stroke-width="18"/>
 <text x="4500" y="-1125" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 4500 -1125)">9000</text>
-<line x1="12000" y1="-100" x2="12000" y2="-950" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="10700" y1="-100" x2="10700" y2="-950" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="9000" y1="-100" x2="9000" y2="-950" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="12000" y1="-950" x2="9000" y2="-950" stroke="#0E5484" stroke-width="18"/>
-<line x1="11915.15" y1="-1034.85" x2="12084.85" y2="-865.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="10700" y1="-950" x2="9000" y2="-950" stroke="#0E5484" stroke-width="18"/>
+<line x1="10615.15" y1="-1034.85" x2="10784.85" y2="-865.15" stroke="#0E5484" stroke-width="18"/>
 <line x1="8915.15" y1="-1034.85" x2="9084.85" y2="-865.15" stroke="#0E5484" stroke-width="18"/>
-<text x="10500" y="-1125" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 10500 -1125)">3000</text>
+<text x="9850" y="-1125" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 9850 -1125)">1700</text>
+<line x1="12500" y1="-100" x2="12500" y2="-950" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="10700" y1="-100" x2="10700" y2="-950" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="12500" y1="-950" x2="10700" y2="-950" stroke="#0E5484" stroke-width="18"/>
+<line x1="12415.15" y1="-1034.85" x2="12584.85" y2="-865.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="10615.15" y1="-1034.85" x2="10784.85" y2="-865.15" stroke="#0E5484" stroke-width="18"/>
+<text x="11600" y="-1125" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 11600 -1125)">1800</text>
 <line x1="15000" y1="-100" x2="15000" y2="-950" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="12000" y1="-100" x2="12000" y2="-950" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="15000" y1="-950" x2="12000" y2="-950" stroke="#0E5484" stroke-width="18"/>
+<line x1="12500" y1="-100" x2="12500" y2="-950" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="15000" y1="-950" x2="12500" y2="-950" stroke="#0E5484" stroke-width="18"/>
 <line x1="14915.15" y1="-1034.85" x2="15084.85" y2="-865.15" stroke="#0E5484" stroke-width="18"/>
-<line x1="11915.15" y1="-1034.85" x2="12084.85" y2="-865.15" stroke="#0E5484" stroke-width="18"/>
-<text x="13500" y="-1125" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 13500 -1125)">3000</text>
+<line x1="12415.15" y1="-1034.85" x2="12584.85" y2="-865.15" stroke="#0E5484" stroke-width="18"/>
+<text x="13750" y="-1125" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 13750 -1125)">2500</text>
 <line x1="15100" y1="-100" x2="15100" y2="-1500" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="-100" y1="-100" x2="-100" y2="-1500" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="15100" y1="-1500" x2="-100" y2="-1500" stroke="#0E5484" stroke-width="18"/>
@@ -2712,12 +2748,24 @@ exports[`golden SVG snapshots > renders corner-cafe.arch deterministically 1`] =
 <line x1="15484.85" y1="2415.15" x2="15315.15" y2="2584.85" stroke="#0E5484" stroke-width="18"/>
 <line x1="15484.85" y1="1415.15" x2="15315.15" y2="1584.85" stroke="#0E5484" stroke-width="18"/>
 <text x="15575" y="2000" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 15575 2000)">1000</text>
-<line x1="15100" y1="10100" x2="15400" y2="10100" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="15100" y1="2850" x2="15400" y2="2850" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="15100" y1="2500" x2="15400" y2="2500" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="15400" y1="10100" x2="15400" y2="2500" stroke="#0E5484" stroke-width="18"/>
-<line x1="15484.85" y1="10015.15" x2="15315.15" y2="10184.85" stroke="#0E5484" stroke-width="18"/>
+<line x1="15400" y1="2850" x2="15400" y2="2500" stroke="#0E5484" stroke-width="18"/>
+<line x1="15484.85" y1="2765.15" x2="15315.15" y2="2934.85" stroke="#0E5484" stroke-width="18"/>
 <line x1="15484.85" y1="2415.15" x2="15315.15" y2="2584.85" stroke="#0E5484" stroke-width="18"/>
-<text x="15575" y="6300" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 15575 6300)">7600</text>
+<text x="15575" y="2675" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 15575 2675)">350</text>
+<line x1="15100" y1="3750" x2="15400" y2="3750" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="15100" y1="2850" x2="15400" y2="2850" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="15400" y1="3750" x2="15400" y2="2850" stroke="#0E5484" stroke-width="18"/>
+<line x1="15484.85" y1="3665.15" x2="15315.15" y2="3834.85" stroke="#0E5484" stroke-width="18"/>
+<line x1="15484.85" y1="2765.15" x2="15315.15" y2="2934.85" stroke="#0E5484" stroke-width="18"/>
+<text x="15575" y="3300" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 15575 3300)">900</text>
+<line x1="15100" y1="10100" x2="15400" y2="10100" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="15100" y1="3750" x2="15400" y2="3750" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="15400" y1="10100" x2="15400" y2="3750" stroke="#0E5484" stroke-width="18"/>
+<line x1="15484.85" y1="10015.15" x2="15315.15" y2="10184.85" stroke="#0E5484" stroke-width="18"/>
+<line x1="15484.85" y1="3665.15" x2="15315.15" y2="3834.85" stroke="#0E5484" stroke-width="18"/>
+<text x="15575" y="6925" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 15575 6925)">6350</text>
 <line x1="15100" y1="4000" x2="15950" y2="4000" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="15100" y1="0" x2="15950" y2="0" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="15950" y1="4000" x2="15950" y2="0" stroke="#0E5484" stroke-width="18"/>
@@ -2752,7 +2800,7 @@ exports[`golden SVG snapshots > renders corner-cafe.arch deterministically 1`] =
 <text x="4525" y="457.5" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 4525 457.5)">200</text>
 </g>
 <g id="A-ANNO" inkscape:groupmode="layer" inkscape:label="A-ANNO">
-<polygon points="-100,13385 3500,13385 3500,17465 -100,17465" fill="none" stroke="#333333" stroke-width="18"/>
+<polygon points="-100,13385 3500,13385 3500,17805 -100,17805" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="-28" y="13555" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">ROOM SCHEDULE</text>
 <line x1="-100" y1="13725" x2="3500" y2="13725" stroke="#333333" stroke-width="18"/>
 <text x="175" y="13895" font-size="152" fill="#888888" text-anchor="middle" dominant-baseline="central" font-weight="600">NO.</text>
@@ -2765,34 +2813,38 @@ exports[`golden SVG snapshots > renders corner-cafe.arch deterministically 1`] =
 <text x="3428" y="14575" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">90.00</text>
 <line x1="-100" y1="14745" x2="3500" y2="14745" stroke="#333333" stroke-width="13"/>
 <text x="175" y="14915" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">02</text>
-<text x="522" y="14915" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Accessible WC</text>
-<text x="3428" y="14915" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">9.00</text>
-<line x1="450" y1="14405" x2="450" y2="15085" stroke="#333333" stroke-width="13"/>
-<line x1="2450" y1="14405" x2="2450" y2="15085" stroke="#333333" stroke-width="13"/>
+<text x="522" y="14915" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Lobby</text>
+<text x="3428" y="14915" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">5.10</text>
 <line x1="-100" y1="15085" x2="3500" y2="15085" stroke="#333333" stroke-width="13"/>
-<text x="-28" y="15255" font-size="190" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">SUBTOTAL</text>
-<text x="3428" y="15255" font-size="190" fill="#888888" text-anchor="end" dominant-baseline="central" font-weight="600">99.00</text>
-<line x1="-100" y1="15425" x2="3500" y2="15425" stroke="#333333" stroke-width="18"/>
-<text x="-28" y="15595" font-size="190" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">Back of house</text>
-<text x="175" y="15935" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">03</text>
-<text x="522" y="15935" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Kitchen</text>
-<text x="3428" y="15935" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">24.00</text>
-<line x1="-100" y1="16105" x2="3500" y2="16105" stroke="#333333" stroke-width="13"/>
+<text x="175" y="15255" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">03</text>
+<text x="522" y="15255" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">WC</text>
+<text x="3428" y="15255" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">5.40</text>
+<line x1="450" y1="14405" x2="450" y2="15425" stroke="#333333" stroke-width="13"/>
+<line x1="2450" y1="14405" x2="2450" y2="15425" stroke="#333333" stroke-width="13"/>
+<line x1="-100" y1="15425" x2="3500" y2="15425" stroke="#333333" stroke-width="13"/>
+<text x="-28" y="15595" font-size="190" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">SUBTOTAL</text>
+<text x="3428" y="15595" font-size="190" fill="#888888" text-anchor="end" dominant-baseline="central" font-weight="600">100.50</text>
+<line x1="-100" y1="15765" x2="3500" y2="15765" stroke="#333333" stroke-width="18"/>
+<text x="-28" y="15935" font-size="190" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">Back of house</text>
 <text x="175" y="16275" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">04</text>
-<text x="522" y="16275" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Servery</text>
-<text x="3428" y="16275" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">18.00</text>
+<text x="522" y="16275" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Kitchen</text>
+<text x="3428" y="16275" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">24.00</text>
 <line x1="-100" y1="16445" x2="3500" y2="16445" stroke="#333333" stroke-width="13"/>
 <text x="175" y="16615" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">05</text>
-<text x="522" y="16615" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Store</text>
-<text x="3428" y="16615" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">9.00</text>
-<line x1="450" y1="15765" x2="450" y2="16785" stroke="#333333" stroke-width="13"/>
-<line x1="2450" y1="15765" x2="2450" y2="16785" stroke="#333333" stroke-width="13"/>
+<text x="522" y="16615" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Servery</text>
+<text x="3428" y="16615" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">18.00</text>
 <line x1="-100" y1="16785" x2="3500" y2="16785" stroke="#333333" stroke-width="13"/>
-<text x="-28" y="16955" font-size="190" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">SUBTOTAL</text>
-<text x="3428" y="16955" font-size="190" fill="#888888" text-anchor="end" dominant-baseline="central" font-weight="600">51.00</text>
-<line x1="-100" y1="17125" x2="3500" y2="17125" stroke="#333333" stroke-width="18"/>
-<text x="-28" y="17295" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">TOTAL</text>
-<text x="3428" y="17295" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central" font-weight="600">150.00</text>
+<text x="175" y="16955" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">06</text>
+<text x="522" y="16955" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Store</text>
+<text x="3428" y="16955" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">7.50</text>
+<line x1="450" y1="16105" x2="450" y2="17125" stroke="#333333" stroke-width="13"/>
+<line x1="2450" y1="16105" x2="2450" y2="17125" stroke="#333333" stroke-width="13"/>
+<line x1="-100" y1="17125" x2="3500" y2="17125" stroke="#333333" stroke-width="13"/>
+<text x="-28" y="17295" font-size="190" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">SUBTOTAL</text>
+<text x="3428" y="17295" font-size="190" fill="#888888" text-anchor="end" dominant-baseline="central" font-weight="600">49.50</text>
+<line x1="-100" y1="17465" x2="3500" y2="17465" stroke="#333333" stroke-width="18"/>
+<text x="-28" y="17635" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">TOTAL</text>
+<text x="3428" y="17635" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central" font-weight="600">150.00</text>
 <polygon points="3800,13385 6500,13385 6500,17805 3800,17805" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="3854" y="13555" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">LEGEND</text>
 <line x1="3800" y1="13725" x2="6500" y2="13725" stroke="#333333" stroke-width="18"/>
@@ -10734,148 +10786,10 @@ exports[`golden SVG snapshots > renders parametric.arch deterministically 1`] = 
 </svg>"
 `;
 
-exports[`golden SVG snapshots > renders relational.arch deterministically 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"  viewBox="-1494 -1494 10988 12201.6" font-family="Helvetica, Arial, sans-serif">
-<defs><pattern id="poche" patternUnits="userSpaceOnUse" width="106.6" height="106.6" patternTransform="rotate(45)"><rect width="106.6" height="106.6" fill="#e9e4db"/><line x1="0" y1="0" x2="0" y2="106.6" stroke="#b9b1a4" stroke-width="9.18"/></pattern></defs>
-<rect x="-1494" y="-1494" width="10988" height="12201.6" fill="#ffffff"/>
-<g id="A-FLOR" inkscape:groupmode="layer" inkscape:label="A-FLOR">
-<polygon points="0,0 5000,0 5000,4000 0,4000" fill="#fbfaf7"/>
-<polygon points="5000,0 8000,0 8000,4000 5000,4000" fill="#fbfaf7"/>
-<polygon points="0,4000 5000,4000 5000,7500 0,7500" fill="#fbfaf7"/>
-<polygon points="5000,4000 8000,4000 8000,7500 5000,7500" fill="#fbfaf7"/>
-</g>
-<g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
-<path d="M 1777.5,7400 L 322.5,7400 A 22.5 22.5 0 0 1 300,7377.5 L 300,5422.5 A 22.5 22.5 0 0 1 322.5,5400 L 1777.5,5400 A 22.5 22.5 0 0 1 1800,5422.5 L 1800,7377.5 A 22.5 22.5 0 0 1 1777.5,7400 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 1777.5,7400 L 322.5,7400 A 22.5 22.5 0 0 1 300,7377.5 L 300,7310 L 1800,7310 L 1800,7377.5 A 22.5 22.5 0 0 1 1777.5,7400 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 1612,7250 L 1198,7250 A 108 108 0 0 1 1090,7142 L 1090,6998 A 108 108 0 0 1 1198,6890 L 1612,6890 A 108 108 0 0 1 1720,6998 L 1720,7142 A 108 108 0 0 1 1612,7250 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
-<path d="M 902,7250 L 488,7250 A 108 108 0 0 1 380,7142 L 380,6998 A 108 108 0 0 1 488,6890 L 902,6890 A 108 108 0 0 1 1010,6998 L 1010,7142 A 108 108 0 0 1 902,7250 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
-<polygon points="1755,6800 345,6800 345,5685 585,5445 1755,5445" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.48"/>
-<polygon points="1755,6800 345,6800 345,6600 1755,6600" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
-<polygon points="345,5685 585,5445 585,5685" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
-<path d="M 256,2900 L 1944,2900 A 56 56 0 0 1 2000,2956 L 2000,3644 A 56 56 0 0 1 1944,3700 L 256,3700 A 56 56 0 0 1 200,3644 L 200,2956 A 56 56 0 0 1 256,2900 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 256,2900 L 344,2900 L 344,3644 A 56 56 0 0 1 288,3700 L 256,3700 A 56 56 0 0 1 200,3644 L 200,2956 A 56 56 0 0 1 256,2900 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 1856,2900 L 1944,2900 A 56 56 0 0 1 2000,2956 L 2000,3644 A 56 56 0 0 1 1944,3700 L 1912,3700 A 56 56 0 0 1 1856,3644 L 1856,2900 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 386.4,2940 L 815.2,2940 A 28 28 0 0 1 843.2,2968 L 843.2,3032 A 28 28 0 0 1 815.2,3060 L 386.4,3060 A 28 28 0 0 1 358.4,3032 L 358.4,2968 A 28 28 0 0 1 386.4,2940 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
-<path d="M 885.6,2940 L 1314.4,2940 A 28 28 0 0 1 1342.4,2968 L 1342.4,3032 A 28 28 0 0 1 1314.4,3060 L 885.6,3060 A 28 28 0 0 1 857.6,3032 L 857.6,2968 A 28 28 0 0 1 885.6,2940 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
-<path d="M 1384.8,2940 L 1813.6,2940 A 28 28 0 0 1 1841.6,2968 L 1841.6,3032 A 28 28 0 0 1 1813.6,3060 L 1384.8,3060 A 28 28 0 0 1 1356.8,3032 L 1356.8,2968 A 28 28 0 0 1 1384.8,2940 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
-<path d="M 394.4,3074.4 L 807.2,3074.4 A 36 36 0 0 1 843.2,3110.4 L 843.2,3628 A 36 36 0 0 1 807.2,3664 L 394.4,3664 A 36 36 0 0 1 358.4,3628 L 358.4,3110.4 A 36 36 0 0 1 394.4,3074.4 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
-<path d="M 893.6,3074.4 L 1306.4,3074.4 A 36 36 0 0 1 1342.4,3110.4 L 1342.4,3628 A 36 36 0 0 1 1306.4,3664 L 893.6,3664 A 36 36 0 0 1 857.6,3628 L 857.6,3110.4 A 36 36 0 0 1 893.6,3074.4 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
-<path d="M 1392.8,3074.4 L 1805.6,3074.4 A 36 36 0 0 1 1841.6,3110.4 L 1841.6,3628 A 36 36 0 0 1 1805.6,3664 L 1392.8,3664 A 36 36 0 0 1 1356.8,3628 L 1356.8,3110.4 A 36 36 0 0 1 1392.8,3074.4 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
-<path d="M 220,2000 L 1080,2000 A 20 20 0 0 1 1100,2020 L 1100,2480 A 20 20 0 0 1 1080,2500 L 220,2500 A 20 20 0 0 1 200,2480 L 200,2020 A 20 20 0 0 1 220,2000 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 262,2050 L 1038,2050 A 12 12 0 0 1 1050,2062 L 1050,2438 A 12 12 0 0 1 1038,2450 L 262,2450 A 12 12 0 0 1 250,2438 L 250,2062 A 12 12 0 0 1 262,2050 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
-<path d="M 5572.06,564 L 7427.94,564 A 8.06 8.06 0 0 1 7436,572.06 L 7436,1227.94 A 8.06 8.06 0 0 1 7427.94,1236 L 5572.06,1236 A 8.06 8.06 0 0 1 5564,1227.94 L 5564,572.06 A 8.06 8.06 0 0 1 5572.06,564 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 5589.54,584.16 L 7410.46,584.16 A 5.38 5.38 0 0 1 7415.84,589.54 L 7415.84,1210.46 A 5.38 5.38 0 0 1 7410.46,1215.84 L 5589.54,1215.84 A 5.38 5.38 0 0 1 5584.16,1210.46 L 5584.16,589.54 A 5.38 5.38 0 0 1 5589.54,584.16 Z" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
-<path d="M 5799.97,400.32 L 5952.03,400.32 A 28.51 28.51 0 0 1 5980.54,428.83 L 5980.54,564 L 5771.46,564 L 5771.46,428.83 A 28.51 28.51 0 0 1 5799.97,400.32 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 5773.04,379.2 L 5978.96,379.2 A 15.84 15.84 0 0 1 5994.8,395.04 A 15.84 15.84 0 0 1 5978.96,410.88 L 5773.04,410.88 A 15.84 15.84 0 0 1 5757.2,395.04 A 15.84 15.84 0 0 1 5773.04,379.2 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 5952.03,1399.68 L 5799.97,1399.68 A 28.51 28.51 0 0 1 5771.46,1371.17 L 5771.46,1236 L 5980.54,1236 L 5980.54,1371.17 A 28.51 28.51 0 0 1 5952.03,1399.68 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 5978.96,1420.8 L 5773.04,1420.8 A 15.84 15.84 0 0 1 5757.2,1404.96 A 15.84 15.84 0 0 1 5773.04,1389.12 L 5978.96,1389.12 A 15.84 15.84 0 0 1 5994.8,1404.96 A 15.84 15.84 0 0 1 5978.96,1420.8 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 6423.97,400.32 L 6576.03,400.32 A 28.51 28.51 0 0 1 6604.54,428.83 L 6604.54,564 L 6395.46,564 L 6395.46,428.83 A 28.51 28.51 0 0 1 6423.97,400.32 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 6397.04,379.2 L 6602.96,379.2 A 15.84 15.84 0 0 1 6618.8,395.04 A 15.84 15.84 0 0 1 6602.96,410.88 L 6397.04,410.88 A 15.84 15.84 0 0 1 6381.2,395.04 A 15.84 15.84 0 0 1 6397.04,379.2 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 6576.03,1399.68 L 6423.97,1399.68 A 28.51 28.51 0 0 1 6395.46,1371.17 L 6395.46,1236 L 6604.54,1236 L 6604.54,1371.17 A 28.51 28.51 0 0 1 6576.03,1399.68 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 6602.96,1420.8 L 6397.04,1420.8 A 15.84 15.84 0 0 1 6381.2,1404.96 A 15.84 15.84 0 0 1 6397.04,1389.12 L 6602.96,1389.12 A 15.84 15.84 0 0 1 6618.8,1404.96 A 15.84 15.84 0 0 1 6602.96,1420.8 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 7047.97,400.32 L 7200.03,400.32 A 28.51 28.51 0 0 1 7228.54,428.83 L 7228.54,564 L 7019.46,564 L 7019.46,428.83 A 28.51 28.51 0 0 1 7047.97,400.32 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 7021.04,379.2 L 7226.96,379.2 A 15.84 15.84 0 0 1 7242.8,395.04 A 15.84 15.84 0 0 1 7226.96,410.88 L 7021.04,410.88 A 15.84 15.84 0 0 1 7005.2,395.04 A 15.84 15.84 0 0 1 7021.04,379.2 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 7200.03,1399.68 L 7047.97,1399.68 A 28.51 28.51 0 0 1 7019.46,1371.17 L 7019.46,1236 L 7228.54,1236 L 7228.54,1371.17 A 28.51 28.51 0 0 1 7200.03,1399.68 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 7226.96,1420.8 L 7021.04,1420.8 A 15.84 15.84 0 0 1 7005.2,1404.96 A 15.84 15.84 0 0 1 7021.04,1389.12 L 7226.96,1389.12 A 15.84 15.84 0 0 1 7242.8,1404.96 A 15.84 15.84 0 0 1 7226.96,1420.8 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 5400.32,976.03 L 5400.32,823.97 A 28.51 28.51 0 0 1 5428.83,795.46 L 5564,795.46 L 5564,1004.54 L 5428.83,1004.54 A 28.51 28.51 0 0 1 5400.32,976.03 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 5379.2,1002.96 L 5379.2,797.04 A 15.84 15.84 0 0 1 5395.04,781.2 A 15.84 15.84 0 0 1 5410.88,797.04 L 5410.88,1002.96 A 15.84 15.84 0 0 1 5395.04,1018.8 A 15.84 15.84 0 0 1 5379.2,1002.96 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 7599.68,823.97 L 7599.68,976.03 A 28.51 28.51 0 0 1 7571.17,1004.54 L 7436,1004.54 L 7436,795.46 L 7571.17,795.46 A 28.51 28.51 0 0 1 7599.68,823.97 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 7620.8,797.04 L 7620.8,1002.96 A 15.84 15.84 0 0 1 7604.96,1018.8 A 15.84 15.84 0 0 1 7589.12,1002.96 L 7589.12,797.04 A 15.84 15.84 0 0 1 7604.96,781.2 A 15.84 15.84 0 0 1 7620.8,797.04 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 5681,1736 L 5969,1736 A 54 54 0 0 1 6023,1790 L 6023,2096 A 54 54 0 0 1 5969,2150 L 5681,2150 A 54 54 0 0 1 5627,2096 L 5627,1790 A 54 54 0 0 1 5681,1736 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 5627,1700 L 6023,1700 A 27 27 0 0 1 6050,1727 A 27 27 0 0 1 6023,1754 L 5627,1754 A 27 27 0 0 1 5600,1727 A 27 27 0 0 1 5627,1700 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 6881,1736 L 7169,1736 A 54 54 0 0 1 7223,1790 L 7223,2096 A 54 54 0 0 1 7169,2150 L 6881,2150 A 54 54 0 0 1 6827,2096 L 6827,1790 A 54 54 0 0 1 6881,1736 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 6827,1700 L 7223,1700 A 27 27 0 0 1 7250,1727 A 27 27 0 0 1 7223,1754 L 6827,1754 A 27 27 0 0 1 6800,1727 A 27 27 0 0 1 6827,1700 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<polygon points="7900,2400 7900,3200 7300,3200 7300,2400" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 7780,2570.05 L 7780,3029.95 A 43.8 43.8 0 0 1 7736.2,3073.75 L 7385.8,3073.75 A 43.8 43.8 0 0 1 7342,3029.95 L 7342,2570.05 A 43.8 43.8 0 0 1 7385.8,2526.25 L 7736.2,2526.25 A 43.8 43.8 0 0 1 7780,2570.05 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
-<circle cx="7561" cy="2800" r="28.47" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
-<circle cx="7837" cy="2800" r="21" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
-<line x1="7816" y1="2800" x2="7692.4" y2="2800" stroke="#a8a29a" stroke-width="9.48"/>
-<polygon points="7900,3300 7900,3900 7300,3900 7300,3300" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 7864,3351 L 7864,3849 A 15 15 0 0 1 7849,3864 L 7471,3864 A 15 15 0 0 1 7456,3849 L 7456,3351 A 15 15 0 0 1 7471,3336 L 7849,3336 A 15 15 0 0 1 7864,3351 Z" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
-<circle cx="7755.88" cy="3474.12" r="76.7" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
-<circle cx="7755.88" cy="3474.12" r="42.19" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
-<circle cx="7755.88" cy="3725.88" r="76.7" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
-<circle cx="7755.88" cy="3725.88" r="42.19" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
-<circle cx="7564.12" cy="3474.12" r="55.61" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
-<circle cx="7564.12" cy="3474.12" r="30.59" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
-<circle cx="7564.12" cy="3725.88" r="55.61" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
-<circle cx="7564.12" cy="3725.88" r="30.59" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
-<circle cx="7363" cy="3420" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.48"/>
-<circle cx="7363" cy="3540" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.48"/>
-<circle cx="7363" cy="3660" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.48"/>
-<circle cx="7363" cy="3780" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.48"/>
-<path d="M 7900,4353.52 L 7900,4646.48 A 23.52 23.52 0 0 1 7876.48,4670 L 7755.52,4670 A 23.52 23.52 0 0 1 7732,4646.48 L 7732,4353.52 A 23.52 23.52 0 0 1 7755.52,4330 L 7876.48,4330 A 23.52 23.52 0 0 1 7900,4353.52 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 7238.5,4500 A 121.51 121.51 0 0 1 7295.52,4397.02 A 373.97 373.97 0 0 1 7692.48,4397.02 A 121.51 121.51 0 0 1 7749.5,4500 A 121.51 121.51 0 0 1 7692.48,4602.98 A 373.97 373.97 0 0 1 7295.52,4602.98 A 121.51 121.51 0 0 1 7238.5,4500 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 7276.9,4500 A 91.53 91.53 0 0 1 7320.51,4422.01 A 294.71 294.71 0 0 1 7629.09,4422.01 A 91.53 91.53 0 0 1 7672.7,4500 A 91.53 91.53 0 0 1 7629.09,4577.99 A 294.71 294.71 0 0 1 7320.51,4577.99 A 91.53 91.53 0 0 1 7276.9,4500 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
-<line x1="7717.18" y1="4432" x2="7687.53" y2="4432" stroke="#a8a29a" stroke-width="9.48"/>
-<line x1="7717.18" y1="4568" x2="7687.53" y2="4568" stroke="#a8a29a" stroke-width="9.48"/>
-<circle cx="7816" cy="4500" r="16" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.48"/>
-<path d="M 7900,5027 L 7900,5573 A 27 27 0 0 1 7873,5600 L 7477,5600 A 27 27 0 0 1 7450,5573 L 7450,5027 A 27 27 0 0 1 7477,5000 L 7873,5000 A 27 27 0 0 1 7900,5027 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 7639,5528 A 120.17 120.17 0 0 1 7539.21,5474.79 A 313.68 313.68 0 0 1 7539.21,5125.21 A 120.17 120.17 0 0 1 7639,5072 A 120.17 120.17 0 0 1 7738.79,5125.21 A 313.68 313.68 0 0 1 7738.79,5474.79 A 120.17 120.17 0 0 1 7639,5528 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 7639,5497.4 A 92.52 92.52 0 0 1 7560.37,5453.63 A 291.54 291.54 0 0 1 7560.37,5146.37 A 92.52 92.52 0 0 1 7639,5102.6 A 92.52 92.52 0 0 1 7717.63,5146.37 A 291.54 291.54 0 0 1 7717.63,5453.63 A 92.52 92.52 0 0 1 7639,5497.4 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
-<circle cx="7848.25" cy="5300" r="15.75" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.48"/>
-<line x1="7848.25" y1="5300" x2="7760.5" y2="5300" stroke="#a8a29a" stroke-width="9.48"/>
-<circle cx="7623.7" cy="5300" r="13.5" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.48"/>
-<path d="M 5236,6500 L 6064,6500 A 36 36 0 0 1 6100,6536 L 6100,7364 A 36 36 0 0 1 6064,7400 L 5236,7400 A 36 36 0 0 1 5200,7364 L 5200,6536 A 36 36 0 0 1 5236,6500 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
-<path d="M 5272,6554 L 6028,6554 A 18 18 0 0 1 6046,6572 L 6046,7328 A 18 18 0 0 1 6028,7346 L 5272,7346 A 18 18 0 0 1 5254,7328 L 5254,6572 A 18 18 0 0 1 5272,6554 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
-<line x1="5273.09" y1="6573.09" x2="5615" y2="6915" stroke="#a8a29a" stroke-width="9.48"/>
-<line x1="6026.91" y1="6573.09" x2="5685" y2="6915" stroke="#a8a29a" stroke-width="9.48"/>
-<line x1="6026.91" y1="7326.91" x2="5685" y2="6985" stroke="#a8a29a" stroke-width="9.48"/>
-<line x1="5273.09" y1="7326.91" x2="5615" y2="6985" stroke="#a8a29a" stroke-width="9.48"/>
-<circle cx="5650" cy="6950" r="49.5" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
-<circle cx="5650" cy="6950" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.48"/>
-</g>
-<g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
-<path d="M -100,-100 L 500,-100 L 500,100 L 100,100 L 100,7400 L 2400,7400 L 2400,7600 L -100,7600 Z M 1500,-100 L 5600,-100 L 5600,100 L 1500,100 Z M 4000,7400 L 7900,7400 L 7900,100 L 7400,100 L 7400,-100 L 8100,-100 L 8100,7600 L 4000,7600 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<path d="M -100,-100 L 500,-100 L 500,100 L 100,100 L 100,7400 L 2400,7400 L 2400,7600 L -100,7600 Z M 1500,-100 L 5600,-100 L 5600,100 L 1500,100 Z M 4000,7400 L 7900,7400 L 7900,100 L 7400,100 L 7400,-100 L 8100,-100 L 8100,7600 L 4000,7600 Z" fill="none" stroke="#1b1b1b" stroke-width="22.96" stroke-linejoin="miter" stroke-miterlimit="4"/>
-</g>
-<g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
-<polygon points="500,100 1500,100 1500,-100 500,-100" fill="none"/>
-<polygon points="500,0 500,1000 540,999.2 540,0" fill="#ffffff" stroke="#555555" stroke-width="17.06"/>
-<path d="M 500,1000 A 1000 1000 0 0 0 1500,0" fill="none" stroke="#555555" stroke-width="9.48"/>
-</g>
-<g id="A-GLAZ" inkscape:groupmode="layer" inkscape:label="A-GLAZ">
-<polygon points="5600,122.96 7400,122.96 7400,-122.96 5600,-122.96" fill="#ffffff"/>
-<line x1="5600" y1="100" x2="7400" y2="100" stroke="#1b1b1b" stroke-width="13.12"/>
-<line x1="5600" y1="-100" x2="7400" y2="-100" stroke="#1b1b1b" stroke-width="13.12"/>
-<line x1="5600" y1="25" x2="7400" y2="25" stroke="#3a6ea5" stroke-width="13.12"/>
-<line x1="5600" y1="-25" x2="7400" y2="-25" stroke="#3a6ea5" stroke-width="13.12"/>
-<polygon points="5560,-100 5560,-140 7440,-140 7440,-100" fill="none" stroke="#1b1b1b" stroke-width="13.12"/>
-<polygon points="4000,7377.04 2400,7377.04 2400,7622.96 4000,7622.96" fill="#ffffff"/>
-<line x1="4000" y1="7400" x2="2400" y2="7400" stroke="#1b1b1b" stroke-width="13.12"/>
-<line x1="4000" y1="7600" x2="2400" y2="7600" stroke="#1b1b1b" stroke-width="13.12"/>
-<line x1="4000" y1="7475" x2="2400" y2="7475" stroke="#3a6ea5" stroke-width="13.12"/>
-<line x1="4000" y1="7525" x2="2400" y2="7525" stroke="#3a6ea5" stroke-width="13.12"/>
-<polygon points="4040,7600 4040,7640 2360,7640 2360,7600" fill="none" stroke="#1b1b1b" stroke-width="13.12"/>
-</g>
-<g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
-<text x="2500" y="1950.8" font-size="246" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Living</text>
-<text x="2500" y="2221.4" font-size="180.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">20.0 m²</text>
-<text x="6500" y="2550.8" font-size="246" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Kitchen</text>
-<text x="6500" y="2821.4" font-size="180.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
-<text x="2500" y="5700.8" font-size="246" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>
-<text x="2500" y="5971.4" font-size="180.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">17.5 m²</text>
-<text x="6500" y="5700.8" font-size="246" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bath</text>
-<text x="6500" y="5971.4" font-size="180.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">10.5 m²</text>
-</g>
-<g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
-<line x1="-100" y1="7500" x2="-100" y2="8100" stroke="#0E5484" stroke-width="9.18"/>
-<line x1="8100" y1="7500" x2="8100" y2="8100" stroke="#0E5484" stroke-width="9.18"/>
-<line x1="-100" y1="8100" x2="8100" y2="8100" stroke="#0E5484" stroke-width="13.12"/>
-<line x1="-30.42" y1="8169.58" x2="-169.58" y2="8030.42" stroke="#0E5484" stroke-width="13.12"/>
-<line x1="8169.58" y1="8169.58" x2="8030.42" y2="8030.42" stroke="#0E5484" stroke-width="13.12"/>
-<text x="4000" y="8214.8" font-size="164" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 4000 8214.8)">8200</text>
-</g>
-<g><polygon points="7731,-1235.7 7546.5,-645.3 7731,-774.45 7915.5,-645.3" fill="#333333" transform="rotate(0 7731 -866.7)"/><text x="7731" y="-1406.26" font-size="213.2" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
-<g><rect x="-100" y="8788.8" width="1000" height="114.8" fill="#333333"/><rect x="900" y="8788.8" width="1000" height="114.8" fill="none" stroke="#333333" stroke-width="13.12"/><text x="-100" y="9067.6" font-size="164" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="1900" y="9067.6" font-size="164" fill="#333333" text-anchor="middle" dominant-baseline="central">2 m</text></g>
-<g><rect x="5312" y="8788.8" width="2788" height="1508.8" fill="none" stroke="#333333" stroke-width="13.12"/><text x="5451.4" y="8977.4" font-size="124.64" fill="#888888" dominant-baseline="central">PROJECT</text><text x="7960.6" y="8977.4" font-size="155.8" fill="#333333" text-anchor="end" dominant-baseline="central">Relational Layout Demo</text><text x="5451.4" y="9354.6" font-size="124.64" fill="#888888" dominant-baseline="central">DRAWN BY</text><text x="7960.6" y="9354.6" font-size="155.8" fill="#333333" text-anchor="end" dominant-baseline="central">ArchCanvas</text><line x1="5312" y1="9166" x2="8100" y2="9166" stroke="#333333" stroke-width="6.56"/><text x="5451.4" y="9731.8" font-size="124.64" fill="#888888" dominant-baseline="central">DATE</text><text x="7960.6" y="9731.8" font-size="155.8" fill="#333333" text-anchor="end" dominant-baseline="central">2026-06-26</text><line x1="5312" y1="9543.2" x2="8100" y2="9543.2" stroke="#333333" stroke-width="6.56"/><text x="5451.4" y="10109" font-size="124.64" fill="#888888" dominant-baseline="central">SCALE</text><text x="7960.6" y="10109" font-size="155.8" fill="#333333" text-anchor="end" dominant-baseline="central">1:100</text><line x1="5312" y1="9920.4" x2="8100" y2="9920.4" stroke="#333333" stroke-width="6.56"/></g>
-</svg>"
-`;
-
-exports[`golden SVG snapshots > renders small-office.arch deterministically 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="594mm" height="420mm" viewBox="-20700 -9470 59400 42000" font-family="Helvetica, Arial, sans-serif">
+exports[`golden SVG snapshots > renders practice-office.arch deterministically 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="594mm" height="420mm" viewBox="-20700 -9300 59400 42000" font-family="Helvetica, Arial, sans-serif">
 <defs><pattern id="poche" patternUnits="userSpaceOnUse" width="120" height="120" patternTransform="rotate(45)"><rect width="120" height="120" fill="#e9e4db"/><line x1="0" y1="0" x2="0" y2="120" stroke="#b9b1a4" stroke-width="12.6"/></pattern></defs>
-<rect x="-20700" y="-9470" width="59400" height="42000" fill="#ffffff"/>
+<rect x="-20700" y="-9300" width="59400" height="42000" fill="#ffffff"/>
 <g id="A-FLOR" inkscape:groupmode="layer" inkscape:label="A-FLOR">
 <polygon points="0,0 10500,0 10500,6000 0,6000" fill="#fbfaf7"/>
 <polygon points="10500,0 14000,0 14000,6000 10500,6000" fill="#fbfaf7"/>
@@ -11015,8 +10929,8 @@ exports[`golden SVG snapshots > renders small-office.arch deterministically 1`] 
 <circle cx="11173.7" cy="10000" r="13.5" fill="#a8a29a" stroke="#a8a29a" stroke-width="13"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
-<path d="M -100,-100 L 1500,-100 L 1500,100 L 100,100 L 100,2000 L -100,2000 Z M -100,12600 L -100,4000 L 100,4000 L 100,5950 L 5400,5950 L 5400,6050 L 100,6050 L 100,7750 L 1500,7750 L 1500,7850 L 100,7850 L 100,12400 L 1650,12400 L 1650,12600 Z M 10000,7750 L 10000,7850 L 9550,7850 L 9550,12400 L 11450,12400 L 11450,7850 L 11000,7850 L 11000,7750 L 12000,7750 L 12000,7850 L 11550,7850 L 11550,12400 L 13450,12400 L 13450,7850 L 13000,7850 L 13000,7750 L 15250,7750 L 15250,7850 L 13550,7850 L 13550,12400 L 14850,12400 L 14850,12600 L 7900,12600 L 7900,12400 L 9450,12400 L 9450,7850 L 7500,7850 L 7500,7750 Z M 10450,100 L 10550,100 L 10550,5950 L 11750,5950 L 11750,6050 L 6600,6050 L 6600,5950 L 10450,5950 Z M 11000,-100 L 11550,-100 L 11550,100 L 11000,100 Z M 12750,5950 L 13950,5950 L 13950,100 L 12950,100 L 12950,-100 L 15000,-100 L 15000,100 L 14050,100 L 14050,5950 L 15500,5950 L 15500,6050 L 12750,6050 Z M 16250,7750 L 17900,7750 L 17900,6050 L 16500,6050 L 16500,5950 L 17900,5950 L 17900,4000 L 18100,4000 L 18100,9000 L 17900,9000 L 17900,7850 L 16250,7850 Z M 16650,12400 L 17900,12400 L 17900,11000 L 18100,11000 L 18100,12600 L 16650,12600 Z M 17000,-100 L 18100,-100 L 18100,2000 L 17900,2000 L 17900,100 L 17000,100 Z M 2850,12400 L 4450,12400 L 4450,7850 L 3000,7850 L 3000,7750 L 6500,7750 L 6500,7850 L 4550,7850 L 4550,12400 L 6100,12400 L 6100,12600 L 2850,12600 Z M 3500,-100 L 5500,-100 L 5500,100 L 3500,100 Z M 7500,-100 L 9000,-100 L 9000,100 L 7500,100 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<path d="M -100,-100 L 1500,-100 L 1500,100 L 100,100 L 100,2000 L -100,2000 Z M -100,12600 L -100,4000 L 100,4000 L 100,5950 L 5400,5950 L 5400,6050 L 100,6050 L 100,7750 L 1500,7750 L 1500,7850 L 100,7850 L 100,12400 L 1650,12400 L 1650,12600 Z M 10000,7750 L 10000,7850 L 9550,7850 L 9550,12400 L 11450,12400 L 11450,7850 L 11000,7850 L 11000,7750 L 12000,7750 L 12000,7850 L 11550,7850 L 11550,12400 L 13450,12400 L 13450,7850 L 13000,7850 L 13000,7750 L 15250,7750 L 15250,7850 L 13550,7850 L 13550,12400 L 14850,12400 L 14850,12600 L 7900,12600 L 7900,12400 L 9450,12400 L 9450,7850 L 7500,7850 L 7500,7750 Z M 10450,100 L 10550,100 L 10550,5950 L 11750,5950 L 11750,6050 L 6600,6050 L 6600,5950 L 10450,5950 Z M 11000,-100 L 11550,-100 L 11550,100 L 11000,100 Z M 12750,5950 L 13950,5950 L 13950,100 L 12950,100 L 12950,-100 L 15000,-100 L 15000,100 L 14050,100 L 14050,5950 L 15500,5950 L 15500,6050 L 12750,6050 Z M 16250,7750 L 17900,7750 L 17900,6050 L 16500,6050 L 16500,5950 L 17900,5950 L 17900,4000 L 18100,4000 L 18100,9000 L 17900,9000 L 17900,7850 L 16250,7850 Z M 16650,12400 L 17900,12400 L 17900,11000 L 18100,11000 L 18100,12600 L 16650,12600 Z M 17000,-100 L 18100,-100 L 18100,2000 L 17900,2000 L 17900,100 L 17000,100 Z M 2850,12400 L 4450,12400 L 4450,7850 L 3000,7850 L 3000,7750 L 6500,7750 L 6500,7850 L 4550,7850 L 4550,12400 L 6100,12400 L 6100,12600 L 2850,12600 Z M 3500,-100 L 5500,-100 L 5500,100 L 3500,100 Z M 7500,-100 L 9000,-100 L 9000,100 L 7500,100 Z" fill="none" stroke="#1b1b1b" stroke-width="50" stroke-linejoin="miter" stroke-miterlimit="4"/>
+<path d="M -100,-100 L 1500,-100 L 1500,100 L 100,100 L 100,2000 L -100,2000 Z M -100,12600 L -100,4000 L 100,4000 L 100,5950 L 5400,5950 L 5400,6050 L 100,6050 L 100,7750 L 1500,7750 L 1500,7850 L 100,7850 L 100,12400 L 1650,12400 L 1650,12600 Z M 10000,-100 L 11550,-100 L 11550,100 L 10550,100 L 10550,5950 L 11750,5950 L 11750,6050 L 6600,6050 L 6600,5950 L 10450,5950 L 10450,100 L 10000,100 Z M 10000,7750 L 10000,7850 L 9550,7850 L 9550,12400 L 11450,12400 L 11450,7850 L 11000,7850 L 11000,7750 L 12000,7750 L 12000,7850 L 11550,7850 L 11550,12400 L 13450,12400 L 13450,7850 L 13000,7850 L 13000,7750 L 15250,7750 L 15250,7850 L 13550,7850 L 13550,12400 L 14850,12400 L 14850,12600 L 7900,12600 L 7900,12400 L 9450,12400 L 9450,7850 L 7500,7850 L 7500,7750 Z M 12750,5950 L 13950,5950 L 13950,100 L 12950,100 L 12950,-100 L 15000,-100 L 15000,100 L 14050,100 L 14050,5950 L 15500,5950 L 15500,6050 L 12750,6050 Z M 16250,7750 L 17900,7750 L 17900,7400 L 18100,7400 L 18100,9000 L 17900,9000 L 17900,7850 L 16250,7850 Z M 16500,5950 L 17900,5950 L 17900,4000 L 18100,4000 L 18100,6400 L 17900,6400 L 17900,6050 L 16500,6050 Z M 16650,12400 L 17900,12400 L 17900,11000 L 18100,11000 L 18100,12600 L 16650,12600 Z M 17000,-100 L 18100,-100 L 18100,2000 L 17900,2000 L 17900,100 L 17000,100 Z M 2850,12400 L 4450,12400 L 4450,7850 L 3000,7850 L 3000,7750 L 6500,7750 L 6500,7850 L 4550,7850 L 4550,12400 L 6100,12400 L 6100,12600 L 2850,12600 Z M 3500,-100 L 5500,-100 L 5500,100 L 3500,100 Z M 7500,-100 L 8000,-100 L 8000,100 L 7500,100 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M -100,-100 L 1500,-100 L 1500,100 L 100,100 L 100,2000 L -100,2000 Z M -100,12600 L -100,4000 L 100,4000 L 100,5950 L 5400,5950 L 5400,6050 L 100,6050 L 100,7750 L 1500,7750 L 1500,7850 L 100,7850 L 100,12400 L 1650,12400 L 1650,12600 Z M 10000,-100 L 11550,-100 L 11550,100 L 10550,100 L 10550,5950 L 11750,5950 L 11750,6050 L 6600,6050 L 6600,5950 L 10450,5950 L 10450,100 L 10000,100 Z M 10000,7750 L 10000,7850 L 9550,7850 L 9550,12400 L 11450,12400 L 11450,7850 L 11000,7850 L 11000,7750 L 12000,7750 L 12000,7850 L 11550,7850 L 11550,12400 L 13450,12400 L 13450,7850 L 13000,7850 L 13000,7750 L 15250,7750 L 15250,7850 L 13550,7850 L 13550,12400 L 14850,12400 L 14850,12600 L 7900,12600 L 7900,12400 L 9450,12400 L 9450,7850 L 7500,7850 L 7500,7750 Z M 12750,5950 L 13950,5950 L 13950,100 L 12950,100 L 12950,-100 L 15000,-100 L 15000,100 L 14050,100 L 14050,5950 L 15500,5950 L 15500,6050 L 12750,6050 Z M 16250,7750 L 17900,7750 L 17900,7400 L 18100,7400 L 18100,9000 L 17900,9000 L 17900,7850 L 16250,7850 Z M 16500,5950 L 17900,5950 L 17900,4000 L 18100,4000 L 18100,6400 L 17900,6400 L 17900,6050 L 16500,6050 Z M 16650,12400 L 17900,12400 L 17900,11000 L 18100,11000 L 18100,12600 L 16650,12600 Z M 17000,-100 L 18100,-100 L 18100,2000 L 17900,2000 L 17900,100 L 17000,100 Z M 2850,12400 L 4450,12400 L 4450,7850 L 3000,7850 L 3000,7750 L 6500,7750 L 6500,7850 L 4550,7850 L 4550,12400 L 6100,12400 L 6100,12600 L 2850,12600 Z M 3500,-100 L 5500,-100 L 5500,100 L 3500,100 Z M 7500,-100 L 8000,-100 L 8000,100 L 7500,100 Z" fill="none" stroke="#1b1b1b" stroke-width="50" stroke-linejoin="miter" stroke-miterlimit="4"/>
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
 <polygon points="2850,12400 1650,12400 1650,12600 2850,12600" fill="none"/>
@@ -11035,14 +10949,17 @@ exports[`golden SVG snapshots > renders small-office.arch deterministically 1`] 
 <polygon points="6500,7800 6500,8800 6546.8,8798.9 6546.8,7800" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
 <path d="M 6500,8800 A 1000 1000 0 0 0 7500,7800" fill="none" stroke="#555555" stroke-width="13"/>
 <polygon points="10000,7850 11000,7850 11000,7750 10000,7750" fill="none"/>
-<polygon points="10000,7800 10000,8800 10046.8,8798.9 10046.8,7800" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
-<path d="M 10000,8800 A 1000 1000 0 0 0 11000,7800" fill="none" stroke="#555555" stroke-width="13"/>
+<polygon points="10000,7800 10000,6800 10046.8,6801.1 10046.8,7800" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
+<path d="M 10000,6800 A 1000 1000 0 0 1 11000,7800" fill="none" stroke="#555555" stroke-width="13"/>
 <polygon points="12000,7850 13000,7850 13000,7750 12000,7750" fill="none"/>
 <polygon points="12000,7800 12000,8800 12046.8,8798.9 12046.8,7800" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
 <path d="M 12000,8800 A 1000 1000 0 0 0 13000,7800" fill="none" stroke="#555555" stroke-width="13"/>
 <polygon points="15250,7850 16250,7850 16250,7750 15250,7750" fill="none"/>
 <polygon points="15250,7800 15250,8800 15296.8,8798.9 15296.8,7800" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
 <path d="M 15250,8800 A 1000 1000 0 0 0 16250,7800" fill="none" stroke="#555555" stroke-width="13"/>
+<polygon points="17900,6400 17900,7400 18100,7400 18100,6400" fill="none"/>
+<polygon points="18000,7400 17000,7400 17001.1,7353.2 18000,7353.2" fill="#ffffff" stroke="#555555" stroke-width="23.4"/>
+<path d="M 17000,7400 A 1000 1000 0 0 1 18000,6400" fill="none" stroke="#555555" stroke-width="13"/>
 <polygon points="1500,7850 3000,7850 3000,7750 1500,7750" fill="none"/>
 </g>
 <g id="A-GLAZ" inkscape:groupmode="layer" inkscape:label="A-GLAZ">
@@ -11058,12 +10975,12 @@ exports[`golden SVG snapshots > renders small-office.arch deterministically 1`] 
 <line x1="5500" y1="25" x2="7500" y2="25" stroke="#3a6ea5" stroke-width="18"/>
 <line x1="5500" y1="-25" x2="7500" y2="-25" stroke="#3a6ea5" stroke-width="18"/>
 <polygon points="5460,-100 5460,-140 7540,-140 7540,-100" fill="none" stroke="#1b1b1b" stroke-width="18"/>
-<polygon points="9000,150 11000,150 11000,-150 9000,-150" fill="#ffffff"/>
-<line x1="9000" y1="100" x2="11000" y2="100" stroke="#1b1b1b" stroke-width="18"/>
-<line x1="9000" y1="-100" x2="11000" y2="-100" stroke="#1b1b1b" stroke-width="18"/>
-<line x1="9000" y1="25" x2="11000" y2="25" stroke="#3a6ea5" stroke-width="18"/>
-<line x1="9000" y1="-25" x2="11000" y2="-25" stroke="#3a6ea5" stroke-width="18"/>
-<polygon points="8960,-100 8960,-140 11040,-140 11040,-100" fill="none" stroke="#1b1b1b" stroke-width="18"/>
+<polygon points="8000,150 10000,150 10000,-150 8000,-150" fill="#ffffff"/>
+<line x1="8000" y1="100" x2="10000" y2="100" stroke="#1b1b1b" stroke-width="18"/>
+<line x1="8000" y1="-100" x2="10000" y2="-100" stroke="#1b1b1b" stroke-width="18"/>
+<line x1="8000" y1="25" x2="10000" y2="25" stroke="#3a6ea5" stroke-width="18"/>
+<line x1="8000" y1="-25" x2="10000" y2="-25" stroke="#3a6ea5" stroke-width="18"/>
+<polygon points="7960,-100 7960,-140 10040,-140 10040,-100" fill="none" stroke="#1b1b1b" stroke-width="18"/>
 <polygon points="11550,150 12950,150 12950,-150 11550,-150" fill="#ffffff"/>
 <line x1="11550" y1="100" x2="12950" y2="100" stroke="#1b1b1b" stroke-width="18"/>
 <line x1="11550" y1="-100" x2="12950" y2="-100" stroke="#1b1b1b" stroke-width="18"/>
@@ -11284,24 +11201,24 @@ exports[`golden SVG snapshots > renders small-office.arch deterministically 1`] 
 <line x1="7415.15" y1="-484.85" x2="7584.85" y2="-315.15" stroke="#0E5484" stroke-width="18"/>
 <line x1="5415.15" y1="-484.85" x2="5584.85" y2="-315.15" stroke="#0E5484" stroke-width="18"/>
 <text x="6500" y="-575" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 6500 -575)">2000</text>
-<line x1="9000" y1="-100" x2="9000" y2="-400" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="8000" y1="-100" x2="8000" y2="-400" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="7500" y1="-100" x2="7500" y2="-400" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="9000" y1="-400" x2="7500" y2="-400" stroke="#0E5484" stroke-width="18"/>
-<line x1="8915.15" y1="-484.85" x2="9084.85" y2="-315.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="8000" y1="-400" x2="7500" y2="-400" stroke="#0E5484" stroke-width="18"/>
+<line x1="7915.15" y1="-484.85" x2="8084.85" y2="-315.15" stroke="#0E5484" stroke-width="18"/>
 <line x1="7415.15" y1="-484.85" x2="7584.85" y2="-315.15" stroke="#0E5484" stroke-width="18"/>
-<text x="8250" y="-575" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 8250 -575)">1500</text>
-<line x1="11000" y1="-100" x2="11000" y2="-400" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="9000" y1="-100" x2="9000" y2="-400" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="11000" y1="-400" x2="9000" y2="-400" stroke="#0E5484" stroke-width="18"/>
-<line x1="10915.15" y1="-484.85" x2="11084.85" y2="-315.15" stroke="#0E5484" stroke-width="18"/>
-<line x1="8915.15" y1="-484.85" x2="9084.85" y2="-315.15" stroke="#0E5484" stroke-width="18"/>
-<text x="10000" y="-575" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 10000 -575)">2000</text>
+<text x="7750" y="-575" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 7750 -575)">500</text>
+<line x1="10000" y1="-100" x2="10000" y2="-400" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="8000" y1="-100" x2="8000" y2="-400" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="10000" y1="-400" x2="8000" y2="-400" stroke="#0E5484" stroke-width="18"/>
+<line x1="9915.15" y1="-484.85" x2="10084.85" y2="-315.15" stroke="#0E5484" stroke-width="18"/>
+<line x1="7915.15" y1="-484.85" x2="8084.85" y2="-315.15" stroke="#0E5484" stroke-width="18"/>
+<text x="9000" y="-575" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 9000 -575)">2000</text>
 <line x1="11550" y1="-100" x2="11550" y2="-400" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="11000" y1="-100" x2="11000" y2="-400" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="11550" y1="-400" x2="11000" y2="-400" stroke="#0E5484" stroke-width="18"/>
+<line x1="10000" y1="-100" x2="10000" y2="-400" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="11550" y1="-400" x2="10000" y2="-400" stroke="#0E5484" stroke-width="18"/>
 <line x1="11465.15" y1="-484.85" x2="11634.85" y2="-315.15" stroke="#0E5484" stroke-width="18"/>
-<line x1="10915.15" y1="-484.85" x2="11084.85" y2="-315.15" stroke="#0E5484" stroke-width="18"/>
-<text x="11275" y="-575" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 11275 -575)">550</text>
+<line x1="9915.15" y1="-484.85" x2="10084.85" y2="-315.15" stroke="#0E5484" stroke-width="18"/>
+<text x="10775" y="-575" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 10775 -575)">1550</text>
 <line x1="12950" y1="-100" x2="12950" y2="-400" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="11550" y1="-100" x2="11550" y2="-400" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="12950" y1="-400" x2="11550" y2="-400" stroke="#0E5484" stroke-width="18"/>
@@ -11386,12 +11303,24 @@ exports[`golden SVG snapshots > renders small-office.arch deterministically 1`] 
 <line x1="18484.85" y1="3915.15" x2="18315.15" y2="4084.85" stroke="#0E5484" stroke-width="18"/>
 <line x1="18484.85" y1="1915.15" x2="18315.15" y2="2084.85" stroke="#0E5484" stroke-width="18"/>
 <text x="18575" y="3000" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 18575 3000)">2000</text>
-<line x1="18100" y1="9000" x2="18400" y2="9000" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="18100" y1="6400" x2="18400" y2="6400" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="18100" y1="4000" x2="18400" y2="4000" stroke="#0E5484" stroke-width="12.6"/>
-<line x1="18400" y1="9000" x2="18400" y2="4000" stroke="#0E5484" stroke-width="18"/>
-<line x1="18484.85" y1="8915.15" x2="18315.15" y2="9084.85" stroke="#0E5484" stroke-width="18"/>
+<line x1="18400" y1="6400" x2="18400" y2="4000" stroke="#0E5484" stroke-width="18"/>
+<line x1="18484.85" y1="6315.15" x2="18315.15" y2="6484.85" stroke="#0E5484" stroke-width="18"/>
 <line x1="18484.85" y1="3915.15" x2="18315.15" y2="4084.85" stroke="#0E5484" stroke-width="18"/>
-<text x="18575" y="6500" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 18575 6500)">5000</text>
+<text x="18575" y="5200" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 18575 5200)">2400</text>
+<line x1="18100" y1="7400" x2="18400" y2="7400" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="18100" y1="6400" x2="18400" y2="6400" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="18400" y1="7400" x2="18400" y2="6400" stroke="#0E5484" stroke-width="18"/>
+<line x1="18484.85" y1="7315.15" x2="18315.15" y2="7484.85" stroke="#0E5484" stroke-width="18"/>
+<line x1="18484.85" y1="6315.15" x2="18315.15" y2="6484.85" stroke="#0E5484" stroke-width="18"/>
+<text x="18575" y="6900" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 18575 6900)">1000</text>
+<line x1="18100" y1="9000" x2="18400" y2="9000" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="18100" y1="7400" x2="18400" y2="7400" stroke="#0E5484" stroke-width="12.6"/>
+<line x1="18400" y1="9000" x2="18400" y2="7400" stroke="#0E5484" stroke-width="18"/>
+<line x1="18484.85" y1="8915.15" x2="18315.15" y2="9084.85" stroke="#0E5484" stroke-width="18"/>
+<line x1="18484.85" y1="7315.15" x2="18315.15" y2="7484.85" stroke="#0E5484" stroke-width="18"/>
+<text x="18575" y="8200" font-size="250" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 18575 8200)">1600</text>
 <line x1="18100" y1="11000" x2="18400" y2="11000" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="18100" y1="9000" x2="18400" y2="9000" stroke="#0E5484" stroke-width="12.6"/>
 <line x1="18400" y1="11000" x2="18400" y2="9000" stroke="#0E5484" stroke-width="18"/>
@@ -11454,12 +11383,14 @@ exports[`golden SVG snapshots > renders small-office.arch deterministically 1`] 
 <text x="11580" y="7330" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">D07</text>
 <circle cx="14830" cy="7330" r="320" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="14830" y="7330" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">D08</text>
+<circle cx="17480" cy="7820" r="320" fill="none" stroke="#333333" stroke-width="18"/>
+<text x="17480" y="7820" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">D09</text>
 <polygon points="2180,200 2820,200 2820,600 2180,600" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="2500" y="400" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W01</text>
 <polygon points="6180,200 6820,200 6820,600 6180,600" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="6500" y="400" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W02</text>
-<polygon points="9680,200 10320,200 10320,600 9680,600" fill="none" stroke="#333333" stroke-width="18"/>
-<text x="10000" y="400" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W03</text>
+<polygon points="8680,200 9320,200 9320,600 8680,600" fill="none" stroke="#333333" stroke-width="18"/>
+<text x="9000" y="400" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W03</text>
 <polygon points="11930,200 12570,200 12570,600 11930,600" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="12250" y="400" font-size="250" fill="#333333" text-anchor="middle" dominant-baseline="central">W04</text>
 <polygon points="15680,200 16320,200 16320,600 15680,600" fill="none" stroke="#333333" stroke-width="18"/>
@@ -11531,18 +11462,18 @@ exports[`golden SVG snapshots > renders small-office.arch deterministically 1`] 
 <line x1="-100" y1="23285" x2="3500" y2="23285" stroke="#333333" stroke-width="18"/>
 <text x="-28" y="23455" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">TOTAL</text>
 <text x="3428" y="23455" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central" font-weight="600">225.00</text>
-<polygon points="3800,18185 9450,18185 9450,24985 3800,24985" fill="none" stroke="#333333" stroke-width="18"/>
+<polygon points="3800,18185 9450,18185 9450,25325 3800,25325" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="3913" y="18355" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">DOOR &amp; WINDOW SCHEDULE</text>
 <line x1="3800" y1="18525" x2="9450" y2="18525" stroke="#333333" stroke-width="18"/>
 <text x="4075" y="18695" font-size="152" fill="#888888" text-anchor="middle" dominant-baseline="central" font-weight="600">TAG</text>
 <text x="4463" y="18695" font-size="152" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">ROOM(S)</text>
-<line x1="4350" y1="18525" x2="4350" y2="24985" stroke="#333333" stroke-width="13"/>
+<line x1="4350" y1="18525" x2="4350" y2="25325" stroke="#333333" stroke-width="13"/>
 <text x="7937" y="18695" font-size="152" fill="#888888" text-anchor="end" dominant-baseline="central" font-weight="600">WIDTH</text>
-<line x1="7350" y1="18525" x2="7350" y2="24985" stroke="#333333" stroke-width="13"/>
+<line x1="7350" y1="18525" x2="7350" y2="25325" stroke="#333333" stroke-width="13"/>
 <text x="8163" y="18695" font-size="152" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">TYPE</text>
-<line x1="8050" y1="18525" x2="8050" y2="24985" stroke="#333333" stroke-width="13"/>
+<line x1="8050" y1="18525" x2="8050" y2="25325" stroke="#333333" stroke-width="13"/>
 <text x="8963" y="18695" font-size="152" fill="#888888" text-anchor="start" dominant-baseline="central" font-weight="600">HAND</text>
-<line x1="8850" y1="18525" x2="8850" y2="24985" stroke="#333333" stroke-width="13"/>
+<line x1="8850" y1="18525" x2="8850" y2="25325" stroke="#333333" stroke-width="13"/>
 <line x1="3800" y1="18865" x2="9450" y2="18865" stroke="#333333" stroke-width="18"/>
 <text x="4075" y="19035" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">D01</text>
 <text x="4463" y="19035" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">exterior / Reception</text>
@@ -11577,7 +11508,7 @@ exports[`golden SVG snapshots > renders small-office.arch deterministically 1`] 
 <text x="4463" y="20735" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Corridor / Accessibl...</text>
 <text x="7937" y="20735" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1000</text>
 <text x="8163" y="20735" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">hinged</text>
-<text x="8963" y="20735" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">left</text>
+<text x="8963" y="20735" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">right</text>
 <line x1="3800" y1="20565" x2="9450" y2="20565" stroke="#333333" stroke-width="13"/>
 <text x="4075" y="21075" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">D07</text>
 <text x="4463" y="21075" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Corridor / Comms</text>
@@ -11591,81 +11522,226 @@ exports[`golden SVG snapshots > renders small-office.arch deterministically 1`] 
 <text x="8163" y="21415" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">hinged</text>
 <text x="8963" y="21415" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">left</text>
 <line x1="3800" y1="21245" x2="9450" y2="21245" stroke="#333333" stroke-width="13"/>
-<text x="4075" y="21755" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W01</text>
-<text x="4463" y="21755" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Team Workspace</text>
-<text x="7937" y="21755" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">2000</text>
-<text x="8163" y="21755" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">window</text>
-<text x="8963" y="21755" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">-</text>
+<text x="4075" y="21755" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">D09</text>
+<text x="4463" y="21755" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">exterior / Corridor</text>
+<text x="7937" y="21755" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1000</text>
+<text x="8163" y="21755" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">hinged</text>
+<text x="8963" y="21755" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">right</text>
 <line x1="3800" y1="21585" x2="9450" y2="21585" stroke="#333333" stroke-width="13"/>
-<text x="4075" y="22095" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W02</text>
+<text x="4075" y="22095" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W01</text>
 <text x="4463" y="22095" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Team Workspace</text>
 <text x="7937" y="22095" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">2000</text>
 <text x="8163" y="22095" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">window</text>
 <text x="8963" y="22095" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">-</text>
 <line x1="3800" y1="21925" x2="9450" y2="21925" stroke="#333333" stroke-width="13"/>
-<text x="4075" y="22435" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W03</text>
+<text x="4075" y="22435" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W02</text>
 <text x="4463" y="22435" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Team Workspace</text>
 <text x="7937" y="22435" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">2000</text>
 <text x="8163" y="22435" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">window</text>
 <text x="8963" y="22435" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">-</text>
 <line x1="3800" y1="22265" x2="9450" y2="22265" stroke="#333333" stroke-width="13"/>
-<text x="4075" y="22775" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W04</text>
-<text x="4463" y="22775" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Manager</text>
-<text x="7937" y="22775" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1400</text>
+<text x="4075" y="22775" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W03</text>
+<text x="4463" y="22775" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Team Workspace</text>
+<text x="7937" y="22775" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">2000</text>
 <text x="8163" y="22775" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">window</text>
 <text x="8963" y="22775" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">-</text>
 <line x1="3800" y1="22605" x2="9450" y2="22605" stroke="#333333" stroke-width="13"/>
-<text x="4075" y="23115" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W05</text>
-<text x="4463" y="23115" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Meeting 1</text>
-<text x="7937" y="23115" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">2000</text>
+<text x="4075" y="23115" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W04</text>
+<text x="4463" y="23115" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Manager</text>
+<text x="7937" y="23115" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1400</text>
 <text x="8163" y="23115" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">window</text>
 <text x="8963" y="23115" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">-</text>
 <line x1="3800" y1="22945" x2="9450" y2="22945" stroke="#333333" stroke-width="13"/>
-<text x="4075" y="23455" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W06</text>
+<text x="4075" y="23455" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W05</text>
 <text x="4463" y="23455" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Meeting 1</text>
 <text x="7937" y="23455" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">2000</text>
 <text x="8163" y="23455" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">window</text>
 <text x="8963" y="23455" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">-</text>
 <line x1="3800" y1="23285" x2="9450" y2="23285" stroke="#333333" stroke-width="13"/>
-<text x="4075" y="23795" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W07</text>
-<text x="4463" y="23795" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Meeting 2</text>
+<text x="4075" y="23795" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W06</text>
+<text x="4463" y="23795" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Meeting 1</text>
 <text x="7937" y="23795" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">2000</text>
 <text x="8163" y="23795" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">window</text>
 <text x="8963" y="23795" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">-</text>
 <line x1="3800" y1="23625" x2="9450" y2="23625" stroke="#333333" stroke-width="13"/>
-<text x="4075" y="24135" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W08</text>
-<text x="4463" y="24135" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Break Room</text>
-<text x="7937" y="24135" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1800</text>
+<text x="4075" y="24135" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W07</text>
+<text x="4463" y="24135" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Meeting 2</text>
+<text x="7937" y="24135" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">2000</text>
 <text x="8163" y="24135" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">window</text>
 <text x="8963" y="24135" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">-</text>
 <line x1="3800" y1="23965" x2="9450" y2="23965" stroke="#333333" stroke-width="13"/>
-<text x="4075" y="24475" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W09</text>
-<text x="4463" y="24475" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Meeting 2</text>
+<text x="4075" y="24475" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W08</text>
+<text x="4463" y="24475" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Break Room</text>
 <text x="7937" y="24475" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1800</text>
 <text x="8163" y="24475" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">window</text>
 <text x="8963" y="24475" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">-</text>
 <line x1="3800" y1="24305" x2="9450" y2="24305" stroke="#333333" stroke-width="13"/>
-<text x="4075" y="24815" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W10</text>
-<text x="4463" y="24815" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Team Workspace</text>
-<text x="7937" y="24815" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">2000</text>
+<text x="4075" y="24815" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W09</text>
+<text x="4463" y="24815" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Meeting 2</text>
+<text x="7937" y="24815" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1800</text>
 <text x="8163" y="24815" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">window</text>
 <text x="8963" y="24815" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">-</text>
 <line x1="3800" y1="24645" x2="9450" y2="24645" stroke="#333333" stroke-width="13"/>
-<polygon points="9750,18185 17100,18185 17100,20225 9750,20225" fill="none" stroke="#333333" stroke-width="18"/>
+<text x="4075" y="25155" font-size="190" fill="#333333" text-anchor="middle" dominant-baseline="central">W10</text>
+<text x="4463" y="25155" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Team Workspace</text>
+<text x="7937" y="25155" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">2000</text>
+<text x="8163" y="25155" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">window</text>
+<text x="8963" y="25155" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">-</text>
+<line x1="3800" y1="24985" x2="9450" y2="24985" stroke="#333333" stroke-width="13"/>
+<polygon points="9750,18185 17100,18185 17100,20565 9750,20565" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="9897" y="18355" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">NOTES</text>
 <line x1="9750" y1="18525" x2="17100" y2="18525" stroke="#333333" stroke-width="18"/>
 <text x="9953" y="18695" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1.</text>
 <text x="10100" y="18695" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">All dimensions in millimetres. Do not scale from this</text>
 <text x="10100" y="19035" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">drawing.</text>
 <text x="9953" y="19375" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">2.</text>
-<text x="10100" y="19375" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Room areas are taken to wall centrelines.</text>
-<text x="9953" y="19715" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">3.</text>
-<text x="10100" y="19715" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Fire-rated door to the comms room to be confirmed by the</text>
-<text x="10100" y="20055" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">engineer.</text>
+<text x="10100" y="19375" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Room areas are as scheduled; confirm on site before</text>
+<text x="10100" y="19715" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">ordering finishes.</text>
+<text x="9953" y="20055" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">3.</text>
+<text x="10100" y="20055" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">Fire-rated door to the comms room to be confirmed by the</text>
+<text x="10100" y="20395" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">engineer.</text>
 </g>
 <g><polygon points="17650,-1375 17425,-655 17650,-812.5 17875,-655" fill="#333333" transform="rotate(0 17650 -925)"/><text x="17650" y="-1583" font-size="260" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
 <g><rect x="-100" y="14925" width="1000" height="140" fill="#333333"/><rect x="900" y="14925" width="1000" height="140" fill="none" stroke="#333333" stroke-width="18"/><text x="-100" y="15265" font-size="200" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="1900" y="15265" font-size="200" fill="#333333" text-anchor="middle" dominant-baseline="central">2 m</text></g>
-<g><rect x="14700" y="14925" width="3400" height="2760" fill="none" stroke="#333333" stroke-width="18"/><text x="14870" y="15155" font-size="152" fill="#888888" dominant-baseline="central">PROJECT</text><text x="17930" y="15155" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">Small Office</text><text x="14870" y="15615" font-size="152" fill="#888888" dominant-baseline="central">DRAWN BY</text><text x="17930" y="15615" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">ArchLang</text><line x1="14700" y1="15385" x2="18100" y2="15385" stroke="#333333" stroke-width="9"/><text x="14870" y="16075" font-size="152" fill="#888888" dominant-baseline="central">DATE</text><text x="17930" y="16075" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">2026-10-14</text><line x1="14700" y1="15845" x2="18100" y2="15845" stroke="#333333" stroke-width="9"/><text x="14870" y="16535" font-size="152" fill="#888888" dominant-baseline="central">DRAWING NO.</text><text x="17930" y="16535" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">A-201</text><line x1="14700" y1="16305" x2="18100" y2="16305" stroke="#333333" stroke-width="9"/><text x="14870" y="16995" font-size="152" fill="#888888" dominant-baseline="central">REVISION</text><text x="17930" y="16995" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">A</text><line x1="14700" y1="16765" x2="18100" y2="16765" stroke="#333333" stroke-width="9"/><text x="14870" y="17455" font-size="152" fill="#888888" dominant-baseline="central">SCALE</text><text x="17930" y="17455" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1:100</text><line x1="14700" y1="17225" x2="18100" y2="17225" stroke="#333333" stroke-width="9"/></g>
+<g><rect x="14700" y="14925" width="3400" height="2760" fill="none" stroke="#333333" stroke-width="18"/><text x="14870" y="15155" font-size="152" fill="#888888" dominant-baseline="central">PROJECT</text><text x="17930" y="15155" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">Practice Office</text><text x="14870" y="15615" font-size="152" fill="#888888" dominant-baseline="central">DRAWN BY</text><text x="17930" y="15615" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">ArchLang</text><line x1="14700" y1="15385" x2="18100" y2="15385" stroke="#333333" stroke-width="9"/><text x="14870" y="16075" font-size="152" fill="#888888" dominant-baseline="central">DATE</text><text x="17930" y="16075" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">2026-10-14</text><line x1="14700" y1="15845" x2="18100" y2="15845" stroke="#333333" stroke-width="9"/><text x="14870" y="16535" font-size="152" fill="#888888" dominant-baseline="central">DRAWING NO.</text><text x="17930" y="16535" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">A-201</text><line x1="14700" y1="16305" x2="18100" y2="16305" stroke="#333333" stroke-width="9"/><text x="14870" y="16995" font-size="152" fill="#888888" dominant-baseline="central">REVISION</text><text x="17930" y="16995" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">A</text><line x1="14700" y1="16765" x2="18100" y2="16765" stroke="#333333" stroke-width="9"/><text x="14870" y="17455" font-size="152" fill="#888888" dominant-baseline="central">SCALE</text><text x="17930" y="17455" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central">1:100</text><line x1="14700" y1="17225" x2="18100" y2="17225" stroke="#333333" stroke-width="9"/></g>
+</svg>"
+`;
+
+exports[`golden SVG snapshots > renders relational.arch deterministically 1`] = `
+"<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"  viewBox="-1494 -1494 10988 12201.6" font-family="Helvetica, Arial, sans-serif">
+<defs><pattern id="poche" patternUnits="userSpaceOnUse" width="106.6" height="106.6" patternTransform="rotate(45)"><rect width="106.6" height="106.6" fill="#e9e4db"/><line x1="0" y1="0" x2="0" y2="106.6" stroke="#b9b1a4" stroke-width="9.18"/></pattern></defs>
+<rect x="-1494" y="-1494" width="10988" height="12201.6" fill="#ffffff"/>
+<g id="A-FLOR" inkscape:groupmode="layer" inkscape:label="A-FLOR">
+<polygon points="0,0 5000,0 5000,4000 0,4000" fill="#fbfaf7"/>
+<polygon points="5000,0 8000,0 8000,4000 5000,4000" fill="#fbfaf7"/>
+<polygon points="0,4000 5000,4000 5000,7500 0,7500" fill="#fbfaf7"/>
+<polygon points="5000,4000 8000,4000 8000,7500 5000,7500" fill="#fbfaf7"/>
+</g>
+<g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
+<path d="M 1777.5,7400 L 322.5,7400 A 22.5 22.5 0 0 1 300,7377.5 L 300,5422.5 A 22.5 22.5 0 0 1 322.5,5400 L 1777.5,5400 A 22.5 22.5 0 0 1 1800,5422.5 L 1800,7377.5 A 22.5 22.5 0 0 1 1777.5,7400 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 1777.5,7400 L 322.5,7400 A 22.5 22.5 0 0 1 300,7377.5 L 300,7310 L 1800,7310 L 1800,7377.5 A 22.5 22.5 0 0 1 1777.5,7400 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 1612,7250 L 1198,7250 A 108 108 0 0 1 1090,7142 L 1090,6998 A 108 108 0 0 1 1198,6890 L 1612,6890 A 108 108 0 0 1 1720,6998 L 1720,7142 A 108 108 0 0 1 1612,7250 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
+<path d="M 902,7250 L 488,7250 A 108 108 0 0 1 380,7142 L 380,6998 A 108 108 0 0 1 488,6890 L 902,6890 A 108 108 0 0 1 1010,6998 L 1010,7142 A 108 108 0 0 1 902,7250 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
+<polygon points="1755,6800 345,6800 345,5685 585,5445 1755,5445" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.48"/>
+<polygon points="1755,6800 345,6800 345,6600 1755,6600" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
+<polygon points="345,5685 585,5445 585,5685" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
+<path d="M 256,2900 L 1944,2900 A 56 56 0 0 1 2000,2956 L 2000,3644 A 56 56 0 0 1 1944,3700 L 256,3700 A 56 56 0 0 1 200,3644 L 200,2956 A 56 56 0 0 1 256,2900 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 256,2900 L 344,2900 L 344,3644 A 56 56 0 0 1 288,3700 L 256,3700 A 56 56 0 0 1 200,3644 L 200,2956 A 56 56 0 0 1 256,2900 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 1856,2900 L 1944,2900 A 56 56 0 0 1 2000,2956 L 2000,3644 A 56 56 0 0 1 1944,3700 L 1912,3700 A 56 56 0 0 1 1856,3644 L 1856,2900 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 386.4,2940 L 815.2,2940 A 28 28 0 0 1 843.2,2968 L 843.2,3032 A 28 28 0 0 1 815.2,3060 L 386.4,3060 A 28 28 0 0 1 358.4,3032 L 358.4,2968 A 28 28 0 0 1 386.4,2940 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
+<path d="M 885.6,2940 L 1314.4,2940 A 28 28 0 0 1 1342.4,2968 L 1342.4,3032 A 28 28 0 0 1 1314.4,3060 L 885.6,3060 A 28 28 0 0 1 857.6,3032 L 857.6,2968 A 28 28 0 0 1 885.6,2940 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
+<path d="M 1384.8,2940 L 1813.6,2940 A 28 28 0 0 1 1841.6,2968 L 1841.6,3032 A 28 28 0 0 1 1813.6,3060 L 1384.8,3060 A 28 28 0 0 1 1356.8,3032 L 1356.8,2968 A 28 28 0 0 1 1384.8,2940 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
+<path d="M 394.4,3074.4 L 807.2,3074.4 A 36 36 0 0 1 843.2,3110.4 L 843.2,3628 A 36 36 0 0 1 807.2,3664 L 394.4,3664 A 36 36 0 0 1 358.4,3628 L 358.4,3110.4 A 36 36 0 0 1 394.4,3074.4 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
+<path d="M 893.6,3074.4 L 1306.4,3074.4 A 36 36 0 0 1 1342.4,3110.4 L 1342.4,3628 A 36 36 0 0 1 1306.4,3664 L 893.6,3664 A 36 36 0 0 1 857.6,3628 L 857.6,3110.4 A 36 36 0 0 1 893.6,3074.4 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
+<path d="M 1392.8,3074.4 L 1805.6,3074.4 A 36 36 0 0 1 1841.6,3110.4 L 1841.6,3628 A 36 36 0 0 1 1805.6,3664 L 1392.8,3664 A 36 36 0 0 1 1356.8,3628 L 1356.8,3110.4 A 36 36 0 0 1 1392.8,3074.4 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
+<path d="M 220,2000 L 1080,2000 A 20 20 0 0 1 1100,2020 L 1100,2480 A 20 20 0 0 1 1080,2500 L 220,2500 A 20 20 0 0 1 200,2480 L 200,2020 A 20 20 0 0 1 220,2000 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 262,2050 L 1038,2050 A 12 12 0 0 1 1050,2062 L 1050,2438 A 12 12 0 0 1 1038,2450 L 262,2450 A 12 12 0 0 1 250,2438 L 250,2062 A 12 12 0 0 1 262,2050 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
+<path d="M 5572.06,564 L 7427.94,564 A 8.06 8.06 0 0 1 7436,572.06 L 7436,1227.94 A 8.06 8.06 0 0 1 7427.94,1236 L 5572.06,1236 A 8.06 8.06 0 0 1 5564,1227.94 L 5564,572.06 A 8.06 8.06 0 0 1 5572.06,564 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 5589.54,584.16 L 7410.46,584.16 A 5.38 5.38 0 0 1 7415.84,589.54 L 7415.84,1210.46 A 5.38 5.38 0 0 1 7410.46,1215.84 L 5589.54,1215.84 A 5.38 5.38 0 0 1 5584.16,1210.46 L 5584.16,589.54 A 5.38 5.38 0 0 1 5589.54,584.16 Z" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
+<path d="M 5799.97,400.32 L 5952.03,400.32 A 28.51 28.51 0 0 1 5980.54,428.83 L 5980.54,564 L 5771.46,564 L 5771.46,428.83 A 28.51 28.51 0 0 1 5799.97,400.32 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 5773.04,379.2 L 5978.96,379.2 A 15.84 15.84 0 0 1 5994.8,395.04 A 15.84 15.84 0 0 1 5978.96,410.88 L 5773.04,410.88 A 15.84 15.84 0 0 1 5757.2,395.04 A 15.84 15.84 0 0 1 5773.04,379.2 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 5952.03,1399.68 L 5799.97,1399.68 A 28.51 28.51 0 0 1 5771.46,1371.17 L 5771.46,1236 L 5980.54,1236 L 5980.54,1371.17 A 28.51 28.51 0 0 1 5952.03,1399.68 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 5978.96,1420.8 L 5773.04,1420.8 A 15.84 15.84 0 0 1 5757.2,1404.96 A 15.84 15.84 0 0 1 5773.04,1389.12 L 5978.96,1389.12 A 15.84 15.84 0 0 1 5994.8,1404.96 A 15.84 15.84 0 0 1 5978.96,1420.8 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 6423.97,400.32 L 6576.03,400.32 A 28.51 28.51 0 0 1 6604.54,428.83 L 6604.54,564 L 6395.46,564 L 6395.46,428.83 A 28.51 28.51 0 0 1 6423.97,400.32 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 6397.04,379.2 L 6602.96,379.2 A 15.84 15.84 0 0 1 6618.8,395.04 A 15.84 15.84 0 0 1 6602.96,410.88 L 6397.04,410.88 A 15.84 15.84 0 0 1 6381.2,395.04 A 15.84 15.84 0 0 1 6397.04,379.2 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 6576.03,1399.68 L 6423.97,1399.68 A 28.51 28.51 0 0 1 6395.46,1371.17 L 6395.46,1236 L 6604.54,1236 L 6604.54,1371.17 A 28.51 28.51 0 0 1 6576.03,1399.68 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 6602.96,1420.8 L 6397.04,1420.8 A 15.84 15.84 0 0 1 6381.2,1404.96 A 15.84 15.84 0 0 1 6397.04,1389.12 L 6602.96,1389.12 A 15.84 15.84 0 0 1 6618.8,1404.96 A 15.84 15.84 0 0 1 6602.96,1420.8 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 7047.97,400.32 L 7200.03,400.32 A 28.51 28.51 0 0 1 7228.54,428.83 L 7228.54,564 L 7019.46,564 L 7019.46,428.83 A 28.51 28.51 0 0 1 7047.97,400.32 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 7021.04,379.2 L 7226.96,379.2 A 15.84 15.84 0 0 1 7242.8,395.04 A 15.84 15.84 0 0 1 7226.96,410.88 L 7021.04,410.88 A 15.84 15.84 0 0 1 7005.2,395.04 A 15.84 15.84 0 0 1 7021.04,379.2 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 7200.03,1399.68 L 7047.97,1399.68 A 28.51 28.51 0 0 1 7019.46,1371.17 L 7019.46,1236 L 7228.54,1236 L 7228.54,1371.17 A 28.51 28.51 0 0 1 7200.03,1399.68 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 7226.96,1420.8 L 7021.04,1420.8 A 15.84 15.84 0 0 1 7005.2,1404.96 A 15.84 15.84 0 0 1 7021.04,1389.12 L 7226.96,1389.12 A 15.84 15.84 0 0 1 7242.8,1404.96 A 15.84 15.84 0 0 1 7226.96,1420.8 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 5400.32,976.03 L 5400.32,823.97 A 28.51 28.51 0 0 1 5428.83,795.46 L 5564,795.46 L 5564,1004.54 L 5428.83,1004.54 A 28.51 28.51 0 0 1 5400.32,976.03 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 5379.2,1002.96 L 5379.2,797.04 A 15.84 15.84 0 0 1 5395.04,781.2 A 15.84 15.84 0 0 1 5410.88,797.04 L 5410.88,1002.96 A 15.84 15.84 0 0 1 5395.04,1018.8 A 15.84 15.84 0 0 1 5379.2,1002.96 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 7599.68,823.97 L 7599.68,976.03 A 28.51 28.51 0 0 1 7571.17,1004.54 L 7436,1004.54 L 7436,795.46 L 7571.17,795.46 A 28.51 28.51 0 0 1 7599.68,823.97 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 7620.8,797.04 L 7620.8,1002.96 A 15.84 15.84 0 0 1 7604.96,1018.8 A 15.84 15.84 0 0 1 7589.12,1002.96 L 7589.12,797.04 A 15.84 15.84 0 0 1 7604.96,781.2 A 15.84 15.84 0 0 1 7620.8,797.04 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 5681,1736 L 5969,1736 A 54 54 0 0 1 6023,1790 L 6023,2096 A 54 54 0 0 1 5969,2150 L 5681,2150 A 54 54 0 0 1 5627,2096 L 5627,1790 A 54 54 0 0 1 5681,1736 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 5627,1700 L 6023,1700 A 27 27 0 0 1 6050,1727 A 27 27 0 0 1 6023,1754 L 5627,1754 A 27 27 0 0 1 5600,1727 A 27 27 0 0 1 5627,1700 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 6881,1736 L 7169,1736 A 54 54 0 0 1 7223,1790 L 7223,2096 A 54 54 0 0 1 7169,2150 L 6881,2150 A 54 54 0 0 1 6827,2096 L 6827,1790 A 54 54 0 0 1 6881,1736 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 6827,1700 L 7223,1700 A 27 27 0 0 1 7250,1727 A 27 27 0 0 1 7223,1754 L 6827,1754 A 27 27 0 0 1 6800,1727 A 27 27 0 0 1 6827,1700 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<polygon points="7900,2400 7900,3200 7300,3200 7300,2400" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 7780,2570.05 L 7780,3029.95 A 43.8 43.8 0 0 1 7736.2,3073.75 L 7385.8,3073.75 A 43.8 43.8 0 0 1 7342,3029.95 L 7342,2570.05 A 43.8 43.8 0 0 1 7385.8,2526.25 L 7736.2,2526.25 A 43.8 43.8 0 0 1 7780,2570.05 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
+<circle cx="7561" cy="2800" r="28.47" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
+<circle cx="7837" cy="2800" r="21" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
+<line x1="7816" y1="2800" x2="7692.4" y2="2800" stroke="#a8a29a" stroke-width="9.48"/>
+<polygon points="7900,3300 7900,3900 7300,3900 7300,3300" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 7864,3351 L 7864,3849 A 15 15 0 0 1 7849,3864 L 7471,3864 A 15 15 0 0 1 7456,3849 L 7456,3351 A 15 15 0 0 1 7471,3336 L 7849,3336 A 15 15 0 0 1 7864,3351 Z" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
+<circle cx="7755.88" cy="3474.12" r="76.7" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
+<circle cx="7755.88" cy="3474.12" r="42.19" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
+<circle cx="7755.88" cy="3725.88" r="76.7" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
+<circle cx="7755.88" cy="3725.88" r="42.19" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
+<circle cx="7564.12" cy="3474.12" r="55.61" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
+<circle cx="7564.12" cy="3474.12" r="30.59" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
+<circle cx="7564.12" cy="3725.88" r="55.61" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
+<circle cx="7564.12" cy="3725.88" r="30.59" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
+<circle cx="7363" cy="3420" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.48"/>
+<circle cx="7363" cy="3540" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.48"/>
+<circle cx="7363" cy="3660" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.48"/>
+<circle cx="7363" cy="3780" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.48"/>
+<path d="M 7900,4353.52 L 7900,4646.48 A 23.52 23.52 0 0 1 7876.48,4670 L 7755.52,4670 A 23.52 23.52 0 0 1 7732,4646.48 L 7732,4353.52 A 23.52 23.52 0 0 1 7755.52,4330 L 7876.48,4330 A 23.52 23.52 0 0 1 7900,4353.52 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 7238.5,4500 A 121.51 121.51 0 0 1 7295.52,4397.02 A 373.97 373.97 0 0 1 7692.48,4397.02 A 121.51 121.51 0 0 1 7749.5,4500 A 121.51 121.51 0 0 1 7692.48,4602.98 A 373.97 373.97 0 0 1 7295.52,4602.98 A 121.51 121.51 0 0 1 7238.5,4500 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 7276.9,4500 A 91.53 91.53 0 0 1 7320.51,4422.01 A 294.71 294.71 0 0 1 7629.09,4422.01 A 91.53 91.53 0 0 1 7672.7,4500 A 91.53 91.53 0 0 1 7629.09,4577.99 A 294.71 294.71 0 0 1 7320.51,4577.99 A 91.53 91.53 0 0 1 7276.9,4500 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
+<line x1="7717.18" y1="4432" x2="7687.53" y2="4432" stroke="#a8a29a" stroke-width="9.48"/>
+<line x1="7717.18" y1="4568" x2="7687.53" y2="4568" stroke="#a8a29a" stroke-width="9.48"/>
+<circle cx="7816" cy="4500" r="16" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.48"/>
+<path d="M 7900,5027 L 7900,5573 A 27 27 0 0 1 7873,5600 L 7477,5600 A 27 27 0 0 1 7450,5573 L 7450,5027 A 27 27 0 0 1 7477,5000 L 7873,5000 A 27 27 0 0 1 7900,5027 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 7639,5528 A 120.17 120.17 0 0 1 7539.21,5474.79 A 313.68 313.68 0 0 1 7539.21,5125.21 A 120.17 120.17 0 0 1 7639,5072 A 120.17 120.17 0 0 1 7738.79,5125.21 A 313.68 313.68 0 0 1 7738.79,5474.79 A 120.17 120.17 0 0 1 7639,5528 Z" fill="#ffffff" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 7639,5497.4 A 92.52 92.52 0 0 1 7560.37,5453.63 A 291.54 291.54 0 0 1 7560.37,5146.37 A 92.52 92.52 0 0 1 7639,5102.6 A 92.52 92.52 0 0 1 7717.63,5146.37 A 291.54 291.54 0 0 1 7717.63,5453.63 A 92.52 92.52 0 0 1 7639,5497.4 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
+<circle cx="7848.25" cy="5300" r="15.75" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.48"/>
+<line x1="7848.25" y1="5300" x2="7760.5" y2="5300" stroke="#a8a29a" stroke-width="9.48"/>
+<circle cx="7623.7" cy="5300" r="13.5" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.48"/>
+<path d="M 5236,6500 L 6064,6500 A 36 36 0 0 1 6100,6536 L 6100,7364 A 36 36 0 0 1 6064,7400 L 5236,7400 A 36 36 0 0 1 5200,7364 L 5200,6536 A 36 36 0 0 1 5236,6500 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="13.12"/>
+<path d="M 5272,6554 L 6028,6554 A 18 18 0 0 1 6046,6572 L 6046,7328 A 18 18 0 0 1 6028,7346 L 5272,7346 A 18 18 0 0 1 5254,7328 L 5254,6572 A 18 18 0 0 1 5272,6554 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="9.48"/>
+<line x1="5273.09" y1="6573.09" x2="5615" y2="6915" stroke="#a8a29a" stroke-width="9.48"/>
+<line x1="6026.91" y1="6573.09" x2="5685" y2="6915" stroke="#a8a29a" stroke-width="9.48"/>
+<line x1="6026.91" y1="7326.91" x2="5685" y2="6985" stroke="#a8a29a" stroke-width="9.48"/>
+<line x1="5273.09" y1="7326.91" x2="5615" y2="6985" stroke="#a8a29a" stroke-width="9.48"/>
+<circle cx="5650" cy="6950" r="49.5" fill="none" stroke="#a8a29a" stroke-width="9.48"/>
+<circle cx="5650" cy="6950" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.48"/>
+</g>
+<g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
+<path d="M -100,-100 L 500,-100 L 500,100 L 100,100 L 100,7400 L 2400,7400 L 2400,7600 L -100,7600 Z M 1500,-100 L 5600,-100 L 5600,100 L 1500,100 Z M 4000,7400 L 7900,7400 L 7900,100 L 7400,100 L 7400,-100 L 8100,-100 L 8100,7600 L 4000,7600 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M -100,-100 L 500,-100 L 500,100 L 100,100 L 100,7400 L 2400,7400 L 2400,7600 L -100,7600 Z M 1500,-100 L 5600,-100 L 5600,100 L 1500,100 Z M 4000,7400 L 7900,7400 L 7900,100 L 7400,100 L 7400,-100 L 8100,-100 L 8100,7600 L 4000,7600 Z" fill="none" stroke="#1b1b1b" stroke-width="22.96" stroke-linejoin="miter" stroke-miterlimit="4"/>
+</g>
+<g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
+<polygon points="500,100 1500,100 1500,-100 500,-100" fill="none"/>
+<polygon points="500,0 500,1000 540,999.2 540,0" fill="#ffffff" stroke="#555555" stroke-width="17.06"/>
+<path d="M 500,1000 A 1000 1000 0 0 0 1500,0" fill="none" stroke="#555555" stroke-width="9.48"/>
+</g>
+<g id="A-GLAZ" inkscape:groupmode="layer" inkscape:label="A-GLAZ">
+<polygon points="5600,122.96 7400,122.96 7400,-122.96 5600,-122.96" fill="#ffffff"/>
+<line x1="5600" y1="100" x2="7400" y2="100" stroke="#1b1b1b" stroke-width="13.12"/>
+<line x1="5600" y1="-100" x2="7400" y2="-100" stroke="#1b1b1b" stroke-width="13.12"/>
+<line x1="5600" y1="25" x2="7400" y2="25" stroke="#3a6ea5" stroke-width="13.12"/>
+<line x1="5600" y1="-25" x2="7400" y2="-25" stroke="#3a6ea5" stroke-width="13.12"/>
+<polygon points="5560,-100 5560,-140 7440,-140 7440,-100" fill="none" stroke="#1b1b1b" stroke-width="13.12"/>
+<polygon points="4000,7377.04 2400,7377.04 2400,7622.96 4000,7622.96" fill="#ffffff"/>
+<line x1="4000" y1="7400" x2="2400" y2="7400" stroke="#1b1b1b" stroke-width="13.12"/>
+<line x1="4000" y1="7600" x2="2400" y2="7600" stroke="#1b1b1b" stroke-width="13.12"/>
+<line x1="4000" y1="7475" x2="2400" y2="7475" stroke="#3a6ea5" stroke-width="13.12"/>
+<line x1="4000" y1="7525" x2="2400" y2="7525" stroke="#3a6ea5" stroke-width="13.12"/>
+<polygon points="4040,7600 4040,7640 2360,7640 2360,7600" fill="none" stroke="#1b1b1b" stroke-width="13.12"/>
+</g>
+<g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
+<text x="2500" y="1950.8" font-size="246" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Living</text>
+<text x="2500" y="2221.4" font-size="180.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">20.0 m²</text>
+<text x="6500" y="2550.8" font-size="246" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Kitchen</text>
+<text x="6500" y="2821.4" font-size="180.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
+<text x="2500" y="5700.8" font-size="246" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>
+<text x="2500" y="5971.4" font-size="180.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">17.5 m²</text>
+<text x="6500" y="5700.8" font-size="246" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bath</text>
+<text x="6500" y="5971.4" font-size="180.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">10.5 m²</text>
+</g>
+<g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
+<line x1="-100" y1="7500" x2="-100" y2="8100" stroke="#0E5484" stroke-width="9.18"/>
+<line x1="8100" y1="7500" x2="8100" y2="8100" stroke="#0E5484" stroke-width="9.18"/>
+<line x1="-100" y1="8100" x2="8100" y2="8100" stroke="#0E5484" stroke-width="13.12"/>
+<line x1="-30.42" y1="8169.58" x2="-169.58" y2="8030.42" stroke="#0E5484" stroke-width="13.12"/>
+<line x1="8169.58" y1="8169.58" x2="8030.42" y2="8030.42" stroke="#0E5484" stroke-width="13.12"/>
+<text x="4000" y="8214.8" font-size="164" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 4000 8214.8)">8200</text>
+</g>
+<g><polygon points="7731,-1235.7 7546.5,-645.3 7731,-774.45 7915.5,-645.3" fill="#333333" transform="rotate(0 7731 -866.7)"/><text x="7731" y="-1406.26" font-size="213.2" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
+<g><rect x="-100" y="8788.8" width="1000" height="114.8" fill="#333333"/><rect x="900" y="8788.8" width="1000" height="114.8" fill="none" stroke="#333333" stroke-width="13.12"/><text x="-100" y="9067.6" font-size="164" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="1900" y="9067.6" font-size="164" fill="#333333" text-anchor="middle" dominant-baseline="central">2 m</text></g>
+<g><rect x="5312" y="8788.8" width="2788" height="1508.8" fill="none" stroke="#333333" stroke-width="13.12"/><text x="5451.4" y="8977.4" font-size="124.64" fill="#888888" dominant-baseline="central">PROJECT</text><text x="7960.6" y="8977.4" font-size="155.8" fill="#333333" text-anchor="end" dominant-baseline="central">Relational Layout Demo</text><text x="5451.4" y="9354.6" font-size="124.64" fill="#888888" dominant-baseline="central">DRAWN BY</text><text x="7960.6" y="9354.6" font-size="155.8" fill="#333333" text-anchor="end" dominant-baseline="central">ArchCanvas</text><line x1="5312" y1="9166" x2="8100" y2="9166" stroke="#333333" stroke-width="6.56"/><text x="5451.4" y="9731.8" font-size="124.64" fill="#888888" dominant-baseline="central">DATE</text><text x="7960.6" y="9731.8" font-size="155.8" fill="#333333" text-anchor="end" dominant-baseline="central">2026-06-26</text><line x1="5312" y1="9543.2" x2="8100" y2="9543.2" stroke="#333333" stroke-width="6.56"/><text x="5451.4" y="10109" font-size="124.64" fill="#888888" dominant-baseline="central">SCALE</text><text x="7960.6" y="10109" font-size="155.8" fill="#333333" text-anchor="end" dominant-baseline="central">1:100</text><line x1="5312" y1="9920.4" x2="8100" y2="9920.4" stroke="#333333" stroke-width="6.56"/></g>
 </svg>"
 `;
 

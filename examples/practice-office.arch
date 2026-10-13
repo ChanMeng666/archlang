@@ -14,7 +14,7 @@
 # reachability and path-width lint can measure. The WC door is 1000 wide and the room is
 # deep enough to turn a wheelchair — the accessible-WC rule in
 # `--profile accessibility-advisory`.
-plan "Small Office" {
+plan "Practice Office" {
   units mm
   grid 50
   paper A2 landscape
@@ -24,10 +24,10 @@ plan "Small Office" {
   schedule rooms
   schedule openings
   notes "All dimensions in millimetres. Do not scale from this drawing."
-  notes "Room areas are taken to wall centrelines."
+  notes "Room areas are as scheduled; confirm on site before ordering finishes."
   notes "Fire-rated door to the comms room to be confirmed by the engineer."
 
-  title { project "Small Office" drawn_by "ArchLang" date "2026-10-14" number "A-201" revision "A" }
+  title { project "Practice Office" drawn_by "ArchLang" date "2026-10-14" number "A-201" revision "A" }
 
   # ---- shell and partitions ---------------------------------------------------
   wall id=shell exterior thickness 200 { (0,0) (18000,0) (18000,12500) (0,12500) close }
@@ -43,7 +43,7 @@ plan "Small Office" {
 
   # ---- rooms ------------------------------------------------------------------
   zone work "Workspace" {
-    room id=r_open    at (0,0)        size 10500x6000 label "Team Workspace" uses office
+    room id=r_team    at (0,0)        size 10500x6000 label "Team Workspace" uses office
     room id=r_manager at (10500,0)    size 3500x6000  label "Manager" uses office
     room id=r_meet1   at (14000,0)    size 4000x6000  label "Meeting 1" uses office
     room id=r_meet2   at (13500,7800) size 4500x4700  label "Meeting 2" uses office
@@ -59,18 +59,20 @@ plan "Small Office" {
   # ---- doors ------------------------------------------------------------------
   door id=d_front at (2250,12500) width 1200 wall shell hinge left swing in
   opening id=o_recep on w_cs at 2250 width 1500
-  door id=d_open on w_cn at 6000 width 1200 swing into r_open
+  door id=d_open on w_cn at 6000 width 1200 swing into r_team
   door id=d_mgr on w_cn at 12250 width 1000 swing into r_manager
   door id=d_m1 on w_cn at 16000 width 1000 swing into r_meet1
   door id=d_break on w_cs at 7000 width 1000 swing into r_break
-  door id=d_wc on w_cs at 10500 width 1000 swing into r_wc
+  door id=d_wc on w_cs at 10500 width 1000 swing into r_spine
   door id=d_comms on w_cs at 12500 width 1000 swing into r_comms
   door id=d_m2 on w_cs at 15750 width 1000 swing into r_meet2
+  # A second way out: the corridor ends on an outward-opening door, so no room is a dead end.
+  door id=d_east at (18000,6900) width 1000 wall shell hinge right swing in
 
   # ---- windows ----------------------------------------------------------------
   window at (2500,0) width 2000 wall shell
   window at (6500,0) width 2000 wall shell
-  window at (10000,0) width 2000 wall shell
+  window at (9000,0) width 2000 wall shell
   window at (12250,0) width 1400 wall shell
   window at (16000,0) width 2000 wall shell
   window at (18000,3000) width 2000 wall shell
