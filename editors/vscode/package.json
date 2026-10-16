@@ -65,7 +65,7 @@
   "devDependencies": {
     "@chanmeng666/archlang": "^1.43.1",
     "@types/markdown-it": "^14.1.2",
-    "@types/node": "^22.20.0",
+    "@types/node": "^26.6.5",
     "@types/vscode": "^1.75.0",
     "@vscode/vsce": "^3.2.1",
     "esbuild": "^0.28.2",
