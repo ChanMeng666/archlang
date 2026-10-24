@@ -536,10 +536,17 @@ into PS3.12)
   enclosing rectangle (`src/geometry/min-rect.ts`), the SKILL and spec loop line (compile → lint →
   score --taste → repair). PS5.1a and PS5.1b together complete PS5.1.
 
-**PS5.2 · Profiles.** `todo`
+**PS5.2 · Profiles.** `done (PR #NNN, pending)`
 - `cn-`, `uk-` and `us-residential-advisory`, each a partial ruleset with sourced numbers.
 - R4 (area and short side by use), R8 (corridor width by destination), R10 (WC clearances) and R37
   (bedroom escape window, `us`).
+- Shipped: R4, R8 and R7's target per profile (`cn` 1/7, `uk`/`us` 8 %); new code
+  `W_ROOM_TOO_NARROW` (clear width between wall faces), a double bedroom read from its bed
+  (`no-bed` otherwise), R8 measured on the passage's own width (not the walk, which runs through
+  doors); profile-only warnings under the taste report's `advisory`, never capping.
+- *Deferred (lead ruling, 2026-10-24):* R10 lands with PS2.11's WC-clearance rule and R37 with
+  PS2.16's escape-window rule; their sourced numbers wait, unread, in `DEFERRED_PROFILE_NUMBERS`
+  (`src/lint/ruleset.ts`).
 
 **PS5.3 · `validate --json` gains `next`.** `done (PR #246, pending)`
 - The one diagnostic to fix first, chosen by fixed precedence: errors, then validity, then intent,
@@ -597,7 +604,7 @@ into PS3.12)
 | 3 | PS3.1, PS3.2, PS3.0, PS3.3, PS3.4 | ADR merged; byte-identity law green; `relational.arch` lints clean with walls derived; the 500 mm widening drill moves walls and doors with the room; the class-2 corpus cases are unwritable in the D5 form. *Status:* met 2026-10-23 by PS3.6 (PR #227), every bullet; catch rate then 46/68; dated status history verbatim: `research/2026-10-24-ps3-as-built.md` § §7 row 3 |
 | 3a | PS3.7, PS3.8, PS3.5, PS3.9 (and PS0.19) | Unplanned: done after row 3 was met, before row 4 (D7): PRs #228, #229, #230, #232; PS0.19 #231. First-contact re-run, PR #233 (`audits/2026-10-24-first-contact-rerun.md`): old six plans 17/57 caught (6 partially; 14/57 counting halves); cold re-authoring 6/6 rooms-first; defects 57 → 48, blockers 4 → 2; corpus catch rate 46/68 → 47/70 |
 | 4 | PS0.4, PS4.1, PS4.2 | The widening drill's `impact` names every moved, held and broken item correctly. *Status:* met in part 2026-10-24 by PS4.2 (PR #240): every moved and broken item of the drill is named correctly; `held` is empty because the drill's walls are fixed coordinates and depend on nothing (PS4.5). Merged 2026-10-24 (7954f252) |
-| 5 | PS5.1–PS5.3, PS2.10–PS2.12 | **Next.** The taste score separates the corpus's known-bad from known-good plans monotonically. D10: the row-3 first-contact figures are the baseline; re-measure after this row. PS5.1 complete; concordance 37 ordered / 0 tied / 0 reversed (0 ledgered) / 4 unjudged. *Re-measure:* `audits/2026-10-25-first-contact-rerun-row5.md` (PR #249): cold re-authoring 6/6 rooms-first, defects 48 → 49 (B 2 → 0), final lint 0; 0/6 authors ran `score --taste` or `validate`; taste 0.72–0.93 on the new plans and reaches 3/48 (+1 partial) and 2/49 audited defects; the row-5 codes caught 1.5/57 and 0/48 on the old plans (`W_ANNOTATION_OVERLAP` only, 12 true hits); concordance unchanged; corpus 53/72. |
+| 5 | PS5.1–PS5.3, PS2.10–PS2.12 | **Next.** The taste score separates the corpus's known-bad from known-good plans monotonically. D10: the row-3 first-contact figures are the baseline; re-measure after this row. PS5.1 complete; concordance 37 ordered / 0 tied / 0 reversed (0 ledgered) / 4 unjudged. *Re-measure:* `audits/2026-10-25-first-contact-rerun-row5.md` (PR #249): cold re-authoring 6/6 rooms-first, defects 48 → 49 (B 2 → 0), final lint 0; 0/6 authors ran `score --taste` or `validate`; taste 0.72–0.93 on the new plans and reaches 3/48 (+1 partial) and 2/49 audited defects; the row-5 codes caught 1.5/57 and 0/48 on the old plans (`W_ANNOTATION_OVERLAP` only, 12 true hits); concordance unchanged; corpus 53/72. PS5.2 done (PR #NNN, pending; R10 and R37 deferred to PS2.11 and PS2.16). |
 | 6 | PS4.3, PS4.4, PS3.5, PS3.6, PS5.4, PS7.x | — (PS3.6 landed in row 3, PS3.5 in row 3a) |
 | 7 | PS6.1 | — |
 

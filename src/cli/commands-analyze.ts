@@ -825,6 +825,10 @@ function printTaste(r: TasteReport): void {
     );
   if (r.validity.drafting.warnings > 0)
     process.stderr.write(`  drafting (does not cap): ${r.validity.drafting.codes.join(", ")}\n`);
+  if (r.advisory.length > 0)
+    process.stderr.write(
+      `  advisory, ${r.profile} only (does not cap): ${r.advisory.map((a) => `${a.code} ×${a.warnings}`).join(", ")} (see \`lint --profile ${r.profile}\`)\n`,
+    );
   for (const c of r.criteria) {
     const head = `${c.id} ${c.name} ${c.score === null ? "—" : c.score}${c.advice ? ` ${c.advice}` : ""}`;
     process.stderr.write(`  ${head}: ${c.message}\n`);

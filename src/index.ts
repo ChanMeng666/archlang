@@ -284,7 +284,14 @@ export { LINT_CODE_LAYERS } from "./lint.js";
 export type { LintLayer } from "./lint.js";
 // The taste layer (ADR 0032, PS5.1): a separate, sourced score that never gates. `lint()` and
 // `describe()` never read it.
-export { taste, TASTE_ADVICE, TASTE_BUDGET, TASTE_PROFILE_NAMES, TASTE_SUBSCORES } from "./taste/index.js";
+export {
+  taste,
+  TASTE_ADVICE,
+  TASTE_BUDGET,
+  TASTE_PROFILE_NAMES,
+  TASTE_PROFILES,
+  TASTE_SUBSCORES,
+} from "./taste/index.js";
 export type {
   TasteAdviceRow,
   TasteAdvisory,

@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Three residential-advisory profiles (plan card PS5.2): `cn-residential-advisory`,
+  `uk-residential-advisory` and `us-residential-advisory`, each a lint profile and a taste
+  profile, so `lint --profile`, `score --taste` and `validate --profile/--taste` take the same
+  names. They add room areas by use and, for a double bedroom, its own (a double is read from its
+  bed: a `double_bed`, a `bed` wider than 1200 mm, or two beds; never from the label), clear room
+  widths and passage widths by the rooms a passage leads to, each read from its source as advice
+  (GB 50096-2011, the Nationally Described Space Standard, Approved Document M4(2), IRC R304 and
+  R311.6; the table is in `docs/analysis.md`). New code `W_ROOM_TOO_NARROW`; new coverage reason
+  `no-bed`; `no-dwelling` gains its first caller. The taste profiles set R7's target (`cn` 1/7,
+  GB 50096-2011 7.1.5; `uk` and `us` 8 %), and a residential-advisory taste report lists its lint
+  profile's own warnings under `advisory`, where they never cap. Default `lint()`, `describe()`
+  and the drawing are unchanged. WC clearances and the escape window wait for their rules.
+
 - `validate --json` ends with `next` (plan card PS5.3): the one item to fix first, `{ tier,
   code, message, span?, hint? }` or `null`, chosen by a fixed precedence: compile errors, then
   compile-channel warnings (upstream causes, such as a door off its wall), then validity-layer

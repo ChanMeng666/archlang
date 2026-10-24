@@ -270,8 +270,8 @@ parse + resolve + lint, no render (is it valid & sound?)
 | `--graph <graph.json>` | also check the plan's interior-door adjacency against an intended graph (bare dict or {input_graph:{…}}); mismatch → exit 2 |
 | `--intent <intent.json>` | gate the plan against a brief's intent JSON; a failing gating assertion (room count/existence/area/windows) → exit 2. Adjacency/reachability score but never gate. Composes with --graph. |
 | `--feedback` | with --intent, append a deterministic per-violation correction prompt (advisory data, never applied) |
-| `--profile <residential-basic\|accessibility-advisory>` | lint under this advisory ruleset too (as `lint --profile`); its own warnings rank as `next` tier profile |
-| `--taste <generic>` | let `next` fall back to the lowest-scoring taste criterion (ADR 0032); never gates |
+| `--profile <residential-basic\|accessibility-advisory\|cn-residential-advisory\|uk-residential-advisory\|us-residential-advisory>` | lint under this advisory ruleset too (as `lint --profile`); its own warnings rank as `next` tier profile |
+| `--taste <generic\|cn-residential-advisory\|uk-residential-advisory\|us-residential-advisory>` | let `next` fall back to the lowest-scoring taste criterion (ADR 0032); never gates |
 | `--code <CODE[,CODE…]>` | show only diagnostics with these codes — a DISPLAY filter: the exit code and `ok` still come from the unfiltered set |
 | `--severity <error\|warning>` | show only diagnostics of this severity — a DISPLAY filter, like --code (never changes the exit code) |
 | `--json` | structured result on stdout, messages on stderr |
@@ -349,7 +349,7 @@ continuous intent satisfaction (satisfied/total) as data — the refine-loop rew
 | Flag | Does |
 | --- | --- |
 | `--brief <intent.json>` | the intent JSON to measure satisfaction against (this or --taste) |
-| `--taste <generic>` | score taste instead (ADR 0032): sourced criteria in [0,1], capped at 0.5 while a validity lint warning stands; never gates (not with --brief) |
+| `--taste <generic\|cn-residential-advisory\|uk-residential-advisory\|us-residential-advisory>` | score taste instead (ADR 0032): sourced criteria in [0,1], capped at 0.5 while a validity lint warning stands; never gates (not with --brief) |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -371,7 +371,7 @@ architectural soundness warnings
 
 | Flag | Does |
 | --- | --- |
-| `--profile <residential-basic\|accessibility-advisory>` | advisory ruleset |
+| `--profile <residential-basic\|accessibility-advisory\|cn-residential-advisory\|uk-residential-advisory\|us-residential-advisory>` | advisory ruleset |
 | `--strict, --fail-on-warning` | warnings fail (exit 2) |
 | `--code <CODE[,CODE…]>` | show only diagnostics with these codes — a DISPLAY filter: the exit code and `ok` still come from the unfiltered set |
 | `--severity <error\|warning>` | show only diagnostics of this severity — a DISPLAY filter, like --code (never changes the exit code) |
@@ -644,7 +644,7 @@ print the full bundled agent context (spec + workflow + CLI + errors)
 
 | Flag | Does |
 | --- | --- |
-| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 135 KB of it (spec = the language, 30 KB; workflow = the agent loop, 28 KB; cli = every command, 24 KB; errors = the diagnostic catalog, 52 KB) |
+| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 136 KB of it (spec = the language, 30 KB; workflow = the agent loop, 28 KB; cli = every command, 24 KB; errors = the diagnostic catalog, 52 KB) |
 | `--json` | structured result on stdout, messages on stderr |
 
 **Examples**
@@ -653,7 +653,7 @@ print the full bundled agent context (spec + workflow + CLI + errors)
 # the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 $ archlang context
 
-# just the diagnostic catalog (52 KB) — read one section instead of paying for the whole 135 KB bundle
+# just the diagnostic catalog (52 KB) — read one section instead of paying for the whole 136 KB bundle
 $ archlang context --section errors
 ```
 

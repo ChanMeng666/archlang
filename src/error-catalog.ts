@@ -1374,6 +1374,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Widen the room to the figure the warning quotes, park fewer cars in it, or drop the `uses garage` tag if the room is not one (a store that happens to be called a garage classifies as one from its label alone — an explicit `uses storage` overrides that).",
     'room id=g at (0,0) size 2500x6000 label "Garage" uses garage\nfurniture car at (300,300) size 1800x4600 in g   # lint: 2500 mm across, one bay wants 2700',
   ),
+  W_ROOM_TOO_NARROW: W(
+    "W_ROOM_TOO_NARROW",
+    "A room is narrower than its profile asks of its use.",
+    "Raised only under a residential-advisory lint profile (`cn-`, `uk-`, `us-residential-advisory`); the default ruleset asks no room a width. A rectangular room's short side, measured CLEAR between the inner faces of the walls along it (the drawn edge where no wall backs it), is under the least width the profile gives: for a use (a bedroom 2150 mm under `uk`, a habitable room 2134 mm and a hall 914 mm under `us`), for a double bedroom (2550 mm under `uk`; one double bedroom of a home 2750 mm, held on the widest when none is that wide), or for a passage by the rooms it opens onto (under `cn`: 1200 mm for the entry passage, 1000 mm to a bedroom or living room, 900 mm to a kitchen, bathroom, WC or store). A bedroom is a double from its bed, never its label: a `double_bed`, a `bed` wider than 1200 mm, or two beds; a bedroom with no bed files a `no-bed` coverage skip. A polygon or circle room is not measured (`non-rectangular-room`). The figures are read from the sources each profile cites, as advice, never as compliance (ADR 0005).",
+    "Widen the room until the quoted width stands clear between the walls' inner faces; the drawn size runs to the wall centrelines, so add half of each wall's thickness.",
+    'room id=h at (0,0) size 950x4000 label "Hall" uses hall\nroom id=b at (950,0) size 3000x3000 label "Bedroom" uses bedroom   # lint --profile cn-residential-advisory: the passage to a bedroom asks 1000 mm clear',
+  ),
   W_WHILE_DEPRECATED: W(
     "W_WHILE_DEPRECATED",
     "`while` is deprecated and will be removed in a future major version.",

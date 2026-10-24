@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**134 errors** · **69 warnings**
+**134 errors** · **70 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -196,6 +196,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_ROOM_NO_FIXTURE`](#w_room_no_fixture) | warning | Bathroom or kitchen has no fixtures. |
 | [`W_ROOM_OUTSIDE_SHELL`](#w_room_outside_shell) | warning | A room lies partly outside the building's walls. |
 | [`W_ROOM_OVERLAP`](#w_room_overlap) | warning | Rooms overlap. |
+| [`W_ROOM_TOO_NARROW`](#w_room_too_narrow) | warning | A room is narrower than its profile asks of its use. |
 | [`W_ROOM_TOO_SMALL`](#w_room_too_small) | warning | Room is implausibly small. |
 | [`W_ROOM_UNREACHABLE`](#w_room_unreachable) | warning | Room cannot be reached from the entrance. |
 | [`W_ROOM_VIA_PRIVATE`](#w_room_via_private) | warning | Every route to a room passes through one particular bedroom, bathroom or WC. |
@@ -2595,6 +2596,19 @@ room at (4000,0) size 4600x5000 label "Bedroom" uses bedroom   # lint: 600 mm pa
 ```arch static
 room at (0,0) size 2000x2000
 room at (1000,0) size 2000x2000   # warning
+```
+
+## W_ROOM_TOO_NARROW
+
+*warning* — A room is narrower than its profile asks of its use.
+
+**Cause.** Raised only under a residential-advisory lint profile (`cn-`, `uk-`, `us-residential-advisory`); the default ruleset asks no room a width. A rectangular room's short side, measured CLEAR between the inner faces of the walls along it (the drawn edge where no wall backs it), is under the least width the profile gives: for a use (a bedroom 2150 mm under `uk`, a habitable room 2134 mm and a hall 914 mm under `us`), for a double bedroom (2550 mm under `uk`; one double bedroom of a home 2750 mm, held on the widest when none is that wide), or for a passage by the rooms it opens onto (under `cn`: 1200 mm for the entry passage, 1000 mm to a bedroom or living room, 900 mm to a kitchen, bathroom, WC or store). A bedroom is a double from its bed, never its label: a `double_bed`, a `bed` wider than 1200 mm, or two beds; a bedroom with no bed files a `no-bed` coverage skip. A polygon or circle room is not measured (`non-rectangular-room`). The figures are read from the sources each profile cites, as advice, never as compliance (ADR 0005).
+
+**Fix.** Widen the room until the quoted width stands clear between the walls' inner faces; the drawn size runs to the wall centrelines, so add half of each wall's thickness.
+
+```arch static
+room id=h at (0,0) size 950x4000 label "Hall" uses hall
+room id=b at (950,0) size 3000x3000 label "Bedroom" uses bedroom   # lint --profile cn-residential-advisory: the passage to a bedroom asks 1000 mm clear
 ```
 
 ## W_ROOM_TOO_SMALL
