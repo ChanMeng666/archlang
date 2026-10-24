@@ -107,7 +107,7 @@ piece that cannot be placed is left out.
 > with areas read as drawn (the PR's first head, as its review measured it) 14 in 9 plans, `uk`
 > 12, `cn` 2, `us` 0; with net areas (as merged) 28 in 14 plans, `uk` 22, `cn` 6, `us` 0. Every
 > one is a `W_ROOM_TOO_SMALL` or `W_ROOM_TOO_NARROW` on a bedroom the furnished 1500 mm `bed`
-> makes a double; the shipped examples gain one (`sheet-notes`, `uk`, net areas). Card PS5.5:
+> makes a double; the shipped examples gain one (`sheet-notes`, `uk`, net areas). Card PS5.6:
 > `furnish --profile <name>` holds the law under that profile.
 
 **8. This version furnishes rectangular rooms of single-storey plans.** A polygon or circular

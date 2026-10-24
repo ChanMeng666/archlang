@@ -59,9 +59,11 @@ export function netAreaM2(ctx: LintContext, r: RRoom): number | undefined {
   return mm2 === undefined ? undefined : Math.round((mm2 / 1_000_000) * 100) / 100;
 }
 
-/** The `W_ROOM_TOO_SMALL` hint when a net-area ruleset falls back to the drawn area. */
+/** The `W_ROOM_TOO_SMALL` hint when a net-area ruleset falls back to the drawn area: the net area
+ *  is omitted past the edge or probe-work caps, or when the integral fails its consistency guard
+ *  (`"inconsistent"`, `netAreaDetail` in `src/analyze/net-area.ts`). */
 const GROSS_AREA_HINT =
-  "gross-area: this room's net area could not be measured (too much wall geometry for the net-area budget), so its drawn area, to the wall centrelines, was read instead; the clause measures net floor.";
+  "gross-area: this room's net area could not be measured (too much wall geometry for the net-area budget, or walls crossing it in a way the exact measure cannot settle), so its drawn area, to the wall centrelines, was read instead; the clause measures net floor.";
 
 /**
  * Does any window serve the room? The one window-attribution fact the daylight rules read

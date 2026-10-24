@@ -109,7 +109,7 @@ the reason goes in `unresolved`. A plan that needs nothing comes back byte-ident
 > `cn` 6, `us` 0.
 > Every one is a `W_ROOM_TOO_SMALL` or `W_ROOM_TOO_NARROW` on a bedroom that the furnished
 > 1500 mm `bed` makes a double. The shipped examples gain one (`sheet-notes`, `uk`, with net
-> areas; none as drawn). Card PS5.5 lets `finish`/`furnish --profile <name>` hold the law under
+> areas; none as drawn). Card PS5.6 lets `finish`/`furnish --profile <name>` hold the law under
 > that one profile.
 
 > **Superseded (2026-10).** The `furnish` stage exists: see
