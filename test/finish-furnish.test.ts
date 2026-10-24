@@ -23,6 +23,7 @@ import {
   LINT_PROFILES,
   lint,
 } from "../src/index.js";
+import { ADVISORY_CODE_PROFILES } from "../src/lint.js";
 import { sourceConflicts } from "../src/repair.js";
 import type { World } from "../src/world.js";
 import { canonicalFixture } from "../src/elements/fixtures-glyphs.js";
@@ -978,6 +979,11 @@ suite("furnish — the table is built from words the catalogue has, and the docs
   });
 });
 
+/**
+ * Every lint profile but the advisory-code ones (`ADVISORY_CODE_PROFILES`, PS5.2): those read a
+ * bedroom as a double from its bed, so placing a bed can raise their room-size warnings, and the
+ * law is not held under them (`src/lint/ruleset.ts` says why).
+ */
 suite("furnish law — never worse under EVERY lint profile", () => {
   const profileCodes = (src: string, profile: string): Map<string, number> => {
     const out = new Map<string, number>();
@@ -997,7 +1003,7 @@ suite("furnish law — never worse under EVERY lint profile", () => {
   for (const [name, src] of CORPUS)
     it(`${name}: no profile gains a lint code`, () => {
       const r = finish(src, { world, only: "furnish" });
-      for (const profile of LINT_PROFILE_NAMES) {
+      for (const profile of LINT_PROFILE_NAMES.filter((p) => !ADVISORY_CODE_PROFILES.includes(p))) {
         const was = profileCodes(src, profile);
         const gained = [...profileCodes(r.source, profile)].filter(([c, n]) => n > (was.get(c) ?? 0)).map(([c]) => c);
         expect(gained, `${profile}:\n${r.changes.map((c) => c.text).join("\n")}`).toEqual([]);

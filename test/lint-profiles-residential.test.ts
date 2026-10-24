@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_RULESET,
+  ERROR_CATALOG,
   LINT_PROFILE_NAMES,
   LINT_PROFILES,
   lint,
@@ -9,7 +10,7 @@ import {
   TASTE_PROFILE_NAMES,
   taste,
 } from "../src/index.js";
-import { DEFERRED_PROFILE_NUMBERS } from "../src/lint/ruleset.js";
+import { ADVISORY_CODE_PROFILES, DEFERRED_PROFILE_NUMBERS } from "../src/lint/ruleset.js";
 import { EXAMPLE_SOURCES, TASTE_WORLD } from "./taste-sources.js";
 
 /**
@@ -52,6 +53,8 @@ describe("the residential-advisory profiles", () => {
     }
     const residential = (names: readonly string[]) => names.filter((n) => n.endsWith("-residential-advisory"));
     expect(residential(LINT_PROFILE_NAMES)).toEqual(residential(TASTE_PROFILE_NAMES));
+    // The advisory-code layer: finish's never-worse law is not held under them.
+    expect(ADVISORY_CODE_PROFILES).toEqual(residential(LINT_PROFILE_NAMES));
     for (const n of [...LINT_PROFILE_NAMES, ...TASTE_PROFILE_NAMES])
       for (const part of n.split("-")) expect(part, n).not.toMatch(/^(gb\d*|ndss|irc|nkba|ada|iso)$/i);
   });
@@ -104,6 +107,16 @@ describe("the residential-advisory profiles", () => {
     const narrowBed = room(1500, 4000, "bedroom", bed(1500), "Bedroom");
     expect(found(narrowBed)).toEqual([]);
     expect(skipsOf(narrowBed, "residential-basic")).not.toContain("no-bed");
+  });
+});
+
+describe("the catalog example", () => {
+  it("raises W_ROOM_TOO_NARROW under the profile it names, and nothing under the default", () => {
+    const ex = ERROR_CATALOG.W_ROOM_TOO_NARROW!.example;
+    const profile = /lint --profile ([a-z-]+)/.exec(ex)![1]!;
+    const src = `plan "E" {\n  units mm\n${ex}\n}\n`;
+    expect(lint(src, { profile }).map((d) => d.code)).toContain("W_ROOM_TOO_NARROW");
+    expect(lint(src).map((d) => d.code)).not.toContain("W_ROOM_TOO_NARROW");
   });
 });
 

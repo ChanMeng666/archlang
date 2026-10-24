@@ -468,6 +468,20 @@ export const DEFERRED_PROFILE_NUMBERS = Object.freeze({
   ukEscape: Object.freeze({ minClearM2: 0.33, minClearSideMm: 450, maxOpenableHeightMm: 1100 }),
 });
 
+/**
+ * The profiles of the ADVISORY-CODE layer (plan-soundness README §4, PS5.2): opt-in readings of a
+ * jurisdiction's room sizes. `finish`'s never-worse law is not held under them (`furnish` and
+ * `finish` measure the default ruleset and the other profiles only): placing a bed is what makes
+ * a bedroom a double for them, so a law held under them would refuse to furnish every bedroom
+ * under a jurisdiction's double-bedroom figure, which is advisory code turned into gating by the
+ * back door (design §6 Q2, the reason taste does not cap on them either).
+ */
+export const ADVISORY_CODE_PROFILES: readonly string[] = Object.freeze([
+  "cn-residential-advisory",
+  "uk-residential-advisory",
+  "us-residential-advisory",
+]);
+
 /** The names of the built-in {@link LINT_PROFILES}, for CLI validation. */
 export const LINT_PROFILE_NAMES: readonly string[] = Object.keys(LINT_PROFILES);
 

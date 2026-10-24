@@ -2607,8 +2607,7 @@ room at (1000,0) size 2000x2000   # warning
 **Fix.** Widen the room until the quoted width stands clear between the walls' inner faces; the drawn size runs to the wall centrelines, so add half of each wall's thickness.
 
 ```arch static
-room id=h at (0,0) size 950x4000 label "Hall" uses hall
-room id=b at (950,0) size 3000x3000 label "Bedroom" uses bedroom   # lint --profile cn-residential-advisory: the passage to a bedroom asks 1000 mm clear
+room id=b at (0,0) size 2100x4000 label "Bedroom" uses bedroom   # lint --profile uk-residential-advisory: 2100 mm, under the 2150 mm a bedroom is asked
 ```
 
 ## W_ROOM_TOO_SMALL

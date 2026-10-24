@@ -1402,7 +1402,7 @@ one.
 targets (today R7's, in the criteria table above) and, for a residential-advisory one, lists the
 warnings its lint profile raises that default `lint` does not under `advisory` as
 `{ code, warnings }`. They are advice from an advisory code and never cap the score: only
-default-profile validity warnings do. `arch score plan.arch --taste cn-residential-advisory`
+default-profile validity warnings do. `archlang score plan.arch --taste cn-residential-advisory`
 prints them on one `advisory … (does not cap)` line; `lint --profile` shows each.
 
 ## The agent loop

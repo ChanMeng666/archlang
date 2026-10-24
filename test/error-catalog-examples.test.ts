@@ -142,13 +142,16 @@ const NOT_REPRODUCED: ReadonlyMap<string, string> = new Map([
 /** The smallest legal plan an example fragment can be dropped into. */
 const wrap = (body: string): string => `plan "E" {\n  units mm\n${body}\n}\n`;
 
-/** Every code an example raises through both channels a `.arch` source has. */
+/** Every code an example raises through both channels a `.arch` source has, and through `lint()`
+ *  under the profile its comment names (`# lint --profile <name>: …`), when it names one. */
 function codesRaisedBy(example: string): string[] {
   const src = /^\s*plan\b/.test(example) ? example : wrap(example);
+  const profile = /# lint --profile ([a-z-]+)/.exec(example)?.[1];
   try {
     return [
       ...compile(src, { noCache: true }).diagnostics.map((d) => d.code ?? "<uncoded>"),
       ...lint(src).map((d) => d.code ?? "<uncoded>"),
+      ...(profile ? lint(src, { profile }).map((d) => d.code ?? "<uncoded>") : []),
     ];
   } catch (e) {
     return [`<threw: ${(e as Error).message}>`];

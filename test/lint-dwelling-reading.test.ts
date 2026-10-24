@@ -278,6 +278,10 @@ describe("finish's stricter profiles", () => {
     expect(STRICTER_PROFILES).toContain("accessibility-advisory");
   });
 
+  it("leave out the advisory-code profiles (PS5.2): placing a bed must not be refused for a jurisdiction's double", () => {
+    expect(STRICTER_PROFILES).toEqual(["accessibility-advisory"]);
+  });
+
   it("keep a profile with a threshold override, alone or beside assumeDwelling", () => {
     expect(
       stricterProfileNames({

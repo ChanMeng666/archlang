@@ -30,6 +30,7 @@ import { storeyHasEntranceCandidate } from "./analyze/entrance.js";
 import { arrivalRuns, levelsEnteredFromBelow, verticalConnections, verticalReach } from "./vertical.js";
 
 export {
+  ADVISORY_CODE_PROFILES,
   DEFAULT_RULESET,
   LINT_PROFILES,
   LINT_PROFILE_NAMES,
