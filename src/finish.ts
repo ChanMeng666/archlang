@@ -44,7 +44,7 @@ import { Data } from "./fix-apply.js";
 import { type FurnishCodes, furnishStage, gainedCodes } from "./furnish.js";
 import { type ResolvedPlan, type RFurniture, type ROutdoor, type RRoom, sheetExtents } from "./ir.js";
 import { lex, type Token } from "./lexer.js";
-import { LINT_PROFILES, lint } from "./lint.js";
+import { ADVISORY_CODE_PROFILES, LINT_PROFILES, lint } from "./lint.js";
 import { fmt3 } from "./num-format.js";
 import { parse } from "./parser.js";
 import { compileUncached } from "./pipeline.js";
@@ -265,8 +265,13 @@ export function stricterProfileNames(profiles: Readonly<Record<string, object>>)
   return Object.keys(profiles).filter((p) => Object.keys(profiles[p]!).some((k) => k !== "assumeDwelling"));
 }
 
-/** {@link stricterProfileNames} over the built-in {@link LINT_PROFILES}. */
-export const STRICTER_PROFILES: readonly string[] = stricterProfileNames(LINT_PROFILES);
+/** {@link stricterProfileNames} over the built-in {@link LINT_PROFILES}, less the advisory-code
+ *  ones. The rule: the never-worse law holds under the default ruleset and the universal advisory
+ *  profiles, never under a jurisdiction's ({@link ADVISORY_CODE_PROFILES}; ADR 0024 decision 6,
+ *  amended 2026-10-25). */
+export const STRICTER_PROFILES: readonly string[] = stricterProfileNames(LINT_PROFILES).filter(
+  (p) => !ADVISORY_CODE_PROFILES.includes(p),
+);
 
 /**
  * The diagnostic codes of a source as multisets: compile's with lint's under the default

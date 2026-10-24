@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**134 errors** · **69 warnings**
+**134 errors** · **70 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -196,6 +196,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_ROOM_NO_FIXTURE`](#w_room_no_fixture) | warning | Bathroom or kitchen has no fixtures. |
 | [`W_ROOM_OUTSIDE_SHELL`](#w_room_outside_shell) | warning | A room lies partly outside the building's walls. |
 | [`W_ROOM_OVERLAP`](#w_room_overlap) | warning | Rooms overlap. |
+| [`W_ROOM_TOO_NARROW`](#w_room_too_narrow) | warning | A room is narrower than its profile asks of its use. |
 | [`W_ROOM_TOO_SMALL`](#w_room_too_small) | warning | Room is implausibly small. |
 | [`W_ROOM_UNREACHABLE`](#w_room_unreachable) | warning | Room cannot be reached from the entrance. |
 | [`W_ROOM_VIA_PRIVATE`](#w_room_via_private) | warning | Every route to a room passes through one particular bedroom, bathroom or WC. |
@@ -2597,11 +2598,23 @@ room at (0,0) size 2000x2000
 room at (1000,0) size 2000x2000   # warning
 ```
 
+## W_ROOM_TOO_NARROW
+
+*warning* — A room is narrower than its profile asks of its use.
+
+**Cause.** Raised only under a residential-advisory lint profile (`cn-`, `uk-`, `us-residential-advisory`); the default ruleset asks no room a width. A rectangular room's short side, measured CLEAR between the inner faces of the walls along it (the drawn edge where no wall backs it), is under the least width the profile gives: for a use (a bedroom 2150 mm under `uk`, a habitable room 2134 mm and a hall 914 mm under `us`), for a double bedroom (2550 mm under `uk`; one double bedroom of a home 2750 mm, held on the widest when none is that wide), or for a passage by the rooms it opens onto (under `cn`: 1200 mm for the entry passage, 1000 mm to a bedroom or living room, 900 mm to a kitchen, bathroom, WC or store). A bedroom is a double from its bed, never its label: a `double_bed`, a `bed` wider than 1200 mm, or two beds; a bedroom with no bed files a `no-bed` coverage skip. A polygon or circle room is not measured (`non-rectangular-room`). The figures are read from the sources each profile cites, as advice, never as compliance (ADR 0005).
+
+**Fix.** Widen the room until the quoted width stands clear between the walls' inner faces; the drawn size runs to the wall centrelines, so add half of each wall's thickness.
+
+```arch static
+room id=b at (0,0) size 2100x4000 label "Bedroom" uses bedroom   # lint --profile uk-residential-advisory: 2100 mm, under the 2150 mm a bedroom is asked
+```
+
 ## W_ROOM_TOO_SMALL
 
 *warning* — Room is implausibly small.
 
-**Cause.** A room's floor area is below the minimum for its use. A room is held to the generic minimum (default 4 m²) unless every use it has (its `uses`, or its label when it has none) has a floor of its own: a WC 1.1 m² and a bathroom 2.0 m² (GB 50096-2011 5.4.2, read as advice), while a store, utility room, hall, circulation space or entry has no area floor at all (a passage is judged by its width, `W_PATH_TOO_NARROW`). A room with several uses takes the highest floor among them, and a room with no classified use keeps the generic minimum. The per-use floors are the `minRoomAreaByUseM2` ruleset setting, merged per use, so a profile or a caller can change one and keep the rest. A profile or caller that sets the generic minimum itself holds every room to at least it (`accessibility-advisory`: 5 m²), since no researched accessible per-use floors exist yet.
+**Cause.** A room's floor area is below the minimum for its use. A room is held to the generic minimum (default 4 m²) unless every use it has (its `uses`, or its label when it has none) has a floor of its own: a WC 1.1 m² and a bathroom 2.0 m² (GB 50096-2011 5.4.2, read as advice), while a store, utility room, hall, circulation space or entry has no area floor at all (a passage is judged by its width, `W_PATH_TOO_NARROW`). A room with several uses takes the highest floor among them, and a room with no classified use keeps the generic minimum. The per-use floors are the `minRoomAreaByUseM2` ruleset setting, merged per use, so a profile or a caller can change one and keep the rest. A profile or caller that sets the generic minimum itself holds every room to at least it (`accessibility-advisory`: 5 m²), since no researched accessible per-use floors exist yet. Under a residential-advisory profile (`cn-`, `uk-`, `us-residential-advisory`) the per-use floors are read on the room's net floor inside the walls, as their sources measure a room, and a bedroom whose bed makes it a double is held to the profile's double-bedroom floor.
 
 **Fix.** Increase its `size`, or merge it into an adjacent space.
 

@@ -1183,16 +1183,18 @@ label, as in every lint message. The reasons:
 | `no-site` | orientation | the plan declares no `site` and has a bedroom, living or dining room with a window, so no window has a compass facing |
 | `single-storey` | storey matching | a `stair`, `elevator` or `escalator` on a plan with one storey |
 | `arc-window-unattributed` | daylight | a room bounded by a curved wall edge whose window the shape attributes to no room (neither face probe finds a floor, and no bay opens into a room through the chord) |
-| `non-rectangular-room` | room and furniture checks | a polygon room: the garage-width check declines a `uses garage` one, and the fixture-orientation check (`W_FIXTURE_BACK_TO_ROOM`) any one |
+| `non-rectangular-room` | room and furniture checks | a polygon room: the garage-width check declines a `uses garage` one, the fixture-orientation check (`W_FIXTURE_BACK_TO_ROOM`) any one, and under a residential-advisory profile `W_ROOM_TOO_NARROW` a polygon or circle room it would ask a width |
 | `no-entrance` | reachability, circulation walk, privacy checks | a storey with rooms and no way in (`W_NO_ENTRANCE` still runs) |
 | `balcony-only-entrance` | privacy checks | every door to the outside opens onto a balcony or terrace, which these rules do not count as a way in (the access graph and the walk do) |
 | `unsupported-host-geometry` | door checks | a door on an angled or curved wall, which the doorway-landing and pocket-run checks do not measure |
 | `no-kitchen-fixtures` | privacy checks | a bath or WC door onto a room that is a kitchen and also the living room, which holds no sink, hob, oven, fridge, worktop, island or dishwasher, so `W_WET_ROOM_DOOR` cannot tell whether the door opens onto the kitchen |
 | `no-main-entrance` | circulation walk, privacy checks | a storey with more than one way in whose `access.mainEntrance` names no door (`tie`, `no-candidate`, `upper-storey`), so `W_PATH_TOO_NARROW`, `W_ROOM_VIA_PRIVATE` and `W_WET_ROOM_DOOR` judge a route from every exterior door |
 | `non-dwelling` | daylight, privacy checks | the plan reads as non-residential: a room label with "Cafe", "Restaurant", "Retail", "Clinic", "Consulting", "Servery", "Staff room" or "Classroom"; or, on a plan with no bedroom and no living room, a room whose use is `office` or a label with "Lobby", "Reception", "Waiting", "Shop" or "Meeting" (a house's "Reception room" or "Entrance Lobby" stays a dwelling). `W_HABITABLE_NO_WINDOW` does not ask a kitchen for daylight there, and `W_WET_ROOM_DOOR` (all but a door onto a kitchen) and `W_ENTRANCE_INTO_PRIVATE` do not judge: they describe a home. `residential-basic` judges every plan as a dwelling and files none |
+| `no-bed` | room checks | under a profile with a double-bedroom figure (`cn-`, `uk-residential-advisory`), a bedroom with no `bed` or `double_bed`: whether it is a single or a double is not known, so it is held to the single figure only |
+| `no-dwelling` | room checks | under `uk-residential-advisory`, a multi-storey plan with double bedrooms: "one double bedroom of every home 2.75 m wide" needs to know which bedrooms share a home (declared dwellings are still to come) |
 
-Three more reasons are reserved for families that do not exist yet: `no-brief`,
-`no-dwelling` and `no-operable-window-data`. In human mode `lint` prints one line on stderr
+Two more reasons are reserved for families that do not exist yet: `no-brief` and
+`no-operable-window-data`. In human mode `lint` prints one line on stderr
 when anything was skipped, and nothing when nothing was:
 
 ```
@@ -1209,11 +1211,51 @@ A **profile** is a named bundle of thresholds, applied with `--profile` (CLI) or
 | *(default, no profile)* | doors ≥ 700 mm, rooms ≥ 4 m², walk clear ≥ 700 mm, detour ≤ 3.0×, no swing-clearance buffer; the home-only checks skip a plan that reads as non-residential (`non-dwelling`) |
 | `residential-basic` | the default's thresholds, with every plan judged as a dwelling |
 | `accessibility-advisory` | doors ≥ 850 mm, rooms ≥ 5 m², walk clear ≥ 900 mm, detour ≤ 3.0×, 150 mm swing clearance |
+| `cn-residential-advisory` | the default's, plus room areas and passage widths read from China's residential design code (table below) |
+| `uk-residential-advisory` | the default's, plus bedroom areas and widths from England's space standard and hall widths (table below) |
+| `us-residential-advisory` | the default's, plus habitable-room areas and widths and hallway widths from the US model residential code (table below) |
+
+The three residential-advisory profiles add room sizes by use. Each number is read from the
+source it cites, marked [V] (read in the source) or [S] (second-hand: the primary text was not
+reachable); nothing remembered ships:
+
+| Check | `cn-residential-advisory` | `uk-residential-advisory` | `us-residential-advisory` |
+|---|---|---|---|
+| Bedroom area (`W_ROOM_TOO_SMALL`) | single 5 m², double 9 m² (GB 50096-2011 5.2.1 [V]) | single 7.5 m², double 11.5 m² (NDSS 10(c), 10(d) [V]) | 6.5 m² (IRC R304.1 [S]) |
+| Living / dining area | living 10 m² (GB 5.2.2 [V]) | — | 6.5 m² each (IRC R304.1 [S]) |
+| Kitchen area | 4.0 m² (GB 5.3.1 [V]) | — | excepted: the default 4 m² |
+| Room width (`W_ROOM_TOO_NARROW`) | — | bedroom 2150 mm (NDSS 10(c) [V]); double 2550 mm, one double per home 2750 mm (NDSS 10(e) [V]) | living, dining, bedroom 2134 mm (IRC R304.2 [S]) |
+| Passage width (`W_ROOM_TOO_NARROW`) | entry passage 1200 mm (宜, should); to a bedroom or living room 1000 mm; to a kitchen, bath, WC or store 900 mm (GB 5.7.1 [V]) | hall, circulation, entry 900 mm (Approved Document M4(2) [S]) | hall, circulation, entry 914 mm (IRC R311.6 [S]) |
+| Daylight target (taste R7) | 1/7 (GB 7.1.5 [V]) | 8 %, the generic target (no English figure read) | 8 % (IRC R303.1 [S]) |
+
+How they measure:
+
+- **Areas** are net floor, inside the walls (`describe`'s `net_area_m2`), as the clauses measure
+  a room: under these profiles every per-use floor of `W_ROOM_TOO_SMALL` (the WC's and bathroom's
+  too) reads the net area and says "of net floor". Where the net area is omitted the drawn area
+  stands in and the hint says `gross-area`. The generic 4 m² floor is still read as drawn.
+- **Widths** are clear: a rectangular room's short side between the inner faces of the walls
+  along it (the drawn edge where no wall backs it). A polygon or circle room is not measured
+  (`non-rectangular-room`). A passage (a room used as hall, circulation or entry) is held to the
+  highest width the rooms it opens onto ask, and to the entry width when a door from outside
+  opens into it or it is used as `entry` (a door onto a balcony counts too for now, which
+  overstates a passage entered only from a balcony; the hint says so). This is the passage's own
+  width, not the walk's bottleneck (`W_PATH_TOO_NARROW`), which runs through doors.
+- `finish` and `furnish` do not hold their never-worse law under these profiles: a furnished
+  bedroom's 1500 mm bed can make it a double here, and `lint --profile` then reports it.
+- **Single or double** comes from the bedroom's bed, never its label: a `double_bed`, a `bed`
+  wider than 1200 mm, or two beds (a twin room, held to the double's figures) make a double. A
+  bedroom with no bed is held to the single figure and files `no-bed`.
+- Not yet: WC side and front clearances (IRC P2705.1, R307.1) land with the WC-clearance rule,
+  and the bedroom escape window (IRC R310; Approved Document B 2.10) with the escape-window
+  checks. Their numbers are kept, unused, with their sources (`DEFERRED_PROFILE_NUMBERS` in
+  `src/lint/ruleset.ts`; noted 2026-10-24).
 
 ```
 archlang lint plan.arch                                  # the default ruleset
 archlang lint plan.arch --profile residential-basic     # the same, judged as a dwelling
 archlang lint plan.arch --profile accessibility-advisory
+archlang lint plan.arch --profile cn-residential-advisory  # room sizes and passage widths as advice
 ```
 
 The flagship studio is **clean under the default profile**, but the stricter profile
@@ -1272,7 +1314,7 @@ ramp anchor.
 |---|---|---|---|---|
 | R3 intimacy gradient | zoning | the share of (living/dining/kitchen, bedroom) pairs where the public room is no deeper from the entrance | 0 → 1 | Alexander, *A Pattern Language*, 127 [V] |
 | R6 furniture–use match | furnishing | the share of plumbing fixtures, kitchen fittings and beds standing in a room of their use (a counter or worktop is not judged; homes only) | 0 → 1 | the fixture catalogue's zones and a bedroom's defining piece |
-| R7 daylight ratio | light | glazing (width × (head − sill)) over net floor area, per habitable room; generic target 8 % | 0 → 8 % | IRC R303.1 [S] |
+| R7 daylight ratio | light | glazing (width × (head − sill)) over net floor area, per habitable room; target 8 % (`generic`, `uk-` and `us-residential-advisory`), 1/7 (`cn-residential-advisory`) | 0 → the target | IRC R303.1 [S]; GB 50096-2011 7.1.5 [V] for `cn` |
 | R9 proportion | geometry | per habitable, bath or WC room, long ÷ short side of the minimum-area rectangle enclosing its floor (from the shape, never the bounding box; a circle reads 1) | habitable 3 → 2, bath or WC 3.5 → 2.5 | Palladio, *I Quattro Libri* I.xxi (preferred room shapes, the longest 2:1), as read in Mitrović, "Andrea Palladio's Villa Cornaro in Piombino Dese", *Nexus Network Journal* 6(2), 2004 [S]; ResPlan aspect p95 [prior] |
 | R11 kitchen–dining link | zoning | the share of kitchens with a living or dining use, or a door or opening to such a room (homes only) | 0 → 1 | Alexander 139 [V]; ResPlan 99 % [prior] |
 | R12 dwelling aspect | light | the number of compass sides the habitable windows face: none 0, one 0.5 (0 if it is the pole side of a `site`), two or more 1 (homes only) | — | London Plan D6, LPG C4.1 [S] |
@@ -1357,7 +1399,15 @@ its case (0.7303 > 0.5) because R9 lifts the twin's geometry subscore, while R7 
 case's window (0.7677 against the twin's 0.4606).
 
 Read taste after `lint` is clean: it is advice for a sound plan, not a substitute for fixing
-one. Only `generic` ships today.
+one.
+
+**Profiles.** `generic` and the three residential-advisory profiles (`cn-`, `uk-`,
+`us-residential-advisory`, the same names `lint --profile` takes). A profile sets the criteria's
+targets (today R7's, in the criteria table above) and, for a residential-advisory one, lists the
+warnings its lint profile raises that default `lint` does not under `advisory` as
+`{ code, warnings }`. They are advice from an advisory code and never cap the score: only
+default-profile validity warnings do. `archlang score plan.arch --taste cn-residential-advisory`
+prints them on one `advisory … (does not cap)` line; `lint --profile` shows each.
 
 ## The agent loop
 

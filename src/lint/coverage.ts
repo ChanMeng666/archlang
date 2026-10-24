@@ -14,9 +14,10 @@
  * and its words to {@link FAMILY_NOUN}, or the reason to {@link LintSkipReason} and its words to
  * {@link SKIP_WHY}; both tables are `Record`s over the union, so the compiler refuses a member
  * with no words. Then call `ctx.skip(reason, room?)` at the exact line where the rule declines.
- * Three reasons are reserved for families not built yet and have no caller:
- * `no-brief` (intent-given sizes, PS4.4), `no-dwelling` (the across-dwellings rule, PS2.14) and
- * `no-operable-window-data` (escape-window checks, PS2.16).
+ * Two reasons are reserved for families not built yet and have no caller: `no-brief`
+ * (intent-given sizes, PS4.4) and `no-operable-window-data` (escape-window checks, PS2.16).
+ * `no-dwelling` (declared dwellings, PS2.14) has one caller so far: the one-main-double-bedroom
+ * arm of `W_ROOM_TOO_NARROW` on a multi-storey plan (PS5.2).
  *
  * `describe()` never reads any of this.
  */
@@ -60,7 +61,8 @@ export type LintSkipReason =
   | "no-entrance"
   /** Reserved: an intent brief is needed (PS4.4). No caller yet. */
   | "no-brief"
-  /** Reserved: rooms must be grouped into declared dwellings (PS2.14). No caller yet. */
+  /** Rooms must be grouped into declared dwellings (PS2.14) for the rule to judge: filed by the
+   *  one-main-double-bedroom arm of `W_ROOM_TOO_NARROW` on a multi-storey plan (PS5.2). */
   | "no-dwelling"
   /** Reserved: windows carry no operable-sash data (PS2.16). No caller yet. */
   | "no-operable-window-data"
@@ -90,7 +92,11 @@ export type LintSkipReason =
   /** The storey's drawing is past the drawing budget (`MAX_DRAW_UNITS`, `src/draw-budget.ts`),
    *  or its annotation texts and symbols would take more than the counted collision budget
    *  (`MAX_ANNOTATION_WORK`, `src/lint/rules/annotations.ts`), so no collision is measured. */
-  | "annotation-budget";
+  | "annotation-budget"
+  /** A bedroom holds no `bed` or `double_bed`, so whether it is a single or a double bedroom is
+   *  not known and a profile's double-bedroom threshold is not applied (PS5.2; never read from
+   *  the label, ADR 0005). Filed only under a profile that sets one. */
+  | "no-bed";
 
 /** What each family checks, as the human coverage line names it. */
 export const FAMILY_NOUN: Readonly<Record<LintFamily, string>> = {
@@ -130,6 +136,7 @@ export const SKIP_WHY: Readonly<Record<LintSkipReason, string>> = {
   "hint-budget": "the run checked as many quoted fixture placements as it may, so later hints quote none",
   "non-dwelling": "the plan reads as non-residential",
   "annotation-budget": "the drawing is too large to measure for collisions",
+  "no-bed": "the bedroom holds no bed to tell a single from a double",
 };
 
 /**

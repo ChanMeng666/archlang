@@ -23,6 +23,7 @@ import {
   LINT_PROFILES,
   lint,
 } from "../src/index.js";
+import { ADVISORY_CODE_PROFILES } from "../src/lint.js";
 import { sourceConflicts } from "../src/repair.js";
 import type { World } from "../src/world.js";
 import { canonicalFixture } from "../src/elements/fixtures-glyphs.js";
@@ -978,7 +979,13 @@ suite("furnish — the table is built from words the catalogue has, and the docs
   });
 });
 
-suite("furnish law — never worse under EVERY lint profile", () => {
+/**
+ * The default ruleset and the universal advisory profiles (`accessibility-advisory`). The
+ * residential-advisory profiles (`ADVISORY_CODE_PROFILES`) are jurisdiction-specific and mutually
+ * exclusive by design, so the law is not held under them (ADR 0024 decision 6 and ADR 0025 §7,
+ * amended 2026-10-25, PR #248; `src/lint/ruleset.ts` says why).
+ */
+suite("furnish law — never worse under the default and universal profiles", () => {
   const profileCodes = (src: string, profile: string): Map<string, number> => {
     const out = new Map<string, number>();
     for (const d of lint(src, { world, profile })) out.set(d.code ?? "", (out.get(d.code ?? "") ?? 0) + 1);
@@ -997,7 +1004,7 @@ suite("furnish law — never worse under EVERY lint profile", () => {
   for (const [name, src] of CORPUS)
     it(`${name}: no profile gains a lint code`, () => {
       const r = finish(src, { world, only: "furnish" });
-      for (const profile of LINT_PROFILE_NAMES) {
+      for (const profile of LINT_PROFILE_NAMES.filter((p) => !ADVISORY_CODE_PROFILES.includes(p))) {
         const was = profileCodes(src, profile);
         const gained = [...profileCodes(r.source, profile)].filter(([c, n]) => n > (was.get(c) ?? 0)).map(([c]) => c);
         expect(gained, `${profile}:\n${r.changes.map((c) => c.text).join("\n")}`).toEqual([]);

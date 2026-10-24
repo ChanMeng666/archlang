@@ -246,7 +246,76 @@ export interface LintRuleset {
    * plan-soundness PS2.11, ADR 0029 §6). Default 600. `null` turns the rule off.
    */
   seatTableReachMm: number | null;
+  /**
+   * `W_ROOM_TOO_SMALL`'s floor (m²) for a DOUBLE bedroom: a bedroom whose beds read as one
+   * (`bedroomBeds`, `src/lint/rules/per-room.ts`: a `double_bed`, a `bed` wider than
+   * {@link DOUBLE_BED_MIN_WIDTH_MM}, or two or more beds). It joins the per-use floors as one
+   * more candidate, so the room still takes the highest. A bedroom with no bed is held to its
+   * per-use floor ({@link minRoomAreaByUseM2}'s `bedroom`, the single figure, which every
+   * bedroom must meet) and files a `no-bed` coverage skip: whether it is a double is not known.
+   * Never read from the label (ADR 0005). Default `null`: off. Set by the residential-advisory
+   * profiles (plan-soundness PS5.2).
+   */
+  minDoubleBedroomAreaM2: number | null;
+  /**
+   * `W_ROOM_TOO_NARROW`'s least CLEAR width (mm) of a room of a given use, read from
+   * {@link roomUses}; a room with several uses takes the highest. The width is the room's short
+   * side measured between the inner faces of the walls along it (`innerFaceOfRoomEdge`; the
+   * drawn edge where no wall backs it), because a clause that sets a width (a bedroom's, a
+   * passage's) means the clear one, and half of each wall is a large share of it. Rectangular
+   * rooms only: a polygon or circle room files `non-rectangular-room` (a bounding box's short
+   * side is not a concave floor's width). Merged PER USE ({@link resolveRuleset}). Default `{}`:
+   * no room is asked a width.
+   */
+  minRoomShortSideByUseMm: Readonly<Partial<Record<UseKind, number>>>;
+  /** `W_ROOM_TOO_NARROW`'s least clear width (mm) of a double bedroom (read as for
+   *  {@link minDoubleBedroomAreaM2}); a bedroom with no bed files `no-bed`. Default `null`: off. */
+  minDoubleBedroomShortSideMm: number | null;
+  /**
+   * The least clear width (mm) ONE double bedroom of a home must have, the others being held to
+   * {@link minDoubleBedroomShortSideMm}. When no double bedroom on the storey reaches it, the
+   * widest one (the first in source order on a tie) is held to it, so one room carries the
+   * warning. Judged per storey, the storey read as one home: a single-storey plan of several
+   * homes under-reports (one wide double anywhere quiets it). On a multi-storey plan the rule
+   * cannot tell which bedrooms share a home and files `no-dwelling` instead (declared dwellings
+   * are PS2.14). Default `null`: off.
+   */
+  minMainDoubleBedroomShortSideMm: number | null;
+  /**
+   * `W_ROOM_TOO_NARROW`'s least clear width (mm) of a PASSAGE (a room used as hall, circulation
+   * or entry) by the use of the rooms it opens onto: a passage with a door or cased opening into
+   * a room of use `u` is held to this table's `u` entry (the highest over its neighbours, and
+   * over its own uses' {@link minRoomShortSideByUseMm}). Measured as that table measures: the
+   * passage's clear short side. It is NOT the walk's bottleneck (`W_PATH_TOO_NARROW`), which runs
+   * through doors, and a door is by design narrower than the passage that leads to it. Merged
+   * PER USE. Default `{}`: off.
+   */
+  minPathClearWidthByUseMm: Readonly<Partial<Record<UseKind, number>>>;
+  /**
+   * `W_ROOM_TOO_NARROW`'s least clear width (mm) of an ENTRY passage: a passage (hall,
+   * circulation or entry use) that a door from outside opens into, or one used as `entry`.
+   * Default `null`: off.
+   */
+  minEntryPassageWidthMm: number | null;
+  /**
+   * What `W_ROOM_TOO_SMALL` measures a PER-USE floor ({@link minRoomAreaByUseM2}, and a double
+   * bedroom's) against. `"drawn"` (the default): the room as drawn, to the wall centrelines
+   * (`describe().rooms[].area_m2`). `"net"`: its net floor, inside the walls (ADR 0027,
+   * `net_area_m2`), as GB 50096 (使用面积), NDSS and IRC R304 measure a room; where the net area
+   * is omitted the drawn area stands in and the hint says `gross-area`. The generic floor
+   * ({@link minRoomAreaM2}) is always read as drawn. The residential-advisory profiles set
+   * `"net"` (plan-soundness PS5.2, red-team round 1).
+   */
+  roomAreaMeasure: "drawn" | "net";
 }
+
+/**
+ * A bed wider than this (mm, its footprint's shorter side) sleeps two: a double. The lead's
+ * ruling for plan-soundness PS5.2 (`docs/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md`
+ * §5): a single bed is 900–1000 mm wide and a small double from about 1200 mm, so 1200 separates
+ * them. Read only by the double-bedroom thresholds, which no default sets.
+ */
+export const DOUBLE_BED_MIN_WIDTH_MM = 1200;
 
 export const DEFAULT_RULESET: LintRuleset = {
   minRoomAreaM2: 4,
@@ -282,6 +351,13 @@ export const DEFAULT_RULESET: LintRuleset = {
   roomAreaFloorMode: "by-use",
   assumeDwelling: false,
   seatTableReachMm: 600,
+  minDoubleBedroomAreaM2: null,
+  minRoomShortSideByUseMm: Object.freeze({}),
+  minDoubleBedroomShortSideMm: null,
+  minMainDoubleBedroomShortSideMm: null,
+  minPathClearWidthByUseMm: Object.freeze({}),
+  minEntryPassageWidthMm: null,
+  roomAreaMeasure: "drawn",
 };
 
 /**
@@ -309,7 +385,130 @@ export const LINT_PROFILES: Readonly<Record<string, Partial<LintRuleset>>> = Obj
     doorwayLandingMm: 450, // a deeper clear approach in front of each door
     minPathClearWidthMm: 900, // a continuous clear width for wheelchair passage
   },
+  /**
+   * Room sizes and passage widths read from China's residential design code, as ADVICE (ADR
+   * 0005: the name is not the standard's, and passing is not compliance). Source: GB 50096-2011
+   * 住宅设计规范, full text read (`docs/plans/plan-soundness/research/prior-art.md` §3.1) [V].
+   * Areas are net floor (使用面积, the clauses' measure; {@link LintRuleset.roomAreaMeasure}), and
+   * widths are clear, between wall faces (净宽). The design sets no `cn` number for R10 (WC
+   * clearances) or R37 (escape window).
+   */
+  "cn-residential-advisory": {
+    roomAreaMeasure: "net", // GB 50096-2011 5.2–5.4 give room areas as 使用面积, the usable floor inside the walls [V]
+    minRoomAreaByUseM2: {
+      bedroom: 5, // GB 50096-2011 5.2.1: a single bedroom at least 5 m², which every bedroom meets [V]
+      living: 10, // GB 50096-2011 5.2.2: a living room (起居室) at least 10 m² [V]
+      kitchen: 4, // GB 50096-2011 5.3.1: a kitchen at least 4.0 m² (3.5 in the smallest dwelling type, not modelled) [V]
+    },
+    minDoubleBedroomAreaM2: 9, // GB 50096-2011 5.2.1: a double bedroom at least 9 m² [V]
+    minEntryPassageWidthMm: 1200, // GB 50096-2011 5.7.1: the entry passage 宜 (should) be at least 1.20 m clear [V]
+    minPathClearWidthByUseMm: {
+      bedroom: 1000, // GB 50096-2011 5.7.1: a passage to a bedroom or living room at least 1.00 m clear [V]
+      living: 1000, // GB 50096-2011 5.7.1 (起居室（厅）) [V]
+      kitchen: 900, // GB 50096-2011 5.7.1: a passage to a kitchen, bathroom or store at least 0.90 m clear [V]
+      bath: 900, // GB 50096-2011 5.7.1 (卫生间) [V]
+      wc: 900, // GB 50096-2011 5.7.1 (卫生间: a WC is one) [V]
+      storage: 900, // GB 50096-2011 5.7.1 (贮藏室) [V]
+    },
+  },
+  /**
+   * Room sizes and hall widths read from England's space standard and access guidance, as
+   * ADVICE (ADR 0005). Bedrooms: the Nationally Described Space Standard (2015) 10(c)–(e), read
+   * in full (`prior-art.md` §3.3) [V]. NDSS measures finished internal dimensions, so areas are
+   * net floor and widths clear, between wall faces. Halls: Approved Document M4(2), second-hand
+   * [S]. The one-main-double arm (2750 mm) is judged PER STOREY, every bedroom on it read as one
+   * home: on a single-storey plan holding several homes (`terrace-row`) one wide enough double in
+   * any home quiets it for all, so it under-reports there until dwellings are declared (PS2.14).
+   * R37 (the ADB 2.10 escape window) waits for PS2.16; its numbers are in
+   * {@link DEFERRED_PROFILE_NUMBERS}, unused.
+   */
+  "uk-residential-advisory": {
+    roomAreaMeasure: "net", // NDSS 10: bedroom areas are internal (usable) floor area [S, the PS5.2 review, PR #248]
+    minRoomAreaByUseM2: {
+      bedroom: 7.5, // NDSS 10(c): a single bedroom at least 7.5 m², which every bedroom meets [V]
+    },
+    minDoubleBedroomAreaM2: 11.5, // NDSS 10(d): a double (or twin) bedroom at least 11.5 m² [V]
+    minRoomShortSideByUseMm: {
+      bedroom: 2150, // NDSS 10(c): a single bedroom at least 2.15 m wide, which every bedroom meets [V]
+      hall: 900, // Approved Document M4(2): a hall at least 900 mm clear [S, prior-art.md §3.3]
+      circulation: 900, // Approved Document M4(2), as `hall` [S]
+      entry: 900, // Approved Document M4(2), as `hall`: an entrance hall is a hall [S]
+    },
+    minDoubleBedroomShortSideMm: 2550, // NDSS 10(e): every other double (or twin) bedroom at least 2.55 m wide [V]
+    minMainDoubleBedroomShortSideMm: 2750, // NDSS 10(e): one double (or twin) bedroom at least 2.75 m wide [V]
+  },
+  /**
+   * Room sizes and hallway widths read from the US model residential code, as ADVICE (ADR
+   * 0005). Source: IRC (2021), second-hand: the primary text was not reachable and the figures
+   * come from jurisdiction handouts (`prior-art.md` §3.2) [S]. "Habitable" is the IRC's own
+   * definition (living, sleeping, eating or cooking), so `living`, `dining` and `bedroom`: the
+   * kitchen is excepted from both R304 limits and keeps the default floor, and an `office` is
+   * not in the definition and is not asked. R10 (WC clearances) waits for PS2.11's WC rule and
+   * R37 (the escape opening) for PS2.16; their numbers are in {@link DEFERRED_PROFILE_NUMBERS}.
+   */
+  "us-residential-advisory": {
+    roomAreaMeasure: "net", // IRC R304.1: a habitable room's net floor area [S, the PS5.2 review, PR #248]
+    minRoomAreaByUseM2: {
+      living: 6.5, // IRC R304.1: a habitable room at least 70 ft² (6.5 m²), kitchens excepted [S]
+      dining: 6.5, // IRC R304.1 [S]
+      bedroom: 6.5, // IRC R304.1 [S]
+    },
+    minRoomShortSideByUseMm: {
+      living: 2134, // IRC R304.2: a habitable room at least 7 ft (2134 mm) in any horizontal dimension [S]
+      dining: 2134, // IRC R304.2 [S]
+      bedroom: 2134, // IRC R304.2 [S]
+      hall: 914, // IRC R311.6: a hallway at least 3 ft (914 mm) wide [S]
+      circulation: 914, // IRC R311.6 [S]
+      entry: 914, // IRC R311.6: an entry foyer is walked as a hallway [S]
+    },
+  },
 });
+
+/**
+ * Sourced numbers for residential-advisory checks whose RULES do not exist yet, kept so their
+ * sources are not lost (plan-soundness PS5.2, 2026-10-24). Nothing reads them: R10 lands with
+ * PS2.11's WC-clearance rule and R37 with PS2.16's escape-window rule, each of which moves its
+ * numbers into the profile as ruleset fields. Design:
+ * `docs/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §5.
+ */
+export const DEFERRED_PROFILE_NUMBERS = Object.freeze({
+  /** R10, `us`: a WC's centreline at least 15 in (381 mm) from a side wall, and 21 in (533 mm)
+   *  clear in front of it (IRC P2705.1, R307.1) [S, `prior-art.md` §3.3; clause numbers from the
+   *  design's §5 table]. */
+  usWc: Object.freeze({ centreToSideMm: 381, clearInFrontMm: 533 }),
+  /** R37, `us`: an emergency escape and rescue opening at least 20 in (508 mm) clear wide and
+   *  24 in (610 mm) clear high, its sill at most 44 in (1118 mm) above the floor, and at least
+   *  5.7 ft² (0.53 m²) net clear, or 5.0 ft² (0.46 m²) at grade (IRC R310) [S, `prior-art.md`
+   *  §3.2]. A failure only, never a pass. */
+  usEscape: Object.freeze({
+    minClearWidthMm: 508,
+    minClearHeightMm: 610,
+    maxSillMm: 1118,
+    minNetClearM2: 0.53,
+    minNetClearAtGradeM2: 0.46,
+  }),
+  /** R37, `uk`: an escape window at least 0.33 m² clear and 450 × 450 mm, its openable part at
+   *  most 1100 mm above the floor (Approved Document B 2.10) [S, `prior-art.md` §3.3]. */
+  ukEscape: Object.freeze({ minClearM2: 0.33, minClearSideMm: 450, maxOpenableHeightMm: 1100 }),
+});
+
+/**
+ * The profiles of the ADVISORY-CODE layer (plan-soundness README §4, PS5.2): opt-in readings of
+ * one jurisdiction's room sizes.
+ *
+ * **The rule (ADR 0024 decision 6 and ADR 0025 §7, amended 2026-10-25, PR #248):** `finish`'s
+ * never-worse law holds under the default ruleset and under the UNIVERSAL advisory profiles
+ * (`accessibility-advisory`: physical access, culture-independent). These profiles are
+ * jurisdiction-specific and mutually exclusive by design (plan-soundness D3), so no single
+ * furnished output can satisfy all of them and none may govern the default output: they are
+ * outside the never-worse comparison (`STRICTER_PROFILES`, `src/finish.ts`; `RULESETS`,
+ * `src/furnish.ts`). Placing a bed is what makes a bedroom a double for them.
+ */
+export const ADVISORY_CODE_PROFILES: readonly string[] = Object.freeze([
+  "cn-residential-advisory",
+  "uk-residential-advisory",
+  "us-residential-advisory",
+]);
 
 /** The names of the built-in {@link LINT_PROFILES}, for CLI validation. */
 export const LINT_PROFILE_NAMES: readonly string[] = Object.keys(LINT_PROFILES);
@@ -318,7 +517,8 @@ const hasOwn = (o: object | undefined, k: string): boolean => o !== undefined &&
 
 /**
  * The ruleset cascade `lint()` runs: defaults, then the named profile's overrides, then the
- * caller's. Flat keys are replaced; `minRoomAreaByUseM2` is merged per use (later layers win
+ * caller's. Flat keys are replaced; `minRoomAreaByUseM2`, `minRoomShortSideByUseMm` and
+ * `minPathClearWidthByUseMm` are merged per use (later layers win
  * per key, the other keys keep their defaults). `roomAreaFloorMode` is `"at-least-generic"`
  * when a profile or the caller sets `minRoomAreaM2` without setting the mode.
  */
@@ -335,6 +535,16 @@ export function resolveRuleset(profile: Partial<LintRuleset> = {}, ruleset: Part
       ...DEFAULT_RULESET.minRoomAreaByUseM2,
       ...profile.minRoomAreaByUseM2,
       ...ruleset.minRoomAreaByUseM2,
+    },
+    minRoomShortSideByUseMm: {
+      ...DEFAULT_RULESET.minRoomShortSideByUseMm,
+      ...profile.minRoomShortSideByUseMm,
+      ...ruleset.minRoomShortSideByUseMm,
+    },
+    minPathClearWidthByUseMm: {
+      ...DEFAULT_RULESET.minPathClearWidthByUseMm,
+      ...profile.minPathClearWidthByUseMm,
+      ...ruleset.minPathClearWidthByUseMm,
     },
     roomAreaFloorMode: mode,
   };

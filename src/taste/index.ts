@@ -24,14 +24,17 @@
 import { resolvePlan } from "../analyze.js";
 import { describe, type SceneSummary } from "../describe.js";
 import type { ResolvedLevel, ResolvedPlan } from "../ir.js";
-import { lintWithCoverage } from "../lint.js";
+import type { Diagnostic } from "../diagnostics.js";
+import { lint, LINT_PROFILES, lintWithCoverage } from "../lint.js";
 import { fmtPermyriad } from "../num-format.js";
 import type { World } from "../world.js";
 import { adviceOf } from "./advice.js";
 import { meanPermyriad, ONE } from "./arith.js";
-import { type CriterionResult, TASTE_CRITERIA, notJudged, type TasteProfile, type TasteStorey } from "./criteria.js";
+import { type CriterionResult, TASTE_CRITERIA, notJudged, type TasteStorey } from "./criteria.js";
+import { TASTE_PROFILE_NAMES, TASTE_PROFILE_SOURCES, TASTE_PROFILES } from "./profiles.js";
 import {
   TASTE_SUBSCORES,
+  type TasteAdvisory,
   type TasteCriterion,
   type TasteReport,
   type TasteSkip,
@@ -51,16 +54,7 @@ export type {
 export { TASTE_SUBSCORES } from "./report.js";
 export { TASTE_ADVICE, type TasteAdviceRow } from "./advice.js";
 
-/** The taste profiles (PS5.1 ships `generic` only; PS5.2 adds the residential-advisory three). */
-export const TASTE_PROFILES: Readonly<Record<string, TasteProfile>> = Object.freeze({
-  generic: {
-    // IRC R303.1: glazing at least 8 % of the floor area of a habitable room [S, prior-art.md §3].
-    daylightTarget: { num: 8n, den: 100n },
-  },
-});
-
-/** The names {@link taste} accepts, in a stable order. */
-export const TASTE_PROFILE_NAMES: readonly string[] = Object.keys(TASTE_PROFILES);
+export { TASTE_PROFILES, TASTE_PROFILE_NAMES } from "./profiles.js";
 
 /**
  * The counted budget of one `taste()` call, in work units: each criterion declares a cost that
@@ -179,8 +173,8 @@ export function tasteWithBudget(source: string, opts: TasteOptions, budget: numb
       ...(result.reason ? { reason: result.reason } : {}),
       measured: result.measured,
       score: result.p === null ? null : num(result.p),
-      source: row.source,
-      verified: row.verified,
+      source: TASTE_PROFILE_SOURCES[profileName]?.[def.id]?.source ?? row.source,
+      verified: TASTE_PROFILE_SOURCES[profileName]?.[def.id]?.verified ?? row.verified,
       advice: result.p !== null && result.p < ONE ? row.code : null,
       message: result.message,
       evidence: result.evidence,
@@ -212,7 +206,7 @@ export function tasteWithBudget(source: string, opts: TasteOptions, budget: numb
       codes: validityCodes,
       drafting: { warnings: draftingWarnings, codes: draftingCodes },
     },
-    advisory: [],
+    advisory: advisoryOf(source, world, profileName, linted.diagnostics),
     coverage: {
       rooms: roomCount,
       classified: roomCount - unclassified.length,
@@ -226,6 +220,37 @@ export function tasteWithBudget(source: string, opts: TasteOptions, budget: numb
     >,
     criteria,
   };
+}
+
+/**
+ * The report's `advisory` (PS5.2): the warnings `lint()` raises under the lint profile of the
+ * same name and default `lint()` does not raise at the same place (same code, module, storey and
+ * span: a profile that only changes the number a default warning quotes adds nothing here),
+ * counted per code in first-raised order. Empty for a taste profile that names no lint profile
+ * (`generic`). They are advice from an advisory code and never cap the score (design §6 Q2:
+ * otherwise a profile would turn advisory code into gating by the back door).
+ */
+function advisoryOf(
+  source: string,
+  world: { world?: World },
+  profile: string,
+  base: readonly Diagnostic[],
+): TasteAdvisory[] {
+  if (!Object.hasOwn(LINT_PROFILES, profile)) return [];
+  const samePlace = (a: Diagnostic, b: Diagnostic): boolean =>
+    a.code === b.code &&
+    a.file === b.file &&
+    a.level === b.level &&
+    a.span?.start === b.span?.start &&
+    a.span?.end === b.span?.end;
+  const out: TasteAdvisory[] = [];
+  for (const d of lint(source, { ...world, profile })) {
+    if (d.severity !== "warning" || d.code === undefined || base.some((b) => samePlace(b, d))) continue;
+    const row = out.find((a) => a.code === d.code);
+    if (row) row.warnings++;
+    else out.push({ code: d.code, warnings: 1 });
+  }
+  return out;
 }
 
 /** One {@link TasteStorey} per storey: the lowest is judged by the depth readers, the rest are `upper`. */

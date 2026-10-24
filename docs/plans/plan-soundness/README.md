@@ -322,7 +322,7 @@ A done row's "record" is `research/2026-10-24-ps0-ps2-as-built.md`.
 | PS0.9 | `describe` assigns a window between an enclosed room and a covered loggia to the loggia, so lint and describe disagree on bedroom windows (`audits/showcase-and-examples.md` villa-rotonda) | todo |
 | PS0.13 | `W_ROOM_NO_CLEAR_PATH` was not equivariant under mirror x. As built: record § PS0.13 | done (PR #214, e736146f) |
 | PS0.14 | `describe()`'s net-area integral was super-linear on a comb room. As built: record § PS0.14 | done (PR #214, e736146f) |
-| PS0.15 | `describe()`'s net-area work has a cap per room but no total per plan. Measured by PR #214's red team on `aac48b2`: 200 distinct 45-wall × 60-tooth comb rooms, each under `MAX_NET_PROBE_WORK`, cost `describe()` 172.6 s (50 rooms 19.7 s; main 60.3 s for the same 50). `compile()` meets the drawing budget only when a schedule is drawn; `describe()` draws nothing (ADR 0022 §4), so the step budget is its only bound and the playground thread is still exposed. Add a per-call total (a count, charged before each room's walk; rooms past it omit the figure for the same reason) or make the per-room charge count against one plan-level meter. No shipped plan is near it | todo |
+| PS0.15 | `describe()`'s net-area work has a cap per room but no total per plan. Measured by PR #214's red team on `aac48b2`: 200 distinct 45-wall × 60-tooth comb rooms, each under `MAX_NET_PROBE_WORK`, cost `describe()` 172.6 s (50 rooms 19.7 s; main 60.3 s for the same 50). `compile()` meets the drawing budget only when a schedule is drawn; `describe()` draws nothing (ADR 0022 §4), so the step budget is its only bound and the playground thread is still exposed. Add a per-call total (a count, charged before each room's walk; rooms past it omit the figure for the same reason) or make the per-room charge count against one plan-level meter. No shipped plan is near it. *Note 2026-10-25 (PR #248):* `lint --profile` with a net-area profile (`cn-`, `uk-`, `us-residential-advisory`, `roomAreaMeasure: "net"`) now runs the same per-room net-area work for every room held to a per-use floor (shared memo with `describe()`), so the missing per-plan total bounds that path too | todo |
 | PS0.16 | `set` value parsing: `parseSetValue` reads a bare identifier before `,`/`)` as a word (like `swing: out`), so `set door(width: W)` and `set door(width: hall.cx)` silently become the string "W"/"hall.cx" and have no effect, with no diagnostic (predates PR #221, found in its review; a door's explicit `width` overrides `set`, so the effect was never visible). Decide: a bound name or a dotted datum name as a `set` value is an expression; a bare word stays a word only for word-valued keys. Also: `set door(swing: inward\|outward)` is silently ignored like any unknown enum word there (PS3.8); fix it with this card | todo |
 | PS0.20 | Plan JSON: a door carrying both `swing` and `swing_building` that contradict each other (e.g. `swing: "out"` with `swing_building: "outward"` where outward resolves to `in`) is accepted silently; `swing_building` wins on input and the `swing` value is never read (found in PR #229's review). Consider a warning on import, or document `swing` as informational there | todo |
 | PS0.17 | `describe` keys: `outdoor` and `fences` are missing from `PER_STOREY_OPTIONAL_KEYS` (`src/describe.ts`), so `describe --level N` can leave another storey's surfaces standing, and from `DESCRIBE_KEYS` (`src/cli/commands-analyze.ts`), so `--select outdoor` is refused (found in PR #223, which added `derived_walls` to both; not fixed there) | todo |
@@ -397,6 +397,7 @@ A done row's "record" is `research/2026-10-24-ps0-ps2-as-built.md`.
 | PS2.38 | Chord-aware dimension hint, or an arc-length dimension form | A straight `dim` drawn on the jambs of an opening on an arc and lettered with the opening's width (the arc length) is told by `W_DIM_TEXT_MISMATCH` to move its endpoints so they span that width, i.e. off the jambs. Either make the hint chord-aware (recognise jambs on an arc and say the line measures the chord) or add an arc-length dimension form that measures along the arc. Found in PR #243 (aquarium's two window dims, now lettered `2.0m`) | todo |
 | PS2.39 | Thickness call-outs on room floors | `dims auto all` letters each wall thickness once, beside its wall on the side with floor (`thicknessSideFlipped`, `scene-build.ts`): about 65 numbers on a room floor across 21 of the 26 `dims auto` examples, with the `R` and `φ` call-outs (audits X28, M6, DM2; corpus `annotation-collisions/auto-dims-in-room`). A drawing decision, not a lint: state thickness on the openings chain or in the dimension band, or make the tier opt-in, with its own byte-identity accounting. PS2.12 declined to flag it (no author remedy short of dropping the openings chains) | todo |
 | PS2.40 | `furnish` avoids label overprints | `furnish` prefers a candidate that raises no `W_ANNOTATION_OVERLAP`, else lists the room under `unresolved`. Acceptance: `finish` on the eval goldens raises 0 overlaps (9 across 6 plans today: ADR 0024 §6 and ADR 0025 §7, amended 2026-10-24). Found in PR #245 | todo |
+| PS2.44 | A balcony door does not make an entry passage | Under `cn-residential-advisory`, `W_ROOM_TOO_NARROW` holds a passage to the 1200 mm entry figure when any door from outside opens into it, a door onto an `outdoor balcony` included (`widthAsk`, `src/lint/rules/per-room.ts`, reads every exterior access edge). Read the entrance as the walk does (`entranceWays`' `balcony` flag, `src/analyze/entrance.ts`) and leave balcony doors out; the warning's hint says so until then. (PS2.41–43 are reserved by the row-5 audit, PR #249.) Found in PR #248 | todo |
 
 ### PS3 · Relation-first authoring (D1 + D5; needs an ADR)
 
@@ -536,10 +537,20 @@ into PS3.12)
   enclosing rectangle (`src/geometry/min-rect.ts`), the SKILL and spec loop line (compile → lint →
   score --taste → repair). PS5.1a and PS5.1b together complete PS5.1.
 
-**PS5.2 · Profiles.** `todo`
+**PS5.2 · Profiles.** `done (PR #248, pending)`
 - `cn-`, `uk-` and `us-residential-advisory`, each a partial ruleset with sourced numbers.
 - R4 (area and short side by use), R8 (corridor width by destination), R10 (WC clearances) and R37
   (bedroom escape window, `us`).
+- Shipped: R4, R8 and R7's target per profile (`cn` 1/7, `uk`/`us` 8 %); new code
+  `W_ROOM_TOO_NARROW` (clear width between wall faces), a double bedroom read from its bed
+  (`no-bed` otherwise), R8 measured on the passage's own width (not the walk, which runs through
+  doors); profile-only warnings under the taste report's `advisory`, never capping. Areas are
+  net floor (ADR 0027; review round 1). The never-worse law of `finish`/`furnish` now holds under
+  the default ruleset and the universal profiles only (ADR 0024 §6, ADR 0025 §7, amended
+  2026-10-25; follow-up PS5.6).
+- *Deferred (lead ruling, 2026-10-24):* R10 lands with PS2.11's WC-clearance rule and R37 with
+  PS2.16's escape-window rule; their sourced numbers wait, unread, in `DEFERRED_PROFILE_NUMBERS`
+  (`src/lint/ruleset.ts`).
 
 **PS5.3 · `validate --json` gains `next`.** `done (PR #246, pending)`
 - The one diagnostic to fix first, chosen by fixed precedence: errors, then validity, then intent,
@@ -561,6 +572,16 @@ into PS3.12)
   plus zoomed crops of every flagged junction.
 - Agents look at pictures well when told where to look ("not opened = not seen").
 - Drawing-only; it never changes `describe()` or `lint()`.
+
+**PS5.6 · `finish`/`furnish --profile <name>`.** `todo`
+- `finish --profile <name>` (and its furnish stage) holds the never-worse law under that profile
+  as well: when the profile refuses a room's first piece, it falls back to the next size in the
+  furnish table (e.g. the 900 × 2000 single bed for the 1500 mm `bed` that makes a bedroom a
+  double), and reports what it could not fit.
+- Why: ADR 0024 §6 and ADR 0025 §7 (amended 2026-10-25, PR #248) left the residential-advisory
+  profiles out of the default law; measured on the eval goldens, a default furnish leaves 28
+  profile-only warnings in 14 plans (`uk` 22, `cn` 6, `us` 0), every one a bedroom the 1500 mm
+  bed makes a double.
 
 ### PS6 · `arch solve` (explicit transform; last)
 
@@ -597,7 +618,7 @@ into PS3.12)
 | 3 | PS3.1, PS3.2, PS3.0, PS3.3, PS3.4 | ADR merged; byte-identity law green; `relational.arch` lints clean with walls derived; the 500 mm widening drill moves walls and doors with the room; the class-2 corpus cases are unwritable in the D5 form. *Status:* met 2026-10-23 by PS3.6 (PR #227), every bullet; catch rate then 46/68; dated status history verbatim: `research/2026-10-24-ps3-as-built.md` § §7 row 3 |
 | 3a | PS3.7, PS3.8, PS3.5, PS3.9 (and PS0.19) | Unplanned: done after row 3 was met, before row 4 (D7): PRs #228, #229, #230, #232; PS0.19 #231. First-contact re-run, PR #233 (`audits/2026-10-24-first-contact-rerun.md`): old six plans 17/57 caught (6 partially; 14/57 counting halves); cold re-authoring 6/6 rooms-first; defects 57 → 48, blockers 4 → 2; corpus catch rate 46/68 → 47/70 |
 | 4 | PS0.4, PS4.1, PS4.2 | The widening drill's `impact` names every moved, held and broken item correctly. *Status:* met in part 2026-10-24 by PS4.2 (PR #240): every moved and broken item of the drill is named correctly; `held` is empty because the drill's walls are fixed coordinates and depend on nothing (PS4.5). Merged 2026-10-24 (7954f252) |
-| 5 | PS5.1–PS5.3, PS2.10–PS2.12 | **Next.** The taste score separates the corpus's known-bad from known-good plans monotonically. D10: the row-3 first-contact figures are the baseline; re-measure after this row. PS5.1 complete; concordance 37 ordered / 0 tied / 0 reversed (0 ledgered) / 4 unjudged. *Re-measure:* `audits/2026-10-25-first-contact-rerun-row5.md` (PR #249): cold re-authoring 6/6 rooms-first, defects 48 → 49 (B 2 → 0), final lint 0; 0/6 authors ran `score --taste` or `validate`; taste 0.72–0.93 on the new plans and reaches 3/48 (+1 partial) and 2/49 audited defects; the row-5 codes caught 1.5/57 and 0/48 on the old plans (`W_ANNOTATION_OVERLAP` only, 12 true hits); concordance unchanged; corpus 53/72. |
+| 5 | PS5.1–PS5.3, PS2.10–PS2.12 | **Next.** The taste score separates the corpus's known-bad from known-good plans monotonically. D10: the row-3 first-contact figures are the baseline; re-measure after this row. PS5.1 complete; concordance 37 ordered / 0 tied / 0 reversed (0 ledgered) / 4 unjudged. *Re-measure:* `audits/2026-10-25-first-contact-rerun-row5.md` (PR #249): cold re-authoring 6/6 rooms-first, defects 48 → 49 (B 2 → 0), final lint 0; 0/6 authors ran `score --taste` or `validate`; taste 0.72–0.93 on the new plans and reaches 3/48 (+1 partial) and 2/49 audited defects; the row-5 codes caught 1.5/57 and 0/48 on the old plans (`W_ANNOTATION_OVERLAP` only, 12 true hits); concordance unchanged; corpus 53/72. PS5.2 done (PR #248, pending; R10 and R37 deferred to PS2.11 and PS2.16). |
 | 6 | PS4.3, PS4.4, PS3.5, PS3.6, PS5.4, PS7.x | — (PS3.6 landed in row 3, PS3.5 in row 3a) |
 | 7 | PS6.1 | — |
 

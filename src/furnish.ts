@@ -48,7 +48,7 @@ import { distToPolygonEdge, pointInPolygon, polygonsOverlap, rectRing } from "./
 import { type BBox, doorLandingRect, rectsOverlap } from "./geometry/rect.js";
 import type { RDoor, RFurniture, ROpening, ResolvedPlan, RRoom, RWall, RWindow } from "./ir.js";
 import { lex } from "./lexer.js";
-import { DEFAULT_RULESET, LINT_CODE_LAYERS, LINT_PROFILES } from "./lint.js";
+import { ADVISORY_CODE_PROFILES, DEFAULT_RULESET, LINT_CODE_LAYERS, LINT_PROFILES } from "./lint.js";
 import { buildLintContext } from "./lint/context.js";
 import { definingItems, pasteSet, useNoun } from "./lint/defining.js";
 import { fmtSource } from "./num-format.js";
@@ -126,8 +126,15 @@ export const MAX_ROOM_AREA_M2 = 100;
  */
 const JUDGED_BY_PIECES = "W_ROOM_MISSING_DEFINING";
 
-/** The default ruleset and every named profile: a position is pruned by the strictest of them. */
-const RULESETS = [DEFAULT_RULESET, ...Object.values(LINT_PROFILES).map((p) => ({ ...DEFAULT_RULESET, ...p }))];
+/** The default ruleset and the universal advisory profiles: a position is pruned by the strictest
+ *  of them. The rule: the never-worse law holds under these, never under a jurisdiction's
+ *  profile ({@link ADVISORY_CODE_PROFILES}; ADR 0025 §7, amended 2026-10-25). */
+const RULESETS = [
+  DEFAULT_RULESET,
+  ...Object.entries(LINT_PROFILES)
+    .filter(([name]) => !ADVISORY_CODE_PROFILES.includes(name))
+    .map(([, p]) => ({ ...DEFAULT_RULESET, ...p })),
+];
 /** How deep a door's clear approach is kept, each side of its wall. */
 const LANDING_MM = Math.max(...RULESETS.map((r) => r.doorwayLandingMm));
 /** How far off a door's swing a piece is kept. */

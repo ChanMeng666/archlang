@@ -216,7 +216,12 @@ describe("the report", () => {
   });
 
   it("an unknown profile is a caller error", () => {
-    expect(TASTE_PROFILE_NAMES).toEqual(["generic"]);
+    expect(TASTE_PROFILE_NAMES).toEqual([
+      "generic",
+      "cn-residential-advisory",
+      "uk-residential-advisory",
+      "us-residential-advisory",
+    ]);
     expect(() => taste(read(`${CHAIN}.arch`), { profile: "uk" })).toThrow(/unknown taste profile "uk"/);
   });
 

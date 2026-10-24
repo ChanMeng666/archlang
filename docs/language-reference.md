@@ -2879,6 +2879,7 @@ machine-readable, image-free output:
   ```
   archlang lint plan.arch --profile residential-basic        # the default's ≥700 mm doors, ≥4 m² rooms (WC 1.1, bath 2.0; store/hall none), every plan judged as a dwelling
   archlang lint plan.arch --profile accessibility-advisory   # stricter: ≥850 mm doors, ≥5 m² every room, swing clearance
+  archlang lint plan.arch --profile uk-residential-advisory  # also cn-, us-: room areas and widths by use, read from each source as advice
   ```
 
   Profiles are **advisory soundness checks, never a building-code guarantee.** The
