@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Three residential-advisory profiles (plan card PS5.2): `cn-residential-advisory`,
   `uk-residential-advisory` and `us-residential-advisory`, each a lint profile and a taste
   profile, so `lint --profile`, `score --taste` and `validate --profile/--taste` take the same
-  names. They add room areas by use and, for a double bedroom, its own (a double is read from its
+  names. They add room areas by use, read as net floor inside the walls as the sources measure
+  them, and, for a double bedroom, its own (a double is read from its
   bed: a `double_bed`, a `bed` wider than 1200 mm, or two beds; never from the label), clear room
   widths and passage widths by the rooms a passage leads to, each read from its source as advice
   (GB 50096-2011, the Nationally Described Space Standard, Approved Document M4(2), IRC R304 and
@@ -106,6 +107,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   SVGs move; `describe()` and every other plan's output are unchanged.
 
 ### Changed
+
+- `finish` and its `furnish` stage hold the never-worse law under the default ruleset and the
+  universal advisory profile (`accessibility-advisory`), no longer under every lint profile: the
+  new residential-advisory profiles read one jurisdiction each and disagree by design, so none
+  governs the default output (ADR 0024 decision 6 and ADR 0025 §7, amended). A furnished bedroom
+  whose 1500 mm bed makes it a double under a profile's figures now keeps its bed, and
+  `lint --profile` reports the shortfall.
 
 - `finish`'s never-worse law no longer counts drafting-layer codes (plan card PS2.12, ADR 0024
   and ADR 0025 amended; `W_ANNOTATION_OVERLAP`, `W_TITLE_OVERFLOW`, `W_DIM_INSIDE`,

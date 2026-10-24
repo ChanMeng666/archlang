@@ -96,6 +96,20 @@ piece that cannot be placed is left out.
 > +1 each; no other drafting-layer code gained. Card PS2.40 makes the stage prefer a candidate
 > that raises no overlap.
 
+> *Amended 2026-10-25 (PR #248).* "Under every named profile in `LINT_PROFILES`" now reads:
+> under the default ruleset and the UNIVERSAL advisory profiles (`accessibility-advisory`:
+> physical access, the same in any culture). The residential-advisory profiles (`cn-`, `uk-`,
+> `us-residential-advisory`; `ADVISORY_CODE_PROFILES`, `src/lint/ruleset.ts`) are outside this
+> comparison and out of the stage's door clearances: each reads one jurisdiction's room sizes and
+> reads a bedroom as a double from its bed, they disagree with each other by design
+> (plan-soundness D3), so no single furnished output satisfies all three and none may govern the
+> default output. Measured on the eval goldens, the profile-only warnings the stage now leaves:
+> with areas read as drawn (the PR's first head, as its review measured it) 14 in 9 plans, `uk`
+> 12, `cn` 2, `us` 0; with net areas (as merged) 28 in 14 plans, `uk` 22, `cn` 6, `us` 0. Every
+> one is a `W_ROOM_TOO_SMALL` or `W_ROOM_TOO_NARROW` on a bedroom the furnished 1500 mm `bed`
+> makes a double; the shipped examples gain one (`sheet-notes`, `uk`, net areas). Card PS5.5:
+> `furnish --profile <name>` holds the law under that profile.
+
 **8. This version furnishes rectangular rooms of single-storey plans.** A polygon or circular
 room, and every empty room of a plan with `level` blocks, is reported in `unresolved` and left
 as it is. A polygon room is not approximated by its bounding box or by a rectangle inscribed in
@@ -125,7 +139,7 @@ result a stage would edit again is not returned, and the source comes back untou
 | Law | Statement |
 |---|---|
 | Fixpoint | a second run changes nothing |
-| Never worse | no compile error, no new diagnostic code under any lint profile, no new furniture conflict (drafting-layer codes excepted, see the 2026-10-24 amendment to §7) |
+| Never worse | no compile error, no new diagnostic code under the default ruleset or a universal lint profile, no new furniture conflict (drafting-layer codes and the residential-advisory profiles excepted, see the 2026-10-24 and 2026-10-25 amendments to §7) |
 | Run | a use's wall fixtures sit on one wall, each touching the next |
 | Fill only | a furnished room is untouched; an all-furnished plan is a byte no-op |
 | Pure insertion | the result is the source with one run of statements inserted |

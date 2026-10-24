@@ -980,11 +980,12 @@ suite("furnish — the table is built from words the catalogue has, and the docs
 });
 
 /**
- * Every lint profile but the advisory-code ones (`ADVISORY_CODE_PROFILES`, PS5.2): those read a
- * bedroom as a double from its bed, so placing a bed can raise their room-size warnings, and the
- * law is not held under them (`src/lint/ruleset.ts` says why).
+ * The default ruleset and the universal advisory profiles (`accessibility-advisory`). The
+ * residential-advisory profiles (`ADVISORY_CODE_PROFILES`) are jurisdiction-specific and mutually
+ * exclusive by design, so the law is not held under them (ADR 0024 decision 6 and ADR 0025 §7,
+ * amended 2026-10-25, PR #248; `src/lint/ruleset.ts` says why).
  */
-suite("furnish law — never worse under EVERY lint profile", () => {
+suite("furnish law — never worse under the default and universal profiles", () => {
   const profileCodes = (src: string, profile: string): Map<string, number> => {
     const out = new Map<string, number>();
     for (const d of lint(src, { world, profile })) out.set(d.code ?? "", (out.get(d.code ?? "") ?? 0) + 1);

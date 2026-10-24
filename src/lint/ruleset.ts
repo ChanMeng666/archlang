@@ -275,8 +275,10 @@ export interface LintRuleset {
    * The least clear width (mm) ONE double bedroom of a home must have, the others being held to
    * {@link minDoubleBedroomShortSideMm}. When no double bedroom on the storey reaches it, the
    * widest one (the first in source order on a tie) is held to it, so one room carries the
-   * warning. On a multi-storey plan the rule cannot tell which bedrooms share a home and files
-   * `no-dwelling` instead (declared dwellings are PS2.14). Default `null`: off.
+   * warning. Judged per storey, the storey read as one home: a single-storey plan of several
+   * homes under-reports (one wide double anywhere quiets it). On a multi-storey plan the rule
+   * cannot tell which bedrooms share a home and files `no-dwelling` instead (declared dwellings
+   * are PS2.14). Default `null`: off.
    */
   minMainDoubleBedroomShortSideMm: number | null;
   /**
@@ -295,6 +297,16 @@ export interface LintRuleset {
    * Default `null`: off.
    */
   minEntryPassageWidthMm: number | null;
+  /**
+   * What `W_ROOM_TOO_SMALL` measures a PER-USE floor ({@link minRoomAreaByUseM2}, and a double
+   * bedroom's) against. `"drawn"` (the default): the room as drawn, to the wall centrelines
+   * (`describe().rooms[].area_m2`). `"net"`: its net floor, inside the walls (ADR 0027,
+   * `net_area_m2`), as GB 50096 (使用面积), NDSS and IRC R304 measure a room; where the net area
+   * is omitted the drawn area stands in and the hint says `gross-area`. The generic floor
+   * ({@link minRoomAreaM2}) is always read as drawn. The residential-advisory profiles set
+   * `"net"` (plan-soundness PS5.2, red-team round 1).
+   */
+  roomAreaMeasure: "drawn" | "net";
 }
 
 /**
@@ -345,6 +357,7 @@ export const DEFAULT_RULESET: LintRuleset = {
   minMainDoubleBedroomShortSideMm: null,
   minPathClearWidthByUseMm: Object.freeze({}),
   minEntryPassageWidthMm: null,
+  roomAreaMeasure: "drawn",
 };
 
 /**
@@ -376,13 +389,12 @@ export const LINT_PROFILES: Readonly<Record<string, Partial<LintRuleset>>> = Obj
    * Room sizes and passage widths read from China's residential design code, as ADVICE (ADR
    * 0005: the name is not the standard's, and passing is not compliance). Source: GB 50096-2011
    * 住宅设计规范, full text read (`docs/plans/plan-soundness/research/prior-art.md` §3.1) [V].
-   * Areas are measured as `W_ROOM_TOO_SMALL` measures every floor, on the room as drawn (to the
-   * wall centrelines when drawn so), while the clauses give 使用面积 (net floor): the check is
-   * lenient by the walls' half thickness and never warns a room that meets the figure. Widths
-   * are clear, between wall faces (净宽). The design sets no `cn` number for R10 (WC clearances)
-   * or R37 (escape window).
+   * Areas are net floor (使用面积, the clauses' measure; {@link LintRuleset.roomAreaMeasure}), and
+   * widths are clear, between wall faces (净宽). The design sets no `cn` number for R10 (WC
+   * clearances) or R37 (escape window).
    */
   "cn-residential-advisory": {
+    roomAreaMeasure: "net", // GB 50096-2011 5.2–5.4 give room areas as 使用面积, the usable floor inside the walls [V]
     minRoomAreaByUseM2: {
       bedroom: 5, // GB 50096-2011 5.2.1: a single bedroom at least 5 m², which every bedroom meets [V]
       living: 10, // GB 50096-2011 5.2.2: a living room (起居室) at least 10 m² [V]
@@ -402,12 +414,16 @@ export const LINT_PROFILES: Readonly<Record<string, Partial<LintRuleset>>> = Obj
   /**
    * Room sizes and hall widths read from England's space standard and access guidance, as
    * ADVICE (ADR 0005). Bedrooms: the Nationally Described Space Standard (2015) 10(c)–(e), read
-   * in full (`prior-art.md` §3.3) [V]. NDSS measures finished internal dimensions, so the areas,
-   * measured as drawn, are lenient by the walls' half thickness; the widths are clear, between
-   * wall faces. Halls: Approved Document M4(2), second-hand [S]. R37 (the ADB 2.10 escape
-   * window) waits for PS2.16; its numbers are in {@link DEFERRED_PROFILE_NUMBERS}, unused.
+   * in full (`prior-art.md` §3.3) [V]. NDSS measures finished internal dimensions, so areas are
+   * net floor and widths clear, between wall faces. Halls: Approved Document M4(2), second-hand
+   * [S]. The one-main-double arm (2750 mm) is judged PER STOREY, every bedroom on it read as one
+   * home: on a single-storey plan holding several homes (`terrace-row`) one wide enough double in
+   * any home quiets it for all, so it under-reports there until dwellings are declared (PS2.14).
+   * R37 (the ADB 2.10 escape window) waits for PS2.16; its numbers are in
+   * {@link DEFERRED_PROFILE_NUMBERS}, unused.
    */
   "uk-residential-advisory": {
+    roomAreaMeasure: "net", // NDSS 10: bedroom areas are internal (usable) floor area [S, the PS5.2 review, PR #248]
     minRoomAreaByUseM2: {
       bedroom: 7.5, // NDSS 10(c): a single bedroom at least 7.5 m², which every bedroom meets [V]
     },
@@ -431,6 +447,7 @@ export const LINT_PROFILES: Readonly<Record<string, Partial<LintRuleset>>> = Obj
    * R37 (the escape opening) for PS2.16; their numbers are in {@link DEFERRED_PROFILE_NUMBERS}.
    */
   "us-residential-advisory": {
+    roomAreaMeasure: "net", // IRC R304.1: a habitable room's net floor area [S, the PS5.2 review, PR #248]
     minRoomAreaByUseM2: {
       living: 6.5, // IRC R304.1: a habitable room at least 70 ft² (6.5 m²), kitchens excepted [S]
       dining: 6.5, // IRC R304.1 [S]
@@ -459,22 +476,33 @@ export const DEFERRED_PROFILE_NUMBERS = Object.freeze({
    *  clear in front of it (IRC P2705.1, R307.1) [S, `prior-art.md` §3.3; clause numbers from the
    *  design's §5 table]. */
   usWc: Object.freeze({ centreToSideMm: 381, clearInFrontMm: 533 }),
-  /** R37, `us`: an emergency escape and rescue opening at least 20 in (508 mm) clear wide, its
-   *  sill at most 44 in (1118 mm) above the floor, and at least 5.7 ft² (0.53 m²) net clear, or
-   *  5.0 ft² (0.46 m²) at grade (IRC R310) [S, `prior-art.md` §3.2]. A failure only, never a pass. */
-  usEscape: Object.freeze({ minClearWidthMm: 508, maxSillMm: 1118, minNetClearM2: 0.53, minNetClearAtGradeM2: 0.46 }),
+  /** R37, `us`: an emergency escape and rescue opening at least 20 in (508 mm) clear wide and
+   *  24 in (610 mm) clear high, its sill at most 44 in (1118 mm) above the floor, and at least
+   *  5.7 ft² (0.53 m²) net clear, or 5.0 ft² (0.46 m²) at grade (IRC R310) [S, `prior-art.md`
+   *  §3.2]. A failure only, never a pass. */
+  usEscape: Object.freeze({
+    minClearWidthMm: 508,
+    minClearHeightMm: 610,
+    maxSillMm: 1118,
+    minNetClearM2: 0.53,
+    minNetClearAtGradeM2: 0.46,
+  }),
   /** R37, `uk`: an escape window at least 0.33 m² clear and 450 × 450 mm, its openable part at
    *  most 1100 mm above the floor (Approved Document B 2.10) [S, `prior-art.md` §3.3]. */
   ukEscape: Object.freeze({ minClearM2: 0.33, minClearSideMm: 450, maxOpenableHeightMm: 1100 }),
 });
 
 /**
- * The profiles of the ADVISORY-CODE layer (plan-soundness README §4, PS5.2): opt-in readings of a
- * jurisdiction's room sizes. `finish`'s never-worse law is not held under them (`furnish` and
- * `finish` measure the default ruleset and the other profiles only): placing a bed is what makes
- * a bedroom a double for them, so a law held under them would refuse to furnish every bedroom
- * under a jurisdiction's double-bedroom figure, which is advisory code turned into gating by the
- * back door (design §6 Q2, the reason taste does not cap on them either).
+ * The profiles of the ADVISORY-CODE layer (plan-soundness README §4, PS5.2): opt-in readings of
+ * one jurisdiction's room sizes.
+ *
+ * **The rule (ADR 0024 decision 6 and ADR 0025 §7, amended 2026-10-25, PR #248):** `finish`'s
+ * never-worse law holds under the default ruleset and under the UNIVERSAL advisory profiles
+ * (`accessibility-advisory`: physical access, culture-independent). These profiles are
+ * jurisdiction-specific and mutually exclusive by design (plan-soundness D3), so no single
+ * furnished output can satisfy all of them and none may govern the default output: they are
+ * outside the never-worse comparison (`STRICTER_PROFILES`, `src/finish.ts`; `RULESETS`,
+ * `src/furnish.ts`). Placing a bed is what makes a bedroom a double for them.
  */
 export const ADVISORY_CODE_PROFILES: readonly string[] = Object.freeze([
   "cn-residential-advisory",

@@ -36,6 +36,7 @@ import type { RRoom } from "../../ir.js";
 import type { LintContext, LintRule } from "../context.js";
 import { DEFAULT_RULESET, DOUBLE_BED_MIN_WIDTH_MM, type LintRuleset } from "../ruleset.js";
 import { innerFaceOfRoomEdge } from "../../fixture-orientation.js";
+import { memoRoomNetAreaMm2, storeyNetAreaBands } from "../../analyze/net-area-memo.js";
 import { itemWords, pasteSet, roomDefiningItems } from "../defining.js";
 import type { PasteFailure } from "../fixture-paste.js";
 
@@ -47,6 +48,20 @@ export const KITCHEN_FIX = zoneFixtureCategories("kitchen");
 
 /** Square metres of a room (exact for a polygon too), rounded to 2 decimals. */
 export const areaM2 = (r: RRoom): number => Math.round((roomAreaMm2(r) / 1_000_000) * 100) / 100;
+
+/**
+ * A room's net floor in m² (ADR 0027: its floor less every part a wall stands on), rounded to 2
+ * decimals exactly as `describe().rooms[].net_area_m2` is, from the same memo; `undefined` where
+ * describe omits it (past the net-area budgets).
+ */
+export function netAreaM2(ctx: LintContext, r: RRoom): number | undefined {
+  const mm2 = memoRoomNetAreaMm2(r, storeyNetAreaBands(ctx.ir.walls));
+  return mm2 === undefined ? undefined : Math.round((mm2 / 1_000_000) * 100) / 100;
+}
+
+/** The `W_ROOM_TOO_SMALL` hint when a net-area ruleset falls back to the drawn area. */
+const GROSS_AREA_HINT =
+  "gross-area: this room's net area could not be measured (too much wall geometry for the net-area budget), so its drawn area, to the wall centrelines, was read instead; the clause measures net floor.";
 
 /**
  * Does any window serve the room? The one window-attribution fact the daylight rules read
@@ -382,9 +397,14 @@ export const perRoomRules: LintRule = {
       if (roomUses(r).size === 0) ctx.skip("no-uses", r);
 
       // Implausibly tiny room, against the floor its use asks for.
-      const a = areaM2(r);
       const rBeds = beds?.get(r.id);
       const floor = roomAreaFloor(r, rules, rBeds);
+      // PS5.2: under a ruleset that reads areas as net (the residential-advisory profiles), a
+      // per-use floor is measured on the room's net floor (ADR 0027), as the clauses measure it;
+      // the drawn area stands in, said in a hint, only where the net area is omitted.
+      const byNet = rules.roomAreaMeasure === "net" && floor !== null && floor.use !== null;
+      const net = byNet ? netAreaM2(ctx, r) : undefined;
+      const a = net ?? areaM2(r);
       if (floor !== null && a < floor.m2) {
         const noun = floor.double
           ? "a double bedroom"
@@ -403,12 +423,13 @@ export const perRoomRules: LintRule = {
           message:
             floor.use === null
               ? `Room "${labelOf(r)}" is only ${a} m² (under ${rules.minRoomAreaM2} m²).`
-              : `Room "${labelOf(r)}" is only ${a} m² (under ${fmt2(floor.m2)} m², the floor for ${noun}).`,
+              : `Room "${labelOf(r)}" is only ${a} m²${net !== undefined ? " of net floor" : ""} (under ${fmt2(floor.m2)} m², the floor for ${noun}).`,
           hints:
             floor.use === null
               ? ["Increase its `size`, or merge it into an adjacent space."]
               : [
                   ...(source !== undefined ? [source] : []),
+                  ...(byNet && net === undefined ? [GROSS_AREA_HINT] : []),
                   "Increase its `size`, or merge it into an adjacent space.",
                   floor.double
                     ? DOUBLE_HINT
@@ -530,6 +551,7 @@ export const perRoomRules: LintRule = {
             hints: [
               `Widen its short side until ${d.required} mm stand clear between the walls' inner faces (the drawn size runs to the wall centrelines, so add half of each wall's thickness).`,
               ...(ask.of === "a double bedroom" || ask.of.startsWith("one double bedroom") ? [DOUBLE_HINT] : []),
+              ...(ask.of === "an entry passage" ? [ENTRY_HINT] : []),
             ],
           });
         }
@@ -538,6 +560,10 @@ export const perRoomRules: LintRule = {
     return out;
   },
 };
+
+/** What makes a passage the entry passage (PS5.2), and the known over-reach (card PS2.44). */
+const ENTRY_HINT =
+  "It is read as the entry passage because a door from outside opens into it (or it is `uses entry`); a door onto a balcony counts too for now, which overstates a passage that is entered only from a balcony.";
 
 /** Why a bedroom reads as a double (PS5.2): its bed, never its label. */
 const DOUBLE_HINT = `It reads as a double bedroom from its bed: a \`double_bed\`, a \`bed\` wider than ${DOUBLE_BED_MIN_WIDTH_MM} mm, or two beds.`;

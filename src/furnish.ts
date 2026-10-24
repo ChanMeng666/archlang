@@ -126,8 +126,9 @@ export const MAX_ROOM_AREA_M2 = 100;
  */
 const JUDGED_BY_PIECES = "W_ROOM_MISSING_DEFINING";
 
-/** The default ruleset and every named profile but the advisory-code ones
- *  ({@link ADVISORY_CODE_PROFILES}): a position is pruned by the strictest of them. */
+/** The default ruleset and the universal advisory profiles: a position is pruned by the strictest
+ *  of them. The rule: the never-worse law holds under these, never under a jurisdiction's
+ *  profile ({@link ADVISORY_CODE_PROFILES}; ADR 0025 §7, amended 2026-10-25). */
 const RULESETS = [
   DEFAULT_RULESET,
   ...Object.entries(LINT_PROFILES)

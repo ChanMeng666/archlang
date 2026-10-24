@@ -63,7 +63,7 @@ A statement is inserted only at a line boundary, in the file's own indentation a
 | Law | Statement |
 |---|---|
 | Fixpoint | `finish(finish(s).source).source === finish(s).source` |
-| Never worse | the result has no compile error, no diagnostic code (compile and lint, counted) that the input did not have, and no new furniture conflict (drafting-layer codes excepted, see the 2026-10-24 amendment) |
+| Never worse | the result has no compile error, no diagnostic code (compile and lint, counted) that the input did not have, and no new furniture conflict (drafting-layer codes and the residential-advisory profiles excepted, see the 2026-10-24 and 2026-10-25 amendments) |
 | Fitted | when `finish` wrote `paper` or `scale`, the result raises neither `W_SCALE_OVERFLOW` nor `W_DRAWING_OVERFLOW` |
 | Untouched | a source that does not compile is returned byte-identical |
 
@@ -96,6 +96,21 @@ the reason goes in `unresolved`. A plan that needs nothing comes back byte-ident
 > `two-bath-flat` 0 → 2, `sized-bedrooms`, `three-bed-2bath`, `two-bed-hall` and `l-shaped-flat`
 > +1 each; no other drafting-layer code gained. Card PS2.40 makes `furnish` prefer a candidate
 > that raises no overlap.
+
+> *Amended 2026-10-25 (PR #248).* "Checked under every lint profile" now reads: under the
+> default ruleset and the UNIVERSAL advisory profiles (`accessibility-advisory`: physical access,
+> the same in any culture). The three residential-advisory profiles (`cn-`, `uk-`,
+> `us-residential-advisory`, `ADVISORY_CODE_PROFILES` in `src/lint/ruleset.ts`) are outside the
+> comparison: each reads one jurisdiction's room sizes, they disagree with each other by design
+> (plan-soundness D3), so no single furnished output can satisfy all three, and none of them may
+> govern the default output. Measured on the eval goldens, the profile-only warnings `finish`'s
+> furnish stage now leaves: with areas read as drawn (the PR's first head, as its review measured
+> it) 14 in 9 plans, `uk` 12, `cn` 2, `us` 0; with net areas (as merged) 28 in 14 plans, `uk` 22,
+> `cn` 6, `us` 0.
+> Every one is a `W_ROOM_TOO_SMALL` or `W_ROOM_TOO_NARROW` on a bedroom that the furnished
+> 1500 mm `bed` makes a double. The shipped examples gain one (`sheet-notes`, `uk`, with net
+> areas; none as drawn). Card PS5.5 lets `finish`/`furnish --profile <name>` hold the law under
+> that one profile.
 
 > **Superseded (2026-10).** The `furnish` stage exists: see
 > [ADR 0025](0025-furnish-as-explicit-transform.md). A full run is `furnish`, then `sheet`, and

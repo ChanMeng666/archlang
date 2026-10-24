@@ -65,15 +65,23 @@
  *    target in the 173 rows where R7 judges a room; R7's score falls in 124 rows (a ratio between
  *    8 % and 1/7 met the generic target and no longer does; e.g. `examples/one-room.arch`
  *    1 → 0.6908), which moves `subscores.light` and `uncapped`, and `score` in 78 rows.
- *    `advisory` lists the profile's own warnings in 15 rows (`W_ROOM_TOO_SMALL`,
+ *    `advisory` lists the profile's own warnings in 20 rows (`W_ROOM_TOO_SMALL`,
  *    `W_ROOM_TOO_NARROW`), and none caps: `capped` and `validity` equal generic's in every row.
  *    No criterion but R7 moves.
  *  - `us` (R7 target 8 %, IRC R303.1 [S], the same number and source as generic): every report
  *    equals generic's except `profile` and, in 12 rows, `advisory`.
  * `uk-residential-advisory` declares no taste number (no English glazing ratio was read, so it
  * keeps generic's 8 %) and has no block: `UK_INHERITS` below proves its report is generic's with
- * only `profile` and `advisory` changed (17 rows list an advisory), and that `advisory` is the
+ * only `profile` and `advisory` changed (24 rows list an advisory), and that `advisory` is the
  * profile-only lint warnings.
+ *
+ * Re-measured in PS5.2's red-team round 1, when the profiles' areas became net floor (ADR 0027):
+ * five `cn` rows moved, each only by one more `W_ROOM_TOO_SMALL` in `advisory` (a double bedroom
+ * or a living room over its figure as drawn and under it net): `examples/accessible.arch`
+ * (bedroom 8.93 m² net), `examples/studio.arch` (8.12), `annotation-collisions/label-over-bed`
+ * ("Bedroom 4", 8.54) and both `clearances/wc-side-clearance` twins (living room 8.86 of 10).
+ * No `us` row moved (no habitable room crosses 6.5 m² between drawn and net). `uk` gained 7
+ * advisory rows, pinned by the law below.
  */
 
 import { describe, expect, it } from "vitest";
@@ -949,7 +957,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/taste-corpus/r9-long-bedroom.good.arch",
   ],
   [
-    "a2d0a8bbbdfb524cfad35b4d841caa61ba226282f872adb1e4c6cf08aba3af48",
+    "e3c615e0c258c7e2b5884d6aa555005377aa1d8c4eb69a3076b0fdc8ff18287f",
     "cn-residential-advisory",
     "examples/accessible.arch",
   ],
@@ -1079,7 +1087,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "examples/sheet-notes.arch",
   ],
   [
-    "8b639d61998d29d6275eb178081734e0d7478d74bf7d35379314c08a9abba7e2",
+    "19ae656fa0018abd32973c336bb26466b27da09b66e07fb91b3b67e506e8b5e8",
     "cn-residential-advisory",
     "examples/studio.arch",
   ],
@@ -1139,7 +1147,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/annotation-collisions/dim-text-lies.clean.arch",
   ],
   [
-    "89780d09398443799a0400dd3b3516391f377b56b84dc9483d11c2d556a5bf98",
+    "bb173d491f2a9213a6784a83ed6d83df7f1d5329de17c2125b648c17dc84a4a8",
     "cn-residential-advisory",
     "test/defect-corpus/annotation-collisions/label-over-bed.arch",
   ],
@@ -1479,12 +1487,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/wc-centre-to-basin.clean.arch",
   ],
   [
-    "25dbd38eb1f681c857d780fcc2b753772b9e441209d62ff52d563100be427370",
+    "d98ff1b14268af63b7e07554ef85c877d1cacaf7d3b2debfe212111400f34f8f",
     "cn-residential-advisory",
     "test/defect-corpus/clearances/wc-side-clearance.arch",
   ],
   [
-    "25dbd38eb1f681c857d780fcc2b753772b9e441209d62ff52d563100be427370",
+    "d98ff1b14268af63b7e07554ef85c877d1cacaf7d3b2debfe212111400f34f8f",
     "cn-residential-advisory",
     "test/defect-corpus/clearances/wc-side-clearance.clean.arch",
   ],

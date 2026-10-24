@@ -397,6 +397,7 @@ A done row's "record" is `research/2026-10-24-ps0-ps2-as-built.md`.
 | PS2.38 | Chord-aware dimension hint, or an arc-length dimension form | A straight `dim` drawn on the jambs of an opening on an arc and lettered with the opening's width (the arc length) is told by `W_DIM_TEXT_MISMATCH` to move its endpoints so they span that width, i.e. off the jambs. Either make the hint chord-aware (recognise jambs on an arc and say the line measures the chord) or add an arc-length dimension form that measures along the arc. Found in PR #243 (aquarium's two window dims, now lettered `2.0m`) | todo |
 | PS2.39 | Thickness call-outs on room floors | `dims auto all` letters each wall thickness once, beside its wall on the side with floor (`thicknessSideFlipped`, `scene-build.ts`): about 65 numbers on a room floor across 21 of the 26 `dims auto` examples, with the `R` and `φ` call-outs (audits X28, M6, DM2; corpus `annotation-collisions/auto-dims-in-room`). A drawing decision, not a lint: state thickness on the openings chain or in the dimension band, or make the tier opt-in, with its own byte-identity accounting. PS2.12 declined to flag it (no author remedy short of dropping the openings chains) | todo |
 | PS2.40 | `furnish` avoids label overprints | `furnish` prefers a candidate that raises no `W_ANNOTATION_OVERLAP`, else lists the room under `unresolved`. Acceptance: `finish` on the eval goldens raises 0 overlaps (9 across 6 plans today: ADR 0024 §6 and ADR 0025 §7, amended 2026-10-24). Found in PR #245 | todo |
+| PS2.44 | A balcony door does not make an entry passage | Under `cn-residential-advisory`, `W_ROOM_TOO_NARROW` holds a passage to the 1200 mm entry figure when any door from outside opens into it, a door onto an `outdoor balcony` included (`widthAsk`, `src/lint/rules/per-room.ts`, reads every exterior access edge). Read the entrance as the walk does (`entranceWays`' `balcony` flag, `src/analyze/entrance.ts`) and leave balcony doors out; the warning's hint says so until then. (PS2.41 is reserved by the row-5 audit.) Found in PR #248 | todo |
 
 ### PS3 · Relation-first authoring (D1 + D5; needs an ADR)
 
@@ -543,7 +544,10 @@ into PS3.12)
 - Shipped: R4, R8 and R7's target per profile (`cn` 1/7, `uk`/`us` 8 %); new code
   `W_ROOM_TOO_NARROW` (clear width between wall faces), a double bedroom read from its bed
   (`no-bed` otherwise), R8 measured on the passage's own width (not the walk, which runs through
-  doors); profile-only warnings under the taste report's `advisory`, never capping.
+  doors); profile-only warnings under the taste report's `advisory`, never capping. Areas are
+  net floor (ADR 0027; review round 1). The never-worse law of `finish`/`furnish` now holds under
+  the default ruleset and the universal profiles only (ADR 0024 §6, ADR 0025 §7, amended
+  2026-10-25; follow-up PS5.5).
 - *Deferred (lead ruling, 2026-10-24):* R10 lands with PS2.11's WC-clearance rule and R37 with
   PS2.16's escape-window rule; their sourced numbers wait, unread, in `DEFERRED_PROFILE_NUMBERS`
   (`src/lint/ruleset.ts`).
@@ -568,6 +572,16 @@ into PS3.12)
   plus zoomed crops of every flagged junction.
 - Agents look at pictures well when told where to look ("not opened = not seen").
 - Drawing-only; it never changes `describe()` or `lint()`.
+
+**PS5.5 · `finish`/`furnish --profile <name>`.** `todo`
+- `finish --profile <name>` (and its furnish stage) holds the never-worse law under that profile
+  as well: when the profile refuses a room's first piece, it falls back to the next size in the
+  furnish table (e.g. the 900 × 2000 single bed for the 1500 mm `bed` that makes a bedroom a
+  double), and reports what it could not fit.
+- Why: ADR 0024 §6 and ADR 0025 §7 (amended 2026-10-25, PR #248) left the residential-advisory
+  profiles out of the default law; measured on the eval goldens, a default furnish leaves 28
+  profile-only warnings in 14 plans (`uk` 22, `cn` 6, `us` 0), every one a bedroom the 1500 mm
+  bed makes a double.
 
 ### PS6 · `arch solve` (explicit transform; last)
 

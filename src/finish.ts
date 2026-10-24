@@ -266,7 +266,9 @@ export function stricterProfileNames(profiles: Readonly<Record<string, object>>)
 }
 
 /** {@link stricterProfileNames} over the built-in {@link LINT_PROFILES}, less the advisory-code
- *  ones ({@link ADVISORY_CODE_PROFILES}: the never-worse law is not held under them, PS5.2). */
+ *  ones. The rule: the never-worse law holds under the default ruleset and the universal advisory
+ *  profiles, never under a jurisdiction's ({@link ADVISORY_CODE_PROFILES}; ADR 0024 decision 6,
+ *  amended 2026-10-25). */
 export const STRICTER_PROFILES: readonly string[] = stricterProfileNames(LINT_PROFILES).filter(
   (p) => !ADVISORY_CODE_PROFILES.includes(p),
 );

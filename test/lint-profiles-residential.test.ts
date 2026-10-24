@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_RULESET,
+  describe as describePlan,
   ERROR_CATALOG,
   LINT_PROFILE_NAMES,
   LINT_PROFILES,
@@ -75,12 +76,14 @@ describe("the residential-advisory profiles", () => {
 
   it("pin the sourced numbers", () => {
     expect(LINT_PROFILES[CN]).toEqual({
+      roomAreaMeasure: "net",
       minRoomAreaByUseM2: { bedroom: 5, living: 10, kitchen: 4 },
       minDoubleBedroomAreaM2: 9,
       minEntryPassageWidthMm: 1200,
       minPathClearWidthByUseMm: { bedroom: 1000, living: 1000, kitchen: 900, bath: 900, wc: 900, storage: 900 },
     });
     expect(LINT_PROFILES[UK]).toEqual({
+      roomAreaMeasure: "net",
       minRoomAreaByUseM2: { bedroom: 7.5 },
       minDoubleBedroomAreaM2: 11.5,
       minRoomShortSideByUseMm: { bedroom: 2150, hall: 900, circulation: 900, entry: 900 },
@@ -88,6 +91,7 @@ describe("the residential-advisory profiles", () => {
       minMainDoubleBedroomShortSideMm: 2750,
     });
     expect(LINT_PROFILES[US]).toEqual({
+      roomAreaMeasure: "net",
       minRoomAreaByUseM2: { living: 6.5, dining: 6.5, bedroom: 6.5 },
       minRoomShortSideByUseMm: { living: 2134, dining: 2134, bedroom: 2134, hall: 914, circulation: 914, entry: 914 },
     });
@@ -123,7 +127,8 @@ describe("the catalog example", () => {
 describe("single or double: read from the bed, never the label (ADR 0005)", () => {
   // 3000 × 2900 = 8.7 m²: under cn's 9 m² double, over its 5 m² single.
   const cnRoom = (extra: string, label = "Bedroom") => room(3000, 2900, "bedroom", extra, label);
-  const dbl = 'W_ROOM_TOO_SMALL Room "Bedroom" is only 8.7 m² (under 9 m², the floor for a double bedroom).';
+  const dbl =
+    'W_ROOM_TOO_SMALL Room "Bedroom" is only 8.7 m² of net floor (under 9 m², the floor for a double bedroom).';
 
   it("a bed 1200 mm wide is a single; 1201 mm a double", () => {
     expect(found(cnRoom(bed(1200)), CN)).toEqual([]);
@@ -155,26 +160,43 @@ describe("single or double: read from the bed, never the label (ADR 0005)", () =
   });
 });
 
+describe("areas are net floor under every residential profile (ADR 0027)", () => {
+  // Drawn 3000 × 3100 = 9.3 m² on the centrelines of a 100 mm shell: 2900 × 3000 = 8.7 m² net.
+  const walled = `plan "P" {
+  units mm
+  wall id=shell exterior thickness 100 { (0,0) (3000,0) (3000,3100) (0,3100) close }
+  room id=r at (0,0) size 3000x3100 label "Bedroom" uses bedroom
+  furniture bed at (300,300) size 1500x2000
+}`;
+  it("a double drawn at 9.3 m² with 8.7 m² of net floor warns under cn, and its net area is describe's", () => {
+    expect(found(walled, CN)).toEqual([
+      'W_ROOM_TOO_SMALL Room "Bedroom" is only 8.7 m² of net floor (under 9 m², the floor for a double bedroom).',
+    ]);
+    expect(found(walled)).toEqual([]);
+    expect(describePlan(walled).rooms[0]!.net_area_m2).toBe(8.7);
+  });
+});
+
 describe("cn-residential-advisory (GB 50096-2011)", () => {
   it("5.2.1: a single bedroom 5 m², a double 9 m²", () => {
     expect(found(room(2500, 2000, "bedroom", bed(900)), CN)).toEqual([]);
     expect(found(room(2500, 1980, "bedroom", bed(900)), CN)).toEqual([
-      'W_ROOM_TOO_SMALL Room "Room" is only 4.95 m² (under 5 m², the floor for a bedroom).',
+      'W_ROOM_TOO_SMALL Room "Room" is only 4.95 m² of net floor (under 5 m², the floor for a bedroom).',
     ]);
     expect(found(room(3000, 3000, "bedroom", bed(1500)), CN)).toEqual([]);
     expect(found(room(3000, 2990, "bedroom", bed(1500)), CN)).toEqual([
-      'W_ROOM_TOO_SMALL Room "Room" is only 8.97 m² (under 9 m², the floor for a double bedroom).',
+      'W_ROOM_TOO_SMALL Room "Room" is only 8.97 m² of net floor (under 9 m², the floor for a double bedroom).',
     ]);
   });
 
   it("5.2.2: a living room 10 m²; 5.3.1: a kitchen 4 m²", () => {
     expect(found(room(4000, 2500, "living"), CN)).toEqual([]);
     expect(found(room(4000, 2490, "living"), CN)).toEqual([
-      'W_ROOM_TOO_SMALL Room "Room" is only 9.96 m² (under 10 m², the floor for a living room).',
+      'W_ROOM_TOO_SMALL Room "Room" is only 9.96 m² of net floor (under 10 m², the floor for a living room).',
     ]);
     expect(found(room(2000, 2000, "kitchen"), CN)).toEqual([]);
     expect(found(room(2000, 1990, "kitchen"), CN)).toEqual([
-      'W_ROOM_TOO_SMALL Room "Room" is only 3.98 m² (under 4 m², the floor for a kitchen).',
+      'W_ROOM_TOO_SMALL Room "Room" is only 3.98 m² of net floor (under 4 m², the floor for a kitchen).',
     ]);
   });
 });
@@ -234,7 +256,7 @@ describe("uk-residential-advisory (NDSS 10(c)–(e); AD M4(2))", () => {
       'W_ROOM_TOO_NARROW Room "Room" is 2140 mm wide between its wall faces, under the 2150 mm the profile asks of a bedroom — 10 mm short.',
     ]);
     expect(found(room(2500, 2990, "bedroom", bed(900)), UK)).toEqual([
-      'W_ROOM_TOO_SMALL Room "Room" is only 7.48 m² (under 7.5 m², the floor for a bedroom).',
+      'W_ROOM_TOO_SMALL Room "Room" is only 7.48 m² of net floor (under 7.5 m², the floor for a bedroom).',
     ]);
   });
 
@@ -267,7 +289,7 @@ describe("uk-residential-advisory (NDSS 10(c)–(e); AD M4(2))", () => {
   it("10(d) at the lattice: 11.5 m² passes, 11.49 m² warns", () => {
     expect(found(room(2875, 4000, "bedroom", bed(1500)), UK)).toEqual([]);
     expect(found(room(2873, 4000, "bedroom", bed(1500)), UK)).toEqual([
-      'W_ROOM_TOO_SMALL Room "Room" is only 11.49 m² (under 11.5 m², the floor for a double bedroom).',
+      'W_ROOM_TOO_SMALL Room "Room" is only 11.49 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     ]);
   });
 
@@ -306,7 +328,7 @@ describe("us-residential-advisory (IRC R304, R311.6)", () => {
   it("R304.1: a habitable room 6.5 m²; the kitchen is excepted", () => {
     expect(found(room(2600, 2500, "living"), US)).toEqual([]);
     expect(found(room(2600, 2490, "dining"), US)).toEqual([
-      'W_ROOM_TOO_SMALL Room "Room" is only 6.47 m² (under 6.5 m², the floor for a dining room).',
+      'W_ROOM_TOO_SMALL Room "Room" is only 6.47 m² of net floor (under 6.5 m², the floor for a dining room).',
     ]);
     // A 2 m wide, 4.2 m² kitchen: over the default 4 m² floor, and asked no width.
     expect(found(room(2000, 2100, "kitchen"), US)).toEqual([]);
@@ -335,23 +357,28 @@ describe("us-residential-advisory (IRC R304, R311.6)", () => {
  */
 const EXAMPLE_ADDITIONS: Record<string, string[]> = {
   [CN]: [
+    'examples/accessible.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 8.93 m² of net floor (under 9 m², the floor for a double bedroom).',
     'examples/furnished-flat.arch W_ROOM_TOO_NARROW Room "Hall" is 1100 mm wide between its wall faces, under the 1200 mm the profile asks of an entry passage — 100 mm short.',
-    'examples/garden-loft.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 8.96 m² (under 9 m², the floor for a double bedroom).',
+    'examples/garden-loft.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 8.08 m² of net floor (under 9 m², the floor for a double bedroom).',
     'examples/relational.arch W_ROOM_TOO_NARROW Room "Hall" is 1100 mm wide between its wall faces, under the 1200 mm the profile asks of an entry passage — 100 mm short.',
+    'examples/studio.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 8.12 m² of net floor (under 9 m², the floor for a double bedroom).',
   ],
   [UK]: [
-    'examples/accessible.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 10 m² (under 11.5 m², the floor for a double bedroom).',
+    'examples/accessible.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 8.93 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     'examples/accessible.arch W_ROOM_TOO_NARROW Room "Bedroom" is 2350 mm wide between its wall faces, under the 2750 mm the profile asks of one double bedroom of every home (none here is that wide) — 400 mm short.',
-    'examples/furnished-flat.arch W_ROOM_TOO_SMALL Room "Bedroom 2" is only 11.2 m² (under 11.5 m², the floor for a double bedroom).',
-    'examples/garden-loft.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 8.96 m² (under 11.5 m², the floor for a double bedroom).',
+    'examples/attached.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 10.83 m² of net floor (under 11.5 m², the floor for a double bedroom).',
+    'examples/furnished-flat.arch W_ROOM_TOO_SMALL Room "Bedroom 2" is only 10.4 m² of net floor (under 11.5 m², the floor for a double bedroom).',
+    'examples/garden-loft.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 8.08 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     'examples/garden-loft.arch W_ROOM_TOO_NARROW Room "Bedroom" is 2650 mm wide between its wall faces, under the 2750 mm the profile asks of one double bedroom of every home (none here is that wide) — 100 mm short.',
-    'examples/hillside-villa.arch W_ROOM_TOO_SMALL Room "Bedroom 2" is only 10.4 m² (under 11.5 m², the floor for a double bedroom).',
+    'examples/hillside-villa.arch W_ROOM_TOO_SMALL Room "Bedroom 2" is only 9.12 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     'examples/hillside-villa.arch W_ROOM_TOO_NARROW Room "Bedroom 2" is 2400 mm wide between its wall faces, under the 2550 mm the profile asks of a double bedroom — 150 mm short.',
-    'examples/hillside-villa.arch W_ROOM_TOO_SMALL Room "Bedroom 3" is only 10.4 m² (under 11.5 m², the floor for a double bedroom).',
+    'examples/hillside-villa.arch W_ROOM_TOO_SMALL Room "Bedroom 3" is only 9.12 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     'examples/hillside-villa.arch W_ROOM_TOO_NARROW Room "Bedroom 3" is 2400 mm wide between its wall faces, under the 2550 mm the profile asks of a double bedroom — 150 mm short.',
+    'examples/relational.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 10.43 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     'examples/relational.arch W_ROOM_TOO_NARROW Room "Bedroom" is 2150 mm wide between its wall faces, under the 2750 mm the profile asks of one double bedroom of every home (none here is that wide) — 600 mm short.',
-    'examples/studio.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 9 m² (under 11.5 m², the floor for a double bedroom).',
-    'examples/two-bed.arch W_ROOM_TOO_SMALL Room "Bedroom 2" is only 10.8 m² (under 11.5 m², the floor for a double bedroom).',
+    'examples/studio.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 8.12 m² of net floor (under 11.5 m², the floor for a double bedroom).',
+    'examples/themed.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 10.59 m² of net floor (under 11.5 m², the floor for a double bedroom).',
+    'examples/two-bed.arch W_ROOM_TOO_SMALL Room "Bedroom 2" is only 9.52 m² of net floor (under 11.5 m², the floor for a double bedroom).',
   ],
   [US]: [],
 };

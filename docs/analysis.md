@@ -1230,15 +1230,19 @@ reachable); nothing remembered ships:
 
 How they measure:
 
-- **Areas** are read as `W_ROOM_TOO_SMALL` reads every floor, on the room as drawn (to the wall
-  centrelines when it is drawn so). The clauses give net floor area, so the check is lenient by
-  half of each wall and never warns a room that meets the figure.
+- **Areas** are net floor, inside the walls (`describe`'s `net_area_m2`), as the clauses measure
+  a room: under these profiles every per-use floor of `W_ROOM_TOO_SMALL` (the WC's and bathroom's
+  too) reads the net area and says "of net floor". Where the net area is omitted the drawn area
+  stands in and the hint says `gross-area`. The generic 4 m² floor is still read as drawn.
 - **Widths** are clear: a rectangular room's short side between the inner faces of the walls
   along it (the drawn edge where no wall backs it). A polygon or circle room is not measured
   (`non-rectangular-room`). A passage (a room used as hall, circulation or entry) is held to the
   highest width the rooms it opens onto ask, and to the entry width when a door from outside
-  opens into it or it is used as `entry`. This is the passage's own width, not the walk's
-  bottleneck (`W_PATH_TOO_NARROW`), which runs through doors.
+  opens into it or it is used as `entry` (a door onto a balcony counts too for now, which
+  overstates a passage entered only from a balcony; the hint says so). This is the passage's own
+  width, not the walk's bottleneck (`W_PATH_TOO_NARROW`), which runs through doors.
+- `finish` and `furnish` do not hold their never-worse law under these profiles: a furnished
+  bedroom's 1500 mm bed can make it a double here, and `lint --profile` then reports it.
 - **Single or double** comes from the bedroom's bed, never its label: a `double_bed`, a `bed`
   wider than 1200 mm, or two beds (a twin room, held to the double's figures) make a double. A
   bedroom with no bed is held to the single figure and files `no-bed`.
