@@ -9,8 +9,8 @@ relative to the programme folder (`docs/plans/plan-soundness/`). This file has n
 
 ### PS0 · Bugs found by the audit (independent; file and fix first)
 
-Landed: PS0.1 (PR #196, da9b47b5), PS0.7 (PR #197, 1d92656f), PS0.10–PS0.12 (PR #211, fcb30748),
-PS0.13–PS0.14 (PR #214, e736146f). Landing notes verbatim: `research/2026-10-24-ps0-ps2-as-built.md` § PS0.
+Landed: PS0.1 (PR #196, da9b47b5), PS0.7 (PR #197, 1d92656f), PS0.10–PS0.12 (PR #211, fcb30748).
+Landing notes (and the done rows PS0.13–PS0.14 below) verbatim: `research/2026-10-24-ps0-ps2-as-built.md` § PS0.
 
 A done row's "record" is `research/2026-10-24-ps0-ps2-as-built.md`.
 
@@ -49,7 +49,7 @@ A done row's "record" is `research/2026-10-24-ps0-ps2-as-built.md`.
 - *Open (carried from PS1.1):* should the corpus also feed `eval:ci` as a non-gating metric? Read
   `.claude/rules/eval-dataset.md` first: the holdout rules apply.
 
-**PS1.3 · Walls-first control arm for §8 Q1.** `done` (PR #264, commit filled at merge)
+**PS1.3 · Walls-first control arm for §8 Q1.** `done` (PR #264, 3f071b91)
 - Measured 2026-10-26 (`audits/2026-10-26-walls-first-control-arm.md`, D21): 54 verified defects walls-first against 52 rooms-first (arm A), 0 class-1 in the final plans in both; D1/D5 re-stated as claims about authoring. Not run: a walls-first spec.
 
 **PS1.4 · Which diagnostic wording repairs best (§8 Q3).** `todo` (filed 2026-10-25 from the
@@ -105,14 +105,14 @@ A done row's "record" is `research/2026-10-24-ps0-ps2-as-built.md`.
 | PS2.19 | Vocabulary gaps | As built: record § PS2.19 | done (PR #216, 8bbdd699) |
 | PS2.20 | Furnish: shower and tub placement | After PS2.9, 44 of 1,600 fuzzed baths are left empty because neither the stage's candidates nor the lint's placement search finds a tub or shower position, where the previous main wrote a WC and basin. Measure what those rooms have in common (size, door and window positions) and extend the candidate set (a shower in the corner the door does not swing into; a tub along the long wall with the door at its foot) before anyone concludes the rooms are too small | todo |
 | PS2.21 | Enclosure budget follow-ups | From PR #204's final red-team: (1) the point-test charge assumes every curve crosses every other (`piecesBound ≈ 2c²` × ring vertices), so a plain round room drawn with ≥ 300 vertices is refused on `point-tests` although it crosses nothing; count only curve pairs whose boxes meet so finely drawn curved rooms stay measured (corpus max today is 56 vertices, aquarium's concourse). (2) The slowest admitted shape, a 50-partition × 30-tooth comb room, lints in ~1.6 s vs 0.44 s on main: bounded, not a hang, but twice the figure the PR body quotes. (3) `W_BOUNDARY_NO_WALL` sits outside the `FaceBudget` (ring × ring per room pair plus runs × wall segments), the same class as the ring-pair analyses `describe()` already pays; two interlocking 2000-tooth combs go 23 s → 35 s. Give it a count bound beside the existing ring-pair cost | todo |
-| PS2.22 | `W_ALIAS_MATCH` quotes a room id | Folded into PS2.29; as built: `research/2026-10-26-ps229-as-built.md` | done (PR #269) |
+| PS2.22 | `W_ALIAS_MATCH` quotes a room id | Folded into PS2.29; as built: `research/2026-10-26-ps229-as-built.md` | done (PR #269, 5aab29e5) |
 | PS2.23 | Authored wall beside a derived line | An authored wall 1 mm (any non-zero distance) off a `walls from rooms` derived line is kept beside the derived wall, not merged (ADR 0028 §3 coexistence): two parallel bands nearly on top of each other. Lint it: an authored straight wall parallel to a derived segment, overlapping it along its length, whose centreline is closer than half the thicker wall's thickness, almost always meant to lie on the line (found by PR #223's red team) | todo |
 | PS2.24 | Wall meeting an open run mid-span | An authored wall perpendicular to a `walls from rooms` `open between` run, ending on it mid-span, is neither refused (it is not collinear, so not `E_WALL_BETWEEN_OPEN`) nor excused: today it only warns through `W_OPENING_AT_JUNCTION` (a wall standing inside the opening). Decide the rule: refuse it as `E_WALL_BETWEEN_OPEN`, or a lint finding with its own hint (give the opening a `width` that clears the wall, or move the wall). No code yet (found by PR #224's red team) | todo |
 | PS2.25 | `W_DOOR_NEAR_CORNER` disagrees with the junction measure | `W_DOOR_NEAR_CORNER` measures from a different point than the junction measure `E_OPENING_NIB` and `W_OPENING_AT_JUNCTION` share (`src/opening-junctions.ts`), so a relational door placed at the nib hint's "nearest legal position" (650 from end on a 400 mm host meeting a thinner wall) still warns. Fix: measure the corner from the meeting wall's face, or have the nib hint skip candidates that would warn. No code yet (found by PR #225's red team) | todo |
 | PS2.26 | `W_SWING_OBSTRUCTED` at exactly 0 mm short | Under `accessibility-advisory` the rule fires on `examples/two-bed.arch` with a swing that needs 1050 mm of clear radius and measures 1050 mm ("0 mm short", found by PR #227's red team). The boundary should be `<`, not `≤`: decide, fix, and explain the corpus movement in that PR | todo |
 | PS2.27 | `W_FACING_BLOCKED` | A declared `facing` whose front ray crosses a wall body before it reaches its target (a TV facing a sofa through a partition). Walls only: a coffee table between a sofa and its TV is the arrangement. Deferred from PS3.7 (ADR 0029) | todo |
 | PS2.28 | Undeclared sofa → TV check | A sofa or loveseat in a room with a `tv`/`tv_unit` whose front ray misses it (the audit's A3, H2, T3: 3 of 3 sofas). Out of PS3.7's scope, which judges only seats at tables; measure the corpus first, and decide what a sofa facing a view instead means | todo |
-| PS2.29 | Id-free lint messages | As built: `research/2026-10-26-ps229-as-built.md` | done (PR #269) |
+| PS2.29 | Id-free lint messages | As built: `research/2026-10-26-ps229-as-built.md` | done (PR #269, 5aab29e5) |
 | PS2.30 | Room use inferred from contents | A room holding a kitchen sink, stove or fridge but not typed `kitchen` (or untyped) gets `W_ROOM_USE_MISSING`, or the kitchen rules run on the inferred use. NA1, NS1, NC1. NC1 shows that deleting the type is the cheapest way to silence `W_ROOM_MISSING_DEFINING`. **Acceptance test: the exact laundering.** The final café (`first-contact-plans/2026-10-24-rerun/4-cafe.arch`) has `service` untyped, and lint reports only `W_WET_ROOM_DOOR`. Restoring `uses kitchen` on `service` brings back `W_ROOM_MISSING_DEFINING`: "Counter" is furnished (bar counter) but has no kitchen sink, no stove and no counter or worktop. The card is done when the untyped room gets the same finding. `bar_counter` does not count as the worktop in that message, and the card should keep it that way. Source: `audits/2026-10-24-first-contact-rerun.md`. *Evidence 2026-10-25* (`audits/2026-10-25-first-contact-rerun-row5.md`): RA2, RS2 (2 / 6 kitchens typed `living` again); RS2 adds a laundering route, deleting the worktop to clear `W_FURNITURE_OVERLAP` *Evidence 2026-10-26* (`audits/2026-10-26-first-contact-rerun-d15.md`): OA2, OS1, CA2 (kitchens typed `uses living` again, 3 of 12); the laundering routes CC1 (the counter room lost `uses kitchen` and was relabelled to clear `W_ROOM_MISSING_DEFINING`), CS4 (a wardrobe and a nightstand deleted to clear warnings) and CA3 (a TV deleted) *Evidence 2026-10-26* (`audits/2026-10-26-walls-first-control-arm.md`): WK5 (the clinic staff room retyped `uses kitchen` → `uses office` to silence `W_ROOM_MISSING_DEFINING`: silencing by retyping), WA2, WS2 (kitchens typed `uses living` again) | todo |
 | PS2.31 | A table or desk with no seat | A dining table or desk with no chair within `seatTableReachMm`. NA4, NT8, NK1. Also a waiting room's seat count, as a profile value. Source: `audits/2026-10-24-first-contact-rerun.md`. *Evidence 2026-10-25* (`audits/2026-10-25-first-contact-rerun-row5.md`): RH6, RK1 *Evidence 2026-10-26* (`audits/2026-10-26-first-contact-rerun-d15.md`): CA7, CT8, CK1, OK1 (a table or desk with no seat) | todo |
 | PS2.32 | A seat or sofa facing a wall | A sofa or seat whose front ray meets a wall face within 600 mm: NS4, NK5, NH2's front. A sibling of PS2.28. Also make `in <room> anchor <edge> flush` turn a sofa's back to the anchored wall as it does a bed's head, or say in `spec.llm.md` that it does not. Source: `audits/2026-10-24-first-contact-rerun.md`. *Evidence 2026-10-25* (`audits/2026-10-25-first-contact-rerun-row5.md`): RS4 (a sofa facing a bed) | todo |
@@ -128,12 +128,12 @@ A done row's "record" is `research/2026-10-24-ps0-ps2-as-built.md`.
 | PS2.42 | The front door opens onto a modelled room with no way out | *Intent:* a plan whose only exterior opening is a balcony or patio door, while a circulation room holds the hinged front door and has no exterior opening, is a dwelling with its context drawn inside. Warn, or read the corridor as the entrance side (PS2.14's dwelling context). *Acceptance:* the 2026-10-25 apartment warns (today `access.entrances` = the balcony slider); the 2026-10-24 apartment is silent. Source: `audits/2026-10-25-first-contact-rerun-row5.md` (RA1) | todo |
 | PS2.43 | A counter or desk with its service side against a wall | *Intent:* a `reception_desk` or `bar_counter` whose staff side or customer side meets a wall face within 600 mm (RK3, RC1; K7, NC2). A sibling of PS2.32. *Acceptance:* the 2026-10-25 clinic and café warn; their furniture turned 180° does not. Source: `audits/2026-10-25-first-contact-rerun-row5.md` | todo |
 | PS2.44 | A balcony door does not make an entry passage | Under `cn-residential-advisory`, `W_ROOM_TOO_NARROW` holds a passage to the 1200 mm entry figure when any door from outside opens into it, a door onto an `outdoor balcony` included (`widthAsk`, `src/lint/rules/per-room.ts`, reads every exterior access edge). Read the entrance as the walk does (`entranceWays`' `balcony` flag, `src/analyze/entrance.ts`) and leave balcony doors out; the warning's hint says so until then. Found in PR #248 | todo |
-| PS2.45 | `finish` furnishes small wet rooms the WC rule accepts | As built: `research/2026-10-26-ps245-as-built.md` | done (PR #268) |
+| PS2.45 | `finish` furnishes small wet rooms the WC rule accepts | As built: `research/2026-10-26-ps245-as-built.md` | done (PR #268, e6778596) |
 | PS2.46 | A hob under a window | A hob or cooktop whose footprint overlaps a window's span on its wall (NC8, RS3; the hob halves of NA2 and RC4). Not a tall unit, so `W_FURNITURE_OVER_WINDOW` does not report it; decide whether it is the same code with a second catalogue set or its own. Found in PR #252 | todo |
 | PS2.47 | `W_WC_SIDE_CLEARANCE` names the same side under a mirror | When both sides of a pan are equally short the message names `sides[0]`, which a mirror maps to the other side: the same plan mirrored names "the wall" where it named "the basin". Pick the reported side by a rule that does not depend on orientation (both obstacles, or a fixed precedence of piece over wall). Found in PR #252's red team | todo |
 | PS2.48 | `W_FURNITURE_OVER_WINDOW` wording for a unit beside the window | A bookshelf standing perpendicular to the window wall, its end within the band, is reported as standing "in front of" the window although it stands beside it (`examples/furnished-flat`'s, fixed in PR #252). Say "across N mm of" or distinguish the two. Found in PR #252's red team | todo |
 | PS2.49 | Equivariance oracle coverage for the clearance rules | No shipped example raises `W_WC_SIDE_CLEARANCE` or `W_FURNITURE_OVER_WINDOW` after PR #252's fixes, so the oracle classifies both `invariant` without a corpus case exercising them. Add a component example (or an oracle-only fixture) that raises each under `place … rotate`/`mirror`. Found in PR #252's red team | todo |
-| PS2.50 | `W_FIXTURE_BACK_TO_ROOM` on a piece end-on or side-on to a wall | As built: `research/2026-10-26-ps250-as-built.md` (side-on by `anchor`/`at` + `rotate`; an `against` side-on clause not built) | done (PR #267) |
+| PS2.50 | `W_FIXTURE_BACK_TO_ROOM` on a piece end-on or side-on to a wall | As built: `research/2026-10-26-ps250-as-built.md` (side-on by `anchor`/`at` + `rotate`; an `against` side-on clause not built) | done (PR #267, 98b3d7ab) |
 | PS2.51 | Dedupe gap between the two door rules | A pair of doors whose swings collide is left to `W_SWING_OBSTRUCTED`, which reports a door's furniture hit before its swing pairs and stops at the first cause; when the earlier door also hits furniture, neither rule reports the pair's leaf across the doorway (found in PR #253's review) | todo |
 | PS2.52 | Equivariance oracle: a corpus plan for each PS2.11 code | No plan in `test/equivariance-corpus.test.ts`'s corpus raises `W_FOOTPRINT_TRANSPOSED` or `W_LEAF_ACROSS_DOORWAY`, so the oracle's `invariant` class for them is pinned only by the rule's own placement tests. Add a placed-component case that raises each (found in PR #253's review) | todo |
 | PS2.53 | A per-family depth ceiling | `W_FOOTPRINT_TRANSPOSED` judges only one-shape families (`fixedAspect`), so a wardrobe drawn 600 wide and 1800 deep (`examples/hillside-villa.arch` before PR #253) is out of its reach: wardrobes come in both shapes. A sourced ceiling per family (a wardrobe or bookcase is never deeper than about 700 mm) would catch it without judging a single-door wardrobe | todo |
@@ -219,7 +219,7 @@ into PS3.12)
 
 **PS4.2 · `arch impact`.** `done` (PR #240, 7954f252)
 
-**PS4.3 · `keep` invariants (checked, never solved, by `compile()`).** `doing` (A: PR #272; ADR 0033 Accepted)
+**PS4.3 · `keep` invariants (checked, never solved, by `compile()`).** `doing` (A: PR #272, 6f3de966; ADR 0033 Accepted)
 - Design: `research/2026-10-26-ps43-keep-design.md` (PR #270). PS4.3a built the statement, its evaluation,
   `W_KEEP_VIOLATED`, `describe().keeps[]`, `validate --json` `keeps` and `next`, the never-worse counts,
   the spec line and its cuts and the byte-identity law (`research/2026-10-26-ps43a-as-built.md`); PS4.3b
@@ -232,7 +232,7 @@ into PS3.12)
 - A static DOF/redundancy/conflict fact goes under `--facts depends`.
 - A `keep` draws nothing and moves nothing.
 
-**PS4.4 · Brief-bound dimensions (provenance).** `done` (PR #271, commit filled at merge)
+**PS4.4 · Brief-bound dimensions (provenance).** `done` (PR #271, c2f4176b)
 - `describe().totals.gross_internal_area_m2` and the intent's `grossInternalAreaM2`/`roomDimensions`, gating; `research/2026-10-26-ps44-as-built.md`.
 
 **PS4.5 · Contact dependency.** `todo`
@@ -281,7 +281,7 @@ into PS3.12)
   `validate`/`describe`/`impact` return `keeps` (a tool-surface change: bump `packages/mcp` and both
   `server.json` fields). Source: the PS4.3 design §7 and §11.
 
-**PS4.11 · Plan JSON says it dropped keeps.** `todo` (with PS4.3a)
+**PS4.11 · Plan JSON says it dropped keeps.** `todo` (with PS4.3b)
 - Until PS4.10 carries them, an export of a plan with keeps states the loss: a note or a warning
   naming how many keeps it left out, never a silent drop. Source: the PS4.3 design §11 (D22, red-team
   ruling R19).
@@ -371,8 +371,8 @@ PS5.1b: PR #247, 9cc29c7e)
 **PS7.4 · Teach the taste step where cold authors read.** `done` (PR #250, 6e0aa520; measured in PR #261, ef16e249)
 - As built: `research/2026-10-25-ps5-as-built.md` § PS7.4. Measured 2026-10-26 (`audits/2026-10-26-first-contact-rerun-d15.md`, D20): teaching the step where cold authors read did not change behaviour (arm B over arm A: +1 `validate`, +1 `describe`, 0 `score`); taste is a reviewer's tool, PS7.5.
 
-**PS7.5 · Move the taste step out of the author loop.** `done` (PR #263; D20)
-- As built: the spec's self-correction paragraph, `skills/archlang/SKILL.md` step 7 (a review step) and `.claude/agents/arch-author.md` (a "Review" heading) teach compile → `validate --json` `next` → lint → repair; `spec.llm.md` is 29,729 UTF-16 units (was 29,864; 271 under the 30,000 cap). The next first-contact re-measure states the changed surface; *reverse if* is D20's.
+**PS7.5 · Move the taste step out of the author loop.** `done` (PR #263, f024ab4a; D20)
+- As built: `research/2026-10-26-ps75-as-built.md` (a spec-text card).
 
 **PS7.6 · `lint` opens with a one-line summary.** `todo`
 - Three arm-B authors cut `lint --json` with `head -c` and repaired only what they saw (café 4 of 23 codes, clinic 2 of 4, studio 5 of 6). Put a one-line summary (`N warnings: CODE ×k, …`) as the first key of the JSON and as the first line of the text report.

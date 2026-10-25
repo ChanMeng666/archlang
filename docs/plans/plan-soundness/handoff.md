@@ -1,8 +1,8 @@
-# Plan-soundness programme: handoff (state as of 2026-10-26, PS1.3 PR #264 at `da14ff36`)
+# Plan-soundness programme: handoff (state as of 2026-10-26, `main@6f3de966`)
 
 This page is the resume point for a new session. It says where the programme stands, what is open,
 in which order, and how the work is run. It is re-written at every stage end; the dated history is
-in `research/` and `audits/`. Decisions are in `README.md` §3 (D1–D21); cards are in `cards.md`.
+in `research/` and `audits/`. Decisions are in `README.md` §3 (D1–D23); cards are in `cards.md`.
 Nothing here is private: the companion material the owner keeps outside this repository stays there
 (D4).
 
@@ -46,18 +46,18 @@ The means, tracked in `README.md` §7: defect-corpus catch rate 7/53 (10-18) →
 | 3a | PS3.5, PS3.7–PS3.9, PS0.19 | unplanned, recorded by D7 |
 | 4 | PS0.4, PS4.1, PS4.2 | met in part 2026-10-24: `held` is empty (PS4.5 open) |
 | 5 | PS5.1–PS5.3, PS2.10–PS2.12 | met 2026-10-25 (D14; PS2.11e moved to row 6) |
-| 6 | PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e | **current** (the owed re-measure ran 2026-10-26, D20; the row's cards may start) |
+| 6 | PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e | **current** (the owed re-measure ran 2026-10-26, D20). Landed: row-5 residue PS2.50 (#267), PS2.45 (#268), PS2.22/PS2.29 (#269); PS4.4 (#271); PS4.3 design (#270) and part A (#272). In flight: PS4.3b. Waiting: PS7.x, PS2.11e |
 | 7 | PS6.1 | parked |
 
-## 3. What shipped (2026-10-18 → 10-26, PRs #195–#264)
+## 3. What shipped (2026-10-18 → 10-26, PRs #195–#272)
 
 Everything below is on `main` and **unreleased**: the last `v*` tag predates PR #195 (check with
 `git describe --tags --abbrev=0` and `npm view @chanmeng666/archlang version`). A release starts only
 when the owner asks; the agent then runs the chain (`docs/agents/iron-laws.md` § Owner policies).
 `CHANGELOG.md` `[Unreleased]` is the release record; PR #255 backfilled the 24 programme PRs it was
-missing. Totals at 1f7c544d: 22 new `W_*` codes (52 → 74), 31 new `E_*` codes (103 → 134), 11 `A_*`
-taste advice codes, `LINT_RULES` 45 entries; 124 cards: 49 done, 2 parked,
-73 todo (after PRs #263 and #264).
+missing. Totals at 6f3de966: 23 new `W_*` codes (52 → 75), 40 new `E_*` codes (103 → 143), 11 `A_*`
+taste advice codes, `LINT_RULES` 45 entries; 133 cards, counted from `cards.md`: 54 done, 1 doing
+(PS4.3), 2 parked, 76 todo.
 
 | Surface | Card | PR | Merge |
 |---|---|---|---|
@@ -101,8 +101,17 @@ taste advice codes, `LINT_RULES` 45 entries; 124 cards: 49 done, 2 parked,
 | `W_FOOTPRINT_TRANSPOSED`, `W_LEAF_ACROSS_DOORWAY` | PS2.11c/d | #253 | 43fe7fd6 |
 | Housekeeping: D7–D19, ADR 0029/0032 Accepted, cards moved to `cards.md`, CHANGELOG backfill, this page | — | #237, #241, #242, #249, #251, #254, #255, #256 | — |
 | First-contact re-measure, D15's two arms; D20; ADR 0032 addendum; PS2.56, PS7.5, PS7.6 filed | PS7.4 | #261 | ef16e249 |
-| The taste step leaves the author loop: spec, SKILL step 7 and `arch-author.md` teach compile → validate → lint → repair; taste is the reviewer's | PS7.5 | #263 | — |
-| Walls-first control arm (arm C of the same run); D21 | PS1.3 | #264 | — |
+| DXF export carries text justification, rotation and non-ASCII (external contributor) | — | #262 | 186d0561 |
+| The taste step leaves the author loop: spec, SKILL step 7 and `arch-author.md` teach compile → validate → lint → repair; taste is the reviewer's | PS7.5 | #263 | f024ab4a |
+| Walls-first control arm (arm C of the same run); D21 | PS1.3 | #264 | 3f071b91 |
+| Opening tags stay off room names pinned with `label … at` (external contributor; four `terrace-row` tags) | — | #265 | caa54106 |
+| CI posts the benchmark comment only for same-repo PRs | — | #266 | b10c24e3 |
+| `W_FIXTURE_BACK_TO_ROOM` declines a piece side-on or end-on to a wall | PS2.50 | #267 | 98b3d7ab |
+| `finish` furnishes small wet rooms as whole sets | PS2.45 | #268 | e6778596 |
+| No message quotes an element id (`lint()`, `taste()`, `W_ROOM_OVERLAP`; `src/naming.ts`); D23 awaits ratification | PS2.22, PS2.29 | #269 | 5aab29e5 |
+| `keep` design record, D22, ADR 0033 (Proposed) | PS4.3 design | #270 | 0c5e7a09 |
+| Brief-bound dimensions; `describe().totals.gross_internal_area_m2` | PS4.4 | #271 | c2f4176b |
+| `keep` statement, `W_KEEP_VIOLATED`, `describe().keeps[]`, `validate --json` `keeps`/`next`; ADR 0033 Accepted | PS4.3a | #272 | 6f3de966 |
 
 Recorded practice a reader must know: lint PRs bump the `lintWarnings` counts in `eval/judge-fixture.json`
 when a new rule fires on an eval golden (judgment fields untouched, `JUDGE_VERSION` unchanged; D19).
@@ -117,9 +126,10 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    and 0 `validate` calls in 65, arm B (current role) 0 and 1 in 77; defects 52 and 54, blockers 1 and
    1 (both the townhouse stair). D2's reverse-if is met: taste is a reviewer's tool, PS7.4 is done and
    PS7.5 moves the step out of the author loop. The row-5 residue and row 6 may start;
-   PS2.45 is done (PR #268) and PS2.50 is done (PR #267); item 2 is next.
+   the row-5 residue is done (PS2.50 PR #267, PS2.45 PR #268, PS2.22/PS2.29 PR #269); item 2 is next.
 2. **PS4.3** `keep` invariants: design PR #270; rulings D22; PS4.3a PR #272 (ADR 0033 Accepted);
-   PS4.3b next. **PS4.5** `impact` reports `held`.
+   PS4.3b (`impact` `keeps`, `depends.keeps[]`, PS4.11's Plan JSON note) in flight. **PS4.4** is done
+   (PR #271). **PS4.5** `impact` reports `held`.
 4. **PS7.x** staged authoring; then **PS7.6** (`lint` opens with a one-line summary). It changes what
    authors see, so the next re-measure states it, with PS7.5 (done: the taste step left the author loop
    in the spec, SKILL and role text).
@@ -129,8 +139,8 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    2026-10-25 transcript audit. **PS1.3** walls-first control arm (§8 Q1) is done (PR #264, D21): it ran on
    2026-10-26 in item 1's harness (66 CLI calls, 0 `score`, 0 `validate`; 54 verified defects against 52
    rooms-first; D1/D5 re-stated).
-7. Everything else in `cards.md` by family: PS0 17 todo, PS1 1, PS2 39 todo, PS3 4, PS4 9, PS5 3,
-    PS7 3 (7.1, 7.2, 7.6); pick by first-contact evidence, not by number.
+7. Everything else in `cards.md` by family: PS0 17 todo, PS1 1, PS2 39 todo, PS3 4, PS4 8 todo (and
+    PS4.3 doing), PS5 3, PS7 3 (7.1, 7.2, 7.6); pick by first-contact evidence, not by number.
 
 **Open cards by family (2026-10-25 audit, counts updated 2026-10-26; "ready" = no stated dependency
 outstanding; every card that changes what an author sees in `lint`, `validate`, `finish` or the spec
@@ -142,13 +152,13 @@ waited for item 1 (D19), which ran 2026-10-26: such a card may start and the nex
 | PS0 | 17 | PS0.15 (net-area bound), 0.2, 0.3, 0.6, 0.9, 0.17, 0.22, 0.23, 0.25, 0.26, 0.27 | 0.8 (re-measure), 0.16/0.18/0.20/0.21 (a decision each), 0.24 (code landed in #252; only a `clear front\|sides` test is left) |
 | PS2 | 39 | 2.21, 2.23, 2.25, 2.27, 2.30–2.35, 2.41–2.44, 2.47–2.49, 2.51, 2.52, 2.54, 2.56, 2.57, 2.58 | 2.11e (row 6), 2.14 (ADR), 2.15 (2.11e), 2.16/2.36 (facts), 2.20/2.28 (measure first), 2.24/2.26/2.37/2.38/2.46/2.55 (a decision each), 2.39 (drawing decision), 2.40 and 5.6 (fire D12's reverse-if), 2.53 (a sourced ceiling) |
 | PS3 | 4 | 3.12 | 3.10 (decision; moves digests, D8), 3.11 (corpus sweep), 3.13 (proof first) |
-| PS4 | 9 | 4.5, 4.6, 4.7 | 4.3 (design PR #270 open; implementation next), 4.4 (row 6), 4.8–4.11 (after or with 4.3) |
+| PS4 | 9 | 4.5, 4.6, 4.7 | 4.3 (doing: A merged, PR #272; 4.3b next), 4.8–4.11 (after or with 4.3), 4.12 (with 5.3a's version bump) |
 | PS5 | 3 | 5.5 | 5.3a (MCP version bump), 5.6 (D12) |
 | PS6/PS7 | 1 parked; 3 todo, 1 parked | 7.2, 7.6 | 6.1 (until `keep` is used), 7.1 ("after PS2" is ambiguous; read it as after row 6), 7.3 (parked: only if rule packs outgrow code) |
 
 Facts a reader would otherwise miss: the dwelling reading (D6) now has six consumers (three lint
-arms, taste R6/R11/R12), so D6's reverse-if has fired and is re-stated in D6; `spec.llm.md` has 271
-UTF-16 units under its 30,000 cap (PS7.5 freed 135 from the loop paragraph's taste clause), so row 6's `keep` form must still be paid for by cuts where it exceeds that;
+arms, taste R6/R11/R12), so D6's reverse-if has fired and is re-stated in D6; `spec.llm.md` is
+29,815 UTF-16 units, 185 under its 30,000 cap (PS7.5 freed 135 from the loop paragraph's taste clause; PS4.3a's 483-unit keep line took 86 back net of four cuts), so the next spec-text card is paid for within that headroom;
 the first-contact hits of the four clearance rules (A8, NT4, NH6, RH3, T5, A1, K4, NH5, RA6, C4, RS4,
 RK4) are in the two 2026-10-25 as-built records and are summed in Part 1 of the 2026-10-26 audit (23
 of the 57, 7 of the 48 and 5 of the 49 now caught, 9 new true findings, 0 false positives); `docs/backlog.md`
@@ -159,6 +169,9 @@ items 3.1(b), M.8, M.9, M.14 and D.7 wait on the owner's answers and are not cov
 - Walls-first vs rooms-first comparison (PS1.3): done 2026-10-26 (D21; `audits/2026-10-26-walls-first-control-arm.md`).
   Diagnostic wording (PS1.4): card filed, not run.
 - Id-free lint messages: done 2026-10-26 (PS2.22/PS2.29, PR #269); the rule is in `README.md` §5.
+  **D23 is awaiting the owner's ratification** (D18): PR #269 widened the id-free wording in
+  `docs/agents/iron-laws.md` to `taste()` and the compile-channel `W_ROOM_OVERLAP` without a D-entry; it
+  is recorded now with its reverse-if, applied in code and enforced by tests, and not cited as precedent.
 - Fuzz, timing and red-team probes were to run in the owner's prepaid `claude --cloud` sessions
   (owner, in conversation, 2026-10-20). One probe ran; the rest ran locally. Item 1's two arms ran as
   local headless sessions, not in the cloud sessions; use the cloud sessions, if they are still

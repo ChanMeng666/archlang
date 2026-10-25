@@ -17,9 +17,9 @@ and **judges quality** (a scored, sourced taste report), while keeping every iro
 ArchLang for the first time, helped only by the language's own guidance, checks and reasoning, writes
 plans that follow architectural logic and usage logic and show professional taste. The yardstick is
 the first-contact re-measure (six briefs cold-authored from `spec.llm.md`, audited by hand, D7): verified
-defects 57 (2026-10-18) → 48 (10-24) → 49 (10-25), blockers 4 → 2 → 0, rooms-first 6/6, taste report
-used by 0/6 authors. Corpus catch rates (§7) are the means; this number is the end. It is not yet met:
-49 defects still pass lint, and the 10-25 run predates the clearance rules (PS2.11a–d).
+defects 57 (2026-10-18) → 48 (10-24) → 49 (10-25) → 52 / 54 (10-26, arms A / B, D20), blockers 4 → 2 → 0
+→ 1 per arm, rooms-first 6/6 (12/12 on 10-26), taste report used by 0/6 (0/12 on 10-26) authors. Corpus
+catch rates (§7) are the means; this number is the end. It is not yet met: 52 and 54 defects still pass lint.
 
 **How to use this document (for a new session).**
 
@@ -193,9 +193,8 @@ non-residential, not by choosing a profile.** (2026-10-20, amends PS2.18's card;
   dwelling arms, `residential-basic` runs them unconditionally, and `W_WET_ROOM_DOOR`'s kitchen arm
   stays on under every reading. The full ruling, word lists and refinements, verbatim:
   `research/2026-10-25-ps5-as-built.md` § D5 and D6 detail.
-- *Why:* the two first-contact plans the card cites (4-cafe, 6-clinic) both carry that evidence, and
-  no residential example or eval golden does; the heuristic is therefore decided by measurement, and
-  the acceptance for PS2.18 is that no residential corpus row loses a warning.
+- *Why:* decided by measurement over the corpus (no residential row loses a warning). Verbatim:
+  `research/2026-10-26-readme-history.md` § D6 Why.
 - *Reverse-if fired, re-stated 2026-10-25:* the entry said to revisit the reading if a third rule
   needed it. It now has six consumers: the three lint arms above and taste criteria R6, R11 and R12
   (PS5.1b, PR #247; `src/taste/criteria.ts`). The 2026-10-25 audit found R12's dependence recorded
@@ -209,9 +208,8 @@ non-residential, not by choosing a profile.** (2026-10-20, amends PS2.18's card;
 
 **D7. After §7 row 3, four PS3 cards outside any row ran before rows 4 and 5; and a met row is
 followed by a first-contact re-measure.** (2026-10-24, recorded after the fact; amends §7's order.)
-- Row 3 was met by PR #227 (PS3.6). PS3.7 (PR #228), PS3.8 (PR #229), PS3.5 (PR #230) and PS3.9
-  (PR #232) then landed although they sat in no §7 row (PS3.5 sat in row 6); rows 4 and 5 were not
-  started. PR #231 (PS0.19) fixed a pre-existing fuzz failure in the same stretch.
+- PS3.7, PS3.8, PS3.5 and PS3.9 (PRs #228–#232) landed after PS3.6 although they sat in no §7 row; rows 4
+  and 5 were not started. Verbatim: `research/2026-10-26-readme-history.md` § D7.
 - *Why:* PS3.7's priority was raised by the 2026-10-18 first-contact audit, where seat-facing defects
   were the largest new class among its 57 defects (9 of 57); PS3.8 came from that audit's finding K1 (a fire exit's door swinging
   inward); PS3.5 and PS3.9 both close gaps PS3.0 left (segment selectors on derived rings;
@@ -246,15 +244,10 @@ recorded 2026-10-24.)
 
 **D10. The D7 first-contact re-measure after §7 row 4 is waived; the row-3 re-measure
 (`audits/2026-10-24-first-contact-rerun.md`, PR #233) stays the baseline for row 5.** (2026-10-24)
-- Row 4 (PS0.4 PR #238, PS4.1 PR #239, PS4.2 PR #240, merged 2026-10-24) added analysis tooling only
-  (`diffPlans` fixes, `describe --facts depends`, `arch impact`); it changed no language form, no
-  lint rule, no example and no teaching text (`spec.llm.md` gained one generated CLI-list line), so
-  a cold re-authoring would measure the same spec as #233 did hours earlier.
-- *Why:* a re-measure costs a full six-brief authoring run and would return noise, not evidence;
-  D7's purpose is to catch drift in what authors are taught, and nothing taught changed.
-- *Reverse if:* any row-4 follow-up card (PS4.5–4.7) or a later discovery shows the row changed
-  authoring-facing output; and in any case the re-measure is mandatory after row 5, which changes
-  lint (PS2.10–2.12), before row 6 starts.
+- Row 4 changed no language form, lint rule, example or teaching text, so a cold re-authoring would have
+  measured the same spec as #233. *Reverse if* (fulfilled): row 4's follow-ups changed authoring-facing
+  output, or the re-measure after row 5 did not run; it ran 2026-10-26 (D15, D20). Body, Why and the
+  reverse-if as written: `research/2026-10-26-readme-history.md` § D10.
 
 **D11. The taste ADR is 0032, and drafting-layer lint codes never cap the score.** (Lead ruling on
 the PS5 design, PR #242; built in PS5.1a, PR #244; ADR 0032 decision 4.)
@@ -303,24 +296,16 @@ evidence `audits/2026-10-25-first-contact-rerun-row5.md`, PR #249.)
   `W_FURNITURE_OVER_WINDOW`, PS2.11c `W_FOOTPRINT_TRANSPOSED`, PS2.11d `W_LEAF_ACROSS_DOORWAY`;
   row 5 closes when they merge and the clearances corpus class reaches ≥ 10/18; the rest of PS2.11
   moves to row 6 with a reason.
-- *Why:* PS2.11 is a row-5 card (the 2026-10-19 correction to row 2 moved class 5 here for it) and
-  never started; the 2026-10-25 audit counts 13 of the 49 surviving defects in class 5, and the
-  corpus clearances class is 5/18. The first version of this entry (PR #251's first commit) called
-  the row met on the taste acceptance alone. The remainder (PS2.11e) moves because the audits hit
-  it least.
+- *Why:* PS2.11 is a row-5 card, never started, with 13 of the 49 surviving defects in class 5 and the
+  clearances class at 5/18; the remainder (PS2.11e) moves because the audits hit it least. Verbatim:
+  `research/2026-10-26-readme-history.md` § D14 Why.
 - *Reverse if:* PS2.11a–d merge and the clearances class stays under 10/18 (then the threshold or
   the split is wrong, and this entry is re-stated), or a re-measure shows the remainder carrying
   more first-contact hits than the four (then those bullets come back into row 5).
-- *Closed 2026-10-25:* PS2.11a/b merged as PR #252 (486c9cb7) and PS2.11c/d as PR #253
-  (43fe7fd6); the defect corpus reads 59/73 with the clearances class at 11/19 (two plans added
-  for `sofa-l-transposed`), so the threshold is met and row 5 is met in full. Checked card by card:
-  PS5.1–PS5.3, PS2.10, PS2.12 and PS2.11a–d are done; PS2.11e sits in row 6 with its reason. The
-  first-contact hits are in the as-built records (`research/2026-10-25-ps211ab-as-built.md`,
-  `research/2026-10-25-ps211cd-as-built.md`); the first-contact plans themselves are not re-run
-  here, that is D15's two-arm re-measure. Costs recorded there and carried as cards: `finish`
-  leaves 30 WC rooms and 16 baths of the 918-room probe empty rather than place a pan the WC rule
-  refuses (PS2.45), and two examples (`tiny-house`, `hillside-villa`) carried one honest
-  `W_FIXTURE_BACK_TO_ROOM` each until PS2.50 declined that rule on side-on pieces (PR #267).
+- *Closed 2026-10-25:* PS2.11a/b (PR #252) and PS2.11c/d (PR #253) merged; clearances 11/19, corpus 59/73,
+  so row 5 is met in full. Costs carried as cards: PS2.45 (done, PR #268); PS2.50 (done, PR #267), which
+  removed the rule's false positives on `tiny-house` and `hillside-villa`.
+  Detail: `research/2026-10-26-readme-history.md` § D14.
 
 **D15. D2's and ADR 0032's reverse-if was hit and is not yet assessed.** (2026-10-25, stage-end
 drift audit.)
@@ -331,11 +316,9 @@ drift audit.)
   same briefs — (A) spec text only, with the pre-#250 role text, (B) the current role — and counts
   `score --taste` and `validate` calls; taste stays an author tool only if arm A shows calls.
   PS7.4 stays `doing` until then.
-- *Why:* one arm cannot tell "agents ignore the score" from "the protocol never showed it to them";
-  arm A holds the role fixed so the spec text alone is measured.
-- *Reverse if:* arm A shows no calls: then D2's reverse-if is met, taste becomes a reviewer's tool
-  (ADR 0032's consequence) and D2 is re-stated. If arm A shows calls, this entry closes and PS7.4
-  is done.
+- *Why / Reverse if:* arm A holds the role fixed so the spec text alone is measured; if arm A showed no
+  calls, D2's reverse-if is met (taste becomes a reviewer's tool, D2 re-stated), else this entry closes.
+  It showed none (Closed, below). Verbatim: `research/2026-10-26-readme-history.md` § D15.
 - *Closed 2026-10-26:* arm A 0 calls; D20.
 
 **D16. The README stays small; the cards live in `cards.md`.** (2026-10-25.)
@@ -394,26 +377,23 @@ ratification (D18).*
   touched. The iron-law text says so from this PR on. *Reverse if:* a bump ever hides a judgment change, or the
   owner declines the reading; then the counts are frozen and new rules are excluded from the
   fixture's lint count instead.
-- *Re-measure order:* D10 makes a first-contact re-measure mandatory after row 5 and before row 6
-  starts. The only row-5 run (#249) predates #248, #250, #252 and #253, so the row-5 re-measure is
-  still owed; it runs as D15's two arms and is the first item of `handoff.md` § 4, before any
-  row-6 card. PS2.45, PS2.50 and PS2.22/PS2.29 are row-5 residue and may land before it only if
-  they change no measured surface the authors see (PS2.50 and PS2.22/PS2.29 change lint output and
-  PS2.45 changes `finish` output, so all of them wait too).
-  *Reverse if:* the owner asks for row 6 to start first; then this bullet records the waiver.
-  *Closed 2026-10-26:* the re-measure ran as D15's two arms (`audits/2026-10-26-first-contact-rerun-d15.md`;
-  D20); the row-5 residue and row 6 may start.
+- *Re-measure order:* D10's mandatory re-measure after row 5 was owed before row 6 and ran 2026-10-26 as
+  D15's two arms (D20), so the row-5 residue and row 6 may start. *Reverse if* (moot): the owner asks
+  for row 6 to start first. Verbatim: `research/2026-10-26-readme-history.md` § D19.
 
 **D20. D15's two arms ran; D2's reverse-if is met, and taste is re-scoped as a reviewer's tool.** (2026-10-26; evidence `audits/2026-10-26-first-contact-rerun-d15.md`.)
-- Measured: arm A (spec text only, pre-#250 role) made 0 `score --taste` and 0 `validate` calls in 65; arm B (the current role, whose loop names `validate` as step 3 and `score --taste` as step 5) made 0 `score` and 1 `validate` in 77. Both arms ran under the protocol's prompt, which names `compile|lint` and says stop when it compiles; two arm-B authors said unprompted that they skipped `score --taste`. D15's test says taste stays an author tool only if arm A shows calls. It shows none, and arm B shows that the role text alone does not change that.
+- Result: arm A (spec text only) made 0 `score --taste` and 0 `validate` calls in 65, so D15's test fails
+  and the role text alone did not change it (arm B: 0 and 1 in 77). Counts: `research/2026-10-26-readme-history.md` § D20.
 - D2 re-stated: validity stays in `lint`; quality stays in a separate taste score, read by the reviewer — the dispatching session, `validate --taste`, and `preview --review` (PS5.4) — and no longer expected in a cold author's loop. The score's design (0–1, sourced, capped under a validity warning, never gating, `taste()` in the API) is unchanged; only its audience is.
-- Consequences: (a) ADR 0032 gets a 2026-10-26 addendum under Consequences recording this measurement and the re-scope. (b) PS7.4 is `done`: measured; teaching the step where cold authors read did not change behaviour (arm B over arm A: +1 `validate`, +1 `describe`, 0 `score`). (c) A new card PS7.5 moves the taste step out of the author loop in `spec.llm.md`'s self-correction paragraph (its characters return to the spec budget, which row 6's `keep` form needs), re-words SKILL step 7 as a review step, and reverts `.claude/agents/arch-author.md` to compile → `validate` `next` → lint → repair with taste under a "Review" heading; one PR, after this audit merges; the spec change is a measured surface, so the next re-measure states it. `validate --json` `next` stays taught: it is the validity ordering, not a second score, and its uptake (1 of 12) is a PS7.x staged-authoring question, not a taste one.
-- Not changed by this run: the defect count is flat (49 → 52 / 54 under two auditors), blockers 0 → 1 per arm (both stairs: the stair class has no default lint rule but `W_STAIR_UNMATCHED`), rooms-first 6/6 in both arms, `facing` 0 uses in 12 plans. Row 6's content cards (PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e) and the row-5 residue (PS2.45, PS2.50, PS2.22/2.29) may now start: D10's and D19's mandatory re-measure has run.
+- Consequences: (a) ADR 0032 gets a 2026-10-26 addendum under Consequences. (b) PS7.4 is `done`: measured, teaching the step where cold authors read did not change behaviour. (c) PS7.5 moves the taste step out of the author loop (spec self-correction paragraph, SKILL step 7 as a review step, `.claude/agents/arch-author.md` back to compile → `validate` `next` → lint → repair with taste under "Review"); the spec change is a measured surface the next re-measure states. `validate --json` `next` stays taught: it is the validity ordering, not a second score. Full text: `research/2026-10-26-readme-history.md` § D20 Consequences.
+- Not changed: defects flat (49 → 52 / 54), blockers 0 → 1 per arm (both stairs), rooms-first 6/6;
+  row 6 and the row-5 residue may start. Verbatim: `research/2026-10-26-readme-history.md` § D20.
 - *Reverse if:* a re-measure whose dispatch prompt names the whole loop (not `compile|lint`) shows at least half of the cold authors running `score --taste` unprompted, or a consumer is shown steering authors by the score; then taste returns to the author loop and PS7.5 is reverted.
+- *Closed 2026-10-26:* PS7.5 merged as PR #263 (f024ab4a).
 
 **D21. The walls-first control arm (PS1.3) ran: walls-first is not worse in surviving defects, and D1/D5 are re-stated as claims about authoring, not about the defect rate.** (2026-10-26; evidence `audits/2026-10-26-walls-first-control-arm.md`.)
-- Measured on the same six briefs, same day, same model, same spec, with one role section added: rooms-first (arm A) 52 defects (1 B), walls-first (arm C) 54 (1 B); without area rows 49 vs 52; CLI calls 65 vs 66; class 1 defects in the final plans 0 vs 0. The difference is within what two auditor instances and authoring chance produce (arm B, rooms-first with the other role text, scored 54).
-- What walls-first did cost: three class-1 warnings at the point of writing (`W_OPENING_AT_JUNCTION` ×2, `W_OPENING_OVERLAP`), all repaired in the loop — the defects D1/D5 make unwritable were written and then caught; 45 `wall` statements and 54 hosted openings against 0 `wall` and 30 `door between` plus 1 `opening between` in arm A; two of six authors stopped with lint warnings standing (0 of 12 in the rooms-first arms), which the auditor counts as 3 caught + 2 partial. No class-2 defect (an unenclosed space: `W_BOUNDARY_NO_WALL`, `W_FLOOR_UNASSIGNED`, `W_ROOM_OUTSIDE_SHELL`) fired in any arm-C loop, so the omission class D5 makes unwritable was not written by these six walls-first authors either; the three warnings written and repaired were class 1 (openings at a junction or overlapping).
+- Measured on the same six briefs, spec and day: rooms-first (arm A) 52 defects (1 B), walls-first (arm C)
+  54 (1 B), within auditor spread. Figures and what walls-first cost: `research/2026-10-26-readme-history.md` § D21.
 - Re-statement: D1 and D5 hold as the form an author reaches for first (6/6 cold authors chose it unprompted in four runs) and as the form under which the omission class cannot be written (this arm shows six walls-first authors did not write it either, so the arm neither confirms nor refutes that cost); they are not a claim that rooms-first plans carry fewer surviving defects, because the surviving classes (clearances, defining contents, stairs, annotation, furniture relation) do not depend on how the walls were written, and the class they do remove is now also caught by lint. §8 Q1 is answered to that extent; the open question stays whether a spec that led with walls would change the authors' choice (not run; it would measure the spec's pull, which the card already names).
 - *Reverse if:* a walls-first arm under a walls-first spec shows fewer surviving defects than rooms-first by more than the spread the two rooms-first arms showed between themselves (2 in total, 5 in noticeable rows), or shows class-1 defects that lint misses; then D5's headline form is reconsidered.
 
@@ -421,8 +401,22 @@ ratification (D18).*
 - *R1, grade landing:* `hard` (the default) is a compile-channel `W_KEEP_VIOLATED` that fails `--strict`, counts in the never-worse law and sits in `next`'s `warning` tier; `soft` sits in `next`'s `intent` tier after the brief's gating items and never gates; `advisory` is reported in `describe()`, `validate --json` and `impact` only, never in `next`; no grade caps taste and no keep enters `lint()`. Why: a soft keep in lint would gate `--strict` and the never-worse law as a hard one does while capping taste where a hard one does not, so the grades would not be ordered.
 - *R2, plain `validate`:* exits 0 on a broken hard keep; only `--strict` fails. Why: no warning code fails plain `validate` today, and `--strict` is the ship gate the spec teaches.
 - *R3, `keep fixed <d> at <mm>`:* the valued form replaces the card's bare `keep fixed …`. Why: a keep that one compile can never find broken is not a check.
-- *R4, the four spec cuts* (the `door` "DASHED" sentence, the `garage` sentence shortened, the `outdoor` hatch prose, the GB 50352 citation; 397 UTF-16 units against the keep line's 432, net headroom 236): accepted on the condition that `docs/language-reference.md` keeps every cut fact and the GB 50352-2019 source stays in `src/datum.ts`'s `WINDOW_SILL` doc comment (D3); both checked on `main@98b3d7ab`. Why: the cut text describes only how something is drawn.
+- *R4, the four spec cuts* (the `door` "DASHED" sentence, the `garage` sentence shortened, the `outdoor` hatch prose, the GB 50352 citation; 397 UTF-16 units against the keep line's 432, net headroom 236): accepted on the condition that `docs/language-reference.md` keeps every cut fact and the GB 50352-2019 source stays in `src/datum.ts`'s `WINDOW_SILL` doc comment (D3); both checked on `main@98b3d7ab`. Why: the cut text describes only how something is drawn. *As built (PS4.3a, PR #272):* the keep line is 483 units, `spec.llm.md` 29,815 UTF-16 units, headroom 185, after red-team rounds 1 and 2 added the placement words (`research/2026-10-26-ps43a-as-built.md`).
+- *D4 law, narrowed as built:* the equivariance law (ADR 0033 decision 7) ships over single-storey plans whose keeps name no axis and whose datums include no half-grid centre. Why: the instance route carries no axis and no storey, and `snap` rounds a half toward +∞, so a mirrored half-grid centre snaps one grid from its image (a fault in snapping). *Reverse if* PS0.26 lands (sign-symmetric `snap`, a whole-plan transform): the law widens.
 - D22 changes no iron law. *Reverse if:* any trigger in ADR 0033's "Reverse if" list fires, or design §12's reverse-if for the decision a ruling confirms.
+
+**D23. The id-free message law is widened in `docs/agents/iron-laws.md`: it now names `taste()` and the
+compile-channel `W_ROOM_OVERLAP`.** *Awaiting ratification (D18).* (PR #269, 2026-10-26;
+recorded after the fact, PS2.22, PS2.29.)
+- Changed: the iron law "a `lint()` diagnostic's `message` never quotes an element id" gained a naming
+  rule (an unlabelled room is named by its use or its place, `src/naming.ts`, shared by `lint()`,
+  `taste()` and the `W_ROOM_OVERLAP` compile warning) and a new guard, `test/lint-messages-id-free.test.ts`
+  (the whole corpus, the catalogue examples and a label-stripped twin of each), beside
+  `test/lint-fix-texts.test.ts`. It is applied in code and enforced by those tests.
+- *Why:* PS2.29's acceptance and ADR 0032 decision 6 already required it; a message is wrong in `taste()`
+  and the compile channel for the reason it is wrong in lint. The PR recorded no D-entry (D18 asks for one).
+- *Reverse if:* the owner declines. The wording reverts to lint-only and the `taste()` and compile-channel
+  rows (PS2.57 covers the remaining compile, `describe()` and CLI texts) are re-filed as cards.
 
 ## 4. Principles: what "professional rules and taste" means here
 
@@ -514,7 +508,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS2 · Validity checks that read existing facts (small, high yield)
 
-60 cards: 19 done, 41 todo. Cards, tables and as-built pointers: `cards.md` § PS2.
+62 cards: 23 done, 39 todo. Cards, tables and as-built pointers: `cards.md` § PS2.
 
 ### PS3 · Relation-first authoring (D1 + D5; needs an ADR)
 
@@ -522,7 +516,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS4 · The change model: what follows, what stays, what breaks
 
-11 cards: 2 done, 9 todo (PS4.8–PS4.11 filed by the PS4.3 design). Cards, tables and as-built pointers: `cards.md` § PS4.
+12 cards: 3 done, 1 doing (PS4.3: A merged, B next), 8 todo (PS4.8–PS4.11 filed by the PS4.3 design, PS4.12 by PS4.4). Cards, tables and as-built pointers: `cards.md` § PS4.
 
 ### PS5 · The taste layer and the review sheet (D2)
 
@@ -534,7 +528,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS7 · Staged authoring for agents
 
-6 cards: 1 done, 4 todo, 1 parked. Cards, tables and as-built pointers: `cards.md` § PS7.
+6 cards: 2 done, 3 todo, 1 parked. Cards, tables and as-built pointers: `cards.md` § PS7.
 
 ## 7. Suggested order and acceptance
 
@@ -545,8 +539,8 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 | 3 | PS3.1, PS3.2, PS3.0, PS3.3, PS3.4 | ADR merged; byte-identity law green; `relational.arch` lints clean with walls derived; the widening drill moves walls and doors with the room; the class-2 cases are unwritable in the D5 form. *Status:* met 2026-10-23 by PS3.6 (PR #227) |
 | 3a | PS3.7, PS3.8, PS3.5, PS3.9 (and PS0.19) | Unplanned, after row 3 (D7): PRs #228–#232. Re-measure PR #233: defects 57 → 48, blockers 4 → 2; corpus 47/70 |
 | 4 | PS0.4, PS4.1, PS4.2 | The widening drill's `impact` names every moved, held and broken item correctly. *Status:* met in part 2026-10-24 by PS4.2 (PR #240, 7954f252); `held` is empty (PS4.5) |
-| 5 | PS5.1–PS5.3, PS2.10–PS2.12 | The taste score separates the corpus's known-bad from known-good plans monotonically; the clearances corpus class reaches ≥ 10/18. *Status:* met 2026-10-25 (D14): the taste acceptance holds as worded (44 pairs on 2026-10-25: 40 ordered / 0 tied / 0 reversed / 4 unjudged, ledger empty; 41/37 when #249 ran; caveats in D14); PS2.11a–d merged (PRs #252, #253); clearances 11/19; corpus 59/73. *Re-measure:* `audits/2026-10-25-first-contact-rerun-row5.md` (PR #249; ran before #248, #250, #252 and #253 merged, so the row-5 re-measure is still owed, D19): defects 48 → 49, blockers 2 → 0 (by authoring chance: no row-5 rule touches a stair), 0/6 authors ran taste or `next`. Status history verbatim: `research/2026-10-25-ps5-as-built.md` § §7 row 5 |
-| 6 | PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e | **Current** (row 5 closed 2026-10-25). The owed row-5 re-measure, run as D15's two arms (D19), ran 2026-10-26 (`audits/2026-10-26-first-contact-rerun-d15.md`; D20: taste is a reviewer's tool, PS7.4 done, PS7.5 filed), so the row's cards may start: first PS2.45/PS2.50/PS2.22/PS2.29 as row-5 residue, then: `keep` invariants and brief-bound sizes are checked by `validate`, the widening drill reports a broken `keep` with its signed residual, and `preview --review` rings every flagged element; a re-measure closes the row (D10). Order and the open-card map: `handoff.md` § 4. (PS3.5 and PS3.6 already landed, rows 3a and 3) |
+| 5 | PS5.1–PS5.3, PS2.10–PS2.12 | The taste score separates the corpus's known-bad from known-good plans monotonically; the clearances corpus class reaches ≥ 10/18. *Status:* met 2026-10-25 (D14); PS2.11a–d merged (PRs #252, #253), clearances 11/19, corpus 59/73. Status and re-measure history: `research/2026-10-26-readme-history.md` § §7 row 5 |
+| 6 | PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e | **Current** (row 5 closed 2026-10-25). The owed row-5 re-measure, run as D15's two arms (D19), ran 2026-10-26 (`audits/2026-10-26-first-contact-rerun-d15.md`; D20: taste is a reviewer's tool, PS7.4 done, PS7.5 filed), so the row's cards may start. *Landed 2026-10-26:* PS2.50 (PR #267), PS2.45 (PR #268), PS2.22/PS2.29 (PR #269), PS4.4 (PR #271), PS4.3 design (PR #270, D22) and part A (PR #272); PS4.3b and PS5.4 in flight. The row is met when: `keep` invariants and brief-bound sizes are checked by `validate`, the widening drill reports a broken `keep` with its signed residual, and `preview --review` rings every flagged element; a re-measure closes the row (D10). Order and the open-card map: `handoff.md` § 4. (PS3.5 and PS3.6 already landed, rows 3a and 3) |
 | 7 | PS6.1 | — |
 
 Rows 1–4 as they stood before this pruning, verbatim: `research/2026-10-25-ps5-as-built.md` § §7 rows 1–4.
@@ -565,12 +559,9 @@ This plan is a hypothesis about what will make AI-written plans professional. Tr
    to exist, so it runs after row 3 of §7. Until then the first-contact experiment under question 8
    measures the wall-first baseline (`audits/2026-10-18-first-contact.md`). The walls-first control
    arm is card PS1.3 (filed 2026-10-25; run 2026-10-26, below).
-   *Measured 2026-10-24, see `audits/2026-10-24-first-contact-rerun.md`:* six cold authors on
-   today's spec wrote rooms-first unprompted (6/6, 0 `wall` statements); class-1 defects fell 4 → 0
-   and surviving defects 57 → 48 (area basis judged as in the baseline; 54 → 45 without it). There
-   is no walls-first control arm yet.
-   *Measured 2026-10-25, see `audits/2026-10-25-first-contact-rerun-row5.md`:* 6/6 rooms-first again (31 `door between`, 0 `wall`); defects 48 → 49 (46 without area basis), blockers 2 → 0; still no walls-first arm.
-   *Measured 2026-10-26 (PS1.3), see `audits/2026-10-26-walls-first-control-arm.md` and D21:* the walls-first arm (arm C, the pre-#250 role plus one "write walls first" section, same spec, same day) wrote 45 `wall` statements and 54 hosted openings with 0 `walls from rooms` and 0 `door between`, and left 54 verified defects (1 B / 22 N / 31 m; 52 without area basis) against 52 (1 / 25 / 26; 49) for the rooms-first arm A and 54 for arm B; class 1 in the final plans 0 in all three, but the walls-first loops wrote three class-1 warnings (`W_OPENING_AT_JUNCTION` ×2, `W_OPENING_OVERLAP`) that lint caught, and no class-2 (unenclosed space) warning fired in any arm-C loop; CLI calls 66 against 65. Walls-first is not worse in surviving defects; what stays open is whether a spec that led with walls would change the authors' choice.
+   *Answered to that extent 2026-10-26 (PS1.3, D21):* walls-first is not worse in surviving defects (54
+   against 52); what stays open is whether a spec that led with walls would change the authors' choice.
+   The 10-24, 10-25 and 10-26 measurements: `research/2026-10-26-readme-history.md` § §8 Q1.
 2. **Where is the boundary between a fact and taste in each culture?** For example, a kitchen as the
    entry room is normal in some housing stocks. Profiles may need a `residential-generic` that is
    deliberately quiet.
@@ -579,7 +570,7 @@ This plan is a hypothesis about what will make AI-written plans professional. Tr
 4. **Can `between`-style forms cover non-rectilinear rooms?** Polygon and circle rooms are refused
    in v1 of PS3. What would an honest extension be?
 5. **What would make `impact` a planning tool, not just a report?** For example, "list the edits that
-   keep every `keep` true". *Designed 2026-10-26 (PS4.3, PR #270):* `research/2026-10-26-ps43-keep-design.md`, ADR 0033 (Proposed): a keep is checked with a signed residual and `impact` lists those a change breaks; listing the edits that keep them all true stays `arch solve` (PS6.1).
+   keep every `keep` true". *Designed 2026-10-26 (PS4.3, PR #270):* `research/2026-10-26-ps43-keep-design.md`, ADR 0033 (Accepted, PR #272): a keep is checked with a signed residual and `impact` lists those a change breaks; listing the edits that keep them all true stays `arch solve` (PS6.1).
 6. **Multi-dwelling and multi-storey rules.** Toilet over habitable room below (GB 50096 5.4.4,
    mandatory), wet-stack alignment, and units sharing a corridor. These need a dwelling concept
    ArchLang lacks. *Researched 2026-10-18* (`research/2026-10-18-furniture-and-multistorey.md`
@@ -592,26 +583,17 @@ This plan is a hypothesis about what will make AI-written plans professional. Tr
    `research/adai-sketchup.md` idea 7). *Researched 2026-10-18* (same file, Part A): became card
    PS3.7. Still open: no evidence on how often agents get a furniture turn wrong; the first-contact
    audit should count it.
-8. **Anything the audits missed.** Run a fresh audit on new plans after each §7 row (D7, D10; done 2026-10-24 and 2026-10-25, next as D15's two arms). The defect classes
-   in §1 came from about 30 plans and are surely incomplete. *First round done 2026-10-18*
-   (`audits/2026-10-18-first-contact.md`): six briefs written cold by an AI author from
-   `spec.llm.md` alone, all six lint-clean and strict-clean, carry 57 verified defects (4 blockers),
-   lint caught none, and 26 fall outside the eight classes. Twelve new classes are listed there;
-   the ones that became cards: furniture not facing its companion (PS3.7), transposed footprints and
-   door–door interference (PS2.11), entrance masking (PS0.10), direction-relative wording (PS3.8),
-   area basis (PS4.4), non-residential egress and zoning (PS2.16), repair pressure (PS0.11 and the
-   order "land PS2.1 before more corner fixes are suggested"). Still uncarded: context modelled
+8. **Anything the audits missed.** Run a fresh audit on new plans after each §7 row (D7, D10; done 2026-10-24, 2026-10-25 and 2026-10-26 (D20)). The defect classes
+   in §1 came from about 30 plans and are surely incomplete. *First round done 2026-10-18* (`audits/2026-10-18-first-contact.md`): 57 verified defects, 26 outside
+   the eight classes, twelve new classes listed there (most became cards; the list verbatim:
+   `research/2026-10-26-readme-history.md` § §8 Q8: the first-round paragraph). Still uncarded: context modelled
    inside the plan (a common corridor as paving; PS2.14's dwelling work should give it a home),
    vertical stacking of partitions, oblique joins inflating `bbox_outer`, circulation share (taste).
    Re-run with each first-contact re-measure, and count the furniture turn (PS2.11c's
    `W_FOOTPRINT_TRANSPOSED` now catches the turned-footprint half; the `rotate` half is PS2.50).
-   *Measured 2026-10-24, see `audits/2026-10-24-first-contact-rerun.md`:*
-   - The old plans re-linted: 17/57 caught, 6 of them partially (14/57 counting halves), and 0 false positives.
-   - The briefs re-authored cold: 48 defects (2 B), final lint 1.
-   - Seats: 24/24 inverted before the lint loop, 0/24 after; `facing` used 0 times.
-   - Sofas: 1/3 face their TV.
-   - Exterior doors: 8/8 swing the intended way.
-   *Measured 2026-10-25, see `audits/2026-10-25-first-contact-rerun-row5.md`:* 49 defects (0 B), final lint 0; seats 18/24 inverted before the loop, 0/24 after, `facing` 0; sofas 0/3 face their TV and 3 of 5 are transposed footprints; exterior doors 8/8.
+   *Measured 2026-10-24, 2026-10-25 and 2026-10-26 (D20):* seats, sofas, exterior doors and the old plans
+   re-linted are in the three `audits/` re-runs; the 10-24 and 10-25 blocks verbatim:
+   `research/2026-10-26-readme-history.md` § §8 Q8.
 9. **Should a `let` be able to hold a room-edge datum?** PS3.2 part B (PR #221) refuses it
    (`E_DATUM_BEFORE_ROOMS`: a `let` is evaluated once, at expansion, before any room is placed).
    The alternative considered and declined there was a deferred `let`, evaluated where it is read;
@@ -673,6 +655,10 @@ This plan is a hypothesis about what will make AI-written plans professional. Tr
   PS1.3, the walls-first control arm of the same run (arm C); 54 verified defects against 52 for arm A; D21.
 - `research/2026-10-24-ps5-taste-design.md`: the PS5 taste layer design (row 5).
 - `research/2026-10-26-ps43-keep-design.md`: the PS4.3 `keep` design and ADR 0033's reasons (row 6).
+- `research/2026-10-26-ps229-as-built.md`, `-ps245-`, `-ps250-`, `-ps43a-`, `-ps44-`, `-ps75-as-built.md`:
+  the 2026-10-26 as-built records (PS2.22/2.29, PS2.45, PS2.50, PS4.3a, PS4.4, PS7.5).
+- `research/2026-10-26-readme-history.md`: measurements and closure narrative moved out of this README
+  on 2026-10-26, verbatim.
 - `research/2026-10-24-ps0-ps2-as-built.md`, `research/2026-10-24-ps3-as-built.md`,
   `research/2026-10-25-ps5-as-built.md`: landed cards' as-built notes, verbatim (the last also
   holds row 5's PR rulings, §7 rows 1–5 as they stood, and D5/D6 detail).

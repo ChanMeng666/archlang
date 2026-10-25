@@ -415,7 +415,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   30,000-character cap, the spec's "Place furniture so it's physically sound" paragraph is folded
   into the lint sentence before it (each clause restated a lint flag or the furniture row of "Common
   mistakes"), and the `score --taste` flag line is a short reviewer's-report comment. The spec is
-  29,729 characters (29,970 before PS7.4's cut).
+  29,729 characters after this change (29,970 before PS7.4's cut); the keep line (PS4.3a) later took it to
+  29,815.
 
 - `finish` and its `furnish` stage hold the never-worse law under the default ruleset and the
   universal advisory profile (`accessibility-advisory`), no longer under every lint profile: the
@@ -500,7 +501,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A door or window tag no longer prints over a room name pinned with `label "…" at (x,y)`. Tags
   are placed before the label pass so that a name moves off a tag, but a pinned name never moves,
   so the two overprinted; the tag placer now treats pinned names as obstacles like furniture.
-  `hexagon-pavilion.arch` D01 now clears every ink; three `terrace-row.arch` tags (W08, W16 and
+  `hexagon-pavilion.arch` D01 now clears every ink; four `terrace-row.arch` tags (W08, W16 and
   newly W04, W12) keep off its pinned names and sit on furniture or poché instead.
 
 - A door or opening's `between` is read off both faces of its host wall, at the centre and just

@@ -4,7 +4,7 @@
   card PS4.3a, PR #272; `docs/plans/plan-soundness/README.md` §6 and §7 row 6). Design record:
   `docs/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`; as built:
   `docs/plans/plan-soundness/research/2026-10-26-ps43a-as-built.md`. Decision 6 (the `--facts depends`
-  rows and `arch impact`'s keeps) is built by PS4.3b.
+  rows and `arch impact`'s keeps) and PS4.11's Plan JSON note are built by PS4.3b.
 - **Date:** 2026-10
 - **Relates to:** [ADR 0004](0004-relational-placement-not-optimizer.md) and
   [ADR 0006](0006-solver-as-explicit-transform.md) (no solver inside `compile()`; a solver is an
@@ -109,8 +109,9 @@ number.
    has finished (groups, `facing`, frames, openings, cross-element checks), in source order, and on
    a `paper` plan in the drawn pass only. Root-level keeps are taken out of the statements every
    storey shares before the storeys are built; `stacked` is evaluated after the last storey. Each
-   keep is charged once, immediately before its measure (`1 + targets`, or its share of the wall
-   scan for `min clear`), on `MAX_EVAL_STEPS`; the per-storey indexes the measures read are built and
+   keep is charged at expansion (one step per target, where `E_KEEP_LIMIT` is counted) and once
+   before its measure (`1 + targets`, or its share of the wall scan for `min clear`), on
+   `MAX_EVAL_STEPS`; the per-storey indexes the measures read are built and
    charged once. The storeys share one step counter, and the `stacked` pass continues it. There is
    no iteration and no fixed point. A result is stored beside the resolved plan, never on an element
    or on the memoised AST. A plan that crosses the step budget inside its keep pass, the `stacked`
@@ -170,8 +171,10 @@ number.
   keep to gate leaves the grade off.
 - `keep` becomes a reserved word; the form words and grades after it are contextual, so no plan that
   uses `soft`, `fixed` or `stacked` as a name changes meaning. Plan JSON drops keeps, as it already
-  drops axes, until a consumer needs them, and the export says how many it dropped.
-- The spec gains one grammar line (432 UTF-16 units), paid for by cutting drawing-only prose from the
+  drops axes, until a consumer needs them, and the export will say how many it dropped (built in
+  PS4.3b, card PS4.11).
+- The spec gains one grammar line (483 UTF-16 units as built, with its newline; the design counted 432,
+  and `spec.llm.md` is 29,815 units, 185 under its cap), paid for by cutting drawing-only prose from the
   `door`, `outdoor` and `height` lines; the language reference keeps that prose.
 - `arch solve` gets its input: declared equalities, an inequality, grades that map to IFC's, and the
   static redundancy and conflict facts.
