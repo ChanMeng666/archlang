@@ -180,6 +180,7 @@ render a PNG you can look at (zero-install where the optional binary is present)
 | `--scale, -s <n>` | raster scale (default 1; without -w/-s the page auto-targets ~1600px wide for legibility) |
 | `--width, -w <px>` | page width hint in pixels |
 | `--ascii` | print a zero-dependency ASCII text plan to stdout instead of a PNG |
+| `--review` | render the REVIEW SHEET instead of the plain plan: the access graph over the plan, every element a compile or default-lint warning names ringed with its number and code, a legend (number → code → message) and a fixed-scale close-up of every flagged opening and furniture piece (default output &lt;name&gt;.review.png; --json adds marks[] and crops[], boxes in plan mm). One storey per sheet (--level); not with --ascii, --view or --overlay |
 | `--level <n>` | preview this storey of a multi-storey plan (default: the lowest level, i.e. page 1) |
 | `--cols <n>` | text renderer (-f txt / preview --ascii) grid width in characters (default 80) |
 | `--charset <unicode\|ascii>` | text renderer glyph set (default unicode) |
@@ -201,6 +202,9 @@ $ archlang preview plan.arch -o plan.png --json
 
 # look at one storey of a multi-storey plan
 $ archlang preview house.arch --level 2 -o upper.png --json
+
+# the reviewer's sheet: every warning ringed and numbered on the plan, with close-ups of each flagged opening and piece
+$ archlang preview plan.arch --review -o review.png --json
 
 # raster an illustrative plan-oblique of the building so a vision model can look at it
 $ archlang preview house.arch --view axon -o house-axon.png --json

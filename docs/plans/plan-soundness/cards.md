@@ -312,11 +312,9 @@ PS5.1b: PR #247, 9cc29c7e)
 - A tool-surface change: bump `packages/mcp`'s version and both `server.json` fields (iron law);
   the hosted worker inherits it. Deferred from PS5.3 by lead ruling.
 
-**PS5.4 · `arch preview --review`.** `todo`
-- A review sheet: the plan with the access graph overlaid, each flagged element ringed with its code,
-  plus zoomed crops of every flagged junction.
-- Agents look at pictures well when told where to look ("not opened = not seen").
-- Drawing-only; it never changes `describe()` or `lint()`.
+**PS5.4 · `arch preview --review`.** `done` (PR #PENDING)
+- As built: `research/2026-10-26-ps54-as-built.md`. The review sheet: access graph, every warned element
+  ringed and numbered, legend, fixed-scale close-ups; drawing-only (CLI layer, consumes `lint()`).
 
 **PS5.5 · Use-scoped R6, R11 and R12.** `todo`
 - From PS5.1b's lead rulings (PR #247; design note after §3): R6, R11 and R12 skip a non-residential

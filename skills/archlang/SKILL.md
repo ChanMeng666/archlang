@@ -55,8 +55,11 @@ owns that name, so the shell runs the wrong program.
    `archlang score plan.arch --taste generic --json` and reads the advice: a sourced 0–1 score
    (privacy gradient, daylight, proportion, corner doors, …) whose `criteria[].advice` `A_*` codes
    name what to improve. It never gates, the author does not iterate on it, and a score capped at 0.5
-   means a validity lint warning still stands. If no one reviews for you, run it once after the loop is
-   clean and report the score and its `A_*` advice; do not iterate on it.
+   means a validity lint warning still stands. The reviewer then looks at
+   `archlang preview plan.arch --review -o review.png`: every warned element ringed and numbered on
+   the plan, a legend, and a close-up of each flagged opening and piece. If no one reviews for you,
+   run both once after the loop is clean and report the score and its `A_*` advice; do not iterate
+   on it.
 8. **Check the plan against the brief.** Write the user's brief as an `intent.json` — its checkable
    expectations as data (room count, per-room concepts with area/window bands, total area, optional
    adjacency/reachability). A stated size binds: "about 70 m²" → `grossInternalAreaM2` (inside the

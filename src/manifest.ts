@@ -508,6 +508,11 @@ const COMMANDS: ManifestCommand[] = [
       WIDTH_FLAG,
       { flag: "--ascii", description: "print a zero-dependency ASCII text plan to stdout instead of a PNG" },
       {
+        flag: "--review",
+        description:
+          "render the REVIEW SHEET instead of the plain plan: the access graph over the plan, every element a compile or default-lint warning names ringed with its number and code, a legend (number → code → message) and a fixed-scale close-up of every flagged opening and furniture piece (default output <name>.review.png; --json adds marks[] and crops[], boxes in plan mm). One storey per sheet (--level); not with --ascii, --view or --overlay",
+      },
+      {
         ...LEVEL_FLAG,
         description: "preview this storey of a multi-storey plan (default: the lowest level, i.e. page 1)",
       },
@@ -534,6 +539,10 @@ const COMMANDS: ManifestCommand[] = [
       {
         cmd: "archlang preview house.arch --level 2 -o upper.png --json",
         note: "look at one storey of a multi-storey plan",
+      },
+      {
+        cmd: "archlang preview plan.arch --review -o review.png --json",
+        note: "the reviewer's sheet: every warning ringed and numbered on the plan, with close-ups of each flagged opening and piece",
       },
       {
         cmd: "archlang preview house.arch --view axon -o house-axon.png --json",

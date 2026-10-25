@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `arch preview <file> --review`: the review sheet, one PNG for whoever reviews a plan (plan card
+  PS5.4; D20). The plan exactly as `preview` draws it, with `describe().access` laid over it (rooms
+  as nodes at their label points, an edge through each door and opening, entrances marked); every
+  element a `compile()` or default-ruleset `lint()` warning names ringed and numbered with its code
+  (a room by its floor outline, a door, window or opening by a circle, anything else by its drawn
+  extent); a legend listing number, code and the id-free message; and a strip of close-ups, at one
+  fixed scale (1 m = 250 sheet units), of every flagged opening and furniture piece. Default output
+  `<name>.review.png`; `--json` adds `rings`, `marks[]` (with each ringed element's id, kind and
+  ring box) and `crops[]` (boxes in plan mm). One storey per sheet (`--level`, as `preview`);
+  refused beside `--ascii`, `--view` or `--overlay` (exit 3). Drawing-only: it lives in the CLI
+  layer, reads `compile()`, `describe()` and `lint()`, and changes none of them, nor the default
+  `preview`.
+
 - `keep`: declared invariants the compiler checks and never solves (ADR 0033; plan card PS4.3a).
   Seven forms, `keep align <d> <d> …`, `keep equal width|depth <t> <t> …`, `keep offset <x> from
   <d> <mm>`, `keep min clear <room> <mm>`, `keep on axis <label> <wall>`, `keep stacked <id> on

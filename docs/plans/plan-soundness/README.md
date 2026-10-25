@@ -436,6 +436,9 @@ ratification (D18).*
 | Drafting | The sheet, not the plan: annotation collisions, title overflow, dimension text (D11) | `W_*` lint rules with `layer: "drafting"` | Never; never cap taste; `finish`'s never-worse law excepts them (D12) |
 | Taste | Privacy gradient, day/night zoning, light on two sides, alignment, proportion, façade rhythm | `score --taste` (PS5) | Never |
 
+**The reviewer's tools** (D20): `score --taste` (the score) and `preview --review` (PS5.4: every
+warned element ringed and numbered, the access graph, close-ups of flagged openings and pieces).
+
 **The hold-fixed ladder: what stays when a number changes.** Higher tiers hold, and lower tiers follow:
 
 > the brief's given numbers → site and lot → party walls and unit boundaries → structural axes →
@@ -523,7 +526,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS5 · The taste layer and the review sheet (D2)
 
-7 cards: 3 done, 4 todo. Cards, tables and as-built pointers: `cards.md` § PS5.
+7 cards: 4 done, 3 todo. Cards, tables and as-built pointers: `cards.md` § PS5.
 
 ### PS6 · `arch solve` (explicit transform; last)
 
