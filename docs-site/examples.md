@@ -46,10 +46,7 @@ eaves on the upper storey; and a `component` authored once — `ensuite() { … 
 `place`d three times: twice on the bedroom band, the second with `mirror x` so the pair
 face opposite ways, and once more inside the master suite.
 
-`archlang lint` raises eight warnings on it, all on the upper floor. One is a known false
-reading, not a defect: `W_FIXTURE_BACK_TO_ROOM` on Bedroom 2's wardrobe, which touches the
-north wall only with its end, and the rule takes that end for its back (plan-soundness card
-PS2.50). Two are left in on
+`archlang lint` raises seven warnings on it, all on the upper floor. Two are left in on
 purpose, as the honest cost of a real site: two bedrooms whose windows don't face the
 equator side. (The master en-suite, reached only through its bedroom, is not one: the
 other two en-suites also open off the landing.) The other five squeeze to

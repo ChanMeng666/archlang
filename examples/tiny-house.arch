@@ -122,9 +122,8 @@ plan "Tiny House" {
   # ---- living / sleeping ----------------------------------------------------
   # Lengthwise under the window, its side on the north wall and its head toward the wet-room
   # partition (`rotate 90`, back east): 2000 long and 1400 wide. Unturned, the same footprint
-  # drew a bed 2 m wide and 1.4 m long. W_FIXTURE_BACK_TO_ROOM reads the north wall as the
-  # one a bed should back onto; a bed side-on to a wall is a normal tiny-house layout
-  # (a plan-soundness card).
+  # drew a bed 2 m wide and 1.4 m long. A bed side-on to a wall is a normal tiny-house
+  # layout, and lint reads it as one.
   furniture bed      at (2600,100)  size 2000x1400 label "Bed"      rotate 90 in r_main
   furniture bench    at (3400,2100) size 1500x600  label "Bench"    in r_main
   furniture wardrobe at (100,2350)  size 1800x350  label "Wardrobe" rotate 180 in r_main

@@ -180,6 +180,16 @@ export interface FixtureSpec {
    * Each entry that sets it says why on the line above.
    */
   fixedAspect?: boolean;
+  /**
+   * The piece is **mounted on a wall by its back**: its back mounts on a wall whenever it touches
+   * one, though it needs no services there (so it is not {@link requiresWall}, and
+   * `W_FIXTURE_FLOATING` leaves it alone when it stands free). Read only by
+   * `W_FIXTURE_BACK_TO_ROOM` (plan-soundness PS2.50), which declines a piece standing side-on or
+   * end-on to a wall, a layout for a bed or a wardrobe, but not for one of these: a radiator, a
+   * fireplace, a TV or an EV charger touching a wall with its end is the wrong way round. Set on
+   * exactly those four families.
+   */
+  wallMounted?: boolean;
 }
 
 /** A room zone a fixture can satisfy (see {@link FixtureSpec.zones}). */
@@ -508,7 +518,7 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   wheelie_bin: { requiresWall: false, directional: true, footprint: { along: 600, depth: 700 } },
   mailbox: { requiresWall: false, directional: true, footprint: { along: 400, depth: 300 } },
   letterbox: { requiresWall: false, directional: true, footprint: { along: 400, depth: 300 } },
-  ev_charger: { requiresWall: false, directional: true, footprint: { along: 400, depth: 300 } },
+  ev_charger: { requiresWall: false, directional: true, wallMounted: true, footprint: { along: 400, depth: 300 } },
   pergola: { requiresWall: false, symmetric: true },
   sandpit: { requiresWall: false, symmetric: true },
   sandbox: { requiresWall: false, symmetric: true },
@@ -670,8 +680,8 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   },
 
   // Living.
-  fireplace: { requiresWall: false, directional: true, footprint: { along: 1200, depth: 400 } },
-  radiator: { requiresWall: false, directional: true, footprint: { along: 1000, depth: 100 } },
+  fireplace: { requiresWall: false, directional: true, wallMounted: true, footprint: { along: 1200, depth: 400 } },
+  radiator: { requiresWall: false, directional: true, wallMounted: true, footprint: { along: 1000, depth: 100 } },
   sideboard: { requiresWall: false, directional: true, footprint: { along: 1600, depth: 450 } },
   buffet: { requiresWall: false, directional: true, footprint: { along: 1600, depth: 450 } },
   // fixedAspect: a two-seat sofa: seats along its back, always wider than deep.
@@ -679,7 +689,13 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   sofa_2: { requiresWall: false, fixedAspect: true, footprint: { along: 1500, depth: 850 }, serves: "sofa" },
   chaise: { requiresWall: false, footprint: { along: 1600, depth: 800 } },
   // fixedAspect: a screen is a thin band, always far wider than deep.
-  tv: { requiresWall: false, fixedAspect: true, directional: true, footprint: { along: 1200, depth: 80 } },
+  tv: {
+    requiresWall: false,
+    fixedAspect: true,
+    directional: true,
+    wallMounted: true,
+    footprint: { along: 1200, depth: 80 },
+  },
   coat_rack: { requiresWall: false, symmetric: true, footprint: { along: 400, depth: 400 } },
   shoe_cabinet: { requiresWall: false, directional: true, footprint: { along: 800, depth: 300 } },
 
@@ -718,6 +734,13 @@ export function fixtureSpec(category: string): FixtureSpec | null {
 /** Does this fixture category conventionally need a wall behind it? */
 export function requiresWall(category: string): boolean {
   return CATALOG[category]?.requiresWall ?? false;
+}
+
+/** Must this piece's back be on a wall whenever it touches one: a services fixture
+ *  ({@link FixtureSpec.requiresWall}) or a wall-mounted one ({@link FixtureSpec.wallMounted})? */
+export function backsOntoWall(category: string): boolean {
+  const spec = CATALOG[category];
+  return spec?.requiresWall === true || spec?.wallMounted === true;
 }
 
 /**
