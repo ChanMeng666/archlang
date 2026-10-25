@@ -15,11 +15,12 @@ import { SWING_BUILDING_PLANS } from "./swing-building-plans.js";
 const API: CompilerApi = { compile, describe, lint };
 
 const DIGESTS: [string, string][] = [
-  ["k1-west-to-east", "7b408d0ac562b44ddd4972280ec06872b667fc45346b1a69f41c565a0d1b1a01"], // PS2.29: message text only, same code, same span
-  ["k1-east-to-west", "5d4e7131e9886e6502a040d8e59e7c00f7b719bf032401d14da26d3a21d6567d"], // PS2.29: message text only, same code, same span
-  ["loop", "201190f90c8af2e8f73b863136ab9708b417c58806280d730f758b0947552400"], // PS2.29: message text only, same code, same span
-  ["ring", "142352155d5a15bc0abf34193616bc01616adbbd9c3626bd421df54a6186a682"],
-  ["frames", "25cfb077669378f72b78849bc3cfa471aef510dbe14cd25ba36fdf46fb0eb71b"], // PS2.29: message text only, same code, same span
+  // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
+  ["k1-west-to-east", "db09ae897832301b114bc8ff586e44a794385a2b4c495a518d374d66b199d61c"], // PS2.29: message text only, same code, same span
+  ["k1-east-to-west", "a04b716939992b6d37d522cf7d310dfae38aac880f235f9f63359abcfa10ae6f"], // PS2.29: message text only, same code, same span
+  ["loop", "6a6e5e95567e7221eaf50b064a79d525f4cb2eca871290a95c0538afaacf6522"], // PS2.29: message text only, same code, same span
+  ["ring", "4cc235210897be4e79a8e49740ddf55a2b28aa26fdd7fd0c03d1852cddff2bd0"],
+  ["frames", "1fbb5062d80872bdc8497c176eaea87f01c59ac8de002cfcdec2f553cbb18354"], // PS2.29: message text only, same code, same span
   // Moved once, by review round 1 (N1): the "both faces" message dropped "(it stands between two
   // rooms)", which was false for a wall free-standing inside one room. Message text only.
   ["refused", "d0ff72c2f1e61f259980b250b027ddbfdfcc724c82a6c5d98d80f0b64274f5c4"],

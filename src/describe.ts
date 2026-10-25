@@ -37,6 +37,7 @@ import type {
 import type { FenceStyle, OutdoorKind, Point, RailSide, VerticalDir } from "./ast.js";
 import { polygonArea, polygonBounds } from "./geometry/polygon.js";
 import { memoRoomNetAreaMm2, storeyNetAreaBands } from "./analyze/net-area-memo.js";
+import { grossInternalArea, type GrossAreaReason } from "./analyze/gross-area.js";
 import type { DoorKind } from "./grammar/tokens.js";
 import type { Diagnostic } from "./diagnostics.js";
 import {
@@ -789,6 +790,47 @@ export interface SceneSummary {
     windows: number;
     floor_area_m2: number;
     /**
+     * GROSS INTERNAL AREA in m², 2 dp: the floor enclosed by the inner faces of the storey's
+     * `exterior` walls (authored, or the ring `walls from rooms` derives), joined as the drawing
+     * joins them, before any opening is cut. Exact from the shape: each loop's closed-form
+     * area, never a bbox. It counts the partitions and any floor no room covers inside the
+     * shell, and excludes the shell; a courtyard ring's court is excluded, a court bounded only
+     * by partitions is not. Several separate buildings on one storey sum. This, not the
+     * centreline `floor_area_m2`, is the "about N m²" a brief means.
+     * `src/analyze/gross-area.ts` holds the rule.
+     *
+     * ABSENT when the storey has no closed exterior ring or the figure cannot be trusted, and
+     * then {@link gross_internal_area_omitted} says why: every resolving summary carries exactly
+     * one of the two. Like every total here it is THIS storey's: the top level reports the
+     * lowest storey, and each `levels[i].totals` its own.
+     */
+    gross_internal_area_m2?: number;
+    /**
+     * Why {@link gross_internal_area_m2} is absent, present only then:
+     * `no-closed-exterior-ring` (no exterior wall encloses a region: a shell that does not
+     * close, a room-only sketch, an open site), `exterior-ring-subdivided` (an exterior wall
+     * divides the enclosure, so which side is the building is not stated),
+     * `nested-exterior-rings` (something enclosed inside a courtyard ring), `too-much-work` (a
+     * counted cap) or `inconsistent`. Never a guess (ADR 0005).
+     */
+    gross_internal_area_omitted?: GrossAreaReason;
+    /**
+     * The BUILDING's gross internal area in m², 2 dp: the sum of every storey's
+     * {@link gross_internal_area_m2} (each already rounded, the way `floor_area_m2` is summed),
+     * equal to it on a single-storey plan. Top-level `totals` only: never inside `levels[i]`,
+     * and a summary narrowed to one storey (`describe --level`) does not carry it. ABSENT when
+     * any storey's figure is, and then {@link gross_internal_area_all_levels_omitted} names the
+     * first such storey and its reason: every resolving whole-plan summary carries exactly one
+     * of the two. This is the figure a brief's whole-house "about N m²" binds to.
+     */
+    gross_internal_area_all_levels_m2?: number;
+    /**
+     * Why {@link gross_internal_area_all_levels_m2} is absent: the first storey (lowest first)
+     * whose figure is omitted, by its `level` number (absent on a plan with no `level`
+     * blocks), and that storey's {@link gross_internal_area_omitted} reason.
+     */
+    gross_internal_area_all_levels_omitted?: { level?: number; reason: GrossAreaReason };
+    /**
      * Sum of the rooms' {@link RoomSummary.net_area_m2}, rounded to 2 decimals — summed from
      * the same rounded per-room figures, the way `floor_area_m2` is, so the total and the
      * list never disagree by a rounding step. ABSENT when any room's net area is omitted:
@@ -957,7 +999,7 @@ export function buildCaption(s: CaptionInput): string {
  * pattern — this only runs in accessible mode.
  */
 export function captionForPlan(ir: ResolvedPlan, tol: number = DEFAULT_TOL): string {
-  const s = summarize(ir, tol);
+  const s = summarize(ir, tol, [], [], false, undefined, false);
   return buildCaption({ plan: s.plan, rooms: s.rooms, totals: s.totals, entrances: s.access.entrances });
 }
 
@@ -1209,6 +1251,8 @@ function summarize(
   upperStorey = false,
   /** The linked plan's statements, built only when `depends` is requested. */
   statements?: StatementIndex,
+  /** False on the caption path only: the gross internal area is not computed at all. */
+  withGrossArea = true,
 ): Omit<SceneSummary, "ok" | "diagnostics"> {
   const roomEls = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const doorEls = ir.elements.filter((e): e is RDoor => e.kind === "door");
@@ -1454,11 +1498,21 @@ function summarize(
   const bbox_outer = Number.isFinite(ob.minX) ? { w: ob.maxX - ob.minX, h: ob.maxY - ob.minY } : { w: 0, h: 0 };
 
   const floorArea = r2(rooms.reduce((s, r) => s + r.area_m2, 0));
+  // Skipped on the accessible-caption path (`captionForPlan`, inside `compile()`): the caption
+  // never reads it, so `compile()` does none of this unbudgeted work.
+  const gia = withGrossArea ? grossInternalArea(ir.walls) : null;
   const totals = {
     rooms: rooms.length,
     doors: doors.length,
     windows: windows.length,
     floor_area_m2: floorArea,
+    // The shell's enclosure, beside the centreline sum: every resolving summary carries exactly
+    // one of the two keys.
+    ...(gia === null
+      ? {}
+      : gia.ok
+        ? { gross_internal_area_m2: r2(gia.mm2 / 1_000_000) }
+        : { gross_internal_area_omitted: gia.reason }),
     // Never a sum over a subset: one omitted room omits the total.
     ...(rooms.every((r) => r.net_area_m2 !== undefined)
       ? { net_floor_area_m2: r2(rooms.reduce((s, r) => s + (r.net_area_m2 ?? 0), 0)) }
@@ -1833,21 +1887,51 @@ function summarizeResolved(
         }))
       : undefined;
 
+  // The lowest storey's arrivals, so the top level still repeats `levels[0]` exactly.
+  const top = summarize(
+    ir,
+    tol,
+    opts.facts,
+    levels.length > 0 ? arrivalsOn(levels[0]!.level) : [],
+    levels.length > 0 ? (building?.fromBelow.has(levels[0]!.level) ?? false) : false,
+    statements,
+  );
   return {
     ok: true,
-    // The lowest storey's arrivals, so the top level still repeats `levels[0]` exactly.
-    ...summarize(
-      ir,
-      tol,
-      opts.facts,
-      levels.length > 0 ? arrivalsOn(levels[0]!.level) : [],
-      levels.length > 0 ? (building?.fromBelow.has(levels[0]!.level) ?? false) : false,
-      statements,
-    ),
+    ...top,
+    totals: withAllLevelsGrossArea(top.totals, perLevel),
     ...(perLevel ? { levels: perLevel } : {}),
     ...(vertical ? { vertical } : {}),
     diagnostics,
   };
+}
+
+/**
+ * The top-level totals with the building's gross internal area inserted right after the
+ * storey's own (so the key order reads storey figure, building figure): the sum over every
+ * storey, or the first storey whose figure is omitted. A single-storey plan's building is its
+ * one storey.
+ */
+function withAllLevelsGrossArea(
+  totals: SceneSummary["totals"],
+  perLevel: LevelSummary[] | undefined,
+): SceneSummary["totals"] {
+  const storeys = perLevel ? perLevel.map((l) => ({ level: l.level, t: l.totals })) : [{ level: undefined, t: totals }];
+  const missing = storeys.find((s) => s.t.gross_internal_area_m2 === undefined);
+  const building = missing
+    ? {
+        gross_internal_area_all_levels_omitted: {
+          ...(missing.level !== undefined ? { level: missing.level } : {}),
+          reason: missing.t.gross_internal_area_omitted ?? ("no-closed-exterior-ring" as const),
+        },
+      }
+    : { gross_internal_area_all_levels_m2: r2(storeys.reduce((n, s) => n + (s.t.gross_internal_area_m2 ?? 0), 0)) };
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(totals)) {
+    out[k] = v;
+    if (k === "gross_internal_area_m2" || k === "gross_internal_area_omitted") Object.assign(out, building);
+  }
+  return out as SceneSummary["totals"];
 }
 
 /**

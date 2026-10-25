@@ -207,3 +207,35 @@ describe("arch score", () => {
     expect(r.status).toBe(3);
   }, 30000);
 });
+
+describe("arch validate --intent: brief-bound measures (PS4.4)", () => {
+  it("prints one human `measure` line per bound size, rounded, with (turned); --json lists them", () => {
+    const intent = writeJson("measures.json", {
+      grossInternalAreaM2: { min: 30, source: "about 35 m²" },
+      roomDimensions: [
+        { room: "bed", sizeMm: { w: 5000, h: 4000, source: "a 4 × 5 m bedroom" } },
+        { room: "Bathroom", widthMm: { min: 4333.333, source: "x" } },
+      ],
+    });
+    const human = run(["validate", "-", "--intent", intent], PLAN);
+    expect(human.status).toBe(2);
+    expect(human.stderr).toContain(
+      "  measure /grossInternalAreaM2: gross internal area 37.44 m², residual 0 m² · ok\n",
+    );
+    expect(human.stderr).toContain(
+      '  measure /roomDimensions/0/sizeMm: "Bedroom" size 5000 × 4000 mm (turned), residual 0 × 0 mm · ok\n',
+    );
+    expect(human.stderr).toContain(
+      '  measure /roomDimensions/1/widthMm: "Bathroom" width 4000 mm, residual −333.33 mm · miss\n',
+    );
+    const j = JSON.parse(run(["validate", "-", "--intent", intent, "--json"], PLAN).stdout);
+    expect(j.intent.measures.map((m: { path: string; residual: number[] }) => [m.path, m.residual])).toEqual([
+      ["/grossInternalAreaM2", [0]],
+      ["/roomDimensions/0/sizeMm", [0, 0]],
+      ["/roomDimensions/1/widthMm", [-333.33]],
+    ]);
+    // An intent with no brief-bound size has no `measures` key: the payload is what it was.
+    const plain = JSON.parse(run(["validate", "-", "--intent", p("ok.json"), "--json"], PLAN).stdout);
+    expect("measures" in plain.intent).toBe(false);
+  }, 30000);
+});

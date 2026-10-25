@@ -628,6 +628,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Give the plugin's `ElementDef` a `transform(el, t)` that maps its geometry with the `TransformCtx` it is handed (`t.point`, `t.rect`, `t.side`, `t.id`, …) — or write the element at plan level instead of inside the component.",
     "component c() { gazebo at (0,0) }   # `gazebo` is a plugin kind with no transform()\nplace c() as g at (5000,0)   # error: cannot be placed",
   ),
+  E_INTENT_GROSS_AREA: E(
+    "E_INTENT_GROSS_AREA",
+    "The plan's gross internal area is outside the brief's band.",
+    "An intent `grossInternalAreaM2` band (from a number in the brief, ±10% for \"about N\") does not contain the plan's gross internal area: the floor inside the exterior walls' inner faces (`describe().totals.gross_internal_area_m2`), the figure a client means. The centreline `floor_area_m2` runs half a wall past it.",
+    "Grow or shrink the shell so the enclosed floor lands in the band; partitions inside the shell do not change the figure. Gating tier: this failure fails `validateIntent`'s `ok`. Assert a band only where the brief states a number.",
+    '# brief says "about 70 m²" (band 63–77); the shell encloses 9600 × 6400 = 61.44 m² inside its inner faces',
+  ),
   E_INTENT_NOT_ADJACENT: E(
     "E_INTENT_NOT_ADJACENT",
     "Two rooms the brief wants adjacent share no interior door.",
@@ -670,6 +677,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Add or remove rooms to reach the enumerated count. Gating tier: this failure fails `validateIntent`'s `ok`.",
     "# brief lists 4 rooms; the plan draws 5 (and the extra is a bedroom, not a hall)",
   ),
+  E_INTENT_ROOM_DIMENSION: E(
+    "E_INTENT_ROOM_DIMENSION",
+    "A room's width, depth or exact size is not what the brief states.",
+    "An intent `roomDimensions[]` entry binds one room (by id or label) to a size the brief states: a `widthMm`/`depthMm` band on its extent along x/y, or an exact `sizeMm` (`w × h` in either orientation, within `tolerance`). Measured on wall centrelines from the room's own rectangle; the residual is reported in mm.",
+    "Resize that room's `size` to the stated dimension; every number the brief does not state is free to flex. Gating tier: this failure fails `validateIntent`'s `ok`.",
+    'room id=bed1 at (0,0) size 2900x3600 label "Bedroom 1"   # brief: "bedroom at least 3 m wide" → width 2900, residual −100 mm',
+  ),
   E_INTENT_ROOM_MISSING: E(
     "E_INTENT_ROOM_MISSING",
     "A room the brief names is absent from the plan.",
@@ -683,6 +697,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     'An intent `totalAreaM2` band (from a number in the brief, ±10% for "about N") does not contain the plan\'s total floor area.',
     "Grow or shrink rooms so the total lands in the band. Gating tier: this failure fails `validateIntent`'s `ok`. Assert a band only where the brief states a number.",
     '# brief says "about 42 m²" (band 37.8–46.2); the plan totals 52 m²',
+  ),
+  E_INTENT_UNMEASURED: E(
+    "E_INTENT_UNMEASURED",
+    "A brief-bound measure has no value on this plan.",
+    "An intent `grossInternalAreaM2` or `roomDimensions[]` assertion cannot be measured: the room selector names no room or more than one, the room is a polygon or a circle (no single width), the plan did not resolve, or the plan has no gross internal area (no closed exterior wall ring, an exterior wall dividing the shell, a ring nested in a courtyard, or a counted cap; `describe().totals.gross_internal_area_omitted` names which). The question is unanswerable, not answered no.",
+    "Bind the room by its id or a unique label, give it a rectangular `size`, or close the shell with one `exterior` wall ring (`walls from rooms` derives one). Gating tier: this failure fails `validateIntent`'s `ok` — a refusal, never a silent pass.",
+    "wall id=n exterior thickness 200 { (0,0) (9000,0) (9000,7000) }   # an open run encloses nothing: gross internal area unmeasured",
   ),
   E_INTENT_UNREACHABLE: E(
     "E_INTENT_UNREACHABLE",

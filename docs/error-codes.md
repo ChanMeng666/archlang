@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**134 errors** · **74 warnings**
+**137 errors** · **74 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -57,14 +57,17 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_INDEX`](#e_index) | error | Array index out of range. |
 | [`E_INPUT_TOO_LARGE`](#e_input_too_large) | error | The source is larger than this host accepts. |
 | [`E_INSTANCE_NO_TRANSFORM`](#e_instance_no_transform) | error | A plugin element inside a `place`d component has no `transform()`. |
+| [`E_INTENT_GROSS_AREA`](#e_intent_gross_area) | error | The plan's gross internal area is outside the brief's band. |
 | [`E_INTENT_NOT_ADJACENT`](#e_intent_not_adjacent) | error | Two rooms the brief wants adjacent share no interior door. |
 | [`E_INTENT_NO_DOOR`](#e_intent_no_door) | error | The plan has no modeled entrance, so `reachable` cannot hold. |
 | [`E_INTENT_NO_SITE`](#e_intent_no_site) | error | An intent asserts a SYMBOLIC window facing against a plan with no `site`. |
 | [`E_INTENT_NO_WINDOW`](#e_intent_no_window) | error | A room the brief wants a window in has too few. |
 | [`E_INTENT_ROOM_AREA`](#e_intent_room_area) | error | A named room's floor area is outside the brief's band. |
 | [`E_INTENT_ROOM_COUNT`](#e_intent_room_count) | error | The plan's room count does not match the brief. |
+| [`E_INTENT_ROOM_DIMENSION`](#e_intent_room_dimension) | error | A room's width, depth or exact size is not what the brief states. |
 | [`E_INTENT_ROOM_MISSING`](#e_intent_room_missing) | error | A room the brief names is absent from the plan. |
 | [`E_INTENT_TOTAL_AREA`](#e_intent_total_area) | error | The plan's total floor area is outside the brief's band. |
+| [`E_INTENT_UNMEASURED`](#e_intent_unmeasured) | error | A brief-bound measure has no value on this plan. |
 | [`E_INTENT_UNREACHABLE`](#e_intent_unreachable) | error | A room cannot be reached from the entrance through modeled doors. |
 | [`E_JSON_DERIVED_IN_INSTANCE`](#e_json_derived_in_instance) | error | Plan JSON cannot carry a `place`d component that derives its walls in this plan. |
 | [`E_JSON_KIND`](#e_json_kind) | error | Unknown element kind in plan JSON. |
@@ -811,6 +814,18 @@ component c() { gazebo at (0,0) }   # `gazebo` is a plugin kind with no transfor
 place c() as g at (5000,0)   # error: cannot be placed
 ```
 
+## E_INTENT_GROSS_AREA
+
+*error* — The plan's gross internal area is outside the brief's band.
+
+**Cause.** An intent `grossInternalAreaM2` band (from a number in the brief, ±10% for "about N") does not contain the plan's gross internal area: the floor inside the exterior walls' inner faces (`describe().totals.gross_internal_area_m2`), the figure a client means. The centreline `floor_area_m2` runs half a wall past it.
+
+**Fix.** Grow or shrink the shell so the enclosed floor lands in the band; partitions inside the shell do not change the figure. Gating tier: this failure fails `validateIntent`'s `ok`. Assert a band only where the brief states a number.
+
+```arch static
+# brief says "about 70 m²" (band 63–77); the shell encloses 9600 × 6400 = 61.44 m² inside its inner faces
+```
+
 ## E_INTENT_NOT_ADJACENT
 
 *error* — Two rooms the brief wants adjacent share no interior door.
@@ -886,6 +901,18 @@ room at (0,0) size 4000x3000 label "Bedroom"   # 12 m²
 # brief lists 4 rooms; the plan draws 5 (and the extra is a bedroom, not a hall)
 ```
 
+## E_INTENT_ROOM_DIMENSION
+
+*error* — A room's width, depth or exact size is not what the brief states.
+
+**Cause.** An intent `roomDimensions[]` entry binds one room (by id or label) to a size the brief states: a `widthMm`/`depthMm` band on its extent along x/y, or an exact `sizeMm` (`w × h` in either orientation, within `tolerance`). Measured on wall centrelines from the room's own rectangle; the residual is reported in mm.
+
+**Fix.** Resize that room's `size` to the stated dimension; every number the brief does not state is free to flex. Gating tier: this failure fails `validateIntent`'s `ok`.
+
+```arch static
+room id=bed1 at (0,0) size 2900x3600 label "Bedroom 1"   # brief: "bedroom at least 3 m wide" → width 2900, residual −100 mm
+```
+
 ## E_INTENT_ROOM_MISSING
 
 *error* — A room the brief names is absent from the plan.
@@ -908,6 +935,18 @@ room at (0,0) size 2000x2000 label "Bathroom" uses bath   # supply the missing r
 
 ```arch static
 # brief says "about 42 m²" (band 37.8–46.2); the plan totals 52 m²
+```
+
+## E_INTENT_UNMEASURED
+
+*error* — A brief-bound measure has no value on this plan.
+
+**Cause.** An intent `grossInternalAreaM2` or `roomDimensions[]` assertion cannot be measured: the room selector names no room or more than one, the room is a polygon or a circle (no single width), the plan did not resolve, or the plan has no gross internal area (no closed exterior wall ring, an exterior wall dividing the shell, a ring nested in a courtyard, or a counted cap; `describe().totals.gross_internal_area_omitted` names which). The question is unanswerable, not answered no.
+
+**Fix.** Bind the room by its id or a unique label, give it a rectangular `size`, or close the shell with one `exterior` wall ring (`walls from rooms` derives one). Gating tier: this failure fails `validateIntent`'s `ok` — a refusal, never a silent pass.
+
+```arch static
+wall id=n exterior thickness 200 { (0,0) (9000,0) (9000,7000) }   # an open run encloses nothing: gross internal area unmeasured
 ```
 
 ## E_INTENT_UNREACHABLE

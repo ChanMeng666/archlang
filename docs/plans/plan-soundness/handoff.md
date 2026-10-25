@@ -119,7 +119,7 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    PS7.5 moves the step out of the author loop. The row-5 residue and row 6 may start;
    PS2.45 is done (PR #268) and PS2.50 is done (PR #267); item 2 is next.
 2. **PS4.3** `keep` invariants: design PR #270; rulings D22; implementation PS4.3a next (then
-   PS4.3b; ADR 0033 Proposed). **PS4.4** brief-bound dimensions, **PS4.5** `impact` reports `held`.
+   PS4.3b; ADR 0033 Proposed). **PS4.5** `impact` reports `held`.
 3. **PS5.4** `preview --review` rings every flagged element.
 4. **PS7.x** staged authoring; then **PS7.6** (`lint` opens with a one-line summary). It changes what
    authors see, so the next re-measure states it, with PS7.5 (done: the taste step left the author loop

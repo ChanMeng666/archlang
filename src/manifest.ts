@@ -595,7 +595,7 @@ const COMMANDS: ManifestCommand[] = [
     ],
     input: "<file.arch|->",
     output:
-      "diagnostics (plus a graph{} report with --graph and an intent{ ok, satisfied, total, subscores, violations } block with --intent), then `next`: the one item to fix first { tier, code, message, span?, hint? } or null (tiers: error, warning, validity, drafting, intent, profile, taste)",
+      "diagnostics (plus a graph{} report with --graph and an intent{ ok, satisfied, total, subscores, violations, measures? } block with --intent; `measures` lists each brief-bound size with its measured value and signed residual), then `next`: the one item to fix first { tier, code, message, span?, hint? } or null (tiers: error, warning, validity, drafting, intent, profile, taste)",
     examples: [
       {
         cmd: "archlang validate plan.arch --strict --json",
@@ -676,7 +676,7 @@ const COMMANDS: ManifestCommand[] = [
     flags: [BRIEF_FLAG, TASTE_FLAG, JSON_FLAG, QUIET_FLAG],
     input: "<file.arch|->",
     output:
-      "--brief: { ok, satisfied, total, score, subscores, violations }; --taste: { profile, ok, score, uncapped, capped, validity, advisory, coverage, subscores, criteria } (exit 0 on a successful measurement, whatever the score)",
+      "--brief: { ok, satisfied, total, score, subscores, violations, measures? }; --taste: { profile, ok, score, uncapped, capped, validity, advisory, coverage, subscores, criteria } (exit 0 on a successful measurement, whatever the score)",
     examples: [
       {
         cmd: "archlang score plan.arch --brief brief.json --json",

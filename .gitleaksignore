@@ -202,3 +202,24 @@ c82d5dd89bdd450a64c9160064fefaa97bfe3f20:test/import-module-lets.test.ts:generic
 4a32ce1eb1e6c462bb1c69a97332fe55be6f227d:test/byte-identity-baseline.ts:generic-api-key:1127
 4a32ce1eb1e6c462bb1c69a97332fe55be6f227d:test/import-module-lets.test.ts:generic-api-key:407
 4a32ce1eb1e6c462bb1c69a97332fe55be6f227d:test/while-byte-identity-baseline.ts:generic-api-key:264
+# ---------------------------------------------------------------------------------------
+# 2026-10-26 — six findings, rule `generic-api-key`, the same false positive as the blocks above,
+# from re-measuring every `describe()` digest for PS4.4's new totals key (PR #271). Each was
+# opened and read: the `accessible` rows of the byte-identity tables and the two
+# `eval/goldens/accessible-*` rows, MEASURED SHA-256 BYTE-IDENTITY BASELINES of public output.
+# `gitleaks git --log-opts=origin/main..HEAD` on the branch reported exactly these six.
+# ---------------------------------------------------------------------------------------
+32aed0908d16b09df9cad48ccfe045915ec878bf:test/byte-identity-baseline.ts:generic-api-key:1481
+32aed0908d16b09df9cad48ccfe045915ec878bf:test/byte-identity-baseline.ts:generic-api-key:1529
+32aed0908d16b09df9cad48ccfe045915ec878bf:test/while-byte-identity-baseline.ts:generic-api-key:329
+32aed0908d16b09df9cad48ccfe045915ec878bf:test/import-module-lets.test.ts:generic-api-key:501
+32aed0908d16b09df9cad48ccfe045915ec878bf:test/import-module-lets.test.ts:generic-api-key:575
+32aed0908d16b09df9cad48ccfe045915ec878bf:test/import-module-lets.test.ts:generic-api-key:576
+# 2026-10-26 (PR #271 red-team round 1) — the same six rows re-measured once more, for the top-level
+# building key; the same false positive, each opened and read.
+344cc2d24b14dd542920586e520d6020536ce8f7:test/byte-identity-baseline.ts:generic-api-key:1486
+344cc2d24b14dd542920586e520d6020536ce8f7:test/byte-identity-baseline.ts:generic-api-key:1534
+344cc2d24b14dd542920586e520d6020536ce8f7:test/import-module-lets.test.ts:generic-api-key:501
+344cc2d24b14dd542920586e520d6020536ce8f7:test/while-byte-identity-baseline.ts:generic-api-key:329
+344cc2d24b14dd542920586e520d6020536ce8f7:test/import-module-lets.test.ts:generic-api-key:575
+344cc2d24b14dd542920586e520d6020536ce8f7:test/import-module-lets.test.ts:generic-api-key:576

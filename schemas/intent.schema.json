@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://archlang.uk/intent.schema.json",
   "title": "ArchLang Intent",
-  "description": "A floor-plan brief's checkable INTENT as structured data — what the source TEXT asked for, independent of any one drawing. Every field is BRIEF-grounded (derived from the prompt's words, not a golden's geometry). Area bands follow one convention everywhere: a brief's \"about/around/~N m²\" or a bare \"N m²\" sets both bounds to ±10% of N; \"at least N m²\" sets `min` only (open top); qualitative size words (compact, generous, large, spacious) license NO area assertion — omit the band rather than invent bounds. Assertions are checked against `describe()` facts; room count / existence / area / windows GATE (a real deliverable miss), while `adjacency`/`reachable` are ADVISORY (scored, never gating).",
+  "description": "A floor-plan brief's checkable INTENT as structured data — what the source TEXT asked for, independent of any one drawing. Every field is BRIEF-grounded (derived from the prompt's words, not a golden's geometry). Area bands follow one convention everywhere: a brief's \"about/around/~N m²\" or a bare \"N m²\" sets both bounds to ±10% of N; \"at least N m²\" sets `min` only (open top); qualitative size words (compact, generous, large, spacious) license NO area assertion — omit the band rather than invent bounds. Assertions are checked against `describe()` facts; room count / existence / area / windows / gross internal area / room dimensions GATE (a real deliverable miss), while `adjacency`/`reachable` are ADVISORY (scored, never gating).",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -181,6 +181,174 @@
     "reachable": {
       "type": "boolean",
       "description": "Assert that every room is reachable from a modeled entrance. ADVISORY tier: scored, never gating. Assert only where the brief's words license it (e.g. \"no room reached through another\")."
+    },
+    "grossInternalAreaM2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source"
+      ],
+      "anyOf": [
+        {
+          "required": [
+            "min"
+          ]
+        },
+        {
+          "required": [
+            "max"
+          ]
+        }
+      ],
+      "description": "Gross internal area band in square metres: the floor inside the exterior walls' INNER FACES (`describe().totals.gross_internal_area_m2`), which is what a client's \"about 70 m²\" means — `totalAreaM2` runs to wall centrelines and reads several per cent larger. On a plan with `level` blocks it binds the BUILDING: the sum over every storey (`totals.gross_internal_area_all_levels_m2`). Same band conventions as `areaM2`. GATING. A plan with no closed exterior wall ring has no such figure and fails as E_INTENT_UNMEASURED, never a silent pass.",
+      "properties": {
+        "min": {
+          "type": "number",
+          "description": "Lower bound (m²)."
+        },
+        "max": {
+          "type": "number",
+          "description": "Upper bound (m²); omit for an open \"at least\" band."
+        },
+        "source": {
+          "type": "string",
+          "description": "The brief phrase that licensed the band, quoted."
+        }
+      }
+    },
+    "roomDimensions": {
+      "type": "array",
+      "description": "Room sizes the brief STATES, each bound to one room (GATING): \"the living room at least 4 m wide\", \"a 3.2 × 3.6 m bedroom\". Measured on wall centrelines from the room's own rectangle; every number the brief does not state is free to flex. A polygon or circular room has no single width and fails as E_INTENT_UNMEASURED, as does a selector that names no room or more than one. Assert only numbers the brief gives.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "room"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "widthMm"
+            ]
+          },
+          {
+            "required": [
+              "depthMm"
+            ]
+          },
+          {
+            "required": [
+              "sizeMm"
+            ]
+          }
+        ],
+        "properties": {
+          "room": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The room's id, or its label exactly as written, on any storey. A selector that matches more than one room (a shared label, an id repeated on two storeys, an id of one room that is another's label) is refused: bind by an id no other room shares."
+          },
+          "widthMm": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source"
+            ],
+            "anyOf": [
+              {
+                "required": [
+                  "min"
+                ]
+              },
+              {
+                "required": [
+                  "max"
+                ]
+              }
+            ],
+            "description": "Band on the room's extent along the page's x axis (its `size` W), in mm.",
+            "properties": {
+              "min": {
+                "type": "number",
+                "description": "Lower bound (mm)."
+              },
+              "max": {
+                "type": "number",
+                "description": "Upper bound (mm)."
+              },
+              "source": {
+                "type": "string",
+                "description": "The brief phrase that licensed the band, quoted."
+              }
+            }
+          },
+          "depthMm": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source"
+            ],
+            "anyOf": [
+              {
+                "required": [
+                  "min"
+                ]
+              },
+              {
+                "required": [
+                  "max"
+                ]
+              }
+            ],
+            "description": "Band on the room's extent along the page's y axis (its `size` H), in mm.",
+            "properties": {
+              "min": {
+                "type": "number",
+                "description": "Lower bound (mm)."
+              },
+              "max": {
+                "type": "number",
+                "description": "Upper bound (mm)."
+              },
+              "source": {
+                "type": "string",
+                "description": "The brief phrase that licensed the band, quoted."
+              }
+            }
+          },
+          "sizeMm": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "w",
+              "h",
+              "source"
+            ],
+            "description": "An exact size: the room's rectangle is `w × h` mm in EITHER orientation (a brief's \"3.2 × 3.6 m\" names a rectangle, not which way it faces), each side within `tolerance` mm. Use `widthMm`/`depthMm` to bind an orientation.",
+            "properties": {
+              "w": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "One side (mm)."
+              },
+              "h": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "The other side (mm)."
+              },
+              "tolerance": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Allowed difference per side (mm); default 0."
+              },
+              "source": {
+                "type": "string",
+                "description": "The brief phrase that licensed the size, quoted."
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

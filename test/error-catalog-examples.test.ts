@@ -80,14 +80,17 @@ const FRAGMENT =
  * illustrate, which is the opposite of what `arch explain` is for.
  */
 const NOT_REPRODUCED: ReadonlyMap<string, string> = new Map([
+  ["E_INTENT_GROSS_AREA", INTENT],
   ["E_INTENT_NO_DOOR", INTENT],
   ["E_INTENT_NO_SITE", INTENT],
   ["E_INTENT_NO_WINDOW", INTENT],
   ["E_INTENT_NOT_ADJACENT", INTENT],
   ["E_INTENT_ROOM_AREA", INTENT],
   ["E_INTENT_ROOM_COUNT", INTENT],
+  ["E_INTENT_ROOM_DIMENSION", INTENT],
   ["E_INTENT_ROOM_MISSING", INTENT],
   ["E_INTENT_TOTAL_AREA", INTENT],
+  ["E_INTENT_UNMEASURED", INTENT],
   ["E_INTENT_UNREACHABLE", INTENT],
 
   ["E_IMPORT_BAD_SPEC", IMPORT],
@@ -214,7 +217,10 @@ suite("error catalog — every example that can raise its code does", () => {
     // E_JSON_DERIVED_IN_INSTANCE took it to 51: `planToJson` raises it on a plan that compiles
     // cleanly, so no compile()/lint() of a snippet can; raised in test/walls-from-rooms.test.ts.
     // E_SET_OVERRIDE took it to 52: `arch impact --set` raises it on the override, before any
-    // compile; its example is executed in test/impact.test.ts.
-    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(52);
+    // compile; its example is executed in test/impact.test.ts. E_INTENT_GROSS_AREA,
+    // E_INTENT_ROOM_DIMENSION and E_INTENT_UNMEASURED took it to 55: like every E_INTENT_* code,
+    // `validateIntent()` raises them on the intent channel; each is raised in
+    // test/brief-bound.test.ts.
+    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(55);
   });
 });

@@ -416,10 +416,11 @@ suite("a function body has no room of its own", () => {
  * row is a finding to explain (`docs/testing.md` §3), never a re-pin.
  */
 const DIGESTS: [string, string][] = [
-  ["plain", "875a87173789e8308f1c2af571d6cd8afe206395f0eaa057d72457d07efe3531"],
-  ["frames", "8c96285f5d4d33104b6046eeb8990fa0f5f3e9da36e61bc871abc9c0480a5334"],
-  ["compass", "ae3594f0782bb6bda8160b6c6e31ef8d37eaa11fc997f18360762496311ed2d7"],
-  ["half-grid", "245f7253919ce9891fea4d1005eda89a4caa211ba28754c53fd2d5b58f26856c"],
+  // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
+  ["plain", "d715b3b0c20822545b511049a4edc5f59a57d883f1f73246491df4c9874e9cfd"],
+  ["frames", "8f91d2eae69c96262dd74c35f8fca1e2dd1786290a71c765661918993e032ffb"],
+  ["compass", "b1fc05ae2b823375fdeaba01ec043a2927b666d5fe0ae07ee2f72c78579fc640"],
+  ["half-grid", "496a205d32b5691ffaa7ea6f439a04a189df9c215bb86cb3619b4be1d80c6a91"],
 ];
 
 suite("datum plans: digest table", () => {
