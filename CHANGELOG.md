@@ -341,13 +341,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The authoring loop is taught where cold authors read (plan cards PS7.4, PS7.5): `spec.llm.md`'s
   self-correction paragraph, the workflow skill's step 7 and the `arch-author` agent role now say
   the same loop, compile → `validate --json` (fix its `next` first) → lint → repair. Taste is the
-  reviewer's report, not the author's step: the first-contact re-measure found cold authors never ran
-  `score --taste` even when taught it (decision D20), so the skill's step 7 and a "Review" heading in
-  the agent role name it as the reviewer's `score --taste generic`, which never gates, its 0.5 cap
-  meaning a validity lint warning stands. To stay under the spec's 30,000-character cap, the spec's "Place furniture
-  so it's physically sound" paragraph is folded into the lint sentence before it (each clause
-  restated a lint flag or the furniture row of "Common mistakes"), and the `score --taste` flag
-  line is a short reviewer's-report comment. The spec is 29,729 characters (was 29,970).
+  reviewer's report, not the author's step: the 2026-10-26 first-contact re-measure (plan decision
+  D20) found cold authors never ran `score --taste` even when taught it, so the skill's step 7 and
+  a "Review" section in the agent role name it as the reviewer's `score --taste generic`, which
+  never gates; a score capped at 0.5 means a validity lint warning stands. To stay under the spec's
+  30,000-character cap, the spec's "Place furniture so it's physically sound" paragraph is folded
+  into the lint sentence before it (each clause restated a lint flag or the furniture row of "Common
+  mistakes"), and the `score --taste` flag line is a short reviewer's-report comment. The spec is
+  29,729 characters (29,970 before PS7.4's cut).
 
 - `finish` and its `furnish` stage hold the never-worse law under the default ruleset and the
   universal advisory profile (`accessibility-advisory`), no longer under every lint profile: the

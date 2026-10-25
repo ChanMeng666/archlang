@@ -88,4 +88,7 @@ diagnostic span-edits) — do not reach for `repair` to fix a syntax or topology
 
 ## Review
 
-After the loop is clean, a reviewer (not the author) may run `score --taste generic --json`; it is advice, never a target.
+After the loop is clean, a reviewer (not the author) runs
+`npm run cli -- score <file> --taste generic --json`. It is advice, never a target: the score never
+sets the exit code and never gates. A score with `capped: true` (held to 0.5) means a validity lint
+warning still stands; `coverage.weight` shows how much of the profile was judged.

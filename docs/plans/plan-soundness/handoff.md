@@ -56,8 +56,8 @@ Everything below is on `main` and **unreleased**: the last `v*` tag predates PR 
 when the owner asks; the agent then runs the chain (`docs/agents/iron-laws.md` § Owner policies).
 `CHANGELOG.md` `[Unreleased]` is the release record; PR #255 backfilled the 24 programme PRs it was
 missing. Totals at 1f7c544d: 22 new `W_*` codes (52 → 74), 31 new `E_*` codes (103 → 134), 11 `A_*`
-taste advice codes, `LINT_RULES` 45 entries; after this PR, 124 cards: 48 done, 2 parked,
-74 todo (PS7.5's PR #263 will make it 49/73; 121 after PR #256, plus PS2.56, PS7.5 and PS7.6; PS7.4 and PS1.3 are done).
+taste advice codes, `LINT_RULES` 45 entries; 124 cards: 49 done, 2 parked,
+73 todo (after PRs #263 and #264).
 
 | Surface | Card | PR | Merge |
 |---|---|---|---|
@@ -100,7 +100,8 @@ taste advice codes, `LINT_RULES` 45 entries; after this PR, 124 cards: 48 done, 
 | `W_WC_SIDE_CLEARANCE`, `W_FURNITURE_OVER_WINDOW`; `finish` WC 450 mm off the side face; cursor clauses | PS2.11a/b | #252 | 486c9cb7 |
 | `W_FOOTPRINT_TRANSPOSED`, `W_LEAF_ACROSS_DOORWAY` | PS2.11c/d | #253 | 43fe7fd6 |
 | Housekeeping: D7–D19, ADR 0029/0032 Accepted, cards moved to `cards.md`, CHANGELOG backfill, this page | — | #237, #241, #242, #249, #251, #254, #255, #256 | — |
-| First-contact re-measure, D15's two arms; D20; ADR 0032 addendum; PS2.56, PS7.5, PS7.6 filed | PS7.4 | #261 | — |
+| First-contact re-measure, D15's two arms; D20; ADR 0032 addendum; PS2.56, PS7.5, PS7.6 filed | PS7.4 | #261 | ef16e249 |
+| The taste step leaves the author loop: spec, SKILL step 7 and `arch-author.md` teach compile → validate → lint → repair; taste is the reviewer's | PS7.5 | #263 | — |
 | Walls-first control arm (arm C of the same run); D21 | PS1.3 | #264 | — |
 
 Recorded practice a reader must know: lint PRs bump the `lintWarnings` counts in `eval/judge-fixture.json`
@@ -155,7 +156,7 @@ waited for item 1 (D19), which ran 2026-10-26: such a card may start and the nex
 
 Facts a reader would otherwise miss: the dwelling reading (D6) now has six consumers (three lint
 arms, taste R6/R11/R12), so D6's reverse-if has fired and is re-stated in D6; `spec.llm.md` has 271
-UTF-16 units of headroom under its 30,000 cap (PS7.5 freed 135 from the loop paragraph's taste clause), so row 6's `keep` form must still be paid for by cuts where it exceeds that;
+UTF-16 units under its 30,000 cap (PS7.5 freed 135 from the loop paragraph's taste clause), so row 6's `keep` form must still be paid for by cuts where it exceeds that;
 the first-contact hits of the four clearance rules (A8, NT4, NH6, RH3, T5, A1, K4, NH5, RA6, C4, RS4,
 RK4) are in the two 2026-10-25 as-built records and are summed in Part 1 of the 2026-10-26 audit (23
 of the 57, 7 of the 48 and 5 of the 49 now caught, 9 new true findings, 0 false positives); `docs/backlog.md`
