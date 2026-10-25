@@ -117,8 +117,6 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    and 0 `validate` calls in 65, arm B (current role) 0 and 1 in 77; defects 52 and 54, blockers 1 and
    1 (both the townhouse stair). D2's reverse-if is met: taste is a reviewer's tool, PS7.4 is done and
    PS7.5 moves the step out of the author loop. The row-5 residue and row 6 may start: item 2 is next.
-2. **PS2.45** `finish` leaves small wet rooms empty rather than place a pan the WC rule refuses (30 of
-   276 WC rooms and 16 of 144 baths in the 918-room probe). User-visible; first in row 6.
 3. **PS2.50** `W_FIXTURE_BACK_TO_ROOM` has no correct reading for a bed or wardrobe side-on to a wall;
    `examples/tiny-house.arch` and `examples/hillside-villa.arch` each carry one `W_FIXTURE_BACK_TO_ROOM`
    that is the rule's fault, not the plan's (both examples also carry their own `W_PATH_TOO_NARROW`

@@ -589,6 +589,13 @@ the fridge next to the worktop, on one wall. A worktop with no room left in the 
 another wall (the other leg of an L, or across a galley), a 400 mm module when 600 does not fit. A
 use whose required pieces cannot be placed together is left out whole and named in `unresolved`.
 
+A WC stands with its centreline at least 450 mm from each side face, the strictest figure of the
+rulesets the never-worse check holds (`W_WC_SIDE_CLEARANCE`). A bathroom or WC that the pieces,
+placed one at a time, would leave empty is tried as whole sets: each position of the pan, with
+the basin and the bath or shower completed around it, the basin also tried against the end of a
+door's approach or of the floor kept in front of the pan. The first set the check accepts is
+written; a room that no set fits stays empty, with the reason.
+
 - **Fill only.** A room gains pieces only when nothing stands on its floor and nothing is
   declared `in` it. A piece stands on a room's floor when its footprint reaches it; a piece
   declared `in` another room must reach more than 100 mm onto it, the overhang

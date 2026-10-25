@@ -49,7 +49,7 @@ import { type BBox, doorLandingRect, rectsOverlap } from "./geometry/rect.js";
 import type { RDoor, RFurniture, ROpening, ResolvedPlan, RRoom, RWall, RWindow } from "./ir.js";
 import { lex } from "./lexer.js";
 import { ADVISORY_CODE_PROFILES, DEFAULT_RULESET, LINT_CODE_LAYERS, LINT_PROFILES } from "./lint.js";
-import { isWc } from "./lint/clearance-measure.js";
+import { isShort, isWc, measureWcSides, type WcWorldSource, wcWorld } from "./lint/clearance-measure.js";
 import { buildLintContext } from "./lint/context.js";
 import { definingItems, pasteSet, useNoun } from "./lint/defining.js";
 import { fmtSource } from "./num-format.js";
@@ -106,8 +106,15 @@ const DETAIL: Readonly<Record<string, Detail>> = {
 export const MAX_PIECES_PER_ROOM = 8;
 /** Compile checks spent on one piece once a room's first proposal has been refused. */
 export const MAX_CHECKS_PER_PIECE = 3;
-/** Compile checks spent on one room: the first proposal, then piece by piece. */
-export const MAX_CHECKS_PER_ROOM = 13;
+/** Compile checks spent on one room's pieces: the first proposal, then piece by piece. */
+export const MAX_PIECE_CHECKS_PER_ROOM = 13;
+/**
+ * Compile checks spent on whole sets in a wet room the piece-by-piece run left empty
+ * ({@link wetSet}, PS2.45): one per layout, in the layouts' fixed order.
+ */
+export const MAX_SET_CHECKS_PER_ROOM = 4;
+/** Compile checks spent on one room: its pieces, then (a wet room left empty) its sets. */
+export const MAX_CHECKS_PER_ROOM = MAX_PIECE_CHECKS_PER_ROOM + MAX_SET_CHECKS_PER_ROOM;
 
 /** The most compile checks one run of the stage makes on a plan with `rooms` rooms. */
 export const furnishCheckBound = (rooms: number): number => 1 + rooms * MAX_CHECKS_PER_ROOM;
@@ -301,7 +308,10 @@ export function furnishStage(
   const walls = ir.walls;
   const segs = walls.flatMap((w) => segmentsOfWall(w));
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
-  const passages = [...doors, ...ir.elements.filter((e): e is ROpening => e.kind === "opening")];
+  const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
+  const passages = [...doors, ...openings];
+  /** The walls and doorways a WC's sides are measured against, as `W_WC_SIDE_CLEARANCE` reads them. */
+  const wcSrc: WcWorldSource = { wallSegs: segs, doors, openings };
   const windows = ir.elements.filter((e): e is RWindow => e.kind === "window");
   const ids = new Map<string, number>();
   for (const e of ir.elements) if (e.kind === "room") ids.set(e.id, (ids.get(e.id) ?? 0) + 1);
@@ -388,7 +398,20 @@ export function furnishStage(
       }));
     }
     const site = new Site(room, walls, segs, passages, doors, windows, !relational);
-    let budget = MAX_CHECKS_PER_ROOM;
+    let budget = MAX_PIECE_CHECKS_PER_ROOM;
+    /**
+     * A wet room the piece-by-piece run is about to leave empty: try its pieces as whole sets
+     * ({@link wetSet}) before saying so, and keep the first set the gate accepts. Only a room
+     * that would otherwise stay empty reaches this, so every room the stage furnished before
+     * keeps exactly the pieces it had (PS2.45).
+     */
+    const together = (): boolean => {
+      if (!uses.every((u) => u === "bath" || u === "wc")) return false;
+      const set = wetSet(site, groups, wcSrc, (texts) => refusal(render(texts)) === null);
+      if (set === null) return false;
+      accept(room, uses, set);
+      return true;
+    };
     const nowhere = (item: FurnishItem): string =>
       site.walled === 0 && item.place !== "centre"
         ? `"${room.id}" has no wall behind any of its edges to stand the required \`${item.category}\` against`
@@ -484,6 +507,7 @@ export function furnishStage(
         keep = refusal(render(remaining.map((p) => p.text))) === null;
       }
       if (!keep) {
+        if (together()) return;
         note(room, `"${room.id}" was left empty — ${lacking.map(why).join("; ")}`, [JUDGED_BY_PIECES]);
         return;
       }
@@ -512,6 +536,7 @@ export function furnishStage(
       else first.push(...mine);
     }
     if (first.length === 0) {
+      if (together()) continue;
       if (absent[0]) note(room, `${nowhere(absent[0].item)} — the room was left empty`);
       continue;
     }
@@ -555,6 +580,7 @@ export function furnishStage(
       else kept.push(...mine);
     }
     if (kept.length === 0) {
+      if (together()) continue;
       const failed = dropped[0]?.item;
       note(
         room,
@@ -630,6 +656,99 @@ function groupsFor(uses: readonly UseKind[]): Array<{ use: UseKind; items: Furni
 /** The required pieces after `items[i]` that must stand in its run: it is placed where they fit. */
 const followers = (items: readonly FurnishItem[], i: number): FurnishItem[] =>
   items.slice(i + 1).filter((f) => f.required && DETAIL[f.category]?.run === true && !DETAIL[f.category]?.spill);
+
+/**
+ * A wet room's pieces placed together (PS2.45). The piece-by-piece run stands the pan at its
+ * first clear position and then looks for the basin and the bath or shower around it; when the
+ * pan's first position leaves no room for them, the room was left empty although another pan
+ * position fitted the whole set. Here every piece of the room's row (`wc`, `basin`, and in a
+ * bathroom the `bathtub` or `shower` that defines it: each is required in the set) is placed
+ * together, from an ordered list of layouts:
+ *
+ * - one layout per position the stage's own candidates give the pan (`Site.candidates`, its
+ *   fixed order: the walls with no door first, then corners before the middle);
+ * - the layout is the first completion of that pan in the same candidate order, depth first
+ *   (basin, then bath or shower), in which every piece clears the room's geometry
+ *   (`Site.fits`: the clear floor, each door's approach and swing, the pieces before it and
+ *   their front strips) and every pan's two sides keep the strictest ruleset's
+ *   `wcSideClearanceMm` to the walls and the other pieces, measured with `W_WC_SIDE_CLEARANCE`'s
+ *   own strips and obstacles (`measureWcSides`, `wcWorld`);
+ * - each layout is offered to `accepts` (one compile check under the never-worse gate) and the
+ *   first it accepts is the set. At most {@link MAX_SET_CHECKS_PER_ROOM} layouts are checked.
+ *
+ * Positions: the stage's own candidates, then the abutting ones (`Site.abutting`: one end of the
+ * piece against the end of a placed piece, of its front strip, or of a door's approach on the
+ * room's floor), each statement once.
+ *
+ * Bounded: on each of at most four walls a piece has three slots plus `2 × (a + 2p)` abutting
+ * positions, per word and footprint (`a` door approaches on the room's floor, `p` pieces before
+ * it, at most two), so one room visits a fixed polynomial in `a` of partial sets, with no compile
+ * check among them, and checks at most {@link MAX_SET_CHECKS_PER_ROOM}. No layout, or none
+ * accepted: null, and the room stays empty.
+ */
+function wetSet(
+  site: Site,
+  groups: ReadonlyArray<{ use: UseKind; items: FurnishItem[] }>,
+  wcSrc: WcWorldSource,
+  accepts: (texts: string[]) => boolean,
+): Placed[] | null {
+  const items = groups.flatMap((g) => g.items.map((item) => ({ item, use: g.use })));
+  const head = items[0];
+  if (head === undefined || !isWc(head.item.category)) return null;
+  /** A piece's positions: the stage's own candidates, then the abutting ones, each text once. */
+  const positions = (item: FurnishItem, use: UseKind, set: readonly Placed[]): Placed[] => {
+    const out = new Map<string, Placed>();
+    for (const p of [...site.candidates(item, use, set), ...site.abutting(item, use, set)])
+      if (!out.has(p.text)) out.set(p.text, p);
+    return [...out.values()];
+  };
+  /** The first completion of `set` with `items[i..]`, depth first in candidate order. */
+  const complete = (i: number, set: Placed[]): Placed[] | null => {
+    const next = items[i];
+    if (next === undefined) return set;
+    for (const c of positions(next.item, next.use, set)) {
+      const row = [...set, c];
+      if (!wcSidesClear(row, wcSrc)) continue;
+      const done = complete(i + 1, row);
+      if (done) return done;
+    }
+    return null;
+  };
+  let checks = MAX_SET_CHECKS_PER_ROOM;
+  for (const pan of positions(head.item, head.use, [])) {
+    if (checks === 0) break;
+    if (!wcSidesClear([pan], wcSrc)) continue;
+    const set = complete(1, [pan]);
+    if (set === null) continue;
+    checks--;
+    if (accepts(set.map((p) => p.text))) return set;
+  }
+  return null;
+}
+
+/**
+ * Does every pan in `set` keep the strictest ruleset's side clearance ({@link WC_SIDE_MM}) to
+ * the walls and to the other pieces of the set? The pieces are read as `W_WC_SIDE_CLEARANCE`
+ * reads furniture, with the rule's own strips and obstacles, so a set this passes raises the
+ * code only through a piece outside the room, which the compile check then refuses.
+ */
+function wcSidesClear(set: readonly Placed[], src: WcWorldSource): boolean {
+  const pieces = set.map(
+    (p) =>
+      ({
+        category: p.text.split(" ")[1] ?? p.item.category,
+        at: { x: p.rect.x, y: p.rect.y },
+        size: { w: p.rect.w, h: p.rect.h },
+        rotate: p.edge === null ? 0 : rotateForBackEdge(p.edge),
+      }) as RFurniture,
+  );
+  const world = wcWorld(pieces, src);
+  return pieces.every((f, i) => {
+    if (!isWc(f.category)) return true;
+    const m = measureWcSides(set[i]!.rect, f.rotate, WC_SIDE_MM, world, f);
+    return m === null || !m.sides.some((s) => isShort(s, m.depth));
+  });
+}
 
 function footprints(category: string, item: FurnishItem): ReadonlyArray<readonly [number, number]> {
   if (item.sizes && category === item.category) return item.sizes;
@@ -949,6 +1068,50 @@ class Site {
       }
       return true;
     });
+  }
+
+  /**
+   * The positions of a services fixture along each wall a statement can name where it abuts
+   * something already decided: one end against the end of a placed piece or of its front
+   * strip, or against the end of a door's approach on this room's floor (PS2.45). The stage's
+   * corners and wall middles never stand a basin in the gap between a door's approach and the
+   * floor kept in front of a pan, which is often the one place a small WC room has for it.
+   * Filtered by {@link fits} and, for a tall piece, by {@link glazed} as {@link candidates}
+   * filters; a piece under a window is offered after every other. At most
+   * `2 × (approaches + 2 × placed)` positions per wall, per word and footprint. Only the
+   * set search ({@link wetSet}) asks for these, so the piece-by-piece run is as it was.
+   */
+  abutting(item: FurnishItem, use: UseKind, placed: readonly Placed[]): Placed[] {
+    if (item.place !== "wall") return [];
+    const c = this.clear;
+    const floor: BBox = { x: c.x0, y: c.y0, w: c.x1 - c.x0, h: c.y1 - c.y0 };
+    const ends: BBox[] = [
+      ...placed.flatMap((q) => (q.strip ? [q.rect, q.strip] : [q.rect])),
+      ...this.passages.flatMap((d) => {
+        const r = doorLandingRect(d, LANDING_MM);
+        return r && rectsOverlap(r, floor) ? [r] : [];
+      }),
+    ];
+    const here: Placed[] = [];
+    const late: Placed[] = [];
+    for (const category of [item.category, ...(item.or ?? [])])
+      for (const [along, depth] of footprints(category, item))
+        for (const e of this.edges) {
+          if (!e.ref) continue;
+          const at = ends.flatMap((o) => {
+            const [lo, hi] = e.horizontal ? [o.x, o.x + o.w] : [o.y, o.y + o.h];
+            return [lo - along / 2, hi + along / 2];
+          });
+          for (const centre of [...new Set(at)].sort((a, b) => a - b)) {
+            const made = this.against(item, category, e, centre, along, depth);
+            if (!made) continue;
+            const p: Placed = { ...made, use };
+            if (!this.fits(p, placed)) continue;
+            if (!this.glazed(p)) here.push(p);
+            else if (!DETAIL[category]?.tall) late.push(p);
+          }
+        }
+    return [...here, ...late];
   }
 
   /** Is the piece against a wall under a window — the wall behind it, or the one beside a corner? */
