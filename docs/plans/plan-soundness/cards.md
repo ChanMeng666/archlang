@@ -340,7 +340,7 @@ PS5.1b: PR #247, 9cc29c7e)
 **PS7.4 · Teach the taste step where cold authors read.** `done` (PR #250, 6e0aa520; measured in PR #261, commit filled at merge)
 - As built: `research/2026-10-25-ps5-as-built.md` § PS7.4. Measured 2026-10-26 (`audits/2026-10-26-first-contact-rerun-d15.md`, D20): teaching the step where cold authors read did not change behaviour (arm B over arm A: +1 `validate`, +1 `describe`, 0 `score`); taste is a reviewer's tool, PS7.5.
 
-**PS7.5 · Move the taste step out of the author loop.** `done` (PR #PRNUM; D20)
+**PS7.5 · Move the taste step out of the author loop.** `done` (PR #263; D20)
 - As built: the spec's self-correction paragraph, `skills/archlang/SKILL.md` step 7 (a review step) and `.claude/agents/arch-author.md` (a "Review" heading) teach compile → `validate --json` `next` → lint → repair; `spec.llm.md` is 29,729 UTF-16 units (was 29,864; 271 of headroom). The next first-contact re-measure states the changed surface; *reverse if* is D20's.
 
 **PS7.6 · `lint` opens with a one-line summary.** `todo`
