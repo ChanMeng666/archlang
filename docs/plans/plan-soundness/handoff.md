@@ -130,7 +130,7 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    2026-10-25 transcript audit. **PS1.3** walls-first control arm (§8 Q1) is done (PR #264, D21): it ran on
    2026-10-26 in item 1's harness (66 CLI calls, 0 `score`, 0 `validate`; 54 verified defects against 52
    rooms-first; D1/D5 re-stated).
-7. Everything else in `cards.md` by family: PS0 15 todo, PS1 1, PS2 40 todo, PS3 4, PS4 9, PS5 4,
+7. Everything else in `cards.md` by family: PS0 15 todo, PS1 1, PS2 39 todo, PS3 4, PS4 9, PS5 4,
     PS7 3 (7.1, 7.2, 7.6); pick by first-contact evidence, not by number.
 
 **Open cards by family (2026-10-25 audit, counts updated 2026-10-26; "ready" = no stated dependency
