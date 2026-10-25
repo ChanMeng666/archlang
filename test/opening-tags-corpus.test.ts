@@ -46,8 +46,6 @@ const ALLOWED: Record<string, string> = {
   "courtyard-house.arch:W06":
     "every candidate place is taken; the tag keeps its first choice (furniture:circle,furniture:path)",
   "courtyard-house.arch:W11": "every candidate place is taken; the tag keeps its first choice (furniture:path,poche)",
-  "hexagon-pavilion.arch:D01":
-    "a room name the label pass left under the tag (it moves a label only once buried past its threshold)",
   "hillside-villa.arch#L1:W06": "every candidate place is taken; the tag keeps its first choice (furniture:line)",
   "hillside-villa.arch#L2:W01": "every candidate place is taken; the tag keeps its first choice (furniture:path)",
   "laneway-house.arch:W01": "every candidate place is taken; the tag keeps its first choice (furniture:polygon)",
@@ -65,11 +63,15 @@ const ALLOWED: Record<string, string> = {
     "every candidate place is taken; the tag keeps its first choice (furniture:line,furniture:path,poche)",
   "terrace-row.arch:W03":
     "a room name the label pass left under the tag (it moves a label only once buried past its threshold)",
+  "terrace-row.arch:W04":
+    "every candidate place clear of ink is taken, a pinned room name (`label … at`) among them; the tag keeps off the name and takes the first place clear of other tags (furniture:circle,furniture:path)",
   "terrace-row.arch:W06": "every candidate place is taken; the tag keeps its first choice (furniture:path,poche)",
   "terrace-row.arch:W08":
-    "a room name the label pass left under the tag (it moves a label only once buried past its threshold)",
+    "every candidate place clear of ink is taken, a pinned room name (`label … at`) among them; the tag keeps off the name and takes the first place clear of other tags (poche)",
+  "terrace-row.arch:W12":
+    "every candidate place clear of ink is taken, a pinned room name (`label … at`) among them; the tag keeps off the name and takes the first place clear of other tags (poche)",
   "terrace-row.arch:W16":
-    "a room name the label pass left under the tag (it moves a label only once buried past its threshold)",
+    "every candidate place clear of ink is taken, a pinned room name (`label … at`) among them; the tag keeps off the name and takes the first place clear of other tags (poche)",
   "tiny-house.arch:D01":
     "every candidate place is taken; the tag keeps its first choice (furniture:line,furniture:path)",
   "tiny-house.arch:D02":
