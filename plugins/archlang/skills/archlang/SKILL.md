@@ -50,11 +50,12 @@ owns that name, so the shell runs the wrong program.
    generation pipeline runs before it ships. Add `--graph g.json` to also assert the intended
    room-to-room adjacency (`{ "living": ["kitchen","hall"], … }`); a mismatch fails. Read each
    `diagnostics[].fix`, edit, and re-run until it passes — or, if a warning is deliberate, say so.
-   Then read the taste advice, `archlang score plan.arch --taste generic --json`: a sourced 0–1 score
+   The author's loop is compile → `validate --json` (fix its `next` first) → lint → repair.
+   **Review, once that loop is clean:** the reviewer (not the author) runs
+   `archlang score plan.arch --taste generic --json` and reads the advice: a sourced 0–1 score
    (privacy gradient, daylight, proportion, corner doors, …) whose `criteria[].advice` `A_*` codes
-   name what to improve. The loop is compile → `validate --json` (fix its `next` first) → lint →
-   `score --taste generic` → repair. Taste is advice and never gates; a score capped at 0.5 means a
-   validity lint warning stands, so fix validity first.
+   name what to improve. It never gates, the author does not iterate on it, and a score capped at 0.5
+   means a validity lint warning still stands.
 8. **Check the plan against the brief.** Write the user's brief as an `intent.json` — its checkable
    expectations as data (room count, per-room concepts with area/window bands, total area, optional
    adjacency/reachability). Two disciplines keep it brief-grounded: assert an area band only where the

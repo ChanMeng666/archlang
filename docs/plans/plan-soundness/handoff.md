@@ -127,10 +127,9 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
 5. **PS4.3** `keep` invariants checked by `validate` (ADR addendum first), **PS4.4** brief-bound
    dimensions, **PS4.5** `impact` reports `held`.
 6. **PS5.4** `preview --review` rings every flagged element.
-7. **PS7.x** staged authoring; then **PS7.5** (the taste step leaves the author loop in the spec, SKILL
-   and role text; one PR; PS4.3 in item 5 needs the spec characters it frees, so take PS7.5 first if
-   PS4.3 starts) and **PS7.6** (`lint` opens with a one-line summary). Both change what authors see, so
-   the next re-measure states them.
+7. **PS7.x** staged authoring; then **PS7.6** (`lint` opens with a one-line summary). It changes what
+   authors see, so the next re-measure states it, with PS7.5 (done: the taste step left the author loop
+   in the spec, SKILL and role text).
 8. **PS2.11e** the clearance remainder (`W_DOORWAY_BLOCKED` over leaf-less openings, stair swings,
    hob under a window PS2.46, per-family depth ceiling PS2.53, face/centreline unification PS2.54).
 9. **PS1.4** diagnostic-wording study (§8 Q3) is still open: an owner ask from 2026-10-18 found undone by the
@@ -138,7 +137,7 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    2026-10-26 in item 1's harness (66 CLI calls, 0 `score`, 0 `validate`; 54 verified defects against 52
    rooms-first; D1/D5 re-stated).
 10. Everything else in `cards.md` by family: PS0 15 todo, PS1 1, PS2 41 todo, PS3 4, PS4 5, PS5 4,
-    PS7 4 (7.1, 7.2, 7.5, 7.6); pick by first-contact evidence, not by number.
+    PS7 3 (7.1, 7.2, 7.6); pick by first-contact evidence, not by number.
 
 **Open cards by family (2026-10-25 audit, counts updated 2026-10-26; "ready" = no stated dependency
 outstanding; every card that changes what an author sees in `lint`, `validate`, `finish` or the spec
@@ -152,12 +151,11 @@ waited for item 1 (D19), which ran 2026-10-26: such a card may start and the nex
 | PS3 | 4 | 3.12 | 3.10 (decision; moves digests, D8), 3.11 (corpus sweep), 3.13 (proof first) |
 | PS4 | 5 | 4.5, 4.6, 4.7 | 4.3 (ADR addendum, row 6), 4.4 (row 6) |
 | PS5 | 4 | 5.5 | 5.3a (MCP version bump), 5.4 (row 6), 5.6 (D12) |
-| PS6/PS7 | 1 parked; 4 todo, 1 parked | 7.2, 7.5 (D20; before PS4.3, which needs its spec characters), 7.6 | 6.1 (until `keep` is used), 7.1 ("after PS2" is ambiguous; read it as after row 6), 7.3 (parked: only if rule packs outgrow code) |
+| PS6/PS7 | 1 parked; 3 todo, 1 parked | 7.2, 7.6 | 6.1 (until `keep` is used), 7.1 ("after PS2" is ambiguous; read it as after row 6), 7.3 (parked: only if rule packs outgrow code) |
 
 Facts a reader would otherwise miss: the dwelling reading (D6) now has six consumers (three lint
-arms, taste R6/R11/R12), so D6's reverse-if has fired and is re-stated in D6; `spec.llm.md` has 136
-UTF-16 units of headroom under its 30,000 cap, so row 6's `keep` form must be paid for by cuts (PS7.5 frees the
-loop paragraph's taste clause);
+arms, taste R6/R11/R12), so D6's reverse-if has fired and is re-stated in D6; `spec.llm.md` has 271
+UTF-16 units of headroom under its 30,000 cap (PS7.5 freed 135 from the loop paragraph's taste clause), so row 6's `keep` form must still be paid for by cuts where it exceeds that;
 the first-contact hits of the four clearance rules (A8, NT4, NH6, RH3, T5, A1, K4, NH5, RA6, C4, RS4,
 RK4) are in the two 2026-10-25 as-built records and are summed in Part 1 of the 2026-10-26 audit (23
 of the 57, 7 of the 48 and 5 of the 49 now caught, 9 new true findings, 0 false positives); `docs/backlog.md`

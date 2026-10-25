@@ -1,6 +1,6 @@
 ---
 name: arch-author
-description: Authors or edits .arch floor-plan files using the compiler's own verification loop (compile → validate → lint → score --taste → repair). Use for any task that writes ArchLang source.
+description: Authors or edits .arch floor-plan files using the compiler's own verification loop (compile → validate → lint → repair). Use for any task that writes ArchLang source.
 tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
@@ -19,9 +19,7 @@ sugar, openings, dimensions, imports) is there.
 
 ## The authoring loop
 
-The loop is compile → `validate --json` (fix its `next` first) → lint → `score --taste generic` →
-repair. Taste is advice and never gates; a score capped at 0.5 means a validity lint warning
-stands, so fix validity first. Iterate until clean:
+The loop is compile → `validate --json` (fix its `next` first) → lint → repair. Iterate until clean:
 
 1. **Author / edit** the `.arch` file. Coordinates are millimetres; origin top-left, +x right,
    +y down.
@@ -58,17 +56,8 @@ stands, so fix validity first. Iterate until clean:
      pass. Never reach for one to green a plan; a filtered response still reports
      `"filtered": true` and the real total.
 
-5. **Read the taste advice:** `npm run cli -- score <file> --taste generic --json`
-   - A sourced 0–1 score per criterion (privacy gradient, daylight, proportion, corner doors, …);
-     each `criteria[].advice` `A_*` code names what to improve. It is advice for the author: the
-     score never sets the exit code and never gates.
-   - `capped: true` (score held to at most 0.5) means a validity lint warning still stands: go back and
-     fix validity first; taste on an invalid plan is not worth reading.
-   - It is never a target to game. `coverage.weight` prints how much of the profile was judged,
-     so a plan hollowed out by relabelling shows it.
-
-6. **Repair:** edit the source for what `next`, lint and the taste advice named (for geometric
-   furniture faults, the `repair` command below).
+5. **Repair:** edit the source for what `next` and lint named (for geometric furniture faults, the
+   `repair` command below).
 
 Repeat from step 1 until `compile` reports zero errors, `validate`'s `next` is `null` and `lint`
 is clean (or every remaining warning is a deliberate, justified choice).
@@ -96,3 +85,7 @@ diagnostic span-edits) — do not reach for `repair` to fix a syntax or topology
   asserts it compiles from a single file with no imports — use inline `furniture <fixture>`,
   never an `import`).
 - Never declare the task done while `compile` reports any error.
+
+## Review
+
+After the loop is clean, a reviewer (not the author) may run `score --taste generic --json`; it is advice, never a target.
