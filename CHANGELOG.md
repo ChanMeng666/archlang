@@ -373,6 +373,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- DXF text now lands where the SVG and PDF put it. Every `TEXT` entity carries the Scene's
+  justification (group codes 72/73 with the 11/21 alignment point) and its rotation (50), so a
+  CAD program no longer draws every label left-aligned on its baseline: room names sit centred
+  in their rooms, schedule numbers right-align in their columns, and a vertical dimension's text
+  stays turned along its line. Non-ASCII text is written as `\U+XXXX` escapes, so the file is
+  pure ASCII and `Baño` / `客厅` no longer open as mojibake in a reader that assumes an ANSI code
+  page (an R2000 file has no UTF-8). The DXF height is now the cap height (0.716 × the font
+  size) — a DXF text height measures a capital letter, an SVG font size the em, so every label
+  drew about 1.4× larger than the PDF and overran its room or column — and a STYLE table puts
+  `Standard` on Arial instead of the reader's wider `txt` shape font. DXF output changes; SVG,
+  PDF and PNG are unchanged.
+
 - A door or window tag no longer prints over a room name pinned with `label "…" at (x,y)`. Tags
   are placed before the label pass so that a name moves off a tag, but a pinned name never moves,
   so the two overprinted; the tag placer now treats pinned names as obstacles like furniture.

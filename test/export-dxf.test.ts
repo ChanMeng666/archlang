@@ -703,3 +703,65 @@ describe("DXF units and wall layers", () => {
     });
   }
 });
+
+describe("DXF text placement and encoding", () => {
+  const src = `plan "Casa" {
+  wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+  room id=r_bath at (0,0) size 4000x3000 label "Baño principal"
+}`;
+
+  /** Every TEXT entity as a group-code → value map. */
+  function texts(dxf: string): Map<string, string>[] {
+    const lines = dxf.split("\n");
+    const out: Map<string, string>[] = [];
+    for (let i = 0; i < lines.length - 1; i += 2) {
+      if (lines[i] === "0" && lines[i + 1] === "TEXT") {
+        const m = new Map<string, string>();
+        for (let j = i + 2; j < lines.length - 1 && lines[j] !== "0"; j += 2) m.set(lines[j]!, lines[j + 1]!);
+        out.push(m);
+      }
+    }
+    return out;
+  }
+
+  it("is pure ASCII and escapes non-ASCII text as \\U+XXXX", () => {
+    const dxf = dxfOf(src);
+    expect([...dxf].every((c) => c.charCodeAt(0) < 0x80)).toBe(true);
+    expect(dxf).toContain("Ba\\U+00F1o principal");
+  });
+
+  it("carries the Scene's justification: middle-centred on the alignment point", () => {
+    const label = texts(dxfOf(src)).find((t) => t.get("1")?.startsWith("Ba"))!;
+    expect(label.get("72")).toBe("1");
+    expect(label.get("73")).toBe("2");
+    expect(label.get("11")).toBe(label.get("10"));
+    expect(label.get("21")).toBe(label.get("20"));
+  });
+
+  it("gives every TEXT a justification and an alignment point", () => {
+    for (const t of texts(dxfOf(studio))) {
+      expect(["0", "1", "2"]).toContain(t.get("72"));
+      expect(t.get("73")).toBe("2");
+      expect(t.has("11") && t.has("21")).toBe(true);
+    }
+  });
+
+  it("declares the Standard text style on a TrueType sans, not the txt shape font", () => {
+    const dxf = dxfOf(studio);
+    expect(dxf).toContain("0\nSTYLE\n2\nStandard\n");
+    expect(dxf).toContain("3\narial.ttf\n");
+  });
+
+  it("writes a text's cap height, not its em size, as the DXF height", () => {
+    const { scene } = compile(src, { noCache: true });
+    const sizes = new Set<number>();
+    for (const n of scene!.nodes) if (n.prim.t === "text") sizes.add(n.prim.size);
+    const heights = new Set(texts(toDxf(scene!)).map((t) => Number(t.get("40"))));
+    for (const h of heights) expect([...sizes].some((s) => Math.abs(h - s * 0.716) < 0.001)).toBe(true);
+  });
+
+  it("keeps a dimension's text turned along its line", () => {
+    const angles = texts(dxfOf(studio)).map((t) => t.get("50"));
+    expect(angles.some((a) => a === "90" || a === "270")).toBe(true);
+  });
+});

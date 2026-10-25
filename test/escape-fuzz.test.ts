@@ -540,6 +540,8 @@ describe("escaping fuzz — shrunk regressions", () => {
     const { svg, scene } = compile(clean, { noCache: true });
     assertSafeSvg(svg);
     expect(svg).toContain("Living 客厅");
-    expect(toDxf(scene!)).toContain("Living 客厅");
+    // DXF carries non-ASCII as the `\U+XXXX` escapes every CAD reader decodes (an R2000
+    // file has no UTF-8), so the same label survives there spelled out.
+    expect(toDxf(scene!)).toContain("Living \\U+5BA2\\U+5385");
   });
 });
