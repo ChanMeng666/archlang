@@ -370,6 +370,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- DXF text now lands where the SVG and PDF put it. Every `TEXT` entity carries the Scene's
+  justification (group codes 72/73 with the 11/21 alignment point) and its rotation (50), so a
+  CAD program no longer draws every label left-aligned on its baseline: room names sit centred
+  in their rooms, schedule numbers right-align in their columns, and a vertical dimension's text
+  stays turned along its line. Non-ASCII text is written as `\U+XXXX` escapes, so the file is
+  pure ASCII and `Baño` / `客厅` no longer open as mojibake in a reader that assumes an ANSI code
+  page (an R2000 file has no UTF-8). DXF output changes; SVG, PDF and PNG are unchanged.
+
 - A door or opening's `between` is read off both faces of its host wall, at the centre and just
   inside both jambs, so an exterior door centred on a T-junction, or within 200 mm of a
   partition's end, is no longer given to the two rooms inside and no longer raises

@@ -37,6 +37,23 @@ import { plainText } from "../text-safe.js";
 import { textLines } from "../text-layout.js";
 import { classifyWallSet } from "../wall-lowering.js";
 
+/**
+ * A text value as pure ASCII: every non-ASCII character becomes the `\U+XXXX` escape that
+ * AutoCAD and every DXF reader decode for an R2000 file. The file declares no
+ * `$DWGCODEPAGE`, so raw UTF-8 bytes were read in the reader's ANSI code page — `Baño`
+ * opened as `BaÃ±o`. A character past the BMP (no 4-digit escape) becomes `?`.
+ */
+export function dxfUnicode(s: string): string {
+  let out = "";
+  for (const ch of s) {
+    const cp = ch.codePointAt(0)!;
+    if (cp < 0x80) out += ch;
+    else if (cp > 0xffff) out += "?";
+    else out += `\\U+${cp.toString(16).toUpperCase().padStart(4, "0")}`;
+  }
+  return out;
+}
+
 /** Map a Scene line type to a DXF LTYPE name; undefined (or continuous) → BYLAYER. */
 function dxfLineType(t: LineType | undefined): string | undefined {
   switch (t) {
@@ -94,7 +111,23 @@ class DxfBuilder {
     this.pair(40, num(radius));
   }
 
-  text(layer: string, at: Point, height: number, value: string, ltype?: string): void {
+  /**
+   * A TEXT entity placed the way the Scene placed it. Every Scene text is vertically centred
+   * on `at` (`baseline: "central"`) and anchored at its start, middle or end, so the entity
+   * carries that justification (72 horizontal, 73 = 2 middle) and `at` as its alignment
+   * point (11/21). Without them a CAD program draws every label left-aligned on its
+   * baseline from `at`: a centred room name lands half its width to the right, and a
+   * right-aligned schedule column runs into the next one. `rotate` is the Scene's
+   * clockwise-on-screen angle; DXF angles turn the other way (Y is flipped), hence the sign.
+   */
+  text(
+    layer: string,
+    at: Point,
+    height: number,
+    value: string,
+    align: { anchor: "start" | "middle" | "end"; rotate?: number },
+    ltype?: string,
+  ): void {
     this.begin("TEXT", layer, ltype);
     this.pair(10, num(at.x));
     this.pair(20, num(-at.y));
@@ -103,7 +136,13 @@ class DxfBuilder {
     // value would desynchronize a reader (LF and CR both end a record) or drive a
     // terminal (ESC). `plainText` blanks every one of them — for a newline that is
     // exactly the space this line has always substituted, so output is unchanged.
-    this.pair(1, plainText(value));
+    this.pair(1, dxfUnicode(plainText(value)));
+    const angle = align.rotate ? ((-align.rotate % 360) + 360) % 360 : 0;
+    if (angle) this.pair(50, num(angle));
+    this.pair(72, align.anchor === "start" ? 0 : align.anchor === "middle" ? 1 : 2);
+    this.pair(11, num(at.x));
+    this.pair(21, num(-at.y));
+    this.pair(73, 2);
   }
 
   /** Closed loop of points as a chain of LINEs (R12-safe; no LWPOLYLINE). */
@@ -425,7 +464,7 @@ function emit(b: DxfBuilder, node: SceneNode): void {
     case "text":
       // A TEXT entity is one line, so a wrapped name is one entity per line, at the
       // positions every backend reads from `textLines`.
-      for (const line of textLines(prim)) b.text(layer, line.at, prim.size, line.value, lt);
+      for (const line of textLines(prim)) b.text(layer, line.at, prim.size, line.value, prim, lt);
       break;
   }
 }
