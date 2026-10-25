@@ -23,17 +23,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   names it in tier `warning`, and the never-worse law of `finish`, `furnish`, `repair`, `arch fix`
   and `reroll` counts it. A broken `soft` keep is named by `next` in tier `intent`; an `advisory`
   keep is only reported. No keep caps taste or reaches `lint()`. Refusals are compile errors:
-  `E_KEEP_TARGET`, `E_KEEP_MEASURE`, `E_KEEP_SELF`, `E_KEEP_PLACEMENT` (inside a component, or
-  `stacked` anywhere but the root of a multi-storey plan), `E_KEEP_VALUE` and `E_KEEP_LIMIT`
+  `E_KEEP_TARGET`, `E_KEEP_MEASURE`, `E_KEEP_SELF`, `E_KEEP_PLACEMENT` (inside a component, placed or
+  not; `stacked` anywhere but the root of a multi-storey plan; any other form at that root, once and
+  with no level), `E_KEEP_VALUE` and `E_KEEP_LIMIT`
   (1,000 keeps, 64 targets). `describe --json` appends `keeps[]` and `validate --json` appends
   `keeps` before `next`, each only when the plan declares a keep. `keep` is the one reserved word;
   the form and grade words stay names everywhere else. A plan with no keep compiles, describes,
   lints, validates and reports impact byte for byte as before (269 files measured before the
   statement existed, step counts included); a plan whose keeps are all accepted draws, lints and
   describes exactly as the same source with its keeps blanked. The spec gains the `keep` line
-  (425 UTF-16 units), paid for by four drawing-only passages the language reference keeps (the
-  `door` line's dashed/solid sentence, its garage sentence shortened, the `outdoor` hatch prose,
-  the window-sill citation): `spec.llm.md` 29,729 → 29,757 units. Plan JSON drops keeps. The
+  (455 UTF-16 units, saying where a keep may stand), paid for by four drawing-only passages the
+  language reference keeps (the `door` line's dashed/solid sentence, its garage sentence
+  shortened, the `outdoor` hatch prose, the window-sill citation): `spec.llm.md` 29,729 → 29,787
+  units. Plan JSON drops keeps. The
   `--facts depends` keep rows and `arch impact`'s keeps section follow in PS4.3b.
 
 - Brief-bound dimensions (plan card PS4.4). `describe().totals` gains the plan's **gross internal

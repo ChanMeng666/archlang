@@ -154,7 +154,7 @@ number.
    removed; with every keep holding, the diagnostics are the same with nothing removed. The D4
    equivariance law is checked through a source-level transformer of keeps (datum words, measure
    words and axes mapped by the turn or mirror), comparing residual sets unordered; the component
-   route of the D4 oracle does not apply, since keeps are refused inside components.
+   route of the D4 oracle does not apply, since keeps are refused inside components. As built (PS4.3a), the law is stated over single-storey plans whose keeps name no axis and whose datums include no half-grid centre: a placed frame carries no positioning axis and no storey, so axis keeps and `stacked` keeps have no image under the instance route (a whole-plan transform would carry them; plan-soundness card PS0.26), and the language's `snap` rounds a half toward +∞ (`Math.round`), so a mirrored half-grid centre snaps one grid away from its image: the fault is in snapping, not in the transformer (PS0.26).
 
 ## Consequences
 

@@ -1115,6 +1115,20 @@ class Parser {
    * a statement keyword, `}`, or a name that starts an assignment or a call).
    */
   private parseKeep(): KeepNode {
+    const line = this.peek().line;
+    try {
+      return this.parseKeepForm();
+    } catch (e) {
+      // A keep is one line: on a failure, skip the rest of it before recovery resyncs, so a form
+      // word that is also a statement keyword (`level`, `height`) is not parsed as a statement.
+      if (e instanceof ParseError) {
+        while (!this.isType("eof") && !this.isType("rcurly") && this.peek().line === line) this.next();
+      }
+      throw e;
+    }
+  }
+
+  private parseKeepForm(): KeepNode {
     const kw = this.eatKeyword("keep");
     const w = this.peek();
     const forms = KEEP_WORDS.forms;
@@ -1400,7 +1414,20 @@ class Parser {
     else if (t.value === "if") node = this.parseIf(components, selfName);
     else if (t.value === "while") node = this.parseWhile(components, selfName);
     else if (t.value === "set") node = this.parseSet();
-    else if (t.value === "keep") node = this.parseKeep();
+    else if (t.value === "keep" && selfName !== undefined) {
+      // A keep inside a component would be checked once per instance in its own frame (ADR 0033):
+      // refused where it is written, placed or not. Consumed for clean recovery, as `roof` is.
+      this.parseKeep();
+      const msg = "A keep inside a component would be checked once per instance in its own frame; write it in the plan";
+      this.diagnostics.push({
+        severity: "error",
+        message: msg,
+        code: "E_KEEP_PLACEMENT",
+        span: this.spanFrom(start),
+        hints: ["move the keep to the plan or storey that places the component"],
+      });
+      return { kind: "error", id: "", line: t.line, message: msg };
+    } else if (t.value === "keep") node = this.parseKeep();
     else {
       const def = this.registry.byKeyword.get(t.value);
       if (def) {

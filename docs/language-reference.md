@@ -2588,10 +2588,12 @@ earlier element is named, and a keep is the statement that must survive edits.
   furniture read at its footprint's centre, on `<d>`'s normal axis.
 - `min clear`: along each axis, the widest free interval of the room between the bodies
   (centreline ± t/2) of the straight wall segments that meet the room and span its whole other
-  extent; the smaller of the two. A wall end joined to another wall carries its body on by half
-  its thickness, so a partition T-joined at both ends spans the room between them. A wall's
-  height is never read. A curved, oblique or non-spanning segment that meets the room is not
-  read, and is counted (`skipped_walls`).
+  extent; the smaller of the two. Runs on one line (same centreline and thickness) count as one,
+  and a run whose end lies inside another wall's body is carried through that body, so a partition
+  that stops at the shell's inner face, or anywhere inside it, spans the room between the walls it
+  meets; one that stops short of every body does not. A wall's height is never read. A curved,
+  oblique or non-spanning segment that meets the room is not read, and is counted
+  (`skipped_walls`).
 - `stacked`: the element's resolved `at` + `size` rectangle (a rectangular room, a stair, a lift,
   an escalator or a void) on each listed storey, edge by edge against the first.
 - `fixed`: the datum against the stated value.
@@ -2619,8 +2621,10 @@ than 64 targets in one). Two keeps that contradict each other are both legal: bo
 at least one reports, nothing moves.
 
 **Parsing.** Only `keep` is reserved; its form and grade words mean what they mean only after it.
-A trailing grade word is always the grade. A value (`<mm>`, a level) is the longest complete
-expression, so write `on levels -1 1` or `on levels 1 (-1)`: `on levels 1 -1` reads as one level,
+A grade word at the end of a form that is otherwise complete is the grade, never a target, so
+`keep align a.left b.left soft` is soft; where the form still needs its value, the word is read as
+the value, so `keep fixed a.left at hard` reads `hard` as a name. A value (`<mm>`, a level) is the
+longest complete expression, so write `on levels -1 1` or `on levels 1 (-1)`: `on levels 1 -1` reads as one level,
 `1 - 1`.
 
 ```arch

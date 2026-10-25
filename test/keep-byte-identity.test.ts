@@ -84,6 +84,10 @@ suite("keep · K2, the strong law: an accepted keep draws nothing and moves noth
       const blank = blankKeeps(src);
       expect(blank.length).toBe(src.length);
       expect(keepNodes(blank)).toEqual([]);
+      // Every occurrence is blanked, nested ones included: the corpus has no comments, so each
+      // `keep` word is a statement, and none survives.
+      expect(src.match(/\bkeep\b/g)?.length).toBe(keepNodes(src).length);
+      expect(blank.match(/\bkeep\b/g) ?? []).toEqual([]);
       const a = k2Parts(src, true);
       const b = k2Parts(blank, false);
       expect(a.svg).toBe(b.svg);

@@ -450,7 +450,7 @@ Plus two laws the implementation needs anyway, and the printer's:
   and the `x`↔`y` axes swap, and `at` values are mapped. Turning or mirroring a whole root plan with
   its keeps then keeps every `holds` and every residual's magnitude, signs mapped by the axis map, and
   the residual sets are compared **unordered**. The `test/d4-oracle.ts` component route does not
-  apply: keeps are refused inside components (§2.2), so there is no instance frame to carry them.
+  apply: keeps are refused inside components (§2.2), so there is no instance frame to carry them. As built (PS4.3a), the law is stated over single-storey plans whose keeps name no axis and whose datums include no half-grid centre: a placed frame carries no positioning axis and no storey, so axis keeps and `stacked` keeps have no image under the instance route (a whole-plan transform would carry them; plan-soundness card PS0.26), and the language's `snap` rounds a half toward +∞ (`Math.round`), so a mirrored half-grid centre snaps one grid away from its image: the fault is in snapping, not in the transformer (PS0.26).
 - **Printer round trip** (ADR 0020 §5): `arch fmt` prints every keep and re-parses to the same AST.
   Plan JSON drops keeps (it drops axes already) and the round-trip test pins that drop (PS4.10,
   PS4.11).

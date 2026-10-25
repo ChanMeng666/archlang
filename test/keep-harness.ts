@@ -43,6 +43,10 @@ export function keepNodes(src: string): KeepNode[] {
   return out.sort((a, b) => a.span!.start - b.span!.start);
 }
 
+/** `s` as a regular-expression literal: every metacharacter escaped (global), so a text matches
+ *  only itself. */
+export const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 /** The source with every keep statement's bytes blanked by spaces, newlines kept (R9), so every
  *  later span, line and column is what it was. */
 export function blankKeeps(src: string): string {

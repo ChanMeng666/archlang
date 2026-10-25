@@ -417,7 +417,7 @@ ratification (D18).*
 - Re-statement: D1 and D5 hold as the form an author reaches for first (6/6 cold authors chose it unprompted in four runs) and as the form under which the omission class cannot be written (this arm shows six walls-first authors did not write it either, so the arm neither confirms nor refutes that cost); they are not a claim that rooms-first plans carry fewer surviving defects, because the surviving classes (clearances, defining contents, stairs, annotation, furniture relation) do not depend on how the walls were written, and the class they do remove is now also caught by lint. §8 Q1 is answered to that extent; the open question stays whether a spec that led with walls would change the authors' choice (not run; it would measure the spec's pull, which the card already names).
 - *Reverse if:* a walls-first arm under a walls-first spec shows fewer surviving defects than rooms-first by more than the spread the two rooms-first arms showed between themselves (2 in total, 5 in noticeable rows), or shows class-1 defects that lint misses; then D5's headline form is reconsidered.
 
-**D22. `keep` is checked in the compile channel by grade, never solved and never a lint rule.** (2026-10-26; coordinator rulings on the PS4.3 design, PR #270; `research/2026-10-26-ps43-keep-design.md` §12–§14; ADR 0033, Proposed.)
+**D22. `keep` is checked in the compile channel by grade, never solved and never a lint rule.** (2026-10-26; coordinator rulings on the PS4.3 design, PR #270; `research/2026-10-26-ps43-keep-design.md` §12–§14; ADR 0033, Accepted with PS4.3a, PR #272.)
 - *R1, grade landing:* `hard` (the default) is a compile-channel `W_KEEP_VIOLATED` that fails `--strict`, counts in the never-worse law and sits in `next`'s `warning` tier; `soft` sits in `next`'s `intent` tier after the brief's gating items and never gates; `advisory` is reported in `describe()`, `validate --json` and `impact` only, never in `next`; no grade caps taste and no keep enters `lint()`. Why: a soft keep in lint would gate `--strict` and the never-worse law as a hard one does while capping taste where a hard one does not, so the grades would not be ordered.
 - *R2, plain `validate`:* exits 0 on a broken hard keep; only `--strict` fails. Why: no warning code fails plain `validate` today, and `--strict` is the ship gate the spec teaches.
 - *R3, `keep fixed <d> at <mm>`:* the valued form replaces the card's bare `keep fixed …`. Why: a keep that one compile can never find broken is not a check.
@@ -503,7 +503,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS0 · Bugs found by the audit (independent; file and fix first)
 
-20 cards in the table: 5 done, 15 todo (PS0.1, PS0.7 and PS0.10–PS0.12 landed earlier, listed in `cards.md` above the table). Cards, tables and as-built pointers: `cards.md` § PS0.
+21 cards in the table: 5 done, 16 todo (PS0.1, PS0.7 and PS0.10–PS0.12 landed earlier, listed in `cards.md` above the table). Cards, tables and as-built pointers: `cards.md` § PS0.
 
 ### PS1 · The defect corpus (do this before PS2; it is the yardstick)
 

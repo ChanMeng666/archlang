@@ -1620,7 +1620,7 @@ function expandScopeFrame(
       case "keep":
         // A declared invariant (ADR 0033): its values are evaluated here, in this scope, and the
         // record is measured once the storey has resolved. It yields no element.
-        expandKeep(stmt, ectx.keepPlace, (e) => asNum(evalIn(e), diag, exprSpan(e)), diag, ectx.keeps);
+        expandKeep(stmt, ectx.keepPlace, (e) => keepValueOf(e, () => scope.flatten(), diag), diag, ectx.keeps);
         break;
       case "error":
         // A statement that failed to parse — already reported as a diagnostic at
@@ -1640,6 +1640,21 @@ function expandScopeFrame(
     }
   }
   return out;
+}
+
+/**
+ * A keep's value (`<mm>`, a level), or `undefined` when evaluating it raised a diagnostic: that
+ * report stands, and the keep is dropped rather than measured against the substitute value the
+ * evaluator returns (ADR 0033).
+ */
+function keepValueOf(e: Expr, env: () => Env, diag: (d: Diagnostic) => void): number | undefined {
+  let raised = false;
+  const report = (d: Diagnostic): void => {
+    raised = true;
+    diag(d);
+  };
+  const v = asNum(evalExpr(e, env(), report), report, exprSpan(e));
+  return raised ? undefined : v;
 }
 
 /**
@@ -2219,6 +2234,7 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
     if ("value" in run) {
       for (const r of run.value) if (r.grade === "hard" && !r.holds) planKeeps.push(violationOf(r));
       stackedResultsOfIr.set(levels[0]!.ir, run.value);
+      stackedStepsOfIr.set(levels[0]!.ir, run.used);
     } else {
       planKeeps.push(stepLimitDiagnostic(run.signal));
       stopped = true;
@@ -2472,6 +2488,8 @@ interface KeepState {
 const keepStateOfIr = new WeakMap<ResolvedPlan, KeepState>();
 /** The plan's `stacked` results, keyed by its PRIMARY (lowest) storey's IR. */
 const stackedResultsOfIr = new WeakMap<ResolvedPlan, KeepResult[]>();
+/** Where the `stacked` pass left the step counter, keyed the same way (read by `evaluationSteps`). */
+const stackedStepsOfIr = new WeakMap<ResolvedPlan, number>();
 
 /**
  * Every accepted keep of a resolved plan, measured, in source order: each storey's keeps by level,
@@ -2509,6 +2527,9 @@ export function evaluationSteps(res: PlanResolution): number {
   let used = stepsOf(top).used;
   // A storey left unevaluated above a crossing carries no count; the crossing storey's does.
   for (const l of res.levels) used = Math.max(used, stepsOf(l.ir).used);
+  // The plan's `stacked` keeps are measured after the last storey, on the same counter.
+  const first = res.levels[0]?.ir;
+  if (first) used = Math.max(used, stackedStepsOfIr.get(first) ?? 0);
   return used;
 }
 
@@ -2643,13 +2664,7 @@ function resolveBody(
       chargeSteps(DIAGNOSTIC_STEPS);
       diagnostics.push(d);
     };
-    expandKeep(
-      k,
-      "root",
-      (e) => asNum(evalExpr(e, globalScope.flatten(), diagRoot), diagRoot, exprSpan(e)),
-      diagRoot,
-      stackedSink,
-    );
+    expandKeep(k, "root", (e) => keepValueOf(e, () => globalScope.flatten(), diagRoot), diagRoot, stackedSink);
   }
 
   // 1. Partition the flat stream into RESOLUTION GROUPS: one per `place`d instance, plus
@@ -3416,7 +3431,9 @@ function resolveBody(
       if (!ids) {
         chargeSteps(entries.length + 1);
         ids = new Set();
-        for (const e of entries) if (e.idAuthored === true && e.resolved && !dropped.has(e)) ids.add(e.resolved.id);
+        // Every id the author wrote, an element later dropped (out of range, not carried) included,
+        // so a keep naming one is told it was dropped, not that it was never written.
+        for (const e of entries) if (e.idAuthored === true && e.resolved) ids.add(e.resolved.id);
       }
       return ids.has(id);
     };

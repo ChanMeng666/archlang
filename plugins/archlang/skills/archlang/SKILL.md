@@ -69,8 +69,8 @@ owns that name, so the shell runs the wrong program.
    gate). Use `archlang score plan.arch --brief intent.json --json` as a continuous satisfaction meter
    (always exit `0`) to watch the plan approach the brief across edits. See
    [`/intent.schema.json`](https://archlang.uk/intent.schema.json). A number or relation the brief
-   fixes and every edit must keep (a 3.6 m clear living room, a partition on axis 2, a bath over a
-   bath) goes in the source as a `keep` (`keep min clear living 3600`); it moves and draws nothing, a
+   fixes and every edit must keep (a 3.6 m clear living room, a partition on axis 2, a bathroom over a
+   bathroom) goes in the source as a `keep` (`keep min clear living 3600`); it moves and draws nothing, a
    broken hard keep (the default) is `W_KEEP_VIOLATED` with a signed residual and fails `--strict`,
    and `archlang impact --set` lists it among the diagnostics a change breaks.
 9. **Fix furniture geometry:** `archlang repair plan.arch -o fixed.arch` pushes furniture out of

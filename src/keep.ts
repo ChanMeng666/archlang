@@ -29,9 +29,9 @@
 
 import type { KeepGrade, KeepNode, KeepRef, Point } from "./ast.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
-import { actOnSide, applyVec } from "./algebra/d4.js";
 import { chargeSteps, closest, stepSite } from "./expr.js";
 import { segmentsOfWall, type WallSegment } from "./geometry.js";
+import { arcExtremes } from "./geometry/arc.js";
 import { pointInPolygon } from "./geometry/polygon.js";
 import type { RRoom, ResolvedElement, ResolvedPlan, RWall } from "./ir.js";
 import {
@@ -43,7 +43,7 @@ import {
   type WallRun,
   wallRunPhrase,
 } from "./naming.js";
-import { fmtHalfLattice, MODEL_RANGE_MM } from "./num-format.js";
+import { fmt3, fmtHalfLattice, MODEL_RANGE_MM } from "./num-format.js";
 import { COMPASS_DATUM_ALIASES, type DatumWord } from "./room-datums.js";
 import { keepFormText, keepRefText } from "./statement-print.js";
 import { classifyLabelUses } from "./vocabulary.js";
@@ -146,26 +146,32 @@ function refKind(r: KeepRef): string {
 }
 
 /**
- * Expand one keep statement: refuse it where it may not stand, charge it, count it against the
+ * Expand one keep statement: charge it, refuse it where it may not stand, count it against the
  * caps, evaluate its values and check them; on success append its record to `sink`. Every refusal
- * is a compile error (R8) through `diag`.
+ * is a compile error (R8) through `diag`. `evalNum` returns `undefined` when evaluating the value
+ * raised a diagnostic (`E_DIV_ZERO`, `E_DATUM_BEFORE_ROOMS`, …): that diagnostic is the report,
+ * and the keep is dropped rather than measured against a substitute value.
  */
 export function expandKeep(
   node: KeepNode,
   place: KeepPlace,
-  evalNum: (e: import("./expr.js").Expr) => number,
+  evalNum: (e: import("./expr.js").Expr) => number | undefined,
   diag: (d: Diagnostic) => void,
   sink: KeepSink,
 ): void {
+  // Charged before anything is allocated, and whether or not a refusal or the cap then drops it
+  // (R13): one step per target and level.
+  chargeSteps(targetCount(node));
   const span = node.span;
-  const refuse = ({ code }: { code: string }, message: string, hint?: string): void =>
-    diag({ severity: "error", code, message, ...(span ? { span } : {}), ...(hint ? { hints: [hint] } : {}) });
-  const text = `keep ${keepFormText(node)}`;
+  const text = (): string => `keep ${keepFormText(node)}`;
+  const refuse = ({ code }: { code: string }, message: string, hint: () => string): void =>
+    diag({ severity: "error", code, message, ...(span ? { span } : {}), hints: [hint()] });
   if (place === "component") {
     refuse(
       { code: "E_KEEP_PLACEMENT" },
       "A keep inside a component would be checked once per instance in its own frame; write it in the plan",
-      `\`${text}\` sits in a component body (a \`place\`d or called component, or an imported file); move it to the plan or storey that places the component`,
+      () =>
+        `\`${text()}\` sits in a component body (a \`place\`d or called component, or an imported file); move it to the plan or storey that places the component`,
     );
     return;
   }
@@ -175,14 +181,13 @@ export function expandKeep(
       place === "storey"
         ? "A stacked keep compares storeys, so it sits outside every level"
         : "A stacked keep compares storeys, and this plan has one",
-      place === "storey"
-        ? `move \`${text}\` out of the \`level\` block, to the plan's root`
-        : `\`${text}\` needs a plan of two or more \`level\` blocks`,
+      () =>
+        place === "storey"
+          ? `move \`${text()}\` out of the \`level\` block, to the plan's root`
+          : `\`${text()}\` needs a plan of two or more \`level\` blocks`,
     );
     return;
   }
-  // Charged before the record exists, and whether or not the cap then drops it (R13).
-  chargeSteps(targetCount(node));
   sink.count++;
   if (
     sink.count > MAX_KEEPS ||
@@ -194,35 +199,36 @@ export function expandKeep(
       refuse(
         { code: "E_KEEP_LIMIT" },
         sink.count > MAX_KEEPS
-          ? `A plan may declare at most ${MAX_KEEPS} keeps`
-          : `A keep may name at most ${MAX_KEEP_TARGETS} targets or levels`,
-        `this keep and every later one past the cap are not checked; split the keep, or keep fewer`,
+          ? `A plan may declare at most ${fmt3(MAX_KEEPS)} keeps`
+          : `A keep may name at most ${fmt3(MAX_KEEP_TARGETS)} targets or levels`,
+        () => "this keep and every later one past the cap are not checked; split the keep, or keep fewer",
       );
     }
     return;
   }
   const refs = refsOf(node);
-  const seen = new Map<string, KeepRef>();
+  const seen = new Set<string>();
   for (const r of refs) {
     const k = refKey(r);
     if (seen.has(k)) {
       refuse(
         { code: "E_KEEP_SELF" },
         `This keep compares ${refKind(r)} with itself`,
-        `\`${keepRefText(r)}\` is named twice in \`${text}\`; name each target once`,
+        () => `\`${keepRefText(r)}\` is named twice in \`${text()}\`; name each target once`,
       );
       return;
     }
-    seen.set(k, r);
+    seen.add(k);
   }
   const rec: KeepRecord = { node };
   if (node.form === "offset" || node.form === "min-clear" || node.form === "fixed") {
     const mm = evalNum(node.mm);
+    if (mm === undefined) return;
     if (!(Math.abs(mm) <= MODEL_RANGE_MM)) {
       refuse(
         { code: "E_KEEP_VALUE" },
-        `A keep's length must be in mm within ±${MODEL_RANGE_MM.toLocaleString("en-US")}`,
-        `\`${text}\` evaluates its length to ${mm}`,
+        `A keep's length must be in mm within ±${fmt3(MODEL_RANGE_MM)} (2^25 mm)`,
+        () => `\`${text()}\` evaluates its length to ${fmt3(mm)}`,
       );
       return;
     }
@@ -230,7 +236,7 @@ export function expandKeep(
       refuse(
         { code: "E_KEEP_VALUE" },
         "A minimum clear span must be a positive length in mm",
-        `\`${text}\` asks for ${mm} mm`,
+        () => `\`${text()}\` asks for ${fmt3(mm)} mm`,
       );
       return;
     }
@@ -240,19 +246,20 @@ export function expandKeep(
     const levels: number[] = [];
     for (const e of node.levels) {
       const v = evalNum(e);
+      if (v === undefined) return;
       if (!Number.isInteger(v)) {
         refuse(
           { code: "E_KEEP_VALUE" },
           "A level in a stacked keep must be a whole storey number",
-          `\`${text}\` names level ${v}`,
+          () => `\`${text()}\` names level ${fmt3(v)}`,
         );
         return;
       }
       if (levels.includes(v)) {
         refuse(
           { code: "E_KEEP_SELF" },
-          `This keep compares level ${v} with itself`,
-          `\`${text}\` lists level ${v} twice`,
+          `This keep compares level ${fmt3(v)} with itself`,
+          () => `\`${text()}\` lists level ${fmt3(v)} twice`,
         );
         return;
       }
@@ -480,6 +487,13 @@ const wallNoun = (s: WallSegment): string => (s.category === "partition" ? "part
 /** Look an authored element up, or say why not. */
 function lookup(ix: StoreyIndex, ctx: KeepStoreyCtx, id: string, text: string): ResolvedElement | Refusal {
   const el = ix.byId.get(id);
+  if (!el && ctx.authored(id)) {
+    return {
+      code: "E_KEEP_TARGET",
+      message: "This keep names an element that could not be placed",
+      hint: `\`${id}\` in \`${text}\` was written here and dropped (its own error says why)`,
+    };
+  }
   if (!el) {
     const hint = closest(
       id,
@@ -520,13 +534,13 @@ function wallSegment(w: RWall, ref: Extract<KeepRef, { t: "el" }>, text: string)
       return {
         code: "E_KEEP_TARGET",
         message: `This keep names a wall segment the wall does not have`,
-        hint: `\`${ref.id}\` in \`${text}\` has segments 0 to ${segs.length - 1}`,
+        hint: `\`${ref.id}\` in \`${text}\` has segments 0 to ${fmt3(segs.length - 1)}`,
       };
     }
   } else if (segs.length !== 1) {
     return {
       code: "E_KEEP_MEASURE",
-      message: `A wall of ${segs.length} segments has no one line to measure: name one of its segments`,
+      message: `A wall of ${fmt3(segs.length)} segments has no one line to measure: name one of its segments`,
       hint: `write \`${ref.id} segment <n>\` in \`${text}\` (segments are numbered from 0)`,
     };
   } else s = segs[0]!;
@@ -647,7 +661,7 @@ function readLine(ix: StoreyIndex, ctx: KeepStoreyCtx, ref: KeepRef, text: strin
   return {
     vertical,
     h: halfOf(vertical ? s.a.x : s.a.y),
-    phrase: ref.segment !== undefined ? `segment ${ref.segment} of ${phrase}` : phrase,
+    phrase: ref.segment !== undefined ? `segment ${fmt3(ref.segment)} of ${phrase}` : phrase,
     that: `that ${wallNoun(s)}`,
     text: written,
   };
@@ -795,8 +809,7 @@ export function evaluateKeeps(records: readonly KeepRecord[], ctx: KeepStoreyCtx
         r = measureOffset(ix, ctx, node, rec.mm!, text);
         break;
       case "min-clear":
-        scan ??= wallScan(ctx.ir);
-        r = measureMinClear(ix, ctx, node, rec.mm!, text, scan);
+        r = measureMinClear(ix, ctx, node, rec.mm!, text, () => (scan ??= wallScan(ctx.ir)));
         break;
       case "stacked":
         // Never reaches a storey: refused at expansion everywhere but the root.
@@ -993,74 +1006,209 @@ function measureOffset(
 
 // ---- `min clear` ---------------------------------------------------------------------------
 
-/** A straight wall segment's body for the clear-span scan, in half-lattice units. */
+/** A straight wall body for the clear-span scan, in half-lattice units: the collinear runs on
+ *  one line (same centreline, same thickness) merged into one, and each end carried on through
+ *  the body of a wall it is joined into. */
 interface Body {
   vertical: boolean;
   /** Centreline coordinate across the run, and half the thickness (both half-lattice). */
   c: number;
   half: number;
-  /** The run's extent along it, extended by `half` at an end that is joined to a wall. */
+  /** The run's extent along its line, carried through the walls it is joined into. */
   lo: number;
   hi: number;
+  /** The run's own extent, before it is carried on: whether it meets a room is read on this. */
+  lo0: number;
+  hi0: number;
 }
 
-/** The storey's straight wall segments, and the curved or oblique ones, built once (R13). */
+/** A curved segment's body read by its true extent: the arc's extreme points, ± half its
+ *  thickness (`arcExtremes`, never its endpoints). */
+interface CurvedBody {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+/** An oblique straight segment's body: its centreline and half its thickness, tested exactly. */
+interface ObliqueBody {
+  a: { x: bigint; y: bigint };
+  b: { x: bigint; y: bigint };
+  half: bigint;
+}
+
+/** The storey's wall bodies for `min clear`, built once (R13). */
 interface WallScan {
   straight: Body[];
-  other: { x0: number; y0: number; x1: number; y1: number }[];
+  curved: CurvedBody[];
+  oblique: ObliqueBody[];
+}
+
+/** ⌈log₂(n + 2)⌉, in integers. */
+function bitsOf(n: number): number {
+  let b = 1;
+  while (2 ** b < n + 2) b++;
+  return b;
+}
+
+/** Merge the runs that share a line (orientation, centreline and half-thickness) and touch or
+ *  overlap into one run each, in a deterministic order (by line, then by start). */
+function mergeCollinear(bodies: readonly Body[]): Body[] {
+  const sorted = [...bodies].sort(
+    (p, q) => Number(p.vertical) - Number(q.vertical) || p.c - q.c || p.half - q.half || p.lo - q.lo || p.hi - q.hi,
+  );
+  const out: Body[] = [];
+  for (const b of sorted) {
+    const last = out[out.length - 1];
+    if (last && last.vertical === b.vertical && last.c === b.c && last.half === b.half && b.lo <= last.hi) {
+      last.hi = Math.max(last.hi, b.hi);
+      last.lo0 = Math.min(last.lo0, b.lo0);
+      last.hi0 = Math.max(last.hi0, b.hi0);
+    } else out.push({ ...b });
+  }
+  return out;
 }
 
 /**
- * Build the storey's scan once, charged once: one step per wall and per segment, then one per
- * segment end tested for a join against every segment. An end is joined when another segment of
- * any wall runs through it or ends at it (a ring's corner, a T-junction): the joined outline then
- * carries the body on by half its thickness, which is how a partition T-joined at each end spans the
- * room between the walls it meets (design §2.1, R18). Heights are never read.
+ * Build the storey's scan once, charged once and before it allocates: one step per wall, two per
+ * segment, and `segments × ⌈log₂ segments⌉` for the two sorts; each host a join lookup visits is
+ * one more step. The straight runs on one line are merged first (a collinear vertex, two walls
+ * meeting end to end), then each end that falls inside another wall's body (± t/2: a ring's
+ * corner, a T-junction, a partition stopped at the shell's inner face or short of its centreline)
+ * is carried on through that body, which is how a wall spans a room on the joined outline (design
+ * §2.1, R18) without building the joinery. Hosts are found by binary search over the bodies sorted
+ * by centreline, so the scan is `O(n log n)` in the segments. Heights are never read.
  */
 function wallScan(ir: ResolvedPlan): WallScan {
-  const segs = ir.walls.flatMap((w) => segmentsOfWall(w));
-  chargeSteps(ir.walls.length + segs.length + 2 * segs.length * segs.length + 1);
-  const P = (p: Point): { x: number; y: number } => ({ x: halfOf(p.x), y: halfOf(p.y) });
-  const pts = segs.map((s) => ({ a: P(s.a), b: P(s.b), s }));
-  const onSeg = (p: { x: number; y: number }, q: (typeof pts)[number]): boolean => {
-    if (q.s.arc) return (p.x === q.a.x && p.y === q.a.y) || (p.x === q.b.x && p.y === q.b.y);
-    const cross = (q.b.x - q.a.x) * (p.y - q.a.y) - (q.b.y - q.a.y) * (p.x - q.a.x);
-    if (cross !== 0) return false;
-    return (
-      p.x >= Math.min(q.a.x, q.b.x) &&
-      p.x <= Math.max(q.a.x, q.b.x) &&
-      p.y >= Math.min(q.a.y, q.b.y) &&
-      p.y <= Math.max(q.a.y, q.b.y)
-    );
-  };
-  const joined = (p: { x: number; y: number }, self: number): boolean => pts.some((q, j) => j !== self && onSeg(p, q));
-  const straight: Body[] = [];
-  const other: WallScan["other"] = [];
-  pts.forEach((q, i) => {
-    const half = lattice(q.s.thickness);
-    const vertical = q.a.x === q.b.x && q.a.y !== q.b.y;
-    const horizontal = q.a.y === q.b.y && q.a.x !== q.b.x;
-    if (q.s.arc || (!vertical && !horizontal)) {
-      other.push({
-        x0: Math.min(q.a.x, q.b.x) - half,
-        x1: Math.max(q.a.x, q.b.x) + half,
-        y0: Math.min(q.a.y, q.b.y) - half,
-        y1: Math.max(q.a.y, q.b.y) + half,
-      });
-      return;
+  let n = 0;
+  for (const w of ir.walls) n += Math.max(0, w.points.length - 1) + (w.closed && w.points.length > 2 ? 1 : 0);
+  chargeSteps(ir.walls.length + 2 * n + n * bitsOf(n) + 1);
+  const raw: Body[] = [];
+  const curved: CurvedBody[] = [];
+  const oblique: ObliqueBody[] = [];
+  for (const w of ir.walls) {
+    for (const s of segmentsOfWall(w)) {
+      const half = lattice(s.thickness);
+      if (s.arc) {
+        const ex = arcExtremes(s.arc);
+        const xs = ex.map((p) => halfOf(p.x));
+        const ys = ex.map((p) => halfOf(p.y));
+        curved.push({
+          x0: Math.min(...xs) - half,
+          x1: Math.max(...xs) + half,
+          y0: Math.min(...ys) - half,
+          y1: Math.max(...ys) + half,
+        });
+        continue;
+      }
+      const a = { x: halfOf(s.a.x), y: halfOf(s.a.y) };
+      const b = { x: halfOf(s.b.x), y: halfOf(s.b.y) };
+      const vertical = a.x === b.x && a.y !== b.y;
+      const horizontal = a.y === b.y && a.x !== b.x;
+      if (vertical || horizontal) {
+        const [p, q] = vertical ? [a.y, b.y] : [a.x, b.x];
+        const [lo, hi] = [Math.min(p, q), Math.max(p, q)];
+        raw.push({ vertical, c: vertical ? a.x : a.y, half, lo, hi, lo0: lo, hi0: hi });
+      } else if (a.x !== b.x || a.y !== b.y) {
+        oblique.push({
+          a: { x: BigInt(a.x), y: BigInt(a.y) },
+          b: { x: BigInt(b.x), y: BigInt(b.y) },
+          half: BigInt(half),
+        });
+      }
     }
-    const along = (p: { x: number; y: number }): number => (vertical ? p.y : p.x);
-    const [lo, loEnd, hi, hiEnd] =
-      along(q.a) <= along(q.b) ? [along(q.a), q.a, along(q.b), q.b] : [along(q.b), q.b, along(q.a), q.a];
-    straight.push({
-      vertical,
-      c: vertical ? q.a.x : q.a.y,
-      half,
-      lo: joined(loEnd, i) ? lo - half : lo,
-      hi: joined(hiEnd, i) ? hi + half : hi,
-    });
+  }
+  const merged = mergeCollinear(raw);
+  // The join hosts, per orientation, sorted by centreline; the widest half bounds the search.
+  const hosts = (vertical: boolean): { list: Body[]; maxHalf: number } => {
+    const list = merged.filter((b) => b.vertical === vertical).sort((p, q) => p.c - q.c);
+    let maxHalf = 0;
+    for (const b of list) maxHalf = Math.max(maxHalf, b.half);
+    return { list, maxHalf };
+  };
+  const byOrientation = [hosts(false), hosts(true)];
+  /** The first index of `list` whose centreline is at least `v`. */
+  const lowerBound = (list: readonly Body[], v: number): number => {
+    let lo = 0;
+    let hi = list.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (list[mid]!.c < v) lo = mid + 1;
+      else hi = mid;
+    }
+    return lo;
+  };
+  /** The extent along `along`'s axis of every other body whose rectangle holds `p`. */
+  const through = (self: Body, p: { x: number; y: number }, verticalAxis: boolean): { min: number; max: number } => {
+    let min = Number.POSITIVE_INFINITY;
+    let max = Number.NEGATIVE_INFINITY;
+    for (const { list, maxHalf } of byOrientation) {
+      const vert = list[0]?.vertical ?? false;
+      const across = vert ? p.x : p.y;
+      const alongP = vert ? p.y : p.x;
+      for (let i = lowerBound(list, across - maxHalf); i < list.length && list[i]!.c <= across + maxHalf; i++) {
+        chargeSteps(1);
+        const h = list[i]!;
+        if (h === self || Math.abs(across - h.c) > h.half || alongP < h.lo || alongP > h.hi) continue;
+        // The host's extent along the joining body's own axis.
+        const [e0, e1] = h.vertical === verticalAxis ? [h.lo, h.hi] : [h.c - h.half, h.c + h.half];
+        min = Math.min(min, e0);
+        max = Math.max(max, e1);
+      }
+    }
+    return { min, max };
+  };
+  const carried = merged.map((b) => {
+    const at = (e: number): { x: number; y: number } => (b.vertical ? { x: b.c, y: e } : { x: e, y: b.c });
+    const lo = through(b, at(b.lo), b.vertical);
+    const hi = through(b, at(b.hi), b.vertical);
+    return {
+      ...b,
+      lo: Number.isFinite(lo.min) ? Math.min(b.lo, lo.min) : b.lo,
+      hi: Number.isFinite(hi.max) ? Math.max(b.hi, hi.max) : b.hi,
+    };
   });
-  return { straight, other };
+  // Two runs of one line carried into the same wall from either side now touch: one run.
+  return { straight: mergeCollinear(carried), curved, oblique };
+}
+
+/** Whether an oblique body meets the room's open rectangle — decided exactly, on the integer
+ *  lattice, by separating axes (x, y, the run and its normal), squares compared so no root is
+ *  taken. */
+function obliqueMeets(o: ObliqueBody, X0: number, X1: number, Y0: number, Y1: number): boolean {
+  const [x0, x1, y0, y1] = [BigInt(X0), BigInt(X1), BigInt(Y0), BigInt(Y1)];
+  const dx = o.b.x - o.a.x;
+  const dy = o.b.y - o.a.y;
+  const L2 = dx * dx + dy * dy;
+  const h2 = o.half * o.half;
+  const abs = (v: bigint): bigint => (v < 0n ? -v : v);
+  /** `u < h·k/L` for a non-negative `k`: `u ≤ 0` or `u²·L2 < h²·k²`. */
+  const below = (u: bigint, k: bigint): boolean => u <= 0n || u * u * L2 < h2 * k * k;
+  // x: the body's extent is [min − h|dy|/L, max + h|dy|/L].
+  const minX = o.a.x < o.b.x ? o.a.x : o.b.x;
+  const maxX = o.a.x < o.b.x ? o.b.x : o.a.x;
+  if (!below(x0 - maxX, abs(dy)) || !below(minX - x1, abs(dy))) return false;
+  const minY = o.a.y < o.b.y ? o.a.y : o.b.y;
+  const maxY = o.a.y < o.b.y ? o.b.y : o.a.y;
+  if (!below(y0 - maxY, abs(dx)) || !below(minY - y1, abs(dx))) return false;
+  const corners = [
+    [x0, y0],
+    [x1, y0],
+    [x1, y1],
+    [x0, y1],
+  ] as const;
+  // The normal: |n·(p − a)| < h·L inside the body (|n| = L).
+  const ns = corners.map(([x, y]) => -dy * (x - o.a.x) + dx * (y - o.a.y));
+  const nMin = ns.reduce((p, q) => (q < p ? q : p));
+  const nMax = ns.reduce((p, q) => (q > p ? q : p));
+  const within = (u: bigint): boolean => u * u < h2 * L2;
+  if (!(nMin < 0n || within(nMin)) || !(nMax > 0n || within(nMax))) return false;
+  // The run: 0 < d·(p − a) < L2 inside the body.
+  const ts = corners.map(([x, y]) => dx * (x - o.a.x) + dy * (y - o.a.y));
+  const tMin = ts.reduce((p, q) => (q < p ? q : p));
+  const tMax = ts.reduce((p, q) => (q > p ? q : p));
+  return tMin < L2 && tMax > 0n;
 }
 
 /** The widest interval of `[lo, hi]` left free by the `cuts` (each clipped to it). */
@@ -1084,15 +1232,14 @@ function measureMinClear(
   node: Extract<KeepNode, { form: "min-clear" }>,
   mm: number,
   text: string,
-  scan: WallScan,
+  scan: () => WallScan,
 ): Measured | Refusal {
-  chargeSteps(1 + scan.straight.length + scan.other.length);
   const ref = node.room;
   if (ref.t !== "el" || ref.segment !== undefined) {
     return {
       code: "E_KEEP_MEASURE",
-      message: "`keep min clear` measures a room: name the room itself",
-      hint: `\`${keepRefText(ref)}\` in \`${text}\``,
+      message: "A clear span is measured in a room: this keep names an edge or a segment instead",
+      hint: `\`${keepRefText(ref)}\` in \`${text}\`; name the room itself`,
     };
   }
   const el = lookup(ix, ctx, ref.id, text);
@@ -1100,7 +1247,7 @@ function measureMinClear(
   if (el.kind !== "room") {
     return {
       code: "E_KEEP_MEASURE",
-      message: `A ${el.kind} has no clear span: \`keep min clear\` measures a room`,
+      message: `A ${el.kind} has no clear span: a clear span is measured in a room`,
       hint: `\`${ref.id}\` in \`${text}\``,
     };
   }
@@ -1112,6 +1259,8 @@ function measureMinClear(
       hint: `\`${ref.id}\` in \`${text}\`; only a rectangular room's span is measured`,
     };
   }
+  const sc = scan();
+  chargeSteps(1 + sc.straight.length + sc.curved.length + sc.oblique.length);
   const X0 = halfOf(r.at.x);
   const X1 = halfOf(r.at.x + r.size.w);
   const Y0 = halfOf(r.at.y);
@@ -1120,10 +1269,11 @@ function measureMinClear(
   const yCuts: [number, number][] = [];
   let skipped = 0;
   const meets = (x0: number, x1: number, y0: number, y1: number): boolean => x0 < X1 && x1 > X0 && y0 < Y1 && y1 > Y0;
-  for (const b of scan.straight) {
+  for (const b of sc.straight) {
+    // Meeting the room is read on the run's own body; spanning it, on the joined outline.
     const [x0, x1, y0, y1] = b.vertical
-      ? [b.c - b.half, b.c + b.half, b.lo, b.hi]
-      : [b.lo, b.hi, b.c - b.half, b.c + b.half];
+      ? [b.c - b.half, b.c + b.half, b.lo0, b.hi0]
+      : [b.lo0, b.hi0, b.c - b.half, b.c + b.half];
     if (!meets(x0, x1, y0, y1)) continue;
     const spans = b.vertical ? b.lo <= Y0 && b.hi >= Y1 : b.lo <= X0 && b.hi >= X1;
     if (!spans) {
@@ -1133,7 +1283,8 @@ function measureMinClear(
     if (b.vertical) xCuts.push([x0, x1]);
     else yCuts.push([y0, y1]);
   }
-  for (const o of scan.other) if (meets(o.x0, o.x1, o.y0, o.y1)) skipped++;
+  for (const o of sc.curved) if (meets(o.x0, o.x1, o.y0, o.y1)) skipped++;
+  for (const o of sc.oblique) if (obliqueMeets(o, X0, X1, Y0, Y1)) skipped++;
   const across = widestFree(X0, X1, xCuts);
   const down = widestFree(Y0, Y1, yCuts);
   const clear = Math.min(across, down);
@@ -1143,7 +1294,7 @@ function measureMinClear(
   if (h < 0) {
     out.message = `This keep holds a clear span of at least ${mmText(want)} mm in ${roomPhrase(ix, r)}; its clear span is ${mmText(clear)} mm, ${mmText(-h)} mm short.${MESSAGE_TAIL}`;
     out.hints = [
-      `The keep names \`${ref.id}\`; residual ${mmText(h)} mm (+ is margin): clear ${mmText(across)} mm across x and ${mmText(down)} mm down y between the wall faces${skipped > 0 ? `, ${skipped} wall segment${skipped === 1 ? "" : "s"} meeting the room not read (curved, oblique or not spanning it)` : ""}.`,
+      `The keep names \`${ref.id}\`; residual ${mmText(h)} mm (+ is margin): clear ${mmText(across)} mm across x and ${mmText(down)} mm down y between the wall faces${skipped > 0 ? `, ${fmt3(skipped)} wall segment${skipped === 1 ? "" : "s"} meeting the room not read (curved, oblique or not spanning it)` : ""}.`,
       `Nothing was moved: the walls and \`${ref.id}\` stand where their own statements put them.`,
     ];
   }
@@ -1190,6 +1341,29 @@ export function evaluateStacked(
     }
     return m;
   };
+  /** How a message names the element on its storey: a room as `src/naming.ts` names it, a
+   *  stair, lift, escalator or void by its kind and where it stands. Built on first use. */
+  const namings = new Map<number, Naming>();
+  const nameOn = (s: StackedStorey, el: ResolvedElement): string => {
+    let naming = namings.get(s.level);
+    const rooms = s.ir.elements.filter((e): e is RRoom => e.kind === "room");
+    const nameable = rooms.map((r) =>
+      nameableOf(r, r.uses && r.uses.length > 0 ? r.uses : classifyLabelUses(r.label ?? r.id).uses),
+    );
+    if (!naming) {
+      naming = makeNaming(nameable);
+      namings.set(s.level, naming);
+    }
+    if (el.kind === "room") {
+      const r = el as RRoom;
+      if (r.label !== undefined) return `"${r.label}"`;
+      const n = nameable.find((x) => x.id === r.id);
+      return n ? naming.phrase(n) : "the room";
+    }
+    const f = el as unknown as { at: Point; size: { w: number; h: number } };
+    const c = { x: f.at.x + f.size.w / 2, y: f.at.y + f.size.h / 2 };
+    return `the ${KIND_NOUN[el.kind] ?? el.kind} ${naming.placeAt(c)}`;
+  };
   for (const rec of records) {
     const node = rec.node;
     if (node.form !== "stacked") continue;
@@ -1215,18 +1389,31 @@ export function evaluateStacked(
       if (!s) {
         refuse(
           { code: "E_KEEP_TARGET" },
-          `This keep names level ${lv}, which the plan does not have`,
-          `\`${text}\` lists level ${lv}; the plan's levels are ${storeys.map((x) => x.level).join(", ")}`,
+          `This keep names level ${fmt3(lv)}, which the plan does not have`,
+          `\`${text}\` lists level ${fmt3(lv)}; the plan's levels are ${storeys.map((x) => fmt3(x.level)).join(", ")}`,
         );
         failed = true;
         break;
       }
       const el = indexFor(s).get(target.id);
-      if (!el || !s.authored(target.id)) {
+      if (!el) {
         refuse(
           { code: "E_KEEP_TARGET" },
-          `This keep names something level ${lv} does not have`,
-          `\`${target.id}\` in \`${text}\` is ${el ? "an assigned id" : "not an authored id"} on level ${lv}`,
+          s.authored(target.id)
+            ? `This keep names an element level ${fmt3(lv)} could not place`
+            : `This keep names something level ${fmt3(lv)} does not have`,
+          s.authored(target.id)
+            ? `\`${target.id}\` in \`${text}\` was written on level ${fmt3(lv)} and dropped there (its own error says why)`
+            : `\`${target.id}\` in \`${text}\` names no element on level ${fmt3(lv)}`,
+        );
+        failed = true;
+        break;
+      }
+      if (!s.authored(target.id)) {
+        refuse(
+          { code: "E_KEEP_TARGET" },
+          "This keep names an element by an auto id, which renumbers when an earlier element is named",
+          `\`${target.id}\` in \`${text}\` is an assigned id on level ${fmt3(lv)}; give the element its own \`id=\` and name that`,
         );
         failed = true;
         break;
@@ -1237,7 +1424,7 @@ export function evaluateStacked(
           el.kind === "room"
             ? `A ${(el as RRoom).circle ? "circle" : "polygon"} room has no rectangular footprint to stack`
             : `A ${el.kind} has no rectangular footprint to stack: name a rectangular room, a stair, a lift, an escalator or a void`,
-          `\`${target.id}\` in \`${text}\` on level ${lv}`,
+          `\`${target.id}\` in \`${text}\` on level ${fmt3(lv)}`,
         );
         failed = true;
         break;
@@ -1246,7 +1433,7 @@ export function evaluateStacked(
         refuse(
           { code: "E_KEEP_TARGET" },
           "This keep names a room that could not be placed",
-          `\`${target.id}\` in \`${text}\` on level ${lv}`,
+          `\`${target.id}\` in \`${text}\` on level ${fmt3(lv)}`,
         );
         failed = true;
         break;
@@ -1284,16 +1471,11 @@ export function evaluateStacked(
     };
     if (!holds) {
       const vertical = worst.edge === "left" || worst.edge === "right";
-      const el = first.el;
-      const phrase =
-        el.kind === "room"
-          ? (el as RRoom).label !== undefined
-            ? `"${(el as RRoom).label}"`
-            : `the room`
-          : `the ${KIND_NOUN[el.kind] ?? el.kind}`;
-      res.message = `This keep holds ${phrase} on levels ${listWords(levels.map(String))} with one footprint; on level ${worst.level} its ${worst.edge} edge is ${mmText(Math.abs(worst.h))} mm ${sideWord(vertical, worst.h)} where it is on level ${first.level}.${MESSAGE_TAIL}`;
+      const phrase = nameOn(storeys.find((x) => x.level === first.level)!, first.el);
+      const lvText = (l: number): string => fmt3(l);
+      res.message = `This keep holds ${phrase} on levels ${listWords(levels.map(lvText))} with one footprint; on level ${lvText(worst.level!)} its ${worst.edge} edge is ${mmText(Math.abs(worst.h))} mm ${sideWord(vertical, worst.h)} where it is on level ${lvText(first.level)}.${MESSAGE_TAIL}`;
       res.hints = [
-        `The keep names \`${target.id}\` on levels ${levels.join(", ")}; residual ${mmText(worst.h)} mm on ${axisWord(vertical)} (${signWord(vertical)}): its ${worst.edge} edge at ${mmText(rects.find((r) => r.level === worst.level)!.e[worst.edge!])} on level ${worst.level}, ${mmText(first.e[worst.edge!])} on level ${first.level}.`,
+        `The keep names \`${target.id}\` on levels ${levels.map(lvText).join(", ")}; residual ${mmText(worst.h)} mm on ${axisWord(vertical)} (${signWord(vertical)}): its ${worst.edge} edge at ${mmText(rects.find((r) => r.level === worst.level)!.e[worst.edge!])} on level ${lvText(worst.level!)}, ${mmText(first.e[worst.edge!])} on level ${lvText(first.level)}.`,
         `Nothing was moved: each storey's \`${target.id}\` stands where its own statement puts it.`,
       ];
     }
@@ -1370,99 +1552,4 @@ export function keepValidateRow(r: KeepResult): KeepValidateRow {
     ...(r.measuredH !== undefined ? { measured_mm: mmNumber(r.measuredH) } : {}),
     ...(span ? { span: [span.start, span.end] as [number, number] } : {}),
   };
-}
-
-// ---- the D4 transformer (tests) ------------------------------------------------------------
-
-/**
- * A keep carried through a whole-plan turn or mirror, as source (design §7, R10): the plan's body
- * placed as one instance `prefix` by `place … at t rotate … mirror …`, and the keep rewritten to
- * name the same lines in world words. A room's `left|right|top|bottom` goes where the frame takes
- * that side, `cx`↔`cy` and `width`↔`depth` swap under a quarter turn, ids gain the prefix, and a
- * value along an axis is carried to the image axis (`offset`: its sign; `fixed`: its sign and the
- * translation). `vertical(ref)` says which way a line the source cannot spell runs (a wall's
- * centreline), and `opening(ref)` whether an id names a door, window or opening (whose width runs
- * along its wall, so it stays a width under any turn). An axis reference is left as it is: a frame carries no positioning axis, so the
- * law is stated over keeps that name none. Values must be literals. Never used by `compile()`.
- */
-export function transformKeep(
-  n: KeepNode,
-  g: import("./algebra/d4.js").D4,
-  t: Point,
-  prefix: string,
-  vertical: (ref: KeepRef) => boolean,
-  opening: (ref: KeepRef) => boolean = () => false,
-): KeepNode {
-  const img = (v: { x: number; y: number }): { x: number; y: number } => applyVec(g, v);
-  const swaps = img({ x: 1, y: 0 }).x === 0;
-  const ref = (r: KeepRef): KeepRef => {
-    switch (r.t) {
-      case "axis":
-        return r;
-      case "el":
-        return { ...r, id: `${prefix}.${r.id}` };
-      case "room": {
-        const w = (COMPASS_DATUM_ALIASES[r.word] ?? r.word) as DatumWord;
-        const word = w === "cx" || w === "cy" ? (swaps ? (w === "cx" ? "cy" : "cx") : w) : actOnSide(g, w);
-        return { ...r, room: `${prefix}.${r.room}`, word };
-      }
-    }
-  };
-  const isVertical = (r: KeepRef): boolean =>
-    r.t === "room" ? ["left", "right", "cx", "west", "east"].includes(r.word) : vertical(r);
-  /** The image of a line's normal axis: its sign, and the translation along it. */
-  const along = (r: KeepRef): { s: number; t: number } => {
-    const v = img(isVertical(r) ? { x: 1, y: 0 } : { x: 0, y: 1 });
-    return v.x !== 0 ? { s: v.x, t: t.x } : { s: v.y, t: t.y };
-  };
-  const lit = (e: import("./expr.js").Expr): number => {
-    if (e.t !== "num") throw new Error("transformKeep: a keep's value must be a literal");
-    return e.value;
-  };
-  const num = (v: number): import("./expr.js").Expr => ({ t: "num", value: v });
-  switch (n.form) {
-    case "align":
-      return { ...n, refs: n.refs.map(ref) };
-    case "equal":
-      return {
-        ...n,
-        measure: swaps && !n.refs.some(opening) ? (n.measure === "width" ? "depth" : "width") : n.measure,
-        refs: n.refs.map(ref),
-      };
-    case "offset":
-      return { ...n, x: ref(n.x), from: ref(n.from), mm: num(along(n.from).s * lit(n.mm)) };
-    case "min-clear":
-      return { ...n, room: ref(n.room) };
-    case "on-axis":
-      return { ...n, wall: ref(n.wall) };
-    case "stacked":
-      return { ...n, target: ref(n.target) };
-    case "fixed": {
-      const a = along(n.datum);
-      return { ...n, datum: ref(n.datum), mm: num(a.s * lit(n.mm) + a.t) };
-    }
-  }
-}
-
-/** The sign a residual of `n` takes under `g`: `+1` or `-1` for a keep measured along one axis
- *  (`align`, `on axis`, `offset`, `fixed`), `+1` for an extent or a span (`equal`, `min clear`). */
-export function residualSign(
-  n: KeepNode,
-  g: import("./algebra/d4.js").D4,
-  vertical: (ref: KeepRef) => boolean,
-): number {
-  const first: KeepRef | undefined =
-    n.form === "align"
-      ? n.refs[0]
-      : n.form === "offset"
-        ? n.from
-        : n.form === "fixed"
-          ? n.datum
-          : n.form === "on-axis"
-            ? n.wall
-            : undefined;
-  if (!first) return 1;
-  const isV = first.t === "room" ? ["left", "right", "cx", "west", "east"].includes(first.word) : vertical(first);
-  const v = applyVec(g, isV ? { x: 1, y: 0 } : { x: 0, y: 1 });
-  return v.x !== 0 ? v.x : v.y;
 }

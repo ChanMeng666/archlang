@@ -22,14 +22,15 @@ import { gainedCodes } from "../src/furnish.js";
 import { link } from "../src/import.js";
 import { compile, describe, format, lint, planToJson, repair } from "../src/index.js";
 import { evaluationSteps, resolveAll } from "../src/ir.js";
-import { residualSign, transformKeep } from "../src/keep.js";
+import { MAX_EVAL_STEPS } from "../src/expr.js";
+import { residualSign, transformKeep } from "./keep-d4.js";
 import { fmtHalfLattice } from "../src/num-format.js";
 import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import { proves } from "../src/reroll.js";
 import { keepFormText, statementText } from "../src/statement-print.js";
 import { NULL_WORLD } from "../src/world.js";
-import { blankKeeps, KEEP_CORPUS_DIR, keepCorpus, keepNodes } from "./keep-harness.js";
+import { blankKeeps, escapeRegExp, KEEP_CORPUS_DIR, keepCorpus, keepNodes } from "./keep-harness.js";
 import { runValidate } from "./validate-json-run.js";
 
 const plan = (body: string, head = ""): string => `plan "K" {\n  units mm\n${head}${body}\n}\n`;
@@ -407,7 +408,7 @@ suite("keep · purity and the step meter", () => {
         "minClear": 64,
         "offset": 25,
         "onAxis": 15,
-        "stackedOf2": 24,
+        "stackedOf2": 45,
       }
     `);
   });
@@ -532,8 +533,7 @@ suite("keep · messages never quote an id", () => {
         if (!d.code?.includes("KEEP")) continue;
         const m = d.message.replace(/"[^"]*"/g, '""');
         for (const t of texts)
-          if (new RegExp(`(^|[^\\w.])${t.replace(/\./g, "\\.")}($|[^\\w.])`).test(m))
-            bad.push(`${name}: ${t} in ${d.message}`);
+          if (new RegExp(`(^|[^\\w.])${escapeRegExp(t)}($|[^\\w.])`).test(m)) bad.push(`${name}: ${t} in ${d.message}`);
         expect(d.hints?.length, d.message).toBeGreaterThan(0);
       }
     }
@@ -639,4 +639,118 @@ suite("keep · D4 equivariance through the source-level transformer", () => {
       }
     });
   }
+});
+
+// ---- red-team round 1 ------------------------------------------------------------------------
+
+suite("keep · round-1 probes", () => {
+  it("a keep whose value raised a diagnostic is dropped, never measured against a substitute", () => {
+    for (const [value, code] of [
+      ["1 / 0", "E_DIV_ZERO"],
+      ["b.left", "E_DATUM_BEFORE_ROOMS"],
+      ["sqrt(-1)", "E_DOMAIN"],
+    ] as const) {
+      const src = plan(
+        `  room id=a at (0,0) size 3000x3000\n  room id=b at (3000,0) size 3000x3000\n  keep fixed a.left at ${value}`,
+      );
+      expect(codes(src), value).toEqual([code]);
+    }
+  });
+
+  it("min clear: the joined outline (R18) on the six join cases and a derived plan", () => {
+    const joins = keepsOf(readFileSync(`${KEEP_CORPUS_DIR}/min-clear-joins.arch`, "utf8"));
+    expect(joins.map((k) => [k.keep, k.measured_mm, k.skipped_walls])).toEqual([
+      ["min clear r1 3850", 3850, 0], // stopped at the shell's inner face
+      ["min clear r2 3851", 3850, 0], // a collinear vertex
+      ["min clear r3 3850", 3850, 0], // two collinear partitions meeting mid-room
+      ["min clear r4 3850", 3850, 0], // 1 mm short of the shell's centreline, inside its body
+      ["min clear r5 4800", 4800, 1], // 1 mm short of the inner face: not joined, not read
+      ["min clear r6 1400", 1500, 1], // an arc bulging into the room, met by its true extent
+    ]);
+    expect(joins[1]).toMatchObject({ holds: false, residual_mm: -1 });
+    const derived = keepsOf(readFileSync(`${KEEP_CORPUS_DIR}/min-clear-derived.arch`, "utf8"));
+    expect(derived.map((k) => [k.measured_mm, k.holds])).toEqual([
+      [3850, true],
+      [2350, true],
+      [2350, false],
+    ]);
+  });
+
+  it("min clear's scan is O(n log n): 800 two-segment walls and one keep still compile", () => {
+    const walls = Array.from(
+      { length: 800 },
+      (_, i) =>
+        `  wall id=w${i} partition thickness 100 { (${(i % 40) * 500},${Math.floor(i / 40) * 500 + 20000}) (${(i % 40) * 500},${Math.floor(i / 40) * 500 + 20300}) (${(i % 40) * 500 + 300},${Math.floor(i / 40) * 500 + 20300}) }`,
+    ).join("\n");
+    const src = plan(`${SHELL}\n${walls}\n  room id=a at (0,0) size 8000x5000\n  keep min clear a 4800`);
+    const c = codes(src);
+    expect(c).not.toContain("E_STEP_LIMIT");
+    expect(keepsOf(src)[0]).toMatchObject({ holds: true, measured_mm: 4800 });
+  });
+
+  it("a crossing inside the stacked pass is E_STEP_LIMIT, with no level, and the plan is unresolved (R13)", () => {
+    const storey = (dir: string, a: number, r: number) =>
+      `${SHELL}\n    stair id=st at (300,3800) size 2400x900 dir ${dir}\n    for i in 0..${a} { for j in 0..1000 { let x = j } }\n    for k in 0..${r} { let y = k }`;
+    const src = (a: number, r: number) =>
+      plan(
+        `  level 1 {\n  ${storey("up", a, r)}\n  }\n  level 2 {\n  ${storey("down", 0, 0)}\n  }\n  keep stacked st on levels 1 2`,
+      );
+    // The resolution spends s00 + perA·a + perR·r steps: fill the budget to within one inner step
+    // of the end, so the first step past it is the last thing charged, the stacked pass.
+    const s00 = stepsOf(src(0, 0));
+    const perA = stepsOf(src(1, 0)) - s00;
+    const perR = (stepsOf(src(0, 10)) - s00) / 10;
+    expect(Number.isInteger(perR)).toBe(true);
+    const a = Math.floor((MAX_EVAL_STEPS - s00) / perA) - 1;
+    const r = Math.floor((MAX_EVAL_STEPS - stepsOf(src(a, 0))) / perR) + 1;
+    const over = src(a, r);
+    const crossing = compile(over, { noCache: true }).diagnostics.filter((d) => d.code === "E_STEP_LIMIT");
+    expect(crossing).toHaveLength(1);
+    expect(crossing[0]!.span).toEqual(keepNodes(over).at(-1)!.span);
+    expect(crossing[0]!.level).toBeUndefined();
+    // Both storeys resolved before it (one inner step fewer resolves, keep and all), and the
+    // crossing left every storey unresolved: it was the stacked pass.
+    expect(codes(src(a, r - 1))).not.toContain("E_STEP_LIMIT");
+    const { plan: ast } = parse(over, BUILTIN_REGISTRY);
+    const res = resolveAll(link(ast!, NULL_WORLD, BUILTIN_REGISTRY).plan, BUILTIN_REGISTRY, NULL_WORLD);
+    expect(res.levels.map((l) => l.ir.elements.length)).toEqual([0, 0]);
+    expect(compile(over, { noCache: true }).svg).toBe("");
+    expect(describe(over).ok).toBe(false);
+  }, 120_000);
+
+  it("a keep that fails to parse skips its own line: no `level` or `height` statement is parsed from it", () => {
+    for (const bad of ["keep fixed a.left height 3000", "keep stacked a on level 2 {\n  }"]) {
+      const src = plan(`  room id=a at (0,0) size 3000x3000\n  ${bad}\n  room id=b at (3000,0) size 3000x3000`);
+      expect(
+        parse(src).diagnostics.map((d) => d.code),
+        bad,
+      ).toEqual(["E_PARSE"]);
+      expect(
+        codes(src).filter((x) => x !== "E_PARSE"),
+        bad,
+      ).toEqual([]);
+    }
+  });
+
+  it("a keep inside a component is refused where it is written, placed or not", () => {
+    const src = plan(`  component bay() {\n    room id=r at (0,0) size 3000x3000\n    keep min clear r 2800\n  }`);
+    expect(parse(src).diagnostics.map((d) => d.code)).toEqual(["E_KEEP_PLACEMENT"]);
+  });
+
+  it("a keep naming an authored element that was dropped says so", () => {
+    const src = plan(
+      `  room id=a at (0,0) size 3000x3000\n  room id=far at (40000000,0) size 3000x3000\n  keep fixed far.left at 0`,
+    );
+    const d = compile(src, { noCache: true }).diagnostics.find((x) => x.code === "E_KEEP_TARGET")!;
+    expect(d.message).toBe("This keep names an element that could not be placed");
+  });
+
+  it("the stacked message names the element through src/naming.ts", () => {
+    const st = (dir: string, x: number) => `${SHELL}\n    stair id=st at (${x},3800) size 2400x900 dir ${dir}`;
+    const src = plan(
+      `  level 1 {\n  ${st("up", 300)}\n  }\n  level 2 {\n  ${st("down", 400)}\n  }\n  keep stacked st on levels 1 2`,
+    );
+    const d = compile(src, { noCache: true }).diagnostics.find((x) => x.code === "W_KEEP_VIOLATED")!;
+    expect(d.message).toMatch(/^This keep holds the stair (in|on|at) the [a-z ]+ of the plan on levels 1 and 2 /);
+  });
 });
