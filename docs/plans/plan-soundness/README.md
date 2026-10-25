@@ -417,6 +417,13 @@ ratification (D18).*
 - Re-statement: D1 and D5 hold as the form an author reaches for first (6/6 cold authors chose it unprompted in four runs) and as the form under which the omission class cannot be written (this arm shows six walls-first authors did not write it either, so the arm neither confirms nor refutes that cost); they are not a claim that rooms-first plans carry fewer surviving defects, because the surviving classes (clearances, defining contents, stairs, annotation, furniture relation) do not depend on how the walls were written, and the class they do remove is now also caught by lint. §8 Q1 is answered to that extent; the open question stays whether a spec that led with walls would change the authors' choice (not run; it would measure the spec's pull, which the card already names).
 - *Reverse if:* a walls-first arm under a walls-first spec shows fewer surviving defects than rooms-first by more than the spread the two rooms-first arms showed between themselves (2 in total, 5 in noticeable rows), or shows class-1 defects that lint misses; then D5's headline form is reconsidered.
 
+**D22. `keep` is checked in the compile channel by grade, never solved and never a lint rule.** (2026-10-26; coordinator rulings on the PS4.3 design, PR #270; `research/2026-10-26-ps43-keep-design.md` §12–§14; ADR 0033, Proposed.)
+- *R1, grade landing:* `hard` (the default) is a compile-channel `W_KEEP_VIOLATED` that fails `--strict`, counts in the never-worse law and sits in `next`'s `warning` tier; `soft` sits in `next`'s `intent` tier after the brief's gating items and never gates; `advisory` is reported in `describe()`, `validate --json` and `impact` only, never in `next`; no grade caps taste and no keep enters `lint()`. Why: a soft keep in lint would gate `--strict` and the never-worse law as a hard one does while capping taste where a hard one does not, so the grades would not be ordered.
+- *R2, plain `validate`:* exits 0 on a broken hard keep; only `--strict` fails. Why: no warning code fails plain `validate` today, and `--strict` is the ship gate the spec teaches.
+- *R3, `keep fixed <d> at <mm>`:* the valued form replaces the card's bare `keep fixed …`. Why: a keep that one compile can never find broken is not a check.
+- *R4, the four spec cuts* (the `door` "DASHED" sentence, the `garage` sentence shortened, the `outdoor` hatch prose, the GB 50352 citation; 397 UTF-16 units against the keep line's 432, net headroom 236): accepted on the condition that `docs/language-reference.md` keeps every cut fact and the GB 50352-2019 source stays in `src/datum.ts`'s `WINDOW_SILL` doc comment (D3); both checked on `main@98b3d7ab`. Why: the cut text describes only how something is drawn.
+- D22 changes no iron law. *Reverse if:* any trigger in ADR 0033's "Reverse if" list fires, or design §12's reverse-if for the decision a ruling confirms.
+
 ## 4. Principles: what "professional rules and taste" means here
 
 **Five layers, treated differently** (Drafting added by D11):
@@ -512,7 +519,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS4 · The change model: what follows, what stays, what breaks
 
-7 cards: 2 done, 5 todo. Cards, tables and as-built pointers: `cards.md` § PS4.
+11 cards: 2 done, 9 todo (PS4.8–PS4.11 filed by the PS4.3 design). Cards, tables and as-built pointers: `cards.md` § PS4.
 
 ### PS5 · The taste layer and the review sheet (D2)
 
@@ -569,7 +576,7 @@ This plan is a hypothesis about what will make AI-written plans professional. Tr
 4. **Can `between`-style forms cover non-rectilinear rooms?** Polygon and circle rooms are refused
    in v1 of PS3. What would an honest extension be?
 5. **What would make `impact` a planning tool, not just a report?** For example, "list the edits that
-   keep every `keep` true".
+   keep every `keep` true". *Designed 2026-10-26 (PS4.3, PR #270):* `research/2026-10-26-ps43-keep-design.md`, ADR 0033 (Proposed): a keep is checked with a signed residual and `impact` lists those a change breaks; listing the edits that keep them all true stays `arch solve` (PS6.1).
 6. **Multi-dwelling and multi-storey rules.** Toilet over habitable room below (GB 50096 5.4.4,
    mandatory), wet-stack alignment, and units sharing a corridor. These need a dwelling concept
    ArchLang lacks. *Researched 2026-10-18* (`research/2026-10-18-furniture-and-multistorey.md`
@@ -662,6 +669,7 @@ This plan is a hypothesis about what will make AI-written plans professional. Tr
 - `audits/2026-10-26-walls-first-control-arm.md` and `audits/first-contact-plans/2026-10-26-walls-first/*.arch`:
   PS1.3, the walls-first control arm of the same run (arm C); 54 verified defects against 52 for arm A; D21.
 - `research/2026-10-24-ps5-taste-design.md`: the PS5 taste layer design (row 5).
+- `research/2026-10-26-ps43-keep-design.md`: the PS4.3 `keep` design and ADR 0033's reasons (row 6).
 - `research/2026-10-24-ps0-ps2-as-built.md`, `research/2026-10-24-ps3-as-built.md`,
   `research/2026-10-25-ps5-as-built.md`: landed cards' as-built notes, verbatim (the last also
   holds row 5's PR rulings, §7 rows 1–5 as they stood, and D5/D6 detail).
