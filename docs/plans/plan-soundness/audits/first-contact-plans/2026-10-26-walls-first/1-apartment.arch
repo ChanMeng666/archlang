@@ -1,0 +1,64 @@
+plan "Two-bed apartment" {
+  units mm
+  grid 100
+  paper A3 landscape
+  north up
+  dims auto all
+
+  room id=living at (0,0) size 5600x4200 label "Living / Dining / Kitchen" uses living
+  room id=bed2 at (5600,0) size 4400x3000 label "Bedroom 2" uses bedroom
+  room id=hall at (5600,3000) size 4400x2400 label "Hall" uses hall
+  room id=bed1 at (0,4200) size 5600x3200 label "Bedroom 1" uses bedroom
+  room id=closet at (5600,5400) size 1800x2000 label "Store" uses storage
+  room id=bath at (7400,5400) size 2600x2000 label "Bath" uses bath
+  room id=corridor at (10000,0) size 1600x7400 label "Corridor" uses circulation
+
+  wall id=wN exterior thickness 200 { (10000,0) (0,0) }
+  wall id=wW exterior thickness 200 { (0,0) (0,7400) }
+  wall id=wS exterior thickness 200 { (0,7400) (10000,7400) }
+  wall id=wR exterior thickness 200 { (10000,0) (10000,7400) }
+  wall id=wC exterior thickness 200 { (10000,0) (11600,0) (11600,7400) (10000,7400) }
+  wall id=wV partition thickness 100 { (5600,0) (5600,7400) }
+  wall id=wL partition thickness 100 { (0,4200) (5600,4200) }
+  wall id=wH1 partition thickness 100 { (5600,3000) (10000,3000) }
+  wall id=wH2 partition thickness 100 { (5600,5400) (10000,5400) }
+  wall id=wB partition thickness 100 { (7400,5400) (7400,7400) }
+
+  # front door from the corridor, exit from the corridor
+  door on wR at 4100 width 900 swing into hall
+  door on wC at 7600 width 1000 swing into corridor
+  # interior doors
+  door on wV at 3600 width 900 swing into living
+  door on wV at 4800 width 800 swing into bed1
+  door on wH1 at 1200 width 800 swing into bed2
+  door on wH2 at 1000 width 800 swing into closet
+  door on wH2 at 3200 width 800 swing into bath
+  # balcony door and windows
+  door sliding on wN at 7400 width 1800
+  window on wW at 2200 width 1500
+  window on wW at 5600 width 1500
+  window on wN at 2200 width 1600
+  window on wS at 9000 width 900
+
+  outdoor id=balc balcony at (800,-1600) size 3600x1600 label "Balcony"
+
+  furniture sofa in living anchor bottom-left flush size 1800x900
+  furniture tv_unit in living anchor bottom flush size 1400x400
+  furniture table in living anchor center size 1600x900
+  furniture kitchen_sink in living anchor top-right flush size 1200x600
+  furniture stove against wall wN offset 6000 size 600x600 in living
+
+  furniture double_bed in bed2 anchor right flush size 2000x1600 rotate 90
+  furniture wardrobe in bed2 anchor bottom-right flush size 1600x600
+
+  furniture double_bed in bed1 anchor bottom flush size 1600x2000
+  furniture wardrobe in bed1 anchor top-left flush size 1800x600
+
+  furniture bathtub in bath anchor bottom-left flush size 750x1500
+  furniture wc in bath anchor bottom flush size 400x700
+  furniture basin in bath anchor top-right flush size 500x400
+
+  furniture shoe_cabinet in hall anchor top-right flush size 1000x350
+
+  title { project "Two-bed apartment" drawn_by "Author" date "2026-10-26" number "A-01" revision "A" }
+}
