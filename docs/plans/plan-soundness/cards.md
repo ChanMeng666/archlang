@@ -217,7 +217,7 @@ into PS3.12)
 
 **PS4.2 · `arch impact`.** `done` (PR #240, 7954f252)
 
-**PS4.3 · `keep` invariants (checked, never solved, by `compile()`).** `doing` (A: PR #PRNUM; ADR 0033 Accepted)
+**PS4.3 · `keep` invariants (checked, never solved, by `compile()`).** `doing` (A: PR #272; ADR 0033 Accepted)
 - Design: `research/2026-10-26-ps43-keep-design.md` (PR #270). PS4.3a built the statement, its evaluation,
   `W_KEEP_VIOLATED`, `describe().keeps[]`, `validate --json` `keeps` and `next`, the never-worse counts,
   the spec line and its cuts and the byte-identity law (`research/2026-10-26-ps43a-as-built.md`); PS4.3b

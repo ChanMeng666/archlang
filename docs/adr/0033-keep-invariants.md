@@ -1,7 +1,7 @@
 # 33. `keep`: declared invariants, checked by the compiler, never solved
 
 - **Status:** Accepted 2026-10-26 with the PR that builds the statement and its law (plan-soundness
-  card PS4.3a, PR #PRNUM; `docs/plans/plan-soundness/README.md` §6 and §7 row 6). Design record:
+  card PS4.3a, PR #272; `docs/plans/plan-soundness/README.md` §6 and §7 row 6). Design record:
   `docs/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`; as built:
   `docs/plans/plan-soundness/research/2026-10-26-ps43a-as-built.md`. Decision 6 (the `--facts depends`
   rows and `arch impact`'s keeps) is built by PS4.3b.
