@@ -163,15 +163,19 @@ export async function cmdCompile(args: Args): Promise<number> {
   }
 
   const errored = hasErrors(r.diagnostics);
-  // What the artifact left out (`-f json` drops keeps, PS4.11): one line each on stderr.
-  if (!errored && !args.quiet) for (const n of r.notes ?? []) process.stderr.write(`${n}\n`);
+  // What the artifact left out (`-f json` drops keeps, PS4.11): one stderr line each, printed
+  // only once the export has succeeded.
+  const noted = (code: number): number => {
+    if (code === EXIT.OK && !args.quiet) for (const n of r.notes ?? []) process.stderr.write(`${n}\n`);
+    return code;
+  };
 
   // ---- multi-storey: one sheet per level -----------------------------------------
   // `-o -` cannot mean "several drawings on one stream", so it is a usage error (exit 3)
   // unless `--level` picked a single storey — the same doctrine as `-o -` + `--json`.
   if (r.pages) {
     if (args.o === "-") return stdoutMultiPage("compile", r.levels);
-    return writePages(r.pages, r.diagnostics, source, input, format, args);
+    return noted(await writePages(r.pages, r.diagnostics, source, input, format, args));
   }
 
   if (r.bytes === undefined) {
@@ -236,7 +240,7 @@ export async function cmdCompile(args: Args): Promise<number> {
   if (!noWrite) {
     if (target === "-") {
       process.stdout.write(bytes);
-      return EXIT.OK;
+      return noted(EXIT.OK);
     }
     try {
       writeFileSync(resolvePath(target), bytes);
@@ -263,7 +267,7 @@ export async function cmdCompile(args: Args): Promise<number> {
     const len = typeof bytes === "string" ? Buffer.byteLength(bytes) : bytes.length;
     if (!args.quiet) process.stdout.write(`✓ ${input} → ${target} (${len} bytes, ${format.toUpperCase()})\n`);
   }
-  return EXIT.OK;
+  return noted(EXIT.OK);
 }
 
 /**

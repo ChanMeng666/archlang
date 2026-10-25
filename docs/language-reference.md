@@ -2575,9 +2575,10 @@ Each form may end with a grade, `hard` (the default), `soft` or `advisory`.
 `cy` (or a compass word where room datums take one), `axis <label>` from the plan's `axes`, or
 a straight wall read as its centreline (`p`, or `p segment 1` for one segment of a longer wall).
 A vertical line's value is an x, a horizontal one's a y (`+y` down). A keep reads a datum as an
-expression in the plan would, grid-snapped; the keep's own `<mm>` is never snapped. Every value
-goes on the 0.001 mm lattice (`sign(v)·round(|v|·1000)`) and is compared exactly, a centre line
-at twice its value. Targets are **authored ids** only: an auto id (`room_3`) renumbers when an
+expression in the plan would, grid-snapped; the keep's own `<mm>` is never snapped. The
+residual, the difference of what the keep compares, goes on the 0.001 mm lattice once
+(`sign(v)·round(|v|·1000)`) and is compared exactly, at twice its value when a centre line is
+one side. Targets are **authored ids** only: an auto id (`room_3`) renumbers when an
 earlier element is named, and a keep is the statement that must survive edits.
 
 **What each form measures.**
@@ -2619,20 +2620,27 @@ by level then the plan's: the statement, form, grade, targets, `holds`, `residua
 its storey, its text and its place among keeps of the same text (so a keep a `for` loop repeats
 is told apart by order), and listed under `broke` (broken after, and held before or its residual
 moved), `healed`, `held` (held on both sides while a target it names changed, or its residual
-moved), `added` or `removed`, with its residual before and after and the targets that changed on
-its own storey; the rest count in `unchanged_count`. A broken hard keep is reported there once:
+moved), `added` or `removed`, with its residual before and after, the targets whose position or
+size changed on its own storey, its `occurrence` among keeps of its text and its span; the rest
+count in `unchanged_count`. A keep whose grade an edit changed carries `grade: { before, after }`,
+and counts as `broke` when it is a broken hard keep after, or `healed` when it was one before. A broken hard keep is reported there once:
 its `W_KEEP_VIOLATED` is not also counted under `diagnostics`.
 
 `describe --facts depends` adds `depends.keeps[]` (every keep on the top-level `depends`, a
-storey's own on its `levels[]` entry): the targets, `constrains` (the `let`s and parameters the
-targets' positions and the keep's own value read; `locked: true` when there are none, so no
-`--set` can break it), `equations` or `bounds`, and three facts decided from the declarations
-alone: `implied` (an equality the statements before it already make hold, such as `keep align
-a.right b.left` beside `room b right-of a`, with the statements that imply it under `by`),
-`redundant` (every equality implied; a `min clear` another on the same room outdoes) and
-`conflicts` (an equality that cannot hold together with what came before, with the gap in mm).
-A relation is implied by a room only when it survives grid snapping: an edge, never a centre,
-and every literal it reads a multiple of the plan's `grid`.
+storey's own on its `levels[]` entry): the targets, `constrains` (the `let`s and parameters that can move or remove it: what the
+targets' positions read through their dependencies, the keep's own value, the `if`/`for`/`while`
+conditions around the keep and its targets, and the `let`s those read in turn), `locked: true`
+when there are none (a `--set` then cannot move it through anything `--facts depends` records; a
+position found by a search, such as `flush`, is not recorded), `equations` or `bounds`, and three
+facts decided from the declarations alone: `implied` (an equality the statements before it
+already make hold, such as `keep align a.right b.left` beside `room b right-of a`, with the
+statements that imply it under `by`), `redundant` (every equality implied; a `min clear`
+another on the same room outdoes), reported as `redundant_by_weaker` when what implies it
+includes a keep of a weaker grade, and `conflicts` (an equality that cannot hold together with
+what came before, with the gap in mm; a gap of one lattice unit, 0.001 mm, is claimed neither
+way). A relation is implied by a room or wall written with `id=` only, and only when it survives
+grid snapping: an edge, never a centre, and every literal it reads a multiple of the plan's
+`grid` on the 0.001 mm lattice.
 
 **Plan JSON carries no keeps.** `compile -f json` exports the plan without them (as it exports no
 axes) and says so with a note on stderr naming how many it left out; `planToJson()` returns the

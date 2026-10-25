@@ -77,10 +77,13 @@ number.
 
    A datum `<d>` is a rectangular room's edge or centre (`r.left`, ADR 0028 §2), `axis <label>`, or
    a straight wall (or `<wall> segment <n>`) read as its centreline. A keep reads a datum exactly as
-   an expression in the plan would: grid-snapped, as ADR 0028 §2 resolves it. Each value is then put
-   on the 0.001 mm lattice by sign-symmetric rounding (`sign(v)·round(|v|·1000)/1000`) and compared
-   in lattice integers without tolerance; a centre is compared at twice its value. A keep's own
-   `<mm>` is put on the lattice and **never grid-snapped**. A target is an authored id. The residual
+   an expression in the plan would: grid-snapped, as ADR 0028 §2 resolves it. The residual, the
+   difference of the values the keep compares (and its own `<mm>`), is then put on the 0.001 mm
+   lattice once, by sign-symmetric rounding (`sign(v)·round(|v|·1000)/1000`), and compared in
+   lattice integers without tolerance; a difference with a centre on either side is compared at
+   twice its value. (Amended 2026-10-26 by PS4.3b: as accepted, each value was rounded and then
+   subtracted, which could report 0.001 mm between two values 0.0005 mm apart, or hide it.) A
+   keep's own `<mm>` is **never grid-snapped**. A target is an authored id. The residual
    is signed (`+` is right or below, `+y` down; for `min clear`, `+` is margin), in mm. `stacked`
    compares each element's resolved `at` + `size` rectangle; `offset` reads a piece of furniture at
    its footprint rectangle's own centre. `min clear` measures the widest free span between the bodies

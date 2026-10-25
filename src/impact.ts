@@ -83,9 +83,9 @@
 
 import type { ComponentDef, LetNode, PlanNode, Statement } from "./ast.js";
 import { exprChildren, statementBodies } from "./cursor.js";
-import { describe, type DescribeOptions } from "./describe.js";
+import type { DescribeOptions } from "./describe.js";
 import type { DependsEntry, DerivedWallDepends } from "./analyze/depends.js";
-import { indexStatements } from "./analyze/depends.js";
+import { dependsFacts, indexStatements } from "./analyze/depends.js";
 import { resolvePlan } from "./analyze.js";
 import type { Diagnostic, Severity } from "./diagnostics.js";
 import { diffSides, type OpeningChange, type PlanDiff, type RoomChange, type WallChange } from "./diff.js";
@@ -180,9 +180,13 @@ export interface ImpactDiagnostic {
 export interface KeepImpact {
   /** The keep as `arch fmt` prints it, without `keep` and the grade. */
   keep: string;
-  grade: KeepResult["grade"];
+  /** Its grade, or `{ before, after }` when an edit changed it. */
+  grade: KeepResult["grade"] | { before: KeepResult["grade"]; after: KeepResult["grade"] };
   /** Its storey, on a multi-storey plan (absent for a `stacked` keep, which spans storeys). */
   level?: number;
+  /** Which keep of this text on its storey it is, from 1 in source order (a `for` loop's repeats
+   *  are told apart by it; the match key with the storey and the text). */
+  occurrence: number;
   /** The reported residual in mm on each side it exists on (`before` absent when added,
    *  `after` absent when removed). */
   residual_mm: { before?: number; after?: number };
@@ -191,6 +195,8 @@ export interface KeepImpact {
   /** The targets it names whose element changed on its storey (a `stacked` keep: on any level
    *  it lists), by id or `axis <label>`, in the order the keep names them. */
   changed: string[];
+  /** Its byte span on the after side (the before side's when removed). */
+  span?: [number, number];
 }
 
 /** `ImpactReport.keeps`. */
@@ -458,10 +464,13 @@ function readSide(source: string, opts: ImpactOptions): Side {
     levels,
   };
   if (!ir) return side;
-  const deps = describe(source, { ...aopts, facts: ["depends"] }).depends;
+  // The lowest storey's depends rows, exactly as `describe(…, { facts: ["depends"] }).depends`
+  // carries them, built from this resolve directly: no second resolve, no summary, and none of
+  // the keep facts `describe` would add (impact reads only the element and derived-wall rows).
+  const index = plan ? indexStatements(plan) : undefined;
+  const deps = index ? dependsFacts(ir, index) : undefined;
   for (const r of deps?.elements ?? []) side.rows.set(r.id, r);
   for (const r of deps?.derived_walls ?? []) side.derivedRows.set(r.name, r);
-  const index = plan ? indexStatements(plan) : undefined;
   for (const e of ir.elements as ResolvedElement[]) {
     if (e.kind === "walls" || e.kind === "wall" || side.kind.has(e.id)) continue;
     side.kind.set(e.id, e.kind);
@@ -909,21 +918,34 @@ function diagnosticDelta(A: Side, B: Side, dropKeeps: boolean): ImpactReport["di
 // ---------------------------------------------------------------------------------------
 // Keeps (PS4.3 design §6, R15)
 
-/** What a keep's target is on its storey, label aside: the resolved element's fields without
- *  spans or internals (a wall from `ir.walls`), or `undefined` when the storey lacks it. */
+/** What a keep reads of an element, and nothing else: a wall's points, arcs, closure and
+ *  thickness; a room's corner, size, polygon or circle; any other element's position, size and
+ *  width. A door sliding along a wall is not a change of the wall a keep names, nor is a relabel. */
+function keepReads(e: object): string {
+  const r = e as Record<string, unknown>;
+  const pick = (ks: readonly string[]): Record<string, unknown> => {
+    const out: Record<string, unknown> = {};
+    for (const k of ks) if (r[k] !== undefined) out[k] = r[k];
+    return out;
+  };
+  if (r.kind === "wall" || "points" in r) return keyOf(pick(["points", "arcs", "closed", "thickness"]));
+  if (r.kind === "room") return keyOf(pick(["at", "size", "poly", "circle"]));
+  return keyOf(pick(["at", "size", "width"]));
+}
+
+/** What each element of one storey is, as a keep reads it (a wall from `ir.walls`). */
 function storeyFacts(ir: ResolvedPlan): Map<string, string> {
   const out = new Map<string, string>();
   for (const e of ir.elements as ResolvedElement[]) {
     if (e.kind === "walls" || e.kind === "wall" || out.has(e.id)) continue;
-    const { label: _label, ...rest } = e as unknown as Record<string, unknown>;
-    out.set(e.id, keyOf(rest));
+    out.set(e.id, keepReads(e));
   }
-  for (const w of ir.walls) if (!out.has(w.id)) out.set(w.id, keyOf(w));
+  for (const w of ir.walls) if (!out.has(w.id)) out.set(w.id, keepReads(w));
   return out;
 }
 
-/** One side's view of its keeps' targets: per storey (`""` for a single-storey plan), the
- *  facts of each element, built once per storey on first use; and the axes. */
+/** One side's view of its keeps' targets: per storey (`""` for a single-storey plan), what a
+ *  keep reads of each element, built once per storey on first use. */
 function targetReader(side: Side): (level: number | undefined, id: string) => string | undefined {
   const byLevel = new Map<string, Map<string, string>>();
   return (level, id) => {
@@ -947,15 +969,22 @@ function targetReader(side: Side): (level: number | undefined, id: string) => st
  * The `keeps` section: match by (storey, text, occurrence index), classify, and name the
  * targets that changed. Linear in the keeps and their targets, plus one pass over each storey's
  * elements the first time a keep on it is read.
+ *
+ * A keep whose grade differs between the sides (an `if` choosing the grade) is classified by
+ * the hard channel when either side is a broken hard keep: `broke` when it is one after,
+ * `healed` when it was one before and is not after, so a `W_KEEP_VIOLATED` never appears or
+ * vanishes unreported; its row carries `grade: { before, after }`.
  */
 function keepDelta(A: Side, B: Side): ImpactKeeps {
-  const keyed = (rs: readonly KeepResult[] | undefined): Array<{ key: string; r: KeepResult }> => {
+  const keyed = (
+    rs: readonly KeepResult[] | undefined,
+  ): Array<{ key: string; base: string; n: number; r: KeepResult }> => {
     const seen = new Map<string, number>();
     return (rs ?? []).map((r) => {
       const base = `${r.level ?? ""}\u0000${r.keep}`;
       const n = seen.get(base) ?? 0;
       seen.set(base, n + 1);
-      return { key: `${base}\u0000${n}`, r };
+      return { key: `${base}\u0000${n}`, base, n, r };
     });
   };
   const a = keyed(A.keeps);
@@ -979,36 +1008,53 @@ function keepDelta(A: Side, B: Side): ImpactKeeps {
     }
     return out;
   };
-  const row = (r: KeepResult, residual: KeepImpact["residual_mm"], at: KeepAt | undefined): KeepImpact => ({
-    keep: r.keep,
-    grade: r.grade,
-    ...(r.level !== undefined ? { level: r.level } : {}),
-    residual_mm: residual,
-    ...(at ? { at } : {}),
-    changed: changedOf(r),
-  });
+  const row = (
+    x: { base: string; n: number; r: KeepResult },
+    grade: KeepImpact["grade"],
+    residual: KeepImpact["residual_mm"],
+  ): KeepImpact => {
+    const { r } = x;
+    const span = r.node.span;
+    return {
+      keep: r.keep,
+      grade,
+      ...(r.level !== undefined ? { level: r.level } : {}),
+      occurrence: x.n + 1,
+      residual_mm: residual,
+      ...(r.at ? { at: r.at } : {}),
+      changed: changedOf(r),
+      ...(span ? { span: [span.start, span.end] as [number, number] } : {}),
+    };
+  };
+  const brokenHard = (r: KeepResult): boolean => r.grade === "hard" && !r.holds;
   const out: ImpactKeeps = { broke: [], held: [], healed: [], added: [], removed: [], unchanged_count: 0 };
-  for (const { key, r } of b) {
+  for (const x of b) {
+    const { key, r } = x;
     const p = before.get(key);
     if (!p) {
-      out.added.push(row(r, { after: mmNumber(r.h) }, r.at));
+      out.added.push(row(x, r.grade, { after: mmNumber(r.h) }));
       continue;
     }
     const residual = { before: mmNumber(p.h), after: mmNumber(r.h) };
     const moved = p.h !== r.h;
-    if (!r.holds && (p.holds || moved)) out.broke.push(row(r, residual, r.at));
-    else if (r.holds && !p.holds) out.healed.push(row(r, residual, r.at));
+    const flipped = p.grade !== r.grade;
+    const grade: KeepImpact["grade"] = flipped ? { before: p.grade, after: r.grade } : r.grade;
+    if (flipped && brokenHard(r)) out.broke.push(row(x, grade, residual));
+    else if (flipped && brokenHard(p)) out.healed.push(row(x, grade, residual));
+    else if (!r.holds && (p.holds || moved)) out.broke.push(row(x, grade, residual));
+    else if (r.holds && !p.holds) out.healed.push(row(x, grade, residual));
     else if (r.holds && p.holds) {
-      const k = row(r, residual, r.at);
+      const k = row(x, grade, residual);
       if (k.changed.length > 0 || moved) out.held.push(k);
       else out.unchanged_count++;
     } else out.unchanged_count++;
   }
-  for (const { key, r } of a) if (!afterKeys.has(key)) out.removed.push(row(r, { before: mmNumber(r.h) }, r.at));
+  for (const x of a) if (!afterKeys.has(x.key)) out.removed.push(row(x, x.r.grade, { before: mmNumber(x.r.h) }));
   return out;
 }
 
-/** `keep <text> (<grade>[, level n]): residual <before> → <after> mm[ at <target>[, level n, <edge> edge]]`. */
+/** `keep <text> (<grade>[, level n][, occurrence n > 1]): residual <before> → <after> mm[ at
+ *  <target>[, level n, <edge> edge]]`. */
 function keepLine(k: KeepImpact): string {
   const mm = (v: number | undefined): string => fmtHalfLattice(Math.round((v ?? 0) * 2000));
   const where = k.at
@@ -1020,7 +1066,10 @@ function keepLine(k: KeepImpact): string {
       : k.residual_mm.after === undefined
         ? `removed, residual was ${mm(k.residual_mm.before)} mm`
         : `residual ${mm(k.residual_mm.before)} → ${mm(k.residual_mm.after)} mm`;
-  return `  keep ${k.keep} (${k.grade}${k.level !== undefined ? `, level ${k.level}` : ""}): ${residual}${where}`;
+  const grade = typeof k.grade === "string" ? k.grade : `${k.grade.before} → ${k.grade.after}`;
+  const level = k.level !== undefined ? `, level ${k.level}` : "";
+  const occurrence = k.occurrence > 1 ? `, occurrence ${k.occurrence}` : "";
+  return `  keep ${k.keep} (${grade}${level}${occurrence}): ${residual}${where}`;
 }
 
 // ---------------------------------------------------------------------------------------
