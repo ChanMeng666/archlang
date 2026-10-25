@@ -8,8 +8,11 @@ import {
   type FurnishCodes,
   furnishCheckBound,
   furnishStage,
+  MAX_CHECKS_PER_PIECE,
   MAX_CHECKS_PER_ROOM,
+  MAX_PIECE_CHECKS_PER_ROOM,
   MAX_PIECES_PER_ROOM,
+  MAX_SET_CHECKS_PER_ROOM,
   NOT_GATED_DRAFTING,
 } from "../src/furnish.js";
 import {
@@ -27,6 +30,7 @@ import { ADVISORY_CODE_PROFILES } from "../src/lint.js";
 import { sourceConflicts } from "../src/repair.js";
 import type { World } from "../src/world.js";
 import { canonicalFixture } from "../src/elements/fixtures-glyphs.js";
+import { countsByClass, GATED, sweep } from "../scripts/probe-finish-wet-rooms.js";
 import { finishDigest, PARTLY } from "./finish-digest.js";
 
 /**
@@ -1150,4 +1154,106 @@ suite("furnish — smaller placement rules", () => {
     expect(r.unresolved[0]!.reason).toContain("no wall");
     expect(r.unresolved[0]!.reason).not.toContain("clears its walls");
   });
+});
+
+/**
+ * PS2.45: a wet room the piece-by-piece run would leave empty is tried as whole sets (pan, basin,
+ * and in a bathroom the bath or shower), from the stage's ordered layouts (`wetSet`,
+ * `src/furnish.ts`). A room it furnished before keeps its pieces: only empty rooms gain any.
+ */
+suite("furnish law — a wet room's pieces are placed together (PS2.45)", () => {
+  const room = (use: "wc" | "bath", w: number, h: number, swing: "in" | "out"): string => `plan "Wet" {
+  units mm
+  wall id=w exterior thickness 200 { (0,0) (${w},0) (${w},${h}) (0,${h}) close }
+  room id=r at (0,0) size ${w}x${h} label "${use === "wc" ? "WC" : "Bathroom"}" uses ${use}
+  door id=d on w at ${w / 2} width 800 swing ${swing}
+}
+`;
+  const gatedIn = (src: string, profile?: string): string[] =>
+    lint(src, profile ? { profile } : {})
+      .map((d) => d.code ?? "")
+      .filter((c) => (GATED as readonly string[]).includes(c));
+
+  it("the bound: a room's checks are its pieces' and its sets'", () => {
+    expect(MAX_CHECKS_PER_ROOM).toBe(MAX_PIECE_CHECKS_PER_ROOM + MAX_SET_CHECKS_PER_ROOM);
+    expect(MAX_PIECE_CHECKS_PER_ROOM).toBe(13);
+  });
+
+  it("a 1.0 m clear WC room takes its pan on the end wall and its basin on the side wall, lint clean", () => {
+    // 1200 on the centrelines, a 200 mm wall: 1000 mm clear, 2200 mm long, the door at the far end.
+    const src = room("wc", 1200, 2400, "out");
+    const r = finish(src, { only: "furnish" });
+    expect(r.unresolved).toEqual([]);
+    expect(r.changes.map((c) => c.text)).toEqual([
+      // the pan on the end wall, its centreline 450 mm off the side face (and 550 off the other)
+      "furniture wc against wall w segment 2 offset 650 side left in r",
+      // the basin on the side wall, between the door's approach and the floor before the pan
+      "furniture basin against wall w segment 1 offset 750 side left in r",
+    ]);
+    expect(lint(r.source).map((d) => d.code)).toEqual([]);
+    expect(gatedIn(r.source, "accessibility-advisory")).toEqual([]);
+    expect(gainedBy(src, r.source, undefined)).toEqual([]);
+  });
+
+  it("a 2.4 × 2.1 m bathroom takes a shower after an off-corner pan, lint clean", () => {
+    const src = room("bath", 2400, 2100, "in");
+    const r = finish(src, { only: "furnish" });
+    expect(r.unresolved).toEqual([]);
+    expect(r.changes.map((c) => c.text)).toEqual([
+      // the pan on the far wall, its centreline 450 mm off the side face
+      "furniture wc against wall w segment 2 offset 1850 side left in r",
+      // the basin on the side wall, clear of the door's swing
+      "furniture basin against wall w segment 1 offset 400 side left in r",
+      // the shower in the other corner of the far wall, clear of the pan's side
+      "furniture shower against wall w segment 2 offset 550 side left in r",
+    ]);
+    expect(lint(r.source).map((d) => d.code)).toEqual([]);
+    expect(gatedIn(r.source, "accessibility-advisory")).toEqual([]);
+    expect(gainedBy(src, r.source, undefined)).toEqual([]);
+  });
+
+  it("a wet room every check refuses spends the first proposal, three tries at the pan and four layouts", () => {
+    // The 2.4 × 2.1 m bathroom above, with every candidate refused: 1 first proposal + 3 tries at the
+    // required `wc` (MAX_CHECKS_PER_PIECE) + 4 layouts (MAX_SET_CHECKS_PER_ROOM). Lifting the set
+    // search's cap makes this count grow, so the cap is pinned here, not only by the bound.
+    const src = room("bath", 2400, 2100, "in");
+    let calls = 0;
+    const r = furnishStage(src, {}, (s) => {
+      calls++;
+      return { errors: false, codes: new Map(s === src ? [] : [["W_TEST_BLOCK", 1]]) };
+    });
+    expect(r.source).toBe(src);
+    expect(r.rooms).toBe(1);
+    expect(r.checks).toBe(1 + MAX_CHECKS_PER_PIECE + MAX_SET_CHECKS_PER_ROOM);
+    expect(r.checks).toBe(8);
+    expect(calls).toBe(1 + r.checks);
+    expect(r.unresolved.map((u) => u.codes)).toEqual([["W_TEST_BLOCK"]]);
+  });
+
+  it("a room too small for any layout stays empty, with the note the stage already gives", () => {
+    // 1000 × 1300 mm clear: the pan and its clear floor leave no 600 mm of side wall for a basin.
+    const src = room("wc", 1200, 1500, "out");
+    const r = finish(src, { only: "furnish" });
+    expect(r.source).toBe(src);
+    expect(r.changed).toBe(false);
+    expect(r.unresolved).toEqual([
+      {
+        stage: "furnish",
+        room: "r",
+        reason:
+          'no position for the required `basin` in "r" clears its walls, its doors and the pieces before it — the room was left empty',
+        span: expect.anything(),
+      },
+    ]);
+  });
+
+  it("the wet-room sweep (`scripts/probe-finish-wet-rooms.ts`): its counts, and no furnished room raises a gated code", () => {
+    // Measured 2026-10-26 (PS2.45). On main before this card: bath 152, wc 260, and every one of
+    // those rooms furnished here with the same statements (the script's `--against`). The script's
+    // `--ensuite` class is left out: it reads as a bath and repeats the bath class exactly.
+    const results = sweep();
+    expect(results.length).toBe(612);
+    expect(countsByClass(results)).toEqual({ bath: 213, wc: 275, ensuite: 0 });
+    expect(results.filter((r) => r.violations.length > 0).map((r) => r.key)).toEqual([]);
+  }, 300000);
 });

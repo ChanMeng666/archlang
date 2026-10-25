@@ -542,11 +542,43 @@ ${extra}}
     expect([...codes(r.source)].filter((c) => !before.has(c))).toEqual([]);
   });
 
-  it("a bath where neither search finds a bathtub or shower position is left empty, and the note says so", () => {
-    // From the review's fuzz corpus A: 1.95 x 2.25 m, its door swinging out. `main` wrote a WC
-    // and a basin; neither the stage's candidates nor the lint's search place a bathtub or
-    // shower beside them without a new code.
+  it("the review's bath with no bathtub or shower beside its first WC is furnished as a set (PS2.45)", () => {
+    // From the review's fuzz corpus A: 1.95 x 2.25 m, its door swinging out. `main` once wrote a
+    // WC and a basin; then neither the stage's candidates nor the lint's search placed a bathtub
+    // or shower beside them without a new code, and the room was left empty. The set search
+    // (`wetSet`, `src/furnish.ts`) stands the pan elsewhere and fits all three.
     const src = plan(1950, 2250, "bath", "door id=d_x at (1400,2250) width 800 wall w_mid swing out", "");
+    const r = finish(src, { only: "furnish" });
+    expect(r.unresolved).toEqual([]);
+    expect(r.changes.map((c) => c.text)).toEqual([
+      "furniture wc against wall shell segment 3 offset 3500 side left in r_x",
+      "furniture basin against wall shell segment 0 offset 400 side left in r_x",
+      "furniture shower against wall shell segment 1 offset 550 side left in r_x",
+    ]);
+    // Never worse, counted: no code more often than before, under the default ruleset and the
+    // universal profile the stage's law also holds under.
+    const counts = (s: string, profile?: string): Map<string, number> => {
+      const m = new Map<string, number>();
+      for (const d of lint(s, profile ? { profile } : {})) m.set(d.code ?? "", (m.get(d.code ?? "") ?? 0) + 1);
+      return m;
+    };
+    for (const profile of [undefined, "accessibility-advisory"]) {
+      const was = counts(src, profile);
+      const gained = [...counts(r.source, profile)].filter(([c, n]) => n > (was.get(c) ?? 0)).map(([c]) => c);
+      expect(gained, profile ?? "default").toEqual([]);
+    }
+  });
+
+  it("a bath where no search finds a bathtub or shower position is left empty, and the note says so", () => {
+    // 1.15 x 2.5 m clear, its door in the middle of an end wall swinging out: no set the stage
+    // tries keeps the floor in front of the pan and the door's approach clear (PS2.45's sweep).
+    const src = `plan "F" {
+  units mm
+  wall id=w exterior thickness 200 { (0,0) (1350,0) (1350,2700) (0,2700) close }
+  room id=r_x at (0,0) size 1350x2700 label "X" uses bath
+  door id=d on w at 675 width 800 swing out
+}
+`;
     expect(words(src)).toEqual([]);
     const r = finish(src, { only: "furnish" });
     expect(r.unresolved.map((u) => u.reason)).toEqual([
