@@ -1457,9 +1457,11 @@
  * `hillside-villa` (Bedroom 2's wardrobe, end-on to the north wall) and `tiny-house` (the bed,
  * side-on to the north wall) move because `lint()` loses exactly that one diagnostic, the two
  * PS2.11c/d recorded as this rule's false reading. Every storey's SVG, `describe()` and
- * `compile().diagnostics` are byte-identical, no example source was edited, and a sweep of 233
- * plans (examples, eval goldens, defect, recovery and walls-from-rooms corpora, test fixtures)
- * against `origin/main` found no other plan whose payload moved.
+ * `compile().diagnostics` are byte-identical. `tiny-house`'s bed comment was rewritten (comment
+ * only, above no diagnostic): the new compiler over the old and new source gives the same
+ * payload. A sweep of every `.arch` file in the repository against `origin/main` moved only these
+ * two among the pinned plans (and, outside these tables, `docs/plans/…/repro/family-apartment`
+ * and `…/first-contact-plans/6-clinic`; see the PS2.50 as-built note).
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

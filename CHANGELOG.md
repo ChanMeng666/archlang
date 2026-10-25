@@ -400,14 +400,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of the bathrooms with no bath or shower. Of the rooms 1.43.1 furnished, 73 bathrooms and 12 WC rooms
   stay empty, because no set of the stage's fits them without one of those warnings.
 
-- `W_FIXTURE_BACK_TO_ROOM` no longer warns on a piece that needs no services and touches a wall
-  only with a side or an end its catalogued footprint rules out as a back, such as a bed lengthwise
-  along a wall or a wardrobe end-on to one (plan card PS2.50). That is a layout, not a back turned
-  to the room. A plumbed or vented fixture still warns, since its back must reach a wall, and so
-  does any piece whose front is on a wall that could be its back. Side-on placement now has a
-  lint-clean spelling, `in <room> anchor <edge>` or `at (x,y)` with a `rotate`. `against` still
-  backs a piece onto the wall, so a crib or treadmill written there with its long side along the
-  wall keeps its `W_FOOTPRINT_TRANSPOSED`, whose hint now names the side-on spelling.
+- `W_FIXTURE_BACK_TO_ROOM` no longer warns on a piece standing side-on or end-on to a wall: one
+  that touches the wall only with a side or an end its catalogued footprint rules out as a back,
+  with its drawn front off the wall too, such as a bed lengthwise along a wall or a wardrobe
+  end-on to one (plan card PS2.50). That is a layout, not a back turned to the room. A piece whose
+  front is on a wall still warns, as does a plumbed or vented fixture or a wall-mounted one (a
+  radiator, a fireplace, a TV, an EV charger; the catalogue's new `wallMounted` flag), whose back
+  must reach any wall it touches. Side-on placement now has a lint-clean spelling, `at (x,y)` or
+  `in <room> anchor <edge> flush` with a `rotate`. `against` still backs a piece onto the wall, so
+  a bed, crib or treadmill written there with its long side along the wall keeps its
+  `W_FOOTPRINT_TRANSPOSED`, whose hint now gives the side-on spelling with the piece's numbers.
   `tiny-house` and `hillside-villa` each lose that one warning; their drawings and `describe()` are
   unchanged.
 
