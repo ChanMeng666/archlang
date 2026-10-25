@@ -49,7 +49,7 @@
 | `builds` | `build`, `typecheck:all`, all four workspace builds, MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring` |
 | `windows` | tests + `check:drift` at the runner's default line endings |
 | `e2e-playground`, `e2e-docs` | Playwright against the built sites |
-| `bench` | informational PR comment of per-stage timings; never gates |
+| `bench` | informational per-stage timings in the job summary (+ a PR comment on same-repo PRs); never gates |
 
 `codeql.yml` `analyze` gates too (and runs weekly). `nightly.yml`: `prod-smoke`
 (`scripts/smoke.mjs`), `audit` (report-only), `secrets` (gitleaks over full history),
