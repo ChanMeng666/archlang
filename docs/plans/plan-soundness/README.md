@@ -519,7 +519,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS4 · The change model: what follows, what stays, what breaks
 
-10 cards: 2 done, 8 todo (PS4.8–PS4.10 filed by the PS4.3 design). Cards, tables and as-built pointers: `cards.md` § PS4.
+11 cards: 2 done, 9 todo (PS4.8–PS4.11 filed by the PS4.3 design). Cards, tables and as-built pointers: `cards.md` § PS4.
 
 ### PS5 · The taste layer and the review sheet (D2)
 

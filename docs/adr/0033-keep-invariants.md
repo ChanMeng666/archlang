@@ -16,8 +16,10 @@
 - **Scope:** one control statement, `keep`, with seven forms and three grades; its evaluation inside
   `compile()`; one compile-channel warning, `W_KEEP_VIOLATED`, and six refusal codes; a `keeps` fact
   in `describe()`, `validate --json`, `describe --facts depends` and `arch impact`. A plan with no
-  `keep` compiles, describes, lints, validates and reports impact byte for byte as before; a plan
-  with keeps draws, lints and resolves every element exactly as the same plan without them.
+  `keep` compiles, describes, lints, validates and reports impact byte for byte as before. A plan
+  whose keeps are all accepted, and which resolves within the step budget, draws, lints and resolves
+  every element exactly as the same plan without them. A refused keep is a compile error, which
+  stops lint, `describe()` and `finish` as any compile error does.
 - **Numbering:** a new number rather than an addendum to ADR 0028, because a keep derives no
   geometry: what it decides is where a declared invariant is checked and reported, across
   `validate`, `next`, the taste cap, the never-worse law and the solver seam. 0030 and 0031 are
@@ -70,12 +72,18 @@ number.
    keep fixed <d> at <mm>                      # v(d) − mm = 0
    ```
 
-   A datum `<d>` is a rectangular room's edge or centre (`r.left`, ADR 0028 §2, read as written
-   there), `axis <label>`, or a straight wall (or `<wall> segment <n>`) read as its centreline. A
-   target is an authored id. The residual is signed (`+` is right or below, `+y` down; for `min
-   clear`, `+` is margin), in mm, exact on the 0.001 mm lattice and compared without tolerance.
-   `min clear` measures the widest free span between the bodies of the straight walls that cross
-   the room's whole extent, on each axis, and reports the walls it could not read.
+   A datum `<d>` is a rectangular room's edge or centre (`r.left`, ADR 0028 §2), `axis <label>`, or
+   a straight wall (or `<wall> segment <n>`) read as its centreline. A keep reads a datum exactly as
+   an expression in the plan would: grid-snapped, as ADR 0028 §2 resolves it. Each value is then put
+   on the 0.001 mm lattice by sign-symmetric rounding (`sign(v)·round(|v|·1000)/1000`) and compared
+   in lattice integers without tolerance; a centre is compared at twice its value. A keep's own
+   `<mm>` is put on the lattice and **never grid-snapped**. A target is an authored id. The residual
+   is signed (`+` is right or below, `+y` down; for `min clear`, `+` is margin), in mm. `stacked`
+   compares each element's resolved `at` + `size` rectangle; `offset` reads a piece of furniture at
+   its footprint rectangle's own centre. `min clear` measures the widest free span between the bodies
+   (± t/2, on the joined wall outline) of the straight walls that span the room's whole extent, on
+   each axis, counts every wall body whatever its `height` (heights measure nothing), and reports the
+   walls it could not read.
 
 3. **Three grades, monotone in every consequence. `hard` is the default.**
 
@@ -85,7 +93,7 @@ number.
    | `validate --strict` | fails | passes | passes |
    | `validate --json` `next` | tier `warning` | tier `intent`, after the brief's gating items | never |
    | `describe()`, `validate --json`, `arch impact` | reported | reported | reported |
-   | `finish`/`furnish` never-worse law | counted | not counted | not counted |
+   | no-worse law of every source-rewriting transform (`finish`, `furnish`, `repair`, fix-apply, `reroll`) | counted | not counted | not counted |
    | taste cap, `lint()` | never | never | never |
 
    A broken hard keep means the source does not resolve to what it declares, so it ranks with the
@@ -96,37 +104,55 @@ number.
    because the cap reads validity-layer lint codes only (ADR 0032 decision 4).
 
 4. **Evaluated once, last, on the step meter.** A storey's keeps are evaluated after its resolution
-   has finished (groups, `facing`, frames, openings, cross-element checks), in source order;
-   `stacked` after the last storey. Each charges its cost (`1 + targets`, or the wall scan for `min
-   clear`) to `MAX_EVAL_STEPS` before it reads. There is no iteration and no fixed point. A result
-   is stored beside the resolved plan, never on an element or on the memoised AST. A plan that
-   crosses the step budget inside its keep pass stops with `E_STEP_LIMIT`, as any plan does.
+   has finished (groups, `facing`, frames, openings, cross-element checks), in source order, and on
+   a `paper` plan in the drawn pass only. Root-level keeps are taken out of the statements every
+   storey shares before the storeys are built; `stacked` is evaluated after the last storey. Each
+   keep is charged once, immediately before its measure (`1 + targets`, or its share of the wall
+   scan for `min clear`), on `MAX_EVAL_STEPS`; the per-storey indexes the measures read are built and
+   charged once. The storeys share one step counter, and the `stacked` pass continues it. There is
+   no iteration and no fixed point. A result is stored beside the resolved plan, never on an element
+   or on the memoised AST. A plan that crosses the step budget inside its keep pass, the `stacked`
+   pass included, stops with `E_STEP_LIMIT` and is unresolved, as any plan that crosses it is.
 
 5. **Refusals are typed and never chosen around.** `E_KEEP_TARGET` (an unknown, auto-id'd or
    unplaced target, an undeclared axis, a missing level), `E_KEEP_MEASURE` (no such measure: a
    polygon or circle room, mixed orientations, a curved or multi-segment wall, an opening's depth),
    `E_KEEP_SELF` (a target compared with itself), `E_KEEP_PLACEMENT` (inside a `component`;
    `stacked` inside a `level` or on a single-storey plan; another form at the root of a multi-storey
-   plan), `E_KEEP_VALUE` (a length outside `MODEL_RANGE_MM`, a `min clear` ≤ 0), `E_KEEP_LIMIT` (more
-   than 1,000 keeps, or more than 64 targets in one). A keep defines no value, so keeps cannot form a
-   cycle. Two keeps that contradict each other are both legal: both are measured, at least one
-   reports, nothing moves.
+   plan, raised once and without a level), `E_KEEP_VALUE` (a length outside `MODEL_RANGE_MM`, a
+   `min clear` ≤ 0), `E_KEEP_LIMIT` (more than 1,000 keeps, or more than 64 targets in one; raised
+   once, every later keep dropped while still charged). Each is a compile error, as every refused
+   statement's code is. Every `E_KEEP_*` and `W_KEEP_VIOLATED` message is id-free: rooms and walls
+   are named by the shared phrase builder (`src/naming.ts`, plan-soundness card PS2.29), and the ids and datums as written go in
+   the first hint. The grammar is unambiguous by rule: a trailing grade word is always the grade, a
+   value is the longest complete expression, and only `keep` is reserved (`min` stays the built-in).
+   A keep defines no value, so keeps cannot form a cycle. Two keeps that contradict each other are
+   both legal: both are measured, at least one reports, nothing moves.
 
 6. **Static facts, reported, never acted on.** `describe --facts depends` lists per keep its
    targets, the bound names it constrains, its equation count, which of its equations the source
    already implies (a relational placement, a wall written on a datum) or another keep implies, and
-   the keeps or statements it conflicts with, decided exactly on the declarations alone. `arch
-   impact` lists keeps that broke, held while a target moved, or healed, each with its residual
-   before and after, and reports `W_KEEP_VIOLATED` there rather than twice. The solver that would
+   the keeps or statements it conflicts with, decided exactly on the declarations alone. A source
+   implication is entered only when it survives grid snapping: the datum is an edge, never a centre,
+   and every literal of the implying statement is a multiple of the grid. `arch impact` matches keeps
+   by storey, text and occurrence, and lists keeps that broke, held while a target moved, healed,
+   were added or were removed, each with its residual before and after (an upper-storey keep is
+   classified by its residual alone until storeys are compared); it reports `W_KEEP_VIOLATED` there
+   rather than twice. The solver that would
    act on these facts stays an explicit transform (ADR 0006, plan-soundness card PS6.1).
 
 7. **The byte-identity law is pinned in two strengths.** Weak: a plan with no keep is unchanged in
    every storey's SVG, `describe()` (with and without `--facts depends`), `lint()`,
    `compile().diagnostics` and its order, `validate --json` and `impact --json`, against a baseline
-   taken before code lands. Strong: a plan with keeps, compared with the same source with every keep
-   removed inside the test, has the same SVG and `lint()`, and the same `describe()` and diagnostics
-   once the `keeps` key and the `W_KEEP_VIOLATED` rows are removed; with every keep holding, the
-   diagnostics are the same with nothing removed.
+   taken before code lands. Strong, for accepted keeps on plans within the step budget: a plan with
+   keeps, compared with the same source with each keep's bytes blanked by spaces (newlines kept, so
+   every later span, line and column stays put) inside the test, has the same SVG and `lint()`, the
+   same `describe()` once the `keeps` key, `depends.keeps` and the `W_KEEP_VIOLATED` rows of its
+   diagnostics are removed, and the same `compile().diagnostics` once the `W_KEEP_VIOLATED` rows are
+   removed; with every keep holding, the diagnostics are the same with nothing removed. The D4
+   equivariance law is checked through a source-level transformer of keeps (datum words, measure
+   words and axes mapped by the turn or mirror), comparing residual sets unordered; the component
+   route of the D4 oracle does not apply, since keeps are refused inside components.
 
 ## Consequences
 
@@ -142,7 +168,7 @@ number.
   keep to gate leaves the grade off.
 - `keep` becomes a reserved word; the form words and grades after it are contextual, so no plan that
   uses `soft`, `fixed` or `stacked` as a name changes meaning. Plan JSON drops keeps, as it already
-  drops axes, until a consumer needs them.
+  drops axes, until a consumer needs them, and the export says how many it dropped.
 - The spec gains one grammar line (432 UTF-16 units), paid for by cutting drawing-only prose from the
   `door`, `outdoor` and `height` lines; the language reference keeps that prose.
 - `arch solve` gets its input: declared equalities, an inequality, grades that map to IFC's, and the

@@ -221,8 +221,9 @@ into PS3.12)
 - Design: `research/2026-10-26-ps43-keep-design.md` (PR #270). Built as PS4.3a (statement, evaluation,
   `W_KEEP_VIOLATED`, `describe().keeps[]`, the byte-identity law), then PS4.3b (`validate` `keeps`
   and `next`, `impact` `keeps`, `depends.keeps[]`, the spec line and its cuts); design §11.
-- Vocabulary: `keep align …`, `keep equal …`, `keep offset <x> from <y> <mm>`, `keep min clear <room> <mm>`,
-  `keep on axis <n> <wall>`, `keep stacked <room> on levels …`, `keep fixed …`.
+- Vocabulary: `keep align <d> <d> …`, `keep equal width|depth <t> <t> …`, `keep offset <x> from <d> <mm>`,
+  `keep min clear <room> <mm>`, `keep on axis <label> <wall>`, `keep stacked <id> on levels <n> <n> …`,
+  `keep fixed <d> at <mm>` (D22 R3; design §2).
 - Grades `hard`/`soft`/`advisory` (the IFC `IfcConstraintEnum` ladder).
 - `W_KEEP_VIOLATED` reports a signed residual in mm.
 - A static DOF/redundancy/conflict fact goes under `--facts depends`.
@@ -281,6 +282,11 @@ into PS3.12)
 - Plan JSON drops keeps in v1, as it drops axes; carry them when a consumer needs them. MCP
   `validate`/`describe`/`impact` return `keeps` (a tool-surface change: bump `packages/mcp` and both
   `server.json` fields). Source: the PS4.3 design §7 and §11.
+
+**PS4.11 · Plan JSON says it dropped keeps.** `todo` (with PS4.3a)
+- Until PS4.10 carries them, an export of a plan with keeps states the loss: a note or a warning
+  naming how many keeps it left out, never a silent drop. Source: the PS4.3 design §11 (D22, red-team
+  ruling R19).
 
 ### PS5 · The taste layer and the review sheet (D2)
 

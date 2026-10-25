@@ -109,6 +109,16 @@ written on 2026-10-18, before ADR 0029 and 0032 existed. Reasons for a new numbe
 `KEYWORDS.control` entry; `align`, `equal`, `offset`, `min`, `clear`, `on`, `axis`, `stacked`, `on
 levels`, `fixed`, `at`, `width`, `depth` and the three grades are read **in position after `keep`
 only**, so no plan that uses `soft`, `fixed` or `stacked` as an id or a `let` changes meaning.
+*Parsing rules (R14):* a trailing grade word is always the grade, never a target; a value (`<mm>`,
+a level) is the longest complete expression; `keep` joins `STATEMENT_STARTS`; `min` stays the
+built-in function everywhere else, and no new `KEYWORDS` category is added for the form words.
+
+**How a datum is read (R5, R6, R20).** A keep reads a datum exactly as an expression in the plan
+would read it: the room edge or centre as ADR 0028 §2 resolves it, grid-snapped. Each datum value is
+then put on the 0.001 mm lattice with sign-symmetric rounding, `sign(v)·round(|v|·1000)/1000`, and
+compared in lattice integers; a centre (`cx`, `cy`) is compared at twice its value, so a
+half-lattice centre is never rounded. A keep's own `<mm>` is put on the lattice the same way and is
+**never grid-snapped**: it is the author's number, not a coordinate.
 
 ### 2.1 One line per form
 
@@ -121,10 +131,10 @@ diagnostic, `validate` and `impact` quote; `describe()` lists every residual.
 |---|---|---|---|---|
 | `keep align <d1> <d2> …` | the line position of each datum (resolved room rectangle, axis, wall centreline) | per `di`, i ≥ 2: `v(di) − v(d1)`; `+` = right of / below `d1`; mm. Reported: the largest in magnitude, first in list order on a tie, `at` that target | every residual is 0 | 2–64 datums of one orientation |
 | `keep equal width\|depth <t1> <t2> …` | `width` = x extent of a rectangular room or the resolved width of an opening; `depth` = y extent of a rectangular room | per `ti`: `m(ti) − m(t1)`; `+` = wider / deeper; mm. Reported as `align` | every residual is 0 | 2–64 rooms (either word) or openings (`width` only) |
-| `keep offset <x> from <d> <mm>` | `v(x) − v(d)` on `d`'s normal axis; `x` is a datum parallel to `d`, or an opening or furniture id read at its resolved centre on that axis | `(v(x) − v(d)) − mm`; `+` = `x` lies further right / lower than stated; mm | residual is 0 | `d` a datum; `x` a datum, opening or furniture |
-| `keep min clear <room> <mm>` | the room's clear span: along each axis, the widest free interval of the room's extent between the bodies (centreline ± t/2) of the straight wall segments parallel to that axis that meet the room's rectangle with positive area and span its whole other extent; the smaller of the two spans | `clear − mm`; `+` = margin, `−` = short; mm | residual ≥ 0 | one rectangular room |
+| `keep offset <x> from <d> <mm>` | `v(x) − v(d)` on `d`'s normal axis; `x` is a datum parallel to `d`, an opening read at its resolved centre, or a piece of furniture read at its resolved footprint rectangle's own centre, on that axis | `(v(x) − v(d)) − mm`; `+` = `x` lies further right / lower than stated; mm | residual is 0 | `d` a datum; `x` a datum, opening or furniture |
+| `keep min clear <room> <mm>` | the room's clear span: along each axis, the widest free interval of the room's extent between the bodies (centreline ± t/2, read on the joined wall outline) of the straight wall segments parallel to that axis that meet the room's rectangle with positive area and whose body spans its whole other extent; the smaller of the two spans; every wall body counts whatever its `height` (R18) | `clear − mm`; `+` = margin, `−` = short; mm | residual ≥ 0 | one rectangular room |
 | `keep on axis <label> <wall>` | the wall's centreline line against the axis line (the structural-axis rung's own word for `keep align axis <label> <wall>`) | `v(wall) − v(axis)`; `+` = right of / below the axis; mm | residual is 0 | a declared axis and a straight wall (or `segment <n>`) parallel to it |
-| `keep stacked <id> on levels <l1> <l2> …` | the footprint edges `left, top, right, bottom` of the element with that id on each listed storey | per `li`, i ≥ 2, per edge: `e(id@li) − e(id@l1)`; mm. Reported: the largest in magnitude, first in level order then edge order; `at` `{ level, edge }` | every residual is 0 | a rectangular room, `stair`, `elevator`, `escalator` or `void` present on every listed level |
+| `keep stacked <id> on levels <l1> <l2> …` | the footprint edges `left, top, right, bottom` of the element with that id on each listed storey, the footprint being its resolved `at` + `size` rectangle | per `li`, i ≥ 2, per edge: `e(id@li) − e(id@l1)`; mm. Reported: the largest in magnitude, first in level order then edge order; `at` `{ level, edge }` | every residual is 0 | a rectangular room, `stair`, `elevator`, `escalator` or `void` present on every listed level |
 | `keep fixed <d> at <mm>` | `v(d)` | `v(d) − mm`; `+` = right of / below the stated value; mm | residual is 0 | one datum |
 
 Notes on the measures:
@@ -134,7 +144,9 @@ Notes on the measures:
   whole other extent (a nib) are not read; their count is reported as `skipped_walls` on the row, so
   the limit is visible, never silent. A room cut by a full-span wall is honestly measured as its
   widest piece. Lint keeps judging what the measure leaves out (`W_PATH_TOO_NARROW`,
-  `W_BOUNDARY_NO_WALL`).
+  `W_BOUNDARY_NO_WALL`). Whether a wall spans is decided by its body on the joined outline, so a
+  partition that T-joins a wall at each end spans the room between them. A wall's `height` is never
+  read: heights measure nothing (iron law), so a low wall cuts the span like a full one (R18).
 - **`keep fixed` takes its value.** The card wrote `keep fixed …` with no number. A fixed with no
   value can be checked only between two versions (impact) or by a solver, never by one `compile()`,
   which the card's own headline ("checked … by `compile()`") forbids. With `at <mm>` it is checked in
@@ -149,17 +161,25 @@ Notes on the measures:
 ### 2.2 Refusals
 
 Every refusal is a `Diagnostic` with a span on the offending clause and a catalogue entry with an
-executed example; nothing throws. A refused keep is dropped and draws nothing (it never draws).
+executed example; nothing throws. **`E_KEEP_*` are compile errors, as every refused statement's code
+is (R8):** a plan with a refused keep has `ok: false`, and lint, `describe()` and `finish` stop at it
+exactly as they stop at any compile error. The strong law of §7 (K2) is therefore stated for
+accepted keeps only.
 
-| Code | When | Message (shape; rooms by label, walls by category, ids only in hints) |
+**Messages are id-free (R17).** Every `E_KEEP_*` and `W_KEEP_VIOLATED` message names rooms and
+walls through the shared phrase builder of PR #269 (`src/naming.ts`): a room by its label (or its
+use, place or size), a wall by the rooms it joins or the room it stands in, so two partitions are
+never both "the partition". The ids and datums as written go in `hints[0]`.
+
+| Code | When | Message (shape; names from `src/naming.ts`, ids only in `hints[0]`) |
 |---|---|---|
-| `E_KEEP_TARGET` | a name not in the storey (or plan, for `stacked`); an auto id; an element that could not be placed; an undeclared axis label; a level the plan lacks; a `stacked` id missing on a listed level | `This keep names "<name>", which is not an authored id on this storey` / `… could not be placed` / `… is not on level <n>` |
+| `E_KEEP_TARGET` | a name not in the storey (or plan, for `stacked`); an auto id; an element that could not be placed; an undeclared axis label; a level the plan lacks; a `stacked` id missing on a listed level | `This keep names something that is not an authored id on this storey` / `… names a room that could not be placed` / `… names something level <n> does not have` |
 | `E_KEEP_MEASURE` | the measure is undefined for the target: a datum, `equal`, `min clear` or `stacked` on a polygon or circle room; datums of two orientations in one `align`/`offset`/`on axis`; a wall that is not one straight segment (an arc, several segments without `segment <n>`, an oblique segment); `depth` of an opening; an `offset` whose `from` is not a datum; a `stacked` kind with no rectangular footprint | `<what> has no <measure>: <reason>` (e.g. `a polygon room has no left edge to align`) |
-| `E_KEEP_SELF` | one target named twice in one keep: `align a.left a.left`, `offset a.left from a.left 0`, `equal width a a`, a level listed twice | `This keep compares <target> with itself` |
+| `E_KEEP_SELF` | one target named twice in one keep: `align a.left a.left`, `offset a.left from a.left 0`, `equal width a a`, a level listed twice | `This keep compares the left edge of "Living" with itself` (the target by its phrase) |
 | `E_KEEP_PLACEMENT` | a keep inside a `component` (and so inside a file imported as one); `stacked` inside a `level` or on a single-storey plan; any other form at the root of a multi-storey plan | `A keep inside a component would be checked once per instance in its own frame; write it in the plan` / `stacked compares storeys, so it sits outside every level` / `… sits inside the level it measures` |
 | `E_KEEP_VALUE` | `<mm>` not a finite length within `MODEL_RANGE_MM`; `min clear` ≤ 0; a level that is not an integer | `<mm> must be a length in mm within ±33,554,432` |
-| `E_KEEP_LIMIT` | more than `MAX_KEEPS` = 1,000 keeps in a plan, or more than `MAX_KEEP_TARGETS` = 64 targets or levels in one keep | `A plan may declare at most 1000 keeps` |
-| `W_KEEP_VIOLATED` | a `hard` keep does not hold (§3) | per form, e.g. `This keep holds the right edge of "Living", the left edge of "Bed" and a partition on one line; the partition is 500 mm left of the right edge of "Living". A keep moves nothing.` |
+| `E_KEEP_LIMIT` | more than `MAX_KEEPS` = 1,000 keeps in a plan, or more than `MAX_KEEP_TARGETS` = 64 targets or levels in one keep; raised once, at the first keep past the cap, and every later keep is dropped while still charged (R13) | `A plan may declare at most 1000 keeps` |
+| `W_KEEP_VIOLATED` | a `hard` keep does not hold (§3) | per form, e.g. `This keep holds the right edge of "Living", the left edge of "Bed" and the partition in "Living" on one line; that partition is 500 mm left of the right edge of "Living". A keep moves nothing.` |
 
 `MAX_KEEPS` is 12 × the 80 keeps that would pin every edge of the largest example. It bounds output
 size (`describe().keeps[]`, impact's matching); the work is bounded by the step meter (§4).
@@ -215,7 +235,7 @@ tier, never gating.
 | `validate --json` `keeps` (§3.3) | listed | listed | listed |
 | `describe().keeps[]` | listed | listed | listed |
 | `arch impact` `keeps` (§6) | listed | listed | listed |
-| `finish`/`furnish` never-worse law | counted (a compile code) | not counted | not counted |
+| every source-rewriting transform's no-worse law (`finish`, `furnish`, `repair`, fix-apply, `reroll`; R7) | counted (a compile code) | not counted | not counted |
 | taste cap (D11) | never | never | never |
 | `lint()` | never | never | never |
 
@@ -230,11 +250,15 @@ So the ladder is monotone in every row: hard ≥ soft ≥ advisory. Why each row
   warnings never cap either", and the intent layer never capped. A keep is the intent layer; a plan
   whose author broke a contract is not thereby a worse plan, and the taste reviewer reads the keep
   row anyway.
-- **Never-worse.** `finish` adds sheet statements and furniture; neither moves a datum, but an
-  inserted piece could in principle sit where a `keep offset <furniture>` measures, and the law then
-  refuses it with no new code path. Soft and advisory keeps are not counted because the law counts
-  codes and they raise none. *Reverse if:* a `finish` run is shown breaking a soft keep an author
-  relied on; then `gainedCodes` reads the keep rows too.
+- **No-worse laws (corrected, R7, R19).** Every transform that rewrites source and holds a no-worse
+  law over codes (`finish`, `furnish`, `repair`, fix-apply, `reroll`) counts `W_KEEP_VIOLATED`,
+  because the law counts codes and a broken hard keep raises one: a rewrite that breaks a hard keep
+  is refused with no keep-specific code path. An inserted piece cannot be a keep's target (targets
+  are authored ids, and `finish`/`furnish` insert pieces with none), so the law guards the rewrites
+  that move or re-derive what a keep names (`repair` moving a named piece, a fix rewriting a
+  coordinate, a `reroll` loop). Soft and advisory keeps are not counted because they raise no code.
+  *Reverse if:* a transform is shown breaking a soft keep an author relied on; then the laws read
+  the keep rows too.
 - **Plain `validate` does not fail on a broken hard keep.** It fails only on errors today, and the
   ship gate the spec teaches is `validate --strict`. Making one warning code fail plain `validate`
   would be the only such code. *Reverse if:* authors are seen shipping with a broken hard keep
@@ -266,18 +290,31 @@ an element and never on the memoised `PlanNode`. Readers:
   nothing is drawn; the evaluator lives in one new module, `src/keep.ts`, with its measures.
 - **Expansion.** A keep expands like any statement (inside `for`, `if` and `zone`; refused inside
   `component`). Its `<mm>` expression is evaluated there on the meter, as every expression is, so it
-  cannot read a datum (`E_DATUM_BEFORE_ROOMS`, as a `let` cannot). Each keep charges `1 + targets`
-  steps before its record is allocated, and the count is checked against `MAX_KEEPS` and
-  `MAX_KEEP_TARGETS` there (`E_KEEP_LIMIT`).
+  cannot read a datum (`E_DATUM_BEFORE_ROOMS`, as a `let` cannot). Expansion charges a keep as it
+  charges any statement: its expressions, and one step per target before the record is allocated;
+  the measure's charge is separate and paid once (below). The count is checked against
+  `MAX_KEEPS` and `MAX_KEEP_TARGETS` there: `E_KEEP_LIMIT` is raised once, and every later keep is
+  dropped while its expansion is still charged, so the cap cannot be used to skip work (R13).
+- **Where root keeps go on a multi-storey plan (R12).** Root-level keep statements are taken out of
+  the `shared` statements before `levelPlanFor` builds each storey's plan, so a root keep is never
+  copied into every storey. `stacked` keeps are evaluated in `resolveLevelsImpl` after the last
+  storey has resolved. The root-placement refusal (`E_KEEP_PLACEMENT` for a storey form at the root
+  of a multi-storey plan) is raised once, with no `level`.
 - **Evaluation, once, after the last stage.** A storey's keeps are evaluated after the storey's
   resolution has finished every step of `resolveBody` (`src/ir.ts`: groups resolved, `facing`
   settled (`settleKinds`), instances carried into plan coordinates, openings registered, the
   cross-element checks, axes, sheet and drawn sizes), in source order, reading the resolved plan in
-  plan coordinates. `stacked` keeps are evaluated after the last storey, on a meter that continues
-  from that storey's count (the storeys already chain `stepsBefore`).
-- **Charged before reading.** `align`, `equal`, `offset`, `on axis`, `fixed`: `1 + targets` steps;
-  `min clear`: `1 + walls + segments` of its storey (the scan), as `bodiesOn` charges; `stacked`:
-  `1 + 4 × levels`. All on `MAX_EVAL_STEPS`, before the measure runs.
+  plan coordinates. On a `paper` plan, whose storeys resolve twice (the geometry probes, then the
+  drawn pass), keeps are evaluated **in the drawn pass only** (R11).
+- **Charged once, at one point: immediately before the measure (R11).** `align`, `equal`, `offset`,
+  `on axis`, `fixed`: `1 + targets` steps; `min clear`: its share of the storey's wall scan;
+  `stacked`: `1 + 4 × levels`. All on `MAX_EVAL_STEPS`. The per-storey indexes the measures read (id →
+  element, and the straight-segment index `min clear` scans) are built once per storey and charged
+  once when built (`walls + segments`), not once per keep (R13).
+- **One counter (R13).** The storeys of a plan share one step counter (`stepsBefore` chains them, and
+  a `paper` plan's probes and drawn pass count into the same total), and the `stacked` pass after the
+  last storey continues it. A crossing inside the `stacked` pass is `E_STEP_LIMIT` and leaves the
+  plan unresolved, like any crossing.
 - **Deterministic and exact.** Lattice integers, source order, no `Map` iteration over anything but
   source order, no tolerance, no float upstream of a printed residual.
 - **No iteration, no solving, no writes.** One pass; a keep reads the resolved plan and writes only
@@ -286,9 +323,9 @@ an element and never on the memoised `PlanNode`. Readers:
   them (§2.2, §5).
 - **The one exception to "a keep draws nothing", stated.** A plan whose resolution crosses
   `MAX_EVAL_STEPS` inside its keep pass stops there with `E_STEP_LIMIT` and resolves to no elements,
-  exactly as a plan whose `height` or `let` expressions cross it does. The law of §7 is stated for
-  plans that resolve within the budget; the keep pass runs last, so no keep can move the crossing
-  point of a plan that crosses earlier.
+  exactly as a plan whose `height` or `let` expressions cross it does. The law of §7 is scoped to
+  plans that resolve within the step budget (R13); the keep pass runs last, so no keep can move the
+  crossing point of a plan that crosses earlier.
 - **Outside `compile()`.** The static facts of §5 and impact's matching run post-resolve with no
   meter, bounded by counts, as `--facts depends` and `impact` are today.
 
@@ -313,8 +350,12 @@ keep:
   node per measured length; `stacked` one node per id and level). Before the keeps, the source's
   **implications** are entered, each labelled with the statement that makes it hold *for every value
   of every name*: a relational room (`right-of a gap <literal>` gives `b.left − a.right = gap`; `align
-  top|bottom|middle` gives the cross-axis edge equality), a wall point written as a bare datum or a
-  datum plus a literal (`(a.right, 0)`). Then the keeps, in source order, into a weighted union-find
+  top|bottom` gives the cross-axis edge equality), a wall point written as a bare datum or a datum
+  plus a literal (`(a.right, 0)`). **Only implications that survive grid snapping are entered (R5):**
+  the datum is an edge, never a centre (`cx`, `cy`, and so `align middle|center`, may sit on a
+  half-grid and snap), and every literal in the implying statement is a multiple of the plan's
+  `grid`. Otherwise the relation is not implied: a keep that restates it is measured, not excused,
+  because the keep reads the snapped datum (§2). Then the keeps, in source order, into a weighted union-find
   on lattice integers: an equality whose ends are already joined with the same `c` is *implied*
   (listed under `implied` with `by`: the keep or statement phrase, never an internal name); a keep all
   of whose equalities are implied is `redundant: { by: […] }`. `min clear` is redundant when a later
@@ -331,29 +372,40 @@ keep:
   `MAX_KEEP_CONFLICTS` = 64 conflict paths are named, each a walk bounded by its component's size,
   then `conflicts_truncated: true`. No step is charged (no evaluation happens, as `depends.ts` says).
 - `arch solve` (PS6.1) is what would *use* these facts; this card only reports them.
+- **Scope (R16):** `depends.keeps[]` is built in PS4.3b, and so are the per-storey rows (a keep row
+  on each `levels[]` entry's `depends`, beside the plan-wide list).
 
 ## 6. `arch impact` reads keeps
 
 `ImpactReport` gains `keeps`, present only when either side declares a keep, placed after
 `diagnostics`:
 
-    keeps: { broke: KeepImpact[], held: KeepImpact[], healed: KeepImpact[], unchanged_count }
+    keeps: { broke: KeepImpact[], held: KeepImpact[], healed: KeepImpact[],
+             added: KeepImpact[], removed: KeepImpact[], unchanged_count }
     KeepImpact = { keep, grade, level?, residual_mm: { before, after }, at?, changed: [names] }
 
-- Keeps are matched across the sides by `(level, keep text)`, span-blind (the text is the printed
-  form, so `--set` cannot change it; a keep's `<mm>` that reads a name prints the name).
+- Keeps are matched across the sides by `(level, keep text, occurrence index)`, span-blind (the
+  text is the printed form, so `--set` cannot change it; a keep's `<mm>` that reads a name prints the
+  name; the occurrence index tells apart two keeps with the same text, such as one a `for` loop
+  repeats). A keep present on one side only is reported under `added` or `removed`, with the one
+  residual it has (R15).
 - **broke**: violated after, and either held before or its residual changed. **healed**: held after,
   violated before. **held**: held on both sides while at least one of its targets is in `changed`
   (the useful signal: the change moved what the keep reads, and the keep still holds, e.g. `keep
   align a.right b.left` on the drill, held because `b` follows `a` by `right-of`). Everything else
   counts in `unchanged_count`. `changed` lists the keep's targets that `impact` reports as changed.
+- **Upper storeys (R15).** `impact` compares only the lowest storey's elements until PS4.6, so a keep
+  on a higher storey (and a `stacked` keep's upper levels) has no `changed` to read. Such a keep is
+  classified by its residual alone: broke and healed as above; held when it holds on both sides and
+  its residual changed (a `min clear` margin); otherwise unchanged. PS4.3b names per-storey
+  comparison of keep targets as its scope.
 - **`W_KEEP_VIOLATED` is reported once, under `keeps`**: `sideDiagnostics` drops the code from the
   compile channel before matching, so `diagnostics.broke`/`healed`/`unchanged_count` never count it.
   The PS4.2 seam comment said it would arrive there "with no change here"; reporting it twice (a
   diagnostic and a keep row with its residual) would double every broken hard keep in the summary,
   and the keep row says more. The seam comment is rewritten in the implementation PR.
-- Human summary: three sections after `Unchanged diagnostics`, `Keeps broke (n)`, `Keeps held (n)`,
-  `Keeps healed (n)`, one line per keep (`keep <text> (<grade>[, level n]): residual <before> →
+- Human summary: sections after `Unchanged diagnostics`, `Keeps broke (n)`, `Keeps held (n)`,
+  `Keeps healed (n)`, and `Keeps added (n)` / `Keeps removed (n)` only when non-empty, one line per keep (`keep <text> (<grade>[, level n]): residual <before> →
   <after> mm[ at <target>[, level n, <edge> edge]]`) and one `changed:` line.
 - PS4.5 (contact dependency, element `held`) is independent: a keep makes the drill's partition
   visible as a broken keep; PS4.5 makes it visible as a held element without any declaration.
@@ -368,24 +420,40 @@ Three claims, the heights law's weak/strong split (`test/height-byte-identity.te
   the test's own digest (`allStoreysPayload`, `allStoreysDiagnosticsPayload`) **before any code
   lands**. The resolver's step count of every keep-free corpus plan is unchanged
   (`test/step-budget.test.ts`).
-- **K2, strong: a keep draws nothing and moves nothing.** A keep corpus, `test/keep-corpus/*.arch`
-  (each form and grade, holding and broken; the drill of §9; a placed instance's datums; a
-  three-storey `stacked`), is compiled twice: as written, and with every `keep` statement removed by
-  its parsed span inside the test (no twin file to drift). Then: every storey's SVG is identical;
-  `lint()` is identical; `describe()` is identical once the `keeps` key and `depends.keeps` are
-  removed; `compile().diagnostics` is identical once `W_KEEP_VIOLATED` rows are removed; and for the
-  plans whose keeps all hold, `compile().diagnostics` is identical with nothing removed. Each
-  comparison is a SHA-256 over the payload.
+- **K2, strong: an accepted keep draws nothing and moves nothing** (scoped to accepted keeps, R8,
+  and to plans within the step budget, R13). A keep corpus, `test/keep-corpus/*.arch` (each form and
+  grade, holding and broken; the drill of §9; a placed instance's datums; a three-storey `stacked`;
+  one keep inside a `for` and one inside an `if`, R9), is compiled twice: as written, and with each
+  keep's byte span **blanked with spaces, newlines kept**, inside the test (no twin file to drift),
+  so every later span, line and column is unchanged (R9). Then, each a SHA-256 over the payload:
+  every storey's SVG is identical; `lint()` is identical; `describe()` is identical once the `keeps`
+  key, `depends.keeps` and the `W_KEEP_VIOLATED` rows of `describe().diagnostics` are removed;
+  `compile().diagnostics` is identical once `W_KEEP_VIOLATED` rows are removed; and for the plans
+  whose keeps all hold, `compile().diagnostics` is identical with nothing removed.
 - **K3, the keep rows themselves.** A digest table over the keep corpus's `describe().keeps[]`,
   `validate --json` `keeps`/`next` and `impact --json` `keeps`, pinned last (as ADR 0029 §7's
   relation digests were). A table test pins each form's holds ⇔ residual rule and sign on hand-built
-  cases, including the lattice edge (a 0.001 mm offset breaks `align`).
+  cases, including:
+  - the lattice edge: a 0.001 mm offset breaks `align`;
+  - snapping (R5): `grid 50` and a room 4050 wide, so its `cx` lies on a half-grid and is read
+    snapped; a keep on that `cx` measures the snapped value, and no `implied` fact is entered for
+    it;
+  - lattice rounding (R6): `keep fixed a.left at 0.1 + 0.2` on a room at `x = 0.3` with no grid
+    holds, both sides rounding to 300 lattice units;
+  - `min clear` spanning (R18): the §9 after-case, whose outside wall's north and south runs end at
+    x 8100 inside a room that reaches 8500, so they do not span it, are not read
+    (`skipped_walls: 2`), and the depth span is the room's full 5000.
 
-Plus two laws the implementation needs anyway: **D4 equivariance** (`test/d4-oracle.ts`): turning or
-mirroring a whole root plan with its keeps keeps every `holds` and every residual's magnitude, and
-maps each residual's sign by the axis map; and the **printer round trip** (ADR 0020 §5): `arch fmt`
-prints every keep and re-parses to the same AST. Plan JSON drops keeps (it drops axes already) and
-the round-trip test pins that drop (PS4.10).
+Plus two laws the implementation needs anyway, and the printer's:
+- **D4 equivariance (R10).** PS4.3a ships a source-level transformer for keeps: under `mirror x` the
+  datum words `left`↔`right` swap, under `mirror y` `top`↔`bottom`, under a transpose `width`↔`depth`
+  and the `x`↔`y` axes swap, and `at` values are mapped. Turning or mirroring a whole root plan with
+  its keeps then keeps every `holds` and every residual's magnitude, signs mapped by the axis map, and
+  the residual sets are compared **unordered**. The `test/d4-oracle.ts` component route does not
+  apply: keeps are refused inside components (§2.2), so there is no instance frame to carry them.
+- **Printer round trip** (ADR 0020 §5): `arch fmt` prints every keep and re-parses to the same AST.
+  Plan JSON drops keeps (it drops axes already) and the round-trip test pins that drop (PS4.10,
+  PS4.11).
 
 ## 8. Teaching
 
@@ -396,10 +464,13 @@ words and the grades from the parser's tables and guarded by `assertVocabRendere
 list, the generated-artifacts rule):
 
 ```text
-keep (align <d> <d>… | equal width|depth <id> <id>… | offset <d|id> from <d> <mm> | min clear <room> <mm> | on axis <n> <wall> | stacked <room> on levels <n> <n>… | fixed <d> at <mm>) [hard|soft|advisory]   # CHECKED, never solved: moves and draws nothing. <d>: r.left…, axis <n>, a straight wall; authored ids. Broken hard (default): W_KEEP_VIOLATED + signed residual mm, fails --strict; soft: `next` only; advisory: describe only
+keep (align <d>… | equal width|depth <id>… | offset <d|id> from <d> <mm> | min clear <room> <mm> | on axis <label> <wall> | stacked <room|stair|elevator|void> on levels <n>… | fixed <d> at <mm>) [hard|soft|advisory]   # CHECKED, never solved: draws/moves nothing. <d>: r.left…, axis <label>, straight wall; authored ids. Broken: hard (default) W_KEEP_VIOLATED ±mm, fails --strict; soft in next; advisory in describe/validate/impact
 ```
 
-Cost, measured on the in-memory string the test measures (UTF-16 units): **432** with its newline.
+(Revised by R19: the line now says where advisory keeps are reported, teaches `stacked` on stairs,
+lifts and voids, and tells the axis `<label>` from the level `<n>`; shortened elsewhere to the same
+cost.) Cost, measured on the in-memory string the test measures (UTF-16 units): **432** with its
+newline.
 Headroom today: 271. The line does not fit alone, so four passages that describe only how
 something is *drawn* (nothing an author writes differently, no refusal code, no measured fact) pay
 for it, each an exact, unique substring of today's render:
@@ -481,12 +552,16 @@ span is the same on the after side.
   residuals 0, 0; holds. `min clear b`: `b` spans x 4000–8000, y 0–5000; full-depth vertical bodies
   meeting it: `p` (x 3950–4050, clipped to 4000–4050) and the shell's east segment (x 7900–8100,
   clipped to 7900–8000); widest free x interval 4050–7900 = 3850; horizontal: the shell's north and
-  south segments cut y 0–100 and 4900–5000, free 100–4900 = 4800; clear 3850; residual +50; holds.
+  south segments, whose bodies run x −100–8100 and so span `b`'s 4000–8000, cut y 0–100 and
+  4900–5000, free 100–4900 = 4800; clear 3850; residual +50; `skipped_walls: 0`; holds.
   `stacked b`: both storeys' `b` at x 4000–8000, y 0–5000; residuals 0; holds.
 - *After* (`AW = 4500`): `a.right` = 4500, `b.left` = 4500, `p` = 4000: residuals 0 (b.left) and
   −500 (p); broken, reported at `p`. `min clear b`: `b` spans x 4500–8500; `p` no longer meets it; the
   shell's east segment (x 7900–8100) crosses it at full depth; free x intervals 4500–7900 = 3400 and
-  8100–8500 = 400, widest 3400; y still 4800; clear 3400; residual −400; broken. `stacked b`: level 1
+  8100–8500 = 400, widest 3400; the shell's north and south segments still meet `b` but their bodies
+  end at x 8100, short of `b`'s 8500, so they do not span it and are not read (`skipped_walls: 2`,
+  R18), and the depth span is `b`'s full 5000; clear min(3400, 5000) = 3400; residual −400; broken.
+  `stacked b`: level 1
   `b` left 4500, right 8500; level 2 `b` left 4000, right 8000; residuals (level 2 − level 1) left −500,
   top 0, right −500, bottom 0; reported left −500 (first in edge order); broken.
 
@@ -521,13 +596,13 @@ span is the same on the after side.
     {
       "code": "W_KEEP_VIOLATED",
       "severity": "warning",
-      "message": "This keep holds the right edge of \"Living\", the left edge of \"Bed\" and a partition on one line; the partition is 500 mm left of the right edge of \"Living\". A keep moves nothing.",
+      "message": "This keep holds the right edge of \"Living\", the left edge of \"Bed\" and the partition in \"Living\" on one line; that partition is 500 mm left of the right edge of \"Living\". A keep moves nothing.",
       "line": 15,
       "col": 5,
       "span": [585, 612],
       "fix": "Edit the source so the keep holds (move what it names, or derive it from the rooms so it follows them), or remove the keep if the relation no longer applies. There is no machine fix: which side follows is a design decision.",
       "hints": [
-        "Residual -500 mm on x (+ is right): `p` at 4000, `a.right` at 4500.",
+        "The keep names `a.right`, `b.left` and `p`; residual -500 mm on x (+ is right): `p` at 4000, `a.right` at 4500.",
         "Nothing was moved: `p` stands where its own statement puts it."
       ],
       "level": 1
@@ -545,17 +620,23 @@ span is the same on the after side.
   "next": {
     "tier": "warning",
     "code": "W_KEEP_VIOLATED",
-    "message": "This keep holds the right edge of \"Living\", the left edge of \"Bed\" and a partition on one line; the partition is 500 mm left of the right edge of \"Living\". A keep moves nothing.",
+    "message": "This keep holds the right edge of \"Living\", the left edge of \"Bed\" and the partition in \"Living\" on one line; that partition is 500 mm left of the right edge of \"Living\". A keep moves nothing.",
     "span": [585, 612],
     "level": 1,
-    "hint": "Residual -500 mm on x (+ is right): `p` at 4000, `a.right` at 4500."
+    "hint": "The keep names `a.right`, `b.left` and `p`; residual -500 mm on x (+ is right): `p` at 4000, `a.right` at 4500."
   }
 }
 ```
 
 (The rows marked "today's row" are printed in full by the CLI exactly as `main@98b3d7ab` prints
 them; they are abbreviated here because K2 makes them identical by law. PR #269, open, rewords lint
-messages to drop ids; whatever it merges is what these rows then carry.) Were the hard keep fixed
+messages to drop ids; whatever it merges is what these rows then carry. The keep's own message
+names the partition through that PR's builder, `src/naming.ts`; "the partition in "Living"" is the
+phrase the design expects, and the exact words are the builder's.) `describe()`'s row for the `min
+clear` keep carries `skipped_walls: 2` (the shell's north and south runs). `next` names the broken
+keep here only because the drill has no earlier compile-channel warning: `W_KEEP_VIOLATED` is
+appended after the storey's other diagnostics, so within tier `warning` an earlier compile warning
+(an opening off its wall, an overlap) would be named first (R19). Were the hard keep fixed
 (`p` written `between a and b`), `next` would fall to tier `validity`; the soft `min clear` keep is
 named by `next` (tier `intent`) only once validity and drafting are clean; the advisory `stacked`
 keep never is.
@@ -603,6 +684,8 @@ and in `--json`, after `diagnostics` (which counts no `W_KEEP_VIOLATED`):
   ],
   "held": [],
   "healed": [],
+  "added": [],
+  "removed": [],
   "unchanged_count": 0
 }
 ```
@@ -642,7 +725,9 @@ PS4.3 stays `todo` with this design as its pointer, and is built in two PRs:
 - Files: `src/grammar/tokens.ts` (`keep` in `KEYWORDS.control`; the contextual word tables),
   `src/parser.ts`, `src/ast.ts` (`KeepNode`), `src/statement-print.ts` (printer), expansion in
   `src/ir.ts` (`E_KEEP_PLACEMENT`, `E_KEEP_LIMIT`, `E_KEEP_VALUE` at expansion), `src/keep.ts` (new:
-  measures, evaluation, the side table), the storey and plan hooks in `src/ir.ts`, `src/describe.ts`
+  measures, evaluation, the side table, the source-level D4 transformer for tests), the storey and
+  plan hooks in `src/ir.ts` (root keeps out of `shared` before `levelPlanFor`, `stacked` in
+  `resolveLevelsImpl`, the drawn pass only on `paper` plans), `src/describe.ts`
   (`keeps[]`), `src/error-catalog.ts` (seven entries with executed examples), regenerated `gen:*`
   outputs (grammars, errors, CLI reference, llms files); `docs/language-reference.md` (a `keep`
   section); `test/keep-*.test.ts`, `test/keep-corpus/`.
@@ -656,11 +741,16 @@ executor-hours. After PS4.3a.
   in the intent tier), `src/impact.ts` (`keeps` section, the `sideDiagnostics` filter, the seam
   comment), `src/analyze/depends.ts` (`depends.keeps[]`), `scripts/gen-llm-spec.ts` (the line and the
   four cuts of §8.1), `skills/archlang/SKILL.md` (§8.2), `src/manifest.ts` if the `impact` or
-  `validate` output description names its keys; tests.
+  `validate` output description names its keys; the no-worse checks of every source-rewriting
+  transform, each proven to count `W_KEEP_VIOLATED` (`src/repair.ts`, `src/fix-apply.ts`,
+  `src/reroll.ts`, and `finish`/`furnish`'s `gainedCodes`, R7); tests.
+- Scope named here (R15, R16): per-storey comparison of keep targets in `impact`, and the per-storey
+  `depends` rows for keeps.
 - Acceptance: the §9 outputs reproduced through the CLI (`validate --json` before and after, `impact`
   human and JSON, `describe --facts depends`); `validate --json` of every keep-free corpus plan
   byte-identical (K1); `next`'s corpus table test unchanged; spec ≤ 29,764 units as measured by the
-  test; a CHANGELOG `[Unreleased]` entry; the as-built record.
+  test; `test/spec-forms.test.ts` compiles one snippet per keep form as the spec line teaches it
+  (R19); a CHANGELOG `[Unreleased]` entry; the as-built record.
 
 Follow-up cards filed by this design:
 - **PS4.8 · `keep` inside a component**: per instance, in its own frame, with residual signs mapped
@@ -670,6 +760,8 @@ Follow-up cards filed by this design:
   extents.
 - **PS4.10 · Keeps over Plan JSON and MCP**: Plan JSON drops keeps in v1 (as it drops axes); MCP
   `validate`/`describe`/`impact` return `keeps` with the version bump (with PS5.3a's).
+- **PS4.11 · Plan JSON says it dropped keeps** (R19): an export of a plan with keeps carries a note
+  or a warning naming how many keeps it left out, so the loss is visible, not silent.
 
 PS6.1 (`arch solve`) stays parked "until `keep` has real use"; PS4.3 gives it the declarations and
 the static facts it would read.
@@ -736,3 +828,60 @@ the §12 decision it names; nothing in §1–§12 changes.
   side and missing `open` (1628–1648), and the outdoor hatch over a tint with the balcony's tint and
   railing (2194–2207); `src/datum.ts`'s `WINDOW_SILL` doc comment carries the GB 50352-2019 source.
   Net headroom after the keep line: **236** UTF-16 units (29,764 of 30,000).
+
+### Red-team round 1 rulings (R5–R20), folded in place
+
+The red team read the branch at `c00718f7` and found one blocker (R5) and fifteen should-fixes. The
+coordinator ruled on each; unlike R1–R4, these amend §1–§11 in place, and the marks `(R5)` … `(R20)`
+in the text show where. ADR 0033's decisions are amended to match. This was the last design round;
+the implementation PRs carry their own reviews.
+
+- **R5 (blocker) · Grid snapping.** A keep reads a datum as an expression in the plan would,
+  grid-snapped (ADR 0028 §2); §5's `implied`/`redundant` facts are entered only when the implication
+  survives snapping (an edge, never a half-grid centre; every literal of the implying statement a
+  multiple of `grid`). K3 gains the `grid 50`, 4050-wide room, `cx` case. §2, §5, §7.
+- **R6 · Lattice.** Datum values go on the 0.001 mm lattice by `sign(v)·round(|v|·1000)/1000`;
+  centres compare at twice their value. K3 gains the `0.1 + 0.2` case. §2, §7.
+- **R7 · No-worse laws.** Every source-rewriting transform's law counts a hard `W_KEEP_VIOLATED`:
+  `finish`, `furnish`, `repair`, fix-apply, `reroll`. §3.2, §11 (PS4.3b files).
+- **R8 · Refusals are compile errors.** A refused keep stops lint, `describe()` and `finish` as any
+  error does; K2 is scoped to accepted keeps. §2.2, §7; ADR scope line.
+- **R9 · K2's comparison.** Keep spans blanked with spaces (newlines kept); payloads as listed in §7,
+  including `describe().diagnostics` less `W_KEEP_VIOLATED`; the keep corpus has a keep inside a
+  `for` and one inside an `if`. §7.
+- **R10 · D4 equivariance.** A source-level keep transformer in PS4.3a; residual sets compared
+  unordered; the `d4-oracle` component route does not apply. §7, §11.
+- **R11 · Paper plans.** Keeps are evaluated in the drawn pass only, charged once, immediately before
+  the measure. §4.
+- **R12 · Storeys.** Root keeps leave `shared` before `levelPlanFor`; `stacked` is evaluated in
+  `resolveLevelsImpl` after the last storey; the root-placement refusal is raised once, without a
+  level. §4, §11.
+- **R13 · Budget.** The law is scoped to plans within the step budget; storeys share one counter; a
+  crossing in the `stacked` pass is `E_STEP_LIMIT` and leaves the plan unresolved; per-storey indexes
+  are built and charged once; `E_KEEP_LIMIT` is raised once and later keeps are dropped while still
+  charged. §2.2, §4, §7.
+- **R14 · Parsing.** A trailing grade word is always the grade; a value is the longest complete
+  expression; `keep` joins `STATEMENT_STARTS`; `min` stays the built-in; no new `KEYWORDS`
+  category. §2.
+- **R15 · `impact`.** Keeps match by `(level, text, occurrence index)`; one-sided keeps are `added` /
+  `removed`; upper-storey keeps are classified by their residual change; per-storey comparison is
+  PS4.3b scope. §6, §9, §11.
+- **R16 · `depends`.** Per-storey keep rows are PS4.3b scope. §5, §11.
+- **R17 · Messages.** `E_KEEP_*` and `W_KEEP_VIOLATED` messages are id-free, built with PR #269's
+  shared phrase builder (`src/naming.ts`); ids and datums go in `hints[0]`; a wall is named by the
+  builder's wall phrase, so "the partition" is never ambiguous. §2.2, §9.
+- **R18 · `min clear`.** A wall spans the room by its body (± t/2) on the joined outline; every wall
+  body counts whatever its `height`. §9's after-case corrected: depth span 5000, `skipped_walls: 2`
+  (residual unchanged, −400); K3 pins it. §2.1, §7, §9.
+- **R19 · Nits.** `cards.md`'s vocabulary line uses R3's forms; the spec line says where advisory
+  keeps are reported, teaches `stacked` on stairs, lifts and voids, and tells an axis `<label>` from a
+  level `<n>`, at the same 432 units; PS4.3b's acceptance gains `test/spec-forms.test.ts`; `stacked`'s
+  footprint is the resolved `at` + `size` rectangle; furniture in `offset` is read at its footprint
+  rectangle's own centre; §3.2's no-worse justification corrected (the law counts codes; inserted
+  pieces have no authored id); §9 notes that `next` names the keep only because the drill has no
+  earlier compile-channel warning; card PS4.11 filed (Plan JSON says it dropped keeps). §2.1, §3.2,
+  §8.1, §9, §11.
+- **R20 · `<mm>` is never grid-snapped.** A keep's own value is the author's number; it is put on
+  the lattice (R6), never on the grid. §2; ADR decision 2.
+
+D22's figures stand: the revised spec line is still 432 units, so the headroom is still 236.
