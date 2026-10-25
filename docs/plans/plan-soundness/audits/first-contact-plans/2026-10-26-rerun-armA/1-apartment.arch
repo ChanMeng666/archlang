@@ -1,0 +1,44 @@
+plan "Two-bed apartment" {
+  units mm
+  grid 100
+  paper A3 landscape
+  north up
+  dims auto all
+
+  room id=bed1 at (0,0) size 3500x3300 label "Bedroom 1" uses bedroom
+  room id=bath right-of bed1 size 2300x3300 label "Bathroom" uses bath
+  room id=bed2 right-of bath size 3600x3300 label "Bedroom 2" uses bedroom
+  room id=hall below bed1 size 9400x1200 label "Hall" uses hall
+  room id=living below hall size 9400x3000 label "Living / Dining / Kitchen" uses living
+
+  walls from rooms exterior 200 partition 100 { open between hall and living }
+
+  door on hall.left at center width 900 swing into hall
+  door between hall and bed1 at 600 from start width 800 swing into bed1
+  door between hall and bath at center width 800 swing into bath
+  door between hall and bed2 at 600 from end width 800 swing into bed2
+  door sliding on living.bottom at center width 1800
+
+  window on bed1.top width 1400
+  window on bath.top width 800
+  window on bed2.top width 1400
+  window on living.left width 1400
+  window on living.right width 1600
+
+  outdoor balcony at (3200,7600) size 3000x1500 label "Balcony"
+
+  furniture double_bed in bed1 anchor top flush size 1600x2000
+  furniture wardrobe against bed1.left size 1600x600
+  furniture double_bed in bed2 anchor top flush size 1500x2000
+  furniture wardrobe against bed2.right size 1600x600
+
+  furniture bathtub against bath.right size 1700x700
+  furniture wc against bath.top offset 500 size 400x700
+  furniture basin against bath.left size 500x400
+
+  furniture counter against living.left offset 1000 size 1600x600
+  furniture kitchen_sink against living.left offset 2300 size 800x600
+  furniture sofa_l in living anchor bottom-right inset 600 size 2400x900
+  furniture meeting_table in living anchor center size 1800x900
+  title { project "Two-bed apartment" drawn_by "Claude" date "2026-10-26" number "A-01" revision "A" }
+}

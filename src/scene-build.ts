@@ -937,11 +937,17 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
 
   // `schedule openings` — a tag beside every door and window (`opening-schedule.ts`), placed
   // from each opening's own wall. Before the label pass, so a room name moves off a tag
-  // rather than sitting on it; nothing is emitted without the opt-in.
+  // rather than sitting on it — except a name pinned with `label … at`, which never moves,
+  // so the tags keep off it instead. Nothing is emitted without the opt-in.
   if (ir.openingSchedule)
     nodes.push(
-      ...openingTagNodes(ir.elements, theme, sizes, nodes, (e) =>
-        runtime.registry.byKind.get(e.kind)?.yieldsWalls?.(e),
+      ...openingTagNodes(
+        ir.elements,
+        theme,
+        sizes,
+        nodes,
+        (e) => runtime.registry.byKind.get(e.kind)?.yieldsWalls?.(e),
+        pinnedLabelNodes(nodes, labelGroups),
       ),
     );
 
@@ -1062,4 +1068,14 @@ export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Ru
   // lowering above was handed, in its order, projected lazily. No backend draws it.
   attachSceneWalls(scene, ir.walls);
   return scene;
+}
+
+/** The text nodes of every room label pinned with `label "…" at (x,y)` — the names the label pass never moves. */
+function pinnedLabelNodes(nodes: readonly SceneNode[], groups: readonly LabelGroup[]): Set<SceneNode> {
+  const out = new Set<SceneNode>();
+  for (const g of groups) {
+    if (!g.fixed) continue;
+    for (let i = g.from; i < g.to; i++) if (nodes[i]!.layer === "labels") out.add(nodes[i]!);
+  }
+  return out;
 }

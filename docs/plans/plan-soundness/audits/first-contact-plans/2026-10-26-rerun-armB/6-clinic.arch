@@ -1,0 +1,55 @@
+plan "Small Clinic" {
+  units mm
+  grid 100
+  paper A3 landscape
+  north up
+  dims auto all
+
+  room id=consult_a at (0,0) size 4000x4000 label "Consulting 1" uses office
+  room id=consult_b right-of consult_a size 4000x4000 label "Consulting 2" uses office
+  room id=consult_c right-of consult_b size 4000x4000 label "Consulting 3" uses office
+  room id=corridor below consult_a size 12000x1600 label "Corridor" uses circulation
+  room id=waiting below corridor align left size 6000x4400 label "Waiting / Reception" uses entry
+  room id=wc right-of waiting size 2400x4400 label "Accessible WC" uses wc
+  room id=staff right-of wc size 2200x4400 label "Staff Room" uses utility
+  room id=store right-of staff size 1400x4400 label "Store" uses storage
+
+  walls from rooms exterior 200 partition 100 { open between waiting and corridor width 2400 }
+
+  door between consult_a and corridor at 2000 from start width 900 swing into consult_a
+  door between consult_b and corridor at 2000 from start width 900 swing into consult_b
+  door between consult_c and corridor at 2000 from start width 900 swing into consult_c
+  door between wc and corridor at 1200 from start width 900 swing into wc
+  door between staff and corridor at 1100 from start width 900 swing into staff
+  door between store and corridor at 700 from start width 800 swing into store
+
+  door on waiting.bottom at center width 1200 swing inward
+  door on corridor.right at center width 1000 swing inward
+
+  window on consult_a.top width 1500
+  window on consult_b.top width 1500
+  window on consult_c.top width 1500
+  window on waiting.left width 1800
+  window on waiting.bottom at 1200 from start width 1500
+  window on staff.bottom width 1200
+
+  furniture reception_desk in waiting anchor top-right inset 400 size 2000x700
+  furniture sofa_l in waiting anchor bottom-left inset 300 size 2000x900
+  furniture meeting_table in waiting anchor left inset 400 size 800x1200
+
+  furniture bed in consult_a anchor top-left inset 300 size 700x1900
+  furniture desk in consult_a anchor right inset 300 size 1400x700
+  furniture bed in consult_b anchor top-left inset 300 size 700x1900
+  furniture desk in consult_b anchor right inset 300 size 1400x700
+  furniture bed in consult_c anchor top-left inset 300 size 700x1900
+  furniture desk in consult_c anchor right inset 300 size 1400x700
+
+  furniture wc in wc anchor bottom flush size 400x700
+  furniture basin in wc anchor bottom-right flush size 500x400
+
+  furniture meeting_table in staff anchor center size 1200x800
+  furniture counter in staff anchor bottom flush size 1200x600
+  furniture locker in store anchor bottom flush size 1000x500
+
+  title { project "Small Clinic" drawn_by "ArchLang" date "2026-10-26" number "A-01" revision "A" }
+}

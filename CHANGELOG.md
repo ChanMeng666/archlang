@@ -382,6 +382,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Standard` on Arial instead of the reader's wider `txt` shape font. DXF output changes; SVG,
   PDF and PNG are unchanged.
 
+- A door or window tag no longer prints over a room name pinned with `label "…" at (x,y)`. Tags
+  are placed before the label pass so that a name moves off a tag, but a pinned name never moves,
+  so the two overprinted; the tag placer now treats pinned names as obstacles like furniture.
+  `hexagon-pavilion.arch` D01 now clears every ink; three `terrace-row.arch` tags (W08, W16 and
+  newly W04, W12) keep off its pinned names and sit on furniture or poché instead.
+
 - A door or opening's `between` is read off both faces of its host wall, at the centre and just
   inside both jambs, so an exterior door centred on a T-junction, or within 200 mm of a
   partition's end, is no longer given to the two rooms inside and no longer raises

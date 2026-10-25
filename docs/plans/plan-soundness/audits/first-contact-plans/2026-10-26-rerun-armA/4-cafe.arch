@@ -1,0 +1,55 @@
+plan "Corner Cafe" {
+  units mm
+  grid 100
+  paper A3 landscape
+  north up
+  dims auto all
+
+  room id=dining at (0,0) size 8000x7500 label "Cafe seating" uses dining
+  room id=kitchen right-of dining align top size 4000x2500 uses kitchen
+  room id=corr below kitchen align left size 1500x5000 uses hall
+  room id=store right-of corr align top size 2500x1500 uses storage
+  room id=staffwc below store align left size 2500x1500 label "Staff WC" uses wc
+  room id=accwc below staffwc align left size 2500x2000 label "Accessible WC" uses wc
+
+  walls from rooms exterior 200 partition 100 { open between dining and kitchen width 1000 }
+
+  door between kitchen and corr at 750 from start width 900 swing into corr
+  door between dining and corr at 2000 from start width 1000 swing into corr
+  door between corr and store at 750 from start width 900 swing into store
+  door between corr and staffwc at 750 from start width 800 swing into staffwc
+  door between corr and accwc at 1000 from start width 900 swing into accwc
+  door on dining.left at 6700 from start width 1100 swing into dining
+
+  window on dining.left width 1800 sill 300 head 2100
+  window on dining.top width 2000
+  window on dining.bottom width 2400
+  window on kitchen.top width 1400
+
+  furniture id=counter bar_counter against dining.top offset 5800 size 3000x700 label "Counter"
+
+  for r in 0..2 {
+    for c in 0..3 {
+      let cx = 2300 + c * 1900
+      let cy = 3300 + r * 2000
+      furniture table at (cx - 450, cy - 450) size 900x900
+      furniture chair at (cx - 225, cy - 900) size 450x450
+      furniture chair at (cx - 225, cy + 450) size 450x450 rotate 180
+      furniture chair at (cx - 900, cy - 225) size 450x450 rotate 270
+      furniture chair at (cx + 450, cy - 225) size 450x450 rotate 90
+    }
+  }
+
+  furniture counter in kitchen anchor top-left flush size 1800x600
+  furniture stove against kitchen.top offset 3000
+  furniture kitchen_sink against kitchen.right offset 1200
+  furniture fridge against kitchen.bottom offset 3400
+
+  furniture wc against accwc.right offset 1000
+  furniture basin against accwc.bottom offset 1700
+  furniture wc against staffwc.top offset 1900
+  furniture basin against staffwc.bottom offset 900
+  furniture locker against store.right offset 750
+
+  title { project "Corner Cafe" drawn_by "ArchLang" date "2026-10-26" number "A-01" revision "A" }
+}

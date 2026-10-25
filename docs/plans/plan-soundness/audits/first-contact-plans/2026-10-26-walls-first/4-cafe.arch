@@ -1,0 +1,62 @@
+plan "Corner Cafe" {
+  units mm
+  grid 50
+  paper A3 landscape
+  scale 1:100
+  north up
+  dims auto all
+
+  wall id=ext exterior thickness 200 { (0,0) (12000,0) (12000,7500) (0,7500) close }
+  wall id=p_main partition thickness 100 { (8000,0) (8000,7500) }
+  wall id=p_kit partition thickness 100 { (8000,3500) (12000,3500) }
+  wall id=p_store partition thickness 100 { (10000,3500) (10000,7500) }
+  wall id=p_wc partition thickness 100 { (8000,5000) (10000,5000) }
+
+  room id=seating at (0,0) size 8000x7500 label "Seating" uses dining
+  room id=kitchen at (8000,0) size 4000x3500 label "Kitchen" uses kitchen
+  room id=staffwc at (8000,3500) size 2000x1500 label "Staff WC" uses wc
+  room id=accwc at (8000,5000) size 2000x2500 label "Accessible WC" uses wc
+  room id=store at (10000,3500) size 2000x4000 label "Store" uses storage
+
+  # entrance near the SW corner, plus a second leaf-less corner glazing
+  door at (1200,7500) width 1200 wall exterior swing outward
+  window at (4500,7500) width 2400 wall exterior
+  window at (7000,7500) width 1200 wall exterior
+  window at (0,2500) width 1800 wall exterior
+  window at (0,5000) width 1800 wall exterior
+  window at (3000,0) width 2000 wall exterior
+  window at (10000,0) width 1600 wall exterior
+  window at (9000,7500) width 600 wall exterior
+
+  door on p_main at 2800 width 900 swing into kitchen
+  door on p_main at 6250 width 1000 swing into accwc
+  door on p_kit at 1000 width 800 swing into staffwc
+  door on p_kit at 3000 width 800 swing into store
+
+  furniture bar_counter at (3500,1000) size 3500x700 label "Counter"
+  furniture stove in kitchen anchor top-left flush size 700x1200
+  furniture kitchen_sink in kitchen anchor top-right flush size 1200x600
+  furniture fridge in kitchen anchor right flush size 700x700
+  furniture counter in kitchen anchor top flush size 1500x700
+  furniture wc in staffwc anchor bottom flush size 400x700
+  furniture basin in staffwc anchor top-left flush size 500x400
+  furniture wc in accwc anchor bottom flush size 400x700
+  furniture basin in accwc anchor top-left flush size 500x400
+  furniture locker in store anchor bottom-right flush size 600x1200
+
+  for r in 0..2 {
+    for c in 0..3 {
+      let x = 1500 + c * 2200
+      let y = 3300 + r * 2200
+      furniture table at (x, y) size 800x800
+      furniture chair at (x + 200, y - 500) size 400x400 rotate 0
+      furniture chair at (x + 200, y + 900) size 400x400 rotate 180
+      furniture chair at (x - 500, y + 200) size 400x400 rotate 270
+      furniture chair at (x + 900, y + 200) size 400x400 rotate 90
+    }
+  }
+
+  schedule rooms
+  legend
+  title { project "Corner Cafe" drawn_by "Author" date "2026-10-26" number "A-04" revision "A" }
+}
