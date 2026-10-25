@@ -16,7 +16,7 @@
  */
 
 import type { Diagnostic } from "../../diagnostics.js";
-import { defaultFootprint, fixtureSpec } from "../../fixtures-catalog.js";
+import { defaultFootprint, fixtureSpec, requiresWall } from "../../fixtures-catalog.js";
 import type { RFurniture } from "../../ir.js";
 import type { LintContext, LintRule } from "../context.js";
 import { mm } from "../measure.js";
@@ -60,6 +60,13 @@ function symbolFrame(f: RFurniture): { w: number; h: number } {
  *
  * The hint quotes the piece's id only when the author wrote one (ADR 0029 §6): an assigned id
  * renumbers the moment an earlier piece is named.
+ *
+ * An `against` piece written with its long side along the wall (a crib or a treadmill meant
+ * side-on) still warns: `against` derives the turn that backs the piece onto the wall, so the
+ * symbol IS drawn head-to-wall and stretched. Side-on is spelled `in <room> anchor <edge>` or
+ * `at (x,y)` with a `rotate`, which this rule reads as the right frame and
+ * `W_FIXTURE_BACK_TO_ROOM` declines for a piece that needs no services (PS2.50); the hint
+ * names that spelling for such a piece.
  */
 export const footprintTransposed: LintRule = {
   name: "footprint-transposed",
@@ -95,7 +102,9 @@ export const footprintTransposed: LintRule = {
           `Swap the two sides of \`size\` on ${ref}${swap ? ` (\`size ${swap.text}\`)` : ""}` +
             (turnable
               ? ", or keep the size and turn the symbol a quarter: add 90 to its `rotate` or take 90 from it, whichever puts its back where it belongs."
-              : "; the wall it backs onto states its turn."),
+              : requiresWall(f.category)
+                ? "; the wall it backs onto states its turn."
+                : "; `against` always backs a piece onto the wall. To stand it side-on to the wall instead, place it with `in <room> anchor <edge>` or `at (x,y)`, keep the size as plan width x height, and add the `rotate` that points its back along the wall (90 or 270 on a north or south wall, 0 or 180 on an east or west one)."),
         ],
         ...(swap
           ? {

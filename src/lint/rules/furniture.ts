@@ -216,6 +216,11 @@ function sizeTurnHint(
  * A corner with two valid walls, or a walled edge the shape rules out, leaves the
  * warning standing on its own for the author to resolve — lint never guesses between
  * alternatives (ADR 0005).
+ *
+ * When NO walled edge is a back candidate the piece touches the wall with a side or an end,
+ * and the rule declines for a piece that needs no services (a bed side-on to a wall, a
+ * wardrobe end-on to one: plan-soundness PS2.50). A `requiresWall` piece still warns there,
+ * because its back must reach a wall whatever the layout.
  */
 export const fixtureBackToRoom: LintRule = {
   name: "fixture-back-to-room",
@@ -247,6 +252,12 @@ export const fixtureBackToRoom: LintRule = {
       const name = f.label ?? f.category;
       const shape = backCandidateEdges(f.size, defaultFootprint(f.category));
       const targets = walled.filter((e) => shape.includes(e));
+      // No walled edge could be this piece's back: it stands side-on or end-on to the wall
+      // (a bed lengthwise along it, a wardrobe touching it with its end), which is a layout,
+      // not a back turned to the room. Only a piece that needs the wall for services
+      // (`requiresWall`: a WC, a basin, a washer) must still have its back on one, and for it
+      // the walled edge says its size is the wrong way round (the size-turn hint).
+      if (targets.length === 0 && !requiresWall(f.category)) continue;
       const facing = targets.length === 1 ? rotateForBackEdge(targets[0]!) : null;
       // `facing` is the quarter-turn in PLAN space, but the edit lands in the statement's
       // own source, which for a placed component is its local frame: pull it back through

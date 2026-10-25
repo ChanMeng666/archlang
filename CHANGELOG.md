@@ -400,6 +400,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of the bathrooms with no bath or shower. Of the rooms 1.43.1 furnished, 73 bathrooms and 12 WC rooms
   stay empty, because no set of the stage's fits them without one of those warnings.
 
+- `W_FIXTURE_BACK_TO_ROOM` no longer warns on a piece that needs no services and touches a wall
+  only with a side or an end its catalogued footprint rules out as a back, such as a bed lengthwise
+  along a wall or a wardrobe end-on to one (plan card PS2.50). That is a layout, not a back turned
+  to the room. A plumbed or vented fixture still warns, since its back must reach a wall, and so
+  does any piece whose front is on a wall that could be its back. Side-on placement now has a
+  lint-clean spelling, `in <room> anchor <edge>` or `at (x,y)` with a `rotate`. `against` still
+  backs a piece onto the wall, so a crib or treadmill written there with its long side along the
+  wall keeps its `W_FOOTPRINT_TRANSPOSED`, whose hint now names the side-on spelling.
+  `tiny-house` and `hillside-villa` each lose that one warning; their drawings and `describe()` are
+  unchanged.
+
 - A door or window tag no longer prints over a room name pinned with `label "…" at (x,y)`. Tags
   are placed before the label pass so that a name moves off a tag, but a pinned name never moves,
   so the two overprinted; the tag placer now treats pinned names as obstacles like furniture.

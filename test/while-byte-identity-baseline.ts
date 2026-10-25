@@ -323,6 +323,7 @@
 // Re-measured 2026-10-24 (PS2.12): the annotation-collision examples (seven fixed examples and townhouse); why, and the swap-back proof, in `test/byte-identity-baseline.ts`'s header.
 // Re-measured 2026-10-25 (PS2.11a/b): the twelve examples fixed for WC side clearance and tall units over windows, and test/fixtures/schedule-sheet (gains W_WC_SIDE_CLEARANCE, not edited); why, and the proof that nothing else moved, in `test/byte-identity-baseline.ts`'s header.
 // Re-measured 2026-10-25 (PS2.11c, PS2.11d): hillside-villa, relational and tiny-house fixed for a transposed footprint or a parked leaf; why, and the swap-back proof, in `test/byte-identity-baseline.ts`'s header.
+// Re-measured 2026-10-26 (PS2.50): hillside-villa and tiny-house each lose one `W_FIXTURE_BACK_TO_ROOM` (a piece side-on or end-on to a wall, no longer read as its back to the room); nothing else moved, see `test/byte-identity-baseline.ts`'s header.
 export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/accessible.arch", "37750afda8d897db7e4e03b20db72ffe0873a840210eca21d494aaefa7cfc0a2"],
   ["examples/aquarium.arch", "58e77abe2d1295ae6fd8cdfbb6edc7ecb793987a7556c8438a579d6c62eab0aa"], // re-measured for PS2.4, see header; PS2.10 dims fixed (byte-identity-baseline.ts)
@@ -338,7 +339,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/garden-house.arch", "ca301c92f83194527199e06d809ad2e2be11f317fe2570cea14eec9884f769a1"], // re-measured, see header
   ["examples/garden-loft.arch", "eb6be0aa8496c054e6aad518d92f7603772b5740d6822bfcbad7a6d58ef4951d"],
   ["examples/hexagon-pavilion.arch", "edef621837ae7adb96218de65b346e231ffe0c006dcd72f70a7e8d3b14777858"],
-  ["examples/hillside-villa.arch", "e8df383e5e44e84cf567cfb232ac0104e2669bcd5f4fd5d12bc64976ccc3e852"], // re-measured, see header
+  ["examples/hillside-villa.arch", "e281f29d171318d0aa279a5e29ed8d9d5716ca2790139897da2ec20a9dc8e16f"], // re-measured, see header
   ["examples/imports.arch", "f1b5ff9ee7189d217cd8df57d04a1af5d2876bbc69ec588be202f28c68f47a5b"],
   ["examples/laneway-house.arch", "8d4c82f4eee8df75a460d87b9178701b88a3f655a2fa789fb11dcaeeb8e99052"],
   ["examples/library.arch", "85e0a65732f435bace56035fb5f1dc0cec529e5e9d86c19b4e57d12a7e4de86c"],
@@ -354,7 +355,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/studio.arch", "ed8513998b1bc62fa08d73a67c0897777ab68f186609896ae491b868adf463d8"],
   ["examples/terrace-row.arch", "7899ea115baf2f835b336b3fa19811131b6806b238c65d8e9dcdfca0a4ca4de9"],
   ["examples/themed.arch", "4e7c2e8038077ad9698c3e654e15f88ee89bf3468fe8261082dafcc018f24776"],
-  ["examples/tiny-house.arch", "6d929b7b131350ca55f1e3d9fc2020ad0a17517588f35fc984ef37d3f4adc51d"],
+  ["examples/tiny-house.arch", "ace948358949ce2bb556a7f43dfa5136b8b813a5505091148278470ced322191"],
   ["examples/townhouse.arch", "82df7bb4157fd9b4687a9e56aa3fc92fc185a21698e0072c2000ad847136360b"],
   ["examples/transit-hall.arch", "c9cd341de542893c026a75eab9251de869db96b405e334738ef535a170ff6a5d"],
   ["examples/two-bed.arch", "3eb3731a693055e708d480b93ab6309ae9b5ce7a4294643afa9639414dea5954"], // PS3.6 source rewrite, see ./byte-identity-baseline.ts
