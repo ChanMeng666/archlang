@@ -217,7 +217,10 @@ into PS3.12)
 
 **PS4.2 · `arch impact`.** `done` (PR #240, 7954f252)
 
-**PS4.3 · `keep` invariants (checked, never solved, by `compile()`).** `todo` (needs an ADR addendum)
+**PS4.3 · `keep` invariants (checked, never solved, by `compile()`).** `todo` (ADR 0033 Proposed)
+- Design: `research/2026-10-26-ps43-keep-design.md` (PR #n). Built as PS4.3a (statement, evaluation,
+  `W_KEEP_VIOLATED`, `describe().keeps[]`, the byte-identity law), then PS4.3b (`validate` `keeps`
+  and `next`, `impact` `keeps`, `depends.keeps[]`, the spec line and its cuts); design §11.
 - Vocabulary: `keep align …`, `keep equal …`, `keep offset <x> from <y> <mm>`, `keep min clear <room> <mm>`,
   `keep on axis <n> <wall>`, `keep stacked <room> on levels …`, `keep fixed …`.
 - Grades `hard`/`soft`/`advisory` (the IFC `IfcConstraintEnum` ladder).
@@ -264,6 +267,20 @@ into PS3.12)
     (`bed_1` with `x = 0·W`; a loop's elements at `i = 0`).
 - *Acceptance:* resolve bindings per instance and per scope, and compare values, not names.
   Found in PR #240.
+
+**PS4.8 · `keep` inside a component.** `todo` (after PS4.3)
+- Check a component's keeps per instance in its own frame, with residual signs mapped by the
+  instance's transform; until then `E_KEEP_PLACEMENT`. Source: `research/2026-10-26-ps43-keep-design.md` §11.
+
+**PS4.9 · `keep` measures beyond v1.** `todo` (after PS4.3)
+- Level-qualified datums, so `keep align` can hold a partition over a wall below (first-contact T7,
+  WT8); arc, oblique and partial walls in `min clear` (counted as `skipped_walls` in v1); polygon
+  room edges; furniture extents. Source: the PS4.3 design §2.1 and §11.
+
+**PS4.10 · Keeps over Plan JSON and MCP.** `todo` (after PS4.3; with PS5.3a's version bump)
+- Plan JSON drops keeps in v1, as it drops axes; carry them when a consumer needs them. MCP
+  `validate`/`describe`/`impact` return `keeps` (a tool-surface change: bump `packages/mcp` and both
+  `server.json` fields). Source: the PS4.3 design §7 and §11.
 
 ### PS5 · The taste layer and the review sheet (D2)
 

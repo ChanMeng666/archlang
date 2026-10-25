@@ -330,6 +330,11 @@ const PAGE_META = [
     "ADR 32 — taste is a separate score",
     "Taste is a separate, sourced score in [0, 1] that never gates: integer arithmetic, capped at 0.5 while a validity lint warning stands, never read by lint or describe.",
   ],
+  [
+    "/adr/0033-keep-invariants",
+    "ADR 33 — keep invariants (proposed)",
+    "A keep declares what must stay: the compiler measures it, reports a signed residual in mm and never moves anything; a broken hard keep fails --strict.",
+  ],
 ] as const;
 
 type PageMeta = { readonly title: string; readonly description: string };

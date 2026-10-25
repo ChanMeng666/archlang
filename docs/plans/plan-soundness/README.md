@@ -512,7 +512,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS4 · The change model: what follows, what stays, what breaks
 
-7 cards: 2 done, 5 todo. Cards, tables and as-built pointers: `cards.md` § PS4.
+10 cards: 2 done, 8 todo (PS4.8–PS4.10 filed by the PS4.3 design). Cards, tables and as-built pointers: `cards.md` § PS4.
 
 ### PS5 · The taste layer and the review sheet (D2)
 
@@ -569,7 +569,7 @@ This plan is a hypothesis about what will make AI-written plans professional. Tr
 4. **Can `between`-style forms cover non-rectilinear rooms?** Polygon and circle rooms are refused
    in v1 of PS3. What would an honest extension be?
 5. **What would make `impact` a planning tool, not just a report?** For example, "list the edits that
-   keep every `keep` true".
+   keep every `keep` true". *Designed 2026-10-26 (PS4.3, PR #n):* `research/2026-10-26-ps43-keep-design.md`, ADR 0033 (Proposed): a keep is checked with a signed residual and `impact` lists those a change breaks; listing the edits that keep them all true stays `arch solve` (PS6.1).
 6. **Multi-dwelling and multi-storey rules.** Toilet over habitable room below (GB 50096 5.4.4,
    mandatory), wet-stack alignment, and units sharing a corridor. These need a dwelling concept
    ArchLang lacks. *Researched 2026-10-18* (`research/2026-10-18-furniture-and-multistorey.md`
@@ -662,6 +662,7 @@ This plan is a hypothesis about what will make AI-written plans professional. Tr
 - `audits/2026-10-26-walls-first-control-arm.md` and `audits/first-contact-plans/2026-10-26-walls-first/*.arch`:
   PS1.3, the walls-first control arm of the same run (arm C); 54 verified defects against 52 for arm A; D21.
 - `research/2026-10-24-ps5-taste-design.md`: the PS5 taste layer design (row 5).
+- `research/2026-10-26-ps43-keep-design.md`: the PS4.3 `keep` design and ADR 0033's reasons (row 6).
 - `research/2026-10-24-ps0-ps2-as-built.md`, `research/2026-10-24-ps3-as-built.md`,
   `research/2026-10-25-ps5-as-built.md`: landed cards' as-built notes, verbatim (the last also
   holds row 5's PR rulings, §7 rows 1–5 as they stood, and D5/D6 detail).
