@@ -279,6 +279,16 @@ into PS3.12)
   naming how many keeps it left out, never a silent drop. Source: the PS4.3 design §11 (D22, red-team
   ruling R19).
 
+**PS4.12 · Gross internal area residue.** `todo` (MCP part with PS5.3a's version bump)
+- Memoise the figure: one `describe()` computes it up to three times (top level, `levels[0]`, and
+  `validateIntent`'s own `describe()`), about 36 ms each on a 300-ring stress plan.
+- `exterior-ring-subdivided` also fires on two rings touching at a corner, which is not a dividing
+  wall: word it, or split the case.
+- A court bounded only by partitions counts as floor (`courtyard-house` 175.84 m² against 163 m² on
+  centrelines): subtract an `outdoor` or `void` inside the shell, as a decision with a reverse-if.
+- MCP `validate` passes `intent.measures` through and serves the new schema fields.
+- Source: the PS4.4 as-built note, open questions; PR #271 red-team round 1.
+
 ### PS5 · The taste layer and the review sheet (D2)
 
 Taste is ADR 0032 (Accepted 2026-10-25; D11, D14). A done card's "record" is

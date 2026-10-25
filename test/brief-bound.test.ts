@@ -11,7 +11,7 @@
 import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
 import { applyLetOverride, describe, type Intent, intentFromJson, validateIntent } from "../src/index.js";
-import { grossInternalArea } from "../src/analyze/gross-area.js";
+import { GROSS_AREA_REASONS, grossInternalArea } from "../src/analyze/gross-area.js";
 
 const FC = "docs/plans/plan-soundness/audits/first-contact-plans";
 const REPRO = "docs/plans/plan-soundness/repro";
@@ -149,7 +149,18 @@ suite("PS4.4 — the GIA rule, case by case", () => {
         expect(keys[keys.indexOf("floor_area_m2") + 1]).toMatch(/^gross_internal_area_(m2|omitted)$/);
         expect("gross_internal_area_m2" in t !== "gross_internal_area_omitted" in t).toBe(true);
       }
+      // The building figure: exactly one of its two keys, top level only, right after the storey's.
+      const keys = Object.keys(s.totals);
+      expect(keys[keys.indexOf("floor_area_m2") + 2]).toMatch(/^gross_internal_area_all_levels_(m2|omitted)$/);
+      expect(
+        "gross_internal_area_all_levels_m2" in s.totals !== "gross_internal_area_all_levels_omitted" in s.totals,
+      ).toBe(true);
     }
+    // hillside-villa's ground storey is subdivided, so the building figure names it.
+    expect(describe(read("examples/hillside-villa.arch")).totals.gross_internal_area_all_levels_omitted).toEqual({
+      level: 1,
+      reason: "exterior-ring-subdivided",
+    });
   });
 
   it("no wall is no work: an empty set is refused before the joinery", () => {
@@ -183,7 +194,7 @@ suite("PS4.4 — brief-bound intent assertions", () => {
       [
         "E_INTENT_GROSS_AREA",
         true,
-        "intent /grossInternalAreaM2: gross internal 65.32 m² outside [67, ∞], residual −1.68 m² (a two-bed apartment of about 70 m²)",
+        "intent /grossInternalAreaM2: gross internal area 65.32 m² outside [67, ∞], residual −1.68 m² (a two-bed apartment of about 70 m²)",
       ],
     ]);
     expect(r.measures![0]!.residual).toEqual([-1.68]);
@@ -210,6 +221,7 @@ suite("PS4.4 — brief-bound intent assertions", () => {
       // Written 5000 × 4000, measured 4000 × 5000: the size binds the rectangle, not its turn.
       ["/roomDimensions/1/sizeMm", [5000, 4000], [0, 0], true],
     ]);
+    expect(was.measures![2]!.turned).toBe(true);
     const now = validateIntent(o.source, intent);
     expect(now.ok).toBe(false);
     expect(now.violations.map((v) => [v.code, v.message])).toEqual([
@@ -251,6 +263,7 @@ suite("PS4.4 — brief-bound intent assertions", () => {
     ]);
     expect(r.violations.every((v) => v.code === "E_INTENT_UNMEASURED" && v.gate)).toBe(true);
     // Id-free: a room bound by its id is still named by its label.
+    expect(r.measures![4]!.what).toBe('"Bed" width');
     expect(r.violations.map((v) => v.message).join("\n")).not.toMatch(/\bid=|"a"/);
   });
 
@@ -295,5 +308,201 @@ suite("PS4.4 — brief-bound intent assertions", () => {
       "/roomDimensions/1/sizeMm/source: expected a string",
       "/roomDimensions/2: expected an object",
     ]);
+  });
+});
+
+suite("PS4.4 round 1 — the building's figure and storey-aware binding", () => {
+  const SHELL = "wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }";
+  const HOUSE = `plan "h" {
+  units mm
+  level 1 "Ground" {
+    ${SHELL}
+    room id=living at (0,0) size 8000x6000 label "Living"
+  }
+  level 2 "First" {
+    ${SHELL}
+    room id=master at (0,0) size 5000x6000 label "Master"
+    room id=bath at (5000,0) size 3000x6000 label "Bath"
+  }
+}`;
+
+  it("a two-storey 8000 × 6000 house: each storey 45.24, the building 90.48", () => {
+    const s = describe(HOUSE);
+    expect(s.ok).toBe(true);
+    expect(s.totals.gross_internal_area_m2).toBe(45.24); // the lowest storey, 7800 × 5800
+    expect(s.totals.gross_internal_area_all_levels_m2).toBe(90.48);
+    expect(s.levels!.map((l) => l.totals.gross_internal_area_m2)).toEqual([45.24, 45.24]);
+    // Top level only: no storey carries the building figure.
+    for (const l of s.levels!) expect("gross_internal_area_all_levels_m2" in l.totals).toBe(false);
+    const keys = Object.keys(s.totals);
+    expect(keys.slice(keys.indexOf("floor_area_m2"), keys.indexOf("floor_area_m2") + 3)).toEqual([
+      "floor_area_m2",
+      "gross_internal_area_m2",
+      "gross_internal_area_all_levels_m2",
+    ]);
+  });
+
+  it("a single-storey plan's building figure is its storey's", () => {
+    const t = describe(read(`${FC}/2026-10-26-rerun-armA/1-apartment.arch`)).totals;
+    expect(t.gross_internal_area_all_levels_m2).toBe(t.gross_internal_area_m2);
+    expect(t.gross_internal_area_all_levels_m2).toBe(67.16);
+    const none = describe('plan "n" {\n  units mm\n  room id=a at (0,0) size 3000x3000 label "A"\n}').totals;
+    expect(none.gross_internal_area_all_levels_omitted).toEqual({ reason: "no-closed-exterior-ring" });
+  });
+
+  it("the building figure is omitted, naming the first storey that has none", () => {
+    const src = HOUSE.replace(
+      /\n}$/,
+      `\n  level 3 "Roof" {\n    room id=deck at (0,0) size 8000x6000 label "Deck"\n  }\n}`,
+    );
+    const t = describe(src).totals;
+    expect(t.gross_internal_area_all_levels_m2).toBeUndefined();
+    expect(t.gross_internal_area_all_levels_omitted).toEqual({ level: 3, reason: "no-closed-exterior-ring" });
+    const r = validateIntent(src, { grossInternalAreaM2: { min: 80, source: "about 90 m² over two floors" } });
+    expect(r.violations.map((v) => [v.code, v.message])).toEqual([
+      [
+        "E_INTENT_UNMEASURED",
+        "intent /grossInternalAreaM2: cannot measure gross internal area over 3 storeys: level 3: the plan has no closed exterior wall ring",
+      ],
+    ]);
+    expect(r.measures![0]).toMatchObject({ reason: "no-closed-exterior-ring", level: 3, pass: false });
+  });
+
+  it("grossInternalAreaM2 binds the building on a plan with storeys, and says so", () => {
+    const r = validateIntent(HOUSE, { grossInternalAreaM2: { min: 95, source: "about 100 m² over two floors" } });
+    expect(r.violations.map((v) => v.message)).toEqual([
+      "intent /grossInternalAreaM2: gross internal area over 2 storeys 90.48 m² outside [95, ∞], residual −4.52 m² (about 100 m² over two floors)",
+    ]);
+    expect(r.measures![0]).toMatchObject({ what: "gross internal area over 2 storeys", measured: [90.48] });
+  });
+
+  it("a room on an upper storey is found and named with its storey", () => {
+    const r = validateIntent(HOUSE, {
+      roomDimensions: [
+        { room: "Master", widthMm: { min: 5500, source: "a master bedroom 5.5 m wide" } },
+        { room: "bath", sizeMm: { w: 3000, h: 6000, source: "x" } },
+        { room: "Garage", widthMm: { min: 1, source: "x" } },
+      ],
+    });
+    expect(r.violations.map((v) => [v.code, v.message])).toEqual([
+      [
+        "E_INTENT_ROOM_DIMENSION",
+        'intent /roomDimensions/0/widthMm: "Master" on level 2 width 5000 mm on centrelines outside [5500, ∞] mm, residual −500 mm (a master bedroom 5.5 m wide)',
+      ],
+      [
+        "E_INTENT_UNMEASURED",
+        "intent /roomDimensions/2/widthMm: cannot measure the room width: no room on any storey has that id or label",
+      ],
+    ]);
+    expect(r.measures!.map((m) => [m.path, m.level, m.pass])).toEqual([
+      ["/roomDimensions/0/widthMm", 2, false],
+      ["/roomDimensions/1/sizeMm", 2, true],
+      ["/roomDimensions/2/widthMm", undefined, false],
+    ]);
+  });
+});
+
+suite("PS4.4 round 1 — selector, orientation, tolerance, rounding and refusals", () => {
+  const plan = (body: string): string => `plan "p" {\n  units mm\n${body}\n}`;
+  const one = (src: string, d: Intent["roomDimensions"]) => validateIntent(src, { roomDimensions: d });
+
+  it("an id naming one room and a label naming another is ambiguous", () => {
+    const src = plan(
+      '  room id=a at (0,0) size 3000x3000 label "Den"\n  room id=b at (3000,0) size 3000x3000 label "a"',
+    );
+    expect(one(src, [{ room: "a", widthMm: { min: 1, source: "x" } }]).measures![0]!.reason).toBe("room-ambiguous");
+    // The same selector naming one room twice (its id and its label) is that room.
+    const same = plan('  room id=den at (0,0) size 3000x3000 label "den"');
+    expect(one(same, [{ room: "den", widthMm: { min: 1, source: "x" } }]).measures![0]!.pass).toBe(true);
+  });
+
+  it("a tie keeps the orientation as written; the tolerance is inclusive (49 passes, 51 does not)", () => {
+    const sq = plan('  room id=r at (0,0) size 4000x4000 label "R"');
+    const tie = one(sq, [{ room: "r", sizeMm: { w: 4100, h: 3900, tolerance: 100, source: "x" } }]).measures![0]!;
+    expect(tie).toMatchObject({ measured: [4000, 4000], residual: [-100, 100], pass: true });
+    expect(tie.turned).toBeUndefined();
+    const at = (w: number) => plan(`  room id=r at (0,0) size ${w}x3600 label "R"`);
+    const bind: Intent["roomDimensions"] = [{ room: "r", sizeMm: { w: 3200, h: 3600, tolerance: 50, source: "x" } }];
+    expect(one(at(3249), bind).measures![0]).toMatchObject({ residual: [49, 0], pass: true });
+    const miss = one(at(3251), bind);
+    expect(miss.measures![0]).toMatchObject({ residual: [51, 0], pass: false });
+    expect(miss.violations[0]!.message).toBe(
+      'intent /roomDimensions/0/sizeMm: "R" size 3251 × 3600 mm on centrelines, wanted 3200 × 3600 ± 50 mm, residual +51 × 0 mm (x)',
+    );
+  });
+
+  it("measures and residuals are rounded the way the message prints them (10000/3 → 3333.33, −66.67)", () => {
+    const src = plan('  let W = 10000 / 3\n  room id=r at (0,0) size W x 3000 label "R"');
+    const r = one(src, [{ room: "r", widthMm: { min: 3400, source: "x" } }]);
+    expect(r.measures![0]).toMatchObject({ measured: [3333.33], residual: [-66.67] });
+    expect(r.violations[0]!.message).toContain(
+      "width 3333.33 mm on centrelines outside [3400, ∞] mm, residual −66.67 mm",
+    );
+  });
+
+  it("a circular room is refused; an unresolved plan is refused, for every measure", () => {
+    const circ = plan('  room id=c circle at (3000,3000) radius 2000 label "Round"');
+    expect(one(circ, [{ room: "c", widthMm: { min: 1, source: "x" } }]).measures![0]!.reason).toBe(
+      "room-not-rectangular",
+    );
+    const broken = 'plan "x" {\n  units mm\n  room id=a at (0,0) size 3000x\n}';
+    const r = validateIntent(broken, {
+      grossInternalAreaM2: { min: 1, source: "x" },
+      roomDimensions: [{ room: "a", sizeMm: { w: 1, h: 1, source: "x" } }],
+    });
+    expect(r.ok).toBe(false);
+    expect(r.measures!.map((m) => m.reason)).toEqual(["plan-unresolved", "plan-unresolved"]);
+  });
+
+  it("mixed shell thicknesses: each wall's own inner face (300 north, 200 elsewhere)", () => {
+    const t = describe(
+      plan(
+        [
+          "  wall id=n exterior thickness 300 { (0,0) (10000,0) }",
+          "  wall id=e exterior thickness 200 { (10000,0) (10000,8000) }",
+          "  wall id=s exterior thickness 200 { (10000,8000) (0,8000) }",
+          "  wall id=w exterior thickness 200 { (0,8000) (0,0) }",
+          '  room id=a at (0,0) size 10000x8000 label "A"',
+        ].join("\n"),
+      ),
+    ).totals;
+    expect(t.gross_internal_area_m2).toBe(75.95); // 9800 × 7750
+  });
+});
+
+suite("PS4.4 round 1 — caps, reasons and the caption path", () => {
+  /** `n` free-standing 2500 mm square exterior rings on a 3000 mm pitch. */
+  const rings = (n: number): string => {
+    const lines = ['plan "rings" {', "  units mm"];
+    for (let i = 0; i < n; i++) {
+      const x = (i % 25) * 3000;
+      const y = Math.floor(i / 25) * 3000;
+      lines.push(
+        `  wall id=r${i} exterior thickness 200 { (${x},${y}) (${x + 2500},${y}) (${x + 2500},${y + 2500}) (${x},${y + 2500}) close }`,
+      );
+    }
+    lines.push('  room id=a at (0,0) size 2500x2500 label "A"', "}");
+    return lines.join("\n");
+  };
+
+  it("499 free-standing rings: refused before the joinery (`too-much-work`), never approximated", () => {
+    const t = describe(rings(499)).totals;
+    expect(t.gross_internal_area_m2).toBeUndefined();
+    expect(t.gross_internal_area_omitted).toBe("too-much-work");
+  });
+
+  it("300 rings are measured: 300 × 2300²", () => {
+    expect(describe(rings(300)).totals.gross_internal_area_m2).toBe(Math.round(300 * 2300 * 2300 * 1e-4) / 100);
+  });
+
+  it("GROSS_AREA_REASONS is exactly the reason list `docs/analysis.md` documents", () => {
+    const row = read("docs/analysis.md")
+      .split("\n")
+      .find((l) => l.startsWith("| `totals.gross_internal_area_m2` |"));
+    expect(row).toBeDefined();
+    const documented = [...row!.matchAll(/`([a-z]+(?:-[a-z]+)*)`/g)]
+      .map((m) => m[1]!)
+      .filter((w) => w.includes("-") || w === "inconsistent");
+    expect(documented).toEqual([...GROSS_AREA_REASONS]);
   });
 });

@@ -1474,44 +1474,49 @@
  * adds the key replaced by `{}` (the figure still computed, so its work has no other effect),
  * the 18 digest suites (992 tests) reproduce every OLD pin; with it restored, each new row is
  * the measurement with that suite's own digest body. No row was blessed alone.
+ *
+ * Red-team round 1 added the building's figure to the TOP-LEVEL totals, right after the storey's:
+ * `gross_internal_area_all_levels_m2` (the sum over storeys) or `…_all_levels_omitted`. The same
+ * rows moved again, by that one key. With only that key's insertion removed, the 18 suites
+ * (992 tests) reproduced the round-0 pins; each row was then re-measured the same way.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
 export const BASELINE: [string, string][] = [
-  ["accessible", "10c56cb7839306023f74cb51ac3bde64625c4d370abd3beceda13b3ae27f0a45"],
-  ["aquarium", "cf2ea11a6c5ceb90583e4912caa6594ac33372d9879c53e2c1eb987beed6fc78"], // re-measured for PS2.4, see header; PS2.10 dims fixed, see header
-  ["attached", "a766dd342b93394a07758e19021561343946d2cddb2b8a927356f2fddfd50289"],
-  ["bungalow", "212e4b7910d17e62786fae7a1a71fb7a28cfe2c6891af728ece16aacb825ec11"],
-  ["classroom-block", "05b84173662d55960e9d9cc55a51a351651ba6e709846cc5b924720a008c3786"], // added with the example, re-measured for net area, see header
-  ["clinic", "5ea8e309d330aa2630db695f191806cc816c5c856ba1eae5fee3f2d79cc65a04"],
-  ["corner-cafe", "ecf35f4ff2b2c04c8505ffb20edc837322b7680de40ed51eb3102af7494bea88"], // added with the example, re-measured for net area, see header
-  ["courtyard-house", "2d2a5c54f21330cb3fb30864f7ca7becec82d9eb17d5677df7443f587fc05bab"], // re-measured for PS2.4, see header
-  ["furnished-flat", "a03cbdc9dfd1165cd3114b708a9e0cace3d7b7186cfe945348f043a67770ff82"],
-  ["gallery-l", "98b3b756d5baa8c52a2ed315ddff4da7444db55ff2e5e82fe5386fd163a73c22"], // PS2.10 dim fixed, see header
-  ["garden-house", "d2f1df95a1c52c2437e7a7ba047181b0275a52440c72eaf5f568f2b20897d9a4"], // re-measured, see header
-  ["garden-loft", "be87d777a9bd2aecb0cc1030ea31324ecf7bb3596f5aada5a0077818f3854a6f"],
-  ["hexagon-pavilion", "d296b1a660f755625fce8d446e88a3a038410ea26ad91d1c0059d4ab1f6fda5a"],
-  ["hillside-villa", "25a4d12d5572fba44994c75065b0fe9d042fab55a2418e84598878c692d71340"], // re-measured, see header
-  ["imports", "b306e64a3b330bb87395600c214bc71ffb87846d2bc2169f1bcff98617b28007"],
-  ["laneway-house", "391bfbbb41fcb09e93f242a5f72ab367ad1adbdec31d61b9d5b11374db88615a"],
-  ["library", "795c3c3a0e84889768551b0d9c4167de300c60187ee85233bbdced43b43c07cf"],
-  ["materials", "dcf3ded953a1cdd244a630770a408af80b917de225cac1542175bd4e408f1a9c"],
-  ["museum-wing", "fe33454644490d871564424ee21005f72e54b624c0cbb7ee2abec9b22a93bcda"],
-  ["museum-wings", "69c8f4ee92d6bf5e45434ab1ce3157119f3f3aa4f24fff53069eff2a1345fc82"], // re-measured, see header
-  ["museum", "a532e0e8762aaf9009c7afe618998571af86b58b9205c31a177436abd169c1df"],
-  ["one-room", "1471431662a9e37ef711dc7f688c20b2f9c64b7d7ec40766b377c662602ec4ed"],
-  ["parametric", "9f14ba2c6251cb58ef91402746897b3cbc2e4fccaf3ddce1ac2ada3c89105a85"],
-  ["practice-office", "1ffda163b8a3c8d059c02ca1fb347d30669e17ab795887a6e8617d286be286a3"], // added with the example, re-measured for net area, see header
-  ["relational", "e8d7a486f3235778e8c0b32c5792643c015cc83ebeedf9cc67803f4b7e7954c4"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header
-  ["sheet-notes", "adadf8d35feab9d29eea8ff6a2e9f33a69e988d165069199c579793aa3d7540d"], // re-measured, see header
-  ["studio", "82fe959144377f91640399c673cbcd4d58aad91b34ca45a26541ab5c99fbe3c1"],
-  ["terrace-row", "8e621d6c624ca832af68efb95fabce73c69bd7b280f651f3fd3df6891872e61f"], // re-measured, see header
-  ["themed", "6c2032816f85d5470848b2c37bd89a197d0ba069898bc97631f5165e9355f2aa"],
-  ["tiny-house", "4d79153482a0319296e7536f665168c8ec54d79e57272f39d0f505580980966a"],
-  ["townhouse", "9afa967838939dd525a8634c231bf5e952735720c0da55b301d90ff1a54a5908"], // re-measured, see header
-  ["transit-hall", "4ded3a9b79e5c60b4cdc2ccce3bf8f1437abee73df012762a890a67d9838e77c"],
-  ["two-bed", "57ad08ca74589f30db3515a62facade0d57e128cf9d723709bf6f584400215c2"], // PS3.6 source rewrite, see header
-  ["two-storey", "0c7fd2591e7a8199c9f25b1e1933ecc8891851955ae103dfaae7a040ee37a152"], // re-measured, see header
+  ["accessible", "697c11114da0d8d3b16dda0bac1e2492d550b797add8a3fe8799729a4e0b0a4f"],
+  ["aquarium", "7610953ce9881aebdfb1c3c3b2193f89f7e6bf9a7f26da47cb98415dab6964a1"], // re-measured for PS2.4, see header; PS2.10 dims fixed, see header
+  ["attached", "ab37b9000bd5ca7cf5f6940241f6b6945e338b207756773a2a9712a525100d72"],
+  ["bungalow", "8bedb43a0138fac952166fd494969a5debebbdb980cae64351e88abcc1eb986e"],
+  ["classroom-block", "62ade0f476fbc91032cbd78941f08e43432e29020cba1840577b6e853d16fe87"], // added with the example, re-measured for net area, see header
+  ["clinic", "2affc3a4552dbe0d12cb23eec39e5ec5cb333325a54c60ab47fcf62e2a1e1abb"],
+  ["corner-cafe", "ffc726d834d983a61dc85c47d495f11d43a7b80b6aa0363da5d37b1aa263c770"], // added with the example, re-measured for net area, see header
+  ["courtyard-house", "948b0433272da8e2e19717663a3d4ec5b86c2cdcb1f5e364d7d18175542e39d0"], // re-measured for PS2.4, see header
+  ["furnished-flat", "1e13bc3c1696e890263d9c33ad631e8fac10feb6eb83df6a7785e158eabe1820"],
+  ["gallery-l", "815e2649eef730d2ab10e16a928d78cee632a53c4ddedc5fc931eb423ac0b153"], // PS2.10 dim fixed, see header
+  ["garden-house", "6efb5416945d05d565a0ecff143cc0fa9177e1756cf4a4a1105b07d81ce8198c"], // re-measured, see header
+  ["garden-loft", "ba5d2d16920bddaac969c39b495cf7d3ad44583f3e129491ba8180f90f27e82e"],
+  ["hexagon-pavilion", "c9feff36e36022353398608901b0b508a737c27eca89e4e2c2becd3a5723e0b5"],
+  ["hillside-villa", "45e81759a75549bad275313cb92c273dd7da2b6abab2308fb271bee8b8d8bb38"], // re-measured, see header
+  ["imports", "20480639c190072f8baa98be8a499191037409ecfc248f448d32e45c23ea1433"],
+  ["laneway-house", "ceaa65cd4852d5fe9c9b057ef08be372e220a7664c299b551712e78e8d8df62b"],
+  ["library", "bbcffa76c3bfba89aea5fc585635c4372af10fc9980741734134b26fafa528b9"],
+  ["materials", "450c20dd9b04628d6a9b984b4a12b93ce7d5cbae0c7d57318d3667d6b41d82a0"],
+  ["museum-wing", "8f6450de07eb73c07d7f89389a52220619193bd4f185e1a066a4e3cc89f44bd0"],
+  ["museum-wings", "92100a063aa72a2818470584dd3269e08fbd6709fd4a6211198e07e88efc81c2"], // re-measured, see header
+  ["museum", "85e009329a24c9399db2299f3fb8c209668106850175043a89f60f5a49eba229"],
+  ["one-room", "17b12740d9e290ca59ea17013f89d54c42a3d6907c915db4338416966d988ce0"],
+  ["parametric", "bf71f8697f130bf4d44cca1604cb69558fe75b3f087e030fa8356c085257b2b5"],
+  ["practice-office", "342600441ad0bb86cbf6913e9388f2b8ae93b71a8fda9b79a858ee37e8c19fa3"], // added with the example, re-measured for net area, see header
+  ["relational", "8a699e8c7102633dea2497a09a959578e25985f13f625747808987935d41eda2"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header
+  ["sheet-notes", "4cc86e92db896dade462f57b6db434057abe253ab5e10232711804e4da31d7d9"], // re-measured, see header
+  ["studio", "8fb96c7149b5c1e97a41fdd896ebc2064dff9190fe1d6a81cf2451bd377e8778"],
+  ["terrace-row", "68fa9bded504a4e657722cd7cb5b2fe8c3cbef316dc77f588431221a796ba0c0"], // re-measured, see header
+  ["themed", "a510c72bd57c1cdb883e890c343de08693fa087b9afcd56b51b07122931f0cc9"],
+  ["tiny-house", "06bcbb67cd14c7f39f6524067c22a8a6f1dafa3c7aea5ef7af177b7c39d8777b"],
+  ["townhouse", "4375ced13bad62bd2cb034b4b41f5d91241c46e3551d37217cd3ae4691987c65"], // re-measured, see header
+  ["transit-hall", "03778b2ba38d06102ff51a716a9a5e4dc68ca9d089786c0a8ac9c97bac49be9c"],
+  ["two-bed", "2c6dda4d4b66b1983e1c8cdb6cea57a51c4d872e4222b4d57a4b7eb9835ef2a8"], // PS3.6 source rewrite, see header
+  ["two-storey", "d7781679f19d8e52b9e74e7b50217cca4ece689e091bcae37c1b82f0cbee244a"], // re-measured, see header
 ];
 
 /**
@@ -1526,40 +1531,40 @@ export const BASELINE: [string, string][] = [
  * described in the header.
  */
 export const SEMANTIC_BASELINE: [string, string][] = [
-  ["accessible", "c8efb17129261dfcf6181461ae4a64565f61d65948e3ef91910bdfdd54f79da1"],
-  ["aquarium", "69e4f4aa32e0dcc9e5442f067f858c83eb73b6a0e4183f52ebb87f97f5a3755c"], // re-measured for PS2.4, see header
-  ["attached", "09ea15ef09ad4bfb0506999cab257bf4403259de40125c9b52556afa18826832"],
-  ["bungalow", "6ec78e3ea6d359372405d3cc7aacb476bf6afb0fee7d322cd6a953ea9be9239a"],
-  ["classroom-block", "883705844057863da2420a4aee03510953da091e5e12050319c22cb4c05520c0"], // added with the example, re-measured for net area, see header
-  ["clinic", "60610ec4eeacc720cc0cc6abefd6c4ac38fb54b902971ae791ae521959e397fe"],
-  ["corner-cafe", "8e890bff5e5c3092052771f71d623e442cfbe3c66a76af045508180fbc04a89b"], // added with the example, re-measured for net area, see header
-  ["courtyard-house", "1466828fdfc2b886eb1578c1e72abc7b19a30143fcba055f1eb5233fa14beed8"], // re-measured for PS2.4, see header
-  ["furnished-flat", "f9740bf19ebe9393544c8c4b596ace39c7533ccd5db338ad6168b96e84bffe1d"],
-  ["gallery-l", "36dd0fa0f53c4cedab0d6b4bd807b154895fb3d9b3559d076a1c6f8534211a99"],
-  ["garden-house", "3b549992a7ed19fb82ca77a55188c7907464d25008f7be5aca779ad0918e6db9"], // re-measured, see header
-  ["garden-loft", "f4f205d03af49a148b86d4fd02f91e04735a4bca92016a9c75eaffac3345143c"],
-  ["hexagon-pavilion", "9b743a0868defc1a91d719c815f8d0bb873b2fba1902ac4d19bd7662632d0251"],
-  ["hillside-villa", "48721e209f451f50861f3adb47636eda172e47cd189c562928951bcb28572ea6"], // re-measured, see header
-  ["imports", "b7e813551cc793d516d0435c2a355a4a57c5f203bee036c25cce0fb77a914b28"],
-  ["laneway-house", "870b085220a30a6edb97ff76694b105c118b9e5d51360cb0ce559f10859b50d5"],
-  ["library", "a234e388bf983c474b91cc52c64e320def243b43508d4157162f8f122499847b"],
-  ["materials", "ab389e4c0fcbccacea3f61cdb3dddb72ff92e9b8e01305f2aadb073832142345"],
-  ["museum-wing", "345de37c0e977590c433be32cbb2a6f27112acfafd5acffb3a3f5ac2ee70e5da"],
-  ["museum-wings", "eeae76c336917d56973fd9ca01ef7c36f6ac2b8ab61895ece33d1bd79ee4d153"], // re-measured, see header
-  ["museum", "ee3dd59af1ca302f8deaa22b99dfb6c011d70e6bb5e40d941ef5e6cc018fd310"],
-  ["one-room", "7ab075b94ca84a536efac6fcfd6ae1d9bd48bd3de9f18371927d081c9f7db6ab"],
-  ["parametric", "9c53c2ec03871966c218a917a8e8b274ca657c7cbc953c55f0b16c029c494729"],
-  ["practice-office", "625802bab5e571046ff168cacac97037a468487a8727b133aeb85db9f8f5a9b0"], // added with the example, re-measured for net area, see header
-  ["relational", "3b5c2267f3eda8270ac7fd07f69d33778be8cd7e255913e990ef08c508491bbc"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header
-  ["sheet-notes", "d4f2f59125602fb50c91ee1a382765a3bcbf5ac489b604441fa493fe8e6c1ad3"], // added with the example, see header
-  ["studio", "7f8fc9b1f532bb497d826eaea9110f569df1b21cc91b558deb7e83588432abab"],
-  ["terrace-row", "7f5160c53bc645a46b3b152865b09fddc482e3952348dd1577ca668a05bee528"],
-  ["themed", "96302da829b3dcc7ccbdd42dc0aa2eb9ff0bd4b8e10ff0b79e8ba98e881d8a36"],
-  ["tiny-house", "c9e97f9dcc161f74ab936c20b029782577b4b03044758651c2197ea94437ea5f"],
-  ["townhouse", "a39afd923195ab5177a2d66eeddf8cda31c930748a9b7358e3c588cda0d4de3e"], // re-measured, see header
-  ["transit-hall", "d6b576eec9e82f201f2dcf21c587ccc314bf754d17ae8f1504d29fb6bbd19b9a"],
-  ["two-bed", "e2b8068bbca56dd2422efe090b0dfb9a945d524c91102e49d4546c928428f7a0"], // PS3.6 source rewrite, see header
-  ["two-storey", "cf12237182f1845eab55b2aa2986a385b1076bb3806d1423325d8621e84c912a"], // re-measured, see header
+  ["accessible", "337d9fc2cd8075fb8c3cacb6511df291e35c5419528e9070e5348a0bc56d6d45"],
+  ["aquarium", "6ba99782cc17a45ec099eba27898214f36c0d658db75d08df44993c5e068335b"], // re-measured for PS2.4, see header
+  ["attached", "ac26cc9877820bd6591a2bb6f2ca6378c9138b5b7a2f1c73d9884c758bacb2dc"],
+  ["bungalow", "f503dfffc8e3440f0e289acb63ab5a0de3660230dfd21ec0853128623b2fee68"],
+  ["classroom-block", "b1cda791988aa99367e61484ccd390084c65f6fd050374b10682078a4b23610f"], // added with the example, re-measured for net area, see header
+  ["clinic", "c01524dcae509c38f6eae88980c9ba715efe947991247b5494bbd51cc57e6381"],
+  ["corner-cafe", "602c1cc665f97d90fadec0223e4017dab908408a1e5bf5f4c241beae1a3c30c2"], // added with the example, re-measured for net area, see header
+  ["courtyard-house", "0599c25bc0fcbcfdc6448ce38f1b653ffc3939ee7944ed9739349555b0e9373c"], // re-measured for PS2.4, see header
+  ["furnished-flat", "0ef1347b4398a4b5b27de26166f3d188aa0dc353b177a4303289d1c714bf9ca5"],
+  ["gallery-l", "6aeb5f3345c4ec64fdc962a9fe9ac89c342a8412ed667a212da4a7006f97c17d"],
+  ["garden-house", "47486e58e23abd128703d866319351ef611cbf2a93b9ae057f829f783cf3bd8d"], // re-measured, see header
+  ["garden-loft", "d37d7f678f65473d7f0b023a1cb6caca96fc92da9db5f412e66db2726071c5e8"],
+  ["hexagon-pavilion", "435b9fb0cc07194798fde23c5528f869a07ad02ee3842b4d4d87775a76b6f36a"],
+  ["hillside-villa", "d7041e5ae1ea03dee62d15aa1eb3468a0ab3306bd6d3f43df4e328d2cb96e162"], // re-measured, see header
+  ["imports", "85b77c3fa1a9961a884cf5966ae5f87af436edf6adf3c16f2e426f72ed2b1b2f"],
+  ["laneway-house", "4f136c1c2c408940beb64a58cbc07e998a9d454b56ddea20ac7b81b04335bab0"],
+  ["library", "45659dc5d202091d7993e8dc160cdd17cd65c58a29c54f8fd16f62feff9095fd"],
+  ["materials", "2fcb14e1f71bb0ba850aff1c33172e32fc8e3bb898313b68ba72fe690150abbc"],
+  ["museum-wing", "e185d55c240c1c3df463aed1665aec2b33159838277d65d2246e984bd58aed1b"],
+  ["museum-wings", "18ad80aec75ed5a444a43896b3ca9aeec193640a6d6875ff9c6b716efa3ea22b"], // re-measured, see header
+  ["museum", "ac9fb61f482aad3dec755b99b7872ec6eea854f35ddd15da91b7efc267483f61"],
+  ["one-room", "48eb98086894551bb9dddcab954a4e3f3d5a532158da11e38fd711134709605a"],
+  ["parametric", "144703a7cf28e64c70cfc57451525839dd84da0f1d310135750b5d9f532d565a"],
+  ["practice-office", "bf39a9a46d2635dd1cb6f14d61d222859d2e6439c9c5307dece6ae180bd62eb2"], // added with the example, re-measured for net area, see header
+  ["relational", "16f34879e0042edbbad9edaeb80ca16748626b5fa5e5940db8c8e4e307dbc4ed"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header
+  ["sheet-notes", "148de5f5a58fb9533999df816a742074ec901216e3b9fb78eff338b91633a4b8"], // added with the example, see header
+  ["studio", "4be3a4f1f7c98743452bfb55b4a8434721654c03386102a4b3fc9db99f8169d7"],
+  ["terrace-row", "0c37d23bb8dfa83ce746869724ff62952637f1acb8a6ca353bfe8f7a440941a7"],
+  ["themed", "40eaaf5fe851e82c14084a04611f09ab4a5a0f91a095bfa15e4dbb0965358770"],
+  ["tiny-house", "e66d0c418a44b200e22fb3358faa8ee7aaec6ac818e7f90157ada6fd00f0e627"],
+  ["townhouse", "3577f336430ef832625c19b90bb79771177e65b298be10b6cde18cec1fdb9c60"], // re-measured, see header
+  ["transit-hall", "f731284c49b98bf43eae4e91c36dccf26b2e728a85803386bcd29268cd2e8ee6"],
+  ["two-bed", "df3c47a0219448b3735540031ddd562e1f811f50430fa30d02350d40efc3e6cf"], // PS3.6 source rewrite, see header
+  ["two-storey", "0f6783db26210caaa75e999903f5cefb0663456e98f6e31de73c1b8f7f26d4a6"], // re-measured, see header
 ];
 
 /**

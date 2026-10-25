@@ -88,7 +88,7 @@ const BASELINE: [string, string, string[]][] = [
     "relational-readers.arch",
     // Re-measured for PS0.5 (see the header): was 8bb99685…642f with
     // ["W_SWING_ROOM_NOT_ADJACENT@678", "E_FURN_AGAINST@734", "E_PLACE_REF@795"].
-    "34b25542caeeaa66adf747dfeb6a0561b75847b9db04880d90203bb303663fae",
+    "6e7386f0c2a15fdf4d328253d6ce9f28cccd62d4cb2c07f850fab13c3987e8a7",
     [],
   ],
   [

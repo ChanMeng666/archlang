@@ -70,8 +70,8 @@ representative, annotated example:
 | `roomsInclude[].windows` | a required window count for the concept's rooms; optional `facing` (`N`/`S`/`E`/`W`) restricts the count to windows whose host wall faces that **true compass** direction (`describe().windows[].facing` — the page direction read against the plan's [`north`](language-reference.md#plan-settings), so `facing: "S"` means compass south, not "toward the bottom of the page"). `facing` also accepts the five **names** a plan's [`site` block](language-reference.md#site-and-orientation) derives — `street`, `back`, `equator_side`, `sunrise_side`, `sunset_side` — each of which resolves to one of those letters through that plan's own site; see [Symbolic facings](#symbolic-facings-naming-a-direction-instead-of-a-letter) |
 | `totalAreaM2` | a total floor-area band, again with a `source` quote |
 | `adjacency` | interior-door adjacency the brief licenses, `{ conceptA: [conceptB, …] }` — **advisory** |
-| `grossInternalAreaM2` | a band on the plan's **gross internal area** — the floor inside the exterior walls' inner faces (`describe().totals.gross_internal_area_m2`), which is what a client's "about 70 m²" means; `totalAreaM2` runs to wall centrelines and reads several per cent larger. Same band rules and `source` |
-| `roomDimensions[]` | sizes the brief **states**, each bound to one room by `room` (its id, or its exact label): `widthMm`/`depthMm` bands on its centreline extent along x/y, or an exact `sizeMm` `{ w, h, tolerance? }` in either orientation. See [Brief-bound sizes](#brief-bound-sizes) |
+| `grossInternalAreaM2` | a band on the plan's **gross internal area** — the floor inside the exterior walls' inner faces (`describe().totals.gross_internal_area_m2`), which is what a client's "about 70 m²" means; `totalAreaM2` runs to wall centrelines and reads several per cent larger. On a plan with `level` blocks it binds the building: the sum over every storey (`totals.gross_internal_area_all_levels_m2`). Same band rules and `source` |
+| `roomDimensions[]` | sizes the brief **states**, each bound to one room on any storey by `room` (its id, or its exact label): `widthMm`/`depthMm` bands on its centreline extent along x/y, or an exact `sizeMm` `{ w, h, tolerance? }` in either orientation. See [Brief-bound sizes](#brief-bound-sizes) |
 | `reachable` | assert every room is reachable from a modeled entrance — **advisory**. On a multi-storey plan every storey must also have a way in (its own exterior door, or a stair/lift/escalator from a room you can reach); rooms on upper storeys are not checked one by one |
 
 Every quantitative band carries a `source`: the brief phrase that justified the number.
@@ -97,7 +97,8 @@ assertion, and an edit that breaks one fails the gate:
 `validate --intent --json` reports each one under `intent.measures`: the value measured, the
 signed residual (mm or m²; `0` inside a band) and the verdict. Widths and depths are read on
 wall centrelines from the room's own rectangle (`size`), so a polygon or circular room is
-refused, as is a selector that names no room or more than one. A plan with no closed exterior
+refused, as is a selector that names no room or more than one (an id and a label naming two
+different rooms included). An upper-storey room is found, and its message names the storey. A plan with no closed exterior
 wall ring has no gross internal area (`totals.gross_internal_area_omitted` says why). Each of
 these is `E_INTENT_UNMEASURED`: a refusal, never a silent pass.
 

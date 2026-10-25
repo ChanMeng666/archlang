@@ -498,149 +498,149 @@ suite("a module `let` that fails reports as it does in the module", () => {
 // Re-measured 2026-10-26 (PS2.50): hillside-villa and tiny-house each lose one `W_FIXTURE_BACK_TO_ROOM` (a piece side-on or end-on to a wall); nothing else moved, see `test/byte-identity-baseline.ts`'s header.
 const BASELINE: [string, string][] = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
-  ["examples/accessible.arch", "85e27237df00e50be8aa1b46cf4cf11f619b2bb1093b3fe3390dc7ceba87d609"],
-  ["examples/aquarium.arch", "78bd4379d464fdaac2de9d08e97fd8b99693c9713a05c15eb1add904b69e3d85"], // re-measured for PS2.4, see header; PS2.10 dims fixed (byte-identity-baseline.ts)
-  ["examples/attached.arch", "632df13a9d8ee99fe25a5b71a9df34597a2becd4e2c9ef69015d4ae38b63926b"],
-  ["examples/bungalow.arch", "f0ac0395cefa2df1b94a60cf396c00029e3ae2a31d19e6ec61e99e8db2e42631"],
-  ["examples/classroom-block.arch", "4e99994194840efe6dc2257a57719e4a3bc0a4378c152452926666c0e835514c"], // added with the example, re-measured for net area, see header
-  ["examples/clinic.arch", "3c8b4aeaa4f1e90c8aff25bb17e820da3f89756d54c321c5ae7c6d79dc8ee97d"],
-  ["examples/corner-cafe.arch", "8392dbffa52f6854d9406f8b7420d89cfac0c46e2ee6bc60e5b370f0d55e876e"], // added with the example, re-measured for net area, see header
-  ["examples/courtyard-house.arch", "b8121deef02b164c787053ba145465fd33d045dd7d87d38691d4b47ce673883d"], // re-measured for PS2.4, see header
+  ["examples/accessible.arch", "5f69fe78d45db6b096e3e7f4c44bfcdb537c4201d06fee8780e813112869f20c"],
+  ["examples/aquarium.arch", "3f1b6522d9005be0a0a306754d29c4ca993c817106f368e1696f784bdbc06c83"], // re-measured for PS2.4, see header; PS2.10 dims fixed (byte-identity-baseline.ts)
+  ["examples/attached.arch", "07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc"],
+  ["examples/bungalow.arch", "c7a8ee06b84987b04b737449cfd19028febb61c0e3ee85b6d147c1fdf2d1a7c1"],
+  ["examples/classroom-block.arch", "2a6c7630e21f8409663d2c7bf3a28cabb96670b8e6053a541e49e70276425c75"], // added with the example, re-measured for net area, see header
+  ["examples/clinic.arch", "8321ab6d53ba385d743d49fee08686afcf8b53915b7cc03f466aa72fd366d55a"],
+  ["examples/corner-cafe.arch", "199a01c5d9fcbe38de99e8a87109a800428eee868b171404e81e2dfbb51a57ce"], // added with the example, re-measured for net area, see header
+  ["examples/courtyard-house.arch", "27d16f56824757b4822d8f2215acc9e5ec84aca565b9f9ac039122aea466a3a6"], // re-measured for PS2.4, see header
   // Re-measured 2026-10-20 (PS2.19), `describe()` only: "Utility" reads `utility` (`byte-identity-baseline.ts`).
-  ["examples/furnished-flat.arch", "65b0ffbc76086c3cd0396f1a690cba6cb7c60811841b91cb1befbb3e35228540"],
-  ["examples/gallery-l.arch", "54b9ca169ce2163a1c75a399e49e2b5a6b60b3c8f8da7fd6e28179549374f94f"], // PS2.10 dims fixed (byte-identity-baseline.ts)
+  ["examples/furnished-flat.arch", "66735d9ba7a6c5c2fc3c13d6e8f9c697bcc570e1cdc4dcb8ecfdad11239b6611"],
+  ["examples/gallery-l.arch", "54eeeb9fb3e9a370306ffe5f435a3a93fb35c0bdf5576764e78b56d3b56e23d4"], // PS2.10 dims fixed (byte-identity-baseline.ts)
   // Re-measured because the EXAMPLE changed (backlog D.1, its doubled chairs removed), and again
   // for the legend's ground swatches (backlog D.3, level 1's SVG only): the same row, with the
   // same digest body, as `./while-byte-identity-baseline.ts`, whose header has the reasons.
-  ["examples/garden-house.arch", "061efca9f04557dae0bf7e272fe5b42daa09d869332f76c4b51ebf0d567cbd92"],
-  ["examples/garden-loft.arch", "987374c0f15d2b23767305c536015cd60f91c3d2cef2304f6538b995c94e5003"],
-  ["examples/hexagon-pavilion.arch", "891af8cd488c23db8001c962347fd41d29e021fda2d933a3b33d2b467b25cceb"],
+  ["examples/garden-house.arch", "2e3cd939b9e4d9e2d41e41001b5b4400e5ff07a61f425f5ed02bd6f067bd035b"],
+  ["examples/garden-loft.arch", "9c32144fa59fbed83396dcbfa1083cce3838976d60f4dae96f21df2f13c17cae"],
+  ["examples/hexagon-pavilion.arch", "3078765cf03974518e0f2b3ea13585cca69ffbb86438f0899218c8a1c24a09a8"],
   // Re-measured for the facade-probe fix (level 2's `dims auto` chains only), and again because
   // the EXAMPLE changed (backlog D.2, its piano turned and moved): the same row, with the same
   // digest body, as `./while-byte-identity-baseline.ts`, whose header has the reasons.
-  ["examples/hillside-villa.arch", "eeff7b8fa532f567c26cb473094ef6ff58648291b5875b75010e427fd505d333"], // re-measured, see header
-  ["examples/imports.arch", "ef15afb9ec7f0c2d2e2685f137e5934c90ac41af0603c8a70199278ba2352845"],
-  ["examples/laneway-house.arch", "abe288c68a810052245c81758241eb734189e257815c84c4eea5dc07be4ca358"],
-  ["examples/library.arch", "8a36040b92af80972952125daf0b73a27454313ad3b2b47b86569f84c1a7a74e"],
-  ["examples/materials.arch", "11159194446551253f972978abde8959a37a07fc52bfd92cd557884dffca540f"],
-  ["examples/museum-wing.arch", "6833ec14e690c8a93e03f7021ef453ca877b3a524717afa63e1b77cc4b986be3"],
-  ["examples/museum-wings.arch", "703c2614c7321c513055892eaaeacdd8cc9f9407837500d3678f39033c8bd6cb"],
-  ["examples/museum.arch", "b4226b78babacfe1a8d56e6d8ba2f64b46e20aab9dba533cb287fb947f3a2794"],
-  ["examples/one-room.arch", "95f9283ff6b02f3c39fd09d3e7a76ce977b06e5cb3095e5bdecd911a86e887b4"],
-  ["examples/parametric.arch", "2df383db4f3fd671faa3e5277ba0140409708ab45093008501119234cd756490"],
-  ["examples/practice-office.arch", "5eda7af75b09b46be68f9b6ea545a1d1dbb94f38ac2658db826faf1388231e2f"], // added with the example, re-measured for net area, see header
+  ["examples/hillside-villa.arch", "3975fbd3ba8c61bc9a8e6551109373d591aa968f29ad93506c6e11dc55f3db09"], // re-measured, see header
+  ["examples/imports.arch", "9cfb83e40cb9e3b4605be6d235145d963585295f5c25704ed827181b34f1762e"],
+  ["examples/laneway-house.arch", "fe7de9e78abe6f38ec285f1d23e79e95b6aea68de9da3a6fa26f0f41218c030f"],
+  ["examples/library.arch", "bec5ec7aaaefa4012e6e8c073562a55540e46d612110ad46e87c415f19af855a"],
+  ["examples/materials.arch", "1a4aa9bad5d42f06c1158d6089a71b784b8f079761b7a03dad17a1271fd5b2ff"],
+  ["examples/museum-wing.arch", "546b10dfb0204dbce454dff9e47713f32745285f4885e58a46b5faff23d10126"],
+  ["examples/museum-wings.arch", "0a2b5e7824a58f7ed6cc6c90c0e34db169de681accd7f8ffbb69a44cd889567c"],
+  ["examples/museum.arch", "90b0fffa53a66acac71a0f207bd6a49e05c4248dfd6ef90cb7aa7cddfde07e64"],
+  ["examples/one-room.arch", "8c47e263f778993d69c2f85d07a24b3a62c0b96d9f17ccb5cd9ebf2af6fa0120"],
+  ["examples/parametric.arch", "2a6b29053ac201b452bde4204087f10b17648473e3080327d2486e0cba11d86b"],
+  ["examples/practice-office.arch", "0c130db682d1f18310d6e8516b7949b3a476d70f7cbd9236bbd31afc32995429"], // added with the example, re-measured for net area, see header
   // Re-measured 2026-10-18 (PS0.7, the label classifier emits living; `describe()` only): the
   // same row, with the same digest body, as `./while-byte-identity-baseline.ts`, whose header has the reasons.
-  ["examples/relational.arch", "a22334f627579d184403c238a560059d0473b721ff3b04000955fbbad4e47de0"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see ./byte-identity-baseline.ts
+  ["examples/relational.arch", "330b426dc44cdf8ee2379d0c5469649da9f1dc7a88aa027a915b7e71a1045ec4"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see ./byte-identity-baseline.ts
   // ADDED with the new example (the issued-sheet statements), then re-measured once when the
   // thickness call-out change met it (drawing only): the same row, with the same digest body,
   // as `./while-byte-identity-baseline.ts`, whose header has both.
-  ["examples/sheet-notes.arch", "3f8154c12b87841ac58b2a9b4f44d6f3e723e7c5688f8857a279ddff4c8d2ce1"],
-  ["examples/studio.arch", "f44a791a974b9f363ccf610656d42084a2d4ec27cf77055478f3622aabedf119"],
-  ["examples/terrace-row.arch", "245a464047cebe8083df659a26f2c08259ca6e66f3e3431e3f047b7c1565689d"],
+  ["examples/sheet-notes.arch", "602cfd5f8e34268bf660dcad47b5cbf28332ddf92a119fba7317850ab9f9d798"],
+  ["examples/studio.arch", "c9e4c976c814207b7ad9b74be3b32eada7c16cb4d813e203fcbd06b65c15247e"],
+  ["examples/terrace-row.arch", "5b45dd460a3dbb1e788b8a839ee1f7fb594a0b1efe92118c84e1bf4639edca87"],
   // Re-measured 2026-10-18 (PS0.7, the label classifier emits living; `describe()` only): the
   // same row, with the same digest body, as `./while-byte-identity-baseline.ts`, whose header has the reasons.
-  ["examples/themed.arch", "70e8a38ff38f0585a17d4e430ffff6569b301a1468d2d03f1668ba3ba0086525"],
-  ["examples/tiny-house.arch", "10541668c3377c88575621a16f10e8c31265bd159dca43cc748cfa7e3c000686"],
-  ["examples/townhouse.arch", "19aaac944b66fd8b9a9d9ca9cd7764e95a1df3ad04d0c9cdbfa5039c45909d34"],
-  ["examples/transit-hall.arch", "3f2f312a7cb40ac5f5e63d852f1c33a4738099488ca20fd70439e43d2ac219e1"],
+  ["examples/themed.arch", "ba7fc662ed168816ea118fad7533e1c473d9b7eb5266cfef9c3fe5e1c443a390"],
+  ["examples/tiny-house.arch", "572dffc87ddae576a68890709561d35a728507f07edca99dc7b2ca5e0a5c63d0"],
+  ["examples/townhouse.arch", "dcddd916b6af56d49a6e843c46b4bcd4f3ee5f1711ce3dbe9102a88d9c0a1ef4"],
+  ["examples/transit-hall.arch", "b95b9997518ea3ed923a224042b7acbe334ec1e06528099349c9518c03b2b25a"],
   // Re-measured 2026-10-18 (PS0.7, the label classifier emits living; `describe()` only): the
   // same row, with the same digest body, as `./while-byte-identity-baseline.ts`, whose header has the reasons.
-  ["examples/two-bed.arch", "9fb86073236bea7574f0551f583dc05edb6bca91bc7cbe077b675d8d823d87ca"], // PS3.6 source rewrite, see ./byte-identity-baseline.ts
-  ["examples/two-storey.arch", "22fab4467821c289f31e506222cfcf2630731888e4e24105d2912e50c74ceb1e"],
-  ["examples/lib/doors.arch", "73fe5f4c758f2e520b7605b2c1e727378f2b15a21eb40c549f7672cf3bcbcfb1"],
-  ["examples/lib/fixtures.arch", "253b3c683338a810d540cff738b2138ef7c6748545d7c1a8c5890ca63bafe210"],
-  ["examples/lib/furniture.arch", "a07a3589fa884d943d3c01993922e4efedfbc08b44c32cadc0fcd092fabbd23e"],
-  ["test/fixtures/axes-grid.arch", "77d4b09d0c981d263ac921469314cccc8b9dc88d9fa18eef482633d167b0f785"],
-  ["test/fixtures/chain30.arch", "2997088e815b2f8fae3c3f02187d843a397941e424519d773ca8d7df148cf8b7"], // new fixture, see header
-  ["test/fixtures/dense-bays.arch", "4601b4bb1dc59a322e1f7af12b7b6d5f28567839c64832cd726d6ad27c0f7892"],
-  ["test/fixtures/diff-a.arch", "0e7174a00b646e604a1c4eaec97a680cbfa828a9291d13bf0840c04ae42a3b95"], // re-measured for PS2.4, see header
-  ["test/fixtures/diff-b.arch", "e0e70c1f605fad6611a4e1d4356a0902564b1bea546f721d9b71980457174703"],
-  ["test/fixtures/diff-circ-a.arch", "7841d2c91e36047ee99c31b64bc2eac53f1ed5db4443ae01f031db36d088add8"],
-  ["test/fixtures/diff-circ-b.arch", "b8ebc690809f823fe06939d013b0be7c7b340e533def45896719131317a83d72"],
-  ["test/fixtures/off-path-bypass.arch", "6ca934556d7587a7c734e14506e0a8790be063d348adee5dd90a9bcf22cf932f"], // new fixture, see header
-  ["test/fixtures/schedule-sheet.arch", "38c2bcf210494861de34861249b407aa87fecd9b7f4269dc445ecc0bbc2a8f76"], // re-measured, see header; PS2.29: message text only, same code, same span
-  ["test/fixtures/star30.arch", "3278865463e62a7e5fdacdf5c9a91231a71849bb5ffa750c7c1ab412cb8852ae"], // new fixture, see header
-  ["test/fixtures/zones-levels.arch", "7d45e53ca15b5a093ff00383694df8659f2245b8603f0930aec52e82c1135b1a"], // re-measured for PS2.4, see header
-  ["test/fixtures/zones-wings.arch", "fa91773f3c3426cf62ea9bcd58e7e74bc3eb6a68f1419f68f3f49fd575292988"], // re-measured for PS2.4, see header
-  ["test/recovery-corpus/attached.arch", "632df13a9d8ee99fe25a5b71a9df34597a2becd4e2c9ef69015d4ae38b63926b"],
-  ["test/recovery-corpus/clinic.arch", "3c8b4aeaa4f1e90c8aff25bb17e820da3f89756d54c321c5ae7c6d79dc8ee97d"],
-  ["test/recovery-corpus/materials.arch", "ada2a75387bd63c86a92405a44f4d4c57127bdb07ba912bcd891e8ac9b78f3d9"],
-  ["test/recovery-corpus/parametric.arch", "2df383db4f3fd671faa3e5277ba0140409708ab45093008501119234cd756490"],
-  ["test/recovery-corpus/studio.arch", "f44a791a974b9f363ccf610656d42084a2d4ec27cf77055478f3622aabedf119"],
-  ["test/recovery-corpus/terrace-row.arch", "846b4f2f42439d2d47ba1b63b7caa202328923e4c45031c04998bee97dd36a5a"],
+  ["examples/two-bed.arch", "4ddd7391b3da9f7b6b74bb336b6b65c0031a34fe99a22914f260026b2d14fc01"], // PS3.6 source rewrite, see ./byte-identity-baseline.ts
+  ["examples/two-storey.arch", "a794b452d5ffffafd0c3f3e559223d6cb112d8575fa2ea1a1dc4cc53fe4eb60f"],
+  ["examples/lib/doors.arch", "f57eaea084d2e6e62b85b8450ef96675e9f1466bea9aff24e2869f2d6f0c9804"],
+  ["examples/lib/fixtures.arch", "57d6c78e2eea8451a9b32a5828f3babb24b0251cc5c3b72675b431be22b3f310"],
+  ["examples/lib/furniture.arch", "adf16d60e17d76d76f092f95fb24dab4b7ba5ebaa977ed32bcc3a8eaddc7e05b"],
+  ["test/fixtures/axes-grid.arch", "e6be5d70788d931cacaa8cb1db2c2c454c1532d01153b90e2427c125770e5559"],
+  ["test/fixtures/chain30.arch", "df7e1343b01b2194505898df5017da81b58d8c840d01236ff75101f047396e43"], // new fixture, see header
+  ["test/fixtures/dense-bays.arch", "9f4ad4538851a27b463113cd7e563823d185bc7e18b342fd9eebb45f2887992f"],
+  ["test/fixtures/diff-a.arch", "33a377ed414748c1262bdfbd057d657f8dda607ff77be9d944d2daa5feb12b2a"], // re-measured for PS2.4, see header
+  ["test/fixtures/diff-b.arch", "1d4aaebab314c77742fc16d68c8925aa629ae42e1253a2167e240a2f25849ab1"],
+  ["test/fixtures/diff-circ-a.arch", "e5bebcb2ebee7d35409f726a36c6da902eb7f414cadc9b93adb6e5d8a014235d"],
+  ["test/fixtures/diff-circ-b.arch", "e52a2d0d2299ddaa916dc6e204c21d5296ccc52f4eb7376591c78eef685191de"],
+  ["test/fixtures/off-path-bypass.arch", "049e43531e791aa74bf153a788d97ae1afda47bf29ff744484896e9ca0d895c2"], // new fixture, see header
+  ["test/fixtures/schedule-sheet.arch", "15dc29228ea12dae7240ad843567f88218c5a57bd8838ea950b1a5792c2579a5"], // re-measured, see header; PS2.29: message text only, same code, same span
+  ["test/fixtures/star30.arch", "74a3209110606543fb04c1932b2ec60a78526ccdd2a7205cdfe972719efac471"], // new fixture, see header
+  ["test/fixtures/zones-levels.arch", "0d1a1bf3d1bfad34156356ccfa65b8d823ab0761344b1bafde050d6213d93b0f"], // re-measured for PS2.4, see header
+  ["test/fixtures/zones-wings.arch", "392675a2abd9bc82b094fc768190979fabf814b22dbb8d4fbaf7de410570c35a"], // re-measured for PS2.4, see header
+  ["test/recovery-corpus/attached.arch", "07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc"],
+  ["test/recovery-corpus/clinic.arch", "8321ab6d53ba385d743d49fee08686afcf8b53915b7cc03f466aa72fd366d55a"],
+  ["test/recovery-corpus/materials.arch", "bbda743cf59fdd49e1295d036c024723d5be658f0e1791202e08148f48b69ff6"],
+  ["test/recovery-corpus/parametric.arch", "2a6b29053ac201b452bde4204087f10b17648473e3080327d2486e0cba11d86b"],
+  ["test/recovery-corpus/studio.arch", "c9e4c976c814207b7ad9b74be3b32eada7c16cb4d813e203fcbd06b65c15247e"],
+  ["test/recovery-corpus/terrace-row.arch", "5e22a50567dc07de2340835bd50c979380a768842e11e15ef320fbf6f046beb5"],
   // Re-measured 2026-10-18 (PS0.7): a copy of `examples/themed.arch`, the same cause and value.
-  ["test/recovery-corpus/themed.arch", "ab2e4e203fc1aecbc99be0652e8f91e58b0eaa6d7ac35117d9ec435c10dc7fea"],
-  ["test/recovery-corpus/two-storey.arch", "b04122839a2a550e1848cdd1d7e30c460d8cd8812d67fa1ce767af19b0c50643"],
-  ["eval/goldens/accessible-bath.arch", "6dafe5b3a03ff00d306dd154020ccc578d22ab5c5c5e126503097d73910bc63e"],
-  ["eval/goldens/accessible-flat.arch", "67195a005d6b2dae19dfcf797d56f753f973e845fb009931c0c2c932fc00de0b"],
-  ["eval/goldens/against-wall-bath.arch", "abbe0a7e402f1e0fc572040c9841a4c2e47f2047a25680f09f7c28bdc50f9faa"],
-  ["eval/goldens/anchor-furniture.arch", "8bb4a263cf1399ceb961547baeb0977ef7d9ff13aae1f889c1a362b456cba835"],
-  ["eval/goldens/attach-openings.arch", "eca8ee546ff47350447f9a5dfee10d4f9f2782286df0cbe6ef1b7eff5a5df027"],
-  ["eval/goldens/bungalow.arch", "f8f7958f7cc7a82e6d4d93633d20a5693482217eb01f1686e5d188027cd123e7"],
-  ["eval/goldens/compact-studio.arch", "4667bdec42cad98ade05c4c8623b599fd3c220b90edeffebb5108c78aaad6ec4"],
-  ["eval/goldens/core-and-shell.arch", "8912fc688886be18aa6fc7ccfb85db7834bc65e10a79882cfe6c1cc3bbdb7466"],
-  ["eval/goldens/dims-auto-cottage.arch", "3321e80770f2f574a64d21939e9edce1a0edfba46295c8e16af5f2508fb41758"],
-  ["eval/goldens/galley-kitchen.arch", "e0d35f018de00be9beb92829656fa501de66d187fd92b16da965ef78029e3997"],
-  ["eval/goldens/l-shaped-flat.arch", "a8dc59458f89b35d46a2684bab5ba62f623196cb3760c6281dfc615a0f2f99a4"],
+  ["test/recovery-corpus/themed.arch", "925fd85f0ffd49574d214fc9ed44ca7e5f73b4ea8432a04ea66e2d1e11840643"],
+  ["test/recovery-corpus/two-storey.arch", "309aae8fcf8c345c37e98be99c0065e0acc4e71882e0ce7a522e04ec9ff87b22"],
+  ["eval/goldens/accessible-bath.arch", "d92fb8bf1dafde517a579409ff32602a06687a29149d3c2e7e1de69bd4cc4fce"],
+  ["eval/goldens/accessible-flat.arch", "3809f58573d9685eb190389ae026bdbafa161dd57bdbf109a90048f4bb3e802a"],
+  ["eval/goldens/against-wall-bath.arch", "b39f97de3ae495e7c18b74541403648a0972bd439b46d007f491f4f695b10e59"],
+  ["eval/goldens/anchor-furniture.arch", "c825ed175012280d8d024156f13d0b5e7bd3d3fca4a8ffde1f8d298b200c897c"],
+  ["eval/goldens/attach-openings.arch", "6145cc560b75ba3683ad2f7d29898671977d273dba1b241b4b780dbb21c0e2d2"],
+  ["eval/goldens/bungalow.arch", "4271ab6f36107a1e601f0e031955d1d06a1be07ceecd959ca5b857becdf7be86"],
+  ["eval/goldens/compact-studio.arch", "505973d51b527b6658aab88bb0e2e46b57279ccea3a5095aa26267f4b77b858e"],
+  ["eval/goldens/core-and-shell.arch", "1d9390f6b1cfbe4dcba5409be90f303d7d6b51b37511bb74b6bbe6040a85f2f8"],
+  ["eval/goldens/dims-auto-cottage.arch", "d50e01370b0e84eb57b6b1dea2b0c3d0b5eb4529fc75f85bc367395e8203aae3"],
+  ["eval/goldens/galley-kitchen.arch", "99acdcb1dafd1bd75e62fb6e57922d98c8b01fbe9d5fff838c4fc922a7d2d9fe"],
+  ["eval/goldens/l-shaped-flat.arch", "a98fde0d72db97ad3033d0b02344a655b5a882fd330f4e756dfcc35860cd5931"],
   // Re-measured 2026-10-20 for PS2.19 (`describe()` only: "Open Office" reads `office`) and again for
   // PS2.18 (`lint()` only: the kitchenette's daylight warning declines); see header.
-  ["eval/goldens/office.arch", "f6cf97e27ef5a48dc069230b98f9dd71a86c5c97df835621f27dd7f64241c117"],
-  ["eval/goldens/open-plan-loft.arch", "1827d0800eda9abab40b0913cb795951f198bda003b6d3c3c1a2faf668a61dd8"],
-  ["eval/goldens/reception-suite.arch", "c9bb588e0225d5ff470029fc45b9b5a83a3bf44420cfc12d2054df4a6b621749"],
-  ["eval/goldens/relational-studio.arch", "cb72851c21bdc5d07d0cf52b74b3b50050d3d2e556cb837b053822c4b494907c"],
-  ["eval/goldens/scripting-units.arch", "1c6c5cab4921e303acedfcdf93d036414c5f948dd755a13d78a83a192f9085cd"],
-  ["eval/goldens/sized-bedrooms.arch", "129652c81c6c52b15f3373d1d7edd2cbf37ce94035b51a66309ad409bfc20ff7"],
-  ["eval/goldens/sized-kitchen-flat.arch", "e985f43d0ccf9ba2143010597035e9888a41e95be4f1d1d66403e8a6c1bcd187"],
-  ["eval/goldens/sized-office-mix.arch", "1839f2f388911d9f60af4695a85c9a37ef2846a2db8ae2c3b9eba26dd40978ea"],
-  ["eval/goldens/sized-wet-room.arch", "259b50ca0cc821daa33e71c59aaa0d6ca9567c24a1311a8a478ccbaa8bd4bbb4"],
-  ["eval/goldens/strip-attach-clean.arch", "d2296285dbb3ea687c53590a067f7c0da4ba4f4e7251c81660e6b89441955dce"], // re-measured, see header
-  ["eval/goldens/strip-corridor.arch", "21d67396aef0acd4d8181db943589d6656f58ff29383b78c9077610963668dfc"],
-  ["eval/goldens/three-bed-2bath.arch", "aa0384bd43c3608d71e70505278040df1a46c955aab99025584292f75efd5ca4"],
-  ["eval/goldens/two-bath-flat.arch", "42d457d22261497573fb7b1c05e7da283a1c5db5d772866ff90caf10d7a4e5c7"],
-  ["eval/goldens/two-bed-hall.arch", "ac1300e8e4887254af170d91e7890ceebbc1c8d67ed3f1a871772cec57af105a"],
+  ["eval/goldens/office.arch", "1a973564c08433ff368642c0bcba6a0e6d0429e15ab299a1a21cccb21cf3ef5d"],
+  ["eval/goldens/open-plan-loft.arch", "63b2581c909426a3bc1cda32ae6e2f18ab6b55c054d15ab50cd8854139438440"],
+  ["eval/goldens/reception-suite.arch", "22e497e2b65ef398d41739622032ed7ba74ae2d6119255b45157c5780358d2ee"],
+  ["eval/goldens/relational-studio.arch", "e4eec5ae0421fb401d506e00aeb8caa6f00af6523a88975a5249840c60d0400b"],
+  ["eval/goldens/scripting-units.arch", "4278fd060523d0683d10698e5b664ca08c18f1bdef0bc6c5e3502d40cb928396"],
+  ["eval/goldens/sized-bedrooms.arch", "d89893bae1e7569300d69f5984e7ef04a959c0fa72081758a247d81d50f959c8"],
+  ["eval/goldens/sized-kitchen-flat.arch", "b8afa97af97231aa96dc009e92564574d4cc002ce4f891f6f206677458d8f06c"],
+  ["eval/goldens/sized-office-mix.arch", "d129cf5e22d3311c115ef632f749fe5fc8c535d0b58c54ab209fcaec1cbad960"],
+  ["eval/goldens/sized-wet-room.arch", "1e08941d7dd42a00dd37e30e326302d37c013a1cf2390b6c3dc371a4ad0e968c"],
+  ["eval/goldens/strip-attach-clean.arch", "de82e3e66dcaf656743890891a14e893306fc09e09dad8a72407288388557494"], // re-measured, see header
+  ["eval/goldens/strip-corridor.arch", "3f4df475aef8e3fda40bb8371c7550c777eceb2add0639fff5c4a0f8f8a4fee7"],
+  ["eval/goldens/three-bed-2bath.arch", "c798ea81b1d1b6384189185e3019f2a1a496a8461f824b9eef8e46209c55f24c"],
+  ["eval/goldens/two-bath-flat.arch", "f080683ead3f7d3e4b32470f067a39c011ad9195703277374ba198c59f31ae0a"],
+  ["eval/goldens/two-bed-hall.arch", "8dc7c690d9d6fb848e086db8882f2d6c6eb0b4f3f583a192985cc9cf94a2fad2"],
   [
     "eval/fidelity-plans/capped-wet-room.laundered.arch",
-    "a1833f7eed550c3c16db083794093b34f571994ba24b8b181f4870f96bdad0f7", // PS2.29: message text and the new door-id hint of W_SWING_OBSTRUCTED, same codes, same spans
+    "03b236fb694bde8aada86fb4c4bf9c737431704ace1cfa182b3cc7f85f7822ca", // PS2.29: message text and the new door-id hint of W_SWING_OBSTRUCTED, same codes, same spans
   ],
   [
     "eval/fidelity-plans/four-bed-cap.laundered.arch",
-    "851d8eb2f2da417f95fa99ce44fdd8a91705e20944643af40bafe4b0abad6896",
+    "6846f91e3b6b2af062e5b38f8d727c58d88cb96d934de5c1756a54ca6a816ed7",
   ],
   [
     "eval/fidelity-plans/min-bedroom-flat.faithful.arch",
-    "53787bb3ed97dfde8444c79a1bd27286d40ae374feed74be457221259158f30d",
+    "50a2b61812b950c1a5d6a9a39e18ec9529dbf02a5b28741e942d9c972a779a53",
   ],
   [
     "eval/fidelity-plans/min-bedroom-flat.laundered.arch",
-    "ca1695638c51c21a5f54d27e3749e55c6a8274715668eecd14074e0806e3986f",
+    "144db7eb9193223fa001d32b7b3877afcf86cfe53419daa46d18fb9714cf3591",
   ],
   [
     "eval/fidelity-plans/over-programmed-flat.laundered.arch",
-    "ff092e9eb0a468804b400f605c652043aa52327fbfe82ed2461666c42b192fc0",
+    "bd25f8cb69904cbd428c1a5beb94fac3c620a13b575af7258cda8a835850af74",
   ],
   [
     "eval/fidelity-plans/two-bed-min-area.faithful.arch",
-    "fd06942afd81250fa105679862e979d02cf79e75262baa4f2375e9b2f9bf1e8b",
+    "b12281ae967fb6d73120d9b3d5a876479fec788367e94b8ca762807bc3f519bf",
   ],
   [
     "eval/fidelity-plans/two-bed-min-area.laundered.arch",
-    "b90f8ca5269cda2845a9a765edf72116fab90eebff6adc7a13fef370bca6902d",
+    "5d728d9eb59b4204bc828462cc3a79b299a79f9f26d5d2612acf11c3f4d9b88f",
   ],
   [
     "eval/fidelity-plans/wide-doorways.faithful.arch",
-    "e592c912a977468e0c9312fb1203d2c0cbb909039610aebd50011453d34f8e03",
+    "1293a84e10439aa745aa581f4f6b963be23343541b9b800d53091232dca721af",
   ],
   [
     "eval/fidelity-plans/wide-doorways.laundered.arch",
-    "9186aa4f70c3ec56acaa6d67da796c18efab283fc81818b671faef4b09aba97a",
+    "c078a19c5369d0c124f5101388a3ae6db3aa6fa6b5e52aee38c6a935dd19fd50",
   ],
-  ["eval/faults/blocked-doorway.arch", "197392b25b6442ca08cd89e053ba57613cc918b99f7a7a00022c8b03fbf1deb2"],
-  ["eval/faults/combined.arch", "84c21c7e5e8a8fde7d7e0a8d28cc1fba7126841ed7a4bebafbdd27040b8e865e"],
-  ["eval/faults/furniture-through-wall.arch", "63156303d4ed25d96512fe94313b5512ff5c305de5d2c5c302c21bf8356d689c"],
-  ["eval/faults/off-wall-door.arch", "f04951025604414c5972f148d0afe5dc9ec19ccc96838a0961a31cb0e80ed968"],
-  ["eval/faults/off-wall-opening.arch", "252708db1350fc43b973d34b71b4fc19dc18bf36cc10add008d0a4e7eb72e7b5"],
-  ["eval/faults/off-wall-window.arch", "e3f6e07c15a1279d4b87451569f15789b2eb6c3777e301da64c4391335ead0f3"],
+  ["eval/faults/blocked-doorway.arch", "94987eba0cb780464780d51004225c5e92544242df51f8c4d87e2f38164f826e"],
+  ["eval/faults/combined.arch", "e03eaac79db548177fed5a9a65b56ea4d64b8acfc2c94fe5413fe122fcfe6da5"],
+  ["eval/faults/furniture-through-wall.arch", "20190dd103c9d4eb57dc7a1a1847a96ed041cf5d8162119f49a305fc3869aa3e"],
+  ["eval/faults/off-wall-door.arch", "b213f8bb418871df0e1e6a8f4d771f33ebb2f15a8fbbb6a89e9716796b172b38"],
+  ["eval/faults/off-wall-opening.arch", "43fb130733db20b7d2cd72ed7997d9e6cc53de9f8f1ae208e6267975aaf8775c"],
+  ["eval/faults/off-wall-window.arch", "49231dd8f88c327fffb9127b2e48bf7b0ac9f626f3f3b7e527e91637c9f6e336"],
 ];
 
 const ROOT = resolvePath(__dirname, "..");

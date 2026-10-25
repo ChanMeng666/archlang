@@ -417,10 +417,10 @@ suite("a function body has no room of its own", () => {
  */
 const DIGESTS: [string, string][] = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
-  ["plain", "a8b28ce67a55758cf6ceef4dbdee1d0c87c2cd4c2d558f09e596cb10f674f504"],
-  ["frames", "0c423b77e46d1a67b0bf7e76bd74eb29de1ebbe3c65b071f93f6c9310b8ced9d"],
-  ["compass", "ec0177d87a3effa66a5fc3ef2a70d624d0fdfa726a992abaa297d8366583e5bd"],
-  ["half-grid", "3f5000700db97c261d4a1ce9bb21d088aa68646d01f5e3192865fcc0012aa513"],
+  ["plain", "d715b3b0c20822545b511049a4edc5f59a57d883f1f73246491df4c9874e9cfd"],
+  ["frames", "8f91d2eae69c96262dd74c35f8fca1e2dd1786290a71c765661918993e032ffb"],
+  ["compass", "b1fc05ae2b823375fdeaba01ec043a2927b666d5fe0ae07ee2f72c78579fc640"],
+  ["half-grid", "496a205d32b5691ffaa7ea6f439a04a189df9c215bb86cb3619b4be1d80c6a91"],
 ];
 
 suite("datum plans: digest table", () => {

@@ -200,7 +200,7 @@
           ]
         }
       ],
-      "description": "Gross internal area band in square metres: the floor inside the exterior walls' INNER FACES (`describe().totals.gross_internal_area_m2`), which is what a client's \"about 70 m²\" means — `totalAreaM2` runs to wall centrelines and reads several per cent larger. Same band conventions as `areaM2`. GATING. A plan with no closed exterior wall ring has no such figure and fails as E_INTENT_UNMEASURED, never a silent pass.",
+      "description": "Gross internal area band in square metres: the floor inside the exterior walls' INNER FACES (`describe().totals.gross_internal_area_m2`), which is what a client's \"about 70 m²\" means — `totalAreaM2` runs to wall centrelines and reads several per cent larger. On a plan with `level` blocks it binds the BUILDING: the sum over every storey (`totals.gross_internal_area_all_levels_m2`). Same band conventions as `areaM2`. GATING. A plan with no closed exterior wall ring has no such figure and fails as E_INTENT_UNMEASURED, never a silent pass.",
       "properties": {
         "min": {
           "type": "number",
@@ -246,7 +246,7 @@
           "room": {
             "type": "string",
             "minLength": 1,
-            "description": "The room's id, or its label exactly as written (a label two rooms share is refused: bind by id)."
+            "description": "The room's id, or its label exactly as written, on any storey. A selector that matches more than one room (a shared label, an id repeated on two storeys, an id of one room that is another's label) is refused: bind by an id no other room shares."
           },
           "widthMm": {
             "type": "object",

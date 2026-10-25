@@ -679,6 +679,7 @@ suite("examples/museum.arch — the large-building flagship", () => {
       windows: 9,
       floor_area_m2: 6000,
       gross_internal_area_m2: 5952.09,
+      gross_internal_area_all_levels_m2: 5952.09, // one storey: the building is it
       net_floor_area_m2: 5860.73,
     });
     expect(d.access.hasEntrance).toBe(true);

@@ -18,9 +18,9 @@ const API: CompilerApi = { compile, describe, lint };
 
 const DIGESTS: [string, string][] = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
-  ["relations", "75da8ba71ca2dbe99ee6d286588d1ac4d74f9f32cee36e41d7096b4d04f40b2b"],
-  ["frames", "6252c543ce10ea7cc704eecc159079fd553866ba03d3e5092143ce9cd678ffc9"], // PS2.29: message text only, same code, same span
-  ["seats", "5727f50f227b619c0c813d214092cdc05e370a8307c53720f7ff312bb9bbd60a"], // seat hint reworded (red team round 1),
+  ["relations", "1525e298d30d6f4d31b8be3a4ee3916fb183582ba9ac831e0c5580905609d29f"],
+  ["frames", "52fedc6c31336afaf64806bda125a0f1ec6567a773a5c98ef531b2ffa0b6c7d2"], // PS2.29: message text only, same code, same span
+  ["seats", "1c34ef80221b0c63becf52f9a3bb03d87afdd38ee051222b2dce615aeff8563e"], // seat hint reworded (red team round 1),
   ["refused", "77a135b355d61ee48ed2f265c7dbb99da75edcb9ab381ead6c615e4cf8facd39"],
 ];
 

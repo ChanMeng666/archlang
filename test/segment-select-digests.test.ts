@@ -16,10 +16,10 @@ const API: CompilerApi = { compile, describe, lint };
 
 const DIGESTS: [string, string][] = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
-  ["ring", "335a9a56723acc72b2c5b8f677f5fd6058a27159b7abd80590a11e5122411e12"], // PS2.29: message text only, same code, same span
-  ["open", "9c7116b86187cbdf9058205f2e174594826ee232a52a829c53c6ab235a8d1178"], // PS2.29: message text only, same code, same span
-  ["derived", "b824d3e54dcf399c4a92cea4f24e9c77004c2b7a5cec27b0bdd1ad011d81c138"], // PS2.29: message text only, same code, same span
-  ["frames", "fa0aaef4dac05ab1263eeb24f40576f2040ff0067cafa550d008664eb208901a"], // PS2.29: message text only, same code, same span
+  ["ring", "b0e71529ada672dc0f5d35b78566b86fbcb5a523cd8157b5aad1651651b15d5b"], // PS2.29: message text only, same code, same span
+  ["open", "b084b3a9fe78e1ebadf676e66408ef9fae158c8cf41d6af084a6161de2b1b414"], // PS2.29: message text only, same code, same span
+  ["derived", "0e9ba98a14acd1b134b0a7c40a08d4099d98b7f1be73c44dc15ee4b9bfaf289d"], // PS2.29: message text only, same code, same span
+  ["frames", "ee6fa2bcd0358ac95cfd5a96626a1d5ea3127ac7156b43c7e571644d2024ccd9"], // PS2.29: message text only, same code, same span
   ["refused", "81a19f28940657c107b17ca08d7414999776c386e8a9d97a0e4450ca79c3346c"], // PS2.29: message text only, same code, same span
   ["compass-refused", "bdfa0c557e5c3653610eee94b8f9f9c1983a262b0f91b31ea86e1a7f4708e741"],
 ];

@@ -7,6 +7,7 @@
 
 import { readFileSync } from "node:fs";
 import { resolve as resolvePath } from "node:path";
+import { fmt2 } from "../num-format.js";
 import {
   describe,
   describeLevel,
@@ -645,11 +646,11 @@ const measuresJson = (r: IntentCheckResult): Record<string, unknown> => (r.measu
 /** One human line per brief-bound measure: what, the value, the residual, the verdict. */
 function measureLine(m: NonNullable<IntentCheckResult["measures"]>[number]): string {
   const unit = m.unit === "m2" ? " m²" : " mm";
-  const sign = (n: number): string => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : "0");
+  const sign = (n: number): string => (n > 0 ? `+${fmt2(n)}` : n < 0 ? `−${fmt2(-n)}` : "0");
   const body =
     m.measured && m.residual
-      ? `${m.measured.join(" × ")}${unit}, residual ${m.residual.map(sign).join(" × ")}${unit}`
-      : `unmeasured (${m.reason})`;
+      ? `${m.measured.map(fmt2).join(" × ")}${unit}${m.turned ? " (turned)" : ""}, residual ${m.residual.map(sign).join(" × ")}${unit}`
+      : `unmeasured (${m.level !== undefined ? `level ${m.level}: ` : ""}${m.reason})`;
   return `  measure ${m.path}: ${m.what} ${body} · ${m.pass ? "ok" : "miss"}\n`;
 }
 

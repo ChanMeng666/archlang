@@ -114,7 +114,8 @@ export interface Intent {
   reachable?: boolean;
   /**
    * Gross internal area band (m²): the floor inside the exterior walls' inner faces,
-   * `describe().totals.gross_internal_area_m2` — the figure a brief's "about N m²" means.
+   * `describe().totals.gross_internal_area_m2` — the figure a brief's "about N m²" means. On a
+   * plan with `level` blocks, the building's: `totals.gross_internal_area_all_levels_m2`.
    * Same band conventions and `source` rule as {@link totalAreaM2}. Gating.
    */
   grossInternalAreaM2?: { min?: number; max?: number; source: string };
@@ -162,6 +163,11 @@ export interface IntentMeasureReading {
   residual?: number[];
   /** Why there is no value. Present only then. */
   reason?: IntentUnmeasuredReason;
+  /** The storey the measure reads (a bound room's, or the first storey with no gross internal
+   *  area), present only on a multi-storey plan. */
+  level?: number;
+  /** An exact size matched with its sides swapped (the room stands turned); present only then. */
+  turned?: true;
 }
 
 /** A row of {@link IntentCheckResult.measures}: the reading, its intent path and its verdict. */
@@ -703,8 +709,8 @@ type BriefMeasureKind = "gross-area" | "room-dimension" | "room-size";
 
 /** Why each unmeasured reason leaves no value, as a clause of a detail line. */
 const UNMEASURED_TEXT: Record<IntentUnmeasuredReason, string> = {
-  "room-not-found": "no room has that id or label",
-  "room-ambiguous": "more than one room has that label (bind it by id)",
+  "room-not-found": "no room on any storey has that id or label",
+  "room-ambiguous": "more than one room has that id or label (bind it by an id no other room shares)",
   "room-not-rectangular": "the room is not a rectangle, so it has no single width or depth",
   "plan-unresolved": "the plan did not resolve",
   "no-closed-exterior-ring": "the plan has no closed exterior wall ring",
@@ -716,6 +722,9 @@ const UNMEASURED_TEXT: Record<IntentUnmeasuredReason, string> = {
 
 /** A signed residual against `[lo, hi]`: 0 inside, `v − lo` below, `v − hi` above. */
 const bandResidual = (v: number, lo: number, hi: number): number => (v < lo ? v - lo : v > hi ? v - hi : 0);
+
+/** Round to 2 decimals, as every printed figure is (`fmt2`), so a measure row and its message agree. */
+const r2 = (n: number): number => Math.round(n * 100) / 100;
 
 /** A residual as a signed number: `+200`, `−100`, `0`. */
 const signedText = (n: number): string => (n > 0 ? `+${fmt2(n)}` : n < 0 ? `−${fmt2(-n)}` : "0");
@@ -739,97 +748,144 @@ function rectOfRoom(r: RoomSummary): { w: number; h: number } | null {
   return w > 0 && h > 0 ? { w, h } : null;
 }
 
+/** A room of the plan with the storey it stands on (`level` set only on a plan of several). */
+interface StoreyRoom {
+  room: RoomSummary;
+  level?: number;
+}
+
+/** Every room of every storey, lowest storey first, each with its storey on a multi-storey plan.
+ *  A plan with no `level` blocks is its one storey (`summary.rooms`). */
+function storeyRooms(summary: SceneSummary): StoreyRoom[] {
+  const levels = summary.levels ?? [];
+  if (levels.length === 0) return summary.rooms.map((room) => ({ room }));
+  const multi = levels.length > 1;
+  return levels.flatMap((l) => l.rooms.map((room) => (multi ? { room, level: l.level } : { room })));
+}
+
 /** Each room's name as a person reads it (its quoted label, else the shared naming phrase of
- *  `src/naming.ts`), never its id. Built from the summary, the way `taste()` builds it. */
-function roomNames(summary: SceneSummary): Map<string, string> {
-  const rooms = summary.rooms;
-  const list: NameableRoom[] = rooms.map((r) => ({
-    id: r.id,
-    ...(r.label !== undefined ? { label: r.label } : {}),
-    uses: r.uses,
-    point: r.floor_circle
-      ? { x: r.floor_circle.cx, y: r.floor_circle.cy }
-      : r.floor_polygon.length >= 3
-        ? polygonLabelPoint(r.floor_polygon)
-        : { x: r.bbox.x + r.bbox.w / 2, y: r.bbox.y + r.bbox.h / 2 },
-    bounds: { x0: r.bbox.x, y0: r.bbox.y, x1: r.bbox.x + r.bbox.w, y1: r.bbox.y + r.bbox.h },
-    size: sizeWords(rectOfRoom(r), r.area_m2 * 1_000_000),
-  }));
-  const lowest = summary.levels?.[0];
-  const naming = makeNaming(list, lowest && (summary.levels?.length ?? 0) > 1 ? lowest.level : undefined);
-  const out = new Map<string, string>();
-  for (const [i, r] of rooms.entries()) out.set(r.id, r.label !== undefined ? `"${r.label}"` : naming.phrase(list[i]!));
+ *  `src/naming.ts`), never its id; on a multi-storey plan, with its storey (`"Master" on level 2`).
+ *  Built per storey from the summary, the way `taste()` builds it. */
+function roomNames(rooms: readonly StoreyRoom[]): Map<RoomSummary, string> {
+  const out = new Map<RoomSummary, string>();
+  const byLevel = new Map<number | undefined, StoreyRoom[]>();
+  for (const r of rooms) byLevel.set(r.level, [...(byLevel.get(r.level) ?? []), r]);
+  for (const [level, group] of byLevel) {
+    const list: NameableRoom[] = group.map(({ room: r }) => ({
+      id: r.id,
+      ...(r.label !== undefined ? { label: r.label } : {}),
+      uses: r.uses,
+      point: r.floor_circle
+        ? { x: r.floor_circle.cx, y: r.floor_circle.cy }
+        : r.floor_polygon.length >= 3
+          ? polygonLabelPoint(r.floor_polygon)
+          : { x: r.bbox.x + r.bbox.w / 2, y: r.bbox.y + r.bbox.h / 2 },
+      bounds: { x0: r.bbox.x, y0: r.bbox.y, x1: r.bbox.x + r.bbox.w, y1: r.bbox.y + r.bbox.h },
+      size: sizeWords(rectOfRoom(r), r.area_m2 * 1_000_000),
+    }));
+    const naming = makeNaming(list, level);
+    const where = level !== undefined ? ` on level ${level}` : "";
+    for (const [i, { room: r }] of group.entries())
+      out.set(r, r.label !== undefined ? `"${r.label}"${where}` : naming.phrase(list[i]!));
+  }
   return out;
 }
 
-/** The one room a selector binds (its id, else its exact label), or why there is none. */
+/** What a room-bound measure reads: the rooms of every storey and their names, each built once. */
+interface RoomIndex {
+  rooms: () => StoreyRoom[];
+  names: () => Map<RoomSummary, string>;
+}
+
+/** The one room a selector binds, on any storey, or why there is none. Every room whose id or
+ *  exact label is the selector counts, so an id naming one room and a label naming another is
+ *  `room-ambiguous`, never a silent pick. */
 function boundRoom(
   sel: string,
   summary: SceneSummary,
-): { room: RoomSummary; rect: { w: number; h: number } | null } | { reason: IntentUnmeasuredReason } {
+  index: RoomIndex,
+): { at: StoreyRoom; rect: { w: number; h: number } | null } | { reason: IntentUnmeasuredReason } {
   if (!summary.ok) return { reason: "plan-unresolved" };
-  const byId = summary.rooms.find((r) => r.id === sel);
-  const hits = byId ? [byId] : summary.rooms.filter((r) => r.label === sel);
+  const hits = index.rooms().filter(({ room: r }) => r.id === sel || r.label === sel);
   if (hits.length === 0) return { reason: "room-not-found" };
   if (hits.length > 1) return { reason: "room-ambiguous" };
-  const room = hits[0]!;
-  return { room, rect: rectOfRoom(room) };
+  const at = hits[0]!;
+  return { at, rect: rectOfRoom(at.room) };
 }
 
-/** A failing result for a measure that has no value. */
+/** A failing result for a measure that has no value. `level` names the storey when it is one
+ *  storey's figure that is missing. */
 function unmeasured(
   p: Extract<Predicate, { kind: BriefMeasureKind }>,
   what: string,
   unit: "mm" | "m2",
   reason: IntentUnmeasuredReason,
+  level?: number,
 ): AssertionResult {
+  const where = level !== undefined ? `level ${level}: ` : "";
   return {
     predicate: p,
     pass: false,
-    detail: `${p.kind === "gross-area" ? "area" : "size"}: cannot measure ${what}: ${UNMEASURED_TEXT[reason]}`,
-    measure: { what, unit, reason },
+    detail: `${p.kind === "gross-area" ? "area" : "size"}: cannot measure ${what}: ${where}${UNMEASURED_TEXT[reason]}`,
+    measure: { what, unit, reason, ...(level !== undefined ? { level } : {}) },
   };
 }
 
-/** `gross-area`: the plan's gross internal area against the band. */
+/** `gross-area`: the building's gross internal area against the band. On a plan with `level`
+ *  blocks it is the sum over every storey (`totals.gross_internal_area_all_levels_m2`), else the
+ *  one storey's figure; the detail says which. */
 function checkGrossArea(p: Extract<Predicate, { kind: "gross-area" }>, summary: SceneSummary): AssertionResult {
-  const what = "gross internal area";
+  const storeys = summary.levels?.length ?? 0;
+  const what = storeys > 1 ? `gross internal area over ${storeys} storeys` : "gross internal area";
   if (!summary.ok) return unmeasured(p, what, "m2", "plan-unresolved");
-  const a = summary.totals.gross_internal_area_m2;
-  if (a === undefined)
-    return unmeasured(p, what, "m2", summary.totals.gross_internal_area_omitted ?? "no-closed-exterior-ring");
+  const t = summary.totals;
+  const a = storeys > 0 ? t.gross_internal_area_all_levels_m2 : t.gross_internal_area_m2;
+  if (a === undefined) {
+    const missing = t.gross_internal_area_all_levels_omitted;
+    const reason = (storeys > 0 ? missing?.reason : t.gross_internal_area_omitted) ?? "no-closed-exterior-ring";
+    return unmeasured(p, what, "m2", reason, storeys > 1 ? missing?.level : undefined);
+  }
   // The figure is printed to 0.01 m², so the residual is too.
-  const residual = Math.round(bandResidual(a, p.minM2, p.maxM2) * 100) / 100;
+  const residual = r2(bandResidual(a, p.minM2, p.maxM2));
   const pass = a >= p.minM2 && a <= p.maxM2;
   const detail = pass
-    ? `area: gross internal ${fmt2(a)} m² within ${band(p.minM2, p.maxM2)}`
-    : `area: gross internal ${fmt2(a)} m² outside ${band(p.minM2, p.maxM2)}, residual ${signedText(residual)} m² (${p.source})`;
+    ? `area: ${what} ${fmt2(a)} m² within ${band(p.minM2, p.maxM2)}`
+    : `area: ${what} ${fmt2(a)} m² outside ${band(p.minM2, p.maxM2)}, residual ${signedText(residual)} m² (${p.source})`;
   return { predicate: p, pass, detail, measure: { what, unit: "m2", measured: [a], residual: [residual] } };
 }
 
 /** The name a room-bound measure speaks: the bound room's, else a neutral "the room". */
-const nameOfBound = (bound: ReturnType<typeof boundRoom>, names: () => Map<string, string>): string =>
-  "room" in bound ? (names().get(bound.room.id) ?? "the room") : "the room";
+const nameOfBound = (bound: ReturnType<typeof boundRoom>, index: RoomIndex): string =>
+  "at" in bound ? (index.names().get(bound.at.room) ?? "the room") : "the room";
+
+/** The storey a bound room stands on, for the measure row (multi-storey plans only). */
+const levelOf = (bound: ReturnType<typeof boundRoom>): { level?: number } =>
+  "at" in bound && bound.at.level !== undefined ? { level: bound.at.level } : {};
 
 /** `room-dimension`: one room's centreline width (x extent) or depth (y extent) against the band. */
 function checkRoomDimension(
   p: Extract<Predicate, { kind: "room-dimension" }>,
   summary: SceneSummary,
-  names: () => Map<string, string>,
+  index: RoomIndex,
 ): AssertionResult {
-  const bound = boundRoom(p.room, summary);
-  const what = `${nameOfBound(bound, names)} ${p.axis}`;
+  const bound = boundRoom(p.room, summary, index);
+  const what = `${nameOfBound(bound, index)} ${p.axis}`;
   if ("reason" in bound) return unmeasured(p, what, "mm", bound.reason);
-  if (!bound.rect) return unmeasured(p, what, "mm", "room-not-rectangular");
-  const v = p.axis === "width" ? bound.rect.w : bound.rect.h;
+  if (!bound.rect) return unmeasured(p, what, "mm", "room-not-rectangular", levelOf(bound).level);
+  const v = r2(p.axis === "width" ? bound.rect.w : bound.rect.h);
   const lo = p.minMm ?? 0;
   const hi = p.maxMm ?? INF;
-  const residual = bandResidual(v, lo, hi);
-  const pass = residual === 0;
+  const residual = r2(bandResidual(v, lo, hi));
+  const pass = v >= lo && v <= hi;
   const detail = pass
     ? `size: ${what} ${fmt2(v)} mm on centrelines within ${band(lo, hi)} mm`
     : `size: ${what} ${fmt2(v)} mm on centrelines outside ${band(lo, hi)} mm, residual ${signedText(residual)} mm (${p.source})`;
-  return { predicate: p, pass, detail, measure: { what, unit: "mm", measured: [v], residual: [residual] } };
+  return {
+    predicate: p,
+    pass,
+    detail,
+    measure: { what, unit: "mm", measured: [v], residual: [residual], ...levelOf(bound) },
+  };
 }
 
 /** `room-size`: one room's centreline `w × h`, in the orientation that fits best, within the
@@ -837,15 +893,16 @@ function checkRoomDimension(
 function checkRoomSize(
   p: Extract<Predicate, { kind: "room-size" }>,
   summary: SceneSummary,
-  names: () => Map<string, string>,
+  index: RoomIndex,
 ): AssertionResult {
-  const bound = boundRoom(p.room, summary);
-  const what = `${nameOfBound(bound, names)} size`;
+  const bound = boundRoom(p.room, summary, index);
+  const what = `${nameOfBound(bound, index)} size`;
   if ("reason" in bound) return unmeasured(p, what, "mm", bound.reason);
-  if (!bound.rect) return unmeasured(p, what, "mm", "room-not-rectangular");
-  const { w, h } = bound.rect;
-  const asWritten = [w - p.w, h - p.h];
-  const turned = [h - p.w, w - p.h];
+  if (!bound.rect) return unmeasured(p, what, "mm", "room-not-rectangular", levelOf(bound).level);
+  const w = r2(bound.rect.w);
+  const h = r2(bound.rect.h);
+  const asWritten = [r2(w - p.w), r2(h - p.h)];
+  const turned = [r2(h - p.w), r2(w - p.h)];
   const worst = (r: number[]): number => Math.max(Math.abs(r[0]!), Math.abs(r[1]!));
   const isTurned = worst(turned) < worst(asWritten);
   const residual = isTurned ? turned : asWritten;
@@ -858,7 +915,19 @@ function checkRoomSize(
   const detail = pass
     ? `size: ${what} ${got} matches ${want}${turnedNote}`
     : `size: ${what} ${got}, wanted ${want}${turnedNote}, residual ${signedText(residual[0]!)} × ${signedText(residual[1]!)} mm (${p.source})`;
-  return { predicate: p, pass, detail, measure: { what, unit: "mm", measured, residual } };
+  return {
+    predicate: p,
+    pass,
+    detail,
+    measure: {
+      what,
+      unit: "mm",
+      measured,
+      residual,
+      ...(isTurned ? { turned: true as const } : {}),
+      ...levelOf(bound),
+    },
+  };
 }
 
 /**
@@ -872,16 +941,20 @@ function checkRoomSize(
 export function checkPredicates(preds: Predicate[], summary: SceneSummary): AssertionResult[] {
   const assignment = assignRooms(preds, summary);
   const claims = new Map<string, RoomSummary[]>();
-  // Built only when a room-bound measure asks for a name.
-  let names: Map<string, string> | undefined;
-  const nameMap = (): Map<string, string> => (names ??= roomNames(summary));
+  // Built only when a room-bound measure asks for one.
+  let rooms: StoreyRoom[] | undefined;
+  let names: Map<RoomSummary, string> | undefined;
+  const index: RoomIndex = {
+    rooms: () => (rooms ??= storeyRooms(summary)),
+    names: () => (names ??= roomNames(index.rooms())),
+  };
   return preds.map((p, i) => {
     if (p.kind === "room-exists") return checkRoomExists(p, assignment.get(i) ?? [], claims);
     if (p.kind === "room-area") return checkRoomArea(p, summary, claims);
     if (p.kind === "room-windows") return checkRoomWindows(p, summary, claims);
     if (p.kind === "gross-area") return checkGrossArea(p, summary);
-    if (p.kind === "room-dimension") return checkRoomDimension(p, summary, nameMap);
-    if (p.kind === "room-size") return checkRoomSize(p, summary, nameMap);
+    if (p.kind === "room-dimension") return checkRoomDimension(p, summary, index);
+    if (p.kind === "room-size") return checkRoomSize(p, summary, index);
     return checkOne(p, summary);
   });
 }
@@ -1410,7 +1483,7 @@ export const INTENT_JSON_SCHEMA = {
       required: ["source"],
       anyOf: [{ required: ["min"] }, { required: ["max"] }],
       description:
-        "Gross internal area band in square metres: the floor inside the exterior walls' INNER FACES (`describe().totals.gross_internal_area_m2`), which is what a client's \"about 70 m²\" means — `totalAreaM2` runs to wall centrelines and reads several per cent larger. Same band conventions as `areaM2`. GATING. A plan with no closed exterior wall ring has no such figure and fails as E_INTENT_UNMEASURED, never a silent pass.",
+        "Gross internal area band in square metres: the floor inside the exterior walls' INNER FACES (`describe().totals.gross_internal_area_m2`), which is what a client's \"about 70 m²\" means — `totalAreaM2` runs to wall centrelines and reads several per cent larger. On a plan with `level` blocks it binds the BUILDING: the sum over every storey (`totals.gross_internal_area_all_levels_m2`). Same band conventions as `areaM2`. GATING. A plan with no closed exterior wall ring has no such figure and fails as E_INTENT_UNMEASURED, never a silent pass.",
       properties: {
         min: { type: "number", description: "Lower bound (m²)." },
         max: { type: "number", description: 'Upper bound (m²); omit for an open "at least" band.' },
@@ -1431,7 +1504,7 @@ export const INTENT_JSON_SCHEMA = {
             type: "string",
             minLength: 1,
             description:
-              "The room's id, or its label exactly as written (a label two rooms share is refused: bind by id).",
+              "The room's id, or its label exactly as written, on any storey. A selector that matches more than one room (a shared label, an id repeated on two storeys, an id of one room that is another's label) is refused: bind by an id no other room shares.",
           },
           widthMm: {
             type: "object",

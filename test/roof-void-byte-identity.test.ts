@@ -257,19 +257,19 @@ const BASELINE: [string, string][] = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
   // Both laneway-house rows re-measured 2026-10-20 (PS2.17): its kitchen gained a worktop; the new
   // compiler on the previous source, the worktop finding removed, reproduces 1e163ea9… and f3afd6b5….
-  ["laneway-house", "b381425d761d2ad513d1a412e95ee9972a643057ea50cd1ff2743835fc52299f"],
-  ["studio", "883c9498f948716d513f92ba0de7bee235e3579baa2bc44643d5a8707c396f61"],
-  ["gallery-l", "3fbe6e3741ada0e3eaea159c5ef46cea5bff258b30758cb7f1f1b816e72e3dfd"], // PS2.10 dims fixed (byte-identity-baseline.ts)
-  ["aquarium", "e35c9df4a6954e576f674ad68416ac37a57dd2aa9d2e0e7c3b789734ea21927d"], // re-measured for PS2.4, see header; PS2.10 dims fixed (byte-identity-baseline.ts)
+  ["laneway-house", "32e7e564ed2db72d67a77e9d260c38cc5fee909c1172633c6b5b13365a7b9795"],
+  ["studio", "67dbbcb741589a8f9333ddde296f281eefdf70940f65fb2f2b6fffb876557872"],
+  ["gallery-l", "cfdd8a2994aee9ff9bf350e9d761e9b91054d9d6255ae4c4668a78b51a9e77a6"], // PS2.10 dims fixed (byte-identity-baseline.ts)
+  ["aquarium", "d3b7a19d3fcde9df11b68e79c1f13918884e1d2597dcb5b4ff41da9361a1de99"], // re-measured for PS2.4, see header; PS2.10 dims fixed (byte-identity-baseline.ts)
 ];
 
 /** The SUMMARY half of the same law — see the header. Re-measured for `aquarium` twice, both times because its rooms were wrong (the second: PS2.4). */
 const SEMANTIC_BASELINE: [string, string][] = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
-  ["laneway-house", "870b085220a30a6edb97ff76694b105c118b9e5d51360cb0ce559f10859b50d5"],
-  ["studio", "7f8fc9b1f532bb497d826eaea9110f569df1b21cc91b558deb7e83588432abab"],
-  ["gallery-l", "36dd0fa0f53c4cedab0d6b4bd807b154895fb3d9b3559d076a1c6f8534211a99"],
-  ["aquarium", "69e4f4aa32e0dcc9e5442f067f858c83eb73b6a0e4183f52ebb87f97f5a3755c"], // re-measured for PS2.4, see header
+  ["laneway-house", "4f136c1c2c408940beb64a58cbc07e998a9d454b56ddea20ac7b81b04335bab0"],
+  ["studio", "4be3a4f1f7c98743452bfb55b4a8434721654c03386102a4b3fc9db99f8169d7"],
+  ["gallery-l", "6aeb5f3345c4ec64fdc962a9fe9ac89c342a8412ed667a212da4a7006f97c17d"],
+  ["aquarium", "6ba99782cc17a45ec099eba27898214f36c0d658db75d08df44993c5e068335b"], // re-measured for PS2.4, see header
 ];
 
 /** The compiler surface the summary-half pins are taken over. */

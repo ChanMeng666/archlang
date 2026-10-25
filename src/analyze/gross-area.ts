@@ -39,6 +39,20 @@
  * (`too-much-work`), never approximated; a sum that comes out negative or not finite (a sign that a
  * configuration defeated the joinery) is `inconsistent`.
  *
+ * **Where it runs.** `describe()` only (its storey summary; `validateIntent` reads it there). It
+ * is never computed inside `compile()`: the accessible-SVG caption (`compile(…, { accessible:
+ * true })` → `captionForPlan` → the storey summary, `src/scene-build.ts`) passes
+ * `withGrossArea = false`, because the caption reads only the plan name, the rooms, the
+ * centreline total and the entrances. So `compile()`'s step and drawing budgets need no charge
+ * for it (`test/brief-bound-caption.test.ts` counts zero calls there). Measured on the 300-ring
+ * stress plan (300 free-standing closed exterior rings): this rule ~36 ms of a ~48 ms
+ * `describe()`; `compile(…, { accessible: true })` ~39 ms against ~35 ms without the caption.
+ *
+ * `inconsistent` is a guard, not a reachable outcome from source: the joinery's loops never
+ * cross, so every loop standing in a hole is smaller than it and the sum is non-negative, and
+ * every coordinate is finite within `MODEL_RANGE_MM`. It stays so that no future joinery
+ * change can print a negative or non-finite figure.
+ *
  * Pure, synchronous, deterministic: the joinery's own order, then loops by size.
  */
 

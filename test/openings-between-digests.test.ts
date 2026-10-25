@@ -17,11 +17,11 @@ const API: CompilerApi = { compile, describe, lint };
 
 const DIGESTS: [string, string][] = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
-  ["relational-forms", "b815544822879c4284cb3fe38a18f74d3d0235b8d7624a79ceabbf855ad2f6a3"],
-  ["hosted-datums", "669e093403a8a1693c59b73956f8ee48351d6ea00113e811a57ac12c0e49f9c5"],
-  ["frames", "63b1fcde09d4ae2333c8572f86c4347b46f3d69e89081619d2a19d039e29e900"], // PS2.29: message text only, same code, same span
-  ["widen-4000", "ddbed23ee91d2ab3ebe2e5f054ebef98b5c7bbf041a1d30b664da797d3ddaec3"],
-  ["widen-4500", "e10c23d1ec1b88edff514314378739732c5bf1e5df58ae32c5f7ac418427391c"],
+  ["relational-forms", "5e18d3deb43482d7634f9ff0b0885e4592b37b50a20ed4a98e004297ac26bcbc"],
+  ["hosted-datums", "ed32136bcef7682f957e05a5c5c44aa6c731c54b56baae7c9fe9b212b832e666"],
+  ["frames", "786fa364de4f634e82c93501aeec28da290a4fc0aa636066b899bfa521a3e2ed"], // PS2.29: message text only, same code, same span
+  ["widen-4000", "2a88ff177ad46b12397f45d5e6ef0ea40d652c0a3dc57335699e58ff9afeae01"],
+  ["widen-4500", "462b46729c778470eb1796a12c6132703d00a998355a2e5e092a59c62c5333f1"],
   ["refused", "8f8d8a2ccb3150bb6998eda99ae95acc80f577e04744e17992f2507f6324d7d2"],
 ];
 

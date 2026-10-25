@@ -16,11 +16,11 @@ const API: CompilerApi = { compile, describe, lint };
 
 const DIGESTS: [string, string][] = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
-  ["k1-west-to-east", "4ee096e9d63e9bcef64ae831c524504b740366962e488df595df034390f11181"], // PS2.29: message text only, same code, same span
-  ["k1-east-to-west", "2a63ede50d839174333a28ca7fabee3525b58c19c9a5a2cc63b4c2c8efce8fa1"], // PS2.29: message text only, same code, same span
-  ["loop", "08f86b22dc7c9915aa42911ecf092c1dd564983173760a42ee4010596b1d2b5c"], // PS2.29: message text only, same code, same span
-  ["ring", "43c51fd0af4e4b5f44c9412106ffe1c4be8a235b73d7f9ec9b7206db8df3f1cd"],
-  ["frames", "9f2431b29bb506b4a34f4e0b53e2178cf65be4e5c55244219acc7043a493e878"], // PS2.29: message text only, same code, same span
+  ["k1-west-to-east", "db09ae897832301b114bc8ff586e44a794385a2b4c495a518d374d66b199d61c"], // PS2.29: message text only, same code, same span
+  ["k1-east-to-west", "a04b716939992b6d37d522cf7d310dfae38aac880f235f9f63359abcfa10ae6f"], // PS2.29: message text only, same code, same span
+  ["loop", "6a6e5e95567e7221eaf50b064a79d525f4cb2eca871290a95c0538afaacf6522"], // PS2.29: message text only, same code, same span
+  ["ring", "4cc235210897be4e79a8e49740ddf55a2b28aa26fdd7fd0c03d1852cddff2bd0"],
+  ["frames", "1fbb5062d80872bdc8497c176eaea87f01c59ac8de002cfcdec2f553cbb18354"], // PS2.29: message text only, same code, same span
   // Moved once, by review round 1 (N1): the "both faces" message dropped "(it stands between two
   // rooms)", which was false for a wall free-standing inside one room. Message text only.
   ["refused", "d0ff72c2f1e61f259980b250b027ddbfdfcc724c82a6c5d98d80f0b64274f5c4"],
