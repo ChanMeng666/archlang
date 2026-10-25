@@ -746,6 +746,20 @@ describe("DXF text placement and encoding", () => {
     }
   });
 
+  it("declares the Standard text style on a TrueType sans, not the txt shape font", () => {
+    const dxf = dxfOf(studio);
+    expect(dxf).toContain("0\nSTYLE\n2\nStandard\n");
+    expect(dxf).toContain("3\narial.ttf\n");
+  });
+
+  it("writes a text's cap height, not its em size, as the DXF height", () => {
+    const { scene } = compile(src, { noCache: true });
+    const sizes = new Set<number>();
+    for (const n of scene!.nodes) if (n.prim.t === "text") sizes.add(n.prim.size);
+    const heights = new Set(texts(toDxf(scene!)).map((t) => Number(t.get("40"))));
+    for (const h of heights) expect([...sizes].some((s) => Math.abs(h - s * 0.716) < 0.001)).toBe(true);
+  });
+
   it("keeps a dimension's text turned along its line", () => {
     const angles = texts(dxfOf(studio)).map((t) => t.get("50"));
     expect(angles.some((a) => a === "90" || a === "270")).toBe(true);

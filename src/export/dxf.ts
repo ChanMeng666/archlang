@@ -37,6 +37,9 @@ import { plainText } from "../text-safe.js";
 import { textLines } from "../text-layout.js";
 import { classifyWallSet } from "../wall-lowering.js";
 
+/** Cap height of the drawing sans (Arial 0.716 em, Roboto 0.711 em), as a fraction of its font size. */
+const CAP_HEIGHT = 0.716;
+
 /**
  * A text value as pure ASCII: every non-ASCII character becomes the `\U+XXXX` escape that
  * AutoCAD and every DXF reader decode for an R2000 file. The file declares no
@@ -131,7 +134,10 @@ class DxfBuilder {
     this.begin("TEXT", layer, ltype);
     this.pair(10, num(at.x));
     this.pair(20, num(-at.y));
-    this.pair(40, num(height));
+    // A DXF text height is the height of a CAPITAL letter, an SVG/PDF font size the em; a
+    // TEXT given the font size draws about 1.4x larger than the PDF and overruns the room
+    // or column the layout fitted it to.
+    this.pair(40, num(height * CAP_HEIGHT));
     // DXF is a line-oriented group-code stream, so ANY control character in the
     // value would desynchronize a reader (LF and CR both end a record) or drive a
     // terminal (ESC). `plainText` blanks every one of them — for a newline that is
@@ -357,6 +363,25 @@ function header(layers: readonly { name: string; color: number }[]): string {
     p(62, color);
     p(6, "CONTINUOUS");
   }
+  p(0, "ENDTAB");
+  // STYLE table: `Standard` (the style every TEXT uses by default) on Arial. With no STYLE
+  // table a CAD program falls back to its `txt` shape font, roughly a third wider than the
+  // sans the SVG and PDF draw with, so text the layout fitted to a column or a room — a
+  // schedule heading, a room name — overruns it. Arial is on every CAD seat and is within a
+  // few percent of Roboto's advance widths, which `textWidth` already over-estimates.
+  p(0, "TABLE");
+  p(2, "STYLE");
+  p(70, 1);
+  p(0, "STYLE");
+  p(2, "Standard");
+  p(70, 0);
+  p(40, 0);
+  p(41, 1);
+  p(50, 0);
+  p(71, 0);
+  p(42, 2.5);
+  p(3, "arial.ttf");
+  p(4, "");
   p(0, "ENDTAB");
   p(0, "ENDSEC");
   return h.join("\n") + "\n";

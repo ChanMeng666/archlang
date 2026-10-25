@@ -376,7 +376,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   in their rooms, schedule numbers right-align in their columns, and a vertical dimension's text
   stays turned along its line. Non-ASCII text is written as `\U+XXXX` escapes, so the file is
   pure ASCII and `Baño` / `客厅` no longer open as mojibake in a reader that assumes an ANSI code
-  page (an R2000 file has no UTF-8). DXF output changes; SVG, PDF and PNG are unchanged.
+  page (an R2000 file has no UTF-8). The DXF height is now the cap height (0.716 × the font
+  size) — a DXF text height measures a capital letter, an SVG font size the em, so every label
+  drew about 1.4× larger than the PDF and overran its room or column — and a STYLE table puts
+  `Standard` on Arial instead of the reader's wider `txt` shape font. DXF output changes; SVG,
+  PDF and PNG are unchanged.
 
 - A door or opening's `between` is read off both faces of its host wall, at the centre and just
   inside both jambs, so an exterior door centred on a T-junction, or within 200 mm of a
