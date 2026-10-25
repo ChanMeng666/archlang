@@ -714,3 +714,25 @@ the static facts it would read.
 - **Q4 · The four spec cuts (§8.1),** 397 units of drawing-only prose. Recommended as listed; any other
   set of cuts of at least 161 units keeps the line inside the cap, but a margin under about 100 units
   makes the cap a veto on unrelated example edits (the test's own warning).
+
+## 14. Coordinator rulings (2026-10-26)
+
+The coordinator ruled on §13's four questions on PR #270; recorded as README §3 D22. Each confirms
+the §12 decision it names; nothing in §1–§12 changes.
+
+- **R1 · Grade landing: accepted as §3.2's table** (§12 item 2). `hard`: compile-channel
+  `W_KEEP_VIOLATED`, fails `--strict`, counted by the never-worse law, `next` tier `warning`. `soft`:
+  `next` tier `intent` after the brief's gating items, never gates. `advisory`: reported in
+  `describe()`, `validate --json` and `impact` only, never in `next`. No grade caps taste; keeps never
+  enter `lint()`.
+- **R2 · Plain `validate` exits 0 on a broken hard keep; only `--strict` fails** (§3.2): no warning
+  code fails plain `validate` today.
+- **R3 · `keep fixed <d> at <mm>`** (§12 item 4): a keep that one compile can never find broken is
+  not a check.
+- **R4 · The four spec cuts of §8.1** (§12 item 12), on the condition that the language reference
+  keeps every cut fact and the GB 50352-2019 source stays in the doc comment where the 900 default
+  lives (D3). Checked on `main@98b3d7ab`: `docs/language-reference.md` keeps the dashed convention
+  and the hinged swing's solid arc (lines 1520, 1598–1601), the garage's overhead parking, derived
+  side and missing `open` (1628–1648), and the outdoor hatch over a tint with the balcony's tint and
+  railing (2194–2207); `src/datum.ts`'s `WINDOW_SILL` doc comment carries the GB 50352-2019 source.
+  Net headroom after the keep line: **236** UTF-16 units (29,764 of 30,000).
