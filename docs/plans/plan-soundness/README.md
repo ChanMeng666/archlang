@@ -569,7 +569,7 @@ This plan is a hypothesis about what will make AI-written plans professional. Tr
 4. **Can `between`-style forms cover non-rectilinear rooms?** Polygon and circle rooms are refused
    in v1 of PS3. What would an honest extension be?
 5. **What would make `impact` a planning tool, not just a report?** For example, "list the edits that
-   keep every `keep` true". *Designed 2026-10-26 (PS4.3, PR #n):* `research/2026-10-26-ps43-keep-design.md`, ADR 0033 (Proposed): a keep is checked with a signed residual and `impact` lists those a change breaks; listing the edits that keep them all true stays `arch solve` (PS6.1).
+   keep every `keep` true". *Designed 2026-10-26 (PS4.3, PR #270):* `research/2026-10-26-ps43-keep-design.md`, ADR 0033 (Proposed): a keep is checked with a signed residual and `impact` lists those a change breaks; listing the edits that keep them all true stays `arch solve` (PS6.1).
 6. **Multi-dwelling and multi-storey rules.** Toilet over habitable room below (GB 50096 5.4.4,
    mandatory), wet-stack alignment, and units sharing a corridor. These need a dwelling concept
    ArchLang lacks. *Researched 2026-10-18* (`research/2026-10-18-furniture-and-multistorey.md`

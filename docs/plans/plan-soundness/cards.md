@@ -218,7 +218,7 @@ into PS3.12)
 **PS4.2 · `arch impact`.** `done` (PR #240, 7954f252)
 
 **PS4.3 · `keep` invariants (checked, never solved, by `compile()`).** `todo` (ADR 0033 Proposed)
-- Design: `research/2026-10-26-ps43-keep-design.md` (PR #n). Built as PS4.3a (statement, evaluation,
+- Design: `research/2026-10-26-ps43-keep-design.md` (PR #270). Built as PS4.3a (statement, evaluation,
   `W_KEEP_VIOLATED`, `describe().keeps[]`, the byte-identity law), then PS4.3b (`validate` `keeps`
   and `next`, `impact` `keeps`, `depends.keeps[]`, the spec line and its cuts); design §11.
 - Vocabulary: `keep align …`, `keep equal …`, `keep offset <x> from <y> <mm>`, `keep min clear <room> <mm>`,
