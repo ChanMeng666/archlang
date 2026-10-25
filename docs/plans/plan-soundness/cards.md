@@ -229,7 +229,7 @@ into PS3.12)
 - A static DOF/redundancy/conflict fact goes under `--facts depends`.
 - A `keep` draws nothing and moves nothing.
 
-**PS4.4 · Brief-bound dimensions (provenance).** `done` (PR to follow, commit filled at merge)
+**PS4.4 · Brief-bound dimensions (provenance).** `done` (PR #271, commit filled at merge)
 - `describe().totals.gross_internal_area_m2` and the intent's `grossInternalAreaM2`/`roomDimensions`, gating; `research/2026-10-26-ps44-as-built.md`.
 
 **PS4.5 · Contact dependency.** `todo`
