@@ -47,7 +47,7 @@ A done row's "record" is `research/2026-10-24-ps0-ps2-as-built.md`.
 - *Open (carried from PS1.1):* should the corpus also feed `eval:ci` as a non-gating metric? Read
   `.claude/rules/eval-dataset.md` first: the holdout rules apply.
 
-**PS1.3 · Walls-first control arm for §8 Q1.** `done` (PR #PRNUM, commit filled at merge)
+**PS1.3 · Walls-first control arm for §8 Q1.** `done` (PR #264, commit filled at merge)
 - Measured 2026-10-26 (`audits/2026-10-26-walls-first-control-arm.md`, D21): 54 verified defects walls-first against 52 rooms-first (arm A), 0 class-1 in the final plans in both; D1/D5 re-stated as claims about authoring. Not run: a walls-first spec.
 
 **PS1.4 · Which diagnostic wording repairs best (§8 Q3).** `todo` (filed 2026-10-25 from the
