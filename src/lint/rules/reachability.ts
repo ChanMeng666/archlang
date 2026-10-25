@@ -25,13 +25,14 @@ import {
 } from "../../analyze.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import type { LintContext, LintRule } from "../context.js";
+import { capFirst } from "../../naming.js";
 
 export const reachability: LintRule = {
   name: "reachability",
   family: "reachability",
   layer: "validity",
   codes: ["W_BATH_VIA_BEDROOM", "W_ROOM_UNREACHABLE"],
-  check({ rooms, connectors, roomRects, rules, labelOf, at, building, access, skip }: LintContext): Diagnostic[] {
+  check({ rooms, connectors, roomRects, rules, nameOf, at, building, access, skip }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
     // W_BATH_VIA_BEDROOM asks which rooms are bedrooms and which are wet rooms; a room with no
     // classified use is neither, so it is declared to the coverage report (PS2.13).
@@ -59,7 +60,7 @@ export const reachability: LintRule = {
             severity: "warning",
             code: "W_BATH_VIA_BEDROOM",
             ...at(r),
-            message: `Bathroom "${labelOf(r)}" is reachable only through a bedroom.`,
+            message: `${capFirst(nameOf(r, "bathroom"))} is reachable only through a bedroom.`,
             hints: [
               "Connect it to a hall or living space — or, if it is an en-suite, add a second bathroom or WC on the same storey that is reached without passing through a bedroom.",
             ],
@@ -75,7 +76,7 @@ export const reachability: LintRule = {
             severity: "warning",
             code: "W_ROOM_UNREACHABLE",
             ...at(r),
-            message: `Room "${labelOf(r)}" can't be reached from the entrance.`,
+            message: `${capFirst(nameOf(r, "room"))} can't be reached from the entrance.`,
             hints: [
               "Add a door or cased `opening` linking it (directly or through a hall) to a space that reaches the entrance.",
             ],

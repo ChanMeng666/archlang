@@ -1925,7 +1925,7 @@ window at (0,0) width 0   # error
 
 *warning* — A room's use was inferred from an indirect alias, not stated.
 
-**Cause.** A room has no authored `uses`, and its function was guessed from its label via a non-canonical alias (an indirect term like `powder` → WC, `foyer` → entry) rather than a direct word (`wc`, `entrance`). The guess is reasonable but the intent is implicit, so a reader (or agent) cannot tell the classification was assumed.
+**Cause.** A room has no authored `uses`, and its function was guessed from its label (or, when it has no label, from its id) via a non-canonical alias (an indirect term like `powder` → WC, `foyer` → entry) rather than a direct word (`wc`, `entrance`). A room with no label is named in the message by where it stands, never by its id; the id and the term taken from it are in the hint. The guess is reasonable but the intent is implicit, so a reader (or agent) cannot tell the classification was assumed.
 
 **Fix.** Add an explicit `uses …` to the room stating the inferred function — the machine-applicable fix inserts it for you. This pins the classification without changing the room's `describe()` type.
 
@@ -2002,7 +2002,7 @@ room at (0,4000) size 6000x3000 label "Bedroom" uses bedroom   # lint: no wall o
 
 *warning* — A room is reached by a very roundabout path.
 
-**Cause.** The walking distance to a room from its entrance — the one nearest it by walk, which the message names — is many times the straight-line distance from that same entrance: the room is reachable but only by a circuitous route (e.g. all the way around the plan). The ratio describes the walk `walkDistanceMm` reports, not the least ratio over every entrance, so a room walked from a door behind its back can trip it even when another door faces it. A coarse circulation fact (ADR 0008); the default ratio is generous so a normal tucked-away room does not trip it.
+**Cause.** The walking distance to a room from its entrance — the one nearest it by walk, which the message names by the rooms it joins (the id is in the hint) — is many times the straight-line distance from that same entrance: the room is reachable but only by a circuitous route (e.g. all the way around the plan). The ratio describes the walk `walkDistanceMm` reports, not the least ratio over every entrance, so a room walked from a door behind its back can trip it even when another door faces it. A coarse circulation fact (ADR 0008); the default ratio is generous so a normal tucked-away room does not trip it.
 
 **Fix.** Add a more direct connection — a door or a hall — so the room is not reached the long way round.
 

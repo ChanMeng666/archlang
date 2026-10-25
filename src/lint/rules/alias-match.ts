@@ -18,6 +18,7 @@ import { classifyLabelUses } from "../../vocabulary.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import type { UseKind } from "../../ast.js";
 import type { LintContext, LintRule } from "../context.js";
+import { capFirst } from "../../naming.js";
 
 /** Human phrasing for a use kind in the advisory message. */
 const USE_PHRASE: Record<UseKind, string> = {
@@ -42,7 +43,7 @@ export const aliasMatch: LintRule = {
   layer: "validity",
   codes: ["W_ALIAS_MATCH"],
   check(ctx: LintContext): Diagnostic[] {
-    const { rooms, labelOf, at } = ctx;
+    const { rooms, labelOf, placeOf, at } = ctx;
     const out: Diagnostic[] = [];
 
     for (const r of rooms) {
@@ -62,8 +63,16 @@ export const aliasMatch: LintRule = {
         severity: "warning",
         code: "W_ALIAS_MATCH",
         ...at(r),
-        message: `Room "${label}" reads as ${inferred} only from the indirect term ${aliasWords} — its classification is a guess.`,
-        hints: [`Add \`uses ${usesText}\` to state the room's function explicitly.`],
+        // A room with no label is classified from its id, so its message names the room by where it
+        // stands and leaves the id (and the word taken from it) to the hint (PS2.22).
+        message:
+          r.label !== undefined
+            ? `Room "${label}" reads as ${inferred} only from the indirect term ${aliasWords} — its classification is a guess.`
+            : `${capFirst(placeOf(r))} reads as ${inferred} only from an indirect term in its id — its classification is a guess.`,
+        hints: [
+          `Add \`uses ${usesText}\` to state the room's function explicitly.`,
+          ...(r.label !== undefined ? [] : [`The term is ${aliasWords}, taken from the room's id \`${r.id}\`.`]),
+        ],
         ...(r.span
           ? {
               fixes: [

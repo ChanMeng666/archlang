@@ -34,6 +34,7 @@ import { deficitMm, mm, shortfall } from "../measure.js";
 import type { UseKind } from "../../ast.js";
 import type { RRoom } from "../../ir.js";
 import type { LintContext, LintRule } from "../context.js";
+import { capFirst } from "../../naming.js";
 import { DEFAULT_RULESET, DOUBLE_BED_MIN_WIDTH_MM, type LintRuleset } from "../ruleset.js";
 import { innerFaceOfRoomEdge } from "../../fixture-orientation.js";
 import { memoRoomNetAreaMm2, storeyNetAreaBands } from "../../analyze/net-area-memo.js";
@@ -289,7 +290,7 @@ function widthAsk(
         const mm = byUse[u];
         if (mm !== undefined && (best === undefined || mm > best)) best = mm;
       }
-      if (best !== undefined) cands.push({ mm: best, of: `a passage that leads to "${ctx.labelOf(other)}"` });
+      if (best !== undefined) cands.push({ mm: best, of: `a passage that leads to ${ctx.nameOf(other)}` });
     }
   }
   let out: WidthAsk | null = null;
@@ -381,7 +382,7 @@ export const perRoomRules: LintRule = {
     "W_ROOM_TOO_NARROW",
   ],
   check(ctx: LintContext): Diagnostic[] {
-    const { rules, rooms, furniture, connectors, roomRects, wallSegs, labelOf, at, ir } = ctx;
+    const { rules, rooms, furniture, connectors, roomRects, wallSegs, nameOf, at, ir } = ctx;
     const out: Diagnostic[] = [];
     // PS5.2: each bedroom's bed reading and the main double bedroom, only under a ruleset that
     // reads them (none by default, so nothing here runs or files a skip).
@@ -424,8 +425,8 @@ export const perRoomRules: LintRule = {
           ...at(r),
           message:
             floor.use === null
-              ? `Room "${labelOf(r)}" is only ${a} m² (under ${rules.minRoomAreaM2} m²).`
-              : `Room "${labelOf(r)}" is only ${a} m²${net !== undefined ? " of net floor" : ""} (under ${fmt2(floor.m2)} m², the floor for ${noun}).`,
+              ? `${capFirst(nameOf(r, "room"))} is only ${a} m² (under ${rules.minRoomAreaM2} m²).`
+              : `${capFirst(nameOf(r, "room"))} is only ${a} m²${net !== undefined ? " of net floor" : ""} (under ${fmt2(floor.m2)} m², the floor for ${noun}).`,
           hints:
             floor.use === null
               ? ["Increase its `size`, or merge it into an adjacent space."]
@@ -446,7 +447,7 @@ export const perRoomRules: LintRule = {
           severity: "warning",
           code: "W_ROOM_DISCONNECTED",
           ...at(r),
-          message: `Room "${labelOf(r)}" has no door or opening — it can't be entered.`,
+          message: `${capFirst(nameOf(r, "room"))} has no door or opening — it can't be entered.`,
           hints: ["Add a `door` or a cased `opening` on one of its walls."],
         });
       }
@@ -457,7 +458,7 @@ export const perRoomRules: LintRule = {
           severity: "warning",
           code: "W_BEDROOM_NO_WINDOW",
           ...at(r),
-          message: `Bedroom "${labelOf(r)}" has no window.`,
+          message: `${capFirst(nameOf(r, "bedroom"))} has no window.`,
           hints: ["Add a `window` on an exterior wall of this room."],
         });
       }
@@ -478,7 +479,7 @@ export const perRoomRules: LintRule = {
             severity: "warning",
             code: "W_ROOM_NOT_ENCLOSED",
             ...at(r),
-            message: `Bathroom "${labelOf(r)}" is not fully enclosed (~${Math.round(gap)} mm of its perimeter has no wall).`,
+            message: `${capFirst(nameOf(r, "bathroom"))} is not fully enclosed (~${Math.round(gap)} mm of its perimeter has no wall).`,
             hints: ["Extend the partition so the room is walled on all sides — a door or window in the wall is fine."],
           });
         }
@@ -493,7 +494,7 @@ export const perRoomRules: LintRule = {
             severity: "warning",
             code: "W_ROOM_NO_FIXTURE",
             ...at(r),
-            message: `${isWet ? "Bathroom" : "Kitchen"} "${labelOf(r)}" has no ${isWet ? "fixtures (WC, basin, shower…)" : "fixtures (sink, counter, stove…)"}.`,
+            message: `${capFirst(nameOf(r, isWet ? "bathroom" : "kitchen"))} has no ${isWet ? "fixtures (WC, basin, shower…)" : "fixtures (sink, counter, stove…)"}.`,
             hints: [noFixtureHint(ctx, r)],
           });
         }
@@ -523,7 +524,7 @@ export const perRoomRules: LintRule = {
             severity: "warning",
             code: "W_GARAGE_TOO_NARROW",
             ...at(r),
-            message: `Garage "${labelOf(r)}" is ${mm(have)} mm across its short side, under the ${mm(need)} mm ${bays} bay${bays === 1 ? "" : "s"} need (${drawn}) — ${mm(shortfall(need, have))} mm short.`,
+            message: `${capFirst(nameOf(r, "garage"))} is ${mm(have)} mm across its short side, under the ${mm(need)} mm ${bays} bay${bays === 1 ? "" : "s"} need (${drawn}) — ${mm(shortfall(need, have))} mm short.`,
             hints: [
               `A parking bay wants ${CAR_BAY_WIDTH_MM} mm of clear width — body plus a door opening each side.`,
               cars > 1
@@ -549,7 +550,7 @@ export const perRoomRules: LintRule = {
             severity: "warning",
             code: "W_ROOM_TOO_NARROW",
             ...at(r),
-            message: `Room "${labelOf(r)}" is ${d.available} mm wide between its wall faces, under the ${d.required} mm the profile asks of ${ask.of} — ${d.short} mm short.`,
+            message: `${capFirst(nameOf(r, "room"))} is ${d.available} mm wide between its wall faces, under the ${d.required} mm the profile asks of ${ask.of} — ${d.short} mm short.`,
             hints: [
               `Widen its short side until ${d.required} mm stand clear between the walls' inner faces (the drawn size runs to the wall centrelines, so add half of each wall's thickness).`,
               ...(ask.of === "a double bedroom" || ask.of.startsWith("one double bedroom") ? [DOUBLE_HINT] : []),

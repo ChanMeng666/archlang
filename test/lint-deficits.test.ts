@@ -48,7 +48,8 @@ describe("W_SWING_OBSTRUCTED states the measured deficit", () => {
       }`,
       "W_SWING_OBSTRUCTED",
     );
-    expect(d.message).toMatch(/door "front"'s swing overlaps it/);
+    // The other door is named by what it joins, never by its id (PS2.29).
+    expect(d.message).toMatch(/the swing of the exterior door into "Room" overlaps it/);
     expect(d.message).toMatch(/hinges are \d+ mm apart where the two leaves need 1800 mm \(\d+ mm short\)/);
   });
 
@@ -189,7 +190,7 @@ describe("W_SWING_OBSTRUCTED on a double door (backlog 6.8)", () => {
   it("still warns when the leaves overlap by 1 mm, quoting the 1 mm", () => {
     const d = one(pair(1000, 3499), "W_SWING_OBSTRUCTED");
     expect(d.message).toBe(
-      `Door swing is obstructed — door "de"'s swing overlaps it — the hinges are 1999 mm apart where the two leaves need 2000 mm (1 mm short).`,
+      `Door swing is obstructed — the swing of the exterior door into "Hall" overlaps it — the hinges are 1999 mm apart where the two leaves need 2000 mm (1 mm short).`,
     );
     // The quoted width is recomputed and proved: applied to "dw", the pair lints clean.
     const w = quoted(d);

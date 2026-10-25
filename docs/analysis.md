@@ -349,9 +349,10 @@ describes one route. `detourRatio` divides the walk `walkDistanceMm` reports by 
 line from that SAME entrance; the alternative, each entrance's walk over its own straight line
 with the smallest ratio kept, would call `g3` direct again but would no longer describe the
 walk that is reported beside it, and a room could then read "direct" while its walk is the
-long way round. `W_CIRCUITOUS_PATH` therefore names the entrance it measures from ("The walk
-from entrance "…" to "…" is 2.33× the straight-line distance from that entrance"), so a warning
-on a room with a straighter door elsewhere says which door the ratio is about.
+long way round. `W_CIRCUITOUS_PATH` therefore names the entrance it measures from, by the rooms it joins
+("The walk from the entrance (the exterior door into "Hall") to "Bath" is 2.33× the straight-line
+distance from that entrance"; its id is in the hint), so a warning on a room with a straighter door
+elsewhere says which door the ratio is about.
 
 ### Ties — the same numbers however the plan is drawn
 

@@ -26,6 +26,8 @@ import { segmentsOfWall } from "../geometry.js";
 import { type LatticePoint, latticeArea2, minAreaRect, minRectCost } from "../geometry/min-rect.js";
 import type { RDoor, ResolvedPlan, RFurniture, RRoom, RWindow } from "../ir.js";
 import { definingItems } from "../lint/defining.js";
+import { capFirst, makeNaming, type NameableRoom, sizeWords } from "../naming.js";
+import { polygonLabelPoint } from "../geometry/polygon.js";
 import { type CompassLetter, FACINGS, oppositeLetter, type SiteFacts } from "../site.js";
 import { fmtRatio, lattice, meanPermyriad, ONE, type Ratio, ramp } from "./arith.js";
 import { adviceOf } from "./advice.js";
@@ -89,15 +91,43 @@ const isBedroomOnly = (uses: readonly string[]): boolean => uses.includes("bedro
 const isHabitable = (uses: readonly string[]): boolean => uses.some((u) => HABITABLE_USES.has(u));
 const isCommon = (uses: readonly string[]): boolean => uses.some((u) => COMMON_USES.has(u));
 
-/** Each room's name as a person reads it (its label, or its id when it has none: lint's rule),
- *  built once per storey: one unit per room. */
-function namesOf(s: TasteStorey, work: Work): Map<string, string> {
+/** Each room's name as a person reads it, built once per storey: one unit per room. A labelled
+ *  room is its quoted label; an unlabelled one is named by what the plan knows of it (its use, its
+ *  place, its size), never by its id (PS2.29; the one builder `lint()` uses, `src/naming.ts`).
+ *  The phrase starts in lower case: a sentence that opens with it uses {@link capFirst}. The
+ *  storey is named only on a plan of several (`multi`). */
+function namesOf(s: TasteStorey, work: Work, multi: boolean): Map<string, string> {
+  const rooms = s.summary.rooms;
+  const list: NameableRoom[] = rooms.map((r) => {
+    const rect =
+      !r.floor_circle && r.floor_polygon.length === 4 && Math.abs((r.bbox.w * r.bbox.h) / 1_000_000 - r.area_m2) < 0.01;
+    return {
+      id: r.id,
+      ...(r.label !== undefined ? { label: r.label } : {}),
+      uses: r.uses,
+      point: summaryPoint(r),
+      bounds: { x0: r.bbox.x, y0: r.bbox.y, x1: r.bbox.x + r.bbox.w, y1: r.bbox.y + r.bbox.h },
+      size: sizeWords(rect ? { w: r.bbox.w, h: r.bbox.h } : null, r.area_m2 * 1_000_000),
+    };
+  });
+  const naming = makeNaming(list, multi ? s.level : undefined);
   const out = new Map<string, string>();
-  for (const r of s.summary.rooms) {
+  for (const [i, r] of rooms.entries()) {
     work.n++;
-    out.set(r.id, `"${r.label ?? r.id}"`);
+    out.set(r.id, r.label !== undefined ? `"${r.label}"` : naming.phrase(list[i]!));
   }
   return out;
+}
+
+/** A point inside the room's floor: a circle's centre, the ring's label point, else the box centre. */
+function summaryPoint(r: {
+  bbox: { x: number; y: number; w: number; h: number };
+  floor_polygon: { x: number; y: number }[];
+  floor_circle?: { cx: number; cy: number };
+}): { x: number; y: number } {
+  if (r.floor_circle) return { x: r.floor_circle.cx, y: r.floor_circle.cy };
+  if (r.floor_polygon.length >= 3) return polygonLabelPoint(r.floor_polygon);
+  return { x: r.bbox.x + r.bbox.w / 2, y: r.bbox.y + r.bbox.h / 2 };
 }
 
 /** Evidence collected up to {@link MAX_EVIDENCE} entries and counted past that. */
@@ -186,7 +216,7 @@ const R3: TasteCriterionDef = {
     for (const s of judged) {
       if (!s.summary.access.hasEntrance) continue;
       anyEntrance = true;
-      const names = namesOf(s, work);
+      const names = namesOf(s, work, storeys.length > 1);
       const depth = depthsOf(s, work);
       const pubs: Array<{ id: string; d: number }> = [];
       const beds: Array<{ id: string; d: number }> = [];
@@ -215,7 +245,7 @@ const R3: TasteCriterionDef = {
     const good = pairs - inversions;
     const p = ramp({ num: BigInt(good), den: BigInt(pairs) }, { num: 0n, den: 1n }, { num: 1n, den: 1n });
     const message = first
-      ? `${first.names.get(first.p)} is ${first.dp} doors in from the entrance and ${first.names.get(first.b)} ${first.db}: ` +
+      ? `${capFirst(first.names.get(first.p)!)} is ${first.dp} doors in from the entrance and ${first.names.get(first.b)} ${first.db}: ` +
         `${inversions} of ${pairs} living-to-bedroom pair${pairs === 1 ? "" : "s"} ${inversions === 1 ? "puts" : "put"} the public room deeper than the bedroom.`
       : `No living, dining or kitchen room is deeper from the entrance than a bedroom (${pairs} pair${pairs === 1 ? "" : "s"}).`;
     return {
@@ -279,7 +309,7 @@ const R7: TasteCriterionDef = {
     let worst: { names: Map<string, string>; id: string; v: Ratio } | null = null;
     const evidence = new EvidenceList();
     for (const s of storeys) {
-      const names = namesOf(s, work);
+      const names = namesOf(s, work, storeys.length > 1);
       const byRoom = windowsByRoom(s, work);
       for (const r of s.summary.rooms) {
         work.n++;
@@ -420,7 +450,7 @@ const R14: TasteCriterionDef = {
       }
       rank.set(id, r);
     }
-    const names = namesOf(s, work);
+    const names = namesOf(s, work, storeys.length > 1);
     let best: { id: string; r: number } | null = null;
     for (const room of s.summary.rooms) {
       work.n++;
@@ -444,8 +474,8 @@ const R14: TasteCriterionDef = {
     const others = heart.length > 3 ? ` and ${heart.length - 3} more` : "";
     const message =
       best.r <= c
-        ? `${names.get(best.id)} ranks ${best.r} of ${n} rooms by total depth to every other space: at the heart of the plan.`
-        : `${names.get(best.id)} ranks ${best.r} of ${n} rooms by total depth to every other space; ` +
+        ? `${capFirst(names.get(best.id)!)} ranks ${best.r} of ${n} rooms by total depth to every other space: at the heart of the plan.`
+        : `${capFirst(names.get(best.id)!)} ranks ${best.r} of ${n} rooms by total depth to every other space; ` +
           `${named.join(" and ")}${others} ${heart.length === 1 ? "ranks" : "rank"} 1.`;
     return {
       measured: { num: best.r, den: n },
@@ -621,7 +651,7 @@ const R6: TasteCriterionDef = {
     const evidence = new EvidenceList();
     let first: { names: Map<string, string>; room: string; category: string } | null = null;
     for (const s of storeys) {
-      const names = namesOf(s, work);
+      const names = namesOf(s, work, storeys.length > 1);
       const uses = usesOf(s, work);
       const rings: Array<{ id: string; ring: LatticePoint[] }> = [];
       const furniture: RFurniture[] = [];
@@ -744,7 +774,7 @@ const R9: TasteCriterionDef = {
     let worst: { names: Map<string, string>; id: string; long: bigint; short: bigint } | null = null;
     const evidence = new EvidenceList();
     for (const s of storeys) {
-      const names = namesOf(s, work);
+      const names = namesOf(s, work, storeys.length > 1);
       const uses = usesOf(s, work);
       for (const r of s.ir.elements) {
         work.n++;
@@ -817,7 +847,7 @@ const R18: TasteCriterionDef = {
     let worst: { names: Map<string, string>; id: string; v: Ratio } | null = null;
     const evidence = new EvidenceList();
     for (const s of storeys) {
-      const names = namesOf(s, work);
+      const names = namesOf(s, work, storeys.length > 1);
       const uses = usesOf(s, work);
       for (const r of s.ir.elements) {
         work.n++;
@@ -898,7 +928,7 @@ const R11: TasteCriterionDef = {
     const evidence = new EvidenceList();
     let first: { names: Map<string, string>; id: string } | null = null;
     for (const s of storeys) {
-      const names = namesOf(s, work);
+      const names = namesOf(s, work, storeys.length > 1);
       const uses = usesOf(s, work);
       for (const r of s.summary.rooms) {
         work.n++;
@@ -929,7 +959,7 @@ const R11: TasteCriterionDef = {
     if (kitchens === 0) return skipped("R11", "too-few-items");
     const p = ramp({ num: BigInt(linked), den: BigInt(kitchens) }, { num: 0n, den: 1n }, { num: 1n, den: 1n });
     const message = first
-      ? `${first.names.get(first.id)} has no door or opening to a living or dining room: ` +
+      ? `${capFirst(first.names.get(first.id)!)} has no door or opening to a living or dining room: ` +
         `${linked} of ${plural(kitchens, "kitchen")} ${linked === 1 || kitchens === 1 ? "is" : "are"} linked to where people eat.`
       : kitchens === 1
         ? "The kitchen opens onto a living or dining room, or shares one."
@@ -1090,7 +1120,7 @@ const R15: TasteCriterionDef = {
     const evidence = new EvidenceList();
     let first: { names: Map<string, string>; a: string; b: string } | null = null;
     for (const s of judged) {
-      const names = namesOf(s, work);
+      const names = namesOf(s, work, storeys.length > 1);
       const uses = usesOf(s, work);
       const isCirc = (id: string): boolean => isCirculationRoom(uses.get(id) ?? []);
       work.n += s.summary.access.edges.length;
@@ -1153,7 +1183,7 @@ const R15: TasteCriterionDef = {
     if (bedroomsSeen < 2 || pairs === 0) return skipped("R15", "too-few-items", skips);
     const p = ramp({ num: BigInt(zoned), den: BigInt(pairs) }, { num: 0n, den: 1n }, { num: 1n, den: 1n });
     const message = first
-      ? `${first.names.get(first.a)} and ${first.names.get(first.b)} are not joined through a hall or corridor alone: ` +
+      ? `${capFirst(first.names.get(first.a)!)} and ${first.names.get(first.b)} are not joined through a hall or corridor alone: ` +
         `${zoned} of ${plural(pairs, "bedroom pair")} ${zoned === 1 || pairs === 1 ? "shares" : "share"} a night zone.`
       : `Every bedroom pair (${plural(pairs, "pair")}) opens off a common hall or corridor: one night zone.`;
     return {
@@ -1210,7 +1240,7 @@ const R16: TasteCriterionDef = {
     const evidence = new EvidenceList();
     let first: { names: Map<string, string>; room: string; nib: bigint } | null = null;
     for (const s of storeys) {
-      const names = namesOf(s, work);
+      const names = namesOf(s, work, storeys.length > 1);
       const skippedRooms = new Set<string>();
       const rooms = new Map<string, LatticePoint[] | null>();
       const irDoors: RDoor[] = [];

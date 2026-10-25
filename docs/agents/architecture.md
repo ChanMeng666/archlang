@@ -97,6 +97,9 @@ source (.arch)
 - hatch prim `origin`/`zoom` (`scene.ts`) re-frame one region's tile, honoured by SVG (and so PNG) only; set by
   the legend's ground swatches (`hatches.ts` `groundSwatchFrame`, `sheet-tables.ts`)
 - `backends/ascii.ts` pass 2 carves an opening from its one unstroked cover polygon only
+- `naming.ts` how a message names an unlabelled room (use, place, size) and where a point stands on a
+  storey: shared by `lint/context.ts` (`nameOf`), `taste/criteria.ts` and the resolver's `W_ROOM_OVERLAP`;
+  `lint/element-phrases.ts` names a wall or an opening in a lint message. No message quotes an id
 - `vocabulary.ts` room-label matching · `intent.ts` + `intent-concepts.ts` intent channel (shared
   with `eval/`)
 - `expr.ts` holds the evaluation step meter (`MAX_EVAL_STEPS`): one step per node evaluated, per

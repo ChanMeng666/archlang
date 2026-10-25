@@ -558,7 +558,7 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/diff-circ-a.arch", "272184ab44393f0f5cf74f5ad7a41c65ee2e16fbaf837dd9d0a1fb40ab71a335"],
   ["test/fixtures/diff-circ-b.arch", "68ba4e31f6e1bcb57fda4bc7eefc2afba407b1e0038497fb4a65079be210864d"],
   ["test/fixtures/off-path-bypass.arch", "b8123c5f00d6ce700209f6c5f6a479847f0e5218cf99c8bb2d4af66006289415"], // new fixture, see header
-  ["test/fixtures/schedule-sheet.arch", "1c1db7bd1f88c8df4beb563913a2a7459800dde601c035c6158c9133d0dc5bf8"], // re-measured, see header
+  ["test/fixtures/schedule-sheet.arch", "f8bf3c2679d6c8803a39d6775d82af06e0127b1723ef7ecdb7e8363bf2fab121"], // re-measured, see header; PS2.29: message text only, same code, same span
   ["test/fixtures/star30.arch", "eb21a2460d3cd302bc0b470184924cb46c947fa9ca95a7d8d7cbda839f791761"], // new fixture, see header
   ["test/fixtures/zones-levels.arch", "3a6f8bc7115bcd0a1471ce008b984f5c121cafc3e8b4a8269f0dcc94af18ecb8"], // re-measured for PS2.4, see header
   ["test/fixtures/zones-wings.arch", "f7ee2a2b343dee5164a308b00204c546f3f8cfcfde21a32f128f58d5e2a1f072"], // re-measured for PS2.4, see header
@@ -600,7 +600,7 @@ const BASELINE: [string, string][] = [
   ["eval/goldens/two-bed-hall.arch", "36a87e7c15583c6a819e071f55e1727014a4dbc13a39421588acd1c07ffd2ce8"],
   [
     "eval/fidelity-plans/capped-wet-room.laundered.arch",
-    "58e3553acf88e96d8f89dd349434cfd1f6636ab7eb2488e2fa30d05dce57af2b",
+    "c73e7d067703b1bf28830a4455e9f336d55656f6367c4633a6687df72956af8f", // PS2.29: message text and the new door-id hint of W_SWING_OBSTRUCTED, same codes, same spans
   ],
   [
     "eval/fidelity-plans/four-bed-cap.laundered.arch",

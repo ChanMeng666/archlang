@@ -29,7 +29,7 @@
  * is actually wrong instead of advising a swap that would not help.
  */
 
-import { openingClauseOf, wallRef } from "../../wall-ref.js";
+import { openingClauseOf } from "../../wall-ref.js";
 import type { Diagnostic, Span } from "../../diagnostics.js";
 import type { Bounds } from "../../geometry.js";
 import {
@@ -52,6 +52,8 @@ import { CHAIN_STEP, SHEET_MM } from "../../sheet.js";
 import { fmt2, fmt3 } from "../../num-format.js";
 import { textWidth } from "../../text-metrics.js";
 import type { LintContext, LintRule } from "../context.js";
+import { openingName, wallPhrase } from "../element-phrases.js";
+import { capFirst } from "../../naming.js";
 
 export const dimInside: LintRule = {
   name: "dim-inside",
@@ -96,7 +98,7 @@ export const dimInside: LintRule = {
         code: "W_DIM_INSIDE",
         ...ctx.at(dm),
         // The offset as WRITTEN: a reflecting frame negated it on the way into plan space.
-        message: `Dimension "${dm.id}" draws its line inside the building — the \`offset ${(offsetSign(ctx, dm) ?? 1) * dm.offset}\` pushes it into the plan, not out to the margin.`,
+        message: `The dimension from ${pointWords(dm.from)} to ${pointWords(dm.to)} draws its line inside the building — the \`offset ${(offsetSign(ctx, dm) ?? 1) * dm.offset}\` pushes it into the plan, not out to the margin.`,
         hints: [
           swapHelps
             ? "Swap the two endpoints (or negate the offset) so the dimension reads outside the building."
@@ -185,7 +187,7 @@ export const dimOverlap: LintRule = {
           severity: "warning",
           code: "W_DIM_OVERLAP",
           ...ctx.at(later.dm),
-          message: `Dimension "${later.dm.id}" is drawn over "${other.dm.id}" — both land in the same chain tier (\`offset ${fmt2((sLater ?? 1) * later.dm.offset)}\` and \`offset ${fmt2((sOther ?? 1) * other.dm.offset)}\`), so their lines and texts collide.`,
+          message: `The dimension from ${pointWords(later.dm.from)} to ${pointWords(later.dm.to)} is drawn over the one from ${pointWords(other.dm.from)} to ${pointWords(other.dm.to)} — both land in the same chain tier (\`offset ${fmt2((sLater ?? 1) * later.dm.offset)}\` and \`offset ${fmt2((sOther ?? 1) * other.dm.offset)}\`), so their lines and texts collide.`,
           hints: [
             newOffset === null
               ? "Move one of them out a tier — a larger `offset` on one of them clears the other's line and text."
@@ -226,7 +228,8 @@ export const openingNotDimensioned: LintRule = {
   family: "annotation",
   layer: "drafting",
   codes: ["W_OPENING_NOT_DIMENSIONED"],
-  check({ ir, doors, windows, openings, at }: LintContext): Diagnostic[] {
+  check(ctx: LintContext): Diagnostic[] {
+    const { ir, doors, windows, openings, at } = ctx;
     if (ir.autoDims !== "all") return [];
     const missed = unchainedOpenings(ir);
     if (missed.length === 0) return [];
@@ -242,11 +245,15 @@ export const openingNotDimensioned: LintRule = {
           : m.reason === "angled"
             ? "it sits on an angled wall, and the facade chains measure along x or y only"
             : "its wall is not the building's outer outline there (a courtyard or a recessed face), so no facade chain runs past it";
+      // By the rooms it joins; a connector that joins none is already named by its wall.
+      const on = el.host ? wallPhrase(el.host) : "its wall";
+      const joins = openingClauseOf(el) ? `the ${el.kind} derived by an \`open between\` clause` : openingName(ctx, el);
+      const named = joins.endsWith(on) ? joins : `${joins} on ${on}`;
       out.push({
         severity: "warning",
         code: "W_OPENING_NOT_DIMENSIONED",
         ...at(el),
-        message: `The ${el.kind} ${openingClauseOf(el) ? "derived by an `open between` clause" : `"${el.id}"`} on ${wallRef(ir.walls, el.host ?? { wallId: m.wallId })} is on no \`dims auto all\` chain: ${why}.`,
+        message: `${capFirst(named)} is on no \`dims auto all\` chain: ${why}.`,
         hints: [
           `Dimension it by hand: a \`dim\` from the nearest corner to each jamb of ${openingClauseOf(el) ? `the opening ${openingClauseOf(el)} derives` : `"${el.id}"`} states the position the auto chains cannot.`,
         ],
@@ -404,7 +411,7 @@ export const dimTextMismatch: LintRule = {
 };
 
 /** A plan point as the message quotes it: `(x,y)` in whole-hundredth millimetres. */
-const pointWords = (p: Point): string => `(${fmt2(p.x)},${fmt2(p.y)})`;
+const pointWords = (p: Point): string => `(${fmt2(p.x)}, ${fmt2(p.y)})`;
 
 /** A hand-written dim with a drawn band worth testing: it came from source, it is offset
  *  off its measured segment, and that segment has a direction (a failed `dim radius` ref

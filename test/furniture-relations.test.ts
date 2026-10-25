@@ -313,7 +313,8 @@ suite("clear front|sides — declared, measured, checked", () => {
     const ds = lint(base(" clear front 800")).filter((d) => d.code === "W_FURN_CLEAR_FRONT");
     expect(ds).toHaveLength(1);
     expect(ds[0]!.message).toBe(
-      "The wardrobe in r needs 800 mm clear in front, but the bed leaves 600 mm (200 mm short).",
+      // The room `r` has no label: it is named by its use (PS2.29), never by its id.
+      "The wardrobe in the living room needs 800 mm clear in front, but the bed leaves 600 mm (200 mm short).",
     );
     expect(ds[0]!.message).not.toContain('"robe"');
   });
@@ -414,7 +415,7 @@ suite("W_SEAT_FACING_AWAY (PS2.11, undeclared)", () => {
   it("a chair south of its table facing south warns; turned, it does not", () => {
     const ds = lint(cafe("(2225,2400) size 450x450")).filter((d) => d.code === "W_SEAT_FACING_AWAY");
     expect(ds).toHaveLength(1);
-    expect(ds[0]!.message).toBe("A chair in r faces away from the table beside it.");
+    expect(ds[0]!.message).toBe("A chair in the living room faces away from the table beside it.");
     expect(ds[0]!.hints![0]).toBe('On "chair_2", add `facing t` (it turns to `rotate 180`).');
     expect(ds[0]!.fixes).toBeUndefined();
     expect(lint(cafe("(2225,2400) size 450x450 rotate 180")).map((d) => d.code)).not.toContain("W_SEAT_FACING_AWAY");

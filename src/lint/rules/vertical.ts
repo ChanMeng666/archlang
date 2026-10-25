@@ -17,6 +17,7 @@
  */
 
 import type { Diagnostic } from "../../diagnostics.js";
+import { verticalRect as rect } from "../../vertical.js";
 import type { LintContext, LintRule } from "../context.js";
 
 export const stairUnmatched: LintRule = {
@@ -24,7 +25,7 @@ export const stairUnmatched: LintRule = {
   family: "vertical",
   layer: "validity",
   codes: ["W_STAIR_UNMATCHED"],
-  check({ verticals, building, at, skip }: LintContext): Diagnostic[] {
+  check({ verticals, placeAt, ir, building, at, skip }: LintContext): Diagnostic[] {
     if (!building.multiStorey) {
       // A run drawn on a one-storey plan: whether it meets its other end is not asked.
       if (verticals.length > 0) skip("single-storey");
@@ -37,7 +38,11 @@ export const stairUnmatched: LintRule = {
         severity: "warning",
         code: "W_STAIR_UNMATCHED",
         ...at(v),
-        message: `${v.kind === "elevator" ? "Elevator" : v.kind === "escalator" ? "Escalator" : "Stair"} "${v.id}" appears on only one storey, so it connects nothing.`,
+        // Named by where it stands, never by its id: the id is what joins storeys, and is in the hint.
+        message: `The ${v.kind === "elevator" ? "elevator" : v.kind === "escalator" ? "escalator" : "stair"} ${placeAt({
+          x: rect(v).x + rect(v).w / 2,
+          y: rect(v).y + rect(v).h / 2,
+        })}${(building.storeyCount ?? 1) > 1 && ir.level !== undefined ? ` on level ${ir.level}` : ""} appears on only one storey, so it connects nothing.`,
         hints: [
           `Draw the matching run with the same id \`${v.id}\` on the storey above or below (each storey declares its own \`dir\`).`,
         ],

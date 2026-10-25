@@ -4,7 +4,8 @@
  * too little wall at a corner — in that (pinned) order via `rules/index.ts`.
  */
 
-import { isDerivedWall, wallRef } from "../../wall-ref.js";
+import { isDerivedWall } from "../../wall-ref.js";
+import { openingName, wallNamed, wallPhrase } from "../element-phrases.js";
 import { relationText } from "../../opening-relation.js";
 import { det } from "../../algebra/d4.js";
 import { CLI_NAME } from "../../command-name.js";
@@ -54,7 +55,8 @@ export const swingObstructed: LintRule = {
   family: "doors",
   layer: "validity",
   codes: ["W_SWING_OBSTRUCTED"],
-  check({ ir, doors, furniture, rules, at, frameOf }: LintContext): Diagnostic[] {
+  check(ctx: LintContext): Diagnostic[] {
+    const { ir, doors, furniture, rules, at, frameOf } = ctx;
     const out: Diagnostic[] = [];
     const swings: Array<{ d: RDoor; s: DoorSwing }> = [];
     for (const d of doors) {
@@ -67,6 +69,8 @@ export const swingObstructed: LintRule = {
       const { d, s } = swings[i]!;
       /** The measured cause, as prose. */
       let cause: string | null = null;
+      /** The other door whose swing is the cause, for the hint: its id is nowhere in the message. */
+      let otherDoor: RDoor | null = null;
       const hit = furniture.find((f) => sectorIntersectsRect(s, rectOf(f), clr));
       if (hit) {
         const m = deficitMm(s.radius + clr, distPointToRect(s.hinge, rectOf(hit)));
@@ -80,7 +84,8 @@ export const swingObstructed: LintRule = {
           if (!swingsCollide(s, o.s, clr)) continue;
           const gap = Math.hypot(s.hinge.x - o.s.hinge.x, s.hinge.y - o.s.hinge.y);
           const m = deficitMm(s.radius + o.s.radius + clr, gap);
-          cause = `door "${o.d.id}"'s swing overlaps it — the hinges are ${m.available} mm apart where the two leaves need ${m.required} mm (${m.short} mm short)`;
+          otherDoor = o.d;
+          cause = `the swing of ${openingName(ctx, o.d)} overlaps it — the hinges are ${m.available} mm apart where the two leaves need ${m.required} mm (${m.short} mm short)`;
           break;
         }
       }
@@ -127,6 +132,9 @@ export const swingObstructed: LintRule = {
           // and by statements the author can paste, not as a vague suggestion.
           "Or hang no swinging leaf at all — a `sliding`, `pocket` or `barn` door sweeps nothing, so this warning cannot apply to it (`door pocket on <wall> at <pos> width <mm>`).",
           "If no leaf is wanted here, make it a leafless `opening` instead.",
+          // The other door is named in the message by the rooms it joins; two doors between the
+          // same rooms are told apart here, by id.
+          ...(otherDoor === null ? [] : [`The door whose swing it meets is \`${otherDoor.id}\`.`]),
         ],
         ...(flipClears ? fixesFrom(doorHingeFlipFix(d, flipped)) : {}),
       });
@@ -270,7 +278,8 @@ export const pocketRun: LintRule = {
   family: "doors",
   layer: "validity",
   codes: ["W_POCKET_RUN"],
-  check({ doors, ir, rules, at, skip }: LintContext): Diagnostic[] {
+  check(ctx: LintContext): Diagnostic[] {
+    const { doors, ir, rules, at, skip } = ctx;
     const out: Diagnostic[] = [];
     for (const d of doors) {
       if (d.doorKind !== "pocket") continue;
@@ -293,7 +302,7 @@ export const pocketRun: LintRule = {
         severity: "warning",
         code: "W_POCKET_RUN",
         ...at(d),
-        message: `Pocket door has nowhere to slide — it needs ${mm(need)} mm of clear wall past the ${side} jamb but only ${mm(have)} mm is available on ${wallRef(ir.walls, seg)} (${mm(shortfall(need, have))} mm short).`,
+        message: `Pocket door has nowhere to slide — it needs ${mm(need)} mm of clear wall past the ${side} jamb but only ${mm(have)} mm is available on ${wallNamed(ctx, seg)} (${mm(shortfall(need, have))} mm short).`,
         hints: [
           `Slide it the other way — \`slide ${reversed}\`${reverseFits ? " (that run is long enough)" : " — though that run is no longer"}.`,
           "Or move the door along its wall (`on <wall> at <pos>`) so the pocket lands on solid wall.",
@@ -450,8 +459,8 @@ export const doorNearCorner: LintRule = {
         code: "W_DOOR_NEAR_CORNER",
         ...at(d),
         message:
-          `Door leaves too little wall at a corner — the nib between its jamb and the corner of ` +
-          `${wallRef(ir.walls, seg)} at (${mm(worst.corner.x)}, ${mm(worst.corner.y)}) should be at least ` +
+          `Door leaves too little wall at a corner — the nib between its jamb and the corner at ` +
+          `(${mm(worst.corner.x)}, ${mm(worst.corner.y)}) of ${wallPhrase(seg)} should be at least ` +
           `${mm(need)} mm, the wall's own thickness, but measures ${mm(worst.have)} mm ` +
           `(${mm(short)} mm short).`,
         hints: [
@@ -647,10 +656,12 @@ export const leafAcrossDoorway: LintRule = {
         });
         const room = shared === undefined ? undefined : roomById.get(shared);
         if (room === undefined) continue;
-        const to = (e: AccessEdge): string => {
+        // A message names the room by what it is; a hint by its quoted label or id.
+        const to = (e: AccessEdge, forHint = false): string => {
           const other = e.between[0] === room.id ? e.between[1] : e.between[0];
           const r = roomById.get(other);
-          return r === undefined ? "the door from outside" : `the door to "${ctx.labelOf(r)}"`;
+          if (r === undefined) return "the door from outside";
+          return `the door to ${forHint ? `"${ctx.labelOf(r)}"` : ctx.nameOf(r)}`;
         };
         // Does the leaf hung on its other jamb (same side of the wall) still stand in this
         // doorway's approach? Recomputed, never assumed.
@@ -662,14 +673,16 @@ export const leafAcrossDoorway: LintRule = {
         // Two doors from the same room to the same place read alike; the second is "the other".
         const toA = to(ea);
         const toB = to(eb) === toA ? toA.replace(/^the door/, "the other door") : to(eb);
-        const refA = a._idAuthored === true ? `door "${a.id}"` : toA;
-        const refB = b._idAuthored === true ? `door "${b.id}"` : toB;
+        const toAh = to(ea, true);
+        const toBh = to(eb, true) === toAh ? toAh.replace(/^the door/, "the other door") : to(eb, true);
+        const refA = a._idAuthored === true ? `door "${a.id}"` : toAh;
+        const refB = b._idAuthored === true ? `door "${b.id}"` : toBh;
         out.push({
           severity: "warning",
           code: "W_LEAF_ACROSS_DOORWAY",
           ...at(a),
           message:
-            `In "${ctx.labelOf(room)}", the open leaf of ${toA} parks ${mm(hit.depth)} mm in front of ${toB} ` +
+            `In ${ctx.nameOf(room)}, the open leaf of ${toA} parks ${mm(hit.depth)} mm in front of ${toB} ` +
             `and leaves ${mm(hit.free)} mm of its ${mm(b.width)} mm doorway clear (${mm(need)} mm needed), ` +
             "so one door must be shut to use the other.",
           hints: [

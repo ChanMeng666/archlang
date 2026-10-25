@@ -54,6 +54,7 @@ import type { RDoor, RRoom } from "../../ir.js";
 import { fmt0, fmt2 } from "../../num-format.js";
 import { judgesAsDwelling, type LintContext, type LintRule } from "../context.js";
 import { openingClauseById } from "../../wall-ref.js";
+import { capFirst } from "../../naming.js";
 
 /** Uses that make a room one people pass through by design. */
 const PUBLIC_USES: ReadonlySet<UseKind> = new Set<UseKind>([
@@ -409,7 +410,17 @@ function privateDominators(ctx: LintContext, f: Facts): Map<string, string[]> {
   return out;
 }
 
-const quoted = (ctx: LintContext, r: RRoom): string => `"${ctx.labelOf(r)}"`;
+/** A room as a message names it: its quoted label, or the phrase its plan gives it (PS2.29). */
+const quoted = (ctx: LintContext, r: RRoom, noun?: string): string =>
+  noun === undefined ? ctx.nameOf(r) : ctx.nameAs(r, noun);
+/** Does this name already say the noun? An unlabelled room's phrase does ("the bedroom"), a quoted
+ *  label does not, so only the label wants ", a bedroom" after it. */
+const saysNoun = (name: string, noun: string): boolean => !name.startsWith('"') && name.includes(noun);
+/** A room as a HINT names it: its quoted label, or its quoted id when it has none, which is the
+ *  handle an agent edits by (a message uses {@link quoted}). */
+const hq = (ctx: LintContext, r: RRoom): string => `"${ctx.labelOf(r)}"`;
+/** {@link quoted} at the start of a sentence. */
+const quotedStart = (ctx: LintContext, r: RRoom): string => capFirst(ctx.nameOf(r));
 
 /** `"A"`, `"A" then "B"`, `"A", then "B", then "C"`. */
 function chain(names: readonly string[]): string {
@@ -497,7 +508,7 @@ export const roomViaPrivate: LintRule = {
       const names = ps.map((p) => quoted(ctx, f.byId.get(p)!));
       const kinds = [...new Set(ps.map((p) => NOUN[f.priv.get(p)!]))];
       const message =
-        `${quoted(ctx, d)} is reached only through ${chain(names)} (access depth ${depth}). ` +
+        `${quotedStart(ctx, d)} is reached only through ${chain(names)} (access depth ${depth}). ` +
         `A route through a ${kinds.join(" or ")} takes away that room's privacy (Ching's pass-through rule, ` +
         "Alexander pattern 131; ResPlan: about 0.03 % of 16,317 dwellings reach a room this way).";
       out.push({
@@ -535,7 +546,7 @@ function viaPrivateHints(
   cands.sort((a, b) => a.depth - b.depth || b.shared - a.shared || order.get(a.r.id)! - order.get(b.r.id)!);
   for (const c of cands.slice(0, 3)) {
     hints.push(
-      `${quoted(ctx, c.r)} (${c.r.id}) shares a straight ${mm(c.shared)} mm of edge with ${quoted(ctx, d)} (${d.id}), on ` +
+      `${hq(ctx, c.r)} (${c.r.id}) shares a straight ${mm(c.shared)} mm of edge with ${hq(ctx, d)} (${d.id}), on ` +
         `centrelines: a door at least ${floor} mm wide there, with 100 mm of wall left at each jamb, reaches it at depth ` +
         `${c.depth} without passing a bedroom, bathroom or WC.`,
     );
@@ -546,13 +557,13 @@ function viaPrivateHints(
     outside = run >= FRONT_DOOR_MM + NIBS_MM;
     if (outside)
       hints.push(
-        `${quoted(ctx, d)} (${d.id}) has a straight run of ${mm(run)} mm of exterior wall, on centrelines: a door from ` +
+        `${hq(ctx, d)} (${d.id}) has a straight run of ${mm(run)} mm of exterior wall, on centrelines: a door from ` +
           `outside at least ${FRONT_DOOR_MM} mm wide there, with 100 mm of wall left at each jamb, reaches it at depth 1.`,
       );
   }
   if (cands.length === 0 && !outside)
     hints.push(
-      `No room reached without a bedroom, bathroom or WC shares a door-wide edge with ${quoted(ctx, d)} (${d.id}), ` +
+      `No room reached without a bedroom, bathroom or WC shares a door-wide edge with ${hq(ctx, d)} (${d.id}), ` +
         `${f.priv.has(d.id) ? "so no new door between rooms" : "and it has no exterior wall for a door, so no single new door"} can fix this: move partitions so a hall or corridor at least ${CORRIDOR_MM} mm clear runs ` +
         "to it, keeping every room at least the size its use needs (do not shrink or delete a room to silence this).",
     );
@@ -643,7 +654,7 @@ export const wetRoomDoor: LintRule = {
           code: "W_WET_ROOM_DOOR",
           ...ctx.at(w),
           message:
-            `${quoted(ctx, w)} has no door: its only way in is a leaf-less opening ${mm(only.nominalWidth)} mm wide from ` +
+            `${quotedStart(ctx, w)} has no door: its only way in is a leaf-less opening ${mm(only.nominalWidth)} mm wide from ` +
             `${quoted(ctx, onlyTo)}. A ${noun} that cannot be closed gives no privacy and lets steam and odour into a ` +
             "habitable room (GB 50096-2011 Table 5.8.7 gives a bath or WC a door of at least 700 mm, cited as advice).",
           hints,
@@ -674,6 +685,9 @@ export const wetRoomDoor: LintRule = {
         }
         reported.add(e.doorId);
         const what = u.has("kitchen") ? "a kitchen" : "a dining room";
+        // A room named by its use already says what it is; a label needs ", a kitchen" after it.
+        const useWord = u.has("kitchen") ? "kitchen" : "dining room";
+        const toName = quoted(ctx, to, useWord);
         const moves = movesOnto(ctx, f, w, wBox, new Set([to.id]), order, tol, e.doorId);
         const way = `${e.kind === "door" ? "a door" : "an opening"} ${mm(e.nominalWidth)} mm wide`;
         out.push({
@@ -682,26 +696,29 @@ export const wetRoomDoor: LintRule = {
           ...ctx.at(w),
           message:
             (near
-              ? `${quoted(ctx, w)} opens straight into the kitchen of ${quoted(ctx, to)} through ${way}, ` +
-                `${mm(near.mm)} mm from its ${near.category}. `
-              : `${quoted(ctx, w)} opens straight into ${quoted(ctx, to)}, ${what}, through ${way}. `) +
+              ? `${quotedStart(ctx, w)} opens straight into ${
+                  saysNoun(toName, "kitchen") ? toName : `the kitchen of ${toName}`
+                } through ${way}, ` + `${mm(near.mm)} mm from its ${near.category}. `
+              : `${quotedStart(ctx, w)} opens straight into ${toName}${
+                  saysNoun(toName, useWord) ? "" : `, ${what}`
+                }, through ${way}. `) +
             `A ${noun} door should not open directly onto a kitchen or dining room without a lobby ` +
             "(GB 50096-2011 5.4.3, cited as advice, not compliance; ResPlan: about 0.3 % of bath doors open off a kitchen).",
           hints: [
             ...moves,
             ...(near
               ? [
-                  `Keep the kitchen of ${quoted(ctx, to)} (${to.id}) at least ${mm(ctx.rules.wetDoorKitchenProximityMm)} mm ` +
+                  `Keep the kitchen of ${hq(ctx, to)} (${to.id}) at least ${mm(ctx.rules.wetDoorKitchenProximityMm)} mm ` +
                     `from ${openingClauseById(ctx.ir.elements, e.doorId) ? `the opening ${openingClauseById(ctx.ir.elements, e.doorId)} derives` : e.doorId}, measured from the doorway's face: its ${near.category} is ${mm(near.mm)} mm away.`,
                 ]
               : []),
             ...(moves.length === 0
               ? [
-                  `No hall or corridor shares a door-wide edge with ${quoted(ctx, w)} (${w.id}): a lobby at least ` +
-                    `${CORRIDOR_MM} mm clear between ${quoted(ctx, to)} (${to.id}) and it keeps the door off the ${what.slice(2)}.`,
+                  `No hall or corridor shares a door-wide edge with ${hq(ctx, w)} (${w.id}): a lobby at least ` +
+                    `${CORRIDOR_MM} mm clear between ${hq(ctx, to)} (${to.id}) and it keeps the door off the ${what.slice(2)}.`,
                 ]
               : []),
-            `Accept if the plan follows a code that allows it, or ${quoted(ctx, to)} is the only room the ${noun} can ` +
+            `Accept if the plan follows a code that allows it, or ${hq(ctx, to)} is the only room the ${noun} can ` +
               "open from. The warning is advisory.",
           ],
         });
@@ -744,7 +761,7 @@ export const wetRoomDoor: LintRule = {
         );
         if (direct) {
           hints.push(
-            `${quoted(ctx, b)} (${b.id}) already opens onto ${quoted(ctx, direct)} (${direct.id}) through ` +
+            `${hq(ctx, b)} (${b.id}) already opens onto ${hq(ctx, direct)} (${direct.id}) through ` +
               `${connectorBetween(edges, direct.id, b.id)}: remove ${doorTo.get(b.id)}, and the ${noun} is no longer on the way.`,
           );
           continue;
@@ -770,18 +787,18 @@ export const wetRoomDoor: LintRule = {
         const c = cands[0];
         if (!c) continue;
         hints.push(
-          `${quoted(ctx, c.r)} (${c.r.id}) shares a straight ${mm(c.shared)} mm of edge with ${quoted(ctx, b)} (${b.id}), ` +
+          `${hq(ctx, c.r)} (${c.r.id}) shares a straight ${mm(c.shared)} mm of edge with ${hq(ctx, b)} (${b.id}), ` +
             `on centrelines: re-host ${doorTo.get(b.id)} onto it, at least ${floor} mm wide with 100 mm of wall left at ` +
-            `each jamb, so ${quoted(ctx, b)} is reached without crossing the ${noun}.`,
+            `each jamb, so ${hq(ctx, b)} is reached without crossing the ${noun}.`,
         );
       }
       if (hints.length === 0)
         hints.push(
           `No room reached without the ${noun} shares a door-wide edge with ${near
             .slice(1)
-            .map((r) => quoted(ctx, r))
+            .map((r) => hq(ctx, r))
             .join(" or ")}: a hall or ` +
-            `corridor at least ${CORRIDOR_MM} mm clear between ${names.join(" and ")} takes the route out of the ${noun}.`,
+            `corridor at least ${CORRIDOR_MM} mm clear between ${farRooms.map((r) => hq(ctx, r)).join(" and ")} takes the route out of the ${noun}.`,
         );
       hints.push(
         `Accept if ${w.id} is a utility or mud room meant to be walked through, with the ${noun} closed off by a door of its own. The warning is advisory.`,
@@ -791,7 +808,7 @@ export const wetRoomDoor: LintRule = {
         code: "W_WET_ROOM_DOOR",
         ...ctx.at(w),
         message:
-          `${quoted(ctx, w)} is a passage: its ${mine.length} connectors join ${listed(joined)}, so the way between ` +
+          `${quotedStart(ctx, w)} is a passage: its ${mine.length} connectors join ${listed(joined)}, so the way between ` +
           `${listed(names)} runs through a ${noun}. A ${noun} should be a dead end off circulation, not a route between rooms ` +
           "(Ching's pass-through rule; privacy and hygiene).",
         hints,
@@ -822,7 +839,7 @@ function movesOnto(
     const existing = connectorBetween(f.edges, h.id, w.id);
     if (existing !== undefined)
       return [
-        `${quoted(ctx, w)} (${w.id}) already opens onto ${quoted(ctx, h)} (${h.id}) through ${existing}: remove ` +
+        `${hq(ctx, w)} (${w.id}) already opens onto ${hq(ctx, h)} (${h.id}) through ${existing}: remove ` +
           `${connectorId}.`,
       ];
     const shared = sharedEdgeMm(ctx.roomRects.get(h.id)!, wBox, tol);
@@ -833,7 +850,7 @@ function movesOnto(
     .slice(0, 2)
     .map(
       (c) =>
-        `${quoted(ctx, c.r)} (${c.r.id}) shares a straight ${mm(c.shared)} mm of edge with ${quoted(ctx, w)} (${w.id}), ` +
+        `${hq(ctx, c.r)} (${c.r.id}) shares a straight ${mm(c.shared)} mm of edge with ${hq(ctx, w)} (${w.id}), ` +
         `on centrelines: re-host ${connectorId} onto it as a door at least 700 mm wide, with 100 mm of wall left at each jamb.`,
     );
 }
@@ -897,10 +914,15 @@ export const entranceIntoPrivate: LintRule = {
     const order = new Map(ctx.rooms.map((r, i) => [r.id, i]));
     for (const { door, room } of ways) {
       const noun = NOUN[f.priv.get(room.id)!];
-      const fact =
-        ways.length === 1
-          ? `The only door from outside opens into ${quoted(ctx, room)}, a ${noun}.`
-          : `The door from outside into ${quoted(ctx, room)} opens into a ${noun}, and no door from outside opens into a hall, living space or kitchen.`;
+      // A room named by its use already says what it is ("the bedroom"); a label needs ", a bedroom".
+      const there = quoted(ctx, room, noun);
+      const fact = saysNoun(there, noun)
+        ? ways.length === 1
+          ? `The only door from outside opens into ${there}.`
+          : `A door from outside opens into ${there}, and no door from outside opens into a hall, living space or kitchen.`
+        : ways.length === 1
+          ? `The only door from outside opens into ${there}, a ${noun}.`
+          : `The door from outside into ${there} opens into a ${noun}, and no door from outside opens into a hall, living space or kitchen.`;
       // A public room with exterior wall for a front door, from which this room is still reached.
       const cands: Array<{ r: RRoom; run: number; depth: number }> = [];
       for (const h of ctx.rooms) {
@@ -916,13 +938,13 @@ export const entranceIntoPrivate: LintRule = {
         .slice(0, 3)
         .map(
           (c) =>
-            `Move ${door.id} onto ${quoted(ctx, c.r)} (${c.r.id}), which has a straight run of ${mm(c.run)} mm of ` +
+            `Move ${door.id} onto ${hq(ctx, c.r)} (${c.r.id}), which has a straight run of ${mm(c.run)} mm of ` +
             `exterior wall on centrelines, at least ${FRONT_DOOR_MM} mm wide with 100 mm of wall left at each jamb: ` +
-            `${quoted(ctx, room)} (${room.id}) is then at depth ${c.depth}.`,
+            `${hq(ctx, room)} (${room.id}) is then at depth ${c.depth}.`,
         );
       hints.push(
         `${cands.length > 0 ? "Or put" : "Put"} an entrance hall or lobby at least ${ENTRY_LOBBY_MM} mm clear ` +
-          `(GB 50096-2011 5.7.1, as advice) between ${door.id} and ${quoted(ctx, room)} (${room.id}).`,
+          `(GB 50096-2011 5.7.1, as advice) between ${door.id} and ${hq(ctx, room)} (${room.id}).`,
       );
       hints.push(`Accept if ${room.id} is a bedsit or cabin with no separate living space. The warning is advisory.`);
       out.push({

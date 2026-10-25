@@ -33,6 +33,8 @@ import {
   resolveAll,
 } from "../src/ir.js";
 import { link } from "../src/import.js";
+import { roomOverlapNamer } from "../src/naming.js";
+import { classifyLabelUses } from "../src/vocabulary.js";
 import { extractArchBlocks } from "../src/markdown.js";
 import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
@@ -40,6 +42,12 @@ import type { World } from "../src/world.js";
 import { NULL_WORLD } from "../src/world.js";
 
 const ROOT = resolvePath(__dirname, "..");
+
+/** The message for a pair: since PS2.29 it names rooms by label or by what the plan knows of them,
+ *  never by id (`roomOverlapNamer`, `src/naming.ts`). The oracles keep their PAIR logic
+ *  verbatim and take only the wording from the one shared builder. */
+const overlapNamer = (rooms: readonly RRoom[]) =>
+  roomOverlapNamer(rooms, (x) => (x.uses && x.uses.length > 0 ? x.uses : classifyLabelUses(x.label ?? x.id).uses));
 
 /* ---------------------------------------------------------------------------
  * The oracles: the replaced code, verbatim
@@ -50,6 +58,7 @@ function checkRoomOverlapsGrid(elements: ResolvedElement[], diagnostics: Diagnos
   // A room left unplaced carries a (0,0) placeholder, not geometry: testing it would
   // report phantom overlaps (quadratic in a chain) on top of the layout error.
   const rooms = elements.filter((e): e is RRoom => e.kind === "room" && !e._unplaced);
+  const overlapText = overlapNamer(rooms);
   const roomBox = (r: RRoom): GridBox => ({
     minX: r.at.x,
     minY: r.at.y,
@@ -85,7 +94,7 @@ function checkRoomOverlapsGrid(elements: ResolvedElement[], diagnostics: Diagnos
       if (found <= MAX_OVERLAP_PAIRS_LISTED) {
         diagnostics.push({
           severity: "warning",
-          message: `Rooms "${r1.id}" and "${r2.id}" overlap`,
+          message: overlapText(r1, r2),
           code: "W_ROOM_OVERLAP",
           span: r2.span,
         });
@@ -104,6 +113,7 @@ function checkRoomOverlapsGrid(elements: ResolvedElement[], diagnostics: Diagnos
 /** The double loop over every pair: the grid pass's own oracle, and the rule's definition. */
 function checkRoomOverlapsPairs(elements: ResolvedElement[], diagnostics: Diagnostic[]): void {
   const rooms = elements.filter((e): e is RRoom => e.kind === "room" && !e._unplaced);
+  const overlapText = overlapNamer(rooms);
   let found = 0;
   for (let a = 0; a < rooms.length; a++) {
     for (let b = a + 1; b < rooms.length; b++) {
@@ -120,7 +130,7 @@ function checkRoomOverlapsPairs(elements: ResolvedElement[], diagnostics: Diagno
       if (found <= MAX_OVERLAP_PAIRS_LISTED) {
         diagnostics.push({
           severity: "warning",
-          message: `Rooms "${r1.id}" and "${r2.id}" overlap`,
+          message: overlapText(r1, r2),
           code: "W_ROOM_OVERLAP",
           span: r2.span,
         });

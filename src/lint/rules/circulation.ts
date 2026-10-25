@@ -8,6 +8,7 @@
 
 import { computeRoomClearances } from "../../analyze/occupancy.js";
 import type { Diagnostic } from "../../diagnostics.js";
+import { capFirst } from "../../naming.js";
 import type { LintContext, LintRule } from "../context.js";
 
 export const roomNoClearPath: LintRule = {
@@ -15,7 +16,7 @@ export const roomNoClearPath: LintRule = {
   family: "circulation",
   layer: "validity",
   codes: ["W_ROOM_NO_CLEAR_PATH"],
-  check({ rooms, furniture, doors, openings, ir, rules, labelOf, at }: LintContext): Diagnostic[] {
+  check({ rooms, furniture, doors, openings, ir, rules, nameOf, at }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
     for (const rc of computeRoomClearances(rooms, furniture, doors, openings, ir.walls, rules.tolMm)) {
       if (
@@ -28,7 +29,7 @@ export const roomNoClearPath: LintRule = {
           severity: "warning",
           code: "W_ROOM_NO_CLEAR_PATH",
           ...at(r),
-          message: `Room "${labelOf(r)}" can't be entered — furniture and door swings seal off the floor by its door (only ${rc.reachableClearAreaM2} m² reachable).`,
+          message: `${capFirst(nameOf(r, "room"))} can't be entered — furniture and door swings seal off the floor by its door (only ${rc.reachableClearAreaM2} m² reachable).`,
           hints: ["Move or shrink the pieces nearest the door so there's a continuous walkable path into the room."],
         });
       }

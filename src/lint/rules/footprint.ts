@@ -113,7 +113,7 @@ export const footprintTransposed: LintRule = {
       // `against wall` and `against <room>.<edge>` derive the turn from the wall, and refuse a
       // `rotate` (`E_FURN_AGAINST`). Read off the fields a `place` frame carries across.
       const turnable = f._againstWall === undefined && f._relation === undefined;
-      const ref = f._idAuthored === true ? `"${f.id}"` : `the ${name}${where}`;
+      const ref = f._idAuthored === true ? `"${f.id}"` : `the ${name}${inRoomPhrase(f, ctx, true)}`;
       const shape = wide
         ? `a ${f.category} is wider than it is deep (${mm(fp.along)} × ${mm(fp.depth)} mm), so its long side is drawn as its depth`
         : `a ${f.category} is deeper than it is wide (${mm(fp.along)} × ${mm(fp.depth)} mm), so its long side is drawn along its back`;

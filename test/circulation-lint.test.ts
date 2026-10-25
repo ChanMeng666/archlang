@@ -97,7 +97,10 @@ describe("circulation lint", () => {
       const over = circ.rooms.filter((r) => r.detourRatio > 2.0);
       expect(warns.length).toBe(over.length);
       over.forEach((r, i) => {
-        expect(warns[i]!.message).toContain(`from entrance "${r.entranceId ?? circ.entranceId}"`);
+        // The message names the entrance by the rooms it joins; the id it is measured from is in the hint.
+        expect(warns[i]!.message).toMatch(/^The walk from the entrance \((the .+)\) to /);
+        expect(warns[i]!.message).not.toContain(`"${r.entranceId ?? circ.entranceId}"`);
+        expect(warns[i]!.hints!.join(" ")).toContain(`\`${r.entranceId ?? circ.entranceId}\``);
         expect(warns[i]!.message).toContain(`${r.detourRatio}×`);
       });
     }

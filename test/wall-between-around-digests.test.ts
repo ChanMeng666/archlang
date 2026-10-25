@@ -21,7 +21,7 @@ const DIGESTS: [string, string][] = [
   ["frames", "99811e5cfa28e40fbbe9cc7da81f7872767235671c10d1ce4400c68574646bf0"],
   ["widen-4000", "18781e880e4e42843595c6116a9689622b3a9aa1dca04b1f3e4d177cf15ba887"],
   ["widen-4500", "dbf477f001fa9c3bb7f1ef3ce242afd204613ecd4cbc7d1437cce8570f2915e7"],
-  ["refused", "9f9660055ef547552cec87f595f34fb21e383a0388cdc8e2ff9a5da47a32aa77"],
+  ["refused", "7e18b4bff41d18b98b0f0457e0f0488a8ce0bb34792e7194d8144c42e88dc901"], // PS2.29: message text only, same code, same span
 ];
 
 suite("pairwise walls: digest table", () => {

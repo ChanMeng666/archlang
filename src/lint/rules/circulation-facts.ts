@@ -34,6 +34,7 @@ import {
 import { type AccessEdge, type AccessGraph, buildDoorAccessGraph, EXTERIOR_NODE, roomBox } from "../../analyze.js";
 import { entranceInputs, entranceWays, walkAccessGraph } from "../../analyze/entrance.js";
 import type { Diagnostic } from "../../diagnostics.js";
+import { openingName } from "../element-phrases.js";
 import type { LintContext, LintRule } from "../context.js";
 import { openingClauseById } from "../../wall-ref.js";
 import { mm, shortfall } from "../measure.js";
@@ -622,7 +623,7 @@ function connectorPhrase(e: AccessEdge, ctx: LintContext, view: View): string {
   const depth = hopsOf(ctx, view);
   const name = (id: string): string => {
     const hit = byId.get(id);
-    return `"${hit ? ctx.labelOf(hit.r) : id}"`;
+    return hit ? ctx.nameOf(hit.r) : "another room";
   };
   if (e.exterior) {
     const inside = e.between[0] === EXTERIOR_NODE ? e.between[1] : e.between[0];
@@ -669,7 +670,7 @@ export const pathTooNarrow: LintRule = {
     const full = fullView(ctx);
     const circFull = own.size > 0 ? (circulationOf(ctx, "nearest") ?? circ) : circ;
     const viewOf = (id: string): View => (own.has(id) ? full : walk);
-    const { rooms, labelOf, at } = ctx;
+    const { rooms, nameOf, at } = ctx;
     const min = ctx.rules.minPathClearWidthMm;
     const roomById = new Map(rooms.map((r) => [r.id, r]));
     const out: Diagnostic[] = [];
@@ -732,8 +733,8 @@ export const pathTooNarrow: LintRule = {
       const tail = "the room is reached only through its own door from outside";
       const message =
         sealed > 0
-          ? `From the main entrance the walk to "${labelOf(r)}" squeezes to ${mm(sealed)} mm and stops there (${mm(shortfall(min, sealed))} mm below the ${mm(min)} mm minimum); ${tail}.`
-          : `From the main entrance the walk to "${labelOf(r)}" is blocked: furniture and its clearances leave no gap at all (0 mm against the ${mm(min)} mm minimum); ${tail}.`;
+          ? `From the main entrance the walk to ${nameOf(r)} squeezes to ${mm(sealed)} mm and stops there (${mm(shortfall(min, sealed))} mm below the ${mm(min)} mm minimum); ${tail}.`
+          : `From the main entrance the walk to ${nameOf(r)} is blocked: furniture and its clearances leave no gap at all (0 mm against the ${mm(min)} mm minimum); ${tail}.`;
       const ids = (own.get(r.id) ?? []).map((id) => `\`${id}\``).join(", ");
       return {
         severity: "warning",
@@ -756,8 +757,8 @@ export const pathTooNarrow: LintRule = {
         // at all is called a seal.
         const message =
           wayIn > 0
-            ? `The walk from the entrance to "${labelOf(r)}" squeezes to ${mm(wayIn)} mm and stops there — no way in is wider, so no route reaches the room (${mm(shortfall(min, wayIn))} mm below the ${mm(min)} mm minimum).`
-            : `The walk from the entrance to "${labelOf(r)}" is blocked: furniture and its clearances leave no gap at all (0 mm against the ${mm(min)} mm minimum).`;
+            ? `The walk from the entrance to ${nameOf(r)} squeezes to ${mm(wayIn)} mm and stops there — no way in is wider, so no route reaches the room (${mm(shortfall(min, wayIn))} mm below the ${mm(min)} mm minimum).`
+            : `The walk from the entrance to ${nameOf(r)} is blocked: furniture and its clearances leave no gap at all (0 mm against the ${mm(min)} mm minimum).`;
         out.push({
           severity: "warning",
           code: "W_PATH_TOO_NARROW",
@@ -786,7 +787,7 @@ export const pathTooNarrow: LintRule = {
         severity: "warning",
         code: "W_PATH_TOO_NARROW",
         ...at(r),
-        message: `The walk from the entrance to "${labelOf(r)}" squeezes to ${mm(rc.bottleneckClearWidthMm)} mm (${mm(shortfall(min, rc.bottleneckClearWidthMm))} mm below the ${mm(min)} mm minimum)${namedClause(doors, rc.bottleneckClearWidthMm, ctx, viewOf(r.id))}.`,
+        message: `The walk from the entrance to ${nameOf(r)} squeezes to ${mm(rc.bottleneckClearWidthMm)} mm (${mm(shortfall(min, rc.bottleneckClearWidthMm))} mm below the ${mm(min)} mm minimum)${namedClause(doors, rc.bottleneckClearWidthMm, ctx, viewOf(r.id))}.`,
         hints: narrowHints(min, doors, ctx, viewOf(r.id), unreached),
       });
     }
@@ -803,7 +804,7 @@ export const pathTooNarrow: LintRule = {
         severity: "warning",
         code: "W_PATH_TOO_NARROW",
         ...at(from),
-        message: `The route from "${labelOf(from)}" to "${to ? labelOf(to) : rt.toRoomId}" squeezes to ${mm(w)} mm (${mm(shortfall(min, w))} mm below the ${mm(min)} mm minimum).`,
+        message: `The route from ${nameOf(from)} to ${to ? nameOf(to) : "another room"} squeezes to ${mm(w)} mm (${mm(shortfall(min, w))} mm below the ${mm(min)} mm minimum).`,
         // A route runs room to room: where the walk starts says nothing about it.
         hints: narrowRemedies(min, null, ctx),
       });
@@ -823,7 +824,7 @@ export const circuitousPath: LintRule = {
   check(ctx: LintContext): Diagnostic[] {
     const circ = measuredCirculationOf(ctx, "nearest");
     if (!circ) return [];
-    const { rooms, labelOf, at } = ctx;
+    const { rooms, nameOf, at } = ctx;
     const max = ctx.rules.maxDetourRatio;
     const roomById = new Map(rooms.map((r) => [r.id, r]));
     const out: Diagnostic[] = [];
@@ -836,12 +837,19 @@ export const circuitousPath: LintRule = {
       // not the least ratio over every entrance. So the message names the door it measures
       // from; a single-entrance plan's model carries it in the header.
       const entrance = rc.entranceId ?? circ.entranceId;
+      // Named by the rooms it joins (an id is for the hint); an id that is no door or opening here
+      // (a stair arrival) is just "the entrance".
+      const door = ctx.connectors.find((c) => c.id === entrance);
+      const from = door ? `the entrance (${openingName(ctx, door)})` : "the entrance";
       out.push({
         severity: "warning",
         code: "W_CIRCUITOUS_PATH",
         ...at(r),
-        message: `The walk from entrance "${entrance}" to "${labelOf(r)}" is ${rc.detourRatio}× the straight-line distance from that entrance (over ${max}×).`,
-        hints: ["Add a more direct connection — a door or a hall — so the room isn't reached the long way round."],
+        message: `The walk from ${from} to ${nameOf(r)} is ${rc.detourRatio}× the straight-line distance from that entrance (over ${max}×).`,
+        hints: [
+          "Add a more direct connection — a door or a hall — so the room isn't reached the long way round.",
+          `The entrance it is measured from is \`${entrance}\`.`,
+        ],
       });
     }
     return out;

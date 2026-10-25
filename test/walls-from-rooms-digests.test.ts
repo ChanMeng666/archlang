@@ -24,18 +24,18 @@ const DIGESTS: [string, string][] = [
   ["two-bed-twin", "4fbad9ce863e4e2aca346556a7a728e2471670dcaf107dbda3568687335fa31e"],
   ["widen-4000", "8f10a20c86ffc919a72b6bb7912c7fffea0f953f46777d3f84a598582c67209e"],
   ["widen-4500", "c50d7c02d2f34d92da146950a02856fa53648b2d961314cc29db95d97e78012d"],
-  ["courtyard", "7db77fbb50cf24659f402e0ef09e2e15ebffa9d5833b9d1a16513dedf6a5fb4e"],
-  ["void-hole", "d66a420fdca3a21429b331389715f2d723e934a1c56df73cb10ca0676f15789a"],
-  ["instances", "00fbb27c01b89e46510de799b05a6bde359bc5baf0c18c623ab79609dd04b19d"],
-  ["coexist", "ad84cacd155fe30a10560c26299bbfac28b638abcb4bfc508853370289f35e6e"],
-  ["refused", "2be9eba41c04c8a8dbcd0c5d0534949a49916bb205ed091b71f748897968af21"],
+  ["courtyard", "a275e4579cbce8f519beb0685c4418badeab0565cd00530deda8cfa3d553108b"], // PS2.29: message text only, same code, same span
+  ["void-hole", "ead0619b314fa4909cac8a1a06e519817198747f0ce366e11dc0c0b538d8383d"], // PS2.29: message text only, same code, same span
+  ["instances", "94e172415611d6b589f37957bcced3265c6c2473e98e5aeba34105421e15eaaa"], // PS2.29: message text only, same code, same span
+  ["coexist", "fba1b7b96368559795065ca930ab8f266e7a01eca2177ffb5a745780cad2b5fd"], // PS2.29: message text only, same code, same span
+  ["refused", "76e0b4711a8d03cafc6ce4271a2fb765a9280b9d332ffec2eeb350ef93bf67f7"], // PS2.29: message text only, same code, same span
   // Part C, the pair clauses: pinned after the twins held (`test/walls-from-rooms-clauses.test.ts`).
   // Re-pinned in red team round 1 (S1): the first pin carried a false W_OPENING_AT_JUNCTION (a
   // 25 mm "nib" beside the thinner wall at the a|c (150) / b|c (100) end); with the HEAD rule
   // restored the old digest reproduces exactly, so the rule fix is the only change.
-  ["open-plan", "2181822b798d5774d2ba30a928d5fe9f8e814dcbaa797e14cab1e28cfa696762"],
-  ["open-width", "b2413725d9053a145f68237e9bcd9dc872eb42a14615ff9869f98bac696539e0"],
-  ["open-instances", "facae4205369cb92054da512779db81c3421f95743da3c819fd9997be3f94cd2"],
+  ["open-plan", "6ebb5e7d9f7fb571d15dcd3c3382b3696bdd18250ec3f2239158b1220fe16486"], // PS2.29: message text only, same code, same span
+  ["open-width", "0fdbefbb73012f204dc367c4b7047454a534f1174bd06edb79334e7b599edb88"], // PS2.29: message text only, same code, same span (round 2: no capital mid-sentence)
+  ["open-instances", "73c5ad30e5247ae54f50bed598c3bc02b2fec4f6c97edd98e92b19ea97db3d19"], // PS2.29: message text only, same code, same span
   ["clauses-refused", "2ee033192ebca84b6e8d593937ed348915530b2805b38f8d339ad7a5a6d6fe02"],
 ];
 

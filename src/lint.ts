@@ -270,6 +270,7 @@ export function buildingContexts(levels: readonly ResolvedLevel[], tolMm: number
   for (const l of levels) {
     out.set(l.level, {
       multiStorey: true,
+      storeyCount: levels.length,
       verticalPeerIds: peerIds,
       arrivalRooms: reach.arrivalRooms.get(l.level) ?? [],
       arrivalShafts: runs.get(l.level) ?? [],
