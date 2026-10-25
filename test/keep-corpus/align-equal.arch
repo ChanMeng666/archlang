@@ -1,0 +1,22 @@
+plan "align-equal" {
+  units mm
+  axes { x at 0, 4000, 8000 y at 0, 5000 }
+  wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+  wall id=p partition thickness 100 { (4000,0) (4000,5000) }
+  wall id=q partition thickness 100 { (4000,2500) (8000,2500) }
+  room id=a at (0,0) size 4000x5000 label "Living" uses living
+  room id=b at (4000,0) size 4000x2500 label "Bed" uses bedroom
+  room id=c at (4000,2500) size 4000x2500 label "Study" uses office
+  door id=d1 on p at 1200 width 800
+  door id=d2 on p at 3700 width 900
+  window id=w1 on shell at 2000 width 1500
+  window id=w2 on shell at 6000 width 1200
+  keep align a.right b.left c.left p axis 2
+  keep align b.bottom c.top q
+  keep equal width b c
+  keep equal depth b c soft
+  keep equal width d1 d2 advisory
+  keep equal width w1 w2
+  keep align a.top b.top axis A soft
+  keep equal depth a b advisory
+}

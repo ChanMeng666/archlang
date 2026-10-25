@@ -54,6 +54,8 @@ import {
   DOOR_HINGE_NEAR,
   DOOR_KINDS,
   DOOR_SWING_BUILDING,
+  KEEP_GRADES,
+  KEEP_WORDS,
   KEYWORDS,
   OPERATORS,
   TITLE_FIELDS,
@@ -242,6 +244,36 @@ function assertVocab(body: [string, string][]): void {
 }
 
 /**
+ * `keep <form> [grade]` (ADR 0033): each form's leading words from `KEEP_WORDS.forms`, the
+ * measures and level words from `KEEP_WORDS`, the grades from `KEEP_GRADES` — derived, never
+ * retyped. The tail after the leading words is the form's structure (`parseKeep`,
+ * `src/parser.ts`); a form with no tail here throws, so a new form cannot ship ungrammared.
+ */
+function keepRules(): [string, string][] {
+  const tails: Record<string, string> = {
+    align: `keep-ref ( rws keep-ref )+`,
+    equal: `( ${litAlt(KEEP_WORDS.measures)} ) rws keep-ref ( rws keep-ref )+`,
+    offset: `keep-ref rws "from" rws keep-ref ws expr`,
+    "min-clear": `keep-ref ws expr`,
+    // `on axis <label> <wall>`: the second leading word is the axis datum's own `axis`.
+    "on-axis": `( number | ident ) rws keep-ref`,
+    stacked: `keep-ref rws ${KEEP_WORDS.levels.map(lit).join(" rws ")} ws expr ( ws expr )+`,
+    fixed: `keep-ref rws "at" ws expr`,
+  };
+  const forms = Object.entries(KEEP_WORDS.forms);
+  const missing = forms.filter(([k]) => tails[k] === undefined).map(([k]) => k);
+  if (missing.length) throw new Error(`gen-gbnf: keep forms with no production: ${missing.join(", ")}`);
+  const name = (k: string): string => `keep-${k}`;
+  return [
+    ["keep-stmt", `"keep" rws keep-form ( rws keep-grade )?`],
+    ["keep-form", forms.map(([k]) => name(k)).join(" | ")],
+    ...forms.map(([k, words]): [string, string] => [name(k), `${words.map(lit).join(" rws ")} rws ${tails[k]}`]),
+    ["keep-ref", `"axis" rws ( number | ident ) | ref ( rws "segment" rws number )?`],
+    ["keep-grade", litAlt(KEEP_GRADES)],
+  ];
+}
+
+/**
  * The grammar body, as `[name, production]` pairs emitted in this fixed order.
  * Non-terminals are dashed-lowercase words (GBNF requirement). Whitespace is
  * explicit: `ws` is optional inter-token layout (bounded inline runs, may cross
@@ -274,7 +306,7 @@ function rules(): [string, string][] {
       "block-stmt",
       // `place-stmt` precedes `instance-stmt`: both begin with a word, and the bare-call
       // rule would otherwise consume `place` as the component name.
-      `element | let-stmt | for-stmt | if-stmt | while-stmt | set-stmt | zone-stmt | place-stmt | instance-stmt | assign-stmt`,
+      `element | let-stmt | for-stmt | if-stmt | while-stmt | set-stmt | keep-stmt | zone-stmt | place-stmt | instance-stmt | assign-stmt`,
     ],
     [
       "element",
@@ -377,6 +409,7 @@ function rules(): [string, string][] {
     ],
     ["mirror-axis", `"x" | "y"`],
     ["assign-stmt", `ident ws "=" ws expr`],
+    ...keepRules(),
     ["block", `"{" ws ( block-stmt ws )* "}"`],
 
     // ---- strip -----------------------------------------------------------

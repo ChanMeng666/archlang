@@ -49,6 +49,9 @@ export const KEYWORDS = {
     // `notes "…"` — the sheet's general-notes table. A statement keyword like `legend`;
     // appended at the end so every earlier keyword keeps its position.
     "notes",
+    // `keep <form> [grade]` (ADR 0033): the one reserved word the declared invariants add. Its
+    // form and grade words are contextual (`KEEP_WORDS` below), read in position after it only.
+    "keep",
   ],
   /** Built-in element kinds → `storage.type.element`, CM `typeName`. */
   element: [
@@ -171,6 +174,15 @@ export const KEYWORDS = {
     // `segment containing <room>.<edge>` (plan card PS3.5): a segment selector. The compass
     // selector words (`segment north`) are already here or in `enum`.
     "containing",
+    // The `keep` form words that lead a clause (ADR 0033; `KEEP_WORDS`). Contextual: read as
+    // form words only in position after `keep`, so a binding of the same name keeps its
+    // meaning everywhere else. `align`, `offset`, `clear`, `on`, `axis`, `from`, `at`,
+    // `width` and `segment` are already here; `min` stays the built-in function.
+    "equal",
+    "depth",
+    "stacked",
+    "levels",
+    "fixed",
   ],
   /** Enum value keywords → `constant.language`, CM `atom`. */
   enum: [
@@ -279,6 +291,10 @@ export const KEYWORDS = {
     // happen is a second `"garage"` here — the generators build flat alternations from these
     // lists and would emit the word twice.
     "garage",
+    // The `keep` grades (`KEEP_GRADES`): values, so they sit here.
+    "hard",
+    "soft",
+    "advisory",
   ],
 } as const;
 
@@ -497,4 +513,32 @@ export const STATEMENT_STARTS: readonly string[] = [
   "height",
   // The sheet's `notes "…"` statement, for the same reason `legend` is here.
   "notes",
+  // `keep <form> [grade]` (ADR 0033): a body statement, legal wherever a statement is.
+  "keep",
 ];
+
+/**
+ * The `keep` vocabulary (ADR 0033, PS4.3 design §2) — the one source the parser, the printer, the
+ * GBNF and the spec line read. Every word here is contextual: it means a form, a measure or a
+ * grade only in its position after `keep`.
+ *
+ * - `forms`: each form's leading words, in the order the spec teaches them;
+ * - `measures`: the extents `keep equal` compares;
+ * - `levels`: the words `keep stacked <id>` takes before its level list.
+ */
+export const KEEP_WORDS = {
+  forms: {
+    align: ["align"],
+    equal: ["equal"],
+    offset: ["offset"],
+    "min-clear": ["min", "clear"],
+    "on-axis": ["on", "axis"],
+    stacked: ["stacked"],
+    fixed: ["fixed"],
+  },
+  measures: ["width", "depth"],
+  levels: ["on", "levels"],
+} as const;
+
+/** The `keep` grades, weakest last; the first is the default (ADR 0033 decision 3). */
+export const KEEP_GRADES = ["hard", "soft", "advisory"] as const;

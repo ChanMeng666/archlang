@@ -91,6 +91,7 @@ import { segmentsOfWall, doorSwing, sectorIntersectsRect, type DoorSwing } from 
 import { DEFAULT_RULESET } from "./lint.js";
 import { cutPlaneLayer, defaultFootprint, orientationMatters, requiresWall } from "./fixtures-catalog.js";
 import type { ResolvedPlan, RWall, RDoor, RRoom, ROpening, RFurniture, RVoid } from "./ir.js";
+import { keepResultsOf } from "./ir.js";
 import type { ComponentDef, FurnitureAnchor, FurnitureNode, FurniturePlace, PlanNode, Statement } from "./ast.js";
 import type { Span } from "./diagnostics.js";
 import type { Expr } from "./expr.js";
@@ -960,6 +961,24 @@ export function sourceConflicts(source: string, opts: AnalyzeOptions = {}): Sour
     const doors = st.ir.elements.filter((e): e is RDoor => e.kind === "door");
     for (const [k, c] of hardConflictsOf(furniture, st.ir.walls, doors))
       conflicts.set(`${level}|${k}`, { ...c, level });
+  }
+  // A broken hard keep (ADR 0033, `W_KEEP_VIOLATED`) counts in the no-worse law as every
+  // source-rewriting transform's law counts it (PS4.3 R7): a keep that names a piece repair moved
+  // pins the piece. Keyed by storey, statement text and occurrence, never by span (a later round
+  // reads a re-printed source); a plan with no keep adds nothing.
+  const keeps = ir ? keepResultsOf(ir, levels) : undefined;
+  const seen = new Map<string, number>();
+  for (const r of keeps ?? []) {
+    const base = `${r.level ?? ""}|keep|${r.keep}`;
+    const n = seen.get(base) ?? 0;
+    seen.set(base, n + 1);
+    if (r.grade !== "hard" || r.holds) continue;
+    const level = `${r.level ?? ""}`;
+    conflicts.set(`${base}|${n}`, {
+      refs: r.targets,
+      level,
+      would: () => `break the hard keep \`keep ${r.keep}\` (W_KEEP_VIOLATED)`,
+    });
   }
   return { conflicts, at };
 }

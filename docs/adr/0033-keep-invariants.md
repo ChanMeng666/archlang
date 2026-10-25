@@ -1,8 +1,10 @@
 # 33. `keep`: declared invariants, checked by the compiler, never solved
 
-- **Status:** Proposed (plan-soundness card PS4.3, `docs/plans/plan-soundness/README.md` §6 and §7
-  row 6). Design record: `docs/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`. To be
-  accepted when the PR that builds the statement and its law (PS4.3a) merges.
+- **Status:** Accepted 2026-10-26 with the PR that builds the statement and its law (plan-soundness
+  card PS4.3a, PR #272; `docs/plans/plan-soundness/README.md` §6 and §7 row 6). Design record:
+  `docs/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`; as built:
+  `docs/plans/plan-soundness/research/2026-10-26-ps43a-as-built.md`. Decision 6 (the `--facts depends`
+  rows and `arch impact`'s keeps) is built by PS4.3b.
 - **Date:** 2026-10
 - **Relates to:** [ADR 0004](0004-relational-placement-not-optimizer.md) and
   [ADR 0006](0006-solver-as-explicit-transform.md) (no solver inside `compile()`; a solver is an
@@ -152,7 +154,7 @@ number.
    removed; with every keep holding, the diagnostics are the same with nothing removed. The D4
    equivariance law is checked through a source-level transformer of keeps (datum words, measure
    words and axes mapped by the turn or mirror), comparing residual sets unordered; the component
-   route of the D4 oracle does not apply, since keeps are refused inside components.
+   route of the D4 oracle does not apply, since keeps are refused inside components. As built (PS4.3a), the law is stated over single-storey plans whose keeps name no axis and whose datums include no half-grid centre: a placed frame carries no positioning axis and no storey, so axis keeps and `stacked` keeps have no image under the instance route (a whole-plan transform would carry them; plan-soundness card PS0.26), and the language's `snap` rounds a half toward +∞ (`Math.round`), so a mirrored half-grid centre snaps one grid away from its image: the fault is in snapping, not in the transformer (PS0.26).
 
 ## Consequences
 

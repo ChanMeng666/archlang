@@ -1,0 +1,19 @@
+plan "offset-fixed" {
+  units mm
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  room id=a at (0,0) size 6000x4000 label "Studio" uses living
+  room id=s at (0.3,0) size 1000x1000
+  door id=d on shell at 3000 width 900
+  window id=w on shell at 4500 width 1200
+  furniture id=sofa sofa at (1000,1500) size 2000x900 in a
+  keep offset d from a.left 3000
+  keep offset w from a.left 4000 soft
+  keep offset sofa from a.top 1950
+  keep offset a.right from a.left 6000 advisory
+  keep offset shell segment 1 from shell segment 3 6000
+  keep fixed a.left at 0
+  keep fixed a.cx at 3050
+  keep fixed s.left at 0.1 + 0.2
+  keep fixed s.left at 0.301 soft
+  keep fixed shell segment 0 at -100 advisory
+}

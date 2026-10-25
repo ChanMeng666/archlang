@@ -593,6 +593,27 @@ const POSITIVE: Snippet[] = [
     note: "the lot line — the one part of `site` that draws anything",
     src: plan(`  site {\n    street south\n    boundary (0,0) (20000,0) (20000,16000) (0,16000)\n  }`),
   },
+  // --- keep (ADR 0033): one snippet per form, as the line teaches it ------------
+  ...((): Snippet[] => {
+    const two = `  axes { x at 0, 4000, 8000 }\n${BOX}\n  wall id=p partition thickness 100 { (4000,0) (4000,5000) }\n  room id=a at (0,0) size 4000x5000\n  room id=b right-of a align top gap 0 size 4000x5000\n  door id=d on p at 2500 width 800`;
+    const keep = (note: string, line: string): Snippet => ({ keyword: "keep", note, src: plan(`${two}\n  ${line}`) });
+    return [
+      keep("align, several datums: room edges and a straight wall", "keep align a.right b.left p"),
+      keep("equal width of rooms, soft", "keep equal width a b soft"),
+      keep("equal depth of rooms, advisory", "keep equal depth a b advisory"),
+      keep("offset of an opening from a datum, hard spelled", "keep offset d from b.top 2500 hard"),
+      keep("min clear of a room", "keep min clear b 3800"),
+      keep("on axis <label> <wall>", "keep on axis 2 p"),
+      keep("fixed <d> at <mm>, the axis datum", "keep fixed axis 2 at 4000"),
+      {
+        keyword: "keep",
+        note: "stacked at the root of a multi-storey plan, a stair on levels 1 and 2",
+        src: plan(
+          `  level 1 {\n${BOX}\n    stair id=st at (300,3800) size 2400x900 dir up\n  }\n  level 2 {\n${BOX}\n    stair id=st at (300,3800) size 2400x900 dir down\n  }\n  keep stacked st on levels 1 2`,
+        ),
+      },
+    ];
+  })(),
 ];
 
 // ---------------------------------------------------------------------------
@@ -612,6 +633,12 @@ interface Negative {
 }
 
 const NEGATIVE: Negative[] = [
+  {
+    code: "W_KEEP_VIOLATED",
+    channel: "compile",
+    note: "a broken hard keep (the default grade) is a compile-channel warning with a signed residual",
+    src: plan(`  room id=a at (0,0) size 3000x3000\n  keep fixed a.left at 100`),
+  },
   {
     code: "E_ARC_RADIUS",
     channel: "compile",

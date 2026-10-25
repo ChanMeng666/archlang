@@ -44,6 +44,8 @@ import type {
   NextInput,
   NextItem,
 } from "../index.js";
+import { keepResultsOf } from "../ir.js";
+import { type KeepResult, keepValidateRow } from "../keep.js";
 // Internal (not part of the public surface): parse → link → resolve without
 // rendering — validate/lint need only the diagnostics, never the SVG.
 import { resolvePlan } from "../analyze.js";
@@ -474,6 +476,7 @@ function report(
   filter: DiagFilter = {},
   coverage?: LintCoverage,
   next?: NextItem | null,
+  keeps?: readonly KeepResult[],
 ): number {
   const e = diags.filter((d) => d.severity === "error").length;
   const w = diags.length - e;
@@ -489,6 +492,8 @@ function report(
       ...(active ? { filtered: true, total_diagnostics: diags.length } : {}),
       diagnostics: shown.map((d) => diagnosticToJson(source, d)),
       ...(coverage ? { coverage } : {}),
+      // ADR 0033: the plan's keeps, only when it declares one, before `next`.
+      ...(keeps ? { keeps: keeps.map(keepValidateRow) } : {}),
       // `validate` only (PS5.3): appended LAST, so every byte before it is what it was.
       ...(next !== undefined ? { next } : {}),
     });
@@ -541,7 +546,9 @@ export function cmdValidate(args: Args): number {
     // resolvePlan yields exactly compile()'s diagnostics (toScene/renderSvg never
     // emit any) without paying for the render; lint() then reuses the warm
     // parse/resolve stage memos, so the whole command resolves once, renders never.
-    const { diagnostics } = resolvePlan(source, { world });
+    const { diagnostics, ir, levels } = resolvePlan(source, { world });
+    // ADR 0033: the plan's keeps, measured by the same resolve (absent when it declares none).
+    const keeps = ir ? keepResultsOf(ir, levels) : undefined;
     const lintDiags = lint(source, { world });
     // `--profile` lints under the named advisory ruleset too, and its warnings are the ones
     // reported (as `lint --profile` reports them); the default run still ranks `next`.
@@ -555,6 +562,7 @@ export function cmdValidate(args: Args): number {
     const nextInput: NextInput = {
       diagnostics,
       lint: lintDiags,
+      ...(keeps ? { keeps } : {}),
       ...(profileLint ? { profileLint } : {}),
       ...(tasteReport ? { taste: tasteReport } : {}),
     };
@@ -562,8 +570,8 @@ export function cmdValidate(args: Args): number {
     // blocks may appear in one call, and either failing gates the exit code. Plain
     // validate (neither flag) is `report`, byte-identical to before but for `next`.
     if (args.graph !== undefined || args.intent !== undefined)
-      return reportWithChecks(source, diags, args, world, filter, nextInput);
-    return report(source, diags, args, filter, undefined, nextDiagnostic(nextInput));
+      return reportWithChecks(source, diags, args, world, filter, nextInput, keeps);
+    return report(source, diags, args, filter, undefined, nextDiagnostic(nextInput), keeps);
   });
 }
 
@@ -671,6 +679,7 @@ function reportWithChecks(
   world: World,
   filter: DiagFilter,
   nextInput: NextInput,
+  keeps?: readonly KeepResult[],
 ): number {
   const graph = args.graph !== undefined ? loadGraphCheck(source, args.graph, args, world) : undefined;
   if (isCheckError(graph)) return graph.exit;
@@ -727,6 +736,7 @@ function reportWithChecks(
       if (feedback) block.feedback = feedback;
       o.intent = block;
     }
+    if (keeps) o.keeps = keeps.map(keepValidateRow);
     // PS5.3: appended LAST, so every byte before it is what it was.
     o.next = next;
     emitJson(o);

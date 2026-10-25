@@ -1,0 +1,20 @@
+plan "loops" {
+  units mm
+  let N = 3
+  let W = 3000
+  wall id=shell exterior thickness 200 { (0,0) (9000,0) (9000,4000) (0,4000) close }
+  room id=r0 at (0,0) size W x 4000
+  room id=b1 at (3000,0) size 3000x4000
+  room id=b2 at (6000,0) size 3000x4000
+  for i in 0..N {
+    keep fixed b1.left at W * (i + 1) soft
+  }
+  if N > 2 {
+    keep equal width b1 b2
+  } else {
+    keep equal width b1 b2 advisory
+  }
+  zone east "East" {
+    keep align b1.right b2.left
+  }
+}

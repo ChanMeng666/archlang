@@ -86,6 +86,8 @@ import {
   verticalsOf,
 } from "./vertical.js";
 import { fmt2 } from "./num-format.js";
+import { type KeepSummary, keepSummary } from "./keep.js";
+import { keepResultsOf } from "./ir.js";
 import { type D4, fromSpelling, northQuarterTurns } from "./algebra/d4.js";
 import { type ClearWorld, clearWorldOf, measureClear } from "./furniture-relation.js";
 
@@ -498,6 +500,7 @@ export function instanceTransform(i: Pick<InstanceSummary, "rotate" | "mirror">)
 }
 
 export type { RoomPlacement, OpeningPlacement, FurniturePlacement, DerivedWallRow } from "./ir.js";
+export type { KeepAt, KeepSkipped, KeepSummary } from "./keep.js";
 
 /** How a single placed element's position was authored vs derived. */
 export interface FreedomElement {
@@ -914,6 +917,12 @@ export interface SceneSummary {
   depends?: DependsFacts;
   /** All problems from parse/link/resolve, with byte spans and codes. */
   diagnostics: Diagnostic[];
+  /**
+   * The plan's `keep` invariants (ADR 0033), each measured against the resolved plan: one row
+   * per keep in source order, every storey's by level and then the plan's (`stacked`), with its
+   * signed residual in mm. Present **only when the plan declares a keep**, and last.
+   */
+  keeps?: KeepSummary[];
 }
 
 /**
@@ -1837,6 +1846,7 @@ function summarizeResolved(
   statements?: StatementIndex,
 ): SceneSummary {
   const tol = opts.adjacencyTolMm ?? DEFAULT_TOL;
+  const keeps = ir ? keepResultsOf(ir, levels) : undefined;
 
   if (!ir) {
     return {
@@ -1903,6 +1913,9 @@ function summarizeResolved(
     ...(perLevel ? { levels: perLevel } : {}),
     ...(vertical ? { vertical } : {}),
     diagnostics,
+    // ADR 0033: the plan's keeps, measured, LAST and only when it declares one, so every byte
+    // before it is what it was (PS4.3 design §3.3).
+    ...(keeps ? { keeps: keeps.map(keepSummary) } : {}),
   };
 }
 

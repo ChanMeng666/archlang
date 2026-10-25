@@ -15,7 +15,7 @@
 
 root ::= ws "plan" rws string ws "{" ws ( plan-stmt ws )* "}" ws
 plan-stmt ::= setting | title-stmt | axes-stmt | acc-stmt | theme-stmt | style-stmt | component-stmt | import-stmt | strip-stmt | level-stmt | block-stmt
-block-stmt ::= element | let-stmt | for-stmt | if-stmt | while-stmt | set-stmt | zone-stmt | place-stmt | instance-stmt | assign-stmt
+block-stmt ::= element | let-stmt | for-stmt | if-stmt | while-stmt | set-stmt | keep-stmt | zone-stmt | place-stmt | instance-stmt | assign-stmt
 element ::= wall-stmt | room-stmt | door-stmt | window-stmt | opening-stmt | furniture-stmt | dim-stmt | column-stmt | stair-stmt | elevator-stmt | escalator-stmt | roof-stmt | void-stmt | outdoor-stmt | fence-stmt | walls-stmt
 setting ::= units-stmt | grid-stmt | paper-stmt | scale-stmt | height-stmt | north-stmt | site-stmt | dims-stmt | schedule-stmt | legend-stmt | notes-stmt
 units-stmt ::= "units" rws "mm"
@@ -65,6 +65,17 @@ instance-stmt ::= ident ws "(" ws ( expr ( ws "," ws expr )* )? ws ")"
 place-stmt ::= "place" rws ident ws "(" ws ( expr ( ws "," ws expr )* )? ws ")" rws "as" rws ident rws "at" ws point ( rws "rotate" ws number )? ( rws "mirror" rws mirror-axis )?
 mirror-axis ::= "x" | "y"
 assign-stmt ::= ident ws "=" ws expr
+keep-stmt ::= "keep" rws keep-form ( rws keep-grade )?
+keep-form ::= keep-align | keep-equal | keep-offset | keep-min-clear | keep-on-axis | keep-stacked | keep-fixed
+keep-align ::= "align" rws keep-ref ( rws keep-ref )+
+keep-equal ::= "equal" rws ( "width" | "depth" ) rws keep-ref ( rws keep-ref )+
+keep-offset ::= "offset" rws keep-ref rws "from" rws keep-ref ws expr
+keep-min-clear ::= "min" rws "clear" rws keep-ref ws expr
+keep-on-axis ::= "on" rws "axis" rws ( number | ident ) rws keep-ref
+keep-stacked ::= "stacked" rws keep-ref rws "on" rws "levels" ws expr ( ws expr )+
+keep-fixed ::= "fixed" rws keep-ref rws "at" ws expr
+keep-ref ::= "axis" rws ( number | ident ) | ref ( rws "segment" rws number )?
+keep-grade ::= "hard" | "soft" | "advisory"
 block ::= "{" ws ( block-stmt ws )* "}"
 strip-stmt ::= "strip" rws ( strip-h | strip-v ) ws "{" ws ( strip-room ws )* "}"
 strip-h ::= ( "right" | "left" ) rws "at" ws point rws "gap" ws expr ( rws "height" ws expr )?

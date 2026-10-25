@@ -16,7 +16,9 @@
  * 4. `drafting` — a default `lint()` warning from a drafting-layer rule (the annotation family).
  *    Its own sub-tier after validity: a drafting code is never chosen ahead of a validity code.
  * 5. `intent` — a failing gating assertion of the brief, then a `--graph` mismatch (it gates
- *    too), then an advisory assertion.
+ *    too), then a broken `soft` keep (ADR 0033: the author's contract, which never gates), then an
+ *    advisory assertion. A broken `hard` keep is a compile-channel warning (tier 2); an
+ *    `advisory` keep is never chosen.
  * 6. `profile` — a warning only the named lint profile raises. Default `lint()` warnings all
  *    rank above (tiers 3–4), so this tier is reached only when default `lint()` is empty and
  *    every profile warning is then profile-only.
@@ -40,6 +42,7 @@ import { LINT_CODE_LAYERS, type LintLayer } from "./lint.js";
 import { fmtPermyriad } from "./num-format.js";
 import type { GraphCheck } from "./plan-json.js";
 import type { TasteReport } from "./taste/report.js";
+import type { KeepResult } from "./keep.js";
 
 /** The tiers, in precedence order. */
 export const NEXT_TIERS = ["error", "warning", "validity", "drafting", "intent", "profile", "taste"] as const;
@@ -80,6 +83,8 @@ export interface NextInput {
   profileLint?: readonly Diagnostic[];
   /** `taste()`'s report (`validate --taste`). */
   taste?: TasteReport;
+  /** The plan's measured keeps (ADR 0033); only a broken `soft` one is an item (tier `intent`). */
+  keeps?: readonly KeepResult[];
 }
 
 function fromDiagnostic(tier: NextTier, d: Diagnostic): NextItem {
@@ -127,6 +132,14 @@ export function nextDiagnostic(input: NextInput): NextItem | null {
   const graph = input.graph;
   const graphItem = graph && !graph.ok ? fromGraph(graph) : null;
   if (graphItem) return graphItem;
+  const soft = input.keeps?.find((k) => k.grade === "soft" && !k.holds);
+  if (soft) {
+    const out: NextItem = { tier: "intent", code: "W_KEEP_VIOLATED", message: soft.message! };
+    if (soft.node.span) out.span = [soft.node.span.start, soft.node.span.end];
+    if (soft.level !== undefined) out.level = soft.level;
+    if (soft.hints?.[0]) out.hint = soft.hints[0];
+    return out;
+  }
   if (intent && intent.violations.length > 0) return fromViolation(intent, 0);
 
   // Reached only when default lint() raised nothing (any warning of it returned above), so every

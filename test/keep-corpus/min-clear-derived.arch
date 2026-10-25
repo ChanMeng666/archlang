@@ -1,0 +1,10 @@
+plan "min-clear-derived" {
+  units mm
+  room id=living at (0,0) size 4000x5000 label "Living" uses living
+  room id=bed1 right-of living align top size 4000x2500 label "Bedroom 1" uses bedroom
+  room id=bed2 below bed1 align left size 4000x2500 label "Bedroom 2" uses bedroom
+  walls from rooms exterior 200 partition 100
+  keep min clear living 3850
+  keep min clear bed1 2350
+  keep min clear bed2 2351 soft
+}

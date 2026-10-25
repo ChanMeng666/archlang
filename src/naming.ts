@@ -251,6 +251,45 @@ export function makeNaming(rooms: readonly NameableRoom[], level?: number): Nami
   return { phrase, placeAt };
 }
 
+/** A straight wall run as the wall namer reads it. */
+export interface WallRun {
+  a: Point;
+  b: Point;
+  thickness: number;
+  category: string;
+}
+
+/**
+ * A wall named by what stands on its two faces, for a message that must not quote its id: one
+ * probe a little past each face of the run's midpoint (`roomAt` answers with the room there, its
+ * id and its phrase, or undefined). A room on each face: "the partition between A and B"; the same room on
+ * both (a wall standing inside one room): "the partition in A"; a room on one face: "the exterior
+ * wall of A"; none: the kind and where it stands ("the partition in the middle of the plan"). The
+ * kind is "partition" for a partition and "<category> wall" for any other category. Shared by the
+ * resolver's `keep` messages (ADR 0033); lint words its walls through `lint/element-phrases.ts`.
+ */
+export function wallRunPhrase(
+  s: WallRun,
+  roomAt: (p: Point) => { id: string; phrase: string } | undefined,
+  placeAt: (p: Point) => string,
+): string {
+  const kind = s.category === "partition" ? "partition" : `${s.category} wall`;
+  const dx = s.b.x - s.a.x;
+  const dy = s.b.y - s.a.y;
+  const len = Math.hypot(dx, dy);
+  const mid = { x: (s.a.x + s.b.x) / 2, y: (s.a.y + s.b.y) / 2 };
+  if (len > 0) {
+    const off = s.thickness / 2 + 50;
+    const a = roomAt({ x: mid.x - (dy / len) * off, y: mid.y + (dx / len) * off });
+    const b = roomAt({ x: mid.x + (dy / len) * off, y: mid.y - (dx / len) * off });
+    if (a !== undefined && b !== undefined) {
+      return a.id === b.id ? `the ${kind} in ${a.phrase}` : `the ${kind} between ${a.phrase} and ${b.phrase}`;
+    }
+    if (a !== undefined || b !== undefined) return `the ${kind} of ${(a ?? b)!.phrase}`;
+  }
+  return `the ${kind} ${placeAt(mid)}`;
+}
+
 /** A phrase at the start of a sentence: its first letter capitalised, the rest as it is. */
 export const capFirst = (s: string): string => (s === "" ? s : s[0]!.toUpperCase() + s.slice(1));
 

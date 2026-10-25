@@ -1179,6 +1179,41 @@ export interface SetNode extends NodeBase {
 }
 
 /**
+ * One target of a `keep` (ADR 0033, PS4.3): a datum or an element, as written.
+ *
+ * - `room`: `<room>.<word>`, a rectangular room's edge or centre (`a.right`, `west.main.left`), the
+ *   word being a frame word or a compass alias (ADR 0028 §2);
+ * - `axis`: `axis <label>`, a positioning axis;
+ * - `el`: a bare id (`p`, `west.p`), optionally `segment <n>`: a straight wall read as its
+ *   centreline, or, where the form allows one, a room, an opening, a piece of furniture or a
+ *   vertical element. Which it is, is decided when the keep is measured.
+ */
+export type KeepRef =
+  | { t: "room"; room: string; word: string; span: Span }
+  | { t: "axis"; label: string; span: Span }
+  | { t: "el"; id: string; segment?: number; span: Span };
+
+/** The grade of a `keep` (the IFC `IfcConstraintEnum` ladder); `hard` is the default. */
+export type KeepGrade = "hard" | "soft" | "advisory";
+
+/** The seven forms of a `keep`, by their measure. */
+export type KeepForm =
+  | { form: "align"; refs: KeepRef[] }
+  | { form: "equal"; measure: "width" | "depth"; refs: KeepRef[] }
+  | { form: "offset"; x: KeepRef; from: KeepRef; mm: Expr }
+  | { form: "min-clear"; room: KeepRef; mm: Expr }
+  | { form: "on-axis"; axis: KeepRef; wall: KeepRef }
+  | { form: "stacked"; target: KeepRef; levels: Expr[] }
+  | { form: "fixed"; datum: KeepRef; mm: Expr };
+
+/**
+ * `keep <form> [hard|soft|advisory]` — a declared invariant `compile()` checks and never solves
+ * (ADR 0033). A control statement, not an element: it has no id, draws nothing and moves
+ * nothing. `grade` is the written grade, absent for the default `hard`.
+ */
+export type KeepNode = NodeBase & { kind: "keep"; grade?: KeepGrade } & KeepForm;
+
+/**
  * A statement the parser could not parse. Instead of silently dropping the
  * broken region, the parser emits one of these (capturing the skipped span and
  * the diagnostic message), so the tree stays lossless and tooling can see the
@@ -1203,17 +1238,20 @@ export type Statement =
   | StripNode
   | LevelNode
   | ZoneNode
+  | KeepNode
   | ErrorNode;
 
 /**
  * Statement kinds that may sit at plan level in a MULTI-STOREY plan (beside the `level`
  * blocks): the plan-global scope only — `let` bindings, `set` defaults, an `assign`, and
- * an already-reported parse `error`. Anything else draws, so it belongs to exactly one
+ * an already-reported parse `error` — and a `keep`, which draws nothing: a `stacked` keep
+ * belongs at the root, and any other form there is refused at resolve (`E_KEEP_PLACEMENT`, ADR
+ * 0033), once for the plan rather than per storey. Anything else draws, so it belongs to exactly one
  * storey and mixing it with levels is `E_LEVEL_MIX`. (Settings, `component`s and
  * `import`s are not body statements at all — they are plan fields — so they are always
  * shared.)
  */
-export const LEVEL_SHARED_KINDS: readonly Statement["kind"][] = ["let", "set", "assign", "error", "level"];
+export const LEVEL_SHARED_KINDS: readonly Statement["kind"][] = ["let", "set", "assign", "error", "level", "keep"];
 
 /** `component NAME(params) { body }` — a reusable parameterised sub-plan. */
 export interface ComponentDef {

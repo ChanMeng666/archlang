@@ -1,0 +1,35 @@
+plan "min-clear-joins" {
+  units mm
+  # Six 8000 x 5000 rooms, each in its own shell and cut at x 4000 by a partition joined a different way.
+  # 1: the partition stops at the shell's inner face.
+  wall id=s1 exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+  wall id=p1 partition thickness 100 { (4000,100) (4000,4900) }
+  room id=r1 at (0,0) size 8000x5000 label "Face"
+  keep min clear r1 3850
+  # 2: the partition has a collinear vertex.
+  wall id=s2 exterior thickness 200 { (10000,0) (18000,0) (18000,5000) (10000,5000) close }
+  wall id=p2 partition thickness 100 { (14000,0) (14000,2500) (14000,5000) }
+  room id=r2 at (10000,0) size 8000x5000 label "Vertex"
+  keep min clear r2 3851
+  # 3: two collinear partitions meet mid-room.
+  wall id=s3 exterior thickness 200 { (20000,0) (28000,0) (28000,5000) (20000,5000) close }
+  wall id=p3a partition thickness 100 { (24000,0) (24000,2500) }
+  wall id=p3b partition thickness 100 { (24000,2500) (24000,5000) }
+  room id=r3 at (20000,0) size 8000x5000 label "Meet"
+  keep min clear r3 3850 soft
+  # 4: the partition stops 1 mm short of the shell's centreline, inside its body.
+  wall id=s4 exterior thickness 200 { (30000,0) (38000,0) (38000,5000) (30000,5000) close }
+  wall id=p4 partition thickness 100 { (34000,1) (34000,4999) }
+  room id=r4 at (30000,0) size 8000x5000 label "Short"
+  keep min clear r4 3850 advisory
+  # 5: the partition stops 1 mm short of the shell's inner face: not joined, so not read.
+  wall id=s5 exterior thickness 200 { (40000,0) (48000,0) (48000,5000) (40000,5000) close }
+  wall id=p5 partition thickness 100 { (44000,101) (44000,4899) }
+  room id=r5 at (40000,0) size 8000x5000 label "Gap"
+  keep min clear r5 4800
+  # 6: an arc bulging into a room is met by its true extent and counted.
+  wall id=s6 exterior thickness 200 { (50000,0) (53000,0) (53000,6000) (50000,6000) close }
+  wall id=bow partition thickness 100 { (50000,0) arc (50000,6000) radius 3000 cw }
+  room id=r6 at (51000,1000) size 1500x4000 label "Bow"
+  keep min clear r6 1400
+}

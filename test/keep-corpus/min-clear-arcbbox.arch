@@ -1,0 +1,8 @@
+plan "min-clear-arcbbox" {
+  units mm
+  grid 1
+  wall id=s exterior thickness 200 { (-500,-500) (6000,-500) (6000,6000) (-500,6000) close }
+  wall id=a partition thickness 100 { (3000,0) arc (0,3000) radius 3000 ccw }
+  room id=r at (2600,2600) size 400x400 label "R"
+  keep min clear r 300
+}
