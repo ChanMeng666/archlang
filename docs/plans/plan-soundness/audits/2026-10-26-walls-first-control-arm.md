@@ -28,7 +28,7 @@ The one thing that differs from arm A is a section inserted into the `arch-autho
 | Class 7, stair | 3 | 3 | 2 |
 | Class 8, annotation | 8 | 9 | 10 |
 | Furniture relation / transposed / door–door / other | 5 / 0 / 2 / 12 | 5 / 1 / 0 / 15 | 4 / 1 / 1 / 10 |
-| Statement forms | 0 `wall`, 31 `door\|opening between` | 0 `wall`, 33 `door\|opening between` | 45 `wall`, 54 openings `on <wall> at`, 31 by coordinates; 0 `walls from rooms`, 0 `door between` |
+| Statement forms | 6/6 `walls from rooms`, 0 `wall`, 30 `door between` plus 1 `opening between` | 6/6 `walls from rooms`, 0 `wall`, 32 `door between` plus 1 `opening between` | 45 `wall`, 54 openings `on <wall> at`, 31 by coordinates; 0 `walls from rooms`, 0 `door between` |
 | Sofas facing their TV | 0 / 2 | 1 / 2 | 0 / 3 |
 | Café chairs facing away before → after the loop | before: `W_SEAT_FACING_AWAY` fired on the side chairs (no count given) → 0 / 24 | 18 / 24 → 0 / 24 | 24 / 24 → 0 / 24 |
 | Hinged exterior doors opening the intended way | 7 / 7 | 7 / 8 | 9 / 9 |
@@ -228,6 +228,7 @@ Arms A and B are the columns of `2026-10-26-first-contact-rerun-d15.md` § Then 
 | Class | 10-26 arm A (rooms-first) | 10-26 arm B (rooms-first, current role) | 10-26 arm C (walls-first) |
 |---|---|---|---|
 | 1 Openings ignore walls | 0 | 0 | 0 (the loops fired `W_OPENING_AT_JUNCTION` twice and `W_OPENING_OVERLAP` once, all repaired) |
+| 2 Space not enclosed | 0 | 0 | 0 (no PS2.4 warning fired in the arm-C loops) |
 | 3 Circulation and privacy | 1 (OA1, the hall opened over its whole length) | 0 (CT1, unreachable, is filed under 7 as `7 / 3`) | 4 (WH8, WC1, WC3, WT3; WC1 and WC3 caught) |
 | 4 Defining contents | 6 (2 hidden by `uses living`, 1 by `uses kitchen`) | 10 (2 hidden by typing, 3 presence only, 1 made by deleting a wardrobe) | 8 (WA2, WA4, WH2, WS2, WC6, WT5, WK1, WK5; 3 hidden by typing, 1 by retyping) |
 | 5 Clearances | 15 | 11 (2 accessible WCs) | 14 (WC4 caught; WC5 is also transposed) |
@@ -385,17 +386,18 @@ New this run:
 
 Recorded in `../README.md` § 3 as D21 and as § 8 Q1's measured answer (reverse-if in D21).
 
-- **Measured** on the same six briefs, the same day, the same model and the same spec, with one role sentence
-  changed: rooms-first (arm A) 52 defects (1 B), walls-first (arm C) 54 (1 B); without area rows 49 against 52; CLI
+- **Measured** on the same six briefs, the same day, the same model and the same spec, with one role section
+  added: rooms-first (arm A) 52 defects (1 B), walls-first (arm C) 54 (1 B); without area rows 49 against 52; CLI
   calls 65 against 66; class 1 defects in the final plans 0 against 0. The difference is within what two
   auditor instances and authoring chance produce: arm B, rooms-first with the other role text, scored 54.
 - **What walls-first cost:** three class-1 warnings at the point of writing (`W_OPENING_AT_JUNCTION` ×2,
   `W_OPENING_OVERLAP`), all repaired in the loop, so the defects D1/D5 make unwritable were written and then caught;
-  45 `wall` statements and 54 hosted openings against 0 and 31 `door between` in arm A; two of six authors
-  stopped with lint warnings standing (0 of 12 in the rooms-first arms), which the auditor counts as 3 caught and 2
-  partial.
+  45 `wall` statements and 54 hosted openings against 0 `wall` and 30 `door between` plus 1 `opening between` in
+  arm A; two of six authors stopped with lint warnings standing (0 of 12 in the rooms-first arms), which the auditor
+  counts as 3 caught and 2 partial. No class-2 defect (an unenclosed space: `W_BOUNDARY_NO_WALL`, `W_FLOOR_UNASSIGNED`, `W_ROOM_OUTSIDE_SHELL`) fired in any arm-C loop, so the omission class D5 makes unwritable was not written by these six walls-first authors either; the three warnings written and repaired were class 1 (openings at a junction or overlapping).
 - **Re-statement:** D1 and D5 hold as the form an author reaches for first (6 / 6 cold authors chose it unprompted
-  in four runs) and as the removal of the omission class at the point of writing. They are not a claim that
+  in four runs) and as the form under which the omission class cannot be written (this arm shows six walls-first authors did not
+  write it either, so the arm neither confirms nor refutes that cost). They are not a claim that
   rooms-first plans carry fewer surviving defects, because the surviving classes (clearances, defining contents,
   stairs, annotation, furniture relation) do not depend on how the walls were written, and the class they do remove
   is now also caught by lint. § 8 Q1 is answered to that extent; the open question stays whether a spec that led with
@@ -456,7 +458,7 @@ taste concordance (A ∪ B ∪ C): 44 pairs — 40 ordered, 0 tied, 0 reversed (
 ## Confounders
 
 These are the protocol's (step 10) plus what this run adds:
-- **One role sentence changed, but the spec did not.** `spec.llm.md` still leads with rooms, so the arm measures
+- **One role section added, but the spec did not change.** `spec.llm.md` still leads with rooms, so the arm measures
   walls-first authoring under a spec that teaches rooms-first. The card's open question (can the spec be shown to
   a walls-first author without teaching rooms-first) is not answered; a walls-first spec was not run.
 - **Two of six authors stopped with warnings standing** (café 6, townhouse 1), as the prompt says ("stop when it

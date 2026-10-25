@@ -133,6 +133,7 @@ The owner delegated these on 2026-10-18. Each records what would reverse it.
 - *Reverse if:* the resolve-order change (rooms and relational placement before walls) cannot be made
   byte-identical, or `place`-frame semantics for datums cannot be made sound. In that case ship datums
   in wall points only and keep `between` as an explicit `arch` transform.
+- *Re-stated 2026-10-26 (D21):* a claim about the authoring form, not the surviving-defect rate; see D21.
 
 **D2. Validity in `lint`, quality in a separate taste score.**
 - Only plain defects become `W_*` lint rules (§6 PS2).
@@ -182,6 +183,7 @@ pair.** (2026-10-18, amends D1; does not reverse it.)
 - *Measured* (PR #222, PS3.0 part A): 15 of 279 storeys refused (5.4 %), all `E_ROOM_NOT_RECTANGLE`,
   with or without the reviewed except list; 15/283 on 2026-10-24. Under the quarter: D5 holds.
   Detail verbatim: `research/2026-10-24-ps3-as-built.md` § D5 measured.
+- *Re-stated 2026-10-26 (D21):* a claim about the authoring form, not the surviving-defect rate; see D21.
 
 **D6. The default profile keeps the dwelling-reading rules on; a plan opts out by reading as
 non-residential, not by choosing a profile.** (2026-10-20, amends PS2.18's card; does not touch D3.)
@@ -410,11 +412,10 @@ ratification (D18).*
 - *Reverse if:* a re-measure whose dispatch prompt names the whole loop (not `compile|lint`) shows at least half of the cold authors running `score --taste` unprompted, or a consumer is shown steering authors by the score; then taste returns to the author loop and PS7.5 is reverted.
 
 **D21. The walls-first control arm (PS1.3) ran: walls-first is not worse in surviving defects, and D1/D5 are re-stated as claims about authoring, not about the defect rate.** (2026-10-26; evidence `audits/2026-10-26-walls-first-control-arm.md`.)
-- Measured on the same six briefs, same day, same model, same spec, with one role sentence changed: rooms-first (arm A) 52 defects (1 B), walls-first (arm C) 54 (1 B); without area rows 49 vs 52; CLI calls 65 vs 66; class 1 defects in the final plans 0 vs 0. The difference is within what two auditor instances and authoring chance produce (arm B, rooms-first with the other role text, scored 54).
-- What walls-first did cost: three class-1 warnings at the point of writing (`W_OPENING_AT_JUNCTION` ×2, `W_OPENING_OVERLAP`), all repaired in the loop — the defects D1/D5 make unwritable were written and then caught; 45 `wall` statements and 54 hosted openings against 0 and 31 `door between` in arm A; two of six authors stopped with lint warnings standing (0 of 12 in the rooms-first arms), which the auditor counts as 3 caught + 2 partial.
-- Re-statement: D1 and D5 hold as the form an author reaches for first (6/6 cold authors chose it unprompted in four runs) and as the removal of the omission class at the point of writing; they are not a claim that rooms-first plans carry fewer surviving defects, because the surviving classes (clearances, defining contents, stairs, annotation, furniture relation) do not depend on how the walls were written, and the class they do remove is now also caught by lint. §8 Q1 is answered to that extent; the open question stays whether a spec that led with walls would change the authors' choice (not run; it would measure the spec's pull, which the card already names).
-- *Reverse if:* a walls-first arm under a walls-first spec shows fewer surviving defects than rooms-first by more than the two-auditor spread (≈ 5), or shows class-1 defects that lint misses; then D5's headline form is reconsidered.
-
+- Measured on the same six briefs, same day, same model, same spec, with one role section added: rooms-first (arm A) 52 defects (1 B), walls-first (arm C) 54 (1 B); without area rows 49 vs 52; CLI calls 65 vs 66; class 1 defects in the final plans 0 vs 0. The difference is within what two auditor instances and authoring chance produce (arm B, rooms-first with the other role text, scored 54).
+- What walls-first did cost: three class-1 warnings at the point of writing (`W_OPENING_AT_JUNCTION` ×2, `W_OPENING_OVERLAP`), all repaired in the loop — the defects D1/D5 make unwritable were written and then caught; 45 `wall` statements and 54 hosted openings against 0 `wall` and 30 `door between` plus 1 `opening between` in arm A; two of six authors stopped with lint warnings standing (0 of 12 in the rooms-first arms), which the auditor counts as 3 caught + 2 partial. No class-2 defect (an unenclosed space: `W_BOUNDARY_NO_WALL`, `W_FLOOR_UNASSIGNED`, `W_ROOM_OUTSIDE_SHELL`) fired in any arm-C loop, so the omission class D5 makes unwritable was not written by these six walls-first authors either; the three warnings written and repaired were class 1 (openings at a junction or overlapping).
+- Re-statement: D1 and D5 hold as the form an author reaches for first (6/6 cold authors chose it unprompted in four runs) and as the form under which the omission class cannot be written (this arm shows six walls-first authors did not write it either, so the arm neither confirms nor refutes that cost); they are not a claim that rooms-first plans carry fewer surviving defects, because the surviving classes (clearances, defining contents, stairs, annotation, furniture relation) do not depend on how the walls were written, and the class they do remove is now also caught by lint. §8 Q1 is answered to that extent; the open question stays whether a spec that led with walls would change the authors' choice (not run; it would measure the spec's pull, which the card already names).
+- *Reverse if:* a walls-first arm under a walls-first spec shows fewer surviving defects than rooms-first by more than the spread the two rooms-first arms showed between themselves (2 in total, 5 in noticeable rows), or shows class-1 defects that lint misses; then D5's headline form is reconsidered.
 
 ## 4. Principles: what "professional rules and taste" means here
 
@@ -499,7 +500,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS1 · The defect corpus (do this before PS2; it is the yardstick)
 
-4 cards: 3 done, 1 todo (PS1.3 walls-first control arm, done 2026-10-26, D21; PS1.4 diagnostic wording; both filed 2026-10-25 from the owner's 2026-10-18 asks). Cards, tables and as-built pointers: `cards.md` § PS1.
+4 cards: 3 done, 1 todo (PS1.4 diagnostic wording); PS1.3 walls-first control arm done 2026-10-26 (D21); both filed 2026-10-25 from the owner's 2026-10-18 asks. Cards, tables and as-built pointers: `cards.md` § PS1.
 
 ### PS2 · Validity checks that read existing facts (small, high yield)
 
@@ -559,7 +560,7 @@ This plan is a hypothesis about what will make AI-written plans professional. Tr
    and surviving defects 57 → 48 (area basis judged as in the baseline; 54 → 45 without it). There
    is no walls-first control arm yet.
    *Measured 2026-10-25, see `audits/2026-10-25-first-contact-rerun-row5.md`:* 6/6 rooms-first again (31 `door between`, 0 `wall`); defects 48 → 49 (46 without area basis), blockers 2 → 0; still no walls-first arm.
-   *Measured 2026-10-26 (PS1.3), see `audits/2026-10-26-walls-first-control-arm.md` and D21:* the walls-first arm (arm C, the pre-#250 role plus one "write walls first" section, same spec, same day) wrote 45 `wall` statements and 54 hosted openings with 0 `walls from rooms` and 0 `door between`, and left 54 verified defects (1 B / 22 N / 31 m; 52 without area basis) against 52 (1 / 25 / 26; 49) for the rooms-first arm A and 54 for arm B; class 1 in the final plans 0 in all three, but the walls-first loops wrote three class-1 warnings (`W_OPENING_AT_JUNCTION` ×2, `W_OPENING_OVERLAP`) that lint caught; CLI calls 66 against 65. Walls-first is not worse in surviving defects; what stays open is whether a spec that led with walls would change the authors' choice.
+   *Measured 2026-10-26 (PS1.3), see `audits/2026-10-26-walls-first-control-arm.md` and D21:* the walls-first arm (arm C, the pre-#250 role plus one "write walls first" section, same spec, same day) wrote 45 `wall` statements and 54 hosted openings with 0 `walls from rooms` and 0 `door between`, and left 54 verified defects (1 B / 22 N / 31 m; 52 without area basis) against 52 (1 / 25 / 26; 49) for the rooms-first arm A and 54 for arm B; class 1 in the final plans 0 in all three, but the walls-first loops wrote three class-1 warnings (`W_OPENING_AT_JUNCTION` ×2, `W_OPENING_OVERLAP`) that lint caught, and no class-2 (unenclosed space) warning fired in any arm-C loop; CLI calls 66 against 65. Walls-first is not worse in surviving defects; what stays open is whether a spec that led with walls would change the authors' choice.
 2. **Where is the boundary between a fact and taste in each culture?** For example, a kitchen as the
    entry room is normal in some housing stocks. Profiles may need a `residential-generic` that is
    deliberately quiet.

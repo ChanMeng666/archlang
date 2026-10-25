@@ -23,10 +23,11 @@ cold-authored from `spec.llm.md` alone, audited by hand.
 | 2026-10-26 arm C, walls-first control (`audits/2026-10-26-walls-first-control-arm.md`, D21) | 54, 52 without area basis (3, plus 2 partial) | 1 (townhouse stair) | 0/6 (45 `wall`, 0 `walls from rooms`) | same run | 0/6 (`validate` 0/6, `describe` 1/6; 0 of 66 calls) |
 
 **Not met.** Rooms-first authoring is the norm (12 of 12 plans) and class 1 stays at 0, but 52 and 54
-defects still pass lint, and each arm drew one blocker, both on the townhouse stair (the stair class
+defects still pass lint, and all three arms drew one blocker, each on the townhouse stair (the stair class
 has no default rule but `W_STAIR_UNMATCHED`). The 10-26 run is D15's two-arm re-measure after the
-four clearance rules (PS2.11a–d); the two arms were audited by two auditor instances, so compare them
-by class and by blockers, not by the minor count. Its verdict is D20: arm A made no `score --taste`
+four clearance rules (PS2.11a–d), plus the walls-first control arm (D21: walls-first is not worse, 54 against 52);
+arms A and C were audited by two auditor instances, arm B by a third, so compare the arms by class and by blockers,
+not by the minor count. Its verdict is D20: arm A made no `score --taste`
 and no `validate` call, so D2's reverse-if is met and taste is a reviewer's tool, not an author's
 (PS7.5 moves it out of the author loop). Authors game rules when they can (labels pinned on wall
 lines, a stair shrunk to clear a label warning, a worktop or a TV deleted, a `uses` dropped, doors
@@ -48,15 +49,15 @@ The means, tracked in `README.md` §7: defect-corpus catch rate 7/53 (10-18) →
 | 6 | PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e | **current** (the owed re-measure ran 2026-10-26, D20; the row's cards may start) |
 | 7 | PS6.1 | parked |
 
-## 3. What shipped (2026-10-18 → 10-26, PRs #195–#261)
+## 3. What shipped (2026-10-18 → 10-26, PRs #195–#264)
 
 Everything below is on `main` and **unreleased**: the last `v*` tag predates PR #195 (check with
 `git describe --tags --abbrev=0` and `npm view @chanmeng666/archlang version`). A release starts only
 when the owner asks; the agent then runs the chain (`docs/agents/iron-laws.md` § Owner policies).
 `CHANGELOG.md` `[Unreleased]` is the release record; PR #255 backfilled the 24 programme PRs it was
 missing. Totals at 1f7c544d: 22 new `W_*` codes (52 → 74), 31 new `E_*` codes (103 → 134), 11 `A_*`
-taste advice codes, `LINT_RULES` 45 entries; after this PR, 124 cards: 47 done, 2 parked,
-75 todo (121 after PR #256, plus PS2.56, PS7.5 and PS7.6; PS7.4 is done).
+taste advice codes, `LINT_RULES` 45 entries; after this PR, 124 cards: 48 done, 2 parked,
+74 todo (PS7.5's PR #263 will make it 49/73; 121 after PR #256, plus PS2.56, PS7.5 and PS7.6; PS7.4 and PS1.3 are done).
 
 | Surface | Card | PR | Merge |
 |---|---|---|---|
@@ -100,6 +101,7 @@ taste advice codes, `LINT_RULES` 45 entries; after this PR, 124 cards: 47 done, 
 | `W_FOOTPRINT_TRANSPOSED`, `W_LEAF_ACROSS_DOORWAY` | PS2.11c/d | #253 | 43fe7fd6 |
 | Housekeeping: D7–D19, ADR 0029/0032 Accepted, cards moved to `cards.md`, CHANGELOG backfill, this page | — | #237, #241, #242, #249, #251, #254, #255, #256 | — |
 | First-contact re-measure, D15's two arms; D20; ADR 0032 addendum; PS2.56, PS7.5, PS7.6 filed | PS7.4 | #261 | — |
+| Walls-first control arm (arm C of the same run); D21 | PS1.3 | #264 | — |
 
 Recorded practice a reader must know: lint PRs bump the `lintWarnings` counts in `eval/judge-fixture.json`
 when a new rule fires on an eval golden (judgment fields untouched, `JUDGE_VERSION` unchanged; D19).
