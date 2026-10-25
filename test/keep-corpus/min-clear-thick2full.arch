@@ -1,0 +1,9 @@
+plan "min-clear-thick2full" {
+  units mm
+  grid 1
+  wall id=s exterior thickness 200 { (0,0) (5000,0) (5000,8000) (0,8000) close }
+  room id=r at (0,0) size 5000x8000 label "R"
+  wall id=a partition thickness 300 { (0,4000) (2500,4000) }
+  wall id=b partition thickness 100 { (2500,4000) (5000,4000) }
+  keep min clear r 3800
+}

@@ -500,7 +500,7 @@ export function instanceTransform(i: Pick<InstanceSummary, "rotate" | "mirror">)
 }
 
 export type { RoomPlacement, OpeningPlacement, FurniturePlacement, DerivedWallRow } from "./ir.js";
-export type { KeepAt, KeepSummary } from "./keep.js";
+export type { KeepAt, KeepSkipped, KeepSummary } from "./keep.js";
 
 /** How a single placed element's position was authored vs derived. */
 export interface FreedomElement {

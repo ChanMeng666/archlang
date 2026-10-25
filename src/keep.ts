@@ -288,6 +288,19 @@ export interface KeepResidual {
   h: number;
 }
 
+/** Why `min clear` did not read a wall segment that meets the room, by count. */
+export interface KeepSkipped {
+  /** A straight run that does not span the room on the joined outline. */
+  not_spanning?: number;
+  /** A straight run that ends in a curved or oblique wall, which carries no run (so it does not
+   *  span the room, whatever it ends in). */
+  ends_in_curved_or_oblique?: number;
+  /** A curved segment (an arc is never a cut). */
+  curved?: number;
+  /** An oblique straight segment (never a cut). */
+  oblique?: number;
+}
+
 /** One accepted keep, measured. */
 export interface KeepResult {
   node: KeepNode;
@@ -309,6 +322,8 @@ export interface KeepResult {
   residuals?: KeepResidual[];
   /** `min clear`: the wall segments that meet the room and could not be read. */
   skippedWalls?: number;
+  /** `min clear`: why they were not read, when any were. */
+  skipped?: KeepSkipped;
   /** When broken: the id-free message and its hints (the `W_KEEP_VIOLATED` text for any grade). */
   message?: string;
   hints?: string[];
@@ -1006,15 +1021,15 @@ function measureOffset(
 
 // ---- `min clear` ---------------------------------------------------------------------------
 
-/** A straight wall body for the clear-span scan, in half-lattice units: the collinear runs on
- *  one line (same centreline, same thickness) merged into one, and each end carried on through
- *  the body of a wall it is joined into. */
+/** A straight wall run for the clear-span scan, in half-lattice units: the collinear runs on one
+ *  line (same centreline, same thickness) merged into one, then carried through the walls it is
+ *  joined to. */
 interface Body {
   vertical: boolean;
   /** Centreline coordinate across the run, and half the thickness (both half-lattice). */
   c: number;
   half: number;
-  /** The run's extent along its line, carried through the walls it is joined into. */
+  /** The run's extent along its line, carried through the walls it is joined to. */
   lo: number;
   hi: number;
   /** The run's own extent, before it is carried on: whether it meets a room is read on this. */
@@ -1022,8 +1037,8 @@ interface Body {
   hi0: number;
 }
 
-/** A curved segment's body read by its true extent: the arc's extreme points, ± half its
- *  thickness (`arcExtremes`, never its endpoints). */
+/** A curved segment's body, read by the box around the arc's extreme points (`arcExtremes`, the
+ *  endpoints and every axis extreme inside the sweep) ± half its thickness. */
 interface CurvedBody {
   x0: number;
   y0: number;
@@ -1071,14 +1086,104 @@ function mergeCollinear(bodies: readonly Body[]): Body[] {
 }
 
 /**
- * Build the storey's scan once, charged once and before it allocates: one step per wall, two per
- * segment, and `segments × ⌈log₂ segments⌉` for the two sorts; each host a join lookup visits is
- * one more step. The straight runs on one line are merged first (a collinear vertex, two walls
- * meeting end to end), then each end that falls inside another wall's body (± t/2: a ring's
- * corner, a T-junction, a partition stopped at the shell's inner face or short of its centreline)
- * is carried on through that body, which is how a wall spans a room on the joined outline (design
- * §2.1, R18) without building the joinery. Hosts are found by binary search over the bodies sorted
- * by centreline, so the scan is `O(n log n)` in the segments. Heights are never read.
+ * The runs of one orientation, indexed for the two join queries (R13): grouped by LINE (one
+ * centreline and half-thickness, whose merged runs are disjoint and sorted along it, so a position
+ * is found by binary search), and the lines sorted by where their band starts across, with the
+ * furthest band end of every subtree beside them, so the lines whose band meets a cross interval are
+ * reached in `O((k + 1) log n)` for `k` lines reported. Every node visited is one step.
+ */
+class RunIndex {
+  /** The lines, sorted by band start (`c − half`); each holds its runs sorted along. */
+  private readonly lines: { c: number; half: number; runs: Body[] }[];
+  /** `maxEnd[node]` over the implicit segment tree of `lines` (1-based, size 2^k). */
+  private readonly maxEnd: number[];
+  private readonly size: number;
+
+  constructor(runs: readonly Body[]) {
+    const byLine = new Map<string, { c: number; half: number; runs: Body[] }>();
+    for (const r of runs) {
+      const k = `${r.c}|${r.half}`;
+      let l = byLine.get(k);
+      if (!l) {
+        l = { c: r.c, half: r.half, runs: [] };
+        byLine.set(k, l);
+      }
+      l.runs.push(r);
+    }
+    this.lines = [...byLine.values()].sort((p, q) => p.c - p.half - (q.c - q.half) || p.c - q.c || p.half - q.half);
+    for (const l of this.lines) l.runs.sort((p, q) => p.lo0 - q.lo0);
+    let size = 1;
+    while (size < this.lines.length) size *= 2;
+    this.size = size;
+    this.maxEnd = new Array<number>(2 * size).fill(Number.NEGATIVE_INFINITY);
+    this.lines.forEach((l, i) => {
+      this.maxEnd[size + i] = l.c + l.half;
+    });
+    for (let i = size - 1; i >= 1; i--) this.maxEnd[i] = Math.max(this.maxEnd[2 * i]!, this.maxEnd[2 * i + 1]!);
+  }
+
+  /** Every line whose band `[c − half, c + half]` meets `[lo, hi]` (closed), charged per node. */
+  linesMeeting(lo: number, hi: number, visit: (l: { c: number; half: number; runs: Body[] }) => void): void {
+    // The lines whose band starts at or before `hi`: a prefix of the sort.
+    let n = 0;
+    let top = this.lines.length;
+    while (n < top) {
+      const mid = (n + top) >> 1;
+      if (this.lines[mid]!.c - this.lines[mid]!.half <= hi) n = mid + 1;
+      else top = mid;
+    }
+    chargeSteps(bitsOf(this.lines.length));
+    const walk = (node: number, from: number, to: number): void => {
+      if (from >= n) return;
+      chargeSteps(1);
+      if (this.maxEnd[node]! < lo) return;
+      if (to - from === 1) {
+        visit(this.lines[from]!);
+        return;
+      }
+      const mid = (from + to) >> 1;
+      walk(2 * node, from, mid);
+      walk(2 * node + 1, mid, to);
+    };
+    if (this.lines.length > 0) walk(1, 0, this.size);
+  }
+
+  /** The runs of a line whose own extent meets `[lo, hi]` (closed), found by binary search. */
+  static runsMeeting(runs: readonly Body[], lo: number, hi: number, visit: (r: Body) => void): void {
+    // Runs on one line are disjoint and sorted, so the first that can reach `lo` is found by search.
+    let a = 0;
+    let b = runs.length;
+    while (a < b) {
+      const mid = (a + b) >> 1;
+      if (runs[mid]!.hi0 < lo) a = mid + 1;
+      else b = mid;
+    }
+    chargeSteps(bitsOf(runs.length));
+    for (let i = a; i < runs.length && runs[i]!.lo0 <= hi; i++) {
+      chargeSteps(1);
+      visit(runs[i]!);
+    }
+  }
+}
+
+/**
+ * Build the storey's scan once (R13), charged before it allocates: one step per wall, two per
+ * segment and `segments × ⌈log₂ segments⌉` for the sorts, then `O(log n)` per join query and one
+ * step per join found. The straight runs on one line are merged; then each run is carried through
+ * the walls it is joined to, read on the joined outline without building the joinery (design §2.1,
+ * R18):
+ *
+ * - **along** a parallel straight wall whose band (± t/2) meets its own band and whose extent meets
+ *   its own (two thicknesses end to end, a lining against a wall): the two are one body, and
+ *   every run joined this way, however many hops, takes the extent of all of them (a union-find
+ *   over these joins, so the carry is closed, never one hop);
+ * - **across** a perpendicular straight wall when its end lies inside that wall's body (± t/2: a
+ *   ring's corner, a T-junction, a partition stopped at the shell's inner face or short of its
+ *   centreline): the end reaches the far face of the body that wall belongs to (so a lining on
+ *   the shell counts with the shell).
+ *
+ * Only straight horizontal and vertical walls carry a run: a run ending in an oblique or a curved
+ * wall is not carried, and is counted as skipped when it meets a room. Heights are never read.
  */
 function wallScan(ir: ResolvedPlan): WallScan {
   let n = 0;
@@ -1119,58 +1224,73 @@ function wallScan(ir: ResolvedPlan): WallScan {
       }
     }
   }
-  const merged = mergeCollinear(raw);
-  // The join hosts, per orientation, sorted by centreline; the widest half bounds the search.
-  const hosts = (vertical: boolean): { list: Body[]; maxHalf: number } => {
-    const list = merged.filter((b) => b.vertical === vertical).sort((p, q) => p.c - q.c);
-    let maxHalf = 0;
-    for (const b of list) maxHalf = Math.max(maxHalf, b.half);
-    return { list, maxHalf };
-  };
-  const byOrientation = [hosts(false), hosts(true)];
-  /** The first index of `list` whose centreline is at least `v`. */
-  const lowerBound = (list: readonly Body[], v: number): number => {
-    let lo = 0;
-    let hi = list.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (list[mid]!.c < v) lo = mid + 1;
-      else hi = mid;
+  const runs = mergeCollinear(raw);
+  const index = [new RunIndex(runs.filter((r) => !r.vertical)), new RunIndex(runs.filter((r) => r.vertical))];
+  const indexOfRun = new Map(runs.map((r, i) => [r, i] as const));
+  // Along: parallel runs whose bands and extents meet are one body (union-find, closed).
+  const parent = runs.map((_, i) => i);
+  const find = (i: number): number => {
+    let x = i;
+    while (parent[x] !== x) {
+      parent[x] = parent[parent[x]!]!;
+      x = parent[x]!;
     }
-    return lo;
+    return x;
   };
-  /** The extent along `along`'s axis of every other body whose rectangle holds `p`. */
-  const through = (self: Body, p: { x: number; y: number }, verticalAxis: boolean): { min: number; max: number } => {
-    let min = Number.POSITIVE_INFINITY;
-    let max = Number.NEGATIVE_INFINITY;
-    for (const { list, maxHalf } of byOrientation) {
-      const vert = list[0]?.vertical ?? false;
-      const across = vert ? p.x : p.y;
-      const alongP = vert ? p.y : p.x;
-      for (let i = lowerBound(list, across - maxHalf); i < list.length && list[i]!.c <= across + maxHalf; i++) {
-        chargeSteps(1);
-        const h = list[i]!;
-        if (h === self || Math.abs(across - h.c) > h.half || alongP < h.lo || alongP > h.hi) continue;
-        // The host's extent along the joining body's own axis.
-        const [e0, e1] = h.vertical === verticalAxis ? [h.lo, h.hi] : [h.c - h.half, h.c + h.half];
-        min = Math.min(min, e0);
-        max = Math.max(max, e1);
-      }
-    }
-    return { min, max };
-  };
-  const carried = merged.map((b) => {
-    const at = (e: number): { x: number; y: number } => (b.vertical ? { x: b.c, y: e } : { x: e, y: b.c });
-    const lo = through(b, at(b.lo), b.vertical);
-    const hi = through(b, at(b.hi), b.vertical);
-    return {
-      ...b,
-      lo: Number.isFinite(lo.min) ? Math.min(b.lo, lo.min) : b.lo,
-      hi: Number.isFinite(hi.max) ? Math.max(b.hi, hi.max) : b.hi,
-    };
+  for (const r of runs) {
+    const self = indexOfRun.get(r)!;
+    index[r.vertical ? 1 : 0]!.linesMeeting(r.c - r.half, r.c + r.half, (line) =>
+      RunIndex.runsMeeting(line.runs, r.lo0, r.hi0, (h) => {
+        if (h === r) return;
+        const a = find(self);
+        const b = find(indexOfRun.get(h)!);
+        if (a !== b) parent[a < b ? b : a] = a < b ? a : b;
+      }),
+    );
+  }
+  // Each body's band across its line: the union of its runs' bands.
+  const band = new Map<number, { lo: number; hi: number }>();
+  runs.forEach((r, i) => {
+    const root = find(i);
+    const e = band.get(root);
+    if (e) {
+      e.lo = Math.min(e.lo, r.c - r.half);
+      e.hi = Math.max(e.hi, r.c + r.half);
+    } else band.set(root, { lo: r.c - r.half, hi: r.c + r.half });
   });
-  // Two runs of one line carried into the same wall from either side now touch: one run.
-  return { straight: mergeCollinear(carried), curved, oblique };
+  // Across: each end inside a perpendicular wall's body reaches the far face of the body that
+  // wall belongs to.
+  for (const r of runs) {
+    const across = index[r.vertical ? 0 : 1]!;
+    for (const [end, isLo] of [
+      [r.lo0, true],
+      [r.hi0, false],
+    ] as const) {
+      across.linesMeeting(end, end, (line) =>
+        RunIndex.runsMeeting(line.runs, r.c, r.c, (h) => {
+          const e = band.get(find(indexOfRun.get(h)!))!;
+          if (isLo) r.lo = Math.min(r.lo, e.lo);
+          else r.hi = Math.max(r.hi, e.hi);
+        }),
+      );
+    }
+  }
+  // Every run of a body takes the extent of all of them.
+  const extent = new Map<number, { lo: number; hi: number }>();
+  runs.forEach((r, i) => {
+    const root = find(i);
+    const e = extent.get(root);
+    if (e) {
+      e.lo = Math.min(e.lo, r.lo);
+      e.hi = Math.max(e.hi, r.hi);
+    } else extent.set(root, { lo: r.lo, hi: r.hi });
+  });
+  runs.forEach((r, i) => {
+    const e = extent.get(find(i))!;
+    r.lo = e.lo;
+    r.hi = e.hi;
+  });
+  return { straight: runs, curved, oblique };
 }
 
 /** Whether an oblique body meets the room's open rectangle — decided exactly, on the integer
@@ -1209,6 +1329,18 @@ function obliqueMeets(o: ObliqueBody, X0: number, X1: number, Y0: number, Y1: nu
   const tMin = ts.reduce((p, q) => (q < p ? q : p));
   const tMax = ts.reduce((p, q) => (q > p ? q : p));
   return tMin < L2 && tMax > 0n;
+}
+
+/** Whether an oblique body holds the point `p` (half-lattice), closed, decided exactly. */
+function obliqueHolds(o: ObliqueBody, p: { x: number; y: number }): boolean {
+  const px = BigInt(p.x) - o.a.x;
+  const py = BigInt(p.y) - o.a.y;
+  const dx = o.b.x - o.a.x;
+  const dy = o.b.y - o.a.y;
+  const L2 = dx * dx + dy * dy;
+  const n = -dy * px + dx * py;
+  const t = dx * px + dy * py;
+  return n * n <= o.half * o.half * L2 && t >= 0n && t <= L2;
 }
 
 /** The widest interval of `[lo, hi]` left free by the `cuts` (each clipped to it). */
@@ -1267,8 +1399,18 @@ function measureMinClear(
   const Y1 = halfOf(r.at.y + r.size.h);
   const xCuts: [number, number][] = [];
   const yCuts: [number, number][] = [];
-  let skipped = 0;
+  const why: Required<KeepSkipped> = { not_spanning: 0, ends_in_curved_or_oblique: 0, curved: 0, oblique: 0 };
   const meets = (x0: number, x1: number, y0: number, y1: number): boolean => x0 < X1 && x1 > X0 && y0 < Y1 && y1 > Y0;
+  /** A straight run's end that lies in a curved or oblique wall, which carries no run. */
+  const endsInUnread = (b: Body): boolean => {
+    chargeSteps(2 * (sc.curved.length + sc.oblique.length));
+    for (const e of [b.lo0, b.hi0]) {
+      const p = b.vertical ? { x: b.c, y: e } : { x: e, y: b.c };
+      if (sc.curved.some((o) => p.x >= o.x0 && p.x <= o.x1 && p.y >= o.y0 && p.y <= o.y1)) return true;
+      if (sc.oblique.some((o) => obliqueHolds(o, p))) return true;
+    }
+    return false;
+  };
   for (const b of sc.straight) {
     // Meeting the room is read on the run's own body; spanning it, on the joined outline.
     const [x0, x1, y0, y1] = b.vertical
@@ -1277,24 +1419,41 @@ function measureMinClear(
     if (!meets(x0, x1, y0, y1)) continue;
     const spans = b.vertical ? b.lo <= Y0 && b.hi >= Y1 : b.lo <= X0 && b.hi >= X1;
     if (!spans) {
-      skipped++;
+      if (endsInUnread(b)) why.ends_in_curved_or_oblique++;
+      else why.not_spanning++;
       continue;
     }
     if (b.vertical) xCuts.push([x0, x1]);
     else yCuts.push([y0, y1]);
   }
-  for (const o of sc.curved) if (meets(o.x0, o.x1, o.y0, o.y1)) skipped++;
-  for (const o of sc.oblique) if (obliqueMeets(o, X0, X1, Y0, Y1)) skipped++;
+  for (const o of sc.curved) if (meets(o.x0, o.x1, o.y0, o.y1)) why.curved++;
+  for (const o of sc.oblique) if (obliqueMeets(o, X0, X1, Y0, Y1)) why.oblique++;
+  const skipped = why.not_spanning + why.ends_in_curved_or_oblique + why.curved + why.oblique;
+  const reasons: KeepSkipped = {};
+  for (const k of ["not_spanning", "ends_in_curved_or_oblique", "curved", "oblique"] as const)
+    if (why[k] > 0) reasons[k] = why[k];
   const across = widestFree(X0, X1, xCuts);
   const down = widestFree(Y0, Y1, yCuts);
   const clear = Math.min(across, down);
   const want = halfOf(mm);
   const h = clear - want;
-  const out: Measured = { holds: h >= 0, h, measuredH: clear, skippedWalls: skipped };
+  const out: Measured = {
+    holds: h >= 0,
+    h,
+    measuredH: clear,
+    skippedWalls: skipped,
+    ...(skipped > 0 ? { skipped: reasons } : {}),
+  };
   if (h < 0) {
+    const said: string[] = [];
+    if (why.not_spanning) said.push(`${fmt3(why.not_spanning)} not spanning it`);
+    if (why.ends_in_curved_or_oblique)
+      said.push(`${fmt3(why.ends_in_curved_or_oblique)} ending in a curved or oblique wall, which carries no run`);
+    if (why.curved) said.push(`${fmt3(why.curved)} curved`);
+    if (why.oblique) said.push(`${fmt3(why.oblique)} oblique`);
     out.message = `This keep holds a clear span of at least ${mmText(want)} mm in ${roomPhrase(ix, r)}; its clear span is ${mmText(clear)} mm, ${mmText(-h)} mm short.${MESSAGE_TAIL}`;
     out.hints = [
-      `The keep names \`${ref.id}\`; residual ${mmText(h)} mm (+ is margin): clear ${mmText(across)} mm across x and ${mmText(down)} mm down y between the wall faces${skipped > 0 ? `, ${fmt3(skipped)} wall segment${skipped === 1 ? "" : "s"} meeting the room not read (curved, oblique or not spanning it)` : ""}.`,
+      `The keep names \`${ref.id}\`; residual ${mmText(h)} mm (+ is margin): clear ${mmText(across)} mm across x and ${mmText(down)} mm down y between the wall faces${skipped > 0 ? `; wall segments meeting the room and not read: ${listWords(said)}` : ""}.`,
       `Nothing was moved: the walls and \`${ref.id}\` stand where their own statements put them.`,
     ];
   }
@@ -1343,21 +1502,31 @@ export function evaluateStacked(
   };
   /** How a message names the element on its storey: a room as `src/naming.ts` names it, a
    *  stair, lift, escalator or void by its kind and where it stands. Built on first use. */
-  const namings = new Map<number, Naming>();
+  const namings = new Map<number, { naming: Naming; byId: Map<string, NameableRoom> }>();
   const nameOn = (s: StackedStorey, el: ResolvedElement): string => {
-    let naming = namings.get(s.level);
-    const rooms = s.ir.elements.filter((e): e is RRoom => e.kind === "room");
-    const nameable = rooms.map((r) =>
-      nameableOf(r, r.uses && r.uses.length > 0 ? r.uses : classifyLabelUses(r.label ?? r.id).uses),
-    );
-    if (!naming) {
-      naming = makeNaming(nameable);
-      namings.set(s.level, naming);
+    let cached = namings.get(s.level);
+    if (!cached) {
+      // Once per storey, charged before it is built: one step per element read and per room named.
+      chargeSteps(s.ir.elements.length + 1);
+      const rooms = s.ir.elements.filter((e): e is RRoom => e.kind === "room");
+      chargeSteps(rooms.length);
+      const byId = new Map(
+        rooms.map(
+          (r) =>
+            [
+              r.id,
+              nameableOf(r, r.uses && r.uses.length > 0 ? r.uses : classifyLabelUses(r.label ?? r.id).uses),
+            ] as const,
+        ),
+      );
+      cached = { naming: makeNaming([...byId.values()]), byId };
+      namings.set(s.level, cached);
     }
+    const { naming, byId } = cached;
     if (el.kind === "room") {
       const r = el as RRoom;
       if (r.label !== undefined) return `"${r.label}"`;
-      const n = nameable.find((x) => x.id === r.id);
+      const n = byId.get(r.id);
       return n ? naming.phrase(n) : "the room";
     }
     const f = el as unknown as { at: Point; size: { w: number; h: number } };
@@ -1499,6 +1668,7 @@ export interface KeepSummary {
   measured_mm?: number;
   residuals?: { target: string; level?: number; edge?: KeepAt["edge"]; residual_mm: number }[];
   skipped_walls?: number;
+  skipped?: KeepSkipped;
 }
 
 /** A result as `describe()` lists it. */
@@ -1524,6 +1694,7 @@ export function keepSummary(r: KeepResult): KeepSummary {
         }
       : {}),
     ...(r.skippedWalls !== undefined ? { skipped_walls: r.skippedWalls } : {}),
+    ...(r.skipped ? { skipped: r.skipped } : {}),
   };
 }
 

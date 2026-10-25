@@ -32,9 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   lints, validates and reports impact byte for byte as before (269 files measured before the
   statement existed, step counts included); a plan whose keeps are all accepted draws, lints and
   describes exactly as the same source with its keeps blanked. The spec gains the `keep` line
-  (455 UTF-16 units, saying where a keep may stand), paid for by four drawing-only passages the
+  (483 UTF-16 units, saying where a keep may stand), paid for by four drawing-only passages the
   language reference keeps (the `door` line's dashed/solid sentence, its garage sentence
-  shortened, the `outdoor` hatch prose, the window-sill citation): `spec.llm.md` 29,729 → 29,787
+  shortened, the `outdoor` hatch prose, the window-sill citation): `spec.llm.md` 29,729 → 29,815
   units. Plan JSON drops keeps. The
   `--facts depends` keep rows and `arch impact`'s keeps section follow in PS4.3b.
 

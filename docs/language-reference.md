@@ -2588,12 +2588,17 @@ earlier element is named, and a keep is the statement that must survive edits.
   furniture read at its footprint's centre, on `<d>`'s normal axis.
 - `min clear`: along each axis, the widest free interval of the room between the bodies
   (centreline ± t/2) of the straight wall segments that meet the room and span its whole other
-  extent; the smaller of the two. Runs on one line (same centreline and thickness) count as one,
-  and a run whose end lies inside another wall's body is carried through that body, so a partition
-  that stops at the shell's inner face, or anywhere inside it, spans the room between the walls it
-  meets; one that stops short of every body does not. A wall's height is never read. A curved,
-  oblique or non-spanning segment that meets the room is not read, and is counted
-  (`skipped_walls`).
+  extent; the smaller of the two. Spanning is read on the joined outline: runs on one line (same
+  centreline and thickness) count as one; parallel runs whose bodies touch or overlap, along and
+  across (two thicknesses end to end, a lining on a wall), are one body, however many there are;
+  and a run whose end lies inside a perpendicular wall's body reaches the far face of the body that
+  wall belongs to, so a partition that stops at the shell's inner face, or anywhere inside it, spans
+  the room between the walls it meets, and one that stops short of every body does not. Only
+  straight horizontal and vertical walls carry a run: a run that ends in an oblique or curved wall
+  is not carried. A wall's height is never read. A segment that meets the room and is not read is
+  counted (`skipped_walls`), with why (`skipped`: `not_spanning`, `ends_in_curved_or_oblique`,
+  `curved`, `oblique`); an arc meets the room when the box around its extreme points, ± half its
+  thickness, does.
 - `stacked`: the element's resolved `at` + `size` rectangle (a rectangular room, a stair, a lift,
   an escalator or a void) on each listed storey, edge by edge against the first.
 - `fixed`: the datum against the stated value.
@@ -2606,7 +2611,7 @@ breaks one. A broken `soft` keep is named by `next` in its `intent` tier and nev
 
 **Where results appear.** `describe --json` appends `keeps[]` (one row per keep, every storey's
 by level then the plan's: the statement, form, grade, targets, `holds`, `residual_mm`, and `at`,
-`measured_mm`, `residuals` and `skipped_walls` where they apply), and `validate --json` appends
+`measured_mm`, `residuals`, `skipped_walls` and `skipped` where they apply), and `validate --json` appends
 `keeps` before `next`. Both keys are present only when the plan declares a keep.
 
 **Where a keep may stand.** In the plan or a `level` block, inside `for`, `if` and `zone`. Not

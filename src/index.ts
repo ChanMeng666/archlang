@@ -109,6 +109,7 @@ export type {
   SceneSummary,
   KeepSummary,
   KeepAt,
+  KeepSkipped,
   LevelSummary,
   SheetSummary,
   VerticalSummary,

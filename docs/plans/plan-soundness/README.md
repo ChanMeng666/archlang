@@ -503,7 +503,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS0 · Bugs found by the audit (independent; file and fix first)
 
-21 cards in the table: 5 done, 16 todo (PS0.1, PS0.7 and PS0.10–PS0.12 landed earlier, listed in `cards.md` above the table). Cards, tables and as-built pointers: `cards.md` § PS0.
+22 cards in the table: 5 done, 17 todo (PS0.1, PS0.7 and PS0.10–PS0.12 landed earlier, listed in `cards.md` above the table). Cards, tables and as-built pointers: `cards.md` § PS0.
 
 ### PS1 · The defect corpus (do this before PS2; it is the yardstick)
 

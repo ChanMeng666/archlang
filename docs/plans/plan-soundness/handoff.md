@@ -130,7 +130,7 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    2026-10-25 transcript audit. **PS1.3** walls-first control arm (§8 Q1) is done (PR #264, D21): it ran on
    2026-10-26 in item 1's harness (66 CLI calls, 0 `score`, 0 `validate`; 54 verified defects against 52
    rooms-first; D1/D5 re-stated).
-7. Everything else in `cards.md` by family: PS0 16 todo, PS1 1, PS2 39 todo, PS3 4, PS4 9, PS5 4,
+7. Everything else in `cards.md` by family: PS0 17 todo, PS1 1, PS2 39 todo, PS3 4, PS4 9, PS5 4,
     PS7 3 (7.1, 7.2, 7.6); pick by first-contact evidence, not by number.
 
 **Open cards by family (2026-10-25 audit, counts updated 2026-10-26; "ready" = no stated dependency
@@ -140,7 +140,7 @@ waited for item 1 (D19), which ran 2026-10-26: such a card may start and the nex
 | Family | Open | Ready now | Waiting on something |
 |---|---|---|---|
 | PS1 | 1 | — | 1.4 (item 1's harness) |
-| PS0 | 16 | PS0.15 (net-area bound), 0.2, 0.3, 0.6, 0.9, 0.17, 0.22, 0.23, 0.25, 0.26 | 0.8 (re-measure), 0.16/0.18/0.20/0.21 (a decision each), 0.24 (code landed in #252; only a `clear front\|sides` test is left) |
+| PS0 | 17 | PS0.15 (net-area bound), 0.2, 0.3, 0.6, 0.9, 0.17, 0.22, 0.23, 0.25, 0.26, 0.27 | 0.8 (re-measure), 0.16/0.18/0.20/0.21 (a decision each), 0.24 (code landed in #252; only a `clear front\|sides` test is left) |
 | PS2 | 39 | 2.21, 2.23, 2.25, 2.27, 2.30–2.35, 2.41–2.44, 2.47–2.49, 2.51, 2.52, 2.54, 2.56, 2.57, 2.58 | 2.11e (row 6), 2.14 (ADR), 2.15 (2.11e), 2.16/2.36 (facts), 2.20/2.28 (measure first), 2.24/2.26/2.37/2.38/2.46/2.55 (a decision each), 2.39 (drawing decision), 2.40 and 5.6 (fire D12's reverse-if), 2.53 (a sourced ceiling) |
 | PS3 | 4 | 3.12 | 3.10 (decision; moves digests, D8), 3.11 (corpus sweep), 3.13 (proof first) |
 | PS4 | 9 | 4.5, 4.6, 4.7 | 4.3 (design PR #270 open; implementation next), 4.4 (row 6), 4.8–4.11 (after or with 4.3) |

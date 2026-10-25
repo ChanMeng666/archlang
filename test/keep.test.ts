@@ -150,6 +150,7 @@ suite("keep · the widening drill (design §9), through the CLI", () => {
       residual_mm: -400,
       measured_mm: 3400,
       skipped_walls: 2,
+      skipped: { not_spanning: 2 },
     });
     expect(keepsOf(readFileSync(before, "utf8"))[1]!.skipped_walls).toBe(0);
   });
@@ -405,7 +406,7 @@ suite("keep · purity and the step meter", () => {
         "align": 15,
         "equal": 15,
         "fixed": 23,
-        "minClear": 64,
+        "minClear": 138,
         "offset": 25,
         "onAxis": 15,
         "stackedOf2": 45,
@@ -676,17 +677,22 @@ suite("keep · round-1 probes", () => {
     ]);
   });
 
-  it("min clear's scan is O(n log n): 800 two-segment walls and one keep still compile", () => {
-    const walls = Array.from(
-      { length: 800 },
-      (_, i) =>
-        `  wall id=w${i} partition thickness 100 { (${(i % 40) * 500},${Math.floor(i / 40) * 500 + 20000}) (${(i % 40) * 500},${Math.floor(i / 40) * 500 + 20300}) (${(i % 40) * 500 + 300},${Math.floor(i / 40) * 500 + 20300}) }`,
-    ).join("\n");
-    const src = plan(`${SHELL}\n${walls}\n  room id=a at (0,0) size 8000x5000\n  keep min clear a 4800`);
-    const c = codes(src);
-    expect(c).not.toContain("E_STEP_LIMIT");
-    expect(keepsOf(src)[0]).toMatchObject({ holds: true, measured_mm: 4800 });
-  });
+  it("min clear's scan is O(n log n): many runs on one line, many walls, a huge wall, each well under budget", () => {
+    // Steps a plan spends for its keep: the same plan with the keep minus the plan without it.
+    const cost = (body: string): number => stepsOf(plan(`${body}\n  keep min clear a 1000`)) - stepsOf(plan(body));
+    const room = `  room id=a at (0,0) size 4000x3000 label "A"`;
+    // 1,600 collinear runs on one line (the round-2 probe `collinear1`).
+    const collinear = `${room}\n  for i in 0..1600 {\n    wall partition thickness 100 { (i*1000, 10000) (i*1000+500, 10000) }\n  }`;
+    // 1,200 two-segment walls (`many1200_1`).
+    const many = `${room}\n  for i in 0..1200 {\n    wall partition thickness 100 { (i*1000, 10000) (i*1000, 11000) (i*1000+500, 11000) }\n  }`;
+    // One wall 3 km thick beside 1,600 vertical runs (`fatv1`).
+    const fat = `${room}\n  wall partition thickness 3000000 { (3000000, 0) (3000000, 1) }\n  for i in 0..1600 {\n    wall partition thickness 100 { (i*1000, 10000) (i*1000, 10500) }\n  }`;
+    const steps = { collinear: cost(collinear), many: cost(many), fat: cost(fat) };
+    for (const [name, n] of Object.entries(steps)) expect(n, name).toBeLessThan(MAX_EVAL_STEPS / 20);
+    for (const body of [collinear, many, fat]) {
+      expect(keepsOf(plan(`${body}\n  keep min clear a 1000`))[0]).toMatchObject({ holds: true, measured_mm: 3000 });
+    }
+  }, 120_000);
 
   it("a crossing inside the stacked pass is E_STEP_LIMIT, with no level, and the plan is unresolved (R13)", () => {
     const storey = (dir: string, a: number, r: number) =>
@@ -752,5 +758,30 @@ suite("keep · round-1 probes", () => {
     );
     const d = compile(src, { noCache: true }).diagnostics.find((x) => x.code === "W_KEEP_VIOLATED")!;
     expect(d.message).toMatch(/^This keep holds the stair (in|on|at) the [a-z ]+ of the plan on levels 1 and 2 /);
+  });
+});
+
+suite("keep · round-2 probes (min clear's joined outline)", () => {
+  const row = (name: string) => keepsOf(readFileSync(`${KEEP_CORPUS_DIR}/min-clear-${name}.arch`, "utf8"))[0]!;
+  it("a run that changes thickness across the room is one body, however many thicknesses", () => {
+    expect(row("thick2face")).toMatchObject({ measured_mm: 3750, holds: false, skipped_walls: 0 });
+    expect(row("thick2full")).toMatchObject({ measured_mm: 3750, holds: false, skipped_walls: 0 });
+    const four = row("thick4b");
+    expect(four.measured_mm).toBeLessThanOrEqual(3875);
+    expect(four).toMatchObject({ holds: false, skipped_walls: 0 });
+  });
+  it("a lining on the shell and a nib against it read their geometry alike", () => {
+    expect(row("lining300")).toMatchObject({ measured_mm: 4700, holds: false });
+    expect(row("nib100")).toMatchObject({ measured_mm: 4700, holds: false });
+  });
+  it("a run ending in an oblique wall is not carried, and the row says why", () => {
+    expect(row("t45")).toMatchObject({
+      measured_mm: 4800,
+      skipped_walls: 2,
+      skipped: { ends_in_curved_or_oblique: 1, oblique: 1 },
+    });
+  });
+  it("an arc meets a room by the box around its extreme points ± t/2", () => {
+    expect(row("arcbbox")).toMatchObject({ measured_mm: 400, skipped_walls: 1, skipped: { curved: 1 } });
   });
 });
