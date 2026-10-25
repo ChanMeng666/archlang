@@ -33,7 +33,7 @@ export function inRoomPhrase(f: RFurniture, ctx: LintContext): string {
       const box = ctx.roomRects.get(r.id);
       return box !== undefined && pointInRoomBox({ x: f.at.x + f.size.w / 2, y: f.at.y + f.size.h / 2 }, box);
     });
-  return room ? ` in ${ctx.labelOf(room)}` : "";
+  return room ? ` in ${room.label ?? ctx.nameOf(room)}` : "";
 }
 
 /** A piece named as a person would: its label, else its category. */

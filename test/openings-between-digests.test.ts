@@ -18,7 +18,7 @@ const API: CompilerApi = { compile, describe, lint };
 const DIGESTS: [string, string][] = [
   ["relational-forms", "c152bfe4c49d13825e41cab7814a57bbb63379fc7641eeb795ae3dc531b81998"],
   ["hosted-datums", "2de74be4cdc3993be2a0eba3292c1a4a564ddb3c116da83f75e53e16f35302cf"],
-  ["frames", "9c462905c18747815edee83e00ed5d545553f62fca99c1a41a7c53d3fe3910d8"],
+  ["frames", "50f91949030acfac188fb04ce7ac101864bea7b87e7e19941355cbf7d3a6c401"], // PS2.29: message text only, same code, same span
   ["widen-4000", "d1605219c6eebb1868a94cb5c433e8d4c80bcf18c28735d4904c5cda9d1c2704"],
   ["widen-4500", "7b48c85287593ab898f6b170605bdc7e43d40c8abe9c209c0886e1a5e2c3235b"],
   ["refused", "8f8d8a2ccb3150bb6998eda99ae95acc80f577e04744e17992f2507f6324d7d2"],

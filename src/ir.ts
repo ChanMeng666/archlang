@@ -105,6 +105,8 @@ import {
 } from "./geometry/polygon.js";
 import { BUILTIN_NAMES } from "./builtins.js";
 import { idSpanOf } from "./parser.js";
+import { roomOverlapNamer } from "./lint/phrases.js";
+import { classifyLabelUses } from "./vocabulary.js";
 
 export interface RBase {
   kind: ElementKind;
@@ -4009,10 +4011,15 @@ export function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diag
     }
     return list;
   };
+  // A message never quotes an id (PS2.29): a labelled room is named by its label, an unlabelled
+  // one by what the plan knows of it (`src/lint/phrases.ts`, built only when a pair needs it).
+  const overlapText = roomOverlapNamer(rooms, (x) =>
+    x.uses && x.uses.length > 0 ? x.uses : classifyLabelUses(x.label ?? x.id).uses,
+  );
   const report = (r1: RRoom, r2: RRoom): void => {
     diagnostics.push({
       severity: "warning",
-      message: `Rooms "${r1.id}" and "${r2.id}" overlap`,
+      message: overlapText(r1, r2),
       code: "W_ROOM_OVERLAP",
       span: r2.span,
     });

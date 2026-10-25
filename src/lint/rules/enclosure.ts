@@ -55,6 +55,7 @@ import { collinearOverlapLength } from "../../geometry/polygon.js";
 import type { ResolvedPlan, RRoom, RWall } from "../../ir.js";
 import { fmt2 } from "../../num-format.js";
 import type { LintContext, LintRule } from "../context.js";
+import { capFirst } from "../phrases.js";
 import type { EnclosureBudgetCap } from "../coverage.js";
 import { mm } from "../measure.js";
 
@@ -406,15 +407,15 @@ export const boundaryNoWall: LintRule = {
           .sort((m, k) => Math.round(m.x) - Math.round(k.x) || m.y - k.y);
         const g0 = ends[0]!;
         const g1 = ends[1]!;
-        const na = `"${ctx.labelOf(a)}"`;
-        const nb = `"${ctx.labelOf(b)}"`;
+        const na = ctx.nameOf(a);
+        const nb = ctx.nameOf(b);
         const reason = (it: string): string =>
           worst.connector
             ? `A door or opening on the run joins them, but through ${it} they are one space, so privacy and enclosure are read as if it were walled.`
             : `Through ${it} they are one space that anyone walks through, but no door or opening joins them in the plan, so routes, privacy and enclosure are read as if it were walled.`;
         const message =
           worst.bare && Math.abs(gapLen - run.len) <= EPS
-            ? `${na} and ${nb} have no wall between them: they meet along ${mm(run.len)} mm ${runWords(run.p, run.q)} with no wall, door or opening anywhere on it, wider than a ${mm(max)} mm doorway. ${reason("that boundary")}`
+            ? `${capFirst(na)} and ${nb} have no wall between them: they meet along ${mm(run.len)} mm ${runWords(run.p, run.q)} with no wall, door or opening anywhere on it, wider than a ${mm(max)} mm doorway. ${reason("that boundary")}`
             : `The boundary between ${na} and ${nb} is open for ${mm(gapLen)} mm (${runWords(g0, g1).replace(/^on the line /, "")}), wider than a ${mm(max)} mm doorway: they meet along ${mm(run.len)} mm ${runWords(run.p, run.q)}, and that stretch has no wall, door or opening. ${reason("that stretch")}`;
         const thick = run.sep > EPS ? run.sep : Number.isFinite(thinnest) ? thinnest : DEFAULT_PARTITION_MM;
         const stmt = `wall partition thickness ${mm(thick)} { (${mm(g0.x)},${mm(g0.y)}) (${mm(g1.x)},${mm(g1.y)}) }`;
@@ -565,7 +566,7 @@ export const floorUnassigned: LintRule = {
       if (bordering.length === 0 && !faceHasOpening(ctx, wf, fi)) continue;
       const walls = wallsRound(ctx, wf, fi);
       const beyond = bordering.length === 0 ? roomsBeyond(ctx, wf, fi) : [];
-      const names = (rs: readonly RRoom[]): string => listOf(rs.map((r) => `"${ctx.labelOf(r)}"`));
+      const names = (rs: readonly RRoom[]): string => listOf(rs.map((r) => ctx.nameOf(r)));
       const where =
         bordering.length > 0
           ? ` next to ${names(bordering)}`
@@ -637,7 +638,7 @@ export const roomOutsideShell: LintRule = {
         severity: "warning",
         code: "W_ROOM_OUTSIDE_SHELL",
         ...ctx.at(r),
-        message: `Room "${ctx.labelOf(r)}" has ${m2} m² of its floor outside the building's walls${depth}. A room drawn past the outside wall has floor no wall encloses, usually a room resized or moved while its walls stayed put.`,
+        message: `${capFirst(ctx.nameOf(r, "room"))} has ${m2} m² of its floor outside the building's walls${depth}. A room drawn past the outside wall has floor no wall encloses, usually a room resized or moved while its walls stayed put.`,
         hints: [
           `Bring "${ctx.labelOf(r)}" back inside the walls (resize or move it so its edge meets the outside wall), or move the outside wall out to the room's edge.`,
           "If that part is meant to be outside (a terrace, a balcony, a porch), it is not a room: draw it as an `outdoor` surface instead and keep the room inside the walls.",

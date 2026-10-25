@@ -44,7 +44,8 @@ describe("W_DOOR_NEAR_CORNER — a straight run", () => {
     expect(d.severity).toBe("warning");
     expect(d.span).toBeDefined();
     expect(nums(d.message)).toEqual([250, 150, 100]);
-    expect(d.message).toContain('wall "w1" at (5000, 0)');
+    expect(d.message).toContain("at (5000, 0) of the exterior wall at y 0");
+    expect(d.message).not.toContain('"w1"');
   });
 
   it("says nothing when the door is comfortably clear of the corner", () => {

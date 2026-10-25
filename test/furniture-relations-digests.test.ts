@@ -18,7 +18,7 @@ const API: CompilerApi = { compile, describe, lint };
 
 const DIGESTS: [string, string][] = [
   ["relations", "cc6bf8f4abf362e91e93f4248a7360757b37f992ea5dda5057493090ce069e79"],
-  ["frames", "b8c26ee3064f335c58452fd3834192bf231d435d5b22010ef9cc519607ff1aa5"],
+  ["frames", "22e88b1f19c01260d0eb3f93de78d9f19d5fdfeed111ce8118b57a89129c08ca"], // PS2.29: message text only, same code, same span
   ["seats", "fd9634cca453d3bf8c3bcb9f616b368a90827cdad1e34482d7bf3b656342da6a"], // seat hint reworded (red team round 1),
   ["refused", "77a135b355d61ee48ed2f265c7dbb99da75edcb9ab381ead6c615e4cf8facd39"],
 ];

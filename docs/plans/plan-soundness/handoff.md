@@ -123,8 +123,6 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    `examples/tiny-house.arch` and `examples/hillside-villa.arch` each carry one `W_FIXTURE_BACK_TO_ROOM`
    that is the rule's fault, not the plan's (both examples also carry their own `W_PATH_TOO_NARROW`
    and, for hillside-villa, `W_ROOM_NOT_EQUATOR_FACING` warnings, which are the plans').
-4. **PS2.22, PS2.29** id-free lint messages. An owner rule from 2026-10-18 ("lint 消息里不出现 id")
-   that the code still breaks through `labelOf`'s id fallback. Small; do it before new rules.
 5. **PS4.3** `keep` invariants checked by `validate` (ADR addendum first), **PS4.4** brief-bound
    dimensions, **PS4.5** `impact` reports `held`.
 6. **PS5.4** `preview --review` rings every flagged element.
@@ -166,7 +164,7 @@ items 3.1(b), M.8, M.9, M.14 and D.7 wait on the owner's answers and are not cov
 
 - Walls-first vs rooms-first comparison (PS1.3): done 2026-10-26 (D21; `audits/2026-10-26-walls-first-control-arm.md`).
   Diagnostic wording (PS1.4): card filed, not run.
-- Id-free lint messages: PS2.22/PS2.29 open; the rule is in `README.md` §5.
+- Id-free lint messages: done 2026-10-26 (PS2.22/PS2.29, PR #pending); the rule is in `README.md` §5.
 - Fuzz, timing and red-team probes were to run in the owner's prepaid `claude --cloud` sessions
   (owner, in conversation, 2026-10-20). One probe ran; the rest ran locally. Item 1's two arms ran as
   local headless sessions, not in the cloud sessions; use the cloud sessions, if they are still

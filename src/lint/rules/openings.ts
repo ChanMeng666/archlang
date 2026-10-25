@@ -51,14 +51,12 @@ import type { Point } from "../../ast.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { doorSwing, isDoubleDoorPair, segmentLength, segmentPointAlong, type WallSegment } from "../../geometry.js";
 import { arcOpeningVoid } from "../../geometry/arc-band.js";
-import type { RDoor, ROpening, RWindow } from "../../ir.js";
 import type { LintContext, LintRule } from "../context.js";
 import { mm } from "../measure.js";
+import { type Hosted, KIND_WORD, openingName, wallPhrase } from "../element-phrases.js";
 import { isCorner, tightestCorner } from "./doors.js";
 import { FLUSH_MM, junctionSpans, MEET_TOL_MM, PARALLEL_SIN, sameSeg } from "../../opening-junctions.js";
 import { relationalClause } from "../../opening-relation.js";
-
-type Hosted = RDoor | RWindow | ROpening;
 
 /** Float dust on whole-millimetre geometry. */
 const EPS = 1e-6;
@@ -176,17 +174,6 @@ const nibNeed = (ctx: LintContext, seg: WallSegment): number =>
 
 // ─── naming ────────────────────────────────────────────────────────────────────────────
 
-/** ` at x 4000` / ` at y 3000` for a straight axis-aligned segment, else nothing. */
-function axisLine(s: WallSegment): string {
-  if (s.arc) return " (curved)";
-  if (s.a.x === s.b.x && s.a.y !== s.b.y) return ` at x ${mm(s.a.x)}`;
-  if (s.a.y === s.b.y && s.a.x !== s.b.x) return ` at y ${mm(s.a.y)}`;
-  return ` from (${mm(s.a.x)}, ${mm(s.a.y)}) to (${mm(s.b.x)}, ${mm(s.b.y)})`;
-}
-
-/** A wall named by its kind and the line it runs on, never its id. */
-const wallPhrase = (s: WallSegment): string => `the ${s.category} wall${axisLine(s)}`;
-
 /** A point on the host run, as the coordinate a reader looks up: `x 3050` on a horizontal
  *  run, `y 3650` on a vertical one, `(x, y)` otherwise. */
 function runCoord(seg: WallSegment, s: number): string {
@@ -204,30 +191,6 @@ function runSpan(seg: WallSegment, lo: number, hi: number): string {
   const axis = a.slice(0, 2);
   const [p, q] = [a.slice(2), b.slice(2)].map(Number).sort((m, k) => m - k);
   return `${axis}${mm(p!)}–${mm(q!)}`;
-}
-
-const KIND_WORD: Record<Hosted["kind"], string> = { door: "door", window: "window", opening: "opening" };
-
-/** An opening named by the rooms it serves (labels, never ids). */
-function openingName(ctx: LintContext, el: Hosted): string {
-  const { between } = connectorConnection(el, ctx.roomRects, ctx.rules.tolMm);
-  const label = (id: string): string | null => {
-    const r = ctx.rooms.find((x) => x.id === id);
-    return r ? `"${ctx.labelOf(r)}"` : null;
-  };
-  const word = KIND_WORD[el.kind];
-  const [a, b] = [between[0] ?? "", between[1] ?? ""];
-  const ext = a === EXTERIOR_NODE ? b : b === EXTERIOR_NODE ? a : null;
-  if (ext !== null) {
-    const r = label(ext);
-    if (r) return el.kind === "window" ? `the window of ${r}` : `the exterior ${word} into ${r}`;
-  } else {
-    const ra = label(a);
-    const rb = label(b);
-    if (ra && rb) return `the ${word} between ${ra} and ${rb}`;
-    if (ra || rb) return `the ${word} of ${ra ?? rb}`;
-  }
-  return el.host ? `the ${word} on ${wallPhrase(el.host)}` : `the ${word}`;
 }
 
 /** The rooms an access graph reaches from outside. */
@@ -419,7 +382,7 @@ function joined(ctx: LintContext, between: readonly string[]): string {
     .map((id) => {
       if (id === EXTERIOR_NODE) return "the outside";
       const r = ctx.rooms.find((x) => x.id === id);
-      return r ? `"${ctx.labelOf(r)}"` : "no room";
+      return r ? ctx.nameOf(r) : "no room";
     });
   if (names.length <= 1) return names[0] ?? "no room";
   return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]!}`;
@@ -794,7 +757,7 @@ export const connectorAmbiguous: LintRule = {
     const all = openingsOnRuns(ctx);
     const label = (id: string): string => {
       const r = ctx.rooms.find((x) => x.id === id);
-      return r ? `"${ctx.labelOf(r)}"` : "outside";
+      return r ? ctx.nameOf(r) : "outside";
     };
     const list = (ids: readonly string[]): string =>
       ids.length <= 1

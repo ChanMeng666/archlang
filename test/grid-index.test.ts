@@ -2,7 +2,21 @@ import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { compile } from "../src/index.js";
 import { GridIndex } from "../src/geometry/grid-index.js";
-import { MAX_OVERLAP_PAIRS_LISTED } from "../src/ir.js";
+import { resolvePlan } from "../src/analyze.js";
+import { MAX_OVERLAP_PAIRS_LISTED, type RRoom } from "../src/ir.js";
+import { roomOverlapNamer } from "../src/lint/phrases.js";
+import { classifyLabelUses } from "../src/vocabulary.js";
+
+/** The wording of a pair, from the one builder `checkRoomOverlaps` uses (since PS2.29 a message
+ *  names rooms by what the plan knows of them, never by id). These tests are about WHICH pairs
+ *  are listed and in what order; the rooms are `r0`, `r1`, … in source order. */
+function pairText(src: string): (a: number, b: number) => string {
+  const rooms = resolvePlan(src).ir!.elements.filter((e): e is RRoom => e.kind === "room");
+  const text = roomOverlapNamer(rooms, (x) =>
+    x.uses && x.uses.length > 0 ? x.uses : classifyLabelUses(x.label ?? x.id).uses,
+  );
+  return (a, b) => text(rooms[a]!, rooms[b]!);
+}
 
 describe("GridIndex", () => {
   it("returns items whose cells intersect the query box (deduped, deterministic)", () => {
@@ -55,6 +69,7 @@ describe("room-overlap grid ≡ O(n²) (T3.7)", () => {
           `plan "R" { units mm grid 1\n` +
           rooms.map((r, i) => `room id=r${i} at (${r.x},${r.y}) size ${r.w}x${r.h}`).join("\n") +
           `\n}`;
+        const text = pairText(src);
         const { diagnostics } = compile(src, { noCache: true });
         const got = diagnostics.filter((d) => d.code === "W_ROOM_OVERLAP").map((d) => d.message);
 
@@ -66,7 +81,7 @@ describe("room-overlap grid ≡ O(n²) (T3.7)", () => {
             const r2 = rooms[b]!;
             const ox = Math.max(0, Math.min(r1.x + r1.w, r2.x + r2.w) - Math.max(r1.x, r2.x));
             const oy = Math.max(0, Math.min(r1.y + r1.h, r2.y + r2.h) - Math.max(r1.y, r2.y));
-            if (ox > 1 && oy > 1) want.push(`Rooms "r${a}" and "r${b}" overlap`);
+            if (ox > 1 && oy > 1) want.push(text(a, b));
           }
         }
         expect(got).toEqual(want);
@@ -89,6 +104,7 @@ describe("room-overlap listing cap", () => {
 
   it("lists exactly K pairs in (a,b) order, then one correct summary", () => {
     const n = 150;
+    const text = pairText(stack(n));
     const msgs = compile(stack(n), { noCache: true })
       .diagnostics.filter((d) => d.code === "W_ROOM_OVERLAP")
       .map((d) => d.message);
@@ -97,7 +113,7 @@ describe("room-overlap listing cap", () => {
     const want: string[] = [];
     for (let a = 0; a < n && want.length < MAX_OVERLAP_PAIRS_LISTED; a++) {
       for (let b = a + 1; b < n && want.length < MAX_OVERLAP_PAIRS_LISTED; b++) {
-        want.push(`Rooms "r${a}" and "r${b}" overlap`);
+        want.push(text(a, b));
       }
     }
     expect(msgs.slice(0, MAX_OVERLAP_PAIRS_LISTED)).toEqual(want);

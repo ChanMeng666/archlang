@@ -245,7 +245,9 @@ ${places}
     const src = twice(b);
     const ds = byCode(lint(src), "W_DIM_OVERLAP");
     // One report per placement, each with its own instance's value in the hint…
-    expect(ds.map((d) => d.message.slice(0, 22))).toEqual(['Dimension "a.dim_2" is', 'Dimension "b.dim_2" is']);
+    // (A dimension is named by where it runs, never by its `a.dim_2` id: the two placements start
+    // at different points.)
+    expect(ds.map((d) => d.message.slice(0, 22))).toEqual(["The dimension from (0,", "The dimension from (20"]);
     for (const d of ds) expect(d.hints![0]).toContain(`\`${want}\``);
     // …and the one statement gets one edit, applied once, which clears both.
     const fixes = ds.flatMap((d) => d.fixes ?? []);

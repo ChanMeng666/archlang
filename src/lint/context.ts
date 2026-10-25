@@ -6,7 +6,7 @@
 
 import { type D4, D4_IDENTITY, fromSpelling } from "../algebra/d4.js";
 import type { AccessGraph, MainEntranceFact, RoomBox } from "../analyze.js";
-import { buildDoorAccessGraph, roomBox } from "../analyze.js";
+import { buildDoorAccessGraph, roomBox, roomUses } from "../analyze.js";
 import { entranceInputs, mainEntranceOf, walkAccessGraph, walkWays } from "../analyze/entrance.js";
 import type { Diagnostic } from "../diagnostics.js";
 import { segmentsOfWall, type WallSegment } from "../geometry.js";
@@ -14,6 +14,7 @@ import type { RDoor, RFurniture, ROpening, RRoom, RVoid, RWindow, ResolvedPlan }
 import { type ArrivingRun, type RVertical, verticalsOf } from "../vertical.js";
 import type { DwellingReading } from "../analyze/dwelling.js";
 import type { EnclosureBudgetCap, LintFamily, LintSkipReason } from "./coverage.js";
+import { labelPointOf, unlabelledRoomPhrases } from "./phrases.js";
 import type { LintRuleset } from "./ruleset.js";
 
 /**
@@ -112,7 +113,20 @@ export interface LintContext {
   /** {@link access} with only the {@link walkWays} entrance edges: the graph the circulation
    *  rules walk. {@link access} itself when `walkWays()` is `null`. Memoised. */
   walkAccess(): AccessGraph;
+  /** A room's label, or its id when it has none. For a HINT, where an id is the handle an
+   *  agent edits by; a message uses {@link nameOf}. */
   labelOf(r: RRoom): string;
+  /**
+   * How a MESSAGE names a room (PS2.29: a message never quotes an id): its quoted label, or,
+   * for a room with no label, the phrase the plan's own facts give it ("the kitchen", "the
+   * bedroom in the top left of the plan", `src/lint/phrases.ts`). With `noun` a labelled room
+   * reads `bedroom "Bed 2"` and an unlabelled one just its phrase; the result starts with a
+   * lower-case letter or a noun, so a sentence that opens with it capitalises it itself.
+   */
+  nameOf(r: RRoom, noun?: string): string;
+  /** {@link nameOf} by place alone, never by use: for a message about how the room's use was
+   *  read from its label or id (`W_ALIAS_MATCH`). */
+  placeOf(r: RRoom): string;
   /**
    * The location half of a diagnostic raised ON an element: its byte `span` **and the
    * file that span is measured in**.
@@ -220,6 +234,19 @@ export function buildLintContext(
   let waysMemo: { fact: MainEntranceFact | null; keep: ReadonlySet<string> | null } | null = null;
   let walkMemo: AccessGraph | null = null;
   let framesMemo: Map<string, D4> | null = null;
+  let phrasesMemo: Map<string, string> | null = null;
+  let placesMemo: Map<string, string> | null = null;
+  const phrasesOf = (byUse: boolean): Map<string, string> =>
+    unlabelledRoomPhrases(
+      rooms.map((x) => ({
+        id: x.id,
+        ...(x.label !== undefined ? { label: x.label } : {}),
+        uses: [...roomUses(x)],
+        point: labelPointOf(x),
+      })),
+      ir.level,
+      byUse,
+    );
   const roomRects = new Map<string, RoomBox>(rooms.map((r) => [r.id, roomBox(r)]));
   const access = (): AccessGraph =>
     (accessMemo ??= buildDoorAccessGraph(rooms, doors, rules.tolMm, undefined, openings));
@@ -255,6 +282,16 @@ export function buildLintContext(
     walkWays: walkWaysOf,
     walkAccess: () => (walkMemo ??= walkAccessGraph(access(), walkWaysOf())),
     labelOf: (r) => r.label ?? r.id,
+    nameOf: (r, noun) => {
+      if (r.label !== undefined) return noun === undefined ? `"${r.label}"` : `${noun} "${r.label}"`;
+      phrasesMemo ??= phrasesOf(true);
+      return phrasesMemo.get(r.id) ?? "an unlabelled room";
+    },
+    placeOf: (r) => {
+      if (r.label !== undefined) return `"${r.label}"`;
+      placesMemo ??= phrasesOf(false);
+      return placesMemo.get(r.id) ?? "an unlabelled room";
+    },
     at: (el) => ({
       ...(el.span ? { span: el.span } : {}),
       ...(el._file !== undefined ? { file: el._file } : {}),

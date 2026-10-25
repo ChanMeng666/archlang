@@ -34,6 +34,7 @@ import type { RRoom } from "../../ir.js";
 import { deriveSite, planCenterOfRooms, toCompass, windowFacingPage } from "../../site.js";
 import { northQuarterTurns } from "../../describe.js";
 import type { LintContext, LintRule } from "../context.js";
+import { capFirst } from "../phrases.js";
 
 /**
  * Does the room read as HABITABLE — a space people occupy for long stretches, which is
@@ -101,7 +102,7 @@ export const roomNotEquatorFacing: LintRule = {
         code: "W_ROOM_NOT_EQUATOR_FACING",
         ...ctx.at(r),
         message:
-          `Room "${ctx.labelOf(r)}" has ${wins.length} window(s), none facing ${facts.equator_side} ` +
+          `${capFirst(ctx.nameOf(r, "room"))} has ${wins.length} window(s), none facing ${facts.equator_side} ` +
           `(the equator side in the ${facts.hemisphere}ern hemisphere) — they face ${[...new Set(facings)].join(", ")}.`,
         hints: [
           `A drafting heuristic, not a daylight measurement: it reports the aspect, not the light. Move a window onto the ${facts.equator_side} facade, or accept it.`,

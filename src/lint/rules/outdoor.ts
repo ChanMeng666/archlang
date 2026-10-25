@@ -6,17 +6,75 @@
  */
 
 import type { Point } from "../../ast.js";
-import type { ROutdoor } from "../../ir.js";
+import type { ROutdoor, RRoom } from "../../ir.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { rectCorners } from "../../geometry.js";
-import { distToPolygonEdge, pointInPolygon, polygonsOverlap, rectRing } from "../../geometry/polygon.js";
+import {
+  distToPolygonEdge,
+  pointInPolygon,
+  polygonLabelPoint,
+  polygonsOverlap,
+  rectRing,
+} from "../../geometry/polygon.js";
 import type { LintContext, LintRule } from "../context.js";
+import { capFirst, labelPointOf, placeWithin } from "../phrases.js";
 
 /** The ring a surface actually occupies — its own polygon, or its rectangle. */
 function ringOf(o: ROutdoor): Point[] | null {
   if (o.poly) return o.poly;
   if (o.size.w <= 0 || o.size.h <= 0) return null;
   return rectCorners(o.at.x, o.at.y, o.size.w, o.size.h);
+}
+
+/**
+ * How a message names a ground surface (PS2.29: never by its id): its own label when it has one
+ * (`terrace "Back terrace"`), else "the balcony off the living room" (the room whose floor it
+ * touches or lies nearest, within `reach`), else "the lawn in the bottom left of the plan"; two
+ * surfaces that would read alike are told apart by "(1 of 2)". Positions are the surfaces' and
+ * the rooms' label points, not bounding boxes.
+ */
+function surfaceNames(ctx: LintContext, reach: number): Map<ROutdoor, string> {
+  const outs = ctx.ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor");
+  const names = new Map<ROutdoor, string>();
+  const base = new Map<ROutdoor, string>();
+  const points = ctx.rooms.map((r) => labelPointOf(r));
+  for (const o of outs) {
+    if (o.label !== undefined) {
+      names.set(o, `${o.surface} "${o.label}"`);
+      continue;
+    }
+    const ring = ringOf(o);
+    let near: RRoom | undefined;
+    let best = Infinity;
+    if (ring)
+      for (const r of ctx.rooms) {
+        const box = ctx.roomRects.get(r.id);
+        if (!box) continue;
+        const floor = box.poly ?? rectRing(box);
+        const d = polygonsOverlap(ring, floor)
+          ? 0
+          : Math.min(...ring.map((p) => distToPolygonEdge(p, floor)), ...floor.map((p) => distToPolygonEdge(p, ring)));
+        if (d <= reach && d < best) {
+          best = d;
+          near = r;
+        }
+      }
+    const centre = ring ? polygonLabelPoint(ring) : labelPointOf(o);
+    base.set(
+      o,
+      near !== undefined
+        ? `the ${o.surface} off ${ctx.nameOf(near)}`
+        : `the ${o.surface} ${placeWithin(centre, points)}`,
+    );
+  }
+  // Two surfaces worded alike are told apart by their place in the reading order.
+  const alike = new Map<string, ROutdoor[]>();
+  for (const [o, b] of base) alike.set(b, [...(alike.get(b) ?? []), o]);
+  for (const [b, group] of alike) {
+    const ordered = [...group].sort((p, q) => p.at.y - q.at.y || p.at.x - q.at.x);
+    for (const [i, o] of ordered.entries()) names.set(o, group.length > 1 ? `${b} (${i + 1} of ${group.length})` : b);
+  }
+  return names;
 }
 
 /**
@@ -52,6 +110,8 @@ export const outdoorOverlapsRoom: LintRule = {
     const out: Diagnostic[] = [];
     const outdoors = ctx.ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor");
     if (outdoors.length === 0) return out;
+    // Named by place alone (reach -1): "off" the very room it overlaps would say nothing.
+    const names = surfaceNames(ctx, -1);
     for (const o of outdoors) {
       const ring = ringOf(o);
       if (!ring) continue;
@@ -63,7 +123,7 @@ export const outdoorOverlapsRoom: LintRule = {
         out.push({
           severity: "warning",
           message:
-            `Outdoor surface "${o.id}" (${o.surface}) overlaps the floor of room "${ctx.labelOf(r)}". ` +
+            `${capFirst(names.get(o)!)} overlaps the floor of ${ctx.nameOf(r, "room")}. ` +
             `Ground and floor are reported in separate totals, so the overlapping ground is counted ` +
             `twice by anything that adds them.`,
           code: "W_OUTDOOR_OVERLAPS_ROOM",
@@ -102,6 +162,7 @@ export const balconyNoDoor: LintRule = {
     const balconies = ctx.ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor" && e.surface === "balcony");
     if (balconies.length === 0) return out;
     const reach = ctx.ir.walls.length > 0 ? Math.max(...ctx.ir.walls.map((w) => w.thickness)) : 250;
+    const names = surfaceNames(ctx, reach);
     const openings: Point[] = [...ctx.doors, ...ctx.windows].map((d) => ({ ...d.at }));
     for (const b of balconies) {
       const ring = ringOf(b);
@@ -111,7 +172,7 @@ export const balconyNoDoor: LintRule = {
       out.push({
         severity: "warning",
         message:
-          `Balcony "${b.id}" has no door or window within ${reach} mm of any of its edges, so there is ` +
+          `${capFirst(names.get(b)!)} has no door or window within ${reach} mm of any of its edges, so there is ` +
           `no way onto it. Add a door (or a full-height window) on the wall it hangs off.`,
         code: "W_BALCONY_NO_DOOR",
         ...ctx.at(b),

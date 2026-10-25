@@ -440,7 +440,10 @@ suite("vertical circulation — the same id on two storeys is one shaft", () => 
     const diags = lint(twoStorey(STAIR_UP, ``)).filter((d) => d.code === "W_STAIR_UNMATCHED");
     expect(diags).toHaveLength(1);
     expect(diags[0]!.level).toBe(1);
-    expect(diags[0]!.message).toContain('Stair "stair"');
+    // Named by where it stands and its storey, never by its id (PS2.29); the id is in the hint.
+    expect(diags[0]!.message).toMatch(/^The stair in the .+ of the plan on level 1 appears on only one storey/);
+    expect(diags[0]!.message).not.toContain('"stair"');
+    expect(diags[0]!.hints!.join(" ")).toContain("`stair`");
   });
 
   it("a matched pair raises no W_STAIR_UNMATCHED, and a single-storey plan never does", () => {

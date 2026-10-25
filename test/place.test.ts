@@ -313,13 +313,16 @@ describe("place — the plan is still ONE plan for analysis", () => {
     const codes = compile(src, { noCache: true }).diagnostics.map((d) => d.code);
     expect(codes).toContain("W_ROOM_OVERLAP");
     const msg = compile(src, { noCache: true }).diagnostics.find((d) => d.code === "W_ROOM_OVERLAP")?.message;
-    expect(msg).toContain("west.main");
-    expect(msg).toContain("east.main");
+    // The message names the two rooms as a reader would (never by their `west.main` ids, PS2.29):
+    // both are "Gallery", so each is told apart by where it stands.
+    expect(msg).toMatch(/^Rooms "Gallery" .+ and "Gallery" .+ overlap$/);
+    expect(msg).not.toContain("west.main");
+    expect(msg).not.toContain("east.main");
   });
 
   it("lint reads instance contents under their namespaced ids", () => {
     // A fixture buried in the wall solid is a whole-plan geometric fact, and lint must
-    // report it against the id the plan can actually address.
+    // report it against the id the plan can actually address: in the HINT, never the message.
     const buried = `component bad() {
     wall id=w exterior thickness 300 { (0,0) (3000,0) (3000,3000) (0,3000) close }
     room id=r at (0,0) size 3000x3000 uses bedroom
@@ -332,7 +335,8 @@ describe("place — the plan is still ONE plan for analysis", () => {
 }`;
     const found = lint(src);
     expect(found.length).toBeGreaterThan(0);
-    expect(found.some((d) => d.message.includes("west."))).toBe(true);
+    expect(found.some((d) => (d.hints ?? []).join(" ").includes("west."))).toBe(true);
+    expect(found.some((d) => d.message.includes("west."))).toBe(false);
   });
 });
 

@@ -66,7 +66,7 @@ describe("6.12 — an overlap with no sampled point in it collides", () => {
     ].join("\n");
     const swing = lint(src).filter((d) => d.code === "W_SWING_OBSTRUCTED");
     expect(swing).toHaveLength(1);
-    expect(swing[0]!.message).toContain(`door "d_a"'s swing overlaps it`);
+    expect(swing[0]!.message).toContain("the swing of the door on the wb wall at y 300 overlaps it");
   });
 });
 
@@ -361,7 +361,7 @@ describe("the narrowing hint's bisection equals a brute force over every width",
     ].join("\n");
     const swing = lint(src, { profile: "accessibility-advisory" }).filter((x) => x.code === "W_SWING_OBSTRUCTED");
     expect(swing).toHaveLength(1);
-    expect(swing[0]!.message).toContain(`door "c"'s swing overlaps it`);
+    expect(swing[0]!.message).toContain("the swing of the door on the w wall at y 0 overlaps it");
     expect(swing[0]!.hints).toContain(
       "Narrowing the door is not a fix here — the leaf would have to drop to 200 mm, under the 960 mm minimum passable width.",
     );

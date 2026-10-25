@@ -552,12 +552,12 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/axes-grid.arch", "a0a729cd0ec5bbfd90353f47e0fc9d3ee45601b66dbb67df459f54165465e8ff"],
   ["test/fixtures/chain30.arch", "858da6001d3d8032a10d372a3dac4c4eae453ad898c4f930ec4dd09ad4d9c54a"], // new fixture, see header
   ["test/fixtures/dense-bays.arch", "01ec7328bb74d5e67b80e9c2301db4bdf6734542b398ba714a3c19807b1bfa57"],
-  ["test/fixtures/diff-a.arch", "55aa08f8cc9c48bc3535b14e15cab82ac4002a88709c7bd691f171f74512308a"], // re-measured for PS2.4, see header
-  ["test/fixtures/diff-b.arch", "36af79705f9dcbf671117c2d0cb263d309ec0540d7e689bcc6cc3bfaee4c6a8e"],
+  ["test/fixtures/diff-a.arch", "768a2de371e762db2da819d9c02368728755279c02f9a8bf37d056994d010393"], // re-measured for PS2.4, see header; PS2.29: message text only, same code, same span
+  ["test/fixtures/diff-b.arch", "e8d55cabd70161fdef465f88ced3f91c026d5ae98a6bafce54e480929fa15a45"], // PS2.29: message text only, same code, same span
   ["test/fixtures/diff-circ-a.arch", "272184ab44393f0f5cf74f5ad7a41c65ee2e16fbaf837dd9d0a1fb40ab71a335"],
   ["test/fixtures/diff-circ-b.arch", "68ba4e31f6e1bcb57fda4bc7eefc2afba407b1e0038497fb4a65079be210864d"],
   ["test/fixtures/off-path-bypass.arch", "b8123c5f00d6ce700209f6c5f6a479847f0e5218cf99c8bb2d4af66006289415"], // new fixture, see header
-  ["test/fixtures/schedule-sheet.arch", "1c1db7bd1f88c8df4beb563913a2a7459800dde601c035c6158c9133d0dc5bf8"], // re-measured, see header
+  ["test/fixtures/schedule-sheet.arch", "f8bf3c2679d6c8803a39d6775d82af06e0127b1723ef7ecdb7e8363bf2fab121"], // re-measured, see header; PS2.29: message text only, same code, same span
   ["test/fixtures/star30.arch", "eb21a2460d3cd302bc0b470184924cb46c947fa9ca95a7d8d7cbda839f791761"], // new fixture, see header
   ["test/fixtures/zones-levels.arch", "3a6f8bc7115bcd0a1471ce008b984f5c121cafc3e8b4a8269f0dcc94af18ecb8"], // re-measured for PS2.4, see header
   ["test/fixtures/zones-wings.arch", "f7ee2a2b343dee5164a308b00204c546f3f8cfcfde21a32f128f58d5e2a1f072"], // re-measured for PS2.4, see header
@@ -577,7 +577,7 @@ const BASELINE: [string, string][] = [
   ["eval/goldens/attach-openings.arch", "a0ac00b106622e0d3d049b88dccfd35700f0c634649941d190f55651fb6c36a6"],
   ["eval/goldens/bungalow.arch", "2205e6505a37378b5d3e54f64066abfafb1bea07a67b62d5f08c724162842168"],
   ["eval/goldens/compact-studio.arch", "b3160b2298eca02ba4427db159983f4df86e7eec19fe662d26c4743d09992391"],
-  ["eval/goldens/core-and-shell.arch", "51edb95aa3a6c8414aeb32aec98a4510cec889b1a0a527a4a7810dfb258300bc"],
+  ["eval/goldens/core-and-shell.arch", "e621d0e87b7ae6209c68406fafd4739118baa78b0e94fc7e0f15da715ea29d70"], // PS2.29: message text only, same code, same span
   ["eval/goldens/dims-auto-cottage.arch", "ca327599910fd97d0f8ced7ea4f03bb93312541b92e12119e12e976b0e76b5d8"],
   ["eval/goldens/galley-kitchen.arch", "af379acc431baaa7728fde7eee94f2a34fef2e4303ab967cabb029a7b3837669"],
   ["eval/goldens/l-shaped-flat.arch", "9e01d165d55e93a0d91dc86772420c3aaf2669e1a68013bee13fbf762ab706c8"],
@@ -599,7 +599,7 @@ const BASELINE: [string, string][] = [
   ["eval/goldens/two-bed-hall.arch", "36a87e7c15583c6a819e071f55e1727014a4dbc13a39421588acd1c07ffd2ce8"],
   [
     "eval/fidelity-plans/capped-wet-room.laundered.arch",
-    "58e3553acf88e96d8f89dd349434cfd1f6636ab7eb2488e2fa30d05dce57af2b",
+    "4c7158e788d5cbe44b454ebfda60135c49876434cd4bd8a7bd597c5a8804a60f", // PS2.29: message text only, same code, same span
   ],
   [
     "eval/fidelity-plans/four-bed-cap.laundered.arch",
@@ -607,31 +607,31 @@ const BASELINE: [string, string][] = [
   ],
   [
     "eval/fidelity-plans/min-bedroom-flat.faithful.arch",
-    "849b77f80e0b45648fdd9f4b55da31fdeaae4bd16831e59933f9f590d1693821",
+    "c8955f2c9a7104da1b4bca3a10bce940addb6273611921792331e16243b34b1d", // PS2.29: message text only, same code, same span
   ],
   [
     "eval/fidelity-plans/min-bedroom-flat.laundered.arch",
-    "939244eeb49bda4e93fbc18d42644b36abf74949506a6b8b239f83a313c83a78",
+    "74de319956ca9bafac5d871aa6e6566ae61d0bfb0f39e33a24743b180744d2cd", // PS2.29: message text only, same code, same span
   ],
   [
     "eval/fidelity-plans/over-programmed-flat.laundered.arch",
-    "7340c22c8401c015133f24cda5fd3bb36cfe08d08b25b48379e5340aab50ccb3",
+    "4690b87ba29332d97450b718fdaefb03e38de535aef763bc7829e9b4ad3f4511", // PS2.29: message text only, same code, same span
   ],
   [
     "eval/fidelity-plans/two-bed-min-area.faithful.arch",
-    "def845b79d221073f162cc6d1a74c9a535e44653ac1124f9321e612c2b6d8cf7",
+    "f3117ffdc00cfaebfa6510b6b23eadd16124d04d19b57066635707469e1b08b3", // PS2.29: message text only, same code, same span
   ],
   [
     "eval/fidelity-plans/two-bed-min-area.laundered.arch",
-    "f34b44502b0d494422c40d073d52068a14a9fe3066085cb1b297c897e6492d3d",
+    "ad24fedc7c65d653b2198df9c5028fba4fa7f019ba1fa1f3c40bd7d946cf2711", // PS2.29: message text only, same code, same span
   ],
   [
     "eval/fidelity-plans/wide-doorways.faithful.arch",
-    "2ce59bd2c5c613503fa5ff562c83ef4527ee6af9f9cbbd7b78856d4717c8a335",
+    "43c79fa51d6cfeb56e55e12c30ebd831525ec141d434ef7dabff411eed6c83f3", // PS2.29: message text only, same code, same span
   ],
   [
     "eval/fidelity-plans/wide-doorways.laundered.arch",
-    "c3a5e6f53a1a903834500e5706145a485adf6f11cff315a02eddc36a86aa5751",
+    "05b8569707a015b98cfc318f580857862a10f0f2af6dc08be986bbd8d399bd2b", // PS2.29: message text only, same code, same span
   ],
   ["eval/faults/blocked-doorway.arch", "7f35390a12c0e596cd2bc43d0f9d3c34ffcbb5cf373b0c6159fa4ba72f68fd3c"],
   ["eval/faults/combined.arch", "d3740a0d13d8117fa16eb80308713f68f0b645d193ebaca01ef23f85784cec6d"],

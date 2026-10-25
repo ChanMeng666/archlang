@@ -341,7 +341,7 @@ suite("doors — W_POCKET_RUN", () => {
     const d = pocketDiag(pocketPlan(6000, "1000", "left"))!;
     // required = 900 + max(50, 900 × 5%) = 950; available = 1000 − 450 = 550.
     expect(d.message).toBe(
-      'Pocket door has nowhere to slide — it needs 950 mm of clear wall past the left jamb but only 550 mm is available on wall "w" (400 mm short).',
+      "Pocket door has nowhere to slide — it needs 950 mm of clear wall past the left jamb but only 550 mm is available on the partition wall at y 0 (400 mm short).",
     );
   });
 

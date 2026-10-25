@@ -25,6 +25,7 @@ import type { RFurniture, RRoom } from "../../ir.js";
 import { fmt2 } from "../../num-format.js";
 import { judgesAsDwelling, type LintContext, type LintRule } from "../context.js";
 import { definingItems, itemWords, pasteSet, useNoun } from "../defining.js";
+import { capFirst } from "../phrases.js";
 import { areaM2, lacksZoneFixture, pasteFailureWhy, roomHasWindow } from "./per-room.js";
 
 // ---------------------------------------------------------------------------
@@ -145,7 +146,7 @@ export const habitableNoWindow: LintRule = {
         severity: "warning",
         code: "W_HABITABLE_NO_WINDOW",
         ...ctx.at(r),
-        message: `${kind[1]} "${ctx.labelOf(r)}" (${fmt2(areaM2(r))} m²) has no window on any of its walls; a room people live in needs daylight.`,
+        message: `${capFirst(ctx.nameOf(r, kind[1].toLowerCase()))} (${fmt2(areaM2(r))} m²) has no window on any of its walls; a room people live in needs daylight.`,
         hints: [where, "Accept it if the room is lit in a way the plan cannot draw (a roof light, a light well)."],
       });
     }
@@ -217,7 +218,7 @@ export const roomMissingDefining: LintRule = {
         severity: "warning",
         code: "W_ROOM_MISSING_DEFINING",
         ...ctx.at(r),
-        message: `"${ctx.labelOf(r)}" is furnished (${pieces}) but has ${lacks}: ${items.length === 1 ? "the piece that makes" : "the pieces that make"} it ${nouns}.`,
+        message: `${capFirst(ctx.nameOf(r))} is furnished (${pieces}) but has ${lacks}: ${items.length === 1 ? "the piece that makes" : "the pieces that make"} it ${nouns}.`,
         hints: [
           add,
           `If \`${r.id}\` is not ${nouns}, say what it is with \`uses …\`: a room's use is read from its \`uses\`, or from its label when it has none.`,

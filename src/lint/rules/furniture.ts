@@ -289,7 +289,7 @@ export const fixtureWrongRoom: LintRule = {
   family: "furniture",
   layer: "validity",
   codes: ["W_FIXTURE_WRONG_ROOM"],
-  check({ furniture, roomRects, at }: LintContext): Diagnostic[] {
+  check({ furniture, roomRects, rooms, nameOf, at }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
     for (const f of furniture) {
       if (f.room === undefined) continue;
@@ -297,12 +297,13 @@ export const fixtureWrongRoom: LintRule = {
       if (!rect) continue;
       if (!rectInRoomBox(rectOf(f), rect)) {
         const name = f.label ?? f.category;
+        const declared = rooms.find((r) => r.id === f.room);
         out.push({
           severity: "warning",
           code: "W_FIXTURE_WRONG_ROOM",
           ...at(f),
-          message: `Fixture "${name}" is not inside its declared room "${f.room}".`,
-          hints: ["Move it inside that room, or correct the `in <roomId>`."],
+          message: `Fixture "${name}" is not inside its declared room${declared ? ` (${nameOf(declared)})` : ""}.`,
+          hints: [`Move it inside that room, or correct the \`in <roomId>\` (it says \`${f.room}\`).`],
         });
       }
     }

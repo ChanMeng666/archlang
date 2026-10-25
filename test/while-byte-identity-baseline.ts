@@ -362,12 +362,12 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["test/fixtures/axes-grid.arch", "a0a729cd0ec5bbfd90353f47e0fc9d3ee45601b66dbb67df459f54165465e8ff"],
   ["test/fixtures/chain30.arch", "858da6001d3d8032a10d372a3dac4c4eae453ad898c4f930ec4dd09ad4d9c54a"], // new fixture, see header
   ["test/fixtures/dense-bays.arch", "01ec7328bb74d5e67b80e9c2301db4bdf6734542b398ba714a3c19807b1bfa57"],
-  ["test/fixtures/diff-a.arch", "55aa08f8cc9c48bc3535b14e15cab82ac4002a88709c7bd691f171f74512308a"], // re-measured, see header
-  ["test/fixtures/diff-b.arch", "36af79705f9dcbf671117c2d0cb263d309ec0540d7e689bcc6cc3bfaee4c6a8e"], // re-measured, see header
+  ["test/fixtures/diff-a.arch", "768a2de371e762db2da819d9c02368728755279c02f9a8bf37d056994d010393"], // re-measured, see header; PS2.29: message text only, same code, same span
+  ["test/fixtures/diff-b.arch", "e8d55cabd70161fdef465f88ced3f91c026d5ae98a6bafce54e480929fa15a45"], // re-measured, see header; PS2.29: message text only, same code, same span
   ["test/fixtures/diff-circ-a.arch", "272184ab44393f0f5cf74f5ad7a41c65ee2e16fbaf837dd9d0a1fb40ab71a335"],
   ["test/fixtures/diff-circ-b.arch", "68ba4e31f6e1bcb57fda4bc7eefc2afba407b1e0038497fb4a65079be210864d"],
   ["test/fixtures/off-path-bypass.arch", "b8123c5f00d6ce700209f6c5f6a479847f0e5218cf99c8bb2d4af66006289415"], // new fixture, see header
-  ["test/fixtures/schedule-sheet.arch", "1c1db7bd1f88c8df4beb563913a2a7459800dde601c035c6158c9133d0dc5bf8"], // re-measured, see header
+  ["test/fixtures/schedule-sheet.arch", "f8bf3c2679d6c8803a39d6775d82af06e0127b1723ef7ecdb7e8363bf2fab121"], // re-measured, see header; PS2.29: message text only, same code, same span
   ["test/fixtures/star30.arch", "eb21a2460d3cd302bc0b470184924cb46c947fa9ca95a7d8d7cbda839f791761"], // new fixture, see header
   ["test/fixtures/zones-levels.arch", "3a6f8bc7115bcd0a1471ce008b984f5c121cafc3e8b4a8269f0dcc94af18ecb8"], // re-measured for PS2.4, see header
   ["test/fixtures/zones-wings.arch", "f7ee2a2b343dee5164a308b00204c546f3f8cfcfde21a32f128f58d5e2a1f072"], // re-measured for PS2.4, see header

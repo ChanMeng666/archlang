@@ -152,7 +152,9 @@ suite("W_OPENING_NOT_DIMENSIONED", () => {
   it("reports an opening on an angled exterior wall", () => {
     const d = lint(angled("all")).filter((x) => x.code === "W_OPENING_NOT_DIMENSIONED");
     expect(d).toHaveLength(1);
-    expect(d[0]!.message).toContain('"win"');
+    expect(d[0]!.message).not.toContain('"win"');
+    expect(d[0]!.message).toMatch(/^The window on the exterior wall from/);
+    expect(d[0]!.hints![0]).toContain('"win"');
     expect(d[0]!.message).toContain("angled");
     expect(d[0]!.span).toBeDefined();
   });
@@ -186,11 +188,12 @@ suite("W_OPENING_NOT_DIMENSIONED", () => {
     expect(codes(angled("all", "dim (0,0)->(6000,0) offset -600"))).toContain("W_OPENING_NOT_DIMENSIONED");
   });
 
-  /** The opening ids the rule reports on a source. */
+  /** The opening ids the rule reports on a source: read from the HINT, which names the element by
+   *  its id (the message names it by the rooms it joins or the wall it stands on, PS2.29). */
   const hit = (src: string): string[] =>
     lint(src)
       .filter((d) => d.code === "W_OPENING_NOT_DIMENSIONED")
-      .map((d) => d.message.match(/"([^"]+)"/)![1]!);
+      .map((d) => d.hints![0]!.match(/jamb of "([^"]+)"/)![1]!);
   /** An example with its hand-written `dim` lines removed. */
   const undimmed = (name: string): string =>
     example(name)

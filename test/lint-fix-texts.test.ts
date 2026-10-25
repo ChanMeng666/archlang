@@ -727,7 +727,8 @@ describe("W_PATH_TOO_NARROW — names only doors whose widening clears the room,
         for (const s of ruleStoreys(src, world) as Storey[]) {
           const c = s.circulation;
           if (!c) continue;
-          const label = (id: string) => s.rooms?.find((r) => r.id === id)?.label ?? id;
+          // A room with no label is named by a phrase (PS2.29), never its id: keyed as "*" here.
+          const label = (id: string) => s.rooms?.find((r) => r.id === id)?.label ?? "*";
           const warned = new Set<string>();
           for (const r of s.rooms ?? []) {
             const rc = c.rooms.find((x) => x.roomId === r.id);
@@ -743,9 +744,10 @@ describe("W_PATH_TOO_NARROW — names only doors whose widening clears the room,
           }
         }
         for (const d of lint(src, { world, ...opts(p) }).filter((x) => x.code === "W_PATH_TOO_NARROW")) {
-          const walk = /^The walk from the entrance to "(.+?)" /.exec(d.message);
-          const route = /^The route from "(.+?)" to /.exec(d.message);
-          const k = walk ? `walk:${walk[1]}` : `route:${route![1]}`;
+          const walk = /^The walk from the entrance to (.+?) (?:squeezes|is blocked)/.exec(d.message);
+          const route = /^The route from (.+?) to .+? squeezes/.exec(d.message);
+          const keyOf = (m: string) => (m.startsWith('"') ? m.slice(1, -1) : "*");
+          const k = walk ? `walk:${keyOf(walk[1]!)}` : `route:${keyOf(route![1]!)}`;
           const left = allowed.get(k) ?? 0;
           expect(left, `${name}: ${d.message}`).toBeGreaterThan(0);
           allowed.set(k, left - 1);
@@ -796,7 +798,7 @@ describe("the four reworded hints' messages name things as a reader would; ids s
   // A consumer may show `message` to a person who never sees the source (an app built on the
   // compiler does). So these four messages quote only what the plan itself calls a room or a
   // piece of furniture; the element id an agent edits by is in the hints. Derived from
-  // `describe()`, never retyped: a room is named by its label (its id when it has none), a
+  // `describe()`, never retyped: a room is named by its label (an unlabelled room is never quoted by its id: PS2.29, `test/lint-messages-id-free.test.ts`), a
   // piece by its label or category. The three opening rules (PS2.1–PS2.3) are held to it too.
   // The three circulation-and-privacy codes (plan-soundness PS2.5–PS2.7) were written to this
   // rule from the start; `test/lint-circulation-privacy.test.ts` holds their option texts.
