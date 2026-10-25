@@ -312,7 +312,7 @@ PS5.1b: PR #247, 9cc29c7e)
 - A tool-surface change: bump `packages/mcp`'s version and both `server.json` fields (iron law);
   the hosted worker inherits it. Deferred from PS5.3 by lead ruling.
 
-**PS5.4 · `arch preview --review`.** `done` (PR #PENDING)
+**PS5.4 · `arch preview --review`.** `done` (PR #274)
 - As built: `research/2026-10-26-ps54-as-built.md`. The review sheet: access graph, every warned element
   ringed and numbered, legend, fixed-scale close-ups; drawing-only (CLI layer, consumes `lint()`).
 
