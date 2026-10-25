@@ -30,6 +30,7 @@ import { fixesFrom, fixtureRotateFix } from "../../fix-producers.js";
 import {
   cutPlaneLayer,
   defaultFootprint,
+  backsOntoWall,
   frontClearanceMm,
   isUnderlay,
   orientationMatters,
@@ -172,7 +173,9 @@ export const fixtureFloating: LintRule = {
 /**
  * The `W_FIXTURE_BACK_TO_ROOM` hint when EVERY walled edge is ruled out by the footprint's
  * aspect ({@link backCandidateEdges}): the size is the wrong way round, so the fix is to swap
- * it, not to pick a `rotate`. A `rotate` alone would silence the rule while drawing the symbol
+ * it, not to pick a `rotate`. Since PS2.50 it is reached only for a piece whose back must reach
+ * any wall it touches ({@link backsOntoWall}) or whose drawn front is on a wall; a piece
+ * standing side-on or end-on is declined before it. A `rotate` alone would silence the rule while drawing the symbol
  * squashed into the box (`furniture.render()` swaps the pre-rotation footprint for 90/270).
  *
  * The numbers are written in the statement's own frame: a placed component's quarter-turn
@@ -216,6 +219,11 @@ function sizeTurnHint(
  * A corner with two valid walls, or a walled edge the shape rules out, leaves the
  * warning standing on its own for the author to resolve — lint never guesses between
  * alternatives (ADR 0005).
+ *
+ * When NO walled edge is a back candidate and the drawn front is off the wall too, the piece
+ * touches the wall with a side or an end, and the rule declines (a bed side-on to a wall, a
+ * wardrobe end-on to one: plan-soundness PS2.50), unless its back must reach any wall it
+ * touches ({@link backsOntoWall}: a services or wall-mounted piece).
  */
 export const fixtureBackToRoom: LintRule = {
   name: "fixture-back-to-room",
@@ -247,6 +255,16 @@ export const fixtureBackToRoom: LintRule = {
       const name = f.label ?? f.category;
       const shape = backCandidateEdges(f.size, defaultFootprint(f.category));
       const targets = walled.filter((e) => shape.includes(e));
+      // No walled edge could be this piece's back, and its drawn front is off the wall too: it
+      // stands side-on or end-on to the wall (a bed lengthwise along it, a wardrobe touching it
+      // with its end), which is a layout, not a back turned to the room. A piece whose drawn
+      // FRONT is on a wall still warns, whatever its aspect (a nightstand `400x450 rotate 180`
+      // facing the wall). So does a piece whose back must reach any wall it touches
+      // (`backsOntoWall`: a WC, a basin or a washer for its services; a radiator, a fireplace,
+      // a TV or an EV charger because it mounts by its back), for which the walled edge says
+      // its size is the wrong way round (the size-turn hint).
+      const front = backEdgeForRotate((f.rotate ?? 0) + 180);
+      if (targets.length === 0 && !backsOntoWall(f.category) && !walled.includes(front)) continue;
       const facing = targets.length === 1 ? rotateForBackEdge(targets[0]!) : null;
       // `facing` is the quarter-turn in PLAN space, but the edit lands in the statement's
       // own source, which for a placed component is its local frame: pull it back through

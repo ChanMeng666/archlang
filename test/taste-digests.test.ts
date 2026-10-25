@@ -105,6 +105,12 @@
  * turns: the validity list gains `W_FIXTURE_BACK_TO_ROOM` (PS2.50) on a plan already capped by its
  * `W_PATH_TOO_NARROW`s.
  * Six rows added for the new pair `clearances/sofa-l-transposed`. No other row moved.
+ *
+ * Re-measured in PS2.50 (`W_FIXTURE_BACK_TO_ROOM` declines a piece side-on or end-on to a wall):
+ * the three rows each of `examples/tiny-house.arch` and `examples/hillside-villa.arch` lose that
+ * code from their validity lists and return byte for byte to their values before PS2.11c/d, the
+ * bed and wardrobe turns having moved nothing else; both stay capped by their `W_PATH_TOO_NARROW`.
+ * No other row moved.
  */
 
 import { describe, expect, it } from "vitest";
@@ -128,7 +134,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
   ["5f9e6dabf2962f4c3a90f5b879232b5d05c7af6babbee8766980f59551833cbb", "generic", "examples/garden-house.arch"],
   ["0f60f5a9f68e6b7ea2eaf1128531449141831248dd7c90f9c8b56e4072072fa4", "generic", "examples/garden-loft.arch"],
   ["b47f84f6b6b3d23388dac71a8fe7820a9df4fc6d767b35aaef612ed7b9c04aef", "generic", "examples/hexagon-pavilion.arch"],
-  ["6e4378db22c24815a8dd0f7d3d388d9b14a1f7f1d19319937638ba1c618b090d", "generic", "examples/hillside-villa.arch"],
+  ["6d27dd9e61fd114a5a5216f9af01a61a64be0fc0025feadaf6da39e0199d4d7f", "generic", "examples/hillside-villa.arch"],
   ["791d5c50b474f2c187df63940ccd669a68761d5d6b081dab90f361ddbbb10735", "generic", "examples/imports.arch"],
   ["38d6e8eb4c8aa81addd4190e6d9b80dd525cc62d3d4c4e77c32827f173ae0e03", "generic", "examples/laneway-house.arch"],
   ["c28f1b6c03abceb451d14cdb946f4168ea07b005415d3010ae0e76778864c180", "generic", "examples/library.arch"],
@@ -144,7 +150,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
   ["97d75cac716e67fbaa99ed74f6e1694c0135238c2a13bafcf06eab147bf6406a", "generic", "examples/studio.arch"],
   ["6d8fc2e54ce83a8228a025fb7be5a258f2cc772880298b2871c1b7fc354199ed", "generic", "examples/terrace-row.arch"],
   ["8108392464b97e022edbbd5500a40d32cf328e6515bad96eab6cffe08cfc256c", "generic", "examples/themed.arch"],
-  ["8c7224edaab7c030fcb9bd5f0f36dff888f933f30dd9e52352de725f3a072173", "generic", "examples/tiny-house.arch"],
+  ["da2bd1b8f7b0e9198b1c66e045a5830f943894c707d9b348eda8b4690d09fe6a", "generic", "examples/tiny-house.arch"],
   ["85872c4976afb17d18b189240ccc2891c0506f1a41de23a46a70a423bf1fabc8", "generic", "examples/townhouse.arch"],
   ["74c9749a26ec9f777e9e9b969216e4b24fafd8fc4ed1499a255075e48f0bb53e", "generic", "examples/transit-hall.arch"],
   ["1b5a551caf4aa0fb26334d09c73a5ba5976974b0e0b6004b657a6aaedb60e68d", "generic", "examples/two-bed.arch"],
@@ -1055,7 +1061,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "examples/hexagon-pavilion.arch",
   ],
   [
-    "4b90687c29c6db657d18836e0929cb9888f0410793f38cecfdd71841e66b1c5e",
+    "3cbe726eaca8764b80b039911ec834e4d8fa0688fd6f3a233c46c62c6902273e",
     "cn-residential-advisory",
     "examples/hillside-villa.arch",
   ],
@@ -1135,7 +1141,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "examples/themed.arch",
   ],
   [
-    "db72c2b5b30ad7f479ac1296ee389468e385c134c417ba41242815bb3cd60504",
+    "943a8a162e9141742581e928f7ea0575b16453409c3f9f803bc9f18c9e2ab8a6",
     "cn-residential-advisory",
     "examples/tiny-house.arch",
   ],
@@ -2065,7 +2071,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "examples/hexagon-pavilion.arch",
   ],
   [
-    "306429552903dead442d1c3a49606b8c9c6c85a3f215963b82f8914269f972a3",
+    "3d73f688ac68d9b806e6aaf23ef269ab06e4c41782386387704d1ee71f0bb0cc",
     "us-residential-advisory",
     "examples/hillside-villa.arch",
   ],
@@ -2145,7 +2151,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "examples/themed.arch",
   ],
   [
-    "7c198524586881e3cf60cf60b0d99831945395dc6ee304d34febdc476ae56075",
+    "37cf69e4600f109cf8f3927587b47a723abe5a1620c64d77f3dd443a7714d282",
     "us-residential-advisory",
     "examples/tiny-house.arch",
   ],

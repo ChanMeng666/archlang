@@ -546,6 +546,9 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
   // units over windows; why, in `test/byte-identity-baseline.ts`'s header.
   // Re-measured 2026-10-25 (PS2.11c, PS2.11d): hillside-villa, relational and tiny-house fixed for a
   // transposed footprint or a parked leaf; why, in `test/byte-identity-baseline.ts`'s header.
+  // Re-measured 2026-10-26 (PS2.50): tiny-house's bed comment rewritten, comment only. `finish`
+  // echoes the source, so the row moves; its `changes` and `unresolved` are unchanged, and its
+  // `source` is the old one with that comment swapped, in both runs.
   const FINISH_DIGESTS: ReadonlyMap<string, string> = new Map(
     (
       [
@@ -581,7 +584,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         ["147ce7e23f6f2a403d2d269cc0e68b678cab850e0d3a641287ef50bced7c76d3", "studio"],
         ["e6ebea8b9816dc6c0dba817b2138bb4dcda276e1f0fa4ae17f75bcc4b162fb63", "terrace-row"], // PS2.1–PS2.3 and PS2.9 source edits; PS2.17 source edit (a worktop), see above
         ["4607ea41ae2417d9972689aa59285c843bed4f7140ba44184c9f7fdefc492ef2", "themed"],
-        ["7446a147b4b3263750590a8ff96b11f779ffd4baf2b302f2102c358e8d283033", "tiny-house"], // PS2.17 source edit (a worktop), see above
+        ["33d460c38c9da0523f58d045edf744ea834fc8f3b16cc1963b65cd1580ccbdfc", "tiny-house"], // PS2.17 source edit (a worktop); PS2.50 comment edit, see above
         ["c251b2227e4f794ebdd5db387fd2034682b4cd909a7d8d8340ce56518800c05b", "townhouse"], // PS2.17 source edit (a worktop), see above
         ["1bc121651874bac4a7618a3b174d5f7ea38680948dcfd84a59ecb47612c33df6", "transit-hall"],
         ["4d761741af311d3ccec753451755c414cecbab46342481d3bcfd150def4fea7e", "two-bed"], // PS2.17 source edit (a worktop), see above; PS3.6 source rewrite, see ./byte-identity-baseline.ts

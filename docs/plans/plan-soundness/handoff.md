@@ -117,26 +117,22 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    and 0 `validate` calls in 65, arm B (current role) 0 and 1 in 77; defects 52 and 54, blockers 1 and
    1 (both the townhouse stair). D2's reverse-if is met: taste is a reviewer's tool, PS7.4 is done and
    PS7.5 moves the step out of the author loop. The row-5 residue and row 6 may start;
-   PS2.45 is done (PR #268), and item 2 is next.
-2. **PS2.50** `W_FIXTURE_BACK_TO_ROOM` has no correct reading for a bed or wardrobe side-on to a wall;
-   `examples/tiny-house.arch` and `examples/hillside-villa.arch` each carry one `W_FIXTURE_BACK_TO_ROOM`
-   that is the rule's fault, not the plan's (both examples also carry their own `W_PATH_TOO_NARROW`
-   and, for hillside-villa, `W_ROOM_NOT_EQUATOR_FACING` warnings, which are the plans').
-3. **PS2.22, PS2.29** id-free lint messages. An owner rule from 2026-10-18 ("lint 消息里不出现 id")
+   PS2.45 is done (PR #268) and PS2.50 is done (PR #267); item 2 is next.
+1. **PS2.22, PS2.29** id-free lint messages. An owner rule from 2026-10-18 ("lint 消息里不出现 id")
    that the code still breaks through `labelOf`'s id fallback. Small; do it before new rules.
-4. **PS4.3** `keep` invariants checked by `validate` (ADR addendum first), **PS4.4** brief-bound
+2. **PS4.3** `keep` invariants checked by `validate` (ADR addendum first), **PS4.4** brief-bound
    dimensions, **PS4.5** `impact` reports `held`.
-5. **PS5.4** `preview --review` rings every flagged element.
-6. **PS7.x** staged authoring; then **PS7.6** (`lint` opens with a one-line summary). It changes what
+3. **PS5.4** `preview --review` rings every flagged element.
+4. **PS7.x** staged authoring; then **PS7.6** (`lint` opens with a one-line summary). It changes what
    authors see, so the next re-measure states it, with PS7.5 (done: the taste step left the author loop
    in the spec, SKILL and role text).
-7. **PS2.11e** the clearance remainder (`W_DOORWAY_BLOCKED` over leaf-less openings, stair swings,
+5. **PS2.11e** the clearance remainder (`W_DOORWAY_BLOCKED` over leaf-less openings, stair swings,
    hob under a window PS2.46, per-family depth ceiling PS2.53, face/centreline unification PS2.54).
-8. **PS1.4** diagnostic-wording study (§8 Q3) is still open: an owner ask from 2026-10-18 found undone by the
+6. **PS1.4** diagnostic-wording study (§8 Q3) is still open: an owner ask from 2026-10-18 found undone by the
    2026-10-25 transcript audit. **PS1.3** walls-first control arm (§8 Q1) is done (PR #264, D21): it ran on
    2026-10-26 in item 1's harness (66 CLI calls, 0 `score`, 0 `validate`; 54 verified defects against 52
    rooms-first; D1/D5 re-stated).
-9. Everything else in `cards.md` by family: PS0 15 todo, PS1 1, PS2 40 todo, PS3 4, PS4 5, PS5 4,
+7. Everything else in `cards.md` by family: PS0 15 todo, PS1 1, PS2 40 todo, PS3 4, PS4 5, PS5 4,
     PS7 3 (7.1, 7.2, 7.6); pick by first-contact evidence, not by number.
 
 **Open cards by family (2026-10-25 audit, counts updated 2026-10-26; "ready" = no stated dependency

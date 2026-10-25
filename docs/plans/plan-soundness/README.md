@@ -43,7 +43,7 @@ used by 0/6 authors. Corpus catch rates (§7) are the means; this number is the 
 *This section is the 2026-10-18 baseline, kept as written because it is the evidence the plan was
 made from. Much of it is no longer true of `main`: the rules it says are missing now exist (45 lint
 rules, 22 new `W_*` codes), the dimension that "lints clean" raises `W_DIM_TEXT_MISMATCH`, the
-family-apartment reconstruction lints 34 warnings over 11 codes, and the coverage report says what was
+family-apartment reconstruction lints 33 warnings over 11 codes, and the coverage report says what was
 not checked. Today's state is `handoff.md` § 1 and § 3.*
 
 - **About 120 verified defects across about 30 plans; lint caught a handful.** The plans audited:
@@ -319,8 +319,8 @@ evidence `audits/2026-10-25-first-contact-rerun-row5.md`, PR #249.)
   `research/2026-10-25-ps211cd-as-built.md`); the first-contact plans themselves are not re-run
   here, that is D15's two-arm re-measure. Costs recorded there and carried as cards: `finish`
   leaves 30 WC rooms and 16 baths of the 918-room probe empty rather than place a pan the WC rule
-  refuses (PS2.45), and two examples (`tiny-house`, `hillside-villa`) carry one honest
-  `W_FIXTURE_BACK_TO_ROOM` each until PS2.50 teaches that rule side-on pieces.
+  refuses (PS2.45), and two examples (`tiny-house`, `hillside-villa`) carried one honest
+  `W_FIXTURE_BACK_TO_ROOM` each until PS2.50 declined that rule on side-on pieces (PR #267).
 
 **D15. D2's and ADR 0032's reverse-if was hit and is not yet assessed.** (2026-10-25, stage-end
 drift audit.)
