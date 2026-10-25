@@ -193,8 +193,9 @@ jobs:
   bench:
     name: Benchmark (informational)
     runs-on: ubuntu-latest
-    # Timings are runner-dependent — this never gates the build; it posts a PR
-    # comment with the median per-stage deltas vs. bench/baseline.json.
+    # Timings are runner-dependent — this never gates the build; it writes the
+    # median per-stage deltas vs. bench/baseline.json to the job summary and, on
+    # same-repo PRs (a fork's GITHUB_TOKEN is read-only), posts them as a comment.
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
@@ -210,7 +211,10 @@ jobs:
         run: |
           npx tsx bench/run.ts --json > bench-current.json
           node bench/compare.mjs bench-current.json bench-comment.md
+      - name: Write benchmark summary
+        run: cat bench-comment.md >> "$GITHUB_STEP_SUMMARY"
       - name: Post benchmark comment
+        if: github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
