@@ -411,8 +411,66 @@ describe("the storey is named only on a plan of several (PS2.29)", () => {
       (d) => d.code === "W_ROOM_OVERLAP",
     );
     expect(warns.length).toBeGreaterThan(0);
-    for (const w of warns) expect(w.message).toMatch(/on level 2 overlap$/);
+    // The storey is said once, at the end, not after each room.
+    for (const w of warns) {
+      expect(w.message).toMatch(/ on level 2 overlap$/);
+      expect(w.message.match(/on level/g)).toHaveLength(1);
+    }
     const lints = lint(twolevels, { world: EXAMPLES_WORLD }).filter((d) => d.level === 2);
     expect(lints.some((d) => /on level 2/.test(d.message))).toBe(true);
+  });
+});
+
+describe("the id a message no longer carries is in a hint (PS2.29)", () => {
+  const hintsOf = (src: string, code: string): string[][] =>
+    lint(src, { world: EXAMPLES_WORLD })
+      .filter((d) => d.code === code)
+      .map((d) => d.hints ?? []);
+
+  it("W_OUTDOOR_OVERLAPS_ROOM and W_BALCONY_NO_DOOR name the surface and the room in a hint", () => {
+    const plan = `plan "Outdoor" {
+  units mm
+  wall id=w_out exterior thickness 200 { (0,0) (10000,0) (10000,6000) (0,6000) close }
+  room id=r_liv at (0,0) size 5000x6000 uses living
+  room id=r_bed at (5000,0) size 5000x6000 uses bedroom
+  door id=d_front on w_out at 2500 width 900
+  outdoor id=pav1 paving at (1000,1000) size 1000x1000
+  outdoor id=pav2 paving at (1000,4000) size 1000x1000
+  outdoor id=lawn1 lawn at (6000,1000) size 1000x1000 label "Back"
+  outdoor id=bal1 balcony at (0,7000) size 3000x1500
+  outdoor id=bal2 balcony at (6000,7000) size 3000x1500
+}
+`;
+    const overlaps = hintsOf(plan, "W_OUTDOOR_OVERLAPS_ROOM").map((h) => h.join(" "));
+    expect(overlaps).toEqual([
+      "The surface is `pav1` and the room it overlaps is `r_liv`.",
+      "The surface is `pav2` and the room it overlaps is `r_liv`.",
+      "The surface is `lawn1` and the room it overlaps is `r_bed`.",
+    ]);
+    const balconies = hintsOf(plan, "W_BALCONY_NO_DOOR").map((h) => h.join(" "));
+    expect(balconies).toEqual(["The balcony is `bal1`.", "The balcony is `bal2`."]);
+  });
+
+  it("W_SWING_OBSTRUCTED names the door whose swing it meets, which the message names by its rooms", () => {
+    const plan = `plan "Swings" {
+  units mm
+  wall exterior thickness 200 { (0,0) (10000,0) (10000,6000) (0,6000) close }
+  wall partition thickness 100 { (5000,0) (5000,6000) }
+  room id=r_liv at (0,0) size 5000x6000 uses living
+  room id=r_bed at (5000,0) size 5000x6000 uses bedroom
+  door id=d_a at (900,0) width 800 wall exterior hinge right swing in
+  door id=d_b at (0,900) width 800 wall exterior hinge right swing in
+  door id=d_c at (5000,3000) width 800 wall partition
+}
+`;
+    const hints = hintsOf(plan, "W_SWING_OBSTRUCTED");
+    expect(hints.length).toBeGreaterThan(0);
+    expect(hints.map((h) => h.at(-1))).toContain("The door whose swing it meets is `d_b`.");
+  });
+
+  it("W_CIRCUITOUS_PATH names the entrance it measures from in a hint", () => {
+    const src = readFileSync("test/defect-corpus/circulation-privacy/two-bed-chain.arch", "utf8");
+    const hints = hintsOf(src, "W_CIRCUITOUS_PATH");
+    expect(hints.map((h) => h.at(-1))).toEqual(["The entrance it is measured from is `d_front`."]);
   });
 });

@@ -275,7 +275,8 @@ export function roomOverlapNamer(
   let nameable: Map<string, NameableRoom> | undefined;
   const of = (r: OverlapRoom): NameableRoom => {
     nameable ??= new Map(rooms.map((x) => [x.id, nameableOf(x, useOf(x))] as const));
-    naming ??= makeNaming([...nameable.values()], level);
+    // The storey is said once, at the end of the sentence, not after each room.
+    naming ??= makeNaming([...nameable.values()]);
     return nameable.get(r.id) ?? nameableOf(byId.get(r.id) ?? r, useOf(r));
   };
   const name = (r: OverlapRoom): string => (r.label !== undefined ? `"${r.label}"` : naming!.phrase(of(r)));
@@ -291,6 +292,6 @@ export function roomOverlapNamer(
     }
     return r1.label !== undefined && r2.label !== undefined
       ? `Rooms ${a} and ${b} overlap`
-      : `${capFirst(a)} and ${b} overlap`;
+      : `${capFirst(a)} and ${b}${level !== undefined ? ` on level ${level}` : ""} overlap`;
   };
 }

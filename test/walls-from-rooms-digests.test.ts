@@ -34,7 +34,7 @@ const DIGESTS: [string, string][] = [
   // 25 mm "nib" beside the thinner wall at the a|c (150) / b|c (100) end); with the HEAD rule
   // restored the old digest reproduces exactly, so the rule fix is the only change.
   ["open-plan", "6ebb5e7d9f7fb571d15dcd3c3382b3696bdd18250ec3f2239158b1220fe16486"], // PS2.29: message text only, same code, same span
-  ["open-width", "4166f94b1b0c64b89d1bdc708ae976de66eaf8064a2ac574be412772bc564530"], // PS2.29: message text only, same code, same span
+  ["open-width", "0fdbefbb73012f204dc367c4b7047454a534f1174bd06edb79334e7b599edb88"], // PS2.29: message text only, same code, same span (round 2: no capital mid-sentence)
   ["open-instances", "73c5ad30e5247ae54f50bed598c3bc02b2fec4f6c97edd98e92b19ea97db3d19"], // PS2.29: message text only, same code, same span
   ["clauses-refused", "2ee033192ebca84b6e8d593937ed348915530b2805b38f8d339ad7a5a6d6fe02"],
 ];

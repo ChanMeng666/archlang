@@ -655,7 +655,7 @@ export const wetRoomDoor: LintRule = {
           ...ctx.at(w),
           message:
             `${quotedStart(ctx, w)} has no door: its only way in is a leaf-less opening ${mm(only.nominalWidth)} mm wide from ` +
-            `${quotedStart(ctx, onlyTo)}. A ${noun} that cannot be closed gives no privacy and lets steam and odour into a ` +
+            `${quoted(ctx, onlyTo)}. A ${noun} that cannot be closed gives no privacy and lets steam and odour into a ` +
             "habitable room (GB 50096-2011 Table 5.8.7 gives a bath or WC a door of at least 700 mm, cited as advice).",
           hints,
         });
