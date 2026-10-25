@@ -246,7 +246,7 @@ export const annotationOverlap: LintRule = {
             ? `The name "${name}" is`
             : name !== undefined
               ? `The area figure (${e.area}) of "${name}" is`
-              : `The area figure (${e.area}) of an unlabelled room is`;
+              : `The area figure (${e.area}) of ${ctx.nameOf(room)} is`;
       const things = listOf(e.hits.map(symbolWord));
       // The hint names each element by the id an agent edits it by (never the message).
       const byId = listOf(e.hits.map(symbolWithId));
@@ -260,8 +260,8 @@ export const annotationOverlap: LintRule = {
           name === undefined
             ? `Move ${byId} off the middle of the floor, or name the room and give its label a clear point with \`label "…" at (x,y)\`.`
             : pinned
-              ? `The label of ${roomRef(room)} is pinned by \`label "${name}" at (x,y)\`: move that point to a clear part of the floor, or move ${byId}.`
-              : `The label placer found no clear part of the floor of ${roomRef(room)} big enough for the label. Give it a clear point with \`label "${name}" at (x,y)\`, or move ${byId}.`,
+              ? `The label of ${roomRef(ctx, room)} is pinned by \`label "${name}" at (x,y)\`: move that point to a clear part of the floor, or move ${byId}.`
+              : `The label placer found no clear part of the floor of ${roomRef(ctx, room)} big enough for the label. Give it a clear point with \`label "${name}" at (x,y)\`, or move ${byId}.`,
         ],
       });
     }
@@ -272,11 +272,11 @@ export const annotationOverlap: LintRule = {
       const floor = rooms.find((r) => pointInRoomBox(nb.at, roomBox(r)));
       // Where the number stands, unless what it is over already says so (a room's own label).
       const where =
-        floor && !(nb.hits.length === 0 && nb.over.every((l) => l.room === floor)) ? ` in ${roomName(floor)}` : "";
+        floor && !(nb.hits.length === 0 && nb.over.every((l) => l.room === floor)) ? ` in ${ctx.nameOf(floor)}` : "";
       const things = listOf([
         ...nb.hits.map(symbolWord),
         ...nb.over.map((l) =>
-          l.isName ? `the name "${l.prim.value}"` : `the area figure (${l.prim.value}) of ${roomName(l.room)}`,
+          l.isName ? `the name "${l.prim.value}"` : `the area figure (${l.prim.value}) of ${ctx.nameOf(l.room)}`,
         ),
       ]);
       const pinnedLabel = nb.over.find((l) => l.room.labelAt !== undefined);
@@ -287,10 +287,10 @@ export const annotationOverlap: LintRule = {
         chain: `The figure ${nb.value} of a ${setting} chain`,
       }[kind];
       const move = pinnedLabel
-        ? `Move the \`label "${pinnedLabel.room.label}" at (x,y)\` point of ${roomRef(pinnedLabel.room)} clear of it`
+        ? `Move the \`label "${pinnedLabel.room.label}" at (x,y)\` point of ${roomRef(ctx, pinnedLabel.room)} clear of it`
         : nb.hits.length > 0
           ? `Move ${listOf(nb.hits.map(symbolWithId))} clear of it`
-          : `Give the label of ${roomRef(nb.over[0]!.room)} a clear point with \`label "…" at (x,y)\``;
+          : `Give the label of ${roomRef(ctx, nb.over[0]!.room)} a clear point with \`label "…" at (x,y)\``;
       const why = {
         thickness:
           "`dims auto all` letters each wall thickness once, on the longest straight wall of that thickness, at a run no crossing wall, opening, piece of furniture or stair stands on; this wall has no such run.",
@@ -393,10 +393,7 @@ const symbolWithId = (el: ResolvedElement): string =>
 const idAuthored = (el: ResolvedElement): boolean => (el as { _idAuthored?: boolean })._idAuthored === true;
 
 /** A room as a hint names it: by its authored id, else as the message does. */
-const roomRef = (r: RRoom): string => (idAuthored(r) ? `room \`${r.id}\`` : roomName(r));
-
-/** A room as a message names it: its label in quotes, or "an unlabelled room". */
-const roomName = (r: RRoom): string => (r.label !== undefined ? `"${r.label}"` : "an unlabelled room");
+const roomRef = (ctx: LintContext, r: RRoom): string => (idAuthored(r) ? `room \`${r.id}\`` : ctx.nameOf(r));
 
 /** "a", "a and b", "a, b and c" — first-hit order, duplicates dropped. */
 function listOf(words: readonly string[]): string {

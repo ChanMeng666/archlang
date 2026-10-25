@@ -34,7 +34,7 @@ import type { RRoom } from "../../ir.js";
 import { deriveSite, planCenterOfRooms, toCompass, windowFacingPage } from "../../site.js";
 import { northQuarterTurns } from "../../describe.js";
 import type { LintContext, LintRule } from "../context.js";
-import { capFirst } from "../phrases.js";
+import { capFirst } from "../../naming.js";
 
 /**
  * Does the room read as HABITABLE — a space people occupy for long stretches, which is

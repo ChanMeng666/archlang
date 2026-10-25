@@ -8,7 +8,7 @@
 
 import { computeRoomClearances } from "../../analyze/occupancy.js";
 import type { Diagnostic } from "../../diagnostics.js";
-import { capFirst } from "../phrases.js";
+import { capFirst } from "../../naming.js";
 import type { LintContext, LintRule } from "../context.js";
 
 export const roomNoClearPath: LintRule = {

@@ -53,7 +53,7 @@ import { fmt2, fmt3 } from "../../num-format.js";
 import { textWidth } from "../../text-metrics.js";
 import type { LintContext, LintRule } from "../context.js";
 import { openingName, wallPhrase } from "../element-phrases.js";
-import { capFirst } from "../phrases.js";
+import { capFirst } from "../../naming.js";
 
 export const dimInside: LintRule = {
   name: "dim-inside",
@@ -411,7 +411,7 @@ export const dimTextMismatch: LintRule = {
 };
 
 /** A plan point as the message quotes it: `(x,y)` in whole-hundredth millimetres. */
-const pointWords = (p: Point): string => `(${fmt2(p.x)},${fmt2(p.y)})`;
+const pointWords = (p: Point): string => `(${fmt2(p.x)}, ${fmt2(p.y)})`;
 
 /** A hand-written dim with a drawn band worth testing: it came from source, it is offset
  *  off its measured segment, and that segment has a direction (a failed `dim radius` ref

@@ -18,7 +18,7 @@ import { classifyLabelUses } from "../../vocabulary.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import type { UseKind } from "../../ast.js";
 import type { LintContext, LintRule } from "../context.js";
-import { capFirst } from "../phrases.js";
+import { capFirst } from "../../naming.js";
 
 /** Human phrasing for a use kind in the advisory message. */
 const USE_PHRASE: Record<UseKind, string> = {

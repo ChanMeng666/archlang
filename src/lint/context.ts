@@ -14,7 +14,7 @@ import type { RDoor, RFurniture, ROpening, RRoom, RVoid, RWindow, ResolvedPlan }
 import { type ArrivingRun, type RVertical, verticalsOf } from "../vertical.js";
 import type { DwellingReading } from "../analyze/dwelling.js";
 import type { EnclosureBudgetCap, LintFamily, LintSkipReason } from "./coverage.js";
-import { labelPointOf, unlabelledRoomPhrases } from "./phrases.js";
+import { makeNaming, type NameableRoom, type Naming, nameableOf } from "../naming.js";
 import type { LintRuleset } from "./ruleset.js";
 
 /**
@@ -47,6 +47,9 @@ export interface BuildingContext {
    * single-storey plan, whose one context counts its own. A count, never a time.
    */
   attributionMeasures?: { left: number; storeys: number };
+  /** How many storeys the building has (`level` blocks). A message names the storey only when
+   *  this is more than one: a plan of a single `level` block has nothing to tell apart. */
+  storeyCount?: number;
   /** A shaft arrives on this storey from a storey below (`levelsEnteredFromBelow`): it names no
    *  main entrance, and its walk keeps every way in (PS0.10; PS0.3 owns the upper storeys). */
   enteredFromBelow?: boolean;
@@ -119,14 +122,21 @@ export interface LintContext {
   /**
    * How a MESSAGE names a room (PS2.29: a message never quotes an id): its quoted label, or,
    * for a room with no label, the phrase the plan's own facts give it ("the kitchen", "the
-   * bedroom in the top left of the plan", `src/lint/phrases.ts`). With `noun` a labelled room
-   * reads `bedroom "Bed 2"` and an unlabelled one just its phrase; the result starts with a
-   * lower-case letter or a noun, so a sentence that opens with it capitalises it itself.
+   * bedroom on the left of the plan", `src/naming.ts`). `noun` is the use the message is about
+   * ("bedroom"): a labelled room reads `bedroom "Bed 2"`, an unlabelled one is named by that use
+   * (a room that is both `living` and `bedroom` is "the bedroom" to a bedroom rule). The result
+   * starts in lower case, so a sentence that opens with it capitalises it itself.
    */
   nameOf(r: RRoom, noun?: string): string;
   /** {@link nameOf} by place alone, never by use: for a message about how the room's use was
    *  read from its label or id (`W_ALIAS_MATCH`). */
   placeOf(r: RRoom): string;
+  /** {@link nameOf} without the noun prefix on a labelled room: its quoted label, or, unlabelled,
+   *  the phrase for the use the message is about ("the kitchen" to a rule about kitchens). */
+  nameAs(r: RRoom, noun: string): string;
+  /** Where a point stands on this storey ("in the top left of the plan"): for naming a thing that
+   *  is not a room (an outdoor surface, a stair). */
+  placeAt(p: { x: number; y: number }): string;
   /**
    * The location half of a diagnostic raised ON an element: its byte `span` **and the
    * file that span is measured in**.
@@ -234,19 +244,20 @@ export function buildLintContext(
   let waysMemo: { fact: MainEntranceFact | null; keep: ReadonlySet<string> | null } | null = null;
   let walkMemo: AccessGraph | null = null;
   let framesMemo: Map<string, D4> | null = null;
-  let phrasesMemo: Map<string, string> | null = null;
-  let placesMemo: Map<string, string> | null = null;
-  const phrasesOf = (byUse: boolean): Map<string, string> =>
-    unlabelledRoomPhrases(
-      rooms.map((x) => ({
-        id: x.id,
-        ...(x.label !== undefined ? { label: x.label } : {}),
-        uses: [...roomUses(x)],
-        point: labelPointOf(x),
-      })),
-      ir.level,
-      byUse,
-    );
+  // The storey's naming (`src/naming.ts`), built the first time a message names a room. The
+  // storey is named only on a plan of several (`building.storeyCount`): one `level` block says
+  // nothing a reader needs.
+  let namingMemo: { naming: Naming; by: Map<string, NameableRoom> } | null = null;
+  const namingOf = (): { naming: Naming; by: Map<string, NameableRoom> } => {
+    if (namingMemo === null) {
+      const list = rooms.map((x) => nameableOf(x, [...roomUses(x)]));
+      namingMemo = {
+        naming: makeNaming(list, (building.storeyCount ?? 1) > 1 ? ir.level : undefined),
+        by: new Map(list.map((x) => [x.id, x] as const)),
+      };
+    }
+    return namingMemo;
+  };
   const roomRects = new Map<string, RoomBox>(rooms.map((r) => [r.id, roomBox(r)]));
   const access = (): AccessGraph =>
     (accessMemo ??= buildDoorAccessGraph(rooms, doors, rules.tolMm, undefined, openings));
@@ -284,14 +295,23 @@ export function buildLintContext(
     labelOf: (r) => r.label ?? r.id,
     nameOf: (r, noun) => {
       if (r.label !== undefined) return noun === undefined ? `"${r.label}"` : `${noun} "${r.label}"`;
-      phrasesMemo ??= phrasesOf(true);
-      return phrasesMemo.get(r.id) ?? "an unlabelled room";
+      const { naming, by } = namingOf();
+      const n = by.get(r.id);
+      return n ? naming.phrase(n, noun !== undefined ? { noun } : {}) : "an unlabelled room";
     },
     placeOf: (r) => {
       if (r.label !== undefined) return `"${r.label}"`;
-      placesMemo ??= phrasesOf(false);
-      return placesMemo.get(r.id) ?? "an unlabelled room";
+      const { naming, by } = namingOf();
+      const n = by.get(r.id);
+      return n ? naming.phrase(n, { byUse: false }) : "an unlabelled room";
     },
+    nameAs: (r, noun) => {
+      if (r.label !== undefined) return `"${r.label}"`;
+      const { naming, by } = namingOf();
+      const n = by.get(r.id);
+      return n ? naming.phrase(n, { noun }) : "an unlabelled room";
+    },
+    placeAt: (p) => namingOf().naming.placeAt(p),
     at: (el) => ({
       ...(el.span ? { span: el.span } : {}),
       ...(el._file !== undefined ? { file: el._file } : {}),

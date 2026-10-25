@@ -55,7 +55,7 @@ import { collinearOverlapLength } from "../../geometry/polygon.js";
 import type { ResolvedPlan, RRoom, RWall } from "../../ir.js";
 import { fmt2 } from "../../num-format.js";
 import type { LintContext, LintRule } from "../context.js";
-import { capFirst } from "../phrases.js";
+import { capFirst } from "../../naming.js";
 import type { EnclosureBudgetCap } from "../coverage.js";
 import { mm } from "../measure.js";
 

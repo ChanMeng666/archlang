@@ -105,7 +105,7 @@ import {
 } from "./geometry/polygon.js";
 import { BUILTIN_NAMES } from "./builtins.js";
 import { idSpanOf } from "./parser.js";
-import { roomOverlapNamer } from "./lint/phrases.js";
+import { roomOverlapNamer } from "./naming.js";
 import { classifyLabelUses } from "./vocabulary.js";
 
 export interface RBase {
@@ -1828,6 +1828,8 @@ export interface PlanResolution {
  */
 interface ResolveExtras {
   level?: LevelStamp;
+  /** How many `level` blocks the plan has: a message names the storey only when this is above 1. */
+  storeyCount?: number;
   /** A pre-resolved sheet to adopt verbatim (skips deriving one + its overflow warning). */
   sheet?: ResolvedSheet;
   /**
@@ -2068,6 +2070,7 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
     for (const b of blocks) {
       const probe = resolveCached(levelPlanFor(ast, b, true), registry, world, {
         level: stampOf(b),
+        storeyCount: blocks.length,
         stepsBefore: probeSteps,
       });
       probes.push({ b, ...probe });
@@ -2118,6 +2121,7 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
     if (stopped) return unresolvedLevel(ast, b, stampOf(b));
     const extras: ResolveExtras = {
       level: stampOf(b),
+      storeyCount: blocks.length,
       ...(sheet ? { sheet } : {}),
       elevation: elevationOf(heightsBelow),
       heightsAuthored,
@@ -3084,7 +3088,7 @@ function resolveBody(
   //    (a dropped room is still the room a piece of furniture names, so it raises no
   //    second error); the overlap check reads only what was kept.
   checkPlanDrawable(resolvedElements, diagnostics);
-  checkRoomOverlaps(elements, diagnostics);
+  checkRoomOverlaps(elements, diagnostics, (extras?.storeyCount ?? 1) > 1 ? extras?.level?.level : undefined);
   checkFurnitureRooms(resolvedElements, diagnostics);
 
   // 5. Positioning axes (定位轴线): evaluated before the root group resolved (step 3(ii)),
@@ -3937,7 +3941,7 @@ export const MAX_OVERLAP_PAIRS_LISTED = 200;
  *  stays quadratic is what the answer is made of: n DISTINCT polygon rooms that all share a
  *  cell are n² distinct exact tests. Rooms reaching this check are finite (`checkNumberDomain`
  *  drops the rest first). */
-export function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diagnostic[]): void {
+export function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diagnostic[], level?: number): void {
   // A room left unplaced carries a (0,0) placeholder, not geometry: testing it would
   // report phantom overlaps (quadratic in a chain) on top of the layout error.
   const rooms = elements.filter((e): e is RRoom => e.kind === "room" && !e._unplaced);
@@ -4012,9 +4016,11 @@ export function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diag
     return list;
   };
   // A message never quotes an id (PS2.29): a labelled room is named by its label, an unlabelled
-  // one by what the plan knows of it (`src/lint/phrases.ts`, built only when a pair needs it).
-  const overlapText = roomOverlapNamer(rooms, (x) =>
-    x.uses && x.uses.length > 0 ? x.uses : classifyLabelUses(x.label ?? x.id).uses,
+  // one by what the plan knows of it (`src/naming.ts`, built only when a pair needs it).
+  const overlapText = roomOverlapNamer(
+    rooms,
+    (x) => (x.uses && x.uses.length > 0 ? x.uses : classifyLabelUses(x.label ?? x.id).uses),
+    level,
   );
   const report = (r1: RRoom, r2: RRoom): void => {
     diagnostics.push({

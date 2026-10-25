@@ -302,7 +302,7 @@ export const fixtureWrongRoom: LintRule = {
           severity: "warning",
           code: "W_FIXTURE_WRONG_ROOM",
           ...at(f),
-          message: `Fixture "${name}" is not inside its declared room${declared ? ` (${nameOf(declared)})` : ""}.`,
+          message: `Fixture "${name}" is not inside ${declared ? `${nameOf(declared)}, the room it is declared in` : "its declared room"}.`,
           hints: [`Move it inside that room, or correct the \`in <roomId>\` (it says \`${f.room}\`).`],
         });
       }

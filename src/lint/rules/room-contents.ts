@@ -25,7 +25,7 @@ import type { RFurniture, RRoom } from "../../ir.js";
 import { fmt2 } from "../../num-format.js";
 import { judgesAsDwelling, type LintContext, type LintRule } from "../context.js";
 import { definingItems, itemWords, pasteSet, useNoun } from "../defining.js";
-import { capFirst } from "../phrases.js";
+import { capFirst } from "../../naming.js";
 import { areaM2, lacksZoneFixture, pasteFailureWhy, roomHasWindow } from "./per-room.js";
 
 // ---------------------------------------------------------------------------
@@ -38,6 +38,12 @@ const HABITABLE: readonly [UseKind, string][] = [
   ["dining", "Dining room"],
   ["kitchen", "Kitchen"],
 ];
+
+/** The room's area in a bracket after its name; folded into the name's own bracket ("… (1 of 2; 20 m²)")
+ *  when it ends in one, never two brackets in a row. */
+function withArea(name: string, area: string): string {
+  return name.endsWith(")") ? `${name.slice(0, -1)}; ${area})` : `${name} (${area})`;
+}
 
 /** A probe this far off a room edge, outward, is past any wall it could be on. */
 const OUTSIDE_PROBE_MM = 400;
@@ -146,7 +152,7 @@ export const habitableNoWindow: LintRule = {
         severity: "warning",
         code: "W_HABITABLE_NO_WINDOW",
         ...ctx.at(r),
-        message: `${capFirst(ctx.nameOf(r, kind[1].toLowerCase()))} (${fmt2(areaM2(r))} m²) has no window on any of its walls; a room people live in needs daylight.`,
+        message: `${withArea(capFirst(ctx.nameOf(r, kind[1].toLowerCase())), `${fmt2(areaM2(r))} m²`)} has no window on any of its walls; a room people live in needs daylight.`,
         hints: [where, "Accept it if the room is lit in a way the plan cannot draw (a roof light, a light well)."],
       });
     }

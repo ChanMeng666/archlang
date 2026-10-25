@@ -70,7 +70,7 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
   by the rooms they join, walls by kind and the line they run on) and never quotes an element id;
   ids live only in `hint`. A consumer may show `message` to someone who never sees the source,
   while an agent edits by the id in the hint. A room with no label is named by its use or its place
-  (`src/lint/phrases.ts`, shared by `lint()`, `taste()` and the `W_ROOM_OVERLAP` compile warning).
+  (`src/naming.ts`, shared by `lint()`, `taste()` and the `W_ROOM_OVERLAP` compile warning).
   `test/lint-messages-id-free.test.ts` holds it over the whole corpus, the catalogue examples and a
   label-stripped twin of each; `test/lint-fix-texts.test.ts` holds the wording of the codes it covers.
 - **Circulation**: furniture within R + δ of a doorway's face reads the room `blocked` (kept; no one can

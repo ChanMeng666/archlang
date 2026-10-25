@@ -388,15 +388,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Lint messages no longer quote an element id (plan cards PS2.22, PS2.29; the owner's rule that a
   `message` names things as a person would and only a `hint` carries an id). A room with no label
   was named by its id in about forty rules and in `taste()`; it is now named by its use or its place
-  ("the kitchen", "the bedroom on the left of the plan", "the room in the top left of the plan (2 of
-  2)"), one builder for `lint()`, `taste()` and the `W_ROOM_OVERLAP` compile warning. A wall, another
-  door, the entrance, a dimension, an outdoor surface and a stair that a message named by id
+  ("the kitchen", "the bedroom on the left of the plan", "the 3.2 × 2.4 m room in the top left of the
+  plan"), one builder (`src/naming.ts`) for `lint()`, `taste()` and the `W_ROOM_OVERLAP` compile
+  warning, and a labelled room reads exactly as before. A wall, another door, the entrance, a
+  dimension, an outdoor surface, a stair and a fixture's declared room that a message named by id
   (`W_POCKET_RUN`, `W_DOOR_NEAR_CORNER`, `W_SWING_OBSTRUCTED`, `W_CIRCUITOUS_PATH`,
   `W_OPENING_NOT_DIMENSIONED`, `W_DIM_INSIDE`, `W_DIM_OVERLAP`, `W_OUTDOOR_OVERLAPS_ROOM`,
   `W_BALCONY_NO_DOOR`, `W_STAIR_UNMATCHED`, `W_FIXTURE_WRONG_ROOM`) are named by the rooms they
-  join, the line they run on or where they stand; the id moves to the hint where an agent needs
-  it (`W_ALIAS_MATCH` and `W_CIRCUITOUS_PATH` gain one). A labelled room reads exactly as before.
-  Over the shipped examples and the eval goldens no `lint()` row moves; a corpus-wide test
+  join, the wall they stand in or where they stand, and the id moves to a hint (a new one on
+  `W_ALIAS_MATCH`, `W_CIRCUITOUS_PATH`, `W_SWING_OBSTRUCTED`, `W_OUTDOOR_OVERLAPS_ROOM` and
+  `W_BALCONY_NO_DOOR`). `W_ROOM_OVERLAP` now names two labelled rooms by their labels, where it named
+  them by their ids, and the storey only on a plan of several. `W_DIM_TEXT_MISMATCH` writes a
+  coordinate as `(x, y)`. Over the shipped examples and the eval goldens no `lint()` row moves in rule
+  or count, and no other rule's message changes for a labelled room; a corpus-wide test
   (`test/lint-messages-id-free.test.ts`) now fails when any message quotes an id of its own plan.
 
 - A door or window tag no longer prints over a room name pinned with `label "…" at (x,y)`. Tags

@@ -26,14 +26,15 @@ import { mm } from "../measure.js";
 
 /** The room a piece is in, as a person names it: its declared room, else the room whose floor
  *  holds its centre; `""` when none does. */
-export function inRoomPhrase(f: RFurniture, ctx: LintContext): string {
+export function inRoomPhrase(f: RFurniture, ctx: LintContext, forHint = false): string {
   const room =
     (f.room !== undefined ? ctx.rooms.find((r) => r.id === f.room) : undefined) ??
     ctx.rooms.find((r) => {
       const box = ctx.roomRects.get(r.id);
       return box !== undefined && pointInRoomBox({ x: f.at.x + f.size.w / 2, y: f.at.y + f.size.h / 2 }, box);
     });
-  return room ? ` in ${room.label ?? ctx.nameOf(room)}` : "";
+  // A message names an unlabelled room by what it is; a hint by its id, the handle to edit by.
+  return room ? ` in ${room.label ?? (forHint ? room.id : ctx.nameOf(room))}` : "";
 }
 
 /** A piece named as a person would: its label, else its category. */

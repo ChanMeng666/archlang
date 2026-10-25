@@ -18,7 +18,7 @@ const DIGESTS: [string, string][] = [
   ["ring", "7f32920ee8079ebe78813946dd8225a39b489e96d698efd8833190ca0c87c3bf"], // PS2.29: message text only, same code, same span
   ["open", "3bf116b775c4abf44e51598b979096a453e1e0b68cecec7bdb0ab3ddd3dae751"], // PS2.29: message text only, same code, same span
   ["derived", "59f0e4d617880b162f45cc83020aeae43dd9bdbb8aae003ecf3a535dca58d90a"], // PS2.29: message text only, same code, same span
-  ["frames", "6fe22e5133c4fc16e1bc7184915cf75b73867074f0c664792a4a471aebadc89b"], // PS2.29: message text only, same code, same span
+  ["frames", "cd64daabedc6989cad1ae12aabfce9ebb9aba6199d62d711948204585a30e869"], // PS2.29: message text only, same code, same span
   ["refused", "81a19f28940657c107b17ca08d7414999776c386e8a9d97a0e4450ca79c3346c"], // PS2.29: message text only, same code, same span
   ["compass-refused", "bdfa0c557e5c3653610eee94b8f9f9c1983a262b0f91b31ea86e1a7f4708e741"],
 ];

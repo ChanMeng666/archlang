@@ -34,7 +34,7 @@ import { deficitMm, mm, shortfall } from "../measure.js";
 import type { UseKind } from "../../ast.js";
 import type { RRoom } from "../../ir.js";
 import type { LintContext, LintRule } from "../context.js";
-import { capFirst } from "../phrases.js";
+import { capFirst } from "../../naming.js";
 import { DEFAULT_RULESET, DOUBLE_BED_MIN_WIDTH_MM, type LintRuleset } from "../ruleset.js";
 import { innerFaceOfRoomEdge } from "../../fixture-orientation.js";
 import { memoRoomNetAreaMm2, storeyNetAreaBands } from "../../analyze/net-area-memo.js";
@@ -494,7 +494,7 @@ export const perRoomRules: LintRule = {
             severity: "warning",
             code: "W_ROOM_NO_FIXTURE",
             ...at(r),
-            message: `${capFirst(nameOf(r, isWet ? "bathroom" : "kitchen"))} has no${isWet ? "fixtures (WC, basin, shower…)" : "fixtures (sink, counter, stove…)"}.`,
+            message: `${capFirst(nameOf(r, isWet ? "bathroom" : "kitchen"))} has no ${isWet ? "fixtures (WC, basin, shower…)" : "fixtures (sink, counter, stove…)"}.`,
             hints: [noFixtureHint(ctx, r)],
           });
         }

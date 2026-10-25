@@ -184,6 +184,13 @@ describe("W_ROOM_NO_FIXTURE — the hint's statement compiles, clears it, and ra
     }
   }
 
+  it("the message of a LABELLED room reads exactly as it always did (PS2.29 changed only unlabelled rooms)", () => {
+    expect(of(BATH, "W_ROOM_NO_FIXTURE")[0]!.message).toBe('Bathroom "Bath" has no fixtures (WC, basin, shower…).');
+    expect(of(KITCHEN, "W_ROOM_NO_FIXTURE")[0]!.message).toBe(
+      'Kitchen "Kitchen" has no fixtures (sink, counter, stove…).',
+    );
+  });
+
   it("the default cases each DO quote a statement (the clean-paste tests above are not vacuous)", () => {
     for (const src of [BATH, DOOR_ON_TOP, POLY, L_SHAPE, RELATIONAL])
       expect(allQuoted(of(src, "W_ROOM_NO_FIXTURE")[0]!.hints!.join(" "), /^furniture /)).toHaveLength(1);
@@ -724,11 +731,19 @@ describe("W_PATH_TOO_NARROW — names only doors whose widening clears the room,
         };
         const allowed = new Map<string, number>();
         const bump = (k: string) => allowed.set(k, (allowed.get(k) ?? 0) + 1);
-        for (const s of ruleStoreys(src, world) as Storey[]) {
+        // A room is keyed by the words its message names it by (its quoted label, or the phrase an
+        // unlabelled one gets: PS2.29), read off the same lint context the rule uses.
+        const planned = resolvePlan(src, world ? { world } : {});
+        const storeyIrs = planned.levels.length > 0 ? planned.levels.map((l) => l.ir) : planned.ir ? [planned.ir] : [];
+        const building = planned.levels.length > 0 ? buildingContexts(planned.levels, DEFAULT_RULESET.tolMm) : null;
+        const phrases = storeyIrs.map((st, i) => {
+          const c = buildLintContext(st, DEFAULT_RULESET, building?.get(planned.levels[i]!.level));
+          return new Map(c.rooms.map((r) => [r.id, c.nameOf(r)] as const));
+        });
+        for (const [i, s] of (ruleStoreys(src, world) as Storey[]).entries()) {
           const c = s.circulation;
           if (!c) continue;
-          // A room with no label is named by a phrase (PS2.29), never its id: keyed as "*" here.
-          const label = (id: string) => s.rooms?.find((r) => r.id === id)?.label ?? "*";
+          const label = (id: string) => phrases[i]?.get(id) ?? id;
           const warned = new Set<string>();
           for (const r of s.rooms ?? []) {
             const rc = c.rooms.find((x) => x.roomId === r.id);
@@ -746,8 +761,7 @@ describe("W_PATH_TOO_NARROW — names only doors whose widening clears the room,
         for (const d of lint(src, { world, ...opts(p) }).filter((x) => x.code === "W_PATH_TOO_NARROW")) {
           const walk = /^The walk from the entrance to (.+?) (?:squeezes|is blocked)/.exec(d.message);
           const route = /^The route from (.+?) to .+? squeezes/.exec(d.message);
-          const keyOf = (m: string) => (m.startsWith('"') ? m.slice(1, -1) : "*");
-          const k = walk ? `walk:${keyOf(walk[1]!)}` : `route:${keyOf(route![1]!)}`;
+          const k = walk ? `walk:${walk[1]}` : `route:${route![1]}`;
           const left = allowed.get(k) ?? 0;
           expect(left, `${name}: ${d.message}`).toBeGreaterThan(0);
           allowed.set(k, left - 1);

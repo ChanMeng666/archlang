@@ -95,7 +95,7 @@ describe("W_DIM_TEXT_MISMATCH — the rounding rule", () => {
     const [d, ...rest] = mismatches(dim("4000", "4500"));
     expect(rest).toEqual([]);
     expect(d!.message).toBe(
-      "The dimension from (0,-600) to (4000,-600) is lettered 4500, but its line spans 4000 mm: the text is 500 mm longer than what it measures.",
+      "The dimension from (0, -600) to (4000, -600) is lettered 4500, but its line spans 4000 mm: the text is 500 mm longer than what it measures.",
     );
   });
 

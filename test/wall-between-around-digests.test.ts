@@ -16,9 +16,9 @@ import { WALL_BETWEEN_AROUND_PLANS } from "./wall-between-around-plans.js";
 const API: CompilerApi = { compile, describe, lint };
 
 const DIGESTS: [string, string][] = [
-  ["pairwise-forms", "0dcccccc013f5589489e77fc4b1dba159709419f8e8e03d83b685565a025529a"], // PS2.29: message text only, same code, same span
-  ["beside-walls-from-rooms", "bb4db0582d5a70c2f06d7f232850d5da5c60f233b20d3da41a5218f0fd1b2cac"], // PS2.29: message text only, same code, same span
-  ["frames", "f5c5137931998b3cdb5f4986cf183b8f25d0876026a2fe566fcc35183c3b5b84"], // PS2.29: message text only, same code, same span
+  ["pairwise-forms", "675455f4cd6f09bda4ab7fa8c771fd4587b96412b65198adcbc090a69fa90d3f"],
+  ["beside-walls-from-rooms", "e491169ae7b920ba5ff752e145600069567e4743abae4386668f3096f81ba557"],
+  ["frames", "99811e5cfa28e40fbbe9cc7da81f7872767235671c10d1ce4400c68574646bf0"],
   ["widen-4000", "18781e880e4e42843595c6116a9689622b3a9aa1dca04b1f3e4d177cf15ba887"],
   ["widen-4500", "dbf477f001fa9c3bb7f1ef3ce242afd204613ecd4cbc7d1437cce8570f2915e7"],
   ["refused", "7e18b4bff41d18b98b0f0457e0f0488a8ce0bb34792e7194d8144c42e88dc901"], // PS2.29: message text only, same code, same span

@@ -25,7 +25,7 @@ import {
 } from "../../analyze.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import type { LintContext, LintRule } from "../context.js";
-import { capFirst } from "../phrases.js";
+import { capFirst } from "../../naming.js";
 
 export const reachability: LintRule = {
   name: "reachability",

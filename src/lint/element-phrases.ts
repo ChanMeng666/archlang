@@ -6,9 +6,10 @@
  * (`phrases.ts`). The id an agent edits by is in the hints.
  */
 
-import { connectorConnection, EXTERIOR_NODE } from "../analyze.js";
+import { connectorConnection, EXTERIOR_NODE, pointInRoomBox } from "../analyze.js";
 import type { WallSegment } from "../geometry.js";
 import type { RDoor, ROpening, RWindow } from "../ir.js";
+import { wallOf } from "../wall-ref.js";
 import type { LintContext } from "./context.js";
 import { mm } from "./measure.js";
 
@@ -48,4 +49,45 @@ export function openingName(ctx: LintContext, el: Hosted): string {
     if (ra || rb) return `the ${word} of ${ra ?? rb}`;
   }
   return el.host ? `the ${word} on ${wallPhrase(el.host)}` : `the ${word}`;
+}
+
+/**
+ * A wall named by what stands on its two faces, for a message that must not quote its id: the
+ * partition `walls from rooms` derived between two rooms, or any straight wall with a room on each
+ * face ("the partition between the kitchen and the hall"), an exterior wall with one ("the exterior
+ * wall of the kitchen"), else its kind and where it stands ("the exterior wall at the top of the
+ * plan"). A curved wall falls back to {@link wallPhrase}.
+ */
+export function wallNamed(ctx: LintContext, seg: WallSegment): string {
+  const w = wallOf(ctx.ir.walls, { wallId: seg.wallId, a: seg.a, b: seg.b });
+  const roomNamed = (id: string): string | null => {
+    const r = ctx.rooms.find((x) => x.id === id);
+    return r ? ctx.nameOf(r) : null;
+  };
+  const between = w?._derived?.between;
+  if (between) {
+    const a = roomNamed(between[0]);
+    const b = roomNamed(between[1]);
+    if (a && b) return `the partition between ${a} and ${b}`;
+  }
+  // A curved wall, or a plan with no room to place it among: the kind and the line it runs on.
+  if (seg.arc || ctx.rooms.length === 0) return wallPhrase(seg);
+  const dx = seg.b.x - seg.a.x;
+  const dy = seg.b.y - seg.a.y;
+  const len = Math.hypot(dx, dy);
+  const mid = { x: (seg.a.x + seg.b.x) / 2, y: (seg.a.y + seg.b.y) / 2 };
+  if (len > 0) {
+    // One probe each side, a little past the wall's own face, lands inside the room there.
+    const off = seg.thickness / 2 + 50;
+    const roomAt = (p: { x: number; y: number }) =>
+      ctx.rooms.find((r) => {
+        const box = ctx.roomRects.get(r.id);
+        return box !== undefined && pointInRoomBox(p, box);
+      });
+    const a = roomAt({ x: mid.x - (dy / len) * off, y: mid.y + (dx / len) * off });
+    const b = roomAt({ x: mid.x + (dy / len) * off, y: mid.y - (dx / len) * off });
+    if (a && b && a !== b) return `the partition between ${ctx.nameOf(a)} and ${ctx.nameOf(b)}`;
+    if ((a || b) && seg.category === "exterior") return `the exterior wall of ${ctx.nameOf((a ?? b)!)}`;
+  }
+  return `the ${seg.category} wall ${ctx.placeAt(mid)}`;
 }

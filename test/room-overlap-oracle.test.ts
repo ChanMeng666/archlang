@@ -33,7 +33,7 @@ import {
   resolveAll,
 } from "../src/ir.js";
 import { link } from "../src/import.js";
-import { roomOverlapNamer } from "../src/lint/phrases.js";
+import { roomOverlapNamer } from "../src/naming.js";
 import { classifyLabelUses } from "../src/vocabulary.js";
 import { extractArchBlocks } from "../src/markdown.js";
 import { parse } from "../src/parser.js";
@@ -44,7 +44,7 @@ import { NULL_WORLD } from "../src/world.js";
 const ROOT = resolvePath(__dirname, "..");
 
 /** The message for a pair: since PS2.29 it names rooms by label or by what the plan knows of them,
- *  never by id (`roomOverlapNamer`, `src/lint/phrases.ts`). The oracles keep their PAIR logic
+ *  never by id (`roomOverlapNamer`, `src/naming.ts`). The oracles keep their PAIR logic
  *  verbatim and take only the wording from the one shared builder. */
 const overlapNamer = (rooms: readonly RRoom[]) =>
   roomOverlapNamer(rooms, (x) => (x.uses && x.uses.length > 0 ? x.uses : classifyLabelUses(x.label ?? x.id).uses));

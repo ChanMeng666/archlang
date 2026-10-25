@@ -382,7 +382,8 @@ function joined(ctx: LintContext, between: readonly string[]): string {
     .map((id) => {
       if (id === EXTERIOR_NODE) return "the outside";
       const r = ctx.rooms.find((x) => x.id === id);
-      return r ? ctx.nameOf(r) : "no room";
+      // A HINT names a room by its quoted label or, with none, its quoted id (the handle to edit by).
+      return r ? `"${ctx.labelOf(r)}"` : "no room";
     });
   if (names.length <= 1) return names[0] ?? "no room";
   return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]!}`;
@@ -759,10 +760,18 @@ export const connectorAmbiguous: LintRule = {
       const r = ctx.rooms.find((x) => x.id === id);
       return r ? ctx.nameOf(r) : "outside";
     };
-    const list = (ids: readonly string[]): string =>
-      ids.length <= 1
-        ? ids.map(label).join("")
-        : `${ids.slice(0, -1).map(label).join(", ")} and ${label(ids[ids.length - 1]!)}`;
+    const listWith =
+      (name: (id: string) => string) =>
+      (ids: readonly string[]): string =>
+        ids.length <= 1
+          ? ids.map(name).join("")
+          : `${ids.slice(0, -1).map(name).join(", ")} and ${name(ids[ids.length - 1]!)}`;
+    const list = listWith(label);
+    // The same for a hint, which names a room by its label or its id.
+    const hlist = listWith((id) => {
+      const r = ctx.rooms.find((x) => x.id === id);
+      return r ? `"${ctx.labelOf(r)}"` : "outside";
+    });
     ctx.connectors.forEach((c, k) => {
       const e = edges[k];
       if (!e || e.doorId !== c.id) return;
@@ -842,7 +851,7 @@ export const connectorAmbiguous: LintRule = {
             ]),
         ...(!e.ambiguous && !wallInside && straddled.length > 1
           ? [
-              `Accept it if ${list(straddled)} are one open space with no wall between them, so the ${word} serves both.`,
+              `Accept it if ${hlist(straddled)} are one open space with no wall between them, so the ${word} serves both.`,
             ]
           : []),
         `The ${word} is "${c.id}" on ${wallRef(ctx.ir.walls, c.host)}${straddled.length ? `; its span covers rooms ${straddled.map((x) => `"${x}"`).join(", ")}` : ""}.`,

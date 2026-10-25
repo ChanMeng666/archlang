@@ -4,7 +4,8 @@ import { describe, expect, it } from "vitest";
 import { compile, ERROR_CATALOG, lint, taste } from "../src/index.js";
 import { resolvePlan } from "../src/analyze.js";
 import type { ResolvedPlan } from "../src/ir.js";
-import { type NameableRoom, unlabelledRoomPhrases } from "../src/lint/phrases.js";
+import { makeNaming, type NameableRoom, nameableOf } from "../src/naming.js";
+import { DOOR_HINGE_NEAR, DOOR_KINDS, DOOR_SWING_BUILDING, KEYWORDS } from "../src/grammar/tokens.js";
 import { EXAMPLE_FILES, EXAMPLES_WORLD, SHIPPED_EXAMPLES } from "./d4-oracle.js";
 
 /**
@@ -55,6 +56,8 @@ interface Forbidden {
   plain: string[];
   /** Strings the plan itself uses as names (labels), which may be quoted legitimately. */
   names: Set<string>;
+  /** Every id, shaped or plain. */
+  ids: string[];
 }
 
 function forbiddenOf(src: string): Forbidden {
@@ -73,7 +76,7 @@ function forbiddenOf(src: string): Forbidden {
     }
     for (const id of ids) (ID_SHAPED.test(id) ? shaped : plain).add(id);
   }
-  return { shaped: [...shaped], plain: [...plain], names };
+  return { shaped: [...shaped], plain: [...plain], names, ids: [...shaped, ...plain] };
 }
 
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -156,6 +159,39 @@ const INLINE: Case[] = [
   },
 ];
 
+/** Words of the language an id must not be renamed over (a keyword, a door kind, an anchor edge). */
+const LANGUAGE = new Set<string>([
+  ...Object.values(KEYWORDS).flat(),
+  ...DOOR_KINDS,
+  ...DOOR_HINGE_NEAR,
+  ...DOOR_SWING_BUILDING,
+  "top",
+  "bottom",
+  "left",
+  "right",
+  "north",
+  "south",
+  "east",
+  "west",
+  "in",
+  "out",
+  "up",
+  "down",
+]);
+
+/**
+ * The same plan with every id renamed to `zz_<id>`, so that an id which is also a plain word
+ * (`hall`, `bath`, `kitchen`) or equals a furniture category is as visible to the check as
+ * `r_hall` is: a message that says "the bath" no longer hides an id `bath`. Tokens inside strings
+ * and comments are left alone, and so is an id that is a word of the language (`left`), which the
+ * quoted-id rule still covers. A rename that stops the plan compiling is dropped.
+ */
+function renameIds(c: Case): Case {
+  const ids = new Set(forbiddenOf(c.src).ids.filter((id) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(id) && !LANGUAGE.has(id)));
+  const src = c.src.replace(/"(?:[^"\\]|\\.)*"|#[^\n]*|[A-Za-z_][A-Za-z0-9_]*/g, (t) => (ids.has(t) ? `zz_${t}` : t));
+  return { ...c, src };
+}
+
 /** The same plan with its labels taken away: an unlabelled room has only its id to be named by. */
 const unlabelled = (c: Case): Case => ({
   ...c,
@@ -237,7 +273,13 @@ describe("no message over the corpus quotes an internal id (PS2.22, PS2.29)", ()
   });
 
   it("the same holds with every label taken away (an unlabelled room has only its id)", () => {
-    const twins = [...CORPUS, ...CATALOGUE, ...INLINE].map(unlabelled).filter(compiles);
+    const bare = [...CORPUS, ...CATALOGUE, ...INLINE].map(unlabelled).filter(compiles);
+    // …and every id renamed to an id-shaped sentinel; where that breaks the plan, the plain twin.
+    const twins = bare.map((c) => {
+      const r = renameIds(c);
+      return compiles(r) ? r : c;
+    });
+    expect(twins.filter((c, i) => c !== bare[i]).length).toBeGreaterThan(150);
     expect(twins.length).toBeGreaterThan(200);
     const { rows, codes } = sweep(twins);
     expect(rows).toEqual([]);
@@ -247,40 +289,130 @@ describe("no message over the corpus quotes an internal id (PS2.22, PS2.29)", ()
   });
 });
 
-describe("unlabelledRoomPhrases — what an unlabelled room is called (src/lint/phrases.ts)", () => {
-  const room = (id: string, x: number, y: number, uses: string[] = [], label?: string): NameableRoom => ({
-    id,
-    uses,
-    point: { x, y },
-    ...(label !== undefined ? { label } : {}),
+describe("makeNaming — what an unlabelled room is called (src/naming.ts)", () => {
+  /** A rectangular room at (x, y) of w × h, named by its centre. */
+  const room = (id: string, x: number, y: number, w: number, h: number, uses: string[] = [], label?: string) =>
+    nameableOf({ id, at: { x, y }, size: { w, h }, ...(label !== undefined ? { label } : {}) }, uses);
+  const say = (rooms: NameableRoom[], id: string, opts?: Parameters<ReturnType<typeof makeNaming>["phrase"]>[1]) =>
+    makeNaming(rooms).phrase(rooms.find((r) => r.id === id)!, opts);
+
+  it("names a lone room by its use", () => {
+    const rooms = [room("r_k", 0, 0, 3000, 3000, ["kitchen"]), room("r_h", 3000, 0, 3000, 3000, ["hall"], "Hall")];
+    expect(say(rooms, "r_k")).toBe("the kitchen");
   });
 
-  it("names a lone room by its use, and leaves a labelled room to its label", () => {
-    const m = unlabelledRoomPhrases([room("r_k", 0, 0, ["kitchen"]), room("r_h", 5000, 0, ["hall"], "Hall")]);
-    expect([...m]).toEqual([["r_k", "the kitchen"]]);
+  it('counts a labelled room of the same use, so "the kitchen" is never ambiguous beside Kitchen', () => {
+    const rooms = [
+      room("r_k", 0, 0, 3000, 3000, ["kitchen"]),
+      room("r_k2", 9000, 0, 3000, 3000, ["kitchen"], "Kitchen"),
+    ];
+    expect(say(rooms, "r_k")).toBe("the kitchen on the left of the plan");
   });
 
   it("tells two rooms of one use apart by where they stand, never by id", () => {
-    const m = unlabelledRoomPhrases([room("r_a", 0, 0, ["bedroom"]), room("r_b", 9000, 0, ["bedroom"])]);
-    expect(m.get("r_a")).toBe("the bedroom on the left of the plan");
-    expect(m.get("r_b")).toBe("the bedroom on the right of the plan");
+    const rooms = [room("r_a", 0, 0, 3000, 3000, ["bedroom"]), room("r_b", 9000, 0, 3000, 3000, ["bedroom"])];
+    expect(say(rooms, "r_a")).toBe("the bedroom on the left of the plan");
+    expect(say(rooms, "r_b")).toBe("the bedroom on the right of the plan");
   });
 
-  it("places a room that has no use at once, and counts two that tie", () => {
-    const m = unlabelledRoomPhrases([room("r_a", 0, 0), room("r_b", 100, 200), room("r_c", 9000, 9000)]);
-    expect(m.get("r_a")).toBe("the room in the top left of the plan (1 of 2)");
-    expect(m.get("r_b")).toBe("the room in the top left of the plan (2 of 2)");
-    expect(m.get("r_c")).toBe("the room in the bottom right of the plan");
-    expect([...m.values()].join(" ")).not.toMatch(/r_[abc]/);
+  it("reads place against the outline: two equal rooms side by side, one 10 mm lower, are left and right", () => {
+    const rooms = [room("r_a", 0, 0, 3000, 3000), room("r_b", 3000, 10, 3000, 3000)];
+    expect(say(rooms, "r_a")).toBe("the room on the left of the plan");
+    expect(say(rooms, "r_b")).toBe("the room on the right of the plan");
   });
 
-  it("reads a use from the room only when asked (a message about how the use was guessed)", () => {
-    const rooms = [room("r_carport", 0, 0, ["garage"]), room("r_x", 9000, 0, ["hall"])];
-    expect(unlabelledRoomPhrases(rooms).get("r_carport")).toBe("the garage");
-    expect(unlabelledRoomPhrases(rooms, undefined, false).get("r_carport")).toBe("the room on the left of the plan");
+  it("a room 1000–3000 deep in a 6000-deep plan is not 'at the top'", () => {
+    const rooms = [room("r_a", 0, 1000, 3000, 2000), room("r_b", 0, 0, 3000, 1000), room("r_c", 0, 3000, 3000, 3000)];
+    expect(say(rooms, "r_a")).not.toMatch(/top/);
   });
 
-  it("adds the storey on a multi-storey plan", () => {
-    expect(unlabelledRoomPhrases([room("r_k", 0, 0, ["kitchen"])], 2).get("r_k")).toBe("the kitchen on level 2");
+  it("tells rooms that tie on use and place apart by size first, then by reading order, in one bracket", () => {
+    const rooms = [
+      room("r_a", 0, 0, 3200, 2400, ["bedroom"]),
+      room("r_b", 0, 3000, 3000, 2000, ["bedroom"]),
+      room("r_c", 0, 6000, 3000, 2000, ["bedroom"]),
+      room("r_d", 6000, 0, 3200, 2400, ["bedroom"]),
+    ];
+    // Same use everywhere; r_a and r_d differ in place; r_b and r_c in place; none ties.
+    expect(say(rooms, "r_a")).toBe("the bedroom in the top left of the plan");
+    const tie = [room("r_a", 0, 0, 3200, 2400, ["bedroom"]), room("r_b", 0, 100, 3000, 2000, ["bedroom"])];
+    expect(say(tie, "r_a")).toBe("the 3.2 × 2.4 m bedroom in the middle of the plan");
+    expect(say(tie, "r_b")).toBe("the 3 × 2 m bedroom in the middle of the plan");
+    const twin = [room("r_a", 0, 0, 3000, 2000, ["bedroom"]), room("r_b", 0, 100, 3000, 2000, ["bedroom"])];
+    expect(say(twin, "r_a")).toBe("the 3 × 2 m bedroom in the middle of the plan (1 of 2)");
+    expect(say(twin, "r_b")).toBe("the 3 × 2 m bedroom in the middle of the plan (2 of 2)");
+    for (const id of ["r_a", "r_b"]) expect(say(twin, id)).not.toMatch(/\).*\(/);
+  });
+
+  it("names a room by the use the message is about, when it has it", () => {
+    const rooms = [room("r_lb", 0, 0, 3000, 3000, ["living", "bedroom"])];
+    expect(say(rooms, "r_lb")).toBe("the living room");
+    expect(say(rooms, "r_lb", { noun: "bedroom" })).toBe("the bedroom");
+    expect(say(rooms, "r_lb", { noun: "kitchen" })).toBe("the living room");
+  });
+
+  it("names by place alone when asked (a message about how the use was guessed)", () => {
+    const rooms = [room("r_carport", 0, 0, 3000, 3000, ["garage"]), room("r_x", 9000, 0, 3000, 3000, ["hall"])];
+    expect(say(rooms, "r_carport")).toBe("the garage");
+    expect(say(rooms, "r_carport", { byUse: false })).toBe("the room on the left of the plan");
+  });
+
+  it("adds the storey only when asked for one", () => {
+    const rooms = [room("r_k", 0, 0, 3000, 3000, ["kitchen"])];
+    expect(makeNaming(rooms, 2).phrase(rooms[0]!)).toBe("the kitchen on level 2");
+    expect(makeNaming(rooms).phrase(rooms[0]!)).toBe("the kitchen");
+  });
+});
+
+describe("the storey is named only on a plan of several (PS2.29)", () => {
+  const onelevel = `plan "One" {
+  units mm
+  level 0 {
+    wall id=w_out exterior thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close }
+    wall id=w_mid partition thickness 100 { (4000,0) (4000,4000) }
+    room id=r_a at (0,0) size 4000x4000 uses living
+    room id=r_b at (4000,0) size 4000x4000 uses kitchen
+    door id=d_front on w_out at 2000 width 900
+    door id=d_mid on w_mid at 2000 width 900
+  }
+}
+`;
+  const twolevels = `plan "Two" {
+  units mm
+  level 1 {
+    wall id=w1 exterior thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close }
+    room id=r_g at (0,0) size 8000x4000 uses living
+    door id=d_g on w1 at 2000 width 900
+    stair id=s at (7000,500) size 900x2600 dir up
+  }
+  level 2 {
+    wall id=w2 exterior thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close }
+    room id=r_u1 at (0,0) size 4500x4000 uses bedroom
+    room id=r_u2 at (4000,0) size 4000x4000 uses bedroom
+    stair id=s at (7000,500) size 900x2600 dir down
+  }
+}
+`;
+
+  it('a plan of one `level` block says no "on level 0" in lint, taste or the compile warning', () => {
+    const messages = [
+      ...lint(onelevel, { world: EXAMPLES_WORLD }).map((d) => d.message),
+      ...compile(onelevel, { world: EXAMPLES_WORLD, noCache: true }).diagnostics.map((d) => d.message),
+    ];
+    const t: string[] = [];
+    walkMessages(taste(onelevel, { world: EXAMPLES_WORLD }), t);
+    messages.push(...t);
+    expect(messages.some((m) => /\bthe (living room|kitchen)\b/i.test(m))).toBe(true);
+    expect(messages.filter((m) => /on level/.test(m))).toEqual([]);
+  });
+
+  it("a plan of several names the storey, in the compile warning too", () => {
+    const warns = compile(twolevels, { world: EXAMPLES_WORLD, noCache: true }).diagnostics.filter(
+      (d) => d.code === "W_ROOM_OVERLAP",
+    );
+    expect(warns.length).toBeGreaterThan(0);
+    for (const w of warns) expect(w.message).toMatch(/on level 2 overlap$/);
+    const lints = lint(twolevels, { world: EXAMPLES_WORLD }).filter((d) => d.level === 2);
+    expect(lints.some((d) => /on level 2/.test(d.message))).toBe(true);
   });
 });

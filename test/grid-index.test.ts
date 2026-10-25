@@ -4,7 +4,7 @@ import { compile } from "../src/index.js";
 import { GridIndex } from "../src/geometry/grid-index.js";
 import { resolvePlan } from "../src/analyze.js";
 import { MAX_OVERLAP_PAIRS_LISTED, type RRoom } from "../src/ir.js";
-import { roomOverlapNamer } from "../src/lint/phrases.js";
+import { roomOverlapNamer } from "../src/naming.js";
 import { classifyLabelUses } from "../src/vocabulary.js";
 
 /** The wording of a pair, from the one builder `checkRoomOverlaps` uses (since PS2.29 a message
