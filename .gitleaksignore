@@ -215,3 +215,11 @@ c82d5dd89bdd450a64c9160064fefaa97bfe3f20:test/import-module-lets.test.ts:generic
 32aed0908d16b09df9cad48ccfe045915ec878bf:test/import-module-lets.test.ts:generic-api-key:501
 32aed0908d16b09df9cad48ccfe045915ec878bf:test/import-module-lets.test.ts:generic-api-key:575
 32aed0908d16b09df9cad48ccfe045915ec878bf:test/import-module-lets.test.ts:generic-api-key:576
+# 2026-10-26 (PR #271 red-team round 1) — the same six rows re-measured once more, for the top-level
+# building key; the same false positive, each opened and read.
+344cc2d24b14dd542920586e520d6020536ce8f7:test/byte-identity-baseline.ts:generic-api-key:1486
+344cc2d24b14dd542920586e520d6020536ce8f7:test/byte-identity-baseline.ts:generic-api-key:1534
+344cc2d24b14dd542920586e520d6020536ce8f7:test/import-module-lets.test.ts:generic-api-key:501
+344cc2d24b14dd542920586e520d6020536ce8f7:test/while-byte-identity-baseline.ts:generic-api-key:329
+344cc2d24b14dd542920586e520d6020536ce8f7:test/import-module-lets.test.ts:generic-api-key:575
+344cc2d24b14dd542920586e520d6020536ce8f7:test/import-module-lets.test.ts:generic-api-key:576
