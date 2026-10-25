@@ -14,11 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as nodes at their label points, an edge through each door and opening, entrances marked); every
   element a `compile()` or default-ruleset `lint()` warning names ringed and numbered with its code
   (a room by its floor outline, a door, window or opening by a circle, anything else by its drawn
-  extent); a legend listing number, code and the id-free message; and a strip of close-ups, at one
-  fixed scale (1 m = 250 sheet units), of every flagged opening and furniture piece. Default output
-  `<name>.review.png`; `--json` adds `rings`, `marks[]` (with each ringed element's id, kind and
-  ring box) and `crops[]` (boxes in plan mm). One storey per sheet (`--level`, as `preview`);
-  refused beside `--ascii`, `--view` or `--overlay` (exit 3). Drawing-only: it lives in the CLI
+  extent; a room overlap rings both rooms); a legend listing number, code and the id-free message;
+  and a strip of close-ups, at one fixed scale (1 m = 250 sheet units), of the flagged openings and
+  furniture pieces, at most 24. One mark per warning: a warning from a repeated statement (a `for`
+  body, a component placed twice) that does not say which copy it means is listed, not ringed.
+  Default output `<name>.review.png`; `--json` adds `rings`, `marks[]` (each warning's span, line
+  and column, and its ringed elements with their boxes), `crops[]` and `cropsOmitted[]` (boxes in
+  plan mm), and reports `compile()`'s warnings as plain `preview` does. One storey per sheet
+  (`--level`, as `preview`); refused beside `--ascii`, `--view` or `--overlay` (exit 3).
+  Drawing-only: it lives in the CLI
   layer, reads `compile()`, `describe()` and `lint()`, and changes none of them, nor the default
   `preview`.
 

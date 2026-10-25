@@ -1,0 +1,13 @@
+plan "P3" {
+  units mm
+  component pod() {
+    wall id=wall partition thickness 100 { (0,0) (2000,0) (2000,2000) (0,2000) close }
+    room id=room at (0,0) size 2000x2000 label "Pod" uses storage
+    furniture wc at (100, 100) size 400x700 in room
+  }
+  wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close }
+  room id=hall at (0,0) size 8000x4000 label "Hall" uses hall
+  door at (4000,4000) width 900 wall shell
+  place pod() as p1 at (1000,1000)
+  place pod() as p2 at (5000,1000)
+}

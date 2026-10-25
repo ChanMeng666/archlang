@@ -180,7 +180,7 @@ render a PNG you can look at (zero-install where the optional binary is present)
 | `--scale, -s <n>` | raster scale (default 1; without -w/-s the page auto-targets ~1600px wide for legibility) |
 | `--width, -w <px>` | page width hint in pixels |
 | `--ascii` | print a zero-dependency ASCII text plan to stdout instead of a PNG |
-| `--review` | render the REVIEW SHEET instead of the plain plan: the access graph over the plan, every element a compile or default-lint warning names ringed with its number and code, a legend (number → code → message) and a fixed-scale close-up of every flagged opening and furniture piece (default output &lt;name&gt;.review.png; --json adds marks[] and crops[], boxes in plan mm). One storey per sheet (--level); not with --ascii, --view or --overlay |
+| `--review` | render the REVIEW SHEET instead of the plain plan: the access graph over the plan, every element a compile or default-lint warning names ringed with its number and code, a legend (number → code → message) and fixed-scale close-ups of the flagged openings and furniture pieces, the first 24 in mark order (default output &lt;name&gt;.review.png; --json adds marks[] with each warning's span and ringed elements, crops[] and cropsOmitted[], boxes in plan mm). One mark per warning; a warning from a repeated statement that does not say which copy it means is listed, not ringed. One storey per sheet (--level); not with --ascii, --view or --overlay |
 | `--level <n>` | preview this storey of a multi-storey plan (default: the lowest level, i.e. page 1) |
 | `--cols <n>` | text renderer (-f txt / preview --ascii) grid width in characters (default 80) |
 | `--charset <unicode\|ascii>` | text renderer glyph set (default unicode) |
@@ -648,7 +648,7 @@ print the full bundled agent context (spec + workflow + CLI + errors)
 
 | Flag | Does |
 | --- | --- |
-| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 141 KB of it (spec = the language, 30 KB; workflow = the agent loop, 29 KB; cli = every command, 25 KB; errors = the diagnostic catalog, 56 KB) |
+| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 142 KB of it (spec = the language, 30 KB; workflow = the agent loop, 29 KB; cli = every command, 25 KB; errors = the diagnostic catalog, 56 KB) |
 | `--json` | structured result on stdout, messages on stderr |
 
 **Examples**
@@ -657,7 +657,7 @@ print the full bundled agent context (spec + workflow + CLI + errors)
 # the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 $ archlang context
 
-# just the diagnostic catalog (56 KB) — read one section instead of paying for the whole 141 KB bundle
+# just the diagnostic catalog (56 KB) — read one section instead of paying for the whole 142 KB bundle
 $ archlang context --section errors
 ```
 

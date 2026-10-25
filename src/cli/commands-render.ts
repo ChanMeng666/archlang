@@ -503,8 +503,6 @@ export async function cmdPreview(args: Args, preread?: string): Promise<number> 
   const input = args._[0];
   if (!input) return usageError("preview needs an input file (use a path or `-` for stdin)");
 
-  // `--ascii`: a zero-install text preview an agent can read straight from stdout,
-  // no raster dependency. Reuses the same `renderAscii` backend as `-f txt`.
   if (args.review) {
     // The review sheet draws its own overlay and is a raster of the PLAN, so each of these
     // has nothing to mean beside it: refused rather than silently ignored.
@@ -522,6 +520,8 @@ export async function cmdPreview(args: Args, preread?: string): Promise<number> 
       );
     return cmdPreviewReview(args, input);
   }
+  // `--ascii`: a zero-install text preview an agent can read straight from stdout,
+  // no raster dependency. Reuses the same `renderAscii` backend as `-f txt`.
   if (args.ascii) return cmdPreviewAscii(args, input);
 
   const format: Format = "png";
@@ -701,7 +701,9 @@ async function cmdPreviewReview(args: Args, input: string): Promise<number> {
   } catch (e) {
     return ioError((e as Error).message, args.json, { format });
   }
-  const ringed = sheet.marks.filter((m) => m.element !== null).length;
+  const ringed = sheet.marks.filter((m) => m.ringed.length > 0).length;
+  // What plain `preview` reports: compile()'s warnings (every storey), then the render's own.
+  const reported = [...sheet.diagnostics, ...warnings].filter((d) => d.severity === "warning");
   if (args.json) {
     emitJson({
       ok: true,
@@ -715,10 +717,11 @@ async function cmdPreviewReview(args: Args, input: string): Promise<number> {
       rings: ringed,
       marks: sheet.marks,
       crops: sheet.crops,
-      diagnostics: warnings.map((d) => diagnosticToJson(source, d)),
+      cropsOmitted: sheet.cropsOmitted,
+      diagnostics: reported.map((d) => diagnosticToJson(source, d)),
     });
   } else {
-    emitDiagnosticsHuman(source, warnings, args.quiet);
+    emitDiagnosticsHuman(source, reported, args.quiet);
     if (!args.quiet)
       process.stdout.write(
         `✓ ${input} → ${target} (review sheet: ${sheet.marks.length} flagged, ${ringed} ringed, ${sheet.crops.length} close-up${sheet.crops.length === 1 ? "" : "s"}; ${bytes.length} bytes)\n`,

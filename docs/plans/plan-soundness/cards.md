@@ -247,6 +247,10 @@ into PS3.12)
   not read as one broke plus one healed, and the elements of one loop body are told apart.
 - An unresolved side keys its errors to the statement. Every storey's elements are compared, not
   only the lowest storey's. Found in PR #240.
+- Evidence from PS5.4 (PR #274, red-team round 1): `preview --review` keys by span too, so a warning
+  from a `for` body or a component placed twice cannot be ringed on the copy it means unless a hint
+  quotes an id; the sheet then rings none and says how many copies. An element id on the diagnostic
+  makes that ring exact.
 
 **PS4.7 · Impact resolves bindings, not names.** `todo`
 - `arch impact` keeps one entry per bound name, so a name stands for every place that binds it.

@@ -2,17 +2,23 @@
  * `arch preview --review` (plan-soundness PS5.4): the review sheet. One picture a reviewer
  * (or an agent's vision) reads in a single look: the plan as `preview` draws it, the access
  * graph laid over it, every element a warning names ringed and numbered, a legend that keys
- * each number to its code and message, and a strip of close-ups of every flagged opening and
- * furniture piece at one fixed scale. Agents look at pictures well when told where to look.
+ * each number to its code and message, and a strip of close-ups of the flagged openings and
+ * furniture pieces at one fixed scale. Agents look at pictures well when told where to look.
  *
- * A separate code path that CONSUMES `compile()` and `lint()` and feeds neither: the plan
- * drawing is the default `compile()` SVG embedded unchanged, the geometry comes from a second,
- * annotated compile and the resolved plan, and nothing here reaches `describe()`, `lint()` or
- * the default `preview`. It lives in the CLI layer and is pure apart from that (no I/O, no time,
- * no randomness), so the same source always yields the same SVG bytes.
+ * A separate code path that CONSUMES `compile()`, `describe()` and `lint()` and feeds none of
+ * them: the plan drawing is the default `compile()` SVG embedded unchanged, the geometry comes
+ * from a second, annotated compile and the resolved plan, and nothing here reaches the default
+ * `preview`. It lives in the CLI layer and is pure apart from that (no I/O, no time, no
+ * randomness), so the same source always yields the same SVG bytes.
+ *
+ * One mark per diagnostic, never merged: two warnings from one statement (a `for` body, a
+ * component placed twice) are two marks. A diagnostic keys to an element only by its span, so
+ * when several elements share the span and nothing in the diagnostic says which one it means,
+ * the sheet rings none of them and says so in the legend (exact attribution waits on
+ * diagnostics carrying an element id, card PS4.6).
  */
 
-import { compile, describe, describeLevel, lint } from "../index.js";
+import { compile, describe, describeLevel, diagnosticToJson, lint } from "../index.js";
 import type { Diagnostic, Scene, SceneNode, World } from "../index.js";
 import { EXTERIOR_NODE, resolvePlan } from "../analyze.js";
 import { roomLabelAnchor } from "../elements/room.js";
@@ -29,6 +35,8 @@ export const REVIEW_SHEET_UNITS = 1600;
 export const REVIEW_CROP_SCALE = 0.25;
 /** A close-up shows at least this much plan around its element, in mm, on each axis. */
 export const REVIEW_CROP_MIN_MM = 2400;
+/** At most this many close-ups are drawn, the first in mark order; `--json` lists the rest. */
+export const REVIEW_MAX_CROPS = 24;
 /** …and at least this much margin around the element's own extent. */
 const CROP_MARGIN_MM = 600;
 
@@ -46,10 +54,12 @@ const INK = "#1f2933";
 const MUTED = "#6b7280";
 const PAPER = "#ffffff";
 
-/** The element a mark rings, as `--json` reports it (ids are data here, never in the legend). */
-export interface ReviewElement {
+/** A ringed element, as `--json` reports it (ids are data here, never in the legend). */
+export interface ReviewRinged {
   id: string;
   kind: string;
+  /** The ring's extent in plan mm (the drawn ring's outer edge). */
+  box: ReviewBox;
 }
 
 /** A box in plan millimetres (origin top-left, +y down, as the drawing). */
@@ -60,24 +70,35 @@ export interface ReviewBox {
   h: number;
 }
 
-/** One numbered warning on the sheet. */
+/** Why a mark rings nothing; the legend prints `text`. */
+export interface ReviewUnringed {
+  reason: "whole-plan" | "imported" | "no-element" | "repeated" | "not-drawn";
+  /** With `repeated`: how many elements share the statement. */
+  copies?: number;
+}
+
+/** One numbered warning on the sheet: exactly one per diagnostic. */
 export interface ReviewMark {
   n: number;
   code: string;
   message: string;
   /** Which pass raised it: a `compile()` warning or a default-ruleset `lint()` one. */
   channel: "compile" | "lint";
-  /** The element its span resolves to; `null` when it names none drawn on this storey. */
-  element: ReviewElement | null;
-  /** The ring's extent in plan mm; absent when the mark is legend-only. */
-  ring?: ReviewBox;
+  span?: [number, number];
+  line?: number;
+  col?: number;
+  file?: string;
+  /** What it rings: usually one element, two for a room overlap; empty when legend-only. */
+  ringed: ReviewRinged[];
+  /** Present when `ringed` is empty, or (a room overlap) when a named room could not be ringed. */
+  unringed?: ReviewUnringed;
 }
 
 /** One close-up of a flagged opening or furniture piece. */
 export interface ReviewCrop {
   /** The marks on this element, ascending: the tile's title. */
   n: number[];
-  element: ReviewElement;
+  element: { id: string; kind: string };
   /** The plan window the tile shows, in plan mm. */
   box: ReviewBox;
 }
@@ -86,6 +107,10 @@ export interface ReviewSheet {
   svg: string;
   marks: ReviewMark[];
   crops: ReviewCrop[];
+  /** Marks whose element would have had a close-up past {@link REVIEW_MAX_CROPS}, ascending. */
+  cropsOmitted: number[];
+  /** `compile()`'s own diagnostics (all storeys), which plain `preview` reports. */
+  diagnostics: Diagnostic[];
   /** The storey drawn (multi-storey plans only). */
   level?: number;
 }
@@ -105,11 +130,11 @@ const fmt = fmt2;
 const num = (n: number): number => Number(fmt2(n));
 const box = (b: ReviewBox): ReviewBox => ({ x: num(b.x), y: num(b.y), w: num(b.w), h: num(b.h) });
 
-/** The ring geometry of one element. */
+/** The ring geometry of one element; `ext` is the drawn ring's outer box. */
 type Ring =
-  | { t: "outline"; pts: Point[]; closed: boolean; widthMm: number; anchor: Point; ext: ReviewBox }
-  | { t: "circle"; c: Point; r: number; anchor: Point; ext: ReviewBox }
-  | { t: "rect"; ext: ReviewBox; anchor: Point };
+  | { t: "outline"; pts: Point[]; closed: boolean; widthMm: number; ext: ReviewBox }
+  | { t: "circle"; c: Point; r: number; ext: ReviewBox }
+  | { t: "rect"; ext: ReviewBox };
 
 /** Every point a scene primitive draws through (arcs and circles by their extreme points). */
 function primPoints(n: SceneNode): Point[] {
@@ -153,7 +178,10 @@ function extentOf(pts: readonly Point[]): ReviewBox | null {
 
 const grow = (b: ReviewBox, d: number): ReviewBox => ({ x: b.x - d, y: b.y - d, w: b.w + 2 * d, h: b.h + 2 * d });
 
-/** A room's floor ring, from its shape: the polygon, the circle, else its rectangle. */
+const overlaps = (a: ReviewBox, b: ReviewBox): boolean =>
+  a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+/** A room's floor ring, from its shape: the polygon, else its rectangle. */
 function roomRing(r: RRoom): Point[] {
   if (r.poly) return r.poly;
   return [
@@ -164,56 +192,63 @@ function roomRing(r: RRoom): Point[] {
   ];
 }
 
+/** What a diagnostic's span resolves to on this storey. */
+type Attribution = { element: ResolvedElement } | { unringed: ReviewUnringed };
+
 /**
  * The element a diagnostic names: the one whose statement contains its span, the narrowest
- * (the rule `impact` keys diagnostics by). Several elements share one span when a component
- * is placed more than once; then the one whose id a hint quotes wins, else the first.
+ * (the rule `impact` keys diagnostics by), in the file the span is measured in. Several
+ * elements share one span when a statement is repeated (a `for` body, a component placed more
+ * than once); then the one whose id a hint quotes wins, else the tied room nearest a door or
+ * opening a hint quotes. Otherwise the diagnostic does not say which copy it means, and it is
+ * attributed to none of them.
  */
-function elementOf(d: Diagnostic, elements: readonly ResolvedElement[]): ResolvedElement | undefined {
+function attribute(d: Diagnostic, elements: readonly ResolvedElement[]): Attribution {
   const s = d.span;
-  if (!s || d.file !== undefined) return undefined;
+  if (!s) return { unringed: { reason: "whole-plan" } };
   let best: ResolvedElement[] = [];
   let bestLen = Infinity;
   for (const e of elements) {
     const es = e.span;
-    if (!es || e._file !== undefined || es.start > s.start || es.end < s.end) continue;
+    if (!es || e._file !== d.file || es.start > s.start || es.end < s.end) continue;
     const len = es.end - es.start;
     if (len < bestLen) {
       best = [e];
       bestLen = len;
     } else if (len === bestLen) best.push(e);
   }
-  if (best.length <= 1) return best[0];
+  if (best.length === 0) return { unringed: { reason: d.file !== undefined ? "imported" : "no-element" } };
+  if (best.length === 1) return { element: best[0]! };
   const hints = (d.hints ?? []).join("\n");
-  const named = best.find((e) => hints.includes(`"${e.id}"`));
-  if (named) return named;
+  const named = best.filter((e) => hints.includes(`"${e.id}"`));
+  if (named.length === 1) return { element: named[0]! };
   // A hint that quotes a door or opening (the bottleneck of a walk, say) places the
-  // diagnostic: the tied room whose floor that connector stands on (nearest its outline) wins.
-  const at = elements.find(
+  // diagnostic: the one tied room whose floor that connector stands on (nearest its outline).
+  const quoted = elements.filter(
     (e): e is RDoor | ROpening | RWindow =>
       (e.kind === "door" || e.kind === "opening" || e.kind === "window") && hints.includes(`"${e.id}"`),
-  )?.at;
-  if (at) {
+  );
+  if (quoted.length === 1 && best.every((e) => e.kind === "room")) {
+    const at = quoted[0]!.at;
     let near: RRoom | undefined;
     let nearD = Infinity;
+    let tie = false;
     for (const e of best) {
-      if (e.kind !== "room") continue;
       const ring = roomRing(e as RRoom);
       const dist = pointInPolygon(at.x, at.y, ring) ? 0 : distToPolygonEdge(at, ring);
       if (dist < nearD) {
         near = e as RRoom;
         nearD = dist;
-      }
+        tie = false;
+      } else if (dist === nearD) tie = true;
     }
-    if (near) return near;
+    if (near && !tie) return { element: near };
   }
-  return best[0];
+  return { unringed: { reason: "repeated", copies: best.length } };
 }
 
-/**
- * Ring geometry for an element, from its shape (rooms, walls, openings) or its drawn nodes.
- * `roomFont` lifts a room's tag clear of its drawn name (the tag sits above the label point). */
-function ringOf(e: ResolvedElement, drawn: ReadonlyMap<string, Point[]>, padMm: number, roomFont: number): Ring | null {
+/** Ring geometry for an element, from its shape (rooms, walls, openings) or its drawn nodes. */
+function ringOf(e: ResolvedElement, drawn: ReadonlyMap<string, Point[]>, padMm: number): Ring | null {
   if (e.kind === "room") {
     const r = e as RRoom;
     const pts = r.circle
@@ -222,39 +257,31 @@ function ringOf(e: ResolvedElement, drawn: ReadonlyMap<string, Point[]>, padMm: 
           return { x: r.circle!.c.x + r.circle!.r * Math.cos(a), y: r.circle!.c.y + r.circle!.r * Math.sin(a) };
         })
       : roomRing(r);
-    const label = roomLabelAnchor(r);
-    const lifted = { x: label.x, y: label.y - roomFont * 1.8 };
-    return { t: "outline", pts, closed: true, widthMm: padMm * 0.6, anchor: lifted, ext: extentOf(pts)! };
+    const widthMm = padMm * 0.6;
+    return { t: "outline", pts, closed: true, widthMm, ext: grow(extentOf(pts)!, widthMm / 2) };
   }
   if (e.kind === "wall") {
     const w = e as RWall;
     const ext = extentOf(w.points);
     if (!ext) return null;
+    // The band is the wall's thickness plus a pad each side; the box is the band's outer edge.
     return {
       t: "outline",
       pts: w.points,
       closed: w.closed,
-      widthMm: w.thickness + padMm,
-      anchor: w.points[0]!,
-      ext: grow(ext, w.thickness / 2),
+      widthMm: w.thickness + 2 * padMm,
+      ext: grow(ext, w.thickness / 2 + padMm),
     };
   }
   if (e.kind === "door" || e.kind === "window" || e.kind === "opening") {
     const o = e as RDoor | ROpening;
     const r = o.width / 2 + padMm;
-    return {
-      t: "circle",
-      c: o.at,
-      r,
-      anchor: { x: o.at.x + r * 0.71, y: o.at.y - r * 0.71 },
-      ext: grow({ x: o.at.x, y: o.at.y, w: 0, h: 0 }, r),
-    };
+    return { t: "circle", c: o.at, r, ext: grow({ x: o.at.x, y: o.at.y, w: 0, h: 0 }, r) };
   }
   const pts = drawn.get(e.id);
   const ext = pts ? extentOf(pts) : null;
   if (!ext) return null;
-  const g = grow(ext, padMm);
-  return { t: "rect", ext: g, anchor: { x: g.x + g.w, y: g.y } };
+  return { t: "rect", ext: grow(ext, padMm) };
 }
 
 /** Kinds whose marks get a close-up: the openings and the furniture pieces. */
@@ -311,20 +338,47 @@ function ringSvg(ring: Ring, k: number): string {
   );
 }
 
-/** The tag beside a ring: one badge per mark, then the codes (without the `W_` prefix). */
+/** Size of a tag (one badge + code line per mark) at scale `k`, in plan mm. */
+function tagSize(marks: readonly ReviewMark[], k: number): { w: number; h: number } {
+  const r = 11 / k;
+  const font = 12 / k;
+  const text = Math.max(...marks.map((m) => textWidth(m.code.replace(/^W_/, ""), font)));
+  return { w: 2 * r + r * 0.35 + text + 4 / k, h: marks.length * 2.3 * r };
+}
+
+/** The tag: one badge per mark, then the code (without `W_`) on a paper backing, from top-left `at`. */
 function tagSvg(at: Point, marks: readonly ReviewMark[], k: number): string {
   const r = 11 / k;
   const font = 12 / k;
   const out: string[] = [];
   marks.forEach((m, i) => {
-    const c = { x: at.x + r, y: at.y - r + i * 2.3 * r };
-    out.push(badge(c, r, String(m.n)));
+    const c = { x: at.x + r, y: at.y + r + i * 2.3 * r };
     const code = m.code.replace(/^W_/, "");
+    const tx = c.x + r * 1.35;
+    const tw = textWidth(code, font);
     out.push(
-      `<text x="${fmt(c.x + r * 1.35)}" y="${fmt(c.y)}" font-size="${fmt(font)}" font-weight="700" fill="${RING}" stroke="${PAPER}" stroke-width="${fmt(3 / k)}" paint-order="stroke" dominant-baseline="central">${xmlText(code)}</text>`,
+      `<rect x="${fmt(tx - 2 / k)}" y="${fmt(c.y - font * 0.7)}" width="${fmt(tw + 4 / k)}" height="${fmt(font * 1.4)}" fill="${PAPER}" fill-opacity="0.9"/>`,
+      badge(c, r, String(m.n)),
+      `<text x="${fmt(tx)}" y="${fmt(c.y)}" font-size="${fmt(font)}" font-weight="700" fill="${RING}" dominant-baseline="central">${xmlText(code)}</text>`,
     );
   });
   return out.join("");
+}
+
+/** The legend's note for a mark that rings nothing (or not everything it names). */
+function unringedText(u: ReviewUnringed, partial: boolean): string {
+  switch (u.reason) {
+    case "whole-plan":
+      return "(the whole plan; nothing to ring)";
+    case "imported":
+      return "(in an imported file; not placed on this storey)";
+    case "no-element":
+      return "(names no drawn element)";
+    case "not-drawn":
+      return partial ? "(the other room is not named by a unique label; not ringed)" : "(not drawn on this storey)";
+    case "repeated":
+      return `(in a repeated statement, ${u.copies} copies; the warning does not say which${partial ? ", so that room is not ringed" : ""})`;
+  }
 }
 
 /**
@@ -362,22 +416,15 @@ export function buildReviewSheet(source: string, opts: ReviewOptions = {}): Revi
   const resolved = resolvePlan(source, world ? { world } : {});
   const ir = pageIndex >= 0 ? resolved.levels[pageIndex]!.ir : resolved.ir!;
   const elements = ir.elements;
+  const rooms = elements.filter((e): e is RRoom => e.kind === "room");
 
-  // The warnings: compile's and the default ruleset's, this storey's, each once, in source order.
+  // The warnings: compile's and the default ruleset's, this storey's, ONE MARK EACH, in
+  // source order of the span (none last), then code, then the order they were raised in.
   const onStorey = (d: Diagnostic): boolean => level === undefined || d.level === undefined || d.level === level;
-  const seen = new Set<string>();
   const raw: Array<{ d: Diagnostic; channel: ReviewMark["channel"] }> = [];
-  const take = (d: Diagnostic, channel: ReviewMark["channel"]): void => {
-    if (d.severity !== "warning" || !onStorey(d)) return;
-    // The hints are part of the key: two instances of one component raise the same
-    // message from one span, and only their hints tell the two elements apart.
-    const key = `${d.code ?? ""}\u0000${d.message}\u0000${(d.hints ?? []).join("\u0001")}\u0000${d.span?.start ?? ""}:${d.span?.end ?? ""}\u0000${d.level ?? ""}`;
-    if (seen.has(key)) return;
-    seen.add(key);
-    raw.push({ d, channel });
-  };
-  for (const d of plain.diagnostics) take(d, "compile");
-  for (const d of lint(source, world ? { world } : {})) take(d, "lint");
+  for (const d of plain.diagnostics) if (d.severity === "warning" && onStorey(d)) raw.push({ d, channel: "compile" });
+  for (const d of lint(source, world ? { world } : {}))
+    if (d.severity === "warning" && onStorey(d)) raw.push({ d, channel: "lint" });
   const order = raw.map((x, i) => ({ ...x, i }));
   order.sort((a, b) => {
     const sa = a.d.span?.start ?? Number.MAX_SAFE_INTEGER;
@@ -395,22 +442,48 @@ export function buildReviewSheet(source: string, opts: ReviewOptions = {}): Revi
 
   const marks: ReviewMark[] = [];
   const rings = new Map<string, { ring: Ring; element: ResolvedElement; marks: ReviewMark[] }>();
+  const ringFor = (e: ResolvedElement, mark: ReviewMark): boolean => {
+    const held = rings.get(e.id);
+    if (held) {
+      if (!held.marks.includes(mark)) held.marks.push(mark);
+      mark.ringed.push({ id: e.id, kind: e.kind, box: box(held.ring.ext) });
+      return true;
+    }
+    const ring = ringOf(e, drawn, padMm);
+    if (!ring) return false;
+    rings.set(e.id, { ring, element: e, marks: [mark] });
+    mark.ringed.push({ id: e.id, kind: e.kind, box: box(ring.ext) });
+    return true;
+  };
   order.forEach(({ d, channel }, i) => {
-    const e = elementOf(d, elements);
-    const ring = e ? ringOf(e, drawn, padMm, scene.sizes.roomFont) : null;
+    const j = diagnosticToJson(source, d);
     const mark: ReviewMark = {
       n: i + 1,
       code: d.code ?? "",
       message: d.message,
       channel,
-      element: e && ring ? { id: e.id, kind: e.kind } : null,
-      ...(e && ring ? { ring: box(ring.ext) } : {}),
+      ...(j.span ? { span: j.span } : {}),
+      ...(j.line !== undefined ? { line: j.line, col: j.col } : {}),
+      ...(d.file !== undefined ? { file: d.file } : {}),
+      ringed: [],
     };
     marks.push(mark);
-    if (e && ring) {
-      const held = rings.get(e.id);
-      if (held) held.marks.push(mark);
-      else rings.set(e.id, { ring, element: e, marks: [mark] });
+    const a = attribute(d, elements);
+    if ("element" in a) {
+      if (!ringFor(a.element, mark)) mark.unringed = { reason: "not-drawn" };
+    } else mark.unringed = a.unringed;
+    // A room overlap names TWO rooms and its span holds one: ring the other too when its
+    // label names exactly one room on this storey; otherwise say it is not ringed.
+    if (d.code === "W_ROOM_OVERLAP") {
+      const m = /^Rooms "(.*)" and "(.*)" overlap$/.exec(d.message);
+      const held = "element" in a ? a.element.id : undefined;
+      for (const name of m ? [m[1]!, m[2]!] : []) {
+        const named = rooms.filter((r) => r.label === name);
+        if (named.length === 1) {
+          if (named[0]!.id !== held) ringFor(named[0]!, mark);
+        } else if (!named.some((r) => r.id === held) && mark.unringed === undefined)
+          mark.unringed = named.length > 1 ? { reason: "repeated", copies: named.length } : { reason: "not-drawn" };
+      }
     }
   });
 
@@ -431,8 +504,8 @@ export function buildReviewSheet(source: string, opts: ReviewOptions = {}): Revi
   let y = panelY + panelH + GAP;
 
   // The access graph exactly as `describe().access` reports it for this storey: rooms as
-  // nodes at their label points, one edge per connector drawn through the connector itself.
-  const rooms = elements.filter((e): e is RRoom => e.kind === "room");
+  // nodes at their label points (small hollow rings with a paper halo, so the name stays
+  // legible), one edge per connector drawn through the connector itself.
   const doors = elements.filter((e): e is RDoor => e.kind === "door");
   const openings = elements.filter((e): e is ROpening => e.kind === "opening");
   const summary = describe(source, world ? { world } : {});
@@ -441,6 +514,7 @@ export function buildReviewSheet(source: string, opts: ReviewOptions = {}): Revi
   const connAt = new Map<string, Point>([...doors, ...openings].map((c) => [c.id, c.at]));
   const reachable = new Map(access.rooms.map((r) => [r.id, r.reachable]));
   const graph: string[] = [];
+  const captions: string[] = [];
   const gw = fmt(2 / k);
   for (const edge of access.edges) {
     const at = connAt.get(edge.doorId);
@@ -459,26 +533,66 @@ export function buildReviewSheet(source: string, opts: ReviewOptions = {}): Revi
       `<rect x="${fmt(at.x - s)}" y="${fmt(at.y - s)}" width="${fmt(2 * s)}" height="${fmt(2 * s)}" fill="${colour}"/>`,
     );
   }
+  const main = access.mainEntrance;
   for (const id of access.entrances) {
     const at = connAt.get(id);
     if (!at) continue;
     const s = 9 / k;
+    // Which entrance is the main one, or that the choice is a tie (`describe().access.mainEntrance`).
+    const caption =
+      main === undefined
+        ? "ENTRANCE"
+        : main.door === id
+          ? "MAIN ENTRANCE"
+          : main.basis === "tie" && main.candidates.includes(id)
+            ? "ENTRANCE (main: a tie)"
+            : "ENTRANCE";
     graph.push(
       `<polygon points="${fmt(at.x)},${fmt(at.y - s)} ${fmt(at.x + s)},${fmt(at.y)} ${fmt(at.x)},${fmt(at.y + s)} ${fmt(at.x - s)},${fmt(at.y)}" fill="${ENTRANCE}"/>`,
-      `<text x="${fmt(at.x + s * 1.3)}" y="${fmt(at.y + s * 1.9)}" font-size="${fmt(11 / k)}" font-weight="700" fill="${ENTRANCE}" stroke="${PAPER}" stroke-width="${fmt(3 / k)}" paint-order="stroke">ENTRANCE</text>`,
+    );
+    captions.push(
+      `<text x="${fmt(at.x + s * 1.3)}" y="${fmt(at.y + s * 1.9)}" font-size="${fmt(11 / k)}" font-weight="700" fill="${ENTRANCE}" stroke="${PAPER}" stroke-width="${fmt(3 / k)}" paint-order="stroke">${caption}</text>`,
     );
   }
   for (const r of rooms) {
     const p = nodeAt.get(r.id)!;
     const ok = reachable.get(r.id) !== false;
+    const dash = ok ? "" : ` stroke-dasharray="${fmt(3 / k)} ${fmt(2 / k)}"`;
     graph.push(
-      `<circle cx="${fmt(p.x)}" cy="${fmt(p.y)}" r="${fmt(6 / k)}" fill="${ok ? GRAPH : PAPER}" fill-opacity="${ok ? "0.85" : "1"}" stroke="${ok ? PAPER : GRAPH}" stroke-width="${fmt(2 / k)}"/>`,
+      `<circle cx="${fmt(p.x)}" cy="${fmt(p.y)}" r="${fmt(5 / k)}" fill="none" stroke="${PAPER}" stroke-width="${fmt(5 / k)}"/>`,
+      `<circle cx="${fmt(p.x)}" cy="${fmt(p.y)}" r="${fmt(5 / k)}" fill="none" stroke="${ok ? GRAPH : MUTED}" stroke-width="${fmt(2 / k)}"${dash}/>`,
     );
   }
 
-  // Rings and their tags on the main plan.
+  // Rings, then their tags: each tag at the first outward corner of its ring box (NE, NW,
+  // SE, SW) that misses every ring and every tag placed so far, else NE.
   const ringMarks: string[] = [];
-  for (const { ring, marks: ms } of rings.values()) ringMarks.push(ringSvg(ring, k), tagSvg(ring.anchor, ms, k));
+  const tagMarks: string[] = [];
+  const ringBoxes = [...rings.values()].map((r) => r.ring.ext);
+  const placed: ReviewBox[] = [];
+  for (const { ring, marks: ms } of rings.values()) {
+    ringMarks.push(ringSvg(ring, k));
+    const { w, h } = tagSize(ms, k);
+    const e = ring.ext;
+    const corners: ReviewBox[] = [
+      { x: e.x + e.w, y: e.y - h, w, h },
+      { x: e.x - w, y: e.y - h, w, h },
+      { x: e.x + e.w, y: e.y + e.h, w, h },
+      { x: e.x - w, y: e.y + e.h, w, h },
+    ];
+    const free = corners.find((c) => !ringBoxes.some((b) => overlaps(c, b)) && !placed.some((b) => overlaps(c, b)));
+    const at = free ?? corners[0]!;
+    placed.push(at);
+    tagMarks.push(tagSvg(at, ms, k));
+  }
+
+  // Close-ups: one tile per flagged opening or furniture piece, in mark order, at one scale,
+  // at most REVIEW_MAX_CROPS of them.
+  const cropped = [...rings.values()].filter((r) => CROPPED.has(r.element.kind));
+  const drawnCrops = cropped.slice(0, REVIEW_MAX_CROPS);
+  const cropsOmitted = [...new Set(cropped.slice(REVIEW_MAX_CROPS).flatMap((r) => r.marks.map((m) => m.n)))]
+    .filter((n) => !drawnCrops.some((c) => c.marks.some((m) => m.n === n)))
+    .sort((a, b) => a - b);
 
   // Legend.
   const legend: string[] = [];
@@ -490,20 +604,22 @@ export function buildReviewSheet(source: string, opts: ReviewOptions = {}): Revi
   // The key to the graph, once: what the blue marks are.
   const ky = y + 9;
   legend.push(
-    `<circle cx="${PAD + 11}" cy="${ky}" r="6" fill="${GRAPH}" fill-opacity="0.85"/>`,
-    `<circle cx="${PAD + 31}" cy="${ky}" r="5" fill="${PAPER}" stroke="${GRAPH}" stroke-width="2"/>`,
-    `<rect x="${PAD + 45}" y="${ky - 4}" width="8" height="8" fill="${GRAPH}"/>`,
-    `<polygon points="${PAD + 69},${ky - 8} ${PAD + 77},${ky} ${PAD + 69},${ky + 8} ${PAD + 61},${ky}" fill="${ENTRANCE}"/>`,
-    `<text x="${PAD + 88}" y="${ky}" font-size="${LEGEND_FONT}" fill="${MUTED}" dominant-baseline="central">access graph (describe().access): a room, filled when reachable from an entrance on this storey; a door or opening; an entrance. Red: a ringed element and its numbered warnings.</text>`,
+    `<circle cx="${PAD + 11}" cy="${ky}" r="5" fill="none" stroke="${GRAPH}" stroke-width="2"/>`,
+    `<circle cx="${PAD + 29}" cy="${ky}" r="5" fill="none" stroke="${MUTED}" stroke-width="2" stroke-dasharray="3 2"/>`,
+    `<rect x="${PAD + 43}" y="${ky - 4}" width="8" height="8" fill="${GRAPH}"/>`,
+    `<polygon points="${PAD + 67},${ky - 8} ${PAD + 75},${ky} ${PAD + 67},${ky + 8} ${PAD + 59},${ky}" fill="${ENTRANCE}"/>`,
+    `<text x="${PAD + 86}" y="${ky}" font-size="${LEGEND_FONT}" fill="${MUTED}" dominant-baseline="central">access graph (describe().access): a room reached from an entrance on this storey; one not reached; a door or opening; an entrance. Red: a ringed element and its numbered warnings.</text>`,
   );
   y += LEGEND_LINE + 8;
   const textX = PAD + 34;
   const textW = innerW - 34;
   for (const m of marks) {
     legend.push(badge({ x: PAD + 11, y: y + 9 }, 11, String(m.n)));
-    // A warning that names nothing drawn on this storey is listed, never ringed.
-    const where =
-      m.element === null ? `<tspan dx="8" font-weight="400" fill="${MUTED}">(not on the drawing)</tspan>` : "";
+    // A warning that names nothing drawn on this storey (or cannot say which copy) is
+    // listed with the reason, never ringed on a guess.
+    const where = m.unringed
+      ? `<tspan dx="8" font-weight="400" fill="${MUTED}">${xmlText(unringedText(m.unringed, m.ringed.length > 0))}</tspan>`
+      : "";
     legend.push(
       `<text x="${textX}" y="${fmt(y + 9)}" font-size="${LEGEND_FONT}" font-weight="700" fill="${INK}" dominant-baseline="central">${xmlText(m.code)}${where}</text>`,
     );
@@ -517,20 +633,19 @@ export function buildReviewSheet(source: string, opts: ReviewOptions = {}): Revi
     y += 6;
   }
 
-  // Close-ups: one tile per flagged opening or furniture piece, in mark order, at one scale.
   const crops: ReviewCrop[] = [];
   const tiles: string[] = [];
-  const cropped = [...rings.values()].filter((r) => CROPPED.has(r.element.kind));
-  if (cropped.length > 0) {
+  if (drawnCrops.length > 0) {
     y += GAP - 6;
+    const more = cropped.length - drawnCrops.length;
     tiles.push(
-      `<text x="${PAD}" y="${fmt(y)}" font-size="16" font-weight="700" fill="${INK}" dominant-baseline="hanging">Close-ups (1 m = ${fmt(REVIEW_CROP_SCALE * 1000)} units, every tile)</text>`,
+      `<text x="${PAD}" y="${fmt(y)}" font-size="16" font-weight="700" fill="${INK}" dominant-baseline="hanging">Close-ups (1 m = ${fmt(REVIEW_CROP_SCALE * 1000)} units, every tile)${more > 0 ? `<tspan dx="8" font-weight="400" fill="${MUTED}">+${more} close-up${more === 1 ? "" : "s"} not drawn (the first ${REVIEW_MAX_CROPS} in mark order are)</tspan>` : ""}</text>`,
     );
     y += 28;
     const maxMm = innerW / REVIEW_CROP_SCALE;
     let x = PAD;
     let rowH = 0;
-    for (const { ring, element, marks: ms } of cropped) {
+    for (const { ring, element, marks: ms } of drawnCrops) {
       const e = ring.ext;
       const wMm = Math.min(maxMm, Math.max(REVIEW_CROP_MIN_MM, e.w + 2 * CROP_MARGIN_MM));
       const hMm = Math.min(maxMm, Math.max(REVIEW_CROP_MIN_MM, e.h + 2 * CROP_MARGIN_MM));
@@ -578,11 +693,20 @@ export function buildReviewSheet(source: string, opts: ReviewOptions = {}): Revi
     `</g>`,
     `<g id="rv-access-graph">${graph.join("")}</g>`,
     `<g id="rv-rings">${ringMarks.join("")}</g>`,
+    `<g id="rv-captions">${captions.join("")}</g>`,
+    `<g id="rv-tags">${tagMarks.join("")}</g>`,
     `</svg>`,
     `<rect x="${fmt(panelX)}" y="${fmt(panelY)}" width="${fmt(panelW)}" height="${fmt(panelH)}" fill="none" stroke="${MUTED}" stroke-width="1"/>`,
     `<g id="rv-legend">${legend.join("")}</g>`,
     `<g id="rv-close-ups">${tiles.join("")}</g>`,
     `</svg>`,
   );
-  return { svg: out.join("\n"), marks, crops, ...(level !== undefined ? { level } : {}) };
+  return {
+    svg: out.join("\n"),
+    marks,
+    crops,
+    cropsOmitted,
+    diagnostics: plain.diagnostics,
+    ...(level !== undefined ? { level } : {}),
+  };
 }

@@ -1,0 +1,12 @@
+plan "P10" {
+  units mm
+  wall id=shell exterior thickness 200 { (0,0) (9000,0) (9000,4000) (0,4000) close }
+  room id=r at (0,0) size 9000x4000 label "Class" uses office
+  door at (4500,4000) width 1000 wall shell
+  window at (4500,0) width 1200 wall shell
+  for i in 0..3 {
+    furniture desk at (i * 3000 + 500, 800) size 1600x800
+    furniture chair at (i * 3000 + 1000, 1300) size 500x500
+  }
+  furniture chair at (7700, 1300) size 500x500
+}

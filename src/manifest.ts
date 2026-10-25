@@ -510,7 +510,7 @@ const COMMANDS: ManifestCommand[] = [
       {
         flag: "--review",
         description:
-          "render the REVIEW SHEET instead of the plain plan: the access graph over the plan, every element a compile or default-lint warning names ringed with its number and code, a legend (number → code → message) and a fixed-scale close-up of every flagged opening and furniture piece (default output <name>.review.png; --json adds marks[] and crops[], boxes in plan mm). One storey per sheet (--level); not with --ascii, --view or --overlay",
+          "render the REVIEW SHEET instead of the plain plan: the access graph over the plan, every element a compile or default-lint warning names ringed with its number and code, a legend (number → code → message) and fixed-scale close-ups of the flagged openings and furniture pieces, the first 24 in mark order (default output <name>.review.png; --json adds marks[] with each warning's span and ringed elements, crops[] and cropsOmitted[], boxes in plan mm). One mark per warning; a warning from a repeated statement that does not say which copy it means is listed, not ringed. One storey per sheet (--level); not with --ascii, --view or --overlay",
       },
       {
         ...LEVEL_FLAG,

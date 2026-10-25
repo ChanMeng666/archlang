@@ -1,0 +1,10 @@
+plan "P2" {
+  units mm
+  wall id=shell exterior thickness 200 { (0,0) (9000,0) (9000,3000) (0,3000) close }
+  wall partition thickness 100 { (3000,0) (3000,3000) }
+  wall partition thickness 100 { (6000,0) (6000,3000) }
+  for i in 0..3 {
+    room at (i * 3000, 0) size 3000x3000 label "Cell" uses storage
+  }
+  door at (1500,0) width 900 wall shell
+}
