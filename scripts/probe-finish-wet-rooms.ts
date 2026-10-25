@@ -9,13 +9,15 @@
  * 3600 by 150 and `h` 1200 to 3600 by 300 (17 × 9 sizes), one 800 mm door in the middle of the
  * first (top) wall swinging in or out, and three classes: `uses bath`, `uses wc`, and a room
  * labelled "Ensuite" with no `uses` (the vocabulary reads it as a bath). 17 × 9 × 2 × 3 = 918.
+ * The ensuite class repeats the bath class exactly, so it runs only with `--ensuite` (or
+ * `{ ensuite: true }`); without it the sweep is the 612 bath and WC rooms.
  *
  * For each room it runs `finish --only furnish` and records whether the room was furnished, the
  * statements written, and the gated codes the result raises under the default ruleset and under
  * `accessibility-advisory` (the universal profile the never-worse law also holds under). A
  * furnished room raising one is a violation.
  *
- * Run: `npx tsx scripts/probe-finish-wet-rooms.ts [--against <checkout>] [--json]`. `--against`
+ * Run: `npx tsx scripts/probe-finish-wet-rooms.ts [--ensuite] [--against <checkout>] [--json]`. `--against`
  * runs the same rooms through another checkout's `finish` (a worktree of `origin/main`, say),
  * judges what it wrote with THIS checkout's lint, and reports the rooms lost and gained per class
  * and the rooms furnished by both whose statements differ.
@@ -51,10 +53,10 @@ export interface ProbeRoom {
   source: string;
 }
 
-/** The 918 rooms, in a fixed order. */
-export function probeRooms(): ProbeRoom[] {
+/** The rooms, in a fixed order: 612, or the 918 with `ensuite`. */
+export function probeRooms(opts: { ensuite?: boolean } = {}): ProbeRoom[] {
   const out: ProbeRoom[] = [];
-  for (const [cls, tag] of CLASSES)
+  for (const [cls, tag] of CLASSES.filter(([c]) => c !== "ensuite" || opts.ensuite === true))
     for (let w = 1200; w <= 3600; w += 150)
       for (let h = 1200; h <= 3600; h += 300)
         for (const swing of ["in", "out"] as const)
@@ -87,8 +89,12 @@ export interface ProbeResult {
   violations: string[];
 }
 
-export function sweep(finish: Finish = finishHere, lint: Lint = lintHere): ProbeResult[] {
-  return probeRooms().map((r) => {
+export function sweep(
+  finish: Finish = finishHere,
+  lint: Lint = lintHere,
+  opts: { ensuite?: boolean } = {},
+): ProbeResult[] {
+  return probeRooms(opts).map((r) => {
     const f = finish(r.source, { only: "furnish" });
     const texts = f.changes.map((c) => c.text);
     const violations: string[] = [];
@@ -109,7 +115,8 @@ export function countsByClass(results: readonly ProbeResult[]): Record<RoomClass
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const json = process.argv.includes("--json");
   const at = process.argv.indexOf("--against");
-  const here = sweep();
+  const opts = { ensuite: process.argv.includes("--ensuite") };
+  const here = sweep(finishHere, lintHere, opts);
   const report: Record<string, unknown> = {
     rooms: here.length,
     furnished: countsByClass(here),
@@ -119,7 +126,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const other = (await import(pathToFileURL(resolve(process.argv[at + 1]!, "src/index.ts")).href)) as {
       finish: Finish;
     };
-    const there = sweep(other.finish);
+    const there = sweep(other.finish, lintHere, opts);
     const per = (pick: (a: ProbeResult, b: ProbeResult) => boolean): Record<RoomClass, number> => {
       const out = { bath: 0, wc: 0, ensuite: 0 } as Record<RoomClass, number>;
       here.forEach((a, i) => {

@@ -548,11 +548,25 @@ ${extra}}
     // or shower beside them without a new code, and the room was left empty. The set search
     // (`wetSet`, `src/furnish.ts`) stands the pan elsewhere and fits all three.
     const src = plan(1950, 2250, "bath", "door id=d_x at (1400,2250) width 800 wall w_mid swing out", "");
-    expect(words(src)).toEqual(["wc", "basin", "shower"]);
     const r = finish(src, { only: "furnish" });
     expect(r.unresolved).toEqual([]);
-    const before = new Set(lint(src).map((d) => d.code));
-    expect(lint(r.source).filter((d) => !before.has(d.code))).toEqual([]);
+    expect(r.changes.map((c) => c.text)).toEqual([
+      "furniture wc against wall shell segment 3 offset 3500 side left in r_x",
+      "furniture basin against wall shell segment 0 offset 400 side left in r_x",
+      "furniture shower against wall shell segment 1 offset 550 side left in r_x",
+    ]);
+    // Never worse, counted: no code more often than before, under the default ruleset and the
+    // universal profile the stage's law also holds under.
+    const counts = (s: string, profile?: string): Map<string, number> => {
+      const m = new Map<string, number>();
+      for (const d of lint(s, profile ? { profile } : {})) m.set(d.code ?? "", (m.get(d.code ?? "") ?? 0) + 1);
+      return m;
+    };
+    for (const profile of [undefined, "accessibility-advisory"]) {
+      const was = counts(src, profile);
+      const gained = [...counts(r.source, profile)].filter(([c, n]) => n > (was.get(c) ?? 0)).map(([c]) => c);
+      expect(gained, profile ?? "default").toEqual([]);
+    }
   });
 
   it("a bath where no search finds a bathtub or shower position is left empty, and the note says so", () => {

@@ -20,7 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   machine fix, and every position a lint hint quotes now respects them. `finish` stands a WC it
   writes at a corner with its centreline 450 mm off the side wall (the strictest gated figure);
   a WC room or bathroom too small for its pieces under the figure is now left empty with a note
-  naming the code, where it was furnished before. Twelve examples whose WC
+  naming the code, where it was furnished before (PS2.45, under Fixed, furnishes most of those
+  rooms again as whole sets). Twelve examples whose WC
   stood in a corner or whose fridge, wardrobe or bookcase stood across a window were fixed; their
   drawings move. `describe()` and the drawing of every other plan are unchanged.
 
@@ -385,16 +386,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Standard` on Arial instead of the reader's wider `txt` shape font. DXF output changes; SVG,
   PDF and PNG are unchanged.
 
-- `finish` furnishes small bathrooms and WCs again (plan card PS2.45). Since its WC stood 450 mm
-  off the side wall, a wet room whose pieces did not fit around the pan's first position was left
-  empty. Such a room is now tried as whole sets: each position of the pan, with the basin and the
+- `finish` furnishes most small bathrooms and WCs again (plan card PS2.45). Since its WC stood
+  450 mm off the side wall (PS2.11a, above), a wet room whose pieces did not fit around the pan's
+  first position was left empty. Such a room is now tried as whole sets: each position of the pan, with the basin and the
   bath or shower completed around it, the basin also tried against the end of a door's approach
   or of the floor in front of the pan; the first set the never-worse check accepts is written (at
   most four checked, so a run makes at most `1 + 17 × rooms` compile checks). A 1.0 m clear WC
   room 2.2 m long now takes its pan on the end wall and its basin on the side wall. A room
   furnished before keeps its pieces byte for byte, and a room no set fits stays empty with the same
-  note. Over a 918-room sweep (`scripts/probe-finish-wet-rooms.ts`) 213 bathrooms and 275 WC rooms
-  are furnished, against 152 and 260, none raising a clearance, overlap, doorway or swing warning.
+  note. Over a 612-room sweep (`scripts/probe-finish-wet-rooms.ts`) 213 bathrooms and 275 WC rooms
+  are furnished, none raising a clearance, overlap, doorway or swing warning: before this change
+  152 and 260; in 1.43.1, 286 and 286, every one with its pan against a wall or its basin, and 133
+  of the bathrooms with no bath or shower. Of the rooms 1.43.1 furnished, 73 bathrooms and 12 WC rooms
+  stay empty, because no set of the stage's fits them without one of those warnings.
 
 - A door or window tag no longer prints over a room name pinned with `label "…" at (x,y)`. Tags
   are placed before the label pass so that a name moves off a tag, but a pinned name never moves,

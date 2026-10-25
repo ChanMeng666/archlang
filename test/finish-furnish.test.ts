@@ -8,6 +8,7 @@ import {
   type FurnishCodes,
   furnishCheckBound,
   furnishStage,
+  MAX_CHECKS_PER_PIECE,
   MAX_CHECKS_PER_ROOM,
   MAX_PIECE_CHECKS_PER_ROOM,
   MAX_PIECES_PER_ROOM,
@@ -1198,11 +1199,35 @@ suite("furnish law — a wet room's pieces are placed together (PS2.45)", () => 
     const src = room("bath", 2400, 2100, "in");
     const r = finish(src, { only: "furnish" });
     expect(r.unresolved).toEqual([]);
-    expect(r.changes.map((c) => c.text.split(" ")[1])).toEqual(["wc", "basin", "shower"]);
-    expect(r.changes[0]!.text).toBe("furniture wc against wall w segment 2 offset 1850 side left in r");
+    expect(r.changes.map((c) => c.text)).toEqual([
+      // the pan on the far wall, its centreline 450 mm off the side face
+      "furniture wc against wall w segment 2 offset 1850 side left in r",
+      // the basin on the side wall, clear of the door's swing
+      "furniture basin against wall w segment 1 offset 400 side left in r",
+      // the shower in the other corner of the far wall, clear of the pan's side
+      "furniture shower against wall w segment 2 offset 550 side left in r",
+    ]);
     expect(lint(r.source).map((d) => d.code)).toEqual([]);
     expect(gatedIn(r.source, "accessibility-advisory")).toEqual([]);
     expect(gainedBy(src, r.source, undefined)).toEqual([]);
+  });
+
+  it("a wet room every check refuses spends the first proposal, three tries at the pan and four layouts", () => {
+    // The 2.4 × 2.1 m bathroom above, with every candidate refused: 1 first proposal + 3 tries at the
+    // required `wc` (MAX_CHECKS_PER_PIECE) + 4 layouts (MAX_SET_CHECKS_PER_ROOM). Lifting the set
+    // search's cap makes this count grow, so the cap is pinned here, not only by the bound.
+    const src = room("bath", 2400, 2100, "in");
+    let calls = 0;
+    const r = furnishStage(src, {}, (s) => {
+      calls++;
+      return { errors: false, codes: new Map(s === src ? [] : [["W_TEST_BLOCK", 1]]) };
+    });
+    expect(r.source).toBe(src);
+    expect(r.rooms).toBe(1);
+    expect(r.checks).toBe(1 + MAX_CHECKS_PER_PIECE + MAX_SET_CHECKS_PER_ROOM);
+    expect(r.checks).toBe(8);
+    expect(calls).toBe(1 + r.checks);
+    expect(r.unresolved.map((u) => u.codes)).toEqual([["W_TEST_BLOCK"]]);
   });
 
   it("a room too small for any layout stays empty, with the note the stage already gives", () => {
@@ -1223,11 +1248,12 @@ suite("furnish law — a wet room's pieces are placed together (PS2.45)", () => 
   });
 
   it("the wet-room sweep (`scripts/probe-finish-wet-rooms.ts`): its counts, and no furnished room raises a gated code", () => {
-    // Measured 2026-10-26 (PS2.45). On main before this card: bath 152, wc 260, ensuite 152, and
-    // every one of those rooms furnished here with the same statements (the script's `--against`).
+    // Measured 2026-10-26 (PS2.45). On main before this card: bath 152, wc 260, and every one of
+    // those rooms furnished here with the same statements (the script's `--against`). The script's
+    // `--ensuite` class is left out: it reads as a bath and repeats the bath class exactly.
     const results = sweep();
-    expect(results.length).toBe(918);
-    expect(countsByClass(results)).toEqual({ bath: 213, wc: 275, ensuite: 213 });
+    expect(results.length).toBe(612);
+    expect(countsByClass(results)).toEqual({ bath: 213, wc: 275, ensuite: 0 });
     expect(results.filter((r) => r.violations.length > 0).map((r) => r.key)).toEqual([]);
   }, 300000);
 });

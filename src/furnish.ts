@@ -26,7 +26,10 @@
  * rule's hint quotes); a use whose defining piece neither places is left out whole, and reported.
  *
  * **Bounded.** The candidate order is fixed, and the number of compile checks is at most
- * {@link furnishCheckBound} — linear in the rooms. There is no search loop and no randomness.
+ * {@link furnishCheckBound} — linear in the rooms. There is no randomness. The one search is a
+ * wet room's set search ({@link wetSet}): a bounded depth-first search over the candidates that
+ * backs up when a piece has no position, with no compile check inside it; each set it completes
+ * costs one check, and at most {@link MAX_SET_CHECKS_PER_ROOM} are checked.
  */
 
 import type { FurnitureAnchor, PlanNode, Point, UseKind } from "./ast.js";

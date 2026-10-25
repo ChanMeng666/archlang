@@ -72,13 +72,15 @@ under a window comes after every position that is not, and a piece in a corner c
 windows of both walls it touches. A larger footprint is tried before a smaller one. A candidate
 is dropped before any compile when it leaves the room's clear floor, crosses a door's approach
 or swing, or overlaps a piece already proposed or the floor kept clear in front of one. The
-door clearances are the largest any lint profile asks for. There is no search loop and no randomness. One run makes at most `1 + 17 × rooms`
-compile checks (13 before the 2026-10-26 amendment below).
+door clearances are the largest any lint profile asks for. There is no randomness, and no search
+loop but the wet-room set search of the 2026-10-26 amendment below, whose depth-first search backs
+up when a piece has no position and runs no compile check. One run makes at most `1 + 17 × rooms`
+compile checks (13 before that amendment).
 
 > *Amended 2026-10-26 (PS2.45).* A wet room (every use `bath` or `wc`) that the piece-by-piece
 > run would leave empty is tried as whole sets before it is reported: one layout per position the
-> candidates above give the pan, completed depth first in the same order (basin, then bath or
-> shower), each piece also offered where it abuts a placed piece, its front strip or a door's
+> candidates above give the pan, completed by a depth-first search in the same order (basin, then
+> bath or shower) that backs up when a piece has no position and compiles nothing, each piece also offered where it abuts a placed piece, its front strip or a door's
 > approach; a set is dropped before any compile when a pan's side is nearer than the strictest
 > ruleset's `wcSideClearanceMm` to a wall or another piece (`W_WC_SIDE_CLEARANCE`'s own measure).
 > At most 4 layouts are compiled (`MAX_SET_CHECKS_PER_ROOM`, `src/furnish.ts`), so a room costs
