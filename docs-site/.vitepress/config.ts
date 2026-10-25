@@ -332,7 +332,7 @@ const PAGE_META = [
   ],
   [
     "/adr/0033-keep-invariants",
-    "ADR 33 — keep invariants (proposed)",
+    "ADR 33 — keep invariants",
     "A keep declares what must stay: the compiler measures it, reports a signed residual in mm and never moves anything; a broken hard keep fails --strict.",
   ],
 ] as const;

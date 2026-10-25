@@ -1,0 +1,11 @@
+plan "grid50-cx" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (4050,0) (4050,3000) (0,3000) close }
+  room id=a at (0,0) size 4050x3000 label "Room"
+  wall id=m partition thickness 100 { (2025,0) (2025,3000) }
+  keep fixed a.cx at 2025
+  keep fixed a.cx at 2050 soft
+  keep align a.cx m
+  keep fixed a.cy at 1500 advisory
+}

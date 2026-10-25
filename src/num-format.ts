@@ -118,3 +118,20 @@ export function plainDigits(n: number): string {
   const frac = m[3] ?? "";
   return `${m[1]}${m[2]}${frac}${"0".repeat(Number(m[4]) - frac.length)}`;
 }
+
+/**
+ * An integer count `h` of half-lattice units (0.0005 mm: the 0.001 mm lattice of ADR 0022, doubled
+ * so a centre line is never rounded) as its exact decimal in mm, built from the integer's digits
+ * with no division, so no float sits upstream of the bytes (the `keep` residuals, ADR 0033).
+ * `-1_000_000 → "-500"`, `1 → "0.0005"`, `0 → "0"`. A non-integer is a caller bug and throws.
+ */
+export function fmtHalfLattice(h: number): string {
+  if (!Number.isSafeInteger(h)) throw new RangeError(`fmtHalfLattice: ${h} is not an integer count`);
+  const q = Math.abs(h) * 5;
+  const whole = Math.floor(q / 10000);
+  const frac = String(q % 10000)
+    .padStart(4, "0")
+    .replace(/0+$/, "");
+  const body = frac === "" ? String(whole) : `${whole}.${frac}`;
+  return h < 0 ? `-${body}` : body;
+}

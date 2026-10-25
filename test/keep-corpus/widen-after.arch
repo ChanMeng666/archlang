@@ -1,0 +1,28 @@
+plan "widen" {
+  units mm
+  grid 50
+  let AW = 4500
+  level 1 {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+    wall id=p partition thickness 100 { (4000,0) (4000,5000) }
+    room id=a at (0,0) size AW x 5000 label "Living"
+    room id=b right-of a align top gap 0 size 4000x5000 label "Bed"
+    door on shell at 1000 width 900
+    door on p at 2500 width 800
+    window on shell at 6000 width 1500
+    stair id=st at (300,3800) size 2400x900 dir up
+    furniture id=bed double_bed against wall shell segment 0 offset 6000 side left in b
+    keep align a.right b.left p
+    keep min clear b 3800 soft
+  }
+  level 2 {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+    wall id=p partition thickness 100 { (4000,0) (4000,5000) }
+    room id=l at (0,0) size 4000x5000 label "Landing" uses hall
+    room id=b at (4000,0) size 4000x5000 label "Bed 2"
+    door on p at 2500 width 800
+    window on shell at 6000 width 1500
+    stair id=st at (300,3800) size 2400x900 dir down
+  }
+  keep stacked b on levels 1 2 advisory
+}

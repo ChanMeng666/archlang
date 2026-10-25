@@ -219,8 +219,10 @@ export async function cmdFix(args: Args): Promise<number> {
     });
   };
 
-  const errorsOf = (src: string): Diagnostic[] =>
-    compile(src, { noCache: true, world }).diagnostics.filter((d) => d.severity === "error");
+  const compiledDiagsOf = (src: string): Diagnostic[] => compile(src, { noCache: true, world }).diagnostics;
+  /** Broken hard keeps (ADR 0033): the never-worse law counts them, as every source-rewriting
+   *  transform's does (PS4.3 R7). */
+  const brokenKeeps = (ds: readonly Diagnostic[]): number => ds.filter((d) => d.code === "W_KEEP_VIOLATED").length;
 
   const applied: Array<{ code?: string; title: string; applicability: string }> = [];
   const skipped: Array<{ code?: string; reason: string }> = [];
@@ -253,9 +255,16 @@ export async function cmdFix(args: Args): Promise<number> {
     if (report.applied.length === 0) break; // zero progress (all skipped/placeholders)
 
     const errBefore = diagnostics.filter((d) => d.severity === "error").length;
-    const errAfter = errorsOf(report.output).length;
+    const after = compiledDiagsOf(report.output);
+    const errAfter = after.filter((d) => d.severity === "error").length;
     if (errAfter > errBefore && !args.force) {
       stopReason = `pass ${pass + 1} would raise the error count ${errBefore} → ${errAfter}; rolled back (use --force to keep it)`;
+      break;
+    }
+    const keepsBefore = brokenKeeps(diagnostics);
+    const keepsAfter = brokenKeeps(after);
+    if (keepsAfter > keepsBefore && !args.force) {
+      stopReason = `pass ${pass + 1} would break a hard keep (W_KEEP_VIOLATED ${keepsBefore} → ${keepsAfter}); rolled back (use --force to keep it)`;
       break;
     }
 

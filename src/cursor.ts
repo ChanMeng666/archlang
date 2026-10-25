@@ -209,6 +209,11 @@ const STATEMENT_EXPRS: { [K in Statement["kind"]]: (s: Extract<Statement, { kind
     // A zone is a pure lexical/metadata wrapper (label is a string, not an Expr) —
     // no expression of its own; its body is walked separately (`statementBodies`).
   },
+  keep: (s, out) => {
+    // A keep's values, in source order: its `<mm>`, or a `stacked` keep's levels.
+    if (s.form === "offset" || s.form === "min-clear" || s.form === "fixed") out.push(s.mm);
+    else if (s.form === "stacked") for (const l of s.levels) out.push(l);
+  },
   error: () => {
     // A parse failure carries no evaluable expression.
   },

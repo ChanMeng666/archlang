@@ -107,6 +107,19 @@ import { BUILTIN_NAMES } from "./builtins.js";
 import { idSpanOf } from "./parser.js";
 import { roomOverlapNamer } from "./naming.js";
 import { classifyLabelUses } from "./vocabulary.js";
+import {
+  evaluateKeeps,
+  evaluateStacked,
+  expandKeep,
+  type KeepPlace,
+  type KeepRecord,
+  type KeepResult,
+  type KeepSink,
+  type StackedStorey,
+  violationOf,
+} from "./keep.js";
+import type { KeepNode } from "./ast.js";
+import { keepFormText } from "./statement-print.js";
 
 export interface RBase {
   kind: ElementKind;
@@ -1065,6 +1078,10 @@ interface ExpandCtx {
   budget: ElementBudget;
   /** Imported modules' plan-level `let`s, shared BY REFERENCE across one resolution. */
   modules: ModuleEnvs;
+  /** The keeps one resolution expands (ADR 0033), shared BY REFERENCE across every call. */
+  keeps: KeepSink;
+  /** Where a `keep` met here stands: a component body refuses it (`E_KEEP_PLACEMENT`). */
+  keepPlace: KeepPlace;
 }
 
 /**
@@ -1126,6 +1143,8 @@ function moduleFallback(comp: ComponentDef, diagnostics: Diagnostic[], ectx: Exp
             executedWhiles: new Set<string>(),
             budget: { count: 0, capped: false },
             modules,
+            keeps: { list: [], count: 0, limited: false },
+            keepPlace: "component",
           },
           rootZoneFrame(),
         ),
@@ -1441,7 +1460,11 @@ function expandScopeFrame(
             comp.scope ?? components,
             diagnostics,
             depth + 1,
-            { ...ectx, ...(comp.file !== undefined ? { file: comp.file } : { file: undefined }) },
+            {
+              ...ectx,
+              ...(comp.file !== undefined ? { file: comp.file } : { file: undefined }),
+              keepPlace: "component",
+            },
             zone,
           ),
         );
@@ -1484,6 +1507,8 @@ function expandScopeFrame(
               executedWhiles: ectx.executedWhiles,
               budget: ectx.budget,
               modules: ectx.modules,
+              keeps: ectx.keeps,
+              keepPlace: "component",
             },
             // No label: the instance NAME is already the heading a reader wants, and
             // inventing one ("wing instance") would print the same text for every
@@ -1592,6 +1617,11 @@ function expandScopeFrame(
         );
         break;
       }
+      case "keep":
+        // A declared invariant (ADR 0033): its values are evaluated here, in this scope, and the
+        // record is measured once the storey has resolved. It yields no element.
+        expandKeep(stmt, ectx.keepPlace, (e) => asNum(evalIn(e), diag, exprSpan(e)), diag, ectx.keeps);
+        break;
       case "error":
         // A statement that failed to parse — already reported as a diagnostic at
         // parse time. It carries no geometry, so there is nothing to expand.
@@ -1852,6 +1882,19 @@ interface ResolveExtras {
    * where the one below it stopped. Absent = 0, the single-storey plan and the lowest storey.
    */
   stepsBefore?: number;
+  /**
+   * The `keep` seam (ADR 0033). `probe`: this is a `paper` plan's geometry probe, so its keeps
+   * are expanded but never measured (R11). `keepsBefore`/`keepsLimited`: the keeps the storeys
+   * below counted, and whether `E_KEEP_LIMIT` was raised, so the cap is the plan's. `rootKeeps`:
+   * the plan's root `stacked` keeps, handed to the LAST storey's drawn pass to be expanded
+   * against the plan-level bindings (R12). `keepAuthored`: record which ids were authored, for
+   * the `stacked` pass. All absent on a plan with no keep.
+   */
+  probe?: boolean;
+  keepsBefore?: number;
+  keepsLimited?: boolean;
+  rootKeeps?: readonly KeepNode[];
+  keepAuthored?: boolean;
 }
 
 /** A value-based key for {@link ResolveExtras}, so the memo hits across calls (an
@@ -1868,7 +1911,9 @@ function extrasKey(extras: ResolveExtras | undefined): string {
   const h = `E${extras.elevation ?? 0}/${extras.heightsAuthored === undefined ? "-" : extras.heightsAuthored ? 1 : 0}`;
   // Where the step counter starts decides whether the storey crosses the budget, so it is
   // part of what the resolution is a function of.
-  return `${l}|${s}|${h}|T${extras.stepsBefore ?? 0}`;
+  // The keep seam: absent on a plan with no keep, so its keys are what they were.
+  const k = `${extras.probe ? "|P" : ""}${extras.keepsBefore ? `|K${extras.keepsBefore}${extras.keepsLimited ? "!" : ""}` : ""}${extras.rootKeeps ? `|R${extras.rootKeeps.length}` : ""}${extras.keepAuthored ? "|A" : ""}`;
+  return `${l}|${s}|${h}|T${extras.stepsBefore ?? 0}${k}`;
 }
 
 export function resolve(
@@ -1950,7 +1995,8 @@ function levelPlanFor(ast: PlanNode, block: LevelNode, dropPaper: boolean): Plan
   const key = `${idToken(ast)}:${block.level}:${dropPaper ? 1 : 0}`;
   const hit = levelPlanCache.get(key);
   if (hit) return hit;
-  const shared = ast.body.filter((s) => s.kind !== "level");
+  // A root `keep` is the plan's, never copied into every storey (R12): `resolveLevelsImpl` reads it.
+  const shared = ast.body.filter((s) => s.kind !== "level" && s.kind !== "keep");
   const plan: PlanNode = {
     ...ast,
     ...(dropPaper ? { paper: undefined } : {}),
@@ -2044,6 +2090,7 @@ function outerExtent(ir: ResolvedPlan, registry: Registry): ReturnType<typeof sh
 function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registry, world: World): PlanResolution {
   const stampOf = (b: LevelNode): LevelStamp => ({ level: b.level, ...(b.name !== undefined ? { name: b.name } : {}) });
   const shared: Diagnostic[] = [];
+  const { stacked: rootStacked, spans: rootKeepSpans } = rootKeepsOf(ast, blocks.length, shared);
 
   let sheet: ResolvedSheet | undefined;
   // The step budget is one counter for the whole compile, so on a `paper` plan the geometry
@@ -2051,6 +2098,7 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
   // evaluate every storey once and the drawn pass a second time, and the drawn pass starts
   // where the probes stopped. A probe that crosses the budget ends the resolution there.
   let probeSteps = 0;
+  let probeKeeps: KeepState | undefined;
   if (ast.paper) {
     let w = 0;
     let h = 0;
@@ -2072,7 +2120,10 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
         level: stampOf(b),
         storeyCount: blocks.length,
         stepsBefore: probeSteps,
+        probe: true,
+        ...keepsBeforeOf(probeKeeps),
       });
+      probeKeeps = keepStateOfIr.get(probe.ir) ?? probeKeeps;
       probes.push({ b, ...probe });
       const spent = stepsOf(probe.ir);
       if (spent.exhausted) return stoppedLevels(ast, blocks, probes, stampOf);
@@ -2117,7 +2168,11 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
   // evaluated at all (they resolve to no elements and raise nothing).
   let steps = probeSteps;
   let stopped = false;
-  const levels: ResolvedLevel[] = blocks.map((b) => {
+  let keeps: KeepState | undefined;
+  // A report about a root keep is the plan's, not the storey's that happened to expand it.
+  const inRootKeep = (d: Diagnostic): boolean =>
+    d.span !== undefined && rootKeepSpans.some((sp) => d.span!.start >= sp.start && d.span!.end <= sp.end);
+  const levels: ResolvedLevel[] = blocks.map((b, i) => {
     if (stopped) return unresolvedLevel(ast, b, stampOf(b));
     const extras: ResolveExtras = {
       level: stampOf(b),
@@ -2126,20 +2181,54 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
       elevation: elevationOf(heightsBelow),
       heightsAuthored,
       stepsBefore: steps,
+      ...keepsBeforeOf(keeps),
+      ...(rootStacked.length > 0 ? { keepAuthored: true } : {}),
+      ...(rootStacked.length > 0 && i === blocks.length - 1 ? { rootKeeps: rootStacked } : {}),
     };
     const { ir, diagnostics } = resolveCached(levelPlanFor(ast, b, false), registry, world, extras);
     const spent = stepsOf(ir);
     steps = spent.used;
     stopped = spent.exhausted;
+    keeps = keepStateOfIr.get(ir) ?? keeps;
     heightsBelow.push(ir.storeyHeight);
     return {
       level: b.level,
       ...(b.name !== undefined ? { name: b.name } : {}),
       ir,
       // Tag by copy — the cached diagnostics are shared and must never be mutated.
-      diagnostics: diagnostics.map((d) => ({ ...d, level: b.level })),
+      diagnostics: diagnostics.map((d) => (inRootKeep(d) ? { ...d } : { ...d, level: b.level })),
     };
   });
+
+  // The plan's `stacked` keeps, after the last storey (R12), on the same step counter: a crossing
+  // here is `E_STEP_LIMIT` and leaves the plan unresolved, as any crossing does (R13).
+  const planKeeps: Diagnostic[] = [];
+  const records = !stopped ? keepStateOfIr.get(levels[levels.length - 1]!.ir)?.stacked : undefined;
+  if (records) {
+    const storeys: StackedStorey[] = levels.map((l) => ({
+      level: l.level,
+      ir: l.ir,
+      authored: keepStateOfIr.get(l.ir)?.authored ?? (() => false),
+    }));
+    const run = withStepMeter(steps, () =>
+      evaluateStacked(records, storeys, (d) => {
+        chargeSteps(DIAGNOSTIC_STEPS);
+        planKeeps.push(d);
+      }),
+    );
+    if ("value" in run) {
+      for (const r of run.value) if (r.grade === "hard" && !r.holds) planKeeps.push(violationOf(r));
+      stackedResultsOfIr.set(levels[0]!.ir, run.value);
+    } else {
+      planKeeps.push(stepLimitDiagnostic(run.signal));
+      stopped = true;
+      for (let i = 0; i < levels.length; i++) {
+        const ir = unresolvedPlan(levelPlanFor(ast, blocks[i]!, false), { level: stampOf(blocks[i]!) });
+        stepsSpent.set(ir, { used: run.used, exhausted: true });
+        levels[i] = { ...levels[i]!, ir };
+      }
+    }
+  }
 
   // Once per PLAN, not per page: the theme's pen (the drawing budget is the pipeline's).
   // It does not run on a plan the step budget stopped (its storeys hold no elements).
@@ -2160,10 +2249,53 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
         levels.map((l) => l.diagnostics),
         ast,
       ),
+      ...planKeeps,
       ...planWide,
     ],
     levels,
   };
+}
+
+/** The keep cap's state the storeys below handed on (absent when nothing was counted). */
+function keepsBeforeOf(k: KeepState | undefined): Pick<ResolveExtras, "keepsBefore" | "keepsLimited"> {
+  if (!k || k.count === 0) return {};
+  return { keepsBefore: k.count, ...(k.limited ? { keepsLimited: true } : {}) };
+}
+
+/**
+ * The root keeps of a multi-storey plan (R12): a `stacked` keep is the plan's, measured after the
+ * last storey; any other form there is refused once, with no level (`E_KEEP_PLACEMENT`), and so is
+ * a `stacked` keep on a plan of one storey. Returns the accepted `stacked` keeps and every root
+ * keep's span.
+ */
+function rootKeepsOf(ast: PlanNode, storeys: number, out: Diagnostic[]): { stacked: KeepNode[]; spans: Span[] } {
+  const stacked: KeepNode[] = [];
+  const spans: Span[] = [];
+  for (const s of ast.body) {
+    if (s.kind !== "keep") continue;
+    if (s.span) spans.push(s.span);
+    const refuse = (message: string, hint: string): void => {
+      out.push({
+        severity: "error",
+        code: "E_KEEP_PLACEMENT",
+        message,
+        ...(s.span ? { span: s.span } : {}),
+        hints: [hint],
+      });
+    };
+    if (s.form !== "stacked") {
+      refuse(
+        "A keep at the root of a multi-storey plan measures no storey: it sits inside the level it measures",
+        `move \`keep ${keepFormText(s)}\` into the \`level\` block whose plan it reads`,
+      );
+    } else if (storeys < 2) {
+      refuse(
+        "A stacked keep compares storeys, and this plan has one",
+        `\`keep ${keepFormText(s)}\` needs two or more \`level\` blocks`,
+      );
+    } else stacked.push(s);
+  }
+  return { stacked, spans };
 }
 
 /** A storey left unevaluated because a storey below it crossed the step budget. */
@@ -2323,6 +2455,48 @@ interface StepsSpent {
 }
 const stepsSpent = new WeakMap<ResolvedPlan, StepsSpent>();
 
+/**
+ * What one storey's resolution knows of its keeps (ADR 0033), beside the IR as `stepsSpent` is,
+ * never on it: the keeps the plan has counted so far (this storey's included), whether
+ * `E_KEEP_LIMIT` was raised, this storey's measured results, the plan's root `stacked` keeps
+ * as the last storey expanded them, and which ids were authored (for the `stacked` pass). Set only
+ * for a plan that declares a keep.
+ */
+interface KeepState {
+  count: number;
+  limited: boolean;
+  results?: KeepResult[];
+  stacked?: KeepRecord[];
+  authored?: (id: string) => boolean;
+}
+const keepStateOfIr = new WeakMap<ResolvedPlan, KeepState>();
+/** The plan's `stacked` results, keyed by its PRIMARY (lowest) storey's IR. */
+const stackedResultsOfIr = new WeakMap<ResolvedPlan, KeepResult[]>();
+
+/**
+ * Every accepted keep of a resolved plan, measured, in source order: each storey's keeps by level,
+ * then the plan's (`stacked`). `undefined` when the plan declares none, so a reader adds no key.
+ * Internal: read by `describe()` and `validate`; never on the IR, never in the drawing.
+ */
+export function keepResultsOf(ir: ResolvedPlan, levels: readonly ResolvedLevel[]): KeepResult[] | undefined {
+  const storeys = levels.length > 0 ? levels.map((l) => l.ir) : [ir];
+  const out: KeepResult[] = [];
+  let any = false;
+  for (const s of storeys) {
+    const st = keepStateOfIr.get(s);
+    if (st?.results) {
+      any = true;
+      out.push(...st.results);
+    }
+  }
+  const plan = stackedResultsOfIr.get(storeys[0]!);
+  if (plan) {
+    any = true;
+    out.push(...plan);
+  }
+  return any ? out : undefined;
+}
+
 /** The steps a resolved plan's resolution left the counter at (0 for a plan from elsewhere). */
 function stepsOf(ir: ResolvedPlan): StepsSpent {
   return stepsSpent.get(ir) ?? { used: 0, exhausted: false };
@@ -2440,6 +2614,7 @@ function resolveBody(
   const zoneFrame = rootZoneFrame();
   const executedWhiles = new Set<string>();
   const budget: ElementBudget = { count: 0, capped: false };
+  const keepSink: KeepSink = { list: [], count: extras.keepsBefore ?? 0, limited: extras.keepsLimited === true };
   const entries = expandScope(
     ast.body,
     globalScope,
@@ -2453,9 +2628,29 @@ function resolveBody(
       executedWhiles,
       budget,
       modules: { builtins: builtinScope, envs: new Map() },
+      keeps: keepSink,
+      keepPlace: extras.level !== undefined ? "storey" : "plan",
     },
     zoneFrame,
   );
+  // The plan's root `stacked` keeps, on the last storey only: expanded against the plan-level
+  // bindings, measured after the last storey (`resolveLevelsImpl`, R12).
+  const stackedSink: KeepSink = { list: [], count: keepSink.count, limited: keepSink.limited };
+  for (const k of extras.rootKeeps ?? []) {
+    stepSite(k.span);
+    chargeSteps(1);
+    const diagRoot = (d: Diagnostic): void => {
+      chargeSteps(DIAGNOSTIC_STEPS);
+      diagnostics.push(d);
+    };
+    expandKeep(
+      k,
+      "root",
+      (e) => asNum(evalExpr(e, globalScope.flatten(), diagRoot), diagRoot, exprSpan(e)),
+      diagRoot,
+      stackedSink,
+    );
+  }
 
   // 1. Partition the flat stream into RESOLUTION GROUPS: one per `place`d instance, plus
   //    the root plan. A plan with no `place` has exactly one group (the root) holding
@@ -3210,6 +3405,54 @@ function resolveBody(
   };
   datumTablesOfIr.set(ir, datumTables);
   if (instanceBodies.size > 0) instanceBodiesOfIr.set(ir, instanceBodies);
+
+  // 8. The storey's keeps (ADR 0033), last: measured against the plan as it resolved, in plan
+  //    coordinates, in source order — on a `paper` plan's drawn pass only (R11). A keep reads, it
+  //    never writes; a broken hard keep is one `W_KEEP_VIOLATED`, after every other diagnostic of
+  //    the storey. A plan with no keep does none of this and spends no step on it.
+  const authoredOf = (): ((id: string) => boolean) => {
+    let ids: Set<string> | undefined;
+    return (id) => {
+      if (!ids) {
+        chargeSteps(entries.length + 1);
+        ids = new Set();
+        for (const e of entries) if (e.idAuthored === true && e.resolved && !dropped.has(e)) ids.add(e.resolved.id);
+      }
+      return ids.has(id);
+    };
+  };
+  const keepState: KeepState = { count: stackedSink.count, limited: stackedSink.limited };
+  if (extras.keepAuthored) keepState.authored = authoredOf();
+  if (stackedSink.list.length > 0) keepState.stacked = stackedSink.list;
+  if (keepSink.list.length > 0 && !extras.probe) {
+    const north = ast.north;
+    const results = evaluateKeeps(keepSink.list, {
+      ir,
+      snap,
+      authored: keepState.authored ?? authoredOf(),
+      compass: {
+        aliases: north === "up",
+        why:
+          typeof north === "object"
+            ? `the plan's \`north\` is a bearing of ${fmt3(north.deg)} degrees`
+            : `the plan's \`north\` is \`${north}\``,
+      },
+      ...(extras.level ? { level: extras.level.level } : {}),
+      ...((extras.storeyCount ?? 1) > 1 && extras.level ? { namingLevel: extras.level.level } : {}),
+      diag: (d) => {
+        chargeSteps(DIAGNOSTIC_STEPS);
+        diagnostics.push(d);
+      },
+    });
+    for (const r of results) {
+      if (r.grade === "hard" && !r.holds) {
+        chargeSteps(DIAGNOSTIC_STEPS);
+        diagnostics.push(violationOf(r));
+      }
+    }
+    keepState.results = results;
+  }
+  if (keepSink.count > 0 || keepState.authored || keepState.stacked) keepStateOfIr.set(ir, keepState);
   return { ir, diagnostics };
 }
 

@@ -107,6 +107,8 @@ export {
 } from "./datum.js";
 export type {
   SceneSummary,
+  KeepSummary,
+  KeepAt,
   LevelSummary,
   SheetSummary,
   VerticalSummary,

@@ -1,0 +1,5 @@
+plan "single-storey-stacked" {
+  units mm
+  room id=a at (0,0) size 3000x3000
+  keep stacked a on levels 1 2
+}

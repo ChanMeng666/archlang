@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `keep`: declared invariants the compiler checks and never solves (ADR 0033; plan card PS4.3a).
+  Seven forms, `keep align <d> <d> …`, `keep equal width|depth <t> <t> …`, `keep offset <x> from
+  <d> <mm>`, `keep min clear <room> <mm>`, `keep on axis <label> <wall>`, `keep stacked <id> on
+  levels <n> <n> …` and `keep fixed <d> at <mm>`, each with a trailing grade, `hard` (the default),
+  `soft` or `advisory`. A datum is a rectangular room's edge or centre line, `axis <label>` or a
+  straight wall (`<wall> segment <n>`), read grid-snapped as an expression reads it and compared
+  exactly on the 0.001 mm lattice; a keep's own `<mm>` is never snapped. Every keep is measured once,
+  after its storey resolves (on a `paper` plan in the drawn pass only; `stacked` after the last
+  storey), on the step meter, and reports a signed residual in mm. A broken `hard` keep is the new
+  compile-channel warning `W_KEEP_VIOLATED` (id-free message, the ids and measured values in the
+  first hint): it fails `validate --strict` but not plain `validate`, `validate --json`'s `next`
+  names it in tier `warning`, and the never-worse law of `finish`, `furnish`, `repair`, `arch fix`
+  and `reroll` counts it. A broken `soft` keep is named by `next` in tier `intent`; an `advisory`
+  keep is only reported. No keep caps taste or reaches `lint()`. Refusals are compile errors:
+  `E_KEEP_TARGET`, `E_KEEP_MEASURE`, `E_KEEP_SELF`, `E_KEEP_PLACEMENT` (inside a component, or
+  `stacked` anywhere but the root of a multi-storey plan), `E_KEEP_VALUE` and `E_KEEP_LIMIT`
+  (1,000 keeps, 64 targets). `describe --json` appends `keeps[]` and `validate --json` appends
+  `keeps` before `next`, each only when the plan declares a keep. `keep` is the one reserved word;
+  the form and grade words stay names everywhere else. A plan with no keep compiles, describes,
+  lints, validates and reports impact byte for byte as before (269 files measured before the
+  statement existed, step counts included); a plan whose keeps are all accepted draws, lints and
+  describes exactly as the same source with its keeps blanked. The spec gains the `keep` line
+  (425 UTF-16 units), paid for by four drawing-only passages the language reference keeps (the
+  `door` line's dashed/solid sentence, its garage sentence shortened, the `outdoor` hatch prose,
+  the window-sill citation): `spec.llm.md` 29,729 → 29,757 units. Plan JSON drops keeps. The
+  `--facts depends` keep rows and `arch impact`'s keeps section follow in PS4.3b.
+
 - Brief-bound dimensions (plan card PS4.4). `describe().totals` gains the plan's **gross internal
   area**, `gross_internal_area_m2`: the floor inside the inner faces of the storey's `exterior`
   walls, joined as the drawing joins them, exact from the shape (arcs included, never a bbox),

@@ -719,6 +719,48 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Fix the value at the reported JSON path (the message names it, e.g. `/rooms/0/width`); express geometry as concrete numbers, and author scripting/imports in `.arch` source instead.",
     '{ "rooms": [ { "x": 0, "y": 0, "width": "big", "height": 3000 } ] }   # error at /rooms/0/width: expected a number',
   ),
+  E_KEEP_LIMIT: E(
+    "E_KEEP_LIMIT",
+    "Too many keeps, or too many targets in one keep.",
+    "A plan declares more than 1,000 `keep` statements (counted as they expand, every storey and loop iteration included), or one keep names more than 64 targets or levels. The cap bounds the size of what a keep reports; the work is bounded by the evaluation-step budget. It is raised once, at the first keep past the cap, and that keep and every later one past it are not checked (their expansion is still counted, so the cap cannot skip work).",
+    "Keep fewer: a keep states an invariant an edit must not break, not every coordinate of the plan. Split a long `keep align` into two.",
+    'plan "K" {\n  units mm\n  room id=a at (0,0) size 3000x3000\n  for i in 0..1001 { keep fixed a.left at 0 }   # error: more than 1000 keeps\n}',
+  ),
+  E_KEEP_MEASURE: E(
+    "E_KEEP_MEASURE",
+    "The keep's measure is not defined for what it names.",
+    "A `keep` names something its measure cannot read: an edge, centre, width, depth, clear span or footprint of a `polygon` or `circle` room; datums of two orientations in one `align`, `offset` or `on axis` (a vertical line and a horizontal one); a wall that is not one straight segment (an arc, an oblique run, or a wall of several segments without `segment <n>`); the depth of an opening; an `offset` measured from something that is not a datum; a bare room where a line is needed. The keep is refused rather than approximated (ADR 0033).",
+    "Name what the measure reads: a rectangular room's `left`/`right`/`top`/`bottom`/`cx`/`cy`, `axis <label>`, a straight wall or `<wall> segment <n>`; compare widths of openings with `keep equal width`.",
+    'plan "K" {\n  units mm\n  room id=a polygon (0,0) (3000,0) (0,3000)\n  keep fixed a.left at 0   # error: a polygon room has no left edge\n}',
+  ),
+  E_KEEP_PLACEMENT: E(
+    "E_KEEP_PLACEMENT",
+    "A keep where it cannot be checked.",
+    "A `keep` sits inside a `component` (a `place`d instance, a bare call or an imported file), where it would be checked once per instance in the instance's own frame; or a `keep stacked` sits inside a `level` block or in a plan with fewer than two storeys (it compares storeys, so it belongs at the plan's root); or another form sits at the root of a multi-storey plan, where it measures no storey (refused once, with no level).",
+    "Move the keep into the plan (or the `level` block) whose geometry it reads; put a `keep stacked` at the root of a multi-storey plan.",
+    'plan "K" {\n  units mm\n  component bay() { room id=r at (0,0) size 3000x3000\n    keep min clear r 2800 }\n  place bay() as w at (0,0)   # error: a keep inside a component\n}',
+  ),
+  E_KEEP_SELF: E(
+    "E_KEEP_SELF",
+    "A keep compares something with itself.",
+    "One target is named twice in one `keep` (`align a.left a.left`, `offset a.left from a.left 0`, `equal width a a`, or the same level twice in a `stacked` keep; a compass word counts as the frame word it aliases). Such a keep can never be broken, so it checks nothing.",
+    "Name each target once; compare the target with the other thing it must stay with.",
+    'plan "K" {\n  units mm\n  room id=a at (0,0) size 3000x3000\n  keep align a.left a.left   # error: the same edge twice\n}',
+  ),
+  E_KEEP_TARGET: E(
+    "E_KEEP_TARGET",
+    "A keep names something that is not there.",
+    "A `keep` target is not an authored id on its storey (or, for `stacked`, on every listed level): an unknown name, an auto id (`room_3`, which renumbers when an earlier element is named), an element that could not be placed, an undeclared `axis <label>`, a wall `segment <n>` past the wall's last segment, or a level the plan does not have. A keep is the statement that must survive edits, so it names only what the author named.",
+    "Give the element its own `id=` and name that, declare the axis in `axes`, or list only the levels the plan has.",
+    'plan "K" {\n  units mm\n  room id=a at (0,0) size 3000x3000\n  keep fixed b.left at 0   # error: no element b\n}',
+  ),
+  E_KEEP_VALUE: E(
+    "E_KEEP_VALUE",
+    "A keep's value is out of its domain.",
+    "A `keep`'s length (`offset … <mm>`, `min clear … <mm>`, `fixed … at <mm>`) is outside the modelling range of ±33,554,432 mm, a `min clear` length is zero or negative, or a level in `keep stacked … on levels` is not a whole number.",
+    "Give the keep a length within the range (a positive one for `min clear`) and whole storey numbers.",
+    'plan "K" {\n  units mm\n  room id=a at (0,0) size 3000x3000\n  keep min clear a 0   # error: a clear span must be positive\n}',
+  ),
   E_JSON_KIND: E(
     "E_JSON_KIND",
     "Unknown element kind in plan JSON.",
@@ -1522,6 +1564,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "At least `minOutsideShellM2` (0.1 m² by default) of the room's floor is off every walled face and every wall body: outside the building. A room drawn on the wall centrelines, or to the outer face, has none outside. The rule judges only a room most of whose floor (half or more, an exact area) lies inside walled faces: a room beside a column ring or a closed WC box, or behind a shell left open at its door, has no closed shell to be outside of, and the rule says nothing rather than invent one. The area is measured in closed form from the room's shape and the joined wall bands; the message also gives how far the farthest corner stands past the walls' outer face. **Why:** a room past the outside wall has floor no wall encloses, usually because the room was resized or moved while its walls stayed put.",
     "Bring the room back inside the walls (resize or move it so its edge meets the outside wall), or move the outside wall out to the room's edge. If that part is meant to be outside (a terrace, a balcony, a porch), it is not a room: draw it as an `outdoor` surface instead and keep the room inside the walls. There is no machine fix.",
     'wall exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }\nroom at (4000,0) size 4600x5000 label "Bedroom" uses bedroom   # lint: 600 mm past the east wall',
+  ),
+  W_KEEP_VIOLATED: W(
+    "W_KEEP_VIOLATED",
+    "A hard keep does not hold.",
+    "A `keep` (grade `hard`, the default) states an invariant the resolved plan breaks: datums that should lie on one line do not, two extents differ, an offset or a fixed position is off, a room's clear span is short, a wall is off its axis, or an element's footprint moves between storeys. The message names what the keep holds and the signed residual in mm (`+` is right of, below, wider or a margin), and the first hint the ids and the measured values. Compile channel: it fails `validate --strict` and every source-rewriting transform's never-worse law counts it, but it never fails plain `validate`, never caps taste and never reaches `lint()`. A `soft` keep that breaks is named by `validate --json`'s `next` (tier `intent`) instead, and an `advisory` one is only reported (`describe`, `validate --json`). **Why:** a keep is checked, never solved: nothing moves to satisfy it (ADR 0033).",
+    "Edit the source so the keep holds (move what it names, or derive it from the rooms so it follows them), or remove the keep if the relation no longer applies. There is no machine fix: which side follows is a design decision.",
+    'plan "K" {\n  units mm\n  room id=a at (0,0) size 3000x3000\n  keep fixed a.left at 100   # warning: the left edge is at 0, 100 mm left of where the keep holds it\n}',
   ),
 });
 

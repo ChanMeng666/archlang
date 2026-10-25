@@ -1,8 +1,10 @@
 # 33. `keep`: declared invariants, checked by the compiler, never solved
 
-- **Status:** Proposed (plan-soundness card PS4.3, `docs/plans/plan-soundness/README.md` §6 and §7
-  row 6). Design record: `docs/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`. To be
-  accepted when the PR that builds the statement and its law (PS4.3a) merges.
+- **Status:** Accepted 2026-10-26 with the PR that builds the statement and its law (plan-soundness
+  card PS4.3a, PR #PRNUM; `docs/plans/plan-soundness/README.md` §6 and §7 row 6). Design record:
+  `docs/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`; as built:
+  `docs/plans/plan-soundness/research/2026-10-26-ps43a-as-built.md`. Decision 6 (the `--facts depends`
+  rows and `arch impact`'s keeps) is built by PS4.3b.
 - **Date:** 2026-10
 - **Relates to:** [ADR 0004](0004-relational-placement-not-optimizer.md) and
   [ADR 0006](0006-solver-as-explicit-transform.md) (no solver inside `compile()`; a solver is an

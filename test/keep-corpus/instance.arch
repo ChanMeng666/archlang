@@ -1,0 +1,16 @@
+plan "instance" {
+  units mm
+  north up
+  component wing() {
+    wall id=shell exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+    room id=main at (0,0) size 4000x3000 label "Wing room"
+  }
+  place wing() as west at (0,0)
+  place wing() as east at (12000,0) mirror x
+  room id=link at (4000,0) size 4000x3000 label "Link"
+  keep align west.main.right link.left
+  keep align link.east east.main.west
+  keep equal width west.main east.main soft
+  keep fixed east.main.left at 8000 advisory
+  keep offset east.shell segment 1 from west.shell segment 1 8000
+}

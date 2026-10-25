@@ -1,0 +1,15 @@
+plan "on-axis" {
+  units mm
+  axes { x at 0, 3600, 7200 y at 0, 4800 }
+  wall id=shell exterior thickness 200 { (0,0) (7200,0) (7200,4800) (0,4800) close }
+  wall id=p partition thickness 100 { (3600,0) (3600,4800) }
+  wall id=r partition thickness 100 { (3650,2400) (7200,2400) }
+  room id=a at (0,0) size 3600x4800 label "Living"
+  room id=b at (3600,0) size 3600x4800 label "Bed"
+  keep on axis 2 p
+  keep on axis 3 shell segment 1 soft
+  keep on axis A shell segment 0 advisory
+  keep on axis B shell segment 2
+  keep on axis B r
+  keep align axis 3 shell segment 1
+}

@@ -1,0 +1,28 @@
+plan "refused" {
+  units mm
+  north down
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  wall id=bow exterior thickness 200 { (0,4000) arc (6000,4000) radius 4000 }
+  wall id=diag partition thickness 100 { (0,0) (2000,2000) }
+  room id=a at (0,0) size 3000x4000 label "A"
+  room at (3000,0) size 3000x4000 label "Auto"
+  room id=poly polygon (0,0) (1000,0) (0,1000)
+  door id=d on shell at 1500 width 800
+  keep fixed nobody.left at 0
+  keep fixed room_2.left at 3000
+  keep on axis 1 shell segment 0
+  keep fixed shell segment 9 at 0
+  keep fixed poly.left at 0
+  keep align a.left a.top
+  keep fixed bow at 0
+  keep fixed shell at 0
+  keep fixed diag at 0
+  keep equal depth d a
+  keep offset a.left from d 0
+  keep fixed a at 0
+  keep fixed a.west at 0
+  keep align a.left a.left
+  keep offset a.left from a.left 0
+  keep fixed a.left at 40000000
+  keep min clear a 0
+}

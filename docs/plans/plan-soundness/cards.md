@@ -217,10 +217,11 @@ into PS3.12)
 
 **PS4.2 · `arch impact`.** `done` (PR #240, 7954f252)
 
-**PS4.3 · `keep` invariants (checked, never solved, by `compile()`).** `todo` (ADR 0033 Proposed)
-- Design: `research/2026-10-26-ps43-keep-design.md` (PR #270). Built as PS4.3a (statement, evaluation,
-  `W_KEEP_VIOLATED`, `describe().keeps[]`, the byte-identity law), then PS4.3b (`validate` `keeps`
-  and `next`, `impact` `keeps`, `depends.keeps[]`, the spec line and its cuts); design §11.
+**PS4.3 · `keep` invariants (checked, never solved, by `compile()`).** `doing` (A: PR #PRNUM; ADR 0033 Accepted)
+- Design: `research/2026-10-26-ps43-keep-design.md` (PR #270). PS4.3a built the statement, its evaluation,
+  `W_KEEP_VIOLATED`, `describe().keeps[]`, `validate --json` `keeps` and `next`, the never-worse counts,
+  the spec line and its cuts and the byte-identity law (`research/2026-10-26-ps43a-as-built.md`); PS4.3b
+  builds `impact` `keeps`, `depends.keeps[]` and PS4.11's Plan JSON note.
 - Vocabulary: `keep align <d> <d> …`, `keep equal width|depth <t> <t> …`, `keep offset <x> from <d> <mm>`,
   `keep min clear <room> <mm>`, `keep on axis <label> <wall>`, `keep stacked <id> on levels <n> <n> …`,
   `keep fixed <d> at <mm>` (D22 R3; design §2).

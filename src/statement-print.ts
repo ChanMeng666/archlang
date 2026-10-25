@@ -17,6 +17,8 @@ import type {
   ExprPoint,
   FurnitureNode,
   FurniturePlace,
+  KeepNode,
+  KeepRef,
   OpeningAttach,
   OpeningBetween,
   RoomRel,
@@ -323,5 +325,50 @@ export function statementText(s: LeafStatement): Doc {
       }${s.mirror ? ` mirror ${s.mirror}` : ""}`;
     case "set":
       return `set ${s.target}(${s.over.map((o) => `${o.key}: ${setValStr(o.value)}`).join(", ")})`;
+    case "keep":
+      return `keep ${keepFormText(s)}${s.grade ? ` ${s.grade}` : ""}`;
+  }
+}
+
+/** One `keep` target as written: `a.right`, `axis 2`, `p`, `w segment 1`. */
+export function keepRefText(r: KeepRef): string {
+  switch (r.t) {
+    case "room":
+      return `${r.room}.${r.word}`;
+    case "axis":
+      return `axis ${r.label}`;
+    case "el":
+      return r.segment !== undefined ? `${r.id} segment ${r.segment}` : r.id;
+  }
+}
+
+/**
+ * A `keep` statement as `arch fmt` prints it, without the leading `keep` and the grade
+ * (`align a.right b.left p`): the text `describe().keeps[].keep` quotes (PS4.3 design §3.3). A
+ * `<mm>` or a level that reads a name prints the name.
+ */
+export function keepFormText(s: KeepNode): string {
+  switch (s.form) {
+    case "align":
+      return `align ${s.refs.map(keepRefText).join(" ")}`;
+    case "equal":
+      return `equal ${s.measure} ${s.refs.map(keepRefText).join(" ")}`;
+    case "offset":
+      return `offset ${keepRefText(s.x)} from ${keepRefText(s.from)} ${exprStr(s.mm)}`;
+    case "min-clear":
+      return `min clear ${keepRefText(s.room)} ${exprStr(s.mm)}`;
+    case "on-axis":
+      return `on ${keepRefText(s.axis)} ${keepRefText(s.wall)}`;
+    case "stacked":
+      // A level list item is its own expression; one that does not start with a number is
+      // parenthesised so it cannot fuse with the item before it (`1 -1` would read as `1 - 1`).
+      return `stacked ${keepRefText(s.target)} on levels ${s.levels
+        .map((e, i) => {
+          const t = exprStr(e);
+          return i > 0 && !/^\d/.test(t) ? `(${t})` : t;
+        })
+        .join(" ")}`;
+    case "fixed":
+      return `fixed ${keepRefText(s.datum)} at ${exprStr(s.mm)}`;
   }
 }

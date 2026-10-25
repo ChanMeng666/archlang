@@ -52,7 +52,9 @@ import { fnv1a } from "./hash.js";
 import { idToken } from "./identity.js";
 import type { ParseCtx, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
-import { STATEMENT_STARTS, TITLE_FIELDS, type TitleField } from "./grammar/tokens.js";
+import { KEEP_GRADES, KEEP_WORDS, STATEMENT_STARTS, TITLE_FIELDS, type TitleField } from "./grammar/tokens.js";
+import type { KeepGrade, KeepNode, KeepRef } from "./ast.js";
+import { splitDatum } from "./room-datums.js";
 import type { PaperOrientation, PaperSize } from "./sheet.js";
 import { PAPER_ORIENTATIONS, PAPER_SIZES } from "./sheet.js";
 import { checkWhileDeprecation } from "./while-deprecation.js";
@@ -1103,6 +1105,131 @@ class Parser {
     return { kind, style };
   }
 
+  // ---- `keep` (ADR 0033) -------------------------------------------------------------
+
+  /**
+   * `keep <form> [hard|soft|advisory]` — a declared invariant (ADR 0033, PS4.3 design §2). Every
+   * word after `keep` is contextual (`KEEP_WORDS`). Parsing rules (R14): a grade word is always
+   * the grade, never a target, and ends the statement; a value (`<mm>`, a level) is the longest
+   * complete expression; a target list ends at the first token that cannot be a target (a grade,
+   * a statement keyword, `}`, or a name that starts an assignment or a call).
+   */
+  private parseKeep(): KeepNode {
+    const kw = this.eatKeyword("keep");
+    const w = this.peek();
+    const forms = KEEP_WORDS.forms;
+    const base = { kind: "keep" as const, id: "", line: kw.line };
+    let node: KeepNode;
+    if (this.isKeyword(forms.align[0])) {
+      this.next();
+      node = { ...base, form: "align", refs: this.parseKeepRefs("align", "datums") };
+    } else if (this.isKeyword(forms.equal[0])) {
+      this.next();
+      const m = this.peek();
+      if (m.type !== "ident" || !(KEEP_WORDS.measures as readonly string[]).includes(m.value)) {
+        this.fail(
+          `\`keep equal\` takes ${KEEP_WORDS.measures.join(" or ")} first, then the rooms or openings it compares (found ${describe(m)})`,
+          m,
+        );
+      }
+      this.next();
+      const measure = m.value as "width" | "depth";
+      node = { ...base, form: "equal", measure, refs: this.parseKeepRefs("equal", "extents") };
+    } else if (this.isKeyword(forms.offset[0])) {
+      this.next();
+      const x = this.parseKeepRef();
+      this.eatKeyword("from");
+      const from = this.parseKeepRef();
+      node = { ...base, form: "offset", x, from, mm: parseExprPratt(this.ctx) };
+    } else if (this.isKeyword(forms["min-clear"][0]) && this.isKeyword(forms["min-clear"][1], 1)) {
+      this.next();
+      this.next();
+      const room = this.parseKeepRef();
+      node = { ...base, form: "min-clear", room, mm: parseExprPratt(this.ctx) };
+    } else if (this.isKeyword(forms["on-axis"][0]) && this.isKeyword(forms["on-axis"][1], 1)) {
+      this.next();
+      const axis = this.parseKeepRef();
+      node = { ...base, form: "on-axis", axis, wall: this.parseKeepRef() };
+    } else if (this.isKeyword(forms.stacked[0])) {
+      this.next();
+      const target = this.parseKeepRef();
+      this.eatKeyword(KEEP_WORDS.levels[0]);
+      this.eatKeyword(KEEP_WORDS.levels[1]);
+      const levels = [parseExprPratt(this.ctx)];
+      while (this.keepValueFollows()) levels.push(parseExprPratt(this.ctx));
+      if (levels.length < 2) {
+        this.fail("`keep stacked … on levels` compares storeys, so it names at least two levels");
+      }
+      node = { ...base, form: "stacked", target, levels };
+    } else if (this.isKeyword(forms.fixed[0])) {
+      this.next();
+      const datum = this.parseKeepRef();
+      this.eatKeyword("at");
+      node = { ...base, form: "fixed", datum, mm: parseExprPratt(this.ctx) };
+    } else {
+      this.fail(
+        `Expected a keep form (align, equal, offset, min clear, on axis, stacked or fixed) after "keep" but found ${describe(w)}`,
+        w,
+      );
+    }
+    if (this.isType("ident") && isKeepGrade(this.peek().value)) node.grade = this.next().value as KeepGrade;
+    return node;
+  }
+
+  /** Whether the next token can be one more target of a keep's list (see {@link parseKeep}). */
+  private keepRefFollows(): boolean {
+    const t = this.peek();
+    if (t.type !== "ident" || isKeepGrade(t.value) || this.statementStarts.has(t.value)) return false;
+    const after = this.peek(1).type;
+    return after !== "equals" && after !== "lparen";
+  }
+
+  /** Whether the next token can start one more level of a `stacked` keep's list. */
+  private keepValueFollows(): boolean {
+    const t = this.peek();
+    if (t.type === "number" || t.type === "minus" || t.type === "lparen") return true;
+    return this.keepRefFollows();
+  }
+
+  /** Two or more targets, then the end of the list. */
+  private parseKeepRefs(form: string, what: string): KeepRef[] {
+    const refs = [this.parseKeepRef()];
+    while (this.keepRefFollows()) refs.push(this.parseKeepRef());
+    if (refs.length < 2) this.fail(`\`keep ${form}\` compares ${what}, so it names at least two`);
+    return refs;
+  }
+
+  /** One target: `<room>.<word>`, `axis <label>`, or an id with an optional `segment <n>`. */
+  private parseKeepRef(): KeepRef {
+    const t = this.peek();
+    if (t.type === "ident" && t.value === "axis") {
+      const after = this.peek(1);
+      if (after.type === "number" || (after.type === "ident" && !isKeepGrade(after.value))) {
+        this.next();
+        const l = this.next();
+        return { t: "axis", label: l.value, span: { start: t.start, end: l.end } };
+      }
+    }
+    if (t.type !== "ident" || this.statementStarts.has(t.value) || isKeepGrade(t.value)) {
+      this.fail(
+        `Expected a keep target (a room datum such as \`a.left\`, \`axis <label>\`, or an authored id) but found ${describe(t)}`,
+        t,
+      );
+    }
+    this.next();
+    const d = splitDatum(t.value);
+    if (d) return { t: "room", room: d.room, word: d.word, span: { start: t.start, end: t.end } };
+    if (this.isKeyword("segment") && this.peek(1).type === "number") {
+      this.next();
+      const n = this.next();
+      if (!Number.isInteger(n.num) || n.num! < 0) {
+        this.fail(`\`segment\` takes a whole number counted from 0 (got ${n.value})`, n);
+      }
+      return { t: "el", id: t.value, segment: n.num!, span: { start: t.start, end: n.end } };
+    }
+    return { t: "el", id: t.value, span: { start: t.start, end: t.end } };
+  }
+
   private parseLet(): LetNode {
     const kw = this.eatKeyword("let");
     const name = this.declName(this.eatIdent());
@@ -1273,6 +1400,7 @@ class Parser {
     else if (t.value === "if") node = this.parseIf(components, selfName);
     else if (t.value === "while") node = this.parseWhile(components, selfName);
     else if (t.value === "set") node = this.parseSet();
+    else if (t.value === "keep") node = this.parseKeep();
     else {
       const def = this.registry.byKeyword.get(t.value);
       if (def) {
@@ -1598,4 +1726,9 @@ function describe(t: Token): string {
   if (t.type === "eof") return "end of input";
   if (t.type === "string") return `string ${JSON.stringify(t.value)}`;
   return `"${t.value}"`;
+}
+
+/** A `keep` grade word (`KEEP_GRADES`). */
+function isKeepGrade(v: string): boolean {
+  return (KEEP_GRADES as readonly string[]).includes(v);
 }

@@ -1,0 +1,19 @@
+plan "refused-placement" {
+  units mm
+  component bay() {
+    room id=r at (0,0) size 3000x3000
+    keep min clear r 2800
+  }
+  level 1 {
+    place bay() as w at (0,0)
+    room id=x at (4000,0) size 3000x3000
+    keep stacked x on levels 1 2
+  }
+  level 2 {
+    room id=x at (4000,0) size 3000x3000
+  }
+  keep fixed x.left at 4000
+  keep stacked x on levels 1 3
+  keep stacked x on levels 1 1.5
+  keep stacked x on levels 2 2
+}

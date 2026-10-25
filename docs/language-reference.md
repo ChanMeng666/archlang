@@ -2553,6 +2553,91 @@ system, so the tables scale with the sheet. `describe()` reports the room schedu
 pure rendering and add no field — every fact they show is already in `describe()`
 (`furniture`, `doors`, `windows`) or the source.
 
+## Keep — declared invariants, checked and never solved
+
+A `keep` states what an edit must not break. The compiler measures it against the resolved plan
+and reports a signed residual in millimetres; it **never moves anything** to make it hold, and it
+draws nothing (ADR 0033).
+
+```arch static
+keep align <d> <d> [<d> …]                  # one line: every residual v(dᵢ) − v(d₁) is 0
+keep equal width|depth <t> <t> [<t> …]      # one extent: m(tᵢ) − m(t₁) is 0
+keep offset <x> from <d> <mm>               # (v(x) − v(d)) − mm is 0
+keep min clear <room> <mm>                  # clear span − mm ≥ 0
+keep on axis <label> <wall>                 # v(wall) − v(axis) is 0
+keep stacked <id> on levels <n> <n> [<n> …] # the footprint's four edges, storey against storey
+keep fixed <d> at <mm>                      # v(d) − mm is 0
+```
+
+Each form may end with a grade, `hard` (the default), `soft` or `advisory`.
+
+**Datums.** A `<d>` is a line: a rectangular room's `left`, `right`, `top`, `bottom`, `cx` or
+`cy` (or a compass word where room datums take one), `axis <label>` from the plan's `axes`, or
+a straight wall read as its centreline (`p`, or `p segment 1` for one segment of a longer wall).
+A vertical line's value is an x, a horizontal one's a y (`+y` down). A keep reads a datum as an
+expression in the plan would, grid-snapped; the keep's own `<mm>` is never snapped. Every value
+goes on the 0.001 mm lattice (`sign(v)·round(|v|·1000)`) and is compared exactly, a centre line
+at twice its value. Targets are **authored ids** only: an auto id (`room_3`) renumbers when an
+earlier element is named, and a keep is the statement that must survive edits.
+
+**What each form measures.**
+- `align` and `on axis`: the datums' positions; the reported residual is the largest, at that
+  target (`+` = right of / below the first).
+- `equal`: a rectangular room's width (x extent) or depth (y extent), or an opening's width.
+- `offset`: `<x>` is a datum parallel to `<d>`, an opening read at its centre, or a piece of
+  furniture read at its footprint's centre, on `<d>`'s normal axis.
+- `min clear`: along each axis, the widest free interval of the room between the bodies
+  (centreline ± t/2) of the straight wall segments that meet the room and span its whole other
+  extent; the smaller of the two. A wall end joined to another wall carries its body on by half
+  its thickness, so a partition T-joined at both ends spans the room between them. A wall's
+  height is never read. A curved, oblique or non-spanning segment that meets the room is not
+  read, and is counted (`skipped_walls`).
+- `stacked`: the element's resolved `at` + `size` rectangle (a rectangular room, a stair, a lift,
+  an escalator or a void) on each listed storey, edge by edge against the first.
+- `fixed`: the datum against the stated value.
+
+**Grades.** A broken `hard` keep is `W_KEEP_VIOLATED`, a compile-channel warning: it fails
+`validate --strict` (plain `validate` still exits 0), `validate --json`'s `next` names it with the
+other compile warnings, and `finish`, `furnish`, `repair` and `fix` refuse a rewrite that
+breaks one. A broken `soft` keep is named by `next` in its `intent` tier and never gates. An
+`advisory` keep is only reported. No grade caps the taste score, and `lint()` never reads a keep.
+
+**Where results appear.** `describe --json` appends `keeps[]` (one row per keep, every storey's
+by level then the plan's: the statement, form, grade, targets, `holds`, `residual_mm`, and `at`,
+`measured_mm`, `residuals` and `skipped_walls` where they apply), and `validate --json` appends
+`keeps` before `next`. Both keys are present only when the plan declares a keep.
+
+**Where a keep may stand.** In the plan or a `level` block, inside `for`, `if` and `zone`. Not
+inside a `component` (it would be checked once per instance, in its own frame): `E_KEEP_PLACEMENT`.
+`stacked` compares storeys, so it sits at the root of a multi-storey plan; every other form sits
+in the storey it measures. Refusals are compile errors: `E_KEEP_TARGET` (unknown, auto-id'd or
+unplaced target, undeclared axis, missing level), `E_KEEP_MEASURE` (no such measure: a polygon or
+circle room, mixed orientations, a curved or multi-segment wall, an opening's depth),
+`E_KEEP_SELF` (a target compared with itself), `E_KEEP_VALUE` (a length outside the modelling
+range, a `min clear` ≤ 0, a fractional level) and `E_KEEP_LIMIT` (more than 1,000 keeps, or more
+than 64 targets in one). Two keeps that contradict each other are both legal: both are measured,
+at least one reports, nothing moves.
+
+**Parsing.** Only `keep` is reserved; its form and grade words mean what they mean only after it.
+A trailing grade word is always the grade. A value (`<mm>`, a level) is the longest complete
+expression, so write `on levels -1 1` or `on levels 1 (-1)`: `on levels 1 -1` reads as one level,
+`1 - 1`.
+
+```arch
+plan "Widen" {
+  units mm
+  let AW = 4500
+  wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+  wall id=p partition thickness 100 { (4000,0) (4000,5000) }
+  room id=a at (0,0) size AW x 5000 label "Living"
+  room id=b right-of a align top gap 0 size 4000x5000 label "Bed"
+  keep align a.right b.left p
+}
+```
+
+Widened to 4500, the living room's right edge and the bedroom placed `right-of` it move, and the
+partition written at fixed coordinates does not: `W_KEEP_VIOLATED`, residual −500 mm at `p`.
+
 ## Levels — a multi-storey building (v1.21)
 
 ```

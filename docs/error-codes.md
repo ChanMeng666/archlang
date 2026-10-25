@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**137 errors** · **74 warnings**
+**143 errors** · **75 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -73,6 +73,12 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_JSON_KIND`](#e_json_kind) | error | Unknown element kind in plan JSON. |
 | [`E_JSON_MIRROR`](#e_json_mirror) | error | Plan JSON furniture, door or dimension is `mirror: true`, which `.arch` source cannot state. |
 | [`E_JSON_SCHEMA`](#e_json_schema) | error | Plan JSON does not match the schema. |
+| [`E_KEEP_LIMIT`](#e_keep_limit) | error | Too many keeps, or too many targets in one keep. |
+| [`E_KEEP_MEASURE`](#e_keep_measure) | error | The keep's measure is not defined for what it names. |
+| [`E_KEEP_PLACEMENT`](#e_keep_placement) | error | A keep where it cannot be checked. |
+| [`E_KEEP_SELF`](#e_keep_self) | error | A keep compares something with itself. |
+| [`E_KEEP_TARGET`](#e_keep_target) | error | A keep names something that is not there. |
+| [`E_KEEP_VALUE`](#e_keep_value) | error | A keep's value is out of its domain. |
 | [`E_LAYOUT_CYCLE`](#e_layout_cycle) | error | Relational room placement forms a cycle. |
 | [`E_LAYOUT_REF`](#e_layout_ref) | error | Relational placement references an unknown room. |
 | [`E_LAYOUT_UNPLACED`](#e_layout_unplaced) | error | A relational room depends on a room that could not be placed. |
@@ -183,6 +189,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_HABITABLE_NO_WINDOW`](#w_habitable_no_window) | warning | A living room, dining room or kitchen has no window. |
 | [`W_HATCH_SCALE`](#w_hatch_scale) | warning | Hatch scale must be positive; using 1. |
 | [`W_IMPORT_EMPTY_FILE`](#w_import_empty_file) | warning | Whole-file import binds an empty component. |
+| [`W_KEEP_VIOLATED`](#w_keep_violated) | warning | A hard keep does not hold. |
 | [`W_LEAF_ACROSS_DOORWAY`](#w_leaf_across_doorway) | warning | A door's open leaf parks across another doorway's approach. |
 | [`W_NO_ENTRANCE`](#w_no_entrance) | warning | The plan has no exterior door. |
 | [`W_OPENING_AT_JUNCTION`](#w_opening_at_junction) | warning | An opening runs into a wall junction, or leaves too short a nib of wall beside a jamb. |
@@ -1010,6 +1017,103 @@ place outer() as o at (0,0)   # compile -f json: error, instance "o.i" (nested)
 
 ```arch static
 { "rooms": [ { "x": 0, "y": 0, "width": "big", "height": 3000 } ] }   # error at /rooms/0/width: expected a number
+```
+
+## E_KEEP_LIMIT
+
+*error* — Too many keeps, or too many targets in one keep.
+
+**Cause.** A plan declares more than 1,000 `keep` statements (counted as they expand, every storey and loop iteration included), or one keep names more than 64 targets or levels. The cap bounds the size of what a keep reports; the work is bounded by the evaluation-step budget. It is raised once, at the first keep past the cap, and that keep and every later one past it are not checked (their expansion is still counted, so the cap cannot skip work).
+
+**Fix.** Keep fewer: a keep states an invariant an edit must not break, not every coordinate of the plan. Split a long `keep align` into two.
+
+```arch static
+plan "K" {
+  units mm
+  room id=a at (0,0) size 3000x3000
+  for i in 0..1001 { keep fixed a.left at 0 }   # error: more than 1000 keeps
+}
+```
+
+## E_KEEP_MEASURE
+
+*error* — The keep's measure is not defined for what it names.
+
+**Cause.** A `keep` names something its measure cannot read: an edge, centre, width, depth, clear span or footprint of a `polygon` or `circle` room; datums of two orientations in one `align`, `offset` or `on axis` (a vertical line and a horizontal one); a wall that is not one straight segment (an arc, an oblique run, or a wall of several segments without `segment <n>`); the depth of an opening; an `offset` measured from something that is not a datum; a bare room where a line is needed. The keep is refused rather than approximated (ADR 0033).
+
+**Fix.** Name what the measure reads: a rectangular room's `left`/`right`/`top`/`bottom`/`cx`/`cy`, `axis <label>`, a straight wall or `<wall> segment <n>`; compare widths of openings with `keep equal width`.
+
+```arch static
+plan "K" {
+  units mm
+  room id=a polygon (0,0) (3000,0) (0,3000)
+  keep fixed a.left at 0   # error: a polygon room has no left edge
+}
+```
+
+## E_KEEP_PLACEMENT
+
+*error* — A keep where it cannot be checked.
+
+**Cause.** A `keep` sits inside a `component` (a `place`d instance, a bare call or an imported file), where it would be checked once per instance in the instance's own frame; or a `keep stacked` sits inside a `level` block or in a plan with fewer than two storeys (it compares storeys, so it belongs at the plan's root); or another form sits at the root of a multi-storey plan, where it measures no storey (refused once, with no level).
+
+**Fix.** Move the keep into the plan (or the `level` block) whose geometry it reads; put a `keep stacked` at the root of a multi-storey plan.
+
+```arch static
+plan "K" {
+  units mm
+  component bay() { room id=r at (0,0) size 3000x3000
+    keep min clear r 2800 }
+  place bay() as w at (0,0)   # error: a keep inside a component
+}
+```
+
+## E_KEEP_SELF
+
+*error* — A keep compares something with itself.
+
+**Cause.** One target is named twice in one `keep` (`align a.left a.left`, `offset a.left from a.left 0`, `equal width a a`, or the same level twice in a `stacked` keep; a compass word counts as the frame word it aliases). Such a keep can never be broken, so it checks nothing.
+
+**Fix.** Name each target once; compare the target with the other thing it must stay with.
+
+```arch static
+plan "K" {
+  units mm
+  room id=a at (0,0) size 3000x3000
+  keep align a.left a.left   # error: the same edge twice
+}
+```
+
+## E_KEEP_TARGET
+
+*error* — A keep names something that is not there.
+
+**Cause.** A `keep` target is not an authored id on its storey (or, for `stacked`, on every listed level): an unknown name, an auto id (`room_3`, which renumbers when an earlier element is named), an element that could not be placed, an undeclared `axis <label>`, a wall `segment <n>` past the wall's last segment, or a level the plan does not have. A keep is the statement that must survive edits, so it names only what the author named.
+
+**Fix.** Give the element its own `id=` and name that, declare the axis in `axes`, or list only the levels the plan has.
+
+```arch static
+plan "K" {
+  units mm
+  room id=a at (0,0) size 3000x3000
+  keep fixed b.left at 0   # error: no element b
+}
+```
+
+## E_KEEP_VALUE
+
+*error* — A keep's value is out of its domain.
+
+**Cause.** A `keep`'s length (`offset … <mm>`, `min clear … <mm>`, `fixed … at <mm>`) is outside the modelling range of ±33,554,432 mm, a `min clear` length is zero or negative, or a level in `keep stacked … on levels` is not a whole number.
+
+**Fix.** Give the keep a length within the range (a positive one for `min clear`) and whole storey numbers.
+
+```arch static
+plan "K" {
+  units mm
+  room id=a at (0,0) size 3000x3000
+  keep min clear a 0   # error: a clear span must be positive
+}
 ```
 
 ## E_LAYOUT_CYCLE
@@ -2435,6 +2539,22 @@ wall exterior thickness 200 material brick scale 0 { (0,0) (1,0) }
 
 ```arch static
 import "lib.arch" as lib   # warning when lib.arch only declares components
+```
+
+## W_KEEP_VIOLATED
+
+*warning* — A hard keep does not hold.
+
+**Cause.** A `keep` (grade `hard`, the default) states an invariant the resolved plan breaks: datums that should lie on one line do not, two extents differ, an offset or a fixed position is off, a room's clear span is short, a wall is off its axis, or an element's footprint moves between storeys. The message names what the keep holds and the signed residual in mm (`+` is right of, below, wider or a margin), and the first hint the ids and the measured values. Compile channel: it fails `validate --strict` and every source-rewriting transform's never-worse law counts it, but it never fails plain `validate`, never caps taste and never reaches `lint()`. A `soft` keep that breaks is named by `validate --json`'s `next` (tier `intent`) instead, and an `advisory` one is only reported (`describe`, `validate --json`). **Why:** a keep is checked, never solved: nothing moves to satisfy it (ADR 0033).
+
+**Fix.** Edit the source so the keep holds (move what it names, or derive it from the rooms so it follows them), or remove the keep if the relation no longer applies. There is no machine fix: which side follows is a design decision.
+
+```arch static
+plan "K" {
+  units mm
+  room id=a at (0,0) size 3000x3000
+  keep fixed a.left at 100   # warning: the left edge is at 0, 100 mm left of where the keep holds it
+}
 ```
 
 ## W_LEAF_ACROSS_DOORWAY
