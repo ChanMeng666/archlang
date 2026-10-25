@@ -1,0 +1,63 @@
+plan "Small Clinic" {
+  units mm
+  grid 100
+  paper A3 landscape
+  north up
+  dims auto all
+
+  wall id=ext exterior thickness 200 { (0,0) (12000,0) (12000,10000) (0,10000) close }
+  wall id=pTop partition thickness 100 { (0,4500) (12000,4500) }
+  wall id=pBot partition thickness 100 { (0,6500) (12000,6500) }
+  wall id=v1 partition thickness 100 { (4000,0) (4000,4500) }
+  wall id=v2 partition thickness 100 { (8000,0) (8000,4500) }
+  wall id=b1 partition thickness 100 { (6000,6500) (6000,10000) }
+  wall id=b2 partition thickness 100 { (8000,6500) (8000,10000) }
+  wall id=b3 partition thickness 100 { (10500,6500) (10500,10000) }
+
+  room id=c1 at (0,0) size 4000x4500 label "Consulting 1" uses office
+  room id=c2 at (4000,0) size 4000x4500 label "Consulting 2" uses office
+  room id=c3 at (8000,0) size 4000x4500 label "Consulting 3" uses office
+  room id=hall at (0,4500) size 12000x2000 label "Corridor" uses hall
+  room id=waiting at (0,6500) size 6000x3500 label "Waiting and Reception" uses entry
+  room id=wc at (6000,6500) size 2000x3500 label "Accessible WC" uses wc
+  room id=staff at (8000,6500) size 2500x3500 label "Staff Room" uses office
+  room id=store at (10500,6500) size 1500x3500 label "Store" uses storage
+
+  door on pTop at 2000 width 900 swing into c1
+  door on pTop at 6000 width 900 swing into c2
+  door on pTop at 10000 width 900 swing into c3
+  door on pBot at 3000 width 1200 swing into hall
+  door on pBot at 7000 width 900 swing into wc
+  door on pBot at 9250 width 900 swing into staff
+  door on pBot at 11250 width 800 swing into store
+  door at (3000,10000) width 1400 wall ext swing inward
+  door at (12000,5500) width 1000 wall ext swing inward
+
+  window at (2000,0) width 1500 wall ext
+  window at (6000,0) width 1500 wall ext
+  window at (10000,0) width 1500 wall ext
+  window at (1500,10000) width 1200 wall ext
+  window at (5000,10000) width 1200 wall ext
+  window at (0,8500) width 1200 wall ext
+  window at (9250,10000) width 1200 wall ext
+
+  furniture desk in c1 anchor top-left inset 400 size 1400x700
+  furniture bed in c1 anchor bottom-right flush size 700x1900
+  furniture desk in c2 anchor top-left inset 400 size 1400x700
+  furniture bed in c2 anchor bottom-right flush size 700x1900
+  furniture desk in c3 anchor top-left inset 400 size 1400x700
+  furniture bed in c3 anchor bottom-right flush size 700x1900
+
+  furniture reception_desk in waiting anchor top-right inset 400 size 2200x800
+  furniture loveseat in waiting anchor bottom-left flush size 1800x800
+  furniture loveseat in waiting anchor bottom-right flush size 1800x800
+
+  furniture wc in wc anchor bottom flush size 400x700
+  furniture basin in wc anchor right flush size 400x500
+
+  furniture meeting_table in staff anchor center size 1400x800
+  furniture kitchen_sink in staff anchor bottom-left flush size 1200x600
+  furniture locker in store anchor bottom flush size 1200x500
+
+  title { project "Small Clinic" drawn_by "Author" date "2026-10-26" number "A-01" revision "A" }
+}

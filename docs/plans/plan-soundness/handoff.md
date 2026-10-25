@@ -1,8 +1,8 @@
-# Plan-soundness programme: handoff (state as of 2026-10-26, `main` after PR #261 merges)
+# Plan-soundness programme: handoff (state as of 2026-10-26, PS1.3 PR head `HEADSHA`)
 
 This page is the resume point for a new session. It says where the programme stands, what is open,
 in which order, and how the work is run. It is re-written at every stage end; the dated history is
-in `research/` and `audits/`. Decisions are in `README.md` §3 (D1–D20); cards are in `cards.md`.
+in `research/` and `audits/`. Decisions are in `README.md` §3 (D1–D21); cards are in `cards.md`.
 Nothing here is private: the companion material the owner keeps outside this repository stays there
 (D4).
 
@@ -20,6 +20,7 @@ cold-authored from `spec.llm.md` alone, audited by hand.
 | 2026-10-25 (`audits/2026-10-25-first-contact-rerun-row5.md`) | 49, 46 without area basis (0) | 0 | 6/6 | 19 (7) of 57 | 0/6 |
 | 2026-10-26 arm A, pre-#250 role (`audits/2026-10-26-first-contact-rerun-d15.md`) | 52, 49 without area basis (0) | 1 (townhouse stair) | 6/6 | 23 (6) of 57 | 0/6 (`validate` 0/6, `describe` 1/6; 0 of 65 calls) |
 | 2026-10-26 arm B, current role (same file) | 54, 51 without area basis (0) | 1 (townhouse stair) | 6/6 | 23 (6) of 57 | 0/6 (`validate` 1/6, `describe` 1/6; 0 of 77 calls) |
+| 2026-10-26 arm C, walls-first control (`audits/2026-10-26-walls-first-control-arm.md`, D21) | 54, 52 without area basis (3, plus 2 partial) | 1 (townhouse stair) | 0/6 (45 `wall`, 0 `walls from rooms`) | same run | 0/6 (`validate` 0/6, `describe` 1/6; 0 of 66 calls) |
 
 **Not met.** Rooms-first authoring is the norm (12 of 12 plans) and class 1 stays at 0, but 52 and 54
 defects still pass lint, and each arm drew one blocker, both on the townhouse stair (the stair class
@@ -130,11 +131,11 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    the next re-measure states them.
 8. **PS2.11e** the clearance remainder (`W_DOORWAY_BLOCKED` over leaf-less openings, stair swings,
    hob under a window PS2.46, per-family depth ceiling PS2.53, face/centreline unification PS2.54).
-9. **PS1.3** walls-first control arm (§8 Q1) and **PS1.4** diagnostic-wording study (§8 Q3): owner asks
-   from 2026-10-18 found undone by the 2026-10-25 transcript audit; PS1.3's walls-first arm ran on
-   2026-10-26 in item 1's harness (66 CLI calls, 0 `score`, 0 `validate`; six plans, hand-audited) and is
-   reported in its own audit and PR; PS1.4 is still open.
-10. Everything else in `cards.md` by family: PS0 15 todo, PS1 2, PS2 41 todo, PS3 4, PS4 5, PS5 4,
+9. **PS1.4** diagnostic-wording study (§8 Q3) is still open: an owner ask from 2026-10-18 found undone by the
+   2026-10-25 transcript audit. **PS1.3** walls-first control arm (§8 Q1) is done (PR #PRNUM, D21): it ran on
+   2026-10-26 in item 1's harness (66 CLI calls, 0 `score`, 0 `validate`; 54 verified defects against 52
+   rooms-first; D1/D5 re-stated).
+10. Everything else in `cards.md` by family: PS0 15 todo, PS1 1, PS2 41 todo, PS3 4, PS4 5, PS5 4,
     PS7 4 (7.1, 7.2, 7.5, 7.6); pick by first-contact evidence, not by number.
 
 **Open cards by family (2026-10-25 audit, counts updated 2026-10-26; "ready" = no stated dependency
@@ -143,7 +144,7 @@ waited for item 1 (D19), which ran 2026-10-26: such a card may start and the nex
 
 | Family | Open | Ready now | Waiting on something |
 |---|---|---|---|
-| PS1 | 2 | — | 1.3 and 1.4 (item 1's harness) |
+| PS1 | 1 | — | 1.4 (item 1's harness) |
 | PS0 | 15 | PS0.15 (net-area bound), 0.2, 0.3, 0.6, 0.9, 0.17, 0.22, 0.23, 0.25 | 0.8 (re-measure), 0.16/0.18/0.20/0.21 (a decision each), 0.24 (code landed in #252; only a `clear front\|sides` test is left) |
 | PS2 | 41 | 2.21, 2.23, 2.25, 2.27, 2.29, 2.30–2.35, 2.41–2.45, 2.47–2.49, 2.51, 2.52, 2.54, 2.56 | 2.11e (row 6), 2.14 (ADR), 2.15 (2.11e), 2.16/2.36 (facts), 2.20/2.28 (measure first), 2.22 (fold into 2.29), 2.24/2.26/2.37/2.38/2.46/2.50/2.55 (a decision each), 2.39 (drawing decision), 2.40 and 5.6 (fire D12's reverse-if), 2.53 (a sourced ceiling) |
 | PS3 | 4 | 3.12 | 3.10 (decision; moves digests, D8), 3.11 (corpus sweep), 3.13 (proof first) |
@@ -162,8 +163,8 @@ items 3.1(b), M.8, M.9, M.14 and D.7 wait on the owner's answers and are not cov
 
 ## 5. Owner asks not yet carried out (from the 2026-10-25 transcript audit)
 
-- Walls-first vs rooms-first comparison (PS1.3): ran 2026-10-26 in item 1's harness and is reported in
-  its own audit and PR. Diagnostic wording (PS1.4): card filed, not run.
+- Walls-first vs rooms-first comparison (PS1.3): done 2026-10-26 (D21; `audits/2026-10-26-walls-first-control-arm.md`).
+  Diagnostic wording (PS1.4): card filed, not run.
 - Id-free lint messages: PS2.22/PS2.29 open; the rule is in `README.md` §5.
 - Fuzz, timing and red-team probes were to run in the owner's prepaid `claude --cloud` sessions
   (owner, in conversation, 2026-10-20). One probe ran; the rest ran locally. Item 1's two arms ran as

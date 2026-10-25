@@ -1,0 +1,77 @@
+plan "Two-storey townhouse" {
+  units mm
+  grid 50
+  paper A3 landscape
+  north up
+  height 2700
+  dims auto all
+  title { project "Townhouse, 2 x 55 m2" drawn_by "ArchLang" date "2026-10-26" number "TH-01" revision "A" }
+
+  level 0 "Ground" {
+    room id=hall at (0,0) size 2500x3000 label "Hall" uses hall
+    room id=wc at (2500,0) size 1200x3000 label "WC" at (3100,1000) uses wc
+    room id=stairhall at (3700,0) size 1800x3000 label "Stair" at (4100,2700) uses circulation
+    room id=living at (0,3000) size 5500x3500 label "Living" uses living
+    room id=kitchen at (0,6500) size 5500x3500 label "Kitchen / Dining" uses kitchen
+
+    wall id=gx exterior thickness 200 { (0,0) (5500,0) (5500,10000) (0,10000) close }
+    wall id=gp1 partition thickness 100 { (0,3000) (5500,3000) }
+    wall id=gp2 partition thickness 100 { (2500,0) (2500,3000) }
+    wall id=gp3 partition thickness 100 { (3700,0) (3700,3000) }
+    wall id=gp4 partition thickness 100 { (0,6500) (5500,6500) }
+
+    door on gx at 1250 width 1000 swing inward
+    door on gp1 at 1250 width 900 swing into living
+    door on gp2 at 1500 width 800 swing into wc
+    door on gp1 at 4600 width 900 swing into living
+    opening on gp4 at 2750 width 2000
+    window on gx at 3100 width 600
+    window on gx at 4600 width 900
+    window on gx at 10250 width 1600
+    window on gx at 13750 width 1600
+    window on gx at 18250 width 1800
+    window on gx at 26250 width 1600
+
+    stair id=st at (4500,200) size 800x2800 dir up
+    furniture wc against wall gp2 offset 2400 in wc
+    furniture basin against wall gx segment 0 offset 3100 side left in wc
+    furniture sofa in living anchor bottom-left flush size 900x2000
+    furniture tv_unit in living anchor right flush size 400x1500
+    furniture kitchen_sink against wall gx segment 2 offset 2300 in kitchen
+    furniture fridge against wall gx segment 2 offset 500 in kitchen
+    furniture stove against wall gx segment 2 offset 1400 in kitchen
+    furniture counter against wall gx segment 1 offset 7300 side left in kitchen
+    furniture dining_table in kitchen anchor left inset 400 size 1400x900
+  }
+
+  level 1 "First" {
+    room id=bath at (0,0) size 2000x3500 label "Bath" uses bath
+    room id=landing at (2000,0) size 3500x3500 label "Landing" uses circulation
+    room id=bed1 at (0,3500) size 3200x6500 label "Bedroom 1" uses bedroom
+    room id=bed2 at (3200,3500) size 2300x6500 label "Bedroom 2" uses bedroom
+
+    wall id=fx exterior thickness 200 { (0,0) (5500,0) (5500,10000) (0,10000) close }
+    wall id=fp1 partition thickness 100 { (0,3500) (5500,3500) }
+    wall id=fp2 partition thickness 100 { (2000,0) (2000,3500) }
+    wall id=fp3 partition thickness 100 { (3200,3500) (3200,10000) }
+
+    door on fp2 at 2300 width 800 swing into bath
+    door on fp1 at 2600 width 800 swing into bed1
+    door on fp1 at 4350 width 800 swing into bed2
+    window on fx at 1000 width 600
+    window on fx at 2800 width 900
+    window on fx at 24250 width 1400
+    window on fx at 19900 width 1400
+    window on fx at 12250 width 1400
+    window on fx at 16750 width 1200
+
+    stair id=st at (4500,200) size 800x2800 dir down
+    furniture bathtub against wall fx segment 3 offset 7600 side left in bath
+    furniture wc against wall fx segment 0 offset 600 side left in bath
+    furniture basin against wall fx segment 0 offset 1500 side left in bath
+    furniture double_bed in bed1 anchor bottom-left flush size 1600x2000
+    furniture wardrobe in bed1 anchor bottom-right flush size 1000x600
+    furniture bed in bed2 anchor bottom-right flush size 1400x2000
+    furniture wardrobe in bed2 anchor left flush size 600x1200
+  }
+}

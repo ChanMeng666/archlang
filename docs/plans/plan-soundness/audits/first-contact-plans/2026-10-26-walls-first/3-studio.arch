@@ -1,0 +1,36 @@
+plan "Studio Flat 30 m2" {
+  units mm
+  grid 100
+  paper A3 landscape
+  north up
+  dims auto all
+
+  room id=main at (0,0) size 4200x5000 label "Studio" uses living
+  room id=bath at (4200,0) size 1800x2500 label "Bath" uses bath
+  room id=entry at (4200,2500) size 1800x2500 label "Entry" uses entry
+
+  wall id=ext exterior thickness 200 { (0,0) (6000,0) (6000,5000) (0,5000) close }
+  wall id=pv partition thickness 100 { (4200,0) (4200,5000) }
+  wall id=ph partition thickness 100 { (4200,2500) (6000,2500) }
+
+  door at (5100,5000) width 900 wall exterior swing inward
+  door on pv at 3750 width 900 swing into main
+  door on ph at 900 from start width 800 swing into bath
+  window at (1500,0) width 1600 wall exterior
+  window at (0,2500) width 1600 wall exterior
+  window at (5100,0) width 600 wall exterior
+
+  # sleeping alcove (top-left of the main room)
+  furniture double_bed in main anchor top-left flush size 1600x2000
+  furniture nightstand in main anchor top-left flush inset 1700 size 450x400
+  # kitchenette zone (bottom-left)
+  furniture counter in main anchor bottom-left flush size 1800x600 rotate 180
+  # living
+  furniture sofa in main anchor top-right flush size 1800x900
+
+  furniture wc in bath anchor top-left flush inset 200 size 400x700
+  furniture basin in bath anchor left flush size 400x500
+  furniture shower in bath anchor top-right flush size 800x800
+
+  title { project "Studio Flat" drawn_by "Author" date "2026-10-26" number "A-01" revision "A" }
+}
