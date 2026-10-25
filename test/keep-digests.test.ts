@@ -9,7 +9,7 @@
  */
 
 import { describe as suite, expect, it } from "vitest";
-import { k3DigestOf, keepCorpus } from "./keep-harness.js";
+import { k3bDigestOf, k3DigestOf, keepCorpus } from "./keep-harness.js";
 
 const K3_DIGESTS: [string, string][] = [
   ["align-equal", "55af8ab086b4e78bb06062cd549ff704d3a94728a8e06e04a3b70c63bbeb2b52"],
@@ -45,6 +45,52 @@ suite("keep · K3, the keep rows: a digest table over the corpus", () => {
     it(name, () => {
       const src = keepCorpus().find(([n]) => n === name)![1];
       expect(k3DigestOf(name, src)).toBe(digest);
+    });
+  }
+});
+
+/**
+ * K3's second table (PS4.3b): the keep rows of the surfaces PS4.3b added — `depends.keeps` (top
+ * level and per storey) and `impact`'s `keeps` (against itself, and with the first top-level
+ * numeric `let` raised by 100) — over the same corpus (`k3bDigestOf`, `./keep-harness.ts`).
+ * Pinned in its own table, after the first held unchanged, so PS4.3a's 23 rows above prove
+ * PS4.3b moved none of them. The refused plans share one digest: they resolve to no keeps, so
+ * every surface reads `null`.
+ */
+const K3B_DIGESTS: [string, string][] = [
+  ["align-equal", "3af24fabb9d0d5167331571be762e14fbcdffcc74104507aa6b62ebf8d53506c"],
+  ["grid50-cx", "85034ad8ae82c46c4eae587ae135f6830823b388c9fceb60d935b75c87f584cf"],
+  ["instance", "22935e9be5ac4a9d4785a80f421277979bf93b521597ceb5f0e97b3806cefc0c"],
+  ["loops", "ace2903a5059387a1d8c3dba3e5b7e7ca2849b6a2ce646ea99c1cf9466e3af42"],
+  ["min-clear-arcbbox", "1f0a9d44252157bb56a1a7f07675300b157c8e0034033b9772baa0990db2e58d"],
+  ["min-clear-derived", "f9ca9ac60336002600ec88e4e3ed61dfc38286d6a9122c8b519c9ba77602997e"],
+  ["min-clear-joins", "e3017205ecef37293eca7ab1b5dfe5ecd0480298291ba67d1afd5472b94f87a5"],
+  ["min-clear-lining300", "58109f9749f73fec3f9de2df2145657ad646d9efef85a87fd4a853a532790c60"],
+  ["min-clear-nib100", "58109f9749f73fec3f9de2df2145657ad646d9efef85a87fd4a853a532790c60"],
+  ["min-clear-t45", "f100132436d2c4e3482ec3b32cedb2f7865aff54835d4f696df31d9190529355"],
+  ["min-clear-thick2face", "891a16d17fd9f8bddf98dd335724298e07f57cc7b922adfb0031bcc439f9e25e"],
+  ["min-clear-thick2full", "891a16d17fd9f8bddf98dd335724298e07f57cc7b922adfb0031bcc439f9e25e"],
+  ["min-clear-thick4b", "066b437596134a16bdc45200d2fa559b2d17ba39dd290075080fa92376740697"],
+  ["min-clear", "cf14ae67c2d0b3b2c64b9a13c2b41829e34f205d14d3e4d26bf0bd5dac898153"],
+  ["offset-fixed", "42aa2e374d28c23eec2287fe272a8dfc0f3c2baf690f1e8aa24e7213bcece00a"],
+  ["on-axis", "666d616acf4d3580cecdf3c866aace4603a553d369e3473eb3e686a7d1cd488e"],
+  ["paper", "443c56121dd80b06026c1e2772f016664efe1ee818c58e5687587f7f5a0248e0"],
+  ["refused-limit", "eb53f56c39e1cd5c4d2c64fc65520f87336421f4a1ff29dd3ae7129185ec44f5"],
+  ["refused-placement", "eb53f56c39e1cd5c4d2c64fc65520f87336421f4a1ff29dd3ae7129185ec44f5"],
+  ["refused", "eb53f56c39e1cd5c4d2c64fc65520f87336421f4a1ff29dd3ae7129185ec44f5"],
+  ["single-storey-stacked", "eb53f56c39e1cd5c4d2c64fc65520f87336421f4a1ff29dd3ae7129185ec44f5"],
+  ["widen-after", "48ff4274443dc2d617ec707749f3295b21e86e8d94c0e3854918d6bde7e89cc3"],
+  ["widen-before", "65a8cc533e3fd4566237a1cd756e2bceafd39a5aca1d2358758c1f8cd0bc96ca"],
+];
+
+suite("keep · K3b, the keep rows PS4.3b added: depends.keeps and impact's keeps", () => {
+  it("pins every corpus plan", () => {
+    expect(K3B_DIGESTS.map(([n]) => n)).toEqual(keepCorpus().map(([n]) => n));
+  });
+  for (const [name, digest] of K3B_DIGESTS) {
+    it(name, () => {
+      const src = keepCorpus().find(([n]) => n === name)![1];
+      expect(k3bDigestOf(src)).toBe(digest);
     });
   }
 });

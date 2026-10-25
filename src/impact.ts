@@ -39,12 +39,23 @@
  * its clause (`opening between a and b`) and the statement itself as `walls from rooms`;
  * internal names (`a|b`, `exterior`, `a|b:open`) never leave this module.
  *
- * **`keep` (PS4.3) seam.** `keep` does not exist yet. When it lands, `W_KEEP_VIOLATED` is
- * raised by `compile()` (a `keep` is checked, never solved, by the compiler), so it arrives
- * in {@link sideDiagnostics}' `compile` channel and is keyed, matched and reported by code and
- * element like every other code, with no change here. If PS4.3 reports violations through a
- * separate channel instead, it is added to {@link ImpactDiagnostic.channel} and to
- * {@link sideDiagnostics}, the one place both sides' diagnostics are gathered.
+ * - **keeps** (ADR 0033; PS4.3 design §6, R15), present only when either side declares a
+ *   `keep`: each keep matched across the sides by (storey, its text as `arch fmt` prints it,
+ *   occurrence index), span-blind, so a `for` loop's repeats are told apart by order and a
+ *   `--set` never re-keys one. `broke`: broken after, and held before or its residual moved;
+ *   `healed`: held after, broken before; `held`: held on both sides while a target it names
+ *   changed or its residual moved (a `min clear` margin); a keep on one side only is `added` or
+ *   `removed` with the one residual it has; everything else counts in `unchanged_count`. A
+ *   target's change is read on the keep's own storey (every storey, unlike `changed[]` and
+ *   `held[]` below, which compare the lowest storey's elements until PS4.6): its resolved
+ *   element, label aside, differs between the sides; a `stacked` keep reads every level it lists.
+ *
+ * **`W_KEEP_VIOLATED` is reported once, under `keeps`.** `compile()` raises it for a broken
+ * hard keep, so it arrives in {@link sideDiagnostics}' `compile` channel; when both sides
+ * resolve, the code is dropped there before matching, so `diagnostics.broke`/`healed`/
+ * `unchanged_count` never count it and the keep row (with its residual) is the one report. When
+ * a side does not resolve nothing is compared: the code stays a diagnostic and no `keeps`
+ * section is built.
  *
  * **Limits** (recorded, not hidden): elements pair by id, so under `--against` a statement
  * inserted ahead of auto-id'd elements shifts their ids (PS0.23, as in `diffPlans`); only the
@@ -81,7 +92,10 @@ import { diffSides, type OpeningChange, type PlanDiff, type RoomChange, type Wal
 import { closest, type Expr } from "./expr.js";
 import type { ResolvedElement, ResolvedPlan, ROpening, RWall } from "./ir.js";
 import { lex } from "./lexer.js";
+import { keepResultsOf, type ResolvedLevel } from "./ir.js";
+import { type KeepAt, type KeepResult, keepRefsOf, mmNumber } from "./keep.js";
 import { lint } from "./lint.js";
+import { fmtHalfLattice } from "./num-format.js";
 import { parse } from "./parser.js";
 import { compileUncached } from "./pipeline.js";
 import type { CompileOptions } from "./types.js";
@@ -158,8 +172,35 @@ export interface ImpactDiagnostic {
   element?: string;
   message: string;
   level?: number;
-  /** Which pass raised it: `compile` (parse, resolve, render; where `keep` lands, PS4.3) or `lint`. */
+  /** Which pass raised it: `compile` (parse, resolve, render; a broken hard keep's `W_KEEP_VIOLATED` is raised here and reported under `keeps` instead) or `lint`. */
   channel: "compile" | "lint";
+}
+
+/** One keep in the `keeps` section (PS4.3 design §6). */
+export interface KeepImpact {
+  /** The keep as `arch fmt` prints it, without `keep` and the grade. */
+  keep: string;
+  grade: KeepResult["grade"];
+  /** Its storey, on a multi-storey plan (absent for a `stacked` keep, which spans storeys). */
+  level?: number;
+  /** The reported residual in mm on each side it exists on (`before` absent when added,
+   *  `after` absent when removed). */
+  residual_mm: { before?: number; after?: number };
+  /** Where the reported residual stands (the after side's; the before side's when removed). */
+  at?: KeepAt;
+  /** The targets it names whose element changed on its storey (a `stacked` keep: on any level
+   *  it lists), by id or `axis <label>`, in the order the keep names them. */
+  changed: string[];
+}
+
+/** `ImpactReport.keeps`. */
+export interface ImpactKeeps {
+  broke: KeepImpact[];
+  held: KeepImpact[];
+  healed: KeepImpact[];
+  added: KeepImpact[];
+  removed: KeepImpact[];
+  unchanged_count: number;
 }
 
 export interface ImpactReport {
@@ -169,7 +210,11 @@ export interface ImpactReport {
   changed: ImpactChange[];
   held: ImpactHeld[];
   diagnostics: { broke: ImpactDiagnostic[]; healed: ImpactDiagnostic[]; unchanged_count: number };
-  /** The report as human lines (sections Lets / Changed / Held / Broke / Healed). */
+  /** The keeps, matched across the sides; present only when both sides resolve and either
+   *  declares a keep (see the module header). */
+  keeps?: ImpactKeeps;
+  /** The report as human lines (sections Lets / Changed / Held / Broke / Healed, then the
+   *  keeps' when present). */
   summary: string[];
 }
 
@@ -218,6 +263,10 @@ interface Side {
   /** Openings' resolved `at` and furniture's `at`/`size`, for move/resize phrases. */
   at: Map<string, { x: number; y: number }>;
   size: Map<string, { w: number; h: number }>;
+  /** Every accepted keep, measured (`undefined` when the side declares none or does not resolve). */
+  keeps?: KeepResult[];
+  /** The storeys, for reading a keep's targets on its own storey. */
+  levels: readonly ResolvedLevel[];
 }
 
 interface PlaceReads {
@@ -373,7 +422,7 @@ function wallName(w: RWall): string {
   return `${wallPhraseOf(w)}${run ? ` (run ${run[1]})` : ""}`;
 }
 
-/** Diagnostics from both passes, each tagged with the pass that raised it. The `keep` seam. */
+/** Diagnostics from both passes, each tagged with the pass that raised it. `diagnosticDelta` drops `W_KEEP_VIOLATED` from the `compile` channel when both sides resolve. */
 function sideDiagnostics(source: string, opts: ImpactOptions): Side["diagnostics"] {
   const compiled = compileUncached(source, { world: opts.world, plugins: opts.plugins });
   return [
@@ -386,6 +435,7 @@ function readSide(source: string, opts: ImpactOptions): Side {
   const aopts: DescribeOptions = { world: opts.world, plugins: opts.plugins };
   const { ir, levels, plan } = resolvePlan(source, aopts);
   const bound = bindingsOf(source, plan);
+  const keeps = ir ? keepResultsOf(ir, levels) : undefined;
   const side: Side = {
     ok: ir !== null,
     ir,
@@ -404,6 +454,8 @@ function readSide(source: string, opts: ImpactOptions): Side {
     axes: new Map(),
     at: new Map(),
     size: new Map(),
+    ...(keeps ? { keeps } : {}),
+    levels,
   };
   if (!ir) return side;
   const deps = describe(source, { ...aopts, facts: ["depends"] }).depends;
@@ -517,7 +569,10 @@ export function impact(before: string, after: string, opts: ImpactOptions = {}):
     lets: [],
     changed: [],
     held: [],
-    diagnostics: diagnosticDelta(A, B),
+    // Both sides resolved: a broken keep is reported once, in `keeps`, never also here.
+    diagnostics: diagnosticDelta(A, B, ok),
+    // After `diagnostics`, before `summary`, as the JSON prints it; only when there is a keep.
+    ...(ok && (A.keeps || B.keeps) ? { keeps: keepDelta(A, B) } : {}),
     summary: [],
   };
   if (ok) {
@@ -801,20 +856,25 @@ function elementOf(side: Side, d: Diagnostic): string | undefined {
   return nameOf(best).name;
 }
 
-function diagnosticDelta(A: Side, B: Side): ImpactReport["diagnostics"] {
+/** A broken hard keep's compile code, which `keeps` reports instead. */
+const KEEP_CODE = "W_KEEP_VIOLATED";
+
+function diagnosticDelta(A: Side, B: Side, dropKeeps: boolean): ImpactReport["diagnostics"] {
   const project = (side: Side): Array<{ key: string; out: ImpactDiagnostic }> =>
-    side.diagnostics.map(({ d, channel }) => {
-      const element = elementOf(side, d);
-      const out: ImpactDiagnostic = {
-        code: d.code ?? "",
-        severity: d.severity,
-        ...(element !== undefined ? { element } : {}),
-        message: d.message,
-        ...(d.level !== undefined ? { level: d.level } : {}),
-        channel,
-      };
-      return { key: `${channel}\u0000${out.code}\u0000${element ?? ""}\u0000${d.level ?? ""}`, out };
-    });
+    side.diagnostics
+      .filter(({ d, channel }) => !(dropKeeps && channel === "compile" && d.code === KEEP_CODE))
+      .map(({ d, channel }) => {
+        const element = elementOf(side, d);
+        const out: ImpactDiagnostic = {
+          code: d.code ?? "",
+          severity: d.severity,
+          ...(element !== undefined ? { element } : {}),
+          message: d.message,
+          ...(d.level !== undefined ? { level: d.level } : {}),
+          channel,
+        };
+        return { key: `${channel}\u0000${out.code}\u0000${element ?? ""}\u0000${d.level ?? ""}`, out };
+      });
   const a = project(A);
   const b = project(B);
   const count = (xs: typeof a): Map<string, number> => {
@@ -844,6 +904,123 @@ function diagnosticDelta(A: Side, B: Side): ImpactReport["diagnostics"] {
     );
   };
   return { broke: extra(b, ca), healed: extra(a, cb), unchanged_count: unchanged };
+}
+
+// ---------------------------------------------------------------------------------------
+// Keeps (PS4.3 design §6, R15)
+
+/** What a keep's target is on its storey, label aside: the resolved element's fields without
+ *  spans or internals (a wall from `ir.walls`), or `undefined` when the storey lacks it. */
+function storeyFacts(ir: ResolvedPlan): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const e of ir.elements as ResolvedElement[]) {
+    if (e.kind === "walls" || e.kind === "wall" || out.has(e.id)) continue;
+    const { label: _label, ...rest } = e as unknown as Record<string, unknown>;
+    out.set(e.id, keyOf(rest));
+  }
+  for (const w of ir.walls) if (!out.has(w.id)) out.set(w.id, keyOf(w));
+  return out;
+}
+
+/** One side's view of its keeps' targets: per storey (`""` for a single-storey plan), the
+ *  facts of each element, built once per storey on first use; and the axes. */
+function targetReader(side: Side): (level: number | undefined, id: string) => string | undefined {
+  const byLevel = new Map<string, Map<string, string>>();
+  return (level, id) => {
+    const k = level === undefined ? "" : String(level);
+    let m = byLevel.get(k);
+    if (!m) {
+      const ir =
+        level === undefined
+          ? side.levels.length === 0
+            ? side.ir
+            : null
+          : side.levels.find((l) => l.level === level)?.ir;
+      m = ir ? storeyFacts(ir) : new Map();
+      byLevel.set(k, m);
+    }
+    return m.get(id);
+  };
+}
+
+/**
+ * The `keeps` section: match by (storey, text, occurrence index), classify, and name the
+ * targets that changed. Linear in the keeps and their targets, plus one pass over each storey's
+ * elements the first time a keep on it is read.
+ */
+function keepDelta(A: Side, B: Side): ImpactKeeps {
+  const keyed = (rs: readonly KeepResult[] | undefined): Array<{ key: string; r: KeepResult }> => {
+    const seen = new Map<string, number>();
+    return (rs ?? []).map((r) => {
+      const base = `${r.level ?? ""}\u0000${r.keep}`;
+      const n = seen.get(base) ?? 0;
+      seen.set(base, n + 1);
+      return { key: `${base}\u0000${n}`, r };
+    });
+  };
+  const a = keyed(A.keeps);
+  const b = keyed(B.keeps);
+  const before = new Map(a.map((x) => [x.key, x.r]));
+  const afterKeys = new Set(b.map((x) => x.key));
+  const readA = targetReader(A);
+  const readB = targetReader(B);
+  /** The targets of `r` whose element differs between the sides, on the storeys it reads. */
+  const changedOf = (r: KeepResult): string[] => {
+    const out: string[] = [];
+    const levels = r.levels ?? [r.level];
+    for (const ref of keepRefsOf(r.node)) {
+      const name = ref.t === "axis" ? `axis ${ref.label}` : ref.t === "room" ? ref.room : ref.id;
+      if (out.includes(name)) continue;
+      const moved =
+        ref.t === "axis"
+          ? A.axes.get(ref.label) !== B.axes.get(ref.label)
+          : levels.some((lv) => readA(lv, name) !== readB(lv, name));
+      if (moved) out.push(name);
+    }
+    return out;
+  };
+  const row = (r: KeepResult, residual: KeepImpact["residual_mm"], at: KeepAt | undefined): KeepImpact => ({
+    keep: r.keep,
+    grade: r.grade,
+    ...(r.level !== undefined ? { level: r.level } : {}),
+    residual_mm: residual,
+    ...(at ? { at } : {}),
+    changed: changedOf(r),
+  });
+  const out: ImpactKeeps = { broke: [], held: [], healed: [], added: [], removed: [], unchanged_count: 0 };
+  for (const { key, r } of b) {
+    const p = before.get(key);
+    if (!p) {
+      out.added.push(row(r, { after: mmNumber(r.h) }, r.at));
+      continue;
+    }
+    const residual = { before: mmNumber(p.h), after: mmNumber(r.h) };
+    const moved = p.h !== r.h;
+    if (!r.holds && (p.holds || moved)) out.broke.push(row(r, residual, r.at));
+    else if (r.holds && !p.holds) out.healed.push(row(r, residual, r.at));
+    else if (r.holds && p.holds) {
+      const k = row(r, residual, r.at);
+      if (k.changed.length > 0 || moved) out.held.push(k);
+      else out.unchanged_count++;
+    } else out.unchanged_count++;
+  }
+  for (const { key, r } of a) if (!afterKeys.has(key)) out.removed.push(row(r, { before: mmNumber(r.h) }, r.at));
+  return out;
+}
+
+/** `keep <text> (<grade>[, level n]): residual <before> → <after> mm[ at <target>[, level n, <edge> edge]]`. */
+function keepLine(k: KeepImpact): string {
+  const mm = (v: number | undefined): string => fmtHalfLattice(Math.round((v ?? 0) * 2000));
+  const where = k.at
+    ? ` at ${k.at.target}${k.at.level !== undefined ? `, level ${k.at.level}` : ""}${k.at.edge !== undefined ? `, ${k.at.edge} edge` : ""}`
+    : "";
+  const residual =
+    k.residual_mm.before === undefined
+      ? `added, residual ${mm(k.residual_mm.after)} mm`
+      : k.residual_mm.after === undefined
+        ? `removed, residual was ${mm(k.residual_mm.before)} mm`
+        : `residual ${mm(k.residual_mm.before)} → ${mm(k.residual_mm.after)} mm`;
+  return `  keep ${k.keep} (${k.grade}${k.level !== undefined ? `, level ${k.level}` : ""}): ${residual}${where}`;
 }
 
 // ---------------------------------------------------------------------------------------
@@ -899,6 +1076,21 @@ function summaryOf(r: ImpactReport): string[] {
   diag("Broke", r.diagnostics.broke);
   diag("Healed", r.diagnostics.healed);
   out.push(`Unchanged diagnostics: ${r.diagnostics.unchanged_count}`);
+  if (r.keeps) {
+    const keeps = (title: string, ks: KeepImpact[], always: boolean): void => {
+      if (!always && ks.length === 0) return;
+      head(title, ks.length);
+      for (const k of ks) {
+        out.push(keepLine(k));
+        if (k.changed.length > 0) out.push(`    changed: ${k.changed.join(", ")}`);
+      }
+    };
+    keeps("Keeps broke", r.keeps.broke, true);
+    keeps("Keeps held", r.keeps.held, true);
+    keeps("Keeps healed", r.keeps.healed, true);
+    keeps("Keeps added", r.keeps.added, false);
+    keeps("Keeps removed", r.keeps.removed, false);
+  }
   return out;
 }
 

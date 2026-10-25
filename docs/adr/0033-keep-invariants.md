@@ -5,6 +5,7 @@
   `docs/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`; as built:
   `docs/plans/plan-soundness/research/2026-10-26-ps43a-as-built.md`. Decision 6 (the `--facts depends`
   rows and `arch impact`'s keeps) and PS4.11's Plan JSON note are built by PS4.3b.
+- **Built:** PS4.3a PR #272, PS4.3b PR #275 (`docs/plans/plan-soundness/research/2026-10-26-ps43b-as-built.md`).
 - **Date:** 2026-10
 - **Relates to:** [ADR 0004](0004-relational-placement-not-optimizer.md) and
   [ADR 0006](0006-solver-as-explicit-transform.md) (no solver inside `compile()`; a solver is an
@@ -139,9 +140,10 @@ number.
    implication is entered only when it survives grid snapping: the datum is an edge, never a centre,
    and every literal of the implying statement is a multiple of the grid. `arch impact` matches keeps
    by storey, text and occurrence, and lists keeps that broke, held while a target moved, healed,
-   were added or were removed, each with its residual before and after (an upper-storey keep is
-   classified by its residual alone until storeys are compared); it reports `W_KEEP_VIOLATED` there
-   rather than twice. The solver that would
+   were added or were removed, each with its residual before and after (as built by PS4.3b, a keep's
+   targets are compared on its own storey, so an upper-storey keep is read like a ground-floor one;
+   `impact`'s element sections still compare the lowest storey, plan-soundness card PS4.6); it reports
+   `W_KEEP_VIOLATED` there rather than twice. The solver that would
    act on these facts stays an explicit transform (ADR 0006, plan-soundness card PS6.1).
 
 7. **The byte-identity law is pinned in two strengths.** Weak: a plan with no keep is unchanged in
@@ -171,8 +173,8 @@ number.
   keep to gate leaves the grade off.
 - `keep` becomes a reserved word; the form words and grades after it are contextual, so no plan that
   uses `soft`, `fixed` or `stacked` as a name changes meaning. Plan JSON drops keeps, as it already
-  drops axes, until a consumer needs them, and the export will say how many it dropped (built in
-  PS4.3b, card PS4.11).
+  drops axes, until a consumer needs them, and the export says how many it dropped (card PS4.11,
+  built in PS4.3b).
 - The spec gains one grammar line (483 UTF-16 units as built, with its newline; the design counted 432,
   and `spec.llm.md` is 29,815 units, 185 under its cap), paid for by cutting drawing-only prose from the
   `door`, `outdoor` and `height` lines; the language reference keeps that prose.

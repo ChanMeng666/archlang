@@ -37,6 +37,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   shortened, the `outdoor` hatch prose, the window-sill citation): `spec.llm.md` 29,729 → 29,815
   units. Plan JSON drops keeps. The
   `--facts depends` keep rows and `arch impact`'s keeps section follow in PS4.3b.
+- `arch impact` reads keeps, and `describe --facts depends` states them (ADR 0033; plan cards
+  PS4.3b, PS4.11). `impact` adds a `keeps` section after `diagnostics` when either side declares a
+  keep: each keep is matched across the versions by storey, text and occurrence (so a `for` loop's
+  repeats pair by order) and listed under `broke`, `held` (a target moved, or its residual did,
+  and it still holds), `healed`, `added` or `removed`, with its residual before and after, where
+  the residual stands and which of its targets changed on its own storey; the rest count in
+  `unchanged_count`, and the human report gains `Keeps broke`/`held`/`healed` (and `added`/
+  `removed` when non-empty). A broken hard keep is reported there once: `W_KEEP_VIOLATED` no longer
+  also counts as a broken diagnostic when both sides resolve. `describe --facts depends` adds
+  `depends.keeps[]` (all keeps on the top level, a storey's own on its `levels[]` entry): the
+  targets, `constrains` (the names the targets' positions and the keep's value read; `locked`
+  when none), `equations` or `bounds`, and `implied`, `redundant` and `conflicts` decided from the
+  declarations alone by a weighted union-find over relational rooms and walls written on a datum,
+  entered only where the relation survives grid snapping. `compile -f json` prints a note on
+  stderr naming how many keeps Plan JSON left out, and `planToJson()` returns the count as
+  `droppedKeeps`. The `impact` and `validate` CLI help name their `keeps` keys; the spec's `keep`
+  line says advisory keeps are reported by `impact` too (29,815 → 29,822 units) and the SKILL
+  sentence describes the real report. A plan with no keep is unchanged byte for byte in every
+  surface (the 269-file baseline).
 
 - Brief-bound dimensions (plan card PS4.4). `describe().totals` gains the plan's **gross internal
   area**, `gross_internal_area_m2`: the floor inside the inner faces of the storey's `exterior`

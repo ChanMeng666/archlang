@@ -58,7 +58,7 @@ import type {
   ResolvedPlan,
   ResolvedElement,
 } from "./ir.js";
-import { instanceBodiesOf } from "./ir.js";
+import { instanceBodiesOf, keepResultsOf } from "./ir.js";
 import type { Diagnostic } from "./diagnostics.js";
 import type {
   DoorEnumClause,
@@ -877,13 +877,20 @@ export interface PlanJsonPage {
  * page `compile().svg` draws). `pages` carries every storey, each projected alone in
  * ascending level order, exactly as `compile().pages` carries one drawing per storey; it is
  * absent for a single-storey plan, so that result is unchanged.
+ *
+ * Plan JSON carries no `keep` (ADR 0033; plan-soundness PS4.10 would carry them), so a plan that
+ * declares keeps says how many it left out: `droppedKeeps`, the accepted keeps as measured (a
+ * keep a `for` loop repeats counts once per pass), present only when there is one (PS4.11), and
+ * `compile -f json` prints it as a note on stderr. The loss is visible, never silent.
  */
 export function planToJson(
   source: string,
   opts: AnalyzeOptions = {},
-): { json?: PlanJson; pages?: PlanJsonPage[]; diagnostics: Diagnostic[] } {
+): { json?: PlanJson; pages?: PlanJsonPage[]; diagnostics: Diagnostic[]; droppedKeeps?: number } {
   const { ir, diagnostics, levels } = resolvePlan(source, opts);
   if (!ir) return { diagnostics };
+  const keeps = keepResultsOf(ir, levels);
+  const dropped = keeps ? { droppedKeeps: keeps.length } : {};
   // A storey whose `place`d component derives its walls carries its components and instances
   // (PS3.9): the statement sits in the component's body, never the walls it derives (ADR 0028
   // §3). What that record cannot carry is refused, naming the instance, never dropped.
@@ -895,13 +902,13 @@ export function planToJson(
     carriedOf.set(s, c);
   }
   const project = (s: ResolvedPlan): PlanJson => resolvedToJson(s, DEFAULT_TOL, carriedOf.get(s));
-  if (levels.length === 0) return { json: project(ir), diagnostics };
+  if (levels.length === 0) return { json: project(ir), diagnostics, ...dropped };
   const pages = levels.map((l) => ({
     level: l.level,
     ...(l.name !== undefined ? { name: l.name } : {}),
     json: project(l.ir),
   }));
-  return { json: project(ir), pages, diagnostics };
+  return { json: project(ir), pages, diagnostics, ...dropped };
 }
 
 /** {@link PlanJson.components} and {@link PlanJson.instances}, as one storey carries them. */

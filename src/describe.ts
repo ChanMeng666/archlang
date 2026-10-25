@@ -34,7 +34,7 @@ import type {
   OpeningPlacement,
   FurniturePlacement,
 } from "./ir.js";
-import type { FenceStyle, OutdoorKind, Point, RailSide, VerticalDir } from "./ast.js";
+import type { FenceStyle, OutdoorKind, PlanNode, Point, RailSide, VerticalDir } from "./ast.js";
 import { polygonArea, polygonBounds } from "./geometry/polygon.js";
 import { memoRoomNetAreaMm2, storeyNetAreaBands } from "./analyze/net-area-memo.js";
 import { grossInternalArea, type GrossAreaReason } from "./analyze/gross-area.js";
@@ -67,6 +67,7 @@ import { entranceInputs, storeyHasEntranceCandidate, withMainEntrance } from "./
 import { symmetryFacts, type SymmetryFacts } from "./analyze/symmetry.js";
 import { syntaxFacts, type SyntaxFacts } from "./analyze/syntax.js";
 import { type DependsFacts, dependsFacts, indexStatements, type StatementIndex } from "./analyze/depends.js";
+import { keepFacts } from "./analyze/keep-facts.js";
 import { roomTypeForUses, buildInputGraph } from "./plan-json.js";
 import { roomSchedule, type ScheduleRow } from "./sheet-tables.js";
 // The page→compass conversion and the `site` derivation live in ONE module: the site
@@ -118,6 +119,7 @@ export type {
 } from "./analyze/symmetry.js";
 export type { SyntaxFacts, SyntaxRoom } from "./analyze/syntax.js";
 export type { DependsEntry, DependsFacts, DerivedWallDepends } from "./analyze/depends.js";
+export type { KeepFact } from "./analyze/keep-facts.js";
 
 // The access graph and its two node/edge shapes are DECLARED in `analyze.js`, but
 // `describe()` is the only public value that surfaces them ({@link SceneSummary.access}),
@@ -1722,7 +1724,7 @@ export function describeWithAutoIds(
     for (const e of ir.elements) if (e.kind === "room" && (e as RRoom)._idAuthored !== true) autoRoomIds.add(e.id);
   const statements = plan && opts.facts?.includes("depends") ? indexStatements(plan) : undefined;
   return {
-    summary: summarizeResolved(ir, diagnostics, levels, opts, statements),
+    summary: summarizeResolved(ir, diagnostics, levels, opts, statements, plan),
     autoRoomIds,
     fabric: diffFabricOf(ir),
   };
@@ -1844,6 +1846,7 @@ function summarizeResolved(
   levels: ReturnType<typeof resolvePlan>["levels"],
   opts: DescribeOptions,
   statements?: StatementIndex,
+  plan?: PlanNode,
 ): SceneSummary {
   const tol = opts.adjacencyTolMm ?? DEFAULT_TOL;
   const keeps = ir ? keepResultsOf(ir, levels) : undefined;
@@ -1906,6 +1909,18 @@ function summarizeResolved(
     levels.length > 0 ? (building?.fromBelow.has(levels[0]!.level) ?? false) : false,
     statements,
   );
+  // ADR 0033 / PS4.3b: the keeps as static facts, under `depends` (the plan's every keep on the
+  // top-level object, a storey's own on its `levels[]` entry), only when the plan declares one.
+  if (keeps && plan && top.depends) {
+    const facts = keepFacts(plan, ir, levels, keeps, (level) =>
+      level === undefined ? top.depends : perLevel?.find((l) => l.level === level)?.depends,
+    );
+    top.depends = { ...top.depends, keeps: facts };
+    for (const l of perLevel ?? []) {
+      const own = facts.filter((f) => f.level === l.level);
+      if (l.depends && own.length > 0) l.depends = { ...l.depends, keeps: own };
+    }
+  }
   return {
     ok: true,
     ...top,

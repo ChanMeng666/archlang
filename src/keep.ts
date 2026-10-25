@@ -62,6 +62,8 @@ function lattice(v: number): number {
 }
 /** An edge, a length or a `<mm>` in half-lattice units. */
 const halfOf = (v: number): number => 2 * lattice(v);
+/** {@link halfOf}, for the static facts: a literal on the same scale as a keep's residuals. */
+export const keepHalfOf = halfOf;
 /** A centre line in half-lattice units: twice its value, on the lattice, so it is never rounded. */
 const halfOfCentre = (v: number): number => lattice(2 * v);
 /** A half-lattice count in mm, exact. */
@@ -119,6 +121,9 @@ function refsOf(n: KeepNode): KeepRef[] {
       return [n.datum];
   }
 }
+
+/** The refs a keep names, in the order it names them (read by `impact` and the static facts). */
+export const keepRefsOf = (n: KeepNode): KeepRef[] => refsOf(n);
 
 /** One step per target (levels included) — what expansion charges before the record. */
 function targetCount(n: KeepNode): number {
@@ -327,6 +332,14 @@ export interface KeepResult {
   /** When broken: the id-free message and its hints (the `W_KEEP_VIOLATED` text for any grade). */
   message?: string;
   hints?: string[];
+  /** Internal, read by the static facts (`--facts depends`): whether the lines `align`, `on
+   *  axis`, `offset` and `fixed` compare are vertical (their values are x) or horizontal. */
+  vertical?: boolean;
+  /** Internal, read by the static facts and `impact`: a `stacked` keep's levels as evaluated. */
+  levels?: number[];
+  /** Internal, read by the static facts: the keep's own `<mm>` (`offset`, `min clear`, `fixed`),
+   *  half-lattice units, never snapped. */
+  valueH?: number;
 }
 
 const FORM_WORDS: Record<KeepNode["form"], string> = {
@@ -834,7 +847,7 @@ export function evaluateKeeps(records: readonly KeepRecord[], ctx: KeepStoreyCtx
       refuseAt(ctx, node, r);
       continue;
     }
-    out.push({ ...base, ...r });
+    out.push({ ...base, ...r, ...(rec.mm !== undefined ? { valueH: halfOf(rec.mm) } : {}) });
   }
   return out;
 }
@@ -887,6 +900,7 @@ function measureAlign(
     h: worst.h,
     ...(holds ? {} : { at: { target: worst.target } }),
     ...(node.form === "align" && residuals.length > 1 ? { residuals } : {}),
+    vertical: first.vertical,
   };
   if (!holds) {
     const wl = lines.find((l) => l.text === worst.target)!;
@@ -914,7 +928,7 @@ function measureFixed(
   if (isRefusal(l)) return l;
   const want = halfOf(mm);
   const h = l.h - want;
-  const out: Measured = { holds: h === 0, h };
+  const out: Measured = { holds: h === 0, h, vertical: l.vertical };
   if (h !== 0) {
     const a = axisWord(l.vertical);
     out.message = `This keep holds ${l.phrase} at ${a} ${mmText(want)}; it is at ${a} ${mmText(l.h)}, ${mmText(Math.abs(h))} mm ${sideWord(l.vertical, h)} that.${MESSAGE_TAIL}`;
@@ -1005,7 +1019,7 @@ function measureOffset(
   }
   const want = halfOf(mm);
   const h = xh - d.h - want;
-  const out: Measured = { holds: h === 0, h };
+  const out: Measured = { holds: h === 0, h, vertical: d.vertical };
   if (h !== 0) {
     const stated =
       want === 0 ? `on ${d.phrase}` : `${mmText(Math.abs(want))} mm ${sideWord(d.vertical, want)} ${d.phrase}`;
@@ -1637,6 +1651,7 @@ export function evaluateStacked(
       h: worst.h,
       ...(holds ? {} : { at: { target: target.id, level: worst.level!, edge: worst.edge! } }),
       residuals,
+      levels: [...levels],
     };
     if (!holds) {
       const vertical = worst.edge === "left" || worst.edge === "right";

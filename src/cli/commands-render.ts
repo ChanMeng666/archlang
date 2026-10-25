@@ -163,6 +163,8 @@ export async function cmdCompile(args: Args): Promise<number> {
   }
 
   const errored = hasErrors(r.diagnostics);
+  // What the artifact left out (`-f json` drops keeps, PS4.11): one line each on stderr.
+  if (!errored && !args.quiet) for (const n of r.notes ?? []) process.stderr.write(`${n}\n`);
 
   // ---- multi-storey: one sheet per level -----------------------------------------
   // `-o -` cannot mean "several drawings on one stream", so it is a usage error (exit 3)

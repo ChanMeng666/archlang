@@ -2614,6 +2614,30 @@ by level then the plan's: the statement, form, grade, targets, `holds`, `residua
 `measured_mm`, `residuals`, `skipped_walls` and `skipped` where they apply), and `validate --json` appends
 `keeps` before `next`. Both keys are present only when the plan declares a keep.
 
+`archlang impact` (`--set NAME=value` or `--against old.arch`) adds a `keeps` section after
+`diagnostics` when either side declares a keep: each keep is matched across the two versions by
+its storey, its text and its place among keeps of the same text (so a keep a `for` loop repeats
+is told apart by order), and listed under `broke` (broken after, and held before or its residual
+moved), `healed`, `held` (held on both sides while a target it names changed, or its residual
+moved), `added` or `removed`, with its residual before and after and the targets that changed on
+its own storey; the rest count in `unchanged_count`. A broken hard keep is reported there once:
+its `W_KEEP_VIOLATED` is not also counted under `diagnostics`.
+
+`describe --facts depends` adds `depends.keeps[]` (every keep on the top-level `depends`, a
+storey's own on its `levels[]` entry): the targets, `constrains` (the `let`s and parameters the
+targets' positions and the keep's own value read; `locked: true` when there are none, so no
+`--set` can break it), `equations` or `bounds`, and three facts decided from the declarations
+alone: `implied` (an equality the statements before it already make hold, such as `keep align
+a.right b.left` beside `room b right-of a`, with the statements that imply it under `by`),
+`redundant` (every equality implied; a `min clear` another on the same room outdoes) and
+`conflicts` (an equality that cannot hold together with what came before, with the gap in mm).
+A relation is implied by a room only when it survives grid snapping: an edge, never a centre,
+and every literal it reads a multiple of the plan's `grid`.
+
+**Plan JSON carries no keeps.** `compile -f json` exports the plan without them (as it exports no
+axes) and says so with a note on stderr naming how many it left out; `planToJson()` returns the
+count as `droppedKeeps`. The `.arch` source is the only home of a keep.
+
 **Where a keep may stand.** In the plan or a `level` block, inside `for`, `if` and `zone`. Not
 inside a `component` (it would be checked once per instance, in its own frame): `E_KEEP_PLACEMENT`.
 `stacked` compares storeys, so it sits at the root of a multi-storey plan; every other form sits
