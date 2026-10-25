@@ -16,11 +16,12 @@ import { WALL_BETWEEN_AROUND_PLANS } from "./wall-between-around-plans.js";
 const API: CompilerApi = { compile, describe, lint };
 
 const DIGESTS: [string, string][] = [
-  ["pairwise-forms", "675455f4cd6f09bda4ab7fa8c771fd4587b96412b65198adcbc090a69fa90d3f"],
-  ["beside-walls-from-rooms", "e491169ae7b920ba5ff752e145600069567e4743abae4386668f3096f81ba557"],
-  ["frames", "99811e5cfa28e40fbbe9cc7da81f7872767235671c10d1ce4400c68574646bf0"],
-  ["widen-4000", "18781e880e4e42843595c6116a9689622b3a9aa1dca04b1f3e4d177cf15ba887"],
-  ["widen-4500", "dbf477f001fa9c3bb7f1ef3ce242afd204613ecd4cbc7d1437cce8570f2915e7"],
+  // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
+  ["pairwise-forms", "c0c49d00ec76a8c54d65632e164d1697e9d70f55214ecc13efed97f39d984f15"],
+  ["beside-walls-from-rooms", "1ac81bb4260561095036634e9079846c6984b655f7ff904018622caf4c2d50e4"],
+  ["frames", "b00d94e4583565a90247a3c6905c31f6670ac8097a5c990cfdb46d663722a29f"],
+  ["widen-4000", "39560adbd89d36ba775bdcf70edba0dbaa40f24fb0e3bc9007fbe268abbd7aed"],
+  ["widen-4500", "9eedd7e2646e16a777655ade402a5316bc7539cc46b691feef1805ec5412874e"],
   ["refused", "7e18b4bff41d18b98b0f0457e0f0488a8ce0bb34792e7194d8144c42e88dc901"], // PS2.29: message text only, same code, same span
 ];
 

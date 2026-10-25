@@ -37,6 +37,7 @@ import type {
 import type { FenceStyle, OutdoorKind, Point, RailSide, VerticalDir } from "./ast.js";
 import { polygonArea, polygonBounds } from "./geometry/polygon.js";
 import { memoRoomNetAreaMm2, storeyNetAreaBands } from "./analyze/net-area-memo.js";
+import { grossInternalArea, type GrossAreaReason } from "./analyze/gross-area.js";
 import type { DoorKind } from "./grammar/tokens.js";
 import type { Diagnostic } from "./diagnostics.js";
 import {
@@ -789,6 +790,29 @@ export interface SceneSummary {
     windows: number;
     floor_area_m2: number;
     /**
+     * GROSS INTERNAL AREA in m², 2 dp: the floor enclosed by the inner faces of the storey's
+     * `exterior` walls (authored, or the ring `walls from rooms` derives), joined as the drawing
+     * joins them, before any opening is cut. Exact from the shape: each loop's closed-form
+     * area, never a bbox. It counts the partitions and any floor no room covers inside the
+     * shell, and excludes the shell; a courtyard ring's court is excluded, a court bounded only
+     * by partitions is not. Several separate buildings on one storey sum. This, not the
+     * centreline `floor_area_m2`, is the "about N m²" a brief means.
+     * `src/analyze/gross-area.ts` holds the rule.
+     *
+     * ABSENT when the storey has no closed exterior ring or the figure cannot be trusted, and
+     * then {@link gross_internal_area_omitted} says why. Exactly one of the two is present.
+     */
+    gross_internal_area_m2?: number;
+    /**
+     * Why {@link gross_internal_area_m2} is absent, present only then:
+     * `no-closed-exterior-ring` (no exterior wall encloses a region: a shell that does not
+     * close, a room-only sketch, an open site), `exterior-ring-subdivided` (an exterior wall
+     * divides the enclosure, so which side is the building is not stated),
+     * `nested-exterior-rings` (something enclosed inside a courtyard ring), `too-much-work` (a
+     * counted cap) or `inconsistent`. Never a guess (ADR 0005).
+     */
+    gross_internal_area_omitted?: GrossAreaReason;
+    /**
      * Sum of the rooms' {@link RoomSummary.net_area_m2}, rounded to 2 decimals — summed from
      * the same rounded per-room figures, the way `floor_area_m2` is, so the total and the
      * list never disagree by a rounding step. ABSENT when any room's net area is omitted:
@@ -1454,11 +1478,14 @@ function summarize(
   const bbox_outer = Number.isFinite(ob.minX) ? { w: ob.maxX - ob.minX, h: ob.maxY - ob.minY } : { w: 0, h: 0 };
 
   const floorArea = r2(rooms.reduce((s, r) => s + r.area_m2, 0));
+  const gia = grossInternalArea(ir.walls);
   const totals = {
     rooms: rooms.length,
     doors: doors.length,
     windows: windows.length,
     floor_area_m2: floorArea,
+    // The shell's enclosure, beside the centreline sum; exactly one of the two keys.
+    ...(gia.ok ? { gross_internal_area_m2: r2(gia.mm2 / 1_000_000) } : { gross_internal_area_omitted: gia.reason }),
     // Never a sum over a subset: one omitted room omits the total.
     ...(rooms.every((r) => r.net_area_m2 !== undefined)
       ? { net_floor_area_m2: r2(rooms.reduce((s, r) => s + (r.net_area_m2 ?? 0), 0)) }

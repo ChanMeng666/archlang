@@ -176,11 +176,12 @@ const ROOT = join(HERE, "..");
 // Re-measured 2026-10-24 (PS2.12): the annotation-collision examples (two-bed, both tables); why, and the swap-back proof, in `test/byte-identity-baseline.ts`'s header.
 // Re-measured 2026-10-25 (PS2.11a/b): furnished-flat, laneway-house and two-bed, fixed for WC side clearance and tall units over windows; why, and the proof that nothing else moved, in `test/byte-identity-baseline.ts`'s header.
 const BASELINE: Readonly<Record<string, string>> = {
-  "studio.arch": "820d01bc49c948e62b0be9e6fd7d80334a312b5c9c5ff440bed4279b8638d75f",
+  // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
+  "studio.arch": "82fe959144377f91640399c673cbcd4d58aad91b34ca45a26541ab5c99fbe3c1",
   // laneway-house, bungalow and two-bed re-measured 2026-10-20 (PS2.17), a worktop in each kitchen;
   // see `byte-identity-baseline.ts`, "a worktop in every example kitchen", for the swap-back proof.
-  "laneway-house.arch": "efd11c408cc1c0ab1c23ef1ef054b63ce3c86bd7024c06b3fc69654b602dcfff",
-  "bungalow.arch": "7e4b4f8e97cd44c1f03f2fa8aa9ae85ee1568a17dc5743c384e55590196eb1e5",
+  "laneway-house.arch": "391bfbbb41fcb09e93f242a5f72ab367ad1adbdec31d61b9d5b11374db88615a",
+  "bungalow.arch": "212e4b7910d17e62786fae7a1a71fb7a28cfe2c6891af728ece16aacb825ec11",
   // Re-measured for the `overhead` flag. Its SOURCE gained two statements —
   // a `range_hood` over the stove and a `mirror` over the basin, the two correct drawings
   // the missing flag had kept out of the flagship — so this plan is a different building
@@ -190,12 +191,12 @@ const BASELINE: Readonly<Record<string, string>> = {
   // 50 mm nib beside the partition, so only the SVG moved; the previous SVG with the new
   // describe() + lint() reproduces the previous row (./byte-identity-baseline.ts, "Six examples").
   // Re-measured 2026-10-20 (PS2.19): "Utility" now classifies as `utility`; see `byte-identity-baseline.ts`.
-  "furnished-flat.arch": "1d3a98c3cf3eff0bec89ee54b0c3acbbb24cf799caa771efbf66a2aa45b8b5d7",
+  "furnished-flat.arch": "a03cbdc9dfd1165cd3114b708a9e0cace3d7b7186cfe945348f043a67770ff82",
   // Re-measured 2026-10-18 (PS0.7): "Kitchen / Living" now classifies as `kitchen living`, so
   // `describe()` moves (uses + room_type) and nothing else; see ./byte-identity-baseline.ts,
   // "the label classifier emits living", for the swap-back proof. Re-measured again the same day
   // (PS2.5): `lint()` gains three W_ROOM_VIA_PRIVATE; see "the circulation-and-privacy rules".
-  "two-bed.arch": "2dc668dc93aa6dd7e114715e593a87ec91b208ff60255b2d41bf20c585b3fa05", // PS3.6 source rewrite, see ./byte-identity-baseline.ts
+  "two-bed.arch": "57ad08ca74589f30db3515a62facade0d57e128cf9d723709bf6f584400215c2", // PS3.6 source rewrite, see ./byte-identity-baseline.ts
 };
 
 /**
@@ -206,10 +207,11 @@ const BASELINE: Readonly<Record<string, string>> = {
  * allowed to move {@link BASELINE}; nothing in this release is allowed to move these.
  */
 const SEMANTIC_BASELINE: Readonly<Record<string, string>> = {
-  "studio.arch": "ff1227adbd85a5239306f8b1b2d6ef4359af324e8a334dca3b5d63a25361ee6a",
+  // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
+  "studio.arch": "7f8fc9b1f532bb497d826eaea9110f569df1b21cc91b558deb7e83588432abab",
   // laneway-house, bungalow and two-bed re-measured 2026-10-20 (PS2.17), as above.
-  "laneway-house.arch": "c8b08b3f3a1b0fc9f390a7be6f9e16a6bcd512df54db8fce74f06cf3fbd6e679",
-  "bungalow.arch": "f655bb711665281ce3440d10cb38dc2ca4cdb80343e0a4580d2ca89947078351",
+  "laneway-house.arch": "870b085220a30a6edb97ff76694b105c118b9e5d51360cb0ce559f10859b50d5",
+  "bungalow.arch": "6ec78e3ea6d359372405d3cc7aacb476bf6afb0fee7d322cd6a953ea9be9239a",
   // `furnished-flat.arch` is the ONE value in this table that is not the original `5298b99`
   // measurement, and the exception proves the rule rather than bending it. Its SOURCE keeps
   // being edited -- seven of the new families in the furniture pass, then a `range_hood` and a `mirror`
@@ -226,9 +228,9 @@ const SEMANTIC_BASELINE: Readonly<Record<string, string>> = {
   // `lint()` still returns ONE diagnostic, the same `W_PATH_TOO_NARROW` with the same
   // message and hints, its byte span shifted by the comment lines added above it.
   // Re-measured 2026-10-20 (PS2.19), `describe()` only: see `byte-identity-baseline.ts`.
-  "furnished-flat.arch": "6a19a52e6e702ead080c55100e93d69667627a7a586412db992ab65c5289ba24",
+  "furnished-flat.arch": "f9740bf19ebe9393544c8c4b596ace39c7533ccd5db338ad6168b96e84bffe1d",
   // Re-measured 2026-10-18 (PS0.7, then PS2.5), the same causes as BASELINE's two-bed row.
-  "two-bed.arch": "8c3bc146d49582bf1438d0b075c40f5aa80d24d9e8a5b9b52e9a75cc4d4b1cae", // PS3.6 source rewrite, see ./byte-identity-baseline.ts
+  "two-bed.arch": "e2b8068bbca56dd2422efe090b0dfb9a945d524c91102e49d4546c928428f7a0", // PS3.6 source rewrite, see ./byte-identity-baseline.ts
 };
 
 suite("the outdoor tranche — the byte-identity law", () => {

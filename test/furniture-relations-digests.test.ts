@@ -17,9 +17,10 @@ import { FURNITURE_RELATION_PLANS } from "./furniture-relations-plans.js";
 const API: CompilerApi = { compile, describe, lint };
 
 const DIGESTS: [string, string][] = [
-  ["relations", "cc6bf8f4abf362e91e93f4248a7360757b37f992ea5dda5057493090ce069e79"],
-  ["frames", "c22ce0149901cce286a2a06471b6c711a3827a95a44f4d7ea7b2b45df317e7ae"], // PS2.29: message text only, same code, same span
-  ["seats", "fd9634cca453d3bf8c3bcb9f616b368a90827cdad1e34482d7bf3b656342da6a"], // seat hint reworded (red team round 1),
+  // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
+  ["relations", "75da8ba71ca2dbe99ee6d286588d1ac4d74f9f32cee36e41d7096b4d04f40b2b"],
+  ["frames", "6252c543ce10ea7cc704eecc159079fd553866ba03d3e5092143ce9cd678ffc9"], // PS2.29: message text only, same code, same span
+  ["seats", "5727f50f227b619c0c813d214092cdc05e370a8307c53720f7ff312bb9bbd60a"], // seat hint reworded (red team round 1),
   ["refused", "77a135b355d61ee48ed2f265c7dbb99da75edcb9ab381ead6c615e4cf8facd39"],
 ];
 

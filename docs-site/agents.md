@@ -149,12 +149,12 @@ For the [studio example](/examples), `archlang describe --json` returns (abridge
     "entrances": ["d_main"], "hasEntrance": true,
     "rooms": [ { "id": "r_bath", "depthFromEntrance": 3, "reachable": true, "bottleneckClearWidth": 740 } ]
   },
-  "totals": { "rooms": 4, "floor_area_m2": 42, "net_floor_area_m2": 38.29 }
+  "totals": { "rooms": 4, "floor_area_m2": 42, "gross_internal_area_m2": 39.44, "net_floor_area_m2": 38.29 }
 }
 ```
 
-A text-only agent can read this and confirm "4 rooms, 42 m² on wall centrelines (38.29 m² net,
-inside the walls), the bath reached off the hall (not through the bedroom), every room reachable
+A text-only agent can read this and confirm "4 rooms, 42 m² on wall centrelines (39.44 m² inside the shell,
+38.29 m² net of every wall), the bath reached off the hall (not through the bedroom), every room reachable
 from the front door" — no rendering required. See the [full schema](/analysis).
 
 `describe --json` also reports **`freedom`**: for every placed element, whether its coordinates were

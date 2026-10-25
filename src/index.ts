@@ -228,7 +228,12 @@ export type {
   IntentCode,
   IntentCheckResult,
   IntentFacing,
+  RoomDimensionIntent,
+  IntentMeasure,
+  IntentMeasureReading,
+  IntentUnmeasuredReason,
 } from "./intent.js";
+export type { GrossAreaReason } from "./analyze/gross-area.js";
 export {
   roomsMatchingConcept,
   isKnownConcept,

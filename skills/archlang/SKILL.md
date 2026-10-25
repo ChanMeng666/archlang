@@ -59,11 +59,12 @@ owns that name, so the shell runs the wrong program.
    clean and report the score and its `A_*` advice; do not iterate on it.
 8. **Check the plan against the brief.** Write the user's brief as an `intent.json` — its checkable
    expectations as data (room count, per-room concepts with area/window bands, total area, optional
-   adjacency/reachability). Two disciplines keep it brief-grounded: assert an area band only where the
-   brief gives a number ("about/~N" → ±10%; "at least N" → `min` only; qualitative words → nothing),
+   adjacency/reachability). A stated size binds: "about 70 m²" → `grossInternalAreaM2` (inside the
+   shell's inner faces); a room's stated width/depth/W × H → `roomDimensions`. Two disciplines keep
+   it brief-grounded: assert an area band only where the brief gives a number ("about/~N" → ±10%; "at least N" → `min` only; qualitative words → nothing),
    and assert the top-level room `count` only when the brief **enumerates** the rooms. Gate with
    `archlang validate plan.arch --intent intent.json --feedback --json`: a gating miss (room
-   count/existence/area/total-area/window) fails (exit `2`) with a per-violation correction prompt —
+   count/existence/area/total-area/window/size) fails (exit `2`) with a per-violation correction prompt —
    iterate on the feedback and re-run. Adjacency/reachability are advisory (reported, never fail the
    gate). Use `archlang score plan.arch --brief intent.json --json` as a continuous satisfaction meter
    (always exit `0`) to watch the plan approach the brief across edits. See

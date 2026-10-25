@@ -45,6 +45,7 @@ const DIR = resolvePath("test/resolve-order");
 
 /** [file, digest, diagnostic sequence] — measured on `main` at `60be6a4`. */
 const BASELINE: [string, string, string[]][] = [
+  // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
   [
     "axes-and-elements.arch",
     "860c6d742b5d0c602868f4342d2198c37072b8951d0a5447a9db9a20f3a4ed31",
@@ -87,7 +88,7 @@ const BASELINE: [string, string, string[]][] = [
     "relational-readers.arch",
     // Re-measured for PS0.5 (see the header): was 8bb99685…642f with
     // ["W_SWING_ROOM_NOT_ADJACENT@678", "E_FURN_AGAINST@734", "E_PLACE_REF@795"].
-    "78342f89cff072308f6d61f2d2300378ba0f3011089ccee5e2e54991f064cf7a",
+    "34b25542caeeaa66adf747dfeb6a0561b75847b9db04880d90203bb303663fae",
     [],
   ],
   [

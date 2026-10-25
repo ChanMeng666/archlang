@@ -16,11 +16,12 @@ import { OPENINGS_BETWEEN_PLANS } from "./openings-between-plans.js";
 const API: CompilerApi = { compile, describe, lint };
 
 const DIGESTS: [string, string][] = [
-  ["relational-forms", "c152bfe4c49d13825e41cab7814a57bbb63379fc7641eeb795ae3dc531b81998"],
-  ["hosted-datums", "2de74be4cdc3993be2a0eba3292c1a4a564ddb3c116da83f75e53e16f35302cf"],
-  ["frames", "13d3d040f5fc497e596b15badaf0c088c3bfb6c265f68731fd6782b993f22451"], // PS2.29: message text only, same code, same span
-  ["widen-4000", "d1605219c6eebb1868a94cb5c433e8d4c80bcf18c28735d4904c5cda9d1c2704"],
-  ["widen-4500", "7b48c85287593ab898f6b170605bdc7e43d40c8abe9c209c0886e1a5e2c3235b"],
+  // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
+  ["relational-forms", "b815544822879c4284cb3fe38a18f74d3d0235b8d7624a79ceabbf855ad2f6a3"],
+  ["hosted-datums", "669e093403a8a1693c59b73956f8ee48351d6ea00113e811a57ac12c0e49f9c5"],
+  ["frames", "63b1fcde09d4ae2333c8572f86c4347b46f3d69e89081619d2a19d039e29e900"], // PS2.29: message text only, same code, same span
+  ["widen-4000", "ddbed23ee91d2ab3ebe2e5f054ebef98b5c7bbf041a1d30b664da797d3ddaec3"],
+  ["widen-4500", "e10c23d1ec1b88edff514314378739732c5bf1e5df58ae32c5f7ac418427391c"],
   ["refused", "8f8d8a2ccb3150bb6998eda99ae95acc80f577e04744e17992f2507f6324d7d2"],
 ];
 

@@ -638,6 +638,21 @@ const violationJson = (v: IntentCheckResult["violations"][number]): Record<strin
   gate: v.gate,
 });
 
+/** The brief-bound measure rows (PS4.4), present on the intent block only when the intent
+ *  asserts one, so every other `--json` payload is byte-identical. */
+const measuresJson = (r: IntentCheckResult): Record<string, unknown> => (r.measures ? { measures: r.measures } : {});
+
+/** One human line per brief-bound measure: what, the value, the residual, the verdict. */
+function measureLine(m: NonNullable<IntentCheckResult["measures"]>[number]): string {
+  const unit = m.unit === "m2" ? " m²" : " mm";
+  const sign = (n: number): string => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : "0");
+  const body =
+    m.measured && m.residual
+      ? `${m.measured.join(" × ")}${unit}, residual ${m.residual.map(sign).join(" × ")}${unit}`
+      : `unmeasured (${m.reason})`;
+  return `  measure ${m.path}: ${m.what} ${body} · ${m.pass ? "ok" : "miss"}\n`;
+}
+
 /**
  * `validate --graph`/`--intent` — normal validate plus an optional graph-adjacency
  * comparison and/or an intent check. Both blocks may appear together (`--graph` and
@@ -706,6 +721,7 @@ function reportWithChecks(
         total: intentResult.total,
         subscores: intentResult.subscores,
         violations: intentResult.violations.map(violationJson),
+        ...measuresJson(intentResult),
       };
       if (feedback) block.feedback = feedback;
       o.intent = block;
@@ -725,6 +741,7 @@ function reportWithChecks(
           process.stderr.write(`  graph: unexpected connection ${a} — ${b}\n`);
       }
       if (intentResult) {
+        for (const m of intentResult.measures ?? []) process.stderr.write(measureLine(m));
         for (const v of intentResult.violations) process.stderr.write(`  ${v.code}: ${v.message}\n`);
         if (feedback) for (const f of feedback) process.stderr.write(`  ${f}\n`);
       }
@@ -777,6 +794,7 @@ export function cmdScore(args: Args): number {
         score,
         subscores: result.subscores,
         violations: result.violations.map(violationJson),
+        ...measuresJson(result),
       });
     } else if (!args.quiet) {
       const pct = Math.round(score * 100);

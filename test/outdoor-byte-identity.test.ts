@@ -216,20 +216,22 @@ import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js"
 // Re-measured 2026-10-24 (PS2.12): the annotation-collision examples (aquarium); why, and the swap-back proof, in `test/byte-identity-baseline.ts`'s header.
 // Re-measured 2026-10-25 (PS2.11a/b): laneway-house (its WC moved off the corner); why, and the proof that nothing else moved, in `test/byte-identity-baseline.ts`'s header.
 const BASELINE: [string, string][] = [
+  // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
   // Both laneway-house rows re-measured 2026-10-20 (PS2.17): its kitchen gained a worktop; the new
   // compiler on the previous source, the worktop finding removed, reproduces 1e163ea9… and f3afd6b5….
-  ["laneway-house", "bc8de1eed091610692e68ad119160f06d20d257d16528d6cc2870a7443ba949b"],
-  ["studio", "fe06b9554615b4722732d13e7976991b7469d03387e8846ad83f54f83f3cbde7"],
-  ["gallery-l", "721b24f30ba6dc199ef3bc7f8ccca09157157296293a1164bd94a2fe9c1e5fa2"], // PS2.10 dims fixed (byte-identity-baseline.ts)
-  ["aquarium", "6bef7d4f7c7fb3fa4425fddc2be889fdbb519e4d444d6bf8b59f7a9cb625f9d1"], // re-measured for PS2.4, see header; PS2.10 dims fixed (byte-identity-baseline.ts)
+  ["laneway-house", "b381425d761d2ad513d1a412e95ee9972a643057ea50cd1ff2743835fc52299f"],
+  ["studio", "883c9498f948716d513f92ba0de7bee235e3579baa2bc44643d5a8707c396f61"],
+  ["gallery-l", "3fbe6e3741ada0e3eaea159c5ef46cea5bff258b30758cb7f1f1b816e72e3dfd"], // PS2.10 dims fixed (byte-identity-baseline.ts)
+  ["aquarium", "e35c9df4a6954e576f674ad68416ac37a57dd2aa9d2e0e7c3b789734ea21927d"], // re-measured for PS2.4, see header; PS2.10 dims fixed (byte-identity-baseline.ts)
 ];
 
 /** The SUMMARY half of the same law — see the header. Re-measured for `aquarium` twice, both times because its rooms were wrong (the second: PS2.4). */
 const SEMANTIC_BASELINE: [string, string][] = [
-  ["laneway-house", "c8b08b3f3a1b0fc9f390a7be6f9e16a6bcd512df54db8fce74f06cf3fbd6e679"],
-  ["studio", "ff1227adbd85a5239306f8b1b2d6ef4359af324e8a334dca3b5d63a25361ee6a"],
-  ["gallery-l", "ae44ce899ea92b457360ec9c39362baec12d3840c8105cad5248afa16fd905e1"],
-  ["aquarium", "ac66ce24faecd7af7fc55e3153868caa2e7f720b4eb535cdfd3715fbacac9893"], // re-measured for PS2.4, see header
+  // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
+  ["laneway-house", "870b085220a30a6edb97ff76694b105c118b9e5d51360cb0ce559f10859b50d5"],
+  ["studio", "7f8fc9b1f532bb497d826eaea9110f569df1b21cc91b558deb7e83588432abab"],
+  ["gallery-l", "36dd0fa0f53c4cedab0d6b4bd807b154895fb3d9b3559d076a1c6f8534211a99"],
+  ["aquarium", "69e4f4aa32e0dcc9e5442f067f858c83eb73b6a0e4183f52ebb87f97f5a3755c"], // re-measured for PS2.4, see header
 ];
 
 /** The compiler surface the summary-half pins are taken over. */

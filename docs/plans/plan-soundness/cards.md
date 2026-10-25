@@ -229,17 +229,8 @@ into PS3.12)
 - A static DOF/redundancy/conflict fact goes under `--facts depends`.
 - A `keep` draws nothing and moves nothing.
 
-**PS4.4 · Brief-bound dimensions (provenance).** `todo`
-- Sizes stated by the user's brief become intent assertions that `validate --intent` measures from
-  geometry (room count and area exist already; add a room width/depth and an exact-size assertion).
-- An edit that breaks one fails the gate. Every other number is free to flex.
-- This is the machine form of "know what to keep" (ADAI's bound dimension targets,
-  `research/adai-sketchup.md` idea 1).
-- Check the intent schema's drift and generator rules before adding fields.
-- Add a gross-internal-area fact beside the centreline area (`describe().totals`), because every
-  first-contact brief was "met" on centrelines and the finished floor came out 6–10 % under the
-  brief (`audits/2026-10-18-first-contact.md` A12, H8, S7). The brief binds to the fact the client
-  means.
+**PS4.4 · Brief-bound dimensions (provenance).** `done` (PR to follow, commit filled at merge)
+- `describe().totals.gross_internal_area_m2` and the intent's `grossInternalAreaM2`/`roomDimensions`, gating; `research/2026-10-26-ps44-as-built.md`.
 
 **PS4.5 · Contact dependency.** `todo`
 - A wall or element written at fixed coordinates that lies on a room's edge records that contact

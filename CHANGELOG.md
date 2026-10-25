@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Brief-bound dimensions (plan card PS4.4). `describe().totals` gains the plan's **gross internal
+  area**, `gross_internal_area_m2`: the floor inside the inner faces of the storey's `exterior`
+  walls, joined as the drawing joins them, exact from the shape (arcs included, never a bbox),
+  partitions counted, a courtyard ring's court excluded, separate buildings summed. Where the
+  storey has no closed exterior ring, or an exterior wall divides the shell, or a ring stands in a
+  court, the figure is absent and `gross_internal_area_omitted` names why instead; every summary
+  gains exactly one of the two keys, beside `floor_area_m2`, and nothing else moves. The intent
+  file gains `grossInternalAreaM2` (a band, like `totalAreaM2`) and `roomDimensions[]`: a room
+  bound by id or exact label to a `widthMm`/`depthMm` band or an exact `sizeMm` `{ w, h,
+  tolerance }` in either orientation, on centrelines. Each gates; `validate --intent --json` and
+  `score --brief --json` list them under `intent.measures` with the measured value and the
+  signed residual (mm or m²). A polygon or circular room, a selector that names no room or two,
+  and a plan with no gross internal area are refused as the new `E_INTENT_UNMEASURED`; misses are
+  `E_INTENT_GROSS_AREA` and `E_INTENT_ROOM_DIMENSION`. Adjacency and reachability stay advisory.
+
 - Two clearance checks (plan cards PS2.11a, PS2.11b). `W_WC_SIDE_CLEARANCE`: a WC whose
   centreline is nearer than the ruleset's new `wcSideClearanceMm` to a wall face or a piece
   beside the pan, measured from the drawn shapes over the pan's depth (400 mm by default; 381 under

@@ -672,7 +672,15 @@ suite("examples/museum.arch — the large-building flagship", () => {
     // 2 × 99.7 m × 0.2, the north cross walls 3 × 25.75 m + 21.75 m, the south ones
     // 5 × 27.75 m and the two WC walls 2 × 9.8 m, all × 0.2 m: 139.26 m², so 5860.74. The
     // reported total sums the rooms' already-rounded figures, one rounding step below it.
-    expect(d.totals).toEqual({ rooms: 14, doors: 7, windows: 9, floor_area_m2: 6000, net_floor_area_m2: 5860.73 });
+    // Gross internal: the floor inside the shell's inner faces, 99.7 × 59.7 m (PS4.4).
+    expect(d.totals).toEqual({
+      rooms: 14,
+      doors: 7,
+      windows: 9,
+      floor_area_m2: 6000,
+      gross_internal_area_m2: 5952.09,
+      net_floor_area_m2: 5860.73,
+    });
     expect(d.access.hasEntrance).toBe(true);
     expect(d.access.rooms.filter((r) => !r.reachable)).toEqual([]);
   });
