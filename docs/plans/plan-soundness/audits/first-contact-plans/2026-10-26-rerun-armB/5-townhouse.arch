@@ -1,0 +1,71 @@
+plan "Two-storey townhouse" {
+  units mm
+  grid 100
+  paper A3 landscape
+  north up
+  dims auto all
+  height 2700
+  title { project "Townhouse, 2 x 55 m2" drawn_by "ArchLang" date "2026-10-26" number "TH-01" revision "A" }
+
+  level 0 "Ground floor" {
+    room id=hall at (0,0) size 2400x3500 label "Hall" uses hall
+    room id=stairs below hall size 2400x4700 label "Stair" at (500,5800) uses circulation
+    room id=wc below stairs size 2400x1800 label "WC" uses wc
+    room id=living right-of hall align top size 3100x5000 label "Living" uses living
+    room id=kitchen below living size 3100x5000 label "Kitchen / Dining" at (3500,5600) uses kitchen
+    walls from rooms exterior 200 partition 100 { open between living and kitchen }
+
+    stair id=st at (1200,4000) size 1000x3600 dir up
+
+    door on hall.top at center width 1000 swing into hall
+    door between hall and living at 1750 from start width 900 swing into living
+    door between hall and stairs at 600 from start width 800 swing into hall
+    door between stairs and wc at 1700 from start width 800 swing into wc
+    door between stairs and kitchen at 1000 from start width 900 swing into kitchen
+
+    window on living.top width 1500
+    window on living.right width 1500
+    window on kitchen.right width 1400
+    window on kitchen.bottom width 1600
+    window on wc.left width 600
+
+    furniture sofa in living anchor bottom-right inset 400 size 2000x900
+    furniture tv_unit against living.top offset 1000 size 1400x400
+    furniture counter against kitchen.bottom offset 2300 size 900x600
+    furniture kitchen_sink against kitchen.bottom offset 1300 size 900x600
+    furniture stove against kitchen.right offset 900
+    furniture fridge against kitchen.left offset 4300 size 700x700
+    furniture table in kitchen centered size 1600x900
+    furniture wc against wc.bottom offset 500
+    furniture basin against wc.bottom offset 1500
+  }
+
+  level 1 "First floor" {
+    room id=landing at (0,0) size 2400x8200 label "Landing" uses circulation
+    room id=bath below landing size 2400x1800 label "Bathroom" at (800,8600) uses bath
+    room id=bed1 right-of landing align top size 3100x5000 label "Bedroom 1" uses bedroom
+    room id=bed2 below bed1 size 3100x5000 label "Bedroom 2" uses bedroom
+    walls from rooms exterior 200 partition 100
+
+    stair id=st at (1200,4000) size 1000x3600 dir down
+
+    door between landing and bed1 at 1500 from start width 900 swing into bed1
+    door between landing and bed2 at 1000 from start width 900 swing into bed2
+    door between landing and bath at 800 from start width 800 swing into bath
+
+    window on bed1.top width 1500
+    window on bed1.right width 1500
+    window on bed2.right width 1500
+    window on bed2.bottom width 1600
+    window on bath.left width 600
+    window on landing.left width 900
+
+    furniture double_bed in bed1 anchor top-right flush size 1600x2000
+    furniture wardrobe against bed1.bottom offset 1000 size 1600x600
+    furniture double_bed in bed2 anchor bottom-right flush size 1600x2000
+    furniture wardrobe against bed2.top offset 2200 size 1600x600
+    furniture bathtub against bath.right offset 900 size 1500x700
+    furniture wc against bath.bottom offset 600
+    furniture basin against bath.bottom offset 1300
+  }
+}

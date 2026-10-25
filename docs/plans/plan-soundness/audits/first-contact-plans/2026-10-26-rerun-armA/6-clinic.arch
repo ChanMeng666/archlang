@@ -1,0 +1,52 @@
+plan "Small Clinic" {
+  units mm
+  grid 100
+  paper A3 landscape
+  north up
+  dims auto all
+
+  room id=consult1 at (0,0) size 4000x4000 label "Consulting 1" uses office
+  room id=consult2 right-of consult1 size 4000x4000 label "Consulting 2" uses office
+  room id=consult3 right-of consult2 size 4000x4000 label "Consulting 3" uses office
+  room id=corridor below consult1 size 12000x1500 label "Corridor" uses circulation
+  room id=waiting below corridor size 5000x4500 label "Waiting / Reception" uses entry
+  room id=wc right-of waiting size 2500x4500 label "Accessible WC" uses wc
+  room id=staff right-of wc size 2500x4500 label "Staff Room" uses utility
+  room id=store right-of staff size 2000x4500 label "Store" uses storage
+
+  walls from rooms exterior 200 partition 100 { open between waiting and corridor width 2400 }
+
+  door id=exit_main on waiting.bottom at center width 1200 swing outward
+  door id=exit_rear on corridor.right at center width 1000 swing outward
+
+  door between consult1 and corridor at center width 900 swing into consult1
+  door between consult2 and corridor at center width 900 swing into consult2
+  door between consult3 and corridor at center width 900 swing into consult3
+  door between wc and corridor at center width 900 swing into corridor
+  door between staff and corridor at center width 900 swing into staff
+  door between store and corridor at center width 900 swing into store
+
+  window on consult1.top width 1500
+  window on consult2.top width 1500
+  window on consult3.top width 1500
+  window on waiting.left width 1800
+  window on staff.bottom width 1200
+
+  furniture reception_desk in waiting anchor top-left inset 600 size 2000x800
+  furniture sofa_l in waiting anchor bottom-left flush inset 300 size 2000x900
+
+  furniture wc against wc.bottom
+  furniture basin against wc.right
+
+  furniture desk in consult1 anchor top flush inset 300 size 1600x800
+  furniture bed in consult1 anchor bottom-left flush size 700x1900
+  furniture desk in consult2 anchor top flush inset 300 size 1600x800
+  furniture bed in consult2 anchor bottom-left flush size 700x1900
+  furniture desk in consult3 anchor top flush inset 300 size 1600x800
+  furniture bed in consult3 anchor bottom-left flush size 700x1900
+
+  furniture meeting_table in staff centered size 1600x800
+  furniture locker in store anchor bottom flush size 1200x500
+
+  title { project "Small Clinic" drawn_by "ArchLang" date "2026-10-26" number "A-01" revision "A" }
+}

@@ -1,0 +1,56 @@
+plan "Corner Cafe" {
+  units mm
+  grid 100
+  paper A3 landscape
+  scale 1:100
+  north up
+  dims auto all
+
+  room id=store at (0,0) size 2500x3000 label "Store" uses storage
+  room id=kitchen right-of store size 5200x3000 label "Kitchen" uses kitchen
+  room id=staffwc right-of kitchen size 1800x3000 label "Staff WC" uses wc
+  room id=accwc right-of staffwc size 2500x3000 label "Accessible WC" uses wc
+  room id=counter below store size 4500x4500 label "Serving Counter"
+  room id=dining right-of counter align top size 7500x4500 label "Seating" uses living
+
+  walls from rooms exterior 200 partition 100
+
+  # entrance on the south-east corner
+  door id=entry on dining.bottom at 700 from end width 1000 swing inward
+  door between dining and accwc at center width 900 swing into accwc
+  door between dining and staffwc at center width 800 swing into staffwc
+  door between store and kitchen at center width 800 swing into store
+  door between kitchen and counter at center width 900 swing into kitchen
+  opening between counter and dining at center width 1500
+
+  window on dining.right width 1800
+  window on dining.bottom at 3000 from start width 2000
+  window on counter.left width 1500
+  window on counter.bottom width 1800
+  window on kitchen.top width 1500
+
+  furniture wc in accwc anchor top flush size 400x700
+  furniture basin in accwc anchor top-right flush size 500x400
+  furniture wc in staffwc anchor top-left flush inset 200 size 400x700
+  furniture basin in staffwc anchor top-right flush size 500x400
+  furniture bookshelf in store anchor top flush size 1800x400
+  furniture stove in kitchen anchor top flush size 800x600
+  furniture kitchen_sink in kitchen anchor top-right flush size 1200x600
+  furniture fridge in kitchen anchor top-left flush size 700x700
+  furniture counter in kitchen anchor right flush size 600x1400
+  furniture bar_counter in counter anchor left flush size 700x2800
+
+  for r in 0..2 {
+    for c in 0..3 {
+      let cx = 5500 + c * 2100
+      let ty = 3700 + r * 2400
+      furniture table at (cx - 700, ty) size 1400x800
+      furniture chair at (cx - 500, ty - 400) size 400x400 rotate 0
+      furniture chair at (cx + 100, ty - 400) size 400x400 rotate 0
+      furniture chair at (cx - 500, ty + 800) size 400x400 rotate 180
+      furniture chair at (cx + 100, ty + 800) size 400x400 rotate 180
+    }
+  }
+
+  title { project "Corner Cafe" drawn_by "Author" date "2026-10-26" number "A-01" revision "A" }
+}

@@ -112,5 +112,22 @@ already separate the corpus's circulation and daylight pairs.
   pre-#250 role text and (B) the current role, counting `score --taste` and `validate` calls;
   taste stays an author tool only if arm A shows calls, and otherwise is re-scoped as a reviewer's
   tool.
+- **Measured 2026-10-26** (D15's two arms,
+  `docs/plans/plan-soundness/audits/2026-10-26-first-contact-rerun-d15.md`). Twelve cold authors
+  wrote the six briefs, six under each role text, from a spec that names `validate --json` and
+  `score --taste generic` in its self-correction loop. Arm A (the pre-#250 role) made 0 `score
+  --taste` and 0 `validate` calls in 65 CLI calls (27 `compile`, 37 `lint`, 1 `describe`). Arm B
+  (the current role, whose loop names `validate` as step 3 and `score --taste` as step 5) made 0
+  `score` and 1 `validate` in 77 (32 `compile`, 42 `lint`, 2 `describe`); two of its authors wrote,
+  unprompted, that they had skipped `describe` and `score --taste`. So arm A shows no calls, the
+  role text alone does not change that (arm B over arm A: +1 `validate`, +1 `describe`, 0 `score`), and this ADR's reverse-if is met. The dispatch prompt names
+  `compile|lint` only and says to stop when it compiles, so the result measures that protocol, not
+  an agent told to run the whole loop. Re-scoped by plan-soundness D20 (`docs/plans/plan-soundness/README.md`
+  § 3): validity stays in `lint`; the taste score is read by the reviewer (the dispatching session,
+  `validate --taste`, and the planned `preview --review`) and is no longer expected in a cold
+  author's loop. The score's design is unchanged: 0 to 1, sourced, capped under a validity warning,
+  never gating, `taste()` in the API. Only its audience changes. It comes back into the author loop
+  if a re-measure whose prompt names the whole loop shows at least half of the cold authors running
+  `score --taste` unprompted, or if a consumer is shown steering authors by the score.
 
 *Reverse if:* agents measurably ignore a separate score (D2's own trigger).

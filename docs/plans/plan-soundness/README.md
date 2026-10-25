@@ -142,6 +142,8 @@ The owner delegated these on 2026-10-18. Each records what would reverse it.
   output across the whole corpus for every tweak. A separate meter can evolve freely, and agents can
   still optimise it.
 - *Reverse if:* agents measurably ignore a separate score.
+- *Re-stated 2026-10-26 (D20):* the reverse-if was met; the score is read by the reviewer, not expected
+  in a cold author's loop.
 
 **D3. Advisory profiles are named honestly.**
 - Thresholds from codes ship as `cn-residential-advisory`, `uk-residential-advisory` and
@@ -332,6 +334,7 @@ drift audit.)
 - *Reverse if:* arm A shows no calls: then D2's reverse-if is met, taste becomes a reviewer's tool
   (ADR 0032's consequence) and D2 is re-stated. If arm A shows calls, this entry closes and PS7.4
   is done.
+- *Closed 2026-10-26:* arm A 0 calls; D20.
 
 **D16. The README stays small; the cards live in `cards.md`.** (2026-10-25.)
 - §6's card tables and card texts moved to `cards.md`, with the same tables, ids and status words.
@@ -396,6 +399,15 @@ ratification (D18).*
   they change no measured surface the authors see (PS2.50 and PS2.22/PS2.29 change lint output and
   PS2.45 changes `finish` output, so all of them wait too).
   *Reverse if:* the owner asks for row 6 to start first; then this bullet records the waiver.
+  *Closed 2026-10-26:* the re-measure ran as D15's two arms (`audits/2026-10-26-first-contact-rerun-d15.md`;
+  D20); the row-5 residue and row 6 may start.
+
+**D20. D15's two arms ran; D2's reverse-if is met, and taste is re-scoped as a reviewer's tool.** (2026-10-26; evidence `audits/2026-10-26-first-contact-rerun-d15.md`.)
+- Measured: arm A (spec text only, pre-#250 role) made 0 `score --taste` and 0 `validate` calls in 65; arm B (the current role, whose loop names `validate` as step 3 and `score --taste` as step 5) made 0 `score` and 1 `validate` in 77. Both arms ran under the protocol's prompt, which names `compile|lint` and says stop when it compiles; two arm-B authors said unprompted that they skipped `score --taste`. D15's test says taste stays an author tool only if arm A shows calls. It shows none, and arm B shows that the role text alone does not change that.
+- D2 re-stated: validity stays in `lint`; quality stays in a separate taste score, read by the reviewer — the dispatching session, `validate --taste`, and `preview --review` (PS5.4) — and no longer expected in a cold author's loop. The score's design (0–1, sourced, capped under a validity warning, never gating, `taste()` in the API) is unchanged; only its audience is.
+- Consequences: (a) ADR 0032 gets a 2026-10-26 addendum under Consequences recording this measurement and the re-scope. (b) PS7.4 is `done`: measured; teaching the step where cold authors read did not change behaviour (arm B over arm A: +1 `validate`, +1 `describe`, 0 `score`). (c) A new card PS7.5 moves the taste step out of the author loop in `spec.llm.md`'s self-correction paragraph (its characters return to the spec budget, which row 6's `keep` form needs), re-words SKILL step 7 as a review step, and reverts `.claude/agents/arch-author.md` to compile → `validate` `next` → lint → repair with taste under a "Review" heading; one PR, after this audit merges; the spec change is a measured surface, so the next re-measure states it. `validate --json` `next` stays taught: it is the validity ordering, not a second score, and its uptake (1 of 12) is a PS7.x staged-authoring question, not a taste one.
+- Not changed by this run: the defect count is flat (49 → 52 / 54 under two auditors), blockers 0 → 1 per arm (both stairs: the stair class has no default lint rule but `W_STAIR_UNMATCHED`), rooms-first 6/6 in both arms, `facing` 0 uses in 12 plans. Row 6's content cards (PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e) and the row-5 residue (PS2.45, PS2.50, PS2.22/2.29) may now start: D10's and D19's mandatory re-measure has run.
+- *Reverse if:* a re-measure whose dispatch prompt names the whole loop (not `compile|lint`) shows at least half of the cold authors running `score --taste` unprompted, or a consumer is shown steering authors by the score; then taste returns to the author loop and PS7.5 is reverted.
 
 ## 4. Principles: what "professional rules and taste" means here
 
@@ -484,7 +496,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS2 · Validity checks that read existing facts (small, high yield)
 
-59 cards: 19 done, 40 todo. Cards, tables and as-built pointers: `cards.md` § PS2.
+60 cards: 19 done, 41 todo. Cards, tables and as-built pointers: `cards.md` § PS2.
 
 ### PS3 · Relation-first authoring (D1 + D5; needs an ADR)
 
@@ -504,7 +516,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS7 · Staged authoring for agents
 
-4 cards: 1 doing, 2 todo, 1 parked. Cards, tables and as-built pointers: `cards.md` § PS7.
+6 cards: 1 done, 4 todo, 1 parked. Cards, tables and as-built pointers: `cards.md` § PS7.
 
 ## 7. Suggested order and acceptance
 
@@ -516,7 +528,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 | 3a | PS3.7, PS3.8, PS3.5, PS3.9 (and PS0.19) | Unplanned, after row 3 (D7): PRs #228–#232. Re-measure PR #233: defects 57 → 48, blockers 4 → 2; corpus 47/70 |
 | 4 | PS0.4, PS4.1, PS4.2 | The widening drill's `impact` names every moved, held and broken item correctly. *Status:* met in part 2026-10-24 by PS4.2 (PR #240, 7954f252); `held` is empty (PS4.5) |
 | 5 | PS5.1–PS5.3, PS2.10–PS2.12 | The taste score separates the corpus's known-bad from known-good plans monotonically; the clearances corpus class reaches ≥ 10/18. *Status:* met 2026-10-25 (D14): the taste acceptance holds as worded (44 pairs on 2026-10-25: 40 ordered / 0 tied / 0 reversed / 4 unjudged, ledger empty; 41/37 when #249 ran; caveats in D14); PS2.11a–d merged (PRs #252, #253); clearances 11/19; corpus 59/73. *Re-measure:* `audits/2026-10-25-first-contact-rerun-row5.md` (PR #249; ran before #248, #250, #252 and #253 merged, so the row-5 re-measure is still owed, D19): defects 48 → 49, blockers 2 → 0 (by authoring chance: no row-5 rule touches a stair), 0/6 authors ran taste or `next`. Status history verbatim: `research/2026-10-25-ps5-as-built.md` § §7 row 5 |
-| 6 | PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e | **Current** (row 5 closed 2026-10-25). Starts with the owed row-5 re-measure, run as D15's two arms (D19), then PS2.45/PS2.50/PS2.22/PS2.29 as row-5 residue, then: `keep` invariants and brief-bound sizes are checked by `validate`, the widening drill reports a broken `keep` with its signed residual, and `preview --review` rings every flagged element; a re-measure closes the row (D10). Order and the open-card map: `handoff.md` § 4. (PS3.5 and PS3.6 already landed, rows 3a and 3) |
+| 6 | PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e | **Current** (row 5 closed 2026-10-25). The owed row-5 re-measure, run as D15's two arms (D19), ran 2026-10-26 (`audits/2026-10-26-first-contact-rerun-d15.md`; D20: taste is a reviewer's tool, PS7.4 done, PS7.5 filed), so the row's cards may start: first PS2.45/PS2.50/PS2.22/PS2.29 as row-5 residue, then: `keep` invariants and brief-bound sizes are checked by `validate`, the widening drill reports a broken `keep` with its signed residual, and `preview --review` rings every flagged element; a re-measure closes the row (D10). Order and the open-card map: `handoff.md` § 4. (PS3.5 and PS3.6 already landed, rows 3a and 3) |
 | 7 | PS6.1 | — |
 
 Rows 1–4 as they stood before this pruning, verbatim: `research/2026-10-25-ps5-as-built.md` § §7 rows 1–4.
@@ -635,6 +647,9 @@ This plan is a hypothesis about what will make AI-written plans professional. Tr
   cold by an AI author, lint-clean, 57 verified defects, twelve classes outside the taxonomy.
 - `audits/2026-10-24-first-contact-rerun.md`: the same, re-measured after row 3 (D7).
 - `audits/2026-10-25-first-contact-rerun-row5.md`: the same, re-measured after row 5 (D10, D14).
+- `audits/2026-10-26-first-contact-rerun-d15.md` and `audits/first-contact-plans/2026-10-26-rerun-arm{A,B}/*.arch`:
+  the same, re-measured after row 5 as D15's two arms (A: pre-#250 role, B: current role); 52 and 54
+  verified defects, 0 and 0 `score --taste` calls; D20.
 - `research/2026-10-24-ps5-taste-design.md`: the PS5 taste layer design (row 5).
 - `research/2026-10-24-ps0-ps2-as-built.md`, `research/2026-10-24-ps3-as-built.md`,
   `research/2026-10-25-ps5-as-built.md`: landed cards' as-built notes, verbatim (the last also
