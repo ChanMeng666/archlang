@@ -465,6 +465,9 @@ export function openingTagNodes(
   /** The walls an element derives (`ElementDef.yieldsWalls` from the caller's registry): a
    *  derived wall is an obstacle too, though it is never an element. */
   derivedWallsOf: (e: ResolvedElement) => readonly RWall[] | undefined = () => undefined,
+  /** Room-name nodes an authored `label "…" at (x,y)` pinned: the label pass never moves
+   *  them, so a tag must keep off them as it does off furniture. */
+  pinned: ReadonlySet<SceneNode> = new Set(),
 ): SceneNode[] {
   const { doors, windows } = taggable(elements);
   const boxes = floorBoxes(elements);
@@ -505,9 +508,11 @@ export function openingTagNodes(
   // line by its stroke),
   // filtered the way the room-label pass filters its obstacles: never the floor or the wall
   // fills (the walls are in by segment above), a roof outline or the ground (each boxes the
-  // whole site), and never a room's name, which moves off a tag after this pass.
+  // whole site), and never a room's name, which moves off a tag after this pass — unless the
+  // author pinned it with `label … at`, which the label pass will not move.
   for (const n of drawn) {
-    if (n.layer === "floor" || n.layer === "wallFill" || n.layer === "wallFace" || n.layer === "labels") continue;
+    if (n.layer === "floor" || n.layer === "wallFill" || n.layer === "wallFace") continue;
+    if (n.layer === "labels" && !pinned.has(n)) continue;
     // The annotations pass holds only the lot line here (the tables come after the tags).
     if (n.layer === "annotations") continue;
     if (n.layerName === ROOF_LAYER) continue;
