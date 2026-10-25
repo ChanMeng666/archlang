@@ -56,8 +56,8 @@ Everything below is on `main` and **unreleased**: the last `v*` tag predates PR 
 when the owner asks; the agent then runs the chain (`docs/agents/iron-laws.md` § Owner policies).
 `CHANGELOG.md` `[Unreleased]` is the release record; PR #255 backfilled the 24 programme PRs it was
 missing. Totals at 1f7c544d: 22 new `W_*` codes (52 → 74), 31 new `E_*` codes (103 → 134), 11 `A_*`
-taste advice codes, `LINT_RULES` 45 entries; after this PR, 124 cards: 48 done, 2 parked,
-74 todo (PS7.5's PR #263 will make it 49/73; 121 after PR #256, plus PS2.56, PS7.5 and PS7.6; PS7.4 and PS1.3 are done).
+taste advice codes, `LINT_RULES` 45 entries; 124 cards: 49 done, 2 parked,
+73 todo (after PRs #263 and #264).
 
 | Surface | Card | PR | Merge |
 |---|---|---|---|
@@ -100,7 +100,8 @@ taste advice codes, `LINT_RULES` 45 entries; after this PR, 124 cards: 48 done, 
 | `W_WC_SIDE_CLEARANCE`, `W_FURNITURE_OVER_WINDOW`; `finish` WC 450 mm off the side face; cursor clauses | PS2.11a/b | #252 | 486c9cb7 |
 | `W_FOOTPRINT_TRANSPOSED`, `W_LEAF_ACROSS_DOORWAY` | PS2.11c/d | #253 | 43fe7fd6 |
 | Housekeeping: D7–D19, ADR 0029/0032 Accepted, cards moved to `cards.md`, CHANGELOG backfill, this page | — | #237, #241, #242, #249, #251, #254, #255, #256 | — |
-| First-contact re-measure, D15's two arms; D20; ADR 0032 addendum; PS2.56, PS7.5, PS7.6 filed | PS7.4 | #261 | — |
+| First-contact re-measure, D15's two arms; D20; ADR 0032 addendum; PS2.56, PS7.5, PS7.6 filed | PS7.4 | #261 | ef16e249 |
+| The taste step leaves the author loop: spec, SKILL step 7 and `arch-author.md` teach compile → validate → lint → repair; taste is the reviewer's | PS7.5 | #263 | — |
 | Walls-first control arm (arm C of the same run); D21 | PS1.3 | #264 | — |
 
 Recorded practice a reader must know: lint PRs bump the `lintWarnings` counts in `eval/judge-fixture.json`
@@ -127,10 +128,9 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
 5. **PS4.3** `keep` invariants checked by `validate` (ADR addendum first), **PS4.4** brief-bound
    dimensions, **PS4.5** `impact` reports `held`.
 6. **PS5.4** `preview --review` rings every flagged element.
-7. **PS7.x** staged authoring; then **PS7.5** (the taste step leaves the author loop in the spec, SKILL
-   and role text; one PR; PS4.3 in item 5 needs the spec characters it frees, so take PS7.5 first if
-   PS4.3 starts) and **PS7.6** (`lint` opens with a one-line summary). Both change what authors see, so
-   the next re-measure states them.
+7. **PS7.x** staged authoring; then **PS7.6** (`lint` opens with a one-line summary). It changes what
+   authors see, so the next re-measure states it, with PS7.5 (done: the taste step left the author loop
+   in the spec, SKILL and role text).
 8. **PS2.11e** the clearance remainder (`W_DOORWAY_BLOCKED` over leaf-less openings, stair swings,
    hob under a window PS2.46, per-family depth ceiling PS2.53, face/centreline unification PS2.54).
 9. **PS1.4** diagnostic-wording study (§8 Q3) is still open: an owner ask from 2026-10-18 found undone by the
@@ -138,7 +138,7 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    2026-10-26 in item 1's harness (66 CLI calls, 0 `score`, 0 `validate`; 54 verified defects against 52
    rooms-first; D1/D5 re-stated).
 10. Everything else in `cards.md` by family: PS0 15 todo, PS1 1, PS2 41 todo, PS3 4, PS4 5, PS5 4,
-    PS7 4 (7.1, 7.2, 7.5, 7.6); pick by first-contact evidence, not by number.
+    PS7 3 (7.1, 7.2, 7.6); pick by first-contact evidence, not by number.
 
 **Open cards by family (2026-10-25 audit, counts updated 2026-10-26; "ready" = no stated dependency
 outstanding; every card that changes what an author sees in `lint`, `validate`, `finish` or the spec
@@ -152,12 +152,11 @@ waited for item 1 (D19), which ran 2026-10-26: such a card may start and the nex
 | PS3 | 4 | 3.12 | 3.10 (decision; moves digests, D8), 3.11 (corpus sweep), 3.13 (proof first) |
 | PS4 | 5 | 4.5, 4.6, 4.7 | 4.3 (ADR addendum, row 6), 4.4 (row 6) |
 | PS5 | 4 | 5.5 | 5.3a (MCP version bump), 5.4 (row 6), 5.6 (D12) |
-| PS6/PS7 | 1 parked; 4 todo, 1 parked | 7.2, 7.5 (D20; before PS4.3, which needs its spec characters), 7.6 | 6.1 (until `keep` is used), 7.1 ("after PS2" is ambiguous; read it as after row 6), 7.3 (parked: only if rule packs outgrow code) |
+| PS6/PS7 | 1 parked; 3 todo, 1 parked | 7.2, 7.6 | 6.1 (until `keep` is used), 7.1 ("after PS2" is ambiguous; read it as after row 6), 7.3 (parked: only if rule packs outgrow code) |
 
 Facts a reader would otherwise miss: the dwelling reading (D6) now has six consumers (three lint
-arms, taste R6/R11/R12), so D6's reverse-if has fired and is re-stated in D6; `spec.llm.md` has 136
-UTF-16 units of headroom under its 30,000 cap, so row 6's `keep` form must be paid for by cuts (PS7.5 frees the
-loop paragraph's taste clause);
+arms, taste R6/R11/R12), so D6's reverse-if has fired and is re-stated in D6; `spec.llm.md` has 271
+UTF-16 units under its 30,000 cap (PS7.5 freed 135 from the loop paragraph's taste clause), so row 6's `keep` form must still be paid for by cuts where it exceeds that;
 the first-contact hits of the four clearance rules (A8, NT4, NH6, RH3, T5, A1, K4, NH5, RA6, C4, RS4,
 RK4) are in the two 2026-10-25 as-built records and are summed in Part 1 of the 2026-10-26 audit (23
 of the 57, 7 of the 48 and 5 of the 49 now caught, 9 new true findings, 0 false positives); `docs/backlog.md`

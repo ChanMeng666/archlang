@@ -337,13 +337,11 @@ PS5.1b: PR #247, 9cc29c7e)
   sources, and draft/verified-on-corpus state.
 - Only if PS5 shows the rule count outgrowing code-defined profiles.
 
-**PS7.4 · Teach the taste step where cold authors read.** `done` (PR #250, 6e0aa520; measured in PR #261, commit filled at merge)
+**PS7.4 · Teach the taste step where cold authors read.** `done` (PR #250, 6e0aa520; measured in PR #261, ef16e249)
 - As built: `research/2026-10-25-ps5-as-built.md` § PS7.4. Measured 2026-10-26 (`audits/2026-10-26-first-contact-rerun-d15.md`, D20): teaching the step where cold authors read did not change behaviour (arm B over arm A: +1 `validate`, +1 `describe`, 0 `score`); taste is a reviewer's tool, PS7.5.
 
-**PS7.5 · Move the taste step out of the author loop.** `todo` (one PR, after the 2026-10-26 audit merges; D20)
-- Goal: a cold author's loop is the validity loop; `score --taste` is read by the reviewer (the dispatching session, `validate --taste`, `preview --review` PS5.4). Three edits in one PR: (1) `spec.llm.md`'s self-correction paragraph drops `score --taste generic` from the loop (compile → `validate --json` `next` → lint → repair), so its characters return to the spec budget that row 6's `keep` form needs (136 UTF-16 units of headroom under 30,000 today); the CLI list keeps naming the command. (2) `skills/archlang/SKILL.md` step 7 is re-worded as a review step. (3) `.claude/agents/arch-author.md` reverts to compile → `validate` `next` → lint → repair, with taste under a "Review" heading.
-- Design: `validate --json` `next` stays taught: it is the validity ordering, not a second score, and its uptake (1 of 12 authors) is a PS7.x staged-authoring question. The score's design (0–1, sourced, capped under a validity warning, never gating, `taste()` in the API) is unchanged; only its audience is.
-- Acceptance: the spec's loop paragraph no longer names `score --taste` and the PR states the characters freed; the SKILL and the role text agree with the spec; the spec and prefilled-link budget tests stay green. The spec change is a measured surface: the next first-contact re-measure states it among its confounders. *Reverse if* (D20): a re-measure whose dispatch prompt names the whole loop shows at least half of the cold authors running `score --taste` unprompted, or a consumer is shown steering authors by the score; then taste returns to the author loop and this card is reverted.
+**PS7.5 · Move the taste step out of the author loop.** `done` (PR #263; D20)
+- As built: the spec's self-correction paragraph, `skills/archlang/SKILL.md` step 7 (a review step) and `.claude/agents/arch-author.md` (a "Review" heading) teach compile → `validate --json` `next` → lint → repair; `spec.llm.md` is 29,729 UTF-16 units (was 29,864; 271 under the 30,000 cap). The next first-contact re-measure states the changed surface; *reverse if* is D20's.
 
 **PS7.6 · `lint` opens with a one-line summary.** `todo`
 - Three arm-B authors cut `lint --json` with `head -c` and repaired only what they saw (café 4 of 23 codes, clinic 2 of 4, studio 5 of 6). Put a one-line summary (`N warnings: CODE ×k, …`) as the first key of the JSON and as the first line of the text report.
