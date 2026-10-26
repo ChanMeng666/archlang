@@ -6,6 +6,10 @@
  * digests were. A moved row is a finding to explain (`docs/testing.md` §3), never a re-pin; a lint
  * rewording on a corpus plan moves its `validate --json` part, and that row is then re-measured
  * with its reason beside it.
+ *
+ * Re-measured in PS2.11e: `paper`, `widen-before` and `widen-after` gain `W_STAIR_NO_LANDING` in
+ * their `validate --json` (the upper storeys bring a flight's head 200 mm from the west wall, a true
+ * defect of the fixtures, which no keep reads); their keep rows are unchanged.
  */
 
 import { describe as suite, expect, it } from "vitest";
@@ -28,13 +32,13 @@ const K3_DIGESTS: [string, string][] = [
   ["min-clear", "367f2a9efad686f70a06504e9dbc2b5665195590d8553a4df762f8dc50118c78"], // round 2: the `skipped` reasons beside skipped_walls (round 1: the nib no longer counts in the hall)
   ["offset-fixed", "084509601305bc7bf6b27649efd0c3124fdbac2ab6e97daaf69e22aa05ed021e"],
   ["on-axis", "1a2d6ca631da7360538737b946c0e143b5586b5a905d10497d270f30e0c9890c"],
-  ["paper", "ac7b2747b43f45c849dc97c400b810e41a43244d21ba246fbc2bb03e550cb82f"],
+  ["paper", "2acce06e98b9361b0f0d4d2b5c1258d2dfe8b1a984786a1898a91815c5f0892f"],
   ["refused-limit", "8744e79cb97e882640c5f1feda1291407d108e8e1348b5b7075df6a2df182a9f"],
   ["refused-placement", "8f764cae04d74f29fc9e39ae9f369a9aaf8005c7f71e71cb47347e4b733e434f"], // round 1: a keep in a component is refused where it is written
   ["refused", "99ea1ef2a3b9baaac3d6a9502c4f1c5552f3f7404afe2bf98a336a889293ecf0"], // round 1: numbers through num-format
   ["single-storey-stacked", "df3b4580f7dab78c06067120477533dabf0bd64f8489c4a951ca2bc1a7a7dd78"],
-  ["widen-after", "510134f7df24b91da3e61818102bdac8a8afc929d6ff88ce2762ccb28b99bbb7"], // round 2: the `skipped` reasons, and the hint lists them
-  ["widen-before", "a4620b68f1174873d84676b230bb3cbc348a31b47cc73d3c05e9cf8054cbd0d9"],
+  ["widen-after", "42f87860d7ce13c0d747d1e9153dac0eb81357dd0519035883bb32eed6211e41"], // round 2: the `skipped` reasons, and the hint lists them
+  ["widen-before", "27410afb80fa3aeefd5ce4f213658d68c6dfbeeed3afb577791eb0764ff4a4ee"],
 ];
 
 suite("keep · K3, the keep rows: a digest table over the corpus", () => {

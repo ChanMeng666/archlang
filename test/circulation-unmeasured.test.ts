@@ -119,11 +119,24 @@ describe("G.5 — circulation reports every room it cannot measure", () => {
   });
 
   it("`no_threshold` names a room whose doorway never opened in the grid", () => {
-    // `garden-house`'s study has one door, and it opens onto the flank of the stair —
-    // whose clearance covers the hall side of the opening, so no threshold across its
-    // width can be carved. Not `blocked`: the obstruction is not furniture, and that
-    // message would name the wrong element to move.
-    const s = describePlan(readFileSync("examples/garden-house.arch", "utf8"), { world: exampleWorld });
+    // A study with one door, and it opens onto the flank of the stair — whose clearance
+    // covers the hall side of the opening, so no threshold across its width can be carved.
+    // Not `blocked`: the obstruction is not furniture, and that message would name the wrong
+    // element to move. (`garden-house`'s study was this case until PS2.11e's
+    // `W_STAIR_SIDE_ENTRY` called it a defect and the example's stair moved; the reduction
+    // keeps the shape.)
+    const s = describePlan(`plan "Study off the flank of a stair" {
+  units mm
+  grid 100
+  wall id=shell exterior thickness 300 { (0,0) (6000,0) (6000,5000) (0,5000) close }
+  wall id=w_h1 partition thickness 100 { (3000,0) (3000,5000) }
+  room id=r_study at (0,0) size 3000x5000 label "Study" uses office
+  room id=r_hall at (3000,0) size 3000x5000 label "Hall" uses hall entry
+  door id=d_front on shell at 4500 width 1000 swing into r_hall
+  door id=d_study on w_h1 at 2500 width 900 swing into r_study
+  window on shell at 1500 width 1200
+  stair id=st at (3100,700) size 900x3200 dir up
+}`);
     expect(s.circulation?.unmeasured).toEqual([{ roomId: "r_study", reason: "no_threshold" }]);
     expect((s.circulation?.blocked ?? []).map((b) => b.roomId)).not.toContain("r_study");
   });

@@ -52,7 +52,6 @@ const ALLOWED: Record<string, string> = {
   "laneway-house.arch:W02":
     "every candidate place is taken; the tag keeps its first choice (furniture:line,furniture:path)",
   "library.arch:W13": "every candidate place is taken; the tag keeps its first choice (furniture:path)",
-  "library.arch:W14": "every candidate place is taken; the tag keeps its first choice (furniture:polygon)",
   "materials.arch:W05":
     "every candidate place is taken; the tag keeps its first choice (furniture:line,furniture:polygon)",
   "museum-wings.arch:D05": "every candidate place is taken; the tag keeps its first choice (poche)",

@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Six stair-safety lint rules (plan cards PS2.11e's stair bullets, PS2.34, PS2.15), validity layer,
+  on by default, in a new `stairs` coverage family (`W_SHAFT_FOOTPRINT_MISMATCH` in `vertical`).
+  The landing is the square beyond a flight's end as wide as the flight (Approved Document K 2013
+  1.20; at least 1200 mm long outside a dwelling, 1.23a), on the end the flight is entered from on
+  that storey (its foot going `up`, its head coming `down`). `W_SWING_OVER_STAIR`: a hinged door's
+  quarter-disc over the flight (on a storey it rises from, only the part lower than the door's
+  head; a stairwell whole), over the head landing, or within 400 mm of the bottom step (AD K 1.24,
+  Diagram 1.8; the whole foot landing outside a dwelling, 1.23b). `W_STAIR_NO_LANDING`: a wall, a
+  door's closed leaf, a void at the foot, or the end of the floor nearer than that landing, measured
+  across the middle half of the flight (a cased opening is passable). `W_STAIR_SIDE_ENTRY`: a door
+  or opening in a wall along the flight, beside the part a person cannot pass under (2 m headroom,
+  AD K 1.11) with less than a doorway's width past either end, nearer than `minPathClearWidthMm`.
+  `W_STAIR_HEAD_VOID`: a `void` on the head landing (a void drawn as the stairwell is not one).
+  `W_STAIR_TOO_STEEP`: a rising flight whose run is shorter than its storey's authored `height`
+  needs at `stairMaxRiseMm`/`stairMinGoingMm` (new ruleset fields; default 220/220, AD K's private
+  stair without its pitch note, the most generous of the figures read; `uk-` adds the 42° pitch as
+  `stairMaxPitchRatio` 0.9004, `us-` IRC R311.7.5's 7¾ in riser and 10 in tread, `cn-` GB
+  50096-2011 5.7.4's 0.20 m and 0.22 m); a plan that authors no height is not judged and files the
+  new `no-storey-height` coverage skip. `W_SHAFT_FOOTPRINT_MISMATCH`: one id's runs on neighbouring
+  stops whose footprints overlap by less than half of the smaller, run along different axes, or
+  are different kinds; a lift car must match exactly. Examples redrawn for real stair defects:
+  `garden-house` (the flight, now 800 mm wide, centred in the hall, its head 1100 mm off the north
+  wall), `hillside-villa` (the stair rises in the living room to the gallery, the gallery void moved
+  off its head, bedroom 2's door moved off the bed), `library` (the foot 1000 mm farther from the
+  south wall) and `two-storey` (a 2650 mm run for its 2700 mm storey, the void now the stairwell);
+  their drawings and `describe()` move, and `hillside-villa` lints eight warnings, not seven.
+
 - `arch preview <file> --review`: the review sheet, one PNG for whoever reviews a plan (plan card
   PS5.4; D20). The plan exactly as `preview` draws it, with `describe().access` laid over it (rooms
   as nodes at their label points, an edge through each door and opening, entrances marked); every

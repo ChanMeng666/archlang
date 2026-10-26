@@ -40,7 +40,8 @@ export type LintFamily =
   | "openings"
   | "daylight"
   | "contents"
-  | "enclosure";
+  | "enclosure"
+  | "stairs";
 
 /**
  * Why a rule declined to judge. A room-level reason is filed with the room; a plan-level one
@@ -102,7 +103,10 @@ export type LintSkipReason =
   | "curved-window-host"
   /** A curved wall stands near a WC's side, which `W_WC_SIDE_CLEARANCE` does not measure
    *  (PS2.11a): that WC is not judged. */
-  | "curved-wc-wall";
+  | "curved-wc-wall"
+  /** The plan authors no height anywhere (`describe().heights` is absent), so a flight's run is
+   *  not judged against a storey height the author never stated (`W_STAIR_TOO_STEEP`, PS2.11e). */
+  | "no-storey-height";
 
 /** What each family checks, as the human coverage line names it. */
 export const FAMILY_NOUN: Readonly<Record<LintFamily, string>> = {
@@ -121,6 +125,7 @@ export const FAMILY_NOUN: Readonly<Record<LintFamily, string>> = {
   daylight: "daylight",
   contents: "room contents",
   enclosure: "enclosure checks",
+  stairs: "stair checks",
 };
 
 /** Why a reason stops a rule, as one clause. */
@@ -145,6 +150,7 @@ export const SKIP_WHY: Readonly<Record<LintSkipReason, string>> = {
   "no-bed": "the bedroom holds no bed to tell a single from a double",
   "curved-window-host": "a window stands on a curved wall, which the rule does not measure",
   "curved-wc-wall": "a curved wall stands beside a WC, which the rule does not measure",
+  "no-storey-height": "the plan states no storey height",
 };
 
 /**

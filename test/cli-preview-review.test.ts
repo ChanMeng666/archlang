@@ -115,7 +115,9 @@ describe("preview --review: clean plans, storeys and the corpus", () => {
     expect(upper.level).toBe(2);
     const ringed = upper.marks.filter((m) => m.code === "W_PATH_TOO_NARROW").map((m) => m.ringed[0]?.id);
     // Three placed ensuites raise one message from one component span; the hint's door places each.
-    expect(ringed).toEqual(["en2.room", "en3.room", "en_m.room", "r_bed2", "r_bed3"]);
+    // `r_bed2` rings the route from Bedroom 2 to its en-suite; `r_linen` the walk to the linen
+    // cupboard, reachable since PS2.11e moved the stair off the landing.
+    expect(ringed).toEqual(["en2.room", "en3.room", "en_m.room", "r_bed2", "r_linen", "r_bed3"]);
     expect(sheetOf(source, 1).marks.some((m) => m.code === "W_PATH_TOO_NARROW")).toBe(false);
     expect(buildReviewSheet(source, { level: 9 })).toEqual({ kind: "badLevel", levels: [1, 2] });
   });

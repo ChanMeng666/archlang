@@ -3,7 +3,7 @@
 #   275 mm from the front wall face, with no landing; the g_front swing covers the only floor there; reduced with the
 #   front door in front of the foot)
 # expect: W_SWING_OVER_STAIR
-# status: todo
+# status: done
 # fact: st (x 150-1050, y 200-3600, dir up) is entered at its south end y 3600 and the shell's inner face is y 3875: 275
 #   mm of floor at the foot. d_front (x 300-1100) is hinged at (300,4000) and swings in with an 800 mm leaf, sweeping
 #   x 300-1100, y 3200-4000: over the whole foot strip x 300-1050, y 3600-3875 and the flight's last 400 mm

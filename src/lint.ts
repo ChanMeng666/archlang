@@ -19,7 +19,13 @@
 import { buildingRoomReach, DEFAULT_TOL, resolvePlan, roomUses, storeyGrounded } from "./analyze.js";
 import type { ResolvedLevel, ResolvedPlan, RRoom } from "./ir.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
-import { type BuildingContext, buildLintContext, type LintLayer, NO_BUILDING } from "./lint/context.js";
+import {
+  type BuildingContext,
+  buildLintContext,
+  type LintLayer,
+  NO_BUILDING,
+  type ShaftNeighbours,
+} from "./lint/context.js";
 import { dwellingReading } from "./analyze/dwelling.js";
 import { foldCoverage, type LintCoverage, type LintUnclassifiedRoom, type SkipNote } from "./lint/coverage.js";
 import { MAX_ATTRIBUTION_MEASURES } from "./lint/rules/circulation-facts.js";
@@ -27,7 +33,14 @@ import { ONCE_PER_PLACEMENT_CODES } from "./lint/rules/dims.js";
 import { LINT_RULES } from "./lint/rules/index.js";
 import { LINT_PROFILES, type LintOptions, type LintRuleset, resolveRuleset } from "./lint/ruleset.js";
 import { storeyHasEntranceCandidate } from "./analyze/entrance.js";
-import { arrivalRuns, levelsEnteredFromBelow, verticalConnections, verticalReach } from "./vertical.js";
+import {
+  arrivalRuns,
+  levelsEnteredFromBelow,
+  type RVertical,
+  verticalConnections,
+  verticalReach,
+  verticalsOf,
+} from "./vertical.js";
 
 export {
   ADVISORY_CODE_PROFILES,
@@ -264,6 +277,30 @@ export function buildingContexts(levels: readonly ResolvedLevel[], tolMm: number
     const l = levels.find((x) => x.level === n);
     return l ? storeyHasEntranceCandidate(l.ir, tolMm ?? DEFAULT_TOL) : false;
   });
+  // Each run's neighbouring stops (PS2.11e, PS2.15): the first run of an id per storey, as
+  // `verticalConnections` reads it; levels are ascending, so the neighbours are adjacent entries.
+  const firstRuns = levels.map((l) => {
+    const m = new Map<string, RVertical>();
+    for (const v of verticalsOf(l.ir)) if (!m.has(v.id)) m.set(v.id, v);
+    return m;
+  });
+  const neighbours = levels.map((l, i) => {
+    const m = new Map<string, ShaftNeighbours>();
+    for (const id of firstRuns[i]!.keys()) {
+      if (!peerIds.has(id)) continue;
+      const n: ShaftNeighbours = {};
+      for (let j = i - 1; j >= 0 && !n.below; j--) {
+        const run = firstRuns[j]!.get(id);
+        if (run) n.below = { level: levels[j]!.level, run };
+      }
+      for (let j = i + 1; j < levels.length && !n.above; j++) {
+        const run = firstRuns[j]!.get(id);
+        if (run) n.above = { level: levels[j]!.level, run };
+      }
+      m.set(id, n);
+    }
+    return { level: l.level, m };
+  });
   const out = new Map<number, BuildingContext>();
   // One re-measure budget for the whole building, not one per storey.
   const attributionMeasures = { left: MAX_ATTRIBUTION_MEASURES, storeys: levels.length };
@@ -278,6 +315,7 @@ export function buildingContexts(levels: readonly ResolvedLevel[], tolMm: number
       ...(fromBelow.has(l.level) ? { enteredFromBelow: true } : {}),
       // Levels arrive ascending, so the first is the lowest.
       ...(l === levels[0] ? { lowestStorey: true as const } : {}),
+      shaftNeighbours: neighbours.find((x) => x.level === l.level)!.m,
     });
   }
   return out;

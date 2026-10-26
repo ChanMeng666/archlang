@@ -9,6 +9,13 @@
  * law. Never hand-edited, and never re-taken on a tree that carries keep code. A moved row is a
  * finding to explain (`docs/testing.md` §3), never a re-pin.
  *
+ * Seventeen rows re-measured row by row in PS2.11e (not a re-take: the rest of the table stands as
+ * taken), each with `keepWeakLawDigest` on the PS2.11e tree: four examples whose stair moved
+ * (garden-house, hillside-villa, library, two-storey) and thirteen plans whose only change is the new
+ * stair warnings in `lint()` and `validate --json`, their SVG, `describe()` and `compile().diagnostics`
+ * unchanged (the seven stair-safety defect files and the six first-contact townhouses). No step count
+ * moved. None of them declares a keep: the change is a lint rule, not keep code.
+ *
  * Taken: main@c2f4176b, after PR #271 added describe().totals.gross_internal_area_m2 (and gross_internal_area_all_levels_m2) to every resolving plan; 269 files re-taken on this tree before any keep code (first taken on main@5aab29e5, re-taken on main@0c5e7a09)
  */
 
@@ -67,7 +74,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/garden-house.arch",
-    "bdab4ee27a951933df8d0132d83f88cdf2d2ce51a95f2c4a14d62bb47c99b544",
+    "da851d1f7c72012ebe7d994b273ce25f9c682a72de8f0372afb4c981673c613e",
     3846,
   ],
   [
@@ -82,7 +89,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/hillside-villa.arch",
-    "09c8d75e835ddae58d8e0257a69a4b4324909fea3f84e751aea72b792bfee107",
+    "8eeab22336be2190d69e8bdde4803adfc0f12750acc32b06864c732d00f86a28",
     4868,
   ],
   [
@@ -97,7 +104,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/library.arch",
-    "81f92d713f4d2fa64f734f7774ca2576c1a24ae5694f9d78b9dfeb953be3bf8a",
+    "d7bd1f4b6b10b2267560ced52f91f742405d4868c6fef65087b9e0beeb432409",
     2645,
   ],
   [
@@ -182,7 +189,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/two-storey.arch",
-    "2f0b48f7196a63ad318b9dbac3150335d5c983eddfca36931c8710bd5ea8adb0",
+    "918baf62dee13c0793ab72b2740ab43b04c9590c643f27a88d26e16d6500f2b0",
     1778,
   ],
   [
@@ -1002,37 +1009,37 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/stair-safety/stair-too-steep.arch",
-    "c97a1e76d14dbc4e90b3beaa3d488bb140ea5e7a0fc6a9864971b31ff5033d0f",
+    "0c928803e947b1a3bb72b67a334c457f29cceb505d242adf17f1de7c80990a24",
     168,
   ],
   [
     "test/defect-corpus/stair-safety/stair-too-steep.clean.arch",
-    "ee330e5da6e0600a010e89b46183531ac031b2044a9e68e38aa74f1d87eb2971",
+    "0067ac144c36cffb2faaac2e1d692e84310133fde8e5f263a43ee1e2b06d0846",
     168,
   ],
   [
     "test/defect-corpus/stair-safety/swing-at-stair-foot.arch",
-    "36fb61fdc97e11bc36c7be06c8d382dfa796966833a047b40d82a1fc5ece983d",
+    "96ce39ec7e62ce5dc3eddffbd1c4816f10cfe1a4216c734fb2afdcf488be810d",
     142,
   ],
   [
     "test/defect-corpus/stair-safety/swing-at-stair-foot.clean.arch",
-    "13b4c7a94b6f396254068c115fb307ea71d47f5199571f72469328dcdabb95d7",
+    "3cf42dd6de4fdfa9e213022e951e817f7d2c243cef8a30a221ab04833785d324",
     142,
   ],
   [
     "test/defect-corpus/stair-safety/swing-over-stair.arch",
-    "6807edf85f4929832c841a0bdbca412993039a9504aa6378488d3c0d8d23e815",
+    "04be922c10e254fabcfb9d3cd04884db132e0240ea634eb4a8c5605cb8beb498",
     186,
   ],
   [
     "test/defect-corpus/stair-safety/swing-over-stair.clean.arch",
-    "b10b767b8a8270df742e3548cf3449a015cc15f99f699b96cd5c120f3891389a",
+    "73e879fcaebc2bced352492d06520deee905338286c09d2d160149c6c8c6897b",
     186,
   ],
   [
     "test/defect-corpus/stair-safety/void-at-stair-head.arch",
-    "5ddf230763dc5cfd79f33b061d892de1c53358c3ed86e88b92b5a968a884581f",
+    "4ccf1f32ac60f7e0b75dd2e9d78993377657870e0a59690cb73cdbfc0040386d",
     265,
   ],
   [
@@ -1182,7 +1189,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-24-rerun/5-townhouse.arch",
-    "cbb9786b104e41b481b5cc0bc7ae3dc72c1bd6c11953e13d81c2dc4825874abf",
+    "61fc16511372e6579518799e4e0e9d68eebe48129b85259a402c81370ced9f0c",
     4634,
   ],
   [
@@ -1212,7 +1219,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-25-rerun/5-townhouse.arch",
-    "aaaac1de4c2b709f6eeb6cd33a7ecea0324df2bc9ecdc29bf22224d0bede8ac6",
+    "c99508ba340ff6580e4edb3afefa276541033ccc56a899f5a53cc2870b0c3dba",
     4632,
   ],
   [
@@ -1242,7 +1249,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armA/5-townhouse.arch",
-    "6f89ed5a1c1c0f54b44748428fa72f33494cda3a8ddab0b2a8e5ddd7ce352b09",
+    "b1066a453a1ca7b99bd9621ae9e3ee7d850cab418485b00033531f09224faa85",
     3706,
   ],
   [
@@ -1272,7 +1279,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armB/5-townhouse.arch",
-    "10ad67ed28f313829c0cf5d9903f6d26bb503143dea576a8e5f5169161ab50e3",
+    "585dc58cd89446753a79f67998f4c87e379adf8fd26424640242f73b8d5edceb",
     4410,
   ],
   [
@@ -1302,7 +1309,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/5-townhouse.arch",
-    "81a838fd8d07e1945df70973ad2f1887d2ea10a642ab792bd2d7761e62170d96",
+    "ae5de907a70adf03e07e36b3e83d59928f9a2648bd4dbafd2b61541a52a366ad",
     1702,
   ],
   [
@@ -1322,7 +1329,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/5-townhouse.arch",
-    "7a89a7ccb440147bbea2148db63dfcba0821400af23e6f2cf47b59b0eef06fa5",
+    "837153d4d4870cd093af9f1a2535f5c659dc146c8a43d7808f67c4e5f7c7b0c4",
     1850,
   ],
   [

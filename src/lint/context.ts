@@ -61,6 +61,25 @@ export interface BuildingContext {
    *  it is reported once rather than once per page. Absent on every other storey and on a
    *  single-storey plan (whose one context reports it). */
   lowestStorey?: true;
+  /**
+   * For each vertical run id on THIS storey, the same-id run on the neighbouring stops of its
+   * shaft: the nearest storey below and the nearest above that draw it (plan-soundness PS2.11e,
+   * PS2.15). Identity only, as `verticalConnections` reads it (the first run of an id per
+   * storey). Absent on a single-storey plan; an id with no other stop has no entry.
+   */
+  shaftNeighbours?: ReadonlyMap<string, ShaftNeighbours>;
+}
+
+/** One neighbouring stop of a shaft: the storey and the run as drawn there. */
+export interface ShaftStop {
+  level: number;
+  run: RVertical;
+}
+
+/** A run's neighbouring stops ({@link BuildingContext.shaftNeighbours}). */
+export interface ShaftNeighbours {
+  below?: ShaftStop;
+  above?: ShaftStop;
 }
 
 export const NO_BUILDING: BuildingContext = {

@@ -1,7 +1,7 @@
 # class: stair-safety
 # origin: audits/showcase-and-examples.md X9 (examples/two-storey.arch L2: the void is at the head of the stair; reduced)
 # expect: W_STAIR_HEAD_VOID
-# status: todo
+# status: done
 # fact: the flight (x 100-1000, y 1500-4100) is entered at its south end on level 1 and arrives at its north
 #   end y=1500 on level 2, where void gallery spans x 100-1000, y 200-1300: 200 mm past the top tread
 plan "Void at the stair head" {

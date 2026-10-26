@@ -453,7 +453,8 @@ suite("doors — W_POCKET_RUN", () => {
     // short, and PS2.11's undeclared seat check, whose corpus movement is listed there too.
     // PS2.10's dimension-text rule follows those, for the same reasons.
     // The two annotation-collision rules (PS2.12) follow those: drafting only, their corpus
-    // movement listed in the same header. The two clearance rules (PS2.11a/b) come last.
+    // movement listed in the same header. The clearance rules (PS2.11a–d) follow those, and the
+    // stair rules (PS2.11e, PS2.34, PS2.15) come last.
     expect(names.slice(i + 1)).toEqual([
       "outdoor-overlaps-room",
       "balcony-no-door",
@@ -479,6 +480,12 @@ suite("doors — W_POCKET_RUN", () => {
       "furniture-over-window",
       "footprint-transposed",
       "leaf-across-doorway",
+      "swing-over-stair",
+      "stair-no-landing",
+      "stair-side-entry",
+      "stair-head-void",
+      "stair-too-steep",
+      "shaft-footprint-mismatch",
     ]);
   });
 
@@ -492,9 +499,10 @@ suite("doors — W_POCKET_RUN", () => {
     // follow those, and this plan has no room for them to read either; nor do the three
     // space-enclosure rules after them, nor the two furniture-relation rules after those, nor
     // the dimension-text rule (no `dim` here), nor the two annotation-collision rules (no
-    // furniture, no `dims auto`, no title), nor the four clearance rules last of all (PS2.11a–d:
-    // no WC, no tall unit, no furniture, and one door has no other doorway to park its leaf across).
-    expect(LINT_RULES.map((r) => r.name).slice(-22)).toEqual([
+    // furniture, no `dims auto`, no title), nor the four clearance rules (PS2.11a–d:
+    // no WC, no tall unit, no furniture, and one door has no other doorway to park its leaf across),
+    // nor the six stair rules last of all (PS2.11e, PS2.34, PS2.15: no stair).
+    expect(LINT_RULES.map((r) => r.name).slice(-28)).toEqual([
       "door-near-corner",
       "opening-not-dimensioned",
       "room-via-private",
@@ -517,6 +525,12 @@ suite("doors — W_POCKET_RUN", () => {
       "furniture-over-window",
       "footprint-transposed",
       "leaf-across-doorway",
+      "swing-over-stair",
+      "stair-no-landing",
+      "stair-side-entry",
+      "stair-head-void",
+      "stair-too-steep",
+      "shaft-footprint-mismatch",
     ]);
     // A plan carrying an unrelated pre-existing warning (a sub-passable door width) AND
     // tripping the new rule: the old diagnostic must still be first, byte-for-byte.

@@ -52,7 +52,7 @@ The eight classes of README §1, most frequent first. The test reads the slugs f
 | `missing-defining-contents` | A bedroom without a bed, a bath without a shower, a kitchen without a worktop |
 | `clearances` | WC side clearance, wardrobe fronts, tall units over windows, blocked openings, pinches |
 | `daylight` | Windowless living rooms (labelled or typed) and bedrooms |
-| `stair-safety` | A door swing over the stair head, a void at the arrival, a flight too steep |
+| `stair-safety` | A door swing over a flight or its landing, no landing at a foot or head, a door onto a flight's side, a void at the arrival, a flight too steep, a shaft drawn in two places |
 | `annotation-collisions` | Auto dimensions inside rooms, title-block overflow, labels over furniture, lying dimension text |
 
 Two classes from `evidence.md` §3 have no cases, because no core lint rule can see them:
@@ -81,6 +81,12 @@ Two classes from `evidence.md` §3 have no cases, because no core lint rule can 
 | `W_FURNITURE_OVER_WINDOW` | PS2.11b |
 | `W_FOOTPRINT_TRANSPOSED` | PS2.11c |
 | `W_LEAF_ACROSS_DOORWAY` | PS2.11d |
+| `W_SWING_OVER_STAIR` | PS2.11e |
+| `W_STAIR_NO_LANDING` | PS2.11e, PS2.34 |
+| `W_STAIR_SIDE_ENTRY` | PS2.34 |
+| `W_STAIR_HEAD_VOID` | PS2.11e |
+| `W_STAIR_TOO_STEEP` | PS2.11e |
+| `W_SHAFT_FOOTPRINT_MISMATCH` | PS2.15 |
 
 ## Proposed codes
 
@@ -93,9 +99,6 @@ The card that implements a check may rename its code; rename it here and in the 
 | `W_WARDROBE_FRONT_CLEARANCE` | Clear depth in front of a wardrobe under 600 mm | PS2.11 |
 | `W_HOB_FRIDGE_GAP` | A hob closer than 300 mm to a fridge or tall unit along the run | PS2.11 |
 | `W_LEAF_TOO_WIDE` | A single hinged leaf over 1200 mm | PS2.11 |
-| `W_SWING_OVER_STAIR` | A door swing over a stair footprint or its landing | PS2.11 |
-| `W_STAIR_HEAD_VOID` | A void on a stair's arrival landing | PS2.11 |
-| `W_STAIR_TOO_STEEP` | A flight too short for its storey height (riser over the profile's limit) | PS2.11 |
 | `W_EXIT_SWINGS_INWARD` | A hinged exterior door that is an exit of a non-residential plan, swinging into the floor against the escape direction | PS2.16 |
 
 Two checks extend existing codes instead of adding one: a desk in front of a leaf-less opening expects

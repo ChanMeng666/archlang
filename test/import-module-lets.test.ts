@@ -484,6 +484,14 @@ suite("a module `let` that fails reports as it does in the module", () => {
  * kitchenette for a window. `lint()` only: the new SVG, `describe()` and `compile().diagnostics`
  * with the PREVIOUS `lint()` reproduce each previous row (ddcdc0c9…, f4725500…, 2d52aba1…,
  * 019a62d8…).
+ *
+ * 2026-10-26, plan-soundness PS2.11e/PS2.34/PS2.15 (six stair-safety lint rules): four examples
+ * fixed for a real stair defect (`garden-house`, `hillside-villa`, `library`, `two-storey`; the
+ * account is in `./byte-identity-baseline.ts`, "Four examples fixed: stair safety"), whose SVG,
+ * `describe()` and `lint()` move; and `test/fixtures/zones-levels.arch` (no floor beyond its stair)
+ * and `test/recovery-corpus/two-storey.arch` (the old example's head void and short run), which
+ * only gain the new warnings: the new SVG, `describe()` and `compile().diagnostics` with `lint()`
+ * stripped of the six new codes reproduce their previous rows (0d1a1bf3…, 309aae8f…).
  */
 // Re-measured 2026-10-23 (PS3.7): aquarium, corner-cafe, furnished-flat, gallery-l, hillside-villa, materials, museum, themed: chairs turned to the table they sit at, a real
 // defect `W_SEAT_FACING_AWAY` found (ADR 0029 §6); the cause and the proof that nothing else
@@ -512,16 +520,16 @@ const BASELINE: [string, string][] = [
   // Re-measured because the EXAMPLE changed (backlog D.1, its doubled chairs removed), and again
   // for the legend's ground swatches (backlog D.3, level 1's SVG only): the same row, with the
   // same digest body, as `./while-byte-identity-baseline.ts`, whose header has the reasons.
-  ["examples/garden-house.arch", "2e3cd939b9e4d9e2d41e41001b5b4400e5ff07a61f425f5ed02bd6f067bd035b"],
+  ["examples/garden-house.arch", "cf1c67a24d9673382c0f2b3c996e979c2829abb4f2d8bdf827f02b82d1671979"],
   ["examples/garden-loft.arch", "9c32144fa59fbed83396dcbfa1083cce3838976d60f4dae96f21df2f13c17cae"],
   ["examples/hexagon-pavilion.arch", "3078765cf03974518e0f2b3ea13585cca69ffbb86438f0899218c8a1c24a09a8"],
   // Re-measured for the facade-probe fix (level 2's `dims auto` chains only), and again because
   // the EXAMPLE changed (backlog D.2, its piano turned and moved): the same row, with the same
   // digest body, as `./while-byte-identity-baseline.ts`, whose header has the reasons.
-  ["examples/hillside-villa.arch", "3975fbd3ba8c61bc9a8e6551109373d591aa968f29ad93506c6e11dc55f3db09"], // re-measured, see header
+  ["examples/hillside-villa.arch", "d819cabc53a7d9050c2b8f7d5161580297f407844328ada52325c4665628fe78"], // re-measured, see header
   ["examples/imports.arch", "9cfb83e40cb9e3b4605be6d235145d963585295f5c25704ed827181b34f1762e"],
   ["examples/laneway-house.arch", "fe7de9e78abe6f38ec285f1d23e79e95b6aea68de9da3a6fa26f0f41218c030f"],
-  ["examples/library.arch", "bec5ec7aaaefa4012e6e8c073562a55540e46d612110ad46e87c415f19af855a"],
+  ["examples/library.arch", "e204bd144cb0fc9155be099d1c0c838473f31d5531bdb9d473b8930a0e7b2086"],
   ["examples/materials.arch", "1a4aa9bad5d42f06c1158d6089a71b784b8f079761b7a03dad17a1271fd5b2ff"],
   ["examples/museum-wing.arch", "546b10dfb0204dbce454dff9e47713f32745285f4885e58a46b5faff23d10126"],
   ["examples/museum-wings.arch", "0a2b5e7824a58f7ed6cc6c90c0e34db169de681accd7f8ffbb69a44cd889567c"],
@@ -547,7 +555,7 @@ const BASELINE: [string, string][] = [
   // Re-measured 2026-10-18 (PS0.7, the label classifier emits living; `describe()` only): the
   // same row, with the same digest body, as `./while-byte-identity-baseline.ts`, whose header has the reasons.
   ["examples/two-bed.arch", "4ddd7391b3da9f7b6b74bb336b6b65c0031a34fe99a22914f260026b2d14fc01"], // PS3.6 source rewrite, see ./byte-identity-baseline.ts
-  ["examples/two-storey.arch", "a794b452d5ffffafd0c3f3e559223d6cb112d8575fa2ea1a1dc4cc53fe4eb60f"],
+  ["examples/two-storey.arch", "b5207394153b87a74b20b7d80dd45d25c2616267e7b98089f51762b911f5be56"],
   ["examples/lib/doors.arch", "f57eaea084d2e6e62b85b8450ef96675e9f1466bea9aff24e2869f2d6f0c9804"],
   ["examples/lib/fixtures.arch", "57d6c78e2eea8451a9b32a5828f3babb24b0251cc5c3b72675b431be22b3f310"],
   ["examples/lib/furniture.arch", "adf16d60e17d76d76f092f95fb24dab4b7ba5ebaa977ed32bcc3a8eaddc7e05b"],
@@ -561,7 +569,7 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/off-path-bypass.arch", "049e43531e791aa74bf153a788d97ae1afda47bf29ff744484896e9ca0d895c2"], // new fixture, see header
   ["test/fixtures/schedule-sheet.arch", "15dc29228ea12dae7240ad843567f88218c5a57bd8838ea950b1a5792c2579a5"], // re-measured, see header; PS2.29: message text only, same code, same span
   ["test/fixtures/star30.arch", "74a3209110606543fb04c1932b2ec60a78526ccdd2a7205cdfe972719efac471"], // new fixture, see header
-  ["test/fixtures/zones-levels.arch", "0d1a1bf3d1bfad34156356ccfa65b8d823ab0761344b1bafde050d6213d93b0f"], // re-measured for PS2.4, see header
+  ["test/fixtures/zones-levels.arch", "05693d9ec59a2c27dcf9c35c5b8d8d5a63969ee0931499b97305433324cb978f"], // re-measured for PS2.4, see header
   ["test/fixtures/zones-wings.arch", "392675a2abd9bc82b094fc768190979fabf814b22dbb8d4fbaf7de410570c35a"], // re-measured for PS2.4, see header
   ["test/recovery-corpus/attached.arch", "07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc"],
   ["test/recovery-corpus/clinic.arch", "8321ab6d53ba385d743d49fee08686afcf8b53915b7cc03f466aa72fd366d55a"],
@@ -571,7 +579,7 @@ const BASELINE: [string, string][] = [
   ["test/recovery-corpus/terrace-row.arch", "5e22a50567dc07de2340835bd50c979380a768842e11e15ef320fbf6f046beb5"],
   // Re-measured 2026-10-18 (PS0.7): a copy of `examples/themed.arch`, the same cause and value.
   ["test/recovery-corpus/themed.arch", "925fd85f0ffd49574d214fc9ed44ca7e5f73b4ea8432a04ea66e2d1e11840643"],
-  ["test/recovery-corpus/two-storey.arch", "309aae8fcf8c345c37e98be99c0065e0acc4e71882e0ce7a522e04ec9ff87b22"],
+  ["test/recovery-corpus/two-storey.arch", "dcf4bb96dfff7a1b7dac3557c1b9d0f55a2018cd5047b48960f806416e7e6b0c"],
   ["eval/goldens/accessible-bath.arch", "d92fb8bf1dafde517a579409ff32602a06687a29149d3c2e7e1de69bd4cc4fce"],
   ["eval/goldens/accessible-flat.arch", "3809f58573d9685eb190389ae026bdbafa161dd57bdbf109a90048f4bb3e802a"],
   ["eval/goldens/against-wall-bath.arch", "b39f97de3ae495e7c18b74541403648a0972bd439b46d007f491f4f695b10e59"],

@@ -90,6 +90,9 @@ suite("keep · the widening drill (design §9), through the CLI", () => {
       "W_HABITABLE_NO_WINDOW",
       "W_BOUNDARY_NO_WALL",
       "W_ROOM_OUTSIDE_SHELL",
+      // PS2.11e: the drill's upper storey brings the flight's head 200 mm from the west wall,
+      // in `before` as in `after` (a true defect of the fixture, which the widening does not touch).
+      "W_STAIR_NO_LANDING",
     ]);
     const message =
       'This keep holds the right edge of "Living", the left edge of "Bed" and the partition in "Living" on one line; that partition is 500 mm left of the right edge of "Living". A keep moves nothing.';

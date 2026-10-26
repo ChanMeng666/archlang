@@ -1,7 +1,7 @@
 # class: stair-safety
 # origin: audits/showcase-and-examples.md X7 (examples/hillside-villa.arch: a 2200 mm run for a 3000 mm storey); X11, X15
 # expect: W_STAIR_TOO_STEEP
-# status: todo
+# status: done
 # fact: the storey is 3000 mm and the flight's run 2200 mm; by the audit's method (250 mm going) that is about
 #   9 risers of 333 mm, over the 220 mm (UK) and 196 mm (IRC) limits
 plan "Stair too steep for its storey" {

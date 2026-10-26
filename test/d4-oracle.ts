@@ -89,10 +89,10 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve as resolvePath, sep } from "node:path";
 import type { LevelNode, NorthDir, PlaceNode, PlaceRotate, PlanNode, Point, RoofNode } from "../src/ast.js";
-import { buildDoorAccessGraph, buildingRoomReach, DEFAULT_TOL, resolvePlan, storeyGrounded } from "../src/analyze.js";
+import { buildDoorAccessGraph, DEFAULT_TOL, resolvePlan } from "../src/analyze.js";
 import { type CirculationOverlay, computeCirculationOverlay, navExtent } from "../src/analyze/circulation.js";
 import type { RDoor, RFurniture, ROpening, ResolvedLevel, RVoid } from "../src/ir.js";
-import { arrivalRuns, verticalConnections, verticalReach, verticalsOf } from "../src/vertical.js";
+import { verticalsOf } from "../src/vertical.js";
 import { northQuarterTurns } from "../src/describe.js";
 import type { Diagnostic, FixSuggestion, Span } from "../src/diagnostics.js";
 import { formatPlan } from "../src/format.js";
@@ -114,7 +114,7 @@ import {
   type World,
 } from "../src/index.js";
 import { type BuildingContext, buildLintContext } from "../src/lint/context.js";
-import { LINT_RULES, reconcileSharedFixes } from "../src/lint.js";
+import { buildingContexts, LINT_RULES, reconcileSharedFixes } from "../src/lint.js";
 import { parse } from "../src/parser.js";
 
 // ---------------------------------------------------------------------------
@@ -441,6 +441,16 @@ export const RULE_CLASS: Readonly<Record<string, RuleClass>> = {
   "footprint-transposed": "invariant",
   // PS2.11d: a leaf segment against an axis-aligned zone; the group permutes both alike.
   "leaf-across-doorway": "invariant",
+  // PS2.11e, PS2.34: a stair's footprint, its landings beyond the ends `tailEdge` names (read off
+  // `_tail` through `place`), door sectors, wall bodies and voids, all axis-aligned rectangles
+  // and quarter-discs the group permutes alike; the storey height is a scalar.
+  "swing-over-stair": "invariant",
+  "stair-no-landing": "invariant",
+  "stair-side-entry": "invariant",
+  "stair-head-void": "invariant",
+  "stair-too-steep": "invariant",
+  // PS2.15: the overlap share of two footprints and their run axes, which a turn swaps together.
+  "shaft-footprint-mismatch": "invariant",
 };
 
 /**
@@ -1971,33 +1981,13 @@ export function levelPlanOf(name: string, storeys: readonly string[]): string {
 }
 
 /**
- * {@link BuildingContext} per storey, as `lint()` builds it (`buildingContexts`,
- * `src/lint.ts`, not exported): which runs are shafts, and where a door-less storey is
- * arrived on. Retyped from the source, so `test/equivariance-storeys.test.ts` holds the
- * fold built on it to `lint()` itself, storey by storey.
+ * {@link BuildingContext} per storey: `lint()`'s own `buildingContexts` (`src/lint.ts`), so
+ * `test/equivariance-storeys.test.ts` holds the fold built on it to `lint()` itself, storey by
+ * storey. It was retyped here while that function was private, and the copy went stale when
+ * the context grew (`storeyCount`, `shaftNeighbours`, PS2.11e).
  */
 function buildingContextsOf(levels: readonly ResolvedLevel[], tol: number): Map<number, BuildingContext> {
-  const inputs = levels.map((l) => ({ level: l.level, ir: l.ir }));
-  const connections = verticalConnections(inputs);
-  const peerIds = new Set(connections.map((c) => c.id));
-  const grounded = (n: number): boolean => {
-    const l = levels.find((x) => x.level === n);
-    return l ? storeyGrounded(l.ir, tol) : false;
-  };
-  const roomReach = buildingRoomReach(inputs, tol);
-  const reach = verticalReach(inputs, grounded, roomReach);
-  const runs = arrivalRuns(inputs, grounded, roomReach);
-  return new Map(
-    levels.map((l) => [
-      l.level,
-      {
-        multiStorey: true,
-        verticalPeerIds: peerIds,
-        arrivalRooms: reach.arrivalRooms.get(l.level) ?? [],
-        arrivalShafts: runs.get(l.level) ?? [],
-      },
-    ]),
-  );
+  return buildingContexts(levels, tol);
 }
 
 /**
