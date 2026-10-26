@@ -880,3 +880,6 @@ These are the protocol's (step 10) plus what this run adds:
   were, which shortens their loops (café 4 of 23, clinic 2 of 4, studio 5 of 6).
 - **Part 1 does not depend on the arms.** It re-lints the same eighteen old plans at two commits, so it
   is one measurement and appears once.
+- **Line endings of the arm-B café (note added 2026-10-27, stage-end drift audit).** The arm-B
+  worktree's copy of `first-contact-plans/2026-10-26-rerun-armB/4-cafe.arch` has CRLF line endings;
+  the committed copy has LF. The two are byte-identical once CR is stripped.

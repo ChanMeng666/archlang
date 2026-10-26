@@ -155,3 +155,157 @@ Moved verbatim from README §3 D6 on 2026-10-26.
 - *Why:* the two first-contact plans the card cites (4-cafe, 6-clinic) both carry that evidence, and
   no residential example or eval golden does; the heuristic is therefore decided by measurement, and
   the acceptance for PS2.18 is that no residential corpus row loses a warning.
+
+## Moved 2026-10-27
+
+The sections below were moved verbatim on 2026-10-27 from `main@f1c197ab` by the stage-end
+housekeeping PR, to bring the README back under its 60,000-byte cap (D16); the same rules as above apply.
+
+## §1: the evidence bullets
+
+Moved verbatim from README §1 on 2026-10-27 (the eight defect classes stayed).
+
+- **About 120 verified defects across about 30 plans; lint caught a handful.** The plans audited:
+  - the ArchCanvas public examples (10 plans), with 6 blockers;
+  - the ArchLang showcase (12 plans);
+  - ArchLang's own `examples/`;
+  - one reconstructed published plan (`repro/family-apartment.arch`).
+
+  Default lint on that reconstructed plan returns only fixture-rotation warnings. One `arch fix` run
+  plus one hand edit makes it pass `validate --strict` with every architectural defect still present.
+- **Fresh plans confirm it (2026-10-18).** Six briefs written cold by an AI author from `spec.llm.md`
+  alone end lint-clean and strict-clean with 57 verified defects, 4 of them blockers; lint caught
+  none, and 26 fall outside the eight classes below (`audits/2026-10-18-first-contact.md`).
+- **The flagship example is wrong and lints clean.** `examples/two-bed.arch` says "central corridor".
+  Its access graph is a chain: hall → bathroom → master bedroom → kitchen/living → bedroom 2.
+  `arch lint` returns `[]`. *(PS3.6, PR #227: re-laid with every room off the corridor, in the room-graph form.)*
+- **The facts exist; no rule reads them.** On the family-apartment reconstruction, `describe --json`
+  already knows that:
+  - the front door opens into the kitchen;
+  - the living room is 4 doors deep;
+  - `d_living_bed3` actually joins bedroom 3 and bathroom 2;
+  - `win_bed1` lights bedroom 2;
+  - the living room touches bedrooms 3 and 4 with no wall (geometric adjacency without an access
+    edge), while the walking grid walks straight through the missing wall.
+- **Change has no consequences.** Making the studio example's living room 500 mm wider needs about
+  24 literal edits. Changing only the room size drives the room through a wall that stays put, and
+  lint reports only "rooms overlap (allowed)" and "unreachable". A `dim` whose text says 4500 over a
+  4000 span lints clean.
+
+## D18: what was taken under the entry
+
+Moved verbatim from README §3 D18's first bullet on 2026-10-27.
+
+Taken under this entry: D17 ratified; the executor and red-team scratch folders of
+  merged PRs (2026-10-23 to 2026-10-25, 45 folders) deleted because their evidence lives in the
+  dated `research/` and `audits/` files and the PR bodies; the 2026-10-18 audit scratch kept as
+  instructed. Not ruled on (not named by the owner): the remote branch `docs/archlang-3d-plan` and
+  the stray worktree directory `.claude/worktrees/agent-a1314d858f0b8b0cb`, both the owner's.
+
+## D22 R4: as built
+
+Moved verbatim from README §3 D22's R4 bullet on 2026-10-27.
+
+*As built (PS4.3a, PR #272):* the keep line is 483 units, `spec.llm.md` 29,815 UTF-16 units, headroom 185, after red-team rounds 1 and 2 added the placement words (`research/2026-10-26-ps43a-as-built.md`).
+
+## §8 Q1: the scheduling sentence
+
+Moved verbatim from README §8 Q1 on 2026-10-27.
+
+*Scheduled:* it needs the PS3 forms
+   to exist, so it runs after row 3 of §7. Until then the first-contact experiment under question 8
+   measures the wall-first baseline (`audits/2026-10-18-first-contact.md`). The walls-first control
+   arm is card PS1.3 (filed 2026-10-25; run 2026-10-26, below).
+
+## §8 Q8: the 2026-10-26 "Measured" sentence
+
+Moved verbatim from README §8 Q8 on 2026-10-27.
+
+*Measured 2026-10-24, 2026-10-25 and 2026-10-26 (D20):* seats, sofas, exterior doors and the old plans
+   re-linted are in the three `audits/` re-runs; the 10-24 and 10-25 blocks verbatim:
+   `research/2026-10-26-readme-history.md` § §8 Q8.
+
+## §1: the note on the baseline
+
+Moved verbatim from README §1 on 2026-10-27.
+
+*This section is the 2026-10-18 baseline, kept as written because it is the evidence the plan was
+made from. Much of it is no longer true of `main`: the rules it says are missing now exist (45 lint
+rules, 22 new `W_*` codes), the dimension that "lints clean" raises `W_DIM_TEXT_MISMATCH`, the
+family-apartment reconstruction lints 33 warnings over 11 codes, and the coverage report says what was
+not checked. Today's state is `handoff.md` § 1 and § 3.*
+
+## D20: the Consequences summary
+
+Moved verbatim from README §3 D20 on 2026-10-27 (the full text is § D20: the Consequences bullet, above).
+
+- Consequences: (a) ADR 0032 gets a 2026-10-26 addendum under Consequences. (b) PS7.4 is `done`: measured, teaching the step where cold authors read did not change behaviour. (c) PS7.5 moves the taste step out of the author loop (spec self-correction paragraph, SKILL step 7 as a review step, `.claude/agents/arch-author.md` back to compile → `validate` `next` → lint → repair with taste under "Review"); the spec change is a measured surface the next re-measure states. `validate --json` `next` stays taught: it is the validity ordering, not a second score. Full text: `research/2026-10-26-readme-history.md` § D20 Consequences.
+
+## §8 Q3: the "Measured" sentence
+
+Moved verbatim from README §8 Q3 on 2026-10-27; its open follow-ups are card PS1.8.
+
+*Measured 2026-10-26 (PS1.4):* `research/2026-10-26-ps14-diagnostic-wording.md`. Over 59 corpus cases on two local models, the current message + hint
+   repaired best on both (51/59 sonnet, 48/59 haiku), but by 1 case on sonnet, under the 3-case margin, so no wording rule yet; open: repeat draws, a third model, the spec in context, a `cause`-derived rule arm.
+
+## §8 Q5: the "Designed" sentence
+
+Moved verbatim from README §8 Q5 on 2026-10-27.
+
+*Designed 2026-10-26 (PS4.3, PR #270):* `research/2026-10-26-ps43-keep-design.md`, ADR 0033 (Accepted, PR #272): a keep is checked with a signed residual and `impact` lists those a change breaks; listing the edits that keep them all true stays `arch solve` (PS6.1).
+
+## §7 row 6: the status sentence
+
+Moved verbatim from README §7 row 6 on 2026-10-27.
+
+*Status:* every card landed (PRs #267–#283) and the D10 re-measure ran (`audits/2026-10-26-first-contact-rerun-row6.md`: 61 defects against 52 / 54 / 54, 12 reported by lint, the stair blocker named by lint, the residual families unchanged). The review-sheet clause is false as built inside repeated statements (`p2-for` 0 of 2 marks ringed, `p10-loopfurn` 5 of 8, `p3-place` 4 of 6; PS5.4 as-built): **PS4.6** is the remainder.
+
+## §9: the file list
+
+Moved verbatim from README §9 on 2026-10-27, where a shorter index replaced it; its
+descriptions of each file stand. Files added since are named in the new index.
+
+- `README.md`: this plan.
+- `handoff.md`: the resume point — state, open work in order, how the work is run (re-written at
+  every stage end).
+- `cards.md`: every card of §6, with its table, id and status (D16).
+- `research/2026-10-25-ps211ab-as-built.md`, `research/2026-10-25-ps211cd-as-built.md`: the four
+  clearance rules as built, their first-contact hits, corpus movements and the `finish` sweep.
+- `audits/first-contact-protocol.md`: the six briefs, the dispatch prompts, the rubric, the arm A
+  role-text pointer and the re-measure checklist that D15 needs (PR #257, 053ba3f8).
+- `evidence.md`: what was measured, the bug list and the defect taxonomy.
+- `research/checks-inventory.md`: every current check, the authoring-model facts, governing ADRs,
+  and the gap list with code locations.
+- `research/prior-art.md`: LLM floor-plan work, rule checking, codes and thresholds, DSL design
+  evidence.
+- `research/associativity.md`: Revit, ArchiCAD, FreeCAD, IFC/Bonsai, Sweet Home 3D, SolveSpace and
+  Topologic at source level, plus the full P1–P7 design (datums, `between`, `impact`, `keep`,
+  `solve`, the ladder, selectors).
+- `research/design-taste.md`: 37 sourced rules, ResPlan priors (16,317 plans) and the score design.
+- `research/adai-sketchup.md`: lessons from a staged, evidence-gated SketchUp agent (ideas only;
+  CPAL licence).
+- `research/2026-10-18-room-tiling.md`: do rooms already tile the building? (the D5 premise).
+- `research/2026-10-18-furniture-and-multistorey.md`: furniture relations in Holodeck, Infinigen,
+  LayoutVLM, IFC, Revit and Sweet Home 3D, plus twelve multi-storey/multi-dwelling rules with clause
+  numbers and a fact-sufficiency table (cards PS3.7, PS2.14–PS2.16).
+- `audits/archcanvas-public-examples.md`, `audits/showcase-and-examples.md`: per-plan defects with
+  coordinates.
+- `audits/2026-10-18-first-contact.md` and `audits/first-contact-plans/*.arch`: six briefs written
+  cold by an AI author, lint-clean, 57 verified defects, twelve classes outside the taxonomy.
+- `audits/2026-10-24-first-contact-rerun.md`: the same, re-measured after row 3 (D7).
+- `audits/2026-10-25-first-contact-rerun-row5.md`: the same, re-measured after row 5 (D10, D14).
+- `audits/2026-10-26-first-contact-rerun-d15.md` and `audits/first-contact-plans/2026-10-26-rerun-arm{A,B}/*.arch`:
+  the same, re-measured after row 5 as D15's two arms (A: pre-#250 role, B: current role); 52 and 54
+  verified defects, 0 and 0 `score --taste` calls; D20.
+- `audits/2026-10-26-walls-first-control-arm.md` and `audits/first-contact-plans/2026-10-26-walls-first/*.arch`:
+  PS1.3, the walls-first control arm of the same run (arm C); 54 verified defects against 52 for arm A; D21.
+- `research/2026-10-24-ps5-taste-design.md`: the PS5 taste layer design (row 5).
+- `research/2026-10-26-ps43-keep-design.md`: the PS4.3 `keep` design and ADR 0033's reasons (row 6).
+- `research/2026-10-26-ps229-as-built.md`, `-ps245-`, `-ps250-`, `-ps43a-`, `-ps44-`, `-ps75-as-built.md`:
+  the 2026-10-26 as-built records (PS2.22/2.29, PS2.45, PS2.50, PS4.3a, PS4.4, PS7.5).
+- `research/2026-10-26-readme-history.md`: measurements and closure narrative moved out of this README
+  on 2026-10-26, verbatim.
+- `research/2026-10-24-ps0-ps2-as-built.md`, `research/2026-10-24-ps3-as-built.md`,
+  `research/2026-10-25-ps5-as-built.md`: landed cards' as-built notes, verbatim (the last also
+  holds row 5's PR rulings, §7 rows 1–5 as they stood, and D5/D6 detail).
+- `repro/`: minimal reproductions (see its README).
