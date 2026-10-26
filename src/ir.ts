@@ -497,6 +497,9 @@ export interface RWindow extends RBase {
   at: Point;
   width: number;
   host: WallSegment | null;
+  /** The author wrote this window's `id=` (set only then). Read by `W_HOB_UNDER_WINDOW`'s hint,
+   *  which quotes an id only when the author wrote one. Internal. */
+  _idAuthored?: true;
   /** `attached` vs `absolute` — see {@link RDoor._placement}. */
   _placement?: OpeningPlacement;
   /** See {@link RDoor._relation}. */
@@ -2918,6 +2921,9 @@ function resolveBody(
           if (e.idAuthored === true) r._idAuthored = true;
         } else if (r.kind === "door") {
           // The same, for `W_LEAF_ACROSS_DOORWAY`'s hints (plan-soundness PS2.11d).
+          if (e.idAuthored === true) r._idAuthored = true;
+        } else if (r.kind === "window") {
+          // The same, for `W_HOB_UNDER_WINDOW`'s hint (plan-soundness PS2.46).
           if (e.idAuthored === true) r._idAuthored = true;
         } else if (def.yieldsWalls) {
           // Derived walls join the group's wall list at once, before any opening resolves

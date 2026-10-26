@@ -239,6 +239,11 @@ const POSITIVE: Snippet[] = [
   },
   {
     keyword: "door",
+    note: "a `double` pair takes `swing` (in, out or into a room), never `hinge`",
+    src: plan(`${BOX}\n${ROOM}\n  door double on w1 at 70% width 1800 swing into r1`),
+  },
+  {
+    keyword: "door",
     note: "relational placement: `between <A> and <B> at …`, `on <room>.<edge>`, the datum positions",
     src: plan(
       `  room id=a at (0,0) size 4000x5000\n  room id=b at (4000,0) size 4000x5000\n  walls from rooms exterior 200 partition 100\n` +

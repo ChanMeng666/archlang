@@ -435,3 +435,68 @@ export function doorLandingRect(
     ? { x: d.at.x - halfW, y: d.at.y - reach, w: d.width, h: reach * 2 }
     : { x: d.at.x - reach, y: d.at.y - halfW, w: reach * 2, h: d.width };
 }
+
+/**
+ * A doorway's width (mm): the widest cased opening judged as a door is (plan-soundness PS2.11e,
+ * the coordinator's ruling on PR #283), and the clear stretch a wider one must keep: a broad
+ * doorway's width.
+ */
+export const DOORWAY_WIDTH_MM = 1200;
+
+/** What {@link openingBlock} finds in a cased opening's approach. */
+export interface OpeningBlock {
+  /** The landing ({@link doorLandingRect}). */
+  landing: BBox;
+  /** Indices into the rects passed, in their order, of those whose footprint overlaps it. */
+  inside: number[];
+  /** The longest stretch (mm) of the opening's span, jamb to jamb, that none of them covers. */
+  stretch: number;
+  /** Is the opening blocked: any piece inside when it is at most {@link DOORWAY_WIDTH_MM} wide,
+   *  else a clear stretch under {@link DOORWAY_WIDTH_MM}? */
+  blocked: boolean;
+}
+
+/**
+ * Is a cased opening blocked by the footprints `rects` (plan-soundness PS2.11e)? An opening up to
+ * a doorway's width ({@link DOORWAY_WIDTH_MM}) is judged as a door is: any piece in its landing
+ * blocks it. A wider one, an open-plan join or the full shared edge `open between` derives, is
+ * blocked only when the pieces in its landing leave no doorway's width of it clear: the longest
+ * stretch of its span (along the wall, jamb to jamb) that none of them covers, each read where it
+ * stands across the span. `null` when the opening has no landing (no host, or an angled one).
+ * Shared by `W_DOORWAY_BLOCKED`, the placement check and the repair corrector, so what each clears
+ * is what the rule reads.
+ */
+export function openingBlock(
+  o: Parameters<typeof doorLandingRect>[0],
+  depth: number,
+  rects: readonly BBox[],
+): OpeningBlock | null {
+  const landing = doorLandingRect(o, depth);
+  if (!landing) return null;
+  const inside: number[] = [];
+  rects.forEach((r, i) => {
+    if (rectsOverlap(landing, r)) inside.push(i);
+  });
+  // The host is orthogonal (a landing exists only then): the span runs along x or y.
+  const horiz = o.host!.a.y === o.host!.b.y;
+  const lo = (horiz ? o.at.x : o.at.y) - o.width / 2;
+  const hi = lo + o.width;
+  const covers = inside
+    .map((i) => {
+      const r = rects[i]!;
+      const a = horiz ? r.x : r.y;
+      const b = a + (horiz ? r.w : r.h);
+      return [Math.max(lo, a), Math.min(hi, b)] as [number, number];
+    })
+    .filter(([a, b]) => b > a)
+    .sort((p, q) => p[0] - q[0]);
+  let stretch = 0;
+  let at = lo;
+  for (const [a, b] of covers) {
+    stretch = Math.max(stretch, a - at);
+    at = Math.max(at, b);
+  }
+  stretch = Math.max(stretch, hi - at);
+  const blocked = inside.length > 0 && (o.width <= DOORWAY_WIDTH_MM || stretch < DOORWAY_WIDTH_MM);
+  return { landing, inside, stretch, blocked };
+}

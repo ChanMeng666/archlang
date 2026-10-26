@@ -82,7 +82,9 @@ import {
 import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
 import { type ArrivingRun, arrivalRuns, verticalsOf } from "./vertical.js";
 import {
+  DOORWAY_WIDTH_MM,
   doorLandingRect,
+  openingBlock,
   rectOverlapAmounts,
   rectsOverlap,
   wallIntrusion,
@@ -905,7 +907,8 @@ export interface HardConflict {
  *
  *   * `overlap|a|b` — two pieces on one cut-plane layer overlapping (`W_FURNITURE_OVERLAP`);
  *   * `wall|a` — a piece into a wall solid past the slack (`W_FURNITURE_WALL_COLLISION`);
- *   * `doorway|d|a` — a piece in door or cased opening `d`'s clear landing (`W_DOORWAY_BLOCKED`);
+ *   * `doorway|d|a` — a piece in door or cased opening `d`'s clear landing (`W_DOORWAY_BLOCKED`;
+ *     an opening wider than a doorway only while it is blocked, `openingBlock`);
  *   * `swing|d|a` — a piece in door `d`'s swing, with clearance (`W_SWING_OBSTRUCTED`).
  *
  * `test/repair-conflicts.ts` re-derives the same census from the lint side, independently.
@@ -934,8 +937,16 @@ function hardConflictsOf(
   for (const d of [...doors, ...cased]) {
     const landing = doorLandingRect(d, DEFAULT_RULESET.doorwayLandingMm);
     const leaves = d.kind === "door" ? doorLeaves(d) : [];
+    // A cased opening wider than a doorway blocks only while it keeps no doorway's width clear.
+    const open =
+      d.kind === "opening" &&
+      openingBlock(
+        d,
+        DEFAULT_RULESET.doorwayLandingMm,
+        furniture.filter((f) => !isServiceCounter(f.category)).map(rect),
+      )?.blocked === false;
     for (const f of furniture) {
-      if (landing && !(d.kind === "opening" && isServiceCounter(f.category)) && rectsOverlap(landing, rect(f)))
+      if (landing && !open && !(d.kind === "opening" && isServiceCounter(f.category)) && rectsOverlap(landing, rect(f)))
         out.set(`doorway|${d.id}|${f.id}`, {
           refs: [f.id],
           would: () => `block the clear approach through ${d.kind} "${d.id}"`,
@@ -1408,9 +1419,18 @@ function repairStorey(
     .map((d) => doorLandingRect(d, DEFAULT_RULESET.doorwayLandingMm))
     .filter((l): l is BBox => l !== null);
   // A cased opening keeps the same clear approach as a door (`W_DOORWAY_BLOCKED`, PS2.11e), for
-  // every piece but a service counter, which stands across one as its servery hatch.
+  // every piece but a service counter, which stands across one as its servery hatch. One wider
+  // than a doorway is cleared only when it is blocked as the input stands (`openingBlock`): a
+  // table beside an open-plan join that leaves a doorway's width of it clear is not moved.
+  const counted = ir.elements
+    .filter((e): e is RFurniture => e.kind === "furniture" && !isServiceCounter(e.category))
+    .map((f) => ({ x: f.at.x, y: f.at.y, w: f.size.w, h: f.size.h }));
   const openingLandings = ir.elements
     .filter((e): e is ROpening => e.kind === "opening")
+    .filter(
+      (o) =>
+        o.width <= DOORWAY_WIDTH_MM || openingBlock(o, DEFAULT_RULESET.doorwayLandingMm, counted)?.blocked !== false,
+    )
     .map((o) => doorLandingRect(o, DEFAULT_RULESET.doorwayLandingMm))
     .filter((l): l is BBox => l !== null);
   const landingsFor = (category: string): BBox[] =>

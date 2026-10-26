@@ -26,7 +26,8 @@ import {
 import type { WallSegment } from "../geometry.js";
 import { type Arc, arcContainsRay, distPointToArc } from "../geometry/arc.js";
 import type { BBox } from "../geometry/rect.js";
-import type { RFurniture, RWindow } from "../ir.js";
+import { pointInRoomBox } from "../analyze.js";
+import type { RFurniture, RRoom, RWindow } from "../ir.js";
 import type { LintContext } from "./context.js";
 import { WALL_COLLISION_SLACK_MM } from "./measure.js";
 
@@ -42,6 +43,22 @@ export const isServiceCounter = (category: string): boolean => {
 
 /** Is this category a cooking surface (the `stove` family: `stove`, `hob`, `cooktop`)? */
 export const isCookingSurface = (category: string): boolean => canonicalFixture(category) === "stove";
+
+/** The room a piece stands in: its declared room, else the first room whose floor holds the
+ *  footprint's centre; `null` when none does. */
+export function roomOf(f: RFurniture, ctx: Pick<LintContext, "rooms" | "roomRects">): RRoom | null {
+  if (f.room !== undefined) {
+    const r = ctx.rooms.find((x) => x.id === f.room);
+    if (r) return r;
+  }
+  const c = { x: f.at.x + f.size.w / 2, y: f.at.y + f.size.h / 2 };
+  return (
+    ctx.rooms.find((r) => {
+      const box = ctx.roomRects.get(r.id);
+      return box !== undefined && pointInRoomBox(c, box);
+    }) ?? null
+  );
+}
 
 /** What {@link wcWorld} reads off a lint context. */
 export type WcWorldSource = Pick<LintContext, "wallSegs" | "doors" | "openings">;
@@ -368,31 +385,52 @@ export function clearancesClear(
     const probe = { at: { x: fr.x, y: fr.y }, size: { w: fr.w, h: fr.h }, rotate, category } as RFurniture;
     if (isCookingSurface(category)) {
       const tall = others.filter((f) => isTallUnit(f.category));
-      if (tall.length > 0 && hobSideGap(probe, tall, landing) !== null) return false;
+      if (tall.length > 0 && hobSideGap(ctx, probe, tall, landing) !== null) return false;
     }
     if (isTallUnit(category)) {
       for (const hob of others)
-        if (isCookingSurface(hob.category) && hobSideGap(hob, [probe], landing) !== null) return false;
+        if (isCookingSurface(hob.category) && hobSideGap(ctx, hob, [probe], landing) !== null) return false;
     }
   }
   return true;
 }
 
-/** The nearest tall unit standing inside either side strip of cooking surface `f`, `need` deep,
- *  and its gap from the hob's side face, or `null` when neither side has one (`W_HOB_FRIDGE_GAP`
- *  and the placement check above read this one measure). */
+/** What {@link hobSideGap} reads off a lint context: the walls (with their doorways cut out)
+ *  and the rooms. */
+export type HobWorldSource = WcWorldSource & Pick<LintContext, "rooms" | "roomRects">;
+
+/**
+ * The nearest tall unit standing inside either side strip of cooking surface `f`, `need` deep,
+ * and its gap from the hob's side face, or `null` when neither side has one (`W_HOB_FRIDGE_GAP`
+ * and the placement check above read this one measure). Only a tall unit in the hob's own room
+ * ({@link roomOf}) is read, and each strip is measured against the straight wall bodies as well
+ * ({@link cutSegments}), so a fridge behind a partition, in the next room, is not beside the hob:
+ * the wall is the nearer obstacle and is not this measure's. Equal gaps on the two sides keep the
+ * unit first in source order (`tall`'s order), so the reading does not depend on which side a
+ * turn of the frame lists first.
+ */
 export function hobSideGap(
+  src: HobWorldSource,
   f: RFurniture,
   tall: readonly RFurniture[],
   need: number,
 ): { piece: RFurniture; gap: number } | null {
-  const world: ClearWorld = { furniture: tall.filter((t) => t !== f), segments: [], swings: [] };
+  const home = roomOf(f, src);
+  const mine = tall.filter((t) => t !== f && roomOf(t, src) === home);
+  if (mine.length === 0) return null;
+  const world: ClearWorld = { furniture: mine, segments: cutSegments(src), swings: [] };
   const rect = { x: f.at.x, y: f.at.y, w: f.size.w, h: f.size.h };
   let best: { piece: RFurniture; gap: number } | null = null;
   for (const s of clearStrips(rect, f.rotate, "sides", need)) {
     const m = measureStrip(s, world, f);
     if (m.by?.kind !== "furniture" || m.measured >= need) continue;
-    if (best === null || m.measured < best.gap) best = { piece: m.by.piece, gap: m.measured };
+    const piece = m.by.piece;
+    if (
+      best === null ||
+      m.measured < best.gap ||
+      (m.measured === best.gap && mine.indexOf(piece) < mine.indexOf(best.piece))
+    )
+      best = { piece, gap: m.measured };
   }
   return best;
 }

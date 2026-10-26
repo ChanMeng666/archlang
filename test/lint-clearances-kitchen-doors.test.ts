@@ -9,8 +9,13 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe as suite, expect, it } from "vitest";
-import { type Diagnostic, lint, type World } from "../src/index.js";
-import { doorLandingRect } from "../src/geometry/rect.js";
+import { type Diagnostic, describe as describePlan, lint, type World } from "../src/index.js";
+import { type AccessEdge, rectOf, resolvePlan } from "../src/analyze.js";
+import { doorLandingRect, openingBlock } from "../src/geometry/rect.js";
+import type { RFurniture, ROpening } from "../src/ir.js";
+import { clearancesClear } from "../src/lint/clearance-measure.js";
+import { buildLintContext } from "../src/lint/context.js";
+import { DEFAULT_RULESET } from "../src/lint/ruleset.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const of = (src: string, code: string, opts: Parameters<typeof lint>[1] = {}): Diagnostic[] =>
@@ -54,6 +59,19 @@ suite("W_HOB_UNDER_WINDOW (PS2.46)", () => {
     expect(ds[0]!.hints![0]).toMatch(/^"hob1" stands under/);
   });
 
+  it("a window's assigned id is never quoted: it is named by its width", () => {
+    const ds = of(
+      kitchen(
+        "furniture stove against wall shell segment 0 offset 2000 in r_k",
+        "window at (2000,0) width 1200 wall shell",
+      ),
+      HU,
+    );
+    expect(ds).toHaveLength(1);
+    expect(ds[0]!.hints![0]).toContain('stands under 600 mm of the 1200 mm window on wall "shell"');
+    expect(ds[0]!.hints![0]).not.toMatch(/window_\d/);
+  });
+
   it("a hob past the window's end, touching it, is clear (positive area only)", () => {
     // Window x 1400–2600; a hob centred at 2900 spans 2600–3200.
     expect(of(kitchen("furniture stove against wall shell segment 0 offset 2900 in r_k"), HU)).toEqual([]);
@@ -95,18 +113,79 @@ suite("W_HOB_FRIDGE_GAP (PS2.11e)", () => {
     const ds = of(run(2000, 2700), HF);
     expect(ds).toHaveLength(1);
     expect(ds[0]!.message).toBe(
-      "The stove in Kitchen stands 100 mm from the fridge beside it; a cooking surface needs 300 mm of worktop on each side before a tall unit (200 mm short).",
+      "The stove in Kitchen stands 100 mm from the fridge beside it; a cooking surface needs 305 mm of worktop on each side before a tall unit (205 mm short).",
     );
-    expect(ds[0]!.hints![0]).toContain("`hobLandingMm` is 300 mm");
-    expect(ds[0]!.hints![0]).toContain("move one of them 200 mm further along the run");
+    expect(ds[0]!.hints![0]).toContain("`hobLandingMm` is 305 mm");
+    expect(ds[0]!.hints![0]).toContain("move one of them 205 mm further along the run");
   });
 
-  it("abutting (0 mm) fires; 300 mm is clear; either side", () => {
+  it("abutting (0 mm) fires; 305 mm, the cited 12 in, is clear; either side", () => {
     expect(of(run(2000, 2600), HF)).toHaveLength(1);
-    expect(of(run(2000, 2900), HF)).toEqual([]);
-    expect(of(run(2000, 2850), HF)).toHaveLength(1);
-    expect(of(run(2000, 1100), HF)).toEqual([]);
-    expect(of(run(2000, 1150), HF)).toHaveLength(1);
+    expect(of(run(2000, 2950), HF)).toEqual([]);
+    expect(of(run(2000, 2900), HF)).toHaveLength(1);
+    expect(of(run(2000, 1050), HF)).toEqual([]);
+    expect(of(run(2000, 1100), HF)).toHaveLength(1);
+    // The figure is the cited one in mm, not a grid module: off the grid, 305 clears and 304 does not.
+    const fine = (fridge: number) => run(2000, fridge).replace("grid 50", "grid 1");
+    expect(of(fine(2905), HF)).toEqual([]);
+    expect(of(fine(2904), HF)).toHaveLength(1);
+  });
+
+  it("a fridge behind a partition, in the next room, is not beside the hob (lint and placement agree)", () => {
+    // Kitchen x 0–2400, a 100 mm partition on x 2400 (body 2350–2450), a pantry beyond. The stove
+    // spans 1700–2300; the fridge 2450–3050 stands 150 mm from it, through the wall.
+    const src = `plan "K" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  wall id=w_p partition thickness 100 { (2400,0) (2400,4000) }
+  room id=r_k at (0,0) size 2400x4000 label "Kitchen" uses kitchen
+  room id=r_p at (2400,0) size 3600x4000 label "Pantry" uses storage
+  door id=d at (1200,4000) width 900 wall shell
+  door id=d2 at (2400,3000) width 800 wall w_p
+  furniture stove against wall shell segment 0 offset 2000 in r_k
+  furniture fridge against wall shell segment 0 offset 2750 in r_p
+}`;
+    expect(of(src, HF)).toEqual([]);
+    const ctx = buildLintContext(resolvePlan(src, {}).ir!, DEFAULT_RULESET);
+    // The placement check reads the same measure: the fridge where it stands is clear of the stove,
+    // and so is the stove where it stands of the fridge.
+    expect(clearancesClear(ctx, { x: 2450, y: 100, w: 600, h: 650 }, "fridge", 0)).toBe(true);
+    expect(clearancesClear(ctx, { x: 1700, y: 100, w: 600, h: 600 }, "stove", 0)).toBe(true);
+    // In the kitchen, 100 mm from the stove, the same fridge is refused.
+    expect(clearancesClear(ctx, { x: 1000, y: 100, w: 600, h: 650 }, "fridge", 0)).toBe(false);
+  });
+
+  it("a tall unit in another room is not read, even with no wall between", () => {
+    // Two rooms meeting on x 2400 with no wall: the fridge 100 mm off the stove is in the other room.
+    const src = run(2000, 2700)
+      .replace(
+        'room id=r_k at (0,0) size 6000x4000 label "Kitchen" uses kitchen',
+        'room id=r_k at (0,0) size 2400x4000 label "Kitchen" uses kitchen\n  room id=r_d at (2400,0) size 3600x4000 label "Dining" uses dining',
+      )
+      .replace("offset 2700 in r_k", "offset 2700 in r_d");
+    expect(src).toContain('label "Dining"');
+    expect(of(src, HF)).toEqual([]);
+  });
+
+  it("a stub wall between them in one room ends the measure: the wall is nearer", () => {
+    // A 100 mm nib on x 2400 (body 2350–2450) from the back wall; stove 1700–2300, fridge 2450–3050.
+    const src = run(2000, 2750, "\n  wall id=w_nib partition thickness 100 { (2400,0) (2400,800) }");
+    expect(of(src, HF)).toEqual([]);
+    expect(of(run(2000, 2750), HF)).toHaveLength(1);
+  });
+
+  it("two tall units at the same gap: the one first in source order is named, either frame", () => {
+    // A wardrobe and a bookcase 100 mm off each side of the stove.
+    const pieces = (a: string, b: string) =>
+      kitchen(
+        `furniture stove against wall shell segment 0 offset 2000 in r_k
+  furniture ${a} against wall shell segment 0 offset 2700 size 600x600 in r_k
+  furniture ${b} against wall shell segment 0 offset 1300 size 600x600 in r_k`,
+        "window id=w_k at (5000,4000) width 1200 wall shell",
+      );
+    expect(of(pieces("wardrobe", "bookcase"), HF)[0]!.message).toContain("from the wardrobe beside it");
+    expect(of(pieces("bookcase", "wardrobe"), HF)[0]!.message).toContain("from the bookcase beside it");
   });
 
   it("any tall unit counts (a wardrobe or a bookcase), a low one does not", () => {
@@ -230,6 +309,96 @@ suite("W_DOORWAY_BLOCKED on a leaf-less opening (PS2.11e)", () => {
   });
 });
 
+suite("W_DOORWAY_BLOCKED on an opening wider than a doorway (the ruling on PR #283)", () => {
+  const wide = (width: number) => `opening id=o_study at (5000,2000) width ${width} wall w_mid`;
+
+  it("an opening up to 1200 mm is judged as a door: any piece in its approach blocks it", () => {
+    // Opening y 1400–2600; a chest over 100 mm of it still blocks a doorway-wide opening.
+    expect(of(pair(wide(1200), "furniture chest at (4600,2500) size 300x600 in r_study"), DB)).toHaveLength(1);
+  });
+
+  it("wider, it is blocked only when the pieces leave under 1200 mm of it clear", () => {
+    // Opening 1300, y 1350–2650. A chest over its last 100 mm leaves 1200 clear; over 150, 1150.
+    expect(of(pair(wide(1300), "furniture chest at (4600,2550) size 300x600 in r_study"), DB)).toEqual([]);
+    const ds = of(pair(wide(1300), "furniture chest at (4600,2500) size 300x600 in r_study"), DB);
+    expect(ds).toHaveLength(1);
+    expect(ds[0]!.message).toBe(
+      'The opening between "Study" and "Entry" is blocked — "chest" in its 300 mm approach leaves 1150 mm of its 1300 mm clear, under the 1200 mm a doorway needs (50 mm short).',
+    );
+  });
+
+  it("the stretch is read across every piece in the approach, on both sides of the wall", () => {
+    // Opening 3000, y 500–3500. A desk over 2200–3500 leaves 1700 clear; a chest on the entry
+    // side over 1000–1600 then leaves 600 (500–1000) and 600 (1600–2200).
+    const desk = "furniture desk at (4100,2200) size 800x1600 in r_study";
+    expect(of(pair(wide(3000), desk), DB)).toEqual([]);
+    const ds = of(pair(wide(3000), `${desk}\n  furniture chest at (5100,1000) size 300x600 in r_entry`), DB);
+    expect(ds).toHaveLength(1);
+    expect(ds[0]!.message).toContain(
+      '"desk" and 1 other piece in its 300 mm approach leave 600 mm of its 3000 mm clear',
+    );
+  });
+
+  it("the full shared edge `open between` derives is judged the same way: an open-plan join stays open", () => {
+    // examples/relational.arch: the dining table 300 mm in from the living/kitchen join, its
+    // 800 mm depth well inside the 3850 mm edge's approach, leaves 1550 mm of it to walk through.
+    const src = readFileSync(join(ROOT, "examples/relational.arch"), "utf8");
+    expect(src).toContain('furniture dining_table in kitchen anchor left inset 300 size 1400x800 label "Table"');
+    const { ir } = resolvePlan(src, {});
+    const join_ = ir!.elements.find((e) => e.kind === "opening" && e.width > 1200) as ROpening;
+    const furniture = ir!.elements.filter((e): e is RFurniture => e.kind === "furniture");
+    const block = openingBlock(join_, DEFAULT_RULESET.doorwayLandingMm, furniture.map(rectOf));
+    expect(block).toMatchObject({ stretch: 1550, blocked: false });
+    expect(block!.inside.map((i) => furniture[i]!.label)).toEqual(["Table"]);
+    expect(of(src, DB)).toEqual([]);
+  });
+});
+
+suite("a `double` door is passed through one leaf (ADA 2010 404.2.3)", () => {
+  const withEntry = (door: string) =>
+    pair(OPENING, "").replace("door id=d_entry at (6500,4000) width 900 wall shell", door);
+  const codes = (door: string, opts: Parameters<typeof lint>[1] = {}) =>
+    lint(withEntry(door), opts)
+      .map((d) => d.code)
+      .filter((c) => c === "W_DOOR_CLEARANCE" || c === "W_PATH_TOO_NARROW");
+
+  it("`double width 1000` raises what a 500 mm door raises: the leaf is judged", () => {
+    const pairOf = codes("door id=d_entry double at (6500,4000) width 1000 wall shell swing in");
+    const single = codes("door id=d_entry at (6500,4000) width 500 wall shell swing in");
+    expect(pairOf).toEqual(single);
+    expect(pairOf).toEqual(["W_DOOR_CLEARANCE", "W_PATH_TOO_NARROW"]);
+    const ds = lint(withEntry("door id=d_entry double at (6500,4000) width 1000 wall shell swing in"));
+    const dc = ds.find((d) => d.code === "W_DOOR_CLEARANCE")!;
+    expect(dc.message).toBe(
+      "Door is a double door whose leaves are each 500 mm wide (under the 700 mm minimum nominal width): a person passes through one leaf.",
+    );
+    expect(dc.hints![0]).toBe("Widen it to at least 1400 mm, two 700 mm leaves.");
+    // The path remedy widens the pair so each leaf passes: twice the passable single width.
+    const path = ds.find((d) => d.code === "W_PATH_TOO_NARROW")!;
+    expect(path.hints!.join(" ")).toContain('Widen door "d_entry" to `width 1550`');
+  });
+
+  it("1400 mm: two 700 mm leaves pass the door minimum, not the path's; 1550 passes both", () => {
+    const door = "door id=d_entry double at (6500,4000) width 1400 wall shell swing in";
+    // A 700 mm leaf is 640 mm clear (the 60 mm leaf-and-stop allowance), under the 700 mm path.
+    expect(codes(door)).toEqual(["W_PATH_TOO_NARROW"]);
+    expect(codes(door.replace("width 1400", "width 1550"))).toEqual([]);
+    expect(codes(door, { profile: "accessibility-advisory" })).toContain("W_DOOR_CLEARANCE");
+    expect(codes(door.replace("width 1400", "width 2000"), { profile: "accessibility-advisory" })).toEqual([]);
+  });
+
+  it("describe() reads the clear width off one leaf, the nominal width off the pair", () => {
+    const src = pair(OPENING, "").replace(
+      "door id=d_entry at (6500,4000) width 900 wall shell",
+      "door id=d_entry double at (6500,4000) width 1400 wall shell swing in",
+    );
+    const edge = (describePlan(src) as { access: { edges: AccessEdge[] } }).access.edges.find(
+      (e) => e.doorId === "d_entry",
+    )!;
+    expect(edge).toMatchObject({ nominalWidth: 1400, estimatedClearWidth: 640 });
+  });
+});
+
 suite("one datum for a doorway's approach: the wall's face (PS2.54)", () => {
   it("`doorLandingRect` reaches the depth past each FACE, the wall's body between", () => {
     const host = { a: { x: 5000, y: 0 }, b: { x: 5000, y: 4000 }, thickness: 100 };
@@ -293,17 +462,27 @@ suite("the audits' rows each rule catches (the acceptance of PS2.11e, PS2.46)", 
     ["NT7", "2026-10-24-rerun/5-townhouse.arch", HF],
     ["OH3 (its fridge half)", "2026-10-26-rerun-armA/2-house.arch", HF],
     ["WH7 (its fridge half)", "2026-10-26-walls-first/2-house.arch", HF],
+    // Exactly 300 mm apart: inside the cited 305 mm (the figure was 300 until red-team round 1).
+    ["WT5", "2026-10-26-walls-first/5-townhouse.arch", HF],
     // A piece in a leaf-less opening's approach (PS2.11e).
     ["T2", "5-townhouse.arch", DB],
-    ["NH2 (its opening half)", "2026-10-24-rerun/2-house.arch", DB],
     ["OS2", "2026-10-26-rerun-armA/3-studio.arch", DB],
     ["OT4 (its opening half)", "2026-10-26-rerun-armA/5-townhouse.arch", DB],
-    ["CS3 (its opening half)", "2026-10-26-rerun-armB/3-studio.arch", DB],
     // Door–door interference, still read from the face (PS2.54 kept the leaf rule's datum).
     ["A1", "1-apartment.arch", "W_LEAF_ACROSS_DOORWAY"],
     ["NH5", "2026-10-24-rerun/2-house.arch", "W_LEAF_ACROSS_DOORWAY"],
   ];
   it.each(ROWS)("%s (%s): %s", (_row, path, code) => {
     expect(codesOf(path)).toContain(code);
+  });
+
+  // The ruling on PR #283: an opening wider than a doorway is blocked only below 1200 mm clear.
+  // NH2's sofa covers 950 mm of a 2400 mm join (1450 left) and CS3's fridge 325 mm of an 1800 mm
+  // one (1475 left): each keeps a doorway's width, so neither is caught any more.
+  it.each([
+    ["NH2 (its opening half)", "2026-10-24-rerun/2-house.arch"],
+    ["CS3 (its opening half)", "2026-10-26-rerun-armB/3-studio.arch"],
+  ])("%s (%s): no longer W_DOORWAY_BLOCKED, a doorway's width stays clear", (_row, path) => {
+    expect(codesOf(path)).not.toContain(DB);
   });
 });

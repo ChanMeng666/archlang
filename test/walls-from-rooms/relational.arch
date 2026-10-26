@@ -48,7 +48,7 @@ plan "Relational 1BR" {
 
   furniture sofa         in living anchor bottom-left flush inset 300 size 1800x800 label "Sofa"
   furniture coffee_table in living anchor left inset 300 size 900x500
-  furniture dining_table in kitchen anchor left inset 350 size 1400x800 label "Table"
+  furniture dining_table in kitchen anchor left inset 300 size 1400x800 label "Table"
 
   furniture counter against wall w_ring segment 1 offset 1500 size 600x600 in kitchen
   furniture sink    against wall w_ring segment 1 offset 2300 size 800x600 in kitchen

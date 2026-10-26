@@ -11,6 +11,7 @@ import { det } from "../../algebra/d4.js";
 import { CLI_NAME } from "../../command-name.js";
 import {
   type AccessEdge,
+  activeLeafWidth,
   connectorClearWidth,
   DEFAULT_CLEAR_ALLOWANCE_MM,
   EXTERIOR_NODE,
@@ -32,7 +33,7 @@ import {
 } from "../../geometry.js";
 import { arcOpeningVoid } from "../../geometry/arc-band.js";
 import { type Arc, arcLength, arcTangentAt } from "../../geometry/arc.js";
-import { doorLandingRect, rectsOverlap } from "../../geometry/rect.js";
+import { DOORWAY_WIDTH_MM, doorLandingRect, openingBlock, rectsOverlap } from "../../geometry/rect.js";
 import type { RDoor, RFurniture, ROpening } from "../../ir.js";
 import type { LintContext, LintRule } from "../context.js";
 import { isServiceCounter } from "../clearance-measure.js";
@@ -249,9 +250,13 @@ function blockedApproach(
  * A leaf-less (cased) opening is read too (plan-soundness PS2.11e), after every door, with the
  * same landing: an opening has no leaf, so nothing but the approach can block it, and a sofa
  * 250 mm in front of a hall's only way into the living room (the first-contact audit's T2)
- * blocks it as surely as a door. Its message names the opening by the rooms it joins (never an
- * id); a derived `open between` opening takes its span from the rooms' shared edge, so its hint
- * does not offer to move it. A counter (`counter`, `worktop`, `bar_counter`) is not a blocker
+ * blocks it as surely as a door. An opening up to a doorway's width ({@link DOORWAY_WIDTH_MM},
+ * 1200 mm) is judged as a door is; a wider one, an open-plan join or the full shared edge an
+ * `open between` derives, only when the pieces in its approach leave no 1200 mm stretch of it
+ * clear ({@link openingBlock}): a dining table 250 mm off a 3 m join leaves the rest of it to walk
+ * through. Its message names the opening by the rooms it joins (never an id); a derived
+ * `open between` opening takes its span from the rooms' shared edge, so its hint does not offer
+ * to move it. A counter (`counter`, `worktop`, `bar_counter`) is not a blocker
  * there: a counter across a cased opening is the servery hatch a café or a kitchen is served
  * across (`examples/corner-cafe.arch`), the opening's purpose; whether a room is still reached is
  * `W_PATH_TOO_NARROW`'s question.
@@ -282,6 +287,11 @@ export const doorwayBlocked: LintRule = {
     }
     // Cased openings after every door, so a plan's door diagnostics keep their order.
     for (const o of ctx.openings) {
+      if (o.width > DOORWAY_WIDTH_MM) {
+        const wide = wideOpeningBlocked(o, ctx);
+        if (wide) out.push(wide);
+        continue;
+      }
       const hit = blockedApproach(o, ctx, (f) => !isServiceCounter(f.category));
       if (!hit) continue;
       const { blocker, depth, gap, short } = hit;
@@ -305,6 +315,39 @@ export const doorwayBlocked: LintRule = {
     return out;
   },
 };
+
+/**
+ * A cased opening wider than a doorway ({@link DOORWAY_WIDTH_MM}) whose approach keeps no doorway's
+ * width clear ({@link openingBlock}), or `null`. The piece named is the first in its approach, in
+ * source order; a service counter is not read, as for a narrow opening.
+ */
+function wideOpeningBlocked(o: ROpening, ctx: LintContext): Diagnostic | null {
+  const pieces = ctx.furniture.filter((f) => !isServiceCounter(f.category));
+  const block = openingBlock(o, ctx.rules.doorwayLandingMm, pieces.map(rectOf));
+  if (block === null) {
+    if (o.host) ctx.skip("unsupported-host-geometry");
+    return null;
+  }
+  if (!block.blocked) return null;
+  const blocker = pieces[block.inside[0]!]!;
+  const gn = blocker.label ?? blocker.category;
+  const ref = blocker._idAuthored === true ? `"${blocker.id}"` : `"${gn}"`;
+  const others = block.inside.length - 1;
+  const name = openingName(ctx, o);
+  const short = shortfall(DOORWAY_WIDTH_MM, block.stretch);
+  return {
+    severity: "warning",
+    code: "W_DOORWAY_BLOCKED",
+    ...ctx.at(o),
+    message: `${name[0]!.toUpperCase()}${name.slice(1)} is blocked — "${gn}"${others > 0 ? ` and ${others} other piece${others > 1 ? "s" : ""}` : ""} in its ${mm(ctx.rules.doorwayLandingMm)} mm approach leave${others > 0 ? "" : "s"} ${mm(block.stretch)} mm of its ${mm(o.width)} mm clear, under the ${mm(DOORWAY_WIDTH_MM)} mm a doorway needs (${mm(short)} mm short).`,
+    hints: [
+      `Move ${ref} out of the opening's approach (${mm(ctx.rules.doorwayLandingMm)} mm past each face of the wall) or along it, so ${mm(DOORWAY_WIDTH_MM)} mm of the opening stays clear — \`${CLI_NAME} repair\` clears the whole approach.`,
+      o._derived
+        ? "The opening is derived by `open between` and spans the rooms' shared edge, so the pieces are what move."
+        : `Or widen the opening, or move it along its wall (\`on <wall> at <pos>\`), so a ${mm(DOORWAY_WIDTH_MM)} mm stretch of it misses ${ref}.`,
+    ],
+  };
+}
 
 /**
  * A `pocket` door with nowhere for its panel to go.
@@ -425,15 +468,26 @@ export const doorClearance: LintRule = {
   check({ doors, rules, at }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
     for (const d of doors) {
-      if (d.width < rules.minDoorWidthMm) {
+      // A `double` door is passed through one leaf (ADA 2010 404.2.3), so its leaf is judged.
+      const leaf = activeLeafWidth(d);
+      if (leaf >= rules.minDoorWidthMm) continue;
+      if (d.doorKind === "double") {
         out.push({
           severity: "warning",
           code: "W_DOOR_CLEARANCE",
           ...at(d),
-          message: `Door is ${d.width} mm wide (under the ${rules.minDoorWidthMm} mm minimum nominal width).`,
-          hints: [`Widen it to at least ${rules.minDoorWidthMm} mm.`],
+          message: `Door is a double door whose leaves are each ${mm(leaf)} mm wide (under the ${rules.minDoorWidthMm} mm minimum nominal width): a person passes through one leaf.`,
+          hints: [`Widen it to at least ${mm(2 * rules.minDoorWidthMm)} mm, two ${rules.minDoorWidthMm} mm leaves.`],
         });
+        continue;
       }
+      out.push({
+        severity: "warning",
+        code: "W_DOOR_CLEARANCE",
+        ...at(d),
+        message: `Door is ${d.width} mm wide (under the ${rules.minDoorWidthMm} mm minimum nominal width).`,
+        hints: [`Widen it to at least ${rules.minDoorWidthMm} mm.`],
+      });
     }
     return out;
   },

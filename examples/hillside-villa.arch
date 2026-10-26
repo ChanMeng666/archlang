@@ -130,7 +130,7 @@ plan "Hillside Villa" {
     door id=d_kit_terrace   sliding on w_kit_terr at 3000 width 2400 slide left
     door id=d_living_garden at (800,10200) width 1000 wall shell hinge left swing out
 
-    opening id=o_liv_din on w_liv_din at 1250 width 1500
+    opening id=o_liv_din on w_liv_din at 2000 width 3000
     opening id=o_entry_svc on w_entry_svc at 1000 width 1600
     opening id=o_entry_dining on w_l1_band_w at 6200 width 2400
 
@@ -140,7 +140,7 @@ plan "Hillside Villa" {
     }
     window on shell at 11800 width 900                # pantry
     window on shell at 19000 width 1200                # kitchen (east wall)
-    window on shell at 20900 width 600                 # kitchen (east wall)
+    window on shell at 20400 width 1000                # kitchen (east wall)
     window on shell at 23000 width 1400                # terrace (east wall)
     window on shell at 17000 width 900                 # corridor (east wall)
     window at (6000,10200) width 1800 wall shell        # dining, south wall
@@ -163,9 +163,9 @@ plan "Hillside Villa" {
 
     furniture counter        against wall shell segment 1 offset 4900 size 1000x600 in r_kitchen
     furniture kitchen_sink   against wall shell segment 1 offset 5800 in r_kitchen
-    furniture stove          against wall shell segment 1 offset 6500 in r_kitchen
-    furniture dishwasher     against wall shell segment 1 offset 7100 in r_kitchen
-    furniture fridge         against wall shell segment 1 offset 7700 in r_kitchen
+    furniture stove          against wall shell segment 1 offset 7400 in r_kitchen
+    furniture dishwasher     against wall shell segment 1 offset 6600 in r_kitchen
+    furniture fridge         against wall w_l1_band_e offset 700 in r_kitchen
     furniture upper_cabinet  against wall w_l1_band_e offset 4500 in r_kitchen
     furniture island         at (9200,5400) size 1800x900 in r_kitchen
     furniture barstool       at (8900,6500) size 400x400  in r_kitchen

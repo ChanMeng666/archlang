@@ -419,13 +419,15 @@ cited as precedent (D18).* (PR #269, 2026-10-26; recorded after the fact, PS2.22
   rows (PS2.57 covers the remaining compile, `describe()` and CLI texts) are re-filed as cards.
 
 **D25. The doorway-approach datum moves to the wall face; three eval holdout judgments move with
-it.** *Awaiting ratification (D18).* (2026-10-26, coordinator ruling on PR #283; PS2.54, PS2.11e.)
+it.** *Ratified by the owner 2026-10-26, so it may be cited as precedent (D18).* (2026-10-26, coordinator ruling on PR #283; PS2.54, PS2.11e.)
 - Changed: `W_DOORWAY_BLOCKED`'s approach is measured `doorwayLandingMm` past the wall's FACE (PS2.54,
   `doorLandingRect`), and it reads cased openings (PS2.11e). Three eval holdout goldens now raise it,
   a physical failure for the judge (`eval/run.ts`'s `PHYSICAL_CODES`), so `eval/judge-fixture.json`
   sets their `semanticPass` to false, `physicalWarnings` to 1 and their failure line, with a per-row
   reason in the fixture's `notes`; `JUDGE_VERSION` is unchanged. `test/eval-offline.test.ts` reads
-  the three from those notes and holds each to that one finding.
+  the three from those notes and holds each to that one finding. CI's offline `eval:ci` step gates on
+  every golden passing (`eval/run.ts` exits 1 when `semanticPass !== total`), so it now prints
+  `✗ 3 golden(s) regressed` and exits 1 at 23/26; that all-goldens gate is the owner's and is unchanged.
 - *Why:* the goldens' pieces really stand inside the approach read from the face:
   `dims-auto-cottage`'s WC 250 mm off the bath door's face, over 100 of its 800 mm;
   `galley-kitchen`'s basin 250 mm off the bath door's face, over 150 of 800 mm; `compact-studio`'s

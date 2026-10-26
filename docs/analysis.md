@@ -270,7 +270,7 @@ openings) and walks it from the exterior. For the studio:
 |-------|---------|
 | `entrances` / `hasEntrance` | the door(s) that connect the exterior to a room, and whether any exist at all |
 | `edges[].nominalWidth` | the connector's drawn width |
-| `edges[].estimatedClearWidth` | the usable opening: a **door** loses ~60 mm to its leaf and stop, an **opening** keeps its full width |
+| `edges[].estimatedClearWidth` | the usable opening: a **door** loses ~60 mm to its leaf and stop (from one leaf of a `double` door, half its width), an **opening** keeps its full width |
 | `edges[].exterior` | whether this connector reaches the outside |
 | `edges[].straddles` | as `doors[].straddles` |
 | `edges[].ambiguous` | the connector sits where three or more rooms meet, and probing one wall thickness either side of its host wall's centreline could not say which two it joins (a probe landed on a room boundary). It is listed but joins nothing, so it counts for no room's reachability. When the probe does decide, `between` is the room on each face, and lint, circulation and `suggest` all read that same pair |

@@ -47,15 +47,15 @@
 <path d="M 4700,11530 L 4700,11970 A 30 30 0 0 1 4670,12000 A 30 30 0 0 1 4640,11970 L 4640,11530 A 30 30 0 0 1 4670,11500 A 30 30 0 0 1 4700,11530 Z" fill="#f3ece0" stroke="#7b7364" stroke-width="19.8"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
-<path d="M -150,-150 L 8300,-150 L 8300,150 L 150,150 L 150,13850 L 5900,13850 L 5900,11600 L 6100,11600 L 6100,13721.41 L 8327.81,11864.91 L 8519.86,12095.37 L 6054.31,14150 L -150,14150 Z M 11300,-150 L 12150,-150 L 12150,9070.26 L 9672.19,11135.09 L 9480.14,10904.63 L 11850,8929.74 L 11850,8100 L 6100,8100 L 6100,10400 L 5900,10400 L 5900,7900 L 11850,7900 L 11850,150 L 11300,150 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<path d="M -150,-150 L 8300,-150 L 8300,150 L 150,150 L 150,13850 L 5900,13850 L 5900,11600 L 6100,11600 L 6100,13721.41 L 8327.81,11864.91 L 8519.86,12095.37 L 6054.31,14150 L -150,14150 Z M 11300,-150 L 12150,-150 L 12150,9070.26 L 9672.19,11135.09 L 9480.14,10904.63 L 11850,8929.74 L 11850,8100 L 6100,8100 L 6100,10400 L 5900,10400 L 5900,7900 L 11850,7900 L 11850,150 L 11300,150 Z" fill="none" stroke="#2b2b2b" stroke-width="55" stroke-linejoin="miter" stroke-miterlimit="4"/>
+<path d="M -150,-150 L 8300,-150 L 8300,150 L 150,150 L 150,13850 L 5900,13850 L 5900,11600 L 6100,11600 L 6100,13721.41 L 8135.75,12024.95 L 8327.81,12255.42 L 6054.31,14150 L -150,14150 Z M 11300,-150 L 12150,-150 L 12150,9070.26 L 9864.25,10975.05 L 9672.19,10744.58 L 11850,8929.74 L 11850,8100 L 6100,8100 L 6100,10400 L 5900,10400 L 5900,7900 L 11850,7900 L 11850,150 L 11300,150 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M -150,-150 L 8300,-150 L 8300,150 L 150,150 L 150,13850 L 5900,13850 L 5900,11600 L 6100,11600 L 6100,13721.41 L 8135.75,12024.95 L 8327.81,12255.42 L 6054.31,14150 L -150,14150 Z M 11300,-150 L 12150,-150 L 12150,9070.26 L 9864.25,10975.05 L 9672.19,10744.58 L 11850,8929.74 L 11850,8100 L 6100,8100 L 6100,10400 L 5900,10400 L 5900,7900 L 11850,7900 L 11850,150 L 11300,150 Z" fill="none" stroke="#2b2b2b" stroke-width="55" stroke-linejoin="miter" stroke-miterlimit="4"/>
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
-<polygon points="9480.14,10904.63 8327.81,11864.91 8519.86,12095.37 9672.19,11135.09" fill="none"/>
-<polygon points="9576.17,11019.86 9096.03,10443.7 9062.32,10473.54 9541.6,11048.67" fill="#faf7f2" stroke="#6b5d49" stroke-width="25.74"/>
-<path d="M 9096.03,10443.7 A 750 750 0 0 0 9000,11500" fill="none" stroke="#6b5d49" stroke-width="14.3"/>
-<polygon points="8423.83,11980.14 7943.7,11403.97 7979.13,11376.2 8458.4,11951.33" fill="#faf7f2" stroke="#6b5d49" stroke-width="25.74"/>
-<path d="M 7943.7,11403.97 A 750 750 0 0 1 9000,11500" fill="none" stroke="#6b5d49" stroke-width="14.3"/>
+<polygon points="9672.19,10744.58 8135.75,12024.95 8327.81,12255.42 9864.25,10975.05" fill="none"/>
+<polygon points="9768.22,10859.82 9128.04,10091.59 9089.34,10125.57 9728.67,10892.77" fill="#faf7f2" stroke="#6b5d49" stroke-width="25.74"/>
+<path d="M 9128.04,10091.59 A 1000 1000 0 0 0 9000,11500" fill="none" stroke="#6b5d49" stroke-width="14.3"/>
+<polygon points="8231.78,12140.18 7591.59,11371.96 7631.99,11340.03 8271.33,12107.23" fill="#faf7f2" stroke="#6b5d49" stroke-width="25.74"/>
+<path d="M 7591.59,11371.96 A 1000 1000 0 0 1 9000,11500" fill="none" stroke="#6b5d49" stroke-width="14.3"/>
 <polygon points="5900,10400 5900,11600 6100,11600 6100,10400" fill="none"/>
 <polygon points="6000,10400 4800,10400 4801.1,10451.48 6000,10451.48" fill="#faf7f2" stroke="#6b5d49" stroke-width="25.74"/>
 <path d="M 4800,10400 A 1200 1200 0 0 0 6000,11600" fill="none" stroke="#6b5d49" stroke-width="14.3"/>
@@ -75,10 +75,10 @@
 <text x="8200" y="10515" font-size="250" fill="#8a7f70" text-anchor="middle" dominant-baseline="central">21.0 m²</text>
 </g>
 <g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
-<line x1="8423.83" y1="11980.14" x2="9576.17" y2="11019.86" stroke="#3c6b8a" stroke-width="19.8"/>
-<line x1="8543.34" y1="11991" x2="8304.32" y2="11969.28" stroke="#3c6b8a" stroke-width="19.8"/>
-<line x1="9695.68" y1="11030.72" x2="9456.66" y2="11009" stroke="#3c6b8a" stroke-width="19.8"/>
-<text x="9112.03" y="11634.44" font-size="250" fill="#3c6b8a" text-anchor="middle" dominant-baseline="central" transform="rotate(-39.81 9112.03 11634.44)">1500</text>
+<line x1="8231.78" y1="12140.18" x2="9768.22" y2="10859.82" stroke="#3c6b8a" stroke-width="19.8"/>
+<line x1="8351.29" y1="12151.04" x2="8112.27" y2="12129.32" stroke="#3c6b8a" stroke-width="19.8"/>
+<line x1="9887.73" y1="10870.68" x2="9648.71" y2="10848.96" stroke="#3c6b8a" stroke-width="19.8"/>
+<text x="9112.03" y="11634.44" font-size="250" fill="#3c6b8a" text-anchor="middle" dominant-baseline="central" transform="rotate(-39.81 9112.03 11634.44)">2000</text>
 <line x1="0" y1="14150" x2="0" y2="15000" stroke="#3c6b8a" stroke-width="13.86"/>
 <line x1="6000" y1="14150" x2="6000" y2="15000" stroke="#3c6b8a" stroke-width="13.86"/>
 <line x1="0" y1="15000" x2="6000" y2="15000" stroke="#3c6b8a" stroke-width="19.8"/>

@@ -15,19 +15,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `open` (`E_DOOR_KIND_CLAUSE`); unlike the sliding family it is accepted on an `arc` wall, both
   leaves taken from the tangent at the doorway's centre. Every swing measure reads each leaf as
   drawn (`W_SWING_OBSTRUCTED`, `W_LEAF_ACROSS_DOORWAY`, the clear zones, `repair`, `finish`);
-  `describe()` reports `kind: "double"` and Plan JSON `door_kind: "double"`. A plan that writes no
-  `double` door renders, describes and lints exactly as before.
+  `describe()` reports `kind: "double"` and Plan JSON `door_kind: "double"`. A person passes
+  through one leaf (ADA 2010 404.2.3), so `W_DOOR_CLEARANCE` judges a pair's leaf and its clear
+  width (`describe().access`'s `estimatedClearWidth`, and so `W_PATH_TOO_NARROW`) is one leaf's.
+  A plan that writes no `double` door renders, describes and lints exactly as before.
 - Three validity-layer lint rules (plan cards PS2.11e, PS2.46). `W_HOB_UNDER_WINDOW`: a `stove`,
   `hob` or `cooktop` against a window's wall across part of its span (NKBA Kitchen Planning
   Guidelines 20: a cooking surface not under an operable window). `W_HOB_FRIDGE_GAP`: a fridge or
-  other tall unit nearer a cooking surface's side than `hobLandingMm` (300 mm; NKBA guideline 17's
-  12 in landing area). `W_LEAF_TOO_WIDE`: a swinging leaf wider than `maxHingedLeafMm` (1219 mm,
+  other tall unit in the hob's room nearer its side than `hobLandingMm` (305 mm, NKBA guideline 17's
+  12 in landing area), a wall between them ending the measure. `W_LEAF_TOO_WIDE`: a swinging leaf wider than `maxHingedLeafMm` (1219 mm,
   the International Building Code's 48 in nominal leaf, 2018 and earlier); a `double` door is read
   leaf by leaf. Messages id-free; hints quote an id only when the author wrote one; no fixes.
 - `W_DOORWAY_BLOCKED` reads leaf-less `opening`s too, after every door, with the same approach a
-  door keeps clear; a counter, worktop or bar counter across an opening is a servery hatch and is
-  not a blocker. `repair`, the placement check behind quoted positions and `finish` keep the
-  same approach clear.
+  door keeps clear, up to a doorway's width (1200 mm); a wider opening, an open-plan join or the
+  edge an `open between` derives, is blocked only when the pieces in its approach leave no 1200 mm
+  of it clear. A counter, worktop or bar counter across an opening is a servery hatch and is not a
+  blocker. `repair` clears what the rule reads; the placement check behind quoted positions and
+  `finish` keep every opening's approach clear.
 - `arch context --level starter`: one screen (at most 4,000 characters, 60 lines of 100 columns) for a small model, built from the
   spec's lead example and the compiler rather than retyped: the example, the statements a plan needs
   (each a line of that example, plus the sheet lines), the compile, `validate`, `lint` loop, and the five errors cold authors
@@ -421,11 +425,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A doorway's approach (`W_DOORWAY_BLOCKED`'s landing, `doorwayLandingMm` deep) is measured from
   the wall's FACE on each side, not its centreline, the datum `W_LEAF_ACROSS_DOORWAY` already read
   (plan card PS2.54); on a 100 mm partition the approach reaches 50 mm further into each room.
-  Twenty examples were redrawn for the new rules: eight wide leaves in six examples became
+  Twenty-one examples were redrawn for the new rules: eight wide leaves in six examples became
   `door double` pairs (`transit-hall`'s 4000 mm entrance a `sliding` door), hobs moved off windows
-  and away from fridges, and `themed`, `relational` and `hillside-villa` cleared a doorway's
-  approach. Three eval holdout goldens now fail the judge's physical check on it and their pinned
-  judgments moved (plan-soundness D25, awaiting the owner's ratification).
+  and away from fridges, `themed` cleared a doorway's approach, and three double-door entrances
+  widened to 2000 mm. Three eval holdout goldens now fail the judge's physical check on it and their
+  pinned judgments moved (plan-soundness D25, ratified).
 
 - `W_ROOM_TOO_SMALL` reads the room's use. A WC is judged against 1.1 m2 and a bathroom against
   2.0 m2 (GB 50096-2011 5.4.2, as advice), and a store, utility room, hall, circulation space or

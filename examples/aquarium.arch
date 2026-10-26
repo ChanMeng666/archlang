@@ -118,7 +118,7 @@ plan "Harbour Aquarium" {
   # runs east -> north -> west -> south, so 25% is the north point (the staff door into
   # Filtration) and 75% the south one (the public door off the Concourse).
   door id=d_rot_n on rotunda at 25% width 1200
-  door id=d_rot_s double on rotunda at 75% width 1800
+  door id=d_rot_s double on rotunda at 75% width 2000
 
   # The main entrance is on the CURVED facade, at 15% of the shell's run measured from
   # its start — which lands on the straight south wall; the pair of harbour-side windows

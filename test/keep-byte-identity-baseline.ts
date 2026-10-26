@@ -9,7 +9,7 @@
  * law. Never hand-edited, and never re-taken on a tree that carries keep code. A moved row is a
  * finding to explain (`docs/testing.md` §3), never a re-pin.
  *
- * Taken: 2f235fe2 (PS4.3a's baseline commit, before any keep code) with this branch's PS2.11e/PS2.46/PS2.54 feature commit (c2978a47) cherry-picked, so the table carries that change and no keep code: 66 rows moved (twenty examples edited, corpus twins edited, new lint rules and the face datum on unedited plans) and 4 added (the two new defect-corpus pairs); see the PS2.11e as-built note
+ * Taken: 2f235fe2 (PS4.3a's baseline commit, before any keep code) with this branch's PS2.11e/PS2.46/PS2.54 feature commit (c2978a47) cherry-picked and the `src/` changes of its red-team round 1 (PR #283) applied, so the table carries that change and no keep code: 66 rows moved (twenty examples edited, corpus twins edited, new lint rules and the face datum on unedited plans) and 4 added (the two new defect-corpus pairs); round 1 moved 50 more (its edited examples and corpus twins, the double-door examples' clear width, the 305 mm hob figure, the ruling on wide openings, the leaf reading, and the catalogue text `validate --json` carries); see the PS2.11e as-built note
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -22,7 +22,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/aquarium.arch",
-    "f68c4237d18d777a395143921b3d4dd153e49f900c0a50c145568f3928e18f68",
+    "16fa90d0e5e3239743ea5fd3d08bd1c26b065ee040021bdefe4c5f4c125a8b29",
     929,
   ],
   [
@@ -37,7 +37,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/classroom-block.arch",
-    "8c1422b7de8959ce513281200cc946d22916719a0418770ac8ea755ca044ac7f",
+    "bffb390dc5e059a58e79245a360db1d19353e7ab2b223a22223b0e0f08c05665",
     2413,
   ],
   [
@@ -57,17 +57,17 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/furnished-flat.arch",
-    "2ab746a6da0c68acf82c3b7146aeb6cd58ee01559236d5e33a03314f6bb57e51",
+    "136281dc24121f70abbce89718f794dd0bde3f48daa6e885bacf45f43f88edf0",
     969,
   ],
   [
     "examples/gallery-l.arch",
-    "cf7fa824bca546207d538c0232b0e4abfdaa6d9389f7c71e81f99664079c3120",
+    "0396aa8a113f9452383d830cc48f17222b3850d2562df02e5d1fa0f12aee09b1",
     265,
   ],
   [
     "examples/garden-house.arch",
-    "bdab4ee27a951933df8d0132d83f88cdf2d2ce51a95f2c4a14d62bb47c99b544",
+    "c1bb72e950534dc1aa5fd3067d8902865f0d853c1de30c9201b2ea142e394748",
     3846,
   ],
   [
@@ -82,8 +82,8 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/hillside-villa.arch",
-    "b88f4dafb00fe6d9d73ddba8b7bc01d985c898481c4221560eb03d618619da80",
-    4868,
+    "37eb7f768a4f0dc4c0bdf9f113af77ba1eee4870040ef8cb9c8a658a85eb6ea8",
+    4864,
   ],
   [
     "examples/imports.arch",
@@ -97,7 +97,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/library.arch",
-    "b2699d039d8ec80e177046c58f2afb9be7627e194ad80fd8796fcf86fd083a00",
+    "995654754ed15cc6f7627c706d69c21c01e188d02f5c65fabb600f4ea5681d37",
     2645,
   ],
   [
@@ -112,12 +112,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/museum-wings.arch",
-    "43bb3dcf8d95da28d3ca3bf860324ea33771bd2b7a933f24890e81b4b5b4f927",
+    "7e847bb2a2584ba177f4ef501e986002386d622e26a2c5f092ced0dc7ecd8670",
     781,
   ],
   [
     "examples/museum.arch",
-    "a865fde33b5d94a60c536fa465bbf41d635e4353e3955d7d7bc137d08e7c5b54",
+    "b54536b1e0c40a029e917fcce2d4498efadcf35aa6e03758a49e8474d21a1c45",
     1772,
   ],
   [
@@ -137,7 +137,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/relational.arch",
-    "de3cc91972a1ab01b22a6be9686ed8d45a93142eeec6c9b2d616b42ddd7e3e67",
+    "5d1a6adfed591d80badf58bed52b692cdb15e4088c9be5df70f5984cb0043d90",
     882,
   ],
   [
@@ -152,7 +152,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/terrace-row.arch",
-    "db69152c136f7afe1f4b2715b3e71b102ebc629e58101de71f7f068578565fcc",
+    "f9a9e395c76afe77b413fc120829bfa250a73191bf9cc9cf5f9e1aed066ce5d3",
     5198,
   ],
   [
@@ -162,8 +162,8 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/tiny-house.arch",
-    "39181ea7de98629f8425bc49700678cf0014c7d4d07ca9d13d4b54b366047b15",
-    477,
+    "edbddfd3977e60bb3e5478be15a0f25c7f47846a5149ac8b95fd00434447b050",
+    479,
   ],
   [
     "examples/townhouse.arch",
@@ -217,7 +217,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "eval/goldens/compact-studio.arch",
-    "64c66adb48bdd46aad7d9fcb12029e74954c61db24be96cc0536e58f5da68011",
+    "652c63cb10c5d9e03a8eb769801162414be0bc46e4872cd96917818449291d5f",
     312,
   ],
   [
@@ -272,7 +272,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "eval/goldens/sized-kitchen-flat.arch",
-    "8c9ec663603a3e70ee427fbedc9786d475d14a920a24010effdbc49d821759a0",
+    "79e7a49efff7c02f908ea340c64b693006a405e290bc520f31748f35d0213306",
     324,
   ],
   [
@@ -282,7 +282,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "eval/goldens/sized-wet-room.arch",
-    "d9300c75f52e41f68e5b14a360e9d0296791067be7c31dedc49eeb49491da053",
+    "e085d7ef2a5756154a5aa177034d6aa94a5932a1c0f426cd44bf5b57d9c94716",
     339,
   ],
   [
@@ -297,7 +297,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "eval/goldens/three-bed-2bath.arch",
-    "5a0ea0e4be8d9497822aa248a75a7d89df0f2b75413cde6619022955f5baa62b",
+    "742d9d56c5f4b705ec7026bc4d582538bbafee98ac6f4ae12b40b8c6dd78a543",
     656,
   ],
   [
@@ -382,12 +382,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/circulation-privacy/bath-door-off-kitchen.arch",
-    "2fe357a35880646afb9ec12b22c4ad880b625067a07227247d1f8baa6181419a",
+    "a48a618e23c94e8ac942040acfcfdf297ff19df72e048e2bcd67da626199df5a",
     170,
   ],
   [
     "test/defect-corpus/circulation-privacy/bath-door-off-kitchen.clean.arch",
-    "fe3dea350357852d7799baf119a940dae613c9de37d31f4010f1d5790c89df88",
+    "a45c598564c6c8cc1dc07362ff3cd930dee67dbc7c21f906d516c6b15a4ee282",
     170,
   ],
   [
@@ -502,7 +502,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/clearances/bed-before-door-face.arch",
-    "4d523b1aa1ec17cf54be8845e1a59b9b5ec61742fd0489a9070ba80567df81e5",
+    "9795bb3f6855983c2c78c3b486da885db7e2a03ed0d658570d04e6374351487f",
     149,
   ],
   [
@@ -512,7 +512,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/clearances/bed-blocks-alcove.arch",
-    "33164d3d2d5bcb9a49ce2b2c1c6dd532f5861b9afd9ad860149fe4af1a6e4209",
+    "a71eebe289a879e709a2dd5683e2b5aac9daf186dd66e03b116c454a4240db48",
     151,
   ],
   [
@@ -522,7 +522,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/clearances/bench-across-opening.arch",
-    "8454586b2fe442fc4e2707cb02d429e3fd989dfb2e9e427413d33a172644dd4c",
+    "21d8e14fbf6f421eabecf06636cf251bc0756fd6c497ae5de2306d3f3801a8cd",
     129,
   ],
   [
@@ -582,7 +582,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/clearances/hob-against-fridge.arch",
-    "59076175abf35460c78f50ae08ce957f62b0575974c0b4e77397e05a23d39c48",
+    "ee6ea47157214114113dc7181a000565bef4ebd0f899f313a5f59c4dc97cf49f",
     192,
   ],
   [
@@ -592,7 +592,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/clearances/hob-under-window.arch",
-    "4ada2216e8599184e4eb3c9b8635f299a7fcce33b1b67dfec695deecc7f32ae5",
+    "5a905caf4294145a72f17d58670544f52bb7c3d911f11652eb8a34a4c472823e",
     192,
   ],
   [
@@ -612,7 +612,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/clearances/masked-route-balcony-door.arch",
-    "9e9a34774f65158602620e1954f888fb84c43fc5783c0aa1fbe2f0de7d61ac0f",
+    "3bf83e01615a2c01c430fb89f9375e64e6b92f75e25dbc22299674539ba18fa2",
     239,
   ],
   [
@@ -647,7 +647,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/clearances/single-leaf-2400.clean.arch",
-    "a0088c18919709745b8d4b4da893d8130b880fefb63dad0bd550f72bd2b20523",
+    "b8240f6a6b87162ec915c93313fbfe1e3b7439f013278564ec32452a21392e14",
     74,
   ],
   [
@@ -702,12 +702,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/clearances/wc-side-clearance.arch",
-    "5cb24f24b04d673a6324061470b2a5e1bfd96b93d631da431d6932b1a5f437e7",
+    "fe724e4d875bf7ce16d87d95ac3ae59f17330a244377296649e648013d533793",
     152,
   ],
   [
     "test/defect-corpus/clearances/wc-side-clearance.clean.arch",
-    "95feece970ba66fea101d3d46a96eaef46a3ee504b8eb406e74f9b50bb193df9",
+    "71941ffb848e987e26b5407198f379ce3135da63308b8111836daddcd6b31e12",
     152,
   ],
   [
@@ -862,12 +862,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/openings-ignore-walls/door-window-overlap-chamfer.arch",
-    "9f34c997c2c97b14881ec7a381551a0d66bd05cb530c6221d0397d1256b21e19",
+    "8ddc7ce10d3af2fb9f3531d19110e6b4293ec3c8ab94ec502875f9c4bbba9102",
     71,
   ],
   [
     "test/defect-corpus/openings-ignore-walls/door-window-overlap-chamfer.clean.arch",
-    "98038e91365eaef10c6008ea385be5f3dc98d5828de9e134c4e2d7c92af5e8e4",
+    "0fdf9c92013d356adf7ab02f2db1493cd0c5c2558a4fee4d7b664bc21db09950",
     71,
   ],
   [
@@ -887,7 +887,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/openings-ignore-walls/fa-door-across-tee.clean.arch",
-    "ff10e34b691d24fbea07f4d308ef18ffc8725eb60ce6f4cca83168bce93bfbcb",
+    "a0b164e3ca7b6ddae8584f76650a40583f6c74e502c19647a3bb1c9e47373c1c",
     159,
   ],
   [
@@ -967,7 +967,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/space-not-enclosed/bath-open-side.clean.arch",
-    "6381d965a878552ff2376ec02740c0fda8dc7935572555e69a3586211ab470c6",
+    "d89aeb7fe43daa3b058b8c1a948f21479bb8482a22360c1b1a3a21683d55574a",
     191,
   ],
   [
@@ -1042,12 +1042,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/stair-safety/swing-over-stair.arch",
-    "6807edf85f4929832c841a0bdbca412993039a9504aa6378488d3c0d8d23e815",
+    "588e8880bf15eabeed09356929431911c705cb3fa9b0ad3d19767f2d9cf57b97",
     186,
   ],
   [
     "test/defect-corpus/stair-safety/swing-over-stair.clean.arch",
-    "b10b767b8a8270df742e3548cf3449a015cc15f99f699b96cd5c120f3891389a",
+    "59670279a96f4603deda04d28e9dda29719dae2f1610a4bdafb80426438108cf",
     186,
   ],
   [
@@ -1172,7 +1172,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/1-apartment.arch",
-    "8fc37f4df8dc2b463aceb7225cacf7fb193f22a6ff0f4fa545a4c3858de2c1e5",
+    "553a606d7237f875016903ffddb291b34a6b57456d014ef6a7944b0e3810d36c",
     849,
   ],
   [
@@ -1182,27 +1182,27 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-24-rerun/1-apartment.arch",
-    "b7ed16f06e9bcd211f70fe704637ad1340c5e64b5c018ee86d7764e48ece8498",
+    "0b1d35d7da77c0c19949d03c7584351329e3cc8614f56697902c699d3acfa674",
     1518,
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-24-rerun/2-house.arch",
-    "13e1f68e282046098b4bd40b17dc14641cdcf1f79f74686ad45e9f9d08f24797",
+    "14c4467748e0c4a053ef9b82b2214d6a5dca2b51d9aff57b35e6207f3e6b120d",
     4532,
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-24-rerun/3-studio.arch",
-    "8efcef84de88bb261f74f3fe9f75cefecbbd4ef5ca854f11c9357164752fd698",
+    "f464eaa8e666ce1a57ad297e074e1a9efa7458a816cad4e5168053c3b872a4cb",
     592,
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-24-rerun/4-cafe.arch",
-    "2a12b587c45c465ca9169ed289096cd118f38395c29ac70bbadf1a2c6d275b35",
+    "824042bafffebf9d1a1c7c6e9371638a0b4521568440c60e0cfbb94141ee9290",
     2531,
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-24-rerun/5-townhouse.arch",
-    "253315c77fb7219af1feb6d53fd92a3107ef4ddcee85182654b56a58df26e0b0",
+    "731d218247cf0237ca157287991ef03388a4334063009f9e9b66f2dc665650cb",
     4634,
   ],
   [
@@ -1222,12 +1222,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-25-rerun/3-studio.arch",
-    "fc5f35304f60ce447dbe12ac62c176adbf7fcb5525b08aec4728b99ae5c3fb00",
+    "f785ee92c6c0e217065631873207d9b41b6570c608ee3dd6fae84b5627c662d6",
     629,
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-25-rerun/4-cafe.arch",
-    "216a16386c332a8fd644e22d27d242e6635fa66a4992af774964b9eb48d95561",
+    "c93535e6be30867612ef8898450105b562ec409b5f2a95a20eae7d44f1a5dd0b",
     2734,
   ],
   [
@@ -1247,12 +1247,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armA/2-house.arch",
-    "da24a1f65536b6cf5ddd129e80f0fffdb64efd89b9d9760825b486c3b119219b",
+    "f463d6ee642fabb0b361f6d39dfdd745cc7ba541f85996d42f00b0f3f3a8f0d7",
     3827,
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armA/3-studio.arch",
-    "0e0aaf3b4c1cdc4d30392fbdb138e230357d8fb74121093cc861e722fc9e4021",
+    "5a0d85c8598cd8c9d3e7de392c7058bcbe3f05dbe968ae0c6410efdf612f0123",
     860,
   ],
   [
@@ -1262,7 +1262,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armA/5-townhouse.arch",
-    "3420fa1d4e9010c2d7ee6b0b2539b8bf10e398214d81a224f8205e8f648d2a6e",
+    "c39cd8b5d195540803efb8bfee72b305edd5d6b55dd572e5b76c7a3b7da0f3c7",
     3706,
   ],
   [
@@ -1277,17 +1277,17 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armB/2-house.arch",
-    "e9f790e5da54d1dbb754c2b6a17e078f45244553057c990248685737055e4390",
+    "bf629fe0bc5041e9caacb897616ad1366ce514b89b05adfeb63042ab47abd8d6",
     3058,
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armB/3-studio.arch",
-    "03275cbccbecb699c31c682e81289b1652856abf8901e79f57ae7265d02b153c",
+    "1d326b1cdd9dad67db002bc7891dd6f41e6db71301705b43b6211885c079f957",
     881,
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armB/4-cafe.arch",
-    "0b8b97f18c7c7e2be4b1cb59dc3c4390c43af14792b689245db786a7a95bc2ab",
+    "f2a460ee9ca7f676c1fab0f33164949540ae58624b42da58a74c700dc15ec164",
     2260,
   ],
   [
@@ -1307,7 +1307,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/2-house.arch",
-    "9af46cfc9fcbd19436a4659a537006ddafaea3d5d36da2f4558ad31b2e44241c",
+    "dbd7fd6f5f3474a22b552294f6f46a6b70ff1ab03a4ce82a0bc59645dbefb77c",
     854,
   ],
   [
@@ -1322,7 +1322,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/5-townhouse.arch",
-    "81a838fd8d07e1945df70973ad2f1887d2ea10a642ab792bd2d7761e62170d96",
+    "712b15a3b0d6a4b1d940cafee3a388922ffd45db9856422e79f08ff2f6ee5c57",
     1702,
   ],
   [
@@ -1367,7 +1367,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/repro/gallery-bench-pinch.arch",
-    "531e15a8ffb919e91e3f4e9927ea228fcd7e0ecc05722e082ed21d526bdd73a1",
+    "2d8c4285289840323f399efb45df278fe4cc716f0f68aa5d53d52977635a9bcf",
     1975,
   ],
   [

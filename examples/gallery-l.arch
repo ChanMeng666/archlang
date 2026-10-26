@@ -33,12 +33,13 @@ plan "Gallery L" {
 
   # The entrance sits on the ANGLED south-west facade, so it opens into the trapezoid
   # lobby — a door on a wall that is not axis-aligned, hosted the ordinary way.
-  door id=entry double on exterior at 51% width 1500 swing in
+  door id=entry double on exterior at 51% width 2000 swing in
   # The facade chains measure along x and y, so none can tick a door on the angled face;
   # `lint` reports it (W_OPENING_NOT_DIMENSIONED) until it is dimensioned by hand. This
-  # one is drawn ON the opening, jamb to jamb (offset 0): 750 mm either side of the door's
-  # centre (9000,11500) along the 6:5 facade, so the line spans the 1500 it is lettered.
-  dim (8423.83,11980.14)->(9576.17,11019.86) offset 0 text "1500"
+  # one is drawn ON the opening, jamb to jamb (offset 0): 1000 mm either side of the door's
+  # centre (9000,11500) along the 6:5 facade, so the line spans the 2000 it is lettered. The
+  # pair is 2000 wide because a person passes through one leaf: 1000 mm leaves.
+  dim (8231.78,12140.18)->(9768.22,10859.82) offset 0 text "2000"
   door id=inner on spine at 50% width 1200 hinge left swing in
   window id=north_light on exterior at 20% width 3000
 

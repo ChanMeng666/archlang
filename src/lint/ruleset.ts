@@ -328,11 +328,12 @@ export interface LintRuleset {
    * the hob's side face, over its depth, to the tall unit's drawn footprint. `null` turns the rule
    * off.
    *
-   * **Default 300:** the NKBA Kitchen Planning Guidelines with Access Standards, guideline 17
+   * **Default 305:** the NKBA Kitchen Planning Guidelines with Access Standards, guideline 17
    * (cook surface landing area), ask "a minimum of 12" of landing area on one side of a cooking
    * surface and 15" on the other side" (read in the NKBA guidelines PDF and its consumer
    * checklist [V]). A tall unit inside the lesser figure, 12 in (305 mm), fails it whichever side
-   * it stands on; taken as 300 mm, the half of a 600 mm base unit, on the metric grid.
+   * it stands on. The figure is the cited one: a lint threshold is a length in mm, and no grid
+   * module enters it.
    */
   hobLandingMm: number | null;
   /**
@@ -399,7 +400,7 @@ export const DEFAULT_RULESET: LintRuleset = {
   minEntryPassageWidthMm: null,
   roomAreaMeasure: "drawn",
   wcSideClearanceMm: 400,
-  hobLandingMm: 300,
+  hobLandingMm: 305,
   maxHingedLeafMm: 1219,
 };
 

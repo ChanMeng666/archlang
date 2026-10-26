@@ -81,7 +81,10 @@ export function placementClear(
     const landing = doorLandingRect(d, ctx.rules.doorwayLandingMm);
     if (landing && rectsOverlap(landing, fr)) return false;
   }
-  // A cased opening's approach, which `W_DOORWAY_BLOCKED` reads as a door's (PS2.11e).
+  // A cased opening's approach (PS2.11e). `W_DOORWAY_BLOCKED` reads a door-wide one as a door's
+  // and a wider one only once no doorway's width of it stays clear (`openingBlock`); a quoted
+  // position keeps out of every opening's approach, wide or not, so a hint never parks a piece in
+  // an open-plan join it narrows (the walk through it is `W_PATH_TOO_NARROW`'s, judged later).
   for (const o of ctx.openings) {
     const landing = doorLandingRect(o, ctx.rules.doorwayLandingMm);
     if (landing && rectsOverlap(landing, fr)) return false;

@@ -345,6 +345,19 @@ export interface AccessConnector {
   width: number;
   host: (Pick<WallSegment, "a" | "b" | "arc" | "thickness"> & { category: string; wallId: string }) | null;
   kind: "door" | "opening";
+  /** A door's kind when it is not hinged ({@link RDoor.doorKind}); a `double` door passes
+   *  through one leaf ({@link activeLeafWidth}). */
+  doorKind?: string;
+}
+
+/**
+ * The width a person passes through: a `double` door's one active leaf, half its width (the
+ * ADA 2010 Standards 404.2.3: "for a pair of doors, at least one of the active leaves" gives the
+ * clear width), else the whole width. Read by `W_DOOR_CLEARANCE` and by every connector's clear
+ * width ({@link connectorClearWidth}), so `W_PATH_TOO_NARROW` reads the leaf too.
+ */
+export function activeLeafWidth(d: { width: number; doorKind?: string }): number {
+  return d.doorKind === "double" ? d.width / 2 : d.width;
 }
 
 /**
@@ -756,7 +769,8 @@ export interface AccessEdge {
   /** The two spaces it connects (room ids and/or `"exterior"`). */
   between: [string, string];
   nominalWidth: number;
-  /** Clear opening width: a door loses the leaf/stop allowance; an opening keeps it all. */
+  /** Clear opening width: a door loses the leaf/stop allowance from its active leaf (half a
+   *  `double` door's width); an opening keeps it all. */
   estimatedClearWidth: number;
   /** Category of the host wall, if any (`"exterior"`, `"partition"`, …). */
   hostCategory?: string;
@@ -831,14 +845,24 @@ export interface AccessGraph {
 
 /**
  * A connector's estimated CLEAR width from its nominal one: an opening keeps its full width
- * (no leaf); a door loses `clearAllowanceMm` for the leaf and stop, never below 0. The one
+ * (no leaf); a door loses `clearAllowanceMm` for the leaf and stop, never below 0, from the one
+ * leaf a person passes (`leaves`: a `double` door's width is shared by two, {@link activeLeafWidth}). The one
  * deduction behind {@link AccessEdge.estimatedClearWidth}, and so behind every circulation
  * bottleneck `W_PATH_TOO_NARROW` measures — a rule that asks "would a narrower door pass?"
  * calls this rather than restating it.
  */
-export function connectorClearWidth(kind: AccessConnector["kind"], width: number, clearAllowanceMm: number): number {
-  return kind === "opening" ? width : Math.max(0, width - clearAllowanceMm);
+export function connectorClearWidth(
+  kind: AccessConnector["kind"],
+  width: number,
+  clearAllowanceMm: number,
+  leaves = 1,
+): number {
+  return kind === "opening" ? width : Math.max(0, width / leaves - clearAllowanceMm);
 }
+
+/** How many leaves a connector's width is shared by: 2 for a `double` door, else 1. */
+export const leavesOf = (c: { kind: string; doorKind?: string }): number =>
+  c.kind === "door" && c.doorKind === "double" ? 2 : 1;
 
 /**
  * One {@link AccessEdge} per connector, in connector order. An opening keeps its full
@@ -860,7 +884,7 @@ export function connectorEdges(
       kind: c.kind,
       between: [between[0] ?? "", between[1] ?? ""] as [string, string],
       nominalWidth: c.width,
-      estimatedClearWidth: connectorClearWidth(c.kind, c.width, clearAllowanceMm),
+      estimatedClearWidth: connectorClearWidth(c.kind, c.width, clearAllowanceMm, leavesOf(c)),
       ...(c.host?.category !== undefined ? { hostCategory: c.host.category } : {}),
       ...(c.host?.wallId !== undefined ? { hostWallId: c.host.wallId } : {}),
       exterior,

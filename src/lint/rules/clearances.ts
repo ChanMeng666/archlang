@@ -7,11 +7,11 @@
  * for the placement check every quoted position passes.
  */
 
-import { pointInRoomBox, rectOf } from "../../analyze.js";
+import { rectOf } from "../../analyze.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { isTallUnit } from "../../fixtures-catalog.js";
 import { type ClearWorld, measureStrip, type Obstacle } from "../../furniture-relation.js";
-import type { RFurniture, RRoom } from "../../ir.js";
+import type { RFurniture } from "../../ir.js";
 import { capFirst } from "../../naming.js";
 import { wallRef } from "../../wall-ref.js";
 import {
@@ -21,6 +21,7 @@ import {
   isShort,
   isWc,
   measureWcSides,
+  roomOf,
   type WcSide,
   type WcSides,
   wcWorld,
@@ -29,22 +30,6 @@ import {
 } from "../clearance-measure.js";
 import type { LintContext, LintRule } from "../context.js";
 import { deficitMm, mm } from "../measure.js";
-
-/** The room a piece stands in: its declared room, else the first room whose floor holds the
- *  footprint's centre; `null` when none does. */
-function roomOf(f: RFurniture, ctx: LintContext): RRoom | null {
-  if (f.room !== undefined) {
-    const r = ctx.rooms.find((x) => x.id === f.room);
-    if (r) return r;
-  }
-  const c = { x: f.at.x + f.size.w / 2, y: f.at.y + f.size.h / 2 };
-  return (
-    ctx.rooms.find((r) => {
-      const box = ctx.roomRects.get(r.id);
-      return box !== undefined && pointInRoomBox(c, box);
-    }) ?? null
-  );
-}
 
 /**
  * The subject of a message: "The fridge in Kitchen" when the piece's room has a label, else
@@ -245,7 +230,7 @@ export const hobUnderWindow: LintRule = {
           ...ctx.at(f),
           message: `${subject(f, name, ctx)} stands under ${mm(cover.covered)} mm of a ${mm(w.width)} mm window: a cooking surface under a window puts its curtain or blind over the flames, and the reach to open it across the burners.`,
           hints: [
-            `${capFirst(pieceRef(f, ctx))} stands under ${mm(cover.covered)} mm of window "${w.id}" on ${wallRef(ctx.ir.walls, w.host!)}: slide it ${mm(Math.min(toStart, toEnd))} mm along the wall past the window's ${toStart <= toEnd ? "start" : "end"} (its end nearer the wall's ${toStart <= toEnd ? "first" : "last"} point) and stand the sink or a worktop under the window, or move the window.`,
+            `${capFirst(pieceRef(f, ctx))} stands under ${mm(cover.covered)} mm of ${w._idAuthored === true ? `window "${w.id}"` : `the ${mm(w.width)} mm window`} on ${wallRef(ctx.ir.walls, w.host!)}: slide it ${mm(Math.min(toStart, toEnd))} mm along the wall past the window's ${toStart <= toEnd ? "start" : "end"} (its end nearer the wall's ${toStart <= toEnd ? "first" : "last"} point) and stand the sink or a worktop under the window, or move the window.`,
           ],
         });
       }
@@ -263,7 +248,9 @@ export const hobUnderWindow: LintRule = {
  * Standards, guideline 17 (cook surface landing area): "a minimum of 12" of landing area on one
  * side of a cooking surface and 15" on the other side" (read in the NKBA guidelines PDF and the
  * NKBA consumer checklist [V]); a tall unit inside 12 in leaves that side less than the lesser
- * landing, whichever side it is on. A wall beside the hob is not judged here (the landing rule
+ * landing, whichever side it is on. Only a tall unit in the hob's own room is read, and the strip
+ * is measured against the walls too, so a fridge behind a partition is not beside the hob
+ * ({@link hobSideGap}). A wall beside the hob is not judged here (the landing rule
  * would read it too: card PS2.59). Every plan is read, as for {@link hobUnderWindow}. One warning
  * per hob, on its nearer short side; no fix (which piece moves, or whether a worktop goes
  * between, is the author's).
@@ -282,7 +269,7 @@ export const hobFridgeGap: LintRule = {
     if (tall.length === 0) return [];
     const out: Diagnostic[] = [];
     for (const f of hobs) {
-      const near = hobSideGap(f, tall, need);
+      const near = hobSideGap(ctx, f, tall, need);
       if (near === null) continue;
       const by = near.piece;
       const d = deficitMm(need, near.gap);

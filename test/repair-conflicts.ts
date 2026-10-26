@@ -28,7 +28,7 @@ import { isServiceCounter } from "../src/lint/clearance-measure.js";
 import { resolvePlan } from "../src/analyze.js";
 import { cutPlaneLayer } from "../src/fixtures-catalog.js";
 import { doorLeaves, sectorIntersectsRect, segmentsOfWall } from "../src/geometry.js";
-import { doorLandingRect, rectsOverlap, wallIntrusionDepth } from "../src/geometry/rect.js";
+import { doorLandingRect, openingBlock, rectsOverlap, wallIntrusionDepth } from "../src/geometry/rect.js";
 import type { RDoor, RFurniture, ROpening, ResolvedPlan } from "../src/ir.js";
 import { DEFAULT_RULESET } from "../src/lint.js";
 
@@ -51,13 +51,21 @@ function storeyConflicts(ir: ResolvedPlan, level: number | undefined, out: Set<s
     }
   for (const f of furniture)
     if (segs.some((s) => wallIntrusionDepth(rectOf(f), s, openings) > 30)) out.add(`wall|${L}|${f.id}`);
-  // A cased opening keeps the same landing a door does (`W_DOORWAY_BLOCKED`, PS2.11e); it has no swing.
+  // A cased opening keeps the same landing a door does (`W_DOORWAY_BLOCKED`, PS2.11e); it has no
+  // swing. One wider than a doorway is a conflict only while `openingBlock` reads it blocked.
   const cased = ir.elements.filter((e): e is ROpening => e.kind === "opening");
+  const counted = furniture.filter((f) => !isServiceCounter(f.category)).map(rectOf);
   for (const d of [...doors, ...cased]) {
     const landing = doorLandingRect(d, DEFAULT_RULESET.doorwayLandingMm);
     const leaves = d.kind === "door" ? doorLeaves(d) : [];
+    const clear = d.kind === "opening" && openingBlock(d, DEFAULT_RULESET.doorwayLandingMm, counted)?.blocked === false;
     for (const f of furniture) {
-      if (landing && !(d.kind === "opening" && isServiceCounter(f.category)) && rectsOverlap(landing, rectOf(f)))
+      if (
+        landing &&
+        !clear &&
+        !(d.kind === "opening" && isServiceCounter(f.category)) &&
+        rectsOverlap(landing, rectOf(f))
+      )
         out.add(`doorway|${L}|${d.id}|${f.id}`);
       if (leaves.some((swing) => sectorIntersectsRect(swing, rectOf(f), DEFAULT_RULESET.swingClearanceMm)))
         out.add(`swing|${L}|${d.id}|${f.id}`);

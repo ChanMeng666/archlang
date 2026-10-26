@@ -171,7 +171,7 @@ items 3.1(b), M.8, M.9, M.14 and D.7 wait on the owner's answers and are not cov
   **D23 ratified by the owner on 2026-10-26** (D18): PR #269 widened the id-free wording in
   `docs/agents/iron-laws.md` to `taste()` and the compile-channel `W_ROOM_OVERLAP`; recorded with its
   reverse-if, applied in code, enforced by tests, and now citable as precedent.
-- **D25 awaits the owner's ratification** (D18): the doorway approach is read from the wall's face
+- **D25 ratified 2026-10-26** (D18): the doorway approach is read from the wall's face
   (PS2.54, PR #283), so three eval holdout goldens (`dims-auto-cottage`, `galley-kitchen`,
   `compact-studio`) now fail the judge's physical check and their `semanticPass` was set to false,
   beyond D19's `lintWarnings`-only practice. Reverse-if in `README.md` §3 D25.

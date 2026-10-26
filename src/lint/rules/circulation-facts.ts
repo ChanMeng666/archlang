@@ -31,7 +31,14 @@ import {
   type NavCache,
   roomBottlenecks,
 } from "../../analyze/circulation.js";
-import { type AccessEdge, type AccessGraph, buildDoorAccessGraph, EXTERIOR_NODE, roomBox } from "../../analyze.js";
+import {
+  type AccessEdge,
+  type AccessGraph,
+  buildDoorAccessGraph,
+  EXTERIOR_NODE,
+  leavesOf,
+  roomBox,
+} from "../../analyze.js";
 import { entranceInputs, entranceWays, walkAccessGraph } from "../../analyze/entrance.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { openingName } from "../element-phrases.js";
@@ -239,7 +246,9 @@ const narrowRemedies = (min: number, doors: readonly AccessEdge[] | null, ctx: L
  * Rounded UP to the module because the resolver snaps a written width to it.
  */
 function clearingWidth(e: AccessEdge, ctx: LintContext): number {
-  const need = e.kind === "door" ? passableDoorWidthMm(ctx.rules) : Math.ceil(ctx.rules.minPathClearWidthMm);
+  // A `double` door passes through one leaf: both leaves must be the passable width.
+  const need =
+    e.kind === "door" ? edgeLeaves(e, ctx) * passableDoorWidthMm(ctx.rules) : Math.ceil(ctx.rules.minPathClearWidthMm);
   const grid = ctx.ir.grid;
   return grid > 0 ? Math.ceil(need / grid) * grid : need;
 }
@@ -530,16 +539,26 @@ function doorCapacity(
       if (!e.between.includes(u)) continue;
       const v = e.between[0] === u ? e.between[1] : e.between[0];
       if (done.has(v)) continue;
-      const nc = Math.min(cap.get(u)!, widenedClear(e, wider));
+      const nc = Math.min(cap.get(u)!, widenedClear(e, wider, ctx));
       if (nc > (cap.get(v) ?? Number.NEGATIVE_INFINITY)) cap.set(v, nc);
     }
   }
   return cap;
 }
 
-/** A connector's clear width with `wider` applied (the leaf allowance kept for a door). */
-const widenedClear = (e: AccessEdge, wider: ReadonlyMap<string, number>): number =>
-  wider.has(e.doorId) ? wider.get(e.doorId)! - (e.nominalWidth - e.estimatedClearWidth) : e.estimatedClearWidth;
+/** A connector's clear width with `wider` applied (the leaf allowance kept for a door; a
+ *  `double` door's added width is shared by its two leaves). */
+const widenedClear = (e: AccessEdge, wider: ReadonlyMap<string, number>, ctx: LintContext): number =>
+  wider.has(e.doorId)
+    ? e.estimatedClearWidth + (wider.get(e.doorId)! - e.nominalWidth) / edgeLeaves(e, ctx)
+    : e.estimatedClearWidth;
+
+/** How many leaves share a connector's width ({@link leavesOf}): 2 for a `double` door. */
+const edgeLeaves = (e: AccessEdge, ctx: LintContext): number => {
+  if (e.kind !== "door") return 1;
+  const d = ctx.doors.find((x) => x.id === e.doorId);
+  return d ? leavesOf(d) : 1;
+};
 
 /**
  * The widest door-only way to `roomId` that USES a widened door of `set` — an upper bound on
@@ -569,7 +588,7 @@ function throughSet(
         far === roomId
           ? Number.POSITIVE_INFINITY
           : (doorCapacity(ctx, others, wider, far).get(roomId) ?? Number.NEGATIVE_INFINITY);
-      best = Math.max(best, Math.min(reach, widenedClear(e, wider), onward));
+      best = Math.max(best, Math.min(reach, widenedClear(e, wider, ctx), onward));
     }
   }
   return best;
