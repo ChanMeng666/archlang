@@ -133,7 +133,7 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    with a one-line summary).
 5. **PS2.11e** the clearance remainder (`W_DOORWAY_BLOCKED` over leaf-less openings, hob under a
    window PS2.46, per-family depth ceiling PS2.53, face/centreline unification PS2.54); its stair
-   bullets, PS2.15 and PS2.34 are PR #PRNUM.
+   bullets, PS2.15 and PS2.34 are PR #280.
 6. **PS1.4** diagnostic-wording study (§8 Q3) is still open: an owner ask from 2026-10-18 found undone by the
    2026-10-25 transcript audit. **PS1.3** walls-first control arm (§8 Q1) is done (PR #264, D21): it ran on
    2026-10-26 in item 1's harness (66 CLI calls, 0 `score`, 0 `validate`; 54 verified defects against 52
