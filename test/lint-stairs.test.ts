@@ -257,8 +257,8 @@ suite("W_STAIR_TOO_STEEP", () => {
       run: 2860,
     });
     const uk = minimumRun(2700, resolveRuleset(LINT_PROFILES["uk-residential-advisory"]));
-    expect(uk.risers).toBe(13);
-    expect(uk.going).toBeCloseTo(2700 / 13 / 0.9004, 9); // the pitch, not the 220 going, binds
+    expect(uk!.risers).toBe(13);
+    expect(uk!.going).toBeCloseTo(2700 / 13 / 0.9004, 9); // the pitch, not the 220 going, binds
     expect(minimumRun(2700, resolveRuleset(LINT_PROFILES["us-residential-advisory"]))).toMatchObject({
       risers: 14,
       run: 3302,
