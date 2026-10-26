@@ -323,8 +323,13 @@ owns that name, so the shell runs the wrong program.
    `archlang score plan.arch --taste generic --json` and reads the advice: a sourced 0–1 score
    (privacy gradient, daylight, proportion, corner doors, …) whose `criteria[].advice` `A_*` codes
    name what to improve. It never gates, the author does not iterate on it, and a score capped at 0.5
-   means a validity lint warning still stands. If no one reviews for you, run it once after the loop is
-   clean and report the score and its `A_*` advice; do not iterate on it.
+   means a validity lint warning still stands. The reviewer then looks at
+   `archlang preview plan.arch --review -o review.png`: every warned element ringed and numbered on
+   the plan, a legend, and close-ups of flagged openings and pieces. On a lint-clean plan it still
+   shows the access graph (which rooms each door joins, which rooms the entrance reaches) and which
+   door is the main entrance or that the choice is a tie: check those against the brief. If no one
+   reviews for you, run both once after the loop is clean and report the score and its `A_*`
+   advice; do not iterate on it.
 8. **Check the plan against the brief.** Write the user's brief as an `intent.json` — its checkable
    expectations as data (room count, per-room concepts with area/window bands, total area, optional
    adjacency/reachability). A stated size binds: "about 70 m²" → `grossInternalAreaM2` (inside the
@@ -701,7 +706,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 
 **`archlang preview`** — render a PNG you can look at (zero-install where the optional binary is present)
   - input: <file.arch|-> → output: PNG file (or ASCII text on stdout with --ascii)
-  - flags: `--out|-o <out.png|->` output PNG file, or '-' for stdout (default: <name>.png) · `--scale|-s <n>` raster scale (default 1; without -w/-s the page auto-targets ~1600px wide for legibility) · `--width|-w <px>` page width hint in pixels · `--ascii` print a zero-dependency ASCII text plan to stdout instead of a PNG · `--level <n>` preview this storey of a multi-storey plan (default: the lowest level, i.e. page 1) · `--cols <n>` text renderer (-f txt / preview --ascii) grid width in characters (default 80) · `--charset <unicode|ascii>` text renderer glyph set (default unicode) · `--overlay <circulation>` draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged · `--error-svg` on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) · `--install` auto-install @resvg/resvg-js if missing, then render · `--view <iso|axon>` DEPRECATED (removed in 2.0; ArchLang draws plans) — render an illustrative axonometric of the building instead of the plan (iso = true isometric, axon = the 30/60 plan oblique) — a picture, never a measured drawing: no scale, no title block, no dimensions, and `describe`/`lint` are unaffected · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+  - flags: `--out|-o <out.png|->` output PNG file, or '-' for stdout (default: <name>.png) · `--scale|-s <n>` raster scale (default 1; without -w/-s the page auto-targets ~1600px wide for legibility) · `--width|-w <px>` page width hint in pixels · `--ascii` print a zero-dependency ASCII text plan to stdout instead of a PNG · `--review` render the REVIEW SHEET instead of the plain plan: the access graph over the plan, every element a compile or default-lint warning names ringed with its number and code, a legend (number → code → message) and fixed-scale close-ups of the flagged openings and furniture pieces, the first 24 in mark order (default output <name>.review.png; --json adds marks[] with each warning's span and ringed elements, crops[] and cropsOmitted[], boxes in plan mm). One mark per warning; a warning from a repeated statement that does not say which copy it means is listed, not ringed. One storey per sheet (--level); not with --ascii, --view or --overlay · `--level <n>` preview this storey of a multi-storey plan (default: the lowest level, i.e. page 1) · `--cols <n>` text renderer (-f txt / preview --ascii) grid width in characters (default 80) · `--charset <unicode|ascii>` text renderer glyph set (default unicode) · `--overlay <circulation>` draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged · `--error-svg` on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) · `--install` auto-install @resvg/resvg-js if missing, then render · `--view <iso|axon>` DEPRECATED (removed in 2.0; ArchLang draws plans) — render an illustrative axonometric of the building instead of the plan (iso = true isometric, axon = the 30/60 plan oblique) — a picture, never a measured drawing: no scale, no title block, no dimensions, and `describe`/`lint` are unaffected · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `archlang preview plan.arch --ascii --json` — a zero-dependency text plan an agent can read on stdout
 
 **`archlang link`** — print a playground URL that opens the plan, rendered, with nothing to install
@@ -791,7 +796,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 
 **`archlang context`** — print the full bundled agent context (spec + workflow + CLI + errors)
   - input: none → output: the full agent context (llms-full.txt), or one --section of it
-  - flags: `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 141 KB of it (spec = the language, 30 KB; workflow = the agent loop, 29 KB; cli = every command, 25 KB; errors = the diagnostic catalog, 56 KB) · `--json` structured result on stdout, messages on stderr
+  - flags: `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 142 KB of it (spec = the language, 30 KB; workflow = the agent loop, 29 KB; cli = every command, 25 KB; errors = the diagnostic catalog, 56 KB) · `--json` structured result on stdout, messages on stderr
   - example: `archlang context` — the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 
 **`archlang new`** (aliases: `init`) — scaffold a starter .arch

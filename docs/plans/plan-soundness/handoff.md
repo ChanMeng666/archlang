@@ -46,7 +46,7 @@ The means, tracked in `README.md` §7: defect-corpus catch rate 7/53 (10-18) →
 | 3a | PS3.5, PS3.7–PS3.9, PS0.19 | unplanned, recorded by D7 |
 | 4 | PS0.4, PS4.1, PS4.2 | met in part 2026-10-24: `held` is empty (PS4.5 open) |
 | 5 | PS5.1–PS5.3, PS2.10–PS2.12 | met 2026-10-25 (D14; PS2.11e moved to row 6) |
-| 6 | PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e | **current** (the owed re-measure ran 2026-10-26, D20). Landed: row-5 residue PS2.50 (#267), PS2.45 (#268), PS2.22/PS2.29 (#269); PS4.4 (#271); PS4.3 design (#270) and part A (#272). In flight: PS4.3b, PS5.4. Waiting: PS7.x, PS2.11e |
+| 6 | PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e | **current** (the owed re-measure ran 2026-10-26, D20). Landed: row-5 residue PS2.50 (#267), PS2.45 (#268), PS2.22/PS2.29 (#269); PS4.4 (#271); PS4.3 design (#270) and part A (#272). In flight: PS4.3b. Waiting: PS7.x, PS2.11e |
 | 7 | PS6.1 | parked |
 
 ## 3. What shipped (2026-10-18 → 10-26, PRs #195–#272)
@@ -130,7 +130,6 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
 2. **PS4.3** `keep` invariants: design PR #270; rulings D22; PS4.3a PR #272 (ADR 0033 Accepted);
    PS4.3b (`impact` `keeps`, `depends.keeps[]`, PS4.11's Plan JSON note) in flight. **PS4.4** is done
    (PR #271). **PS4.5** `impact` reports `held`.
-3. **PS5.4** `preview --review` rings every flagged element (in flight).
 4. **PS7.x** staged authoring; then **PS7.6** (`lint` opens with a one-line summary). It changes what
    authors see, so the next re-measure states it, with PS7.5 (done: the taste step left the author loop
    in the spec, SKILL and role text).
@@ -141,7 +140,7 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    2026-10-26 in item 1's harness (66 CLI calls, 0 `score`, 0 `validate`; 54 verified defects against 52
    rooms-first; D1/D5 re-stated).
 7. Everything else in `cards.md` by family: PS0 17 todo, PS1 1, PS2 39 todo, PS3 4, PS4 8 todo (and
-    PS4.3 doing), PS5 4, PS7 3 (7.1, 7.2, 7.6); pick by first-contact evidence, not by number.
+    PS4.3 doing), PS5 3, PS7 3 (7.1, 7.2, 7.6); pick by first-contact evidence, not by number.
 
 **Open cards by family (2026-10-25 audit, counts updated 2026-10-26; "ready" = no stated dependency
 outstanding; every card that changes what an author sees in `lint`, `validate`, `finish` or the spec
@@ -154,7 +153,7 @@ waited for item 1 (D19), which ran 2026-10-26: such a card may start and the nex
 | PS2 | 39 | 2.21, 2.23, 2.25, 2.27, 2.30–2.35, 2.41–2.44, 2.47–2.49, 2.51, 2.52, 2.54, 2.56, 2.57, 2.58 | 2.11e (row 6), 2.14 (ADR), 2.15 (2.11e), 2.16/2.36 (facts), 2.20/2.28 (measure first), 2.24/2.26/2.37/2.38/2.46/2.55 (a decision each), 2.39 (drawing decision), 2.40 and 5.6 (fire D12's reverse-if), 2.53 (a sourced ceiling) |
 | PS3 | 4 | 3.12 | 3.10 (decision; moves digests, D8), 3.11 (corpus sweep), 3.13 (proof first) |
 | PS4 | 9 | 4.5, 4.6, 4.7 | 4.3 (doing: A merged, PR #272; 4.3b next), 4.8–4.11 (after or with 4.3), 4.12 (with 5.3a's version bump) |
-| PS5 | 4 | 5.5 | 5.3a (MCP version bump), 5.4 (row 6), 5.6 (D12) |
+| PS5 | 3 | 5.5 | 5.3a (MCP version bump), 5.6 (D12) |
 | PS6/PS7 | 1 parked; 3 todo, 1 parked | 7.2, 7.6 | 6.1 (until `keep` is used), 7.1 ("after PS2" is ambiguous; read it as after row 6), 7.3 (parked: only if rule packs outgrow code) |
 
 Facts a reader would otherwise miss: the dwelling reading (D6) now has six consumers (three lint

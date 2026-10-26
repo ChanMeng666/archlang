@@ -13,6 +13,8 @@ import {
   ERROR_CATALOG,
   extractArchBlocks,
   PNG_PREVIEW_WIDTH,
+  isOptionalDepError,
+  renderPngFromSvg,
   rewriteMarkdown,
 } from "../index.js";
 import type { Diagnostic } from "../index.js";
@@ -50,7 +52,9 @@ import {
   perFileJson,
   renderArtifact,
   runPool,
+  runWithInstall,
 } from "./serialize.js";
+import { buildReviewSheet } from "./review.js";
 
 /** Byte length of a rendered artifact (string or binary). */
 const byteLen = (b: string | Uint8Array): number => (typeof b === "string" ? Buffer.byteLength(b) : b.length);
@@ -495,10 +499,27 @@ async function cmdPreviewAscii(args: Args, input: string): Promise<number> {
   return EXIT.OK;
 }
 
-export async function cmdPreview(args: Args): Promise<number> {
+export async function cmdPreview(args: Args, preread?: string): Promise<number> {
   const input = args._[0];
   if (!input) return usageError("preview needs an input file (use a path or `-` for stdin)");
 
+  if (args.review) {
+    // The review sheet draws its own overlay and is a raster of the PLAN, so each of these
+    // has nothing to mean beside it: refused rather than silently ignored.
+    const clash = args.ascii
+      ? "--ascii"
+      : args.view !== undefined
+        ? "--view"
+        : args.overlay !== undefined
+          ? "--overlay"
+          : undefined;
+    if (clash)
+      return usageErrorFor(
+        "preview",
+        `--review cannot be combined with ${clash} — the review sheet is a PNG of the plan with its own access-graph overlay`,
+      );
+    return cmdPreviewReview(args, input);
+  }
   // `--ascii`: a zero-install text preview an agent can read straight from stdout,
   // no raster dependency. Reuses the same `renderAscii` backend as `-f txt`.
   if (args.ascii) return cmdPreviewAscii(args, input);
@@ -516,7 +537,8 @@ export async function cmdPreview(args: Args): Promise<number> {
 
   let source: string;
   try {
-    source = readInput(input);
+    // `--review` hands over the source it already read: stdin cannot be read twice.
+    source = preread ?? readInput(input);
   } catch {
     return ioError(`cannot read ${input}`, args.json, { format });
   }
@@ -610,6 +632,99 @@ export async function cmdPreview(args: Args): Promise<number> {
     if (!args.quiet)
       process.stdout.write(
         `✓ ${input} → ${target} (${bytes} bytes, PNG${args.width ? ` ${args.width}px` : ""}@${args.scale}x)\n`,
+      );
+  }
+  return EXIT.OK;
+}
+
+/**
+ * `preview --review` (plan-soundness PS5.4): the review sheet ({@link buildReviewSheet}) as a
+ * PNG — the plan with its access graph, every warned element ringed and numbered, the legend
+ * and the close-up strip. It consumes `compile()` and `lint()` and feeds neither; the plain
+ * `preview` path above is untouched. A broken plan takes `preview`'s own failure path (with
+ * `--error-svg`, its error card). Default output `<name>.review.png`, beside the plain preview.
+ */
+async function cmdPreviewReview(args: Args, input: string): Promise<number> {
+  const format: Format = "png";
+  if (args.json && args.o === "-") return stdoutJsonConflict("preview");
+  let source: string;
+  try {
+    source = readInput(input);
+  } catch {
+    return ioError(`cannot read ${input}`, args.json, { format });
+  }
+  const world = makeNodeWorld(baseDirOf(input));
+  const width = args.width !== undefined && args.width > 0 ? args.width : undefined;
+  const sheet = buildReviewSheet(source, {
+    world,
+    ...(args.level !== undefined ? { level: args.level } : {}),
+    ...(width !== undefined ? { width } : {}),
+  });
+  const target = args.o ?? defaultOut(input, format).replace(/\.png$/, ".review.png");
+  if ("kind" in sheet) {
+    if (sheet.kind === "badLevel") return unknownLevel("preview", args.level!, sheet.levels);
+    // A broken plan: exactly what `preview` does with it (diagnostics, exit 2, the error card).
+    return cmdPreview({ ...args, review: false, o: target }, source);
+  }
+  const scale = args.scale !== undefined && args.scale > 0 ? args.scale : 1;
+  const warnings: Diagnostic[] = [];
+  let bytes: Uint8Array;
+  try {
+    bytes = await runWithInstall(
+      () =>
+        renderPngFromSvg(sheet.svg, {
+          scale,
+          onDiagnostic: (d) => {
+            if (!warnings.some((w) => w.code === d.code && w.message === d.message)) warnings.push(d);
+          },
+        }),
+      "@resvg/resvg-js",
+      args,
+    );
+  } catch (e) {
+    const message = (e as Error).message;
+    if (isOptionalDepError(e)) {
+      if (args.json) {
+        const fix = ERROR_CATALOG.E_PNG_DEPENDENCY?.fix;
+        emitJson({ ok: false, format, error: message, code: "E_PNG_DEPENDENCY", ...(fix ? { fix } : {}) });
+        return EXIT.INTERNAL;
+      }
+    }
+    return ioError(message, args.json, { format });
+  }
+  if (target === "-") {
+    process.stdout.write(bytes);
+    return EXIT.OK;
+  }
+  try {
+    writeFileSync(resolvePath(target), bytes);
+  } catch (e) {
+    return ioError((e as Error).message, args.json, { format });
+  }
+  const ringed = sheet.marks.filter((m) => m.ringed.length > 0).length;
+  // What plain `preview` reports: compile()'s warnings (every storey), then the render's own.
+  const reported = [...sheet.diagnostics, ...warnings].filter((d) => d.severity === "warning");
+  if (args.json) {
+    emitJson({
+      ok: true,
+      format,
+      review: true,
+      output: resolvePath(target),
+      bytes: bytes.length,
+      width: width ?? null,
+      scale,
+      ...(sheet.level !== undefined ? { level: sheet.level } : {}),
+      rings: ringed,
+      marks: sheet.marks,
+      crops: sheet.crops,
+      cropsOmitted: sheet.cropsOmitted,
+      diagnostics: reported.map((d) => diagnosticToJson(source, d)),
+    });
+  } else {
+    emitDiagnosticsHuman(source, reported, args.quiet);
+    if (!args.quiet)
+      process.stdout.write(
+        `✓ ${input} → ${target} (review sheet: ${sheet.marks.length} flagged, ${ringed} ringed, ${sheet.crops.length} close-up${sheet.crops.length === 1 ? "" : "s"}; ${bytes.length} bytes)\n`,
       );
   }
   return EXIT.OK;
