@@ -9,7 +9,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import type { KeepNode, Statement } from "../src/ast.js";
 import { compile, describe, lint } from "../src/index.js";
 import { parse } from "../src/parser.js";
-import { runValidate } from "./validate-json-run.js";
+import { runValidate, withoutSummary } from "./validate-json-run.js";
 
 export const KEEP_CORPUS_DIR = "test/keep-corpus";
 
@@ -94,7 +94,7 @@ export function k3DigestOf(name: string, src: string): string {
   const payload = [
     JSON.stringify(describe(src).keeps ?? null),
     JSON.stringify(compile(src, { noCache: true }).diagnostics),
-    String(v.exit) + String.fromCharCode(10) + v.stdout,
+    String(v.exit) + String.fromCharCode(10) + withoutSummary(v.stdout),
   ].join(" ");
   return createHash("sha256").update(payload, "utf8").digest("hex");
 }

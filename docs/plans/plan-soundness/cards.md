@@ -374,6 +374,5 @@ PS5.1b: PR #247, 9cc29c7e)
 **PS7.5 · Move the taste step out of the author loop.** `done` (PR #263, f024ab4a; D20)
 - As built: `research/2026-10-26-ps75-as-built.md` (a spec-text card).
 
-**PS7.6 · `lint` opens with a one-line summary.** `todo`
-- Three arm-B authors cut `lint --json` with `head -c` and repaired only what they saw (café 4 of 23 codes, clinic 2 of 4, studio 5 of 6). Put a one-line summary (`N warnings: CODE ×k, …`) as the first key of the JSON and as the first line of the text report.
-- Acceptance: the summary is a function of the diagnostics alone and every diagnostic over the corpus is byte-identical; `lint --json` truncated to its first 200 bytes still names the count and the codes. A surface authors see, so the next first-contact re-measure states it (D19). Source: `audits/2026-10-26-first-contact-rerun-d15.md` (arm B authoring friction).
+**PS7.6 · `lint` opens with a one-line summary.** `done` (PR #TBD)
+- As built: `research/2026-10-26-ps76-as-built.md`.

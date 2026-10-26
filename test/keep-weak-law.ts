@@ -28,6 +28,7 @@ import { evaluationSteps, resolveAll } from "../src/ir.js";
 import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import type { World } from "../src/world.js";
+import { withoutSummary } from "./validate-json-run.js";
 import { allStoreysDiagnosticsPayload, type CompilerApi } from "./byte-identity-payload.js";
 
 const API: CompilerApi = { compile, describe, lint };
@@ -82,7 +83,7 @@ function runCli(cmd: (a: ReturnType<typeof parseArgs>) => number, argv: string[]
   process.stderr.write = (() => true) as typeof process.stderr.write;
   try {
     const exit = cmd(parseArgs(argv));
-    return `${exit}\n${stdout}`;
+    return `${exit}\n${withoutSummary(stdout)}`;
   } finally {
     process.stdout.write = write;
     process.stderr.write = writeErr;

@@ -50,7 +50,9 @@ owns that name, so the shell runs the wrong program.
    generation pipeline runs before it ships. Add `--graph g.json` to also assert the intended
    room-to-room adjacency (`{ "living": ["kitchen","hall"], … }`); a mismatch fails. Read each
    `diagnostics[].fix`, edit, and re-run until it passes — or, if a warning is deliberate, say so.
-   The author's loop is compile → `validate --json` (fix its `next` first) → lint → repair.
+   The author's loop is compile → `validate --json` (fix its `next` first) → lint → repair. Read the
+   `summary` (first key of `lint|validate --json`, first line of the text report) before anything
+   else: it counts the warnings and names their codes, so a truncated read still tells you how many.
    **Review, once that loop is clean:** the reviewer (not the author) runs
    `archlang score plan.arch --taste generic --json` and reads the advice: a sourced 0–1 score
    (privacy gradient, daylight, proportion, corner doors, …) whose `criteria[].advice` `A_*` codes
