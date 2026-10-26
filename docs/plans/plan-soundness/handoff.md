@@ -147,7 +147,7 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    compiles"; the stair blocker named by lint; the residual families unchanged. Its remainder is PS4.6
    (`preview --review` rings nothing inside a repeated statement). Cards filed: PS2.64–PS2.72, PS7.7,
    PS7.8.
-2. The stage-end drift audit ran 2026-10-27 and its housekeeping PR (`docs/ps-stage-end-housekeeping`)
+2. The stage-end drift audit ran 2026-10-27 and its housekeeping PR (#287)
    ratified D19, D24 and D25's gate bullet by delegation (D18), cut the README to its cap and filed
    PS0.28, PS1.8, PS2.73 and PS7.9. **Next: row 7 / the next PS2 tranche per `cards.md`**: first the two false
    positives the re-measure found (PS2.64 hob beside a window, PS2.65 garage door), PS7.7 (`next`
