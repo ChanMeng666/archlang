@@ -1,0 +1,27 @@
+plan "Studio Flat 30 m2" {
+  units mm
+  grid 100
+  paper A3 landscape
+  north up
+  dims auto all
+  room id=main at (0,0) size 4000x4300 label "Living / Kitchenette" uses living
+  room id=entry right-of main align top size 3000x1300 uses entry
+  room id=bath below entry align left size 3000x1300 uses bath
+  room id=alcove below bath align left size 3000x1700 label "Alcove" at (4500,3300) uses bedroom
+  walls from rooms exterior 200 partition 100 { open between main and alcove }
+  door on entry.right at center width 900 swing into entry
+  door between entry and main at center width 900 swing into main
+  door sliding between entry and bath at 1200 from start width 800
+  window on main.left at center width 1500
+  window on main.bottom at center width 1500
+  window on alcove.right at center width 900
+  furniture fridge in main anchor top-left flush size 600x600
+  furniture counter at (700,100) size 1200x600 label "Kitchenette"
+  furniture kitchen_sink at (1900,100) size 800x600
+  furniture sofa in main anchor bottom-left inset 600 size 2000x900
+  furniture bed in alcove anchor bottom-right flush size 1900x1300
+  furniture wc in bath anchor left flush size 700x400
+  furniture basin at (6000,1350) size 500x400
+  furniture shower in bath anchor bottom-right flush size 700x700
+  title { project "Studio Flat" drawn_by "Claude" date "2026-10-27" number "S-01" revision "A" }
+}

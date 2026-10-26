@@ -1,0 +1,58 @@
+plan "Corner Cafe" {
+  units mm
+  grid 100
+  paper A3 landscape
+  north up
+  dims auto all
+
+  room id=seating at (0,0) size 6000x7500 label "Seating" uses dining
+  room id=kitchen right-of seating align top size 6000x3500 label "Kitchen" uses kitchen
+  room id=hall below kitchen size 6000x2000 label "Back hall" uses hall
+  room id=store below hall align left size 2000x2000 label "Store" uses storage
+  room id=wc_acc right-of store size 2200x2000 label "Accessible WC" uses wc
+  room id=wc_staff right-of wc_acc size 1800x2000 label "Staff WC" uses wc
+
+  walls from rooms exterior 200 partition 100
+
+  door id=entry on seating.bottom at 1100 from start width 1100 swing outward
+  opening id=pass between seating and kitchen at 1200 from start width 900
+  door between seating and hall at 1000 from start width 1000 swing into hall
+  door between kitchen and hall at 1000 from start width 900 swing into kitchen
+  door between hall and store at 1000 from start width 900 swing into store
+  door between hall and wc_acc at 1100 from start width 900 swing into hall
+  door between hall and wc_staff at 900 from start width 800 swing into hall
+  door id=backdoor on kitchen.right at 1200 from start width 900 swing outward
+
+  window on seating.left at 1800 from start width 1600
+  window on seating.left at 5500 from start width 1600
+  window on seating.top at 3000 from start width 2000
+  window on seating.bottom at 4200 from start width 1600
+  window on kitchen.right at 2700 from start width 1200
+  window on wc_acc.bottom width 600
+  window on wc_staff.bottom width 600
+
+  title { project "Corner Cafe" drawn_by "ArchLang" date "2026-10-27" number "A-01" revision "A" }
+
+  for r in 0..3 {
+    for c in 0..2 {
+      let tx = 700 + c * 2400
+      let ty = 1000 + r * 2000
+      furniture table at (tx, ty) size 1600x800
+      furniture chair at (tx + 200, ty - 500) size 450x450
+      furniture chair at (tx + 950, ty - 500) size 450x450
+      furniture chair at (tx + 200, ty + 850) size 450x450 rotate 180
+      furniture chair at (tx + 950, ty + 850) size 450x450 rotate 180
+    }
+  }
+
+  furniture counter against seating.right offset 6300 size 2000x600
+  furniture kitchen_sink against kitchen.top offset 1000
+  furniture stove against kitchen.top offset 3000
+  furniture fridge against kitchen.top offset 5000
+  furniture counter against kitchen.bottom offset 3500 size 2400x600
+  furniture wc against wc_acc.bottom
+  furniture basin against wc_acc.right
+  furniture wc against wc_staff.bottom offset 500
+  furniture basin against wc_staff.right
+  furniture bookshelf against store.left
+}

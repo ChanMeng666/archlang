@@ -21,6 +21,7 @@ cold-authored from `spec.llm.md` alone, audited by hand.
 | 2026-10-26 arm A, pre-#250 role (`audits/2026-10-26-first-contact-rerun-d15.md`) | 52, 49 without area basis (0) | 1 (townhouse stair) | 6/6 | 23 (6) of 57 | 0/6 (`validate` 0/6, `describe` 1/6; 0 of 65 calls) |
 | 2026-10-26 arm B, current role (same file) | 54, 51 without area basis (0) | 1 (townhouse stair) | 6/6 | 23 (6) of 57 | 0/6 (`validate` 1/6, `describe` 1/6; 0 of 77 calls) |
 | 2026-10-26 arm C, walls-first control (`audits/2026-10-26-walls-first-control-arm.md`, D21) | 54, 52 without area basis (3, plus 2 partial) | 1 (townhouse stair) | 0/6 (45 `wall`, 0 `walls from rooms`) | same run | 0/6 (`validate` 0/6, `describe` 1/6; 0 of 66 calls) |
+| 2026-10-26 row 6, current role (`audits/2026-10-26-first-contact-rerun-row6.md`, D26) | 61, 58 without area basis (12, all on the two plans whose authors stopped early) | 2 (house: four rooms unreachable; townhouse stair; both reported by lint) | 6/6 | not re-mapped by id (Part 1: 42 new warnings on 36 old plans, 39 true, 1 false positive) | 0/6 (`validate` 0/6, `describe` 1/6 discarded; 0 of 60 calls) |
 
 **Not met.** Rooms-first authoring is the norm (12 of 12 plans) and class 1 stays at 0, but 52 and 54
 defects still pass lint, and all three arms drew one blocker, each on the townhouse stair (the stair class
@@ -46,7 +47,7 @@ The means, tracked in `README.md` §7: defect-corpus catch rate 7/53 (10-18) →
 | 3a | PS3.5, PS3.7–PS3.9, PS0.19 | unplanned, recorded by D7 |
 | 4 | PS0.4, PS4.1, PS4.2, PS4.5 | met 2026-10-26: PS4.5 reports `held` |
 | 5 | PS5.1–PS5.3, PS2.10–PS2.12 | met 2026-10-25 (D14; PS2.11e moved to row 6) |
-| 6 | PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e | **current** (the owed re-measure ran 2026-10-26, D20). Landed: row-5 residue PS2.50 (#267), PS2.45 (#268), PS2.22/PS2.29 (#269); PS4.4 (#271); PS4.3 design (#270) and parts A and B (#272, #275); PS5.4 (#274). In flight: none. Waiting: PS7.x, PS2.11e |
+| 6 | PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e | **met in part** 2026-10-27 (D26): every card landed (#267–#283) and the D10 re-measure ran (`audits/2026-10-26-first-contact-rerun-row6.md`); `preview --review` rings nothing inside repeated statements, so PS4.6 is the remainder |
 | 7 | PS6.1 | parked |
 
 ## 3. What shipped (2026-10-18 → 10-26, PRs #195–#272)
@@ -121,30 +122,22 @@ when a new rule fires on an eval golden (judgment fields untouched, `JUDGE_VERSI
 The order below is the coordinator's reading of §7 row 6 plus the costs and owner asks that surfaced
 on 2026-10-25. Each item names its card; the card holds goal, design, acceptance and open questions.
 
-1. **The row-5 re-measure, run as D15's two arms: done 2026-10-26** (`audits/2026-10-26-first-contact-rerun-d15.md`,
-   PR #261; D20). Sonnet authors, six briefs per arm; arm A (pre-#250 role) made 0 `score --taste`
-   and 0 `validate` calls in 65, arm B (current role) 0 and 1 in 77; defects 52 and 54, blockers 1 and
-   1 (both the townhouse stair). D2's reverse-if is met: taste is a reviewer's tool, PS7.4 is done and
-   PS7.5 moves the step out of the author loop. The row-5 residue and row 6 may start;
-   the row-5 residue is done (PS2.50 PR #267, PS2.45 PR #268, PS2.22/PS2.29 PR #269); item 4 is next.
-4. **PS7.x** staged authoring. The next re-measure states what authors now see: PS7.5 (done: the taste
-   step left the author loop in the spec, SKILL and role text), PS7.6 (done: `lint`/`validate` open
-   with a one-line summary) and PS7.1 (done: `validate --stage`, the stage-ordered loop in the spec,
-   SKILL and role text, a `stage` key on every `validate --json` diagnostic); PS7.2 is done too
-   (`context --level starter`, PR #279).
-5. **PS2.11e** the clearance remainder: the stair bullets, PS2.15 and PS2.34 are PR #280 (merged);
-   the kitchen and door half is PR #283 (leaf-less openings, hob under a window PS2.46, hob beside a
-   fridge, leaf over 1219 mm and `door double`, the face datum PS2.54; the eval-judge ruling it
-   raised is D25, ratified). PS2.53 waits on a sourced ceiling.
-6. **PS1.4** diagnostic-wording study (§8 Q3) is done (`research/2026-10-26-ps14-diagnostic-wording.md`): the owner's
-   2026-10-18 ask is answered with data and no wording rule (`current` is best on both models, but by 1 case on sonnet, under the 3-case margin). **PS1.3** walls-first control arm (§8 Q1) is done (PR #264, D21): it ran on
-   2026-10-26 in item 1's harness (66 CLI calls, 0 `score`, 0 `validate`; 54 verified defects against 52
-   rooms-first; D1/D5 re-stated).
-7. Everything else in `cards.md` by family: PS0 17 todo, PS1 3, PS2 39 todo, PS3 4, PS4 6 todo, PS5 3, PS7 0 (7.3 parked); pick by first-contact evidence, not by number.
+1. **Resume point (2026-10-27): row 6 is closed, met in part, by `audits/2026-10-26-first-contact-rerun-row6.md`
+   (D26).** One arm, current role, `main@24a8afa2`: 61 defects (2 B) against 52 / 54 / 54; 12 reported
+   by the final lint, all on the two plans whose authors stopped on the prompt's "stop when it
+   compiles"; the stair blocker named by lint; the residual families unchanged. Its remainder is PS4.6
+   (`preview --review` rings nothing inside a repeated statement). Cards filed: PS2.64–PS2.72, PS7.7,
+   PS7.8.
+2. **Next: the stage-end drift audit and its housekeeping PR** (README byte cap, §6 and this file's
+   counts, D-entry statuses), **then row 7 / the next PS2 tranche per `cards.md`**: first the two false
+   positives the re-measure found (PS2.64 hob beside a window, PS2.65 garage door), PS7.7 (`next`
+   precedence), then the no-rule families by first-contact evidence (PS2.28/2.32, PS2.30, PS2.31,
+   PS2.36/2.16, PS2.43, PS2.71). PS7.8 (the whole-loop arm) runs with the next re-measure.
+3. Everything else in `cards.md` by family: PS0 17 todo, PS1 3, PS2 39 todo, PS3 4, PS4 6 todo, PS5 3, PS7 0 (7.3 parked); pick by first-contact evidence, not by number.
 
 **Open cards by family (2026-10-25 audit, counts updated 2026-10-26; "ready" = no stated dependency
 outstanding; every card that changes what an author sees in `lint`, `validate`, `finish` or the spec
-waited for item 1 (D19), which ran 2026-10-26: such a card may start and the next re-measure states it).**
+waited for the row-5 re-measure (D19), which ran 2026-10-26: such a card may start and the next re-measure states it).**
 
 | Family | Open | Ready now | Waiting on something |
 |---|---|---|---|

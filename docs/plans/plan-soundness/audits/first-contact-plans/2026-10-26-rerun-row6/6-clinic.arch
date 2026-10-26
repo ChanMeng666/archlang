@@ -1,0 +1,54 @@
+plan "Small Clinic" {
+  units mm
+  grid 100
+  paper A2 landscape
+  north up
+  dims auto all
+
+  strip right at (0,0) gap 0 height 4000 {
+    room id=c1 size 3500 label "Consulting 1" uses office
+    room id=c2 size 3500 label "Consulting 2" uses office
+    room id=c3 size 3500 label "Consulting 3" uses office
+    room id=store size 1500 label "Store" uses storage
+  }
+  room id=corr at (0,4000) size 12000x2000 label "Corridor" uses circulation
+  strip right at (0,6000) gap 0 height 4000 {
+    room id=wait size 6000 label "Waiting / Reception" uses entry
+    room id=wc size 2500 label "Accessible WC" uses wc
+    room id=staff size 3500 label "Staff Room" uses office
+  }
+
+  walls from rooms exterior 200 partition 100 { open between wait and corr }
+
+  door between c1 and corr at 1750 from start width 900 swing into c1
+  door between c2 and corr at 1750 from start width 900 swing into c2
+  door between c3 and corr at 1750 from start width 900 swing into c3
+  door between store and corr at 750 from start width 800 swing into store
+  door between wc and corr at 1250 from start width 900 swing into wc
+  door between staff and corr at 1750 from start width 900 swing into staff
+
+  door on wait.bottom at 3000 from start width 1200 swing outward
+  door on corr.right at center width 1000 swing outward
+
+  window on c1.top width 1400
+  window on c2.top width 1400
+  window on c3.top width 1400
+  window on wait.left width 1800
+  window on staff.bottom width 1200
+  window on wc.bottom width 600 sill 1500
+
+  furniture reception_desk in wait anchor top-right inset 600 size 2000x800
+  furniture sofa_l in wait anchor bottom-left inset 600 size 2400x900
+  furniture bed in c1 anchor top-left inset 300 size 1500x700
+  furniture bed in c2 anchor top-left inset 300 size 1500x700
+  furniture bed in c3 anchor top-left inset 300 size 1500x700
+  furniture desk in c1 anchor top-right inset 400 size 1200x700
+  furniture desk in c2 anchor top-right inset 400 size 1200x700
+  furniture desk in c3 anchor top-right inset 400 size 1200x700
+  furniture wc against wc.bottom offset 1700
+  furniture basin against wc.bottom offset 600
+  furniture meeting_table in staff centered size 2000x1000
+  furniture locker in store anchor top flush size 1000x400
+
+  title { project "Small Clinic" drawn_by "Architect" date "2026-10-27" number "A-101" revision "A" }
+}

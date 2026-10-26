@@ -1,0 +1,63 @@
+plan "Two-storey townhouse" {
+  units mm
+  grid 100
+  paper A2 landscape
+  north up
+  dims auto all
+  height 2700
+
+  level 0 "Ground" {
+    room id=g_stair at (0,0) size 1800x2500 label "Stair" uses circulation
+    room id=g_hall right-of g_stair size 2200x2500 label "Hall" uses hall
+    room id=g_wc right-of g_hall size 1500x2500 label "WC" uses wc
+    room id=g_living below g_stair size 5500x3500 label "Living" uses living
+    room id=g_kd below g_living size 5500x4000 label "Kitchen / Dining" uses kitchen dining
+    walls from rooms exterior 200 partition 100 { open between g_stair and g_hall  open between g_living and g_stair }
+    stair id=st at (200,200) size 1400x2100 dir up
+    door on g_hall.top at center width 1000 swing into g_hall
+    door between g_hall and g_wc at center width 800 swing into g_wc
+    opening between g_hall and g_living at center width 1200
+    opening between g_living and g_kd at center width 1800
+    window on g_living.left width 1800
+    window on g_living.right width 1800
+    window on g_kd.left width 1800
+    window on g_kd.bottom width 2200
+    window on g_wc.right width 600 sill 1500
+    furniture sofa_l in g_living anchor bottom-left flush inset 300 size 2200x900
+    furniture coffee_table in g_living centered size 1000x600
+    furniture tv_unit against g_living.right
+    furniture wc against g_wc.right
+    furniture basin against g_wc.top
+    furniture kitchen_sink against g_kd.bottom offset 1000
+    furniture stove against g_kd.bottom offset 2000
+    furniture fridge against g_kd.bottom offset 3000
+    furniture dining_table in g_kd anchor top flush inset 600 size 1800x900
+  }
+
+  level 1 "First" {
+    room id=f_stair at (0,0) size 1800x2500 label "Stair" uses circulation
+    room id=f_land right-of f_stair size 2200x2500 label "Landing" uses hall
+    room id=f_bath right-of f_land size 1500x2500 label "Bathroom" uses bath
+    room id=f_bed1 below f_stair size 2800x7500 label "Bedroom 1" uses bedroom
+    room id=f_bed2 right-of f_bed1 align top size 2700x7500 label "Bedroom 2" uses bedroom
+    walls from rooms exterior 200 partition 100 { open between f_stair and f_land }
+    stair id=st at (200,200) size 1400x2100 dir down
+    door between f_land and f_bed1 at center width 700 swing into f_bed1
+    door between f_land and f_bed2 at center width 800 swing into f_bed2
+    door between f_land and f_bath at center width 800 swing into f_bath
+    window on f_bed1.left width 1500
+    window on f_bed1.bottom width 1500
+    window on f_bed2.right width 1500
+    window on f_bed2.bottom width 1200
+    window on f_bath.top width 600
+    furniture double_bed in f_bed1 anchor bottom flush size 1600x2000
+    furniture wardrobe in f_bed1 anchor top-left flush size 1800x600
+    furniture double_bed in f_bed2 anchor bottom flush size 1400x2000
+    furniture wardrobe in f_bed2 anchor top-right flush size 1500x600
+    furniture bathtub against f_bath.right
+    furniture wc against f_bath.top
+    furniture basin against f_bath.bottom
+  }
+
+  title { project "Townhouse" drawn_by "Author" date "2026-10-27" number "TH-01" revision "A" }
+}

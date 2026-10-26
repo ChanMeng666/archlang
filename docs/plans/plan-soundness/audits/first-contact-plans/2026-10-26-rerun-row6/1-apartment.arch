@@ -1,0 +1,48 @@
+plan "Two-Bed Apartment" {
+  units mm
+  grid 100
+  north up
+  dims auto all
+  height 2700
+
+  room id=living at (0,0) size 5600x4200 label "Living" at (1500,1000) uses living
+  room id=bed1 right-of living size 4400x4200 label "Bedroom 1" uses bedroom
+  room id=bed2 below living align left size 3600x2800 label "Bedroom 2" at (1800,6700) uses bedroom
+  room id=hall right-of bed2 size 4000x2800 label "Hall" uses hall
+  room id=bath right-of hall size 2400x2800 label "Bath" at (8300,5200) uses bath
+  room id=corridor below bed2 align left size 10000x1500 label "Corridor" uses circulation
+
+  walls from rooms exterior 200 partition 100
+
+  outdoor id=balc balcony at (400,-1500) size 4800x1500 label "Balcony"
+
+  door between corridor and hall at 1500 from start width 1000 swing into hall
+  opening between hall and living at 1000 from start width 1400
+  door between hall and bed2 at 800 from start width 800 swing into bed2
+  door between hall and bed1 at 1000 from start width 800 swing into bed1
+  door between hall and bath at 1400 from start width 800 swing into bath
+  door sliding on living.top at 1200 from start width 1800
+  window on living.left width 1800
+  window on bed1.right width 1600
+  window on bed2.left width 1400
+
+  furniture id=sofa sofa in living anchor bottom inset 300 size 2200x900
+  furniture id=tvu tv_unit against living.left size 1600x450
+  furniture id=kt kitchen_sink against living.top offset 2900 size 1200x600
+  furniture id=stv stove against living.top offset 4000 size 600x600
+  furniture id=frg fridge against living.top offset 5100 size 700x700
+  furniture id=dtab table at (2800,1500) size 1800x900
+
+  furniture id=b1 double_bed in bed1 anchor top flush size 1800x2100
+  furniture id=n1 nightstand in bed1 anchor top-left flush size 450x450
+  furniture id=w1 wardrobe in bed1 anchor bottom-right flush size 1800x600
+
+  furniture id=b2 bed in bed2 anchor left flush size 2000x1500
+  furniture id=w2 wardrobe in bed2 anchor bottom-right flush size 600x1200
+
+  furniture id=bt bathtub in bath anchor top-right flush size 750x1700
+  furniture id=wc1 wc against bath.bottom offset 700 size 400x700
+  furniture id=bs basin in bath anchor bottom-right flush size 600x450
+
+  title { project "Two-Bed Apartment" drawn_by "ArchLang" date "2026-10-27" number "A-01" revision "A" }
+}
