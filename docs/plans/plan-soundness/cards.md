@@ -341,7 +341,7 @@ PS5.1b: PR #247, 9cc29c7e)
 
 ### PS7 · Staged authoring for agents
 
-**PS7.1 · Stages as a first-class idea.** `done` (PR pending)
+**PS7.1 · Stages as a first-class idea.** `done` (PR #282)
 - As built: `research/2026-10-26-ps71-as-built.md` (`validate --stage`, `LintRule.stage`; room graph and zoning are one `rooms` stage).
 
 **PS7.2 · `arch context --level starter`.** `todo`
