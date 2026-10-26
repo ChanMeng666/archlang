@@ -218,8 +218,8 @@ apply. The shape that worked for the 49 programme PRs merged between #195 and #2
 
 1. The coordinating session reads this page, `README.md` §3/§7 and the card, then writes a brief
    (template below) and dispatches an executor in a worktree branched from `main`.
-2. The executor opens a PR; the coordinator starts `gh pr checks <n> --watch --fail-fast` and a
-   read-only red-team review in parallel; fixes go back to the executor; at most two rounds.
+2. The executor opens a PR; the coordinator starts `gh pr checks <n> --watch` (not `--fail-fast`:
+   it stops on the informational Benchmark job) and a read-only red-team review in parallel; fixes go back to the executor; at most two rounds.
 3. Merge on green CI and a reviewed diff. Before merging, post `reviewed <full sha>` as a PR comment
    (a round-2 fix of blocker class gets that note too; #286 was the first to carry it), then
    `gh pr merge <n> --merge --match-head-commit <full sha> --delete-branch`, then unlink the worktree's
