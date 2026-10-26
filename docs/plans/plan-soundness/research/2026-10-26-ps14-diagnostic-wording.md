@@ -278,13 +278,13 @@ How to read the deletion and relabelling columns:
 - **`W_TITLE_OVERFLOW`: the hint misleads without the spec.** All four `fix` and `current` replies broke,
   on both models, with `E_PARSE: Unknown title field "notes"`. The hint and the catalogue `fix` say "move the
   rest to a `notes "…"` line". Every author put that line inside `title { }`, but `notes` is a plan-level
-  statement. The `facts` and `rule` authors shortened the value instead (3 of 4 fixed). Candidate card:
+  statement. The `facts` and `rule` authors shortened the value instead (3 of 4 fixed). Filed as PS2.62:
   say where the line goes ("a plan-level `notes "…"` line, outside the `title { }` block"). Authors with
   the spec could look this up; these authors could not.
 - **`W_ANNOTATION_OVERLAP`: the hint gives no point.** The hint says "Give it a clear point with
   `label "…" at (x,y)`" but does not say which point. Authors chose one that was still over the symbol, so
   sonnet's `current` fixed 2 of 6 cases in this class, its lowest. Three of the `facts`/`rule` fixes are
-  relabels (a shorter name), an evasion. Candidate card: quote a computed clear point in the hint, as the
+  relabels (a shorter name), an evasion. Filed as PS2.63: quote a computed clear point in the hint, as the
   opening hints quote checked positions.
 - **`W_OPENING_AT_JUNCTION` and `W_OPENING_OVERLAP`: checked positions repair.** These hints quote a checked
   `at`/`on … at` clause. Sonnet fixed 14 of 16 cases with `fix` and with `current`, against 9 with `facts`.
@@ -304,7 +304,7 @@ How to read the deletion and relabelling columns:
 - **Corpus artifacts: `bath-open-side` and `fa-door-across-tee`.** Both broke in all 8 replies each, on
   `W_PATH_TOO_NARROW`. Their own clean twins raise the same code: the case's fix unmasks a 700 mm door that
   is 640 mm clear, which the defect had hidden (the room was reached another way). The twin-adjusted column
-  scores these as fixed, adding 2 to every cell. Candidate card: give each of the two cases a door the path
+  scores these as fixed, adding 2 to every cell. Filed as PS1.6: give each of the two cases a door the path
   rule passes, so the corpus case holds one defect.
 - **`round-snug-unassigned`: the authors invented syntax.** 7 of 8 replies are `E_PARSE` (`room … rect
   (0,0) (3800,2400)`). Without the spec the authors had to make up the form of a rectangular room. This
