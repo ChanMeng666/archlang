@@ -15,7 +15,7 @@ Local and unpaid: the authors are this machine's Claude Code subscription models
 | `build.ts` | Writes `cases.json`, the task files and one dispatch folder per model |
 | `author-agent.md` | The `wording-author` subagent's prompt (tools `Read` and `Write` only) |
 | `dispatcher-prompt.md` | The dispatching session's prompt (six authors at a time) |
-| `score.ts` | Re-lints every reply and prints the tables |
+| `score.ts` | Re-lints every reply and prints the tables. `fixed` is strict by default (the expected code is gone); `--lenient` also counts fewer instances |
 | `transcripts.ts` | Checks that every author made only one `Read` of its task and one `Write` of its reply |
 
 Keep `<out>` outside the repository: replies and scores never enter it.

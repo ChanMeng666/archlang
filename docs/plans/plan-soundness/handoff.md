@@ -135,7 +135,7 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
 5. **PS2.11e** the clearance remainder (`W_DOORWAY_BLOCKED` over leaf-less openings, stair swings,
    hob under a window PS2.46, per-family depth ceiling PS2.53, face/centreline unification PS2.54).
 6. **PS1.4** diagnostic-wording study (§8 Q3) is done (`research/2026-10-26-ps14-diagnostic-wording.md`): the owner's
-   2026-10-18 ask is answered with data and no wording rule (no variant won on both models). **PS1.3** walls-first control arm (§8 Q1) is done (PR #264, D21): it ran on
+   2026-10-18 ask is answered with data and no wording rule (`current` is best on both models, but by 1 case on sonnet, under the 3-case margin). **PS1.3** walls-first control arm (§8 Q1) is done (PR #264, D21): it ran on
    2026-10-26 in item 1's harness (66 CLI calls, 0 `score`, 0 `validate`; 54 verified defects against 52
    rooms-first; D1/D5 re-stated).
 7. Everything else in `cards.md` by family: PS0 17 todo, PS1 2, PS2 41 todo, PS3 4, PS4 6 todo, PS5 3, PS7 0 (7.3 parked); pick by first-contact evidence, not by number.
@@ -166,7 +166,7 @@ items 3.1(b), M.8, M.9, M.14 and D.7 wait on the owner's answers and are not cov
 
 - Walls-first vs rooms-first comparison (PS1.3): done 2026-10-26 (D21; `audits/2026-10-26-walls-first-control-arm.md`).
   Diagnostic wording (PS1.4): done 2026-10-26 (`research/2026-10-26-ps14-diagnostic-wording.md`): the current message + hint repaired
-  best or near it on sonnet and haiku; the data supports no wording rule, and the record says what would.
+  best on sonnet and haiku, but by 1 case on sonnet, under the 3-case margin; the data supports no wording rule, and the record says what would.
 - Id-free lint messages: done 2026-10-26 (PS2.22/PS2.29, PR #269); the rule is in `README.md` §5.
   **D23 ratified by the owner on 2026-10-26** (D18): PR #269 widened the id-free wording in
   `docs/agents/iron-laws.md` to `taste()` and the compile-channel `W_ROOM_OVERLAP`; recorded with its

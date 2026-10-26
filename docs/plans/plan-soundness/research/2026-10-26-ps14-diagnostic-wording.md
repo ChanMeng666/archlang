@@ -7,22 +7,33 @@
 
 ## Headline
 
+Fixed means the card's definition: the expected code is gone, nothing new is raised, and the reply
+compiles.
+
 | Variant | sonnet: fixed / unchanged / broke (of 59) | haiku: fixed / unchanged / broke (of 59) | Both models |
 |---|---|---|---|
-| `facts` (measured facts only) | 46 / 8 / 5 (78 %) | 46 / 6 / 7 (78 %) | 92 |
-| `rule` (catalogue one-liner, no numbers) | 49 / 5 / 5 (83 %) | 42 / 8 / 9 (71 %) | 91 |
-| `fix` (the hints only) | **52** / 2 / 5 (88 %) | 45 / 3 / 11 (76 %) | 97 |
-| `current` (message + hints + catalogue fix, as `arch lint` prints them) | 51 / 3 / 5 (86 %) | **51** / 3 / 5 (86 %) | **102** |
+| `facts` (measured facts only) | 46 / 8 / 5 (78 %) | 45 / 7 / 7 (76 %) | 91 |
+| `rule` (the catalogue's one-line summary, no numbers) | 49 / 5 / 5 (83 %) | 42 / 8 / 9 (71 %) | 91 |
+| `fix` (the hints only) | 50 / 4 / 5 (85 %) | 45 / 3 / 11 (76 %) | 95 |
+| `current` (message + hints + catalogue fix, as `arch lint` prints them) | **51** / 3 / 5 (86 %) | **48** / 6 / 5 (81 %) | **99** |
 
-**Verdict: the data does not support a wording rule.** The rule needed a variant that is best on both
-models by at least 3 cases (5 % of 59). The best variant differs by model. On sonnet `fix` leads `current`
-by one case. On haiku `current` leads `facts` by five. The transfer check fails. What the data does
-show: `current` is never more than one case behind the best on either model. Pooled over both models,
-`current` beats `facts` (15 cases fixed by `current` only, against 5 by `facts` only; sign test p 0.04)
-and beats `rule` (16 against 5, p 0.03). Six pairs were tested, so neither result survives a Bonferroni
-correction. The working reading for the catalogue: keep the current combination of a message with
-facts and a hint with an instruction. Do not cut messages down to facts only or to a rule only. The
-next section says what would support a rule.
+**Verdict: the data does not support a wording rule.**
+- **The test.** A rule needed one variant that is best on both models by at least 3 cases (5 % of 59).
+  That margin was chosen after the run, not before it.
+- **Why it fails.** `current` is best on both models. Its lead over the runner-up is 1 case on sonnet (51
+  against `fix`'s 50) and 3 on haiku (48 against 45 for `facts` and for `fix`). The sonnet lead is under
+  the margin. The verdict holds for any margin of 2 or more; only a 1-case margin would let `current` win.
+- **No pairwise test supports it either.** Each test is an exact McNemar test (a two-sided sign test on
+  the discordant pairs). None reaches p 0.1 on either model alone. Pooled over both models, `current`
+  fixed 15 cases `facts` did not and `facts` 7 that `current` did not (p 0.13, uncorrected); against
+  `rule` the split is 16 to 8 (p 0.15).
+- **The working reading for the catalogue.** Keep the current combination of a message that states the
+  facts and a hint that gives the instruction. Do not cut messages down to the facts alone or to the
+  catalogue summary alone. The section "What would support a rule" says what a rule would need.
+
+A secondary, lenient reading also counts a fix that leaves fewer instances of the code, which only the
+three multi-instance cases allow. It gives fixed counts of 46/49/52/51 (sonnet) and 46/42/45/51 (haiku),
+so the best variant then differs by model (`fix` on sonnet, `current` on haiku).
 
 ## Method
 
@@ -51,7 +62,7 @@ run time (`lib.ts`). None is retyped:
 | Variant | Source | Derivation |
 |---|---|---|
 | `facts` | the diagnostic's `message` | First sentence (up to the first `. ` before a capital, a quote or `(`). Then, for 14 codes, the template `FACTS_EDITS` cuts the threshold, the consequence or the rule clause; per code below. An edit that matches no message in the corpus fails the build |
-| `rule` | `ERROR_CATALOG[code].message`, the one-line summary `arch explain` prints first | Mechanical, every code. The build checks it holds no digit |
+| `rule` | `ERROR_CATALOG[code].message`, the one-line summary `arch explain` prints first | Mechanical, every code. The build checks it holds no digit. This is the catalogue's summary of the defect, not a normative rule ("A door's open leaf parks across another doorway's approach", not "a door must not …"). The normative text is the entry's `cause` field, and a `cause`-derived rule is the arm this study did not test |
 | `fix` | the diagnostic's `hints`, each as a `= help:` line | Mechanical. Every case carries hints, so the catalogue-`fix` fallback was never used. Hints may name ids (PS2.29 allows ids only there) |
 | `current` | `message`, then each hint as `= help:`, then `= fix:` and the catalogue `fix` | Mechanical: the lines `arch lint` prints for the diagnostic, without the code tag and the source excerpt (see the frame below) |
 
@@ -93,8 +104,11 @@ Make the minimal edit to the source that resolves this. Reply with the full file
 ````
 
 The frame names the line and quotes it for every variant, because a real diagnostic always has a span.
-The code name (`W_…`) is left out of every variant. It is itself a short rule wording, and it would
-blur the gap between `facts` and `rule`.
+The case's own code name (`W_…`) is left out of every variant: it is itself a short rule wording, and it
+would blur the gap between `facts` and `rule`. Other codes do appear. 12 texts (11 `current`, 1 `fix`)
+name another code where a hint or the catalogue `fix` cites one: `W_DOOR_NEAR_CORNER` in the catalogue
+`fix` of the opening codes (9 `current` texts), `W_DOOR_CLEARANCE` in three more. The frame's "one warning" is also not literally true for 27 of the 59 cases,
+which raise other warnings besides the one shown (see Confounders).
 
 The four texts for `clearances/leaf-across-doorway`, verbatim:
 
@@ -137,7 +151,6 @@ to the prompts.
 | Setting | sonnet | haiku |
 |---|---|---|
 | Model that answered (every author transcript) | `claude-sonnet-5-5` | `claude-haiku-5-5` |
-| Dispatcher session | `dac813b1-7910-47e8-912b-a69e1f5bbd69` | `c8f46f1f-66f3-4b27-bf64-7ec992c1bffd` |
 | Agent calls per dispatcher message | 6 ×39, then 2 | 6 ×30, 8 ×7 (the dispatcher said so in its reply) |
 | Wall time | about 13 min | about 10 min |
 | API-metered cost the session reports (the subscription paid it) | about $5.43 | about $0.62 |
@@ -145,71 +158,101 @@ to the prompts.
 | Author compliance (`transcripts.ts`) | 236 strict: one `Read` of its task, then one `Write` of its reply | 210 strict. The other 26 made one more call after the `Write` (re-read their own reply or task, a `Read` with no path, one second `Write` of the same reply). No author touched another job's file or any other file |
 
 **Scoring** (`score.ts`). Each reply was re-linted with the same build. Its code set is `lint()` plus
-the compile channel's warnings, counted per code. The outcomes are:
+the compile channel's warnings, counted per code. The outcomes are (strict, the card's definition, and
+the default):
 - `broke`: the reply has a compile error, or it raises a code its baseline did not.
-- `unchanged`: otherwise, when the expected code fires at least as often as before.
-- `fixed`: otherwise. In the three multi-instance cases this includes fewer instances (`partial`: 2 sonnet
-  and 4 haiku replies).
+- `fixed`: otherwise, when the expected code is gone.
+- `unchanged`: otherwise, when the expected code still fires.
+
+Two readings are reported beside the strict one:
+- **Lenient** (`--lenient`): it also counts as fixed a reply that raises the expected code fewer times
+  than before (`partial`). Only the three multi-instance cases allow it: 2 sonnet replies and 4 haiku replies.
+  The first version of this record used this reading as primary; red-team round 1 of PR #284 corrected it.
+- **Twin-adjusted** (strict): a new code that the case's own clean twin also raises does not count as
+  broke (see the per-code notes).
 
 Also recorded:
 - changed lines (an LCS line diff, added + removed);
 - statements deleted, by leading keyword;
-- `relabelled`: any `label` text or `uses` word changed;
-- a twin-adjusted outcome, in which a new code that the case's own clean twin also raises does not
-  count as broke (see the per-code notes).
+- `renamed`: any `label` text, `uses` word or title-block value changed.
 
 ## Results
 
-| Model | Variant | Fixed | Unchanged | Broke | Fixed, twin-adjusted | Median changed lines (fixed) | Fixed by deleting a statement | Fixed by relabelling |
-|---|---|---|---|---|---|---|---|---|
-| sonnet | facts | 46 | 8 | 5 | 48 | 2 | 2 | 1 |
-| sonnet | rule | 49 | 5 | 5 | 51 | 2 | 2 | 0 |
-| sonnet | fix | 52 | 2 | 5 | 54 | 2 | 1 | 0 |
-| sonnet | current | 51 | 3 | 5 | 53 | 2 | 1 | 0 |
-| haiku | facts | 46 | 6 | 7 | 48 | 2 | 2 | 1 |
-| haiku | rule | 42 | 8 | 9 | 44 | 2 | 2 | 1 |
-| haiku | fix | 45 | 3 | 11 | 47 | 2 | 1 | 0 |
-| haiku | current | 51 | 3 | 5 | 53 | 2 | 1 | 0 |
+**Primary (strict).**
 
-How to read the deletion and relabelling columns:
-- Deleting a statement: 8 of the 12 rows (every variant on both models) are `bath-leafless-to-living`'s
+| Model | Variant | Fixed | Unchanged | Broke | Fixed, lenient | Fixed, twin-adjusted | Median changed lines (fixed) | Fixed by deleting a statement | Fixed by renaming |
+|---|---|---|---|---|---|---|---|---|---|
+| sonnet | facts | 46 | 8 | 5 | 46 | 48 | 2 | 2 | 2 |
+| sonnet | rule | 49 | 5 | 5 | 49 | 51 | 2 | 2 | 1 |
+| sonnet | fix | 50 | 4 | 5 | 52 | 52 | 2 | 1 | 0 |
+| sonnet | current | 51 | 3 | 5 | 51 | 53 | 2 | 1 | 0 |
+| haiku | facts | 45 | 7 | 7 | 46 | 47 | 2 | 2 | 2 |
+| haiku | rule | 42 | 8 | 9 | 42 | 44 | 2 | 2 | 1 |
+| haiku | fix | 45 | 3 | 11 | 45 | 47 | 2 | 1 | 0 |
+| haiku | current | 48 | 6 | 5 | 51 | 50 | 2 | 1 | 0 |
+
+**Secondary (lenient)**, as first published:
+
+| Model | facts | rule | fix | current |
+|---|---|---|---|---|
+| sonnet fixed / unchanged / broke | 46 / 8 / 5 | 49 / 5 / 5 | 52 / 2 / 5 | 51 / 3 / 5 |
+| haiku fixed / unchanged / broke | 46 / 6 / 7 | 42 / 8 / 9 | 45 / 3 / 11 | 51 / 3 / 5 |
+
+How to read the deletion and renaming columns:
+- **Deleting a statement.** 8 of the 12 rows (every variant on both models) are `bath-leafless-to-living`'s
   `opening` rewritten as a `door`, which is the hint's own fix. The other 4 delete the garage door in
   `wc-utility-passage`, under `facts` and `rule` only. That is a fix the hint, which re-hosts the door,
   would not make.
-- Relabelling: all three silenced `W_ANNOTATION_OVERLAP` by shortening a room label ("Bedroom 4" became
-  "Bed 4") or dropping it. That is an evasion, and it appears only under `facts` and `rule`.
+- **Renaming.** All six are evasions, and every one is under `facts` or `rule`:
+  - three silenced `W_ANNOTATION_OVERLAP` by shortening a room label ("Bedroom 4" became "Bed 4") or
+    dropping it;
+  - three silenced `W_TITLE_OVERFLOW` by cutting the PROJECT value to "742 Evergreen Terrace" and dropping
+    the rest of the text, where the hint asks to move it to a `notes` line.
 
-**Paired, same cases** (cases fixed by A only / by B only, exact two-sided sign test):
+**Paired, same cases, strict.** Each cell gives the cases fixed by A only and by B only, then the
+exact McNemar p (the two-sided sign test on those discordant pairs).
+- Every p is uncorrected. Across the 18 values printed, Bonferroni puts the bar at 0.0028; across the 6
+  pooled tests the verdict reads, at 0.0083. No value comes near either bar.
+- The pooled column is not a set of independent pairs: each case counts once per model.
 
 | A vs B | sonnet | haiku | Both models pooled |
 |---|---|---|---|
-| facts vs rule | 4 / 7, p 0.55 | 8 / 4, p 0.39 | 12 / 11, p 1.00 |
-| facts vs fix | 2 / 8, p 0.11 | 9 / 8, p 1.00 | 11 / 16, p 0.44 |
-| facts vs current | 3 / 8, p 0.23 | 2 / 7, p 0.18 | 5 / 15, p 0.04 |
-| rule vs fix | 2 / 5, p 0.45 | 9 / 12, p 0.66 | 11 / 17, p 0.34 |
-| rule vs current | 2 / 4, p 0.69 | 3 / 12, p 0.04 | 5 / 16, p 0.03 |
-| fix vs current | 1 / 0, p 1.00 | 1 / 7, p 0.07 | 2 / 7, p 0.18 |
+| facts vs rule | 4 / 7, p 0.55 | 8 / 5, p 0.58 | 12 / 12, p 1.00 |
+| facts vs fix | 4 / 8, p 0.39 | 8 / 8, p 1.00 | 12 / 16, p 0.57 |
+| facts vs current | 3 / 8, p 0.23 | 4 / 7, p 0.55 | 7 / 15, p 0.13 |
+| rule vs fix | 4 / 5, p 1.00 | 9 / 12, p 0.66 | 13 / 17, p 0.58 |
+| rule vs current | 2 / 4, p 0.69 | 6 / 12, p 0.24 | 8 / 16, p 0.15 |
+| fix vs current | 1 / 2, p 1.00 | 1 / 4, p 0.38 | 2 / 6, p 0.29 |
 
-**Fixed per class** (the corpus's code families; cases per class in the second column):
+Under the lenient reading the pooled `current` comparisons were 15 / 5 against `facts` (p 0.04) and
+16 / 5 against `rule` (p 0.03), both uncorrected. They do not survive the strict definition or either
+correction.
+
+**Fixed per class, strict** (the corpus's code families; cases per class in the second column):
 
 | Class | Cases | sonnet facts | sonnet rule | sonnet fix | sonnet current | haiku facts | haiku rule | haiku fix | haiku current |
 |---|---|---|---|---|---|---|---|---|---|
 | annotation-collisions | 6 | 5 | 4 | 3 | 2 | 5 | 3 | 3 | 4 |
-| circulation-privacy | 11 | 11 | 11 | 11 | 11 | 11 | 11 | 7 | 11 |
+| circulation-privacy | 11 | 11 | 11 | 9 | 11 | 11 | 11 | 7 | 9 |
 | clearances | 11 | 11 | 8 | 11 | 11 | 9 | 10 | 10 | 9 |
 | daylight | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 4 |
 | missing-defining-contents | 5 | 3 | 4 | 5 | 5 | 3 | 2 | 5 | 5 |
 | openings-ignore-walls | 16 | 9 | 14 | 14 | 14 | 11 | 9 | 13 | 14 |
-| space-not-enclosed | 6 | 3 | 4 | 4 | 4 | 3 | 3 | 3 | 4 |
+| space-not-enclosed | 6 | 3 | 4 | 4 | 4 | 2 | 3 | 3 | 3 |
 
-**Transfer check.**
-- Ranks by fixed count: sonnet `fix` > `current` > `rule` > `facts`; haiku `current` > `facts` > `fix` > `rule`.
-- The best variant does not agree across the models. `current` is in the top two on both.
-- The models gave the same outcome in 201 of 236 case × variant cells.
+**Transfer check (strict).**
+- Ranks by fixed count: sonnet `current` > `fix` > `rule` > `facts`; haiku `current` > `facts` = `fix` > `rule`.
+- The best variant agrees across the models. Its margin is the problem: 1 case on sonnet, 3 on haiku.
+  Below the top the ranks disagree (`fix` second on sonnet, tied second on haiku; `facts` last on sonnet,
+  tied second on haiku).
+- The models gave the same outcome in 198 of 236 case × variant cells.
 - Few cases tell the variants apart. 28 cases were fixed in all eight cells. All four variants gave the
-  same outcome on 44 cases for sonnet and 32 for haiku, which leaves 15 and 27 cases that discriminate.
+  same outcome on 42 cases for sonnet and 32 for haiku, which leaves 17 and 27 cases that discriminate.
 
-**Per case** (F fixed, U unchanged, B broke; the four letters are `facts rule fix current`):
+**Per case, strict** (F fixed, U unchanged, B broke; the four letters are `facts rule fix current`).
+The lenient reading differs in six cells: in `living-via-bedrooms` and `two-bed-chain`, sonnet `fix` and
+haiku `current`; in `fa-no-wall-living-bedrooms`, haiku `facts` and `current`. In each of these the code
+fires fewer times but still fires.
 
 | Case | Code | sonnet | haiku |
 |---|---|---|---|
@@ -225,8 +268,8 @@ How to read the deletion and relabelling columns:
 | circulation-privacy--bath-via-bedroom | W_BATH_VIA_BEDROOM | FFFF | FFFF |
 | circulation-privacy--bedroom-via-bedroom | W_ROOM_VIA_PRIVATE | FFFF | FFFF |
 | circulation-privacy--entry-into-bedroom | W_ENTRANCE_INTO_PRIVATE | FFFF | FFFF |
-| circulation-privacy--living-via-bedrooms | W_ROOM_VIA_PRIVATE | FFFF | FFBF |
-| circulation-privacy--two-bed-chain | W_ROOM_VIA_PRIVATE | FFFF | FFBF |
+| circulation-privacy--living-via-bedrooms | W_ROOM_VIA_PRIVATE | FFUF | FFBU |
+| circulation-privacy--two-bed-chain | W_ROOM_VIA_PRIVATE | FFUF | FFBU |
 | circulation-privacy--wc-off-dining | W_WET_ROOM_DOOR | FFFF | FFUF |
 | circulation-privacy--wc-off-servery | W_WET_ROOM_DOOR | FFFF | FFFF |
 | circulation-privacy--wc-utility-passage | W_WET_ROOM_DOOR | FFFF | FFFF |
@@ -268,7 +311,7 @@ How to read the deletion and relabelling columns:
 | openings-ignore-walls--window-straddles-tee | W_OPENING_AT_JUNCTION | FFFF | UFFF |
 | space-not-enclosed--bath-open-side | W_ROOM_NOT_ENCLOSED | BBBB | BBBB |
 | space-not-enclosed--bow-strip-unassigned | W_FLOOR_UNASSIGNED | FFFF | BBFF |
-| space-not-enclosed--fa-no-wall-living-bedrooms | W_BOUNDARY_NO_WALL | BFFF | FFBF |
+| space-not-enclosed--fa-no-wall-living-bedrooms | W_BOUNDARY_NO_WALL | BFFF | UFBU |
 | space-not-enclosed--room-past-shell | W_ROOM_OUTSIDE_SHELL | FFFF | FFFF |
 | space-not-enclosed--round-snug-unassigned | W_FLOOR_UNASSIGNED | BBBB | BBBU |
 | space-not-enclosed--widen-after-outside-shell | W_ROOM_OUTSIDE_SHELL | FFFF | FFFF |
@@ -278,16 +321,18 @@ How to read the deletion and relabelling columns:
 - **`W_TITLE_OVERFLOW`: the hint misleads without the spec.** All four `fix` and `current` replies broke,
   on both models, with `E_PARSE: Unknown title field "notes"`. The hint and the catalogue `fix` say "move the
   rest to a `notes "…"` line". Every author put that line inside `title { }`, but `notes` is a plan-level
-  statement. The `facts` and `rule` authors shortened the value instead (3 of 4 fixed). Filed as PS2.62:
+  statement. The `facts` and `rule` authors cut the value and dropped the rest of the text (3 of 4 "fixed",
+  all three by that evasion; see the renaming column). Filed as PS2.62:
   say where the line goes ("a plan-level `notes "…"` line, outside the `title { }` block"). Authors with
   the spec could look this up; these authors could not.
 - **`W_ANNOTATION_OVERLAP`: the hint gives no point.** The hint says "Give it a clear point with
   `label "…" at (x,y)`" but does not say which point. Authors chose one that was still over the symbol, so
   sonnet's `current` fixed 2 of 6 cases in this class, its lowest. Three of the `facts`/`rule` fixes are
-  relabels (a shorter name), an evasion. Filed as PS2.63: quote a computed clear point in the hint, as the
+  relabels (a shorter name or none), an evasion. Filed as PS2.63: quote a computed clear point in the hint, as the
   opening hints quote checked positions.
 - **`W_OPENING_AT_JUNCTION` and `W_OPENING_OVERLAP`: checked positions repair.** These hints quote a checked
-  `at`/`on … at` clause. Sonnet fixed 14 of 16 cases with `fix` and with `current`, against 9 with `facts`.
+  `at`/`on … at` clause. On these two codes (14 cases) sonnet fixed 12 with `fix` and with `current`, against 7 with `facts`;
+  haiku fixed 11 and 12 against 9.
   The `facts` text drops the 100 mm nib and the mullion size, so authors moved the opening too little (a
   window moved 300 mm where the hint's checked move is 350 mm; an opening moved 600 mm where it is 675 mm). This is
   the clearest per-code effect in the data: a number the author must reach is worth stating.
@@ -295,8 +340,10 @@ How to read the deletion and relabelling columns:
   The `facts`/`rule` authors added only the sink (`UU` on both models); the hint names both (`FF`).
 - **Circulation (`W_ROOM_VIA_PRIVATE`, `W_WET_ROOM_DOOR`): the hint alone loses the target.** Haiku's `fix`
   variant failed 4 of the 11 circulation cases: 3 broke (the front door moved to another wall; a room
-  shrunk, which leaves `W_FLOOR_UNASSIGNED`) and 1 came back unchanged. With the message in front of the hint (`current`) it fixed 11 of 11. Sonnet fixed
-  all 11 in every variant.
+  shrunk, which leaves `W_FLOOR_UNASSIGNED`) and 1 came back unchanged. With the message in front of the
+  hint (`current`) it fixed 9 of 11; the other two (`living-via-bedrooms`, `two-bed-chain`) cleared some
+  instances of the code and left others firing. Sonnet fixed all 11 in every variant except `fix` (9 of 11,
+  the same two cases).
 - **`door-fills-gap`: the authors narrowed the door.** None of the 8 replies fixed it. Six narrowed the door
   to 800 or 700 mm, the "constraint laundering" `W_DOOR_NEAR_CORNER`'s hint warns against, which either left
   the junction or raised `W_PATH_TOO_NARROW`; two moved the door or the partition so that the door spanned two rooms (`W_CONNECTOR_AMBIGUOUS`). The hint says no position on this run works and to move the door
@@ -320,14 +367,20 @@ wording rule a later card writes keeps that as its first clause.
 
 ## What would support a rule
 
-- **Repeat draws.** Run each prompt at least three times per model. The models already disagree on 35 of
-  236 cells, and one draw cannot tell wording from sampling noise.
+- **Repeat draws.** Run each prompt at least three times per model. The models already disagree on 38 of
+  236 cells, and one draw cannot tell wording from sampling noise. The 6-job haiku pilot run before the
+  study (same task files, byte for byte) is a second draw on six prompts: 5 outcomes matched, and one
+  flipped (`label-over-bed` `rule`: broke in the pilot on `W_FURNITURE_WALL_COLLISION`, fixed by a relabel
+  in the study).
 - **A third model,** to settle the transfer question this run left open.
 - **More discriminating cases.** 28 of 59 cases were fixed in all eight cells, so they say nothing about
   wording.
+- **The untested arm:** a normative rule taken from each entry's `cause` field, in place of the
+  catalogue's summary line.
 - **The spec in the author's context,** as real authors have it. It would remove the `notes` and `rect`
   syntax confounds above, which fall unevenly on the variants.
-- **A margin stated before the run** and a correction for six pairwise tests.
+- **A margin stated before the run** (this one's 3 was set after it) and a correction for the pairwise
+  tests.
 
 With those, a rule could be tested in its likely form: "the message states the measured facts and the
 number to reach; the hint quotes a checked edit". The `facts`-versus-`current` gap on the opening codes is
@@ -344,8 +397,12 @@ the effect it would have to reproduce.
   would accept the edit. The relabels and the deleted garage door above are fixes by that measure.
 - **No spec,** by the card's design. Real authors have `spec.llm.md`, and syntax guesses cost some
   variants more than others.
+- **"The linter reports one warning."** The fixed frame says so for every case, but 27 of the 59 cases
+  raise other warnings too (other codes, or more instances of the same code). The author saw only the one
+  diagnostic, so an edit that ignores the others is not a fault of the wording.
 - **Minimal plans.** The shown sources are 7 to 21 lines with one defect each, so a median edit is 2 lines. Real
   plans are larger and carry many warnings at once.
 - **Stair class.** Its four corpus cases are `todo`, so the stair class is absent.
 - **Run differences.** The haiku dispatcher sent 8 calls per message seven times. 26 haiku authors made one
-  extra call on their own files after writing the reply.
+  extra call on their own files after writing the reply. A 6-job haiku pilot preceded the study, and its
+  replies are not in the tables; one of its six outcomes differs from the study's (see "Repeat draws").

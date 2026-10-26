@@ -53,7 +53,7 @@ A done row's "record" is `research/2026-10-24-ps0-ps2-as-built.md`.
 - Measured 2026-10-26 (`audits/2026-10-26-walls-first-control-arm.md`, D21): 54 verified defects walls-first against 52 rooms-first (arm A), 0 class-1 in the final plans in both; D1/D5 re-stated as claims about authoring. Not run: a walls-first spec.
 
 **PS1.4 · Which diagnostic wording repairs best (§8 Q3).** `done` (PR #284)
-- Measured 2026-10-26 (`research/2026-10-26-ps14-diagnostic-wording.md`): 59 cases × 4 wordings × sonnet and haiku, one draw; fixed facts/rule/fix/current 46/49/52/51 (sonnet), 46/42/45/51 (haiku). No variant wins on both models, so no wording rule; keep message + hint, and do not cut messages to facts or rule alone.
+- Measured 2026-10-26 (`research/2026-10-26-ps14-diagnostic-wording.md`): 59 cases × 4 wordings × sonnet and haiku, one draw; fixed (expected code gone) facts/rule/fix/current 46/49/50/51 (sonnet), 45/42/45/48 (haiku). `current` is best on both, but by 1 case on sonnet, under the 3-case margin, so no wording rule; keep message + hint, and do not cut messages to the facts or the catalogue summary alone.
 
 **PS1.5 · Two wording slips found in PS7.2's red team (2026-10-26).** `todo`
 - `E_FURN_SIZE` under `furniture … in <room> anchor|centered` says "no default footprint for `wc`" for a piece that has one (it does under `against`; `in` never reads the catalogue). Say what is true: `in` always needs `size`.
@@ -62,7 +62,7 @@ A done row's "record" is `research/2026-10-24-ps0-ps2-as-built.md`.
 
 **PS1.6 · Two clean twins raise `W_PATH_TOO_NARROW` (found by PS1.4, 2026-10-26).** `todo`
 - `space-not-enclosed/bath-open-side.clean.arch` and `openings-ignore-walls/fa-door-across-tee.clean.arch` raise `W_PATH_TOO_NARROW`, which their cases do not: the fix unmasks a 700 mm door (640 mm clear) that the case's defect hid, because the room was reached another way. In PS1.4 (`research/2026-10-26-ps14-diagnostic-wording.md`, § Per-code notes) every reply to the two cases (8 each: sonnet and haiku, all four variants) scored `broke` on that code, the same one the twin raises. They are the only two twins that raise a code their case does not (checked 2026-10-26 at `main@0413af3d`).
-- *Acceptance:* give each case and its twin a door the path rule passes, so the twin is clean and the case still raises only its own defect plus what it raised before; a defect-corpus assertion that no twin raises a code its case does not; the catch rate stays 59/73 and every moved corpus row is explained.
+- *Acceptance:* give each case and its twin a door the path rule passes, so the twin is clean and the case still raises only its own defect plus what it raised before; a defect-corpus assertion that no twin raises a code its case does not; the catch rate does not move and every moved corpus row is explained.
 
 ### PS2 · Validity checks that read existing facts (small, high yield)
 
