@@ -131,7 +131,7 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
 4. **PS7.x** staged authoring. The next re-measure states what authors now see: PS7.5 (done: the taste
    step left the author loop in the spec, SKILL and role text) and PS7.6 (done: `lint`/`validate` open
    with a one-line summary).
-5. **PS2.11e** the clearance remainder: the kitchen and door half is PR #PRNUM (leaf-less openings,
+5. **PS2.11e** the clearance remainder: the kitchen and door half is PR #283 (leaf-less openings,
    hob under a window PS2.46, hob beside a fridge, leaf over 1219 mm and `door double`, the face datum
    PS2.54; the eval-judge ruling it raises is in its as-built note); the stair half is its own PR.
    PS2.53 waits on a sourced ceiling.
