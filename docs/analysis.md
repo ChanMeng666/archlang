@@ -965,6 +965,7 @@ Opt-in like `symmetry`; without `--facts` the key is absent.
 | `params` | the bound names its own expressions read, sorted: a `let`, a module `let`, a component or function parameter, a `for` variable, and the user functions it calls (never a built-in) |
 | `axes` | the positioning-axis labels it is placed at (`at axis 3`, `at axis B`), sorted. Always present, like `on` and `params`, and empty when it reads none |
 | `hostWallId` | the wall it is hosted on or backed onto, authored or derived: a door's, window's or cased opening's host (as in `access.edges[]`), an `against wall` piece's wall, the ring a `roof … overhang` follows. Absent when there is none |
+| `contacts` | on an authored wall or a furniture piece only: the rectangular rooms' edges it lies ON, as `{ room, edge }` sorted by room then edge. A wall's straight segment lies on an edge when its centreline is on the edge's line and overlaps it by a positive length; a piece's back edge (the footprint side its `rotate` puts the back on) the same way. "On the line" is equal on the 0.001 mm lattice, so even 0.001 mm off is not a contact; each value is put on the lattice by itself, not the difference rounded once as a `keep` residual is. A room already in `on` is left out (the element follows it), and so are a curved segment, a corner-only touch, and polygon or circle rooms (they have no named edges). The edge is spelled as the datum reads at the plan root (`top` is the smaller `y`), not as a turned component spells it, so in a turned instance it turns with the instance. At most 64 per element, taken as whole rooms in room-id order (so the room set does not depend on how the plan is turned). Absent when there is none; a derived wall never has one. When a contact was left out (an element past 64, or a storey past the search's budget), `depends.contacts_truncated` is `true` |
 
 `depends.derived_walls[]` has one row per wall `walls from rooms` derived, sorted by
 `name` (the name `derived_walls[]` and `heights.walls[]` use): `on` is the pair of rooms a
@@ -1025,7 +1026,7 @@ rows above. It has four parts:
 | `lets` | the bound names whose binding changed (a `let` anywhere, a `for` variable's range, the argument a component parameter is given), and those whose binding reads one (`reads`); `before`/`after` are the `let`'s text as written when there is one |
 | `changed[]` | every element that changed: rooms, openings and walls as `diffPlans` classifies them (`moved`, `resized`, `rehosted`, `rethickened`, `relabeled`, `added`, `removed`); other kinds, and a door that slid along a wall that did not move, from their resolved position (`moved`, `resized`, `changed`) |
 | `changed[].why` | the chain from the element back to what changed first: each step names the dependency it followed (`on`, `host`, `axis`, `param` (a name the element or its `place … at` reads), and `joins` for a re-hosted opening only: a room whose change moved the spaces it joins) and how that dependency changed. Where several dependencies changed, the chain takes the first, in that edge order and then by id in code-unit order, that leads to a root, else the first that changed: an order, not a judgement of which cause mattered most. `root` says how the chain ends: `let` (a binding's text changed), `edited` (that element's own statement changed), `axis`, or `unexplained` (no recorded dependency reaches a change) |
-| `held[]` | elements that did not change although a dependency did (`because`): the "should it have followed?" signal. A relabel never makes a dependant held |
+| `held[]` | elements that did not change although a dependency did (`because`): the "should it have followed?" signal. A relabel never makes a dependant held, and an element that moved at all, even within `diffPlans`' 10 mm tolerance, is not held. A wall or piece that lay on a room edge (its before-side `contacts`) is held when that edge's line moved and the element still stands exactly on the line it lay on: the step is `via: "contact"`, named as the datum (`a.right`), with `contact: { room, edge, axis, stayed_mm, moved_to_mm, gap_mm }`. An edge that only grew or shrank along its own line has not moved; a wall `diffPlans` calls `moved` or `resized` is under `changed`, so it is never held. One line per held row; edges that moved to the same line share it (`a.right / b.left`). When the before side's contacts were truncated, `contacts_truncated: true` and a note under Held say `held` may be incomplete |
 | `diagnostics` | `broke` (only after), `healed` (only before) and `unchanged_count`, matched by code, element and storey over the compile and lint diagnostics of both sides |
 
 Every element is named as `describe()` names it; a wall `walls from rooms` derived is named by its
@@ -1045,7 +1046,9 @@ Changed (3):
     why: on a (resized) ← reads AW (4000 → 4500)
   door door_2 re-hosted: joins a and b → nothing
     why: joins a (resized) ← reads AW (4000 → 4500)
-Held (0): none
+Held (2):
+  wall p stayed at x 4000 while a.right / b.left moved to x 4500 (500 mm)
+  wall shell stayed at x 8000 while b.right moved to x 8500 (500 mm)
 Broke (3):
   W_BOUNDARY_NO_WALL on b: "Living" and "Bed" have no wall between them: …
   W_ROOM_DISCONNECTED on b: Room "Bed" has no door or opening — it can't be entered.
@@ -1056,10 +1059,11 @@ Unchanged diagnostics: 1
 
 What it cannot tell you:
 
-- **A wall written in numbers depends on nothing**, so it can never be `held`: in the drill the
-  shell and the partition should have followed the rooms, and the report names what that broke
-  (`W_ROOM_OUTSIDE_SHELL`, `W_BOUNDARY_NO_WALL`), not the walls. Derive walls from rooms
-  (`walls from rooms`) and they follow instead.
+- **A wall written in numbers is held only through a contact.** In the drill the shell and the
+  partition lay on the edges that moved, so they are held. A wall a room has outgrown without
+  ever touching it, a polygon room's side, or a piece whose back stood off the edge records no
+  contact, so the report names only what that broke (`W_ROOM_OUTSIDE_SHELL`,
+  `W_BOUNDARY_NO_WALL`). Derive walls from rooms (`walls from rooms`) and they follow instead.
 - **Elements pair by id.** Under `--against`, a statement inserted ahead of elements with
   positional ids (`door_2`) shifts them, as in `diffPlans`.
 - **The lowest storey's elements** are compared, as `describe()`'s top-level facts are;

@@ -230,11 +230,8 @@ into PS3.12)
 **PS4.4 · Brief-bound dimensions (provenance).** `done` (PR #271, c2f4176b)
 - `describe().totals.gross_internal_area_m2` and the intent's `grossInternalAreaM2`/`roomDimensions`, gating; `research/2026-10-26-ps44-as-built.md`.
 
-**PS4.5 · Contact dependency.** `todo`
-- A wall or element written at fixed coordinates that lies on a room's edge records that contact
-  (a `depends` edge), so `arch impact`'s `held` can flag it when the room moves and it does not.
-- *Acceptance:* the widening drill (`repro/widen-before.arch`, `--set AW=4500`) reports the shell and
-  the partition `p` as held. Found in PR #240.
+**PS4.5 · Contact dependency.** `done` (PR #281, commit filled at merge)
+- `describe --facts depends` `contacts`, `impact` `held` via contact; `research/2026-10-26-ps45-as-built.md`.
 
 **PS4.6 · Impact keying.** `todo`
 - Diagnostics carry the element id they are about, and `arch impact` keys by it instead of by span
