@@ -294,6 +294,25 @@ export type {
 // Each lint code's soundness layer (ADR 0032): validity or drafting, read off its rule.
 export { LINT_CODE_LAYERS } from "./lint.js";
 export type { LintLayer } from "./lint.js";
+// The authoring stages (PS7.1): brief → rooms → walls → openings → fixtures → drafting; each
+// finding's stage, and `validate --stage`'s view (`atStage`). Pure; `lint()` never reads them.
+export { LINT_CODE_STAGES } from "./lint.js";
+export type { LintStage } from "./lint.js";
+export {
+  AUTHORING_STAGES,
+  atStage,
+  codeStage,
+  COMPILE_WARNING_STAGES,
+  diagnosticStage,
+  ELEMENT_KIND_STAGES,
+  GRAPH_STAGE,
+  isAuthoringStage,
+  keepStage,
+  kindsOf,
+  predicateStage,
+  stageAtMost,
+} from "./stages.js";
+export type { AuthoringStage, KindOf, StageView } from "./stages.js";
 // The taste layer (ADR 0032, PS5.1): a separate, sourced score that never gates. `lint()` and
 // `describe()` never read it.
 export {

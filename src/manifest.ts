@@ -43,6 +43,7 @@ export type ExportFormat = (typeof EXPORT_FORMATS)[number]["id"];
 import { ERROR_CODES, ERROR_CATALOG } from "./error-catalog.js";
 import { LINT_PROFILE_NAMES, LINT_PROFILES, DEFAULT_RULESET } from "./lint.js";
 import { TASTE_PROFILE_NAMES } from "./taste/index.js";
+import { AUTHORING_STAGES } from "./stages.js";
 import { FIXTURE_CATEGORIES } from "./elements/fixtures-glyphs.js";
 import { DESCRIBE_FACTS } from "./describe.js";
 import { FINISH_STAGE_ORDER, FINISH_STAGES, FINISH_STAGES_AVAILABLE } from "./finish.js";
@@ -597,6 +598,12 @@ const COMMANDS: ManifestCommand[] = [
         arg: `<${TASTE_PROFILE_NAMES.join("|")}>`,
         description: "let `next` fall back to the lowest-scoring taste criterion (ADR 0032); never gates",
       },
+      {
+        flag: "--stage",
+        arg: `<${AUTHORING_STAGES.join("|")}>`,
+        description:
+          "only the findings meaningful up to this authoring stage (errors always); `next`, `ok` and --strict read that set, `summary` says how many later-stage findings are held back; taste only at drafting",
+      },
       CODE_FLAG,
       SEVERITY_FLAG,
       JSON_FLAG,
@@ -604,7 +611,7 @@ const COMMANDS: ManifestCommand[] = [
     ],
     input: "<file.arch|->",
     output:
-      "diagnostics (plus a graph{} report with --graph and an intent{ ok, satisfied, total, subscores, violations, measures? } block with --intent; `measures` lists each brief-bound size with its measured value and signed residual), then `keeps` when the plan declares one (each { keep, grade, level?, holds, residual_mm, at?, measured_mm?, span }), then `next`: the one item to fix first { tier, code, message, span?, hint? } or null (tiers: error, warning, validity, drafting, intent, profile, taste)",
+      "diagnostics (plus a graph{} report with --graph and an intent{ ok, satisfied, total, subscores, violations, measures? } block with --intent; `measures` lists each brief-bound size with its measured value and signed residual), then `keeps` when the plan declares one (each { keep, grade, level?, holds, residual_mm, at?, measured_mm?, span }), then `next`: the one item to fix first { tier, code, message, span?, hint? } or null (tiers: error, warning, validity, drafting, intent, profile, taste). Each diagnostic and intent violation carries its authoring `stage`; with --stage, an `at_stage` { stage, held_back, clean } block precedes `keeps`",
     examples: [
       {
         cmd: "archlang validate plan.arch --strict --json",
@@ -621,6 +628,10 @@ const COMMANDS: ManifestCommand[] = [
       {
         cmd: "archlang validate plan.arch --json --taste generic",
         note: "read `next` first: the one diagnostic to fix before anything else, by fixed precedence",
+      },
+      {
+        cmd: "archlang validate plan.arch --stage rooms --json",
+        note: "author in stages: fix what the rooms alone decide, advance to walls once `at_stage.clean`",
       },
       {
         cmd: "archlang validate plan.arch --severity error --json",

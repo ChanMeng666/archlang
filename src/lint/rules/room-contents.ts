@@ -121,6 +121,7 @@ export const habitableNoWindow: LintRule = {
   name: "habitable-no-window",
   family: "daylight",
   layer: "validity",
+  stage: "openings",
   codes: ["W_HABITABLE_NO_WINDOW"],
   check(ctx: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
@@ -181,6 +182,7 @@ export const roomMissingDefining: LintRule = {
   name: "room-missing-defining",
   family: "contents",
   layer: "validity",
+  stage: "fixtures",
   codes: ["W_ROOM_MISSING_DEFINING"],
   check(ctx: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];

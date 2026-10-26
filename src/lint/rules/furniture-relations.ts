@@ -61,6 +61,7 @@ export const furnClearDeclared: LintRule = {
   name: "furn-clear-declared",
   family: "furniture",
   layer: "validity",
+  stage: "fixtures",
   codes: ["W_FURN_CLEAR_FRONT", "W_FURN_CLEAR_SIDES"],
   check(ctx: LintContext): Diagnostic[] {
     const { furniture, ir, doors, at } = ctx;
@@ -123,6 +124,7 @@ export const seatFacingAway: LintRule = {
   name: "seat-facing-away",
   family: "furniture",
   layer: "validity",
+  stage: "fixtures",
   codes: ["W_SEAT_FACING_AWAY"],
   check(ctx: LintContext): Diagnostic[] {
     const { furniture, rules, rooms, roomRects, at, frameOf } = ctx;

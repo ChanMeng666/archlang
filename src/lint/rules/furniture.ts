@@ -57,6 +57,7 @@ export const furnitureOverlap: LintRule = {
   name: "furniture-overlap",
   family: "furniture",
   layer: "validity",
+  stage: "fixtures",
   codes: ["W_FURNITURE_OVERLAP"],
   check({ furniture, at }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
@@ -98,6 +99,7 @@ export const furnClearance: LintRule = {
   name: "furn-clearance",
   family: "furniture",
   layer: "validity",
+  stage: "fixtures",
   codes: ["W_FURN_CLEARANCE"],
   check({ furniture, at }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
@@ -151,6 +153,7 @@ export const fixtureFloating: LintRule = {
   name: "fixture-floating",
   family: "furniture",
   layer: "validity",
+  stage: "fixtures",
   codes: ["W_FIXTURE_FLOATING"],
   check({ furniture, ir, rules, wallSegs, at }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
@@ -229,6 +232,7 @@ export const fixtureBackToRoom: LintRule = {
   name: "fixture-back-to-room",
   family: "furniture",
   layer: "validity",
+  stage: "fixtures",
   codes: ["W_FIXTURE_BACK_TO_ROOM"],
   readsFurniture: true,
   check({ furniture, ir, rooms, rules, wallSegs, at, frameOf, skip }: LintContext): Diagnostic[] {
@@ -306,6 +310,7 @@ export const fixtureWrongRoom: LintRule = {
   name: "fixture-wrong-room",
   family: "furniture",
   layer: "validity",
+  stage: "fixtures",
   codes: ["W_FIXTURE_WRONG_ROOM"],
   check({ furniture, roomRects, rooms, nameOf, at }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
@@ -337,6 +342,7 @@ export const furnitureWallCollision: LintRule = {
   name: "furniture-wall-collision",
   family: "furniture",
   layer: "validity",
+  stage: "fixtures",
   codes: ["W_FURNITURE_WALL_COLLISION"],
   check(ctx: LintContext): Diagnostic[] {
     const { furniture, wallSegs, wallOpenings, at } = ctx;

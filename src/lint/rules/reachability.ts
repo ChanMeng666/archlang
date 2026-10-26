@@ -31,6 +31,7 @@ export const reachability: LintRule = {
   name: "reachability",
   family: "reachability",
   layer: "validity",
+  stage: "openings",
   codes: ["W_BATH_VIA_BEDROOM", "W_ROOM_UNREACHABLE"],
   check({ rooms, connectors, roomRects, rules, nameOf, at, building, access, skip }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];

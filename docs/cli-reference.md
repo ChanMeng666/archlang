@@ -266,7 +266,7 @@ $ archlang watch plan.arch -o plan.svg
 
 parse + resolve + lint, no render (is it valid & sound?)
 
-**Input:** `<file.arch|->` · **Output:** diagnostics (plus a graph{} report with --graph and an intent{ ok, satisfied, total, subscores, violations, measures? } block with --intent; `measures` lists each brief-bound size with its measured value and signed residual), then `keeps` when the plan declares one (each { keep, grade, level?, holds, residual_mm, at?, measured_mm?, span }), then `next`: the one item to fix first { tier, code, message, span?, hint? } or null (tiers: error, warning, validity, drafting, intent, profile, taste)
+**Input:** `<file.arch|->` · **Output:** diagnostics (plus a graph{} report with --graph and an intent{ ok, satisfied, total, subscores, violations, measures? } block with --intent; `measures` lists each brief-bound size with its measured value and signed residual), then `keeps` when the plan declares one (each { keep, grade, level?, holds, residual_mm, at?, measured_mm?, span }), then `next`: the one item to fix first { tier, code, message, span?, hint? } or null (tiers: error, warning, validity, drafting, intent, profile, taste). Each diagnostic and intent violation carries its authoring `stage`; with --stage, an `at_stage` { stage, held_back, clean } block precedes `keeps`
 
 | Flag | Does |
 | --- | --- |
@@ -276,6 +276,7 @@ parse + resolve + lint, no render (is it valid & sound?)
 | `--feedback` | with --intent, append a deterministic per-violation correction prompt (advisory data, never applied) |
 | `--profile <residential-basic\|accessibility-advisory\|cn-residential-advisory\|uk-residential-advisory\|us-residential-advisory>` | lint under this advisory ruleset too (as `lint --profile`); its own warnings rank as `next` tier profile |
 | `--taste <generic\|cn-residential-advisory\|uk-residential-advisory\|us-residential-advisory>` | let `next` fall back to the lowest-scoring taste criterion (ADR 0032); never gates |
+| `--stage <brief\|rooms\|walls\|openings\|fixtures\|drafting>` | only the findings meaningful up to this authoring stage (errors always); `next`, `ok` and --strict read that set, `summary` says how many later-stage findings are held back; taste only at drafting |
 | `--code <CODE[,CODE…]>` | show only diagnostics with these codes — a DISPLAY filter: the exit code and `ok` still come from the unfiltered set |
 | `--severity <error\|warning>` | show only diagnostics of this severity — a DISPLAY filter, like --code (never changes the exit code) |
 | `--json` | structured result on stdout, messages on stderr |
@@ -295,6 +296,9 @@ $ archlang validate plan.arch --graph rooms.json --json
 
 # read `next` first: the one diagnostic to fix before anything else, by fixed precedence
 $ archlang validate plan.arch --json --taste generic
+
+# author in stages: fix what the rooms alone decide, advance to walls once `at_stage.clean`
+$ archlang validate plan.arch --stage rooms --json
 
 # read only the blocking errors; `ok` and the exit code still weigh every diagnostic
 $ archlang validate plan.arch --severity error --json
@@ -648,7 +652,7 @@ print the full bundled agent context (spec + workflow + CLI + errors)
 
 | Flag | Does |
 | --- | --- |
-| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 143 KB of it (spec = the language, 30 KB; workflow = the agent loop, 29 KB; cli = every command, 26 KB; errors = the diagnostic catalog, 56 KB) |
+| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 144 KB of it (spec = the language, 30 KB; workflow = the agent loop, 30 KB; cli = every command, 26 KB; errors = the diagnostic catalog, 56 KB) |
 | `--json` | structured result on stdout, messages on stderr |
 
 **Examples**
@@ -657,7 +661,7 @@ print the full bundled agent context (spec + workflow + CLI + errors)
 # the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 $ archlang context
 
-# just the diagnostic catalog (56 KB) — read one section instead of paying for the whole 143 KB bundle
+# just the diagnostic catalog (56 KB) — read one section instead of paying for the whole 144 KB bundle
 $ archlang context --section errors
 ```
 

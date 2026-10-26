@@ -50,7 +50,13 @@ owns that name, so the shell runs the wrong program.
    generation pipeline runs before it ships. Add `--graph g.json` to also assert the intended
    room-to-room adjacency (`{ "living": ["kitchen","hall"], … }`); a mismatch fails. Read each
    `diagnostics[].fix`, edit, and re-run until it passes — or, if a warning is deliberate, say so.
-   The author's loop is compile → `validate --json` (fix its `next` first) → lint → repair. Read the
+   The author's loop is compile → `validate --json` (fix its `next` first) → lint → repair, **one
+   stage at a time**: the rooms (with stairs and outdoor surfaces), then
+   `archlang validate plan.arch --stage rooms --json` until `at_stage.clean` is true; then the walls
+   (`walls from rooms`) and `--stage walls`; then doors and windows, `--stage openings`; then fixtures
+   and furniture, `--stage fixtures`; then the sheet and the full `validate --strict`. Advance only
+   when the stage is clean: a later stage's findings are held back (the `summary` counts them),
+   because they mean nothing until the earlier decisions stand; errors always show. Read the
    `summary` (first key of `lint|validate --json`, first line of the text report) before anything
    else: it counts the warnings and the distinct codes and leads with the commonest, so a truncated
    read still tells you how much is hidden.

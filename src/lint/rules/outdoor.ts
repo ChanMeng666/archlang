@@ -128,6 +128,7 @@ export const outdoorOverlapsRoom: LintRule = {
   name: "outdoor-overlaps-room",
   family: "outdoor",
   layer: "validity",
+  stage: "rooms",
   codes: ["W_OUTDOOR_OVERLAPS_ROOM"],
   check(ctx: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
@@ -187,6 +188,7 @@ export const balconyNoDoor: LintRule = {
   name: "balcony-no-door",
   family: "outdoor",
   layer: "validity",
+  stage: "openings",
   codes: ["W_BALCONY_NO_DOOR"],
   check(ctx: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];

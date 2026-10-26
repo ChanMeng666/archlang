@@ -1498,6 +1498,38 @@ followed by its `= help:` line; `--quiet` drops it. In the library it is
 `nextDiagnostic({ diagnostics, lint, intent?, graph?, profileLint?, taste? })`, pure: it reads
 the results it is handed and measures nothing itself.
 
+### Stages: author low-frequency decisions first
+
+A plan is decided in stages, the rarely-changed things first, because an early error of
+proportion spreads through everything drawn after it:
+
+| Stage | What is decided | Findings that belong to it (examples) |
+|---|---|---|
+| `brief` | the frame: `plan`, units, `site`, `level`s, `let`s, `keep`s | the language's own errors and warnings |
+| `rooms` | rooms placed and sized (the room graph and its zoning are one act in ArchLang), stairs, voids, outdoor surfaces | `W_ROOM_TOO_SMALL`, `W_ROOM_OVERLAP`, `W_STAIR_UNMATCHED`; intent room count, areas, sizes |
+| `walls` | the walls, derived (`walls from rooms`) or written | `W_BOUNDARY_NO_WALL`, `W_ROOM_NOT_ENCLOSED`; intent gross internal area |
+| `openings` | doors, windows, cased openings: everything that reads the door graph | `W_NO_ENTRANCE`, `W_ROOM_UNREACHABLE`, `W_OPENING_AT_JUNCTION`; intent adjacency, windows; `--graph` |
+| `fixtures` | fixtures and furniture | `W_FIXTURE_FLOATING`, `W_DOORWAY_BLOCKED`, `W_SEAT_FACING_AWAY` |
+| `drafting` | the sheet | the drafting layer; everything else; taste |
+
+`validate --stage <s>` shows only the findings of stage `s` and earlier. Errors are always shown,
+since a plan that does not resolve has no stage that is clean. `ok`, `--strict`, the intent block,
+and `next` all read the shown set. Taste is a `next` tier only at `drafting`, and a `--graph`
+check only from `openings` on. `summary` starts with the stage and ends with how many later-stage
+findings are held back (`stage rooms: 1 warning in 1 code: W_ROOM_TOO_SMALL ×1 (10 later-stage
+findings held back)`). An `at_stage` block (`{ stage, held_back, clean }`) comes before `keeps`
+and `next`. `clean` is true when no tier of `next` but taste has an item left: that is the moment
+to advance. A finding's stage is the latest stage whose elements its check needs in order to judge
+at all, whether it reads them or their absence: `W_NO_ENTRANCE` reports a missing door, so it
+belongs to `openings`. Lint codes take their stage from their rule (`LintRule.stage`, required).
+Compile warnings take theirs from their family, an intent assertion from its predicate, and a
+`keep` from what it measures.
+
+Without `--stage`, nothing changes but one key: every `validate --json` diagnostic and intent
+violation ends with its `stage`. `lint --json` and `lint()` are untouched. In the library:
+`atStage(stage, diagnostics, nextInput, kindsOf(plans))` returns the stage's view, and
+`LINT_CODE_STAGES`, `codeStage`, `predicateStage` and `keepStage` return the stage of a finding.
+
 ### Diagnostics as data, and seeing a failure
 
 The two feedback channels an agent relies on are both public, structured API:

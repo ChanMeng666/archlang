@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `arch validate --stage <brief|rooms|walls|openings|fixtures|drafting>`: authoring stages, the
+  rarely-changed decisions first (plan card PS7.1). The command shows only the findings of that
+  stage and earlier; errors are always shown. `ok`, `--strict`, the intent block and `next` read
+  that set. Taste is a `next` tier only at `drafting`, and a `--graph` check only from `openings`
+  on. `summary` opens with the stage and counts the later-stage findings it holds back, and an
+  `at_stage` `{ stage, held_back, clean }` block says when to advance. Every lint rule now declares
+  its `stage` (`LintRule.stage`, required like `layer`; `LINT_CODE_STAGES`). A finding's stage is
+  the latest stage whose elements its check needs: `W_ROOM_TOO_SMALL` is `rooms`,
+  `W_BOUNDARY_NO_WALL` `walls`, `W_NO_ENTRANCE` `openings`, `W_FIXTURE_FLOATING` `fixtures`.
+  Compile warnings take their stage from their family, intent assertions from their predicate and
+  `keep`s from what they measure. Without the flag, `validate --json` adds only a `stage` key, last,
+  on each diagnostic and intent violation. `lint`, `lint()`, `describe()` and the drawing are
+  unchanged. Library: `AUTHORING_STAGES`, `atStage`, `codeStage`, `predicateStage`, `keepStage`.
+  SKILL's loop, `arch-author.md` and the spec now teach stage-ordered authoring.
+
 - `arch preview <file> --review`: the review sheet, one PNG for whoever reviews a plan (plan card
   PS5.4; D20). The plan exactly as `preview` draws it, with `describe().access` laid over it (rooms
   as nodes at their label points, an edge through each door and opening, entrances marked); every

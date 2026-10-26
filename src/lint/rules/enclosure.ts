@@ -373,6 +373,7 @@ export const boundaryNoWall: LintRule = {
   name: "boundary-no-wall",
   family: "enclosure",
   layer: "validity",
+  stage: "walls",
   codes: ["W_BOUNDARY_NO_WALL"],
   check(ctx: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
@@ -545,6 +546,7 @@ export const floorUnassigned: LintRule = {
   name: "floor-unassigned",
   family: "enclosure",
   layer: "validity",
+  stage: "walls",
   codes: ["W_FLOOR_UNASSIGNED"],
   check(ctx: LintContext): Diagnostic[] {
     if (ctx.rooms.length === 0) return [];
@@ -618,6 +620,7 @@ export const roomOutsideShell: LintRule = {
   name: "room-outside-shell",
   family: "enclosure",
   layer: "validity",
+  stage: "walls",
   codes: ["W_ROOM_OUTSIDE_SHELL"],
   check(ctx: LintContext): Diagnostic[] {
     if (ctx.rooms.length === 0) return [];

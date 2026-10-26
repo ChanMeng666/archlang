@@ -54,6 +54,7 @@ export const roomNotEquatorFacing: LintRule = {
   name: "room-not-equator-facing",
   family: "orientation",
   layer: "validity",
+  stage: "openings",
   codes: ["W_ROOM_NOT_EQUATOR_FACING"],
   check(ctx: LintContext): Diagnostic[] {
     const site = ctx.ir.site;

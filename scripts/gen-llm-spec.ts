@@ -52,6 +52,7 @@ import {
 } from "../src/grammar/tokens.js";
 import { KNOWN_MATERIALS } from "../src/hatches.js";
 import { buildManifest } from "../src/manifest.js";
+import { AUTHORING_STAGES } from "../src/stages.js";
 import { STYLE_KINDS, THEMES } from "../src/theme.js";
 import { AUTO_SCALE_DENOMINATORS, PAPER_ORIENTATIONS, PAPER_SIZES } from "../src/sheet.js";
 // The vertical datum's defaults are INTERPOLATED, never typed out: a language fact
@@ -770,7 +771,7 @@ arch score plan.arch --brief brief.json --json  # satisfied/total — measures, 
 arch score plan.arch --taste generic --json  # a reviewer's taste report, 0–1, never gates
 \`\`\`
 
-**Self-correction loop:** compile → \`validate --json\` (fix its \`next\` first) → lint → repair. If
+**Self-correction loop:** compile → \`validate --json\` (fix its \`next\` first) → lint → repair; author in stages: \`validate --stage ${AUTHORING_STAGES.slice(1, -1).join("|")}\` in turn, advancing when \`at_stage.clean\`. If
 \`ok\` is false, read each \`diagnostics[].fix\` (and \`line\`/\`col\`/\`span\`), edit the source, recompile.
 Then \`describe --json\` to confirm intent without rendering an image (floor area: \`net_area_m2\`; \`area_m2\` runs to wall centrelines). **Before shipping, gate with \`validate --strict\`**
 — lint flags furniture through a wall or in the wrong room, a fixture blocking a doorway or a door's

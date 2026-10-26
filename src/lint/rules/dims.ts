@@ -59,6 +59,7 @@ export const dimInside: LintRule = {
   name: "dim-inside",
   family: "annotation",
   layer: "drafting",
+  stage: "drafting",
   codes: ["W_DIM_INSIDE"],
   check(ctx: LintContext): Diagnostic[] {
     const dims = ctx.ir.elements.filter((e): e is RDim => e.kind === "dim");
@@ -149,6 +150,7 @@ export const dimOverlap: LintRule = {
   name: "dim-overlap",
   family: "annotation",
   layer: "drafting",
+  stage: "drafting",
   codes: ["W_DIM_OVERLAP"],
   check(ctx: LintContext): Diagnostic[] {
     const dims = ctx.ir.elements.filter((e): e is RDim => e.kind === "dim");
@@ -227,6 +229,7 @@ export const openingNotDimensioned: LintRule = {
   name: "opening-not-dimensioned",
   family: "annotation",
   layer: "drafting",
+  stage: "drafting",
   codes: ["W_OPENING_NOT_DIMENSIONED"],
   check(ctx: LintContext): Diagnostic[] {
     const { ir, doors, windows, openings, at } = ctx;
@@ -362,6 +365,7 @@ export const dimTextMismatch: LintRule = {
   name: "dim-text-mismatch",
   family: "annotation",
   layer: "drafting",
+  stage: "drafting",
   codes: ["W_DIM_TEXT_MISMATCH"],
   check(ctx: LintContext): Diagnostic[] {
     const dims = ctx.ir.elements.filter((e): e is RDim => e.kind === "dim" && !!e.span && e.text !== undefined);

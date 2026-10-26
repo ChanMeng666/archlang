@@ -47,6 +47,16 @@ import type {
 import { keepResultsOf } from "../ir.js";
 import { diagnosticsSummary, validateSummary } from "./summary.js";
 import { type KeepResult, keepValidateRow } from "../keep.js";
+import {
+  AUTHORING_STAGES,
+  type AuthoringStage,
+  atStage,
+  diagnosticStage,
+  isAuthoringStage,
+  type KindOf,
+  kindsOf,
+  predicateStage,
+} from "../stages.js";
 // Internal (not part of the public surface): parse → link → resolve without
 // rendering — validate/lint need only the diagnostics, never the SVG.
 import { resolvePlan } from "../analyze.js";
@@ -478,6 +488,7 @@ function report(
   coverage?: LintCoverage,
   next?: NextItem | null,
   keeps?: readonly KeepResult[],
+  staged?: Staged,
 ): number {
   const e = diags.filter((d) => d.severity === "error").length;
   const w = diags.length - e;
@@ -487,7 +498,7 @@ function report(
   const shown = active ? applyDiagFilter(diags, filter) : diags;
   // PS7.6: the count and the codes, of the whole set like `ok`. A function of the diagnostics
   // alone, so `validate`'s `next` stays purely additive (test/cli-validate-next.test.ts).
-  const summary = diagnosticsSummary(diags);
+  const summary = stagedSummary(diagnosticsSummary(diags), staged);
 
   if (args.json) {
     emitJson({
@@ -496,8 +507,10 @@ function report(
       ok,
       strict: args.strict ?? false,
       ...(active ? { filtered: true, total_diagnostics: diags.length } : {}),
-      diagnostics: shown.map((d) => diagnosticToJson(source, d)),
+      diagnostics: shown.map((d) => withStage(diagnosticToJson(source, d), staged?.stageOf(d))),
       ...(coverage ? { coverage } : {}),
+      // PS7.1: only under `--stage`, before `keeps` and `next`.
+      ...(staged?.at ? { at_stage: atStageJson(staged.at) } : {}),
       // ADR 0033: the plan's keeps, only when it declares one, before `next`.
       ...(keeps ? { keeps: keeps.map(keepValidateRow) } : {}),
       // `validate` only (PS5.3): appended LAST, so every byte before it is what it was.
@@ -506,7 +519,7 @@ function report(
   } else {
     // PS7.6: the first line of the report, only when there is something to count. The filter
     // note sits under it too, so the line cannot be read as describing the shown set.
-    if (diags.length && !args.quiet) {
+    if ((diags.length || staged?.at) && !args.quiet) {
       const shownNote = active ? `  (display filter: showing ${shown.length} of ${diags.length} diagnostics)\n` : "";
       process.stderr.write(`${summary}\n${shownNote}\n`);
     }
@@ -516,12 +529,59 @@ function report(
       const skipped = coverage ? coverageLine(coverage) : null;
       if (skipped) process.stderr.write(`  ${skipped}\n`);
       if (next) process.stderr.write(`${nextLine(source, next)}\n`);
+      if (staged?.at) process.stderr.write(`${stageLine(staged.at)}\n`);
       if (ok) process.stdout.write(`✓ ok${w ? ` (${w} warning${w === 1 ? "" : "s"})` : ""}\n`);
       else if (e === 0) process.stdout.write(`✗ ${w} warning${w === 1 ? "" : "s"} (--strict)\n`);
       else process.stdout.write(`✗ ${e} error${e === 1 ? "" : "s"}, ${w} warning${w === 1 ? "" : "s"}\n`);
     }
   }
   return ok ? EXIT.OK : EXIT.USER;
+}
+
+/**
+ * What `validate` knows about stages (PS7.1). `stageOf` is always there on `validate`, so every
+ * JSON diagnostic carries its `stage`; `at` only under `--stage`.
+ */
+interface Staged {
+  stageOf: (d: Diagnostic) => AuthoringStage;
+  at?: { stage: AuthoringStage; held: number; clean: boolean };
+}
+
+/** A JSON object with its `stage` appended last (additive: every key before it is as it was). */
+function withStage<T extends object>(j: T, stage: AuthoringStage | undefined): T {
+  return stage === undefined ? j : { ...j, stage };
+}
+
+const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+/** The summary under `--stage`: the stage first, the held-back count last; unchanged without it. */
+function stagedSummary(line: string, staged: Staged | undefined): string {
+  const at = staged?.at;
+  if (!at) return line;
+  const held = at.held ? ` (${plural(at.held, "later-stage finding")} held back)` : "";
+  return `stage ${at.stage}: ${line}${held}`;
+}
+
+const atStageJson = (at: NonNullable<Staged["at"]>): Record<string, unknown> => ({
+  stage: at.stage,
+  held_back: at.held,
+  clean: at.clean,
+});
+
+/** The human stage line (stderr): whether the stage is clean, and where to go next. */
+function stageLine(at: NonNullable<Staged["at"]>): string {
+  const after = AUTHORING_STAGES[AUTHORING_STAGES.indexOf(at.stage) + 1];
+  const held = at.held ? `; ${plural(at.held, "later-stage finding")} held back` : "";
+  if (!at.clean) return `  (stage ${at.stage}: fix what it shows before advancing${held})`;
+  return after === undefined
+    ? `  (stage ${at.stage} is clean, and it is the last)`
+    : `  (stage ${at.stage} is clean: advance to --stage ${after}${held})`;
+}
+
+/** A stage is clean when no tier of `next` but taste has an item left (taste never gates). */
+function isClean(input: NextInput): boolean {
+  const { taste: _taste, ...rest } = input;
+  return nextDiagnostic(rest) === null;
 }
 
 /**
@@ -551,6 +611,12 @@ export function cmdValidate(args: Args): number {
       `unknown taste profile "${args.taste}"${didYouMean(args.taste, TASTE_PROFILE_NAMES)} (available: ${echoList(TASTE_PROFILE_NAMES)})`,
     );
   }
+  if (args.stage !== undefined && !isAuthoringStage(args.stage)) {
+    return usageError(
+      `unknown stage "${args.stage}"${didYouMean(args.stage, AUTHORING_STAGES)} (available: ${echoList(AUTHORING_STAGES)})`,
+    );
+  }
+  const stage = args.stage as AuthoringStage | undefined;
   const filter = parseDiagFilter(args);
   if (isCheckError(filter)) return filter.exit;
   return withSource(args, (source, input) => {
@@ -581,9 +647,20 @@ export function cmdValidate(args: Args): number {
     // `--graph` and/or `--intent` layer an intent check onto plain validate; both
     // blocks may appear in one call, and either failing gates the exit code. Plain
     // validate (neither flag) is `report`, byte-identical to before but for `next`.
+    // PS7.1: every diagnostic's stage, read off its code (a broken hard keep off its measure).
+    const kindOf = kindsOf(levels.length > 0 ? levels.map((l) => l.ir) : ir ? [ir] : []);
+    const stageOf = (d: Diagnostic): AuthoringStage => diagnosticStage(d, keeps, kindOf);
     if (args.graph !== undefined || args.intent !== undefined)
-      return reportWithChecks(source, diags, args, world, filter, nextInput, keeps);
-    return report(source, diags, args, filter, undefined, nextDiagnostic(nextInput), keeps);
+      return reportWithChecks(source, diags, args, world, filter, nextInput, keeps, { stage, stageOf, kindOf });
+    if (stage === undefined)
+      return report(source, diags, args, filter, undefined, nextDiagnostic(nextInput), keeps, { stageOf });
+    // `--stage`: the report, `next` and `ok` read the stage's view; errors always stay.
+    const view = atStage(stage, diags, nextInput, kindOf);
+    const at = { stage, held: view.held, clean: isClean(view.input) };
+    return report(source, view.diagnostics, args, filter, undefined, nextDiagnostic(view.input), keeps, {
+      stageOf,
+      at,
+    });
   });
 }
 
@@ -691,19 +768,37 @@ function reportWithChecks(
   world: World,
   filter: DiagFilter,
   nextInput: NextInput,
-  keeps?: readonly KeepResult[],
+  keeps: readonly KeepResult[] | undefined,
+  stages: { stage?: AuthoringStage; stageOf: (d: Diagnostic) => AuthoringStage; kindOf: KindOf },
 ): number {
-  const graph = args.graph !== undefined ? loadGraphCheck(source, args.graph, args, world) : undefined;
-  if (isCheckError(graph)) return graph.exit;
+  const loaded = args.graph !== undefined ? loadGraphCheck(source, args.graph, args, world) : undefined;
+  if (isCheckError(loaded)) return loaded.exit;
+  let graph: GraphCheck | undefined = loaded;
 
   let intentResult: IntentCheckResult | undefined;
-  let feedback: string[] | undefined;
   if (args.intent !== undefined) {
     const it = loadIntent(args.intent, "--intent", args);
     if (isCheckError(it)) return it.exit;
     intentResult = validateIntent(source, it, { world });
-    if (args.feedback) feedback = feedbackForResult(intentResult);
   }
+
+  // PS7.1 `--stage`: the stage's view of everything measured; errors always stay. A `--graph`
+  // check reads the door graph, so before `openings` its block is held back with the rest.
+  let at: Staged["at"];
+  if (stages.stage !== undefined) {
+    const view = atStage(
+      stages.stage,
+      diags,
+      { ...nextInput, ...(intentResult ? { intent: intentResult } : {}), ...(graph ? { graph } : {}) },
+      stages.kindOf,
+    );
+    diags = view.diagnostics;
+    nextInput = view.input;
+    intentResult = view.input.intent;
+    graph = view.input.graph;
+    at = { stage: stages.stage, held: view.held, clean: isClean(view.input) };
+  }
+  const feedback = intentResult && args.feedback ? feedbackForResult(intentResult) : undefined;
 
   const e = diags.filter((d) => d.severity === "error").length;
   const w = diags.length - e;
@@ -721,7 +816,7 @@ function reportWithChecks(
     ...(graph ? { graph } : {}),
   });
 
-  const summary = validateSummary(diags, ok);
+  const summary = stagedSummary(validateSummary(diags, ok), { stageOf: stages.stageOf, at });
 
   if (args.json) {
     const o: Record<string, unknown> = {
@@ -729,7 +824,7 @@ function reportWithChecks(
       ok,
       strict: args.strict ?? false,
       ...(active ? { filtered: true, total_diagnostics: diags.length } : {}),
-      diagnostics: shown.map((d) => diagnosticToJson(source, d)),
+      diagnostics: shown.map((d) => withStage(diagnosticToJson(source, d), stages.stageOf(d))),
     };
     if (graph) {
       o.graph = {
@@ -745,12 +840,13 @@ function reportWithChecks(
         satisfied: intentResult.satisfied,
         total: intentResult.total,
         subscores: intentResult.subscores,
-        violations: intentResult.violations.map(violationJson),
+        violations: intentResult.violations.map((v) => withStage(violationJson(v), predicateStage(v.predicate))),
         ...measuresJson(intentResult),
       };
       if (feedback) block.feedback = feedback;
       o.intent = block;
     }
+    if (at) o.at_stage = atStageJson(at);
     if (keeps) o.keeps = keeps.map(keepValidateRow);
     // PS5.3: appended LAST, so every byte before it is what it was.
     o.next = next;
@@ -776,6 +872,7 @@ function reportWithChecks(
         if (feedback) for (const f of feedback) process.stderr.write(`  ${f}\n`);
       }
       if (next) process.stderr.write(`${nextLine(source, next)}\n`);
+      if (at) process.stderr.write(`${stageLine(at)}\n`);
       if (ok) {
         const extras: string[] = [];
         if (graph) extras.push("graph matches");
