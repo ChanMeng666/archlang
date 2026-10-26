@@ -2,7 +2,7 @@
 # origin: audits/archcanvas-public-examples.md CB2 (sink, hob and fridge butted together with no worktop)
 # expect: W_ROOM_MISSING_DEFINING
 # status: done
-# fact: r_kitchen (uses kitchen) holds a kitchen_sink, a stove and a fridge in one run (x 100-2100) and no counter
+# fact: r_kitchen (uses kitchen) holds a kitchen_sink and a stove (x 100-1500) and a fridge (x 2100-2700) and no counter
 plan "Kitchen without a worktop" {
   units mm
   grid 50
@@ -16,5 +16,5 @@ plan "Kitchen without a worktop" {
   window at (4500,0) width 1500 wall shell
   furniture kitchen_sink against wall shell segment 0 offset 500 in r_kitchen
   furniture stove against wall shell segment 0 offset 1200 in r_kitchen
-  furniture fridge against wall shell segment 0 offset 1800 in r_kitchen
+  furniture fridge against wall shell segment 0 offset 2400 in r_kitchen
 }

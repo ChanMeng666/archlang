@@ -270,7 +270,7 @@ openings) and walks it from the exterior. For the studio:
 |-------|---------|
 | `entrances` / `hasEntrance` | the door(s) that connect the exterior to a room, and whether any exist at all |
 | `edges[].nominalWidth` | the connector's drawn width |
-| `edges[].estimatedClearWidth` | the usable opening: a **door** loses ~60 mm to its leaf and stop, an **opening** keeps its full width |
+| `edges[].estimatedClearWidth` | the usable opening: a **door** loses ~60 mm to its leaf and stop (from one leaf of a `double` door, half its width), an **opening** keeps its full width |
 | `edges[].exterior` | whether this connector reaches the outside |
 | `edges[].straddles` | as `doors[].straddles` |
 | `edges[].ambiguous` | the connector sits where three or more rooms meet, and probing one wall thickness either side of its host wall's centreline could not say which two it joins (a probe landed on a room boundary). It is listed but joins nothing, so it counts for no room's reachability. When the probe does decide, `between` is the room on each face, and lint, circulation and `suggest` all read that same pair |
@@ -1095,11 +1095,11 @@ What it cannot tell you:
 |--------|---------------|
 | Room | `W_ROOM_TOO_SMALL`, `W_ROOM_DISCONNECTED`, `W_BEDROOM_NO_WINDOW`, `W_HABITABLE_NO_WINDOW`, `W_ROOM_MISSING_DEFINING`, `W_ROOM_OVERLAP`, `W_ROOM_NOT_EQUATOR_FACING` |
 | Placement | `W_DOOR_OFF_WALL`, `W_WINDOW_OFF_WALL`, `W_OPENING_OFF_WALL` |
-| Door / circulation | `W_DOOR_CLEARANCE`, `W_SWING_OBSTRUCTED`, `W_LEAF_ACROSS_DOORWAY`, `W_NO_ENTRANCE` |
+| Door / circulation | `W_DOOR_CLEARANCE`, `W_SWING_OBSTRUCTED`, `W_DOORWAY_BLOCKED`, `W_LEAF_ACROSS_DOORWAY`, `W_LEAF_TOO_WIDE`, `W_NO_ENTRANCE` |
 | Reachability | `W_ROOM_UNREACHABLE`, `W_BATH_VIA_BEDROOM` |
 | Wet rooms | `W_ROOM_NOT_ENCLOSED`, `W_ROOM_NO_FIXTURE` |
 | Garage | `W_GARAGE_TOO_NARROW` |
-| Furniture / fixtures | `W_FIXTURE_FLOATING`, `W_FIXTURE_BACK_TO_ROOM`, `W_FIXTURE_WRONG_ROOM`, `W_FURNITURE_OVERLAP`, `W_FURN_CLEARANCE`, `W_WC_SIDE_CLEARANCE`, `W_FURNITURE_OVER_WINDOW`, `W_FOOTPRINT_TRANSPOSED` |
+| Furniture / fixtures | `W_FIXTURE_FLOATING`, `W_FIXTURE_BACK_TO_ROOM`, `W_FIXTURE_WRONG_ROOM`, `W_FURNITURE_OVERLAP`, `W_FURN_CLEARANCE`, `W_WC_SIDE_CLEARANCE`, `W_FURNITURE_OVER_WINDOW`, `W_HOB_UNDER_WINDOW`, `W_HOB_FRIDGE_GAP`, `W_FOOTPRINT_TRANSPOSED` |
 | Circulation quality | `W_ROOM_NO_CLEAR_PATH`, `W_PATH_TOO_NARROW`, `W_CIRCUITOUS_PATH` |
 | Circulation and privacy | `W_ROOM_VIA_PRIVATE`, `W_WET_ROOM_DOOR`, `W_ENTRANCE_INTO_PRIVATE` |
 | Enclosure | `W_BOUNDARY_NO_WALL`, `W_FLOOR_UNASSIGNED`, `W_ROOM_OUTSIDE_SHELL` |
@@ -1148,6 +1148,18 @@ bookcase or locker) stands against a window's wall across part of its span, on e
 the wall; a window whose sill is at or above 2100 mm is a high window over the unit and is not
 judged. Both give the measured figure and a slide that clears it in the hint, and neither offers a
 machine fix.
+
+Two more read a cooking surface (`stove`, `hob`, `cooktop`). `W_HOB_UNDER_WINDOW` fires when one
+stands against a window's wall across part of its span (the band the tall-unit rule reads): a
+curtain over the flames, and the reach across the burners to open it. `W_HOB_FRIDGE_GAP` fires when
+a fridge or other tall unit stands inside `hobLandingMm` (300 mm) of the hob's side, the worktop a
+cook lands a pan on. Both read every plan, a café's kitchen as a dwelling's.
+
+`W_DOORWAY_BLOCKED` keeps a doorway's approach clear: the span, jamb to jamb, `doorwayLandingMm`
+(300 mm) past each face of the wall, for a door and for a leaf-less `opening` alike (a counter
+across an opening is a servery hatch and does not count). `W_LEAF_ACROSS_DOORWAY` reads the same
+zone from the same face for another door's parked leaf. `W_LEAF_TOO_WIDE` fires on a swinging leaf
+over 1219 mm: a wide doorway is a `door double`, two leaves of half its width.
 
 Narrow a noisy report with `--code` or `--severity` — on `lint` and on `validate`:
 

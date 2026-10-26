@@ -41,9 +41,9 @@
 <line x1="2937.5" y1="5981" x2="2937.5" y2="6100" stroke="#a8a29a" stroke-width="8.9"/>
 <line x1="3112.5" y1="2700" x2="3112.5" y2="2819" stroke="#a8a29a" stroke-width="8.9"/>
 <line x1="3112.5" y1="5981" x2="3112.5" y2="6100" stroke="#a8a29a" stroke-width="8.9"/>
-<path d="M 100,688 L 100,112 A 12 12 0 0 1 112,100 L 738,100 A 12 12 0 0 1 750,112 L 750,688 A 12 12 0 0 1 738,700 L 112,700 A 12 12 0 0 1 100,688 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="12.32"/>
-<line x1="659" y1="700" x2="659" y2="100" stroke="#a8a29a" stroke-width="8.9"/>
-<line x1="704.5" y1="496" x2="704.5" y2="304" stroke="#6c6864" stroke-width="12.32"/>
+<path d="M 100,3888 L 100,3312 A 12 12 0 0 1 112,3300 L 738,3300 A 12 12 0 0 1 750,3312 L 750,3888 A 12 12 0 0 1 738,3900 L 112,3900 A 12 12 0 0 1 100,3888 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="12.32"/>
+<line x1="659" y1="3900" x2="659" y2="3300" stroke="#a8a29a" stroke-width="8.9"/>
+<line x1="704.5" y1="3696" x2="704.5" y2="3504" stroke="#6c6864" stroke-width="12.32"/>
 <polygon points="100,1500 100,900 700,900 700,1500" fill="#f4f2ee" stroke="#6c6864" stroke-width="12.32"/>
 <path d="M 136,1449 L 136,951 A 15 15 0 0 1 151,936 L 529,936 A 15 15 0 0 1 544,951 L 544,1449 A 15 15 0 0 1 529,1464 L 151,1464 A 15 15 0 0 1 136,1449 Z" fill="none" stroke="#a8a29a" stroke-width="8.9"/>
 <circle cx="244.12" cy="1325.88" r="76.7" fill="none" stroke="#a8a29a" stroke-width="8.9"/>
@@ -63,9 +63,9 @@
 <circle cx="439" cy="2000" r="28.47" fill="#ffffff" stroke="#a8a29a" stroke-width="8.9"/>
 <circle cx="163" cy="2000" r="21" fill="none" stroke="#a8a29a" stroke-width="8.9"/>
 <line x1="184" y1="2000" x2="307.6" y2="2000" stroke="#a8a29a" stroke-width="8.9"/>
-<polygon points="100,3100 100,2500 700,2500 700,3100" fill="#f4f2ee" stroke="#6c6864" stroke-width="12.32"/>
-<line x1="127" y1="3100" x2="127" y2="2500" stroke="#a8a29a" stroke-width="8.9"/>
-<line x1="664" y1="3100" x2="664" y2="2500" stroke="#a8a29a" stroke-width="8.9"/>
+<polygon points="100,700 100,100 700,100 700,700" fill="#f4f2ee" stroke="#6c6864" stroke-width="12.32"/>
+<line x1="127" y1="700" x2="127" y2="100" stroke="#a8a29a" stroke-width="8.9"/>
+<line x1="664" y1="700" x2="664" y2="100" stroke="#a8a29a" stroke-width="8.9"/>
 <path d="M 1460.8,2800 L 2739.2,2800 A 10.8 10.8 0 0 1 2750,2810.8 L 2750,3689.2 A 10.8 10.8 0 0 1 2739.2,3700 L 1460.8,3700 A 10.8 10.8 0 0 1 1450,3689.2 L 1450,2810.8 A 10.8 10.8 0 0 1 1460.8,2800 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="12.32"/>
 <path d="M 1484.2,2827 L 2715.8,2827 A 7.2 7.2 0 0 1 2723,2834.2 L 2723,3665.8 A 7.2 7.2 0 0 1 2715.8,3673 L 1484.2,3673 A 7.2 7.2 0 0 1 1477,3665.8 L 1477,2834.2 A 7.2 7.2 0 0 1 1484.2,2827 Z" fill="none" stroke="#a8a29a" stroke-width="8.9"/>
 <path d="M 413,4150 L 1187,4150 A 63 63 0 0 1 1250,4213 L 1250,6087 A 63 63 0 0 1 1187,6150 L 413,6150 A 63 63 0 0 1 350,6087 L 350,4213 A 63 63 0 0 1 413,4150 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="12.32"/>

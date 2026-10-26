@@ -545,7 +545,8 @@
               "barn",
               "bifold",
               "pocket",
-              "garage"
+              "garage",
+              "double"
             ],
             "description": "Door kind (default `hinged`, in which case this is omitted). A non-hinged kind has no swing arc; `hinge` is not accepted on one."
           },

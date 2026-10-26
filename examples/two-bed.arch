@@ -42,9 +42,9 @@ plan "Two-Bedroom Flat" {
   # Kitchen run along the west wall (the ring's segment 3, which runs from (0,8000) up to
   # (0,0)), clear of the window; the living half of the room takes a sofa and a table.
   furniture fridge       against wall exterior segment 3 offset 7500 in r_living
-  furniture stove        against wall exterior segment 3 offset 6800 in r_living
+  furniture stove        against wall exterior segment 3 offset 5300 in r_living
   furniture kitchen_sink against wall exterior segment 3 offset 6100 in r_living
-  furniture counter      against wall exterior segment 3 offset 5300 in r_living
+  furniture counter      against wall exterior segment 3 offset 6800 in r_living
   furniture sofa  at (2850,5400) size 850x2000 label "Sofa"  in r_living
   furniture table at (800,5800)  size 1200x800 label "Table" in r_living
 

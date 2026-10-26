@@ -1,7 +1,7 @@
 # class: clearances
 # origin: audits/archcanvas-public-examples.md CB2 ("the fridge is directly against the hob"; same template in courtyard, studio-loft, townhouse, family-house)
 # expect: W_HOB_FRIDGE_GAP
-# status: todo
+# status: done
 # fact: the stove spans x 1600-2200 and the fridge x 2200-2800 on the north wall: 0 mm between them
 plan "Hob against the fridge" {
   units mm

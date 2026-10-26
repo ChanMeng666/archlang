@@ -1599,6 +1599,7 @@ A bare **kind** word may lead the statement, after any `id=` — the same shape 
 | `bifold` | two folding leaves, the fold hinge and the **dashed** head track | no |
 | `pocket` | a panel and the **dashed** (hidden) wall cavity it slides into | no |
 | `garage` *(v1.31)* | a sectional panel in the reveal, plus its **dashed** overhead projection | no |
+| `double` | two leaf slabs, each half the width, hung on the two jambs and closing onto each other at the centre, each with its solid swing arc | yes, two |
 
 Every panel is a slab drawn with the same pen as a hinged leaf, and a dash is never
 decoration: it marks what is above the cut plane (a track, a parked garage panel) or
@@ -1607,7 +1608,11 @@ hidden inside the wall (a pocket's cavity).
 `hinged` is the default **and writing it is identical to omitting it** — a plan
 that names no kind compiles to exactly the bytes it always did.
 
-**Only a hinged door has a swing arc.** For every other kind the leaf sweeps
+**Only a hinged or `double` door has a swing arc**; a `double` door has two, one per leaf,
+and every rule that reads a swing (`W_SWING_OBSTRUCTED`, `W_LEAF_ACROSS_DOORWAY`, the clear
+zones, `repair`, `finish`) reads each leaf as drawn. A swinging leaf wider than 1219 mm
+(48 in) is [`W_LEAF_TOO_WIDE`](error-codes.md#w_leaf_too_wide): a wide doorway is a `double`
+door, whose leaves are each half its width. For every other kind the leaf sweeps
 nothing, so [`W_SWING_OBSTRUCTED`](error-codes.md#w_swing_obstructed) cannot apply
 to it — which is why that warning's remedies now name them. The rules that measure
 the *doorway* rather than the leaf are unchanged for every kind: you still walk
@@ -1621,7 +1626,7 @@ proved correct under `place … mirror`:
 
 | kind | `swing in\|out` selects |
 | --- | --- |
-| `hinged` | which side of the wall the leaf sweeps to |
+| `hinged`, `double` | which side of the wall the leaf (both leaves) sweeps to |
 | `barn` | which **face** of the wall the panel hangs on |
 | `bifold` | which **face** the panels fold toward |
 | `sliding`, `pocket` | *not accepted* — the panel stays in the plane of the wall, or inside it |
@@ -1652,13 +1657,14 @@ The overhead projection is a rectangle the width of the opening and half that de
 the same statement an `upper_cabinet`, a [`roof`](#roof) eaves line and a [`void`](#void)
 make.
 
-**Other clauses are refused, not ignored.** `hinge` is hinged-only and `slide`/`open` are
-sliding-family-only; the wrong pairing is
+**Other clauses are refused, not ignored.** `hinge` is hinged-only (a `double` door has a
+leaf on each jamb, so there is no side to choose) and `slide`/`open` are sliding-family-only; the wrong pairing is
 [`E_DOOR_KIND_CLAUSE`](error-codes.md#e_door_kind_clause) with a machine-applicable
-fix that deletes the clause. A non-hinged kind on a wall whose hosting edge is an
-`arc` is [`E_DOOR_KIND_CURVED`](error-codes.md#e_door_kind_curved) — a straight panel
+fix that deletes the clause. A sliding-family or `garage` door on a wall whose hosting
+edge is an `arc` is [`E_DOOR_KIND_CURVED`](error-codes.md#e_door_kind_curved) — a straight panel
 on a straight track has no meaning on a curved reveal, and drawing one anyway would
-be a wrong drawing with no diagnostic. Clause order follows the grammar line above.
+be a wrong drawing with no diagnostic. A `double` door is accepted there, as a hinged one
+is: both leaves are taken from the tangent at the doorway's centre. Clause order follows the grammar line above.
 
 A `pocket` door needs its own width plus end clearance of clear wall past the
 slide-side jamb, or [`W_POCKET_RUN`](error-codes.md#w_pocket_run) — measured, and

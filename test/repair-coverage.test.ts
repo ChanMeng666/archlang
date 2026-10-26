@@ -165,8 +165,10 @@ describe("repair — a single resolved instance is rewritten however it is neste
     expect(r.changes).toHaveLength(1);
     expect(r.changes[0]!.via).toBe("at");
     expect(r.changes[0]!.reason).toContain("wall");
-    // The edit lands inside the component body, where the statement lives.
-    expect(r.source).toContain("component Nook() {\n    furniture sofa at (2700, 600)");
+    // The edit lands inside the component body, where the statement lives. x 2650: the sofa's east
+    // side stops 300 mm short of the partition's FACE (3950), where the door's approach starts
+    // (PS2.54; 2700 while the approach was measured from the centreline).
+    expect(r.source).toContain("component Nook() {\n    furniture sofa at (2650, 600)");
     expect(codes(r.source)).not.toContain("W_FURNITURE_WALL_COLLISION");
   });
 
@@ -176,7 +178,7 @@ describe("repair — a single resolved instance is rewritten however it is neste
     const r = repair(src);
     expect(r.changed).toBe(true);
     expect(r.changes[0]!.via).toBe("at");
-    expect(r.source).toContain("if one == 1 {\n    furniture sofa at (2700, 600)");
+    expect(r.source).toContain("if one == 1 {\n    furniture sofa at (2650, 600)");
     expect(codes(r.source)).not.toContain("W_FURNITURE_WALL_COLLISION");
   });
 

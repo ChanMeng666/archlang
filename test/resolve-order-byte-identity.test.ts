@@ -88,7 +88,9 @@ const BASELINE: [string, string, string[]][] = [
     "relational-readers.arch",
     // Re-measured for PS0.5 (see the header): was 8bb99685…642f with
     // ["W_SWING_ROOM_NOT_ADJACENT@678", "E_FURN_AGAINST@734", "E_PLACE_REF@795"].
-    "6e7386f0c2a15fdf4d328253d6ce9f28cccd62d4cb2c07f850fab13c3987e8a7",
+    // Re-measured for PS2.54 (6e7386f0…e8a7): its `W_DOORWAY_BLOCKED` counter, measured from the
+    // wall's face, leaves 0 mm (50 mm from the centreline); `lint()` text only.
+    "44c7f50a4e0ed98d42f48c15b00ad99d670e95888bab16c0ea00bb4bec8da0b1",
     [],
   ],
   [

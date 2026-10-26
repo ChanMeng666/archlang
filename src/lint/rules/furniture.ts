@@ -21,7 +21,7 @@ import {
 import { actOnQuarterTurn, type D4, inverse } from "../../algebra/d4.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { type BBox, doorLandingRect, rectsOverlap, wallIntrusionDepth } from "../../geometry/rect.js";
-import { doorSwing } from "../../geometry.js";
+import { doorLeaves } from "../../geometry.js";
 import type { WallSegment } from "../../geometry.js";
 import type { RFurniture } from "../../ir.js";
 import { pointInPolygon } from "../../geometry/polygon.js";
@@ -456,13 +456,17 @@ function collisionHint(f: RFurniture, fr: BBox, hit: WallSegment, ctx: LintConte
   }
   const room = f.room !== undefined ? roomRects.get(f.room) : undefined;
   // Other obstacles in the strip: the piece just clear of each, either side. Their rects are
-  // the other furniture, each door's doorway landing, and the box round each door's swing.
+  // the other furniture, each door's and cased opening's doorway landing, and the box round each
+  // door's swing.
   const obstacles: BBox[] = ctx.furniture.filter((o) => o !== f).map((o) => rectOf(o));
+  for (const o of ctx.openings) {
+    const landing = doorLandingRect(o, ctx.rules.doorwayLandingMm);
+    if (landing) obstacles.push(landing);
+  }
   for (const door of ctx.doors) {
     const landing = doorLandingRect(door, ctx.rules.doorwayLandingMm);
     if (landing) obstacles.push(landing);
-    const sw = doorSwing(door);
-    if (sw) {
+    for (const sw of doorLeaves(door)) {
       const r = sw.radius + ctx.rules.swingClearanceMm;
       obstacles.push({ x: sw.hinge.x - r, y: sw.hinge.y - r, w: 2 * r, h: 2 * r });
     }

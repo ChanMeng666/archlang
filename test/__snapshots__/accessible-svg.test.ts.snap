@@ -18,23 +18,23 @@ exports[`accessible (opt-in <title>/<desc>/aria) > renders studio.arch accessibl
 <circle cx="700" cy="589" r="28.47" fill="#ffffff" stroke="#a8a29a" stroke-width="8.32"/>
 <circle cx="700" cy="313" r="21" fill="none" stroke="#a8a29a" stroke-width="8.32"/>
 <line x1="700" y1="334" x2="700" y2="457.6" stroke="#a8a29a" stroke-width="8.32"/>
-<polygon points="1200,250 1800,250 1800,850 1200,850" fill="#f4f2ee" stroke="#6c6864" stroke-width="11.52"/>
-<line x1="1200" y1="277" x2="1800" y2="277" stroke="#a8a29a" stroke-width="8.32"/>
-<line x1="1200" y1="814" x2="1800" y2="814" stroke="#a8a29a" stroke-width="8.32"/>
 <polygon points="1950,250 2550,250 2550,850 1950,850" fill="#f4f2ee" stroke="#6c6864" stroke-width="11.52"/>
-<path d="M 2001,286 L 2499,286 A 15 15 0 0 1 2514,301 L 2514,679 A 15 15 0 0 1 2499,694 L 2001,694 A 15 15 0 0 1 1986,679 L 1986,301 A 15 15 0 0 1 2001,286 Z" fill="none" stroke="#a8a29a" stroke-width="8.32"/>
-<circle cx="2124.12" cy="394.12" r="76.7" fill="none" stroke="#a8a29a" stroke-width="8.32"/>
-<circle cx="2124.12" cy="394.12" r="42.19" fill="none" stroke="#a8a29a" stroke-width="8.32"/>
-<circle cx="2375.88" cy="394.12" r="76.7" fill="none" stroke="#a8a29a" stroke-width="8.32"/>
-<circle cx="2375.88" cy="394.12" r="42.19" fill="none" stroke="#a8a29a" stroke-width="8.32"/>
-<circle cx="2124.12" cy="585.88" r="55.61" fill="none" stroke="#a8a29a" stroke-width="8.32"/>
-<circle cx="2124.12" cy="585.88" r="30.59" fill="none" stroke="#a8a29a" stroke-width="8.32"/>
-<circle cx="2375.88" cy="585.88" r="55.61" fill="none" stroke="#a8a29a" stroke-width="8.32"/>
-<circle cx="2375.88" cy="585.88" r="30.59" fill="none" stroke="#a8a29a" stroke-width="8.32"/>
-<circle cx="2070" cy="787" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="8.32"/>
-<circle cx="2190" cy="787" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="8.32"/>
-<circle cx="2310" cy="787" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="8.32"/>
-<circle cx="2430" cy="787" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="8.32"/>
+<line x1="1950" y1="277" x2="2550" y2="277" stroke="#a8a29a" stroke-width="8.32"/>
+<line x1="1950" y1="814" x2="2550" y2="814" stroke="#a8a29a" stroke-width="8.32"/>
+<polygon points="1200,250 1800,250 1800,850 1200,850" fill="#f4f2ee" stroke="#6c6864" stroke-width="11.52"/>
+<path d="M 1251,286 L 1749,286 A 15 15 0 0 1 1764,301 L 1764,679 A 15 15 0 0 1 1749,694 L 1251,694 A 15 15 0 0 1 1236,679 L 1236,301 A 15 15 0 0 1 1251,286 Z" fill="none" stroke="#a8a29a" stroke-width="8.32"/>
+<circle cx="1374.12" cy="394.12" r="76.7" fill="none" stroke="#a8a29a" stroke-width="8.32"/>
+<circle cx="1374.12" cy="394.12" r="42.19" fill="none" stroke="#a8a29a" stroke-width="8.32"/>
+<circle cx="1625.88" cy="394.12" r="76.7" fill="none" stroke="#a8a29a" stroke-width="8.32"/>
+<circle cx="1625.88" cy="394.12" r="42.19" fill="none" stroke="#a8a29a" stroke-width="8.32"/>
+<circle cx="1374.12" cy="585.88" r="55.61" fill="none" stroke="#a8a29a" stroke-width="8.32"/>
+<circle cx="1374.12" cy="585.88" r="30.59" fill="none" stroke="#a8a29a" stroke-width="8.32"/>
+<circle cx="1625.88" cy="585.88" r="55.61" fill="none" stroke="#a8a29a" stroke-width="8.32"/>
+<circle cx="1625.88" cy="585.88" r="30.59" fill="none" stroke="#a8a29a" stroke-width="8.32"/>
+<circle cx="1320" cy="787" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="8.32"/>
+<circle cx="1440" cy="787" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="8.32"/>
+<circle cx="1560" cy="787" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="8.32"/>
+<circle cx="1680" cy="787" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="8.32"/>
 <path d="M 2712,250 L 3288,250 A 12 12 0 0 1 3300,262 L 3300,888 A 12 12 0 0 1 3288,900 L 2712,900 A 12 12 0 0 1 2700,888 L 2700,262 A 12 12 0 0 1 2712,250 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="11.52"/>
 <line x1="2700" y1="809" x2="3300" y2="809" stroke="#a8a29a" stroke-width="8.32"/>
 <line x1="2904" y1="854.5" x2="3096" y2="854.5" stroke="#6c6864" stroke-width="11.52"/>

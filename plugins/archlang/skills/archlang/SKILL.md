@@ -271,9 +271,10 @@ not make. When lint reports `W_ROOM_UNREACHABLE`, `W_ROOM_DISCONNECTED`, `W_NO_E
 
 ### Pick the door KIND before you widen the room
 
-A door has a kind — `hinged` (the default) · `sliding` · `barn` · `bifold` · `pocket` · `garage` —
-and it changes what the checks can say, not just the drawing. **Only `hinged` sweeps an arc**, so
-`W_SWING_OBSTRUCTED` cannot apply to any of the others.
+A door has a kind — `hinged` (the default) · `sliding` · `barn` · `bifold` · `pocket` · `garage` ·
+`double` — and it changes what the checks can say, not just the drawing. **Only `hinged` and `double`
+(two leaves, one per jamb) sweep arcs**, so `W_SWING_OBSTRUCTED` cannot apply to any of the others.
+A hinged leaf over 1219 mm raises `W_LEAF_TOO_WIDE`: a wide doorway is a `double` door.
 
 That makes the kind a legitimate answer to a diagnostic, and often the *right* one:
 
@@ -284,8 +285,8 @@ That makes the kind a legitimate answer to a diagnostic, and often the *right* o
   Swapping one warning for the other is a real trade, so read the new one rather than assuming a win.
 - Clauses are kind-specific and a wrong pairing **refuses** (`E_DOOR_KIND_CLAUSE`): `hinge` is
   hinged-only, `slide`/`open` are sliding-family-only, and `garage` takes no clause at all — which
-  side it parks on is derived from which face has floor. A non-hinged kind on an `arc` wall also
-  refuses (`E_DOOR_KIND_CURVED`).
+  side it parks on is derived from which face has floor. A kind other than `hinged` or `double` on an
+  `arc` wall also refuses (`E_DOOR_KIND_CURVED`).
 
 `archlang spec` has the full grammar; `examples/bungalow.arch` is the worked plan.
 

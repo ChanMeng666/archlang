@@ -267,12 +267,18 @@ suite("doors — a non-hinged kind on a curved host is refused, not approximated
       const got = compile(curved(`door id=d ${k} on w at 50% width 900`), { noCache: true }).diagnostics.some(
         (d) => d.code === "E_DOOR_KIND_CURVED",
       );
-      expect(got, k).toBe(k !== "hinged");
+      // A `double` door's two leaves come from the tangent at the doorway's centre, as a hinged
+      // leaf does (PS2.11e), so only the sliding family and `garage` are refused.
+      expect(got, k).toBe(k !== "hinged" && k !== "double");
     }
   });
 
   it("a hinged door on the same curve still works — its leaf comes from the tangent", () => {
     expect(compile(curved("door id=d on w at 50% width 900"), { noCache: true }).errors).toEqual([]);
+  });
+
+  it("a double door on the same curve works too — both leaves from the tangent at its centre", () => {
+    expect(compile(curved("door id=d double on w at 50% width 1800"), { noCache: true }).errors).toEqual([]);
   });
 });
 
@@ -486,6 +492,9 @@ suite("doors — W_POCKET_RUN", () => {
       "stair-head-void",
       "stair-too-steep",
       "shaft-footprint-mismatch",
+      "hob-under-window",
+      "hob-fridge-gap",
+      "leaf-too-wide",
     ]);
   });
 
@@ -501,8 +510,9 @@ suite("doors — W_POCKET_RUN", () => {
     // the dimension-text rule (no `dim` here), nor the two annotation-collision rules (no
     // furniture, no `dims auto`, no title), nor the four clearance rules (PS2.11a–d:
     // no WC, no tall unit, no furniture, and one door has no other doorway to park its leaf across),
-    // nor the six stair rules last of all (PS2.11e, PS2.34, PS2.15: no stair).
-    expect(LINT_RULES.map((r) => r.name).slice(-28)).toEqual([
+    // nor the six stair rules (PS2.11e, PS2.34, PS2.15: no stair) and the three PS2.11e kitchen and
+    // door rules last of all (no hob, and a 600 mm leaf).
+    expect(LINT_RULES.map((r) => r.name).slice(-31)).toEqual([
       "door-near-corner",
       "opening-not-dimensioned",
       "room-via-private",
@@ -531,6 +541,9 @@ suite("doors — W_POCKET_RUN", () => {
       "stair-head-void",
       "stair-too-steep",
       "shaft-footprint-mismatch",
+      "hob-under-window",
+      "hob-fridge-gap",
+      "leaf-too-wide",
     ]);
     // A plan carrying an unrelated pre-existing warning (a sub-passable door width) AND
     // tripping the new rule: the old diagnostic must still be first, byte-for-byte.
@@ -721,10 +734,18 @@ suite("doors — the drawing language", () => {
   });
 
   it("dashes only what is above the cut plane or hidden — and always by NAME", () => {
-    // hinged: the swing is at floor level. sliding: the panels and tracks are visible.
+    // hinged and double: the swings are at floor level. sliding: the panels and tracks are visible.
     // barn: the top-hung track. bifold: the head track. pocket: the two cavity lines inside
     // the wall. garage: the overhead projection.
-    const expected: Record<string, number> = { hinged: 0, sliding: 0, barn: 1, bifold: 1, pocket: 2, garage: 1 };
+    const expected: Record<string, number> = {
+      hinged: 0,
+      sliding: 0,
+      barn: 1,
+      bifold: 1,
+      pocket: 2,
+      garage: 1,
+      double: 0,
+    };
     for (const k of DOOR_KINDS) {
       const { nodes, sizes } = nodesOf(plan(`door id=d ${k} on mid at 50% width 900`));
       const dashed = nodes.filter((n) => n.paint.dash !== undefined || n.lineType !== undefined);

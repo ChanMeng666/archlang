@@ -570,12 +570,14 @@ ${extra}}
   });
 
   it("a bath where no search finds a bathtub or shower position is left empty, and the note says so", () => {
-    // 1.15 x 2.5 m clear, its door in the middle of an end wall swinging out: no set the stage
+    // 1.15 x 2.3 m clear, its door in the middle of an end wall swinging out: no set the stage
     // tries keeps the floor in front of the pan and the door's approach clear (PS2.45's sweep).
+    // (At 2.5 m clear, the room this probe first held, a set fits since PS2.54 measures the
+    // door's approach from the wall's face: the basin then abuts that deeper approach.)
     const src = `plan "F" {
   units mm
-  wall id=w exterior thickness 200 { (0,0) (1350,0) (1350,2700) (0,2700) close }
-  room id=r_x at (0,0) size 1350x2700 label "X" uses bath
+  wall id=w exterior thickness 200 { (0,0) (1350,0) (1350,2500) (0,2500) close }
+  room id=r_x at (0,0) size 1350x2500 label "X" uses bath
   door id=d on w at 675 width 800 swing out
 }
 `;

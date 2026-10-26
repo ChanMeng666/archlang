@@ -11,23 +11,23 @@
 <circle cx="500" cy="439" r="28.47" fill="#ffffff" stroke="#a8a29a" stroke-width="9.24"/>
 <circle cx="500" cy="163" r="21" fill="none" stroke="#a8a29a" stroke-width="9.24"/>
 <line x1="500" y1="184" x2="500" y2="307.6" stroke="#a8a29a" stroke-width="9.24"/>
-<polygon points="900,100 1500,100 1500,700 900,700" fill="#f4f2ee" stroke="#6c6864" stroke-width="12.8"/>
-<path d="M 951,136 L 1449,136 A 15 15 0 0 1 1464,151 L 1464,529 A 15 15 0 0 1 1449,544 L 951,544 A 15 15 0 0 1 936,529 L 936,151 A 15 15 0 0 1 951,136 Z" fill="none" stroke="#a8a29a" stroke-width="9.24"/>
-<circle cx="1074.12" cy="244.12" r="76.7" fill="none" stroke="#a8a29a" stroke-width="9.24"/>
-<circle cx="1074.12" cy="244.12" r="42.19" fill="none" stroke="#a8a29a" stroke-width="9.24"/>
-<circle cx="1325.88" cy="244.12" r="76.7" fill="none" stroke="#a8a29a" stroke-width="9.24"/>
-<circle cx="1325.88" cy="244.12" r="42.19" fill="none" stroke="#a8a29a" stroke-width="9.24"/>
-<circle cx="1074.12" cy="435.88" r="55.61" fill="none" stroke="#a8a29a" stroke-width="9.24"/>
-<circle cx="1074.12" cy="435.88" r="30.59" fill="none" stroke="#a8a29a" stroke-width="9.24"/>
-<circle cx="1325.88" cy="435.88" r="55.61" fill="none" stroke="#a8a29a" stroke-width="9.24"/>
-<circle cx="1325.88" cy="435.88" r="30.59" fill="none" stroke="#a8a29a" stroke-width="9.24"/>
-<circle cx="1020" cy="637" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.24"/>
-<circle cx="1140" cy="637" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.24"/>
-<circle cx="1260" cy="637" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.24"/>
-<circle cx="1380" cy="637" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.24"/>
-<path d="M 1512,100 L 2088,100 A 12 12 0 0 1 2100,112 L 2100,738 A 12 12 0 0 1 2088,750 L 1512,750 A 12 12 0 0 1 1500,738 L 1500,112 A 12 12 0 0 1 1512,100 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="12.8"/>
-<line x1="1500" y1="659" x2="2100" y2="659" stroke="#a8a29a" stroke-width="9.24"/>
-<line x1="1704" y1="704.5" x2="1896" y2="704.5" stroke="#6c6864" stroke-width="12.8"/>
+<polygon points="1150,100 1750,100 1750,700 1150,700" fill="#f4f2ee" stroke="#6c6864" stroke-width="12.8"/>
+<path d="M 1201,136 L 1699,136 A 15 15 0 0 1 1714,151 L 1714,529 A 15 15 0 0 1 1699,544 L 1201,544 A 15 15 0 0 1 1186,529 L 1186,151 A 15 15 0 0 1 1201,136 Z" fill="none" stroke="#a8a29a" stroke-width="9.24"/>
+<circle cx="1324.12" cy="244.12" r="76.7" fill="none" stroke="#a8a29a" stroke-width="9.24"/>
+<circle cx="1324.12" cy="244.12" r="42.19" fill="none" stroke="#a8a29a" stroke-width="9.24"/>
+<circle cx="1575.88" cy="244.12" r="76.7" fill="none" stroke="#a8a29a" stroke-width="9.24"/>
+<circle cx="1575.88" cy="244.12" r="42.19" fill="none" stroke="#a8a29a" stroke-width="9.24"/>
+<circle cx="1324.12" cy="435.88" r="55.61" fill="none" stroke="#a8a29a" stroke-width="9.24"/>
+<circle cx="1324.12" cy="435.88" r="30.59" fill="none" stroke="#a8a29a" stroke-width="9.24"/>
+<circle cx="1575.88" cy="435.88" r="55.61" fill="none" stroke="#a8a29a" stroke-width="9.24"/>
+<circle cx="1575.88" cy="435.88" r="30.59" fill="none" stroke="#a8a29a" stroke-width="9.24"/>
+<circle cx="1270" cy="637" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.24"/>
+<circle cx="1390" cy="637" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.24"/>
+<circle cx="1510" cy="637" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.24"/>
+<circle cx="1630" cy="637" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="9.24"/>
+<path d="M 2110,100 L 2590,100 A 10 10 0 0 1 2600,110 L 2600,740 A 10 10 0 0 1 2590,750 L 2110,750 A 10 10 0 0 1 2100,740 L 2100,110 A 10 10 0 0 1 2110,100 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="12.8"/>
+<line x1="2100" y1="659" x2="2600" y2="659" stroke="#a8a29a" stroke-width="9.24"/>
+<line x1="2270" y1="704.5" x2="2430" y2="704.5" stroke="#6c6864" stroke-width="12.8"/>
 <polygon points="100,1100 100,700 700,700 700,1100" fill="#f4f2ee" stroke="#6c6864" stroke-width="12.8"/>
 <line x1="127" y1="1100" x2="127" y2="700" stroke="#a8a29a" stroke-width="9.24"/>
 <line x1="664" y1="1100" x2="664" y2="700" stroke="#a8a29a" stroke-width="9.24"/>

@@ -46,7 +46,7 @@ plan "Themed Duplex" {
   furniture desk        at (300,300)  size 1200x600 in a
   furniture office_chair at (900,1000) size 450x450 rotate 180 in a
 
-  door   at (3000,2000) width 900  wall partition hinge left swing in
+  door   at (3000,3000) width 900  wall partition hinge left swing in
   window at (1500,0)    width 1600 wall exterior
   window at (4500,0)    width 1200 wall exterior
 

@@ -23,7 +23,9 @@ const DIGESTS: [string, string][] = [
   ["frames", "1fbb5062d80872bdc8497c176eaea87f01c59ac8de002cfcdec2f553cbb18354"], // PS2.29: message text only, same code, same span
   // Moved once, by review round 1 (N1): the "both faces" message dropped "(it stands between two
   // rooms)", which was false for a wall free-standing inside one room. Message text only.
-  ["refused", "d0ff72c2f1e61f259980b250b027ddbfdfcc724c82a6c5d98d80f0b64274f5c4"],
+  // PS2.11e: the pocket door's `E_DOOR_KIND_CLAUSE` hint lists the kinds that take `swing`, now `double` too
+  // (derived from DOOR_KIND_CLAUSES); the code, span and message are unchanged.
+  ["refused", "0f71f9060ab451219f69b2a31f60843dc40207d5c9790e62decc6138635fd493"],
 ];
 
 suite("swing inward|outward: digest table", () => {

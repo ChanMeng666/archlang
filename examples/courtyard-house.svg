@@ -35,28 +35,28 @@
 <path d="M 5484.2,1327 L 7015.8,1327 A 7.2 7.2 0 0 1 7023,1334.2 L 7023,2165.8 A 7.2 7.2 0 0 1 7015.8,2173 L 5484.2,2173 A 7.2 7.2 0 0 1 5477,2165.8 L 5477,1334.2 A 7.2 7.2 0 0 1 5484.2,1327 Z" fill="none" stroke="#a8a29a" stroke-width="13"/>
 <path d="M 9960.8,1300 L 11539.2,1300 A 10.8 10.8 0 0 1 11550,1310.8 L 11550,2189.2 A 10.8 10.8 0 0 1 11539.2,2200 L 9960.8,2200 A 10.8 10.8 0 0 1 9950,2189.2 L 9950,1310.8 A 10.8 10.8 0 0 1 9960.8,1300 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
 <path d="M 9984.2,1327 L 11515.8,1327 A 7.2 7.2 0 0 1 11523,1334.2 L 11523,2165.8 A 7.2 7.2 0 0 1 11515.8,2173 L 9984.2,2173 A 7.2 7.2 0 0 1 9977,2165.8 L 9977,1334.2 A 7.2 7.2 0 0 1 9984.2,1327 Z" fill="none" stroke="#a8a29a" stroke-width="13"/>
-<polygon points="12700,150 13500,150 13500,750 12700,750" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
-<path d="M 12870.05,270 L 13329.95,270 A 43.8 43.8 0 0 1 13373.75,313.8 L 13373.75,664.2 A 43.8 43.8 0 0 1 13329.95,708 L 12870.05,708 A 43.8 43.8 0 0 1 12826.25,664.2 L 12826.25,313.8 A 43.8 43.8 0 0 1 12870.05,270 Z" fill="#ffffff" stroke="#6c6864" stroke-width="18"/>
-<circle cx="13100" cy="489" r="28.47" fill="#ffffff" stroke="#a8a29a" stroke-width="13"/>
-<circle cx="13100" cy="213" r="21" fill="none" stroke="#a8a29a" stroke-width="13"/>
-<line x1="13100" y1="234" x2="13100" y2="357.6" stroke="#a8a29a" stroke-width="13"/>
-<polygon points="13500,150 14100,150 14100,750 13500,750" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
-<path d="M 13551,186 L 14049,186 A 15 15 0 0 1 14064,201 L 14064,579 A 15 15 0 0 1 14049,594 L 13551,594 A 15 15 0 0 1 13536,579 L 13536,201 A 15 15 0 0 1 13551,186 Z" fill="none" stroke="#a8a29a" stroke-width="13"/>
-<circle cx="13674.12" cy="294.12" r="76.7" fill="none" stroke="#a8a29a" stroke-width="13"/>
-<circle cx="13674.12" cy="294.12" r="42.19" fill="none" stroke="#a8a29a" stroke-width="13"/>
-<circle cx="13925.88" cy="294.12" r="76.7" fill="none" stroke="#a8a29a" stroke-width="13"/>
-<circle cx="13925.88" cy="294.12" r="42.19" fill="none" stroke="#a8a29a" stroke-width="13"/>
-<circle cx="13674.12" cy="485.88" r="55.61" fill="none" stroke="#a8a29a" stroke-width="13"/>
-<circle cx="13674.12" cy="485.88" r="30.59" fill="none" stroke="#a8a29a" stroke-width="13"/>
-<circle cx="13925.88" cy="485.88" r="55.61" fill="none" stroke="#a8a29a" stroke-width="13"/>
-<circle cx="13925.88" cy="485.88" r="30.59" fill="none" stroke="#a8a29a" stroke-width="13"/>
-<circle cx="13620" cy="687" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="13"/>
-<circle cx="13740" cy="687" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="13"/>
-<circle cx="13860" cy="687" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="13"/>
-<circle cx="13980" cy="687" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="13"/>
-<polygon points="14100,150 14700,150 14700,750 14100,750" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
-<line x1="14100" y1="177" x2="14700" y2="177" stroke="#a8a29a" stroke-width="13"/>
-<line x1="14100" y1="714" x2="14700" y2="714" stroke="#a8a29a" stroke-width="13"/>
+<polygon points="14000,150 14800,150 14800,750 14000,750" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
+<path d="M 14170.05,270 L 14629.95,270 A 43.8 43.8 0 0 1 14673.75,313.8 L 14673.75,664.2 A 43.8 43.8 0 0 1 14629.95,708 L 14170.05,708 A 43.8 43.8 0 0 1 14126.25,664.2 L 14126.25,313.8 A 43.8 43.8 0 0 1 14170.05,270 Z" fill="#ffffff" stroke="#6c6864" stroke-width="18"/>
+<circle cx="14400" cy="489" r="28.47" fill="#ffffff" stroke="#a8a29a" stroke-width="13"/>
+<circle cx="14400" cy="213" r="21" fill="none" stroke="#a8a29a" stroke-width="13"/>
+<line x1="14400" y1="234" x2="14400" y2="357.6" stroke="#a8a29a" stroke-width="13"/>
+<polygon points="12800,150 13400,150 13400,750 12800,750" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
+<path d="M 12851,186 L 13349,186 A 15 15 0 0 1 13364,201 L 13364,579 A 15 15 0 0 1 13349,594 L 12851,594 A 15 15 0 0 1 12836,579 L 12836,201 A 15 15 0 0 1 12851,186 Z" fill="none" stroke="#a8a29a" stroke-width="13"/>
+<circle cx="12974.12" cy="294.12" r="76.7" fill="none" stroke="#a8a29a" stroke-width="13"/>
+<circle cx="12974.12" cy="294.12" r="42.19" fill="none" stroke="#a8a29a" stroke-width="13"/>
+<circle cx="13225.88" cy="294.12" r="76.7" fill="none" stroke="#a8a29a" stroke-width="13"/>
+<circle cx="13225.88" cy="294.12" r="42.19" fill="none" stroke="#a8a29a" stroke-width="13"/>
+<circle cx="12974.12" cy="485.88" r="55.61" fill="none" stroke="#a8a29a" stroke-width="13"/>
+<circle cx="12974.12" cy="485.88" r="30.59" fill="none" stroke="#a8a29a" stroke-width="13"/>
+<circle cx="13225.88" cy="485.88" r="55.61" fill="none" stroke="#a8a29a" stroke-width="13"/>
+<circle cx="13225.88" cy="485.88" r="30.59" fill="none" stroke="#a8a29a" stroke-width="13"/>
+<circle cx="12920" cy="687" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="13"/>
+<circle cx="13040" cy="687" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="13"/>
+<circle cx="13160" cy="687" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="13"/>
+<circle cx="13280" cy="687" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="13"/>
+<polygon points="13400,150 14000,150 14000,750 13400,750" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
+<line x1="13400" y1="177" x2="14000" y2="177" stroke="#a8a29a" stroke-width="13"/>
+<line x1="13400" y1="714" x2="14000" y2="714" stroke="#a8a29a" stroke-width="13"/>
 <path d="M 15212,150 L 15788,150 A 12 12 0 0 1 15800,162 L 15800,788 A 12 12 0 0 1 15788,800 L 15212,800 A 12 12 0 0 1 15200,788 L 15200,162 A 12 12 0 0 1 15212,150 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
 <line x1="15200" y1="709" x2="15800" y2="709" stroke="#a8a29a" stroke-width="13"/>
 <line x1="15404" y1="754.5" x2="15596" y2="754.5" stroke="#6c6864" stroke-width="18"/>

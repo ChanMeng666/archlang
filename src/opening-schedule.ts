@@ -257,6 +257,7 @@ function openingObstacle(o: RDoor | RWindow | ROpening, floorSide: 1 | -1 | 0, g
     const face: 1 | -1 = o.swing === "in" ? 1 : -1;
     let reach = 0;
     if (kind === "hinged" || kind === "bifold" || kind === "garage") reach = h + o.width;
+    else if (kind === "double") reach = h + o.width / 2;
     else if (kind === "barn") {
       reach = h + seg.thickness;
       if (o.slide === "right") hi += o.width;

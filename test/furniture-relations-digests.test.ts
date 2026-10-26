@@ -18,7 +18,9 @@ const API: CompilerApi = { compile, describe, lint };
 
 const DIGESTS: [string, string][] = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
-  ["relations", "1525e298d30d6f4d31b8be3a4ee3916fb183582ba9ac831e0c5580905609d29f"],
+  // PS2.54: `lint()` gains one `W_DOORWAY_BLOCKED`, its dining table 250 mm off a door's face (300
+  // from the wall's centreline, on the old datum's edge); SVG, `describe()` and diagnostics unchanged.
+  ["relations", "032f52930ac3504ad545e446390a299123b0486b4489ddcce29d2ee9153e5dc6"],
   ["frames", "52fedc6c31336afaf64806bda125a0f1ec6567a773a5c98ef531b2ffa0b6c7d2"], // PS2.29: message text only, same code, same span
   ["seats", "1c34ef80221b0c63becf52f9a3bb03d87afdd38ee051222b2dce615aeff8563e"], // seat hint reworded (red team round 1),
   ["refused", "77a135b355d61ee48ed2f265c7dbb99da75edcb9ab381ead6c615e4cf8facd39"],

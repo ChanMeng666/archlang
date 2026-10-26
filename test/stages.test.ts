@@ -74,6 +74,7 @@ const DECIDED: Record<AuthoringStage, string[]> = {
     "W_FLOOR_UNASSIGNED",
     "W_HABITABLE_NO_WINDOW",
     "W_LEAF_ACROSS_DOORWAY",
+    "W_LEAF_TOO_WIDE",
     "W_NO_ENTRANCE",
     "W_OPENING_AT_JUNCTION",
     "W_OPENING_OVERLAP",
@@ -100,6 +101,8 @@ const DECIDED: Record<AuthoringStage, string[]> = {
     "W_FURN_CLEARANCE",
     "W_FURN_CLEAR_FRONT",
     "W_FURN_CLEAR_SIDES",
+    "W_HOB_FRIDGE_GAP",
+    "W_HOB_UNDER_WINDOW",
     "W_ROOM_MISSING_DEFINING",
     "W_ROOM_NO_CLEAR_PATH",
     "W_ROOM_NO_FIXTURE",
@@ -151,8 +154,10 @@ describe("the stage ladder and the per-rule table", () => {
   it("the per-stage counts are the as-built note's table", () => {
     const counts = Object.fromEntries(AUTHORING_STAGES.map((s) => [s, 0]));
     for (const s of Object.values(LINT_CODE_STAGES)) counts[s]!++;
-    // PS2.11e (PR #280) added six stair codes: three rooms, one walls, two openings.
-    expect(counts).toEqual({ brief: 0, rooms: 8, walls: 5, openings: 24, fixtures: 16, drafting: 6 });
+    // The PS7.1 note's 53 codes (openings 22, fixtures 16); PR #280's six stair codes (three rooms,
+    // one walls, two openings); PR #283's three (the PS2.11e as-built note): `W_LEAF_TOO_WIDE` at
+    // openings, the two hob codes at fixtures.
+    expect(counts).toEqual({ brief: 0, rooms: 8, walls: 5, openings: 25, fixtures: 18, drafting: 6 });
   });
 
   it("the drafting layer is exactly the drafting stage, and no lint code is a brief finding", () => {

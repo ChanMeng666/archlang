@@ -451,6 +451,11 @@ export const RULE_CLASS: Readonly<Record<string, RuleClass>> = {
   "stair-too-steep": "invariant",
   // PS2.15: the overlap share of two footprints and their run axes, which a turn swaps together.
   "shaft-footprint-mismatch": "invariant",
+  // PS2.11e/PS2.46: a hob's footprint against a window's span and its side strips in its own
+  // frame (as the PS2.11a/b rules), and a door's own width: none reads a compass or the sheet.
+  "hob-under-window": "invariant",
+  "hob-fridge-gap": "invariant",
+  "leaf-too-wide": "invariant",
 };
 
 /**

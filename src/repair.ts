@@ -53,6 +53,7 @@
  * parsed AST → re-emit via the formatter. No I/O, deterministic.
  */
 
+import { isServiceCounter } from "./lint/clearance-measure.js";
 import { wallRef } from "./wall-ref.js";
 import { CLI_NAME } from "./command-name.js";
 import { parse } from "./parser.js";
@@ -81,13 +82,15 @@ import {
 import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
 import { type ArrivingRun, arrivalRuns, verticalsOf } from "./vertical.js";
 import {
+  DOORWAY_WIDTH_MM,
   doorLandingRect,
+  openingBlock,
   rectOverlapAmounts,
   rectsOverlap,
   wallIntrusion,
   wallIntrusionDepth,
 } from "./geometry/rect.js";
-import { segmentsOfWall, doorSwing, sectorIntersectsRect, type DoorSwing } from "./geometry.js";
+import { segmentsOfWall, doorLeaves, sectorIntersectsRect, type DoorSwing } from "./geometry.js";
 import { DEFAULT_RULESET } from "./lint.js";
 import { cutPlaneLayer, defaultFootprint, orientationMatters, requiresWall } from "./fixtures-catalog.js";
 import type { ResolvedPlan, RWall, RDoor, RRoom, ROpening, RFurniture, RVoid } from "./ir.js";
@@ -904,12 +907,18 @@ export interface HardConflict {
  *
  *   * `overlap|a|b` — two pieces on one cut-plane layer overlapping (`W_FURNITURE_OVERLAP`);
  *   * `wall|a` — a piece into a wall solid past the slack (`W_FURNITURE_WALL_COLLISION`);
- *   * `doorway|d|a` — a piece in door `d`'s clear landing (`W_DOORWAY_BLOCKED`);
+ *   * `doorway|d|a` — a piece in door or cased opening `d`'s clear landing (`W_DOORWAY_BLOCKED`;
+ *     an opening wider than a doorway only while it is blocked, `openingBlock`);
  *   * `swing|d|a` — a piece in door `d`'s swing, with clearance (`W_SWING_OBSTRUCTED`).
  *
  * `test/repair-conflicts.ts` re-derives the same census from the lint side, independently.
  */
-function hardConflictsOf(furniture: RFurniture[], walls: RWall[], doors: RDoor[]): Map<string, HardConflict> {
+function hardConflictsOf(
+  furniture: RFurniture[],
+  walls: RWall[],
+  doors: RDoor[],
+  cased: ROpening[] = [],
+): Map<string, HardConflict> {
   const out = new Map<string, HardConflict>();
   const rect = (f: RFurniture): BBox => ({ x: f.at.x, y: f.at.y, w: f.size.w, h: f.size.h });
   for (let i = 0; i < furniture.length; i++)
@@ -925,16 +934,24 @@ function hardConflictsOf(furniture: RFurniture[], walls: RWall[], doors: RDoor[]
   for (const f of furniture)
     if (segs.some((s) => wallIntrusionDepth(rect(f), s, openings) > SLACK_MM))
       out.set(`wall|${f.id}`, { refs: [f.id], would: () => "push it into a wall" });
-  for (const d of doors) {
+  for (const d of [...doors, ...cased]) {
     const landing = doorLandingRect(d, DEFAULT_RULESET.doorwayLandingMm);
-    const swing = doorSwing(d);
+    const leaves = d.kind === "door" ? doorLeaves(d) : [];
+    // A cased opening wider than a doorway blocks only while it keeps no doorway's width clear.
+    const open =
+      d.kind === "opening" &&
+      openingBlock(
+        d,
+        DEFAULT_RULESET.doorwayLandingMm,
+        furniture.filter((f) => !isServiceCounter(f.category)).map(rect),
+      )?.blocked === false;
     for (const f of furniture) {
-      if (landing && rectsOverlap(landing, rect(f)))
+      if (landing && !open && !(d.kind === "opening" && isServiceCounter(f.category)) && rectsOverlap(landing, rect(f)))
         out.set(`doorway|${d.id}|${f.id}`, {
           refs: [f.id],
-          would: () => `block the clear approach through door "${d.id}"`,
+          would: () => `block the clear approach through ${d.kind} "${d.id}"`,
         });
-      if (swing && sectorIntersectsRect(swing, rect(f), DEFAULT_RULESET.swingClearanceMm))
+      if (leaves.some((swing) => sectorIntersectsRect(swing, rect(f), DEFAULT_RULESET.swingClearanceMm)))
         out.set(`swing|${d.id}|${f.id}`, { refs: [f.id], would: () => `put it in door "${d.id}"'s swing` });
     }
   }
@@ -959,7 +976,8 @@ export function sourceConflicts(source: string, opts: AnalyzeOptions = {}): Sour
     const furniture = st.ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
     for (const f of furniture) at.set(`${level}|${f.id}`, f.at);
     const doors = st.ir.elements.filter((e): e is RDoor => e.kind === "door");
-    for (const [k, c] of hardConflictsOf(furniture, st.ir.walls, doors))
+    const cased = st.ir.elements.filter((e): e is ROpening => e.kind === "opening");
+    for (const [k, c] of hardConflictsOf(furniture, st.ir.walls, doors, cased))
       conflicts.set(`${level}|${k}`, { ...c, level });
   }
   // A broken hard keep (ADR 0033, `W_KEEP_VIOLATED`) counts in the no-worse law as every
@@ -1397,10 +1415,27 @@ function repairStorey(
     record ? own : (book.get(spanKeyFor(id)) ?? own);
   const walls = ir.walls;
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
-  const landings = doors
+  const doorLandings = doors
     .map((d) => doorLandingRect(d, DEFAULT_RULESET.doorwayLandingMm))
     .filter((l): l is BBox => l !== null);
-  const swings = doors.map((d) => doorSwing(d)).filter((s): s is DoorSwing => s !== null);
+  // A cased opening keeps the same clear approach as a door (`W_DOORWAY_BLOCKED`, PS2.11e), for
+  // every piece but a service counter, which stands across one as its servery hatch. One wider
+  // than a doorway is cleared only when it is blocked as the input stands (`openingBlock`): a
+  // table beside an open-plan join that leaves a doorway's width of it clear is not moved.
+  const counted = ir.elements
+    .filter((e): e is RFurniture => e.kind === "furniture" && !isServiceCounter(e.category))
+    .map((f) => ({ x: f.at.x, y: f.at.y, w: f.size.w, h: f.size.h }));
+  const openingLandings = ir.elements
+    .filter((e): e is ROpening => e.kind === "opening")
+    .filter(
+      (o) =>
+        o.width <= DOORWAY_WIDTH_MM || openingBlock(o, DEFAULT_RULESET.doorwayLandingMm, counted)?.blocked !== false,
+    )
+    .map((o) => doorLandingRect(o, DEFAULT_RULESET.doorwayLandingMm))
+    .filter((l): l is BBox => l !== null);
+  const landingsFor = (category: string): BBox[] =>
+    isServiceCounter(category) ? doorLandings : [...doorLandings, ...openingLandings];
+  const swings: DoorSwing[] = doors.flatMap((d) => doorLeaves(d));
   const roomRects = new Map<string, BBox>(
     ir.elements
       .filter((e): e is RRoom => e.kind === "room")
@@ -1589,7 +1624,7 @@ function repairStorey(
         ...(p.room ? { room: p.room } : {}),
         earlier: earlierThan(p.ord),
         walls,
-        landings,
+        landings: landingsFor(p.f.category),
         swings,
         grid,
       });
@@ -1753,7 +1788,7 @@ function repairStorey(
       ...(o.room ? { room: o.room } : {}),
       earlier: earlierThan(o.ord),
       walls,
-      landings,
+      landings: landingsFor(o.category),
       swings,
       grid,
     });

@@ -10,12 +10,13 @@ import { annotationOverlap, titleOverflow } from "./annotations.js";
 import { roomNoClearPath } from "./circulation.js";
 import { dimInside, dimOverlap, dimTextMismatch, openingNotDimensioned } from "./dims.js";
 import { circuitousPath, pathTooNarrow } from "./circulation-facts.js";
-import { furnitureOverWindow, wcSideClearance } from "./clearances.js";
+import { furnitureOverWindow, hobFridgeGap, hobUnderWindow, wcSideClearance } from "./clearances.js";
 import {
   doorClearance,
   doorNearCorner,
   doorwayBlocked,
   leafAcrossDoorway,
+  leafTooWide,
   pocketRun,
   swingObstructed,
 } from "./doors.js";
@@ -157,6 +158,13 @@ export const LINT_RULES: readonly LintRule[] = [
   stairHeadVoid,
   stairTooSteep,
   shaftFootprintMismatch,
+  // The clearance remainder (plan-soundness PS2.11e, PS2.46): a hob under a window, a hob with a
+  // fridge or tall unit beside it, and a swinging leaf wider than a door is made. Appended LAST,
+  // in this order, so no existing diagnostic moves within the array. (`W_DOORWAY_BLOCKED` now also
+  // reads leaf-less openings, after every door, inside its own rule.)
+  hobUnderWindow,
+  hobFridgeGap,
+  leafTooWide,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

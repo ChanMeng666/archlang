@@ -63,7 +63,7 @@ plan "Classroom Block" {
   }
 
   # ---- doors ------------------------------------------------------------------
-  door id=d_front at (2500,14000) width 1400 wall shell hinge left swing in
+  door id=d_front double at (2500,14000) width 2000 wall shell swing in
   opening id=o_lobby on w_cs at 2500 width 1500
   door id=d_c1 on w_cn at 6700 width 1000 swing into r_c1
   door id=d_c2 on w_cn at 14200 width 1000 swing into r_c2

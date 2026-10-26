@@ -1,0 +1,23 @@
+# class: clearances
+# origin: audits/2026-10-24-first-contact-rerun.md NC8 (the hob wholly under the kitchen window); RS3, the hob halves
+#   of NA2 and RC4 (audits/2026-10-25-first-contact-rerun-row5.md); OT6, CC4 (audits/2026-10-26-first-contact-rerun-d15.md)
+# expect: W_HOB_UNDER_WINDOW
+# status: done
+# fact: the stove spans x 1600-2200 on the north wall and the window x 1400-2600 on the same wall: the hob stands
+#   under 600 mm of the 1200 mm window
+plan "Hob under the window" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  wall id=w_mid partition thickness 100 { (4000,0) (4000,4000) }
+  room id=r_kitchen at (0,0) size 4000x4000 label "Kitchen" uses kitchen
+  room id=r_living at (4000,0) size 2000x4000 label "Living Room" uses living
+  door id=d_entry at (2000,4000) width 900 wall shell
+  door id=d_mid at (4000,2000) width 800 wall w_mid
+  window at (2000,0) width 1200 wall shell
+  window at (6000,2000) width 1200 wall shell
+  furniture kitchen_sink against wall shell segment 0 offset 1100 in r_kitchen
+  furniture stove against wall shell segment 0 offset 1900 in r_kitchen
+  furniture counter against wall shell segment 0 offset 2500 in r_kitchen
+  furniture fridge against wall shell segment 0 offset 3400 in r_kitchen
+}

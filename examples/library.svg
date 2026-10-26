@@ -760,8 +760,10 @@
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
 <polygon points="26200,31850 23800,31850 23800,32150 26200,32150" fill="none"/>
-<polygon points="26200,32000 26200,29600 26106.4,29601.83 26106.4,32000" fill="#ffffff" stroke="#555555" stroke-width="46.8"/>
-<path d="M 26200,29600 A 2400 2400 0 0 0 23800,32000" fill="none" stroke="#555555" stroke-width="26"/>
+<polygon points="26200,32000 26200,30800 26128,30802.16 26128,32000" fill="#ffffff" stroke="#555555" stroke-width="46.8"/>
+<path d="M 26200,30800 A 1200 1200 0 0 0 25000,32000" fill="none" stroke="#555555" stroke-width="26"/>
+<polygon points="23800,32000 23800,30800 23872,30802.16 23872,32000" fill="#ffffff" stroke="#555555" stroke-width="46.8"/>
+<path d="M 23800,30800 A 1200 1200 0 0 1 25000,32000" fill="none" stroke="#555555" stroke-width="26"/>
 <polygon points="46500,14600 47500,14600 47500,14400 46500,14400" fill="none"/>
 <line x1="47500" y1="14525" x2="48500" y2="14525" stroke="#555555" stroke-width="36" stroke-dasharray="216 144"/>
 <line x1="47500" y1="14475" x2="48500" y2="14475" stroke="#555555" stroke-width="36" stroke-dasharray="216 144"/>

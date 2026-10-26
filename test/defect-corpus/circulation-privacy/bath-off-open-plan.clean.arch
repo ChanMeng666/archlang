@@ -2,8 +2,8 @@
 # twin-of: bath-off-open-plan
 # origin: audits/2026-10-18-first-contact.md S1 with the kitchen run moved to the far wall of the room
 # expect: none
-# fact: d_bath still opens onto "Living / Kitchen", but its nearest kitchen fixture, the stove (x 1300-1900,
-#   y 100-700 against the north wall), is 3147 mm from the doorway's face (y 2950, x 4100-4900), at least
+# fact: d_bath still opens onto "Living / Kitchen", but its nearest kitchen fixture, the stove (x 1200-1800,
+#   y 100-700 against the north wall, clear of the window), is 3218 mm from the doorway's face (y 2950, x 4100-4900), at least
 #   the 1500 mm wetDoorKitchenProximityMm; the door and every other statement are the case's
 plan "Bathroom opening onto the open-plan living room" {
   units mm
@@ -19,7 +19,7 @@ plan "Bathroom opening onto the open-plan living room" {
   door id=d_bath at (4500,3000) width 800 wall w_h swing into r_bath
   window at (3000,0) width 2400 wall shell
   furniture kitchen_sink against wall shell segment 0 offset 800 in r_main
-  furniture stove against wall shell segment 0 offset 1600 in r_main
+  furniture stove against wall shell segment 0 offset 1500 in r_main
   furniture table at (3600,600) size 1600x900
   furniture shower against wall shell segment 1 offset 4450 in r_bath
   furniture wc against wall shell segment 2 offset 1700 in r_bath

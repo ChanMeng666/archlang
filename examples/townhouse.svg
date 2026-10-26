@@ -50,9 +50,9 @@
 <circle cx="687" cy="8660" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="6.5"/>
 <circle cx="687" cy="8540" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="6.5"/>
 <circle cx="687" cy="8420" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="6.5"/>
-<path d="M 150,8088 L 150,7512 A 12 12 0 0 1 162,7500 L 788,7500 A 12 12 0 0 1 800,7512 L 800,8088 A 12 12 0 0 1 788,8100 L 162,8100 A 12 12 0 0 1 150,8088 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
-<line x1="709" y1="8100" x2="709" y2="7500" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="754.5" y1="7896" x2="754.5" y2="7704" stroke="#6c6864" stroke-width="9"/>
+<path d="M 150,7788 L 150,7212 A 12 12 0 0 1 162,7200 L 788,7200 A 12 12 0 0 1 800,7212 L 800,7788 A 12 12 0 0 1 788,7800 L 162,7800 A 12 12 0 0 1 150,7788 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
+<line x1="709" y1="7800" x2="709" y2="7200" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="754.5" y1="7596" x2="754.5" y2="7404" stroke="#6c6864" stroke-width="9"/>
 <polygon points="150,10500 150,9900 750,9900 750,10500" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
 <line x1="177" y1="10500" x2="177" y2="9900" stroke="#a8a29a" stroke-width="6.5"/>
 <line x1="714" y1="10500" x2="714" y2="9900" stroke="#a8a29a" stroke-width="6.5"/>

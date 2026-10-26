@@ -2,12 +2,12 @@
 # twin-of: door-window-overlap-chamfer
 # origin: audits/archcanvas-public-examples.md CC1 with the window narrowed
 # expect: none
-# fact: along the chamfer the door spans s 1350-2850 and the window s 250-1150: a 200 mm pier
+# fact: along the chamfer the door (a `double` pair, two 800 mm leaves) spans s 1350-2950 and the window s 250-1150: a 200 mm pier
 plan "Door and window on a chamfer, with a pier" {
   units mm
   grid 50
   wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,3000) (3000,6000) (0,6000) close }
   room id=a polygon (0,0) (6000,0) (6000,3000) (3000,6000) (0,6000) label "Cafe" uses dining
-  door id=d_entry on shell at 11100 width 1500
+  door id=d_entry double on shell at 11150 width 1600
   window id=win_corner on shell at 9700 width 900
 }

@@ -534,7 +534,9 @@ function jambs(at: Point, width: number, host: RDoor["host"]): Point[] {
  *  - `pocket` — `[slide-side jamb, other jamb]`: the cavity's side; the symbol is symmetric
  *    across the wall line, so the face is not read;
  *  - `garage` — `[tip, jamb, jamb]` with the jambs unordered: the overhead projection's face
- *    and nothing along the wall, which the symbol is symmetric about.
+ *    and nothing along the wall, which the symbol is symmetric about;
+ *  - `double` — the same: its two leaves mirror each other across the doorway's centre, so
+ *    only the face they open to is handed.
  *
  * So a reflection that swaps any of those choices is seen, and one the drawing ignores is not.
  * The label carries the kind and width, and — for the four kinds whose panel is DRAWN at a
@@ -563,7 +565,10 @@ function doorRec(d: RDoor): Rec<Point> {
     }
     case "pocket":
       return { form: "seq", label, pts: [p, o] };
+    // A `double` door's two leaves mirror each other across the doorway's centre, so like a
+    // garage door it reads only its face, the side both leaves open to.
     case "garage":
+    case "double":
       return { form: "head", label, pts: [off(d.at, face), p, o] };
     default:
       return { form: "seq", label, pts: [p, o, off(p, face)] };

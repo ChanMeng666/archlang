@@ -282,27 +282,36 @@ describe("approachGapMm — clear landing depth on one side of an opening", () =
 
   it("measures the standoff on whichever side the blocker sits", () => {
     // Blocker entirely before the opening line: gap is line - hi.
-    expect(approachGapMm(5000, 4000, 4700, DEPTH)).toBe(300);
+    expect(approachGapMm(5000, 0, 4000, 4700, DEPTH)).toBe(300);
     // Blocker entirely after it: gap is lo - line.
-    expect(approachGapMm(5000, 5250, 6000, DEPTH)).toBe(250);
+    expect(approachGapMm(5000, 0, 5250, 6000, DEPTH)).toBe(250);
   });
 
   it("leaves nothing when the blocker straddles the opening, or exactly touches it", () => {
-    expect(approachGapMm(5000, 4800, 5200, DEPTH)).toBe(0); // straddling
-    expect(approachGapMm(5000, 4000, 5000, DEPTH)).toBe(0); // far edge exactly on the line
-    expect(approachGapMm(5000, 5000, 6000, DEPTH)).toBe(0); // near edge exactly on the line
+    expect(approachGapMm(5000, 0, 4800, 5200, DEPTH)).toBe(0); // straddling
+    expect(approachGapMm(5000, 0, 4000, 5000, DEPTH)).toBe(0); // far edge exactly on the line
+    expect(approachGapMm(5000, 0, 5000, 6000, DEPTH)).toBe(0); // near edge exactly on the line
+  });
+
+  it("measures from the wall's face, not its centreline (PS2.54)", () => {
+    // A 100 mm wall on x 5000: its faces are 4950 and 5050.
+    expect(approachGapMm(5000, 50, 4000, 4700, DEPTH)).toBe(250);
+    expect(approachGapMm(5000, 50, 5250, 6000, DEPTH)).toBe(200);
+    // A blocker reaching the face, or into the wall's body, leaves nothing.
+    expect(approachGapMm(5000, 50, 4000, 4950, DEPTH)).toBe(0);
+    expect(approachGapMm(5000, 50, 5020, 6000, DEPTH)).toBe(0);
   });
 
   it("caps at the required depth — a blocker beyond the landing is not extra credit", () => {
-    expect(approachGapMm(5000, 0, 100, DEPTH)).toBe(DEPTH);
-    expect(approachGapMm(5000, 99_000, 100_000, DEPTH)).toBe(DEPTH);
-    expect(approachGapMm(5000, 4000, 5000 - DEPTH, DEPTH)).toBe(DEPTH); // exactly at the cap
+    expect(approachGapMm(5000, 0, 0, 100, DEPTH)).toBe(DEPTH);
+    expect(approachGapMm(5000, 0, 99_000, 100_000, DEPTH)).toBe(DEPTH);
+    expect(approachGapMm(5000, 0, 4000, 5000 - DEPTH, DEPTH)).toBe(DEPTH); // exactly at the cap
   });
 
   it("stays within [0, depth]", () => {
     fc.assert(
       fc.property(mmInt(), mmInt(), extent(), extent(), (line, lo, span, depth) => {
-        const gap = approachGapMm(line, lo, lo + span, depth);
+        const gap = approachGapMm(line, 0, lo, lo + span, depth);
         expect(gap).toBeGreaterThanOrEqual(0);
         expect(gap).toBeLessThanOrEqual(depth);
       }),
@@ -315,7 +324,7 @@ describe("approachGapMm — clear landing depth on one side of an opening", () =
       fc.property(mmInt(), mmInt(), extent(), extent(1), (line, lo, span, depth) => {
         // depth >= 1 so a genuine standoff can never round into the straddle case.
         const hi = lo + span;
-        expect(approachGapMm(line, lo, hi, depth + 1) === 0).toBe(lo <= line && line <= hi);
+        expect(approachGapMm(line, 0, lo, hi, depth + 1) === 0).toBe(lo <= line && line <= hi);
       }),
       { numRuns: 500 },
     );
@@ -327,7 +336,7 @@ describe("approachGapMm — clear landing depth on one side of an opening", () =
     fc.assert(
       fc.property(mmInt(), mmInt(), extent(), extent(), (line, lo, span, depth) => {
         const hi = lo + span;
-        expect(approachGapMm(-line, -hi, -lo, depth)).toBe(approachGapMm(line, lo, hi, depth));
+        expect(approachGapMm(-line, 0, -hi, -lo, depth)).toBe(approachGapMm(line, 0, lo, hi, depth));
       }),
       { numRuns: 500 },
     );
@@ -338,7 +347,7 @@ describe("approachGapMm — clear landing depth on one side of an opening", () =
       fc.property(mmInt(), extent(5_000), extent(20_000), extent(20_000), (line, span, d1, d2) => {
         const [near, far] = d1 <= d2 ? [d1, d2] : [d2, d1];
         // Blocker sitting `d` beyond the line, on the far side.
-        const at = (d: number) => approachGapMm(line, line + d, line + d + span, 1_000);
+        const at = (d: number) => approachGapMm(line, 0, line + d, line + d + span, 1_000);
         expect(at(far)).toBeGreaterThanOrEqual(at(near));
       }),
       { numRuns: 500 },

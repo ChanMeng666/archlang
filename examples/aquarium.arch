@@ -118,12 +118,12 @@ plan "Harbour Aquarium" {
   # runs east -> north -> west -> south, so 25% is the north point (the staff door into
   # Filtration) and 75% the south one (the public door off the Concourse).
   door id=d_rot_n on rotunda at 25% width 1200
-  door id=d_rot_s on rotunda at 75% width 1800
+  door id=d_rot_s double on rotunda at 75% width 2000
 
   # The main entrance is on the CURVED facade, at 15% of the shell's run measured from
   # its start — which lands on the straight south wall; the pair of harbour-side windows
   # below sit on the arc itself, their panes along the tangent and their jambs radial.
-  door id=d_main at (30000,40000) width 2400 wall shell swing in
+  door id=d_main double at (30000,40000) width 2400 wall shell swing in
   window id=w_arc1 on shell at 47% width 2000
   window id=w_arc2 on shell at 50% width 2000
   # No facade chain can tick an opening on a curve, so `lint` reports each one

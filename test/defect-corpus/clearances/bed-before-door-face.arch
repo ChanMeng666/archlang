@@ -1,0 +1,21 @@
+# class: clearances
+# origin: examples/themed.arch before PS2.11e (the bed 250 mm in front of the bedroom door's face); card PS2.54 (one
+#   datum for a doorway's approach: the wall's face, as W_LEAF_ACROSS_DOORWAY reads it)
+# expect: W_DOORWAY_BLOCKED
+# status: done
+# fact: the door spans y 1550-2450 on the 100 mm partition at x 3000 (bedroom face x 3050); the bed spans x 3300-4800,
+#   y 300-2300: 250 mm off the face across 750 mm of the doorway. From the centreline it stood 300 mm off, on the edge
+#   of the approach, and was not reported
+plan "Bed before the door" {
+  units mm
+  grid 50
+  wall exterior thickness 250 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  wall partition thickness 100 { (3000,0) (3000,4000) }
+  room id=a at (0,0) size 3000x4000 label "Living"
+  room id=b at (3000,0) size 3000x4000 label "Bedroom"
+  furniture bed at (3300,300) size 1500x2000 label "Bed"
+  door id=d_front at (1500,4000) width 900 wall exterior
+  door at (3000,2000) width 900 wall partition hinge left swing in
+  window at (1500,0) width 1600 wall exterior
+  window at (4500,0) width 1200 wall exterior
+}

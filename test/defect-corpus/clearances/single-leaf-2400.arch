@@ -1,8 +1,8 @@
 # class: clearances
 # origin: audits/showcase-and-examples.md MR2 (miraflores d_main, a 2400 mm single hinged leaf); GW4, CA3
 # expect: W_LEAF_TOO_WIDE
-# status: todo
-# fact: d_main is one hinged leaf 2400 mm wide (the PS2.11 limit is 1200 mm)
+# status: done
+# fact: d_main is one hinged leaf 2400 mm wide (`maxHingedLeafMm` is 1219 mm, the IBC 48 in leaf)
 plan "One 2400 mm leaf" {
   units mm
   grid 50

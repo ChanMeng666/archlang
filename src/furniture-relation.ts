@@ -16,7 +16,7 @@
 
 import type { Point } from "./ast.js";
 import { backEdgeOfDeg } from "./algebra/d4.js";
-import { doorSwing, segmentsOfWall, type DoorSwing, type WallSegment } from "./geometry.js";
+import { doorLeaves, segmentsOfWall, type DoorSwing, type WallSegment } from "./geometry.js";
 import type { RDoor, RFurniture, RWall } from "./ir.js";
 import { solidFurniture } from "./fixtures-catalog.js";
 import type { BBox } from "./geometry/rect.js";
@@ -334,10 +334,7 @@ export function clearWorldOf(
   doors: readonly RDoor[],
 ): ClearWorld {
   const swings: { door: RDoor; swing: DoorSwing }[] = [];
-  for (const d of doors) {
-    const s = doorSwing(d);
-    if (s) swings.push({ door: d, swing: s });
-  }
+  for (const d of doors) for (const s of doorLeaves(d)) swings.push({ door: d, swing: s });
   return { furniture: solidFurniture(furniture), segments: walls.flatMap((w) => segmentsOfWall(w)), swings };
 }
 

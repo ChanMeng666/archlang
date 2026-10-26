@@ -99,7 +99,7 @@ plan "Transit Hall" {
   opening id=o_gate_wide on w_gate at 49200 width 1200
 
   # ---- the rest of the route ------------------------------------------------
-  door id=d_main at (45000,40000) width 4000 wall shell swing into r_unpaid
+  door id=d_main sliding at (45000,40000) width 4000 wall shell
 
   opening id=o_shop1 on w_retail_e at 3250  width 2400
   opening id=o_shop2 on w_retail_e at 9750  width 2400

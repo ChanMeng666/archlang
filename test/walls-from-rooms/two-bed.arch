@@ -48,9 +48,9 @@ plan "Two-Bedroom Flat" {
   furniture wardrobe in r_bed2 anchor bottom-left flush size 600x1200 rotate 270
 
   furniture fridge       against wall w_ring segment 3 offset 7500 in r_living
-  furniture stove        against wall w_ring segment 3 offset 6800 in r_living
+  furniture stove        against wall w_ring segment 3 offset 5300 in r_living
   furniture kitchen_sink against wall w_ring segment 3 offset 6100 in r_living
-  furniture counter      against wall w_ring segment 3 offset 5300 in r_living
+  furniture counter      against wall w_ring segment 3 offset 6800 in r_living
   furniture sofa  at (2850,5400) size 850x2000 label "Sofa"  in r_living
   furniture table at (800,5800)  size 1200x800 label "Table" in r_living
 

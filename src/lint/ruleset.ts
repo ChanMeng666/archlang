@@ -346,6 +346,32 @@ export interface LintRuleset {
    * the private stair's maximum pitch [V].
    */
   stairMaxPitchRatio: number | null;
+  /**
+   * The least gap (mm) between a cooking surface's side and a fridge or other tall unit beside it
+   * (`W_HOB_FRIDGE_GAP`, plan-soundness PS2.11e): the worktop a cook lands a pan on. Measured from
+   * the hob's side face, over its depth, to the tall unit's drawn footprint. `null` turns the rule
+   * off.
+   *
+   * **Default 305:** the NKBA Kitchen Planning Guidelines with Access Standards, guideline 17
+   * (cook surface landing area), ask "a minimum of 12" of landing area on one side of a cooking
+   * surface and 15" on the other side" (read in the NKBA guidelines PDF and its consumer
+   * checklist [V]). A tall unit inside the lesser figure, 12 in (305 mm), fails it whichever side
+   * it stands on. The figure is the cited one: a lint threshold is a length in mm, and no grid
+   * module enters it.
+   */
+  hobLandingMm: number | null;
+  /**
+   * The widest single hinged leaf (mm) before `W_LEAF_TOO_WIDE` warns (plan-soundness PS2.11e).
+   * A `door` with no kind, or `hinged`, is one leaf its full `width` wide. `null` turns the rule
+   * off.
+   *
+   * **Default 1219:** the International Building Code (2018 and earlier editions) 1010.1.1, "The
+   * maximum width of a swinging door leaf shall be 48 inches (1219 mm) nominal", because, its
+   * commentary says, larger doors are difficult to handle and are of sizes not typically fire
+   * tested (quoted by the door-hardware reference iDigHardware, 2018 [S]; the 2021 edition dropped
+   * the sentence and keeps the operating-force limits).
+   */
+  maxHingedLeafMm: number | null;
 }
 
 /**
@@ -401,6 +427,8 @@ export const DEFAULT_RULESET: LintRuleset = {
   stairMaxRiseMm: 220,
   stairMinGoingMm: 220,
   stairMaxPitchRatio: null,
+  hobLandingMm: 305,
+  maxHingedLeafMm: 1219,
 };
 
 /**

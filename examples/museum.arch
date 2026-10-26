@@ -65,7 +65,7 @@ plan "City Museum" {
 
   # ---- openings: the public route -------------------------------------------
   # Main entrance (south facade) into the hall, then a wide threshold to the spine.
-  door at (39000,60000) width 2000 swing out
+  door double at (39000,60000) width 2000 swing out
   opening at (39000,32000) width 4000
 
   # Galleries read off the spine through cased openings, not doors.

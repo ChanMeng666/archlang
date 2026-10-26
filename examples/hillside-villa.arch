@@ -163,9 +163,9 @@ plan "Hillside Villa" {
 
     furniture counter        against wall shell segment 1 offset 4900 size 1000x600 in r_kitchen
     furniture kitchen_sink   against wall shell segment 1 offset 5800 in r_kitchen
-    furniture stove          against wall shell segment 1 offset 6500 in r_kitchen
-    furniture dishwasher     against wall shell segment 1 offset 7100 in r_kitchen
-    furniture fridge         against wall shell segment 1 offset 7700 in r_kitchen
+    furniture stove          against wall shell segment 1 offset 7400 in r_kitchen
+    furniture dishwasher     against wall shell segment 1 offset 6600 in r_kitchen
+    furniture fridge         against wall w_l1_band_e offset 700 in r_kitchen
     furniture upper_cabinet  against wall w_l1_band_e offset 4500 in r_kitchen
     furniture island         at (9200,5400) size 1800x900 in r_kitchen
     furniture barstool       at (8900,6500) size 400x400  in r_kitchen

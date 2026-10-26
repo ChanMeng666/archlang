@@ -76,12 +76,15 @@ describe("repair — the villa witness", () => {
     expect(lint(r.source).filter((d) => d.code === "W_FURNITURE_OVERLAP")).toEqual([]);
     expect(newConflicts(VILLA, r.source)).toEqual([]);
     expect(r.changes.map((c) => c.id)).toEqual(["sofa_l#5", "coffee_table#6", "piano#9"]);
+    // (3500,5800): the push that clears the living/dining opening stops the chair's east side
+    // short of the approach measured from the partition's FACE (4725 − 300), on the plan's 50 mm
+    // grid; it was (3600,5800), from the centreline, before PS2.54.
     expect(r.unresolved.find((u) => u.id === "armchair#7")).toEqual({
       id: "armchair#7",
       level: 1,
       span: expect.any(Object),
       reason:
-        'moving it to (3600,5800) would overlap "tv_unit_10", which the plan does not have now — left in place; adjust manually',
+        'moving it to (3500,5800) would overlap "tv_unit_10", which the plan does not have now — left in place; adjust manually',
     });
     expect(repair(r.source).source).toBe(r.source);
   });

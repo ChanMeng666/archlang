@@ -2,12 +2,12 @@
 # origin: audits/archcanvas-public-examples.md CC1 (corner-cafe d_entry + win_corner on the chamfered wall)
 # expect: W_OPENING_OVERLAP
 # status: done
-# fact: along the chamfer (run from 9000) the door spans s 1350-2850 and the window s 250-1750: 400 mm of overlap
+# fact: along the chamfer (run from 9000) the door (a `double` pair, two 800 mm leaves, each 740 mm clear) spans s 1350-2950 and the window s 250-1750: 400 mm of overlap
 plan "Door and window on a chamfer" {
   units mm
   grid 50
   wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,3000) (3000,6000) (0,6000) close }
   room id=a polygon (0,0) (6000,0) (6000,3000) (3000,6000) (0,6000) label "Cafe" uses dining
-  door id=d_entry on shell at 11100 width 1500
+  door id=d_entry double on shell at 11150 width 1600
   window id=win_corner on shell at 10000 width 1500
 }

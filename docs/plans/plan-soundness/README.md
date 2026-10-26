@@ -433,6 +433,30 @@ legitimately moves a hashed output; the reason is recorded in the table header a
 - *Reverse if:* a re-take ever hides an unexplained movement (a row moving in a re-take whose commit
   does not name it). The generator then lists per-row reasons, as the other digest tables' headers do.
 
+**D25. The doorway-approach datum moves to the wall face; three eval holdout judgments move with
+it.** *Ratified by the owner 2026-10-26, so it may be cited as precedent (D18).* (2026-10-26, coordinator ruling on PR #283; PS2.54, PS2.11e.)
+- Changed: `W_DOORWAY_BLOCKED`'s approach is measured `doorwayLandingMm` past the wall's FACE (PS2.54,
+  `doorLandingRect`), and it reads cased openings (PS2.11e). Three eval holdout goldens now raise it,
+  a physical failure for the judge (`eval/run.ts`'s `PHYSICAL_CODES`), so `eval/judge-fixture.json`
+  sets their `semanticPass` to false, `physicalWarnings` to 1 and their failure line, with a per-row
+  reason in the fixture's `notes`; `JUDGE_VERSION` is unchanged. `test/eval-offline.test.ts` reads
+  the three from those notes and holds each to that one finding.
+- Consequence: the eval:ci gate compares against the fixture, never requires 26/26. A gate that
+  required every golden to pass could not be green under a ratified `semanticPass: false`, so
+  `eval/run.ts`'s offline exit is 1 only when a golden differs from `eval/judge-fixture.json` (one
+  recorded as passing that now fails, or whose `physicalWarnings` or `lintWarnings` differ, or one
+  with no row), printing `✗ n golden(s) regressed against the fixture` with each named; otherwise
+  `✓ 23/26 pass, 3 recorded as failing (D25)`. `JUDGE_VERSION` unchanged; no threshold anywhere
+  (coordinator ruling on PR #283).
+- *Why:* the goldens' pieces really stand inside the approach read from the face:
+  `dims-auto-cottage`'s WC 250 mm off the bath door's face, over 100 of its 800 mm;
+  `galley-kitchen`'s basin 250 mm off the bath door's face, over 150 of 800 mm; `compact-studio`'s
+  kitchen sink 250 mm off the kitchenette opening's face, over 350 of 1000 mm. Moving a holdout
+  judgment goes beyond D19's `lintWarnings`-only practice for a lint PR, so the owner ratified it.
+- *Reverse if:* if the owner later reverses D25, the datum returns to the centreline for
+  `W_DOORWAY_BLOCKED` only (T2 and `clearances/bed-before-door-face` move back to missed) and the
+  three judgments and their fixture notes revert.
+
 ## 4. Principles: what "professional rules and taste" means here
 
 **Five layers, treated differently** (Drafting added by D11):
@@ -519,11 +543,11 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS1 · The defect corpus (do this before PS2; it is the yardstick)
 
-6 cards: 4 done, 2 todo (PS1.5 two message slips, PS1.6 two clean twins that are not clean); PS1.3 walls-first control arm done 2026-10-26 (D21); PS1.4 diagnostic wording measured 2026-10-26 (no rule). PS1.3 and PS1.4 were filed 2026-10-25 from the owner's 2026-10-18 asks, PS1.5 on 2026-10-26 from PS7.2's red team, PS1.6 on 2026-10-26 from PS1.4. Cards, tables and as-built pointers: `cards.md` § PS1.
+7 cards: 4 done, 3 todo (PS1.5 two message slips, PS1.6 two clean twins that are not clean, PS1.7 the `eval:ci` gate's blind spots); PS1.3 walls-first control arm done 2026-10-26 (D21); PS1.4 diagnostic wording measured 2026-10-26 (no rule). PS1.3 and PS1.4 were filed 2026-10-25 from the owner's 2026-10-18 asks, PS1.5 on 2026-10-26 from PS7.2's red team, PS1.6 on 2026-10-26 from PS1.4. Cards, tables and as-built pointers: `cards.md` § PS1.
 
 ### PS2 · Validity checks that read existing facts (small, high yield)
 
-64 cards: 25 done, 39 todo. Cards, tables and as-built pointers: `cards.md` § PS2.
+67 cards: 28 done, 39 todo. Cards, tables and as-built pointers: `cards.md` § PS2.
 
 ### PS3 · Relation-first authoring (D1 + D5; needs an ADR)
 

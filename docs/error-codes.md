@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**143 errors** · **81 warnings**
+**143 errors** · **84 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -26,7 +26,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_DIV_ZERO`](#e_div_zero) | error | Division or modulo by zero. |
 | [`E_DOMAIN`](#e_domain) | error | Math domain error. |
 | [`E_DOOR_KIND_CLAUSE`](#e_door_kind_clause) | error | That clause is not available on this kind of door. |
-| [`E_DOOR_KIND_CURVED`](#e_door_kind_curved) | error | A non-hinged door kind cannot sit on a curved wall. |
+| [`E_DOOR_KIND_CURVED`](#e_door_kind_curved) | error | A sliding-family or garage door cannot sit on a curved wall. |
 | [`E_DOOR_OPEN_RANGE`](#e_door_open_range) | error | `open` must be between 0 and 1. |
 | [`E_DOOR_WIDTH`](#e_door_width) | error | Door must have a positive width. |
 | [`E_DOTTED_DECL`](#e_dotted_decl) | error | A dotted name cannot be declared. |
@@ -188,9 +188,12 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_GLYPH_UNSUPPORTED`](#w_glyph_unsupported) | warning | PDF/PNG text has characters no embedded font can draw. |
 | [`W_HABITABLE_NO_WINDOW`](#w_habitable_no_window) | warning | A living room, dining room or kitchen has no window. |
 | [`W_HATCH_SCALE`](#w_hatch_scale) | warning | Hatch scale must be positive; using 1. |
+| [`W_HOB_FRIDGE_GAP`](#w_hob_fridge_gap) | warning | A fridge or other tall unit stands too close beside a hob. |
+| [`W_HOB_UNDER_WINDOW`](#w_hob_under_window) | warning | A hob stands under a window. |
 | [`W_IMPORT_EMPTY_FILE`](#w_import_empty_file) | warning | Whole-file import binds an empty component. |
 | [`W_KEEP_VIOLATED`](#w_keep_violated) | warning | A hard keep does not hold. |
 | [`W_LEAF_ACROSS_DOORWAY`](#w_leaf_across_doorway) | warning | A door's open leaf parks across another doorway's approach. |
+| [`W_LEAF_TOO_WIDE`](#w_leaf_too_wide) | warning | A swinging door leaf is wider than a door is made. |
 | [`W_NO_ENTRANCE`](#w_no_entrance) | warning | The plan has no exterior door. |
 | [`W_OPENING_AT_JUNCTION`](#w_opening_at_junction) | warning | An opening runs into a wall junction, or leaves too short a nib of wall beside a jamb. |
 | [`W_OPENING_NOT_DIMENSIONED`](#w_opening_not_dimensioned) | warning | An opening on the outside of the building is on no `dims auto all` chain. |
@@ -437,7 +440,7 @@ let x = sqrt(-1)   # error
 
 *error* — That clause is not available on this kind of door.
 
-**Cause.** A `door` statement carries a clause its kind has no meaning for: `hinge` on any of the sliding family (`sliding`/`barn`/`bifold`/`pocket` — nothing is hinged to a jamb), `swing` on a `sliding` or `pocket` door (the panel stays in the plane of the wall, or inside it), or `slide`/`open` on a `hinged` door (nothing travels along the wall). ArchLang refuses rather than draws the statement as if the clause were absent — silently ignoring a written clause is the silent-error design this project rules out (the v1.23 precedent: rectangle-only clauses REFUSE a polygon room rather than approximate it).
+**Cause.** A `door` statement carries a clause its kind has no meaning for: `hinge` on any of the sliding family (`sliding`/`barn`/`bifold`/`pocket` — nothing is hinged to a jamb) or on a `double` door (a leaf hangs on each jamb, so there is no side to choose), `swing` on a `sliding` or `pocket` door (the panel stays in the plane of the wall, or inside it), or `slide`/`open` on a `hinged` or `double` door (nothing travels along the wall). ArchLang refuses rather than draws the statement as if the clause were absent — silently ignoring a written clause is the silent-error design this project rules out (the v1.23 precedent: rectangle-only clauses REFUSE a polygon room rather than approximate it).
 
 **Fix.** Delete the clause (the machine-applicable fix does exactly that), or change the door's kind to one the clause belongs to. `swing` on a `barn` or `bifold` door is legal and means which FACE of the wall the panel hangs on or folds toward — it is not a leaf arc.
 
@@ -447,9 +450,9 @@ door pocket on w1 at 50% width 900 hinge left   # error: a pocket door has no hi
 
 ## E_DOOR_KIND_CURVED
 
-*error* — A non-hinged door kind cannot sit on a curved wall.
+*error* — A sliding-family or garage door cannot sit on a curved wall.
 
-**Cause.** The panel of a `sliding`, `barn`, `bifold` or `pocket` door is a straight rectangle running along a straight track, and its pocket/track geometry is straight by construction — none of that survives on a wall whose hosting edge is an `arc`. A hinged leaf does survive (its swing is taken from the tangent at the doorway), so only the sliding family is refused. Refusing is deliberate: drawing a straight panel across a curved reveal would be a wrong drawing with no diagnostic.
+**Cause.** The panel of a `sliding`, `barn`, `bifold` or `pocket` door is a straight rectangle running along a straight track, and its pocket/track geometry is straight by construction — none of that survives on a wall whose hosting edge is an `arc`. A hinged leaf does survive (its swing is taken from the tangent at the doorway), and so do a `double` door's two (both from the tangent at the doorway's centre), so only the sliding family and `garage` are refused. Refusing is deliberate: drawing a straight panel across a curved reveal would be a wrong drawing with no diagnostic.
 
 **Fix.** Use a `hinged` door on the curve (the default — delete the kind word), or move the door onto one of the wall's straight runs.
 
@@ -2241,9 +2244,9 @@ dim (0,-100)->(4000,-100) offset -300 text "4500"   # lint: the line spans 4000 
 
 *warning* — A doorway's landing is blocked.
 
-**Cause.** A piece of furniture/fixture sits in the clear landing space immediately on either side of a door opening, so you cannot pass through the doorway even when the leaf is open. This is the approach path, distinct from the leaf's swing arc (`W_SWING_OBSTRUCTED`). The warning states the landing depth required, the depth actually left, and the shortfall.
+**Cause.** A piece of furniture/fixture sits in the clear landing space immediately on either side of a door or a leaf-less (cased) `opening`, so you cannot pass through the doorway even when the leaf is open. The landing runs jamb to jamb and `doorwayLandingMm` deep (300 mm; 450 under `accessibility-advisory`) past each FACE of the wall, where a person standing in the doorway stands (the datum `W_LEAF_ACROSS_DOORWAY` reads too). This is the approach path, distinct from the leaf's swing arc (`W_SWING_OBSTRUCTED`). The warning states the landing depth required, the depth actually left, and the shortfall; a cased opening is named by the rooms it joins. A cased opening up to 1200 mm wide (a doorway's width) is judged as a door is: any piece in its landing blocks it. A wider one, an open-plan join or the full shared edge an `open between` derives, is blocked only when the pieces in its landing leave no 1200 mm stretch of it clear (along the wall, jamb to jamb); its warning states the approach depth and the stretch left. A counter across a cased opening is a servery hatch and is not read.
 
-**Fix.** Move the obstruction clear of the opening by the shortfall the warning quotes (`archlang repair` computes the smallest clearing shift), shrink it by that much on the axis facing the door, or move the door along its wall so its landing misses it.
+**Fix.** Move the obstruction clear of the opening by the shortfall the warning quotes (`archlang repair` computes the smallest clearing shift), shrink it by that much on the axis facing the doorway, or move the door or opening along its wall so its landing misses it (an opening `open between` derives has the rooms' shared edge as its span, so there the piece moves).
 
 ```arch static
 door at (6000,3000) width 800
@@ -2254,7 +2257,7 @@ furniture wc at (5800,3050) size 700x400   # lint: WC blocks the doorway
 
 *warning* — Door is narrower than the minimum clear width.
 
-**Cause.** A door's width is below the configured minimum passable width (default 700 mm).
+**Cause.** A door's width is below the configured minimum passable width (default 700 mm). A `double` door is judged by one leaf, half its width: a person passes through one active leaf (ADA 2010 Standards 404.2.3), so `double width 1000` is judged as a 500 mm door.
 
 **Fix.** Widen the door to at least the minimum clear width.
 
@@ -2535,6 +2538,34 @@ room id=liv at (0,0) size 4000x4000 label "Living"   # lint: no window on its wa
 wall exterior thickness 200 material brick scale 0 { (0,0) (1,0) }
 ```
 
+## W_HOB_FRIDGE_GAP
+
+*warning* — A fridge or other tall unit stands too close beside a hob.
+
+**Cause.** A cooking surface (`stove`, `hob`, `cooktop`) has a fridge or other tall unit (a wardrobe, bookcase or locker) beside it nearer than `hobLandingMm` (305 mm by default): measured from the hob's side face, over its depth, to the unit's drawn footprint. The hob's sides are the two edges beside its back (its `rotate`). The NKBA Kitchen Planning Guidelines (guideline 17) ask for 12 in (305 mm) of landing area on one side of a cooking surface and 15 in on the other, so a tall unit inside 12 in leaves either side short. A wall between them ends the measure (a fridge behind a partition is not beside the hob); rooms do not, so a dining room's fridge across an open-plan join counts. A wall beside the hob is not judged by this rule. Every plan is read. Set `hobLandingMm: null` to turn it off.
+
+**Fix.** Move the hob or the tall unit apart by the shortfall the warning quotes and stand a worktop between them, or stand the tall unit at the far end of the run. There is no machine-applicable fix.
+
+```arch static
+room id=k at (0,0) size 4000x2400 label "Kitchen"
+furniture stove at (1600,100) size 600x600
+furniture fridge at (2300,100) size 600x650   # lint: 100 mm from the hob, 200 mm short
+```
+
+## W_HOB_UNDER_WINDOW
+
+*warning* — A hob stands under a window.
+
+**Cause.** A cooking surface (`stove`, `hob`, `cooktop`) stands against a window's wall across part of its span, on either side of the wall: its footprint overlaps, with positive area, the window's span within `fixtureWallTolMm` (300 mm) of the wall's centreline, the band `W_FURNITURE_OVER_WINDOW` reads for a tall unit. A curtain or blind then hangs over the flames, and opening the window means reaching across the burners: the NKBA Kitchen Planning Guidelines (guideline 20, cooking surface safety) say not to locate the cooking surface under an operable window. ArchLang does not model whether a window opens, so every window is judged; one whose sill is at or above 2100 mm is out of reach and is not, and one on a curved wall is not measured. Every plan is read, a café's kitchen as a dwelling's.
+
+**Fix.** Slide the hob along its wall past the window's nearer end (the hint gives the distance) and stand the sink or a worktop under the window, or move the window. There is no machine-applicable fix: which one moves is the author's choice.
+
+```arch static
+wall id=w exterior thickness 200 { (0,0) (4000,0) }
+window at (2000,0) width 1200 wall w
+furniture stove at (1700,100) size 600x600   # lint: under 600 mm of the window
+```
+
 ## W_IMPORT_EMPTY_FILE
 
 *warning* — Whole-file import binds an empty component.
@@ -2567,7 +2598,7 @@ plan "K" {
 
 *warning* — A door's open leaf parks across another doorway's approach.
 
-**Cause.** A hinged door's leaf, open where it is drawn (from the hinge to the open tip), stands in the approach of another door in the room both open onto: the zone `doorwayLandingMm` deep (300 mm; 450 under `accessibility-advisory`) in front of that door's wall face, jamb to jamb. (`W_DOORWAY_BLOCKED` keeps the same depth clear but measures it from the wall's centreline; read from there, a leaf 250 mm in front of a 100 mm wall's face sits exactly on the zone's edge, so this rule reads from the face, where a person in the doorway stands.) What is left is the longest stretch of that doorway the leaf does not cover; it warns when that is under the narrowest door the ruleset passes (`minDoorWidthMm`, 700 mm), or under the doorway's own width if it is narrower. One door must then be shut to use the other. Two doors whose swings collide are `W_SWING_OBSTRUCTED`'s report, not this one's. Leaf-less openings are not judged, nor is a door on an angled or curved wall, whether its own leaf or its approach.
+**Cause.** A hinged door's leaf, open where it is drawn (from the hinge to the open tip), stands in the approach of another door in the room both open onto: the zone `doorwayLandingMm` deep (300 mm; 450 under `accessibility-advisory`) in front of that door's wall face, jamb to jamb: the landing `W_DOORWAY_BLOCKED` keeps clear of furniture, read from the same face, where a person in the doorway stands. What is left is the longest stretch of that doorway the leaf does not cover; it warns when that is under the narrowest door the ruleset passes (`minDoorWidthMm`, 700 mm), or under the doorway's own width if it is narrower. One door must then be shut to use the other. Two doors whose swings collide are `W_SWING_OBSTRUCTED`'s report, not this one's. Leaf-less openings are not judged as the approached doorway, nor is a door on an angled or curved wall, whether its own leaf or its approach; a `double` door's two leaves are each judged.
 
 **Fix.** Hang the leaf on its other jamb (flip its `hinge`; the hint says when that clears the doorway), open it to the other side of its wall (flip its `swing`), move either door along its wall until the open leaf stands at least the approach depth clear of the doorway's face or beside it, or make it a `sliding` or `pocket` door. There is no machine-applicable fix: which door moves or turns is a design decision.
 
@@ -2578,6 +2609,19 @@ room id=bed at (0,0) size 3000x5000 label "Bedroom"
 room id=hall at (3000,0) size 3000x5000 label "Hall"
 door id=front at (3700,0) width 900 wall shell hinge near start swing into hall   # lint: its open leaf stands 200 mm in front of the bedroom door
 door id=bed_door at (3000,650) width 800 wall mid swing into bed
+```
+
+## W_LEAF_TOO_WIDE
+
+*warning* — A swinging door leaf is wider than a door is made.
+
+**Cause.** A hinged `door` (no kind, or `hinged`) is one leaf its full `width` wide, and a `double` door two, each half the width. A leaf wider than `maxHingedLeafMm` (1219 mm by default: the International Building Code's 48 in nominal maximum for a swinging leaf, in its 2018 and earlier editions) is heavier and wider than a door is hung and swung. A 2400 mm opening written as one hinged leaf is the usual case: it draws a 2.4 m quarter-circle across the room. A `sliding`, `barn`, `bifold`, `pocket` or `garage` door has no swinging leaf and is never judged. Set `maxHingedLeafMm: null` to turn it off.
+
+**Fix.** Make it a pair of leaves, `door double … width <mm>` (each leaf half the width; narrow a double door wider than twice the figure too), or narrow it, or make it a `sliding` or `bifold` door, or a cased `opening` if it needs no door. There is no machine-applicable fix: which the doorway becomes is a design decision.
+
+```arch static
+wall id=w exterior thickness 200 { (0,0) (8000,0) }
+door at (4000,0) width 2400 wall w   # lint: one 2400 mm leaf; `door double … width 2400` is two of 1200
 ```
 
 ## W_NO_ENTRANCE
@@ -2665,7 +2709,7 @@ outdoor paving at (1000,1000) size 3000x2000   # warning: on the living-room flo
 
 **Cause.** The widest route from the entrance into a room (or between a key pair of rooms, e.g. bedroom→bath) has an unavoidable pinch narrower than the minimum passable clear width — a too-narrow door/opening, or furniture crowding the way. The limit case is reported too: when no route reaches the room at all, the message gives the MEASURED width of the best way in that does exist (found by asking which smaller body does get there) rather than a fabricated zero, and calls the walk blocked only when there is no gap at all. When the storey names a main entrance (`describe().access.mainEntrance`), the walk starts there: another door from outside is a way in only for a room the main entrance cannot reach from inside, or when it is a `garage` door, so a patio or balcony door does not hide a route blocked from the front door, and a hint names the doors left out. A room with its own door from outside is judged by that door; when the walk from the main entrance does not reach it at all, the warning says so in its own words ("From the main entrance the walk to … is blocked …; the room is reached only through its own door from outside"), naming that door in the hints only. When no main entrance can be named, the walk starts from every exterior door, and the lint coverage report says so (`no-main-entrance`). A coarse fact from the circulation nav grid (ADR 0008); the number is grid-quantised, and it is the width a body passes through, not the room left over after its own clearance.
 
-**Fix.** When doors set the limit, the message names the door or opening the walk squeezes through at that width by the rooms it joins (doors in series, or two tied ways in, are all named) and the hints name each by id with a `width` for it; widening every named one was re-measured to clear the minimum before it is quoted (a door loses a leaf-and-stop allowance from its nominal width; a leafless `opening` keeps all of it). When no door is named, widening doors alone was not enough or the pinch is furniture or a shaft: move the furniture pinching the route, or add a second way in so the pinch is avoidable. One bottleneck is reported once: a room or route whose pinch is a door already named is not reported again. There is no machine-applicable fix: widening a door rewrites a number you chose.
+**Fix.** When doors set the limit, the message names the door or opening the walk squeezes through at that width by the rooms it joins (doors in series, or two tied ways in, are all named) and the hints name each by id with a `width` for it; widening every named one was re-measured to clear the minimum before it is quoted (a door loses a leaf-and-stop allowance from its nominal width, from one leaf of a `double` door, half its width; a leafless `opening` keeps all of it). When no door is named, widening doors alone was not enough or the pinch is furniture or a shaft: move the furniture pinching the route, or add a second way in so the pinch is avoidable. One bottleneck is reported once: a room or route whose pinch is a door already named is not reported again. There is no machine-applicable fix: widening a door rewrites a number you chose.
 
 ```arch static
 door at (4000,1500) width 600

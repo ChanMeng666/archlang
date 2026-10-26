@@ -111,7 +111,7 @@
       ]
     },
     "constants": {
-      "match": "\\b(up|down|left|right|in|out|inward|outward|mm|true|false|top|middle|bottom|center|centered|start|end|top-left|top-right|bottom-left|bottom-right|auto|overall|rooms|openings|all|cw|ccw|major|hinged|sliding|barn|bifold|pocket|A4|A3|A2|A1|A0|landscape|portrait|living|kitchen|dining|bedroom|bath|wc|hall|circulation|storage|utility|office|entry|south|east|west|none|front|sides|lawn|planting|paving|deck|gravel|water|driveway|patio|balcony|picket|panel|post|garage|hard|soft|advisory)\\b",
+      "match": "\\b(up|down|left|right|in|out|inward|outward|mm|true|false|top|middle|bottom|center|centered|start|end|top-left|top-right|bottom-left|bottom-right|auto|overall|rooms|openings|all|cw|ccw|major|hinged|sliding|barn|bifold|pocket|double|A4|A3|A2|A1|A0|landscape|portrait|living|kitchen|dining|bedroom|bath|wc|hall|circulation|storage|utility|office|entry|south|east|west|none|front|sides|lawn|planting|paving|deck|gravel|water|driveway|patio|balcony|picket|panel|post|garage|hard|soft|advisory)\\b",
       "name": "constant.language.arch"
     },
     "operators": {
