@@ -406,8 +406,8 @@ ratification (D18).*
 - D22 changes no iron law. *Reverse if:* any trigger in ADR 0033's "Reverse if" list fires, or design §12's reverse-if for the decision a ruling confirms.
 
 **D23. The id-free message law is widened in `docs/agents/iron-laws.md`: it now names `taste()` and the
-compile-channel `W_ROOM_OVERLAP`.** *Awaiting ratification (D18).* (PR #269, 2026-10-26;
-recorded after the fact, PS2.22, PS2.29.)
+compile-channel `W_ROOM_OVERLAP`.** *Ratified by the owner 2026-10-26 ("D23 批准"), so it may be
+cited as precedent (D18).* (PR #269, 2026-10-26; recorded after the fact, PS2.22, PS2.29.)
 - Changed: the iron law "a `lint()` diagnostic's `message` never quotes an element id" gained a naming
   rule (an unlabelled room is named by its use or its place, `src/naming.ts`, shared by `lint()`,
   `taste()` and the `W_ROOM_OVERLAP` compile warning) and a new guard, `test/lint-messages-id-free.test.ts`

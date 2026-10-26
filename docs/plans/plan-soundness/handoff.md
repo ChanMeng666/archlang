@@ -108,7 +108,7 @@ taste advice codes, `LINT_RULES` 45 entries; 133 cards, counted from `cards.md`:
 | CI posts the benchmark comment only for same-repo PRs | — | #266 | b10c24e3 |
 | `W_FIXTURE_BACK_TO_ROOM` declines a piece side-on or end-on to a wall | PS2.50 | #267 | 98b3d7ab |
 | `finish` furnishes small wet rooms as whole sets | PS2.45 | #268 | e6778596 |
-| No message quotes an element id (`lint()`, `taste()`, `W_ROOM_OVERLAP`; `src/naming.ts`); D23 awaits ratification | PS2.22, PS2.29 | #269 | 5aab29e5 |
+| No message quotes an element id (`lint()`, `taste()`, `W_ROOM_OVERLAP`; `src/naming.ts`); D23 ratified 2026-10-26 | PS2.22, PS2.29 | #269 | 5aab29e5 |
 | `keep` design record, D22, ADR 0033 (Proposed) | PS4.3 design | #270 | 0c5e7a09 |
 | Brief-bound dimensions; `describe().totals.gross_internal_area_m2` | PS4.4 | #271 | c2f4176b |
 | `keep` statement, `W_KEEP_VIOLATED`, `describe().keeps[]`, `validate --json` `keeps`/`next`; ADR 0033 Accepted | PS4.3a | #272 | 6f3de966 |
@@ -169,9 +169,9 @@ items 3.1(b), M.8, M.9, M.14 and D.7 wait on the owner's answers and are not cov
 - Walls-first vs rooms-first comparison (PS1.3): done 2026-10-26 (D21; `audits/2026-10-26-walls-first-control-arm.md`).
   Diagnostic wording (PS1.4): card filed, not run.
 - Id-free lint messages: done 2026-10-26 (PS2.22/PS2.29, PR #269); the rule is in `README.md` §5.
-  **D23 is awaiting the owner's ratification** (D18): PR #269 widened the id-free wording in
-  `docs/agents/iron-laws.md` to `taste()` and the compile-channel `W_ROOM_OVERLAP` without a D-entry; it
-  is recorded now with its reverse-if, applied in code and enforced by tests, and not cited as precedent.
+  **D23 ratified by the owner on 2026-10-26** (D18): PR #269 widened the id-free wording in
+  `docs/agents/iron-laws.md` to `taste()` and the compile-channel `W_ROOM_OVERLAP`; recorded with its
+  reverse-if, applied in code, enforced by tests, and now citable as precedent.
 - Fuzz, timing and red-team probes were to run in the owner's prepaid `claude --cloud` sessions
   (owner, in conversation, 2026-10-20). One probe ran; the rest ran locally. Item 1's two arms ran as
   local headless sessions, not in the cloud sessions; use the cloud sessions, if they are still
