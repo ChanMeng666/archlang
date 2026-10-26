@@ -119,7 +119,7 @@ export type {
 } from "./analyze/symmetry.js";
 export type { SyntaxFacts, SyntaxRoom } from "./analyze/syntax.js";
 export type { DependsEntry, DependsFacts, DerivedWallDepends } from "./analyze/depends.js";
-export type { KeepFact } from "./analyze/keep-facts.js";
+export type { KeepFact, KeepRedundancy } from "./analyze/keep-facts.js";
 
 // The access graph and its two node/edge shapes are DECLARED in `analyze.js`, but
 // `describe()` is the only public value that surfaces them ({@link SceneSummary.access}),

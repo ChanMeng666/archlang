@@ -164,6 +164,7 @@ export type {
   SyntaxRoom,
   DependsFacts,
   KeepFact,
+  KeepRedundancy,
   DependsEntry,
   DerivedWallDepends,
   DerivedWallRow,
