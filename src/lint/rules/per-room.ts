@@ -372,6 +372,16 @@ export const perRoomRules: LintRule = {
   name: "per-room",
   family: "rooms",
   layer: "validity",
+  // One stage per code: a room's size exists with the room; a door, a window or a wall does not.
+  stage: {
+    W_ROOM_TOO_SMALL: "rooms",
+    W_ROOM_DISCONNECTED: "openings",
+    W_BEDROOM_NO_WINDOW: "openings",
+    W_ROOM_NOT_ENCLOSED: "walls",
+    W_ROOM_NO_FIXTURE: "fixtures",
+    W_GARAGE_TOO_NARROW: "rooms",
+    W_ROOM_TOO_NARROW: "walls",
+  },
   codes: [
     "W_ROOM_TOO_SMALL",
     "W_ROOM_DISCONNECTED",

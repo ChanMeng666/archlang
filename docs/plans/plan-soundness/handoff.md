@@ -129,15 +129,17 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    the row-5 residue is done (PS2.50 PR #267, PS2.45 PR #268, PS2.22/PS2.29 PR #269); item 2 is next.
 2. **PS4.4** is done (PR #271). **PS4.5** `impact` reports `held`.
 4. **PS7.x** staged authoring. The next re-measure states what authors now see: PS7.5 (done: the taste
-   step left the author loop in the spec, SKILL and role text) and PS7.6 (done: `lint`/`validate` open
-   with a one-line summary).
+   step left the author loop in the spec, SKILL and role text), PS7.6 (done: `lint`/`validate` open
+   with a one-line summary) and PS7.1 (done: `validate --stage`, the stage-ordered loop in the spec,
+   SKILL and role text, a `stage` key on every `validate --json` diagnostic); PS7.2 is done too
+   (`context --level starter`, PR #279).
 5. **PS2.11e** the clearance remainder (`W_DOORWAY_BLOCKED` over leaf-less openings, stair swings,
    hob under a window PS2.46, per-family depth ceiling PS2.53, face/centreline unification PS2.54).
 6. **PS1.4** diagnostic-wording study (§8 Q3) is still open: an owner ask from 2026-10-18 found undone by the
    2026-10-25 transcript audit. **PS1.3** walls-first control arm (§8 Q1) is done (PR #264, D21): it ran on
    2026-10-26 in item 1's harness (66 CLI calls, 0 `score`, 0 `validate`; 54 verified defects against 52
    rooms-first; D1/D5 re-stated).
-7. Everything else in `cards.md` by family: PS0 17 todo, PS1 2, PS2 39 todo, PS3 4, PS4 7 todo, PS5 3, PS7 2 (7.1, 7.6); pick by first-contact evidence, not by number.
+7. Everything else in `cards.md` by family: PS0 17 todo, PS1 2, PS2 39 todo, PS3 4, PS4 7 todo, PS5 3, PS7 0 (7.3 parked); pick by first-contact evidence, not by number.
 
 **Open cards by family (2026-10-25 audit, counts updated 2026-10-26; "ready" = no stated dependency
 outstanding; every card that changes what an author sees in `lint`, `validate`, `finish` or the spec

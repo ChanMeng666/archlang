@@ -19,7 +19,7 @@
 import { buildingRoomReach, DEFAULT_TOL, resolvePlan, roomUses, storeyGrounded } from "./analyze.js";
 import type { ResolvedLevel, ResolvedPlan, RRoom } from "./ir.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
-import { type BuildingContext, buildLintContext, type LintLayer, NO_BUILDING } from "./lint/context.js";
+import { type BuildingContext, buildLintContext, type LintLayer, type LintStage, NO_BUILDING } from "./lint/context.js";
 import { dwellingReading } from "./analyze/dwelling.js";
 import { foldCoverage, type LintCoverage, type LintUnclassifiedRoom, type SkipNote } from "./lint/coverage.js";
 import { MAX_ATTRIBUTION_MEASURES } from "./lint/rules/circulation-facts.js";
@@ -37,7 +37,7 @@ export {
   type LintOptions,
   type LintRuleset,
 } from "./lint/ruleset.js";
-export type { BuildingContext, DiagnosticSite, LintContext, LintLayer, LintRule } from "./lint/context.js";
+export type { BuildingContext, DiagnosticSite, LintContext, LintLayer, LintRule, LintStage } from "./lint/context.js";
 
 /**
  * Each lint code's {@link LintLayer}, read off the rule that declares it in its `codes` (ADR
@@ -45,6 +45,22 @@ export type { BuildingContext, DiagnosticSite, LintContext, LintLayer, LintRule 
  */
 export const LINT_CODE_LAYERS: Readonly<Record<string, LintLayer>> = Object.freeze(
   Object.fromEntries(LINT_RULES.flatMap((r) => r.codes.map((c) => [c, r.layer] as const))),
+);
+
+/**
+ * Each lint code's {@link LintStage} (plan-soundness PS7.1, `src/stages.ts`), read off the rule
+ * that declares it: its one stage, or its entry for that code. Built once from `LINT_RULES`, in
+ * rule order; frozen. `lint()` never reads it; `validate --stage` does.
+ */
+export const LINT_CODE_STAGES: Readonly<Record<string, LintStage>> = Object.freeze(
+  Object.fromEntries(
+    LINT_RULES.flatMap((r) =>
+      r.codes.flatMap((c) => {
+        const s = typeof r.stage === "string" ? r.stage : r.stage[c];
+        return s === undefined ? [] : [[c, s] as const];
+      }),
+    ),
+  ),
 );
 export type {
   LintCoverage,

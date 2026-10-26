@@ -184,7 +184,7 @@ arch score plan.arch --brief brief.json --json  # satisfied/total — measures, 
 arch score plan.arch --taste generic --json  # a reviewer's taste report, 0–1, never gates
 ```
 
-**Self-correction loop:** compile → `validate --json` (fix its `next` first) → lint → repair. If
+**Self-correction loop:** compile → `validate --json` (fix its `next` first) → lint → repair; author in stages: `validate --stage rooms|walls|openings|fixtures` in turn, advancing when `at_stage.clean`. If
 `ok` is false, read each `diagnostics[].fix` (and `line`/`col`/`span`), edit the source, recompile.
 Then `describe --json` to confirm intent without rendering an image (floor area: `net_area_m2`; `area_m2` runs to wall centrelines). **Before shipping, gate with `validate --strict`**
 — lint flags furniture through a wall or in the wrong room, a fixture blocking a doorway or a door's
@@ -318,7 +318,16 @@ owns that name, so the shell runs the wrong program.
    generation pipeline runs before it ships. Add `--graph g.json` to also assert the intended
    room-to-room adjacency (`{ "living": ["kitchen","hall"], … }`); a mismatch fails. Read each
    `diagnostics[].fix`, edit, and re-run until it passes — or, if a warning is deliberate, say so.
-   The author's loop is compile → `validate --json` (fix its `next` first) → lint → repair. Read the
+   The author's loop is compile → `validate --json` (fix its `next` first) → lint → repair, **one
+   stage at a time**: the rooms (with stairs and outdoor surfaces), then
+   `archlang validate plan.arch --stage rooms --json` until `at_stage.clean` is true; then the walls
+   (`walls from rooms`) and `--stage walls`; then doors and windows, `--stage openings`; then fixtures
+   and furniture, `--stage fixtures`; then the sheet and the full `validate --strict`. Advance when
+   the stage is clean, or when every remaining finding is one you accept and say so: a later stage's
+   findings are held back (the `summary` counts them), because they mean nothing until the earlier
+   decisions stand; errors always show. Clean is not permanent: a later stage can add or re-raise an
+   earlier stage's finding (walls narrow a room to its clear width, a bed makes a double, furniture
+   pinches a walk), and each later stage shows the earlier stages' codes again. Read the
    `summary` (first key of `lint|validate --json`, first line of the text report) before anything
    else: it counts the warnings and the distinct codes and leads with the commonest, so a truncated
    read still tells you how much is hidden.
@@ -724,8 +733,8 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
   - example: `archlang watch plan.arch -o plan.svg` — recompile on every save (interactive; agents should use compile)
 
 **`archlang validate`** — parse + resolve + lint, no render (is it valid & sound?)
-  - input: <file.arch|-> → output: diagnostics (plus a graph{} report with --graph and an intent{ ok, satisfied, total, subscores, violations, measures? } block with --intent; `measures` lists each brief-bound size with its measured value and signed residual), then `keeps` when the plan declares one (each { keep, grade, level?, holds, residual_mm, at?, measured_mm?, span }), then `next`: the one item to fix first { tier, code, message, span?, hint? } or null (tiers: error, warning, validity, drafting, intent, profile, taste)
-  - flags: `--strict|--fail-on-warning` advisory warnings fail too (exit 2) · `--graph <graph.json>` also check the plan's interior-door adjacency against an intended graph (bare dict or {input_graph:{…}}); mismatch → exit 2 · `--intent <intent.json>` gate the plan against a brief's intent JSON; a failing gating assertion (room count/existence/area/windows) → exit 2. Adjacency/reachability score but never gate. Composes with --graph. · `--feedback` with --intent, append a deterministic per-violation correction prompt (advisory data, never applied) · `--profile <residential-basic|accessibility-advisory|cn-residential-advisory|uk-residential-advisory|us-residential-advisory>` lint under this advisory ruleset too (as `lint --profile`); its own warnings rank as `next` tier profile · `--taste <generic|cn-residential-advisory|uk-residential-advisory|us-residential-advisory>` let `next` fall back to the lowest-scoring taste criterion (ADR 0032); never gates · `--code <CODE[,CODE…]>` show only diagnostics with these codes — a DISPLAY filter: the exit code and `ok` still come from the unfiltered set · `--severity <error|warning>` show only diagnostics of this severity — a DISPLAY filter, like --code (never changes the exit code) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+  - input: <file.arch|-> → output: diagnostics (plus a graph{} report with --graph and an intent{ ok, satisfied, total, subscores, violations, measures? } block with --intent; `measures` lists each brief-bound size with its measured value and signed residual), then `keeps` when the plan declares one (each { keep, grade, level?, holds, residual_mm, at?, measured_mm?, span }), then `next`: the one item to fix first { tier, code, message, span?, hint? } or null (tiers: error, warning, validity, drafting, intent, profile, taste). Each diagnostic and intent violation carries its authoring `stage`; with --stage, an `at_stage` { stage, held_back, clean } block precedes `keeps`
+  - flags: `--strict|--fail-on-warning` advisory warnings fail too (exit 2) · `--graph <graph.json>` also check the plan's interior-door adjacency against an intended graph (bare dict or {input_graph:{…}}); mismatch → exit 2 · `--intent <intent.json>` gate the plan against a brief's intent JSON; a failing gating assertion (room count/existence/area/windows) → exit 2. Adjacency/reachability score but never gate. Composes with --graph. · `--feedback` with --intent, append a deterministic per-violation correction prompt (advisory data, never applied) · `--profile <residential-basic|accessibility-advisory|cn-residential-advisory|uk-residential-advisory|us-residential-advisory>` lint under this advisory ruleset too (as `lint --profile`); its own warnings rank as `next` tier profile · `--taste <generic|cn-residential-advisory|uk-residential-advisory|us-residential-advisory>` let `next` fall back to the lowest-scoring taste criterion (ADR 0032); never gates · `--stage <brief|rooms|walls|openings|fixtures|drafting>` only the findings meaningful up to this authoring stage (errors always); `next`, `ok` and --strict read that set, `summary` says how many later-stage findings are held back; taste only at drafting · `--code <CODE[,CODE…]>` show only diagnostics with these codes — a DISPLAY filter: the exit code and `ok` still come from the unfiltered set · `--severity <error|warning>` show only diagnostics of this severity — a DISPLAY filter, like --code (never changes the exit code) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `archlang validate plan.arch --strict --json` — the ship gate: errors and advisory warnings both fail
 
 **`archlang describe`** — semantic facts: rooms, areas, adjacency, what doors connect
@@ -800,7 +809,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 
 **`archlang context`** — print the full bundled agent context (spec + workflow + CLI + errors)
   - input: none → output: the full agent context (llms-full.txt), one --section of it, or the one-screen --level starter
-  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 143 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 143 KB of it (spec = the language, 30 KB; workflow = the agent loop, 29 KB; cli = every command, 26 KB; errors = the diagnostic catalog, 56 KB) · `--json` structured result on stdout, messages on stderr
+  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 144 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 144 KB of it (spec = the language, 30 KB; workflow = the agent loop, 30 KB; cli = every command, 26 KB; errors = the diagnostic catalog, 56 KB) · `--json` structured result on stdout, messages on stderr
   - example: `archlang context` — the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 
 **`archlang new`** (aliases: `init`) — scaffold a starter .arch

@@ -511,6 +511,7 @@ export const openingAtJunction: LintRule = {
   name: "opening-at-junction",
   family: "openings",
   layer: "validity",
+  stage: "openings",
   codes: ["W_OPENING_AT_JUNCTION"],
   check(ctx: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
@@ -643,6 +644,7 @@ export const openingOverlap: LintRule = {
   name: "opening-overlap",
   family: "openings",
   layer: "validity",
+  stage: "openings",
   codes: ["W_OPENING_OVERLAP"],
   check(ctx: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
@@ -751,6 +753,7 @@ export const connectorAmbiguous: LintRule = {
   name: "connector-ambiguous",
   family: "openings",
   layer: "validity",
+  stage: "openings",
   codes: ["W_CONNECTOR_AMBIGUOUS"],
   check(ctx: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];

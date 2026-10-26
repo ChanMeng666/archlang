@@ -96,6 +96,7 @@ export const footprintTransposed: LintRule = {
   name: "footprint-transposed",
   family: "furniture",
   layer: "validity",
+  stage: "fixtures",
   codes: ["W_FOOTPRINT_TRANSPOSED"],
   check(ctx: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
