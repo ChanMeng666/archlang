@@ -125,6 +125,8 @@ export interface Args {
   set?: string;
   /** `--against <old.arch>`: (impact) compare the input against this older file. */
   against?: string;
+  /** `--level <starter|full>`: (context) the starter screen or the whole bundle. (Every other command reads `--level <n>` as `level`.) */
+  contextLevel?: string;
   /** `--section <spec|workflow|cli|errors>`: (context) print one section of the bundle, not all of it. */
   section?: string;
   /** `--level <n>`: (compile/watch/preview/describe) narrow a multi-storey plan to one storey. */
@@ -141,6 +143,8 @@ export interface Args {
 export interface FlagSpec {
   key: keyof Args;
   kind: "string" | "number" | "boolean";
+  /** A command that reads this flag differently (`context --level starter` vs `describe --level 2`). */
+  perCommand?: Record<string, { key: keyof Args; kind: "string" | "number" | "boolean" }>;
 }
 
 /**
@@ -168,7 +172,7 @@ export const FLAG_KEYS: Record<string, FlagSpec> = {
   "--scale": { key: "scale", kind: "number" },
   "-s": { key: "scale", kind: "number" },
   "--cols": { key: "cols", kind: "number" },
-  "--level": { key: "level", kind: "number" },
+  "--level": { key: "level", kind: "number", perCommand: { context: { key: "contextLevel", kind: "string" } } },
   "--at": { key: "at", kind: "number" },
   "--charset": { key: "charset", kind: "string" },
   "--profile": { key: "profile", kind: "string" },
@@ -239,12 +243,15 @@ export function parseArgs(argv: string[], command?: ManifestCommand): Args {
       res.help = true;
       continue;
     }
-    const spec = FLAG_KEYS[a];
+    const base = FLAG_KEYS[a];
+    const spec = base && command ? (base.perCommand?.[command.name] ?? base) : base;
     if (spec && (!allowed || allowed.has(a))) {
       if (spec.kind === "boolean") bag[spec.key] = true;
       else {
         const raw = argv[++i];
-        bag[spec.key] = spec.kind === "number" ? Number(raw) : raw;
+        // A per-command string flag with no value after it is "", never undefined: the command
+        // can then refuse it (`context --level` must not fall back to printing the full bundle).
+        bag[spec.key] = spec.kind === "number" ? Number(raw) : spec === base ? raw : (raw ?? "");
       }
       continue;
     }

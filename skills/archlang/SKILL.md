@@ -26,7 +26,7 @@ owns that name, so the shell runs the wrong program.
 ## The loop (always follow this)
 
 1. **Learn the language first.** Run `archlang spec` and read it — the entire language in one page.
-   (`archlang context` prints *everything*: spec + this workflow + CLI reference + error catalog.)
+   (`archlang context` prints *everything*: spec + this workflow + CLI reference + error catalog; a small model starts with `archlang context --level starter`, one screen.)
    Do this before writing any `.arch`.
 2. **Write the plan** to a `.arch` file (or pipe via stdin with `-`), preferring the **placement
    sugar** below so you never hand-compute a coordinate.

@@ -75,6 +75,24 @@ describe("FLAG_KEYS — no drift vs the manifest", () => {
     }
   });
 
+  it("checks every perCommand override against the command that owns it", () => {
+    let overrides = 0;
+    for (const [name, spec] of Object.entries(FLAG_KEYS)) {
+      for (const [command, over] of Object.entries(spec.perCommand ?? {})) {
+        overrides++;
+        const cmd = m.commands.find((c) => c.name === command);
+        expect(cmd, `perCommand "${name}" names an unknown command "${command}"`).toBeDefined();
+        const flag = cmd!.flags.find((f) => f.flag === name || f.alias === name);
+        expect(flag, `${command} does not declare "${name}" but FLAG_KEYS overrides it there`).toBeDefined();
+        expect(over.kind !== "boolean", `"${name}" on ${command}: arg=${flag!.arg ?? "none"} vs override kind`).toBe(
+          flag!.arg !== undefined,
+        );
+        expect(over.key, `the override must fill a different field than the default`).not.toBe(spec.key);
+      }
+    }
+    expect(overrides).toBeGreaterThan(0);
+  });
+
   it("keeps --help/-h out of the value-taking table (they short-circuit in parseArgs)", () => {
     for (const h of HELP_FLAGS) expect(FLAG_KEYS[h]).toBeUndefined();
   });
