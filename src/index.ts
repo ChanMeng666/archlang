@@ -306,6 +306,7 @@ export {
   diagnosticStage,
   ELEMENT_KIND_STAGES,
   GRAPH_STAGE,
+  INTENT_CODE_STAGES,
   isAuthoringStage,
   keepStage,
   kindsOf,

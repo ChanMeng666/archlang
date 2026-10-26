@@ -380,7 +380,7 @@ export const perRoomRules: LintRule = {
     W_ROOM_NOT_ENCLOSED: "walls",
     W_ROOM_NO_FIXTURE: "fixtures",
     W_GARAGE_TOO_NARROW: "rooms",
-    W_ROOM_TOO_NARROW: "rooms",
+    W_ROOM_TOO_NARROW: "walls",
   },
   codes: [
     "W_ROOM_TOO_SMALL",

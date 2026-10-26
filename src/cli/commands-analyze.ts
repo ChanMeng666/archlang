@@ -544,7 +544,8 @@ function report(
  */
 interface Staged {
   stageOf: (d: Diagnostic) => AuthoringStage;
-  at?: { stage: AuthoringStage; held: number; clean: boolean };
+  /** `intent`: with `--intent`, the assertions of this stage or an earlier one (satisfied/total). */
+  at?: { stage: AuthoringStage; held: number; clean: boolean; intent?: { satisfied: number; total: number } };
 }
 
 /** A JSON object with its `stage` appended last (additive: every key before it is as it was). */
@@ -566,6 +567,7 @@ const atStageJson = (at: NonNullable<Staged["at"]>): Record<string, unknown> => 
   stage: at.stage,
   held_back: at.held,
   clean: at.clean,
+  ...(at.intent ? { intent: at.intent } : {}),
 });
 
 /** The human stage line (stderr): whether the stage is clean, and where to go next. */
@@ -610,6 +612,10 @@ export function cmdValidate(args: Args): number {
     return usageError(
       `unknown taste profile "${args.taste}"${didYouMean(args.taste, TASTE_PROFILE_NAMES)} (available: ${echoList(TASTE_PROFILE_NAMES)})`,
     );
+  }
+  // `--stage` with no value parses to no value at all: refused, never read as "no stage".
+  if (Object.hasOwn(args, "stage") && (args.stage === undefined || args.stage === "")) {
+    return usageError(`--stage needs a value: ${echoList(AUTHORING_STAGES)}`);
   }
   if (args.stage !== undefined && !isAuthoringStage(args.stage)) {
     return usageError(
@@ -796,7 +802,12 @@ function reportWithChecks(
     nextInput = view.input;
     intentResult = view.input.intent;
     graph = view.input.graph;
-    at = { stage: stages.stage, held: view.held, clean: isClean(view.input) };
+    at = {
+      stage: stages.stage,
+      held: view.held,
+      clean: isClean(view.input),
+      ...(view.intent ? { intent: view.intent } : {}),
+    };
   }
   const feedback = intentResult && args.feedback ? feedbackForResult(intentResult) : undefined;
 
@@ -852,7 +863,8 @@ function reportWithChecks(
     o.next = next;
     emitJson(o);
   } else {
-    if (diags.length && !args.quiet) {
+    // As in `report`: under `--stage` the summary line is always printed, so the stage is said.
+    if ((diags.length || at) && !args.quiet) {
       const shownNote = active ? `  (display filter: showing ${shown.length} of ${diags.length} diagnostics)\n` : "";
       process.stderr.write(`${summary}\n${shownNote}\n`);
     }

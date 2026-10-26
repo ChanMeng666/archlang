@@ -16,8 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   on. `summary` opens with the stage and counts the later-stage findings it holds back, and an
   `at_stage` `{ stage, held_back, clean }` block says when to advance. Every lint rule now declares
   its `stage` (`LintRule.stage`, required like `layer`; `LINT_CODE_STAGES`). A finding's stage is
-  the latest stage whose elements its check needs: `W_ROOM_TOO_SMALL` is `rooms`,
-  `W_BOUNDARY_NO_WALL` `walls`, `W_NO_ENTRANCE` `openings`, `W_FIXTURE_FLOATING` `fixtures`.
+  the earliest stage at which its check can be judged: `W_ROOM_TOO_SMALL` is `rooms`,
+  `W_ROOM_TOO_NARROW` (clear width) `walls`, `W_NO_ENTRANCE` `openings`, `W_FIXTURE_FLOATING`
+  `fixtures`. A later stage can re-raise an earlier stage's finding, so a clean stage is not final.
   Compile warnings take their stage from their family, intent assertions from their predicate and
   `keep`s from what they measure. Without the flag, `validate --json` adds only a `stage` key, last,
   on each diagnostic and intent violation. `lint`, `lint()`, `describe()` and the drawing are

@@ -546,7 +546,7 @@ export const floorUnassigned: LintRule = {
   name: "floor-unassigned",
   family: "enclosure",
   layer: "validity",
-  stage: "walls",
+  stage: "openings",
   codes: ["W_FLOOR_UNASSIGNED"],
   check(ctx: LintContext): Diagnostic[] {
     if (ctx.rooms.length === 0) return [];

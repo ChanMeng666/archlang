@@ -4,8 +4,9 @@
  *
  * > brief → rooms → walls → openings → fixtures → drafting
  *
- * - `brief`: the frame the brief fixes (the plan, its units, `site`, `level`s, `let`s, `keep`s on
- *   the brief's numbers). Only the language's own errors and warnings count here.
+ * - `brief`: the "does it parse" stage: the frame the brief fixes (the plan, its units, `site`,
+ *   `level`s, `let`s, `keep`s on the brief's numbers). Only the language's own errors and warnings
+ *   count here; no lint code does.
  * - `rooms`: the room graph and its zoning on a grid, which ArchLang takes in one act: a `room`
  *   is declared with its place and size (rooms-first, ADR 0028), together with stairs, voids and
  *   outdoor surfaces, which hold their place above every partition (the hold-fixed ladder).
@@ -14,12 +15,20 @@
  * - `fixtures`: fixtures and furniture.
  * - `drafting`: the sheet; at this stage everything counts, and taste is reported.
  *
- * A finding's stage is the latest stage whose elements the check needs in order to judge at all,
- * presence or absence: `W_NO_ENTRANCE` reports a door that is missing, so it is an `openings`
- * finding; `W_SWING_OBSTRUCTED` judges a door's swing, and furniture only sharpens it, so it is
- * `openings` too. A lint code's stage is declared by its rule (`LintRule.stage`, read into
+ * A finding's stage is the EARLIEST stage at which its check can be judged: the stage whose
+ * elements it needs, present or absent, as the check is defined. `W_NO_ENTRANCE` reports a missing
+ * door, so it is `openings`; `W_ROOM_TOO_NARROW` is defined on the clear width between wall faces,
+ * so it is `walls`; `W_FLOOR_UNASSIGNED` reads a walled face, which a doorless wall ring cannot
+ * leave, so it is `openings`; `W_ROOM_NO_CLEAR_PATH` is a room packed by furniture, so it is
+ * `fixtures`. A later stage can still ADD or RE-RAISE an earlier stage's finding: walls take the
+ * clear width a room's area was drawn to, a bed makes a bedroom a double, furniture pinches a walk
+ * that was wide enough. So "clean at stage s" is not permanent: the later stage's view includes
+ * every earlier stage's codes, and they are fixed there too.
+ *
+ * A lint code's stage is declared by its rule (`LintRule.stage`, read into
  * {@link LINT_CODE_STAGES}); a compile-channel code's comes from its family, below; an intent
- * assertion's from its predicate; a `keep`'s from what it measures.
+ * assertion's from its predicate ({@link predicateStage}; {@link INTENT_CODE_STAGES} is a bare
+ * code's earliest); a `keep`'s from what it measures.
  *
  * Errors are never held back: a plan that does not resolve has no stage that is clean.
  *
@@ -88,6 +97,27 @@ export const COMPILE_WARNING_STAGES: Readonly<Record<string, AuthoringStage>> = 
 });
 
 /**
+ * The intent blame codes (`validate --intent`), each at the earliest stage its predicate can be
+ * judged. A violation carries its predicate, and {@link predicateStage} is what `--stage` reads;
+ * this table only answers for a bare code. `E_INTENT_UNMEASURED` comes from a room dimension
+ * (`rooms`) or the gross internal area (`walls`), so the bare code answers `rooms`.
+ */
+export const INTENT_CODE_STAGES: Readonly<Record<string, AuthoringStage>> = Object.freeze({
+  E_INTENT_ROOM_COUNT: "rooms",
+  E_INTENT_ROOM_MISSING: "rooms",
+  E_INTENT_ROOM_AREA: "rooms",
+  E_INTENT_TOTAL_AREA: "rooms",
+  E_INTENT_ROOM_DIMENSION: "rooms",
+  E_INTENT_UNMEASURED: "rooms",
+  E_INTENT_GROSS_AREA: "walls",
+  E_INTENT_NOT_ADJACENT: "openings",
+  E_INTENT_NO_DOOR: "openings",
+  E_INTENT_UNREACHABLE: "openings",
+  E_INTENT_NO_WINDOW: "openings",
+  E_INTENT_NO_SITE: "openings",
+});
+
+/**
  * The `E_*` families by prefix, first match wins; a code no family names is a `brief` error (the
  * language: parse, types, names, imports, budgets, levels, site, keeps). Errors are never held
  * back, so this is the stage the error is about, for the reader.
@@ -102,15 +132,16 @@ const ERROR_FAMILIES: ReadonlyArray<readonly [RegExp, AuthoringStage]> = [
 
 /**
  * The stage of a diagnostic code: a lint code's declared stage, a compile warning's from
- * {@link COMPILE_WARNING_STAGES}, an error's from its family. A diagnostic with no code, or an
- * uncatalogued code, is `brief`: it is shown at every stage.
+ * {@link COMPILE_WARNING_STAGES}, an intent code's from {@link INTENT_CODE_STAGES}, an error's
+ * from its family. A diagnostic with no code, or an uncatalogued code, is `brief`: it is shown at
+ * every stage.
  */
 export function codeStage(code: string | undefined): AuthoringStage {
   if (code === undefined) return "brief";
   const lint = LINT_CODE_STAGES[code];
   if (lint !== undefined) return lint;
-  const compile = COMPILE_WARNING_STAGES[code];
-  if (compile !== undefined) return compile;
+  const named = COMPILE_WARNING_STAGES[code] ?? INTENT_CODE_STAGES[code];
+  if (named !== undefined) return named;
   for (const [re, s] of ERROR_FAMILIES) if (re.test(code)) return s;
   return "brief";
 }
@@ -203,10 +234,12 @@ export function kindsOf(plans: ReadonlyArray<{ elements: readonly ResolvedElemen
 
 /**
  * The stage of a diagnostic: {@link codeStage}, except a `W_KEEP_VIOLATED`, which is the stage of
- * the keep it reports (matched by the keep's span, then storey).
+ * the keep it reports, matched by (file, span, storey). A keep is refused inside a component body
+ * or an imported file (`E_KEEP_PLACEMENT`), so its warning never carries a `file`; one that did
+ * would match no keep and fall back to {@link codeStage}.
  */
 export function diagnosticStage(d: Diagnostic, keeps?: readonly KeepResult[], kindOf?: KindOf): AuthoringStage {
-  if (d.code === "W_KEEP_VIOLATED" && keeps && kindOf) {
+  if (d.code === "W_KEEP_VIOLATED" && d.file === undefined && keeps && kindOf) {
     const k = keeps.find(
       (r) =>
         r.node.span !== undefined &&
@@ -230,6 +263,9 @@ export interface StageView {
   /** Later-stage findings held back: warnings, intent violations, a `--graph` mismatch and broken
    *  soft keeps (a broken hard keep is counted once, as its warning). */
   held: number;
+  /** With an intent: the assertions of this stage or an earlier one, satisfied and in all. The
+   *  intent block's own `satisfied`/`total`/`subscores` stay the whole brief's meter. */
+  intent?: { satisfied: number; total: number };
 }
 
 /**
@@ -253,12 +289,27 @@ export function atStage(
   let held = diagnostics.length - report.length;
 
   let intent: IntentCheckResult | undefined;
+  let intentCounts: StageView["intent"];
   if (input.intent) {
-    const violations = input.intent.violations.filter((v) => stageAtMost(predicateStage(v.predicate), stage));
+    const shownP = (p: Predicate): boolean => stageAtMost(predicateStage(p), stage);
+    const violations = input.intent.violations.filter((v) => shownP(v.predicate));
     held += input.intent.violations.length - violations.length;
     // `ok` as the shown set reads it: the plan compiled and no shown gating assertion failed.
     const compiled = !input.diagnostics.some((d) => d.severity === "error");
-    intent = { ...input.intent, violations, ok: compiled && !violations.some((v) => v.gate) };
+    // The brief-bound measure rows: one per measuring assertion, in assertion order.
+    const measuring = input.intent.assertions.filter((a) => a.measure !== undefined);
+    const measures = input.intent.measures?.filter((_, i) => {
+      const a = measuring[i];
+      return a === undefined || shownP(a.predicate);
+    });
+    const shownAssertions = input.intent.assertions.filter((a) => shownP(a.predicate));
+    intentCounts = { satisfied: shownAssertions.filter((a) => a.pass).length, total: shownAssertions.length };
+    intent = {
+      ...input.intent,
+      violations,
+      ok: compiled && !violations.some((v) => v.gate),
+      ...(measures ? { measures } : {}),
+    };
   }
   const graphShown = stageAtMost(GRAPH_STAGE, stage);
   if (input.graph && !graphShown && !input.graph.ok) held += 1;
@@ -279,5 +330,5 @@ export function atStage(
     ...(input.taste && stage === "drafting" ? { taste: input.taste } : {}),
     ...(keepsShown ? { keeps: keepsShown } : {}),
   };
-  return { stage, input: out, diagnostics: report, held };
+  return { stage, input: out, diagnostics: report, held, ...(intentCounts ? { intent: intentCounts } : {}) };
 }

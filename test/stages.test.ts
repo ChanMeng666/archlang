@@ -8,8 +8,9 @@ import {
   type AuthoringStage,
   codeStage,
   COMPILE_WARNING_STAGES,
-  ELEMENT_KIND_STAGES,
+  type ELEMENT_KIND_STAGES,
   ERROR_CATALOG,
+  INTENT_CODE_STAGES,
   keepStage,
   LINT_CODE_LAYERS,
   LINT_CODE_STAGES,
@@ -17,6 +18,8 @@ import {
 } from "../src/index.js";
 import { LINT_RULES } from "../src/lint.js";
 import type { KeepNode } from "../src/ast.js";
+import { cmdValidate } from "../src/cli/commands-analyze.js";
+import { parseArgs } from "../src/cli/io.js";
 import { runValidate, withoutStageKeys } from "./validate-json-run.js";
 
 /**
@@ -42,15 +45,8 @@ import { runValidate, withoutStageKeys } from "./validate-json-run.js";
  */
 const DECIDED: Record<AuthoringStage, string[]> = {
   brief: [],
-  rooms: [
-    "W_ALIAS_MATCH",
-    "W_GARAGE_TOO_NARROW",
-    "W_OUTDOOR_OVERLAPS_ROOM",
-    "W_ROOM_TOO_NARROW",
-    "W_ROOM_TOO_SMALL",
-    "W_STAIR_UNMATCHED",
-  ],
-  walls: ["W_BOUNDARY_NO_WALL", "W_FLOOR_UNASSIGNED", "W_ROOM_NOT_ENCLOSED", "W_ROOM_OUTSIDE_SHELL"],
+  rooms: ["W_ALIAS_MATCH", "W_GARAGE_TOO_NARROW", "W_OUTDOOR_OVERLAPS_ROOM", "W_ROOM_TOO_SMALL", "W_STAIR_UNMATCHED"],
+  walls: ["W_BOUNDARY_NO_WALL", "W_ROOM_NOT_ENCLOSED", "W_ROOM_OUTSIDE_SHELL", "W_ROOM_TOO_NARROW"],
   openings: [
     "W_BALCONY_NO_DOOR",
     "W_BATH_VIA_BEDROOM",
@@ -60,6 +56,7 @@ const DECIDED: Record<AuthoringStage, string[]> = {
     "W_DOOR_CLEARANCE",
     "W_DOOR_NEAR_CORNER",
     "W_ENTRANCE_INTO_PRIVATE",
+    "W_FLOOR_UNASSIGNED",
     "W_HABITABLE_NO_WINDOW",
     "W_LEAF_ACROSS_DOORWAY",
     "W_NO_ENTRANCE",
@@ -69,7 +66,6 @@ const DECIDED: Record<AuthoringStage, string[]> = {
     "W_POCKET_RUN",
     "W_ROOM_DISCONNECTED",
     "W_ROOM_NOT_EQUATOR_FACING",
-    "W_ROOM_NO_CLEAR_PATH",
     "W_ROOM_UNREACHABLE",
     "W_ROOM_VIA_PRIVATE",
     "W_SWING_OBSTRUCTED",
@@ -88,6 +84,7 @@ const DECIDED: Record<AuthoringStage, string[]> = {
     "W_FURN_CLEAR_FRONT",
     "W_FURN_CLEAR_SIDES",
     "W_ROOM_MISSING_DEFINING",
+    "W_ROOM_NO_CLEAR_PATH",
     "W_ROOM_NO_FIXTURE",
     "W_SEAT_FACING_AWAY",
     "W_WC_SIDE_CLEARANCE",
@@ -134,6 +131,12 @@ describe("the stage ladder and the per-rule table", () => {
     );
   });
 
+  it("the per-stage counts are the as-built note's table", () => {
+    const counts = Object.fromEntries(AUTHORING_STAGES.map((s) => [s, 0]));
+    for (const s of Object.values(LINT_CODE_STAGES)) counts[s]!++;
+    expect(counts).toEqual({ brief: 0, rooms: 5, walls: 4, openings: 22, fixtures: 16, drafting: 6 });
+  });
+
   it("the drafting layer is exactly the drafting stage, and no lint code is a brief finding", () => {
     for (const [c, layer] of Object.entries(LINT_CODE_LAYERS)) {
       expect(LINT_CODE_STAGES[c] === "drafting", c).toBe(layer === "drafting");
@@ -147,6 +150,41 @@ describe("the stage ladder and the per-rule table", () => {
     );
     expect(compileWarnings.length).toBeGreaterThan(15);
     expect(Object.keys(COMPILE_WARNING_STAGES).sort()).toEqual(compileWarnings.sort());
+  });
+
+  it("each compile-channel warning's stage is the one decided for it", () => {
+    expect({ ...COMPILE_WARNING_STAGES }).toEqual({
+      W_EMPTY_PLAN: "brief",
+      W_IMPORT_EMPTY_FILE: "brief",
+      W_WHILE_DEPRECATED: "brief",
+      W_REASSIGN_DEPRECATED: "brief",
+      W_KEEP_VIOLATED: "brief",
+      W_ROOM_OVERLAP: "rooms",
+      W_DOOR_OFF_WALL: "openings",
+      W_WINDOW_OFF_WALL: "openings",
+      W_OPENING_OFF_WALL: "openings",
+      W_SWING_ROOM_NOT_ADJACENT: "openings",
+      W_CJK_FONT_MISSING: "drafting",
+      W_GLYPH_UNSUPPORTED: "drafting",
+      W_DUP_ACC_METADATA: "drafting",
+      W_HATCH_SCALE: "drafting",
+      W_SANITIZED_CONFIG: "drafting",
+      W_UNKNOWN_MATERIAL: "drafting",
+      W_UNKNOWN_STYLE_KEY: "drafting",
+      W_UNKNOWN_THEME_KEY: "drafting",
+      W_ROOM_LABEL_OUTSIDE: "drafting",
+      W_DIM_NO_WALL: "drafting",
+      W_SCALE_OVERFLOW: "drafting",
+      W_DRAWING_OVERFLOW: "drafting",
+    });
+  });
+
+  it("every intent code has a stage, the earliest its predicate can be judged at", () => {
+    const intentCodes = Object.keys(ERROR_CATALOG).filter((c) => c.startsWith("E_INTENT_"));
+    expect(Object.keys(INTENT_CODE_STAGES).sort()).toEqual(intentCodes.sort());
+    expect(codeStage("E_INTENT_ROOM_DIMENSION")).toBe("rooms");
+    expect(codeStage("E_INTENT_GROSS_AREA")).toBe("walls");
+    expect(codeStage("E_INTENT_NOT_ADJACENT")).toBe("openings");
   });
 
   it("errors map by family; an uncoded or unknown diagnostic is brief", () => {
@@ -298,17 +336,29 @@ describe("--strict and ok read the shown set only", () => {
     expect(run([clean, "--json", "--strict", "--stage", "walls"]).exit).toBe(2);
   });
 
-  it("errors are never held back", () => {
-    const broken = file("broken.arch", `plan "x" {\n  room id=a at (0,0) size 1x\n}\n`);
-    const r = run([broken, "--json", "--stage", "brief"]);
-    expect(r.exit).toBe(2);
-    expect(r.out.diagnostics.some((d) => d.severity === "error")).toBe(true);
-    expect(r.out.next?.tier).toBe("error");
+  it("errors are never held back, even a later stage's (a fixtures error at --stage rooms)", () => {
+    const broken = file(
+      "broken.arch",
+      `plan "x" {\n  units mm\n  room id=living at (0,0) size 5000x4000 label "Living" uses living\n  furniture id=f wc in living anchor top-left\n}\n`,
+    );
+    for (const s of ["brief", "rooms"] as const) {
+      const r = run([broken, "--json", "--stage", s]);
+      expect(r.exit, s).toBe(2);
+      expect(r.out.ok, s).toBe(false);
+      expect(
+        r.out.diagnostics.filter((d) => d.severity === "error").map((d) => [d.code, d.stage]),
+        s,
+      ).toEqual([["E_FURN_SIZE", "fixtures"]]);
+      expect(r.out.next?.tier, s).toBe("error");
+      expect(r.out.at_stage?.clean, s).toBe(false);
+    }
   });
 
-  it("an unknown stage is bad usage with a did-you-mean (exit 3)", () => {
+  it("an unknown stage, or --stage with no value, is bad usage (exit 3)", () => {
     const clean = file("u.arch", ROOMS_CLEAN);
     expect(runValidate([clean, "--json", "--stage", "room"]).exit).toBe(3);
+    expect(runValidate([clean, "--stage"]).exit).toBe(3);
+    expect(runValidate([clean, "--json", "--stage"]).exit).toBe(3);
   });
 });
 
@@ -339,14 +389,66 @@ describe("intent, --graph and taste under --stage", () => {
     expect(run([plan, "--json", "--graph", graph, "--stage", "openings"]).exit).toBe(2);
   });
 
-  it("taste is a next tier only at drafting", () => {
-    const studio = "examples/studio.arch";
-    const draft = run([studio, "--json", "--taste", "generic", "--stage", "drafting"]).out;
-    const plain = run([studio, "--json", "--taste", "generic"]).out;
+  it("taste is a next tier only at drafting (bungalow: taste is plain --taste's next)", () => {
+    const plan = "examples/bungalow.arch";
+    const plain = run([plan, "--json", "--taste", "generic"]).out;
+    expect(plain.next?.tier).toBe("taste");
+    const draft = run([plan, "--json", "--taste", "generic", "--stage", "drafting"]).out;
     expect(draft.next).toEqual(plain.next);
+    // Taste never gates: the stage is clean even though taste has an item.
+    expect(draft.at_stage?.clean).toBe(true);
     for (const s of AUTHORING_STAGES.slice(0, -1)) {
-      const out = run([studio, "--json", "--taste", "generic", "--stage", s]).out;
-      expect(out.next?.tier, s).not.toBe("taste");
+      const out = run([plan, "--json", "--taste", "generic", "--stage", s]).out;
+      expect(out.next, s).toBeNull();
+      expect(out.at_stage?.clean, s).toBe(true);
     }
+  });
+
+  it("the intent block's measures and violations follow the stage; at_stage carries the staged counts", () => {
+    const plan = file("m.arch", ROOMS_CLEAN);
+    const brief = file(
+      "m.json",
+      JSON.stringify({
+        grossInternalAreaM2: { min: 10, max: 20, source: "brief" },
+        roomDimensions: [{ room: "living", widthMm: { min: 6000, source: "brief" } }],
+      }),
+    );
+    type M = Out & {
+      intent: Out["intent"] & { satisfied: number; total: number; measures: Array<{ path: string }> };
+      at_stage: NonNullable<Out["at_stage"]> & { intent?: { satisfied: number; total: number } };
+    };
+    const at = (s: string): M => run([plan, "--json", "--intent", brief, "--stage", s]).out as M;
+    const rooms = at("rooms");
+    expect(rooms.intent.measures.map((m) => m.path)).toEqual(["/roomDimensions/0/widthMm"]);
+    expect(rooms.intent.violations.map((v) => v.stage)).toEqual(["rooms"]);
+    expect(rooms.at_stage.intent).toEqual({ satisfied: 0, total: 1 });
+    // The whole brief's meter is unchanged in the intent block itself.
+    const plain = run([plan, "--json", "--intent", brief]).out as M;
+    expect([rooms.intent.satisfied, rooms.intent.total]).toEqual([plain.intent.satisfied, plain.intent.total]);
+    const walls = at("walls");
+    expect(walls.intent.measures.map((m) => m.path)).toEqual(["/grossInternalAreaM2", "/roomDimensions/0/widthMm"]);
+    expect(walls.at_stage.intent).toEqual({ satisfied: 0, total: 2 });
+    expect(Object.keys(plain)).not.toContain("at_stage");
+  });
+
+  it("the text report always says the stage, with --intent or --graph too", () => {
+    const plan = file("t.arch", ROOMS_CLEAN);
+    const graph = file("t.json", JSON.stringify({ living: ["bed"] }));
+    let err = "";
+    const writeErr = process.stderr.write.bind(process.stderr);
+    const write = process.stdout.write.bind(process.stdout);
+    process.stderr.write = ((c: string | Uint8Array): boolean => {
+      err += typeof c === "string" ? c : Buffer.from(c).toString("utf8");
+      return true;
+    }) as typeof process.stderr.write;
+    process.stdout.write = (() => true) as typeof process.stdout.write;
+    try {
+      cmdValidate(parseArgs([plan, "--graph", graph, "--stage", "rooms"]));
+    } finally {
+      process.stderr.write = writeErr;
+      process.stdout.write = write;
+    }
+    expect(err.split("\n")[0]).toMatch(/^stage rooms: no warnings \(\d+ later-stage findings? held back\)$/);
+    expect(err).toContain("(stage rooms is clean: advance to --stage walls");
   });
 });

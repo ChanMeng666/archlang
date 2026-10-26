@@ -1505,23 +1505,28 @@ proportion spreads through everything drawn after it:
 
 | Stage | What is decided | Findings that belong to it (examples) |
 |---|---|---|
-| `brief` | the frame: `plan`, units, `site`, `level`s, `let`s, `keep`s | the language's own errors and warnings |
+| `brief` | the "does it parse" stage: the frame (`plan`, units, `site`, `level`s, `let`s, `keep`s) | the language's own errors and warnings; no lint code |
 | `rooms` | rooms placed and sized (the room graph and its zoning are one act in ArchLang), stairs, voids, outdoor surfaces | `W_ROOM_TOO_SMALL`, `W_ROOM_OVERLAP`, `W_STAIR_UNMATCHED`; intent room count, areas, sizes |
-| `walls` | the walls, derived (`walls from rooms`) or written | `W_BOUNDARY_NO_WALL`, `W_ROOM_NOT_ENCLOSED`; intent gross internal area |
-| `openings` | doors, windows, cased openings: everything that reads the door graph | `W_NO_ENTRANCE`, `W_ROOM_UNREACHABLE`, `W_OPENING_AT_JUNCTION`; intent adjacency, windows; `--graph` |
-| `fixtures` | fixtures and furniture | `W_FIXTURE_FLOATING`, `W_DOORWAY_BLOCKED`, `W_SEAT_FACING_AWAY` |
+| `walls` | the walls, derived (`walls from rooms`) or written | `W_BOUNDARY_NO_WALL`, `W_ROOM_NOT_ENCLOSED`, `W_ROOM_TOO_NARROW` (clear width); intent gross internal area |
+| `openings` | doors, windows, cased openings: everything that reads the door graph | `W_NO_ENTRANCE`, `W_ROOM_UNREACHABLE`, `W_FLOOR_UNASSIGNED`; intent adjacency, windows; `--graph` |
+| `fixtures` | fixtures and furniture | `W_FIXTURE_FLOATING`, `W_DOORWAY_BLOCKED`, `W_ROOM_NO_CLEAR_PATH` |
 | `drafting` | the sheet | the drafting layer; everything else; taste |
 
 `validate --stage <s>` shows only the findings of stage `s` and earlier. Errors are always shown,
 since a plan that does not resolve has no stage that is clean. `ok`, `--strict`, the intent block,
-and `next` all read the shown set. Taste is a `next` tier only at `drafting`, and a `--graph`
+and `next` all read the shown set. Within the intent block, `violations` and `measures` follow the
+stage; `satisfied`, `total` and `subscores` stay the whole brief's meter, and `at_stage.intent`
+gives the staged `{ satisfied, total }`. Taste is a `next` tier only at `drafting`, and a `--graph`
 check only from `openings` on. `summary` starts with the stage and ends with how many later-stage
 findings are held back (`stage rooms: 1 warning in 1 code: W_ROOM_TOO_SMALL ×1 (10 later-stage
 findings held back)`). An `at_stage` block (`{ stage, held_back, clean }`) comes before `keeps`
 and `next`. `clean` is true when no tier of `next` but taste has an item left: that is the moment
-to advance. A finding's stage is the latest stage whose elements its check needs in order to judge
-at all, whether it reads them or their absence: `W_NO_ENTRANCE` reports a missing door, so it
-belongs to `openings`. Lint codes take their stage from their rule (`LintRule.stage`, required).
+to advance (or advance with the remaining findings accepted, and say so). A finding's stage is the
+earliest stage at which its check can be judged, whether it reads elements or their absence:
+`W_NO_ENTRANCE` reports a missing door, so it belongs to `openings`. A later stage can still add
+or re-raise an earlier stage's finding: walls take the clear width a room's size was drawn to, a
+bed makes a bedroom a double, furniture pinches a walk. So clean at a stage is not permanent, and
+each later stage's view shows the earlier stages' codes again. Lint codes take their stage from their rule (`LintRule.stage`, required).
 Compile warnings take theirs from their family, an intent assertion from its predicate, and a
 `keep` from what it measures.
 

@@ -54,9 +54,12 @@ owns that name, so the shell runs the wrong program.
    stage at a time**: the rooms (with stairs and outdoor surfaces), then
    `archlang validate plan.arch --stage rooms --json` until `at_stage.clean` is true; then the walls
    (`walls from rooms`) and `--stage walls`; then doors and windows, `--stage openings`; then fixtures
-   and furniture, `--stage fixtures`; then the sheet and the full `validate --strict`. Advance only
-   when the stage is clean: a later stage's findings are held back (the `summary` counts them),
-   because they mean nothing until the earlier decisions stand; errors always show. Read the
+   and furniture, `--stage fixtures`; then the sheet and the full `validate --strict`. Advance when
+   the stage is clean, or when every remaining finding is one you accept and say so: a later stage's
+   findings are held back (the `summary` counts them), because they mean nothing until the earlier
+   decisions stand; errors always show. Clean is not permanent: a later stage can add or re-raise an
+   earlier stage's finding (walls narrow a room to its clear width, a bed makes a double, furniture
+   pinches a walk), and each later stage shows the earlier stages' codes again. Read the
    `summary` (first key of `lint|validate --json`, first line of the text report) before anything
    else: it counts the warnings and the distinct codes and leads with the commonest, so a truncated
    read still tells you how much is hidden.

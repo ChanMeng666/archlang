@@ -218,8 +218,9 @@ export interface LintRule {
   codes: readonly string[];
   /**
    * The authoring stage at which the rule's findings mean something (plan-soundness PS7.1,
-   * `src/stages.ts`): the latest stage whose elements the rule needs in order to judge at all,
-   * presence or absence. One stage for every code, or, for a rule whose codes judge different
+   * `src/stages.ts`): the earliest stage at which the rule can judge, as it is defined (the stage
+   * whose elements it needs, present or absent); a later stage may still add or re-raise its
+   * findings. One stage for every code, or, for a rule whose codes judge different
    * things, one per code in {@link codes} (exactly those). Required, like {@link layer}, so the
    * compiler refuses a rule with no stage. `validate --stage` reads it; `lint()` never does.
    */
