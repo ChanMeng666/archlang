@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `door double`: a pair of hinged leaves, each half the door's `width`, hung on the two jambs and
+  closing onto each other at the centre, both to the `swing` side (plan card PS2.11e). It takes
+  `swing` (wall-relative, `inward|outward` or `into <room>`) and refuses `hinge`, `slide` and
+  `open` (`E_DOOR_KIND_CLAUSE`); unlike the sliding family it is accepted on an `arc` wall, both
+  leaves taken from the tangent at the doorway's centre. Every swing measure reads each leaf as
+  drawn (`W_SWING_OBSTRUCTED`, `W_LEAF_ACROSS_DOORWAY`, the clear zones, `repair`, `finish`);
+  `describe()` reports `kind: "double"` and Plan JSON `door_kind: "double"`. A plan that writes no
+  `double` door renders, describes and lints exactly as before.
+- Three validity-layer lint rules (plan cards PS2.11e, PS2.46). `W_HOB_UNDER_WINDOW`: a `stove`,
+  `hob` or `cooktop` against a window's wall across part of its span (NKBA Kitchen Planning
+  Guidelines 20: a cooking surface not under an operable window). `W_HOB_FRIDGE_GAP`: a fridge or
+  other tall unit nearer a cooking surface's side than `hobLandingMm` (300 mm; NKBA guideline 17's
+  12 in landing area). `W_LEAF_TOO_WIDE`: a swinging leaf wider than `maxHingedLeafMm` (1219 mm,
+  the International Building Code's 48 in nominal leaf, 2018 and earlier); a `double` door is read
+  leaf by leaf. Messages id-free; hints quote an id only when the author wrote one; no fixes.
+- `W_DOORWAY_BLOCKED` reads leaf-less `opening`s too, after every door, with the same approach a
+  door keeps clear; a counter, worktop or bar counter across an opening is a servery hatch and is
+  not a blocker. `repair`, the placement check behind quoted positions and `finish` keep the
+  same approach clear.
+
 - `arch preview <file> --review`: the review sheet, one PNG for whoever reviews a plan (plan card
   PS5.4; D20). The plan exactly as `preview` draws it, with `describe().access` laid over it (rooms
   as nodes at their label points, an edge through each door and opening, entrances marked); every
@@ -391,6 +411,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   SVGs move; `describe()` and every other plan's output are unchanged.
 
 ### Changed
+
+- A doorway's approach (`W_DOORWAY_BLOCKED`'s landing, `doorwayLandingMm` deep) is measured from
+  the wall's FACE on each side, not its centreline, the datum `W_LEAF_ACROSS_DOORWAY` already read
+  (plan card PS2.54); on a 100 mm partition the approach reaches 50 mm further into each room.
+  Twenty examples were redrawn for the new rules: eight wide leaves in six examples became
+  `door double` pairs (`transit-hall`'s 4000 mm entrance a `sliding` door), hobs moved off windows
+  and away from fridges, and `themed`, `relational` and `hillside-villa` cleared a doorway's
+  approach.
 
 - `W_ROOM_TOO_SMALL` reads the room's use. A WC is judged against 1.1 m2 and a bathroom against
   2.0 m2 (GB 50096-2011 5.4.2, as advice), and a store, utility room, hall, circulation space or

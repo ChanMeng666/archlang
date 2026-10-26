@@ -9,13 +9,15 @@
  * `src/` at `8c2d6150`** (the base of the PR that added the kind) with that tree extracted by
  * `git archive` and this suite's own digest body (`test/byte-identity-digest.ts`) run against it.
  *
- * The set is every import-free plan of `examples/`, `test/fixtures/` and `docs/gallery/` whose
- * payload the same PR left byte-identical, 29 of 50. The other 21 moved for the PR's lint rules,
- * not for the kind, each named in `docs/plans/plan-soundness/research/2026-10-26-ps211e-as-built.md`:
- * 20 examples were edited to clear `W_HOB_UNDER_WINDOW`, `W_HOB_FRIDGE_GAP`, `W_LEAF_TOO_WIDE`
- * (seven of them by becoming `double` doors) or `W_DOORWAY_BLOCKED` read from the wall's face
- * (PS2.54); `test/fixtures/off-path-bypass.arch` and seven gallery plans gain those warnings (or
- * a hint now quotes a position clear of them) and are kept as written.
+ * The set is every plan of `examples/` and `test/fixtures/` that writes no `double` door and whose
+ * payload the same PR left byte-identical: 25 of the 40 (28 examples and 12 fixtures) that write
+ * none. The other 15 moved for the PR's lint rules, not for the kind, each named in
+ * `docs/plans/plan-soundness/research/2026-10-26-ps211e-as-built.md`: 14 examples were edited to
+ * clear `W_HOB_UNDER_WINDOW`, `W_HOB_FRIDGE_GAP`, `W_LEAF_TOO_WIDE` (`transit-hall` by becoming a
+ * `sliding` door) or `W_DOORWAY_BLOCKED` read from the wall's face (PS2.54), and
+ * `test/fixtures/off-path-bypass.arch` gains `W_DOORWAY_BLOCKED` and is kept as written. Six
+ * examples write `double` doors (their wide leaves fixed) and are the kind's own drawings.
+ * (The agent gallery is left out: no test may read it, `test/agent-gallery.test.ts`.)
  *
  * The kind's own path is reachable only from its word: `doorLeaves` returns a hinged door's one
  * `doorSwing`, computed by the same arithmetic as before (`swingAlong`), and the resolver adds
@@ -71,10 +73,6 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/star30.arch", "74a3209110606543fb04c1932b2ec60a78526ccdd2a7205cdfe972719efac471"],
   ["test/fixtures/zones-levels.arch", "0d1a1bf3d1bfad34156356ccfa65b8d823ab0761344b1bafde050d6213d93b0f"],
   ["test/fixtures/zones-wings.arch", "392675a2abd9bc82b094fc768190979fabf814b22dbb8d4fbaf7de410570c35a"],
-  ["docs/gallery/l-shape.arch", "925616345bd5f5fb4fa07323b7eaa9f6ac5bead5bf65cfdeedeff9dcaacb67e7"],
-  ["docs/gallery/narrow-plot.arch", "2233494cee800607e249c5a809c4da8b848e62b0f68159de59dba54cbdd515b6"],
-  ["docs/gallery/revision.arch", "30604b558b73b8617874c1fe8edf98bd17c27e81c3f67079602510d4c2e2c94f"],
-  ["docs/gallery/two-bed.arch", "df29f960d8812817d5b7d44d08bc7d998a89d6e13f73cfbacc4f4204311c1b82"],
 ];
 
 suite("`double` door kind — the byte-identity law", () => {

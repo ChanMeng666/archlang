@@ -93,7 +93,7 @@ The card that implements a check may rename its code; rename it here and in the 
 | Code | Check | Card |
 |---|---|---|
 | `W_FLOOR_UNASSIGNED` | A walled face less than 95 % covered by rooms (PS2.4's dual) | PS2.4 |
-| `W_WARDROBE_FRONT_CLEARANCE` | Clear depth in front of a wardrobe under 600 mm (a declared `clear front`, or a profile figure: card PS2.63) | PS2.11 |
+| `W_WARDROBE_FRONT_CLEARANCE` | Clear depth in front of a wardrobe under 600 mm (a declared `clear front`, or a profile figure: card PS2.62) | PS2.11 |
 | `W_SWING_OVER_STAIR` | A door swing over a stair footprint or its landing | PS2.11 |
 | `W_STAIR_HEAD_VOID` | A void on a stair's arrival landing | PS2.11 |
 | `W_STAIR_TOO_STEEP` | A flight too short for its storey height (riser over the profile's limit) | PS2.11 |
@@ -146,7 +146,7 @@ label, whether the text is a room label or a `dims auto` number.
   `W_DOORWAY_BLOCKED` at the hall's opening (T2), but the masked route it is about is
   `W_PATH_TOO_NARROW`'s. The two wardrobe-front cases stay `todo`: a front is a declaration
   (`clear front 600`, PS3.7) or a profile figure, never a default, and no standard read so far gives
-  one (card PS2.63).
+  one (card PS2.62).
 - `clearances/sofa-transposed` stays `todo` after PS2.11c: `W_FOOTPRINT_TRANSPOSED` judges a piece
   against its catalogued footprint, and a plain `sofa` has none until PS3.11. The rule's own case is
   `sofa-l-transposed` (RK4, RS4), whose `sofa_l` has one.

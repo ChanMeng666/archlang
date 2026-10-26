@@ -131,8 +131,10 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
 4. **PS7.x** staged authoring. The next re-measure states what authors now see: PS7.5 (done: the taste
    step left the author loop in the spec, SKILL and role text) and PS7.6 (done: `lint`/`validate` open
    with a one-line summary).
-5. **PS2.11e** the clearance remainder (`W_DOORWAY_BLOCKED` over leaf-less openings, stair swings,
-   hob under a window PS2.46, per-family depth ceiling PS2.53, face/centreline unification PS2.54).
+5. **PS2.11e** the clearance remainder: the kitchen and door half is PR #PRNUM (leaf-less openings,
+   hob under a window PS2.46, hob beside a fridge, leaf over 1219 mm and `door double`, the face datum
+   PS2.54; the eval-judge ruling it raises is in its as-built note); the stair half is its own PR.
+   PS2.53 waits on a sourced ceiling.
 6. **PS1.4** diagnostic-wording study (§8 Q3) is still open: an owner ask from 2026-10-18 found undone by the
    2026-10-25 transcript audit. **PS1.3** walls-first control arm (§8 Q1) is done (PR #264, D21): it ran on
    2026-10-26 in item 1's harness (66 CLI calls, 0 `score`, 0 `validate`; 54 verified defects against 52
@@ -155,7 +157,7 @@ waited for item 1 (D19), which ran 2026-10-26: such a card may start and the nex
 
 Facts a reader would otherwise miss: the dwelling reading (D6) now has six consumers (three lint
 arms, taste R6/R11/R12), so D6's reverse-if has fired and is re-stated in D6; `spec.llm.md` is
-29,815 UTF-16 units, 185 under its 30,000 cap (PS7.5 freed 135 from the loop paragraph's taste clause; PS4.3a's 483-unit keep line took 86 back net of four cuts), so the next spec-text card is paid for within that headroom;
+29,896 UTF-16 units, 104 under its 30,000 cap (PS2.11e's `double` kind took 74) (PS7.5 freed 135 from the loop paragraph's taste clause; PS4.3a's 483-unit keep line took 86 back net of four cuts), so the next spec-text card is paid for within that headroom;
 the first-contact hits of the four clearance rules (A8, NT4, NH6, RH3, T5, A1, K4, NH5, RA6, C4, RS4,
 RK4) are in the two 2026-10-25 as-built records and are summed in Part 1 of the 2026-10-26 audit (23
 of the 57, 7 of the 48 and 5 of the 49 now caught, 9 new true findings, 0 false positives); `docs/backlog.md`
