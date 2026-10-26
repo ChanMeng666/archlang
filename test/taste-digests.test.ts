@@ -112,24 +112,25 @@
  * bed and wardrobe turns having moved nothing else; both stay capped by their `W_PATH_TOO_NARROW`.
  * No other row moved.
  *
- * PS2.11e/PS2.34/PS2.15 (PR #280, six stair-safety validity codes) moved 26 rows and added 24, each
- * checked key by key against `origin/main` with a script over this table's files. Added: the four new
- * stair-safety pairs under each of the three profiles; every case is capped by its own code, every
- * twin lints clean and scores above its case. Moved, under each profile:
- *  - the seven older stair-safety files. `stair-too-steep`, `swing-at-stair-foot` and `void-at-stair-
- *    head` gain their own code in `validity` (the last two newly capped, 0.6667 and 0.7861/0.7152 →
- *    0.5). The twins were made to lint clean (the ruling on PR #280): `stair-too-steep` both sides
- *    gain a store with a corner door on level 2 and the flight moved 700 mm east (its head had no
- *    landing; `W_ROOM_DISCONNECTED` gone: score null → 0.5 capped / 1), `swing-at-stair-foot.clean`'s
- *    flight is shorter (its foot had no landing: still 0.6667, uncapped), `swing-over-stair.clean`'s
- *    door moved off the well, widened and the ensuite furnished (0.5 capped → 0.8125);
- *    `swing-over-stair` gains `W_SWING_OVER_STAIR` and `W_STAIR_SIDE_ENTRY`, already capped.
- *  - `examples/hillside-villa` (stair moved, bedroom 2's door moved): `validity.warnings` 7 → 8, R16's
- *    corner doors 4 → 5 of 14 (bedroom 2's door now stands 250 mm from its corner), `uncapped`
- *    0.9072 → 0.9144 under `generic` (0.8932 → 0.9004 under `cn`); still capped.
- *  - `examples/two-storey` under `cn-` and `us-`: `advisory` gains `W_STAIR_TOO_STEEP` (its 2650 mm
- *    run clears 220/220, not those profiles' figures); nothing else. Under `generic` it did not move:
- *    no criterion reads where its stair or void stands.
+ * PS2.11e/PS2.34/PS2.15 (PR #280, six stair-safety validity codes, and its red-team round 1) moved 22
+ * rows and added 24, each checked key by key against `origin/main` with a script over this table's
+ * files. Added: the four new stair-safety pairs under each of the three profiles; every case is capped
+ * by its own code, every twin lints clean and scores above its case. Moved, under each profile:
+ *  - the seven older stair-safety files. Each case carries its one code in `validity` (`void-at-stair-
+ *    head` and `swing-at-stair-foot` newly capped, 0.7861/0.7152 and 0.6667 → 0.5). Every twin was made
+ *    to lint clean (the rulings on PR #280): `stair-too-steep` both sides gain a store with a corner door
+ *    on level 2 and a 900-mm flight 500 mm farther east (its head had no landing; `W_ROOM_DISCONNECTED`
+ *    gone: score null → 0.5 capped / 1; the twin's run is 3900 mm, past even the `us-` 3810);
+ *    `swing-at-stair-foot`'s flight is 800 × 2700 on both sides, so T1's missing landing is not a second
+ *    defect of the case (the twin's row is as on `origin/main`); `swing-over-stair.clean`'s door moved off the well,
+ *    widened, and the ensuite furnished (0.5 capped → 0.8125); `swing-over-stair` gains
+ *    `W_SWING_OVER_STAIR` and `W_STAIR_SIDE_ENTRY` (one door), already capped.
+ *  - `examples/hillside-villa` (stair moved and lengthened, bedroom 2's door moved): `validity.warnings`
+ *    7 → 8, R16's corner doors 4 → 5 of 14 (bedroom 2's door now stands 250 mm from its corner),
+ *    `uncapped` 0.9072 → 0.9144 under `generic` (0.8932 → 0.9004 under `cn`); still capped.
+ *  - `examples/two-storey` under `us-`: `advisory` gains `W_STAIR_TOO_STEEP` (its 2900 mm run clears
+ *    220/220, GB 50096 and AD K's 42°, not the IRC's 3302 mm); nothing else. Under `generic` and `cn-`
+ *    it did not move: no criterion reads where its stair or void stands.
  * `garden-house` and `library` did not move: no criterion reads their stairs.
  */
 
@@ -916,7 +917,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/stair-too-steep.clean.arch",
   ],
   [
-    "eb40a051c5b34ad461bc30826a8fc238f5e967ba275da5afbbc4e26ee9c4f417",
+    "85550cf74ff5ca8222e54fc0cafeb754db06fa0a5fda4eb3451eb5bd92b2399f",
     "generic",
     "test/defect-corpus/stair-safety/swing-at-stair-foot.arch",
   ],
@@ -1221,7 +1222,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "examples/two-bed.arch",
   ],
   [
-    "7dcdc419978b2136413030c48ecd05d86df0563d3d68f5448f2a31222804a43d",
+    "c559a0038a5b53af12628c993855615d0af450ff44fc8ab68aa89ac63939ca85",
     "cn-residential-advisory",
     "examples/two-storey.arch",
   ],
@@ -1966,7 +1967,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/stair-too-steep.clean.arch",
   ],
   [
-    "cab300a304f78838f889554ad392567f0ace401803c485266f5e458e32c6e502",
+    "be39655f174fb97b1df7ba6965fd0180291158b494f978b5a0b24f634554474d",
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/swing-at-stair-foot.arch",
   ],
@@ -3011,12 +3012,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/stair-too-steep.arch",
   ],
   [
-    "c4c031a08062706ee26c38a9fc31e051b3336191fea5fc2e9db484ce1b2bb2ce",
+    "1fff16648f1bcac1eabdc83dda629f6960db269b2349a49dac5498fa7d0a0b94",
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/stair-too-steep.clean.arch",
   ],
   [
-    "3f029325696b5db78fb742f59bdfdad382539e63a5f52f7a3a7ba46b80e2c845",
+    "319e5df3f3085ce9f449698e0ae43870d9fbe465a117193d47c7e0594cb9e9f3",
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/swing-at-stair-foot.arch",
   ],

@@ -363,9 +363,9 @@ describe("us-residential-advisory (IRC R304, R311.6)", () => {
 /**
  * Every warning each profile adds over default `lint()` across the shipped examples, judged one
  * by one in the PS5.2 PR (all true positives: each room is under the sourced figure as measured).
- * PS2.11e added `two-storey`'s flight under each profile's stair figures: its 2650 mm run climbs
- * 2700 mm, which clears the default's 220/220 but not GB 50096's 200 mm riser, AD K's 42° or the
- * IRC's 7¾ in riser and 10 in tread (a true positive under each; the example is judged by default).
+ * PS2.11e added `two-storey`'s flight under `us-`: its 2900 mm run climbs 2700 mm, which clears the
+ * default's 220/220, GB 50096's 200 mm riser and AD K's 42°, but not the IRC's 7¾ in riser and 10 in
+ * tread (3302 mm; a true positive; the example is judged by default).
  * A move here is a finding: explain it, never re-pin to green.
  */
 const EXAMPLE_ADDITIONS: Record<string, string[]> = {
@@ -375,7 +375,6 @@ const EXAMPLE_ADDITIONS: Record<string, string[]> = {
     'examples/garden-loft.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 8.08 m² of net floor (under 9 m², the floor for a double bedroom).',
     'examples/relational.arch W_ROOM_TOO_NARROW Room "Hall" is 1100 mm wide between its wall faces, under the 1200 mm the profile asks of an entry passage — 100 mm short.',
     'examples/studio.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 8.12 m² of net floor (under 9 m², the floor for a double bedroom).',
-    'examples/two-storey.arch W_STAIR_TOO_STEEP The stair in "Hall" on level 1 is too steep: its 2650 mm run climbs the 2700 mm storey, which at most 200 mm a riser takes 14 risers, and their 13 goings of at least 220 mm need a 2860 mm run (210 mm short).',
   ],
   [UK]: [
     'examples/accessible.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 8.93 m² of net floor (under 11.5 m², the floor for a double bedroom).',
@@ -393,10 +392,9 @@ const EXAMPLE_ADDITIONS: Record<string, string[]> = {
     'examples/studio.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 8.12 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     'examples/themed.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 10.59 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     'examples/two-bed.arch W_ROOM_TOO_SMALL Room "Bedroom 2" is only 9.52 m² of net floor (under 11.5 m², the floor for a double bedroom).',
-    'examples/two-storey.arch W_STAIR_TOO_STEEP The stair in "Hall" on level 1 is too steep: its 2650 mm run climbs the 2700 mm storey, which at most 220 mm a riser takes 13 risers, and their 12 goings of at least 231 mm need a 2769 mm run (119 mm short).',
   ],
   [US]: [
-    'examples/two-storey.arch W_STAIR_TOO_STEEP The stair in "Hall" on level 1 is too steep: its 2650 mm run climbs the 2700 mm storey, which at most 197 mm a riser takes 14 risers, and their 13 goings of at least 254 mm need a 3302 mm run (652 mm short).',
+    'examples/two-storey.arch W_STAIR_TOO_STEEP The stair in "Hall" on level 1 is too steep: its 2900 mm run must climb the 2700 mm storey, and at 197 mm (7¾ in) a riser at most that is 14 risers and 13 goings of at least 254 mm, a 3302 mm run (402 mm short).',
   ],
 };
 

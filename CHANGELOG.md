@@ -31,10 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stops whose footprints overlap by less than half of the smaller, run along different axes, or
   are different kinds; a lift car must match exactly. Examples redrawn for real stair defects:
   `garden-house` (the flight, now 800 mm wide, centred in the hall, its head 1100 mm off the north
-  wall), `hillside-villa` (the stair rises in the living room to the gallery, the gallery void moved
-  off its head, bedroom 2's door moved off the bed), `library` (the foot 1000 mm farther from the
-  south wall) and `two-storey` (a 2650 mm run for its 2700 mm storey, the void now the stairwell);
-  their drawings and `describe()` move, and `hillside-villa` lints eight warnings, not seven.
+  wall), `hillside-villa` (the stair, now 2900 mm long and 800 wide, rises in the living room to the
+  gallery, whose opening onto the landing narrowed to 1600 mm; bedroom 2's door moved off the bed),
+  `library` (the foot 1000 mm farther from the south wall) and `two-storey` (a 2900 mm run for its
+  2700 mm storey, the void now the stairwell); their drawings and `describe()` move, and
+  `hillside-villa` lints eight warnings, not seven. A landing a curved wall stands near is not judged
+  (`curved-landing-wall` coverage skip); the rules' work is a count (`MAX_STAIR_WORK`, `stair-budget`
+  skip). The defect corpus's stair class goes from 0/4 to 8/8, the corpus from 59/73 to 67/77.
 
 - `arch preview <file> --review`: the review sheet, one PNG for whoever reviews a plan (plan card
   PS5.4; D20). The plan exactly as `preview` draws it, with `describe().access` laid over it (rooms

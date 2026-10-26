@@ -34,7 +34,7 @@ lines, a stair shrunk to clear a label warning, a worktop or a TV deleted, a `us
 swung outward): every new rule is checked for the cheapest evasion.
 
 The means, tracked in `README.md` §7: defect-corpus catch rate 7/53 (10-18) → 46/68 (10-20) → 53/72
-(10-24) → **59/73** (10-25 and 10-26), clearances class 11/19.
+(10-24) → 59/73 (10-25 and 10-26) → **67/77** (PR #280, stair safety 0/4 → 8/8), clearances class 11/19.
 
 ## 2. Where §7 stands
 
@@ -61,7 +61,7 @@ taste advice codes, `LINT_RULES` 45 entries; 133 cards, counted from `cards.md`:
 
 | Surface | Card | PR | Merge |
 |---|---|---|---|
-| Defect corpus (7/53 → 59/73) | PS1.1, PS1.2 | #195, #203, #233 | 3d255044, 90ae6bfd, 1a1efd9e |
+| Defect corpus (7/53 → 67/77) | PS1.1, PS1.2 | #195, #203, #233 | 3d255044, 90ae6bfd, 1a1efd9e |
 | Connector `between` read off the host wall's faces | PS0.1 | #196 | da9b47b5 |
 | Living/dining classified from the label | PS0.7 | #197 | 1d92656f |
 | Main entrance, use-aware floor, arc-window attribution | PS0.10–0.12 | #211 | fcb30748 |

@@ -106,7 +106,13 @@ export type LintSkipReason =
   | "curved-wc-wall"
   /** The plan authors no height anywhere (`describe().heights` is absent), so a flight's run is
    *  not judged against a storey height the author never stated (`W_STAIR_TOO_STEEP`, PS2.11e). */
-  | "no-storey-height";
+  | "no-storey-height"
+  /** A curved wall stands near a stair's landing, which `W_STAIR_NO_LANDING` and
+   *  `W_SWING_OVER_STAIR` do not measure (PS2.11e): that landing is not judged. */
+  | "curved-landing-wall"
+  /** The stair rules' counted work on the storey (`MAX_STAIR_WORK`, `src/lint/rules/stairs.ts`,
+   *  charged before the work) would pass its cap: no stair on the storey is judged. */
+  | "stair-budget";
 
 /** What each family checks, as the human coverage line names it. */
 export const FAMILY_NOUN: Readonly<Record<LintFamily, string>> = {
@@ -151,6 +157,8 @@ export const SKIP_WHY: Readonly<Record<LintSkipReason, string>> = {
   "curved-window-host": "a window stands on a curved wall, which the rule does not measure",
   "curved-wc-wall": "a curved wall stands beside a WC, which the rule does not measure",
   "no-storey-height": "the plan states no storey height",
+  "curved-landing-wall": "a curved wall stands near a stair's landing, which the rule does not measure",
+  "stair-budget": "too many stairs, doors and walls on the storey to measure",
 };
 
 /**

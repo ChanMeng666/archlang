@@ -52,7 +52,7 @@ plan "Two-storey house" {
     furniture kitchen_sink against wall kitchen_w offset 1200 in kitchen
     furniture stove against wall kitchen_w offset 2200 in kitchen
     furniture counter against wall kitchen_w offset 2900 in kitchen
-    stair id=stair at (100,1500) size 900x2650 dir up
+    stair id=stair at (100,1000) size 900x2900 dir up
   }
 
   # A taller first floor than the ground: `height` in the level HEADER overrides the plan's
@@ -87,7 +87,7 @@ plan "Two-storey house" {
     furniture wc against bath.right offset 1100 size 400x700
     furniture basin in bath anchor bottom-right flush size 600x450
     furniture shower in bath anchor bottom-left flush size 900x900
-    stair id=stair at (100,1500) size 900x2650 dir down
+    stair id=stair at (100,1000) size 900x2900 dir down
 
     # The landing looks down into the hall below over a balustrade: there is no floor
     # here, so the plan says so. A `void` is drawn (dashed rectangle + both diagonals)
@@ -97,7 +97,7 @@ plan "Two-storey house" {
     # the schedule and `describe --json` both report, so subtracting the well here would
     # leave the drawing and the table disagreeing. `describe --json` lists it under
     # `voids[]` with the room it falls in, which is where a net figure comes from.
-    void id=gallery at (100,1500) size 900x2650
+    void id=gallery at (100,1000) size 900x2900
 
     # The eaves, on the top storey only — this level's `shell` is the plan's one
     # closed exterior ring on THIS page, so no `wall` clause is needed.

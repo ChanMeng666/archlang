@@ -344,7 +344,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/garden-house.arch", "cf1c67a24d9673382c0f2b3c996e979c2829abb4f2d8bdf827f02b82d1671979"], // re-measured, see header
   ["examples/garden-loft.arch", "9c32144fa59fbed83396dcbfa1083cce3838976d60f4dae96f21df2f13c17cae"],
   ["examples/hexagon-pavilion.arch", "3078765cf03974518e0f2b3ea13585cca69ffbb86438f0899218c8a1c24a09a8"],
-  ["examples/hillside-villa.arch", "d819cabc53a7d9050c2b8f7d5161580297f407844328ada52325c4665628fe78"], // re-measured, see header
+  ["examples/hillside-villa.arch", "c0316a8e8f3dc8f5a8ade0e4dd817ac561cdb2650d7f8db3fd139934c5e74d8f"], // re-measured, see header
   ["examples/imports.arch", "9cfb83e40cb9e3b4605be6d235145d963585295f5c25704ed827181b34f1762e"],
   ["examples/laneway-house.arch", "fe7de9e78abe6f38ec285f1d23e79e95b6aea68de9da3a6fa26f0f41218c030f"],
   ["examples/library.arch", "e204bd144cb0fc9155be099d1c0c838473f31d5531bdb9d473b8930a0e7b2086"],
@@ -364,7 +364,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/townhouse.arch", "dcddd916b6af56d49a6e843c46b4bcd4f3ee5f1711ce3dbe9102a88d9c0a1ef4"],
   ["examples/transit-hall.arch", "b95b9997518ea3ed923a224042b7acbe334ec1e06528099349c9518c03b2b25a"],
   ["examples/two-bed.arch", "4ddd7391b3da9f7b6b74bb336b6b65c0031a34fe99a22914f260026b2d14fc01"], // PS3.6 source rewrite, see ./byte-identity-baseline.ts
-  ["examples/two-storey.arch", "b5207394153b87a74b20b7d80dd45d25c2616267e7b98089f51762b911f5be56"],
+  ["examples/two-storey.arch", "af715e19ae61d9bb03c14ea23a07d713dd1fe6d2237188825e29db28d4a98a53"],
   ["test/fixtures/axes-grid.arch", "e6be5d70788d931cacaa8cb1db2c2c454c1532d01153b90e2427c125770e5559"],
   ["test/fixtures/chain30.arch", "df7e1343b01b2194505898df5017da81b58d8c840d01236ff75101f047396e43"], // new fixture, see header
   ["test/fixtures/dense-bays.arch", "9f4ad4538851a27b463113cd7e563823d185bc7e18b342fd9eebb45f2887992f"],

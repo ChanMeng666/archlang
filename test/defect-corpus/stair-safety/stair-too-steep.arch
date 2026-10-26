@@ -13,7 +13,7 @@ plan "Stair too steep for its storey" {
     room id=hall at (0,0) size 6000x4000 label "Hall" uses hall
     door id=front at (3000,4000) width 1000 wall shell
     window at (3000,0) width 1500 wall shell
-    stair id=stair at (1200,500) size 2200x1000 dir up
+    stair id=stair at (1000,500) size 2200x900 dir up
   }
   level 2 "First floor" {
     wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
@@ -22,6 +22,6 @@ plan "Stair too steep for its storey" {
     room id=store at (5000,0) size 1000x4000 label "Store" uses storage
     door id=d_store at (5000,650) width 800 wall w_s swing into store
     window at (3000,0) width 1500 wall shell
-    stair id=stair at (1200,500) size 2200x1000 dir down
+    stair id=stair at (1000,500) size 2200x900 dir down
   }
 }

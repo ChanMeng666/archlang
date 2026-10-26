@@ -33,7 +33,9 @@ What the test asserts:
 - a `done` case's `lint()` codes contain its `expect` code;
 - a `todo` case's codes do **not** contain it yet. When a PS2 rule lands and a case starts to fire,
   the test goes red until the header says `done`, so the status column never goes stale;
-- a twin's codes never contain its case's `expect` code, whatever the case's status;
+- a twin's codes never contain its case's `expect` code, whatever the case's status, under the default
+  ruleset and under every profile (but for the rows of the test's `PROFILE_LEDGER`, each with why a stricter profile
+  is right to ask more);
 - every case has a twin and every twin has a case;
 - an `expect` code that is not in `src/error-catalog.ts` is listed in one of the code tables below,
   and every code listed below is used by at least one case.

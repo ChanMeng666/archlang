@@ -526,7 +526,7 @@ const BASELINE: [string, string][] = [
   // Re-measured for the facade-probe fix (level 2's `dims auto` chains only), and again because
   // the EXAMPLE changed (backlog D.2, its piano turned and moved): the same row, with the same
   // digest body, as `./while-byte-identity-baseline.ts`, whose header has the reasons.
-  ["examples/hillside-villa.arch", "d819cabc53a7d9050c2b8f7d5161580297f407844328ada52325c4665628fe78"], // re-measured, see header
+  ["examples/hillside-villa.arch", "c0316a8e8f3dc8f5a8ade0e4dd817ac561cdb2650d7f8db3fd139934c5e74d8f"], // re-measured, see header
   ["examples/imports.arch", "9cfb83e40cb9e3b4605be6d235145d963585295f5c25704ed827181b34f1762e"],
   ["examples/laneway-house.arch", "fe7de9e78abe6f38ec285f1d23e79e95b6aea68de9da3a6fa26f0f41218c030f"],
   ["examples/library.arch", "e204bd144cb0fc9155be099d1c0c838473f31d5531bdb9d473b8930a0e7b2086"],
@@ -555,7 +555,7 @@ const BASELINE: [string, string][] = [
   // Re-measured 2026-10-18 (PS0.7, the label classifier emits living; `describe()` only): the
   // same row, with the same digest body, as `./while-byte-identity-baseline.ts`, whose header has the reasons.
   ["examples/two-bed.arch", "4ddd7391b3da9f7b6b74bb336b6b65c0031a34fe99a22914f260026b2d14fc01"], // PS3.6 source rewrite, see ./byte-identity-baseline.ts
-  ["examples/two-storey.arch", "b5207394153b87a74b20b7d80dd45d25c2616267e7b98089f51762b911f5be56"],
+  ["examples/two-storey.arch", "af715e19ae61d9bb03c14ea23a07d713dd1fe6d2237188825e29db28d4a98a53"],
   ["examples/lib/doors.arch", "f57eaea084d2e6e62b85b8450ef96675e9f1466bea9aff24e2869f2d6f0c9804"],
   ["examples/lib/fixtures.arch", "57d6c78e2eea8451a9b32a5828f3babb24b0251cc5c3b72675b431be22b3f310"],
   ["examples/lib/furniture.arch", "adf16d60e17d76d76f092f95fb24dab4b7ba5ebaa977ed32bcc3a8eaddc7e05b"],
@@ -579,7 +579,7 @@ const BASELINE: [string, string][] = [
   ["test/recovery-corpus/terrace-row.arch", "5e22a50567dc07de2340835bd50c979380a768842e11e15ef320fbf6f046beb5"],
   // Re-measured 2026-10-18 (PS0.7): a copy of `examples/themed.arch`, the same cause and value.
   ["test/recovery-corpus/themed.arch", "925fd85f0ffd49574d214fc9ed44ca7e5f73b4ea8432a04ea66e2d1e11840643"],
-  ["test/recovery-corpus/two-storey.arch", "dcf4bb96dfff7a1b7dac3557c1b9d0f55a2018cd5047b48960f806416e7e6b0c"],
+  ["test/recovery-corpus/two-storey.arch", "d8d10f31b567b34e81642e2dc36ce7becdee44aac6ca865864b805caf3fd171e"],
   ["eval/goldens/accessible-bath.arch", "d92fb8bf1dafde517a579409ff32602a06687a29149d3c2e7e1de69bd4cc4fce"],
   ["eval/goldens/accessible-flat.arch", "3809f58573d9685eb190389ae026bdbafa161dd57bdbf109a90048f4bb3e802a"],
   ["eval/goldens/against-wall-bath.arch", "b39f97de3ae495e7c18b74541403648a0972bd439b46d007f491f4f695b10e59"],

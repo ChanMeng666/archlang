@@ -151,7 +151,7 @@ plan "Hillside Villa" {
     furniture office_chair at (2300,2900) size 600x600  rotate 90 in r_office
     furniture bookshelf    at (200,3700)  size 1600x300 in r_office
 
-    furniture rug          at (600,5000)  size 3000x2400 in r_living
+    furniture rug          at (600,5100)  size 3000x2300 in r_living
     furniture sofa_l        at (700,5600)  size 2400x1500 in r_living
     furniture coffee_table  at (1300,7200) size 1000x500  in r_living
     furniture armchair      at (3200,5750) size 900x850  rotate 270 in r_living
@@ -187,7 +187,7 @@ plan "Hillside Villa" {
     dim (8000,10500)->(13800,10500) offset 600 text "Terrace 5.8 x 2.0 m"
     dim (0,10800)->(3000,10800) offset 300
 
-    stair id=stair at (1400,4300) size 2200x1000 dir up
+    stair id=stair at (1000,4300) size 2900x800 dir up
   }
 
   # =====================================================================================
@@ -226,7 +226,7 @@ plan "Hillside Villa" {
     room id=r_landing at (0,2600) size 13800x1600 label "Landing" uses hall circulation
 
     # The gallery: it contains the void over the living room below, so it keeps its own
-    # full floor area even though a 3.0 x 3.9 m hole obstructs the middle of it.
+    # full floor area even though a 3.0 x 4.2 m hole obstructs the middle of it.
     room id=r_gallery at (0,4200) size 4800x6000 label "Gallery" uses hall circulation
 
     # ---- doors ----------------------------------------------------------------------------
@@ -239,7 +239,7 @@ plan "Hillside Villa" {
     door id=d_en3   pocket on en3.wall  at 7500  width 700 slide right
     door id=d_enm   on en_m.wall at 7500  width 700 swing out
     door id=d_master_corr on w_l2_band at 10500 width 1000 swing into r_master
-    opening id=o_gallery on w_l2_band at 1500 width 1800
+    opening id=o_gallery on w_l2_band at 1050 width 1600
 
     # en2 and en3 also open onto the landing (their SOUTH wall, run-length 5300), so each is
     # a guest bath too; `en_m` keeps one door, into the master bedroom, the conventional
@@ -276,13 +276,13 @@ plan "Hillside Villa" {
 
     # The gallery railing looks down into the double-height living room below — a `void`
     # does not reduce this room's own area (`describe --json` reports it under `voids[]`).
-    void id=v_gallery at (900,5400) size 3000x3900
+    void id=v_gallery at (900,5100) size 3000x4200
 
     # The eaves: derived from THIS storey's own closed shell, mitred outward — it draws
     # and nothing else, but it does grow the page.
     roof overhang 700 wall shell
 
-    stair id=stair at (1400,4300) size 2200x1000 dir down
+    stair id=stair at (1000,4300) size 2900x800 dir down
   }
 
   axes {

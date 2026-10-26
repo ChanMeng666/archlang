@@ -10,7 +10,8 @@
  * Re-measured in PS2.11e: `paper` gains `W_STAIR_NO_LANDING` in its `validate --json` (its upper
  * storeys bring a flight's head 200 mm from the west wall, a true defect of the fixture, which no
  * keep reads); its keep rows are unchanged. The widening drill's stair was moved instead (same bytes,
- * same spans), so `widen-before`/`widen-after` read as before.
+ * same spans), so `widen-before`/`widen-after` read as before. `paper` re-measured once more in the
+ * red-team round, for the warning's hint (a wall named `wall "<id>"`), not its keep rows.
  */
 
 import { describe as suite, expect, it } from "vitest";
@@ -33,7 +34,7 @@ const K3_DIGESTS: [string, string][] = [
   ["min-clear", "367f2a9efad686f70a06504e9dbc2b5665195590d8553a4df762f8dc50118c78"], // round 2: the `skipped` reasons beside skipped_walls (round 1: the nib no longer counts in the hall)
   ["offset-fixed", "084509601305bc7bf6b27649efd0c3124fdbac2ab6e97daaf69e22aa05ed021e"],
   ["on-axis", "1a2d6ca631da7360538737b946c0e143b5586b5a905d10497d270f30e0c9890c"],
-  ["paper", "2acce06e98b9361b0f0d4d2b5c1258d2dfe8b1a984786a1898a91815c5f0892f"],
+  ["paper", "eb8f3fea25c43c9f4bded46dcf5f573e8b5948891e70c186483ff5108cce29b7"],
   ["refused-limit", "8744e79cb97e882640c5f1feda1291407d108e8e1348b5b7075df6a2df182a9f"],
   ["refused-placement", "8f764cae04d74f29fc9e39ae9f369a9aaf8005c7f71e71cb47347e4b733e434f"], // round 1: a keep in a component is refused where it is written
   ["refused", "99ea1ef2a3b9baaac3d6a9502c4f1c5552f3f7404afe2bf98a336a889293ecf0"], // round 1: numbers through num-format

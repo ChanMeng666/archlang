@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
-import { compile, ERROR_CATALOG, lint } from "../src/index.js";
+import { compile, ERROR_CATALOG, LINT_PROFILE_NAMES, lint } from "../src/index.js";
 
 /**
  * The defect corpus (`test/defect-corpus/`, card PS1.1 of `docs/plans/plan-soundness/README.md`).
@@ -185,7 +185,35 @@ describe.each(TWINS.map((t) => [t.path, t] as const))("clean twin %s", (_path, t
     expect(of, "the case this twin belongs to").toBeDefined();
     expect([...result(t).codes]).not.toContain(of!.header.expect);
   });
+
+  it("does not raise its case's code under any profile, but where the ledger says why", () => {
+    const raised = LINT_PROFILE_NAMES.filter((p) =>
+      lint(t.src, { profile: p }).some((d) => d.code === of!.header.expect),
+    );
+    expect(raised).toEqual(Object.keys(PROFILE_LEDGER[`${t.cls}/${t.name}`] ?? {}));
+  });
 });
+
+/**
+ * Twins that raise their case's code under a STRICTER profile than the default the case was fixed
+ * against, each with why the profile is right to: the twin is the default's fix, and the profile
+ * asks more (PR #280 extended the twin check to every profile and found these three; none is a
+ * stair twin). Checked both ways: a row whose twin no longer raises the code fails too.
+ */
+const PROFILE_LEDGER: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  "clearances/bed-blocks-alcove.clean": {
+    "accessibility-advisory":
+      "its walk squeezes to 800 mm through the alcove opening: over the default 700, under the profile's 900",
+  },
+  "clearances/masked-route-balcony-door.clean": {
+    "accessibility-advisory":
+      "its walk squeezes to 740 mm through the laundry door: over the default 700, under the profile's 900",
+  },
+  "clearances/wc-side-clearance.clean": {
+    "accessibility-advisory":
+      "its WC centreline stands 400 mm from the basin: the default's figure, not the profile's 450",
+  },
+};
 
 afterAll(() => {
   const caught = (c: CaseFile) => result(c).codes.has(c.header.expect!);

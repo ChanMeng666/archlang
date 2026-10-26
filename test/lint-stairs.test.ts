@@ -8,7 +8,7 @@
 import { describe as suite, expect, it } from "vitest";
 import { type Diagnostic, lint, lintCoverage } from "../src/index.js";
 import { DEFAULT_RULESET, LINT_PROFILES } from "../src/lint.js";
-import { minimumRun } from "../src/lint/rules/stairs.js";
+import { MAX_STAIR_WORK, minimumRun } from "../src/lint/rules/stairs.js";
 import { resolveRuleset } from "../src/lint/ruleset.js";
 
 const of = (src: string, code: string, profile?: string): Diagnostic[] =>
@@ -139,7 +139,7 @@ suite("W_STAIR_NO_LANDING", () => {
       'The stair in "Hall" has no landing at its foot: the partition wall at y 3000 stands 450 mm past the bottom step, where a landing as long as the flight is wide needs 1000 mm (550 mm short).',
     );
     expect(ds[0]!.hints![0]).toContain("`st`");
-    expect(ds[0]!.hints![0]).toContain("`w_p`");
+    expect(ds[0]!.hints![0]).toContain('wall "w_p"');
     // Shortened to leave 1050 mm: quiet.
     expect(of(house("  stair id=st at (200,200) size 1000x1700 dir up"), "W_STAIR_NO_LANDING")).toEqual([]);
   });
@@ -277,7 +277,7 @@ suite("W_STAIR_TOO_STEEP", () => {
     expect(ds.map((d) => [d.level, d.message])).toEqual([
       [
         1,
-        'The stair in "Hall" on level 1 is too steep: its 2000 mm run climbs the 2800 mm storey, which at most 220 mm a riser takes 13 risers, and their 12 goings of at least 220 mm need a 2640 mm run (640 mm short).',
+        'The stair in "Hall" on level 1 is too steep: its 2000 mm run must climb the 2800 mm storey, and at 220 mm a riser at most that is 13 risers and 12 goings of at least 220 mm, a 2640 mm run (640 mm short).',
       ],
     ]);
     expect(of(src(2650), "W_STAIR_TOO_STEEP")).toEqual([]);
@@ -354,5 +354,136 @@ suite("a `place` turn moves none of them", () => {
     const base = stairCodes(placed(0));
     expect(base).toEqual(["W_SWING_OVER_STAIR", "W_STAIR_NO_LANDING"]);
     for (const r of [90, 180, 270]) expect(stairCodes(placed(r)), `rotate ${r}`).toEqual(base);
+  });
+});
+
+suite("bad ruleset overrides are declined, never looped on or printed", () => {
+  const src = `plan "P" {
+  units mm
+  height 2800
+  room id=r at (0,0) size 6000x6000 label "Hall" uses hall
+  stair id=s at (500,500) size 1000x2000 dir up
+}`;
+  const bad = [
+    { stairMaxRiseMm: -200 },
+    { stairMaxRiseMm: 0 },
+    { stairMaxRiseMm: Number.NaN },
+    { stairMaxRiseMm: Number.POSITIVE_INFINITY },
+    { stairMaxRiseMm: 1e-300 },
+    { stairMinGoingMm: -1 },
+    { stairMinGoingMm: Number.NaN },
+    { stairMinGoingMm: Number.POSITIVE_INFINITY },
+    { stairMaxPitchRatio: 0 },
+    { stairMaxPitchRatio: -1 },
+    { stairMaxPitchRatio: Number.NaN },
+  ];
+  it.each(bad.map((r) => [JSON.stringify(r), r] as const))("%s", (_name, r) => {
+    expect(minimumRun(2800, { ...DEFAULT_RULESET, ...r })).toBeNull();
+    const ds = lint(src, { ruleset: r });
+    expect(ds.filter((d) => d.code === "W_STAIR_TOO_STEEP")).toEqual([]);
+    for (const d of ds) expect(`${d.message} ${(d.hints ?? []).join(" ")}`).not.toMatch(/Infinity|NaN|e\+\d/);
+  });
+
+  it("a bad rise is declined too", () => {
+    for (const rise of [0, -1, Number.NaN, Number.POSITIVE_INFINITY])
+      expect(minimumRun(rise, DEFAULT_RULESET)).toBeNull();
+  });
+});
+
+suite("hints name only what an author can write", () => {
+  it("a derived wall by its rooms, an unnamed door by its rooms (walls from rooms)", () => {
+    // The red team's t01: a stair against the partition `walls from rooms` derived between the hall
+    // and the bedroom, beside the hall-living door; neither has an id in the source.
+    const src = `plan "T1" {
+  units mm
+  grid 50
+  room id=hall at (0,0) size 2000x4000 label "Hall" uses hall
+  room id=living right-of hall align top gap 0 size 4000x4000 label "Living" uses living
+  room id=bed below hall align left gap 0 size 6000x3000 label "Bedroom" uses bedroom
+  walls from rooms exterior 200 partition 100
+  door between hall and living at 2000 from start width 800 swing into living
+  door between hall and bed at 1000 from start width 800 swing into bed
+  door on hall.top at center width 900 swing into hall
+  window on living.top width 1800
+  window on bed.bottom width 1800
+  stair id=st at (500,1000) size 1000x2700 dir up
+}`;
+    const ds = lint(src).filter((d) => STAIR_CODES.includes(d.code!));
+    expect(ds.map((d) => d.code)).toEqual(["W_STAIR_NO_LANDING", "W_STAIR_SIDE_ENTRY"]);
+    const hints = ds.flatMap((d) => d.hints ?? []).join(" ");
+    expect(hints).not.toContain("|");
+    expect(hints).not.toContain("door_");
+    expect(hints).toContain('the partition between "hall" and "bed"');
+    expect(hints).toContain('Move the door between "Hall" and "Living" along its wall');
+  });
+});
+
+suite("a flight that continues upward from where the flight below arrives", () => {
+  it("is owed the lower flight's head landing, read on the lower flight's footprint", () => {
+    // Level 2's run is drawn 1000 mm south of level 1's; level 1's flight arrives at y 1500, where a
+    // partition at y 1000 stands 450 mm off. Read on level 2's own footprint (its top at y 2500) the
+    // landing would look clear.
+    const src = `plan "Three" {
+  units mm
+  grid 50
+  level 1 {
+    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,7000) (0,7000) close }
+    room id=hall at (0,0) size 6000x7000 label "Hall" uses hall
+    door id=front at (4500,7000) width 1000 wall shell
+    stair id=st at (2000,1500) size 1000x3000 dir up
+  }
+  level 2 {
+    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,7000) (0,7000) close }
+    wall id=w_x partition thickness 100 { (0,1000) (6000,1000) }
+    room id=store at (0,0) size 6000x1000 label "Store" uses storage
+    room id=land at (0,1000) size 6000x6000 label "Landing" uses circulation
+    door id=d_store at (4500,1000) width 800 wall w_x
+    stair id=st at (2000,2500) size 1000x3000 dir up
+  }
+  level 3 {
+    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,7000) (0,7000) close }
+    room id=top at (0,0) size 6000x7000 label "Top" uses circulation
+    stair id=st at (2000,2500) size 1000x3000 dir down
+  }
+}`;
+    expect(of(src, "W_STAIR_NO_LANDING").map((d) => [d.level, d.message])).toEqual([
+      [
+        2,
+        'The stair in "Landing" on level 2 has no landing at its head: the partition wall at y 1000 stands 450 mm past the top step, where a landing as long as the flight is wide needs 1000 mm (550 mm short).',
+      ],
+    ]);
+    // The partition moved 600 mm north: 1050 mm clear of the arriving head, quiet.
+    expect(
+      of(
+        src
+          .replace("(0,1000) (6000,1000)", "(0,400) (6000,400)")
+          .replace("size 6000x1000 label", "size 6000x400 label")
+          .replace("at (0,1000) size 6000x6000", "at (0,400) size 6000x6600")
+          .replace("(4500,1000) width 800 wall w_x", "(4500,400) width 800 wall w_x"),
+        "W_STAIR_NO_LANDING",
+      ),
+    ).toEqual([]);
+  });
+});
+
+suite("a curved wall near a landing", () => {
+  it("is not measured: the landing is not judged and the coverage report says so", () => {
+    const src = `plan "P" {
+  units mm
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) arc (0,4000) radius 10000 cw close }
+  room id=r at (0,0) size 6000x4000 label "Hall" uses hall
+  door id=d at (3000,0) width 900 wall shell
+  stair id=st at (2500,500) size 1000x3000 dir up
+}`;
+    expect(of(src, "W_STAIR_NO_LANDING")).toEqual([]);
+    const stairs = lintCoverage(src)!.families.find((f) => f.family === "stairs")!;
+    expect(stairs.skipped!.map((s) => s.reason)).toContain("curved-landing-wall");
+  });
+});
+
+suite("the counted work", () => {
+  it("is a count, charged before the work", () => {
+    expect(Number.isInteger(MAX_STAIR_WORK)).toBe(true);
+    expect(MAX_STAIR_WORK).toBeGreaterThan(200_000);
   });
 });

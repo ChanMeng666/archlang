@@ -40,19 +40,19 @@
 <line x1="4800" y1="4214" x2="5400" y2="4214" stroke="#a8a29a" stroke-width="6.5"/>
 </g>
 <g id="A-FLOR-STRS" inkscape:groupmode="layer" inkscape:label="A-FLOR-STRS">
-<polygon points="100,1500 1000,1500 1000,4150 100,4150" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
-<line x1="46" y1="3197.22" x2="1054" y2="2747.22" stroke="#a8a29a" stroke-width="9"/>
-<line x1="46" y1="2902.78" x2="1054" y2="2452.78" stroke="#a8a29a" stroke-width="9"/>
-<line x1="100" y1="3855.56" x2="1000" y2="3855.56" stroke="#a8a29a" stroke-width="9"/>
-<line x1="100" y1="3561.11" x2="1000" y2="3561.11" stroke="#a8a29a" stroke-width="9"/>
-<line x1="100" y1="3266.67" x2="1000" y2="3266.67" stroke="#a8a29a" stroke-width="9"/>
-<line x1="100" y1="2383.33" x2="1000" y2="2383.33" stroke="#a8a29a" stroke-width="9"/>
-<line x1="100" y1="2088.89" x2="1000" y2="2088.89" stroke="#a8a29a" stroke-width="9"/>
-<line x1="100" y1="1794.44" x2="1000" y2="1794.44" stroke="#a8a29a" stroke-width="9"/>
-<line x1="550" y1="3796.67" x2="550" y2="1617.78" stroke="#6c6864" stroke-width="9"/>
-<line x1="550" y1="1617.78" x2="701.2" y2="1869.78" stroke="#6c6864" stroke-width="9"/>
-<line x1="550" y1="1617.78" x2="398.8" y2="1869.78" stroke="#6c6864" stroke-width="9"/>
-<text x="550" y="4002.78" font-size="100" fill="#333333" text-anchor="middle" dominant-baseline="central">UP</text>
+<polygon points="100,1000 1000,1000 1000,3900 100,3900" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
+<line x1="46" y1="2820" x2="1054" y2="2370" stroke="#a8a29a" stroke-width="9"/>
+<line x1="46" y1="2530" x2="1054" y2="2080" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="3610" x2="1000" y2="3610" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="3320" x2="1000" y2="3320" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="3030" x2="1000" y2="3030" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="1870" x2="1000" y2="1870" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="1580" x2="1000" y2="1580" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="1290" x2="1000" y2="1290" stroke="#a8a29a" stroke-width="9"/>
+<line x1="550" y1="3552" x2="550" y2="1116" stroke="#6c6864" stroke-width="9"/>
+<line x1="550" y1="1116" x2="701.2" y2="1368" stroke="#6c6864" stroke-width="9"/>
+<line x1="550" y1="1116" x2="398.8" y2="1368" stroke="#6c6864" stroke-width="9"/>
+<text x="550" y="3755" font-size="100" fill="#333333" text-anchor="middle" dominant-baseline="central">UP</text>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -100,-100 L 4100,-100 L 4100,100 L 2250,100 L 2250,1350 L 2150,1350 L 2150,100 L 100,100 L 100,6900 L 600,6900 L 600,7100 L -100,7100 Z M 1600,6900 L 2150,6900 L 2150,5750 L 2250,5750 L 2250,6900 L 7900,6900 L 7900,5900 L 8100,5900 L 8100,7100 L 1600,7100 Z M 2150,2250 L 2250,2250 L 2250,3550 L 7900,3550 L 7900,100 L 5900,100 L 5900,-100 L 8100,-100 L 8100,4700 L 7900,4700 L 7900,3650 L 2250,3650 L 2250,4850 L 2150,4850 Z" fill="url(#poche)" fill-rule="nonzero"/>

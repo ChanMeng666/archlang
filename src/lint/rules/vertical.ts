@@ -98,7 +98,7 @@ export const shaftFootprintMismatch: LintRule = {
       if (v.kind !== below.run.kind) why = `it is drawn as ${word(below.run.kind)} there and ${word(v.kind)} here`;
       else if (lift) {
         if (a.x !== b.x || a.y !== b.y || a.w !== b.w || a.h !== b.h)
-          why = `a lift car stands in one plumb shaft, and the footprints overlap by ${pct(share)} of the smaller`;
+          why = "a lift car stands in one plumb shaft, and this car is not drawn in the footprint of the one below";
       } else if (runAxis(v) !== runAxis(below.run))
         why = "the flight runs across the page on one storey and up it on the other";
       else if (share < SHAFT_MIN_OVERLAP_SHARE)

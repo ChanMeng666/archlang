@@ -1491,14 +1491,14 @@
  * and bedroom 2's door opened 50 mm from the flight's side, and its head arrived 550 mm from the
  * north wall: the flight, now 800 mm wide, is centred in the hall and starts 1100 mm off the
  * wall), `hillside-villa` (the ensuite door swung over the top of the flight, audit X5, and the
- * linen and ensuite doors and the entry–dining opening stood beside it: the stair now rises in the
- * living room to the gallery, whose void moved 300 mm south off its head; bedroom 2's door moved
- * 1300 mm west, off the bed it opened onto, which the old route through the ensuite had hidden),
- * `library` (the foot stood 850 mm from the south wall where a public stair 1400 mm wide needs
- * 1400: moved 1000 mm north) and `two-storey` (the void sat on the stair head, audit X9, and the
- * 2600 mm run could not climb 2700 mm at 220/220, audit X11: the run is 2650 and the void is now
- * the stairwell). Each moves its SVG and `describe()`; `lint()` loses the new warnings and, on
- * `hillside-villa`, trades the walk to bedroom 2 for the walk to the linen cupboard and the route
+ * linen and ensuite doors and the entry–dining opening stood beside it: the stair, now 2900 × 800 mm,
+ * rises in the living room to the gallery, the rug 100 mm shorter so it stops at the flight, the gallery's opening onto
+ * the landing narrowed to 1600 mm; bedroom 2's door moved 1300 mm west, off the bed it opened onto,
+ * which the old route through the ensuite had hidden), `library` (the foot stood 850 mm from the
+ * south wall where a public stair 1400 mm wide needs 1400: moved 1000 mm north) and `two-storey`
+ * (the void sat on the stair head, audit X9, and the 2600 mm run could not climb 2700 mm at 220/220,
+ * audit X11: the run is 2900 and the void is now the stairwell). Each moves its SVG and
+ * `describe()`; `lint()` loses the new warnings and, on `hillside-villa`, trades the walk to bedroom 2 for the walk to the linen cupboard and the route
  * from bedroom 2 to its ensuite (each a 700 mm door, 640 clear). Rows that moved only because their
  * plan gained one of the new warnings and was not edited: `test/fixtures/zones-levels` (no floor
  * beyond its stair), `test/recovery-corpus/two-storey` (the old example's two defects) and the
@@ -1522,7 +1522,7 @@ export const BASELINE: [string, string][] = [
   ["garden-house", "531f3bd917bee17fce905b1aaf34faedfa3b7490ddf609fedaba5a28b7647ba2"], // re-measured, see header
   ["garden-loft", "ba5d2d16920bddaac969c39b495cf7d3ad44583f3e129491ba8180f90f27e82e"],
   ["hexagon-pavilion", "c9feff36e36022353398608901b0b508a737c27eca89e4e2c2becd3a5723e0b5"],
-  ["hillside-villa", "d4fa3edcc0bd95e088faa3a540a4d83336f3eb9a6031eed958cda3c2140a7c92"], // re-measured, see header
+  ["hillside-villa", "8596eb1bf4d87abaae57203d765769f7f0253186d91a2fe3d9ea917224d87a01"], // re-measured, see header
   ["imports", "20480639c190072f8baa98be8a499191037409ecfc248f448d32e45c23ea1433"],
   ["laneway-house", "ceaa65cd4852d5fe9c9b057ef08be372e220a7664c299b551712e78e8d8df62b"],
   ["library", "3cd4ee34d089ab9b93289c7d4908bbd1e10b0676af70c29c473653d6d6113b04"],
@@ -1542,7 +1542,7 @@ export const BASELINE: [string, string][] = [
   ["townhouse", "4375ced13bad62bd2cb034b4b41f5d91241c46e3551d37217cd3ae4691987c65"], // re-measured, see header
   ["transit-hall", "03778b2ba38d06102ff51a716a9a5e4dc68ca9d089786c0a8ac9c97bac49be9c"],
   ["two-bed", "2c6dda4d4b66b1983e1c8cdb6cea57a51c4d872e4222b4d57a4b7eb9835ef2a8"], // PS3.6 source rewrite, see header
-  ["two-storey", "e49533be3f2d514eb8ca68ea63f7710b1ee03abf6b0e3f150d0b246a10afb074"], // re-measured, see header
+  ["two-storey", "e43fb07297abf3246baba2a7ead419fe7f22a3d37fd088afb6e64994b1777aca"], // re-measured, see header
 ];
 
 /**
@@ -1570,7 +1570,7 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["garden-house", "f4411df722509a3ac255f0920ea0f30695d688512eefa3e34109034d24f0f07b"], // re-measured, see header
   ["garden-loft", "d37d7f678f65473d7f0b023a1cb6caca96fc92da9db5f412e66db2726071c5e8"],
   ["hexagon-pavilion", "435b9fb0cc07194798fde23c5528f869a07ad02ee3842b4d4d87775a76b6f36a"],
-  ["hillside-villa", "67cb0f2ce19a2b6934e7f1d9c486060dbcd712c77d451aeed05464b7e161cd5a"], // re-measured, see header
+  ["hillside-villa", "f291ea422d7d4b1cedbdce98ce39ab17d49219185ef296535f198d3a533c9066"], // re-measured, see header
   ["imports", "85b77c3fa1a9961a884cf5966ae5f87af436edf6adf3c16f2e426f72ed2b1b2f"],
   ["laneway-house", "4f136c1c2c408940beb64a58cbc07e998a9d454b56ddea20ac7b81b04335bab0"],
   ["library", "753871c5e080683d8b363ccad99a078ba6c68e8d5b017068fa2a8cf92dde501a"],
@@ -1590,7 +1590,7 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["townhouse", "3577f336430ef832625c19b90bb79771177e65b298be10b6cde18cec1fdb9c60"], // re-measured, see header
   ["transit-hall", "f731284c49b98bf43eae4e91c36dccf26b2e728a85803386bcd29268cd2e8ee6"],
   ["two-bed", "df3c47a0219448b3735540031ddd562e1f811f50430fa30d02350d40efc3e6cf"], // PS3.6 source rewrite, see header
-  ["two-storey", "9c2db15b2c19cd067b11fdbc052dfaebcb33939f41b64715f884508ef97214ea"], // re-measured, see header
+  ["two-storey", "aa05d758f3a7379faab5bdb63b39926f52b63610f8541fd44abd25729812cf97"], // re-measured, see header
 ];
 
 /**

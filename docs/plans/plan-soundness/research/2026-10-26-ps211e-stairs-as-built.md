@@ -67,6 +67,29 @@ void's id. No rule offers a machine fix: every remedy moves a stair or a door, a
 - **The oracle's building context.** `test/d4-oracle.ts` retyped `buildingContexts` while it was
   private, and the copy had gone stale (`storeyCount`); it now calls the exported function.
 
+## Red-team round 1 (same PR)
+
+- `minimumRun` declines bad ruleset overrides (a riser limit not finite or not above zero, a going
+  negative or not finite, a pitch cap not finite or not above zero, a run past `MODEL_RANGE_MM`):
+  closed form, one `ceil` and one correction, no loop; no `Infinity` or `NaN` reaches a message.
+- The landing measure ran per door × stair (300 doors, stairs and walls: 69 s). It is now measured once
+  per storey and shared by the rules (memoised on the lint context), and the work is a count,
+  `MAX_STAIR_WORK` (2,000,000), charged before it runs; past it the storey files `stair-budget`.
+  Stress plan (N doors, stairs and walls on one storey, `lint()` ms, one run of the three trees back to
+  back on this machine): the reviewed head N 100 969, N 300 15744; after N 100 223, N 300 1471;
+  `origin/main` (no stair rules) N 100 148, N 300 1407. (An earlier, busier run measured the reviewed
+  head at 3102 and 69168.)
+- Hints name a derived wall by its rooms (`wallRef`), a door without an authored id by the rooms it
+  joins, and an `open between` opening by its clause, never by an id the author cannot write.
+- The head a flight from below arrives at is read on the LOWER flight's footprint (it was read on this
+  storey's, which differs when the runs are drawn apart); a three-storey test pins it.
+- A curved wall near a landing: the landing is not judged and the `curved-landing-wall` skip is filed.
+- Every stair twin is clean of its case's code under every profile (`stair-too-steep.clean`'s run is
+  3900 mm, past the IRC's 3810); the twin check in `test/defect-corpus.test.ts` now runs under every
+  profile, with a ledger of three clearance twins a stricter profile is right to warn. The cases
+  `stair-too-steep` and `swing-at-stair-foot` carry one stair defect each (`swing-over-stair` keeps
+  X5's door beside the well, which is the same door).
+
 ## What `lint()` cannot read
 
 Nothing in these cards needed a fact `lint()` cannot read by law. Two facts it does not have, so two
@@ -85,12 +108,13 @@ compiler against new: no SVG, `describe()` or `compile().diagnostics` moved, and
 | Plan | Codes | Verdict |
 |---|---|---|
 | `examples/garden-house` | L1 `W_STAIR_SIDE_ENTRY` (study door 50 mm from the flight), L2 `W_STAIR_NO_LANDING` (head 550 mm from the north wall), L2 `W_STAIR_SIDE_ENTRY` (bedroom 2's door 50 mm from the well) | true; fixed: the flight is 800 mm wide, centred in the hall (750 mm each side) and starts 1100 mm off the north wall |
-| `examples/hillside-villa` | L2 `W_SWING_OVER_STAIR` (audit X5), L2 `W_STAIR_SIDE_ENTRY` ×2 (linen and ensuite doors 50 mm from the well), L1 `W_STAIR_SIDE_ENTRY` (the entry–dining opening 400 mm from the flight) | true; fixed: the stair rises in the living room (x 1400–3600, y 4300–5300) to the gallery; the gallery void moved 300 mm south off the head; bedroom 2's door moved 1300 mm west, off the bed 450 mm in front of it, which the old route through the ensuite had hidden. `lint()` now says eight warnings: the walk to bedroom 2 is gone, the walk to the linen cupboard and the route from bedroom 2 to its ensuite are new (each a 700 mm door) |
+| `examples/hillside-villa` | L2 `W_SWING_OVER_STAIR` (audit X5), L2 `W_STAIR_SIDE_ENTRY` ×2 (linen and ensuite doors 50 mm from the well), L1 `W_STAIR_SIDE_ENTRY` (the entry–dining opening 400 mm from the flight) | true; fixed: the stair, now 2900 × 800 mm (a run that climbs the default 3000 mm storey at 220/220, audit X7), rises in the living room (x 1000–3900, y 4300–5100) to the gallery; the rug 100 mm shorter so it stops at the flight; the gallery's opening onto the landing narrowed to 1600 mm so a doorway's width of it stands past the stairwell's end; bedroom 2's door moved 1300 mm west, off the bed 450 mm in front of it, which the old route through the ensuite had hidden. `lint()` now says eight warnings: the walk to bedroom 2 is gone, the walk to the linen cupboard and the route from bedroom 2 to its ensuite are new (each a 700 mm door) |
 | `examples/library` | `W_STAIR_NO_LANDING` (foot 850 mm from the south wall; a public stair 1400 mm wide asks 1400) | true; fixed: moved 1000 mm north |
-| `examples/two-storey` | L1 `W_STAIR_TOO_STEEP` (2600 run, 2700 storey, audit X11), L2 `W_STAIR_HEAD_VOID` (audit X9) | true; fixed: run 2650, the void is the stairwell |
+| `examples/two-storey` | L1 `W_STAIR_TOO_STEEP` (2600 run, 2700 storey, audit X11), L2 `W_STAIR_HEAD_VOID` (audit X9) | true; fixed: run 2900 (the bare 220/220 minimum, 2640, was about 43°), its head 900 mm off the north wall; the void is the stairwell |
 | `docs/gallery/two-storey` | L1 `W_STAIR_NO_LANDING` (head on the west wall) | true; fixed: moved 1000 mm east, 3500 run |
 | `examples/townhouse` | `W_STAIR_SIDE_ENTRY` ×3 under `accessibility-advisory` only (doors 850 mm from the flight, under its 900) | true under that profile; no default change |
-| `examples/two-storey` (fixed) | `W_STAIR_TOO_STEEP` under `cn-`, `uk-`, `us-` | true under each (200 mm riser; 42°; IRC); listed in `test/lint-profiles-residential.test.ts` |
+| `examples/two-storey` (fixed) | `W_STAIR_TOO_STEEP` under `us-` only (IRC 7¾ in / 10 in ask 3302 mm) | true under that profile; listed in `test/lint-profiles-residential.test.ts` |
+| `examples/garden-house`, `examples/hillside-villa` (fixed) | `W_STAIR_SIDE_ENTRY` under `accessibility-advisory` only: 4 on garden-house (doors 750 mm from the 800 mm flight), 1 on hillside-villa (the gallery opening, 750 mm of it past the well, under the profile's 850 mm door) | true under that profile's 900 mm path and 850 mm door; no default change |
 | first-contact townhouses (six) | see the audit table below | true |
 | `test/fixtures/zones-levels` | `W_STAIR_NO_LANDING` ×2 (no room beyond either end) | true of the fixture; not edited |
 | `test/keep-corpus/{widen-before,widen-after}` | `W_STAIR_NO_LANDING` (head 200 mm from the west wall) | true; fixed: the stair moved to `(1000,800) size 2000x900`, a line of the same bytes, so no room, partition `p`, keep residual or span moved; the drill's output is as before (design §9 note, `repro/README.md`) |
@@ -134,10 +158,15 @@ stair-safety twin now lints clean under the default ruleset.
 | WT1 | walls-first L0 | `W_STAIR_NO_LANDING` (foot 0 mm, on the partition's centreline) |
 | WT2 | walls-first L1 | `W_STAIR_NO_LANDING` (head 100) |
 | X5, X9, X11 | the showcase examples | `W_SWING_OVER_STAIR`, `W_STAIR_HEAD_VOID`, `W_STAIR_TOO_STEEP`; fixed |
-| X7, X15 | hillside-villa, townhouse | not judged: neither authors a height (X15 passes 220/220 at the default 3000 anyway) |
+| X7, X15 | hillside-villa, townhouse | not judged: neither authors a height; hillside-villa's run was lengthened to 2900 anyway, and X15 passes 220/220 at the default 3000 |
 
-Also caught, not in a row: the 2026-10-24, 2026-10-25 and walls-first townhouses' runs are too short
-for their 2800 mm storeys (`W_STAIR_TOO_STEEP`).
+Also caught, not in a row: the 2026-10-24 and 2026-10-25 townhouses' runs are too short for their
+2800 mm storeys under the default (`W_STAIR_TOO_STEEP`); the walls-first townhouse's is too short only
+under the `cn-` and `us-` profiles.
+
+**"Appended" holds per storey.** The six codes come after every older code within a storey's lint
+output; on a multi-storey plan the storeys are concatenated, so a new L1 code precedes an older L2
+code (13 corpus files). No existing diagnostic moved within its storey.
 
 ## Defect corpus
 
