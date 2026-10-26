@@ -344,7 +344,8 @@ jobs:
   # ---------------------------------------------------------------------------
   # One writer for the pinned issue. Folding "advisories found" and "a job failed"
   # into a single always()-job keeps both out of each other's way: two jobs racing to
-  # create-or-update the same issue can create it twice.
+  # create-or-update the same issue can create it twice. A fully green night comments
+  # on the open issue and closes it.
   # ---------------------------------------------------------------------------
   report:
     name: Report
@@ -376,13 +377,37 @@ jobs:
             // show in the body when the issue is written anyway.
             const engines = needs['cross-engine']?.outputs?.status || 'unknown';
             const diverged = engines === 'diverged';
+            const run = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
 
+            // A fully green night (no failed job, no advisory, no divergence) closes the open
+            // issue, so it never outlives the problem it reported. The next bad night opens a
+            // fresh one through the path below, which this branch never reaches.
             if (failed.length === 0 && !advisories && !diverged) {
-              core.info('nightly: all jobs green and no advisories — nothing to report');
+              const open = (
+                await github.paginate(github.rest.issues.listForRepo, { owner, repo, state: 'open', per_page: 100 })
+              ).find((i) => !i.pull_request && (i.body ?? '').includes(marker));
+              if (!open) {
+                core.info('nightly: all jobs green and no advisories — nothing to report');
+                return;
+              }
+              const date = new Date().toISOString().slice(0, 10);
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: open.number,
+                body: `All nightly jobs green on ${date} (run ${run}).`,
+              });
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: open.number,
+                state: 'closed',
+                state_reason: 'completed',
+              });
+              core.info(`nightly: all jobs green — closed #${open.number}`);
               return;
             }
 
-            const run = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
             const body = [
               marker,
               `_Updated by the [nightly workflow](${run}) — ${new Date().toISOString()}._`,
