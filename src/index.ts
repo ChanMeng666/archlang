@@ -163,6 +163,8 @@ export type {
   SyntaxFacts,
   SyntaxRoom,
   DependsFacts,
+  KeepFact,
+  KeepRedundancy,
   DependsEntry,
   DerivedWallDepends,
   DerivedWallRow,
@@ -264,10 +266,12 @@ export type {
   ImpactChange,
   ImpactDiagnostic,
   ImpactHeld,
+  ImpactKeeps,
   ImpactLet,
   ImpactOptions,
   ImpactReport,
   ImpactStep,
+  KeepImpact,
   LetOverride,
 } from "./impact.js";
 // Architectural lint: habitability rules as `W_*` diagnostics — every room

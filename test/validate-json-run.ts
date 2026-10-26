@@ -25,6 +25,14 @@ export function validateJsonFiles(): string[] {
   return [...examples, ...walk("test/defect-corpus")];
 }
 
+/**
+ * `stdout` without the `summary` key `lint`/`validate --json` open with (PS7.6), byte for byte.
+ * The digest laws that hash `validate --json` (`keep-byte-identity`, `keep-digests`) were pinned
+ * before the key existed: they measure everything BUT the key, so no pin is re-blessed and the
+ * summary is covered where it belongs, by `./lint-summary.test.ts`.
+ */
+export const withoutSummary = (stdout: string): string => stdout.replace(/^\{\n {2}"summary": "[^"\n]*",\n/, "{\n");
+
 /** Run `validate <argv…>` in-process; return its exit code and everything it wrote to stdout. */
 export function runValidate(argv: string[]): { exit: number; stdout: string } {
   let stdout = "";

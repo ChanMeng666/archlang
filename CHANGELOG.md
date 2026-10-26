@@ -79,8 +79,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (483 UTF-16 units, saying where a keep may stand), paid for by four drawing-only passages the
   language reference keeps (the `door` line's dashed/solid sentence, its garage sentence
   shortened, the `outdoor` hatch prose, the window-sill citation): `spec.llm.md` 29,729 → 29,815
-  units. Plan JSON drops keeps. The
-  `--facts depends` keep rows and `arch impact`'s keeps section follow in PS4.3b.
+  units. Plan JSON drops keeps (and, as the next entry says, names how many).
+- `arch impact` reads keeps, and `describe --facts depends` states them (ADR 0033; plan cards
+  PS4.3b, PS4.11). `impact` adds a `keeps` section after `diagnostics` when either side declares a
+  keep: each keep is matched across the versions by storey, text and occurrence (so a `for` loop's
+  repeats pair by order) and listed under `broke`, `held` (a target moved, or its residual did,
+  and it still holds), `healed`, `added` or `removed`, with its residual before and after, where
+  the residual stands, which of its targets moved or resized on its own storey, its `occurrence`
+  and its span; a keep whose grade an edit changed carries `grade: { before, after }` and counts
+  as `broke` or `healed` when either side is a broken hard keep; the rest count in
+  `unchanged_count`, and the human report gains `Keeps broke`/`held`/`healed` (and `added`/
+  `removed` when non-empty). A broken hard keep is reported there once: `W_KEEP_VIOLATED` no longer
+  also counts as a broken diagnostic when both sides resolve. `describe --facts depends` adds
+  `depends.keeps[]` (all keeps on the top level, a storey's own on its `levels[]` entry): the
+  targets, `constrains` (the names the targets' positions, the keep's value and the conditions
+  around both read, through `let` chains; `locked` when none), `equations` or `bounds`, and
+  `implied`, `redundant` (`redundant_by_weaker` when a weaker keep implies it) and `conflicts`
+  decided from the declarations alone by a weighted union-find over relational rooms and walls
+  written on a datum with `id=`, entered only where the relation survives grid snapping. A
+  keep's residual is now the difference of the values it compares rounded once on the 0.001 mm
+  lattice, not the difference of values rounded one by one (ADR 0033 decision 2, amended); no
+  corpus residual moves. `compile -f json` prints a note on
+  stderr naming how many keeps Plan JSON left out, and `planToJson()` returns the count as
+  `droppedKeeps`. The `impact` and `validate` CLI help name their `keeps` keys; the spec's `keep`
+  line says advisory keeps are reported by `impact` too (29,815 → 29,822 units) and the SKILL
+  sentence describes the real report. A plan with no keep is unchanged byte for byte in every
+  surface (the 269-file baseline).
 
 - Brief-bound dimensions (plan card PS4.4). `describe().totals` gains the plan's **gross internal
   area**, `gross_internal_area_m2`: the floor inside the inner faces of the storey's `exterior`
@@ -465,6 +489,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   by grepping `examples/` and the test corpus). `containing` is a selector only when a dotted
   `<room>.<edge>` follows it, which never parsed before, so a variable named `containing` reads
   as it did.
+
+- `lint`, `validate` and `score --taste` (on a plan that does not compile) open with a one-line
+  summary (plan card PS7.6). `--json` gains `summary` as its first key
+  (`"7 warnings in 2 codes: W_SWING_OBSTRUCTED ×4, W_ANNOTATION_OVERLAP ×3"`, `"no warnings"` when
+  clean, errors first as `2 errors, 3 warnings in 4 codes: …`; codes by descending count, then
+  alphabetically). The head carries the number of distinct codes, so output cut short with
+  `head -c 200` still names the count, how many distinct codes there are and the leading ones; every
+  other key keeps its order and bytes. `validate --json` with a failing `--graph` or `--intent` and no
+  diagnostics says `no diagnostics; validate failed on a later tier (see next)`, never "no warnings".
+  The text report prints the same line first on stderr when there is anything to count (`--quiet`
+  drops it; a display filter's `(display filter: showing n of m)` note sits right under it). It is a
+  function of the whole diagnostic set, like `ok`, and lives in the CLI: `lint()`, `compile()` and
+  every diagnostic are unchanged. A consumer that matches the whole `lint --json` text, or its first
+  key, must skip `summary`.
 
 ### Fixed
 

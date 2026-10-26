@@ -45,6 +45,7 @@ import type {
   NextItem,
 } from "../index.js";
 import { keepResultsOf } from "../ir.js";
+import { diagnosticsSummary, validateSummary } from "./summary.js";
 import { type KeepResult, keepValidateRow } from "../keep.js";
 // Internal (not part of the public surface): parse → link → resolve without
 // rendering — validate/lint need only the diagnostics, never the SVG.
@@ -484,9 +485,14 @@ function report(
 
   const active = filterActive(filter);
   const shown = active ? applyDiagFilter(diags, filter) : diags;
+  // PS7.6: the count and the codes, of the whole set like `ok`. A function of the diagnostics
+  // alone, so `validate`'s `next` stays purely additive (test/cli-validate-next.test.ts).
+  const summary = diagnosticsSummary(diags);
 
   if (args.json) {
     emitJson({
+      // First, so a reader who cuts the output short still sees the count and the codes.
+      summary,
       ok,
       strict: args.strict ?? false,
       ...(active ? { filtered: true, total_diagnostics: diags.length } : {}),
@@ -498,6 +504,12 @@ function report(
       ...(next !== undefined ? { next } : {}),
     });
   } else {
+    // PS7.6: the first line of the report, only when there is something to count. The filter
+    // note sits under it too, so the line cannot be read as describing the shown set.
+    if (diags.length && !args.quiet) {
+      const shownNote = active ? `  (display filter: showing ${shown.length} of ${diags.length} diagnostics)\n` : "";
+      process.stderr.write(`${summary}\n${shownNote}\n`);
+    }
     emitDiagnosticsHuman(source, shown, args.quiet);
     if (!args.quiet) {
       if (active) process.stderr.write(`  (display filter: showing ${shown.length} of ${diags.length} diagnostics)\n`);
@@ -709,8 +721,11 @@ function reportWithChecks(
     ...(graph ? { graph } : {}),
   });
 
+  const summary = validateSummary(diags, ok);
+
   if (args.json) {
     const o: Record<string, unknown> = {
+      summary,
       ok,
       strict: args.strict ?? false,
       ...(active ? { filtered: true, total_diagnostics: diags.length } : {}),
@@ -741,6 +756,10 @@ function reportWithChecks(
     o.next = next;
     emitJson(o);
   } else {
+    if (diags.length && !args.quiet) {
+      const shownNote = active ? `  (display filter: showing ${shown.length} of ${diags.length} diagnostics)\n` : "";
+      process.stderr.write(`${summary}\n${shownNote}\n`);
+    }
     emitDiagnosticsHuman(source, shown, args.quiet);
     if (!args.quiet) {
       if (active) process.stderr.write(`  (display filter: showing ${shown.length} of ${diags.length} diagnostics)\n`);

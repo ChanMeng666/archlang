@@ -9,7 +9,9 @@ import { readdirSync, readFileSync } from "node:fs";
 import type { KeepNode, Statement } from "../src/ast.js";
 import { compile, describe, lint } from "../src/index.js";
 import { parse } from "../src/parser.js";
-import { runValidate } from "./validate-json-run.js";
+import { applyLetOverride, impact } from "../src/index.js";
+import { firstLetBump } from "./keep-weak-law.js";
+import { runValidate, withoutSummary } from "./validate-json-run.js";
 
 export const KEEP_CORPUS_DIR = "test/keep-corpus";
 
@@ -94,7 +96,24 @@ export function k3DigestOf(name: string, src: string): string {
   const payload = [
     JSON.stringify(describe(src).keeps ?? null),
     JSON.stringify(compile(src, { noCache: true }).diagnostics),
-    String(v.exit) + String.fromCharCode(10) + v.stdout,
+    String(v.exit) + String.fromCharCode(10) + withoutSummary(v.stdout),
+  ].join(" ");
+  return createHash("sha256").update(payload, "utf8").digest("hex");
+}
+
+/** K3's second table (PS4.3b): SHA-256 of one corpus plan's keep rows in the surfaces PS4.3b
+ *  added — `depends.keeps` on the top level and on every `levels[]` entry, and `impact`'s `keeps`
+ *  section against the plan itself and, when it binds a top-level numeric `let`, with that `let`
+ *  raised by 100 (the weak law's own bump, `firstLetBump`). */
+export function k3bDigestOf(src: string): string {
+  const d = describe(src, { facts: ["depends"] });
+  const bump = firstLetBump(src);
+  const set = bump !== undefined ? applyLetOverride(src, bump.split("=")[0]!, bump.split("=")[1]!) : undefined;
+  const payload = [
+    JSON.stringify(d.depends?.keeps ?? null),
+    JSON.stringify((d.levels ?? []).map((l) => l.depends?.keeps ?? null)),
+    JSON.stringify(impact(src, src).keeps ?? null),
+    JSON.stringify(set?.ok ? (impact(src, set.source).keeps ?? null) : null),
   ].join(" ");
   return createHash("sha256").update(payload, "utf8").digest("hex");
 }

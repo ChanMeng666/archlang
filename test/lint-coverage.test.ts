@@ -287,7 +287,7 @@ describe("lint coverage: the CLI appends it", () => {
     const r = cli(["lint", "examples/hillside-villa.arch", "--json"]);
     expect(r.status).toBe(0);
     const o = JSON.parse(r.stdout) as Record<string, unknown>;
-    expect(Object.keys(o)).toEqual(["ok", "strict", "diagnostics", "coverage"]);
+    expect(Object.keys(o)).toEqual(["summary", "ok", "strict", "diagnostics", "coverage"]);
     const src = example("hillside-villa.arch");
     expect(o.diagnostics).toEqual(lint(src).map((d) => diagnosticToJson(src, d)));
     expect(o.coverage).toEqual(lintCoverage(src));
@@ -299,6 +299,7 @@ describe("lint coverage: the CLI appends it", () => {
   it("--json with a display filter: coverage still follows the filter fields", () => {
     const r = cli(["lint", "examples/hillside-villa.arch", "--json", "--code", "W_PATH_TOO_NARROW"]);
     expect(Object.keys(JSON.parse(r.stdout))).toEqual([
+      "summary",
       "ok",
       "strict",
       "filtered",

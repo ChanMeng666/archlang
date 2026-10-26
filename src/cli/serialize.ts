@@ -22,6 +22,7 @@ import {
   planToJson,
 } from "../index.js";
 import type { Diagnostic, PlanJson, Scene, ViewName, World } from "../index.js";
+import { fmt3 } from "../num-format.js";
 import { type Args, type Format, EXIT, asciiCharset, baseDirOf, hasErrors, makeNodeWorld, readInput } from "./io.js";
 
 /** Pick the package manager from the environment (lockfiles / npm_config_user_agent). */
@@ -116,7 +117,16 @@ export function planJsonArtifact(
   levels: number[],
   diagnostics: Diagnostic[],
 ): Rendered {
-  const { json, pages, diagnostics: projected } = planToJson(source, { world });
+  const { json, pages, diagnostics: projected, droppedKeeps } = planToJson(source, { world });
+  // Plan JSON carries no keeps (PS4.10): say how many this export leaves out (PS4.11).
+  const notes =
+    droppedKeeps !== undefined
+      ? {
+          notes: [
+            `note: Plan JSON carries no keeps; this export leaves out the plan's ${fmt3(droppedKeeps)} keep${droppedKeeps === 1 ? "" : "s"} (the .arch source still holds ${droppedKeeps === 1 ? "it" : "them"})`,
+          ],
+        }
+      : {};
   // After a clean compile only a refused projection gets here (`E_JSON_DERIVED_IN_INSTANCE`):
   // reported with its diagnostic, never an exception.
   if (!json) {
@@ -133,14 +143,14 @@ export function planJsonArtifact(
         ...(p.name !== undefined ? { name: p.name } : {}),
         bytes: planJsonText(p.json),
       }));
-      return { pages: out, levels, diagnostics };
+      return { pages: out, levels, diagnostics, ...notes };
     }
     const want = page === "first" ? pages[0]! : pages.find((p) => p.level === page.level);
     if (!want) return { diagnostics, levels, badLevel: true };
-    return { bytes: planJsonText(want.json), levels, diagnostics };
+    return { bytes: planJsonText(want.json), levels, diagnostics, ...notes };
   }
   if (typeof page === "object") return { diagnostics, levels, badLevel: true };
-  return { bytes: planJsonText(json), levels, diagnostics };
+  return { bytes: planJsonText(json), levels, diagnostics, ...notes };
 }
 
 /** One serialized page of a multi-storey plan (`level <n> { … }`). */
@@ -170,6 +180,8 @@ export interface Rendered {
   /** Serialize/dependency error message (compile errors are in `diagnostics`). */
   error?: string;
   errorCode?: string;
+  /** One-line notes for stderr: what the artifact left out (`-f json` drops keeps, PS4.11). */
+  notes?: string[];
 }
 
 /**
