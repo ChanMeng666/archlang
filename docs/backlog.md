@@ -44,6 +44,7 @@ is to be started until its question is answered; the entry named holds the evide
 | M.9 | Should grid snap and `fmt2` round half away from zero, so a mirror image snaps alike? It moves output. |
 | M.14 | Should a roof's acute corner be bevelled or miter-limited, and at what limit? |
 | D.7 | One hairline for the whole sheet? The title block's rules would move in every example. |
+| CI throughput | Which of `docs/plans/ci-throughput.md`'s options (repo auto-merge and branch protection, a concurrency group, path-filtered legs, coverage off the PR path, a merge queue, changelog fragments) to take? Repo settings are the owner's. |
 
 ---
 
@@ -1613,6 +1614,17 @@ and `examples/studio.arch` at 9648 x 10214, and some image readers refuse an ima
 on a side. `-s <n>` lowers it (`studio.arch` at `-s 0.25` is 2412 x 2553). Re-run:
 `node dist/cli.js compile examples/museum.arch -f png -o out.png`, then read the width and
 height from the PNG header (bytes 16-23).
+
+### M.24 · An unseeded property test flakes about once in 200 runs — `todo`
+
+`test/reroll-findrun-oracle.test.ts` › "reroll() — identical suggestions …" › "generated sources"
+runs 60 fast-check cases with no `seed` and then asserts `offered > 0`. Seeds 124, 461 and 524 of
+640 tried produce no suggestion at all (on `main` too), so the run goes red about 0.5 % of the time
+with no defect; it went red once on the Windows leg and passed on re-run. Fix: pin a `seed` (as
+`test/diff-laws.test.ts` does), or move the `> 0` assertion to a fixed sample that is known to
+offer one, keeping the unseeded equality property. Then grep `test/` for other `fc.assert` blocks
+followed by a count assertion with no `seed` (the same file's `numRuns: 300`/`5000` blocks have the
+shape with far more runs). Verify: the chosen seed reproduces a non-zero count; `check` green.
 
 ### M.19 · Quadratic passes the two budgets do not see — closed (two residuals kept by decision)
 

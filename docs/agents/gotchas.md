@@ -6,8 +6,10 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 ## Core
 
 - **Door `hinge left/right` is relative to the wall's traversal direction**, not the screen, so it
-  flips with the order of a wall's points. The leaf's sector is `doorSwing` in `geometry.ts`,
-  shared by `door.render()` and `W_SWING_OBSTRUCTED` — keep both on that one helper.
+  flips with the order of a wall's points. Each leaf's sector comes from `doorLeaves` in
+  `geometry.ts` (a `double` door's two, built with `doorSwing`'s geometry), shared by
+  `door.render()` and every swing measure — keep them on that one helper. `doorSwing` alone
+  returns null for a `double`, so a new caller of it skips double doors silently.
 - **`E_DRAWING_LIMIT` exists only in `compile()`, and only when no other error is present**
   (`src/pipeline.ts`). `describe()`/`lint()` never report it, and a catalogue fence wrapped as a
   fragment shows only `E_PARSE`. `toScene(resolve(ast).ir)` bypasses the drawing budget; `compile()`
@@ -27,6 +29,10 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   symbol's handedness); drop what cannot (a local `anchor` corner).
 - **Room-label classification goes through `src/vocabulary.ts`**; the corpus classification is pinned
   by `test/vocabulary-equivalence.test.ts`. A red pin means fix the vocabulary, never regenerate it.
+- **Every CLI exit goes through `exitFlushed()` (`src/cli.ts`, reached via `finish()`).** A bare
+  `process.exit` after a large stdout write truncates the output on a pipe (Node 22 on Linux cut
+  `context --json` at ~145 KB). `test/cli-flush.test.ts` discriminates only on Linux: Windows pipes
+  drain in time, so a green local Windows run proves nothing about a new exit path.
 - **The PNG backend is Node-only and async**; keep `node:*` imports lazy so the module stays
   browser-safe.
 - **CJK text in PDF/PNG**: the face from `@chanmeng666/archlang-font-cjk` is registered only when a
@@ -66,6 +72,20 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   (`examples/*.svg` after any rendering change) modified in the working tree. Read the diff, then
   commit them or `git checkout --` them; do not mistake them for your own edits.
 
+## PRs & CI
+
+- **A PR whose branch conflicts with `main` gets no CI run** (GitHub cannot build the merge ref).
+  A PR sitting with no checks is in conflict: resolve first, then CI starts.
+- **`gh pr checks <n> --watch --fail-fast` has exited early on the informational Benchmark job.**
+  Watch without `--fail-fast`, then read every conclusion with
+  `gh api repos/<owner>/<repo>/commits/<sha>/check-runs`.
+- **`gh pr merge --match-head-commit` needs the full 40-character SHA**; a short one fails the
+  merge, and a branch delete `;`-chained after it then closes the PR unmerged. Delete the branch
+  only once `gh pr view <n> --json state` says `MERGED` (procedure: `commands.md` § Merging a PR).
+- **Parallel PRs conflict on the records** (`CHANGELOG.md` `[Unreleased]`, a programme's
+  `handoff.md` and `cards.md`) after nearly every merge. Resolve by keeping both entries; counts in
+  those records are recounted only at a stage end, never per PR.
+
 ## Docs & prose
 
 - **A quoted dimension must name its convention or carry a tilde.** A plan with wall thickness has
@@ -100,6 +120,12 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 - **`npx vitest run --maxWorkers=N` errors in this repo unless `--minWorkers=1` is also given.**
 - **Under heavy machine load the visual, sheet and roof tests can time out.** Rerun the file alone
   before suspecting the code.
+- **`test/reroll-findrun-oracle.test.ts` › "generated sources" is an unseeded property flake**: it
+  asserts `> 0` suggestions over 60 fast-check runs with no `seed`, and about 0.5 % of runs (seeds
+  124, 461, 524 of 640) offer none. A one-off red there is legitimately re-run; the fix is owed
+  (seed it or assert across runs; `docs/backlog.md`).
+- **`2>nul` in the Bash tool on Windows creates files** named `nul`, `nul.L0`, `nul.L1` in the
+  working tree (it is cmd syntax). Write `2>/dev/null`.
 
 - **(Typecheck) A file's compiler options come from the program compiling it.** A root test that
   imports a workspace module pulls it into the root program (`noUncheckedIndexedAccess` on), and
@@ -142,7 +168,10 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   `git worktree remove --force` or any recursive delete, or the delete follows them into the primary.
 - **A clean auto-merge of a moved function another branch modified is not evidence.** Taking one
   side can silently revert the other's fix with a green suite. Diff the moved body against the newer
-  version and run both branches' fixtures together.
+  version and run both branches' fixtures together. The same holds for a CALLER: a PR's new rule
+  called `doorSwing()` while a parallel PR made it return null for `door … double`; the merge was
+  clean and the rule went silent on double doors. After merging `main` into a PR, red-team the
+  merged head, and grep every caller of a function the other branch changed.
 - **(MCP registry) The `io.github.ChanMeng666/*` namespace is case-sensitive and identity-checked**
   against the npm package's `mcpName`, and the server `description` is capped at 100 chars.
 - **(Eval) Reasoning models spend thinking tokens out of `max_completion_tokens`.** An implausibly low

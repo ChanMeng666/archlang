@@ -61,6 +61,8 @@ source (.arch)
   `drafting`, and every `codes` it may emit); `lint/rules/index.ts` the ordered rule list (order is
   contract); `lint/coverage.ts` which families ran or were skipped and why (`ctx.skip`), beside the
   diagnostics and never inside them
+- `lint/rules/stairs.ts` stair safety: a swing over a flight, a missing landing, a side entry, a
+  void where a flight arrives, a flight too steep for its storey (read through `doorLeaves`)
 - `lint/rules/clearances.ts` WC side clearance and a tall unit in front of a window;
   `lint/rules/footprint.ts` `W_FOOTPRINT_TRANSPOSED`; `lint/clearance-measure.ts` the shape measures
   both read, shared with the placement check `lint/fixture-paste.ts` quotes positions through
@@ -69,14 +71,21 @@ source (.arch)
   same sweep; `opening-junctions.ts` where other walls meet a host wall, shared by
   `W_OPENING_AT_JUNCTION` and `E_OPENING_NIB`
 - `impact.ts` `impact(before, after)`: what changed, what stayed and what broke between two sources,
-  over one pipeline; `analyze/depends.ts` `describe --facts depends`, what each element derives from
+  over one pipeline; `analyze/depends.ts` `describe --facts depends`, what each element derives from;
+  `analyze/contacts.ts` which room edge a fixed-coordinate wall or piece lies on (lattice-exact,
+  never a bbox), so `impact` can report it `held` while that edge moved
+- `keep.ts` `keep` invariants (ADR 0033): expanded on the step meter, measured once after the storey
+  resolves, results in a side table beside the resolved plan; reads, never writes or solves
+- `stages.ts` the authoring ladder (brief → rooms → walls → openings → fixtures → drafting): each
+  code's stage (`LintRule.stage`, `codeStage`), read by `validate --stage`
 - `analyze/dwelling.ts` whether the plan reads as a dwelling, the gate of the home-only lint arms
 - `taste/` the taste score (ADR 0032): reads `describe()`, `lintWithCoverage()` and the IR, never
   read by them; integer permyriads; the validity cap reads each rule's `layer`
   (`taste/index.ts` the entry, `criteria.ts` the judges and their counted costs, `profiles.ts` the
   sourced numbers per profile, `advice.ts` the `A_*` rows, `report.ts` the report shape, `arith.ts` the
   exact `BigInt` arithmetic)
-- `geometry.ts` `doorSwing` (the leaf's sector) shared by `door.render()` and `W_SWING_OBSTRUCTED`;
+- `geometry.ts` `doorLeaves` (each leaf's sector, a `double` door's two; `doorSwing` is the hinged
+  leaf and returns null for a `double`) shared by `door.render()` and every swing measure;
   `sectorsObstruct` is the exact two-sector test (separating axes, no sampling)
 - `geometry/` band, intersect, joinery (the wall outline); `union.ts`/`clipper.ts` are test oracles only;
   `arc.ts` decides an arc's radius check exactly, in `BigInt` on the 0.001 mm lattice, never on
@@ -148,6 +157,9 @@ source (.arch)
   `while-fix.ts` the proven `while`→`for` rewrite `arch fix` offers, kept out of `compile()`
   itself on purpose (see its header) · `reroll.ts` the proven re-roll of a run in arithmetic
   progression into a `for` loop (`arch reroll`, `reroll()`, the LSP's `refactorActions`)
+- `cli/summary.ts` the one-line count-and-codes summary `lint`/`validate` open with (CLI only, so
+  no corpus digest moves) · `cli/review.ts` `arch preview --review`, the review sheet: consumes
+  `compile()`/`describe()`/`lint()`, feeds none of them
 - `plan-json.ts` Plan JSON · `diagnostic-json.ts` · `repair.ts` (geometric corrector) vs
   `fix-apply.ts` (`arch fix`; skips a fix carrying `file`) · `manifest.ts` the CLI contract
 - `input-limit.ts` `inputTooLarge()` / `rateLimited()`: a HOST's refusals (`E_INPUT_TOO_LARGE`,

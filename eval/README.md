@@ -227,9 +227,11 @@ The corpus is **26 briefs** (the original 22 plus a per-room-area `sized-*` slic
 dimension is no longer total-only). Every `expect` field must be **brief-derivable** — derived from
 the prompt's words, not the golden's labels or geometry (three prompts were amended so every room
 count is enumerable from the brief; see rubric §5's flag resolution). The goldens must **self-prove**:
-`eval:ci` requires every golden to pass its gating checks *and* score a perfect (or `null`) subscore
-on all four dimensions. Adding a brief = brief-derivable expectations + a golden that passes them + a
-rubric row.
+each passes its gating checks *and* scores a perfect (or `null`) subscore on all four dimensions,
+unless a ratified plan-soundness decision named in its `eval/judge-fixture.json` `notes` records it
+as failing (D25). `eval:ci` compares every golden with that fixture and exits 1 only on a regression
+against it; it never requires all to pass. Adding a brief = brief-derivable expectations + a golden
+that passes them + a rubric row.
 
 > **Contamination warning (roadmap T5 iron law).** These briefs and goldens are a **private
 > holdout**, and they stay private **forever**. **Never publish them.** The public dataset now

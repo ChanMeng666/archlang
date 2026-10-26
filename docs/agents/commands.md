@@ -16,8 +16,13 @@
 - `*:build:only` scripts skip the core rebuild; `npm run build` must have run.
 - `e2e:playground` / `e2e:docs` run Playwright against the BUILT site. `E2E_BASE_URL=<origin>` drops
   the preview server and drives that origin instead (nightly uses it with `--grep @prod`).
-- `eval:ci` is the offline authorability gate; `eval:fidelity` is a separate, judge-free corpus
-  whose numbers are never compared with it; `eval:live` is paid and owner-only.
+- `eval:ci` is the offline authorability gate: it scores the committed goldens (rewriting the
+  tracked `eval/results.md`), compares each with `eval/judge-fixture.json` and exits 1 only on a
+  regression against it (a golden recorded as passing that now fails, or a moved
+  `physicalWarnings`/`lintWarnings` count). It never requires every golden to pass; its last line
+  says how many are recorded as failing and under which decision (`fixtureVerdict`, `eval/run.ts`).
+  `eval:fidelity` is a separate, judge-free corpus whose numbers are never compared with it;
+  `eval:live` is paid and owner-only.
 - `npm run digest:engines` (ADVISORY, always exits 0, last line `status=` clean, diverged, incomplete or
   baseline-stale) measures cross-engine determinism: the built `dist/` is run in Playwright chromium,
   firefox and webkit over examples, fixtures, recovery and eval plans plus transcendental probes, and
@@ -41,15 +46,32 @@
 
 ## CI
 
-`ci.yml` (push to `main` + PRs), all gating except `bench`:
+`ci.yml` (push to `main` + PRs), all gating except `bench`. No `concurrency` group and no path
+filters; `main` has no branch protection, so "gating" means the merge procedure below waits for it.
+Minutes measured 2026-10-26, run for 5b872984 (`gh run view 40329078071`):
 
-| Job | Runs |
-|---|---|
-| `build` (Node 18/20/22) | typecheck, `lint:ci`, `check:drift`, tests (coverage on 22, report-only), `eval:ci` |
-| `builds` | `build`, `typecheck:all`, all four workspace builds, MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring` |
-| `windows` | tests + `check:drift` at the runner's default line endings |
-| `e2e-playground`, `e2e-docs` | Playwright against the built sites |
-| `bench` | informational per-stage timings in the job summary (+ a PR comment on same-repo PRs); never gates |
+| Job (check name) | Runs | Min |
+|---|---|---|
+| `build` (Node 18, Node 20) | typecheck, `lint:ci`, `check:drift`, `npm test`, `eval:ci` | 20.5, 15.3 |
+| `build` (Node 22) | the same with `test:coverage` in place of `npm test` (report-only), plus the coverage summary, the zero-coverage advisory and the summary artifact: the only coverage in CI, and the long pole (its test step alone 42.5) | 43.3 |
+| `builds` (Workspace builds) | `build`, `typecheck:all`, all four workspace builds, MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring` (each only here) | 2.1 |
+| `windows` | `npm test` + `check:drift` at the runner's default line endings (no `eval:ci`) | 18.7 |
+| `e2e-playground`, `e2e-docs` | Playwright against the built sites | 11.4, 22.1 |
+| `bench` | informational per-stage timings in the job summary (+ a PR comment on same-repo PRs); never gates | 1.0 |
+
+The E2E legs vary most: their apt "Install Chromium system deps" step took 10 and 18 minutes in that
+run and under one minute in others. A run's wall clock is its slowest leg (24–60 min over the 15
+`ci.yml` runs up to 55d9d2fc's push, PRs and pushes, median ≈ 43). Options to shorten it: `docs/plans/ci-throughput.md`.
+
+### Merging a PR
+
+1. Wait for every check: `gh pr checks <n> --watch` (no `--fail-fast`, see `gotchas.md`), then read
+   each conclusion with `gh api repos/<owner>/<repo>/commits/<sha>/check-runs`.
+2. Post a PR comment `reviewed <full sha>` naming the commit whose diff was read.
+3. `gh pr merge <n> --merge --match-head-commit <full 40-character sha>`: a merge commit (a squash
+   or rebase re-creates allowlisted gitleaks lines), pinned to the reviewed commit.
+4. Only once `gh pr view <n> --json state` says `MERGED`, delete the remote branch; unlink a
+   worktree's `node_modules` junction before removing the worktree.
 
 `codeql.yml` `analyze` gates too (and runs weekly). `nightly.yml`: `prod-smoke`
 (`scripts/smoke.mjs`), `audit` (report-only), `secrets` (gitleaks over full history),

@@ -15,7 +15,7 @@ say what it enforces; this file does not inventory them.
 | `npm run typecheck:all` | the only typecheck of `test/`, `eval/`, `dataset/`, `scripts/`, `bench/` and the workspaces. `npm run build` first |
 | `npm run docs:build` | the only thing that compiles the VitePress site |
 | `npm run e2e:playground` / `e2e:docs` | Playwright against the BUILT site: `npm run build && npm run playground:build:only` (or `docs:build:only`) first |
-| `npm run eval:ci` / `eval:fidelity` | offline eval gates; separate corpora, never compared |
+| `npm run eval:ci` / `eval:fidelity` | offline eval gates; separate corpora, never compared. `eval:ci` fails only on a regression against `eval/judge-fixture.json`, never because a golden recorded as failing still fails |
 | `npm run test:coverage` | report-only v8 coverage over `src/`; no thresholds, nothing fails on a number |
 
 Minimum: `check` + `check:drift`. Add `typecheck:all` for anything outside `src/` (including
@@ -52,6 +52,11 @@ diff's bounding box lands where the geometry changed.
 | VS Code bundle freshness | `editors/vscode/test/stdio.test.ts` | `npm run vscode:build:only` |
 | Docs tripwires | `docs-table-pipes`, `docs-fences`, `docs-flags`, `readme-permalink`, `docs-examples-figures`, `docs-page-meta`, `playground-examples-rows` | fix the prose from the tool's answer, never the plan to suit the prose; never widen a killed-claim regex; regenerate a permalink with `scripts/gen-permalink.mjs` |
 | Byte-identity digests | `roof-void-byte-identity`, `height-byte-identity`, `iso-byte-identity` (baseline `test/byte-identity-baseline.ts`), `site`, `doors` | a finding to explain before anything is re-measured (see below) |
+| The weak `keep` law (K1) | `keep-byte-identity` (baseline `test/keep-byte-identity-baseline.ts`) | a finding to explain. A PR that legitimately moves a hashed output and touches no keep code re-takes the whole table with `npx tsx test/keep-weak-law-gen.ts "<why, on which commit>"`, never by hand, and lists the moved files in its commit message (plan-soundness D24) |
+| Message wording | `lint-messages-id-free`, `lint-fix-texts` | a message that quotes an id: name the thing through `src/naming.ts` / `src/lint/element-phrases.ts` and move the id to the `hint`; never add an allowance |
+| Stage table | `stages` | a new lint code needs its row in the test's `DECIDED` table (the stage is reviewed with the rule); a red default view means `validate --json` moved beyond its one `stage` key |
+| Platform-discriminating | `cli-flush` | a truncated piped output: route the exit through `exitFlushed()` (`src/cli.ts`). It can fail only on Linux, so a green Windows run proves nothing |
+| Property tests without a seed | `reroll-findrun-oracle` "generated sources" | a known ~0.5 % flake (no `seed`); a lone red is re-run, a repeat is a real defect. Seed any new property test that asserts over a whole run |
 | Model-vs-truth gates | `circulation-hand-derived`, `nav-grid-residual`, `joinery-oracle`, `joinery-pipeline` | a real defect. Never re-bless a number, add a tolerance, enlarge a radius or drop an example |
 | Fixture symbol snapshots | `fixture-byte-identity` | group 1 (PERMANENT) red is always a bug; groups 2–4 are re-blessable only with each diff explained (scope `-u`, see `docs/agents/gotchas.md`) |
 | Handedness and symmetry of the drawing | `glyph-chirality` (the `HANDED` record, the survey `HANDED_ON_MAIN`, the grid `test/handedness-grid-baseline.ts`, the `symmetric` pilots), the D4 sweeps in `glyphs-living`, `glyphs-outdoor` and `glyphs-misc`, `equivariance-scene` | a symbol that GAINED handedness, or a pinned `symmetric` family that stopped mapping onto itself, is a drawing defect: fix the glyph. A handed mark removed as decoration goes in `LOST_HANDEDNESS` with its reason. Never re-measure to green (see below) |

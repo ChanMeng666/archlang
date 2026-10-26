@@ -117,7 +117,8 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
 ## Owner policies
 
 - **Merging a PR**: once CI is green and the diff has been read (a code change: adversarially
-  reviewed), the agent merges without asking. It never merges a red gate or an unread diff.
+  reviewed), the agent merges without asking, pinned to the reviewed commit (procedure:
+  `docs/agents/commands.md` § Merging a PR). It never merges a red gate or an unread diff.
   Dependabot patch/minor bumps merge under the same rule after `@dependabot rebase` onto a fresh
   `main` and green CI; a major bump waits for the owner.
   Committing and pushing still happen only when asked.
