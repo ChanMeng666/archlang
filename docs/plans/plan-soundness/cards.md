@@ -225,7 +225,7 @@ into PS3.12)
 **PS4.4 · Brief-bound dimensions (provenance).** `done` (PR #271, c2f4176b)
 - `describe().totals.gross_internal_area_m2` and the intent's `grossInternalAreaM2`/`roomDimensions`, gating; `research/2026-10-26-ps44-as-built.md`.
 
-**PS4.5 · Contact dependency.** `done` (PR #TBD, commit filled at merge)
+**PS4.5 · Contact dependency.** `done` (PR #281, commit filled at merge)
 - `describe --facts depends` `contacts`, `impact` `held` via contact; `research/2026-10-26-ps45-as-built.md`.
 
 **PS4.6 · Impact keying.** `todo`
