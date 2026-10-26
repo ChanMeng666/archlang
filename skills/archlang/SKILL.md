@@ -327,7 +327,7 @@ facts into context just to filter them yourself.
   *unfiltered* set, so reading less can never turn a failing plan green. A filtered result carries
   `filtered: true` + `total_diagnostics`.
 - **`archlang context --section spec|workflow|cli|errors`** prints one section of the bundle
-  instead of all of it (about 130 KB in all) — `errors` for the diagnostic catalog, `cli` for the
+  instead of all of it (about 145 KB in all) — `errors` for the diagnostic catalog, `cli` for the
   command reference.
 - **`archlang fix --dry-run`** prints the exact unified diff it would write (to stderr; `--json` also
   carries it as `diff`) and touches nothing. When you do apply in place, **`--backup`** keeps the

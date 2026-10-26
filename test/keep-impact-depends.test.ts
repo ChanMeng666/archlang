@@ -93,7 +93,9 @@ suite("keep · impact: the widening drill (design §9), through the CLI", () => 
     ]);
     expect(lines.slice(lines.indexOf("Healed (0): none"))).toEqual([
       "Healed (0): none",
-      "Unchanged diagnostics: 1",
+      // PS2.11e: plus `W_STAIR_NO_LANDING` on level 2 (the flight's head 200 mm from the west wall,
+      // before and after the widening alike).
+      "Unchanged diagnostics: 2",
       "Keeps broke (3):",
       "  keep align a.right b.left p (hard, level 1): residual 0 → -500 mm at p",
       "    changed: a, b",
