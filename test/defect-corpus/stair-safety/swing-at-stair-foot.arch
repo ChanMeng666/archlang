@@ -1,12 +1,13 @@
 # class: stair-safety
 # origin: audits/2026-10-18-first-contact.md T1 (first-contact-plans/5-townhouse.arch L0: stair st entered at y 9600,
 #   275 mm from the front wall face, with no landing; the g_front swing covers the only floor there; reduced with the
-#   front door in front of the foot)
+#   front door in front of the foot, and the flight 800 mm wide and 2700 long so its foot keeps a landing: T1's
+#   second defect, the missing landing, is foot-against-partition's case)
 # expect: W_SWING_OVER_STAIR
-# status: todo
-# fact: st (x 150-1050, y 200-3600, dir up) is entered at its south end y 3600 and the shell's inner face is y 3875: 275
-#   mm of floor at the foot. d_front (x 300-1100) is hinged at (300,4000) and swings in with an 800 mm leaf, sweeping
-#   x 300-1100, y 3200-4000: over the whole foot strip x 300-1050, y 3600-3875 and the flight's last 400 mm
+# status: done
+# fact: st (x 150-950, y 200-2900, dir up) is entered at its south end y 2900, 975 mm before the shell's inner face at
+#   y 3875 (a landing for an 800 mm flight). d_front (x 300-1100) is hinged at (300,4000) and swings in with an 800 mm
+#   leaf, sweeping x 300-1100, y 3200-4000: into the 400 mm a door must leave clear beyond the bottom step (y 2900-3300)
 plan "Front door swinging at the foot of the stair" {
   units mm
   grid 50
@@ -18,5 +19,5 @@ plan "Front door swinging at the foot of the stair" {
   door id=d_liv at (2200,1500) width 900 wall w_v swing into r_liv
   window at (3800,4000) width 1800 wall shell
   window at (3800,0) width 1800 wall shell
-  stair id=st at (150,200) size 900x3400 dir up
+  stair id=st at (150,200) size 800x2700 dir up
 }

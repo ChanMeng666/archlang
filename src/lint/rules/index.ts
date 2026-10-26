@@ -39,7 +39,8 @@ import { reachability } from "./reachability.js";
 import { habitableNoWindow, roomMissingDefining } from "./room-contents.js";
 import { balconyNoDoor, outdoorOverlapsRoom } from "./outdoor.js";
 import { roomNotEquatorFacing } from "./site.js";
-import { stairUnmatched } from "./vertical.js";
+import { shaftFootprintMismatch, stairUnmatched } from "./vertical.js";
+import { stairHeadVoid, stairNoLanding, stairSideEntry, stairTooSteep, swingOverStair } from "./stairs.js";
 
 export const LINT_RULES: readonly LintRule[] = [
   perRoomRules,
@@ -147,6 +148,16 @@ export const LINT_RULES: readonly LintRule[] = [
   // LAST, in this order, so no existing diagnostic moves within the array.
   footprintTransposed,
   leafAcrossDoorway,
+  // Stair safety (plan-soundness PS2.11e, the stair bullets, and PS2.34): a door swinging over a
+  // flight or its landing, a flight with no landing, a doorway onto its side, a void at its head
+  // and a run too short for its storey; then PS2.15, a shaft whose stops do not stand over each
+  // other. Appended LAST, in this order, so no existing diagnostic moves within the array.
+  swingOverStair,
+  stairNoLanding,
+  stairSideEntry,
+  stairHeadVoid,
+  stairTooSteep,
+  shaftFootprintMismatch,
   // The clearance remainder (plan-soundness PS2.11e, PS2.46): a hob under a window, a hob with a
   // fridge or tall unit beside it, and a swinging leaf wider than a door is made. Appended LAST,
   // in this order, so no existing diagnostic moves within the array. (`W_DOORWAY_BLOCKED` now also

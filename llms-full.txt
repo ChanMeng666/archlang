@@ -810,7 +810,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 
 **`archlang context`** — print the full bundled agent context (spec + workflow + CLI + errors)
   - input: none → output: the full agent context (llms-full.txt), one --section of it, or the one-screen --level starter
-  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 146 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 146 KB of it (spec = the language, 30 KB; workflow = the agent loop, 30 KB; cli = every command, 26 KB; errors = the diagnostic catalog, 58 KB) · `--json` structured result on stdout, messages on stderr
+  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 148 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 148 KB of it (spec = the language, 30 KB; workflow = the agent loop, 30 KB; cli = every command, 26 KB; errors = the diagnostic catalog, 59 KB) · `--json` structured result on stdout, messages on stderr
   - example: `archlang context` — the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 
 **`archlang new`** (aliases: `init`) — scaffold a starter .arch
@@ -828,7 +828,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `archlang explain <CODE>`.
-**143 errors** (abort rendering) · **78 warnings** (advisory; `validate --strict` fails on them too).
+**143 errors** (abort rendering) · **84 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -1045,8 +1045,14 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `W_SANITIZED_CONFIG` — A disallowed config value was stripped. **Fix:** Use a plain colour/string value (no `<`, `>`, or `url(data:…)`).
 - `W_SCALE_OVERFLOW` — The drawing does not fit the declared paper at the declared scale. **Fix:** Pick a coarser scale (a larger denominator draws the building smaller), move up a paper size, drop a margin table you can do without, or drop the `scale` line and let the sheet auto-fit choose the finest scale from 1:50 / 1:100 / 1:200 / 1:500.
 - `W_SEAT_FACING_AWAY` — A chair at a table faces away from it. **Fix:** Add `facing <table id>` to the chair (the hint names the nearest table and the turn it derives), or give it the `rotate` that turns its front to the table.
+- `W_SHAFT_FOOTPRINT_MISMATCH` — A shaft's runs on two neighbouring storeys do not stand over each other. **Fix:** Draw the run with the same `at` and `size` on both storeys (the hint quotes both), or give two unrelated runs different ids. There is no machine-applicable fix: which storey is right is the author's call.
+- `W_STAIR_HEAD_VOID` — A void opens on the landing at the head of a flight. **Fix:** Move the void beside the flight or past its foot end, or shrink it, so the landing beyond the head is floor. There is no machine-applicable fix.
+- `W_STAIR_NO_LANDING` — A flight has no landing at its foot or head. **Fix:** Move the stair, shorten it, or move the wall until the quoted depth stands clear beyond the end. There is no machine-applicable fix: moving a stair moves the rooms around it.
+- `W_STAIR_SIDE_ENTRY` — A doorway opens onto the side of a flight. **Fix:** Move the doorway along its wall past the foot or head of the flight, or move the stair so at least the quoted width stands between them. There is no machine-applicable fix.
+- `W_STAIR_TOO_STEEP` — A flight is too short to climb its storey. **Fix:** Lengthen the flight (its `size` along the run, on every storey the shaft is drawn) to the quoted run, lower the storey `height` if it is wrong, or draw the climb as two flights with a landing between. There is no machine-applicable fix: a longer flight moves the rooms around it.
 - `W_STAIR_UNMATCHED` — A run of vertical circulation appears on only one storey. **Fix:** Draw the same run with the SAME `id` on the neighbouring storey (each storey declares its own `dir` — `up` on the lower floor, `down` on the upper one), or fix the id.
 - `W_SWING_OBSTRUCTED` — Door swing is obstructed. **Fix:** Hang the leaf on the other jamb (`hinge left|right`) — a machine-applicable fix when the flipped swing is proved clear; or open it the other way (`swing in|out`), move the door along its wall, move the obstruction (`archlang repair`), narrow the leaf to the width the warning quotes (never below the minimum passable width — that relocates the problem into `W_DOOR_CLEARANCE`), hang no swinging leaf at all (a `sliding`, `pocket` or `barn` door sweeps nothing, so this rule cannot apply to it), or make it a leafless `opening`.
+- `W_SWING_OVER_STAIR` — A door's swing sweeps a stair or the landing at its end. **Fix:** Open the door to the other side of its wall (flip its `swing`) or hang it on the other jamb (flip its `hinge`); the hint says when either clears the stair. Otherwise move the door or the stair, or use a `sliding` or `pocket` door, which sweeps nothing. There is no machine-applicable fix: which way a door opens is a design decision.
 - `W_SWING_ROOM_NOT_ADJACENT` — `swing into <room>` names a room the door does not border. **Fix:** Point `swing into` at a room the door actually opens onto, or use explicit `swing in|out`. The door falls back to its default swing.
 - `W_TITLE_OVERFLOW` — A title-block value is wider than its row. **Fix:** Shorten the value to the number of characters the warning quotes and move the rest to a `notes "…"` line. There is no machine-applicable fix: what to cut is the author's wording.
 - `W_UNKNOWN_MATERIAL` — Unknown wall material; using the default hatch. **Fix:** Use a known material (e.g. brick, concrete, insulation, tile) or omit it.

@@ -267,7 +267,7 @@ describe("the corpus (ADR 0028 Acceptance): both figures, pinned", () => {
 /** `[storeys, refused (a), refused (b), overlap/not-tiling/short/not-rect under (b)]`. */
 const PINNED_ROWS: Record<string, [number, number, number, string]> = {
   examples: [39, 7, 7, "0/0/0/7"],
-  "test/defect-corpus": [154, 9, 9, "0/0/0/9"],
+  "test/defect-corpus": [166, 9, 9, "0/0/0/9"],
   "test/recovery-corpus": [9, 0, 0, "0/0/0/0"],
   "test/fixtures": [13, 0, 0, "0/0/0/0"],
   "docs/plans/plan-soundness/repro": [6, 0, 0, "0/0/0/0"],
@@ -278,15 +278,17 @@ const PINNED_ROWS: Record<string, [number, number, number, string]> = {
   "test/callout-fixtures": [1, 0, 0, "0/0/0/0"],
   "test/finish-fixtures": [1, 0, 0, "0/0/0/0"],
   "test/resolve-order": [1, 0, 0, "0/0/0/0"],
-  total: [293, 19, 19, "0/0/0/19"],
+  total: [305, 19, 19, "0/0/0/19"],
 };
 /** Measured 2026-10-21 on `main@9fb7949`: 15 of 279 storeys refused, both figures (5.4 %). 2026-10-24: 15 of 283
  * (5.3 %) after four defect-corpus plans (seat-facing-away, fire-door-inward and their twins), none refused. 19 of 287
  * (6.6 %) after four more (PS2.12: radius-over-label, radius-over-piece and their twins), each refused as not a
  * rectangle: a `circle` pavilion is the only room that carries a `dims auto` R call-out. 19 of 289 (6.6 %) after
  * two more (PS2.11c: sofa-l-transposed and its twin), neither refused: two plans added, the shares unchanged. 19 of
- * 293 (6.5 %) after four more (PS2.11e/PS2.46: hob-under-window, bed-before-door-face and their twins), none refused. */
-const PINNED_SHARE_A: [number, number] = [19, 293];
-const PINNED_SHARE_B: [number, number] = [19, 293];
-/** The literal reading of "no use kind means outdoor": 16 of 279 (5.7 %); 16 of 283 (5.7 %) since 2026-10-24; 20 of 287 with PS2.12's four pavilions; 20 of 289 with PS2.11c's pair; 20 of 293 with PS2.11e's two pairs. */
-const PINNED_SHARE_LITERAL: [number, number] = [20, 293];
+ * 301 (6.3 %) after PS2.11e's eight stair-safety plans (twelve storeys: two pairs of two `level`s, two
+ * single-storey pairs), none refused; 305 (6.2 %) with PR #283's four (hob-under-window,
+ * bed-before-door-face and their twins), none refused. */
+const PINNED_SHARE_A: [number, number] = [19, 305];
+const PINNED_SHARE_B: [number, number] = [19, 305];
+/** The literal reading of "no use kind means outdoor": 16 of 279 (5.7 %); 16 of 283 (5.7 %) since 2026-10-24; 20 of 287 with PS2.12's four pavilions; 20 of 289 with PS2.11c's pair; 20 of 301 with PS2.11e's eight stair plans; 20 of 305 with PR #283's four. */
+const PINNED_SHARE_LITERAL: [number, number] = [20, 305];

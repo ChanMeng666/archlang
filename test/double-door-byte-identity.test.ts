@@ -6,8 +6,9 @@
  *
  * The digests below are the whole agent-facing payload ({@link allStoreysDigestWithDiagnostics}:
  * every storey's SVG, `describe()` and `lint()`, plus `compile().diagnostics`), **measured against
- * `src/` at `8c2d6150`** (the base of the PR that added the kind) with that tree extracted by
- * `git archive` and this suite's own digest body (`test/byte-identity-digest.ts`) run against it.
+ * `src/` at `e432c24a`** (`main` with PR #280's stair rules, which has no `double` kind; first taken
+ * at `8c2d6150`, re-taken when PR #280's example edits moved `two-storey`) with that tree extracted
+ * by `git archive` and this suite's own digest body (`test/byte-identity-digest.ts`) run against it.
  *
  * The set is every plan of `examples/` and `test/fixtures/` that writes no `double` door and whose
  * payload the same PR left byte-identical: 23 of the 40 (28 examples and 12 fixtures) that write
@@ -53,7 +54,7 @@ import { type CompilerApi, allStoreysDigestWithDiagnostics } from "./byte-identi
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const API: CompilerApi = { compile, describe: describePlan, lint };
 
-/** Measured at `8c2d6150` (see the header). */
+/** Measured at `e432c24a` (see the header). */
 const BASELINE: [string, string][] = [
   ["examples/accessible.arch", "5f69fe78d45db6b096e3e7f4c44bfcdb537c4201d06fee8780e813112869f20c"],
   ["examples/attached.arch", "07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc"],
@@ -66,7 +67,7 @@ const BASELINE: [string, string][] = [
   ["examples/one-room.arch", "8c47e263f778993d69c2f85d07a24b3a62c0b96d9f17ccb5cd9ebf2af6fa0120"],
   ["examples/parametric.arch", "2a6b29053ac201b452bde4204087f10b17648473e3080327d2486e0cba11d86b"],
   ["examples/sheet-notes.arch", "602cfd5f8e34268bf660dcad47b5cbf28332ddf92a119fba7317850ab9f9d798"],
-  ["examples/two-storey.arch", "a794b452d5ffffafd0c3f3e559223d6cb112d8575fa2ea1a1dc4cc53fe4eb60f"],
+  ["examples/two-storey.arch", "af715e19ae61d9bb03c14ea23a07d713dd1fe6d2237188825e29db28d4a98a53"],
   ["test/fixtures/axes-grid.arch", "e6be5d70788d931cacaa8cb1db2c2c454c1532d01153b90e2427c125770e5559"],
   ["test/fixtures/chain30.arch", "df7e1343b01b2194505898df5017da81b58d8c840d01236ff75101f047396e43"],
   ["test/fixtures/dense-bays.arch", "9f4ad4538851a27b463113cd7e563823d185bc7e18b342fd9eebb45f2887992f"],
@@ -76,7 +77,7 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/diff-circ-b.arch", "e52a2d0d2299ddaa916dc6e204c21d5296ccc52f4eb7376591c78eef685191de"],
   ["test/fixtures/schedule-sheet.arch", "15dc29228ea12dae7240ad843567f88218c5a57bd8838ea950b1a5792c2579a5"],
   ["test/fixtures/star30.arch", "74a3209110606543fb04c1932b2ec60a78526ccdd2a7205cdfe972719efac471"],
-  ["test/fixtures/zones-levels.arch", "0d1a1bf3d1bfad34156356ccfa65b8d823ab0761344b1bafde050d6213d93b0f"],
+  ["test/fixtures/zones-levels.arch", "05693d9ec59a2c27dcf9c35c5b8d8d5a63969ee0931499b97305433324cb978f"],
   ["test/fixtures/zones-wings.arch", "392675a2abd9bc82b094fc768190979fabf814b22dbb8d4fbaf7de410570c35a"],
 ];
 
@@ -96,8 +97,9 @@ suite("`double` door kind — the byte-identity law", () => {
  * This table pins them without `lint()`: every storey's SVG, `describe()` and
  * `compile().diagnostics` ({@link allStoreysDigestWithDiagnostics} with a `lint` that returns
  * nothing), of each plan's source **as it stands on `main`**, measured against `src/` at
- * `2c7ca200` (this branch's merge base with `main`; `b0f89776`, with PS7.1 merged, gives the same
- * seventeen) by the same digest body run on a `git archive` of that tree.
+ * `e432c24a` (`main` after PR #280, whose stair edits to `garden-house` and `hillside-villa` are in
+ * `main`'s source here; first taken at `2c7ca200`) by the same digest body run on a `git archive`
+ * of that tree.
  *
  * The test rebuilds `main`'s source from the branch's file by undoing this PR's edits, each a
  * block of whole lines found exactly once, and holds the result to `main`'s own bytes (the
@@ -149,8 +151,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/garden-house.arch",
-    "e5035803bb97e05017f567426ec701137be0f9d07530b72158a31db29e36fe1d",
-    "00da192b82e1ca070884b3ef214b26228745fdc69075013f042c92d3c579be7f",
+    "50f4a3080e5bed008ef79ed66ec2ad49e3ca1cde51a6b9246f7cdefb9aa5a3ff",
+    "377bd849141c19f46241189c874fab06af9a36ad205a7a6f15703f75b4098428",
     [
       [
         "    furniture fridge       against wall w_e1 offset 3200 in r_kitchen\n    furniture counter      against wall w_e1 offset 2500 in r_kitchen",
@@ -171,8 +173,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/hillside-villa.arch",
-    "32d9386cfdc776a02fc2e9fad563baae48eff007f3a161a3cb77c0bca9e549e6",
-    "df395956f53fec917277953d52d899310475f1b318d603a52c9c5b087aeb3a79",
+    "adb86e4e06d3ace32a859b38f75e6505b534b528988494334641d1ab5fd497c9",
+    "572b454c4d35717504029cd5c052c9a28dd5cebda58fb11b4020f254a47388a6",
     [
       [
         "    furniture stove          against wall shell segment 1 offset 7400 in r_kitchen\n    furniture dishwasher     against wall shell segment 1 offset 6600 in r_kitchen\n    furniture fridge         against wall w_l1_band_e offset 700 in r_kitchen",

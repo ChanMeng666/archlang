@@ -316,6 +316,10 @@
  * (`./byte-identity-baseline.ts`, "a worktop in every example kitchen"): the new compiler's
  * payload of each previous source, with the "no counter or worktop" findings removed, reproduces
  * each previous row.
+ *
+ * 2026-10-26, plan-soundness PS2.11e: the rows of `garden-house`, `hillside-villa`, `library` and
+ * `two-storey` (stair defects fixed in the source) and `test/fixtures/zones-levels` (new stair
+ * warnings only) re-measured, with the same reasons as `./import-module-lets.test.ts`'s table.
  */
 // Re-measured 2026-10-23 (PS3.7): aquarium, corner-cafe, furnished-flat, gallery-l, hillside-villa, materials, museum, themed: chairs turned to the table they sit at, a real
 // defect `W_SEAT_FACING_AWAY` found (ADR 0029 §6); the cause and the proof that nothing else
@@ -326,6 +330,7 @@
 // Re-measured 2026-10-26 (PS2.50): hillside-villa and tiny-house each lose one `W_FIXTURE_BACK_TO_ROOM` (a piece side-on or end-on to a wall, no longer read as its back to the room); nothing else moved, see `test/byte-identity-baseline.ts`'s header.
 // Re-measured 2026-10-26 (PS2.11e, PS2.46, PS2.54): the twenty examples fixed for a hob under a window, a hob beside a fridge, a hinged leaf over 1219 mm and a doorway approach read from the wall's face, and test/fixtures/off-path-bypass (its cabinet 250 mm off d_d's face gains `W_DOORWAY_BLOCKED`, not edited; its SVG, `describe()` and diagnostics are unchanged); why, in `test/byte-identity-baseline.ts`'s header.
 // Re-measured 2026-10-26 (PR #283 red-team round 1): the examples edited by its rulings (relational, hillside-villa, tiny-house, garden-house, terrace-row, and the widened `double` pairs of gallery-l, classroom-block and aquarium) and the summary of every example writing a `double` door (a person passes one leaf, so `describe()`'s clear width halves); why, in `test/byte-identity-baseline.ts`'s header.
+// Re-measured 2026-10-26 (merging main@e432c24a, PR #280, into PR #283): garden-house, hillside-villa and library carry both PRs' example edits (the stair fixes and this PR's), each row the measurement with this suite's body; two-storey (and its recovery-corpus copy) is `main`'s row, unedited by this PR; why, in `test/byte-identity-baseline.ts`'s header.
 export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
   ["examples/accessible.arch", "5f69fe78d45db6b096e3e7f4c44bfcdb537c4201d06fee8780e813112869f20c"],
@@ -339,13 +344,13 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   // Re-measured 2026-10-20 (PS2.19), `describe()` only: "Utility" reads `utility` (`byte-identity-baseline.ts`).
   ["examples/furnished-flat.arch", "36b3b2a3ba1c43c5371e11897be34737a2d5bccdf3a7478676e134d0a39ec6ba"], // PS2.11e, see header
   ["examples/gallery-l.arch", "0e8f7696890b8f3e01211ecbc873996f49ba22fff103e349e8f4660b1417a1c2"], // PS2.10 dims fixed (byte-identity-baseline.ts); PS2.11e, see header
-  ["examples/garden-house.arch", "17b9328a790d44ceaf2f7670b948f7d7fda87e60c553e89fe56f0ea61eac63af"], // re-measured, see header
+  ["examples/garden-house.arch", "27a23e7207bc36eed82d203be744d46e0eedefd9bd4f1d165d790b65bf71fd7b"], // re-measured, see header
   ["examples/garden-loft.arch", "f273e4717a1afae1cd94ae0f62a7390ae603c7418fbe434e061e191aa98231a0"], // PS2.11e, see header
   ["examples/hexagon-pavilion.arch", "3078765cf03974518e0f2b3ea13585cca69ffbb86438f0899218c8a1c24a09a8"],
-  ["examples/hillside-villa.arch", "b397a3f7b3790b8eea7bb35ffd851e529dead3f4e5fc1b29c51a83a63a9776a5"], // re-measured, see header; PS2.11e, see header
+  ["examples/hillside-villa.arch", "625c37e10d948766613e87a047ec9fdd5a6c0328075fb61a432af4afa639c4e3"], // re-measured, see header; PS2.11e, see header
   ["examples/imports.arch", "9cfb83e40cb9e3b4605be6d235145d963585295f5c25704ed827181b34f1762e"],
   ["examples/laneway-house.arch", "d109287a00b28661d6dce81d21dda38c8476a6fe50e9fc8b8c6436ba54d38e5f"], // PS2.11e, see header
-  ["examples/library.arch", "9f1af9e2432a660e89ff98b3ccb1f7047955839e67b168acede535fe4d345c7c"], // PS2.11e, see header
+  ["examples/library.arch", "c602382cf927ddff9f8ce1799e2d5f4c220e9bc0b34796fc5087194184428ef8"], // PS2.11e, see header
   ["examples/materials.arch", "1a4aa9bad5d42f06c1158d6089a71b784b8f079761b7a03dad17a1271fd5b2ff"],
   ["examples/museum-wing.arch", "546b10dfb0204dbce454dff9e47713f32745285f4885e58a46b5faff23d10126"],
   ["examples/museum-wings.arch", "1149f0993df1cd719dcffd1d8c5c43c4ea6176c9a43b47954b23b3950bcc6f4a"], // re-measured, see header; PS2.11e, see header
@@ -362,7 +367,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/townhouse.arch", "2ba4f5c6510c8c1c5b0dce5fda946532a49aa27d9d14668e8398903af71f3612"], // PS2.11e, see header
   ["examples/transit-hall.arch", "4757e4bd31c84cd43ad562086e232e5765432928abfb9aad3bd838517bae37ee"], // PS2.11e, see header
   ["examples/two-bed.arch", "4fb4b10d1cde2487691965ce44bb8eb7e210c785e026f586dbeaf853f1e5b610"], // PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e, see header
-  ["examples/two-storey.arch", "a794b452d5ffffafd0c3f3e559223d6cb112d8575fa2ea1a1dc4cc53fe4eb60f"],
+  ["examples/two-storey.arch", "af715e19ae61d9bb03c14ea23a07d713dd1fe6d2237188825e29db28d4a98a53"],
   ["test/fixtures/axes-grid.arch", "e6be5d70788d931cacaa8cb1db2c2c454c1532d01153b90e2427c125770e5559"],
   ["test/fixtures/chain30.arch", "df7e1343b01b2194505898df5017da81b58d8c840d01236ff75101f047396e43"], // new fixture, see header
   ["test/fixtures/dense-bays.arch", "9f4ad4538851a27b463113cd7e563823d185bc7e18b342fd9eebb45f2887992f"],
@@ -373,6 +378,6 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["test/fixtures/off-path-bypass.arch", "81ef92c32f98bc41635428f477b2cf7e59adea520e60892b5e39aa48fcbcaecf"], // new fixture, see header; PS2.11e, see header
   ["test/fixtures/schedule-sheet.arch", "15dc29228ea12dae7240ad843567f88218c5a57bd8838ea950b1a5792c2579a5"], // re-measured, see header; PS2.29: message text only, same code, same span
   ["test/fixtures/star30.arch", "74a3209110606543fb04c1932b2ec60a78526ccdd2a7205cdfe972719efac471"], // new fixture, see header
-  ["test/fixtures/zones-levels.arch", "0d1a1bf3d1bfad34156356ccfa65b8d823ab0761344b1bafde050d6213d93b0f"], // re-measured for PS2.4, see header
+  ["test/fixtures/zones-levels.arch", "05693d9ec59a2c27dcf9c35c5b8d8d5a63969ee0931499b97305433324cb978f"], // re-measured for PS2.4, see header
   ["test/fixtures/zones-wings.arch", "392675a2abd9bc82b094fc768190979fabf814b22dbb8d4fbaf7de410570c35a"], // re-measured for PS2.4, see header
 ];

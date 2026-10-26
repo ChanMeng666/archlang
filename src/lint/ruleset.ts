@@ -323,6 +323,30 @@ export interface LintRuleset {
    */
   wcSideClearanceMm: number | null;
   /**
+   * The highest riser (mm) `W_STAIR_TOO_STEEP` lets a straight flight climb its storey with
+   * (plan-soundness PS2.11e). With {@link stairMinGoingMm} and {@link stairMaxPitchRatio} it
+   * fixes the shortest run that climbs a storey: the fewest risers no higher than this, each
+   * going at least the least going and, where a pitch is set, at least the riser over that
+   * ratio. Judged only where the plan authors a height (`describe().heights`).
+   *
+   * **Default 220 with a 220 going and no pitch cap: the most generous figures any cited code
+   * gives,** Approved Document K (2013) Table 1.1's private stair (rise 150–220, going 220–300)
+   * [V], without its 42° note. A flight that fails them fails every code read here (IRC, GB
+   * 50096, the other AD K stair categories), whatever the building. The residential-advisory
+   * profiles set their own.
+   */
+  stairMaxRiseMm: number;
+  /** The least going (mm) of {@link stairMaxRiseMm}'s check. Default 220 (Approved Document K
+   *  2013 Table 1.1, private stair) [V]. */
+  stairMinGoingMm: number;
+  /**
+   * The steepest pitch {@link stairMaxRiseMm}'s check allows, as rise over going (the tangent of
+   * the angle, so no trigonometry runs). `null` (the default): no pitch cap.
+   * `uk-residential-advisory` sets 0.9004, tan 42°: Approved Document K (2013) Table 1.1 note 1,
+   * the private stair's maximum pitch [V].
+   */
+  stairMaxPitchRatio: number | null;
+  /**
    * The least gap (mm) between a cooking surface's side and a fridge or other tall unit beside it
    * (`W_HOB_FRIDGE_GAP`, plan-soundness PS2.11e): the worktop a cook lands a pan on. Measured from
    * the hob's side face, over its depth, to the tall unit's drawn footprint. `null` turns the rule
@@ -400,6 +424,9 @@ export const DEFAULT_RULESET: LintRuleset = {
   minEntryPassageWidthMm: null,
   roomAreaMeasure: "drawn",
   wcSideClearanceMm: 400,
+  stairMaxRiseMm: 220,
+  stairMinGoingMm: 220,
+  stairMaxPitchRatio: null,
   hobLandingMm: 305,
   maxHingedLeafMm: 1219,
 };
@@ -459,6 +486,8 @@ export const LINT_PROFILES: Readonly<Record<string, Partial<LintRuleset>>> = Obj
       wc: 900, // GB 50096-2011 5.7.1 (卫生间: a WC is one) [V]
       storage: 900, // GB 50096-2011 5.7.1 (贮藏室) [V]
     },
+    stairMaxRiseMm: 200, // GB 50096-2011 5.7.4: a stair inside a dwelling (套内楼梯), riser at most 0.20 m [S, gf.cabr-fire.com article-7235]
+    stairMinGoingMm: 220, // GB 50096-2011 5.7.4: tread (踏步宽度) at least 0.22 m [S, same]
   },
   /**
    * Room sizes and hall widths read from England's space standard and access guidance, as
@@ -486,6 +515,9 @@ export const LINT_PROFILES: Readonly<Record<string, Partial<LintRuleset>>> = Obj
     minDoubleBedroomShortSideMm: 2550, // NDSS 10(e): every other double (or twin) bedroom at least 2.55 m wide [V]
     minMainDoubleBedroomShortSideMm: 2750, // NDSS 10(e): one double (or twin) bedroom at least 2.75 m wide [V]
     wcSideClearanceMm: 400, // Approved Document M Vol 1 (2015) M4(2) Diagram 2.5: WC centreline 400–500 mm from the adjacent wall; the low end [V]
+    stairMaxRiseMm: 220, // Approved Document K (2013) Table 1.1: a private stair's rise at most 220 mm [V]
+    stairMinGoingMm: 220, // Approved Document K (2013) Table 1.1: a private stair's going at least 220 mm [V]
+    stairMaxPitchRatio: 0.9004, // Approved Document K (2013) Table 1.1 note 1: a private stair's pitch at most 42° (tan 42° = 0.9004) [V]
   },
   /**
    * Room sizes and hallway widths read from the US model residential code, as ADVICE (ADR
@@ -513,6 +545,8 @@ export const LINT_PROFILES: Readonly<Record<string, Partial<LintRuleset>>> = Obj
       entry: 914, // IRC R311.6: an entry foyer is walked as a hallway [S]
     },
     wcSideClearanceMm: 381, // IRC P2705.1: a water closet's centreline at least 15 in (381 mm) from a side wall or obstruction [S, prior-art.md §3.3]
+    stairMaxRiseMm: 196.85, // IRC R311.7.5.1: a riser at most 7¾ in (196.85 mm) [S, jurisdiction handouts, e.g. Placer County "Residential Stairs"]
+    stairMinGoingMm: 254, // IRC R311.7.5.2: a tread depth at least 10 in (254 mm) [S, same]
   },
 });
 

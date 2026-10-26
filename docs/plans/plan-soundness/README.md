@@ -418,6 +418,21 @@ cited as precedent (D18).* (PR #269, 2026-10-26; recorded after the fact, PS2.22
 - *Reverse if:* the owner declines. The wording reverts to lint-only and the `taste()` and compile-channel
   rows (PS2.57 covers the remaining compile, `describe()` and CLI texts) are re-filed as cards.
 
+**D24. The keep weak-law baseline is re-taken by its generator, never by hand, whenever a later PR
+legitimately moves a hashed output; the reason is recorded in the table header and the commit.**
+(2026-10-26; coordinator ruling on PR #280, PS2.11e.)
+- Changed: `test/keep-byte-identity-baseline.ts` (K1 of ADR 0033 decision 7) was taken once on the tree
+  before any keep code, and its header forbade a re-take on a tree with keep code. A lint rule, a drawing
+  fix or an example edit moves its SVG, `describe()`, `lint()` or `validate --json` hashes for reasons
+  that have nothing to do with `keep`; such a PR now re-takes the whole table with
+  `test/keep-weak-law-gen.ts` (whose header states the rule), records why in the table header and lists
+  the moved files in the commit message. Rows are never edited by hand.
+- *Why:* a hand-edited row is indistinguishable from a blessed one, and the alternative, freezing the
+  table, would turn every later corpus change red for a law it does not touch. The generator measures
+  with the test's own body, so a re-take cannot drift from what the test checks.
+- *Reverse if:* a re-take ever hides an unexplained movement (a row moving in a re-take whose commit
+  does not name it). The generator then lists per-row reasons, as the other digest tables' headers do.
+
 **D25. The doorway-approach datum moves to the wall face; three eval holdout judgments move with
 it.** *Ratified by the owner 2026-10-26, so it may be cited as precedent (D18).* (2026-10-26, coordinator ruling on PR #283; PS2.54, PS2.11e.)
 - Changed: `W_DOORWAY_BLOCKED`'s approach is measured `doorwayLandingMm` past the wall's FACE (PS2.54,
@@ -527,11 +542,11 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS1 · The defect corpus (do this before PS2; it is the yardstick)
 
-5 cards: 3 done, 2 todo (PS1.4 diagnostic wording, PS1.5 two message slips); PS1.3 walls-first control arm done 2026-10-26 (D21); both filed 2026-10-25 from the owner's 2026-10-18 asks. Cards, tables and as-built pointers: `cards.md` § PS1.
+6 cards: 4 done, 2 todo (PS1.5 two message slips, PS1.6 two clean twins that are not clean); PS1.3 walls-first control arm done 2026-10-26 (D21); PS1.4 diagnostic wording measured 2026-10-26 (no rule). PS1.3 and PS1.4 were filed 2026-10-25 from the owner's 2026-10-18 asks, PS1.5 on 2026-10-26 from PS7.2's red team, PS1.6 on 2026-10-26 from PS1.4. Cards, tables and as-built pointers: `cards.md` § PS1.
 
 ### PS2 · Validity checks that read existing facts (small, high yield)
 
-62 cards: 23 done, 39 todo. Cards, tables and as-built pointers: `cards.md` § PS2.
+67 cards: 28 done, 39 todo. Cards, tables and as-built pointers: `cards.md` § PS2.
 
 ### PS3 · Relation-first authoring (D1 + D5; needs an ADR)
 
@@ -590,6 +605,8 @@ This plan is a hypothesis about what will make AI-written plans professional. Tr
    deliberately quiet.
 3. **Which diagnostic wording repairs best?** No controlled study exists for a spatial DSL
    (`research/prior-art.md` "Gaps"). The defect corpus plus a local, unpaid loop could measure it.
+   *Measured 2026-10-26 (PS1.4):* `research/2026-10-26-ps14-diagnostic-wording.md`. Over 59 corpus cases on two local models, the current message + hint
+   repaired best on both (51/59 sonnet, 48/59 haiku), but by 1 case on sonnet, under the 3-case margin, so no wording rule yet; open: repeat draws, a third model, the spec in context, a `cause`-derived rule arm.
 4. **Can `between`-style forms cover non-rectilinear rooms?** Polygon and circle rooms are refused
    in v1 of PS3. What would an honest extension be?
 5. **What would make `impact` a planning tool, not just a report?** For example, "list the edits that

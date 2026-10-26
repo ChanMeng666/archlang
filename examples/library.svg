@@ -53,25 +53,25 @@
 <text x="-4950" y="0" font-size="450" fill="#0E5484" text-anchor="middle" dominant-baseline="central">F</text>
 </g>
 <g id="A-FLOR-STRS" inkscape:groupmode="layer" inkscape:label="A-FLOR-STRS">
-<polygon points="28500,26500 29900,26500 29900,31000 28500,31000" fill="#f4f2ee" stroke="#6c6864" stroke-width="36"/>
-<line x1="28416" y1="29240.63" x2="29984" y2="28540.63" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28416" y1="28959.38" x2="29984" y2="28259.38" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="30718.75" x2="29900" y2="30718.75" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="30437.5" x2="29900" y2="30437.5" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="30156.25" x2="29900" y2="30156.25" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="29875" x2="29900" y2="29875" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="29593.75" x2="29900" y2="29593.75" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="29312.5" x2="29900" y2="29312.5" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="28187.5" x2="29900" y2="28187.5" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="27906.25" x2="29900" y2="27906.25" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="27625" x2="29900" y2="27625" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="27343.75" x2="29900" y2="27343.75" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="27062.5" x2="29900" y2="27062.5" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="26781.25" x2="29900" y2="26781.25" stroke="#a8a29a" stroke-width="36"/>
-<line x1="29200" y1="30662.5" x2="29200" y2="26612.5" stroke="#6c6864" stroke-width="36"/>
-<line x1="29200" y1="26612.5" x2="29435.2" y2="27004.5" stroke="#6c6864" stroke-width="36"/>
-<line x1="29200" y1="26612.5" x2="28964.8" y2="27004.5" stroke="#6c6864" stroke-width="36"/>
-<text x="29200" y="30859.38" font-size="400" fill="#333333" text-anchor="middle" dominant-baseline="central">UP</text>
+<polygon points="28500,25500 29900,25500 29900,30000 28500,30000" fill="#f4f2ee" stroke="#6c6864" stroke-width="36"/>
+<line x1="28416" y1="28240.63" x2="29984" y2="27540.63" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28416" y1="27959.38" x2="29984" y2="27259.38" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="29718.75" x2="29900" y2="29718.75" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="29437.5" x2="29900" y2="29437.5" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="29156.25" x2="29900" y2="29156.25" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="28875" x2="29900" y2="28875" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="28593.75" x2="29900" y2="28593.75" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="28312.5" x2="29900" y2="28312.5" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="27187.5" x2="29900" y2="27187.5" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="26906.25" x2="29900" y2="26906.25" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="26625" x2="29900" y2="26625" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="26343.75" x2="29900" y2="26343.75" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="26062.5" x2="29900" y2="26062.5" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="25781.25" x2="29900" y2="25781.25" stroke="#a8a29a" stroke-width="36"/>
+<line x1="29200" y1="29662.5" x2="29200" y2="25612.5" stroke="#6c6864" stroke-width="36"/>
+<line x1="29200" y1="25612.5" x2="29435.2" y2="26004.5" stroke="#6c6864" stroke-width="36"/>
+<line x1="29200" y1="25612.5" x2="28964.8" y2="26004.5" stroke="#6c6864" stroke-width="36"/>
+<text x="29200" y="29859.38" font-size="400" fill="#333333" text-anchor="middle" dominant-baseline="central">UP</text>
 </g>
 <g id="A-FLOR-EVTR" inkscape:groupmode="layer" inkscape:label="A-FLOR-EVTR">
 <polygon points="30500,28000 32700,28000 32700,30200 30500,30200" fill="#f4f2ee" stroke="#6c6864" stroke-width="36"/>

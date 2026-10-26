@@ -81,11 +81,33 @@ const MANIFEST = buildManifest(VERSION);
  *
  * Note what this does NOT do: it never falls off the end without exiting. A one-shot
  * command that returns a code still exits with it explicitly, so nothing depends on
- * the event loop happening to be empty.
+ * the event loop happening to be empty — but only AFTER stdout and stderr have drained
+ * ({@link exitFlushed}), because `process.exit` discards whatever a pipe has not yet
+ * accepted.
  */
 function finish(result: CommandResult): void {
   if (result === RESIDENT) return; // the command owns the process now; let it live.
-  process.exit(result);
+  exitFlushed(result);
+}
+
+/**
+ * End the process with `code` once everything already written to stdout/stderr has been
+ * handed to the OS. A bare `process.exit()` right after `process.stdout.write(big)` truncates
+ * the output on a pipe (Node 22 on Linux cut `context --json` at ~145 KB, and the cut moves
+ * down as outputs grow): the write is asynchronous and `exit` does not wait for it. An empty
+ * write queues behind the pending ones, so its callback fires exactly when they are done;
+ * the no-op error listeners keep a closed reader (`| head`) from turning EPIPE into an
+ * uncaught exception that would replace the documented exit code.
+ */
+function exitFlushed(code: number): void {
+  let pending = 2;
+  const done = (): void => {
+    if (--pending === 0) process.exit(code);
+  };
+  for (const stream of [process.stdout, process.stderr]) {
+    stream.on("error", () => {});
+    stream.write("", done);
+  }
 }
 
 async function main(): Promise<void> {
@@ -94,20 +116,20 @@ async function main(): Promise<void> {
   // 1. No command at all: help belongs on stderr, because exit 3 means "you invoked me wrong".
   if (!cmd) {
     process.stderr.write(`error: missing command\n\n${renderTopHelp(MANIFEST)}`);
-    process.exit(EXIT.USAGE);
+    return finish(EXIT.USAGE);
   }
 
   // 2. `--version`, before dispatch (it is not a command, so it needs no manifest entry).
   if (cmd === "--version" || cmd === "-V") {
     process.stdout.write(`${VERSION}\n`);
-    process.exit(EXIT.OK);
+    return finish(EXIT.OK);
   }
 
   // 3. `archlang help [cmd]` / `archlang --help` — asking for help succeeds (stdout, exit 0).
   if (cmd === "help" || cmd === "--help" || cmd === "-h") {
     const target = rest[0] ? findCommand(MANIFEST, rest[0]) : null;
     process.stdout.write(target ? renderCommandHelp(MANIFEST, target) : renderTopHelp(MANIFEST));
-    process.exit(EXIT.OK);
+    return finish(EXIT.OK);
   }
 
   // 4. Unknown verb: a typo gets a did-you-mean, not a bare rejection.
@@ -115,7 +137,7 @@ async function main(): Promise<void> {
   if (!command) {
     const hint = closest(cmd, [...MANIFEST_COMMAND_NAMES]);
     const mean = hint ? ` — did you mean \`${CLI_NAME} ${hint}\`?` : "";
-    process.exit(usageError(`unknown command "${cmd}"${mean} (try \`${CLI_NAME} help\`)`));
+    return finish(usageError(`unknown command "${cmd}"${mean} (try \`${CLI_NAME} help\`)`));
   }
 
   // Parsed against the RESOLVED command, so a flag it does not declare is rejected below
@@ -125,7 +147,7 @@ async function main(): Promise<void> {
   // 5. `archlang <cmd> --help`, handled before the command runs — so it works with no input file.
   if (args.help) {
     process.stdout.write(renderCommandHelp(MANIFEST, command));
-    process.exit(EXIT.OK);
+    return finish(EXIT.OK);
   }
 
   // 6. A flag this command does not take is a usage error, never a filename.
@@ -133,7 +155,7 @@ async function main(): Promise<void> {
     const bad = args.unknownFlags[0]!;
     const hint = closest(bad, allowedFlags(command));
     const mean = hint ? ` — did you mean \`${hint}\`?` : "";
-    process.exit(usageErrorFor(command.name, `unknown flag "${bad}" for \`${CLI_NAME} ${command.name}\`${mean}`));
+    return finish(usageErrorFor(command.name, `unknown flag "${bad}" for \`${CLI_NAME} ${command.name}\`${mean}`));
   }
 
   switch (cmd) {

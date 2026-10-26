@@ -1,0 +1,17 @@
+# class: stair-safety
+# twin-of: door-onto-flank
+# origin: audits/2026-10-24-first-contact-rerun.md NT1 with the door moved past the foot of the flight
+# expect: none
+# fact: d_side spans y 2850-3650, past the foot at y 2700: a person steps through onto the floor in front of the flight
+plan "Door past the foot of a flight" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (7000,0) (7000,4000) (0,4000) close }
+  wall id=w_v partition thickness 100 { (3000,0) (3000,4000) }
+  room id=r_bed at (0,0) size 3000x4000 label "Bedroom" uses bedroom
+  room id=r_stair at (3000,0) size 4000x4000 label "Stair hall" uses hall
+  door id=d_front at (7000,3200) width 900 wall shell swing into r_stair
+  door id=d_side at (3000,3250) width 800 wall w_v swing into r_bed
+  window at (0,2000) width 1200 wall shell
+  stair id=st at (3200,300) size 1100x2400 dir up
+}

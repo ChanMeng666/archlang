@@ -165,7 +165,7 @@ plan "Reading Room Library" {
   # ---- vertical circulation, side by side in the hall -----------------------
   # A single-storey plan still draws both symbols; `W_STAIR_UNMATCHED` is a multi-storey
   # question and never fires here.
-  stair id=st_main at (28500,26500) size 1400x4500 dir up
+  stair id=st_main at (28500,25500) size 1400x4500 dir up
   elevator id=lift_main at (30500,28000) size 2200x2200
 
   # ---- fit-out --------------------------------------------------------------

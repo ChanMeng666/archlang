@@ -1,8 +1,11 @@
 # class: stair-safety
 # twin-of: swing-over-stair
-# origin: audits/showcase-and-examples.md X5 with the ensuite door swinging into the ensuite
+# origin: audits/showcase-and-examples.md X5 with the ensuite door swinging into the ensuite and moved 400 mm west, off
+#   the well's side (where it stood 50 mm from it, W_STAIR_SIDE_ENTRY), widened to 800 and the ensuite given its shower
+#   and basin (the case's other warnings, W_PATH_TOO_NARROW and W_ROOM_NO_FIXTURE): the twin fixes all three
 # expect: none
-# fact: d_en_corr swings into the ensuite (y 1900-2600), clear of the stair (y 2700-3700)
+# fact: d_en_corr (x 4100-4900, 800 wide) swings into the ensuite (y 1900-2600), clear of the stair (x 4900-7100,
+#   y 2700-3700), and no part of it stands beside the flight
 plan "Door swinging away from the stair head" {
   units mm
   grid 50
@@ -14,7 +17,9 @@ plan "Door swinging away from the stair head" {
   room id=r_landing at (0,2600) size 8000x1900 label "Landing" uses circulation
   door id=d_front at (1000,4500) width 900 wall shell
   door id=d_bed at (1750,2600) width 800 wall w_land swing into r_bed
-  door id=d_en_corr at (4900,2600) width 700 wall w_land hinge near start swing into r_en
+  door id=d_en_corr at (4500,2600) width 800 wall w_land hinge near start swing into r_en
   window at (1750,0) width 1200 wall shell
+  furniture shower in r_en anchor top-right flush size 900x900
+  furniture basin in r_en anchor top-left flush size 600x450
   stair id=stair at (4900,2700) size 2200x1000 dir down
 }

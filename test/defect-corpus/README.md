@@ -33,7 +33,9 @@ What the test asserts:
 - a `done` case's `lint()` codes contain its `expect` code;
 - a `todo` case's codes do **not** contain it yet. When a PS2 rule lands and a case starts to fire,
   the test goes red until the header says `done`, so the status column never goes stale;
-- a twin's codes never contain its case's `expect` code, whatever the case's status;
+- a twin's codes never contain its case's `expect` code, whatever the case's status, under the default
+  ruleset and under every profile (but for the rows of the test's `PROFILE_LEDGER`, each with why a stricter profile
+  is right to ask more);
 - every case has a twin and every twin has a case;
 - an `expect` code that is not in `src/error-catalog.ts` is listed in one of the code tables below,
   and every code listed below is used by at least one case.
@@ -52,7 +54,7 @@ The eight classes of README §1, most frequent first. The test reads the slugs f
 | `missing-defining-contents` | A bedroom without a bed, a bath without a shower, a kitchen without a worktop |
 | `clearances` | WC side clearance, wardrobe fronts, tall units over windows, blocked openings, pinches |
 | `daylight` | Windowless living rooms (labelled or typed) and bedrooms |
-| `stair-safety` | A door swing over the stair head, a void at the arrival, a flight too steep |
+| `stair-safety` | A door swing over a flight or its landing, no landing at a foot or head, a door onto a flight's side, a void at the arrival, a flight too steep, a shaft drawn in two places |
 | `annotation-collisions` | Auto dimensions inside rooms, title-block overflow, labels over furniture, lying dimension text |
 
 Two classes from `evidence.md` §3 have no cases, because no core lint rule can see them:
@@ -81,6 +83,12 @@ Two classes from `evidence.md` §3 have no cases, because no core lint rule can 
 | `W_FURNITURE_OVER_WINDOW` | PS2.11b |
 | `W_FOOTPRINT_TRANSPOSED` | PS2.11c |
 | `W_LEAF_ACROSS_DOORWAY` | PS2.11d |
+| `W_SWING_OVER_STAIR` | PS2.11e |
+| `W_STAIR_NO_LANDING` | PS2.11e, PS2.34 |
+| `W_STAIR_SIDE_ENTRY` | PS2.34 |
+| `W_STAIR_HEAD_VOID` | PS2.11e |
+| `W_STAIR_TOO_STEEP` | PS2.11e |
+| `W_SHAFT_FOOTPRINT_MISMATCH` | PS2.15 |
 | `W_HOB_FRIDGE_GAP` | PS2.11e |
 | `W_LEAF_TOO_WIDE` | PS2.11e |
 | `W_HOB_UNDER_WINDOW` | PS2.46 |
@@ -94,9 +102,6 @@ The card that implements a check may rename its code; rename it here and in the 
 |---|---|---|
 | `W_FLOOR_UNASSIGNED` | A walled face less than 95 % covered by rooms (PS2.4's dual) | PS2.4 |
 | `W_WARDROBE_FRONT_CLEARANCE` | Clear depth in front of a wardrobe under 600 mm (a declared `clear front`, or a profile figure: card PS2.60) | PS2.11 |
-| `W_SWING_OVER_STAIR` | A door swing over a stair footprint or its landing | PS2.11 |
-| `W_STAIR_HEAD_VOID` | A void on a stair's arrival landing | PS2.11 |
-| `W_STAIR_TOO_STEEP` | A flight too short for its storey height (riser over the profile's limit) | PS2.11 |
 | `W_EXIT_SWINGS_INWARD` | A hinged exterior door that is an exit of a non-residential plan, swinging into the floor against the escape direction | PS2.16 |
 
 Two checks extend existing codes instead of adding one: a desk in front of a leaf-less opening expects

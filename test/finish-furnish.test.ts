@@ -554,6 +554,9 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
   // wall's face; why, in `test/byte-identity-baseline.ts`'s header. `finish` echoes the source, so
   // each row moves with its edit; the partly furnished rooms each names are unchanged (asserted above).
   // Re-measured 2026-10-26 (PR #283 red-team round 1): the eight examples its rulings edited (relational is `main`'s again); `finish` echoes the source; why, in `test/byte-identity-baseline.ts`'s header.
+  // Re-measured 2026-10-26 (merging main@e432c24a): garden-house, hillside-villa and library carry both PRs' edits; two-storey is `main`'s row; why, in `test/byte-identity-baseline.ts`'s header.
+  // Re-measured 2026-10-26 (PS2.11e): garden-house, hillside-villa, library and two-storey fixed for
+  // stair defects; why, in `test/byte-identity-baseline.ts`'s header.
   const FINISH_DIGESTS: ReadonlyMap<string, string> = new Map(
     (
       [
@@ -570,13 +573,13 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         // Re-measured 2026-10-18 (plan-soundness PS2.6): the example's SOURCE changed, one door
         // re-hosted (`d_gar` onto the kitchen, +3 bytes), and `source` is part of this digest. The
         // pre-edit source still gives the previous row; see ./byte-identity-baseline.ts.
-        ["502b6ac277f5fd2dd49950184ee0a4a6762f3189fd586bd483fc3d9503f3d7f4", "garden-house"], // PS2.17 source edit (a worktop), see above
+        ["983247101693380971f87673233611f0ae1359af114762731c48f36dda75eb2e", "garden-house"], // PS2.17 source edit (a worktop), see above
         ["2e7ccbfcc9e7f2b3a7fae8d5bd7b28c964f6ffba39f523986ea0d8820a19ae4f", "garden-loft"], // PS2.17 source edit (a worktop), see above; PS2.11e source edit, see above
         ["57d4237846d3b666c6806da6ee2bf4cadeb68a2e1d39723c6a024e5b415d5faf", "hexagon-pavilion"],
-        ["40e003eb5e1e024d568b2a2ac6c847e819e18111e53bef5a9c92f8c0049b7967", "hillside-villa"], // PS2.1–PS2.3 and PS2.9 source edits, see above; PS2.11e source edit, see above
+        ["37ab4a50cdf72fc2a5fc72c26ee3b244761456d975bb72713e373d3936da309b", "hillside-villa"], // PS2.1–PS2.3 and PS2.9 source edits, see above; PS2.11e source edit, see above
         ["d90d58c40a4068427ef23c066acba5d50d8e99a801b6ce890da3ac9dc01a9554", "imports"],
         ["3c74875a484473833fa631c3b1ddd70824604261e970c922fc788cff0fb5db5a", "laneway-house"], // PS2.17 source edit (a worktop), see above; PS2.11e source edit, see above
-        ["c2ffdfea8a6ac8bd7d00e64405c21f2c1917532419244b239fe6cf32e9012298", "library"], // PS2.11e source edit, see above
+        ["788f3c1236fd579c0232ce22219cf57a12316f336122793bf985d12224f0030b", "library"], // PS2.11e source edit, see above
         ["283b12f402d18bae334393b1e7d88823a2c36224a8a347e58012933050f8e11f", "materials"],
         ["f13dba69c7e1828d96ce3ae08a02d438157c43db45f37c525e800ab5a3bc302d", "museum"], // PS2.11e source edit, see above
         ["e56adeb88cb99daf3c2e93723b84ccd134c948f803bffb84fb519553d0ff63c4", "museum-wing"],
@@ -593,7 +596,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         ["f65d780ba8d63321f1a00dfac34b070e2cf6f6ec912c14eda5a4396549966362", "townhouse"], // PS2.17 source edit (a worktop), see above; PS2.11e source edit, see above
         ["d5f4adda998c4cfe008fc69ee82cd0232d39e748f83c078fda1332ec1afbedf4", "transit-hall"], // PS2.11e source edit, see above
         ["16b598f449b4051c4113c1ad9ec92cc0b603cffa0772d51c9d78e6e59490a1e7", "two-bed"], // PS2.17 source edit (a worktop), see above; PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e source edit, see above
-        ["582be7470bc327469f912a06896ef2657a308072486fb8b5f21314a4f7a3a6b0", "two-storey"], // PS2.1–PS2.3 and PS2.9 source edits; PS2.17 source edit (a worktop), see above
+        ["abf58453899289e59907fe53c867c88b50cd5bc3a6544a1cb47ff55d013d06c5", "two-storey"], // PS2.1–PS2.3 and PS2.9 source edits; PS2.17 source edit (a worktop), see above
       ] as const
     ).map(([digest, example]) => [example, digest]),
   );

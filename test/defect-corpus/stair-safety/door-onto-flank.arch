@@ -1,0 +1,19 @@
+# class: stair-safety
+# origin: audits/2026-10-24-first-contact-rerun.md NT1 (first-contact-plans/2026-10-24-rerun/5-townhouse.arch L0: the hall
+#   door opens onto the flight's flank; also CT2 and CT1); reduced to a bedroom door, the leaf turned away from the flight
+# expect: W_STAIR_SIDE_ENTRY
+# status: done
+# fact: d_side (y 1100-1900 on w_v, face x 3050) opens 150 mm from the flight's west side (x 3200-4300, y 300-2700,
+#   dir up), beside its lowest 1600 mm; no part of the doorway lies past either end of the flight
+plan "Door onto the side of a flight" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (7000,0) (7000,4000) (0,4000) close }
+  wall id=w_v partition thickness 100 { (3000,0) (3000,4000) }
+  room id=r_bed at (0,0) size 3000x4000 label "Bedroom" uses bedroom
+  room id=r_stair at (3000,0) size 4000x4000 label "Stair hall" uses hall
+  door id=d_front at (7000,3200) width 900 wall shell swing into r_stair
+  door id=d_side at (3000,1500) width 800 wall w_v swing into r_bed
+  window at (0,2000) width 1200 wall shell
+  stair id=st at (3200,300) size 1100x2400 dir up
+}
