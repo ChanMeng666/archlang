@@ -71,8 +71,9 @@ suite("keep · impact: the widening drill (design §9), through the CLI", () => 
     const r = await run(cmdImpact, [file, "--set", "AW=4500"]);
     expect(r.exit).toBe(0);
     const lines = r.stdout.trimEnd().split("\n");
-    // Today's sections, unchanged but for the keep code, which is not among them.
-    expect(lines.slice(0, 11)).toEqual([
+    // Today's sections, unchanged but for the keep code, which is not among them. Held: the
+    // walls written at fixed coordinates that lay on the edges that moved (PS4.5 contacts).
+    expect(lines.slice(0, 13)).toEqual([
       "AW: 4000 → 4500",
       "Lets (1):",
       "  AW: 4000 → 4500",
@@ -83,7 +84,9 @@ suite("keep · impact: the widening drill (design §9), through the CLI", () => 
       "    why: on a (resized) ← reads AW (4000 → 4500)",
       "  door door_2 re-hosted: joins a and b → nothing",
       "    why: joins a (resized) ← reads AW (4000 → 4500)",
-      "Held (0): none",
+      "Held (2):",
+      "  wall p stayed at x 4000 while a.right / b.left moved to x 4500 (500 mm)",
+      "  wall shell stayed at x 8000 while b.right moved to x 8500 (500 mm)",
     ]);
     const broke = lines.slice(lines.indexOf("Broke (3):") + 1, lines.indexOf("Healed (0): none"));
     expect(broke.map((l) => l.split(":")[0])).toEqual([

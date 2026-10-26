@@ -119,6 +119,7 @@ export type {
 } from "./analyze/symmetry.js";
 export type { SyntaxFacts, SyntaxRoom } from "./analyze/syntax.js";
 export type { DependsEntry, DependsFacts, DerivedWallDepends } from "./analyze/depends.js";
+export type { ContactFact, RoomEdge } from "./analyze/contacts.js";
 export type { KeepFact, KeepRedundancy } from "./analyze/keep-facts.js";
 
 // The access graph and its two node/edge shapes are DECLARED in `analyze.js`, but

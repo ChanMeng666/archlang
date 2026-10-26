@@ -33,6 +33,22 @@ export function validateJsonFiles(): string[] {
  */
 export const withoutSummary = (stdout: string): string => stdout.replace(/^\{\n {2}"summary": "[^"\n]*",\n/, "{\n");
 
+/**
+ * `stdout` without the `"stage": "<stage>"` key PS7.1 appends LAST to every `validate --json`
+ * diagnostic and intent violation, byte for byte. Only a string-valued `stage` key is removed, and
+ * only as the last key of its object, so `--stage`'s `at_stage` block (an object) is never touched.
+ */
+export const withoutStageKeys = (stdout: string): string =>
+  stdout.replace(/,\n +"stage": "(?:brief|rooms|walls|openings|fixtures|drafting)"(?=\n +\})/g, "");
+
+/**
+ * What the digest laws that hash `validate --json` (`keep-byte-identity` K1, `keep-digests` K3)
+ * measure: the output without the keys added after their pins (PS7.6's `summary`, PS7.1's
+ * `stage`), so no pin is re-blessed. Each key is covered where it belongs: `./lint-summary.test.ts`
+ * and `./stages.test.ts`.
+ */
+export const validateDigestView = (stdout: string): string => withoutStageKeys(withoutSummary(stdout));
+
 /** Run `validate <argv…>` in-process; return its exit code and everything it wrote to stdout. */
 export function runValidate(argv: string[]): { exit: number; stdout: string } {
   let stdout = "";

@@ -57,6 +57,7 @@ export const swingObstructed: LintRule = {
   name: "swing-obstructed",
   family: "doors",
   layer: "validity",
+  stage: "openings",
   codes: ["W_SWING_OBSTRUCTED"],
   check(ctx: LintContext): Diagnostic[] {
     const { ir, doors, furniture, rules, at, frameOf } = ctx;
@@ -265,6 +266,7 @@ export const doorwayBlocked: LintRule = {
   name: "doorway-blocked",
   family: "doors",
   layer: "validity",
+  stage: "fixtures",
   codes: ["W_DOORWAY_BLOCKED"],
   check(ctx: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
@@ -377,6 +379,7 @@ export const pocketRun: LintRule = {
   name: "pocket-run",
   family: "doors",
   layer: "validity",
+  stage: "openings",
   codes: ["W_POCKET_RUN"],
   check(ctx: LintContext): Diagnostic[] {
     const { doors, ir, rules, at, skip } = ctx;
@@ -464,6 +467,7 @@ export const doorClearance: LintRule = {
   name: "door-clearance",
   family: "doors",
   layer: "validity",
+  stage: "openings",
   codes: ["W_DOOR_CLEARANCE"],
   check({ doors, rules, at }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
@@ -555,6 +559,7 @@ export const doorNearCorner: LintRule = {
   name: "door-near-corner",
   family: "doors",
   layer: "validity",
+  stage: "openings",
   codes: ["W_DOOR_NEAR_CORNER"],
   check({ ir, doors, wallSegs, rules, at }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
@@ -735,6 +740,7 @@ export const leafAcrossDoorway: LintRule = {
   name: "leaf-across-doorway",
   family: "doors",
   layer: "validity",
+  stage: "openings",
   codes: ["W_LEAF_ACROSS_DOORWAY"],
   check(ctx: LintContext): Diagnostic[] {
     const { doors, rules, rooms, roomRects, at } = ctx;

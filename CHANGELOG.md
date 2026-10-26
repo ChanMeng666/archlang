@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `arch validate --stage <brief|rooms|walls|openings|fixtures|drafting>`: authoring stages, the
+  rarely-changed decisions first (plan card PS7.1). The command shows only the findings of that
+  stage and earlier; errors are always shown. `ok`, `--strict`, the intent block and `next` read
+  that set. Taste is a `next` tier only at `drafting`, and a `--graph` check only from `openings`
+  on. `summary` opens with the stage and counts the later-stage findings it holds back, and an
+  `at_stage` `{ stage, held_back, clean }` block says when to advance. Every lint rule now declares
+  its `stage` (`LintRule.stage`, required like `layer`; `LINT_CODE_STAGES`). A finding's stage is
+  the earliest stage at which its check can be judged: `W_ROOM_TOO_SMALL` is `rooms`,
+  `W_ROOM_TOO_NARROW` (clear width) `walls`, `W_NO_ENTRANCE` `openings`, `W_FIXTURE_FLOATING`
+  `fixtures`. A later stage can re-raise an earlier stage's finding, so a clean stage is not final.
+  Compile warnings take their stage from their family, intent assertions from their predicate and
+  `keep`s from what they measure. Without the flag, `validate --json` adds only a `stage` key, last,
+  on each diagnostic and intent violation. `lint`, `lint()`, `describe()` and the drawing are
+  unchanged. Library: `AUTHORING_STAGES`, `atStage`, `codeStage`, `predicateStage`, `keepStage`.
+  SKILL's loop, `arch-author.md` and the spec now teach stage-ordered authoring.
+
 - `door double`: a pair of hinged leaves, each half the door's `width`, hung on the two jambs and
   closing onto each other at the centre, both to the `swing` side (plan card PS2.11e). It takes
   `swing` (wall-relative, `inward|outward` or `into <room>`) and refuses `hinge`, `slide` and
@@ -39,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   order, `E_FURN_SIZE`, `E_OPENING_DATUM`, `E_OPENING_NIB`, `E_FURN_AGAINST`). `--level full` is
   the default, the whole bundle as before; `--level starter --section` is a usage error. Plan card
   PS7.2.
+
 - `arch preview <file> --review`: the review sheet, one PNG for whoever reviews a plan (plan card
   PS5.4; D20). The plan exactly as `preview` draws it, with `describe().access` laid over it (rooms
   as nodes at their label points, an edge through each door and opening, entrances marked); every
@@ -108,6 +125,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   line says advisory keeps are reported by `impact` too (29,815 → 29,822 units) and the SKILL
   sentence describes the real report. A plan with no keep is unchanged byte for byte in every
   surface (the 269-file baseline).
+- `arch impact` reports walls and furniture written at fixed coordinates as `held` when a room
+  edge they lay on moves and they do not (plan card PS4.5). `describe --facts depends` adds
+  `contacts: [{ room, edge }]` to an authored wall's or furniture piece's row: the rectangular
+  rooms' edges it lies on (a straight segment's centreline, a piece's back edge, on the same
+  0.001 mm lattice line and overlapping by a positive length; never a bounding box), less the rooms
+  it already follows through `on`; present only when non-empty, and never on a derived wall. An
+  element lists at most 64, whole rooms in room-id order; when a contact is left out (that cap, or
+  the storey's search budget) `depends.contacts_truncated` is `true`. `impact` reads the before
+  side's contacts: an element that is exactly unchanged and still on the line it lay on, whose
+  contact edge's line moved, gains a `because` step `via: "contact"` named as the datum
+  (`a.right`), with `contact: { room, edge, axis, stayed_mm, moved_to_mm, gap_mm }`; the human
+  report prints one line per held row, edges that moved to the same line together:
+  `wall p stayed at x 4000 while a.right / b.left moved to x 4500 (500 mm)`. A truncated before
+  side adds `contacts_truncated: true` and a note under Held. An element that moved at all, even
+  within `diffPlans`' 10 mm tolerance, is no longer held through any dependency. The widening drill
+  now holds the shell and the partition `p`; the studio drill holds the x 4000 partition. Edges
+  are spelled as the datum reads at the plan root, so they turn with a turned instance. Plain
+  `describe()`, the SVG and `lint()` are unchanged.
 
 - Brief-bound dimensions (plan card PS4.4). `describe().totals` gains the plan's **gross internal
   area**, `gross_internal_area_m2`: the floor inside the inner faces of the storey's `exterior`

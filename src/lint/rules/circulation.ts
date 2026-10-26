@@ -15,6 +15,7 @@ export const roomNoClearPath: LintRule = {
   name: "room-no-clear-path",
   family: "circulation",
   layer: "validity",
+  stage: "fixtures",
   codes: ["W_ROOM_NO_CLEAR_PATH"],
   check({ rooms, furniture, doors, openings, ir, rules, nameOf, at }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];

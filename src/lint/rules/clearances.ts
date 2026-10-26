@@ -75,6 +75,7 @@ export const wcSideClearance: LintRule = {
   name: "wc-side-clearance",
   family: "furniture",
   layer: "validity",
+  stage: "fixtures",
   codes: ["W_WC_SIDE_CLEARANCE"],
   check(ctx: LintContext): Diagnostic[] {
     const need = ctx.rules.wcSideClearanceMm;
@@ -158,6 +159,7 @@ export const furnitureOverWindow: LintRule = {
   name: "furniture-over-window",
   family: "furniture",
   layer: "validity",
+  stage: "fixtures",
   codes: ["W_FURNITURE_OVER_WINDOW"],
   check(ctx: LintContext): Diagnostic[] {
     const tall = ctx.furniture.filter((f) => isTallUnit(f.category));

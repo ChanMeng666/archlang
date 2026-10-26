@@ -465,6 +465,7 @@ export const roomViaPrivate: LintRule = {
   name: "room-via-private",
   family: "privacy",
   layer: "validity",
+  stage: "openings",
   codes: ["W_ROOM_VIA_PRIVATE"],
   check(ctx: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
@@ -608,6 +609,7 @@ export const wetRoomDoor: LintRule = {
   name: "wet-room-door",
   family: "privacy",
   layer: "validity",
+  stage: "openings",
   codes: ["W_WET_ROOM_DOOR"],
   readsFurniture: "wet-door",
   check(ctx: LintContext): Diagnostic[] {
@@ -900,6 +902,7 @@ export const entranceIntoPrivate: LintRule = {
   name: "entrance-into-private",
   family: "privacy",
   layer: "validity",
+  stage: "openings",
   codes: ["W_ENTRANCE_INTO_PRIVATE"],
   check(ctx: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];

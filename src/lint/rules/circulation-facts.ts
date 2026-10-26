@@ -672,6 +672,7 @@ export const pathTooNarrow: LintRule = {
   name: "path-too-narrow",
   family: "circulation",
   layer: "validity",
+  stage: "openings",
   codes: ["W_PATH_TOO_NARROW"],
   readsFurniture: "walk",
   check(ctx: LintContext): Diagnostic[] {
@@ -836,6 +837,7 @@ export const circuitousPath: LintRule = {
   name: "circuitous-path",
   family: "circulation",
   layer: "validity",
+  stage: "openings",
   codes: ["W_CIRCUITOUS_PATH"],
   // Reads the same nav grid as the walk: a quoted set that closes a way through a room sends
   // the walk round (measured on multi-room fuzz, `test/lint-hint-paste.test.ts`).

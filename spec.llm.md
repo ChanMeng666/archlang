@@ -161,7 +161,7 @@ arch score plan.arch --brief brief.json --json  # satisfied/total — measures, 
 arch score plan.arch --taste generic --json  # a reviewer's taste report, 0–1, never gates
 ```
 
-**Self-correction loop:** compile → `validate --json` (fix its `next` first) → lint → repair. If
+**Self-correction loop:** compile → `validate --json` (fix its `next` first) → lint → repair; author in stages: `validate --stage rooms|walls|openings|fixtures` in turn, advancing when `at_stage.clean`. If
 `ok` is false, read each `diagnostics[].fix` (and `line`/`col`/`span`), edit the source, recompile.
 Then `describe --json` to confirm intent without rendering an image (floor area: `net_area_m2`; `area_m2` runs to wall centrelines). **Before shipping, gate with `validate --strict`**
 — lint flags furniture through a wall or in the wrong room, a fixture blocking a doorway or a door's
