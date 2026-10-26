@@ -264,7 +264,7 @@ export const hobUnderWindow: LintRule = {
  * side of a cooking surface and 15" on the other side" (read in the NKBA guidelines PDF and the
  * NKBA consumer checklist [V]); a tall unit inside 12 in leaves that side less than the lesser
  * landing, whichever side it is on. A wall beside the hob is not judged here (the landing rule
- * would read it too: card PS2.61). Every plan is read, as for {@link hobUnderWindow}. One warning
+ * would read it too: card PS2.59). Every plan is read, as for {@link hobUnderWindow}. One warning
  * per hob, on its nearer short side; no fix (which piece moves, or whether a worktop goes
  * between, is the author's).
  */

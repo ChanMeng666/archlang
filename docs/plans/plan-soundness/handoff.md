@@ -157,7 +157,7 @@ waited for item 1 (D19), which ran 2026-10-26: such a card may start and the nex
 
 Facts a reader would otherwise miss: the dwelling reading (D6) now has six consumers (three lint
 arms, taste R6/R11/R12), so D6's reverse-if has fired and is re-stated in D6; `spec.llm.md` is
-29,896 UTF-16 units, 104 under its 30,000 cap (PS2.11e's `double` kind took 74) (PS7.5 freed 135 from the loop paragraph's taste clause; PS4.3a's 483-unit keep line took 86 back net of four cuts), so the next spec-text card is paid for within that headroom;
+29,868 UTF-16 units, 132 under its 30,000 cap (PS2.11e's `double` kind took 74 and cut 28) (PS7.5 freed 135 from the loop paragraph's taste clause; PS4.3a's 483-unit keep line took 86 back net of four cuts), so the next spec-text card is paid for within that headroom;
 the first-contact hits of the four clearance rules (A8, NT4, NH6, RH3, T5, A1, K4, NH5, RA6, C4, RS4,
 RK4) are in the two 2026-10-25 as-built records and are summed in Part 1 of the 2026-10-26 audit (23
 of the 57, 7 of the 48 and 5 of the 49 now caught, 9 new true findings, 0 false positives); `docs/backlog.md`
@@ -171,6 +171,10 @@ items 3.1(b), M.8, M.9, M.14 and D.7 wait on the owner's answers and are not cov
   **D23 ratified by the owner on 2026-10-26** (D18): PR #269 widened the id-free wording in
   `docs/agents/iron-laws.md` to `taste()` and the compile-channel `W_ROOM_OVERLAP`; recorded with its
   reverse-if, applied in code, enforced by tests, and now citable as precedent.
+- **D25 awaits the owner's ratification** (D18): the doorway approach is read from the wall's face
+  (PS2.54, PR #283), so three eval holdout goldens (`dims-auto-cottage`, `galley-kitchen`,
+  `compact-studio`) now fail the judge's physical check and their `semanticPass` was set to false,
+  beyond D19's `lintWarnings`-only practice. Reverse-if in `README.md` §3 D25.
 - Fuzz, timing and red-team probes were to run in the owner's prepaid `claude --cloud` sessions
   (owner, in conversation, 2026-10-20). One probe ran; the rest ran locally. Item 1's two arms ran as
   local headless sessions, not in the cloud sessions; use the cloud sessions, if they are still

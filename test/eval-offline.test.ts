@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { RoomSummary } from "../src/index.js";
 import { type CorpusEntry, evaluate, l1Row, loadCorpus, parseBudget, readGolden, scoreSource } from "../eval/run.js";
@@ -13,6 +14,23 @@ import { SYNONYMS_VERSION, isKnownConcept, roomsMatching } from "../eval/synonym
  * -- --live`) produces the headline authorability number for the README.
  */
 
+/**
+ * The holdout goldens whose physical judgment D25 (plan-soundness README §3, awaiting
+ * ratification) moved: the doorway approach read from the wall's face (PS2.54) and over cased
+ * openings (PS2.11e) finds a piece inside it. Read from the judge fixture's own `notes`, never
+ * retyped; each is held to fail on that one finding alone (below).
+ */
+const D25: ReadonlySet<string> = new Set(
+  Object.entries(
+    (
+      JSON.parse(readFileSync(new URL("../eval/judge-fixture.json", import.meta.url), "utf8")) as {
+        notes?: Record<string, string>;
+      }
+    ).notes ?? {},
+  )
+    .filter(([, note]) => note.startsWith("D25"))
+    .map(([id]) => id),
+);
 describe("eval — committed goldens still author correctly", () => {
   const entries = loadCorpus();
 
@@ -22,8 +40,18 @@ describe("eval — committed goldens still author correctly", () => {
 
   it("every golden compiles and matches its expected semantics", async () => {
     const { results, summary } = await evaluate(entries, (e) => readGolden(e));
-    const failed = results.filter((r) => !r.semanticPass);
+    const failed = results.filter((r) => !r.semanticPass && !D25.has(r.id));
     expect(failed.map((r) => `${r.id}: ${r.failures.join(", ")}`)).toEqual([]);
+    // D25's goldens fail on exactly the one physical finding the decision names, nothing else.
+    for (const r of results.filter((x) => D25.has(x.id))) {
+      expect(r.semanticPass, r.id).toBe(false);
+      expect(
+        r.failures.map((f) => f.split(" — ")[0]),
+        r.id,
+      ).toEqual(["physical: W_DOORWAY_BLOCKED"]);
+    }
+    expect(results.filter((r) => D25.has(r.id))).toHaveLength(D25.size);
+    expect([...D25].sort()).toEqual(["compact-studio", "dims-auto-cottage", "galley-kitchen"]);
     expect(summary.valid).toBe(summary.total);
   });
 
@@ -149,7 +177,7 @@ describe("eval — committed goldens still author correctly", () => {
 
   it("no golden contains a physical-correctness violation", async () => {
     const { results } = await evaluate(entries, (e) => readGolden(e));
-    const broken = results.filter((r) => r.physicalWarnings > 0);
+    const broken = results.filter((r) => r.physicalWarnings > 0 && !D25.has(r.id));
     expect(broken.map((r) => `${r.id}: ${r.failures.join(", ")}`)).toEqual([]);
   });
 

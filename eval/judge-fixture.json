@@ -305,9 +305,11 @@
       "id": "dims-auto-cottage",
       "valid": true,
       "lintWarnings": 2,
-      "physicalWarnings": 0,
-      "semanticPass": true,
-      "failures": [],
+      "physicalWarnings": 1,
+      "semanticPass": false,
+      "failures": [
+        "physical: W_DOORWAY_BLOCKED — Doorway is blocked — the approach needs 300 mm clear on each side but \"wc\" leaves 250 mm (50 mm short)."
+      ],
       "subscores": {
         "rooms": 1,
         "labels": 1,
@@ -893,9 +895,11 @@
       "id": "galley-kitchen",
       "valid": true,
       "lintWarnings": 2,
-      "physicalWarnings": 0,
-      "semanticPass": true,
-      "failures": [],
+      "physicalWarnings": 1,
+      "semanticPass": false,
+      "failures": [
+        "physical: W_DOORWAY_BLOCKED — Doorway is blocked — the approach needs 300 mm clear on each side but \"basin\" leaves 250 mm (50 mm short)."
+      ],
       "subscores": {
         "rooms": 1,
         "labels": 1,
@@ -1198,9 +1202,11 @@
       "id": "compact-studio",
       "valid": true,
       "lintWarnings": 5,
-      "physicalWarnings": 0,
-      "semanticPass": true,
-      "failures": [],
+      "physicalWarnings": 1,
+      "semanticPass": false,
+      "failures": [
+        "physical: W_DOORWAY_BLOCKED — The opening between \"Studio Room\" and \"Kitchenette\" is blocked — the approach needs 300 mm clear on each side but \"kitchen_sink\" leaves 250 mm (50 mm short)."
+      ],
       "subscores": {
         "rooms": 1,
         "labels": 1,
@@ -2159,5 +2165,10 @@
       ],
       "judgeVersion": "2"
     }
-  ]
+  ],
+  "notes": {
+    "dims-auto-cottage": "D25 (awaiting ratification): the WC stands 250 mm off the bath door's face, over 100 mm of its 800 mm span; from the wall's face (PS2.54) that is inside the 300 mm approach, so W_DOORWAY_BLOCKED is a physical failure and semanticPass is false. JUDGE_VERSION unchanged.",
+    "galley-kitchen": "D25 (awaiting ratification): the basin stands 250 mm off the bath door's face, over 150 mm of its 800 mm span; inside the 300 mm approach read from the face (PS2.54), a physical failure. JUDGE_VERSION unchanged.",
+    "compact-studio": "D25 (awaiting ratification): the kitchen sink stands 250 mm off the kitchenette opening's face, over 350 mm of its 1000 mm span; W_DOORWAY_BLOCKED now reads cased openings, from the face (PS2.11e, PS2.54), a physical failure. JUDGE_VERSION unchanged."
+  }
 }
