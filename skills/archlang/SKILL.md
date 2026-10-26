@@ -50,7 +50,10 @@ owns that name, so the shell runs the wrong program.
    generation pipeline runs before it ships. Add `--graph g.json` to also assert the intended
    room-to-room adjacency (`{ "living": ["kitchen","hall"], … }`); a mismatch fails. Read each
    `diagnostics[].fix`, edit, and re-run until it passes — or, if a warning is deliberate, say so.
-   The author's loop is compile → `validate --json` (fix its `next` first) → lint → repair.
+   The author's loop is compile → `validate --json` (fix its `next` first) → lint → repair. Read the
+   `summary` (first key of `lint|validate --json`, first line of the text report) before anything
+   else: it counts the warnings and the distinct codes and leads with the commonest, so a truncated
+   read still tells you how much is hidden.
    **Review, once that loop is clean:** the reviewer (not the author) runs
    `archlang score plan.arch --taste generic --json` and reads the advice: a sourced 0–1 score
    (privacy gradient, daylight, proportion, corner doors, …) whose `criteria[].advice` `A_*` codes
@@ -77,7 +80,8 @@ owns that name, so the shell runs the wrong program.
    fixes and every edit must keep (a 3.6 m clear living room, a partition on axis 2, a bathroom over a
    bathroom) goes in the source as a `keep` (`keep min clear living 3600`); it moves and draws nothing, a
    broken hard keep (the default) is `W_KEEP_VIOLATED` with a signed residual and fails `--strict`,
-   and `archlang impact --set` lists it among the diagnostics a change breaks.
+   and `archlang impact --set` lists which keeps a change breaks, holds or heals, each with its
+   residual before and after.
 9. **Fix furniture geometry:** `archlang repair plan.arch -o fixed.arch` pushes furniture out of
    walls/doorways/swing arcs (the geometric corrector; distinct from `fix`). It rewrites a piece in
    the form you wrote it (an `at` point, or the `inset` of an `in <room> anchor …` placement) — and

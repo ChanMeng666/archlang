@@ -119,7 +119,7 @@ schedule rooms|openings   # DERIVED tables under the title block, either or both
 legend   # draw the LEGEND table beside the schedule: a row per wall hatch material used and per placed fixture category that has a plan symbol, each with a real swatch. Fully derived
 site { street north|south|east|west [hemisphere north|south] [boundary (x,y) (x,y) (x,y) …] }   # `street`/`hemisphere` are semantics only and draw NOTHING; `boundary` is the LOT LINE and is the one part that draws (a dash-dot property line) and grows the page, adding `site.lot_area_m2` (exact shoelace) + `site.lot_bbox` (E_SITE_BOUNDARY_DEGENERATE, E_SITE_BOUNDARY_SELF_INTERSECT). `street` is a TRUE compass direction (read WITH `north`, not instead of it) and names five on `describe --json`'s `site`: `street`, `back` (opposite), `equator_side` (S north of the equator, N south of it), `sunrise_side` (E), `sunset_side` (W). An intent's `windows.facing` may assert those NAMES instead of a letter (no `site` = E_INTENT_NO_SITE). They are a DRAFTING HEURISTIC for an aspect, NOT daylight — there is no sun model. `street` required (E_SITE_NO_STREET), one block (E_SITE_DUP), plan-level only
 notes "…" ["…" …]   # a numbered NOTES table, wrapped to its column; repeats append. Drawing-only, like `legend`, `schedule openings` and title `number`/`revision`
-keep (align <d>… | equal width|depth <id>… | offset <d|id> from <d> <mm> | min clear <room> <mm> | on axis <label> <wall> | stacked <room|stair|elevator|void> on levels <n>… | fixed <d> at <mm>) [hard|soft|advisory]   # CHECKED, never solved: draws/moves nothing. <d>: r.left…, axis <label>, straight wall; authored ids; stacked: plan root; others in their level (multi-storey). Broken: hard (default) W_KEEP_VIOLATED ±mm, fails --strict; soft in next; advisory in describe/validate
+keep (align <d>… | equal width|depth <id>… | offset <d|id> from <d> <mm> | min clear <room> <mm> | on axis <label> <wall> | stacked <room|stair|elevator|void> on levels <n>… | fixed <d> at <mm>) [hard|soft|advisory]   # CHECKED, never solved: draws/moves nothing. <d>: r.left…, axis <label>, straight wall; authored ids; stacked: plan root; others in their level (multi-storey). Broken: hard (default) W_KEEP_VIOLATED ±mm, fails --strict; soft in next; advisory in describe/validate/impact
 ```
 
 ## Scripting (all expand-time, deterministic)
@@ -318,7 +318,10 @@ owns that name, so the shell runs the wrong program.
    generation pipeline runs before it ships. Add `--graph g.json` to also assert the intended
    room-to-room adjacency (`{ "living": ["kitchen","hall"], … }`); a mismatch fails. Read each
    `diagnostics[].fix`, edit, and re-run until it passes — or, if a warning is deliberate, say so.
-   The author's loop is compile → `validate --json` (fix its `next` first) → lint → repair.
+   The author's loop is compile → `validate --json` (fix its `next` first) → lint → repair. Read the
+   `summary` (first key of `lint|validate --json`, first line of the text report) before anything
+   else: it counts the warnings and the distinct codes and leads with the commonest, so a truncated
+   read still tells you how much is hidden.
    **Review, once that loop is clean:** the reviewer (not the author) runs
    `archlang score plan.arch --taste generic --json` and reads the advice: a sourced 0–1 score
    (privacy gradient, daylight, proportion, corner doors, …) whose `criteria[].advice` `A_*` codes
@@ -345,7 +348,8 @@ owns that name, so the shell runs the wrong program.
    fixes and every edit must keep (a 3.6 m clear living room, a partition on axis 2, a bathroom over a
    bathroom) goes in the source as a `keep` (`keep min clear living 3600`); it moves and draws nothing, a
    broken hard keep (the default) is `W_KEEP_VIOLATED` with a signed residual and fails `--strict`,
-   and `archlang impact --set` lists it among the diagnostics a change breaks.
+   and `archlang impact --set` lists which keeps a change breaks, holds or heals, each with its
+   residual before and after.
 9. **Fix furniture geometry:** `archlang repair plan.arch -o fixed.arch` pushes furniture out of
    walls/doorways/swing arcs (the geometric corrector; distinct from `fix`). It rewrites a piece in
    the form you wrote it (an `at` point, or the `inset` of an `in <room> anchor …` placement) — and
@@ -721,7 +725,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
   - example: `archlang watch plan.arch -o plan.svg` — recompile on every save (interactive; agents should use compile)
 
 **`archlang validate`** — parse + resolve + lint, no render (is it valid & sound?)
-  - input: <file.arch|-> → output: diagnostics (plus a graph{} report with --graph and an intent{ ok, satisfied, total, subscores, violations, measures? } block with --intent; `measures` lists each brief-bound size with its measured value and signed residual), then `next`: the one item to fix first { tier, code, message, span?, hint? } or null (tiers: error, warning, validity, drafting, intent, profile, taste)
+  - input: <file.arch|-> → output: diagnostics (plus a graph{} report with --graph and an intent{ ok, satisfied, total, subscores, violations, measures? } block with --intent; `measures` lists each brief-bound size with its measured value and signed residual), then `keeps` when the plan declares one (each { keep, grade, level?, holds, residual_mm, at?, measured_mm?, span }), then `next`: the one item to fix first { tier, code, message, span?, hint? } or null (tiers: error, warning, validity, drafting, intent, profile, taste)
   - flags: `--strict|--fail-on-warning` advisory warnings fail too (exit 2) · `--graph <graph.json>` also check the plan's interior-door adjacency against an intended graph (bare dict or {input_graph:{…}}); mismatch → exit 2 · `--intent <intent.json>` gate the plan against a brief's intent JSON; a failing gating assertion (room count/existence/area/windows) → exit 2. Adjacency/reachability score but never gate. Composes with --graph. · `--feedback` with --intent, append a deterministic per-violation correction prompt (advisory data, never applied) · `--profile <residential-basic|accessibility-advisory|cn-residential-advisory|uk-residential-advisory|us-residential-advisory>` lint under this advisory ruleset too (as `lint --profile`); its own warnings rank as `next` tier profile · `--taste <generic|cn-residential-advisory|uk-residential-advisory|us-residential-advisory>` let `next` fall back to the lowest-scoring taste criterion (ADR 0032); never gates · `--code <CODE[,CODE…]>` show only diagnostics with these codes — a DISPLAY filter: the exit code and `ok` still come from the unfiltered set · `--severity <error|warning>` show only diagnostics of this severity — a DISPLAY filter, like --code (never changes the exit code) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `archlang validate plan.arch --strict --json` — the ship gate: errors and advisory warnings both fail
 
@@ -776,7 +780,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
   - example: `archlang reroll plan.arch --json` — each candidate run as { span, replacement, count, loopVar, tokensBefore, tokensAfter }
 
 **`archlang impact`** — change one number: what moved and why, what held, what broke
-  - input: <file.arch|-> → output: { ok, set?, lets, changed[] (each with its `why` dependency chain and `root`), held[], diagnostics: { broke, healed, unchanged_count }, summary } (exit 0 on a report, 2 on a refused --set)
+  - input: <file.arch|-> → output: { ok, set?, lets, changed[] (each with its `why` dependency chain and `root`), held[], diagnostics: { broke, healed, unchanged_count }, keeps? (when either side declares a keep: { broke, held, healed, added, removed, unchanged_count }, each { keep, grade (or { before, after } when an edit changed it), level?, occurrence, residual_mm: { before, after }, at?, changed, span }; a broken hard keep is reported here, never also under diagnostics), summary } (exit 0 on a report, 2 on a refused --set)
   - flags: `--set <NAME=value>` override the root plan's top-level `let NAME` with a numeric literal (`4500` is mm, `4.5m`) and compare the plan before and after; refused with E_SET_OVERRIDE when NAME is not exactly one top-level let · `--against <old.arch>` compare the input (the new version) against this older file instead; exactly one of --set and --against · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `archlang impact plan.arch --set W=4500 --json` — widen by one number: every moved/resized/re-hosted element with the chain that moved it, what held, what broke
 
@@ -797,7 +801,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 
 **`archlang context`** — print the full bundled agent context (spec + workflow + CLI + errors)
   - input: none → output: the full agent context (llms-full.txt), or one --section of it
-  - flags: `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 143 KB of it (spec = the language, 30 KB; workflow = the agent loop, 29 KB; cli = every command, 25 KB; errors = the diagnostic catalog, 58 KB) · `--json` structured result on stdout, messages on stderr
+  - flags: `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 144 KB of it (spec = the language, 30 KB; workflow = the agent loop, 29 KB; cli = every command, 26 KB; errors = the diagnostic catalog, 58 KB) · `--json` structured result on stdout, messages on stderr
   - example: `archlang context` — the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 
 **`archlang new`** (aliases: `init`) — scaffold a starter .arch

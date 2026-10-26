@@ -192,7 +192,7 @@ describe("validate · next tiers through the CLI", () => {
     const r = runValidate([cleanPlan(), "--json", "--intent", brief()]);
     expect(r.exit).toBe(2);
     const out = JSON.parse(r.stdout);
-    expect(Object.keys(out)).toEqual(["ok", "strict", "diagnostics", "intent", "next"]);
+    expect(Object.keys(out)).toEqual(["summary", "ok", "strict", "diagnostics", "intent", "next"]);
     expect(out.next).toMatchObject({ tier: "intent", code: "E_INTENT_ROOM_COUNT" });
   });
 

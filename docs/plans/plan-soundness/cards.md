@@ -219,18 +219,8 @@ into PS3.12)
 
 **PS4.2 · `arch impact`.** `done` (PR #240, 7954f252)
 
-**PS4.3 · `keep` invariants (checked, never solved, by `compile()`).** `doing` (A: PR #272, 6f3de966; ADR 0033 Accepted)
-- Design: `research/2026-10-26-ps43-keep-design.md` (PR #270). PS4.3a built the statement, its evaluation,
-  `W_KEEP_VIOLATED`, `describe().keeps[]`, `validate --json` `keeps` and `next`, the never-worse counts,
-  the spec line and its cuts and the byte-identity law (`research/2026-10-26-ps43a-as-built.md`); PS4.3b
-  builds `impact` `keeps`, `depends.keeps[]` and PS4.11's Plan JSON note.
-- Vocabulary: `keep align <d> <d> …`, `keep equal width|depth <t> <t> …`, `keep offset <x> from <d> <mm>`,
-  `keep min clear <room> <mm>`, `keep on axis <label> <wall>`, `keep stacked <id> on levels <n> <n> …`,
-  `keep fixed <d> at <mm>` (D22 R3; design §2).
-- Grades `hard`/`soft`/`advisory` (the IFC `IfcConstraintEnum` ladder).
-- `W_KEEP_VIOLATED` reports a signed residual in mm.
-- A static DOF/redundancy/conflict fact goes under `--facts depends`.
-- A `keep` draws nothing and moves nothing.
+**PS4.3 · `keep` invariants (checked, never solved, by `compile()`).** `done` (A: PR #272, B: PR #275, commit filled at merge)
+- ADR 0033; design `research/2026-10-26-ps43-keep-design.md`; as built `research/2026-10-26-ps43a-as-built.md`, `research/2026-10-26-ps43b-as-built.md`.
 
 **PS4.4 · Brief-bound dimensions (provenance).** `done` (PR #271, c2f4176b)
 - `describe().totals.gross_internal_area_m2` and the intent's `grossInternalAreaM2`/`roomDimensions`, gating; `research/2026-10-26-ps44-as-built.md`.
@@ -281,10 +271,8 @@ into PS3.12)
   `validate`/`describe`/`impact` return `keeps` (a tool-surface change: bump `packages/mcp` and both
   `server.json` fields). Source: the PS4.3 design §7 and §11.
 
-**PS4.11 · Plan JSON says it dropped keeps.** `todo` (with PS4.3b)
-- Until PS4.10 carries them, an export of a plan with keeps states the loss: a note or a warning
-  naming how many keeps it left out, never a silent drop. Source: the PS4.3 design §11 (D22, red-team
-  ruling R19).
+**PS4.11 · Plan JSON says it dropped keeps.** `done` (with PS4.3b, PR #275, commit filled at merge)
+- `planToJson().droppedKeeps` and a `compile -f json` stderr note; `research/2026-10-26-ps43b-as-built.md`.
 
 **PS4.12 · Gross internal area residue.** `todo` (MCP part with PS5.3a's version bump)
 - Memoise the figure: one `describe()` computes it up to three times (top level, `levels[0]`, and
@@ -374,6 +362,5 @@ PS5.1b: PR #247, 9cc29c7e)
 **PS7.5 · Move the taste step out of the author loop.** `done` (PR #263, f024ab4a; D20)
 - As built: `research/2026-10-26-ps75-as-built.md` (a spec-text card).
 
-**PS7.6 · `lint` opens with a one-line summary.** `todo`
-- Three arm-B authors cut `lint --json` with `head -c` and repaired only what they saw (café 4 of 23 codes, clinic 2 of 4, studio 5 of 6). Put a one-line summary (`N warnings: CODE ×k, …`) as the first key of the JSON and as the first line of the text report.
-- Acceptance: the summary is a function of the diagnostics alone and every diagnostic over the corpus is byte-identical; `lint --json` truncated to its first 200 bytes still names the count and the codes. A surface authors see, so the next first-contact re-measure states it (D19). Source: `audits/2026-10-26-first-contact-rerun-d15.md` (arm B authoring friction).
+**PS7.6 · `lint` opens with a one-line summary.** `done` (PR #278)
+- As built: `research/2026-10-26-ps76-as-built.md`.

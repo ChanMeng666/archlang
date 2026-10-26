@@ -48,6 +48,7 @@ import type { Span } from "../diagnostics.js";
 import type { Expr } from "../expr.js";
 import type { RFurniture, ResolvedElement, ResolvedPlan, RRoof, RRoom, RWallsFromRooms } from "../ir.js";
 import { splitDatum } from "../room-datums.js";
+import type { KeepFact } from "./keep-facts.js";
 
 /** One element's dependencies. */
 export interface DependsEntry {
@@ -80,6 +81,9 @@ export interface DependsFacts {
   elements: DependsEntry[];
   /** Every wall `walls from rooms` derived on the storey, by name. */
   derived_walls: DerivedWallDepends[];
+  /** The plan's keeps as static facts (`./keep-facts.ts`), present only when it declares one:
+   *  every keep on the top-level object, a storey's own on each `levels[]` entry. */
+  keeps?: KeepFact[];
 }
 
 /** What one statement reads, in its own frame. */
@@ -151,6 +155,14 @@ function walkExprs(exprs: readonly Expr[], names: Set<string>, ids: Set<string>)
     for (const c of exprChildren(e)) go(c, inner);
   };
   for (const e of exprs) go(e, new Set());
+}
+
+/** The bound names expressions read (a `let`, a parameter, a user function), minus built-ins
+ *  and the names their own function literals bind; datums are not names. */
+export function exprNames(exprs: readonly Expr[]): Set<string> {
+  const names = new Set<string>();
+  walkExprs(exprs, names, new Set());
+  return names;
 }
 
 /** The room of a dotted `<room>.<edge>` written outside an expression. */
