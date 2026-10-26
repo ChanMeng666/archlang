@@ -218,11 +218,15 @@ apply. The shape that worked for the 49 programme PRs merged between #195 and #2
 
 1. The coordinating session reads this page, `README.md` §3/§7 and the card, then writes a brief
    (template below) and dispatches an executor in a worktree branched from `main`.
-2. The executor opens a PR; the coordinator starts `gh pr checks <n> --watch` (not `--fail-fast`:
-   it stops on the informational Benchmark job) and a read-only red-team review in parallel; fixes go back to the executor; at most two rounds.
-3. Merge on green CI and a reviewed diff. Before merging, post `reviewed <full sha>` as a PR comment
-   (a round-2 fix of blocker class gets that note too; #286 was the first to carry it), then
-   `gh pr merge <n> --merge --match-head-commit <full sha> --delete-branch`, then unlink the worktree's
+2. The executor opens a PR. The coordinator reviews the diff at once (never after CI), with a
+   read-only red team in parallel; fixes go back to the executor; at most two rounds.
+3. Auto-merge since option A went live (`docs/plans/ci-throughput.md`): post `reviewed <full sha>`, then
+   `gh pr merge <n> --auto --merge --match-head-commit <full sha>`; GitHub merges on the seven required
+   checks and deletes the branch, and nothing waits for the `push` run on `main`. A later push voids
+   the pin (re-review, re-pin). PRs touching the same records (CHANGELOG `[Unreleased]`, this page,
+   cards) are stacked: the next branches from the previous head, then `gh pr update-branch <n>` (or a
+   `main` merge) once it lands, and the coordinator re-pins; a PR that merged `main` after review is
+   red-teamed on the merged head (#280/#283). Independent PRs run in parallel. Unlink the worktree's
    `node_modules` junction before removing the worktree.
 4. At a stage end: drift audit (read-only, compares the stage's PRs with §3/§7 and the cards), the
    housekeeping PR (decisions, counts, this page), the report to the owner.

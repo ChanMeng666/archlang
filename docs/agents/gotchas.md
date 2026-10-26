@@ -80,8 +80,8 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   Watch without `--fail-fast`, then read every conclusion with
   `gh api repos/<owner>/<repo>/commits/<sha>/check-runs`.
 - **`gh pr merge --match-head-commit` needs the full 40-character SHA**; a short one fails the
-  merge, and a branch delete `;`-chained after it then closes the PR unmerged. Delete the branch
-  only once `gh pr view <n> --json state` says `MERGED` (procedure: `commands.md` § Merging a PR).
+  merge, and a branch delete `;`-chained after it then closes the PR unmerged. Auto-merge deletes
+  the branch on merge: never delete it by hand (procedure: `commands.md` § Merging a PR).
 - **Parallel PRs conflict on the records** (`CHANGELOG.md` `[Unreleased]`, a programme's
   `handoff.md` and `cards.md`) after nearly every merge. Resolve by keeping both entries; counts in
   those records are recounted only at a stage end, never per PR.

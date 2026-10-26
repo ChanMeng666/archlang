@@ -79,13 +79,17 @@ one minute in others; that is the apt mirror. Options and their status: `docs/pl
 
 ### Merging a PR
 
-1. Wait for every check: `gh pr checks <n> --watch` (no `--fail-fast`, see `gotchas.md`), then read
-   each conclusion with `gh api repos/<owner>/<repo>/commits/<sha>/check-runs`.
-2. Post a PR comment `reviewed <full sha>` naming the commit whose diff was read.
-3. `gh pr merge <n> --merge --match-head-commit <full 40-character sha>`: a merge commit (a squash
-   or rebase re-creates allowlisted gitleaks lines), pinned to the reviewed commit.
-4. Only once `gh pr view <n> --json state` says `MERGED`, delete the remote branch; unlink a
-   worktree's `node_modules` junction before removing the worktree.
+Auto-merge (option A of `docs/plans/ci-throughput.md`); nothing waits for CI or for the `push` run on `main`.
+
+1. Review the diff as soon as the PR opens, never after CI; post `reviewed <full sha>` on the PR.
+2. `gh pr merge <n> --auto --merge --match-head-commit <full 40-character sha>`: GitHub merges (a merge
+   commit; a squash or rebase re-creates allowlisted gitleaks lines) once the seven required checks
+   pass, and deletes the branch. A later push voids the pin: re-review, re-run step 2.
+3. PRs touching the same records (`CHANGELOG.md` `[Unreleased]`, handoff, cards) are STACKED: the next
+   branches from the previous PR's head and, once that merges, runs `gh pr update-branch <n>` (or
+   merges `main`); the coordinator re-pins. Independent PRs run in parallel.
+4. A PR that merged `main` after its review is red-teamed again on the merged head (#280/#283).
+5. Unlink a worktree's `node_modules` junction before removing the worktree.
 
 `codeql.yml` `analyze` gates too (and runs weekly). `nightly.yml`: `prod-smoke`
 (`scripts/smoke.mjs`), `audit` (report-only), `secrets` (gitleaks over full history),
