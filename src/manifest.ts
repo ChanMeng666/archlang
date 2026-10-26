@@ -12,6 +12,7 @@
 
 import { PNG_PREVIEW_WIDTH } from "./backends/png-defaults.js";
 import { CONTEXT_BUNDLE_KB } from "./context-size.js";
+import { CONTEXT_LEVELS, STARTER_MAX_UNITS } from "./context-levels.js";
 import { KEYWORDS } from "./grammar/tokens.js";
 
 // The command name lives in a leaf module so diagnostics can name it without importing this
@@ -330,8 +331,8 @@ const SECTION_FLAG: ManifestFlag = {
 
 const CONTEXT_LEVEL_FLAG: ManifestFlag = {
   flag: "--level",
-  arg: "<starter|full>",
-  description: `starter = one screen (about 4,000 characters) for a small model: the lead example, the six statements, the loop and the five commonest errors; full = the whole ${CONTEXT_BUNDLE_KB.total} KB bundle (default, unchanged)`,
+  arg: `<${CONTEXT_LEVELS.join("|")}>`,
+  description: `starter = one screen (at most ${STARTER_MAX_UNITS} characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole ${CONTEXT_BUNDLE_KB.total} KB bundle (default, unchanged)`,
 };
 
 /**
@@ -975,7 +976,7 @@ const COMMANDS: ManifestCommand[] = [
       { cmd: "archlang context", note: "the cold-start bundle: spec + workflow + CLI reference + every diagnostic" },
       {
         cmd: "archlang context --level starter",
-        note: "one screen for a small model: the lead example, the six statements a plan needs, the loop and the five errors cold authors hit first",
+        note: "one screen for a small model: the lead example, the statements a plan needs, the loop and the five errors cold authors hit first",
       },
       {
         cmd: "archlang context --section errors",

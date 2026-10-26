@@ -5,10 +5,13 @@
  * Nothing here retypes the language. The example is the spec's lead example, read out of the
  * shipped `spec.llm.md` (its first ```arch fence, pinned equal to `LEAD_EXAMPLE` by
  * `test/context-starter.test.ts`); every statement it teaches is a LINE of that example, picked by
- * its first words; the relational directions are `REL_DIRS`. The only authored text is the prose,
- * one furniture line and the table of the errors cold authors hit most, and each row of that table
- * is executable: `bad` raises the row's code and `good` compiles without an error
- * (`test/context-starter.test.ts` runs every row, so the table cannot drift from the compiler).
+ * its first words; the relational directions are `REL_DIRS`; the `--section` names are the
+ * caller's `SECTION_NAMES`. The only authored text is the prose, a few extra statements and the
+ * table of the errors cold authors hit most. Every authored statement is executable: each error
+ * row's `bad` raises its code and its `good` compiles without an error, each sized/unsized piece
+ * is run, and the sheet lines compile inside the lead plan (`test/context-starter.test.ts`), so a
+ * sentence here cannot drift from the compiler. The test also pins the size (4,000 units, 60 lines,
+ * 100 columns) and checks every command, flag and JSON key the text names.
  *
  * Pure: the caller reads the spec; this module renders text and never touches the file system.
  */
@@ -16,12 +19,13 @@
 import { REL_DIRS } from "../ast.js";
 import { CLI_NAME } from "../command-name.js";
 import { CONTEXT_BUNDLE_KB } from "../context-size.js";
+import { CONTEXT_LEVELS, STARTER_MAX_UNITS } from "../context-levels.js";
 
-/** The most UTF-16 code units the starter may occupy: one screen. Pinned by test. */
-export const STARTER_MAX_UNITS = 4000;
+export { CONTEXT_LEVELS, STARTER_MAX_UNITS };
 
-/** The `--level` words `context` accepts; `full` is today's output, byte for byte. */
-export const CONTEXT_LEVELS = ["starter", "full"] as const;
+/** One screen: at most this many lines, each at most {@link STARTER_MAX_COLUMNS} columns. */
+export const STARTER_MAX_LINES = 60;
+export const STARTER_MAX_COLUMNS = 100;
 
 /**
  * The plan every error row is probed in: two rooms, their walls, one place for the row's statement.
@@ -39,49 +43,60 @@ export interface StarterError {
   code: string;
   /** What to do, in one line. */
   fix: string;
-  /** A statement that raises `code` inside {@link STARTER_PROBE}. */
+  /** A statement that raises `code` inside {@link STARTER_PROBE} (warnings may accompany it). */
   bad: string;
   /** The same statement repaired: no error inside {@link STARTER_PROBE}. */
   good: string;
 }
 
 /**
- * The five errors the first-contact audits show cold authors hit most (clause order, a relational
- * opening's nib, `in <room> anchor` without a size, a bare `at <mm>` on an edge, an offset past the
- * end of an edge), each with the one-line fix that cleared it.
+ * The five errors the first-contact audits show cold authors hit most (clause order, `in … anchor`
+ * without a size, a bare `at <mm>` on an edge, a relational opening's nib, an offset past the end of
+ * an edge), each with the one-line fix that cleared it.
  */
 export const STARTER_ERRORS: readonly StarterError[] = [
   {
     code: "E_PARSE",
-    fix: "clause order is part of the grammar: `label` goes BEFORE `uses`.",
+    fix: "`label` goes after `size`, before `uses`:",
     bad: 'room id=den below bath size 2000x1500 uses office label "Den"',
     good: 'room id=den below bath size 2000x1500 label "Den" uses office',
   },
   {
     code: "E_FURN_SIZE",
-    fix: "`in <room> anchor|centered` needs `size WxH`; only `against` may omit it.",
+    fix: "`in` always needs a `size`:",
     bad: "furniture wc in bath anchor top",
     good: "furniture wc in bath anchor top size 400x700",
   },
   {
     code: "E_OPENING_DATUM",
-    fix: "a position on an edge says where it counts from: `at <mm> from start|end` or `at center`.",
+    fix: "say where `at` counts from (`from start|end`, or `at center`):",
     bad: "door on hall.bottom at 750 width 900",
     good: "door on hall.bottom at 750 from start width 900",
   },
   {
     code: "E_OPENING_NIB",
-    fix: "the jamb needs wall to the next wall: use the position the `hints` entry names, or a narrower opening.",
-    bad: "door between hall and bath at 100 from start width 800 swing into bath",
-    good: "door between hall and bath at 1000 from start width 800 swing into bath",
+    fix: "too near a wall; `next.hint` names a legal position:",
+    bad: "door between hall and bath at 100 from start width 800",
+    good: "door between hall and bath at 1000 from start width 800",
   },
   {
     code: "E_FURN_AGAINST",
-    fix: "`offset` is mm along the edge to the piece's centre, and stays on the edge.",
+    fix: "`offset` stays on the edge:",
     bad: "furniture wc against bath.right offset 9000",
     good: "furniture wc against bath.right offset 1200",
   },
 ];
+
+/** Pieces `furniture … against` may leave without a `size` (a catalogued footprint); each is run. */
+export const STARTER_SIZED = ["wc", "bed", "tv_unit"] as const;
+/** Pieces that always need a `size`, `against` or not (`E_FURN_SIZE`); each is run. */
+export const STARTER_UNSIZED = ["sofa", "desk", "table", "chair", "armchair"] as const;
+
+/** The one furniture line the lead example does not carry. */
+export const STARTER_AGAINST = `furniture ${STARTER_SIZED[2]} against living.top`;
+
+/** The sheet statements the starter names; compiled and linted inside the lead plan by test. */
+export const STARTER_SHEET = ["paper A3", "dims auto all", 'title { project "House" }'] as const;
 
 /** The first ```arch fence of `spec.llm.md`: the lead example, or null if the spec has none. */
 export function leadExampleFromSpec(spec: string): string | null {
@@ -99,9 +114,6 @@ function line(example: string, prefix: string): string {
   return hits[0]!;
 }
 
-/** The one furniture line the lead example does not carry (a catalogued piece may omit `size`). */
-export const STARTER_AGAINST = "furniture tv_unit against living.top";
-
 /**
  * The lines the starter quotes from the lead example, by their first words, in the order the
  * statements are taught. Exported so the test pins each one to the example.
@@ -117,61 +129,76 @@ export const STARTER_PICKS = {
   furniture: "furniture bed in ",
 } as const;
 
-/** A room line with `label "…"` set where the grammar wants it: before `uses`. */
+/** A room line with `label "…"` set where the grammar wants it: after `size`, before `uses`. */
 export function withLabel(roomLine: string, label: string): string {
   return roomLine.replace(" uses ", ` label "${label}" uses `);
 }
 
 /**
- * Render the starter from the lead example. Throws (an internal error, never user input) if the
- * example no longer holds a line the starter quotes; the test turns that into a red build.
+ * The part of a statement that changed, with two words of context before and one after:
+ * `(bad, good)` -> the two fragments an error row shows. Word-wise common prefix and suffix.
  */
-export function renderStarter(lead: string): string {
+export function changedFragments(bad: string, good: string): [string, string] {
+  const a = bad.split(" ");
+  const b = good.split(" ");
+  let p = 0;
+  while (p < a.length && p < b.length && a[p] === b[p]) p++;
+  let s = 0;
+  while (s < a.length - p && s < b.length - p && a[a.length - 1 - s] === b[b.length - 1 - s]) s++;
+  const from = Math.max(0, p - 2);
+  const after = Math.min(s, 1);
+  return [a.slice(from, a.length - s + after).join(" "), b.slice(from, b.length - s + after).join(" ")];
+}
+
+/**
+ * Render the starter from the lead example and the `--section` names. Throws (an internal error,
+ * never user input) if the example no longer holds a line the starter quotes; the test turns that
+ * into a red build.
+ */
+export function renderStarter(lead: string, sectionNames: readonly string[]): string {
   const pick = (k: keyof typeof STARTER_PICKS): string => line(lead, STARTER_PICKS[k]);
-  const errors = STARTER_ERRORS.map((e) => `- \`${e.code}\`: ${e.fix}\n  \`${e.bad}\` -> \`${e.good}\``).join("\n");
+  const errors = STARTER_ERRORS.map((e) => {
+    const [bad, good] = changedFragments(e.bad, e.good);
+    return `- \`${e.code}\`: ${e.fix}\n  \`${bad}\` -> \`${good}\``;
+  }).join("\n");
   const cli = CLI_NAME;
   return `# ArchLang starter
-
-Write the rooms, let \`walls from rooms\` derive every wall, and host each door and window by the rooms
-it joins. Units are millimetres; the origin is top-left and +y points down. This plan compiles and
-lints clean:
+Write the rooms, let \`walls from rooms\` derive every wall, host each door and window by the rooms it
+joins. Units are mm; the origin is top-left and +y points down. This plan lints clean:
 
 \`\`\`arch
 ${lead}
 \`\`\`
 
-## The six statements a plan needs
-
-Edit the numbers and ids; keep the clause order.
-
-- plan: \`${pick("plan")}\` opens the block and \`units mm\` comes first.
-- room: \`${withLabel(pick("room"), "Living")}\` places one. \`label\` goes BEFORE \`uses\`.
-  \`${pick("relRoom")}\` places the next beside it (\`${REL_DIRS.join("|")}\`).
-- walls: \`${pick("walls")}\` derives every wall from the rooms; \`open between\` leaves one edge open.
-- door: \`${pick("doorBetween")}\`. \`at <mm> from start|end\` or \`at center\`; \`swing into <room>\`.
-  On an outside edge: \`${pick("doorOn")}\`.
-- window: \`${pick("window")}\`.
-- furniture: \`${pick("furniture")}\`. \`in\` needs \`size\`.
-  Against a wall: \`${STARTER_AGAINST}\` (a catalogued piece may omit \`size\`).
-
-For a drawing sheet add \`paper\`, \`dims auto all\` and \`title { … }\`; \`${cli} finish plan.arch\` adds what is missing.
+## The statements a plan needs (edit numbers and ids; keep the clause order)
+- plan: \`${pick("plan")}\` opens the block; \`units mm\` comes first.
+- room: \`${withLabel(pick("room"), "Living")}\`
+  \`label\` goes after \`size\`, before \`uses\`. Beside it (\`${REL_DIRS.join("|")}\`):
+  \`${pick("relRoom")}\`
+- walls: \`${pick("walls")}\`
+  derives every wall; \`open between\` leaves one shared edge open.
+- door: \`${pick("doorBetween")}\`
+  \`at <mm> from start|end\` counts to the door's CENTRE (or \`at center\`). On an outside edge:
+  \`${pick("doorOn")}\`
+- window: \`${pick("window")}\`
+- furniture: \`${pick("furniture")}\`
+  \`in\` always needs a \`size\`. \`against\` may omit it only for a catalogued piece, as in
+  \`${STARTER_AGAINST}\` (${STARTER_SIZED.join(", ")}, ...), never for
+  ${STARTER_UNSIZED.join(", ")}.
+- sheet: ${STARTER_SHEET.map((s) => `\`${s}\``).join(", ")}; \`${cli} finish\` adds the rest.
 
 ## The loop
-
 1. \`${cli} compile plan.arch -o plan.svg --json\`
-2. \`${cli} validate plan.arch --json\`: fix its \`next\` first.
-3. \`${cli} lint plan.arch --json\`: read \`summary\` (the first key) before anything else, then each
-   \`diagnostics[].fix\`.
-4. Edit and repeat until \`ok\` is true and nothing is left to fix. Exit 2 is your source: fix it,
-   do not retry. \`score --taste\` is the reviewer's tool, not part of this loop.
+2. \`${cli} validate plan.arch --json\`: fix \`next\` first; \`next.hint\` says how, when it can.
+3. \`${cli} lint plan.arch --json\`: read \`summary\` (first key), then each \`diagnostics[].fix\`.
+4. Repeat until \`ok\` is true. Exit 2 is your source: fix it, do not retry.
+   \`score --taste\` is a reviewer's tool, not part of this loop.
 
 ## The errors you will meet first
-
 ${errors}
 
 ## More
-
-\`${cli} explain <CODE>\` · \`${cli} spec\` (the whole language, one page) · \`${cli} context\` (everything,
-about ${CONTEXT_BUNDLE_KB.total} KB; \`--section spec|workflow|cli|errors\` for one part).
+\`${cli} explain <CODE>\` · \`${cli} spec\` (the whole language) · \`${cli} context\` (all, about
+${CONTEXT_BUNDLE_KB.total} KB; \`--section ${sectionNames.join("|")}\` for one part).
 `;
 }

@@ -118,7 +118,7 @@ const SECTIONS: Readonly<Record<string, string>> = {
   cli: "## 3. CLI reference",
   errors: "## 4. Diagnostic catalog",
 };
-const SECTION_NAMES = Object.keys(SECTIONS);
+export const SECTION_NAMES = Object.keys(SECTIONS);
 /** intro + the four sections — the chunk count the split must produce. */
 const SECTION_CHUNKS = SECTION_NAMES.length + 1;
 
@@ -151,7 +151,7 @@ function cmdContextStarter(args: Args): number {
   if (lead === null) return ioError("spec.llm.md has no ```arch example to build the starter from", args.json);
   let starter: string;
   try {
-    starter = renderStarter(lead);
+    starter = renderStarter(lead, SECTION_NAMES);
   } catch (e) {
     return ioError(`cannot build the starter from spec.llm.md: ${(e as Error).message}`, args.json);
   }
@@ -163,6 +163,7 @@ function cmdContextStarter(args: Args): number {
 export function cmdContext(args: Args): number {
   const level = args.contextLevel;
   if (level !== undefined) {
+    if (level === "") return usageError(`--level needs a value: ${CONTEXT_LEVELS.join(" or ")}`);
     if (!(CONTEXT_LEVELS as readonly string[]).includes(level)) {
       const hint = closest(level, [...CONTEXT_LEVELS]);
       return usageError(

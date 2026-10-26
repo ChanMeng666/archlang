@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `arch context --level starter`: one screen (under 4,000 characters) for a small model, built from the
-  spec's lead example and the compiler rather than retyped: the example, the six statements a plan needs
-  (each a line of that example), the compile, `validate`, `lint` loop, and the five errors cold authors
+- `arch context --level starter`: one screen (at most 4,000 characters, 60 lines of 100 columns) for a small model, built from the
+  spec's lead example and the compiler rather than retyped: the example, the statements a plan needs
+  (each a line of that example, plus the sheet lines), the compile, `validate`, `lint` loop, and the five errors cold authors
   hit first, each with a bad statement that raises the code and the repaired one (`E_PARSE` clause
   order, `E_FURN_SIZE`, `E_OPENING_DATUM`, `E_OPENING_NIB`, `E_FURN_AGAINST`). `--level full` is
   the default, the whole bundle as before; `--level starter --section` is a usage error. Plan card
