@@ -604,7 +604,7 @@ const COMMANDS: ManifestCommand[] = [
     ],
     input: "<file.arch|->",
     output:
-      "diagnostics (plus a graph{} report with --graph and an intent{ ok, satisfied, total, subscores, violations, measures? } block with --intent; `measures` lists each brief-bound size with its measured value and signed residual), then `next`: the one item to fix first { tier, code, message, span?, hint? } or null (tiers: error, warning, validity, drafting, intent, profile, taste)",
+      "diagnostics (plus a graph{} report with --graph and an intent{ ok, satisfied, total, subscores, violations, measures? } block with --intent; `measures` lists each brief-bound size with its measured value and signed residual), then `keeps` when the plan declares one (each { keep, grade, level?, holds, residual_mm, at?, measured_mm?, span }), then `next`: the one item to fix first { tier, code, message, span?, hint? } or null (tiers: error, warning, validity, drafting, intent, profile, taste)",
     examples: [
       {
         cmd: "archlang validate plan.arch --strict --json",
@@ -915,7 +915,7 @@ const COMMANDS: ManifestCommand[] = [
     ],
     input: "<file.arch|->",
     output:
-      "{ ok, set?, lets, changed[] (each with its `why` dependency chain and `root`), held[], diagnostics: { broke, healed, unchanged_count }, summary } (exit 0 on a report, 2 on a refused --set)",
+      "{ ok, set?, lets, changed[] (each with its `why` dependency chain and `root`), held[], diagnostics: { broke, healed, unchanged_count }, keeps? (when either side declares a keep: { broke, held, healed, added, removed, unchanged_count }, each { keep, grade (or { before, after } when an edit changed it), level?, occurrence, residual_mm: { before, after }, at?, changed, span }; a broken hard keep is reported here, never also under diagnostics), summary } (exit 0 on a report, 2 on a refused --set)",
     examples: [
       {
         cmd: "archlang impact plan.arch --set W=4500 --json",
