@@ -348,7 +348,7 @@ PS5.1b: PR #247, 9cc29c7e)
   when a stage is clean.
 - Prior art and ADAI agree: decide low-frequency things first; early proportional errors cascade.
 
-**PS7.2 · `arch context --level starter`.** `done` (PR pending)
+**PS7.2 · `arch context --level starter`.** `done` (PR #279)
 - As built: `research/2026-10-26-ps72-as-built.md`. One screen (3,673 UTF-16 units, cap 4,000) built from the spec's lead example and the compiler, not retyped.
 
 **PS7.3 · Rule packs as data.** `parked`
