@@ -1501,9 +1501,10 @@
  * `hillside-villa`, trades the walk to bedroom 2 for the walk to the linen cupboard and the route
  * from bedroom 2 to its ensuite (each a 700 mm door, 640 clear). Rows that moved only because their
  * plan gained one of the new warnings and was not edited: `test/fixtures/zones-levels` (no floor
- * beyond its stair), `test/recovery-corpus/two-storey` (the old example's two defects), the seven
- * stair-safety defect files and the first-contact townhouses. Each new row is the measurement with
- * that suite's digest body.
+ * beyond its stair), `test/recovery-corpus/two-storey` (the old example's two defects) and the
+ * first-contact townhouses; the stair-safety defect files moved too, three of their twins edited to
+ * lint clean (the PS2.11e as-built note). Each new row is the measurement with that suite's digest
+ * body.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

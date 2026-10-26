@@ -111,6 +111,26 @@
  * code from their validity lists and return byte for byte to their values before PS2.11c/d, the
  * bed and wardrobe turns having moved nothing else; both stay capped by their `W_PATH_TOO_NARROW`.
  * No other row moved.
+ *
+ * PS2.11e/PS2.34/PS2.15 (PR #280, six stair-safety validity codes) moved 26 rows and added 24, each
+ * checked key by key against `origin/main` with a script over this table's files. Added: the four new
+ * stair-safety pairs under each of the three profiles; every case is capped by its own code, every
+ * twin lints clean and scores above its case. Moved, under each profile:
+ *  - the seven older stair-safety files. `stair-too-steep`, `swing-at-stair-foot` and `void-at-stair-
+ *    head` gain their own code in `validity` (the last two newly capped, 0.6667 and 0.7861/0.7152 →
+ *    0.5). The twins were made to lint clean (the ruling on PR #280): `stair-too-steep` both sides
+ *    gain a store with a corner door on level 2 and the flight moved 700 mm east (its head had no
+ *    landing; `W_ROOM_DISCONNECTED` gone: score null → 0.5 capped / 1), `swing-at-stair-foot.clean`'s
+ *    flight is shorter (its foot had no landing: still 0.6667, uncapped), `swing-over-stair.clean`'s
+ *    door moved off the well, widened and the ensuite furnished (0.5 capped → 0.8125);
+ *    `swing-over-stair` gains `W_SWING_OVER_STAIR` and `W_STAIR_SIDE_ENTRY`, already capped.
+ *  - `examples/hillside-villa` (stair moved, bedroom 2's door moved): `validity.warnings` 7 → 8, R16's
+ *    corner doors 4 → 5 of 14 (bedroom 2's door now stands 250 mm from its corner), `uncapped`
+ *    0.9072 → 0.9144 under `generic` (0.8932 → 0.9004 under `cn`); still capped.
+ *  - `examples/two-storey` under `cn-` and `us-`: `advisory` gains `W_STAIR_TOO_STEEP` (its 2650 mm
+ *    run clears 220/220, not those profiles' figures); nothing else. Under `generic` it did not move:
+ *    no criterion reads where its stair or void stands.
+ * `garden-house` and `library` did not move: no criterion reads their stairs.
  */
 
 import { describe, expect, it } from "vitest";
@@ -886,12 +906,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.clean.arch",
   ],
   [
-    "b691f52d55c67ff725c889742d977177669ea155a8f2a732752a48d4ae7180d4",
+    "104f55b834249b7df6415bc8c7cc1a2457063431c94a89ec956246a338538cce",
     "generic",
     "test/defect-corpus/stair-safety/stair-too-steep.arch",
   ],
   [
-    "123fd0ede044600b9dfd012e9850ed00f79b640e7a322bdbe46d1f1e54319575",
+    "48b136e1e08f46e60be9c2dd1bbee43ab94df9f8da7dfd64bb42eec87455c6ca",
     "generic",
     "test/defect-corpus/stair-safety/stair-too-steep.clean.arch",
   ],
@@ -901,7 +921,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/swing-at-stair-foot.arch",
   ],
   [
-    "470ed5916aace1585f9418d8ad286eeb85a7033f25e7a4cec24e1415f08e17c4",
+    "a1ba7e82669d7885e3202eb0810e4743ed29e29b6390d28b442aabb7b9fab6eb",
     "generic",
     "test/defect-corpus/stair-safety/swing-at-stair-foot.clean.arch",
   ],
@@ -911,7 +931,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/swing-over-stair.arch",
   ],
   [
-    "05958e7c1d4e3458fcd38101041596518efd92412e29de884e45d9e71cd4e6a3",
+    "659bc536c740d2336bde61981d47768b5c841fcb30ace9137c6e27f24843f94a",
     "generic",
     "test/defect-corpus/stair-safety/swing-over-stair.clean.arch",
   ],
@@ -1936,12 +1956,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.clean.arch",
   ],
   [
-    "13701b0547281872bb7210273268e66e6af73f45561228cc77a5f76ccd5a5d43",
+    "8c1b44425df4237bf2367197195dcc630de90e6c690926de5da9d24c087bc6e9",
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/stair-too-steep.arch",
   ],
   [
-    "f1d13f8a1dafadcefe3de20695ca3540c6fa0073376eb04308d959e650f98c97",
+    "8a48f181b2c51463f647815a94bdd230fea3330e9d1ba3071e2f0c1ea293482f",
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/stair-too-steep.clean.arch",
   ],
@@ -1951,7 +1971,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/swing-at-stair-foot.arch",
   ],
   [
-    "a7634e0a4298f2b7ac164e320a691c5ed8189381b42e7139b85df34f2fa926fd",
+    "fc63cdc9279016b9cdc46067a66d1e46e0a4acd8886c7dd1fb70b6e030558534",
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/swing-at-stair-foot.clean.arch",
   ],
@@ -1961,7 +1981,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/swing-over-stair.arch",
   ],
   [
-    "96d0589f592a0f91b0a7e98d7b756afd81b6a404d1f812d3fe148f6f69fbb9ad",
+    "4c799678a46b75f704aa99c9cc6b4c15e35e0f7eec4d2f1cd9d95ceeab82d6b3",
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/swing-over-stair.clean.arch",
   ],
@@ -2986,12 +3006,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.clean.arch",
   ],
   [
-    "109da622d83dcaf3054a68ea13983b50821664aea1aef54d8f76280cea3cee4f",
+    "5888b9ac9d7fc7ea89f8b5e6c404bfb2ad1b495e508feadcea86ac563dbbf8d2",
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/stair-too-steep.arch",
   ],
   [
-    "d42a2e951fd9cfb34702c66fcde0a008af18cd1fa688f878fbfd4301a1403a8c",
+    "c4c031a08062706ee26c38a9fc31e051b3336191fea5fc2e9db484ce1b2bb2ce",
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/stair-too-steep.clean.arch",
   ],
@@ -3001,7 +3021,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/swing-at-stair-foot.arch",
   ],
   [
-    "66ea1c02f1fe139ead515b5c8af4f18eb102bbc7f62bb75210348a9b4ab92827",
+    "35bb6e446bce1af32c23269fd1c1f5b797052d5cb86eb7ee642a4b931fa1cca7",
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/swing-at-stair-foot.clean.arch",
   ],
@@ -3011,7 +3031,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/swing-over-stair.arch",
   ],
   [
-    "8f7a71f4c45478300c693ecd95b032083be55d67b7bc1a66c044902402b14a88",
+    "dd430c3a6766019d02331cecef81e80aea2a10bdd390ea4da3fed2ae14216671",
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/swing-over-stair.clean.arch",
   ],

@@ -210,6 +210,13 @@ function swingHit(
   return null;
 }
 
+/**
+ * `W_SWING_OVER_STAIR`: a hinged leaf's quarter-disc over the flight, the head landing, or the foot's
+ * 400 mm strip (a dwelling) or whole foot landing (elsewhere). On a storey the flight RISES from, only
+ * the part of it lower than the door's `head` counts ({@link lowPart}), read against `ir.storeyHeight`,
+ * which is 3000 mm (`STOREY_HEIGHT`) when the plan authors no height: a default used only to decide
+ * which treads a leaf passes under, so it can only make this rule quieter, never louder.
+ */
 export const swingOverStair: LintRule = {
   name: "swing-over-stair",
   family: "stairs",
@@ -438,6 +445,12 @@ export const stairNoLanding: LintRule = {
 
 // ── W_STAIR_SIDE_ENTRY ──────────────────────────────────────────────────────
 
+/**
+ * `W_STAIR_SIDE_ENTRY`: a doorway beside the part of a flight a person cannot pass under, nearer than
+ * `minPathClearWidthMm`. On a storey the flight rises from, that part is the run up to 2 m of rise
+ * ({@link STAIR_HEADROOM_MM}), read against `ir.storeyHeight`, 3000 mm (`STOREY_HEIGHT`) when the
+ * plan authors no height: a default that only narrows what is judged, never widens it.
+ */
 export const stairSideEntry: LintRule = {
   name: "stair-side-entry",
   family: "stairs",

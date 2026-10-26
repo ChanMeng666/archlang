@@ -7,9 +7,10 @@
  * rewording on a corpus plan moves its `validate --json` part, and that row is then re-measured
  * with its reason beside it.
  *
- * Re-measured in PS2.11e: `paper`, `widen-before` and `widen-after` gain `W_STAIR_NO_LANDING` in
- * their `validate --json` (the upper storeys bring a flight's head 200 mm from the west wall, a true
- * defect of the fixtures, which no keep reads); their keep rows are unchanged.
+ * Re-measured in PS2.11e: `paper` gains `W_STAIR_NO_LANDING` in its `validate --json` (its upper
+ * storeys bring a flight's head 200 mm from the west wall, a true defect of the fixture, which no
+ * keep reads); its keep rows are unchanged. The widening drill's stair was moved instead (same bytes,
+ * same spans), so `widen-before`/`widen-after` read as before.
  */
 
 import { describe as suite, expect, it } from "vitest";
@@ -37,8 +38,8 @@ const K3_DIGESTS: [string, string][] = [
   ["refused-placement", "8f764cae04d74f29fc9e39ae9f369a9aaf8005c7f71e71cb47347e4b733e434f"], // round 1: a keep in a component is refused where it is written
   ["refused", "99ea1ef2a3b9baaac3d6a9502c4f1c5552f3f7404afe2bf98a336a889293ecf0"], // round 1: numbers through num-format
   ["single-storey-stacked", "df3b4580f7dab78c06067120477533dabf0bd64f8489c4a951ca2bc1a7a7dd78"],
-  ["widen-after", "42f87860d7ce13c0d747d1e9153dac0eb81357dd0519035883bb32eed6211e41"], // round 2: the `skipped` reasons, and the hint lists them
-  ["widen-before", "27410afb80fa3aeefd5ce4f213658d68c6dfbeeed3afb577791eb0764ff4a4ee"],
+  ["widen-after", "510134f7df24b91da3e61818102bdac8a8afc929d6ff88ce2762ccb28b99bbb7"], // round 2: the `skipped` reasons, and the hint lists them
+  ["widen-before", "a4620b68f1174873d84676b230bb3cbc348a31b47cc73d3c05e9cf8054cbd0d9"],
 ];
 
 suite("keep · K3, the keep rows: a digest table over the corpus", () => {

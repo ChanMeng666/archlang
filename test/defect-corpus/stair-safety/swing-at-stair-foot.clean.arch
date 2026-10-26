@@ -1,9 +1,10 @@
 # class: stair-safety
 # twin-of: swing-at-stair-foot
-# origin: audits/2026-10-18-first-contact.md T1 with d_front swinging out
+# origin: audits/2026-10-18-first-contact.md T1 with d_front swinging out and the flight shortened (T1 is two defects:
+#   the swing, and the foot 275 mm from the front wall's face, W_STAIR_NO_LANDING; the twin fixes both)
 # expect: none
 # fact: d_front swings out: its leaf sweeps y 4000-4800 outside the shell, and nothing swings over the stair or its
-#   foot
+#   foot; st ends at y 2800, 1075 mm before the shell's inner face at y 3875
 plan "Front door swinging at the foot of the stair" {
   units mm
   grid 50
@@ -15,5 +16,5 @@ plan "Front door swinging at the foot of the stair" {
   door id=d_liv at (2200,1500) width 900 wall w_v swing into r_liv
   window at (3800,4000) width 1800 wall shell
   window at (3800,0) width 1800 wall shell
-  stair id=st at (150,200) size 900x3400 dir up
+  stair id=st at (150,200) size 900x2600 dir up
 }

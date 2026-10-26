@@ -48,6 +48,8 @@ void's id. No rule offers a machine fix: every remedy moves a stair or a door, a
   `W_STAIR_PITCH`: the defect is the steepness, and the corpus already named it). PS2.34's two
   checks are two codes (`W_STAIR_NO_LANDING`, `W_STAIR_SIDE_ENTRY`): different geometry, different
   remedy.
+- **The 3000 mm default** (ruling on PR #280): stated in each of the two rules' doc comments and
+  catalogue entries; it only narrows what the swing and side-entry rules judge.
 - **Height only where authored.** `ir.storeyHeight` is always resolved (3000 by default), but
   `describe()` states heights only when the plan authors one (`_heightsAuthored`). A warning that
   quoted a 3000 mm storey the author never wrote would be a number the plan's own summary does not
@@ -91,16 +93,28 @@ compiler against new: no SVG, `describe()` or `compile().diagnostics` moved, and
 | `examples/two-storey` (fixed) | `W_STAIR_TOO_STEEP` under `cn-`, `uk-`, `us-` | true under each (200 mm riser; 42°; IRC); listed in `test/lint-profiles-residential.test.ts` |
 | first-contact townhouses (six) | see the audit table below | true |
 | `test/fixtures/zones-levels` | `W_STAIR_NO_LANDING` ×2 (no room beyond either end) | true of the fixture; not edited |
-| `test/keep-corpus/{paper,widen-before,widen-after}` | `W_STAIR_NO_LANDING` (head 200 mm from the west wall) | true of the fixtures; not edited |
+| `test/keep-corpus/{widen-before,widen-after}` | `W_STAIR_NO_LANDING` (head 200 mm from the west wall) | true; fixed: the stair moved to `(1000,800) size 2000x900`, a line of the same bytes, so no room, partition `p`, keep residual or span moved; the drill's output is as before (design §9 note, `repro/README.md`) |
+| `test/keep-corpus/paper` | `W_STAIR_NO_LANDING` ×2 (head 200 mm from the west wall) | true of the fixture; not edited, `keep-digests` row re-measured |
 | `test/main-entrance-fixtures/n6-*` | `W_STAIR_NO_LANDING` (foot 800 of 900) | true; not edited |
 | `test/recovery-corpus/two-storey` | the old example's two | true; the frozen copy is not edited |
 
 No eval golden moved, so `eval/judge-fixture.json` is untouched. Every digest row that moved is
 re-measured with its suite's own body and its reason stated in that table's header
 (`test/byte-identity-baseline.ts`, `import-module-lets`, `while-byte-identity-baseline`,
-`keep-byte-identity-baseline`, `keep-digests`, `finish-furnish`, `taste-digests`); for the two
-unedited fixtures in the diagnostics tables, the new payload with `lint()` stripped of the six codes
-reproduces each previous row.
+`keep-digests`, `finish-furnish`, `taste-digests`); for the two unedited fixtures in the diagnostics
+tables, the new payload with `lint()` stripped of the six codes reproduces each previous row. The
+keep weak law's table (`test/keep-byte-identity-baseline.ts`) is never hand-edited: it was re-taken
+with its generator (`test/keep-weak-law-gen.ts`, whose header now states that a later PR moving a
+hashed output re-takes it that way, reason recorded), 17 rows moved and 8 added, listed in the commit.
+
+**Clean twins lint clean** (ruling on PR #280). Three older stair twins carried a second real defect
+the new rules saw, and were made sound: `swing-at-stair-foot.clean` (T1's foot, 275 mm from the
+wall: the flight is 800 mm shorter), `swing-over-stair.clean` (X5's ensuite door stood 50 mm beside
+the well: moved 400 mm west, widened to 800, the ensuite given a shower and basin, which also clears
+its pre-existing `W_PATH_TOO_NARROW` and `W_ROOM_NO_FIXTURE`) and `stair-too-steep` (both sides: the
+head had no landing, so the flight moved 700 mm east, and level 2 gained a store with a corner door,
+which clears the pre-existing `W_ROOM_DISCONNECTED`; the pair still differs only in the run). Every
+stair-safety twin now lints clean under the default ruleset.
 
 ## The audits' stair rows
 
