@@ -57,13 +57,15 @@ suite("PS4.2 — the widening drill (§7 row 4 acceptance)", () => {
     //   4500, so the doorway at x 4000 stands inside a and joins no two rooms (`diffPlans`:
     //   joins a and b → nothing). Its host is unchanged, so its why is the `joins` edge: a,
     //   whose growth swallowed it, → AW.
-    // - Held: none. Every element that depends on something that changed did change (b on a,
-    //   door_2 by joins). The shell, p, door_1 (`on shell at 1000`), window_1 (`on shell at
-    //   6000`) and the bed (`against wall shell … side left in b`, whose explicit side keeps b
-    //   out of its `on`) depend only on the shell, which is written in absolute coordinates
-    //   and did not change. The walls that SHOULD have followed (the shell's right side at
-    //   x 8000, p at x 4000) depend on nothing, so `held` cannot name them by this definition;
-    //   the breakage they cause is named under Broke, which is where the drill's defects show.
+    // - Held: the two walls written at fixed coordinates that lay ON a room edge that moved
+    //   (PS4.5 contacts, read on the before side). p (x 4000, y 0–5000) lay on a.right and
+    //   b.left, both now at x 4500: two 500 mm gaps. The shell lay on six edges (a.top, a.left,
+    //   a.bottom, b.top, b.right, b.bottom); only b.right's line moved (x 8000 → 8500), since
+    //   the top and bottom edges grew or slid along y 0 and y 5000 without leaving them. Every
+    //   other element that depends on something that changed did change (b on a, door_2 by
+    //   joins); door_1, window_1 and the bed (`against wall shell … side left in b`, whose
+    //   explicit side keeps b out of its `on`, and whose back is on the shell's face at y 100,
+    //   not on b.top at y 0) depend only on the shell, which did not change.
     // - Broke (all lint, all raised on b's statement): W_BOUNDARY_NO_WALL (a and b now meet
     //   along x 4500 where no wall stands: p is at 4000); W_ROOM_DISCONNECTED (b's only door,
     //   door_2, no longer joins it); W_ROOM_OUTSIDE_SHELL (b spans x 4500–8500, 500 mm past the
@@ -80,7 +82,10 @@ suite("PS4.2 — the widening drill (§7 row 4 acceptance)", () => {
       "    why: on a (resized) ← reads AW (4000 → 4500)",
       "  door door_2 re-hosted: joins a and b → nothing",
       "    why: joins a (resized) ← reads AW (4000 → 4500)",
-      "Held (0): none",
+      "Held (2):",
+      "  wall p stayed at x 4000 while a.right moved to x 4500 (500 mm)",
+      "  wall p stayed at x 4000 while b.left moved to x 4500 (500 mm)",
+      "  wall shell stayed at x 8000 while b.right moved to x 8500 (500 mm)",
       "Broke (3):",
       `  W_BOUNDARY_NO_WALL on b: ${W_BOUNDARY}`,
       `  W_ROOM_DISCONNECTED on b: ${W_DISCONNECTED}`,
@@ -130,7 +135,40 @@ suite("PS4.2 — the widening drill (§7 row 4 acceptance)", () => {
           root: "let",
         },
       ],
-      held: [],
+      held: [
+        {
+          name: "p",
+          id: "p",
+          kind: "wall",
+          because: [
+            {
+              via: "contact",
+              name: "a.right",
+              change: "moved 500 mm right",
+              contact: { room: "a", edge: "right", axis: "x", stayed_mm: 4000, moved_to_mm: 4500, gap_mm: 500 },
+            },
+            {
+              via: "contact",
+              name: "b.left",
+              change: "moved 500 mm right",
+              contact: { room: "b", edge: "left", axis: "x", stayed_mm: 4000, moved_to_mm: 4500, gap_mm: 500 },
+            },
+          ],
+        },
+        {
+          name: "shell",
+          id: "shell",
+          kind: "wall",
+          because: [
+            {
+              via: "contact",
+              name: "b.right",
+              change: "moved 500 mm right",
+              contact: { room: "b", edge: "right", axis: "x", stayed_mm: 8000, moved_to_mm: 8500, gap_mm: 500 },
+            },
+          ],
+        },
+      ],
       diagnostics: {
         broke: [
           { code: "W_BOUNDARY_NO_WALL", severity: "warning", element: "b", message: W_BOUNDARY, channel: "lint" },
@@ -184,9 +222,13 @@ suite("PS4.2 — the studio widening drill (`--against`)", () => {
     //   absolutely and did not move, but x 4000 is now inside r_living (0–4500), so the opening
     //   joins only r_hall (was r_living and r_hall). It records no dependency on r_living, so
     //   the chain is the `joins` edge to r_living, whose statement was edited.
-    // - Held: none. Nothing in studio depends on r_living by name (only the WC reads r_bath).
-    //   Everything that should have followed (the x 4000 partition, r_bed, r_hall, r_bath,
-    //   the d_bath door) is written in absolute coordinates, so the breakage is under Broke.
+    // - Held: the x 4000 partition (`partition_2`, written at fixed coordinates), which lay on
+    //   r_living's right edge (PS4.5 contacts) and stayed at x 4000 while that edge moved to
+    //   4500. Nothing in studio depends on r_living by name (only the WC reads r_bath). The
+    //   rest that should have followed (r_bed, r_hall, r_bath, the d_bath door) does not lie on
+    //   an edge that moved (r_bed.left and the rest are where they were), so its breakage is
+    //   under Broke. The shell lay on r_living's top, left and bottom edges, whose lines did not
+    //   move; the kitchen run's backs are at y 250, off r_living.top.
     // - Broke: W_ROOM_OVERLAP on r_bed, r_hall and r_bath (r_living now covers x 4000–4500 of
     //   each; raised by the resolver, `compile` channel, on the second room's statement);
     //   the rest by lint: W_ROOM_UNREACHABLE on the same three (the
@@ -203,7 +245,8 @@ suite("PS4.2 — the studio widening drill (`--against`)", () => {
       "    why: joins r_living (resized); that statement was edited",
       "  room r_living resized (24 m² → 27 m²; right edge +500 mm)",
       "    why: its own statement was edited",
-      "Held (0): none",
+      "Held (1):",
+      "  wall partition_2 stayed at x 4000 while r_living.right moved to x 4500 (500 mm)",
       "Broke (8):",
       `  W_CONNECTOR_AMBIGUOUS on d_bath: ${msg("W_CONNECTOR_AMBIGUOUS", "d_bath")}`,
       `  W_CONNECTOR_AMBIGUOUS on o_living: ${msg("W_CONNECTOR_AMBIGUOUS", "o_living")}`,
@@ -245,7 +288,21 @@ suite("PS4.2 — the studio widening drill (`--against`)", () => {
           root: "edited",
         },
       ],
-      held: [],
+      held: [
+        {
+          name: "partition_2",
+          id: "partition_2",
+          kind: "wall",
+          because: [
+            {
+              via: "contact",
+              name: "r_living.right",
+              change: "moved 500 mm right",
+              contact: { room: "r_living", edge: "right", axis: "x", stayed_mm: 4000, moved_to_mm: 4500, gap_mm: 500 },
+            },
+          ],
+        },
+      ],
     });
     expect(diagnostics.healed).toEqual([]);
     expect(diagnostics.unchanged_count).toBe(0);

@@ -166,6 +166,8 @@ export type {
   KeepFact,
   KeepRedundancy,
   DependsEntry,
+  ContactFact,
+  RoomEdge,
   DerivedWallDepends,
   DerivedWallRow,
 } from "./describe.js";
@@ -264,6 +266,7 @@ export { unifiedDiff } from "./unified-diff.js";
 export { impact, applyLetOverride, MAX_WHY_DEPTH } from "./impact.js";
 export type {
   ImpactChange,
+  ImpactContact,
   ImpactDiagnostic,
   ImpactHeld,
   ImpactKeeps,

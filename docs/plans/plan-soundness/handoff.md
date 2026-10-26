@@ -44,7 +44,7 @@ The means, tracked in `README.md` §7: defect-corpus catch rate 7/53 (10-18) →
 | 2 | PS2.1–PS2.9, PS2.13 | met 2026-10-20 |
 | 3 | PS3.0–PS3.4, PS3.6 | met 2026-10-23 (ADR 0028) |
 | 3a | PS3.5, PS3.7–PS3.9, PS0.19 | unplanned, recorded by D7 |
-| 4 | PS0.4, PS4.1, PS4.2 | met in part 2026-10-24: `held` is empty (PS4.5 open) |
+| 4 | PS0.4, PS4.1, PS4.2, PS4.5 | met 2026-10-26: PS4.5 reports `held` |
 | 5 | PS5.1–PS5.3, PS2.10–PS2.12 | met 2026-10-25 (D14; PS2.11e moved to row 6) |
 | 6 | PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e | **current** (the owed re-measure ran 2026-10-26, D20). Landed: row-5 residue PS2.50 (#267), PS2.45 (#268), PS2.22/PS2.29 (#269); PS4.4 (#271); PS4.3 design (#270) and parts A and B (#272, #275); PS5.4 (#274). In flight: none. Waiting: PS7.x, PS2.11e |
 | 7 | PS6.1 | parked |
@@ -126,8 +126,7 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    and 0 `validate` calls in 65, arm B (current role) 0 and 1 in 77; defects 52 and 54, blockers 1 and
    1 (both the townhouse stair). D2's reverse-if is met: taste is a reviewer's tool, PS7.4 is done and
    PS7.5 moves the step out of the author loop. The row-5 residue and row 6 may start;
-   the row-5 residue is done (PS2.50 PR #267, PS2.45 PR #268, PS2.22/PS2.29 PR #269); item 2 is next.
-2. **PS4.4** is done (PR #271). **PS4.5** `impact` reports `held`.
+   the row-5 residue is done (PS2.50 PR #267, PS2.45 PR #268, PS2.22/PS2.29 PR #269); item 4 is next.
 4. **PS7.x** staged authoring. The next re-measure states what authors now see: PS7.5 (done: the taste
    step left the author loop in the spec, SKILL and role text) and PS7.6 (done: `lint`/`validate` open
    with a one-line summary).
@@ -137,7 +136,7 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    2026-10-25 transcript audit. **PS1.3** walls-first control arm (§8 Q1) is done (PR #264, D21): it ran on
    2026-10-26 in item 1's harness (66 CLI calls, 0 `score`, 0 `validate`; 54 verified defects against 52
    rooms-first; D1/D5 re-stated).
-7. Everything else in `cards.md` by family: PS0 17 todo, PS1 1, PS2 39 todo, PS3 4, PS4 7 todo, PS5 3, PS7 3 (7.1, 7.2, 7.6); pick by first-contact evidence, not by number.
+7. Everything else in `cards.md` by family: PS0 17 todo, PS1 1, PS2 39 todo, PS3 4, PS4 6 todo, PS5 3, PS7 3 (7.1, 7.2, 7.6); pick by first-contact evidence, not by number.
 
 **Open cards by family (2026-10-25 audit, counts updated 2026-10-26; "ready" = no stated dependency
 outstanding; every card that changes what an author sees in `lint`, `validate`, `finish` or the spec

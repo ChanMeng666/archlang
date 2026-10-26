@@ -26,7 +26,11 @@
  * - **held**: an element that did NOT change although something it depends on (by the same
  *   four edges) changed geometry or value. A wall changes only as `diffPlans` sees it (points,
  *   arcs, closure, thickness): an opening widened in it is not a change of the wall. The "should it have followed?" signal. A
- *   relabel never makes a dependant held.
+ *   relabel never makes a dependant held. One more edge counts here and only here, `contact`
+ *   (PS4.5): an authored wall or a furniture piece that lay ON a rectangular room's edge on
+ *   the before side (its `depends` row's `contacts`, `src/analyze/contacts.ts`) is held when
+ *   that edge's line moved and the element did not, with the room, the edge and the gap
+ *   (`contact` on the step); an edge that only grew or shrank along its own line did not move.
  * - **diagnostics**: `broke` (on the after side only) and `healed` (on the before side only),
  *   matched as a multiset keyed by code, element and storey, and `unchanged_count`. The
  *   element is the one whose statement contains the diagnostic's span (its byte offsets move
@@ -63,8 +67,10 @@
  * do), while diagnostics cover every storey; a bound name is one entry however many places
  * bind it (a component parameter and a `let` of the same name are not told apart, PS4.7); and
  * an element whose position comes
- * from geometry it does not record as a dependency (an absolute wall a room has outgrown)
- * cannot be "held" by this definition: the breakage it causes appears under `broke` instead.
+ * from geometry it does not record as a dependency, and that does not lie on a rectangular
+ * room's edge (a wall a room has outgrown without touching, a polygon room's side, a piece of
+ * furniture whose back is off the edge), cannot be "held" by this definition: the breakage it
+ * causes appears under `broke` instead.
  *
  * **Bounds.** Post-compile and outside the evaluator, so nothing is charged to the step meter
  * (`src/expr.ts`; there is no meter outside a resolution). Every loop is bounded by a count:
@@ -74,7 +80,8 @@
  * the binding closure is at most L passes, each over every name and its reads, O(L·(L+R));
  * the chain search visits each node once (memoised) over its edges, O(E·K), and each reported
  * chain is at most {@link MAX_WHY_DEPTH} steps, O(E·MAX_WHY_DEPTH) to print them all; held
- * is one pass over every row, O(E·K); keying diagnostics scans the elements once per
+ * is one pass over every row, O(E·K), its contacts one map lookup and one edge each (at most
+ * `MAX_CONTACTS_LISTED` per row); keying diagnostics scans the elements once per
  * diagnostic, O(D·E). Worst case is that last term, ~5,000 × the diagnostic count.
  *
  * Pure, synchronous, deterministic (code-unit order, never `localeCompare`), never throws on
@@ -90,11 +97,12 @@ import { resolvePlan } from "./analyze.js";
 import type { Diagnostic, Severity } from "./diagnostics.js";
 import { diffSides, type OpeningChange, type PlanDiff, type RoomChange, type WallChange } from "./diff.js";
 import { closest, type Expr } from "./expr.js";
-import type { ResolvedElement, ResolvedPlan, ROpening, RWall } from "./ir.js";
+import type { ResolvedElement, ResolvedPlan, ROpening, RRoom, RWall } from "./ir.js";
 import { lex } from "./lexer.js";
 import { keepResultsOf, type ResolvedLevel } from "./ir.js";
-import { type KeepAt, type KeepResult, keepRefsOf, mmNumber } from "./keep.js";
+import { type KeepAt, type KeepResult, keepHalfOf, keepRefsOf, mmNumber } from "./keep.js";
 import { lint } from "./lint.js";
+import { type RoomEdge, roomEdgeLine } from "./analyze/contacts.js";
 import { fmtHalfLattice } from "./num-format.js";
 import { parse } from "./parser.js";
 import { compileUncached } from "./pipeline.js";
@@ -115,13 +123,33 @@ export interface ImpactOptions {
 
 /** One link of a `why` chain or a held element's `because`. */
 export interface ImpactStep {
-  /** The edge followed: a depends `on` id, the host wall, an axis, a `let` read, or (for a
-   *  re-hosted opening only) a room whose change moved the spaces it joins. */
-  via: "on" | "host" | "axis" | "param" | "joins";
-  /** The dependency, named as the report names everything (never an internal name). */
+  /** The edge followed: a depends `on` id, the host wall, an axis, a `let` read, (for a
+   *  re-hosted opening only) a room whose change moved the spaces it joins, or (in `held`
+   *  only) a room edge the element lay on (PS4.5). */
+  via: "on" | "host" | "axis" | "param" | "joins" | "contact";
+  /** The dependency, named as the report names everything (never an internal name); a
+   *  contact's is the room edge as a datum is written (`a.right`). */
   name: string;
   /** How it changed, briefly (`resized`, `moved 500 mm right`, `4000 → 4500`). */
   change: string;
+  /** `via: "contact"` only: where the element stayed and where the edge went. */
+  contact?: ImpactContact;
+}
+
+/** A held element's contact with a room edge that moved (PS4.5). Positions are mm on the
+ *  0.001 mm lattice, in the resolved plan's frame (`+y` down the page). */
+export interface ImpactContact {
+  /** The room's id. */
+  room: string;
+  edge: RoomEdge;
+  /** The coordinate the edge's line fixes: `x` for `left`/`right`, `y` for `top`/`bottom`. */
+  axis: "x" | "y";
+  /** The line the element lay on, and still lies on (the edge's before-side position). */
+  stayed_mm: number;
+  /** The edge's after-side position. */
+  moved_to_mm: number;
+  /** How far apart they now stand, `|moved_to_mm − stayed_mm|`. */
+  gap_mm: number;
 }
 
 /** One changed element. */
@@ -266,6 +294,8 @@ interface Side {
   /** Each element's instance path. */
   instance: Map<string, string>;
   axes: Map<string, string>;
+  /** The lowest storey's rooms by id, for reading a contact's edge (PS4.5). */
+  rooms: Map<string, RRoom>;
   /** Openings' resolved `at` and furniture's `at`/`size`, for move/resize phrases. */
   at: Map<string, { x: number; y: number }>;
   size: Map<string, { w: number; h: number }>;
@@ -458,6 +488,7 @@ function readSide(source: string, opts: ImpactOptions): Side {
     places: bound.places,
     instance: new Map(),
     axes: new Map(),
+    rooms: new Map(),
     at: new Map(),
     size: new Map(),
     ...(keeps ? { keeps } : {}),
@@ -474,6 +505,7 @@ function readSide(source: string, opts: ImpactOptions): Side {
   for (const e of ir.elements as ResolvedElement[]) {
     if (e.kind === "walls" || e.kind === "wall" || side.kind.has(e.id)) continue;
     side.kind.set(e.id, e.kind);
+    if (e.kind === "room") side.rooms.set(e.id, e as RRoom);
     const n = nameOf(e);
     side.name.set(e.id, n.name);
     if (n.derived) side.derived.add(e.id);
@@ -827,12 +859,43 @@ function buildChanges(A: Side, B: Side, diff: PlanDiff, report: ImpactReport): v
     });
   }
 
-  // 3. Held: on both sides, unchanged, with a direct dependency that changed.
+  // 3. Held: on both sides, unchanged, with a direct dependency that changed, or a room edge
+  // it lay on (before) whose line moved (PS4.5).
+  const contactSteps = (id: string): ImpactStep[] => {
+    const out: ImpactStep[] = [];
+    for (const c of A.rows.get(id)?.contacts ?? []) {
+      const ra = A.rooms.get(c.room);
+      const rb = B.rooms.get(c.room);
+      const la = ra && roomEdgeLine(ra, c.edge);
+      const lb = rb && roomEdgeLine(rb, c.edge);
+      if (!la || !lb) continue;
+      const d = keepHalfOf(lb.at - la.at);
+      if (d === 0) continue;
+      const dir = la.axis === "x" ? (d > 0 ? "right" : "left") : d > 0 ? "down" : "up";
+      out.push({
+        via: "contact",
+        name: `${nameOfId(c.room)}.${c.edge}`,
+        change: `moved ${fmtHalfLattice(Math.abs(d))} mm ${dir}`,
+        contact: {
+          room: c.room,
+          edge: c.edge,
+          axis: la.axis,
+          stayed_mm: mmNumber(keepHalfOf(la.at)),
+          moved_to_mm: mmNumber(keepHalfOf(lb.at)),
+          gap_mm: mmNumber(Math.abs(d)),
+        },
+      });
+    }
+    return out;
+  };
   for (const id of ids) {
     if (nodes.has(id) || !A.kind.has(id) || !B.kind.has(id)) continue;
-    const because = edges(id)
-      .filter((e) => e.via !== "joins" && moves(e.key))
-      .map((e) => ({ via: e.via, name: display(e.key), change: brief(e.key) }));
+    const because: ImpactStep[] = [
+      ...edges(id)
+        .filter((e) => e.via !== "joins" && moves(e.key))
+        .map((e) => ({ via: e.via, name: display(e.key), change: brief(e.key) })),
+      ...contactSteps(id),
+    ];
     if (because.length === 0) continue;
     const derived = B.derived.has(id);
     report.held.push({
@@ -1081,8 +1144,12 @@ const VIA_WORD: Record<ImpactStep["via"], string> = {
   axis: "at",
   param: "reads",
   joins: "joins",
+  contact: "on",
 };
 const stepPhrase = (s: ImpactStep): string => `${VIA_WORD[s.via]} ${s.name} (${s.change})`;
+/** `stayed at x 4000 while a.right moved to x 4500 (500 mm)`. */
+const contactPhrase = (edge: string, c: ImpactContact): string =>
+  `stayed at ${c.axis} ${c.stayed_mm} while ${edge} moved to ${c.axis} ${c.moved_to_mm} (${c.gap_mm} mm)`;
 
 /** `room a`, or a derived element's phrase alone (it already says what it is). */
 const who = (x: { kind: string; name: string; derived?: true }): string => (x.derived ? x.name : `${x.kind} ${x.name}`);
@@ -1113,8 +1180,11 @@ function summaryOf(r: ImpactReport): string[] {
     out.push(`    why: ${[chain, end].filter((x) => x !== "").join("; ")}${c.truncated ? " (truncated)" : ""}`);
   }
   head("Held", r.held.length);
-  for (const h of r.held)
-    out.push(`  ${who(h)} stayed; what it depends on changed: ${h.because.map(stepPhrase).join(", ")}`);
+  for (const h of r.held) {
+    const deps = h.because.filter((s) => s.contact === undefined);
+    if (deps.length > 0) out.push(`  ${who(h)} stayed; what it depends on changed: ${deps.map(stepPhrase).join(", ")}`);
+    for (const s of h.because) if (s.contact) out.push(`  ${who(h)} ${contactPhrase(s.name, s.contact)}`);
+  }
   const diag = (title: string, ds: ImpactDiagnostic[]): void => {
     head(title, ds.length);
     for (const d of ds)

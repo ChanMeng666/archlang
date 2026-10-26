@@ -78,6 +78,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   line says advisory keeps are reported by `impact` too (29,815 → 29,822 units) and the SKILL
   sentence describes the real report. A plan with no keep is unchanged byte for byte in every
   surface (the 269-file baseline).
+- `arch impact` reports walls and furniture written at fixed coordinates as `held` when a room
+  edge they lay on moves and they do not (plan card PS4.5). `describe --facts depends` adds
+  `contacts: [{ room, edge }]` to an authored wall's or furniture piece's row: the rectangular
+  rooms' edges it lies on (a straight segment's centreline, a piece's back edge, collinear on the
+  0.001 mm lattice and overlapping by a positive length; never a bounding box), less the rooms it
+  already follows through `on`, at most 64; present only when non-empty, and never on a derived
+  wall. `impact` reads the before side's contacts: an unchanged element whose contact edge's line
+  moved gains a `because` step `via: "contact"` named as the datum (`a.right`), with
+  `contact: { room, edge, axis, stayed_mm, moved_to_mm, gap_mm }`, and the human report a line
+  `wall p stayed at x 4000 while a.right moved to x 4500 (500 mm)`. The widening drill now holds
+  the shell and the partition `p`; the studio drill holds the x 4000 partition. Edges are named
+  in the plan's frame, so they turn with a turned instance. Plain `describe()`, the SVG and
+  `lint()` are unchanged.
 
 - Brief-bound dimensions (plan card PS4.4). `describe().totals` gains the plan's **gross internal
   area**, `gross_internal_area_m2`: the floor inside the inner faces of the storey's `exterior`

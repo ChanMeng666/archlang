@@ -13,6 +13,12 @@
  *  4. `impact --json --against <the file itself>`, and, when the file binds a top-level numeric
  *     `let`, `impact --json --set <name>=<value + 100>`, each with its exit code.
  *
+ * PS4.5 added facts after the baseline was taken, and the generator may run only on the tree
+ * before keep code existed, so the baseline is not re-taken: the payload removes exactly those
+ * additive facts instead (as `validate`'s `summary` is removed): `describe`'s
+ * `depends.elements[].contacts` ({@link withoutContacts}) and `impact`'s contact `held` steps
+ * with the rows and summary lines they make ({@link withoutContactHeld}).
+ *
  * Beside the digest, the resolver's evaluation-step count of the whole resolution (every storey),
  * which a keep-free plan must not move either.
  */
@@ -96,6 +102,54 @@ export function firstLetBump(src: string): string | undefined {
   return m ? `${m[1]}=${Number(m[2]) + 100}` : undefined;
 }
 
+/**
+ * PS4.5's additive facts, removed so the baseline (taken before any keep code, so never re-taken)
+ * still measures everything else: every `depends.elements[].contacts` (top level and per storey).
+ * The key is present only on a row that lies on a room edge, so this removes nothing else.
+ */
+export function withoutContacts<T>(summary: T): T {
+  const strip = (deps: { elements?: Array<Record<string, unknown>> } | undefined): void => {
+    for (const row of deps?.elements ?? []) delete row.contacts;
+  };
+  const copy = structuredClone(summary) as {
+    depends?: Parameters<typeof strip>[0];
+    levels?: Array<{ depends?: Parameters<typeof strip>[0] }>;
+  };
+  strip(copy.depends);
+  for (const l of copy.levels ?? []) strip(l.depends);
+  return copy as T;
+}
+
+/** The human line a held contact prints (`src/impact.ts`'s `contactPhrase`, after `  <who> `). */
+const CONTACT_LINE = / stayed at [xy] -?[0-9.]+ while \S+ moved to [xy] -?[0-9.]+ \([0-9.]+ mm\)$/;
+
+/**
+ * `impact --json` less PS4.5's additive `held` content, as it printed before contacts existed:
+ * every `via: "contact"` step, a held row left with none, the summary lines those steps print,
+ * and the `Held (n)` head recounted. A report that is not JSON (a usage error) or has no contact
+ * step comes back byte for byte.
+ */
+export function withoutContactHeld(stdout: string): string {
+  const nl = stdout.indexOf("\n");
+  const exit = stdout.slice(0, nl + 1);
+  const body = stdout.slice(nl + 1);
+  let j: { held?: Array<{ because: Array<{ via: string }> }>; summary?: string[] };
+  try {
+    j = JSON.parse(body);
+  } catch {
+    return stdout;
+  }
+  if (!j.held?.some((h) => h.because.some((s) => s.via === "contact"))) return stdout;
+  const held = j.held
+    .map((h) => ({ ...h, because: h.because.filter((s) => s.via !== "contact") }))
+    .filter((h) => h.because.length > 0);
+  j.held = held;
+  j.summary = (j.summary ?? [])
+    .filter((l) => !(l.startsWith("  ") && CONTACT_LINE.test(l)))
+    .map((l) => (/^Held \(\d+\):/.test(l) ? `Held (${held.length})${held.length === 0 ? ": none" : ":"}` : l));
+  return `${exit}${JSON.stringify(j, null, 2)}\n`;
+}
+
 /** The weak law's payload for one file (see the header). */
 export function keepWeakLawPayload(file: string): string {
   const src = readFileSync(file, "utf8");
@@ -103,10 +157,10 @@ export function keepWeakLawPayload(file: string): string {
   const bump = firstLetBump(src);
   return [
     allStoreysDiagnosticsPayload(API, src, { world }),
-    JSON.stringify(describe(src, { world, facts: ["depends"] })),
+    JSON.stringify(withoutContacts(describe(src, { world, facts: ["depends"] }))),
     runCli(cmdValidate, [file, "--json"], true),
-    runCli(cmdImpact, [file, "--json", "--against", file]),
-    bump !== undefined ? runCli(cmdImpact, [file, "--json", "--set", bump]) : "",
+    withoutContactHeld(runCli(cmdImpact, [file, "--json", "--against", file])),
+    bump !== undefined ? withoutContactHeld(runCli(cmdImpact, [file, "--json", "--set", bump])) : "",
   ].join(" ");
 }
 

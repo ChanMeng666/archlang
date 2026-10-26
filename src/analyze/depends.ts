@@ -35,6 +35,13 @@
  * is charged, because no evaluation happens (there is no meter outside a resolution, see
  * `src/expr.ts`).
  *
+ * - `contacts` (PS4.5, `./contacts.ts`): on an authored wall and a furniture piece, the
+ *   rectangular rooms' edges it lies ON (a straight segment's centreline, a piece's back edge,
+ *   collinear on the lattice and overlapping), less the rooms already in its `on` (those it
+ *   follows). Present only when non-empty, so a plan with no contact is unchanged by a byte.
+ *   It is what lets `arch impact` report an element written at fixed coordinates as `held`
+ *   when a room edge it lay on moves and it does not. A derived wall has none: it follows.
+ *
  * `--view` cannot reach it: `describe()` never sees a view, and nothing here reads one.
  * Heights are not dependencies: no element's position reads a height, and a height clause's
  * own names (`height h`, `head hd`, `sill s`) are read only by that element, so they appear
@@ -46,8 +53,9 @@ import { BUILTIN_NAMES } from "../builtins.js";
 import { exprChildren, statementBodies, statementReads } from "../cursor.js";
 import type { Span } from "../diagnostics.js";
 import type { Expr } from "../expr.js";
-import type { RFurniture, ResolvedElement, ResolvedPlan, RRoof, RRoom, RWallsFromRooms } from "../ir.js";
+import type { RFurniture, ResolvedElement, ResolvedPlan, RRoof, RRoom, RWall, RWallsFromRooms } from "../ir.js";
 import { splitDatum } from "../room-datums.js";
+import { type ContactFact, contactIndex } from "./contacts.js";
 import type { KeepFact } from "./keep-facts.js";
 
 /** One element's dependencies. */
@@ -64,6 +72,9 @@ export interface DependsEntry {
    *  or backed onto (an `against wall` piece, a roof following a ring), authored or derived:
    *  the one place a derived wall's internal name appears in an element's row. */
   hostWallId?: string;
+  /** The room edges an authored wall or a furniture piece lies on (`./contacts.ts`), less the
+   *  rooms in `on`, sorted by room then edge; absent when it lies on none. */
+  contacts?: ContactFact[];
 }
 
 /** One derived wall's dependencies (`name` as in `derived_walls[]` and `heights.walls[]`). */
@@ -242,6 +253,7 @@ export function dependsFacts(ir: ResolvedPlan, index: StatementIndex): DependsFa
     return names;
   };
 
+  const contacts = contactIndex(rooms);
   const elements: DependsEntry[] = [];
   for (const e of ir.elements as ResolvedElement[]) {
     if (e.kind === "walls") continue;
@@ -273,6 +285,10 @@ export function dependsFacts(ir: ResolvedPlan, index: StatementIndex): DependsFa
     // it: it is reached through `hostWallId` and its own `derived_walls[]` row.
     for (const id of [...on]) if (wallsById.get(id)?._derived) on.delete(id);
     on.delete(e.id);
+    const touches =
+      (e.kind === "wall" && !(e as RWall)._derived) || e.kind === "furniture"
+        ? contacts.of(e as RWall | RFurniture, on)
+        : [];
     elements.push({
       id: e.id,
       kind: e.kind,
@@ -280,6 +296,7 @@ export function dependsFacts(ir: ResolvedPlan, index: StatementIndex): DependsFa
       params: sorted(params),
       axes: sorted(axes),
       ...(hostWallId !== undefined ? { hostWallId } : {}),
+      ...(touches.length > 0 ? { contacts: touches } : {}),
     });
   }
   elements.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : a.kind < b.kind ? -1 : a.kind > b.kind ? 1 : 0));
