@@ -644,11 +644,12 @@ $ archlang spec
 
 print the full bundled agent context (spec + workflow + CLI + errors)
 
-**Input:** `none` · **Output:** the full agent context (llms-full.txt), or one --section of it
+**Input:** `none` · **Output:** the full agent context (llms-full.txt), one --section of it, or the one-screen --level starter
 
 | Flag | Does |
 | --- | --- |
-| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 144 KB of it (spec = the language, 30 KB; workflow = the agent loop, 29 KB; cli = every command, 26 KB; errors = the diagnostic catalog, 58 KB) |
+| `--level <starter\|full>` | starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 145 KB bundle (default, unchanged) |
+| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 145 KB of it (spec = the language, 30 KB; workflow = the agent loop, 29 KB; cli = every command, 26 KB; errors = the diagnostic catalog, 58 KB) |
 | `--json` | structured result on stdout, messages on stderr |
 
 **Examples**
@@ -657,7 +658,10 @@ print the full bundled agent context (spec + workflow + CLI + errors)
 # the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 $ archlang context
 
-# just the diagnostic catalog (58 KB) — read one section instead of paying for the whole 144 KB bundle
+# one screen for a small model: the lead example, the statements a plan needs, the loop and the five errors cold authors hit first
+$ archlang context --level starter
+
+# just the diagnostic catalog (58 KB) — read one section instead of paying for the whole 145 KB bundle
 $ archlang context --section errors
 ```
 

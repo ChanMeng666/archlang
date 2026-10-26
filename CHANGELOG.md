@@ -39,6 +39,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`curved-landing-wall` coverage skip); the rules' work is a count (`MAX_STAIR_WORK`, `stair-budget`
   skip). The defect corpus's stair class goes from 0/4 to 8/8, the corpus from 59/73 to 67/77.
 
+- `arch context --level starter`: one screen (at most 4,000 characters, 60 lines of 100 columns) for a small model, built from the
+  spec's lead example and the compiler rather than retyped: the example, the statements a plan needs
+  (each a line of that example, plus the sheet lines), the compile, `validate`, `lint` loop, and the five errors cold authors
+  hit first, each with a bad statement that raises the code and the repaired one (`E_PARSE` clause
+  order, `E_FURN_SIZE`, `E_OPENING_DATUM`, `E_OPENING_NIB`, `E_FURN_AGAINST`). `--level full` is
+  the default, the whole bundle as before; `--level starter --section` is a usage error. Plan card
+  PS7.2.
 - `arch preview <file> --review`: the review sheet, one PNG for whoever reviews a plan (plan card
   PS5.4; D20). The plan exactly as `preview` draws it, with `describe().access` laid over it (rooms
   as nodes at their label points, an edge through each door and opening, entrances marked); every
