@@ -29,7 +29,7 @@ jobs:
   # and `npm-tarball`, which ships CHANGELOG.md). NOT records: published pages,
   # `docs/adr/` (synced to the site), the README, `spec.llm.md`, skills, package READMEs,
   # and every non-Markdown file under `docs/plans/` (its `.arch` plans are the corpus of
-  # a dozen suites; its scripts are linted). A suite that starts reading a record joins
+  # 19 suites; its scripts are linted). A suite that starts reading a record joins
   # the docs leg's list below, or the record leaves this list.
   #
   # Every gating job below keeps its check NAME (the required checks on `main` are those
