@@ -211,6 +211,7 @@ export const hobUnderWindow: LintRule = {
   name: "hob-under-window",
   family: "furniture",
   layer: "validity",
+  stage: "fixtures",
   codes: ["W_HOB_UNDER_WINDOW"],
   check(ctx: LintContext): Diagnostic[] {
     const hobs = ctx.furniture.filter((f) => isCookingSurface(f.category));
@@ -261,6 +262,7 @@ export const hobFridgeGap: LintRule = {
   name: "hob-fridge-gap",
   family: "furniture",
   layer: "validity",
+  stage: "fixtures",
   codes: ["W_HOB_FRIDGE_GAP"],
   check(ctx: LintContext): Diagnostic[] {
     const need = ctx.rules.hobLandingMm;

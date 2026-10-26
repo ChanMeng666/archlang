@@ -899,6 +899,7 @@ export const leafTooWide: LintRule = {
   name: "leaf-too-wide",
   family: "doors",
   layer: "validity",
+  stage: "openings",
   codes: ["W_LEAF_TOO_WIDE"],
   check(ctx: LintContext): Diagnostic[] {
     const max = ctx.rules.maxHingedLeafMm;
