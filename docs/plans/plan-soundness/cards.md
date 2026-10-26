@@ -374,5 +374,5 @@ PS5.1b: PR #247, 9cc29c7e)
 **PS7.5 · Move the taste step out of the author loop.** `done` (PR #263, f024ab4a; D20)
 - As built: `research/2026-10-26-ps75-as-built.md` (a spec-text card).
 
-**PS7.6 · `lint` opens with a one-line summary.** `done` (PR #TBD)
+**PS7.6 · `lint` opens with a one-line summary.** `done` (PR #278)
 - As built: `research/2026-10-26-ps76-as-built.md`.
