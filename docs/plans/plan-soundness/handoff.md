@@ -128,9 +128,9 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    PS7.5 moves the step out of the author loop. The row-5 residue and row 6 may start;
    the row-5 residue is done (PS2.50 PR #267, PS2.45 PR #268, PS2.22/PS2.29 PR #269); item 2 is next.
 2. **PS4.4** is done (PR #271). **PS4.5** `impact` reports `held`.
-4. **PS7.x** staged authoring; then **PS7.6** (`lint` opens with a one-line summary). It changes what
-   authors see, so the next re-measure states it, with PS7.5 (done: the taste step left the author loop
-   in the spec, SKILL and role text).
+4. **PS7.x** staged authoring. The next re-measure states what authors now see: PS7.5 (done: the taste
+   step left the author loop in the spec, SKILL and role text) and PS7.6 (done: `lint`/`validate` open
+   with a one-line summary).
 5. **PS2.11e** the clearance remainder (`W_DOORWAY_BLOCKED` over leaf-less openings, stair swings,
    hob under a window PS2.46, per-family depth ceiling PS2.53, face/centreline unification PS2.54).
 6. **PS1.4** diagnostic-wording study (§8 Q3) is still open: an owner ask from 2026-10-18 found undone by the
