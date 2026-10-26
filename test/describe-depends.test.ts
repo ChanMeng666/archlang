@@ -8,7 +8,9 @@
  * - over the examples corpus: every `on` id names an element of that storey, and the lists
  *   are sorted and repeat nothing;
  * - equivariance: placing a plan turned, mirrored or translated changes neither `on` nor
- *   `params` (the oracle's own wrapper over the corpus, and the random-plan arbitrary).
+ *   `params` (the oracle's own wrapper over the corpus, and the random-plan arbitrary), and
+ *   moves each `contacts` edge exactly as the frame moves a side (PS4.5: an edge is named in
+ *   the resolved plan's frame, so `g` acts on it; the room set is unchanged).
  *
  * That a summary NOT asking for the fact is byte-identical is `test/describe-facts.test.ts`
  * (every example, `strip` of the opt-in keys); SVG and `lint()` never see the option, and the
@@ -17,6 +19,7 @@
 
 import fc from "fast-check";
 import { describe as suite, expect, it } from "vitest";
+import { actOnSide, fromSpelling } from "../src/algebra/d4.js";
 import { type DependsEntry, type DependsFacts, describe, type SceneSummary } from "../src/index.js";
 import { buildManifest } from "../src/manifest.js";
 import { planSpec, withInstance } from "./arbitrary-plan.js";
@@ -354,7 +357,22 @@ suite("`params`: the bound names an element's expressions read", () => {
   wall id=e exterior thickness 200 height H { (0,0) (7000,0) (7000,3000) (0,3000) close }
   window id=w on e at center width 1200 sill S`),
     );
-    expect(entry(f, "e")).toEqual({ id: "e", kind: "wall", on: [], params: ["H"], axes: [] });
+    // The ring lies on every outer edge of a and b (PS4.5 `contacts`); a height reads no room.
+    expect(entry(f, "e")).toEqual({
+      id: "e",
+      kind: "wall",
+      on: [],
+      params: ["H"],
+      axes: [],
+      contacts: [
+        { room: "a", edge: "bottom" },
+        { room: "a", edge: "left" },
+        { room: "a", edge: "top" },
+        { room: "b", edge: "bottom" },
+        { room: "b", edge: "right" },
+        { room: "b", edge: "top" },
+      ],
+    });
     expect(entry(f, "w")).toEqual({ id: "w", kind: "window", on: ["e"], params: ["S"], axes: [], hostWallId: "e" });
   });
 });
@@ -496,6 +514,25 @@ suite("pinned", () => {
 // Equivariance: a frame moves coordinates, never a dependency
 // ---------------------------------------------------------------------------
 
+/**
+ * `depends` as `p0` would read under `g`: every contact's edge acted on by `g` (`actOnSide`, the
+ * frame's linear part), re-sorted by room then edge; everything else as it is.
+ */
+function underFrame(d: DependsFacts | undefined, g: { rotate: 0 | 90 | 180 | 270; mirror?: "x" }): string {
+  const el = fromSpelling(g.rotate, g.mirror);
+  const elements = (d?.elements ?? []).map((e) =>
+    e.contacts
+      ? {
+          ...e,
+          contacts: e.contacts
+            .map((c) => ({ room: c.room, edge: actOnSide(el, c.edge) }))
+            .sort((p, q) => byCode(p.room, q.room) || byCode(p.edge, q.edge)),
+        }
+      : e,
+  );
+  return JSON.stringify(d ? { ...d, elements } : d);
+}
+
 suite("equivariance: `on` and `params` do not move with the frame", () => {
   it.each(ELIGIBLE_EXAMPLES)(
     "%s",
@@ -507,10 +544,9 @@ suite("equivariance: `on` and `params` do not move with the frame", () => {
       // Every id is namespaced into the instance exactly as the element ids are.
       const known = new Set(p0.depends!.elements.map((e) => e.id));
       for (const e of p0.depends!.elements) for (const id of e.on) expect(known.has(id), `${e.id} → ${id}`).toBe(true);
-      const want = JSON.stringify(p0.depends);
       for (const g of corpusElements(rel)) {
         const gP = describe(wrapperSource(rel, g), { world: EXAMPLES_WORLD, facts: ["depends"] });
-        expect(JSON.stringify(gP.depends), `${rel} under ${g.name}`).toBe(want);
+        expect(JSON.stringify(gP.depends), `${rel} under ${g.name}`).toBe(underFrame(p0.depends, g));
       }
     },
     120_000,
@@ -526,7 +562,7 @@ suite("equivariance: `on` and `params` do not move with the frame", () => {
         const p0 = describe(withInstance(spec, { rotate: 0, at: { x: 0, y: 0 } }), { facts: ["depends"] });
         const gP = describe(at(g.rotate, g.mirror), { facts: ["depends"] });
         expect(p0.depends, "the instance variant emits only plans that resolve").toBeDefined();
-        expect(JSON.stringify(gP.depends)).toBe(JSON.stringify(p0.depends));
+        expect(JSON.stringify(gP.depends)).toBe(underFrame(p0.depends, g));
       }),
       { numRuns: 30 },
     );
