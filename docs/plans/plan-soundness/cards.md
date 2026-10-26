@@ -52,19 +52,8 @@ A done row's "record" is `research/2026-10-24-ps0-ps2-as-built.md`.
 **PS1.3 · Walls-first control arm for §8 Q1.** `done` (PR #264, 3f071b91)
 - Measured 2026-10-26 (`audits/2026-10-26-walls-first-control-arm.md`, D21): 54 verified defects walls-first against 52 rooms-first (arm A), 0 class-1 in the final plans in both; D1/D5 re-stated as claims about authoring. Not run: a walls-first spec.
 
-**PS1.4 · Which diagnostic wording repairs best (§8 Q3).** `todo` (filed 2026-10-25 from the
-transcript audit: asked by the owner on 2026-10-18, "什么样的诊断措辞最利于 AI 修复"; never studied.)
-- *Goal:* measure, on the defect corpus, which message/hint wording an AI author repairs correctly
-  in one pass: facts only ("the door's leaf parks 200 mm in front of the WC door") vs rule ("doors
-  must not swing into another doorway's approach") vs fix instruction ("hinge the door on its other
-  jamb") vs the current combination.
-- *Design:* for each corpus defect case, give a local, unpaid author model the plan plus one wording
-  variant, ask for the minimal edit, re-lint; count fixed / unchanged / broke-something-else per
-  variant. Hold the model and the prompt fixed; vary only the diagnostic text. No paid eval.
-- *Acceptance:* a dated `research/` file with the table and a wording rule for the catalogue
-  (`lint-fix-texts` then pins it); the PS2.29 id-free rule folded in.
-- *Open:* whether the result transfers across models; run at least two local models before writing
-  the rule.
+**PS1.4 · Which diagnostic wording repairs best (§8 Q3).** `done` (PR pending)
+- Measured 2026-10-26 (`research/2026-10-26-ps14-diagnostic-wording.md`): 59 cases × 4 wordings × sonnet and haiku, one draw; fixed facts/rule/fix/current 46/49/52/51 (sonnet), 46/42/45/51 (haiku). No variant wins on both models, so no wording rule; keep message + hint, and do not cut messages to facts or rule alone.
 
 **PS1.5 · Two wording slips found in PS7.2's red team (2026-10-26).** `todo`
 - `E_FURN_SIZE` under `furniture … in <room> anchor|centered` says "no default footprint for `wc`" for a piece that has one (it does under `against`; `in` never reads the catalogue). Say what is true: `in` always needs `size`.
