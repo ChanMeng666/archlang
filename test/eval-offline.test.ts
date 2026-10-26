@@ -26,8 +26,8 @@ import { SYNONYMS_VERSION, isKnownConcept, roomsMatching } from "../eval/synonym
  */
 
 /**
- * The holdout goldens whose physical judgment D25 (plan-soundness README §3, awaiting
- * ratification) moved: the doorway approach read from the wall's face (PS2.54) and over cased
+ * The holdout goldens whose physical judgment D25 (plan-soundness README §3, ratified) moved:
+ * the doorway approach read from the wall's face (PS2.54) and over cased
  * openings (PS2.11e) finds a piece inside it. Read from the judge fixture's own `notes`, never
  * retyped; each is held to fail on that one finding alone (below).
  */
