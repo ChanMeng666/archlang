@@ -61,21 +61,21 @@ that compile every `arch` fence of every Markdown page, `npm-tarball`) and `docs
 `main`, a failed `changes` job or any other path runs everything. A suite that starts reading a record
 joins the docs leg's list in `ci.yml`, or the record leaves the filter.
 
-Minutes, full run: MINUTES_SOURCE
+Minutes, a full run measured 2026-10-27 (PR #290 at 2ed9d70e, `gh run view 40416348158`; wall clock 22.7):
 
 | Job (check name) | Runs | Min |
 |---|---|---|
-| `changes` (Changed paths) | classifies the PR's paths (not a required check) | MIN_CHANGES |
-| `build` (Node 18, Node 20, Node 22) | typecheck, `lint:ci`, `check:drift`, `npm test`, `eval:ci`; on a record-only PR, Node 22 runs the docs leg | MIN_BUILD |
-| `builds` (Workspace builds) | `build`, `typecheck:all`, all four workspace builds, MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring` (each only here) | MIN_BUILDS |
-| `windows` | `npm test` + `check:drift` at the runner's default line endings (no `eval:ci`) | MIN_WIN |
-| `e2e-playground`, `e2e-docs` | Playwright against the built sites | MIN_E2E |
-| `bench` | informational per-stage timings in the job summary (+ a PR comment on same-repo PRs); never gates; skipped on a record-only PR | MIN_BENCH |
+| `changes` (Changed paths) | classifies the PR's paths (not a required check) | < 0.1 |
+| `build` (Node 18, Node 20, Node 22) | typecheck, `lint:ci`, `check:drift`, `npm test`, `eval:ci`; on a record-only PR, Node 22 runs the docs leg | 20.7, 19.9, 10.8 |
+| `builds` (Workspace builds) | `build`, `typecheck:all`, all four workspace builds, MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring` (each only here) | 2.0 |
+| `windows` | `npm test` + `check:drift` at the runner's default line endings (no `eval:ci`) | 21.1 |
+| `e2e-playground`, `e2e-docs` | Playwright against the built sites | 4.7, 4.7 |
+| `bench` | informational per-stage timings in the job summary (+ a PR comment on same-repo PRs); never gates; skipped on a record-only PR | 0.9 |
 
 Coverage is not in `ci.yml`: nightly's `coverage` job runs `test:coverage` (report-only). The E2E legs
 vary most: their "Install Chromium system deps only" step runs on every run (it installs fonts the
-runner image lacks, which the specs' layout depends on) and took 10 and 18 minutes in one run, under
-one minute in others; that is the apt mirror. Options and their status: `docs/plans/ci-throughput.md`.
+runner image lacks, which the specs' layout depends on): 10 and 18 minutes in run 40329078071, 12 s and
+3 min in the run above; the spread is the apt mirror. Options and status: `docs/plans/ci-throughput.md`.
 
 ### Merging a PR
 
