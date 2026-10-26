@@ -223,3 +223,16 @@ c82d5dd89bdd450a64c9160064fefaa97bfe3f20:test/import-module-lets.test.ts:generic
 344cc2d24b14dd542920586e520d6020536ce8f7:test/while-byte-identity-baseline.ts:generic-api-key:329
 344cc2d24b14dd542920586e520d6020536ce8f7:test/import-module-lets.test.ts:generic-api-key:575
 344cc2d24b14dd542920586e520d6020536ce8f7:test/import-module-lets.test.ts:generic-api-key:576
+# ---------------------------------------------------------------------------------------
+# 2026-10-27 — one finding, rule `generic-api-key`, the same false positive as the blocks above
+# (nightly run 40291956443, the `secrets` job of 2026-10-26). Opened and read:
+#
+#   test/double-door-byte-identity.test.ts:49   at c2978a47
+#
+#           `["examples/accessible.arch", "5f69fe78…<56 more hex>"]`, the first row of the
+#           double-door byte-identity BASELINE: a MEASURED SHA-256 digest of public output,
+#           keyed by a plan whose name contains the rule's key-ish word "access". Recomputable
+#           from this repository (`test/byte-identity-digest.ts`); it grants access to nothing.
+#           `gitleaks detect` 8.24.3 over the full history at adbf0dbb reported exactly this one.
+# ---------------------------------------------------------------------------------------
+c2978a477cf30cf228233c5707d5ddfb9e9c45ea:test/double-door-byte-identity.test.ts:generic-api-key:49

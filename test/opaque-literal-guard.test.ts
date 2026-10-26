@@ -39,6 +39,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { ERROR_CATALOG } from "../src/error-catalog.js";
 
 const ROOT = resolve(".");
 const read = (p: string): string => readFileSync(resolve(ROOT, p), "utf8");
@@ -74,6 +75,7 @@ const opaqueLiteralsIn = (path: string): string[] => [...read(path).matchAll(OPA
  *  compare against; the rules themselves are the individual `it`s. */
 const HAVE_RULES = [
   "test/byte-identity-baseline.ts",
+  "test/double-door-byte-identity.test.ts",
   "test/height-byte-identity.test.ts",
   "test/import-module-lets.test.ts",
   "test/indexnow-script.test.ts",
@@ -118,6 +120,16 @@ describe("every gitleaks-excluded file is guarded for what it may CONTAIN", () =
       (s) => !/^[0-9a-f]{64}$/.test(s) && !(/^[a-z0-9/-]+$/.test(s) && existsSync(resolve(ROOT, s))),
     );
     expect(unexplained, "an opaque string that is neither a digest nor a corpus directory").toEqual([]);
+  });
+
+  it("test/double-door-byte-identity.test.ts holds only digests and catalogued diagnostic codes", () => {
+    // A byte-identity suite whose BASELINE pins every corpus plan by path (a `.` and a `/`, so
+    // no candidate) and measured SHA-256 value; its assertions name diagnostics by code. What
+    // remains must be a digest or a code the error catalog defines.
+    const opaque = opaqueLiteralsIn("test/double-door-byte-identity.test.ts");
+    expect(opaque.filter((s) => /^[0-9a-f]{64}$/.test(s)).length).toBeGreaterThan(0);
+    const unexplained = opaque.filter((s) => !/^[0-9a-f]{64}$/.test(s) && !Object.hasOwn(ERROR_CATALOG, s));
+    expect(unexplained, "an opaque string that is neither a digest nor a catalogued code").toEqual([]);
   });
 
   it("test/height-byte-identity.test.ts holds no opaque string at all", () => {
