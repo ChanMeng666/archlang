@@ -521,6 +521,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The CLI now waits for stdout and stderr to drain before it exits, so a large `--json` output (the
+  `arch context --json` bundle, a big `ast`) is never cut off when piped; a pipe lost everything past
+  its first 64 KB to the `process.exit` that followed the write.
 - DXF text now lands where the SVG and PDF put it. Every `TEXT` entity carries the Scene's
   justification (group codes 72/73 with the 11/21 alignment point) and its rotation (50), so a
   CAD program no longer draws every label left-aligned on its baseline: room names sit centred
