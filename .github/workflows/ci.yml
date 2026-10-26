@@ -9,103 +9,191 @@ on:
 permissions:
   contents: read
 
+# A new push to a PR cancels that PR's superseded run (B in docs/plans/ci-throughput.md).
+# A push to `main` gets a group of its own (keyed on the commit, not the ref), so a main
+# build is never cancelled, and never left pending behind another one either: GitHub
+# replaces a PENDING run in a group even when cancel-in-progress is false.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  # ---------------------------------------------------------------------------
+  # Record-only PRs skip the heavy work (C in docs/plans/ci-throughput.md).
+  #
+  # `code` is true when ANY changed path lies outside RECORDS, the negated globs below:
+  # Markdown that nothing publishes and that only the docs leg's checks read. Measured,
+  # not assumed: every `fs` read of the full suite was traced per test file, and the
+  # only suites that read a record are the ones the docs leg runs (`docs-*`, the seven
+  # that compile every `arch` fence of every Markdown page under `docs/` and the root,
+  # and `npm-tarball`, which ships CHANGELOG.md). NOT records: published pages,
+  # `docs/adr/` (synced to the site), the README, `spec.llm.md`, skills, package READMEs,
+  # and every non-Markdown file under `docs/plans/` (its `.arch` plans are the corpus of
+  # a dozen suites; its scripts are linted). A suite that starts reading a record joins
+  # the docs leg's list below, or the record leaves this list.
+  #
+  # Every gating job below keeps its check NAME (the required checks on `main` are those
+  # names) and only guards its steps on FULL_CI, so a record-only PR reports every check,
+  # green, in about a minute. FULL_CI fails OPEN: on a push, on a failed or empty
+  # `changes`, or on any non-record path, every leg runs in full.
+  # ---------------------------------------------------------------------------
+  changes:
+    name: Changed paths
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      code: ${{ steps.verdict.outputs.code }}
+    steps:
+      - name: Classify the PR's changed paths
+        id: filter
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          # `every`: a file counts as `code` only if it matches `**` AND none of the
+          # negated record globs, i.e. it is not a record.
+          predicate-quantifier: every
+          filters: |
+            code:
+              - '**'
+              - '!docs/plans/**/*.md'
+              - '!docs/agents/*.md'
+              - '!docs/backlog.md'
+              - '!docs/testing.md'
+              - '!docs/seo.md'
+              - '!docs/hosting-and-domains.md'
+              - '!docs/npm-oidc-publishing-playbook.md'
+              - '!eval/README.md'
+              - '!.claude/**/*.md'
+              - '!.github/ISSUE_TEMPLATE/**'
+              - '!AGENTS.md'
+              - '!CLAUDE.md'
+              - '!CHANGELOG.md'
+
+      - name: Verdict
+        id: verdict
+        env:
+          EVENT: ${{ github.event_name }}
+          CODE: ${{ steps.filter.outputs.code }}
+        run: |
+          if [ "$EVENT" = "pull_request" ] && [ "$CODE" = "false" ]; then code=false; else code=true; fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          if [ "$code" = "false" ]; then
+            echo "Record-only change: the gating legs report green without running; Node 22 runs the docs leg." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Code change (or a push): every leg runs in full." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   build:
     name: Node ${{ matrix.node }}
     runs-on: ubuntu-latest
+    needs: changes
+    # Runs even if `changes` failed: FULL_CI then reads as true and every step runs.
+    if: ${{ !cancelled() }}
+    env:
+      FULL_CI: ${{ needs.changes.outputs.code != 'false' }}
     strategy:
       fail-fast: false
       matrix:
         node: [18, 20, 22]
     steps:
+      - name: Record-only change, nothing to run on this leg
+        if: env.FULL_CI != 'true' && matrix.node != 22
+        run: echo "Record-only change; the docs leg runs on Node 22."
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.FULL_CI == 'true' || matrix.node == 22
 
       - name: Set up Node.js ${{ matrix.node }}
+        if: env.FULL_CI == 'true' || matrix.node == 22
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node }}
           cache: npm
 
       - name: Install dependencies
+        if: env.FULL_CI == 'true' || matrix.node == 22
         run: npm ci
 
       - name: Type-check
+        if: env.FULL_CI == 'true'
         run: npm run typecheck
 
       - name: Lint & format (Biome)
+        if: env.FULL_CI == 'true'
         run: npm run lint:ci
 
       - name: Generated artifacts are in sync
+        if: env.FULL_CI == 'true'
         run: npm run check:drift
 
-      # Coverage is instrumented on ONE leg (Node 22) instead of in a job of its
-      # own, so it costs one instrumented run rather than a second `npm ci` + suite,
-      # and the 18/20 legs pay nothing at all. It is REPORT-ONLY: there are no
-      # thresholds and no step below can fail on a coverage number — `npm test`
-      # stays the single pass/fail signal.
+      # Coverage no longer runs here: it moved to nightly.yml's `coverage` job, where it
+      # is still report-only. Every leg runs the plain suite, the pass/fail signal.
       - name: Test
-        if: matrix.node != 22
+        if: env.FULL_CI == 'true'
         run: npm test
 
-      - name: Test (+ coverage, report-only)
-        if: matrix.node == 22
-        run: npm run test:coverage
-
-      - name: Coverage summary
-        if: matrix.node == 22
-        run: |
-          node --input-type=commonjs -e '
-          const t = JSON.parse(require("node:fs").readFileSync("coverage/coverage-summary.json", "utf8")).total;
-          const rows = ["lines", "statements", "functions", "branches"].map(
-            (k) => "| " + k + " | " + t[k].pct + "% | " + t[k].covered + " / " + t[k].total + " |",
-          );
-          console.log(
-            [
-              "## Coverage — `src/` (report-only, never gates)",
-              "",
-              "| Metric | % | Covered / Total |",
-              "| --- | --- | --- |",
-              ...rows,
-            ].join("\n"),
-          );
-          ' >> "$GITHUB_STEP_SUMMARY"
-
-      # The totals above cannot show a module that fell to ZERO — it is one row among 111
-      # in the `text` reporter and invisible in a four-line total. This names them. It is
-      # ADVISORY in the strongest sense: the script always exits 0 (it catches its own
-      # errors, including a missing coverage file), so this step can never turn a green run
-      # red. No thresholds are added — see `docs/testing.md` §1 (coverage is report-only).
-      - name: Zero-coverage modules (advisory)
-        if: matrix.node == 22
-        run: node scripts/coverage-zero-report.mjs >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload coverage summary
-        if: matrix.node == 22
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: coverage-summary
-          path: coverage/coverage-summary.json
-          if-no-files-found: error
-
       - name: Authorability eval (offline golden regression guard)
+        if: env.FULL_CI == 'true'
         run: npm run eval:ci
+
+      # The docs leg: what still guards a record-only change, i.e. every suite that reads
+      # a record (see `changes`), the wiring check, the generators and the site build. A
+      # full run covers all of these elsewhere.
+      - name: "Docs leg: generated artifacts are in sync"
+        if: env.FULL_CI != 'true' && matrix.node == 22
+        run: npm run check:drift
+
+      - name: "Docs leg: every test file is wired into the suite"
+        if: env.FULL_CI != 'true' && matrix.node == 22
+        run: npm run check:test-wiring
+
+      - name: "Docs leg: the suites that read a record"
+        if: env.FULL_CI != 'true' && matrix.node == 22
+        run: >-
+          npx vitest run
+          test/docs-
+          test/step-budget.test.ts
+          test/label-placement-oracle.test.ts
+          test/label-wrap.test.ts
+          test/room-adjacency-oracle.test.ts
+          test/room-overlap-oracle.test.ts
+          test/vocabulary-living-dining.test.ts
+          test/vocabulary-matcher-oracle.test.ts
+          test/npm-tarball.test.ts
+
+      - name: "Docs leg: build the docs site"
+        if: env.FULL_CI != 'true' && matrix.node == 22
+        run: npm run docs:build
 
   builds:
     name: Workspace builds
     runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ !cancelled() }}
+    env:
+      FULL_CI: ${{ needs.changes.outputs.code != 'false' }}
     # The core suite never compiles the downstream workspaces, so a change that
     # breaks the docs site, the playground, the MCP shim or the VS Code extension
     # used to reach `main` green. This job compiles all four.
     steps:
+      - name: Record-only change, nothing to run on this leg
+        if: env.FULL_CI != 'true'
+        run: echo "Record-only change; see the Node 22 docs leg."
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.FULL_CI == 'true'
 
       - name: Set up Node.js
+        if: env.FULL_CI == 'true'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
 
       - name: Install dependencies
+        if: env.FULL_CI == 'true'
         run: npm ci
 
       # Every workspace consumes the core's `dist/`, and the root
@@ -113,6 +201,7 @@ jobs:
       # own `npm run build`. Running those four here would rebuild the core four
       # times, so the core is built once and CI calls the `:only` variants.
       - name: Build core (once — every workspace below consumes dist/)
+        if: env.FULL_CI == 'true'
         run: npm run build
 
       # Fails fast, before the slower site builds. Covers the root dev tsconfig
@@ -123,29 +212,36 @@ jobs:
       # after the build above; the docs leg also runs `sync-docs.mjs` first, since
       # config.ts and CompileSeam.vue import its generated modules.
       - name: Type-check every workspace
+        if: env.FULL_CI == 'true'
         run: npm run typecheck:all
 
       - name: Build docs site
+        if: env.FULL_CI == 'true'
         run: npm run docs:build:only
 
       - name: Build playground
+        if: env.FULL_CI == 'true'
         run: npm run playground:build:only
 
       - name: Build MCP shim
+        if: env.FULL_CI == 'true'
         run: npm run mcp:build:only
 
       - name: Build VS Code extension
+        if: env.FULL_CI == 'true'
         run: npm run vscode:build:only
 
       # The MCP shim bakes its context resources into dist/ at pack time — the
       # 0.2.2 staleness incident shipped a v1.19 grammar against a current core.
       # This proves every dist/ resource is byte-identical to its repo source.
       - name: Check MCP dist resources are fresh
+        if: env.FULL_CI == 'true'
         run: node packages/mcp/scripts/check-dist-resources.mjs
 
       # The stdio smoke + bundle-freshness tests need the built extension
       # (dist/server.js); the plain test matrix skips them by design.
       - name: VS Code extension bundle tests
+        if: env.FULL_CI == 'true'
         run: npx vitest run editors/vscode
 
       # A `*.test.ts` outside vitest.config.ts's `test.include` list is not skipped
@@ -153,6 +249,7 @@ jobs:
       # diff while `npm test` stays green. This proves every tracked test file is
       # matched by a glob the suite actually runs (and that no glob has gone dead).
       - name: Every test file is wired into the suite
+        if: env.FULL_CI == 'true'
         run: npm run check:test-wiring
 
       # (appended by later workstreams)
@@ -160,6 +257,10 @@ jobs:
   windows:
     name: Windows (tests + drift)
     runs-on: windows-latest
+    needs: changes
+    if: ${{ !cancelled() }}
+    env:
+      FULL_CI: ${{ needs.changes.outputs.code != 'false' }}
     # Determinism is a core invariant, and the whole toolchain is developed on
     # Windows — but CI only ever proved it on Linux. This leg catches the two
     # things that actually differ: line endings (a golden/snapshot mismatch) and
@@ -173,21 +274,30 @@ jobs:
     # `eval:ci` and the benchmark are Linux-only on purpose: the eval is already
     # covered by the matrix above and bench timings are runner-dependent.
     steps:
+      - name: Record-only change, nothing to run on this leg
+        if: env.FULL_CI != 'true'
+        run: echo "Record-only change; see the Node 22 docs leg."
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.FULL_CI == 'true'
 
       - name: Set up Node.js
+        if: env.FULL_CI == 'true'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
 
       - name: Install dependencies
+        if: env.FULL_CI == 'true'
         run: npm ci
 
       - name: Test
+        if: env.FULL_CI == 'true'
         run: npm test
 
       - name: Generated artifacts are in sync
+        if: env.FULL_CI == 'true'
         run: npm run check:drift
 
   bench:
@@ -196,7 +306,9 @@ jobs:
     # Timings are runner-dependent — this never gates the build; it writes the
     # median per-stage deltas vs. bench/baseline.json to the job summary and, on
     # same-repo PRs (a fork's GITHUB_TOKEN is read-only), posts them as a comment.
-    if: github.event_name == 'pull_request'
+    # Not a required check, so on a record-only PR the whole job is skipped.
+    needs: changes
+    if: ${{ !cancelled() && github.event_name == 'pull_request' && needs.changes.outputs.code != 'false' }}
     permissions:
       contents: read
       pull-requests: write
@@ -235,6 +347,10 @@ jobs:
   e2e-playground:
     name: Playground E2E (Playwright)
     runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ !cancelled() }}
+    env:
+      FULL_CI: ${{ needs.changes.outputs.code != 'false' }}
     # The unit suite proves the playground's pure logic and `builds` proves it
     # COMPILES — neither ever opens the page. This job drives the real built
     # bundle in a real Chromium: boot, edit, apply a diagnostic fix, download
@@ -247,15 +363,22 @@ jobs:
     # That class of fault is invisible to `tsc`, vitest and `vite build` alike,
     # which is the whole argument for this leg.
     steps:
+      - name: Record-only change, nothing to run on this leg
+        if: env.FULL_CI != 'true'
+        run: echo "Record-only change; see the Node 22 docs leg."
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.FULL_CI == 'true'
 
       - name: Set up Node.js
+        if: env.FULL_CI == 'true'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
 
       - name: Install dependencies
+        if: env.FULL_CI == 'true'
         run: npm ci
 
       # `vite preview` (the config's `webServer`) only SERVES playground/dist/ —
@@ -263,21 +386,25 @@ jobs:
       # conveniences: the core first, since the playground aliases the bare
       # `archlang` specifier to ../dist/index.js, then the app itself.
       - name: Build core
+        if: env.FULL_CI == 'true'
         run: npm run build
 
       - name: Build playground
+        if: env.FULL_CI == 'true'
         run: npm run playground:build:only
 
       # Keyed on the RESOLVED @playwright/test version: a browser build is pinned
       # to its driver, so a version bump must miss the cache rather than reuse an
       # incompatible download.
       - name: Resolve Playwright version
+        if: env.FULL_CI == 'true'
         id: pw
         run: |
           version=$(node -p "require('@playwright/test/package.json').version")
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
+        if: env.FULL_CI == 'true'
         id: pw-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -286,16 +413,21 @@ jobs:
 
       # On a cache hit the browser binary is already there but the OS packages it
       # links against are not (they live outside the cached path), so the two
-      # cases install different things.
+      # cases install different things. The cache-hit step is NOT skippable: on
+      # ubuntu-latest it installs nine packages, mostly fonts (ipafont-gothic,
+      # freefont, unifont, wqy-zenhei, xfonts-*) the image lacks, and the specs
+      # measure laid-out text (boundingBox). When it takes 10+ minutes that is the
+      # Azure apt mirror serving those debs slowly, not a cache miss.
       - name: Install Chromium (browser + system deps)
-        if: steps.pw-cache.outputs.cache-hit != 'true'
+        if: env.FULL_CI == 'true' && steps.pw-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
 
       - name: Install Chromium system deps only (cached browser)
-        if: steps.pw-cache.outputs.cache-hit == 'true'
+        if: env.FULL_CI == 'true' && steps.pw-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
       - name: Run E2E specs
+        if: env.FULL_CI == 'true'
         run: npx playwright test -c playground
 
       - name: Upload Playwright report
@@ -312,6 +444,10 @@ jobs:
   e2e-docs:
     name: Docs site E2E (Playwright)
     runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ !cancelled() }}
+    env:
+      FULL_CI: ${{ needs.changes.outputs.code != 'false' }}
     # `builds` proves the docs site COMPILES and `scripts/smoke.mjs` proves its routes
     # exist AFTER a deploy — neither opens the site. This job serves the built output
     # and checks the two contracts that are invisible to both:
@@ -331,9 +467,15 @@ jobs:
     # Route lists are derived from docs-site/sync-docs.mjs, so a new page or example
     # extends this job the day it lands.
     steps:
+      - name: Record-only change, nothing to run on this leg
+        if: env.FULL_CI != 'true'
+        run: echo "Record-only change; see the Node 22 docs leg."
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.FULL_CI == 'true'
 
       - name: Set up Node.js
+        if: env.FULL_CI == 'true'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           # Node 22, not 18/20: archlive.spec.ts decodes the widget's `#z=` hash with
@@ -342,6 +484,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
+        if: env.FULL_CI == 'true'
         run: npm ci
 
       # `vitepress preview` (the config's `webServer`) only SERVES
@@ -350,21 +493,25 @@ jobs:
       # bare `archlang` specifier to ../dist/index.js (and sync-docs compiles every
       # gallery example through it), then the site itself.
       - name: Build core
+        if: env.FULL_CI == 'true'
         run: npm run build
 
       - name: Build docs site
+        if: env.FULL_CI == 'true'
         run: npm run docs:build:only
 
       # Keyed on the RESOLVED @playwright/test version: a browser build is pinned
       # to its driver, so a version bump must miss the cache rather than reuse an
       # incompatible download.
       - name: Resolve Playwright version
+        if: env.FULL_CI == 'true'
         id: pw
         run: |
           version=$(node -p "require('@playwright/test/package.json').version")
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
+        if: env.FULL_CI == 'true'
         id: pw-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -373,16 +520,21 @@ jobs:
 
       # On a cache hit the browser binary is already there but the OS packages it
       # links against are not (they live outside the cached path), so the two
-      # cases install different things.
+      # cases install different things. The cache-hit step is NOT skippable: on
+      # ubuntu-latest it installs nine packages, mostly fonts (ipafont-gothic,
+      # freefont, unifont, wqy-zenhei, xfonts-*) the image lacks, and the specs
+      # measure laid-out text (boundingBox). When it takes 10+ minutes that is the
+      # Azure apt mirror serving those debs slowly, not a cache miss.
       - name: Install Chromium (browser + system deps)
-        if: steps.pw-cache.outputs.cache-hit != 'true'
+        if: env.FULL_CI == 'true' && steps.pw-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
 
       - name: Install Chromium system deps only (cached browser)
-        if: steps.pw-cache.outputs.cache-hit == 'true'
+        if: env.FULL_CI == 'true' && steps.pw-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
       - name: Run E2E specs
+        if: env.FULL_CI == 'true'
         run: npx playwright test -c docs-site
 
       - name: Upload Playwright report

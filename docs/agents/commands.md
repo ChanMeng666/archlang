@@ -46,22 +46,36 @@
 
 ## CI
 
-`ci.yml` (push to `main` + PRs), all gating except `bench`. No `concurrency` group and no path
-filters; `main` has no branch protection, so "gating" means the merge procedure below waits for it.
-Minutes measured 2026-10-26, run for 5b872984 (`gh run view 40329078071`):
+`ci.yml` (push to `main` + PRs), all gating except `bench`. `main` is protected: its required checks
+are the seven gating check names below (not up-to-date-with-`main`, no reviews), and repository
+auto-merge is on. A new push to a PR cancels that PR's running CI (`concurrency`, per PR number); each
+push to `main` runs in a group of its own and is never cancelled.
+
+**Record-only PRs.** The `changes` job sets `code=false` when every changed path is a record: the
+negated globs in its `dorny/paths-filter` step (Markdown under `docs/plans/`, `docs/agents/`, a few
+unpublished `docs/*.md`, `.claude/**/*.md`, `AGENTS.md`, `CLAUDE.md`, `CHANGELOG.md`; never a published
+page, an ADR, the README, `spec.llm.md`, a skill, or a non-Markdown file under `docs/plans/`). Then
+every gating job still reports its check, green, with its steps skipped, and Node 22 runs the docs
+leg instead: `check:drift`, `check:test-wiring`, the suites that read a record (`docs-*`, the seven
+that compile every `arch` fence of every Markdown page, `npm-tarball`) and `docs:build`. A push to
+`main`, a failed `changes` job or any other path runs everything. A suite that starts reading a record
+joins the docs leg's list in `ci.yml`, or the record leaves the filter.
+
+Minutes, full run: MINUTES_SOURCE
 
 | Job (check name) | Runs | Min |
 |---|---|---|
-| `build` (Node 18, Node 20) | typecheck, `lint:ci`, `check:drift`, `npm test`, `eval:ci` | 20.5, 15.3 |
-| `build` (Node 22) | the same with `test:coverage` in place of `npm test` (report-only), plus the coverage summary, the zero-coverage advisory and the summary artifact: the only coverage in CI, and the long pole (its test step alone 42.5) | 43.3 |
-| `builds` (Workspace builds) | `build`, `typecheck:all`, all four workspace builds, MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring` (each only here) | 2.1 |
-| `windows` | `npm test` + `check:drift` at the runner's default line endings (no `eval:ci`) | 18.7 |
-| `e2e-playground`, `e2e-docs` | Playwright against the built sites | 11.4, 22.1 |
-| `bench` | informational per-stage timings in the job summary (+ a PR comment on same-repo PRs); never gates | 1.0 |
+| `changes` (Changed paths) | classifies the PR's paths (not a required check) | MIN_CHANGES |
+| `build` (Node 18, Node 20, Node 22) | typecheck, `lint:ci`, `check:drift`, `npm test`, `eval:ci`; on a record-only PR, Node 22 runs the docs leg | MIN_BUILD |
+| `builds` (Workspace builds) | `build`, `typecheck:all`, all four workspace builds, MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring` (each only here) | MIN_BUILDS |
+| `windows` | `npm test` + `check:drift` at the runner's default line endings (no `eval:ci`) | MIN_WIN |
+| `e2e-playground`, `e2e-docs` | Playwright against the built sites | MIN_E2E |
+| `bench` | informational per-stage timings in the job summary (+ a PR comment on same-repo PRs); never gates; skipped on a record-only PR | MIN_BENCH |
 
-The E2E legs vary most: their apt "Install Chromium system deps" step took 10 and 18 minutes in that
-run and under one minute in others. A run's wall clock is its slowest leg (24–60 min over the 15
-`ci.yml` runs up to 55d9d2fc's push, PRs and pushes, median ≈ 43). Options to shorten it: `docs/plans/ci-throughput.md`.
+Coverage is not in `ci.yml`: nightly's `coverage` job runs `test:coverage` (report-only). The E2E legs
+vary most: their "Install Chromium system deps only" step runs on every run (it installs fonts the
+runner image lacks, which the specs' layout depends on) and took 10 and 18 minutes in one run, under
+one minute in others; that is the apt mirror. Options and their status: `docs/plans/ci-throughput.md`.
 
 ### Merging a PR
 
@@ -75,10 +89,10 @@ run and under one minute in others. A run's wall clock is its slowest leg (24–
 
 `codeql.yml` `analyze` gates too (and runs weekly). `nightly.yml`: `prod-smoke`
 (`scripts/smoke.mjs`), `audit` (report-only), `secrets` (gitleaks over full history),
-`full-matrix`, `cross-engine` (`digest:engines`, advisory: never fails the night, a divergence updates
+`full-matrix`, `coverage` (`test:coverage`, the coverage summary and artifact; report-only, `continue-on-error`, outside `report`), `cross-engine` (`digest:engines`, advisory: never fails the night, a divergence updates
 the pinned issue; its report is an
 artifact), `e2e-prod` (the read-only `@prod` subset against the live sites; its docs half also
-detects a stale deploy), and `report` (the single writer of the pinned issue). `deploy.yml` deploys
+detects a stale deploy), and `report` (the single writer of the pinned issue; a fully green night comments on it and closes it). `deploy.yml` deploys
 both sites on every push to `main`; `release.yml` publishes on a `v*` tag; `publish-openvsx.yml` (manual) publishes the VS Code
 extension to Open VSX. The `eval-*.yml`
 workflows are manual and owner-only — never dispatch `eval-l2.yml`.

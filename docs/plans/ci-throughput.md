@@ -1,6 +1,6 @@
 # CI throughput: options for the owner
 
-Status: proposal. Nothing here is applied; every option changes a workflow or a repository setting,
+Status: A live 2026-10-27; B/C/D in PR #PRNUM. Every option changes a workflow or a repository setting,
 and the owner decides which to take. Job map and per-job minutes: `docs/agents/commands.md` § CI.
 
 ## 1. What is measured
@@ -70,6 +70,10 @@ check, so a skipped job never leaves a required check pending.
 - Needs: a workflow PR, plus A's protection rule re-pointed at `CI summary`.
 - Reverse if: a record-only PR merges green and the next full run on `main` is red because of it;
   that path then leaves the set.
+- As built (PR #PRNUM): no `CI summary` job. Every gating job keeps its check name and guards its
+  steps, so A's required checks stay as they are. The record set was measured by tracing every `fs`
+  read of the full suite: seven suites compile every `arch` fence of every Markdown page under
+  `docs/` and the root, so the docs leg runs them too, and `.arch` plans under `docs/plans/` are code.
 
 ### D. Shorten the long pole
 

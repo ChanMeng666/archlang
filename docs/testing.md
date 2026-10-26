@@ -16,7 +16,7 @@ say what it enforces; this file does not inventory them.
 | `npm run docs:build` | the only thing that compiles the VitePress site |
 | `npm run e2e:playground` / `e2e:docs` | Playwright against the BUILT site: `npm run build && npm run playground:build:only` (or `docs:build:only`) first |
 | `npm run eval:ci` / `eval:fidelity` | offline eval gates; separate corpora, never compared. `eval:ci` fails only on a regression against `eval/judge-fixture.json`, never because a golden recorded as failing still fails |
-| `npm run test:coverage` | report-only v8 coverage over `src/`; no thresholds, nothing fails on a number |
+| `npm run test:coverage` | report-only v8 coverage over `src/`; no thresholds, nothing fails on a number. Runs nightly (`nightly.yml` `coverage`), not on PRs |
 
 Minimum: `check` + `check:drift`. Add `typecheck:all` for anything outside `src/` (including
 `test/`), `docs:build` for `docs/*.md`, and the matching E2E for `playground/` or `docs-site/`.
