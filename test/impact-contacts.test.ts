@@ -62,8 +62,7 @@ suite("PS4.5 — the widening drill: the shell and p are held", () => {
       ["shell", "contact", "b.right", 8000, 8500, 500],
     ]);
     expect(heldLines(r)).toEqual([
-      "  wall p stayed at x 4000 while a.right moved to x 4500 (500 mm)",
-      "  wall p stayed at x 4000 while b.left moved to x 4500 (500 mm)",
+      "  wall p stayed at x 4000 while a.right / b.left moved to x 4500 (500 mm)",
       "  wall shell stayed at x 8000 while b.right moved to x 8500 (500 mm)",
     ]);
   });
@@ -109,6 +108,37 @@ suite("PS4.5 — what is and is not a contact", () => {
     const src = plan(`${TWO}\n  wall id=p partition thickness 100 { (4001,0) (4001,3000) }`, "grid 1");
     expect(row(src, "p").contacts).toBeUndefined();
     expect(setImpact(src, "W", "4500").held).toEqual([]);
+  });
+
+  it("a wall that moved with the edge by less than diffPlans' tolerance is not held (red team p4)", () => {
+    // `follow` is written at `(W,0) (W,3000)`: it lies on a.right and moves with it. At W 4005
+    // the 5 mm move is inside `diffPlans`' 10 mm tolerance, so the wall is not `changed`; it is
+    // not on x 4000 any more, so it did not stay there, and it read W but followed it exactly.
+    const src = plan(
+      `  let W = 4000
+  room id=a at (0,0) size W x 3000 label "A"
+  room id=b at (6000,0) size 3000x3000 label "B"
+  wall id=follow partition thickness 100 { (W,0) (W,3000) }`,
+      "grid 1",
+    );
+    expect(row(src, "follow").contacts).toEqual([{ room: "a", edge: "right" }]);
+    for (const w of ["4005", "4500"]) {
+      const r = setImpact(src, "W", w);
+      expect(r.held, `W=${w}`).toEqual([]);
+      expect(r.summary, `W=${w}`).toContain("Held (0): none");
+    }
+  });
+
+  it("one line per held row: edges on one moved line share a clause, two moved lines join with `and`", () => {
+    const src = plan(`  let S = 0
+  room id=a at (S,S) size 4000x3000 label "A"
+  wall id=l partition thickness 100 { (0,3000) (0,0) (4000,0) }`);
+    const r = setImpact(src, "S", "500");
+    expect(r.held.map((h) => h.because.map((s) => s.name))).toEqual([["a.left", "a.top"]]);
+    expect(r.summary).toContain("Held (1):");
+    expect(heldLines(r)).toEqual([
+      "  wall l stayed at x 0 while a.left moved to x 500 (500 mm) and at y 0 while a.top moved to y 500 (500 mm)",
+    ]);
   });
 
   it("a wall meeting an edge only at its corner, and a curved segment: no contact", () => {
@@ -163,17 +193,64 @@ suite("PS4.5 — what is and is not a contact", () => {
     expect(setImpact(src, "W", "4500").held).toEqual([]);
   });
 
-  it(`lists at most ${MAX_CONTACTS_LISTED} contacts per element, the first found along it`, () => {
+  it(`lists at most ${MAX_CONTACTS_LISTED} contacts per element: whole rooms, in sorted room-id order`, () => {
     const n = MAX_CONTACTS_LISTED + 6;
     const body = Array.from({ length: n }, (_, k) => `  room id=r${k} at (${k * 1000},0) size 1000x1000`).join("\n");
     const src = plan(`${body}\n  wall id=w partition thickness 100 { (0,0) (${n * 1000},0) }`);
-    const c = row(src, "w").contacts!;
-    expect(c).toHaveLength(MAX_CONTACTS_LISTED);
-    expect(new Set(c.map((x) => x.room))).toEqual(
-      new Set(Array.from({ length: MAX_CONTACTS_LISTED }, (_, k) => `r${k}`)),
-    );
-    expect(c.every((x) => x.edge === "top")).toBe(true);
+    const s = describe(src, { facts: ["depends"] });
+    const c = s.depends!.elements.find((e) => e.id === "w")!.contacts!;
+    // Code-unit order (r0, r1, r10, …, r19, r2, …): the first 64 ids, not the first 64 along the
+    // wall, so the room set does not depend on which way the plan is turned.
+    const ids = Array.from({ length: n }, (_, k) => `r${k}`).sort();
+    expect(c).toEqual(ids.slice(0, MAX_CONTACTS_LISTED).map((room) => ({ room, edge: "top" })));
+    expect(s.depends!.contacts_truncated).toBe(true);
   });
+
+  it("a long corridor beside 2,000 rooms and walls: every wall keeps both contacts, in either statement order", () => {
+    // The red team's `corridor.arch`: a 2,000 m corridor `c` under a row of 2,000 rooms, each
+    // wall on one room's bottom and the corridor's top. With one sorted list per line every probe
+    // walked the short edges before the long one, the probe budget ran out and 588 walls lost
+    // their contacts (which ones depended on the order). Length classes make each probe cheap.
+    const n = 2000;
+    const rooms = Array.from({ length: n }, (_, k) => `  room id=r${k} at (${k * 1000},0) size 1000x1000`);
+    const walls = Array.from(
+      { length: n },
+      (_, k) => `  wall id=w${k} partition thickness 100 { (${k * 1000},1000) (${(k + 1) * 1000},1000) }`,
+    );
+    const head = [`  let H = 2000`, `  room id=c at (0,1000) size ${n * 1000} x H label "C"`];
+    const fwd = plan([...head, ...rooms, ...walls].join("\n"));
+    const rev = plan([...head, ...rooms, ...[...walls].reverse()].join("\n"));
+    const facts = (src: string) => describe(src, { facts: ["depends"] }).depends!;
+    const f = facts(fwd);
+    expect(f.contacts_truncated).toBeUndefined();
+    const ws = f.elements.filter((e) => e.kind === "wall");
+    expect(ws).toHaveLength(n);
+    for (const w of ws)
+      expect(w.contacts, w.id).toEqual([
+        { room: "c", edge: "top" },
+        { room: `r${w.id.slice(1)}`, edge: "bottom" },
+      ]);
+    expect(JSON.stringify(facts(rev))).toBe(JSON.stringify(f));
+  }, 120_000);
+
+  it("past the probe budget: `depends.contacts_truncated`, and `impact` says held may be incomplete", () => {
+    // 1,000 coincident rooms and 1,001 walls on their top line that start where the rooms end:
+    // no wall touches a room past a corner, so no element reaches the 64 cap, but each probe
+    // walks every coincident edge of its length class (a pile is the one case length classes do
+    // not thin): 1,001,000 edges walked, past MAX_CONTACT_PROBES (1,000,000).
+    const rooms = Array.from({ length: 1000 }, (_, k) => `  room id=r${k} at (0,0) size 1000 x D`);
+    const walls = Array.from(
+      { length: 1001 },
+      (_, k) => `  wall id=w${k} partition thickness 100 { (1000,0) (2000,0) }`,
+    );
+    const src = plan([`  let D = 1000`, ...rooms, ...walls].join("\n"));
+    expect(describe(src, { facts: ["depends"] }).depends!.contacts_truncated).toBe(true);
+    const r = setImpact(src, "D", "1500");
+    expect(r.contacts_truncated).toBe(true);
+    expect(r.summary).toContain(
+      "  (contacts truncated on the before side: too many room edges; held may be incomplete)",
+    );
+  }, 120_000);
 });
 
 suite("PS4.5 — determinism", () => {

@@ -11,20 +11,33 @@
  *   `backEdgeOfDeg`, `src/algebra/d4.ts`) is collinear with and overlaps a room edge.
  *
  * Collinear means equal on the 0.001 mm lattice (ADR 0022) in half-lattice units, sign-symmetric
- * (`keepHalfOf`, the scale the keep residuals use), so 1 mm off is no contact. A room edge is one
- * of the four of a rectangular room (`top` is the smaller `y`, the frame the resolved plan places
- * it in, the frame `diffPlans` reads); a polygon, circle, unplaced or zero-size room has no named
- * edge (it exposes no datum lines either, `src/room-datums.ts`) and so no contact. A derived wall
- * is never measured: it follows its rooms by construction.
+ * (`keepHalfOf`, the scale the keep residuals use), so 0.001 mm off is no contact. Each value is
+ * put on the lattice on its own before the comparison (not the difference rounded once, as a keep
+ * residual is, ADR 0033 R6 as amended): a contact is "the same lattice line", not a measured gap.
+ * A room edge is one of the four of a rectangular room, named in the resolved plan's frame (`top`
+ * is the smaller `y`: the datum as it reads at the plan root, the frame `diffPlans` reads, not as a
+ * turned component spells it); a polygon, circle, unplaced or zero-size room has no named edge (it
+ * exposes no datum lines either, `src/room-datums.ts`) and so no contact. A derived wall is never
+ * measured: it follows its rooms by construction.
  *
  * **Bounds.** Post-resolve and outside the evaluator (no meter there, `src/expr.ts`), so the work
- * is bounded by counts: the room edges are indexed by line (a map keyed by the axis and the line's
- * position) and sorted by start once, O(R log R) for R rooms; a probe binary-searches its line's
- * window (edges that start no earlier than its own start less the line's longest edge) and walks
- * it, so for rooms that do not overlap each other a probe costs O(log R + its contacts). Every
- * edge walked is counted, and past {@link MAX_CONTACT_PROBES} in one storey no further contact is
- * recorded (a pile of coincident rooms and walls only). An element lists at most
- * {@link MAX_CONTACTS_LISTED} distinct contacts, the first found in segment order.
+ * is bounded by counts. The room edges are indexed by line (a map keyed by the axis and the line's
+ * position) and, on each line, by LENGTH CLASS (`⌊log₂ length⌋` in half-lattice units, at most ~37
+ * classes over `MODEL_RANGE_MM`), each class sorted by start once: O(R log R) for R rooms. A probe
+ * `[lo, hi]` searches each class whose line it is on: an edge of class `c` (length < 2^(c+1)) can
+ * overlap only if it starts after `lo − 2^(c+1)`, so a binary search finds that window and the walk
+ * stops at the first start ≥ `hi`. Inside the window the edges that do not overlap start in
+ * `[lo − 2^(c+1), lo − 2^c]`, a span shorter than any of them, so for rooms that do not overlap each
+ * other each class walks O(1) misses: a probe costs O(log R · classes + its contacts) = O(log² R +
+ * its contacts). A long edge on the line (a corridor) costs its own class one search, never a walk
+ * over the short ones. Every edge walked is counted, and past {@link MAX_CONTACT_PROBES} in one
+ * storey no further contact is recorded (a pile of coincident rooms and walls only):
+ * {@link ContactIndex.truncated} then says so, and `describe` prints `contacts_truncated: true`.
+ *
+ * An element lists at most {@link MAX_CONTACTS_LISTED} contacts, chosen by sorted room id (code-unit
+ * order): the rooms are taken whole, in id order, while their contacts fit, so the listed ROOM SET
+ * does not depend on the frame the plan is placed in (an edge name does; a room's edges come or go
+ * together). A cut is also reported by {@link ContactIndex.truncated}.
  *
  * Pure, synchronous, deterministic (code-unit order, never `localeCompare`).
  */
@@ -43,13 +56,13 @@ export interface ContactFact {
   edge: RoomEdge;
 }
 
-/** The most contacts one element lists (the first found, in segment order). A count. */
+/** The most contacts one element lists (whole rooms, in room-id order). A count. */
 export const MAX_CONTACTS_LISTED = 64;
 /** The most room edges one storey's contact search walks before it records no more. A count. */
 export const MAX_CONTACT_PROBES = 1_000_000;
 
-/** A room edge as a line: the coordinate it fixes (`y` for `top`/`bottom`), where (mm), and
- *  the span it runs along the other coordinate (mm, `from` < `to`). */
+/** A line piece: the coordinate it fixes (`y` for a horizontal piece), where (mm), and the span
+ *  it runs along the other coordinate (mm, unordered). */
 export interface EdgeLine {
   axis: "x" | "y";
   at: number;
@@ -76,122 +89,171 @@ export function roomEdgeLine(r: RRoom, edge: RoomEdge): EdgeLine | undefined {
   }
 }
 
+/**
+ * The axis-parallel line pieces an element can touch a room edge with: an authored wall's
+ * straight, axis-parallel segments of positive length; a furniture piece's back edge.
+ */
+export function contactLines(e: RWall | RFurniture): EdgeLine[] {
+  const out: EdgeLine[] = [];
+  if (e.kind === "wall") {
+    for (const s of segmentsOfWall(e)) {
+      if (s.arc) continue;
+      const same = (p: number, q: number): boolean => keepHalfOf(p) === keepHalfOf(q);
+      if (same(s.a.y, s.b.y) && !same(s.a.x, s.b.x)) out.push({ axis: "y", at: s.a.y, from: s.a.x, to: s.b.x });
+      else if (same(s.a.x, s.b.x) && !same(s.a.y, s.b.y)) out.push({ axis: "x", at: s.a.x, from: s.a.y, to: s.b.y });
+    }
+    return out;
+  }
+  const { x, y } = e.at;
+  const { w, h } = e.size;
+  switch (backEdgeOfDeg(e.rotate)) {
+    case "top":
+      out.push({ axis: "y", at: y, from: x, to: x + w });
+      break;
+    case "bottom":
+      out.push({ axis: "y", at: y + h, from: x, to: x + w });
+      break;
+    case "left":
+      out.push({ axis: "x", at: x, from: y, to: y + h });
+      break;
+    case "right":
+      out.push({ axis: "x", at: x + w, from: y, to: y + h });
+      break;
+  }
+  return out;
+}
+
+/** Does the element still have a contact line on `(axis, at)`, on the lattice? */
+export function liesOnLine(e: RWall | RFurniture, axis: "x" | "y", at: number): boolean {
+  const h = keepHalfOf(at);
+  return contactLines(e).some((l) => l.axis === axis && keepHalfOf(l.at) === h);
+}
+
 interface Entry {
   from: number;
   to: number;
   room: string;
   edge: RoomEdge;
+  /** Its place in (room, edge) code-unit order over the storey, so an element's contacts sort
+   *  by number, never by string. */
+  rank: number;
 }
-interface Line {
+/** One length class of one line: its edges sorted by start, and the class's length bound. */
+interface LengthClass {
   entries: Entry[];
-  /** The longest entry on the line, in half-lattice units. */
-  maxLen: number;
+  /** Every entry is shorter than this (half-lattice units): 2^(c+1). */
+  bound: number;
 }
 
 const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 const lineKey = (axis: "x" | "y", at: number): string => `${axis}${at}`;
 
-/** One storey's room edges, indexed by line; {@link ContactIndex.of} answers per element. */
+/** One storey's room edges, indexed by line and length class. */
 export interface ContactIndex {
   /** The contacts of an authored wall or a furniture piece, less those with the rooms in
    *  `skip` (rooms it already records as a dependency), sorted by room then edge. */
   of(e: RWall | RFurniture, skip: ReadonlySet<string>): ContactFact[];
+  /** True once a contact was left out: the storey's probe budget ran out, or an element had
+   *  more than {@link MAX_CONTACTS_LISTED}. */
+  truncated(): boolean;
 }
 
 /** Index the room edges of one storey (its placed rectangular rooms). */
 export function contactIndex(rooms: readonly RRoom[]): ContactIndex {
-  const lines = new Map<string, Line>();
+  const lines = new Map<string, Map<number, LengthClass>>();
+  const all: Entry[] = [];
   for (const r of rooms) {
     for (const edge of EDGES) {
       const l = roomEdgeLine(r, edge);
       if (!l) continue;
-      const k = lineKey(l.axis, keepHalfOf(l.at));
-      let line = lines.get(k);
-      if (!line) {
-        line = { entries: [], maxLen: 0 };
-        lines.set(k, line);
-      }
       const from = keepHalfOf(l.from);
       const to = keepHalfOf(l.to);
-      line.entries.push({ from, to, room: r.id, edge });
-      if (to - from > line.maxLen) line.maxLen = to - from;
+      const len = to - from;
+      if (len <= 0) continue;
+      const k = lineKey(l.axis, keepHalfOf(l.at));
+      let classes = lines.get(k);
+      if (!classes) {
+        classes = new Map();
+        lines.set(k, classes);
+      }
+      const c = Math.floor(Math.log2(len));
+      let cls = classes.get(c);
+      if (!cls) {
+        cls = { entries: [], bound: 2 ** (c + 1) };
+        classes.set(c, cls);
+      }
+      const entry: Entry = { from, to, room: r.id, edge, rank: 0 };
+      cls.entries.push(entry);
+      all.push(entry);
     }
   }
-  for (const line of lines.values())
-    line.entries.sort((a, b) => a.from - b.from || cmp(a.room, b.room) || cmp(a.edge, b.edge));
+  all.sort((a, b) => cmp(a.room, b.room) || cmp(a.edge, b.edge));
+  all.forEach((e, k) => {
+    e.rank = k;
+  });
+  for (const classes of lines.values())
+    for (const cls of classes.values())
+      cls.entries.sort((a, b) => a.from - b.from || cmp(a.room, b.room) || cmp(a.edge, b.edge));
   let probes = 0;
+  let truncated = false;
 
-  /** The first entry index whose `from` is at least `v`. */
-  const lowerBound = (es: readonly Entry[], v: number): number => {
+  /** The first entry index whose `from` is greater than `v`. */
+  const firstAfter = (es: readonly Entry[], v: number): number => {
     let lo = 0;
     let hi = es.length;
     while (lo < hi) {
       const mid = (lo + hi) >>> 1;
-      if (es[mid]!.from < v) lo = mid + 1;
+      if (es[mid]!.from <= v) lo = mid + 1;
       else hi = mid;
     }
     return lo;
   };
 
-  /** Add the edges on line `(axis, at)` overlapping `[a, b]` (mm) to `out`. */
-  const probe = (
-    axis: "x" | "y",
-    at: number,
-    a: number,
-    b: number,
-    skip: ReadonlySet<string>,
-    out: Map<string, ContactFact>,
-  ): void => {
-    const line = lines.get(lineKey(axis, keepHalfOf(at)));
-    if (!line) return;
-    const lo = keepHalfOf(Math.min(a, b));
-    const hi = keepHalfOf(Math.max(a, b));
+  /** Add the edges overlapping the line piece `l` to `out`. */
+  const probe = (l: EdgeLine, skip: ReadonlySet<string>, out: Set<Entry>): void => {
+    const classes = lines.get(lineKey(l.axis, keepHalfOf(l.at)));
+    if (!classes) return;
+    const lo = keepHalfOf(Math.min(l.from, l.to));
+    const hi = keepHalfOf(Math.max(l.from, l.to));
     if (hi <= lo) return;
-    const es = line.entries;
-    for (let i = lowerBound(es, lo - line.maxLen); i < es.length; i++) {
-      if (probes >= MAX_CONTACT_PROBES || out.size >= MAX_CONTACTS_LISTED) return;
-      probes++;
-      const e = es[i]!;
-      if (e.from >= hi) return;
-      if (Math.min(e.to, hi) - Math.max(e.from, lo) <= 0 || skip.has(e.room)) continue;
-      const k = `${e.room}\u0000${e.edge}`;
-      if (!out.has(k)) out.set(k, { room: e.room, edge: e.edge });
+    for (const cls of classes.values()) {
+      const es = cls.entries;
+      // An entry shorter than `bound` that starts at or before `lo − bound` ends before `lo`.
+      for (let i = firstAfter(es, lo - cls.bound); i < es.length; i++) {
+        const e = es[i]!;
+        if (e.from >= hi) break;
+        if (probes >= MAX_CONTACT_PROBES) {
+          truncated = true;
+          return;
+        }
+        probes++;
+        if (Math.min(e.to, hi) - Math.max(e.from, lo) <= 0 || skip.has(e.room)) continue;
+        out.add(e);
+      }
     }
   };
 
   return {
     of(e, skip) {
       if (lines.size === 0) return [];
-      const out = new Map<string, ContactFact>();
-      if (e.kind === "wall") {
-        for (const s of segmentsOfWall(e)) {
-          if (s.arc) continue;
-          const ay = keepHalfOf(s.a.y);
-          const by = keepHalfOf(s.b.y);
-          const ax = keepHalfOf(s.a.x);
-          const bx = keepHalfOf(s.b.x);
-          if (ay === by && ax !== bx) probe("y", s.a.y, s.a.x, s.b.x, skip, out);
-          else if (ax === bx && ay !== by) probe("x", s.a.x, s.a.y, s.b.y, skip, out);
-        }
-      } else {
-        const { x, y } = e.at;
-        const { w, h } = e.size;
-        switch (backEdgeOfDeg(e.rotate)) {
-          case "top":
-            probe("y", y, x, x + w, skip, out);
-            break;
-          case "bottom":
-            probe("y", y + h, x, x + w, skip, out);
-            break;
-          case "left":
-            probe("x", x, y, y + h, skip, out);
-            break;
-          case "right":
-            probe("x", x + w, y, y + h, skip, out);
-            break;
+      const out = new Set<Entry>();
+      for (const l of contactLines(e)) probe(l, skip, out);
+      const found = [...out].sort((p, q) => p.rank - q.rank);
+      let n = found.length;
+      if (n > MAX_CONTACTS_LISTED) {
+        // Whole rooms, in id order, while they fit: the room set is frame-free.
+        truncated = true;
+        n = 0;
+        for (let i = 0; i < found.length; ) {
+          let j = i;
+          while (j < found.length && found[j]!.room === found[i]!.room) j++;
+          if (j > MAX_CONTACTS_LISTED) break;
+          n = j;
+          i = j;
         }
       }
-      return [...out.values()].sort((p, q) => cmp(p.room, q.room) || cmp(p.edge, q.edge));
+      return found.slice(0, n).map((x) => ({ room: x.room, edge: x.edge }));
     },
+    truncated: () => truncated,
   };
 }

@@ -31,6 +31,13 @@
  *   the before side (its `depends` row's `contacts`, `src/analyze/contacts.ts`) is held when
  *   that edge's line moved and the element did not, with the room, the edge and the gap
  *   (`contact` on the step); an edge that only grew or shrank along its own line did not move.
+ *   "Did not" is read twice: `diffPlans` saw no change (its tolerance hides a move of 10 mm or
+ *   less), AND the element's after-side line (a wall's straight segment, a piece's back edge)
+ *   is still exactly on the before-side contact line on the lattice; an element that moved
+ *   with the edge by a few mm is skipped. A wall `diffPlans` calls `moved` or `resized` (its
+ *   own points changed) is in `changed`, so it is never held, contact or not. When the before
+ *   side's contact search was cut (`depends.contacts_truncated`), the report says so
+ *   (`contacts_truncated: true`, and a line under Held): `held` may then be incomplete.
  * - **diagnostics**: `broke` (on the after side only) and `healed` (on the before side only),
  *   matched as a multiset keyed by code, element and storey, and `unchanged_count`. The
  *   element is the one whose statement contains the diagnostic's span (its byte offsets move
@@ -97,12 +104,12 @@ import { resolvePlan } from "./analyze.js";
 import type { Diagnostic, Severity } from "./diagnostics.js";
 import { diffSides, type OpeningChange, type PlanDiff, type RoomChange, type WallChange } from "./diff.js";
 import { closest, type Expr } from "./expr.js";
-import type { ResolvedElement, ResolvedPlan, ROpening, RRoom, RWall } from "./ir.js";
+import type { ResolvedElement, ResolvedPlan, RFurniture, ROpening, RRoom, RWall } from "./ir.js";
 import { lex } from "./lexer.js";
 import { keepResultsOf, type ResolvedLevel } from "./ir.js";
 import { type KeepAt, type KeepResult, keepHalfOf, keepRefsOf, mmNumber } from "./keep.js";
 import { lint } from "./lint.js";
-import { type RoomEdge, roomEdgeLine } from "./analyze/contacts.js";
+import { liesOnLine, type RoomEdge, roomEdgeLine } from "./analyze/contacts.js";
 import { fmtHalfLattice } from "./num-format.js";
 import { parse } from "./parser.js";
 import { compileUncached } from "./pipeline.js";
@@ -243,6 +250,9 @@ export interface ImpactReport {
   lets: ImpactLet[];
   changed: ImpactChange[];
   held: ImpactHeld[];
+  /** Present (true) only when the before side's contact search was cut
+   *  (`depends.contacts_truncated`): `held` may miss a contact then. */
+  contacts_truncated?: true;
   diagnostics: { broke: ImpactDiagnostic[]; healed: ImpactDiagnostic[]; unchanged_count: number };
   /** The keeps, matched across the sides; present only when both sides resolve and either
    *  declares a keep (see the module header). */
@@ -296,6 +306,11 @@ interface Side {
   axes: Map<string, string>;
   /** The lowest storey's rooms by id, for reading a contact's edge (PS4.5). */
   rooms: Map<string, RRoom>;
+  /** The lowest storey's authored walls and furniture by id, for checking that a held element
+   *  is still on its contact line (PS4.5). */
+  bodies: Map<string, RWall | RFurniture>;
+  /** The lowest storey's contact search was cut (`depends.contacts_truncated`). */
+  contactsTruncated: boolean;
   /** Openings' resolved `at` and furniture's `at`/`size`, for move/resize phrases. */
   at: Map<string, { x: number; y: number }>;
   size: Map<string, { w: number; h: number }>;
@@ -489,6 +504,8 @@ function readSide(source: string, opts: ImpactOptions): Side {
     instance: new Map(),
     axes: new Map(),
     rooms: new Map(),
+    bodies: new Map(),
+    contactsTruncated: false,
     at: new Map(),
     size: new Map(),
     ...(keeps ? { keeps } : {}),
@@ -502,10 +519,12 @@ function readSide(source: string, opts: ImpactOptions): Side {
   const deps = index ? dependsFacts(ir, index) : undefined;
   for (const r of deps?.elements ?? []) side.rows.set(r.id, r);
   for (const r of deps?.derived_walls ?? []) side.derivedRows.set(r.name, r);
+  side.contactsTruncated = deps?.contacts_truncated === true;
   for (const e of ir.elements as ResolvedElement[]) {
     if (e.kind === "walls" || e.kind === "wall" || side.kind.has(e.id)) continue;
     side.kind.set(e.id, e.kind);
     if (e.kind === "room") side.rooms.set(e.id, e as RRoom);
+    if (e.kind === "furniture") side.bodies.set(e.id, e as RFurniture);
     const n = nameOf(e);
     side.name.set(e.id, n.name);
     if (n.derived) side.derived.add(e.id);
@@ -524,6 +543,8 @@ function readSide(source: string, opts: ImpactOptions): Side {
   for (const w of ir.walls) {
     if (side.kind.has(w.id)) continue;
     side.kind.set(w.id, "wall");
+    if (!w._derived) side.bodies.set(w.id, w);
+    side.fp.set(w.id, keepReads(w));
     side.name.set(w.id, w._derived ? wallName(w) : w.id);
     if (w._instance !== undefined) side.instance.set(w.id, w._instance);
     if (w._derived) side.derived.add(w.id);
@@ -610,6 +631,7 @@ export function impact(before: string, after: string, opts: ImpactOptions = {}):
     lets: [],
     changed: [],
     held: [],
+    ...(ok && A.contactsTruncated ? { contacts_truncated: true as const } : {}),
     // Both sides resolved: a broken keep is reported once, in `keeps`, never also here.
     diagnostics: diagnosticDelta(A, B, ok),
     // After `diagnostics`, before `summary`, as the JSON prints it; only when there is a keep.
@@ -868,9 +890,11 @@ function buildChanges(A: Side, B: Side, diff: PlanDiff, report: ImpactReport): v
       const rb = B.rooms.get(c.room);
       const la = ra && roomEdgeLine(ra, c.edge);
       const lb = rb && roomEdgeLine(rb, c.edge);
-      if (!la || !lb) continue;
+      const body = B.bodies.get(id);
+      if (!la || !lb || !body) continue;
       const d = keepHalfOf(lb.at - la.at);
-      if (d === 0) continue;
+      // The edge moved; the element must still stand exactly on the line it lay on.
+      if (d === 0 || !liesOnLine(body, la.axis, la.at)) continue;
       const dir = la.axis === "x" ? (d > 0 ? "right" : "left") : d > 0 ? "down" : "up";
       out.push({
         via: "contact",
@@ -890,6 +914,9 @@ function buildChanges(A: Side, B: Side, diff: PlanDiff, report: ImpactReport): v
   };
   for (const id of ids) {
     if (nodes.has(id) || !A.kind.has(id) || !B.kind.has(id)) continue;
+    // Exactly unchanged, not merely within `diffPlans`' tolerance: an element that moved a few mm
+    // with what it reads followed it, so it is not held (PS4.5 red team).
+    if (A.fp.get(id) !== B.fp.get(id)) continue;
     const because: ImpactStep[] = [
       ...edges(id)
         .filter((e) => e.via !== "joins" && moves(e.key))
@@ -1147,9 +1174,33 @@ const VIA_WORD: Record<ImpactStep["via"], string> = {
   contact: "on",
 };
 const stepPhrase = (s: ImpactStep): string => `${VIA_WORD[s.via]} ${s.name} (${s.change})`;
-/** `stayed at x 4000 while a.right moved to x 4500 (500 mm)`. */
-const contactPhrase = (edge: string, c: ImpactContact): string =>
-  `stayed at ${c.axis} ${c.stayed_mm} while ${edge} moved to ${c.axis} ${c.moved_to_mm} (${c.gap_mm} mm)`;
+/**
+ * One held row as one line: `stayed at x 4000 while a.right / b.left moved to x 4500 (500 mm)`,
+ * one clause per moved line (the contact steps that share the line the element stayed on and
+ * the line the edges went to, their edges joined by ` / ` in step order; clauses joined by
+ * ` and `), then `; what it depends on changed: …` for the other steps, or `stayed; what it
+ * depends on changed: …` alone when it has no contact.
+ */
+function heldPhrase(h: ImpactHeld): string {
+  const groups = new Map<string, { c: ImpactContact; names: string[] }>();
+  const deps: ImpactStep[] = [];
+  for (const s of h.because) {
+    if (!s.contact) {
+      deps.push(s);
+      continue;
+    }
+    const k = `${s.contact.axis} ${s.contact.stayed_mm} ${s.contact.moved_to_mm}`;
+    const g = groups.get(k);
+    if (g) g.names.push(s.name);
+    else groups.set(k, { c: s.contact, names: [s.name] });
+  }
+  const clauses = [...groups.values()].map(
+    ({ c, names }) =>
+      `at ${c.axis} ${c.stayed_mm} while ${names.join(" / ")} moved to ${c.axis} ${c.moved_to_mm} (${c.gap_mm} mm)`,
+  );
+  const tail = deps.length > 0 ? `; what it depends on changed: ${deps.map(stepPhrase).join(", ")}` : "";
+  return `stayed${clauses.length > 0 ? ` ${clauses.join(" and ")}` : ""}${tail}`;
+}
 
 /** `room a`, or a derived element's phrase alone (it already says what it is). */
 const who = (x: { kind: string; name: string; derived?: true }): string => (x.derived ? x.name : `${x.kind} ${x.name}`);
@@ -1180,11 +1231,9 @@ function summaryOf(r: ImpactReport): string[] {
     out.push(`    why: ${[chain, end].filter((x) => x !== "").join("; ")}${c.truncated ? " (truncated)" : ""}`);
   }
   head("Held", r.held.length);
-  for (const h of r.held) {
-    const deps = h.because.filter((s) => s.contact === undefined);
-    if (deps.length > 0) out.push(`  ${who(h)} stayed; what it depends on changed: ${deps.map(stepPhrase).join(", ")}`);
-    for (const s of h.because) if (s.contact) out.push(`  ${who(h)} ${contactPhrase(s.name, s.contact)}`);
-  }
+  for (const h of r.held) out.push(`  ${who(h)} ${heldPhrase(h)}`);
+  if (r.contacts_truncated)
+    out.push("  (contacts truncated on the before side: too many room edges; held may be incomplete)");
   const diag = (title: string, ds: ImpactDiagnostic[]): void => {
     head(title, ds.length);
     for (const d of ds)

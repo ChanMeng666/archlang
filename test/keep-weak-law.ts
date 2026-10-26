@@ -104,49 +104,60 @@ export function firstLetBump(src: string): string | undefined {
 
 /**
  * PS4.5's additive facts, removed so the baseline (taken before any keep code, so never re-taken)
- * still measures everything else: every `depends.elements[].contacts` (top level and per storey).
- * The key is present only on a row that lies on a room edge, so this removes nothing else.
+ * still measures everything else: every `depends.elements[].contacts` and `depends.contacts_truncated`
+ * (top level and per storey). Both are present only when non-empty or true, so this removes
+ * nothing else.
  */
 export function withoutContacts<T>(summary: T): T {
-  const strip = (deps: { elements?: Array<Record<string, unknown>> } | undefined): void => {
+  type Deps = { elements?: Array<Record<string, unknown>>; contacts_truncated?: true };
+  const strip = (deps: Deps | undefined): void => {
+    if (deps) delete deps.contacts_truncated;
     for (const row of deps?.elements ?? []) delete row.contacts;
   };
-  const copy = structuredClone(summary) as {
-    depends?: Parameters<typeof strip>[0];
-    levels?: Array<{ depends?: Parameters<typeof strip>[0] }>;
-  };
+  const copy = structuredClone(summary) as { depends?: Deps; levels?: Array<{ depends?: Deps }> };
   strip(copy.depends);
   for (const l of copy.levels ?? []) strip(l.depends);
   return copy as T;
 }
 
-/** The human line a held contact prints (`src/impact.ts`'s `contactPhrase`, after `  <who> `). */
-const CONTACT_LINE = / stayed at [xy] -?[0-9.]+ while \S+ moved to [xy] -?[0-9.]+ \([0-9.]+ mm\)$/;
+/** A held row's line with contact clauses (`src/impact.ts`'s `heldPhrase`): the element (an
+ *  authored wall or a piece, `<kind> <id>`), the clauses, then the other steps' tail if any. */
+const CONTACT_LINE =
+  /^( {2}\S+ \S+) stayed at [xy] -?[0-9.]+ while .+? moved to [xy] -?[0-9.]+ \([0-9.]+ mm\)((?:; what it depends on changed: .*)?)$/;
+/** The note `impact` prints under Held when the before side's contact search was cut. */
+const TRUNCATED_LINE = "  (contacts truncated on the before side: too many room edges; held may be incomplete)";
 
 /**
  * `impact --json` less PS4.5's additive `held` content, as it printed before contacts existed:
- * every `via: "contact"` step, a held row left with none, the summary lines those steps print,
- * and the `Held (n)` head recounted. A report that is not JSON (a usage error) or has no contact
- * step comes back byte for byte.
+ * every `via: "contact"` step, a held row left with none, the contact clauses of the summary
+ * (a row's line without them, or no line when nothing else is left), `contacts_truncated` and
+ * its note, and the `Held (n)` head recounted. A report that is not JSON (a usage error) or has
+ * no contact content comes back byte for byte.
  */
 export function withoutContactHeld(stdout: string): string {
   const nl = stdout.indexOf("\n");
   const exit = stdout.slice(0, nl + 1);
   const body = stdout.slice(nl + 1);
-  let j: { held?: Array<{ because: Array<{ via: string }> }>; summary?: string[] };
+  let j: { held?: Array<{ because: Array<{ via: string }> }>; contacts_truncated?: true; summary?: string[] };
   try {
     j = JSON.parse(body);
   } catch {
     return stdout;
   }
-  if (!j.held?.some((h) => h.because.some((s) => s.via === "contact"))) return stdout;
-  const held = j.held
+  const contact = j.held?.some((h) => h.because.some((s) => s.via === "contact")) === true;
+  if (!contact && j.contacts_truncated === undefined) return stdout;
+  const held = (j.held ?? [])
     .map((h) => ({ ...h, because: h.because.filter((s) => s.via !== "contact") }))
     .filter((h) => h.because.length > 0);
   j.held = held;
-  j.summary = (j.summary ?? [])
-    .filter((l) => !(l.startsWith("  ") && CONTACT_LINE.test(l)))
-    .map((l) => (/^Held \(\d+\):/.test(l) ? `Held (${held.length})${held.length === 0 ? ": none" : ":"}` : l));
+  delete j.contacts_truncated;
+  j.summary = (j.summary ?? []).flatMap((l) => {
+    if (l === TRUNCATED_LINE) return [];
+    if (/^Held \(\d+\):/.test(l)) return [`Held (${held.length})${held.length === 0 ? ": none" : ":"}`];
+    const m = CONTACT_LINE.exec(l);
+    if (!m) return [l];
+    return m[2] ? [`${m[1]} stayed${m[2]}`] : [];
+  });
   return `${exit}${JSON.stringify(j, null, 2)}\n`;
 }
 

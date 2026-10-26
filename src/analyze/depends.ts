@@ -92,6 +92,9 @@ export interface DependsFacts {
   elements: DependsEntry[];
   /** Every wall `walls from rooms` derived on the storey, by name. */
   derived_walls: DerivedWallDepends[];
+  /** Present (true) only when a contact was left out of some row: the storey's contact search
+   *  ran past its probe budget, or an element touched more than 64 room edges (`./contacts.ts`). */
+  contacts_truncated?: true;
   /** The plan's keeps as static facts (`./keep-facts.ts`), present only when it declares one:
    *  every keep on the top-level object, a storey's own on each `levels[]` entry. */
   keeps?: KeepFact[];
@@ -330,5 +333,5 @@ export function dependsFacts(ir: ResolvedPlan, index: StatementIndex): DependsFa
     }
   }
   derived_walls.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
-  return { elements, derived_walls };
+  return { elements, derived_walls, ...(contacts.truncated() ? { contacts_truncated: true as const } : {}) };
 }
