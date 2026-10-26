@@ -504,7 +504,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS1 · The defect corpus (do this before PS2; it is the yardstick)
 
-4 cards: 3 done, 1 todo (PS1.4 diagnostic wording); PS1.3 walls-first control arm done 2026-10-26 (D21); both filed 2026-10-25 from the owner's 2026-10-18 asks. Cards, tables and as-built pointers: `cards.md` § PS1.
+5 cards: 3 done, 2 todo (PS1.4 diagnostic wording, PS1.5 two message slips); PS1.3 walls-first control arm done 2026-10-26 (D21); both filed 2026-10-25 from the owner's 2026-10-18 asks. Cards, tables and as-built pointers: `cards.md` § PS1.
 
 ### PS2 · Validity checks that read existing facts (small, high yield)
 

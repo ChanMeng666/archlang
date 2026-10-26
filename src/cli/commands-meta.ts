@@ -11,6 +11,7 @@ import { buildManifest, ERROR_CATALOG, explain } from "../index.js";
 // The zero-dep levenshtein behind every "did you mean" hint the CLI prints.
 import { closest } from "../expr.js";
 import { CLI_NAME } from "../manifest.js";
+import { CONTEXT_LEVELS, leadExampleFromSpec, renderStarter } from "./context-starter.js";
 import { type Args, EXIT, HERE, VERSION, emitJson, ioError, usageError } from "./io.js";
 
 /** `manifest` — the whole CLI API surface as one structured document for agents. */
@@ -117,7 +118,7 @@ const SECTIONS: Readonly<Record<string, string>> = {
   cli: "## 3. CLI reference",
   errors: "## 4. Diagnostic catalog",
 };
-const SECTION_NAMES = Object.keys(SECTIONS);
+export const SECTION_NAMES = Object.keys(SECTIONS);
 /** intro + the four sections — the chunk count the split must produce. */
 const SECTION_CHUNKS = SECTION_NAMES.length + 1;
 
@@ -139,7 +140,39 @@ export function splitContext(text: string): Record<string, string> | null {
   return out;
 }
 
+/** `context --level starter`: the one-screen starter, rendered from the shipped spec. */
+function cmdContextStarter(args: Args): number {
+  if (args.section !== undefined) {
+    return usageError("--level starter is one screen; --section picks a part of the full bundle — drop one of the two");
+  }
+  const spec = readSpec();
+  if (spec === null) return ioError("spec.llm.md not found", args.json);
+  const lead = leadExampleFromSpec(spec);
+  if (lead === null) return ioError("spec.llm.md has no ```arch example to build the starter from", args.json);
+  let starter: string;
+  try {
+    starter = renderStarter(lead, SECTION_NAMES);
+  } catch (e) {
+    return ioError(`cannot build the starter from spec.llm.md: ${(e as Error).message}`, args.json);
+  }
+  if (args.json) emitJson({ ok: true, level: "starter", context: starter });
+  else process.stdout.write(starter);
+  return EXIT.OK;
+}
+
 export function cmdContext(args: Args): number {
+  const level = args.contextLevel;
+  if (level !== undefined) {
+    if (level === "") return usageError(`--level needs a value: ${CONTEXT_LEVELS.join(" or ")}`);
+    if (!(CONTEXT_LEVELS as readonly string[]).includes(level)) {
+      const hint = closest(level, [...CONTEXT_LEVELS]);
+      return usageError(
+        `unknown level "${level}" — expected one of: ${CONTEXT_LEVELS.join(", ")}` +
+          (hint === null ? "" : ` (did you mean "${hint}"?)`),
+      );
+    }
+    if (level === "starter") return cmdContextStarter(args);
+  }
   const context = readContext();
   if (context === null) return ioError("llms-full.txt not found", args.json);
 

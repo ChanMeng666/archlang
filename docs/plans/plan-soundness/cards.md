@@ -66,6 +66,11 @@ transcript audit: asked by the owner on 2026-10-18, "什么样的诊断措辞最
 - *Open:* whether the result transfers across models; run at least two local models before writing
   the rule.
 
+**PS1.5 · Two wording slips found in PS7.2's red team (2026-10-26).** `todo`
+- `E_FURN_SIZE` under `furniture … in <room> anchor|centered` says "no default footprint for `wc`" for a piece that has one (it does under `against`; `in` never reads the catalogue). Say what is true: `in` always needs `size`.
+- `describe|compile|preview … --level starter` reports "--level NaN was given …" (the raw word is lost in `Number()`); echo the word and say `--level` is a storey number.
+- *Acceptance:* both messages fixed with their `explain` text; a test pins each; `lint-fix-texts` stays green.
+
 ### PS2 · Validity checks that read existing facts (small, high yield)
 
 Each is an advisory `W_*` appended to `LINT_RULES`, with catalogue entry, `explain` text, fix prose
@@ -345,8 +350,8 @@ PS5.1b: PR #247, 9cc29c7e)
   when a stage is clean.
 - Prior art and ADAI agree: decide low-frequency things first; early proportional errors cascade.
 
-**PS7.2 · `arch context --level starter`.** `todo`
-- A one-screen starter for weak models: the same truth as the full context, less of it.
+**PS7.2 · `arch context --level starter`.** `done` (PR #279)
+- As built: `research/2026-10-26-ps72-as-built.md`. One screen (3,156 UTF-16 units, 59 lines of at most 100 columns; caps 4,000 / 60 / 100) built from the spec's lead example and the compiler, not retyped.
 
 **PS7.3 · Rule packs as data.** `parked`
 - Profiles and taste rules described as versioned data, each with applicability, check, failure exit,
