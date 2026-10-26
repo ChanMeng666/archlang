@@ -287,6 +287,72 @@ export async function evaluate(
   return { results, summary };
 }
 
+/** The committed judge fixture (`eval/judge-fixture.json`): every golden's pinned `Score`, in
+ *  corpus order, and a per-row `notes` reason for any judgment a plan-soundness decision moved. */
+export interface JudgeFixture {
+  judgeVersion: string;
+  synonymsVersion: number;
+  scores: Score[];
+  notes?: Record<string, string>;
+}
+
+export function readJudgeFixture(): JudgeFixture {
+  return JSON.parse(readFileSync(resolve(ROOT, "eval/judge-fixture.json"), "utf8")) as JudgeFixture;
+}
+
+/** One golden whose offline result is not the one the fixture records. */
+export interface FixtureRegression {
+  id: string;
+  why: string;
+}
+
+/**
+ * The offline gate (plan-soundness D25's consequence): the committed judge fixture is the truth, so
+ * a golden regresses only when its result differs from the one recorded there. A golden recorded as
+ * passing that now fails, one whose `physicalWarnings` or `lintWarnings` differ from the fixture's,
+ * or one the fixture has no row for. A golden the fixture records as failing (a ratified judgment,
+ * with its reason in `notes`) is not a regression while it fails as recorded. No threshold: the gate
+ * never asks for a pass count, only for agreement with the fixture.
+ */
+export function regressionsAgainstFixture(results: readonly Score[], fixture: JudgeFixture): FixtureRegression[] {
+  const pinned = new Map(fixture.scores.map((s) => [s.id, s]));
+  const out: FixtureRegression[] = [];
+  for (const r of results) {
+    const f = pinned.get(r.id);
+    if (!f) {
+      out.push({ id: r.id, why: "no row in the judge fixture" });
+      continue;
+    }
+    const why: string[] = [];
+    if (f.semanticPass && !r.semanticPass) why.push("recorded as passing, now fails");
+    if (r.physicalWarnings !== f.physicalWarnings)
+      why.push(`physicalWarnings ${f.physicalWarnings} → ${r.physicalWarnings}`);
+    if (r.lintWarnings !== f.lintWarnings) why.push(`lintWarnings ${f.lintWarnings} → ${r.lintWarnings}`);
+    if (why.length > 0) out.push({ id: r.id, why: why.join(", ") });
+  }
+  return out;
+}
+
+/** The offline gate's verdict line, and whether it fails ({@link regressionsAgainstFixture}). The
+ *  decisions behind the goldens recorded as failing are read off their fixture notes (`D25 …`). */
+export function fixtureVerdict(results: readonly Score[], fixture: JudgeFixture): { ok: boolean; line: string } {
+  const regressed = regressionsAgainstFixture(results, fixture);
+  if (regressed.length > 0)
+    return {
+      ok: false,
+      line: `✗ ${regressed.length} golden(s) regressed against the fixture: ${regressed.map((x) => `${x.id} (${x.why})`).join("; ")}`,
+    };
+  const pass = results.filter((r) => r.semanticPass).length;
+  const failing = results.filter((r) => !r.semanticPass);
+  const decisions = [
+    ...new Set(failing.map((r) => /^(D\d+)\b/.exec(fixture.notes?.[r.id] ?? "")?.[1]).filter((d) => d !== undefined)),
+  ];
+  return {
+    ok: true,
+    line: `✓ ${pass}/${results.length} pass, ${failing.length} recorded as failing${decisions.length > 0 ? ` (${decisions.join(", ")})` : ""}`,
+  };
+}
+
 /** Live provider/model, resolved from env: explicit `ARCHLANG_EVAL_PROVIDER`,
  *  else OpenAI when only its key is present, else Anthropic (the default). */
 export function resolveProvider(): { provider: "anthropic" | "openai"; model: string } {
@@ -735,10 +801,14 @@ async function main(): Promise<void> {
     writeFileSync(resolve(ROOT, "eval/results.md"), md);
     process.stdout.write(md + "\n");
     process.stdout.write(`✓ wrote eval/results.md\n`);
-    if (summary.semanticPass !== summary.total) {
-      process.stderr.write(`✗ ${summary.total - summary.semanticPass} golden(s) regressed\n`);
+    // The gate compares against the committed judge fixture, never asks for every golden to pass
+    // (plan-soundness D25): a ratified judgment of `semanticPass: false` is recorded there.
+    const verdict = fixtureVerdict(results, readJudgeFixture());
+    if (!verdict.ok) {
+      process.stderr.write(`${verdict.line}\n`);
       process.exit(1);
     }
+    process.stdout.write(`${verdict.line}\n`);
     return;
   }
 

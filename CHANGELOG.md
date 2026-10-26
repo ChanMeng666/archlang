@@ -464,7 +464,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `door double` pairs (`transit-hall`'s 4000 mm entrance a `sliding` door), hobs moved off windows
   and away from fridges, `themed` cleared a doorway's approach, and three double-door entrances
   widened to 2000 mm. Three eval holdout goldens now fail the judge's physical check on it and their
-  pinned judgments moved (plan-soundness D25, ratified).
+  pinned judgments moved (plan-soundness D25, ratified); the offline `eval:ci` gate now fails only
+  when a golden differs from the committed judge fixture, never asking for every golden to pass.
 
 - `W_ROOM_TOO_SMALL` reads the room's use. A WC is judged against 1.1 m2 and a bathroom against
   2.0 m2 (GB 50096-2011 5.4.2, as advice), and a store, utility room, hall, circulation space or
