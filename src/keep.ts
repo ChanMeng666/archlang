@@ -11,10 +11,12 @@
  * element and never on the memoised AST.
  *
  * Exactness (ADR 0022, design R5/R6/R20). A datum is read as an expression in the plan would read
- * it, grid-snapped; each value is put on the 0.001 mm lattice by `sign(v)·round(|v|·1000)` and the
- * arithmetic is done in integers. Every quantity is held in HALF-lattice units (0.0005 mm) so a
- * centre line (`cx`, `cy`) is compared at twice its value and never rounded, and a wall face
- * (centreline ± t/2) is exact. A keep's own `<mm>` is put on the lattice and never snapped.
+ * it, grid-snapped; a residual is the difference of the values compared (less the keep's own
+ * `<mm>`), put on the 0.001 mm lattice ONCE by `sign(v)·round(|v|·1000)` (R6 as amended by PS4.3b,
+ * {@link diffH}), never the difference of values rounded one by one. Every quantity is held in
+ * HALF-lattice units (0.0005 mm) so a centre line (`cx`, `cy`) is compared at twice its value and
+ * never rounded, and a wall face (centreline ± t/2) is exact; `min clear`'s scan works on the
+ * values put on the lattice one by one, as before. A keep's own `<mm>` is never snapped.
  *
  * Budget (design §4, R11, R13). Expansion charges one step per target before the record is
  * allocated (its expressions are charged as every expression is); the measure charges once,
@@ -62,8 +64,22 @@ function lattice(v: number): number {
 }
 /** An edge, a length or a `<mm>` in half-lattice units. */
 const halfOf = (v: number): number => 2 * lattice(v);
+/** {@link halfOf}, for the static facts: a literal on the same scale as a keep's residuals. */
+export const keepHalfOf = halfOf;
 /** A centre line in half-lattice units: twice its value, on the lattice, so it is never rounded. */
 const halfOfCentre = (v: number): number => lattice(2 * v);
+/**
+ * A residual `a − b − c` in half-lattice units, the DIFFERENCE rounded once (R6 as amended by
+ * PS4.3b): each value is read as an expression reads it (a datum snapped), the difference is taken
+ * exactly as the numbers stand, and only then is it put on the lattice, sign-symmetric. Rounding
+ * each value first and subtracting could put a residual of 0.001 mm on two values 0.0005 mm apart
+ * on either side of a lattice tie, or hide one. A centre line on either side is compared at twice
+ * the difference, so a half-lattice centre is never rounded.
+ */
+function diffH(a: { raw: number; centre: boolean }, b: { raw: number; centre: boolean }, c = 0): number {
+  const d = a.raw - b.raw - c;
+  return a.centre || b.centre ? lattice(2 * d) : 2 * lattice(d);
+}
 /** A half-lattice count in mm, exact. */
 const mmText = (h: number): string => fmtHalfLattice(h);
 /** A half-lattice count as the JSON number of its exact decimal. */
@@ -119,6 +135,9 @@ function refsOf(n: KeepNode): KeepRef[] {
       return [n.datum];
   }
 }
+
+/** The refs a keep names, in the order it names them (read by `impact` and the static facts). */
+export const keepRefsOf = (n: KeepNode): KeepRef[] => refsOf(n);
 
 /** One step per target (levels included) — what expansion charges before the record. */
 function targetCount(n: KeepNode): number {
@@ -327,6 +346,16 @@ export interface KeepResult {
   /** When broken: the id-free message and its hints (the `W_KEEP_VIOLATED` text for any grade). */
   message?: string;
   hints?: string[];
+  /** Internal, read by the static facts (`--facts depends`): whether the lines `align`, `on
+   *  axis`, `offset` and `fixed` compare are vertical (their values are x) or horizontal. */
+  vertical?: boolean;
+  /** Internal, read by the static facts and `impact`: a `stacked` keep's levels as evaluated. */
+  levels?: number[];
+  /** Internal, read by the static facts: the keep's own `<mm>` (`offset`, `min clear`, `fixed`),
+   *  half-lattice units, never snapped. */
+  valueH?: number;
+  /** The same value in mm, as evaluated. */
+  value?: number;
 }
 
 const FORM_WORDS: Record<KeepNode["form"], string> = {
@@ -372,6 +401,10 @@ export interface KeepStoreyCtx {
 interface Line {
   vertical: boolean;
   h: number;
+  /** The value as read (mm, snapped where a datum snaps), and whether it is a centre line: a
+   *  residual is the DIFFERENCE of two such values, rounded once ({@link diffH}). */
+  raw: number;
+  centre: boolean;
   /** How a message names it, and how it refers back to it ("that edge"). */
   phrase: string;
   that: string;
@@ -595,6 +628,8 @@ function readLine(ix: StoreyIndex, ctx: KeepStoreyCtx, ref: KeepRef, text: strin
     return {
       vertical: a.axis === "x",
       h: halfOf(a.pos),
+      raw: a.pos,
+      centre: false,
       phrase: `axis ${a.label}`,
       that: "that axis",
       text: written,
@@ -652,6 +687,8 @@ function readLine(ix: StoreyIndex, ctx: KeepStoreyCtx, ref: KeepRef, text: strin
     return {
       vertical: word === "left" || word === "right" || word === "cx",
       h: centre ? halfOfCentre(v) : halfOf(v),
+      raw: v,
+      centre,
       phrase: `the ${datumWordName(word, ref.word)} of ${roomPhrase(ix, r)}`,
       that: centre ? "that centre line" : "that edge",
       text: written,
@@ -676,6 +713,8 @@ function readLine(ix: StoreyIndex, ctx: KeepStoreyCtx, ref: KeepRef, text: strin
   return {
     vertical,
     h: halfOf(vertical ? s.a.x : s.a.y),
+    raw: vertical ? s.a.x : s.a.y,
+    centre: false,
     phrase: ref.segment !== undefined ? `segment ${fmt3(ref.segment)} of ${phrase}` : phrase,
     that: `that ${wallNoun(s)}`,
     text: written,
@@ -721,7 +760,7 @@ function readExtent(
   ref: KeepRef,
   measure: "width" | "depth",
   text: string,
-): { h: number; phrase: string; text: string } | Refusal {
+): { h: number; raw: number; phrase: string; text: string } | Refusal {
   const written = keepRefText(ref);
   if (ref.t !== "el" || ref.segment !== undefined) {
     return {
@@ -741,7 +780,8 @@ function readExtent(
         hint: `\`${written}\` in \`${text}\`; only a rectangular room has one`,
       };
     }
-    return { h: halfOf(measure === "width" ? r.size.w : r.size.h), phrase: roomPhrase(ix, r), text: written };
+    const raw = measure === "width" ? r.size.w : r.size.h;
+    return { h: halfOf(raw), raw, phrase: roomPhrase(ix, r), text: written };
   }
   if (el.kind === "door" || el.kind === "window" || el.kind === "opening") {
     if (measure === "depth") {
@@ -753,6 +793,7 @@ function readExtent(
     }
     return {
       h: halfOf(el.width),
+      raw: el.width,
       phrase: openingPhrase(ix, el),
       text: written,
     };
@@ -834,7 +875,7 @@ export function evaluateKeeps(records: readonly KeepRecord[], ctx: KeepStoreyCtx
       refuseAt(ctx, node, r);
       continue;
     }
-    out.push({ ...base, ...r });
+    out.push({ ...base, ...r, ...(rec.mm !== undefined ? { value: rec.mm, valueH: halfOf(rec.mm) } : {}) });
   }
   return out;
 }
@@ -879,7 +920,7 @@ function measureAlign(
       hint: `\`${odd.text}\` and \`${first.text}\` in \`${text}\` have two orientations`,
     };
   }
-  const residuals: KeepResidual[] = lines.slice(1).map((l) => ({ target: l.text, h: l.h - first.h }));
+  const residuals: KeepResidual[] = lines.slice(1).map((l) => ({ target: l.text, h: diffH(l, first) }));
   const worst = largest(residuals)!;
   const holds = residuals.every((x) => x.h === 0);
   const out: Measured = {
@@ -887,6 +928,7 @@ function measureAlign(
     h: worst.h,
     ...(holds ? {} : { at: { target: worst.target } }),
     ...(node.form === "align" && residuals.length > 1 ? { residuals } : {}),
+    vertical: first.vertical,
   };
   if (!holds) {
     const wl = lines.find((l) => l.text === worst.target)!;
@@ -913,8 +955,8 @@ function measureFixed(
   const l = readLine(ix, ctx, node.datum, text);
   if (isRefusal(l)) return l;
   const want = halfOf(mm);
-  const h = l.h - want;
-  const out: Measured = { holds: h === 0, h };
+  const h = diffH(l, { raw: mm, centre: false });
+  const out: Measured = { holds: h === 0, h, vertical: l.vertical };
   if (h !== 0) {
     const a = axisWord(l.vertical);
     out.message = `This keep holds ${l.phrase} at ${a} ${mmText(want)}; it is at ${a} ${mmText(l.h)}, ${mmText(Math.abs(h))} mm ${sideWord(l.vertical, h)} that.${MESSAGE_TAIL}`;
@@ -932,14 +974,17 @@ function measureEqual(
   node: Extract<KeepNode, { form: "equal" }>,
   text: string,
 ): Measured | Refusal {
-  const ext: { h: number; phrase: string; text: string }[] = [];
+  const ext: { h: number; raw: number; phrase: string; text: string }[] = [];
   for (const ref of node.refs) {
     const e = readExtent(ix, ctx, ref, node.measure, text);
     if (isRefusal(e)) return e;
     ext.push(e);
   }
   const first = ext[0]!;
-  const residuals: KeepResidual[] = ext.slice(1).map((e) => ({ target: e.text, h: e.h - first.h }));
+  const residuals: KeepResidual[] = ext.slice(1).map((e) => ({
+    target: e.text,
+    h: diffH({ raw: e.raw, centre: false }, { raw: first.raw, centre: false }),
+  }));
   const worst = largest(residuals)!;
   const holds = residuals.every((x) => x.h === 0);
   const out: Measured = {
@@ -980,6 +1025,7 @@ function measureOffset(
   const d = readLine(ix, ctx, node.from, text);
   if (isRefusal(d)) return d;
   let xh: number;
+  let xRead: { raw: number; centre: boolean };
   let xPhrase: string;
   let xText: string;
   const pt = node.x.t === "el" ? readPoint(ix, ctx, node.x, text) : undefined;
@@ -987,6 +1033,7 @@ function measureOffset(
   if (pt) {
     // The point is doubled already (a centre), so it is put on the lattice as a centre.
     xh = lattice(d.vertical ? pt.x : pt.y);
+    xRead = { raw: (d.vertical ? pt.x : pt.y) / 2, centre: true };
     xPhrase = pt.phrase;
     xText = pt.text;
   } else {
@@ -1000,12 +1047,13 @@ function measureOffset(
       };
     }
     xh = l.h;
+    xRead = l;
     xPhrase = l.phrase;
     xText = l.text;
   }
   const want = halfOf(mm);
-  const h = xh - d.h - want;
-  const out: Measured = { holds: h === 0, h };
+  const h = diffH(xRead, d, mm);
+  const out: Measured = { holds: h === 0, h, vertical: d.vertical };
   if (h !== 0) {
     const stated =
       want === 0 ? `on ${d.phrase}` : `${mmText(Math.abs(want))} mm ${sideWord(d.vertical, want)} ${d.phrase}`;
@@ -1551,7 +1599,12 @@ export function evaluateStacked(
       );
       continue;
     }
-    const rects: { level: number; el: ResolvedElement; e: Record<KeepAt["edge"] & string, number> }[] = [];
+    const rects: {
+      level: number;
+      el: ResolvedElement;
+      raw: Record<KeepAt["edge"] & string, number>;
+      e: Record<KeepAt["edge"] & string, number>;
+    }[] = [];
     let failed = false;
     for (const lv of levels) {
       const s = storeys.find((x) => x.level === lv);
@@ -1608,15 +1661,12 @@ export function evaluateStacked(
         break;
       }
       const f = el as unknown as { at: Point; size: { w: number; h: number } };
+      const raw = { left: f.at.x, top: f.at.y, right: f.at.x + f.size.w, bottom: f.at.y + f.size.h };
       rects.push({
         level: lv,
         el,
-        e: {
-          left: halfOf(f.at.x),
-          top: halfOf(f.at.y),
-          right: halfOf(f.at.x + f.size.w),
-          bottom: halfOf(f.at.y + f.size.h),
-        },
+        raw,
+        e: { left: halfOf(raw.left), top: halfOf(raw.top), right: halfOf(raw.right), bottom: halfOf(raw.bottom) },
       });
     }
     if (failed) continue;
@@ -1624,7 +1674,12 @@ export function evaluateStacked(
     const residuals: KeepResidual[] = [];
     for (const r of rects.slice(1))
       for (const edge of EDGE_ORDER)
-        residuals.push({ target: target.id, level: r.level, edge, h: r.e[edge] - first.e[edge] });
+        residuals.push({
+          target: target.id,
+          level: r.level,
+          edge,
+          h: diffH({ raw: r.raw[edge], centre: false }, { raw: first.raw[edge], centre: false }),
+        });
     const worst = largest(residuals)!;
     const holds = residuals.every((x) => x.h === 0);
     const res: KeepResult = {
@@ -1637,6 +1692,7 @@ export function evaluateStacked(
       h: worst.h,
       ...(holds ? {} : { at: { target: target.id, level: worst.level!, edge: worst.edge! } }),
       residuals,
+      levels: [...levels],
     };
     if (!holds) {
       const vertical = worst.edge === "left" || worst.edge === "right";
