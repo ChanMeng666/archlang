@@ -237,6 +237,10 @@ into PS3.12)
   not read as one broke plus one healed, and the elements of one loop body are told apart.
 - An unresolved side keys its errors to the statement. Every storey's elements are compared, not
   only the lowest storey's. Found in PR #240.
+- Evidence from PS5.4 (PR #274, red-team round 1): `preview --review` keys by span too, so a warning
+  from a `for` body or a component placed twice cannot be ringed on the copy it means unless a hint
+  quotes an id; the sheet then rings none and says how many copies. An element id on the diagnostic
+  makes that ring exact.
 
 **PS4.7 · Impact resolves bindings, not names.** `todo`
 - `arch impact` keeps one entry per bound name, so a name stands for every place that binds it.
@@ -300,11 +304,9 @@ PS5.1b: PR #247, 9cc29c7e)
 - A tool-surface change: bump `packages/mcp`'s version and both `server.json` fields (iron law);
   the hosted worker inherits it. Deferred from PS5.3 by lead ruling.
 
-**PS5.4 · `arch preview --review`.** `todo`
-- A review sheet: the plan with the access graph overlaid, each flagged element ringed with its code,
-  plus zoomed crops of every flagged junction.
-- Agents look at pictures well when told where to look ("not opened = not seen").
-- Drawing-only; it never changes `describe()` or `lint()`.
+**PS5.4 · `arch preview --review`.** `done` (PR #274)
+- As built: `research/2026-10-26-ps54-as-built.md`. The review sheet: access graph, every warned element
+  ringed and numbered, legend, fixed-scale close-ups; drawing-only (CLI layer, consumes `lint()`).
 
 **PS5.5 · Use-scoped R6, R11 and R12.** `todo`
 - From PS5.1b's lead rulings (PR #247; design note after §3): R6, R11 and R12 skip a non-residential

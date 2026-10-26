@@ -430,6 +430,9 @@ recorded after the fact, PS2.22, PS2.29.)
 | Drafting | The sheet, not the plan: annotation collisions, title overflow, dimension text (D11) | `W_*` lint rules with `layer: "drafting"` | Never; never cap taste; `finish`'s never-worse law excepts them (D12) |
 | Taste | Privacy gradient, day/night zoning, light on two sides, alignment, proportion, façade rhythm | `score --taste` (PS5) | Never |
 
+**The reviewer's tools** (D20): `score --taste` (the score) and `preview --review` (PS5.4: every
+warned element ringed and numbered, the access graph, close-ups of flagged openings and pieces).
+
 **The hold-fixed ladder: what stays when a number changes.** Higher tiers hold, and lower tiers follow:
 
 > the brief's given numbers → site and lot → party walls and unit boundaries → structural axes →
@@ -517,7 +520,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS5 · The taste layer and the review sheet (D2)
 
-7 cards: 3 done, 4 todo. Cards, tables and as-built pointers: `cards.md` § PS5.
+7 cards: 4 done, 3 todo. Cards, tables and as-built pointers: `cards.md` § PS5.
 
 ### PS6 · `arch solve` (explicit transform; last)
 
@@ -537,7 +540,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 | 3a | PS3.7, PS3.8, PS3.5, PS3.9 (and PS0.19) | Unplanned, after row 3 (D7): PRs #228–#232. Re-measure PR #233: defects 57 → 48, blockers 4 → 2; corpus 47/70 |
 | 4 | PS0.4, PS4.1, PS4.2 | The widening drill's `impact` names every moved, held and broken item correctly. *Status:* met in part 2026-10-24 by PS4.2 (PR #240, 7954f252); `held` is empty (PS4.5) |
 | 5 | PS5.1–PS5.3, PS2.10–PS2.12 | The taste score separates the corpus's known-bad from known-good plans monotonically; the clearances corpus class reaches ≥ 10/18. *Status:* met 2026-10-25 (D14); PS2.11a–d merged (PRs #252, #253), clearances 11/19, corpus 59/73. Status and re-measure history: `research/2026-10-26-readme-history.md` § §7 row 5 |
-| 6 | PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e | **Current** (row 5 closed 2026-10-25). The owed row-5 re-measure, run as D15's two arms (D19), ran 2026-10-26 (`audits/2026-10-26-first-contact-rerun-d15.md`; D20: taste is a reviewer's tool, PS7.4 done, PS7.5 filed), so the row's cards may start. *Landed 2026-10-26:* PS2.50 (PR #267), PS2.45 (PR #268), PS2.22/PS2.29 (PR #269), PS4.4 (PR #271), PS4.3 design (PR #270, D22) and parts A and B (`keep` done, PRs #272/#275); PS5.4 in flight. The row is met when: `keep` invariants and brief-bound sizes are checked by `validate`, the widening drill reports a broken `keep` with its signed residual, and `preview --review` rings every flagged element; a re-measure closes the row (D10). Order and the open-card map: `handoff.md` § 4. (PS3.5 and PS3.6 already landed, rows 3a and 3) |
+| 6 | PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e | **Current** (row 5 closed 2026-10-25). The owed row-5 re-measure, run as D15's two arms (D19), ran 2026-10-26 (`audits/2026-10-26-first-contact-rerun-d15.md`; D20: taste is a reviewer's tool, PS7.4 done, PS7.5 filed), so the row's cards may start. *Landed 2026-10-26:* PS2.50 (PR #267), PS2.45 (PR #268), PS2.22/PS2.29 (PR #269), PS4.4 (PR #271), PS4.3 design (PR #270, D22) and parts A and B (`keep` done, PRs #272/#275), PS5.4 (PR #274). The row is met when: `keep` invariants and brief-bound sizes are checked by `validate`, the widening drill reports a broken `keep` with its signed residual, and `preview --review` rings every flagged element; a re-measure closes the row (D10). Order and the open-card map: `handoff.md` § 4. (PS3.5 and PS3.6 already landed, rows 3a and 3) |
 | 7 | PS6.1 | — |
 
 Rows 1–4 as they stood before this pruning, verbatim: `research/2026-10-25-ps5-as-built.md` § §7 rows 1–4.

@@ -79,6 +79,8 @@ export interface Args {
   accIdPrefix?: string;
   /** `--ascii`: (preview) print the plan as ASCII text instead of a PNG. */
   ascii?: boolean;
+  /** `--review`: (preview) render the review sheet: access graph, ringed warnings, legend, close-ups. */
+  review?: boolean;
   /** `--cols <n>`: target grid width for the `txt` / `--ascii` text renderer. */
   cols?: number;
   /** `--charset unicode|ascii`: glyph set for the text renderer (default unicode). */
@@ -190,6 +192,7 @@ export const FLAG_KEYS: Record<string, FlagSpec> = {
   "--from-json": { key: "fromJson", kind: "boolean" },
   "--feedback": { key: "feedback", kind: "boolean" },
   "--ascii": { key: "ascii", kind: "boolean" },
+  "--review": { key: "review", kind: "boolean" },
   "--install": { key: "install", kind: "boolean" },
   "--unsafe": { key: "unsafe", kind: "boolean" },
   "--dry-run": { key: "dryRun", kind: "boolean" },

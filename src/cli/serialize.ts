@@ -54,7 +54,7 @@ function autoInstall(pkg: string, quiet?: boolean): void {
 }
 
 /** Run a render, and on a missing-optional-dep error retry once after auto-install (if `--install`). */
-async function runWithInstall<T>(fn: () => Promise<T>, pkg: string, args: Args): Promise<T> {
+export async function runWithInstall<T>(fn: () => Promise<T>, pkg: string, args: Args): Promise<T> {
   try {
     return await fn();
   } catch (e) {
