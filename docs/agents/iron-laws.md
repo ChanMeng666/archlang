@@ -22,7 +22,11 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
   change. Regenerate `eval/judge-fixture.json` only for an approved bump, never to green a suite.
   Its `lintWarnings` counts are a side count, not a judgment: a lint PR whose new rule fires on an
   eval golden bumps that count with a per-row reason in the PR body and touches no field other than
-  `lintWarnings`; plan-soundness D19, awaiting ratification.
+  `lintWarnings` (plan-soundness D19, ratified 2026-10-27). A judgment field moves only under a
+  ratified D-entry named in the row's fixture `notes` (D25: three goldens recorded as failing), and
+  the offline `eval:ci` gate compares every golden with the fixture, never requires all to pass, and
+  prints how many are recorded as failing (`fixtureVerdict`, `eval/run.ts`; D25's gate bullet,
+  ratified 2026-10-27).
 - **`eval/rubric.md` is frozen; `npm run eval:live` is paid and owner-only.** CI runs `eval:ci`.
 
 ## Releases

@@ -40,38 +40,13 @@ catch rates (§7) are the means; this number is the end. It is not yet met: 52 a
 
 ## 1. The evidence in one page (detail: `evidence.md`)
 
-*This section is the 2026-10-18 baseline, kept as written because it is the evidence the plan was
-made from. Much of it is no longer true of `main`: the rules it says are missing now exist (45 lint
-rules, 22 new `W_*` codes), the dimension that "lints clean" raises `W_DIM_TEXT_MISMATCH`, the
-family-apartment reconstruction lints 33 warnings over 11 codes, and the coverage report says what was
-not checked. Today's state is `handoff.md` § 1 and § 3.*
+*The 2026-10-18 baseline, kept as the evidence the plan was made from; much of it is no longer true
+of `main` (`research/2026-10-26-readme-history.md` § §1: the note). Today's state is `handoff.md` § 1 and § 3.*
 
-- **About 120 verified defects across about 30 plans; lint caught a handful.** The plans audited:
-  - the ArchCanvas public examples (10 plans), with 6 blockers;
-  - the ArchLang showcase (12 plans);
-  - ArchLang's own `examples/`;
-  - one reconstructed published plan (`repro/family-apartment.arch`).
-
-  Default lint on that reconstructed plan returns only fixture-rotation warnings. One `arch fix` run
-  plus one hand edit makes it pass `validate --strict` with every architectural defect still present.
-- **Fresh plans confirm it (2026-10-18).** Six briefs written cold by an AI author from `spec.llm.md`
-  alone end lint-clean and strict-clean with 57 verified defects, 4 of them blockers; lint caught
-  none, and 26 fall outside the eight classes below (`audits/2026-10-18-first-contact.md`).
-- **The flagship example is wrong and lints clean.** `examples/two-bed.arch` says "central corridor".
-  Its access graph is a chain: hall → bathroom → master bedroom → kitchen/living → bedroom 2.
-  `arch lint` returns `[]`. *(PS3.6, PR #227: re-laid with every room off the corridor, in the room-graph form.)*
-- **The facts exist; no rule reads them.** On the family-apartment reconstruction, `describe --json`
-  already knows that:
-  - the front door opens into the kitchen;
-  - the living room is 4 doors deep;
-  - `d_living_bed3` actually joins bedroom 3 and bathroom 2;
-  - `win_bed1` lights bedroom 2;
-  - the living room touches bedrooms 3 and 4 with no wall (geometric adjacency without an access
-    edge), while the walking grid walks straight through the missing wall.
-- **Change has no consequences.** Making the studio example's living room 500 mm wider needs about
-  24 literal edits. Changing only the room size drives the room through a wall that stays put, and
-  lint reports only "rooms overlap (allowed)" and "unreachable". A `dim` whose text says 4500 over a
-  4000 span lints clean.
+- About 120 verified defects across about 30 plans (the ArchCanvas public examples, the showcase,
+  `examples/`, `repro/family-apartment.arch`) and 57 more in six cold-authored first-contact plans;
+  lint caught a handful. The flagship example's corridor was a chain, `describe` knew facts no rule
+  read, and a change had no consequences. These bullets verbatim: `research/2026-10-26-readme-history.md` § §1.
 - **Missed defect classes, most common first:**
   1. openings that ignore walls: across a T-junction, overlapping each other, or with nibs under 100 mm;
   2. space not enclosed or not assigned: a shared edge with no wall, walled area with no room;
@@ -351,11 +326,7 @@ pending rulings to the coordinator and asked for the best decision; the reasons 
 请你帮我做出最佳决策，然后实施".)
 - The coordinator took the rulings that were waiting on the owner on 2026-10-25 and recorded each
   as a decision here with its reasons and reverse-if, so the owner reviews a written ruling instead
-  of a question. Taken under this entry: D17 ratified; the executor and red-team scratch folders of
-  merged PRs (2026-10-23 to 2026-10-25, 45 folders) deleted because their evidence lives in the
-  dated `research/` and `audits/` files and the PR bodies; the 2026-10-18 audit scratch kept as
-  instructed. Not ruled on (not named by the owner): the remote branch `docs/archlang-3d-plan` and
-  the stray worktree directory `.claude/worktrees/agent-a1314d858f0b8b0cb`, both the owner's.
+  of a question. What was taken under it: `research/2026-10-26-readme-history.md` § D18.
 - The owner's sentence named the items pending that day; it is not read as a standing delegation.
   Going forward, an iron-law change is proposed in a PR, recorded here as a D-entry with reverse-if,
   marked *awaiting ratification*, and listed in the stage report; it is applied in code (the law is
@@ -366,8 +337,8 @@ pending rulings to the coordinator and asked for the best decision; the reasons 
   the owner extends the delegation in words, this entry is widened and says so.
 
 **D19. Two unrecorded practices, written down; one owed measurement.** (2026-10-25, from the
-repo-truth audit before the handoff.) *The first bullet touches an iron law's wording and is awaiting
-ratification (D18).*
+repo-truth audit before the handoff.) *The first bullet touches an iron law's wording; ratified
+2026-10-27 by delegation at the owner's request (D18), as is; stands unless the owner objects.*
 - *`eval/judge-fixture.json`:* the iron law says regenerate it only for an approved bump. Since
   PS2.5–2.7 (PR #199) every lint PR whose new rule fires on an eval golden has hand-edited that
   golden's `lintWarnings` count (PRs #199, #200, #201, #217, #245, #252, #253; every changed line
@@ -376,7 +347,10 @@ ratification (D18).*
   bumping it with a per-row reason in the PR body is allowed; no other field of the fixture is
   touched. The iron-law text says so from this PR on. *Reverse if:* a bump ever hides a judgment change, or the
   owner declines the reading; then the counts are frozen and new rules are excluded from the
-  fixture's lint count instead.
+  fixture's lint count instead. *Ratified 2026-10-27* (above); reverse-if as ratified: a
+  `lintWarnings` bump is found to have hidden a `semanticPass` change. PR #283 bumped four rows under
+  this bullet alone with no per-row reason in its body; the reasons are now in its as-built record
+  (`research/2026-10-26-ps211e-as-built.md` § The face datum and the eval judge).
 - *Re-measure order:* D10's mandatory re-measure after row 5 was owed before row 6 and ran 2026-10-26 as
   D15's two arms (D20), so the row-5 residue and row 6 may start. *Reverse if* (moot): the owner asks
   for row 6 to start first. Verbatim: `research/2026-10-26-readme-history.md` § D19.
@@ -385,7 +359,7 @@ ratification (D18).*
 - Result: arm A (spec text only) made 0 `score --taste` and 0 `validate` calls in 65, so D15's test fails
   and the role text alone did not change it (arm B: 0 and 1 in 77). Counts: `research/2026-10-26-readme-history.md` § D20.
 - D2 re-stated: validity stays in `lint`; quality stays in a separate taste score, read by the reviewer — the dispatching session, `validate --taste`, and `preview --review` (PS5.4) — and no longer expected in a cold author's loop. The score's design (0–1, sourced, capped under a validity warning, never gating, `taste()` in the API) is unchanged; only its audience is.
-- Consequences: (a) ADR 0032 gets a 2026-10-26 addendum under Consequences. (b) PS7.4 is `done`: measured, teaching the step where cold authors read did not change behaviour. (c) PS7.5 moves the taste step out of the author loop (spec self-correction paragraph, SKILL step 7 as a review step, `.claude/agents/arch-author.md` back to compile → `validate` `next` → lint → repair with taste under "Review"); the spec change is a measured surface the next re-measure states. `validate --json` `next` stays taught: it is the validity ordering, not a second score. Full text: `research/2026-10-26-readme-history.md` § D20 Consequences.
+- Consequences: an ADR 0032 addendum; PS7.4 `done`; PS7.5 takes the taste step out of the author loop; `validate --json` `next` stays taught. Summary and full text: `research/2026-10-26-readme-history.md` § D20 Consequences.
 - Not changed: defects flat (49 → 52 / 54), blockers 0 → 1 per arm (both stairs), rooms-first 6/6;
   row 6 and the row-5 residue may start. Verbatim: `research/2026-10-26-readme-history.md` § D20.
 - *Reverse if:* a re-measure whose dispatch prompt names the whole loop (not `compile|lint`) shows at least half of the cold authors running `score --taste` unprompted, or a consumer is shown steering authors by the score; then taste returns to the author loop and PS7.5 is reverted.
@@ -401,7 +375,7 @@ ratification (D18).*
 - *R1, grade landing:* `hard` (the default) is a compile-channel `W_KEEP_VIOLATED` that fails `--strict`, counts in the never-worse law and sits in `next`'s `warning` tier; `soft` sits in `next`'s `intent` tier after the brief's gating items and never gates; `advisory` is reported in `describe()`, `validate --json` and `impact` only, never in `next`; no grade caps taste and no keep enters `lint()`. Why: a soft keep in lint would gate `--strict` and the never-worse law as a hard one does while capping taste where a hard one does not, so the grades would not be ordered.
 - *R2, plain `validate`:* exits 0 on a broken hard keep; only `--strict` fails. Why: no warning code fails plain `validate` today, and `--strict` is the ship gate the spec teaches.
 - *R3, `keep fixed <d> at <mm>`:* the valued form replaces the card's bare `keep fixed …`. Why: a keep that one compile can never find broken is not a check.
-- *R4, the four spec cuts* (the `door` "DASHED" sentence, the `garage` sentence shortened, the `outdoor` hatch prose, the GB 50352 citation; 397 UTF-16 units against the keep line's 432, net headroom 236): accepted on the condition that `docs/language-reference.md` keeps every cut fact and the GB 50352-2019 source stays in `src/datum.ts`'s `WINDOW_SILL` doc comment (D3); both checked on `main@98b3d7ab`. Why: the cut text describes only how something is drawn. *As built (PS4.3a, PR #272):* the keep line is 483 units, `spec.llm.md` 29,815 UTF-16 units, headroom 185, after red-team rounds 1 and 2 added the placement words (`research/2026-10-26-ps43a-as-built.md`).
+- *R4, the four spec cuts* (the `door` "DASHED" sentence, the `garage` sentence shortened, the `outdoor` hatch prose, the GB 50352 citation; 397 UTF-16 units against the keep line's 432, net headroom 236): accepted on the condition that `docs/language-reference.md` keeps every cut fact and the GB 50352-2019 source stays in `src/datum.ts`'s `WINDOW_SILL` doc comment (D3); both checked on `main@98b3d7ab`. Why: the cut text describes only how something is drawn. As built: `research/2026-10-26-readme-history.md` § D22 R4.
 - *D4 law, narrowed as built:* the equivariance law (ADR 0033 decision 7) ships over single-storey plans whose keeps name no axis and whose datums include no half-grid centre. Why: the instance route carries no axis and no storey, and `snap` rounds a half toward +∞, so a mirrored half-grid centre snaps one grid from its image (a fault in snapping). *Reverse if* PS0.26 lands (sign-symmetric `snap`, a whole-plan transform): the law widens.
 - D22 changes no iron law. *Reverse if:* any trigger in ADR 0033's "Reverse if" list fires, or design §12's reverse-if for the decision a ruling confirms.
 
@@ -432,6 +406,14 @@ legitimately moves a hashed output; the reason is recorded in the table header a
   with the test's own body, so a re-take cannot drift from what the test checks.
 - *Reverse if:* a re-take ever hides an unexplained movement (a row moving in a re-take whose commit
   does not name it). The generator then lists per-row reasons, as the other digest tables' headers do.
+- *Ratified 2026-10-27 by delegation at the owner's request (D18); stands unless the owner objects.*
+  It overrides ADR 0033 decision 7's "a baseline taken before code lands", within a boundary: a PR
+  that touches keep code (`src/keep.ts`, the keep branch of `src/analyze/depends.ts`, `src/impact.ts`'s
+  keep handling) may not re-take K1; a re-take happens only in a PR that changes no keep code, by the
+  generator, with the moved files listed in the commit. The three re-takes so far comply (no keep code
+  in PR #280 or #283): `4f5f456e` (#280, 17 moved), `ade61803` (#283, 72 moved, 4 added), `8a9533de`
+  (#283, 5 moved). Recorded as a dated amendment to ADR 0033 decision 7 (still Accepted). *Reverse if:*
+  a re-take lands in a PR that touches keep code.
 
 **D25. The doorway-approach datum moves to the wall face; three eval holdout judgments move with
 it.** *Ratified by the owner 2026-10-26, so it may be cited as precedent (D18).* (2026-10-26, coordinator ruling on PR #283; PS2.54, PS2.11e.)
@@ -447,7 +429,12 @@ it.** *Ratified by the owner 2026-10-26, so it may be cited as precedent (D18).*
   recorded as passing that now fails, or whose `physicalWarnings` or `lintWarnings` differ, or one
   with no row), printing `✗ n golden(s) regressed against the fixture` with each named; otherwise
   `✓ 23/26 pass, 3 recorded as failing (D25)`. `JUDGE_VERSION` unchanged; no threshold anywhere
-  (coordinator ruling on PR #283).
+  (coordinator ruling on PR #283). The owner's ratification covered the three judgments only; this
+  gate bullet (6d916d40) is *ratified 2026-10-27 by delegation at the owner's request (D18); stands
+  unless the owner objects*, on the condition that a fixture row is recorded as failing only when its
+  `notes` names a ratified D-entry, and that the gate prints the count of recorded failures (it does:
+  `fixtureVerdict`, `eval/run.ts`). *Reverse if:* a recorded-failing row survives the reversal of the
+  D-entry it cites.
 - *Why:* the goldens' pieces really stand inside the approach read from the face:
   `dims-auto-cottage`'s WC 250 mm off the bath door's face, over 100 of its 800 mm;
   `galley-kitchen`'s basin 250 mm off the bath door's face, over 150 of 800 mm; `compact-studio`'s
@@ -462,8 +449,8 @@ a whole-loop arm.** (2026-10-27; evidence `audits/2026-10-26-first-contact-rerun
 by delegation (D18); stands unless the owner objects.* A measurement record, not an iron-law change.
 - Row 6: every card landed and the D10 re-measure ran: 61 defects (2 B) against 52 / 54 / 54; 12
   reported by the final lint, all on the two plans whose authors stopped early, so not a gain; the
-  stair blocker named by lint; the residual families unchanged. The review-sheet clause is false
-  inside repeated statements: PS4.6 is the remainder.
+  stair blocker named by lint; the residual families unchanged. The review-sheet clause is false as
+  built (PS5.4 probes: p2-for 0/2, p10 5/8, p3 4/6); PS4.6 is the remainder.
 - Reading: defects do not fall with rules alone; the stopping rule and the families with no rule bind.
 - Ruling: the protocol's frozen prompt ("stop when it compiles", every run since 2026-10-24; authors
   stopping with warnings standing 0 / 0 / 2 / 2 under it, arms A, B, C, row 6) stays unchanged for
@@ -557,15 +544,15 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS0 · Bugs found by the audit (independent; file and fix first)
 
-22 cards in the table: 5 done, 17 todo (PS0.1, PS0.7 and PS0.10–PS0.12 landed earlier, listed in `cards.md` above the table). Cards, tables and as-built pointers: `cards.md` § PS0.
+23 cards in the table: 5 done, 18 todo (PS0.28, the README size guard, filed 2026-10-27; PS0.1, PS0.7 and PS0.10–PS0.12 landed earlier, listed in `cards.md` above the table). Cards, tables and as-built pointers: `cards.md` § PS0.
 
 ### PS1 · The defect corpus (do this before PS2; it is the yardstick)
 
-7 cards: 4 done, 3 todo (PS1.5 two message slips, PS1.6 two clean twins that are not clean, PS1.7 the `eval:ci` gate's blind spots); PS1.3 walls-first control arm done 2026-10-26 (D21); PS1.4 diagnostic wording measured 2026-10-26 (no rule). PS1.3 and PS1.4 were filed 2026-10-25 from the owner's 2026-10-18 asks, PS1.5 on 2026-10-26 from PS7.2's red team, PS1.6 on 2026-10-26 from PS1.4. Cards, tables and as-built pointers: `cards.md` § PS1.
+8 cards: 4 done, 4 todo (PS1.5 two message slips, PS1.6 two clean twins that are not clean, PS1.7 the `eval:ci` gate's blind spots, PS1.8 the wording study's follow-ups); PS1.3 walls-first control arm done 2026-10-26 (D21); PS1.4 diagnostic wording measured 2026-10-26 (no rule). PS1.3 and PS1.4 were filed 2026-10-25 from the owner's 2026-10-18 asks, PS1.5 on 2026-10-26 from PS7.2's red team, PS1.6 on 2026-10-26 from PS1.4, PS1.8 on 2026-10-27 from §8 Q3. Cards, tables and as-built pointers: `cards.md` § PS1.
 
 ### PS2 · Validity checks that read existing facts (small, high yield)
 
-67 cards: 28 done, 39 todo. Cards, tables and as-built pointers: `cards.md` § PS2.
+77 cards: 28 done, 49 todo (PS2.64–PS2.72 filed by the row-6 re-measure, PS2.73 by the 2026-10-27 audit). Cards, tables and as-built pointers: `cards.md` § PS2.
 
 ### PS3 · Relation-first authoring (D1 + D5; needs an ADR)
 
@@ -573,7 +560,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS4 · The change model: what follows, what stays, what breaks
 
-12 cards: 3 done, 1 doing (PS4.3: A merged, B next), 8 todo (PS4.8–PS4.11 filed by the PS4.3 design, PS4.12 by PS4.4). Cards, tables and as-built pointers: `cards.md` § PS4.
+12 cards: 6 done, 6 todo (PS4.6, PS4.7; PS4.8–PS4.10 filed by the PS4.3 design, PS4.12 by PS4.4). Cards, tables and as-built pointers: `cards.md` § PS4.
 
 ### PS5 · The taste layer and the review sheet (D2)
 
@@ -585,7 +572,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS7 · Staged authoring for agents
 
-6 cards: 2 done, 3 todo, 1 parked. Cards, tables and as-built pointers: `cards.md` § PS7.
+9 cards: 5 done, 3 todo (PS7.7, PS7.8 filed by the row-6 re-measure, PS7.9 the spec headroom), 1 parked. Cards, tables and as-built pointers: `cards.md` § PS7.
 
 ## 7. Suggested order and acceptance
 
@@ -597,7 +584,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 | 3a | PS3.7, PS3.8, PS3.5, PS3.9 (and PS0.19) | Unplanned, after row 3 (D7): PRs #228–#232. Re-measure PR #233: defects 57 → 48, blockers 4 → 2; corpus 47/70 |
 | 4 | PS0.4, PS4.1, PS4.2, PS4.5 | The widening drill's `impact` names every moved, held and broken item correctly. *Status:* met 2026-10-26: PS4.2 (PR #240, 7954f252) named the moved and broken items; PS4.5 (PR #281) reports the shell and `p` as held, with their gaps |
 | 5 | PS5.1–PS5.3, PS2.10–PS2.12 | The taste score separates the corpus's known-bad from known-good plans monotonically; the clearances corpus class reaches ≥ 10/18. *Status:* met 2026-10-25 (D14); PS2.11a–d merged (PRs #252, #253), clearances 11/19, corpus 59/73. Status and re-measure history: `research/2026-10-26-readme-history.md` § §7 row 5 |
-| 6 | PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e | **Met in part** 2026-10-27 (D26). The row is met when: `keep` invariants and brief-bound sizes are checked by `validate`, the widening drill reports a broken `keep` with its signed residual, and `preview --review` rings every flagged element; a re-measure closes the row (D10). *Status:* every card landed (PRs #267–#283) and the D10 re-measure ran (`audits/2026-10-26-first-contact-rerun-row6.md`: 61 defects against 52 / 54 / 54, 12 reported by lint, the stair blocker named by lint, the residual families unchanged). The review-sheet clause is false as built inside repeated statements (`p2-for` 0 of 2 marks ringed, `p10-loopfurn` 5 of 8, `p3-place` 4 of 6; PS5.4 as-built): **PS4.6** is the remainder. Order: `handoff.md` § 4 |
+| 6 | PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e | **Met in part** 2026-10-27 (D26). The row is met when: `keep` invariants and brief-bound sizes are checked by `validate`, the widening drill reports a broken `keep` with its signed residual, and `preview --review` rings every flagged element; a re-measure closes the row (D10). *Status:* every card landed (PRs #267–#286) and the D10 re-measure ran (`audits/2026-10-26-first-contact-rerun-row6.md`, figures in D26); the review-sheet clause is false as built: **PS4.6** is the remainder. Detail: `research/2026-10-26-readme-history.md` § §7 row 6. Order: `handoff.md` § 4 |
 | 7 | PS6.1 | — |
 
 Rows 1–4 as they stood before this pruning, verbatim: `research/2026-10-25-ps5-as-built.md` § §7 rows 1–4.
@@ -612,10 +599,7 @@ This plan is a hypothesis about what will make AI-written plans professional. Tr
 **Open questions worth a fresh investigation:**
 1. **Are rooms or walls the better primary for LLM authors?** D1 bets on rooms. A small, unpaid
    experiment can test it: author the corpus briefs both ways with the CLI loop and compare defect
-   counts on the PS1 corpus. Do not run or cite the paid eval. *Scheduled:* it needs the PS3 forms
-   to exist, so it runs after row 3 of §7. Until then the first-contact experiment under question 8
-   measures the wall-first baseline (`audits/2026-10-18-first-contact.md`). The walls-first control
-   arm is card PS1.3 (filed 2026-10-25; run 2026-10-26, below).
+   counts on the PS1 corpus. Do not run or cite the paid eval. Scheduling: `research/2026-10-26-readme-history.md` § §8 Q1 scheduling.
    *Answered to that extent 2026-10-26 (PS1.3, D21):* walls-first is not worse in surviving defects (54
    against 52); what stays open is whether a spec that led with walls would change the authors' choice.
    The 10-24, 10-25 and 10-26 measurements: `research/2026-10-26-readme-history.md` § §8 Q1.
@@ -624,12 +608,12 @@ This plan is a hypothesis about what will make AI-written plans professional. Tr
    deliberately quiet.
 3. **Which diagnostic wording repairs best?** No controlled study exists for a spatial DSL
    (`research/prior-art.md` "Gaps"). The defect corpus plus a local, unpaid loop could measure it.
-   *Measured 2026-10-26 (PS1.4):* `research/2026-10-26-ps14-diagnostic-wording.md`. Over 59 corpus cases on two local models, the current message + hint
-   repaired best on both (51/59 sonnet, 48/59 haiku), but by 1 case on sonnet, under the 3-case margin, so no wording rule yet; open: repeat draws, a third model, the spec in context, a `cause`-derived rule arm.
+   *Measured 2026-10-26 (PS1.4):* no wording rule is supported: `current` repaired best on both models, by 1 case on
+   sonnet, under the 3-case margin (`research/2026-10-26-ps14-diagnostic-wording.md`). Follow-ups: PS1.8.
 4. **Can `between`-style forms cover non-rectilinear rooms?** Polygon and circle rooms are refused
    in v1 of PS3. What would an honest extension be?
 5. **What would make `impact` a planning tool, not just a report?** For example, "list the edits that
-   keep every `keep` true". *Designed 2026-10-26 (PS4.3, PR #270):* `research/2026-10-26-ps43-keep-design.md`, ADR 0033 (Accepted, PR #272): a keep is checked with a signed residual and `impact` lists those a change breaks; listing the edits that keep them all true stays `arch solve` (PS6.1).
+   keep every `keep` true". *Designed 2026-10-26 (PS4.3, ADR 0033):* `impact` lists the keeps a change breaks; listing the edits that keep them all true stays `arch solve` (PS6.1). Detail: `research/2026-10-26-readme-history.md` § §8 Q5.
 6. **Multi-dwelling and multi-storey rules.** Toilet over habitable room below (GB 50096 5.4.4,
    mandatory), wet-stack alignment, and units sharing a corridor. These need a dwelling concept
    ArchLang lacks. *Researched 2026-10-18* (`research/2026-10-18-furniture-and-multistorey.md`
@@ -650,9 +634,7 @@ This plan is a hypothesis about what will make AI-written plans professional. Tr
    vertical stacking of partitions, oblique joins inflating `bbox_outer`, circulation share (taste).
    Re-run with each first-contact re-measure, and count the furniture turn (PS2.11c's
    `W_FOOTPRINT_TRANSPOSED` now catches the turned-footprint half; the `rotate` half is PS2.50).
-   *Measured 2026-10-24, 2026-10-25 and 2026-10-26 (D20):* seats, sofas, exterior doors and the old plans
-   re-linted are in the three `audits/` re-runs; the 10-24 and 10-25 blocks verbatim:
-   `research/2026-10-26-readme-history.md` § §8 Q8.
+   Measured on every re-run since: `research/2026-10-26-readme-history.md` § §8 Q8.
 9. **Should a `let` be able to hold a room-edge datum?** PS3.2 part B (PR #221) refuses it
    (`E_DATUM_BEFORE_ROOMS`: a `let` is evaluated once, at expansion, before any room is placed).
    The alternative considered and declined there was a deferred `let`, evaluated where it is read;
@@ -678,47 +660,26 @@ This plan is a hypothesis about what will make AI-written plans professional. Tr
 
 ## 9. Files in this folder
 
-- `README.md`: this plan.
-- `handoff.md`: the resume point — state, open work in order, how the work is run (re-written at
-  every stage end).
-- `cards.md`: every card of §6, with its table, id and status (D16).
-- `research/2026-10-25-ps211ab-as-built.md`, `research/2026-10-25-ps211cd-as-built.md`: the four
-  clearance rules as built, their first-contact hits, corpus movements and the `finish` sweep.
+- `README.md`: this plan. `handoff.md`: the resume point, re-written at every stage end. `cards.md`:
+  every card of §6 (D16). `evidence.md`: what was measured, the bug list and the defect taxonomy.
 - `audits/first-contact-protocol.md`: the six briefs, the dispatch prompts, the rubric, the arm A
-  role-text pointer and the re-measure checklist that D15 needs (PR #257, 053ba3f8).
-- `evidence.md`: what was measured, the bug list and the defect taxonomy.
-- `research/checks-inventory.md`: every current check, the authoring-model facts, governing ADRs,
-  and the gap list with code locations.
-- `research/prior-art.md`: LLM floor-plan work, rule checking, codes and thresholds, DSL design
-  evidence.
-- `research/associativity.md`: Revit, ArchiCAD, FreeCAD, IFC/Bonsai, Sweet Home 3D, SolveSpace and
-  Topologic at source level, plus the full P1–P7 design (datums, `between`, `impact`, `keep`,
-  `solve`, the ladder, selectors).
-- `research/design-taste.md`: 37 sourced rules, ResPlan priors (16,317 plans) and the score design.
-- `research/adai-sketchup.md`: lessons from a staged, evidence-gated SketchUp agent (ideas only;
-  CPAL licence).
-- `research/2026-10-18-room-tiling.md`: do rooms already tile the building? (the D5 premise).
-- `research/2026-10-18-furniture-and-multistorey.md`: furniture relations in Holodeck, Infinigen,
-  LayoutVLM, IFC, Revit and Sweet Home 3D, plus twelve multi-storey/multi-dwelling rules with clause
-  numbers and a fact-sufficiency table (cards PS3.7, PS2.14–PS2.16).
-- `audits/archcanvas-public-examples.md`, `audits/showcase-and-examples.md`: per-plan defects with
-  coordinates.
-- `audits/2026-10-18-first-contact.md` and `audits/first-contact-plans/*.arch`: six briefs written
-  cold by an AI author, lint-clean, 57 verified defects, twelve classes outside the taxonomy.
-- `audits/2026-10-24-first-contact-rerun.md`: the same, re-measured after row 3 (D7).
-- `audits/2026-10-25-first-contact-rerun-row5.md`: the same, re-measured after row 5 (D10, D14).
-- `audits/2026-10-26-first-contact-rerun-d15.md` and `audits/first-contact-plans/2026-10-26-rerun-arm{A,B}/*.arch`:
-  the same, re-measured after row 5 as D15's two arms (A: pre-#250 role, B: current role); 52 and 54
-  verified defects, 0 and 0 `score --taste` calls; D20.
-- `audits/2026-10-26-walls-first-control-arm.md` and `audits/first-contact-plans/2026-10-26-walls-first/*.arch`:
-  PS1.3, the walls-first control arm of the same run (arm C); 54 verified defects against 52 for arm A; D21.
-- `research/2026-10-24-ps5-taste-design.md`: the PS5 taste layer design (row 5).
-- `research/2026-10-26-ps43-keep-design.md`: the PS4.3 `keep` design and ADR 0033's reasons (row 6).
-- `research/2026-10-26-ps229-as-built.md`, `-ps245-`, `-ps250-`, `-ps43a-`, `-ps44-`, `-ps75-as-built.md`:
-  the 2026-10-26 as-built records (PS2.22/2.29, PS2.45, PS2.50, PS4.3a, PS4.4, PS7.5).
-- `research/2026-10-26-readme-history.md`: measurements and closure narrative moved out of this README
-  on 2026-10-26, verbatim.
-- `research/2026-10-24-ps0-ps2-as-built.md`, `research/2026-10-24-ps3-as-built.md`,
-  `research/2026-10-25-ps5-as-built.md`: landed cards' as-built notes, verbatim (the last also
-  holds row 5's PR rulings, §7 rows 1–5 as they stood, and D5/D6 detail).
+  role-text pointer and the re-measure checklist (PR #257, 053ba3f8).
+- First-contact runs (`audits/`; the plans in `audits/first-contact-plans/`):
+  `2026-10-18-first-contact.md` (57 defects, twelve classes outside the taxonomy),
+  `2026-10-24-first-contact-rerun.md` (after row 3, D7), `2026-10-25-first-contact-rerun-row5.md`
+  (after row 5, D10, D14), `2026-10-26-first-contact-rerun-d15.md` (D15's arms A and B, 52 / 54, D20),
+  `2026-10-26-walls-first-control-arm.md` (PS1.3, arm C, 54, D21),
+  `2026-10-26-first-contact-rerun-row6.md` (row 6, 61, D26). Per-plan defects with coordinates:
+  `audits/archcanvas-public-examples.md`, `audits/showcase-and-examples.md`.
+- Research (`research/`): `checks-inventory.md` (every check, the gap list), `prior-art.md`,
+  `associativity.md` (the P1–P7 design), `design-taste.md` (37 sourced rules, ResPlan priors),
+  `adai-sketchup.md` (ideas only; CPAL), `2026-10-18-room-tiling.md` (the D5 premise),
+  `2026-10-18-furniture-and-multistorey.md` (PS3.7, PS2.14–PS2.16), the designs
+  `2026-10-24-ps5-taste-design.md` (row 5) and `2026-10-26-ps43-keep-design.md` (row 6),
+  `2026-10-26-ps14-diagnostic-wording.md` (PS1.4), and `2026-10-26-readme-history.md` (README text
+  moved out, verbatim; its § §9 keeps the longer description of each file).
+- As-built records (`research/`, landed cards' notes verbatim): `2026-10-24-ps0-ps2-`, `2026-10-24-ps3-`,
+  `2026-10-25-ps5-` (also row 5's PR rulings, §7 rows 1–5, D5/D6 detail), `2026-10-25-ps211ab-`,
+  `2026-10-25-ps211cd-`, and of 2026-10-26 `ps211e-`, `ps211e-stairs-`, `ps229-`, `ps245-`, `ps250-`,
+  `ps43a-`, `ps43b-`, `ps44-`, `ps45-`, `ps54-`, `ps71-`, `ps72-`, `ps75-`, `ps76-as-built.md`.
 - `repro/`: minimal reproductions (see its README).

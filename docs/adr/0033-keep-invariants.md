@@ -162,6 +162,17 @@ number.
    words and axes mapped by the turn or mirror), comparing residual sets unordered; the component
    route of the D4 oracle does not apply, since keeps are refused inside components. As built (PS4.3a), the law is stated over single-storey plans whose keeps name no axis and whose datums include no half-grid centre: a placed frame carries no positioning axis and no storey, so axis keeps and `stacked` keeps have no image under the instance route (a whole-plan transform would carry them; plan-soundness card PS0.26), and the language's `snap` rounds a half toward +∞ (`Math.round`), so a mirrored half-grid centre snaps one grid away from its image: the fault is in snapping, not in the transformer (PS0.26).
 
+   *Amended 2026-10-27 (plan-soundness D24, ratified by delegation at the owner's request, D18):* the
+   weak law's baseline (K1, `test/keep-byte-identity-baseline.ts`) is no longer only the one taken
+   before code landed. A PR that moves a hashed output for a reason that is not `keep` re-takes the
+   whole table with its generator (`test/keep-weak-law-gen.ts`), never by hand, records why in the
+   table header and lists the moved files in its commit. A PR that touches keep code (`src/keep.ts`,
+   the keep branch of `src/analyze/depends.ts`, `src/impact.ts`'s keep handling) may not re-take K1, so
+   a keep change is still measured against a baseline taken without it. The three re-takes before this
+   amendment comply: `4f5f456e` (PR #280, 17 files moved), `ade61803` (PR #283, 72 moved, 4 added) and
+   `8a9533de` (PR #283, 5 moved); neither PR touched keep code. Reversed if a re-take lands in a PR that
+   touches keep code.
+
 ## Consequences
 
 - An author, a brief or a reviewer can write down what must stay, and an edit that breaks it is
