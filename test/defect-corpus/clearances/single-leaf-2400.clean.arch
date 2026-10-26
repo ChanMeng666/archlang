@@ -1,13 +1,13 @@
 # class: clearances
 # twin-of: single-leaf-2400
-# origin: audits/showcase-and-examples.md MR2 with a 1000 mm leaf
+# origin: audits/showcase-and-examples.md MR2 with the 2400 mm doorway hung as a pair of leaves (`door double`)
 # expect: none
-# fact: d_main is one hinged leaf 1000 mm wide
-plan "One 1000 mm leaf" {
+# fact: d_main is a double door 2400 mm wide: two hinged leaves of 1200 mm, one on each jamb
+plan "A 2400 mm pair of leaves" {
   units mm
   grid 50
   wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
   room id=r_hall at (0,0) size 8000x6000 label "Entrance Hall" uses entry
-  door id=d_main at (4000,6000) width 1000 wall shell swing into r_hall
+  door id=d_main double at (4000,6000) width 2400 wall shell swing into r_hall
   window at (4000,0) width 2000 wall shell
 }

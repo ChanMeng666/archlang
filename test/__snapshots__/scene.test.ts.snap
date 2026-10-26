@@ -1118,19 +1118,19 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "prim": {
         "pts": [
           {
-            "x": 1200,
+            "x": 1950,
             "y": 250,
           },
           {
-            "x": 1800,
+            "x": 2550,
             "y": 250,
           },
           {
-            "x": 1800,
+            "x": 2550,
             "y": 850,
           },
           {
-            "x": 1200,
+            "x": 1950,
             "y": 850,
           },
         ],
@@ -1146,11 +1146,11 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
       "prim": {
         "a": {
-          "x": 1200,
+          "x": 1950,
           "y": 277,
         },
         "b": {
-          "x": 1800,
+          "x": 2550,
           "y": 277,
         },
         "t": "line",
@@ -1165,11 +1165,11 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
       "prim": {
         "a": {
-          "x": 1200,
+          "x": 1950,
           "y": 814,
         },
         "b": {
-          "x": 1800,
+          "x": 2550,
           "y": 814,
         },
         "t": "line",
@@ -1186,19 +1186,19 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       "prim": {
         "pts": [
           {
-            "x": 1950,
+            "x": 1200,
             "y": 250,
           },
           {
-            "x": 2550,
+            "x": 1800,
             "y": 250,
           },
           {
-            "x": 2550,
+            "x": 1800,
             "y": 850,
           },
           {
-            "x": 1950,
+            "x": 1200,
             "y": 850,
           },
         ],
@@ -1220,86 +1220,86 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
               {
                 "t": "line",
                 "to": {
-                  "x": 2499,
+                  "x": 1749,
                   "y": 286,
                 },
               },
               {
                 "center": {
-                  "x": 2499,
+                  "x": 1749,
                   "y": 301,
                 },
                 "r": 15,
                 "sweep": 1,
                 "t": "arc",
                 "to": {
-                  "x": 2514,
+                  "x": 1764,
                   "y": 301,
                 },
               },
               {
                 "t": "line",
                 "to": {
-                  "x": 2514,
+                  "x": 1764,
                   "y": 679,
                 },
               },
               {
                 "center": {
-                  "x": 2499,
+                  "x": 1749,
                   "y": 679,
                 },
                 "r": 15,
                 "sweep": 1,
                 "t": "arc",
                 "to": {
-                  "x": 2499,
+                  "x": 1749,
                   "y": 694,
                 },
               },
               {
                 "t": "line",
                 "to": {
-                  "x": 2001,
+                  "x": 1251,
                   "y": 694,
                 },
               },
               {
                 "center": {
-                  "x": 2001,
+                  "x": 1251,
                   "y": 679,
                 },
                 "r": 15,
                 "sweep": 1,
                 "t": "arc",
                 "to": {
-                  "x": 1986,
+                  "x": 1236,
                   "y": 679,
                 },
               },
               {
                 "t": "line",
                 "to": {
-                  "x": 1986,
+                  "x": 1236,
                   "y": 301,
                 },
               },
               {
                 "center": {
-                  "x": 2001,
+                  "x": 1251,
                   "y": 301,
                 },
                 "r": 15,
                 "sweep": 1,
                 "t": "arc",
                 "to": {
-                  "x": 2001,
+                  "x": 1251,
                   "y": 286,
                 },
               },
             ],
             "start": {
-              "x": 2001,
+              "x": 1251,
               "y": 286,
             },
           },
@@ -1317,7 +1317,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
       "prim": {
         "center": {
-          "x": 2124.12,
+          "x": 1374.12,
           "y": 394.12,
         },
         "r": 76.704,
@@ -1334,7 +1334,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
       "prim": {
         "center": {
-          "x": 2124.12,
+          "x": 1374.12,
           "y": 394.12,
         },
         "r": 42.1872,
@@ -1351,7 +1351,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
       "prim": {
         "center": {
-          "x": 2375.88,
+          "x": 1625.88,
           "y": 394.12,
         },
         "r": 76.704,
@@ -1368,7 +1368,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
       "prim": {
         "center": {
-          "x": 2375.88,
+          "x": 1625.88,
           "y": 394.12,
         },
         "r": 42.1872,
@@ -1385,7 +1385,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
       "prim": {
         "center": {
-          "x": 2124.12,
+          "x": 1374.12,
           "y": 585.88,
         },
         "r": 55.61039999999999,
@@ -1402,7 +1402,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
       "prim": {
         "center": {
-          "x": 2124.12,
+          "x": 1374.12,
           "y": 585.88,
         },
         "r": 30.58572,
@@ -1419,7 +1419,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
       "prim": {
         "center": {
-          "x": 2375.88,
+          "x": 1625.88,
           "y": 585.88,
         },
         "r": 55.61039999999999,
@@ -1436,7 +1436,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
       "prim": {
         "center": {
-          "x": 2375.88,
+          "x": 1625.88,
           "y": 585.88,
         },
         "r": 30.58572,
@@ -1453,7 +1453,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
       "prim": {
         "center": {
-          "x": 2070,
+          "x": 1320,
           "y": 787,
         },
         "r": 18,
@@ -1470,7 +1470,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
       "prim": {
         "center": {
-          "x": 2190,
+          "x": 1440,
           "y": 787,
         },
         "r": 18,
@@ -1487,7 +1487,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
       "prim": {
         "center": {
-          "x": 2310,
+          "x": 1560,
           "y": 787,
         },
         "r": 18,
@@ -1504,7 +1504,7 @@ exports[`Scene IR > lowers studio.arch to a golden set of positioned primitives 
       },
       "prim": {
         "center": {
-          "x": 2430,
+          "x": 1680,
           "y": 787,
         },
         "r": 18,

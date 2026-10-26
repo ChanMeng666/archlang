@@ -100,7 +100,7 @@ plan "Townhouse" {
     # the quarter-turn come from the wall; the footprints come from the catalogue.
     furniture kitchen_sink against wall shell segment 3 offset 1200 in r_kitchen
     furniture stove        against wall shell segment 3 offset 2100 in r_kitchen
-    furniture fridge       against wall shell segment 3 offset 2900 in r_kitchen
+    furniture fridge       against wall shell segment 3 offset 3200 in r_kitchen
     furniture counter      against wall shell segment 3 offset 500 in r_kitchen
     furniture table in r_kitchen centered size 1400x900 label "Table"
 

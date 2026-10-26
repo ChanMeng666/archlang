@@ -395,7 +395,10 @@ describe("W_FIXTURE_BACK_TO_ROOM", () => {
     });
 
     it("reports, never guesses, when no single wall is the back", () => {
-      const r = repair(southWall(`furniture counter at (3300,3300) size 600x600 rotate 0`));
+      // The south-west corner, away from the door: in the south-east corner (3300,3300) the
+      // counter stands in the door's approach, which since PS2.54 is measured from the wall's
+      // face, and repair's push to clear it leaves one wall behind it, which it then turns to.
+      const r = repair(southWall(`furniture counter at (100,3300) size 600x600 rotate 0`));
       expect(r.changes.filter((c) => c.kind === "rotated")).toEqual([]);
       expect(r.unresolved.some((u) => u.reason.includes("faces the room"))).toBe(true);
     });

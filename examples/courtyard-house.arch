@@ -170,9 +170,9 @@ plan "Courtyard House" {
 
   # The kitchen run rides the shell's north segment; `offset` is the distance of each
   # piece's CENTRE along it from (0,0), and the footprints come from the catalogue.
-  furniture kitchen_sink against wall shell segment 0 offset 13100 in r_kitchen
-  furniture stove        against wall shell segment 0 offset 13800 in r_kitchen
-  furniture counter      against wall shell segment 0 offset 14400 in r_kitchen
+  furniture kitchen_sink against wall shell segment 0 offset 14400 in r_kitchen
+  furniture stove        against wall shell segment 0 offset 13100 in r_kitchen
+  furniture counter      against wall shell segment 0 offset 13700 in r_kitchen
   furniture fridge       against wall shell segment 0 offset 15500 in r_kitchen
 
   furniture bathtub in r_bath anchor top-right    flush size 1700x700

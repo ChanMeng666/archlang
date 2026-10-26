@@ -1,7 +1,7 @@
 # class: clearances
 # origin: audits/archcanvas-public-examples.md FH3 (family-house desk 50 mm in front of o_entry, blocking 400 of its 1200 mm)
 # expect: W_DOORWAY_BLOCKED
-# status: todo
+# status: done
 # fact: o_study spans y 1400-2600 on w_mid (study face x=4950); the desk spans x 4100-4900, y 2200-3800: 50 mm
 #   off the face and across 400 mm of the opening
 plan "Desk in front of an opening" {

@@ -167,8 +167,11 @@ describe("validate · next tiers through the CLI", () => {
     const plain = JSON.parse(runValidate([f, "--json"]).stdout).next;
     const out = JSON.parse(runValidate([f, "--json", "--profile", "accessibility-advisory"]).stdout);
     expect(out.next).toMatchObject({ tier: "validity", code: plain.code });
-    expect(out.next.message).toMatch(/900 mm/);
-    expect(plain.message).not.toMatch(/900 mm/);
+    // The bench in the cased opening is `W_DOORWAY_BLOCKED`'s first since PS2.11e (that rule runs
+    // before the path rule): its approach is 450 mm under the profile and 300 mm by default.
+    expect(plain.code).toBe("W_DOORWAY_BLOCKED");
+    expect(out.next.message).toMatch(/450 mm/);
+    expect(plain.message).not.toMatch(/450 mm/);
     const shown = out.diagnostics.find((d: { code: string; span: number[] }) => d.code === out.next.code);
     expect(out.next.message).toBe(shown.message);
     expect(out.next.span).toEqual(shown.span);

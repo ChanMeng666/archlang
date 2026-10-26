@@ -152,8 +152,8 @@ function doorFacing(d: RDoor, roomRects: ReadonlyMap<string, RoomBox>, turns: 0 
 /** How near |x| and |y| of a unit outward normal may be for the wall to read as diagonal. */
 const DIAGONAL_TOL = 1e-6;
 
-/** A door with a hinged leaf: the default kind, or `hinged` written out. */
-const hinged = (d: RDoor): boolean => d.doorKind === undefined || d.doorKind === "hinged";
+/** A door with a hinged leaf: the default kind, `hinged` written out, or a `double` door's pair. */
+const hinged = (d: RDoor): boolean => d.doorKind === undefined || d.doorKind === "hinged" || d.doorKind === "double";
 
 /** Uses that make a room an entrance space: a hall, an entry or circulation. */
 const ENTRY_USES: ReadonlySet<UseKind> = new Set<UseKind>(["entry", "hall", "circulation"]);

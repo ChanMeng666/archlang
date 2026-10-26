@@ -2,7 +2,7 @@
 # twin-of: servery-no-sink
 # origin: audits/2026-10-18-first-contact.md C8 with a kitchen_sink and a stove on the servery's north wall
 # expect: none
-# fact: the servery holds a kitchen_sink (x 4800-5600) and a stove (x 5900-6500) beside the counter and fridge
+# fact: the servery holds a kitchen_sink (x 4800-5600) and a stove (x 6100-6700, clear of the window) beside the counter and fridge
 plan "Servery written as a kitchen with no sink or hob" {
   units mm
   grid 50
@@ -17,6 +17,6 @@ plan "Servery written as a kitchen with no sink or hob" {
   furniture table at (1200,1200) size 1600x900
   furniture counter against wall shell segment 1 offset 1500 in r_serv
   furniture kitchen_sink against wall shell segment 0 offset 5200 in r_serv
-  furniture stove against wall shell segment 0 offset 6200 in r_serv
+  furniture stove against wall shell segment 0 offset 6400 in r_serv
   furniture fridge against wall shell segment 1 offset 3200 in r_serv
 }

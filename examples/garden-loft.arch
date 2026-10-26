@@ -35,9 +35,9 @@ plan "Garden Loft" {
   window on w_south at 5000 width 600
 
   furniture fridge       against wall w_west offset 400  in r_live
-  furniture stove        against wall w_west offset 1100 in r_live
-  furniture kitchen_sink against wall w_west offset 1900 in r_live
-  furniture counter      against wall w_west offset 2700 in r_live
+  furniture stove        against wall w_west offset 1900 in r_live
+  furniture kitchen_sink against wall w_west offset 2700 in r_live
+  furniture counter      against wall w_west offset 1100 in r_live
   furniture table  in r_live centered size 1300x900 label "Table"
   furniture sofa   in r_live anchor bottom-left flush inset 300 size 1900x850 label "Sofa"
   furniture bed    in r_bed  anchor bottom-right flush inset 200 size 1500x2000 label "Bed"

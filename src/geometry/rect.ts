@@ -406,16 +406,21 @@ export function wallIntrusion(fr: BBox, s: { a: Point; b: Point; thickness: numb
 }
 
 /**
- * The clear-landing rectangle straddling a door opening on its (orthogonal) host
- * wall — the straight walk-through approach, `depth` mm on each side. Null when the
- * door has no host or the host is angled. Shared by the W_DOORWAY_BLOCKED lint rule
- * and the repair corrector, so what repair clears is exactly what lint flags.
+ * The clear-landing rectangle straddling a door or cased opening on its (orthogonal) host
+ * wall — the straight walk-through approach, `depth` mm on each side, measured from the
+ * wall's FACE on that side (plan-soundness PS2.54): jamb to jamb along the wall, and across it
+ * from `depth` past one face to `depth` past the other, the wall's own body between. A person
+ * standing in a doorway stands past the face, so the face is the datum, as it is for
+ * `W_LEAF_ACROSS_DOORWAY`'s approach; a host with no `thickness` reads as a line. Null when the
+ * opening has no host or the host is angled. Shared by the `W_DOORWAY_BLOCKED` lint rule, the
+ * placement check behind every quoted position, `finish`'s furnish stage and the repair
+ * corrector, so what repair clears and furnish keeps clear is exactly what lint flags.
  */
 export function doorLandingRect(
   d: {
     at: { x: number; y: number };
     width: number;
-    host?: { a: { x: number; y: number }; b: { x: number; y: number } } | null;
+    host?: { a: { x: number; y: number }; b: { x: number; y: number }; thickness?: number } | null;
   },
   depth: number,
 ): BBox | null {
@@ -425,7 +430,8 @@ export function doorLandingRect(
   const vert = seg.a.x === seg.b.x;
   if (horiz === vert) return null;
   const halfW = d.width / 2;
+  const reach = depth + (seg.thickness ?? 0) / 2;
   return horiz
-    ? { x: d.at.x - halfW, y: d.at.y - depth, w: d.width, h: depth * 2 }
-    : { x: d.at.x - depth, y: d.at.y - halfW, w: depth * 2, h: d.width };
+    ? { x: d.at.x - halfW, y: d.at.y - reach, w: d.width, h: reach * 2 }
+    : { x: d.at.x - reach, y: d.at.y - halfW, w: reach * 2, h: d.width };
 }

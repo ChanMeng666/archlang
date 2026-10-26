@@ -37,7 +37,7 @@ import {
 } from "../analyze.js";
 import type { FurnitureAnchor } from "../ast.js";
 import { defaultFootprint, frontClearanceMm, requiresWall } from "../fixtures-catalog.js";
-import { doorSwing, sectorIntersectsRect } from "../geometry.js";
+import { doorLeaves, sectorIntersectsRect } from "../geometry.js";
 import { pointInPolygon } from "../geometry/polygon.js";
 import { type BBox, doorLandingRect, rectsOverlap, wallIntrusionDepth } from "../geometry/rect.js";
 import type { RFurniture, RRoom } from "../ir.js";
@@ -60,7 +60,8 @@ const EDGE_ANCHORS: Readonly<Record<RectEdge, readonly FurnitureAnchor[]>> = {
  * Is a piece of `category` with footprint `fr` and quarter-turn `rotate` clear of everything
  * the placement lint rules measure — the terms `W_FURNITURE_WALL_COLLISION`,
  * `W_FURNITURE_OVERLAP`, `W_SWING_OBSTRUCTED`, `W_DOORWAY_BLOCKED`, `W_FURN_CLEARANCE` (both
- * ways), `W_WC_SIDE_CLEARANCE` (both ways) and `W_FURNITURE_OVER_WINDOW` test? `self` is the piece being moved, left out of its own overlap test. Room
+ * ways), `W_WC_SIDE_CLEARANCE` (both ways), `W_FURNITURE_OVER_WINDOW`, `W_HOB_UNDER_WINDOW` and
+ * `W_HOB_FRIDGE_GAP` (both ways) test? `self` is the piece being moved, left out of its own overlap test. Room
  * containment and wall backing are the caller's, because only the caller knows which room
  * and which edge it means. Shared by this module's paste and the wall-collision `offset` hint,
  * so neither quotes a position that trades its warning for another.
@@ -76,9 +77,13 @@ export function placementClear(
   const others = ctx.furniture.filter((f) => f !== self);
   if (others.some((f) => rectsOverlap(fr, rectOf(f)))) return false;
   for (const d of ctx.doors) {
-    const s = doorSwing(d);
-    if (s && sectorIntersectsRect(s, fr, ctx.rules.swingClearanceMm)) return false;
+    if (doorLeaves(d).some((s) => sectorIntersectsRect(s, fr, ctx.rules.swingClearanceMm))) return false;
     const landing = doorLandingRect(d, ctx.rules.doorwayLandingMm);
+    if (landing && rectsOverlap(landing, fr)) return false;
+  }
+  // A cased opening's approach, which `W_DOORWAY_BLOCKED` reads as a door's (PS2.11e).
+  for (const o of ctx.openings) {
+    const landing = doorLandingRect(o, ctx.rules.doorwayLandingMm);
     if (landing && rectsOverlap(landing, fr)) return false;
   }
   // Its own use-space must be free of free-standing furniture, and a free-standing piece must
@@ -94,7 +99,8 @@ export function placementClear(
       if (c > 0 && rectsOverlap(frontClearanceRect(f, c), fr)) return false;
     }
   }
-  // The clearance family (PS2.11a/b): a WC's sides, a piece beside a WC, a tall unit over a window.
+  // The clearance family (PS2.11a/b/e, PS2.46): a WC's sides, a piece beside a WC, a tall unit or a
+  // hob over a window, a hob with a tall unit beside it.
   return clearancesClear(ctx, fr, category, rotate, self);
 }
 

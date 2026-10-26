@@ -88,7 +88,7 @@ plan "Tiny House" {
   door id=d_ward bifold on w_ward at 1000 width 1600 swing out
 
   # ---- windows --------------------------------------------------------------
-  window id=n_galley at (700,0)     width 900  wall shell   # over the sink
+  window id=n_galley at (500,0)     width 600  wall shell   # over the sink
   window id=n_bed    at (3700,0)    width 1200 wall shell   # over the bed
   window id=w_gable  at (0,1400)    width 900  wall shell
   window id=s_bench  at (4300,2800) width 1200 wall shell
@@ -102,7 +102,7 @@ plan "Tiny House" {
   # 400 mm module, so the gable window keeps its schedule tag clear.
   furniture kitchen_sink against wall shell segment 0 offset 500  in r_main
   furniture stove        against wall shell segment 0 offset 1200 in r_main
-  furniture fridge       against wall shell segment 0 offset 1800 in r_main
+  furniture fridge       against wall shell segment 0 offset 2100 in r_main
   furniture counter      against wall shell segment 3 offset 1900 size 400x600 in r_main
 
   # ---- wet room -------------------------------------------------------------

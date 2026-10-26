@@ -60,15 +60,16 @@ export function distPointToRect(p: Point, r: BBox): number {
 
 /**
  * Clear depth left on ONE side of a door opening: how far the blocker's near edge
- * stands off the opening's line, along the across-wall axis. `line` is the door
- * centre's coordinate on that axis and `[lo, hi]` the blocker's extent on it. A
- * blocker straddling the opening leaves nothing (0); nothing beyond the required
- * landing counts (capped at `depth`), so the number is always the one the rule
- * measures against.
+ * stands off the wall's FACE on that side, along the across-wall axis (plan-soundness PS2.54:
+ * the datum `doorLandingRect` measures from). `line` is the door centre's coordinate on that
+ * axis, `half` half the host wall's thickness, and `[lo, hi]` the blocker's extent on it. A
+ * blocker reaching the face or into the wall leaves nothing (0); nothing beyond the required
+ * landing counts (capped at `depth`), so the number is always the one the rule measures
+ * against.
  */
-export function approachGapMm(line: number, lo: number, hi: number, depth: number): number {
-  if (hi <= line) return Math.min(line - hi, depth);
-  if (lo >= line) return Math.min(lo - line, depth);
+export function approachGapMm(line: number, half: number, lo: number, hi: number, depth: number): number {
+  if (hi <= line) return Math.min(Math.max(0, line - half - hi), depth);
+  if (lo >= line) return Math.min(Math.max(0, lo - line - half), depth);
   return 0;
 }
 

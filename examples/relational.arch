@@ -41,7 +41,7 @@ plan "Relational 1BR" {
 
   furniture sofa         in living anchor bottom-left flush inset 300 size 1800x800 label "Sofa"
   furniture coffee_table in living anchor left inset 300 size 900x500
-  furniture dining_table in kitchen anchor left inset 300 size 1400x800 label "Table"
+  furniture dining_table in kitchen anchor left inset 350 size 1400x800 label "Table"
 
   # The serviced pieces back onto the east facade, the ring's segment 1 (it runs from
   # (8000,0) down to (8000,7500), so `offset` is the piece's centre y).

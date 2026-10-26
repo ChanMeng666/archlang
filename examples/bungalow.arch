@@ -123,10 +123,10 @@ plan "Bungalow" {
   # and the quarter-turn are derived from the wall; the size comes from the catalogue.
   # The sanitary fixtures are anchored to their room instead, where `flush` measures
   # from the backing wall's inner FACE, so no half-thickness is written down by hand.
-  furniture kitchen_sink against wall shell segment 3 offset 1900 in r_kitchen  # under the window
-  furniture stove        against wall shell segment 3 offset 1100 in r_kitchen
+  furniture kitchen_sink against wall shell segment 3 offset 2000 in r_kitchen  # under the window
+  furniture stove        against wall shell segment 3 offset 2800 in r_kitchen
   furniture fridge       against wall shell segment 3 offset 500  in r_kitchen
-  furniture counter      against wall shell segment 3 offset 2600 in r_kitchen
+  furniture counter      against wall shell segment 3 offset 1100 in r_kitchen
 
   furniture basin  in r_bath anchor left   flush size 450x600
   furniture wc     in r_bath anchor bottom flush size 400x700

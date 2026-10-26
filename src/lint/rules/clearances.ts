@@ -12,9 +12,12 @@ import type { Diagnostic } from "../../diagnostics.js";
 import { isTallUnit } from "../../fixtures-catalog.js";
 import { type ClearWorld, measureStrip, type Obstacle } from "../../furniture-relation.js";
 import type { RFurniture, RRoom } from "../../ir.js";
+import { capFirst } from "../../naming.js";
 import { wallRef } from "../../wall-ref.js";
 import {
   curvedNear,
+  hobSideGap,
+  isCookingSurface,
   isShort,
   isWc,
   measureWcSides,
@@ -200,3 +203,107 @@ export const furnitureOverWindow: LintRule = {
     return out;
   },
 };
+
+/**
+ * A cooking surface (`stove`, `hob`, `cooktop`) standing under a window (plan-soundness PS2.46):
+ * its footprint overlaps, with positive area, a window's span along its straight host within
+ * {@link LintRuleset.fixtureWallTolMm} of the host's centreline, the band `W_FURNITURE_OVER_WINDOW`
+ * reads ({@link windowBands}, {@link windowCover}). Its own code, not that rule's second set: a
+ * hob is a low unit and blocks no light, and the defect is a different one. Source: the NKBA
+ * Kitchen Planning Guidelines with Access Standards, guideline 20 (cooking surface safety): "Do
+ * not locate the cooking surface under an operable window", and window treatments above it
+ * should not use flammable materials (read in the NKBA guidelines PDF [V]): a curtain or blind
+ * over the flames, and the reach across the burners to open the window. ArchLang does not model
+ * whether a window opens, so every window is judged; a window whose sill is at or above a door
+ * head (2100 mm) is out of reach and is not, as for the tall unit; one on a curved host files the
+ * `curved-window-host` skip. Every plan is read, a café's kitchen as a dwelling's: the hazard is
+ * the hob's, whoever cooks on it. One warning per hob and window, in source order; no fix (the
+ * author chooses which to move).
+ */
+export const hobUnderWindow: LintRule = {
+  name: "hob-under-window",
+  family: "furniture",
+  layer: "validity",
+  codes: ["W_HOB_UNDER_WINDOW"],
+  check(ctx: LintContext): Diagnostic[] {
+    const hobs = ctx.furniture.filter((f) => isCookingSurface(f.category));
+    if (hobs.length === 0 || ctx.windows.length === 0) return [];
+    const bands = windowBands(ctx.windows, () => ctx.skip("curved-window-host"));
+    const tol = ctx.rules.fixtureWallTolMm;
+    const out: Diagnostic[] = [];
+    for (const f of hobs) {
+      for (const band of bands) {
+        const cover = windowCover(band, rectOf(f), tol);
+        if (cover === null) continue;
+        const { w } = band;
+        const toStart = cover.hi + w.width / 2;
+        const toEnd = w.width / 2 - cover.lo;
+        const name = f.label ?? f.category;
+        out.push({
+          severity: "warning",
+          code: "W_HOB_UNDER_WINDOW",
+          ...ctx.at(f),
+          message: `${subject(f, name, ctx)} stands under ${mm(cover.covered)} mm of a ${mm(w.width)} mm window: a cooking surface under a window puts its curtain or blind over the flames, and the reach to open it across the burners.`,
+          hints: [
+            `${capFirst(pieceRef(f, ctx))} stands under ${mm(cover.covered)} mm of window "${w.id}" on ${wallRef(ctx.ir.walls, w.host!)}: slide it ${mm(Math.min(toStart, toEnd))} mm along the wall past the window's ${toStart <= toEnd ? "start" : "end"} (its end nearer the wall's ${toStart <= toEnd ? "first" : "last"} point) and stand the sink or a worktop under the window, or move the window.`,
+          ],
+        });
+      }
+    }
+    return out;
+  },
+};
+
+/**
+ * A cooking surface with a fridge or other tall unit ({@link isTallUnit}) beside it, nearer than
+ * {@link LintRuleset.hobLandingMm} (plan-soundness PS2.11e, the hob-to-fridge gap). Each side of
+ * the hob (the two edges beside its back, its `rotate`, as `clear sides` reads them, ADR 0029 §4)
+ * is a strip the figure deep over the hob's depth; a tall unit whose footprint overlaps it with
+ * positive area stands that near. Source: the NKBA Kitchen Planning Guidelines with Access
+ * Standards, guideline 17 (cook surface landing area): "a minimum of 12" of landing area on one
+ * side of a cooking surface and 15" on the other side" (read in the NKBA guidelines PDF and the
+ * NKBA consumer checklist [V]); a tall unit inside 12 in leaves that side less than the lesser
+ * landing, whichever side it is on. A wall beside the hob is not judged here (the landing rule
+ * would read it too: card PS2.61). Every plan is read, as for {@link hobUnderWindow}. One warning
+ * per hob, on its nearer short side; no fix (which piece moves, or whether a worktop goes
+ * between, is the author's).
+ */
+export const hobFridgeGap: LintRule = {
+  name: "hob-fridge-gap",
+  family: "furniture",
+  layer: "validity",
+  codes: ["W_HOB_FRIDGE_GAP"],
+  check(ctx: LintContext): Diagnostic[] {
+    const need = ctx.rules.hobLandingMm;
+    if (need === null) return [];
+    const hobs = ctx.furniture.filter((f) => isCookingSurface(f.category));
+    if (hobs.length === 0) return [];
+    const tall = ctx.furniture.filter((f) => isTallUnit(f.category));
+    if (tall.length === 0) return [];
+    const out: Diagnostic[] = [];
+    for (const f of hobs) {
+      const near = hobSideGap(f, tall, need);
+      if (near === null) continue;
+      const by = near.piece;
+      const d = deficitMm(need, near.gap);
+      const byName = by.label ?? by.category;
+      out.push({
+        severity: "warning",
+        code: "W_HOB_FRIDGE_GAP",
+        ...ctx.at(f),
+        message: `${subject(f, f.label ?? f.category, ctx)} stands ${d.available} mm from the ${byName} beside it; a cooking surface needs ${d.required} mm of worktop on each side before a tall unit (${d.short} mm short).`,
+        hints: [
+          `${capFirst(pieceRef(f, ctx))} is ${d.available} mm from ${pieceRef(by, ctx)} (the ruleset's \`hobLandingMm\` is ${d.required} mm): move one of them ${d.short} mm further along the run and put a worktop in the gap, or stand the ${byName} at the far end of the run.`,
+        ],
+      });
+    }
+    return out;
+  },
+};
+
+/** A piece in a hint: its id when the author wrote one, else its name and the room it is in. */
+function pieceRef(f: RFurniture, ctx: LintContext): string {
+  if (f._idAuthored === true) return `"${f.id}"`;
+  const room = roomOf(f, ctx);
+  return `the ${f.label ?? f.category}${room ? ` in "${ctx.labelOf(room)}"` : ""}`;
+}

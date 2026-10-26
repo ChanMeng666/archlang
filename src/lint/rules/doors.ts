@@ -21,6 +21,7 @@ import type { Point } from "../../ast.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { doorHingeFlipFix, fixesFrom, pocketRunFix } from "../../fix-producers.js";
 import {
+  doorLeaves,
   doorSwing,
   sectorIntersectsRect,
   swingsCollide,
@@ -32,8 +33,9 @@ import {
 import { arcOpeningVoid } from "../../geometry/arc-band.js";
 import { type Arc, arcLength, arcTangentAt } from "../../geometry/arc.js";
 import { doorLandingRect, rectsOverlap } from "../../geometry/rect.js";
-import type { RDoor } from "../../ir.js";
+import type { RDoor, RFurniture, ROpening } from "../../ir.js";
 import type { LintContext, LintRule } from "../context.js";
+import { isServiceCounter } from "../clearance-measure.js";
 import { approachGapMm, deficitMm, distPointToRect, mm, shortfall } from "../measure.js";
 
 /**
@@ -58,15 +60,15 @@ export const swingObstructed: LintRule = {
   check(ctx: LintContext): Diagnostic[] {
     const { ir, doors, furniture, rules, at, frameOf } = ctx;
     const out: Diagnostic[] = [];
+    // Every leaf, a `double` door's two in order: one warning per door, on its first obstructed leaf.
     const swings: Array<{ d: RDoor; s: DoorSwing }> = [];
-    for (const d of doors) {
-      const s = doorSwing(d);
-      if (s) swings.push({ d, s });
-    }
+    for (const d of doors) for (const s of doorLeaves(d)) swings.push({ d, s });
     const clr = rules.swingClearanceMm;
     const min = passableDoorWidthMm(rules);
+    const warned = new Set<RDoor>();
     for (let i = 0; i < swings.length; i++) {
       const { d, s } = swings[i]!;
+      if (warned.has(d)) continue;
       /** The measured cause, as prose. */
       let cause: string | null = null;
       /** The other door whose swing is the cause, for the hint: its id is nowhere in the message. */
@@ -81,7 +83,7 @@ export const swingObstructed: LintRule = {
         // the earlier door. (Unchanged: the raise set must stay exactly what it was.)
         for (let j = i + 1; j < swings.length; j++) {
           const o = swings[j]!;
-          if (!swingsCollide(s, o.s, clr)) continue;
+          if (o.d === d || !swingsCollide(s, o.s, clr)) continue;
           const gap = Math.hypot(s.hinge.x - o.s.hinge.x, s.hinge.y - o.s.hinge.y);
           const m = deficitMm(s.radius + o.s.radius + clr, gap);
           otherDoor = o.d;
@@ -90,6 +92,8 @@ export const swingObstructed: LintRule = {
         }
       }
       if (!cause) continue;
+      warned.add(d);
+      const double = d.doorKind === "double";
       /** Is this swing provably clear of every piece and every OTHER door's swing —
        *  including doors earlier in the list, which this rule does not warn about but
        *  which a remedy could newly collide with? The one proof every quoted remedy
@@ -103,9 +107,11 @@ export const swingObstructed: LintRule = {
           sw !== null &&
           !furniture.some((f) => sectorIntersectsRect(sw, rectOf(f), clr)) &&
           swings.every((o) => o.d === d || !collide(sw, o.s, clr));
+      // A `double` door has a leaf on each jamb, so it has no other jamb to hang one on, and its
+      // narrowing is not the single leaf's bisection: both remedies are a hinged door's alone.
       const flipped = d.hinge === "left" ? "right" : "left";
-      const flipClears = clearOf(swingsCollide)(doorSwing({ ...d, hinge: flipped }));
-      const narrowTo = widestClearingWidth(d, ir.grid, clearOf(swingsCollideAsIndependent));
+      const flipClears = !double && clearOf(swingsCollide)(doorSwing({ ...d, hinge: flipped }));
+      const narrowTo = double ? null : widestClearingWidth(d, ir.grid, clearOf(swingsCollideAsIndependent));
       // The swing as WRITTEN: `door.transform` flips `swing` under a reflecting frame, so a
       // mirrored instance's plan-space swing is the opposite of its source clause.
       const g = frameOf(d);
@@ -116,7 +122,9 @@ export const swingObstructed: LintRule = {
         ...at(d),
         message: `Door swing is obstructed — ${cause}.`,
         hints: [
-          `Hang the leaf on the other jamb — \`hinge ${flipped}\`${flipClears ? " (this clears it)" : ""}.`,
+          ...(double
+            ? []
+            : [`Hang the leaf on the other jamb — \`hinge ${flipped}\`${flipClears ? " (this clears it)" : ""}.`]),
           `Open it to the other side of the wall — \`swing ${writtenSwing === "in" ? "out" : "in"}\`.`,
           `Move the door along its wall (\`on <wall> at <pos>\`), or the obstruction — \`${CLI_NAME} repair\` computes the smallest clearing shift.`,
           // Only a width strictly under the door's own, recomputed and proved clear, is
@@ -202,48 +210,97 @@ export function widestClearingWidth(
   return lo * step;
 }
 
-/** Furniture parked in a door's straight approach (the clear landing on each side of
- *  the opening), so you can't pass through even with the leaf open. Distinct from the
- *  swing arc above — this is the walk-through path, the thing that piles fixtures at a
- *  bathroom door. Built as an AABB straddling the opening on orthogonal host walls. */
+/** What stands in a doorway's approach: the first piece whose footprint overlaps the landing,
+ *  the clear depth it leaves (from the wall's face on its side) and the shortfall; `null` when
+ *  the approach is clear or not measured (the skip is filed then). */
+function blockedApproach(
+  d: RDoor | ROpening,
+  { furniture, rules, skip }: LintContext,
+  counts: (f: RFurniture) => boolean = () => true,
+): { blocker: RFurniture; depth: number; gap: number; short: number } | null {
+  const depth = rules.doorwayLandingMm;
+  const landing = doorLandingRect(d, depth);
+  if (!landing) {
+    // No host (`W_DOOR_OFF_WALL`'s or `W_OPENING_OFF_WALL`'s report), or an angled or curved
+    // host: not measured.
+    if (d.host) skip("unsupported-host-geometry");
+    return null;
+  }
+  const blocker = furniture.find((f) => counts(f) && rectsOverlap(landing, rectOf(f)));
+  if (!blocker) return null;
+  const br = rectOf(blocker);
+  // The host is orthogonal (a landing exists at all only then — see `doorLandingRect`), so the
+  // approach runs across the wall on one axis, measured from the face on the blocker's side.
+  const horiz = d.host!.a.y === d.host!.b.y;
+  const half = d.host!.thickness / 2;
+  const gap = horiz
+    ? approachGapMm(d.at.y, half, br.y, br.y + br.h, depth)
+    : approachGapMm(d.at.x, half, br.x, br.x + br.w, depth);
+  return { blocker, depth, gap, short: shortfall(depth, gap) };
+}
+
+/**
+ * Furniture parked in a doorway's straight approach (the clear landing on each side of the
+ * opening), so you can't pass through even with the leaf open. Distinct from the swing arc above
+ * — this is the walk-through path, the thing that piles fixtures at a bathroom door. Built as an
+ * AABB straddling the opening on orthogonal host walls, its depth measured from the wall's face
+ * on each side (PS2.54, {@link doorLandingRect}).
+ *
+ * A leaf-less (cased) opening is read too (plan-soundness PS2.11e), after every door, with the
+ * same landing: an opening has no leaf, so nothing but the approach can block it, and a sofa
+ * 250 mm in front of a hall's only way into the living room (the first-contact audit's T2)
+ * blocks it as surely as a door. Its message names the opening by the rooms it joins (never an
+ * id); a derived `open between` opening takes its span from the rooms' shared edge, so its hint
+ * does not offer to move it. A counter (`counter`, `worktop`, `bar_counter`) is not a blocker
+ * there: a counter across a cased opening is the servery hatch a café or a kitchen is served
+ * across (`examples/corner-cafe.arch`), the opening's purpose; whether a room is still reached is
+ * `W_PATH_TOO_NARROW`'s question.
+ */
 export const doorwayBlocked: LintRule = {
   name: "doorway-blocked",
   family: "doors",
   layer: "validity",
   codes: ["W_DOORWAY_BLOCKED"],
-  check({ doors, furniture, rules, at, skip }: LintContext): Diagnostic[] {
+  check(ctx: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
-    for (const d of doors) {
-      const depth = rules.doorwayLandingMm;
-      const landing = doorLandingRect(d, depth);
-      if (!landing) {
-        // No host (`W_DOOR_OFF_WALL`'s report), or an angled or curved host: not measured.
-        if (d.host) skip("unsupported-host-geometry");
-        continue;
-      }
-      const blocker = furniture.find((f) => rectsOverlap(landing, rectOf(f)));
-      if (blocker) {
-        const gn = blocker.label ?? blocker.category;
-        const br = rectOf(blocker);
-        // The host is orthogonal (a landing exists at all only then — see
-        // `doorLandingRect`), so the approach runs across the wall on one axis.
-        const horiz = d.host!.a.y === d.host!.b.y;
-        const gap = horiz
-          ? approachGapMm(d.at.y, br.y, br.y + br.h, depth)
-          : approachGapMm(d.at.x, br.x, br.x + br.w, depth);
-        const short = shortfall(depth, gap);
-        out.push({
-          severity: "warning",
-          code: "W_DOORWAY_BLOCKED",
-          ...at(d),
-          message: `Doorway is blocked — the approach needs ${mm(depth)} mm clear on each side but "${gn}" leaves ${mm(gap)} mm (${mm(short)} mm short).`,
-          hints: [
-            `Move "${gn}" ${mm(short)} mm clear of the opening — \`${CLI_NAME} repair\` computes the smallest clearing shift.`,
-            `Or shrink it by ${mm(short)} mm on the axis facing the door, so it stops ${mm(depth)} mm short of the opening.`,
-            `Or move the door along its wall (\`on <wall> at <pos>\`) so its landing misses "${gn}".`,
-          ],
-        });
-      }
+    for (const d of ctx.doors) {
+      const hit = blockedApproach(d, ctx);
+      if (!hit) continue;
+      const { blocker, depth, gap, short } = hit;
+      const gn = blocker.label ?? blocker.category;
+      out.push({
+        severity: "warning",
+        code: "W_DOORWAY_BLOCKED",
+        ...ctx.at(d),
+        message: `Doorway is blocked — the approach needs ${mm(depth)} mm clear on each side but "${gn}" leaves ${mm(gap)} mm (${mm(short)} mm short).`,
+        hints: [
+          `Move "${gn}" ${mm(short)} mm clear of the opening — \`${CLI_NAME} repair\` computes the smallest clearing shift.`,
+          `Or shrink it by ${mm(short)} mm on the axis facing the door, so it stops ${mm(depth)} mm short of the opening.`,
+          `Or move the door along its wall (\`on <wall> at <pos>\`) so its landing misses "${gn}".`,
+        ],
+      });
+    }
+    // Cased openings after every door, so a plan's door diagnostics keep their order.
+    for (const o of ctx.openings) {
+      const hit = blockedApproach(o, ctx, (f) => !isServiceCounter(f.category));
+      if (!hit) continue;
+      const { blocker, depth, gap, short } = hit;
+      const gn = blocker.label ?? blocker.category;
+      const ref = blocker._idAuthored === true ? `"${blocker.id}"` : `"${gn}"`;
+      const name = openingName(ctx, o);
+      out.push({
+        severity: "warning",
+        code: "W_DOORWAY_BLOCKED",
+        ...ctx.at(o),
+        message: `${name[0]!.toUpperCase()}${name.slice(1)} is blocked — the approach needs ${mm(depth)} mm clear on each side but "${gn}" leaves ${mm(gap)} mm (${mm(short)} mm short).`,
+        hints: [
+          `Move ${ref} ${mm(short)} mm clear of the opening — \`${CLI_NAME} repair\` computes the smallest clearing shift.`,
+          `Or shrink it by ${mm(short)} mm on the axis facing the opening, so it stops ${mm(depth)} mm short of the wall's face.`,
+          o._derived
+            ? "The opening is derived by `open between` and spans the rooms' shared edge, so the piece is what moves."
+            : `Or move the opening along its wall (\`on <wall> at <pos>\`) so its landing misses ${ref}.`,
+        ],
+      });
     }
     return out;
   },
@@ -627,12 +684,11 @@ export const leafAcrossDoorway: LintRule = {
   codes: ["W_LEAF_ACROSS_DOORWAY"],
   check(ctx: LintContext): Diagnostic[] {
     const { doors, rules, rooms, roomRects, at } = ctx;
+    // Every leaf, a `double` door's two in order: one warning per pair of doors.
     const swings: Array<{ d: RDoor; s: DoorSwing }> = [];
-    for (const d of doors) {
-      const s = doorSwing(d);
-      if (s) swings.push({ d, s });
-    }
+    for (const d of doors) for (const s of doorLeaves(d)) swings.push({ d, s });
     if (swings.length === 0 || doors.length < 2) return [];
+    const warned = new Set<string>();
     const edgeOf = new Map(ctx.access().edges.map((e) => [e.doorId, e] as const));
     const roomById = new Map(rooms.map((r) => [r.id, r] as const));
     const depth = rules.doorwayLandingMm;
@@ -641,11 +697,10 @@ export const leafAcrossDoorway: LintRule = {
       const ea = edgeOf.get(a.id);
       if (!ea || !orthogonalHost(a)) continue;
       for (const b of doors) {
-        if (b === a) continue;
+        if (b === a || warned.has(`${a.id}|${b.id}`)) continue;
         const eb = edgeOf.get(b.id);
         if (!eb) continue;
-        const sb = doorSwing(b);
-        if (sb && swingsCollide(sa, sb, rules.swingClearanceMm)) continue;
+        if (doorLeaves(b).some((sb) => swingsCollide(sa, sb, rules.swingClearanceMm))) continue;
         const hit = leafOverApproach(sa, b, depth);
         if (!hit) continue;
         const need = Math.min(b.width, rules.minDoorWidthMm);
@@ -665,7 +720,9 @@ export const leafAcrossDoorway: LintRule = {
         };
         // Does the leaf hung on its other jamb (same side of the wall) still stand in this
         // doorway's approach? Recomputed, never assumed.
-        const flipped = doorSwing({ ...a, hinge: a.hinge === "left" ? "right" : "left" });
+        // A `double` door has a leaf on each jamb: there is no other jamb to hang one on.
+        const flipped =
+          a.doorKind === "double" ? null : doorSwing({ ...a, hinge: a.hinge === "left" ? "right" : "left" });
         const flipHit = flipped ? leafOverApproach(flipped, b, depth) : null;
         const flipClears = flipped !== null && (flipHit === null || flipHit.free >= need);
         // A door is quoted by id only when the author wrote one (ADR 0029 §6): an assigned id
@@ -677,6 +734,7 @@ export const leafAcrossDoorway: LintRule = {
         const toBh = to(eb, true) === toAh ? toAh.replace(/^the door/, "the other door") : to(eb, true);
         const refA = a._idAuthored === true ? `door "${a.id}"` : toAh;
         const refB = b._idAuthored === true ? `door "${b.id}"` : toBh;
+        warned.add(`${a.id}|${b.id}`);
         out.push({
           severity: "warning",
           code: "W_LEAF_ACROSS_DOORWAY",
@@ -686,7 +744,9 @@ export const leafAcrossDoorway: LintRule = {
             `and leaves ${mm(hit.free)} mm of its ${mm(b.width)} mm doorway clear (${mm(need)} mm needed), ` +
             "so one door must be shut to use the other.",
           hints: [
-            `Hang ${refA} on its other jamb (flip its \`hinge\`)${flipClears ? ", which parks the leaf clear of this doorway" : ""}, or open it to the other side of its wall (flip its \`swing\`).`,
+            a.doorKind === "double"
+              ? `Open ${refA} to the other side of its wall (flip its \`swing\`).`
+              : `Hang ${refA} on its other jamb (flip its \`hinge\`)${flipClears ? ", which parks the leaf clear of this doorway" : ""}, or open it to the other side of its wall (flip its \`swing\`).`,
             `Or move ${refA} or ${refB} along its wall until the open leaf stands at least ${mm(depth)} mm clear of the doorway's face, or beside it.`,
             `Or make ${refA} a \`sliding\` or \`pocket\` door, which parks no leaf in the room.`,
           ],
@@ -762,3 +822,51 @@ function clipToBox(
   if (ul > uh || vl > vh) return null;
   return [ul, vl, uh, vh];
 }
+
+/**
+ * A swinging leaf wider than {@link LintRuleset.maxHingedLeafMm} (plan-soundness PS2.11e): a
+ * `door` with no kind (or `hinged`) is one leaf its full `width` wide, hung on one jamb; a
+ * `double` door is two, each half the width. A leaf over 1219 mm (48 in) is heavier and wider
+ * than any door is made to swing. Source: the International Building Code (2018 and earlier)
+ * 1010.1.1, "The maximum width of a swinging door leaf shall be 48 inches (1219 mm) nominal",
+ * larger doors being, its commentary says, difficult to handle and not typically fire tested
+ * [S]. A wide doorway is a `double` door, a sliding, folding or pocket door, or a cased opening,
+ * and the hint offers them with the width each needs. A `sliding`, `barn`, `bifold`, `pocket` or
+ * `garage` door has no swinging leaf and is never judged. No fix: which kind the doorway
+ * becomes is a design decision.
+ */
+export const leafTooWide: LintRule = {
+  name: "leaf-too-wide",
+  family: "doors",
+  layer: "validity",
+  codes: ["W_LEAF_TOO_WIDE"],
+  check(ctx: LintContext): Diagnostic[] {
+    const max = ctx.rules.maxHingedLeafMm;
+    if (max === null) return [];
+    const out: Diagnostic[] = [];
+    for (const d of ctx.doors) {
+      const kind = d.doorKind ?? "hinged";
+      if (kind !== "hinged" && kind !== "double") continue;
+      const leaf = kind === "double" ? d.width / 2 : d.width;
+      if (leaf <= max) continue;
+      const name = openingName(ctx, d);
+      const ref = d._idAuthored === true ? `door "${d.id}"` : name;
+      const what =
+        kind === "double"
+          ? `a double door whose leaves are each ${mm(leaf)} mm wide`
+          : `one hinged leaf ${mm(leaf)} mm wide`;
+      out.push({
+        severity: "warning",
+        code: "W_LEAF_TOO_WIDE",
+        ...ctx.at(d),
+        message: `${name[0]!.toUpperCase()}${name.slice(1)} is ${what}; a swinging leaf is at most ${mm(max)} mm (${mm(leaf - max)} mm over), wider than a door is made to hang and swing.`,
+        hints: [
+          kind === "double"
+            ? `Narrow ${ref} to ${mm(2 * max)} mm or less (\`width ${mm(2 * max)}\`), or keep the width and make it a \`sliding\` or \`bifold\` door, or a cased \`opening\` if it needs no door.`
+            : `Make ${ref} a pair of leaves, \`door double … width ${mm(d.width)}\` (each leaf ${mm(d.width / 2)} mm${d.width / 2 > max ? `, still over ${mm(max)}: narrow it to ${mm(2 * max)} mm or less too` : ""}), or narrow it to ${mm(max)} mm or less, or make it a \`sliding\` or \`bifold\` door, or a cased \`opening\` if it needs no door.`,
+        ],
+      });
+    }
+    return out;
+  },
+};

@@ -109,11 +109,15 @@
 <polygon points="30600,6000 30600,4800 30528,4802.16 30528,6000" fill="#ffffff" stroke="#555555" stroke-width="46.8"/>
 <path d="M 30600,4800 A 1200 1200 0 0 0 29400,6000" fill="none" stroke="#555555" stroke-width="26"/>
 <polygon points="29100,22100 30900,22100 30900,21900 29100,21900" fill="none"/>
-<polygon points="29100,22000 29100,23800 29193.6,23797.56 29193.6,22000" fill="#ffffff" stroke="#555555" stroke-width="46.8"/>
-<path d="M 29100,23800 A 1800 1800 0 0 0 30900,22000" fill="none" stroke="#555555" stroke-width="26"/>
+<polygon points="29100,22000 29100,22900 29154,22898.38 29154,22000" fill="#ffffff" stroke="#555555" stroke-width="46.8"/>
+<path d="M 29100,22900 A 900 900 0 0 0 30000,22000" fill="none" stroke="#555555" stroke-width="26"/>
+<polygon points="30900,22000 30900,22900 30846,22898.38 30846,22000" fill="#ffffff" stroke="#555555" stroke-width="46.8"/>
+<path d="M 30900,22900 A 900 900 0 0 1 30000,22000" fill="none" stroke="#555555" stroke-width="26"/>
 <polygon points="31200,39850 28800,39850 28800,40150 31200,40150" fill="none"/>
-<polygon points="31200,40000 31200,37600 31106.4,37601.83 31106.4,40000" fill="#ffffff" stroke="#555555" stroke-width="46.8"/>
-<path d="M 31200,37600 A 2400 2400 0 0 0 28800,40000" fill="none" stroke="#555555" stroke-width="26"/>
+<polygon points="31200,40000 31200,38800 31128,38802.16 31128,40000" fill="#ffffff" stroke="#555555" stroke-width="46.8"/>
+<path d="M 31200,38800 A 1200 1200 0 0 0 30000,40000" fill="none" stroke="#555555" stroke-width="26"/>
+<polygon points="28800,40000 28800,38800 28872,38802.16 28872,40000" fill="#ffffff" stroke="#555555" stroke-width="46.8"/>
+<path d="M 28800,38800 A 1200 1200 0 0 1 30000,40000" fill="none" stroke="#555555" stroke-width="26"/>
 <polygon points="19900,33800 19900,36200 20100,36200 20100,33800" fill="none"/>
 <polygon points="39900,33800 39900,36200 40100,36200 40100,33800" fill="none"/>
 <polygon points="28000,30100 32000,30100 32000,29900 28000,29900" fill="none"/>

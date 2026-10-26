@@ -2,7 +2,7 @@
 # twin-of: kitchen-no-worktop
 # origin: audits/archcanvas-public-examples.md CB2 with a counter added to the run
 # expect: none
-# fact: r_kitchen holds a kitchen_sink, a stove, a fridge and a counter (x 2100-2700)
+# fact: r_kitchen holds a kitchen_sink, a stove, a fridge and a counter (x 1500-2100, between the stove and the fridge)
 plan "Kitchen with a worktop" {
   units mm
   grid 50
@@ -16,6 +16,6 @@ plan "Kitchen with a worktop" {
   window at (4500,0) width 1500 wall shell
   furniture kitchen_sink against wall shell segment 0 offset 500 in r_kitchen
   furniture stove against wall shell segment 0 offset 1200 in r_kitchen
-  furniture fridge against wall shell segment 0 offset 1800 in r_kitchen
-  furniture counter against wall shell segment 0 offset 2400 in r_kitchen
+  furniture fridge against wall shell segment 0 offset 2400 in r_kitchen
+  furniture counter against wall shell segment 0 offset 1800 in r_kitchen
 }

@@ -37,10 +37,10 @@ plan "Laneway House" {
   window on w_garden at 5850 width 1600
   window on w_east   at 1500 width 600
 
-  furniture fridge       against wall w_west offset 400  in r_live
+  furniture fridge       against wall w_west offset 3600 in r_live
   furniture stove        against wall w_west offset 1200 in r_live
   furniture kitchen_sink against wall w_west offset 2000 in r_live
-  furniture counter      against wall w_west offset 2800 in r_live
+  furniture counter      against wall w_west offset 400  in r_live
   # The rug is an UNDERLAY, drawn before the pieces that stand on it so the sofa and
   # table sit visibly on top rather than hiding it — anchored to the room, like
   # everything else here, never a coordinate.

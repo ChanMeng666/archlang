@@ -528,9 +528,9 @@ The **Footprint** column above is what `against wall` uses when you omit `size`,
 common case has no numbers in it at all:
 
 ```arch static
-furniture fridge       against wall w_west offset 400  in r_kitchen
 furniture stove        against wall w_west offset 1200 in r_kitchen
 furniture kitchen_sink against wall w_west offset 2000 in r_kitchen
+furniture fridge       against wall w_west offset 2800 in r_kitchen
 ```
 
 The other placement modes always need an explicit `size` — an `at (x,y)` or `in <room>`

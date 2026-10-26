@@ -12,7 +12,7 @@ import type { RDoor, RRoom } from "../ir.js";
 import type { Value } from "../expr.js";
 import type { DoorSwing, WallSegment } from "../geometry.js";
 import { weightWidth } from "../scene.js";
-import { add, doorSwing, mul, nearestWallNote, normal, segmentDirAt, sub, unit, wallFaceProbes } from "../geometry.js";
+import { add, doorLeaves, mul, nearestWallNote, normal, segmentDirAt, sub, unit, wallFaceProbes } from "../geometry.js";
 import { pointInPolygon, pointOnPolygonEdge } from "../geometry/polygon.js";
 import type { DoorClauseName, DoorKind, DoorSwingDir } from "../grammar/tokens.js";
 import type { DoorSwingBuilding } from "../grammar/tokens.js";
@@ -382,7 +382,8 @@ export const door: ElementDef = {
       const slideKw = ctx.next();
       node.slide = eatEnumValue(ctx, DOOR_ENUMS.slide, "slide");
       node.slideSpan = { start: slideKw.start, end: ctx.peek(-1).end };
-    } else if (doorKind !== undefined) {
+    } else if (doorKind !== undefined && doorKind !== "double") {
+      // A `double` door slides nothing, so it records no insertion point for one.
       node.slideSpan = { start: slideAt, end: slideAt };
     }
     if (ctx.isKeyword("open")) {
@@ -471,7 +472,9 @@ export const door: ElementDef = {
     // with a code rather than draw a straight panel across an arc (§10's explicit
     // stage-1 decision: decide, never let it fall out silently). A HINGED leaf does
     // survive, because its swing is taken from the tangent at the doorway.
-    if (doorKind !== undefined && host?.arc) {
+    // A `double` door's two leaves survive as a hinged leaf does: both are taken from the tangent
+    // at the doorway's centre (`doorLeaves`), so it is not refused.
+    if (doorKind !== undefined && doorKind !== "double" && host?.arc) {
       ctx.diag({
         severity: "error",
         message: `Door "${id}" is a "${named}" door on a curved wall — its panel and track are straight`,
@@ -531,7 +534,8 @@ export const door: ElementDef = {
     // Pre-emit the hinge-flipped statement for `W_SWING_OBSTRUCTED`'s fix: lint sees
     // only the IR, and re-emitting here keeps the authored placement/width expressions
     // (rather than baking in resolved numbers). Internal field — no Scene, no bytes.
-    const flipText = n.span ? emitOpening("door", n, { hinge: hinge === "left" ? "right" : "left" }) : undefined;
+    const flipText =
+      n.span && named !== "double" ? emitOpening("door", n, { hinge: hinge === "left" ? "right" : "left" }) : undefined;
     // The vertical datum. A door's sill is the floor by definition, so only the
     // head is authorable and the `sill: 0` below is the fact, not a default.
     const { head } = resolveOpeningHeights(ctx, `Door "${id}"`, n, { sill: 0, head: DOOR_HEAD }, host, n.span);
@@ -551,14 +555,17 @@ export const door: ElementDef = {
       // Everything below is present ONLY on a non-hinged door, so a plan that names
       // no kind produces exactly the IR (and therefore exactly the bytes, exactly the
       // `describe()` payload and exactly the Plan JSON) as if door kinds did not exist.
-      ...(doorKind !== undefined
-        ? {
-            doorKind,
-            slide: n.slide ?? "left",
-            open,
-            ...(n.slideSpan ? { _slideSpan: n.slideSpan } : {}),
-          }
-        : {}),
+      // A `double` door carries its kind alone: it has two hinged leaves and nothing that slides.
+      ...(doorKind === "double"
+        ? { doorKind }
+        : doorKind !== undefined
+          ? {
+              doorKind,
+              slide: n.slide ?? "left",
+              open,
+              ...(n.slideSpan ? { _slideSpan: n.slideSpan } : {}),
+            }
+          : {}),
     };
   },
 
@@ -574,7 +581,7 @@ export const door: ElementDef = {
    * far jamb, minor-arc orientation) is computed **once**, by `doorSwing` — every backend
    * (SVG, DXF, PDF) serializes the same `arc` primitive rather than re-deriving it.
    */
-  /** At most 5 primitives (the drawing budget, `MAX_DRAW_UNITS`): the opening cover, then a leaf slab and its swing arc, or at most four panel strokes for a sliding, barn, bifold, pocket or garage door. */
+  /** At most 5 primitives (the drawing budget, `MAX_DRAW_UNITS`): the opening cover, then a leaf slab and its swing arc (two of each for a `double` door), or at most four panel strokes for a sliding, barn, bifold, pocket or garage door. */
   drawCost: () => 5,
 
   render(resolved, ctx: RenderCtx): SceneNode[] {
@@ -614,19 +621,19 @@ export const door: ElementDef = {
     // arc, and `doorSwing` returns null for it — so the hinged branch below is the
     // EXISTING code, unmoved and unrewritten, and a plan that names no kind emits the
     // same primitives in the same order it always did.
-    if (dr.doorKind !== undefined) {
+    if (dr.doorKind !== undefined && dr.doorKind !== "double") {
       nodes.push(...renderDoorPanels(dr, { theme, sizes, dir: d, thickness: seg.thickness }));
       return nodes;
     }
-    // Leaf + minor-arc geometry is shared with the swing-clearance lint rule.
-    const swing = doorSwing(dr);
-    if (swing) {
+    // Leaf + minor-arc geometry is shared with the swing-clearance lint rule: one leaf for a
+    // hinged door, two (each half the width, one per jamb) for a `double` one, drawn alike.
+    for (const swing of doorLeaves(dr)) {
       // The open leaf is a SLAB (see `leafSlab`), filled with the page colour so the floor
       // tint does not read through it, and stroked at the leaf pen.
       const leafPen = sizes.thin * 1.3;
       nodes.push({
         layer: "doors",
-        prim: { t: "polygon", pts: leafSlab(swing, leafSlabThickness(dr.width, leafPen)) },
+        prim: { t: "polygon", pts: leafSlab(swing, leafSlabThickness(swing.radius, leafPen)) },
         paint: { fill: theme.opening, stroke: theme.doorLeaf, width: leafPen },
       });
       // The swing is a SOLID fine line. A dash means above the cut plane or hidden (an

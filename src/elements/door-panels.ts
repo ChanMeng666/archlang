@@ -259,9 +259,11 @@ export function renderDoorPanels(dr: RDoor, ctx: PanelCtx): SceneNode[] {
       });
       return nodes;
     }
-    // `hinged` never reaches here (the caller returns early), but the switch stays
-    // exhaustive so a kind added to the table without a rendering fails to compile.
+    // `hinged` and `double` never reach here (the caller draws their leaves and arcs from
+    // `doorLeaves`), but the switch stays exhaustive so a kind added to the table without a
+    // rendering fails to compile.
     case "hinged":
+    case "double":
       return [];
   }
 }

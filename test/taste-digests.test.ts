@@ -111,6 +111,22 @@
  * code from their validity lists and return byte for byte to their values before PS2.11c/d, the
  * bed and wardrobe turns having moved nothing else; both stay capped by their `W_PATH_TOO_NARROW`.
  * No other row moved.
+ *
+ * Re-measured in PS2.11e/PS2.46/PS2.54 (`W_HOB_UNDER_WINDOW`, `W_HOB_FRIDGE_GAP`,
+ * `W_LEAF_TOO_WIDE`, `W_DOORWAY_BLOCKED` read from the wall's face and for cased openings),
+ * measured criterion by criterion against the HEAD source under `8c2d6150`'s `src/`:
+ * `examples/hillside-villa.arch` (R7's kitchen glazing 2.64 → 2.16 m², the second kitchen window
+ * narrowed off the hob) and `examples/tiny-house.arch` (R7's glazing 5.04 → 4.68 m², the galley
+ * window narrowed off the hob) move only in that evidence line; `examples/themed.arch`'s bedroom
+ * door moved off the bed to a corner, so R8 (doors at corners) scores 1 for 0 and the uncapped
+ * score rises 0.6875 → 0.9375. The defect cases now caught gain their validity code:
+ * `clearances/desk-in-opening`, `bench-across-opening`, `bed-blocks-alcove` and
+ * `masked-route-patio-door` (`W_DOORWAY_BLOCKED` on a cased opening), `hob-against-fridge`
+ * (`W_HOB_FRIDGE_GAP`) and `single-leaf-2400` (`W_LEAF_TOO_WIDE`); their twins did not move.
+ * Twelve rows added for the new pairs `clearances/hob-under-window` and `bed-before-door-face`. The
+ * corpus twins edited so as not to carry a code their case is not about (`kitchen-no-worktop`
+ * and its twin, `bath-off-open-plan.clean`, `servery-no-sink.clean`, both
+ * `door-window-overlap-chamfer` files) return their rows unchanged. No other row moved.
  */
 
 import { describe, expect, it } from "vitest";
@@ -134,7 +150,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
   ["5f9e6dabf2962f4c3a90f5b879232b5d05c7af6babbee8766980f59551833cbb", "generic", "examples/garden-house.arch"],
   ["0f60f5a9f68e6b7ea2eaf1128531449141831248dd7c90f9c8b56e4072072fa4", "generic", "examples/garden-loft.arch"],
   ["b47f84f6b6b3d23388dac71a8fe7820a9df4fc6d767b35aaef612ed7b9c04aef", "generic", "examples/hexagon-pavilion.arch"],
-  ["6d27dd9e61fd114a5a5216f9af01a61a64be0fc0025feadaf6da39e0199d4d7f", "generic", "examples/hillside-villa.arch"],
+  ["ab99516e3e83f26b129457175bb6d7834244211b239f31c21cc2fd94c35a13ae", "generic", "examples/hillside-villa.arch"],
   ["791d5c50b474f2c187df63940ccd669a68761d5d6b081dab90f361ddbbb10735", "generic", "examples/imports.arch"],
   ["38d6e8eb4c8aa81addd4190e6d9b80dd525cc62d3d4c4e77c32827f173ae0e03", "generic", "examples/laneway-house.arch"],
   ["c28f1b6c03abceb451d14cdb946f4168ea07b005415d3010ae0e76778864c180", "generic", "examples/library.arch"],
@@ -149,8 +165,8 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
   ["805147a393adc8234322e0638409e74621ac698cc5f3f401ff1d305800be8636", "generic", "examples/sheet-notes.arch"],
   ["97d75cac716e67fbaa99ed74f6e1694c0135238c2a13bafcf06eab147bf6406a", "generic", "examples/studio.arch"],
   ["6d8fc2e54ce83a8228a025fb7be5a258f2cc772880298b2871c1b7fc354199ed", "generic", "examples/terrace-row.arch"],
-  ["8108392464b97e022edbbd5500a40d32cf328e6515bad96eab6cffe08cfc256c", "generic", "examples/themed.arch"],
-  ["da2bd1b8f7b0e9198b1c66e045a5830f943894c707d9b348eda8b4690d09fe6a", "generic", "examples/tiny-house.arch"],
+  ["522f333f656b1fae252436f083d0f31936438ed047ec15c1323a4a3fe5af1923", "generic", "examples/themed.arch"],
+  ["d84c27db233152c8306a5276d7f5e1676ac21af7044f1faa262cef685e9e55ca", "generic", "examples/tiny-house.arch"],
   ["85872c4976afb17d18b189240ccc2891c0506f1a41de23a46a70a423bf1fabc8", "generic", "examples/townhouse.arch"],
   ["74c9749a26ec9f777e9e9b969216e4b24fafd8fc4ed1499a255075e48f0bb53e", "generic", "examples/transit-hall.arch"],
   ["1b5a551caf4aa0fb26334d09c73a5ba5976974b0e0b6004b657a6aaedb60e68d", "generic", "examples/two-bed.arch"],
@@ -346,7 +362,17 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/circulation-privacy/wc-utility-passage.clean.arch",
   ],
   [
-    "63a62ecb49dba7717a7fee5ea16b8128c66d9109e578b4074c182e24cc505e78",
+    "8684c0e4948c601a140aadd05b2e5c3e27aa78579da005748b8c525404b4f48b",
+    "generic",
+    "test/defect-corpus/clearances/bed-before-door-face.arch",
+  ],
+  [
+    "a4fa27a04bbae150cf0a120e77e3de5a09da5b8d0876c7288260525972c58683",
+    "generic",
+    "test/defect-corpus/clearances/bed-before-door-face.clean.arch",
+  ],
+  [
+    "41b946cd9281f537b415c0ed88efa09210e2969ee632eee9f21affdbb9d71acb",
     "generic",
     "test/defect-corpus/clearances/bed-blocks-alcove.arch",
   ],
@@ -356,7 +382,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/bed-blocks-alcove.clean.arch",
   ],
   [
-    "757a2d21172887e8db1653d7f12ce3d6c3dbc9007f9f1b9f45b6f9cc37982545",
+    "c00af45e96ce11a814c2720416750a522bd6ad58a9526f88ac0644a27cc95413",
     "generic",
     "test/defect-corpus/clearances/bench-across-opening.arch",
   ],
@@ -376,7 +402,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/bench-diagonal-pinch.clean.arch",
   ],
   [
-    "dbab753369b0a2d556049ddc45f7f0a5963cfa3bd0924ed2afe90e5b9ed6a582",
+    "84cb238dca8d1940420af362089304e272a0382bb152f82236de1cf6f54aa8ae",
     "generic",
     "test/defect-corpus/clearances/desk-in-opening.arch",
   ],
@@ -416,7 +442,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/fridge-over-window.clean.arch",
   ],
   [
-    "e1ac205ea2f64701a75dc6d1444d033a445643d7a52574a4dfc5805dc92f7998",
+    "566c1b2d79c0678608e2701d03a5598385e850b84d268fdde3eab9ecd7bded01",
     "generic",
     "test/defect-corpus/clearances/hob-against-fridge.arch",
   ],
@@ -424,6 +450,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "e1ac205ea2f64701a75dc6d1444d033a445643d7a52574a4dfc5805dc92f7998",
     "generic",
     "test/defect-corpus/clearances/hob-against-fridge.clean.arch",
+  ],
+  [
+    "006c80bcb81ea2779421fe1258af44dd29da035ce8d64807de66ce6d99d05637",
+    "generic",
+    "test/defect-corpus/clearances/hob-under-window.arch",
+  ],
+  [
+    "66670638f93d644a4af94a5daa2ee452c872c394b3ff08eeb05906c3191700d9",
+    "generic",
+    "test/defect-corpus/clearances/hob-under-window.clean.arch",
   ],
   [
     "f095686866522ba81466c5f4dda267de5d1e69b8252cd63eaaffde13405d4290",
@@ -446,7 +482,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/masked-route-balcony-door.clean.arch",
   ],
   [
-    "9dcf8ae46167da2150ac92f3734d6fcaff3439db35d2c1ca16877d8b4af83641",
+    "0955f1aa7d290610bf9d20eec9beaceb36411825742827a12eb8a821adbc4513",
     "generic",
     "test/defect-corpus/clearances/masked-route-patio-door.arch",
   ],
@@ -466,7 +502,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/seat-facing-away.clean.arch",
   ],
   [
-    "28415399210cb525baee7349f45ea3c6c71934ab65252cf45e3dc0a34819ba3b",
+    "ebe85e926529a4fec859239218f03ca9c892e3bd89a1f950509ae488eff52b54",
     "generic",
     "test/defect-corpus/clearances/single-leaf-2400.arch",
   ],
@@ -1061,7 +1097,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "examples/hexagon-pavilion.arch",
   ],
   [
-    "3cbe726eaca8764b80b039911ec834e4d8fa0688fd6f3a233c46c62c6902273e",
+    "a3ccc9a4bf5c183ef302a8083759914a6992f2ebec7c8045302f5f135b93df65",
     "cn-residential-advisory",
     "examples/hillside-villa.arch",
   ],
@@ -1136,12 +1172,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "examples/terrace-row.arch",
   ],
   [
-    "58beab82ff56c739c3998fabdc22fe35ca5d76ad8022f62c02283a6620ee5f18",
+    "a9096f540b629d98b4de1e35361cdd41a7ae619e8c1cb8e0f1cbfd4294d9e7a7",
     "cn-residential-advisory",
     "examples/themed.arch",
   ],
   [
-    "943a8a162e9141742581e928f7ea0575b16453409c3f9f803bc9f18c9e2ab8a6",
+    "0c686ff534294e4b5609758b99866ab6e71d55edcf3cb4f7bff7f67dbc99a5d1",
     "cn-residential-advisory",
     "examples/tiny-house.arch",
   ],
@@ -1356,7 +1392,17 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/circulation-privacy/wc-utility-passage.clean.arch",
   ],
   [
-    "5715ac790a5b3bace53ed4264acdac19b4467ff36e698d065132edd7c6b5517b",
+    "ae5343582eaf6dcab38ed6ed71a9bc9ee98048246018575cc5908786ed7d5f0e",
+    "cn-residential-advisory",
+    "test/defect-corpus/clearances/bed-before-door-face.arch",
+  ],
+  [
+    "699ed5e7027461810430678b3319d2f871edd2353446ceea76e4a9c7c509fac1",
+    "cn-residential-advisory",
+    "test/defect-corpus/clearances/bed-before-door-face.clean.arch",
+  ],
+  [
+    "a64624f41719e03cb3df29c979de4ff5b00e29eed48362127ef77b7390a9a018",
     "cn-residential-advisory",
     "test/defect-corpus/clearances/bed-blocks-alcove.arch",
   ],
@@ -1366,7 +1412,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/bed-blocks-alcove.clean.arch",
   ],
   [
-    "861d70014299e722cbd1fc929d5acc6e3b3c97c6890743ea81b6cc31e78de375",
+    "6b7d080f5f01742c586a142f52a8a54a9f51f97606da2003880f7dcaaa49959c",
     "cn-residential-advisory",
     "test/defect-corpus/clearances/bench-across-opening.arch",
   ],
@@ -1386,7 +1432,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/bench-diagonal-pinch.clean.arch",
   ],
   [
-    "bb29849f57f9529b9cbc9f99746d1788ef044915a1674dd908df9e80ecc79fe5",
+    "6ba32dd8de9a2c135af1509d51e6ff81fefd0ea18f99a32a1c1604ed7cadc7a8",
     "cn-residential-advisory",
     "test/defect-corpus/clearances/desk-in-opening.arch",
   ],
@@ -1426,7 +1472,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/fridge-over-window.clean.arch",
   ],
   [
-    "bbfc248db2ad06b42f5c3277f850ab3f59c67c679cf0f282d4a1c92216e9bd60",
+    "2593c5dc84c3780bf12c703c7f0408e9306edacc89ceb11a76e4057f8796d39e",
     "cn-residential-advisory",
     "test/defect-corpus/clearances/hob-against-fridge.arch",
   ],
@@ -1434,6 +1480,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "bbfc248db2ad06b42f5c3277f850ab3f59c67c679cf0f282d4a1c92216e9bd60",
     "cn-residential-advisory",
     "test/defect-corpus/clearances/hob-against-fridge.clean.arch",
+  ],
+  [
+    "01884ba0eb82b2215193794b4896cdedd5889b1b48157ad4d1f597dec1d1e63d",
+    "cn-residential-advisory",
+    "test/defect-corpus/clearances/hob-under-window.arch",
+  ],
+  [
+    "427b5db5bb775d80862d7b53f1686c4e59e12a2e03783bfe5f9694559a369f42",
+    "cn-residential-advisory",
+    "test/defect-corpus/clearances/hob-under-window.clean.arch",
   ],
   [
     "b478035fa25fd7696b24816b00bbf1b418cb0947a086eb26c990381720e12af3",
@@ -1456,7 +1512,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/masked-route-balcony-door.clean.arch",
   ],
   [
-    "1a33235dfb6b0800e137fbaeeadf798e323c4f6979dbe3ec2b9938ffe758b9eb",
+    "70c509b709629f3c72b429c0ea1a5ec2bb8a8492bc55761207c7b59015e29da5",
     "cn-residential-advisory",
     "test/defect-corpus/clearances/masked-route-patio-door.arch",
   ],
@@ -1476,7 +1532,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/seat-facing-away.clean.arch",
   ],
   [
-    "71d3b981c23dc89f8c4ed3643e03d30be93d657e9469956bedf9d7c39cc1d431",
+    "b92ac361e4610a635546fbe4c4e1a89d6e27900e9238b6d31b12e087d3d15ccc",
     "cn-residential-advisory",
     "test/defect-corpus/clearances/single-leaf-2400.arch",
   ],
@@ -2071,7 +2127,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "examples/hexagon-pavilion.arch",
   ],
   [
-    "3d73f688ac68d9b806e6aaf23ef269ab06e4c41782386387704d1ee71f0bb0cc",
+    "980a5698049c7a22b08fbdb821b01c05b037f1214f6885f9e70b7932db80da4d",
     "us-residential-advisory",
     "examples/hillside-villa.arch",
   ],
@@ -2146,12 +2202,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "examples/terrace-row.arch",
   ],
   [
-    "c4d03ab90b6f56f8776122c46279884c8b24ab18547d31ed8f99536108456da5",
+    "b82c1412a86ca1acf566471c35f107bf693838a6b58a73b33d94632b6dac40c0",
     "us-residential-advisory",
     "examples/themed.arch",
   ],
   [
-    "37cf69e4600f109cf8f3927587b47a723abe5a1620c64d77f3dd443a7714d282",
+    "673d2eb62e8e331f8b5231e9536cd606d9c6bd5be78c49c97dd4439a2404c0ec",
     "us-residential-advisory",
     "examples/tiny-house.arch",
   ],
@@ -2366,7 +2422,17 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/circulation-privacy/wc-utility-passage.clean.arch",
   ],
   [
-    "678ef1f2d96ef752fe09272fc23bc75f389b0ad2a07c1fc07ba6dcb9da95b884",
+    "19573d67a55743b9e3edcf575176427f303133149da6b46af22a3ca665f11f4d",
+    "us-residential-advisory",
+    "test/defect-corpus/clearances/bed-before-door-face.arch",
+  ],
+  [
+    "e8a9389cc15d6a94ff258b3e72091fbcba68339d57a870e9ca4e2368a862b0ac",
+    "us-residential-advisory",
+    "test/defect-corpus/clearances/bed-before-door-face.clean.arch",
+  ],
+  [
+    "13de0a70fbcadb62e083aab1aebbebd5758ddca24b70ea95147e5c2a2ccbd944",
     "us-residential-advisory",
     "test/defect-corpus/clearances/bed-blocks-alcove.arch",
   ],
@@ -2376,7 +2442,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/bed-blocks-alcove.clean.arch",
   ],
   [
-    "27fd276d32206089bbab0a4b9116fc7312fb33f51602dba0578580885de192f6",
+    "3069a08b5ed4eaffa072176ac696725556e96f3c761b9986130819f8a0b7a011",
     "us-residential-advisory",
     "test/defect-corpus/clearances/bench-across-opening.arch",
   ],
@@ -2396,7 +2462,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/bench-diagonal-pinch.clean.arch",
   ],
   [
-    "2fa3e23f61ddba209ff292a1395ce73cae6321e916ab5a41c059f7c342d7312e",
+    "cfc30374725d91ff9a1f3bb47a1a541fb7b68c196c70a1a877303c1fff3d8486",
     "us-residential-advisory",
     "test/defect-corpus/clearances/desk-in-opening.arch",
   ],
@@ -2436,7 +2502,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/fridge-over-window.clean.arch",
   ],
   [
-    "e1e80bf6d1230900ee68c88a042f0fa2825f1e2ffd7aac3fa2a336e4a1c9bc50",
+    "ae5a89d737dd05a14704596508bd7f2fde6c70a7eea0651ac377d8def1e6cb0b",
     "us-residential-advisory",
     "test/defect-corpus/clearances/hob-against-fridge.arch",
   ],
@@ -2444,6 +2510,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "e1e80bf6d1230900ee68c88a042f0fa2825f1e2ffd7aac3fa2a336e4a1c9bc50",
     "us-residential-advisory",
     "test/defect-corpus/clearances/hob-against-fridge.clean.arch",
+  ],
+  [
+    "3ab9a939e8a80fe9e3c517ed6163a208a4899067cea6c1c97e028be280b25a04",
+    "us-residential-advisory",
+    "test/defect-corpus/clearances/hob-under-window.arch",
+  ],
+  [
+    "e696ad9a1bdc6e8d8ceb0c79f0c7c747520fdccdee2503385c8c4af46a62f630",
+    "us-residential-advisory",
+    "test/defect-corpus/clearances/hob-under-window.clean.arch",
   ],
   [
     "cb9bb7fa18e00dd8cd55dfc4897889156a94af0f66019622938e52a97f334269",
@@ -2466,7 +2542,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/masked-route-balcony-door.clean.arch",
   ],
   [
-    "a13d4e0ff29bd50f67d10255458eabf5081eb8b0b75c92a3ca59cdc03ac5bfdf",
+    "30338b7c89ccf4209c782d11042baf4fd7c71169ad81d99c7fc3baf945478477",
     "us-residential-advisory",
     "test/defect-corpus/clearances/masked-route-patio-door.arch",
   ],
@@ -2486,7 +2562,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/seat-facing-away.clean.arch",
   ],
   [
-    "3e09e7c8005131bfbeaa7d82688faaaec1968048421659060b6951f0dc826781",
+    "694f8c2e4a6e38168ffc2b7d8cd2b14a0eb7832e521ebafb670cd599586da03e",
     "us-residential-advisory",
     "test/defect-corpus/clearances/single-leaf-2400.arch",
   ],
@@ -3029,16 +3105,23 @@ describe("taste digests", () => {
   it(`${UK_INHERITS} declares generic's numbers and reports generic's report but for profile and advisory`, () => {
     expect(TASTE_PROFILES[UK_INHERITS]).toEqual(TASTE_PROFILES.generic);
     expect(LINT_PROFILES[UK_INHERITS]).toBeDefined();
-    const same = (a: { code?: string; level?: number; span?: { start: number; end: number } }, b: typeof a) =>
-      a.code === b.code && a.level === b.level && a.span?.start === b.span?.start && a.span?.end === b.span?.end;
+    const same = (
+      a: {
+        code?: string;
+        level?: number;
+        span?: { start: number; end: number };
+      },
+      b: typeof a,
+    ) => a.code === b.code && a.level === b.level && a.span?.start === b.span?.start && a.span?.end === b.span?.end;
     for (const s of TASTE_SOURCES) {
       const g = taste(s.src, { world: TASTE_WORLD });
       const u = taste(s.src, { world: TASTE_WORLD, profile: UK_INHERITS });
       expect({ ...u, profile: g.profile, advisory: g.advisory }, s.name).toEqual(g);
       const base = lint(s.src, { world: TASTE_WORLD });
-      const extra = lint(s.src, { world: TASTE_WORLD, profile: UK_INHERITS }).filter(
-        (d) => d.severity === "warning" && !base.some((b) => same(b, d)),
-      );
+      const extra = lint(s.src, {
+        world: TASTE_WORLD,
+        profile: UK_INHERITS,
+      }).filter((d) => d.severity === "warning" && !base.some((b) => same(b, d)));
       const counts: Array<{ code: string; warnings: number }> = [];
       for (const d of extra) {
         const row = counts.find((c) => c.code === d.code);

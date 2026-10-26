@@ -103,9 +103,9 @@ plan "Furnished Flat" {
   # --- Kitchen: a fitted run of centres along the north wall -------------------
   furniture counter       against wall w_north offset 5650 size 1200x600 in r_kitchen
   furniture kitchen_sink  against wall w_north offset 6650 in r_kitchen
-  furniture stove         against wall w_north offset 7350 in r_kitchen
+  furniture stove         against wall w_north offset 7950 in r_kitchen
   furniture range_hood    against wall w_north offset 7350 in r_kitchen
-  furniture dishwasher    against wall w_north offset 7950 in r_kitchen
+  furniture dishwasher    against wall w_north offset 7350 in r_kitchen
   furniture fridge        against wall w_east  offset 1000 in r_kitchen
   furniture upper_cabinet against wall w_east  offset 1800 in r_kitchen
   furniture microwave     against wall w_east  offset 2600 in r_kitchen

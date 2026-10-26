@@ -81,6 +81,9 @@ Two classes from `evidence.md` §3 have no cases, because no core lint rule can 
 | `W_FURNITURE_OVER_WINDOW` | PS2.11b |
 | `W_FOOTPRINT_TRANSPOSED` | PS2.11c |
 | `W_LEAF_ACROSS_DOORWAY` | PS2.11d |
+| `W_HOB_FRIDGE_GAP` | PS2.11e |
+| `W_LEAF_TOO_WIDE` | PS2.11e |
+| `W_HOB_UNDER_WINDOW` | PS2.46 |
 
 ## Proposed codes
 
@@ -90,17 +93,15 @@ The card that implements a check may rename its code; rename it here and in the 
 | Code | Check | Card |
 |---|---|---|
 | `W_FLOOR_UNASSIGNED` | A walled face less than 95 % covered by rooms (PS2.4's dual) | PS2.4 |
-| `W_WARDROBE_FRONT_CLEARANCE` | Clear depth in front of a wardrobe under 600 mm | PS2.11 |
-| `W_HOB_FRIDGE_GAP` | A hob closer than 300 mm to a fridge or tall unit along the run | PS2.11 |
-| `W_LEAF_TOO_WIDE` | A single hinged leaf over 1200 mm | PS2.11 |
+| `W_WARDROBE_FRONT_CLEARANCE` | Clear depth in front of a wardrobe under 600 mm (a declared `clear front`, or a profile figure: card PS2.63) | PS2.11 |
 | `W_SWING_OVER_STAIR` | A door swing over a stair footprint or its landing | PS2.11 |
 | `W_STAIR_HEAD_VOID` | A void on a stair's arrival landing | PS2.11 |
 | `W_STAIR_TOO_STEEP` | A flight too short for its storey height (riser over the profile's limit) | PS2.11 |
 | `W_EXIT_SWINGS_INWARD` | A hinged exterior door that is an exit of a non-residential plan, swinging into the floor against the escape direction | PS2.16 |
 
 Two checks extend existing codes instead of adding one: a desk in front of a leaf-less opening expects
-`W_DOORWAY_BLOCKED` (PS2.11), and wall-thickness labels from `dims auto` inside a room expect
-`W_DIM_INSIDE`. Both are `todo`. PS2.12 did not widen `W_DIM_INSIDE`: every `dims auto` number on a
+`W_DOORWAY_BLOCKED` (`done` since PS2.11e read cased openings), and wall-thickness labels from `dims auto`
+inside a room expect `W_DIM_INSIDE` (`todo`). PS2.12 did not widen `W_DIM_INSIDE`: every `dims auto` number on a
 room floor is a thickness, `R` or `φ` call-out the renderer letters there by design, so the warning
 would fire on every `dims auto all` plan and could only be cleared by dropping the openings chains.
 Where the thickness tier writes its number is a drawing decision, card PS2.39; when that card moves
@@ -136,6 +137,16 @@ label, whether the text is a room label or a `dims auto` number.
   Instances outside the eight classes, and those in a class with no check a card
   names (A6, S2 bed sides; A7 hob against a side wall; C6, C7, K8 accessible WC layout), are left
   out for the planner.
+- PS2.11e (`W_HOB_FRIDGE_GAP`, `W_LEAF_TOO_WIDE`, `W_DOORWAY_BLOCKED` on a cased opening) marked
+  `hob-against-fridge`, `single-leaf-2400` and `desk-in-opening` done; `single-leaf-2400`'s twin now hangs
+  the 2400 mm doorway as a `door double` pair rather than narrowing it. Two pairs were added:
+  `hob-under-window` (PS2.46: NC8, RS3, the hob halves of NA2 and RC4) and `bed-before-door-face` (PS2.54:
+  the approach read from the wall's face, the bed `examples/themed.arch` held 250 mm before its bedroom
+  door). `masked-route-patio-door` stays `todo` on its own code: its sofa now raises
+  `W_DOORWAY_BLOCKED` at the hall's opening (T2), but the masked route it is about is
+  `W_PATH_TOO_NARROW`'s. The two wardrobe-front cases stay `todo`: a front is a declaration
+  (`clear front 600`, PS3.7) or a profile figure, never a default, and no standard read so far gives
+  one (card PS2.63).
 - `clearances/sofa-transposed` stays `todo` after PS2.11c: `W_FOOTPRINT_TRANSPOSED` judges a piece
   against its catalogued footprint, and a plain `sofa` has none until PS3.11. The rule's own case is
   `sofa-l-transposed` (RK4, RS4), whose `sofa_l` has one.

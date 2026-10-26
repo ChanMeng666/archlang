@@ -31,10 +31,10 @@ plan "Studio 1BR" {
   window at (7000,1500) width 1200 wall exterior
   window at (7000,5200) width 700  wall exterior
 
-  # Kitchen run along the north wall: sink · counter · stove · fridge (drawn as symbols).
+  # Kitchen run along the north wall: sink · stove · counter · fridge (drawn as symbols).
   furniture kitchen_sink at (300,250)  size 800x600
-  furniture counter      at (1200,250) size 600x600
-  furniture stove        at (1950,250) size 600x600
+  furniture counter      at (1950,250) size 600x600
+  furniture stove        at (1200,250) size 600x600
   furniture fridge       at (2700,250) size 600x650
 
   # Living + bedroom furniture, kept clear of the door swings.

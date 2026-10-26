@@ -329,9 +329,11 @@ describe("W_FURNITURE_WALL_COLLISION — names the wall; `offset` is the CENTRE;
   door on w_south at 6000 width 900
   door on w_part at 2000 width 900
   furniture fridge against wall w_north offset 4100 in r_kit
-  furniture stove against wall w_north offset 5200 in r_kit
+  furniture stove against wall w_north offset 5300 in r_kit
 }
 `;
+  // The stove at 5300 (5200 until PS2.11e): at 5200 the quoted fridge position, 4350, stood 250 mm
+  // from the hob, inside the 300 mm `W_HOB_FRIDGE_GAP` keeps, so the placement check moved on.
   const FRIDGE = "furniture fridge against wall w_north offset 4100 in r_kit";
   /** Fires; if it quotes an `offset`, pasting it clears the warning and adds nothing. */
   function pasteClears(src: string, from: string, p: Profile): string | null {
@@ -845,6 +847,12 @@ describe("the four reworded hints' messages name things as a reader would; ids s
     // label; both doors by the rooms they open onto.
     "W_FOOTPRINT_TRANSPOSED",
     "W_LEAF_ACROSS_DOORWAY",
+    // The clearance remainder (PS2.11e, PS2.46): a hob by its label or category and its room by
+    // label; a door by the rooms it opens onto; a cased opening `W_DOORWAY_BLOCKED` names likewise.
+    "W_HOB_UNDER_WINDOW",
+    "W_HOB_FRIDGE_GAP",
+    "W_LEAF_TOO_WIDE",
+    "W_DOORWAY_BLOCKED",
   ];
   type Storey = {
     rooms?: { id: string; label?: string }[];
@@ -915,6 +923,11 @@ describe("the four reworded hints' messages name things as a reader would; ids s
       // And the clearance rules (PS2.11c, PS2.11d), from their defect-corpus cases.
       expect(seen.get("W_FOOTPRINT_TRANSPOSED") ?? 0).toBeGreaterThan(0);
       expect(seen.get("W_LEAF_ACROSS_DOORWAY") ?? 0).toBeGreaterThan(0);
+      // And the PS2.11e/PS2.46 rules, from their defect-corpus cases.
+      expect(seen.get("W_HOB_UNDER_WINDOW") ?? 0).toBeGreaterThan(0);
+      expect(seen.get("W_HOB_FRIDGE_GAP") ?? 0).toBeGreaterThan(0);
+      expect(seen.get("W_LEAF_TOO_WIDE") ?? 0).toBeGreaterThan(0);
+      expect(seen.get("W_DOORWAY_BLOCKED") ?? 0).toBeGreaterThan(0);
     });
   }
 

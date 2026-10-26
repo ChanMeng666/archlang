@@ -549,45 +549,49 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
   // Re-measured 2026-10-26 (PS2.50): tiny-house's bed comment rewritten, comment only. `finish`
   // echoes the source, so the row moves; its `changes` and `unresolved` are unchanged, and its
   // `source` is the old one with that comment swapped, in both runs.
+  // Re-measured 2026-10-26 (PS2.11e, PS2.46, PS2.54): the twenty examples fixed for a hob under a
+  // window, a hob beside a fridge, a hinged leaf over 1219 mm and a doorway approach read from the
+  // wall's face; why, in `test/byte-identity-baseline.ts`'s header. `finish` echoes the source, so
+  // each row moves with its edit; the partly furnished rooms each names are unchanged (asserted above).
   const FINISH_DIGESTS: ReadonlyMap<string, string> = new Map(
     (
       [
         ["50bfe2d1d4955f0399834c0e436ef5f6308a109552a22a7df3aea13f93cdfdd9", "accessible"], // PS2.9 source edit, see above
-        ["1d05ff3c458719f82911616f38cd72d7899a814c8fd68fb2ce5ffdbb5ea81c25", "aquarium"], // PS2.4 source edit, see above; PS2.10 source edit (byte-identity-baseline.ts)
+        ["dea298a25fab4676bb350c1e4ebff03c3a794e83d72ec1faf105ff396a7e5a69", "aquarium"], // PS2.4 source edit, see above; PS2.10 source edit (byte-identity-baseline.ts); PS2.11e source edit, see above
         ["8894023b744a155aad52d1ca28b7836ad1c9d63d1665e82f6b835c8d8e480f3b", "attached"],
-        ["68042a31d598b906bf022a88135afd0c68c12886f9432f6fd6b2172345b32324", "bungalow"], // PS2.17 source edit (a worktop), see above
-        ["cbf505c9f38de1bce32a5f6256b035a3a5cb35df068f411621db590234da0685", "classroom-block"], // first measurement, added with the example
+        ["c743cd7d85ecc0dde2ae556cdc3354781626ebd4dde40b3fb8b384baeb40d282", "bungalow"], // PS2.17 source edit (a worktop), see above; PS2.11e source edit, see above
+        ["8c1b4ae4f8a47e272a089641ae8f86a1d5c82c105931559eed2b82178bf626d7", "classroom-block"], // first measurement, added with the example; PS2.11e source edit, see above
         ["8f1860697479247a76d029ed309957a97660716904b948956bbe76b6bd46873c", "clinic"],
         ["35c8741f367876f8ad1f7c2111485959f1151cb54da5c015d8bcdc9aea130682", "corner-cafe"], // first measurement with the example; PS2.9 source edit; PS2.17 source edit (a worktop), see above
-        ["61b775c5a2945dd8ed31375df0c6c4c5036a7f86f10ab92097340cf0885f3d5f", "courtyard-house"], // PS2.4 source edit, see above
-        ["073159cfd1baa02b0ae29b83c0dba7f527aa815423a56d4a2aa6ce21889d1871", "furnished-flat"],
-        ["28de43eec459b35b62afdf83bb2762f8a1d2146ee3f310e4c0e8f65f7d006cf6", "gallery-l"], // PS2.10 source edit (byte-identity-baseline.ts)
+        ["381181a1fd014f2258dac87fcf2be78964c4a4b828e85e756ba318268925df3a", "courtyard-house"], // PS2.4 source edit, see above; PS2.11e source edit, see above
+        ["2a694868a2ed0e92ab5c76fc6b0024f15f258f08dd92a497cf5d11189936266b", "furnished-flat"], // PS2.11e source edit, see above
+        ["7d5a5a9f32a19145446bde848b7a40692f4ac1219cef42e8de43761f7b1086fd", "gallery-l"], // PS2.10 source edit (byte-identity-baseline.ts); PS2.11e source edit, see above
         // Re-measured 2026-10-18 (plan-soundness PS2.6): the example's SOURCE changed, one door
         // re-hosted (`d_gar` onto the kitchen, +3 bytes), and `source` is part of this digest. The
         // pre-edit source still gives the previous row; see ./byte-identity-baseline.ts.
         ["3178bf17a35411575182d95261c77e4ee39dc0ca79fc509992038aa93ec84f8c", "garden-house"], // PS2.17 source edit (a worktop), see above
-        ["79d22abedbc14db24d5e603018106a153a137d1e740ec1b947eb198b2fe62064", "garden-loft"], // PS2.17 source edit (a worktop), see above
+        ["2e7ccbfcc9e7f2b3a7fae8d5bd7b28c964f6ffba39f523986ea0d8820a19ae4f", "garden-loft"], // PS2.17 source edit (a worktop), see above; PS2.11e source edit, see above
         ["57d4237846d3b666c6806da6ee2bf4cadeb68a2e1d39723c6a024e5b415d5faf", "hexagon-pavilion"],
-        ["b4b37a5f48bc2d1474f24627925f987bb56040cdda7f13939d339edb638b9f8f", "hillside-villa"], // PS2.1–PS2.3 and PS2.9 source edits, see above
+        ["d45339871e6f4e453746c2d6a29e46bfed2681aa4035e11c24f9e6d11535e0d3", "hillside-villa"], // PS2.1–PS2.3 and PS2.9 source edits, see above; PS2.11e source edit, see above
         ["d90d58c40a4068427ef23c066acba5d50d8e99a801b6ce890da3ac9dc01a9554", "imports"],
-        ["7bad5569d0a421afd18269f686830ad2f8dc217a5c3d5c3f6ea654d9c965152a", "laneway-house"], // PS2.17 source edit (a worktop), see above
-        ["daec2640f58f23e22543d3d1d0f2875926409bbe817dac218bd2829cd4df4419", "library"],
+        ["3c74875a484473833fa631c3b1ddd70824604261e970c922fc788cff0fb5db5a", "laneway-house"], // PS2.17 source edit (a worktop), see above; PS2.11e source edit, see above
+        ["c2ffdfea8a6ac8bd7d00e64405c21f2c1917532419244b239fe6cf32e9012298", "library"], // PS2.11e source edit, see above
         ["283b12f402d18bae334393b1e7d88823a2c36224a8a347e58012933050f8e11f", "materials"],
-        ["5abaa53ca8813f41fb3e2c1f782e8bb25cf52033ee857f0dd91f4fc970a976f7", "museum"],
+        ["f13dba69c7e1828d96ce3ae08a02d438157c43db45f37c525e800ab5a3bc302d", "museum"], // PS2.11e source edit, see above
         ["e56adeb88cb99daf3c2e93723b84ccd134c948f803bffb84fb519553d0ff63c4", "museum-wing"],
-        ["c40393b1ef20bcdc8fff77b1a584925ec3367fbf0a04b3296f99c32226e8827f", "museum-wings"],
+        ["46e899df616b8ea0b6423a8a2a53a9ff58851258e49cf93dbe0e8f99e0c93aeb", "museum-wings"], // PS2.11e source edit, see above
         ["863a9f2c6d83393b414fc6cf634c7757d3148ba19d9c85ff19b9b935f2d64f99", "one-room"],
         ["aa3345f2ba982f844e25108a7908a6f60a8ed295b574248fb895b54bb5599c27", "parametric"],
-        ["76939e442b625190b128018fce121c3561a112e0a4f1ca2a7f0249183de00382", "relational"], // PS2.9 and PS2.4 source edits; PS2.17 source edit (a worktop), see above; PS3.6 source rewrite, see ./byte-identity-baseline.ts
+        ["4f9a8c0a2654635e916224fef14eb2411040ce4a221d3c0a541fdac1f6add20f", "relational"], // PS2.9 and PS2.4 source edits; PS2.17 source edit (a worktop), see above; PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e source edit, see above
         ["d58bfbf0a25a5b70b7bdfdd1a8ef7b0fb8912f88ebb5cf631da3efe8268015e4", "sheet-notes"], // first measurement, added with the example
-        ["324269a53206201f470d727c6b29f3b7cce19f58f3d99822f474be1901503675", "practice-office"], // first measurement with the example; PS2.9 source edit, see above
-        ["147ce7e23f6f2a403d2d269cc0e68b678cab850e0d3a641287ef50bced7c76d3", "studio"],
+        ["974ca050f4bd8dc669d9df4fc7cf575f407bc7a516287f28cd09506fd87cddc6", "practice-office"], // first measurement with the example; PS2.9 source edit, see above; PS2.11e source edit, see above
+        ["b3986a9c08a74c5109cb7f480d354f8bda82086920f649d1e583e05bdd3a95d9", "studio"], // PS2.11e source edit, see above
         ["e6ebea8b9816dc6c0dba817b2138bb4dcda276e1f0fa4ae17f75bcc4b162fb63", "terrace-row"], // PS2.1–PS2.3 and PS2.9 source edits; PS2.17 source edit (a worktop), see above
-        ["4607ea41ae2417d9972689aa59285c843bed4f7140ba44184c9f7fdefc492ef2", "themed"],
-        ["33d460c38c9da0523f58d045edf744ea834fc8f3b16cc1963b65cd1580ccbdfc", "tiny-house"], // PS2.17 source edit (a worktop); PS2.50 comment edit, see above
-        ["c251b2227e4f794ebdd5db387fd2034682b4cd909a7d8d8340ce56518800c05b", "townhouse"], // PS2.17 source edit (a worktop), see above
-        ["1bc121651874bac4a7618a3b174d5f7ea38680948dcfd84a59ecb47612c33df6", "transit-hall"],
-        ["4d761741af311d3ccec753451755c414cecbab46342481d3bcfd150def4fea7e", "two-bed"], // PS2.17 source edit (a worktop), see above; PS3.6 source rewrite, see ./byte-identity-baseline.ts
+        ["6fdf91b56c9aa551e71ec9f6fa4a3c3c464bce2c8821a3a8fda0a91b7f4e40b7", "themed"], // PS2.11e source edit, see above
+        ["d613b4c455e66370f7e802c3c88d2556552202234bd645bed3f036104f9644f9", "tiny-house"], // PS2.17 source edit (a worktop); PS2.50 comment edit, see above; PS2.11e source edit, see above
+        ["f65d780ba8d63321f1a00dfac34b070e2cf6f6ec912c14eda5a4396549966362", "townhouse"], // PS2.17 source edit (a worktop), see above; PS2.11e source edit, see above
+        ["d5f4adda998c4cfe008fc69ee82cd0232d39e748f83c078fda1332ec1afbedf4", "transit-hall"], // PS2.11e source edit, see above
+        ["16b598f449b4051c4113c1ad9ec92cc0b603cffa0772d51c9d78e6e59490a1e7", "two-bed"], // PS2.17 source edit (a worktop), see above; PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e source edit, see above
         ["582be7470bc327469f912a06896ef2657a308072486fb8b5f21314a4f7a3a6b0", "two-storey"], // PS2.1–PS2.3 and PS2.9 source edits; PS2.17 source edit (a worktop), see above
       ] as const
     ).map(([digest, example]) => [example, digest]),
@@ -1191,7 +1195,9 @@ suite("furnish law — a wet room's pieces are placed together (PS2.45)", () => 
       // the pan on the end wall, its centreline 450 mm off the side face (and 550 off the other)
       "furniture wc against wall w segment 2 offset 650 side left in r",
       // the basin on the side wall, between the door's approach and the floor before the pan
-      "furniture basin against wall w segment 1 offset 750 side left in r",
+      // (750 before PS2.54: the approach is now kept 300 mm past the 200 mm wall's FACE, not
+      // its centreline, so the basin stands 100 mm further from the door)
+      "furniture basin against wall w segment 1 offset 850 side left in r",
     ]);
     expect(lint(r.source).map((d) => d.code)).toEqual([]);
     expect(gatedIn(r.source, "accessibility-advisory")).toEqual([]);
@@ -1254,9 +1260,13 @@ suite("furnish law — a wet room's pieces are placed together (PS2.45)", () => 
     // Measured 2026-10-26 (PS2.45). On main before this card: bath 152, wc 260, and every one of
     // those rooms furnished here with the same statements (the script's `--against`). The script's
     // `--ensuite` class is left out: it reads as a bath and repeats the bath class exactly.
+    // Re-measured 2026-10-26 (PS2.54): bath 213 → 212, wc 275 → 271. A door's approach is now
+    // kept `doorwayLandingMm` past its wall's FACE, 100 mm deeper on these 200 mm walls, so five
+    // rooms that fitted their set only inside that 100 mm are left empty and reported, as the
+    // stage reports any room it cannot furnish clean; none raises a gated code.
     const results = sweep();
     expect(results.length).toBe(612);
-    expect(countsByClass(results)).toEqual({ bath: 213, wc: 275, ensuite: 0 });
+    expect(countsByClass(results)).toEqual({ bath: 212, wc: 271, ensuite: 0 });
     expect(results.filter((r) => r.violations.length > 0).map((r) => r.key)).toEqual([]);
   }, 300000);
 });

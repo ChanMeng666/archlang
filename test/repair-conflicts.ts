@@ -24,11 +24,12 @@
  * `W_FIXTURE_BACK_TO_ROOM`. repair clears those too, but they are a piece's relation to
  * its own room or wall, not a collision with anything else; see the backlog entry.
  */
+import { isServiceCounter } from "../src/lint/clearance-measure.js";
 import { resolvePlan } from "../src/analyze.js";
 import { cutPlaneLayer } from "../src/fixtures-catalog.js";
-import { doorSwing, sectorIntersectsRect, segmentsOfWall } from "../src/geometry.js";
+import { doorLeaves, sectorIntersectsRect, segmentsOfWall } from "../src/geometry.js";
 import { doorLandingRect, rectsOverlap, wallIntrusionDepth } from "../src/geometry/rect.js";
-import type { RDoor, RFurniture, ResolvedPlan } from "../src/ir.js";
+import type { RDoor, RFurniture, ROpening, ResolvedPlan } from "../src/ir.js";
 import { DEFAULT_RULESET } from "../src/lint.js";
 
 const rectOf = (f: RFurniture) => ({ x: f.at.x, y: f.at.y, w: f.size.w, h: f.size.h });
@@ -50,12 +51,15 @@ function storeyConflicts(ir: ResolvedPlan, level: number | undefined, out: Set<s
     }
   for (const f of furniture)
     if (segs.some((s) => wallIntrusionDepth(rectOf(f), s, openings) > 30)) out.add(`wall|${L}|${f.id}`);
-  for (const d of doors) {
+  // A cased opening keeps the same landing a door does (`W_DOORWAY_BLOCKED`, PS2.11e); it has no swing.
+  const cased = ir.elements.filter((e): e is ROpening => e.kind === "opening");
+  for (const d of [...doors, ...cased]) {
     const landing = doorLandingRect(d, DEFAULT_RULESET.doorwayLandingMm);
-    const swing = doorSwing(d);
+    const leaves = d.kind === "door" ? doorLeaves(d) : [];
     for (const f of furniture) {
-      if (landing && rectsOverlap(landing, rectOf(f))) out.add(`doorway|${L}|${d.id}|${f.id}`);
-      if (swing && sectorIntersectsRect(swing, rectOf(f), DEFAULT_RULESET.swingClearanceMm))
+      if (landing && !(d.kind === "opening" && isServiceCounter(f.category)) && rectsOverlap(landing, rectOf(f)))
+        out.add(`doorway|${L}|${d.id}|${f.id}`);
+      if (leaves.some((swing) => sectorIntersectsRect(swing, rectOf(f), DEFAULT_RULESET.swingClearanceMm)))
         out.add(`swing|${L}|${d.id}|${f.id}`);
     }
   }

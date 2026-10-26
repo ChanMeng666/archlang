@@ -52,8 +52,10 @@
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
 <polygon points="9480.14,10904.63 8327.81,11864.91 8519.86,12095.37 9672.19,11135.09" fill="none"/>
-<polygon points="9576.17,11019.86 8615.89,9867.53 8576.91,9901.17 9536.62,11052.82" fill="#faf7f2" stroke="#6b5d49" stroke-width="25.74"/>
-<path d="M 8615.89,9867.53 A 1500 1500 0 0 0 8423.83,11980.14" fill="none" stroke="#6b5d49" stroke-width="14.3"/>
+<polygon points="9576.17,11019.86 9096.03,10443.7 9062.32,10473.54 9541.6,11048.67" fill="#faf7f2" stroke="#6b5d49" stroke-width="25.74"/>
+<path d="M 9096.03,10443.7 A 750 750 0 0 0 9000,11500" fill="none" stroke="#6b5d49" stroke-width="14.3"/>
+<polygon points="8423.83,11980.14 7943.7,11403.97 7979.13,11376.2 8458.4,11951.33" fill="#faf7f2" stroke="#6b5d49" stroke-width="25.74"/>
+<path d="M 7943.7,11403.97 A 750 750 0 0 1 9000,11500" fill="none" stroke="#6b5d49" stroke-width="14.3"/>
 <polygon points="5900,10400 5900,11600 6100,11600 6100,10400" fill="none"/>
 <polygon points="6000,10400 4800,10400 4801.1,10451.48 6000,10451.48" fill="#faf7f2" stroke="#6b5d49" stroke-width="25.74"/>
 <path d="M 4800,10400 A 1200 1200 0 0 0 6000,11600" fill="none" stroke="#6b5d49" stroke-width="14.3"/>

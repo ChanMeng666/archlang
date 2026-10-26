@@ -1,0 +1,22 @@
+# class: clearances
+# twin-of: hob-under-window
+# origin: audits/2026-10-24-first-contact-rerun.md NC8 with the sink under the window and the hob beside it
+# expect: none
+# fact: the sink spans x 1600-2400 under the window (x 1400-2600) and the stove x 2700-3300, 100 mm past its end;
+#   the fridge (x 400-1000) stands clear of both the window and the hob
+plan "Sink under the window" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  wall id=w_mid partition thickness 100 { (4000,0) (4000,4000) }
+  room id=r_kitchen at (0,0) size 4000x4000 label "Kitchen" uses kitchen
+  room id=r_living at (4000,0) size 2000x4000 label "Living Room" uses living
+  door id=d_entry at (2000,4000) width 900 wall shell
+  door id=d_mid at (4000,2000) width 800 wall w_mid
+  window at (2000,0) width 1200 wall shell
+  window at (6000,2000) width 1200 wall shell
+  furniture fridge against wall shell segment 0 offset 700 in r_kitchen
+  furniture counter against wall shell segment 0 offset 1300 in r_kitchen
+  furniture kitchen_sink against wall shell segment 0 offset 2000 in r_kitchen
+  furniture stove against wall shell segment 0 offset 3000 in r_kitchen
+}

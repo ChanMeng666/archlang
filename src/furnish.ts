@@ -46,13 +46,20 @@ import {
 } from "./fixture-orientation.js";
 import { defaultFootprint, frontClearanceMm } from "./fixtures-catalog.js";
 import { FURNISH_TABLE, type FurnishItem, familyOf, servedBy } from "./furnish-table.js";
-import { doorSwing, normal, sectorIntersectsRect, segmentsOfWall, sub, unit, type WallSegment } from "./geometry.js";
+import { doorLeaves, normal, sectorIntersectsRect, segmentsOfWall, sub, unit, type WallSegment } from "./geometry.js";
 import { distToPolygonEdge, pointInPolygon, polygonsOverlap, rectRing } from "./geometry/polygon.js";
 import { type BBox, doorLandingRect, rectsOverlap } from "./geometry/rect.js";
 import type { RDoor, RFurniture, ROpening, ResolvedPlan, RRoom, RWall, RWindow } from "./ir.js";
 import { lex } from "./lexer.js";
 import { ADVISORY_CODE_PROFILES, DEFAULT_RULESET, LINT_CODE_LAYERS, LINT_PROFILES } from "./lint.js";
-import { isShort, isWc, measureWcSides, type WcWorldSource, wcWorld } from "./lint/clearance-measure.js";
+import {
+  isCookingSurface,
+  isShort,
+  isWc,
+  measureWcSides,
+  type WcWorldSource,
+  wcWorld,
+} from "./lint/clearance-measure.js";
 import { buildLintContext } from "./lint/context.js";
 import { definingItems, pasteSet, useNoun } from "./lint/defining.js";
 import { fmtSource } from "./num-format.js";
@@ -1009,7 +1016,7 @@ class Site {
           const p: Placed = { ...made, use };
           if (!this.fits(p, placed)) return;
           if (!(windowOn && this.glazed(p))) here.push(p);
-          else if (!detail.tall) late.push(p);
+          else if (!detail.tall && !isCookingSurface(category)) late.push(p);
         };
         if (item.place === "centre") {
           const wide = this.clear.x1 - this.clear.x0 >= this.clear.y1 - this.clear.y0;
@@ -1111,7 +1118,7 @@ class Site {
             const p: Placed = { ...made, use };
             if (!this.fits(p, placed)) continue;
             if (!this.glazed(p)) here.push(p);
-            else if (!DETAIL[category]?.tall) late.push(p);
+            else if (!DETAIL[category]?.tall && !isCookingSurface(category)) late.push(p);
           }
         }
     return [...here, ...late];
@@ -1254,10 +1261,8 @@ class Site {
       const landing = doorLandingRect(d, LANDING_MM);
       if (landing && rectsOverlap(landing, p.rect)) return false;
     }
-    for (const d of this.doors) {
-      const swing = doorSwing(d);
-      if (swing && sectorIntersectsRect(swing, p.rect, SWING_MM)) return false;
-    }
+    for (const d of this.doors)
+      for (const swing of doorLeaves(d)) if (sectorIntersectsRect(swing, p.rect, SWING_MM)) return false;
     return true;
   }
 }

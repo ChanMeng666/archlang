@@ -91,8 +91,8 @@ plan "Practice Office" {
   furniture desk in r_manager anchor top inset 600 size 1600x800 label "Desk"
   furniture reception_desk in r_recep anchor top inset 800 size 2200x800 label "Reception"
   furniture kitchen_sink against wall w_s2 offset 1200 in r_break
-  furniture counter against wall w_s2 offset 2400 in r_break
-  furniture fridge against wall w_s2 offset 3600 in r_break
+  furniture counter against wall w_s2 offset 3600 in r_break
+  furniture fridge against wall w_s2 offset 2400 in r_break
   furniture stove against wall w_s2 offset 4300 in r_break
   furniture table in r_break centered size 1800x900 label "Table"
   furniture wc against wall shell segment 2 offset 7450 in r_wc

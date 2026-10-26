@@ -165,8 +165,8 @@ export interface DoorLike {
  * relative to the direction of travel along the wall, which on an arc is the direction
  * the arc turns (`ccw` by default), not the chord.
  *
- * Returns `null` for every NON-HINGED kind: a bypass, barn, bifold or pocket
- * leaf sweeps no quarter-disc, so there is no hinge, no leaf radius and no arc to
+ * Returns `null` for every NON-HINGED kind: a `double` door's two leaves are
+ * {@link doorLeaves}'s, and a bypass, barn, bifold or pocket leaf sweeps no quarter-disc, so there is no hinge, no leaf radius and no arc to
  * report. Every caller already handles `null` — the renderer draws no leaf,
  * `W_SWING_OBSTRUCTED` stops flagging it (correctly: there is nothing to obstruct) and
  * `repair()` has one fewer obstacle. This is the ONE place the kind reaches the swing
@@ -176,7 +176,13 @@ export function doorSwing(d: DoorLike): DoorSwing | null {
   const seg = d.host;
   if (!seg) return null;
   if (d.doorKind !== undefined && d.doorKind !== "hinged") return null;
-  const dir = segmentDirAt(seg, d.at);
+  return swingAlong(segmentDirAt(seg, d.at), d.at, d.width, d.hinge, d.swing);
+}
+
+/** One leaf's swing in a doorway centred at `at`, `width` wide, its wall running along unit `dir`
+ *  (the tangent at the doorway on a curve): {@link doorSwing}'s geometry, stated once. */
+function swingAlong(dir: Vec, at: Point, width: number, hingeSide: DoorHinge, swingSide: DoorSwingDir): DoorSwing {
+  const d = { at, width, hinge: hingeSide, swing: swingSide };
   const n = normal(dir);
   const hw = d.width / 2;
   const hinge = d.hinge === "left" ? add(d.at, mul(dir, -hw)) : add(d.at, mul(dir, hw));
@@ -191,6 +197,32 @@ export function doorSwing(d: DoorLike): DoorSwing | null {
   // `cross < 0 ? 1 : 0` was inverted, selecting the other centre → a concave arc.
   const sweep: 0 | 1 = cross > 0 ? 1 : 0;
   return { hinge, farJamb, leafEnd, radius: d.width, sweep };
+}
+
+/**
+ * Every leaf a door sweeps, as {@link doorSwing} draws one: a hinged door's one leaf; a `double`
+ * door's two (plan-soundness PS2.11e), each half the width, hung on its own jamb and closing onto
+ * the other at the doorway's centre, both to the `swing` side — exactly the pair
+ * {@link isDoubleDoorPair} reads as one assembly. `[]` for an unhosted door and for every kind
+ * that sweeps no quarter-disc. The drawing and every swing measure (the swing and door–door
+ * lint rules, the clear zones, `repair`, `finish`) read the leaves through this, so a `double`
+ * door is measured leaf by leaf, as drawn.
+ */
+export function doorLeaves(d: DoorLike): DoorSwing[] {
+  if (d.doorKind === "double") {
+    const seg = d.host;
+    if (!seg) return [];
+    // Both leaves along the one direction at the doorway's centre (its tangent on a curve), so
+    // the pair closes on one straight line through the centre, as a hinged leaf does on its chord.
+    const dir = segmentDirAt(seg, d.at);
+    const q = d.width / 4;
+    return [
+      swingAlong(dir, add(d.at, mul(dir, -q)), d.width / 2, "left", d.swing),
+      swingAlong(dir, add(d.at, mul(dir, q)), d.width / 2, "right", d.swing),
+    ];
+  }
+  const s = doorSwing(d);
+  return s ? [s] : [];
 }
 
 /** Bounding box of a sized element, mm. */

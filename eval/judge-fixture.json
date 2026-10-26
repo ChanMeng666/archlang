@@ -304,7 +304,7 @@
     {
       "id": "dims-auto-cottage",
       "valid": true,
-      "lintWarnings": 1,
+      "lintWarnings": 2,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -511,7 +511,7 @@
     {
       "id": "core-and-shell",
       "valid": true,
-      "lintWarnings": 1,
+      "lintWarnings": 2,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -784,7 +784,7 @@
     {
       "id": "three-bed-2bath",
       "valid": true,
-      "lintWarnings": 7,
+      "lintWarnings": 8,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -892,7 +892,7 @@
     {
       "id": "galley-kitchen",
       "valid": true,
-      "lintWarnings": 1,
+      "lintWarnings": 2,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -1197,7 +1197,7 @@
     {
       "id": "compact-studio",
       "valid": true,
-      "lintWarnings": 4,
+      "lintWarnings": 5,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -1744,7 +1744,7 @@
     {
       "id": "sized-kitchen-flat",
       "valid": true,
-      "lintWarnings": 3,
+      "lintWarnings": 4,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -1940,7 +1940,7 @@
     {
       "id": "sized-wet-room",
       "valid": true,
-      "lintWarnings": 3,
+      "lintWarnings": 4,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],

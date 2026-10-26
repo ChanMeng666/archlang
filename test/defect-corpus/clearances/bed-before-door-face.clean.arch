@@ -1,0 +1,18 @@
+# class: clearances
+# twin-of: bed-before-door-face
+# origin: examples/themed.arch as fixed in PS2.11e: the bedroom door moved down the partition, past the bed's foot
+# expect: none
+# fact: the door spans y 2550-3450; the bed's foot is at y 2300, so the approach (x 3050-3350 in the bedroom) is clear
+plan "Bed clear of the door" {
+  units mm
+  grid 50
+  wall exterior thickness 250 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  wall partition thickness 100 { (3000,0) (3000,4000) }
+  room id=a at (0,0) size 3000x4000 label "Living"
+  room id=b at (3000,0) size 3000x4000 label "Bedroom"
+  furniture bed at (3300,300) size 1500x2000 label "Bed"
+  door id=d_front at (1500,4000) width 900 wall exterior
+  door at (3000,3000) width 900 wall partition hinge left swing in
+  window at (1500,0) width 1600 wall exterior
+  window at (4500,0) width 1200 wall exterior
+}

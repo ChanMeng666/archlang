@@ -33,6 +33,16 @@ import { WALL_COLLISION_SLACK_MM } from "./measure.js";
 /** Is this category a WC (the `wc` family: `wc`, `toilet`)? */
 export const isWc = (category: string): boolean => canonicalFixture(category) === "wc";
 
+/** A counter, worktop or bar counter: standing across a cased opening, it is a servery hatch, which
+ *  `W_DOORWAY_BLOCKED` does not read as blocking the opening (PS2.11e). */
+export const isServiceCounter = (category: string): boolean => {
+  const family = canonicalFixture(category);
+  return family === "counter" || family === "bar_counter";
+};
+
+/** Is this category a cooking surface (the `stove` family: `stove`, `hob`, `cooktop`)? */
+export const isCookingSurface = (category: string): boolean => canonicalFixture(category) === "stove";
+
 /** What {@link wcWorld} reads off a lint context. */
 export type WcWorldSource = Pick<LintContext, "wallSegs" | "doors" | "openings">;
 
@@ -347,9 +357,42 @@ export function clearancesClear(
       }
     }
   }
-  if (isTallUnit(category)) {
-    const tol = ctx.rules.fixtureWallTolMm;
+  const tol = ctx.rules.fixtureWallTolMm;
+  if (isTallUnit(category) || isCookingSurface(category)) {
     if (windowBands(ctx.windows).some((b) => windowCover(b, fr, tol) !== null)) return false;
   }
+  // The hob-to-fridge gap (PS2.11e), both ways: a hob with a tall unit inside its landing, and a
+  // tall unit standing inside a hob's.
+  const landing = ctx.rules.hobLandingMm;
+  if (landing !== null) {
+    const probe = { at: { x: fr.x, y: fr.y }, size: { w: fr.w, h: fr.h }, rotate, category } as RFurniture;
+    if (isCookingSurface(category)) {
+      const tall = others.filter((f) => isTallUnit(f.category));
+      if (tall.length > 0 && hobSideGap(probe, tall, landing) !== null) return false;
+    }
+    if (isTallUnit(category)) {
+      for (const hob of others)
+        if (isCookingSurface(hob.category) && hobSideGap(hob, [probe], landing) !== null) return false;
+    }
+  }
   return true;
+}
+
+/** The nearest tall unit standing inside either side strip of cooking surface `f`, `need` deep,
+ *  and its gap from the hob's side face, or `null` when neither side has one (`W_HOB_FRIDGE_GAP`
+ *  and the placement check above read this one measure). */
+export function hobSideGap(
+  f: RFurniture,
+  tall: readonly RFurniture[],
+  need: number,
+): { piece: RFurniture; gap: number } | null {
+  const world: ClearWorld = { furniture: tall.filter((t) => t !== f), segments: [], swings: [] };
+  const rect = { x: f.at.x, y: f.at.y, w: f.size.w, h: f.size.h };
+  let best: { piece: RFurniture; gap: number } | null = null;
+  for (const s of clearStrips(rect, f.rotate, "sides", need)) {
+    const m = measureStrip(s, world, f);
+    if (m.by?.kind !== "furniture" || m.measured >= need) continue;
+    if (best === null || m.measured < best.gap) best = { piece: m.by.piece, gap: m.measured };
+  }
+  return best;
 }

@@ -441,6 +441,11 @@ export const RULE_CLASS: Readonly<Record<string, RuleClass>> = {
   "footprint-transposed": "invariant",
   // PS2.11d: a leaf segment against an axis-aligned zone; the group permutes both alike.
   "leaf-across-doorway": "invariant",
+  // PS2.11e/PS2.46: a hob's footprint against a window's span and its side strips in its own
+  // frame (as the PS2.11a/b rules), and a door's own width: none reads a compass or the sheet.
+  "hob-under-window": "invariant",
+  "hob-fridge-gap": "invariant",
+  "leaf-too-wide": "invariant",
 };
 
 /**

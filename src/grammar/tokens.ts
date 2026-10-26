@@ -232,6 +232,7 @@ export const KEYWORDS = {
     "barn",
     "bifold",
     "pocket",
+    "double",
     "A4",
     "A3",
     "A2",
@@ -360,9 +361,11 @@ export const DOOR_SWING_BUILDING = ["inward", "outward"] as const;
  *
  * `hinged` is the default and is EXACTLY equivalent to writing nothing: the resolver
  * drops it, so `door hinged …` and `door …` produce byte-identical output. Order is
- * the order both generators render.
+ * the order both generators render; `double` (plan-soundness PS2.11e: two hinged leaves, each
+ * half the width, hung on the two jambs and meeting in the middle) is last, so every kind
+ * before it renders where it always did.
  */
-export const DOOR_KINDS = ["hinged", "sliding", "barn", "bifold", "pocket", "garage"] as const;
+export const DOOR_KINDS = ["hinged", "sliding", "barn", "bifold", "pocket", "garage", "double"] as const;
 
 /** The optional door clauses whose legality depends on the kind. */
 export type DoorClauseName = "hinge" | "swing" | "slide" | "open";
@@ -409,6 +412,10 @@ export const DOOR_KIND_CLAUSES: Readonly<Record<DoorKind, Readonly<Record<DoorCl
   // where it goes, and it says the same thing at every position. Accepting a clause that
   // changed nothing would be silent-error design, which is what this table exists to refuse.
   garage: { hinge: false, swing: false, slide: false, open: false },
+  // Two hinged leaves, one on each jamb: `swing` says which side both sweep, as a hinged
+  // door's does. No `hinge` (each jamb carries a leaf, so there is no side to choose) and no
+  // `slide`/`open` (nothing slides; a leaf is drawn open, as a hinged one is).
+  double: { hinge: false, swing: true, slide: false, open: false },
 };
 
 /** A door clause that takes a closed value set — a key of {@link DOOR_ENUMS}. */
