@@ -127,6 +127,7 @@ export const annotationOverlap: LintRule = {
   name: "annotation-overlap",
   family: "annotation",
   layer: "drafting",
+  stage: "drafting",
   codes: ["W_ANNOTATION_OVERLAP"],
   check(ctx: LintContext): Diagnostic[] {
     const { ir } = ctx;
@@ -332,6 +333,7 @@ export const titleOverflow: LintRule = {
   name: "title-overflow",
   family: "annotation",
   layer: "drafting",
+  stage: "drafting",
   codes: ["W_TITLE_OVERFLOW"],
   check(ctx: LintContext): Diagnostic[] {
     const title = ctx.ir.title;

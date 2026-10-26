@@ -25,6 +25,7 @@ export const stairUnmatched: LintRule = {
   name: "stair-unmatched",
   family: "vertical",
   layer: "validity",
+  stage: "rooms",
   codes: ["W_STAIR_UNMATCHED"],
   check({ verticals, placeAt, ir, building, at, skip }: LintContext): Diagnostic[] {
     if (!building.multiStorey) {
@@ -75,6 +76,7 @@ export const shaftFootprintMismatch: LintRule = {
   name: "shaft-footprint-mismatch",
   family: "vertical",
   layer: "validity",
+  stage: "rooms",
   codes: ["W_SHAFT_FOOTPRINT_MISMATCH"],
   check({ verticals, placeAt, ir, building, at, skip }: LintContext): Diagnostic[] {
     if (!building.multiStorey) {

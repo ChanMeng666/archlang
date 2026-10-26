@@ -107,6 +107,8 @@ export interface Args {
   brief?: string;
   /** `--taste <profile>`: (score) the taste profile to score the plan under (ADR 0032). */
   taste?: string;
+  /** `--stage <stage>`: (validate) report only the findings meaningful up to this authoring stage (PS7.1). */
+  stage?: string;
   /** `--at <byteOffset>`: (complete) source offset to list completions at. */
   at?: number;
   /** `--room <id[,id…]>`: (describe) keep only these rooms and what touches them. */
@@ -191,6 +193,7 @@ export const FLAG_KEYS: Record<string, FlagSpec> = {
   "--intent": { key: "intent", kind: "string" },
   "--brief": { key: "brief", kind: "string" },
   "--taste": { key: "taste", kind: "string" },
+  "--stage": { key: "stage", kind: "string" },
   "--only": { key: "only", kind: "string" },
   "--reissue": { key: "reissue", kind: "boolean" },
   "--from-json": { key: "fromJson", kind: "boolean" },

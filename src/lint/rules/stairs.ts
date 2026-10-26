@@ -345,6 +345,7 @@ export const swingOverStair: LintRule = {
   name: "swing-over-stair",
   family: "stairs",
   layer: "validity",
+  stage: "openings",
   codes: ["W_SWING_OVER_STAIR"],
   check(ctx: LintContext): Diagnostic[] {
     const f = factsFor(ctx);
@@ -526,6 +527,7 @@ export const stairNoLanding: LintRule = {
   name: "stair-no-landing",
   family: "stairs",
   layer: "validity",
+  stage: "walls",
   codes: ["W_STAIR_NO_LANDING"],
   check(ctx: LintContext): Diagnostic[] {
     const f = factsFor(ctx);
@@ -582,6 +584,7 @@ export const stairSideEntry: LintRule = {
   name: "stair-side-entry",
   family: "stairs",
   layer: "validity",
+  stage: "openings",
   codes: ["W_STAIR_SIDE_ENTRY"],
   check(ctx: LintContext): Diagnostic[] {
     const f = factsFor(ctx);
@@ -644,6 +647,7 @@ export const stairHeadVoid: LintRule = {
   name: "stair-head-void",
   family: "stairs",
   layer: "validity",
+  stage: "rooms",
   codes: ["W_STAIR_HEAD_VOID"],
   check(ctx: LintContext): Diagnostic[] {
     if (ctx.voids.length === 0) return [];
@@ -745,6 +749,7 @@ export const stairTooSteep: LintRule = {
   name: "stair-too-steep",
   family: "stairs",
   layer: "validity",
+  stage: "rooms",
   codes: ["W_STAIR_TOO_STEEP"],
   check(ctx: LintContext): Diagnostic[] {
     // Judged on the storey a flight climbs FROM (`dir up`), against that storey's height: the

@@ -90,6 +90,10 @@ void's id. No rule offers a machine fix: every remedy moves a stair or a door, a
   `stair-too-steep` and `swing-at-stair-foot` carry one stair defect each (`swing-over-stair` keeps
   X5's door beside the well, which is the same door).
 
+**Authoring stages** (PS7.1, merged before this PR): `W_SWING_OVER_STAIR` and `W_STAIR_SIDE_ENTRY`
+at `openings` (they need doors), `W_STAIR_NO_LANDING` at `walls`, `W_STAIR_TOO_STEEP`,
+`W_STAIR_HEAD_VOID` and `W_SHAFT_FOOTPRINT_MISMATCH` at `rooms`, the stair element's stage.
+
 ## What `lint()` cannot read
 
 Nothing in these cards needed a fact `lint()` cannot read by law. Two facts it does not have, so two

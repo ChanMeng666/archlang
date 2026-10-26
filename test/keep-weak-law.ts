@@ -28,7 +28,7 @@ import { evaluationSteps, resolveAll } from "../src/ir.js";
 import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import type { World } from "../src/world.js";
-import { withoutSummary } from "./validate-json-run.js";
+import { validateDigestView } from "./validate-json-run.js";
 import { allStoreysDiagnosticsPayload, type CompilerApi } from "./byte-identity-payload.js";
 
 const API: CompilerApi = { compile, describe, lint };
@@ -70,7 +70,7 @@ function worldFor(file: string): World {
     now: () => new Date(0),
   };
 }
-/** Run a CLI command in-process; its exit code and everything it wrote to stdout (`stripSummary`: minus the `summary` key, for `validate`, whose pins predate it). */
+/** Run a CLI command in-process; its exit code and everything it wrote to stdout (`stripSummary`: minus the `summary` and `stage` keys, for `validate`, whose pins predate them). */
 /** Run a CLI command in-process; its exit code and everything it wrote to stdout. */
 function runCli(cmd: (a: ReturnType<typeof parseArgs>) => number, argv: string[], stripSummary = false): string {
   let stdout = "";
@@ -83,7 +83,7 @@ function runCli(cmd: (a: ReturnType<typeof parseArgs>) => number, argv: string[]
   process.stderr.write = (() => true) as typeof process.stderr.write;
   try {
     const exit = cmd(parseArgs(argv));
-    return `${exit}\n${stripSummary ? withoutSummary(stdout) : stdout}`;
+    return `${exit}\n${stripSummary ? validateDigestView(stdout) : stdout}`;
   } finally {
     process.stdout.write = write;
     process.stderr.write = writeErr;

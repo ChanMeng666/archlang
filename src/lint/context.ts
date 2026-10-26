@@ -16,6 +16,7 @@ import type { DwellingReading } from "../analyze/dwelling.js";
 import type { EnclosureBudgetCap, LintFamily, LintSkipReason } from "./coverage.js";
 import { makeNaming, type NameableRoom, type Naming, nameableOf } from "../naming.js";
 import type { LintRuleset } from "./ruleset.js";
+import type { AuthoringStage } from "../stages.js";
 
 /**
  * What one storey's rules need to know about the BUILDING around it. A
@@ -211,6 +212,10 @@ export function judgesAsDwelling(ctx: LintContext): boolean {
 /** The soundness layer a lint rule judges (ADR 0032): the plan itself, or only its annotation. */
 export type LintLayer = "validity" | "drafting";
 
+/** A lint rule's authoring stage (PS7.1): every stage of `AUTHORING_STAGES` but `brief`, which
+ *  holds no lint finding. */
+export type LintStage = Exclude<AuthoringStage, "brief">;
+
 /** One architectural-soundness rule (or an order-preserving composite of several). */
 export interface LintRule {
   /** Stable name for tests/debugging (not user-facing). */
@@ -230,6 +235,15 @@ export interface LintRule {
    * to exactly one rule (`test/lint-layers.test.ts`).
    */
   codes: readonly string[];
+  /**
+   * The authoring stage at which the rule's findings mean something (plan-soundness PS7.1,
+   * `src/stages.ts`): the earliest stage at which the rule can judge, as it is defined (the stage
+   * whose elements it needs, present or absent); a later stage may still add or re-raise its
+   * findings. One stage for every code, or, for a rule whose codes judge different
+   * things, one per code in {@link codes} (exactly those). Required, like {@link layer}, so the
+   * compiler refuses a rule with no stage. `validate --stage` reads it; `lint()` never does.
+   */
+  stage: LintStage | Readonly<Record<string, LintStage>>;
   /**
    * The rule's output can move when furniture is added to a room in a way the per-piece
    * placement checks of a quoted fixture hint do not see (plan-soundness PS2.17): a hint's set
