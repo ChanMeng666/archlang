@@ -294,7 +294,7 @@ owns that name, so the shell runs the wrong program.
 ## The loop (always follow this)
 
 1. **Learn the language first.** Run `archlang spec` and read it — the entire language in one page.
-   (`archlang context` prints *everything*: spec + this workflow + CLI reference + error catalog.)
+   (`archlang context` prints *everything*: spec + this workflow + CLI reference + error catalog; a small model starts with `archlang context --level starter`, one screen.)
    Do this before writing any `.arch`.
 2. **Write the plan** to a `.arch` file (or pipe via stdin with `-`), preferring the **placement
    sugar** below so you never hand-compute a coordinate.
@@ -808,8 +808,8 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
   - example: `archlang spec` — the whole language on one page — read this before authoring
 
 **`archlang context`** — print the full bundled agent context (spec + workflow + CLI + errors)
-  - input: none → output: the full agent context (llms-full.txt), or one --section of it
-  - flags: `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 144 KB of it (spec = the language, 30 KB; workflow = the agent loop, 30 KB; cli = every command, 26 KB; errors = the diagnostic catalog, 56 KB) · `--json` structured result on stdout, messages on stderr
+  - input: none → output: the full agent context (llms-full.txt), one --section of it, or the one-screen --level starter
+  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 144 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 144 KB of it (spec = the language, 30 KB; workflow = the agent loop, 30 KB; cli = every command, 26 KB; errors = the diagnostic catalog, 56 KB) · `--json` structured result on stdout, messages on stderr
   - example: `archlang context` — the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 
 **`archlang new`** (aliases: `init`) — scaffold a starter .arch
