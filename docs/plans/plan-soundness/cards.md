@@ -348,8 +348,8 @@ PS5.1b: PR #247, 9cc29c7e)
   when a stage is clean.
 - Prior art and ADAI agree: decide low-frequency things first; early proportional errors cascade.
 
-**PS7.2 · `arch context --level starter`.** `todo`
-- A one-screen starter for weak models: the same truth as the full context, less of it.
+**PS7.2 · `arch context --level starter`.** `done` (PR pending)
+- As built: `research/2026-10-26-ps72-as-built.md`. One screen (3,673 UTF-16 units, cap 4,000) built from the spec's lead example and the compiler, not retyped.
 
 **PS7.3 · Rule packs as data.** `parked`
 - Profiles and taste rules described as versioned data, each with applicability, check, failure exit,

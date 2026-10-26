@@ -328,6 +328,12 @@ const SECTION_FLAG: ManifestFlag = {
   description: `print only one section of the bundle instead of all ${CONTEXT_BUNDLE_KB.total} KB of it (spec = the language, ${CONTEXT_BUNDLE_KB.spec} KB; workflow = the agent loop, ${CONTEXT_BUNDLE_KB.workflow} KB; cli = every command, ${CONTEXT_BUNDLE_KB.cli} KB; errors = the diagnostic catalog, ${CONTEXT_BUNDLE_KB.errors} KB)`,
 };
 
+const CONTEXT_LEVEL_FLAG: ManifestFlag = {
+  flag: "--level",
+  arg: "<starter|full>",
+  description: `starter = one screen (about 4,000 characters) for a small model: the lead example, the six statements, the loop and the five commonest errors; full = the whole ${CONTEXT_BUNDLE_KB.total} KB bundle (default, unchanged)`,
+};
+
 /**
  * `--view <iso|axon>` — DEPRECATED (removed in 2.0, ADR 0021): render an ILLUSTRATIVE axonometric instead of the plan.
  *
@@ -962,11 +968,15 @@ const COMMANDS: ManifestCommand[] = [
   {
     name: "context",
     summary: "print the full bundled agent context (spec + workflow + CLI + errors)",
-    flags: [SECTION_FLAG, JSON_FLAG],
+    flags: [CONTEXT_LEVEL_FLAG, SECTION_FLAG, JSON_FLAG],
     input: "none",
-    output: "the full agent context (llms-full.txt), or one --section of it",
+    output: "the full agent context (llms-full.txt), one --section of it, or the one-screen --level starter",
     examples: [
       { cmd: "archlang context", note: "the cold-start bundle: spec + workflow + CLI reference + every diagnostic" },
+      {
+        cmd: "archlang context --level starter",
+        note: "one screen for a small model: the lead example, the six statements a plan needs, the loop and the five errors cold authors hit first",
+      },
       {
         cmd: "archlang context --section errors",
         note: `just the diagnostic catalog (${CONTEXT_BUNDLE_KB.errors} KB) — read one section instead of paying for the whole ${CONTEXT_BUNDLE_KB.total} KB bundle`,
