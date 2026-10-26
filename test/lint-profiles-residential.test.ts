@@ -64,7 +64,7 @@ describe("the residential-advisory profiles", () => {
     const text = readFileSync("src/lint/ruleset.ts", "utf8");
     const block = text.slice(text.indexOf(`"${CN}": {`), text.indexOf("export const DEFERRED_PROFILE_NUMBERS"));
     const numbered = block.split("\n").filter((l) => /:\s*\d/.test(l) && !l.trim().startsWith("*"));
-    expect(numbered.length).toBe(30); // cn 11, uk 9, us 10
+    expect(numbered.length).toBe(37); // cn 13, uk 12, us 12 (the stair figures: PS2.11e)
     for (const l of numbered) {
       expect(l, l).toMatch(/\/\/ .*\[(V|S)[\],]/);
       expect(l, l).not.toContain("[M");
@@ -81,6 +81,8 @@ describe("the residential-advisory profiles", () => {
       minDoubleBedroomAreaM2: 9,
       minEntryPassageWidthMm: 1200,
       minPathClearWidthByUseMm: { bedroom: 1000, living: 1000, kitchen: 900, bath: 900, wc: 900, storage: 900 },
+      stairMaxRiseMm: 200,
+      stairMinGoingMm: 220,
     });
     expect(LINT_PROFILES[UK]).toEqual({
       roomAreaMeasure: "net",
@@ -90,12 +92,17 @@ describe("the residential-advisory profiles", () => {
       minDoubleBedroomShortSideMm: 2550,
       minMainDoubleBedroomShortSideMm: 2750,
       wcSideClearanceMm: 400,
+      stairMaxRiseMm: 220,
+      stairMinGoingMm: 220,
+      stairMaxPitchRatio: 0.9004,
     });
     expect(LINT_PROFILES[US]).toEqual({
       roomAreaMeasure: "net",
       minRoomAreaByUseM2: { living: 6.5, dining: 6.5, bedroom: 6.5 },
       minRoomShortSideByUseMm: { living: 2134, dining: 2134, bedroom: 2134, hall: 914, circulation: 914, entry: 914 },
       wcSideClearanceMm: 381,
+      stairMaxRiseMm: 196.85,
+      stairMinGoingMm: 254,
     });
     // R10's side figure is a ruleset field now (PS2.11a); its front figure and R37 (PS2.16) wait
     // for their rules, kept unread.
@@ -356,6 +363,9 @@ describe("us-residential-advisory (IRC R304, R311.6)", () => {
 /**
  * Every warning each profile adds over default `lint()` across the shipped examples, judged one
  * by one in the PS5.2 PR (all true positives: each room is under the sourced figure as measured).
+ * PS2.11e added `two-storey`'s flight under `us-`: its 2900 mm run climbs 2700 mm, which clears the
+ * default's 220/220, GB 50096's 200 mm riser and AD K's 42°, but not the IRC's 7¾ in riser and 10 in
+ * tread (3302 mm; a true positive; the example is judged by default).
  * A move here is a finding: explain it, never re-pin to green.
  */
 const EXAMPLE_ADDITIONS: Record<string, string[]> = {
@@ -383,7 +393,9 @@ const EXAMPLE_ADDITIONS: Record<string, string[]> = {
     'examples/themed.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 10.59 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     'examples/two-bed.arch W_ROOM_TOO_SMALL Room "Bedroom 2" is only 9.52 m² of net floor (under 11.5 m², the floor for a double bedroom).',
   ],
-  [US]: [],
+  [US]: [
+    'examples/two-storey.arch W_STAIR_TOO_STEEP The stair in "Hall" on level 1 is too steep: its 2900 mm run must climb the 2700 mm storey, and at 197 mm (7¾ in) a riser at most that is 14 risers and 13 goings of at least 254 mm, a 3302 mm run (402 mm short).',
+  ],
 };
 
 describe("over the shipped examples", () => {

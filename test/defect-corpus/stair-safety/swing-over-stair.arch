@@ -1,7 +1,7 @@
 # class: stair-safety
 # origin: audits/showcase-and-examples.md X5 (examples/hillside-villa.arch L2: the ensuite door swings over the top tread; reduced to one storey)
 # expect: W_SWING_OVER_STAIR
-# status: todo
+# status: done
 # fact: d_en_corr (x 4550-5250 on w_land, hinged at 4550) swings out over the landing, sweeping y 2600-3300; the
 #   stair's footprint starts at x 4900, y 2700 and its DN (top) end is the west end
 plan "Door swinging over the stair head" {

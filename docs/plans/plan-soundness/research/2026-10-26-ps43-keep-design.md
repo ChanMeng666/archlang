@@ -525,7 +525,7 @@ plan "widen" {
     door on shell at 1000 width 900
     door on p at 2500 width 800
     window on shell at 6000 width 1500
-    stair id=st at (300,3800) size 2400x900 dir up
+    stair id=st at (1000,800) size 2000x900 dir up
     furniture id=bed double_bed against wall shell segment 0 offset 6000 side left in b
     keep align a.right b.left p
     keep min clear b 3800 soft
@@ -537,7 +537,7 @@ plan "widen" {
     room id=b at (4000,0) size 4000x5000 label "Bed 2"
     door on p at 2500 width 800
     window on shell at 6000 width 1500
-    stair id=st at (300,3800) size 2400x900 dir down
+    stair id=st at (1000,800) size 2000x900 dir down
   }
   keep stacked b on levels 1 2 advisory
 }
@@ -546,6 +546,10 @@ plan "widen" {
 Spans (bytes, LF): `keep align …` [585, 612) at line 15 col 5; `keep min clear …` [617, 643) at line
 16 col 5; `keep stacked …` [1059, 1096) at line 27 col 3. `AW = 4500` has the same length, so every
 span is the same on the after side.
+
+(PS2.11e, PR #280: the twin's stair was first drawn at `(300,3800) size 2400x900`, its head 200 mm from
+the west wall, which `W_STAIR_NO_LANDING` reports. It moved to `(1000,800) size 2000x900`, a line of
+the same bytes, so no room, partition, keep residual or span moved, and the rows below stand.)
 
 **The measures by hand.**
 - *Before* (`AW = 4000`): `a.right` = 4000, `b.left` = 4000 (by `right-of a gap 0`), `p` = 4000:

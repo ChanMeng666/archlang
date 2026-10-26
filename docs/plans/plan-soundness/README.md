@@ -418,6 +418,21 @@ cited as precedent (D18).* (PR #269, 2026-10-26; recorded after the fact, PS2.22
 - *Reverse if:* the owner declines. The wording reverts to lint-only and the `taste()` and compile-channel
   rows (PS2.57 covers the remaining compile, `describe()` and CLI texts) are re-filed as cards.
 
+**D24. The keep weak-law baseline is re-taken by its generator, never by hand, whenever a later PR
+legitimately moves a hashed output; the reason is recorded in the table header and the commit.**
+(2026-10-26; coordinator ruling on PR #280, PS2.11e.)
+- Changed: `test/keep-byte-identity-baseline.ts` (K1 of ADR 0033 decision 7) was taken once on the tree
+  before any keep code, and its header forbade a re-take on a tree with keep code. A lint rule, a drawing
+  fix or an example edit moves its SVG, `describe()`, `lint()` or `validate --json` hashes for reasons
+  that have nothing to do with `keep`; such a PR now re-takes the whole table with
+  `test/keep-weak-law-gen.ts` (whose header states the rule), records why in the table header and lists
+  the moved files in the commit message. Rows are never edited by hand.
+- *Why:* a hand-edited row is indistinguishable from a blessed one, and the alternative, freezing the
+  table, would turn every later corpus change red for a law it does not touch. The generator measures
+  with the test's own body, so a re-take cannot drift from what the test checks.
+- *Reverse if:* a re-take ever hides an unexplained movement (a row moving in a re-take whose commit
+  does not name it). The generator then lists per-row reasons, as the other digest tables' headers do.
+
 ## 4. Principles: what "professional rules and taste" means here
 
 **Five layers, treated differently** (Drafting added by D11):
@@ -508,7 +523,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS2 · Validity checks that read existing facts (small, high yield)
 
-64 cards: 23 done, 41 todo. Cards, tables and as-built pointers: `cards.md` § PS2.
+64 cards: 25 done, 39 todo. Cards, tables and as-built pointers: `cards.md` § PS2.
 
 ### PS3 · Relation-first authoring (D1 + D5; needs an ADR)
 

@@ -110,7 +110,7 @@ plan "Garden House" {
     window id=win_living  on shell at 39400 width 1000
     window id=win_kitchen on shell at 32400 width 1200
 
-    stair id=st at (6900,5200) size 900x3200 dir up
+    stair id=st at (7600,5600) size 800x3200 dir up
 
     # ---- Inside ----
     furniture desk      in r_study anchor top-left    flush size 1600x700
@@ -240,7 +240,7 @@ plan "Garden House" {
 
     outdoor id=g_balcony balcony at (9300,13700) size 4200x1800 label "Balcony"
 
-    stair id=st at (6900,5200) size 900x3200 dir down
+    stair id=st at (7600,5600) size 800x3200 dir down
 
     # Every bed goes `against wall`, not `anchor … flush`: `against` derives the quarter
     # turn FROM the wall, so the headboard ends up at the wall. An anchored bed keeps

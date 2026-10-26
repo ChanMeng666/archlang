@@ -5133,40 +5133,38 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <text x="-6850" y="0" font-size="112.5" fill="#0E5484" text-anchor="middle" dominant-baseline="central">D</text>
 </g>
 <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
-<polygon points="705,5000 3495,5000 3495,7400 705,7400" fill="none" stroke="#a8a29a" stroke-width="6.5"/>
-<polygon points="897,5192 3303,5192 3303,7208 897,7208" fill="none" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="600" y1="5075" x2="705" y2="5075" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="3495" y1="5075" x2="3600" y2="5075" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="600" y1="5225" x2="705" y2="5225" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="3495" y1="5225" x2="3600" y2="5225" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="600" y1="5375" x2="705" y2="5375" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="3495" y1="5375" x2="3600" y2="5375" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="600" y1="5525" x2="705" y2="5525" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="3495" y1="5525" x2="3600" y2="5525" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="600" y1="5675" x2="705" y2="5675" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="3495" y1="5675" x2="3600" y2="5675" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="600" y1="5825" x2="705" y2="5825" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="3495" y1="5825" x2="3600" y2="5825" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="600" y1="5975" x2="705" y2="5975" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="3495" y1="5975" x2="3600" y2="5975" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="600" y1="6125" x2="705" y2="6125" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="3495" y1="6125" x2="3600" y2="6125" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="600" y1="6275" x2="705" y2="6275" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="3495" y1="6275" x2="3600" y2="6275" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="600" y1="6425" x2="705" y2="6425" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="3495" y1="6425" x2="3600" y2="6425" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="600" y1="6575" x2="705" y2="6575" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="3495" y1="6575" x2="3600" y2="6575" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="600" y1="6725" x2="705" y2="6725" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="3495" y1="6725" x2="3600" y2="6725" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="600" y1="6875" x2="705" y2="6875" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="3495" y1="6875" x2="3600" y2="6875" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="600" y1="7025" x2="705" y2="7025" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="3495" y1="7025" x2="3600" y2="7025" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="600" y1="7175" x2="705" y2="7175" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="3495" y1="7175" x2="3600" y2="7175" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="600" y1="7325" x2="705" y2="7325" stroke="#a8a29a" stroke-width="6.5"/>
-<line x1="3495" y1="7325" x2="3600" y2="7325" stroke="#a8a29a" stroke-width="6.5"/>
+<polygon points="705,5100 3495,5100 3495,7400 705,7400" fill="none" stroke="#a8a29a" stroke-width="6.5"/>
+<polygon points="889,5284 3311,5284 3311,7216 889,7216" fill="none" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="600" y1="5176.67" x2="705" y2="5176.67" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="3495" y1="5176.67" x2="3600" y2="5176.67" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="600" y1="5330" x2="705" y2="5330" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="3495" y1="5330" x2="3600" y2="5330" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="600" y1="5483.33" x2="705" y2="5483.33" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="3495" y1="5483.33" x2="3600" y2="5483.33" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="600" y1="5636.67" x2="705" y2="5636.67" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="3495" y1="5636.67" x2="3600" y2="5636.67" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="600" y1="5790" x2="705" y2="5790" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="3495" y1="5790" x2="3600" y2="5790" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="600" y1="5943.33" x2="705" y2="5943.33" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="3495" y1="5943.33" x2="3600" y2="5943.33" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="600" y1="6096.67" x2="705" y2="6096.67" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="3495" y1="6096.67" x2="3600" y2="6096.67" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="600" y1="6250" x2="705" y2="6250" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="3495" y1="6250" x2="3600" y2="6250" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="600" y1="6403.33" x2="705" y2="6403.33" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="3495" y1="6403.33" x2="3600" y2="6403.33" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="600" y1="6556.67" x2="705" y2="6556.67" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="3495" y1="6556.67" x2="3600" y2="6556.67" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="600" y1="6710" x2="705" y2="6710" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="3495" y1="6710" x2="3600" y2="6710" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="600" y1="6863.33" x2="705" y2="6863.33" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="3495" y1="6863.33" x2="3600" y2="6863.33" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="600" y1="7016.67" x2="705" y2="7016.67" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="3495" y1="7016.67" x2="3600" y2="7016.67" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="600" y1="7170" x2="705" y2="7170" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="3495" y1="7170" x2="3600" y2="7170" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="600" y1="7323.33" x2="705" y2="7323.33" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="3495" y1="7323.33" x2="3600" y2="7323.33" stroke="#a8a29a" stroke-width="6.5"/>
 <path d="M 607,2700 L 2193,2700 A 7 7 0 0 1 2200,2707 L 2200,3393 A 7 7 0 0 1 2193,3400 L 607,3400 A 7 7 0 0 1 600,3393 L 600,2707 A 7 7 0 0 1 607,2700 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
 <path d="M 630.1,2724.5 L 2169.9,2724.5 A 5.6 5.6 0 0 1 2175.5,2730.1 L 2175.5,3369.9 A 5.6 5.6 0 0 1 2169.9,3375.5 L 630.1,3375.5 A 5.6 5.6 0 0 1 624.5,3369.9 L 624.5,2730.1 A 5.6 5.6 0 0 1 630.1,2724.5 Z" fill="none" stroke="#a8a29a" stroke-width="6.5"/>
 <line x1="624.5" y1="2784" x2="2175.5" y2="2784" stroke="#a8a29a" stroke-width="6.5"/>
@@ -5391,17 +5389,19 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <path d="M 11596.32,8742 L 12703.68,8742 A 14 14 0 0 1 12717.68,8756 L 12717.68,8763 A 14 14 0 0 1 12703.68,8777 L 11596.32,8777 A 14 14 0 0 1 11582.32,8763 L 11582.32,8756 A 14 14 0 0 1 11596.32,8742 Z" fill="#f4f2ee" stroke="#a8a29a" stroke-width="6.5"/>
 </g>
 <g id="A-FLOR-STRS" inkscape:groupmode="layer" inkscape:label="A-FLOR-STRS">
-<polygon points="4900,2700 7100,2700 7100,3700 4900,3700" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
-<line x1="6387.5" y1="3760" x2="5887.5" y2="2640" stroke="#a8a29a" stroke-width="9"/>
-<line x1="6112.5" y1="3760" x2="5612.5" y2="2640" stroke="#a8a29a" stroke-width="9"/>
-<line x1="6825" y1="3700" x2="6825" y2="2700" stroke="#a8a29a" stroke-width="9"/>
-<line x1="6550" y1="3700" x2="6550" y2="2700" stroke="#a8a29a" stroke-width="9"/>
-<line x1="5450" y1="3700" x2="5450" y2="2700" stroke="#a8a29a" stroke-width="9"/>
-<line x1="5175" y1="3700" x2="5175" y2="2700" stroke="#a8a29a" stroke-width="9"/>
-<line x1="6770" y1="3200" x2="5010" y2="3200" stroke="#6c6864" stroke-width="9"/>
-<line x1="5010" y1="3200" x2="5290" y2="3032" stroke="#6c6864" stroke-width="9"/>
-<line x1="5010" y1="3200" x2="5290" y2="3368" stroke="#6c6864" stroke-width="9"/>
-<text x="6962.5" y="3200" font-size="100" fill="#333333" text-anchor="middle" dominant-baseline="central">UP</text>
+<polygon points="1000,4300 3900,4300 3900,5100 1000,5100" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
+<line x1="2795" y1="5148" x2="2395" y2="4252" stroke="#a8a29a" stroke-width="9"/>
+<line x1="2505" y1="5148" x2="2105" y2="4252" stroke="#a8a29a" stroke-width="9"/>
+<line x1="3610" y1="5100" x2="3610" y2="4300" stroke="#a8a29a" stroke-width="9"/>
+<line x1="3320" y1="5100" x2="3320" y2="4300" stroke="#a8a29a" stroke-width="9"/>
+<line x1="3030" y1="5100" x2="3030" y2="4300" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1870" y1="5100" x2="1870" y2="4300" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1580" y1="5100" x2="1580" y2="4300" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1290" y1="5100" x2="1290" y2="4300" stroke="#a8a29a" stroke-width="9"/>
+<line x1="3552" y1="4700" x2="1116" y2="4700" stroke="#6c6864" stroke-width="9"/>
+<line x1="1116" y1="4700" x2="1340" y2="4565.6" stroke="#6c6864" stroke-width="9"/>
+<line x1="1116" y1="4700" x2="1340" y2="4834.4" stroke="#6c6864" stroke-width="9"/>
+<text x="3755" y="4700" font-size="100" fill="#333333" text-anchor="middle" dominant-baseline="central">UP</text>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -1200,-150 L 350,-150 L 350,150 L 150,150 L 150,1550 L -150,1550 L -150,150 L -1200,150 Z M -150,10050 L -150,6300 L -1950,6300 L -1950,6100 L -150,6100 L -150,2450 L 150,2450 L 150,4100 L 3950,4100 L 3950,2450 L 4050,2450 L 4050,4100 L 5000,4100 L 5000,4300 L 4900,4300 L 4900,4700 L 4700,4700 L 4700,4300 L 150,4300 L 150,10050 L 300,10050 L 300,10350 L -2250,10350 L -2250,10050 Z M -3150,10050 L -3150,10350 L -5650,10350 L -5650,-150 L -4200,-150 L -4200,150 L -5350,150 L -5350,6100 L -3450,6100 L -3450,6300 L -5350,6300 L -5350,10050 Z M 10050,150 L 10050,2150 L 11450,2150 L 11450,2250 L 9400,2250 L 9400,2150 L 9950,2150 L 9950,150 L 8050,150 L 8050,2150 L 8600,2150 L 8600,2250 L 8050,2250 L 8050,2400 L 7950,2400 L 7950,150 L 6600,150 L 6600,-150 L 11350,-150 L 11350,150 Z M 10300,4100 L 10300,4300 L 8050,4300 L 8050,5700 L 7950,5700 L 7950,4300 L 7400,4300 L 7400,4100 L 7950,4100 L 7950,4000 L 8050,4000 L 8050,4100 Z M 1050,-150 L 1450,-150 L 1450,150 L 1050,150 Z M 11500,4100 L 13650,4100 L 13650,3650 L 13950,3650 L 13950,4600 L 13650,4600 L 13650,4300 L 11500,4300 Z M 12200,8100 L 13650,8100 L 13650,7100 L 13950,7100 L 13950,8500 L 13650,8500 L 13650,8300 L 12200,8300 Z M 12250,-150 L 13950,-150 L 13950,2750 L 13650,2750 L 13650,2250 L 12350,2250 L 12350,2150 L 13650,2150 L 13650,150 L 12250,150 Z M 1300,10050 L 1662.66,10050 L 1733.76,10120.47 L 1808.58,10186.99 L 1886.88,10249.37 L 1968.45,10307.42 L 2053.03,10360.98 L 2140.39,10409.88 L 2230.27,10453.98 L 2322.4,10493.15 L 2212.51,10772.31 L 2120.5,10733.6 L 2030.38,10690.66 L 1942.35,10643.58 L 1856.61,10592.47 L 1773.32,10537.43 L 1692.68,10478.59 L 1614.86,10416.07 L 1540.03,10350 L 1300,10350 Z M 13650,10050 L 13650,9900 L 13950,9900 L 13950,10350 L 6900,10350 L 6900,10050 L 7900,10050 L 7900,9650 L 8100,9650 L 8100,10050 Z M 13650,5800 L 13950,5800 L 13950,6100 L 13650,6100 Z M 2150,-150 L 2550,-150 L 2550,150 L 2150,150 Z M 3250,-150 L 5400,-150 L 5400,150 L 4050,150 L 4050,1550 L 3950,1550 L 3950,150 L 3250,150 Z M 3677.6,10493.15 L 3769.73,10453.98 L 3859.61,10409.88 L 3946.97,10360.98 L 4031.55,10307.42 L 4113.12,10249.37 L 4191.42,10186.99 L 4266.24,10120.47 L 4337.34,10050 L 4700,10050 L 4700,7700 L 4900,7700 L 4900,10050 L 5100,10050 L 5100,10350 L 4459.97,10350 L 4385.14,10416.07 L 4307.32,10478.59 L 4226.68,10537.43 L 4143.39,10592.47 L 4057.65,10643.58 L 3969.62,10690.66 L 3879.5,10733.6 L 3787.49,10772.31 Z M 7900,8100 L 7950,8100 L 7950,6700 L 8050,6700 L 8050,8100 L 9800,8100 L 9800,8300 L 8100,8300 L 8100,8750 L 7900,8750 Z" fill="url(#poche)" fill-rule="nonzero"/>
@@ -6502,26 +6502,28 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <line x1="3900" y1="5100" x2="900" y2="9300" stroke="#333333" stroke-width="9" stroke-dasharray="54 36"/>
 </g>
 <g id="A-FLOR-STRS" inkscape:groupmode="layer" inkscape:label="A-FLOR-STRS">
-<polygon points="4900,2700 7100,2700 7100,3700 4900,3700" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
-<line x1="5612.5" y1="2640" x2="6112.5" y2="3760" stroke="#a8a29a" stroke-width="9"/>
-<line x1="5887.5" y1="2640" x2="6387.5" y2="3760" stroke="#a8a29a" stroke-width="9"/>
-<line x1="5175" y1="2700" x2="5175" y2="3700" stroke="#a8a29a" stroke-width="9"/>
-<line x1="5450" y1="2700" x2="5450" y2="3700" stroke="#a8a29a" stroke-width="9"/>
-<line x1="6550" y1="2700" x2="6550" y2="3700" stroke="#a8a29a" stroke-width="9"/>
-<line x1="6825" y1="2700" x2="6825" y2="3700" stroke="#a8a29a" stroke-width="9"/>
-<line x1="5230" y1="3200" x2="6990" y2="3200" stroke="#6c6864" stroke-width="9"/>
-<line x1="6990" y1="3200" x2="6710" y2="3368" stroke="#6c6864" stroke-width="9"/>
-<line x1="6990" y1="3200" x2="6710" y2="3032" stroke="#6c6864" stroke-width="9"/>
-<text x="5037.5" y="3200" font-size="100" fill="#333333" text-anchor="middle" dominant-baseline="central">DN</text>
+<polygon points="1000,4300 3900,4300 3900,5100 1000,5100" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
+<line x1="2105" y1="4252" x2="2505" y2="5148" stroke="#a8a29a" stroke-width="9"/>
+<line x1="2395" y1="4252" x2="2795" y2="5148" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1290" y1="4300" x2="1290" y2="5100" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1580" y1="4300" x2="1580" y2="5100" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1870" y1="4300" x2="1870" y2="5100" stroke="#a8a29a" stroke-width="9"/>
+<line x1="3030" y1="4300" x2="3030" y2="5100" stroke="#a8a29a" stroke-width="9"/>
+<line x1="3320" y1="4300" x2="3320" y2="5100" stroke="#a8a29a" stroke-width="9"/>
+<line x1="3610" y1="4300" x2="3610" y2="5100" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1348" y1="4700" x2="3784" y2="4700" stroke="#6c6864" stroke-width="9"/>
+<line x1="3784" y1="4700" x2="3560" y2="4834.4" stroke="#6c6864" stroke-width="9"/>
+<line x1="3784" y1="4700" x2="3560" y2="4565.6" stroke="#6c6864" stroke-width="9"/>
+<text x="1145" y="4700" font-size="100" fill="#333333" text-anchor="middle" dominant-baseline="central">DN</text>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
-<path d="M -150,-150 L 500,-150 L 500,150 L 150,150 L 150,2550 L 1550,2550 L 1550,2650 L 150,2650 L 150,4100 L 600,4100 L 600,4300 L 150,4300 L 150,6300 L -150,6300 Z M -150,10350 L -150,7700 L 150,7700 L 150,10050 L 4700,10050 L 4700,4300 L 2400,4300 L 2400,4100 L 10000,4100 L 10000,4300 L 4900,4300 L 4900,10050 L 5600,10050 L 5600,10350 Z M 10900,-150 L 10900,150 L 9850,150 L 9850,950 L 9750,950 L 9750,150 L 8050,150 L 8050,2550 L 8550,2550 L 8550,2650 L 7250,2650 L 7250,2550 L 7950,2550 L 7950,150 L 5850,150 L 5850,2550 L 6550,2550 L 6550,2650 L 5250,2650 L 5250,2550 L 5750,2550 L 5750,150 L 4050,150 L 4050,950 L 3950,950 L 3950,150 L 1900,150 L 1900,-150 Z M 11000,4100 L 13650,4100 L 13650,2650 L 12250,2650 L 12250,2550 L 13650,2550 L 13650,150 L 12300,150 L 12300,-150 L 13950,-150 L 13950,10350 L 8000,10350 L 8000,10050 L 13650,10050 L 13650,6850 L 11950,6850 L 11950,5850 L 12050,5850 L 12050,6750 L 13650,6750 L 13650,4300 L 12050,4300 L 12050,5150 L 11950,5150 L 11950,4300 L 11000,4300 Z M 11350,2550 L 11350,2650 L 9250,2650 L 9250,2550 L 9750,2550 L 9750,1650 L 9850,1650 L 9850,2550 Z M 2450,2550 L 3950,2550 L 3950,1650 L 4050,1650 L 4050,2550 L 4550,2550 L 4550,2650 L 2450,2650 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<path d="M -150,-150 L 500,-150 L 500,150 L 150,150 L 150,2550 L 1550,2550 L 1550,2650 L 150,2650 L 150,4100 L 600,4100 L 600,4300 L 150,4300 L 150,6300 L -150,6300 Z M -150,10350 L -150,7700 L 150,7700 L 150,10050 L 4700,10050 L 4700,4300 L 2400,4300 L 2400,4100 L 10000,4100 L 10000,4300 L 4900,4300 L 4900,10050 L 5600,10050 L 5600,10350 Z M 10900,-150 L 10900,150 L 9850,150 L 9850,950 L 9750,950 L 9750,150 L 8050,150 L 8050,2550 L 8550,2550 L 8550,2650 L 7250,2650 L 7250,2550 L 7950,2550 L 7950,150 L 5850,150 L 5850,2550 L 6550,2550 L 6550,2650 L 5250,2650 L 5250,2550 L 5750,2550 L 5750,150 L 4050,150 L 4050,950 L 3950,950 L 3950,150 L 1900,150 L 1900,-150 Z M 11000,4100 L 13650,4100 L 13650,2650 L 12250,2650 L 12250,2550 L 13650,2550 L 13650,150 L 12300,150 L 12300,-150 L 13950,-150 L 13950,10350 L 8000,10350 L 8000,10050 L 13650,10050 L 13650,6850 L 11950,6850 L 11950,5850 L 12050,5850 L 12050,6750 L 13650,6750 L 13650,4300 L 12050,4300 L 12050,5150 L 11950,5150 L 11950,4300 L 11000,4300 Z M 11350,2550 L 11350,2650 L 9250,2650 L 9250,2550 L 9750,2550 L 9750,1650 L 9850,1650 L 9850,2550 Z M 2450,2550 L 3950,2550 L 3950,1650 L 4050,1650 L 4050,2550 L 4550,2550 L 4550,2650 L 2450,2650 Z" fill="none" stroke="#1b1b1b" stroke-width="25" stroke-linejoin="miter" stroke-miterlimit="4"/>
+<path d="M -150,-150 L 500,-150 L 500,150 L 150,150 L 150,2550 L 250,2550 L 250,2650 L 150,2650 L 150,4100 L 300,4100 L 300,4300 L 150,4300 L 150,6300 L -150,6300 Z M -150,10350 L -150,7700 L 150,7700 L 150,10050 L 4700,10050 L 4700,4300 L 1900,4300 L 1900,4100 L 10000,4100 L 10000,4300 L 4900,4300 L 4900,10050 L 5600,10050 L 5600,10350 Z M 10900,-150 L 10900,150 L 9850,150 L 9850,950 L 9750,950 L 9750,150 L 8050,150 L 8050,2550 L 8550,2550 L 8550,2650 L 7250,2650 L 7250,2550 L 7950,2550 L 7950,150 L 5850,150 L 5850,2550 L 6550,2550 L 6550,2650 L 5250,2650 L 5250,2550 L 5750,2550 L 5750,150 L 4050,150 L 4050,950 L 3950,950 L 3950,150 L 1900,150 L 1900,-150 Z M 11000,4100 L 13650,4100 L 13650,2650 L 12250,2650 L 12250,2550 L 13650,2550 L 13650,150 L 12300,150 L 12300,-150 L 13950,-150 L 13950,10350 L 8000,10350 L 8000,10050 L 13650,10050 L 13650,6850 L 11950,6850 L 11950,5850 L 12050,5850 L 12050,6750 L 13650,6750 L 13650,4300 L 12050,4300 L 12050,5150 L 11950,5150 L 11950,4300 L 11000,4300 Z M 11350,2550 L 11350,2650 L 9250,2650 L 9250,2550 L 9750,2550 L 9750,1650 L 9850,1650 L 9850,2550 Z M 1150,2550 L 3950,2550 L 3950,1650 L 4050,1650 L 4050,2550 L 4550,2550 L 4550,2650 L 1150,2650 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M -150,-150 L 500,-150 L 500,150 L 150,150 L 150,2550 L 250,2550 L 250,2650 L 150,2650 L 150,4100 L 300,4100 L 300,4300 L 150,4300 L 150,6300 L -150,6300 Z M -150,10350 L -150,7700 L 150,7700 L 150,10050 L 4700,10050 L 4700,4300 L 1900,4300 L 1900,4100 L 10000,4100 L 10000,4300 L 4900,4300 L 4900,10050 L 5600,10050 L 5600,10350 Z M 10900,-150 L 10900,150 L 9850,150 L 9850,950 L 9750,950 L 9750,150 L 8050,150 L 8050,2550 L 8550,2550 L 8550,2650 L 7250,2650 L 7250,2550 L 7950,2550 L 7950,150 L 5850,150 L 5850,2550 L 6550,2550 L 6550,2650 L 5250,2650 L 5250,2550 L 5750,2550 L 5750,150 L 4050,150 L 4050,950 L 3950,950 L 3950,150 L 1900,150 L 1900,-150 Z M 11000,4100 L 13650,4100 L 13650,2650 L 12250,2650 L 12250,2550 L 13650,2550 L 13650,150 L 12300,150 L 12300,-150 L 13950,-150 L 13950,10350 L 8000,10350 L 8000,10050 L 13650,10050 L 13650,6850 L 11950,6850 L 11950,5850 L 12050,5850 L 12050,6750 L 13650,6750 L 13650,4300 L 12050,4300 L 12050,5150 L 11950,5150 L 11950,4300 L 11000,4300 Z M 11350,2550 L 11350,2650 L 9250,2650 L 9250,2550 L 9750,2550 L 9750,1650 L 9850,1650 L 9850,2550 Z M 1150,2550 L 3950,2550 L 3950,1650 L 4050,1650 L 4050,2550 L 4550,2550 L 4550,2650 L 1150,2650 Z" fill="none" stroke="#1b1b1b" stroke-width="25" stroke-linejoin="miter" stroke-miterlimit="4"/>
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
-<polygon points="1550,2650 2450,2650 2450,2550 1550,2550" fill="none"/>
-<polygon points="1550,2600 1550,3500 1590,3499.11 1590,2600" fill="#ffffff" stroke="#555555" stroke-width="11.7"/>
-<path d="M 1550,3500 A 900 900 0 0 0 2450,2600" fill="none" stroke="#555555" stroke-width="6.5"/>
+<polygon points="250,2650 1150,2650 1150,2550 250,2550" fill="none"/>
+<polygon points="250,2600 250,3500 290,3499.11 290,2600" fill="#ffffff" stroke="#555555" stroke-width="11.7"/>
+<path d="M 250,3500 A 900 900 0 0 0 1150,2600" fill="none" stroke="#555555" stroke-width="6.5"/>
 <polygon points="11350,2650 12250,2650 12250,2550 11350,2550" fill="none"/>
 <polygon points="11350,2600 11350,3500 11390,3499.11 11390,2600" fill="#ffffff" stroke="#555555" stroke-width="11.7"/>
 <path d="M 11350,3500 A 900 900 0 0 0 12250,2600" fill="none" stroke="#555555" stroke-width="6.5"/>
@@ -6548,7 +6550,7 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <polygon points="8550,2650 9250,2650 9250,2550 8550,2550" fill="none"/>
 <polygon points="8550,2600 8550,1900 8590,1901.14 8590,2600" fill="#ffffff" stroke="#555555" stroke-width="11.7"/>
 <path d="M 8550,1900 A 700 700 0 0 1 9250,2600" fill="none" stroke="#555555" stroke-width="6.5"/>
-<polygon points="600,4300 2400,4300 2400,4100 600,4100" fill="none"/>
+<polygon points="300,4300 1900,4300 1900,4100 300,4100" fill="none"/>
 </g>
 <g id="A-GLAZ" inkscape:groupmode="layer" inkscape:label="A-GLAZ">
 <polygon points="500,175 1900,175 1900,-175 500,-175" fill="#ffffff"/>
@@ -6591,10 +6593,10 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <text x="8600" y="6057.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">49.3 m²</text>
 <text x="12900" y="6245" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Ensuite</text>
 <text x="12900" y="6437.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">4.7 m²</text>
-<text x="8970" y="3365" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Landing</text>
-<text x="8970" y="3557.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">22.1 m²</text>
-<text x="2400" y="4765" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Gallery</text>
-<text x="2400" y="4957.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">28.8 m²</text>
+<text x="6900" y="3365" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Landing</text>
+<text x="6900" y="3557.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">22.1 m²</text>
+<text x="2400" y="9565" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Gallery</text>
+<text x="2400" y="9757.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">28.8 m²</text>
 </g>
 <g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
 <line x1="-150" y1="10350" x2="-150" y2="10500" stroke="#0E5484" stroke-width="6.3"/>
@@ -6747,10 +6749,10 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <line x1="13907.57" y1="-892.43" x2="13992.43" y2="-807.57" stroke="#0E5484" stroke-width="9"/>
 <line x1="-192.43" y1="-892.43" x2="-107.57" y2="-807.57" stroke="#0E5484" stroke-width="9"/>
 <text x="6900" y="-937.5" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(0 6900 -937.5)">14100</text>
-<line x1="3200" y1="2650" x2="3200" y2="2550" stroke="#0E5484" stroke-width="9"/>
-<line x1="3242.43" y1="2607.57" x2="3157.57" y2="2692.43" stroke="#0E5484" stroke-width="9"/>
-<line x1="3242.43" y1="2507.57" x2="3157.57" y2="2592.43" stroke="#0E5484" stroke-width="9"/>
-<text x="3200" y="2371.25" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 3200 2371.25)">100</text>
+<line x1="2050" y1="2650" x2="2050" y2="2550" stroke="#0E5484" stroke-width="9"/>
+<line x1="2092.43" y1="2607.57" x2="2007.57" y2="2692.43" stroke="#0E5484" stroke-width="9"/>
+<line x1="2092.43" y1="2507.57" x2="2007.57" y2="2592.43" stroke="#0E5484" stroke-width="9"/>
+<text x="2050" y="2371.25" font-size="125" fill="#0E5484" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 2050 2371.25)">100</text>
 <line x1="8425" y1="4300" x2="8425" y2="4100" stroke="#0E5484" stroke-width="9"/>
 <line x1="8467.43" y1="4257.57" x2="8382.57" y2="4342.43" stroke="#0E5484" stroke-width="9"/>
 <line x1="8467.43" y1="4057.57" x2="8382.57" y2="4142.43" stroke="#0E5484" stroke-width="9"/>
@@ -7386,25 +7388,25 @@ exports[`golden SVG snapshots > renders library.arch deterministically 1`] = `
 <text x="-4950" y="0" font-size="450" fill="#0E5484" text-anchor="middle" dominant-baseline="central">F</text>
 </g>
 <g id="A-FLOR-STRS" inkscape:groupmode="layer" inkscape:label="A-FLOR-STRS">
-<polygon points="28500,26500 29900,26500 29900,31000 28500,31000" fill="#f4f2ee" stroke="#6c6864" stroke-width="36"/>
-<line x1="28416" y1="29240.63" x2="29984" y2="28540.63" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28416" y1="28959.38" x2="29984" y2="28259.38" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="30718.75" x2="29900" y2="30718.75" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="30437.5" x2="29900" y2="30437.5" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="30156.25" x2="29900" y2="30156.25" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="29875" x2="29900" y2="29875" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="29593.75" x2="29900" y2="29593.75" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="29312.5" x2="29900" y2="29312.5" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="28187.5" x2="29900" y2="28187.5" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="27906.25" x2="29900" y2="27906.25" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="27625" x2="29900" y2="27625" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="27343.75" x2="29900" y2="27343.75" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="27062.5" x2="29900" y2="27062.5" stroke="#a8a29a" stroke-width="36"/>
-<line x1="28500" y1="26781.25" x2="29900" y2="26781.25" stroke="#a8a29a" stroke-width="36"/>
-<line x1="29200" y1="30662.5" x2="29200" y2="26612.5" stroke="#6c6864" stroke-width="36"/>
-<line x1="29200" y1="26612.5" x2="29435.2" y2="27004.5" stroke="#6c6864" stroke-width="36"/>
-<line x1="29200" y1="26612.5" x2="28964.8" y2="27004.5" stroke="#6c6864" stroke-width="36"/>
-<text x="29200" y="30859.38" font-size="400" fill="#333333" text-anchor="middle" dominant-baseline="central">UP</text>
+<polygon points="28500,25500 29900,25500 29900,30000 28500,30000" fill="#f4f2ee" stroke="#6c6864" stroke-width="36"/>
+<line x1="28416" y1="28240.63" x2="29984" y2="27540.63" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28416" y1="27959.38" x2="29984" y2="27259.38" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="29718.75" x2="29900" y2="29718.75" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="29437.5" x2="29900" y2="29437.5" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="29156.25" x2="29900" y2="29156.25" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="28875" x2="29900" y2="28875" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="28593.75" x2="29900" y2="28593.75" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="28312.5" x2="29900" y2="28312.5" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="27187.5" x2="29900" y2="27187.5" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="26906.25" x2="29900" y2="26906.25" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="26625" x2="29900" y2="26625" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="26343.75" x2="29900" y2="26343.75" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="26062.5" x2="29900" y2="26062.5" stroke="#a8a29a" stroke-width="36"/>
+<line x1="28500" y1="25781.25" x2="29900" y2="25781.25" stroke="#a8a29a" stroke-width="36"/>
+<line x1="29200" y1="29662.5" x2="29200" y2="25612.5" stroke="#6c6864" stroke-width="36"/>
+<line x1="29200" y1="25612.5" x2="29435.2" y2="26004.5" stroke="#6c6864" stroke-width="36"/>
+<line x1="29200" y1="25612.5" x2="28964.8" y2="26004.5" stroke="#6c6864" stroke-width="36"/>
+<text x="29200" y="29859.38" font-size="400" fill="#333333" text-anchor="middle" dominant-baseline="central">UP</text>
 </g>
 <g id="A-FLOR-EVTR" inkscape:groupmode="layer" inkscape:label="A-FLOR-EVTR">
 <polygon points="30500,28000 32700,28000 32700,30200 30500,30200" fill="#f4f2ee" stroke="#6c6864" stroke-width="36"/>
@@ -15240,19 +15242,19 @@ exports[`golden SVG snapshots > renders two-storey.arch as one page per level > 
 <line x1="4800" y1="4214" x2="5400" y2="4214" stroke="#a8a29a" stroke-width="6.5"/>
 </g>
 <g id="A-FLOR-STRS" inkscape:groupmode="layer" inkscape:label="A-FLOR-STRS">
-<polygon points="100,1500 1000,1500 1000,4100 100,4100" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
-<line x1="46" y1="3169.44" x2="1054" y2="2719.44" stroke="#a8a29a" stroke-width="9"/>
-<line x1="46" y1="2880.56" x2="1054" y2="2430.56" stroke="#a8a29a" stroke-width="9"/>
-<line x1="100" y1="3811.11" x2="1000" y2="3811.11" stroke="#a8a29a" stroke-width="9"/>
-<line x1="100" y1="3522.22" x2="1000" y2="3522.22" stroke="#a8a29a" stroke-width="9"/>
-<line x1="100" y1="3233.33" x2="1000" y2="3233.33" stroke="#a8a29a" stroke-width="9"/>
-<line x1="100" y1="2366.67" x2="1000" y2="2366.67" stroke="#a8a29a" stroke-width="9"/>
-<line x1="100" y1="2077.78" x2="1000" y2="2077.78" stroke="#a8a29a" stroke-width="9"/>
-<line x1="100" y1="1788.89" x2="1000" y2="1788.89" stroke="#a8a29a" stroke-width="9"/>
-<line x1="550" y1="3753.33" x2="550" y2="1615.56" stroke="#6c6864" stroke-width="9"/>
-<line x1="550" y1="1615.56" x2="701.2" y2="1867.56" stroke="#6c6864" stroke-width="9"/>
-<line x1="550" y1="1615.56" x2="398.8" y2="1867.56" stroke="#6c6864" stroke-width="9"/>
-<text x="550" y="3955.56" font-size="100" fill="#333333" text-anchor="middle" dominant-baseline="central">UP</text>
+<polygon points="100,1000 1000,1000 1000,3900 100,3900" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
+<line x1="46" y1="2820" x2="1054" y2="2370" stroke="#a8a29a" stroke-width="9"/>
+<line x1="46" y1="2530" x2="1054" y2="2080" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="3610" x2="1000" y2="3610" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="3320" x2="1000" y2="3320" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="3030" x2="1000" y2="3030" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="1870" x2="1000" y2="1870" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="1580" x2="1000" y2="1580" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="1290" x2="1000" y2="1290" stroke="#a8a29a" stroke-width="9"/>
+<line x1="550" y1="3552" x2="550" y2="1116" stroke="#6c6864" stroke-width="9"/>
+<line x1="550" y1="1116" x2="701.2" y2="1368" stroke="#6c6864" stroke-width="9"/>
+<line x1="550" y1="1116" x2="398.8" y2="1368" stroke="#6c6864" stroke-width="9"/>
+<text x="550" y="3755" font-size="100" fill="#333333" text-anchor="middle" dominant-baseline="central">UP</text>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -100,-100 L 4100,-100 L 4100,100 L 2250,100 L 2250,1350 L 2150,1350 L 2150,100 L 100,100 L 100,6900 L 600,6900 L 600,7100 L -100,7100 Z M 1600,6900 L 2150,6900 L 2150,5750 L 2250,5750 L 2250,6900 L 7900,6900 L 7900,5900 L 8100,5900 L 8100,7100 L 1600,7100 Z M 2150,2250 L 2250,2250 L 2250,3550 L 7900,3550 L 7900,100 L 5900,100 L 5900,-100 L 8100,-100 L 8100,4700 L 7900,4700 L 7900,3650 L 2250,3650 L 2250,4850 L 2150,4850 Z" fill="url(#poche)" fill-rule="nonzero"/>
@@ -15479,24 +15481,24 @@ exports[`golden SVG snapshots > renders two-storey.arch as one page per level > 
 <circle cx="550" cy="6450" r="18" fill="#a8a29a" stroke="#a8a29a" stroke-width="6.5"/>
 </g>
 <g id="A-FLOR-STRS" inkscape:groupmode="layer" inkscape:label="A-FLOR-STRS">
-<polygon points="100,1500 1000,1500 1000,4100 100,4100" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
-<line x1="1054" y1="2430.56" x2="46" y2="2880.56" stroke="#a8a29a" stroke-width="9"/>
-<line x1="1054" y1="2719.44" x2="46" y2="3169.44" stroke="#a8a29a" stroke-width="9"/>
-<line x1="1000" y1="1788.89" x2="100" y2="1788.89" stroke="#a8a29a" stroke-width="9"/>
-<line x1="1000" y1="2077.78" x2="100" y2="2077.78" stroke="#a8a29a" stroke-width="9"/>
-<line x1="1000" y1="2366.67" x2="100" y2="2366.67" stroke="#a8a29a" stroke-width="9"/>
-<line x1="1000" y1="3233.33" x2="100" y2="3233.33" stroke="#a8a29a" stroke-width="9"/>
-<line x1="1000" y1="3522.22" x2="100" y2="3522.22" stroke="#a8a29a" stroke-width="9"/>
-<line x1="1000" y1="3811.11" x2="100" y2="3811.11" stroke="#a8a29a" stroke-width="9"/>
-<line x1="550" y1="1846.67" x2="550" y2="3984.44" stroke="#6c6864" stroke-width="9"/>
-<line x1="550" y1="3984.44" x2="398.8" y2="3732.44" stroke="#6c6864" stroke-width="9"/>
-<line x1="550" y1="3984.44" x2="701.2" y2="3732.44" stroke="#6c6864" stroke-width="9"/>
-<text x="550" y="1644.44" font-size="100" fill="#333333" text-anchor="middle" dominant-baseline="central">DN</text>
+<polygon points="100,1000 1000,1000 1000,3900 100,3900" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
+<line x1="1054" y1="2080" x2="46" y2="2530" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1054" y1="2370" x2="46" y2="2820" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1000" y1="1290" x2="100" y2="1290" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1000" y1="1580" x2="100" y2="1580" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1000" y1="1870" x2="100" y2="1870" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1000" y1="3030" x2="100" y2="3030" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1000" y1="3320" x2="100" y2="3320" stroke="#a8a29a" stroke-width="9"/>
+<line x1="1000" y1="3610" x2="100" y2="3610" stroke="#a8a29a" stroke-width="9"/>
+<line x1="550" y1="1348" x2="550" y2="3784" stroke="#6c6864" stroke-width="9"/>
+<line x1="550" y1="3784" x2="398.8" y2="3532" stroke="#6c6864" stroke-width="9"/>
+<line x1="550" y1="3784" x2="701.2" y2="3532" stroke="#6c6864" stroke-width="9"/>
+<text x="550" y="1145" font-size="100" fill="#333333" text-anchor="middle" dominant-baseline="central">DN</text>
 </g>
 <g id="A-FLOR-OVHD" inkscape:groupmode="layer" inkscape:label="A-FLOR-OVHD">
-<polygon points="100,200 1000,200 1000,1300 100,1300" fill="none" stroke="#333333" stroke-width="9" stroke-dasharray="54 36"/>
-<line x1="100" y1="200" x2="1000" y2="1300" stroke="#333333" stroke-width="9" stroke-dasharray="54 36"/>
-<line x1="1000" y1="200" x2="100" y2="1300" stroke="#333333" stroke-width="9" stroke-dasharray="54 36"/>
+<polygon points="100,1000 1000,1000 1000,3900 100,3900" fill="none" stroke="#333333" stroke-width="9" stroke-dasharray="54 36"/>
+<line x1="100" y1="1000" x2="1000" y2="3900" stroke="#333333" stroke-width="9" stroke-dasharray="54 36"/>
+<line x1="1000" y1="1000" x2="100" y2="3900" stroke="#333333" stroke-width="9" stroke-dasharray="54 36"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -100,-100 L 4250,-100 L 4250,100 L 2250,100 L 2250,1350 L 2150,1350 L 2150,100 L 100,100 L 100,4850 L 700,4850 L 700,4950 L 100,4950 L 100,5500 L -100,5500 Z M -100,6100 L 100,6100 L 100,6900 L 2150,6900 L 2150,4950 L 1500,4950 L 1500,4850 L 2150,4850 L 2150,4700 L 2250,4700 L 2250,6900 L 7900,6900 L 7900,5900 L 8100,5900 L 8100,7100 L -100,7100 Z M 2150,2250 L 2250,2250 L 2250,3550 L 7900,3550 L 7900,100 L 5750,100 L 5750,-100 L 8100,-100 L 8100,4700 L 7900,4700 L 7900,3650 L 2250,3650 L 2250,3800 L 2150,3800 Z" fill="url(#poche)" fill-rule="nonzero"/>

@@ -218,13 +218,17 @@ describe("W_ENTRANCE_INTO_PRIVATE", () => {
 describe("the non-dwelling reason", () => {
   it("is appended after every reason before it, so the reason list stays append-only", () => {
     const reasons = Object.keys(SKIP_WHY);
-    // PS2.12 appended `annotation-budget` after it, PS5.2 `no-bed`, PS2.11b `curved-window-host` and PS2.11a `curved-wc-wall`.
-    expect(reasons.slice(-5)).toEqual([
+    // PS2.12 appended `annotation-budget` after it, PS5.2 `no-bed`, PS2.11b `curved-window-host`, PS2.11a
+    // `curved-wc-wall` and PS2.11e `no-storey-height`, `curved-landing-wall` and `stair-budget`.
+    expect(reasons.slice(-8)).toEqual([
       "non-dwelling",
       "annotation-budget",
       "no-bed",
       "curved-window-host",
       "curved-wc-wall",
+      "no-storey-height",
+      "curved-landing-wall",
+      "stair-budget",
     ]);
     expect(reasons).toContain("no-dwelling"); // PS2.14's reserved reason, still distinct
     expect(SKIP_WHY["non-dwelling"]).toBe("the plan reads as non-residential");

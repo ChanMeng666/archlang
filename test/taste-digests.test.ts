@@ -111,6 +111,27 @@
  * code from their validity lists and return byte for byte to their values before PS2.11c/d, the
  * bed and wardrobe turns having moved nothing else; both stay capped by their `W_PATH_TOO_NARROW`.
  * No other row moved.
+ *
+ * PS2.11e/PS2.34/PS2.15 (PR #280, six stair-safety validity codes, and its red-team round 1) moved 22
+ * rows and added 24, each checked key by key against `origin/main` with a script over this table's
+ * files. Added: the four new stair-safety pairs under each of the three profiles; every case is capped
+ * by its own code, every twin lints clean and scores above its case. Moved, under each profile:
+ *  - the seven older stair-safety files. Each case carries its one code in `validity` (`void-at-stair-
+ *    head` and `swing-at-stair-foot` newly capped, 0.7861/0.7152 and 0.6667 → 0.5). Every twin was made
+ *    to lint clean (the rulings on PR #280): `stair-too-steep` both sides gain a store with a corner door
+ *    on level 2 and a 900-mm flight 500 mm farther east (its head had no landing; `W_ROOM_DISCONNECTED`
+ *    gone: score null → 0.5 capped / 1; the twin's run is 3900 mm, past even the `us-` 3810);
+ *    `swing-at-stair-foot`'s flight is 800 × 2700 on both sides, so T1's missing landing is not a second
+ *    defect of the case (the twin's row is as on `origin/main`); `swing-over-stair.clean`'s door moved off the well,
+ *    widened, and the ensuite furnished (0.5 capped → 0.8125); `swing-over-stair` gains
+ *    `W_SWING_OVER_STAIR` and `W_STAIR_SIDE_ENTRY` (one door), already capped.
+ *  - `examples/hillside-villa` (stair moved and lengthened, bedroom 2's door moved): `validity.warnings`
+ *    7 → 8, R16's corner doors 4 → 5 of 14 (bedroom 2's door now stands 250 mm from its corner),
+ *    `uncapped` 0.9072 → 0.9144 under `generic` (0.8932 → 0.9004 under `cn`); still capped.
+ *  - `examples/two-storey` under `us-`: `advisory` gains `W_STAIR_TOO_STEEP` (its 2900 mm run clears
+ *    220/220, GB 50096 and AD K's 42°, not the IRC's 3302 mm); nothing else. Under `generic` and `cn-`
+ *    it did not move: no criterion reads where its stair or void stands.
+ * `garden-house` and `library` did not move: no criterion reads their stairs.
  */
 
 import { describe, expect, it } from "vitest";
@@ -134,7 +155,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
   ["5f9e6dabf2962f4c3a90f5b879232b5d05c7af6babbee8766980f59551833cbb", "generic", "examples/garden-house.arch"],
   ["0f60f5a9f68e6b7ea2eaf1128531449141831248dd7c90f9c8b56e4072072fa4", "generic", "examples/garden-loft.arch"],
   ["b47f84f6b6b3d23388dac71a8fe7820a9df4fc6d767b35aaef612ed7b9c04aef", "generic", "examples/hexagon-pavilion.arch"],
-  ["6d27dd9e61fd114a5a5216f9af01a61a64be0fc0025feadaf6da39e0199d4d7f", "generic", "examples/hillside-villa.arch"],
+  ["846e34505fa0711c31790b1e4a33cc42a12438872ccca7331e5ba863683a24d9", "generic", "examples/hillside-villa.arch"],
   ["791d5c50b474f2c187df63940ccd669a68761d5d6b081dab90f361ddbbb10735", "generic", "examples/imports.arch"],
   ["38d6e8eb4c8aa81addd4190e6d9b80dd525cc62d3d4c4e77c32827f173ae0e03", "generic", "examples/laneway-house.arch"],
   ["c28f1b6c03abceb451d14cdb946f4168ea07b005415d3010ae0e76778864c180", "generic", "examples/library.arch"],
@@ -846,17 +867,57 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/space-not-enclosed/widen-after-outside-shell.clean.arch",
   ],
   [
-    "858dbb7da587cbce5d65c2a03b3b699ce501c0ca80ae7fc7fe69ac7d0440edd9",
+    "012dd6566faf5b3142a104c5a7b832ffa087b85ff54bee3b55e2d3040edfa7f2",
+    "generic",
+    "test/defect-corpus/stair-safety/door-onto-flank.arch",
+  ],
+  [
+    "33011e1dd69e0ec430cac68dab55d8f45fc0ccb01ea89ce63f09d1d00779502b",
+    "generic",
+    "test/defect-corpus/stair-safety/door-onto-flank.clean.arch",
+  ],
+  [
+    "a14a361a8ed60c948ce1ef08f4e2b063a2cb87ad159101d87bb65461c64d403e",
+    "generic",
+    "test/defect-corpus/stair-safety/foot-against-partition.arch",
+  ],
+  [
+    "61bf2e8fe6ce6c1df9696d52abdbb498b7ff7dcd0a87b81108be2bbea8811ead",
+    "generic",
+    "test/defect-corpus/stair-safety/foot-against-partition.clean.arch",
+  ],
+  [
+    "ae46cab7c8ed30dfa1f468869e9727008a49b335fc71ea0913850d29d1a97139",
+    "generic",
+    "test/defect-corpus/stair-safety/head-against-wall.arch",
+  ],
+  [
+    "64f5a3d4b94c5ede39c9f9b80a73e8092cd64db441eafb007d0c4291dc2e7070",
+    "generic",
+    "test/defect-corpus/stair-safety/head-against-wall.clean.arch",
+  ],
+  [
+    "81d41f0ed00cba3433613fb96d112284646e2f8ae93b533eac69f8e6117402df",
+    "generic",
+    "test/defect-corpus/stair-safety/shaft-footprint-mismatch.arch",
+  ],
+  [
+    "64f5a3d4b94c5ede39c9f9b80a73e8092cd64db441eafb007d0c4291dc2e7070",
+    "generic",
+    "test/defect-corpus/stair-safety/shaft-footprint-mismatch.clean.arch",
+  ],
+  [
+    "104f55b834249b7df6415bc8c7cc1a2457063431c94a89ec956246a338538cce",
     "generic",
     "test/defect-corpus/stair-safety/stair-too-steep.arch",
   ],
   [
-    "858dbb7da587cbce5d65c2a03b3b699ce501c0ca80ae7fc7fe69ac7d0440edd9",
+    "48b136e1e08f46e60be9c2dd1bbee43ab94df9f8da7dfd64bb42eec87455c6ca",
     "generic",
     "test/defect-corpus/stair-safety/stair-too-steep.clean.arch",
   ],
   [
-    "a1ba7e82669d7885e3202eb0810e4743ed29e29b6390d28b442aabb7b9fab6eb",
+    "85550cf74ff5ca8222e54fc0cafeb754db06fa0a5fda4eb3451eb5bd92b2399f",
     "generic",
     "test/defect-corpus/stair-safety/swing-at-stair-foot.arch",
   ],
@@ -866,17 +927,17 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/swing-at-stair-foot.clean.arch",
   ],
   [
-    "687f25e148c8acce8ccec126741e86b846096b8d9772d187310601930f20a9a4",
+    "819098d082d3733f5b639b3ab9302f08a5199714bd9b2ddc312b41329fb96ca2",
     "generic",
     "test/defect-corpus/stair-safety/swing-over-stair.arch",
   ],
   [
-    "687f25e148c8acce8ccec126741e86b846096b8d9772d187310601930f20a9a4",
+    "659bc536c740d2336bde61981d47768b5c841fcb30ace9137c6e27f24843f94a",
     "generic",
     "test/defect-corpus/stair-safety/swing-over-stair.clean.arch",
   ],
   [
-    "54a2e39be1bae97889726c08d5b6aab242482c8b5eec571c8aa55c23c9a77e9d",
+    "8854ee3a8342978274e3bce189e95b670035267b9a7584f5fa88df759d651333",
     "generic",
     "test/defect-corpus/stair-safety/void-at-stair-head.arch",
   ],
@@ -1061,7 +1122,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "examples/hexagon-pavilion.arch",
   ],
   [
-    "3cbe726eaca8764b80b039911ec834e4d8fa0688fd6f3a233c46c62c6902273e",
+    "5ba8f2270442ba690f43b6cb66345f758d341b70d66ebff582f997e71244aab7",
     "cn-residential-advisory",
     "examples/hillside-villa.arch",
   ],
@@ -1856,17 +1917,57 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/space-not-enclosed/widen-after-outside-shell.clean.arch",
   ],
   [
-    "ce793f0e39410b7803f9e40649f0d3f39967bb104cab6989c3ba09275447289b",
+    "a3e9bbc829ac4c7a79d73706ee04ef8efa9371cf04405338400e7c8d6fd19725",
+    "cn-residential-advisory",
+    "test/defect-corpus/stair-safety/door-onto-flank.arch",
+  ],
+  [
+    "2ae251735c13293d5cfbd426e2986cf1cb3951b18f1679494746239dc386c585",
+    "cn-residential-advisory",
+    "test/defect-corpus/stair-safety/door-onto-flank.clean.arch",
+  ],
+  [
+    "16f71ff4e7b55ca7c43cfea961998031ac24a50144b919c10bd94d561e704e44",
+    "cn-residential-advisory",
+    "test/defect-corpus/stair-safety/foot-against-partition.arch",
+  ],
+  [
+    "ac468cb2d01fc41cce92cbe2e943a71c94a4e8d4001b64cc0d3a1776ac177d4f",
+    "cn-residential-advisory",
+    "test/defect-corpus/stair-safety/foot-against-partition.clean.arch",
+  ],
+  [
+    "bd332a1df56dd81f95afb9fe137c7ce21816e99506a50684839825a923e3e547",
+    "cn-residential-advisory",
+    "test/defect-corpus/stair-safety/head-against-wall.arch",
+  ],
+  [
+    "dca4d220888a1719bf4c366185b425ea1759258a886954251f059ef6bd884872",
+    "cn-residential-advisory",
+    "test/defect-corpus/stair-safety/head-against-wall.clean.arch",
+  ],
+  [
+    "51e6b7df0613b1677e37aaa2b26558201eb9e00018ac326d39df5178dcd940aa",
+    "cn-residential-advisory",
+    "test/defect-corpus/stair-safety/shaft-footprint-mismatch.arch",
+  ],
+  [
+    "dca4d220888a1719bf4c366185b425ea1759258a886954251f059ef6bd884872",
+    "cn-residential-advisory",
+    "test/defect-corpus/stair-safety/shaft-footprint-mismatch.clean.arch",
+  ],
+  [
+    "8c1b44425df4237bf2367197195dcc630de90e6c690926de5da9d24c087bc6e9",
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/stair-too-steep.arch",
   ],
   [
-    "ce793f0e39410b7803f9e40649f0d3f39967bb104cab6989c3ba09275447289b",
+    "8a48f181b2c51463f647815a94bdd230fea3330e9d1ba3071e2f0c1ea293482f",
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/stair-too-steep.clean.arch",
   ],
   [
-    "fc63cdc9279016b9cdc46067a66d1e46e0a4acd8886c7dd1fb70b6e030558534",
+    "be39655f174fb97b1df7ba6965fd0180291158b494f978b5a0b24f634554474d",
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/swing-at-stair-foot.arch",
   ],
@@ -1876,17 +1977,17 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/swing-at-stair-foot.clean.arch",
   ],
   [
-    "7ebc971ea6e313d00093abc986a36daf2db57c8387373692037218322bafbe8f",
+    "de23fb1d3c5c18193010ea9e1a575ba02ee7f502f31f217d5aff882225d7cf80",
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/swing-over-stair.arch",
   ],
   [
-    "7ebc971ea6e313d00093abc986a36daf2db57c8387373692037218322bafbe8f",
+    "4c799678a46b75f704aa99c9cc6b4c15e35e0f7eec4d2f1cd9d95ceeab82d6b3",
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/swing-over-stair.clean.arch",
   ],
   [
-    "687d0c20b2e44deec8277160870c42ef9873fa4a14398019fa422713c16e622b",
+    "fe4774b9013e87ea1f1a6c2e58fa7bd2f090018a0e29a0e377b809ff60d7e517",
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/void-at-stair-head.arch",
   ],
@@ -2071,7 +2172,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "examples/hexagon-pavilion.arch",
   ],
   [
-    "3d73f688ac68d9b806e6aaf23ef269ab06e4c41782386387704d1ee71f0bb0cc",
+    "ab04f99b211fd4b9377b7fbd1f5bd45f4006126f357131e64b7a4183142e16dd",
     "us-residential-advisory",
     "examples/hillside-villa.arch",
   ],
@@ -2171,7 +2272,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "examples/two-bed.arch",
   ],
   [
-    "5b36610ce877db774349ad163401d862422c434c49858088c614039ebd64c8ae",
+    "66788ffdb15cd9177a62830f546a5d5b1ac0adcf29b7599c7bc5138704f9a6f6",
     "us-residential-advisory",
     "examples/two-storey.arch",
   ],
@@ -2866,17 +2967,57 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/space-not-enclosed/widen-after-outside-shell.clean.arch",
   ],
   [
-    "2ed3b221a3ab7b008e8668c54cf76a68eede5c3bf62c46715481faad749a4f28",
+    "22acc81a20551b715b072876a7a800be8242b897990a171b715c2104fa91ae37",
+    "us-residential-advisory",
+    "test/defect-corpus/stair-safety/door-onto-flank.arch",
+  ],
+  [
+    "ad95b3a31c82f6e2d051d73d34fb3c25f15de640e678e568a04908e2b3aa533a",
+    "us-residential-advisory",
+    "test/defect-corpus/stair-safety/door-onto-flank.clean.arch",
+  ],
+  [
+    "429840aa94c93192740c87ca8ebf53beb1bd6fd33388351ad2a29fce2fb833a8",
+    "us-residential-advisory",
+    "test/defect-corpus/stair-safety/foot-against-partition.arch",
+  ],
+  [
+    "ba3875f9d9230b090534544604ee407f6566132a54bb7cb204ae7b188e00af86",
+    "us-residential-advisory",
+    "test/defect-corpus/stair-safety/foot-against-partition.clean.arch",
+  ],
+  [
+    "2cd19405d5d13685b895f8fb9395131595b1173c4f8d0874f0ea4e23b1284fba",
+    "us-residential-advisory",
+    "test/defect-corpus/stair-safety/head-against-wall.arch",
+  ],
+  [
+    "16c2358ac9a6036453cffacc5958375cff9eda6573cb63ca221e3b40c8700d37",
+    "us-residential-advisory",
+    "test/defect-corpus/stair-safety/head-against-wall.clean.arch",
+  ],
+  [
+    "3b2b1ffd5d4b8a3a0011c378a791164ba08b356f7c40b90f70102865d01eb72f",
+    "us-residential-advisory",
+    "test/defect-corpus/stair-safety/shaft-footprint-mismatch.arch",
+  ],
+  [
+    "16c2358ac9a6036453cffacc5958375cff9eda6573cb63ca221e3b40c8700d37",
+    "us-residential-advisory",
+    "test/defect-corpus/stair-safety/shaft-footprint-mismatch.clean.arch",
+  ],
+  [
+    "5888b9ac9d7fc7ea89f8b5e6c404bfb2ad1b495e508feadcea86ac563dbbf8d2",
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/stair-too-steep.arch",
   ],
   [
-    "2ed3b221a3ab7b008e8668c54cf76a68eede5c3bf62c46715481faad749a4f28",
+    "1fff16648f1bcac1eabdc83dda629f6960db269b2349a49dac5498fa7d0a0b94",
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/stair-too-steep.clean.arch",
   ],
   [
-    "35bb6e446bce1af32c23269fd1c1f5b797052d5cb86eb7ee642a4b931fa1cca7",
+    "319e5df3f3085ce9f449698e0ae43870d9fbe465a117193d47c7e0594cb9e9f3",
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/swing-at-stair-foot.arch",
   ],
@@ -2886,17 +3027,17 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/swing-at-stair-foot.clean.arch",
   ],
   [
-    "55d2195630a926257e026fc0514c67a4a21a96ad2d4f83529127eeef21ac46b4",
+    "0f4d981b0377829c34b52a2604586b45dc1eeb46549ccf534524e053d4122a2a",
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/swing-over-stair.arch",
   ],
   [
-    "55d2195630a926257e026fc0514c67a4a21a96ad2d4f83529127eeef21ac46b4",
+    "dd430c3a6766019d02331cecef81e80aea2a10bdd390ea4da3fed2ae14216671",
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/swing-over-stair.clean.arch",
   ],
   [
-    "8c668e03e46b867b811098fc6268eed2e8ea63c3bc02b4d06855e4284a4b1af1",
+    "f0d3bd06526aafd2dbf63e71771d13cd4e6af85689bce90dd1b1f509f6fbd606",
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/void-at-stair-head.arch",
   ],

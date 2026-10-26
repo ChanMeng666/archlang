@@ -45,8 +45,23 @@ import { runValidate, withoutStageKeys } from "./validate-json-run.js";
  */
 const DECIDED: Record<AuthoringStage, string[]> = {
   brief: [],
-  rooms: ["W_ALIAS_MATCH", "W_GARAGE_TOO_NARROW", "W_OUTDOOR_OVERLAPS_ROOM", "W_ROOM_TOO_SMALL", "W_STAIR_UNMATCHED"],
-  walls: ["W_BOUNDARY_NO_WALL", "W_ROOM_NOT_ENCLOSED", "W_ROOM_OUTSIDE_SHELL", "W_ROOM_TOO_NARROW"],
+  rooms: [
+    "W_ALIAS_MATCH",
+    "W_GARAGE_TOO_NARROW",
+    "W_OUTDOOR_OVERLAPS_ROOM",
+    "W_ROOM_TOO_SMALL",
+    "W_SHAFT_FOOTPRINT_MISMATCH",
+    "W_STAIR_HEAD_VOID",
+    "W_STAIR_TOO_STEEP",
+    "W_STAIR_UNMATCHED",
+  ],
+  walls: [
+    "W_BOUNDARY_NO_WALL",
+    "W_ROOM_NOT_ENCLOSED",
+    "W_ROOM_OUTSIDE_SHELL",
+    "W_ROOM_TOO_NARROW",
+    "W_STAIR_NO_LANDING",
+  ],
   openings: [
     "W_BALCONY_NO_DOOR",
     "W_BATH_VIA_BEDROOM",
@@ -68,7 +83,9 @@ const DECIDED: Record<AuthoringStage, string[]> = {
     "W_ROOM_NOT_EQUATOR_FACING",
     "W_ROOM_UNREACHABLE",
     "W_ROOM_VIA_PRIVATE",
+    "W_STAIR_SIDE_ENTRY",
     "W_SWING_OBSTRUCTED",
+    "W_SWING_OVER_STAIR",
     "W_WET_ROOM_DOOR",
   ],
   fixtures: [
@@ -134,7 +151,8 @@ describe("the stage ladder and the per-rule table", () => {
   it("the per-stage counts are the as-built note's table", () => {
     const counts = Object.fromEntries(AUTHORING_STAGES.map((s) => [s, 0]));
     for (const s of Object.values(LINT_CODE_STAGES)) counts[s]!++;
-    expect(counts).toEqual({ brief: 0, rooms: 5, walls: 4, openings: 22, fixtures: 16, drafting: 6 });
+    // PS2.11e (PR #280) added six stair codes: three rooms, one walls, two openings.
+    expect(counts).toEqual({ brief: 0, rooms: 8, walls: 5, openings: 24, fixtures: 16, drafting: 6 });
   });
 
   it("the drafting layer is exactly the drafting stage, and no lint code is a brief finding", () => {

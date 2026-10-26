@@ -549,6 +549,8 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
   // Re-measured 2026-10-26 (PS2.50): tiny-house's bed comment rewritten, comment only. `finish`
   // echoes the source, so the row moves; its `changes` and `unresolved` are unchanged, and its
   // `source` is the old one with that comment swapped, in both runs.
+  // Re-measured 2026-10-26 (PS2.11e): garden-house, hillside-villa, library and two-storey fixed for
+  // stair defects; why, in `test/byte-identity-baseline.ts`'s header.
   const FINISH_DIGESTS: ReadonlyMap<string, string> = new Map(
     (
       [
@@ -565,13 +567,13 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         // Re-measured 2026-10-18 (plan-soundness PS2.6): the example's SOURCE changed, one door
         // re-hosted (`d_gar` onto the kitchen, +3 bytes), and `source` is part of this digest. The
         // pre-edit source still gives the previous row; see ./byte-identity-baseline.ts.
-        ["3178bf17a35411575182d95261c77e4ee39dc0ca79fc509992038aa93ec84f8c", "garden-house"], // PS2.17 source edit (a worktop), see above
+        ["f68e8c0539103ad340e9b2d76b5a1ab3b149d398a1267c76f5ae38f0d93d8cf8", "garden-house"], // PS2.17 source edit (a worktop), see above
         ["79d22abedbc14db24d5e603018106a153a137d1e740ec1b947eb198b2fe62064", "garden-loft"], // PS2.17 source edit (a worktop), see above
         ["57d4237846d3b666c6806da6ee2bf4cadeb68a2e1d39723c6a024e5b415d5faf", "hexagon-pavilion"],
-        ["b4b37a5f48bc2d1474f24627925f987bb56040cdda7f13939d339edb638b9f8f", "hillside-villa"], // PS2.1–PS2.3 and PS2.9 source edits, see above
+        ["78c02a4f017cf81d8d7f478ac79b03799ae160e222b46f5427b17543115eba35", "hillside-villa"], // PS2.1–PS2.3 and PS2.9 source edits, see above
         ["d90d58c40a4068427ef23c066acba5d50d8e99a801b6ce890da3ac9dc01a9554", "imports"],
         ["7bad5569d0a421afd18269f686830ad2f8dc217a5c3d5c3f6ea654d9c965152a", "laneway-house"], // PS2.17 source edit (a worktop), see above
-        ["daec2640f58f23e22543d3d1d0f2875926409bbe817dac218bd2829cd4df4419", "library"],
+        ["807f5dbda94fb3fb3a80d14ea415863c9ffcfe597122e597593dacb8c7f9527e", "library"],
         ["283b12f402d18bae334393b1e7d88823a2c36224a8a347e58012933050f8e11f", "materials"],
         ["5abaa53ca8813f41fb3e2c1f782e8bb25cf52033ee857f0dd91f4fc970a976f7", "museum"],
         ["e56adeb88cb99daf3c2e93723b84ccd134c948f803bffb84fb519553d0ff63c4", "museum-wing"],
@@ -588,7 +590,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         ["c251b2227e4f794ebdd5db387fd2034682b4cd909a7d8d8340ce56518800c05b", "townhouse"], // PS2.17 source edit (a worktop), see above
         ["1bc121651874bac4a7618a3b174d5f7ea38680948dcfd84a59ecb47612c33df6", "transit-hall"],
         ["4d761741af311d3ccec753451755c414cecbab46342481d3bcfd150def4fea7e", "two-bed"], // PS2.17 source edit (a worktop), see above; PS3.6 source rewrite, see ./byte-identity-baseline.ts
-        ["582be7470bc327469f912a06896ef2657a308072486fb8b5f21314a4f7a3a6b0", "two-storey"], // PS2.1–PS2.3 and PS2.9 source edits; PS2.17 source edit (a worktop), see above
+        ["abf58453899289e59907fe53c867c88b50cd5bc3a6544a1cb47ff55d013d06c5", "two-storey"], // PS2.1–PS2.3 and PS2.9 source edits; PS2.17 source edit (a worktop), see above
       ] as const
     ).map(([digest, example]) => [example, digest]),
   );

@@ -133,7 +133,7 @@ export function curvedNear(wallSegs: readonly WallSegment[], strips: readonly St
  * (the edge outside the circle, along the radial through the edge's point nearest the centre,
  * when that radial is inside the sweep). Closed form, no tessellation.
  */
-function rectToArc(r: BBox, arc: Arc): number {
+export function rectToArc(r: BBox, arc: Arc): number {
   const inRect = (p: Point): boolean => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
   if (inRect(arc.a) || inRect(arc.b)) return 0;
   const corners: Point[] = [

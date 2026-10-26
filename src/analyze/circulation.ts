@@ -579,8 +579,9 @@ function landingCells(
  * missed, reading the landing as sealed. And only this depth is probed: floor 1 mm deep
  * counts as a landing whatever stands a few millimetres farther out (a partition 50 mm
  * beyond the head). A probe one body radius deep (a body must fit) was measured and not
- * taken: it seals `examples/two-storey.arch`'s upper landing — a 200 mm strip between its
- * gallery void and the stair head — which every shipped measurement reads as walkable.
+ * taken: it sealed `examples/two-storey.arch`'s upper landing as then drawn — a 200 mm strip
+ * between its gallery void and the stair head, which every shipped measurement read as
+ * walkable (the void now spans the stairwell; `W_STAIR_HEAD_VOID` reports such a head).
  */
 const LANDING_PROBE_MM = 1;
 

@@ -41,7 +41,7 @@ plan "Two-Storey House" {
     window on w_east  at 5750 width 600
     window on w_west  at 5200 width 900
 
-    stair id=s_main at (100, 5900) size 3600x1000 dir up
+    stair id=s_main at (1100, 5900) size 3500x1000 dir up
 
     furniture wc    in r_wc anchor top-right    flush size 400x700
     furniture basin in r_wc anchor bottom-right flush size 500x400
@@ -80,7 +80,7 @@ plan "Two-Storey House" {
     window on w_east  at 5750 width 600
     window on w_south at 5500 width 1200
 
-    stair id=s_main at (100, 5900) size 3600x1000 dir down
+    stair id=s_main at (1100, 5900) size 3500x1000 dir down
 
     furniture double_bed in r_bed1 anchor top-left flush size 1600x2000
     furniture double_bed in r_bed2 anchor top-left flush size 1600x2000

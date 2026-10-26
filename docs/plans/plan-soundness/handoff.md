@@ -34,7 +34,7 @@ lines, a stair shrunk to clear a label warning, a worktop or a TV deleted, a `us
 swung outward): every new rule is checked for the cheapest evasion.
 
 The means, tracked in `README.md` §7: defect-corpus catch rate 7/53 (10-18) → 46/68 (10-20) → 53/72
-(10-24) → **59/73** (10-25 and 10-26), clearances class 11/19.
+(10-24) → 59/73 (10-25 and 10-26) → **67/77** (PR #280, stair safety 0/4 → 8/8), clearances class 11/19.
 
 ## 2. Where §7 stands
 
@@ -61,7 +61,7 @@ taste advice codes, `LINT_RULES` 45 entries; 133 cards, counted from `cards.md`:
 
 | Surface | Card | PR | Merge |
 |---|---|---|---|
-| Defect corpus (7/53 → 59/73) | PS1.1, PS1.2 | #195, #203, #233 | 3d255044, 90ae6bfd, 1a1efd9e |
+| Defect corpus (7/53 → 67/77) | PS1.1, PS1.2 | #195, #203, #233 | 3d255044, 90ae6bfd, 1a1efd9e |
 | Connector `between` read off the host wall's faces | PS0.1 | #196 | da9b47b5 |
 | Living/dining classified from the label | PS0.7 | #197 | 1d92656f |
 | Main entrance, use-aware floor, arc-window attribution | PS0.10–0.12 | #211 | fcb30748 |
@@ -132,13 +132,14 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    with a one-line summary) and PS7.1 (done: `validate --stage`, the stage-ordered loop in the spec,
    SKILL and role text, a `stage` key on every `validate --json` diagnostic); PS7.2 is done too
    (`context --level starter`, PR #279).
-5. **PS2.11e** the clearance remainder (`W_DOORWAY_BLOCKED` over leaf-less openings, stair swings,
-   hob under a window PS2.46, per-family depth ceiling PS2.53, face/centreline unification PS2.54).
+5. **PS2.11e** the clearance remainder (`W_DOORWAY_BLOCKED` over leaf-less openings, hob under a
+   window PS2.46, per-family depth ceiling PS2.53, face/centreline unification PS2.54); its stair
+   bullets, PS2.15 and PS2.34 are PR #280.
 6. **PS1.4** diagnostic-wording study (§8 Q3) is done (`research/2026-10-26-ps14-diagnostic-wording.md`): the owner's
    2026-10-18 ask is answered with data and no wording rule (`current` is best on both models, but by 1 case on sonnet, under the 3-case margin). **PS1.3** walls-first control arm (§8 Q1) is done (PR #264, D21): it ran on
    2026-10-26 in item 1's harness (66 CLI calls, 0 `score`, 0 `validate`; 54 verified defects against 52
    rooms-first; D1/D5 re-stated).
-7. Everything else in `cards.md` by family: PS0 17 todo, PS1 2, PS2 41 todo, PS3 4, PS4 6 todo, PS5 3, PS7 0 (7.3 parked); pick by first-contact evidence, not by number.
+7. Everything else in `cards.md` by family: PS0 17 todo, PS1 2, PS2 39 todo, PS3 4, PS4 6 todo, PS5 3, PS7 0 (7.3 parked); pick by first-contact evidence, not by number.
 
 **Open cards by family (2026-10-25 audit, counts updated 2026-10-26; "ready" = no stated dependency
 outstanding; every card that changes what an author sees in `lint`, `validate`, `finish` or the spec
@@ -148,7 +149,7 @@ waited for item 1 (D19), which ran 2026-10-26: such a card may start and the nex
 |---|---|---|---|
 | PS1 | 2 | 1.5, 1.6 | — |
 | PS0 | 17 | PS0.15 (net-area bound), 0.2, 0.3, 0.6, 0.9, 0.17, 0.22, 0.23, 0.25, 0.26, 0.27 | 0.8 (re-measure), 0.16/0.18/0.20/0.21 (a decision each), 0.24 (code landed in #252; only a `clear front\|sides` test is left) |
-| PS2 | 41 | 2.21, 2.23, 2.25, 2.27, 2.30–2.35, 2.41–2.44, 2.47–2.49, 2.51, 2.52, 2.54, 2.56, 2.57, 2.58, 2.62, 2.63 | 2.11e (row 6), 2.14 (ADR), 2.15 (2.11e), 2.16/2.36 (facts), 2.20/2.28 (measure first), 2.24/2.26/2.37/2.38/2.46/2.55 (a decision each), 2.39 (drawing decision), 2.40 and 5.6 (fire D12's reverse-if), 2.53 (a sourced ceiling) |
+| PS2 | 39 | 2.21, 2.23, 2.25, 2.27, 2.30–2.33, 2.35, 2.41–2.44, 2.47–2.49, 2.51, 2.52, 2.54, 2.56, 2.57, 2.58, 2.62, 2.63 | 2.11e (row 6), 2.14 (ADR), 2.16/2.36 (facts), 2.20/2.28 (measure first), 2.24/2.26/2.37/2.38/2.46/2.55 (a decision each), 2.39 (drawing decision), 2.40 and 5.6 (fire D12's reverse-if), 2.53 (a sourced ceiling) |
 | PS3 | 4 | 3.12 | 3.10 (decision; moves digests, D8), 3.11 (corpus sweep), 3.13 (proof first) |
 | PS4 | 6 | 4.6, 4.7, 4.8, 4.9 | 4.10 and 4.12's MCP part (with 5.3a's version bump) |
 | PS5 | 3 | 5.5 | 5.3a (MCP version bump), 5.6 (D12) |

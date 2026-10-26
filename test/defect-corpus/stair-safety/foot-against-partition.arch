@@ -1,0 +1,19 @@
+# class: stair-safety
+# origin: audits/2026-10-25-first-contact-rerun-row5.md RT1 (first-contact-plans/2026-10-25-rerun/5-townhouse.arch L0:
+#   the stair foot 450 mm from the living-room partition ahead; reduced to one storey)
+# expect: W_STAIR_NO_LANDING
+# status: done
+# fact: st (x 200-1200, y 200-2500, dir up) is entered at its south end y 2500; the partition w_p's face is y 2950: 450
+#   mm of floor at the foot, where AD K 1.20 asks a landing as long as the 1000 mm flight is wide
+plan "Stair foot against a partition" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }
+  wall id=w_p partition thickness 100 { (0,3000) (6000,3000) }
+  room id=r_hall at (0,0) size 6000x3000 label "Hall" uses hall
+  room id=r_bed at (0,3000) size 6000x3000 label "Bedroom" uses bedroom
+  door id=d_front at (4500,0) width 900 wall shell swing into r_hall
+  door id=d_bed at (5300,3000) width 900 wall w_p swing into r_bed
+  window at (3000,6000) width 1500 wall shell
+  stair id=st at (200,200) size 1000x2300 dir up
+}

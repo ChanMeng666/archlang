@@ -217,14 +217,20 @@ describe("planted violations — the oracle and the pin table go red", () => {
     const b0 = observeBuilding(storeyWrapper(src, null).src);
     const out = compareBuildings(rel, b0, observeBuilding(planted), g, frameFor(g, grid), "up", false);
     expect(out.get(storeyScope(rel, 1))!.vs).toEqual([]);
-    expect(out.get(storeyScope(rel, 3))!.vs).toEqual([]);
+    // L3 sees only the one cross-storey rule (PS2.15): its stair no longer stands over the turned
+    // L2's, and `W_SHAFT_FOOTPRINT_MISMATCH` reports a pair on its UPPER stop. Nothing of L3's own.
+    const l3 = out.get(storeyScope(rel, 3))!.vs;
+    expect(l3.length).toBeGreaterThan(0);
+    expect(l3.every((v) => v.key.startsWith("lint.shaft-footprint-mismatch"))).toBe(true);
     const l2 = out.get(storeyScope(rel, 2))!.vs;
     expect(l2.map((v) => v.key)).toContain("rooms[g.r_bed1].bbox");
     expect(l2.map((v) => v.key)).toContain("verticals[g.st].bbox");
     // …and the suite's assertion would report it: none of it is pinned.
     const observed = [...out].flatMap(([where, r]) => toObserved(where, "r180", r.vs));
     const { added } = pinDiff(KNOWN, observed, (o) => o.where.startsWith(`${rel}@`));
-    expect(added.length).toBe(toObserved(storeyScope(rel, 2), "r180", l2).length);
+    expect(added.length).toBe(
+      toObserved(storeyScope(rel, 2), "r180", l2).length + toObserved(storeyScope(rel, 3), "r180", l3).length,
+    );
     expect(added.length).toBeGreaterThan(5);
   });
 

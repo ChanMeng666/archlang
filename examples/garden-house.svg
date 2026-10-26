@@ -99,21 +99,21 @@
 <text x="12600" y="19380" font-size="170" fill="#9a9488" text-anchor="middle" dominant-baseline="central">49.0 m²</text>
 </g>
 <g id="A-FLOR-STRS" inkscape:groupmode="layer" inkscape:label="A-FLOR-STRS">
-<polygon points="6900,5200 7800,5200 7800,8400 6900,8400" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
-<line x1="6846" y1="7170.45" x2="7854" y2="6720.45" stroke="#a8a29a" stroke-width="18"/>
-<line x1="6846" y1="6879.55" x2="7854" y2="6429.55" stroke="#a8a29a" stroke-width="18"/>
-<line x1="6900" y1="8109.09" x2="7800" y2="8109.09" stroke="#a8a29a" stroke-width="18"/>
-<line x1="6900" y1="7818.18" x2="7800" y2="7818.18" stroke="#a8a29a" stroke-width="18"/>
-<line x1="6900" y1="7527.27" x2="7800" y2="7527.27" stroke="#a8a29a" stroke-width="18"/>
-<line x1="6900" y1="7236.36" x2="7800" y2="7236.36" stroke="#a8a29a" stroke-width="18"/>
-<line x1="6900" y1="6363.64" x2="7800" y2="6363.64" stroke="#a8a29a" stroke-width="18"/>
-<line x1="6900" y1="6072.73" x2="7800" y2="6072.73" stroke="#a8a29a" stroke-width="18"/>
-<line x1="6900" y1="5781.82" x2="7800" y2="5781.82" stroke="#a8a29a" stroke-width="18"/>
-<line x1="6900" y1="5490.91" x2="7800" y2="5490.91" stroke="#a8a29a" stroke-width="18"/>
-<line x1="7350" y1="8050.91" x2="7350" y2="5316.36" stroke="#6c6864" stroke-width="18"/>
-<line x1="7350" y1="5316.36" x2="7501.2" y2="5568.36" stroke="#6c6864" stroke-width="18"/>
-<line x1="7350" y1="5316.36" x2="7198.8" y2="5568.36" stroke="#6c6864" stroke-width="18"/>
-<text x="7350" y="8254.55" font-size="200" fill="#333333" text-anchor="middle" dominant-baseline="central">UP</text>
+<polygon points="7600,5600 8400,5600 8400,8800 7600,8800" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
+<line x1="7552" y1="7545.45" x2="8448" y2="7145.45" stroke="#a8a29a" stroke-width="18"/>
+<line x1="7552" y1="7254.55" x2="8448" y2="6854.55" stroke="#a8a29a" stroke-width="18"/>
+<line x1="7600" y1="8509.09" x2="8400" y2="8509.09" stroke="#a8a29a" stroke-width="18"/>
+<line x1="7600" y1="8218.18" x2="8400" y2="8218.18" stroke="#a8a29a" stroke-width="18"/>
+<line x1="7600" y1="7927.27" x2="8400" y2="7927.27" stroke="#a8a29a" stroke-width="18"/>
+<line x1="7600" y1="7636.36" x2="8400" y2="7636.36" stroke="#a8a29a" stroke-width="18"/>
+<line x1="7600" y1="6763.64" x2="8400" y2="6763.64" stroke="#a8a29a" stroke-width="18"/>
+<line x1="7600" y1="6472.73" x2="8400" y2="6472.73" stroke="#a8a29a" stroke-width="18"/>
+<line x1="7600" y1="6181.82" x2="8400" y2="6181.82" stroke="#a8a29a" stroke-width="18"/>
+<line x1="7600" y1="5890.91" x2="8400" y2="5890.91" stroke="#a8a29a" stroke-width="18"/>
+<line x1="8000" y1="8450.91" x2="8000" y2="5716.36" stroke="#6c6864" stroke-width="18"/>
+<line x1="8000" y1="5716.36" x2="8134.4" y2="5940.36" stroke="#6c6864" stroke-width="18"/>
+<line x1="8000" y1="5716.36" x2="7865.6" y2="5940.36" stroke="#6c6864" stroke-width="18"/>
+<text x="8000" y="8654.55" font-size="200" fill="#333333" text-anchor="middle" dominant-baseline="central">UP</text>
 </g>
 <g id="A-FURN" inkscape:groupmode="layer" inkscape:label="A-FURN">
 <polygon points="3277,10400 5323,10400 5323,12000 3277,12000" fill="none" stroke="#a8a29a" stroke-width="13"/>
@@ -530,8 +530,8 @@
 <polygon points="13760,13650 13760,13710 12440,13710 12440,13650" fill="none" stroke="#1b1b1b" stroke-width="18"/>
 </g>
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
-<text x="8000" y="8930" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Hall</text>
-<text x="8000" y="9315" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">21.6 m²</text>
+<text x="8000" y="10280" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Hall</text>
+<text x="8000" y="10665" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">21.6 m²</text>
 <text x="4650" y="6680" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Study</text>
 <text x="4650" y="7065" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">19.3 m²</text>
 <text x="4650" y="9830" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Living</text>

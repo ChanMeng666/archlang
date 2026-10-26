@@ -151,7 +151,7 @@ plan "Hillside Villa" {
     furniture office_chair at (2300,2900) size 600x600  rotate 90 in r_office
     furniture bookshelf    at (200,3700)  size 1600x300 in r_office
 
-    furniture rug          at (600,5000)  size 3000x2400 in r_living
+    furniture rug          at (600,5100)  size 3000x2300 in r_living
     furniture sofa_l        at (700,5600)  size 2400x1500 in r_living
     furniture coffee_table  at (1300,7200) size 1000x500  in r_living
     furniture armchair      at (3200,5750) size 900x850  rotate 270 in r_living
@@ -187,7 +187,7 @@ plan "Hillside Villa" {
     dim (8000,10500)->(13800,10500) offset 600 text "Terrace 5.8 x 2.0 m"
     dim (0,10800)->(3000,10800) offset 300
 
-    stair id=stair at (4900,2700) size 2200x1000 dir up
+    stair id=stair at (1000,4300) size 2900x800 dir up
   }
 
   # =====================================================================================
@@ -230,7 +230,7 @@ plan "Hillside Villa" {
     room id=r_gallery at (0,4200) size 4800x6000 label "Gallery" uses hall circulation
 
     # ---- doors ----------------------------------------------------------------------------
-    door id=d_bed2  on w_bed2_s  at 2000  width 900 swing in
+    door id=d_bed2  on w_bed2_s  at 700  width 900 swing in
     door id=d_bed3  on w_bed3_s  at 2000  width 900 swing in
     door id=d_linen on w_linen_s at 1100  width 700 swing out
     # Pocket, not hinged: each ensuite is 1800 mm wide with a bed, wardrobe and this
@@ -239,13 +239,13 @@ plan "Hillside Villa" {
     door id=d_en3   pocket on en3.wall  at 7500  width 700 slide right
     door id=d_enm   on en_m.wall at 7500  width 700 swing out
     door id=d_master_corr on w_l2_band at 10500 width 1000 swing into r_master
-    opening id=o_gallery on w_l2_band at 1500 width 1800
+    opening id=o_gallery on w_l2_band at 1050 width 1600
 
     # en2 and en3 also open onto the landing (their SOUTH wall, run-length 5300), so each is
     # a guest bath too; `en_m` keeps one door, into the master bedroom, the conventional
     # case (en2/en3 are reached off the landing, so `W_BATH_VIA_BEDROOM` does not fire).
-    # `arch lint` warns seven times: `W_ROOM_NOT_EQUATOR_FACING` on bedrooms 2 and 3
-    # (north windows only) and five `W_PATH_TOO_NARROW`, each a real 700 mm door.
+    # `arch lint` warns eight times: `W_ROOM_NOT_EQUATOR_FACING` on bedrooms 2 and 3
+    # (north windows only) and six `W_PATH_TOO_NARROW`, each a real 700 mm door.
     door id=d_en2_corr on en2.wall at 5300 width 700 swing out
     door id=d_en3_corr on en3.wall at 5300 width 700 swing out
 
@@ -282,7 +282,7 @@ plan "Hillside Villa" {
     # and nothing else, but it does grow the page.
     roof overhang 700 wall shell
 
-    stair id=stair at (4900,2700) size 2200x1000 dir down
+    stair id=stair at (1000,4300) size 2900x800 dir down
   }
 
   axes {

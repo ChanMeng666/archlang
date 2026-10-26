@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**143 errors** · **75 warnings**
+**143 errors** · **81 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -216,8 +216,14 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_SANITIZED_CONFIG`](#w_sanitized_config) | warning | A disallowed config value was stripped. |
 | [`W_SCALE_OVERFLOW`](#w_scale_overflow) | warning | The drawing does not fit the declared paper at the declared scale. |
 | [`W_SEAT_FACING_AWAY`](#w_seat_facing_away) | warning | A chair at a table faces away from it. |
+| [`W_SHAFT_FOOTPRINT_MISMATCH`](#w_shaft_footprint_mismatch) | warning | A shaft's runs on two neighbouring storeys do not stand over each other. |
+| [`W_STAIR_HEAD_VOID`](#w_stair_head_void) | warning | A void opens on the landing at the head of a flight. |
+| [`W_STAIR_NO_LANDING`](#w_stair_no_landing) | warning | A flight has no landing at its foot or head. |
+| [`W_STAIR_SIDE_ENTRY`](#w_stair_side_entry) | warning | A doorway opens onto the side of a flight. |
+| [`W_STAIR_TOO_STEEP`](#w_stair_too_steep) | warning | A flight is too short to climb its storey. |
 | [`W_STAIR_UNMATCHED`](#w_stair_unmatched) | warning | A run of vertical circulation appears on only one storey. |
 | [`W_SWING_OBSTRUCTED`](#w_swing_obstructed) | warning | Door swing is obstructed. |
+| [`W_SWING_OVER_STAIR`](#w_swing_over_stair) | warning | A door's swing sweeps a stair or the landing at its end. |
 | [`W_SWING_ROOM_NOT_ADJACENT`](#w_swing_room_not_adjacent) | warning | `swing into <room>` names a room the door does not border. |
 | [`W_TITLE_OVERFLOW`](#w_title_overflow) | warning | A title-block value is wider than its row. |
 | [`W_UNKNOWN_MATERIAL`](#w_unknown_material) | warning | Unknown wall material; using the default hatch. |
@@ -2902,6 +2908,74 @@ furniture table at (0,0) size 800x800
 furniture chair at (175,850) size 450x450   # lint: south of the table, facing south
 ```
 
+## W_SHAFT_FOOTPRINT_MISMATCH
+
+*warning* — A shaft's runs on two neighbouring storeys do not stand over each other.
+
+**Cause.** The same `id` on two `level` blocks is one shaft. On two neighbouring stops of it, the runs do not line up: a lift car is not in exactly the same footprint (a shaft is plumb), or a stair or escalator runs along the other axis, or its two footprints overlap by less than half of the smaller one, or one stop draws a different kind of run. The flight climbed on one page then arrives somewhere else on the next. Reported on the upper stop. Half is the programme's threshold, not a code's: a footprint redrawn a little longer or shifted by a wall's thickness passes.
+
+**Fix.** Draw the run with the same `at` and `size` on both storeys (the hint quotes both), or give two unrelated runs different ids. There is no machine-applicable fix: which storey is right is the author's call.
+
+```arch static
+level 1 "G" { stair id=s at (0,0) size 900x2600 dir up }
+level 2 "1" { stair id=s at (3000,0) size 900x2600 dir down }   # lint: the footprints do not overlap
+```
+
+## W_STAIR_HEAD_VOID
+
+*warning* — A void opens on the landing at the head of a flight.
+
+**Cause.** On the storey a flight arrives at (the `dir down` stop of its id, or the head of a flight from below that continues upward), a `void` overlaps the landing a person steps off the flight onto: the square beyond the head as wide as the flight and as deep (Approved Document K (2013) 1.20; 1200 mm deep outside a dwelling, 1.23a). The top step meets a hole. The stairwell itself may be a void; only the floor beyond the head is judged.
+
+**Fix.** Move the void beside the flight or past its foot end, or shrink it, so the landing beyond the head is floor. There is no machine-applicable fix.
+
+```arch static
+level 2 "First" {
+  stair id=s at (100,1500) size 900x2600 dir down
+  void id=g at (100,200) size 900x1100   # lint: the floor ends 200 mm past the top step
+}
+```
+
+## W_STAIR_NO_LANDING
+
+*warning* — A flight has no landing at its foot or head.
+
+**Cause.** Beyond the end a flight is entered from on this storey (its foot where it goes `up`, its head where it comes `down`, and the head of a flight from below that continues upward), a wall stands, a `void` opens (at a foot), or the floor ends, nearer than the landing the flight needs: as long as the flight is wide (Approved Document K (2013) 1.20, "At the top and bottom of every flight, provide landings the width and length at least as great as the smallest width of the flight"; at least 1200 mm in a building other than a dwelling, 1.23a). The depth is measured across the middle half of the flight's width, from the wall's drawn body (a cased opening is passable and cut out; a door's closed leaf is not), so a wall drawn along the flight's flank is not read as standing across its end. A person stepping off walks into the wall, or must turn on the last step. A curved wall is not measured.
+
+**Fix.** Move the stair, shorten it, or move the wall until the quoted depth stands clear beyond the end. There is no machine-applicable fix: moving a stair moves the rooms around it.
+
+```arch static
+wall id=p partition thickness 100 { (0,3000) (4000,3000) }
+stair id=s at (500,200) size 900x2350 dir up   # lint: the partition stands 400 mm past the bottom step, where 900 mm is needed
+```
+
+## W_STAIR_SIDE_ENTRY
+
+*warning* — A doorway opens onto the side of a flight.
+
+**Cause.** A door or cased opening in a wall along a `stair`'s flight, beside it with less than a doorway's width (`minDoorWidthMm`, or its own width if narrower) past either end, stands nearer to the flight than the ruleset's least clear path width (`minPathClearWidthMm`, 700 mm): stepping through, a person meets the flight's side partway up its rise, with no landing to turn on. A flight is entered at its foot or head, from a landing (Approved Document K (2013) 1.20). Measured from the wall's face to the footprint's side. Only the part of a rising flight under 2 m of rise is beside a person (AD K 1.11's headroom), read against the storey's `height`, or 3000 mm when the plan authors none, a default that can only quiet the rule. A doorway past either end of the flight is the landing rules' question, not this one's.
+
+**Fix.** Move the doorway along its wall past the foot or head of the flight, or move the stair so at least the quoted width stands between them. There is no machine-applicable fix.
+
+```arch static
+wall id=w partition thickness 100 { (4000,0) (4000,3000) }
+door id=d at (4000,1450) width 800 wall w
+stair id=s at (4200,300) size 1100x2400 dir up   # lint: the doorway is 150 mm from the flight
+```
+
+## W_STAIR_TOO_STEEP
+
+*warning* — A flight is too short to climb its storey.
+
+**Cause.** A `stair` going `up` climbs its storey's floor-to-floor `height` in one straight flight, and its run (the footprint's long side) is shorter than the least run that climb needs: the fewest risers no higher than `stairMaxRiseMm`, and one going fewer, each at least `stairMinGoingMm` (and, under a pitch cap, the riser over `stairMaxPitchRatio`). The default, 220 mm risers and 220 mm goings with no pitch cap, is the most generous of the figures read (Approved Document K (2013) Table 1.1, private stair): a flight that fails it fails every code cited. `uk-residential-advisory` adds AD K's 42° pitch, `us-residential-advisory` IRC R311.7.5's 7¾ in riser and 10 in tread, `cn-residential-advisory` GB 50096-2011 5.7.4's 0.20 m riser and 0.22 m tread. Judged only where the plan authors a height (`describe().heights`); otherwise the coverage report says the stair checks skipped it. Judged on the storey the flight climbs from.
+
+**Fix.** Lengthen the flight (its `size` along the run, on every storey the shaft is drawn) to the quoted run, lower the storey `height` if it is wrong, or draw the climb as two flights with a landing between. There is no machine-applicable fix: a longer flight moves the rooms around it.
+
+```arch static
+height 2800
+stair id=s at (200,200) size 1000x2000 dir up   # lint: 13 risers and 12 goings of 220 mm need a 2640 mm run
+```
+
 ## W_STAIR_UNMATCHED
 
 *warning* — A run of vertical circulation appears on only one storey.
@@ -2925,6 +2999,21 @@ level 2 "1" { }   # warning: "s" is on level 1 only
 
 ```arch static
 door at (4000,1500) width 900 swing in   # lint: leaf sweeps onto the bed
+```
+
+## W_SWING_OVER_STAIR
+
+*warning* — A door's swing sweeps a stair or the landing at its end.
+
+**Cause.** A hinged door's quarter-disc (the one the drawing shows) overlaps a `stair`'s footprint, or the landing a flight is stepped off onto at its head, or, at its foot, the 400 mm Approved Document K (2013) 1.24 and Diagram 1.8 ask a dwelling's door to leave clear across the flight's width (in a building other than a dwelling, 1.23b, the whole foot landing). A person stepping off the flight walks into the leaf, or the leaf strikes someone on the treads. The landing is the square beyond the end as wide as the flight and as deep as it is wide (AD K 1.20; at least 1200 mm long outside a dwelling, 1.23a). On a storey where the flight goes `up` its foot is here; where it comes `down`, its head; a storey a flight from below arrives on and continues up from owes both. On a storey the flight rises from, only the part of the footprint lower than the door's head counts (the treads climb the storey height over the run, so a leaf swings under the high end); that height is the storey's `height`, or 3000 mm when the plan authors none, a default that can only quiet the rule. A touch is not an overlap.
+
+**Fix.** Open the door to the other side of its wall (flip its `swing`) or hang it on the other jamb (flip its `hinge`); the hint says when either clears the stair. Otherwise move the door or the stair, or use a `sliding` or `pocket` door, which sweeps nothing. There is no machine-applicable fix: which way a door opens is a design decision.
+
+```arch static
+wall id=w partition thickness 100 { (0,2600) (8000,2600) }
+room id=land at (0,2600) size 8000x1900 label "Landing"
+door id=d at (4900,2600) width 700 wall w hinge near start swing into land   # lint: its leaf sweeps the top of the flight
+stair id=s at (4900,2700) size 2200x1000 dir down
 ```
 
 ## W_SWING_ROOM_NOT_ADJACENT

@@ -15,7 +15,9 @@ Lint as of `main@1f7c544d` (`node dist/cli.js lint <file> --json`, default rules
 
 The impact drill: `archlang impact docs/plans/plan-soundness/repro/widen-before.arch --set AW=4500`
 (the same report as `archlang impact …/widen-after.arch --against …/widen-before.arch`). Its complete
-human report and JSON are pinned in `test/impact.test.ts`.
+human report and JSON are pinned in `test/impact.test.ts`. Its two-storey keep twins (`test/keep-corpus/widen-before.arch`,
+`widen-after.arch`, design §9) add a stair, placed so it lints sound: the same rows as above on
+level 1 and none on level 2.
 
 Two drills need no file. Apply them to `examples/studio.arch`:
 
