@@ -1,0 +1,67 @@
+plan "Three-bed family house" {
+  units mm
+  grid 100
+  paper A3 landscape
+  north up
+  dims auto all
+
+  strip right at (0,0) gap 0 height 3800 {
+    room id=garage size 3200 uses garage
+    room id=utility size 1700 uses utility
+    room id=kitchen size 3500 label "Kitchen / Dining" uses kitchen
+    room id=living size 4600 uses living
+  }
+  room id=hall below garage size 13000x1500 uses hall
+  strip right at (0,5300) gap 0 height 3500 {
+    room id=master size 3400 label "Master" uses bedroom
+    room id=ensuite size 1600 label "Ensuite" uses bath
+    room id=bath size 2000 label "Bathroom" uses bath
+    room id=bed2 size 3000 label "Bed 2" uses bedroom
+    room id=bed3 size 3000 label "Bed 3" uses bedroom
+  }
+
+  walls from rooms exterior 250 partition 100
+
+  door id=front on hall.left at center width 900 swing into hall
+  door id=gdoor garage on garage.left at center width 2400
+  door between garage and utility at center width 900 swing into utility
+  door between utility and hall at center width 800 swing into hall
+  door between kitchen and hall at 600 from start width 900 swing into kitchen
+  door between living and hall at center width 900 swing into living
+  door between hall and master at 700 from start width 900 swing into master
+  door between master and ensuite at center width 800 swing into ensuite
+  door between hall and bath at center width 800 swing into bath
+  door between hall and bed2 at center width 900 swing into bed2
+  door between hall and bed3 at center width 900 swing into bed3
+
+  window on utility.top width 800
+  window on kitchen.top width 1800
+  window on living.top width 1800
+  window on living.right width 1800
+  window on master.left width 1500
+  window on ensuite.bottom width 800
+  window on bath.bottom width 800
+  window on bed2.bottom width 1500
+  window on bed3.bottom width 1500
+
+  furniture sofa_l in living anchor bottom-right inset 400 size 2200x900
+  furniture tv_unit against living.top
+  furniture counter against kitchen.top offset 800
+  furniture kitchen_sink against kitchen.top offset 1800
+  furniture fridge against kitchen.right
+  furniture meeting_table in kitchen anchor bottom inset 500 size 1800x900
+  furniture washer against utility.right
+  furniture double_bed against master.top
+  furniture wardrobe against master.bottom offset 2500
+  furniture wc against ensuite.top
+  furniture shower against ensuite.right
+  furniture basin against ensuite.left
+  furniture bathtub against bath.top
+  furniture wc against bath.right
+  furniture bed against bed2.top
+  furniture wardrobe against bed2.right
+  furniture bed against bed3.top
+  furniture wardrobe against bed3.left
+
+  title { project "Three-bed family house" drawn_by "ArchLang" date "2026-10-27" number "H-01" revision "A" }
+}

@@ -17,8 +17,8 @@ and **judges quality** (a scored, sourced taste report), while keeping every iro
 ArchLang for the first time, helped only by the language's own guidance, checks and reasoning, writes
 plans that follow architectural logic and usage logic and show professional taste. The yardstick is
 the first-contact re-measure (six briefs cold-authored from `spec.llm.md`, audited by hand, D7): verified
-defects 57 (2026-10-18) → 48 (10-24) → 49 (10-25) → 52 / 54 (10-26, arms A / B, D20), blockers 4 → 2 → 0
-→ 1 per arm, rooms-first 6/6 (12/12 on 10-26), taste report used by 0/6 (0/12 on 10-26) authors. Corpus
+defects 57 (2026-10-18) → 48 (10-24) → 49 (10-25) → 52 / 54 (10-26, arms A / B, D20) → 61 (row 6, D26), blockers 4 → 2 → 0
+→ 1 per arm → 2, rooms-first 6/6 (12/12 on 10-26), taste report used by 0/6 (0/12 on 10-26) authors. Corpus
 catch rates (§7) are the means; this number is the end. It is not yet met: 52 and 54 defects still pass lint.
 
 **How to use this document (for a new session).**
@@ -457,6 +457,24 @@ it.** *Ratified by the owner 2026-10-26, so it may be cited as precedent (D18).*
   `W_DOORWAY_BLOCKED` only (T2 and `clearances/bed-before-door-face` move back to missed) and the
   three judgments and their fixture notes revert.
 
+**D26. §7 row 6 is met in part; the first-contact prompt stays frozen and the next re-measure adds
+a whole-loop arm.** (2026-10-27; evidence `audits/2026-10-26-first-contact-rerun-row6.md`.) *Decided
+by delegation (D18); stands unless the owner objects.* A measurement record, not an iron-law change.
+- Row 6: every card landed and the D10 re-measure ran: 61 defects (2 B) against 52 / 54 / 54; 12
+  reported by the final lint, all on the two plans whose authors stopped early, so not a gain; the
+  stair blocker named by lint; the residual families unchanged. The review-sheet clause is false
+  inside repeated statements: PS4.6 is the remainder.
+- Reading: defects do not fall with rules alone; the stopping rule and the families with no rule bind.
+- Ruling: the protocol's frozen prompt ("stop when it compiles", every run since 2026-10-24; authors
+  stopping with warnings standing 0 / 0 / 2 / 2 under it, arms A, B, C, row 6) stays unchanged for
+  comparability, and the next re-measure adds a second arm whose prompt names the whole loop
+  (compile → `validate --stage` → lint → repair, until `next` is `null`), so the uptake of
+  author-facing surfaces can be seen at all (PS7.8).
+- *Why:* changing the prompt alone would move the instrument with the treatment (the PS7.4 lesson);
+  keeping it alone leaves the role's loop (PS7.5, PS7.1) unmeasured.
+- *Reverse if:* the whole-loop arm shows no fewer defects than the frozen arm over two re-measures;
+  then the second arm is dropped.
+
 ## 4. Principles: what "professional rules and taste" means here
 
 **Five layers, treated differently** (Drafting added by D11):
@@ -579,7 +597,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 | 3a | PS3.7, PS3.8, PS3.5, PS3.9 (and PS0.19) | Unplanned, after row 3 (D7): PRs #228–#232. Re-measure PR #233: defects 57 → 48, blockers 4 → 2; corpus 47/70 |
 | 4 | PS0.4, PS4.1, PS4.2, PS4.5 | The widening drill's `impact` names every moved, held and broken item correctly. *Status:* met 2026-10-26: PS4.2 (PR #240, 7954f252) named the moved and broken items; PS4.5 (PR #281) reports the shell and `p` as held, with their gaps |
 | 5 | PS5.1–PS5.3, PS2.10–PS2.12 | The taste score separates the corpus's known-bad from known-good plans monotonically; the clearances corpus class reaches ≥ 10/18. *Status:* met 2026-10-25 (D14); PS2.11a–d merged (PRs #252, #253), clearances 11/19, corpus 59/73. Status and re-measure history: `research/2026-10-26-readme-history.md` § §7 row 5 |
-| 6 | PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e | **Current** (row 5 closed 2026-10-25). The owed row-5 re-measure, run as D15's two arms (D19), ran 2026-10-26 (`audits/2026-10-26-first-contact-rerun-d15.md`; D20: taste is a reviewer's tool, PS7.4 done, PS7.5 filed), so the row's cards may start. *Landed 2026-10-26:* PS2.50 (PR #267), PS2.45 (PR #268), PS2.22/PS2.29 (PR #269), PS4.4 (PR #271), PS4.3 design (PR #270, D22) and parts A and B (`keep` done, PRs #272/#275), PS5.4 (PR #274). The row is met when: `keep` invariants and brief-bound sizes are checked by `validate`, the widening drill reports a broken `keep` with its signed residual, and `preview --review` rings every flagged element; a re-measure closes the row (D10). Order and the open-card map: `handoff.md` § 4. (PS3.5 and PS3.6 already landed, rows 3a and 3) |
+| 6 | PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e | **Met in part** 2026-10-27 (D26). The row is met when: `keep` invariants and brief-bound sizes are checked by `validate`, the widening drill reports a broken `keep` with its signed residual, and `preview --review` rings every flagged element; a re-measure closes the row (D10). *Status:* every card landed (PRs #267–#283) and the D10 re-measure ran (`audits/2026-10-26-first-contact-rerun-row6.md`: 61 defects against 52 / 54 / 54, 12 reported by lint, the stair blocker named by lint, the residual families unchanged). The review-sheet clause is false as built inside repeated statements (`p2-for` 0 of 2 marks ringed, `p10-loopfurn` 5 of 8, `p3-place` 4 of 6; PS5.4 as-built): **PS4.6** is the remainder. Order: `handoff.md` § 4 |
 | 7 | PS6.1 | — |
 
 Rows 1–4 as they stood before this pruning, verbatim: `research/2026-10-25-ps5-as-built.md` § §7 rows 1–4.
