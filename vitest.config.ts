@@ -30,7 +30,7 @@ export default defineConfig({
     // Coverage is REPORT-ONLY and deliberately has NO thresholds: it is a map of
     // what the suite reaches, not a gate. Nothing fails on a coverage number, so
     // `npm test` stays the single pass/fail signal and nobody games a percentage.
-    // Only opted into via `npm run test:coverage` (CI runs it on one leg), so the
+    // Only opted into via `npm run test:coverage` (nightly.yml's `coverage` job), so the
     // ordinary test legs pay none of the instrumentation cost.
     coverage: {
       provider: "v8",

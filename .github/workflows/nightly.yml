@@ -4,7 +4,7 @@ name: Nightly
 #
 # CI (ci.yml) gates every push and must stay fast. These are the checks that either
 # talk to the outside world (production smoke, advisory feeds), take too long to run
-# per-PR (the full OS × Node matrix), or would be pure noise as a merge gate
+# per-PR (the full OS × Node matrix, instrumented coverage), or would be pure noise as a merge gate
 # (dependency advisories nobody can fix in the PR that tripped them).
 #
 # Reporting: dependency advisories are REPORT-ONLY — they never turn this workflow red,
@@ -164,6 +164,67 @@ jobs:
       - run: npm ci
 
       - run: npm test
+
+  # ---------------------------------------------------------------------------
+  # Coverage of `src/` (REPORT-ONLY). It used to run on ci.yml's Node 22 leg, where the
+  # instrumented suite (≈ 43 min) was every PR's long pole; the uninstrumented `npm test`
+  # there and in `full-matrix` above stays the pass/fail signal. Nothing here gates:
+  # there are no thresholds, the zero-coverage script always exits 0, and the job is
+  # `continue-on-error` and NOT among `report`'s needs, so even a red step (an
+  # instrumentation timeout, a missing summary file) can neither turn the night red nor
+  # write the pinned issue. Read it in the run's job summary and the `coverage-summary`
+  # artifact. See `docs/testing.md` §1.
+  # ---------------------------------------------------------------------------
+  coverage:
+    name: Coverage (report-only)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Test (+ coverage, report-only)
+        run: npm run test:coverage
+
+      - name: Coverage summary
+        run: |
+          node --input-type=commonjs -e '
+          const t = JSON.parse(require("node:fs").readFileSync("coverage/coverage-summary.json", "utf8")).total;
+          const rows = ["lines", "statements", "functions", "branches"].map(
+            (k) => "| " + k + " | " + t[k].pct + "% | " + t[k].covered + " / " + t[k].total + " |",
+          );
+          console.log(
+            [
+              "## Coverage — `src/` (report-only, never gates)",
+              "",
+              "| Metric | % | Covered / Total |",
+              "| --- | --- | --- |",
+              ...rows,
+            ].join("\n"),
+          );
+          ' >> "$GITHUB_STEP_SUMMARY"
+
+      # The totals above cannot show a module that fell to ZERO — it is one row among 111
+      # in the `text` reporter and invisible in a four-line total. This names them. It is
+      # ADVISORY in the strongest sense: the script always exits 0 (it catches its own
+      # errors, including a missing coverage file). No thresholds are added — see
+      # `docs/testing.md` §1 (coverage is report-only).
+      - name: Zero-coverage modules (advisory)
+        run: node scripts/coverage-zero-report.mjs >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage summary
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-summary
+          path: coverage/coverage-summary.json
+          if-no-files-found: error
 
   # ---------------------------------------------------------------------------
   # Read-only end-to-end checks against PRODUCTION (Playwright).
@@ -344,7 +405,8 @@ jobs:
   # ---------------------------------------------------------------------------
   # One writer for the pinned issue. Folding "advisories found" and "a job failed"
   # into a single always()-job keeps both out of each other's way: two jobs racing to
-  # create-or-update the same issue can create it twice.
+  # create-or-update the same issue can create it twice. A fully green night comments
+  # on the open issue and closes it.
   # ---------------------------------------------------------------------------
   report:
     name: Report
@@ -376,13 +438,37 @@ jobs:
             // show in the body when the issue is written anyway.
             const engines = needs['cross-engine']?.outputs?.status || 'unknown';
             const diverged = engines === 'diverged';
+            const run = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
 
+            // A fully green night (no failed job, no advisory, no divergence) closes the open
+            // issue, so it never outlives the problem it reported. The next bad night opens a
+            // fresh one through the path below, which this branch never reaches.
             if (failed.length === 0 && !advisories && !diverged) {
-              core.info('nightly: all jobs green and no advisories — nothing to report');
+              const open = (
+                await github.paginate(github.rest.issues.listForRepo, { owner, repo, state: 'open', per_page: 100 })
+              ).find((i) => !i.pull_request && (i.body ?? '').includes(marker));
+              if (!open) {
+                core.info('nightly: all jobs green and no advisories — nothing to report');
+                return;
+              }
+              const date = new Date().toISOString().slice(0, 10);
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: open.number,
+                body: `All nightly jobs green on ${date} (run ${run}).`,
+              });
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: open.number,
+                state: 'closed',
+                state_reason: 'completed',
+              });
+              core.info(`nightly: all jobs green — closed #${open.number}`);
               return;
             }
 
-            const run = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
             const body = [
               marker,
               `_Updated by the [nightly workflow](${run}) — ${new Date().toISOString()}._`,
