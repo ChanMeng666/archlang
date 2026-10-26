@@ -135,8 +135,8 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
 5. **PS2.11e** the clearance remainder (`W_DOORWAY_BLOCKED` over leaf-less openings, hob under a
    window PS2.46, per-family depth ceiling PS2.53, face/centreline unification PS2.54); its stair
    bullets, PS2.15 and PS2.34 are PR #280.
-6. **PS1.4** diagnostic-wording study (§8 Q3) is still open: an owner ask from 2026-10-18 found undone by the
-   2026-10-25 transcript audit. **PS1.3** walls-first control arm (§8 Q1) is done (PR #264, D21): it ran on
+6. **PS1.4** diagnostic-wording study (§8 Q3) is done (`research/2026-10-26-ps14-diagnostic-wording.md`): the owner's
+   2026-10-18 ask is answered with data and no wording rule (`current` is best on both models, but by 1 case on sonnet, under the 3-case margin). **PS1.3** walls-first control arm (§8 Q1) is done (PR #264, D21): it ran on
    2026-10-26 in item 1's harness (66 CLI calls, 0 `score`, 0 `validate`; 54 verified defects against 52
    rooms-first; D1/D5 re-stated).
 7. Everything else in `cards.md` by family: PS0 17 todo, PS1 2, PS2 39 todo, PS3 4, PS4 6 todo, PS5 3, PS7 0 (7.3 parked); pick by first-contact evidence, not by number.
@@ -147,9 +147,9 @@ waited for item 1 (D19), which ran 2026-10-26: such a card may start and the nex
 
 | Family | Open | Ready now | Waiting on something |
 |---|---|---|---|
-| PS1 | 1 | — | 1.4 (item 1's harness) |
+| PS1 | 2 | 1.5, 1.6 | — |
 | PS0 | 17 | PS0.15 (net-area bound), 0.2, 0.3, 0.6, 0.9, 0.17, 0.22, 0.23, 0.25, 0.26, 0.27 | 0.8 (re-measure), 0.16/0.18/0.20/0.21 (a decision each), 0.24 (code landed in #252; only a `clear front\|sides` test is left) |
-| PS2 | 39 | 2.21, 2.23, 2.25, 2.27, 2.30–2.35, 2.41–2.44, 2.47–2.49, 2.51, 2.52, 2.54, 2.56, 2.57, 2.58 | 2.11e (row 6), 2.14 (ADR), 2.15 (2.11e), 2.16/2.36 (facts), 2.20/2.28 (measure first), 2.24/2.26/2.37/2.38/2.46/2.55 (a decision each), 2.39 (drawing decision), 2.40 and 5.6 (fire D12's reverse-if), 2.53 (a sourced ceiling) |
+| PS2 | 39 | 2.21, 2.23, 2.25, 2.27, 2.30–2.33, 2.35, 2.41–2.44, 2.47–2.49, 2.51, 2.52, 2.54, 2.56, 2.57, 2.58, 2.62, 2.63 | 2.11e (row 6), 2.14 (ADR), 2.16/2.36 (facts), 2.20/2.28 (measure first), 2.24/2.26/2.37/2.38/2.46/2.55 (a decision each), 2.39 (drawing decision), 2.40 and 5.6 (fire D12's reverse-if), 2.53 (a sourced ceiling) |
 | PS3 | 4 | 3.12 | 3.10 (decision; moves digests, D8), 3.11 (corpus sweep), 3.13 (proof first) |
 | PS4 | 6 | 4.6, 4.7, 4.8, 4.9 | 4.10 and 4.12's MCP part (with 5.3a's version bump) |
 | PS5 | 3 | 5.5 | 5.3a (MCP version bump), 5.6 (D12) |
@@ -166,7 +166,8 @@ items 3.1(b), M.8, M.9, M.14 and D.7 wait on the owner's answers and are not cov
 ## 5. Owner asks not yet carried out (from the 2026-10-25 transcript audit)
 
 - Walls-first vs rooms-first comparison (PS1.3): done 2026-10-26 (D21; `audits/2026-10-26-walls-first-control-arm.md`).
-  Diagnostic wording (PS1.4): card filed, not run.
+  Diagnostic wording (PS1.4): done 2026-10-26 (`research/2026-10-26-ps14-diagnostic-wording.md`): the current message + hint repaired
+  best on sonnet and haiku, but by 1 case on sonnet, under the 3-case margin; the data supports no wording rule, and the record says what would.
 - Id-free lint messages: done 2026-10-26 (PS2.22/PS2.29, PR #269); the rule is in `README.md` §5.
   **D23 ratified by the owner on 2026-10-26** (D18): PR #269 widened the id-free wording in
   `docs/agents/iron-laws.md` to `taste()` and the compile-channel `W_ROOM_OVERLAP`; recorded with its

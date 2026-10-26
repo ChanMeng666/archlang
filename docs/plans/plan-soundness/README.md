@@ -519,11 +519,11 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS1 · The defect corpus (do this before PS2; it is the yardstick)
 
-5 cards: 3 done, 2 todo (PS1.4 diagnostic wording, PS1.5 two message slips); PS1.3 walls-first control arm done 2026-10-26 (D21); both filed 2026-10-25 from the owner's 2026-10-18 asks. Cards, tables and as-built pointers: `cards.md` § PS1.
+6 cards: 4 done, 2 todo (PS1.5 two message slips, PS1.6 two clean twins that are not clean); PS1.3 walls-first control arm done 2026-10-26 (D21); PS1.4 diagnostic wording measured 2026-10-26 (no rule). PS1.3 and PS1.4 were filed 2026-10-25 from the owner's 2026-10-18 asks, PS1.5 on 2026-10-26 from PS7.2's red team, PS1.6 on 2026-10-26 from PS1.4. Cards, tables and as-built pointers: `cards.md` § PS1.
 
 ### PS2 · Validity checks that read existing facts (small, high yield)
 
-62 cards: 25 done, 37 todo. Cards, tables and as-built pointers: `cards.md` § PS2.
+64 cards: 25 done, 39 todo. Cards, tables and as-built pointers: `cards.md` § PS2.
 
 ### PS3 · Relation-first authoring (D1 + D5; needs an ADR)
 
@@ -582,6 +582,8 @@ This plan is a hypothesis about what will make AI-written plans professional. Tr
    deliberately quiet.
 3. **Which diagnostic wording repairs best?** No controlled study exists for a spatial DSL
    (`research/prior-art.md` "Gaps"). The defect corpus plus a local, unpaid loop could measure it.
+   *Measured 2026-10-26 (PS1.4):* `research/2026-10-26-ps14-diagnostic-wording.md`. Over 59 corpus cases on two local models, the current message + hint
+   repaired best on both (51/59 sonnet, 48/59 haiku), but by 1 case on sonnet, under the 3-case margin, so no wording rule yet; open: repeat draws, a third model, the spec in context, a `cause`-derived rule arm.
 4. **Can `between`-style forms cover non-rectilinear rooms?** Polygon and circle rooms are refused
    in v1 of PS3. What would an honest extension be?
 5. **What would make `impact` a planning tool, not just a report?** For example, "list the edits that
