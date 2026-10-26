@@ -45,7 +45,7 @@ import type {
   NextItem,
 } from "../index.js";
 import { keepResultsOf } from "../ir.js";
-import { diagnosticsSummary } from "./summary.js";
+import { diagnosticsSummary, validateSummary } from "./summary.js";
 import { type KeepResult, keepValidateRow } from "../keep.js";
 // Internal (not part of the public surface): parse → link → resolve without
 // rendering — validate/lint need only the diagnostics, never the SVG.
@@ -504,8 +504,12 @@ function report(
       ...(next !== undefined ? { next } : {}),
     });
   } else {
-    // PS7.6: the first line of the report, only when there is something to count.
-    if (diags.length && !args.quiet) process.stderr.write(`${summary}\n\n`);
+    // PS7.6: the first line of the report, only when there is something to count. The filter
+    // note sits under it too, so the line cannot be read as describing the shown set.
+    if (diags.length && !args.quiet) {
+      const shownNote = active ? `  (display filter: showing ${shown.length} of ${diags.length} diagnostics)\n` : "";
+      process.stderr.write(`${summary}\n${shownNote}\n`);
+    }
     emitDiagnosticsHuman(source, shown, args.quiet);
     if (!args.quiet) {
       if (active) process.stderr.write(`  (display filter: showing ${shown.length} of ${diags.length} diagnostics)\n`);
@@ -717,7 +721,7 @@ function reportWithChecks(
     ...(graph ? { graph } : {}),
   });
 
-  const summary = diagnosticsSummary(diags);
+  const summary = validateSummary(diags, ok);
 
   if (args.json) {
     const o: Record<string, unknown> = {
@@ -752,7 +756,10 @@ function reportWithChecks(
     o.next = next;
     emitJson(o);
   } else {
-    if (diags.length && !args.quiet) process.stderr.write(`${summary}\n\n`);
+    if (diags.length && !args.quiet) {
+      const shownNote = active ? `  (display filter: showing ${shown.length} of ${diags.length} diagnostics)\n` : "";
+      process.stderr.write(`${summary}\n${shownNote}\n`);
+    }
     emitDiagnosticsHuman(source, shown, args.quiet);
     if (!args.quiet) {
       if (active) process.stderr.write(`  (display filter: showing ${shown.length} of ${diags.length} diagnostics)\n`);

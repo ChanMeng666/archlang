@@ -1,9 +1,11 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { afterAll, describe, expect, it } from "vitest";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
 import { cmdLint, cmdValidate } from "../src/cli/commands-analyze.js";
 import { parseArgs } from "../src/cli/io.js";
-import { diagnosticsSummary } from "../src/cli/summary.js";
+import { diagnosticsSummary, validateSummary } from "../src/cli/summary.js";
 import { ERROR_CODES } from "../src/error-catalog.js";
 import { diagnosticToJson, lint } from "../src/index.js";
 import type { Diagnostic } from "../src/index.js";
@@ -27,26 +29,26 @@ describe("diagnosticsSummary", () => {
   });
 
   it("counts, singular and plural", () => {
-    expect(diagnosticsSummary([w("W_SWING_OBSTRUCTED")])).toBe("1 warning: W_SWING_OBSTRUCTED ×1");
-    expect(diagnosticsSummary([e("E_ROOM_SIZE")])).toBe("1 error: E_ROOM_SIZE ×1");
+    expect(diagnosticsSummary([w("W_SWING_OBSTRUCTED")])).toBe("1 warning in 1 code: W_SWING_OBSTRUCTED ×1");
+    expect(diagnosticsSummary([e("E_ROOM_SIZE")])).toBe("1 error in 1 code: E_ROOM_SIZE ×1");
   });
 
   it("lists codes by descending count", () => {
     const ds = [...rep(3, w("W_ANNOTATION_OVERLAP")), ...rep(4, w("W_SWING_OBSTRUCTED"))];
-    expect(diagnosticsSummary(ds)).toBe("7 warnings: W_SWING_OBSTRUCTED ×4, W_ANNOTATION_OVERLAP ×3");
+    expect(diagnosticsSummary(ds)).toBe("7 warnings in 2 codes: W_SWING_OBSTRUCTED ×4, W_ANNOTATION_OVERLAP ×3");
   });
 
-  it("breaks a tie by catalogue order, whatever the input order", () => {
+  it("breaks a tie alphabetically (ERROR_CODES order), whatever the input order", () => {
     const [a, b] = ERROR_CODES.filter((c) => c.startsWith("W_")).slice(0, 2) as [string, string];
     expect(ERROR_CODES.indexOf(a)).toBeLessThan(ERROR_CODES.indexOf(b));
-    expect(diagnosticsSummary([w(b), w(a)])).toBe(`2 warnings: ${a} ×1, ${b} ×1`);
-    expect(diagnosticsSummary([w(a), w(b)])).toBe(`2 warnings: ${a} ×1, ${b} ×1`);
+    expect(diagnosticsSummary([w(b), w(a)])).toBe(`2 warnings in 2 codes: ${a} ×1, ${b} ×1`);
+    expect(diagnosticsSummary([w(a), w(b)])).toBe(`2 warnings in 2 codes: ${a} ×1, ${b} ×1`);
   });
 
   it("puts errors first, then warnings, each by descending count", () => {
     const ds = [...rep(3, w("W_SWING_OBSTRUCTED")), ...rep(2, e("E_ROOM_SIZE")), e("E_NO_PLAN")];
     const out = diagnosticsSummary(ds);
-    expect(out.startsWith("3 errors, 3 warnings: ")).toBe(true);
+    expect(out.startsWith("3 errors, 3 warnings in 3 codes: ")).toBe(true);
     const codes = out.slice(out.indexOf(": ") + 2).split(", ");
     expect(codes[0]).toBe("E_ROOM_SIZE ×2");
     expect(codes[2]).toBe("W_SWING_OBSTRUCTED ×3");
@@ -59,7 +61,9 @@ describe("diagnosticsSummary", () => {
       w("W_NOT_IN_THE_CATALOGUE"),
       w("W_SWING_OBSTRUCTED"),
     ];
-    expect(diagnosticsSummary(ds)).toBe("3 warnings: W_SWING_OBSTRUCTED ×1, W_NOT_IN_THE_CATALOGUE ×1, uncoded ×1");
+    expect(diagnosticsSummary(ds)).toBe(
+      "3 warnings in 3 codes: W_SWING_OBSTRUCTED ×1, W_NOT_IN_THE_CATALOGUE ×1, uncoded ×1",
+    );
   });
 
   it("is a function of the diagnostics alone: order of arrival does not matter", () => {
@@ -96,15 +100,11 @@ interface Json {
   diagnostics: { severity: "error" | "warning"; code: string }[];
 }
 const FIRST_KEY = '{\n  "summary": "';
-const widest = { file: "", bytes: 0, codes: 0 };
-let withWarnings = 0;
-let fitsInCut = 0;
-let total = 0;
 
 describe.each([
   ["lint", cmdLint],
   ["validate", cmdValidate],
-] as const)("%s --json · the summary key over the corpus", (name, cmd) => {
+] as const)("%s --json · the summary key over the corpus", (_name, cmd) => {
   it("is the first key, a function of the diagnostics, and survives a 200-byte cut", () => {
     const files = validateJsonFiles();
     expect(files.length).toBeGreaterThan(150);
@@ -124,21 +124,11 @@ describe.each([
       const head = j.summary.slice(0, j.summary.indexOf(": "));
       const firstCode = j.summary.slice(head.length + 2).split(" ×")[0]!;
       expect(cut.startsWith(`${FIRST_KEY}${head}: ${firstCode} ×`), f).toBe(true);
-      if (name === "lint") {
-        withWarnings++;
-        if (cut.includes(`${j.summary}"`)) fitsInCut++;
-        const codes = new Set(j.diagnostics.map((d) => d.code)).size;
-        if (codes > widest.codes) Object.assign(widest, { file: f, bytes: Buffer.byteLength(j.summary), codes });
-      }
+      // The head names how many distinct codes there are, so the cut says how much it hides.
+      expect(head, f).toMatch(/ in \d+ codes?$/);
+      expect(Number(/ in (\d+) code/.exec(head)![1]), f).toBe(new Set(j.diagnostics.map((d) => d.code)).size);
     }
-    if (name === "lint") total = files.length;
   }, 600_000);
-});
-
-afterAll(() => {
-  console.log(
-    `lint-summary: ${total} files, ${withWarnings} with diagnostics, whole summary within the 200-byte cut for ${fitsInCut}; widest ${widest.codes} codes (${widest.bytes} bytes) at ${widest.file}`,
-  );
 });
 
 describe("the diagnostics are what lint() returns", () => {
@@ -156,6 +146,78 @@ describe("the diagnostics are what lint() returns", () => {
   }, 600_000);
 });
 
+describe("a wide summary and a failing later tier", () => {
+  it("heads a 40-code summary with the count, and the head survives the 200-byte cut", () => {
+    const codes = ERROR_CODES.filter((c) => c.startsWith("W_")).slice(0, 40);
+    expect(codes).toHaveLength(40);
+    const summary = diagnosticsSummary(codes.map(w));
+    expect(summary.startsWith("40 warnings in 40 codes: ")).toBe(true);
+    expect(Buffer.byteLength(summary)).toBeGreaterThan(200);
+    const json = `${JSON.stringify({ summary, ok: true }, null, 2)}\n`;
+    const cut = Buffer.from(json, "utf8").subarray(0, 200).toString("utf8");
+    expect(cut.startsWith(`${FIRST_KEY}40 warnings in 40 codes: `)).toBe(true);
+    expect(diagnosticsSummary([...codes.slice(0, 3).map(e), ...rep(3, w(codes[3]!))])).toMatch(
+      /^3 errors, 3 warnings in 4 codes: /,
+    );
+  });
+
+  it("validateSummary: no diagnostics with a failing ok never says `no warnings`", () => {
+    expect(validateSummary([], true)).toBe("no warnings");
+    expect(validateSummary([], false)).toBe("no diagnostics; validate failed on a later tier (see next)");
+    expect(validateSummary([w("W_SWING_OBSTRUCTED")], false)).toBe("1 warning in 1 code: W_SWING_OBSTRUCTED ×1");
+  });
+
+  it("validate --graph naming a missing room: ok false, empty diagnostics, honest summary", () => {
+    const dir = mkdtempSync(join(tmpdir(), "arch-sum-"));
+    try {
+      const graph = join(dir, "g.json");
+      writeFileSync(graph, JSON.stringify({ "no-such-room": ["hall"] }));
+      const r = runIn(cmdValidate, ["examples/two-bed.arch", "--json", "--graph", graph]);
+      const j = JSON.parse(r.stdout) as { summary: string; ok: boolean; diagnostics: unknown[] };
+      expect(r.exit).toBe(2);
+      expect(j.ok).toBe(false);
+      expect(j.diagnostics).toEqual([]);
+      expect(Object.keys(j)[0]).toBe("summary");
+      expect(j.summary).toBe("no diagnostics; validate failed on a later tier (see next)");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("score --taste --json on a plan that does not compile also opens with the summary", () => {
+    const r = spawnSync(
+      process.execPath,
+      ["--import", "tsx", "src/cli.ts", "score", "-", "--taste", "generic", "--json"],
+      {
+        input: 'plan "B" { units mm room at (0,0) size 0x3000 }',
+        encoding: "utf8",
+        cwd: process.cwd(),
+      },
+    );
+    expect(r.stdout.startsWith(`${FIRST_KEY}1 error in 1 code: E_ROOM_SIZE ×1`)).toBe(true);
+  }, 60_000);
+
+  it("a filtered text run prints the display-filter note right under the summary line", () => {
+    const r = spawnSync(
+      process.execPath,
+      [
+        "--import",
+        "tsx",
+        "src/cli.ts",
+        "lint",
+        "test/defect-corpus/space-not-enclosed/bath-open-side.arch",
+        "--code",
+        "W_ROOM_NOT_ENCLOSED",
+      ],
+      { encoding: "utf8", cwd: process.cwd() },
+    );
+    const lines = r.stderr.split("\n");
+    expect(lines[0]).toMatch(/^4 warnings in 4 codes: /);
+    expect(lines[1]).toBe("  (display filter: showing 1 of 4 diagnostics)");
+    expect(lines[2]).toBe("");
+  }, 60_000);
+});
+
 describe("the text report opens with the line", () => {
   const WARN =
     'plan "W" { units mm wall exterior thickness 200 { (0,0) (2000,0) (2000,2000) (0,2000) close } room id=r at (0,0) size 2000x2000 label "R" }';
@@ -171,7 +233,7 @@ describe("the text report opens with the line", () => {
   it("lint: the first line of the report is the summary, before the first diagnostic", () => {
     const r = cli(["lint", "-"], WARN);
     const lines = r.stderr.split("\n");
-    expect(lines[0]).toMatch(/^\d+ warnings?: W_[A-Z_]+ ×\d+/);
+    expect(lines[0]).toMatch(/^\d+ warnings? in \d+ codes?: W_[A-Z_]+ ×\d+/);
     expect(lines[1]).toBe("");
     expect(lines[2]).toMatch(/^warning/);
   }, 60_000);

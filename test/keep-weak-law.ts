@@ -70,9 +70,9 @@ function worldFor(file: string): World {
     now: () => new Date(0),
   };
 }
-
+/** Run a CLI command in-process; its exit code and everything it wrote to stdout (`stripSummary`: minus the `summary` key, for `validate`, whose pins predate it). */
 /** Run a CLI command in-process; its exit code and everything it wrote to stdout. */
-function runCli(cmd: (a: ReturnType<typeof parseArgs>) => number, argv: string[]): string {
+function runCli(cmd: (a: ReturnType<typeof parseArgs>) => number, argv: string[], stripSummary = false): string {
   let stdout = "";
   const write = process.stdout.write.bind(process.stdout);
   const writeErr = process.stderr.write.bind(process.stderr);
@@ -83,7 +83,7 @@ function runCli(cmd: (a: ReturnType<typeof parseArgs>) => number, argv: string[]
   process.stderr.write = (() => true) as typeof process.stderr.write;
   try {
     const exit = cmd(parseArgs(argv));
-    return `${exit}\n${withoutSummary(stdout)}`;
+    return `${exit}\n${stripSummary ? withoutSummary(stdout) : stdout}`;
   } finally {
     process.stdout.write = write;
     process.stderr.write = writeErr;
@@ -104,7 +104,7 @@ export function keepWeakLawPayload(file: string): string {
   return [
     allStoreysDiagnosticsPayload(API, src, { world }),
     JSON.stringify(describe(src, { world, facts: ["depends"] })),
-    runCli(cmdValidate, [file, "--json"]),
+    runCli(cmdValidate, [file, "--json"], true),
     runCli(cmdImpact, [file, "--json", "--against", file]),
     bump !== undefined ? runCli(cmdImpact, [file, "--json", "--set", bump]) : "",
   ].join(" ");

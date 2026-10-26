@@ -320,7 +320,8 @@ owns that name, so the shell runs the wrong program.
    `diagnostics[].fix`, edit, and re-run until it passes — or, if a warning is deliberate, say so.
    The author's loop is compile → `validate --json` (fix its `next` first) → lint → repair. Read the
    `summary` (first key of `lint|validate --json`, first line of the text report) before anything
-   else: it counts the warnings and names their codes, so a truncated read still tells you how many.
+   else: it counts the warnings and the distinct codes and leads with the commonest, so a truncated
+   read still tells you how much is hidden.
    **Review, once that loop is clean:** the reviewer (not the author) runs
    `archlang score plan.arch --taste generic --json` and reads the advice: a sourced 0–1 score
    (privacy gradient, daylight, proportion, corner doors, …) whose `criteria[].advice` `A_*` codes
@@ -799,7 +800,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 
 **`archlang context`** — print the full bundled agent context (spec + workflow + CLI + errors)
   - input: none → output: the full agent context (llms-full.txt), or one --section of it
-  - flags: `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 142 KB of it (spec = the language, 30 KB; workflow = the agent loop, 29 KB; cli = every command, 26 KB; errors = the diagnostic catalog, 56 KB) · `--json` structured result on stdout, messages on stderr
+  - flags: `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 143 KB of it (spec = the language, 30 KB; workflow = the agent loop, 29 KB; cli = every command, 26 KB; errors = the diagnostic catalog, 56 KB) · `--json` structured result on stdout, messages on stderr
   - example: `archlang context` — the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 
 **`archlang new`** (aliases: `init`) — scaffold a starter .arch

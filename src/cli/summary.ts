@@ -12,13 +12,13 @@ import type { Diagnostic } from "../index.js";
 
 const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? "" : "s"}`;
 
-/** Catalogue position of a code; an uncatalogued code sorts after every catalogued one. */
+/** Position of a code in `ERROR_CODES` (alphabetical); an uncatalogued code sorts after them. */
 const rank = (code: string): number => {
   const i = ERROR_CODES.indexOf(code);
   return i < 0 ? ERROR_CODES.length : i;
 };
 
-/** `CODE ×k, …` for one severity: descending count, then catalogue order, then code text. */
+/** `CODE ×k, …` for one severity: descending count, then alphabetical (`ERROR_CODES` order), then code text. */
 function codeList(diags: readonly Diagnostic[]): string[] {
   const counts = new Map<string, number>();
   for (const d of diags) {
@@ -31,17 +31,31 @@ function codeList(diags: readonly Diagnostic[]): string[] {
 }
 
 /**
- * `no warnings`, `7 warnings: W_SWING_OBSTRUCTED ×4, W_ANNOTATION_OVERLAP ×3`, or with errors
- * `2 errors, 3 warnings: E_A ×2, W_B ×3`. Errors come first, each severity's codes by
- * descending count. Every diagnostic is counted; none is elided.
+ * `no warnings`, `7 warnings in 2 codes: W_SWING_OBSTRUCTED ×4, W_ANNOTATION_OVERLAP ×3`, or with
+ * errors `2 errors, 3 warnings in 4 codes: E_A ×2, …`. Errors come first, each severity's codes by
+ * descending count, then alphabetically (`ERROR_CODES` is sorted, errors before warnings). The head
+ * carries the number of distinct codes, so output cut short still says how much it hides. Every
+ * diagnostic is counted; none is elided.
  */
 export function diagnosticsSummary(diags: readonly Diagnostic[]): string {
   const errors = diags.filter((d) => d.severity === "error");
   const warnings = diags.filter((d) => d.severity !== "error");
   if (!errors.length && !warnings.length) return "no warnings";
+  const codes = [...codeList(errors), ...codeList(warnings)];
   const head = [
     ...(errors.length ? [plural(errors.length, "error")] : []),
     ...(warnings.length ? [plural(warnings.length, "warning")] : []),
   ].join(", ");
-  return `${head}: ${[...codeList(errors), ...codeList(warnings)].join(", ")}`;
+  return `${head} in ${plural(codes.length, "code")}: ${codes.join(", ")}`;
+}
+
+/**
+ * `validate`'s summary: the diagnostics' line, except that no diagnostics with a failing `ok`
+ * (a graph, intent or keep tier failed) must not read "no warnings". The phrase names no `next`
+ * content, so `next` stays purely additive (`test/cli-validate-next.test.ts`).
+ */
+export function validateSummary(diags: readonly Diagnostic[], ok: boolean): string {
+  return !ok && diags.length === 0
+    ? "no diagnostics; validate failed on a later tier (see next)"
+    : diagnosticsSummary(diags);
 }

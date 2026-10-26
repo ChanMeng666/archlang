@@ -1161,12 +1161,15 @@ archlang validate plan.arch --severity error --json                      # only 
 ### The summary line
 
 `lint` and `validate` open with the count and the codes: a `summary` string is the first key of
-`--json` (`"7 warnings: W_SWING_OBSTRUCTED ×4, W_ANNOTATION_OVERLAP ×3"`, or `"no warnings"`), and in
-the text report the same line comes first on stderr (a clean plan prints none; `✓ ok` says it, and
-`--quiet` drops it). Errors lead (`2 errors, 3 warnings: …`), codes run by descending count, then
-catalogue order. It is a function of the diagnostics alone, of the whole set like `ok` (a display
-filter does not narrow it), and it lives in the CLI: `lint()` returns what it always did. Read it
-first, so output cut short (`head -c 200`) still tells you how many warnings stand and which codes.
+`--json` (`"7 warnings in 2 codes: W_SWING_OBSTRUCTED ×4, W_ANNOTATION_OVERLAP ×3"`, or `"no warnings"`;
+`score --taste --json` on a plan that does not compile carries it too), and in the text report the
+same line comes first on stderr (a clean plan prints none; `✓ ok` says it, and `--quiet` drops it).
+Errors lead (`2 errors, 3 warnings in 4 codes: …`), codes run by descending count, then
+alphabetically. When `validate --graph` or `--intent` fails with no diagnostics at all, the line says
+`no diagnostics; validate failed on a later tier (see next)`. It is a function of the diagnostics
+alone, of the whole set like `ok` (a display filter does not narrow it), and it lives in the CLI:
+`lint()` returns what it always did. Read it first: output cut short (`head -c 200`) still tells you
+how many warnings stand, in how many distinct codes, and the leading codes.
 
 ### Coverage: what lint did not check
 

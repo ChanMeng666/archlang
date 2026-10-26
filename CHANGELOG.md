@@ -463,14 +463,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `<room>.<edge>` follows it, which never parsed before, so a variable named `containing` reads
   as it did.
 
-- `lint` and `validate` open with a one-line summary (plan card PS7.6). `--json` gains `summary` as
-  its first key (`"7 warnings: W_SWING_OBSTRUCTED ×4, W_ANNOTATION_OVERLAP ×3"`, `"no warnings"`
-  when clean, errors first as `2 errors, 3 warnings: …`; codes by descending count, then catalogue
-  order), so output cut short with `head -c 200` still names the count and the codes; every other
-  key keeps its order and bytes. The text report prints the same line first on stderr when there is
-  anything to count (`--quiet` drops it). It is a function of the whole diagnostic set, like `ok`,
-  and lives in the CLI: `lint()`, `compile()` and every diagnostic are unchanged. A consumer that
-  matches the whole `lint --json` text, or its first key, must skip `summary`.
+- `lint`, `validate` and `score --taste` (on a plan that does not compile) open with a one-line
+  summary (plan card PS7.6). `--json` gains `summary` as its first key
+  (`"7 warnings in 2 codes: W_SWING_OBSTRUCTED ×4, W_ANNOTATION_OVERLAP ×3"`, `"no warnings"` when
+  clean, errors first as `2 errors, 3 warnings in 4 codes: …`; codes by descending count, then
+  alphabetically). The head carries the number of distinct codes, so output cut short with
+  `head -c 200` still names the count, how many distinct codes there are and the leading ones; every
+  other key keeps its order and bytes. `validate --json` with a failing `--graph` or `--intent` and no
+  diagnostics says `no diagnostics; validate failed on a later tier (see next)`, never "no warnings".
+  The text report prints the same line first on stderr when there is anything to count (`--quiet`
+  drops it; a display filter's `(display filter: showing n of m)` note sits right under it). It is a
+  function of the whole diagnostic set, like `ok`, and lives in the CLI: `lint()`, `compile()` and
+  every diagnostic are unchanged. A consumer that matches the whole `lint --json` text, or its first
+  key, must skip `summary`.
 
 ### Fixed
 
