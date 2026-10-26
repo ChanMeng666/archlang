@@ -19,7 +19,13 @@ sugar, openings, dimensions, imports) is there.
 
 ## The authoring loop
 
-The loop is compile → `validate --json` (fix its `next` first) → lint → repair. Iterate until clean:
+The loop is compile → `validate --json` (fix its `next` first) → lint → repair. Run it one stage
+at a time: write the rooms and run `validate <file> --json --stage rooms`, then the walls
+(`--stage walls`), the doors and windows (`--stage openings`), the fixtures and furniture
+(`--stage fixtures`). Advance when `at_stage.clean` is true, or when every remaining finding is one
+you accept and say so; then the full set. Clean is not permanent: a later stage can add or re-raise
+an earlier stage's finding (walls take a room's clear width, furniture pinches a walk), and each
+later stage shows the earlier codes again. Iterate until clean:
 
 1. **Author / edit** the `.arch` file. Coordinates are millimetres; origin top-left, +x right,
    +y down.

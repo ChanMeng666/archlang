@@ -343,12 +343,8 @@ PS5.1b: PR #247, 9cc29c7e)
 
 ### PS7 · Staged authoring for agents
 
-**PS7.1 · Stages as a first-class idea.** `todo` (after PS2, PS3.4)
-- Stages: brief → room graph → zoning on a grid → walls (derived) → openings → fixtures and
-  furniture → drafting.
-- `validate --stage <s>` runs only the rules meaningful up to that stage. SKILL's loop advances only
-  when a stage is clean.
-- Prior art and ADAI agree: decide low-frequency things first; early proportional errors cascade.
+**PS7.1 · Stages as a first-class idea.** `done` (PR #282)
+- As built: `research/2026-10-26-ps71-as-built.md` (`validate --stage`, `LintRule.stage`; room graph and zoning are one `rooms` stage).
 
 **PS7.2 · `arch context --level starter`.** `done` (PR #279)
 - As built: `research/2026-10-26-ps72-as-built.md`. One screen (3,156 UTF-16 units, 59 lines of at most 100 columns; caps 4,000 / 60 / 100) built from the spec's lead example and the compiler, not retyped.
