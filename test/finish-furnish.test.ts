@@ -555,6 +555,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
   // each row moves with its edit; the partly furnished rooms each names are unchanged (asserted above).
   // Re-measured 2026-10-26 (PR #283 red-team round 1): the eight examples its rulings edited (relational is `main`'s again); `finish` echoes the source; why, in `test/byte-identity-baseline.ts`'s header.
   // Re-measured 2026-10-26 (merging main@e432c24a): garden-house, hillside-villa and library carry both PRs' edits; two-storey is `main`'s row; why, in `test/byte-identity-baseline.ts`'s header.
+  // Re-measured 2026-10-26 (PR #283 red-team round 2): museum-wings, a comment edit only; `finish` echoes the source.
   // Re-measured 2026-10-26 (PS2.11e): garden-house, hillside-villa, library and two-storey fixed for
   // stair defects; why, in `test/byte-identity-baseline.ts`'s header.
   const FINISH_DIGESTS: ReadonlyMap<string, string> = new Map(
@@ -583,7 +584,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         ["283b12f402d18bae334393b1e7d88823a2c36224a8a347e58012933050f8e11f", "materials"],
         ["f13dba69c7e1828d96ce3ae08a02d438157c43db45f37c525e800ab5a3bc302d", "museum"], // PS2.11e source edit, see above
         ["e56adeb88cb99daf3c2e93723b84ccd134c948f803bffb84fb519553d0ff63c4", "museum-wing"],
-        ["46e899df616b8ea0b6423a8a2a53a9ff58851258e49cf93dbe0e8f99e0c93aeb", "museum-wings"], // PS2.11e source edit, see above
+        ["9f9ff13b19a6f8faf34b8c6bd7092e86c5e87ed70f2c37597f5414906114d292", "museum-wings"], // PS2.11e source edit, see above
         ["863a9f2c6d83393b414fc6cf634c7757d3148ba19d9c85ff19b9b935f2d64f99", "one-room"],
         ["aa3345f2ba982f844e25108a7908a6f60a8ed295b574248fb895b54bb5599c27", "parametric"],
         ["76939e442b625190b128018fce121c3561a112e0a4f1ca2a7f0249183de00382", "relational"], // PS2.9 and PS2.4 source edits; PS2.17 source edit (a worktop), see above; PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e source edit, see above

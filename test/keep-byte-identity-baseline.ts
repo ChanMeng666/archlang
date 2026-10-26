@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: re-taken on the merge of main@e432c24a (PR #280's stair rules, PR #284/#285) into feat/lint-clearances-ps211e (PR #283): PR #283's rules, its red-team round 1 and its example edits moved lint()/validate()/describe() of keep-free files on top of PR #280's table (listed in the merge commit). Earlier: re-taken on feat/lint-stairs-ps211e (PR #280, over main@52e7c71f); main@c2f4176b, after PR #271 added describe().totals.gross_internal_area_m2 (and gross_internal_area_all_levels_m2) to every resolving plan; 269 files re-taken on this tree before any keep code (first taken on main@5aab29e5, re-taken on main@0c5e7a09)
+ * Taken: re-taken for PR #283's red-team round 2: W_LEAF_TOO_WIDE's hint rounds its quoted widths down to the plan grid, moving lint()/validate() of five keep-free files (listed in the commit). Earlier: re-taken on the merge of main@e432c24a (PR #280's stair rules, PR #284/#285) into feat/lint-clearances-ps211e (PR #283): PR #283's rules, its red-team round 1 and its example edits moved lint()/validate()/describe() of keep-free files on top of PR #280's table (listed in the merge commit). Earlier: re-taken on feat/lint-stairs-ps211e (PR #280, over main@52e7c71f); main@c2f4176b, after PR #271 added describe().totals.gross_internal_area_m2 (and gross_internal_area_all_levels_m2) to every resolving plan; 269 files re-taken on this tree before any keep code (first taken on main@5aab29e5, re-taken on main@0c5e7a09)
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -223,7 +223,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "eval/goldens/core-and-shell.arch",
-    "19d4a2384f0d8801656672a51e8dba9cc8917c4115f7bb1d5019b9eb0ac34b88",
+    "0a05d9940404ec5c25b5bf506b840c141853739be5ae7103a1bb6363a304a04c",
     284,
   ],
   [
@@ -643,7 +643,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/clearances/single-leaf-2400.arch",
-    "17adfd827ceba9d703e0d877afad4be0c22a66a962110a25b2edda90c59c37c2",
+    "66e6f4eab18078b64aec10ad9b2f21f5f4128c00cfd79d64477d58d6f9111e72",
     74,
   ],
   [
@@ -1278,7 +1278,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-25-rerun/6-clinic.arch",
-    "44c262817573a44c016e2936f04bff98128f89c8226623c481d9c733d9ba150d",
+    "90590e31c06b030de2cd1de8bd5101644d583f0f589689736d78519b95de8c0d",
     2010,
   ],
   [
@@ -1368,7 +1368,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/6-clinic.arch",
-    "b337087340edabe96e5d981eec7547548a18c23d29f5a7c759114e227f4c04ae",
+    "c3eafdb9c190e52e3d7f662bc9676c3e2d5f44b04a1323b088c0d3fad1cffc88",
     722,
   ],
   [
@@ -1408,7 +1408,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/repro/gallery-bench-pinch.arch",
-    "2d8c4285289840323f399efb45df278fe4cc716f0f68aa5d53d52977635a9bcf",
+    "6cf0de0b0b39f66968892ae18ca70431a03b3c7c7af2029307ec90e3e1cfa170",
     1975,
   ],
   [

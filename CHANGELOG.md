@@ -67,8 +67,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Three validity-layer lint rules (plan cards PS2.11e, PS2.46). `W_HOB_UNDER_WINDOW`: a `stove`,
   `hob` or `cooktop` against a window's wall across part of its span (NKBA Kitchen Planning
   Guidelines 20: a cooking surface not under an operable window). `W_HOB_FRIDGE_GAP`: a fridge or
-  other tall unit in the hob's room nearer its side than `hobLandingMm` (305 mm, NKBA guideline 17's
-  12 in landing area), a wall between them ending the measure. `W_LEAF_TOO_WIDE`: a swinging leaf wider than `maxHingedLeafMm` (1219 mm,
+  other tall unit beside it on its run nearer than `hobLandingMm` (305 mm, NKBA guideline 17's
+  12 in landing area), a wall between them ending the measure (across an `open between` join there is
+  none). `W_LEAF_TOO_WIDE`: a swinging leaf wider than `maxHingedLeafMm` (1219 mm,
   the International Building Code's 48 in nominal leaf, 2018 and earlier); a `double` door is read
   leaf by leaf. Messages id-free; hints quote an id only when the author wrote one; no fixes.
 - `W_DOORWAY_BLOCKED` reads leaf-less `opening`s too, after every door, with the same approach a

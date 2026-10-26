@@ -451,10 +451,11 @@ it.** *Ratified by the owner 2026-10-26, so it may be cited as precedent (D18).*
 - *Why:* the goldens' pieces really stand inside the approach read from the face:
   `dims-auto-cottage`'s WC 250 mm off the bath door's face, over 100 of its 800 mm;
   `galley-kitchen`'s basin 250 mm off the bath door's face, over 150 of 800 mm; `compact-studio`'s
-  kitchen sink 250 mm off the kitchenette opening's face, over 350 of 1000 mm. This goes beyond D19's
-  `lintWarnings`-only practice for a lint PR, so it waits for the owner.
-- *Reverse if:* the owner declines. The datum returns to the centreline for `W_DOORWAY_BLOCKED` only
-  (T2 and `clearances/bed-before-door-face` move back to missed) and the three judgments revert.
+  kitchen sink 250 mm off the kitchenette opening's face, over 350 of 1000 mm. Moving a holdout
+  judgment goes beyond D19's `lintWarnings`-only practice for a lint PR, so the owner ratified it.
+- *Reverse if:* if the owner later reverses D25, the datum returns to the centreline for
+  `W_DOORWAY_BLOCKED` only (T2 and `clearances/bed-before-door-face` move back to missed) and the
+  three judgments and their fixture notes revert.
 
 ## 4. Principles: what "professional rules and taste" means here
 
@@ -542,7 +543,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS1 · The defect corpus (do this before PS2; it is the yardstick)
 
-6 cards: 4 done, 2 todo (PS1.5 two message slips, PS1.6 two clean twins that are not clean); PS1.3 walls-first control arm done 2026-10-26 (D21); PS1.4 diagnostic wording measured 2026-10-26 (no rule). PS1.3 and PS1.4 were filed 2026-10-25 from the owner's 2026-10-18 asks, PS1.5 on 2026-10-26 from PS7.2's red team, PS1.6 on 2026-10-26 from PS1.4. Cards, tables and as-built pointers: `cards.md` § PS1.
+7 cards: 4 done, 3 todo (PS1.5 two message slips, PS1.6 two clean twins that are not clean, PS1.7 the `eval:ci` gate's blind spots); PS1.3 walls-first control arm done 2026-10-26 (D21); PS1.4 diagnostic wording measured 2026-10-26 (no rule). PS1.3 and PS1.4 were filed 2026-10-25 from the owner's 2026-10-18 asks, PS1.5 on 2026-10-26 from PS7.2's red team, PS1.6 on 2026-10-26 from PS1.4. Cards, tables and as-built pointers: `cards.md` § PS1.
 
 ### PS2 · Validity checks that read existing facts (small, high yield)
 

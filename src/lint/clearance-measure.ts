@@ -395,19 +395,20 @@ export function clearancesClear(
   return true;
 }
 
-/** What {@link hobSideGap} reads off a lint context: the walls (with their doorways cut out)
- *  and the rooms. */
-export type HobWorldSource = WcWorldSource & Pick<LintContext, "rooms" | "roomRects">;
+/** What {@link hobSideGap} reads off a lint context: the walls, with their doorways cut out. */
+export type HobWorldSource = WcWorldSource;
 
 /**
  * The nearest tall unit standing inside either side strip of cooking surface `f`, `need` deep,
  * and its gap from the hob's side face, or `null` when neither side has one (`W_HOB_FRIDGE_GAP`
- * and the placement check above read this one measure). Only a tall unit in the hob's own room
- * ({@link roomOf}) is read, and each strip is measured against the straight wall bodies as well
- * ({@link cutSegments}), so a fridge behind a partition, in the next room, is not beside the hob:
- * the wall is the nearer obstacle and is not this measure's. Equal gaps on the two sides keep the
- * unit first in source order (`tall`'s order), so the reading does not depend on which side a
- * turn of the frame lists first.
+ * and the placement check above read this one measure). Each strip runs along the hob's wall line
+ * over the hob's depth, so only a unit beside it on its run is read, and is measured against the
+ * straight wall bodies as well ({@link cutSegments}, doorways and openings cut out), so a fridge
+ * behind a partition is not beside the hob: the wall is the nearer obstacle and is not this
+ * measure's. Rooms do not enter it: across an `open between` join there is no wall, and a dining
+ * room's fridge 100 mm from the kitchen's hob is as close as one in the kitchen. Equal gaps on the
+ * two sides keep the unit first in source order (`tall`'s order), so the reading does not depend
+ * on which side a turn of the frame lists first.
  */
 export function hobSideGap(
   src: HobWorldSource,
@@ -415,8 +416,7 @@ export function hobSideGap(
   tall: readonly RFurniture[],
   need: number,
 ): { piece: RFurniture; gap: number } | null {
-  const home = roomOf(f, src);
-  const mine = tall.filter((t) => t !== f && roomOf(t, src) === home);
+  const mine = tall.filter((t) => t !== f);
   if (mine.length === 0) return null;
   const world: ClearWorld = { furniture: mine, segments: cutSegments(src), swings: [] };
   const rect = { x: f.at.x, y: f.at.y, w: f.size.w, h: f.size.h };

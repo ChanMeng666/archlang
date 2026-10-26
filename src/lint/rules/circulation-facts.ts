@@ -232,7 +232,7 @@ const narrowRemedies = (min: number, doors: readonly AccessEdge[] | null, ctx: L
     : [
         ...doors.map(
           (e) =>
-            `Widen ${openingClauseById(ctx.ir.elements, e.doorId) ? `the opening ${openingClauseById(ctx.ir.elements, e.doorId)} derives (give it a \`width\`)` : `${e.kind} "${e.doorId}"`} to \`width ${mm(clearingWidth(e, ctx))}\` (now ${mm(e.nominalWidth)})${doors.length > 1 ? "" : `, which lets the walk clear the ${mm(min)} mm minimum`}.`,
+            `Widen ${openingClauseById(ctx.ir.elements, e.doorId) ? `the opening ${openingClauseById(ctx.ir.elements, e.doorId)} derives (give it a \`width\`)` : `${e.kind} "${e.doorId}"`} to \`width ${mm(clearingWidth(e, ctx))}\` (now ${mm(e.nominalWidth)}${edgeLeaves(e, ctx) === 2 ? `; a double door, so each leaf is ${mm(clearingWidth(e, ctx) / 2)}: a person passes through one` : ""})${doors.length > 1 ? "" : `, which lets the walk clear the ${mm(min)} mm minimum`}.`,
         ),
         // A set is what was measured; that it needs every member is not claimed.
         ...(doors.length > 1 ? [`With these widened together the walk clears the ${mm(min)} mm minimum.`] : []),
@@ -644,15 +644,18 @@ function connectorPhrase(e: AccessEdge, ctx: LintContext, view: View): string {
     const hit = byId.get(id);
     return hit ? ctx.nameOf(hit.r) : "another room";
   };
+  // A `double` door is passed through one leaf, so the phrase says so (its clear width is a leaf's).
+  const what = edgeLeaves(e, ctx) === 2 ? "double door" : e.kind;
+  const leaf = edgeLeaves(e, ctx) === 2 ? " (one of its two leaves)" : "";
   if (e.exterior) {
     const inside = e.between[0] === EXTERIOR_NODE ? e.between[1] : e.between[0];
-    return `the ${e.kind} from outside into ${name(inside)}`;
+    return `the ${what} from outside into ${name(inside)}${leaf}`;
   }
   const rank = (id: string): [number, number] => [depth.get(id) ?? Number.POSITIVE_INFINITY, byId.get(id)?.i ?? 0];
   const [a, b] = e.between;
   const [ra, rb] = [rank(a), rank(b)];
   const [first, second] = ra[0] < rb[0] || (ra[0] === rb[0] && ra[1] <= rb[1]) ? [a, b] : [b, a];
-  return `the ${e.kind} between ${name(first)} and ${name(second)}`;
+  return `the ${what} between ${name(first)} and ${name(second)}${leaf}`;
 }
 
 /** The message clause naming the connectors a walk squeezes through, or nothing. */

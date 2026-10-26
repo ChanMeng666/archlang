@@ -156,16 +156,26 @@ suite("W_HOB_FRIDGE_GAP (PS2.11e)", () => {
     expect(clearancesClear(ctx, { x: 1000, y: 100, w: 600, h: 650 }, "fridge", 0)).toBe(false);
   });
 
-  it("a tall unit in another room is not read, even with no wall between", () => {
-    // Two rooms meeting on x 2400 with no wall: the fridge 100 mm off the stove is in the other room.
-    const src = run(2000, 2700)
-      .replace(
-        'room id=r_k at (0,0) size 6000x4000 label "Kitchen" uses kitchen',
-        'room id=r_k at (0,0) size 2400x4000 label "Kitchen" uses kitchen\n  room id=r_d at (2400,0) size 3600x4000 label "Dining" uses dining',
-      )
-      .replace("offset 2700 in r_k", "offset 2700 in r_d");
-    expect(src).toContain('label "Dining"');
-    expect(of(src, HF)).toEqual([]);
+  it("across an `open between` join there is no wall: a dining room's fridge 100 mm off the hob fires", () => {
+    // Kitchen and dining as one open-plan space (walls from rooms, the shared edge left open). The
+    // stove spans 1700–2300 on the north wall in the kitchen; the fridge 2400–3000 in the dining room.
+    const plan = (join: string) => `plan "K" {
+  units mm
+  grid 50
+  room id=r_k at (0,0) size 2400x4000 label "Kitchen" uses kitchen
+  room id=r_d right-of r_k align top gap 0 size 3600x4000 label "Dining" uses dining
+  walls from rooms exterior 200 partition 100 {
+    ${join}
+  }
+  door on r_d.bottom at center width 900
+  furniture stove against r_k.top offset 2000 in r_k
+  furniture fridge against r_d.top offset 300 in r_d
+}`;
+    const open = of(plan("open between r_k and r_d"), HF);
+    expect(open).toHaveLength(1);
+    expect(open[0]!.message).toContain("from the fridge beside it");
+    // The same rooms with their partition standing: the wall ends the measure.
+    expect(of(plan("door between r_k and r_d at 2000 from start width 800"), HF)).toEqual([]);
   });
 
   it("a stub wall between them in one room ends the measure: the wall is nearer", () => {
@@ -235,6 +245,25 @@ suite("W_LEAF_TOO_WIDE (PS2.11e)", () => {
     expect(ds[0]!.hints![0]).toContain(
       'Make door "d_main" a pair of leaves, `door double … width 2400` (each leaf 1200 mm)',
     );
+  });
+
+  it("the quoted width is rounded DOWN to the plan's grid, so applying it clears the warning", () => {
+    for (const grid of [50, 25, 10]) {
+      const at = (door: string) => hall(door).replace("grid 1", `grid ${grid}`);
+      const single = of(at("door id=d on r_hall.bottom at center width 2500 swing inward"), LW)[0]!.hints![0]!;
+      const pairMax = Math.floor(2438 / grid) * grid;
+      const leafMax = Math.floor(1219 / grid) * grid;
+      expect(single, `grid ${grid}`).toContain(`narrow it to ${leafMax} mm or less`);
+      expect(single, `grid ${grid}`).toContain(`narrow it to ${pairMax} mm or less too`);
+      const pair = of(at("door id=d double on r_hall.bottom at center width 3000 swing inward"), LW)[0]!.hints![0]!;
+      expect(pair).toContain(`Narrow door "d" to ${pairMax} mm or less (\`width ${pairMax}\`)`);
+      // Each quoted width, applied, clears the warning on that grid.
+      expect(of(at(`door on r_hall.bottom at center width ${leafMax} swing inward`), LW), `grid ${grid}`).toEqual([]);
+      expect(
+        of(at(`door double on r_hall.bottom at center width ${pairMax} swing inward`), LW),
+        `grid ${grid}`,
+      ).toEqual([]);
+    }
   });
 
   it("the boundary: 1219 is clear, 1220 fires", () => {
@@ -385,6 +414,24 @@ suite("a `double` door is passed through one leaf (ADA 2010 404.2.3)", () => {
     expect(codes(door.replace("width 1400", "width 1550"))).toEqual([]);
     expect(codes(door, { profile: "accessibility-advisory" })).toContain("W_DOOR_CLEARANCE");
     expect(codes(door.replace("width 1400", "width 2000"), { profile: "accessibility-advisory" })).toEqual([]);
+  });
+
+  it("`W_SWING_OVER_STAIR` reads both leaves: a 1400 mm pair over the corpus flight fires, once", () => {
+    const src = readFileSync(join(ROOT, "test/defect-corpus/stair-safety/swing-over-stair.arch"), "utf8");
+    const hinged = "door id=d_en_corr at (4900,2600) width 700 wall w_land hinge near start swing into r_landing";
+    expect(src).toContain(hinged);
+    // The pair spans x 4200–5600; its east leaf, hung at 5600, sweeps the stair's head at x 4900+.
+    const pair = src.replace(
+      hinged,
+      "door id=d_en_corr double at (4900,2600) width 1400 wall w_land swing into r_landing",
+    );
+    const ds = of(pair, "W_SWING_OVER_STAIR");
+    expect(ds).toHaveLength(1);
+    // A pair has a leaf on each jamb: only the swing-side remedy is offered.
+    expect(ds[0]!.hints![0]).toContain("to the other side of its wall");
+    expect(ds[0]!.hints![0]).not.toContain("other jamb");
+    // Swung the other way, both leaves open into the ensuite, off the stair.
+    expect(of(pair.replace("swing into r_landing", "swing into r_en"), "W_SWING_OVER_STAIR")).toEqual([]);
   });
 
   it("describe() reads the clear width off one leaf, the nominal width off the pair", () => {

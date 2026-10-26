@@ -904,6 +904,10 @@ export const leafTooWide: LintRule = {
   check(ctx: LintContext): Diagnostic[] {
     const max = ctx.rules.maxHingedLeafMm;
     if (max === null) return [];
+    // A quoted width is rounded DOWN to the plan's grid (the resolver snaps a written width to it,
+    // as `clearingWidth` rounds up), so the width the hint gives is one that clears the warning.
+    const grid = ctx.ir.grid;
+    const atMost = (w: number): number => (grid > 0 ? Math.floor(w / grid) * grid : Math.floor(w));
     const out: Diagnostic[] = [];
     for (const d of ctx.doors) {
       const kind = d.doorKind ?? "hinged";
@@ -923,8 +927,8 @@ export const leafTooWide: LintRule = {
         message: `${name[0]!.toUpperCase()}${name.slice(1)} is ${what}; a swinging leaf is at most ${mm(max)} mm (${mm(leaf - max)} mm over), wider than a door is made to hang and swing.`,
         hints: [
           kind === "double"
-            ? `Narrow ${ref} to ${mm(2 * max)} mm or less (\`width ${mm(2 * max)}\`), or keep the width and make it a \`sliding\` or \`bifold\` door, or a cased \`opening\` if it needs no door.`
-            : `Make ${ref} a pair of leaves, \`door double … width ${mm(d.width)}\` (each leaf ${mm(d.width / 2)} mm${d.width / 2 > max ? `, still over ${mm(max)}: narrow it to ${mm(2 * max)} mm or less too` : ""}), or narrow it to ${mm(max)} mm or less, or make it a \`sliding\` or \`bifold\` door, or a cased \`opening\` if it needs no door.`,
+            ? `Narrow ${ref} to ${mm(atMost(2 * max))} mm or less (\`width ${mm(atMost(2 * max))}\`), or keep the width and make it a \`sliding\` or \`bifold\` door, or a cased \`opening\` if it needs no door.`
+            : `Make ${ref} a pair of leaves, \`door double … width ${mm(d.width)}\` (each leaf ${mm(d.width / 2)} mm${d.width / 2 > max ? `, still over ${mm(max)}: narrow it to ${mm(atMost(2 * max))} mm or less too` : ""}), or narrow it to ${mm(atMost(max))} mm or less, or make it a \`sliding\` or \`bifold\` door, or a cased \`opening\` if it needs no door.`,
         ],
       });
     }

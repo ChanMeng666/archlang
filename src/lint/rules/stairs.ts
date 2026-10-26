@@ -6,8 +6,8 @@
  * Every rule reads facts the plan states: the stair's footprint (`at`, `size`), its flight width
  * (`width`, else the footprint's cross extent) and its `dir`, which fix the flight's axis and the
  * end it is entered from (`tailEdge`, `src/vertical.ts`); the same id on the storey below
- * ({@link import("../context.js").BuildingContext.shaftNeighbours}); door swings (`doorSwing`, the
- * one quarter-disc the renderer draws); wall bodies; `void` footprints; and the storey height,
+ * ({@link import("../context.js").BuildingContext.shaftNeighbours}); door swings (`doorLeaves`, the
+ * quarter-disc of each leaf the renderer draws); wall bodies; `void` footprints; and the storey height,
  * read only where the plan authors one (`describe().heights`).
  *
  * **Which end is which.** On a storey where a flight is `dir up` it is entered at its FOOT; where
@@ -28,7 +28,7 @@ import { pointInRoomBox } from "../../analyze.js";
 import { det, oppositeSide, type Side } from "../../algebra/d4.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import {
-  doorSwing,
+  doorLeaves,
   type DoorSwing,
   normal,
   sectorIntersectsRect,
@@ -350,21 +350,30 @@ export const swingOverStair: LintRule = {
   check(ctx: LintContext): Diagnostic[] {
     const f = factsFor(ctx);
     if (f === null) return [];
+    // One entry per door, with every leaf it swings (`doorLeaves`: a hinged door's one, a `double`
+    // door's two), so a pair over a flight is read leaf by leaf and reported once.
     const swings = ctx.doors.flatMap((d) => {
-      const s = doorSwing(d);
-      return s ? [{ d, s }] : [];
+      const leaves = doorLeaves(d);
+      return leaves.length > 0 ? [{ d, leaves }] : [];
     });
-    // Each pair is compared up to three times (the swing and its two alternatives).
-    if (!charge(f, swings.length * f.stairs.length * 3)) {
+    const leafCount = swings.reduce((n, x) => n + x.leaves.length, 0);
+    // Each leaf is compared up to three times (the swing and its two alternatives).
+    if (!charge(f, leafCount * f.stairs.length * 3)) {
       ctx.skip("stair-budget");
       return [];
     }
     const out: Diagnostic[] = [];
     const dwelling = judgesAsDwelling(ctx);
-    for (const { d, s } of swings) {
+    for (const { d, leaves } of swings) {
+      const double = d.doorKind === "double";
       for (const sf of f.stairs) {
         const v = sf.v;
-        const hit = swingHit(s, d.head, sf, ctx);
+        // The first leaf that sweeps the stair names where: one warning per door.
+        let hit: ReturnType<typeof swingHit> = null;
+        for (const s of leaves) {
+          hit = swingHit(s, d.head, sf, ctx);
+          if (hit !== null) break;
+        }
         if (hit === null) continue;
         const headNeed = sf.needs[sf.landings.findIndex((l) => l.end === "head")] ?? sf.needs[0]!;
         const where =
@@ -376,10 +385,11 @@ export const swingOverStair: LintRule = {
                 ? `its open leaf comes within ${mm(FOOT_DOOR_CLEAR_MM)} mm of the bottom step, the clear space a door at the foot of a flight must leave across its width`
                 : "its open leaf sweeps the landing at the foot of the flight, which no door of a building other than a dwelling may swing across";
         const clears = (alt: RDoor): boolean => {
-          const sw = doorSwing(alt);
-          return sw !== null && swingHit(sw, d.head, sf, ctx) === null;
+          const sws = doorLeaves(alt);
+          return sws.length > 0 && sws.every((sw) => swingHit(sw, d.head, sf, ctx) === null);
         };
-        const hingeClears = clears({ ...d, hinge: d.hinge === "left" ? "right" : "left" });
+        // A `double` door has a leaf on each jamb, so it has no other jamb to hang one on.
+        const hingeClears = !double && clears({ ...d, hinge: d.hinge === "left" ? "right" : "left" });
         const sideClears = clears({ ...d, swing: d.swing === "in" ? "out" : "in" });
         // The swing as WRITTEN: `door.transform` flips `swing` under a reflecting frame.
         const g = ctx.frameOf(d);
@@ -391,7 +401,9 @@ export const swingOverStair: LintRule = {
           ...ctx.at(d),
           message: `${capitalise(openingName(ctx, d))} swings over ${stairName(v, ctx)}: ${where}.`,
           hints: [
-            `Open ${ref} to the other side of its wall — \`swing ${written === "in" ? "out" : "in"}\`${sideClears ? " (this clears the stair)" : ""} — or hang it on the other jamb (the other \`hinge\`)${hingeClears ? " (this clears the stair)" : ""}.`,
+            double
+              ? `Open ${ref} to the other side of its wall — \`swing ${written === "in" ? "out" : "in"}\`${sideClears ? " (this clears the stair)" : ""}.`
+              : `Open ${ref} to the other side of its wall — \`swing ${written === "in" ? "out" : "in"}\`${sideClears ? " (this clears the stair)" : ""} — or hang it on the other jamb (the other \`hinge\`)${hingeClears ? " (this clears the stair)" : ""}.`,
             `Or move ${ref} along its wall, or the stair \`${v.id}\`, so the swing stays off the flight and its landings; a \`sliding\` or \`pocket\` door sweeps nothing.`,
           ],
         });

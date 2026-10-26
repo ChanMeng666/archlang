@@ -251,9 +251,9 @@ export const hobUnderWindow: LintRule = {
  * Standards, guideline 17 (cook surface landing area): "a minimum of 12" of landing area on one
  * side of a cooking surface and 15" on the other side" (read in the NKBA guidelines PDF and the
  * NKBA consumer checklist [V]); a tall unit inside 12 in leaves that side less than the lesser
- * landing, whichever side it is on. Only a tall unit in the hob's own room is read, and the strip
- * is measured against the walls too, so a fridge behind a partition is not beside the hob
- * ({@link hobSideGap}). A wall beside the hob is not judged here (the landing rule
+ * landing, whichever side it is on. The strip is measured against the walls too, so a fridge
+ * behind a partition is not beside the hob, and rooms do not enter it: an open-plan join has no
+ * wall ({@link hobSideGap}). A wall beside the hob is not judged here (the landing rule
  * would read it too: card PS2.59). Every plan is read, as for {@link hobUnderWindow}. One warning
  * per hob, on its nearer short side; no fix (which piece moves, or whether a worktop goes
  * between, is the author's).

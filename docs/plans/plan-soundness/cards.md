@@ -64,6 +64,10 @@ A done row's "record" is `research/2026-10-24-ps0-ps2-as-built.md`.
 - `space-not-enclosed/bath-open-side.clean.arch` and `openings-ignore-walls/fa-door-across-tee.clean.arch` raise `W_PATH_TOO_NARROW`, which their cases do not: the fix unmasks a 700 mm door (640 mm clear) that the case's defect hid, because the room was reached another way. In PS1.4 (`research/2026-10-26-ps14-diagnostic-wording.md`, § Per-code notes) every reply to the two cases (8 each: sonnet and haiku, all four variants) scored `broke` on that code, the same one the twin raises. They are the only two twins that raise a code their case does not (checked 2026-10-26 at `main@0413af3d`).
 - *Acceptance:* give each case and its twin a door the path rule passes, so the twin is clean and the case still raises only its own defect plus what it raised before; a defect-corpus assertion that no twin raises a code its case does not; the catch rate does not move and every moved corpus row is explained.
 
+**PS1.7 · The `eval:ci` gate's two blind spots (found by PR #283's red team round 2, 2026-10-26).** `todo`
+- `regressionsAgainstFixture` (`eval/run.ts`) compares each golden's `semanticPass`, `physicalWarnings` and `lintWarnings` with `eval/judge-fixture.json`. It misses (1) a golden recorded as failing (D25's three) that now fails for a different reason with the same counts, say another physical code in place of `W_DOORWAY_BLOCKED`, and (2) a golden deleted from the corpus, whose fixture row is never visited.
+- *Acceptance:* the gate also compares a recorded failure's `failures` lines (or codes) with the fixture's, and reports a fixture row with no golden; `test/eval-offline.test.ts` holds both cases; no threshold, `JUDGE_VERSION` unchanged.
+
 ### PS2 · Validity checks that read existing facts (small, high yield)
 
 Each is an advisory `W_*` appended to `LINT_RULES`, with catalogue entry, `explain` text, fix prose

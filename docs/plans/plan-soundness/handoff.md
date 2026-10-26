@@ -140,7 +140,7 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    2026-10-18 ask is answered with data and no wording rule (`current` is best on both models, but by 1 case on sonnet, under the 3-case margin). **PS1.3** walls-first control arm (§8 Q1) is done (PR #264, D21): it ran on
    2026-10-26 in item 1's harness (66 CLI calls, 0 `score`, 0 `validate`; 54 verified defects against 52
    rooms-first; D1/D5 re-stated).
-7. Everything else in `cards.md` by family: PS0 17 todo, PS1 2, PS2 39 todo, PS3 4, PS4 6 todo, PS5 3, PS7 0 (7.3 parked); pick by first-contact evidence, not by number.
+7. Everything else in `cards.md` by family: PS0 17 todo, PS1 3, PS2 39 todo, PS3 4, PS4 6 todo, PS5 3, PS7 0 (7.3 parked); pick by first-contact evidence, not by number.
 
 **Open cards by family (2026-10-25 audit, counts updated 2026-10-26; "ready" = no stated dependency
 outstanding; every card that changes what an author sees in `lint`, `validate`, `finish` or the spec
@@ -148,7 +148,7 @@ waited for item 1 (D19), which ran 2026-10-26: such a card may start and the nex
 
 | Family | Open | Ready now | Waiting on something |
 |---|---|---|---|
-| PS1 | 2 | 1.5, 1.6 | — |
+| PS1 | 3 | 1.5, 1.6, 1.7 | — |
 | PS0 | 17 | PS0.15 (net-area bound), 0.2, 0.3, 0.6, 0.9, 0.17, 0.22, 0.23, 0.25, 0.26, 0.27 | 0.8 (re-measure), 0.16/0.18/0.20/0.21 (a decision each), 0.24 (code landed in #252; only a `clear front\|sides` test is left) |
 | PS2 | 39 | 2.21, 2.23, 2.25, 2.27, 2.30–2.33, 2.35, 2.41–2.44, 2.47–2.49, 2.51, 2.52, 2.56, 2.57, 2.58, 2.61, 2.62, 2.63 | 2.14 (ADR), 2.16/2.36 (facts), 2.20/2.28/2.59 (measure first), 2.24/2.26/2.37/2.38/2.55 (a decision each), 2.39 (drawing decision), 2.40 and 5.6 (fire D12's reverse-if), 2.53 (a sourced ceiling), 2.60 (a sourced profile figure) |
 | PS3 | 4 | 3.12 | 3.10 (decision; moves digests, D8), 3.11 (corpus sweep), 3.13 (proof first) |
@@ -158,7 +158,7 @@ waited for item 1 (D19), which ran 2026-10-26: such a card may start and the nex
 
 Facts a reader would otherwise miss: the dwelling reading (D6) now has six consumers (three lint
 arms, taste R6/R11/R12), so D6's reverse-if has fired and is re-stated in D6; `spec.llm.md` is
-29,868 UTF-16 units, 132 under its 30,000 cap (PS2.11e's `double` kind took 74 and cut 28) (PS7.5 freed 135 from the loop paragraph's taste clause; PS4.3a's 483-unit keep line took 86 back net of four cuts), so the next spec-text card is paid for within that headroom;
+29,977 UTF-16 units, 23 under its 30,000 cap (PS7.1's stage clause took 109; PS2.11e's `double` kind took 74 and cut 28) (PS7.5 freed 135 from the loop paragraph's taste clause; PS4.3a's 483-unit keep line took 86 back net of four cuts), so the next spec-text card is paid for within that headroom;
 the first-contact hits of the four clearance rules (A8, NT4, NH6, RH3, T5, A1, K4, NH5, RA6, C4, RS4,
 RK4) are in the two 2026-10-25 as-built records and are summed in Part 1 of the 2026-10-26 audit (23
 of the 57, 7 of the 48 and 5 of the 49 now caught, 9 new true findings, 0 false positives); `docs/backlog.md`
