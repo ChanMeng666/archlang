@@ -2,14 +2,15 @@
  * Mesh3D (card A2): one deterministic triangulation, checked against the plan it came from
  * (archlang-3d plan §8.1): V-GEO-02/10 every shell closed with positive volume; V-GEO-07 each wall
  * exactly its height; V-GEO-01 each floor's area equal to the room's; V-GEO-04 every opening's
- * centre clear of the walls and its lintel/sill solid; V-DET-01 the same bytes on every run, pinned
+ * centre clear of the walls and its lintel/sill solid (V-GEO-11 with it: a probe through every
+ * opening meets no wall, so each cut opened every piece it covers); V-DET-01 the same bytes on every run, pinned
  * for laneway-house so CI's Node legs compare across versions; V-GEO-12 the mixed-height warning on
  * s11 only; V-FUR-01 furniture over its floor.
  */
 import { createHash } from "node:crypto";
-import { describe as describePlan } from "@chanmeng666/archlang";
+import { describeLevel, describe as describePlan } from "@chanmeng666/archlang";
 import { describe, expect, it } from "vitest";
-import { adaptPlan, buildMesh, type Mesh3D, type Shell } from "../src/index.js";
+import { adaptPlan, buildMesh, type Mesh3D, prism, type Shell } from "../src/index.js";
 import { EXAMPLES_LIST, STRESS_PLANS, WORLD } from "./corpus.js";
 
 type V3 = [number, number, number];
@@ -121,17 +122,14 @@ describe("Mesh3D on the shipped corpus", () => {
     for (const { n, mesh } of corpus) {
       const keys = mesh.nodes.map((nd) => nd.key);
       expect(new Set(keys).size, n).toBe(keys.length);
-      const sorted = [...mesh.nodes].sort(
-        (a, b) =>
-          a.level - b.level ||
-          (a.kind < b.kind ? -1 : a.kind > b.kind ? 1 : 0) ||
-          (a.id < b.id ? -1 : a.id > b.id ? 1 : 0) ||
-          ((a.part ?? "") < (b.part ?? "") ? -1 : (a.part ?? "") > (b.part ?? "") ? 1 : 0),
-      );
-      expect(
-        sorted.map((nd) => nd.key),
-        n,
-      ).toEqual(keys);
+      // Checked pairwise against the key's own fields, not by re-sorting with the builder's comparator.
+      for (let i = 1; i < mesh.nodes.length; i++) {
+        const [a, b] = [mesh.nodes[i - 1], mesh.nodes[i]] as [Mesh3D["nodes"][number], Mesh3D["nodes"][number]];
+        const t = (x: typeof a): string[] => [String(x.level).padStart(4, "0"), x.kind, x.id, x.part ?? ""];
+        const [ta, tb] = [t(a), t(b)];
+        const k = ta.findIndex((v, j) => v !== tb[j]);
+        expect(k >= 0 && (ta[k] as string) < (tb[k] as string), `${n}: ${a.key} before ${b.key}`).toBe(true);
+      }
     }
   });
 
@@ -148,35 +146,37 @@ describe("Mesh3D on the shipped corpus", () => {
     }
   });
 
-  it("V-GEO-01: each floor's area is its room's describe() area (±0.02 m², plus ε × perimeter on a curve)", () => {
+  it("V-GEO-01: each storey's floors match its rooms' describe() area (±0.02 m², plus ε × perimeter on a curve)", () => {
     const off: string[] = [];
+    let compared = 0;
     for (const { n, r, mesh } of corpus) {
       const src = EXAMPLES_LIST.find(([k]) => k === n)?.[1] ?? "";
-      const rooms = describePlan(src, { world: WORLD }).rooms;
-      for (const room of rooms) {
-        const nd = mesh.nodes.find(
-          (x) =>
-            x.kind === "floor" &&
-            x.id === room.id &&
-            x.level === (mesh.nodes.find((y) => y.kind === "floor" && y.id === room.id)?.level ?? 0),
-        );
-        const s = nd?.shells[0];
-        if (!s) continue;
-        const ys = s.positions.filter((_, i) => i % 3 === 1);
-        const thick = Math.max(...ys) - Math.min(...ys);
-        const m2 = volume(s) / thick / 1e12;
-        // An inscribed polygon whose chords sag at most ε loses at most ε × perimeter (plan §8.1's
-        // "arc rooms need their own bound"); a straight-sided room keeps the spike's 0.02 m².
-        const ring = r.scene.levels.flatMap((l) => l.floors).find((f) => f.id === room.id)?.polygon.outer ?? [];
-        const perim = ring.reduce((sum, p, i) => {
-          const q = ring[(i + 1) % ring.length] ?? p;
-          return sum + Math.hypot(q[0] - p[0], q[1] - p[1]);
-        }, 0);
-        const curved = ring.length > 24;
-        const bound = 0.02 + (curved ? (2 * perim) / 1e9 : 0);
-        if (Math.abs(m2 - room.area_m2) > bound) off.push(`${n} ${room.id}: ${m2.toFixed(3)} vs ${room.area_m2}`);
+      const summary = describePlan(src, { world: WORLD });
+      for (const lv of r.scene.levels) {
+        const rooms = r.scene.levels.length > 1 ? describeLevel(summary, lv.level).rooms : summary.rooms;
+        const voids = lv.voids.length > 0;
+        for (const room of rooms) {
+          const nd = mesh.nodes.find((x) => x.kind === "floor" && x.id === room.id && x.level === lv.level);
+          if (!nd || voids) continue; // a storey with a void: the floor is the room less the void (tested below)
+          const m2 = nd.shells.reduce((sum, sh) => {
+            const ys = sh.positions.filter((_, i) => i % 3 === 1);
+            return sum + volume(sh) / (Math.max(...ys) - Math.min(...ys)) / 1e12;
+          }, 0);
+          // An inscribed polygon whose chords sag at most ε loses at most ε × perimeter (plan §8.1's
+          // "arc rooms need their own bound"); a straight-sided room keeps the spike's 0.02 m².
+          const ring = lv.floors.find((f) => f.id === room.id)?.polygon.outer ?? [];
+          const perim = ring.reduce((sum, p, i) => {
+            const q = ring[(i + 1) % ring.length] ?? p;
+            return sum + Math.hypot(q[0] - p[0], q[1] - p[1]);
+          }, 0);
+          const bound = 0.02 + (ring.length > 24 ? (2 * perim) / 1e9 : 0);
+          compared++;
+          if (Math.abs(m2 - room.area_m2) > bound)
+            off.push(`${n} L${lv.level} ${room.id}: ${m2.toFixed(3)} vs ${room.area_m2}`);
+        }
       }
     }
+    expect(compared).toBeGreaterThan(200);
     expect(off).toEqual([]);
   });
 
@@ -247,6 +247,39 @@ describe("Mesh3D on the shipped corpus", () => {
     expect(outside).toEqual([]);
   });
 
+  it("drops no shell anywhere in the corpus (a refused shell would be in the ledger)", () => {
+    const dropped = corpus.flatMap((c) =>
+      c.mesh.assumptions
+        .filter((a) => a.rule === "shell-degenerate-or-touching-hole")
+        .map((a) => `${c.n} ${a.kind}:${a.id}`),
+    );
+    expect(dropped).toEqual([]);
+  });
+
+  it("cuts a real gallery void out of the slab and the floor (two-storey, hillside-villa)", () => {
+    let checked = 0;
+    for (const { n, r, mesh } of corpus.filter((c) => c.n === "two-storey.arch" || c.n === "hillside-villa.arch")) {
+      for (const lv of r.scene.levels) {
+        for (const v of lv.voids) {
+          const p: V3 = [v.at[0] + v.size.w / 2, lv.elevation - 100_000, v.at[1] + v.size.h / 2];
+          const slab = mesh.nodes.find((x) => x.key === `L${lv.level}/slab:slab`);
+          expect(
+            slab?.shells.some((s) => inside(s, p)),
+            `${n} L${lv.level} slab under ${v.id}`,
+          ).toBe(false);
+          const q: V3 = [p[0], lv.elevation + 2500, p[2]];
+          const floors = mesh.nodes.filter((x) => x.kind === "floor" && x.level === lv.level);
+          expect(
+            floors.some((f) => f.shells.some((s) => inside(s, q))),
+            `${n} floor over ${v.id}`,
+          ).toBe(false);
+          checked++;
+        }
+      }
+    }
+    expect(checked).toBeGreaterThanOrEqual(2);
+  });
+
   it("records every default it adds in the ledger", () => {
     const rules = new Set(corpus.flatMap((c) => c.mesh.assumptions.map((a) => a.rule)));
     for (const r of [
@@ -258,6 +291,56 @@ describe("Mesh3D on the shipped corpus", () => {
     ]) {
       expect(rules.has(r), r).toBe(true);
     }
+  });
+});
+
+describe("voids and holes (PR #328 review round 1)", () => {
+  const plan = (body: string) =>
+    buildMesh(
+      adapted(
+        `plan "v" { units mm grid 50 wall id=w exterior thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close } ${body} }`,
+      ).scene,
+    );
+  const floorsOf = (m: Mesh3D) => m.nodes.filter((x) => x.kind === "floor");
+  const area = (m: Mesh3D, id: string): number =>
+    floorsOf(m)
+      .filter((x) => x.id === id)
+      .flatMap((x) => x.shells)
+      .reduce((s, sh) => s + volume(sh) / (5 * 1000) / 1e12, 0);
+
+  it("cuts a void flush with a wall and one on a corner exactly, every shell closed", () => {
+    const m = plan(
+      'room id=a at (0,0) size 4000x4000 label "A" void id=v1 at (0,2500) size 1000x1000 void id=v2 at (0,0) size 500x500',
+    );
+    for (const f of floorsOf(m)) for (const sh of f.shells) expect(openEdges(sh)).toBe(0);
+    expect(area(m, "a")).toBeCloseTo(16 - 1 - 0.25, 6);
+  });
+
+  it("cuts a void straddling two rooms out of both", () => {
+    const m = plan(
+      'room id=a at (0,0) size 4000x4000 label "A" room id=b at (4000,0) size 4000x4000 label "B" void id=v at (3000,1000) size 2000x1000',
+    );
+    expect(area(m, "a")).toBeCloseTo(16 - 1, 6);
+    expect(area(m, "b")).toBeCloseTo(16 - 1, 6);
+  });
+
+  it("refuses a prism whose hole touches its outer ring or another hole, instead of an open shell", () => {
+    const outer: Array<[number, number]> = [
+      [0, 0],
+      [4000, 0],
+      [4000, 4000],
+      [0, 4000],
+    ];
+    const sq = (x: number, y: number, w: number): Array<[number, number]> => [
+      [x, y],
+      [x + w, y],
+      [x + w, y + w],
+      [x, y + w],
+    ];
+    expect(prism({ outer, holes: [sq(0, 1000, 1000)] }, 0, 10)).toBeNull(); // shares an edge
+    expect(prism({ outer, holes: [sq(1000, 1000, 1000), sq(2000, 1000, 1000)] }, 0, 10)).toBeNull(); // holes touch
+    const ok = prism({ outer, holes: [sq(1000, 1000, 1000)] }, 0, 10);
+    expect(ok && openEdges(ok)).toBe(0);
   });
 });
 
@@ -290,4 +373,4 @@ describe("Mesh3D determinism and budget", () => {
  * change to the adapter or the mesh stage (or a core change to the plan's geometry), recorded in
  * the PR that moves it.
  */
-const LANEWAY_MESH_SHA256 = "7e553810b1f410ed460370ceb948eeb8e01796cf718dfbc820e1c902d4c92983";
+const LANEWAY_MESH_SHA256 = "7d05de616817cba5b063f91ba0d5f77c3c218adf654e4323c0ff56e5bd725a6d";

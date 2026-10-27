@@ -5,7 +5,7 @@
  * assumption ledger.
  *
  * Reads only fields the exported IR types document; underscore-prefixed fields are not part of
- * the core's promise (ADR 0031) and are never read (`test/no-private-fields.test.ts`).
+ * the core's promise (ADR 0031) and are never read (`test/contract.test.ts`).
  */
 import {
   doorLeaves,

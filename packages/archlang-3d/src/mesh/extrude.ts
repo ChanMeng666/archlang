@@ -2,7 +2,8 @@
  * Prisms: a plan polygon (with holes) between two heights → one closed triangle shell, in the
  * exporters' axes (X = plan x, Y = up, Z = plan y), integer micrometres. Caps are triangulated with
  * earcut (ISC), which adds no vertex, so the caps and the sides share every edge and the shell is
- * watertight by construction. Winding is decided numerically per face, never assumed: each face's
+ * watertight whenever every hole lies strictly inside the outer ring and apart from the others
+ * (checked; anything else returns null). Winding is decided numerically per face, never assumed: each face's
  * normal is turned to point out of the solid.
  */
 import earcut from "earcut";
@@ -34,9 +35,44 @@ function clean(r: readonly Pt[]): Pt[] | null {
 /** Orient a ring: `ccw` = positive numeric area in plan (x, y). */
 const orient = (r: Pt[], ccw: boolean): Pt[] => (area2(r) > 0 === ccw ? r : [...r].reverse());
 
+/** Even-odd containment, `null` when `p` lies ON the ring (a vertex or an edge). */
+function where(p: Pt, r: readonly Pt[]): boolean | null {
+  let c = false;
+  for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
+    const a = r[i] as Pt;
+    const b = r[j] as Pt;
+    const cross = (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]);
+    const within =
+      Math.min(a[0], b[0]) <= p[0] &&
+      p[0] <= Math.max(a[0], b[0]) &&
+      Math.min(a[1], b[1]) <= p[1] &&
+      p[1] <= Math.max(a[1], b[1]);
+    if (cross === 0 && within) return null;
+    if (a[1] > p[1] !== b[1] > p[1] && p[0] < ((b[0] - a[0]) * (p[1] - a[1])) / (b[1] - a[1]) + a[0]) c = !c;
+  }
+  return c;
+}
+
+/**
+ * Whether every hole lies strictly inside the outer ring and apart from every other hole: the
+ * condition under which earcut's bridging keeps the caps and the sides sharing every edge. A hole
+ * touching its outer ring or another hole at a vertex or along an edge breaks it (red-team, PR #328).
+ */
+function holesApart(outer: readonly Pt[], holes: readonly Pt[][]): boolean {
+  const strictlyIn = (ps: readonly Pt[], r: readonly Pt[]) => ps.every((p) => where(p, r) === true);
+  const strictlyOut = (ps: readonly Pt[], r: readonly Pt[]) => ps.every((p) => where(p, r) === false);
+  return holes.every(
+    (h, i) =>
+      strictlyIn(h, outer) &&
+      strictlyOut(outer, h) &&
+      holes.every((g, j) => j === i || (strictlyOut(h, g) && strictlyOut(g, h))),
+  );
+}
+
 /**
  * A closed prism over `poly` from `z0` to `z1` (µm, z0 < z1), or `null` when the polygon is
- * degenerate. Outer ring counter-clockwise and holes clockwise in plan numbers, so the solid lies to
+ * degenerate or a hole touches its outer ring or another hole (callers cut such voids exactly
+ * instead; see `lessVoids` in `build.ts`). Outer ring counter-clockwise and holes clockwise in plan numbers, so the solid lies to
  * the LEFT of every edge.
  */
 export function prism(poly: Polygon, z0: number, z1: number): Shell | null {
@@ -48,6 +84,7 @@ export function prism(poly: Polygon, z0: number, z1: number): Shell | null {
     const c = clean(h);
     if (c) rings.push(orient(c, false));
   }
+  if (!holesApart(rings[0] as Pt[], rings.slice(1))) return null;
   const flat: number[] = [];
   const holes: number[] = [];
   rings.forEach((r, i) => {
