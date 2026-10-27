@@ -112,9 +112,22 @@ export const wcSideClearance: LintRule = {
   },
 };
 
-/** A room whose label says it is accessible: "Accessible WC", "Wheelchair WC", "Disabled
- *  toilet". The language has no `uses` word for it, so the label is what says it. */
-const ACCESSIBLE_RE = /\b(?:accessible|wheelchair|disabled)\b/i;
+/** The words that say a room is accessible: "Accessible WC", "Wheelchair WC", "Disabled toilet". */
+const ACCESSIBLE_RE = /\b(?:accessible|wheelchair|disabled)\b/gi;
+
+/** A word that negates the one after it: "Non-accessible", "non accessible", "Not accessible". */
+const NEGATED_RE = /\b(?:non|not)[\s-]*$/i;
+
+/**
+ * Does a room's label say it is accessible? One of {@link ACCESSIBLE_RE}'s words, as a whole word
+ * (so "Inaccessible" is not one) and not negated ({@link NEGATED_RE}: "Non-accessible store"). The
+ * language has no `uses` word for it, so the label is what says it.
+ */
+export function labelSaysAccessible(label: string | undefined): boolean {
+  if (label === undefined) return false;
+  for (const m of label.matchAll(ACCESSIBLE_RE)) if (!NEGATED_RE.test(label.slice(0, m.index))) return true;
+  return false;
+}
 
 /** How far each side is looked along for a wall: past the figure, so the message can say how
  *  far the nearer wall is. */
@@ -128,11 +141,12 @@ const SIDE_WALL_REACH_MM = 10_000;
  * 400–500 mm from the adjacent wall, and M4(3) Diagrams 3.11 and 3.16, 450–500 mm [V]; the ADA
  * 2010 Standards 604.2, 16–18 in (406–457 mm) from the side wall [S]. `W_WC_SIDE_CLEARANCE`
  * judges the low end; this rule the high end, and only where the room's label says accessible
- * ({@link ACCESSIBLE_RE}), since a general WC may stand clear of both walls. Only a straight
+ * ({@link labelSaysAccessible}), since a general WC may stand clear of both walls. Only a straight
  * wall's body counts (a fixture beside the pan carries no rail), measured as
  * `W_WC_SIDE_CLEARANCE` measures: square to the centreline over the pan's depth, from the drawn
  * footprint to the drawn body, a doorway in the wall a gap to its jamb. A curved wall near either
- * side declines the pan (`curved-wc-wall`). One warning per WC; hint only, no fix (the edit
+ * side declines the pan (`curved-wc-wall`), as does a pan more than twice the figure wide
+ * (`wide-wc-pan`). One warning per WC; hint only, no fix (the edit
  * depends on how the pan was placed, as for {@link wcHint}).
  */
 export const accessibleWcSideWall: LintRule = {
@@ -144,14 +158,18 @@ export const accessibleWcSideWall: LintRule = {
   check(ctx: LintContext): Diagnostic[] {
     const max = ctx.rules.wcAccessibleSideWallMaxMm;
     if (max === null) return [];
-    const wcs = ctx.furniture.filter((f) => isWc(f.category) && ACCESSIBLE_RE.test(roomOf(f, ctx)?.label ?? ""));
+    const wcs = ctx.furniture.filter((f) => isWc(f.category) && labelSaysAccessible(roomOf(f, ctx)?.label));
     if (wcs.length === 0) return [];
     // Walls only: a basin or a cistern duct beside the pan holds no grab rail.
     const world = wcWorld([], ctx);
     const out: Diagnostic[] = [];
     for (const f of wcs) {
       const m = measureWcSides(rectOf(f), f.rotate, max, world, f);
-      if (m === null) continue; // a pan more than twice the figure wide: not a WC this reads
+      if (m === null) {
+        // A pan more than twice the figure wide: no side wall can stand within the figure.
+        ctx.skip("wide-wc-pan");
+        continue;
+      }
       if (curvedNear(ctx.wallSegs, [m.sides[0].strip, m.sides[1].strip])) {
         ctx.skip("curved-wc-wall");
         continue;

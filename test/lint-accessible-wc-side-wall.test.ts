@@ -11,7 +11,8 @@
 
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { lint } from "../src/index.js";
+import { lint, lintWithCoverage } from "../src/index.js";
+import { labelSaysAccessible } from "../src/lint/rules/clearances.js";
 
 const CODE = "W_ACCESSIBLE_WC_SIDE_WALL";
 
@@ -40,10 +41,13 @@ function prefix(name: string, fixed: string, was: string): string {
 }
 
 /**
- * The four pre-fix positions. classroom-block, clinic and transit-hall are `git log -p`'s removed
+ * The pre-fix positions. classroom-block, clinic and transit-hall are `git log -p`'s removed
  * lines. The library's accessible WC was added by PR #305 and only its fixed position was
  * committed, so its pre-fix position is reconstructed: the pan at offset 2500, mid-way along the
  * room's 5000 mm span (2350 mm from the 300 mm shell's face, 2400 from the 200 mm partition's).
+ * Then the two this rule found that PR #305 did not move, fixed with it (PS2.74): museum's pan,
+ * set 650 mm from the lobby wall's centreline (550 from its face), and practice-office's, centred
+ * on its 2500 mm room's back wall.
  */
 const PRE_FIX: readonly { name: string; fixed: string; was: string; at: number }[] = [
   {
@@ -70,9 +74,21 @@ const PRE_FIX: readonly { name: string; fixed: string; was: string; at: number }
     was: "furniture wc    against wall shell segment 2 offset 2500 in r_wc_a",
     at: 2350,
   },
+  {
+    name: "museum",
+    fixed: "furniture wc against wall wca_n offset 550 in wca",
+    was: "furniture wc against wall wca_n offset 650 in wca",
+    at: 550,
+  },
+  {
+    name: "practice-office",
+    fixed: "furniture wc against wall shell segment 2 offset 8200 in r_wc",
+    was: "furniture wc against wall shell segment 2 offset 7450 in r_wc",
+    at: 1200,
+  },
 ];
 
-describe("W_ACCESSIBLE_WC_SIDE_WALL: the four positions PR #305 moved by hand", () => {
+describe("W_ACCESSIBLE_WC_SIDE_WALL: the positions moved by hand (PR #305's four, and this card's two)", () => {
   for (const c of PRE_FIX) {
     it(`${c.name}: the pre-fix pan warns once, ${c.at} mm from the nearer side wall`, () => {
       const ds = of(prefix(c.name, c.fixed, c.was));
@@ -122,6 +138,22 @@ describe("W_ACCESSIBLE_WC_SIDE_WALL: the band", () => {
   });
 });
 
+describe("W_ACCESSIBLE_WC_SIDE_WALL: a pan the rule does not read", () => {
+  const skips = (src: string): string[] =>
+    (lintWithCoverage(src).coverage?.families ?? []).flatMap((f) => f.skipped ?? []).map((x) => x.reason);
+
+  it("a pan more than twice the figure wide is not judged and files `wide-wc-pan`", () => {
+    // 1200 wide: its half (600) is past the 500 mm figure on both sides.
+    const src = room("Accessible WC", "furniture wc at (900,100) size 1200x700");
+    expect(of(src)).toEqual([]);
+    expect(skips(src)).toContain("wide-wc-pan");
+  });
+
+  it("control: a pan of ordinary width files no skip", () => {
+    expect(skips(room("Accessible WC", wcAt(1400)))).not.toContain("wide-wc-pan");
+  });
+});
+
 describe("W_ACCESSIBLE_WC_SIDE_WALL: which rooms are read", () => {
   it("a room labelled accessible, wheelchair or disabled is read, in any case", () => {
     for (const label of ["Accessible WC", "WHEELCHAIR TOILET", "Disabled WC", "accessible toilet"])
@@ -133,6 +165,17 @@ describe("W_ACCESSIBLE_WC_SIDE_WALL: which rooms are read", () => {
       expect(of(room(label, wcAt(1400))), label).toEqual([]);
   });
 
+  it("a negated word is not accessible: Non-accessible, non accessible, Not accessible", () => {
+    for (const label of ["Non-accessible WC", "non accessible toilet", "NON-WHEELCHAIR WC", "WC (not accessible)"]) {
+      expect(labelSaysAccessible(label), label).toBe(false);
+      expect(of(room(label, wcAt(1400))), label).toEqual([]);
+    }
+    // A negation of one word does not hide another, nor does a word that only ends in "non".
+    expect(labelSaysAccessible("Non-accessible store / Wheelchair WC")).toBe(true);
+    expect(labelSaysAccessible("Canon accessible WC")).toBe(true);
+    expect(labelSaysAccessible(undefined)).toBe(false);
+  });
+
   it("the message names the room by its label and never quotes an element id", () => {
     const [d] = of(room("Accessible WC", wcAt(1400)));
     expect(d?.message).not.toMatch(/wc_1|r_wc|shell|"/);
@@ -140,28 +183,10 @@ describe("W_ACCESSIBLE_WC_SIDE_WALL: which rooms are read", () => {
 });
 
 describe("W_ACCESSIBLE_WC_SIDE_WALL over the shipped examples", () => {
-  /**
-   * Examples whose accessible WC the rule finds outside the band that PR #305's review did not
-   * move. Each is a real defect by the cited source, pending the owner's decision (see the PR):
-   * fixing the example moves its pinned SVG/describe()/lint() digests.
-   */
-  const OPEN: Readonly<Record<string, number>> = {
-    // The pan's centreline is 650 mm from the lobby wall's centreline, 550 from its face.
-    museum: 550,
-    // The pan stands mid-way along a 2500 mm room's back wall.
-    "practice-office": 1200,
-  };
-
-  it("every other example is silent", () => {
-    const loud: Record<string, number> = {};
+  it("every example is silent", () => {
     for (const file of readdirSync("examples")
       .filter((f) => f.endsWith(".arch"))
-      .sort()) {
-      const ds = of(readFileSync(`examples/${file}`, "utf8"));
-      if (ds.length === 0) continue;
-      expect(ds, file).toHaveLength(1);
-      loud[file.replace(/\.arch$/, "")] = Number(/centreline (\d+) mm/.exec(ds[0]!.message)?.[1]);
-    }
-    expect(loud).toEqual(OPEN);
+      .sort())
+      expect(of(readFileSync(`examples/${file}`, "utf8")), file).toEqual([]);
   });
 });
