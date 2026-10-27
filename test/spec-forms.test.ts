@@ -131,6 +131,16 @@ const POSITIVE: Snippet[] = [
   },
   {
     keyword: "wall",
+    note: "`status` (B3a) after `height`, before the body or the pairwise form: each of the three",
+    src: plan(
+      `  room id=a at (0,0) size 4000x5000\n  room id=b at (4000,0) size 4000x5000\n` +
+        `  wall id=e exterior thickness 200 height 2400 status existing around [a b]\n` +
+        `  wall id=p partition thickness 100 status demolish between a and b\n` +
+        `  wall id=n partition thickness 100 status new { (0,2500) (4000,2500) }`,
+    ),
+  },
+  {
+    keyword: "wall",
     note: "the pairwise forms (ADR 0028 §4): `between <A> and <B>`, `around [<A> …]`",
     src: plan(
       `  room id=a at (0,0) size 4000x5000\n  room id=b at (4000,0) size 4000x5000\n` +
@@ -597,6 +607,14 @@ const POSITIVE: Snippet[] = [
         `  walls from rooms exterior 200 partition 100 { open id=ab between a and b  open between a and c width 900  between b and c thickness 150 }`,
     ),
   },
+  {
+    keyword: "walls",
+    note: "`status <s>` (B3a) after the thicknesses: every derived wall takes it",
+    src: plan(
+      `  room id=a at (0,0) size 4000x3000\n  room id=b at (4000,0) size 3000x3000\n` +
+        `  walls from rooms exterior 200 partition 100 status new { open between a and b }`,
+    ),
+  },
   // --- site boundary ---------------------------------------------------------
   {
     keyword: "site",
@@ -969,6 +987,16 @@ const NEGATIVE: Negative[] = [
     src: plan(
       `  wall id=w1 exterior thickness 200 height 2200 { (0,0) (8000,0) (8000,5000) (0,5000) close }\n` +
         `  door on w1 at 50% width 900 head 2400`,
+    ),
+  },
+  {
+    code: "E_OPENING_ON_DEMOLISHED_WALL",
+    channel: "compile",
+    note: "a door in a wall the remodel takes out stands in nothing",
+    src: plan(
+      `  wall id=w1 exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }\n` +
+        `  wall id=p partition thickness 100 status demolish { (4000,0) (4000,5000) }\n` +
+        `  door on p at 50% width 800`,
     ),
   },
   // --- outdoor / fence / the lot line: every refusal the three lines name -----

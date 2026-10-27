@@ -33,7 +33,7 @@ import {
   type TileWallSeg,
 } from "../room-tiling.js";
 import { opening } from "./opening.js";
-import { wall } from "./wall.js";
+import { parseWallStatus, wall } from "./wall.js";
 
 /** The words that lead a clause of the statement's body. */
 const BODY_CLAUSES = ["except", "open", "between"] as const;
@@ -61,6 +61,8 @@ export const wallsFromRooms: ElementDef = {
     const exterior = ctx.parseExpr();
     ctx.eatKeyword("partition");
     const partition = ctx.parseExpr();
+    // `status <s>` (preview-and-remodel B3a): every wall the statement derives takes it.
+    const status = parseWallStatus(ctx);
     const except: WallsFromRoomsNode["except"] = [];
     let pairs: WallsPairClause[] | undefined;
     if (ctx.isType("lcurly")) {
@@ -89,7 +91,16 @@ export const wallsFromRooms: ElementDef = {
       }
       ctx.eat("rcurly");
     }
-    return { kind: "walls", id: "", exterior, partition, except, ...(pairs ? { pairs } : {}), line: kw.line };
+    return {
+      kind: "walls",
+      id: "",
+      exterior,
+      partition,
+      except,
+      ...(pairs ? { pairs } : {}),
+      ...(status !== undefined ? { status } : {}),
+      line: kw.line,
+    };
   },
 
   idPrefix: () => "walls",
@@ -121,6 +132,7 @@ export const wallsFromRooms: ElementDef = {
       _derivedRows: [],
       _derivedOpenings: [],
       span: n.span,
+      ...(n.status !== undefined ? { status: n.status } : {}),
     };
     const own = ctx.group?.() ?? [];
     if (own.some((e) => e.kind === "walls")) {
@@ -222,6 +234,7 @@ export const wallsFromRooms: ElementDef = {
           closed: piece.closed,
           openings: [],
           span: n.span,
+          ...(n.status !== undefined ? { status: n.status } : {}),
           _idAuthored: false,
           _derived: {
             from: "rooms",

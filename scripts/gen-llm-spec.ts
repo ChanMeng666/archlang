@@ -49,6 +49,7 @@ import {
   KEEP_WORDS,
   KEYWORDS,
   TITLE_FIELDS,
+  WALL_STATUSES,
 } from "../src/grammar/tokens.js";
 import { KNOWN_MATERIALS } from "../src/hatches.js";
 import { buildManifest } from "../src/manifest.js";
@@ -118,7 +119,7 @@ const SIZE_OPTIONAL_FIXTURES: readonly string[] = CANONICAL_FIXTURES.filter((c) 
  * new element can't ship without a spec line (the drift guard).
  */
 export const ELEMENT_GRAMMAR: Record<string, string> = {
-  wall: `wall [id=<name>] <category> thickness <mm> [material ${KNOWN_MATERIALS.join("|")} [scale <n>] [angle <deg>]] [height <mm>] { (x,y) (x,y) … [arc (x,y) radius <mm> [${ARC_DIRS.join("|")}] [major]] … [close] } | between <A> and <B> | around [<A> …]   # category e.g. exterior/partition. NAME IT (\`id=\`) if anything will reference it. An unlisted material is W_UNKNOWN_MATERIAL + the default hatch; \`scale\`/\`angle\`: either order, each once. \`close\` makes a loop. An \`arc\` clause makes THAT edge a circular arc from the PREVIOUS vertex (default: the minor arc turning \`ccw\` AS DRAWN, bulging left of travel; \`cw\`/\`major\` pick the other circle / the long way round; R < chord/2 = E_ARC_RADIUS + a fix supplying the minimum). A closed curve is two arcs. Faces draw as TRUE arcs. Openings work: \`on <wall> at <pos>\` walks RUN length (an arc contributes R·θ, not its chord) and a door's leaf/swing take the TANGENT there; \`furniture … against wall\` on an arc = E_FURN_AGAINST (use at+rotate). \`between\`/\`around\`: points from rooms (their shared edge; their outline, one ring cw from top-left vertex, no hole)`,
+  wall: `wall [id=<name>] <category> thickness <mm> [material ${KNOWN_MATERIALS.join("|")} [scale <n>] [angle <deg>]] [height <mm>] [status ${WALL_STATUSES.join("|")}] { (x,y) (x,y) … [arc (x,y) radius <mm> [${ARC_DIRS.join("|")}] [major]] … [close] } | between <A> and <B> | around [<A> …]   # category e.g. exterior/partition. NAME IT (\`id=\`) if anything will reference it. An unlisted material is W_UNKNOWN_MATERIAL + the default hatch; \`scale\`/\`angle\`: either order, each once. \`close\` makes a loop. An \`arc\` clause makes THAT edge a circular arc from the PREVIOUS vertex (default: the minor arc turning \`ccw\` AS DRAWN, bulging left of travel; \`cw\`/\`major\` pick the other circle / the long way round; R < chord/2 = E_ARC_RADIUS + a fix supplying the minimum). A closed curve is two arcs. Faces draw as TRUE arcs. Openings work: \`on <wall> at <pos>\` walks RUN length (an arc contributes R·θ, not its chord) and a door's leaf/swing take the TANGENT there; \`furniture … against wall\` on an arc = E_FURN_AGAINST (use at+rotate). \`between\`/\`around\`: points from rooms (their shared edge; their outline, one ring cw from top-left vertex, no hole). \`status demolish\`: drawn; encloses, hosts (E_OPENING_ON_DEMOLISHED_WALL), measures nothing`,
   room: `room [id=<name>] at (x,y) size <W>x<H> [label "…" [at (x,y)]] [uses ${USE_KINDS.join("|")} …]   # OR relational: room [id=…] (${REL_DIRS.join("|")}) <roomId> [align <edge>] [gap <mm>] size <W>x<H> — align is CROSS-axis: ${AXIS_ALIGNS.v.join("|")} after ${dirsOn("v")}, ${AXIS_ALIGNS.h.join("|")} after ${dirsOn("h")} (middle=center, both OK); wrong axis = E_ROOM_ALIGN_AXIS +fix, non-edge = E_ROOM_ALIGN. OR POLYGONAL: room [id=…] polygon (x,y) (x,y) (x,y) … — an implicitly-closed SIMPLE polygon (>=3 vertices) instead of at+size: exact shoelace area, label at the CENTROID (override: \`label "…" at (x,y)\`). A crossing or all-collinear ring errors (E_ROOM_POLY_SELF_INTERSECT/E_ROOM_POLY_DEGENERATE); rectangle-only clauses (relational placement, \`furniture … in <poly> anchor|centered\`) REFUSE it with E_PLACE_POLY — use \`at (x,y)\` [+ rotate]. OR CIRCULAR: room [id=…] circle at (cx,cy) radius <mm> — area is EXACT πR² (never the tessellation), reported as \`floor_circle\`; grids/overlap use a 48-gon ring. DATUMS: a rectangular room r has r.${DATUM_WORDS.join("|")} (+y down): numbers for walls, openings, furniture, dims; not in a \`let\` or a room's own at/size (E_DATUM_BEFORE_ROOMS). ${Object.keys(COMPASS_DATUM_ALIASES).join("|")} only at a \`north up\` root (E_DATUM_COMPASS); polygon/circle: E_ROOM_NOT_RECTANGLE`,
   // The two value lists are INTERPOLATED from `DOOR_ENUMS` (+ `DOOR_HINGE_NEAR`), never
   // typed out: this line is prose inside a generator, so a retyped list would document a
@@ -138,7 +139,7 @@ export const ELEMENT_GRAMMAR: Record<string, string> = {
   void: `void [id=<name>] at (x,y) size <W>x<H>   # a hole in THIS storey's floor (stair well, atrium, double-height room): dashed rectangle + both diagonals, \`at\` = TOP-LEFT. It OBSTRUCTS circulation (no walking across it, though you may stand at its edge) and does NOT reduce the containing room's area; \`describe --json\`'s \`voids[]\` gives the extent to subtract. Rectangle-only (E_VOID_SIZE)`,
   outdoor: `outdoor [id=<name>] ${OUTDOOR_KINDS.join("|")} (at (x,y) size <W>x<H> | polygon (x,y) (x,y) (x,y) …) [label "…"] [rail ${RAIL_EDGES.join("|")} …]   # GROUND outside the building. NOT a room — absent from \`rooms[]\`, \`totals.floor_area_m2\`, \`schedule rooms\`, the access graph and Plan JSON — and it obstructs NOTHING (water included). Its facts are \`describe --json\`'s \`outdoor[]\` + \`totals.outdoor_area_m2\`, area by exact shoelace on the ring form. \`label\` draws the name AND the m²; unlabelled ground draws neither. \`rail\` is \`balcony\`-only (E_OUTDOOR_RAIL) and rectangle-only (E_OUTDOOR_POLY_DEGENERATE); omitted, it is DERIVED — every edge with no wall one thickness behind it. W_OUTDOOR_OVERLAPS_ROOM covers a surface over a room's floor, W_BALCONY_NO_DOOR a balcony with no opening within a wall thickness. It grows the page, so a site plan wants \`paper\` (E_OUTDOOR_SIZE, E_OUTDOOR_POLY_SELF_INTERSECT)`,
   fence: `fence [id=<name>] [${FENCE_STYLES.join("|")}] { (x,y) (x,y) … [close] }   # a posted boundary line — dense ticks / a double line / sparse ticks; the style word LEADS and defaults to the first. NOT a thin wall: no thickness, no poché, hosts NO opening, absent from \`describe().walls\` and the access graph (a gate is deferred by name). It draws, it measures (\`fences[]\`: \`length_mm\` + \`closed\`) and it grows the page. An \`arc\` edge is E_FENCE_CURVED — write short straight runs`,
-  walls: `walls from rooms exterior <mm> partition <mm> [{ except <room>… | open [id=] between <A> and <B> [width <mm>] | between … thickness <mm> }]   # a ring + a partition per shared edge (\`open\`: an opening across it); rooms: rectangles tiling one floor. Host openings by rooms (see door), never \`on <wall>\``,
+  walls: `walls from rooms exterior <mm> partition <mm> [status <s>] [{ except <room>… | open [id=] between <A> and <B> [width <mm>] | between … thickness <mm> }]   # a ring + a partition per shared edge (\`open\`: an opening across it); rooms: rectangles tiling one floor. Host openings by rooms (see door), never \`on <wall>\``,
 };
 
 /**
@@ -325,6 +326,8 @@ export const CLAUSE_ATTRIBUTES: readonly string[] = [
   "stacked",
   "levels",
   "fixed",
+  // `wall … status existing|demolish|new` (B3a), taught by `ELEMENT_GRAMMAR.wall` and `.walls`.
+  "status",
 ];
 
 /**
@@ -794,10 +797,8 @@ space beats routing a bath through a bedroom — then re-\`repair\` and \`valida
 
 | Mistake | Fix |
 | --- | --- |
-| Expecting +y to go up | A room below another has a larger y. |
 | Hand-summing room offsets | Lay the row with \`strip\`. |
 | Furniture floated at a guessed \`at\`, or an \`inset\` hand-computed from a wall thickness | Place it \`in <room> anchor <9-point> [flush] [inset]\` or \`against wall <id>\` — closed-form, never names a thickness. |
-| \`size 4000\` | Sizes are \`WxH\`: \`size 4000x3000\`. |
 | String math without interpolation | Use \`"{expr}"\`, e.g. \`label "{round(W / 1000)} m"\`. Only the built-ins above and your own \`let f(…)\` are callable — \`aream2\` is NOT built in. |
 
 ## Worked examples

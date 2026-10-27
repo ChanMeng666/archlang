@@ -319,7 +319,8 @@ function openStretches(ctx: LintContext, run: SharedRun): OpenStretch[] {
     covered.push([lo, hi]);
   }
   let connector = false;
-  for (const c of ctx.connectors) {
+  // A run a demolished wall leaves open (B3a) joins the two rooms as an opening does.
+  for (const c of [...ctx.connectors, ...ctx.openRuns]) {
     const half = (c.host?.thickness ?? 0) / 2;
     if (Math.abs(across(c.at)) - half - WALL_BODY_SLACK_MM > sep / 2) continue;
     const s = along(c.at);

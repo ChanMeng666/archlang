@@ -317,6 +317,8 @@ export function dependsFacts(ir: ResolvedPlan, index: StatementIndex): DependsFa
       if (p.kind === "thickness") thicknessOf.set(pairKey(prefix(p.a.id), prefix(p.b.id)), p.thickness);
     let ring: string[] | undefined;
     for (const w of s._derivedWalls) {
+      // A demolished derived wall (B3a) is gone from the analysis, like an authored one.
+      if (w.status === "demolish") continue;
       const between = w._derived?.between;
       if (!between && ring === undefined) ring = roomSet(s, rooms);
       const on = new Set(between ?? ring);

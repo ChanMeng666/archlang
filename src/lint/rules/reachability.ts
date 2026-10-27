@@ -33,7 +33,18 @@ export const reachability: LintRule = {
   layer: "validity",
   stage: "openings",
   codes: ["W_BATH_VIA_BEDROOM", "W_ROOM_UNREACHABLE"],
-  check({ rooms, connectors, roomRects, rules, nameOf, at, building, access, skip }: LintContext): Diagnostic[] {
+  check({
+    rooms,
+    connectors,
+    openRuns,
+    roomRects,
+    rules,
+    nameOf,
+    at,
+    building,
+    access,
+    skip,
+  }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
     // W_BATH_VIA_BEDROOM asks which rooms are bedrooms and which are wet rooms; a room with no
     // classified use is neither, so it is declared to the coverage report (PS2.13).
@@ -71,7 +82,7 @@ export const reachability: LintRule = {
         // back to the entrance — a sealed-off pocket. Only meaningful when an
         // entrance exists (else W_NO_ENTRANCE already covers the whole plan).
         const rect = roomRects.get(r.id)!;
-        const hasConnector = connectors.some((c) => pointOnRoomEdge(c.at, rect, rules.tolMm));
+        const hasConnector = [...connectors, ...openRuns].some((c) => pointOnRoomEdge(c.at, rect, rules.tolMm));
         if (hasConnector && !reachAll.has(r.id)) {
           out.push({
             severity: "warning",

@@ -709,7 +709,7 @@ const COMMANDS: ManifestCommand[] = [
   },
   {
     name: "takeoff",
-    summary: "geometric quantities, CSV or Markdown",
+    summary: "quantities as csv or md",
     flags: [
       {
         flag: "--format",

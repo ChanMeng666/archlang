@@ -70,6 +70,7 @@ import type { UseKind } from "../ast.js";
 import { wallFaceProbes } from "../geometry.js";
 import type { RDoor, ROpening, ROutdoor, RRoom, ResolvedPlan } from "../ir.js";
 import { type CompassLetter, deriveSite, toCompass } from "../site.js";
+import { openRunsOf } from "../analyze.js";
 
 /** What this module reads off one storey. */
 export interface EntranceInputs {
@@ -224,7 +225,14 @@ export function storeyHasEntranceCandidate(ir: ResolvedPlan, tolMm: number): boo
     ir,
     new Map(ir.elements.filter((e): e is RRoom => e.kind === "room").map((r) => [r.id, roomBox(r)])),
   );
-  const graph = buildDoorAccessGraph([...inp.rooms], [...inp.doors], tolMm, undefined, [...inp.openings]);
+  const graph = buildDoorAccessGraph(
+    [...inp.rooms],
+    [...inp.doors],
+    tolMm,
+    undefined,
+    [...inp.openings],
+    openRunsOf(ir, tolMm),
+  );
   return entranceCandidates(graph, inp).length > 0;
 }
 

@@ -13,7 +13,7 @@
  */
 
 import { parse } from "./parser.js";
-import { lineWeightOutOfRange, resolveAll } from "./ir.js";
+import { drawnView, lineWeightOutOfRange, resolveAll } from "./ir.js";
 import type { PlanResolution } from "./ir.js";
 import { planTheme, toScene } from "./scene-build.js";
 import { drawBudgetDiagnostic } from "./draw-budget.js";
@@ -112,7 +112,7 @@ export function compileUncached(source: string, opts: CompileOptions): CompileRe
       // Scene rather than issued as a set. `describe()`/`lint()` are untouched above and
       // never see the option.
       scene = toIso(
-        resolved.levels.length > 0 ? resolved.levels.map((l) => l.ir) : [resolved.ir],
+        (resolved.levels.length > 0 ? resolved.levels.map((l) => l.ir) : [resolved.ir]).map(drawnView),
         opts.view,
         opts,
         runtime,

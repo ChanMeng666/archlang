@@ -454,7 +454,7 @@ function attributeBottlenecks(
     const openings = ctx.openings.map((o) => (wider.has(o.id) ? { ...o, width: wider.get(o.id)! } : o));
     // Judged from the same ways in as the reading it re-measures (PS0.10).
     const access = walkAccessGraph(
-      buildDoorAccessGraph(ctx.rooms, doors, ctx.rules.tolMm, undefined, openings),
+      buildDoorAccessGraph(ctx.rooms, doors, ctx.rules.tolMm, undefined, openings, ctx.openRuns),
       view.ways,
     );
     const request = new Map<string, Set<string>>();

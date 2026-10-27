@@ -416,6 +416,9 @@ type Refusal = { code: string; message: string; hint: string };
 /** The storey's index of elements by id, built once and charged once (R13). */
 interface StoreyIndex {
   byId: Map<string, ResolvedElement>;
+  /** The storey's `status demolish` walls (B3a), by id: drawn, but in no analysis, so a keep
+   *  naming one is refused by name rather than as an element that could not be placed. */
+  demolished: Set<string>;
   naming: Naming;
   nameable: Map<string, NameableRoom>;
   rooms: RRoom[];
@@ -455,6 +458,7 @@ function indexOf(ctx: KeepStoreyCtx): StoreyIndex {
   const byId = new Map<string, ResolvedElement>();
   for (const e of ir.elements) if (!byId.has(e.id)) byId.set(e.id, e);
   for (const w of ir.walls) if (!byId.has(w.id)) byId.set(w.id, w);
+  const demolished = new Set((ir.drawn?.walls ?? []).filter((w) => w.status === "demolish").map((w) => w.id));
   const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const nameable = new Map(
     rooms.map(
@@ -462,7 +466,7 @@ function indexOf(ctx: KeepStoreyCtx): StoreyIndex {
         [r.id, nameableOf(r, r.uses && r.uses.length > 0 ? r.uses : classifyLabelUses(r.label ?? r.id).uses)] as const,
     ),
   );
-  return { byId, naming: makeNaming([...nameable.values()], ctx.namingLevel), nameable, rooms };
+  return { byId, demolished, naming: makeNaming([...nameable.values()], ctx.namingLevel), nameable, rooms };
 }
 
 function roomPhrase(ix: StoreyIndex, r: RRoom): string {
@@ -535,6 +539,13 @@ const wallNoun = (s: WallSegment): string => (s.category === "partition" ? "part
 /** Look an authored element up, or say why not. */
 function lookup(ix: StoreyIndex, ctx: KeepStoreyCtx, id: string, text: string): ResolvedElement | Refusal {
   const el = ix.byId.get(id);
+  if (!el && ix.demolished.has(id)) {
+    return {
+      code: "E_KEEP_TARGET",
+      message: "This keep names a wall marked `status demolish`, which stands in no measure of the plan",
+      hint: `\`${id}\` in \`${text}\` is demolished: keep a wall that stays, or mark this one \`status existing\``,
+    };
+  }
   if (!el && ctx.authored(id)) {
     return {
       code: "E_KEEP_TARGET",

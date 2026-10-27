@@ -354,7 +354,7 @@ $ archlang describe plan.arch --facts quantities --waste 10 --json --select quan
 
 ### `archlang takeoff`
 
-geometric quantities, CSV or Markdown
+quantities as csv or md
 
 **Input:** `<file.arch|->` · **Output:** the table on stdout, or with --json { ok, plan, units, quantities, levels?: [{ level, name?, quantities }], diagnostics } (exit 2 when the plan does not resolve)
 
@@ -684,7 +684,7 @@ print the full bundled agent context (spec + workflow + CLI + errors)
 | Flag | Does |
 | --- | --- |
 | `--level <starter\|full>` | starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 153 KB bundle (default, unchanged) |
-| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 153 KB of it (spec = the language, 30 KB; workflow = the agent loop, 31 KB; cli = every command, 29 KB; errors = the diagnostic catalog, 61 KB) |
+| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 153 KB of it (spec = the language, 30 KB; workflow = the agent loop, 31 KB; cli = every command, 29 KB; errors = the diagnostic catalog, 62 KB) |
 | `--json` | structured result on stdout, messages on stderr |
 
 **Examples**
@@ -696,7 +696,7 @@ $ archlang context
 # one screen for a small model: the lead example, the statements a plan needs, the loop and the five errors cold authors hit first
 $ archlang context --level starter
 
-# just the diagnostic catalog (61 KB) — read one section instead of paying for the whole 153 KB bundle
+# just the diagnostic catalog (62 KB) — read one section instead of paying for the whole 153 KB bundle
 $ archlang context --section errors
 ```
 

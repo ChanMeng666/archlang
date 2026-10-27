@@ -27,6 +27,7 @@ import {
   roomUses,
   windowServesRoom,
 } from "../../analyze.js";
+import type { WallSegment } from "../../geometry.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { zoneFixtureCategories } from "../../fixtures-catalog.js";
 import { fmt2 } from "../../num-format.js";
@@ -510,8 +511,9 @@ export const perRoomRules: LintRule = {
         });
       }
 
-      // No door or opening on its perimeter, so it can't be entered.
-      if (!connectors.some((c) => onEdge(c.at))) {
+      // No door or opening on its perimeter, so it can't be entered (a run a demolished wall
+      // leaves open is a way in, B3a).
+      if (!connectors.some((c) => onEdge(c.at)) && !ctx.openRuns.some((c) => onEdge(c.at))) {
         out.push({
           severity: "warning",
           code: "W_ROOM_DISCONNECTED",
@@ -538,11 +540,15 @@ export const perRoomRules: LintRule = {
         // only the tessellation, which an arc's chord never backs); a polygon room around
         // its own ring (any edge angle); a rectangle keeps the four-sided test,
         // byte-for-byte.
+        // A run a demolished wall leaves open (B3a) closes the perimeter there, as it joins the
+        // rooms for reachability and for W_BOUNDARY_NO_WALL: the room is open to its neighbour
+        // by design, not left unwalled by mistake.
+        const segs = ctx.openRuns.length > 0 ? [...wallSegs, ...openRunSegs(ctx)] : wallSegs;
         const gap = r.circle
-          ? largestPerimeterGapCircle(r.circle.c, r.circle.r, wallSegs, rules.tolMm)
+          ? largestPerimeterGapCircle(r.circle.c, r.circle.r, segs, rules.tolMm)
           : r.poly
-            ? largestPerimeterGapRing(r.poly, ir.walls, rules.tolMm, wallSegs)
-            : largestPerimeterGap(rect, ir.walls, rules.tolMm, wallSegs);
+            ? largestPerimeterGapRing(r.poly, ir.walls, rules.tolMm, segs)
+            : largestPerimeterGap(rect, ir.walls, rules.tolMm, segs);
         if (gap > rules.maxUnenclosedMm) {
           out.push({
             severity: "warning",
@@ -696,3 +702,28 @@ const ENTRY_HINT =
 
 /** Why a bedroom reads as a double (PS5.2): its bed, never its label. */
 const DOUBLE_HINT = `It reads as a double bedroom from its bed: a \`double_bed\`, a \`bed\` wider than ${DOUBLE_BED_MIN_WIDTH_MM} mm, or two beds.`;
+
+/** The open runs of the storey ({@link LintContext.openRuns}, B3a) as straight wall segments of
+ *  their own span: what a perimeter-cover measure counts as closing the edge. */
+function openRunSegs(ctx: LintContext): WallSegment[] {
+  return ctx.openRuns.flatMap((c, index) => {
+    const h = c.host;
+    if (!h) return [];
+    const dx = h.b.x - h.a.x;
+    const dy = h.b.y - h.a.y;
+    const len = Math.hypot(dx, dy);
+    if (!(len > 0)) return [];
+    const ux = (dx / len) * (c.width / 2);
+    const uy = (dy / len) * (c.width / 2);
+    return [
+      {
+        a: { x: c.at.x - ux, y: c.at.y - uy },
+        b: { x: c.at.x + ux, y: c.at.y + uy },
+        thickness: h.thickness,
+        category: h.category,
+        wallId: h.wallId,
+        index,
+      },
+    ];
+  });
+}
