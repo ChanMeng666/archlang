@@ -578,7 +578,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS7 · Staged authoring for agents
 
-9 cards: 6 done, 2 todo (PS7.8 filed by the row-6 re-measure, PS7.9 the spec headroom), 1 parked; PS7.7 done 2026-10-27 (PR #298). Cards, tables and as-built pointers: `cards.md` § PS7.
+10 cards: 8 done, 1 todo (PS7.9 the spec headroom), 1 parked; PS7.7 done 2026-10-27 (PR #298), PS7.8 done 2026-10-27 (PR #309), PS7.10 (filed by the PS7.8 re-measure) done 2026-10-27. Cards, tables and as-built pointers: `cards.md` § PS7.
 
 ## 7. Suggested order and acceptance
 

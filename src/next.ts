@@ -12,11 +12,12 @@
  *    (Lead ruling on PR #246; the card's wording puts validity right after errors.)
  * 3. `validity` — a default-ruleset `lint()` warning whose rule is in the validity layer
  *    (`LINT_CODE_LAYERS`, ADR 0032). A code no rule declares counts as validity, as it does for
- *    the taste cap. One exception to emission order inside the tier (PS7.7): a door-swing
- *    shortfall ({@link SWING_SHORTFALL_CODES}) that comes first yields to the first stair-safety
- *    code ({@link STAIR_SAFETY_CODES}) or finding of an earlier authoring stage (`src/stages.ts`)
- *    standing beside it: a WC door 85 mm short is not the first fix on a stair with no landing,
- *    and a later stage's finding is not the first fix while an earlier stage's stands.
+ *    the taste cap. One exception to emission order inside the tier: a door-swing shortfall
+ *    ({@link SWING_SHORTFALL_CODES}) that comes first yields to the first stair-safety code
+ *    ({@link STAIR_SAFETY_CODES}) or finding of an earlier authoring stage (`src/stages.ts`)
+ *    standing beside it (PS7.7): a WC door 85 mm short is not the first fix on a stair with no
+ *    landing. A `fixtures`-stage finding that comes first yields likewise, to the first
+ *    stair-safety code or swing shortfall (PS7.10), which may then yield in turn.
  * 4. `drafting` — a default `lint()` warning from a drafting-layer rule (the annotation family).
  *    Its own sub-tier after validity: a drafting code is never chosen ahead of a validity code.
  * 5. `intent` — a failing gating assertion of the brief, then a `--graph` mismatch (it gates
@@ -89,18 +90,43 @@ const stageRank = (code: string | undefined): number | undefined => {
   return s === undefined ? undefined : AUTHORING_STAGES.indexOf(s);
 };
 
-/** The validity item: the first in emission order, unless that is a swing shortfall and a
- *  stair-safety code or an earlier-stage finding stands; then the first such (PS7.7). */
+/** What a validity finding that comes first yields to, or `undefined` when it holds its place
+ *  (emission order). A door-swing shortfall yields to a stair-safety code or a finding of an
+ *  earlier stage (PS7.7); a `fixtures`-stage finding, to a stair-safety code or a swing shortfall
+ *  (PS7.10): a fridge 50 mm into a sink is not the first fix while a door cannot open, nor a
+ *  missing hob while a stair has no landing. */
+function yieldsTo(d: Diagnostic): ((other: Diagnostic) => boolean) | undefined {
+  const code = d.code;
+  if (code === undefined) return undefined;
+  const stair = (o: Diagnostic): boolean => o.code !== undefined && STAIR_SAFETY_CODES.has(o.code);
+  if (SWING_SHORTFALL_CODES.has(code)) {
+    const rank = stageRank(code)!;
+    return (o) => {
+      if (stair(o)) return true;
+      const r = stageRank(o.code);
+      return r !== undefined && r < rank;
+    };
+  }
+  if (LINT_CODE_STAGES[code] === "fixtures") {
+    return (o) => stair(o) || (o.code !== undefined && SWING_SHORTFALL_CODES.has(o.code));
+  }
+  return undefined;
+}
+
+/** The validity item: the first in emission order, unless that one yields ({@link yieldsTo}) to
+ *  a finding standing beside it; then the first such, which may yield in turn (a furniture clash
+ *  to a swing shortfall to a stair). Each step leaves the `fixtures` stage or moves to a stair or
+ *  an earlier stage, so it ends; a finding already visited stops it regardless. */
 function firstValidity(validity: readonly Diagnostic[]): Diagnostic | undefined {
-  const first = validity[0];
-  if (first?.code === undefined || !SWING_SHORTFALL_CODES.has(first.code)) return first;
-  const swing = stageRank(first.code)!;
-  const outranks = (d: Diagnostic): boolean => {
-    if (d.code !== undefined && STAIR_SAFETY_CODES.has(d.code)) return true;
-    const r = stageRank(d.code);
-    return r !== undefined && r < swing;
-  };
-  return validity.find(outranks) ?? first;
+  let item = validity[0];
+  const seen = new Set<Diagnostic>();
+  for (let to = item && yieldsTo(item); item !== undefined && to !== undefined; to = yieldsTo(item)) {
+    seen.add(item);
+    const by = validity.find(to);
+    if (by === undefined || seen.has(by)) break;
+    item = by;
+  }
+  return item;
 }
 
 /** Everything `validate` has measured. Leave a field out and its tier is empty. */
