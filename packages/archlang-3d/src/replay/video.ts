@@ -11,7 +11,6 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { chromium } from "playwright-core";
 import { keyFrames, type ReplayEvent } from "./timeline.js";
 
 /** The flags that make Chromium render WebGL in software, the same on every machine (plan §6.5). */
@@ -70,6 +69,9 @@ export async function renderReplay(o: VideoOptions): Promise<VideoReport> {
       '<style>html,body{overflow:hidden}</style><script>window.__replayAutoplay=false</script>\n<script type="application/json"',
     ),
   );
+  // Loaded only here: playwright-core exits the process on import under Node < 20, and the light
+  // tests (which run on CI's Node 18 leg) import this module's neighbours, never a browser.
+  const { chromium } = await import("playwright-core");
   const browser = await chromium.launch({ args: SWIFTSHADER_ARGS });
   try {
     const page = await browser.newPage({
