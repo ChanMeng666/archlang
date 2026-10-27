@@ -729,6 +729,18 @@ the deprecation merge; byte-identity sweep 810/810; tests pin `--view` → exit 
 example-flag guard). At 2.0: rebase it onto `main`, re-run its sweep, and move its CHANGELOG
 `Removed — BREAKING` block into the 2.0.0 section. Rebase it, do not redo it.
 
+### V.6 · 2.0 raises the Node floor to 22 — `todo`
+
+Node 18 and 20 are end-of-life and get no security releases, yet `engines` stays `>=18` (root,
+`packages/mcp`, `packages/font-cjk`) and CI/nightly still test them. Raising the floor is breaking,
+so it waits for 2.0; until then nothing is exposed: the core and the MCP server open no network
+connection and decompress nothing, and the sites run on workerd, not Node. At 2.0:
+
+- [ ] every `engines.node` → `>=22`; drop 18/20 from the `ci.yml` and `nightly.yml` matrices and the
+      `node-version: 20` legs (`ci.yml`, `arch-render-selftest.yml`, the arch-render README example).
+- [ ] the engine-digest note (V8 on Node 18/20/22) and any doc naming Node 18 as supported.
+- [ ] a CHANGELOG `Removed — BREAKING` line.
+
 ---
 
 ## Found while landing the issued-sheet statements (`notes`, `schedule openings`)
