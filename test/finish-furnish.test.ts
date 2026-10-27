@@ -558,6 +558,9 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
   // Re-measured 2026-10-26 (PR #283 red-team round 2): museum-wings, a comment edit only; `finish` echoes the source.
   // Re-measured 2026-10-26 (PS2.11e): garden-house, hillside-villa, library and two-storey fixed for
   // stair defects; why, in `test/byte-identity-baseline.ts`'s header.
+  // Re-measured 2026-10-27 (PS2.74): museum and practice-office, each accessible-WC pan moved by one
+  // line; `finish` echoes the source; swapped back, the previous rows reproduce. Why, in
+  // `test/byte-identity-baseline.ts`'s header.
   const FINISH_DIGESTS: ReadonlyMap<string, string> = new Map(
     (
       [
@@ -582,14 +585,14 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         ["878f41b12441462bba678bd4dcd3716a2246f174fa58b731bab125b9e44d6189", "laneway-house"], // PS2.17 source edit (a worktop), see above; PS2.11e source edit, see above
         ["d30296c2c7ee4ce7b7fdad894c4a7394d27d8e5422894b6782925d5e172a3414", "library"], // PS2.11e source edit, see above
         ["0a8902f60aa17c548fed121167615cdaaf3d1ea679fb34dff983e1dfa84b2b13", "materials"],
-        ["d523dc647dbd1af6d467dfbcb34fbf6512ad79b04b033273cd39e3b4012f2f97", "museum"], // PS2.11e source edit, see above
+        ["536031a0e434a8373242b3c6c3849b5f1f212bce9ed71d3294f0364dd4350156", "museum"], // PS2.11e source edit, see above; PS2.74 source edit, see above
         ["e56adeb88cb99daf3c2e93723b84ccd134c948f803bffb84fb519553d0ff63c4", "museum-wing"],
         ["9f9ff13b19a6f8faf34b8c6bd7092e86c5e87ed70f2c37597f5414906114d292", "museum-wings"], // PS2.11e source edit, see above
         ["863a9f2c6d83393b414fc6cf634c7757d3148ba19d9c85ff19b9b935f2d64f99", "one-room"],
         ["06e0d70afc7df98e0cf944d4d4d6179370632ea31e52eebf07aaf6efb7af210c", "parametric"],
         ["a6f645e75374318f4ec98242aaf081345a5c478041c9b953df1c235111e64c0c", "relational"], // PS2.9 and PS2.4 source edits; PS2.17 source edit (a worktop), see above; PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e source edit, see above
         ["d58bfbf0a25a5b70b7bdfdd1a8ef7b0fb8912f88ebb5cf631da3efe8268015e4", "sheet-notes"], // first measurement, added with the example
-        ["974ca050f4bd8dc669d9df4fc7cf575f407bc7a516287f28cd09506fd87cddc6", "practice-office"], // first measurement with the example; PS2.9 source edit, see above; PS2.11e source edit, see above
+        ["07fdbb004b13fcea94bbc7969a42f821bbe48f8665f80dd39d093f502415f439", "practice-office"], // first measurement with the example; PS2.9 source edit, see above; PS2.11e source edit, see above; PS2.74 source edit, see above
         ["f6a934fcb40723366612a6485f93d6f1a306342ced16756d593aff9bd7eed4e7", "studio"], // PS2.11e source edit, see above
         ["472248c06943a371266767d2db8b12ff4206a1d0c71ea5ab5de82b11277d154f", "terrace-row"], // PS2.1–PS2.3 and PS2.9 source edits; PS2.17 source edit (a worktop), see above
         ["ed1c51d6484b8ec38f45e16b5706e07ea4318a315138fe9bd57ac2fde2e660d8", "themed"], // PS2.11e source edit, see above

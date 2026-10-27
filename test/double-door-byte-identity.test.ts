@@ -31,6 +31,9 @@
  *
  * Those 17 are pinned by a second table below, without `lint()`, on the source `main` has.
  *
+ * `test/fixtures/storeys-eaves-overflow.arch` (PS2.77) was added after the kind: its row is the
+ * same digest body run on `e432c24a`'s `src/` (equal to the current tree's).
+ *
  * A digest here moving is a finding to explain before it is a diff to re-measure.
  */
 
@@ -77,6 +80,7 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/diff-circ-b.arch", "e52a2d0d2299ddaa916dc6e204c21d5296ccc52f4eb7376591c78eef685191de"],
   ["test/fixtures/schedule-sheet.arch", "15dc29228ea12dae7240ad843567f88218c5a57bd8838ea950b1a5792c2579a5"],
   ["test/fixtures/star30.arch", "74a3209110606543fb04c1932b2ec60a78526ccdd2a7205cdfe972719efac471"],
+  ["test/fixtures/storeys-eaves-overflow.arch", "e29b5e34735306051eeea8215d258873db2935ed3c7ebaf575a4b7af5cb89a6d"],
   ["test/fixtures/zones-levels.arch", "05693d9ec59a2c27dcf9c35c5b8d8d5a63969ee0931499b97305433324cb978f"],
   ["test/fixtures/zones-wings.arch", "392675a2abd9bc82b094fc768190979fabf814b22dbb8d4fbaf7de410570c35a"],
 ];
@@ -205,6 +209,11 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
       [
         "  furniture counter against wall w_s2 offset 3600 in r_break\n  furniture fridge against wall w_s2 offset 2400 in r_break",
         "  furniture counter against wall w_s2 offset 2400 in r_break\n  furniture fridge against wall w_s2 offset 3600 in r_break",
+      ],
+      // PS2.74: the accessible-WC pan moved into the 400–500 mm band.
+      [
+        "  furniture wc against wall shell segment 2 offset 8200 in r_wc",
+        "  furniture wc against wall shell segment 2 offset 7450 in r_wc",
       ],
     ],
   ],

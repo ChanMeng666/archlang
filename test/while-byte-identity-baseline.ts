@@ -174,6 +174,8 @@
  * (`test/lint-attribution-budget.test.ts`). Their rows are their first measurement, taken with
  * this test's own digest body on the tree that adds them. `test/fixtures/off-path-bypass.arch`
  * likewise: the repro of a walk that passes furniture through another room's doorway band.
+ * `test/fixtures/storeys-eaves-overflow.arch` likewise (PS2.77): a two-storey plan whose
+ * upper-storey eaves alone overrun its sheet; the same digest on `e432c24a`'s `src/`.
  *
  * Eighteen rows re-measured, with this test's own digest body, for the thickness call-out
  * station (drawing only): every example that draws a `dims auto all`/`walls` call-out, plus
@@ -320,6 +322,10 @@
  * 2026-10-26, plan-soundness PS2.11e: the rows of `garden-house`, `hillside-villa`, `library` and
  * `two-storey` (stair defects fixed in the source) and `test/fixtures/zones-levels` (new stair
  * warnings only) re-measured, with the same reasons as `./import-module-lets.test.ts`'s table.
+ *
+ * 2026-10-27, plan-soundness PS2.74: `museum` and `practice-office` re-measured, each accessible-WC
+ * pan moved into the 400–500 mm band by one line (`./byte-identity-baseline.ts`, "Two examples
+ * fixed: an accessible WC's pan"); swapped back with the rule off, the previous rows reproduce.
  */
 // Re-measured 2026-10-23 (PS3.7): aquarium, corner-cafe, furnished-flat, gallery-l, hillside-villa, materials, museum, themed: chairs turned to the table they sit at, a real
 // defect `W_SEAT_FACING_AWAY` found (ADR 0029 §6); the cause and the proof that nothing else
@@ -354,10 +360,10 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/materials.arch", "635e4b1a04bb6497e1fff846708c3f28519c89b531f5ad14b363381344cad925"],
   ["examples/museum-wing.arch", "546b10dfb0204dbce454dff9e47713f32745285f4885e58a46b5faff23d10126"],
   ["examples/museum-wings.arch", "1149f0993df1cd719dcffd1d8c5c43c4ea6176c9a43b47954b23b3950bcc6f4a"], // re-measured, see header; PS2.11e, see header
-  ["examples/museum.arch", "5f2ac26fde893028de700917da696c464364d3d362f85e640a40a73c04113db8"], // PS2.11e, see header
+  ["examples/museum.arch", "3eb89a03ff32698a0e11f9419f7d8bc6317ce66d2b660dd289d085cb4ecd36a4"], // PS2.11e, see header; PS2.74 source edit, see header
   ["examples/one-room.arch", "8c47e263f778993d69c2f85d07a24b3a62c0b96d9f17ccb5cd9ebf2af6fa0120"],
   ["examples/parametric.arch", "402cf58e4e122164928e6d875320e63b7be5c017396dce026ab8c73d4a0373ef"],
-  ["examples/practice-office.arch", "a96bea051cb174aaa04a5a5ff2e7f984cc2e99d3d5a74f8e0b4fce40b33adf4a"], // added with the example, re-measured for net area, see header; PS2.11e, see header
+  ["examples/practice-office.arch", "f55654d5dd8db8243b7e46f3e9afe6ed8b265da11392f797608f5364d5c4d2b4"], // added with the example, re-measured for net area, see header; PS2.11e, see header; PS2.74 source edit, see header
   ["examples/relational.arch", "4c117d32d823ccbfa76734397cf58001d5b3fcf700a67ee52b493856c436f5b1"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e, see header
   ["examples/sheet-notes.arch", "602cfd5f8e34268bf660dcad47b5cbf28332ddf92a119fba7317850ab9f9d798"], // re-measured, see header
   ["examples/studio.arch", "b64f7234dddc6527a0176033e82b38b70ad4fe84ca8df22b7a2e3269a1029553"], // PS2.11e, see header
@@ -378,6 +384,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["test/fixtures/off-path-bypass.arch", "81ef92c32f98bc41635428f477b2cf7e59adea520e60892b5e39aa48fcbcaecf"], // new fixture, see header; PS2.11e, see header
   ["test/fixtures/schedule-sheet.arch", "15dc29228ea12dae7240ad843567f88218c5a57bd8838ea950b1a5792c2579a5"], // re-measured, see header; PS2.29: message text only, same code, same span
   ["test/fixtures/star30.arch", "74a3209110606543fb04c1932b2ec60a78526ccdd2a7205cdfe972719efac471"], // new fixture, see header
+  ["test/fixtures/storeys-eaves-overflow.arch", "e29b5e34735306051eeea8215d258873db2935ed3c7ebaf575a4b7af5cb89a6d"], // new fixture (PS2.77), see header
   ["test/fixtures/zones-levels.arch", "05693d9ec59a2c27dcf9c35c5b8d8d5a63969ee0931499b97305433324cb978f"], // re-measured for PS2.4, see header
   ["test/fixtures/zones-wings.arch", "392675a2abd9bc82b094fc768190979fabf814b22dbb8d4fbaf7de410570c35a"], // re-measured for PS2.4, see header
 ];
