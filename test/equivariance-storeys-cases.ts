@@ -3,7 +3,9 @@
  * and the two-way pin assertion they share. The construction is `test/d4-oracle.ts`'s
  * ("Multi-storey buildings"); this module only names the cases.
  *
- *  - every shipped `level` example (COMPUTED: `MULTI_STOREY_EXAMPLES`), and
+ *  - every shipped `level` example (COMPUTED: `MULTI_STOREY_EXAMPLES`),
+ *  - the named `test/fixtures/` buildings a shipped example no longer covers
+ *    ({@link FIXTURE_BUILDINGS}), and
  *  - every building `test/shaft-equivariance.test.ts` runs (its `CASES`), as level bodies from
  *    `./shaft-equivariance-models.ts` — at 1× (a 100 mm nav cell, lattice-aligned, so the
  *    raster is compared under every element) and scaled (a larger cell that does not divide
@@ -13,6 +15,8 @@
  * {@link defineScaledSuite} is the one suite body both scaled files run.
  */
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { lint } from "../src/index.js";
 import { parse } from "../src/parser.js";
@@ -47,6 +51,18 @@ const model = (b: Building): StoreyCase => ({ name: `model:${b.name}`, src: leve
 export const SHIPPED_BUILDINGS: readonly StoreyCase[] = MULTI_STOREY_EXAMPLES.map((rel) => ({
   name: rel,
   src: EXAMPLE_FILES[rel]!,
+}));
+
+/**
+ * The fixture buildings, each named for the coverage it restores (`fixture:<file>`).
+ * `storeys-eaves-overflow.arch` (PS2.77): a building that fits its fixed sheet while its
+ * upper-storey eaves alone do not, so the building-level `W_DRAWING_OVERFLOW` (no `level`) is
+ * compared under the group. `hillside-villa`'s eaves did that until fix/examples-sound
+ * refitted every example to its sheet; examples stay warning-free, so it is a fixture.
+ */
+export const FIXTURE_BUILDINGS: readonly StoreyCase[] = ["storeys-eaves-overflow.arch"].map((file) => ({
+  name: `fixture:${file}`,
+  src: readFileSync(join(__dirname, "fixtures", file), "utf8"),
 }));
 
 /** The shaft models on a 100 mm nav cell. */

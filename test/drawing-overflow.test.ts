@@ -290,6 +290,39 @@ suite("4.9 — a multi-storey plan is measured as one building", () => {
     // Every page adopts the one sheet, so every page reports the residual.
     for (const p of r.pages!) expect(p.scene.sheet!.drawingFits).toBe(false);
   });
+
+  /**
+   * A multi-storey plan that raises the warning AS AUTHORED (PS2.77), not by substitution: no
+   * shipped example does since fix/examples-sound, so `test/fixtures/storeys-eaves-overflow.arch`
+   * holds it. Its building fits A4 landscape at 1:75; its first floor's `roof overhang 1000`
+   * alone overruns the drawing area.
+   */
+  const FIXTURE = readFileSync(join(ROOT, "test", "fixtures", "storeys-eaves-overflow.arch"), "utf8");
+  const ROOF = "    roof overhang 1000\n";
+
+  it("the fixture's UPPER-storey eaves alone overflow: warned once, for the building, and every storey reports it", () => {
+    const r = compile(FIXTURE, { noCache: true });
+    expect(r.errors).toEqual([]);
+    expect(r.diagnostics.map((d) => d.code)).toEqual(["W_DRAWING_OVERFLOW"]);
+    expect(r.diagnostics[0]!.level).toBeUndefined();
+    expect(FIXTURE.slice(r.diagnostics[0]!.span!.start, r.diagnostics[0]!.span!.end)).toBe("paper A4 landscape");
+    expect(r.pages).toHaveLength(2);
+    for (const p of r.pages!) expect(p.scene.sheet!.drawingFits).toBe(false);
+    const d = describePlan(FIXTURE);
+    expect(d.sheet!.fits).toBe(true);
+    expect(d.sheet!.drawing_fits).toBe(false);
+    expect(d.levels!.map((l) => l.sheet?.drawing_fits)).toEqual([false, false]);
+  });
+
+  it("…and its roof is the whole cause: without it the fixture is clean and every storey fits", () => {
+    expect(FIXTURE.split(ROOF)).toHaveLength(2);
+    const bare = FIXTURE.replace(ROOF, "");
+    expect(codesOf(bare)).toEqual([]);
+    const d = describePlan(bare);
+    expect(d.sheet!.fits).toBe(true);
+    expect(d.sheet).not.toHaveProperty("drawing_fits");
+    expect(d.levels!.map((l) => l.sheet && "drawing_fits" in l.sheet)).toEqual([false, false]);
+  });
 });
 
 // ---------------------------------------------------------------------------

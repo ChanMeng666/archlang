@@ -28,6 +28,7 @@ import { describe, expect, it } from "vitest";
 import { describe as describePlan, lint } from "../src/index.js";
 import { parse } from "../src/parser.js";
 import {
+  buildingFacts,
   compareBuildings,
   ELIGIBLE_EXAMPLES,
   elementNamed,
@@ -45,6 +46,7 @@ import {
 } from "./d4-oracle.js";
 import {
   assertBuildingPinned,
+  FIXTURE_BUILDINGS,
   MODEL_BUILDINGS,
   MODEL_CASES,
   SHIPPED_BUILDINGS,
@@ -71,7 +73,7 @@ const GARDEN_AS_WAS: StoreyCase = (() => {
     src: src.replace(now, 'room id=r_study2  at (2500,4500) size 4300x4500 label "Bedroom 3" uses bedroom'),
   };
 })();
-const CASES: readonly StoreyCase[] = [...SHIPPED_BUILDINGS, ...MODEL_CASES];
+const CASES: readonly StoreyCase[] = [...SHIPPED_BUILDINGS, ...FIXTURE_BUILDINGS, ...MODEL_CASES];
 const named = (name: string): StoreyCase => CASES.find((c) => c.name === name)!;
 
 describe("the per-storey oracle's own construction", () => {
@@ -137,8 +139,8 @@ describe("the per-storey oracle's own construction", () => {
   it("the roof is unobserved: removing it moves no fact", () => {
     // A roof is drawing-only (no describe() key, no lint rule); it reaches the facts only
     // through the drawing bounds. So the roof surgery is checked by the absence of
-    // E_ROOF_PLACEMENT above, and by facts only where the eaves move the sheet fit: in
-    // hillside-villa the 700 mm eaves overflow the A2 sheet. Those facts are gated
+    // E_ROOF_PLACEMENT above, and by facts only where the eaves move the sheet fit: no
+    // shipped example's do, the fixture's below (PS2.77) do. Those facts are gated
     // (`sheet`, compared under the elements that keep the axes), so a roof carried wrongly
     // under a quarter-turn would be seen by no fact here: the scene sees it
     // (`test/equivariance-storeys-scene.test.ts`).
@@ -160,6 +162,29 @@ describe("the per-storey oracle's own construction", () => {
       // `test/drawing-overflow.test.ts`'s.
       expect(without, c.name).toEqual(withRoof);
     }
+  });
+
+  it("…except where the eaves alone overrun the sheet: the fixture's roof raises the building-level W_DRAWING_OVERFLOW", () => {
+    // The fact `hillside-villa`'s eaves carried before fix/examples-sound (PS2.77), kept by a
+    // fixture: the building fits its fixed A4 at 1:75, the upper storey's eaves do not. The
+    // warning is the building's (no `level`), on the `paper` statement, so it is compared
+    // under the group as `diagnostics.sheet` wherever the sheet gate is open.
+    const c = named("fixture:storeys-eaves-overflow.arch");
+    const roofs = parse(c.src)
+      .plan!.body.flatMap((l) => (l.kind === "level" ? l.body.filter((x) => x.kind === "roof") : []))
+      .map((r) => r.span!);
+    expect(roofs.length).toBe(1);
+    const bare = c.src.slice(0, roofs[0]!.start) + c.src.slice(roofs[0]!.end);
+    const sheetDiags = (src: string) => {
+      const b = observeBuilding(storeyWrapper(src, null).src);
+      const own = b.summary.diagnostics.filter((d) => d.code === "W_DRAWING_OVERFLOW");
+      expect(own.every((d) => d.level === undefined)).toBe(true);
+      const facts = buildingFacts(b, { sheet: true }).get("diagnostics.sheet")!.value as { code?: string }[];
+      expect(facts.filter((d) => d.code === "W_DRAWING_OVERFLOW")).toHaveLength(own.length);
+      return { codes: b.summary.diagnostics.map((d) => d.code), overflow: own.length };
+    };
+    expect(sheetDiags(c.src)).toEqual({ codes: ["W_DRAWING_OVERFLOW"], overflow: 1 });
+    expect(sheetDiags(bare)).toEqual({ codes: [], overflow: 0 });
   });
 
   it('the models are the shaft suite\'s buildings: P₀ describes every storey as `placed(b, "", 0)` does', () => {
