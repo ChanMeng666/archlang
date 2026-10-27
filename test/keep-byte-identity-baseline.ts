@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: PS2.70: W_GARAGE_TOO_NARROW judges a garage's clear depth along its vehicle door (5000 mm by default); five audit house plans gain the finding, wc-utility-passage's vehicle door moves to the east wall, and the garage-too-shallow pair is new
+ * Taken: PS2.69: W_EXIT_APPROACH_BLOCKED (furniture in the clear floor inside an exterior exit) adds a lint() warning on the first-contact plans 2026-10-26-rerun-armA/6-clinic, 2026-10-26-rerun-row6/4-cafe and 6-clinic, 2026-10-26-walls-first/4-cafe and 3-studio; the new clearances/exit-approach-blocked pair is added; the label-over-wc pair's basin moved out of the exit approach
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -343,12 +343,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/annotation-collisions/label-over-wc.arch",
-    "5718bcbfa889d88e3c1c29633acdaaf6e8a4e9be7967c77e2faa0a0c67b9c627",
+    "fd61431f9189f377437ef13182c698b6dc68d143ca538048a572fc5e1cbdbc87",
     111,
   ],
   [
     "test/defect-corpus/annotation-collisions/label-over-wc.clean.arch",
-    "81f8162a1f53673ebc8ddad4a19e619f06c6bfad4214d0ee05a65848a1d0e95d",
+    "dd6ec442155b070588092ef2dce73cf0399f934916bb0293a97e1363e7cd4050",
     113,
   ],
   [
@@ -550,6 +550,16 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     "test/defect-corpus/clearances/desk-in-opening.clean.arch",
     "00771324edbeb81c6527a72ca147da1d4c805fd8ceeac48aec3d9eeac7e54d1e",
     129,
+  ],
+  [
+    "test/defect-corpus/clearances/exit-approach-blocked.arch",
+    "92eb13637b36ab68771eede3a7e72daacde87e208e34e7a7c063ee4ec8a2c3f0",
+    87,
+  ],
+  [
+    "test/defect-corpus/clearances/exit-approach-blocked.clean.arch",
+    "405cee06b9178556de92e580d157bbb73073ebfd2bcaaffeb2864424cf633ab1",
+    87,
   ],
   [
     "test/defect-corpus/clearances/fridge-in-swing.arch",
@@ -1328,7 +1338,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armA/6-clinic.arch",
-    "1d4f1ac780c0b21be361fdd46dbf06d327293dfaafadae0032c9414a913b3580",
+    "4b369496f25ead6532d3bd5c44d6d21e907b398307c723e33ed8d847bd3bb03f",
     1872,
   ],
   [
@@ -1378,7 +1388,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/4-cafe.arch",
-    "071a9b65fdc611a8cefa6b90bb70e0301e3c68889109c62faf85951fe15ba6dc",
+    "67c6abfa8fe39204eacc03958b47c92ca7b902f52507f170fb8d520c315a9dd0",
     2830,
   ],
   [
@@ -1388,7 +1398,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/6-clinic.arch",
-    "82ddbf0fcfd4a1c7b59aefc81361bbc6c7213555b44c3c024255ad4d9c7eef42",
+    "5a404e6b9d876753bf22c40104de07bc1863b96191c397f4733b05f816def19d",
     2119,
   ],
   [
@@ -1408,7 +1418,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/4-cafe.arch",
-    "8d987e6518a3d6d631e93c62d256161f8421293fd52aa3498adf98ba87ea1c8d",
+    "6afa2eb22f9f7be55b2ae5de3dfffe532dff2b196e57bdce7fd41ba25b296a06",
     1408,
   ],
   [
@@ -1423,7 +1433,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/3-studio.arch",
-    "d169c2bb5200253eb67f303a0b3ebf2eac61e387e21c36dc1db48728a386e0be",
+    "83e8d1e879ac9d1a9420333f0f02c3c7668ca169dd5e77f4e0265e51a94ae701",
     500,
   ],
   [

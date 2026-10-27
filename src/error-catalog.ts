@@ -1486,6 +1486,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Make it a pair of leaves, `door double … width <mm>` (each leaf half the width; narrow a double door wider than twice the figure too), or narrow it, or make it a `sliding` or `bifold` door, or a cased `opening` if it needs no door. There is no machine-applicable fix: which the doorway becomes is a design decision.",
     "wall id=w exterior thickness 200 { (0,0) (8000,0) }\ndoor at (4000,0) width 2400 wall w   # lint: one 2400 mm leaf; `door double … width 2400` is two of 1200",
   ),
+  W_EXIT_APPROACH_BLOCKED: W(
+    "W_EXIT_APPROACH_BLOCKED",
+    "Furniture stands in the clear floor inside an exterior exit.",
+    "A door from outside (a way in from the ground: not a `garage` door, not a door onto an `outdoor balcony`) needs clear floor inside it, in front of the doorway and over its full width, so the way out is not narrowed where people leave: `exitApproachMm` deep from the wall's inside face, 914 mm by default (the International Residential Code R311.3's 36 in landing on each side of an exterior door, as wide as the door; recorded from a state's copy of the code text). Under `accessibility-advisory` the depth is the 2010 ADA Standards' front approach (Table 404.2.4.1): 1220 mm where the door swings out (the inside is its push side) and 1525 mm where it swings in (`exitApproachPullMm`); a sliding, folding or pocket door takes the larger. A piece counts when its footprint enters that floor; the warning fires when the longest stretch of the doorway's span left clear is less than the door's width, and names the first piece beyond the door's own landing. A piece inside the landing (`doorwayLandingMm`, 300 mm; 450 under the profile) is `W_DOORWAY_BLOCKED`'s report and is not named here. A door on an angled or curved wall is not measured. Set `exitApproachMm: null` to turn it off.",
+    "Move the piece further from the wall than the depth the warning quotes, or slide it along the wall clear of the doorway's span, or move the door. There is no machine-applicable fix: which one moves is the author's choice, and `repair` does not move a piece for it.",
+    'wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }\nroom id=hall at (0,0) size 6000x4000 label "Hall" uses entry\ndoor at (3000,4000) width 1200 wall w swing outward\nfurniture sofa at (1200,2600) size 1800x900   # lint: 400 mm inside the exit, 600 mm of its 1200 mm clear',
+  ),
   W_OPENING_NOT_DIMENSIONED: W(
     "W_OPENING_NOT_DIMENSIONED",
     "An opening on the outside of the building is on no `dims auto all` chain.",

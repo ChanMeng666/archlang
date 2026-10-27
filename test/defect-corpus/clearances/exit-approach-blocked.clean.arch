@@ -1,0 +1,15 @@
+# class: clearances
+# origin: the fix for audits/2026-10-26-first-contact-rerun-row6.md QK4: the sofa moved back from the exit
+# expect: none
+# twin-of: exit-approach-blocked
+# fact: f_sofa's near edge stands 1600 mm inside the shell's inside face (y 2300 against 3900): past the default 914 mm and
+#   past the 1220 / 1525 mm of `accessibility-advisory`, so all 1200 mm of d_main is clear
+plan "Exit approach blocked" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  room id=r_wait at (0,0) size 6000x4000 label "Waiting" uses entry
+  door id=d_main at (3000,4000) width 1200 wall shell swing outward
+  window at (3000,0) width 1500 wall shell
+  furniture id=f_sofa sofa at (600,1400) size 2400x900 label "Sofa"
+}

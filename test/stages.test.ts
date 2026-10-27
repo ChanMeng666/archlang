@@ -91,6 +91,7 @@ const DECIDED: Record<AuthoringStage, string[]> = {
   ],
   fixtures: [
     "W_DOORWAY_BLOCKED",
+    "W_EXIT_APPROACH_BLOCKED",
     "W_FIXTURE_BACK_TO_ROOM",
     "W_FIXTURE_FLOATING",
     "W_FIXTURE_WRONG_ROOM",
@@ -156,8 +157,8 @@ describe("the stage ladder and the per-rule table", () => {
     for (const s of Object.values(LINT_CODE_STAGES)) counts[s]!++;
     // The PS7.1 note's 53 codes (openings 22, fixtures 16); PR #280's six stair codes (three rooms,
     // one walls, two openings); PR #283's three (the PS2.11e as-built note): `W_LEAF_TOO_WIDE` at
-    // openings, the two hob codes at fixtures.
-    expect(counts).toEqual({ brief: 0, rooms: 8, walls: 5, openings: 25, fixtures: 18, drafting: 6 });
+    // openings, the two hob codes at fixtures; PS2.69's `W_EXIT_APPROACH_BLOCKED` at fixtures.
+    expect(counts).toEqual({ brief: 0, rooms: 8, walls: 5, openings: 25, fixtures: 19, drafting: 6 });
   });
 
   it("the drafting layer is exactly the drafting stage, and no lint code is a brief finding", () => {

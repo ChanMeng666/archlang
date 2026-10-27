@@ -447,6 +447,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/desk-in-opening.clean.arch",
   ],
   [
+    "6bf2ea8faaf10d3158c9c796df29a83e41eac0afd3a12e0e3857c26f79cbc0c9",
+    "generic",
+    "test/defect-corpus/clearances/exit-approach-blocked.arch",
+  ],
+  [
+    "055ce58a0be2fa9092e58d374efde7a5b64d9595f1c7801ce8ebbab52ebf5d8b",
+    "generic",
+    "test/defect-corpus/clearances/exit-approach-blocked.clean.arch",
+  ],
+  [
     "443e1fe0ec7b74bd1700ff64f29cb48f7fe4499cb42af5dcab3baf5b686bd754",
     "generic",
     "test/defect-corpus/clearances/fridge-in-swing.arch",
@@ -1537,6 +1547,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/desk-in-opening.clean.arch",
   ],
   [
+    "aa7081bcc0361e5131122a8d0e8f1f65c91f7f4326bd343df5526e03523eedd9",
+    "cn-residential-advisory",
+    "test/defect-corpus/clearances/exit-approach-blocked.arch",
+  ],
+  [
+    "710a585aa5da06645c8c45cf59c61ac2aaea99685612d5153fd7833079f9cbc1",
+    "cn-residential-advisory",
+    "test/defect-corpus/clearances/exit-approach-blocked.clean.arch",
+  ],
+  [
     "ecfa78620c1e2986e4e53b3c2900e0421baad92aab54da7564708117296ace62",
     "cn-residential-advisory",
     "test/defect-corpus/clearances/fridge-in-swing.arch",
@@ -2625,6 +2645,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "2fa3e23f61ddba209ff292a1395ce73cae6321e916ab5a41c059f7c342d7312e",
     "us-residential-advisory",
     "test/defect-corpus/clearances/desk-in-opening.clean.arch",
+  ],
+  [
+    "a0917749ce3e6e0517bff99b163cf2c91134885d314e575cf37da0da840ba732",
+    "us-residential-advisory",
+    "test/defect-corpus/clearances/exit-approach-blocked.arch",
+  ],
+  [
+    "6e8f8601af6f8012ba28c48478c34fcfedaf1d195430e30bfe6d24432e8cb71a",
+    "us-residential-advisory",
+    "test/defect-corpus/clearances/exit-approach-blocked.clean.arch",
   ],
   [
     "e4248b4a4d73b9509c2c8b37079f5e66f65963a4f60ffd502fb0124f6a226589",

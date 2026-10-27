@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `W_EXIT_APPROACH_BLOCKED` (plan card PS2.69): furniture inside the clear floor of an exterior exit (914 mm deep, the door's width up to 1200 mm; 1220 push / 1525 pull under `accessibility-advisory`; new ruleset fields `exitApproachMm`, `exitApproachPullMm`).
 - Six stair-safety lint rules (plan cards PS2.11e's stair bullets, PS2.34, PS2.15), validity layer,
   on by default, in a new `stairs` coverage family (`W_SHAFT_FOOTPRINT_MISMATCH` in `vertical`).
   The landing is the square beyond a flight's end as wide as the flight (Approved Document K 2013
