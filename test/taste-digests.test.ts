@@ -167,6 +167,12 @@
  * `clearances/bed-undersized` pair under each of the three profiles, measured with `tasteDigest`:
  * the case lists the code under `validity`, its twin none. No existing row moved (no example or
  * corpus bed is under the figures).
+ *
+ * B6 (`W_GARAGE_OPENING_UNDERSIZED`, a garage's vehicle door under 2400/4200 mm) added six rows, the
+ * new `clearances/garage-door-undersized` pair under each of the three profiles, measured with
+ * `tasteDigest`: the case lists the code under `validity` (`pass` false), its twin none; no criterion
+ * scores either (one garage). No existing row moved (no example or corpus garage door is under the
+ * figures; `examples/garden-house`'s is 3000 mm, `hillside-villa`'s 4800 mm).
  */
 
 import { describe, expect, it } from "vitest";
@@ -510,6 +516,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "13cf4d1ba44c02634638aab2e2ca18a62d8924e8b496819c719d45bf5c6f0342",
     "generic",
     "test/defect-corpus/clearances/fridge-over-window.clean.arch",
+  ],
+  [
+    "c19583e664cebe70078b7be47579c69999fd2c733463e1ddaa26645947ab2125",
+    "generic",
+    "test/defect-corpus/clearances/garage-door-undersized.arch",
+  ],
+  [
+    "28415399210cb525baee7349f45ea3c6c71934ab65252cf45e3dc0a34819ba3b",
+    "generic",
+    "test/defect-corpus/clearances/garage-door-undersized.clean.arch",
   ],
   [
     "d65720b8d596a1f33e52f9737e9849bff2063d85b7a348dced76575100713386",
@@ -1632,6 +1648,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/fridge-over-window.clean.arch",
   ],
   [
+    "ec44097b7813afd3e71212bb8664f51ddd3387f7e9091829480c79b826bf6018",
+    "cn-residential-advisory",
+    "test/defect-corpus/clearances/garage-door-undersized.arch",
+  ],
+  [
+    "71d3b981c23dc89f8c4ed3643e03d30be93d657e9469956bedf9d7c39cc1d431",
+    "cn-residential-advisory",
+    "test/defect-corpus/clearances/garage-door-undersized.clean.arch",
+  ],
+  [
     "5b4d49c65107430428ea1a084456e3b657284b52b92a48a4757616949a50b6c4",
     "cn-residential-advisory",
     "test/defect-corpus/clearances/garage-too-shallow.arch",
@@ -2750,6 +2776,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "001232fd665044aec7762eba337fbf6f37c848f3212e3c1fffb1bd005c538a79",
     "us-residential-advisory",
     "test/defect-corpus/clearances/fridge-over-window.clean.arch",
+  ],
+  [
+    "065019cd81e681fe8661d7e9b7887e9a50d5e2c2760323a82a3a98d14cd03b10",
+    "us-residential-advisory",
+    "test/defect-corpus/clearances/garage-door-undersized.arch",
+  ],
+  [
+    "3e09e7c8005131bfbeaa7d82688faaaec1968048421659060b6951f0dc826781",
+    "us-residential-advisory",
+    "test/defect-corpus/clearances/garage-door-undersized.clean.arch",
   ],
   [
     "d1a237885f25e5331771eaf4bb0f0702b986ef87f9b78820551e59c1aa3c6afb",
