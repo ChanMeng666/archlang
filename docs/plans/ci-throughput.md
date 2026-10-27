@@ -20,7 +20,7 @@ and the owner decides which to take. Job map and per-job minutes: `docs/agents/c
   minutes per job on those PRs: Node 22 13.0–17.6, Node 20 15.3–20.1, Node 18 16.3–21.7, Windows 12.4–20.8,
   Docs E2E 3.3–10.3, Playground E2E 1.5–10.5, Workspace builds 1.7–2.1, Benchmark about 1, Changed paths 0.1.
   The `Changed paths` job printed `Changes output set to ["code"]` on every code PR.
-- Records-only fast path, NOT yet measured: PR #302 is stacked on PR #301 (both target `main`), so its diff against `main` carried #301's `src/` and `test/` changes and `Changed paths` printed `Changes output set to ["code"]`; every leg ran (Node 18/20/22 0.5-0.6 min, failing early at Biome format on #301's test file; Windows 20.6; Playground E2E 2.1; Docs E2E 4.2; Workspace builds 2.0). Not a records-only diff, so it says nothing about the skip. Measure on a records-only PR whose base already contains its dependencies.
+- Records-only fast path, measured on PR #302 (run 40450205508, head edd24380, after #301 merged so the diff vs `main` was CHANGELOG.md and `docs/plans/**` only): `Changes output set to []`. Skipped (every test/build step skipped, job 4-6 s): Node 18, Node 20, Windows (tests + drift), Playground E2E, Docs site E2E, Workspace builds; Benchmark skipped. Ran: Node 22 1.9 min (docs leg only: generated artifacts, test wiring, record-reading suites, docs build; code steps skipped), Changed paths 5 s. Wall clock 2.1 min (04:31:29 to 04:33:33), against about 20 min for a code run.
 
 **The cost today** is the coordinator's waiting, not runner minutes: records conflict after nearly
 every merge (`docs/agents/gotchas.md` § PRs & CI), so the next dependent PR waits for the previous
