@@ -1,8 +1,9 @@
 /**
  * `nextDiagnostic()` (plan-soundness PS5.3): the one item to fix first, by fixed precedence —
  * error → compile warning → validity → drafting → intent (gating, graph, advisory) → profile →
- * taste — and, within a tier, emission order, but for one exception in the validity tier (PS7.7):
- * a door-swing shortfall yields to a stair-safety code or an earlier-stage finding.
+ * taste — and, within a tier, emission order, but for one exception in the validity tier: a
+ * door-swing shortfall yields to a stair-safety code or an earlier-stage finding (PS7.7), and a
+ * `fixtures`-stage finding to a stair-safety code or a swing shortfall (PS7.10).
  *
  * - Unit: every tier alone, every tier against every lower one, emission order within a tier,
  *   the profile run's wording, the taste minimum, and `null`.
@@ -287,14 +288,55 @@ describe("nextDiagnostic · a swing shortfall yields inside the validity tier (P
     expect(next([W(SWING, 1), W(LATER, 2), W(DRAFTING, 3), W("W_NOT_A_RULE", 4)])).toBe(SWING);
   });
 
-  it("only a swing shortfall yields: any other first validity item keeps emission order", () => {
-    expect(next([W(LATER, 1), W(SWING, 2), W("W_STAIR_NO_LANDING", 3)])).toBe(LATER);
+  it("a first validity item of no yielding kind keeps emission order", () => {
+    expect(next([W(EARLIER, 1), W(SWING, 2), W("W_STAIR_NO_LANDING", 3)])).toBe(EARLIER);
+    expect(next([W("W_PATH_TOO_NARROW", 1), W(LATER, 2), W(SIDE, 3)])).toBe("W_PATH_TOO_NARROW");
   });
 
   it("the tiers do not move: a compile warning beats the stair code, and the stair code a drafting one", () => {
     const lint = [W(DRAFTING, 0), W(SWING, 1), W("W_STAIR_TOO_STEEP", 2)];
     expect(nextDiagnostic({ diagnostics: [W("W_DOOR_OFF_WALL")], lint })?.tier).toBe("warning");
     expect(nextDiagnostic({ diagnostics: [], lint })).toMatchObject({ tier: "validity", code: "W_STAIR_TOO_STEEP" });
+  });
+});
+
+describe("nextDiagnostic · a fixtures-stage finding yields inside the validity tier (PS7.10)", () => {
+  const SWING = "W_SWING_OBSTRUCTED";
+  const FIX = "W_FURNITURE_OVERLAP"; // fixtures
+  const HOB = "W_ROOM_MISSING_DEFINING"; // fixtures
+  const PATH = "W_PATH_TOO_NARROW"; // openings: earlier than fixtures, but neither stair nor swing
+  const EARLIER = "W_BOUNDARY_NO_WALL"; // walls
+  const next = (lint: Diagnostic[]): string | null | undefined => nextDiagnostic({ diagnostics: [], lint })?.code;
+
+  it("the codes this block relies on are what it says they are", () => {
+    for (const c of [FIX, HOB]) expect(LINT_CODE_STAGES[c], c).toBe("fixtures");
+    expect(LINT_CODE_STAGES[PATH]).toBe("openings");
+    expect(LINT_CODE_STAGES[EARLIER]).toBe("walls");
+    expect(STAIR_SAFETY_CODES.has(PATH)).toBe(false);
+  });
+
+  it("the yield chain only climbs: no stair-safety code or swing shortfall is a fixtures-stage code", () => {
+    for (const c of [...STAIR_SAFETY_CODES, ...SWING_SHORTFALL_CODES])
+      expect(LINT_CODE_STAGES[c], c).not.toBe("fixtures");
+  });
+
+  it("a stair-safety code, emitted later, is chosen first (the arm-1 townhouse's missing hob)", () => {
+    expect(next([W(HOB, 1), W(FIX, 2), W("W_STAIR_NO_LANDING", 3), W("W_STAIR_TOO_STEEP", 4)])).toBe(
+      "W_STAIR_NO_LANDING",
+    );
+  });
+
+  it("a swing shortfall, emitted later, is chosen first (the arm-1 house's fridge/sink overlap)", () => {
+    expect(next([W(FIX, 1), W(SWING, 2), W(PATH, 3)])).toBe(SWING);
+  });
+
+  it("the swing it yields to yields in turn, as PS7.7 has it", () => {
+    expect(next([W(FIX, 1), W(SWING, 2), W(EARLIER, 3)])).toBe(EARLIER);
+    expect(next([W(FIX, 1), W(SWING, 2), W("W_STAIR_SIDE_ENTRY", 3)])).toBe("W_STAIR_SIDE_ENTRY");
+  });
+
+  it("it holds its place beside other earlier-stage findings, later fixtures ones, drafting and undeclared codes", () => {
+    expect(next([W(FIX, 1), W(PATH, 2), W(EARLIER, 3), W(HOB, 4), W(DRAFTING, 5), W("W_NOT_A_RULE", 6)])).toBe(FIX);
   });
 });
 
@@ -337,9 +379,20 @@ describe("nextDiagnostic · the defect corpus table", () => {
   });
 
   it("every bad twin's next: first compile warning, else first validity warning, else first drafting one", () => {
+    // The validity tier's one exception, stated not re-derived: a first item that yields (a swing
+    // shortfall, PS7.7; a fixtures finding, PS7.10) beside a stair-safety code or swing shortfall
+    // may be replaced by one of those; the unit blocks above pin which.
+    const yieldsTo = (code: string): boolean => STAIR_SAFETY_CODES.has(code) || SWING_SHORTFALL_CODES.has(code);
     const wrong = rows.flatMap((r) => {
       const cw = r.compileWarnings[0];
       const first = r.warnings.find((d) => r.layers[d.code!] !== "drafting") ?? r.warnings[0];
+      const yielding =
+        !cw &&
+        first !== undefined &&
+        (SWING_SHORTFALL_CODES.has(first.code!) || LINT_CODE_STAGES[first.code!] === "fixtures");
+      if (yielding && r.next?.tier === "validity" && r.next.code !== null && yieldsTo(r.next.code)) {
+        return r.warnings.some((d) => d.code === r.next!.code) ? [] : [`${r.name}: ${r.next.code} not raised`];
+      }
       const want = cw
         ? { tier: "warning", code: cw.code }
         : first

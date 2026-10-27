@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: PS2.74 after merging main (#307-#312): W_ACCESSIBLE_WC_SIDE_WALL on museum/practice-office fixes, 2026-10-27 rerun arm1/arm2 cafe and clinic plans, the accessible-wc-pan-far pair
+ * Taken: PS7.10 (PR #314): a fixtures-stage finding yields to a stair or swing code, moving validate's next on five plans; merged over main with PS2.74 (#313)
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -1113,7 +1113,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/stair-safety/swing-over-stair.arch",
-    "37048ea94bfabe50908afba40361b3dfca10c19a619ab84d32e16a8d04126352",
+    "b338ee18e5bab852fdad2a45abbe43d0a20896a9ce975c3c86fe1cf7b5d1d723",
     186,
   ],
   [
@@ -1273,7 +1273,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-24-rerun/5-townhouse.arch",
-    "875020cd0c8b973c2659dfe7aab7852919e49d20e4f6c6bd396be81b9ad406ee",
+    "5a2d6ecb481acfe25d578911a511c74773bd060505451c2fd7e6cd7f8a35a88a",
     4634,
   ],
   [
@@ -1333,7 +1333,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armA/5-townhouse.arch",
-    "6e10b4a9cdaf68e41c2c87d5c32a2a96648c8720cc5c6b0f5a2543fd63ad02ce",
+    "075e2826725d3a911d9d4e6a5cb1a8b1833f651a03b19234de920b4f13ad5fa2",
     3706,
   ],
   [
@@ -1418,7 +1418,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/4-cafe.arch",
-    "6c463dad1aecd3c205ac1851266e5b0f97635b572cad612d171b4385596602cf",
+    "bb57d0d93a03c21d23301c404228f771d192a7a58d14173e93fe89d66eee6c93",
     1408,
   ],
   [
@@ -1453,7 +1453,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/5-townhouse.arch",
-    "1357687658bd69ee3007a1b111a218451bef815d8f7639803b35a310017a26cb",
+    "d6e4f1bdbfb4a80cf0f48264006e9bed21483590824c72d9bad7ef035b46d0bf",
     4074,
   ],
   [
@@ -1503,7 +1503,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/5-townhouse.arch",
-    "0e30eb4ad4ecae99eb8eacde431724bec78e9c83c600922a9e2cfc477ac35bda",
+    "f2f52edcea90be71a14947a62d7f799884da35a25640b1c307fd23c997d298b8",
     1850,
   ],
   [
