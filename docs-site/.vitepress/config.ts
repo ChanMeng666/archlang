@@ -326,6 +326,11 @@ const PAGE_META = [
     "Furniture states what it is for: facing derives a piece's quarter-turn from its target, against backs it onto a room edge, and clear declares free depth that lint checks.",
   ],
   [
+    "/adr/0031-core-exports-for-downstream-consumers",
+    "ADR 31 — the resolved-plan seam is exported",
+    "The package root exports resolvePlan, the wall joinery and the door leaves with the types their signatures reach: additive, append-only, output unchanged.",
+  ],
+  [
     "/adr/0032-taste-separate-score",
     "ADR 32 — taste is a separate score",
     "Taste is a separate, sourced score in [0, 1] that never gates: integer arithmetic, capped at 0.5 while a validity lint warning stands, never read by lint or describe.",

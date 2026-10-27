@@ -1219,7 +1219,8 @@ export function toPathLoop(l: EdgeLoop): PathLoop {
   return { start: edgeStart(l[0]!), edges };
 }
 
-/** Loops → plain polygons, for a hatch fill (arcs tessellated once, shared ends dropped). */
+/** Loops → plain polygons, for a hatch fill (arcs tessellated once, shared ends dropped).
+ *  Public from the package root (ADR 0031); the arc step is not part of the promise. */
 export const loopsToPolygons = (loops: readonly EdgeLoop[]): Point[][] => tessellateLoops(loops);
 
 /** Re-exported so a caller can build a `JoineryWall` without importing two modules. */

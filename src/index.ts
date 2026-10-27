@@ -433,6 +433,34 @@ export type {
   RAxis,
   RZone,
 } from "./ir.js";
+// The resolved-plan seam for downstream consumers (ADR 0031): the complete parse → link →
+// resolve path (unlike `resolveAll(compile(src).ast)`, it keeps imported and placed
+// content), the wall joinery with its per-wall ownership split, and the door-leaf geometry,
+// so a consumer reuses the core's one implementation instead of writing a second.
+// Append-only; the types are the frontier closure of these signatures
+// (`test/public-surface.test.ts`) plus the element names `ResolvedElement` carries.
+export { resolvePlan } from "./analyze.js";
+export type { AnalyzeOptions } from "./analyze.js";
+export { joinWallSet } from "./wall-lowering.js";
+export type { JoinableWall, JoinedCut, JoinedWallSet } from "./wall-lowering.js";
+export { loopsToPolygons } from "./geometry/joinery.js";
+export type { JoineryResult, JoinerySplit } from "./geometry/joinery.js";
+export type { Edge, EdgeLoop } from "./geometry/band.js";
+export type { Arc } from "./geometry/arc.js";
+export { doorLeaves, doorSwing } from "./geometry.js";
+export type { DoorLike, DoorSwing } from "./geometry.js";
+export type { DoorHinge, DoorSwingDir } from "./grammar/tokens.js";
+export type {
+  Opening,
+  ROpening,
+  RStair,
+  RElevator,
+  REscalator,
+  RRoof,
+  RVoid,
+  ROutdoor,
+  RFence,
+} from "./ir.js";
 // Scene IR (the backend-neutral drawing target) + its builder. Backends consume
 // a Scene: `toDxf(scene)` / `toPdf(scene)`; build one with `toScene(ir)` or read
 // `compile().scene`.

@@ -95,6 +95,9 @@ export const DEFAULT_TOL = 200;
  * so a fault on the top floor can never slip past a gate that only read `ir`. `levels`
  * carries the whole set for consumers that summarize or lint per storey; it is `[]` for a
  * single-storey plan (append-only field).
+ *
+ * Public from the package root (ADR 0031): fields of the result are only ever added, and the
+ * semantics above are the promise; underscore-prefixed IR fields are not part of it.
  */
 export function resolvePlan(
   source: string,
