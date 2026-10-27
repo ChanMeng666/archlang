@@ -100,10 +100,10 @@ describe("W_ACCESSIBLE_WC_SIDE_WALL: the band", () => {
     expect(of(room("Accessible WC", wcAt(2800 - 450)))).toEqual([]);
   });
 
-  it("the hint names the wall and gives the slide into the 400–500 mm band", () => {
+  it("the hint names the wall and gives the least slide, the same under every profile", () => {
     const [d] = of(room("Accessible WC", wcAt(1400)));
     expect(d?.hints).toEqual([
-      '"wc_1"\'s centreline is 1400 mm from wall "shell" (the ruleset\'s `wcAccessibleSideWallMaxMm` is 500 mm, centreline to a side wall\'s face): slide it 900–1000 mm along its back wall toward wall "shell".',
+      '"wc_1"\'s centreline is 1400 mm from wall "shell" (the ruleset\'s `wcAccessibleSideWallMaxMm` is 500 mm, centreline to a side wall\'s face): slide it at least 900 mm along its back wall toward wall "shell", its centreline no nearer that wall than `wcSideClearanceMm`.',
     ]);
   });
 

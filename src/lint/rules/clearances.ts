@@ -181,8 +181,6 @@ export const accessibleWcSideWall: LintRule = {
       }
       // Rounded up, so the message never prints a wall at the figure as too far.
       const at = Math.ceil(m.half + far.measured - VERTEX_EPS);
-      const low = Math.max(0, at - max);
-      const high = Math.max(low, at - Math.min(max, ctx.rules.wcSideClearanceMm ?? max));
       const wall = obstaclePhrase(far.by, ctx);
       out.push({
         severity: "warning",
@@ -190,7 +188,7 @@ export const accessibleWcSideWall: LintRule = {
         ...ctx.at(f),
         message: `${name} has its centreline ${mm(at)} mm from the nearer side wall; an accessible WC needs one within ${mm(max)} mm, for a grab rail and a side transfer (${mm(at - max)} mm too far).`,
         hints: [
-          `"${f.id}"'s centreline is ${mm(at)} mm from ${wall.hint} (${figure}): slide it ${low === high ? mm(low) : `${mm(low)}–${mm(high)}`} mm along its back wall toward ${wall.hint}.`,
+          `"${f.id}"'s centreline is ${mm(at)} mm from ${wall.hint} (${figure}): slide it at least ${mm(at - max)} mm along its back wall toward ${wall.hint}, its centreline no nearer that wall than \`wcSideClearanceMm\`.`,
         ],
       });
     }
