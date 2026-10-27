@@ -3,7 +3,7 @@
 # origin: audits/2026-10-18-first-contact.md A11 with the label placed at (1000,1950)
 # expect: none
 # fact: the label is drawn centred at (1000,1880) (y 1705-2055), clear of the wc (to y 1500) and the basin (to y
-#   1550)
+#   1450)
 plan "Room label over the WC" {
   units mm
   grid 50
@@ -15,5 +15,5 @@ plan "Room label over the WC" {
   window at (1000,0) width 800 wall shell
   furniture bathtub against wall shell segment 0 offset 1000 in r_bath
   furniture wc against wall shell segment 1 offset 1300 in r_bath
-  furniture basin against wall shell segment 3 offset 1250 in r_bath
+  furniture basin against wall shell segment 3 offset 1350 in r_bath
 }

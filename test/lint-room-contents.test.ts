@@ -663,11 +663,16 @@ ${extra}}
     // tries keeps the floor in front of the pan and the door's approach clear (PS2.45's sweep).
     // (At 2.5 m clear, the room this probe first held, a set fits since PS2.54 measures the
     // door's approach from the wall's face: the basin then abuts that deeper approach.)
+    // The door opens onto a hall, not outdoors: as an exterior exit its 914 mm clear floor
+    // (PS2.69) leaves no place for the basin either, and the note would name that instead.
     const src = `plan "F" {
   units mm
   wall id=w exterior thickness 200 { (0,0) (1350,0) (1350,2500) (0,2500) close }
   room id=r_x at (0,0) size 1350x2500 label "X" uses bath
   door id=d on w at 675 width 800 swing out
+  wall id=hw exterior thickness 200 { (0,0) (-1200,0) (-1200,-2400) (2550,-2400) (2550,0) (1350,0) }
+  room id=h at (-1200,-2400) size 3750x2400 label "Hall"
+  door id=e on hw at 5475 width 900 swing out
 }
 `;
     expect(words(src)).toEqual([]);
@@ -728,11 +733,16 @@ ${extra}}
   });
 
   it("falls back to a 400 mm module, written with its size", () => {
+    // `d_y` opens into a store, not outdoors: as an exterior exit its clear floor (914 mm, 1525
+    // pull side under `accessibility-advisory`, PS2.69) would leave no worktop room across this
+    // 1.5 m kitchen at all.
     const src = kitchen(
       1700,
       2500,
       "  door id=d_x at (1000,2500) width 800 wall w_mid swing in\n  window at (450,0) width 1200 wall shell\n" +
-        "  window at (0,1800) width 600 wall shell\n  door id=d_y at (1700,800) width 800 wall shell swing in\n",
+        "  window at (0,1800) width 600 wall shell\n  door id=d_y at (1700,800) width 800 wall shell swing in\n" +
+        "  wall id=w_store exterior thickness 200 { (1700,0) (3200,0) (3200,2500) (1700,2500) }\n" +
+        '  room id=r_s at (1700,0) size 1500x2500 label "Store" uses storage\n',
     );
     expect(written(src)).toContain(
       "furniture counter against wall shell segment 3 offset 3800 side left size 400x600 in r_x",

@@ -561,6 +561,10 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
   // Re-measured 2026-10-27 (PS2.74): museum and practice-office, each accessible-WC pan moved by one
   // line; `finish` echoes the source; swapped back, the previous rows reproduce. Why, in
   // `test/byte-identity-baseline.ts`'s header.
+  // Re-measured 2026-10-27 (PS2.69): one-room. Main's `finish` wrote the sofa and a coffee table;
+  // the table stands 1400 mm inside the pull side of the exterior door, which raises
+  // `W_EXIT_APPROACH_BLOCKED` under `accessibility-advisory` (1525 mm), so the never-worse gate
+  // now writes the sofa alone. Nothing else in the two runs moved.
   const FINISH_DIGESTS: ReadonlyMap<string, string> = new Map(
     (
       [
@@ -588,7 +592,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         ["536031a0e434a8373242b3c6c3849b5f1f212bce9ed71d3294f0364dd4350156", "museum"], // PS2.11e source edit, see above; PS2.74 source edit, see above
         ["e56adeb88cb99daf3c2e93723b84ccd134c948f803bffb84fb519553d0ff63c4", "museum-wing"],
         ["9f9ff13b19a6f8faf34b8c6bd7092e86c5e87ed70f2c37597f5414906114d292", "museum-wings"], // PS2.11e source edit, see above
-        ["863a9f2c6d83393b414fc6cf634c7757d3148ba19d9c85ff19b9b935f2d64f99", "one-room"],
+        ["323b8b2e7741e5cd31ae525c5d54c570cb47d5e27c8e32817d357350799a5053", "one-room"], // PS2.69, see above
         ["06e0d70afc7df98e0cf944d4d4d6179370632ea31e52eebf07aaf6efb7af210c", "parametric"],
         ["a6f645e75374318f4ec98242aaf081345a5c478041c9b953df1c235111e64c0c", "relational"], // PS2.9 and PS2.4 source edits; PS2.17 source edit (a worktop), see above; PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e source edit, see above
         ["d58bfbf0a25a5b70b7bdfdd1a8ef7b0fb8912f88ebb5cf631da3efe8268015e4", "sheet-notes"], // first measurement, added with the example
@@ -1182,6 +1186,9 @@ suite("furnish law — a wet room's pieces are placed together (PS2.45)", () => 
   wall id=w exterior thickness 200 { (0,0) (${w},0) (${w},${h}) (0,${h}) close }
   room id=r at (0,0) size ${w}x${h} label "${use === "wc" ? "WC" : "Bathroom"}" uses ${use}
   door id=d on w at ${w / 2} width 800 swing ${swing}
+  wall id=hw exterior thickness 200 { (0,0) (-1200,0) (-1200,-2400) (${w + 1200},-2400) (${w + 1200},0) (${w},0) }
+  room id=h at (-1200,-2400) size ${w + 2400}x2400 label "Hall"
+  door id=e on hw at ${3600 + (w + 2400) / 2} width 900 swing out
 }
 `;
   const gatedIn = (src: string, profile?: string): string[] =>
@@ -1272,9 +1279,14 @@ suite("furnish law — a wet room's pieces are placed together (PS2.45)", () => 
     // kept `doorwayLandingMm` past its wall's FACE, 100 mm deeper on these 200 mm walls, so five
     // rooms that fitted their set only inside that 100 mm are left empty and reported, as the
     // stage reports any room it cannot furnish clean; none raises a gated code.
+    // Re-measured 2026-10-27 (PS2.69): bath 212 → 159, wc 271 → 233. Each probe room's one door
+    // is the building's exterior exit, whose 914 mm clear floor `W_EXIT_APPROACH_BLOCKED` now
+    // reads and the stage now keeps (`Site.fits`); a room whose set fitted only inside it is left
+    // empty and reported. The helper above puts a hall outside its rooms' door, so its pinned
+    // layouts are not exits and are unchanged.
     const results = sweep();
     expect(results.length).toBe(612);
-    expect(countsByClass(results)).toEqual({ bath: 212, wc: 271, ensuite: 0 });
+    expect(countsByClass(results)).toEqual({ bath: 159, wc: 233, ensuite: 0 });
     expect(results.filter((r) => r.violations.length > 0).map((r) => r.key)).toEqual([]);
   }, 300000);
 });

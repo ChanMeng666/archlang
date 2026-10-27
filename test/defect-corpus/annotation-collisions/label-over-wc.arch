@@ -16,5 +16,5 @@ plan "Room label over the WC" {
   window at (1000,0) width 800 wall shell
   furniture bathtub against wall shell segment 0 offset 1000 in r_bath
   furniture wc against wall shell segment 1 offset 1300 in r_bath
-  furniture basin against wall shell segment 3 offset 1250 in r_bath
+  furniture basin against wall shell segment 3 offset 1350 in r_bath
 }

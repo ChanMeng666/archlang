@@ -64,7 +64,7 @@ describe("the residential-advisory profiles", () => {
     const text = readFileSync("src/lint/ruleset.ts", "utf8");
     const block = text.slice(text.indexOf(`"${CN}": {`), text.indexOf("export const DEFERRED_PROFILE_NUMBERS"));
     const numbered = block.split("\n").filter((l) => /:\s*\d/.test(l) && !l.trim().startsWith("*"));
-    expect(numbered.length).toBe(38); // cn 13, uk 13, us 12 (the stair figures: PS2.11e; uk's garage depth: PS2.70)
+    expect(numbered.length).toBe(39); // cn 13, uk 13, us 13 (the stair figures: PS2.11e; uk's garage depth: PS2.70; us's exit approach: PS2.69)
     for (const l of numbered) {
       expect(l, l).toMatch(/\/\/ .*\[(V|S)[\],]/);
       expect(l, l).not.toContain("[M");
@@ -104,6 +104,7 @@ describe("the residential-advisory profiles", () => {
       wcSideClearanceMm: 381,
       stairMaxRiseMm: 196.85,
       stairMinGoingMm: 254,
+      exitApproachMm: 914,
     });
     // R10's side figure is a ruleset field now (PS2.11a); its front figure and R37 (PS2.16) wait
     // for their rules, kept unread.

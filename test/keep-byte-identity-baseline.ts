@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: PS2.67 (PR #315): W_BED_UNDERSIZED; merged over main with PS2.74 (#313) and PS7.10 (#314)
+ * Taken: PS2.67 (PR #315): W_BED_UNDERSIZED; merged over main with PS2.69 (#308), PS2.74 (#313) and PS7.10 (#314)
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -343,12 +343,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/annotation-collisions/label-over-wc.arch",
-    "5718bcbfa889d88e3c1c29633acdaaf6e8a4e9be7967c77e2faa0a0c67b9c627",
+    "fd61431f9189f377437ef13182c698b6dc68d143ca538048a572fc5e1cbdbc87",
     111,
   ],
   [
     "test/defect-corpus/annotation-collisions/label-over-wc.clean.arch",
-    "81f8162a1f53673ebc8ddad4a19e619f06c6bfad4214d0ee05a65848a1d0e95d",
+    "dd6ec442155b070588092ef2dce73cf0399f934916bb0293a97e1363e7cd4050",
     113,
   ],
   [
@@ -570,6 +570,16 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     "test/defect-corpus/clearances/desk-in-opening.clean.arch",
     "00771324edbeb81c6527a72ca147da1d4c805fd8ceeac48aec3d9eeac7e54d1e",
     129,
+  ],
+  [
+    "test/defect-corpus/clearances/exit-approach-blocked.arch",
+    "92eb13637b36ab68771eede3a7e72daacde87e208e34e7a7c063ee4ec8a2c3f0",
+    87,
+  ],
+  [
+    "test/defect-corpus/clearances/exit-approach-blocked.clean.arch",
+    "405cee06b9178556de92e580d157bbb73073ebfd2bcaaffeb2864424cf633ab1",
+    87,
   ],
   [
     "test/defect-corpus/clearances/fridge-in-swing.arch",
@@ -1348,7 +1358,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armA/6-clinic.arch",
-    "9bd25f983377543d12cfc30d6122b7035cca17c24f02b8a1b94433e35a6eec03",
+    "0e3855e5e0bf7bb75a428b4641543ff167c8c2cc3bdc112f5fcbc672a7d99a2a",
     1872,
   ],
   [
@@ -1398,7 +1408,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/4-cafe.arch",
-    "a37d8ce20b5f5b2ddce4ddb7b0b558ab8d82cdbc68527f921c5e9427f65884ec",
+    "07864e5ca99638d29d62ba9ec40f2377d7648117deb05f905da3d86c56196049",
     2830,
   ],
   [
@@ -1408,7 +1418,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/6-clinic.arch",
-    "855be934c56dacafd642d62fd72ed530928adbf9a20ae5b07a9e494495505f02",
+    "9bed65fbddbe5710f441340dd0749c33afe1bd9ed60e6efb0354b0627b452d74",
     2119,
   ],
   [
@@ -1428,7 +1438,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/4-cafe.arch",
-    "bb57d0d93a03c21d23301c404228f771d192a7a58d14173e93fe89d66eee6c93",
+    "bf101a0e64b5ae841c1d8fd33233e5481ef049d439760a1157de4a64b75a5af5",
     1408,
   ],
   [
@@ -1488,7 +1498,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm2/4-cafe.arch",
-    "15608e340c9590ef22f8793908ac7d4996a2acbf8aaf35d3635873a4322066c2",
+    "09f38e6bb83ab607fd8a3220b78ffc2c7b530565d6149703154d50d908623ec4",
     2695,
   ],
   [
@@ -1498,12 +1508,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm2/6-clinic.arch",
-    "522d74333858ad41958c780bcf48d25bf6bbc2ea6d690b64f9707a9a968b5d7d",
+    "28cfacb3602d0172601b8bc31792462b7018262711a8051a030b8b3ee3af5904",
     1969,
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/3-studio.arch",
-    "d169c2bb5200253eb67f303a0b3ebf2eac61e387e21c36dc1db48728a386e0be",
+    "83e8d1e879ac9d1a9420333f0f02c3c7668ca169dd5e77f4e0265e51a94ae701",
     500,
   ],
   [

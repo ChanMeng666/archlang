@@ -401,6 +401,8 @@ export const RULE_CLASS: Readonly<Record<string, RuleClass>> = {
   reachability: "invariant",
   "swing-obstructed": "invariant",
   "doorway-blocked": "invariant",
+  // PS2.69: a strip of fixed depth in front of an exit and clear widths across it, which no turn or mirror changes.
+  "exit-approach-blocked": "invariant",
   "door-clearance": "invariant",
   "room-no-clear-path": "raster",
   "no-entrance": "invariant",
