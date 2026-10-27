@@ -337,6 +337,30 @@ export function windowCover(band: WindowBand, r: BBox, tol: number): WindowCover
 }
 
 /**
+ * Does a cooking surface at footprint `r` stand under the window (plan-soundness PS2.64)? It stands
+ * in front of it ({@link windowCover}) AND against its host: the footprint's side nearest the host
+ * lies on the wall, no farther off its face than {@link WALL_COLLISION_SLACK_MM} (a piece drawn a
+ * few millimetres short of the wall it stands against is flush, as `W_FURNITURE_WALL_COLLISION`
+ * reads it). A hob backing onto a return wall, standing clear of the window wall with only a
+ * corner in its band, is beside that window, not under it. The side is the footprint's, not the
+ * `rotate` back edge: an unturned stove on a side wall, or a corner stove whose side stands
+ * against the window wall, is as near the curtain as one backing onto it.
+ */
+export function hobWindowCover(band: WindowBand, r: BBox, tol: number): WindowCover | null {
+  const cover = windowCover(band, r, tol);
+  if (cover === null) return null;
+  const { w, c, n } = band;
+  const ys = [
+    { x: r.x, y: r.y },
+    { x: r.x + r.w, y: r.y },
+    { x: r.x + r.w, y: r.y + r.h },
+    { x: r.x, y: r.y + r.h },
+  ].map((p) => (p.x - c.x) * n.x + (p.y - c.y) * n.y);
+  const near = ys.every((y) => y >= 0) || ys.every((y) => y <= 0) ? Math.min(...ys.map(Math.abs)) : 0;
+  return near <= w.host!.thickness / 2 + WALL_COLLISION_SLACK_MM ? cover : null;
+}
+
+/**
  * Would a piece of `category` at footprint `fr` and turn `rotate` raise or change a clearance
  * finding? A WC whose own side is short; a piece standing nearer a WC's centreline than the
  * figure and no farther than what already stands on that side (`<=`, deliberately: at an equal
@@ -375,8 +399,11 @@ export function clearancesClear(
     }
   }
   const tol = ctx.rules.fixtureWallTolMm;
-  if (isTallUnit(category) || isCookingSurface(category)) {
+  if (isTallUnit(category)) {
     if (windowBands(ctx.windows).some((b) => windowCover(b, fr, tol) !== null)) return false;
+  }
+  if (isCookingSurface(category)) {
+    if (windowBands(ctx.windows).some((b) => hobWindowCover(b, fr, tol) !== null)) return false;
   }
   // The hob-to-fridge gap (PS2.11e), both ways: a hob with a tall unit inside its landing, and a
   // tall unit standing inside a hob's.
