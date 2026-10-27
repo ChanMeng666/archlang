@@ -1,0 +1,19 @@
+# class: clearances
+# origin: PR #305's design review (cards.md PS2.74): classroom-block's accessible-WC pan 1175 mm from either side
+#   wall; clinic 900, transit-hall 1400, and the library's
+# expect: W_ACCESSIBLE_WC_SIDE_WALL
+# status: done
+# fact: the wc's centreline is x=1275; the side walls' inner faces are x=100 (shell) and x=2450 (w_mid): 1175 mm
+#   to the nearer, over the 500 mm a grab rail reaches (ADM M4(2) Diagram 2.5, ADA 604.2)
+plan "Accessible WC, pan mid-room" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  wall id=w_mid partition thickness 100 { (2500,0) (2500,4000) }
+  room id=r_wca at (0,0) size 2500x4000 label "Accessible WC" uses wc
+  room id=r_lobby at (2500,0) size 3500x4000 label "Lobby" uses circulation
+  door id=d_entry at (4250,4000) width 1000 wall shell
+  door id=d_wca at (2500,3000) width 1000 wall w_mid swing into r_wca
+  furniture wc against wall shell segment 0 offset 1275 in r_wca
+  furniture basin against wall shell segment 3 offset 2000 in r_wca
+}

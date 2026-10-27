@@ -31,6 +31,7 @@ import {
 } from "../clearance-measure.js";
 import type { LintContext, LintRule } from "../context.js";
 import { deficitMm, mm } from "../measure.js";
+import { VERTEX_EPS } from "../../geometry/polygon.js";
 
 /**
  * The subject of a message: "The fridge in Kitchen" when the piece's room has a label, else
@@ -105,6 +106,108 @@ export const wcSideClearance: LintRule = {
         ...ctx.at(f),
         message: `${subject(f, wcName(f), ctx)} has its centreline ${d.available} mm from ${o.prose} beside it; a WC needs ${d.required} mm to each side (${d.short} mm short).`,
         hints: [wcHint(f, m, near, need, world, ctx, o.hint, by.kind === "furniture")],
+      });
+    }
+    return out;
+  },
+};
+
+/** The words that say a room is accessible: "Accessible WC", "Wheelchair WC", "Disabled toilet". */
+const ACCESSIBLE_RE = /\b(?:accessible|wheelchair|disabled)\b/gi;
+
+/** A word that negates the one after it: "Non-accessible", "non accessible", "Not accessible". */
+const NEGATED_RE = /\b(?:non|not)[\s-]*$/i;
+
+/**
+ * Does a room's label say it is accessible? One of {@link ACCESSIBLE_RE}'s words, as a whole word
+ * (so "Inaccessible" is not one) and not negated ({@link NEGATED_RE}: "Non-accessible store"). The
+ * language has no `uses` word for it, so the label is what says it.
+ */
+export function labelSaysAccessible(label: string | undefined): boolean {
+  if (label === undefined) return false;
+  for (const m of label.matchAll(ACCESSIBLE_RE)) if (!NEGATED_RE.test(label.slice(0, m.index))) return true;
+  return false;
+}
+
+/** How far each side is looked along for a wall: past the figure, so the message can say how
+ *  far the nearer wall is. */
+const SIDE_WALL_REACH_MM = 10_000;
+
+/**
+ * A WC in an accessible room whose centreline is farther than
+ * {@link LintRuleset.wcAccessibleSideWallMaxMm} (500 mm) from the face of every side wall
+ * (plan-soundness PS2.74): no grab rail can be fixed within reach of the pan and there is no wall
+ * to transfer against. Source: Approved Document M Vol 1 (2015) M4(2) Diagram 2.5, WC centreline
+ * 400–500 mm from the adjacent wall, and M4(3) Diagrams 3.11 and 3.16, 450–500 mm [V]; the ADA
+ * 2010 Standards 604.2, 16–18 in (406–457 mm) from the side wall [S]. `W_WC_SIDE_CLEARANCE`
+ * judges the low end; this rule the high end, and only where the room's label says accessible
+ * ({@link labelSaysAccessible}), since a general WC may stand clear of both walls. Only a straight
+ * wall's body counts (a fixture beside the pan carries no rail), measured as
+ * `W_WC_SIDE_CLEARANCE` measures: square to the centreline over the pan's depth, from the drawn
+ * footprint to the drawn body, a doorway in the wall a gap to its jamb. A curved wall near either
+ * side declines the pan (`curved-wc-wall`), as does a pan more than twice the figure wide
+ * (`wide-wc-pan`). One warning per WC; hint only, no fix (the edit
+ * depends on how the pan was placed, as for {@link wcHint}).
+ */
+export const accessibleWcSideWall: LintRule = {
+  name: "accessible-wc-side-wall",
+  family: "furniture",
+  layer: "validity",
+  stage: "fixtures",
+  codes: ["W_ACCESSIBLE_WC_SIDE_WALL"],
+  check(ctx: LintContext): Diagnostic[] {
+    const max = ctx.rules.wcAccessibleSideWallMaxMm;
+    if (max === null) return [];
+    const wcs = ctx.furniture.filter((f) => isWc(f.category) && labelSaysAccessible(roomOf(f, ctx)?.label));
+    if (wcs.length === 0) return [];
+    // Walls only: a basin or a cistern duct beside the pan holds no grab rail.
+    const world = wcWorld([], ctx);
+    const out: Diagnostic[] = [];
+    for (const f of wcs) {
+      const m = measureWcSides(rectOf(f), f.rotate, max, world, f);
+      if (m === null) {
+        // A pan more than twice the figure wide: no side wall can stand within the figure.
+        ctx.skip("wide-wc-pan");
+        continue;
+      }
+      if (curvedNear(ctx.wallSegs, [m.sides[0].strip, m.sides[1].strip])) {
+        ctx.skip("curved-wc-wall");
+        continue;
+      }
+      // Each side is looked along out to SIDE_WALL_REACH_MM, so a wall exactly at the figure is
+      // found (a strip capped at the figure records nothing at its own depth) and the hint can
+      // say how far the nearer wall is.
+      let far: { measured: number; by: Obstacle } | null = null;
+      for (const side of m.sides) {
+        const r = measureStrip({ ...side.strip, depth: SIDE_WALL_REACH_MM }, world, f);
+        if (r.by !== null && (far === null || r.measured < far.measured)) far = { measured: r.measured, by: r.by };
+      }
+      if (far !== null && m.half + far.measured <= max + VERTEX_EPS) continue;
+      const name = subject(f, wcName(f), ctx);
+      const figure = `the ruleset's \`wcAccessibleSideWallMaxMm\` is ${mm(max)} mm, centreline to a side wall's face`;
+      if (far === null) {
+        out.push({
+          severity: "warning",
+          code: "W_ACCESSIBLE_WC_SIDE_WALL",
+          ...ctx.at(f),
+          message: `${name} has no side wall within ${mm(SIDE_WALL_REACH_MM)} mm of its centreline; an accessible WC needs one within ${mm(max)} mm, for a grab rail and a side transfer.`,
+          hints: [
+            `"${f.id}" has no wall beside it (${figure}): move it into a corner, its centreline ${mm(max)} mm or less from the side wall.`,
+          ],
+        });
+        continue;
+      }
+      // Rounded up, so the message never prints a wall at the figure as too far.
+      const at = Math.ceil(m.half + far.measured - VERTEX_EPS);
+      const wall = obstaclePhrase(far.by, ctx);
+      out.push({
+        severity: "warning",
+        code: "W_ACCESSIBLE_WC_SIDE_WALL",
+        ...ctx.at(f),
+        message: `${name} has its centreline ${mm(at)} mm from the nearer side wall; an accessible WC needs one within ${mm(max)} mm, for a grab rail and a side transfer (${mm(at - max)} mm too far).`,
+        hints: [
+          `"${f.id}"'s centreline is ${mm(at)} mm from ${wall.hint} (${figure}): slide it at least ${mm(at - max)} mm along its back wall toward ${wall.hint}, its centreline no nearer that wall than \`wcSideClearanceMm\`.`,
+        ],
       });
     }
     return out;
