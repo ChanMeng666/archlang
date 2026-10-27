@@ -105,6 +105,9 @@ intent 14/26 (54%) · sound 3/26 (12%)**. Same run's `--l1` overlay: **intent 18
 numbers live in `live-baseline.json`; the L1 numbers are recorded there as reference only
 (the baseline and every delta against it are L0).
 
+A dated record of a one-off Claude 5.x live run (aggregate numbers, not comparable with this
+baseline, which was not re-measured) is in `eval/live-runs/2026-10-27-claude-5.md`.
+
 > **Prompt-drift history.** v1.15.0's metric-unit-suffix feature added one line to
 > `spec.llm.md` (the author prompt), so the original 2026-07-11 baseline (valid 25 · intent 13
 > · sound 4, pre-suffix prompt) was re-measured the next day under the current prompt — same

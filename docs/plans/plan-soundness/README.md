@@ -452,6 +452,12 @@ by delegation (D18); stands unless the owner objects.* A measurement record, not
   stair blocker named by lint; the residual families unchanged. The review-sheet clause is false as
   built (PS5.4 probes: p2-for 0/2, p10 5/8, p3 4/6); PS4.6 is the remainder.
 - Reading: defects do not fall with rules alone; the stopping rule and the families with no rule bind.
+- *Run result (PS7.8, 2026-10-27, `audits/2026-10-27-first-contact-rerun-ps78.md`, `main@134765d1`):*
+  the frozen arm drew 64 defects (4 / 29 / 31), `validate` 0 / 6, 3 authors stopping with warnings
+  standing; the whole-loop arm drew 56 (1 / 19 / 36), `validate` 6 / 6 (`--stage` 4 / 6, batched,
+  never gated), every plan lint-clean with `next` null, 0 stopping early, and final lint reports 0 of
+  its 56: the loop removes what lint sees and leaves the no-rule families. First read of the
+  reverse-if: not met (fewer defects); one more re-measure with both arms decides it.
 - Ruling: the protocol's frozen prompt ("stop when it compiles", every run since 2026-10-24; authors
   stopping with warnings standing 0 / 0 / 2 / 2 under it, arms A, B, C, row 6) stays unchanged for
   comparability, and the next re-measure adds a second arm whose prompt names the whole loop

@@ -1,0 +1,59 @@
+plan "Small Clinic" {
+  units mm
+  grid 100
+  paper A3 landscape
+  north up
+  dims auto all
+
+  room id=c1 at (0,0) size 4000x4500 label "Consulting 1" uses office
+  room id=c2 right-of c1 size 4000x4500 label "Consulting 2" uses office
+  room id=c3 right-of c2 size 4000x4500 label "Consulting 3" uses office
+  room id=hall below c1 size 12000x1800 label "Corridor" uses hall
+  room id=wait below hall align left size 5600x3700 label "Waiting / Reception" uses entry
+  room id=wc right-of wait size 2400x3700 label "Accessible WC" at (6800,7000) uses wc
+  room id=staff right-of wc size 2400x3700 label "Staff Room" at (8800,9300) uses office
+  room id=store right-of staff size 1600x3700 label "Store" uses storage
+
+  walls from rooms exterior 250 partition 100 { open between wait and hall width 2400 }
+
+  door on wait.bottom at center width 1200 swing outward
+  door on hall.right at center width 1000 swing outward
+  door between c1 and hall at center width 900 swing into c1
+  door between c2 and hall at center width 900 swing into c2
+  door between c3 and hall at center width 900 swing into c3
+  door between wc and hall at center width 900 swing into wc
+  door between staff and hall at center width 900 swing into staff
+  door between store and hall at center width 900 swing into store
+
+  window on c1.top width 1500
+  window on c2.top width 1500
+  window on c3.top width 1500
+  window on wait.left width 1500
+  window on staff.bottom width 1500
+  window on wc.bottom width 600 sill 1500
+
+  furniture reception_desk in wait anchor bottom-right flush inset 300 size 2200x800 rotate 180
+  furniture sofa_l in wait anchor bottom-left flush inset 300 size 2400x900 rotate 180
+
+  furniture bed in c1 anchor top-left flush inset 300 size 800x1900
+  furniture basin in c1 anchor top-right flush size 500x400
+  furniture filing_cabinet in c1 anchor bottom-right flush inset 300 size 500x600 rotate 180
+  furniture bed in c2 anchor top-left flush inset 300 size 800x1900
+  furniture basin in c2 anchor top-right flush size 500x400
+  furniture filing_cabinet in c2 anchor bottom-right flush inset 300 size 500x600 rotate 180
+  furniture bed in c3 anchor top-left flush inset 300 size 800x1900
+  furniture basin in c3 anchor top-right flush size 500x400
+  furniture filing_cabinet in c3 anchor bottom-right flush inset 300 size 500x600 rotate 180
+
+  furniture wc in wc anchor bottom flush size 400x700 rotate 180
+  furniture basin in wc anchor right flush size 500x400 rotate 90
+
+  furniture counter in staff anchor right flush size 600x1800 rotate 90
+  furniture kitchen_sink in staff anchor top-right flush size 600x600 rotate 90
+  furniture meeting_table in staff anchor left flush inset 100 size 900x800
+
+  furniture locker in store anchor bottom flush size 1000x500 rotate 180
+  furniture filing_cabinet in store anchor right flush size 500x600 rotate 90
+
+  title { project "Small Clinic" drawn_by "ArchLang" date "2026-10-27" number "A-01" revision "A" }
+}

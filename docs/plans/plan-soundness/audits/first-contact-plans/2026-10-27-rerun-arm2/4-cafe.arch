@@ -1,0 +1,47 @@
+plan "Corner Cafe" {
+  units mm
+  grid 100
+  paper A3 landscape
+  north up
+  dims auto all
+  room id=seating at (0,0) size 7500x4800 label "Seating" uses dining
+  room id=counter right-of seating align top size 4000x2500 label "Counter"
+  room id=kitchen below counter align left size 4000x5500 label "Kitchen" uses kitchen
+  room id=hall below seating align left size 7500x1200 label "WC Lobby" uses hall
+  room id=wc_acc below hall align left size 2400x2000 label "Accessible WC" uses wc
+  room id=wc_staff right-of wc_acc size 1600x2000 label "Staff WC" uses wc
+  room id=store right-of wc_staff size 3500x2000 label "Store" uses storage
+  walls from rooms exterior 200 partition 100 { open between seating and counter }
+  door on seating.left at 1200 from start width 1000 hinge right swing into seating
+  door between seating and hall at 650 from start width 900 swing into hall
+  door between hall and wc_acc at 1200 from start width 900 swing into wc_acc
+  door between hall and wc_staff at center width 800 swing into wc_staff
+  door between hall and store at center width 900 swing into store
+  door between store and kitchen at center width 900 swing into store
+  door between counter and kitchen at 1700 from start width 900 swing into kitchen
+  window on seating.top at 3000 from start width 1800
+  window on seating.top at 6000 from start width 1800
+  window on seating.left at 3600 from start width 1800
+  window on kitchen.right width 1500
+  window on counter.top width 1500
+  furniture wc against wc_acc.bottom offset 1500
+  furniture basin against wc_acc.bottom offset 600
+  furniture wc against wc_staff.bottom
+  furniture counter in counter anchor top flush size 3000x700
+  furniture fridge in kitchen anchor top-left flush size 700x700
+  furniture counter in kitchen anchor top-right flush size 1600x600
+  furniture stove against kitchen.bottom offset 3300
+  furniture kitchen_sink against kitchen.bottom offset 1800
+  for i in 0..3 {
+    for j in 0..2 {
+      let x = 1200 + i * 2300
+      let y = 1400 + j * 1800
+      furniture table at (x, y) size 800x800
+      furniture chair at (x + 200, y - 500) size 400x400 rotate 0
+      furniture chair at (x + 200, y + 900) size 400x400 rotate 180
+      furniture chair at (x - 500, y + 200) size 400x400 rotate 270
+      furniture chair at (x + 900, y + 200) size 400x400 rotate 90
+    }
+  }
+  title { project "Corner Cafe" drawn_by "Claude" date "2026-10-27" number "A-01" revision "A" }
+}
