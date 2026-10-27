@@ -33,6 +33,9 @@
  *
  * `test/fixtures/storeys-eaves-overflow.arch` (PS2.77) was added after the kind: its row is the
  * same digest body run on `e432c24a`'s `src/` (equal to the current tree's).
+ * `test/fixtures/lock-before.arch`, `lock-partition-moved.arch` and `lock-window-moved.arch`
+ * (preview-and-remodel B1, `test/lock.test.ts`) were added after the kind too: each row is the
+ * same digest body on the tree that adds them; they write no `double` door.
  *
  * A digest here moving is a finding to explain before it is a diff to re-measure.
  */
@@ -78,6 +81,9 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/diff-b.arch", "1d4aaebab314c77742fc16d68c8925aa629ae42e1253a2167e240a2f25849ab1"],
   ["test/fixtures/diff-circ-a.arch", "e5bebcb2ebee7d35409f726a36c6da902eb7f414cadc9b93adb6e5d8a014235d"],
   ["test/fixtures/diff-circ-b.arch", "e52a2d0d2299ddaa916dc6e204c21d5296ccc52f4eb7376591c78eef685191de"],
+  ["test/fixtures/lock-before.arch", "23d883d88f5b94b73686c13e795ed57352dd778e3b807c1d73fdea1e3870943c"],
+  ["test/fixtures/lock-partition-moved.arch", "8a18c466ef0388eaba790eea5e5dc217fcdfe8d8624ec8e0ed529ec98a4e4d56"],
+  ["test/fixtures/lock-window-moved.arch", "5178ac32070a056b37462b4169b3fbdbbb0ee9a94ca05221cc0c64cedf89dd99"],
   ["test/fixtures/schedule-sheet.arch", "15dc29228ea12dae7240ad843567f88218c5a57bd8838ea950b1a5792c2579a5"],
   ["test/fixtures/star30.arch", "74a3209110606543fb04c1932b2ec60a78526ccdd2a7205cdfe972719efac471"],
   ["test/fixtures/storeys-eaves-overflow.arch", "e29b5e34735306051eeea8215d258873db2935ed3c7ebaf575a4b7af5cb89a6d"],
