@@ -487,6 +487,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `W_ROOM_MISSING_DEFINING` now also reports a bathroom that holds a WC and no basin, unless a basin
+  stands in a room a door or opening joins it to directly that is not a kitchen (Approved Document G,
+  G4; plan card PS2.66). A WC room is still defined by its WC alone.
 - A doorway's approach (`W_DOORWAY_BLOCKED`'s landing, `doorwayLandingMm` deep) is measured from
   the wall's FACE on each side, not its centreline, the datum `W_LEAF_ACROSS_DOORWAY` already read
   (plan card PS2.54); on a 100 mm partition the approach reaches 50 mm further into each room.

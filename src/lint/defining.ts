@@ -33,7 +33,8 @@ import { distPointToRect } from "./measure.js";
  * - `bath` is defined by its bathtub-or-shower item, which the row marks optional (furnish
  *   leaves it out when it does not fit; the never-worse gate then refuses that bath, which stays
  *   empty and is `W_ROOM_NO_FIXTURE`'s report). A bath holding a shower and no WC is a shower
- *   room, not a defect.
+ *   room, not a defect. A bath that holds a WC also needs a basin
+ *   ({@link WASH_WITH}).
  * - `wc` is defined by its WC alone: a cloakroom without a basin is common.
  *
  * Kitchen: the row's required marks are a sink, a hob/stove and a worktop (`counter`, or
@@ -61,6 +62,30 @@ export function definingItems(use: UseKind): FurnishItem[] {
   if (row === undefined || spec === undefined || (typeof spec === "object" && "none" in spec)) return [];
   if (spec === "required") return row.filter((i) => i.required);
   return spec.pick.flatMap((c) => row.filter((i) => i.category === c));
+}
+
+/**
+ * A piece one held piece brings with it, as a reading of {@link FURNISH_TABLE} (both categories
+ * name items of the use's row): a `bath` that holds a WC also needs a basin (plan-soundness
+ * PS2.66). The convention is England's Approved Document G (G4, sanitary conveniences and washing
+ * facilities): a washbasin in the room with the WC, or in a room or space that gives direct access
+ * to it, provided it is not used to prepare food. So `W_ROOM_MISSING_DEFINING` counts a basin in
+ * the room, or in any room joined to it directly by a door or opening (an access edge) that is
+ * not a kitchen. A `wc` room has no entry: the module says why above. A bath with no WC (a
+ * shower room) needs no basin from this reading.
+ */
+export const WASH_WITH: Readonly<Partial<Record<UseKind, { held: string; needs: string }>>> = Object.freeze({
+  bath: { held: "wc", needs: "basin" },
+});
+
+/** The {@link WASH_WITH} items of `use` from its furnish row, or `undefined`. */
+export function washItems(use: UseKind): { held: FurnishItem; needs: FurnishItem } | undefined {
+  const spec = WASH_WITH[use];
+  const row = FURNISH_TABLE[use];
+  if (spec === undefined || row === undefined) return undefined;
+  const held = row.find((i) => i.category === spec.held);
+  const needs = row.find((i) => i.category === spec.needs);
+  return held && needs ? { held, needs } : undefined;
 }
 
 /** Every defining item of every use of the room, in the room's use order, each once. */

@@ -106,7 +106,9 @@ describe("preview --review: the fixture's five warnings", () => {
   });
 
   it("the sheet's SVG is pinned (a drawing test: re-pin only with a stated reason)", () => {
-    expect(sha(sheet.svg)).toBe("151d5018c6f86f4996a10a754df3b07a3c9948c65e6a8b017bfb7202092c8bad");
+    // Re-pinned for PS2.66: the fixture gained a basin in its bath (a bath with a WC and no basin is now
+    // a sixth warning, W_ROOM_MISSING_DEFINING), so the drawing holds one more piece; the five marks are unchanged.
+    expect(sha(sheet.svg)).toBe("2ed289fa692891fa2c9f0f62fbb3d36998d92bbf09968e34c729b5a5120d4b3c");
     // Deterministic: a second build is the same bytes.
     expect(sheetOf(source).svg).toBe(sheet.svg);
   });

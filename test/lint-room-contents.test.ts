@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { USE_KINDS } from "../src/ast.js";
 import { describe as describePlan, finish, FURNISH_TABLE, lint } from "../src/index.js";
 import { CATALOG_CATEGORIES } from "../src/fixtures-catalog.js";
-import { DEFINING, definingItems } from "../src/lint/defining.js";
+import { DEFINING, definingItems, WASH_WITH, washItems } from "../src/lint/defining.js";
 import type { World } from "../src/world.js";
 
 /**
@@ -251,6 +251,95 @@ describe("W_ROOM_MISSING_DEFINING", () => {
     expect(only(wc("basin"), "W_ROOM_MISSING_DEFINING").map((d) => d.message)).toEqual([
       '"WC" is furnished (basin) but has no wc: the piece that makes it a WC.',
     ]);
+  });
+
+  it("asks a bath that holds a WC for a basin too (PS2.66), in the room or through a door, never from a kitchen", () => {
+    const WASH =
+      "a room with a WC needs one to wash hands at, in the room or in one a door joins it to (not a kitchen)";
+    const at = (pieces: [string, number][], room = "r_b") =>
+      pieces.map(([p, off]) => `  furniture ${p} against wall shell segment 1 offset ${off} in ${room}\n`).join("");
+    const bath = (pieces: [string, number][], left = LIVING, extra = "") =>
+      PAIR(left, 'label "Bathroom" uses bath', `${WINS}${at(pieces)}${extra}`);
+    const ds = only(
+      bath([
+        ["bathtub", 300],
+        ["wc", 2600],
+      ]),
+      "W_ROOM_MISSING_DEFINING",
+    );
+    expect(ds.map((d) => d.message)).toEqual([`"Bathroom" is furnished (bathtub, wc) but has no basin: ${WASH}.`]);
+    expect(ds[0]!.hints![0]).toContain("furniture basin in r_b");
+    expect(ds[0]!.hints![1]).toContain("If `r_b` is not a bathroom");
+    // The clean twin: the basin in the room.
+    expect(
+      codesOf(
+        bath([
+          ["bathtub", 300],
+          ["wc", 2600],
+          ["basin", 3300],
+        ]),
+      ),
+    ).not.toContain("W_ROOM_MISSING_DEFINING");
+    // A bath holding only its WC lacks both: the defining piece is reported first, its message as before
+    // PS2.66; the basin is asked once the bath is defined.
+    expect(only(bath([["wc", 1000]]), "W_ROOM_MISSING_DEFINING").map((d) => d.message)).toEqual([
+      '"Bathroom" is furnished (wc) but has no bathtub or shower: the piece that makes it a bathroom.',
+    ]);
+    // Approved Document G: a basin in a room giving direct access to the WC counts...
+    const basinNextDoor = "  furniture basin against wall shell segment 3 offset 1000 in r_a\n";
+    const dressing = 'label "Dressing" uses storage';
+    expect(
+      codesOf(
+        bath(
+          [
+            ["bathtub", 300],
+            ["wc", 2600],
+          ],
+          dressing,
+          basinNextDoor,
+        ),
+      ),
+    ).not.toContain("W_ROOM_MISSING_DEFINING");
+    // ... but not through a wall with no door or opening in it, and never from a kitchen.
+    const walled = bath(
+      [
+        ["bathtub", 300],
+        ["wc", 2600],
+      ],
+      dressing,
+      basinNextDoor,
+    ).replace(/ {2}door id=d_mid[^\n]*\n/, "");
+    expect(only(walled, "W_ROOM_MISSING_DEFINING").map((d) => d.message)).toEqual([
+      `"Bathroom" is furnished (bathtub, wc) but has no basin: ${WASH}.`,
+    ]);
+    const kitchen = bath(
+      [
+        ["bathtub", 300],
+        ["wc", 2600],
+      ],
+      'label "Kitchen" uses kitchen',
+      basinNextDoor,
+    );
+    expect(only(kitchen, "W_ROOM_MISSING_DEFINING").map((d) => d.message)).toContain(
+      `"Bathroom" is furnished (bathtub, wc) but has no basin: ${WASH}.`,
+    );
+    // A WC room is defined by its WC alone, basin or not.
+    expect(codesOf(PAIR(LIVING, 'label "WC" uses wc', `${WINS}${at([["wc", 1000]])}`))).not.toContain(
+      "W_ROOM_MISSING_DEFINING",
+    );
+  });
+
+  it("guard: WASH_WITH names items of the use's furnish row", () => {
+    for (const [u, spec] of Object.entries(WASH_WITH)) {
+      const row = FURNISH_TABLE[u as keyof typeof FURNISH_TABLE]!;
+      for (const c of [spec!.held, spec!.needs])
+        expect(
+          row.some((i) => i.category === c),
+          `${u}: ${c}`,
+        ).toBe(true);
+      expect(washItems(u as keyof typeof FURNISH_TABLE), u).toBeDefined();
+    }
+    expect(Object.keys(WASH_WITH)).toEqual(["bath"]);
   });
 
   it("asks a kitchen for its sink, its hob and its worktop; a `hob` is a stove, a `worktop` a counter, a bare `sink` a kitchen sink", () => {
