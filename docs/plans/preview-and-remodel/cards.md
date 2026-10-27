@@ -40,26 +40,20 @@ way escapes both guards; plant one to prove it). **Acceptance.** The package dro
 for the export and its `Point` alias for the core's; the public-surface test goes red on a planted
 `import()`-typed field; every digest unchanged. **Must not.** Export anything else; change a body.
 
-### A2 · M1a geometry: Mesh3D from Scene3D — `doing` · wave 2 · 5 days · model: opus
+### A2 · M1a geometry: Mesh3D from Scene3D — `done` · PR #328 · merge `da464b51` · record: `research/2026-10-28-as-built.md` § A2
 
-**Goal.** One deterministic triangulation that both the viewer and the GLB read.
-**Design.** `Mesh3D` = integer-micrometre vertices, canonical `(level, kind, id)` order, per-node
-`extras` (ids, stage, category, status when B3a lands). Walls: one solid per connected component of
-the H1 ownership polygon, extruded to `RWall.height`; openings cut per covered piece into sill /
-lintel / cased parts from `sill`/`head`; arcs discretised per §4.1 with `--curve-tol`. Floors per
-room (void as hole), one slab (200 mm, Q6), flat roof (Q7, hidden by default), columns, door leaves
-closed (`doorSwing` / `doorLeaves`), window frame + glazing band, grey-box furniture + the 12 T0
-families laneway-house uses, `assumptions[]` ledger with provenance. Port V-GEO-01/02/04/05/07/10–12
-and V-FUR-01/02 as light or heavy tests as their cost dictates.
-**Acceptance.** Group A + B1–B3 of the plan's corpus (`aquarium, hexagon-pavilion, library,
-relational, two-bed, imports, museum-wings` included) build; opening probes 100 %; Mesh3D hash
-identical across three runs and across Node 20/22; mixed-height warning fires on `s11` only;
-single-storey build ≤ 2 s.
-**Must not.** Add roofs beyond flat, stairs, sun, materials; write a GLB yet.
-**Depends on.** A1. **Reverse-if.** Arc-wall openings fail the probes → ship arcs as chords with a
-`W3D_ARC_AS_CHORD` warning and a card for the cut geometry.
+### A2b · Mesh finish before the look round — `todo` · residue of A2 · 1.5 days · model: opus
 
-### A3 · M1a replay viewer and CLI video — `todo` · wave 2 · 4 days · model: opus; owner eyes the look
+**Goal.** What A2 left: the 12 T0 parametric furniture families laneway-house uses (grey boxes
+today, §4.4); V-GEO-05 `W3D_FLOOR_OVERLAP` (rooms overlapping by more than 1 cm², with the plan's
+0.5 mm deterministic lift; the core already warns `W_ROOM_OVERLAP`); window glass on a curved host
+as a chord that runs into the body near its jambs; the T-junctions where a wall body meets its sill
+or lintel (each shell closed; a viewer may show hairlines); the slab as rooms ∪ wall outline less
+voids (today the wall footprint less voids, so a room outside every wall has no slab); a demolished
+wall (B3a) drawn from `ir.drawn`. **Acceptance.** Each with a corpus or synthetic test; Mesh3D stays
+deterministic and laneway's pinned digest moves only with a recorded reason. **Depends on.** A2.
+
+### A3 · M1a replay viewer and CLI video — `doing` (PR #330, gates green, red-team round 1 fixed; waits for the owner's look) · wave 2 · 4 days · model: opus; owner eyes the look
 
 **Goal.** `archlang3d view plan.arch --replay -o plan.html` and `--video out.mp4`.
 **Design.** Single-file HTML, three.js viewer subset *inlined* (pinned 0.186.1, MIT notice in the
@@ -122,46 +116,14 @@ Unpark when a Tier A post needs it. Labelled non-deterministic; muxer through th
 
 ## B · The renovation wedge (language; D6–D9)
 
-### B1 · Lock check without syntax — `doing` (PR #323) · wave 1 · 1.5 days · model: sonnet
-
-**Goal.** `arch impact --against old.arch --lock <id,…>` (and `arch diff --lock` once U.14 lands)
-exits non-zero with `E_LOCKED_ELEMENT_CHANGED` when a locked element moved, resized, changed host,
-changed swing, or vanished.
-**Design.** Reuse `diffPlans` (`src/diff.ts`) pairing by resolved id; a lock names only elements
-with a written `id=`; a lock on a name that resolves to an auto-id is refused with
-`E_LOCK_UNNAMED` (diagnostic text says to write `id=`). Each violation carries both spans (old and
-new) and the kind of change. `--json` lists violations. Catalogue entries, docs
-(`docs/language-reference.md` impact section, `spec.llm.md` one line), a `test/lock.test.ts` with
-laws: identity (same file → no violation), symmetry of "vanished" vs "appeared", and the PS0.23
-auto-id-shift case as a refused lock.
-**Acceptance.** A fixture pair where the exterior ring, the entry door and two windows are locked
-and an interior partition moves → exit 0; move a locked window 100 mm → exit 2 with the two spans.
-**Must not.** Add syntax; change `diffPlans` pairing (PS0.23 is its own card).
-**Depends on.** —. **Reverse-if.** `diffPlans` cannot see a change class the lock needs (e.g. PS0.22
-reshape inside the same bbox) → file the diff card first, lock ships for the classes it can see.
+### B1 · Lock check without syntax — `done` · PR #323 · merge `68065481` · record: `research/2026-10-28-as-built.md` § B1
 
 ### B2 · `keep locked` syntax — `parked` (D6)
 
 Opens when a consumer needs the lock inside the source. Design sketch: `keep locked <id> [, <id>…]`,
 checked by `impact --against` through the same path as B1.
 
-### B3a · Wall `status` semantics — `doing` · wave 2 · 3 days · model: opus
-
-**Goal.** `wall … status existing|demolish|new` (and `walls from rooms … status <s>`) in the IR,
-`describe`, Plan JSON, schema and lint, with the demolished wall enclosing nothing, hosting nothing
-and counting in no area; default `existing`-like behaviour when absent (no byte change).
-**Design.** Template: the heights change `aa6da412` (19 files). Add `status?` to `RWall` and the
-derived-wall statement; parser + printer round-trip; Plan JSON `status` additive with schema; a
-`describe` field per wall and a per-plan count by status; audit the 172 `ir.walls` references in 48
-files and record each consumer's decision in the PR body (table: file → treats `demolish` as
-absent / present / n.a.); lint: a door hosted on a `demolish` wall → `E_OPENING_ON_DEMOLISHED_WALL`;
-a `new` wall is a wall. Byte-identity law for the new form; `describe`/`lint` digests unchanged over
-the corpus.
-**Acceptance.** Corpus digests unchanged; a fixture with one demolished partition: `describe` tiles
-the two rooms as one space, reachability treats it as open, net area counts neither wall; Plan JSON
-round-trips the status.
-**Must not.** Draw anything differently yet (B3b); add `column`/`shaft` semantics (deferred, P2-4).
-**Depends on.** —. **Reverse-if.** README §5.6.
+### B3a · Wall `status` semantics — `done` · PR #329 · merge `f4b62e92` · record: `research/2026-10-28-as-built.md` § B3a
 
 ### B3b · Wall `status` drawing, DXF, legend, example — `todo` · wave 3 · 2 days · model: sonnet
 
@@ -177,33 +139,9 @@ wrote into `docs/language-reference.md` (Room schedule) and flip the B3a test th
 pinned; `docs:build` green.
 **Depends on.** B3a. **Must not.** Touch paint order (D4).
 
-### B4 · Quantities: `describe --facts quantities` and `arch takeoff` — `doing` (PR #324) · wave 1 · 2 days · model: sonnet
+### B4 · Quantities: `describe --facts quantities` and `arch takeoff` — `done` · PR #324 · merge `8031dd86` · record: `research/2026-10-28-as-built.md` § B4
 
-**Goal.** Geometric quantities an estimator can read, without any new claim.
-**Design.** Opt-in via the existing `DESCRIBE_FACTS` mechanism (no byte change to default
-`describe`): per plan and per level — wall length by category and (after B3a) status, as
-`length_centreline_mm` and `length_face_mm`; room perimeter (centreline and net); floor area net
-(exists) and `floor_area_with_waste_m2` **only when** `--waste <pct>` is passed; door/window counts
-by kind and width; wall surface area only when heights are authored. `arch takeoff --format csv|md`
-formats that block. Field names carry the convention. Catalogue nothing new; docs section; tests on
-three corpus plans with hand-checked numbers.
-**Acceptance.** Default `describe` digests unchanged; `takeoff` for `laneway-house` matches a
-hand-computed table in the test; no field named "cost", "stud", "code".
-**Depends on.** —. **Reverse-if.** D9.
-
-### B5 · Imperial input literals — `doing` · wave 2 · 2 days · model: sonnet
-
-**Goal.** `12ft`, `6in`, `12ft6in` as length literals, exact (1 in = 25.4 mm) with rounding half away
-from zero to integer mm (consistent with the direction of PS0.26), through `src/num-format.ts`'s seam.
-**Design.** Lexer (`src/lexer.ts` ~83–160) adds the two suffixes; `12'6"` and `1/2in` are refused with
-a catalogued diagnostic naming the accepted forms (the quote glyphs clash with strings; `/` is
-division). Grammar generators (`gen:*`), `spec.llm.md`, `docs/language-reference.md`, VS Code and
-LSP token tables; byte-identity law via a plan written in feet that compiles to the same bytes as its
-millimetre twin.
-**Acceptance.** The twin-plan law; `MODEL_RANGE_MM` still enforced; `check:drift` green after
-`gen:all`.
-**Must not.** Change any output format (D8).
-**Depends on.** —. **Reverse-if.** D8.
+### B5 · Imperial input literals — `done` · PR #327 · merge `ba6f66e8` · record: `research/2026-10-28-as-built.md` § B5
 
 ### B6 · `W_GARAGE_OPENING_UNDERSIZED` — `done` · PR #320 · merge `9280f256` · record: `research/2026-10-28-as-built.md` § B6
 
