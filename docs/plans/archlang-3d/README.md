@@ -24,6 +24,10 @@
 3. **要动手**：§9（里程碑、验收、**前两周逐日任务**）与 §7（CLI/接口）。
 4. **要核对事实**：附录 H 汇总了所有标"待核实"的事项；附录 D 是真实参考链接。
 
+## v0.7 修订（2026-10-28）
+
+[`amendment-v0.7.md`](amendment-v0.7.md)：M1 拆为 M1a（Mesh3D + 生长回放查看器 + CLI 视频）→ M1b（GLB + 门）→ M1c（playground 切换）→ M1d（parked）；Q5 与 Q1 的"private 到 M6"重开，曝光按验收门分级；C1 加 `doorLeaves`（27 个名字）；对 v0.6 的实测更正。卡片、波次与决定见 [`../preview-and-remodel/`](../preview-and-remodel/README.md)。
+
 ## 当前状态（v0.6，2026-10-24）
 
 - **已完成：** 调研、可行性 spike（Plan JSON 通道，37/39 份构建成功，全部水密、glTF-Validator 0 错 0 警告、同输入字节一致）、IR 覆盖分析（32 个可编译示例中 13 个依赖 Plan JSON 没有的信息；v0.6 在 `main@1a1efd9` 复测不变）。
