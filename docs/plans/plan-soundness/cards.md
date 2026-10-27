@@ -382,7 +382,7 @@ PS5.1b: PR #247, 9cc29c7e)
 **PS7.6 · `lint` opens with a one-line summary.** `done` (PR #278, head 8a78e12e, merge 52e7c71f)
 - As built: `research/2026-10-26-ps76-as-built.md`.
 
-**PS7.7 · `next` ranks class-7 blockers and earlier-stage findings before a swing shortfall.** `done` (PR #PRNUM)
+**PS7.7 · `next` ranks class-7 blockers and earlier-stage findings before a swing shortfall.** `done` (PR #298)
 - On the row-6 townhouse, plain `validate --json` names `W_SWING_OBSTRUCTED` (a WC door 85 mm short) as
   `next` while `W_STAIR_NO_LANDING` (a stair with no landing at its head, a blocker) and
   `W_STAIR_TOO_STEEP` stand; even at `--stage openings`, `next` is the swing while those earlier-stage
