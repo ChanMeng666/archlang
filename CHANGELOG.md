@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Package-root exports for downstream consumers of a resolved plan (ADR 0031): `resolvePlan` (the
+  complete parse → link → resolve path; unlike `resolveAll(compile(src).ast)` it keeps imported and
+  placed content), `joinWallSet` and `loopsToPolygons` (the wall joinery, with the `split` argument
+  that yields one ownership polygon per wall), `doorSwing` and `doorLeaves` (a door's leaves; a
+  `double` door's two come only from `doorLeaves`), the 14 types their signatures reach
+  (`AnalyzeOptions`, `JoinableWall`, `JoinedWallSet`, `JoinedCut`, `JoineryResult`, `JoinerySplit`,
+  `Edge`, `EdgeLoop`, `Arc`, `Opening`, `DoorLike`, `DoorSwing`, `DoorHinge`, `DoorSwingDir`) and the
+  element type names `ROpening`, `RStair`, `RElevator`, `REscalator`, `RRoof`, `RVoid`, `ROutdoor`,
+  `RFence`. Append-only; the promise is recorded in ADR 0031. `test/public-surface.test.ts` now
+  derives the closure of these signatures. Output byte-identical.
 - `W_ACCESSIBLE_WC_SIDE_WALL` (plan card PS2.74), validity layer, on by default: a `wc` in a room
   whose label says "accessible", "wheelchair" or "disabled" (not negated: "Non-accessible" is not), with
   its centreline farther than the new ruleset field `wcAccessibleSideWallMaxMm` (500 mm in every

@@ -238,10 +238,21 @@ describe("the public type surface is closed", () => {
     ts.forEachChild(file, visit);
     return hit;
   };
+  // Where the walk stops: an exported name inside the IR vocabulary `resolvePlan`'s own
+  // signature reaches (`ResolvedPlan`, `RWall`, `CompileOptions`, …). That vocabulary's full
+  // closure is a pre-existing hole ADR 0031 scopes out (it reaches the expression parser's
+  // internals); every type the seam itself introduces (`JoinedCut`, `DoorLike`, `Edge`, …) is
+  // walked through, so a field added to one of them later with an unexported type goes red.
+  const resolvePlanDecl = seamDecl("resolvePlan", "analyze.ts");
+  const irVocabulary = new Set(
+    [...(resolvePlanDecl ? reachableNamedTypes(checker, signatureNodes(resolvePlanDecl)) : new Map()).keys()].filter(
+      (n) => exportedFromIndex.has(n),
+    ),
+  );
   const seam = new Map(
     SEAM_VALUES.map(([name, module]) => {
       const decl = seamDecl(name, module);
-      return [name, decl ? reachableNamedTypes(checker, signatureNodes(decl), exportedFromIndex) : null] as const;
+      return [name, decl ? reachableNamedTypes(checker, signatureNodes(decl), irVocabulary) : null] as const;
     }),
   );
 
@@ -258,6 +269,9 @@ describe("the public type surface is closed", () => {
     expect(seam.get("loopsToPolygons")?.get("Arc")).toBe("src/geometry/arc.ts");
     expect(seam.get("doorSwing")?.get("DoorSwingDir")).toBe("src/grammar/tokens.ts");
     expect(seam.get("resolvePlan")?.has("AnalyzeOptions")).toBe(true);
+    // And the stop set is the IR vocabulary, not empty and not the whole root.
+    expect(irVocabulary.has("ResolvedPlan")).toBe(true);
+    expect(irVocabulary.has("JoinedCut")).toBe(false);
   });
 
   it("exports the seam's values", () => {

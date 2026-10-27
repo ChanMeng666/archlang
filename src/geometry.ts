@@ -171,6 +171,9 @@ export interface DoorLike {
  * `W_SWING_OBSTRUCTED` stops flagging it (correctly: there is nothing to obstruct) and
  * `repair()` has one fewer obstacle. This is the ONE place the kind reaches the swing
  * model; nothing else about a door's geometry is kind-dependent.
+ *
+ * Public from the package root (ADR 0031); a consumer that needs every leaf calls
+ * {@link doorLeaves}.
  */
 export function doorSwing(d: DoorLike): DoorSwing | null {
   const seg = d.host;
@@ -206,7 +209,7 @@ function swingAlong(dir: Vec, at: Point, width: number, hingeSide: DoorHinge, sw
  * {@link isDoubleDoorPair} reads as one assembly. `[]` for an unhosted door and for every kind
  * that sweeps no quarter-disc. The drawing and every swing measure (the swing and door–door
  * lint rules, the clear zones, `repair`, `finish`) read the leaves through this, so a `double`
- * door is measured leaf by leaf, as drawn.
+ * door is measured leaf by leaf, as drawn. Public from the package root (ADR 0031).
  */
 export function doorLeaves(d: DoorLike): DoorSwing[] {
   if (d.doorKind === "double") {

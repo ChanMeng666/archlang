@@ -126,6 +126,9 @@ export interface JoinedWallSet {
  *
  * Pure and deterministic: one {@link PointInterner} for the whole call (see `joinWalls`
  * for why that matters), no clock, no randomness, no Map-order dependence.
+ *
+ * Public from the package root (ADR 0031), with the `split` argument that yields one
+ * ownership polygon per wall; its numeric tolerances are not part of the promise.
  */
 export function joinWallSet<W extends JoinableWall>(
   walls: readonly W[],
