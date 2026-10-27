@@ -692,15 +692,16 @@ function rules(): [string, string][] {
     ["if-expr", `"if" ws expr ws "{" ws expr ws "}" ws "else" ws "{" ws expr ws "}"`],
 
     // ---- lexical ---------------------------------------------------------
-    // A numeric literal may carry an optional metric unit suffix (mm|cm|m),
-    // folded to millimetres by the lexer; the value is scaled, the token shape
-    // is otherwise a number. The integer part is optional (`.5` lexes as a number —
+    // A numeric literal may carry an optional unit suffix, metric (mm|cm|m) or
+    // imperial (ft|in|<ft>ft<in>in), folded to millimetres by the lexer; the value
+    // is scaled, the token shape is otherwise a number. Imperial forms the lexer
+    // refuses (`12'6"`, `1/2in`, `12ft6`) are not generated. The integer part is optional (`.5` lexes as a number —
     // `c === "." && isDigit(peek(1))` in `lexImpl`) but the fraction's digits are not,
     // so `5.` is a lex error in both.
     ["number", `( digits frac? | frac ) unit?`],
     ["digits", `[0-9]+`],
     ["frac", `"." digits`],
-    ["unit", `"mm" | "cm" | "m"`],
+    ["unit", `"mm" | "cm" | "m" | "ft" ( ( digits frac? | frac ) "in" )? | "in"`],
     ["ident", `[a-zA-Z_] [a-zA-Z0-9_]*`],
     // A REFERENCE to an element, which may be namespaced by a `place`d instance
     // (`west.perimeter`). Declarations keep the undotted `ident` — a dotted name in a

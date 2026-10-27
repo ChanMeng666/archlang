@@ -572,6 +572,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Add a door (or a full-height window) on the wall the balcony hangs off — the usual fix — or move the balcony to the facade that already has one.",
     "outdoor balcony at (2000,7200) size 4000x1600   # warning: no opening within reach",
   ),
+  E_IMPERIAL_FORM: E(
+    "E_IMPERIAL_FORM",
+    "An imperial length is written in a form the language does not read.",
+    "Imperial lengths are read in three forms only: `12ft`, `6in` and `12ft6in` (feet before inches, each part a plain decimal such as `0.5in`), converted exactly (1 in = 25.4 mm) and rounded half away from zero to a whole millimetre. The feet-and-inch marks are refused because `\"` opens a string and `'` is no token (`12'6\"`, `12'`, `6\"`); a glued fraction because `/` is division (`1/2in`); and inches before feet or a bare trailing number (`6in12ft`, `12ft6`). The literal is replaced by 0 so the rest of the plan still reads and reports. Output stays in millimetres.",
+    'Write `12ft6in` for 12\'6", `0.5in` for 1/2", and put feet before inches.',
+    "room id=r at (0,0) size 12'6\"x10ft   # error: write 12ft6inx10ft",
+  ),
   E_IMPORT_BAD_SPEC: E(
     "E_IMPORT_BAD_SPEC",
     "Malformed import spec.",
@@ -830,6 +837,20 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "A `level` block is a plan-level statement: it partitions the whole plan into storeys, so it cannot be nested inside another `level`, a `for`/`if`/`while` body, a `strip`, or a component definition.",
     "Move the `level` block out to the plan body. To draw the same content on several storeys, put it in a `component` and call it from each level.",
     "component c() { level 1 { } }   # error: only allowed at plan level",
+  ),
+  E_LOCKED_ELEMENT_CHANGED: E(
+    "E_LOCKED_ELEMENT_CHANGED",
+    "An element `archlang impact --lock` names changed between the two versions.",
+    "`--lock <id,…>` names elements that must stay as they were. An element is changed when, on the lowest storey, it moved (an opening also when it slid along an unchanged wall), resized, was re-hosted (another wall, relation or joined spaces), was re-thickened, changed its door swing or any other resolved field, vanished or appeared. A relabel is not a change. Each violation carries the element's span on both sides. Raised by `impact()`, never by `compile()`.",
+    "Put the locked element back as it was in the older file, or drop it from `--lock` if the change is intended.",
+    "window id=w1 on s at 1200 width 1200   # was `at 1100`: archlang impact new.arch --against old.arch --lock w1: error, moved 100 mm",
+  ),
+  E_LOCK_UNNAMED: E(
+    "E_LOCK_UNNAMED",
+    "`archlang impact --lock` names an element whose id was not written, or no element at all.",
+    "A lock names an element by the `id=` its author wrote. An assigned id (`room_3`, `window_2`, or the internal name of a wall `walls from rooms` derived) shifts when a statement is inserted ahead of it, so a lock on it could follow another element; it is refused. So is a name no element of either version carries, or one that stands only above the lowest storey, which `impact` does not compare yet. Raised by `impact()`, never by `compile()`.",
+    "Write `id=<name>` on the element in both versions and lock that name.",
+    "window on s at 1200 width 1200   # assigned window_1: archlang impact new.arch --against old.arch --lock window_1: error, write id= first",
   ),
   E_NON_FINITE: E(
     "E_NON_FINITE",

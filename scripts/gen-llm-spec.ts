@@ -198,7 +198,7 @@ export const STATEMENT_GRAMMAR: Record<string, string> = {
  */
 export const SETTING_GRAMMAR: Record<string, string> = {
   units: "units mm   # required-ish settings come first",
-  grid: "grid 50   # snap grid in mm",
+  grid: "grid 50   # snap grid",
   paper: `paper A3 landscape   # OPTIONAL sheet: ${PAPER_SIZES.join("|")}, ${PAPER_ORIENTATIONS.join("|")} (${PAPER_ORIENTATIONS[0]} default)`,
   scale: "scale 1:50   # drawing scale — OPERATIVE with `paper`, annotation-only without it",
   // `height` is a SETTING here and NOT in `CLAUSE_ATTRIBUTES`, even though it is also a
@@ -207,7 +207,7 @@ export const SETTING_GRAMMAR: Record<string, string> = {
   // `KEYWORDS.attribute`, so it can sit in exactly one. Its clause roles are taught by the
   // grammar lines of the elements that take it, which is the same argument that keeps
   // `overhang` and `rail` on the other side of the line.
-  height: `height ${STOREY_HEIGHT}   # OPTIONAL storey floor-to-floor in mm — the VERTICAL DATUM, and it DRAWS NOTHING (a plan is a horizontal cut, so heights move no byte). Overridden per storey (\`level <n> height\`) then per wall (\`wall … height\`); mm, never grid-snapped, E_HEIGHT_RANGE outside 0–${MAX_HEIGHT}, and an opening's \`head\` above its wall is E_OPENING_ABOVE_WALL. Defaults: ${STOREY_HEIGHT} storey, ${DOOR_HEAD} door head, ${WINDOW_SILL}/${WINDOW_HEAD} window sill/head, host-wall height for a cased opening. \`describe --json\` reports \`heights\` (storey_height/elevation/per-wall) + \`head\`/\`sill\` on the openings, but ONLY if the source wrote one of these clauses somewhere; \`arch manifest\`'s \`datum\` has the defaults either way`,
+  height: `height ${STOREY_HEIGHT}   # OPTIONAL storey floor-to-floor — the VERTICAL DATUM, and it DRAWS NOTHING (a plan is a horizontal cut, so heights move no byte). Overridden per storey (\`level <n> height\`) then per wall (\`wall … height\`); mm, never grid-snapped, E_HEIGHT_RANGE outside 0–${MAX_HEIGHT}, and an opening's \`head\` above its wall is E_OPENING_ABOVE_WALL. Defaults: ${STOREY_HEIGHT} storey, ${DOOR_HEAD} door head, ${WINDOW_SILL}/${WINDOW_HEAD} window sill/head, host-wall height for a cased opening. \`describe --json\` reports \`heights\` (storey_height/elevation/per-wall) + \`head\`/\`sill\` on the openings, but ONLY if the source wrote one of these clauses somewhere; \`arch manifest\`'s \`datum\` has the defaults either way`,
   north: `north up   # ${NORTH_DIRS.join("|")}`,
   dims: `dims auto all   # OPTIONAL auto-dimensioning instead of hand \`dim\` lines: ${AUTO_DIMS_MODES.join("|")}`,
   accTitle: `accTitle "…"   # OPTIONAL a11y name → SVG <title> under \`compile --accessible\``,
@@ -694,9 +694,9 @@ a \`fix\`). This page is everything you need to author it.
 
 ## The 7 rules that matter
 
-1. **Units are millimetres.** A 4-metre wall is \`4000\`, not \`4\`. Optional metric suffixes fold to mm: \`4m\`=4000, \`3.5m\`=3500, \`40cm\`=400, \`20mm\`=20.
+1. **Units are millimetres.** A 4-metre wall is \`4000\`, not \`4\`. Suffixes fold to mm: \`3.5m\`=3500, \`40cm\`=400, \`20mm\`=20, \`12ft6in\`=3810, \`1in\`=25 (25.4 rounded half away from 0).
 2. **Origin is top-left; +x goes right, +y goes DOWN** (screen/SVG convention — *not* math y-up).
-3. **Coordinates are \`(x, y)\` tuples; sizes are \`WxH\`** (e.g. \`4000x3000\`) or \`<expr> x <expr>\` with spaces.
+3. **Coordinates are \`(x, y)\` tuples; sizes are \`WxH\`** or \`<expr> x <expr>\` with spaces.
 4. **Doors and windows must lie ON a wall segment** (on its centerline), or you get a
    \`W_DOOR_OFF_WALL\` / \`W_WINDOW_OFF_WALL\` warning. Host them by rooms (below) or \`on <wall> at <pos>\` — hosted by construction.
 5. **String interpolation is \`"{expr}"\`** inside double quotes (e.g. \`label "Unit {i}"\`).
@@ -772,6 +772,7 @@ arch fix plan.arch --dry-run --json  # preview/apply the machine-applicable diag
 arch validate plan.arch --intent brief.json --feedback --json  # gate on a brief's intent contract (miss → exit 2)
 arch score plan.arch --brief brief.json --json  # satisfied/total — measures, never gates
 arch score plan.arch --taste generic --json  # a reviewer's taste report, 0–1, never gates
+arch impact new.arch --against old.arch --lock a,b
 \`\`\`
 
 **Self-correction loop:** compile → \`validate --json\` (fix its \`next\` first) → lint → repair; author in stages: \`validate --stage ${AUTHORING_STAGES.slice(1, -1).join("|")}\` in turn, advancing when \`at_stage.clean\`. If

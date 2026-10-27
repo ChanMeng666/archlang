@@ -482,6 +482,10 @@ export const OPERATORS = [
   "]",
 ] as const;
 
+/** One numeric literal with its optional unit suffix (`scanNum` in `src/lexer.ts`): digits, an
+ *  optional fraction, then `mm`|`cm`|`m`, `ft`, `in`, or the compound `<ft>ft<in>in`. */
+const NUM_LITERAL = "[0-9]+(?:\\.[0-9]+)?(?:mm|cm|m|ft(?:(?:[0-9]+(?:\\.[0-9]+)?|\\.[0-9]+)in)?|in)?";
+
 /** Lexical-rule fragments shared by the editor grammars. */
 export const RULES = {
   /** Identifier (also matches keywords; the parser/highlighter classifies). A
@@ -492,9 +496,10 @@ export const RULES = {
   /** Line comment to end of line. */
   comment: "#.*$",
   /** A number, optionally a literal dimension `WxH`. Either component may carry
-   *  an optional metric unit suffix (`mm`|`cm`|`m`, folded to mm at lex time). */
-  dimension: "[0-9]+(?:\\.[0-9]+)?(?:mm|cm|m)?x[0-9]+(?:\\.[0-9]+)?(?:mm|cm|m)?",
-  number: "[0-9]+(?:\\.[0-9]+)?(?:mm|cm|m)?",
+   *  an optional unit suffix, folded to mm at lex time: metric `mm`|`cm`|`m`, or
+   *  imperial `ft`|`in`|`<ft>ft<in>in` (exact 25.4 mm/in, rounded to whole mm). */
+  dimension: `${NUM_LITERAL}x${NUM_LITERAL}`,
+  number: NUM_LITERAL,
 } as const;
 
 /**

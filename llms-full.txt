@@ -32,9 +32,9 @@ a `fix`). This page is everything you need to author it.
 
 ## The 7 rules that matter
 
-1. **Units are millimetres.** A 4-metre wall is `4000`, not `4`. Optional metric suffixes fold to mm: `4m`=4000, `3.5m`=3500, `40cm`=400, `20mm`=20.
+1. **Units are millimetres.** A 4-metre wall is `4000`, not `4`. Suffixes fold to mm: `3.5m`=3500, `40cm`=400, `20mm`=20, `12ft6in`=3810, `1in`=25 (25.4 rounded half away from 0).
 2. **Origin is top-left; +x goes right, +y goes DOWN** (screen/SVG convention — *not* math y-up).
-3. **Coordinates are `(x, y)` tuples; sizes are `WxH`** (e.g. `4000x3000`) or `<expr> x <expr>` with spaces.
+3. **Coordinates are `(x, y)` tuples; sizes are `WxH`** or `<expr> x <expr>` with spaces.
 4. **Doors and windows must lie ON a wall segment** (on its centerline), or you get a
    `W_DOOR_OFF_WALL` / `W_WINDOW_OFF_WALL` warning. Host them by rooms (below) or `on <wall> at <pos>` — hosted by construction.
 5. **String interpolation is `"{expr}"`** inside double quotes (e.g. `label "Unit {i}"`).
@@ -69,14 +69,14 @@ To type some walls and derive others, name one by its rooms: `wall … between <
 ```arch
 plan "Title" {
   units mm   # required-ish settings come first
-  grid 50   # snap grid in mm
+  grid 50   # snap grid
   paper A3 landscape   # OPTIONAL sheet: A4|A3|A2|A1|A0, landscape|portrait (landscape default)
   scale 1:50   # drawing scale — OPERATIVE with `paper`, annotation-only without it
   north up   # up|down|left|right
   dims auto all   # OPTIONAL auto-dimensioning instead of hand `dim` lines: overall|rooms|walls|all
   accTitle "…"   # OPTIONAL a11y name → SVG <title> under `compile --accessible`
   accDescr "…"   # …and description → <desc>, replacing the derived caption. Both plan-level only (E_ACC_PLACEMENT)
-  height 3000   # OPTIONAL storey floor-to-floor in mm — the VERTICAL DATUM, and it DRAWS NOTHING (a plan is a horizontal cut, so heights move no byte). Overridden per storey (`level <n> height`) then per wall (`wall … height`); mm, never grid-snapped, E_HEIGHT_RANGE outside 0–100000, and an opening's `head` above its wall is E_OPENING_ABOVE_WALL. Defaults: 3000 storey, 2100 door head, 900/2100 window sill/head, host-wall height for a cased opening. `describe --json` reports `heights` (storey_height/elevation/per-wall) + `head`/`sill` on the openings, but ONLY if the source wrote one of these clauses somewhere; `arch manifest`'s `datum` has the defaults either way
+  height 3000   # OPTIONAL storey floor-to-floor — the VERTICAL DATUM, and it DRAWS NOTHING (a plan is a horizontal cut, so heights move no byte). Overridden per storey (`level <n> height`) then per wall (`wall … height`); mm, never grid-snapped, E_HEIGHT_RANGE outside 0–100000, and an opening's `head` above its wall is E_OPENING_ABOVE_WALL. Defaults: 3000 storey, 2100 door head, 900/2100 window sill/head, host-wall height for a cased opening. `describe --json` reports `heights` (storey_height/elevation/per-wall) + `head`/`sill` on the openings, but ONLY if the source wrote one of these clauses somewhere; `arch manifest`'s `datum` has the defaults either way
   # … elements and scripting …
   title { project "…" drawn_by "…" date "…" number "…" revision "…" }
 }
@@ -182,6 +182,7 @@ arch fix plan.arch --dry-run --json  # preview/apply the machine-applicable diag
 arch validate plan.arch --intent brief.json --feedback --json  # gate on a brief's intent contract (miss → exit 2)
 arch score plan.arch --brief brief.json --json  # satisfied/total — measures, never gates
 arch score plan.arch --taste generic --json  # a reviewer's taste report, 0–1, never gates
+arch impact new.arch --against old.arch --lock a,b
 ```
 
 **Self-correction loop:** compile → `validate --json` (fix its `next` first) → lint → repair; author in stages: `validate --stage rooms|walls|openings|fixtures` in turn, advancing when `at_stage.clean`. If
@@ -794,8 +795,8 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
   - example: `archlang reroll plan.arch --json` — each candidate run as { span, replacement, count, loopVar, tokensBefore, tokensAfter }
 
 **`archlang impact`** — change one number: what moved and why, what held, what broke
-  - input: <file.arch|-> → output: { ok, set?, lets, changed[] (each with its `why` dependency chain and `root`), held[], diagnostics: { broke, healed, unchanged_count }, keeps? (when either side declares a keep: { broke, held, healed, added, removed, unchanged_count }, each { keep, grade (or { before, after } when an edit changed it), level?, occurrence, residual_mm: { before, after }, at?, changed, span }; a broken hard keep is reported here, never also under diagnostics), summary } (exit 0 on a report, 2 on a refused --set)
-  - flags: `--set <NAME=value>` override the root plan's top-level `let NAME` with a numeric literal (`4500` is mm, `4.5m`) and compare the plan before and after; refused with E_SET_OVERRIDE when NAME is not exactly one top-level let · `--against <old.arch>` compare the input (the new version) against this older file instead; exactly one of --set and --against · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+  - input: <file.arch|-> → output: { ok, set?, lets, changed[] (each with its `why` dependency chain and `root`), held[], diagnostics: { broke, healed, unchanged_count }, keeps? (when either side declares a keep: { broke, held, healed, added, removed, unchanged_count }, each { keep, grade (or { before, after } when an edit changed it), level?, occurrence, residual_mm: { before, after }, at?, changed, span }; a broken hard keep is reported here, never also under diagnostics), lock? (with --lock: { ok, checked, locked, violations[] { code, id, kind, change, detail, message, before?, after? (each { span, file? }) }, refused[] { code, id, message, hint, before?, after? } }), summary } (exit 0 on a report, 2 on a refused --set or a lock that changed, was refused or could not be checked)
+  - flags: `--set <NAME=value>` override the root plan's top-level `let NAME` with a numeric literal (`4500` is mm, `4.5m`) and compare the plan before and after; refused with E_SET_OVERRIDE when NAME is not exactly one top-level let · `--against <old.arch>` compare the input (the new version) against this older file instead; exactly one of --set and --against · `--lock <id[,id…]>` elements that must not change: exit 2 with E_LOCKED_ELEMENT_CHANGED for each that moved, resized, was re-hosted, re-thickened, changed swing or kind, vanished or appeared (a relabel is not a change), with its span on both sides; a lock on an id not written as `id=` (an assigned `room_3` shifts) is refused with E_LOCK_UNNAMED. Lowest storey only, as `changed[]` · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `archlang impact plan.arch --set W=4500 --json` — widen by one number: every moved/resized/re-hosted element with the chain that moved it, what held, what broke
 
 **`archlang suggest`** — advisory topology suggestions as data (door/window statements that resolve reachability/window faults)
@@ -815,7 +816,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 
 **`archlang context`** — print the full bundled agent context (spec + workflow + CLI + errors)
   - input: none → output: the full agent context (llms-full.txt), one --section of it, or the one-screen --level starter
-  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 150 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 150 KB of it (spec = the language, 30 KB; workflow = the agent loop, 31 KB; cli = every command, 27 KB; errors = the diagnostic catalog, 61 KB) · `--json` structured result on stdout, messages on stderr
+  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 151 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 151 KB of it (spec = the language, 30 KB; workflow = the agent loop, 31 KB; cli = every command, 27 KB; errors = the diagnostic catalog, 62 KB) · `--json` structured result on stdout, messages on stderr
   - example: `archlang context` — the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 
 **`archlang new`** (aliases: `init`) — scaffold a starter .arch
@@ -833,7 +834,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `archlang explain <CODE>`.
-**144 errors** (abort rendering) · **88 warnings** (advisory; `validate --strict` fails on them too).
+**147 errors** (abort rendering) · **88 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -876,6 +877,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `E_FURN_ROTATE` — Furniture rotation must be a quarter-turn. **Fix:** Use a quarter-turn: `rotate 0|90|180|270`.
 - `E_FURN_SIZE` — Furniture must have a positive size. **Fix:** Give the item a positive `size W x H`.
 - `E_HEIGHT_RANGE` — A height is outside the range a storey can be built at. **Fix:** Write the height in millimetres, or drop the clause and inherit the default (the fix does exactly that) — 3000 for a storey, 2100 for a door or window head, 900 for a window sill.
+- `E_IMPERIAL_FORM` — An imperial length is written in a form the language does not read. **Fix:** Write `12ft6in` for 12'6", `0.5in` for 1/2", and put feet before inches.
 - `E_IMPORT_BAD_SPEC` — Malformed import spec. **Fix:** Use a relative path ("lib/x.arch") or a namespaced spec ("@scope/name:1.0.0").
 - `E_IMPORT_CONFLICT` — Imported name conflicts with an existing component. **Fix:** Rename with `as`, or remove the duplicate.
 - `E_IMPORT_CYCLE` — Cyclic import. **Fix:** Break the cycle so module dependencies form a tree.
@@ -913,6 +915,8 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `E_LEVEL_DUP` — Two `level` blocks declare the same storey number. **Fix:** Renumber one of them, or merge the two bodies into a single `level` block.
 - `E_LEVEL_MIX` — A drawable statement sits beside `level` blocks. **Fix:** Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`north`/`site`/`dims`/`title`/`axes`/`schedule`/`legend`), `component`/`import` declarations, and the plan-global `let`/`set` stay outside — they apply to every level.
 - `E_LEVEL_NEST` — `level` used inside a block or component. **Fix:** Move the `level` block out to the plan body. To draw the same content on several storeys, put it in a `component` and call it from each level.
+- `E_LOCKED_ELEMENT_CHANGED` — An element `archlang impact --lock` names changed between the two versions. **Fix:** Put the locked element back as it was in the older file, or drop it from `--lock` if the change is intended.
+- `E_LOCK_UNNAMED` — `archlang impact --lock` names an element whose id was not written, or no element at all. **Fix:** Write `id=<name>` on the element in both versions and lock that name.
 - `E_NON_FINITE` — A number is too large to be finite. **Fix:** Use a realistic dimension. A plan is measured in millimetres, and a value above about 1e300 is never a building.
 - `E_OPENING_ABOVE_WALL` — An opening's head is above the wall it is cut in. **Fix:** Lower the `head` to the wall's height (the fix does exactly that), or raise the wall with `wall … height`.
 - `E_OPENING_DATUM` — An opening's position names no datum that applies to its run. **Fix:** Write a position the run can read: `at 600 from start`, `at 600 from end`, `at center`, or an edge through one end of the run (`from a.top` on a vertical run).

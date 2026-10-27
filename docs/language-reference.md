@@ -342,6 +342,36 @@ carry its own suffix (`3mx4m`, `3.5mx4200`, `30cmx40cm`). There is deliberately
 **no area unit** (`m²`); areas come from `describe()`. The formatter normalises a
 suffixed literal to its millimetre value (`3.5m` → `3500`).
 
+### Imperial input
+
+A length may also be written in feet and inches, in three forms: `12ft`, `6in`
+and `12ft6in` (feet before inches; each part a plain decimal, such as `0.5in` or
+`1.5ft`). The conversion is exact (1 in = 25.4 mm, 1 ft = 12 in) and the literal
+is then **rounded half away from zero to a whole millimetre**:
+
+| Written | Exact (mm) | Value (mm) |
+|---------|-----------|-----------|
+| `12ft` | `3657.6` | `3658` |
+| `6in` | `152.4` | `152` |
+| `12ft6in` | `3810` | `3810` |
+| `1in` | `25.4` | `25` |
+| `1ft1in` | `330.2` | `330` |
+| `0.5in` | `12.7` | `13` |
+
+The rounding applies to each **literal**, before any arithmetic, so a plan
+written in feet holds the same integers a millimetre plan would (`3 * 1in` is
+`75`, not `76.2`; write `3in` for `76`). The suffix follows the metric rules: it
+sits immediately after the digits, does not fire when a letter follows (`6inch` is
+`6` then the identifier `inch`), and either component of a `WxH` literal may carry
+it (`12ftx10ft`). Input only: every output (SVG, `describe()`, `lint()`, the
+formatter) stays in millimetres.
+
+The feet-and-inch marks, glued fractions and inches before feet are refused with
+`E_IMPERIAL_FORM`, whose message names the accepted forms: `12'6"` (`"` opens a
+string and `'` is no token), `1/2in` (`/` is division; a spaced `1 / 2in` is a
+division), `6in12ft` and `12ft6`. The refused literal reads as `0`, like an
+`E_NON_FINITE` one, so the rest of the plan still reports.
+
 ### Modelling range
 
 Every coordinate and length a plan resolves to lies within **±33,554,432 mm** (2²⁵ mm,
@@ -2648,6 +2678,17 @@ size changed on its own storey, its `occurrence` among keeps of its text and its
 count in `unchanged_count`. A keep whose grade an edit changed carries `grade: { before, after }`,
 and counts as `broke` when it is a broken hard keep after, or `healed` when it was one before. A broken hard keep is reported there once:
 its `W_KEEP_VIOLATED` is not also counted under `diagnostics`.
+
+**Locks, without syntax.** `archlang impact new.arch --against old.arch --lock shell,entry,w1`
+names elements that must not change between the two versions; it adds nothing to the language.
+Each locked element that moved (an opening also when it slid along an unchanged wall), resized,
+was re-hosted, re-thickened, changed its door swing or another resolved field, vanished or
+appeared is an `E_LOCKED_ELEMENT_CHANGED` under `lock.violations` (`--json`), with its span on
+each side it exists on, and the command exits 2. A relabel is not a change. A lock names an
+element by the `id=` its author wrote: an assigned id such as `window_2` shifts when a statement
+is inserted ahead of it, so a lock on one, on a name neither version carries, or on an element
+above the lowest storey (which `impact` does not compare yet) is refused with `E_LOCK_UNNAMED`
+and also exits 2. A lock also works with `--set`.
 
 `describe --facts depends` adds `depends.keeps[]` (every keep on the top-level `depends`, a
 storey's own on its `levels[]` entry): the targets, `constrains` (the `let`s and parameters that can move or remove it: what the

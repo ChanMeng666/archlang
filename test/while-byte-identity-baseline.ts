@@ -176,6 +176,8 @@
  * likewise: the repro of a walk that passes furniture through another room's doorway band.
  * `test/fixtures/storeys-eaves-overflow.arch` likewise (PS2.77): a two-storey plan whose
  * upper-storey eaves alone overrun its sheet; the same digest on `e432c24a`'s `src/`.
+ * `test/fixtures/lock-before.arch`, `lock-partition-moved.arch` and `lock-window-moved.arch`
+ * likewise (preview-and-remodel B1, the `impact --lock` acceptance pair; `test/lock.test.ts`).
  *
  * Eighteen rows re-measured, with this test's own digest body, for the thickness call-out
  * station (drawing only): every example that draws a `dims auto all`/`walls` call-out, plus
@@ -381,6 +383,9 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["test/fixtures/diff-b.arch", "1d4aaebab314c77742fc16d68c8925aa629ae42e1253a2167e240a2f25849ab1"], // re-measured, see header
   ["test/fixtures/diff-circ-a.arch", "e5bebcb2ebee7d35409f726a36c6da902eb7f414cadc9b93adb6e5d8a014235d"],
   ["test/fixtures/diff-circ-b.arch", "e52a2d0d2299ddaa916dc6e204c21d5296ccc52f4eb7376591c78eef685191de"],
+  ["test/fixtures/lock-before.arch", "23d883d88f5b94b73686c13e795ed57352dd778e3b807c1d73fdea1e3870943c"], // new fixture (B1), see header
+  ["test/fixtures/lock-partition-moved.arch", "8a18c466ef0388eaba790eea5e5dc217fcdfe8d8624ec8e0ed529ec98a4e4d56"], // new fixture (B1), see header
+  ["test/fixtures/lock-window-moved.arch", "5178ac32070a056b37462b4169b3fbdbbb0ee9a94ca05221cc0c64cedf89dd99"], // new fixture (B1), see header
   ["test/fixtures/off-path-bypass.arch", "81ef92c32f98bc41635428f477b2cf7e59adea520e60892b5e39aa48fcbcaecf"], // new fixture, see header; PS2.11e, see header
   ["test/fixtures/schedule-sheet.arch", "15dc29228ea12dae7240ad843567f88218c5a57bd8838ea950b1a5792c2579a5"], // re-measured, see header; PS2.29: message text only, same code, same span
   ["test/fixtures/star30.arch", "74a3209110606543fb04c1932b2ec60a78526ccdd2a7205cdfe972719efac471"], // new fixture, see header

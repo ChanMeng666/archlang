@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Imperial length input: `12ft`, `6in` and `12ft6in` are length literals (also in `WxH`, e.g.
+  `12ftx10ft`), converted exactly (1 in = 25.4 mm) and rounded half away from zero to a whole
+  millimetre per literal (`1in` = 25, `0.5in` = 13, `12ft6in` = 3810). `12'6"`, `1/2in`, `6in12ft`
+  and `12ft6` are refused with the new `E_IMPERIAL_FORM`, whose message names the accepted forms.
+  Input only: every output stays in millimetres, and a plan written in feet compiles to the same
+  bytes as its millimetre twin. The editor grammars and the GBNF grammar read the new suffixes.
+- `archlang impact … --lock <id,…>` (and `impact(before, after, { lock })`): a lock check without
+  syntax. Each locked element that moved, resized, was re-hosted or re-thickened, changed its door
+  swing or another resolved field, vanished or appeared is `E_LOCKED_ELEMENT_CHANGED` with its span
+  on both sides (`lock.violations` in `--json`), and the command exits 2. A lock names only an
+  element whose `id=` was written: a lock on an assigned id (which shifts when a statement is
+  inserted ahead of it), on a name neither version carries, or above the lowest storey is refused
+  with `E_LOCK_UNNAMED`. New exports `checkLocks`, `parseLockList` and the `ImpactLock`,
+  `LockViolation`, `LockRefusal`, `LockSpan`, `LockSide`, `LockElement` types.
 - Wall `status existing|demolish|new` (preview-and-remodel B3a), on a `wall` (after `height`)
   and on `walls from rooms` (after the thicknesses, for every wall it derives). It draws nothing
   yet: a plan marking a wall `demolish` draws exactly the bytes it draws without the clause. A

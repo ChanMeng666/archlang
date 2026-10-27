@@ -39,7 +39,7 @@ export const TOKEN_CLASSES = ["comment", "string", "number", "operator", "keywor
  * `bracket`, which its HighlightStyle gives no colour, so they stay ground-coloured
  * here too rather than gaining one the playground does not have.
  */
-const TOKEN = /(#[^\n]*)|("(?:[^"\\\n]|\\.)*"?)|([0-9]+(?:\.[0-9]+)?(?:mm|cm|m)?x[0-9]+(?:\.[0-9]+)?(?:mm|cm|m)?|[0-9]+(?:\.[0-9]+)?(?:mm|cm|m)?|\.[0-9]+)|(->|==|!=|<=|>=|&&|\|\||\.\.|\+|-|\*|\/|%|=|:|,|<|>|!|\[|\])|([A-Za-z_][A-Za-z0-9_]*)/g;
+const TOKEN = /(#[^\n]*)|("(?:[^"\\\n]|\\.)*"?)|([0-9]+(?:\.[0-9]+)?(?:mm|cm|m|ft(?:(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)in)?|in)?x[0-9]+(?:\.[0-9]+)?(?:mm|cm|m|ft(?:(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)in)?|in)?|[0-9]+(?:\.[0-9]+)?(?:mm|cm|m|ft(?:(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)in)?|in)?|\.[0-9]+)|(->|==|!=|<=|>=|&&|\|\||\.\.|\+|-|\*|\/|%|=|:|,|<|>|!|\[|\])|([A-Za-z_][A-Za-z0-9_]*)/g;
 
 function esc(s) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");

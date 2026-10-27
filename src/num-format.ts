@@ -119,6 +119,65 @@ export function plainDigits(n: number): string {
   return `${m[1]}${m[2]}${frac}${"0".repeat(Number(m[4]) - frac.length)}`;
 }
 
+/** The decimal digit string `d` (no sign, no dot) times the small non-negative integer `k`.
+ *  Linear in the length (digits gathered in an array), so a long literal costs its length. */
+function mulDigits(d: string, k: number): string {
+  const out: number[] = [];
+  let carry = 0;
+  for (let i = d.length - 1; i >= 0; i--) {
+    const v = (d.charCodeAt(i) - 48) * k + carry;
+    out.push(v % 10);
+    carry = Math.floor(v / 10);
+  }
+  for (; carry > 0; carry = Math.floor(carry / 10)) out.push(carry % 10);
+  return out.reverse().join("");
+}
+
+/** The sum of two decimal digit strings (no sign, no dot). */
+function addDigits(a: string, b: string): string {
+  const out: number[] = [];
+  let carry = 0;
+  for (let i = a.length - 1, j = b.length - 1; i >= 0 || j >= 0; i--, j--) {
+    const v = (i >= 0 ? a.charCodeAt(i) - 48 : 0) + (j >= 0 ? b.charCodeAt(j) - 48 : 0) + carry;
+    out.push(v % 10);
+    carry = v >= 10 ? 1 : 0;
+  }
+  if (carry > 0) out.push(1);
+  return out.reverse().join("");
+}
+
+/**
+ * An imperial length literal (`12ft`, `6in`, `12ft6in`) in whole millimetres: `feet` and `inches`
+ * are the literal's raw decimal digit strings (`"12"`, `"6"`, `"0.5"`, `".5"`; `""` for an absent
+ * part), converted EXACTLY (1 in = 25.4 mm, 1 ft = 12 in) and rounded half away from zero to an
+ * integer, the direction ADR 0022's lattice rounding takes. The arithmetic is on the digit strings
+ * (×12, +, ×254, then a decimal shift), never a float multiply, so `1ft1in` is 330 (330.2) and
+ * `0.5in` is 13 (12.7) on every host. A literal is never negative (negation is the unary
+ * operator), so "away from zero" is "up on a half" here, and `-0.5in` is `-(13)`: symmetric.
+ * A value beyond the doubles comes back `Infinity`; the lexer turns that into `E_NON_FINITE`.
+ */
+export function imperialToMm(feet: string, inches: string): number {
+  const split = (s: string): [string, string] => {
+    const dot = s.indexOf(".");
+    return dot === -1 ? [s, ""] : [s.slice(0, dot), s.slice(dot + 1)];
+  };
+  const [fi, ff] = split(feet);
+  const [ii, iff] = split(inches);
+  const places = Math.max(ff.length, iff.length);
+  // Each part scaled by 10^places, as an integer digit string.
+  const ftScaled = `${fi}${ff.padEnd(places, "0")}` || "0";
+  const inScaled = `${ii}${iff.padEnd(places, "0")}` || "0";
+  // mm × 10^(places+1) = (12·ft + in) × 254.
+  const scaledMm = mulDigits(addDigits(mulDigits(ftScaled, 12), inScaled), 254);
+  const shift = places + 1;
+  const padded = scaledMm.padStart(shift + 1, "0");
+  let whole = padded.slice(0, padded.length - shift);
+  // Half away from zero: the first dropped digit alone decides (a 5 followed by anything, zeros
+  // included, is at or above the half).
+  if (padded.charCodeAt(padded.length - shift) >= 53) whole = addDigits(whole, "1");
+  return parseFloat(whole);
+}
+
 /**
  * An integer count `h` of half-lattice units (0.0005 mm: the 0.001 mm lattice of ADR 0022, doubled
  * so a centre line is never rounded) as its exact decimal in mm, built from the integer's digits
