@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Package-root exports for downstream consumers of a resolved plan (ADR 0031): `resolvePlan` (the
+  complete parse → link → resolve path; unlike `resolveAll(compile(src).ast)` it keeps imported and
+  placed content), `joinWallSet` and `loopsToPolygons` (the wall joinery, with the `split` argument
+  that yields one ownership polygon per wall), `doorSwing` and `doorLeaves` (a door's leaves; a
+  `double` door's two come only from `doorLeaves`), the 14 types their signatures reach
+  (`AnalyzeOptions`, `JoinableWall`, `JoinedWallSet`, `JoinedCut`, `JoineryResult`, `JoinerySplit`,
+  `Edge`, `EdgeLoop`, `Arc`, `Opening`, `DoorLike`, `DoorSwing`, `DoorHinge`, `DoorSwingDir`) and the
+  element type names `ROpening`, `RStair`, `RElevator`, `REscalator`, `RRoof`, `RVoid`, `ROutdoor`,
+  `RFence`. Append-only; the promise is recorded in ADR 0031. `test/public-surface.test.ts` now
+  derives the closure of these signatures. Output byte-identical.
 - `W_GARAGE_OPENING_UNDERSIZED` (card B6 of the preview-and-remodel programme), validity layer, on by
   default: a rectangular `garage` whose `door garage` is narrower than 2400 mm (one car, or none drawn),
   or, with two or more cars, has neither a door 4200 mm wide nor two doors 2400 mm wide. The figures
