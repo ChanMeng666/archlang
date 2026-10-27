@@ -1,0 +1,8 @@
+plan "s5-door-on-arc" {
+  units mm
+  grid 50
+  north up
+  wall id=c exterior thickness 250 { (0,0) (6000,0) arc (6000,6000) radius 3000 ccw (0,6000) (0,0) close }
+  door id=d1 on c at 8000 width 1000 swing in
+  window id=w1 on c at 12000 width 1200
+}

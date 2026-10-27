@@ -1,0 +1,11 @@
+plan "s1-t-junction" {
+  units mm
+  grid 50
+  north up
+  wall id=shell exterior thickness 300 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  wall id=p1 partition thickness 100 { (3000,0) (3000,4000) }
+  wall id=p2 partition thickness 150 { (0,2000) (3000,2000) }
+  room id=a at (0,0) size 3000x2000
+  door id=d1 at (3000,1000) width 900 wall p1 hinge left swing in
+  window id=w1 at (1500,0) width 1200 wall shell
+}

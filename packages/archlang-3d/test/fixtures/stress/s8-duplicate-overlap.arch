@@ -1,0 +1,8 @@
+plan "s8-duplicate-overlap" {
+  units mm
+  grid 50
+  north up
+  wall id=a partition thickness 200 { (0,0) (4000,0) }
+  wall id=b partition thickness 200 { (0,0) (4000,0) }
+  wall id=c partition thickness 100 { (1000,0) (3000,0) }
+}

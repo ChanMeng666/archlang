@@ -25,46 +25,22 @@ Baseline facts for every A-card: `../archlang-3d/development-plan.md` §3 (archi
 (algorithms), §6.1/§6.5 (viewer, time seam), §7 (CLI), §8 (checks), §9.8/§9.10 (day list, week-one
 kit); `amendment-v0.7.md` (the recut). The viewer subset of three.js 0.186.1 is 140 kB gzip (MIT).
 
-### A0 · Core exports C1/C2 and ADR 0031 — `todo` · wave 0 · 1 day · model: opus
+### A0 · Core exports C1/C2 and ADR 0031 — `done` · PR #319 · merge `6e510aff` · record: `research/2026-10-28-as-built.md` § A0
 
-**Goal.** Export, additively, what the 3D package needs: the 26 names of
-`../archlang-3d/core-pr/c1-c2-exports.md` **plus `doorLeaves`** (`src/geometry.ts:211`; the `double`
-door kind returns `null` from `doorSwing`). Promote the ADR 0031 draft to `docs/adr/0031-…md`.
-**Design.** Follow the PR draft, correcting its stale numbers before use: root exports are 549 now
-(→ 576), `resolvePlan` returns `{ ir, diagnostics, levels, plan? }`, the type count is 28, the
-insertion point in `src/index.ts` is near lines 417–422. Re-derive the closure with the spike script
-`export_closure_refs.mjs` and paste the real output into the PR body placeholders. Update
-`test/public-surface.test.ts`. CHANGELOG `[Unreleased]` entry. ADR number check (0030/0031 reserved by ADR 0032).
-**Acceptance.** 27 new names exported, all types reachable; `public-surface` test updated; every
-digest test unchanged (no byte moves); `typecheck:all` green; the ADR's stability wording quotes the
-4-field return type and says "public, only-additive, narrow promise".
-**Must not.** Change any behaviour; export anything beyond the closure; touch `src/scene.ts`.
-**Depends on.** —. **Reverse-if.** The maintainer rejects the stability level → A1 deep-imports (R1).
+### A1 · M0: package skeleton, adapter, H1, Scene3D v0 — `done` · PR #325 · merge `88d83823` · record: `research/2026-10-28-as-built.md` § A1
 
-### A1 · M0: package skeleton, adapter, H1, Scene3D v0 — `todo` · wave 1 · 3 days · model: opus
+### A0b · Close the seam's two naming gaps — `todo` · residue of A0/A1 · 0.5 day · model: opus
 
-**Goal.** `packages/archlang-3d` exists, is browser-safe, adapts all 34 examples or refuses by name.
-**Design.** (1) Skeleton per plan §3.2/§3.2.1 and Q16 as *confirmed*: `private: true`,
-`engines.node >=20`, light tests in `test/*.test.ts` (run by the core suite; must pass on Node 18 or
-skip below 20), heavy tests in `e2e/*.e2e.ts` with their own vitest config run by a new root script
-`check:3d`; add the workspace to `typecheck:all`; biome config inherited. (2) ADR 0030 draft →
-`docs/adr/0030-…md`; a row in `docs/backlog.md`'s programmes table. (3) Node `World` and the
-`resolvePlan(source, { world })` adapter (plan §9.8 D2); corpus test: 34 examples adapt or return a
-named refusal. (4) Port the H1 ownership tests (`spike/src/h1_*.mts` → `test/`, with `s1…s11`
-synthetic plans, connected components, cuts across pieces, mixed height → `W3D_MIXED_HEIGHT_JOINT`).
-(5) Orientation convention test (`yaw = −rotate°`, front = +Z) on laneway-house. (6) `Scene3D` v0
-types, `scene3d.schema.json`, validator (plan appendix A); millimetre integers; ids per §3.6.
-(7) Browser-safety test: bundle `adapter + scene3d` with esbuild `platform: browser`, zero externals,
-no `process`/`fs`/`Date.now`/`Math.random`.
-**Acceptance.** Plan §9.1 ①②④⑤ (ADR 0030 reviewed, H1 tests green, M0 actions done, C1 PR
-submitted); `npm run check` time within +10 % of the pre-A1 baseline (record both); `check:3d` runs
-empty-green; the Windows spike bug (bare-path `import()` in `planjson_gap.mts`) fixed in the spike
-copy that moves into the package, the original spike file untouched.
-**Must not.** Write any geometry beyond H1 prisms; add three.js or glTF-Transform yet; touch the core.
-**Depends on.** A0 merged (or R1 recorded). **Reverse-if.** `check` slows by more than 10 % → move
-the corpus test to `e2e/`.
+**Goal.** Two additive core exports the package works around today: the hatch group key `joinWallSet`
+groups fills by (`hatchKey`/`hatchOf`, `src/hatches.ts`; the package rebuilds `material|scale|angle`
+in `hatchGroupKey`, guarded only by its corpus test) and `Point` (`src/ast.ts`; `RWall.points` is
+`Point[]`, the package names it `RWall["points"][number]`). Also teach both closure walkers in
+`test/public-surface.test.ts` to follow an inline `import("…").T` type node (today a field typed that
+way escapes both guards; plant one to prove it). **Acceptance.** The package drops `hatchGroupKey`
+for the export and its `Point` alias for the core's; the public-surface test goes red on a planted
+`import()`-typed field; every digest unchanged. **Must not.** Export anything else; change a body.
 
-### A2 · M1a geometry: Mesh3D from Scene3D — `todo` · wave 2 · 5 days · model: opus
+### A2 · M1a geometry: Mesh3D from Scene3D — `doing` · wave 2 · 5 days · model: opus
 
 **Goal.** One deterministic triangulation that both the viewer and the GLB read.
 **Design.** `Mesh3D` = integer-micrometre vertices, canonical `(level, kind, id)` order, per-node
@@ -146,7 +122,7 @@ Unpark when a Tier A post needs it. Labelled non-deterministic; muxer through th
 
 ## B · The renovation wedge (language; D6–D9)
 
-### B1 · Lock check without syntax — `todo` · wave 1 · 1.5 days · model: sonnet
+### B1 · Lock check without syntax — `doing` (PR #323) · wave 1 · 1.5 days · model: sonnet
 
 **Goal.** `arch impact --against old.arch --lock <id,…>` (and `arch diff --lock` once U.14 lands)
 exits non-zero with `E_LOCKED_ELEMENT_CHANGED` when a locked element moved, resized, changed host,
@@ -169,7 +145,7 @@ reshape inside the same bbox) → file the diff card first, lock ships for the c
 Opens when a consumer needs the lock inside the source. Design sketch: `keep locked <id> [, <id>…]`,
 checked by `impact --against` through the same path as B1.
 
-### B3a · Wall `status` semantics — `todo` · wave 2 · 3 days · model: opus
+### B3a · Wall `status` semantics — `doing` · wave 2 · 3 days · model: opus
 
 **Goal.** `wall … status existing|demolish|new` (and `walls from rooms … status <s>`) in the IR,
 `describe`, Plan JSON, schema and lint, with the demolished wall enclosing nothing, hosting nothing
@@ -198,7 +174,7 @@ pinned by golden and byte-identity law, docs page section with an `arch static` 
 pinned; `docs:build` green.
 **Depends on.** B3a. **Must not.** Touch paint order (D4).
 
-### B4 · Quantities: `describe --facts quantities` and `arch takeoff` — `todo` · wave 1 · 2 days · model: sonnet
+### B4 · Quantities: `describe --facts quantities` and `arch takeoff` — `doing` (PR #324) · wave 1 · 2 days · model: sonnet
 
 **Goal.** Geometric quantities an estimator can read, without any new claim.
 **Design.** Opt-in via the existing `DESCRIBE_FACTS` mechanism (no byte change to default
@@ -212,7 +188,7 @@ three corpus plans with hand-checked numbers.
 hand-computed table in the test; no field named "cost", "stud", "code".
 **Depends on.** —. **Reverse-if.** D9.
 
-### B5 · Imperial input literals — `todo` · wave 2 · 2 days · model: sonnet
+### B5 · Imperial input literals — `doing` · wave 2 · 2 days · model: sonnet
 
 **Goal.** `12ft`, `6in`, `12ft6in` as length literals, exact (1 in = 25.4 mm) with rounding half away
 from zero to integer mm (consistent with the direction of PS0.26), through `src/num-format.ts`'s seam.
@@ -226,30 +202,15 @@ millimetre twin.
 **Must not.** Change any output format (D8).
 **Depends on.** —. **Reverse-if.** D8.
 
-### B6 · `W_GARAGE_OPENING_UNDERSIZED` — `todo` · wave 0 · 0.5 day · model: sonnet
-
-Beside `W_GARAGE_TOO_NARROW` in `src/lint/per-room.ts`: a `garage` room whose vehicle door
-(`doorKind === "garage"`) is narrower than 2400 mm (single) or 4200 mm (double bay, by the existing
-bay count) warns with a hint. Catalogue entry, generated docs, two fixtures; the two shipped garage
-doors (3000 mm) stay clean. Must not add a second clearance code (`W_GARAGE_TOO_NARROW` already
-budgets door swing per bay).
+### B6 · `W_GARAGE_OPENING_UNDERSIZED` — `done` · PR #320 · merge `9280f256` · record: `research/2026-10-28-as-built.md` § B6
 
 ---
 
 ## C · Drafting order in guidance (D3, D4)
 
-### C1 · The canonical sequence, written down — `todo` · wave 0 · 0.5 day · model: sonnet
+### C1 · The canonical sequence, written down — `done` · PR #321 · merge `faef9228` · record: `research/2026-10-28-as-built.md` § C1
 
-Docs only: a short section in `docs/language-reference.md` (or `spec.llm.md`, where authoring
-guidance lives) that states the authoring order as the stages with D3's sub-order, says why
-(rooms first per ADR 0028; exterior before interior; openings after walls; fixtures before loose
-furniture; drafting last) and says plainly that paint order is a different thing and unchanged.
-`docs:build`. No code. Reverse-if: D3.
-
-### C2 · Skill and plugin wording — `todo` · wave 0 · 0.5 day · model: sonnet
-
-`skills/archlang/SKILL.md` and the generated `plugins/archlang/` (`gen:plugin`) mention the order in
-one paragraph next to `validate --stage`. `check:drift` after regeneration.
+### C2 · Skill and plugin wording — `done` · PR #322 · merge `324f87c5` · record: `research/2026-10-28-as-built.md` § C2
 
 ---
 

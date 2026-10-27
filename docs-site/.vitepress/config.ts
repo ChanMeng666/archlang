@@ -326,6 +326,11 @@ const PAGE_META = [
     "Furniture states what it is for: facing derives a piece's quarter-turn from its target, against backs it onto a room edge, and clear declares free depth that lint checks.",
   ],
   [
+    "/adr/0030-3d-as-downstream-package",
+    "ADR 30 — 3D is a downstream package",
+    "archlang-3d is a separate package that reads the resolved plan through public exports; the core never draws the building and stays a plan language.",
+  ],
+  [
     "/adr/0031-core-exports-for-downstream-consumers",
     "ADR 31 — the resolved-plan seam is exported",
     "The package root exports resolvePlan, the wall joinery and the door leaves with the types their signatures reach: additive, append-only, output unchanged.",
