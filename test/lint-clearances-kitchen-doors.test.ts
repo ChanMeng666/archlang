@@ -13,7 +13,7 @@ import { type Diagnostic, describe as describePlan, lint, type World } from "../
 import { type AccessEdge, rectOf, resolvePlan } from "../src/analyze.js";
 import { doorLandingRect, openingBlock } from "../src/geometry/rect.js";
 import type { RFurniture, ROpening } from "../src/ir.js";
-import { clearancesClear } from "../src/lint/clearance-measure.js";
+import { clearancesClear, windowBands, windowCover } from "../src/lint/clearance-measure.js";
 import { buildLintContext } from "../src/lint/context.js";
 import { DEFAULT_RULESET } from "../src/lint/ruleset.js";
 
@@ -86,6 +86,35 @@ suite("W_HOB_UNDER_WINDOW (PS2.46)", () => {
   it("a sink, a worktop or a fridge under the window is not this rule's", () => {
     for (const w of ["kitchen_sink", "counter"])
       expect(of(kitchen(`furniture ${w} against wall shell segment 0 offset 2000 in r_k`), HU), w).toEqual([]);
+  });
+
+  // PS2.64: a hob on the return wall, its corner in the band of the window on the wall beside it.
+  // The stove backs onto the north wall; the window is on the east wall (body x 5900–6100, band
+  // x 5700–6300 at 300 mm), y 300–1500.
+  const returnWall = (offset: number): string =>
+    kitchen(
+      `furniture stove against wall shell segment 0 offset ${offset} in r_k`,
+      "window id=w_e at (6000,900) width 1200 wall shell",
+    );
+
+  it("a hob on a return wall, 125 mm off the window wall's face, is beside the window (PS2.64)", () => {
+    // Stove x 5175–5775, y 100–700: a 75 × 400 mm corner enters the band, 125 mm off the face.
+    const src = returnWall(5475);
+    const ctx = buildLintContext(resolvePlan(src, {}).ir!, DEFAULT_RULESET);
+    const fr = { x: 5175, y: 100, w: 600, h: 600 };
+    expect(windowBands(ctx.windows).some((b) => windowCover(b, fr, DEFAULT_RULESET.fixtureWallTolMm))).toBe(true);
+    expect(of(src, HU)).toEqual([]);
+    // The placement check reads the same measure: where it stands is clear.
+    expect(clearancesClear(ctx, fr, "stove", 0)).toBe(true);
+  });
+
+  it("a corner hob whose side stands against the window wall is under it (PS2.64)", () => {
+    // Stove x 5300–5900, flush with the east wall's face, over y 300–700 of the window.
+    const ds = of(returnWall(5600), HU);
+    expect(ds).toHaveLength(1);
+    expect(ds[0]!.message).toContain("stands under 400 mm of a 1200 mm window");
+    const ctx = buildLintContext(resolvePlan(returnWall(5600), {}).ir!, DEFAULT_RULESET);
+    expect(clearancesClear(ctx, { x: 5300, y: 100, w: 600, h: 600 }, "stove", 0)).toBe(false);
   });
 
   it("a café's kitchen is read as a dwelling's: the hazard is the hob's", () => {
@@ -526,6 +555,12 @@ suite("the audits' rows each rule catches (the acceptance of PS2.11e, PS2.46)", 
   // The ruling on PR #283: an opening wider than a doorway is blocked only below 1200 mm clear.
   // NH2's sofa covers 950 mm of a 2400 mm join (1450 left) and CS3's fridge 325 mm of an 1800 mm
   // one (1475 left): each keeps a doorway's width, so neither is caught any more.
+  // PS2.64: the stove backs onto the north wall, 125 mm off the east wall's face, a corner in the
+  // band of the east window: beside it, not under it (row-6 audit Part 1).
+  it("the 2026-10-18 apartment's return-wall stove (1-apartment.arch): no W_HOB_UNDER_WINDOW", () => {
+    expect(codesOf("1-apartment.arch")).not.toContain(HU);
+  });
+
   it.each([
     ["NH2 (its opening half)", "2026-10-24-rerun/2-house.arch"],
     ["CS3 (its opening half)", "2026-10-26-rerun-armB/3-studio.arch"],
