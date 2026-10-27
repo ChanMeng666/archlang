@@ -411,10 +411,12 @@ export interface LintRuleset {
    *
    * **Default 914:** the International Residential Code R311.3, "a landing or floor on each side
    * of each exterior door", not less than the door's width and "not less than 36 inches (914 mm)
-   * measured in the direction of travel" (2012 and 2021 text, quoted in a state's copy [S]: the
-   * ICC viewer was not readable, `docs/plans/plan-soundness/research/2026-10-27-ps267-271-sources.md`
-   * § PS2.69). The International Building Code's 1010.1.6 asks 1118 mm outside dwellings; not
-   * applied.
+   * measured in the direction of travel" (2012 and 2021 text, read verbatim in two independent
+   * state copies [S], Indiana DHS and Montana DLI's 2021 IRC means-of-egress training: the ICC
+   * viewer was not readable, `docs/plans/plan-soundness/research/2026-10-27-ps267-271-sources.md`
+   * § PS2.69; ratified under plan-soundness D27). Its exception, an exterior balcony under 60 sq ft
+   * reached only through a door, matches the rule's skip of every `outdoor balcony` door. The
+   * International Building Code's 1010.1.6 asks 1118 mm outside dwellings; not applied.
    */
   exitApproachMm: number | null;
   /**
@@ -630,7 +632,7 @@ export const LINT_PROFILES: Readonly<Record<string, Partial<LintRuleset>>> = Obj
     wcSideClearanceMm: 381, // IRC P2705.1: a water closet's centreline at least 15 in (381 mm) from a side wall or obstruction [S, prior-art.md §3.3]
     stairMaxRiseMm: 196.85, // IRC R311.7.5.1: a riser at most 7¾ in (196.85 mm) [S, jurisdiction handouts, e.g. Placer County "Residential Stairs"]
     stairMinGoingMm: 254, // IRC R311.7.5.2: a tread depth at least 10 in (254 mm) [S, same]
-    exitApproachMm: 914, // IRC R311.3: a landing inside an exterior door at least 36 in (914 mm) deep, the door's width wide [S, a state's copy of the code text]
+    exitApproachMm: 914, // IRC R311.3: a landing inside an exterior door at least 36 in (914 mm) deep, the door's width wide [S, two state copies of the code text]
   },
 });
 

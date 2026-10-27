@@ -452,12 +452,7 @@ by delegation (D18); stands unless the owner objects.* A measurement record, not
   stair blocker named by lint; the residual families unchanged. The review-sheet clause is false as
   built (PS5.4 probes: p2-for 0/2, p10 5/8, p3 4/6); PS4.6 is the remainder.
 - Reading: defects do not fall with rules alone; the stopping rule and the families with no rule bind.
-- *Run result (PS7.8, 2026-10-27, `audits/2026-10-27-first-contact-rerun-ps78.md`, `main@134765d1`):*
-  the frozen arm drew 64 defects (4 / 29 / 31), `validate` 0 / 6, 3 authors stopping with warnings
-  standing; the whole-loop arm drew 56 (1 / 19 / 36), `validate` 6 / 6 (`--stage` 4 / 6, batched,
-  never gated), every plan lint-clean with `next` null, 0 stopping early, and final lint reports 0 of
-  its 56: the loop removes what lint sees and leaves the no-rule families. First read of the
-  reverse-if: not met (fewer defects); one more re-measure with both arms decides it.
+- *Run result (PS7.8, 2026-10-27):* moved verbatim to `research/2026-10-26-readme-history.md` § D26.
 - Ruling: the protocol's frozen prompt ("stop when it compiles", every run since 2026-10-24; authors
   stopping with warnings standing 0 / 0 / 2 / 2 under it, arms A, B, C, row 6) stays unchanged for
   comparability, and the next re-measure adds a second arm whose prompt names the whole loop
@@ -470,12 +465,16 @@ by delegation (D18); stands unless the owner objects.* A measurement record, not
 
 **D27. Row-7 tranche 2's sourcing rulings: PS2.67 beds only on a consumer figure, PS2.68 blocked,
 PS2.71 taste.** (2026-10-27; `research/2026-10-27-ps267-271-sources.md`, PRs #306, #315.) *Decided by
-delegation (D18); the D3 exception is awaiting ratification.*
+delegation (D18); the D3 exception ratified 2026-10-28 (owner's delegation, chat).*
 - PS2.67 judges `bed`, `double_bed`, `bunk_bed` only (never `crib`, `cot`): no read source sizes a
   shower tray or exam couch (each a new card once one is). `W_BED_UNDERSIZED`'s 1900 × 750 mm is
   Which? (a magazine, [M]), in `DEFAULT_RULESET` only: profiles take [V]/[S] figures.
 - D3 exception: the bed figure ([M]) and PS2.69's 914 mm (IRC R311.3, [S]) ship unverified, each
   message naming its source.
+  *Ratified 2026-10-28: the owner delegated this call in chat (D18 wording).* The 914 mm: R311.3
+  read verbatim in two independent state copies (Indiana DHS, Montana DLI), still [S]. The bed's
+  1900 × 750: a `DEFAULT_RULESET` figure only, [M], profiles unchanged; GB/T 3328-2016 §4 is
+  paywalled and unread, so card PS2.79.
 - PS2.68 is blocked: no sourced push-back allowance (trade guides say 6, 12 or 18 in); `todo` until
   Time-Saver Standards, Panero & Zelnik or Neufert is read.
 - PS2.71 is taste (D2): a low bed under a sill blocks neither light nor use; draught, curtain reach
@@ -574,7 +573,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS2 · Validity checks that read existing facts (small, high yield)
 
-82 cards: 37 done, 45 todo (nine done 2026-10-27, corpus 77/84; PS2.68 blocked, PS2.71 taste, D27; PS2.78 filed). Cards, tables and as-built pointers: `cards.md` § PS2.
+83 cards: 37 done, 46 todo (nine done 2026-10-27, corpus 77/84; PS2.68 blocked, PS2.71 taste, D27; PS2.78 filed; PS2.79 filed 2026-10-28). Cards, tables and as-built pointers: `cards.md` § PS2.
 
 ### PS3 · Relation-first authoring (D1 + D5; needs an ADR)
 
