@@ -3070,6 +3070,45 @@ The same model backs an **opt-in render overlay** (see
 [`overlays`](#compilation-result) below) — the entrance→room walks (each from the room's
 nearest entrance), their pinch markers, and key routes drawn on top of the plan.
 
+### Authoring order — the stages
+
+A plan is checked, and best written, in six stages, lowest-frequency decisions first:
+`brief → rooms → walls → openings → fixtures → drafting`. `validate --stage <name>` judges the plan
+as far as that stage and no further; advance when `at_stage.clean`. The stage of each element kind
+is fixed by the compiler:
+
+| Stage | What it holds | Element kinds |
+|---|---|---|
+| `brief` | the frame: plan name and units, `site`, `level`s, `let`s, `keep`s on the brief's numbers, and the plan-level `axes`, `grid` and `north` | (plan-level, no element kind) |
+| `rooms` | the room graph on a grid, with the footprints that hold their place above every partition | `room`, `stair`, `elevator`, `escalator`, `void`, `outdoor` |
+| `walls` | the enclosure, derived (`walls from rooms`) or written | `wall`, `walls`, `column`, `roof`, `fence` |
+| `openings` | everything cut into a wall | `door`, `window`, `opening` |
+| `fixtures` | fixtures and furniture | `furniture` |
+| `drafting` | the sheet: dimensions, labels, schedule, legend, title; every finding counts and taste is reported | `dim` |
+
+Inside a stage the order that reads best is: in `walls`, columns, then the exterior walls
+(`category exterior`), then the interior ones, then fences (a `roof` is in this stage too); in
+`openings`, doors, then windows, then plain openings; in `fixtures`, the catalogued fixtures of wet rooms and kitchens,
+then loose furniture. Source order decides within a group. These sub-orders are guidance only: the
+compiler checks the six stages and does not rank anything inside one.
+
+Why this order:
+
+- **Rooms first** ([ADR 0028](adr/0028-rooms-primary-derived-walls.md)). A room is declared with its
+  place and size, and the walls can be derived from the rooms (`walls from rooms`), so rooms come
+  before any wall. Writing walls first stays legal.
+- **Exterior before interior.** The envelope fixes the building's extent; partitions subdivide what it
+  encloses.
+- **Openings after walls.** A door or window is cut into a wall that already exists, and the door
+  graph (entrances, adjacency, reachability) cannot be judged earlier.
+- **Fixtures before loose furniture.** Fixtures are tied to particular walls and to their room's use;
+  loose furniture is then placed in the space they leave.
+- **Drafting last.** Dimensions, labels and the sheet describe a plan that is otherwise settled.
+
+This is the order the language checks in, and it matches common teaching practice for drawing a
+plan; no standard prescribes it. It is a different thing from paint order, which is how the drawing
+layers stack in the SVG; paint order is set by the renderer and is unchanged.
+
 ### Correcting a plan — `archlang repair`
 
 Because lint reports rather than rearranges, ArchLang ships an **explicit,
