@@ -698,6 +698,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   messages now say it "could not be placed (see its own error)".
 - `at <pct>%` resolves to the exact length (55 % of 6000 = 3300, not 3300.0000000000005); a window or door an ulp off a corner or threshold now lands on it.
 - `diffPlans` (plan card PS0.4) reports three changes it missed or misnamed, additively. A room that only changed position is `moved`, with an `offset` read off its own shape (`Moved Bed 500 mm right`), where it read `resized` with `+0.0 m²`. A door, window or opening whose host wall, `between`/`on` placement or joined spaces changed is `rehosted`, naming each host by its id as written or its automatic id, or by its rooms (`door door_2 joins a and b → nothing`), where it was not reported. A new `walls` section lists authored and `walls from rooms` walls added, removed, moved, resized or re-thickened; a derived wall that moved with its rooms names them in `follows`. Existing fields and sentences keep their meaning and order; the new sentences come before the trailing `Walk to` block. Plan JSON, SVG, `describe()` and `lint()` are unchanged. For consumers with an exhaustive `switch`: two unions widen, `RoomChange.change` gains `"moved"` and `OpeningChange.change` gains `"rehosted"`.
+- Tests only (plan card PS2.77): `test/fixtures/storeys-eaves-overflow.arch`, a two-storey plan whose
+  building fits its sheet and whose upper-storey eaves alone raise the building-level
+  `W_DRAWING_OVERFLOW`, restores two coverage losses since every example fits its sheet: the
+  storey oracle compares that diagnostic under the group, and the overflow suite reads it off a
+  multi-storey plan as authored. No shipped example, SVG, `describe()` or `lint()` moved.
 
 ## [1.43.1] - 2026-10-17
 
