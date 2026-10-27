@@ -17,8 +17,8 @@ and **judges quality** (a scored, sourced taste report), while keeping every iro
 ArchLang for the first time, helped only by the language's own guidance, checks and reasoning, writes
 plans that follow architectural logic and usage logic and show professional taste. The yardstick is
 the first-contact re-measure (six briefs cold-authored from `spec.llm.md`, audited by hand, D7): verified
-defects 57 (2026-10-18) → 48 (10-24) → 49 (10-25) → 52 / 54 (10-26, arms A / B, D20) → 61 (row 6, D26), blockers 4 → 2 → 0
-→ 1 per arm → 2, rooms-first 6/6 (12/12 on 10-26), taste report used by 0/6 (0/12 on 10-26) authors. Corpus
+defects 57 (2026-10-18) → 48 (10-24) → 49 (10-25) → 52 / 54 (10-26, arms A / B, D20) → 61 (row 6, D26) → 64 / 56 (PS7.8, frozen / whole-loop), blockers 4 → 2 → 0
+→ 1 per arm → 2 → 4 / 1, rooms-first 6/6 (12/12 on 10-26), taste report used by 0/6 (0/12 on 10-26) authors. Corpus
 catch rates (§7) are the means; this number is the end. It is not yet met: 52 and 54 defects still pass lint.
 
 **How to use this document (for a new session).**
@@ -468,6 +468,22 @@ by delegation (D18); stands unless the owner objects.* A measurement record, not
 - *Reverse if:* the whole-loop arm shows no fewer defects than the frozen arm over two re-measures;
   then the second arm is dropped.
 
+**D27. Row-7 tranche 2's sourcing rulings: PS2.67 beds only on a consumer figure, PS2.68 blocked,
+PS2.71 taste.** (2026-10-27; `research/2026-10-27-ps267-271-sources.md`, PRs #306, #315.) *Decided by
+delegation (D18); the D3 exception is awaiting ratification.*
+- PS2.67 judges `bed`, `double_bed`, `bunk_bed` only (never `crib`, `cot`): no read source sizes a
+  shower tray or exam couch (each a new card once one is). `W_BED_UNDERSIZED`'s 1900 × 750 mm is
+  Which? (a magazine, [M]), in `DEFAULT_RULESET` only: profiles take [V]/[S] figures.
+- D3 exception: the bed figure ([M]) and PS2.69's 914 mm (IRC R311.3, [S]) ship unverified, each
+  message naming its source.
+- PS2.68 is blocked: no sourced push-back allowance (trade guides say 6, 12 or 18 in); `todo` until
+  Time-Saver Standards, Panero & Zelnik or Neufert is read.
+- PS2.71 is taste (D2): a low bed under a sill blocks neither light nor use; draught, curtain reach
+  and light are preferences.
+- *Reverse if:* a standard (BS, EN, GB/T 3328-2016's table) gives another bed minimum (follow it);
+  the owner rejects the D3 exception (both defaults `null` until read); a code forbids a bed head
+  under a window (PS2.71 becomes lint).
+
 ## 4. Principles: what "professional rules and taste" means here
 
 **Five layers, treated differently** (Drafting added by D11):
@@ -550,15 +566,15 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS0 · Bugs found by the audit (independent; file and fix first)
 
-23 cards in the table: 5 done, 18 todo (PS0.28, the README size guard, filed 2026-10-27; PS0.1, PS0.7 and PS0.10–PS0.12 landed earlier, listed in `cards.md` above the table). Cards, tables and as-built pointers: `cards.md` § PS0.
+24 cards in the table: 5 done, 19 todo (PS0.28, PS0.29 filed 2026-10-27; PS0.1, PS0.7 and PS0.10–PS0.12 landed earlier, listed in `cards.md` above the table). Cards, tables and as-built pointers: `cards.md` § PS0.
 
 ### PS1 · The defect corpus (do this before PS2; it is the yardstick)
 
-8 cards: 4 done, 4 todo (PS1.5 two message slips, PS1.6 two clean twins that are not clean, PS1.7 the `eval:ci` gate's blind spots, PS1.8 the wording study's follow-ups); PS1.3 walls-first control arm done 2026-10-26 (D21); PS1.4 diagnostic wording measured 2026-10-26 (no rule). PS1.3 and PS1.4 were filed 2026-10-25 from the owner's 2026-10-18 asks, PS1.5 on 2026-10-26 from PS7.2's red team, PS1.6 on 2026-10-26 from PS1.4, PS1.8 on 2026-10-27 from §8 Q3. Cards, tables and as-built pointers: `cards.md` § PS1.
+8 cards: 4 done (PS1.3, D21; PS1.4, no wording rule), 4 todo (PS1.5–PS1.8). Cards, tables and as-built pointers: `cards.md` § PS1.
 
 ### PS2 · Validity checks that read existing facts (small, high yield)
 
-77 cards: 31 done, 46 todo (PS2.64–PS2.72 filed by the row-6 re-measure, PS2.73 by the 2026-10-27 audit; PS2.64, PS2.65, PS2.66 done 2026-10-27, catch rate 73/80). Cards, tables and as-built pointers: `cards.md` § PS2.
+82 cards: 37 done, 45 todo (nine done 2026-10-27, corpus 77/84; PS2.68 blocked, PS2.71 taste, D27; PS2.78 filed). Cards, tables and as-built pointers: `cards.md` § PS2.
 
 ### PS3 · Relation-first authoring (D1 + D5; needs an ADR)
 
@@ -578,7 +594,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS7 · Staged authoring for agents
 
-10 cards: 8 done, 1 todo (PS7.9 the spec headroom), 1 parked; PS7.7 done 2026-10-27 (PR #298), PS7.8 done 2026-10-27 (PR #309), PS7.10 (filed by the PS7.8 re-measure) done 2026-10-27. Cards, tables and as-built pointers: `cards.md` § PS7.
+10 cards: 8 done, 1 todo (PS7.9 the spec headroom), 1 parked; PS7.7 (PR #298), PS7.8 (PR #309, D26) and PS7.10 (PR #314) done 2026-10-27. Cards, tables and as-built pointers: `cards.md` § PS7.
 
 ## 7. Suggested order and acceptance
 
@@ -591,7 +607,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 | 4 | PS0.4, PS4.1, PS4.2, PS4.5 | The widening drill's `impact` names every moved, held and broken item correctly. *Status:* met 2026-10-26: PS4.2 (PR #240, 7954f252) named the moved and broken items; PS4.5 (PR #281) reports the shell and `p` as held, with their gaps |
 | 5 | PS5.1–PS5.3, PS2.10–PS2.12 | The taste score separates the corpus's known-bad from known-good plans monotonically; the clearances corpus class reaches ≥ 10/18. *Status:* met 2026-10-25 (D14); PS2.11a–d merged (PRs #252, #253), clearances 11/19, corpus 59/73. Status and re-measure history: `research/2026-10-26-readme-history.md` § §7 row 5 |
 | 6 | PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e | **Met in part** 2026-10-27 (D26). The row is met when: `keep` invariants and brief-bound sizes are checked by `validate`, the widening drill reports a broken `keep` with its signed residual, and `preview --review` rings every flagged element; a re-measure closes the row (D10). *Status:* every card landed (PRs #267–#286) and the D10 re-measure ran (`audits/2026-10-26-first-contact-rerun-row6.md`, figures in D26); the review-sheet clause is false as built: **PS4.6** is the remainder. Detail: `research/2026-10-26-readme-history.md` § §7 row 6. Order: `handoff.md` § 4 |
-| 7 | PS6.1 | — *Status:* in progress: tranche 1 (PS2.64, PS2.65, PS2.66, PS7.7) landed 2026-10-27, PRs #296–#301; corpus 73/80 |
+| 7 | PS6.1 | — *Status:* in progress: tranche 1 (PS2.64–PS2.66, PS7.7; PRs #296–#301) and tranche 2 (PS2.67, PS2.69, PS2.70, PS2.72, PS2.74, PS2.77, PS7.8, PS7.10; PRs #305–#315) landed 2026-10-27; corpus 77/84 |
 
 Rows 1–4 as they stood before this pruning, verbatim: `research/2026-10-25-ps5-as-built.md` § §7 rows 1–4.
 
@@ -606,9 +622,8 @@ This plan is a hypothesis about what will make AI-written plans professional. Tr
 1. **Are rooms or walls the better primary for LLM authors?** D1 bets on rooms. A small, unpaid
    experiment can test it: author the corpus briefs both ways with the CLI loop and compare defect
    counts on the PS1 corpus. Do not run or cite the paid eval. Scheduling: `research/2026-10-26-readme-history.md` § §8 Q1 scheduling.
-   *Answered to that extent 2026-10-26 (PS1.3, D21):* walls-first is not worse in surviving defects (54
-   against 52); what stays open is whether a spec that led with walls would change the authors' choice.
-   The 10-24, 10-25 and 10-26 measurements: `research/2026-10-26-readme-history.md` § §8 Q1.
+   *Answered in part (PS1.3, D21):* walls-first is not worse; open: would a walls-first spec change
+   the choice (`research/2026-10-26-readme-history.md` § §8 Q1, and § §8 Q1: the answer sentence).
 2. **Where is the boundary between a fact and taste in each culture?** For example, a kitchen as the
    entry room is normal in some housing stocks. Profiles may need a `residential-generic` that is
    deliberately quiet.
@@ -623,24 +638,14 @@ This plan is a hypothesis about what will make AI-written plans professional. Tr
 6. **Multi-dwelling and multi-storey rules.** Toilet over habitable room below (GB 50096 5.4.4,
    mandatory), wet-stack alignment, and units sharing a corridor. These need a dwelling concept
    ArchLang lacks. *Researched 2026-10-18* (`research/2026-10-18-furniture-and-multistorey.md`
-   Part B): became cards PS2.14–PS2.16. Still open: wet-stack rules need a riser fact and no
-   authoritative spacing number was found; several clause texts were read only from secondary
-   sources (the file's verification log says which) and must be read in the standard before a
-   number ships in a message (D3).
+   Part B): became cards PS2.14–PS2.16. Still open: wet-stack rules (`research/2026-10-26-readme-history.md` § §8 Q6).
 7. **Furniture semantics.** Facing targets (a TV faces the sofa or bed, a bed head is against a wall,
    dining chairs face the table) as relations rather than rotations (ADAI's semantic reconstruction,
-   `research/adai-sketchup.md` idea 7). *Researched 2026-10-18* (same file, Part A): became card
-   PS3.7. Still open: no evidence on how often agents get a furniture turn wrong; the first-contact
-   audit should count it.
-8. **Anything the audits missed.** Run a fresh audit on new plans after each §7 row (D7, D10; done 2026-10-24, 2026-10-25 and 2026-10-26 (D20)). The defect classes
-   in §1 came from about 30 plans and are surely incomplete. *First round done 2026-10-18* (`audits/2026-10-18-first-contact.md`): 57 verified defects, 26 outside
-   the eight classes, twelve new classes listed there (most became cards; the list verbatim:
-   `research/2026-10-26-readme-history.md` § §8 Q8: the first-round paragraph). Still uncarded: context modelled
+   `research/adai-sketchup.md` idea 7). Became PS3.7 (same file, Part A); open: how often agents
+   turn furniture wrong (Q8 counts it).
+8. **Anything the audits missed.** Run a fresh audit on new plans after each §7 row (D7, D10; done 2026-10-24, 2026-10-25 and 2026-10-26 (D20)).  First round: `research/2026-10-26-readme-history.md` § §8 Q8: the 2026-10-27 cut. Still uncarded: context modelled
    inside the plan (a common corridor as paving; PS2.14's dwelling work should give it a home),
-   vertical stacking of partitions, oblique joins inflating `bbox_outer`, circulation share (taste).
-   Re-run with each first-contact re-measure, and count the furniture turn (PS2.11c's
-   `W_FOOTPRINT_TRANSPOSED` now catches the turned-footprint half; the `rotate` half is PS2.50).
-   Measured on every re-run since: `research/2026-10-26-readme-history.md` § §8 Q8.
+   vertical stacking of partitions, oblique joins inflating `bbox_outer`, circulation share (taste). Re-run and count the furniture turn each time (same file, § §8 Q8).
 9. **Should a `let` be able to hold a room-edge datum?** PS3.2 part B (PR #221) refuses it
    (`E_DATUM_BEFORE_ROOMS`: a `let` is evaluated once, at expansion, before any room is placed).
    The alternative considered and declined there was a deferred `let`, evaluated where it is read;
@@ -675,7 +680,7 @@ This plan is a hypothesis about what will make AI-written plans professional. Tr
   `2026-10-24-first-contact-rerun.md` (after row 3, D7), `2026-10-25-first-contact-rerun-row5.md`
   (after row 5, D10, D14), `2026-10-26-first-contact-rerun-d15.md` (D15's arms A and B, 52 / 54, D20),
   `2026-10-26-walls-first-control-arm.md` (PS1.3, arm C, 54, D21),
-  `2026-10-26-first-contact-rerun-row6.md` (row 6, 61, D26). Per-plan defects with coordinates:
+  `2026-10-26-first-contact-rerun-row6.md` (row 6, 61, D26), `2026-10-27-first-contact-rerun-ps78.md` (PS7.8, 64 / 56). Per-plan defects with coordinates:
   `audits/archcanvas-public-examples.md`, `audits/showcase-and-examples.md`.
 - Research (`research/`): `checks-inventory.md` (every check, the gap list), `prior-art.md`,
   `associativity.md` (the P1–P7 design), `design-taste.md` (37 sourced rules, ResPlan priors),
@@ -687,5 +692,6 @@ This plan is a hypothesis about what will make AI-written plans professional. Tr
 - As-built records (`research/`, landed cards' notes verbatim): `2026-10-24-ps0-ps2-`, `2026-10-24-ps3-`,
   `2026-10-25-ps5-` (also row 5's PR rulings, §7 rows 1–5, D5/D6 detail), `2026-10-25-ps211ab-`,
   `2026-10-25-ps211cd-`, and of 2026-10-26 `ps211e-`, `ps211e-stairs-`, `ps229-`, `ps245-`, `ps250-`,
-  `ps43a-`, `ps43b-`, `ps44-`, `ps45-`, `ps54-`, `ps71-`, `ps72-`, `ps75-`, `ps76-as-built.md`.
+  `ps43a-`, `ps43b-`, `ps44-`, `ps45-`, `ps54-`, `ps71-`, `ps72-`, `ps75-`, `ps76-as-built.md`, and of 2026-10-27
+  `ps266-`, `ps267-`, `ps269-`, `ps270-`, `row7-as-built.md` (row-7 card texts); `2026-10-27-ps267-271-sources.md` (D27).
 - `repro/`: minimal reproductions (see its README).

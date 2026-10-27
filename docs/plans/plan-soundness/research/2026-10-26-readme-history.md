@@ -309,3 +309,52 @@ descriptions of each file stand. Files added since are named in the new index.
   `research/2026-10-25-ps5-as-built.md`: landed cards' as-built notes, verbatim (the last also
   holds row 5's PR rulings, §7 rows 1–5 as they stood, and D5/D6 detail).
 - `repro/`: minimal reproductions (see its README).
+
+## §6 PS1: the count line
+
+Moved 2026-10-27 by the row-7 tranche-2 housekeeping, verbatim:
+
+8 cards: 4 done, 4 todo (PS1.5 two message slips, PS1.6 two clean twins that are not clean, PS1.7 the `eval:ci` gate's blind spots, PS1.8 the wording study's follow-ups); PS1.3 walls-first control arm done 2026-10-26 (D21); PS1.4 diagnostic wording measured 2026-10-26 (no rule). PS1.3 and PS1.4 were filed 2026-10-25 from the owner's 2026-10-18 asks, PS1.5 on 2026-10-26 from PS7.2's red team, PS1.6 on 2026-10-26 from PS1.4, PS1.8 on 2026-10-27 from §8 Q3. Cards, tables and as-built pointers: `cards.md` § PS1.
+
+## §8 Q8: the 2026-10-27 cut
+
+Moved 2026-10-27 by the row-7 tranche-2 housekeeping, verbatim:
+
+The defect classes
+   in §1 came from about 30 plans and are surely incomplete. *First round done 2026-10-18* (`audits/2026-10-18-first-contact.md`): 57 verified defects, 26 outside
+   the eight classes, twelve new classes listed there (most became cards; the list verbatim:
+   `research/2026-10-26-readme-history.md` § §8 Q8: the first-round paragraph). Still uncarded:
+
+## §8 Q6: the still-open sentence
+
+Moved 2026-10-27 by the row-7 tranche-2 housekeeping, verbatim:
+
+Still open: wet-stack rules need a riser fact and no
+   authoritative spacing number was found; several clause texts were read only from secondary
+   sources (the file's verification log says which) and must be read in the standard before a
+   number ships in a message (D3).
+
+## §8 Q1: the answer sentence
+
+Moved 2026-10-27 by the row-7 tranche-2 housekeeping, verbatim:
+
+*Answered to that extent 2026-10-26 (PS1.3, D21):* walls-first is not worse in surviving defects (54
+   against 52); what stays open is whether a spec that led with walls would change the authors' choice.
+   The 10-24, 10-25 and 10-26 measurements: `research/2026-10-26-readme-history.md` § §8 Q1.
+
+## §8 Q8: the re-run sentence
+
+Moved 2026-10-27 by the row-7 tranche-2 housekeeping, verbatim:
+
+
+   Re-run with each first-contact re-measure, and count the furniture turn (PS2.11c's
+   `W_FOOTPRINT_TRANSPOSED` now catches the turned-footprint half; the `rotate` half is PS2.50).
+   Measured on every re-run since: `research/2026-10-26-readme-history.md` § §8 Q8.
+
+## §8 Q7: the researched sentence
+
+Moved 2026-10-27 by the row-7 tranche-2 housekeeping, verbatim:
+
+*Researched 2026-10-18* (same file, Part A): became card
+   PS3.7. Still open: no evidence on how often agents get a furniture turn wrong; the first-contact
+   audit should count it.
