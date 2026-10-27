@@ -116,12 +116,14 @@ function yieldsTo(d: Diagnostic): ((other: Diagnostic) => boolean) | undefined {
 /** The validity item: the first in emission order, unless that one yields ({@link yieldsTo}) to
  *  a finding standing beside it; then the first such, which may yield in turn (a furniture clash
  *  to a swing shortfall to a stair). Each step leaves the `fixtures` stage or moves to a stair or
- *  an earlier stage, so it ends. */
+ *  an earlier stage, so it ends; a finding already visited stops it regardless. */
 function firstValidity(validity: readonly Diagnostic[]): Diagnostic | undefined {
   let item = validity[0];
-  for (let to = item && yieldsTo(item); to !== undefined; to = yieldsTo(item!)) {
+  const seen = new Set<Diagnostic>();
+  for (let to = item && yieldsTo(item); item !== undefined && to !== undefined; to = yieldsTo(item)) {
+    seen.add(item);
     const by = validity.find(to);
-    if (by === undefined || by === item) break;
+    if (by === undefined || seen.has(by)) break;
     item = by;
   }
   return item;

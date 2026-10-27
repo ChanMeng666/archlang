@@ -415,7 +415,7 @@ PS5.1b: PR #247, 9cc29c7e)
 - *Design:* list the sentences the spec states twice or that describe only how something is drawn, each with the place in `docs/language-reference.md` (or a doc comment, D3) that keeps the fact, as D22 R4 did; cut them in one spec-text PR, which the next first-contact re-measure states as a measured surface (D20).
 - *Acceptance:* every cut fact found in its kept place; `llm-spec-drift` green; the units freed and the new headroom recorded in `handoff.md` § 4.
 
-**PS7.10 · `next` ranks stair codes and swing shortfalls before a furniture or fixture finding.** `done` (this PR)
+**PS7.10 · `next` ranks stair codes and swing shortfalls before a furniture or fixture finding.** `done` (PR #314)
 - The PS7.8 re-measure (`audits/2026-10-27-first-contact-rerun-ps78.md`, PR #309) found PS7.7 too
   narrow: on the arm-1 house, plain `validate --json`'s `next` is a 50 mm fridge/sink
   `W_FURNITURE_OVERLAP`, ahead of both blockers (XH1, XH2); on the arm-1 townhouse it is the missing
@@ -426,7 +426,10 @@ PS5.1b: PR #247, 9cc29c7e)
   arm-1 house's `next` is XH2's master-door swing, the townhouse's a stair code; every moved `next`
   over the tracked `.arch` files × plain + 6 `--stage` values is listed with a reason, and the moved
   set stays small (a full "earlier stage first" rule moved 165 runs over 55 plans and was not taken).
-- As built: `src/next.ts` `yieldsTo`/`firstValidity`; the arm-1 house's `next` is `W_SWING_OBSTRUCTED`
-  on `double_bed`, the townhouse's `W_STAIR_NO_LANDING` (plain and `--stage fixtures|drafting`); 42
-  of 3,003 runs moved (429 tracked `.arch` × plain + 6 stages; 14 plans × plain, `fixtures`,
+- As built: `src/next.ts` `yieldsTo`/`firstValidity` (a visited set stops the chain; a test pins that
+  no stair-safety code or swing shortfall is a `fixtures` code); the arm-1 townhouse's `next` is
+  `W_STAIR_NO_LANDING` (plain and `--stage fixtures|drafting`). On the tree merged with #307, the
+  arm-1 house's first finding is the rooms-stage `W_GARAGE_TOO_NARROW` (PS2.70), so its `next` no
+  longer turns on this rule; the walls-first cafe pins the fixtures-to-swing case instead. 36 of
+  3,017 runs moved (431 tracked `.arch` × plain + 6 stages; 12 plans × plain, `fixtures`,
   `drafting`), each from a fixtures finding to a stair code or swing shortfall; no digest pin moved.

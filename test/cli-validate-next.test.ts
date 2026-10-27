@@ -160,15 +160,25 @@ describe("validate · next tiers through the CLI", () => {
   });
 
   // The PS7.8 re-measure's arm-1 plans (`audits/2026-10-27-first-contact-rerun-ps78.md`).
-  it("PS7.10: the arm-1 house's next is the master door's swing, not the fridge/sink overlap emitted first", () => {
+  it("PS7.10: the arm-1 house's next is its rooms-stage garage code, which no fixtures finding precedes", () => {
+    // Since PS2.70 (#307) judges a garage's depth, the 4500 mm garage comes first in emission order;
+    // it does not yield, so the house no longer exercises PS7.10 (the cafe below does).
     const plan = "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/2-house.arch";
+    const out = JSON.parse(runValidate([plan, "--json"]).stdout);
+    expect(out.diagnostics.map((d: { code: string }) => d.code).slice(0, 2)).toEqual([
+      "W_GARAGE_TOO_NARROW",
+      "W_FURNITURE_OVERLAP",
+    ]);
+    expect(out.next).toMatchObject({ tier: "validity", code: "W_GARAGE_TOO_NARROW" });
+  });
+
+  it("PS7.10: the walls-first cafe's next is the WC door's swing, not the furniture overlap emitted first", () => {
+    const plan = "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/4-cafe.arch";
     for (const stage of [[], ["--stage", "fixtures"], ["--stage", "drafting"]]) {
       const argv = [plan, "--json", ...stage];
       const out = JSON.parse(runValidate(argv).stdout);
       expect(out.diagnostics[0].code, argv.join(" ")).toBe("W_FURNITURE_OVERLAP");
-      // XH2: the master bedroom door opens onto the bed head 50 mm away.
       expect(out.next, argv.join(" ")).toMatchObject({ tier: "validity", code: "W_SWING_OBSTRUCTED" });
-      expect(out.next.message, argv.join(" ")).toMatch(/"double_bed" is 50 mm/);
     }
   });
 

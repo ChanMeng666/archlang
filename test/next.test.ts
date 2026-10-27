@@ -315,6 +315,11 @@ describe("nextDiagnostic · a fixtures-stage finding yields inside the validity 
     expect(STAIR_SAFETY_CODES.has(PATH)).toBe(false);
   });
 
+  it("the yield chain only climbs: no stair-safety code or swing shortfall is a fixtures-stage code", () => {
+    for (const c of [...STAIR_SAFETY_CODES, ...SWING_SHORTFALL_CODES])
+      expect(LINT_CODE_STAGES[c], c).not.toBe("fixtures");
+  });
+
   it("a stair-safety code, emitted later, is chosen first (the arm-1 townhouse's missing hob)", () => {
     expect(next([W(HOB, 1), W(FIX, 2), W("W_STAIR_NO_LANDING", 3), W("W_STAIR_TOO_STEEP", 4)])).toBe(
       "W_STAIR_NO_LANDING",
