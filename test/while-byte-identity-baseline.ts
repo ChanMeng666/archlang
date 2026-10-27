@@ -174,6 +174,8 @@
  * (`test/lint-attribution-budget.test.ts`). Their rows are their first measurement, taken with
  * this test's own digest body on the tree that adds them. `test/fixtures/off-path-bypass.arch`
  * likewise: the repro of a walk that passes furniture through another room's doorway band.
+ * `test/fixtures/storeys-eaves-overflow.arch` likewise (PS2.77): a two-storey plan whose
+ * upper-storey eaves alone overrun its sheet; the same digest on `e432c24a`'s `src/`.
  *
  * Eighteen rows re-measured, with this test's own digest body, for the thickness call-out
  * station (drawing only): every example that draws a `dims auto all`/`walls` call-out, plus
@@ -378,6 +380,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["test/fixtures/off-path-bypass.arch", "81ef92c32f98bc41635428f477b2cf7e59adea520e60892b5e39aa48fcbcaecf"], // new fixture, see header; PS2.11e, see header
   ["test/fixtures/schedule-sheet.arch", "15dc29228ea12dae7240ad843567f88218c5a57bd8838ea950b1a5792c2579a5"], // re-measured, see header; PS2.29: message text only, same code, same span
   ["test/fixtures/star30.arch", "74a3209110606543fb04c1932b2ec60a78526ccdd2a7205cdfe972719efac471"], // new fixture, see header
+  ["test/fixtures/storeys-eaves-overflow.arch", "e29b5e34735306051eeea8215d258873db2935ed3c7ebaf575a4b7af5cb89a6d"], // new fixture (PS2.77), see header
   ["test/fixtures/zones-levels.arch", "05693d9ec59a2c27dcf9c35c5b8d8d5a63969ee0931499b97305433324cb978f"], // re-measured for PS2.4, see header
   ["test/fixtures/zones-wings.arch", "392675a2abd9bc82b094fc768190979fabf814b22dbb8d4fbaf7de410570c35a"], // re-measured for PS2.4, see header
 ];

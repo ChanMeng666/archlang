@@ -272,7 +272,7 @@ const PINNED_ROWS: Record<string, [number, number, number, string]> = {
   examples: [39, 7, 7, "0/1/0/6"],
   "test/defect-corpus": [170, 9, 9, "0/0/0/9"], // PS2.70 (PR #307): +2 corpus files (garage-too-shallow pair), both tile
   "test/recovery-corpus": [9, 0, 0, "0/0/0/0"],
-  "test/fixtures": [13, 0, 0, "0/0/0/0"],
+  "test/fixtures": [15, 0, 0, "0/0/0/0"], // PS2.77: +1 fixture (storeys-eaves-overflow, two storeys), both tile
   "docs/plans/plan-soundness/repro": [6, 0, 0, "0/0/0/0"],
   "eval/goldens": [25, 0, 0, "0/0/0/0"],
   "eval/fidelity-plans": [9, 0, 0, "0/0/0/0"],
@@ -281,7 +281,7 @@ const PINNED_ROWS: Record<string, [number, number, number, string]> = {
   "test/callout-fixtures": [1, 0, 0, "0/0/0/0"],
   "test/finish-fixtures": [1, 0, 0, "0/0/0/0"],
   "test/resolve-order": [1, 0, 0, "0/0/0/0"],
-  total: [309, 19, 19, "0/1/0/18"], // PS2.66 (PR #301) +2, PS2.70 (PR #307) +2 corpus files (garage-too-shallow pair, both tile); fix/examples-sound: hillside-villa's hole
+  total: [311, 19, 19, "0/1/0/18"], // PS2.66 (PR #301) +2, PS2.70 (PR #307) +2 corpus files (garage-too-shallow pair, both tile); fix/examples-sound: hillside-villa's hole; PS2.77: +2 fixture storeys
 };
 /** Measured 2026-10-21 on `main@9fb7949`: 15 of 279 storeys refused, both figures (5.4 %). 2026-10-24: 15 of 283
  * (5.3 %) after four defect-corpus plans (seat-facing-away, fire-door-inward and their twins), none refused. 19 of 287
@@ -290,8 +290,9 @@ const PINNED_ROWS: Record<string, [number, number, number, string]> = {
  * two more (PS2.11c: sofa-l-transposed and its twin), neither refused: two plans added, the shares unchanged. 19 of
  * 301 (6.3 %) after PS2.11e's eight stair-safety plans (twelve storeys: two pairs of two `level`s, two
  * single-storey pairs), none refused; 305 (6.2 %) with PR #283's four (hob-under-window,
- * bed-before-door-face and their twins), none refused. */
-const PINNED_SHARE_A: [number, number] = [19, 309]; // PS2.70 (PR #307): +2 corpus files (garage-too-shallow pair), both tile
-const PINNED_SHARE_B: [number, number] = [19, 309]; // PS2.70 (PR #307): +2 corpus files (garage-too-shallow pair), both tile
-/** The literal reading of "no use kind means outdoor": 16 of 279 (5.7 %); 16 of 283 (5.7 %) since 2026-10-24; 20 of 287 with PS2.12's four pavilions; 20 of 289 with PS2.11c's pair; 20 of 301 with PS2.11e's eight stair plans; 20 of 305 with PR #283's four. */
-const PINNED_SHARE_LITERAL: [number, number] = [20, 309]; // PS2.70 (PR #307): +2 corpus files (garage-too-shallow pair), both tile
+ * bed-before-door-face and their twins), none refused; 309 (6.1 %) with PS2.70's garage-too-shallow pair, neither
+ * refused; 311 (6.1 %) with PS2.77's two-storey fixture, neither refused. */
+const PINNED_SHARE_A: [number, number] = [19, 311]; // PS2.70 (PR #307) +2 corpus files, PS2.77 +2 fixture storeys, all tile
+const PINNED_SHARE_B: [number, number] = [19, 311]; // PS2.70 (PR #307) +2 corpus files, PS2.77 +2 fixture storeys, all tile
+/** The literal reading of "no use kind means outdoor": 16 of 279 (5.7 %); 16 of 283 (5.7 %) since 2026-10-24; 20 of 287 with PS2.12's four pavilions; 20 of 289 with PS2.11c's pair; 20 of 301 with PS2.11e's eight stair plans; 20 of 305 with PR #283's four; 20 of 309 with PS2.70's pair; 20 of 311 with PS2.77's two-storey fixture. */
+const PINNED_SHARE_LITERAL: [number, number] = [20, 311]; // PS2.70 (PR #307) +2 corpus files, PS2.77 +2 fixture storeys, all tile
