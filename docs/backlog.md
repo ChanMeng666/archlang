@@ -1638,7 +1638,7 @@ offer one, keeping the unseeded equality property. Then grep `test/` for other `
 followed by a count assertion with no `seed` (the same file's `numRuns: 300`/`5000` blocks have the
 shape with far more runs). Verify: the chosen seed reproduces a non-zero count; `check` green.
 
-Done (PR #PRN): the equality law stays unseeded and a second case pins `seed: 20261027` for the `offered > 0` check; the grep found no other unseeded count assertion with the flaky shape.
+Done (PR #300): the equality law stays unseeded and a second case pins `seed: 20261027` for the `offered > 0` check; the grep found no other unseeded count assertion with the flaky shape.
 
 ### M.19 · Quadratic passes the two budgets do not see — closed (two residuals kept by decision)
 
