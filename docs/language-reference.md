@@ -1188,7 +1188,9 @@ tagged `uses bedroom`). The tags drive lint rules like *bedrooms need a window* 
 
 `garage` is the one kind whose own rule measures the room:
 [`W_GARAGE_TOO_NARROW`](error-codes.md) warns when the short side is under 2700 mm per
-parked `car` (an empty garage is measured against one bay). A room labelled "Garage"
+parked `car` (an empty garage is measured against one bay), or when the clear depth along the
+line of its `door garage` is under 5000 mm, a parking bay's length (6000 mm under
+`uk-residential-advisory`). A room labelled "Garage"
 classifies as one from its label alone; "Carport" and "Parking" classify through an alias,
 which is advisory [`W_ALIAS_MATCH`](error-codes.md) asking you to pin the tag.
 

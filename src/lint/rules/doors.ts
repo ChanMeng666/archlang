@@ -215,7 +215,7 @@ export function widestClearingWidth(
 /** What stands in a doorway's approach: the first piece whose footprint overlaps the landing,
  *  the clear depth it leaves (from the wall's face on its side) and the shortfall; `null` when
  *  the approach is clear or not measured (the skip is filed then). */
-function blockedApproach(
+export function blockedApproach(
   d: RDoor | ROpening,
   { furniture, rules, skip }: LintContext,
   counts: (f: RFurniture) => boolean = () => true,

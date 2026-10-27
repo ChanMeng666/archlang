@@ -184,7 +184,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_FURN_CLEARANCE`](#w_furn_clearance) | warning | A fixture's use-space is blocked. |
 | [`W_FURN_CLEAR_FRONT`](#w_furn_clear_front) | warning | A declared `clear front` is not free. |
 | [`W_FURN_CLEAR_SIDES`](#w_furn_clear_sides) | warning | A declared `clear sides` is not free. |
-| [`W_GARAGE_TOO_NARROW`](#w_garage_too_narrow) | warning | A garage is too narrow to park in. |
+| [`W_GARAGE_TOO_NARROW`](#w_garage_too_narrow) | warning | A garage is too narrow, or too shallow, to park in. |
 | [`W_GLYPH_UNSUPPORTED`](#w_glyph_unsupported) | warning | PDF/PNG text has characters no embedded font can draw. |
 | [`W_HABITABLE_NO_WINDOW`](#w_habitable_no_window) | warning | A living room, dining room or kitchen has no window. |
 | [`W_HATCH_SCALE`](#w_hatch_scale) | warning | Hatch scale must be positive; using 1. |
@@ -2491,11 +2491,11 @@ furniture wardrobe at (1700,0) size 600x1800   # lint: 200 mm on the right side
 
 ## W_GARAGE_TOO_NARROW
 
-*warning* — A garage is too narrow to park in.
+*warning* — A garage is too narrow, or too shallow, to park in.
 
-**Cause.** A room classified as a garage (an authored `uses garage`, or a label the use vocabulary reads as one — "Garage", or the aliases "carport" / "parking") measures less across its short side than the cars in it need: 2700 mm of clear width per bay, which is a body plus the room to open a door on each side. A garage with no `car` fixture drawn is measured against ONE bay — a room you could not park in does not become sound by having no car in it — and `bicycle`/`motorcycle` do not count toward the bay total. The warning states the width required, the width the room actually has, and the shortfall. **The rule declines a POLYGON room** rather than measuring its bounding box: a box's short side is not a concave floor's clear width, and a measurement taken from a shape's box instead of the shape is a defect class this compiler has shipped before. It is advisory and has no machine fix: widening a room moves every wall and opening around it, which is a geometric decision the compiler does not make (ADR 0005).
+**Cause.** A room classified as a garage (an authored `uses garage`, or a label the use vocabulary reads as one — "Garage", or the aliases "carport" / "parking") measures less across its short side than the cars in it need: 2700 mm of clear width per bay, which is a body plus the room to open a door on each side. A garage with no `car` fixture drawn is measured against ONE bay — a room you could not park in does not become sound by having no car in it — and `bicycle`/`motorcycle` do not count toward the bay total. The warning states the width required, the width the room actually has, and the shortfall. **The rule declines a POLYGON room** rather than measuring its bounding box: a box's short side is not a concave floor's clear width, and a measurement taken from a shape's box instead of the shape is a defect class this compiler has shipped before. **A second finding judges its DEPTH** (plan-soundness PS2.70): a rectangular garage measures less, between the inner faces of the walls on the edge holding its vehicle door and the edge opposite, than `garageDepthMm` along the line of its `door garage`: 5000 mm by default, the length of a parking bay or a car port (Buckinghamshire parking guidance 2022, Table 9; Monmouthshire SPG Domestic Garages 2013 ¶21), and 6000 mm under `uk-residential-advisory`, the clear internal length of a garage (Monmouthshire ¶12 and ¶25, citing Manual for Streets; Buckinghamshire Table 11). The depth asked is the same whatever the bay count. A garage with several vehicle doors is measured along the deepest axis; one with no `door garage` is not measured and files a `no-vehicle-door` coverage skip. Set `garageDepthMm: null` to turn the depth finding off. It is advisory and has no machine fix: widening or lengthening a room moves every wall and opening around it, which is a geometric decision the compiler does not make (ADR 0005).
 
-**Fix.** Widen the room to the figure the warning quotes, park fewer cars in it, or drop the `uses garage` tag if the room is not one (a store that happens to be called a garage classifies as one from its label alone — an explicit `uses storage` overrides that).
+**Fix.** Widen the room, or lengthen it along the line of its vehicle door, to the figure the warning quotes, park fewer cars in it, or drop the `uses garage` tag if the room is not one (a store that happens to be called a garage classifies as one from its label alone — an explicit `uses storage` overrides that).
 
 ```arch static
 room id=g at (0,0) size 2500x6000 label "Garage" uses garage

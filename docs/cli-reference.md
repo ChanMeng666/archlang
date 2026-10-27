@@ -316,7 +316,7 @@ semantic facts: rooms, areas, adjacency, what doors connect
 | `--zone <path[,path…]>` | keep only the rooms declared in these `zone` blocks (nested zones roll up; paths are dotted, e.g. west.galleries) — a DISPLAY filter: `ok` and the exit code still weigh the whole plan |
 | `--select <key[,key…]>` | emit only these top-level keys of the --json object (rooms, doors, totals, access, circulation, freedom, …); the ok/plan/units/diagnostics envelope is always kept |
 | `--level <n>` | report this storey of a multi-storey plan as the top-level facts (a DISPLAY filter — `ok` and the exit code still weigh the whole plan) |
-| `--facts <symmetry\|syntax\|depends[,…]>` | also compute these opt-in facts: `symmetry` (the plan's symmetry group per layer — shell, rooms, full — and its repeated rooms), `syntax` (space-syntax depth, mean depth, RA, integration and control on the access graph) and `depends` (per element, the ids it derives from and the `let`/parameter names it reads); absent by default |
+| `--facts <symmetry\|syntax\|depends\|clearances[,…]>` | also compute these opt-in facts: `symmetry` (the plan's symmetry group per layer — shell, rooms, full — and its repeated rooms), `syntax` (space-syntax depth, mean depth, RA, integration and control on the access graph), `depends` (per element, the ids it derives from and the `let`/parameter names it reads) and `clearances` (what each clearance rule measured, per storey under the default ruleset: a WC's sides, a tall unit's and a hob's cover of a window, a hob's nearest tall unit, a doorway's clear width and approach, a stair's run and landings); absent by default |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -653,7 +653,7 @@ print the full bundled agent context (spec + workflow + CLI + errors)
 | Flag | Does |
 | --- | --- |
 | `--level <starter\|full>` | starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 148 KB bundle (default, unchanged) |
-| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 148 KB of it (spec = the language, 30 KB; workflow = the agent loop, 30 KB; cli = every command, 26 KB; errors = the diagnostic catalog, 59 KB) |
+| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 148 KB of it (spec = the language, 30 KB; workflow = the agent loop, 30 KB; cli = every command, 27 KB; errors = the diagnostic catalog, 59 KB) |
 | `--json` | structured result on stdout, messages on stderr |
 
 **Examples**

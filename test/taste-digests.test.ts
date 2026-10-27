@@ -155,6 +155,13 @@
  * PS2.66 (`W_ROOM_MISSING_DEFINING` for a bath with a WC and no basin) added six rows, the new
  * `bath-wc-no-basin` pair under each of the three profiles, measured with `tasteDigest`; no existing
  * row moved (the defect case lists the code under `validity`, its twin none).
+ *
+ * PS2.70 (`W_GARAGE_TOO_NARROW` judges a garage's depth along its vehicle door) added six rows, the
+ * new `clearances/garage-too-shallow` pair under each of the three profiles, measured with
+ * `tasteDigest`: the case lists the code under `validity` (`pass` false), its twin none. No existing
+ * row moved: `circulation-privacy/wc-utility-passage`'s garage was 4850 mm deep along its south
+ * vehicle door, so both of its files moved that door to the east wall (5800 mm deep), and their
+ * reports are byte for byte as before (checked against the same files linted with the depth off).
  */
 
 import { describe, expect, it } from "vitest";
@@ -468,6 +475,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "13cf4d1ba44c02634638aab2e2ca18a62d8924e8b496819c719d45bf5c6f0342",
     "generic",
     "test/defect-corpus/clearances/fridge-over-window.clean.arch",
+  ],
+  [
+    "d65720b8d596a1f33e52f9737e9849bff2063d85b7a348dced76575100713386",
+    "generic",
+    "test/defect-corpus/clearances/garage-too-shallow.arch",
+  ],
+  [
+    "28415399210cb525baee7349f45ea3c6c71934ab65252cf45e3dc0a34819ba3b",
+    "generic",
+    "test/defect-corpus/clearances/garage-too-shallow.clean.arch",
   ],
   [
     "566c1b2d79c0678608e2701d03a5598385e850b84d268fdde3eab9ecd7bded01",
@@ -1550,6 +1567,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/fridge-over-window.clean.arch",
   ],
   [
+    "5b4d49c65107430428ea1a084456e3b657284b52b92a48a4757616949a50b6c4",
+    "cn-residential-advisory",
+    "test/defect-corpus/clearances/garage-too-shallow.arch",
+  ],
+  [
+    "71d3b981c23dc89f8c4ed3643e03d30be93d657e9469956bedf9d7c39cc1d431",
+    "cn-residential-advisory",
+    "test/defect-corpus/clearances/garage-too-shallow.clean.arch",
+  ],
+  [
     "2593c5dc84c3780bf12c703c7f0408e9306edacc89ceb11a76e4057f8796d39e",
     "cn-residential-advisory",
     "test/defect-corpus/clearances/hob-against-fridge.arch",
@@ -2628,6 +2655,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "001232fd665044aec7762eba337fbf6f37c848f3212e3c1fffb1bd005c538a79",
     "us-residential-advisory",
     "test/defect-corpus/clearances/fridge-over-window.clean.arch",
+  ],
+  [
+    "d1a237885f25e5331771eaf4bb0f0702b986ef87f9b78820551e59c1aa3c6afb",
+    "us-residential-advisory",
+    "test/defect-corpus/clearances/garage-too-shallow.arch",
+  ],
+  [
+    "3e09e7c8005131bfbeaa7d82688faaaec1968048421659060b6951f0dc826781",
+    "us-residential-advisory",
+    "test/defect-corpus/clearances/garage-too-shallow.clean.arch",
   ],
   [
     "ae5a89d737dd05a14704596508bd7f2fde6c70a7eea0651ac377d8def1e6cb0b",

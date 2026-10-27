@@ -372,6 +372,22 @@ export interface LintRuleset {
    * the sentence and keeps the operating-force limits).
    */
   maxHingedLeafMm: number | null;
+  /**
+   * The least CLEAR depth (mm) of a garage along its vehicle door's axis before
+   * `W_GARAGE_TOO_NARROW`'s depth finding warns (plan-soundness PS2.70): the distance between
+   * the inner faces of the walls on the door's edge and the edge opposite it (the drawn edge
+   * where no wall backs one), for a rectangular room with a `door garage` on its perimeter. A
+   * garage with several vehicle doors is measured along the deepest axis; one with none files
+   * a `no-vehicle-door` coverage skip. Whatever the bay count: a double garage is as deep as a
+   * single. `null` turns the depth finding off.
+   *
+   * **Default 5000:** the length of a parking bay or a car port, the car alone: Buckinghamshire
+   * Council, *Parking guidance for new developments* (2022) §8 Table 9, a car parking space 5.0
+   * × 2.8 m [V]; Monmouthshire County Council, *SPG Domestic Garages* (2013) ¶21, a car port's
+   * roof at least 5.0 m long [V]. A garage shallower than a bay cannot hold a car at all
+   * (`docs/plans/plan-soundness/research/2026-10-27-ps267-271-sources.md` § PS2.70).
+   */
+  garageDepthMm: number | null;
 }
 
 /**
@@ -429,6 +445,7 @@ export const DEFAULT_RULESET: LintRuleset = {
   stairMaxPitchRatio: null,
   hobLandingMm: 305,
   maxHingedLeafMm: 1219,
+  garageDepthMm: 5000,
 };
 
 /**
@@ -518,6 +535,7 @@ export const LINT_PROFILES: Readonly<Record<string, Partial<LintRuleset>>> = Obj
     stairMaxRiseMm: 220, // Approved Document K (2013) Table 1.1: a private stair's rise at most 220 mm [V]
     stairMinGoingMm: 220, // Approved Document K (2013) Table 1.1: a private stair's going at least 220 mm [V]
     stairMaxPitchRatio: 0.9004, // Approved Document K (2013) Table 1.1 note 1: a private stair's pitch at most 42° (tan 42° = 0.9004) [V]
+    garageDepthMm: 6000, // Monmouthshire SPG Domestic Garages (2013) ¶12, ¶25: a garage's clear internal dimensions at least 3.0 × 6.0 m, citing Manual for Streets App. A note 3 [V]; Buckinghamshire parking guidance (2022) §9 Table 11, a garage 6.0 m long [V]
   },
   /**
    * Room sizes and hallway widths read from the US model residential code, as ADVICE (ADR
