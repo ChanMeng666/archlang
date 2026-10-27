@@ -159,6 +159,7 @@ arch fix plan.arch --dry-run --json  # preview/apply the machine-applicable diag
 arch validate plan.arch --intent brief.json --feedback --json  # gate on a brief's intent contract (miss → exit 2)
 arch score plan.arch --brief brief.json --json  # satisfied/total — measures, never gates
 arch score plan.arch --taste generic --json  # a reviewer's taste report, 0–1, never gates
+arch impact new.arch --against old.arch --lock a,b
 ```
 
 **Self-correction loop:** compile → `validate --json` (fix its `next` first) → lint → repair; author in stages: `validate --stage rooms|walls|openings|fixtures` in turn, advancing when `at_stage.clean`. If
@@ -183,10 +184,10 @@ space beats routing a bath through a bedroom — then re-`repair` and `validate 
 
 | Mistake | Fix |
 | --- | --- |
-| Expecting +y to go up | +y goes **down**; a room below another has a larger y. |
+| Expecting +y to go up | A room below another has a larger y. |
 | Hand-summing room offsets | Lay the row with `strip`. |
 | Furniture floated at a guessed `at`, or an `inset` hand-computed from a wall thickness | Place it `in <room> anchor <9-point> [flush] [inset]` or `against wall <id>` — closed-form, never names a thickness. |
-| `size 4000` (no height) | Sizes are `WxH`: `size 4000x3000` (or `W x H` with spaces). |
+| `size 4000` | Sizes are `WxH`: `size 4000x3000`. |
 | String math without interpolation | Use `"{expr}"`, e.g. `label "{round(W / 1000)} m"`. Only the built-ins above and your own `let f(…)` are callable — `aream2` is NOT built in. |
 
 ## Worked examples

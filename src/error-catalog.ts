@@ -831,6 +831,20 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Move the `level` block out to the plan body. To draw the same content on several storeys, put it in a `component` and call it from each level.",
     "component c() { level 1 { } }   # error: only allowed at plan level",
   ),
+  E_LOCKED_ELEMENT_CHANGED: E(
+    "E_LOCKED_ELEMENT_CHANGED",
+    "An element `archlang impact --lock` names changed between the two versions.",
+    "`--lock <id,…>` names elements that must stay as they were. An element is changed when, on the lowest storey, it moved (an opening also when it slid along an unchanged wall), resized, was re-hosted (another wall, relation or joined spaces), was re-thickened, changed its door swing or any other resolved field, vanished or appeared. A relabel is not a change. Each violation carries the element's span on both sides. Raised by `impact()`, never by `compile()`.",
+    "Put the locked element back as it was in the older file, or drop it from `--lock` if the change is intended.",
+    "window id=w1 on s at 1200 width 1200   # was `at 1100`: archlang impact new.arch --against old.arch --lock w1: error, moved 100 mm",
+  ),
+  E_LOCK_UNNAMED: E(
+    "E_LOCK_UNNAMED",
+    "`archlang impact --lock` names an element whose id was not written, or no element at all.",
+    "A lock names an element by the `id=` its author wrote. An assigned id (`room_3`, `window_2`, or the internal name of a wall `walls from rooms` derived) shifts when a statement is inserted ahead of it, so a lock on it could follow another element; it is refused. So is a name no element of either version carries, or one that stands only above the lowest storey, which `impact` does not compare yet. Raised by `impact()`, never by `compile()`.",
+    "Write `id=<name>` on the element in both versions and lock that name.",
+    "window on s at 1200 width 1200   # assigned window_1: archlang impact new.arch --against old.arch --lock window_1: error, write id= first",
+  ),
   E_NON_FINITE: E(
     "E_NON_FINITE",
     "A number is too large to be finite.",

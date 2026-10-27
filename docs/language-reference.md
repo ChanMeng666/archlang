@@ -2664,6 +2664,17 @@ count in `unchanged_count`. A keep whose grade an edit changed carries `grade: {
 and counts as `broke` when it is a broken hard keep after, or `healed` when it was one before. A broken hard keep is reported there once:
 its `W_KEEP_VIOLATED` is not also counted under `diagnostics`.
 
+**Locks, without syntax.** `archlang impact new.arch --against old.arch --lock shell,entry,w1`
+names elements that must not change between the two versions; it adds nothing to the language.
+Each locked element that moved (an opening also when it slid along an unchanged wall), resized,
+was re-hosted, re-thickened, changed its door swing or another resolved field, vanished or
+appeared is an `E_LOCKED_ELEMENT_CHANGED` under `lock.violations` (`--json`), with its span on
+each side it exists on, and the command exits 2. A relabel is not a change. A lock names an
+element by the `id=` its author wrote: an assigned id such as `window_2` shifts when a statement
+is inserted ahead of it, so a lock on one, on a name neither version carries, or on an element
+above the lowest storey (which `impact` does not compare yet) is refused with `E_LOCK_UNNAMED`
+and also exits 2. A lock also works with `--set`.
+
 `describe --facts depends` adds `depends.keeps[]` (every keep on the top-level `depends`, a
 storey's own on its `levels[]` entry): the targets, `constrains` (the `let`s and parameters that can move or remove it: what the
 targets' positions read through their dependencies, the keep's own value, the `if`/`for`/`while`

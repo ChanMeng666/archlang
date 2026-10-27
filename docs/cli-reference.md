@@ -573,12 +573,13 @@ $ archlang reroll plan.arch --write --json
 
 change one number: what moved and why, what held, what broke
 
-**Input:** `<file.arch|->` · **Output:** { ok, set?, lets, changed[] (each with its `why` dependency chain and `root`), held[], diagnostics: { broke, healed, unchanged_count }, keeps? (when either side declares a keep: { broke, held, healed, added, removed, unchanged_count }, each { keep, grade (or { before, after } when an edit changed it), level?, occurrence, residual_mm: { before, after }, at?, changed, span }; a broken hard keep is reported here, never also under diagnostics), summary } (exit 0 on a report, 2 on a refused --set)
+**Input:** `<file.arch|->` · **Output:** { ok, set?, lets, changed[] (each with its `why` dependency chain and `root`), held[], diagnostics: { broke, healed, unchanged_count }, keeps? (when either side declares a keep: { broke, held, healed, added, removed, unchanged_count }, each { keep, grade (or { before, after } when an edit changed it), level?, occurrence, residual_mm: { before, after }, at?, changed, span }; a broken hard keep is reported here, never also under diagnostics), lock? (with --lock: { ok, checked, locked, violations[] { code, id, kind, change, detail, message, before?, after? (each { span, file? }) }, refused[] { code, id, message, hint, before?, after? } }), summary } (exit 0 on a report, 2 on a refused --set or a lock that changed, was refused or could not be checked)
 
 | Flag | Does |
 | --- | --- |
 | `--set <NAME=value>` | override the root plan's top-level `let NAME` with a numeric literal (`4500` is mm, `4.5m`) and compare the plan before and after; refused with E_SET_OVERRIDE when NAME is not exactly one top-level let |
 | `--against <old.arch>` | compare the input (the new version) against this older file instead; exactly one of --set and --against |
+| `--lock <id[,id…]>` | elements that must not change: exit 2 with E_LOCKED_ELEMENT_CHANGED for each that moved, resized, was re-hosted, re-thickened, changed swing or kind, vanished or appeared (a relabel is not a change), with its span on both sides; a lock on an id not written as `id=` (an assigned `room_3` shifts) is refused with E_LOCK_UNNAMED. Lowest storey only, as `changed[]` |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -590,6 +591,9 @@ $ archlang impact plan.arch --set W=4500 --json
 
 # the same report between two versions of a plan (old.arch before, plan.arch after)
 $ archlang impact plan.arch --against old.arch
+
+# these written ids must not move, resize, re-host, swing or vanish: exit 2 with E_LOCKED_ELEMENT_CHANGED and both spans when one did
+$ archlang impact plan.arch --against old.arch --lock shell,entry,w1,w2 --json
 ```
 
 ### `archlang suggest`
@@ -652,8 +656,8 @@ print the full bundled agent context (spec + workflow + CLI + errors)
 
 | Flag | Does |
 | --- | --- |
-| `--level <starter\|full>` | starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 150 KB bundle (default, unchanged) |
-| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 150 KB of it (spec = the language, 30 KB; workflow = the agent loop, 31 KB; cli = every command, 27 KB; errors = the diagnostic catalog, 61 KB) |
+| `--level <starter\|full>` | starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 151 KB bundle (default, unchanged) |
+| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 151 KB of it (spec = the language, 30 KB; workflow = the agent loop, 31 KB; cli = every command, 27 KB; errors = the diagnostic catalog, 61 KB) |
 | `--json` | structured result on stdout, messages on stderr |
 
 **Examples**
@@ -665,7 +669,7 @@ $ archlang context
 # one screen for a small model: the lead example, the statements a plan needs, the loop and the five errors cold authors hit first
 $ archlang context --level starter
 
-# just the diagnostic catalog (61 KB) — read one section instead of paying for the whole 150 KB bundle
+# just the diagnostic catalog (61 KB) — read one section instead of paying for the whole 151 KB bundle
 $ archlang context --section errors
 ```
 

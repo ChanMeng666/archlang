@@ -182,6 +182,7 @@ arch fix plan.arch --dry-run --json  # preview/apply the machine-applicable diag
 arch validate plan.arch --intent brief.json --feedback --json  # gate on a brief's intent contract (miss → exit 2)
 arch score plan.arch --brief brief.json --json  # satisfied/total — measures, never gates
 arch score plan.arch --taste generic --json  # a reviewer's taste report, 0–1, never gates
+arch impact new.arch --against old.arch --lock a,b
 ```
 
 **Self-correction loop:** compile → `validate --json` (fix its `next` first) → lint → repair; author in stages: `validate --stage rooms|walls|openings|fixtures` in turn, advancing when `at_stage.clean`. If
@@ -206,10 +207,10 @@ space beats routing a bath through a bedroom — then re-`repair` and `validate 
 
 | Mistake | Fix |
 | --- | --- |
-| Expecting +y to go up | +y goes **down**; a room below another has a larger y. |
+| Expecting +y to go up | A room below another has a larger y. |
 | Hand-summing room offsets | Lay the row with `strip`. |
 | Furniture floated at a guessed `at`, or an `inset` hand-computed from a wall thickness | Place it `in <room> anchor <9-point> [flush] [inset]` or `against wall <id>` — closed-form, never names a thickness. |
-| `size 4000` (no height) | Sizes are `WxH`: `size 4000x3000` (or `W x H` with spaces). |
+| `size 4000` | Sizes are `WxH`: `size 4000x3000`. |
 | String math without interpolation | Use `"{expr}"`, e.g. `label "{round(W / 1000)} m"`. Only the built-ins above and your own `let f(…)` are callable — `aream2` is NOT built in. |
 
 ## Worked examples
@@ -796,8 +797,8 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
   - example: `archlang reroll plan.arch --json` — each candidate run as { span, replacement, count, loopVar, tokensBefore, tokensAfter }
 
 **`archlang impact`** — change one number: what moved and why, what held, what broke
-  - input: <file.arch|-> → output: { ok, set?, lets, changed[] (each with its `why` dependency chain and `root`), held[], diagnostics: { broke, healed, unchanged_count }, keeps? (when either side declares a keep: { broke, held, healed, added, removed, unchanged_count }, each { keep, grade (or { before, after } when an edit changed it), level?, occurrence, residual_mm: { before, after }, at?, changed, span }; a broken hard keep is reported here, never also under diagnostics), summary } (exit 0 on a report, 2 on a refused --set)
-  - flags: `--set <NAME=value>` override the root plan's top-level `let NAME` with a numeric literal (`4500` is mm, `4.5m`) and compare the plan before and after; refused with E_SET_OVERRIDE when NAME is not exactly one top-level let · `--against <old.arch>` compare the input (the new version) against this older file instead; exactly one of --set and --against · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+  - input: <file.arch|-> → output: { ok, set?, lets, changed[] (each with its `why` dependency chain and `root`), held[], diagnostics: { broke, healed, unchanged_count }, keeps? (when either side declares a keep: { broke, held, healed, added, removed, unchanged_count }, each { keep, grade (or { before, after } when an edit changed it), level?, occurrence, residual_mm: { before, after }, at?, changed, span }; a broken hard keep is reported here, never also under diagnostics), lock? (with --lock: { ok, checked, locked, violations[] { code, id, kind, change, detail, message, before?, after? (each { span, file? }) }, refused[] { code, id, message, hint, before?, after? } }), summary } (exit 0 on a report, 2 on a refused --set or a lock that changed, was refused or could not be checked)
+  - flags: `--set <NAME=value>` override the root plan's top-level `let NAME` with a numeric literal (`4500` is mm, `4.5m`) and compare the plan before and after; refused with E_SET_OVERRIDE when NAME is not exactly one top-level let · `--against <old.arch>` compare the input (the new version) against this older file instead; exactly one of --set and --against · `--lock <id[,id…]>` elements that must not change: exit 2 with E_LOCKED_ELEMENT_CHANGED for each that moved, resized, was re-hosted, re-thickened, changed swing or kind, vanished or appeared (a relabel is not a change), with its span on both sides; a lock on an id not written as `id=` (an assigned `room_3` shifts) is refused with E_LOCK_UNNAMED. Lowest storey only, as `changed[]` · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `archlang impact plan.arch --set W=4500 --json` — widen by one number: every moved/resized/re-hosted element with the chain that moved it, what held, what broke
 
 **`archlang suggest`** — advisory topology suggestions as data (door/window statements that resolve reachability/window faults)
@@ -817,7 +818,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 
 **`archlang context`** — print the full bundled agent context (spec + workflow + CLI + errors)
   - input: none → output: the full agent context (llms-full.txt), one --section of it, or the one-screen --level starter
-  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 150 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 150 KB of it (spec = the language, 30 KB; workflow = the agent loop, 31 KB; cli = every command, 27 KB; errors = the diagnostic catalog, 61 KB) · `--json` structured result on stdout, messages on stderr
+  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 151 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 151 KB of it (spec = the language, 30 KB; workflow = the agent loop, 31 KB; cli = every command, 27 KB; errors = the diagnostic catalog, 61 KB) · `--json` structured result on stdout, messages on stderr
   - example: `archlang context` — the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 
 **`archlang new`** (aliases: `init`) — scaffold a starter .arch
@@ -835,7 +836,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `archlang explain <CODE>`.
-**144 errors** (abort rendering) · **88 warnings** (advisory; `validate --strict` fails on them too).
+**146 errors** (abort rendering) · **88 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -916,6 +917,8 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `E_LEVEL_DUP` — Two `level` blocks declare the same storey number. **Fix:** Renumber one of them, or merge the two bodies into a single `level` block.
 - `E_LEVEL_MIX` — A drawable statement sits beside `level` blocks. **Fix:** Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`north`/`site`/`dims`/`title`/`axes`/`schedule`/`legend`), `component`/`import` declarations, and the plan-global `let`/`set` stay outside — they apply to every level.
 - `E_LEVEL_NEST` — `level` used inside a block or component. **Fix:** Move the `level` block out to the plan body. To draw the same content on several storeys, put it in a `component` and call it from each level.
+- `E_LOCKED_ELEMENT_CHANGED` — An element `archlang impact --lock` names changed between the two versions. **Fix:** Put the locked element back as it was in the older file, or drop it from `--lock` if the change is intended.
+- `E_LOCK_UNNAMED` — `archlang impact --lock` names an element whose id was not written, or no element at all. **Fix:** Write `id=<name>` on the element in both versions and lock that name.
 - `E_NON_FINITE` — A number is too large to be finite. **Fix:** Use a realistic dimension. A plan is measured in millimetres, and a value above about 1e300 is never a building.
 - `E_OPENING_ABOVE_WALL` — An opening's head is above the wall it is cut in. **Fix:** Lower the `head` to the wall's height (the fix does exactly that), or raise the wall with `wall … height`.
 - `E_OPENING_DATUM` — An opening's position names no datum that applies to its run. **Fix:** Write a position the run can read: `at 600 from start`, `at 600 from end`, `at center`, or an edge through one end of the run (`from a.top` on a vertical run).
