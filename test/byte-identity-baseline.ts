@@ -1578,7 +1578,7 @@ export const BASELINE: [string, string][] = [
   ["courtyard-house", "3984a002996a4d4aba0c1bdd462474f710a87ecc50848093435573f4bd4d6c2e"], // re-measured for PS2.4, see header; PS2.11e, see header
   ["furnished-flat", "52b8bee1afff224fca393b2fd77bf7a4720009b91d0a625da434648220a5eb87"], // PS2.11e, see header
   ["gallery-l", "9c21788039e6844add835cfa386e822c5f093475d8d5b4ff7cccc40551f8233f"], // PS2.10 dim fixed, see header; PS2.11e, see header
-  ["garden-house", "c8b65ff73b220a116526275ec35452aaca0a3d0c13c01172a176346a32f21a91"], // re-measured, see header
+  ["garden-house", "e28a6fff19ae87bd61f4d8bde18dbbc4707dbaf66ebc1a9529a5630d3dbcec34"], // re-measured, see header
   ["garden-loft", "bb63052829092bf42cd5b611c9edf81d6364d9a32b5c1cc91b14fa485fddc560"], // PS2.11e, see header
   ["hexagon-pavilion", "c9feff36e36022353398608901b0b508a737c27eca89e4e2c2becd3a5723e0b5"],
   ["hillside-villa", "3f80c4312c849bac7bd109b4eeb95a59b775741b33940d8cff5ec6f62aec2de5"], // re-measured, see header; PS2.11e, see header
@@ -1592,7 +1592,7 @@ export const BASELINE: [string, string][] = [
   ["one-room", "17b12740d9e290ca59ea17013f89d54c42a3d6907c915db4338416966d988ce0"],
   ["parametric", "f56a97d02a2fca82327b80b3f7a7f5edcac9518a0b70244caa292ed8f3a2aee4"],
   ["practice-office", "8a2955715e5c372b7c73383e2803fccb1ce54792fc36b95c0d9771cbf374bf08"], // added with the example, re-measured for net area, see header; PS2.11e, see header
-  ["relational", "50b5f171321f7d83cc3b8d3e74a5f602d91e1cf352fd5e1042391e825bd2d967"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header; PS2.11e, see header
+  ["relational", "357cb4f09333ffb210a8a276acfd524c384c90657cc9ba529d5d4298d88c8cb5"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header; PS2.11e, see header
   ["sheet-notes", "4cc86e92db896dade462f57b6db434057abe253ab5e10232711804e4da31d7d9"], // re-measured, see header
   ["studio", "c1b79a49af3ad31cddf82e88632624d46663c804f134b6e172e585cad36ed969"], // PS2.11e, see header
   ["terrace-row", "ec839a417cb57b6bce80a592a144bd98a216b175edb92c67df3260ab5ce9c33d"], // re-measured, see header
@@ -1626,7 +1626,7 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["courtyard-house", "cbbeb130a02d8dd2a3065e2f95fcf7bd83b3ec5e2f972bef17d201deab16ebd9"], // re-measured for PS2.4, see header
   ["furnished-flat", "d4f5194c4a9f26337646b7bf28a05645fc083fe1e1ec7eb4b6e3cd93b0f32641"],
   ["gallery-l", "5dec4904ac00c1d5a20747336ec0acaa4b6682f40b02008aad554ccfa87f0025"], // PS2.11e, see header
-  ["garden-house", "0d9019961d95aa850305d325000fdb5772676ae631393f0e909e9edc6089d7b9"], // re-measured, see header
+  ["garden-house", "348eb668cf18db4f37d800b1241acda2bc252c4f1de97d544d208f183aa99f64"], // re-measured, see header
   ["garden-loft", "d37d7f678f65473d7f0b023a1cb6caca96fc92da9db5f412e66db2726071c5e8"],
   ["hexagon-pavilion", "435b9fb0cc07194798fde23c5528f869a07ad02ee3842b4d4d87775a76b6f36a"],
   ["hillside-villa", "e863c47547396426ddcabb231fcb2aae2c82482a0a94034042cc0a5c5faee6c6"], // re-measured, see header; PS2.11e, see header
@@ -1640,7 +1640,7 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["one-room", "48eb98086894551bb9dddcab954a4e3f3d5a532158da11e38fd711134709605a"],
   ["parametric", "144703a7cf28e64c70cfc57451525839dd84da0f1d310135750b5d9f532d565a"],
   ["practice-office", "bf39a9a46d2635dd1cb6f14d61d222859d2e6439c9c5307dece6ae180bd62eb2"], // added with the example, re-measured for net area, see header
-  ["relational", "8d51317e51281e3d8870e76894157f18e61413c028d91414a4992ebece4941b3"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header; PS2.11e, see header
+  ["relational", "f35d691d676a0787a261f876af34cbbeeb8c4c6148b378106629e17d30a5d426"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header; PS2.11e, see header
   ["sheet-notes", "148de5f5a58fb9533999df816a742074ec901216e3b9fb78eff338b91633a4b8"], // added with the example, see header
   ["studio", "8ec08c91405139bf3d9979ad20d712299e82409bbec8d6ec9e70e89a856973e4"],
   ["terrace-row", "0c37d23bb8dfa83ce746869724ff62952637f1acb8a6ca353bfe8f7a440941a7"],

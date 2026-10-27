@@ -38,7 +38,7 @@
 plan "Garden House" {
   units mm
   grid 100
-  paper A1 landscape
+  paper A0 landscape
   scale 1:100
   north up
   dims auto overall

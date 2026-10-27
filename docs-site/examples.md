@@ -55,7 +55,7 @@ two cars it holds, and every room is reachable through a door at least 800 mm wi
 ### Garden House
 
 The other half of the language, and the one every plan above leaves out: **everything
-outside the wall line**. A two-storey family house on a 22 × 22 m suburban lot, A2 at
+outside the wall line**. A two-storey family house on a 22 × 22 m suburban lot, A0 at
 1:100 — **6 rooms and 136.5 m² of floor**, beside **220.7 m² of ground**
 (`archlang describe --json`'s `totals.outdoor_area_m2`) and a **484 m² lot**
 (`site.lot_area_m2`). Those are three different numbers and the release exists to keep

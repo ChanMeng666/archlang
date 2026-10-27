@@ -631,12 +631,7 @@ export function summaryFacts(
   // statements) legitimately change — `courtyard-house` fits A1 landscape at 1:100 and
   // overflows it turned. The auto-fit DENOMINATOR changes with them (`museum-wing` goes
   // 1:200 → 1:250), so the effective `scale` is gated separately: fixed unless auto-fit.
-  // `drawing_fits` reads the WHOLE drawing, the lot line included; the lot stays put while
-  // the building turns (see `site.lot_bbox` above), so on a plan with a `boundary` that verdict
-  // is not a group fact: `garden-house`, refitted to its sheet in fix/examples-sound, fits A1
-  // as authored and overruns it turned 180° beside its unmoved lot.
-  const sheet = s.sheet && s.site?.lot_bbox ? (({ drawing_fits: _d, ...rest }) => rest)(s.sheet) : s.sheet;
-  if (gate.sheet) inv("sheet", sheet ?? null);
+  if (gate.sheet) inv("sheet", s.sheet ?? null);
   if (gate.scale) inv("scale", s.scale ?? null);
   inv("accTitle", s.accTitle ?? null);
   inv("accDescr", s.accDescr ?? null);
@@ -770,12 +765,7 @@ export function summaryFacts(
   if (gate.sheet) {
     inv(
       "diagnostics.sheet",
-      // `W_DRAWING_OVERFLOW` reads the whole drawing, the unmoved lot line included (see
-      // `drawing_fits` above), so on a plan with a `boundary` it is not a group fact.
-      s.diagnostics
-        .filter(onSheet)
-        .filter((d) => !(s.site?.lot_bbox && d.code === "W_DRAWING_OVERFLOW"))
-        .map((d) => projectDiag(d, src)),
+      s.diagnostics.filter(onSheet).map((d) => projectDiag(d, src)),
     );
   }
   return f;
@@ -2106,12 +2096,7 @@ export function buildingFacts(obs: BuildingObservation, gate: { sheet: boolean }
   if (gate.sheet) {
     inv(
       "diagnostics.sheet",
-      // As in {@link summaryFacts}: on a plan with a lot `boundary`, `W_DRAWING_OVERFLOW` reads
-      // the unmoved lot line, so it is not a group fact.
-      unowned
-        .filter(onSheet)
-        .filter((d) => !(s.site?.lot_bbox && d.code === "W_DRAWING_OVERFLOW"))
-        .map((d) => projectDiag(d, obs.src)),
+      unowned.filter(onSheet).map((d) => projectDiag(d, obs.src)),
     );
   }
   return f;

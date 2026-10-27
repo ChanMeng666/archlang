@@ -68,7 +68,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/garden-house.arch",
-    "99bc595f5444a7d9cc4e265c1ddff470a9908121dfe74ce709f2fd5bade6584f",
+    "a6037e5bf56650c49fb5ec92989c98d5a476391506bace57257cc3ed4549bc45",
     3840,
   ],
   [
@@ -138,7 +138,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/relational.arch",
-    "60b7d13a2c1d5d7a3d53a39f53f83999f6ef199ed70beb419323cc3a2a89aa3f",
+    "7088586e50efca9a26c8e9595c503b039f7db3f9d6d14655510acc8a0282adee",
     900,
   ],
   [

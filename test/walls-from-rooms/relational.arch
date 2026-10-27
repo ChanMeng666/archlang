@@ -53,13 +53,15 @@ plan "Relational 1BR" {
   furniture counter against wall w_ring segment 1 offset 1500 size 600x600 in kitchen
   furniture sink    against wall w_ring segment 1 offset 2300 size 800x600 in kitchen
   furniture stove   against wall w_ring segment 1 offset 3100 size 600x600 in kitchen
-  furniture fridge  against wall w_ring segment 1 offset 700  size 600x650 in kitchen
 
   furniture basin  against wall w_ring segment 1 offset 5800 size 600x450 in bath
   furniture wc     against wall w_ring segment 1 offset 6800 size 400x700 in bath
   furniture shower in bath anchor bottom-left flush size 900x900
 
   dim faces (0,7500)->(8000,7500) offset 600
+
+  # The fridge closes the kitchen's work triangle (sink, stove, fridge on the east run).
+  furniture id=fridge fridge against wall w_ring segment 1 offset 700 size 600x650 in kitchen
 
   title {
     project "Relational Layout Demo"

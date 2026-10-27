@@ -312,7 +312,7 @@ function shippedExamples(): Example[] {
 /** The one line fix/examples-sound changed to fit each example to its sheet: [now, before]. */
 const AS_WAS: Record<string, [string, string]> = {
   "courtyard-house": ["  roof overhang 500", "  roof overhang 600"],
-  "garden-house": ["  paper A1 landscape", "  paper A2 landscape"],
+  "garden-house": ["  paper A0 landscape", "  paper A2 landscape"],
   "hillside-villa": ["  paper A1 landscape", "  paper A2 landscape"],
   materials: ["  paper A2 landscape", "  paper A3 landscape"],
 };

@@ -574,7 +574,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         // Re-measured 2026-10-18 (plan-soundness PS2.6): the example's SOURCE changed, one door
         // re-hosted (`d_gar` onto the kitchen, +3 bytes), and `source` is part of this digest. The
         // pre-edit source still gives the previous row; see ./byte-identity-baseline.ts.
-        ["207dbef6c8f84224a9cc1cd19fc88ee5b93ede8c9c93a7bb6698fe65cc5787fb", "garden-house"], // PS2.17 source edit (a worktop), see above
+        ["d0e7d7265c8912215734e7b406fc02490eea5739aba9a60c3edcf130126866bf", "garden-house"], // PS2.17 source edit (a worktop), see above
         ["2e7ccbfcc9e7f2b3a7fae8d5bd7b28c964f6ffba39f523986ea0d8820a19ae4f", "garden-loft"], // PS2.17 source edit (a worktop), see above; PS2.11e source edit, see above
         ["57d4237846d3b666c6806da6ee2bf4cadeb68a2e1d39723c6a024e5b415d5faf", "hexagon-pavilion"],
         ["79df29d09e0b76ead92a5d5359d2dfb787af5934617aea947e86289e57843553", "hillside-villa"], // PS2.1–PS2.3 and PS2.9 source edits, see above; PS2.11e source edit, see above
@@ -587,7 +587,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         ["9f9ff13b19a6f8faf34b8c6bd7092e86c5e87ed70f2c37597f5414906114d292", "museum-wings"], // PS2.11e source edit, see above
         ["863a9f2c6d83393b414fc6cf634c7757d3148ba19d9c85ff19b9b935f2d64f99", "one-room"],
         ["06e0d70afc7df98e0cf944d4d4d6179370632ea31e52eebf07aaf6efb7af210c", "parametric"],
-        ["29b882bbe99995938ba65a13a5fdcf0bd1899948138c4f22793142af00336939", "relational"], // PS2.9 and PS2.4 source edits; PS2.17 source edit (a worktop), see above; PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e source edit, see above
+        ["a6f645e75374318f4ec98242aaf081345a5c478041c9b953df1c235111e64c0c", "relational"], // PS2.9 and PS2.4 source edits; PS2.17 source edit (a worktop), see above; PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e source edit, see above
         ["d58bfbf0a25a5b70b7bdfdd1a8ef7b0fb8912f88ebb5cf631da3efe8268015e4", "sheet-notes"], // first measurement, added with the example
         ["974ca050f4bd8dc669d9df4fc7cf575f407bc7a516287f28cd09506fd87cddc6", "practice-office"], // first measurement with the example; PS2.9 source edit, see above; PS2.11e source edit, see above
         ["f6a934fcb40723366612a6485f93d6f1a306342ced16756d593aff9bd7eed4e7", "studio"], // PS2.11e source edit, see above

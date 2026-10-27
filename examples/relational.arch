@@ -48,7 +48,6 @@ plan "Relational 1BR" {
   furniture counter against wall exterior segment 1 offset 1500 size 600x600 in kitchen
   furniture sink    against wall exterior segment 1 offset 2300 size 800x600 in kitchen
   furniture stove   against wall exterior segment 1 offset 3100 size 600x600 in kitchen
-  furniture fridge  against wall exterior segment 1 offset 700  size 600x650 in kitchen
 
   furniture basin  against wall exterior segment 1 offset 5800 size 600x450 in bath
   furniture wc     against wall exterior segment 1 offset 6800 size 400x700 in bath
@@ -57,6 +56,9 @@ plan "Relational 1BR" {
   # Overall width, outside face to outside face (`faces` projects each endpoint onto
   # the wall it runs into, so it prints the true 8200 rather than the 8000 room grid).
   dim faces (0,7500)->(8000,7500) offset 600
+
+  # The fridge closes the kitchen's work triangle (sink, stove, fridge on the east run).
+  furniture id=fridge fridge against wall exterior segment 1 offset 700 size 600x650 in kitchen
 
   title {
     project "Relational Layout Demo"

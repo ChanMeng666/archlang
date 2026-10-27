@@ -586,7 +586,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Every shipped example now validates with no warnings, and a design review fixed what was
   architecturally wrong. Sheets: `courtyard-house` (eaves 600 → 500 mm), `materials` (A2 at 1:50),
-  `garden-house` (A1), `hillside-villa` (A1). `hillside-villa`: both upper bedrooms take the
+  `garden-house` (A0), `hillside-villa` (A1). `hillside-villa`: both upper bedrooms take the
   garden facade, each with an ensuite, back to back (the master's off its own dressing room; the
   street side is now a study and a studio), a 4800 mm double-garage door with a drive, the garage reaches the house through the
   utility rather than the study, the fridge joins the kitchen's work triangle, and 800 mm bathroom

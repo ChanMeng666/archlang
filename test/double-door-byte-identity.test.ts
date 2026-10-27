@@ -151,8 +151,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/garden-house.arch",
-    "9fa544e25b96db72339ece0e5483a8a8faf26426cf76437eda50390deffdb817",
-    "3855de07f95e006eaaea5c4f07f9d08b2a13d89fa7c773b73946e21fbeff445c",
+    "f4873f9a1f6e68f494a84c913d6f850560f626850cfd071a9fb51784835c5b01",
+    "7b0be7cc59f85d596c632beb990432981f153dd38ce1ae7027d8516f01d807ae",
     [
       [
         "    furniture fridge       against wall w_e1 offset 3200 in r_kitchen\n    furniture counter      against wall w_e1 offset 2500 in r_kitchen",
@@ -210,8 +210,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/relational.arch",
-    "ca40259e80151b3cc3236659a636a65cebe2c9d452cb6e4d3f7607470fdd3088",
-    "2845ea0ba1d42c81d2806cec8ea478c821fdeec9b660420be7e4828dd4713388",
+    "4c117d32d823ccbfa76734397cf58001d5b3fcf700a67ee52b493856c436f5b1",
+    "8034d1bda180d886dd5fa3e053155b20f1508131985434735c5bdc283bd74053",
     [],
   ],
   [
