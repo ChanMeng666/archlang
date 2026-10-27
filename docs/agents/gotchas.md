@@ -88,6 +88,24 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 - **Parallel PRs conflict on the records** (`CHANGELOG.md` `[Unreleased]`, a programme's
   `handoff.md` and `cards.md`) after nearly every merge. Resolve by keeping both entries; counts in
   those records are recounted only at a stage end, never per PR.
+- **CI's Node jobs run biome before vitest**, so a PR whose only red was formatting has never run
+  its tests: the run after the formatting fix is its first test run. Run `npx biome check .` before
+  pushing (#307, #308).
+- **A new lint rule is registered beyond its module**: `test/d4-oracle.ts` `RULE_CLASS`, the
+  append-only order windows (`slice(-N)` in `test/doors.test.ts`,
+  `test/lint-circulation-privacy.test.ts`, `test/lint-space-enclosure.test.ts`), the per-stage counts
+  in `test/stages.test.ts`, `test/defect-corpus/README.md`, the totals in
+  `test/rooms-tiling-probe.test.ts` (#308).
+- **Two rule PRs in parallel conflict on all of those** plus `src/lint/rules/index.ts`,
+  `src/error-catalog.ts` and `src/lint/ruleset.ts`: keep main's entry first, then the PR's; bump the
+  windows and counts; re-take K1 and `gen:*` by their generators; re-insert catalogue and ruleset
+  entries as whole blocks (a hunk-level merge split entries and broke the build, #315).
+- **`validate`'s `next` and lint output feed the K1 keep digests**: a change to `next` or a new rule
+  moves K1 rows. After merging `main`, re-run `npx tsx test/keep-weak-law-gen.ts` (D24); never
+  hand-merge the table (#314). `keep-byte-identity` times out under a parallel local run: run it alone.
+- **Editing `examples/` moves the playground e2e specs** (actions, layout and levels read
+  `examples/hillside-villa.arch`) and the docs e2e: run `npm run e2e:playground` before pushing an
+  examples PR (#305).
 
 ## Docs & prose
 

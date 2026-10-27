@@ -183,7 +183,7 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    side-on. (e) The PR #308 red-team follow-ups, filed by this PR: PS0.29 (the furnish sweep's
    `GATED` list lacks `W_EXIT_APPROACH_BLOCKED`) and PS2.78 (`finish` filters exits by room, so a
    strip reaching the next room is unknown there). (f) PS2.75/PS2.76 from the examples review; PS4.6.
-   D27's D3 exception (an [M] and an [S] figure shipping in messages) awaits the owner's ratification.
+   D27's D3 exception ratified 2026-10-28 (owner's delegation, chat): 914 mm on two state copies of R311.3; the bed figure default-only, GB/T 3328-2016 §4 owed (PS2.79).
    Stage-end drift audit (read-only, 2026-10-27, this PR): (i) cards PS2.64–PS2.67, PS2.69, PS2.70,
    PS2.72, PS2.74, PS2.77, PS7.7, PS7.8 and PS7.10 lacked a merge SHA (PS2.67 its PR, PS7.8 read
    "this PR") and kept their full texts: cut to `done` lines, texts moved verbatim to
@@ -191,7 +191,7 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    `CHANGELOG.md` line, added; #303 touched dev and workspace manifests only, #306/#309/#310/#312 are
    records or tests, no line owed; (iii) #306's and #315's rulings had no D-entry: D27;
    (iv) README §6 and this §3 recounted from `cards.md`; (v) the §1 table already carried the PS7.8 row.
-4. Everything else in `cards.md` by family: PS0 19 todo, PS1 4, PS2 45 todo, PS3 4, PS4 6 todo, PS5 3, PS7 1 todo (7.3 parked); pick by first-contact evidence, not by number.
+4. Everything else in `cards.md` by family: PS0 19 todo, PS1 4, PS2 46 todo, PS3 4, PS4 6 todo, PS5 3, PS7 1 todo (7.3 parked); pick by first-contact evidence, not by number.
 
 **Open cards by family (2026-10-25 audit, counts updated 2026-10-27; "ready" = no stated dependency
 outstanding; every card that changes what an author sees in `lint`, `validate`, `finish` or the spec
@@ -201,7 +201,7 @@ waited for the row-5 re-measure (D19), which ran 2026-10-26: such a card may sta
 |---|---|---|---|
 | PS1 | 4 | 1.5, 1.6, 1.7, 1.8 | — |
 | PS0 | 19 | PS0.15 (net-area bound), 0.2, 0.3, 0.6, 0.9, 0.17, 0.22, 0.23, 0.25, 0.26, 0.27, 0.28, 0.29 | 0.8 (re-measure), 0.16/0.18/0.20/0.21 (a decision each), 0.24 (code landed in #252; only a `clear front\|sides` test is left) |
-| PS2 | 45 | 2.21, 2.23, 2.25, 2.27, 2.30–2.33, 2.35, 2.41–2.44, 2.47–2.49, 2.51, 2.52, 2.56, 2.57, 2.58, 2.61–2.63, 2.71 (taste, D27), 2.75, 2.76, 2.78 | 2.68 (a sourced figure, D27), 2.73 (authors reaching for it), 2.14 (ADR), 2.16/2.36 (facts), 2.20/2.28/2.59 (measure first), 2.24/2.26/2.37/2.38/2.55 (a decision each), 2.39 (drawing decision), 2.40 and 5.6 (fire D12's reverse-if), 2.53 (a sourced ceiling), 2.60 (a sourced profile figure) |
+| PS2 | 46 | 2.21, 2.23, 2.25, 2.27, 2.30–2.33, 2.35, 2.41–2.44, 2.47–2.49, 2.51, 2.52, 2.56, 2.57, 2.58, 2.61–2.63, 2.71 (taste, D27), 2.75, 2.76, 2.78 | 2.68 (a sourced figure, D27), 2.79 (GB/T 3328-2016 §4 read), 2.73 (authors reaching for it), 2.14 (ADR), 2.16/2.36 (facts), 2.20/2.28/2.59 (measure first), 2.24/2.26/2.37/2.38/2.55 (a decision each), 2.39 (drawing decision), 2.40 and 5.6 (fire D12's reverse-if), 2.53 (a sourced ceiling), 2.60 (a sourced profile figure) |
 | PS3 | 4 | 3.12 | 3.10 (decision; moves digests, D8), 3.11 (corpus sweep), 3.13 (proof first) |
 | PS4 | 6 | 4.6, 4.7, 4.8, 4.9 | 4.10 and 4.12's MCP part (with 5.3a's version bump) |
 | PS5 | 3 | 5.5 | 5.3a (MCP version bump), 5.6 (D12) |

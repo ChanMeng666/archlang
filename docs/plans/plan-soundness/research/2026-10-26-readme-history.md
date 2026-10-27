@@ -358,3 +358,14 @@ Moved 2026-10-27 by the row-7 tranche-2 housekeeping, verbatim:
 *Researched 2026-10-18* (same file, Part A): became card
    PS3.7. Still open: no evidence on how often agents get a furniture turn wrong; the first-contact
    audit should count it.
+
+## D26: the PS7.8 run result
+
+Moved verbatim from README §3 D26 on 2026-10-28 (D27 ratification records PR), from `main@8829a8bb`:
+
+- *Run result (PS7.8, 2026-10-27, `audits/2026-10-27-first-contact-rerun-ps78.md`, `main@134765d1`):*
+  the frozen arm drew 64 defects (4 / 29 / 31), `validate` 0 / 6, 3 authors stopping with warnings
+  standing; the whole-loop arm drew 56 (1 / 19 / 36), `validate` 6 / 6 (`--stage` 4 / 6, batched,
+  never gated), every plan lint-clean with `next` null, 0 stopping early, and final lint reports 0 of
+  its 56: the loop removes what lint sees and leaves the no-rule families. First read of the
+  reverse-if: not met (fewer defects); one more re-measure with both arms decides it.
