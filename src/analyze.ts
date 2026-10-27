@@ -765,7 +765,12 @@ export function arcWindowRoom(
 
 /** One connector (door or cased opening) as a graph edge between two spaces. */
 export interface AccessEdge {
-  /** Id of the door/opening element. (`doorId` kept as the historical field name.) */
+  /**
+   * Id of the door/opening element. (`doorId` kept as the historical field name.) On an edge a
+   * `status demolish` wall leaves open between two rooms ({@link openRunsOf}, B3a) it is the
+   * WALL's id, with `kind: "opening"`; such a wall may give several edges the same id (one per
+   * pair of rooms along it), and no door or opening element has it.
+   */
   doorId: string;
   /** Whether this edge is a `door` (has a leaf) or a leaf-less `opening`. */
   kind: "door" | "opening";
@@ -984,14 +989,75 @@ export function buildDoorAccessGraph(
   tol: number,
   clearAllowanceMm: number = DEFAULT_CLEAR_ALLOWANCE_MM,
   openings: ROpening[] = [],
+  openRuns: readonly AccessConnector[] = [],
 ): AccessGraph {
   const roomRects = new Map<string, RoomBox>(rooms.map((r) => [r.id, roomBox(r)]));
-  // Doors and cased openings are both connectors, doors first.
-  const edges = connectorEdges(roomRects, [...doors, ...openings], tol, clearAllowanceMm, "probe");
+  // Doors and cased openings are both connectors, doors first; then the runs a demolished wall
+  // leaves open ({@link openRunsOf}, B3a), last, so a plan without one has the edges it had.
+  const edges = connectorEdges(roomRects, [...doors, ...openings, ...openRuns], tol, clearAllowanceMm, "probe");
   return accessGraphOf(
     rooms.map((r) => r.id),
     edges,
   );
+}
+
+/**
+ * The runs a `status demolish` wall leaves open between two rooms (preview-and-remodel B3a), as
+ * connectors of kind `opening` named by the wall's id: where the wall stood, the two rooms are one
+ * space, so the access graph, the circulation walk and the reachability rules join them there.
+ *
+ * Each straight segment of a demolished wall is cut at every room vertex that lies within the
+ * wall's half thickness (plus `tol`) of its centreline, so each piece faces at most one room on
+ * each side; a piece is kept only when it joins two rooms, unambiguously and straddling none
+ * (`connectorConnection`, the `probe` policy every access graph uses). A piece with the outside
+ * on one face is not kept: a demolished facade is not an entrance (the access graph's entrances
+ * are doors and openings). A curved segment opens nothing. Empty for a plan with no demolished
+ * wall, so every access graph of such a plan is the one it always was.
+ */
+export function openRunsOf(ir: ResolvedPlan, tol: number): AccessConnector[] {
+  const demolished = (ir.drawn?.walls ?? []).filter((w) => w.status === "demolish");
+  if (demolished.length === 0) return [];
+  const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
+  const roomRects = new Map<string, RoomBox>(rooms.map((r) => [r.id, roomBox(r)]));
+  const out: AccessConnector[] = [];
+  for (const w of demolished) {
+    for (const seg of segmentsOfWall(w)) {
+      if (seg.arc) continue;
+      const dx = seg.b.x - seg.a.x;
+      const dy = seg.b.y - seg.a.y;
+      const len2 = dx * dx + dy * dy;
+      if (!(len2 > 0)) continue;
+      const len = Math.sqrt(len2);
+      const reach = seg.thickness / 2 + tol;
+      const cuts = new Set<number>([0, 1]);
+      for (const box of roomRects.values()) {
+        for (const v of roomRing(box)) {
+          const t = ((v.x - seg.a.x) * dx + (v.y - seg.a.y) * dy) / len2;
+          if (!(t > 0 && t < 1)) continue;
+          const off = Math.abs((v.x - seg.a.x) * dy - (v.y - seg.a.y) * dx) / len;
+          if (off <= reach) cuts.add(t);
+        }
+      }
+      const ts = [...cuts].sort((p, q) => p - q);
+      for (let k = 0; k + 1 < ts.length; k++) {
+        const width = (ts[k + 1]! - ts[k]!) * len;
+        if (!(width >= 1)) continue;
+        const tm = (ts[k]! + ts[k + 1]!) / 2;
+        const c: AccessConnector = {
+          id: w.id,
+          at: { x: seg.a.x + dx * tm, y: seg.a.y + dy * tm },
+          width,
+          host: { a: seg.a, b: seg.b, thickness: seg.thickness, category: w.category, wallId: w.id },
+          kind: "opening",
+        };
+        const { between, ambiguous, straddles } = connectorConnection(c, roomRects, tol, "probe");
+        if (ambiguous || straddles || between.length !== 2 || between.includes(EXTERIOR_NODE)) continue;
+        if (between[0] === between[1]) continue;
+        out.push(c);
+      }
+    }
+  }
+  return out;
 }
 
 /**
@@ -1121,7 +1187,7 @@ export function storeyGrounded(ir: ResolvedPlan, tol: number): boolean {
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
   const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
   const outdoors = ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor");
-  const graph = buildDoorAccessGraph(rooms, doors, tol, undefined, openings);
+  const graph = buildDoorAccessGraph(rooms, doors, tol, undefined, openings, openRunsOf(ir, tol));
   return levelIsGrounded(graph, rooms, doors, outdoors);
 }
 

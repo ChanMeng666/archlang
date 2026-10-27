@@ -59,6 +59,7 @@ import {
   KEYWORDS,
   OPERATORS,
   TITLE_FIELDS,
+  WALL_STATUSES,
 } from "../src/grammar/tokens.js";
 import {
   USE_KINDS,
@@ -440,8 +441,10 @@ function rules(): [string, string][] {
     // ---- elements --------------------------------------------------------
     [
       "wall-stmt",
-      `"wall" rws id-opt ident rws "thickness" ws expr ( ws wall-material )? ( ws "height" ws expr )? ws ( wall-body | wall-relation )`,
+      `"wall" rws id-opt ident rws "thickness" ws expr ( ws wall-material )? ( ws "height" ws expr )? ( ws wall-status )? ws ( wall-body | wall-relation )`,
     ],
+    // `status existing|demolish|new` (B3a): after `height`, before the body, as the parser reads it.
+    ["wall-status", `"status" rws ( ${litAlt(WALL_STATUSES)} )`],
     ["wall-body", `"{" ws point ws ( wall-vertex ws )+ ( "close" ws )? "}"`],
     // The pairwise forms (ADR 0028 §4) stand where the point list would: the rooms' shared
     // edge, or one ring on the outline of at least one listed room.
@@ -639,7 +642,7 @@ function rules(): [string, string][] {
     // `between … thickness` clauses, the closed list the parser accepts.
     [
       "walls-stmt",
-      `"walls" rws "from" rws "rooms" rws "exterior" rws expr rws "partition" rws expr ( ws "{" ws ( walls-clause ws )* "}" )?`,
+      `"walls" rws "from" rws "rooms" rws "exterior" rws expr rws "partition" rws expr ( ws wall-status )? ( ws "{" ws ( walls-clause ws )* "}" )?`,
     ],
     [
       "walls-clause",

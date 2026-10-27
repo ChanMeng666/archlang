@@ -501,6 +501,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Lower the `head` to the wall's height (the fix does exactly that), or raise the wall with `wall … height`.",
     "wall id=w1 exterior thickness 200 height 2200 { (0,0) (4000,0) close }\n  door id=d on w1 at 50% width 900 head 2400   # error: head above a 2200 wall",
   ),
+  E_OPENING_ON_DEMOLISHED_WALL: E(
+    "E_OPENING_ON_DEMOLISHED_WALL",
+    "A door, window or opening stands in a wall marked `status demolish`.",
+    "A `wall … status demolish` (or a `walls from rooms … status demolish` statement) is a wall the remodel takes out: it is drawn, but it encloses nothing, hosts nothing and counts in no area. A `door`/`window`/`opening` hosted on it would stand in a wall that is no longer there, so the plan contradicts itself.",
+    "Remove the opening (it goes with the wall), host it on a wall that stays, or keep the wall: `status existing` (or no `status` at all).",
+    "wall id=p partition thickness 100 status demolish { (4000,0) (4000,5000) }\n  door id=d on p at 50% width 800   # error: the wall is being demolished",
+  ),
   // ---- ground surfaces, fences and the lot line ------------------------
   E_OUTDOOR_SIZE: E(
     "E_OUTDOOR_SIZE",
@@ -830,6 +837,20 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "A `level` block is a plan-level statement: it partitions the whole plan into storeys, so it cannot be nested inside another `level`, a `for`/`if`/`while` body, a `strip`, or a component definition.",
     "Move the `level` block out to the plan body. To draw the same content on several storeys, put it in a `component` and call it from each level.",
     "component c() { level 1 { } }   # error: only allowed at plan level",
+  ),
+  E_LOCKED_ELEMENT_CHANGED: E(
+    "E_LOCKED_ELEMENT_CHANGED",
+    "An element `archlang impact --lock` names changed between the two versions.",
+    "`--lock <id,…>` names elements that must stay as they were. An element is changed when, on the lowest storey, it moved (an opening also when it slid along an unchanged wall), resized, was re-hosted (another wall, relation or joined spaces), was re-thickened, changed its door swing or any other resolved field, vanished or appeared. A relabel is not a change. Each violation carries the element's span on both sides. Raised by `impact()`, never by `compile()`.",
+    "Put the locked element back as it was in the older file, or drop it from `--lock` if the change is intended.",
+    "window id=w1 on s at 1200 width 1200   # was `at 1100`: archlang impact new.arch --against old.arch --lock w1: error, moved 100 mm",
+  ),
+  E_LOCK_UNNAMED: E(
+    "E_LOCK_UNNAMED",
+    "`archlang impact --lock` names an element whose id was not written, or no element at all.",
+    "A lock names an element by the `id=` its author wrote. An assigned id (`room_3`, `window_2`, or the internal name of a wall `walls from rooms` derived) shifts when a statement is inserted ahead of it, so a lock on it could follow another element; it is refused. So is a name no element of either version carries, or one that stands only above the lowest storey, which `impact` does not compare yet. Raised by `impact()`, never by `compile()`.",
+    "Write `id=<name>` on the element in both versions and lock that name.",
+    "window on s at 1200 width 1200   # assigned window_1: archlang impact new.arch --against old.arch --lock window_1: error, write id= first",
   ),
   E_NON_FINITE: E(
     "E_NON_FINITE",

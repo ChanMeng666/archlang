@@ -296,6 +296,15 @@
           },
           "description": "Room ids left out of the derivation."
         },
+        "status": {
+          "type": "string",
+          "enum": [
+            "existing",
+            "demolish",
+            "new"
+          ],
+          "description": "`status existing|demolish|new`: the status of every wall the statement derives (as on a wall). Omitted when not written."
+        },
         "open": {
           "type": "array",
           "description": "`open [id=] between A and B [width]`: the pair's partition is voided by a derived leaf-less opening across its clear span (not listed in `openings`).",
@@ -411,6 +420,15 @@
             "exclusiveMinimum": 0,
             "maximum": 100000,
             "description": "How tall the wall STANDS, in millimetres — a vertical height, NOT a plan extent like a room's `height`. Defaults to the plan's `storey_height` (3000). It draws nothing: a floor plan is a horizontal cut. An opening's `head` may not exceed it."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "existing",
+              "demolish",
+              "new"
+            ],
+            "description": "What becomes of the wall in a remodel: `existing` (the default when omitted), `demolish` or `new`. A `demolish` wall is drawn but encloses nothing, hosts nothing (a door, window or opening in it is E_OPENING_ON_DEMOLISHED_WALL) and counts in no area; where it stood between two rooms, they are joined. Omitted when not written."
           },
           "closed": {
             "type": "boolean",

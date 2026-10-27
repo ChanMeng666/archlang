@@ -126,6 +126,8 @@ export type {
   WindowSummary,
   OpeningSummary,
   HeightFacts,
+  WallStatusFacts,
+  WallStatus,
   FurnitureSummary,
   ClearFact,
   InstanceSummary,
@@ -182,6 +184,11 @@ export type {
   WcFact,
   WcSideFact,
   WindowCoverFact,
+  DoorQuantity,
+  QuantityFacts,
+  RoomQuantity,
+  WallQuantity,
+  WindowQuantity,
 } from "./describe.js";
 // Structured JSON I/O: the machine-native RPLAN/DStruct2Design plan shape.
 // `planFromJson` builds a PlanNode from JSON (catalogued E_JSON_* on bad shape),
@@ -289,6 +296,10 @@ export type {
   KeepImpact,
   LetOverride,
 } from "./impact.js";
+// The lock check (preview-and-remodel B1): `impact(before, after, { lock })` reports every
+// locked id that changed (`E_LOCKED_ELEMENT_CHANGED`) or names no written id (`E_LOCK_UNNAMED`).
+export { checkLocks, parseLockList } from "./lock.js";
+export type { ImpactLock, LockElement, LockRefusal, LockSide, LockSpan, LockViolation } from "./lock.js";
 // Architectural lint: habitability rules as `W_*` diagnostics — every room
 // enterable, bedrooms have a window, doors wide enough, the building has an entrance.
 // Pure; the ruleset is data. Surfaced as `arch lint`.

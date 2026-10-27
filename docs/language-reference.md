@@ -899,6 +899,21 @@ wall exterior thickness 250 material brick { … }
 wall exterior thickness 250 material brick scale 1.5 angle 30 { … }
 ```
 
+**Status** (for a remodel): `status existing|demolish|new`, after `height` and before the
+points or the pairwise form, says what becomes of the wall; `walls from rooms … partition <mm>
+status <s>` gives every wall the statement derives the same status. Absent, a wall is
+`existing`, and a `new` wall is a wall like any other. A `demolish` wall is drawn exactly as
+it would be without the clause (a later release draws the status), but no fact reads it: it
+encloses nothing, hosts nothing (a door, window or opening in it is
+`E_OPENING_ON_DEMOLISHED_WALL`) and counts in no net area, and where it stood between two
+rooms the access graph, circulation and the reachability rules join them across its run.
+`describe --json` adds `wall_status` (the count by status and each wall's status) only on a
+storey that writes one; Plan JSON carries `status` on a wall and on `walls_from_rooms`.
+
+```arch static
+wall id=p partition thickness 100 status demolish { (4000,0) (4000,5000) }
+```
+
 ### Walls from rooms
 
 ```
@@ -2534,7 +2549,9 @@ renders exactly as before.
 
 A final **`TOTAL`** row closes the table with the same numbers as
 `describe().totals.floor_area_m2` and `.net_floor_area_m2`, so the drawn table and the JSON
-can never disagree.
+can never disagree, except on a storey with a `status demolish` wall, whose drawn table
+measures the plan as drawn (its NET AREA still less the demolished wall's band) until the
+status is drawn; `describe()` reports the plan after the demolition.
 The keyword takes a subject — `rooms` or `openings` — and an unknown one is a parse error
 with a did-you-mean, never a silently ignored word. The two subjects compose: write both
 and both tables draw.
@@ -2663,6 +2680,17 @@ size changed on its own storey, its `occurrence` among keeps of its text and its
 count in `unchanged_count`. A keep whose grade an edit changed carries `grade: { before, after }`,
 and counts as `broke` when it is a broken hard keep after, or `healed` when it was one before. A broken hard keep is reported there once:
 its `W_KEEP_VIOLATED` is not also counted under `diagnostics`.
+
+**Locks, without syntax.** `archlang impact new.arch --against old.arch --lock shell,entry,w1`
+names elements that must not change between the two versions; it adds nothing to the language.
+Each locked element that moved (an opening also when it slid along an unchanged wall), resized,
+was re-hosted, re-thickened, changed its door swing or another resolved field, vanished or
+appeared is an `E_LOCKED_ELEMENT_CHANGED` under `lock.violations` (`--json`), with its span on
+each side it exists on, and the command exits 2. A relabel is not a change. A lock names an
+element by the `id=` its author wrote: an assigned id such as `window_2` shifts when a statement
+is inserted ahead of it, so a lock on one, on a name neither version carries, or on an element
+above the lowest storey (which `impact` does not compare yet) is refused with `E_LOCK_UNNAMED`
+and also exits 2. A lock also works with `--set`.
 
 `describe --facts depends` adds `depends.keeps[]` (every keep on the top-level `depends`, a
 storey's own on its `levels[]` entry): the targets, `constrains` (the `let`s and parameters that can move or remove it: what the

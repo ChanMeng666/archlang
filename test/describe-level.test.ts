@@ -24,14 +24,15 @@ import type { SceneSummary } from "../src/index.js";
 
 /**
  * Level 1 declares every per-storey optional key (a `stair` → `verticals`, a `void` →
- * `voids`, `walls from rooms` → `derived_walls`, its ring taken over by `shell`); level 2
+ * `voids`, `walls from rooms` → `derived_walls`, its ring taken over by `shell`, and a `status` on
+ * `shell` → `wall_status`); level 2
  * declares none. That asymmetry is the whole point: level 2's
  * narrowed read must not inherit level 1's.
  */
 const ASYMMETRIC = `plan "P" {
   units mm
   level 1 "Ground floor" {
-    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+    wall id=shell exterior thickness 200 status existing { (0,0) (8000,0) (8000,6000) (0,6000) close }
     room id=r1 at (0,0) size 8000x6000 label "Hall" uses hall
     door id=front on shell at 4000 width 900
     stair id=s at (500,500) size 900x2600 dir up

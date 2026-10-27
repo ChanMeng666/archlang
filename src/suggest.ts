@@ -47,6 +47,7 @@ import { projectPointOntoWall, type AttachableWall } from "./fix-producers.js";
 import { fmt3 as numStr } from "./num-format.js";
 import type { Point } from "./ast.js";
 import type { RDoor, RFurniture, ROpening, RRoom, RWall, RWindow } from "./ir.js";
+import { openRunsOf } from "./analyze.js";
 
 /** One concrete statement that would resolve a suggested fault, with a reason. */
 export interface SuggestionCandidate {
@@ -302,7 +303,7 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
   // Wall count per category — a bare `on <category>` stable ref is valid iff unique.
   const categoryCount = new Map<string, number>();
   for (const w of walls) categoryCount.set(w.category, (categoryCount.get(w.category) ?? 0) + 1);
-  const access = buildDoorAccessGraph(rooms, doors, tol, undefined, openings);
+  const access = buildDoorAccessGraph(rooms, doors, tol, undefined, openings, openRunsOf(ir, tol));
   const reachable = new Set(access.rooms.filter((r) => r.reachable).map((r) => r.id));
   // Every connector (door/opening) that can block a new opening's site.
   const connectors = [...doors, ...openings, ...windows].map((c) => ({ at: c.at, width: c.width }));

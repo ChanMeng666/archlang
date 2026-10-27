@@ -837,7 +837,14 @@ export const connectorAmbiguous: LintRule = {
             return m ? { ...x, at: m.at } : x;
           });
         const after = reached(
-          buildDoorAccessGraph(ctx.rooms, move(ctx.doors), ctx.rules.tolMm, undefined, move(ctx.openings)),
+          buildDoorAccessGraph(
+            ctx.rooms,
+            move(ctx.doors),
+            ctx.rules.tolMm,
+            undefined,
+            move(ctx.openings),
+            ctx.openRuns,
+          ),
         );
         if (![...reachedNow].every((id) => after.has(id))) return null;
         return mineAfter ? `then opens between ${joined(ctx, mineAfter)}` : null;

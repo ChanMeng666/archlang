@@ -269,6 +269,7 @@ openings) and walks it from the exterior. For the studio:
 | Field | Meaning |
 |-------|---------|
 | `entrances` / `hasEntrance` | the door(s) that connect the exterior to a room, and whether any exist at all |
+| `edges[].doorId` | the door's or opening's id; on the run a `status demolish` wall leaves open between two rooms, the **wall's** id with `kind: "opening"` (one edge per pair of rooms along it) |
 | `edges[].nominalWidth` | the connector's drawn width |
 | `edges[].estimatedClearWidth` | the usable opening: a **door** loses ~60 mm to its leaf and stop (from one leaf of a `double` door, half its width), an **opening** keeps its full width |
 | `edges[].exterior` | whether this connector reaches the outside |
@@ -1024,6 +1025,84 @@ the key is absent. Lengths are whole millimetres, rounded as the messages round 
 
 ```bash
 archlang describe plan.arch --facts clearances --json --select clearances
+```
+
+## Quantities — lengths, perimeters, areas and counts
+
+`describe(src, { facts: ["quantities"], wastePct? })` — `archlang describe plan.arch --facts
+quantities --json` — adds `quantities`: per storey (the top-level block is the lowest storey's,
+and each `levels[]` entry carries its own), the geometric quantities an estimator reads off a
+plan. They are geometry only: lengths, areas and counts measured from the shapes, never a
+material, a price or a judgement of the construction. The convention of each figure is in its
+field name. Opt-in like `clearances`; without `--facts` the key is absent and every other byte
+of the summary is unchanged. Lengths are whole millimetres, areas m² to 2 decimals.
+
+| Key | Holds |
+|-----|-------|
+| `walls[]` | per wall category, sorted by name: `count`, `length_centreline_mm`, `length_face_mm`, and `face_area_before_openings_m2` when the plan authors a height |
+| `faces_omitted` | present only when the storey's face lengths are not measured: `too-many-edges` or `too-much-work` (the caps below) |
+| `rooms[]` | per room, in source order: `perimeter_centreline_mm`, `perimeter_net_mm`, `area_net_m2` (the room's `net_area_m2`) |
+| `floor_area_net_m2` | the storey's `totals.net_floor_area_m2` |
+| `waste_pct`, `floor_area_with_waste_m2` | only when a waste percentage is passed (`--waste <pct>`, 0 to 100); never a default |
+| `doors[]` | `{ kind, width_mm, count }` per door kind (`hinged` when none is written) and width |
+| `windows[]` | `{ width_mm, count }` per window width |
+
+The definitions:
+
+- **`length_centreline_mm`** is the sum of each wall's segment lengths along its centreline: an
+  arc by its arc length, a `close`d run including its closing segment.
+- **`length_face_mm`** is the length of the outline of the storey's wall solid. The solid is the
+  union of every wall's band, the band net area uses (ADR 0027): the centreline ± half the
+  thickness, a square cap half a thickness past a free end, a mitre at each joint of one run, true
+  arcs on a curved run, before any opening is cut. So both faces of a wall count, an exposed end
+  cap counts, and any stretch of face that lies inside another wall's solid does not: a partition
+  that ends in an exterior wall stops at that wall's inner face, and two separate walls meeting at
+  a corner have one outer corner, not two overlapping caps. Doors and windows do not shorten a
+  face. Each piece of the outline is credited to the wall whose band edge it lies on; where two
+  walls' edges coincide (a cap flush with another wall's face), to the wall written first.
+- **`face_area_before_openings_m2`** is, per wall, its share of `length_face_mm` times its own
+  resolved height, summed per category; no opening is deducted. Reported only when the plan
+  writes a `height`, `sill` or `head` clause somewhere (the `heights` gate), so a plan that
+  authors none never reports an area from a default height.
+- **`perimeter_centreline_mm`** is the perimeter of the room's own shape: a rectangle's four
+  sides, a `room polygon`'s ring, a `room circle`'s circumference.
+- **`perimeter_net_mm`** is the perimeter of the room's net floor, the region whose area is
+  `net_area_m2`: the room less every wall band. A wall on the room's edge moves that edge to the
+  wall's face; an edge with no wall stays where it is; a wall standing free on the floor adds its
+  outline. A doorway does not break it.
+- **`floor_area_with_waste_m2`** is `floor_area_net_m2 × (1 + waste_pct / 100)`, taken on the
+  printed hundredths, so `45.05` with `--waste 10` gives `49.56` (4505 × 110 / 100 = 4955.5,
+  rounded half up).
+
+A T-joint, as a fragment: the partition's band runs into the exterior wall's solid, so its faces
+stop at the exterior wall's inner face, and the exterior wall's inner face is broken by the
+partition's thickness.
+
+```arch static
+wall exterior  thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+wall partition thickness 100 { (3000,0) (3000,4000) }
+```
+
+Here `length_centreline_mm` is 20000 (exterior) and 4000 (partition). The outline is the outer
+rectangle, 2 × (6200 + 4200) = 20800, and two holes, each 2 × (2850 + 3800) = 13300; the
+partition's share is its two faces, 2 × 3800 = 7600, and the exterior wall's is
+20800 + 2 × 13300 − 7600 = 39800.
+
+Exact, or omitted, as net area is: the outline is measured by the same closed-form boundary
+walk, every crossing computed exactly, no sampling and no bounding box in a figure. A storey
+with more than 8,000 band edges, or whose walk would cost more than net area's work cap, reports
+`faces_omitted` and no `length_face_mm`; a room whose net area would be omitted under ADR 0027's
+caps has no `perimeter_net_mm`. No shipped plan comes near either.
+
+`archlang takeoff plan.arch --format csv|md [--waste <pct>]` writes the same block as a table
+(Markdown by default). The CSV has one figure per row,
+`level,section,item,width_mm,field,value`, with `field` named as in `describe`; a multi-storey
+plan is taken off storey by storey (`level` set, the top-level repeat left out). `--json`
+prints the block instead.
+
+```bash
+archlang describe plan.arch --facts quantities --waste 10 --json --select quantities
+archlang takeoff plan.arch --format csv > takeoff.csv
 ```
 
 ## Impact — change one number, see what follows

@@ -16,6 +16,7 @@ import { lowerWallSet } from "../wall-lowering.js";
 import { fmt3, MAX_ANGLE_DEG, outOfRangeDiagnostic } from "../num-format.js";
 import { exprSpan } from "../expr.js";
 import { resolveWallRelation } from "../wall-relation.js";
+import { enumList, WALL_STATUSES, type WallStatus } from "../grammar/tokens.js";
 
 export const wall: ElementDef = {
   kind: "wall",
@@ -75,6 +76,9 @@ export const wall: ElementDef = {
       height = ctx.parseExpr();
       heightSpan = { start: hk.start, end: ctx.peek(-1).end };
     }
+    // `status existing|demolish|new` (preview-and-remodel B3a), after `height` and before the
+    // body: a fact about the wall, never a drawing (B3b draws it).
+    const status = parseWallStatus(ctx);
     // The pairwise forms (ADR 0028 §4) stand where the point list would: the wall's points
     // are derived from the rooms at resolve.
     if (ctx.isKeyword("between") || ctx.isKeyword("around")) {
@@ -88,6 +92,7 @@ export const wall: ElementDef = {
         materialAngle,
         ...(height !== undefined ? { height } : {}),
         ...(heightSpan !== undefined ? { heightSpan } : {}),
+        ...(status !== undefined ? { status } : {}),
         points: [],
         closed: false,
         relation: parseRelation(ctx),
@@ -154,6 +159,7 @@ export const wall: ElementDef = {
       materialAngle,
       ...(height !== undefined ? { height } : {}),
       ...(heightSpan !== undefined ? { heightSpan } : {}),
+      ...(status !== undefined ? { status } : {}),
       points,
       ...(arcs.some((a) => a !== undefined) ? { arcs } : {}),
       closed,
@@ -247,6 +253,8 @@ export const wall: ElementDef = {
       // `E_OPENING_ABOVE_WALL`, so it can name the clause the author actually has to edit.
       ...(n.height !== undefined && isDrawableHeight(height) ? { _heightAuthored: true } : {}),
       ...(hatchScaleSpan ? { _hatchScaleSpan: hatchScaleSpan } : {}),
+      // Only when written, so an IR without the clause is the IR it always was.
+      ...(n.status !== undefined ? { status: n.status } : {}),
       points,
       ...(arcs ? { arcs } : {}),
       closed: related?.closed ?? n.closed,
@@ -425,6 +433,20 @@ function resolveArcs(n: WallNode, id: string, points: Point[], ctx: ResolveCtx):
     any = true;
   }
   return any ? out : undefined;
+}
+
+/**
+ * `status existing|demolish|new` when the next word is `status`, else undefined: shared by `wall`
+ * and `walls from rooms`, whose statuses are one vocabulary ({@link WALL_STATUSES}).
+ */
+export function parseWallStatus(ctx: ParseCtx): WallStatus | undefined {
+  if (!ctx.isKeyword("status")) return undefined;
+  ctx.next();
+  const t = ctx.peek();
+  if (t.type !== "ident" || !(WALL_STATUSES as readonly string[]).includes(t.value)) {
+    ctx.fail(`Expected ${enumList(WALL_STATUSES)} after \`status\` but found ${describe(ctx)}`);
+  }
+  return ctx.next().value as WallStatus;
 }
 
 /** `between <A> and <B>` or `around [<A> <B> …]` (at least one room), from the keyword. */

@@ -34,7 +34,14 @@ import type {
   VerticalDir,
   WindowNode,
 } from "./ast.js";
-import type { DoorHinge, DoorKind, DoorSlideDir, DoorSwingBuilding, DoorSwingDir } from "./grammar/tokens.js";
+import type {
+  DoorHinge,
+  DoorKind,
+  DoorSlideDir,
+  DoorSwingBuilding,
+  DoorSwingDir,
+  WallStatus,
+} from "./grammar/tokens.js";
 import { moduleBindings } from "./import.js";
 import { placeRelational } from "./layout.js";
 import {
@@ -85,7 +92,7 @@ import { idToken } from "./identity.js";
 import type { WallSegment } from "./geometry.js";
 import type { Arc } from "./geometry/arc.js";
 import type { Side } from "./algebra/d4.js";
-import { extendBounds, outerFaceBounds, segmentsOfWall, WallGrid } from "./geometry.js";
+import { extendBounds, hostInfoForWalls, outerFaceBounds, segmentsOfWall, WallGrid } from "./geometry.js";
 import type { LevelStamp } from "./chrome-layout.js";
 import { titleRows } from "./chrome-layout.js";
 import type { ResolvedSheet, SheetFitInput } from "./sheet.js";
@@ -276,6 +283,13 @@ export interface RWall extends RBase {
    * never serialized into the Scene/SVG/exports (the `_` prefix keeps it out).
    */
   _heightAuthored?: boolean;
+  /**
+   * `status existing|demolish|new` as written on the wall, or on the `walls from rooms` statement
+   * that derived it (preview-and-remodel B3a). Absent unless written; absent is `existing`. A
+   * `demolish` wall is drawn (B3b) but is left out of {@link ResolvedPlan.walls} and
+   * {@link ResolvedPlan.elements}: it encloses nothing, hosts nothing and counts in no area.
+   */
+  status?: WallStatus;
   /** Byte span of an authored hatch `scale` EXPRESSION (a bare literal has none), so the
    *  drawn-tile range check (`checkDrawnSizes`) blames the clause. Internal; never in the
    *  Scene/SVG/exports (the `_` prefix keeps it out). */
@@ -832,6 +846,8 @@ export interface RWallsFromRooms extends RBase {
   partition: number;
   /** The rooms left out of the derivation. */
   except: string[];
+  /** `status <s>` as written (B3a); every derived wall carries it too. Absent unless written. */
+  status?: WallStatus;
   /** The derived walls, in derivation order: the outer ring, the courtyard rings, the
    *  partitions (by their rooms' source order). Internal. */
   _derivedWalls: RWall[];
@@ -991,10 +1007,21 @@ export interface ResolvedPlan {
    * Internal: never serialized into the Scene/SVG/exports/Plan JSON.
    */
   _executedWhileSpans?: ReadonlySet<string>;
-  /** Resolved elements, in source order (for rendering). */
+  /** Resolved elements, in source order (for rendering). Without the `status demolish` walls:
+   *  the drawing reads {@link ResolvedPlan.drawn} (see {@link drawnView}). */
   elements: ResolvedElement[];
-  /** Resolved walls (for bounds/hosting), in source order. */
+  /** Resolved walls (for bounds/hosting), in source order. Without the `status demolish` walls
+   *  (preview-and-remodel B3a): every analysis reads the plan after the demolition. */
   walls: RWall[];
+  /**
+   * The storey AS DRAWN, present only when a wall on it is `status demolish` (B3a): every element
+   * and every wall in source order, the demolished ones included. `elements`/`walls` above are the
+   * plan after the demolition (what `describe()`, `lint()`, net area, circulation, enclosure,
+   * keeps and every other analysis read), while the drawing (`toScene`, the drawing budget, the
+   * sheet fit, `finish`) reads this, through {@link drawnView}. Until B3b draws the status, a plan
+   * that marks a wall `demolish` draws exactly the bytes it draws without the clause.
+   */
+  drawn?: { elements: ResolvedElement[]; walls: RWall[] };
   /**
    * The plan's `place`d component instances, in source order. Absent when the plan places
    * none, so a component-free plan's IR — and therefore its Scene and its bytes — is unaffected.
@@ -2031,7 +2058,8 @@ function levelPlanFor(ast: PlanNode, block: LevelNode, dropPaper: boolean): Plan
 
 /** The margin-table row count one resolved storey will draw — the second thing (after the
  *  extent) a shared sheet has to be the maximum of. */
-function tableRowsOf(ir: ResolvedPlan): number {
+function tableRowsOf(plan: ResolvedPlan): number {
+  const ir = drawnView(plan);
   return planTableRows({
     schedule: ir.schedule,
     legend: ir.legend,
@@ -2092,7 +2120,19 @@ export function sheetExtents(
 
 /** The outer-wall-face extent of a resolved plan (what a sheet fit is measured on). */
 function outerExtent(ir: ResolvedPlan, registry: Registry): ReturnType<typeof sheetExtents> {
-  return sheetExtents(ir.elements, ir.walls, ir.siteBoundary, registry);
+  const d = drawnView(ir);
+  return sheetExtents(d.elements, d.walls, d.siteBoundary, registry);
+}
+
+/**
+ * The storey as the sheet draws it (preview-and-remodel B3a): {@link ResolvedPlan.drawn}'s
+ * elements and walls, the `status demolish` walls included, in place of the plan after the
+ * demolition. The SAME object when no wall is demolished, so every plan without the clause reads
+ * exactly what it always did. Read by every drawing consumer (`toScene`, the drawing budget, the
+ * sheet fit and `finish`), never by an analysis.
+ */
+export function drawnView(ir: ResolvedPlan): ResolvedPlan {
+  return ir.drawn ? { ...ir, elements: ir.drawn.elements, walls: ir.drawn.walls } : ir;
 }
 
 /**
@@ -3299,6 +3339,35 @@ function resolveBody(
 
   // 3c. Register openings: each hosted door/window voids its wall's solid.
   registerOpenings(elements, walls);
+  // 3d. A demolished wall hosts nothing (B3a). An authored door, window or opening the hosting
+  //     rule gave a demolished wall is re-hosted, for the analysis only, on a STANDING wall that
+  //     hosts it at its point (the same rule over the standing walls: a coincident `status new`
+  //     wall takes it); with none there, or when the statement names the demolished wall by id
+  //     (`on <id>`, `wall <id>`), it is refused. The drawing keeps the hosting it always had.
+  //     Only a plan that marks a wall `demolish` reaches the loop.
+  const rehosted = new Map<ResolvedElement, WallSegment>();
+  if (walls.some((w) => w.status === "demolish")) {
+    const standingWalls = walls.filter((w) => w.status !== "demolish");
+    for (const el of elements) {
+      if ((el.kind !== "door" && el.kind !== "window" && el.kind !== "opening") || !el.host) continue;
+      if (el.kind === "opening" && el._derived) continue;
+      const host = hostWallOf(el.host, walls);
+      if (host?.status !== "demolish") continue;
+      const entry = entryOf.get(el);
+      const node = entry?.node as { attach?: { wall?: string }; wall?: string } | undefined;
+      const ref = node?.attach?.wall ?? node?.wall;
+      const namesIt = ref !== undefined && (ref === host.id || host.id.endsWith(`.${ref}`));
+      if (!namesIt) {
+        const { host: seg, onWall } = hostInfoForWalls(standingWalls, el.at, ref);
+        if (seg && onWall) {
+          rehosted.set(el, seg);
+          continue;
+        }
+      }
+      const d = demolishedHostDiagnostic(el, host);
+      diagnostics.push(entry ? stampProvenance(d, entry.frame, entry.file) : d);
+    }
+  }
 
   // 4. Cross-element checks. Drawability and room references read the plan as authored
   //    (a dropped room is still the room a piece of furniture names, so it raises no
@@ -3420,8 +3489,10 @@ function resolveBody(
     elevation: extras.elevation ?? 0,
     _heightsAuthored: extras.heightsAuthored ?? plansAuthorHeights(ast),
     _executedWhileSpans: executedWhiles,
-    elements,
-    walls,
+    // A `status demolish` wall (B3a) is drawn but stands in no analysis: `elements`/`walls` are
+    // the plan after the demolition and `drawn` the plan as drawn. No such wall, no `drawn` key
+    // and the very arrays, so the IR is the one it always was.
+    ...afterDemolition(elements, walls, rehosted),
     ...(instances.length > 0 ? { instances } : {}),
   };
   datumTablesOfIr.set(ir, datumTables);
@@ -3937,6 +4008,75 @@ function markPlacement(r: ResolvedElement, node: AstElement, fromStrip: boolean)
  * choose among walls that share an id (an `E_DUP_ID` plan), and as the fallback for a host
  * whose id names no wall.
  */
+/**
+ * {@link ResolvedPlan}'s `elements`/`walls`/`drawn` from the storey as resolved (B3a): the very
+ * arrays when no wall is `status demolish`, else the plan after the demolition plus `drawn`.
+ *
+ * The plan after the demolition drops every demolished wall and every opening a `walls from rooms
+ * … status demolish` statement derived on one (it stood in the wall). An opening step 3d re-hosted
+ * on a standing wall is a copy carrying its new host, and that wall a copy carrying the opening,
+ * so the drawn objects (the hosting the drawing always had) are never touched.
+ */
+function afterDemolition(
+  elements: ResolvedElement[],
+  walls: RWall[],
+  rehosted: ReadonlyMap<ResolvedElement, WallSegment>,
+): Pick<ResolvedPlan, "elements" | "walls" | "drawn"> {
+  if (!walls.some((w) => w.status === "demolish")) return { elements, walls };
+  const demolished = (e: ResolvedElement): boolean => e.kind === "wall" && (e as RWall).status === "demolish";
+  const onDemolished = (e: ResolvedElement): boolean =>
+    e.kind === "opening" && e._derived !== undefined && !!e.host && hostWallOf(e.host, walls)?.status === "demolish";
+  const standingWalls = walls.filter((w) => !demolished(w));
+  // The standing walls that take a re-hosted opening, as copies with the opening appended.
+  const copies = new Map<RWall, RWall>();
+  const moved = new Map<ResolvedElement, ResolvedElement>();
+  for (const [el, seg] of rehosted) {
+    const o = el as RDoor | RWindow | ROpening;
+    const target = hostWallOf(seg, standingWalls);
+    if (!target) continue;
+    const copy = copies.get(target) ?? { ...target, openings: [...target.openings] };
+    copy.openings.push({
+      at: o.at,
+      width: o.width,
+      kind: o.kind,
+      ownerId: o.id,
+      sill: o.kind === "window" ? o.sill : 0,
+      head: o.head,
+    });
+    copies.set(target, copy);
+    moved.set(el, { ...o, host: seg });
+  }
+  const after = (e: ResolvedElement): ResolvedElement =>
+    moved.get(e) ?? (e.kind === "wall" ? (copies.get(e as RWall) ?? e) : e);
+  return {
+    elements: elements.filter((e) => !demolished(e) && !onDemolished(e)).map(after),
+    walls: standingWalls.map((w) => copies.get(w) ?? w),
+    drawn: { elements, walls },
+  };
+}
+
+/** `E_OPENING_ON_DEMOLISHED_WALL`: a door, window or opening stands in a `status demolish` wall.
+ *  Named as a person would (the kind and the line the wall runs on); the ids are in the hint. */
+function demolishedHostDiagnostic(el: RDoor | RWindow | ROpening, host: RWall): Diagnostic {
+  const s = el.host!;
+  const line =
+    s.a.x === s.b.x && s.a.y !== s.b.y
+      ? ` at x ${fmt3(s.a.x)}`
+      : s.a.y === s.b.y && s.a.x !== s.b.x
+        ? ` at y ${fmt3(s.a.y)}`
+        : "";
+  const kind = host.category === "partition" ? "partition" : `${host.category} wall`;
+  return {
+    severity: "error",
+    code: "E_OPENING_ON_DEMOLISHED_WALL",
+    message: `A ${el.kind} stands in the ${kind}${line}, which is marked \`status demolish\`: a demolished wall hosts nothing`,
+    ...(el.span ? { span: el.span } : {}),
+    hints: [
+      `The ${el.kind} is "${el.id}" and the wall "${host.id}". Remove the ${el.kind} (it goes with the wall), host it on a wall that stays, or keep the wall (\`status existing\`).`,
+    ],
+  };
+}
+
 /** The wall a hosted opening's segment belongs to: by id when that is unique, else the wall
  *  (among the named ones, or all) that has exactly this segment. */
 function hostWallOf(seg: WallSegment, walls: readonly RWall[]): RWall | undefined {
@@ -4134,7 +4274,7 @@ function penOutOfRange(lw: number, stroke: number, span: Span | undefined, from?
  * {@link renderSizes} `toScene()` draws with, measured on the same drawing bounds.
  */
 function heaviestPen(ir: ResolvedPlan, lw: number, registry: Registry): number {
-  const b = drawingBounds(ir.elements, ir.siteBoundary, registry);
+  const b = drawingBounds(drawnView(ir).elements, ir.siteBoundary, registry);
   return renderSizes(ir.sheet, b.maxX - b.minX, b.maxY - b.minY, lw).wallStroke;
 }
 

@@ -38,7 +38,7 @@ import type { FenceStyle, OutdoorKind, PlanNode, Point, RailSide, VerticalDir } 
 import { polygonArea, polygonBounds } from "./geometry/polygon.js";
 import { memoRoomNetAreaMm2, storeyNetAreaBands } from "./analyze/net-area-memo.js";
 import { grossInternalArea, type GrossAreaReason } from "./analyze/gross-area.js";
-import type { DoorKind } from "./grammar/tokens.js";
+import { type DoorKind, WALL_STATUSES, type WallStatus } from "./grammar/tokens.js";
 import type { Diagnostic } from "./diagnostics.js";
 import {
   resolvePlan,
@@ -88,10 +88,12 @@ import {
 } from "./vertical.js";
 import { fmt2 } from "./num-format.js";
 import { type KeepSummary, keepSummary } from "./keep.js";
-import { keepResultsOf } from "./ir.js";
+import { drawnView, keepResultsOf } from "./ir.js";
 import { type D4, fromSpelling, northQuarterTurns } from "./algebra/d4.js";
 import { type ClearWorld, clearWorldOf, measureClear } from "./furniture-relation.js";
 import { type ClearanceFacts, clearanceFacts } from "./lint/clearance-facts.js";
+import { openRunsOf } from "./analyze.js";
+import { type QuantityFacts, quantityFacts } from "./analyze/quantities.js";
 
 export type { ScheduleRow } from "./sheet-tables.js";
 
@@ -134,6 +136,13 @@ export type {
   WcSideFact,
   WindowCoverFact,
 } from "./lint/clearance-facts.js";
+export type {
+  DoorQuantity,
+  QuantityFacts,
+  RoomQuantity,
+  WallQuantity,
+  WindowQuantity,
+} from "./analyze/quantities.js";
 export type { ContactFact, RoomEdge } from "./analyze/contacts.js";
 export type { KeepFact, KeepRedundancy } from "./analyze/keep-facts.js";
 
@@ -146,6 +155,8 @@ export type { AccessEdge, AccessGraph, AccessRoomNode, MainEntranceBasis, MainEn
 // Likewise for the door kind: it is a grammar token type, but {@link DoorSummary.kind} is
 // where a consumer of the facts channel meets it.
 export type { DoorKind } from "./grammar/tokens.js";
+// And for the wall status (B3a): {@link WallStatusFacts} is where a consumer meets it.
+export type { WallStatus } from "./grammar/tokens.js";
 
 /** Options for {@link describe}; the shared analysis options plus an adjacency tolerance. */
 export interface DescribeOptions extends AnalyzeOptions {
@@ -159,15 +170,26 @@ export interface DescribeOptions extends AnalyzeOptions {
   /**
    * Opt-in derived facts, each computed only when named here: `"symmetry"` adds
    * {@link SceneSummary.symmetry}, `"syntax"` adds {@link SceneSummary.syntax}, `"depends"`
-   * adds {@link SceneSummary.depends}, `"clearances"` adds {@link SceneSummary.clearances}.
+   * adds {@link SceneSummary.depends}, `"clearances"` adds {@link SceneSummary.clearances},
+   * `"quantities"` adds {@link SceneSummary.quantities}.
    * Absent or empty (the default), the summary is
    * byte-identical to one written before any of them existed.
    */
   facts?: readonly DescribeFact[];
+  /**
+   * A waste percentage for {@link QuantityFacts.floor_area_with_waste_m2}, read only by the
+   * `"quantities"` fact: a parameter the caller passes, never a default. Absent, the figure is
+   * absent. A number from 0 to {@link MAX_WASTE_PCT}; anything else throws a `RangeError` (a
+   * caller's argument, never plan source).
+   */
+  wastePct?: number;
 }
 
+/** The largest waste percentage {@link DescribeOptions.wastePct} accepts. */
+export const MAX_WASTE_PCT = 100;
+
 /** Every opt-in fact {@link DescribeOptions.facts} can name — `arch describe --facts` reads this list. */
-export const DESCRIBE_FACTS = ["symmetry", "syntax", "depends", "clearances"] as const;
+export const DESCRIBE_FACTS = ["symmetry", "syntax", "depends", "clearances", "quantities"] as const;
 
 /** One opt-in fact of {@link DESCRIBE_FACTS}. */
 export type DescribeFact = (typeof DESCRIBE_FACTS)[number];
@@ -350,6 +372,27 @@ export interface OpeningSummary {
  * here. The opening heights do have somewhere else to live — `doors[]`, `windows[]`,
  * `openings[]` — and are reported there, beside the width they belong with.
  */
+export interface WallStatusFacts {
+  /** How many walls of the storey have each status (every status listed, zeros included). */
+  counts: Record<WallStatus, number>;
+  /** Every wall of the storey as drawn, in source order: its id (a derived wall's internal
+   *  name), category and status. */
+  walls: Array<{ id: string; category: string; status: WallStatus }>;
+}
+
+/** {@link DescribeSummary.wall_status}: absent unless a wall on the storey writes `status`. */
+function wallStatusFacts(ir: ResolvedPlan): WallStatusFacts | undefined {
+  const walls = drawnView(ir).walls;
+  if (!walls.some((w) => w.status !== undefined)) return undefined;
+  const counts = Object.fromEntries(WALL_STATUSES.map((s) => [s, 0])) as Record<WallStatus, number>;
+  const rows = walls.map((w) => {
+    const status = w.status ?? "existing";
+    counts[status]++;
+    return { id: w.id, category: w.category, status };
+  });
+  return { counts, walls: rows };
+}
+
 export interface HeightFacts {
   /** This storey's floor-to-floor height in mm: the `level`'s own `height`, else the
    *  plan's, else 3000. What a wall inherits when it declares none. */
@@ -793,6 +836,16 @@ export interface SceneSummary {
    */
   heights?: HeightFacts;
   /**
+   * The walls' remodel status (preview-and-remodel B3a): how many walls of the storey are
+   * `existing`, `demolish` and `new`, and each wall's status in source order (a wall that writes
+   * none is `existing`). **Absent unless a wall on the storey writes `status`**, so every summary
+   * of a plan without the clause is byte-identical. Every wall is listed, the demolished ones
+   * included, though no other fact of the summary reads a demolished wall: it encloses nothing,
+   * hosts nothing and counts in no area, and where it stood between two rooms they are joined
+   * (`access.edges` carries the run, named by the wall's id).
+   */
+  wall_status?: WallStatusFacts;
+  /**
    * The modeled access graph: entrances, room reachability/depth from the exterior,
    * and connector edges (doors and cased openings) with estimated clear widths.
    */
@@ -942,6 +995,15 @@ export interface SceneSummary {
    * requested** (`facts: ["clearances"]`). See {@link ClearanceFacts}.
    */
   clearances?: ClearanceFacts;
+  /**
+   * This storey's geometric quantities: wall lengths per category (centreline and face), room
+   * perimeters (centreline and net), the net floor area (and, with
+   * {@link DescribeOptions.wastePct}, that area with waste), door and window counts by kind and
+   * width, and wall face areas when the plan authors heights. Geometry only; the convention is in
+   * each field name. Present **only when requested** (`facts: ["quantities"]`). See
+   * {@link QuantityFacts}.
+   */
+  quantities?: QuantityFacts;
   /** All problems from parse/link/resolve, with byte spans and codes. */
   diagnostics: Diagnostic[];
   /**
@@ -1297,9 +1359,14 @@ function summarize(
   const furnEls = ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
   const verticalEls: RVertical[] = verticalsOf(ir);
   // The walls `walls from rooms` derived, and the authored walls written `between`/`around`
-  // rooms (ADR 0028 §4), as facts (§6), in source order, copied so the IR is never shared.
+  // rooms (ADR 0028 §4), as facts (§6), in source order, copied so the IR is never shared. A
+  // `walls from rooms … status demolish` statement's walls are gone like an authored demolished
+  // wall (B3a): they are listed under `wall_status` only.
   const derivedRows: DerivedWallRow[] = ir.elements.flatMap((e): DerivedWallRow[] => {
-    if (e.kind === "walls") return (e as RWallsFromRooms)._derivedRows.map((r) => structuredClone(r));
+    if (e.kind === "walls")
+      return (e as RWallsFromRooms).status === "demolish"
+        ? []
+        : (e as RWallsFromRooms)._derivedRows.map((r) => structuredClone(r));
     if (e.kind !== "wall" || !(e as RWallFact)._relation || (e as RWallFact).points.length === 0) return [];
     const rel = (e as RWallFact)._relation!;
     return "between" in rel
@@ -1358,6 +1425,8 @@ function summarize(
   // `ResolvedPlan._heightsAuthored`), which is why a building whose upper floor alone
   // declares a height reports heights on every page.
   const heights = ir._heightsAuthored;
+  // The walls' remodel status (B3a): a per-storey block, absent unless a wall here writes one.
+  const wallStatus = wallStatusFacts(ir);
 
   const doors: DoorSummary[] = doorEls.map((d) => {
     const { between, straddles } = connectorConnection(d, roomRects, tol);
@@ -1493,7 +1562,7 @@ function summarize(
   // The main entrance (PS0.10) rides on the access graph, appended, only on a storey with more
   // than one entrance. Circulation keeps measuring each room from its nearest entrance.
   const access = withMainEntrance(
-    buildDoorAccessGraph(roomEls, doorEls, tol, undefined, openingEls),
+    buildDoorAccessGraph(roomEls, doorEls, tol, undefined, openingEls, openRunsOf(ir, tol)),
     entranceInputs(ir, roomRects, upperStorey),
   );
   const circulation = computeCirculation(
@@ -1645,10 +1714,12 @@ function summarize(
           heights: {
             storey_height: ir.storeyHeight,
             elevation: ir.elevation,
-            walls: ir.walls.map((w) => ({ id: w.id, height: w.height })),
+            // Every wall as drawn: a demolished wall (B3a) still has a height.
+            walls: drawnView(ir).walls.map((w) => ({ id: w.id, height: w.height })),
           },
         }
       : {}),
+    ...(wallStatus ? { wall_status: wallStatus } : {}),
     access,
     circulation,
     totals,
@@ -1729,6 +1800,9 @@ function buildVerticalReport(
  * s.totals.floor_area_m2; // 12
  */
 export function describe(source: string, opts: DescribeOptions = {}): SceneSummary {
+  const w = opts.wastePct;
+  if (w !== undefined && !(Number.isFinite(w) && w >= 0 && w <= MAX_WASTE_PCT))
+    throw new RangeError(`describe: wastePct must be a number from 0 to ${MAX_WASTE_PCT}, got ${String(w)}`);
   return describeWithAutoIds(source, opts).summary;
 }
 
@@ -1952,6 +2026,13 @@ function summarizeResolved(
     top.clearances = c.top;
     for (const l of perLevel ?? []) l.clearances = c.byLevel.get(l.level)!;
   }
+  // B4: the geometric quantities, after the clearances, on each storey and the top (the lowest
+  // storey's, as every top-level fact is).
+  if (opts.facts?.includes("quantities")) {
+    top.quantities = quantityFacts(ir, opts.wastePct);
+    for (const l of perLevel ?? [])
+      l.quantities = quantityFacts(levels.find((x) => x.level === l.level)!.ir, opts.wastePct);
+  }
   return {
     ok: true,
     ...top,
@@ -2008,6 +2089,8 @@ export const PER_STOREY_OPTIONAL_KEYS = [
   "verticals",
   "voids",
   "derived_walls",
+  // B3a: a storey's walls' remodel status, present only on a storey that writes one.
+  "wall_status",
 ] as const satisfies readonly (keyof SceneSummary)[];
 
 /**

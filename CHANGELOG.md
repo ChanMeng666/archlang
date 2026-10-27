@@ -15,6 +15,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `12ft6` are refused with the new `E_IMPERIAL_FORM`, whose message names the accepted forms.
   Input only: every output stays in millimetres, and a plan written in feet compiles to the same
   bytes as its millimetre twin. The editor grammars and the GBNF grammar read the new suffixes.
+- `archlang impact … --lock <id,…>` (and `impact(before, after, { lock })`): a lock check without
+  syntax. Each locked element that moved, resized, was re-hosted or re-thickened, changed its door
+  swing or another resolved field, vanished or appeared is `E_LOCKED_ELEMENT_CHANGED` with its span
+  on both sides (`lock.violations` in `--json`), and the command exits 2. A lock names only an
+  element whose `id=` was written: a lock on an assigned id (which shifts when a statement is
+  inserted ahead of it), on a name neither version carries, or above the lowest storey is refused
+  with `E_LOCK_UNNAMED`. New exports `checkLocks`, `parseLockList` and the `ImpactLock`,
+  `LockViolation`, `LockRefusal`, `LockSpan`, `LockSide`, `LockElement` types.
+- `describe --facts quantities` and `arch takeoff --format csv|md` (preview-and-remodel B4): an
+  opt-in facet of geometric quantities per storey, with each figure's convention in its field name.
+  Per wall category: `length_centreline_mm`, `length_face_mm` (the outline of the union of the wall
+  bands, before openings, credited to the wall whose band edge it lies on) and, only when the plan
+  authors a height, `face_area_before_openings_m2`. Per room: `perimeter_centreline_mm`,
+  `perimeter_net_mm` (the outline of the room less every wall band) and `area_net_m2`. The storey's
+  `floor_area_net_m2`, and `floor_area_with_waste_m2` only when `--waste <pct>` is passed (never a
+  default; `DescribeOptions.wastePct` in the API). Door counts by kind and width, window counts by
+  width. `takeoff` writes the block as a one-figure-per-row CSV or Markdown tables, or JSON.
+  Definitions in `docs/analysis.md` § Quantities. `describe()` without the fact is byte-identical;
+  no diagnostic is added.
+- Wall `status existing|demolish|new` (preview-and-remodel B3a), on a `wall` (after `height`)
+  and on `walls from rooms` (after the thicknesses, for every wall it derives). It draws nothing
+  yet: a plan marking a wall `demolish` draws exactly the bytes it draws without the clause. A
+  `demolish` wall encloses nothing, hosts nothing (a door, window or opening in it is the new
+  `E_OPENING_ON_DEMOLISHED_WALL`) and counts in no net area, and where it stood between two rooms
+  the access graph, circulation and the reachability and enclosure rules join them across its run;
+  `existing` and `new` walls are walls. `describe --json` adds `wall_status` (the count by status
+  and each wall's status) only on a storey that writes one; Plan JSON carries `status` on walls
+  and on `walls_from_rooms`, in the schema. A plan that writes no `status` compiles, describes and
+  lints to the same bytes (`test/wall-status-byte-identity.test.ts`).
 - Package-root exports for downstream consumers of a resolved plan (ADR 0031): `resolvePlan` (the
   complete parse → link → resolve path; unlike `resolveAll(compile(src).ast)` it keeps imported and
   placed content), `joinWallSet` and `loopsToPolygons` (the wall joinery, with the `split` argument

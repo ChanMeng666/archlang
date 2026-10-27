@@ -12,6 +12,7 @@ import type {
   DoorSwingBuilding,
   DoorSwingDir,
   TitleField,
+  WallStatus,
 } from "./grammar/tokens.js";
 import type { Span } from "./diagnostics.js";
 import type { Comment } from "./lexer.js";
@@ -113,6 +114,13 @@ export interface WallNode extends NodeBase {
   height?: Expr;
   /** Byte span of the `height` clause, for `E_HEIGHT_RANGE`. */
   heightSpan?: Span;
+  /**
+   * `status existing|demolish|new` — what becomes of the wall in a remodel (preview-and-remodel
+   * B3a). Absent unless written, and absent means `existing`. It draws nothing yet (B3b): a
+   * `demolish` wall is drawn as any wall is, but encloses nothing, hosts nothing and counts in no
+   * area (`ResolvedPlan.drawn`).
+   */
+  status?: WallStatus;
   /** Whether the polyline closes back to its first vertex. */
   closed: boolean;
   /**
@@ -1057,6 +1065,9 @@ export interface WallsFromRoomsNode extends NodeBase {
   /** The `open between` / `between … thickness` clauses, in source order. Absent when the
    *  statement has none, so a statement without them parses to the node it always did. */
   pairs?: WallsPairClause[];
+  /** `status <s>` after the thicknesses: the status of every wall the statement derives
+   *  (preview-and-remodel B3a; {@link WallNode.status}). Absent unless written. */
+  status?: WallStatus;
 }
 
 /** One room named by a `walls from rooms` pair clause, with its own span. */
