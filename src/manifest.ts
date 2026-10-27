@@ -46,7 +46,7 @@ import { LINT_PROFILE_NAMES, LINT_PROFILES, DEFAULT_RULESET } from "./lint.js";
 import { TASTE_PROFILE_NAMES } from "./taste/index.js";
 import { AUTHORING_STAGES } from "./stages.js";
 import { FIXTURE_CATEGORIES } from "./elements/fixtures-glyphs.js";
-import { DESCRIBE_FACTS } from "./describe.js";
+import { DESCRIBE_FACTS, MAX_WASTE_PCT } from "./describe.js";
 import { FINISH_STAGE_ORDER, FINISH_STAGES, FINISH_STAGES_AVAILABLE } from "./finish.js";
 import { CASED_OPENING_HEAD, DOOR_HEAD, MAX_HEIGHT, STOREY_HEIGHT, WINDOW_HEAD, WINDOW_SILL } from "./datum.js";
 
@@ -305,7 +305,13 @@ const FACTS_FLAG: ManifestFlag = {
   flag: "--facts",
   arg: `<${DESCRIBE_FACTS.join("|")}[,…]>`,
   description:
-    "also compute these opt-in facts: `symmetry` (the plan's symmetry group per layer — shell, rooms, full — and its repeated rooms), `syntax` (space-syntax depth, mean depth, RA, integration and control on the access graph), `depends` (per element, the ids it derives from and the `let`/parameter names it reads) and `clearances` (what each clearance rule measured, per storey under the default ruleset: a WC's sides, a tall unit's and a hob's cover of a window, a hob's nearest tall unit, a doorway's clear width and approach, a stair's run and landings); absent by default",
+    "also compute these opt-in facts: `symmetry` (the plan's symmetry group per layer — shell, rooms, full — and its repeated rooms), `syntax` (space-syntax depth, mean depth, RA, integration and control on the access graph), `depends` (per element, the ids it derives from and the `let`/parameter names it reads) and `clearances` (what each clearance rule measured, per storey under the default ruleset: a WC's sides, a tall unit's and a hob's cover of a window, a hob's nearest tall unit, a doorway's clear width and approach, a stair's run and landings) and `quantities` (per storey, geometry only: wall length per category on the centreline and on the faces, room perimeters on the centreline and net, the net floor area, door and window counts by kind and width, wall face areas when the plan authors heights); absent by default",
+};
+/** `--waste <pct>`: a parameter the author passes, never a default (preview-and-remodel D9). */
+const WASTE_FLAG: ManifestFlag = {
+  flag: "--waste",
+  arg: "<pct>",
+  description: `with the \`quantities\` fact, also report \`floor_area_with_waste_m2\` = the net floor area × (1 + pct/100), pct from 0 to ${MAX_WASTE_PCT}; absent unless given`,
 };
 const SELECT_FLAG: ManifestFlag = {
   flag: "--select",
@@ -659,6 +665,7 @@ const COMMANDS: ManifestCommand[] = [
           "report this storey of a multi-storey plan as the top-level facts (a DISPLAY filter — `ok` and the exit code still weigh the whole plan)",
       },
       FACTS_FLAG,
+      WASTE_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
@@ -693,6 +700,39 @@ const COMMANDS: ManifestCommand[] = [
       {
         cmd: "archlang describe plan.arch --facts depends --json --select depends",
         note: "per element, the ids it derives from (`on`) and the `let`/parameter names it reads (`params`) — what follows a change",
+      },
+      {
+        cmd: "archlang describe plan.arch --facts quantities --waste 10 --json --select quantities",
+        note: "wall lengths, room perimeters, net floor area (and with 10% waste), door and window counts — geometry only",
+      },
+    ],
+  },
+  {
+    name: "takeoff",
+    summary: "geometric quantities, CSV or Markdown",
+    flags: [
+      {
+        flag: "--format",
+        alias: "-f",
+        arg: "<csv|md>",
+        description:
+          "csv: one row per figure (`level,section,item,width_mm,field,value`, the field named as in `describe`); md: one table per section and storey (default md)",
+      },
+      WASTE_FLAG,
+      JSON_FLAG,
+      QUIET_FLAG,
+    ],
+    input: "<file.arch|->",
+    output:
+      "the table on stdout, or with --json { ok, plan, units, quantities, levels?: [{ level, name?, quantities }], diagnostics } (exit 2 when the plan does not resolve)",
+    examples: [
+      {
+        cmd: "archlang takeoff plan.arch --format csv > takeoff.csv",
+        note: "wall lengths (centreline and face), room perimeters, net floor area, door and window counts, one figure per row",
+      },
+      {
+        cmd: "archlang takeoff plan.arch --waste 10",
+        note: "the same as Markdown tables, with the net floor area plus a 10% waste allowance you chose",
       },
     ],
   },
@@ -947,7 +987,7 @@ const COMMANDS: ManifestCommand[] = [
   },
   {
     name: "suggest",
-    summary: "advisory topology suggestions as data (door/window statements that resolve reachability/window faults)",
+    summary: "advisory door/window statements for unreachable or windowless rooms",
     flags: [JSON_FLAG, QUIET_FLAG],
     input: "<file.arch|->",
     output: "suggestions (JSON or a summary)",

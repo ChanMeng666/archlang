@@ -154,6 +154,7 @@ arch link  # print a playground URL that opens the plan, rendered, with nothing 
 arch watch  # recompile on save (interactive)
 arch validate  # parse + resolve + lint, no render (is it valid & sound?)
 arch describe  # semantic facts: rooms, areas, adjacency, what doors connect
+arch takeoff  # geometric quantities, CSV or Markdown
 arch score  # continuous intent satisfaction (satisfied/total) as data — the refine-loop reward — or, with --taste, the plan's taste score
 arch lint  # architectural soundness warnings
 arch ast  # parse only (no resolve/render) and print the span-bearing AST as JSON
@@ -164,7 +165,7 @@ arch fix  # apply the machine-applicable fix suggestions on a plan's diagnostics
 arch finish  # furnish the rooms that hold no furniture, then add the sheet statements a plan lacks (paper, scale, dims auto, title, schedule rooms, legend); deletes nothing
 arch reroll  # offer a proven-equivalent `for` loop for a repeated statement run
 arch impact  # change one number: what moved and why, what held, what broke
-arch suggest  # advisory topology suggestions as data (door/window statements that resolve reachability/window faults)
+arch suggest  # advisory door/window statements for unreachable or windowless rooms
 arch manifest  # this document: the whole CLI API as structured data
 arch spec  # print the one-prompt language spec (spec.llm.md)
 arch context  # print the full bundled agent context (spec + workflow + CLI + errors)
@@ -740,8 +741,13 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 
 **`archlang describe`** — semantic facts: rooms, areas, adjacency, what doors connect
   - input: <file.arch|-> → output: facts (JSON or a summary), narrowed by --room/--zone/--select/--level
-  - flags: `--room <id[,id…]>` keep only these rooms; doors/windows/openings/furniture narrow to the ones touching them (plan-level facts — bbox, totals, caption — stay whole-plan) · `--zone <path[,path…]>` keep only the rooms declared in these `zone` blocks (nested zones roll up; paths are dotted, e.g. west.galleries) — a DISPLAY filter: `ok` and the exit code still weigh the whole plan · `--select <key[,key…]>` emit only these top-level keys of the --json object (rooms, doors, totals, access, circulation, freedom, …); the ok/plan/units/diagnostics envelope is always kept · `--level <n>` report this storey of a multi-storey plan as the top-level facts (a DISPLAY filter — `ok` and the exit code still weigh the whole plan) · `--facts <symmetry|syntax|depends|clearances[,…]>` also compute these opt-in facts: `symmetry` (the plan's symmetry group per layer — shell, rooms, full — and its repeated rooms), `syntax` (space-syntax depth, mean depth, RA, integration and control on the access graph), `depends` (per element, the ids it derives from and the `let`/parameter names it reads) and `clearances` (what each clearance rule measured, per storey under the default ruleset: a WC's sides, a tall unit's and a hob's cover of a window, a hob's nearest tall unit, a doorway's clear width and approach, a stair's run and landings); absent by default · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+  - flags: `--room <id[,id…]>` keep only these rooms; doors/windows/openings/furniture narrow to the ones touching them (plan-level facts — bbox, totals, caption — stay whole-plan) · `--zone <path[,path…]>` keep only the rooms declared in these `zone` blocks (nested zones roll up; paths are dotted, e.g. west.galleries) — a DISPLAY filter: `ok` and the exit code still weigh the whole plan · `--select <key[,key…]>` emit only these top-level keys of the --json object (rooms, doors, totals, access, circulation, freedom, …); the ok/plan/units/diagnostics envelope is always kept · `--level <n>` report this storey of a multi-storey plan as the top-level facts (a DISPLAY filter — `ok` and the exit code still weigh the whole plan) · `--facts <symmetry|syntax|depends|clearances|quantities[,…]>` also compute these opt-in facts: `symmetry` (the plan's symmetry group per layer — shell, rooms, full — and its repeated rooms), `syntax` (space-syntax depth, mean depth, RA, integration and control on the access graph), `depends` (per element, the ids it derives from and the `let`/parameter names it reads) and `clearances` (what each clearance rule measured, per storey under the default ruleset: a WC's sides, a tall unit's and a hob's cover of a window, a hob's nearest tall unit, a doorway's clear width and approach, a stair's run and landings) and `quantities` (per storey, geometry only: wall length per category on the centreline and on the faces, room perimeters on the centreline and net, the net floor area, door and window counts by kind and width, wall face areas when the plan authors heights); absent by default · `--waste <pct>` with the `quantities` fact, also report `floor_area_with_waste_m2` = the net floor area × (1 + pct/100), pct from 0 to 100; absent unless given · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `archlang describe plan.arch --json` — rooms, areas, adjacency, door connections, caption, freedom — confirm the plan means what you intended
+
+**`archlang takeoff`** — geometric quantities, CSV or Markdown
+  - input: <file.arch|-> → output: the table on stdout, or with --json { ok, plan, units, quantities, levels?: [{ level, name?, quantities }], diagnostics } (exit 2 when the plan does not resolve)
+  - flags: `--format|-f <csv|md>` csv: one row per figure (`level,section,item,width_mm,field,value`, the field named as in `describe`); md: one table per section and storey (default md) · `--waste <pct>` with the `quantities` fact, also report `floor_area_with_waste_m2` = the net floor area × (1 + pct/100), pct from 0 to 100; absent unless given · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+  - example: `archlang takeoff plan.arch --format csv > takeoff.csv` — wall lengths (centreline and face), room perimeters, net floor area, door and window counts, one figure per row
 
 **`archlang score`** — continuous intent satisfaction (satisfied/total) as data — the refine-loop reward — or, with --taste, the plan's taste score. Measures, never gates (validate --intent is the gate).
   - input: <file.arch|-> → output: --brief: { ok, satisfied, total, score, subscores, violations, measures? }; --taste: { profile, ok, score, uncapped, capped, validity, advisory, coverage, subscores, criteria } (exit 0 on a successful measurement, whatever the score)
@@ -793,7 +799,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
   - flags: `--set <NAME=value>` override the root plan's top-level `let NAME` with a numeric literal (`4500` is mm, `4.5m`) and compare the plan before and after; refused with E_SET_OVERRIDE when NAME is not exactly one top-level let · `--against <old.arch>` compare the input (the new version) against this older file instead; exactly one of --set and --against · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `archlang impact plan.arch --set W=4500 --json` — widen by one number: every moved/resized/re-hosted element with the chain that moved it, what held, what broke
 
-**`archlang suggest`** — advisory topology suggestions as data (door/window statements that resolve reachability/window faults)
+**`archlang suggest`** — advisory door/window statements for unreachable or windowless rooms
   - input: <file.arch|-> → output: suggestions (JSON or a summary)
   - flags: `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `archlang suggest plan.arch --json` — ready-to-paste door/window statements for unreachable rooms, no entrance, or a windowless bedroom
@@ -810,7 +816,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 
 **`archlang context`** — print the full bundled agent context (spec + workflow + CLI + errors)
   - input: none → output: the full agent context (llms-full.txt), one --section of it, or the one-screen --level starter
-  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 149 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 149 KB of it (spec = the language, 30 KB; workflow = the agent loop, 30 KB; cli = every command, 27 KB; errors = the diagnostic catalog, 61 KB) · `--json` structured result on stdout, messages on stderr
+  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 150 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 150 KB of it (spec = the language, 30 KB; workflow = the agent loop, 30 KB; cli = every command, 28 KB; errors = the diagnostic catalog, 61 KB) · `--json` structured result on stdout, messages on stderr
   - example: `archlang context` — the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 
 **`archlang new`** (aliases: `init`) — scaffold a starter .arch
