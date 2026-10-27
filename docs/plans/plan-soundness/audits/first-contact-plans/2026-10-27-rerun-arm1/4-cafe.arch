@@ -1,0 +1,62 @@
+plan "Corner Cafe" {
+  units mm
+  grid 100
+  north up
+  dims auto all
+  paper A3 landscape
+
+  strip right at (0,0) gap 0 height 3500 {
+    room id=swc size 1500 label "Staff WC" uses wc
+    room id=store size 1500 label "Store" uses storage
+    room id=kitchen size 2500 label "Kitchen" uses kitchen
+    room id=counter size 2500 label "Counter" uses circulation
+    room id=accwc size 2000 label "Accessible WC" uses wc
+  }
+  room id=seating at (0,3500) size 10000x5500 label "Seating" uses living
+
+  walls from rooms exterior 200 partition 100 { open between counter and seating width 1800 }
+
+  door on seating.bottom at 1200 from start width 1200 swing inward
+  door on kitchen.top at 700 from start width 900 swing inward
+  door between swc and store at 1750 from start width 800 swing into swc
+  door between store and kitchen at 1750 from start width 900 swing into store
+  door between kitchen and counter at 2000 from start width 900 swing into kitchen
+  door between accwc and seating at 1000 from start width 1000 swing into accwc
+
+  window on seating.left at 2000 from start width 1600
+  window on seating.bottom at 5500 from start width 2400
+  window on seating.bottom at 8500 from start width 1800
+  window on seating.right at center width 2000
+  window on swc.top width 600
+  window on kitchen.top at 1900 from start width 600
+  window on counter.top at 1250 from start width 1200
+  window on accwc.top width 800
+
+  furniture wc in swc anchor top flush size 400x700
+  furniture basin in swc anchor bottom-left flush size 500x400
+  furniture wc in accwc anchor top flush size 400x700
+  furniture basin in accwc anchor left flush size 400x500
+
+  furniture shelf in store anchor top flush size 1000x400
+
+  furniture kitchen_sink against kitchen.bottom offset 1250
+  furniture stove against kitchen.bottom offset 2000
+  furniture fridge against kitchen.left offset 2950
+  furniture counter against kitchen.top offset 1950 size 800x600
+
+  furniture bar_counter against counter.top offset 1700 size 1400x600
+
+  for r in 0..2 {
+    for c in 0..3 {
+      let cx = 2600 + c * 2700
+      let cy = 5000 + r * 2400
+      furniture table at (cx - 400, cy - 400) size 800x800
+      furniture chair at (cx - 200, cy - 800) size 400x400 
+      furniture chair at (cx - 200, cy + 400) size 400x400 rotate 180
+      furniture chair at (cx - 800, cy - 200) size 400x400 rotate 270
+      furniture chair at (cx + 400, cy - 200) size 400x400 rotate 90
+    }
+  }
+
+  title { project "Corner Cafe" drawn_by "ArchLang" date "2026-10-27" number "A-01" revision "A" }
+}

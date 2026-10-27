@@ -1,0 +1,61 @@
+plan "Two-storey townhouse" {
+  units mm
+  grid 100
+  paper A3 portrait
+  north up
+  dims auto all
+  title { project "Townhouse 2 x 55 m2" drawn_by "ArchLang" date "2026-10-27" number "TH-01" revision "A" }
+
+  level 0 "Ground" {
+    room id=kitchen at (0,0) size 5500x3500 label "Kitchen / Dining" uses kitchen dining
+    room id=living at (0,3500) size 3500x3500 uses living
+    room id=stairhall at (3500,3500) size 2000x3500 label "Stair" at (4500,3650) uses circulation
+    room id=wc at (0,7000) size 1500x3000 uses wc
+    room id=hall at (1500,7000) size 4000x3000 uses hall
+    walls from rooms exterior 200 partition 100 { open between hall and stairhall }
+    door on hall.bottom at 3000 from start width 1000 swing inward
+    door between hall and wc at 750 from start width 800 swing into wc
+    door between hall and living at 600 from start width 900 hinge near end swing into living
+    opening between living and kitchen at center width 1200
+    window on kitchen.top at 1800 from start width 1500
+    window on kitchen.top at 4100 from start width 1200
+    window on living.left width 1800
+    window on kitchen.right width 1200
+    window on wc.left width 500
+    stair id=st at (4300,4300) size 1000x2650 dir up
+    furniture kitchen_sink against kitchen.top offset 3000
+    furniture stove against kitchen.left offset 2500
+    furniture counter against kitchen.left offset 1500
+    furniture fridge against kitchen.left offset 500
+    furniture dining_table in kitchen centered size 1800x900
+    furniture sofa_l against living.left offset 1700
+    furniture tv_unit against living.right offset 1750
+    furniture wc against wc.left offset 1000
+    furniture basin against wc.bottom offset 750
+  }
+
+  level 1 "First" {
+    room id=bed1 at (0,0) size 3500x4000 label "Bedroom 1" uses bedroom
+    room id=bath at (0,4000) size 3500x2500 uses bath
+    room id=bed2 at (0,6500) size 3500x3500 label "Bedroom 2" uses bedroom
+    room id=landing at (3500,0) size 2000x10000 uses hall
+    walls from rooms exterior 200 partition 100
+    door between bed1 and landing at 3300 from start width 900 hinge near end swing into bed1
+    door between bath and landing at 1250 from start width 800 swing into bath
+    door between bed2 and landing at 700 from start width 900 hinge near start swing into bed2
+    window on bed1.left at 1000 from start width 1500
+    window on bed1.top width 1200
+    window on bed2.left at 2500 from start width 1000
+    window on bed2.bottom width 1200
+    window on bath.left width 600
+    window on landing.top width 800
+    stair id=st at (4300,4300) size 1000x2650 dir down
+    furniture double_bed against bed1.top offset 1750
+    furniture wardrobe against bed1.left offset 2800
+    furniture double_bed against bed2.bottom offset 1750
+    furniture wardrobe against bed2.left offset 1000
+    furniture bathtub against bath.bottom offset 1000
+    furniture wc against bath.left offset 600
+    furniture basin against bath.bottom offset 2400
+  }
+}
