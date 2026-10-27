@@ -16,3 +16,5 @@ export type { MixedHeightJoint, OwnedWall, Ownership, Piece, Point, Ring } from 
 export { buildMesh, FURNITURE_HEIGHT_MM } from "./mesh/build.js";
 export { prism } from "./mesh/extrude.js";
 export type { Mesh3D, MeshNode, NodeKind, Shell, Stage } from "./mesh/types.js";
+export { authoringOrder, ease, FIXTURE_FAMILIES, keyFrames, PHASE, stateAt, timeline } from "./replay/timeline.js";
+export type { NodeState, ReplayEvent, ReplayState } from "./replay/timeline.js";
