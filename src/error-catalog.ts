@@ -565,6 +565,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Add a door (or a full-height window) on the wall the balcony hangs off — the usual fix — or move the balcony to the facade that already has one.",
     "outdoor balcony at (2000,7200) size 4000x1600   # warning: no opening within reach",
   ),
+  E_IMPERIAL_FORM: E(
+    "E_IMPERIAL_FORM",
+    "An imperial length is written in a form the language does not read.",
+    "Imperial lengths are read in three forms only: `12ft`, `6in` and `12ft6in` (feet before inches, each part a plain decimal such as `0.5in`), converted exactly (1 in = 25.4 mm) and rounded half away from zero to a whole millimetre. The feet-and-inch marks are refused because `\"` opens a string and `'` is no token (`12'6\"`, `12'`, `6\"`); a glued fraction because `/` is division (`1/2in`); and inches before feet or a bare trailing number (`6in12ft`, `12ft6`). The literal is replaced by 0 so the rest of the plan still reads and reports. Output stays in millimetres.",
+    'Write `12ft6in` for 12\'6", `0.5in` for 1/2", and put feet before inches.',
+    "room id=r at (0,0) size 12'6\"x10ft   # error: write 12ft6inx10ft",
+  ),
   E_IMPORT_BAD_SPEC: E(
     "E_IMPORT_BAD_SPEC",
     "Malformed import spec.",

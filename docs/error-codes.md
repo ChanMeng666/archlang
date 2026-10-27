@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**145 errors** · **88 warnings**
+**146 errors** · **88 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -48,6 +48,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_FURN_ROTATE`](#e_furn_rotate) | error | Furniture rotation must be a quarter-turn. |
 | [`E_FURN_SIZE`](#e_furn_size) | error | Furniture must have a positive size. |
 | [`E_HEIGHT_RANGE`](#e_height_range) | error | A height is outside the range a storey can be built at. |
+| [`E_IMPERIAL_FORM`](#e_imperial_form) | error | An imperial length is written in a form the language does not read. |
 | [`E_IMPORT_BAD_SPEC`](#e_import_bad_spec) | error | Malformed import spec. |
 | [`E_IMPORT_CONFLICT`](#e_import_conflict) | error | Imported name conflicts with an existing component. |
 | [`E_IMPORT_CYCLE`](#e_import_cycle) | error | Cyclic import. |
@@ -724,6 +725,18 @@ furniture bed at (0,0) size 0x2000   # error
 
 ```arch static
 wall id=w1 exterior thickness 200 height 0 { (0,0) (4000,0) close }   # error: a wall with no height
+```
+
+## E_IMPERIAL_FORM
+
+*error* — An imperial length is written in a form the language does not read.
+
+**Cause.** Imperial lengths are read in three forms only: `12ft`, `6in` and `12ft6in` (feet before inches, each part a plain decimal such as `0.5in`), converted exactly (1 in = 25.4 mm) and rounded half away from zero to a whole millimetre. The feet-and-inch marks are refused because `"` opens a string and `'` is no token (`12'6"`, `12'`, `6"`); a glued fraction because `/` is division (`1/2in`); and inches before feet or a bare trailing number (`6in12ft`, `12ft6`). The literal is replaced by 0 so the rest of the plan still reads and reports. Output stays in millimetres.
+
+**Fix.** Write `12ft6in` for 12'6", `0.5in` for 1/2", and put feet before inches.
+
+```arch static
+room id=r at (0,0) size 12'6"x10ft   # error: write 12ft6inx10ft
 ```
 
 ## E_IMPORT_BAD_SPEC

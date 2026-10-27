@@ -9,9 +9,9 @@ a `fix`). This page is everything you need to author it.
 
 ## The 7 rules that matter
 
-1. **Units are millimetres.** A 4-metre wall is `4000`, not `4`. Optional metric suffixes fold to mm: `4m`=4000, `3.5m`=3500, `40cm`=400, `20mm`=20.
+1. **Units are millimetres.** A 4-metre wall is `4000`, not `4`. Suffixes fold to mm: `3.5m`=3500, `40cm`=400, `20mm`=20, `12ft6in`=3810, `1in`=25 (25.4 rounded half away from 0).
 2. **Origin is top-left; +x goes right, +y goes DOWN** (screen/SVG convention — *not* math y-up).
-3. **Coordinates are `(x, y)` tuples; sizes are `WxH`** (e.g. `4000x3000`) or `<expr> x <expr>` with spaces.
+3. **Coordinates are `(x, y)` tuples; sizes are `WxH`** or `<expr> x <expr>` with spaces.
 4. **Doors and windows must lie ON a wall segment** (on its centerline), or you get a
    `W_DOOR_OFF_WALL` / `W_WINDOW_OFF_WALL` warning. Host them by rooms (below) or `on <wall> at <pos>` — hosted by construction.
 5. **String interpolation is `"{expr}"`** inside double quotes (e.g. `label "Unit {i}"`).
@@ -46,14 +46,14 @@ To type some walls and derive others, name one by its rooms: `wall … between <
 ```arch
 plan "Title" {
   units mm   # required-ish settings come first
-  grid 50   # snap grid in mm
+  grid 50   # snap grid
   paper A3 landscape   # OPTIONAL sheet: A4|A3|A2|A1|A0, landscape|portrait (landscape default)
   scale 1:50   # drawing scale — OPERATIVE with `paper`, annotation-only without it
   north up   # up|down|left|right
   dims auto all   # OPTIONAL auto-dimensioning instead of hand `dim` lines: overall|rooms|walls|all
   accTitle "…"   # OPTIONAL a11y name → SVG <title> under `compile --accessible`
   accDescr "…"   # …and description → <desc>, replacing the derived caption. Both plan-level only (E_ACC_PLACEMENT)
-  height 3000   # OPTIONAL storey floor-to-floor in mm — the VERTICAL DATUM, and it DRAWS NOTHING (a plan is a horizontal cut, so heights move no byte). Overridden per storey (`level <n> height`) then per wall (`wall … height`); mm, never grid-snapped, E_HEIGHT_RANGE outside 0–100000, and an opening's `head` above its wall is E_OPENING_ABOVE_WALL. Defaults: 3000 storey, 2100 door head, 900/2100 window sill/head, host-wall height for a cased opening. `describe --json` reports `heights` (storey_height/elevation/per-wall) + `head`/`sill` on the openings, but ONLY if the source wrote one of these clauses somewhere; `arch manifest`'s `datum` has the defaults either way
+  height 3000   # OPTIONAL storey floor-to-floor — the VERTICAL DATUM, and it DRAWS NOTHING (a plan is a horizontal cut, so heights move no byte). Overridden per storey (`level <n> height`) then per wall (`wall … height`); mm, never grid-snapped, E_HEIGHT_RANGE outside 0–100000, and an opening's `head` above its wall is E_OPENING_ABOVE_WALL. Defaults: 3000 storey, 2100 door head, 900/2100 window sill/head, host-wall height for a cased opening. `describe --json` reports `heights` (storey_height/elevation/per-wall) + `head`/`sill` on the openings, but ONLY if the source wrote one of these clauses somewhere; `arch manifest`'s `datum` has the defaults either way
   # … elements and scripting …
   title { project "…" drawn_by "…" date "…" number "…" revision "…" }
 }
