@@ -23,6 +23,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   inserted ahead of it), on a name neither version carries, or above the lowest storey is refused
   with `E_LOCK_UNNAMED`. New exports `checkLocks`, `parseLockList` and the `ImpactLock`,
   `LockViolation`, `LockRefusal`, `LockSpan`, `LockSide`, `LockElement` types.
+- `describe --facts quantities` and `arch takeoff --format csv|md` (preview-and-remodel B4): an
+  opt-in facet of geometric quantities per storey, with each figure's convention in its field name.
+  Per wall category: `length_centreline_mm`, `length_face_mm` (the outline of the union of the wall
+  bands, before openings, credited to the wall whose band edge it lies on) and, only when the plan
+  authors a height, `face_area_before_openings_m2`. Per room: `perimeter_centreline_mm`,
+  `perimeter_net_mm` (the outline of the room less every wall band) and `area_net_m2`. The storey's
+  `floor_area_net_m2`, and `floor_area_with_waste_m2` only when `--waste <pct>` is passed (never a
+  default; `DescribeOptions.wastePct` in the API). Door counts by kind and width, window counts by
+  width. `takeoff` writes the block as a one-figure-per-row CSV or Markdown tables, or JSON.
+  Definitions in `docs/analysis.md` § Quantities. `describe()` without the fact is byte-identical;
+  no diagnostic is added.
 - Package-root exports for downstream consumers of a resolved plan (ADR 0031): `resolvePlan` (the
   complete parse → link → resolve path; unlike `resolveAll(compile(src).ast)` it keeps imported and
   placed content), `joinWallSet` and `loopsToPolygons` (the wall joinery, with the `split` argument

@@ -131,6 +131,7 @@ arch link  # print a playground URL that opens the plan, rendered, with nothing 
 arch watch  # recompile on save (interactive)
 arch validate  # parse + resolve + lint, no render (is it valid & sound?)
 arch describe  # semantic facts: rooms, areas, adjacency, what doors connect
+arch takeoff  # geometric quantities, CSV or Markdown
 arch score  # continuous intent satisfaction (satisfied/total) as data — the refine-loop reward — or, with --taste, the plan's taste score
 arch lint  # architectural soundness warnings
 arch ast  # parse only (no resolve/render) and print the span-bearing AST as JSON
@@ -141,7 +142,7 @@ arch fix  # apply the machine-applicable fix suggestions on a plan's diagnostics
 arch finish  # furnish the rooms that hold no furniture, then add the sheet statements a plan lacks (paper, scale, dims auto, title, schedule rooms, legend); deletes nothing
 arch reroll  # offer a proven-equivalent `for` loop for a repeated statement run
 arch impact  # change one number: what moved and why, what held, what broke
-arch suggest  # advisory topology suggestions as data (door/window statements that resolve reachability/window faults)
+arch suggest  # advisory door/window statements for unreachable or windowless rooms
 arch manifest  # this document: the whole CLI API as structured data
 arch spec  # print the one-prompt language spec (spec.llm.md)
 arch context  # print the full bundled agent context (spec + workflow + CLI + errors)
