@@ -51,6 +51,8 @@ describe("browser safety", () => {
       [/\brequire\(\s*["']node:/, "a node: require"],
       [/\bprocess\.(env|argv|cwd|exit|platform)\b/, "process"],
       [/\bDate\.now\s*\(/, "Date.now()"],
+      [/\bnew\s+Date\s*\(/, "new Date()"],
+      [/\bperformance\.now\s*\(/, "performance.now()"],
       [/\bMath\.random\s*\(/, "Math.random()"],
     ];
     const hits = banned.filter(([re]) => re.test(code)).map(([, why]) => why);

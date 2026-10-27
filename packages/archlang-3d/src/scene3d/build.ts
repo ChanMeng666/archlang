@@ -141,7 +141,6 @@ const stairOf = (s: RStair): Stair => ({
 function wallsAndOpenings(
   ir: ResolvedPlan,
   byId: ReadonlyMap<string, ResolvedElement>,
-  ledger: Assumption[],
 ): { walls: Wall[]; openings: Opening[] } {
   const own = wallOwnership(ir.walls);
   const cutsOf = new Map<number, string[]>();
@@ -155,11 +154,10 @@ function wallsAndOpenings(
     const kind =
       op.kind ?? (el?.kind === "door" || el?.kind === "window" || el?.kind === "opening" ? el.kind : "opening");
     const outer = loopsToPolygons([cut.loop])[0] ?? [];
-    let sill = op.sill;
-    if (sill === undefined && kind !== "window") {
-      sill = 0;
-      ledger.push({ kind, id, field: "sill_mm", value: 0, provenance: "default", rule: "opening-sill-at-floor" });
-    }
+    // The core registers every opening with a sill (a window's own, 0 for a door or a cased
+    // opening) and a head; an opening without them would be dropped here, which the corpus test
+    // turns red by counting the scene's openings against the joinery's cuts.
+    const sill = op.sill;
     const head = op.head ?? (el && "head" in el ? (el as RDoor | RWindow | ROpening).head : undefined);
     if (sill === undefined || head === undefined) continue;
     const door = el?.kind === "door" ? (el as RDoor) : undefined;
@@ -198,7 +196,7 @@ function levelOf(s: Storey, ledger: Assumption[]): Level {
   const byId = new Map(els.map((e) => [e.id, e] as const));
   const of = <K extends ResolvedElement["kind"]>(k: K): Extract<ResolvedElement, { kind: K }>[] =>
     els.filter((e): e is Extract<ResolvedElement, { kind: K }> => e.kind === k);
-  const { walls, openings } = wallsAndOpenings(ir, byId, ledger);
+  const { walls, openings } = wallsAndOpenings(ir, byId);
   const roofs: Roof[] = of("roof").map((r: RRoof) => ({
     id: r.id,
     source: source(r),

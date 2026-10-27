@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adaptPlan, validateScene3D } from "../src/index.js";
+import { adaptPlan, validateScene3D, wallOwnership } from "../src/index.js";
 import { EXAMPLES_LIST, WORLD } from "./corpus.js";
 
 describe("every shipped example adapts to a valid Scene3D, or is refused by name", () => {
@@ -16,12 +16,22 @@ describe("every shipped example adapts to a valid Scene3D, or is refused by name
         return;
       }
       expect(validateScene3D(JSON.parse(JSON.stringify(r.scene)))).toEqual([]);
-      // Every cut the core's joinery made is an opening of the scene, hosted by its wall.
-      for (const lv of r.scene.levels) {
-        const cuts = lv.walls.flatMap((w) => w.cuts).sort();
-        expect(lv.openings.map((o) => o.id).sort()).toEqual(cuts);
+      r.scene.levels.forEach((lv, i) => {
+        const ir = r.storeys[i]?.ir;
+        expect(ir, `${name}: level ${i} has a storey`).toBeDefined();
+        if (!ir) return;
+        // Nothing is dropped: each collection is counted against the core's own facts, never
+        // against another view of the scene (PR #325 review round 1).
+        const n = (k: string): number => ir.elements.filter((e) => e.kind === k).length;
+        expect(lv.openings.length, "openings = the joinery's cuts").toBe(wallOwnership(ir.walls).cuts.length);
+        expect(lv.walls.length).toBe(ir.walls.length);
+        const kinds = ["room", "furniture", "stair", "void", "column", "outdoor", "fence", "roof"];
+        const got = [lv.floors, lv.furniture, lv.stairs, lv.voids, lv.columns, lv.outdoor, lv.fences, lv.roofs];
+        expect(got.map((c) => c.length)).toEqual(kinds.map(n));
+        // Every cut is an opening of the scene, hosted by its wall.
+        expect(lv.openings.map((o) => o.id).sort()).toEqual(lv.walls.flatMap((w) => w.cuts).sort());
         expect(lv.walls.every((w) => w.footprint.length > 0)).toBe(true);
-      }
+      });
     });
   }
 

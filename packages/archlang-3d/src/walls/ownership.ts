@@ -132,8 +132,15 @@ function segDist(p: Point, a: Point, b: Point): number {
 
 const ringsOf = (p: Piece): Ring[] => [p.outer, ...p.holes];
 
+/**
+ * How close two boundary points must be to count as touching (mm): the core's joinery fuses
+ * vertices within 0.015 mm (`SNAP_MM`, `src/geometry/band.ts`), so a tighter tolerance could miss
+ * a contact the joinery made; 0.02 mm sits just above it.
+ */
+export const TOUCH_TOL_MM = 0.02;
+
 /** Whether two pieces share a point of their boundaries (an edge or a vertex), within `tol` mm. */
-export function piecesTouch(a: Piece, b: Piece, tol = 1e-3): boolean {
+export function piecesTouch(a: Piece, b: Piece, tol = TOUCH_TOL_MM): boolean {
   const near = (p: Point, rs: Ring[]): boolean =>
     rs.some((r) => r.some((q, i) => segDist(p, q, r[(i + 1) % r.length] as Point) <= tol));
   return (
@@ -144,38 +151,55 @@ export function piecesTouch(a: Piece, b: Piece, tol = 1e-3): boolean {
 
 export interface MixedHeightJoint {
   code: "W3D_MIXED_HEIGHT_JOINT";
-  /** The wall that owns the joint (the joinery's winner) and the taller wall it notches. */
+  /** The lower wall that owns part of the taller wall's band, and the taller wall it notches. */
   owner: { id: string; height: number };
   notched: { id: string; height: number };
+  /** Plan area of the taller wall's band the lower wall owns, mm². */
+  lostMm2: number;
   message: string;
 }
 
+/** A notch smaller than this (mm²) is joinery dust, not a notch: a butt joint loses exactly 0. */
+const NOTCH_MIN_MM2 = 1;
+
 /**
- * Same-storey walls whose owned pieces touch, where the wall that owns the joint is the LOWER
- * one, so the taller wall is notched where they meet (archlang-3d Q19, V-GEO-12; the synthetic
- * `s11` is the regression case). The joinery gives a contested point to the thicker wall, a tie
- * to the earlier one; a joint whose owner is the taller wall loses nothing and is not reported.
- * Reported, never repaired: the geometry is the core's ownership, as drawn.
+ * Same-storey walls of different heights where the LOWER wall owns part of the taller wall's band,
+ * so the taller wall is notched where they meet (archlang-3d Q19, V-GEO-12; the synthetic `s11` is
+ * the regression case). Decided by ownership, never by thickness alone: each touching pair is
+ * joined on its own (in the drawing's order, so the joinery's tie-break holds) and the taller
+ * wall's owned area compared with its band alone. A butt joint, where the bands meet without
+ * overlapping, loses nothing and is not reported. Reported, never repaired: the geometry is the
+ * core's ownership, as drawn.
  */
 export function mixedHeightJoints(own: Ownership): MixedHeightJoint[] {
   const out: MixedHeightJoint[] = [];
   const { owned } = own;
+  const solo = new Map<number, number>();
+  const soloArea = (w: OwnedWall): number => {
+    const v = solo.get(w.index) ?? wallOwnership([w.wall]).owned[0]?.area ?? 0;
+    solo.set(w.index, v);
+    return v;
+  };
   for (let i = 0; i < owned.length; i++) {
     for (let j = i + 1; j < owned.length; j++) {
       const a = owned[i] as OwnedWall;
       const b = owned[j] as OwnedWall;
       if (a.wall.height === b.wall.height) continue;
-      const winner = b.wall.thickness > a.wall.thickness ? b : a;
-      const loser = winner === a ? b : a;
-      if (winner.wall.height >= loser.wall.height) continue;
       if (!a.pieces.some((p) => b.pieces.some((q) => piecesTouch(p, q)))) continue;
+      const [lower, taller] = a.wall.height < b.wall.height ? [a, b] : [b, a];
+      // The pair alone, in the drawing's order (a before b): the taller wall's share of it.
+      const pair = wallOwnership(a.index < b.index ? [a.wall, b.wall] : [b.wall, a.wall]);
+      const kept = pair.owned.find((o) => o.wall === taller.wall)?.area ?? 0;
+      const lost = soloArea(taller) - kept;
+      if (!(lost > NOTCH_MIN_MM2)) continue;
       out.push({
         code: "W3D_MIXED_HEIGHT_JOINT",
-        owner: { id: winner.wall.id, height: winner.wall.height },
-        notched: { id: loser.wall.id, height: loser.wall.height },
+        owner: { id: lower.wall.id, height: lower.wall.height },
+        notched: { id: taller.wall.id, height: taller.wall.height },
+        lostMm2: Math.round(lost),
         message:
-          `Wall ${winner.wall.id} (${winner.wall.height} mm high) owns its joint with the taller wall ` +
-          `${loser.wall.id} (${loser.wall.height} mm), so the taller wall is notched where they meet.`,
+          `Wall ${lower.wall.id} (${lower.wall.height} mm high) owns ${Math.round(lost)} mm² of the taller wall ` +
+          `${taller.wall.id}'s footprint (${taller.wall.height} mm), so the taller wall is notched where they meet.`,
       });
     }
   }

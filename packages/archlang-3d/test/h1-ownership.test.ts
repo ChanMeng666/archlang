@@ -90,6 +90,34 @@ describe("H1 on the synthetic stress plans s1…s11", () => {
     // s4 also mixes heights, but its thicker wall is the taller one, so nothing is notched.
     expect(fired).toEqual(["s11-mixed-thick-low: lowthick>tall"]);
   });
+
+  // The red-team's probes (PR #325 round 1): thickness alone said "notched" where the lower wall
+  // took nothing. A 300 mm wall's square cap reaches 150 mm past its end.
+  const joints = (walls: string): string[] => {
+    const src = `plan "p" { units mm grid 50 ${walls} }`;
+    return mixedHeightJoints(wallOwnership(storeys(src)[0]?.walls ?? [])).map((m) => `${m.owner.id}>${m.notched.id}`);
+  };
+  const TALL = "wall id=tall partition thickness 100 height 3000 { (0,2000) (6000,2000) }";
+
+  it("does not report a butt joint: a lower wall whose cap ends on the taller wall's face", () => {
+    expect(joints(`${TALL} wall id=low partition thickness 300 height 1200 { (3000,0) (3000,1800) }`)).toEqual([]);
+  });
+
+  it("does not report bands that meet at one corner point", () => {
+    expect(joints(`${TALL} wall id=low partition thickness 300 height 1200 { (6200,0) (6200,1800) }`)).toEqual([]);
+  });
+
+  it("reports the same pair once the lower wall's band overlaps the taller one's", () => {
+    expect(joints(`${TALL} wall id=low partition thickness 300 height 1200 { (3000,0) (3000,1900) }`)).toEqual([
+      "low>tall",
+    ]);
+  });
+
+  it("follows the joinery's tie-break: equal thickness, the lower wall written first owns the crossing", () => {
+    const low = "wall id=low partition thickness 100 material brick height 1200 { (3000,0) (3000,4000) }";
+    expect(joints(`${low} ${TALL}`)).toEqual(["low>tall"]);
+    expect(joints(`${TALL} ${low}`)).toEqual([]);
+  });
 });
 
 describe("H1 on the shipped corpus", () => {

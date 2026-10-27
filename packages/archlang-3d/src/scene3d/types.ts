@@ -97,7 +97,11 @@ export interface Furniture {
   category: string;
   room?: string;
   centre: Pt;
-  /** Plan-axis footprint as drawn (after the quarter-turn). */
+  /**
+   * The footprint ON THE PLAN, already turned: `w` along plan x, `d` along plan y, whatever the
+   * quarter-turn. An exporter places the box as is; `yawDeg` orients the asset INSIDE it (an
+   * asset's own width runs along plan y at ±90°). Never apply `yawDeg` to this box a second time.
+   */
   size: { w: Um; d: Um };
   /** Rotation about the vertical axis in the exporters' convention: minus the plan's `rotate`. */
   yawDeg: number;
