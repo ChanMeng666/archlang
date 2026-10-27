@@ -36,7 +36,7 @@ const DESCRIBE = resolve(SRC, "describe.ts");
 
 /**
  * The resolved-plan seam a downstream consumer reads (ADR 0031): each value and the module
- * that declares it. Only these four are walked; the types they reach are DERIVED below.
+ * that declares it. Only these five are walked; the types they reach are DERIVED below.
  */
 const SEAM_VALUES: ReadonlyArray<readonly [name: string, module: string]> = [
   ["resolvePlan", "analyze.ts"],
@@ -319,16 +319,28 @@ function exampleFiles(): Record<string, string> {
 
 describe("resolvePlan from the package root keeps linked content", () => {
   // `resolveAll(compile(src).ast)` reads the UNLINKED tree and silently drops imported and
-  // placed elements; `resolvePlan` is the complete path. Pinned against `describe()`, which
-  // reads the same IR, never against an element count an example edit would move.
+  // placed elements; `resolvePlan` is the complete path. Pinned against that unlinked path
+  // (more elements where the plan imports or places, the same where it does not), and against
+  // `describe()`, never against an element count an example edit would move.
   const files = exampleFiles();
   const world = core.makeVirtualWorld(files);
-  for (const name of ["imports.arch", "museum-wings.arch", "laneway-house.arch"]) {
+  const links: Record<string, boolean> = {
+    "imports.arch": true,
+    "museum-wings.arch": true,
+    "laneway-house.arch": false,
+  };
+  for (const [name, imports] of Object.entries(links)) {
     it(name, () => {
       const source = files[name];
       expect(source, `examples/${name} must exist`).toBeDefined();
       const { ir } = core.resolvePlan(source ?? "", { world });
       expect(ir, `${name} must resolve`).not.toBeNull();
+      const ast = core.compile(source ?? "", { world }).ast;
+      expect(ast, `${name} must parse`).toBeTruthy();
+      const unlinked = ast ? core.resolveAll(ast).ir.elements.length : 0;
+      const linked = ir?.elements.length ?? 0;
+      if (imports) expect(linked).toBeGreaterThan(unlinked);
+      else expect(linked).toBe(unlinked);
       const summary = core.describe(source ?? "", { world });
       const kinds = (k: string): number => ir?.elements.filter((e) => e.kind === k).length ?? -1;
       expect(kinds("room")).toBe(summary.rooms.length);
