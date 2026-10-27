@@ -12,7 +12,11 @@
  *    (Lead ruling on PR #246; the card's wording puts validity right after errors.)
  * 3. `validity` — a default-ruleset `lint()` warning whose rule is in the validity layer
  *    (`LINT_CODE_LAYERS`, ADR 0032). A code no rule declares counts as validity, as it does for
- *    the taste cap.
+ *    the taste cap. One exception to emission order inside the tier (PS7.7): a door-swing
+ *    shortfall ({@link SWING_SHORTFALL_CODES}) that comes first yields to the first stair-safety
+ *    code ({@link STAIR_SAFETY_CODES}) or finding of an earlier authoring stage (`src/stages.ts`)
+ *    standing beside it: a WC door 85 mm short is not the first fix on a stair with no landing,
+ *    and a later stage's finding is not the first fix while an earlier stage's stands.
  * 4. `drafting` — a default `lint()` warning from a drafting-layer rule (the annotation family).
  *    Its own sub-tier after validity: a drafting code is never chosen ahead of a validity code.
  * 5. `intent` — a failing gating assertion of the brief, then a `--graph` mismatch (it gates
@@ -24,8 +28,9 @@
  *    every profile warning is then profile-only.
  * 7. `taste` — the lowest-scoring assessable taste criterion that scored below 1.
  *
- * Within a tier the first in emission order wins, which is already deterministic. A tier whose
- * input was not supplied is empty. `null` when nothing in any tier is left to fix.
+ * Within a tier the first in emission order wins (but for tier 3's one exception), which is
+ * already deterministic. A tier whose input was not supplied is empty. `null` when nothing in any
+ * tier is left to fix.
  *
  * When a profile run is supplied, a validity or drafting item is reported as the profile run
  * words it (the same code at the same place): that is the text the caller's diagnostics show.
@@ -38,11 +43,13 @@ import type { Diagnostic } from "./diagnostics.js";
 import { ERROR_CATALOG } from "./error-catalog.js";
 import type { IntentCheckResult } from "./intent.js";
 import { feedbackForResult } from "./intent.js";
-import { LINT_CODE_LAYERS, type LintLayer } from "./lint.js";
+import { LINT_CODE_LAYERS, LINT_CODE_STAGES, type LintLayer } from "./lint.js";
+import { LINT_RULES } from "./lint/rules/index.js";
 import { fmtPermyriad } from "./num-format.js";
 import type { GraphCheck } from "./plan-json.js";
 import type { TasteReport } from "./taste/report.js";
 import type { KeepResult } from "./keep.js";
+import { AUTHORING_STAGES } from "./stages.js";
 
 /** The tiers, in precedence order. */
 export const NEXT_TIERS = ["error", "warning", "validity", "drafting", "intent", "profile", "taste"] as const;
@@ -65,6 +72,35 @@ export interface NextItem {
   /** What to do: the diagnostic's first hint, else its catalogued fix; the intent violation's
    *  correction prompt; or the taste criterion, its score and its source. */
   hint?: string;
+}
+
+/** The door-swing shortfalls: a leaf that cannot open its full arc. Within the validity tier one
+ *  yields to a stair-safety code or an earlier-stage finding (PS7.7). */
+export const SWING_SHORTFALL_CODES: ReadonlySet<string> = new Set(["W_SWING_OBSTRUCTED"]);
+
+/** The stair-safety codes: every code a `stairs`-family lint rule declares, read off the rules. */
+export const STAIR_SAFETY_CODES: ReadonlySet<string> = new Set(
+  LINT_RULES.filter((r) => r.family === "stairs").flatMap((r) => r.codes),
+);
+
+/** A lint code's stage rank, or `undefined` for a code no rule gives a stage. */
+const stageRank = (code: string | undefined): number | undefined => {
+  const s = code === undefined ? undefined : LINT_CODE_STAGES[code];
+  return s === undefined ? undefined : AUTHORING_STAGES.indexOf(s);
+};
+
+/** The validity item: the first in emission order, unless that is a swing shortfall and a
+ *  stair-safety code or an earlier-stage finding stands; then the first such (PS7.7). */
+function firstValidity(validity: readonly Diagnostic[]): Diagnostic | undefined {
+  const first = validity[0];
+  if (first?.code === undefined || !SWING_SHORTFALL_CODES.has(first.code)) return first;
+  const swing = stageRank(first.code)!;
+  const outranks = (d: Diagnostic): boolean => {
+    if (d.code !== undefined && STAIR_SAFETY_CODES.has(d.code)) return true;
+    const r = stageRank(d.code);
+    return r !== undefined && r < swing;
+  };
+  return validity.find(outranks) ?? first;
 }
 
 /** Everything `validate` has measured. Leave a field out and its tier is empty. */
@@ -119,7 +155,7 @@ export function nextDiagnostic(input: NextInput): NextItem | null {
   const isDrafting = (d: Diagnostic): boolean => d.code !== undefined && layers[d.code] === "drafting";
   // As the caller's diagnostics word it: the profile run's twin of a default warning, if any.
   const asShown = (d: Diagnostic): Diagnostic => input.profileLint?.find((p) => samePlace(p, d)) ?? d;
-  const validity = lintWarnings.find((d) => !isDrafting(d));
+  const validity = firstValidity(lintWarnings.filter((d) => !isDrafting(d)));
   if (validity) return fromDiagnostic("validity", asShown(validity));
   const drafting = lintWarnings.find(isDrafting);
   if (drafting) return fromDiagnostic("drafting", asShown(drafting));

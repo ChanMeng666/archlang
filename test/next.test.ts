@@ -1,7 +1,8 @@
 /**
  * `nextDiagnostic()` (plan-soundness PS5.3): the one item to fix first, by fixed precedence —
  * error → compile warning → validity → drafting → intent (gating, graph, advisory) → profile →
- * taste — and, within a tier, emission order.
+ * taste — and, within a tier, emission order, but for one exception in the validity tier (PS7.7):
+ * a door-swing shortfall yields to a stair-safety code or an earlier-stage finding.
  *
  * - Unit: every tier alone, every tier against every lower one, emission order within a tier,
  *   the profile run's wording, the taste minimum, and `null`.
@@ -30,6 +31,8 @@ import {
   type TasteReport,
   validateIntent,
 } from "../src/index.js";
+import { LINT_CODE_STAGES } from "../src/lint.js";
+import { STAIR_SAFETY_CODES, SWING_SHORTFALL_CODES } from "../src/next.js";
 import { AUTHORS_HEIGHT, BASELINE } from "./byte-identity-baseline.js";
 import { type CompilerApi, allStoreysDigestWith } from "./byte-identity-digest.js";
 import { heightFreeSource } from "./height-free-source.js";
@@ -250,6 +253,48 @@ describe("nextDiagnostic · precedence between tiers", () => {
     expect(nextDiagnostic({ diagnostics: [W("W_DOOR_OFF_WALL"), E("E_PARSE", 9)], lint: [W(VALIDITY)] })?.tier).toBe(
       "error",
     );
+  });
+});
+
+describe("nextDiagnostic · a swing shortfall yields inside the validity tier (PS7.7)", () => {
+  const SWING = "W_SWING_OBSTRUCTED";
+  const SIDE = "W_STAIR_SIDE_ENTRY"; // a stair-safety code at the swing's own stage
+  const LATER = "W_FURN_CLEARANCE"; // fixtures: a later stage than the swing's
+  const EARLIER = "W_BOUNDARY_NO_WALL"; // walls: an earlier stage than the swing's
+  const next = (lint: Diagnostic[]): string | null | undefined => nextDiagnostic({ diagnostics: [], lint })?.code;
+
+  it("the codes this block relies on are what it says they are", () => {
+    expect([...SWING_SHORTFALL_CODES]).toEqual([SWING]);
+    expect(LINT_CODE_STAGES[SWING]).toBe("openings");
+    expect(LINT_CODE_STAGES[SIDE]).toBe("openings");
+    expect(LINT_CODE_STAGES[LATER]).toBe("fixtures");
+    expect(LINT_CODE_STAGES[EARLIER]).toBe("walls");
+    // Read off the `stairs` family, not retyped: it holds the class-7 blockers the card names.
+    for (const c of ["W_STAIR_NO_LANDING", "W_STAIR_TOO_STEEP", SIDE, "W_SWING_OVER_STAIR"])
+      expect(STAIR_SAFETY_CODES.has(c), c).toBe(true);
+    for (const c of STAIR_SAFETY_CODES) expect(LINT_CODE_LAYERS[c], c).toBe("validity");
+  });
+
+  it("a stair-safety code of the swing's own stage, emitted later, is chosen first", () => {
+    expect(next([W(SWING, 1), W(LATER, 2), W(SIDE, 3)])).toBe(SIDE);
+  });
+
+  it("an earlier-stage finding, emitted later, is chosen first; the first such in emission order", () => {
+    expect(next([W(SWING, 1), W(LATER, 2), W(EARLIER, 3), W("W_STAIR_TOO_STEEP", 4)])).toBe(EARLIER);
+  });
+
+  it("the swing stays first beside only later-stage findings, drafting codes and undeclared codes", () => {
+    expect(next([W(SWING, 1), W(LATER, 2), W(DRAFTING, 3), W("W_NOT_A_RULE", 4)])).toBe(SWING);
+  });
+
+  it("only a swing shortfall yields: any other first validity item keeps emission order", () => {
+    expect(next([W(LATER, 1), W(SWING, 2), W("W_STAIR_NO_LANDING", 3)])).toBe(LATER);
+  });
+
+  it("the tiers do not move: a compile warning beats the stair code, and the stair code a drafting one", () => {
+    const lint = [W(DRAFTING, 0), W(SWING, 1), W("W_STAIR_TOO_STEEP", 2)];
+    expect(nextDiagnostic({ diagnostics: [W("W_DOOR_OFF_WALL")], lint })?.tier).toBe("warning");
+    expect(nextDiagnostic({ diagnostics: [], lint })).toMatchObject({ tier: "validity", code: "W_STAIR_TOO_STEEP" });
   });
 });
 
