@@ -210,6 +210,11 @@ const POSITIVE: Snippet[] = [
   },
   {
     keyword: "room",
+    note: "rule 1 — the imperial suffixes fold to whole mm (12ft6in=3810, 1in=25)",
+    src: plan(`  room id=r1 at (0,0) size 12ft6inx10ft\n  column id=c1 at (1in,6in) size 300x300`),
+  },
+  {
+    keyword: "room",
     note: "rule 3 — `<expr> x <expr>` with spaces is the other size form",
     src: plan(`  let W = 4000\n  room id=r1 at (0,0) size W x 3000`),
   },
@@ -367,7 +372,7 @@ const POSITIVE: Snippet[] = [
   // table existed, three of these (`dims`, `accTitle`, `accDescr`) had no syntax on the
   // page and so no way to appear here either — the D12 hole, from the corpus side.
   { keyword: "units", note: "the only unit", src: plan(`  room id=r1 at (0,0) size 4000x3000`) },
-  { keyword: "grid", note: "snap grid in mm", src: plan(`  grid 50\n  room id=r1 at (0,0) size 4000x3000`) },
+  { keyword: "grid", note: "snap grid", src: plan(`  grid 50\n  room id=r1 at (0,0) size 4000x3000`) },
   {
     keyword: "paper",
     note: "size + orientation, the form the Structure block prints",

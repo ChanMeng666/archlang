@@ -40,9 +40,9 @@ const archStream = StreamLanguage.define({
     }
 
     // Number, or a literal dimension WxH. Dimension first (it starts like a number),
-    // and both come from RULES so the optional metric unit suffix stays in step.
-    if (stream.match(/^[0-9]+(?:\.[0-9]+)?(?:mm|cm|m)?x[0-9]+(?:\.[0-9]+)?(?:mm|cm|m)?/)) return "number";
-    if (stream.match(/^[0-9]+(?:\.[0-9]+)?(?:mm|cm|m)?/)) return "number";
+    // and both come from RULES so the optional unit suffix stays in step.
+    if (stream.match(/^[0-9]+(?:\.[0-9]+)?(?:mm|cm|m|ft(?:(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)in)?|in)?x[0-9]+(?:\.[0-9]+)?(?:mm|cm|m|ft(?:(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)in)?|in)?/)) return "number";
+    if (stream.match(/^[0-9]+(?:\.[0-9]+)?(?:mm|cm|m|ft(?:(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)in)?|in)?/)) return "number";
     if (stream.match(/^\.[0-9]+/)) return "number";
 
     // Arrow before minus; multi-char operators before single.

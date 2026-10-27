@@ -130,7 +130,7 @@ const archStream = StreamLanguage.define({
     }
 
     // Number, or a literal dimension WxH. Dimension first (it starts like a number),
-    // and both come from RULES so the optional metric unit suffix stays in step.
+    // and both come from RULES so the optional unit suffix stays in step.
     if (stream.match(/^${RULES.dimension}/)) return "number";
     if (stream.match(/^${RULES.number}/)) return "number";
     if (stream.match(/^\\.[0-9]+/)) return "number";
