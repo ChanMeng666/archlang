@@ -511,6 +511,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `docs/language-reference.md` gains "Authoring order — the stages": the six authoring stages, which element kinds each holds, the sub-order inside a stage, and why (rooms first, exterior before interior, openings after walls, fixtures before loose furniture, drafting last); paint order is stated as separate and unchanged. Docs only.
 - `W_GARAGE_TOO_NARROW` now also judges a garage's clear depth along its `door garage`: 5000 mm by
   default, a parking bay's length, and 6000 mm under `uk-residential-advisory` (new ruleset field
   `garageDepthMm`; a garage with no vehicle door files a `no-vehicle-door` coverage skip; plan card PS2.70).
