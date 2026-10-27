@@ -56,7 +56,9 @@ function storeyConflicts(ir: ResolvedPlan, level: number | undefined, out: Set<s
   const cased = ir.elements.filter((e): e is ROpening => e.kind === "opening");
   const counted = furniture.filter((f) => !isServiceCounter(f.category)).map(rectOf);
   for (const d of [...doors, ...cased]) {
-    const landing = doorLandingRect(d, DEFAULT_RULESET.doorwayLandingMm);
+    // A `garage` door's approach is not read (PS2.65): the car in front of it is what it is for.
+    const landing =
+      d.kind === "door" && d.doorKind === "garage" ? null : doorLandingRect(d, DEFAULT_RULESET.doorwayLandingMm);
     const leaves = d.kind === "door" ? doorLeaves(d) : [];
     const clear = d.kind === "opening" && openingBlock(d, DEFAULT_RULESET.doorwayLandingMm, counted)?.blocked === false;
     for (const f of furniture) {

@@ -144,6 +144,21 @@ describe("validate · next tiers through the CLI", () => {
     expect(out.next.span).toEqual(out.diagnostics.find((d: { code: string }) => d.code === "W_ROOM_VIA_PRIVATE").span);
   });
 
+  it("PS7.7: the row-6 townhouse's next is a stair code, not its WC door's swing, with and without --stage openings", () => {
+    const plan = "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/5-townhouse.arch";
+    for (const argv of [
+      [plan, "--json"],
+      [plan, "--json", "--stage", "openings"],
+    ]) {
+      const out = JSON.parse(runValidate(argv).stdout);
+      const codes = out.diagnostics.map((d: { code: string }) => d.code);
+      // The audit's finding still stands: the swing is first in emission order, the stair codes after it.
+      expect(codes[0], argv.join(" ")).toBe("W_SWING_OBSTRUCTED");
+      expect(codes, argv.join(" ")).toContain("W_STAIR_NO_LANDING");
+      expect(out.next, argv.join(" ")).toMatchObject({ tier: "validity", code: "W_STAIR_SIDE_ENTRY" });
+    }
+  });
+
   it("nothing: null, and no human next line", () => {
     expect(JSON.parse(runValidate([cleanPlan(), "--json"]).stdout).next).toBeNull();
     const h = cli([cleanPlan()]);

@@ -17,20 +17,24 @@ test.describe("front door", () => {
     });
   }
 
-  test("the plan sits above the editor on a narrow screen and beside it on a wide one", async ({ page }) => {
-    const tops = () =>
+  test("the plan comes first on a narrow screen and sits beside the editor on a wide one", async ({ page }) => {
+    const panes = () =>
       page.evaluate(() => {
-        const panes = [...document.querySelectorAll("main > .pane")].map((p) => p.getBoundingClientRect());
-        return { editor: panes[0]!, plan: panes[1]! };
+        const [editor, plan] = [...document.querySelectorAll("main > .pane")].map((p) => p.getBoundingClientRect());
+        return { editor: editor!, plan: plan! };
       });
+    // Narrow: one view at a time (Code · Plan · Problems), and the first is the plan.
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
     await waitForPlan(page);
-    const narrow = await tops();
-    expect(narrow.plan.top, "plan pane above the editor pane").toBeLessThan(narrow.editor.top);
+    await expect(page.locator("#mviews")).toBeVisible();
+    await expect(page.locator("main > .pane").nth(1)).toBeVisible();
+    await expect(page.locator("main > .pane").first()).toBeHidden();
 
+    // Wide: the switcher is gone and both panes are side by side.
     await page.setViewportSize({ width: 1280, height: 800 });
-    const wide = await tops();
+    await expect(page.locator("#mviews")).toBeHidden();
+    const wide = await panes();
     expect(wide.plan.left, "plan pane right of the editor pane").toBeGreaterThan(wide.editor.left);
   });
 

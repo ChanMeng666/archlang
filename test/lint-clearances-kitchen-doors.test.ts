@@ -9,11 +9,11 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe as suite, expect, it } from "vitest";
-import { type Diagnostic, describe as describePlan, lint, type World } from "../src/index.js";
+import { type Diagnostic, describe as describePlan, lint, repair, type World } from "../src/index.js";
 import { type AccessEdge, rectOf, resolvePlan } from "../src/analyze.js";
 import { doorLandingRect, openingBlock } from "../src/geometry/rect.js";
 import type { RFurniture, ROpening } from "../src/ir.js";
-import { clearancesClear } from "../src/lint/clearance-measure.js";
+import { clearancesClear, windowBands, windowCover } from "../src/lint/clearance-measure.js";
 import { buildLintContext } from "../src/lint/context.js";
 import { DEFAULT_RULESET } from "../src/lint/ruleset.js";
 
@@ -86,6 +86,35 @@ suite("W_HOB_UNDER_WINDOW (PS2.46)", () => {
   it("a sink, a worktop or a fridge under the window is not this rule's", () => {
     for (const w of ["kitchen_sink", "counter"])
       expect(of(kitchen(`furniture ${w} against wall shell segment 0 offset 2000 in r_k`), HU), w).toEqual([]);
+  });
+
+  // PS2.64: a hob on the return wall, its corner in the band of the window on the wall beside it.
+  // The stove backs onto the north wall; the window is on the east wall (body x 5900–6100, band
+  // x 5700–6300 at 300 mm), y 300–1500.
+  const returnWall = (offset: number): string =>
+    kitchen(
+      `furniture stove against wall shell segment 0 offset ${offset} in r_k`,
+      "window id=w_e at (6000,900) width 1200 wall shell",
+    );
+
+  it("a hob on a return wall, 125 mm off the window wall's face, is beside the window (PS2.64)", () => {
+    // Stove x 5175–5775, y 100–700: a 75 × 400 mm corner enters the band, 125 mm off the face.
+    const src = returnWall(5475);
+    const ctx = buildLintContext(resolvePlan(src, {}).ir!, DEFAULT_RULESET);
+    const fr = { x: 5175, y: 100, w: 600, h: 600 };
+    expect(windowBands(ctx.windows).some((b) => windowCover(b, fr, DEFAULT_RULESET.fixtureWallTolMm))).toBe(true);
+    expect(of(src, HU)).toEqual([]);
+    // The placement check reads the same measure: where it stands is clear.
+    expect(clearancesClear(ctx, fr, "stove", 0)).toBe(true);
+  });
+
+  it("a corner hob whose side stands against the window wall is under it (PS2.64)", () => {
+    // Stove x 5300–5900, flush with the east wall's face, over y 300–700 of the window.
+    const ds = of(returnWall(5600), HU);
+    expect(ds).toHaveLength(1);
+    expect(ds[0]!.message).toContain("stands under 400 mm of a 1200 mm window");
+    const ctx = buildLintContext(resolvePlan(returnWall(5600), {}).ir!, DEFAULT_RULESET);
+    expect(clearancesClear(ctx, { x: 5300, y: 100, w: 600, h: 600 }, "stove", 0)).toBe(false);
   });
 
   it("a café's kitchen is read as a dwelling's: the hazard is the hob's", () => {
@@ -383,6 +412,51 @@ suite("W_DOORWAY_BLOCKED on an opening wider than a doorway (the ruling on PR #2
   });
 });
 
+suite("W_DOORWAY_BLOCKED leaves a vehicle door out (PS2.65)", () => {
+  // A garage door on the façade (face at y 100) with a car 100 mm in front of it, and a
+  // pedestrian door into the hall (face at x 3450) with a chest 50 mm in front of it.
+  const garage = (kind: string): string => `plan "G" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }
+  wall id=w_mid partition thickness 100 { (3400,0) (3400,6000) }
+  room id=r_gar at (0,0) size 3400x6000 label "Garage" uses garage
+  room id=r_hall at (3400,0) size 2600x6000 label "Hall" uses hall
+  door id=d_gar ${kind} at (1700,0) width 2400 wall shell
+  door id=d_hall sliding at (3400,3000) width 900 wall w_mid
+  furniture car at (750,200) size 1900x4500 label "Car" in r_gar
+  furniture chest at (3500,2700) size 400x600 in r_hall
+}`;
+
+  it("the car in front of a garage door is silent; the chest in front of the pedestrian door still warns", () => {
+    for (const profile of [undefined, "accessibility-advisory"]) {
+      const ds = of(garage("garage"), DB, profile ? { profile } : {});
+      expect(
+        ds.map((d) => d.message),
+        profile,
+      ).toEqual([expect.stringContaining('"chest" leaves 50 mm')]);
+    }
+  });
+
+  it("`repair` leaves the car where it stands and still clears the chest", () => {
+    expect(repair(garage("garage")).changes.map((c) => c.category)).toEqual(["chest"]);
+  });
+
+  it("the same car in front of a pedestrian door of the same width blocks it: the kind is what is read", () => {
+    const ds = of(garage("sliding"), DB);
+    expect(ds.map((d) => d.message)).toEqual([
+      expect.stringContaining('"Car" leaves 100 mm'),
+      expect.stringContaining('"chest" leaves 50 mm'),
+    ]);
+  });
+
+  it("the 2026-10-18 first-contact house's garage door and its car are silent under the a11y profile", () => {
+    const src = readFileSync(join(ROOT, "docs/plans/plan-soundness/audits/first-contact-plans/2-house.arch"), "utf8");
+    expect(src).toContain("door id=d_garage garage on w_s at 1700 width 2400");
+    expect(of(src, DB, { profile: "accessibility-advisory" })).toEqual([]);
+  });
+});
+
 suite("a `double` door is passed through one leaf (ADA 2010 404.2.3)", () => {
   const withEntry = (door: string) =>
     pair(OPENING, "").replace("door id=d_entry at (6500,4000) width 900 wall shell", door);
@@ -526,6 +600,12 @@ suite("the audits' rows each rule catches (the acceptance of PS2.11e, PS2.46)", 
   // The ruling on PR #283: an opening wider than a doorway is blocked only below 1200 mm clear.
   // NH2's sofa covers 950 mm of a 2400 mm join (1450 left) and CS3's fridge 325 mm of an 1800 mm
   // one (1475 left): each keeps a doorway's width, so neither is caught any more.
+  // PS2.64: the stove backs onto the north wall, 125 mm off the east wall's face, a corner in the
+  // band of the east window: beside it, not under it (row-6 audit Part 1).
+  it("the 2026-10-18 apartment's return-wall stove (1-apartment.arch): no W_HOB_UNDER_WINDOW", () => {
+    expect(codesOf("1-apartment.arch")).not.toContain(HU);
+  });
+
   it.each([
     ["NH2 (its opening half)", "2026-10-24-rerun/2-house.arch"],
     ["CS3 (its opening half)", "2026-10-26-rerun-armB/3-studio.arch"],

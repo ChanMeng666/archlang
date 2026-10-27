@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: fix/examples-sound on 9f35e726: 20 examples edited for lint-clean and design review (aquarium, bungalow, classroom-block, clinic, courtyard-house, furnished-flat, garden-house, hillside-villa, imports, laneway-house, library, materials, museum, parametric, relational, studio, themed, tiny-house, transit-hall, two-storey)
+ * Taken: fix/examples-sound merged with origin/main c23045b6: 20 examples edited for lint-clean and design review (aquarium, bungalow, classroom-block, clinic, courtyard-house, furnished-flat, garden-house, hillside-villa, imports, laneway-house, library, materials, museum, parametric, relational, studio, themed, tiny-house, transit-hall, two-storey)
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -1213,7 +1213,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/1-apartment.arch",
-    "553a606d7237f875016903ffddb291b34a6b57456d014ef6a7944b0e3810d36c",
+    "b31e178d84a85b7ff3edc99aa393ff93296d918ade81a1ac19e43de082408b67",
     849,
   ],
   [
@@ -1363,7 +1363,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/5-townhouse.arch",
-    "ea2e615fc188361a7f361857f65592ef09e4cd9fd6c329f8f9fc357ef53a8f08",
+    "f9541021aeb8c8e878df8371903b3f75927de3b8965f7fcf123a0e839246da64",
     4288,
   ],
   [

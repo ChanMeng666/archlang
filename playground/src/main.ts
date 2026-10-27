@@ -25,6 +25,7 @@ import { renderFacts } from "./facts-strip.js";
 import { renderDescribe } from "./describe-panel.js";
 import { renderLint } from "./lint-panel.js";
 import { renderDiagnostics } from "./diagnostics-panel.js";
+import { isNarrow, mountMobileViews } from "./mobile-views.js";
 import { renderIntent, STARTER_INTENT } from "./intent-panel.js";
 import { renderSuggest } from "./suggest-panel.js";
 import { srcFromHash, updateHash } from "./share.js";
@@ -80,6 +81,11 @@ const pzStage = document.querySelector<HTMLElement>(".pz-stage")!;
 const pzToolbar = document.querySelector<HTMLElement>(".pz-toolbar")!;
 const storeysEl = document.getElementById("storeys");
 const storeysSepEl = document.getElementById("storeysSep");
+const mobileViews = mountMobileViews(
+  document.querySelector("main")!,
+  document.getElementById("mviews")!,
+  document.getElementById("mviewCount")!,
+);
 
 // ---- output tabs (Preview · Describe · Lint · Intent) ----
 const tabs = [...document.querySelectorAll<HTMLElement>(".tab")];
@@ -330,6 +336,7 @@ function render(source: string, refit = false) {
   }
   updateAnalysis(source, ok);
   lastDiagRows = renderDiagnostics(errorsEl, diagnostics ?? [], source);
+  mobileViews.setProblemCount(lastDiagRows.length);
   // Keep an already-run intent verdict live as the source changes (but don't run it
   // unprompted — an untouched Intent tab stays empty until you ask).
   if (intentOutput.innerHTML) renderIntent(intentOutput, source, intentSrc.value);
@@ -511,6 +518,9 @@ async function init() {
     if (!row) return;
     row.classList.toggle("open");
     const off = row.dataset.offset;
+    // On a phone the Problems view hides the editor: the line:col is the one place that
+    // means "take me there", so it switches to Code; the rest of the row only expands.
+    if (isNarrow() && target?.closest(".diag-loc")) mobileViews.show("code");
     if (off != null) jumpToOffset(Number(off));
   });
 

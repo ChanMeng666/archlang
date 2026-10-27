@@ -17,6 +17,7 @@ import { wallRef } from "../../wall-ref.js";
 import {
   curvedNear,
   hobSideGap,
+  hobWindowCover,
   isCookingSurface,
   isShort,
   isWc,
@@ -195,7 +196,9 @@ export const furnitureOverWindow: LintRule = {
  * A cooking surface (`stove`, `hob`, `cooktop`) standing under a window (plan-soundness PS2.46):
  * its footprint overlaps, with positive area, a window's span along its straight host within
  * {@link LintRuleset.fixtureWallTolMm} of the host's centreline, the band `W_FURNITURE_OVER_WINDOW`
- * reads ({@link windowBands}, {@link windowCover}). Its own code, not that rule's second set: a
+ * reads ({@link windowBands}, {@link windowCover}), and stands against that host: its side nearest
+ * the host lies on the wall's face ({@link hobWindowCover}, PS2.64), so a hob on a return wall,
+ * clear of the window wall with a corner in the band, is beside the window and not under it. Its own code, not that rule's second set: a
  * hob is a low unit and blocks no light, and the defect is a different one. Source: the NKBA
  * Kitchen Planning Guidelines with Access Standards, guideline 20 (cooking surface safety): "Do
  * not locate the cooking surface under an operable window", and window treatments above it
@@ -221,7 +224,7 @@ export const hobUnderWindow: LintRule = {
     const out: Diagnostic[] = [];
     for (const f of hobs) {
       for (const band of bands) {
-        const cover = windowCover(band, rectOf(f), tol);
+        const cover = hobWindowCover(band, rectOf(f), tol);
         if (cover === null) continue;
         const { w } = band;
         const toStart = cover.hi + w.width / 2;

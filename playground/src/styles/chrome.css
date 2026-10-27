@@ -587,35 +587,193 @@ main {
   }
 }
 
-/* <760px: title-block cells wrap; panes stack; the seam becomes a hairline. */
-@media (max-width: 760px) {
+/* The phone view switcher (Code · Plan · Problems) — hidden above the breakpoint. */
+.mviews {
+  display: none;
+}
+
+/* ≤900px — the phone (and portrait-tablet) layout. The page scrolls vertically past the header and the intro;
+   below them a sticky Code · Plan · Problems switcher sits over a workspace exactly one
+   screen tall that shows ONE view at a time (`main[data-mview]`, mobile-views.ts), so
+   each gets the full screen instead of a third of it. 16px side gutters, 44px touch
+   targets, and nothing wider than the viewport. */
+@media (max-width: 900px) {
+  html,
+  body {
+    height: auto;
+  }
+  body {
+    min-height: 100%;
+  }
+  /* the Ask AI / "⋯" panels anchor to the header itself, so they span the gutters */
+  header {
+    position: relative;
+  }
   .tb-cell {
+    padding: 8px 16px;
     border-bottom: 1px solid var(--src-border);
-  }
-  main {
-    grid-template-columns: 1fr !important;
-    grid-template-rows: 1fr 1fr;
-  }
-  .pane + .pane {
-    border-left: 0;
-    border-top: 1px solid var(--src-border);
-  }
-  /* The plan above the editor on a narrow screen: visual order only (the DOM, and so the
-     tab order and every handler, are unchanged). The seam hairline moves with it. */
-  main > .pane:nth-child(2) {
-    order: -1;
-    border-top: 0;
-  }
-  main > .pane:first-child {
-    border-top: 1px solid var(--src-border);
-  }
-  /* A title-block cell is as wide as the screen, never wider: its controls wrap. */
-  .tb-cell {
+    /* A title-block cell is as wide as the screen, never wider: its controls wrap. */
     max-width: 100%;
-    box-sizing: border-box;
   }
   .tb-controls {
     flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tb-controls select,
+  .tb-controls button,
+  .tb-ai > summary,
+  .tb-check,
+  .tb-nav-more > summary {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .tb-controls button,
+  .tb-ai > summary,
+  .tb-check {
+    font-size: 14px;
+  }
+  /* 16px stops iOS zooming the page when a select takes focus */
+  .tb-controls select {
+    font-size: 16px;
+  }
+  .tb-controls a.tb-link {
+    font-size: 14px;
+    padding: 12px 2px;
+  }
+  .tb-nav-more {
+    margin-right: 16px;
+  }
+  .tb-nav-more > summary {
+    min-width: 44px;
+    justify-content: center;
+  }
+  .tb-ai {
+    position: static;
+  }
+  .tb-ai-panel {
+    left: 16px;
+    right: 16px;
+    width: auto;
+  }
+  /* a closed disclosure's absolutely positioned panel still widens the scroll area */
+  .tb-ai:not([open]) .tb-ai-panel,
+  .tb-nav-more:not([open]) .tb-nav-panel {
+    display: none;
+  }
+  .tb-nav-panel a {
+    padding: 12px 10px;
+    font-size: 14px;
+  }
+
+  .intro {
+    padding: 12px 16px;
+  }
+
+  .mviews {
+    display: flex;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    height: 48px;
+    padding: 0 16px;
+    gap: 4px;
+    background: var(--paper-panel);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .mview {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    margin-top: 2px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    font-family: var(--font-display);
+    font-variation-settings:
+      "wdth" 85,
+      "wght" 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--ink-muted);
+    cursor: pointer;
+  }
+  .mview[aria-pressed="true"] {
+    color: var(--ink);
+    border-bottom-color: var(--redline-ink);
+  }
+  .mview:focus-visible {
+    outline: 2px solid var(--redline-ink);
+    outline-offset: -2px;
+  }
+  .mview-count {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0;
+    color: var(--redline-ink);
+  }
+  .mview-count:empty {
+    display: none;
+  }
+
+  /* exactly one screen under the sticky switcher */
+  main {
+    flex: none;
+    height: calc(100dvh - 48px);
+    grid-template-columns: 1fr !important;
+    grid-template-rows: minmax(0, 1fr);
+  }
+  main > .pane {
+    display: none;
+  }
+  main[data-mview="plan"] > .pane:nth-child(2),
+  main[data-mview="code"] > .pane:first-child,
+  main[data-mview="problems"] > .pane:first-child {
+    display: flex;
+  }
+  .pane + .pane {
+    border-left: 0;
+  }
+  /* Code: the editor alone — the diagnostics live in their own view */
+  main[data-mview="code"] #errors {
+    display: none;
+  }
+  /* Problems: the diagnostics alone, full height */
+  main[data-mview="problems"] .src-tab,
+  main[data-mview="problems"] #editor {
+    display: none;
+  }
+  main[data-mview="problems"] #errors {
+    flex: 1;
+    max-height: none;
+    padding: 12px 16px;
+    border-top: 0;
+    gap: 8px;
+  }
+  main[data-mview="problems"] #errors:not(.show) ~ .problems-empty {
+    display: block;
+  }
+  /* 16px stops iOS zooming the page when the editor takes focus */
+  #editor .cm-editor {
+    font-size: 16px;
+  }
+
+  .pane h2 {
+    flex-wrap: wrap;
+    padding: 4px 16px;
+    row-gap: 0;
+  }
+  .tab,
+  .lv-btn {
+    min-height: 40px;
+  }
+  .lv-group,
+  .lv-sep {
+    margin-left: 4px;
   }
   .divider {
     display: none;
@@ -714,10 +872,4 @@ main {
 .tb-ai-panel a:focus-visible {
   outline: 2px solid var(--plum-deep);
   outline-offset: 1px;
-}
-@media (max-width: 760px) {
-  .tb-ai-panel {
-    right: auto;
-    left: 0;
-  }
 }
