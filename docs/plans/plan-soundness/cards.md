@@ -382,7 +382,7 @@ PS5.1b: PR #247, 9cc29c7e)
 **PS7.6 · `lint` opens with a one-line summary.** `done` (PR #278, head 8a78e12e, merge 52e7c71f)
 - As built: `research/2026-10-26-ps76-as-built.md`.
 
-**PS7.7 · `next` ranks class-7 blockers and earlier-stage findings before a swing shortfall.** `todo`
+**PS7.7 · `next` ranks class-7 blockers and earlier-stage findings before a swing shortfall.** `done` (PR #PRNUM)
 - On the row-6 townhouse, plain `validate --json` names `W_SWING_OBSTRUCTED` (a WC door 85 mm short) as
   `next` while `W_STAIR_NO_LANDING` (a stair with no landing at its head, a blocker) and
   `W_STAIR_TOO_STEEP` stand; even at `--stage openings`, `next` is the swing while those earlier-stage
@@ -390,6 +390,7 @@ PS5.1b: PR #247, 9cc29c7e)
 - *Acceptance:* within the validity tier, `next` puts a finding of an earlier stage, and a
   stair-safety code, before a door-swing shortfall; the row-6 townhouse's `next` is a stair code; every
   moved `validate --json` digest row is explained. D13 (compile-channel warnings first) stands.
+- As built: `src/next.ts` `firstValidity`: a first validity item in `SWING_SHORTFALL_CODES` yields to the first `stairs`-family code or earlier-stage finding; the row-6 townhouse's `next` is `W_STAIR_SIDE_ENTRY` (plain and `--stage openings|fixtures|drafting`), the only move over 2,905 runs (415 tracked `.arch` × plain + 6 stages); no digest pin moved.
 
 **PS7.8 · A whole-loop arm in the next first-contact re-measure.** `todo` (D26)
 - The protocol's frozen per-brief prompt ("stop when it compiles", `audits/first-contact-protocol.md`
