@@ -490,6 +490,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `W_ROOM_MISSING_DEFINING` now also reports a bathroom that holds a WC and no basin, unless a basin
   stands in a room a door or opening joins it to directly that is not a kitchen (Approved Document G,
   G4; plan card PS2.66). A WC room is still defined by its WC alone.
+- `validate --json` `next`: a first validity finding that is a door-swing shortfall (`W_SWING_OBSTRUCTED`)
+  now yields to the first stair-safety or earlier-stage finding, so a plan with a stair blocker
+  is pointed at the stair first (plan card PS7.7).
 - A doorway's approach (`W_DOORWAY_BLOCKED`'s landing, `doorwayLandingMm` deep) is measured from
   the wall's FACE on each side, not its centreline, the datum `W_LEAF_ACROSS_DOORWAY` already read
   (plan card PS2.54); on a 100 mm partition the approach reaches 50 mm further into each room.
@@ -587,6 +590,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `W_HOB_UNDER_WINDOW` no longer fires on a hob beside a window on a return wall: the hob must stand within
+  30 mm of the window wall's face to count as under it (plan card PS2.64).
+- `W_DOORWAY_BLOCKED` and `repair`'s doorway census skip `garage` doors: a vehicle door is not a pedestrian
+  doorway, so the car it exists for no longer blocks it (plan card PS2.65).
 - The CLI now waits for stdout and stderr to drain before it exits, so a large `--json` output (the
   `arch context --json` bundle, a big `ast`) is never cut off when piped; a pipe lost everything past
   its first 64 KB to the `process.exit` that followed the write.
