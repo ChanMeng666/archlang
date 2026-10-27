@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: PS2.64: W_HOB_UNDER_WINDOW leaves the 2026-10-18 apartment's return-wall stove (1-apartment.arch)
+ * Taken: PS7.7: next of 2026-10-26-rerun-row6/5-townhouse.arch moves to W_STAIR_SIDE_ENTRY (PR #298); earlier: PS2.64 re-take (PR #296) and the chain in git history
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -1363,7 +1363,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/5-townhouse.arch",
-    "ea2e615fc188361a7f361857f65592ef09e4cd9fd6c329f8f9fc357ef53a8f08",
+    "f9541021aeb8c8e878df8371903b3f75927de3b8965f7fcf123a0e839246da64",
     4288,
   ],
   [
