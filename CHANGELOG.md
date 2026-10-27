@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Document M4(2) Diagram 2.5 and M4(3) Diagrams 3.11, 3.16, 400–500 mm; ADA 604.2's 16–18 in lies
   inside). A pan over twice the figure wide files the new `wide-wc-pan` coverage skip. Hint only, no
   fix. The `museum` and `practice-office` examples' accessible-WC pans move into the band.
+- Tests only (plan card PS2.77): `test/fixtures/storeys-eaves-overflow.arch`, a two-storey plan whose
+  building fits its sheet and whose upper-storey eaves alone raise the building-level
+  `W_DRAWING_OVERFLOW`, restores two coverage losses since every example fits its sheet: the
+  storey oracle compares that diagnostic under the group, and the overflow suite reads it off a
+  multi-storey plan as authored. No shipped example, SVG, `describe()` or `lint()` moved.
 - `describe --facts clearances` (plan card PS2.72): an opt-in facet printing, per storey, what
   each clearance rule measured, read through the rules' own measures under the default ruleset: a
   WC's sides, a tall unit's and a hob's cover of a window (with the hob's distance off the window

@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: PS2.74 (W_ACCESSIBLE_WC_SIDE_WALL): museum and practice-office fixed (accessible-WC pan moved into the 400-500 mm band, one line each); thirteen first-contact plans gain the warning (pans 750-1450 mm from the nearer side wall face); the twelve 2026-10-27 arm1/arm2 rerun plans enter the table (their 4-cafe and 6-clinic warn); +2 defect-corpus files (accessible-wc-pan-far pair)
+ * Taken: PS2.74 after merging main (#307-#312): W_ACCESSIBLE_WC_SIDE_WALL on museum/practice-office fixes, 2026-10-27 rerun arm1/arm2 cafe and clinic plans, the accessible-wc-pan-far pair
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
