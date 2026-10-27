@@ -196,7 +196,7 @@ suite("v1.21 CLI — describe --level is a display filter", () => {
       `plan "P" {
   units mm
   level 1 {
-    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+    wall id=shell exterior thickness 200 status existing { (0,0) (8000,0) (8000,6000) (0,6000) close }
     room id=r1 at (0,0) size 8000x6000 label "Hall" uses hall
     door id=front on shell at 4000 width 900
     stair id=s at (500,500) size 900x2600 dir up
