@@ -1,0 +1,8 @@
+plan "s10-angled-door" {
+  units mm
+  grid 50
+  north up
+  wall id=a exterior thickness 200 { (0,0) (4000,3000) }
+  door id=d1 at (2000,1500) width 900 wall a swing in
+  window id=w1 at (3200,2400) width 800 wall a
+}

@@ -1,0 +1,7 @@
+plan "s6-acute-20deg" {
+  units mm
+  grid 50
+  north up
+  wall id=a partition thickness 200 { (0,0) (4000,0) (7758,1368) }
+  wall id=b partition thickness 150 { (0,0) (4000,0) (7758,-1368) }
+}

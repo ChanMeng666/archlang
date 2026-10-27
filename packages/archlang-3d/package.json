@@ -1,0 +1,36 @@
+{
+  "name": "@chanmeng666/archlang-3d",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A downstream reader of a resolved ArchLang plan: adapts it to a plan-aligned Scene3D. ArchLang itself draws plans; this package is separate and unpublished.",
+  "license": "MIT",
+  "author": "Chan Meng <chanmeng.dev@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ChanMeng666/archlang.git",
+    "directory": "packages/archlang-3d"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./node": "./src/node.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "e2e": "vitest run --config vitest.e2e.config.ts"
+  },
+  "peerDependencies": {
+    "@chanmeng666/archlang": "^1.43.1"
+  },
+  "dependencies": {
+    "earcut": "^3.2.4"
+  },
+  "devDependencies": {
+    "ajv": "^8.20.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.7.2"
+  }
+}

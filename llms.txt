@@ -40,7 +40,7 @@ Linux, macOS and Git Bash.
 
 ```bash
 npx -y @chanmeng666/archlang context              # cold start: the whole bundled agent context (spec + skill + CLI + errors) in one call
-npx -y @chanmeng666/archlang context --section spec   # ...or one section only: spec | workflow | cli | errors (about 145 KB in all; the catalog alone is about 55 KB)
+npx -y @chanmeng666/archlang context --section spec   # ...or one section only: spec | workflow | cli | errors (about 145 KB in all; the catalog alone is about 60 KB)
 npx -y @chanmeng666/archlang spec                 # learn the whole language (read this first)
 npx -y @chanmeng666/archlang help compile         # per-command help + worked examples, rendered from the manifest (`archlang <cmd> --help` works too)
 npx -y @chanmeng666/archlang manifest --json      # the whole CLI API as data: commands, flags, formats, lint rules, error codes

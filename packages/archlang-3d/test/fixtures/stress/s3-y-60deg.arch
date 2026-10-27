@@ -1,0 +1,8 @@
+plan "s3-y-60deg" {
+  units mm
+  grid 50
+  north up
+  wall id=a partition thickness 200 { (0,0) (3000,0) }
+  wall id=b partition thickness 200 { (3000,0) (4500,2598) }
+  wall id=c partition thickness 200 { (3000,0) (4500,-2598) }
+}

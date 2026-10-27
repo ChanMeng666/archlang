@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**143 errors** · **87 warnings**
+**146 errors** · **88 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -48,6 +48,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_FURN_ROTATE`](#e_furn_rotate) | error | Furniture rotation must be a quarter-turn. |
 | [`E_FURN_SIZE`](#e_furn_size) | error | Furniture must have a positive size. |
 | [`E_HEIGHT_RANGE`](#e_height_range) | error | A height is outside the range a storey can be built at. |
+| [`E_IMPERIAL_FORM`](#e_imperial_form) | error | An imperial length is written in a form the language does not read. |
 | [`E_IMPORT_BAD_SPEC`](#e_import_bad_spec) | error | Malformed import spec. |
 | [`E_IMPORT_CONFLICT`](#e_import_conflict) | error | Imported name conflicts with an existing component. |
 | [`E_IMPORT_CYCLE`](#e_import_cycle) | error | Cyclic import. |
@@ -85,6 +86,8 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_LEVEL_DUP`](#e_level_dup) | error | Two `level` blocks declare the same storey number. |
 | [`E_LEVEL_MIX`](#e_level_mix) | error | A drawable statement sits beside `level` blocks. |
 | [`E_LEVEL_NEST`](#e_level_nest) | error | `level` used inside a block or component. |
+| [`E_LOCKED_ELEMENT_CHANGED`](#e_locked_element_changed) | error | An element `archlang impact --lock` names changed between the two versions. |
+| [`E_LOCK_UNNAMED`](#e_lock_unnamed) | error | `archlang impact --lock` names an element whose id was not written, or no element at all. |
 | [`E_NON_FINITE`](#e_non_finite) | error | A number is too large to be finite. |
 | [`E_OPENING_ABOVE_WALL`](#e_opening_above_wall) | error | An opening's head is above the wall it is cut in. |
 | [`E_OPENING_DATUM`](#e_opening_datum) | error | An opening's position names no datum that applies to its run. |
@@ -187,6 +190,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_FURN_CLEARANCE`](#w_furn_clearance) | warning | A fixture's use-space is blocked. |
 | [`W_FURN_CLEAR_FRONT`](#w_furn_clear_front) | warning | A declared `clear front` is not free. |
 | [`W_FURN_CLEAR_SIDES`](#w_furn_clear_sides) | warning | A declared `clear sides` is not free. |
+| [`W_GARAGE_OPENING_UNDERSIZED`](#w_garage_opening_undersized) | warning | A garage's vehicle door is too narrow to drive a car through. |
 | [`W_GARAGE_TOO_NARROW`](#w_garage_too_narrow) | warning | A garage is too narrow, or too shallow, to park in. |
 | [`W_GLYPH_UNSUPPORTED`](#w_glyph_unsupported) | warning | PDF/PNG text has characters no embedded font can draw. |
 | [`W_HABITABLE_NO_WINDOW`](#w_habitable_no_window) | warning | A living room, dining room or kitchen has no window. |
@@ -723,6 +727,18 @@ furniture bed at (0,0) size 0x2000   # error
 wall id=w1 exterior thickness 200 height 0 { (0,0) (4000,0) close }   # error: a wall with no height
 ```
 
+## E_IMPERIAL_FORM
+
+*error* — An imperial length is written in a form the language does not read.
+
+**Cause.** Imperial lengths are read in three forms only: `12ft`, `6in` and `12ft6in` (feet before inches, each part a plain decimal such as `0.5in`), converted exactly (1 in = 25.4 mm) and rounded half away from zero to a whole millimetre. The feet-and-inch marks are refused because `"` opens a string and `'` is no token (`12'6"`, `12'`, `6"`); a glued fraction because `/` is division (`1/2in`); and inches before feet or a bare trailing number (`6in12ft`, `12ft6`). The literal is replaced by 0 so the rest of the plan still reads and reports. Output stays in millimetres.
+
+**Fix.** Write `12ft6in` for 12'6", `0.5in` for 1/2", and put feet before inches.
+
+```arch static
+room id=r at (0,0) size 12'6"x10ft   # error: write 12ft6inx10ft
+```
+
 ## E_IMPORT_BAD_SPEC
 
 *error* — Malformed import spec.
@@ -1204,6 +1220,30 @@ plan "H" {
 
 ```arch static
 component c() { level 1 { } }   # error: only allowed at plan level
+```
+
+## E_LOCKED_ELEMENT_CHANGED
+
+*error* — An element `archlang impact --lock` names changed between the two versions.
+
+**Cause.** `--lock <id,…>` names elements that must stay as they were. An element is changed when, on the lowest storey, it moved (an opening also when it slid along an unchanged wall), resized, was re-hosted (another wall, relation or joined spaces), was re-thickened, changed its door swing or any other resolved field, vanished or appeared. A relabel is not a change. Each violation carries the element's span on both sides. Raised by `impact()`, never by `compile()`.
+
+**Fix.** Put the locked element back as it was in the older file, or drop it from `--lock` if the change is intended.
+
+```arch static
+window id=w1 on s at 1200 width 1200   # was `at 1100`: archlang impact new.arch --against old.arch --lock w1: error, moved 100 mm
+```
+
+## E_LOCK_UNNAMED
+
+*error* — `archlang impact --lock` names an element whose id was not written, or no element at all.
+
+**Cause.** A lock names an element by the `id=` its author wrote. An assigned id (`room_3`, `window_2`, or the internal name of a wall `walls from rooms` derived) shifts when a statement is inserted ahead of it, so a lock on it could follow another element; it is refused. So is a name no element of either version carries, or one that stands only above the lowest storey, which `impact` does not compare yet. Raised by `impact()`, never by `compile()`.
+
+**Fix.** Write `id=<name>` on the element in both versions and lock that name.
+
+```arch static
+window on s at 1200 width 1200   # assigned window_1: archlang impact new.arch --against old.arch --lock window_1: error, write id= first
 ```
 
 ## E_NON_FINITE
@@ -2532,6 +2572,20 @@ furniture bed at (0,900) size 1500x2000   # lint: the bed leaves 300 mm
 ```arch static
 furniture bed at (0,0) size 1500x2000 clear sides 500
 furniture wardrobe at (1700,0) size 600x1800   # lint: 200 mm on the right side
+```
+
+## W_GARAGE_OPENING_UNDERSIZED
+
+*warning* — A garage's vehicle door is too narrow to drive a car through.
+
+**Cause.** A rectangular room classified as a garage has a `door garage` on its perimeter too narrow for the cars drawn in it. One car, or none drawn (measured as one), wants a vehicle door at least 2400 mm wide; two or more cars want one door at least 4200 mm wide, or two doors each at least 2400 mm (a door per bay). The cars are counted as `W_GARAGE_TOO_NARROW` counts its bays (`car` fixtures only). **The figures are common practice for a sectional or roller door, not a published standard:** no citable code source for them was found, and the rule does not pretend to one. It judges the OPENING only; the room's width, which already budgets the room to open a car door on each side of every bay, stays `W_GARAGE_TOO_NARROW`'s, and this adds no second clearance. A garage with no `door garage` on its perimeter, and a polygon or circle garage, is not judged. It is advisory and has no machine fix: widening a door moves what stands beside it in the wall, a geometric decision the compiler does not make (ADR 0005).
+
+**Fix.** Widen the vehicle door to the figure the warning quotes, add a second vehicle door for a double garage, park fewer cars in the room, or drop the `uses garage` tag if the room is not one.
+
+```arch static
+wall id=shell exterior thickness 200 { (0,0) (6400,0) (6400,3800) (0,3800) close }
+room id=g at (0,0) size 6400x3800 label "Garage" uses garage
+door id=d garage at (0,1900) width 2000 wall shell   # lint: 2000 mm wide, one car wants 2400
 ```
 
 ## W_GARAGE_TOO_NARROW

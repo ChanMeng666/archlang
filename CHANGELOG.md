@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Imperial length input: `12ft`, `6in` and `12ft6in` are length literals (also in `WxH`, e.g.
+  `12ftx10ft`), converted exactly (1 in = 25.4 mm) and rounded half away from zero to a whole
+  millimetre per literal (`1in` = 25, `0.5in` = 13, `12ft6in` = 3810). `12'6"`, `1/2in`, `6in12ft`
+  and `12ft6` are refused with the new `E_IMPERIAL_FORM`, whose message names the accepted forms.
+  Input only: every output stays in millimetres, and a plan written in feet compiles to the same
+  bytes as its millimetre twin. The editor grammars and the GBNF grammar read the new suffixes.
+- `archlang impact … --lock <id,…>` (and `impact(before, after, { lock })`): a lock check without
+  syntax. Each locked element that moved, resized, was re-hosted or re-thickened, changed its door
+  swing or another resolved field, vanished or appeared is `E_LOCKED_ELEMENT_CHANGED` with its span
+  on both sides (`lock.violations` in `--json`), and the command exits 2. A lock names only an
+  element whose `id=` was written: a lock on an assigned id (which shifts when a statement is
+  inserted ahead of it), on a name neither version carries, or above the lowest storey is refused
+  with `E_LOCK_UNNAMED`. New exports `checkLocks`, `parseLockList` and the `ImpactLock`,
+  `LockViolation`, `LockRefusal`, `LockSpan`, `LockSide`, `LockElement` types.
 - `describe --facts quantities` and `arch takeoff --format csv|md` (preview-and-remodel B4): an
   opt-in facet of geometric quantities per storey, with each figure's convention in its field name.
   Per wall category: `length_centreline_mm`, `length_face_mm` (the outline of the union of the wall
@@ -30,6 +44,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   element type names `ROpening`, `RStair`, `RElevator`, `REscalator`, `RRoof`, `RVoid`, `ROutdoor`,
   `RFence`. Append-only; the promise is recorded in ADR 0031. `test/public-surface.test.ts` now
   derives the closure of these signatures. Output byte-identical.
+- `W_GARAGE_OPENING_UNDERSIZED` (card B6 of the preview-and-remodel programme), validity layer, on by
+  default: a rectangular `garage` whose `door garage` is narrower than 2400 mm (one car, or none drawn),
+  or, with two or more cars, has neither a door 4200 mm wide nor two doors 2400 mm wide. The figures
+  are common practice for a sectional door, not a published standard, and the catalogue says so. It
+  judges the opening only; `W_GARAGE_TOO_NARROW` keeps the room's width. No shipped example warns.
 - `W_ACCESSIBLE_WC_SIDE_WALL` (plan card PS2.74), validity layer, on by default: a `wc` in a room
   whose label says "accessible", "wheelchair" or "disabled" (not negated: "Non-accessible" is not), with
   its centreline farther than the new ruleset field `wcAccessibleSideWallMaxMm` (500 mm in every
@@ -532,6 +551,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The `archlang` skill (and the generated plugin copy) states the authoring order next to `validate --stage`: `brief → rooms → walls → openings → fixtures → drafting`, the order inside each stage, and why. Paint order is unchanged.
+- `docs/language-reference.md` gains "Authoring order — the stages": the six authoring stages, which element kinds each holds, the sub-order inside a stage, and why (rooms first, exterior before interior, openings after walls, fixtures before loose furniture, drafting last); paint order is stated as separate and unchanged. Docs only.
 - `W_GARAGE_TOO_NARROW` now also judges a garage's clear depth along its `door garage`: 5000 mm by
   default, a parking bay's length, and 6000 mm under `uk-residential-advisory` (new ruleset field
   `garageDepthMm`; a garage with no vehicle door files a `no-vehicle-door` coverage skip; plan card PS2.70).

@@ -342,6 +342,36 @@ carry its own suffix (`3mx4m`, `3.5mx4200`, `30cmx40cm`). There is deliberately
 **no area unit** (`m²`); areas come from `describe()`. The formatter normalises a
 suffixed literal to its millimetre value (`3.5m` → `3500`).
 
+### Imperial input
+
+A length may also be written in feet and inches, in three forms: `12ft`, `6in`
+and `12ft6in` (feet before inches; each part a plain decimal, such as `0.5in` or
+`1.5ft`). The conversion is exact (1 in = 25.4 mm, 1 ft = 12 in) and the literal
+is then **rounded half away from zero to a whole millimetre**:
+
+| Written | Exact (mm) | Value (mm) |
+|---------|-----------|-----------|
+| `12ft` | `3657.6` | `3658` |
+| `6in` | `152.4` | `152` |
+| `12ft6in` | `3810` | `3810` |
+| `1in` | `25.4` | `25` |
+| `1ft1in` | `330.2` | `330` |
+| `0.5in` | `12.7` | `13` |
+
+The rounding applies to each **literal**, before any arithmetic, so a plan
+written in feet holds the same integers a millimetre plan would (`3 * 1in` is
+`75`, not `76.2`; write `3in` for `76`). The suffix follows the metric rules: it
+sits immediately after the digits, does not fire when a letter follows (`6inch` is
+`6` then the identifier `inch`), and either component of a `WxH` literal may carry
+it (`12ftx10ft`). Input only: every output (SVG, `describe()`, `lint()`, the
+formatter) stays in millimetres.
+
+The feet-and-inch marks, glued fractions and inches before feet are refused with
+`E_IMPERIAL_FORM`, whose message names the accepted forms: `12'6"` (`"` opens a
+string and `'` is no token), `1/2in` (`/` is division; a spaced `1 / 2in` is a
+division), `6in12ft` and `12ft6`. The refused literal reads as `0`, like an
+`E_NON_FINITE` one, so the rest of the plan still reports.
+
 ### Modelling range
 
 Every coordinate and length a plan resolves to lies within **±33,554,432 mm** (2²⁵ mm,
@@ -2634,6 +2664,17 @@ count in `unchanged_count`. A keep whose grade an edit changed carries `grade: {
 and counts as `broke` when it is a broken hard keep after, or `healed` when it was one before. A broken hard keep is reported there once:
 its `W_KEEP_VIOLATED` is not also counted under `diagnostics`.
 
+**Locks, without syntax.** `archlang impact new.arch --against old.arch --lock shell,entry,w1`
+names elements that must not change between the two versions; it adds nothing to the language.
+Each locked element that moved (an opening also when it slid along an unchanged wall), resized,
+was re-hosted, re-thickened, changed its door swing or another resolved field, vanished or
+appeared is an `E_LOCKED_ELEMENT_CHANGED` under `lock.violations` (`--json`), with its span on
+each side it exists on, and the command exits 2. A relabel is not a change. A lock names an
+element by the `id=` its author wrote: an assigned id such as `window_2` shifts when a statement
+is inserted ahead of it, so a lock on one, on a name neither version carries, or on an element
+above the lowest storey (which `impact` does not compare yet) is refused with `E_LOCK_UNNAMED`
+and also exits 2. A lock also works with `--set`.
+
 `describe --facts depends` adds `depends.keeps[]` (every keep on the top-level `depends`, a
 storey's own on its `levels[]` entry): the targets, `constrains` (the `let`s and parameters that can move or remove it: what the
 targets' positions read through their dependencies, the keep's own value, the `if`/`for`/`while`
@@ -3069,6 +3110,45 @@ Two advisory lint rules read this model (see [ADR 0008](adr/0008-circulation-as-
 The same model backs an **opt-in render overlay** (see
 [`overlays`](#compilation-result) below) — the entrance→room walks (each from the room's
 nearest entrance), their pinch markers, and key routes drawn on top of the plan.
+
+### Authoring order — the stages
+
+A plan is checked, and best written, in six stages, lowest-frequency decisions first:
+`brief → rooms → walls → openings → fixtures → drafting`. `validate --stage <name>` judges the plan
+as far as that stage and no further; advance when `at_stage.clean`. The stage of each element kind
+is fixed by the compiler:
+
+| Stage | What it holds | Element kinds |
+|---|---|---|
+| `brief` | the frame: plan name and units, `site`, `level`s, `let`s, `keep`s on the brief's numbers, and the plan-level `axes`, `grid` and `north` | (plan-level, no element kind) |
+| `rooms` | the room graph on a grid, with the footprints that hold their place above every partition | `room`, `stair`, `elevator`, `escalator`, `void`, `outdoor` |
+| `walls` | the enclosure, derived (`walls from rooms`) or written | `wall`, `walls`, `column`, `roof`, `fence` |
+| `openings` | everything cut into a wall | `door`, `window`, `opening` |
+| `fixtures` | fixtures and furniture | `furniture` |
+| `drafting` | the sheet: dimensions, labels, schedule, legend, title; every finding counts and taste is reported | `dim` |
+
+Inside a stage the order that reads best is: in `walls`, columns, then the exterior walls
+(`category exterior`), then the interior ones, then fences (a `roof` is in this stage too); in
+`openings`, doors, then windows, then plain openings; in `fixtures`, the catalogued fixtures of wet rooms and kitchens,
+then loose furniture. Source order decides within a group. These sub-orders are guidance only: the
+compiler checks the six stages and does not rank anything inside one.
+
+Why this order:
+
+- **Rooms first** ([ADR 0028](adr/0028-rooms-primary-derived-walls.md)). A room is declared with its
+  place and size, and the walls can be derived from the rooms (`walls from rooms`), so rooms come
+  before any wall. Writing walls first stays legal.
+- **Exterior before interior.** The envelope fixes the building's extent; partitions subdivide what it
+  encloses.
+- **Openings after walls.** A door or window is cut into a wall that already exists, and the door
+  graph (entrances, adjacency, reachability) cannot be judged earlier.
+- **Fixtures before loose furniture.** Fixtures are tied to particular walls and to their room's use;
+  loose furniture is then placed in the space they leave.
+- **Drafting last.** Dimensions, labels and the sheet describe a plan that is otherwise settled.
+
+This is the order the language checks in, and it matches common teaching practice for drawing a
+plan; no standard prescribes it. It is a different thing from paint order, which is how the drawing
+layers stack in the SVG; paint order is set by the renderer and is unchanged.
 
 ### Correcting a plan — `archlang repair`
 

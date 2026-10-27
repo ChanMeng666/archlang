@@ -375,3 +375,65 @@ suite("W_GARAGE_TOO_NARROW — the depth finding (PS2.70)", () => {
     expect(depthFinding(read("examples/hillside-villa.arch"))).toBeUndefined();
   });
 });
+
+suite("W_GARAGE_OPENING_UNDERSIZED — the vehicle door's width (B6)", () => {
+  /** A 6400 × 6000 garage, vehicle doors of the given widths on its top edge, `cars` cars in it. */
+  const g = (doors: number[], cars = 0): string =>
+    [
+      'plan "G" {',
+      "  units mm",
+      "  wall id=shell exterior thickness 200 { (0,0) (6400,0) (6400,6000) (0,6000) close }",
+      '  room id=g at (0,0) size 6400x6000 label "Garage" uses garage',
+      ...doors.map(
+        (w, i) => `  door id=d${i} garage at (${doors.length === 1 ? 3200 : 1600 + i * 3200},0) width ${w} wall shell`,
+      ),
+      ...Array.from({ length: cars }, (_, i) => `  furniture car at (${500 + i * 3200},800) size 1800x4600 in g`),
+      "}",
+    ].join("\n");
+  const finding = (src: string) => lint(src).find((d) => d.code === "W_GARAGE_OPENING_UNDERSIZED");
+
+  it("warns on a single door under 2400 mm, empty or with one car, and not at 2400", () => {
+    expect(finding(g([2000]))?.message).toBe(
+      'Garage "Garage" has a vehicle door 2000 mm wide, under the 2400 mm one car needs to drive through — 400 mm short.',
+    );
+    expect(finding(g([2000], 1))).toBeDefined();
+    expect(finding(g([2400]))).toBeUndefined();
+    expect(finding(g([2400], 1))).toBeUndefined();
+  });
+
+  it("asks two cars for one 4200 mm door or two 2400 mm doors", () => {
+    const d = finding(g([3000], 2));
+    expect(d?.message).toBe(
+      'Garage "Garage" has a vehicle door 3000 mm wide, under the 4200 mm its 2 cars need to drive through side by side — 1200 mm short.',
+    );
+    expect(d?.hints?.[0]).toContain("common practice for a sectional door, not a published standard");
+    expect(d?.hints?.[1]).toContain("`d0`");
+    expect(finding(g([4200], 2))).toBeUndefined();
+    // A door per bay is a sound double garage.
+    expect(finding(g([2400, 2400], 2))).toBeUndefined();
+    expect(finding(g([3000, 2000], 2))?.message).toContain("has vehicle doors at most 3000 mm wide");
+  });
+
+  it("judges nothing without a `door garage`, and adds no second clearance code", () => {
+    const side = g([]).replace(/\n\}$/, "\n  door id=d_side at (0,3000) width 900 wall shell swing into g\n}");
+    expect(lint(side).some((d) => d.severity === "error")).toBe(false);
+    expect(finding(side)).toBeUndefined();
+    expect(
+      finding(
+        side.replace(
+          "d_side at (0,3000) width 900 wall shell swing into g",
+          "d_side garage at (0,3000) width 900 wall shell",
+        ),
+      ),
+    ).toBeDefined();
+    // 6400 across fits two 2700 bays: the room is wide enough, only the opening is short.
+    expect(codes(g([3000], 2))).not.toContain("W_GARAGE_TOO_NARROW");
+  });
+
+  it("keeps the shipped garages silent", async () => {
+    const { readFileSync } = await import("node:fs");
+    for (const f of ["examples/garden-house.arch", "examples/hillside-villa.arch"]) {
+      expect(finding(readFileSync(new URL(`../${f}`, import.meta.url), "utf8"))).toBeUndefined();
+    }
+  });
+});

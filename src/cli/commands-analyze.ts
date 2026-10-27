@@ -27,8 +27,10 @@ import {
   TASTE_PROFILE_NAMES,
   nextDiagnostic,
   offsetToLineCol,
+  parseLockList,
 } from "../index.js";
 import type {
+  LockSpan,
   DescribeFact,
   LayerSymmetry,
   Diagnostic,
@@ -1217,6 +1219,9 @@ export function cmdLint(args: Args): number {
  *
  * A report is a measurement, so it exits 0 whatever broke (like `score`); a refused `--set`
  * is a deterministic user error (exit 2, `E_SET_OVERRIDE`); an unreadable file exits 1.
+ * `--lock <id,…>` (card B1) turns the report into a gate: exit 2 when a locked element changed
+ * (`E_LOCKED_ELEMENT_CHANGED`), a lock was refused (`E_LOCK_UNNAMED`) or a side does not
+ * resolve, so nothing could be checked. The check itself is `impact`'s (`src/lock.ts`).
  */
 export function cmdImpact(args: Args): number {
   const hasSet = args.set !== undefined;
@@ -1232,6 +1237,9 @@ export function cmdImpact(args: Args): number {
     if (setName === "" || setValue === "")
       return usageErrorFor("impact", `--set takes NAME=value (e.g. --set W=4500), got "${args.set}"`);
   }
+  const lock = args.lock !== undefined ? parseLockList(args.lock) : undefined;
+  if (lock && lock.length === 0)
+    return usageErrorFor("impact", `--lock takes ids separated by commas (e.g. --lock entry,w1), got "${args.lock}"`);
   return withSource(args, (source, input) => {
     const world = makeNodeWorld(baseDirOf(input));
     let before = source;
@@ -1255,13 +1263,27 @@ export function cmdImpact(args: Args): number {
     }
     // Each file resolves its `import`s against its own directory.
     const beforeWorld = hasAgainst ? makeNodeWorld(baseDirOf(args.against!)) : world;
-    const report = impact(before, after, { world, beforeWorld });
+    const report = impact(before, after, { world, beforeWorld, ...(lock ? { lock } : {}) });
     const { ok, ...rest } = report;
     if (args.json) emitJson({ ok, ...(set ? { set } : {}), ...rest });
     else if (!args.quiet) {
       const head = set ? `${set.name}: ${set.before} → ${set.after}` : `${args.against} → ${input}`;
-      process.stdout.write(`${[head, ...report.summary].join("\n")}\n`);
+      // Where each changed locked element's statement stands on each side (line:col in its file).
+      const where = (s: LockSpan | undefined, text: string, file: string): string => {
+        if (!s) return "(none)";
+        if (s.file !== undefined) return `${s.file} [${s.span[0]}, ${s.span[1]})`;
+        const { line, col } = offsetToLineCol(text, s.span[0]);
+        return `${file}:${line}:${col}`;
+      };
+      const beforeFile = hasAgainst ? args.against! : input;
+      const afterFile = set ? `${input} (with --set)` : input;
+      const spans = (report.lock?.violations ?? []).map(
+        (v) => `  ${v.id}: ${where(v.before, before, beforeFile)} → ${where(v.after, after, afterFile)}`,
+      );
+      const lines = [head, ...report.summary];
+      if (spans.length > 0) lines.push("Locked elements that changed, before → after:", ...spans);
+      process.stdout.write(`${lines.join("\n")}\n`);
     }
-    return EXIT.OK;
+    return report.lock && !report.lock.ok ? EXIT.USER : EXIT.OK;
   });
 }

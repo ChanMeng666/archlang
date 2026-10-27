@@ -1,0 +1,7 @@
+plan "s9-sliver-parallel" {
+  units mm
+  grid 50
+  north up
+  wall id=a partition thickness 100 { (0,0) (4000,0) }
+  wall id=b partition thickness 100 { (0,120) (4000,120) }
+}

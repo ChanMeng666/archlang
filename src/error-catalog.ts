@@ -565,6 +565,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Add a door (or a full-height window) on the wall the balcony hangs off — the usual fix — or move the balcony to the facade that already has one.",
     "outdoor balcony at (2000,7200) size 4000x1600   # warning: no opening within reach",
   ),
+  E_IMPERIAL_FORM: E(
+    "E_IMPERIAL_FORM",
+    "An imperial length is written in a form the language does not read.",
+    "Imperial lengths are read in three forms only: `12ft`, `6in` and `12ft6in` (feet before inches, each part a plain decimal such as `0.5in`), converted exactly (1 in = 25.4 mm) and rounded half away from zero to a whole millimetre. The feet-and-inch marks are refused because `\"` opens a string and `'` is no token (`12'6\"`, `12'`, `6\"`); a glued fraction because `/` is division (`1/2in`); and inches before feet or a bare trailing number (`6in12ft`, `12ft6`). The literal is replaced by 0 so the rest of the plan still reads and reports. Output stays in millimetres.",
+    'Write `12ft6in` for 12\'6", `0.5in` for 1/2", and put feet before inches.',
+    "room id=r at (0,0) size 12'6\"x10ft   # error: write 12ft6inx10ft",
+  ),
   E_IMPORT_BAD_SPEC: E(
     "E_IMPORT_BAD_SPEC",
     "Malformed import spec.",
@@ -823,6 +830,20 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "A `level` block is a plan-level statement: it partitions the whole plan into storeys, so it cannot be nested inside another `level`, a `for`/`if`/`while` body, a `strip`, or a component definition.",
     "Move the `level` block out to the plan body. To draw the same content on several storeys, put it in a `component` and call it from each level.",
     "component c() { level 1 { } }   # error: only allowed at plan level",
+  ),
+  E_LOCKED_ELEMENT_CHANGED: E(
+    "E_LOCKED_ELEMENT_CHANGED",
+    "An element `archlang impact --lock` names changed between the two versions.",
+    "`--lock <id,…>` names elements that must stay as they were. An element is changed when, on the lowest storey, it moved (an opening also when it slid along an unchanged wall), resized, was re-hosted (another wall, relation or joined spaces), was re-thickened, changed its door swing or any other resolved field, vanished or appeared. A relabel is not a change. Each violation carries the element's span on both sides. Raised by `impact()`, never by `compile()`.",
+    "Put the locked element back as it was in the older file, or drop it from `--lock` if the change is intended.",
+    "window id=w1 on s at 1200 width 1200   # was `at 1100`: archlang impact new.arch --against old.arch --lock w1: error, moved 100 mm",
+  ),
+  E_LOCK_UNNAMED: E(
+    "E_LOCK_UNNAMED",
+    "`archlang impact --lock` names an element whose id was not written, or no element at all.",
+    "A lock names an element by the `id=` its author wrote. An assigned id (`room_3`, `window_2`, or the internal name of a wall `walls from rooms` derived) shifts when a statement is inserted ahead of it, so a lock on it could follow another element; it is refused. So is a name no element of either version carries, or one that stands only above the lowest storey, which `impact` does not compare yet. Raised by `impact()`, never by `compile()`.",
+    "Write `id=<name>` on the element in both versions and lock that name.",
+    "window on s at 1200 width 1200   # assigned window_1: archlang impact new.arch --against old.arch --lock window_1: error, write id= first",
   ),
   E_NON_FINITE: E(
     "E_NON_FINITE",
@@ -1548,6 +1569,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     'A room classified as a garage (an authored `uses garage`, or a label the use vocabulary reads as one — "Garage", or the aliases "carport" / "parking") measures less across its short side than the cars in it need: 2700 mm of clear width per bay, which is a body plus the room to open a door on each side. A garage with no `car` fixture drawn is measured against ONE bay — a room you could not park in does not become sound by having no car in it — and `bicycle`/`motorcycle` do not count toward the bay total. The warning states the width required, the width the room actually has, and the shortfall. **The rule declines a POLYGON room** rather than measuring its bounding box: a box\'s short side is not a concave floor\'s clear width, and a measurement taken from a shape\'s box instead of the shape is a defect class this compiler has shipped before. **A second finding judges its DEPTH** (plan-soundness PS2.70): a rectangular garage measures less, between the inner faces of the walls on the edge holding its vehicle door and the edge opposite, than `garageDepthMm` along the line of its `door garage`: 5000 mm by default, the length of a parking bay or a car port (Buckinghamshire parking guidance 2022, Table 9; Monmouthshire SPG Domestic Garages 2013 ¶21), and 6000 mm under `uk-residential-advisory`, the clear internal length of a garage (Monmouthshire ¶12 and ¶25, citing Manual for Streets; Buckinghamshire Table 11). The depth asked is the same whatever the bay count. A garage with several vehicle doors is measured along the deepest axis; one with no `door garage` is not measured and files a `no-vehicle-door` coverage skip. Set `garageDepthMm: null` to turn the depth finding off. It is advisory and has no machine fix: widening or lengthening a room moves every wall and opening around it, which is a geometric decision the compiler does not make (ADR 0005).',
     "Widen the room, or lengthen it along the line of its vehicle door, to the figure the warning quotes, park fewer cars in it, or drop the `uses garage` tag if the room is not one (a store that happens to be called a garage classifies as one from its label alone — an explicit `uses storage` overrides that).",
     'room id=g at (0,0) size 2500x6000 label "Garage" uses garage\nfurniture car at (300,300) size 1800x4600 in g   # lint: 2500 mm across, one bay wants 2700',
+  ),
+  W_GARAGE_OPENING_UNDERSIZED: W(
+    "W_GARAGE_OPENING_UNDERSIZED",
+    "A garage's vehicle door is too narrow to drive a car through.",
+    "A rectangular room classified as a garage has a `door garage` on its perimeter too narrow for the cars drawn in it. One car, or none drawn (measured as one), wants a vehicle door at least 2400 mm wide; two or more cars want one door at least 4200 mm wide, or two doors each at least 2400 mm (a door per bay). The cars are counted as `W_GARAGE_TOO_NARROW` counts its bays (`car` fixtures only). **The figures are common practice for a sectional or roller door, not a published standard:** no citable code source for them was found, and the rule does not pretend to one. It judges the OPENING only; the room's width, which already budgets the room to open a car door on each side of every bay, stays `W_GARAGE_TOO_NARROW`'s, and this adds no second clearance. A garage with no `door garage` on its perimeter, and a polygon or circle garage, is not judged. It is advisory and has no machine fix: widening a door moves what stands beside it in the wall, a geometric decision the compiler does not make (ADR 0005).",
+    "Widen the vehicle door to the figure the warning quotes, add a second vehicle door for a double garage, park fewer cars in the room, or drop the `uses garage` tag if the room is not one.",
+    'wall id=shell exterior thickness 200 { (0,0) (6400,0) (6400,3800) (0,3800) close }\nroom id=g at (0,0) size 6400x3800 label "Garage" uses garage\ndoor id=d garage at (0,1900) width 2000 wall shell   # lint: 2000 mm wide, one car wants 2400',
   ),
   W_ROOM_TOO_NARROW: W(
     "W_ROOM_TOO_NARROW",

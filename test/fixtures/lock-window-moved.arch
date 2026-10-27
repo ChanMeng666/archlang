@@ -1,0 +1,12 @@
+plan "lock" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+  wall id=p partition thickness 100 { (4000,0) (4000,5000) }
+  room id=living at (0,0) size 4000x5000 label "Living"
+  room id=bed at (4000,0) size 4000x5000 label "Bed"
+  door id=entry on shell at 1000 width 900
+  door id=inner on p at 2500 width 800
+  window id=w1 on shell at 2500 width 1500
+  window id=w2 on shell at 6100 width 1500
+}

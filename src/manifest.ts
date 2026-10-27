@@ -968,12 +968,18 @@ const COMMANDS: ManifestCommand[] = [
         description:
           "compare the input (the new version) against this older file instead; exactly one of --set and --against",
       },
+      {
+        flag: "--lock",
+        arg: "<id[,id…]>",
+        description:
+          "elements that must not change: exit 2 with E_LOCKED_ELEMENT_CHANGED for each that moved, resized, was re-hosted, re-thickened, changed swing or kind, vanished or appeared (a relabel is not a change), with its span on both sides; a lock on an id not written as `id=` (an assigned `room_3` shifts) is refused with E_LOCK_UNNAMED. Lowest storey only, as `changed[]`",
+      },
       JSON_FLAG,
       QUIET_FLAG,
     ],
     input: "<file.arch|->",
     output:
-      "{ ok, set?, lets, changed[] (each with its `why` dependency chain and `root`), held[], diagnostics: { broke, healed, unchanged_count }, keeps? (when either side declares a keep: { broke, held, healed, added, removed, unchanged_count }, each { keep, grade (or { before, after } when an edit changed it), level?, occurrence, residual_mm: { before, after }, at?, changed, span }; a broken hard keep is reported here, never also under diagnostics), summary } (exit 0 on a report, 2 on a refused --set)",
+      "{ ok, set?, lets, changed[] (each with its `why` dependency chain and `root`), held[], diagnostics: { broke, healed, unchanged_count }, keeps? (when either side declares a keep: { broke, held, healed, added, removed, unchanged_count }, each { keep, grade (or { before, after } when an edit changed it), level?, occurrence, residual_mm: { before, after }, at?, changed, span }; a broken hard keep is reported here, never also under diagnostics), lock? (with --lock: { ok, checked, locked, violations[] { code, id, kind, change, detail, message, before?, after? (each { span, file? }) }, refused[] { code, id, message, hint, before?, after? } }), summary } (exit 0 on a report, 2 on a refused --set or a lock that changed, was refused or could not be checked)",
     examples: [
       {
         cmd: "archlang impact plan.arch --set W=4500 --json",
@@ -982,6 +988,10 @@ const COMMANDS: ManifestCommand[] = [
       {
         cmd: "archlang impact plan.arch --against old.arch",
         note: "the same report between two versions of a plan (old.arch before, plan.arch after)",
+      },
+      {
+        cmd: "archlang impact plan.arch --against old.arch --lock shell,entry,w1,w2 --json",
+        note: "these written ids must not move, resize, re-host, swing or vanish: exit 2 with E_LOCKED_ELEMENT_CHANGED and both spans when one did",
       },
     ],
   },
