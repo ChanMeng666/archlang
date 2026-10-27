@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**143 errors** · **87 warnings**
+**143 errors** · **88 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -187,6 +187,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_FURN_CLEARANCE`](#w_furn_clearance) | warning | A fixture's use-space is blocked. |
 | [`W_FURN_CLEAR_FRONT`](#w_furn_clear_front) | warning | A declared `clear front` is not free. |
 | [`W_FURN_CLEAR_SIDES`](#w_furn_clear_sides) | warning | A declared `clear sides` is not free. |
+| [`W_GARAGE_OPENING_UNDERSIZED`](#w_garage_opening_undersized) | warning | A garage's vehicle door is too narrow to drive a car through. |
 | [`W_GARAGE_TOO_NARROW`](#w_garage_too_narrow) | warning | A garage is too narrow, or too shallow, to park in. |
 | [`W_GLYPH_UNSUPPORTED`](#w_glyph_unsupported) | warning | PDF/PNG text has characters no embedded font can draw. |
 | [`W_HABITABLE_NO_WINDOW`](#w_habitable_no_window) | warning | A living room, dining room or kitchen has no window. |
@@ -2532,6 +2533,20 @@ furniture bed at (0,900) size 1500x2000   # lint: the bed leaves 300 mm
 ```arch static
 furniture bed at (0,0) size 1500x2000 clear sides 500
 furniture wardrobe at (1700,0) size 600x1800   # lint: 200 mm on the right side
+```
+
+## W_GARAGE_OPENING_UNDERSIZED
+
+*warning* — A garage's vehicle door is too narrow to drive a car through.
+
+**Cause.** A rectangular room classified as a garage has a `door garage` on its perimeter too narrow for the cars drawn in it. One car, or none drawn (measured as one), wants a vehicle door at least 2400 mm wide; two or more cars want one door at least 4200 mm wide, or two doors each at least 2400 mm (a door per bay). The cars are counted as `W_GARAGE_TOO_NARROW` counts its bays (`car` fixtures only). **The figures are common practice for a sectional or roller door, not a published standard:** no citable code source for them was found, and the rule does not pretend to one. It judges the OPENING only; the room's width, which already budgets the room to open a car door on each side of every bay, stays `W_GARAGE_TOO_NARROW`'s, and this adds no second clearance. A garage with no `door garage` on its perimeter, and a polygon or circle garage, is not judged. It is advisory and has no machine fix: widening a door moves what stands beside it in the wall, a geometric decision the compiler does not make (ADR 0005).
+
+**Fix.** Widen the vehicle door to the figure the warning quotes, add a second vehicle door for a double garage, park fewer cars in the room, or drop the `uses garage` tag if the room is not one.
+
+```arch static
+wall id=shell exterior thickness 200 { (0,0) (6400,0) (6400,3800) (0,3800) close }
+room id=g at (0,0) size 6400x3800 label "Garage" uses garage
+door id=d garage at (0,1900) width 2000 wall shell   # lint: 2000 mm wide, one car wants 2400
 ```
 
 ## W_GARAGE_TOO_NARROW

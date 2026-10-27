@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `W_GARAGE_OPENING_UNDERSIZED` (card B6 of the preview-and-remodel programme), validity layer, on by
+  default: a rectangular `garage` whose `door garage` is narrower than 2400 mm (one car, or none drawn),
+  or, with two or more cars, has neither a door 4200 mm wide nor two doors 2400 mm wide. The figures
+  are common practice for a sectional door, not a published standard, and the catalogue says so. It
+  judges the opening only; `W_GARAGE_TOO_NARROW` keeps the room's width. No shipped example warns.
 - `W_ACCESSIBLE_WC_SIDE_WALL` (plan card PS2.74), validity layer, on by default: a `wc` in a room
   whose label says "accessible", "wheelchair" or "disabled" (not negated: "Non-accessible" is not), with
   its centreline farther than the new ruleset field `wcAccessibleSideWallMaxMm` (500 mm in every
