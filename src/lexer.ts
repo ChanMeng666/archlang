@@ -1,6 +1,11 @@
 /** Hand-written lexer for ArchLang. Zero dependencies; tracks line/col. */
 
 import { fnv1a } from "./hash.js";
+import { imperialToMm } from "./num-format.js";
+
+/** `E_IMPERIAL_FORM`'s message: it names every accepted imperial form (B5, D8). */
+export const IMPERIAL_MESSAGE =
+  "Imperial length in an unsupported form: write `12ft`, `6in` or `12ft6in` (feet before inches, decimals such as `0.5in` allowed; no `'` or `\"` marks and no fractions such as `1/2in`)";
 
 export type TokenType =
   | "ident"
@@ -61,7 +66,7 @@ export interface Comment {
 }
 
 /** A lexical error. `code` is set only where the error has its own catalogued code
- *  (`E_NON_FINITE`); the parser maps an absent one to `E_PARSE`. */
+ *  (`E_NON_FINITE`, `E_IMPERIAL_FORM`); the parser maps an absent one to `E_PARSE`. */
 export interface LexError {
   message: string;
   span: { start: number; end: number };
@@ -176,10 +181,8 @@ function lexImpl(src: string): LexResult {
     for (let k = 0; k < len; k++) advance();
     return shift;
   };
-  // Scan one numeric literal (digits, optional `.frac`, optional unit suffix)
-  // starting at the cursor and fold any suffix into a millimetre value.
-  const scanNum = (): number => {
-    const from = i;
+  // The raw digits of one unsigned decimal (`12`, `0.5`, `.5`) at the cursor; "" if none.
+  const scanDigits = (): string => {
     let raw = "";
     while (isDigit(peek())) raw += advance();
     // A "." is a decimal point only when a digit follows; ".." is the range op.
@@ -187,8 +190,78 @@ function lexImpl(src: string): LexResult {
       raw += advance();
       while (isDigit(peek())) raw += advance();
     }
-    const shift = scanUnitSuffix();
-    const value = parseFloat(shift === null ? raw : shiftDecimalLeft(raw, shift));
+    return raw;
+  };
+  const startsDecimal = (o: number) => isDigit(peek(o)) || (peek(o) === "." && isDigit(peek(o + 1)));
+  // The rest of a glued word (digits, letters, decimal points), stopping at a dimension's `x`
+  // (`12ft6x10ft` keeps its second component).
+  const swallowWord = (): void => {
+    while ((isIdentPart(peek()) && !(peek() === "x" && startsDecimal(1))) || (peek() === "." && isDigit(peek(1)))) {
+      advance();
+    }
+  };
+  // Refuse a malformed imperial literal as ONE diagnostic, never a cascade of stray tokens.
+  const refuseImperial = (from: number, swallow = true): void => {
+    if (swallow) swallowWord();
+    errors.push({ message: IMPERIAL_MESSAGE, span: { start: from, end: i }, code: "E_IMPERIAL_FORM" });
+  };
+  // After the digits: an imperial suffix (`ft`, `in`, `<ft>ft<in>in`, B5 / D8) folded to whole mm
+  // through `imperialToMm`, or a refused imperial shape (`12'6"`, `12'`, `6"`, `12ft6`, `6in12ft`).
+  // Returns null when no imperial suffix applies (the metric path then runs), else the value and
+  // whether the literal was refused (its value is then 0, like `E_NON_FINITE`'s).
+  const scanImperial = (raw: string, from: number): { value: number; refused: boolean } | null => {
+    if (peek() === "'" || peek() === '"') {
+      // The quote glyphs: `"` opens a string and `'` is no token, so a feet-inch mark is refused.
+      if (peek() === "'") {
+        advance();
+        scanDigits();
+      }
+      if (peek() === '"') advance();
+      refuseImperial(from, false);
+      return { value: 0, refused: true };
+    }
+    if (peek(0) === "f" && peek(1) === "t") {
+      if (startsDecimal(2)) {
+        advance();
+        advance();
+        const inches = scanDigits();
+        if (peek(0) === "i" && peek(1) === "n" && unitBoundaryOk(2)) {
+          advance();
+          advance();
+          return { value: imperialToMm(raw, inches), refused: false };
+        }
+        refuseImperial(from); // `12ft6`, `12ft6m`, `12ft6inch`
+        return { value: 0, refused: true };
+      }
+      if (!unitBoundaryOk(2)) return null; // `12fts`: the number 12, then an identifier
+      advance();
+      advance();
+      return { value: imperialToMm(raw, ""), refused: false };
+    }
+    if (peek(0) === "i" && peek(1) === "n") {
+      if (startsDecimal(2)) {
+        refuseImperial(from); // `6in12ft`: inches lead, feet never follow
+        return { value: 0, refused: true };
+      }
+      if (!unitBoundaryOk(2)) return null; // `6inch`: the number 6, then an identifier
+      advance();
+      advance();
+      return { value: imperialToMm("", raw), refused: false };
+    }
+    return null;
+  };
+  // Scan one numeric literal (digits, optional `.frac`, optional unit suffix)
+  // starting at the cursor and fold any suffix into a millimetre value.
+  // `imperial` is set when the literal carried an imperial suffix or shape.
+  let imperial = false;
+  const scanNum = (): number => {
+    const from = i;
+    const raw = scanDigits();
+    const imp = scanImperial(raw, from);
+    if (imp) imperial = true;
+    if (imp?.refused) return 0;
+    const shift = imp ? null : scanUnitSuffix();
+    const value = imp ? imp.value : parseFloat(shift === null ? raw : shiftDecimalLeft(raw, shift));
     // A literal too large for a double (after the unit shift) parses to Infinity; diagnose it
     // and substitute 0 so no non-finite number ever enters the expression language.
     if (!Number.isFinite(value)) {
@@ -396,15 +469,41 @@ function lexImpl(src: string): LexResult {
     // Number (optionally part of a literal dimension WxH). Numbers are
     // non-negative; negation is a unary operator in expressions.
     if (isDigit(c) || (c === "." && isDigit(peek(1)))) {
-      const first = scanNum();
+      imperial = false;
+      const errorsBefore = errors.length;
+      let first = scanNum();
+      let from = startIdx;
+      let fromLine = startLine;
+      let fromCol = startCol;
+      // A glued fraction `1/2in` (`<number>/<imperial>` with no space) is an inch fraction, not a
+      // division: refused as one literal. A spaced `1 / 2in` stays a division.
+      const slash = tokens[tokens.length - 1];
+      const numer = tokens[tokens.length - 2];
+      if (
+        imperial &&
+        slash?.type === "slash" &&
+        slash.end === startIdx &&
+        numer?.type === "number" &&
+        numer.end === slash.start &&
+        /^[0-9.]+$/.test(numer.value)
+      ) {
+        swallowWord();
+        errors.length = errorsBefore; // the fraction is ONE refusal, whatever its tail did
+        errors.push({ message: IMPERIAL_MESSAGE, span: { start: numer.start, end: i }, code: "E_IMPERIAL_FORM" });
+        tokens.length -= 2;
+        first = 0;
+        from = numer.start;
+        fromLine = numer.line;
+        fromCol = numer.col;
+      }
       // Dimension: <num>x<num> (each component may carry its own unit suffix).
       if (peek() === "x" && (isDigit(peek(1)) || (peek(1) === "." && isDigit(peek(2))))) {
         advance(); // consume 'x'
         const second = scanNum();
-        push("dimension", src.slice(startIdx, i), startLine, startCol, startIdx, { num: first, num2: second });
+        push("dimension", src.slice(from, i), fromLine, fromCol, from, { num: first, num2: second });
         continue;
       }
-      push("number", src.slice(startIdx, i), startLine, startCol, startIdx, { num: first });
+      push("number", src.slice(from, i), fromLine, fromCol, from, { num: first });
       continue;
     }
 

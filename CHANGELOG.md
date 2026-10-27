@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Imperial length input: `12ft`, `6in` and `12ft6in` are length literals (also in `WxH`, e.g.
+  `12ftx10ft`), converted exactly (1 in = 25.4 mm) and rounded half away from zero to a whole
+  millimetre per literal (`1in` = 25, `0.5in` = 13, `12ft6in` = 3810). `12'6"`, `1/2in`, `6in12ft`
+  and `12ft6` are refused with the new `E_IMPERIAL_FORM`, whose message names the accepted forms.
+  Input only: every output stays in millimetres, and a plan written in feet compiles to the same
+  bytes as its millimetre twin. The editor grammars and the GBNF grammar read the new suffixes.
 - Package-root exports for downstream consumers of a resolved plan (ADR 0031): `resolvePlan` (the
   complete parse → link → resolve path; unlike `resolveAll(compile(src).ast)` it keeps imported and
   placed content), `joinWallSet` and `loopsToPolygons` (the wall joinery, with the `split` argument
