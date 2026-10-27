@@ -66,7 +66,8 @@ export async function renderReplay(o: VideoOptions): Promise<VideoReport> {
     file,
     o.html.replace(
       '<script type="application/json"',
-      '<script>window.__replayAutoplay=false</script>\n<script type="application/json"',
+      // No scrollbar may shift the canvas between frames.
+      '<style>html,body{overflow:hidden}</style><script>window.__replayAutoplay=false</script>\n<script type="application/json"',
     ),
   );
   const browser = await chromium.launch({ args: SWIFTSHADER_ARGS });
@@ -121,18 +122,45 @@ export async function renderReplay(o: VideoOptions): Promise<VideoReport> {
       ff.stderr.on("data", (d: Buffer) => {
         err += d.toString();
       });
-      const done = new Promise<void>((resolve, reject) => {
-        ff.on("error", reject);
-        ff.on("close", (code) => (code === 0 ? resolve() : reject(new Error(`ffmpeg exited ${code}: ${err.trim()}`))));
+      // One settled outcome for the process, observed from the start, so a failed spawn (no ffmpeg)
+      // or an early exit can never become an unhandled rejection or a write that waits forever.
+      let failure: Error | undefined;
+      const done = new Promise<void>((resolve) => {
+        ff.once("error", (e) => {
+          failure ??= new Error(`ffmpeg could not start (${(e as NodeJS.ErrnoException).code ?? e.message})`);
+          resolve();
+        });
+        ff.once("close", (code) => {
+          if (code !== 0) failure ??= new Error(`ffmpeg exited ${code}: ${err.trim()}`);
+          resolve();
+        });
       });
-      for (let i = 0; i < frames; i++) {
-        const t = frames === 1 ? 1 : i / (frames - 1);
-        await page.evaluate((x) => window.__seek(x), t);
-        const png = await canvas.screenshot({ type: "png" });
-        if (!ff.stdin.write(png)) await new Promise((r) => ff.stdin.once("drain", r));
+      ff.stdin.on("error", (e) => {
+        failure ??= e;
+      });
+      const started = await Promise.race([
+        new Promise<boolean>((r) => ff.once("spawn", () => r(true))),
+        done.then(() => false),
+      ]);
+      try {
+        if (!started) throw failure ?? new Error("ffmpeg did not start");
+        for (let i = 0; i < frames; i++) {
+          if (failure) throw failure;
+          const t = frames === 1 ? 1 : i / (frames - 1);
+          await page.evaluate((x) => window.__seek(x), t);
+          const png = await canvas.screenshot({ type: "png" });
+          if (!ff.stdin.write(png)) await Promise.race([new Promise((r) => ff.stdin.once("drain", r)), done]);
+        }
+        ff.stdin.end();
+        await done;
+        if (failure) throw failure;
+      } catch (e) {
+        // Never leave a partial MP4 at the caller's path.
+        ff.kill();
+        await done;
+        rmSync(o.mp4, { force: true });
+        throw e;
       }
-      ff.stdin.end();
-      await done;
       mp4 = o.mp4;
     }
     return {

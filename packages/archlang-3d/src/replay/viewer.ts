@@ -89,11 +89,15 @@ const THEMES = {
   },
 } as const;
 
-/** A footprint is drawn at a hair of its height, so the top-down phase shows it flat. */
-const FLAT = 0.002;
+/**
+ * A footprint stands this many millimetres high while flat: above the 5 mm floor finish, so a door
+ * leaf or a wall shows in the top-down phase (a fraction of the height hid a door under the floor;
+ * red-team, PR #330).
+ */
+const FOOTPRINT_MM = 12;
 const START_FOV = 1.5;
 const END_FOV = 30;
-const END_ELEVATION = 35;
+const END_ELEVATION = 30;
 const END_AZIMUTH = -32;
 
 function payload(): ReplayPayload {
@@ -126,13 +130,17 @@ function start(): void {
   scene.add(sun);
 
   // Nodes in millimetres. Each node rises about its own base (its lowest point).
-  const nodes = new Map<string, Group>();
+  const nodes = new Map<string, { g: Group; flat: number }>();
   const lo = new Vector3(Infinity, Infinity, Infinity);
   const hi = new Vector3(-Infinity, -Infinity, -Infinity);
   for (const n of p.nodes) {
     const pos = new Float32Array(n.positions.length);
     let base = Infinity;
-    for (let i = 1; i < n.positions.length; i += 3) base = Math.min(base, (n.positions[i] as number) / 1000);
+    let topY = -Infinity;
+    for (let i = 1; i < n.positions.length; i += 3) {
+      base = Math.min(base, (n.positions[i] as number) / 1000);
+      topY = Math.max(topY, (n.positions[i] as number) / 1000);
+    }
     for (let i = 0; i < n.positions.length; i += 3) {
       const x = (n.positions[i] as number) / 1000;
       const y = (n.positions[i + 1] as number) / 1000;
@@ -154,6 +162,11 @@ function start(): void {
       transparent: glass,
       opacity: glass ? 0.45 : 1,
       flatShading: true,
+      // The floor finish sits a few millimetres under every footprint: pushed back in depth, so a
+      // flat footprint never fights it in perspective.
+      polygonOffset: n.kind === "floor" || n.kind === "slab",
+      polygonOffsetFactor: 1,
+      polygonOffsetUnits: 4,
     });
     const g = new Group();
     g.position.y = base;
@@ -163,7 +176,7 @@ function start(): void {
     }
     g.visible = false;
     scene.add(g);
-    nodes.set(n.key, g);
+    nodes.set(n.key, { g, flat: Math.min(1, FOOTPRINT_MM / Math.max(1e-6, topY - base)) });
   }
 
   // The first frame frames the core drawing's viewBox exactly, letterboxed as the image is.
@@ -183,6 +196,9 @@ function start(): void {
   const centre = lo.clone().add(hi).multiplyScalar(0.5);
   const size = hi.clone().sub(lo);
   const endHeight = Math.max(size.x, size.z, size.y * 2) * 1.35;
+  // Every point of the building lies within this of any target the camera aims at (the target moves
+  // from the drawing's centre to the building's).
+  const radius = Math.max(size.length() * 0.75 + Math.hypot(centre.x - (vx + vw / 2), centre.z - (vy + vh / 2)), 1000);
   const rad = (d: number) => (d * Math.PI) / 180;
 
   const img = new Image();
@@ -194,10 +210,10 @@ function start(): void {
 
   function seek(t: number): void {
     const s = stateAt(p.events, t);
-    for (const [key, g] of nodes) {
+    for (const [key, { g, flat }] of nodes) {
       const st = s.nodes.get(key);
       g.visible = st?.visible === true;
-      g.scale.y = Math.max(FLAT, st?.rise ?? 0);
+      g.scale.y = Math.max(flat, st?.rise ?? 0);
     }
     let cam: OrthographicCamera | PerspectiveCamera = ortho;
     if (s.tilt > 0 || s.dolly > 0) {
@@ -208,8 +224,9 @@ function start(): void {
       const el = rad(90 - (90 - END_ELEVATION) * s.tilt);
       const az = rad(END_AZIMUTH * s.tilt);
       persp.fov = fov;
-      persp.near = Math.max(10, dist * 0.01);
-      persp.far = dist * 20;
+      // Near and far hug the scene, so depth precision is spent where the building is.
+      persp.near = Math.max(10, dist - radius);
+      persp.far = dist + radius;
       persp.updateProjectionMatrix();
       persp.up.set(0, 0, -1);
       if (el < rad(89.99)) persp.up.set(0, 1, 0);

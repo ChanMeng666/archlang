@@ -7,7 +7,7 @@
  *              openings (doors, windows) → fixtures (catalogued fixtures, then loose furniture);
  *              source order inside a group;
  *   0.40–0.55  the core's own drawing (its SVG) fades in over the footprints and holds;
- *   0.55–1.00  the drawing fades out as the camera tilts to a 30° perspective with a narrow-lens
+ *   0.55–1.00  the drawing fades out as the camera tilts to a 30° elevation with a narrow-lens
  *              dolly; walls rise in the same order, each opening with its host wall; fixtures and
  *              furniture rise after the walls; the roof stays hidden.
  *
@@ -110,15 +110,26 @@ export function authoringOrder(mesh: Mesh3D): MeshNode[] {
   );
 }
 
-/** The replay's event table: every node, when it appears and when it rises. */
+/**
+ * The replay's event table: every node, when it appears and when it rises.
+ *
+ * Phase 1 draws the LOWEST storey only: it is the storey the core's drawing shows (page 1), so the
+ * footprints and the drawing that fades in over them are the same plan. An upper storey stays out of
+ * sight until the rise, then builds storey by storey: its slab and floors appear as its first wall
+ * starts up, and its walls rise after the storey below (red-team, PR #330).
+ */
 export function timeline(mesh: Mesh3D): ReplayEvent[] {
   const order = authoringOrder(mesh);
   const visible = order.filter((n) => !n.hidden);
-  const appearStep = PHASE.drawn / Math.max(1, visible.length);
-  const appearOf = new Map(visible.map((n, i) => [n.key, i * appearStep] as const));
-  // Walls (and what they host) rise first, then fixtures and furniture, each group staggered in order.
-  const walls = visible.filter((n) => n.kind === "wall" || n.kind === "column");
-  const things = visible.filter((n) => n.kind === "furniture");
+  const lowest = visible.reduce((m, n) => Math.min(m, n.level), Number.POSITIVE_INFINITY);
+  const drawn = visible.filter((n) => n.level === lowest);
+  const appearStep = PHASE.drawn / Math.max(1, drawn.length);
+  const appearOf = new Map(drawn.map((n, i) => [n.key, i * appearStep] as const));
+  // Walls (and what they host) rise first, storey by storey, then fixtures and furniture, each group
+  // staggered in order.
+  const byLevel = (list: MeshNode[]) => [...list].sort((a, b) => a.level - b.level);
+  const walls = byLevel(visible.filter((n) => n.kind === "wall" || n.kind === "column"));
+  const things = byLevel(visible.filter((n) => n.kind === "furniture"));
   const stagger = (list: MeshNode[], from: number, to: number): Map<string, [number, number]> => {
     const span = to - from;
     const each = list.length > 0 ? span / (list.length + 2) : 0;
@@ -127,18 +138,25 @@ export function timeline(mesh: Mesh3D): ReplayEvent[] {
   const wallRise = stagger(walls, PHASE.rise, PHASE.wallsUp);
   const thingRise = stagger(things, PHASE.wallsUp, PHASE.done);
   const hostRise = new Map<string, [number, number]>();
+  const levelStart = new Map<number, number>();
   for (const w of walls) {
     const r = wallRise.get(w.key);
-    if (r) hostRise.set(`${w.level}/${w.id}`, r);
+    if (!r) continue;
+    hostRise.set(`${w.level}/${w.id}`, r);
+    if (!levelStart.has(w.level)) levelStart.set(w.level, r[0]);
   }
   return order.map((n, rank) => {
-    const appear = n.hidden ? 1 : (appearOf.get(n.key) ?? 0);
-    let rise: [number, number] = [appear, appear];
+    let rise: [number, number];
     if (wallRise.has(n.key)) rise = wallRise.get(n.key) as [number, number];
     else if (thingRise.has(n.key)) rise = thingRise.get(n.key) as [number, number];
     else if (n.kind === "door" || n.kind === "window")
       rise = hostRise.get(`${n.level}/${String(n.extras.host)}`) ?? [PHASE.rise, PHASE.wallsUp];
-    else if (!isFlat(n)) rise = [PHASE.rise, PHASE.wallsUp];
+    else if (isFlat(n)) {
+      const at = appearOf.get(n.key) ?? levelStart.get(n.level) ?? PHASE.rise;
+      rise = [at, at];
+    } else rise = [PHASE.rise, PHASE.wallsUp];
+    // A node of the lowest storey appears in phase 1; any other appears as it starts to rise.
+    const appear = n.hidden ? 1 : (appearOf.get(n.key) ?? rise[0]);
     return { key: n.key, stage: n.stage, rank, appear, riseFrom: rise[0], riseTo: rise[1], hidden: n.hidden === true };
   });
 }

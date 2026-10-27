@@ -5,7 +5,7 @@
  * and `__seek` round-trips. The MP4's bytes are never compared.
  */
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, statSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { compile } from "@chanmeng666/archlang";
@@ -52,6 +52,29 @@ describe("replay in a browser", () => {
       if (!v.seekRoundTrip || v.keyFrames.length < 4) failed.push(name);
     }
     expect(failed).toEqual([]);
+  });
+
+  it("refuses cleanly without a runnable ffmpeg: no hang, no partial MP4 (PR #330 review round 1)", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "archlang3d-e2e-"));
+    try {
+      const { html, events } = await replayOf("one-room.arch", 160, 90);
+      const mp4 = join(dir, "never.mp4");
+      await expect(
+        renderReplay({
+          html,
+          events,
+          width: 160,
+          height: 90,
+          fps: 5,
+          seconds: 1,
+          mp4,
+          ffmpeg: "no-such-ffmpeg-archlang3d",
+        }),
+      ).rejects.toThrow(/ffmpeg could not start/);
+      expect(existsSync(mp4)).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it("writes an MP4 through ffmpeg (bytes never pinned)", async (ctx) => {

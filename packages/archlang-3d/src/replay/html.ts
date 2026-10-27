@@ -53,7 +53,13 @@ export function viewerScript(): Promise<string> {
     legalComments: "none",
     write: false,
     logLevel: "silent",
-  }).then((r) => r.outputFiles[0]?.text ?? "");
+  }).then(
+    (r) => r.outputFiles[0]?.text ?? "",
+    (e: unknown) => {
+      bundled = undefined; // a failed build is not cached: the next call tries again
+      throw e;
+    },
+  );
   return bundled;
 }
 
@@ -61,7 +67,11 @@ export function viewerScript(): Promise<string> {
 function threeLicence(): string {
   // three.js exports no `./package.json`: resolve its entry and walk up to the package root.
   let dir = dirname(require.resolve("three"));
-  while (!existsSync(join(dir, "package.json")) || !existsSync(join(dir, "LICENSE"))) dir = dirname(dir);
+  while (!existsSync(join(dir, "package.json")) || !existsSync(join(dir, "LICENSE"))) {
+    const up = dirname(dir);
+    if (up === dir) throw new Error("three.js's LICENSE was not found beside its package.json");
+    dir = up;
+  }
   const version = (JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as { version: string }).version;
   return `three.js ${version}\n${readFileSync(join(dir, "LICENSE"), "utf8")}`;
 }

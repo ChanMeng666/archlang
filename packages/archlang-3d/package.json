@@ -14,9 +14,6 @@
   "engines": {
     "node": ">=20"
   },
-  "bin": {
-    "archlang3d": "./src/cli/main.ts"
-  },
   "exports": {
     ".": "./src/index.ts",
     "./node": "./src/node.ts"

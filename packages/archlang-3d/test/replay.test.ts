@@ -47,28 +47,44 @@ describe("replay timeline (D3)", () => {
     }
   });
 
-  it("draws every footprint in phase 1, raises walls with their openings, then fixtures and furniture", () => {
+  it("draws the lowest storey in phase 1, raises walls with their openings, then fixtures and furniture", () => {
+    let upper = 0;
     for (const { n, mesh } of all) {
       const ev = timeline(mesh);
       const byKey = new Map(ev.map((e) => [e.key, e] as const));
-      for (const e of ev.filter((x) => !x.hidden)) expect(e.appear, n).toBeLessThan(PHASE.drawn);
+      const lowest = Math.min(...mesh.nodes.map((x) => x.level));
       for (const nd of mesh.nodes) {
         const e = byKey.get(nd.key);
         if (!e || e.hidden) continue;
+        // The core's drawing (page 1) is the lowest storey: only it is drawn top-down; an upper
+        // storey appears no earlier than the rise (PR #330 review round 1).
+        if (nd.level === lowest) expect(e.appear, `${n} ${nd.key}`).toBeLessThan(PHASE.drawn);
+        else {
+          upper++;
+          expect(e.appear, `${n} ${nd.key}`).toBeGreaterThanOrEqual(PHASE.rise);
+        }
         const within = (a: number, b: number) => e.riseFrom >= a - 1e-9 && e.riseTo <= b + 1e-9;
         if (nd.kind === "wall") expect(within(PHASE.rise, PHASE.wallsUp), `${n} ${nd.key}`).toBe(true);
         if (nd.kind === "furniture") expect(within(PHASE.wallsUp, PHASE.done), `${n} ${nd.key}`).toBe(true);
         if (nd.kind === "door" || nd.kind === "window") {
           const host = byKey.get(`L${nd.level}/wall:${String(nd.extras.host)}`);
-          if (host)
-            expect([e.riseFrom, e.riseTo], `${n} ${nd.key} rises with its wall`).toEqual([host.riseFrom, host.riseTo]);
+          expect(host, `${n} ${nd.key} finds its host wall`).toBeDefined();
+          expect([e.riseFrom, e.riseTo], `${n} ${nd.key} rises with its wall`).toEqual([host?.riseFrom, host?.riseTo]);
         }
+      }
+      // Storey by storey: every wall of a storey starts no earlier than every wall below it.
+      const wallStarts = mesh.nodes
+        .filter((x) => x.kind === "wall")
+        .map((x) => [x.level, byKey.get(x.key)?.riseFrom ?? 0] as const);
+      for (const [l, t] of wallStarts) {
+        for (const [l2, t2] of wallStarts) if (l2 < l) expect(t, n).toBeGreaterThanOrEqual(t2);
       }
       expect(
         ev.filter((e) => mesh.nodes.find((x) => x.key === e.key)?.kind === "roof").every((e) => e.hidden),
         n,
       ).toBe(true);
     }
+    expect(upper, "the multi-storey plans have upper-storey nodes").toBeGreaterThan(50);
   });
 
   it("is a pure function of t: the same t gives the same state, and t is clamped", () => {
