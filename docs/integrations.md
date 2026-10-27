@@ -59,7 +59,10 @@ server `https://mcp.archlang.uk/mcp` (below).
 - **Cursor:** once listed, install from the Cursor Marketplace. Locally, copy `plugins/archlang/` to
   `~/.cursor/plugins/local/archlang` and reload the window.
 - **Anything else:** `npx skills add ChanMeng666/archlang` installs the same skills for the hosts the
-  `skills` CLI supports.
+  `skills` CLI supports. With the GitHub CLI, install one skill at a time by path, e.g.
+  `gh skill install ChanMeng666/archlang skills/archlang --agent cursor`: `gh skill install --all`
+  refuses, because it also finds the plugin's copies under `plugins/archlang/skills/` and reads
+  the matching names as a conflict.
 
 ## Hosted MCP server
 
