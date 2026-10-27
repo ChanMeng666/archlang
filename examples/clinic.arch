@@ -153,7 +153,7 @@ plan "Clinic Wing" {
   furniture id=f_st_sink kitchen_sink against wall w_mid_s offset 1200 in r_staff
   furniture id=f_st_table table at (20400,9600) size 1600x900 label "Table"
 
-  furniture id=f_wc_pan   wc    against wall w_ea_d offset 3500 in r_wc
+  furniture id=f_wc_pan   wc    against wall w_ea_d offset 3950 in r_wc
   furniture id=f_wc_basin basin against wall w_ea_d offset 1200 in r_wc
 
   # The dotted id is what makes ONE instance addressable: this trolley belongs to the

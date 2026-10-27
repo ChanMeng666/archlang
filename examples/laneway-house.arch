@@ -47,7 +47,7 @@ plan "Laneway House" {
   furniture rug   in r_live anchor bottom-left inset 400 size 2800x3400
   furniture table  in r_live centered size 1300x900 label "Table"
   furniture sofa   in r_live anchor bottom-left flush inset 250 size 900x2000  label "Sofa"
-  furniture bed    in r_bed  anchor bottom-right flush inset 250 size 1500x2000 label "Bed"
+  furniture bed    against r_bed.right size 1500x2000 label "Bed"
   furniture robe   in r_bed  anchor top-left     flush inset 200 size 1800x600  label "Wardrobe"
   furniture shower in r_bath anchor top-right    flush size 900x900
   furniture wc     against r_bath.bottom offset 750 size 400x700

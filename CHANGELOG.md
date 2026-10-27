@@ -584,6 +584,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Every shipped example now validates with no warnings, and a design review fixed what was
+  architecturally wrong. Sheets: `courtyard-house` (eaves 600 → 500 mm), `materials` (A2 at 1:50),
+  `garden-house` (A1), `hillside-villa` (A1). `hillside-villa`: both upper bedrooms take the
+  garden facade, each with an ensuite, back to back (the master's off its own dressing room; the
+  street side is now a study and a studio), a 4800 mm double-garage door with a drive, the garage reaches the house through the
+  utility rather than the study, the fridge joins the kitchen's work triangle, and 800 mm bathroom
+  and linen doors. `garden-house`: the street-side upper room is a study. `themed` gains a front
+  door, so no example warns `W_NO_ENTRANCE`. `furnished-flat`, `tiny-house`: the walk that pinched
+  to 400 mm is clear. Beds no longer stand head-under-window (`bungalow`, `laneway-house`,
+  `parametric`, `imports`); `relational` and `two-storey` gain a fridge; `studio`'s WC has 750 mm
+  in front of it; accessible-WC pans move beside a grab-rail wall (`classroom-block`, `clinic`,
+  `transit-hall`); `classroom-block`'s basin leaves the cubicle; `aquarium`, `library` and `museum`
+  gain a second exit, and `library` and `museum` an accessible WC.
 - The CLI now waits for stdout and stderr to drain before it exits, so a large `--json` output (the
   `arch context --json` bundle, a big `ast`) is never cut off when piped; a pipe lost everything past
   its first 64 KB to the `process.exit` that followed the write.

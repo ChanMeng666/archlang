@@ -100,6 +100,7 @@ plan "Reading Room Library" {
     room id=r_lobby    at (33000,24000) size 17000x3000  label "WC Lobby"           uses circulation
     room id=r_wc_w     at (33000,27000) size 6000x5000   label "WC Women"           uses wc
     room id=r_wc_m     at (39000,27000) size 6000x5000   label "WC Men"             uses wc
+    room id=r_wc_a     at (45000,27000) size 5000x5000   label "Accessible WC"      uses wc
   }
 
   zone stacks "Stacks" {
@@ -110,7 +111,6 @@ plan "Reading Room Library" {
   zone staff "Staff" {
     room id=r_staff   at (33000,17500) size 17000x6500  label "Staff Workroom" uses office
     room id=r_kitchen at (44000,0)     size 6000x14500  label "Cafe Kitchen"   uses kitchen
-    room id=r_plant   at (45000,27000) size 5000x5000   label "Plant Room"     uses utility
   }
 
   # ---- thresholds -----------------------------------------------------------
@@ -139,10 +139,11 @@ plan "Reading Room Library" {
   door id=d_kitchen pocket on w_eaisle_n at 14000 width 1000 slide right
   door id=d_cafe_kitchen on w_cafe_e at 50% width 1000 swing into r_kitchen
   door id=d_service at (50000,13000) width 1200 wall shell swing out
+  door id=d_exit_e at (50000,16000) width 1200 wall shell swing out
   door id=d_staff_lobby on w_staff_s at 2500 width 1000 swing into r_lobby
   door id=d_wc_w  on w_lobby_s at 1500  width 1000 swing into r_wc_w
   door id=d_wc_m  on w_lobby_s at 7500  width 1000 swing into r_wc_m
-  door id=d_plant on w_lobby_s at 13000 width 900  swing into r_plant
+  door id=d_wc_a  on w_lobby_s at 13000 width 1000 swing into r_wc_a
 
   # ---- glazing --------------------------------------------------------------
   window at (6000,0)      width 4000 wall shell
@@ -223,6 +224,9 @@ plan "Reading Room Library" {
   furniture wc    against wall shell segment 2 offset 8500 in r_wc_m
   furniture basin against wall w_wcw_e offset 1000 in r_wc_m
   furniture basin against wall w_wcw_e offset 2500 in r_wc_m
+
+  furniture wc    against wall shell segment 2 offset 650 in r_wc_a
+  furniture basin against wall w_wcm_e offset 3500 in r_wc_a
 
   # ---- the explicit curve call-outs (see the head of the file) --------------
   dim radius w_drum segment 0

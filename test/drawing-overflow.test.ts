@@ -208,14 +208,18 @@ suite("4.9 — it does not claim the page grew, and the corpus proves it", () =>
   /**
    * The pin that stops this being renamed `grown`.
    *
-   * `courtyard-house` raises the warning — its `roof overhang 600` puts the eaves at
+   * Since fix/examples-sound (2026-10-27) no shipped example overflows: each was refitted to its
+   * sheet. These pins read each example AS IT WAS, its current source with the one sheet or
+   * eaves line put back ({@link exampleAsWas}), so the overflow they measure is still a real plan's.
+   *
+   * `courtyard-house` raised the warning — its `roof overhang 600` put the eaves at
    * 17500 × 13000 against 35350 × 12910 mm of drawing area, 90 mm over — and its page comes
    * out **exactly A3**, because the 15 mm reserved sheet margin absorbs it. Only
    * `garden-house`, whose 22 × 22 m lot line overruns by 4050 mm, is issued larger (3710 mm until PS2.17 gave its kitchen a worktop: the
    * legend gains a `counter` row, 340 mm taller, so the drawing area shrinks 18290 → 17950 mm).
    */
   it("courtyard-house warns AND is issued exactly paper-sized", () => {
-    const [, src, world] = exampleNamed("courtyard-house");
+    const [, src, world] = exampleAsWas("courtyard-house");
     expect(codesOf(src, world)).toContain("W_DRAWING_OVERFLOW");
     const sheet = compile(src, { world, noCache: true }).scene!.sheet!;
     expect(sheet.page.w).toBe(sheet.widthMm * sheet.denom);
@@ -224,7 +228,7 @@ suite("4.9 — it does not claim the page grew, and the corpus proves it", () =>
   });
 
   it("garden-house warns AND is issued about 1.0% taller than its A2", () => {
-    const [, src, world] = exampleNamed("garden-house");
+    const [, src, world] = exampleAsWas("garden-house");
     expect(codesOf(src, world)).toContain("W_DRAWING_OVERFLOW");
     const sheet = compile(src, { world, noCache: true }).scene!.sheet!;
     expect(sheet.grown).toBe(true);
@@ -242,8 +246,24 @@ suite("4.9 — it does not claim the page grew, and the corpus proves it", () =>
       if (s?.drawing_fits === false) reported.push(name);
       if (codesOf(src, world).includes("W_DRAWING_OVERFLOW")) warned.push(name);
     }
+    // Since fix/examples-sound (2026-10-27) every example fits its sheet; the four that
+    // overflowed are measured as they were below.
+    expect(reported.sort()).toEqual([]);
+    expect(warned.sort()).toEqual([]);
+  });
+
+  it("the four examples as they were before fix/examples-sound report the residual", () => {
+    const reported: string[] = [];
+    const warned: string[] = [];
+    for (const name of Object.keys(AS_WAS)) {
+      const [, src, world] = exampleAsWas(name);
+      if (describePlan(src, { world }).sheet?.drawing_fits === false) reported.push(name);
+      if (codesOf(src, world).includes("W_DRAWING_OVERFLOW")) warned.push(name);
+    }
     expect(reported.sort()).toEqual(["courtyard-house", "garden-house", "hillside-villa", "materials"]);
-    expect(warned.sort()).toEqual(["courtyard-house", "garden-house", "hillside-villa"]);
+    // `hillside-villa`'s current plan on its old A2 is `fits: false` like `materials`, so it
+    // takes `W_SCALE_OVERFLOW` rather than this warning.
+    expect(warned.sort()).toEqual(["courtyard-house", "garden-house"]);
   });
 });
 
@@ -287,6 +307,22 @@ function shippedExamples(): Example[] {
       const abs = join(dir, f);
       return [f.replace(/\.arch$/, ""), readFileSync(abs, "utf8"), worldFor(dirname(abs))] as Example;
     });
+}
+
+/** The one line fix/examples-sound changed to fit each example to its sheet: [now, before]. */
+const AS_WAS: Record<string, [string, string]> = {
+  "courtyard-house": ["  roof overhang 500", "  roof overhang 600"],
+  "garden-house": ["  paper A2 portrait", "  paper A2 landscape"],
+  "hillside-villa": ["  paper A1 landscape", "  paper A2 landscape"],
+  materials: ["  paper A2 landscape", "  paper A3 landscape"],
+};
+
+/** A shipped example with its pre-fix sheet or eaves line put back (each found exactly once). */
+function exampleAsWas(name: string): Example {
+  const [n, src, world] = exampleNamed(name);
+  const [now, before] = AS_WAS[name]!;
+  if (src.split(now).length !== 2) throw new Error(`${name}: "${now}" is not found exactly once`);
+  return [n, src.replace(now, before), world];
 }
 
 function exampleNamed(name: string): Example {

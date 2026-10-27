@@ -49,7 +49,7 @@ plan "Studio 1BR" {
   # room rectangle's centerline edge, so the 200mm shell's half-thickness is never named.
   furniture shower at (6000,5000) size 900x900   # against the E + S walls (corner)
   furniture basin  at (5200,4450) size 600x450   # back to the hall partition
-  furniture wc     in r_bath anchor bottom flush size 400x700
+  furniture wc     against r_bath.bottom offset 700 size 400x700
 
   # Dimension strings: room widths above, overall extents around. The reference
   # (witness) points sit on the building's OUTER faces (x=-100/7100, y=-100/6100 for

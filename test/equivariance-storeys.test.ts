@@ -57,6 +57,20 @@ import { placed } from "./shaft-equivariance-models.js";
 /** Generous: a building runs a dozen full describe() + lint() passes over every storey. */
 const SLOW = 120_000;
 
+/**
+ * `garden-house` as it was before fix/examples-sound (2026-10-27) relabelled its street-side
+ * bedroom a study: the one storey whose compass rule (`W_ROOM_NOT_EQUATOR_FACING`) fires, so
+ * `+N` has something to compare now that every shipped example is warning-free.
+ */
+const GARDEN_AS_WAS: StoreyCase = (() => {
+  const now = 'room id=r_study2  at (2500,4500) size 4300x4500 label "Study"     uses office';
+  const src = SHIPPED_BUILDINGS.find((c) => c.name === "garden-house.arch")!.src;
+  if (src.split(now).length !== 2) throw new Error("garden-house: the study line is not found exactly once");
+  return {
+    name: "garden-house.arch",
+    src: src.replace(now, 'room id=r_study2  at (2500,4500) size 4300x4500 label "Bedroom 3" uses bedroom'),
+  };
+})();
 const CASES: readonly StoreyCase[] = [...SHIPPED_BUILDINGS, ...MODEL_CASES];
 const named = (name: string): StoreyCase => CASES.find((c) => c.name === name)!;
 
@@ -120,7 +134,7 @@ describe("the per-storey oracle's own construction", () => {
     expect(storeyWrapper(named("hillside-villa.arch").src, null).src).toContain("roof overhang 700 wall g.shell");
   });
 
-  it("the roof is nearly unobserved: removing it moves no fact but hillside-villa's sheet fit", () => {
+  it("the roof is unobserved: removing it moves no fact", () => {
     // A roof is drawing-only (no describe() key, no lint rule); it reaches the facts only
     // through the drawing bounds. So the roof surgery is checked by the absence of
     // E_ROOF_PLACEMENT above, and by facts only where the eaves move the sheet fit: in
@@ -141,23 +155,10 @@ describe("the per-storey oracle's own construction", () => {
       expect(roofs.length, c.name).toBe(1);
       const bare = roofs.reduceRight((src, r) => src.slice(0, r.start) + src.slice(r.end), c.src);
       const [withRoof, without] = [view(c.src), view(bare)];
-      if (c.name !== "hillside-villa.arch") {
-        expect(without, c.name).toEqual(withRoof);
-        continue;
-      }
-      for (const [i, s] of withRoof.entries()) {
-        expect(s.summary.sheet?.drawing_fits, `L${s.level}`).toBe(false);
-        expect(without[i]!.summary.sheet?.drawing_fits, `L${s.level}`).toBeUndefined();
-        const { sheet: _a, ...rest } = s.summary;
-        const { sheet: _b, ...restBare } = without[i]!.summary;
-        expect(restBare, `L${s.level}`).toEqual(rest);
-        expect(without[i]!.lint, `L${s.level}`).toEqual(s.lint);
-      }
-      const unowned = (src: string) =>
-        observeBuilding(storeyWrapper(src, null).src)
-          .summary.diagnostics.filter((d) => d.level === undefined)
-          .map((d) => d.code);
-      expect([unowned(c.src), unowned(bare)]).toEqual([["W_DRAWING_OVERFLOW"], []]);
+      // `hillside-villa`'s eaves overran its old A2 sheet, the one fact a roof moved, until
+      // fix/examples-sound (2026-10-27) issued it on A1; the page growing past its sheet is
+      // `test/drawing-overflow.test.ts`'s.
+      expect(without, c.name).toEqual(withRoof);
     }
   });
 
@@ -181,7 +182,7 @@ describe("the per-storey oracle's own construction", () => {
       }
     }
     // …and the compass rule has something to compare under `+N`: garden-house's first floor.
-    const garden = observeBuilding(storeyWrapper(named("garden-house.arch").src, null).src).storeys.get(2)!;
+    const garden = observeBuilding(storeyWrapper(GARDEN_AS_WAS.src, null).src).storeys.get(2)!;
     expect(garden.lint.find((r) => r.name === "room-not-equator-facing")!.diags.length).toBeGreaterThan(0);
   });
 });
@@ -280,6 +281,18 @@ describe("T1 + T2 — every storey's describe(), every lint rule's slice of it, 
       ]);
       if (parse(c.src).plan!.site) expect(tags.filter((t) => t.endsWith("+N"))).toEqual(["r90+N", "r180+N", "r270+N"]);
       assertBuildingPinned(c.name, "T1", runs!);
+    },
+    SLOW,
+  );
+  // The compass rule's comparison under `+N`, on the one storey where it fires (see GARDEN_AS_WAS).
+  it(
+    "garden-house.arch as it was (its street-side bedroom)",
+    () => {
+      const runs = runBuildingFacts(GARDEN_AS_WAS.name, GARDEN_AS_WAS.src);
+      expect(runs).not.toBeNull();
+      const tags = [...runs!.values()][0]!.map((r) => r.tag);
+      expect(tags.filter((t) => t.endsWith("+N"))).toEqual(["r90+N", "r180+N", "r270+N"]);
+      assertBuildingPinned(GARDEN_AS_WAS.name, "T1", runs!);
     },
     SLOW,
   );
