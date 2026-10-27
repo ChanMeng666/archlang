@@ -1,0 +1,13 @@
+# class: clearances
+# origin: audits/2026-10-26-first-contact-rerun-row6.md QH5 (the house garage, about 3000 mm clear along the line of its west vehicle door); OH5, CH5 before
+# expect: W_GARAGE_TOO_NARROW
+# status: done
+# fact: r_gar is 3000 mm deep between its wall faces along d_car's axis (3200 drawn less two 100 mm half-walls), under the 5000 mm
+#   of a parking bay (`garageDepthMm`); its 3200 mm short side passes the width check
+plan "Garage too shallow" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (3200,0) (3200,3800) (0,3800) close }
+  room id=r_gar at (0,0) size 3200x3800 label "Garage" uses garage
+  door id=d_car garage at (0,1900) width 2400 wall shell
+}

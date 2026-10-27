@@ -166,6 +166,7 @@ export const DESCRIBE_KEYS: readonly string[] = [
   "symmetry",
   "syntax",
   "depends",
+  "clearances",
 ];
 
 /** Tally a {@link FreedomReport} bucket without fighting the placement unions. */
@@ -419,6 +420,12 @@ function factLines(s: SceneSummary): string[] {
     ).length;
     out.push(
       `depends: ${linked} of ${s.depends.elements.length} element(s) depend on another id, a name, an axis or a host wall; ${s.depends.derived_walls.length} derived wall(s) (--json for the lists)`,
+    );
+  }
+  if (s.clearances) {
+    const c = s.clearances;
+    out.push(
+      `clearances: ${c.wcs.length} WC(s), ${c.tall_units.length} tall unit(s), ${c.hobs.length} hob(s), ${c.doorways.length} doorway(s), ${c.stairs === null ? "stairs not measured (budget)" : `${c.stairs.length} stair(s)`} measured (--json for the figures)`,
     );
   }
   return out;

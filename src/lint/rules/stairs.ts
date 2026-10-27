@@ -65,7 +65,7 @@ export const NON_DWELLING_LANDING_MM = 1200;
 export const MAX_STAIR_WORK = 2_000_000;
 
 /** One end of a flight this storey owes a landing, read on the footprint of the flight it ends. */
-interface Landing {
+export interface Landing {
   end: "foot" | "head";
   edge: Side;
   /** The footprint of the flight this end belongs to: this storey's run, or, for the head a flight
@@ -84,7 +84,7 @@ const rectOf = (v: { at: Point; size: { w: number; h: number } }): BBox => ({
 });
 
 /** The run's length along its flight axis. */
-const runLength = (v: RStair): number => (runAxis(v) === "y" ? v.size.h : v.size.w);
+export const runLength = (v: RStair): number => (runAxis(v) === "y" ? v.size.h : v.size.w);
 
 /**
  * The rectangle beyond edge `e` of `r`, `depth` deep and `width` wide, centred on the edge (the
@@ -192,13 +192,13 @@ interface WallBody {
 }
 
 /** What first stands in a landing, and how far past the step. */
-interface LandingBlock {
+export interface LandingBlock {
   depth: number;
   what: { wall: WallSegment } | { void: RVoid } | { noFloor: true };
 }
 
 /** One stair's facts, measured once per storey for every rule. */
-interface StairFacts {
+export interface StairFacts {
   v: RStair;
   landings: Landing[];
   /** The footprint is a stairwell here (a flight comes down from, or arrives at, this storey). */
@@ -211,7 +211,7 @@ interface StairFacts {
 }
 
 /** Everything the stair rules read on one storey, or `null` past {@link MAX_STAIR_WORK}. */
-interface StoreyStairs {
+export interface StoreyStairs {
   stairs: StairFacts[];
   /** Work left for the pairwise rules, a count. */
   left: number;
@@ -224,7 +224,7 @@ const FACTS = new WeakMap<LintContext, StoreyStairs | null>();
  * context). `null` when there is no stair, or when measuring the landings would pass
  * {@link MAX_STAIR_WORK} (the caller files `stair-budget`).
  */
-function storeyStairs(ctx: LintContext): StoreyStairs | null {
+export function storeyStairs(ctx: LintContext): StoreyStairs | null {
   if (FACTS.has(ctx)) return FACTS.get(ctx)!;
   const stairs = ctx.verticals.filter((v): v is RStair => v.kind === "stair");
   let result: StoreyStairs | null = null;

@@ -16,7 +16,7 @@ plan "WC in the passage to the garage" {
   door id=d_entry at (1500,0) width 900 wall shell
   door id=d_util at (1500,1500) width 800 wall w_hall
   door id=d_gar at (3000,4000) width 900 wall w_gar
-  door id=d_garage garage at (6000,6500) width 3000 wall shell
+  door id=d_garage garage at (9000,4000) width 3000 wall shell
   furniture wc against wall shell segment 2 offset 8500 in r_util
   furniture basin against wall shell segment 2 offset 7600 in r_util
 }

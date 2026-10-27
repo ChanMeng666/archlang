@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ruleset field `wcAccessibleSideWallMaxMm` (500 mm in every profile) from the face of the straight
   wall on either side, so no grab rail reaches it (Approved Document M4(2) Diagram 2.5 and M4(3)
   Diagrams 3.11, 3.16, 400–500 mm; ADA 604.2's 16–18 in lies inside). Hint only, no fix.
+- `describe --facts clearances` (plan card PS2.72): an opt-in facet printing, per storey, what
+  each clearance rule measured, read through the rules' own measures under the default ruleset: a
+  WC's sides, a tall unit's and a hob's cover of a window (with the hob's distance off the window
+  wall's face and whether it reads as under it), a hob's nearest tall unit, a doorway's clear width
+  and approach, a stair's run and landings. `describe()` without the fact is byte-identical;
+  `lint()` is unchanged.
 - Six stair-safety lint rules (plan cards PS2.11e's stair bullets, PS2.34, PS2.15), validity layer,
   on by default, in a new `stairs` coverage family (`W_SHAFT_FOOTPRINT_MISMATCH` in `vertical`).
   The landing is the square beyond a flight's end as wide as the flight (Approved Document K 2013
@@ -492,6 +498,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `W_GARAGE_TOO_NARROW` now also judges a garage's clear depth along its `door garage`: 5000 mm by
+  default, a parking bay's length, and 6000 mm under `uk-residential-advisory` (new ruleset field
+  `garageDepthMm`; a garage with no vehicle door files a `no-vehicle-door` coverage skip; plan card PS2.70).
 - `W_ROOM_MISSING_DEFINING` now also reports a bathroom that holds a WC and no basin, unless a basin
   stands in a room a door or opening joins it to directly that is not a kitchen (Approved Document G,
   G4; plan card PS2.66). A WC room is still defined by its WC alone.

@@ -309,11 +309,13 @@ export function windowBands(windows: readonly RWindow[], onCurved: () => void = 
 }
 
 /** How a footprint covers a window: the length of the span it stands in front of, and the
- *  footprint's own extent along the host, both measured from the window's centre. */
+ *  footprint's own extent along the host, both measured from the window's centre; and how deep
+ *  across the host the covered part reaches into the band (`describe --facts clearances`). */
 export interface WindowCover {
   covered: number;
   lo: number;
   hi: number;
+  across: number;
 }
 
 /**
@@ -332,8 +334,14 @@ export function windowCover(band: WindowBand, r: BBox, tol: number): WindowCover
   const clipped = clipToRect(local, { x: -w.width / 2, y: -tol, w: w.width, h: 2 * tol });
   if (clipped.length < 3 || Math.abs(area2(clipped)) <= 1e-9) return null;
   const xs = clipped.map((p) => p.x);
+  const ys = clipped.map((p) => p.y);
   const ls = local.map((p) => p.x);
-  return { covered: Math.max(...xs) - Math.min(...xs), lo: Math.min(...ls), hi: Math.max(...ls) };
+  return {
+    covered: Math.max(...xs) - Math.min(...xs),
+    lo: Math.min(...ls),
+    hi: Math.max(...ls),
+    across: Math.max(...ys) - Math.min(...ys),
+  };
 }
 
 /**
@@ -349,15 +357,20 @@ export function windowCover(band: WindowBand, r: BBox, tol: number): WindowCover
 export function hobWindowCover(band: WindowBand, r: BBox, tol: number): WindowCover | null {
   const cover = windowCover(band, r, tol);
   if (cover === null) return null;
-  const { w, c, n } = band;
+  return hobNearHost(band, r) <= band.w.host!.thickness / 2 + WALL_COLLISION_SLACK_MM ? cover : null;
+}
+
+/** How far footprint `r`'s side nearest the window's host stands from the host's centreline
+ *  (0 when the footprint straddles it): the distance {@link hobWindowCover} judges. */
+export function hobNearHost(band: WindowBand, r: BBox): number {
+  const { c, n } = band;
   const ys = [
     { x: r.x, y: r.y },
     { x: r.x + r.w, y: r.y },
     { x: r.x + r.w, y: r.y + r.h },
     { x: r.x, y: r.y + r.h },
   ].map((p) => (p.x - c.x) * n.x + (p.y - c.y) * n.y);
-  const near = ys.every((y) => y >= 0) || ys.every((y) => y <= 0) ? Math.min(...ys.map(Math.abs)) : 0;
-  return near <= w.host!.thickness / 2 + WALL_COLLISION_SLACK_MM ? cover : null;
+  return ys.every((y) => y >= 0) || ys.every((y) => y <= 0) ? Math.min(...ys.map(Math.abs)) : 0;
 }
 
 /**

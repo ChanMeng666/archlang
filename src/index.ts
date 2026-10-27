@@ -170,6 +170,18 @@ export type {
   RoomEdge,
   DerivedWallDepends,
   DerivedWallRow,
+  ApproachFact,
+  ClearanceFacts,
+  ClearanceObstacle,
+  DoorwayFact,
+  HobFact,
+  HobWindowFact,
+  LandingFact,
+  StairFact,
+  TallUnitFact,
+  WcFact,
+  WcSideFact,
+  WindowCoverFact,
 } from "./describe.js";
 // Structured JSON I/O: the machine-native RPLAN/DStruct2Design plan shape.
 // `planFromJson` builds a PlanNode from JSON (catalogued E_JSON_* on bad shape),
