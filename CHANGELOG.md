@@ -520,6 +520,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `validate --json` `next`: a first validity finding that is a door-swing shortfall (`W_SWING_OBSTRUCTED`)
   now yields to the first stair-safety or earlier-stage finding, so a plan with a stair blocker
   is pointed at the stair first (plan card PS7.7).
+- `validate --json` `next`: within the validity tier, a first finding of the `fixtures` stage now also
+  yields to a stair-safety code or a door-swing shortfall standing beside it, so a 50 mm furniture
+  overlap or a missing hob no longer outranks a stair blocker (plan card PS7.10). 36 of 3,017
+  `next` runs over the tracked `.arch` files moved, each to a stair code or swing shortfall.
+- Every shipped example now validates with no warnings under the default profile, after a design
+  review fixed sheets, scales, circulation, exits, accessible-WC pans and furniture (no compiler or
+  rule source changed): `garden-house` moves to A0, `hillside-villa` to A1 with its upper floor
+  rebuilt, `materials` to A2, `themed` gains a front door, and `aquarium`, `library` and `museum` a
+  second exit.
 - A doorway's approach (`W_DOORWAY_BLOCKED`'s landing, `doorwayLandingMm` deep) is measured from
   the wall's FACE on each side, not its centreline, the datum `W_LEAF_ACROSS_DOORWAY` already read
   (plan card PS2.54); on a 100 mm partition the approach reaches 50 mm further into each room.

@@ -1,8 +1,8 @@
-# Plan-soundness programme: handoff (state as of 2026-10-27, `main@38fbb87f`)
+# Plan-soundness programme: handoff (state as of 2026-10-27, `main@64848c69`)
 
 This page is the resume point for a new session. It says where the programme stands, what is open,
 in which order, and how the work is run. It is re-written at every stage end; the dated history is
-in `research/` and `audits/`. Decisions are in `README.md` §3 (D1–D26); cards are in `cards.md`.
+in `research/` and `audits/`. Decisions are in `README.md` §3 (D1–D27); cards are in `cards.md`.
 Nothing here is private: the companion material the owner keeps outside this repository stays there
 (D4).
 
@@ -34,9 +34,13 @@ and no `validate` call, so D2's reverse-if is met and taste is a reviewer's tool
 (PS7.5 moves it out of the author loop). Authors game rules when they can (labels pinned on wall
 lines, a stair shrunk to clear a label warning, a worktop or a TV deleted, a `uses` dropped, doors
 swung outward): every new rule is checked for the cheapest evasion.
+The PS7.8 run (D26) read both prompts on the same briefs: the frozen arm drew 64 defects (4 B), three
+authors stopping with warnings standing; the whole-loop arm drew 56 (1 B), every plan lint-clean with
+`next` null and `validate` used 6 / 6. The loop removes what lint sees; the no-rule families remain.
+One more two-arm re-measure reads D26's reverse-if.
 
 The means, tracked in `README.md` §7: defect-corpus catch rate 7/53 (10-18) → 46/68 (10-20) → 53/72
-(10-24) → 59/73 (10-25 and 10-26) → 67/77 (PR #280, stair safety 0/4 → 8/8) → 72/79 (PR #283), clearances class 11/19 → 16/21 → **73/80** (PR #301).
+(10-24) → 59/73 (10-25 and 10-26) → 67/77 (PR #280, stair safety 0/4 → 8/8) → 72/79 (PR #283), clearances class 11/19 → 16/21 → 73/80 (PR #301) → **77/84** (PRs #307, #308, #313, #315; clearances 20/25).
 
 ## 2. Where §7 stands
 
@@ -49,21 +53,21 @@ The means, tracked in `README.md` §7: defect-corpus catch rate 7/53 (10-18) →
 | 4 | PS0.4, PS4.1, PS4.2, PS4.5 | met 2026-10-26: PS4.5 reports `held` |
 | 5 | PS5.1–PS5.3, PS2.10–PS2.12 | met 2026-10-25 (D14; PS2.11e moved to row 6) |
 | 6 | PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e | **closed in part** 2026-10-27 (D26): every card landed (#267–#286) and the D10 re-measure ran (`audits/2026-10-26-first-contact-rerun-row6.md`); `preview --review` rings nothing inside repeated statements, so PS4.6 is the remainder |
-| 7 | PS6.1 | PS6.1 parked; in progress: tranche 1 (PS2.64, PS2.65, PS2.66, PS7.7; backlog M.24) landed 2026-10-27, PRs #296–#301 |
+| 7 | PS6.1 | PS6.1 parked; in progress: tranche 1 (PS2.64–PS2.66, PS7.7; backlog M.24; PRs #296–#301) and tranche 2 (PS2.67, PS2.69, PS2.70, PS2.72, PS2.74, PS2.77, PS7.8, PS7.10; PRs #305–#315) landed 2026-10-27 |
 
-## 3. What shipped (2026-10-18 → 10-27, PRs #195–#301)
+## 3. What shipped (2026-10-18 → 10-27, PRs #195–#315)
 
 Everything below is on `main` and **unreleased**: the last `v*` tag predates PR #195 (check with
 `git describe --tags --abbrev=0` and `npm view @chanmeng666/archlang version`). A release starts only
 when the owner asks; the agent then runs the chain (`docs/agents/iron-laws.md` § Owner policies).
 `CHANGELOG.md` `[Unreleased]` is the release record; PR #255 backfilled the 24 programme PRs it was
-missing. Totals at 38fbb87f (the tranche changed none of these counts but the catch rate, 73/80): 32 new `W_*` codes (52 → 84), 40 new `E_*` codes (103 → 143), 11 `A_*`
-taste advice codes, `LINT_RULES` 54 entries. Cards, counted from `cards.md`'s tables and card headers
-after the row-7 tranche 1 (PS2.64, PS2.65, PS2.66, PS7.7 done): 151, of which 66 done,
-0 doing, 2 parked, 83 todo (151 / 62 / 87 before the tranche). Recount: 100 table rows
-(`grep -E '^\| PS[0-9]+\.[0-9]+[a-z]? \|' cards.md`: 36 done, 64 todo) plus 51 card headers
-(`grep -E '^\*\*PS[0-9]+\.[0-9]+[a-z]? ·' cards.md`: 30 done, 19 todo, 2 parked), counted on `main@82ad8a51` plus this PR. The five PS0 cards listed above that family's table are
-not counted; the 133 recorded at 6f3de966 counted them (128 without).
+missing. Totals at 64848c69: 35 new `W_*` codes (52 → 87; tranche 2 added `W_EXIT_APPROACH_BLOCKED`,
+`W_ACCESSIBLE_WC_SIDE_WALL`, `W_BED_UNDERSIZED`), 40 new `E_*` codes (103 → 143), 11 `A_*` taste advice
+codes, `LINT_RULES` 57 entries. Cards, recounted from `cards.md` at this stage end (row-7 tranche 2):
+158, of which 74 done, 0 doing, 2 parked, 82 todo (151 / 66 / 83 after tranche 1). Recount: 106 table
+rows (`grep -E '^\| PS[0-9]+\.[0-9]+[a-z]? \|' cards.md`: 42 done, 64 todo) plus 52 card headers
+(`grep -E '^\*\*PS[0-9]+\.[0-9]+[a-z]? ·' cards.md`: 32 done, 18 todo, 2 parked), counted on
+`main@64848c69` plus this PR. The five PS0 cards listed above that family's table are not counted.
 
 | Surface | Card | PR | Merge |
 |---|---|---|---|
@@ -136,6 +140,18 @@ not counted; the 133 recorded at 6f3de966 counted them (128 without).
 | `next`: a first validity item that is a door-swing shortfall yields to the first stairs-family or earlier-stage finding; only the row-6 townhouse's `next` moved (→ `W_STAIR_SIDE_ENTRY`); K1 re-taken for that one row (head 674e54db) | PS7.7 | #298 | 82ad8a51 |
 | Backlog item M.24 (head fa5ddad8) | M.24 | #300 | 1d3b4b91 |
 | `W_ROOM_MISSING_DEFINING` also reports a bath holding a WC and no basin unless a basin stands in a directly joined non-kitchen room (AD G4); catch rate 72/79 → 73/80; one first-contact row moved (`rerun-row6` `2-house.arch`); K1 re-taken; the review-sheet fixture gained a basin (head 88507ce5) | PS2.66 | #301 | 38fbb87f |
+| Dependencies: `npm audit` 19 → 7 findings (prod 5 → 0), Dependabot #209 and #276 absorbed; dev and workspace manifests only (head ec4e5f28) | — | #303 | c23045b6 |
+| Every shipped example validates with no warnings; a design review fixed sheets, exits, accessible-WC pans and furniture; PS2.74–PS2.76 filed (head 3e864977) | — | #305 | 134765d1 |
+| Sourced figures for PS2.67–PS2.70; PS2.71 decided as taste; PS2.68 blocked (D27) (head 35be2b1b) | PS2.67–PS2.71 | #306 | d0e190b5 |
+| `W_GARAGE_TOO_NARROW` judges clear depth along the vehicle door, 5000 mm / 6000 uk; catch rate 74/81 (head a481ae80) | PS2.70 | #307 | f3e87c59 |
+| `W_EXIT_APPROACH_BLOCKED`; `finish` learns the exit strip; catch rate 75/82; red-team follow-ups filed as PS0.29, PS2.78 by this PR (head 67c085bd) | PS2.69 | #308 | fedde166 |
+| PS7.8 first-contact re-measure, frozen vs whole-loop arm (64 / 56); PS7.10 filed (head db0c47b0) | PS7.8 | #309 | ce2a864d |
+| `eval` record of the 2026-10-27 Claude 5.x live run, owner-run (head 0dd6ea39) | — | #310 | 262c87c2 |
+| `describe --facts clearances` (head 78280cde) | PS2.72 | #311 | 8c8b931c |
+| A fixture for the multi-storey drawing overflow, tests only (head 697d249b) | PS2.77 | #312 | 794cb56d |
+| `W_ACCESSIBLE_WC_SIDE_WALL` (head b6ce698e) | PS2.74 | #313 | 310d0d86 |
+| `next`: a fixtures-stage first finding yields to a stair code or swing shortfall; 36 of 3,017 runs moved (head 8b6b5331) | PS7.10 | #314 | a78d368d |
+| `W_BED_UNDERSIZED`, beds only, 1900 × 750 mm ([M], D27); catch rate 77/84 (head e5cb7533) | PS2.67 | #315 | 64848c69 |
 
 Recorded practice a reader must know: lint PRs bump the `lintWarnings` counts in `eval/judge-fixture.json`
 when a new rule fires on an eval golden, with a per-row reason in the PR body (judgment fields untouched,
@@ -155,19 +171,27 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    compiles"; the stair blocker named by lint; the residual families unchanged. Its remainder is PS4.6
    (`preview --review` rings nothing inside a repeated statement). Cards filed: PS2.64–PS2.72, PS7.7,
    PS7.8.
-2. **Resume point (2026-10-27, after row-7 tranche 1):** PS2.64, PS2.65, PS2.66 and PS7.7 are done
-   (PRs #296–#298, #301; backlog M.24 in #300). **Next:** PS2.67–PS2.70 (each needs a sourced
-   figure first), PS2.71 (decide lint or taste first), PS2.72 (a tool), PS2.73 (gated by its own
-   acceptance: authors reaching for it), PS7.8 (the arm-2 prompt is drafted at
-   `research/2026-10-27-ps78-arm2-prompt-draft.md`; it waits for the owner's confirmation before any
-   re-measure). Stage-end drift audit (read-only, 2026-10-27): (a) PRs #296, #297 and #298 shipped
-   without a `CHANGELOG.md` `[Unreleased]` line, backfilled by this PR; (b) the K1 generator header
-   keeps only the latest re-take reason (the earlier chain is in git history), accepted; (c) #301's
-   first commit carries a Sonnet `Co-Authored-By` trailer, accepted; (d) every card's PR matches its
-   card text, no card closed early, PS2.67–PS2.73 untouched (budget). The earlier 2026-10-27 housekeeping
-   (#287) ratified D19, D24 and D25's gate bullet by delegation (D18) and filed PS0.28, PS1.8, PS2.73
-   and PS7.9.
-3. Everything else in `cards.md` by family: PS0 18 todo, PS1 4, PS2 46 todo, PS3 4, PS4 6 todo, PS5 3, PS7 2 todo (7.3 parked); pick by first-contact evidence, not by number.
+2. Row-7 tranche 1 (PS2.64–PS2.66, PS7.7; PRs #296–#301) and its housekeeping (#302) landed 2026-10-27.
+3. **Resume point (2026-10-27, after row-7 tranche 2):** PS2.67, PS2.69, PS2.70, PS2.72, PS2.74,
+   PS2.77, PS7.8 and PS7.10 are done (PRs #305–#315; corpus 77/84). **Next:**
+   (a) PS7.8's follow-ups: the next first-contact re-measure runs both arms again (D26's reverse-if is
+   read from two); it states every surface changed since `main@134765d1` (tranche 2's four rules,
+   PS7.10's `next`, the examples). PS7.9 (spec headroom, 23 units) comes before any spec addition.
+   (b) PS2.71 is taste (D27): a taste criterion for a bed head across a window, through PS5's score.
+   (c) PS2.68 is blocked on a source (D27); do not start it without one.
+   (d) PS2.73 stays gated: start only when a first-contact row shows authors reaching for `against`
+   side-on. (e) The PR #308 red-team follow-ups, filed by this PR: PS0.29 (the furnish sweep's
+   `GATED` list lacks `W_EXIT_APPROACH_BLOCKED`) and PS2.78 (`finish` filters exits by room, so a
+   strip reaching the next room is unknown there). (f) PS2.75/PS2.76 from the examples review; PS4.6.
+   D27's D3 exception (an [M] and an [S] figure shipping in messages) awaits the owner's ratification.
+   Stage-end drift audit (read-only, 2026-10-27, this PR): (i) cards PS2.64–PS2.67, PS2.69, PS2.70,
+   PS2.72, PS2.74, PS2.77, PS7.7, PS7.8 and PS7.10 lacked a merge SHA (PS2.67 its PR, PS7.8 read
+   "this PR") and kept their full texts: cut to `done` lines, texts moved verbatim to
+   `research/2026-10-27-row7-as-built.md`; (ii) #305 (the shipped examples) and #314 (PS7.10) had no
+   `CHANGELOG.md` line, added; #303 touched dev and workspace manifests only, #306/#309/#310/#312 are
+   records or tests, no line owed; (iii) #306's and #315's rulings had no D-entry: D27;
+   (iv) README §6 and this §3 recounted from `cards.md`; (v) the §1 table already carried the PS7.8 row.
+4. Everything else in `cards.md` by family: PS0 19 todo, PS1 4, PS2 45 todo, PS3 4, PS4 6 todo, PS5 3, PS7 1 todo (7.3 parked); pick by first-contact evidence, not by number.
 
 **Open cards by family (2026-10-25 audit, counts updated 2026-10-27; "ready" = no stated dependency
 outstanding; every card that changes what an author sees in `lint`, `validate`, `finish` or the spec
@@ -176,12 +200,12 @@ waited for the row-5 re-measure (D19), which ran 2026-10-26: such a card may sta
 | Family | Open | Ready now | Waiting on something |
 |---|---|---|---|
 | PS1 | 4 | 1.5, 1.6, 1.7, 1.8 | — |
-| PS0 | 18 | PS0.15 (net-area bound), 0.2, 0.3, 0.6, 0.9, 0.17, 0.22, 0.23, 0.25, 0.26, 0.27, 0.28 | 0.8 (re-measure), 0.16/0.18/0.20/0.21 (a decision each), 0.24 (code landed in #252; only a `clear front\|sides` test is left) |
-| PS2 | 46 | 2.21, 2.23, 2.25, 2.27, 2.30–2.33, 2.35, 2.41–2.44, 2.47–2.49, 2.51, 2.52, 2.56, 2.57, 2.58, 2.61–2.63, 2.72 | 2.67/2.68/2.69/2.70 (a sourced figure each), 2.71 (lint or taste first), 2.73 (authors reaching for it), 2.14 (ADR), 2.16/2.36 (facts), 2.20/2.28/2.59 (measure first), 2.24/2.26/2.37/2.38/2.55 (a decision each), 2.39 (drawing decision), 2.40 and 5.6 (fire D12's reverse-if), 2.53 (a sourced ceiling), 2.60 (a sourced profile figure) |
+| PS0 | 19 | PS0.15 (net-area bound), 0.2, 0.3, 0.6, 0.9, 0.17, 0.22, 0.23, 0.25, 0.26, 0.27, 0.28, 0.29 | 0.8 (re-measure), 0.16/0.18/0.20/0.21 (a decision each), 0.24 (code landed in #252; only a `clear front\|sides` test is left) |
+| PS2 | 45 | 2.21, 2.23, 2.25, 2.27, 2.30–2.33, 2.35, 2.41–2.44, 2.47–2.49, 2.51, 2.52, 2.56, 2.57, 2.58, 2.61–2.63, 2.71 (taste, D27), 2.75, 2.76, 2.78 | 2.68 (a sourced figure, D27), 2.73 (authors reaching for it), 2.14 (ADR), 2.16/2.36 (facts), 2.20/2.28/2.59 (measure first), 2.24/2.26/2.37/2.38/2.55 (a decision each), 2.39 (drawing decision), 2.40 and 5.6 (fire D12's reverse-if), 2.53 (a sourced ceiling), 2.60 (a sourced profile figure) |
 | PS3 | 4 | 3.12 | 3.10 (decision; moves digests, D8), 3.11 (corpus sweep), 3.13 (proof first) |
 | PS4 | 6 | 4.6, 4.7, 4.8, 4.9 | 4.10 and 4.12's MCP part (with 5.3a's version bump) |
 | PS5 | 3 | 5.5 | 5.3a (MCP version bump), 5.6 (D12) |
-| PS6/PS7 | 1 parked; 2 todo, 1 parked | 7.9 | 7.8 (runs with the next re-measure), 6.1 (until `keep` is used), 7.3 (parked: only if rule packs outgrow code) |
+| PS6/PS7 | 1 parked; 1 todo, 1 parked | 7.9 | 6.1 (until `keep` is used), 7.3 (parked: only if rule packs outgrow code) |
 
 Facts a reader would otherwise miss: the dwelling reading (D6) now has six consumers (three lint
 arms, taste R6/R11/R12), so D6's reverse-if has fired and is re-stated in D6; spec headroom:
