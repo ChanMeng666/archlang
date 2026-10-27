@@ -1479,6 +1479,8 @@ emission order wins:
 | `profile` | a warning only the named lint profile raises | `--profile <name>` |
 | `taste` | the lowest-scoring assessable taste criterion below 1 | `--taste <profile>` |
 
+One exception holds inside the `validity` tier: a door-swing shortfall that comes first yields to the first stair-safety warning or to a finding of an earlier authoring stage (`validate --stage`), so a WC door 85 mm short is not named before a stair with no landing.
+
 ```
 archlang validate plan.arch --json --taste generic
 ```

@@ -122,7 +122,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",
-    "@playwright/test": "^1.63.0",
+    "@playwright/test": "^1.64.1",
     "@types/node": "^22.20.0",
     "@types/pngjs": "^6.0.5",
     "@vitest/coverage-v8": "^2.1.9",
@@ -141,5 +141,16 @@
     "@chanmeng666/archlang-font-cjk": "1.0.0",
     "@resvg/resvg-js": "2.6.2",
     "pdfkit": "^0.20.2"
+  },
+  "overrides": {
+    "vitepress": {
+      "vite": "^6.4.5"
+    },
+    "tsup": {
+      "esbuild": "^0.28.2"
+    },
+    "@azure/identity": {
+      "@azure/msal-node": "^7.1.1"
+    }
   }
 }

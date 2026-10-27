@@ -554,6 +554,18 @@ describe("findRun — linear forward pass equals the old shrinking search", () =
 
 describe("reroll() — identical suggestions with the new finder and with the oracle", () => {
   it("generated sources", { timeout: 300_000 }, () => {
+    // The equality law runs unseeded: a fresh sample on every run.
+    fc.assert(
+      fc.property(archSource, (src) => {
+        expect(reroll(src)).toEqual(rerollWith(src, {}, oracleFindRun));
+      }),
+      { numRuns: 60 },
+    );
+  });
+
+  it("generated sources — the seeded sample offers at least one suggestion", { timeout: 300_000 }, () => {
+    // Unseeded, ~0.5 % of 60-case runs offer nothing (no defect), so the non-vacuity
+    // check pins a seed that is known to offer.
     let offered = 0;
     fc.assert(
       fc.property(archSource, (src) => {
@@ -561,7 +573,7 @@ describe("reroll() — identical suggestions with the new finder and with the or
         expect(got).toEqual(rerollWith(src, {}, oracleFindRun));
         offered += got.length;
       }),
-      { numRuns: 60 },
+      { numRuns: 60, seed: 20261027 },
     );
     expect(offered).toBeGreaterThan(0);
   });

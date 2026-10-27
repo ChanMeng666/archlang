@@ -392,24 +392,33 @@ async function authorWithAnthropic(
 ): Promise<string> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY is not set (required for --live with the anthropic provider)");
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({
-      model,
-      // Reasoning models spend internal thinking tokens from this same budget — a 2048
-      // cap starved the model into empty/truncated plans (this was the live bug). Sized
-      // so truncation measures authorability, not the budget (mirrors the OpenAI cap).
-      max_tokens: 16384,
-      // Pin sampling for reproducibility (the OpenAI reasoning endpoint rejects this, so
-      // it is anthropic-only — see authorWithOpenAI).
-      temperature: 0,
-      // The ~40 KB spec system prompt is byte-identical across every brief, so mark it
-      // cacheable: the first call writes the cache, every later call reads it.
-      system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
+  const call = (pinTemperature: boolean) =>
+    fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+      body: JSON.stringify({
+        model,
+        // Reasoning models spend internal thinking tokens from this same budget — a 2048
+        // cap starved the model into empty/truncated plans (this was the live bug). Sized
+        // so truncation measures authorability, not the budget (mirrors the OpenAI cap).
+        max_tokens: 16384,
+        // Pin sampling for reproducibility (the OpenAI reasoning endpoint rejects this, so
+        // it is anthropic-only — see authorWithOpenAI).
+        ...(pinTemperature ? { temperature: 0 } : {}),
+        // The ~40 KB spec system prompt is byte-identical across every brief, so mark it
+        // cacheable: the first call writes the cache, every later call reads it.
+        system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+  let res = await call(true);
+  // Newer models reject `temperature` outright (400 "`temperature` is deprecated for this
+  // model"); a rejected request is not billed, so retry once at the model's default sampling.
+  if (res.status === 400) {
+    const body = await res.text();
+    if (!/temperature/i.test(body)) throw new Error(`Anthropic API 400: ${body}`);
+    res = await call(false);
+  }
   if (!res.ok) throw new Error(`Anthropic API ${res.status}: ${await res.text()}`);
   const json = (await res.json()) as {
     content: { type: string; text?: string }[];

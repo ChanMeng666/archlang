@@ -496,9 +496,23 @@
   display: flex;
 }
 
+/* the Problems view's clean-plan line (phone layout only; chrome.css shows it) */
+.problems-empty {
+  display: none;
+  margin: 0;
+  padding: 16px;
+  font-size: 14px;
+  color: var(--ok);
+}
+
 /* diagnostic rows — clickable: jump-to-source + explain disclosure.
    Errors = redline 2px left rule; warnings = amber. */
 .diagrow {
+  /* Never shrink: a row is a flex item of the scrolling #errors column, and with
+     `overflow: hidden` its automatic minimum height is 0 — so a long or expanded
+     diagnostic used to be squeezed to fit the drawer and clipped, with nothing left
+     over for #errors to scroll. Rows keep their content height; the drawer scrolls. */
+  flex: none;
   border: 1px solid var(--hairline);
   border-left: 2px solid var(--redline);
   border-radius: 3px;
@@ -1154,4 +1168,47 @@
 .diag-apply:hover {
   background: color-mix(in srgb, var(--plum) 10%, transparent);
   border-color: var(--plum-deep);
+}
+
+/* ≤900px (the phone layout, chrome.css): touch-sized preview controls, a diagnostic
+   head that wraps its message under the code, 16px side gutters in the panels. */
+@media (max-width: 900px) {
+  .pz-toolbar {
+    top: 8px;
+    right: 8px;
+  }
+  .pz-toolbar button {
+    min-width: 36px;
+    height: 40px;
+  }
+  .diag-head {
+    flex-wrap: wrap;
+    padding: 10px 12px;
+  }
+  .diag-msg {
+    order: 3;
+    flex-basis: 100%;
+  }
+  .diag-loc {
+    margin-left: auto;
+    padding: 4px 6px;
+    text-decoration: underline;
+  }
+  .diag-fix {
+    padding: 0 12px 10px;
+  }
+  .diag-apply {
+    min-height: 40px;
+    padding: 0 12px;
+  }
+  #describe,
+  #lint,
+  #intent {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .lint-controls select,
+  .repair-btn {
+    min-height: 40px;
+  }
 }
