@@ -68,9 +68,9 @@ owns that name, so the shell runs the wrong program.
    **The order inside the loop** is the stage list, `brief → rooms → walls → openings → fixtures →
    drafting`, and within a stage: columns, then the exterior walls, then the other walls, then fences;
    doors, then windows, then plain openings; catalogued fixtures, then loose furniture; dimensions,
-   labels and the sheet last. Rooms come first because they fix the program and the walls are derived
-   from them; the exterior goes before the interior; an opening is cut into a wall that must already
-   exist; drafting reads everything else. This is authoring order only: the order shapes are painted in
+   labels and the sheet last. Rooms (with stairs, voids and outdoor surfaces) come first because they
+   fix the program and the walls can be derived from them; the exterior goes before the interior; an
+   opening is cut into a wall that must already exist; drafting reads everything else. This is authoring order only: the order shapes are painted in
    the SVG is a separate thing and does not change.
    **Review, once that loop is clean:** the reviewer (not the author) runs
    `archlang score plan.arch --taste generic --json` and reads the advice: a sourced 0–1 score
