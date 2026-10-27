@@ -224,11 +224,22 @@
         </p>
       </noscript>
     </section>
-    <main>
+    <!-- Phone-width view switcher (≤900px only; CSS hides it above). Below the breakpoint
+         the workspace shows ONE of Code / Plan / Problems at a time, full-height, rather
+         than three slivers; mobile-views.ts sets `main[data-mview]`. Toggle buttons, not
+         a tablist: the views are layout states of one workspace, and the desktop layout
+         shows all three at once. -->
+    <nav class="mviews" id="mviews" aria-label="Workspace view">
+      <button class="mview" type="button" data-mview="code" aria-pressed="false">Code</button>
+      <button class="mview" type="button" data-mview="plan" aria-pressed="true">Plan</button>
+      <button class="mview" type="button" data-mview="problems" aria-pressed="false">Problems <span class="mview-count" id="mviewCount"></span></button>
+    </nav>
+    <main data-mview="plan">
       <section class="pane">
         <h2 class="src-tab">SOURCE.ARCH</h2>
         <div id="editor"></div>
         <div id="errors"></div>
+        <p class="problems-empty">No problems — the plan compiles clean.</p>
       </section>
       <section class="pane">
         <h2>

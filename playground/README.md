@@ -25,7 +25,9 @@ consumes the built core (`../dist/index.js`). Deployed at
   `localStorage`; a **compressed permalink** (`#z=` deflate-raw, still reads legacy `#src=`).
 - **Export:** **copy** SVG/PNG to the clipboard, or **download** SVG / PNG / DXF / PDF.
   Exports strip the `data-span` annotations, so downloaded files stay clean.
-- **Layout:** draggable resizable split, 5 render themes, 2 lint profiles; responsive.
+- **Layout:** draggable resizable split, 5 render themes, 2 lint profiles; responsive —
+  at ≤900px the workspace shows one of **Code / Plan / Problems** at a time under a sticky
+  switcher, with touch-sized controls and no sideways scroll.
 
 The app is written in **TypeScript** (`src/*.ts`). Note that `npm run build` does **not**
 typecheck it — Vite strips types with esbuild without checking them. Run `npm run typecheck`
@@ -50,6 +52,7 @@ The playground is TypeScript; every module below is `.ts` except the generated g
 | `embed-snippets.ts` | the Embed dialog's iframe and Markdown snippets (an example's hosted drawing, or a plain link) |
 | `embed.ts` / `viewer.ts` | the chrome-less `embed.html` page and its viewer runtime |
 | `facts-strip.ts` / `describe-panel.ts` / `lint-panel.ts` / `diagnostics-panel.ts` | the `describe()`/`lint()` fact & diagnostic panels |
+| `mobile-views.ts` | the ≤900px Code / Plan / Problems view switcher (`main[data-mview]`) |
 | `share.ts` | `#z=` deflate-raw permalink encode/decode (reads legacy `#src=`) |
 | `raster-export.ts` | copy/download SVG · PNG · DXF · PDF |
 | `snapshots.ts` / `storage.ts` | named snapshot history UI + defensive `localStorage` helpers |
