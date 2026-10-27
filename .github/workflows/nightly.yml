@@ -42,6 +42,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
+          check-latest: true
 
       # No `npm ci`: scripts/smoke.mjs is deliberately zero-dependency plain Node.
       - name: Docs site
@@ -67,6 +68,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
+          check-latest: true
           cache: npm
 
       # NOT swallowed — a lockfile that no longer installs is a real, actionable break.
@@ -159,6 +161,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node }}
+          check-latest: true
           cache: npm
 
       - run: npm ci
@@ -186,6 +189,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
+          check-latest: true
           cache: npm
 
       - run: npm ci
@@ -264,6 +268,7 @@ jobs:
           # playground's `#z=` decoder, which needs `DecompressionStream("deflate-raw")`
           # (Node ≥ 21.2) at module scope even when the tagged subset never calls it.
           node-version: 22
+          check-latest: true
           cache: npm
 
       - name: Install dependencies
@@ -351,6 +356,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
+          check-latest: true
           cache: npm
 
       - run: npm ci
