@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (Which?'s UK bed-size table, 2026: a consumer magazine, not a standard). New ruleset fields
   `bedMinLengthMm` and `bedMinWidthMm` (`null` turns either off); `crib` and `cot` are never judged.
   No shipped example moves; the first-contact clinics' examination couches drawn as `bed` warn.
+- `describe --facts clearances` (plan card PS2.72): an opt-in facet printing, per storey, what
+  each clearance rule measured, read through the rules' own measures under the default ruleset: a
+  WC's sides, a tall unit's and a hob's cover of a window (with the hob's distance off the window
+  wall's face and whether it reads as under it), a hob's nearest tall unit, a doorway's clear width
+  and approach, a stair's run and landings. `describe()` without the fact is byte-identical;
+  `lint()` is unchanged.
 - Six stair-safety lint rules (plan cards PS2.11e's stair bullets, PS2.34, PS2.15), validity layer,
   on by default, in a new `stairs` coverage family (`W_SHAFT_FOOTPRINT_MISMATCH` in `vertical`).
   The landing is the square beyond a flight's end as wide as the flight (Approved Document K 2013
