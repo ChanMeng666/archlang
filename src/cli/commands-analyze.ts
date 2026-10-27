@@ -509,7 +509,9 @@ function takeoffCsv(rows: readonly TakeoffRow[]): string {
 
 /** A Markdown table: the header row from `cols`, one row per object, `|` escaped. */
 function mdTable(cols: readonly string[], rows: ReadonlyArray<Record<string, number | string | undefined>>): string[] {
-  const esc = (s: string): string => s.replace(/\|/g, "\\|");
+  // Backslashes first, so a `\` in a value can never turn the escape of a following `|` into a
+  // literal backslash and a live column break.
+  const esc = (s: string): string => s.replace(/\\/g, "\\\\").replace(/\|/g, "\\|");
   return [
     `| ${cols.join(" | ")} |`,
     `| ${cols.map(() => "---").join(" | ")} |`,
