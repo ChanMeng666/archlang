@@ -426,6 +426,8 @@ export interface BoundaryPiece {
   mid: Point;
   /** `+1` when `S` lies on the piece's left (the `+n` side), `-1` on its right. */
   side: 1 | -1;
+  /** The piece's length (mm), closed form: a line by its two ends, an arc by `r · |sweep| · Δt`. */
+  length: number;
 }
 
 /**
@@ -496,7 +498,11 @@ export function regionBoundary(
       counted.add(key);
       const v = curveIntegral(c, t0, t1, p0, p1, origin);
       area += plus ? v : -v;
-      onPiece?.({ curve: i, mid: m, side: plus ? 1 : -1 });
+      if (onPiece) {
+        const length =
+          c.t === "line" ? Math.hypot(p1.x - p0.x, p1.y - p0.y) : Math.abs(c.arc.r * c.arc.sweep * (t1 - t0));
+        onPiece({ curve: i, mid: m, side: plus ? 1 : -1, length });
+      }
     }
   });
   return area;

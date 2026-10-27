@@ -93,6 +93,7 @@ import { type D4, fromSpelling, northQuarterTurns } from "./algebra/d4.js";
 import { type ClearWorld, clearWorldOf, measureClear } from "./furniture-relation.js";
 import { type ClearanceFacts, clearanceFacts } from "./lint/clearance-facts.js";
 import { openRunsOf } from "./analyze.js";
+import { type QuantityFacts, quantityFacts } from "./analyze/quantities.js";
 
 export type { ScheduleRow } from "./sheet-tables.js";
 
@@ -135,6 +136,13 @@ export type {
   WcSideFact,
   WindowCoverFact,
 } from "./lint/clearance-facts.js";
+export type {
+  DoorQuantity,
+  QuantityFacts,
+  RoomQuantity,
+  WallQuantity,
+  WindowQuantity,
+} from "./analyze/quantities.js";
 export type { ContactFact, RoomEdge } from "./analyze/contacts.js";
 export type { KeepFact, KeepRedundancy } from "./analyze/keep-facts.js";
 
@@ -162,15 +170,26 @@ export interface DescribeOptions extends AnalyzeOptions {
   /**
    * Opt-in derived facts, each computed only when named here: `"symmetry"` adds
    * {@link SceneSummary.symmetry}, `"syntax"` adds {@link SceneSummary.syntax}, `"depends"`
-   * adds {@link SceneSummary.depends}, `"clearances"` adds {@link SceneSummary.clearances}.
+   * adds {@link SceneSummary.depends}, `"clearances"` adds {@link SceneSummary.clearances},
+   * `"quantities"` adds {@link SceneSummary.quantities}.
    * Absent or empty (the default), the summary is
    * byte-identical to one written before any of them existed.
    */
   facts?: readonly DescribeFact[];
+  /**
+   * A waste percentage for {@link QuantityFacts.floor_area_with_waste_m2}, read only by the
+   * `"quantities"` fact: a parameter the caller passes, never a default. Absent, the figure is
+   * absent. A number from 0 to {@link MAX_WASTE_PCT}; anything else throws a `RangeError` (a
+   * caller's argument, never plan source).
+   */
+  wastePct?: number;
 }
 
+/** The largest waste percentage {@link DescribeOptions.wastePct} accepts. */
+export const MAX_WASTE_PCT = 100;
+
 /** Every opt-in fact {@link DescribeOptions.facts} can name — `arch describe --facts` reads this list. */
-export const DESCRIBE_FACTS = ["symmetry", "syntax", "depends", "clearances"] as const;
+export const DESCRIBE_FACTS = ["symmetry", "syntax", "depends", "clearances", "quantities"] as const;
 
 /** One opt-in fact of {@link DESCRIBE_FACTS}. */
 export type DescribeFact = (typeof DESCRIBE_FACTS)[number];
@@ -976,6 +995,15 @@ export interface SceneSummary {
    * requested** (`facts: ["clearances"]`). See {@link ClearanceFacts}.
    */
   clearances?: ClearanceFacts;
+  /**
+   * This storey's geometric quantities: wall lengths per category (centreline and face), room
+   * perimeters (centreline and net), the net floor area (and, with
+   * {@link DescribeOptions.wastePct}, that area with waste), door and window counts by kind and
+   * width, and wall face areas when the plan authors heights. Geometry only; the convention is in
+   * each field name. Present **only when requested** (`facts: ["quantities"]`). See
+   * {@link QuantityFacts}.
+   */
+  quantities?: QuantityFacts;
   /** All problems from parse/link/resolve, with byte spans and codes. */
   diagnostics: Diagnostic[];
   /**
@@ -1772,6 +1800,9 @@ function buildVerticalReport(
  * s.totals.floor_area_m2; // 12
  */
 export function describe(source: string, opts: DescribeOptions = {}): SceneSummary {
+  const w = opts.wastePct;
+  if (w !== undefined && !(Number.isFinite(w) && w >= 0 && w <= MAX_WASTE_PCT))
+    throw new RangeError(`describe: wastePct must be a number from 0 to ${MAX_WASTE_PCT}, got ${String(w)}`);
   return describeWithAutoIds(source, opts).summary;
 }
 
@@ -1994,6 +2025,13 @@ function summarizeResolved(
     const c = clearanceFacts(ir, levels);
     top.clearances = c.top;
     for (const l of perLevel ?? []) l.clearances = c.byLevel.get(l.level)!;
+  }
+  // B4: the geometric quantities, after the clearances, on each storey and the top (the lowest
+  // storey's, as every top-level fact is).
+  if (opts.facts?.includes("quantities")) {
+    top.quantities = quantityFacts(ir, opts.wastePct);
+    for (const l of perLevel ?? [])
+      l.quantities = quantityFacts(levels.find((x) => x.level === l.level)!.ir, opts.wastePct);
   }
   return {
     ok: true,

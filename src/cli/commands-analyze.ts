@@ -47,6 +47,8 @@ import type {
   NextItem,
 } from "../index.js";
 import { keepResultsOf } from "../ir.js";
+import { MAX_WASTE_PCT } from "../describe.js";
+import type { QuantityFacts } from "../index.js";
 import { diagnosticsSummary, validateSummary } from "./summary.js";
 import { type KeepResult, keepValidateRow } from "../keep.js";
 import {
@@ -169,7 +171,15 @@ export const DESCRIBE_KEYS: readonly string[] = [
   "syntax",
   "depends",
   "clearances",
+  "quantities",
 ];
+
+/** Why a `--waste` value is refused, or `null` when it is a percentage `describe()` takes. */
+function wasteError(w: number): string | null {
+  return Number.isFinite(w) && w >= 0 && w <= MAX_WASTE_PCT
+    ? null
+    : `--waste takes a percentage from 0 to ${MAX_WASTE_PCT} (e.g. --waste 10)`;
+}
 
 /** Tally a {@link FreedomReport} bucket without fighting the placement unions. */
 const bump = (bucket: object, key: string): void => {
@@ -313,11 +323,18 @@ export function cmdDescribe(args: Args): number {
       return usageError(`--select ${k} needs the fact computed: add --facts ${k}`);
     }
   }
+  // `--waste` feeds the quantities fact alone; asked for without it, it would silently do nothing.
+  if (args.waste !== undefined) {
+    if (!facts.includes("quantities")) return usageError("--waste needs the quantities fact: add --facts quantities");
+    const bad = wasteError(args.waste);
+    if (bad) return usageError(bad);
+  }
 
   return withSource(args, (source, input) => {
     const full = describe(source, {
       world: makeNodeWorld(baseDirOf(input)),
       ...(facts.length > 0 ? { facts: facts as DescribeFact[] } : {}),
+      ...(args.waste !== undefined ? { wastePct: args.waste } : {}),
     });
 
     // A plan that failed to resolve has no rooms to narrow: report ITS diagnostics
@@ -430,7 +447,178 @@ function factLines(s: SceneSummary): string[] {
       `clearances: ${c.wcs.length} WC(s), ${c.tall_units.length} tall unit(s), ${c.hobs.length} hob(s), ${c.doorways.length} doorway(s), ${c.stairs === null ? "stairs not measured (budget)" : `${c.stairs.length} stair(s)`} measured (--json for the figures)`,
     );
   }
+  if (s.quantities) {
+    const q = s.quantities;
+    const centre = q.walls.reduce((n, w) => n + w.length_centreline_mm, 0);
+    out.push(
+      `quantities: ${q.walls.length} wall categor${q.walls.length === 1 ? "y" : "ies"}, ${fmt2(centre)} mm of wall centreline, ${q.rooms.length} room(s), ${q.doors.reduce((n, d) => n + d.count, 0)} door(s), ${q.windows.reduce((n, w) => n + w.count, 0)} window(s) (--json or \`${CLI_NAME} takeoff\` for the figures)`,
+    );
+  }
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// `takeoff` — the quantities block as a table (preview-and-remodel B4, D9).
+// ---------------------------------------------------------------------------
+
+/** The formats `takeoff --format` writes. */
+const TAKEOFF_FORMATS = ["csv", "md"] as const;
+
+/** One figure of a takeoff: the long form both formats are written from. */
+interface TakeoffRow {
+  level: number | undefined;
+  section: "walls" | "rooms" | "floor" | "doors" | "windows";
+  item: string;
+  width_mm?: number;
+  field: string;
+  value: number | string;
+}
+
+/** Every figure of one storey's block, in the block's own order and with its own field names. */
+function takeoffRows(q: QuantityFacts, level: number | undefined): TakeoffRow[] {
+  const rows: TakeoffRow[] = [];
+  const add = (section: TakeoffRow["section"], item: string, obj: object, skip: readonly string[], width?: number) => {
+    for (const [field, value] of Object.entries(obj)) {
+      if (skip.includes(field) || (typeof value !== "number" && typeof value !== "string")) continue;
+      rows.push({ level, section, item, ...(width !== undefined ? { width_mm: width } : {}), field, value });
+    }
+  };
+  for (const w of q.walls) add("walls", w.category, w, ["category"]);
+  if (q.faces_omitted) add("walls", "*", { faces_omitted: q.faces_omitted }, []);
+  for (const r of q.rooms) add("rooms", r.id, r, ["id"]);
+  const { floor_area_net_m2, waste_pct, floor_area_with_waste_m2 } = q;
+  add("floor", "storey", { floor_area_net_m2, waste_pct, floor_area_with_waste_m2 }, []);
+  for (const d of q.doors) add("doors", d.kind, { count: d.count }, [], d.width_mm);
+  for (const w of q.windows) add("windows", "window", { count: w.count }, [], w.width_mm);
+  return rows;
+}
+
+const cell = (v: number | string | undefined): string => (v === undefined ? "" : typeof v === "number" ? fmt2(v) : v);
+
+/** RFC 4180: quote a field holding a comma, a quote or a line break. */
+const csvField = (s: string): string => (/[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
+
+function takeoffCsv(rows: readonly TakeoffRow[]): string {
+  const lines = ["level,section,item,width_mm,field,value"];
+  for (const r of rows)
+    lines.push(
+      [cell(r.level), r.section, r.item, cell(r.width_mm), r.field, cell(r.value)].map((s) => csvField(s)).join(","),
+    );
+  return `${lines.join("\n")}\n`;
+}
+
+/** A Markdown table: the header row from `cols`, one row per object, `|` escaped. */
+function mdTable(cols: readonly string[], rows: ReadonlyArray<Record<string, number | string | undefined>>): string[] {
+  // Backslashes first, so a `\` in a value can never turn the escape of a following `|` into a
+  // literal backslash and a live column break.
+  const esc = (s: string): string => s.replace(/\\/g, "\\\\").replace(/\|/g, "\\|");
+  return [
+    `| ${cols.join(" | ")} |`,
+    `| ${cols.map(() => "---").join(" | ")} |`,
+    ...rows.map((r) => `| ${cols.map((c) => esc(cell(r[c]))).join(" | ")} |`),
+  ];
+}
+
+/** The columns a list of rows carries, in first-seen order (an absent figure is no column). */
+const columnsOf = (rows: readonly object[]): string[] => [...new Set(rows.flatMap((r) => Object.keys(r)))];
+
+function takeoffMd(plan: string, storeys: ReadonlyArray<{ title?: string; q: QuantityFacts }>): string {
+  const out = [
+    `# Takeoff: ${plan}`,
+    "",
+    "Geometric quantities measured from the plan; each column's convention is in its name.",
+  ];
+  for (const { title, q } of storeys) {
+    const h = title ? `## ${title}: ` : "## ";
+    out.push("", `${h}walls`, "", ...mdTable(columnsOf(q.walls), q.walls as unknown as Record<string, number>[]));
+    if (q.faces_omitted) out.push("", `Face lengths omitted: ${q.faces_omitted}.`);
+    out.push("", `${h}rooms`, "", ...mdTable(columnsOf(q.rooms), q.rooms as unknown as Record<string, number>[]));
+    const floor = {
+      floor_area_net_m2: q.floor_area_net_m2,
+      ...(q.waste_pct !== undefined ? { waste_pct: q.waste_pct } : {}),
+      ...(q.floor_area_with_waste_m2 !== undefined ? { floor_area_with_waste_m2: q.floor_area_with_waste_m2 } : {}),
+    };
+    out.push("", `${h}floor`, "", ...mdTable(Object.keys(floor), [floor]));
+    out.push(
+      "",
+      `${h}doors`,
+      "",
+      ...mdTable(["kind", "width_mm", "count"], q.doors as unknown as Record<string, number>[]),
+    );
+    out.push(
+      "",
+      `${h}windows`,
+      "",
+      ...mdTable(["width_mm", "count"], q.windows as unknown as Record<string, number>[]),
+    );
+  }
+  return `${out.join("\n")}\n`;
+}
+
+export function cmdTakeoff(args: Args): number {
+  const format = args.format ?? "md";
+  if (args.json && args.format !== undefined)
+    return usageErrorFor("takeoff", "--json writes the quantities as JSON; --format picks a table — give one of them");
+  if (!(TAKEOFF_FORMATS as readonly string[]).includes(format))
+    return usageErrorFor(
+      "takeoff",
+      `unknown --format "${format}"${didYouMean(format, TAKEOFF_FORMATS)} (available: ${TAKEOFF_FORMATS.join(", ")})`,
+    );
+  if (args.waste !== undefined) {
+    const bad = wasteError(args.waste);
+    if (bad) return usageErrorFor("takeoff", bad);
+  }
+  return withSource(args, (source, input) => {
+    const s = describe(source, {
+      world: makeNodeWorld(baseDirOf(input)),
+      facts: ["quantities"],
+      ...(args.waste !== undefined ? { wastePct: args.waste } : {}),
+    });
+    if (!s.ok || !s.quantities) {
+      if (args.json)
+        emitJson({ ok: false, plan: s.plan, diagnostics: s.diagnostics.map((d) => diagnosticToJson(source, d)) });
+      else {
+        emitDiagnosticsHuman(source, s.diagnostics, args.quiet);
+        if (!args.quiet) process.stderr.write("✗ could not take off (plan has errors)\n");
+      }
+      return EXIT.USER;
+    }
+    // A multi-storey plan is taken off storey by storey; the top-level block repeats the lowest.
+    const storeys = s.levels
+      ? s.levels.map((l) => ({ level: l.level, name: l.name, q: l.quantities! }))
+      : [{ level: undefined, name: undefined, q: s.quantities }];
+    if (args.json) {
+      emitJson({
+        ok: true,
+        plan: s.plan,
+        units: s.units,
+        quantities: s.quantities,
+        ...(s.levels
+          ? {
+              levels: storeys.map((st) => ({
+                level: st.level,
+                ...(st.name !== undefined ? { name: st.name } : {}),
+                quantities: st.q,
+              })),
+            }
+          : {}),
+        diagnostics: s.diagnostics.map((d) => diagnosticToJson(source, d)),
+      });
+    } else if (format === "csv") {
+      process.stdout.write(takeoffCsv(storeys.flatMap((st) => takeoffRows(st.q, st.level))));
+    } else {
+      process.stdout.write(
+        takeoffMd(
+          s.plan,
+          storeys.map((st) => ({
+            ...(st.level !== undefined ? { title: `Level ${st.level}${st.name ? ` (${st.name})` : ""}` } : {}),
+            q: st.q,
+          })),
+        ),
+      );
+    }
+    return EXIT.OK;
+  });
 }
 
 /**

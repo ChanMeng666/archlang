@@ -184,6 +184,11 @@ export type {
   WcFact,
   WcSideFact,
   WindowCoverFact,
+  DoorQuantity,
+  QuantityFacts,
+  RoomQuantity,
+  WallQuantity,
+  WindowQuantity,
 } from "./describe.js";
 // Structured JSON I/O: the machine-native RPLAN/DStruct2Design plan shape.
 // `planFromJson` builds a PlanNode from JSON (catalogued E_JSON_* on bad shape),

@@ -119,6 +119,8 @@ export interface Args {
   select?: string;
   /** `--facts <fact[,fact…]>`: (describe) also compute these opt-in derived facts. */
   facts?: string;
+  /** `--waste <pct>`: (describe --facts quantities, takeoff) the waste percentage for `floor_area_with_waste_m2`. */
+  waste?: number;
   /** `--code <CODE[,…]>`: (lint/validate) DISPLAY-filter diagnostics by code — never gating. */
   code?: string;
   /** `--severity <error|warning>`: (lint/validate) DISPLAY-filter diagnostics — never gating. */
@@ -185,6 +187,7 @@ export const FLAG_KEYS: Record<string, FlagSpec> = {
   "--zone": { key: "zone", kind: "string" },
   "--select": { key: "select", kind: "string" },
   "--facts": { key: "facts", kind: "string" },
+  "--waste": { key: "waste", kind: "number" },
   "--code": { key: "code", kind: "string" },
   "--severity": { key: "severity", kind: "string" },
   "--section": { key: "section", kind: "string" },
