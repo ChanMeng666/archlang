@@ -92,11 +92,9 @@ describe("repair — the villa witness", () => {
   it("declines all three of furnished-flat's conflicting moves, and names each one", () => {
     const r = repair(FLAT);
     expect(r.changed).toBe(false);
+    // Since fix/examples-sound (2026-10-27) cleared the walk to the kitchen, the sofa's move is
+    // declined for pinching that walk rather than for meeting the piano.
     expect(r.unresolved.slice(0, 3).map((u) => [u.id, u.reason])).toEqual([
-      [
-        "sofa_l#3",
-        'moving it to (300,3000) would overlap "piano_8", which the plan does not have now — left in place; adjust manually',
-      ],
       [
         "coffee_table#4",
         'moving it to (900,100) would overlap "tv_unit_2", which the plan does not have now — left in place; adjust manually',
@@ -105,6 +103,7 @@ describe("repair — the villa witness", () => {
         "sun_lounger#6",
         "moving it to (1950,-100) would push it into a wall, which the plan does not have now — left in place; adjust manually",
       ],
+      ["sofa_l#3", 'would pinch the walk to "Kitchen" below 700 mm — left in place; adjust manually'],
     ]);
   });
 });

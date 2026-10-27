@@ -14,7 +14,26 @@ import { embedHash, shareHash, waitForPlan } from "./fixtures.js";
  */
 
 /** A plan whose one warning is long enough to overflow the drawer once expanded. */
-const HILLSIDE = readFileSync(new URL("../../examples/hillside-villa.arch", import.meta.url), "utf8");
+/**
+ * A plan whose first diagnostic is a long whole-drawing one: the flagship villa (warning-free
+ * since fix/examples-sound) with a 20 m drive its A1 sheet cannot hold (`W_DRAWING_OVERFLOW`)
+ * and its four old 700 mm doors back (`W_PATH_TOO_NARROW` rows to scroll past).
+ */
+/** Each [now, before] found exactly once, so a stale fixture fails loudly instead of silently. */
+const rewrite = (src: string, pairs: [string, string][]): string =>
+  pairs.reduce((s, [now, before]) => {
+    if (s.split(now).length !== 2) throw new Error(`"${now}" is not found exactly once`);
+    return s.replace(now, before);
+  }, src);
+const HILLSIDE = rewrite(readFileSync(new URL("../../examples/hillside-villa.arch", import.meta.url), "utf8"), [
+  ["driveway at (-5500,-3000) size 5500x3000", "driveway at (-5500,-20000) size 5500x20000"],
+  ...[
+    ["d_linen  on w_linen_s at 1100 width 800", "d_linen  on w_linen_s at 1100 width 700"],
+    ["d_en2_corr on en2.wall at 5300 width 800", "d_en2_corr on en2.wall at 5300 width 700"],
+    ["d_enm      on en_m.wall at 7500 width 800", "d_enm      on en_m.wall at 7500 width 700"],
+    ["d_enb2     pocket on en_b2.wall at 7500 width 800", "d_enb2     pocket on en_b2.wall at 7500 width 700"],
+  ],
+] as [string, string][]);
 
 /** Every diagnostic row shows its whole content: none is squeezed and clipped. */
 async function expectNoClippedRow(page: Page): Promise<void> {

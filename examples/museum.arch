@@ -42,6 +42,7 @@ plan "City Museum" {
   wall partition thickness 200 { (86000,32000) (86000,60000) }
   wall id=wcw_s partition thickness 200 { (76000,42000) (86000,42000) }
   wall id=wcm_s partition thickness 200 { (76000,52000) (86000,52000) }
+  wall id=wca_n partition thickness 200 { (70000,57000) (76000,57000) }
 
   # ---- north row ------------------------------------------------------------
   room id=g1 at (0,0) size 26000x26000 label "Gallery 1"
@@ -57,7 +58,8 @@ plan "City Museum" {
   room id=g4 at (0,32000) size 30000x28000 label "Gallery 4"
   room id=hall at (30000,32000) size 18000x28000 label "Entrance Hall" uses entry hall
   room id=g5 at (48000,32000) size 22000x28000 label "Gallery 5"
-  room id=link at (70000,32000) size 6000x28000 label "Lobby" uses circulation
+  room id=link at (70000,32000) size 6000x25000 label "Lobby" uses circulation
+  room id=wca at (70000,57000) size 6000x3000 label "Accessible WC" uses wc
   room id=wcw at (76000,32000) size 10000x10000 label "WC Women" uses wc
   room id=wcm at (76000,42000) size 10000x10000 label "WC Men" uses wc
   room id=plant at (76000,52000) size 10000x8000 label "Plant" uses utility
@@ -66,6 +68,7 @@ plan "City Museum" {
   # ---- openings: the public route -------------------------------------------
   # Main entrance (south facade) into the hall, then a wide threshold to the spine.
   door double at (39000,60000) width 2000 swing out
+  door at (0,29000) width 1200 swing out
   opening at (39000,32000) width 4000
 
   # Galleries read off the spine through cased openings, not doors.
@@ -87,6 +90,7 @@ plan "City Museum" {
   door at (76000,37000) width 1200
   door at (76000,47000) width 1200
   door at (76000,56000) width 1200
+  door at (73000,57000) width 1000 swing into wca
 
   # ---- glazing --------------------------------------------------------------
   window at (13000,0) width 4000
@@ -134,6 +138,9 @@ plan "City Museum" {
   furniture wc against wall wcm_s offset 8500 in wcm
   furniture basin against wall wcw_s offset 3000 in wcm
   furniture basin against wall wcw_s offset 7000 in wcm
+
+  furniture wc against wall wca_n offset 650 in wca
+  furniture basin against wall wca_n offset 1800 in wca
 
   # ---- cafe fit-out ---------------------------------------------------------
   furniture counter against wall spine_s offset 90000 size 6000x800 label "Servery" in cafe

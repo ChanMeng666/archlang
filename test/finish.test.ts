@@ -400,9 +400,18 @@ suite("finish law 5 — a sheet finish wrote holds the drawing", () => {
       expect(overflows(finish(srcOf(name), { world, reissue: true }).source)).toEqual([]);
     }, 120000);
 
-  it("the shipped corpus exercises both halves (some example overflows as authored)", () => {
-    expect(NAMES.filter((n) => overflows(srcOf(n)).length > 0).length).toBeGreaterThan(0);
-  });
+  // Since fix/examples-sound (2026-10-27) no shipped example overflows as authored, so the
+  // overflowing half is exercised on `materials` as it was: its old A3 sheet put back.
+  it("the overflowing half: materials on its old A3 is reported, then reissued to fit", () => {
+    expect(NAMES.filter((n) => overflows(srcOf(n)).length > 0)).toEqual([]);
+    const asWas = srcOf("materials").replace("  paper A2 landscape", "  paper A3 landscape");
+    expect(asWas).not.toBe(srcOf("materials"));
+    expect(overflows(asWas).length).toBeGreaterThan(0);
+    const kept = finish(asWas, { world });
+    expect(overflows(kept.source)).toEqual(overflows(asWas));
+    expect(kept.unresolved.some((u) => u.reason.includes("--reissue"))).toBe(true);
+    expect(overflows(finish(asWas, { world, reissue: true }).source)).toEqual([]);
+  }, 120000);
 });
 
 suite("finish law 6 — a source that does not compile is returned untouched", () => {

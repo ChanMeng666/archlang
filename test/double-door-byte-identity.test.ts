@@ -58,16 +58,16 @@ const API: CompilerApi = { compile, describe: describePlan, lint };
 const BASELINE: [string, string][] = [
   ["examples/accessible.arch", "5f69fe78d45db6b096e3e7f4c44bfcdb537c4201d06fee8780e813112869f20c"],
   ["examples/attached.arch", "07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc"],
-  ["examples/clinic.arch", "8321ab6d53ba385d743d49fee08686afcf8b53915b7cc03f466aa72fd366d55a"],
+  ["examples/clinic.arch", "af780d4296064bdd7a1d81dfc776fa586520a26bfaed8295f3298ff91373ead5"],
   ["examples/corner-cafe.arch", "199a01c5d9fcbe38de99e8a87109a800428eee868b171404e81e2dfbb51a57ce"],
   ["examples/hexagon-pavilion.arch", "3078765cf03974518e0f2b3ea13585cca69ffbb86438f0899218c8a1c24a09a8"],
   ["examples/imports.arch", "a0341285f4e3699b738aa1916bba278eed61e347df4d3a2de139b9f0185d9678"],
-  ["examples/materials.arch", "1a4aa9bad5d42f06c1158d6089a71b784b8f079761b7a03dad17a1271fd5b2ff"],
+  ["examples/materials.arch", "635e4b1a04bb6497e1fff846708c3f28519c89b531f5ad14b363381344cad925"],
   ["examples/museum-wing.arch", "546b10dfb0204dbce454dff9e47713f32745285f4885e58a46b5faff23d10126"],
   ["examples/one-room.arch", "8c47e263f778993d69c2f85d07a24b3a62c0b96d9f17ccb5cd9ebf2af6fa0120"],
-  ["examples/parametric.arch", "2a6b29053ac201b452bde4204087f10b17648473e3080327d2486e0cba11d86b"],
+  ["examples/parametric.arch", "402cf58e4e122164928e6d875320e63b7be5c017396dce026ab8c73d4a0373ef"],
   ["examples/sheet-notes.arch", "602cfd5f8e34268bf660dcad47b5cbf28332ddf92a119fba7317850ab9f9d798"],
-  ["examples/two-storey.arch", "af715e19ae61d9bb03c14ea23a07d713dd1fe6d2237188825e29db28d4a98a53"],
+  ["examples/two-storey.arch", "30fea74236f151947c7fec764e66b2f5a860ce6f71908a5a60fc68e87566837a"],
   ["test/fixtures/axes-grid.arch", "e6be5d70788d931cacaa8cb1db2c2c454c1532d01153b90e2427c125770e5559"],
   ["test/fixtures/chain30.arch", "df7e1343b01b2194505898df5017da81b58d8c840d01236ff75101f047396e43"],
   ["test/fixtures/dense-bays.arch", "9f4ad4538851a27b463113cd7e563823d185bc7e18b342fd9eebb45f2887992f"],
@@ -110,8 +110,8 @@ suite("`double` door kind — the byte-identity law", () => {
 const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branch: string, main: string][]][] = [
   [
     "examples/bungalow.arch",
-    "c7a8ee06b84987b04b737449cfd19028febb61c0e3ee85b6d147c1fdf2d1a7c1",
-    "554bda123b628ef6f5f24ffbe4b1c3383d11731638822173e230298b1c2ce0f8",
+    "21eee9f4da8cc53b9fb86193eab28a24ca0b795dab96cf68d57e1c34cd567f71",
+    "f6ba848bd9ad0f4073876e5fbac39a4ea54bb7ef690f8d32243b5ed5d3142eef",
     [
       [
         "  furniture kitchen_sink against wall shell segment 3 offset 2000 in r_kitchen  # under the window\n  furniture stove        against wall shell segment 3 offset 2800 in r_kitchen",
@@ -125,8 +125,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/courtyard-house.arch",
-    "27d16f56824757b4822d8f2215acc9e5ec84aca565b9f9ac039122aea466a3a6",
-    "13a54cb2e73484b4576eac3df9f2dd6232b96dca4d78fe69042c535613977303",
+    "f7069b459aea043d9b908d9649dd280515e5b975f351cc779fd7666869727dfe",
+    "0bc00da708cfd4f3c1ff27a675968ef37cd4d8668ceb1b1ee9f6e3fab67e4401",
     [
       [
         "  furniture kitchen_sink against wall shell segment 0 offset 14400 in r_kitchen\n  furniture stove        against wall shell segment 0 offset 13100 in r_kitchen\n  furniture counter      against wall shell segment 0 offset 13700 in r_kitchen",
@@ -136,8 +136,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/furnished-flat.arch",
-    "afab7212389aaa5eb6a96917c0af81dda7b5560624ab56214b890044c7267741",
-    "ea6e15ae08a102a02ebaea404a7986e06291c6b7ee416e654f029716971be5e2",
+    "890920d33692d593e437eab291ca02494542f90ec4a7292de145fdf3c5a2451e",
+    "24fbdc37c75eb776d93dd062d5d4870f74b4c7313ea04ed94de7d3b816d05861",
     [
       [
         "  furniture stove         against wall w_north offset 7950 in r_kitchen",
@@ -151,8 +151,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/garden-house.arch",
-    "50f4a3080e5bed008ef79ed66ec2ad49e3ca1cde51a6b9246f7cdefb9aa5a3ff",
-    "377bd849141c19f46241189c874fab06af9a36ad205a7a6f15703f75b4098428",
+    "f4873f9a1f6e68f494a84c913d6f850560f626850cfd071a9fb51784835c5b01",
+    "7b0be7cc59f85d596c632beb990432981f153dd38ce1ae7027d8516f01d807ae",
     [
       [
         "    furniture fridge       against wall w_e1 offset 3200 in r_kitchen\n    furniture counter      against wall w_e1 offset 2500 in r_kitchen",
@@ -173,19 +173,19 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/hillside-villa.arch",
-    "adb86e4e06d3ace32a859b38f75e6505b534b528988494334641d1ab5fd497c9",
-    "572b454c4d35717504029cd5c052c9a28dd5cebda58fb11b4020f254a47388a6",
+    "f5917b29a5789d764d5f87c26c453c41cfd494779aec55d6228d542582650e3c",
+    "8aff5c59e5e4aa5d446e2ea8c9492badf80205167402a29cf7a8e9f02795684c",
     [
       [
-        "    furniture stove          against wall shell segment 1 offset 7400 in r_kitchen\n    furniture dishwasher     against wall shell segment 1 offset 6600 in r_kitchen\n    furniture fridge         against wall w_l1_band_e offset 700 in r_kitchen",
+        "    furniture stove          against wall shell segment 1 offset 7400 in r_kitchen\n    furniture dishwasher     against wall shell segment 1 offset 6600 in r_kitchen\n    furniture fridge         against wall w_l1_band_e offset 4700 in r_kitchen",
         "    furniture stove          against wall shell segment 1 offset 6500 in r_kitchen\n    furniture dishwasher     against wall shell segment 1 offset 7100 in r_kitchen\n    furniture fridge         against wall shell segment 1 offset 7700 in r_kitchen",
       ],
     ],
   ],
   [
     "examples/laneway-house.arch",
-    "fe7de9e78abe6f38ec285f1d23e79e95b6aea68de9da3a6fa26f0f41218c030f",
-    "50700d95f8967d70c0e203bf0c5c078c2a87cb096b94c00b423fc170a5c2de38",
+    "47330af81518da4ba0088fd0d85a62c62ed2d87f180b7ca070a9b488346b7730",
+    "cd383a3a7c334d9e7979a99724e7d8ba3d2fee67be9f8b09a76e0b84ba141ef9",
     [
       [
         "  furniture fridge       against wall w_west offset 3600 in r_live",
@@ -210,14 +210,14 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/relational.arch",
-    "330b426dc44cdf8ee2379d0c5469649da9f1dc7a88aa027a915b7e71a1045ec4",
-    "87f11eeb59e6f38b111461315e0472052d687b958e59ad9c1ccd299bcc0650ef",
+    "4c117d32d823ccbfa76734397cf58001d5b3fcf700a67ee52b493856c436f5b1",
+    "8034d1bda180d886dd5fa3e053155b20f1508131985434735c5bdc283bd74053",
     [],
   ],
   [
     "examples/studio.arch",
-    "c9e4c976c814207b7ad9b74be3b32eada7c16cb4d813e203fcbd06b65c15247e",
-    "43b36bad2c910d6e62afe7947fbb7cdcd83c536e7f29013ecf1999ed0418700d",
+    "db6313cfbaecbf55d2e78fac0c1de44a6973b4106497cb7700f3b4b40a94808f",
+    "c9c1f50e159d4b8860578c7dbdfe183adbfa2886ae7ed75333ae27e7e33f7ac6",
     [
       [
         "  # Kitchen run along the north wall: sink · stove · counter · fridge (drawn as symbols).",
@@ -242,8 +242,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/themed.arch",
-    "62282d6debde517de65f58f43cd67cb00994c9da2fa9b5926be161b4d063e954",
-    "96ddcf9a4195ad4d97af300388b1ece7e1f804f2b086c875230e46688600b307",
+    "fe22b49a79161204ff3e4bbe1e638501963064c9a077fc2dd1a7c0afae2a5f70",
+    "e8195ad63a1af314dd906352eaedb04ebd9ce4f5f28fb7716eb24ad4c82a5bfb",
     [
       [
         "  door   at (3000,3000) width 900  wall partition hinge left swing in",
@@ -253,8 +253,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/tiny-house.arch",
-    "1af2e44436e4d15d93eae05719c2e73f05e27fd73047ebf1f0f712011d23e93b",
-    "761feb2a2f41480b0f98e09fbab08cbca202379daa95133babde00fba0d422de",
+    "e2c6cec139b1f0d1348d41ac8bae956cb0f605863a8947d849b6d977b39db166",
+    "720d91aae86b2b3a346c34faf45e2352a26da352ce103450ead8a1d248389efa",
     [
       [
         "  # depth or wall face is written down twice. The stove stands past the window's end, off\n  # the flames' curtain, and the fridge is a 500 mm slimline: it keeps a worktop's 305 mm\n  # from the stove and still ends where the bed begins. The worktop turns the corner onto the",
@@ -279,8 +279,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/transit-hall.arch",
-    "b95b9997518ea3ed923a224042b7acbe334ec1e06528099349c9518c03b2b25a",
-    "fb0fd8e73ed8fc39705dd16e30fbd51740923735e2f1cf55f637b8914e650f77",
+    "97a6f7c827c1a1e61846c74b3ee38992af2472e349c986fea064a8dcb5eadf72",
+    "523c0f5bac7ee09915107b0595039e1c4d8b3378b4269636527e638ed6efdb16",
     [
       [
         "  door id=d_main sliding at (45000,40000) width 4000 wall shell",

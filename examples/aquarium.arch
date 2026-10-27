@@ -137,6 +137,7 @@ plan "Harbour Aquarium" {
   window at (10000,0) width 3000 wall shell
   window at (50000,0) width 3000 wall shell
   window at (0,14000) width 3000 wall shell
+  door id=d_exit_w at (0,26000) width 1200 wall shell swing out
   window at (60000,14000) width 3000 wall shell
 
   opening id=o_shop at (20000,35000) width 2400 wall foyer_w

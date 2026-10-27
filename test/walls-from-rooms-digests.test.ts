@@ -17,7 +17,7 @@ const API: CompilerApi = { compile, describe, lint };
 
 const DIGESTS: [string, string][] = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
-  ["studio-twin", "6b355279b66819521e7b8b6cc4df053630f1fedb9e6231e71205ed863c412f40"], // PS2.11e, see header
+  ["studio-twin", "387daf6359c933086e75c9f7aabca3f94f7741e96a0f8504cee025e261f187b8"], // fix/examples-sound: the studio's WC moved (2026-10-27)
   // Re-pinned for PS3.6: the twin is now the hand-typed twin of the rewritten two-bed (a
   // different plan); the previous twin under this compiler reproduces the previous row.
   // Re-measured 2026-10-24 (PS2.12): the annotation-collision examples (the twin follows two-bed's bed move); why, and the swap-back proof, in `test/byte-identity-baseline.ts`'s header.

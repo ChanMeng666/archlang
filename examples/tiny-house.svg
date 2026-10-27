@@ -58,9 +58,7 @@
 <polygon points="4000,142 4000,1458 2866,1458 2642,1234 2642,142" fill="#f4f2ee" stroke="#a8a29a" stroke-width="9.24"/>
 <polygon points="4000,142 4000,1458 3800,1458 3800,142" fill="#ffffff" stroke="#a8a29a" stroke-width="9.24"/>
 <polygon points="2866,1458 2642,1234 2866,1234" fill="#ffffff" stroke="#a8a29a" stroke-width="9.24"/>
-<path d="M 3412,2100 L 4888,2100 A 12 12 0 0 1 4900,2112 L 4900,2688 A 12 12 0 0 1 4888,2700 L 3412,2700 A 12 12 0 0 1 3400,2688 L 3400,2112 A 12 12 0 0 1 3412,2100 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="12.8"/>
-<line x1="3400" y1="2200" x2="4900" y2="2200" stroke="#a8a29a" stroke-width="9.24"/>
-<line x1="3400" y1="2300" x2="4900" y2="2300" stroke="#a8a29a" stroke-width="9.24"/>
+<path d="M 3408,2300 L 4892,2300 A 8 8 0 0 1 4900,2308 L 4900,2692 A 8 8 0 0 1 4892,2700 L 3408,2700 A 8 8 0 0 1 3400,2692 L 3400,2308 A 8 8 0 0 1 3408,2300 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="12.8"/>
 <line x1="3400" y1="2400" x2="4900" y2="2400" stroke="#a8a29a" stroke-width="9.24"/>
 <line x1="3400" y1="2500" x2="4900" y2="2500" stroke="#a8a29a" stroke-width="9.24"/>
 <line x1="3400" y1="2600" x2="4900" y2="2600" stroke="#a8a29a" stroke-width="9.24"/>

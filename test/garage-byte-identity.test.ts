@@ -178,11 +178,11 @@ const ROOT = join(HERE, "..");
 // Re-measured 2026-10-26 (PS2.11e/PS2.46, BASELINE only): all five examples fixed for a hob under a window or beside a fridge, furniture moved along its run (and studio's stove and counter swapped); SEMANTIC_BASELINE did not move (`describe()` carries no furniture coordinate and `lint()` was clean before and after); why, in `test/byte-identity-baseline.ts`'s header.
 const BASELINE: Readonly<Record<string, string>> = {
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
-  "studio.arch": "6c8ca46d37ce7ac76af922e3b640c2b184373c4a1da4910119b3e7cb733a2822",
+  "studio.arch": "c1b79a49af3ad31cddf82e88632624d46663c804f134b6e172e585cad36ed969",
   // laneway-house, bungalow and two-bed re-measured 2026-10-20 (PS2.17), a worktop in each kitchen;
   // see `byte-identity-baseline.ts`, "a worktop in every example kitchen", for the swap-back proof.
-  "laneway-house.arch": "5e5ce5e2edc514d7886a7cc97abf4912a2b130143cbd0ccb599e3336dda997f1",
-  "bungalow.arch": "43aa97fcbbf987b6b1dc493e7d970b43315916b1e0d57020b8d4f8ab01958d1d",
+  "laneway-house.arch": "40f81577eb4e641b4fd5cd0bd750c6a9021fb91d9a9b54f7dc09e563382368fd",
+  "bungalow.arch": "da38a67297389f39edef0d3cf88e2e0312bbff399fd5cc93d7a2c925d2a28508",
   // Re-measured for the `overhead` flag. Its SOURCE gained two statements —
   // a `range_hood` over the stove and a `mirror` over the basin, the two correct drawings
   // the missing flag had kept out of the flagship — so this plan is a different building
@@ -192,7 +192,7 @@ const BASELINE: Readonly<Record<string, string>> = {
   // 50 mm nib beside the partition, so only the SVG moved; the previous SVG with the new
   // describe() + lint() reproduces the previous row (./byte-identity-baseline.ts, "Six examples").
   // Re-measured 2026-10-20 (PS2.19): "Utility" now classifies as `utility`; see `byte-identity-baseline.ts`.
-  "furnished-flat.arch": "8a63104e8eb19854fef98a3b1e4337c01ffc1bb3f732d95399865d425beabb9f",
+  "furnished-flat.arch": "52b8bee1afff224fca393b2fd77bf7a4720009b91d0a625da434648220a5eb87",
   // Re-measured 2026-10-18 (PS0.7): "Kitchen / Living" now classifies as `kitchen living`, so
   // `describe()` moves (uses + room_type) and nothing else; see ./byte-identity-baseline.ts,
   // "the label classifier emits living", for the swap-back proof. Re-measured again the same day
@@ -209,10 +209,10 @@ const BASELINE: Readonly<Record<string, string>> = {
  */
 const SEMANTIC_BASELINE: Readonly<Record<string, string>> = {
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
-  "studio.arch": "4be3a4f1f7c98743452bfb55b4a8434721654c03386102a4b3fc9db99f8169d7",
+  "studio.arch": "8ec08c91405139bf3d9979ad20d712299e82409bbec8d6ec9e70e89a856973e4",
   // laneway-house, bungalow and two-bed re-measured 2026-10-20 (PS2.17), as above.
-  "laneway-house.arch": "4f136c1c2c408940beb64a58cbc07e998a9d454b56ddea20ac7b81b04335bab0",
-  "bungalow.arch": "f503dfffc8e3440f0e289acb63ab5a0de3660230dfd21ec0853128623b2fee68",
+  "laneway-house.arch": "55f68cc66a633508a2442aafa4dcf60d38076c2f54470c3a56ad3107493839d0",
+  "bungalow.arch": "54cc6dddab36f2688d241d31db27070f342b71ec762502c9b00b67742df5e4d4",
   // `furnished-flat.arch` is the ONE value in this table that is not the original `5298b99`
   // measurement, and the exception proves the rule rather than bending it. Its SOURCE keeps
   // being edited -- seven of the new families in the furniture pass, then a `range_hood` and a `mirror`
@@ -229,7 +229,7 @@ const SEMANTIC_BASELINE: Readonly<Record<string, string>> = {
   // `lint()` still returns ONE diagnostic, the same `W_PATH_TOO_NARROW` with the same
   // message and hints, its byte span shifted by the comment lines added above it.
   // Re-measured 2026-10-20 (PS2.19), `describe()` only: see `byte-identity-baseline.ts`.
-  "furnished-flat.arch": "0ef1347b4398a4b5b27de26166f3d188aa0dc353b177a4303289d1c714bf9ca5",
+  "furnished-flat.arch": "d4f5194c4a9f26337646b7bf28a05645fc083fe1e1ec7eb4b6e3cd93b0f32641",
   // Re-measured 2026-10-18 (PS0.7, then PS2.5), the same causes as BASELINE's two-bed row.
   "two-bed.arch": "df3c47a0219448b3735540031ddd562e1f811f50430fa30d02350d40efc3e6cf", // PS3.6 source rewrite, see ./byte-identity-baseline.ts
 };
