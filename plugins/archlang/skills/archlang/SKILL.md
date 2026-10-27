@@ -65,6 +65,13 @@ owns that name, so the shell runs the wrong program.
    `summary` (first key of `lint|validate --json`, first line of the text report) before anything
    else: it counts the warnings and the distinct codes and leads with the commonest, so a truncated
    read still tells you how much is hidden.
+   **The order inside the loop** is the stage list, `brief → rooms → walls → openings → fixtures →
+   drafting`, and within a stage: columns, then the exterior walls, then the other walls, then fences;
+   doors, then windows, then plain openings; catalogued fixtures, then loose furniture; dimensions,
+   labels and the sheet last. Rooms come first because they fix the program and the walls are derived
+   from them; the exterior goes before the interior; an opening is cut into a wall that must already
+   exist; drafting reads everything else. This is authoring order only: the order shapes are painted in
+   the SVG is a separate thing and does not change.
    **Review, once that loop is clean:** the reviewer (not the author) runs
    `archlang score plan.arch --taste generic --json` and reads the advice: a sourced 0–1 score
    (privacy gradient, daylight, proportion, corner doors, …) whose `criteria[].advice` `A_*` codes

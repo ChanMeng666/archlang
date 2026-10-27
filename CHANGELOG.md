@@ -511,6 +511,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The `archlang` skill (and the generated plugin copy) states the authoring order next to `validate --stage`: `brief → rooms → walls → openings → fixtures → drafting`, the order inside each stage, and why. Paint order is unchanged.
 - `W_GARAGE_TOO_NARROW` now also judges a garage's clear depth along its `door garage`: 5000 mm by
   default, a parking bay's length, and 6000 mm under `uk-residential-advisory` (new ruleset field
   `garageDepthMm`; a garage with no vehicle door files a `no-vehicle-door` coverage skip; plan card PS2.70).
