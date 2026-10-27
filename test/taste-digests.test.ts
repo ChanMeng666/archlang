@@ -151,6 +151,10 @@
  *    220/220, GB 50096 and AD K's 42°, not the IRC's 3302 mm); nothing else. Under `generic` and `cn-`
  *    it did not move: no criterion reads where its stair or void stands.
  * `garden-house` and `library` did not move: no criterion reads their stairs.
+ *
+ * PS2.66 (`W_ROOM_MISSING_DEFINING` for a bath with a WC and no basin) added six rows, the new
+ * `bath-wc-no-basin` pair under each of the three profiles, measured with `tasteDigest`; no existing
+ * row moved (the defect case lists the code under `validity`, its twin none).
  */
 
 import { describe, expect, it } from "vitest";
@@ -644,6 +648,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "2ce34c0dcce390f202014100b524cc4e519855e9a4995e1b7e939f0cff145497",
     "generic",
     "test/defect-corpus/missing-defining-contents/bath-no-shower.clean.arch",
+  ],
+  [
+    "474169f35e146bd963d2602adf9053317d6146c14ca654fa1afeaffb78e34549",
+    "generic",
+    "test/defect-corpus/missing-defining-contents/bath-wc-no-basin.arch",
+  ],
+  [
+    "062a6b225e08cf00a8e53e72fb400f20da97dad954a03c61ba9b1b0130520355",
+    "generic",
+    "test/defect-corpus/missing-defining-contents/bath-wc-no-basin.clean.arch",
   ],
   [
     "ec67d8bb1f4ee911e365a65ee3c2b795c91473479b7b18fa80a771dd8a0e7363",
@@ -1716,6 +1730,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/missing-defining-contents/bath-no-shower.clean.arch",
   ],
   [
+    "b40937fff7b35755b5806ed4c5de87d2484a68c8fa097fdfec87e54f3efb614c",
+    "cn-residential-advisory",
+    "test/defect-corpus/missing-defining-contents/bath-wc-no-basin.arch",
+  ],
+  [
+    "4966b57aae21560d005ac7b404bbb13ef260b797460b50f549138fa1d33f326f",
+    "cn-residential-advisory",
+    "test/defect-corpus/missing-defining-contents/bath-wc-no-basin.clean.arch",
+  ],
+  [
     "e4e48c3340795b63baa367cbfeea56544bf77320ebf58aeb819172c240507f9e",
     "cn-residential-advisory",
     "test/defect-corpus/missing-defining-contents/bedroom-no-bed.arch",
@@ -2784,6 +2808,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "93442053c3bccfe388a3c6fe3e3ea4c2686dfdcf6d37370f9d7cf9e85437ef78",
     "us-residential-advisory",
     "test/defect-corpus/missing-defining-contents/bath-no-shower.clean.arch",
+  ],
+  [
+    "465c43cf4f87c921957ee661bc1d4dcbef4083e7c1b20ce96d055fb4da4b1294",
+    "us-residential-advisory",
+    "test/defect-corpus/missing-defining-contents/bath-wc-no-basin.arch",
+  ],
+  [
+    "22d8759f45f07193639f9b9a6da798acd3fe0af5e868ddf640305fed173fff86",
+    "us-residential-advisory",
+    "test/defect-corpus/missing-defining-contents/bath-wc-no-basin.clean.arch",
   ],
   [
     "4971c2a120beca3a574ebcef1d3b1e0c461a57ecb966a8bb08da3a275e0fdb41",

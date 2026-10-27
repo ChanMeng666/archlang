@@ -25,4 +25,5 @@ plan "Review sheet fixture" {
   furniture bathtub against wall shell segment 3 offset 1500 in r_bath
   furniture sofa at (8900,3500) size 900x2000 in r_living
   furniture coffee_table at (8100,4000) size 1000x600 in r_living
+  furniture basin in r_bath anchor top flush size 600x450
 }

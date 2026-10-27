@@ -24,7 +24,7 @@ import { distPointToWallSegment } from "../../geometry.js";
 import type { RFurniture, RRoom } from "../../ir.js";
 import { fmt2 } from "../../num-format.js";
 import { judgesAsDwelling, type LintContext, type LintRule } from "../context.js";
-import { definingItems, itemWords, pasteSet, useNoun } from "../defining.js";
+import { definingItems, itemWords, pasteSet, useNoun, washItems } from "../defining.js";
 import { capFirst } from "../../naming.js";
 import { areaM2, lacksZoneFixture, pasteFailureWhy, roomHasWindow } from "./per-room.js";
 
@@ -167,6 +167,34 @@ export const habitableNoWindow: LintRule = {
 
 const spoken = (category: string): string => category.replace(/_/g, " ");
 
+/** The pieces whose footprint centre is on the room's floor, read off its shape. */
+function heldIn(ctx: LintContext, r: RRoom): RFurniture[] {
+  const rect = ctx.roomRects.get(r.id)!;
+  return ctx.furniture.filter((f) => {
+    const fr = rectOf(f);
+    return pointInRoomBox({ x: fr.x + fr.w / 2, y: fr.y + fr.h / 2 }, rect);
+  });
+}
+
+/** Does one of `held` do an item's job (its own family, or the one the catalogue says it serves)? */
+function holdsOf(held: readonly RFurniture[]): (i: FurnishItem) => boolean {
+  const families = new Set(held.flatMap((f) => servedBy(f.category)));
+  return (i) => itemWords(i).some((w) => families.has(familyOf(w)));
+}
+
+/** Is `item` held in a room joined to `r` directly by a door or opening, that is not a kitchen
+ *  (Approved Document G: a basin in a space giving direct access to the WC, not one used to
+ *  prepare food)? */
+function basinNextDoor(ctx: LintContext, r: RRoom, item: FurnishItem): boolean {
+  for (const e of ctx.access().edges) {
+    if (!e.between.includes(r.id)) continue;
+    const other = ctx.rooms.find((x) => x.id === (e.between[0] === r.id ? e.between[1] : e.between[0]));
+    if (other === undefined || other === r || roomUses(other).has("kitchen")) continue;
+    if (holdsOf(heldIn(ctx, other))(item)) return true;
+  }
+  return false;
+}
+
 /**
  * `W_ROOM_MISSING_DEFINING`: a room that holds at least one piece of furniture (so the author
  * furnished it) but lacks a piece its use is defined by (`DEFINING`, `src/lint/defining.ts`). A
@@ -175,8 +203,10 @@ const spoken = (category: string): string => category.replace(/_/g, " ");
  * held piece does the job of its own family and of the one the catalogue says it `serves`
  * (`double_bed` serves `bed`), the reading `finish` uses. An empty room is never reported, and
  * neither are the wet and kitchen uses of a room `W_ROOM_NO_FIXTURE` already reports. A room
- * with no classified use is skipped (declared to the coverage report). No machine fix: where a
- * piece goes is the author's decision; the hint quotes statements checked together.
+ * with no classified use is skipped (declared to the coverage report). A bath that holds a WC
+ * and no basin is reported too (`WASH_WITH`, PS2.66), unless a basin stands in a room joined to it
+ * directly by a door or opening that is not a kitchen (Approved Document G's reading). No machine
+ * fix: where a piece goes is the author's decision; the hint quotes statements checked together.
  */
 export const roomMissingDefining: LintRule = {
   name: "room-missing-defining",
@@ -192,23 +222,31 @@ export const roomMissingDefining: LintRule = {
         ctx.skip("no-uses", r);
         continue;
       }
-      const rect = ctx.roomRects.get(r.id)!;
-      const held: RFurniture[] = ctx.furniture.filter((f) => {
-        const fr = rectOf(f);
-        return pointInRoomBox({ x: fr.x + fr.w / 2, y: fr.y + fr.h / 2 }, rect);
-      });
+      const held = heldIn(ctx, r);
       if (held.length === 0) continue;
       const noFixture = lacksZoneFixture(ctx, r);
-      const families = new Set(held.flatMap((f) => servedBy(f.category)));
-      const holds = (i: FurnishItem): boolean => itemWords(i).some((w) => families.has(familyOf(w)));
+      const holds = holdsOf(held);
       const missing: { use: UseKind; items: FurnishItem[] }[] = [];
       for (const use of uses) {
         if (noFixture && (use === "bath" || use === "wc" || use === "kitchen")) continue;
         const items = definingItems(use).filter((i) => !holds(i) && !missing.some((m) => m.items.includes(i)));
         if (items.length > 0) missing.push({ use, items });
       }
-      if (missing.length === 0) continue;
-      const items = missing.flatMap((m) => m.items);
+      // PS2.66: a WC brings a basin with it, here or through a door (not into a kitchen). Asked only
+      // of a room with every defining piece, so a room already reported keeps its message.
+      let wash: FurnishItem | undefined;
+      let washUse: UseKind | undefined;
+      if (missing.length === 0) {
+        for (const use of uses) {
+          const w = washItems(use);
+          if (wash || !w || (noFixture && use === "bath") || !holds(w.held) || holds(w.needs)) continue;
+          if (basinNextDoor(ctx, r, w.needs)) continue;
+          wash = w.needs;
+          washUse = use;
+        }
+        if (wash === undefined) continue;
+      }
+      const items = wash ? [wash] : missing.flatMap((m) => m.items);
       const pieces = [...new Set(held.map((f) => spoken(f.category)))].join(", ");
       const lackList = items.map((i) => `no ${itemWords(i).map(spoken).join(" or ")}`);
       // "no A, no B and no C", as `W_WET_ROOM_DOOR` lists rooms, never "no A and no B and no C".
@@ -217,6 +255,9 @@ export const roomMissingDefining: LintRule = {
           ? (lackList[0] ?? "")
           : `${lackList.slice(0, -1).join(", ")} and ${lackList[lackList.length - 1]}`;
       const nouns = missing.map((m) => `a ${useNoun(m.use)}`).join(" and ");
+      const said = wash
+        ? `${lacks}: a room with a WC needs one to wash hands at, in the room or in one a door joins it to (not a kitchen)`
+        : `${lacks}: ${items.length === 1 ? "the piece that makes" : "the pieces that make"} it ${nouns}`;
       const paste = pasteSet(ctx, r, items);
       const add =
         "stmts" in paste
@@ -226,10 +267,10 @@ export const roomMissingDefining: LintRule = {
         severity: "warning",
         code: "W_ROOM_MISSING_DEFINING",
         ...ctx.at(r),
-        message: `${capFirst(ctx.nameOf(r))} is furnished (${pieces}) but has ${lacks}: ${items.length === 1 ? "the piece that makes" : "the pieces that make"} it ${nouns}.`,
+        message: `${capFirst(ctx.nameOf(r))} is furnished (${pieces}) but has ${said}.`,
         hints: [
           add,
-          `If \`${r.id}\` is not ${nouns}, say what it is with \`uses …\`: a room's use is read from its \`uses\`, or from its label when it has none.`,
+          `If \`${r.id}\` is not ${wash ? `a ${useNoun(washUse!)}` : nouns}, say what it is with \`uses …\`: a room's use is read from its \`uses\`, or from its label when it has none.`,
         ],
       });
     }
