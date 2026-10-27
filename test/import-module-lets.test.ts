@@ -508,6 +508,7 @@ suite("a module `let` that fails reports as it does in the module", () => {
 // Re-measured 2026-10-26 (PR #283 red-team round 1): the examples edited by its rulings (relational, hillside-villa, tiny-house, garden-house, terrace-row, and the widened `double` pairs of gallery-l, classroom-block and aquarium) and the summary of every example writing a `double` door (a person passes one leaf, so `describe()`'s clear width halves); why, in `test/byte-identity-baseline.ts`'s header Not edited, `lint()` only (the cited 305 mm hob figure): the recovery-corpus copies of studio (its message) and terrace-row (four hobs 300 mm from their fridges), and the holdout goldens sized-kitchen-flat, sized-wet-room and three-bed-2bath (their message).
 // Re-measured 2026-10-26 (merging main@e432c24a, PR #280, into PR #283): garden-house, hillside-villa and library carry both PRs' example edits (the stair fixes and this PR's), each row the measurement with this suite's body; two-storey (and its recovery-corpus copy) is `main`'s row, unedited by this PR; why, in `test/byte-identity-baseline.ts`'s header.
 // Re-measured 2026-10-26 (PR #283 red-team round 2): eval/goldens/core-and-shell, `lint()` only: `W_LEAF_TOO_WIDE`'s hint now quotes widths rounded down to the plan grid.
+// Re-measured 2026-10-27 (PS2.74): museum and practice-office, each accessible-WC pan moved into the 400–500 mm band by one line; why, and the swap-back proof, in `test/byte-identity-baseline.ts`'s header. Not edited, gaining `W_ACCESSIBLE_WC_SIDE_WALL` (`lint()` only): test/recovery-corpus/clinic, the frozen copy of the clinic before PR #305 (its pan 900 mm from the nearer side wall); with the rule off its previous row (8321ab6d…) reproduces.
 const BASELINE: [string, string][] = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
   ["examples/accessible.arch", "5f69fe78d45db6b096e3e7f4c44bfcdb537c4201d06fee8780e813112869f20c"],
@@ -537,10 +538,10 @@ const BASELINE: [string, string][] = [
   ["examples/materials.arch", "635e4b1a04bb6497e1fff846708c3f28519c89b531f5ad14b363381344cad925"],
   ["examples/museum-wing.arch", "546b10dfb0204dbce454dff9e47713f32745285f4885e58a46b5faff23d10126"],
   ["examples/museum-wings.arch", "1149f0993df1cd719dcffd1d8c5c43c4ea6176c9a43b47954b23b3950bcc6f4a"], // PS2.11e, see header
-  ["examples/museum.arch", "5f2ac26fde893028de700917da696c464364d3d362f85e640a40a73c04113db8"], // PS2.11e, see header
+  ["examples/museum.arch", "3eb89a03ff32698a0e11f9419f7d8bc6317ce66d2b660dd289d085cb4ecd36a4"], // PS2.11e, see header; PS2.74 source edit, see header
   ["examples/one-room.arch", "8c47e263f778993d69c2f85d07a24b3a62c0b96d9f17ccb5cd9ebf2af6fa0120"],
   ["examples/parametric.arch", "402cf58e4e122164928e6d875320e63b7be5c017396dce026ab8c73d4a0373ef"],
-  ["examples/practice-office.arch", "a96bea051cb174aaa04a5a5ff2e7f984cc2e99d3d5a74f8e0b4fce40b33adf4a"], // added with the example, re-measured for net area, see header; PS2.11e, see header
+  ["examples/practice-office.arch", "f55654d5dd8db8243b7e46f3e9afe6ed8b265da11392f797608f5364d5c4d2b4"], // added with the example, re-measured for net area, see header; PS2.11e, see header; PS2.74 source edit, see header
   // Re-measured 2026-10-18 (PS0.7, the label classifier emits living; `describe()` only): the
   // same row, with the same digest body, as `./while-byte-identity-baseline.ts`, whose header has the reasons.
   ["examples/relational.arch", "4c117d32d823ccbfa76734397cf58001d5b3fcf700a67ee52b493856c436f5b1"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e, see header
@@ -576,7 +577,7 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/zones-levels.arch", "05693d9ec59a2c27dcf9c35c5b8d8d5a63969ee0931499b97305433324cb978f"], // re-measured for PS2.4, see header
   ["test/fixtures/zones-wings.arch", "392675a2abd9bc82b094fc768190979fabf814b22dbb8d4fbaf7de410570c35a"], // re-measured for PS2.4, see header
   ["test/recovery-corpus/attached.arch", "07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc"],
-  ["test/recovery-corpus/clinic.arch", "8321ab6d53ba385d743d49fee08686afcf8b53915b7cc03f466aa72fd366d55a"],
+  ["test/recovery-corpus/clinic.arch", "841d2f92464094900d7c44e9e3f0cad667135af05a27ad46ba9506284360025a"], // PS2.74: the frozen clinic gains W_ACCESSIBLE_WC_SIDE_WALL, see header
   ["test/recovery-corpus/materials.arch", "bbda743cf59fdd49e1295d036c024723d5be658f0e1791202e08148f48b69ff6"],
   ["test/recovery-corpus/parametric.arch", "2a6b29053ac201b452bde4204087f10b17648473e3080327d2486e0cba11d86b"],
   ["test/recovery-corpus/studio.arch", "e547313409b32843df1bc48897017b2d404b2f6a5316d9318b529362f96cb57d"], // PS2.11e, see header

@@ -1170,7 +1170,7 @@ judged. Both give the measured figure and a slide that clears it in the hint, an
 machine fix.
 
 `W_ACCESSIBLE_WC_SIDE_WALL` reads the other end of the same band, in a room whose label says
-"accessible", "wheelchair" or "disabled": it fires when the pan's centreline stands farther than
+"accessible", "wheelchair" or "disabled" (not "Non-accessible"): it fires when the pan's centreline stands farther than
 `wcAccessibleSideWallMaxMm` (500 mm) from the face of the wall on either side, so no grab rail can
 be fixed within reach (Approved Document M4(2) Diagram 2.5 and M4(3) Diagrams 3.11, 3.16: 400–500
 mm; the ADA 2010 Standards 604.2's 16–18 in lies inside it). Only a straight wall counts; a basin

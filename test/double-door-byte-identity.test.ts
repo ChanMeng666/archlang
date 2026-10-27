@@ -206,6 +206,11 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
         "  furniture counter against wall w_s2 offset 3600 in r_break\n  furniture fridge against wall w_s2 offset 2400 in r_break",
         "  furniture counter against wall w_s2 offset 2400 in r_break\n  furniture fridge against wall w_s2 offset 3600 in r_break",
       ],
+      // PS2.74: the accessible-WC pan moved into the 400–500 mm band.
+      [
+        "  furniture wc against wall shell segment 2 offset 8200 in r_wc",
+        "  furniture wc against wall shell segment 2 offset 7450 in r_wc",
+      ],
     ],
   ],
   [

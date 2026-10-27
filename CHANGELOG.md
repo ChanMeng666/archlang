@@ -10,10 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `W_ACCESSIBLE_WC_SIDE_WALL` (plan card PS2.74), validity layer, on by default: a `wc` in a room
-  whose label says "accessible", "wheelchair" or "disabled", with its centreline farther than the new
-  ruleset field `wcAccessibleSideWallMaxMm` (500 mm in every profile) from the face of the straight
-  wall on either side, so no grab rail reaches it (Approved Document M4(2) Diagram 2.5 and M4(3)
-  Diagrams 3.11, 3.16, 400–500 mm; ADA 604.2's 16–18 in lies inside). Hint only, no fix.
+  whose label says "accessible", "wheelchair" or "disabled" (not negated: "Non-accessible" is not), with
+  its centreline farther than the new ruleset field `wcAccessibleSideWallMaxMm` (500 mm in every
+  profile) from the face of the straight wall on either side, so no grab rail reaches it (Approved
+  Document M4(2) Diagram 2.5 and M4(3) Diagrams 3.11, 3.16, 400–500 mm; ADA 604.2's 16–18 in lies
+  inside). A pan over twice the figure wide files the new `wide-wc-pan` coverage skip. Hint only, no
+  fix. The `museum` and `practice-office` examples' accessible-WC pans move into the band.
 - `describe --facts clearances` (plan card PS2.72): an opt-in facet printing, per storey, what
   each clearance rule measured, read through the rules' own measures under the default ruleset: a
   WC's sides, a tall unit's and a hob's cover of a window (with the hob's distance off the window
