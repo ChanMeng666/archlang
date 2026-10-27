@@ -261,6 +261,11 @@ function blockedApproach(
  * there: a counter across a cased opening is the servery hatch a café or a kitchen is served
  * across (`examples/corner-cafe.arch`), the opening's purpose; whether a room is still reached is
  * `W_PATH_TOO_NARROW`'s question.
+ *
+ * A `garage` door is not read (plan-soundness PS2.65): it is a vehicle door, not a pedestrian
+ * doorway, and the car parked in its approach is the one it exists for (the 2026-10-18
+ * first-contact house's 2400 mm door and its "Car"), as `W_LEAF_TOO_WIDE` leaves out the kinds
+ * with no swinging leaf.
  */
 export const doorwayBlocked: LintRule = {
   name: "doorway-blocked",
@@ -271,6 +276,8 @@ export const doorwayBlocked: LintRule = {
   check(ctx: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
     for (const d of ctx.doors) {
+      // A vehicle door is not a pedestrian doorway: the car in front of it is what it is for.
+      if (d.doorKind === "garage") continue;
       const hit = blockedApproach(d, ctx);
       if (!hit) continue;
       const { blocker, depth, gap, short } = hit;

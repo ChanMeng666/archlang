@@ -900,6 +900,9 @@ export interface HardConflict {
   would: (ref: string) => string;
 }
 
+/** A vehicle door, whose approach `W_DOORWAY_BLOCKED` does not read (PS2.65). */
+const isGarageDoor = (d: RDoor | ROpening): boolean => d.kind === "door" && d.doorKind === "garage";
+
 /**
  * Every **hard conflict** in one storey's arrangement, keyed by the identities involved —
  * the faults `repair` exists to clear, each decided by the predicate its lint rule calls,
@@ -935,7 +938,8 @@ function hardConflictsOf(
     if (segs.some((s) => wallIntrusionDepth(rect(f), s, openings) > SLACK_MM))
       out.set(`wall|${f.id}`, { refs: [f.id], would: () => "push it into a wall" });
   for (const d of [...doors, ...cased]) {
-    const landing = doorLandingRect(d, DEFAULT_RULESET.doorwayLandingMm);
+    // A `garage` door is a vehicle door, not a pedestrian doorway: its car is no blocker (PS2.65).
+    const landing = isGarageDoor(d) ? null : doorLandingRect(d, DEFAULT_RULESET.doorwayLandingMm);
     const leaves = d.kind === "door" ? doorLeaves(d) : [];
     // A cased opening wider than a doorway blocks only while it keeps no doorway's width clear.
     const open =
@@ -1416,6 +1420,7 @@ function repairStorey(
   const walls = ir.walls;
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
   const doorLandings = doors
+    .filter((d) => !isGarageDoor(d))
     .map((d) => doorLandingRect(d, DEFAULT_RULESET.doorwayLandingMm))
     .filter((l): l is BBox => l !== null);
   // A cased opening keeps the same clear approach as a door (`W_DOORWAY_BLOCKED`, PS2.11e), for
