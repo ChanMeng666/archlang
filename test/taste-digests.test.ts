@@ -397,6 +397,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/circulation-privacy/wc-utility-passage.clean.arch",
   ],
   [
+    "9423fbc543423c13bb1fc9688971759e2b1d63f5bb206c1789831c1f6dadc037",
+    "generic",
+    "test/defect-corpus/clearances/accessible-wc-pan-far.arch",
+  ],
+  [
+    "cfcee0856adee9212b903a308bb3cfbd8e702a115c6805706ffe696f5545fb1d",
+    "generic",
+    "test/defect-corpus/clearances/accessible-wc-pan-far.clean.arch",
+  ],
+  [
     "8684c0e4948c601a140aadd05b2e5c3e27aa78579da005748b8c525404b4f48b",
     "generic",
     "test/defect-corpus/clearances/bed-before-door-face.arch",
@@ -1497,6 +1507,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/circulation-privacy/wc-utility-passage.clean.arch",
   ],
   [
+    "2116dfd1464436b11318c9dae37656c2f73135418c2fd166a176c1b492bfbac2",
+    "cn-residential-advisory",
+    "test/defect-corpus/clearances/accessible-wc-pan-far.arch",
+  ],
+  [
+    "a94516f2f8e606b4d514123df7e674b67d5b8aefc0cec692dab46247dace8d41",
+    "cn-residential-advisory",
+    "test/defect-corpus/clearances/accessible-wc-pan-far.clean.arch",
+  ],
+  [
     "ae5343582eaf6dcab38ed6ed71a9bc9ee98048246018575cc5908786ed7d5f0e",
     "cn-residential-advisory",
     "test/defect-corpus/clearances/bed-before-door-face.arch",
@@ -2595,6 +2615,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "911a00acd9bd59681d134201de177d6bb03519bd30b18778b0b2e3a339ca7bc1",
     "us-residential-advisory",
     "test/defect-corpus/circulation-privacy/wc-utility-passage.clean.arch",
+  ],
+  [
+    "4c30a90580d107d5bf94d40469188a9d86d8c8a727edf0b36b8d4edec41541f5",
+    "us-residential-advisory",
+    "test/defect-corpus/clearances/accessible-wc-pan-far.arch",
+  ],
+  [
+    "1a986d399969c9fc1790e0c10ef13a5ce991464b467d4e3efa147523a2745997",
+    "us-residential-advisory",
+    "test/defect-corpus/clearances/accessible-wc-pan-far.clean.arch",
   ],
   [
     "19573d67a55743b9e3edcf575176427f303133149da6b46af22a3ca665f11f4d",

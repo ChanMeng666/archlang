@@ -34,7 +34,7 @@ import {
 } from "../../geometry.js";
 import { arcOpeningVoid } from "../../geometry/arc-band.js";
 import { type Arc, arcLength, arcTangentAt } from "../../geometry/arc.js";
-import { DOORWAY_WIDTH_MM, doorLandingRect, openingBlock, rectsOverlap } from "../../geometry/rect.js";
+import { type BBox, DOORWAY_WIDTH_MM, doorLandingRect, openingBlock, rectsOverlap } from "../../geometry/rect.js";
 import type { RDoor, RFurniture, ROpening } from "../../ir.js";
 import type { LintContext, LintRule } from "../context.js";
 import { entranceInputs, entranceWays } from "../../analyze/entrance.js";
@@ -946,6 +946,67 @@ export const leafTooWide: LintRule = {
   },
 };
 
+/** One exterior exit's clear-floor strip, as {@link exitApproachBlocked} measures it. */
+export interface ExitApproachStrip {
+  door: RDoor;
+  /** The room it opens into. */
+  room: string;
+  strip: BBox;
+  depth: number;
+  /** The wall's centreline across the door, its half thickness, and whether it runs along x. */
+  line: number;
+  half: number;
+  horiz: boolean;
+}
+
+/**
+ * The strip inside every exterior exit {@link exitApproachBlocked} reads, `push` deep on the push
+ * side and `pull` on the pull side (the doc there). Skips are filed on `ctx` as the rule files
+ * them; `finish`'s furnish stage keeps the same strips clear (`src/furnish.ts`).
+ */
+export function exitApproachStrips(ctx: LintContext, push: number, pull: number): ExitApproachStrip[] {
+  const access = ctx.access();
+  if (!access.hasEntrance) {
+    if (ctx.rooms.length > 0) ctx.skip("no-entrance");
+    return [];
+  }
+  const doors = new Map(ctx.doors.map((d) => [d.id, d]));
+  const out: ExitApproachStrip[] = [];
+  for (const w of entranceWays(access, entranceInputs(ctx.ir, ctx.roomRects))) {
+    const d = doors.get(w.doorId);
+    if (w.kind !== "door" || !d || d.doorKind === "garage" || w.balcony) continue;
+    const room = ctx.roomRects.get(w.room);
+    const seg = d.host;
+    if (!room || !seg) continue;
+    const landing = doorLandingRect(d, 0);
+    if (!landing) {
+      // An angled or curved host: not measured.
+      ctx.skip("unsupported-host-geometry");
+      continue;
+    }
+    // The inside face: the side of the wall whose probe stands on the room's floor.
+    const half = seg.thickness / 2;
+    const { plus, minus } = wallFaceProbes(seg, d.at, half + 1);
+    const inPlus = pointInRoomBox(plus, room);
+    if (inPlus === pointInRoomBox(minus, room)) continue;
+    const horiz = seg.a.y === seg.b.y;
+    // +1 when the inside lies toward larger coordinates across the wall, else -1.
+    const axisSign = Math.sign(horiz ? plus.y - d.at.y : plus.x - d.at.x) * (inPlus ? 1 : -1);
+    const kind = d.doorKind ?? "hinged";
+    // Swinging `in` puts the leaf on the plus side: the inside is then the pull side.
+    const leafed = kind === "hinged" || kind === "double";
+    const depth = leafed ? ((d.swing === "in") === inPlus ? pull : push) : Math.max(push, pull);
+    const line = horiz ? d.at.y : d.at.x;
+    const face = line + axisSign * half;
+    const lo = Math.min(face, face + axisSign * depth);
+    const strip = horiz
+      ? { x: d.at.x - d.width / 2, y: lo, w: d.width, h: depth }
+      : { x: lo, y: d.at.y - d.width / 2, w: depth, h: d.width };
+    out.push({ door: d, room: w.room, strip, depth, line, half, horiz });
+  }
+  return out;
+}
+
 /**
  * Furniture standing in the clear floor inside an exterior exit (plan-soundness PS2.69).
  *
@@ -988,46 +1049,11 @@ export const exitApproachBlocked: LintRule = {
     const push = ctx.rules.exitApproachMm;
     if (push === null) return [];
     const pull = ctx.rules.exitApproachPullMm ?? push;
-    const access = ctx.access();
-    if (!access.hasEntrance) {
-      if (ctx.rooms.length > 0) ctx.skip("no-entrance");
-      return [];
-    }
-    const doors = new Map(ctx.doors.map((d) => [d.id, d]));
     // A rug is walked on, not round (the walkability grids' reading): never a blocker.
     const pieces = solidFurniture(ctx.furniture);
     const rects = pieces.map(rectOf);
     const out: Diagnostic[] = [];
-    for (const w of entranceWays(access, entranceInputs(ctx.ir, ctx.roomRects))) {
-      const d = doors.get(w.doorId);
-      if (w.kind !== "door" || !d || d.doorKind === "garage" || w.balcony) continue;
-      const room = ctx.roomRects.get(w.room);
-      const seg = d.host;
-      if (!room || !seg) continue;
-      const landing = doorLandingRect(d, 0);
-      if (!landing) {
-        // An angled or curved host: not measured.
-        ctx.skip("unsupported-host-geometry");
-        continue;
-      }
-      // The inside face: the side of the wall whose probe stands on the room's floor.
-      const half = seg.thickness / 2;
-      const { plus, minus } = wallFaceProbes(seg, d.at, half + 1);
-      const inPlus = pointInRoomBox(plus, room);
-      if (inPlus === pointInRoomBox(minus, room)) continue;
-      const horiz = seg.a.y === seg.b.y;
-      // +1 when the inside lies toward larger coordinates across the wall, else -1.
-      const axisSign = Math.sign(horiz ? plus.y - d.at.y : plus.x - d.at.x) * (inPlus ? 1 : -1);
-      const kind = d.doorKind ?? "hinged";
-      // Swinging `in` puts the leaf on the plus side: the inside is then the pull side.
-      const leafed = kind === "hinged" || kind === "double";
-      const depth = leafed ? ((d.swing === "in") === inPlus ? pull : push) : Math.max(push, pull);
-      const line = horiz ? d.at.y : d.at.x;
-      const face = line + axisSign * half;
-      const lo = Math.min(face, face + axisSign * depth);
-      const strip = horiz
-        ? { x: d.at.x - d.width / 2, y: lo, w: d.width, h: depth }
-        : { x: lo, y: d.at.y - d.width / 2, w: depth, h: d.width };
+    for (const { door: d, strip, depth, line, half, horiz } of exitApproachStrips(ctx, push, pull)) {
       const inStrip = rects.flatMap((r, i) => (rectsOverlap(strip, r) ? [i] : []));
       if (inStrip.length === 0) continue;
       const block = openingBlock(

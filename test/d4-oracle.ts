@@ -458,6 +458,9 @@ export const RULE_CLASS: Readonly<Record<string, RuleClass>> = {
   "hob-under-window": "invariant",
   "hob-fridge-gap": "invariant",
   "leaf-too-wide": "invariant",
+  // PS2.74: the WC's side strips in its own frame against wall bodies, as `wc-side-clearance`; the
+  // room's label is read as text.
+  "accessible-wc-side-wall": "invariant",
 };
 
 /**

@@ -858,6 +858,9 @@ describe("the four reworded hints' messages name things as a reader would; ids s
     "W_HOB_FRIDGE_GAP",
     "W_LEAF_TOO_WIDE",
     "W_DOORWAY_BLOCKED",
+    // An accessible WC far from every side wall (PS2.74): the pan by its label or category, the room
+    // by its label; the wall's id in the hint.
+    "W_ACCESSIBLE_WC_SIDE_WALL",
     // The exit approach (PS2.69): a piece by its label or category, the exit by the room it
     // opens into; ids in the hints.
     "W_EXIT_APPROACH_BLOCKED",
@@ -936,6 +939,8 @@ describe("the four reworded hints' messages name things as a reader would; ids s
       expect(seen.get("W_HOB_FRIDGE_GAP") ?? 0).toBeGreaterThan(0);
       expect(seen.get("W_LEAF_TOO_WIDE") ?? 0).toBeGreaterThan(0);
       expect(seen.get("W_DOORWAY_BLOCKED") ?? 0).toBeGreaterThan(0);
+      // And PS2.74, from its defect-corpus case.
+      expect(seen.get("W_ACCESSIBLE_WC_SIDE_WALL") ?? 0).toBeGreaterThan(0);
       expect(seen.get("W_EXIT_APPROACH_BLOCKED") ?? 0).toBeGreaterThan(0);
     });
   }

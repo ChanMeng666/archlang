@@ -10,7 +10,13 @@ import { annotationOverlap, titleOverflow } from "./annotations.js";
 import { roomNoClearPath } from "./circulation.js";
 import { dimInside, dimOverlap, dimTextMismatch, openingNotDimensioned } from "./dims.js";
 import { circuitousPath, pathTooNarrow } from "./circulation-facts.js";
-import { furnitureOverWindow, hobFridgeGap, hobUnderWindow, wcSideClearance } from "./clearances.js";
+import {
+  accessibleWcSideWall,
+  furnitureOverWindow,
+  hobFridgeGap,
+  hobUnderWindow,
+  wcSideClearance,
+} from "./clearances.js";
 import {
   doorClearance,
   doorNearCorner,
@@ -166,6 +172,9 @@ export const LINT_RULES: readonly LintRule[] = [
   hobUnderWindow,
   hobFridgeGap,
   leafTooWide,
+  // An accessible WC's pan far from every side wall (plan-soundness PS2.74). Appended LAST, so no
+  // existing diagnostic moves within the array.
+  accessibleWcSideWall,
   // Furniture in the clear floor inside an exterior exit (plan-soundness PS2.69), deeper than
   // `W_DOORWAY_BLOCKED`'s landing. Appended LAST so no existing diagnostic moves within the array.
   exitApproachBlocked,

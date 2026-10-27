@@ -323,6 +323,20 @@ export interface LintRuleset {
    */
   wcSideClearanceMm: number | null;
   /**
+   * The greatest distance (mm) from the centreline of a WC in an accessible room (a room whose
+   * label says "accessible", "wheelchair" or "disabled") to the face of a side wall: a grab rail
+   * and a lateral transfer need a wall that close (`W_ACCESSIBLE_WC_SIDE_WALL`, plan-soundness
+   * PS2.74). Measured as {@link wcSideClearanceMm} measures, from the drawn footprint to the drawn
+   * wall body, over the pan's depth. `null` turns the rule off.
+   *
+   * **Default 500, in every profile:** the high end of the 400–500 mm WC centreline to the
+   * adjacent wall of Approved Document M Vol 1 (2015) M4(2) Diagram 2.5 and of the 450–500 mm of
+   * its M4(3) Diagrams 3.11 and 3.16 (2016 corrections) [V] (the figures
+   * {@link wcSideClearanceMm} already cites, `research/2026-10-25-ps211ab-as-built.md`); the ADA
+   * 2010 Standards 604.2's 16–18 in (406–457 mm) lies inside it [S].
+   */
+  wcAccessibleSideWallMaxMm: number | null;
+  /**
    * The highest riser (mm) `W_STAIR_TOO_STEEP` lets a straight flight climb its storey with
    * (plan-soundness PS2.11e). With {@link stairMinGoingMm} and {@link stairMaxPitchRatio} it
    * fixes the shortest run that climbs a storey: the fewest risers no higher than this, each
@@ -461,6 +475,7 @@ export const DEFAULT_RULESET: LintRuleset = {
   minEntryPassageWidthMm: null,
   roomAreaMeasure: "drawn",
   wcSideClearanceMm: 400,
+  wcAccessibleSideWallMaxMm: 500,
   stairMaxRiseMm: 220,
   stairMinGoingMm: 220,
   stairMaxPitchRatio: null,

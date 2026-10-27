@@ -460,7 +460,8 @@ suite("doors — W_POCKET_RUN", () => {
     // PS2.10's dimension-text rule follows those, for the same reasons.
     // The two annotation-collision rules (PS2.12) follow those: drafting only, their corpus
     // movement listed in the same header. The clearance rules (PS2.11a–d) follow those, and the
-    // stair rules (PS2.11e, PS2.34, PS2.15) come last.
+    // stair rules (PS2.11e, PS2.34, PS2.15), the kitchen and door rules, PS2.74's
+    // accessible-WC rule and PS2.69's exit-approach rule come last.
     expect(names.slice(i + 1)).toEqual([
       "outdoor-overlaps-room",
       "balcony-no-door",
@@ -495,6 +496,8 @@ suite("doors — W_POCKET_RUN", () => {
       "hob-under-window",
       "hob-fridge-gap",
       "leaf-too-wide",
+      "accessible-wc-side-wall",
+      "exit-approach-blocked",
     ]);
   });
 
@@ -510,9 +513,10 @@ suite("doors — W_POCKET_RUN", () => {
     // the dimension-text rule (no `dim` here), nor the two annotation-collision rules (no
     // furniture, no `dims auto`, no title), nor the four clearance rules (PS2.11a–d:
     // no WC, no tall unit, no furniture, and one door has no other doorway to park its leaf across),
-    // nor the six stair rules (PS2.11e, PS2.34, PS2.15: no stair) and the three PS2.11e kitchen and
-    // door rules last of all (no hob, and a 600 mm leaf).
-    expect(LINT_RULES.map((r) => r.name).slice(-31)).toEqual([
+    // nor the six stair rules (PS2.11e, PS2.34, PS2.15: no stair), the three PS2.11e kitchen and
+    // door rules (no hob, and a 600 mm leaf), nor PS2.74's accessible-WC rule (no WC),
+    // nor PS2.69's exit-approach rule last of all (no furniture).
+    expect(LINT_RULES.map((r) => r.name).slice(-33)).toEqual([
       "door-near-corner",
       "opening-not-dimensioned",
       "room-via-private",
@@ -544,6 +548,8 @@ suite("doors — W_POCKET_RUN", () => {
       "hob-under-window",
       "hob-fridge-gap",
       "leaf-too-wide",
+      "accessible-wc-side-wall",
+      "exit-approach-blocked",
     ]);
     // A plan carrying an unrelated pre-existing warning (a sub-passable door width) AND
     // tripping the new rule: the old diagnostic must still be first, byte-for-byte.

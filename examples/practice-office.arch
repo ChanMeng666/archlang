@@ -95,6 +95,6 @@ plan "Practice Office" {
   furniture fridge against wall w_s2 offset 2400 in r_break
   furniture stove against wall w_s2 offset 4300 in r_break
   furniture table in r_break centered size 1800x900 label "Table"
-  furniture wc against wall shell segment 2 offset 7450 in r_wc
+  furniture wc against wall shell segment 2 offset 8200 in r_wc
   furniture basin against wall w_s3 offset 2200 in r_wc
 }
