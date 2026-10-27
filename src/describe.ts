@@ -91,6 +91,7 @@ import { type KeepSummary, keepSummary } from "./keep.js";
 import { keepResultsOf } from "./ir.js";
 import { type D4, fromSpelling, northQuarterTurns } from "./algebra/d4.js";
 import { type ClearWorld, clearWorldOf, measureClear } from "./furniture-relation.js";
+import { type ClearanceFacts, clearanceFacts } from "./lint/clearance-facts.js";
 
 export type { ScheduleRow } from "./sheet-tables.js";
 
@@ -119,6 +120,20 @@ export type {
 } from "./analyze/symmetry.js";
 export type { SyntaxFacts, SyntaxRoom } from "./analyze/syntax.js";
 export type { DependsEntry, DependsFacts, DerivedWallDepends } from "./analyze/depends.js";
+export type {
+  ApproachFact,
+  ClearanceFacts,
+  ClearanceObstacle,
+  DoorwayFact,
+  HobFact,
+  HobWindowFact,
+  LandingFact,
+  StairFact,
+  TallUnitFact,
+  WcFact,
+  WcSideFact,
+  WindowCoverFact,
+} from "./lint/clearance-facts.js";
 export type { ContactFact, RoomEdge } from "./analyze/contacts.js";
 export type { KeepFact, KeepRedundancy } from "./analyze/keep-facts.js";
 
@@ -144,14 +159,15 @@ export interface DescribeOptions extends AnalyzeOptions {
   /**
    * Opt-in derived facts, each computed only when named here: `"symmetry"` adds
    * {@link SceneSummary.symmetry}, `"syntax"` adds {@link SceneSummary.syntax}, `"depends"`
-   * adds {@link SceneSummary.depends}. Absent or empty (the default), the summary is
+   * adds {@link SceneSummary.depends}, `"clearances"` adds {@link SceneSummary.clearances}.
+   * Absent or empty (the default), the summary is
    * byte-identical to one written before any of them existed.
    */
   facts?: readonly DescribeFact[];
 }
 
 /** Every opt-in fact {@link DescribeOptions.facts} can name — `arch describe --facts` reads this list. */
-export const DESCRIBE_FACTS = ["symmetry", "syntax", "depends"] as const;
+export const DESCRIBE_FACTS = ["symmetry", "syntax", "depends", "clearances"] as const;
 
 /** One opt-in fact of {@link DESCRIBE_FACTS}. */
 export type DescribeFact = (typeof DESCRIBE_FACTS)[number];
@@ -918,6 +934,14 @@ export interface SceneSummary {
    * Present **only when requested** (`facts: ["depends"]`). See {@link DependsFacts}.
    */
   depends?: DependsFacts;
+  /**
+   * What each clearance rule measured on this storey, under the default ruleset: a WC's sides,
+   * a tall unit's and a hob's cover of a window, a hob's nearest tall unit, a doorway's clear
+   * width and approach, a stair's run and landings (plan-soundness PS2.72). Read through the
+   * rules' own measures, so a warning, or its absence, can be checked here. Present **only when
+   * requested** (`facts: ["clearances"]`). See {@link ClearanceFacts}.
+   */
+  clearances?: ClearanceFacts;
   /** All problems from parse/link/resolve, with byte spans and codes. */
   diagnostics: Diagnostic[];
   /**
@@ -1921,6 +1945,12 @@ function summarizeResolved(
       const own = facts.filter((f) => f.level === l.level);
       if (l.depends && own.length > 0) l.depends = { ...l.depends, keeps: own };
     }
+  }
+  // PS2.72: the clearance measures, last among the opt-in facts, on each storey and the top.
+  if (opts.facts?.includes("clearances")) {
+    const c = clearanceFacts(ir, levels);
+    top.clearances = c.top;
+    for (const l of perLevel ?? []) l.clearances = c.byLevel.get(l.level)!;
   }
   return {
     ok: true,

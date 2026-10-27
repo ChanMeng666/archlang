@@ -620,7 +620,11 @@ const EA = "W_EXIT_APPROACH_BLOCKED";
 suite("W_EXIT_APPROACH_BLOCKED: furniture in the clear floor inside an exterior exit (PS2.69)", () => {
   // A 1200 mm exit on the façade, its inside face at y 3900; the sofa covers x 600–3000, so 600 mm
   // of the door's 2400–3600 span. `gap` is its near edge's distance from that face.
-  const exit = (gap: number, door = "door id=d_main at (3000,4000) width 1200 wall shell swing outward", extra = ""): string => `plan "E" {
+  const exit = (
+    gap: number,
+    door = "door id=d_main at (3000,4000) width 1200 wall shell swing outward",
+    extra = "",
+  ): string => `plan "E" {
   units mm
   grid 50
   wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
@@ -664,7 +668,14 @@ suite("W_EXIT_APPROACH_BLOCKED: furniture in the clear floor inside an exterior 
 
   it("a garage door and a door onto a balcony are not exits read here", () => {
     expect(
-      of(exit(500, "door id=d_main garage at (3000,4000) width 1200 wall shell", "door id=d_front at (6000,2000) width 900 wall shell"), EA),
+      of(
+        exit(
+          500,
+          "door id=d_main garage at (3000,4000) width 1200 wall shell",
+          "door id=d_front at (6000,2000) width 900 wall shell",
+        ),
+        EA,
+      ),
     ).toEqual([]);
     const balcony = exit(
       500,
@@ -680,7 +691,15 @@ suite("W_EXIT_APPROACH_BLOCKED: furniture in the clear floor inside an exterior 
     const wide = of(exit(500, "door id=d_main sliding at (3000,4000) width 2000 wall shell"), EA);
     expect(wide.map((d) => d.message)).toEqual([expect.stringContaining("leaves 1000 mm of its 2000 mm width clear")]);
     // …and narrowed to cover 600 mm of it, 1400 mm stays clear: silent.
-    expect(of(exit(500, "door id=d_main sliding at (3000,4000) width 2000 wall shell").replace("size 2400x900", "size 2000x900"), EA)).toEqual([]);
+    expect(
+      of(
+        exit(500, "door id=d_main sliding at (3000,4000) width 2000 wall shell").replace(
+          "size 2400x900",
+          "size 2000x900",
+        ),
+        EA,
+      ),
+    ).toEqual([]);
   });
 
   it("`exitApproachMm: null` turns it off", () => {
@@ -694,10 +713,19 @@ suite("W_EXIT_APPROACH_BLOCKED: furniture in the clear floor inside an exterior 
     );
     for (const opts of [{}, A11Y])
       expect(of(clinic, EA, opts).map((d) => d.message)).toEqual([
-        expect.stringContaining('"sofa_l" stands 500 mm inside the exterior door into "Waiting / Reception" and leaves 600 mm'),
+        expect.stringContaining(
+          '"sofa_l" stands 500 mm inside the exterior door into "Waiting / Reception" and leaves 600 mm',
+        ),
       ]);
     const twin = readFileSync(join(ROOT, "test/defect-corpus/clearances/exit-approach-blocked.clean.arch"), "utf8");
-    for (const profile of [undefined, "residential-basic", "accessibility-advisory", "cn-residential-advisory", "uk-residential-advisory", "us-residential-advisory"])
+    for (const profile of [
+      undefined,
+      "residential-basic",
+      "accessibility-advisory",
+      "cn-residential-advisory",
+      "uk-residential-advisory",
+      "us-residential-advisory",
+    ])
       expect(of(twin, EA, profile ? { profile } : {}), profile).toEqual([]);
   });
 });

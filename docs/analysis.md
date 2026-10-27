@@ -1006,6 +1006,26 @@ Without `--json` the human summary gains one line, e.g.
 `depends: 22 of 24 element(s) depend on another id, a name, an axis or a host wall; 7 derived wall(s) (--json for the lists)`
 (the two that do not: the living room, placed `at (0,0)`, and the `dim`, whose points are numbers).
 
+## Clearances — what each clearance rule measured
+
+`describe(src, { facts: ["clearances"] })` — `archlang describe plan.arch --facts clearances --json`
+— adds `clearances`: per storey, the figures the clearance rules measure, read through the
+rules' own measures under the default ruleset, so a warning (or its absence) can be checked
+from the CLI instead of re-measuring the geometry. Opt-in like `symmetry`; without `--facts`
+the key is absent. Lengths are whole millimetres, rounded as the messages round them.
+
+| Key | Rule | What each row holds |
+|-----|------|---------------------|
+| `wcs[]` | `W_WC_SIDE_CLEARANCE` | `need_mm`; per side, `centreline_mm` to what stands there and `by` (a piece, wall or swing; `null`: clear to the figure); `sides: null` with `unmeasured` (`wide`, `curved-wall`) when the rule does not measure the pan |
+| `tall_units[]` | `W_FURNITURE_OVER_WINDOW` | per window the unit stands in front of: `covered_mm` along the span, `across_mm` into the band |
+| `hobs[]` | `W_HOB_UNDER_WINDOW`, `W_HOB_FRIDGE_GAP` | per window band it reaches: `covered_mm`, `across_mm`, `off_face_mm` (its side nearest the host, past the wall's face) and `under` (the rule's reading); `tall_unit_gap`, the nearest tall unit inside a side's landing |
+| `doorways[]` | `W_DOORWAY_BLOCKED`, `W_PATH_TOO_NARROW` | `width_mm`, `clear_width_mm` (the access graph's), `approach` (`need_mm`, `blocked_by` with the depth left from the wall's face); a cased opening wider than a doorway adds `stretch` (the longest clear stretch, against 1200 mm); `approach: null` with `unmeasured` (`garage`, `host`) when it is not read |
+| `stairs[]` | `W_STAIR_NO_LANDING`, `W_STAIR_TOO_STEEP` | `run_mm`, `min_run_mm` (on a `dir up` flight of a plan that authors heights), and per landing this storey owes, `need_mm`, `clear_mm` and `by` (a wall, a void or `no-floor`); `null` past the stair rules' work budget |
+
+```bash
+archlang describe plan.arch --facts clearances --json --select clearances
+```
+
 ## Impact — change one number, see what follows
 
 `impact(before, after)` — `archlang impact plan.arch --set W=4500` or

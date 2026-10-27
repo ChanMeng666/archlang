@@ -218,7 +218,7 @@ export function widestClearingWidth(
 /** What stands in a doorway's approach: the first piece whose footprint overlaps the landing,
  *  the clear depth it leaves (from the wall's face on its side) and the shortfall; `null` when
  *  the approach is clear or not measured (the skip is filed then). */
-function blockedApproach(
+export function blockedApproach(
   d: RDoor | ROpening,
   { furniture, rules, skip }: LintContext,
   counts: (f: RFurniture) => boolean = () => true,
@@ -1030,7 +1030,11 @@ export const exitApproachBlocked: LintRule = {
         : { x: lo, y: d.at.y - d.width / 2, w: depth, h: d.width };
       const inStrip = rects.flatMap((r, i) => (rectsOverlap(strip, r) ? [i] : []));
       if (inStrip.length === 0) continue;
-      const block = openingBlock(d, depth, inStrip.map((i) => rects[i]!));
+      const block = openingBlock(
+        d,
+        depth,
+        inStrip.map((i) => rects[i]!),
+      );
       // The door's width, up to a doorway's: a wide garden door keeps a way out while a
       // doorway's width of it is clear, as a wide cased opening does (`openingBlock`).
       const need = Math.min(d.width, DOORWAY_WIDTH_MM);

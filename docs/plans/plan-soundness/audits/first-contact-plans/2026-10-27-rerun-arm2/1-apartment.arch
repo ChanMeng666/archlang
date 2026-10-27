@@ -1,0 +1,52 @@
+plan "Two-bed apartment" {
+  units mm
+  grid 100
+  paper A3 portrait
+  north up
+  dims auto all
+
+  room id=corridor at (0,1000) size 9000x1400 label "Corridor" uses circulation
+  room id=bath at (0,2400) size 2500x3000 label "Bathroom" uses bath
+  room id=hall right-of bath size 2000x3000 label "Hall" uses hall
+  room id=bed2 right-of hall size 4500x3000 label "Bedroom 2" uses bedroom
+  room id=living below bath align left size 5500x4600 label "Living / Dining / Kitchen" uses living
+  room id=bed1 right-of living align top size 3500x4600 label "Bedroom 1" uses bedroom
+
+  walls from rooms exterior 250 partition 100
+
+  door id=front between corridor and hall at center width 1000 swing into hall
+  door between hall and bath at center width 800 swing into bath
+  door between hall and bed2 at center width 800 swing into bed2
+  opening between hall and living at center width 1200
+  door between living and bed1 at 1500 from start width 900 swing into bed1
+
+  window on bath.left width 800
+  window on bed2.right width 1600
+  window on bed1.right at 1000 from start width 1200
+  window on living.left at 800 from start width 1000
+  door id=balcdoor sliding on living.bottom at 2200 from start width 1600
+  window on bed1.bottom width 1400
+
+  outdoor balcony at (500,10150) size 3600x1500 label "Balcony"
+
+  furniture bathtub against bath.top
+  furniture wc against bath.bottom offset 700
+  furniture basin against bath.bottom offset 1700
+
+  furniture double_bed against bed2.right
+  furniture nightstand in bed2 anchor top-right flush size 450x400
+  furniture wardrobe against bed2.top offset 1200
+
+  furniture double_bed against bed1.bottom
+  furniture wardrobe against bed1.right offset 3000
+
+  furniture counter against living.left offset 2300
+  furniture kitchen_sink against living.left offset 3300
+  furniture stove against living.left offset 4000
+  furniture fridge against living.top offset 1500
+  furniture id=tv tv_unit against living.top offset 4700 size 1000x400
+  furniture sofa_l in living anchor bottom-right flush inset 0 size 1800x900 facing tv
+  furniture table in living anchor left inset 1400 size 1800x900
+
+  title { project "Two-bed apartment" drawn_by "ArchLang" date "2026-10-27" number "A-01" revision "A" }
+}

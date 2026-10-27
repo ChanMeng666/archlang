@@ -168,8 +168,7 @@ describe("W_ROOM_NO_FIXTURE — the hint's statement compiles, clears it, and ra
           // bottom wall, in front of its door; the kitchen's counter under the a11y profile's
           // 1220 / 1525 mm), and the hint says that instead.
           const raises = hint.includes("the placement found would raise another finding");
-          if (!(raises && p === A11Y && src === KITCHEN))
-            expect(name).toMatch(/grid 600|half-walled/);
+          if (!(raises && p === A11Y && src === KITCHEN)) expect(name).toMatch(/grid 600|half-walled/);
           // The reason must be the true one: on grid 600 the grid, not crowded walls.
           if (src === GRID_600) {
             expect(hint).toContain("`grid 600` snaps an `at (x,y)` placement off the wall face");

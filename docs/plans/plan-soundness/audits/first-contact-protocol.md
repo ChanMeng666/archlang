@@ -71,6 +71,30 @@ Please continue: run the lint loop on your plan and repair the warnings you agre
 
 Both café states were reported. On 2026-10-25 no nudge was needed.
 
+### 2026-10-27: arm 2, the whole-loop prompt
+
+Added by PS7.8 (D26) beside the frozen prompt above, which stays arm 1 unchanged. Confirmed by the
+owner on 2026-10-27 from `../research/2026-10-27-ps78-arm2-prompt-draft.md`; first used by
+`2026-10-27-first-contact-rerun-ps78.md`. One fresh `arch-author` subagent per brief, brief 4 as the
+example (the other five swap the bold brief line and the output file name; the rest is identical):
+
+```text
+Brief (metric, dimensioned, furnished, with doors and windows, a `title`, and `dims auto` where the spec allows):
+
+**Corner café, ~90 m²**: entrance on the corner, seating for 24, counter and back-of-house kitchen, accessible WC, staff WC, store.
+
+The language specification is the file <repo>\spec.llm.md — read all of it; it is your only documentation. Do not read any other file in the repository.
+
+Write the plan and run the whole loop with `node <repo>\dist\cli.js <verb> <file> --json`: compile, then `validate --stage rooms|walls|openings|fixtures` as you add each stage, then `lint`, then repair; iterate until `validate`'s `next` is null (or every remaining warning is a choice you state in your reply).
+
+Save the plan to <repo>\docs\plans\plan-soundness\audits\first-contact-plans\<run-folder>\4-cafe.arch. When done, reply with the number of compile/validate/lint rounds you ran, the final lint codes, the warnings you chose to leave and why, and anything in the language you were unsure about.
+```
+
+Against arm 1 it replaces the "Write the plan; …" sentence and adds "validate" and "the warnings you
+chose to leave and why" to the reply line; nothing else moves (no `describe`, `score`, `context` or
+`preview`). `<run-folder>` is `<date>-rerun-arm2`, and arm 1 then uses `<date>-rerun-arm1`. Both arms
+run from the same dispatcher, one after the other, with separate call logs.
+
 ### 2026-10-18: one teammate, all six briefs
 
 The baseline author was one teammate given all six briefs in a single message (verbatim, with `<repo>`
