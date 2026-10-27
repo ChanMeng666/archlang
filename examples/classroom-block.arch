@@ -101,7 +101,7 @@ plan "Classroom Block" {
   furniture wc against wall shell segment 2 offset 9500 in r_wcp
   furniture wc against wall shell segment 2 offset 8000 in r_wcp
   furniture wc against wall shell segment 2 offset 6500 in r_wcp
-  furniture wc against wall shell segment 2 offset 4250 in r_wca
-  furniture basin against wall w_s4 offset 3000 in r_wcp
+  furniture wc against wall shell segment 2 offset 3550 in r_wca
+  furniture basin against wall w_s4 offset 1000 in r_wcp
   furniture basin against wall w_s5 offset 2000 in r_wca
 }

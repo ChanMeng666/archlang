@@ -160,16 +160,16 @@ describe("W_PATH_TOO_NARROW is monotone in an obstacle's depth", () => {
     // The reported table's own rows: at 200–450 mm the hall still passes a body, at
     // 500 mm and beyond the 600 mm that is left cannot, and the plan used to go CLEAN.
     const ids = (src: string): string[] => (describePlan(src).circulation?.blocked ?? []).map((b) => b.roomId);
-    expect(ids(flatWith(200))).not.toContain("r_live");
+    // Since fix/examples-sound (2026-10-27) the living room's door is east of the cabinet and
+    // its sofa/table pinch is gone, so the hall's west end, Bedroom 1, is the room it seals.
+    expect(ids(flatWith(200))).not.toContain("r_bed1");
     const sealed = ids(flatWith(500));
-    expect(sealed).toContain("r_live");
     expect(sealed).toContain("r_bed1");
     const msgs = lint(flatWith(500))
       .filter((d) => d.code === "W_PATH_TOO_NARROW")
       .map((d) => d.message);
-    // The message carries a MEASURED width, never a fabricated 0 — a real gap exists here
-    // (the sofa/dining-table pair leave 500 mm), it is simply narrower than a body.
-    expect(msgs.some((m) => /"Living \/ Dining" squeezes to [1-9]\d* mm and stops there/.test(m))).toBe(true);
+    // The message carries a MEASURED width, never a fabricated 0 — a real gap exists here,
+    // it is simply narrower than a body.
     expect(msgs.some((m) => /"Bedroom 1" squeezes to [1-9]\d* mm and stops there/.test(m))).toBe(true);
   });
 });

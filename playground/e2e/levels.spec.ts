@@ -1,7 +1,7 @@
 import { expect, type Download, type Page, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { lint } from "../../src/index.js";
-import { waitForPlan, watchForProblems } from "./fixtures.js";
+import { setEditorSource, waitForPlan, watchForProblems } from "./fixtures.js";
 
 /**
  * The STOREY SWITCHER — the control that picks which level of a multi-storey plan the
@@ -155,19 +155,32 @@ test.describe("storey switcher", () => {
    * with warnings hidden on another, saying it would be a whole-building claim drawn
    * from partial data, which is the exact failure this workstream exists to prevent.
    *
-   * `examples/hillside-villa.arch` is the fixture the repo already ships for it: two
-   * storeys, all of its lint warnings on level 2. The counts are DERIVED from the
+   * `examples/hillside-villa.arch` as it was before fix/examples-sound made it warning-free:
+   * its four old 700 mm upper-floor doors put back, so the two storeys have all of their lint
+   * warnings on level 2. The counts are DERIVED from the
    * compiler's own lint() (filtered the way playground/src/main.ts feeds renderLint:
    * a row with no level shows everywhere), never retyped, so a lint-rule change
    * cannot strand this spec on a stale number.
    */
   test("a quiet storey never claims the BUILDING is sound", async ({ page }) => {
+    const src = [
+      ["d_linen  on w_linen_s at 1100 width 800", "d_linen  on w_linen_s at 1100 width 700"],
+      ["d_en2_corr on en2.wall at 5300 width 800", "d_en2_corr on en2.wall at 5300 width 700"],
+      ["d_enm      on en_m.wall at 7500 width 800", "d_enm      on en_m.wall at 7500 width 700"],
+      ["d_enb2     pocket on en_b2.wall at 7500 width 800", "d_enb2     pocket on en_b2.wall at 7500 width 700"],
+    ].reduce(
+      (s, [now, before]) => {
+        if (s.split(now).length !== 2) throw new Error(`"${now}" is not found exactly once`);
+        return s.replace(now, before);
+      },
+      readFileSync(new URL("../../examples/hillside-villa.arch", import.meta.url), "utf8"),
+    );
     await page.goto("/");
     await waitForPlan(page);
-    await pickExample(page, "Hillside Villa");
+    await setEditorSource(page, src);
     await expect(levelButtons(page)).toHaveCount(2);
 
-    const villa = lint(readFileSync(new URL("../../examples/hillside-villa.arch", import.meta.url), "utf8"));
+    const villa = lint(src);
     const onLevel = (n: number) => villa.filter((d) => d.level === undefined || d.level === n).length;
     const hiddenFromLevel1 = villa.length - onLevel(1);
     // The fixture's premise: level 1 is quiet and level 2 owns every warning.

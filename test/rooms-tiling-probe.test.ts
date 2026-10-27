@@ -199,7 +199,9 @@ describe("the corpus (ADR 0028 Acceptance): both figures, pinned", () => {
     const refused = lit.storeys.filter(isRefused);
     const tiling = refused.filter((s) => storeyCodes(s).has("E_ROOMS_NOT_TILING")).map((s) => s.file);
     expect([refused.length, lit.storeys.filter(hasRooms).length]).toEqual(PINNED_SHARE_LITERAL);
-    expect(tiling).toEqual(["test/fixtures/zones-wings.arch"]);
+    // `hillside-villa` since fix/examples-sound (2026-10-27): its upper floor's two ensuites are
+    // component instances standing inside the floor, so the root group has a hole there.
+    expect(tiling).toEqual(["examples/hillside-villa.arch", "test/fixtures/zones-wings.arch"]);
     // Of the (b) refusals, how many could not decide tiling (a non-rectilinear room in the set).
     const undecided = b.storeys.filter((s) => isRefused(s) && s.groups.some((g) => g.note && !g.budget)).length;
     // 13 until PS2.12's four `circle` pavilions (the defect corpus's radius pairs) joined them.
@@ -266,7 +268,8 @@ describe("the corpus (ADR 0028 Acceptance): both figures, pinned", () => {
 
 /** `[storeys, refused (a), refused (b), overlap/not-tiling/short/not-rect under (b)]`. */
 const PINNED_ROWS: Record<string, [number, number, number, string]> = {
-  examples: [39, 7, 7, "0/0/0/7"],
+  // `hillside-villa`'s upper floor: a hole where two ensuite instances stand (fix/examples-sound), no polygon room left.
+  examples: [39, 7, 7, "0/1/0/6"],
   "test/defect-corpus": [168, 9, 9, "0/0/0/9"], // PS2.66 (PR #301): +2 corpus files (bath-wc-no-basin pair), both tile
   "test/recovery-corpus": [9, 0, 0, "0/0/0/0"],
   "test/fixtures": [13, 0, 0, "0/0/0/0"],
@@ -278,7 +281,7 @@ const PINNED_ROWS: Record<string, [number, number, number, string]> = {
   "test/callout-fixtures": [1, 0, 0, "0/0/0/0"],
   "test/finish-fixtures": [1, 0, 0, "0/0/0/0"],
   "test/resolve-order": [1, 0, 0, "0/0/0/0"],
-  total: [307, 19, 19, "0/0/0/19"], // PS2.66 (PR #301): +2 corpus files (bath-wc-no-basin pair), both tile
+  total: [307, 19, 19, "0/1/0/18"], // PS2.66 (PR #301): +2 corpus files; fix/examples-sound: hillside-villa's hole
 };
 /** Measured 2026-10-21 on `main@9fb7949`: 15 of 279 storeys refused, both figures (5.4 %). 2026-10-24: 15 of 283
  * (5.3 %) after four defect-corpus plans (seat-facing-away, fire-door-inward and their twins), none refused. 19 of 287

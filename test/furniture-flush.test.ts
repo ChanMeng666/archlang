@@ -256,10 +256,13 @@ describe("a resolver-DERIVED placement is not grid-snapped", () => {
   });
 });
 
-describe("the flagship example's WC", () => {
-  const studio = readFileSync("examples/studio.arch", "utf8");
+// The shipped WC written `in r_bath anchor bottom flush` on a 200 mm shell: `bungalow`'s since
+// fix/examples-sound (2026-10-27) moved `studio`'s WC along its wall (`against r_bath.bottom`)
+// to clear the basin in front of it.
+describe("a shipped example's WC", () => {
+  const studio = readFileSync("examples/bungalow.arch", "utf8");
   const byHand = studio.replace("anchor bottom flush", "anchor bottom inset 100");
-  // The studio has several fixtures; the WC is the room-anchored one.
+  // The bungalow has several fixtures; the WC is the one category `wc`.
   const wcOf = (src: string): RFurniture =>
     resolve(parse(src).plan!).ir.elements.find((e): e is RFurniture => e.kind === "furniture" && e.category === "wc")!;
 

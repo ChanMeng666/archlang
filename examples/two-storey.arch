@@ -52,6 +52,7 @@ plan "Two-storey house" {
     furniture kitchen_sink against wall kitchen_w offset 1200 in kitchen
     furniture stove against wall kitchen_w offset 2200 in kitchen
     furniture counter against wall kitchen_w offset 2900 in kitchen
+    furniture fridge against wall kitchen_w offset 3600 in kitchen
     stair id=stair at (100,1000) size 900x2900 dir up
   }
 

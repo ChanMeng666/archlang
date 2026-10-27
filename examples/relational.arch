@@ -57,6 +57,9 @@ plan "Relational 1BR" {
   # the wall it runs into, so it prints the true 8200 rather than the 8000 room grid).
   dim faces (0,7500)->(8000,7500) offset 600
 
+  # The fridge closes the kitchen's work triangle (sink, stove, fridge on the east run).
+  furniture id=fridge fridge against wall exterior segment 1 offset 700 size 600x650 in kitchen
+
   title {
     project "Relational Layout Demo"
     drawn_by "ArchCanvas"

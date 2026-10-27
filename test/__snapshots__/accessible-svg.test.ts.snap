@@ -68,12 +68,12 @@ exports[`accessible (opt-in <title>/<desc>/aria) > renders studio.arch accessibl
 <circle cx="5500" cy="4501.75" r="15.75" fill="#a8a29a" stroke="#a8a29a" stroke-width="8.32"/>
 <line x1="5500" y1="4501.75" x2="5500" y2="4589.5" stroke="#a8a29a" stroke-width="8.32"/>
 <circle cx="5500" cy="4726.3" r="13.5" fill="#a8a29a" stroke="#a8a29a" stroke-width="8.32"/>
-<path d="M 5646.48,5900 L 5353.52,5900 A 23.52 23.52 0 0 1 5330,5876.48 L 5330,5755.52 A 23.52 23.52 0 0 1 5353.52,5732 L 5646.48,5732 A 23.52 23.52 0 0 1 5670,5755.52 L 5670,5876.48 A 23.52 23.52 0 0 1 5646.48,5900 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="11.52"/>
-<path d="M 5500,5238.5 A 121.51 121.51 0 0 1 5602.98,5295.52 A 373.97 373.97 0 0 1 5602.98,5692.48 A 121.51 121.51 0 0 1 5500,5749.5 A 121.51 121.51 0 0 1 5397.02,5692.48 A 373.97 373.97 0 0 1 5397.02,5295.52 A 121.51 121.51 0 0 1 5500,5238.5 Z" fill="#ffffff" stroke="#6c6864" stroke-width="11.52"/>
-<path d="M 5500,5276.9 A 91.53 91.53 0 0 1 5577.99,5320.51 A 294.71 294.71 0 0 1 5577.99,5629.09 A 91.53 91.53 0 0 1 5500,5672.7 A 91.53 91.53 0 0 1 5422.01,5629.09 A 294.71 294.71 0 0 1 5422.01,5320.51 A 91.53 91.53 0 0 1 5500,5276.9 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="8.32"/>
-<line x1="5568" y1="5717.18" x2="5568" y2="5687.53" stroke="#a8a29a" stroke-width="8.32"/>
-<line x1="5432" y1="5717.18" x2="5432" y2="5687.53" stroke="#a8a29a" stroke-width="8.32"/>
-<circle cx="5500" cy="5816" r="16" fill="#a8a29a" stroke="#a8a29a" stroke-width="8.32"/>
+<path d="M 4846.48,5900 L 4553.52,5900 A 23.52 23.52 0 0 1 4530,5876.48 L 4530,5755.52 A 23.52 23.52 0 0 1 4553.52,5732 L 4846.48,5732 A 23.52 23.52 0 0 1 4870,5755.52 L 4870,5876.48 A 23.52 23.52 0 0 1 4846.48,5900 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="11.52"/>
+<path d="M 4700,5238.5 A 121.51 121.51 0 0 1 4802.98,5295.52 A 373.97 373.97 0 0 1 4802.98,5692.48 A 121.51 121.51 0 0 1 4700,5749.5 A 121.51 121.51 0 0 1 4597.02,5692.48 A 373.97 373.97 0 0 1 4597.02,5295.52 A 121.51 121.51 0 0 1 4700,5238.5 Z" fill="#ffffff" stroke="#6c6864" stroke-width="11.52"/>
+<path d="M 4700,5276.9 A 91.53 91.53 0 0 1 4777.99,5320.51 A 294.71 294.71 0 0 1 4777.99,5629.09 A 91.53 91.53 0 0 1 4700,5672.7 A 91.53 91.53 0 0 1 4622.01,5629.09 A 294.71 294.71 0 0 1 4622.01,5320.51 A 91.53 91.53 0 0 1 4700,5276.9 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="8.32"/>
+<line x1="4768" y1="5717.18" x2="4768" y2="5687.53" stroke="#a8a29a" stroke-width="8.32"/>
+<line x1="4632" y1="5717.18" x2="4632" y2="5687.53" stroke="#a8a29a" stroke-width="8.32"/>
+<circle cx="4700" cy="5816" r="16" fill="#a8a29a" stroke="#a8a29a" stroke-width="8.32"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -100,-100 L 7100,-100 L 7100,900 L 6900,900 L 6900,100 L 4050,100 L 4050,2950 L 6000,2950 L 6000,3050 L 4050,3050 L 4050,3250 L 3950,3250 L 3950,100 L 100,100 L 100,1250 L -100,1250 Z M -100,2750 L 100,2750 L 100,5900 L 2500,5900 L 2500,6100 L -100,6100 Z M 3500,5900 L 3950,5900 L 3950,4150 L 4050,4150 L 4050,4350 L 4200,4350 L 4200,4450 L 4050,4450 L 4050,5900 L 6900,5900 L 6900,5550 L 7100,5550 L 7100,6100 L 3500,6100 Z M 5000,4350 L 6900,4350 L 6900,3050 L 6800,3050 L 6800,2950 L 6900,2950 L 6900,2100 L 7100,2100 L 7100,4850 L 6900,4850 L 6900,4450 L 5000,4450 Z" fill="url(#poche)" fill-rule="nonzero"/>
@@ -118,8 +118,8 @@ exports[`accessible (opt-in <title>/<desc>/aria) > renders studio.arch accessibl
 <text x="6400" y="794.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">9.0 m²</text>
 <text x="5500" y="3656.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Hall</text>
 <text x="5500" y="3894.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">4.2 m²</text>
-<text x="4600" y="5156.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bath</text>
-<text x="4600" y="5394.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">4.8 m²</text>
+<text x="5500" y="5156.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bath</text>
+<text x="5500" y="5394.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">4.8 m²</text>
 </g>
 <g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
 <line x1="4000" y1="-100" x2="4000" y2="-350" stroke="#0E5484" stroke-width="8.06"/>

@@ -1218,12 +1218,11 @@ describe("closed classes — each former witness is now the law", () => {
       };
       expect(breaks(probeSide)).toEqual({ order: [], frame: [] });
       const old = breaks(firstWins);
-      // Not vacuous: the shipped storey and the witness that pinned the class, and generated
-      // ties at 0 mm and at a distance, each split by the order the old rule read.
-      expect(old.order).toContain("hillside-villa.arch@2 right");
+      // Not vacuous: the witness that pinned the class, and generated ties at 0 mm and at a
+      // distance, each split by the order the old rule read. (`hillside-villa`'s upper storey
+      // held a shipped tie until fix/examples-sound, 2026-10-27, rebuilt that floor.)
       expect(old.order).toContain("witness@1 right");
       expect(old.order.filter((k) => k.startsWith("gen:")).length).toBeGreaterThan(10);
-      expect(old.frame.some((k) => k.startsWith("hillside-villa.arch@2 e:"))).toBe(true);
       expect(old.frame.some((k) => k.startsWith("witness@1 e:"))).toBe(true);
       expect(old.frame.filter((k) => k.startsWith("gen:")).length).toBeGreaterThan(10);
     },

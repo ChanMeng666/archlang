@@ -145,11 +145,17 @@ test.describe("header actions", () => {
   });
 
   test("Finish that declines says so, opens Lint, and offers Reissue sheet", async ({ page }) => {
-    // The flagship's authored A2 sheet is too small at 1:50: finish adds nothing and
-    // says why, and only a reissue may replace the paper (the `arch finish --reissue` rule).
+    // The flagship on its old A2 sheet (it is issued on A1 since fix/examples-sound) is too
+    // small at 1:50: finish adds nothing and says why, and only a reissue may replace the
+    // paper (the `arch finish --reissue` rule).
+    const villaOnA2 = readFileSync(new URL("../../examples/hillside-villa.arch", import.meta.url), "utf8");
+    expect(villaOnA2.split("  paper A1 landscape").length, "the villa's sheet line, once").toBe(2);
     await page.goto("/");
     await waitForPlan(page);
-    await page.locator("#examples").selectOption("Hillside Villa");
+    await setEditorSource(page, villaOnA2.replace("  paper A1 landscape", "  paper A2 landscape"));
+    // The editor draws only the lines in view: bring the sheet settings at the top into it.
+    await page.locator(".cm-content").click();
+    await page.keyboard.press("Control+Home");
     await expect(page.locator(".cm-content")).toContainText("paper A2 landscape");
     const status = await watchStatus(page);
 
@@ -418,7 +424,7 @@ test.describe("header actions", () => {
 
     // A multi-storey example names the storey on screen, as the docs gallery does.
     await page.locator("#examples").selectOption("Hillside Villa");
-    await expect(page.locator(".cm-content")).toContainText("paper A2 landscape");
+    await expect(page.locator(".cm-content")).toContainText("paper A1 landscape");
     await page.locator("#embed").click();
     await expect(page.locator(".embed-dialog").getByLabel(/this example's drawing/)).toHaveValue(
       /\(https:\/\/archlang\.uk\/examples\/hillside-villa\.L1\.svg\)/,

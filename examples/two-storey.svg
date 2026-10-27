@@ -38,6 +38,9 @@
 <polygon points="4800,3650 5400,3650 5400,4250 4800,4250" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
 <line x1="4800" y1="3677" x2="5400" y2="3677" stroke="#a8a29a" stroke-width="6.5"/>
 <line x1="4800" y1="4214" x2="5400" y2="4214" stroke="#a8a29a" stroke-width="6.5"/>
+<path d="M 5512,3650 L 6088,3650 A 12 12 0 0 1 6100,3662 L 6100,4288 A 12 12 0 0 1 6088,4300 L 5512,4300 A 12 12 0 0 1 5500,4288 L 5500,3662 A 12 12 0 0 1 5512,3650 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
+<line x1="5500" y1="4209" x2="6100" y2="4209" stroke="#a8a29a" stroke-width="6.5"/>
+<line x1="5704" y1="4254.5" x2="5896" y2="4254.5" stroke="#6c6864" stroke-width="9"/>
 </g>
 <g id="A-FLOR-STRS" inkscape:groupmode="layer" inkscape:label="A-FLOR-STRS">
 <polygon points="100,1000 1000,1000 1000,3900 100,3900" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>

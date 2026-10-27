@@ -28,20 +28,17 @@
 #
 # ORIENTATION. The plot fronts the street on the NORTH, in the northern hemisphere, so
 # `equator_side` is south — the garden. That is why the living room, the kitchen/dining
-# and two of the three bedrooms take the south facade and the service band stacks along
+# and both bedrooms take the south facade and the service band stacks along
 # the street.
 #
-# ONE DELIBERATE WARNING, left in on purpose:
-#
-#   W_ROOM_NOT_EQUATOR_FACING x1 — Bedroom 2 (level 2) is the one habitable room with no
-#   south window. On a two-band plan one bedroom has to take the street aspect, and the
-#   two rooms people sleep in longest get the garden. The rule is an advisory drafting
-#   heuristic, not a daylight measurement, and this is the case where the drafter
-#   overrules it. `arch validate` is clean; `arch validate --strict` reports this one.
+# The street-side room upstairs is a study, not a third bedroom: a two-band plan has two
+# garden-side rooms per storey, and both bedrooms take them. The rule that says so,
+# `W_ROOM_NOT_EQUATOR_FACING`, is a drafting heuristic, and this plan meets it rather than
+# overruling it. The ground floor's street-side room is the office, beside the front door.
 plan "Garden House" {
   units mm
   grid 100
-  paper A2 landscape
+  paper A0 landscape
   scale 1:100
   north up
   dims auto overall
@@ -72,7 +69,7 @@ plan "Garden House" {
     wall id=w_gar partition thickness 200 { (14000,4500) (14000,10500) }
 
     room id=r_hall    at (6800,4500)  size 2400x9000  label "Hall"           uses hall entry circulation
-    room id=r_study   at (2500,4500)  size 4300x4500  label "Study"          uses office
+    room id=r_study   at (2500,4500)  size 4300x4500  label "Office"         uses office
     room id=r_living  at (2500,9000)  size 4300x4500  label "Living"         uses living
     room id=r_util    at (9200,4500)  size 4800x3500  label "Utility"        uses utility wc
     room id=r_kitchen at (9200,8000)  size 4800x5500  label "Kitchen/Dining" uses kitchen dining
@@ -210,19 +207,19 @@ plan "Garden House" {
     wall id=w_e1 partition thickness 100 { (9200,8000) (14000,8000) }
 
     # "Bedroom 1" IS the main bedroom — the one with the balcony. It is named for its
-    # number rather than its rank so the three read as a set, and so the label fits inside
+    # number rather than its rank so the two read as a set, and so the label fits inside
     # its own floor: the renderer has no font metrics, only the closed-form estimate in
     # `text-metrics.ts`, and "Main bedroom" is wider than a 4.8 m room at 1:100.
     room id=r_landing at (6800,4500) size 2400x9000 label "Landing"   uses circulation hall
-    room id=r_bed2    at (2500,4500) size 4300x4500 label "Bedroom 2" uses bedroom
-    room id=r_bed3    at (2500,9000) size 4300x4500 label "Bedroom 3" uses bedroom
+    room id=r_study2  at (2500,4500) size 4300x4500 label "Study"     uses office
+    room id=r_bed2    at (2500,9000) size 4300x4500 label "Bedroom 2" uses bedroom
     room id=r_bath    at (9200,4500) size 4800x3500 label "Bathroom"  uses bath
     room id=r_bed1    at (9200,8000) size 4800x5500 label "Bedroom 1" uses bedroom
 
     # No exterior door on this storey — see the header note. The stair below carries the
     # same id, so the shaft is what joins this landing to the ground floor.
-    door id=d_bed2 on w_h1 at 2000 width 800 swing into r_bed2
-    door id=d_bed3 on w_h1 at 6500 width 800 swing into r_bed3
+    door id=d_study2 on w_h1 at 2000 width 800 swing into r_study2
+    door id=d_bed2 on w_h1 at 6500 width 800 swing into r_bed2
     door id=d_bath on w_h2 at 1800 width 800 swing into r_bath
     door id=d_bed1 on w_h2 at 6800 width 800 swing into r_bed1
 
@@ -233,9 +230,9 @@ plan "Garden House" {
     # the ground floor's `deck`, which is what a balcony usually is.
     door id=d_balcony sliding on shell at 23500 width 1800 slide right
 
-    window id=win_bed2  on shell at 1700  width 1600
+    window id=win_study on shell at 1700  width 1600
     window id=win_bath  on shell at 8500  width 900
-    window id=win_bed3  on shell at 29900 width 1600
+    window id=win_bed2  on shell at 29900 width 1600
     window id=win_bed1  on shell at 21500 width 1200
 
     outdoor id=g_balcony balcony at (9300,13700) size 4200x1800 label "Balcony"
@@ -249,11 +246,11 @@ plan "Garden House" {
     furniture wardrobe in r_bed1 anchor top flush size 1600x600
     furniture nightstand at (12600,9500) size 450x400 in r_bed1
 
-    furniture bed      against wall shell segment 3 offset 6700 size 1400x2000 in r_bed2
-    furniture wardrobe in r_bed2 anchor top-right flush size 1400x600
+    furniture bed      against wall shell segment 3 offset 2300 size 1400x2000 in r_bed2
+    furniture desk     in r_bed2 anchor top flush size 1400x600
 
-    furniture bed      against wall shell segment 3 offset 2300 size 1400x2000 in r_bed3
-    furniture desk     in r_bed3 anchor top flush size 1400x600
+    furniture desk      against wall shell segment 3 offset 6700 size 1600x700 in r_study2
+    furniture bookshelf in r_study2 anchor top-right flush size 1400x350
 
     furniture bathtub in r_bath anchor top-right    flush size 1700x700
     furniture basin   in r_bath anchor bottom-left  flush size 600x450

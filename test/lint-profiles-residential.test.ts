@@ -383,10 +383,7 @@ const EXAMPLE_ADDITIONS: Record<string, string[]> = {
     'examples/furnished-flat.arch W_ROOM_TOO_SMALL Room "Bedroom 2" is only 10.4 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     'examples/garden-loft.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 8.08 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     'examples/garden-loft.arch W_ROOM_TOO_NARROW Room "Bedroom" is 2650 mm wide between its wall faces, under the 2750 mm the profile asks of one double bedroom of every home (none here is that wide) — 100 mm short.',
-    'examples/hillside-villa.arch W_ROOM_TOO_SMALL Room "Bedroom 2" is only 9.12 m² of net floor (under 11.5 m², the floor for a double bedroom).',
-    'examples/hillside-villa.arch W_ROOM_TOO_NARROW Room "Bedroom 2" is 2400 mm wide between its wall faces, under the 2550 mm the profile asks of a double bedroom — 150 mm short.',
-    'examples/hillside-villa.arch W_ROOM_TOO_SMALL Room "Bedroom 3" is only 9.12 m² of net floor (under 11.5 m², the floor for a double bedroom).',
-    'examples/hillside-villa.arch W_ROOM_TOO_NARROW Room "Bedroom 3" is 2400 mm wide between its wall faces, under the 2550 mm the profile asks of a double bedroom — 150 mm short.',
+    // `hillside-villa`'s small north bedrooms left with fix/examples-sound (2026-10-27): both now meet the profile.
     'examples/relational.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 10.43 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     'examples/relational.arch W_ROOM_TOO_NARROW Room "Bedroom" is 2150 mm wide between its wall faces, under the 2750 mm the profile asks of one double bedroom of every home (none here is that wide) — 600 mm short.',
     'examples/studio.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 8.12 m² of net floor (under 11.5 m², the floor for a double bedroom).',

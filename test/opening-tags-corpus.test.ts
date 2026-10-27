@@ -39,18 +39,18 @@ const world: World = {
 
 /** Every tag that covers ink, as `file#page:tag`, with why it is allowed to. */
 const ALLOWED: Record<string, string> = {
-  "bungalow.arch:W02": "every candidate place is taken; the tag keeps its first choice (furniture:path)",
-  "bungalow.arch:W03": "every candidate place is taken; the tag keeps its first choice (furniture:path)",
   "classroom-block.arch:D10":
     "every candidate place is taken: the exit closes a 2 m corridor end, so no clear wall remains beside either jamb; the tag keeps its first choice (doors:arc,doors:polygon,poche)",
   "courtyard-house.arch:W06":
     "every candidate place is taken; the tag keeps its first choice (furniture:circle,furniture:path)",
   "courtyard-house.arch:W11": "every candidate place is taken; the tag keeps its first choice (furniture:path,poche)",
   "hillside-villa.arch#L1:W06": "every candidate place is taken; the tag keeps its first choice (furniture:line)",
-  "hillside-villa.arch#L2:W01": "every candidate place is taken; the tag keeps its first choice (furniture:path)",
+  "hillside-villa.arch#L2:W02": "every candidate place is taken; the tag keeps its first choice (furniture:path)",
+  "hillside-villa.arch#L2:W05": "every candidate place is taken; the tag keeps its first choice (furniture:path)",
   "laneway-house.arch:W01": "every candidate place is taken; the tag keeps its first choice (furniture:polygon)",
   "laneway-house.arch:W02":
     "every candidate place is taken; the tag keeps its first choice (furniture:line,furniture:path)",
+  "library.arch:D05": "every candidate place is taken; the tag keeps its first choice (axes:line,doors:line)",
   "library.arch:W13": "every candidate place is taken; the tag keeps its first choice (furniture:path)",
   "materials.arch:W05":
     "every candidate place is taken; the tag keeps its first choice (furniture:line,furniture:polygon)",
@@ -71,8 +71,6 @@ const ALLOWED: Record<string, string> = {
     "every candidate place clear of ink is taken, a pinned room name (`label … at`) among them; the tag keeps off the name and takes the first place clear of other tags (poche)",
   "terrace-row.arch:W16":
     "every candidate place clear of ink is taken, a pinned room name (`label … at`) among them; the tag keeps off the name and takes the first place clear of other tags (poche)",
-  "tiny-house.arch:D01":
-    "every candidate place is taken; the tag keeps its first choice (furniture:line,furniture:path)",
   "tiny-house.arch:D02":
     "a room name the label pass left under the tag (it moves a label only once buried past its threshold)",
   "tiny-house.arch:D03":

@@ -1128,7 +1128,7 @@
     },
     {
       "id": "r_study",
-      "label": "Study",
+      "label": "Office",
       "uses": ["office"],
       "room_type": "StudyRoom"
     },
@@ -1163,14 +1163,14 @@
       "room_type": "Entrance"
     },
     {
-      "id": "r_bed2",
-      "label": "Bedroom 2",
-      "uses": ["bedroom"],
-      "room_type": "MasterRoom"
+      "id": "r_study2",
+      "label": "Study",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
     },
     {
-      "id": "r_bed3",
-      "label": "Bedroom 3",
+      "id": "r_bed2",
+      "label": "Bedroom 2",
       "uses": ["bedroom"],
       "room_type": "MasterRoom"
     },
@@ -1319,10 +1319,10 @@
       "room_type": "Entrance"
     },
     {
-      "id": "r_bed2",
-      "label": "Bedroom 2",
-      "uses": ["bedroom"],
-      "room_type": "MasterRoom"
+      "id": "r_study",
+      "label": "Study",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
     },
     {
       "id": "r_linen",
@@ -1331,10 +1331,10 @@
       "room_type": "Storage"
     },
     {
-      "id": "r_bed3",
-      "label": "Bedroom 3",
-      "uses": ["bedroom"],
-      "room_type": "MasterRoom"
+      "id": "r_studio",
+      "label": "Studio",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
     },
     {
       "id": "en2.room",
@@ -1343,10 +1343,22 @@
       "room_type": "Bathroom"
     },
     {
-      "id": "en3.room",
+      "id": "r_bed2",
+      "label": "Bedroom 2",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "en_b2.room",
       "label": "Ensuite",
       "uses": ["bath"],
       "room_type": "Bathroom"
+    },
+    {
+      "id": "r_dress",
+      "label": "Dressing",
+      "uses": ["storage"],
+      "room_type": "Storage"
     },
     {
       "id": "r_master",
@@ -1457,6 +1469,12 @@
       "room_type": "Bathroom"
     },
     {
+      "id": "r_wc_a",
+      "label": "Accessible WC",
+      "uses": ["wc"],
+      "room_type": "Bathroom"
+    },
+    {
       "id": "r_stacks",
       "label": "Open Stacks",
       "uses": ["storage"],
@@ -1479,12 +1497,6 @@
       "label": "Cafe Kitchen",
       "uses": ["kitchen"],
       "room_type": "Kitchen"
-    },
-    {
-      "id": "r_plant",
-      "label": "Plant Room",
-      "uses": ["utility"],
-      "room_type": "Storage"
     }
   ],
   "examples/materials.arch": [
@@ -1655,6 +1667,12 @@
       "label": "Lobby",
       "uses": ["circulation"],
       "room_type": "Entrance"
+    },
+    {
+      "id": "wca",
+      "label": "Accessible WC",
+      "uses": ["wc"],
+      "room_type": "Bathroom"
     },
     {
       "id": "wcw",
