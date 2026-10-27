@@ -159,6 +159,30 @@ describe("validate · next tiers through the CLI", () => {
     }
   });
 
+  // The PS7.8 arm-1 plans, copied from PR #309's `audits/first-contact-plans/2026-10-27-rerun-arm1/`
+  // (unmerged when PS7.10 landed); read them from there once it is on main.
+  it("PS7.10: the arm-1 house's next is the master door's swing, not the fridge/sink overlap emitted first", () => {
+    const plan = "test/next-ps78-plans/arm1-2-house.arch";
+    for (const stage of [[], ["--stage", "fixtures"], ["--stage", "drafting"]]) {
+      const argv = [plan, "--json", ...stage];
+      const out = JSON.parse(runValidate(argv).stdout);
+      expect(out.diagnostics[0].code, argv.join(" ")).toBe("W_FURNITURE_OVERLAP");
+      // XH2: the master bedroom door opens onto the bed head 50 mm away.
+      expect(out.next, argv.join(" ")).toMatchObject({ tier: "validity", code: "W_SWING_OBSTRUCTED" });
+      expect(out.next.message, argv.join(" ")).toMatch(/"double_bed" is 50 mm/);
+    }
+  });
+
+  it("PS7.10: the arm-1 townhouse's next is a stair code, not the missing hob emitted first", () => {
+    const plan = "test/next-ps78-plans/arm1-5-townhouse.arch";
+    for (const stage of [[], ["--stage", "fixtures"], ["--stage", "drafting"]]) {
+      const argv = [plan, "--json", ...stage];
+      const out = JSON.parse(runValidate(argv).stdout);
+      expect(out.diagnostics[0].code, argv.join(" ")).toBe("W_ROOM_MISSING_DEFINING");
+      expect(out.next, argv.join(" ")).toMatchObject({ tier: "validity", code: "W_STAIR_NO_LANDING" });
+    }
+  });
+
   it("nothing: null, and no human next line", () => {
     expect(JSON.parse(runValidate([cleanPlan(), "--json"]).stdout).next).toBeNull();
     const h = cli([cleanPlan()]);
