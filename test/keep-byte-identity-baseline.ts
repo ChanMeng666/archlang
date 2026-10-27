@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: PS2.67 (PR #315): W_BED_UNDERSIZED; merged over main with PS2.69 (#308), PS2.74 (#313) and PS7.10 (#314)
+ * Taken: B6 (W_GARAGE_OPENING_UNDERSIZED) on feat/B6-garage-opening-lint, based on main 00b7e7ec
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -610,6 +610,16 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     "test/defect-corpus/clearances/fridge-over-window.clean.arch",
     "6b84059da5c3f3e8c199ad9d88fb6837b72db32f33d0b8a0a7dfa616ccce33be",
     164,
+  ],
+  [
+    "test/defect-corpus/clearances/garage-door-undersized.arch",
+    "71265a78d16977a07dac16c85fb4ce4a1b5a39d29e4765b342bbed45218e1407",
+    54,
+  ],
+  [
+    "test/defect-corpus/clearances/garage-door-undersized.clean.arch",
+    "b08dbdc2d780ee1f7cdc01fbd2dfa4de892c6e3c16804861317acbd531b4bed1",
+    54,
   ],
   [
     "test/defect-corpus/clearances/garage-too-shallow.arch",

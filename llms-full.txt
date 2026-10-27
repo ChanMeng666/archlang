@@ -835,7 +835,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `archlang explain <CODE>`.
-**143 errors** (abort rendering) · **87 warnings** (advisory; `validate --strict` fails on them too).
+**143 errors** (abort rendering) · **88 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -1020,6 +1020,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `W_FURN_CLEARANCE` — A fixture's use-space is blocked. **Fix:** Move or shrink the obstructing furniture by the shortfall the warning quotes, turn the fixture so its front faces clear floor (its back must stay on a wall), or move the fixture to a wall run with the clearance free in front of it.
 - `W_FURN_CLEAR_FRONT` — A declared `clear front` is not free. **Fix:** Move the obstruction or the piece apart by the shortfall the warning quotes, or lower the declared depth if less will do.
 - `W_FURN_CLEAR_SIDES` — A declared `clear sides` is not free. **Fix:** Move the obstruction or the piece apart by the shortfall, or declare only the zones the piece needs.
+- `W_GARAGE_OPENING_UNDERSIZED` — A garage's vehicle door is too narrow to drive a car through. **Fix:** Widen the vehicle door to the figure the warning quotes, add a second vehicle door for a double garage, park fewer cars in the room, or drop the `uses garage` tag if the room is not one.
 - `W_GARAGE_TOO_NARROW` — A garage is too narrow, or too shallow, to park in. **Fix:** Widen the room, or lengthen it along the line of its vehicle door, to the figure the warning quotes, park fewer cars in it, or drop the `uses garage` tag if the room is not one (a store that happens to be called a garage classifies as one from its label alone — an explicit `uses storage` overrides that).
 - `W_GLYPH_UNSUPPORTED` — PDF/PNG text has characters no embedded font can draw. **Fix:** Render to SVG, which uses the viewer's fonts, or rewrite the label in a covered script.
 - `W_HABITABLE_NO_WINDOW` — A living room, dining room or kitchen has no window. **Fix:** Add a `window` on an exterior wall of the room; the hint names those walls. Accept the warning if the room is lit in a way the plan cannot draw, such as a roof light or a light well. There is no machine fix: where a window goes on a facade is a design decision.

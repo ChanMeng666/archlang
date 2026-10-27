@@ -95,6 +95,7 @@ Two classes from `evidence.md` §3 have no cases, because no core lint rule can 
 | `W_ACCESSIBLE_WC_SIDE_WALL` | PS2.74 |
 | `W_EXIT_APPROACH_BLOCKED` | PS2.69 |
 | `W_BED_UNDERSIZED` | PS2.67 |
+| `W_GARAGE_OPENING_UNDERSIZED` | B6 (preview-and-remodel) |
 
 ## Proposed codes
 

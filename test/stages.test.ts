@@ -72,6 +72,7 @@ const DECIDED: Record<AuthoringStage, string[]> = {
     "W_DOOR_NEAR_CORNER",
     "W_ENTRANCE_INTO_PRIVATE",
     "W_FLOOR_UNASSIGNED",
+    "W_GARAGE_OPENING_UNDERSIZED",
     "W_HABITABLE_NO_WINDOW",
     "W_LEAF_ACROSS_DOORWAY",
     "W_LEAF_TOO_WIDE",
@@ -160,8 +161,9 @@ describe("the stage ladder and the per-rule table", () => {
     // The PS7.1 note's 53 codes (openings 22, fixtures 16); PR #280's six stair codes (three rooms,
     // one walls, two openings); PR #283's three (the PS2.11e as-built note): `W_LEAF_TOO_WIDE` at
     // openings, the two hob codes at fixtures; PS2.74's `W_ACCESSIBLE_WC_SIDE_WALL` at fixtures; PS2.69's
-    // `W_EXIT_APPROACH_BLOCKED` and PS2.67's `W_BED_UNDERSIZED` at fixtures.
-    expect(counts).toEqual({ brief: 0, rooms: 8, walls: 5, openings: 25, fixtures: 21, drafting: 6 });
+    // `W_EXIT_APPROACH_BLOCKED` and PS2.67's `W_BED_UNDERSIZED` at fixtures; B6's
+    // `W_GARAGE_OPENING_UNDERSIZED` at openings.
+    expect(counts).toEqual({ brief: 0, rooms: 8, walls: 5, openings: 26, fixtures: 21, drafting: 6 });
   });
 
   it("the drafting layer is exactly the drafting stage, and no lint code is a brief finding", () => {

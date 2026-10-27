@@ -107,8 +107,26 @@ export function lacksZoneFixture(ctx: LintContext, r: RRoom): boolean {
  */
 const CAR_BAY_WIDTH_MM = 2700;
 
+/**
+ * The least width of a garage's vehicle door: one car through it, and two side by side. Common
+ * practice for a sectional or roller door (a single about 2400 mm, roughly 8 ft; a double 4200-4800 mm), not
+ * a published standard: no citable code source was found, and the hint says so. The opening only;
+ * `W_GARAGE_TOO_NARROW` already budgets the door-swing allowance per bay.
+ */
+const GARAGE_DOOR_SINGLE_MM = 2400;
+const GARAGE_DOOR_DOUBLE_MM = 4200;
+const GARAGE_DOOR_SOURCE = `${GARAGE_DOOR_SINGLE_MM} mm (one car) and ${GARAGE_DOOR_DOUBLE_MM} mm (two side by side) are common practice for a sectional door, not a published standard.`;
+
 /** Categories that occupy a parking bay. A bicycle or a motorcycle does not. */
 const PARKED_CATEGORIES: ReadonlySet<string> = new Set(["car"]);
+
+/** The parked cars in a garage: `car` fixtures whose centre lies in the room's rectangle. */
+function parkedCars(ctx: LintContext, rect: { x: number; y: number; w: number; h: number }): number {
+  return ctx.furniture.filter((f) => {
+    const fr = rectOf(f);
+    return PARKED_CATEGORIES.has(f.category) && pointInRoomBox({ x: fr.x + fr.w / 2, y: fr.y + fr.h / 2 }, rect);
+  }).length;
+}
 
 /**
  * The `W_ROOM_NO_FIXTURE` remedy: the fixture categories are built in (no import), and the
@@ -420,6 +438,7 @@ export const perRoomRules: LintRule = {
     W_ROOM_NO_FIXTURE: "fixtures",
     W_GARAGE_TOO_NARROW: "rooms",
     W_ROOM_TOO_NARROW: "walls",
+    W_GARAGE_OPENING_UNDERSIZED: "openings",
   },
   codes: [
     "W_ROOM_TOO_SMALL",
@@ -429,9 +448,10 @@ export const perRoomRules: LintRule = {
     "W_ROOM_NO_FIXTURE",
     "W_GARAGE_TOO_NARROW",
     "W_ROOM_TOO_NARROW",
+    "W_GARAGE_OPENING_UNDERSIZED",
   ],
   check(ctx: LintContext): Diagnostic[] {
-    const { rules, rooms, furniture, connectors, roomRects, wallSegs, nameOf, at, ir } = ctx;
+    const { rules, rooms, connectors, roomRects, wallSegs, nameOf, at, ir } = ctx;
     const out: Diagnostic[] = [];
     // PS5.2: each bedroom's bed reading and the main double bedroom, only under a ruleset that
     // reads them (none by default, so nothing here runs or files a skip).
@@ -558,10 +578,7 @@ export const perRoomRules: LintRule = {
       // in practice; an L-shaped one gets no warning rather than a wrong one.
       if (isGarage(r) && r.poly) ctx.skip("non-rectangular-room", r);
       if (isGarage(r) && !r.poly) {
-        const cars = furniture.filter((f) => {
-          const fr = rectOf(f);
-          return PARKED_CATEGORIES.has(f.category) && pointInRoomBox({ x: fr.x + fr.w / 2, y: fr.y + fr.h / 2 }, rect);
-        }).length;
+        const cars = parkedCars(ctx, rect);
         // An empty garage is still a garage, so it is measured against one bay: a room you
         // could not park in does not become sound by having no car drawn in it.
         const bays = Math.max(1, cars);
@@ -630,6 +647,42 @@ export const perRoomRules: LintRule = {
               `Lengthen \`${r.id}\` along the line of its vehicle door${depth.door._idAuthored === true ? ` \`${depth.door.id}\`` : ""} until ${d.required} mm stand clear between the walls' inner faces (the drawn size runs to the wall centrelines, so add half of each wall's thickness), or drop the \`uses garage\` tag if it is not one.`,
             ],
           });
+        }
+      }
+
+      // B6: a garage whose vehicle doors are too narrow to drive its cars through. Appended to
+      // the sequence. A polygon or circle garage already filed `non-rectangular-room` above, and
+      // one with no `door garage` on its perimeter the depth finding's `no-vehicle-door`. Cars
+      // are counted as the bays are; one car or none wants a door of GARAGE_DOOR_SINGLE_MM, two
+      // or more want one GARAGE_DOOR_DOUBLE_MM door or two single ones (a double garage with a
+      // door per bay is sound). The OPENING only: door swing per bay stays `W_GARAGE_TOO_NARROW`'s.
+      if (isGarage(r) && !r.poly && !r.circle) {
+        const vehicle = ctx.doors.filter((d) => d.doorKind === "garage" && onEdge(d.at));
+        if (vehicle.length > 0) {
+          const widest = vehicle.reduce((a, b) => (b.width > a.width ? b : a));
+          const cars = parkedCars(ctx, rect);
+          const singles = vehicle.filter((d) => d.width >= GARAGE_DOOR_SINGLE_MM).length;
+          const need =
+            widest.width < GARAGE_DOOR_SINGLE_MM
+              ? GARAGE_DOOR_SINGLE_MM
+              : cars >= 2 && widest.width < GARAGE_DOOR_DOUBLE_MM && singles < 2
+                ? GARAGE_DOOR_DOUBLE_MM
+                : null;
+          if (need !== null) {
+            const d = deficitMm(need, widest.width);
+            const two = need === GARAGE_DOOR_DOUBLE_MM;
+            const door = vehicle.length === 1 ? "a vehicle door" : "vehicle doors at most";
+            out.push({
+              severity: "warning",
+              code: "W_GARAGE_OPENING_UNDERSIZED",
+              ...at(r),
+              message: `${capFirst(nameOf(r, "garage"))} has ${door} ${d.available} mm wide, under the ${d.required} mm ${two ? `its ${cars} cars need to drive through side by side` : "one car needs to drive through"} — ${d.short} mm short.`,
+              hints: [
+                GARAGE_DOOR_SOURCE,
+                `Widen the vehicle door${widest._idAuthored === true ? ` \`${widest.id}\`` : ""} to ${d.required} mm or more${two ? `, add a second vehicle door at least ${GARAGE_DOOR_SINGLE_MM} mm wide` : ""}, ${cars > 0 ? `or park fewer cars in \`${r.id}\`` : `or drop the \`uses garage\` tag if \`${r.id}\` is not one`}.`,
+              ],
+            });
+          }
         }
       }
     }
