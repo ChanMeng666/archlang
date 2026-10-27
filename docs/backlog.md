@@ -56,6 +56,7 @@ at it. Its cards follow the same rules as entries here: stable ids, deleted when
 | Programme | Folder | What it is for |
 |---|---|---|
 | Plan soundness (`PS*` cards) | `docs/plans/plan-soundness/` | Professional rules and taste: relation-first authoring, validity checks that read existing facts, a change model (`impact`, `keep`), a taste score. Takes over G.12 as card PS3 |
+| Preview and remodel (A–F cards) | `docs/plans/preview-and-remodel/` | The downstream `packages/archlang-3d` reader of a resolved plan (ADR 0030, plan `docs/plans/archlang-3d/`) and the renovation wedge (wall status, a lock check, quantities, imperial input) |
 
 ---
 

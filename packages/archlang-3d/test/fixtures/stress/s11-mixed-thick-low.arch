@@ -1,0 +1,7 @@
+plan "s11-mixed-thick-low" {
+  units mm
+  grid 50
+  north up
+  wall id=tall partition thickness 100 height 3000 { (0,2000) (6000,2000) }
+  wall id=lowthick partition thickness 300 height 1200 { (3000,0) (3000,4000) }
+}
