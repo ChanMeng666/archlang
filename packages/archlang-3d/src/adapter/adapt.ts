@@ -7,6 +7,7 @@
 import * as core from "@chanmeng666/archlang";
 import type { Diagnostic, World } from "@chanmeng666/archlang";
 import { buildScene3D, type Storey } from "../scene3d/build.js";
+import { type MixedHeightJoint, mixedHeightJoints, wallOwnership } from "../walls/ownership.js";
 import type { Scene3D } from "../scene3d/types.js";
 
 export type RefusalCode = "E3D_CORE_TOO_OLD" | "E3D_PLAN_ERRORS" | "E3D_NO_WALLS";
@@ -19,7 +20,15 @@ export interface Refusal {
 }
 
 export type AdaptResult =
-  | { ok: true; scene: Scene3D; storeys: Storey[]; diagnostics: Diagnostic[] }
+  | {
+      ok: true;
+      scene: Scene3D;
+      storeys: Storey[];
+      /** The core's diagnostics (warnings only: an error refuses). */
+      diagnostics: Diagnostic[];
+      /** The package's own warnings, per storey (`W3D_MIXED_HEIGHT_JOINT`). */
+      warnings: Array<MixedHeightJoint & { level: number }>;
+    }
   | { ok: false; refusal: Refusal };
 
 export interface AdaptOptions {
@@ -27,6 +36,8 @@ export interface AdaptOptions {
   world?: World;
   /** The core version to stamp; default: `unknown`. */
   coreVersion?: string;
+  /** Largest sagitta (mm) of an arc's chords; default 2 (plan §4.1, `--curve-tol`). */
+  curveTolMm?: number;
 }
 
 /** The first core release expected to carry the seam (the exports are on `main`, unreleased). */
@@ -70,8 +81,14 @@ export function adaptPlan(source: string, opts: AdaptOptions = {}): AdaptResult 
   }
   return {
     ok: true,
-    scene: buildScene3D(storeys, { coreVersion: opts.coreVersion ?? "unknown" }),
+    scene: buildScene3D(storeys, {
+      coreVersion: opts.coreVersion ?? "unknown",
+      ...(opts.curveTolMm !== undefined ? { curveTolMm: opts.curveTolMm } : {}),
+    }),
     storeys,
     diagnostics: res.diagnostics,
+    warnings: storeys.flatMap((s) =>
+      mixedHeightJoints(wallOwnership(s.ir.walls)).map((w) => ({ ...w, level: s.level })),
+    ),
   };
 }

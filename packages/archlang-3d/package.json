@@ -25,6 +25,9 @@
   "peerDependencies": {
     "@chanmeng666/archlang": "^1.43.1"
   },
+  "dependencies": {
+    "earcut": "^3.2.4"
+  },
   "devDependencies": {
     "ajv": "^8.20.0",
     "esbuild": "^0.28.2",

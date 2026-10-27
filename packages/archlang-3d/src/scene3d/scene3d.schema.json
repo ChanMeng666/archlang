@@ -7,39 +7,90 @@
   "required": ["version", "kind", "meta", "levels"],
   "additionalProperties": false,
   "properties": {
-    "version": { "const": 0 },
-    "kind": { "const": "scene3d" },
-    "meta": { "$ref": "#/$defs/meta" },
-    "levels": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/level" } }
+    "version": {
+      "const": 0
+    },
+    "kind": {
+      "const": "scene3d"
+    },
+    "meta": {
+      "$ref": "#/$defs/meta"
+    },
+    "levels": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/level"
+      }
+    }
   },
   "$defs": {
-    "um": { "type": "integer", "description": "Length in integer micrometres (mm x 1000)." },
+    "um": {
+      "type": "integer",
+      "description": "Length in integer micrometres (mm x 1000)."
+    },
     "pt": {
       "type": "array",
-      "prefixItems": [{ "$ref": "#/$defs/um" }, { "$ref": "#/$defs/um" }],
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/um"
+        },
+        {
+          "$ref": "#/$defs/um"
+        }
+      ],
       "minItems": 2,
       "maxItems": 2
     },
-    "ring": { "type": "array", "minItems": 3, "items": { "$ref": "#/$defs/pt" } },
+    "ring": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "$ref": "#/$defs/pt"
+      }
+    },
     "polygon": {
       "type": "object",
       "required": ["outer"],
       "additionalProperties": false,
       "properties": {
-        "outer": { "$ref": "#/$defs/ring" },
-        "holes": { "type": "array", "items": { "$ref": "#/$defs/ring" } }
+        "outer": {
+          "$ref": "#/$defs/ring"
+        },
+        "holes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ring"
+          }
+        }
       }
     },
-    "id": { "type": "string", "minLength": 1 },
-    "provenance": { "enum": ["authored", "derived", "default", "user-param"] },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "provenance": {
+      "enum": ["authored", "derived", "default", "user-param"]
+    },
     "source": {
       "type": "object",
       "required": ["kind", "id"],
       "additionalProperties": false,
       "properties": {
-        "kind": { "type": "string" },
-        "id": { "type": "string" },
-        "span": { "type": "array", "items": { "type": "integer" }, "minItems": 2, "maxItems": 2 }
+        "kind": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "span": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        }
       }
     },
     "assumption": {
@@ -47,12 +98,22 @@
       "required": ["kind", "field", "value", "provenance", "rule"],
       "additionalProperties": false,
       "properties": {
-        "kind": { "type": "string" },
-        "id": { "type": "string" },
-        "field": { "type": "string" },
+        "kind": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "field": {
+          "type": "string"
+        },
         "value": {},
-        "provenance": { "$ref": "#/$defs/provenance" },
-        "rule": { "type": "string" }
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        },
+        "rule": {
+          "type": "string"
+        }
       }
     },
     "meta": {
@@ -60,18 +121,47 @@
       "required": ["name", "units", "tool", "assumptions"],
       "additionalProperties": false,
       "properties": {
-        "name": { "type": "string" },
-        "units": { "const": "mm" },
+        "name": {
+          "type": "string"
+        },
+        "units": {
+          "const": "mm"
+        },
         "tool": {
           "type": "object",
           "required": ["archlang3d", "archlang"],
           "additionalProperties": false,
-          "properties": { "archlang3d": { "type": "string" }, "archlang": { "type": "string" } }
+          "properties": {
+            "archlang3d": {
+              "type": "string"
+            },
+            "archlang": {
+              "type": "string"
+            }
+          }
         },
-        "north": { "oneOf": [{ "enum": ["up", "down", "left", "right"] }, { "type": "number" }] },
-        "siteBoundary": { "$ref": "#/$defs/ring" },
-        "params": { "type": "object" },
-        "assumptions": { "type": "array", "items": { "$ref": "#/$defs/assumption" } }
+        "north": {
+          "oneOf": [
+            {
+              "enum": ["up", "down", "left", "right"]
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "siteBoundary": {
+          "$ref": "#/$defs/ring"
+        },
+        "params": {
+          "type": "object"
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/assumption"
+          }
+        }
       }
     },
     "level": {
@@ -80,6 +170,7 @@
         "level",
         "elevation",
         "storeyHeight",
+        "footprint",
         "floors",
         "walls",
         "openings",
@@ -93,20 +184,84 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "level": { "type": "integer" },
-        "name": { "type": "string" },
-        "elevation": { "$ref": "#/$defs/um" },
-        "storeyHeight": { "$ref": "#/$defs/um" },
-        "floors": { "type": "array", "items": { "$ref": "#/$defs/floor" } },
-        "walls": { "type": "array", "items": { "$ref": "#/$defs/wall" } },
-        "openings": { "type": "array", "items": { "$ref": "#/$defs/opening" } },
-        "furniture": { "type": "array", "items": { "$ref": "#/$defs/furniture" } },
-        "stairs": { "type": "array", "items": { "$ref": "#/$defs/stair" } },
-        "voids": { "type": "array", "items": { "$ref": "#/$defs/box" } },
-        "columns": { "type": "array", "items": { "$ref": "#/$defs/box" } },
-        "outdoor": { "type": "array", "items": { "$ref": "#/$defs/outdoor" } },
-        "fences": { "type": "array", "items": { "$ref": "#/$defs/fence" } },
-        "roofs": { "type": "array", "items": { "$ref": "#/$defs/roof" } }
+        "level": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "elevation": {
+          "$ref": "#/$defs/um"
+        },
+        "storeyHeight": {
+          "$ref": "#/$defs/um"
+        },
+        "footprint": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ring"
+          }
+        },
+        "floors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/floor"
+          }
+        },
+        "walls": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/wall"
+          }
+        },
+        "openings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/opening"
+          }
+        },
+        "furniture": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/furniture"
+          }
+        },
+        "stairs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/stair"
+          }
+        },
+        "voids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/box"
+          }
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/box"
+          }
+        },
+        "outdoor": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/outdoor"
+          }
+        },
+        "fences": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/fence"
+          }
+        },
+        "roofs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/roof"
+          }
+        }
       }
     },
     "floor": {
@@ -114,53 +269,132 @@
       "required": ["id", "source", "polygon"],
       "additionalProperties": false,
       "properties": {
-        "id": { "$ref": "#/$defs/id" },
-        "source": { "$ref": "#/$defs/source" },
-        "polygon": { "$ref": "#/$defs/polygon" },
-        "uses": { "type": "array", "items": { "type": "string" } }
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "polygon": {
+          "$ref": "#/$defs/polygon"
+        },
+        "uses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       }
     },
     "wall": {
       "type": "object",
-      "required": ["id", "source", "footprint", "height", "thickness", "cuts"],
+      "required": ["id", "source", "footprint", "body", "height", "thickness", "cuts"],
       "additionalProperties": false,
       "properties": {
-        "id": { "$ref": "#/$defs/id" },
-        "source": { "$ref": "#/$defs/source" },
-        "category": { "type": "string" },
-        "material": { "type": "string" },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "category": {
+          "type": "string"
+        },
+        "material": {
+          "type": "string"
+        },
         "footprint": {
           "type": "array",
-          "items": { "$ref": "#/$defs/polygon" },
+          "items": {
+            "$ref": "#/$defs/polygon"
+          },
           "description": "Owned region after the core's joinery, one polygon per connected piece; openings NOT removed (see cuts)."
         },
-        "height": { "$ref": "#/$defs/um" },
-        "thickness": { "$ref": "#/$defs/um" },
+        "body": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/polygon"
+          },
+          "description": "The owned pieces with every opening cut removed."
+        },
+        "height": {
+          "$ref": "#/$defs/um"
+        },
+        "thickness": {
+          "$ref": "#/$defs/um"
+        },
         "cuts": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "Ids of the openings this wall hosts."
         }
       }
     },
     "opening": {
       "type": "object",
-      "required": ["id", "source", "kind", "host", "cut", "centre", "width", "sill", "head"],
+      "required": ["id", "source", "kind", "host", "cut", "centre", "jambs", "width", "sill", "head"],
       "additionalProperties": false,
       "properties": {
-        "id": { "$ref": "#/$defs/id" },
-        "source": { "$ref": "#/$defs/source" },
-        "kind": { "enum": ["door", "window", "opening"] },
-        "doorKind": { "enum": ["hinged", "sliding", "barn", "bifold", "pocket", "garage", "double"] },
-        "host": { "type": "string" },
-        "cut": { "$ref": "#/$defs/ring" },
-        "centre": { "$ref": "#/$defs/pt" },
-        "width": { "$ref": "#/$defs/um" },
-        "sill": { "$ref": "#/$defs/um" },
-        "head": { "$ref": "#/$defs/um" },
-        "hinge": { "enum": ["left", "right"] },
-        "swing": { "enum": ["in", "out"] },
-        "slide": { "enum": ["left", "right"] }
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "kind": {
+          "enum": ["door", "window", "opening"]
+        },
+        "doorKind": {
+          "enum": ["hinged", "sliding", "barn", "bifold", "pocket", "garage", "double"]
+        },
+        "host": {
+          "type": "string"
+        },
+        "cut": {
+          "$ref": "#/$defs/ring"
+        },
+        "centre": {
+          "$ref": "#/$defs/pt"
+        },
+        "jambs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/pt"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "leaves": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/pt"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "width": {
+          "$ref": "#/$defs/um"
+        },
+        "sill": {
+          "$ref": "#/$defs/um"
+        },
+        "head": {
+          "$ref": "#/$defs/um"
+        },
+        "hinge": {
+          "enum": ["left", "right"]
+        },
+        "swing": {
+          "enum": ["in", "out"]
+        },
+        "slide": {
+          "enum": ["left", "right"]
+        }
       }
     },
     "furniture": {
@@ -168,19 +402,40 @@
       "required": ["id", "source", "category", "centre", "size", "yawDeg", "asset"],
       "additionalProperties": false,
       "properties": {
-        "id": { "$ref": "#/$defs/id" },
-        "source": { "$ref": "#/$defs/source" },
-        "category": { "type": "string" },
-        "room": { "type": "string" },
-        "centre": { "$ref": "#/$defs/pt" },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "category": {
+          "type": "string"
+        },
+        "room": {
+          "type": "string"
+        },
+        "centre": {
+          "$ref": "#/$defs/pt"
+        },
         "size": {
           "type": "object",
           "required": ["w", "d"],
           "additionalProperties": false,
-          "properties": { "w": { "$ref": "#/$defs/um" }, "d": { "$ref": "#/$defs/um" } }
+          "properties": {
+            "w": {
+              "$ref": "#/$defs/um"
+            },
+            "d": {
+              "$ref": "#/$defs/um"
+            }
+          }
         },
-        "yawDeg": { "type": "integer" },
-        "asset": { "type": "string" }
+        "yawDeg": {
+          "type": "integer"
+        },
+        "asset": {
+          "type": "string"
+        }
       }
     },
     "box": {
@@ -188,14 +443,27 @@
       "required": ["id", "source", "at", "size"],
       "additionalProperties": false,
       "properties": {
-        "id": { "$ref": "#/$defs/id" },
-        "source": { "$ref": "#/$defs/source" },
-        "at": { "$ref": "#/$defs/pt" },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "at": {
+          "$ref": "#/$defs/pt"
+        },
         "size": {
           "type": "object",
           "required": ["w", "h"],
           "additionalProperties": false,
-          "properties": { "w": { "$ref": "#/$defs/um" }, "h": { "$ref": "#/$defs/um" } }
+          "properties": {
+            "w": {
+              "$ref": "#/$defs/um"
+            },
+            "h": {
+              "$ref": "#/$defs/um"
+            }
+          }
         }
       }
     },
@@ -204,11 +472,21 @@
       "required": ["id", "source", "box", "dir", "width"],
       "additionalProperties": false,
       "properties": {
-        "id": { "$ref": "#/$defs/id" },
-        "source": { "$ref": "#/$defs/source" },
-        "box": { "$ref": "#/$defs/box" },
-        "dir": { "enum": ["up", "down"] },
-        "width": { "$ref": "#/$defs/um" }
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "box": {
+          "$ref": "#/$defs/box"
+        },
+        "dir": {
+          "enum": ["up", "down"]
+        },
+        "width": {
+          "$ref": "#/$defs/um"
+        }
       }
     },
     "outdoor": {
@@ -216,11 +494,24 @@
       "required": ["id", "source", "surface", "polygon"],
       "additionalProperties": false,
       "properties": {
-        "id": { "$ref": "#/$defs/id" },
-        "source": { "$ref": "#/$defs/source" },
-        "surface": { "type": "string" },
-        "polygon": { "$ref": "#/$defs/polygon" },
-        "rail": { "type": "array", "items": { "type": "string" } }
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "surface": {
+          "type": "string"
+        },
+        "polygon": {
+          "$ref": "#/$defs/polygon"
+        },
+        "rail": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       }
     },
     "fence": {
@@ -228,11 +519,25 @@
       "required": ["id", "source", "style", "points", "closed"],
       "additionalProperties": false,
       "properties": {
-        "id": { "$ref": "#/$defs/id" },
-        "source": { "$ref": "#/$defs/source" },
-        "style": { "type": "string" },
-        "points": { "type": "array", "items": { "$ref": "#/$defs/pt" }, "minItems": 2 },
-        "closed": { "type": "boolean" }
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "style": {
+          "type": "string"
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/pt"
+          },
+          "minItems": 2
+        },
+        "closed": {
+          "type": "boolean"
+        }
       }
     },
     "roof": {
@@ -240,11 +545,21 @@
       "required": ["id", "source", "form", "ring", "provenance"],
       "additionalProperties": false,
       "properties": {
-        "id": { "$ref": "#/$defs/id" },
-        "source": { "$ref": "#/$defs/source" },
-        "form": { "const": "flat" },
-        "ring": { "$ref": "#/$defs/ring" },
-        "provenance": { "$ref": "#/$defs/provenance" }
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "form": {
+          "const": "flat"
+        },
+        "ring": {
+          "$ref": "#/$defs/ring"
+        },
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        }
       }
     }
   }

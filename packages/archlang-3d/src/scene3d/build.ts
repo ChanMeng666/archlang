@@ -1,15 +1,15 @@
 /**
  * Resolved storeys → Scene3D v0. A mapping of the core's resolved facts into micrometres and
  * plan-aligned records: no geometry is built here beyond the core's own (wall ownership through
- * `joinWallSet`, arcs through `loopsToPolygons`). Every value the plan did not state goes to the
+ * `joinWallSet`; arcs tessellated to a chord tolerance, `curves.ts`). Every value the plan did not state goes to the
  * assumption ledger.
  *
  * Reads only fields the exported IR types document; underscore-prefixed fields are not part of
  * the core's promise (ADR 0031) and are never read (`test/no-private-fields.test.ts`).
  */
 import {
-  loopsToPolygons,
-  type EdgeLoop,
+  doorLeaves,
+  doorSwing,
   type RColumn,
   type RDoor,
   type ResolvedElement,
@@ -24,8 +24,9 @@ import {
   type RVoid,
   type RWindow,
 } from "@chanmeng666/archlang";
+import { circleRing, DEFAULT_CURVE_TOL_MM, tessellateLoops } from "../curves.js";
 import { um, umPoint } from "../units.js";
-import { type Point, type Ring, wallOwnership } from "../walls/ownership.js";
+import { type Point, wallOwnership } from "../walls/ownership.js";
 import type {
   Assumption,
   Box,
@@ -36,6 +37,7 @@ import type {
   Opening,
   Outdoor,
   Polygon,
+  Pt,
   Ring3,
   Roof,
   Scene3D,
@@ -57,6 +59,8 @@ export interface Storey {
 export interface BuildOptions {
   /** The core version the plan was resolved with, stamped into `meta.tool.archlang`. */
   coreVersion: string;
+  /** Largest sagitta (mm) of an arc's chords; default {@link DEFAULT_CURVE_TOL_MM}. */
+  curveTolMm?: number;
 }
 
 const ring = (r: readonly Point[]): Ring3 => r.map(umPoint);
@@ -71,17 +75,6 @@ const rectRing = (at: Point, size: { w: number; h: number }): Point[] => [
   { x: at.x, y: at.y + size.h },
 ];
 
-/** A circle as two half-arcs, discretised by the core's own arc tessellation. */
-function circleRing(c: Point, r: number): Ring {
-  const a = { x: c.x + r, y: c.y };
-  const b = { x: c.x - r, y: c.y };
-  const loop: EdgeLoop = [
-    { t: "arc", arc: { center: c, r, a, b, sweep: Math.PI, start: 0 } },
-    { t: "arc", arc: { center: c, r, a: b, b: a, sweep: Math.PI, start: Math.PI } },
-  ];
-  return loopsToPolygons([loop])[0] ?? [];
-}
-
 const polygon = (outer: readonly Point[], holes: readonly Point[][] = []): Polygon =>
   holes.length > 0 ? { outer: ring(outer), holes: holes.map(ring) } : { outer: ring(outer) };
 
@@ -92,8 +85,10 @@ const box = (e: RColumn | RVoid | RStair): Box => ({
   size: { w: um(e.size.w), h: um(e.size.h) },
 });
 
-function floorOf(r: RRoom): Floor {
-  const outer = r.poly ?? (r.circle ? circleRing(r.circle.c, r.circle.r) : rectRing(r.at, r.size));
+function floorOf(r: RRoom, tol: number): Floor {
+  // A circle first: the core also carries it as a fixed 48-gon `poly` for the drawing, and the
+  // exact circle is what the chord tolerance discretises.
+  const outer = r.circle ? circleRing(r.circle.c, r.circle.r, tol) : (r.poly ?? rectRing(r.at, r.size));
   return { id: r.id, source: source(r), polygon: polygon(outer), ...(r.uses?.length ? { uses: [...r.uses] } : {}) };
 }
 
@@ -141,8 +136,9 @@ const stairOf = (s: RStair): Stair => ({
 function wallsAndOpenings(
   ir: ResolvedPlan,
   byId: ReadonlyMap<string, ResolvedElement>,
-): { walls: Wall[]; openings: Opening[] } {
-  const own = wallOwnership(ir.walls);
+  tol: number,
+): { walls: Wall[]; openings: Opening[]; footprint: Ring3[] } {
+  const own = wallOwnership(ir.walls, (loops) => tessellateLoops(loops, tol));
   const cutsOf = new Map<number, string[]>();
   const openings: Opening[] = [];
   for (const cut of own.cuts) {
@@ -153,7 +149,7 @@ function wallsAndOpenings(
     const el = byId.get(id);
     const kind =
       op.kind ?? (el?.kind === "door" || el?.kind === "window" || el?.kind === "opening" ? el.kind : "opening");
-    const outer = loopsToPolygons([cut.loop])[0] ?? [];
+    const outer = tessellateLoops([cut.loop], tol)[0] ?? [];
     // The core registers every opening with a sill (a window's own, 0 for a door or a cased
     // opening) and a head; an opening without them would be dropped here, which the corpus test
     // turns red by counting the scene's openings against the joinery's cuts.
@@ -161,6 +157,9 @@ function wallsAndOpenings(
     const head = op.head ?? (el && "head" in el ? (el as RDoor | RWindow | ROpening).head : undefined);
     if (sill === undefined || head === undefined) continue;
     const door = el?.kind === "door" ? (el as RDoor) : undefined;
+    const hosted = el as RDoor | RWindow | ROpening | undefined;
+    const jambs = jambsOf(op.at, op.width, hosted?.host ?? null);
+    const leaves = door ? doorLeaves(door).map((l) => [umPoint(l.hinge), umPoint(l.farJamb)] as [Pt, Pt]) : [];
     openings.push({
       id,
       source: el ? source(el) : { kind, id },
@@ -169,6 +168,8 @@ function wallsAndOpenings(
       host: host.id,
       cut: ring(outer),
       centre: umPoint(op.at),
+      jambs,
+      ...(leaves.length > 0 ? { leaves } : {}),
       width: um(op.width),
       sill: um(sill),
       head: um(head),
@@ -183,20 +184,31 @@ function wallsAndOpenings(
     category: o.wall.category,
     material: o.wall.material,
     footprint: o.pieces.map((p) => polygon(p.outer, p.holes)),
+    body: o.body.map((p) => polygon(p.outer, p.holes)),
     height: um(o.wall.height),
     thickness: um(o.wall.thickness),
     cuts: cutsOf.get(o.index) ?? [],
   }));
-  return { walls, openings };
+  return { walls, openings, footprint: own.outline.map(ring) };
 }
 
-function levelOf(s: Storey, ledger: Assumption[]): Level {
+/**
+ * An opening's two jambs on its host's centreline: the core's own chord through the doorway (its
+ * tangent there on a curved host), read through `doorSwing` with a probe door of the opening's width,
+ * so the 3D package never re-derives a wall direction.
+ */
+function jambsOf(at: Point, width: number, host: RDoor["host"]): [Pt, Pt] {
+  const s = host ? doorSwing({ at, width, hinge: "left", swing: "in", host }) : null;
+  return s ? [umPoint(s.hinge), umPoint(s.farJamb)] : [umPoint(at), umPoint(at)];
+}
+
+function levelOf(s: Storey, ledger: Assumption[], tol: number): Level {
   const { ir } = s;
   const els = ir.elements;
   const byId = new Map(els.map((e) => [e.id, e] as const));
   const of = <K extends ResolvedElement["kind"]>(k: K): Extract<ResolvedElement, { kind: K }>[] =>
     els.filter((e): e is Extract<ResolvedElement, { kind: K }> => e.kind === k);
-  const { walls, openings } = wallsAndOpenings(ir, byId);
+  const { walls, openings, footprint } = wallsAndOpenings(ir, byId, tol);
   const roofs: Roof[] = of("roof").map((r: RRoof) => ({
     id: r.id,
     source: source(r),
@@ -231,7 +243,8 @@ function levelOf(s: Storey, ledger: Assumption[]): Level {
     ...(s.name ? { name: s.name } : {}),
     elevation: um(ir.elevation),
     storeyHeight: um(ir.storeyHeight),
-    floors: of("room").map(floorOf),
+    footprint,
+    floors: of("room").map((r) => floorOf(r, tol)),
     walls,
     openings,
     furniture: of("furniture").map(furnitureOf),
@@ -248,10 +261,18 @@ function levelOf(s: Storey, ledger: Assumption[]): Level {
 export function buildScene3D(storeys: readonly Storey[], opts: BuildOptions): Scene3D {
   const first = storeys[0];
   if (!first) throw new Error("buildScene3D needs at least one storey");
+  const tol = opts.curveTolMm ?? DEFAULT_CURVE_TOL_MM;
   const ledger: Assumption[] = [
     { kind: "door", field: "pose", value: "closed", provenance: "default", rule: "door-pose-closed" },
+    {
+      kind: "curve",
+      field: "tolerance_mm",
+      value: tol,
+      provenance: opts.curveTolMm === undefined ? "default" : "user-param",
+      rule: "curve-tol",
+    },
   ];
-  const levels = storeys.map((s) => levelOf(s, ledger));
+  const levels = storeys.map((s) => levelOf(s, ledger, tol));
   return {
     version: 0,
     kind: "scene3d",
@@ -261,6 +282,7 @@ export function buildScene3D(storeys: readonly Storey[], opts: BuildOptions): Sc
       tool: { archlang3d: ARCHLANG_3D_VERSION, archlang: opts.coreVersion },
       north: typeof first.ir.north === "object" ? first.ir.north.deg : first.ir.north,
       ...(first.ir.siteBoundary ? { siteBoundary: ring(first.ir.siteBoundary) } : {}),
+      params: { curveTolMm: tol },
       assumptions: ledger,
     },
     levels,
