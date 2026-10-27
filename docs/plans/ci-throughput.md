@@ -1,6 +1,6 @@
 # CI throughput: options for the owner
 
-Status: A live 2026-10-27; B/C/D in PR #290. Every option changes a workflow or a repository setting,
+Status: A, B, C, D live 2026-10-27 (B/C/D by PR #290). Every option changes a workflow or a repository setting,
 and the owner decides which to take. Job map and per-job minutes: `docs/agents/commands.md` § CI.
 
 ## 1. What is measured
@@ -16,6 +16,11 @@ and the owner decides which to take. Job map and per-job minutes: `docs/agents/c
 - No `concurrency` group and no path filters in `ci.yml`; `main` has no branch protection;
   `allow_auto_merge`, `allow_update_branch` and `delete_branch_on_merge` are all false.
 - Programme PRs are mostly records only (cards, handoff, audits, backlog, CHANGELOG).
+- Measured 2026-10-27 (row-7 tranche 1, code PRs #296–#301; option D live, Node 22 no longer runs coverage on PRs):
+  minutes per job on those PRs: Node 22 13.0–17.6, Node 20 15.3–20.1, Node 18 16.3–21.7, Windows 12.4–20.8,
+  Docs E2E 3.3–10.3, Playground E2E 1.5–10.5, Workspace builds 1.7–2.1, Benchmark about 1, Changed paths 0.1.
+  The `Changed paths` job printed `Changes output set to ["code"]` on every code PR.
+- Records-only PR #<this>: <filled in step 6>
 
 **The cost today** is the coordinator's waiting, not runner minutes: records conflict after nearly
 every merge (`docs/agents/gotchas.md` § PRs & CI), so the next dependent PR waits for the previous

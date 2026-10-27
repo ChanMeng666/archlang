@@ -392,6 +392,7 @@ PS5.1b: PR #247, 9cc29c7e)
   moved `validate --json` digest row is explained. D13 (compile-channel warnings first) stands.
 
 **PS7.8 · A whole-loop arm in the next first-contact re-measure.** `todo` (D26)
+- Draft arm-2 prompt: `research/2026-10-27-ps78-arm2-prompt-draft.md` (2026-10-27), awaiting the owner's confirmation.
 - The protocol's frozen per-brief prompt ("stop when it compiles", `audits/first-contact-protocol.md`
   line 56, in every run since 2026-10-24) stays unchanged as arm 1, for comparability. Under it the
   authors who stopped with warnings standing were 0 / 0 / 2 / 2 (arms A, B, C, row 6), and no row-6

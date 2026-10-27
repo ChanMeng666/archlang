@@ -552,7 +552,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS2 · Validity checks that read existing facts (small, high yield)
 
-77 cards: 28 done, 49 todo (PS2.64–PS2.72 filed by the row-6 re-measure, PS2.73 by the 2026-10-27 audit). Cards, tables and as-built pointers: `cards.md` § PS2.
+77 cards: 31 done, 46 todo (PS2.64–PS2.72 filed by the row-6 re-measure, PS2.73 by the 2026-10-27 audit; PS2.64, PS2.65, PS2.66 done 2026-10-27, catch rate 73/80). Cards, tables and as-built pointers: `cards.md` § PS2.
 
 ### PS3 · Relation-first authoring (D1 + D5; needs an ADR)
 
@@ -572,7 +572,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 
 ### PS7 · Staged authoring for agents
 
-9 cards: 5 done, 3 todo (PS7.7, PS7.8 filed by the row-6 re-measure, PS7.9 the spec headroom), 1 parked. Cards, tables and as-built pointers: `cards.md` § PS7.
+9 cards: 6 done, 2 todo (PS7.8 filed by the row-6 re-measure, PS7.9 the spec headroom), 1 parked; PS7.7 done 2026-10-27 (PR #298). Cards, tables and as-built pointers: `cards.md` § PS7.
 
 ## 7. Suggested order and acceptance
 
@@ -585,7 +585,7 @@ The cards themselves live in `cards.md` (D16); each family below keeps one count
 | 4 | PS0.4, PS4.1, PS4.2, PS4.5 | The widening drill's `impact` names every moved, held and broken item correctly. *Status:* met 2026-10-26: PS4.2 (PR #240, 7954f252) named the moved and broken items; PS4.5 (PR #281) reports the shell and `p` as held, with their gaps |
 | 5 | PS5.1–PS5.3, PS2.10–PS2.12 | The taste score separates the corpus's known-bad from known-good plans monotonically; the clearances corpus class reaches ≥ 10/18. *Status:* met 2026-10-25 (D14); PS2.11a–d merged (PRs #252, #253), clearances 11/19, corpus 59/73. Status and re-measure history: `research/2026-10-26-readme-history.md` § §7 row 5 |
 | 6 | PS4.3, PS4.4, PS5.4, PS7.x, PS2.11e | **Met in part** 2026-10-27 (D26). The row is met when: `keep` invariants and brief-bound sizes are checked by `validate`, the widening drill reports a broken `keep` with its signed residual, and `preview --review` rings every flagged element; a re-measure closes the row (D10). *Status:* every card landed (PRs #267–#286) and the D10 re-measure ran (`audits/2026-10-26-first-contact-rerun-row6.md`, figures in D26); the review-sheet clause is false as built: **PS4.6** is the remainder. Detail: `research/2026-10-26-readme-history.md` § §7 row 6. Order: `handoff.md` § 4 |
-| 7 | PS6.1 | — |
+| 7 | PS6.1 | — *Status:* in progress: tranche 1 (PS2.64, PS2.65, PS2.66, PS7.7) landed 2026-10-27, PRs #296–#301; corpus 73/80 |
 
 Rows 1–4 as they stood before this pruning, verbatim: `research/2026-10-25-ps5-as-built.md` § §7 rows 1–4.
 
