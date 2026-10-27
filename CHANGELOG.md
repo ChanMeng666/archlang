@@ -487,6 +487,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `W_GARAGE_TOO_NARROW` now also judges a garage's clear depth along its `door garage`: 5000 mm by
+  default, a parking bay's length, and 6000 mm under `uk-residential-advisory` (new ruleset field
+  `garageDepthMm`; a garage with no vehicle door files a `no-vehicle-door` coverage skip; plan card PS2.70).
 - `W_ROOM_MISSING_DEFINING` now also reports a bathroom that holds a WC and no basin, unless a basin
   stands in a room a door or opening joins it to directly that is not a kitchen (Approved Document G,
   G4; plan card PS2.66). A WC room is still defined by its WC alone.
