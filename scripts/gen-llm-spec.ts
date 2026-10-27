@@ -769,6 +769,7 @@ arch fix plan.arch --dry-run --json  # preview/apply the machine-applicable diag
 arch validate plan.arch --intent brief.json --feedback --json  # gate on a brief's intent contract (miss → exit 2)
 arch score plan.arch --brief brief.json --json  # satisfied/total — measures, never gates
 arch score plan.arch --taste generic --json  # a reviewer's taste report, 0–1, never gates
+arch impact new.arch --against old.arch --lock a,b  # exit 2 if a locked id= changed
 \`\`\`
 
 **Self-correction loop:** compile → \`validate --json\` (fix its \`next\` first) → lint → repair; author in stages: \`validate --stage ${AUTHORING_STAGES.slice(1, -1).join("|")}\` in turn, advancing when \`at_stage.clean\`. If
@@ -783,9 +784,8 @@ window (that is a design choice). When lint reports \`W_ROOM_UNREACHABLE\`, \`W_
 \`W_BEDROOM_NO_WINDOW\`, or \`W_BATH_VIA_BEDROOM\`, run \`arch suggest --json\` — it returns
 ready-to-paste \`door\`/\`window\` statements (furniture-aware: a door candidate never opens onto a
 wardrobe), each with a rationale, referencing a wall only by a stable ref (authored id or unique
-category) or absolute coordinates, never a re-bindable positional auto-id; pick one and insert it. If nothing fits, read
-\`describe --json\` (\`access.rooms[].reachable\`, room \`bbox\`/\`adjacent\`, building extent =
-min/max of room boxes) and attach the opening yourself — an exterior entrance into a cut-off living
+category) or absolute coordinates; pick one and insert it. If nothing fits, read
+\`describe --json\` (\`access.rooms[].reachable\`, room \`bbox\`/\`adjacent\`) and attach the opening yourself — an exterior entrance into a cut-off living
 space beats routing a bath through a bedroom — then re-\`repair\` and \`validate --strict\`. Full recipe:
 \`skills/archlang/SKILL.md\` (\`archlang context --section workflow\`).
 
@@ -796,7 +796,7 @@ space beats routing a bath through a bedroom — then re-\`repair\` and \`valida
 | Expecting +y to go up | +y goes **down**; a room below another has a larger y. |
 | Hand-summing room offsets | Lay the row with \`strip\`. |
 | Furniture floated at a guessed \`at\`, or an \`inset\` hand-computed from a wall thickness | Place it \`in <room> anchor <9-point> [flush] [inset]\` or \`against wall <id>\` — closed-form, never names a thickness. |
-| \`size 4000\` (no height) | Sizes are \`WxH\`: \`size 4000x3000\` (or \`W x H\` with spaces). |
+| \`size 4000\` | Sizes are \`WxH\`: \`size 4000x3000\`. |
 | String math without interpolation | Use \`"{expr}"\`, e.g. \`label "{round(W / 1000)} m"\`. Only the built-ins above and your own \`let f(…)\` are callable — \`aream2\` is NOT built in. |
 
 ## Worked examples

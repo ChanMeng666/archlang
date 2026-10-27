@@ -109,6 +109,7 @@ import { lex } from "./lexer.js";
 import { keepResultsOf, type ResolvedLevel } from "./ir.js";
 import { type KeepAt, type KeepResult, keepHalfOf, keepRefsOf, mmNumber } from "./keep.js";
 import { lint } from "./lint.js";
+import { checkLocks, type ImpactLock, type LockElement, type LockSide, lockSpanOf } from "./lock.js";
 import { liesOnLine, type RoomEdge, roomEdgeLine } from "./analyze/contacts.js";
 import { fmtHalfLattice } from "./num-format.js";
 import { parse } from "./parser.js";
@@ -126,6 +127,8 @@ export interface ImpactOptions {
   /** The before side's environment, when it differs (`--against` a file in another directory). */
   beforeWorld?: CompileOptions["world"];
   plugins?: CompileOptions["plugins"];
+  /** Ids that must not change (card B1): the report gains {@link ImpactReport.lock}. */
+  lock?: readonly string[];
 }
 
 /** One link of a `why` chain or a held element's `because`. */
@@ -257,6 +260,8 @@ export interface ImpactReport {
   /** The keeps, matched across the sides; present only when both sides resolve and either
    *  declares a keep (see the module header). */
   keeps?: ImpactKeeps;
+  /** The lock check, present only when {@link ImpactOptions.lock} was given (`src/lock.ts`). */
+  lock?: ImpactLock;
   /** The report as human lines (sections Lets / Changed / Held / Broke / Healed, then the
    *  keeps' when present). */
   summary: string[];
@@ -318,6 +323,8 @@ interface Side {
   keeps?: KeepResult[];
   /** The storeys, for reading a keep's targets on its own storey. */
   levels: readonly ResolvedLevel[];
+  /** The elements a lock can name, with their spans and whether their id was written. */
+  lock: LockSide;
 }
 
 interface PlaceReads {
@@ -510,6 +517,7 @@ function readSide(source: string, opts: ImpactOptions): Side {
     size: new Map(),
     ...(keeps ? { keeps } : {}),
     levels,
+    lock: { elements: new Map(), upper: new Set() },
   };
   if (!ir) return side;
   // The lowest storey's depends rows, exactly as `describe(…, { facts: ["depends"] }).depends`
@@ -552,7 +560,52 @@ function readSide(source: string, opts: ImpactOptions): Side {
     if (s) side.stmt.set(w.id, keyOf(s));
   }
   for (const a of ir.axes ?? []) side.axes.set(a.label, `${a.axis}:${a.pos}`);
+  side.lock = lockSideOf(ir, levels, index);
   return side;
+}
+
+/** Whether the author wrote `e`'s id: the resolver's flag where it records one (rooms and
+ *  walls always; doors, windows and furniture only when written), a derived opening's clause,
+ *  else the `id=` on the statement it came from. A derived wall never has one. */
+function idWritten(e: ResolvedElement | RWall, index: ReturnType<typeof indexStatements> | undefined): boolean {
+  const flag = (e as { _idAuthored?: boolean })._idAuthored;
+  if (flag !== undefined) return flag;
+  if (e.kind === "door" || e.kind === "window" || e.kind === "furniture" || e.kind === "walls") return false;
+  if (e.kind === "wall") return false;
+  const d = e.kind === "opening" ? (e as ROpening)._derived : undefined;
+  if (d) return d.idAuthored;
+  const s = index?.statement(e.span, e._file) as { id?: unknown } | undefined;
+  return typeof s?.id === "string" && s.id !== "";
+}
+
+/** The lowest storey's elements and walls by id (the first of a repeated id), as a lock reads
+ *  them; and every id that stands only on a storey above it. */
+function lockSideOf(
+  ir: ResolvedPlan,
+  levels: readonly ResolvedLevel[],
+  index: ReturnType<typeof indexStatements> | undefined,
+): LockSide {
+  const elements = new Map<string, LockElement>();
+  const add = (e: ResolvedElement | RWall): void => {
+    if (elements.has(e.id)) return;
+    const span = lockSpanOf(e.span, e._file);
+    const door = e.kind === "door" ? (e as { hinge?: string; swing?: string }) : undefined;
+    elements.set(e.id, {
+      kind: e.kind,
+      written: idWritten(e, index),
+      ...(span ? { span } : {}),
+      ...(door?.hinge !== undefined && door.swing !== undefined ? { swing: `${door.hinge} ${door.swing}` } : {}),
+    });
+  };
+  for (const e of ir.elements as ResolvedElement[]) if (e.kind !== "walls" && e.kind !== "wall") add(e);
+  for (const w of ir.walls) add(w);
+  const upper = new Set<string>();
+  for (const l of levels) {
+    if (l.ir === ir) continue;
+    for (const e of l.ir.elements as ResolvedElement[]) if (!elements.has(e.id)) upper.add(e.id);
+    for (const w of l.ir.walls) if (!elements.has(w.id)) upper.add(w.id);
+  }
+  return { elements, upper };
 }
 
 // ---------------------------------------------------------------------------------------
@@ -648,8 +701,13 @@ export function impact(before: string, after: string, opts: ImpactOptions = {}):
     );
     buildChanges(A, B, diff, report);
   }
-  report.summary = summaryOf(report);
-  return report;
+  // After `keeps`, before `summary`, as the JSON prints it.
+  const { summary: _summary, ...head } = report;
+  const out: ImpactReport = opts.lock
+    ? { ...head, lock: checkLocks(opts.lock, ok ? A.lock : null, ok ? B.lock : null, report.changed), summary: [] }
+    : report;
+  out.summary = summaryOf(out);
+  return out;
 }
 
 function buildChanges(A: Side, B: Side, diff: PlanDiff, report: ImpactReport): void {
@@ -1258,6 +1316,14 @@ function summaryOf(r: ImpactReport): string[] {
     keeps("Keeps healed", r.keeps.healed, true);
     keeps("Keeps added", r.keeps.added, false);
     keeps("Keeps removed", r.keeps.removed, false);
+  }
+  if (r.lock) {
+    const l = r.lock;
+    out.push(
+      `Locked (${l.locked.length}): ${!l.checked ? "not checked, a side does not resolve" : l.ok ? "none changed" : `${l.violations.length} changed, ${l.refused.length} refused`}`,
+    );
+    for (const v of l.violations) out.push(`  ${v.code}: ${v.message}`);
+    for (const f of l.refused) out.push(`  ${f.code}: ${f.message} ${f.hint}`);
   }
   return out;
 }

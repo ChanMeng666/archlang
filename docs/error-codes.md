@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**143 errors** · **87 warnings**
+**145 errors** · **87 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -85,6 +85,8 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_LEVEL_DUP`](#e_level_dup) | error | Two `level` blocks declare the same storey number. |
 | [`E_LEVEL_MIX`](#e_level_mix) | error | A drawable statement sits beside `level` blocks. |
 | [`E_LEVEL_NEST`](#e_level_nest) | error | `level` used inside a block or component. |
+| [`E_LOCKED_ELEMENT_CHANGED`](#e_locked_element_changed) | error | An element `archlang impact --lock` names changed between the two versions. |
+| [`E_LOCK_UNNAMED`](#e_lock_unnamed) | error | `archlang impact --lock` names an element whose id was not written, or no element at all. |
 | [`E_NON_FINITE`](#e_non_finite) | error | A number is too large to be finite. |
 | [`E_OPENING_ABOVE_WALL`](#e_opening_above_wall) | error | An opening's head is above the wall it is cut in. |
 | [`E_OPENING_DATUM`](#e_opening_datum) | error | An opening's position names no datum that applies to its run. |
@@ -1204,6 +1206,30 @@ plan "H" {
 
 ```arch static
 component c() { level 1 { } }   # error: only allowed at plan level
+```
+
+## E_LOCKED_ELEMENT_CHANGED
+
+*error* — An element `archlang impact --lock` names changed between the two versions.
+
+**Cause.** `--lock <id,…>` names elements that must stay as they were. An element is changed when, on the lowest storey, it moved (an opening also when it slid along an unchanged wall), resized, was re-hosted (another wall, relation or joined spaces), was re-thickened, changed its door swing or any other resolved field, vanished or appeared. A relabel is not a change. Each violation carries the element's span on both sides. Raised by `impact()`, never by `compile()`.
+
+**Fix.** Put the locked element back as it was in the older file, or drop it from `--lock` if the change is intended.
+
+```arch static
+window id=w1 on s at 1200 width 1200   # was `at 1100`: archlang impact new.arch --against old.arch --lock w1: error, moved 100 mm
+```
+
+## E_LOCK_UNNAMED
+
+*error* — `archlang impact --lock` names an element whose id was not written, or no element at all.
+
+**Cause.** A lock names an element by the `id=` its author wrote. An assigned id (`room_3`, `window_2`, or the internal name of a wall `walls from rooms` derived) shifts when a statement is inserted ahead of it, so a lock on it could follow another element; it is refused. So is a name no element of either version carries, or one that stands only above the lowest storey, which `impact` does not compare yet. Raised by `impact()`, never by `compile()`.
+
+**Fix.** Write `id=<name>` on the element in both versions and lock that name.
+
+```arch static
+window on s at 1200 width 1200   # assigned window_1: archlang impact new.arch --against old.arch --lock window_1: error, write id= first
 ```
 
 ## E_NON_FINITE

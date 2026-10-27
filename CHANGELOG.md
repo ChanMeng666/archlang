@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `archlang impact … --lock <id,…>` (and `impact(before, after, { lock })`): a lock check without
+  syntax. Each locked element that moved, resized, was re-hosted or re-thickened, changed its door
+  swing or another resolved field, vanished or appeared is `E_LOCKED_ELEMENT_CHANGED` with its span
+  on both sides (`lock.violations` in `--json`), and the command exits 2. A lock names only an
+  element whose `id=` was written: a lock on an assigned id (which shifts when a statement is
+  inserted ahead of it), on a name neither version carries, or above the lowest storey is refused
+  with `E_LOCK_UNNAMED`. New exports `checkLocks`, `parseLockList` and the `ImpactLock`,
+  `LockViolation`, `LockRefusal`, `LockSpan`, `LockSide`, `LockElement` types.
 - Package-root exports for downstream consumers of a resolved plan (ADR 0031): `resolvePlan` (the
   complete parse → link → resolve path; unlike `resolveAll(compile(src).ast)` it keeps imported and
   placed content), `joinWallSet` and `loopsToPolygons` (the wall joinery, with the `split` argument

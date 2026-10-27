@@ -68,6 +68,8 @@ const HOSTED =
   "raised by a HOST before compile() runs (the hosted MCP Worker's byte cap and rate limit, `inputTooLarge()`/`rateLimited()`), never by compile()/lint(), which have neither; pinned in test/input-limit.test.ts";
 const IMPACT =
   "raised by `applyLetOverride()` (`arch impact --set`) before anything compiles, never by compile()/lint(); the example is executed in test/impact.test.ts";
+const LOCK =
+  "raised by `impact()` with a lock (`arch impact --against old.arch --lock <id,…>`) on two versions of a plan, never by compile()/lint(); pinned in test/lock.test.ts";
 const FRAGMENT =
   "a one-line fragment: the code needs a building around it (a wall to be off, rooms to be unreachable between, a sheet to overflow), and the whole-plan spatial rules are owned by test/lint.test.ts";
 
@@ -107,6 +109,8 @@ const NOT_REPRODUCED: ReadonlyMap<string, string> = new Map([
 
   ["E_INSTANCE_NO_TRANSFORM", PLUGIN],
   ["E_SET_OVERRIDE", IMPACT],
+  ["E_LOCKED_ELEMENT_CHANGED", LOCK],
+  ["E_LOCK_UNNAMED", LOCK],
 
   ["E_PNG_DEPENDENCY", DEP],
   ["E_INPUT_TOO_LARGE", HOSTED],
@@ -220,7 +224,9 @@ suite("error catalog — every example that can raise its code does", () => {
     // compile; its example is executed in test/impact.test.ts. E_INTENT_GROSS_AREA,
     // E_INTENT_ROOM_DIMENSION and E_INTENT_UNMEASURED took it to 55: like every E_INTENT_* code,
     // `validateIntent()` raises them on the intent channel; each is raised in
-    // test/brief-bound.test.ts.
-    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(55);
+    // test/brief-bound.test.ts. E_LOCKED_ELEMENT_CHANGED and E_LOCK_UNNAMED took it to 57: the
+    // lock compares two versions of a plan, so no single snippet can raise either; both are
+    // raised in test/lock.test.ts.
+    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(57);
   });
 });

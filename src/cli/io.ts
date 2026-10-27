@@ -127,6 +127,8 @@ export interface Args {
   set?: string;
   /** `--against <old.arch>`: (impact) compare the input against this older file. */
   against?: string;
+  /** `--lock <id[,id…]>`: (impact) ids that must not change between the sides (exit 2 if one did). */
+  lock?: string;
   /** `--level <starter|full>`: (context) the starter screen or the whole bundle. (Every other command reads `--level <n>` as `level`.) */
   contextLevel?: string;
   /** `--section <spec|workflow|cli|errors>`: (context) print one section of the bundle, not all of it. */
@@ -188,6 +190,7 @@ export const FLAG_KEYS: Record<string, FlagSpec> = {
   "--section": { key: "section", kind: "string" },
   "--set": { key: "set", kind: "string" },
   "--against": { key: "against", kind: "string" },
+  "--lock": { key: "lock", kind: "string" },
   "--view": { key: "view", kind: "string" },
   "--graph": { key: "graph", kind: "string" },
   "--intent": { key: "intent", kind: "string" },
