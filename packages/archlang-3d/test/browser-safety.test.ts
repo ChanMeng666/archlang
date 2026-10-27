@@ -57,10 +57,22 @@ describe("browser safety", () => {
     ];
     const hits = banned.filter(([re]) => re.test(code)).map(([, why]) => why);
     expect(hits).toEqual([]);
-    // Each external the bundle still names is reached only through a dynamic import().
+    // Each external the bundle still names is reached only through a dynamic import(): the
+    // minified bundle writes a static one as `from"x"` or `import"x"`, a dynamic one as `import("x")`.
     const statics = external
       .filter((e) => !e.includes("*"))
-      .filter((e) => new RegExp(`(from|import)\\s*["']${e.replace(/[/.]/g, "\\$&")}["']`).test(code));
+      .filter((e) => [`from"${e}"`, `import"${e}"`].some((s) => code.includes(s)));
     expect(statics).toEqual([]);
+    // And the list is not decoration: without it the browser build fails on those modules.
+    const bare = await build({
+      entryPoints: [join(HERE, "../src/index.ts")],
+      bundle: true,
+      platform: "browser",
+      format: "esm",
+      write: false,
+      logLevel: "silent",
+      alias: { "@chanmeng666/archlang": join(REPO, "src/index.ts") },
+    }).catch((e: { errors?: unknown[] }) => ({ errors: e.errors ?? [e] }));
+    expect(bare.errors.length).toBeGreaterThan(0);
   }, 60_000);
 });
