@@ -90,6 +90,7 @@ const DECIDED: Record<AuthoringStage, string[]> = {
     "W_WET_ROOM_DOOR",
   ],
   fixtures: [
+    "W_ACCESSIBLE_WC_SIDE_WALL",
     "W_DOORWAY_BLOCKED",
     "W_FIXTURE_BACK_TO_ROOM",
     "W_FIXTURE_FLOATING",

@@ -1297,6 +1297,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Slide the pan along its back wall away from the obstacle by the shortfall (the hint says whether its other side then still keeps the figure), move the obstacle, or move the pan to a run wide enough for twice the figure. There is no machine fix: the edit depends on how the pan was placed.",
     "furniture wc at (0,0) size 400x700\nfurniture basin at (500,0) size 600x450   # lint: centreline 300 mm from the basin",
   ),
+  W_ACCESSIBLE_WC_SIDE_WALL: W(
+    "W_ACCESSIBLE_WC_SIDE_WALL",
+    "An accessible WC's pan stands too far from every side wall.",
+    "A `wc` (or `toilet`) in a room whose label says \"accessible\", \"wheelchair\" or \"disabled\" has its centreline farther than the ruleset's `wcAccessibleSideWallMaxMm` (500 mm) from the face of the straight wall on either side of it, so no grab rail can be fixed within reach of the pan and there is no wall to transfer against. Its sides are the two edges beside its back (its `rotate`), measured as `W_WC_SIDE_CLEARANCE` measures, square to the centreline over the pan's depth, from the drawn footprint to the drawn wall body; a fixture beside the pan does not count, and a doorway is a gap measured to its jamb. A WC beside a curved wall is not judged (a `curved-wc-wall` coverage skip). The figure is the high end of the 400–500 mm WC centreline to the adjacent wall of Approved Document M Vol 1 (2015) M4(2) Diagram 2.5 and of the 450–500 mm of its M4(3) Diagrams 3.11 and 3.16; the ADA 2010 Standards 604.2's 16–18 in (406–457 mm) lies inside it. Advice, never compliance (ADR 0005). Set `wcAccessibleSideWallMaxMm: null` to turn it off.",
+    "Slide the pan along its back wall toward the nearer side wall until its centreline stands 400–500 mm from that wall's face (the hint gives the slide), or move it into a corner. There is no machine fix: the edit depends on how the pan was placed.",
+    'wall id=w exterior thickness 200 { (0,0) (3000,0) (3000,2500) (0,2500) close }\nroom id=r at (0,0) size 3000x2500 label "Accessible WC" uses wc\nfurniture wc against wall w segment 0 offset 1500 in r   # lint: centreline 1400 mm from either side wall',
+  ),
   W_FURNITURE_OVER_WINDOW: W(
     "W_FURNITURE_OVER_WINDOW",
     "A tall unit stands in front of a window.",

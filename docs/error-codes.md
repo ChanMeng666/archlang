@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**143 errors** · **84 warnings**
+**143 errors** · **85 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -152,6 +152,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_WALL_THICKNESS`](#e_wall_thickness) | error | Wall must have a positive thickness. |
 | [`E_WHILE_LIMIT`](#e_while_limit) | error | `while` exceeded its iteration cap. |
 | [`E_WINDOW_WIDTH`](#e_window_width) | error | Window must have a positive width. |
+| [`W_ACCESSIBLE_WC_SIDE_WALL`](#w_accessible_wc_side_wall) | warning | An accessible WC's pan stands too far from every side wall. |
 | [`W_ALIAS_MATCH`](#w_alias_match) | warning | A room's use was inferred from an indirect alias, not stated. |
 | [`W_ANNOTATION_OVERLAP`](#w_annotation_overlap) | warning | A label or a `dims auto` number is printed over a symbol or another label. |
 | [`W_BALCONY_NO_DOOR`](#w_balcony_no_door) | warning | A balcony with no way onto it. |
@@ -2071,6 +2072,20 @@ while i < 1 { let y = i }   # error: i never changes
 
 ```arch static
 window at (0,0) width 0   # error
+```
+
+## W_ACCESSIBLE_WC_SIDE_WALL
+
+*warning* — An accessible WC's pan stands too far from every side wall.
+
+**Cause.** A `wc` (or `toilet`) in a room whose label says "accessible", "wheelchair" or "disabled" has its centreline farther than the ruleset's `wcAccessibleSideWallMaxMm` (500 mm) from the face of the straight wall on either side of it, so no grab rail can be fixed within reach of the pan and there is no wall to transfer against. Its sides are the two edges beside its back (its `rotate`), measured as `W_WC_SIDE_CLEARANCE` measures, square to the centreline over the pan's depth, from the drawn footprint to the drawn wall body; a fixture beside the pan does not count, and a doorway is a gap measured to its jamb. A WC beside a curved wall is not judged (a `curved-wc-wall` coverage skip). The figure is the high end of the 400–500 mm WC centreline to the adjacent wall of Approved Document M Vol 1 (2015) M4(2) Diagram 2.5 and of the 450–500 mm of its M4(3) Diagrams 3.11 and 3.16; the ADA 2010 Standards 604.2's 16–18 in (406–457 mm) lies inside it. Advice, never compliance (ADR 0005). Set `wcAccessibleSideWallMaxMm: null` to turn it off.
+
+**Fix.** Slide the pan along its back wall toward the nearer side wall until its centreline stands 400–500 mm from that wall's face (the hint gives the slide), or move it into a corner. There is no machine fix: the edit depends on how the pan was placed.
+
+```arch static
+wall id=w exterior thickness 200 { (0,0) (3000,0) (3000,2500) (0,2500) close }
+room id=r at (0,0) size 3000x2500 label "Accessible WC" uses wc
+furniture wc against wall w segment 0 offset 1500 in r   # lint: centreline 1400 mm from either side wall
 ```
 
 ## W_ALIAS_MATCH
