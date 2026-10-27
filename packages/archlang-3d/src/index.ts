@@ -13,3 +13,6 @@ export type { ValidationIssue } from "./scene3d/validate.js";
 export { um, umPoint } from "./units.js";
 export { hatchGroupKey, mixedHeightJoints, piecesOf, piecesTouch, wallOwnership } from "./walls/ownership.js";
 export type { MixedHeightJoint, OwnedWall, Ownership, Piece, Point, Ring } from "./walls/ownership.js";
+export { buildMesh, FURNITURE_HEIGHT_MM } from "./mesh/build.js";
+export { prism } from "./mesh/extrude.js";
+export type { Mesh3D, MeshNode, NodeKind, Shell, Stage } from "./mesh/types.js";

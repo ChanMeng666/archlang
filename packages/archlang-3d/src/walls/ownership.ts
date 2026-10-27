@@ -30,6 +30,9 @@ export interface OwnedWall {
   index: number;
   wall: RWall;
   pieces: Piece[];
+  /** The same region with EVERY opening's cut removed (the plan's slots), one entry per piece:
+   *  the wall body between each opening's sill and head. */
+  body: Piece[];
   /** Plan area owned, mm² (outer minus holes). */
   area: number;
 }
@@ -40,6 +43,8 @@ export interface Ownership {
   fillArea: number;
   /** Every opening's cut, joined back to its host wall, from the same joinery. */
   cuts: JoinedCut[];
+  /** The outer rings of the joined solid (the building's wall footprint, holes dropped). */
+  outline: Ring[];
 }
 
 /**
@@ -96,29 +101,43 @@ const pieceArea = (p: Piece): number =>
  * Every wall's owned region, in the order given. `walls` must be in the drawing's order
  * (`ResolvedPlan.walls` is): that order breaks the joinery's thickness ties.
  */
-export function wallOwnership(walls: readonly RWall[]): Ownership {
-  if (walls.length === 0) return { owned: [], fillArea: 0, cuts: [] };
+export function wallOwnership(
+  walls: readonly RWall[],
+  tessellate: (loops: Parameters<typeof loopsToPolygons>[0]) => Ring[] = loopsToPolygons,
+): Ownership {
+  if (walls.length === 0) return { owned: [], fillArea: 0, cuts: [], outline: [] };
   const groups = [...new Set(walls.map(hatchGroupKey))];
   // Faces are wall INDICES, so two walls sharing an id (a placed component) never merge.
   const faces = walls.map((_, i) => String(i));
   const solid = walls.map((w) => ({ ...w, openings: [] }));
   const index = new Map(solid.map((w, i) => [w, i] as const));
   const joined = joinWallSet(solid, groups, { faceOf: (w) => String(index.get(w)), faces });
-  const withCuts = joinWallSet(walls, []);
+  const slotted = new Map(walls.map((w, i) => [w, i] as const));
+  const withCuts = joinWallSet(walls, groups, { faceOf: (w) => String(slotted.get(w)), faces });
   const fillArea = (joined?.result.fills ?? []).reduce(
-    (s, f) => s + loopsToPolygons(f.loops).reduce((t, r) => t + signedArea(r), 0),
+    (s, f) => s + tessellate(f.loops).reduce((t, r) => t + signedArea(r), 0),
     0,
   );
-  const rings = new Map<number, Ring[]>();
-  for (const sf of joined?.result.split?.fills ?? []) {
-    const i = Number(sf.face);
-    rings.set(i, [...(rings.get(i) ?? []), ...loopsToPolygons(sf.loops)]);
-  }
+  const byFace = (fills: ReadonlyArray<{ face: string; loops: Parameters<typeof loopsToPolygons>[0] }>) => {
+    const m = new Map<number, Ring[]>();
+    for (const sf of fills) m.set(Number(sf.face), [...(m.get(Number(sf.face)) ?? []), ...tessellate(sf.loops)]);
+    return m;
+  };
+  const rings = byFace(joined?.result.split?.fills ?? []);
+  const bodies = byFace(withCuts?.result.split?.fills ?? []);
   const owned = walls.map((wall, i) => {
     const pieces = piecesOf(rings.get(i) ?? []);
-    return { index: i, wall, pieces, area: pieces.reduce((s, p) => s + pieceArea(p), 0) };
+    return {
+      index: i,
+      wall,
+      pieces,
+      body: piecesOf(bodies.get(i) ?? []),
+      area: pieces.reduce((s, p) => s + pieceArea(p), 0),
+    };
   });
-  return { owned, fillArea: Math.abs(fillArea), cuts: withCuts?.cuts ?? [] };
+  const outlineRings = tessellate(joined?.result.outline ?? []);
+  const outline = piecesOf(outlineRings).map((p) => p.outer);
+  return { owned, fillArea: Math.abs(fillArea), cuts: withCuts?.cuts ?? [], outline };
 }
 
 /** Distance from `p` to segment `ab`. */

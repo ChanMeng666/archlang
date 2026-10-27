@@ -90,7 +90,15 @@ const LEVEL_COLLECTIONS: Record<string, Check> = {
   floors: array(object({ id, source, polygon }, { uses: array(string) })),
   walls: array(
     object(
-      { id, source, footprint: array(polygon), height: integer, thickness: integer, cuts: array(string) },
+      {
+        id,
+        source,
+        footprint: array(polygon),
+        body: array(polygon),
+        height: integer,
+        thickness: integer,
+        cuts: array(string),
+      },
       { category: string, material: string },
     ),
   ),
@@ -103,12 +111,14 @@ const LEVEL_COLLECTIONS: Record<string, Check> = {
         host: string,
         cut: ring,
         centre: pt,
+        jambs: array(pt, 2, 2),
         width: integer,
         sill: integer,
         head: integer,
       },
       {
         doorKind: oneOf("hinged", "sliding", "barn", "bifold", "pocket", "garage", "double"),
+        leaves: array(array(pt, 2, 2)),
         hinge: oneOf("left", "right"),
         swing: oneOf("in", "out"),
         slide: oneOf("left", "right"),
@@ -130,7 +140,7 @@ const LEVEL_COLLECTIONS: Record<string, Check> = {
 };
 
 const level = object(
-  { level: integer, elevation: integer, storeyHeight: integer, ...LEVEL_COLLECTIONS },
+  { level: integer, elevation: integer, storeyHeight: integer, footprint: array(ring), ...LEVEL_COLLECTIONS },
   { name: string },
 );
 

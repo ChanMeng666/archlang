@@ -65,6 +65,8 @@ export interface Wall {
   category?: string;
   material?: string;
   footprint: Polygon[];
+  /** The same pieces with every opening's cut removed: the wall between each opening's sill and head. */
+  body: Polygon[];
   height: Um;
   thickness: Um;
   /** Ids of the openings whose cut is hosted by this wall. */
@@ -83,6 +85,11 @@ export interface Opening {
   /** The plan footprint the opening removes, from the core's `openingCut`. */
   cut: Ring3;
   centre: Pt;
+  /** The two jambs on the host's centreline (the opening's chord along the wall, its tangent on a curve). */
+  jambs: [Pt, Pt];
+  /** A door's leaves in the closed pose, each `[hinge, far jamb]` (two for a `double` door, from the
+   *  core's `doorLeaves`); absent for a kind that sweeps no leaf. */
+  leaves?: Array<[Pt, Pt]>;
   width: Um;
   sill: Um;
   head: Um;
@@ -153,6 +160,8 @@ export interface Level {
   /** Top of this storey's floor above the lowest storey's floor. */
   elevation: Um;
   storeyHeight: Um;
+  /** The outer rings of the storey's joined wall solid: the building's wall footprint. */
+  footprint: Ring3[];
   floors: Floor[];
   walls: Wall[];
   openings: Opening[];
