@@ -1331,9 +1331,14 @@ function summarize(
   const furnEls = ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
   const verticalEls: RVertical[] = verticalsOf(ir);
   // The walls `walls from rooms` derived, and the authored walls written `between`/`around`
-  // rooms (ADR 0028 §4), as facts (§6), in source order, copied so the IR is never shared.
+  // rooms (ADR 0028 §4), as facts (§6), in source order, copied so the IR is never shared. A
+  // `walls from rooms … status demolish` statement's walls are gone like an authored demolished
+  // wall (B3a): they are listed under `wall_status` only.
   const derivedRows: DerivedWallRow[] = ir.elements.flatMap((e): DerivedWallRow[] => {
-    if (e.kind === "walls") return (e as RWallsFromRooms)._derivedRows.map((r) => structuredClone(r));
+    if (e.kind === "walls")
+      return (e as RWallsFromRooms).status === "demolish"
+        ? []
+        : (e as RWallsFromRooms)._derivedRows.map((r) => structuredClone(r));
     if (e.kind !== "wall" || !(e as RWallFact)._relation || (e as RWallFact).points.length === 0) return [];
     const rel = (e as RWallFact)._relation!;
     return "between" in rel
@@ -2046,6 +2051,8 @@ export const PER_STOREY_OPTIONAL_KEYS = [
   "verticals",
   "voids",
   "derived_walls",
+  // B3a: a storey's walls' remodel status, present only on a storey that writes one.
+  "wall_status",
 ] as const satisfies readonly (keyof SceneSummary)[];
 
 /**

@@ -269,6 +269,7 @@ openings) and walks it from the exterior. For the studio:
 | Field | Meaning |
 |-------|---------|
 | `entrances` / `hasEntrance` | the door(s) that connect the exterior to a room, and whether any exist at all |
+| `edges[].doorId` | the door's or opening's id; on the run a `status demolish` wall leaves open between two rooms, the **wall's** id with `kind: "opening"` (one edge per pair of rooms along it) |
 | `edges[].nominalWidth` | the connector's drawn width |
 | `edges[].estimatedClearWidth` | the usable opening: a **door** loses ~60 mm to its leaf and stop (from one leaf of a `double` door, half its width), an **opening** keeps its full width |
 | `edges[].exterior` | whether this connector reaches the outside |

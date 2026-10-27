@@ -169,7 +169,10 @@ round-trips the status.
 `scene-build.ts`), new walls as today (optionally hatched under a sheet option, later), DXF layers
 `A-WALL-DEMO` / `A-WALL-NEWW` through `classifyWallSet`, legend rows only when a status is authored,
 `examples/remodel.arch` (a real apartment shell with two demolished partitions and one new one)
-pinned by golden and byte-identity law, docs page section with an `arch static` fence.
+pinned by golden and byte-identity law, docs page section with an `arch static` fence. The drawn
+`schedule rooms` NET AREA (and its TOTAL) and `--overlay circulation` read the plan after the
+demolition, so the drawn table equals `describe().schedule[]` again; then drop the exception B3a
+wrote into `docs/language-reference.md` (Room schedule) and flip the B3a test that pins it.
 **Acceptance.** Every existing golden unchanged; the new example's SVG, DXF, describe and lint
 pinned; `docs:build` green.
 **Depends on.** B3a. **Must not.** Touch paint order (D4).

@@ -765,7 +765,12 @@ export function arcWindowRoom(
 
 /** One connector (door or cased opening) as a graph edge between two spaces. */
 export interface AccessEdge {
-  /** Id of the door/opening element. (`doorId` kept as the historical field name.) */
+  /**
+   * Id of the door/opening element. (`doorId` kept as the historical field name.) On an edge a
+   * `status demolish` wall leaves open between two rooms ({@link openRunsOf}, B3a) it is the
+   * WALL's id, with `kind: "opening"`; such a wall may give several edges the same id (one per
+   * pair of rooms along it), and no door or opening element has it.
+   */
   doorId: string;
   /** Whether this edge is a `door` (has a leaf) or a leaf-less `opening`. */
   kind: "door" | "opening";

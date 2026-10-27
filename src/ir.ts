@@ -92,7 +92,7 @@ import { idToken } from "./identity.js";
 import type { WallSegment } from "./geometry.js";
 import type { Arc } from "./geometry/arc.js";
 import type { Side } from "./algebra/d4.js";
-import { extendBounds, outerFaceBounds, segmentsOfWall, WallGrid } from "./geometry.js";
+import { extendBounds, hostInfoForWalls, outerFaceBounds, segmentsOfWall, WallGrid } from "./geometry.js";
 import type { LevelStamp } from "./chrome-layout.js";
 import { titleRows } from "./chrome-layout.js";
 import type { ResolvedSheet, SheetFitInput } from "./sheet.js";
@@ -3339,15 +3339,31 @@ function resolveBody(
 
   // 3c. Register openings: each hosted door/window voids its wall's solid.
   registerOpenings(elements, walls);
-  // 3d. A demolished wall hosts nothing (B3a): an authored door, window or opening in one is
-  //     refused. Only a plan that marks a wall `demolish` reaches the loop.
+  // 3d. A demolished wall hosts nothing (B3a). An authored door, window or opening the hosting
+  //     rule gave a demolished wall is re-hosted, for the analysis only, on a STANDING wall that
+  //     hosts it at its point (the same rule over the standing walls: a coincident `status new`
+  //     wall takes it); with none there, or when the statement names the demolished wall by id
+  //     (`on <id>`, `wall <id>`), it is refused. The drawing keeps the hosting it always had.
+  //     Only a plan that marks a wall `demolish` reaches the loop.
+  const rehosted = new Map<ResolvedElement, WallSegment>();
   if (walls.some((w) => w.status === "demolish")) {
+    const standingWalls = walls.filter((w) => w.status !== "demolish");
     for (const el of elements) {
       if ((el.kind !== "door" && el.kind !== "window" && el.kind !== "opening") || !el.host) continue;
       if (el.kind === "opening" && el._derived) continue;
       const host = hostWallOf(el.host, walls);
       if (host?.status !== "demolish") continue;
       const entry = entryOf.get(el);
+      const node = entry?.node as { attach?: { wall?: string }; wall?: string } | undefined;
+      const ref = node?.attach?.wall ?? node?.wall;
+      const namesIt = ref !== undefined && (ref === host.id || host.id.endsWith(`.${ref}`));
+      if (!namesIt) {
+        const { host: seg, onWall } = hostInfoForWalls(standingWalls, el.at, ref);
+        if (seg && onWall) {
+          rehosted.set(el, seg);
+          continue;
+        }
+      }
       const d = demolishedHostDiagnostic(el, host);
       diagnostics.push(entry ? stampProvenance(d, entry.frame, entry.file) : d);
     }
@@ -3476,7 +3492,7 @@ function resolveBody(
     // A `status demolish` wall (B3a) is drawn but stands in no analysis: `elements`/`walls` are
     // the plan after the demolition and `drawn` the plan as drawn. No such wall, no `drawn` key
     // and the very arrays, so the IR is the one it always was.
-    ...afterDemolition(elements, walls),
+    ...afterDemolition(elements, walls, rehosted),
     ...(instances.length > 0 ? { instances } : {}),
   };
   datumTablesOfIr.set(ir, datumTables);
@@ -3992,19 +4008,49 @@ function markPlacement(r: ResolvedElement, node: AstElement, fromStrip: boolean)
  * choose among walls that share an id (an `E_DUP_ID` plan), and as the fallback for a host
  * whose id names no wall.
  */
-/** The wall a hosted opening's segment belongs to: by id when that is unique, else the wall
- *  (among the named ones, or all) that has exactly this segment. */
-/** {@link ResolvedPlan}'s `elements`/`walls`/`drawn` from the storey as resolved (B3a): the very
- *  arrays when no wall is `status demolish`, else the plan after the demolition plus `drawn`. */
+/**
+ * {@link ResolvedPlan}'s `elements`/`walls`/`drawn` from the storey as resolved (B3a): the very
+ * arrays when no wall is `status demolish`, else the plan after the demolition plus `drawn`.
+ *
+ * The plan after the demolition drops every demolished wall and every opening a `walls from rooms
+ * … status demolish` statement derived on one (it stood in the wall). An opening step 3d re-hosted
+ * on a standing wall is a copy carrying its new host, and that wall a copy carrying the opening,
+ * so the drawn objects (the hosting the drawing always had) are never touched.
+ */
 function afterDemolition(
   elements: ResolvedElement[],
   walls: RWall[],
+  rehosted: ReadonlyMap<ResolvedElement, WallSegment>,
 ): Pick<ResolvedPlan, "elements" | "walls" | "drawn"> {
   if (!walls.some((w) => w.status === "demolish")) return { elements, walls };
-  const standing = (e: ResolvedElement): boolean => !(e.kind === "wall" && (e as RWall).status === "demolish");
+  const demolished = (e: ResolvedElement): boolean => e.kind === "wall" && (e as RWall).status === "demolish";
+  const onDemolished = (e: ResolvedElement): boolean =>
+    e.kind === "opening" && e._derived !== undefined && !!e.host && hostWallOf(e.host, walls)?.status === "demolish";
+  const standingWalls = walls.filter((w) => !demolished(w));
+  // The standing walls that take a re-hosted opening, as copies with the opening appended.
+  const copies = new Map<RWall, RWall>();
+  const moved = new Map<ResolvedElement, ResolvedElement>();
+  for (const [el, seg] of rehosted) {
+    const o = el as RDoor | RWindow | ROpening;
+    const target = hostWallOf(seg, standingWalls);
+    if (!target) continue;
+    const copy = copies.get(target) ?? { ...target, openings: [...target.openings] };
+    copy.openings.push({
+      at: o.at,
+      width: o.width,
+      kind: o.kind,
+      ownerId: o.id,
+      sill: o.kind === "window" ? o.sill : 0,
+      head: o.head,
+    });
+    copies.set(target, copy);
+    moved.set(el, { ...o, host: seg });
+  }
+  const after = (e: ResolvedElement): ResolvedElement =>
+    moved.get(e) ?? (e.kind === "wall" ? (copies.get(e as RWall) ?? e) : e);
   return {
-    elements: elements.filter(standing),
-    walls: walls.filter(standing),
+    elements: elements.filter((e) => !demolished(e) && !onDemolished(e)).map(after),
+    walls: standingWalls.map((w) => copies.get(w) ?? w),
     drawn: { elements, walls },
   };
 }
@@ -4031,6 +4077,8 @@ function demolishedHostDiagnostic(el: RDoor | RWindow | ROpening, host: RWall): 
   };
 }
 
+/** The wall a hosted opening's segment belongs to: by id when that is unique, else the wall
+ *  (among the named ones, or all) that has exactly this segment. */
 function hostWallOf(seg: WallSegment, walls: readonly RWall[]): RWall | undefined {
   const sameSegment = (w: RWall) =>
     segmentsOfWall(w).some((s) => s.a.x === seg.a.x && s.a.y === seg.a.y && s.b.x === seg.b.x && s.b.y === seg.b.y);

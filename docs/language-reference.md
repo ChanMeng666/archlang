@@ -2549,7 +2549,9 @@ renders exactly as before.
 
 A final **`TOTAL`** row closes the table with the same numbers as
 `describe().totals.floor_area_m2` and `.net_floor_area_m2`, so the drawn table and the JSON
-can never disagree.
+can never disagree, except on a storey with a `status demolish` wall, whose drawn table
+measures the plan as drawn (its NET AREA still less the demolished wall's band) until the
+status is drawn; `describe()` reports the plan after the demolition.
 The keyword takes a subject — `rooms` or `openings` — and an unknown one is a parse error
 with a did-you-mean, never a silently ignored word. The two subjects compose: write both
 and both tables draw.

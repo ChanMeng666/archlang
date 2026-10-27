@@ -345,3 +345,113 @@ suite("the printer and Plan JSON round-trip a wall's status", () => {
     expect(r.diagnostics[0]?.message).toContain('"existing" or "demolish" or "new"');
   });
 });
+
+// ---------------------------------------------------------------------------------------------
+// Review round 1
+// ---------------------------------------------------------------------------------------------
+
+suite("round 1 · M2: an opening the hosting rule gave a demolished wall is re-hosted on a standing one", () => {
+  // A demolished partition and a `new` one on the same line: the door is placed by position.
+  const coincident = (door: string) =>
+    plan(
+      `${SHELL}\n  wall id=part partition thickness 100 status demolish { (4000,0) (4000,5000) }\n` +
+        `  wall id=fresh partition thickness 100 status new { (4000,0) (4000,5000) }\n${ROOMS}\n${door}`,
+    );
+
+  it("by position: hosted on the `new` wall for the analysis, drawn as before", () => {
+    const src = coincident("  door id=d2 at (4000,2500) width 800");
+    expect(compile(src).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    const ir = resolvePlan(src).ir!;
+    const d2 = ir.elements.find((e) => e.id === "d2") as { host?: { wallId: string } };
+    expect(d2.host?.wallId).toBe("fresh");
+    expect(ir.walls.find((w) => w.id === "fresh")!.openings.map((o) => o.ownerId)).toEqual(["d2"]);
+    // The drawn objects keep the hosting the drawing always had.
+    const drawnD2 = ir.drawn!.elements.find((e) => e.id === "d2") as { host?: { wallId: string } };
+    expect(drawnD2.host?.wallId).toBe("part");
+    expect(ir.drawn!.walls.find((w) => w.id === "fresh")!.openings).toEqual([]);
+    expect(compile(src).svg).toBe(compile(src.replace(" status demolish", "").replace(" status new", "")).svg);
+    // And it is the door the access graph walks through.
+    expect(describePlan(src).access.edges.find((e) => e.doorId === "d2")?.between).toEqual(["a", "b"]);
+  });
+
+  it("by category: `wall partition` re-hosts on the standing partition", () => {
+    const src = coincident("  door id=d2 at (4000,2500) width 800 wall partition");
+    expect(compile(src).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+  });
+
+  it("refused when only the demolished wall is there", () => {
+    const src = DEMOLISHED.replace("  door id=d1", "  door id=d2 at (4000,2500) width 800\n  door id=d1");
+    expect(compile(src).diagnostics.map((d) => d.code)).toContain("E_OPENING_ON_DEMOLISHED_WALL");
+  });
+
+  it("refused when the statement names the demolished wall by id, standing wall or not", () => {
+    for (const door of ["  door id=d2 on part at 50% width 800", "  door id=d2 at (4000,2500) width 800 wall part"]) {
+      expect(compile(coincident(door)).diagnostics.map((d) => d.code)).toContain("E_OPENING_ON_DEMOLISHED_WALL");
+    }
+  });
+});
+
+suite("round 1 · M3: a run a demolished wall leaves open closes a wet room's perimeter", () => {
+  // A WC beside the living room; the partition between them is demolished.
+  const wc = (status: string) =>
+    plan(`  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+${status === "gone" ? "" : `  wall id=part partition thickness 100${status} { (4000,0) (4000,4000) }\n`}  room id=liv at (0,0) size 4000x4000 label "Living" uses living
+  room id=wc at (4000,0) size 2000x4000 label "WC" uses wc
+  door id=d1 at (2000,4000) width 900 wall exterior
+  furniture toilet at (5300,300) size 400x700
+  furniture basin at (5300,3000) size 500x400`);
+
+  it("W_ROOM_NOT_ENCLOSED agrees with the reachability and boundary rules", () => {
+    const codes = (src: string) => lint(src).map((d) => d.code);
+    // With the wall gone from the source the WC is open on a whole side: the rule fires.
+    expect(codes(wc("gone"))).toContain("W_ROOM_NOT_ENCLOSED");
+    // Demolished, the side is an open run joining it to the living room: no rule calls it unwalled.
+    const demolished = codes(wc(" status demolish"));
+    expect(demolished).not.toContain("W_ROOM_NOT_ENCLOSED");
+    expect(demolished).not.toContain("W_BOUNDARY_NO_WALL");
+    expect(demolished).not.toContain("W_ROOM_DISCONNECTED");
+  });
+});
+
+suite("round 1 · M4: the drawn room schedule measures the plan as drawn until B3b", () => {
+  it("states the exception: describe().schedule is after the demolition, the drawn table is not", () => {
+    const src = DEMOLISHED.replace("  units mm", "  units mm\n  schedule rooms");
+    const rows = describePlan(src).schedule!;
+    expect(rows.map((r) => r.net_area_m2)).toEqual([18.72, 18.72]);
+    // The drawn NET AREA still subtracts the demolished partition's band (B3b flips this).
+    const svg = compile(src).svg;
+    expect(svg).toContain(">18.48<");
+    expect(svg).not.toContain(">18.72<");
+    expect(svg).toBe(compile(STANDING.replace("  units mm", "  units mm\n  schedule rooms")).svg);
+  });
+});
+
+suite("round 1 · minors", () => {
+  it("m1: a keep naming a demolished wall is refused by its status", () => {
+    const src = DEMOLISHED.replace("  door id=d1", "  keep fixed part at 4000\n  door id=d1");
+    const d = compile(src).diagnostics.find((x) => x.code === "E_KEEP_TARGET");
+    expect(d?.message).toBe("This keep names a wall marked `status demolish`, which stands in no measure of the plan");
+    expect(d?.hints?.[0]).toContain("`part`");
+  });
+
+  it("m2: an `open between` opening of a demolished statement leaves the analysis with its wall", () => {
+    const src = plan(`  room id=a at (0,0) size 4000x5000
+  room id=b at (4000,0) size 4000x5000
+  walls from rooms exterior 200 partition 100 status demolish { open id=ab between a and b }`);
+    const ir = resolvePlan(src).ir!;
+    expect(ir.elements.some((e) => e.id === "ab")).toBe(false);
+    expect(ir.drawn!.elements.some((e) => e.id === "ab")).toBe(true);
+    expect(describePlan(src).openings.map((o) => o.id)).toEqual([]);
+    expect(compile(src).svg).toBe(compile(src.replace(" status demolish", "")).svg);
+  });
+
+  it("m4: a demolished derived wall is in no `depends` or `derived_walls` fact, like an authored one", () => {
+    const src = plan(`  room id=a at (0,0) size 4000x5000
+  room id=b at (4000,0) size 4000x5000
+  walls from rooms exterior 200 partition 100 status demolish`);
+    const d = describePlan(src, { facts: ["depends"] });
+    expect(d.depends?.derived_walls).toEqual([]);
+    expect(d.derived_walls).toBeUndefined();
+    expect(d.wall_status?.counts.demolish).toBe(2);
+  });
+});
