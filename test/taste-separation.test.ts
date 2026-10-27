@@ -76,6 +76,7 @@ const LEDGER: Readonly<Record<string, string>> = {};
 const UNJUDGED: Readonly<Record<string, string>> = {
   "clearances/bench-across-opening":
     "a concourse and an unclassified gallery: no classified habitable, wet or kitchen room, and too few rooms for R17",
+  "clearances/garage-too-shallow": "PS2.70 (PR #307): the depth finding is validity, not taste; neither twin is scored",
   "clearances/single-leaf-2400":
     "one entrance hall: no classified habitable, wet or kitchen room, and too few rooms for R17",
   "openings-ignore-walls/door-jamb-50-from-tee": "a store and an unclassified staff room: no classified habitable room",

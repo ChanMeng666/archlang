@@ -27,7 +27,15 @@
  */
 
 import { describe as suite, expect, it } from "vitest";
-import { compile, describe as describePlan, lint, format, planToJson, planFromJson } from "../src/index.js";
+import {
+  compile,
+  describe as describePlan,
+  lint,
+  lintWithCoverage,
+  format,
+  planToJson,
+  planFromJson,
+} from "../src/index.js";
 import { USE_KINDS } from "../src/ast.js";
 import { KEYWORDS } from "../src/grammar/tokens.js";
 import { USE_VOCABULARY, classifyLabelUses } from "../src/vocabulary.js";
@@ -278,5 +286,92 @@ suite("uses garage — the byte-identity law", () => {
         f,
       ).not.toContain("W_GARAGE_TOO_NARROW");
     }
+  });
+});
+
+/**
+ * PS2.70: the same code judges a garage's DEPTH along the line of its vehicle door, measured
+ * between the inner faces of the walls on the door's edge and the edge opposite (the room's own
+ * rectangle, never a box of its furniture): 5000 mm by default (a parking bay), 6000 mm under
+ * `uk-residential-advisory` (Monmouthshire SPG 2013 ¶12 citing Manual for Streets).
+ */
+suite("W_GARAGE_TOO_NARROW — the depth finding (PS2.70)", () => {
+  /** A garage `w` × `h` with 200 mm walls and its vehicle door on the given edge. */
+  const deep = (w: number, h: number, edge: "left" | "top" | "none" = "left", cars = 0): string =>
+    [
+      'plan "G" {',
+      "  units mm",
+      `  wall id=shell exterior thickness 200 { (0,0) (${w},0) (${w},${h}) (0,${h}) close }`,
+      `  room id=g at (0,0) size ${w}x${h} label "Garage" uses garage`,
+      edge === "left"
+        ? `  door id=d_car garage at (0,${h / 2}) width 2400 wall shell`
+        : edge === "top"
+          ? `  door id=d_car garage at (${w / 2},0) width 2400 wall shell`
+          : `  door id=d_side at (0,${h / 2}) width 900 wall shell swing into g`,
+      ...Array.from({ length: cars }, (_, i) => `  furniture car at (${300 + i * 2600},800) size 1800x4600 in g`),
+      "}",
+    ].join("\n");
+  const depthFinding = (src: string, opts?: Parameters<typeof lint>[1]) =>
+    lint(src, opts).find((d) => d.code === "W_GARAGE_TOO_NARROW" && d.message.includes("deep from its vehicle door"));
+
+  it("warns on a garage 3000 mm deep along its door's axis, with the depth measured", () => {
+    // 3200 drawn along x (the door is on the left edge), less two 100 mm half-walls: 3000 clear.
+    // Its 3200 short side passes the width check, so the depth is the only finding.
+    const src = deep(3200, 3800, "left");
+    const d = depthFinding(src);
+    expect(d?.message).toBe(
+      'Garage "Garage" is 3000 mm deep from its vehicle door, between its wall faces, under the 5000 mm of clear depth a parked car needs — 2000 mm short.',
+    );
+    expect(d?.hints?.[0]).toContain("Buckinghamshire parking guidance 2022, Table 9");
+    expect(lint(src).filter((x) => x.code === "W_GARAGE_TOO_NARROW")).toHaveLength(1);
+  });
+
+  it("reads the depth along the door's axis, not the long side", () => {
+    // The same 3200 × 3800 room with its door on the top edge: 3600 clear along y.
+    expect(depthFinding(deep(3200, 3800, "top"))?.message).toContain("3600 mm deep");
+    // A 6400 × 3800 room with its door on the left: 6200 deep, silent; on the top: 3600, warns.
+    expect(depthFinding(deep(6400, 3800, "left"))).toBeUndefined();
+    expect(depthFinding(deep(6400, 3800, "top"))?.message).toContain("3600 mm deep");
+  });
+
+  it("keeps a 5500 × 6200 double garage silent", () => {
+    // hillside-villa's garage size: 6000 clear along its door's axis, two cars across 5500.
+    expect(lint(deep(5500, 6200, "top", 2)).map((x) => x.code)).not.toContain("W_GARAGE_TOO_NARROW");
+  });
+
+  it("skips a garage with no vehicle door and says so in the coverage report", () => {
+    const src = deep(3200, 3800, "none");
+    expect(depthFinding(src)).toBeUndefined();
+    const rooms = lintWithCoverage(src).coverage?.families.find((f) => f.family === "rooms");
+    expect(rooms?.skipped).toContainEqual({
+      reason: "no-vehicle-door",
+      why: "the garage has no vehicle door to measure its depth from",
+      rooms: ["Garage"],
+      roomIds: ["g"],
+    });
+  });
+
+  it("holds 6000 mm under uk-residential-advisory: 5500 deep warns there, not by default", () => {
+    // 5700 drawn along x, less two 100 mm half-walls: 5500 clear.
+    const src = deep(5700, 3800, "left");
+    expect(depthFinding(src)).toBeUndefined();
+    const uk = depthFinding(src, { profile: "uk-residential-advisory" });
+    expect(uk?.message).toContain("5500 mm deep from its vehicle door");
+    expect(uk?.message).toContain("under the 6000 mm");
+    expect(uk?.message).toContain("500 mm short");
+    expect(uk?.hints?.[0]).toContain("Manual for Streets");
+    // `garageDepthMm: null` turns the finding off.
+    expect(depthFinding(deep(3200, 3800), { ruleset: { garageDepthMm: null } })).toBeUndefined();
+  });
+
+  it("fires on the row-6 first-contact house and not on hillside-villa", async () => {
+    const { readFileSync } = await import("node:fs");
+    const read = (f: string) => readFileSync(new URL(`../${f}`, import.meta.url), "utf8");
+    const house = depthFinding(
+      read("docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/2-house.arch"),
+    );
+    expect(house?.message).toContain("3000 mm deep from its vehicle door");
+    expect(house?.message).not.toContain(`"garage"`);
+    expect(depthFinding(read("examples/hillside-villa.arch"))).toBeUndefined();
   });
 });

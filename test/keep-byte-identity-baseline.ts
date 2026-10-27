@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: fix/examples-sound merged with origin/main 38fbb87f: 20 examples edited for lint-clean and design review (aquarium, bungalow, classroom-block, clinic, courtyard-house, furnished-flat, garden-house, hillside-villa, imports, laneway-house, library, materials, museum, parametric, relational, studio, themed, tiny-house, transit-hall, two-storey)
+ * Taken: PS2.70: W_GARAGE_TOO_NARROW depth finding, merged over main@134765d1 (PR #305); moved files listed in the commit
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -493,12 +493,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/circulation-privacy/wc-utility-passage.arch",
-    "4f0c1e7d121b25971efd6a655f3aeca45a0e5a2b3162552bed254786f152936b",
+    "121b67331fd618a5f2dc643638228383057180a071fa641a913dbc96266ba8a4",
     194,
   ],
   [
     "test/defect-corpus/circulation-privacy/wc-utility-passage.clean.arch",
-    "44b4ed6be0cc24331495e6dade6704932a067b34ae6f186b52a18133803b4167",
+    "ab4989aa86532e0908b175cd6a13c68fab7f0ef56af74cf0e418bf90bf0a2d19",
     194,
   ],
   [
@@ -580,6 +580,16 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     "test/defect-corpus/clearances/fridge-over-window.clean.arch",
     "6b84059da5c3f3e8c199ad9d88fb6837b72db32f33d0b8a0a7dfa616ccce33be",
     164,
+  ],
+  [
+    "test/defect-corpus/clearances/garage-too-shallow.arch",
+    "7a331c27eef377daf91778ef352c0b2a9404084318008f173740c0838755fa2a",
+    54,
+  ],
+  [
+    "test/defect-corpus/clearances/garage-too-shallow.clean.arch",
+    "cf60c54e3f50391fa928b09273a7780a02624d766eb88d48390f189784818490",
+    54,
   ],
   [
     "test/defect-corpus/clearances/hob-against-fridge.arch",
@@ -1238,7 +1248,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-24-rerun/2-house.arch",
-    "14c4467748e0c4a053ef9b82b2214d6a5dca2b51d9aff57b35e6207f3e6b120d",
+    "7d42917ea9ef3f40995a98e5f6ad08a3c888d3f82eb699701e0b7768466dbf58",
     4532,
   ],
   [
@@ -1268,7 +1278,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-25-rerun/2-house.arch",
-    "0e7c3bdf49bfc6ad886f7344d1bad1b89402b7e8bda67708f8b53233794915ae",
+    "1afda049b078b2c1dc2c5aada7afd5715b2563298137f2d0b16ca310dd571c67",
     3523,
   ],
   [
@@ -1328,7 +1338,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armB/2-house.arch",
-    "bf629fe0bc5041e9caacb897616ad1366ce514b89b05adfeb63042ab47abd8d6",
+    "cbced4c96551ac00c199ec8ca0f7e12e280251ca029dbe5288dcdfeed0cdab7d",
     3058,
   ],
   [
@@ -1358,7 +1368,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/2-house.arch",
-    "b5315c48b28694e329b4a2a48effd23300a65c564b8ecaf2c2ab23a685bf393a",
+    "072527be6cdd0cc565c737d0e2d5cc5d07bc286894884ae9e1c3549cff3ccfb3",
     3793,
   ],
   [
@@ -1388,7 +1398,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/2-house.arch",
-    "dbd7fd6f5f3474a22b552294f6f46a6b70ff1ab03a4ce82a0bc59645dbefb77c",
+    "afa4419a80815894b3392e4ee1bd871485dd90b7dda6e12be0f1cd011c7cc489",
     854,
   ],
   [

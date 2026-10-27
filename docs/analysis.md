@@ -1006,6 +1006,26 @@ Without `--json` the human summary gains one line, e.g.
 `depends: 22 of 24 element(s) depend on another id, a name, an axis or a host wall; 7 derived wall(s) (--json for the lists)`
 (the two that do not: the living room, placed `at (0,0)`, and the `dim`, whose points are numbers).
 
+## Clearances — what each clearance rule measured
+
+`describe(src, { facts: ["clearances"] })` — `archlang describe plan.arch --facts clearances --json`
+— adds `clearances`: per storey, the figures the clearance rules measure, read through the
+rules' own measures under the default ruleset, so a warning (or its absence) can be checked
+from the CLI instead of re-measuring the geometry. Opt-in like `symmetry`; without `--facts`
+the key is absent. Lengths are whole millimetres, rounded as the messages round them.
+
+| Key | Rule | What each row holds |
+|-----|------|---------------------|
+| `wcs[]` | `W_WC_SIDE_CLEARANCE` | `need_mm`; per side, `centreline_mm` to what stands there and `by` (a piece, wall or swing; `null`: clear to the figure); `sides: null` with `unmeasured` (`wide`, `curved-wall`) when the rule does not measure the pan |
+| `tall_units[]` | `W_FURNITURE_OVER_WINDOW` | per window the unit stands in front of: `covered_mm` along the span, `across_mm` into the band |
+| `hobs[]` | `W_HOB_UNDER_WINDOW`, `W_HOB_FRIDGE_GAP` | per window band it reaches: `covered_mm`, `across_mm`, `off_face_mm` (its side nearest the host, past the wall's face) and `under` (the rule's reading); `tall_unit_gap`, the nearest tall unit inside a side's landing |
+| `doorways[]` | `W_DOORWAY_BLOCKED`, `W_PATH_TOO_NARROW` | `width_mm`, `clear_width_mm` (the access graph's), `approach` (`need_mm`, `blocked_by` with the depth left from the wall's face); a cased opening wider than a doorway adds `stretch` (the longest clear stretch, against 1200 mm); `approach: null` with `unmeasured` (`garage`, `host`) when it is not read |
+| `stairs[]` | `W_STAIR_NO_LANDING`, `W_STAIR_TOO_STEEP` | `run_mm`, `min_run_mm` (on a `dir up` flight of a plan that authors heights), and per landing this storey owes, `need_mm`, `clear_mm` and `by` (a wall, a void or `no-floor`); `null` past the stair rules' work budget |
+
+```bash
+archlang describe plan.arch --facts clearances --json --select clearances
+```
+
 ## Impact — change one number, see what follows
 
 `impact(before, after)` — `archlang impact plan.arch --set W=4500` or
@@ -1225,7 +1245,7 @@ label, as in every lint message. The reasons:
 | `no-site` | orientation | the plan declares no `site` and has a bedroom, living or dining room with a window, so no window has a compass facing |
 | `single-storey` | storey matching | a `stair`, `elevator` or `escalator` on a plan with one storey |
 | `arc-window-unattributed` | daylight | a room bounded by a curved wall edge whose window the shape attributes to no room (neither face probe finds a floor, and no bay opens into a room through the chord) |
-| `non-rectangular-room` | room and furniture checks | a polygon room: the garage-width check declines a `uses garage` one, the fixture-orientation check (`W_FIXTURE_BACK_TO_ROOM`) any one, and under a residential-advisory profile `W_ROOM_TOO_NARROW` a polygon or circle room it would ask a width |
+| `non-rectangular-room` | room and furniture checks | a polygon room: the garage-width and garage-depth checks decline a `uses garage` one (the depth check a circle one too), the fixture-orientation check (`W_FIXTURE_BACK_TO_ROOM`) any one, and under a residential-advisory profile `W_ROOM_TOO_NARROW` a polygon or circle room it would ask a width |
 | `no-entrance` | reachability, circulation walk, privacy checks | a storey with rooms and no way in (`W_NO_ENTRANCE` still runs) |
 | `balcony-only-entrance` | privacy checks | every door to the outside opens onto a balcony or terrace, which these rules do not count as a way in (the access graph and the walk do) |
 | `unsupported-host-geometry` | door checks | a door on an angled or curved wall, which the doorway-landing and pocket-run checks do not measure |
@@ -1234,6 +1254,7 @@ label, as in every lint message. The reasons:
 | `non-dwelling` | daylight, privacy checks | the plan reads as non-residential: a room label with "Cafe", "Restaurant", "Retail", "Clinic", "Consulting", "Servery", "Staff room" or "Classroom"; or, on a plan with no bedroom and no living room, a room whose use is `office` or a label with "Lobby", "Reception", "Waiting", "Shop" or "Meeting" (a house's "Reception room" or "Entrance Lobby" stays a dwelling). `W_HABITABLE_NO_WINDOW` does not ask a kitchen for daylight there, and `W_WET_ROOM_DOOR` (all but a door onto a kitchen) and `W_ENTRANCE_INTO_PRIVATE` do not judge: they describe a home. `residential-basic` judges every plan as a dwelling and files none |
 | `no-bed` | room checks | under a profile with a double-bedroom figure (`cn-`, `uk-residential-advisory`), a bedroom with no `bed` or `double_bed`: whether it is a single or a double is not known, so it is held to the single figure only |
 | `no-dwelling` | room checks | under `uk-residential-advisory`, a multi-storey plan with double bedrooms: "one double bedroom of every home 2.75 m wide" needs to know which bedrooms share a home (declared dwellings are still to come) |
+| `no-vehicle-door` | room checks | a rectangular garage with no `door garage` on its perimeter: `W_GARAGE_TOO_NARROW` has no vehicle door to measure its depth from, so only its width is judged |
 
 Two more reasons are reserved for families that do not exist yet: `no-brief` and
 `no-operable-window-data`. In human mode `lint` prints one line on stderr
@@ -1254,7 +1275,7 @@ A **profile** is a named bundle of thresholds, applied with `--profile` (CLI) or
 | `residential-basic` | the default's thresholds, with every plan judged as a dwelling |
 | `accessibility-advisory` | doors ≥ 850 mm, rooms ≥ 5 m², walk clear ≥ 900 mm, detour ≤ 3.0×, 150 mm swing clearance, WC centreline ≥ 450 mm from a side wall or fixture |
 | `cn-residential-advisory` | the default's, plus room areas and passage widths read from China's residential design code (table below) |
-| `uk-residential-advisory` | the default's, plus bedroom areas and widths from England's space standard and hall widths (table below) |
+| `uk-residential-advisory` | the default's, plus bedroom areas and widths from England's space standard, hall widths and a garage's depth (table below) |
 | `us-residential-advisory` | the default's, plus habitable-room areas and widths and hallway widths from the US model residential code (table below) |
 
 The three residential-advisory profiles add room sizes by use. Each number is read from the
@@ -1270,6 +1291,7 @@ reachable); nothing remembered ships:
 | Passage width (`W_ROOM_TOO_NARROW`) | entry passage 1200 mm (宜, should); to a bedroom or living room 1000 mm; to a kitchen, bath, WC or store 900 mm (GB 5.7.1 [V]) | hall, circulation, entry 900 mm (Approved Document M4(2) [S]) | hall, circulation, entry 914 mm (IRC R311.6 [S]) |
 | Daylight target (taste R7) | 1/7 (GB 7.1.5 [V]) | 8 %, the generic target (no English figure read) | 8 % (IRC R303.1 [S]) |
 | WC centreline to a side wall or fixture (`W_WC_SIDE_CLEARANCE`) | 400 mm, the default (GB 50096-2011 gives none) | 400 mm (Approved Document M4(2) Diagram 2.5, 400–500 mm [V]) | 381 mm, 15 in (IRC P2705.1 [S]) |
+| Garage clear depth along its vehicle door (`W_GARAGE_TOO_NARROW`) | 5000 mm, the default (a parking bay: Buckinghamshire Table 9 [V]) | 6000 mm (Monmouthshire SPG Domestic Garages 2013 ¶12, citing Manual for Streets; Buckinghamshire Table 11 [V]) | 5000 mm, the default (no figure read) |
 
 How they measure:
 

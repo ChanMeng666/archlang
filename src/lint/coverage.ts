@@ -112,7 +112,10 @@ export type LintSkipReason =
   | "curved-landing-wall"
   /** The stair rules' counted work on the storey (`MAX_STAIR_WORK`, `src/lint/rules/stairs.ts`,
    *  charged before the work) would pass its cap: no stair on the storey is judged. */
-  | "stair-budget";
+  | "stair-budget"
+  /** A garage has no `door garage` on its perimeter, so `W_GARAGE_TOO_NARROW` has no vehicle
+   *  door to measure its depth from (PS2.70); its width is still judged. */
+  | "no-vehicle-door";
 
 /** What each family checks, as the human coverage line names it. */
 export const FAMILY_NOUN: Readonly<Record<LintFamily, string>> = {
@@ -159,6 +162,7 @@ export const SKIP_WHY: Readonly<Record<LintSkipReason, string>> = {
   "no-storey-height": "the plan states no storey height",
   "curved-landing-wall": "a curved wall stands near a stair's landing, which the rule does not measure",
   "stair-budget": "too many stairs, doors and walls on the storey to measure",
+  "no-vehicle-door": "the garage has no vehicle door to measure its depth from",
 };
 
 /**
