@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `W_BED_UNDERSIZED` (validity, `furniture`, stage `fixtures`; plan card PS2.67): a `bed`,
+  `double_bed` or `bunk_bed` drawn under 1900 mm long or 750 mm wide, the smallest standard UK bed
+  (Which?'s UK bed-size table, 2026: a consumer magazine, not a standard). New ruleset fields
+  `bedMinLengthMm` and `bedMinWidthMm` (`null` turns either off); `crib` and `cot` are never judged.
+  No shipped example moves; the first-contact clinics' examination couches drawn as `bed` warn.
 - Six stair-safety lint rules (plan cards PS2.11e's stair bullets, PS2.34, PS2.15), validity layer,
   on by default, in a new `stairs` coverage family (`W_SHAFT_FOOTPRINT_MISMATCH` in `vertical`).
   The landing is the square beyond a flight's end as wide as the flight (Approved Document K 2013

@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: PS2.70: W_GARAGE_TOO_NARROW depth finding, merged over main@134765d1 (PR #305); moved files listed in the commit
+ * Taken: PS2.67: W_BED_UNDERSIZED (a bed under 1900 x 750 mm), on main@f3e87c59; moved files listed in the commit
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -520,6 +520,16 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     "test/defect-corpus/clearances/bed-blocks-alcove.clean.arch",
     "7e282d8eead24cb72352bc46b85427820f1d1c60c5287d9fe6d9dbf73027493f",
     151,
+  ],
+  [
+    "test/defect-corpus/clearances/bed-undersized.arch",
+    "0cd20cefe3b94da51647fb7eabdb6e587c9afbe29632347d2aed4f814f5b6273",
+    82,
+  ],
+  [
+    "test/defect-corpus/clearances/bed-undersized.clean.arch",
+    "c03be2d0be4f3bb260c753cb112642c2ad6362f0ad3b5e09cb5d4966aae63dff",
+    82,
   ],
   [
     "test/defect-corpus/clearances/bench-across-opening.arch",
@@ -1268,7 +1278,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-24-rerun/6-clinic.arch",
-    "ac5a16bcab3afb9951a56dcbe32575ded44a3c691eb5022c626fe06446d34142",
+    "6e7fa7faa015c64e9e8c9edcdb47b7636f5b3f40cfcccf1d157c0bfae883134e",
     2036,
   ],
   [
@@ -1308,7 +1318,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armA/2-house.arch",
-    "f463d6ee642fabb0b361f6d39dfdd745cc7ba541f85996d42f00b0f3f3a8f0d7",
+    "2f0ff7544d0bdc1f81a3470c90694372536ca03f08aecf501150b336170dd50b",
     3827,
   ],
   [
@@ -1328,7 +1338,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armA/6-clinic.arch",
-    "1d4f1ac780c0b21be361fdd46dbf06d327293dfaafadae0032c9414a913b3580",
+    "9c0303c64c3e4615575950d22a35e6a164ce1ef511b1dc26bee6cbf4f1029a42",
     1872,
   ],
   [
@@ -1358,7 +1368,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armB/6-clinic.arch",
-    "c0ebf7921c11e0aedff041e04edce092ab3f8e34cdee3746d97eb9b4fbc1c95a",
+    "9a3a5dbe436362f849023c5e35c752b701d06d86ae7d572c4e5abb22da7c16ec",
     1906,
   ],
   [
@@ -1388,7 +1398,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/6-clinic.arch",
-    "82ddbf0fcfd4a1c7b59aefc81361bbc6c7213555b44c3c024255ad4d9c7eef42",
+    "710222a18fbd179f92dd52e0c52fb17de1c9bd5e3f0823903a02ad5f620e703c",
     2119,
   ],
   [
@@ -1418,8 +1428,68 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/6-clinic.arch",
-    "c3eafdb9c190e52e3d7f662bc9676c3e2d5f44b04a1323b088c0d3fad1cffc88",
+    "def9111f83d7f83fdcdb40c38ed41948ca8e03bad29c0d9fb4dd9053bda43c31",
     722,
+  ],
+  [
+    "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/1-apartment.arch",
+    "bfab2d6b0f7eb44e0bbfb7ab5499dd8ee4c889288f6d9ebd40ca20b17e1022ea",
+    1482,
+  ],
+  [
+    "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/2-house.arch",
+    "c86d25e9fcf46d3c5d9a7ba70f9b3786db46c058a546f7c5d87ab952af2cd67e",
+    3701,
+  ],
+  [
+    "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/3-studio.arch",
+    "b62e6ef7a50ac744476df0b05a54e26c8c748868ca135fb4e59514cb7261e839",
+    874,
+  ],
+  [
+    "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/4-cafe.arch",
+    "5b0f0a5803f39054a1b67bd5dba88bc375343292300259af460d104847442f39",
+    2744,
+  ],
+  [
+    "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/5-townhouse.arch",
+    "1357687658bd69ee3007a1b111a218451bef815d8f7639803b35a310017a26cb",
+    4074,
+  ],
+  [
+    "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/6-clinic.arch",
+    "5ba0c87a7d636451df1991d0f7b4bdef31af732d5e9250a9625d32dc850f8f82",
+    2262,
+  ],
+  [
+    "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm2/1-apartment.arch",
+    "8a6416dee800d5ec18c14a9cd9e0a951ce6d8a0faf55f80e0bd32185855fa3ec",
+    1892,
+  ],
+  [
+    "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm2/2-house.arch",
+    "9f425647bbc5eec611fdeb736d81c214290d0eb758427695cf10b10e6ebc650a",
+    4001,
+  ],
+  [
+    "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm2/3-studio.arch",
+    "cd6dc6da2f1cb532f19677ec16c6f49f7c0fec6f36ccf43d9db5b37e080fe2bb",
+    833,
+  ],
+  [
+    "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm2/4-cafe.arch",
+    "108d1af3c5b4f55df63cff38af873d1dfb6050e7d2bb625030249b5b0a60c901",
+    2695,
+  ],
+  [
+    "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm2/5-townhouse.arch",
+    "6049739169701d23a764946d4b6da274be1f032e1552b09fb790b07738405cea",
+    4344,
+  ],
+  [
+    "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm2/6-clinic.arch",
+    "205925dea9780573363df2eacd8cf9c661ad171fdd6e8566fcc1ac8dde4e52bf",
+    1969,
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/3-studio.arch",
@@ -1438,7 +1508,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/6-clinic.arch",
-    "a9c0b1da7fc21f10f537a4072360eecbd0d72327cd96d325bb7f350e07debc9f",
+    "88650443e37ea1bc910ebf839b58e65d122e69f9aaef57bcc42349047e945967",
     1365,
   ],
   [

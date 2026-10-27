@@ -495,6 +495,7 @@ suite("doors — W_POCKET_RUN", () => {
       "hob-under-window",
       "hob-fridge-gap",
       "leaf-too-wide",
+      "bed-undersized",
     ]);
   });
 
@@ -511,8 +512,8 @@ suite("doors — W_POCKET_RUN", () => {
     // furniture, no `dims auto`, no title), nor the four clearance rules (PS2.11a–d:
     // no WC, no tall unit, no furniture, and one door has no other doorway to park its leaf across),
     // nor the six stair rules (PS2.11e, PS2.34, PS2.15: no stair) and the three PS2.11e kitchen and
-    // door rules last of all (no hob, and a 600 mm leaf).
-    expect(LINT_RULES.map((r) => r.name).slice(-31)).toEqual([
+    // door rules (no hob, and a 600 mm leaf), and PS2.67's bed rule last of all (no bed).
+    expect(LINT_RULES.map((r) => r.name).slice(-32)).toEqual([
       "door-near-corner",
       "opening-not-dimensioned",
       "room-via-private",
@@ -544,6 +545,7 @@ suite("doors — W_POCKET_RUN", () => {
       "hob-under-window",
       "hob-fridge-gap",
       "leaf-too-wide",
+      "bed-undersized",
     ]);
     // A plan carrying an unrelated pre-existing warning (a sub-passable door width) AND
     // tripping the new rule: the old diagnostic must still be first, byte-for-byte.

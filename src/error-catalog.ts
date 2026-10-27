@@ -1486,6 +1486,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Make it a pair of leaves, `door double … width <mm>` (each leaf half the width; narrow a double door wider than twice the figure too), or narrow it, or make it a `sliding` or `bifold` door, or a cased `opening` if it needs no door. There is no machine-applicable fix: which the doorway becomes is a design decision.",
     "wall id=w exterior thickness 200 { (0,0) (8000,0) }\ndoor at (4000,0) width 2400 wall w   # lint: one 2400 mm leaf; `door double … width 2400` is two of 1200",
   ),
+  W_BED_UNDERSIZED: W(
+    "W_BED_UNDERSIZED",
+    "A bed is drawn smaller than the smallest standard bed.",
+    "A `bed`, `double_bed` or `bunk_bed` is drawn shorter than `bedMinLengthMm` along its longer side (1900 mm by default) or narrower than `bedMinWidthMm` across its shorter side (750 mm by default). The defaults are the smallest standard UK bed, the small single of 75 × 190 cm, whose length every standard UK size below a king shares (Which?, *UK mattress sizes: bed and mattress size guide*, 2026: a consumer magazine, not a standard). They are mattress sizes, so a real bed's frame is at least that. The usual case is a bed cut short to clear another piece, or a piece that is not a bed (an examination couch) drawn as one. The longer side is read as the length whichever way `size` is written; a bed lying across its own length is `W_FOOTPRINT_TRANSPOSED`. A `crib` or `cot` is short by design and is never judged. Set either figure to `null` to turn its finding off, or to another value for another market.",
+    "Draw the bed at least the length and width the warning quotes, and move whatever it was cut short to clear. There is no machine-applicable fix: lengthening a bed moves it into its neighbours. A piece that is not a bed has no catalogue family yet; the warning stands until it does.",
+    'room id=b at (0,0) size 3000x3000 label "Bedroom"\nfurniture bed at (200,200) size 900x1500   # lint: 1500 mm long, 400 mm under the 1900 mm of a UK single',
+  ),
   W_OPENING_NOT_DIMENSIONED: W(
     "W_OPENING_NOT_DIMENSIONED",
     "An opening on the outside of the building is on no `dims auto all` chain.",

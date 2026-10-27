@@ -1,0 +1,17 @@
+# class: clearances
+# origin: audits/2026-10-26-first-contact-rerun-row6.md QK2 (first-contact-plans/2026-10-26-rerun-row6/6-clinic.arch:
+#   three examination couches drawn as `bed` 1500x700, cut from 1900); the 2026-10-26 arm A house's 1400x1800
+#   `double_bed`
+# expect: W_BED_UNDERSIZED
+# status: done
+# fact: the bed is `size 700x1500`, rotate 0, so its head is on the 700 mm north edge: 1500 mm long, 400 mm under
+#   the 1900 mm of a UK single, and 700 mm wide, 50 mm under the 750 mm of a UK small single (Which?, 2026)
+plan "Bed drawn under the smallest standard bed" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (3600,0) (3600,3400) (0,3400) close }
+  room id=r_bed at (0,0) size 3600x3400 label "Bedroom" uses bedroom
+  door id=d_entry at (2800,3400) width 1000 wall shell
+  window at (1800,0) width 1200 wall shell
+  furniture bed at (300,200) size 700x1500
+}

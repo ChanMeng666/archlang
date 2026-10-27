@@ -456,6 +456,8 @@ export const RULE_CLASS: Readonly<Record<string, RuleClass>> = {
   "hob-under-window": "invariant",
   "hob-fridge-gap": "invariant",
   "leaf-too-wide": "invariant",
+  // PS2.67: a bed's two side lengths, which no turn or mirror changes.
+  "bed-undersized": "invariant",
 };
 
 /**

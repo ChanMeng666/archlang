@@ -20,7 +20,7 @@ import {
   pocketRun,
   swingObstructed,
 } from "./doors.js";
-import { footprintTransposed } from "./footprint.js";
+import { bedUndersized, footprintTransposed } from "./footprint.js";
 import { noEntrance } from "./entrance.js";
 import {
   fixtureBackToRoom,
@@ -165,6 +165,9 @@ export const LINT_RULES: readonly LintRule[] = [
   hobUnderWindow,
   hobFridgeGap,
   leafTooWide,
+  // A bed drawn under the smallest standard bed (plan-soundness PS2.67). Appended LAST, so no
+  // existing diagnostic moves within the array.
+  bedUndersized,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

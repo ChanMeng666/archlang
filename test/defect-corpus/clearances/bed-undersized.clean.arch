@@ -1,0 +1,14 @@
+# class: clearances
+# twin-of: bed-undersized
+# origin: audits/2026-10-26-first-contact-rerun-row6.md QK2 with the bed drawn as a UK single
+# expect: none
+# fact: `size 900x1900`: a UK single (Which?, 2026), at the 1900 mm length and over the 750 mm width
+plan "Bed drawn under the smallest standard bed" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (3600,0) (3600,3400) (0,3400) close }
+  room id=r_bed at (0,0) size 3600x3400 label "Bedroom" uses bedroom
+  door id=d_entry at (2800,3400) width 1000 wall shell
+  window at (1800,0) width 1200 wall shell
+  furniture bed at (300,200) size 900x1900
+}
