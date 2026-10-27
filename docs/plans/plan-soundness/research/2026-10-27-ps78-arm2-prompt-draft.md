@@ -1,6 +1,6 @@
 # PS7.8 · Arm 2 ("whole loop") dispatch prompt — DRAFT for the owner's confirmation (D26)
 
-Status: draft, 2026-10-27, not yet in the repository. The protocol file
+Status: draft, 2026-10-27, filed by PR #302 (the housekeeping PR); not yet in the protocol file. The protocol file
 `docs/plans/plan-soundness/audits/first-contact-protocol.md` stays frozen; per card PS7.8 this prompt
 is written into it as a second, dated prompt beside the frozen one **in the re-measure's PR**, and the
 re-measure runs only when the owner says so.

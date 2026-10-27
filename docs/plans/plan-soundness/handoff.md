@@ -1,4 +1,4 @@
-# Plan-soundness programme: handoff (state as of 2026-10-27, `main@82ad8a51`)
+# Plan-soundness programme: handoff (state as of 2026-10-27, `main@38fbb87f`)
 
 This page is the resume point for a new session. It says where the programme stands, what is open,
 in which order, and how the work is run. It is re-written at every stage end; the dated history is
@@ -56,7 +56,7 @@ Everything below is on `main` and **unreleased**: the last `v*` tag predates PR 
 `git describe --tags --abbrev=0` and `npm view @chanmeng666/archlang version`). A release starts only
 when the owner asks; the agent then runs the chain (`docs/agents/iron-laws.md` § Owner policies).
 `CHANGELOG.md` `[Unreleased]` is the release record; PR #255 backfilled the 24 programme PRs it was
-missing. Totals at 82ad8a51 (the tranche changed none of these counts but the catch rate, 73/80): 32 new `W_*` codes (52 → 84), 40 new `E_*` codes (103 → 143), 11 `A_*`
+missing. Totals at 38fbb87f (the tranche changed none of these counts but the catch rate, 73/80): 32 new `W_*` codes (52 → 84), 40 new `E_*` codes (103 → 143), 11 `A_*`
 taste advice codes, `LINT_RULES` 54 entries. Cards, counted from `cards.md`'s tables and card headers
 after the row-7 tranche 1 (PS2.64, PS2.65, PS2.66, PS7.7 done): 151, of which 66 done,
 0 doing, 2 parked, 83 todo (151 / 62 / 87 before the tranche). Recount: 100 table rows
@@ -134,7 +134,7 @@ not counted; the 133 recorded at 6f3de966 counted them (128 without).
 | `W_DOORWAY_BLOCKED` and repair's doorway census skip `garage` doors; one a11y row moved (first-contact `2-house.arch`) (head bd669887) | PS2.65 | #297 | 2cea52d1 |
 | `next`: a first validity item that is a door-swing shortfall yields to the first stairs-family or earlier-stage finding; only the row-6 townhouse's `next` moved (→ `W_STAIR_SIDE_ENTRY`); K1 re-taken for that one row (head 674e54db) | PS7.7 | #298 | 82ad8a51 |
 | Backlog item M.24 (head fa5ddad8) | M.24 | #300 | 1d3b4b91 |
-| `W_ROOM_MISSING_DEFINING` also reports a bath holding a WC and no basin unless a basin stands in a directly joined non-kitchen room (AD G4); catch rate 72/79 → 73/80; one first-contact row moved (`rerun-row6` `2-house.arch`); K1 re-taken; the review-sheet fixture gained a basin (head 521b98c4) | PS2.66 | #301 | auto-merge queued |
+| `W_ROOM_MISSING_DEFINING` also reports a bath holding a WC and no basin unless a basin stands in a directly joined non-kitchen room (AD G4); catch rate 72/79 → 73/80; one first-contact row moved (`rerun-row6` `2-house.arch`); K1 re-taken; the review-sheet fixture gained a basin (head 88507ce5) | PS2.66 | #301 | 38fbb87f |
 
 Recorded practice a reader must know: lint PRs bump the `lintWarnings` counts in `eval/judge-fixture.json`
 when a new rule fires on an eval golden, with a per-row reason in the PR body (judgment fields untouched,
