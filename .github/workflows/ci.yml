@@ -110,6 +110,7 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node }}
+          check-latest: true
           cache: npm
 
       - name: Install dependencies
@@ -190,6 +191,7 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
+          check-latest: true
           cache: npm
 
       - name: Install dependencies
@@ -286,6 +288,7 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
+          check-latest: true
           cache: npm
 
       - name: Install dependencies
@@ -375,6 +378,7 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
+          check-latest: true
           cache: npm
 
       - name: Install dependencies
@@ -481,6 +485,7 @@ jobs:
           # Node 22, not 18/20: archlive.spec.ts decodes the widget's `#z=` hash with
           # `DecompressionStream("deflate-raw")`, which Node only gained in 21.2.
           node-version: 22
+          check-latest: true
           cache: npm
 
       - name: Install dependencies
