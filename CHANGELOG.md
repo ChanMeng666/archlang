@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `W_EXIT_APPROACH_BLOCKED` (plan card PS2.69): furniture inside the clear floor of an exterior exit (914 mm deep, the door's width up to 1200 mm; 1220 push / 1525 pull under `accessibility-advisory`; new ruleset fields `exitApproachMm`, `exitApproachPullMm`).
+- Tests only (plan card PS2.77): `test/fixtures/storeys-eaves-overflow.arch`, a two-storey plan whose
+  building fits its sheet and whose upper-storey eaves alone raise the building-level
+  `W_DRAWING_OVERFLOW`, restores two coverage losses since every example fits its sheet: the
+  storey oracle compares that diagnostic under the group, and the overflow suite reads it off a
+  multi-storey plan as authored. No shipped example, SVG, `describe()` or `lint()` moved.
 - `describe --facts clearances` (plan card PS2.72): an opt-in facet printing, per storey, what
   each clearance rule measured, read through the rules' own measures under the default ruleset: a
   WC's sides, a tall unit's and a hob's cover of a window (with the hob's distance off the window
