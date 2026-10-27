@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe as suite, expect, it } from "vitest";
-import { type Diagnostic, describe as describePlan, lint, type World } from "../src/index.js";
+import { type Diagnostic, describe as describePlan, lint, repair, type World } from "../src/index.js";
 import { type AccessEdge, rectOf, resolvePlan } from "../src/analyze.js";
 import { doorLandingRect, openingBlock } from "../src/geometry/rect.js";
 import type { RFurniture, ROpening } from "../src/ir.js";
@@ -380,6 +380,51 @@ suite("W_DOORWAY_BLOCKED on an opening wider than a doorway (the ruling on PR #2
     expect(block).toMatchObject({ stretch: 1550, blocked: false });
     expect(block!.inside.map((i) => furniture[i]!.label)).toEqual(["Table"]);
     expect(of(src, DB)).toEqual([]);
+  });
+});
+
+suite("W_DOORWAY_BLOCKED leaves a vehicle door out (PS2.65)", () => {
+  // A garage door on the façade (face at y 100) with a car 100 mm in front of it, and a
+  // pedestrian door into the hall (face at x 3450) with a chest 50 mm in front of it.
+  const garage = (kind: string): string => `plan "G" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }
+  wall id=w_mid partition thickness 100 { (3400,0) (3400,6000) }
+  room id=r_gar at (0,0) size 3400x6000 label "Garage" uses garage
+  room id=r_hall at (3400,0) size 2600x6000 label "Hall" uses hall
+  door id=d_gar ${kind} at (1700,0) width 2400 wall shell
+  door id=d_hall sliding at (3400,3000) width 900 wall w_mid
+  furniture car at (750,200) size 1900x4500 label "Car" in r_gar
+  furniture chest at (3500,2700) size 400x600 in r_hall
+}`;
+
+  it("the car in front of a garage door is silent; the chest in front of the pedestrian door still warns", () => {
+    for (const profile of [undefined, "accessibility-advisory"]) {
+      const ds = of(garage("garage"), DB, profile ? { profile } : {});
+      expect(
+        ds.map((d) => d.message),
+        profile,
+      ).toEqual([expect.stringContaining('"chest" leaves 50 mm')]);
+    }
+  });
+
+  it("`repair` leaves the car where it stands and still clears the chest", () => {
+    expect(repair(garage("garage")).changes.map((c) => c.category)).toEqual(["chest"]);
+  });
+
+  it("the same car in front of a pedestrian door of the same width blocks it: the kind is what is read", () => {
+    const ds = of(garage("sliding"), DB);
+    expect(ds.map((d) => d.message)).toEqual([
+      expect.stringContaining('"Car" leaves 100 mm'),
+      expect.stringContaining('"chest" leaves 50 mm'),
+    ]);
+  });
+
+  it("the 2026-10-18 first-contact house's garage door and its car are silent under the a11y profile", () => {
+    const src = readFileSync(join(ROOT, "docs/plans/plan-soundness/audits/first-contact-plans/2-house.arch"), "utf8");
+    expect(src).toContain("door id=d_garage garage on w_s at 1700 width 2400");
+    expect(of(src, DB, { profile: "accessibility-advisory" })).toEqual([]);
   });
 });
 
