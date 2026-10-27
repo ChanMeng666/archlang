@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: PS2.69 (PR #308): W_EXIT_APPROACH_BLOCKED; merged over main with PS7.10 (#314)
+ * Taken: PS2.67 (PR #315): W_BED_UNDERSIZED; merged over main with PS2.69 (#308), PS2.74 (#313) and PS7.10 (#314)
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -530,6 +530,16 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     "test/defect-corpus/clearances/bed-blocks-alcove.clean.arch",
     "7e282d8eead24cb72352bc46b85427820f1d1c60c5287d9fe6d9dbf73027493f",
     151,
+  ],
+  [
+    "test/defect-corpus/clearances/bed-undersized.arch",
+    "0cd20cefe3b94da51647fb7eabdb6e587c9afbe29632347d2aed4f814f5b6273",
+    82,
+  ],
+  [
+    "test/defect-corpus/clearances/bed-undersized.clean.arch",
+    "c03be2d0be4f3bb260c753cb112642c2ad6362f0ad3b5e09cb5d4966aae63dff",
+    82,
   ],
   [
     "test/defect-corpus/clearances/bench-across-opening.arch",
@@ -1288,7 +1298,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-24-rerun/6-clinic.arch",
-    "a37b95d44b749767d033a99f7e7d6599af54e685f6769c9ad3bdd554d8841eb0",
+    "5ee3882257f45da49e99919482d6f50380d25d25fbfc6f1c804105d5368ea806",
     2036,
   ],
   [
@@ -1328,7 +1338,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armA/2-house.arch",
-    "f463d6ee642fabb0b361f6d39dfdd745cc7ba541f85996d42f00b0f3f3a8f0d7",
+    "2f0ff7544d0bdc1f81a3470c90694372536ca03f08aecf501150b336170dd50b",
     3827,
   ],
   [
@@ -1348,7 +1358,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armA/6-clinic.arch",
-    "d99ddb16f6782a4c6c635a0044c7ecf46568f1a83e8606f5f03bf6c060c75a79",
+    "0e3855e5e0bf7bb75a428b4641543ff167c8c2cc3bdc112f5fcbc672a7d99a2a",
     1872,
   ],
   [
@@ -1378,7 +1388,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armB/6-clinic.arch",
-    "dc7bf35d20dc6b6d2599bb47b25f427cc2dd5097421d9dcced4074cd249353e4",
+    "6efde4b29bab5734cf4f0e24e8b9775ee12cf2195af707fd448b1c0d1deaf6ea",
     1906,
   ],
   [
@@ -1408,7 +1418,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/6-clinic.arch",
-    "83783caa38400a39435b97a525f109289e90e8abd763ebe3124bb0c8cfecedce",
+    "9bed65fbddbe5710f441340dd0749c33afe1bd9ed60e6efb0354b0627b452d74",
     2119,
   ],
   [
@@ -1438,7 +1448,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/6-clinic.arch",
-    "15cd5826056cb0e573619c65d633bf0d2f0e138b1523f0ede86c467de21e0173",
+    "22b62d30b68eea0e9172fa9949643eae7da47154ba8384c56f624d12c2af3d36",
     722,
   ],
   [
@@ -1518,7 +1528,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/6-clinic.arch",
-    "b63969c31644499846985b4eccf1469ac107b93559386ba71a2e91d59530090f",
+    "1f9960aff7b641c477d7deae71140684f6358767929b6fb70092888264204a30",
     1365,
   ],
   [

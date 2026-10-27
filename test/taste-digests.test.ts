@@ -162,6 +162,11 @@
  * row moved: `circulation-privacy/wc-utility-passage`'s garage was 4850 mm deep along its south
  * vehicle door, so both of its files moved that door to the east wall (5800 mm deep), and their
  * reports are byte for byte as before (checked against the same files linted with the depth off).
+ *
+ * PS2.67 (`W_BED_UNDERSIZED`, a bed under 1900 × 750 mm) added six rows, the new
+ * `clearances/bed-undersized` pair under each of the three profiles, measured with `tasteDigest`:
+ * the case lists the code under `validity`, its twin none. No existing row moved (no example or
+ * corpus bed is under the figures).
  */
 
 import { describe, expect, it } from "vitest";
@@ -425,6 +430,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "d48149c16c3f9a53f5f13b15d8e17e6c8720f21574f723a279c2eb4348f4f1f0",
     "generic",
     "test/defect-corpus/clearances/bed-blocks-alcove.clean.arch",
+  ],
+  [
+    "1aa63462090c1c4b92ecfafcf410b55a37186a1f9e7230bed6ec15cb951b582c",
+    "generic",
+    "test/defect-corpus/clearances/bed-undersized.arch",
+  ],
+  [
+    "a1272b234c5be37b32b6ceb4f673f519cee8a325a21ab06c45283743c629bdf2",
+    "generic",
+    "test/defect-corpus/clearances/bed-undersized.clean.arch",
   ],
   [
     "c00af45e96ce11a814c2720416750a522bd6ad58a9526f88ac0644a27cc95413",
@@ -1537,6 +1552,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/bed-blocks-alcove.clean.arch",
   ],
   [
+    "c04bf3dfae34ec7a3bcceab52a9e517bf8ff3ba6215a36dbc6edf3bcaace30dc",
+    "cn-residential-advisory",
+    "test/defect-corpus/clearances/bed-undersized.arch",
+  ],
+  [
+    "d425cfc7e10d105fb6537710cedf329dea64d668badb9c09d6f3ada50c01140a",
+    "cn-residential-advisory",
+    "test/defect-corpus/clearances/bed-undersized.clean.arch",
+  ],
+  [
     "6b7d080f5f01742c586a142f52a8a54a9f51f97606da2003880f7dcaaa49959c",
     "cn-residential-advisory",
     "test/defect-corpus/clearances/bench-across-opening.arch",
@@ -2645,6 +2670,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "e581be701727129b2d7780b2246af8405d3a25fb119335be111d977c46bf17e4",
     "us-residential-advisory",
     "test/defect-corpus/clearances/bed-blocks-alcove.clean.arch",
+  ],
+  [
+    "5be26669fae2dab9fc8310e5d13a428c01b8b04b19982af8f0758ff871d3e716",
+    "us-residential-advisory",
+    "test/defect-corpus/clearances/bed-undersized.arch",
+  ],
+  [
+    "2a2d96e878118919aebd8d9b3771b8d1a3c3b72a4a6cfc74553e779fd7a81f46",
+    "us-residential-advisory",
+    "test/defect-corpus/clearances/bed-undersized.clean.arch",
   ],
   [
     "3069a08b5ed4eaffa072176ac696725556e96f3c761b9986130819f8a0b7a011",

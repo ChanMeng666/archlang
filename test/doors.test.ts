@@ -498,6 +498,7 @@ suite("doors — W_POCKET_RUN", () => {
       "leaf-too-wide",
       "accessible-wc-side-wall",
       "exit-approach-blocked",
+      "bed-undersized",
     ]);
   });
 
@@ -515,8 +516,8 @@ suite("doors — W_POCKET_RUN", () => {
     // no WC, no tall unit, no furniture, and one door has no other doorway to park its leaf across),
     // nor the six stair rules (PS2.11e, PS2.34, PS2.15: no stair), the three PS2.11e kitchen and
     // door rules (no hob, and a 600 mm leaf), nor PS2.74's accessible-WC rule (no WC),
-    // nor PS2.69's exit-approach rule last of all (no furniture).
-    expect(LINT_RULES.map((r) => r.name).slice(-33)).toEqual([
+    // nor PS2.69's exit-approach rule (no furniture), nor PS2.67's bed rule last of all (no bed).
+    expect(LINT_RULES.map((r) => r.name).slice(-34)).toEqual([
       "door-near-corner",
       "opening-not-dimensioned",
       "room-via-private",
@@ -550,6 +551,7 @@ suite("doors — W_POCKET_RUN", () => {
       "leaf-too-wide",
       "accessible-wc-side-wall",
       "exit-approach-blocked",
+      "bed-undersized",
     ]);
     // A plan carrying an unrelated pre-existing warning (a sub-passable door width) AND
     // tripping the new rule: the old diagnostic must still be first, byte-for-byte.

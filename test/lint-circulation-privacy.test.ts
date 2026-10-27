@@ -435,8 +435,8 @@ describe("review fixes (PR #199)", () => {
 });
 
 describe("the three rules' texts", () => {
-  it("are appended in card order, followed only by the opening rules (PS2.1–PS2.3), the room-contents rules (PS2.8, PS2.9), the space-enclosure rules (PS2.4), the furniture-relation rules (ADR 0029), PS2.10's dimension text, the annotation-collision rules (PS2.12), the clearance rules (PS2.11a–d) and the stair rules (PS2.11e, PS2.34, PS2.15) and the kitchen and door rules (PS2.11e, PS2.46) and the accessible-WC rule (PS2.74) and the exit-approach rule (PS2.69)", () => {
-    expect(LINT_RULES.slice(-31).map((r) => r.name)).toEqual([
+  it("are appended in card order, followed only by the opening rules (PS2.1–PS2.3), the room-contents rules (PS2.8, PS2.9), the space-enclosure rules (PS2.4), the furniture-relation rules (ADR 0029), PS2.10's dimension text, the annotation-collision rules (PS2.12), the clearance rules (PS2.11a–d) and the stair rules (PS2.11e, PS2.34, PS2.15) and the kitchen and door rules (PS2.11e, PS2.46) and the accessible-WC rule (PS2.74) and the exit-approach rule (PS2.69), and PS2.67's bed rule", () => {
+    expect(LINT_RULES.slice(-32).map((r) => r.name)).toEqual([
       "room-via-private",
       "wet-room-door",
       "entrance-into-private",
@@ -468,6 +468,7 @@ describe("the three rules' texts", () => {
       "leaf-too-wide",
       "accessible-wc-side-wall",
       "exit-approach-blocked",
+      "bed-undersized",
     ]);
   });
 

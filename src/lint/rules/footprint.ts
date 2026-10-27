@@ -21,6 +21,7 @@ import { backsOntoWall, defaultFootprint, fixtureSpec } from "../../fixtures-cat
 import { fmt2 } from "../../num-format.js";
 import type { RFurniture } from "../../ir.js";
 import type { LintContext, LintRule } from "../context.js";
+import { DEFAULT_RULESET } from "../ruleset.js";
 import { mm } from "../measure.js";
 import { inRoomPhrase } from "./furniture-relations.js";
 
@@ -143,6 +144,77 @@ export const footprintTransposed: LintRule = {
               ],
             }
           : {}),
+      });
+    }
+    return out;
+  },
+};
+
+/** The families `W_BED_UNDERSIZED` judges: a bed someone sleeps in at full length. A `crib` or a
+ *  `cot` (700 × 1300) is short by design and is never judged. */
+const ADULT_BEDS: ReadonlySet<string> = new Set(["bed", "double_bed", "bunk_bed"]);
+
+/**
+ * `W_BED_UNDERSIZED` (plan-soundness PS2.67): a `bed`, `double_bed` or `bunk_bed` drawn shorter
+ * than {@link LintRuleset.bedMinLengthMm} (1900 mm) or narrower than
+ * {@link LintRuleset.bedMinWidthMm} (750 mm), the smallest standard UK bed: Which?, *UK mattress
+ * sizes* (8 May 2026), small single 75 × 190 cm [M: a consumer magazine, not a standard; a
+ * normative standard read with a different minimum replaces it]. The first-contact clinic drew its
+ * examination couches as `bed` 1500 × 700 (QK2), and a bed cut short to clear another piece passes
+ * every other rule.
+ *
+ * The length is the frame's longer side and the width its shorter, whichever way `size` is
+ * written: a bed lying across its own length is `W_FOOTPRINT_TRANSPOSED`'s finding, not this
+ * one's. Lengths only, so the rule is D4-invariant. Stage `fixtures`: it reads one piece's own
+ * size. No machine fix: lengthening a bed moves it into whatever it was cut to clear.
+ *
+ * The message names the room, never the piece's id (ADR 0029 §6); the source is named only when
+ * the figure is the default, since a caller's own figure is not Which?'s.
+ */
+export const bedUndersized: LintRule = {
+  name: "bed-undersized",
+  family: "furniture",
+  layer: "validity",
+  stage: "fixtures",
+  codes: ["W_BED_UNDERSIZED"],
+  check(ctx: LintContext): Diagnostic[] {
+    const out: Diagnostic[] = [];
+    const minLength = ctx.rules.bedMinLengthMm;
+    const minWidth = ctx.rules.bedMinWidthMm;
+    if (minLength === null && minWidth === null) return out;
+    for (const f of ctx.furniture) {
+      if (!ADULT_BEDS.has(f.category)) continue;
+      const length = Math.max(f.size.w, f.size.h);
+      const width = Math.min(f.size.w, f.size.h);
+      const short: string[] = [];
+      if (minLength !== null && length < minLength) {
+        const of =
+          minLength === DEFAULT_RULESET.bedMinLengthMm
+            ? "the shortest standard bed (a UK single, 90 × 190 cm; Which? UK bed sizes)"
+            : "`bedMinLengthMm`";
+        short.push(`${mm(length)} mm long, under the ${mm(minLength)} mm of ${of}: ${mm(minLength - length)} mm short`);
+      }
+      if (minWidth !== null && width < minWidth) {
+        const of =
+          minWidth === DEFAULT_RULESET.bedMinWidthMm
+            ? "the narrowest standard bed (a UK small single, 75 × 190 cm; Which? UK bed sizes)"
+            : "`bedMinWidthMm`";
+        short.push(`${mm(width)} mm wide, under the ${mm(minWidth)} mm of ${of}: ${mm(minWidth - width)} mm short`);
+      }
+      if (short.length === 0) continue;
+      const name = f.label ?? f.category;
+      const want = [
+        minLength !== null ? `${mm(minLength)} mm long` : "",
+        minWidth !== null ? `${mm(minWidth)} mm wide` : "",
+      ].filter((s) => s !== "");
+      out.push({
+        severity: "warning",
+        code: "W_BED_UNDERSIZED",
+        ...ctx.at(f),
+        message: `The ${name}${inRoomPhrase(f, ctx)} is ${short.join(", and ")}.`,
+        hints: [
+          `Draw the ${name}${inRoomPhrase(f, ctx, true)} at least ${want.join(" and ")}, moving what it was cut to clear. A piece that is not a bed (an examination couch) has no catalogue family yet; the warning stands until it does.`,
+        ],
       });
     }
     return out;

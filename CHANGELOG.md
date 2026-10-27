@@ -22,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `W_DRAWING_OVERFLOW`, restores two coverage losses since every example fits its sheet: the
   storey oracle compares that diagnostic under the group, and the overflow suite reads it off a
   multi-storey plan as authored. No shipped example, SVG, `describe()` or `lint()` moved.
+- `W_BED_UNDERSIZED` (validity, `furniture`, stage `fixtures`; plan card PS2.67): a `bed`,
+  `double_bed` or `bunk_bed` drawn under 1900 mm long or 750 mm wide, the smallest standard UK bed
+  (Which?'s UK bed-size table, 2026: a consumer magazine, not a standard). New ruleset fields
+  `bedMinLengthMm` and `bedMinWidthMm` (`null` turns either off); `crib` and `cot` are never judged.
+  No shipped example moves; the first-contact clinics' examination couches drawn as `bed` warn.
 - `describe --facts clearances` (plan card PS2.72): an opt-in facet printing, per storey, what
   each clearance rule measured, read through the rules' own measures under the default ruleset: a
   WC's sides, a tall unit's and a hob's cover of a window (with the hob's distance off the window

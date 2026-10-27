@@ -423,6 +423,26 @@ export interface LintRuleset {
    * `null` (the default): the same as {@link exitApproachMm}.
    */
   exitApproachPullMm: number | null;
+  /**
+   * The least LENGTH (mm) of a bed, its longer drawn side, before `W_BED_UNDERSIZED` warns
+   * (plan-soundness PS2.67), for a `bed`, `double_bed` or `bunk_bed`; never a `crib` or a
+   * `cot`, which are short by design. `null` turns the length finding off.
+   *
+   * **Default 1900:** the length of every standard UK bed below a king (small single 75 × 190 cm,
+   * single 90 × 190, small double 120 × 190, double 135 × 190): Which?, *UK mattress sizes: bed and
+   * mattress size guide* (8 May 2026), table "Standard UK bed and mattress sizes" [M: a consumer
+   * magazine, not a standard]. A mattress size, so the drawn frame of a real bed is at least that
+   * (`docs/plans/plan-soundness/research/2026-10-27-ps267-271-sources.md` § PS2.67).
+   */
+  bedMinLengthMm: number | null;
+  /**
+   * The least WIDTH (mm) of a bed, its shorter drawn side, before `W_BED_UNDERSIZED` warns
+   * (PS2.67), for the same families as {@link LintRuleset.bedMinLengthMm}. `null` turns the width
+   * finding off.
+   *
+   * **Default 750:** the UK small single, the narrowest standard UK bed (Which?, as above) [M].
+   */
+  bedMinWidthMm: number | null;
 }
 
 /**
@@ -484,6 +504,8 @@ export const DEFAULT_RULESET: LintRuleset = {
   garageDepthMm: 5000,
   exitApproachMm: 914,
   exitApproachPullMm: null,
+  bedMinLengthMm: 1900,
+  bedMinWidthMm: 750,
 };
 
 /**

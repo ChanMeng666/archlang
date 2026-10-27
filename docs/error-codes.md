@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**143 errors** · **86 warnings**
+**143 errors** · **87 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -158,6 +158,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_BALCONY_NO_DOOR`](#w_balcony_no_door) | warning | A balcony with no way onto it. |
 | [`W_BATH_VIA_BEDROOM`](#w_bath_via_bedroom) | warning | Bathroom is reachable only through a bedroom. |
 | [`W_BEDROOM_NO_WINDOW`](#w_bedroom_no_window) | warning | Bedroom has no window. |
+| [`W_BED_UNDERSIZED`](#w_bed_undersized) | warning | A bed is drawn smaller than the smallest standard bed. |
 | [`W_BOUNDARY_NO_WALL`](#w_boundary_no_wall) | warning | Two rooms meet with no wall between them. |
 | [`W_CIRCUITOUS_PATH`](#w_circuitous_path) | warning | A room is reached by a very roundabout path. |
 | [`W_CJK_FONT_MISSING`](#w_cjk_font_missing) | warning | PDF/PNG text has CJK characters, but the optional CJK font package is not installed. |
@@ -2150,6 +2151,19 @@ door id=d_bath at (5200,4000) width 800 wall partition   # lint: bath only off t
 
 ```arch static
 room at (0,0) size 3000x4000 label "Bedroom"   # lint: no window
+```
+
+## W_BED_UNDERSIZED
+
+*warning* — A bed is drawn smaller than the smallest standard bed.
+
+**Cause.** A `bed`, `double_bed` or `bunk_bed` is drawn shorter than `bedMinLengthMm` along its longer side (1900 mm by default) or narrower than `bedMinWidthMm` across its shorter side (750 mm by default). The defaults are the smallest standard UK bed, the small single of 75 × 190 cm, whose length every standard UK size below a king shares (Which?, *UK mattress sizes: bed and mattress size guide*, 2026: a consumer magazine, not a standard). They are mattress sizes, so a real bed's frame is at least that. The usual case is a bed cut short to clear another piece, or a piece that is not a bed (an examination couch) drawn as one. The longer side is read as the length whichever way `size` is written; a bed lying across its own length is `W_FOOTPRINT_TRANSPOSED`. A `crib` or `cot` is short by design and is never judged. Set either figure to `null` to turn its finding off, or to another value for another market.
+
+**Fix.** Draw the bed at least the length and width the warning quotes, and move whatever it was cut short to clear. There is no machine-applicable fix: lengthening a bed moves it into its neighbours. A piece that is not a bed has no catalogue family yet; the warning stands until it does.
+
+```arch static
+room id=b at (0,0) size 3000x3000 label "Bedroom"
+furniture bed at (200,200) size 900x1500   # lint: 1500 mm long, 400 mm under the 1900 mm of a UK single
 ```
 
 ## W_BOUNDARY_NO_WALL

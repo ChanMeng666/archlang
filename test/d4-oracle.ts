@@ -461,6 +461,8 @@ export const RULE_CLASS: Readonly<Record<string, RuleClass>> = {
   // PS2.74: the WC's side strips in its own frame against wall bodies, as `wc-side-clearance`; the
   // room's label is read as text.
   "accessible-wc-side-wall": "invariant",
+  // PS2.67: a bed's two side lengths, which no turn or mirror changes.
+  "bed-undersized": "invariant",
 };
 
 /**

@@ -1500,6 +1500,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Move the piece further from the wall than the depth the warning quotes, or slide it along the wall clear of the doorway's span, or move the door. There is no machine-applicable fix: which one moves is the author's choice, and `repair` does not move a piece for it.",
     'wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }\nroom id=hall at (0,0) size 6000x4000 label "Hall" uses entry\ndoor at (3000,4000) width 1200 wall w swing outward\nfurniture sofa at (1200,2600) size 1800x900   # lint: 400 mm inside the exit, 600 mm of its 1200 mm clear',
   ),
+  W_BED_UNDERSIZED: W(
+    "W_BED_UNDERSIZED",
+    "A bed is drawn smaller than the smallest standard bed.",
+    "A `bed`, `double_bed` or `bunk_bed` is drawn shorter than `bedMinLengthMm` along its longer side (1900 mm by default) or narrower than `bedMinWidthMm` across its shorter side (750 mm by default). The defaults are the smallest standard UK bed, the small single of 75 × 190 cm, whose length every standard UK size below a king shares (Which?, *UK mattress sizes: bed and mattress size guide*, 2026: a consumer magazine, not a standard). They are mattress sizes, so a real bed's frame is at least that. The usual case is a bed cut short to clear another piece, or a piece that is not a bed (an examination couch) drawn as one. The longer side is read as the length whichever way `size` is written; a bed lying across its own length is `W_FOOTPRINT_TRANSPOSED`. A `crib` or `cot` is short by design and is never judged. Set either figure to `null` to turn its finding off, or to another value for another market.",
+    "Draw the bed at least the length and width the warning quotes, and move whatever it was cut short to clear. There is no machine-applicable fix: lengthening a bed moves it into its neighbours. A piece that is not a bed has no catalogue family yet; the warning stands until it does.",
+    'room id=b at (0,0) size 3000x3000 label "Bedroom"\nfurniture bed at (200,200) size 900x1500   # lint: 1500 mm long, 400 mm under the 1900 mm of a UK single',
+  ),
   W_OPENING_NOT_DIMENSIONED: W(
     "W_OPENING_NOT_DIMENSIONED",
     "An opening on the outside of the building is on no `dims auto all` chain.",
