@@ -1,0 +1,42 @@
+plan "Two-Bed Apartment" {
+  units mm
+  grid 100
+  north up
+  dims auto all
+  room id=living at (0,0) size 5600x4000 label "Living / Dining / Kitchen" at (4000,2900) uses living
+  room id=bed2 right-of living size 3200x4000 label "Bedroom 2" uses bedroom
+  room id=corr below living align left size 8800x1200 label "Corridor" uses circulation
+  room id=bed1 below corr align left size 4000x2800 label "Bedroom 1" uses bedroom
+  room id=bath right-of bed1 size 2400x2800 label "Bathroom" uses bath
+  room id=hall right-of bath size 2400x2800 label "Hall" uses hall
+  walls from rooms exterior 250 partition 100 { open between corr and hall }
+  outdoor id=balc balcony at (400,-1600) size 3600x1600 label "Balcony"
+
+  door on hall.bottom at center width 1000 swing into hall
+  door between corr and living at 4500 from start width 900 swing into living
+  door between corr and bed2 at 800 from bed2.left width 900 swing into bed2
+  door between corr and bed1 at 3300 from start width 900 swing into bed1
+  door between corr and bath at 1000 from bath.left width 800 swing into bath
+  door sliding on living.top at 1200 from start width 1400
+
+  window on living.left width 1600
+  window on bed2.right width 1500
+  window on bed1.left width 1500
+
+  furniture sofa against living.bottom offset 1600 size 2200x900
+  furniture tv_unit against living.left offset 1400 size 1600x450
+  furniture table at (2100,1300) size 1800x900
+  furniture stove against living.top offset 2450 size 600x600
+  furniture counter against living.top offset 3250 size 1000x600
+  furniture kitchen_sink against living.top offset 4250 size 800x600
+  furniture fridge against living.top offset 5100 size 700x700
+  furniture double_bed in bed2 anchor top-right flush size 1600x2000
+  furniture wardrobe in bed2 anchor bottom-right flush size 1800x600
+  furniture double_bed in bed1 anchor bottom-left flush size 1800x2000
+  furniture wardrobe in bed1 anchor bottom-right flush size 1800x600
+  furniture shower in bath anchor top-right flush size 900x900
+  furniture wc against bath.bottom offset 1400
+  furniture basin against bath.left offset 1700
+
+  title { project "Two-Bed Apartment" drawn_by "Author" date "2026-10-27" number "A-01" revision "A" }
+}

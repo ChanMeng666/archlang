@@ -396,8 +396,8 @@ PS5.1b: PR #247, 9cc29c7e)
   moved `validate --json` digest row is explained. D13 (compile-channel warnings first) stands.
 - As built: `src/next.ts` `firstValidity`: a first validity item in `SWING_SHORTFALL_CODES` yields to the first `stairs`-family code or earlier-stage finding; the row-6 townhouse's `next` is `W_STAIR_SIDE_ENTRY` (plain and `--stage openings|fixtures|drafting`), the only move over 2,905 runs (415 tracked `.arch` × plain + 6 stages); no digest pin moved.
 
-**PS7.8 · A whole-loop arm in the next first-contact re-measure.** `todo` (D26)
-- Draft arm-2 prompt: `research/2026-10-27-ps78-arm2-prompt-draft.md` (2026-10-27), awaiting the owner's confirmation.
+**PS7.8 · A whole-loop arm in the next first-contact re-measure.** `done` (this PR; D26)
+- Ran 2026-10-27 on `main@134765d1`: `audits/2026-10-27-first-contact-rerun-ps78.md`. Arm 1 (frozen prompt) 64 defects (4 / 29 / 31), `validate` 0 / 6, 3 authors stopped with warnings standing; arm 2 (whole-loop prompt, now in the protocol as a dated block) 56 (1 / 19 / 36), `validate` 6 / 6, `next` null 6 / 6, 0 stopped early. The arm-2 prompt was confirmed by the owner from `research/2026-10-27-ps78-arm2-prompt-draft.md`.
 - The protocol's frozen per-brief prompt ("stop when it compiles", `audits/first-contact-protocol.md`
   line 56, in every run since 2026-10-24) stays unchanged as arm 1, for comparability. Under it the
   authors who stopped with warnings standing were 0 / 0 / 2 / 2 (arms A, B, C, row 6), and no row-6
