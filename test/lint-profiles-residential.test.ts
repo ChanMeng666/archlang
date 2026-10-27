@@ -64,7 +64,7 @@ describe("the residential-advisory profiles", () => {
     const text = readFileSync("src/lint/ruleset.ts", "utf8");
     const block = text.slice(text.indexOf(`"${CN}": {`), text.indexOf("export const DEFERRED_PROFILE_NUMBERS"));
     const numbered = block.split("\n").filter((l) => /:\s*\d/.test(l) && !l.trim().startsWith("*"));
-    expect(numbered.length).toBe(37); // cn 13, uk 12, us 12 (the stair figures: PS2.11e)
+    expect(numbered.length).toBe(38); // cn 13, uk 13, us 12 (the stair figures: PS2.11e; uk's garage depth: PS2.70)
     for (const l of numbered) {
       expect(l, l).toMatch(/\/\/ .*\[(V|S)[\],]/);
       expect(l, l).not.toContain("[M");
@@ -95,6 +95,7 @@ describe("the residential-advisory profiles", () => {
       stairMaxRiseMm: 220,
       stairMinGoingMm: 220,
       stairMaxPitchRatio: 0.9004,
+      garageDepthMm: 6000,
     });
     expect(LINT_PROFILES[US]).toEqual({
       roomAreaMeasure: "net",
@@ -381,8 +382,14 @@ const EXAMPLE_ADDITIONS: Record<string, string[]> = {
     'examples/accessible.arch W_ROOM_TOO_NARROW Room "Bedroom" is 2350 mm wide between its wall faces, under the 2750 mm the profile asks of one double bedroom of every home (none here is that wide) — 400 mm short.',
     'examples/attached.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 10.83 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     'examples/furnished-flat.arch W_ROOM_TOO_SMALL Room "Bedroom 2" is only 10.4 m² of net floor (under 11.5 m², the floor for a double bedroom).',
+    // PS2.70: a garage's clear internal length is 6000 mm here (Monmouthshire SPG 2013 ¶12, citing
+    // Manual for Streets); this one is 6000 drawn less two 150 mm half-walls.
+    'examples/garden-house.arch W_GARAGE_TOO_NARROW Garage "Garage" is 5700 mm deep from its vehicle door, between its wall faces, under the 6000 mm of clear depth a parked car needs — 300 mm short.',
     'examples/garden-loft.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 8.08 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     'examples/garden-loft.arch W_ROOM_TOO_NARROW Room "Bedroom" is 2650 mm wide between its wall faces, under the 2750 mm the profile asks of one double bedroom of every home (none here is that wide) — 100 mm short.',
+    // PS2.70: 6200 drawn less half of each wall it runs between (250 and 150 written, snapped to the
+    // plan's 100 grid as 300 and 200); measured 5950 mm on main@134765d1.
+    'examples/hillside-villa.arch W_GARAGE_TOO_NARROW Garage "Garage" is 5950 mm deep from its vehicle door, between its wall faces, under the 6000 mm of clear depth a parked car needs — 50 mm short.',
     // `hillside-villa`'s small north bedrooms left with fix/examples-sound (2026-10-27): both now meet the profile.
     'examples/relational.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 10.43 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     'examples/relational.arch W_ROOM_TOO_NARROW Room "Bedroom" is 2150 mm wide between its wall faces, under the 2750 mm the profile asks of one double bedroom of every home (none here is that wide) — 600 mm short.',

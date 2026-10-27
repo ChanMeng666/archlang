@@ -1,0 +1,13 @@
+# class: clearances
+# origin: the fix for audits/2026-10-26-first-contact-rerun-row6.md QH5: the garage lengthened along its vehicle door's axis
+# expect: none
+# twin-of: garage-too-shallow
+# fact: r_gar is 6200 mm deep between its wall faces along d_car's axis (6400 drawn less two 100 mm half-walls), over the default
+#   5000 mm and the 6000 mm of `uk-residential-advisory`
+plan "Garage too shallow" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6400,0) (6400,3800) (0,3800) close }
+  room id=r_gar at (0,0) size 6400x3800 label "Garage" uses garage
+  door id=d_car garage at (0,1900) width 2400 wall shell
+}

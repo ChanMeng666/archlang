@@ -1,9 +1,9 @@
 /**
  * The per-room checks, run as one order-preserving composite: for each room (in
  * source order) TOO_SMALL → DISCONNECTED → NO_WINDOW → NOT_ENCLOSED → NO_FIXTURE →
- * GARAGE_TOO_NARROW → ROOM_TOO_NARROW, exactly the interleaving `lint()` has always emitted
- * (the output array is pinned by tests and by agents diffing `--json` output). A new check is
- * APPENDED to that sequence, never inserted into it.
+ * GARAGE_TOO_NARROW → ROOM_TOO_NARROW → GARAGE_TOO_NARROW's depth finding (PS2.70), exactly the
+ * interleaving `lint()` has always emitted (the output array is pinned by tests and by agents
+ * diffing `--json` output). A new check is APPENDED to that sequence, never inserted into it.
  *
  * `W_ROOM_TOO_NARROW` and the double-bedroom floor of `W_ROOM_TOO_SMALL` read thresholds only
  * the residential-advisory profiles set (plan-soundness PS5.2); under the default ruleset they
@@ -32,7 +32,7 @@ import { zoneFixtureCategories } from "../../fixtures-catalog.js";
 import { fmt2 } from "../../num-format.js";
 import { deficitMm, mm, shortfall } from "../measure.js";
 import type { UseKind } from "../../ast.js";
-import type { RRoom } from "../../ir.js";
+import type { RDoor, RRoom } from "../../ir.js";
 import type { LintContext, LintRule } from "../context.js";
 import { capFirst } from "../../naming.js";
 import { DEFAULT_RULESET, DOUBLE_BED_MIN_WIDTH_MM, type LintRuleset } from "../ruleset.js";
@@ -225,6 +225,45 @@ export function roomClearShortSideMm(ctx: LintContext, r: RRoom): number | null 
   const bottom = face("bottom") ?? rect.y + rect.h;
   return Math.min(right - left, bottom - top);
 }
+
+/**
+ * A garage's CLEAR depth along its vehicle door's axis (PS2.70): for each `door garage` on the
+ * room's perimeter, the distance between the inner face of the wall on the door's edge and that
+ * of the wall on the edge opposite ({@link innerFaceOfRoomEdge}; the drawn edge where no wall
+ * backs it), measured from the room's own rectangle. The deepest axis wins: a car can drive in
+ * through any of them. `"no-door"` when no vehicle door stands on the perimeter; `null` for a
+ * polygon or circle room, whose box is not its floor.
+ */
+export function garageClearDepth(ctx: LintContext, r: RRoom): { mm: number; door: RDoor } | "no-door" | null {
+  if (r.poly || r.circle) return null;
+  const rect = ctx.roomRects.get(r.id)!;
+  const tol = ctx.rules.tolMm;
+  const face = (e: "top" | "bottom" | "left" | "right"): number | null =>
+    innerFaceOfRoomEdge(rect, e, ctx.ir.walls, ctx.rules.fixtureWallTolMm, ctx.wallSegs);
+  let best: { mm: number; door: RDoor } | null = null;
+  for (const d of ctx.doors) {
+    if (d.doorKind !== "garage" || !pointOnRoomEdge(d.at, rect, tol)) continue;
+    const onSide = Math.abs(d.at.x - rect.x) <= tol || Math.abs(d.at.x - (rect.x + rect.w)) <= tol;
+    const onEnd = Math.abs(d.at.y - rect.y) <= tol || Math.abs(d.at.y - (rect.y + rect.h)) <= tol;
+    // At a corner the door stands on both edges; its host wall's run says which one it is in.
+    const across =
+      onSide && onEnd && d.host
+        ? Math.abs(d.host.b.y - d.host.a.y) > Math.abs(d.host.b.x - d.host.a.x)
+        : onSide && !onEnd;
+    const mm = across
+      ? (face("right") ?? rect.x + rect.w) - (face("left") ?? rect.x)
+      : (face("bottom") ?? rect.y + rect.h) - (face("top") ?? rect.y);
+    if (best === null || mm > best.mm) best = { mm, door: d };
+  }
+  return best ?? "no-door";
+}
+
+/** The source of `W_GARAGE_TOO_NARROW`'s depth figure, for the two figures cited
+ *  (`LintRuleset.garageDepthMm`); a figure a caller sets has no source the rule can name. */
+const GARAGE_DEPTH_SOURCE: Readonly<Record<number, string>> = {
+  5000: "5000 mm is the length of a parking bay or a car port, the car alone (Buckinghamshire parking guidance 2022, Table 9: a space 5.0 × 2.8 m; Monmouthshire SPG Domestic Garages 2013 ¶21: a car port 5.0 m long).",
+  6000: "6000 mm is a garage's clear internal length, room to walk round the car (Monmouthshire SPG Domestic Garages 2013 ¶12 and ¶25, citing Manual for Streets: 3.0 × 6.0 m; Buckinghamshire parking guidance 2022, Table 11).",
+};
 
 /** A clear width a profile asks of a room, and the words that say why. */
 interface WidthAsk {
@@ -565,6 +604,30 @@ export const perRoomRules: LintRule = {
               `Widen its short side until ${d.required} mm stand clear between the walls' inner faces (the drawn size runs to the wall centrelines, so add half of each wall's thickness).`,
               ...(ask.of === "a double bedroom" || ask.of.startsWith("one double bedroom") ? [DOUBLE_HINT] : []),
               ...(ask.of === "an entry passage" ? [ENTRY_HINT] : []),
+            ],
+          });
+        }
+      }
+
+      // PS2.70: a garage too shallow to park in, along its vehicle door's axis. Appended to the
+      // sequence. A polygon garage already filed `non-rectangular-room` above; a circle one
+      // files it here.
+      const depthNeed = rules.garageDepthMm;
+      if (isGarage(r) && depthNeed !== null && !r.poly) {
+        const depth = garageClearDepth(ctx, r);
+        if (depth === null) ctx.skip("non-rectangular-room", r);
+        else if (depth === "no-door") ctx.skip("no-vehicle-door", r);
+        else if (depth.mm < depthNeed) {
+          const d = deficitMm(depthNeed, depth.mm);
+          const source = GARAGE_DEPTH_SOURCE[depthNeed];
+          out.push({
+            severity: "warning",
+            code: "W_GARAGE_TOO_NARROW",
+            ...at(r),
+            message: `${capFirst(nameOf(r, "garage"))} is ${d.available} mm deep from its vehicle door, between its wall faces, under the ${d.required} mm of clear depth a parked car needs — ${d.short} mm short.`,
+            hints: [
+              ...(source !== undefined ? [source] : []),
+              `Lengthen \`${r.id}\` along the line of its vehicle door${depth.door._idAuthored === true ? ` \`${depth.door.id}\`` : ""} until ${d.required} mm stand clear between the walls' inner faces (the drawn size runs to the wall centrelines, so add half of each wall's thickness), or drop the \`uses garage\` tag if it is not one.`,
             ],
           });
         }
