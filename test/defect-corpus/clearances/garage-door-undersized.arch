@@ -1,0 +1,13 @@
+# class: clearances
+# origin: B6 of docs/plans/preview-and-remodel/cards.md (a garage whose vehicle door is narrower than a car needs to drive through; no audit plan drew one)
+# expect: W_GARAGE_OPENING_UNDERSIZED
+# status: done
+# fact: d_car is 2000 mm wide, under the 2400 mm one car needs (common practice for a sectional door, not a published standard);
+#   r_gar is 6400 deep and 3800 wide, so neither `W_GARAGE_TOO_NARROW` check fires
+plan "Garage door undersized" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6400,0) (6400,3800) (0,3800) close }
+  room id=r_gar at (0,0) size 6400x3800 label "Garage" uses garage
+  door id=d_car garage at (0,1900) width 2000 wall shell
+}

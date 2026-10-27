@@ -1,0 +1,12 @@
+# class: clearances
+# origin: the fix for garage-door-undersized: the vehicle door widened to 2400 mm
+# expect: none
+# twin-of: garage-door-undersized
+# fact: d_car is 2400 mm wide, the least one car needs through its door
+plan "Garage door undersized" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6400,0) (6400,3800) (0,3800) close }
+  room id=r_gar at (0,0) size 6400x3800 label "Garage" uses garage
+  door id=d_car garage at (0,1900) width 2400 wall shell
+}

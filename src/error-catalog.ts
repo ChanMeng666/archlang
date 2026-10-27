@@ -1563,6 +1563,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Widen the room, or lengthen it along the line of its vehicle door, to the figure the warning quotes, park fewer cars in it, or drop the `uses garage` tag if the room is not one (a store that happens to be called a garage classifies as one from its label alone — an explicit `uses storage` overrides that).",
     'room id=g at (0,0) size 2500x6000 label "Garage" uses garage\nfurniture car at (300,300) size 1800x4600 in g   # lint: 2500 mm across, one bay wants 2700',
   ),
+  W_GARAGE_OPENING_UNDERSIZED: W(
+    "W_GARAGE_OPENING_UNDERSIZED",
+    "A garage's vehicle door is too narrow to drive a car through.",
+    "A rectangular room classified as a garage has a `door garage` on its perimeter too narrow for the cars drawn in it. One car, or none drawn (measured as one), wants a vehicle door at least 2400 mm wide; two or more cars want one door at least 4200 mm wide, or two doors each at least 2400 mm (a door per bay). The cars are counted as `W_GARAGE_TOO_NARROW` counts its bays (`car` fixtures only). **The figures are common practice for a sectional or roller door, not a published standard:** no citable code source for them was found, and the rule does not pretend to one. It judges the OPENING only; the room's width, which already budgets the room to open a car door on each side of every bay, stays `W_GARAGE_TOO_NARROW`'s, and this adds no second clearance. A garage with no `door garage` on its perimeter, and a polygon or circle garage, is not judged. It is advisory and has no machine fix: widening a door moves what stands beside it in the wall, a geometric decision the compiler does not make (ADR 0005).",
+    "Widen the vehicle door to the figure the warning quotes, add a second vehicle door for a double garage, park fewer cars in the room, or drop the `uses garage` tag if the room is not one.",
+    'wall id=shell exterior thickness 200 { (0,0) (6400,0) (6400,3800) (0,3800) close }\nroom id=g at (0,0) size 6400x3800 label "Garage" uses garage\ndoor id=d garage at (0,1900) width 2000 wall shell   # lint: 2000 mm wide, one car wants 2400',
+  ),
   W_ROOM_TOO_NARROW: W(
     "W_ROOM_TOO_NARROW",
     "A room is narrower than its profile asks of its use.",
