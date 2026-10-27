@@ -82,6 +82,9 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 - **`gh pr merge --match-head-commit` needs the full 40-character SHA**; a short one fails the
   merge, and a branch delete `;`-chained after it then closes the PR unmerged. Auto-merge deletes
   the branch on merge: never delete it by hand (procedure: `commands.md` § Merging a PR).
+- **`actions/setup-node` takes the runner's tool cache, which lags a Node security release by
+  days**; every setup-node step carries `check-latest: true`, so a new one must too (the job log
+  prints `Attempting to download` when it bites).
 - **Parallel PRs conflict on the records** (`CHANGELOG.md` `[Unreleased]`, a programme's
   `handoff.md` and `cards.md`) after nearly every merge. Resolve by keeping both entries; counts in
   those records are recounted only at a stage end, never per PR.
