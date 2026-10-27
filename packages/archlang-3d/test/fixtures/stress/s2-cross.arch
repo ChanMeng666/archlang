@@ -1,0 +1,9 @@
+plan "s2-cross" {
+  units mm
+  grid 50
+  north up
+  wall id=a partition thickness 200 { (0,2000) (6000,2000) }
+  wall id=b partition thickness 100 { (3000,0) (3000,4000) }
+  wall id=c partition thickness 200 { (0,0) (6000,0) }
+  door id=d1 at (1000,2000) width 900 wall a hinge left swing in
+}

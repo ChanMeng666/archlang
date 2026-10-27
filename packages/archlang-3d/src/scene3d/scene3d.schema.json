@@ -1,0 +1,251 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/archlang-3d/scene3d.schema.json",
+  "title": "Scene3D (v0)",
+  "description": "Renderer-independent 2.5D building scene read off a resolved ArchLang plan. Plan-aligned: footprints use plan axes (x right, y DOWN); z is height, UP. Every length is integer micrometres (mm x 1000). Handedness is resolved only by exporters.",
+  "type": "object",
+  "required": ["version", "kind", "meta", "levels"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 0 },
+    "kind": { "const": "scene3d" },
+    "meta": { "$ref": "#/$defs/meta" },
+    "levels": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/level" } }
+  },
+  "$defs": {
+    "um": { "type": "integer", "description": "Length in integer micrometres (mm x 1000)." },
+    "pt": {
+      "type": "array",
+      "prefixItems": [{ "$ref": "#/$defs/um" }, { "$ref": "#/$defs/um" }],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "ring": { "type": "array", "minItems": 3, "items": { "$ref": "#/$defs/pt" } },
+    "polygon": {
+      "type": "object",
+      "required": ["outer"],
+      "additionalProperties": false,
+      "properties": {
+        "outer": { "$ref": "#/$defs/ring" },
+        "holes": { "type": "array", "items": { "$ref": "#/$defs/ring" } }
+      }
+    },
+    "id": { "type": "string", "minLength": 1 },
+    "provenance": { "enum": ["authored", "derived", "default", "user-param"] },
+    "source": {
+      "type": "object",
+      "required": ["kind", "id"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "type": "string" },
+        "id": { "type": "string" },
+        "span": { "type": "array", "items": { "type": "integer" }, "minItems": 2, "maxItems": 2 }
+      }
+    },
+    "assumption": {
+      "type": "object",
+      "required": ["kind", "field", "value", "provenance", "rule"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "type": "string" },
+        "id": { "type": "string" },
+        "field": { "type": "string" },
+        "value": {},
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "rule": { "type": "string" }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "required": ["name", "units", "tool", "assumptions"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "units": { "const": "mm" },
+        "tool": {
+          "type": "object",
+          "required": ["archlang3d", "archlang"],
+          "additionalProperties": false,
+          "properties": { "archlang3d": { "type": "string" }, "archlang": { "type": "string" } }
+        },
+        "north": { "oneOf": [{ "enum": ["up", "down", "left", "right"] }, { "type": "number" }] },
+        "siteBoundary": { "$ref": "#/$defs/ring" },
+        "params": { "type": "object" },
+        "assumptions": { "type": "array", "items": { "$ref": "#/$defs/assumption" } }
+      }
+    },
+    "level": {
+      "type": "object",
+      "required": [
+        "level",
+        "elevation",
+        "storeyHeight",
+        "floors",
+        "walls",
+        "openings",
+        "furniture",
+        "stairs",
+        "voids",
+        "columns",
+        "outdoor",
+        "fences",
+        "roofs"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "level": { "type": "integer" },
+        "name": { "type": "string" },
+        "elevation": { "$ref": "#/$defs/um" },
+        "storeyHeight": { "$ref": "#/$defs/um" },
+        "floors": { "type": "array", "items": { "$ref": "#/$defs/floor" } },
+        "walls": { "type": "array", "items": { "$ref": "#/$defs/wall" } },
+        "openings": { "type": "array", "items": { "$ref": "#/$defs/opening" } },
+        "furniture": { "type": "array", "items": { "$ref": "#/$defs/furniture" } },
+        "stairs": { "type": "array", "items": { "$ref": "#/$defs/stair" } },
+        "voids": { "type": "array", "items": { "$ref": "#/$defs/box" } },
+        "columns": { "type": "array", "items": { "$ref": "#/$defs/box" } },
+        "outdoor": { "type": "array", "items": { "$ref": "#/$defs/outdoor" } },
+        "fences": { "type": "array", "items": { "$ref": "#/$defs/fence" } },
+        "roofs": { "type": "array", "items": { "$ref": "#/$defs/roof" } }
+      }
+    },
+    "floor": {
+      "type": "object",
+      "required": ["id", "source", "polygon"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "source": { "$ref": "#/$defs/source" },
+        "polygon": { "$ref": "#/$defs/polygon" },
+        "uses": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "wall": {
+      "type": "object",
+      "required": ["id", "source", "footprint", "height", "thickness", "cuts"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "source": { "$ref": "#/$defs/source" },
+        "category": { "type": "string" },
+        "material": { "type": "string" },
+        "footprint": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/polygon" },
+          "description": "Owned region after the core's joinery, one polygon per connected piece; openings NOT removed (see cuts)."
+        },
+        "height": { "$ref": "#/$defs/um" },
+        "thickness": { "$ref": "#/$defs/um" },
+        "cuts": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Ids of the openings this wall hosts."
+        }
+      }
+    },
+    "opening": {
+      "type": "object",
+      "required": ["id", "source", "kind", "host", "cut", "centre", "width", "sill", "head"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "source": { "$ref": "#/$defs/source" },
+        "kind": { "enum": ["door", "window", "opening"] },
+        "doorKind": { "enum": ["hinged", "sliding", "barn", "bifold", "pocket", "garage", "double"] },
+        "host": { "type": "string" },
+        "cut": { "$ref": "#/$defs/ring" },
+        "centre": { "$ref": "#/$defs/pt" },
+        "width": { "$ref": "#/$defs/um" },
+        "sill": { "$ref": "#/$defs/um" },
+        "head": { "$ref": "#/$defs/um" },
+        "hinge": { "enum": ["left", "right"] },
+        "swing": { "enum": ["in", "out"] },
+        "slide": { "enum": ["left", "right"] }
+      }
+    },
+    "furniture": {
+      "type": "object",
+      "required": ["id", "source", "category", "centre", "size", "yawDeg", "asset"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "source": { "$ref": "#/$defs/source" },
+        "category": { "type": "string" },
+        "room": { "type": "string" },
+        "centre": { "$ref": "#/$defs/pt" },
+        "size": {
+          "type": "object",
+          "required": ["w", "d"],
+          "additionalProperties": false,
+          "properties": { "w": { "$ref": "#/$defs/um" }, "d": { "$ref": "#/$defs/um" } }
+        },
+        "yawDeg": { "type": "integer" },
+        "asset": { "type": "string" }
+      }
+    },
+    "box": {
+      "type": "object",
+      "required": ["id", "source", "at", "size"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "source": { "$ref": "#/$defs/source" },
+        "at": { "$ref": "#/$defs/pt" },
+        "size": {
+          "type": "object",
+          "required": ["w", "h"],
+          "additionalProperties": false,
+          "properties": { "w": { "$ref": "#/$defs/um" }, "h": { "$ref": "#/$defs/um" } }
+        }
+      }
+    },
+    "stair": {
+      "type": "object",
+      "required": ["id", "source", "box", "dir", "width"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "source": { "$ref": "#/$defs/source" },
+        "box": { "$ref": "#/$defs/box" },
+        "dir": { "enum": ["up", "down"] },
+        "width": { "$ref": "#/$defs/um" }
+      }
+    },
+    "outdoor": {
+      "type": "object",
+      "required": ["id", "source", "surface", "polygon"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "source": { "$ref": "#/$defs/source" },
+        "surface": { "type": "string" },
+        "polygon": { "$ref": "#/$defs/polygon" },
+        "rail": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "fence": {
+      "type": "object",
+      "required": ["id", "source", "style", "points", "closed"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "source": { "$ref": "#/$defs/source" },
+        "style": { "type": "string" },
+        "points": { "type": "array", "items": { "$ref": "#/$defs/pt" }, "minItems": 2 },
+        "closed": { "type": "boolean" }
+      }
+    },
+    "roof": {
+      "type": "object",
+      "required": ["id", "source", "form", "ring", "provenance"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "source": { "$ref": "#/$defs/source" },
+        "form": { "const": "flat" },
+        "ring": { "$ref": "#/$defs/ring" },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    }
+  }
+}
