@@ -1,0 +1,20 @@
+# class: missing-defining-contents
+# origin: audits/2026-10-26-first-contact-rerun-row6.md QH7 (the row-6 house's family "Bathroom"
+#   holds a bathtub and a WC and no basin; its door opens onto a hall with no basin either)
+# expect: W_ROOM_MISSING_DEFINING
+# status: done
+# fact: r_bath (uses bath) holds a bathtub and a wc and no basin, and the one room a door joins
+#   it to (r_hall) holds no basin
+plan "Bathroom without a basin" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  wall id=w_mid partition thickness 100 { (3500,0) (3500,4000) }
+  room id=r_hall at (0,0) size 3500x4000 label "Hall" uses hall
+  room id=r_bath at (3500,0) size 2500x4000 label "Bathroom" uses bath
+  door id=d_entry at (1750,4000) width 900 wall shell
+  door id=d_bath at (3500,2000) width 800 wall w_mid swing into r_bath
+  window at (4750,0) width 800 wall shell
+  furniture bathtub in r_bath anchor top flush size 1700x700
+  furniture wc in r_bath anchor right flush size 700x400
+}

@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: PS2.64: W_HOB_UNDER_WINDOW leaves the 2026-10-18 apartment's return-wall stove (1-apartment.arch)
+ * Taken: PS2.66: W_ROOM_MISSING_DEFINING reports a bath with a WC and no basin (moved files listed in the commit)
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -762,6 +762,16 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     157,
   ],
   [
+    "test/defect-corpus/missing-defining-contents/bath-wc-no-basin.arch",
+    "199c18999ece9e41b3e4aa4ac1ad840251fd1cec37273495c7a79299b274ed99",
+    141,
+  ],
+  [
+    "test/defect-corpus/missing-defining-contents/bath-wc-no-basin.clean.arch",
+    "0a2c26dab81dcc09ab8d9ca406a9d2fb31bee354e87ae87c85ec981b094b3318",
+    153,
+  ],
+  [
     "test/defect-corpus/missing-defining-contents/bedroom-no-bed.arch",
     "d4db25e2b13ca346292a2fe45948fcdfe08676ca982849d5dd187422db73a398",
     152,
@@ -1348,7 +1358,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/2-house.arch",
-    "bf4614e8b94c2ccf4825de0758b52ecc6a30e870c7abadced3cefa219be43664",
+    "b5315c48b28694e329b4a2a48effd23300a65c564b8ecaf2c2ab23a685bf393a",
     3793,
   ],
   [

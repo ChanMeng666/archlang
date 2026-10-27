@@ -1,0 +1,19 @@
+# class: missing-defining-contents
+# twin-of: bath-wc-no-basin
+# origin: audits/2026-10-26-first-contact-rerun-row6.md QH7 with a basin added in the bathroom
+# expect: none
+# fact: r_bath holds a bathtub, a wc and a basin
+plan "Bathroom with a basin" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  wall id=w_mid partition thickness 100 { (3500,0) (3500,4000) }
+  room id=r_hall at (0,0) size 3500x4000 label "Hall" uses hall
+  room id=r_bath at (3500,0) size 2500x4000 label "Bathroom" uses bath
+  door id=d_entry at (1750,4000) width 900 wall shell
+  door id=d_bath at (3500,2000) width 800 wall w_mid swing into r_bath
+  window at (4750,0) width 800 wall shell
+  furniture bathtub in r_bath anchor top flush size 1700x700
+  furniture wc in r_bath anchor right flush size 700x400
+  furniture basin in r_bath anchor bottom flush size 600x450
+}
