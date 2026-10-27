@@ -139,7 +139,7 @@ plan "City Museum" {
   furniture basin against wall wcw_s offset 3000 in wcm
   furniture basin against wall wcw_s offset 7000 in wcm
 
-  furniture wc against wall wca_n offset 650 in wca
+  furniture wc against wall wca_n offset 550 in wca
   furniture basin against wall wca_n offset 1800 in wca
 
   # ---- cafe fit-out ---------------------------------------------------------

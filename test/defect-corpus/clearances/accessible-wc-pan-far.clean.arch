@@ -1,0 +1,17 @@
+# class: clearances
+# twin-of: accessible-wc-pan-far
+# origin: PR #305's fix of classroom-block (the pan slid to 475 mm from its side wall)
+# expect: none
+# fact: the wc's centreline is x=575: 475 mm to the shell's inner face (x=100), inside the 400-500 mm band
+plan "Accessible WC, pan in the corner" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  wall id=w_mid partition thickness 100 { (2500,0) (2500,4000) }
+  room id=r_wca at (0,0) size 2500x4000 label "Accessible WC" uses wc
+  room id=r_lobby at (2500,0) size 3500x4000 label "Lobby" uses circulation
+  door id=d_entry at (4250,4000) width 1000 wall shell
+  door id=d_wca at (2500,3000) width 1000 wall w_mid swing into r_wca
+  furniture wc against wall shell segment 0 offset 575 in r_wca
+  furniture basin against wall shell segment 3 offset 2000 in r_wca
+}

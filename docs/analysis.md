@@ -1119,7 +1119,7 @@ What it cannot tell you:
 | Reachability | `W_ROOM_UNREACHABLE`, `W_BATH_VIA_BEDROOM` |
 | Wet rooms | `W_ROOM_NOT_ENCLOSED`, `W_ROOM_NO_FIXTURE` |
 | Garage | `W_GARAGE_TOO_NARROW` |
-| Furniture / fixtures | `W_FIXTURE_FLOATING`, `W_FIXTURE_BACK_TO_ROOM`, `W_FIXTURE_WRONG_ROOM`, `W_FURNITURE_OVERLAP`, `W_FURN_CLEARANCE`, `W_WC_SIDE_CLEARANCE`, `W_FURNITURE_OVER_WINDOW`, `W_HOB_UNDER_WINDOW`, `W_HOB_FRIDGE_GAP`, `W_FOOTPRINT_TRANSPOSED` |
+| Furniture / fixtures | `W_FIXTURE_FLOATING`, `W_FIXTURE_BACK_TO_ROOM`, `W_FIXTURE_WRONG_ROOM`, `W_FURNITURE_OVERLAP`, `W_FURN_CLEARANCE`, `W_WC_SIDE_CLEARANCE`, `W_ACCESSIBLE_WC_SIDE_WALL`, `W_FURNITURE_OVER_WINDOW`, `W_HOB_UNDER_WINDOW`, `W_HOB_FRIDGE_GAP`, `W_FOOTPRINT_TRANSPOSED` |
 | Circulation quality | `W_ROOM_NO_CLEAR_PATH`, `W_PATH_TOO_NARROW`, `W_CIRCUITOUS_PATH` |
 | Circulation and privacy | `W_ROOM_VIA_PRIVATE`, `W_WET_ROOM_DOOR`, `W_ENTRANCE_INTO_PRIVATE` |
 | Enclosure | `W_BOUNDARY_NO_WALL`, `W_FLOOR_UNASSIGNED`, `W_ROOM_OUTSIDE_SHELL` |
@@ -1168,6 +1168,13 @@ bookcase or locker) stands against a window's wall across part of its span, on e
 the wall; a window whose sill is at or above 2100 mm is a high window over the unit and is not
 judged. Both give the measured figure and a slide that clears it in the hint, and neither offers a
 machine fix.
+
+`W_ACCESSIBLE_WC_SIDE_WALL` reads the other end of the same band, in a room whose label says
+"accessible", "wheelchair" or "disabled" (not "Non-accessible"): it fires when the pan's centreline stands farther than
+`wcAccessibleSideWallMaxMm` (500 mm) from the face of the wall on either side, so no grab rail can
+be fixed within reach (Approved Document M4(2) Diagram 2.5 and M4(3) Diagrams 3.11, 3.16: 400–500
+mm; the ADA 2010 Standards 604.2's 16–18 in lies inside it). Only a straight wall counts; a basin
+beside the pan holds no rail. Measured as the side-clearance rule measures, hint only.
 
 Two more read a cooking surface (`stove`, `hob`, `cooktop`). `W_HOB_UNDER_WINDOW` fires when one
 stands against a window's wall across part of its span (the band the tall-unit rule reads): a

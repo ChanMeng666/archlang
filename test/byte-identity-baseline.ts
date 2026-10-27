@@ -1564,6 +1564,17 @@
  * a hob and fridge, the kitchen run and windows, a `double` entrance); their rows are the
  * measurement of the merged source with this suite's body. `two-storey`, edited for the stairs
  * alone, keeps the rows above. No other row moved.
+ *
+ * ## Two examples fixed: an accessible WC's pan far from every side wall (PS2.74)
+ *
+ * `W_ACCESSIBLE_WC_SIDE_WALL` found two accessible-WC pans beyond the 500 mm band (Approved
+ * Document M4(2) Diagram 2.5, M4(3) Diagrams 3.11/3.16; ADA 604.2), each moved by one line:
+ * `museum` (`offset 650` → `550` on `wca_n`: 550 → 450 mm from the lobby wall's face) and
+ * `practice-office` (`offset 7450` → `8200` on the shell's segment 2: 1200 → 450 mm from `w_s2`'s
+ * face). Swap-back proof: with each line swapped back and `wcAccessibleSideWallMaxMm` set to
+ * `null`, this suite's body reproduces the previous rows (ea67d091…, 8a295571…), as do the W7 and
+ * finish-furnish bodies theirs; with the fix, `describe()` + `lint()` are unchanged (the semantic
+ * rows did not move), so only the drawing moved: the WC glyph, 100 and 750 mm along its wall.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -1588,10 +1599,10 @@ export const BASELINE: [string, string][] = [
   ["materials", "f30fbe44a6ec1a7803187157bb86c24bc5506db7ddeb3f9512edbec2acbfe708"],
   ["museum-wing", "8f6450de07eb73c07d7f89389a52220619193bd4f185e1a066a4e3cc89f44bd0"],
   ["museum-wings", "f118a4b0343e06a8be1b1ece65be459f8685618a477be7aa73e9e4b49af3b160"], // re-measured, see header; PS2.11e, see header
-  ["museum", "ea67d09181d39f66b0f233fd29aca2f26eeae425fc04d8a91d7affc5d995286e"], // PS2.11e, see header
+  ["museum", "ea5c3134eebdb43e9254c05ffedaf5e26d73bcd09750aecea2f709396ff63b50"], // PS2.11e, see header; PS2.74 source edit, see header
   ["one-room", "17b12740d9e290ca59ea17013f89d54c42a3d6907c915db4338416966d988ce0"],
   ["parametric", "f56a97d02a2fca82327b80b3f7a7f5edcac9518a0b70244caa292ed8f3a2aee4"],
-  ["practice-office", "8a2955715e5c372b7c73383e2803fccb1ce54792fc36b95c0d9771cbf374bf08"], // added with the example, re-measured for net area, see header; PS2.11e, see header
+  ["practice-office", "105ae5709290f9946f0192427e430a1cef009ddd1de44be1b2ddd818c64cdd7e"], // added with the example, re-measured for net area, see header; PS2.11e, see header; PS2.74 source edit, see header
   ["relational", "357cb4f09333ffb210a8a276acfd524c384c90657cc9ba529d5d4298d88c8cb5"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header; PS2.11e, see header
   ["sheet-notes", "4cc86e92db896dade462f57b6db434057abe253ab5e10232711804e4da31d7d9"], // re-measured, see header
   ["studio", "c1b79a49af3ad31cddf82e88632624d46663c804f134b6e172e585cad36ed969"], // PS2.11e, see header
