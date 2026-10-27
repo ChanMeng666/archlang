@@ -204,7 +204,7 @@ coreutils command on Linux, macOS and Git Bash.
 
 ```bash
 npx -y @chanmeng666/archlang context                       # EVERYTHING: spec + skill + CLI + error catalog
-npx -y @chanmeng666/archlang context --section errors      # …or one section of it (about 145 KB in all; the catalog alone is about 55 KB)
+npx -y @chanmeng666/archlang context --section errors      # …or one section of it (about 145 KB in all; the catalog alone is about 60 KB)
 npx -y @chanmeng666/archlang context --level starter       # one screen for a small model: the lead example, the loop, the commonest errors
 npx -y @chanmeng666/archlang spec                          # just the language, one page
 npx -y @chanmeng666/archlang help describe                 # one command, with worked examples
