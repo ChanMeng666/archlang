@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Document M4(2) Diagram 2.5 and M4(3) Diagrams 3.11, 3.16, 400–500 mm; ADA 604.2's 16–18 in lies
   inside). A pan over twice the figure wide files the new `wide-wc-pan` coverage skip. Hint only, no
   fix. The `museum` and `practice-office` examples' accessible-WC pans move into the band.
+- `W_EXIT_APPROACH_BLOCKED` (plan card PS2.69): furniture inside the clear floor of an exterior exit (914 mm deep, the door's width up to 1200 mm; 1220 push / 1525 pull under `accessibility-advisory`; new ruleset fields `exitApproachMm`, `exitApproachPullMm`).
 - Tests only (plan card PS2.77): `test/fixtures/storeys-eaves-overflow.arch`, a two-storey plan whose
   building fits its sheet and whose upper-storey eaves alone raise the building-level
   `W_DRAWING_OVERFLOW`, restores two coverage losses since every example fits its sheet: the

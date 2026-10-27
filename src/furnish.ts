@@ -48,7 +48,7 @@ import { defaultFootprint, frontClearanceMm } from "./fixtures-catalog.js";
 import { FURNISH_TABLE, type FurnishItem, familyOf, servedBy } from "./furnish-table.js";
 import { doorLeaves, normal, sectorIntersectsRect, segmentsOfWall, sub, unit, type WallSegment } from "./geometry.js";
 import { distToPolygonEdge, pointInPolygon, polygonsOverlap, rectRing } from "./geometry/polygon.js";
-import { type BBox, doorLandingRect, rectsOverlap } from "./geometry/rect.js";
+import { type BBox, DOORWAY_WIDTH_MM, doorLandingRect, openingBlock, rectsOverlap } from "./geometry/rect.js";
 import type { RDoor, RFurniture, ROpening, ResolvedPlan, RRoom, RWall, RWindow } from "./ir.js";
 import { lex } from "./lexer.js";
 import { ADVISORY_CODE_PROFILES, DEFAULT_RULESET, LINT_CODE_LAYERS, LINT_PROFILES } from "./lint.js";
@@ -62,6 +62,7 @@ import {
 } from "./lint/clearance-measure.js";
 import { buildLintContext } from "./lint/context.js";
 import { definingItems, pasteSet, useNoun } from "./lint/defining.js";
+import { type ExitApproachStrip, exitApproachStrips } from "./lint/rules/doors.js";
 import { fmtSource } from "./num-format.js";
 import { parse } from "./parser.js";
 import { BUILTIN_REGISTRY, createRegistry } from "./registry.js";
@@ -155,6 +156,17 @@ const RULESETS = [
 ];
 /** How deep a door's clear approach is kept, each side of its wall. */
 const LANDING_MM = Math.max(...RULESETS.map((r) => r.doorwayLandingMm));
+/** How deep the clear floor inside an exterior exit is kept, push side and pull side
+ *  (`W_EXIT_APPROACH_BLOCKED`, PS2.69); null when no gated ruleset reads it. */
+const EXIT_PUSH = RULESETS.map((r) => r.exitApproachMm).filter((n): n is number => n !== null);
+const EXIT_MM: { push: number; pull: number } | null = EXIT_PUSH.length
+  ? {
+      push: Math.max(...EXIT_PUSH),
+      pull: Math.max(
+        ...RULESETS.flatMap((r) => (r.exitApproachMm === null ? [] : [r.exitApproachPullMm ?? r.exitApproachMm])),
+      ),
+    }
+  : null;
 /** How far off a door's swing a piece is kept. */
 const SWING_MM = Math.max(...RULESETS.map((r) => r.swingClearanceMm));
 /** How far a WC's centreline stands off a side face when it is placed at a corner. */
@@ -323,6 +335,8 @@ export function furnishStage(
   /** The walls and doorways a WC's sides are measured against, as `W_WC_SIDE_CLEARANCE` reads them. */
   const wcSrc: WcWorldSource = { wallSegs: segs, doors, openings };
   const windows = ir.elements.filter((e): e is RWindow => e.kind === "window");
+  /** The exterior exits' clear floor, as `W_EXIT_APPROACH_BLOCKED` measures it (PS2.69). */
+  const exits = EXIT_MM ? exitApproachStrips(buildLintContext(ir, DEFAULT_RULESET), EXIT_MM.push, EXIT_MM.pull) : [];
   const ids = new Map<string, number>();
   for (const e of ir.elements) if (e.kind === "room") ids.set(e.id, (ids.get(e.id) ?? 0) + 1);
 
@@ -407,7 +421,16 @@ export function furnishStage(
         items: g.items.filter((i) => i.place === "wall"),
       }));
     }
-    const site = new Site(room, walls, segs, passages, doors, windows, !relational);
+    const site = new Site(
+      room,
+      walls,
+      segs,
+      passages,
+      doors,
+      exits.filter((x) => x.room === room.id),
+      windows,
+      !relational,
+    );
     let budget = MAX_PIECE_CHECKS_PER_ROOM;
     /**
      * A wet room the piece-by-piece run is about to leave empty: try its pieces as whole sets
@@ -930,6 +953,8 @@ class Site {
     segs: WallSegment[],
     private readonly passages: ReadonlyArray<RDoor | ROpening>,
     private readonly doors: readonly RDoor[],
+    /** The clear floor inside this room's exterior exits. */
+    private readonly exits: readonly ExitApproachStrip[],
     windows: readonly RWindow[],
     /** Can a piece be written `in <room> anchor`? Not in a relational room. */
     private readonly anchors: boolean,
@@ -1101,6 +1126,7 @@ class Site {
         const r = doorLandingRect(d, LANDING_MM);
         return r && rectsOverlap(r, floor) ? [r] : [];
       }),
+      ...this.exits.map((x) => x.strip),
     ];
     const here: Placed[] = [];
     const late: Placed[] = [];
@@ -1245,7 +1271,9 @@ class Site {
     return { item, text, rect, strip, edge, middle, against, lo, hi: lo + along, depth };
   }
 
-  /** Is the piece on the room's clear floor, off every door's approach and swing, and clear of `placed`? */
+  /** Is the piece on the room's clear floor, off every door's approach and swing, and clear of `placed`?
+   *  Inside an exterior exit it may stand only where the clear stretch `W_EXIT_APPROACH_BLOCKED`
+   *  asks is left with every piece placed (counting a rug, which the rule does not: stricter). */
   private fits(p: Placed, placed: readonly Placed[]): boolean {
     const c = this.clear;
     const inside = (r: BBox): boolean =>
@@ -1263,6 +1291,12 @@ class Site {
     }
     for (const d of this.doors)
       for (const swing of doorLeaves(d)) if (sectorIntersectsRect(swing, p.rect, SWING_MM)) return false;
+    for (const x of this.exits) {
+      if (!rectsOverlap(x.strip, p.rect)) continue;
+      const hit = [p.rect, ...placed.map((q) => q.rect)].filter((r) => rectsOverlap(x.strip, r));
+      const block = openingBlock(x.door, x.depth, hit);
+      if (block && block.stretch < Math.min(x.door.width, DOORWAY_WIDTH_MM)) return false;
+    }
     return true;
   }
 }

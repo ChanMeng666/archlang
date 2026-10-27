@@ -1,0 +1,17 @@
+# class: clearances
+# origin: audits/2026-10-26-first-contact-rerun-row6.md QK4 (the clinic's waiting sofa, 500 mm off the facade and across 600 mm
+#   of the 1200 mm main exit; OK5's egress half before)
+# expect: W_EXIT_APPROACH_BLOCKED
+# status: done
+# fact: f_sofa's near edge stands 500 mm inside the shell's inside face (y 3400 against the face at 3900) and covers x 2400-3000
+#   of d_main's 2400-3600 span, leaving 600 mm of its 1200 mm clear inside the 914 mm (`exitApproachMm`); it is beyond the
+#   300 mm doorway landing, so W_DOORWAY_BLOCKED stays silent
+plan "Exit approach blocked" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  room id=r_wait at (0,0) size 6000x4000 label "Waiting" uses entry
+  door id=d_main at (3000,4000) width 1200 wall shell swing outward
+  window at (3000,0) width 1500 wall shell
+  furniture id=f_sofa sofa at (600,2500) size 2400x900 label "Sofa"
+}

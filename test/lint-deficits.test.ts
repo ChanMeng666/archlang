@@ -87,17 +87,26 @@ describe("W_SWING_OBSTRUCTED states the measured deficit", () => {
     const plan = (w: number, furn: string) => swingPlan(furn).replace("width 1000", `width ${w}`);
     // Offered: a 1200 mm leaf 47 mm short; the widest clearing leaf is above the 960 mm floor
     // (850 nominal for W_DOOR_CLEARANCE, 900 clear + 60 for W_PATH_TOO_NARROW). Applied, the
-    // plan lints with NO warning at all — not merely without the swing one.
+    // plan lints with NO warning at all — not merely without the swing one — but the box's
+    // `W_EXIT_APPROACH_BLOCKED` (PS2.69): it stands in the 1525 mm pull-side band of this
+    // exterior door before the narrowing as after it, so the remedy did not trade for it.
     const offered = `furniture box at (3300,2500) size 200x200 label "X"`;
     const d = lint(plan(1200, offered), a11y).find((x) => x.code === "W_SWING_OBSTRUCTED")!;
     expect(d.hints!.join("\n")).toMatch(/Narrow the door to \d+ mm or less, which still clears the 960 mm minimum/);
-    expect(lint(plan(quoted(d), offered), a11y)).toEqual([]);
+    expect(lint(plan(1200, offered), a11y).map((x) => x.code)).toContain("W_EXIT_APPROACH_BLOCKED");
+    expect(lint(plan(quoted(d), offered), a11y).map((x) => x.code)).toEqual(["W_EXIT_APPROACH_BLOCKED"]);
+    expect(lint(plan(quoted(d), offered), { ...a11y, ruleset: { exitApproachMm: null } })).toEqual([]);
     // Refused (the imports-like case): the widest clearing leaf, 949 mm, is under 960 — and
     // applying it really would raise W_PATH_TOO_NARROW, which is why it is not offered.
     const refused = `furniture box at (3300,2800) size 200x100 label "X"`;
     const r = lint(plan(1000, refused), a11y).find((x) => x.code === "W_SWING_OBSTRUCTED")!;
     expect(r.hints!.join("\n")).toMatch(/drop to 949 mm, under the 960 mm minimum passable width/);
-    expect(lint(plan(949, refused), a11y).map((x) => x.code)).toEqual(["W_PATH_TOO_NARROW"]);
+    // (The box's exit-approach finding stands before and after, as above.)
+    expect(lint(plan(1000, refused), a11y).map((x) => x.code)).toContain("W_EXIT_APPROACH_BLOCKED");
+    expect(lint(plan(949, refused), a11y).map((x) => x.code)).toEqual(["W_PATH_TOO_NARROW", "W_EXIT_APPROACH_BLOCKED"]);
+    expect(lint(plan(949, refused), { ...a11y, ruleset: { exitApproachMm: null } }).map((x) => x.code)).toEqual([
+      "W_PATH_TOO_NARROW",
+    ]);
   });
 
   // Backlog 6.9. The leaf is hinged at (3500,4000) and opens up to (3500,3000); a box whose

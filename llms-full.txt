@@ -810,7 +810,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 
 **`archlang context`** — print the full bundled agent context (spec + workflow + CLI + errors)
   - input: none → output: the full agent context (llms-full.txt), one --section of it, or the one-screen --level starter
-  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 148 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 148 KB of it (spec = the language, 30 KB; workflow = the agent loop, 30 KB; cli = every command, 27 KB; errors = the diagnostic catalog, 60 KB) · `--json` structured result on stdout, messages on stderr
+  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 149 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 149 KB of it (spec = the language, 30 KB; workflow = the agent loop, 30 KB; cli = every command, 27 KB; errors = the diagnostic catalog, 60 KB) · `--json` structured result on stdout, messages on stderr
   - example: `archlang context` — the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 
 **`archlang new`** (aliases: `init`) — scaffold a starter .arch
@@ -828,7 +828,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `archlang explain <CODE>`.
-**143 errors** (abort rendering) · **85 warnings** (advisory; `validate --strict` fails on them too).
+**143 errors** (abort rendering) · **86 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -1000,6 +1000,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `W_DUP_ACC_METADATA` — Duplicate `accTitle`/`accDescr`. **Fix:** Keep a single `accTitle` and a single `accDescr`; delete the extra line(s).
 - `W_EMPTY_PLAN` — Empty plan. **Fix:** Add at least one element (wall, room, …).
 - `W_ENTRANCE_INTO_PRIVATE` — The way in from outside opens into a bedroom, bathroom or WC. **Fix:** Move the front door onto a hall, living space or kitchen with enough exterior wall for a 1000 mm door and its nibs (the hints name each such room, measured on centrelines, with the depth the private room is then at), or put an entrance hall or lobby at least 1200 mm clear (GB 50096-2011 5.7.1, as advice) between the door and the room. There is no machine fix: a door is a geometric decision (ADR 0005).
+- `W_EXIT_APPROACH_BLOCKED` — Furniture stands in the clear floor inside an exterior exit. **Fix:** Move the piece further from the wall than the depth the warning quotes, or slide it along the wall clear of the doorway's span, or move the door. There is no machine-applicable fix: which one moves is the author's choice, and `repair` does not move a piece for it.
 - `W_FIXTURE_BACK_TO_ROOM` — A fixture stands against a wall but faces the wrong way. **Fix:** Get the plan `size` right first, then the `rotate`. `size` is W×H in plan axes, and a fixture's catalogued depth runs AWAY from the wall it backs onto, so the size decides which walls it can back onto: a WC (400 along × 700 deep) is `size 400x700` against a north or south wall and `size 700x400` against an east or west one. With the size right, add the `rotate` that puts the back on the walled edge (0 = back to the north, 90 = east, 180 = south, 270 = west); the machine-applicable fix inserts it when exactly one walled edge fits the size. Or let it be derived: `in <room> anchor <edge>` derives the rotation once the size fits that edge, and `against wall <id>` takes `size` as along×depth and derives both. A `rotate` on a size the wrong way round silences this warning but draws the symbol squashed. A square size, or a family whose catalogued footprint is square (`counter`, `stove`), can back onto any edge.
 - `W_FIXTURE_FLOATING` — A plumbing/kitchen fixture is not against a wall. **Fix:** Move the fixture so one edge is against a wall (supply/waste/venting runs in the wall), or remove it.
 - `W_FIXTURE_WRONG_ROOM` — Fixture is not inside its declared room. **Fix:** Move the fixture inside the named room, or correct the `in <roomId>`.

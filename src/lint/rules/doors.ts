@@ -30,12 +30,15 @@ import {
   type DoorLike,
   type DoorSwing,
   type WallSegment,
+  wallFaceProbes,
 } from "../../geometry.js";
 import { arcOpeningVoid } from "../../geometry/arc-band.js";
 import { type Arc, arcLength, arcTangentAt } from "../../geometry/arc.js";
-import { DOORWAY_WIDTH_MM, doorLandingRect, openingBlock, rectsOverlap } from "../../geometry/rect.js";
+import { type BBox, DOORWAY_WIDTH_MM, doorLandingRect, openingBlock, rectsOverlap } from "../../geometry/rect.js";
 import type { RDoor, RFurniture, ROpening } from "../../ir.js";
 import type { LintContext, LintRule } from "../context.js";
+import { entranceInputs, entranceWays } from "../../analyze/entrance.js";
+import { solidFurniture } from "../../fixtures-catalog.js";
 import { isServiceCounter } from "../clearance-measure.js";
 import { approachGapMm, deficitMm, distPointToRect, mm, shortfall } from "../measure.js";
 
@@ -936,6 +939,155 @@ export const leafTooWide: LintRule = {
           kind === "double"
             ? `Narrow ${ref} to ${mm(atMost(2 * max))} mm or less (\`width ${mm(atMost(2 * max))}\`), or keep the width and make it a \`sliding\` or \`bifold\` door, or a cased \`opening\` if it needs no door.`
             : `Make ${ref} a pair of leaves, \`door double … width ${mm(d.width)}\` (each leaf ${mm(d.width / 2)} mm${d.width / 2 > max ? `, still over ${mm(max)}: narrow it to ${mm(atMost(2 * max))} mm or less too` : ""}), or narrow it to ${mm(atMost(max))} mm or less, or make it a \`sliding\` or \`bifold\` door, or a cased \`opening\` if it needs no door.`,
+        ],
+      });
+    }
+    return out;
+  },
+};
+
+/** One exterior exit's clear-floor strip, as {@link exitApproachBlocked} measures it. */
+export interface ExitApproachStrip {
+  door: RDoor;
+  /** The room it opens into. */
+  room: string;
+  strip: BBox;
+  depth: number;
+  /** The wall's centreline across the door, its half thickness, and whether it runs along x. */
+  line: number;
+  half: number;
+  horiz: boolean;
+}
+
+/**
+ * The strip inside every exterior exit {@link exitApproachBlocked} reads, `push` deep on the push
+ * side and `pull` on the pull side (the doc there). Skips are filed on `ctx` as the rule files
+ * them; `finish`'s furnish stage keeps the same strips clear (`src/furnish.ts`).
+ */
+export function exitApproachStrips(ctx: LintContext, push: number, pull: number): ExitApproachStrip[] {
+  const access = ctx.access();
+  if (!access.hasEntrance) {
+    if (ctx.rooms.length > 0) ctx.skip("no-entrance");
+    return [];
+  }
+  const doors = new Map(ctx.doors.map((d) => [d.id, d]));
+  const out: ExitApproachStrip[] = [];
+  for (const w of entranceWays(access, entranceInputs(ctx.ir, ctx.roomRects))) {
+    const d = doors.get(w.doorId);
+    if (w.kind !== "door" || !d || d.doorKind === "garage" || w.balcony) continue;
+    const room = ctx.roomRects.get(w.room);
+    const seg = d.host;
+    if (!room || !seg) continue;
+    const landing = doorLandingRect(d, 0);
+    if (!landing) {
+      // An angled or curved host: not measured.
+      ctx.skip("unsupported-host-geometry");
+      continue;
+    }
+    // The inside face: the side of the wall whose probe stands on the room's floor.
+    const half = seg.thickness / 2;
+    const { plus, minus } = wallFaceProbes(seg, d.at, half + 1);
+    const inPlus = pointInRoomBox(plus, room);
+    if (inPlus === pointInRoomBox(minus, room)) continue;
+    const horiz = seg.a.y === seg.b.y;
+    // +1 when the inside lies toward larger coordinates across the wall, else -1.
+    const axisSign = Math.sign(horiz ? plus.y - d.at.y : plus.x - d.at.x) * (inPlus ? 1 : -1);
+    const kind = d.doorKind ?? "hinged";
+    // Swinging `in` puts the leaf on the plus side: the inside is then the pull side.
+    const leafed = kind === "hinged" || kind === "double";
+    const depth = leafed ? ((d.swing === "in") === inPlus ? pull : push) : Math.max(push, pull);
+    const line = horiz ? d.at.y : d.at.x;
+    const face = line + axisSign * half;
+    const lo = Math.min(face, face + axisSign * depth);
+    const strip = horiz
+      ? { x: d.at.x - d.width / 2, y: lo, w: d.width, h: depth }
+      : { x: lo, y: d.at.y - d.width / 2, w: depth, h: d.width };
+    out.push({ door: d, room: w.room, strip, depth, line, half, horiz });
+  }
+  return out;
+}
+
+/**
+ * Furniture standing in the clear floor inside an exterior exit (plan-soundness PS2.69).
+ *
+ * For every door from outside (the storey's entrance edges, `src/analyze/entrance.ts`), less a
+ * `garage` door (a vehicle door, as `W_DOORWAY_BLOCKED` reads it, PS2.65) and a door onto an
+ * `outdoor balcony` (no way out to the ground), the strip inside the building in front of the
+ * doorway: jamb to jamb along the wall, and {@link LintRuleset.exitApproachMm} deep from the
+ * wall's inside FACE (the datum of `W_DOORWAY_BLOCKED`'s landing, {@link doorLandingRect}, whose
+ * inside half this is). The inside is the face on the room's floor the entrance edge opens into,
+ * probed off the wall's shape. A piece counts when its footprint overlaps the strip with positive
+ * area (a rug, walked on, never does); the longest stretch of the doorway's span that no counted
+ * piece covers ({@link openingBlock}) must be the door's whole width, so a 1200 mm exit wants
+ * 1200 mm, up to a doorway's width ({@link DOORWAY_WIDTH_MM}): a 2000 mm garden door keeps a
+ * way out while 1200 mm of it is clear, as a wide cased opening does for `W_DOORWAY_BLOCKED`.
+ *
+ * Depth: 914 mm by default, the 36 in landing the International Residential Code R311.3 asks on
+ * each side of an exterior door, over the door's width (recorded SECOND-HAND, a state's copy of
+ * the code text, `docs/plans/plan-soundness/research/2026-10-27-ps267-271-sources.md`; the ICC
+ * viewer was not readable). Under `accessibility-advisory` the 2010 ADA Standards' Table
+ * 404.2.4.1 front approach: 1220 mm on the push side (the door swings out, away from the inside)
+ * and 1525 mm on the pull side (it swings in) ({@link LintRuleset.exitApproachPullMm}); a door
+ * with no leaf to read (a sliding, folding or pocket kind) takes the larger.
+ *
+ * The sibling rule owns the doorway's own landing: a piece that overlaps `W_DOORWAY_BLOCKED`'s
+ * landing (300 mm, 450 under the a11y profile) is that rule's report and is never named here, so
+ * one sofa is reported once. It still covers the span it covers, so the width another piece is
+ * said to leave is the width really left. No fix: which piece moves, or the door, is the
+ * author's call; `repair` does not move a piece for it. Flagged `readsFurniture`: a quoted
+ * `W_ROOM_NO_FIXTURE` set was measured to land in front of an exit (`test/lint-fix-texts.test.ts`).
+ */
+export const exitApproachBlocked: LintRule = {
+  name: "exit-approach-blocked",
+  family: "doors",
+  layer: "validity",
+  stage: "fixtures",
+  codes: ["W_EXIT_APPROACH_BLOCKED"],
+  // A quoted fixture set can stand in front of an exit (PS2.17's verification re-lints it).
+  readsFurniture: true,
+  check(ctx: LintContext): Diagnostic[] {
+    const push = ctx.rules.exitApproachMm;
+    if (push === null) return [];
+    const pull = ctx.rules.exitApproachPullMm ?? push;
+    // A rug is walked on, not round (the walkability grids' reading): never a blocker.
+    const pieces = solidFurniture(ctx.furniture);
+    const rects = pieces.map(rectOf);
+    const out: Diagnostic[] = [];
+    for (const { door: d, strip, depth, line, half, horiz } of exitApproachStrips(ctx, push, pull)) {
+      const inStrip = rects.flatMap((r, i) => (rectsOverlap(strip, r) ? [i] : []));
+      if (inStrip.length === 0) continue;
+      const block = openingBlock(
+        d,
+        depth,
+        inStrip.map((i) => rects[i]!),
+      );
+      // The door's width, up to a doorway's: a wide garden door keeps a way out while a
+      // doorway's width of it is clear, as a wide cased opening does (`openingBlock`).
+      const need = Math.min(d.width, DOORWAY_WIDTH_MM);
+      if (!block || block.stretch >= need) continue;
+      // The sibling's landing, on the inside: a piece in it is `W_DOORWAY_BLOCKED`'s.
+      const own = doorLandingRect(d, ctx.rules.doorwayLandingMm)!;
+      const i = inStrip.find((k) => !rectsOverlap(own, rects[k]!));
+      if (i === undefined) continue;
+      const blocker = pieces[i]!;
+      const br = rects[i]!;
+      const gap = horiz
+        ? approachGapMm(line, half, br.y, br.y + br.h, depth)
+        : approachGapMm(line, half, br.x, br.x + br.w, depth);
+      const gn = blocker.label ?? blocker.category;
+      const ref = blocker._idAuthored === true ? `"${blocker.id}"` : `"${gn}"`;
+      const name = openingName(ctx, d);
+      const doorRef = d._idAuthored === true ? `door "${d.id}"` : name;
+      const short = shortfall(depth, gap);
+      out.push({
+        severity: "warning",
+        code: "W_EXIT_APPROACH_BLOCKED",
+        ...ctx.at(d),
+        message: `"${gn}" stands ${mm(gap)} mm inside ${name} and leaves ${mm(block.stretch)} mm of its ${mm(d.width)} mm width clear: a way out needs ${mm(depth)} mm of clear floor in front of it, ${d.width > need ? `${mm(need)} mm wide` : "the door's full width"}.`,
+        hints: [
+          `Move ${ref} ${mm(short)} mm further from the wall, so it stands ${mm(depth)} mm clear of the doorway, or slide it along the wall clear of the door's span.`,
+          `Or move ${doorRef} along its wall (\`on <wall> at <pos>\`) so the floor in front of it is clear.`,
+          `The ${mm(depth)} mm is the clear landing inside an exterior door: the International Residential Code R311.3's 36 in (914 mm) by default; under \`accessibility-advisory\`, the 2010 ADA Standards' Table 404.2.4.1 front approach, 1220 mm on the push side and 1525 mm on the pull side.`,
         ],
       });
     }

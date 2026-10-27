@@ -17,9 +17,13 @@ const API: CompilerApi = { compile, describe, lint };
 
 const DIGESTS: [string, string][] = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
-  ["pairwise-forms", "9eff26529b93242795c157099ea55b8cb92c8cb5c10d59b87ec9a5ddae370676"],
-  ["beside-walls-from-rooms", "51b72edae29692d3e738bc9802c035554e61753af36d4ad506f1bd7a4649b9c3"],
-  ["frames", "0f78e971555db8277a7593507dbb915cc699267cfaaeb68f274b1cf225e06dae"],
+  // PS2.69: `lint()` only, in these three rows: kitchen "C"'s `W_ROOM_NO_FIXTURE` hint no longer
+  // quotes its fixture set (the counter's placement would stand in front of the exterior door and
+  // raise `W_EXIT_APPROACH_BLOCKED`, which the hint's set verification now re-lints, PS2.17), so it
+  // names the fixtures and says why; same code, same span, no new code.
+  ["pairwise-forms", "06eb8323f02f5ba311b7fba05a9a6c0841cdc688c2b970f810064dfe087d8e03"],
+  ["beside-walls-from-rooms", "76b1fe54963ed46db4de0a48abcaba829c135544bd8d6612bd69fda438f3baa6"],
+  ["frames", "297abe6044f7f1c3736bf6b805e6c015fd4166785beac1558fd690696c5f056d"],
   ["widen-4000", "86d18ac0da3a35cc67206619c7b9faf9224ba837caa9283af98404861bf3164c"],
   ["widen-4500", "9cef908d29584b917eb605f312962d98e0a957108ab9143e3d45601e1df18fdb"],
   ["refused", "7e18b4bff41d18b98b0f0457e0f0488a8ce0bb34792e7194d8144c42e88dc901"], // PS2.29: message text only, same code, same span

@@ -613,3 +613,119 @@ suite("the audits' rows each rule catches (the acceptance of PS2.11e, PS2.46)", 
     expect(codesOf(path)).not.toContain(DB);
   });
 });
+
+// ─── W_EXIT_APPROACH_BLOCKED (PS2.69) ────────────────────────────────────────────────────
+
+const EA = "W_EXIT_APPROACH_BLOCKED";
+suite("W_EXIT_APPROACH_BLOCKED: furniture in the clear floor inside an exterior exit (PS2.69)", () => {
+  // A 1200 mm exit on the façade, its inside face at y 3900; the sofa covers x 600–3000, so 600 mm
+  // of the door's 2400–3600 span. `gap` is its near edge's distance from that face.
+  const exit = (
+    gap: number,
+    door = "door id=d_main at (3000,4000) width 1200 wall shell swing outward",
+    extra = "",
+  ): string => `plan "E" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  room id=r_wait at (0,0) size 6000x4000 label "Waiting" uses entry
+  ${door}
+  window at (3000,0) width 1500 wall shell
+  furniture id=f_sofa sofa at (600,${3900 - gap - 900}) size 2400x900 label "Sofa"
+  ${extra}
+}`;
+  const A11Y = { profile: "accessibility-advisory" };
+
+  it("a sofa 500 mm inside a 1200 mm exit, across 600 mm of it: the measured numbers, no id in the message", () => {
+    const ds = of(exit(500), EA);
+    expect(ds.map((d) => d.message)).toEqual([
+      '"Sofa" stands 500 mm inside the exterior door into "Waiting" and leaves 600 mm of its 1200 mm width clear: a way out needs 914 mm of clear floor in front of it, the door\'s full width.',
+    ]);
+    expect(ds[0]!.hints![0]).toBe(
+      'Move "f_sofa" 414 mm further from the wall, so it stands 914 mm clear of the doorway, or slide it along the wall clear of the door\'s span.',
+    );
+    expect(ds[0]!.hints!.join(" ")).toContain("R311.3");
+    // Beyond the doorway landing: the sibling is silent.
+    expect(of(exit(500), "W_DOORWAY_BLOCKED")).toEqual([]);
+  });
+
+  it("1300 mm inside: silent by default and on the a11y push side (1220), warns on its pull side (1525)", () => {
+    expect(of(exit(1300), EA)).toEqual([]);
+    expect(of(exit(1300), EA, A11Y)).toEqual([]);
+    const pull = of(exit(1300, "door id=d_main at (3000,4000) width 1200 wall shell swing inward"), EA, A11Y);
+    expect(pull.map((d) => d.message)).toEqual([expect.stringContaining("needs 1525 mm of clear floor")]);
+    // A door with no leaf to read takes the larger.
+    const sliding = of(exit(1300, "door id=d_main sliding at (3000,4000) width 1200 wall shell"), EA, A11Y);
+    expect(sliding).toHaveLength(1);
+    // The default reads one depth whichever way the door swings.
+    expect(of(exit(1300, "door id=d_main at (3000,4000) width 1200 wall shell swing inward"), EA)).toEqual([]);
+  });
+
+  it("a piece inside the 300 mm doorway landing is W_DOORWAY_BLOCKED's, not this code's", () => {
+    expect(of(exit(200), "W_DOORWAY_BLOCKED")).toHaveLength(1);
+    expect(of(exit(200), EA)).toEqual([]);
+  });
+
+  it("a garage door and a door onto a balcony are not exits read here", () => {
+    expect(
+      of(
+        exit(
+          500,
+          "door id=d_main garage at (3000,4000) width 1200 wall shell",
+          "door id=d_front at (6000,2000) width 900 wall shell",
+        ),
+        EA,
+      ),
+    ).toEqual([]);
+    const balcony = exit(
+      500,
+      "door id=d_main at (3000,4000) width 1200 wall shell swing outward",
+      'door id=d_front at (6000,2000) width 900 wall shell\n  outdoor id=o_bal balcony at (2400,4100) size 1200x1200 label "Balcony" rail left right bottom',
+    );
+    expect(of(balcony, EA)).toEqual([]);
+  });
+
+  it("a rug is walked on; a door wider than a doorway keeps a way out while 1200 mm of it is clear", () => {
+    expect(of(exit(500).replace("furniture id=f_sofa sofa", "furniture id=f_sofa rug"), EA)).toEqual([]);
+    // A 2000 mm door over x 2000–4000: the sofa covers 1000 mm of it, leaving 1000 (under 1200)…
+    const wide = of(exit(500, "door id=d_main sliding at (3000,4000) width 2000 wall shell"), EA);
+    expect(wide.map((d) => d.message)).toEqual([expect.stringContaining("leaves 1000 mm of its 2000 mm width clear")]);
+    // …and narrowed to cover 600 mm of it, 1400 mm stays clear: silent.
+    expect(
+      of(
+        exit(500, "door id=d_main sliding at (3000,4000) width 2000 wall shell").replace(
+          "size 2400x900",
+          "size 2000x900",
+        ),
+        EA,
+      ),
+    ).toEqual([]);
+  });
+
+  it("`exitApproachMm: null` turns it off", () => {
+    expect(of(exit(500), EA, { ruleset: { exitApproachMm: null } })).toEqual([]);
+  });
+
+  it("the row-6 clinic's waiting sofa warns; the defect corpus's clean twin is silent in every profile", () => {
+    const clinic = readFileSync(
+      join(ROOT, "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/6-clinic.arch"),
+      "utf8",
+    );
+    for (const opts of [{}, A11Y])
+      expect(of(clinic, EA, opts).map((d) => d.message)).toEqual([
+        expect.stringContaining(
+          '"sofa_l" stands 500 mm inside the exterior door into "Waiting / Reception" and leaves 600 mm',
+        ),
+      ]);
+    const twin = readFileSync(join(ROOT, "test/defect-corpus/clearances/exit-approach-blocked.clean.arch"), "utf8");
+    for (const profile of [
+      undefined,
+      "residential-basic",
+      "accessibility-advisory",
+      "cn-residential-advisory",
+      "uk-residential-advisory",
+      "us-residential-advisory",
+    ])
+      expect(of(twin, EA, profile ? { profile } : {}), profile).toEqual([]);
+  });
+});

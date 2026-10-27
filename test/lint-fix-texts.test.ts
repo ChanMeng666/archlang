@@ -162,13 +162,18 @@ describe("W_ROOM_NO_FIXTURE — the hint's statement compiles, clears it, and ra
         const stmts = allQuoted(hint, /^furniture /);
         const [stmt] = stmts;
         if (stmt === undefined) {
-          // Only a room where nothing fits may decline, and it must say why.
-          expect(name).toMatch(/grid 600|half-walled/);
+          // Only a room where nothing fits may decline, and it must say why. PS2.69: these rooms'
+          // only door is an exit, so a set standing in its clear floor would raise
+          // `W_EXIT_APPROACH_BLOCKED` and is not quoted (the half-walled bath's bathtub on the
+          // bottom wall, in front of its door; the kitchen's counter under the a11y profile's
+          // 1220 / 1525 mm), and the hint says that instead.
+          const raises = hint.includes("the placement found would raise another finding");
+          if (!(raises && p === A11Y && src === KITCHEN)) expect(name).toMatch(/grid 600|half-walled/);
           // The reason must be the true one: on grid 600 the grid, not crowded walls.
           if (src === GRID_600) {
             expect(hint).toContain("`grid 600` snaps an `at (x,y)` placement off the wall face");
             expect(hint).not.toContain("make room first");
-          } else expect(hint).toContain("make room first");
+          } else if (!raises) expect(hint).toContain("make room first");
           return;
         }
         // A relational room is placed before any furniture resolves (ADR 0028 §1), so the
@@ -856,6 +861,9 @@ describe("the four reworded hints' messages name things as a reader would; ids s
     // An accessible WC far from every side wall (PS2.74): the pan by its label or category, the room
     // by its label; the wall's id in the hint.
     "W_ACCESSIBLE_WC_SIDE_WALL",
+    // The exit approach (PS2.69): a piece by its label or category, the exit by the room it
+    // opens into; ids in the hints.
+    "W_EXIT_APPROACH_BLOCKED",
   ];
   type Storey = {
     rooms?: { id: string; label?: string }[];
@@ -933,6 +941,7 @@ describe("the four reworded hints' messages name things as a reader would; ids s
       expect(seen.get("W_DOORWAY_BLOCKED") ?? 0).toBeGreaterThan(0);
       // And PS2.74, from its defect-corpus case.
       expect(seen.get("W_ACCESSIBLE_WC_SIDE_WALL") ?? 0).toBeGreaterThan(0);
+      expect(seen.get("W_EXIT_APPROACH_BLOCKED") ?? 0).toBeGreaterThan(0);
     });
   }
 
