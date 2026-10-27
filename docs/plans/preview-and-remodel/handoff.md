@@ -1,12 +1,23 @@
-# Preview-and-remodel programme: handoff (state as of 2026-10-28, `main@8829a8bb`)
+# Preview-and-remodel programme: handoff (state as of 2026-10-28, `main@88d83823`)
 
 The resume point for a new session. Re-written at every wave end; dated history goes to `research/`.
 
 ## 1. Where the programme stands
 
-Planned, not started. Wave 0 is open. Nothing in `packages/` exists yet. The growth-side exposure
-decision is recorded (Tier 0: nothing public). The claim corrections are filed in the growth
-repository. No core release has been cut since the authoring stages landed in `[Unreleased]`.
+Updated 2026-10-28 (`main@88d83823`). Wave 0 is done: A0 (#319), B6 (#320), C1 (#321), C2 (#322).
+Wave 1: A1 is done (#325, the gate that opens wave 2: all 34 examples adapt); B1 (#323) and B4
+(#324) are open, reviewed and pinned or queued. Wave 2 is open: A2 (main session), B3a and B5
+(executors). As-built notes: `research/2026-10-28-as-built.md`. Quiet-machine baseline on
+`main@00b7e7ec`: `npm run check` 557 s; A1 put it at 576 s (+3.4 %).
+
+`packages/archlang-3d` exists (private, M0): adapter, H1 ownership, Scene3D v0, light tests in the core
+suite, `npm run check:3d` for heavy tests (empty until A2). Exposure is still Tier 0; ADRs 0030 and
+0031 are in archlang.uk's ADR list (factual wording; flagged to the owner). No core release has been
+cut, so `npx @chanmeng666/archlang` (1.43.1) lacks the seam and the package refuses with
+`E3D_CORE_TOO_OLD` against it.
+
+Execution note: on 2026-10-28 sonnet subagents were refused (HTTP 403 `oauth_org_not_allowed`), so
+executors run on the inherited model.
 
 ## 2. Pre-flight for the first session (do once)
 
@@ -20,13 +31,14 @@ repository. No core release has been cut since the authoring stages landed in `[
 
 ## 3. Next items, in order
 
-1. **A0** core exports + ADR 0031 (opus, worktree). Everything in wave 1 waits for its merge.
-2. In parallel with A0: **B6**, **C1**, **C2** (sonnet, separate worktrees; they share
-   `CHANGELOG.md [Unreleased]` and `docs/` — stack and re-pin per the merge flow).
-3. When A0 is merged: **A1**, **B1**, **B4** (wave 1).
-4. When A1 is accepted: **A2** then **A3** (same executor if possible), **B3a**, **B5** (wave 2).
-5. A3 accepted → tell the owner: Tier A may open. Then **A4**, **A5** (owner confirms the A5 merge),
-   **B3b** (wave 3).
+1. Land **B1** (#323) and then **B4** (#324): B4 merges `main` after B1 and re-checks the
+   `spec.llm.md` cap (both add a line; the file sits a few units under 30,000).
+2. Wave 2: **A2** then **A3** (same executor), **B3a**, **B5**. B3a and B5 also touch `spec.llm.md`;
+   whichever lands later re-checks the cap.
+3. **A0b** (residue of A0/A1: export the hatch group key and `Point`; walkers follow `import()`
+   types) whenever a core PR is open anyway.
+4. A3 accepted → stop and tell the owner: Tier A may open. Then A4, A5 (owner confirms the A5 merge),
+   B3b (wave 3), only on the owner's word.
 
 ## 4. How a card is run
 
