@@ -1,23 +1,34 @@
-# Preview-and-remodel programme: handoff (state as of 2026-10-28, `main@88d83823`)
+# Preview-and-remodel programme: handoff (state as of 2026-10-28, `main@f4b62e92`)
 
 The resume point for a new session. Re-written at every wave end; dated history goes to `research/`.
 
 ## 1. Where the programme stands
 
-Updated 2026-10-28 (`main@88d83823`). Wave 0 is done: A0 (#319), B6 (#320), C1 (#321), C2 (#322).
-Wave 1: A1 is done (#325, the gate that opens wave 2: all 34 examples adapt); B1 (#323) and B4
-(#324) are open, reviewed and pinned or queued. Wave 2 is open: A2 (main session), B3a and B5
-(executors). As-built notes: `research/2026-10-28-as-built.md`. Quiet-machine baseline on
-`main@00b7e7ec`: `npm run check` 557 s; A1 put it at 576 s (+3.4 %).
+Updated 2026-10-28 (`main@f4b62e92`). Waves 0 and 1 are done; wave 2 is done except A3. Landed:
+A0 (#319), B6 (#320), C1 (#321), C2 (#322), A1 (#325), B5 (#327), A2 (#328), B1 (#323), B4 (#324),
+B3a (#329). As-built notes: `research/2026-10-28-as-built.md`. Quiet-machine baseline on
+`main@00b7e7ec`: `npm run check` 557 s; full runs on the card branches took 505–679 s with other
+agents working.
 
-`packages/archlang-3d` exists (private, M0): adapter, H1 ownership, Scene3D v0, light tests in the core
-suite, `npm run check:3d` for heavy tests (empty until A2). Exposure is still Tier 0; ADRs 0030 and
-0031 are in archlang.uk's ADR list (factual wording; flagged to the owner). No core release has been
-cut, so `npx @chanmeng666/archlang` (1.43.1) lacks the seam and the package refuses with
-`E3D_CORE_TOO_OLD` against it.
+**A3 (#330) is the stop point.** Its gates are green and its red-team round 1 is fixed; it waits,
+unmerged, for the owner's look at the laneway, two-bed and hexagon-pavilion replays (one round of look
+notes allowed). A3's acceptance opens Tier A (README §6), which only the owner may approve; nothing in
+wave 3 starts before the owner says so.
 
-Execution note: on 2026-10-28 sonnet subagents were refused (HTTP 403 `oauth_org_not_allowed`), so
-executors run on the inherited model.
+`packages/archlang-3d` (private): adapter, H1 ownership, Scene3D v0, Mesh3D (A2), and on #330 the
+replay viewer, its HTML and its CLI video. The core is untouched by the A-cards beyond A0's exports.
+Exposure is Tier 0; ADRs 0030 and 0031 are in archlang.uk's ADR list (factual wording). No core
+release has been cut: `npx @chanmeng666/archlang` (1.43.1) lacks the seam, lock, quantities,
+imperial literals and wall status, while archlang.uk (deployed from `main`) documents them.
+
+`spec.llm.md` is at 29,999 of its 30,000 cap: the next card that adds to it must pay with a
+provable-duplicate cut. After A2 a checkout needs `npm ci` (new dependency `earcut`); after A3,
+`three`, `playwright-core`, `esbuild` at runtime.
+
+Execution notes: sonnet subagents were refused on 2026-10-28 (HTTP 403 `oauth_org_not_allowed`), so
+executors ran on the inherited model. An executor's test subset repeatedly missed corpus-wide guards
+(taste tables, fixture tables, the per-storey key list, the catalogue size prose); the full local
+`check` before every pin caught each one.
 
 ## 2. Pre-flight for the first session (do once)
 
@@ -31,14 +42,15 @@ executors run on the inherited model.
 
 ## 3. Next items, in order
 
-1. Land **B1** (#323) and then **B4** (#324): B4 merges `main` after B1 and re-checks the
-   `spec.llm.md` cap (both add a line; the file sits a few units under 30,000).
-2. Wave 2: **A2** then **A3** (same executor), **B3a**, **B5**. B3a and B5 also touch `spec.llm.md`;
-   whichever lands later re-checks the cap.
-3. **A0b** (residue of A0/A1: export the hatch group key and `Point`; walkers follow `import()`
-   types) whenever a core PR is open anyway.
-4. A3 accepted → stop and tell the owner: Tier A may open. Then A4, A5 (owner confirms the A5 merge),
-   B3b (wave 3), only on the owner's word.
+1. **Owner:** look at the A3 replays and accept, or file one round of look notes; then confirm
+   Tier A may open. The main session then lands #330 (re-review if the notes change it) and records it.
+2. On the owner's word, wave 3: **A4** (GLB, checks, the `check:3d` CI job and the cross-machine
+   pixel baseline: pin only key frames without the SVG's text, or ship a font), **A5** (the playground
+   toggle; the owner confirms its merge, since a push to `main` deploys), **B3b** (draw the wall
+   status, the schedule law back, extrude from `ir.drawn`).
+3. Residue cards when convenient: **A0b** (export the hatch group key and `Point`; walkers follow
+   `import()` types), **A2b** (T0 furniture, V-GEO-05, curved glass, slab ∪ rooms), `--doors plan` for
+   the replay (needs each leaf's open tip in Scene3D).
 
 ## 4. How a card is run
 
