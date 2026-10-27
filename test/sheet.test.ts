@@ -661,26 +661,30 @@ suite("examples/museum.arch — the large-building flagship", () => {
     expect(r.svg).not.toBe("");
   });
 
-  it("is a ~100 × 60 m, 14-room, 6000 m² building", () => {
+  it("is a ~100 × 60 m, 15-room, 6000 m² building", () => {
     const d = describePlan(MUSEUM);
     expect(d.ok).toBe(true);
     expect(d.diagnostics).toEqual([]);
     expect(d.bbox).toEqual({ w: 100000, h: 60000 });
     expect(d.bbox_outer).toEqual({ w: 100300, h: 60300 });
-    // Net: the 14 rooms tile the 100 × 60 m shell, so the net total is 6000 m² less every
+    // Net: the 15 rooms tile the 100 × 60 m shell, so the net total is 6000 m² less every
     // wall band inside it, by hand: the shell's 150 mm inner band 47.91, the two spines
     // 2 × 99.7 m × 0.2, the north cross walls 3 × 25.75 m + 21.75 m, the south ones
-    // 5 × 27.75 m and the two WC walls 2 × 9.8 m, all × 0.2 m: 139.26 m², so 5860.74. The
-    // reported total sums the rooms' already-rounded figures, one rounding step below it.
+    // 5 × 27.75 m, the two WC walls 2 × 9.8 m and the accessible WC's wall 5.8 m (face 70100
+    // to face 75900; fix/examples-sound, 2026-10-27), all × 0.2 m: 140.42 m², so 5859.58. The
+    // reported total sums the rooms' already-rounded figures, one rounding step below it: the
+    // two rooms the new wall made are exact at 2 dp (Lobby 5.8 × 24.8 = 143.84, Accessible WC
+    // 5.8 × 2.75 = 15.95, together 1.16 less than the old Lobby's 5.8 × 27.75 = 160.95), so the
+    // old 5860.73 less 1.16.
     // Gross internal: the floor inside the shell's inner faces, 99.7 × 59.7 m (PS4.4).
     expect(d.totals).toEqual({
-      rooms: 14,
-      doors: 7,
+      rooms: 15,
+      doors: 9,
       windows: 9,
       floor_area_m2: 6000,
       gross_internal_area_m2: 5952.09,
       gross_internal_area_all_levels_m2: 5952.09, // one storey: the building is it
-      net_floor_area_m2: 5860.73,
+      net_floor_area_m2: 5859.57,
     });
     expect(d.access.hasEntrance).toBe(true);
     expect(d.access.rooms.filter((r) => !r.reachable)).toEqual([]);

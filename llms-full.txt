@@ -251,7 +251,7 @@ plan "Parametric — Studio Row" {
     furniture bed   at (x + 300, 300)      size 1500x2000 label "Bed"
     furniture kitch at (x + W - 1900, 300) size 1600x600  label "Kitchen"
     door   at (x + W / 2, H) width DOOR wall exterior hinge left
-    window at (x + W / 2, 0) width WIN  wall exterior
+    window at (x + W - 1100, 0) width WIN  wall exterior
 
     # The end unit carries a per-unit area dimension (computed by the function).
     # Referenced to the outer face (y = H + WALL/2) so the extension lines start at

@@ -25,6 +25,31 @@ function run(args: string[], input?: string): { status: number | null; stdout: s
   return { status: r.status, stdout: r.stdout, stderr: r.stderr };
 }
 
+/**
+ * Since fix/examples-sound (2026-10-27) every shipped example is warning-free, so the warned
+ * sheets are read off examples AS THEY WERE: the current source with the lines that fix
+ * changed put back, each found exactly once.
+ */
+const AS_WAS: Record<string, [string, string][]> = {
+  "courtyard-house.arch": [["  roof overhang 500", "  roof overhang 600"]],
+  "materials.arch": [["  paper A2 landscape", "  paper A3 landscape"]],
+  "themed.arch": [["  door   at (1500,H)    width 900  wall exterior swing in\n", ""]],
+  "hillside-villa.arch": [
+    ["d_linen  on w_linen_s at 1100 width 800", "d_linen  on w_linen_s at 1100 width 700"],
+    ["d_en2_corr on en2.wall at 5300 width 800", "d_en2_corr on en2.wall at 5300 width 700"],
+    ["d_enm      on en_m.wall at 7500 width 800", "d_enm      on en_m.wall at 7500 width 700"],
+    ["d_enb2     pocket on en_b2.wall at 7500 width 800", "d_enb2     pocket on en_b2.wall at 7500 width 700"],
+  ],
+};
+const asWas = (file: string): string => {
+  let source = readFileSync(`examples/${file}`, "utf8");
+  for (const [now, before] of AS_WAS[file]!) {
+    if (source.split(now).length !== 2) throw new Error(`${file}: "${now}" is not found exactly once`);
+    source = source.replace(now, before);
+  }
+  return source;
+};
+
 const sheetOf = (source: string, level?: number): ReviewSheet => {
   const s = buildReviewSheet(source, level !== undefined ? { level } : {});
   if ("kind" in s) throw new Error(`no sheet: ${s.kind}`);
@@ -112,14 +137,14 @@ describe("preview --review: clean plans, storeys and the corpus", () => {
   });
 
   it("draws one storey per sheet, with that storey's warnings (and each ensuite instance its own ring)", () => {
-    const source = readFileSync("examples/hillside-villa.arch", "utf8");
+    const source = asWas("hillside-villa.arch");
     const upper = sheetOf(source, 2);
     expect(upper.level).toBe(2);
     const ringed = upper.marks.filter((m) => m.code === "W_PATH_TOO_NARROW").map((m) => m.ringed[0]?.id);
     // Three placed ensuites raise one message from one component span; the hint's door places each.
-    // `r_bed2` rings the route from Bedroom 2 to its en-suite; `r_linen` the walk to the linen
-    // cupboard, reachable since PS2.11e moved the stair off the landing.
-    expect(ringed).toEqual(["en2.room", "en3.room", "en_m.room", "r_bed2", "r_linen", "r_bed3"]);
+    // `r_linen` rings the walk to the linen cupboard (the 700 mm doors of the villa before
+    // fix/examples-sound, which also gave each bedroom its own suite).
+    expect(ringed).toEqual(["en2.room", "en_b2.room", "en_m.room", "r_linen"]);
     expect(sheetOf(source, 1).marks.some((m) => m.code === "W_PATH_TOO_NARROW")).toBe(false);
     expect(buildReviewSheet(source, { level: 9 })).toEqual({ kind: "badLevel", levels: [1, 2] });
   });
@@ -127,8 +152,9 @@ describe("preview --review: clean plans, storeys and the corpus", () => {
   it("over the examples, every warning that names an element is ringed; the rest name the whole sheet", () => {
     const unringed = new Set<string>();
     let ringed = 0;
-    for (const f of readdirSync("examples").filter((n) => n.endsWith(".arch") && n !== "imports.arch")) {
-      const source = readFileSync(`examples/${f}`, "utf8");
+    const files = readdirSync("examples").filter((n) => n.endsWith(".arch") && n !== "imports.arch");
+    const sources = [...files.map((f) => readFileSync(`examples/${f}`, "utf8")), ...Object.keys(AS_WAS).map(asWas)];
+    for (const source of sources) {
       if (source.includes("import ")) continue;
       const levels = compile(source, { noCache: true }).pages?.map((p) => p.level) ?? [undefined];
       for (const level of levels) {

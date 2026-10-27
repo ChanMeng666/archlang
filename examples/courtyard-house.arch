@@ -215,8 +215,9 @@ plan "Courtyard House" {
   # `shell` is the plan's one closed exterior wall — a plain rectangle. The courtyard
   # is cut by an INTERIOR partition, `w_court`, so it never enters this offset at all;
   # the concave gallery that wraps it is a room polygon, not a wall, and `roof` only
-  # ever reads the wall ring.
-  roof overhang 600
+  # ever reads the wall ring. 500 mm of eaves keeps the whole drawing on the A3 sheet at
+  # 1:100 (600 overran it by 90 mm, `W_DRAWING_OVERFLOW`).
+  roof overhang 500
 
   title {
     project "Courtyard House"

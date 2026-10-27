@@ -29,40 +29,33 @@ line of its source, because a theme changes inks and hatches, never geometry.
 
 ### Hillside Villa
 
-The showpiece: a two-storey villa with an attached garage, drawn on one A2 sheet at
+The showpiece: a two-storey villa with an attached garage, drawn on one A1 sheet at
 1:50. The widget below shows **page 1 — the ground floor**, **11 rooms, 196.54 m²**
-(`archlang describe --json`); the upper floor adds nine more rooms over 140.76 m²
+(`archlang describe --json`); the upper floor adds ten more rooms over 140.76 m²
 (`archlang describe --level 2 --json`).
 
 It is the plan to read when you want to see how the surfaces above fit together rather
 than in isolation: `site { street north }` names the facades a plot orientation lint
-rule can reason about; a `room … polygon` chamfers a reading nook off the study and an
-L-shaped master suite wraps its own ensuite; an `arc` wall edge bows a bay window off the
+rule can reason about; a `room … polygon` chamfers a reading nook off the study; an `arc` wall edge bows a bay window off the
 living room; all six door kinds ship somewhere a builder would actually put one — hinged,
 sliding, pocket, bifold, barn and the `garage` door on the wing; a `stair` carries the
 same id on both `level` blocks, so it is one shaft, not two symbols that happen to line
 up; a `void` opens a double-height gap over the living room; `roof overhang` draws the
 eaves on the upper storey; and a `component` authored once — `ensuite() { … }` — is
-`place`d three times: twice on the bedroom band, the second with `mirror x` so the pair
-face opposite ways, and once more inside the master suite.
+`place`d three times: once off the landing as the family bathroom, and as the two
+bedrooms' ensuites, back to back on one wet wall, the second with `mirror x` so the pair
+face opposite ways.
 
-`archlang lint` raises eight warnings on it, all on the upper floor. Two are left in on
-purpose, as the honest cost of a real site: two bedrooms whose windows don't face the
-equator side. (The master en-suite, reached only through its bedroom, is not one: the
-other two en-suites also open off the landing.) The other six squeeze to 640 mm, each at a
-real 700 mm door: the walks from the top of the stair, the floor's only way in, to the linen
-cupboard, to bedroom 3 (its bed stands across its own door, so it is walked into through its
-en-suite) and to each en-suite, and the route from bedroom 2 to its en-suite, through the
-pocket door between them. The Master Suite's route to its own en-suite passes through that
-en-suite's one door, already named, so it is not reported twice; the walk to the Master
-Suite itself is 700 mm at its narrowest, which meets the minimum. Every room is reachable.
+`archlang lint` raises no warnings and `archlang validate` is clean. Both bedrooms take the garden (equator) side, the
+street side upstairs is a study and a studio, the garage's 4800 mm sectional door takes the
+two cars it holds, and every room is reachable through a door at least 800 mm wide.
 
 <ArchLive :src="EXAMPLES['hillside-villa']" :rows="20" />
 
 ### Garden House
 
 The other half of the language, and the one every plan above leaves out: **everything
-outside the wall line**. A two-storey family house on a 22 × 22 m suburban lot, A2 at
+outside the wall line**. A two-storey family house on a 22 × 22 m suburban lot, A0 at
 1:100 — **6 rooms and 136.5 m² of floor**, beside **220.7 m² of ground**
 (`archlang describe --json`'s `totals.outdoor_area_m2`) and a **484 m² lot**
 (`site.lot_area_m2`). Those are three different numbers and the release exists to keep
@@ -91,12 +84,8 @@ Which side that is is derived rather than written: the resolver asks which face 
 twenty-one outdoor fixture families furnish the garden, all at their catalogued
 footprints and none of them labelled.
 
-`archlang lint` raises exactly one warning, left in and named in the source: an aspect
-heuristic — `W_ROOM_NOT_EQUATOR_FACING` on the one habitable room with no south window,
-Bedroom 2 on level 2. On a two-band plan one bedroom has to take the street aspect, and
-the two rooms people sleep in longest get the garden, so this is the case where the
-drafter overrules the rule. `archlang validate` is clean; `archlang validate --strict` reports
-that one.
+`archlang lint` raises no warnings: the street-side room upstairs is a study, so both
+bedrooms take the garden aspect.
 
 <ArchLive :src="EXAMPLES['garden-house']" :rows="20" />
 
@@ -221,11 +210,8 @@ Two things to read in the source rather than the drawing. **Not one piece carrie
 [catalogued footprint](/furniture#the-symbol-catalogue) and derives the rotation from the
 wall, so the whole kitchen, bathroom and both beds are written without a hand-computed
 number. `offset` is where a piece's **centre** lands along the wall run, which is why a
-fitted run reads as a sequence of centres rather than corners. `archlang validate` is clean;
-`archlang validate --strict` reports exactly one warning, named in the source so it is not
-mistaken for rot — `W_PATH_TOO_NARROW` on the walk into the kitchen, which the nav grid
-measures at 400 mm through the 1200 mm opening, and which is left standing rather than
-nudged away.
+fitted run reads as a sequence of centres rather than corners. `archlang validate --strict`
+reports no warnings.
 
 <ArchLive :src="EXAMPLES['furnished-flat']" :rows="30" />
 
@@ -345,7 +331,7 @@ without the stack of wet rooms.
 
 ### Museum (a real sheet, at a real scale)
 
-A ~100 × 60 m single-level museum — **14 rooms, 6000 m², 7 doors, 9 windows** — and the
+A ~100 × 60 m single-level museum — **15 rooms, 6000 m², 9 doors, 9 windows** — and the
 large-building flagship. Everything above is a dwelling, where sizing every annotation as
 a fraction of the drawing happens to look right; at 100 m it does not, and room labels come
 out metres tall. So this plan declares a **sheet**:
@@ -360,7 +346,7 @@ no coordinate is hand-computed.
 
 ### Harbour Aquarium (curves)
 
-A 60 × 40 m public aquarium — **8 rooms, 2365.59 m², 3 doors, 6 windows**, A2 at 1:200 —
+A 60 × 40 m public aquarium — **8 rooms, 2365.59 m², 4 doors, 6 windows**, A2 at 1:200 —
 and the [curved-geometry](/reference#curved-walls-arc-edges-v1-24) flagship. Everything
 above is rectilinear; an aquarium is the building type that is not. Its centrepiece is a
 cylindrical tank you walk around, written as a
@@ -381,7 +367,7 @@ length rather than its chord — and their leaves swing off the tangent at the d
 
 ### Reading Room Library (sheet tables)
 
-A 50 × 32 m public library around a circular reading room — **14 rooms, 1545.06 m², 8 doors,
+A 50 × 32 m public library around a circular reading room — **14 rooms, 1545.06 m², 9 doors,
 16 windows**, `paper A2 landscape` at `scale 1:200`, split into three
 [zones](/reference#zones-wings-and-departments-v1-22): public (9 rooms, 948.06 m²), stacks
 (2 rooms, 374.5 m²) and staff (3 rooms, 222.5 m²).
@@ -612,7 +598,7 @@ playground's theme selector can restyle any plan on this page. See
 
 ### Materials (the whole hatch palette)
 
-A 16 × 8 m maker-space — **4 rooms, 128 m², 5 doors, 6 windows**, `paper A3 landscape` at
+A 16 × 8 m maker-space — **4 rooms, 128 m², 5 doors, 6 windows**, `paper A2 landscape` at
 `scale 1:50` — whose walls carry the entire wall-material palette, one per side. Poché is not
 decoration: on a real drawing the hatch inside a wall **is** the specification, and ArchLang
 spells that as one optional clause on `wall`:

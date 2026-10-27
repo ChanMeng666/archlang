@@ -432,7 +432,8 @@ suite("PS0.4 drills", () => {
       // With that connection gone, the entrance (in Living) reaches no other room.
       "Walk to r_bed: 7400 mm (pinch 740 mm) → unmeasured (no_door_route)",
       "Walk to r_hall: 4500 mm (pinch 900 mm) → unmeasured (no_door_route)",
-      "Walk to r_bath: 4600 mm (pinch 740 mm) → unmeasured (no_door_route)",
+      // 4200, not 4600, since fix/examples-sound (2026-10-27) moved the studio's WC along its wall.
+      "Walk to r_bath: 4200 mm (pinch 740 mm) → unmeasured (no_door_route)",
     ]);
   });
 });

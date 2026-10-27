@@ -34,6 +34,13 @@
  * so a label-only room now agrees with an authored one. No other row, field or order moved. The
  * three rows were edited by hand to the values the corpus sweep measured, nothing else.
  *
+ * ## Four examples re-derived on 2026-10-27 (fix/examples-sound): their SOURCE changed
+ *
+ * Not a classifier change: the design review gave `garden-house` a study for its street-side
+ * bedroom, rebuilt `hillside-villa`'s upper floor (study, studio, two bedroom suites), and gave
+ * `library` and `museum` an accessible WC (the library's in place of its plant room). Those four
+ * examples' rows were re-taken from `describe()`; no other row moved.
+ *
  * ## Five rows edited on 2026-10-18 (plan-soundness PS2.9): two examples' SOURCE changed
  *
  * Not a classifier change: two examples dropped an authored use that misdescribed a room.

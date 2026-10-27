@@ -6,12 +6,7 @@
 # two-bedroom flat rather than a showroom, so the ceiling on that number is the FLOOR
 # AREA, not the catalogue: every piece here is somewhere a real one would go, and the
 # linter is what says so -- no piece floats off its wall, backs onto the room, blocks a
-# door, eats a clearance or collides with anything. `arch validate --strict` reports
-# exactly ONE warning, named here so it is not mistaken for rot: `W_PATH_TOO_NARROW` on
-# the walk into the kitchen, which the nav grid measures at 400 mm through the 1200 mm
-# opening. It appeared when that rule started reporting a MEASURED way in instead of a
-# fabricated 0 mm, and it is left standing rather than nudged away -- moving a piece to
-# silence a measurement is how a plan stops being evidence.
+# door, eats a clearance or collides with anything, and `arch validate --strict` is clean.
 #
 # Four things to read off the source rather than the picture:
 #
@@ -67,7 +62,9 @@ plan "Furnished Flat" {
   room id=r_bath    at (6400,6800) size 2000x4000 label "Bath"            uses bath
 
   door id=d_front on w_east   at 6200 width 900 hinge near start swing into r_hall
-  door id=d_live  on w_hall_n at 900  width 900 hinge near start swing into r_live
+  # The living door sits at the hall's kitchen end, so the walk from the front door to the
+  # kitchen (through the living room's opening) does not double back down the hall.
+  door id=d_live  on w_hall_n at 4100 width 900 hinge near start swing into r_live
   door id=d_util  on w_hall_n at 5700 width 800 hinge near start swing into r_util
   door id=d_bed1  on w_hall_s at 700  width 800 hinge near start swing into r_bed1
   door id=d_bed2  on w_hall_s at 5400 width 800 hinge near start swing into r_bed2
@@ -97,7 +94,9 @@ plan "Furnished Flat" {
   # `against wall` — that form would derive a rotation from the wall and face the
   # keyboard into it. Placed by hand, like it is on a real drawing.
   furniture piano        at (250,3200)  size 1400x1400 in r_live
-  furniture dining_table at (2700,3300) size 2100x2000 in r_live
+  # A six-seat 1800 x 1000 table, 800 mm clear of the sofa: the one walk from the hall to
+  # the kitchen opening passes between them.
+  furniture dining_table at (2900,3600) size 1800x1000 in r_live
   furniture radiator     against wall w_west offset 4300 in r_live
 
   # --- Kitchen: a fitted run of centres along the north wall -------------------

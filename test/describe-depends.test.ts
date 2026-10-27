@@ -439,6 +439,7 @@ suite("pinned", () => {
       "door_1 door on=[hall] params=[] host=exterior", // `on hall.left`, `swing into hall`; derived host
       "door_2 door on=[bed hall] params=[] host=hall|bed", // `between hall and bed`, `swing into bed`
       "door_3 door on=[bath hall] params=[] host=hall|bath", // `between hall and bath`, `swing into bath`
+      "fridge furniture on=[kitchen] params=[] host=exterior", // fix/examples-sound (2026-10-27): the kitchen's fridge, as counter_5
       "hall room on=[living] params=[]", // `below living`
       "kitchen room on=[living] params=[]", // `right-of living`
       "living room on=[] params=[]", // the anchor: `at (0,0)`

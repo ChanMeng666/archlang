@@ -23,7 +23,7 @@
 #   (omitted)  150   the two service partitions, which take the default poche hatch
 #
 # THE SHEET IS WHAT MAKES THIS READABLE, and it is the second thing this file is for.
-# `paper A3 landscape` + `scale 1:50` is an operative pair: every annotation becomes a
+# `paper A2 landscape` + `scale 1:50` is an operative pair: every annotation becomes a
 # fixed number of millimetres ON THE PAPER (3.5 mm labels, 0.5 mm lines) times the scale
 # denominator, and — the point here — a 100 mm partition is drawn 2 mm wide and a 300 mm
 # facade 6 mm. Halve that to 1:100 — the auto-fit's answer on a smaller sheet — and they
@@ -38,22 +38,10 @@
 # same way: its NO./NAME/AREA rows and its total are the rooms below, and they are the
 # same numbers `arch describe --json` reports under `schedule[]`.
 #
-# ONE DELIBERATE WARNING, left in on purpose:
-#
-#   W_SCALE_OVERFLOW x1 — and it is about the MARGIN, not the page. The sheet this file
-#   emits is exactly A3 landscape (420 x 297 mm, viewBox 21000 x 14850 at 1:50) and
-#   nothing is clipped; what the fit rule reports is its budget, 16300 x 8300 mm of
-#   building against 17675 x 7305 mm of drawing area once the margins, the dimension
-#   bands, the title block and the two margin tables are taken out. It appeared in
-#   v1.27.0, when `usablePlanMm` started reserving the band its own `schedule` and
-#   `legend` occupy — a true positive that three releases of drawings had been quietly
-#   spending.
-#
-#   The diagnostic's remedy is a coarser scale, and taking it would defeat the file. At
-#   1:100 six wall materials no longer read side by side, and this header's own sentence
-#   is that a hatch you cannot see is a specification you have not written. So the scale
-#   stands and the sampler is issued with its legend tight to the margin. `arch validate`
-#   is clean; `arch validate --strict` reports this one.
+# The sheet is A2, not A3: at 1:50 the building (16300 x 8300 mm on its outer faces) plus
+# its dimension bands, title block and the two margin tables overran A3's drawing area
+# (`W_SCALE_OVERFLOW`). A sampler keeps its scale and takes the larger sheet; the
+# diagnostic's other remedy, a coarser scale, would erase the hatches this file shows.
 plan "Workshop" {
   units mm
   # 10, not 50: a 230 brick wall has a 115 half-thickness, and the WC fixtures are placed
@@ -61,7 +49,7 @@ plan "Workshop" {
   # every wall a fixture backs onto, or the snap pushes the piece into the wall it is
   # supposed to sit against.
   grid 10
-  paper A3 landscape
+  paper A2 landscape
   scale 1:50
   north up
   dims auto all

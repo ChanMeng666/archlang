@@ -162,8 +162,8 @@ plan "Transit Hall" {
   furniture basin against wall w_gate  offset 88500 in r_wc_w
   furniture basin against wall w_wcw_s offset 7000 in r_wc_m
   furniture basin against wall w_wcw_s offset 8500 in r_wc_m
-  furniture wc    against wall w_wca_s offset 1500 in r_wc_a
-  furniture basin against wall w_wca_s offset 3500 in r_wc_a
+  furniture wc    against wall w_wca_s offset 9300 in r_wc_a
+  furniture basin against wall w_wca_s offset 8100 in r_wc_a
 
   # ---- concourse fit-out ----------------------------------------------------
   # Ticket machines back onto the gate wall on the unpaid side — `offset` is the distance
