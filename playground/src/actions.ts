@@ -496,7 +496,7 @@ function mountDivider(): void {
   applyRatio(ratio);
 
   divider.addEventListener("pointerdown", (e) => {
-    if (window.innerWidth <= 760) return; // stacked layout — divider is inert
+    if (window.innerWidth <= 900) return; // one-view phone layout — divider is inert
     e.preventDefault();
     divider.setPointerCapture(e.pointerId);
     divider.classList.add("dragging");

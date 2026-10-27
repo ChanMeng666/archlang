@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: PS2.66: W_ROOM_MISSING_DEFINING reports a bath with a WC and no basin (moved files listed in the commit)
+ * Taken: PS2.66: W_ROOM_MISSING_DEFINING reports a bath with a WC and no basin; merged over main@82ad8a51 (PR #298's re-take)
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -1373,7 +1373,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/5-townhouse.arch",
-    "ea2e615fc188361a7f361857f65592ef09e4cd9fd6c329f8f9fc357ef53a8f08",
+    "f9541021aeb8c8e878df8371903b3f75927de3b8965f7fcf123a0e839246da64",
     4288,
   ],
   [
