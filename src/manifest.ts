@@ -305,7 +305,7 @@ const FACTS_FLAG: ManifestFlag = {
   flag: "--facts",
   arg: `<${DESCRIBE_FACTS.join("|")}[,…]>`,
   description:
-    "also compute these opt-in facts: `symmetry` (the plan's symmetry group per layer — shell, rooms, full — and its repeated rooms), `syntax` (space-syntax depth, mean depth, RA, integration and control on the access graph) and `depends` (per element, the ids it derives from and the `let`/parameter names it reads); absent by default",
+    "also compute these opt-in facts: `symmetry` (the plan's symmetry group per layer — shell, rooms, full — and its repeated rooms), `syntax` (space-syntax depth, mean depth, RA, integration and control on the access graph), `depends` (per element, the ids it derives from and the `let`/parameter names it reads) and `clearances` (what each clearance rule measured, per storey under the default ruleset: a WC's sides, a tall unit's and a hob's cover of a window, a hob's nearest tall unit, a doorway's clear width and approach, a stair's run and landings); absent by default",
 };
 const SELECT_FLAG: ManifestFlag = {
   flag: "--select",

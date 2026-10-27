@@ -16,33 +16,17 @@
  * `lint/ruleset.ts` (re-exported here, so the public surface is unchanged).
  */
 
-import { buildingRoomReach, DEFAULT_TOL, resolvePlan, roomUses, storeyGrounded } from "./analyze.js";
-import type { ResolvedLevel, ResolvedPlan, RRoom } from "./ir.js";
+import { resolvePlan, roomUses } from "./analyze.js";
+import type { ResolvedPlan, RRoom } from "./ir.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
-import {
-  type BuildingContext,
-  buildLintContext,
-  type LintLayer,
-  type LintStage,
-  NO_BUILDING,
-  type ShaftNeighbours,
-} from "./lint/context.js";
-import { dwellingReading } from "./analyze/dwelling.js";
+import { type BuildingContext, buildLintContext, type LintLayer, type LintStage } from "./lint/context.js";
 import { foldCoverage, type LintCoverage, type LintUnclassifiedRoom, type SkipNote } from "./lint/coverage.js";
-import { MAX_ATTRIBUTION_MEASURES } from "./lint/rules/circulation-facts.js";
 import { ONCE_PER_PLACEMENT_CODES } from "./lint/rules/dims.js";
 import { LINT_RULES } from "./lint/rules/index.js";
 import { LINT_PROFILES, type LintOptions, type LintRuleset, resolveRuleset } from "./lint/ruleset.js";
-import { storeyHasEntranceCandidate } from "./analyze/entrance.js";
-import {
-  arrivalRuns,
-  levelsEnteredFromBelow,
-  type RVertical,
-  verticalConnections,
-  verticalReach,
-  verticalsOf,
-} from "./vertical.js";
+import { lintStoreys } from "./lint/storeys.js";
 
+export { buildingContexts } from "./lint/storeys.js";
 export {
   ADVISORY_CODE_PROFILES,
   DEFAULT_RULESET,
@@ -127,18 +111,11 @@ export function lintWithCoverage(
 
   const notes: SkipNote[] = [];
   const unclassified: LintUnclassifiedRoom[] = [];
-  // PS2.18: read once over every storey's rooms; recorded only when it is not a dwelling, so a
-  // dwelling's contexts are exactly the ones they were.
-  const storeyIrs = levels.length > 0 ? levels.map((l) => l.ir) : [ir];
-  const nonResidential =
-    dwellingReading(storeyIrs.flatMap((p) => p.elements.filter((e): e is RRoom => e.kind === "room"))) ===
-    "non-residential";
+  const storeys = lintStoreys(ir, levels, rules.tolMm);
   if (levels.length > 0) {
-    const byLevel = buildingContexts(levels, rules.tolMm);
-    if (nonResidential) for (const b of byLevel.values()) b.dwelling = "non-residential";
-    const out = levels.flatMap((l) => {
-      unclassified.push(...unclassifiedRooms(l.ir, l.level));
-      return lintOne(l.ir, rules, byLevel.get(l.level), notes, l.level).map((d) => ({ ...d, level: l.level }));
+    const out = storeys.flatMap((st) => {
+      unclassified.push(...unclassifiedRooms(st.ir, st.level));
+      return lintOne(st.ir, rules, st.building, notes, st.level).map((d) => ({ ...d, level: st.level }));
     });
     return {
       diagnostics: reconcileSharedFixes(out, levels),
@@ -148,10 +125,7 @@ export function lintWithCoverage(
   }
   unclassified.push(...unclassifiedRooms(ir));
   return {
-    diagnostics: reconcileSharedFixes(
-      lintOne(ir, rules, nonResidential ? { ...NO_BUILDING, dwelling: "non-residential" } : undefined, notes),
-      [{ ir }],
-    ),
+    diagnostics: reconcileSharedFixes(lintOne(ir, rules, storeys[0]!.building, notes), [{ ir }]),
     coverage: foldCoverage(LINT_RULES, notes, unclassified, 1),
     layers: LINT_CODE_LAYERS,
   };
@@ -269,73 +243,6 @@ export function reconcileSharedFixes(diags: Diagnostic[], storeys: readonly Lint
 function withoutFixes(d: Diagnostic): Diagnostic {
   const { fixes: _dropped, ...rest } = d;
   return rest;
-}
-
-/**
- * Per-storey {@link BuildingContext} for a multi-storey plan: which vertical runs are
- * real shafts (their id appears on another storey too) and, for a storey with no exterior
- * entrance of its own, which rooms a shaft delivers you into. Computed once for the whole
- * building so no rule re-derives it, and deterministic (levels are already ascending).
- */
-export function buildingContexts(levels: readonly ResolvedLevel[], tolMm: number): Map<number, BuildingContext> {
-  const inputs = levels.map((l) => ({ level: l.level, ir: l.ir }));
-  const connections = verticalConnections(inputs);
-  const peerIds = new Set(connections.map((c) => c.id));
-  const grounded = (n: number): boolean => {
-    const l = levels.find((x) => x.level === n);
-    return l ? storeyGrounded(l.ir, tolMm ?? DEFAULT_TOL) : false;
-  };
-  // Room-aware: a shaft relays only from a stop whose room is walkable on its storey, on
-  // the same tolerance `grounded` uses, so lint and `describe().vertical` agree.
-  const roomReach = buildingRoomReach(inputs, tolMm ?? DEFAULT_TOL);
-  const reach = verticalReach(inputs, grounded, roomReach);
-  const runs = arrivalRuns(inputs, grounded, roomReach);
-  const fromBelow = levelsEnteredFromBelow(connections, (n) => {
-    const l = levels.find((x) => x.level === n);
-    return l ? storeyHasEntranceCandidate(l.ir, tolMm ?? DEFAULT_TOL) : false;
-  });
-  // Each run's neighbouring stops (PS2.11e, PS2.15): the first run of an id per storey, as
-  // `verticalConnections` reads it; levels are ascending, so the neighbours are adjacent entries.
-  const firstRuns = levels.map((l) => {
-    const m = new Map<string, RVertical>();
-    for (const v of verticalsOf(l.ir)) if (!m.has(v.id)) m.set(v.id, v);
-    return m;
-  });
-  const neighbours = levels.map((l, i) => {
-    const m = new Map<string, ShaftNeighbours>();
-    for (const id of firstRuns[i]!.keys()) {
-      if (!peerIds.has(id)) continue;
-      const n: ShaftNeighbours = {};
-      for (let j = i - 1; j >= 0 && !n.below; j--) {
-        const run = firstRuns[j]!.get(id);
-        if (run) n.below = { level: levels[j]!.level, run };
-      }
-      for (let j = i + 1; j < levels.length && !n.above; j++) {
-        const run = firstRuns[j]!.get(id);
-        if (run) n.above = { level: levels[j]!.level, run };
-      }
-      m.set(id, n);
-    }
-    return { level: l.level, m };
-  });
-  const out = new Map<number, BuildingContext>();
-  // One re-measure budget for the whole building, not one per storey.
-  const attributionMeasures = { left: MAX_ATTRIBUTION_MEASURES, storeys: levels.length };
-  for (const l of levels) {
-    out.set(l.level, {
-      multiStorey: true,
-      storeyCount: levels.length,
-      verticalPeerIds: peerIds,
-      arrivalRooms: reach.arrivalRooms.get(l.level) ?? [],
-      arrivalShafts: runs.get(l.level) ?? [],
-      attributionMeasures,
-      ...(fromBelow.has(l.level) ? { enteredFromBelow: true } : {}),
-      // Levels arrive ascending, so the first is the lowest.
-      ...(l === levels[0] ? { lowestStorey: true as const } : {}),
-      shaftNeighbours: neighbours.find((x) => x.level === l.level)!.m,
-    });
-  }
-  return out;
 }
 
 /** Fold the ordered rule list over one resolved plan (one storey, or the whole plan). */
