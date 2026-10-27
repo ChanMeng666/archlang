@@ -159,10 +159,9 @@ describe("validate · next tiers through the CLI", () => {
     }
   });
 
-  // The PS7.8 arm-1 plans, copied from PR #309's `audits/first-contact-plans/2026-10-27-rerun-arm1/`
-  // (unmerged when PS7.10 landed); read them from there once it is on main.
+  // The PS7.8 re-measure's arm-1 plans (`audits/2026-10-27-first-contact-rerun-ps78.md`).
   it("PS7.10: the arm-1 house's next is the master door's swing, not the fridge/sink overlap emitted first", () => {
-    const plan = "test/next-ps78-plans/arm1-2-house.arch";
+    const plan = "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/2-house.arch";
     for (const stage of [[], ["--stage", "fixtures"], ["--stage", "drafting"]]) {
       const argv = [plan, "--json", ...stage];
       const out = JSON.parse(runValidate(argv).stdout);
@@ -174,7 +173,7 @@ describe("validate · next tiers through the CLI", () => {
   });
 
   it("PS7.10: the arm-1 townhouse's next is a stair code, not the missing hob emitted first", () => {
-    const plan = "test/next-ps78-plans/arm1-5-townhouse.arch";
+    const plan = "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/5-townhouse.arch";
     for (const stage of [[], ["--stage", "fixtures"], ["--stage", "drafting"]]) {
       const argv = [plan, "--json", ...stage];
       const out = JSON.parse(runValidate(argv).stdout);

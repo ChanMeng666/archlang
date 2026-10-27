@@ -427,7 +427,6 @@ PS5.1b: PR #247, 9cc29c7e)
   over the tracked `.arch` files × plain + 6 `--stage` values is listed with a reason, and the moved
   set stays small (a full "earlier stage first" rule moved 165 runs over 55 plans and was not taken).
 - As built: `src/next.ts` `yieldsTo`/`firstValidity`; the arm-1 house's `next` is `W_SWING_OBSTRUCTED`
-  on `double_bed`, the townhouse's `W_STAIR_NO_LANDING` (plain and `--stage fixtures|drafting`); 36
-  of 2,919 runs moved (12 plans × plain, `fixtures`, `drafting`), each from a fixtures finding to a
-  stair code or swing shortfall; no digest pin moved. Tests read the two plans from
-  `test/next-ps78-plans/` until #309 lands.
+  on `double_bed`, the townhouse's `W_STAIR_NO_LANDING` (plain and `--stage fixtures|drafting`); 42
+  of 3,003 runs moved (429 tracked `.arch` × plain + 6 stages; 14 plans × plain, `fixtures`,
+  `drafting`), each from a fixtures finding to a stair code or swing shortfall; no digest pin moved.
