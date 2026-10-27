@@ -142,7 +142,7 @@ describe("preview --review: clean plans, storeys and the corpus", () => {
     // Three placed ensuites raise one message from one component span; the hint's door places each.
     // `r_linen` rings the walk to the linen cupboard (the 700 mm doors of the villa before
     // fix/examples-sound, which also gave each bedroom its own suite).
-    expect(ringed).toEqual(["en2.room", "en_m.room", "en_b2.room", "r_linen"]);
+    expect(ringed).toEqual(["en2.room", "en_b2.room", "en_m.room", "r_linen"]);
     expect(sheetOf(source, 1).marks.some((m) => m.code === "W_PATH_TOO_NARROW")).toBe(false);
     expect(buildReviewSheet(source, { level: 9 })).toEqual({ kind: "badLevel", levels: [1, 2] });
   });

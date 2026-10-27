@@ -1331,25 +1331,13 @@
       "room_type": "Storage"
     },
     {
-      "id": "r_play",
-      "label": "Playroom",
-      "uses": [],
-      "room_type": "Room"
+      "id": "r_studio",
+      "label": "Studio",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
     },
     {
       "id": "en2.room",
-      "label": "Ensuite",
-      "uses": ["bath"],
-      "room_type": "Bathroom"
-    },
-    {
-      "id": "r_master",
-      "label": "Master Suite",
-      "uses": ["bedroom"],
-      "room_type": "MasterRoom"
-    },
-    {
-      "id": "en_m.room",
       "label": "Ensuite",
       "uses": ["bath"],
       "room_type": "Bathroom"
@@ -1362,6 +1350,24 @@
     },
     {
       "id": "en_b2.room",
+      "label": "Ensuite",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_dress",
+      "label": "Dressing",
+      "uses": ["storage"],
+      "room_type": "Storage"
+    },
+    {
+      "id": "r_master",
+      "label": "Master Suite",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "en_m.room",
       "label": "Ensuite",
       "uses": ["bath"],
       "room_type": "Bathroom"
