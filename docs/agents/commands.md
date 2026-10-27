@@ -85,6 +85,9 @@ Auto-merge (option A of `docs/plans/ci-throughput.md`); nothing waits for CI or 
 2. `gh pr merge <n> --auto --merge --match-head-commit <full 40-character sha>`: GitHub merges (a merge
    commit; a squash or rebase re-creates allowlisted gitleaks lines) once the seven required checks
    pass, and deletes the branch. A later push voids the pin: re-review, re-run step 2.
+   A PR already green and in clean status refuses `--auto` ("clean status"): merge it directly,
+   `gh pr merge <n> --merge --match-head-commit <full sha>`. After `gh pr merge --disable-auto` and a
+   new push, re-run step 2.
 3. PRs touching the same records (`CHANGELOG.md` `[Unreleased]`, handoff, cards) are STACKED: the next
    branches from the previous PR's head and, once that merges, runs `gh pr update-branch <n>` (or
    merges `main`); the coordinator re-pins. Independent PRs run in parallel.
