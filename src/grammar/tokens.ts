@@ -183,6 +183,9 @@ export const KEYWORDS = {
     "stacked",
     "levels",
     "fixed",
+    // `wall … status existing|demolish|new` and `walls from rooms … status <s>` (preview-and-remodel
+    // B3a): leads the clause; its values (`WALL_STATUSES`) are in `enum`.
+    "status",
   ],
   /** Enum value keywords → `constant.language`, CM `atom`. */
   enum: [
@@ -296,8 +299,22 @@ export const KEYWORDS = {
     "hard",
     "soft",
     "advisory",
+    // The wall statuses (`WALL_STATUSES`): values, so they sit here.
+    "existing",
+    "demolish",
+    "new",
   ],
 } as const;
+
+/**
+ * `wall … status <s>` / `walls from rooms … status <s>` (preview-and-remodel B3a): what becomes of
+ * the wall in a remodel. `existing` and `new` are walls like any other; a `demolish` wall is drawn
+ * (B3b will dash it) but encloses nothing, hosts nothing and counts in no area. Absent, a wall is
+ * `existing`. The one list the parser, the printer, Plan JSON, the GBNF and the spec read.
+ */
+export const WALL_STATUSES = ["existing", "demolish", "new"] as const;
+/** One of {@link WALL_STATUSES}. */
+export type WallStatus = (typeof WALL_STATUSES)[number];
 
 /**
  * Door clause value sets — the ONE source for the `hinge` / `swing` / `slide`

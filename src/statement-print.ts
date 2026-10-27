@@ -171,6 +171,9 @@ export function statementText(s: LeafStatement): Doc {
       // `fmt` stays a fixed point. Dropping it would silently return a 2200 parapet as a
       // full-height wall.
       if (s.height !== undefined) head += ` height ${exprStr(s.height)}`;
+      // `status` (B3a) follows `height`, as the parser reads it; dropping it would return a
+      // demolished wall as a standing one.
+      if (s.status !== undefined) head += ` status ${s.status}`;
       // A pairwise form (ADR 0028 §4) stands where the point list would.
       if (s.relation) {
         return s.relation.kind === "between"
@@ -306,8 +309,8 @@ export function statementText(s: LeafStatement): Doc {
           ),
         ];
         return `walls from rooms exterior ${exprStr(s.exterior)} partition ${exprStr(s.partition)}${
-          body.length > 0 ? ` { ${body.join(" ")} }` : ""
-        }`;
+          s.status !== undefined ? ` status ${s.status}` : ""
+        }${body.length > 0 ? ` { ${body.join(" ")} }` : ""}`;
       }
     case "let":
       return s.value.t === "fnlit"

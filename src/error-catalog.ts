@@ -501,6 +501,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Lower the `head` to the wall's height (the fix does exactly that), or raise the wall with `wall … height`.",
     "wall id=w1 exterior thickness 200 height 2200 { (0,0) (4000,0) close }\n  door id=d on w1 at 50% width 900 head 2400   # error: head above a 2200 wall",
   ),
+  E_OPENING_ON_DEMOLISHED_WALL: E(
+    "E_OPENING_ON_DEMOLISHED_WALL",
+    "A door, window or opening stands in a wall marked `status demolish`.",
+    "A `wall … status demolish` (or a `walls from rooms … status demolish` statement) is a wall the remodel takes out: it is drawn, but it encloses nothing, hosts nothing and counts in no area. A `door`/`window`/`opening` hosted on it would stand in a wall that is no longer there, so the plan contradicts itself.",
+    "Remove the opening (it goes with the wall), host it on a wall that stays, or keep the wall: `status existing` (or no `status` at all).",
+    "wall id=p partition thickness 100 status demolish { (4000,0) (4000,5000) }\n  door id=d on p at 50% width 800   # error: the wall is being demolished",
+  ),
   // ---- ground surfaces, fences and the lot line ------------------------
   E_OUTDOOR_SIZE: E(
     "E_OUTDOOR_SIZE",

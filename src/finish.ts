@@ -42,7 +42,7 @@ import type { Span } from "./diagnostics.js";
 import { escapeStr } from "./expr-source.js";
 import { Data } from "./fix-apply.js";
 import { type FurnishCodes, furnishStage, gainedCodes } from "./furnish.js";
-import { type ResolvedPlan, type RFurniture, type ROutdoor, type RRoom, sheetExtents } from "./ir.js";
+import { drawnView, type ResolvedPlan, type RFurniture, type ROutdoor, type RRoom, sheetExtents } from "./ir.js";
 import { lex, type Token } from "./lexer.js";
 import { ADVISORY_CODE_PROFILES, LINT_PROFILES, lint } from "./lint.js";
 import { fmt3 } from "./num-format.js";
@@ -303,7 +303,9 @@ interface Measured {
   multiStorey: boolean;
 }
 
-function measure(storeys: ResolvedPlan[], multiStorey: boolean, registry: Registry): Measured {
+function measure(plans: ResolvedPlan[], multiStorey: boolean, registry: Registry): Measured {
+  // The sheet is fitted to the storeys as drawn (B3a: a `status demolish` wall is drawn).
+  const storeys = plans.map(drawnView);
   const building = { w: 0, h: 0 };
   const drawn = { w: 0, h: 0 };
   for (const ir of storeys) {

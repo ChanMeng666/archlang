@@ -510,8 +510,9 @@ export const perRoomRules: LintRule = {
         });
       }
 
-      // No door or opening on its perimeter, so it can't be entered.
-      if (!connectors.some((c) => onEdge(c.at))) {
+      // No door or opening on its perimeter, so it can't be entered (a run a demolished wall
+      // leaves open is a way in, B3a).
+      if (!connectors.some((c) => onEdge(c.at)) && !ctx.openRuns.some((c) => onEdge(c.at))) {
         out.push({
           severity: "warning",
           code: "W_ROOM_DISCONNECTED",

@@ -98,6 +98,7 @@ import { keepResultsOf } from "./ir.js";
 import type { ComponentDef, FurnitureAnchor, FurnitureNode, FurniturePlace, PlanNode, Statement } from "./ast.js";
 import type { Span } from "./diagnostics.js";
 import type { Expr } from "./expr.js";
+import { openRunsOf } from "./analyze.js";
 
 /** Intrusion (mm) past which a piece counts as colliding with a wall — mirrors lint. */
 const SLACK_MM = 30;
@@ -1576,7 +1577,7 @@ function repairStorey(
   const minPathClear = DEFAULT_RULESET.minPathClearWidthMm;
   const roomEls = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const openingEls = ir.elements.filter((e): e is ROpening => e.kind === "opening");
-  const access = buildDoorAccessGraph(roomEls, doors, DEFAULT_TOL, undefined, openingEls);
+  const access = buildDoorAccessGraph(roomEls, doors, DEFAULT_TOL, undefined, openingEls, openRunsOf(ir, DEFAULT_TOL));
   // Furniture NOT under repair's control (against-wall / scripted / expression-placed)
   // stays put; the movable pieces contribute their live position instead.
   const staticFurniture = occupants.filter((o) => !o.piece).map((o) => irFurniture[o.ord]!);

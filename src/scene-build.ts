@@ -10,7 +10,15 @@
  */
 
 import type { CompileOptions } from "./types.js";
-import type { ResolvedPlan, ROutdoor, RRoom, RDim, RFurniture, RVoid } from "./ir.js";
+import {
+  drawnView,
+  type ResolvedPlan,
+  type ROutdoor,
+  type RRoom,
+  type RDim,
+  type RFurniture,
+  type RVoid,
+} from "./ir.js";
 import type { RenderCtx, Registry, Runtime } from "./registry.js";
 import { BUILTIN_RUNTIME } from "./registry.js";
 import type { RenderSizes, Scene, SceneNode, SceneSheet } from "./scene.js";
@@ -741,7 +749,10 @@ export function planTheme(ir: ResolvedPlan, opts: CompileOptions, runtime: Runti
  * (`toScene(resolve(ast).ir)`) takes that budget on, and 500 escalators at the tread cap
  * drawn this way make 1.1 million nodes and about 240 MB. Use `compile().scene`.
  */
-export function toScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Runtime = BUILTIN_RUNTIME): Scene {
+export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: Runtime = BUILTIN_RUNTIME): Scene {
+  // The storey as drawn (B3a): a `status demolish` wall is drawn exactly as any wall until B3b
+  // draws its status, so the sheet reads every wall, never the plan after the demolition.
+  const ir = drawnView(plan);
   const registry = runtime.registry;
 
   // Theme cascade (later wins): default → named base → plan `theme{}` overrides →

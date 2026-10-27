@@ -58,7 +58,7 @@ import type {
   ResolvedPlan,
   ResolvedElement,
 } from "./ir.js";
-import { instanceBodiesOf, keepResultsOf } from "./ir.js";
+import { drawnView, instanceBodiesOf, keepResultsOf } from "./ir.js";
 import type { Diagnostic } from "./diagnostics.js";
 import type {
   DoorEnumClause,
@@ -68,6 +68,7 @@ import type {
   DoorSwingBuilding,
   DoorSwingDir,
   TitleField,
+  WallStatus,
 } from "./grammar/tokens.js";
 import {
   DOOR_ENUMS,
@@ -76,6 +77,7 @@ import {
   DOOR_SWING_BUILDING,
   enumList,
   TITLE_FIELDS,
+  WALL_STATUSES,
 } from "./grammar/tokens.js";
 import { parse } from "./parser.js";
 import { isDrawableHeight, isPlacedHeight, MAX_HEIGHT } from "./datum.js";
@@ -92,6 +94,7 @@ import {
 import { verticalConnections } from "./vertical.js";
 import { SEGMENT_SELECT_RE } from "./segment-select.js";
 import { DEFAULT_MATERIAL } from "./hatches.js";
+import { openRunsOf } from "./analyze.js";
 
 // ---------------------------------------------------------------------------
 // Room-type mapping (uses ⇄ RPLAN-style room_type) — ONE source of truth.
@@ -274,6 +277,8 @@ export interface WallsFromRoomsJson {
   open?: Array<{ between: [string, string]; id?: string; width?: number }>;
   /** `between A and B thickness t` clauses. */
   between?: Array<{ between: [string, string]; thickness: number }>;
+  /** `status <s>` (B3a): the status of every wall the statement derives. Only when written. */
+  status?: WallStatus;
 }
 
 export interface WallJson extends InstanceMark {
@@ -295,6 +300,13 @@ export interface WallJson extends InstanceMark {
    * before this layer is byte-identical; honoured on input.
    */
   height?: number;
+  /**
+   * `status existing|demolish|new` (preview-and-remodel B3a): what becomes of the wall in a
+   * remodel. Emitted only when the source writes it, and honoured on input; absent is `existing`.
+   * A `demolish` wall is listed here (it is drawn) but encloses nothing, hosts nothing and counts
+   * in no area, so it is in no `edges`/`input_graph` fact as a wall.
+   */
+  status?: WallStatus;
   /** Whether the polyline closes into a loop. */
   closed?: boolean;
   /** Hatch material (omitted when the default poché). */
@@ -665,14 +677,17 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL, carr
   const heights = ir._heightsAuthored;
 
   // Authored walls only: a derived wall is exported as the statement that derives it.
-  const walls: WallJson[] = ir.walls
-    .filter((w) => w._derived === undefined)
+  // The walls as drawn (B3a): a `status demolish` wall is listed with its status, though no
+  // analysis below reads it.
+  const walls: WallJson[] = drawnView(ir)
+    .walls.filter((w) => w._derived === undefined)
     .map((w: RWall) => ({
       id: w.id,
       category: w.category,
       points: w.points.map((p) => ({ x: p.x, y: p.y })),
       thickness: w.thickness,
       ...(heights ? { height: w.height } : {}),
+      ...(w.status !== undefined ? { status: w.status } : {}),
       closed: w.closed,
       ...(w.material !== DEFAULT_MATERIAL ? { material: w.material } : {}),
       ...(w.material !== DEFAULT_MATERIAL && w.hatchScale !== 1 ? { material_scale: w.hatchScale } : {}),
@@ -687,6 +702,7 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL, carr
         partition: stmt.partition,
         ...(stmt.except.length > 0 ? { except: [...stmt.except] } : {}),
         ...pairsJson(stmt),
+        ...(stmt.status !== undefined ? { status: stmt.status } : {}),
       }
     : undefined;
 
@@ -808,7 +824,7 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL, carr
   const roomTypes: RoomType[] = [];
   for (const rm of rooms) if (!roomTypes.includes(rm.room_type)) roomTypes.push(rm.room_type);
   const totalArea = r2(rooms.reduce((s, rm) => s + (rm.area ?? 0), 0));
-  const access = buildDoorAccessGraph(roomEls, doorEls, tol, undefined, openingEls);
+  const access = buildDoorAccessGraph(roomEls, doorEls, tol, undefined, openingEls, openRunsOf(ir, tol));
 
   const out: PlanJson = {
     version: 1,
@@ -982,7 +998,7 @@ function carryInstances(ir: ResolvedPlan): CarriedInstances | { refusal: Diagnos
  *  (they carry no `_instance`, so their relational clauses are kept as written). */
 function bodyJson(ir: ResolvedPlan, local: readonly ResolvedElement[]): PlanBodyJson {
   const walls = local.filter((e): e is RWall => e.kind === "wall" && e.points.length > 0);
-  const j = resolvedToJson({ ...ir, elements: [...local], walls, instances: undefined });
+  const j = resolvedToJson({ ...ir, elements: [...local], walls, drawn: undefined, instances: undefined });
   return {
     rooms: j.rooms,
     walls: j.walls,
@@ -1262,6 +1278,13 @@ function validateWall(w: unknown, path: string, val: Validator): void {
   // A VERTICAL height, not a plan extent — see `WallJson.height`.
   if (w.height !== undefined && !(isNum(w.height) && isDrawableHeight(w.height)))
     val.err(`${path}/height`, `expected a number greater than 0 and no more than ${MAX_HEIGHT}`);
+  validateWallStatus(w.status, `${path}/status`, val);
+}
+
+/** A wall's `status` (B3a), when present: one of {@link WALL_STATUSES}. */
+function validateWallStatus(v: unknown, path: string, val: Validator): void {
+  if (v !== undefined && !(isStr(v) && (WALL_STATUSES as readonly string[]).includes(v)))
+    val.err(path, `expected ${enumList(WALL_STATUSES)}`);
 }
 
 /** The pair clauses of a `walls from rooms` statement, as Plan JSON (absent when none). */
@@ -1290,6 +1313,7 @@ function validateWallsFromRooms(w: unknown, path: string, val: Validator): void 
   for (const k of ["exterior", "partition"] as const) {
     if (!(isNum(w[k]) && (w[k] as number) > 0)) val.err(`${path}/${k}`, "expected a number greater than 0");
   }
+  validateWallStatus(w.status, `${path}/status`, val);
   if (w.except !== undefined) {
     if (!Array.isArray(w.except)) val.err(`${path}/except`, "expected an array of room ids");
     else
@@ -1595,6 +1619,8 @@ function emitRows(p: PlanBodyJson, L: string[]): void {
     }
     // Last before the body, the grammar's own order.
     if (typeof w.height === "number") parts.push(`height ${num(w.height)}`);
+    // Then `status` (B3a), the grammar's own order.
+    if (typeof w.status === "string") parts.push(`status ${w.status}`);
     const pts = (w.points ?? []).map((pt) => `(${num(pt.x)},${num(pt.y)})`).join(" ");
     parts.push(`{ ${pts}${w.closed ? " close" : ""} }`);
     L.push(parts.join(" "));
@@ -1613,7 +1639,8 @@ function emitRows(p: PlanBodyJson, L: string[]): void {
       ...(s.between ?? []).map((c) => `between ${c.between[0]} and ${c.between[1]} thickness ${num(c.thickness)}`),
     ];
     const ex = body.length > 0 ? ` { ${body.join(" ")} }` : "";
-    L.push(`  walls from rooms exterior ${num(s.exterior)} partition ${num(s.partition)}${ex}`);
+    const status = typeof s.status === "string" ? ` status ${s.status}` : "";
+    L.push(`  walls from rooms exterior ${num(s.exterior)} partition ${num(s.partition)}${status}${ex}`);
   }
 
   for (const r of (p.rooms ?? []).filter(own)) {
@@ -1907,7 +1934,13 @@ export function checkGraph(source: string, intent: Record<string, string[]>, opt
     const pr = p.elements.filter((e): e is RRoom => e.kind === "room");
     const pd = p.elements.filter((e): e is RDoor => e.kind === "door");
     const po = p.elements.filter((e): e is ROpening => e.kind === "opening");
-    const graph = buildInputGraph(pr, pd, po);
+    const graph = buildInputGraph(
+      pr,
+      pd,
+      po,
+      DEFAULT_TOL,
+      buildDoorAccessGraph(pr, pd, DEFAULT_TOL, undefined, po, openRunsOf(p, DEFAULT_TOL)),
+    );
     for (const a of Object.keys(graph)) for (const b of graph[a] ?? []) addActual(a, b);
   }
   if (levels.length > 0) {
@@ -2077,6 +2110,12 @@ export const PLAN_JSON_SCHEMA = {
         exterior: { type: "number", exclusiveMinimum: 0, description: "Exterior ring thickness in millimetres." },
         partition: { type: "number", exclusiveMinimum: 0, description: "Partition thickness in millimetres." },
         except: { type: "array", items: { type: "string" }, description: "Room ids left out of the derivation." },
+        status: {
+          type: "string",
+          enum: [...WALL_STATUSES],
+          description:
+            "`status existing|demolish|new`: the status of every wall the statement derives (as on a wall). Omitted when not written.",
+        },
         open: {
           type: "array",
           description:
@@ -2145,6 +2184,12 @@ export const PLAN_JSON_SCHEMA = {
             maximum: MAX_HEIGHT,
             description:
               "How tall the wall STANDS, in millimetres — a vertical height, NOT a plan extent like a room's `height`. Defaults to the plan's `storey_height` (3000). It draws nothing: a floor plan is a horizontal cut. An opening's `head` may not exceed it.",
+          },
+          status: {
+            type: "string",
+            enum: [...WALL_STATUSES],
+            description:
+              "What becomes of the wall in a remodel: `existing` (the default when omitted), `demolish` or `new`. A `demolish` wall is drawn but encloses nothing, hosts nothing (a door, window or opening in it is E_OPENING_ON_DEMOLISHED_WALL) and counts in no area; where it stood between two rooms, they are joined. Omitted when not written.",
           },
           closed: { type: "boolean", description: "Whether the polyline closes back to its first vertex." },
           material: {

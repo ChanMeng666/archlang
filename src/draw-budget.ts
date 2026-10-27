@@ -19,7 +19,14 @@
  */
 
 import type { Diagnostic, Span } from "./diagnostics.js";
-import type { RFurniture, ROutdoor, RRoom, ResolvedElement, ResolvedPlan } from "./ir.js";
+import {
+  drawnView,
+  type RFurniture,
+  type ROutdoor,
+  type RRoom,
+  type ResolvedElement,
+  type ResolvedPlan,
+} from "./ir.js";
 import type { Registry } from "./registry.js";
 import { autoDimCount } from "./scene-build.js";
 import {
@@ -91,7 +98,9 @@ const AXIS_PRIMITIVES = 3;
  * zone; a legend row is a rule, a swatch and a name, a fixture's swatch its glyph; the
  * opening tags and their schedule; the NOTES).
  */
-export function storeyPassUnits(ir: ResolvedPlan, registry: Registry): number {
+export function storeyPassUnits(plan: ResolvedPlan, registry: Registry): number {
+  // The storey as drawn: a `status demolish` wall (B3a) is drawn, so it is charged.
+  const ir = drawnView(plan);
   let n = 0;
   const dims = autoDimCount(ir);
   if (dims > 0) {
@@ -157,7 +166,7 @@ export function drawBudgetDiagnostic(
   let total = 0;
   let over: { el?: ResolvedElement; level?: number } | undefined;
   for (const s of storeys) {
-    for (const el of s.ir.elements) {
+    for (const el of drawnView(s.ir).elements) {
       total += drawUnits(el, registry);
       if (over === undefined && total > MAX_DRAW_UNITS) over = { el, level: s.level };
     }

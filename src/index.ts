@@ -126,6 +126,8 @@ export type {
   WindowSummary,
   OpeningSummary,
   HeightFacts,
+  WallStatusFacts,
+  WallStatus,
   FurnitureSummary,
   ClearFact,
   InstanceSummary,

@@ -5,8 +5,8 @@
  */
 
 import { type D4, D4_IDENTITY, fromSpelling } from "../algebra/d4.js";
-import type { AccessGraph, MainEntranceFact, RoomBox } from "../analyze.js";
-import { buildDoorAccessGraph, roomBox, roomUses } from "../analyze.js";
+import type { AccessConnector, AccessGraph, MainEntranceFact, RoomBox } from "../analyze.js";
+import { buildDoorAccessGraph, openRunsOf, roomBox, roomUses } from "../analyze.js";
 import { entranceInputs, mainEntranceOf, walkAccessGraph, walkWays } from "../analyze/entrance.js";
 import type { Diagnostic } from "../diagnostics.js";
 import { segmentsOfWall, type WallSegment } from "../geometry.js";
@@ -107,6 +107,11 @@ export interface LintContext {
   building: BuildingContext;
   /** Both doors and cased openings connect a room to its neighbours. */
   connectors: Array<RDoor | ROpening>;
+  /** The runs a `status demolish` wall leaves open between two rooms ({@link openRunsOf}, B3a):
+   *  joined in the access graph and read as a way in by the reachability rules. Empty on a plan
+   *  with no demolished wall. Not in {@link LintContext.connectors}: no door or opening rule
+   *  judges them. */
+  openRuns: AccessConnector[];
   /** Per-room extent: bbox, plus the floor ring for a `room polygon`. */
   roomRects: Map<string, RoomBox>;
   /** Every wall segment, hoisted once (several rules scan them per room/fixture). */
@@ -292,8 +297,9 @@ export function buildLintContext(
     return namingMemo;
   };
   const roomRects = new Map<string, RoomBox>(rooms.map((r) => [r.id, roomBox(r)]));
+  const openRuns = openRunsOf(ir, rules.tolMm);
   const access = (): AccessGraph =>
-    (accessMemo ??= buildDoorAccessGraph(rooms, doors, rules.tolMm, undefined, openings));
+    (accessMemo ??= buildDoorAccessGraph(rooms, doors, rules.tolMm, undefined, openings, openRuns));
   const mainOf = (): MainEntranceFact | null => {
     if (waysMemo === null) {
       const inp = entranceInputs(ir, roomRects, building.enteredFromBelow === true);
@@ -318,6 +324,7 @@ export function buildLintContext(
     voids: ir.elements.filter((e): e is RVoid => e.kind === "void"),
     building,
     connectors: [...doors, ...openings],
+    openRuns,
     roomRects,
     wallSegs: ir.walls.flatMap((w) => segmentsOfWall(w).map((s) => ({ ...s }))),
     wallOpenings: ir.walls.flatMap((w) => w.openings),

@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Wall `status existing|demolish|new` (preview-and-remodel B3a), on a `wall` (after `height`)
+  and on `walls from rooms` (after the thicknesses, for every wall it derives). It draws nothing
+  yet: a plan marking a wall `demolish` draws exactly the bytes it draws without the clause. A
+  `demolish` wall encloses nothing, hosts nothing (a door, window or opening in it is the new
+  `E_OPENING_ON_DEMOLISHED_WALL`) and counts in no net area, and where it stood between two rooms
+  the access graph, circulation and the reachability and enclosure rules join them across its run;
+  `existing` and `new` walls are walls. `describe --json` adds `wall_status` (the count by status
+  and each wall's status) only on a storey that writes one; Plan JSON carries `status` on walls
+  and on `walls_from_rooms`, in the schema. A plan that writes no `status` compiles, describes and
+  lints to the same bytes (`test/wall-status-byte-identity.test.ts`).
 - Package-root exports for downstream consumers of a resolved plan (ADR 0031): `resolvePlan` (the
   complete parse → link → resolve path; unlike `resolveAll(compile(src).ast)` it keeps imported and
   placed content), `joinWallSet` and `loopsToPolygons` (the wall joinery, with the `split` argument

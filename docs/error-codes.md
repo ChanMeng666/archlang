@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**143 errors** · **88 warnings**
+**144 errors** · **88 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -91,6 +91,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_OPENING_HOST_AMBIGUOUS`](#e_opening_host_ambiguous) | error | A relational opening's run carries more than one wall. |
 | [`E_OPENING_NIB`](#e_opening_nib) | error | A relational opening leaves too short a nib of wall at a junction; it is refused, never moved. |
 | [`E_OPENING_NO_SHARED_WALL`](#e_opening_no_shared_wall) | error | A relational opening's run carries no wall (or, on a room edge, no exterior wall). |
+| [`E_OPENING_ON_DEMOLISHED_WALL`](#e_opening_on_demolished_wall) | error | A door, window or opening stands in a wall marked `status demolish`. |
 | [`E_OPENING_WIDTH`](#e_opening_width) | error | Opening must have a positive width. |
 | [`E_OUTDOOR_POLY_DEGENERATE`](#e_outdoor_poly_degenerate) | error | An outdoor ring is degenerate, or a balcony was given one. |
 | [`E_OUTDOOR_POLY_SELF_INTERSECT`](#e_outdoor_poly_self_intersect) | error | An outdoor ring crosses itself. |
@@ -1292,6 +1293,19 @@ room id=a at (0,0) size 4000x3000
 room id=b at (4000,0) size 3000x3000
 wall id=shell exterior thickness 200 { (0,0) (7000,0) (7000,3000) (0,3000) close }
 door between a and b at 600 from start width 800   # error: no wall on x 4000
+```
+
+## E_OPENING_ON_DEMOLISHED_WALL
+
+*error* — A door, window or opening stands in a wall marked `status demolish`.
+
+**Cause.** A `wall … status demolish` (or a `walls from rooms … status demolish` statement) is a wall the remodel takes out: it is drawn, but it encloses nothing, hosts nothing and counts in no area. A `door`/`window`/`opening` hosted on it would stand in a wall that is no longer there, so the plan contradicts itself.
+
+**Fix.** Remove the opening (it goes with the wall), host it on a wall that stays, or keep the wall: `status existing` (or no `status` at all).
+
+```arch static
+wall id=p partition thickness 100 status demolish { (4000,0) (4000,5000) }
+  door id=d on p at 50% width 800   # error: the wall is being demolished
 ```
 
 ## E_OPENING_WIDTH
