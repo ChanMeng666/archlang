@@ -18,14 +18,14 @@
  * - door: closed leaves, 40 mm thick, [e, e + head]: the core's leaves for a swinging door, one
  *   panel across the jambs for every other kind (Q11, closed by default);
  * - window: a 16 mm glass pane across the jambs and a 40 × 60 mm frame (§4.3), every part kept
- *   inside its cut (on a curved host the chord's corners would cross the jambs into the body);
+ *   inside its cut; on a curved host both follow the arc from jamb face to jamb face (`cutSector`);
  * - furniture: a T0 parametric piece (`t0.ts`) fitted to its footprint for the twelve families it
  *   covers, else a grey box on the floor finish, its height a per-family default;
  * - roof: a 150 mm flat slab on the storey's ring at the top of its tallest wall, hidden (Q7, D3).
  * Stairs, outdoor surfaces and fences are not built yet (M4 and later); the ledger says so.
  */
 import type { Assumption, Level, Polygon, Pt, Scene3D } from "../scene3d/types.js";
-import { insideCut, prism, rect, slab2d } from "./extrude.js";
+import { cutSector, insideCut, prism, rect, sectorBand, slab2d } from "./extrude.js";
 import { type Rect, rectMinus, slabRegion } from "./slab.js";
 import { T0_HEIGHT_MM, t0Parts } from "./t0.js";
 import type { Mesh3D, MeshNode, NodeKind, Shell, Stage } from "./types.js";
@@ -302,7 +302,32 @@ function levelNodes(lv: Level, ledger: Assumption[], defaulted: Set<string>, isT
       const z1 = e + head;
       const fw = FRAME_WIDTH_MM * MM;
       const fd = FRAME_DEPTH_MM * MM;
-      // Every part inside the cut: on a curved host the chord's corners would cross the jambs.
+      const sector = cutSector(o.cut, o.jambs, o.centre);
+      if (sector) {
+        // A curved host (red-team round 1): the jambs lie on the tangent at the opening's centre, so
+        // a chord pane clipped to the cut ends short of the radial jamb faces and its jamb members
+        // all but vanish. The pane and the frame follow the arc from jamb face to jamb face instead,
+        // centred on the host's centreline; a jamb member spans the frame's width along the arc.
+        const band = (depth: number, f0?: number, f1?: number): Polygon =>
+          sectorBand(sector, -depth / 2, depth / 2, f0, f1);
+        const f = Math.min(0.5, fw / (sector.r * Math.abs(sector.sweep)));
+        node("window", o.id, i, [prism(band(GLASS_MM * MM), z0, z1)], extras, "glass");
+        node(
+          "window",
+          o.id,
+          i,
+          [
+            prism(band(fd, 0, f), z0, z1),
+            prism(band(fd, 1 - f, 1), z0, z1),
+            prism(band(fd), z0, z0 + fw),
+            prism(band(fd), z1 - fw, z1),
+          ],
+          extras,
+          "frame",
+        );
+        return;
+      }
+      // A straight host: every part already lies in its cut (`insideCut` keeps it as it is).
       const fit = (p: Polygon, a: number, b: number): Shell | null => {
         const q = insideCut(p, o.cut);
         return q ? prism(q, a, b) : null;

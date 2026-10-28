@@ -154,12 +154,18 @@ export const endElevation = (storeys: number): number => (storeys > 1 ? 45 : 30)
 
 /**
  * The scene's box (mm) from the payload's nodes: positions in micrometres, each node lifted by its
- * `lift` (the combined view's exploded storeys).
+ * `lift` (the combined view's exploded storeys). A demolished wall's ghost (`part` "demolish") is not
+ * the building and is left out of a fit (`timeline.ts`'s header), unless nothing else is there;
+ * `ghosts: true` keeps it, for a box that must hold everything drawn (the viewer's clip range).
  */
-export function boxOfNodes(nodes: ReadonlyArray<{ positions: readonly number[]; lift?: number }>): Box {
+export function boxOfNodes(
+  nodes: ReadonlyArray<{ positions: readonly number[]; lift?: number; part?: string }>,
+  opts: { ghosts?: boolean } = {},
+): Box {
   const lo: Vec3 = [Infinity, Infinity, Infinity];
   const hi: Vec3 = [-Infinity, -Infinity, -Infinity];
-  for (const n of nodes) {
+  const standing = opts.ghosts ? nodes : nodes.filter((n) => n.part !== "demolish");
+  for (const n of standing.length > 0 ? standing : nodes) {
     const lift = n.lift ?? 0;
     for (let i = 0; i < n.positions.length; i += 3) {
       const p: Vec3 = [
@@ -185,7 +191,7 @@ export const START_FOV = 1.5;
  * fitted for the end orbit, which `stateAt` has reached by the time of the first stop.
  */
 export function cameraStops(
-  nodes: ReadonlyArray<{ key: string; positions: readonly number[]; lift?: number }>,
+  nodes: ReadonlyArray<{ key: string; positions: readonly number[]; lift?: number; part?: string }>,
   events: readonly ReplayEvent[],
   o: Orbit,
 ): EndCamera[] {

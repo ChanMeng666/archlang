@@ -6,9 +6,10 @@
  *
  * Exact when the outline and the room are rectilinear (every edge along an axis, every coordinate
  * an integer): the room is cut into rectangles and the outline and every earlier addition are
- * subtracted, so the additions never overlap anything. Otherwise a room the outline covers adds
- * nothing, a room apart from it adds itself, and a room that crosses it adds itself whole, the
- * two solids overlapping, and the ledger says so (no boolean is guessed).
+ * subtracted, so the additions never overlap anything. Otherwise a room that one ring already in the
+ * slab covers adds nothing, a room apart from all of them adds itself, and a room that crosses any
+ * (the outline, an earlier room's rectangles, a room added whole) adds itself whole, the solids
+ * overlapping, and the ledger says so (no boolean is guessed).
  */
 import type { Assumption, Floor, Polygon, Pt, Ring3 } from "../scene3d/types.js";
 import { where } from "./extrude.js";
@@ -88,25 +89,30 @@ export function slabRegion(footprint: readonly Ring3[], floors: readonly Floor[]
   const added: Ring3[] = [];
   for (const f of floors) {
     const room = f.polygon.outer;
+    const unsplit = (): void => {
+      ledger.push({
+        kind: "slab",
+        id: f.id,
+        field: "union",
+        value: "room overlaps the outline or an earlier room: added whole",
+        provenance: "default",
+        rule: "slab-room-unsplit",
+      });
+    };
     if (exact && rectilinear(room)) {
       let pieces = rectsOf(room);
       for (const t of taken) pieces = pieces.flatMap((p) => rectMinus(p, t));
       taken = [...taken, ...pieces];
       for (const p of pieces) out.push(rectPolygon(p));
+      // Exact against every rectangle; an earlier room added whole is not one of them.
+      if (!pieces.every((p) => apart(rectPolygon(p).outer, added))) unsplit();
       continue;
     }
-    const others = [...footprint, ...added];
+    // Against everything already in the slab: the outline, the rooms added whole and the exact
+    // rectangles (red-team round 1: a room over an earlier room's rectangles was added unledgered).
+    const others = [...footprint, ...added, ...taken.map((t) => rectPolygon(t).outer)];
     if (covered(room, others)) continue;
-    if (!apart(room, others)) {
-      ledger.push({
-        kind: "slab",
-        id: f.id,
-        field: "union",
-        value: "room overlaps the outline: added whole",
-        provenance: "default",
-        rule: "slab-room-unsplit",
-      });
-    }
+    if (!apart(room, others)) unsplit();
     out.push({ outer: [...room] });
     added.push(room);
   }

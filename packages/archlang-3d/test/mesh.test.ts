@@ -28,6 +28,21 @@ const corpus = EXAMPLES_LIST.map(([n, s]) => {
   return { n, r, mesh: buildMesh(r.scene) };
 });
 
+/**
+ * A demolished partition butting the shell where a window is cut (red-team round 1): untrimmed, its
+ * ghost ran half a thickness past the shell's centreline and stood in the window. V-GEO-04 probes it.
+ */
+const GHOST_IN_OPENING = `plan "g" { units mm grid 50
+  wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+  wall id=x1 partition thickness 100 status demolish { (3000,0) (3000,6000) }
+  room id=r at (0,0) size 8000x6000 label "R"
+  window id=win on shell at 3000 width 1800
+}`;
+const ghostProbe = (() => {
+  const r = adapted(GHOST_IN_OPENING);
+  return { n: "ghost-in-opening", r, mesh: buildMesh(r.scene) };
+})();
+
 describe("Mesh3D on the shipped corpus", () => {
   it("builds every example (35)", () => {
     expect(corpus.length).toBe(35); // 35 since B3b added examples/remodel.arch
@@ -122,18 +137,21 @@ describe("Mesh3D on the shipped corpus", () => {
     const blocked: string[] = [];
     const notSolid: string[] = [];
     let probes = 0;
-    for (const { n, r, mesh } of corpus) {
+    for (const { n, r, mesh } of [...corpus, ghostProbe]) {
       for (const lv of r.scene.levels) {
-        // A demolished wall's ghost is not structure: it blocks no opening and holds no lintel.
-        const walls = mesh.nodes.filter((x) => x.level === lv.level && x.kind === "wall" && x.part !== "demolish");
+        // A demolished wall's ghost holds no lintel, but it must not stand in an opening either: it is
+        // trimmed to the standing walls (red-team round 1), so it counts for `blocked`.
+        const all = mesh.nodes.filter((x) => x.level === lv.level && x.kind === "wall");
+        const walls = all.filter((x) => x.part !== "demolish");
         const solidAt = (p: V3): boolean => walls.some((w) => w.shells.some((s) => inside(s, p)));
+        const anyAt = (p: V3): boolean => all.some((w) => w.shells.some((s) => inside(s, p)));
         for (const o of lv.openings) {
           const host = lv.walls.find((w) => w.id === o.host);
           if (!host) continue;
           const [x, z] = o.centre;
           probes++;
           const mid = lv.elevation + Math.round((o.sill + Math.min(o.head, host.height)) / 2);
-          if (solidAt([x, mid, z])) blocked.push(`${n} ${o.id}`);
+          if (anyAt([x, mid, z])) blocked.push(`${n} ${o.id}`);
           if (o.head < host.height - 50_000) {
             const y = lv.elevation + Math.round((o.head + host.height) / 2);
             if (!solidAt([x, y, z])) notSolid.push(`${n} ${o.id} lintel`);

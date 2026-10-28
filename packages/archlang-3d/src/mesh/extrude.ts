@@ -249,3 +249,109 @@ export function insideCut(poly: Polygon, ring: readonly Pt[]): Polygon | null {
   if (poly.outer.every((p) => where(p, ring) !== false)) return poly;
   return clipToConvex(ring, poly.outer);
 }
+
+/**
+ * An opening's cut on a CURVED host, read back from its plan ring: the core's cut there is an
+ * annular sector bounded by two RADIAL jamb faces (`openingCut`, `src/geometry/band.ts`). `c` is the
+ * arc's centre (where the two jamb faces' lines meet), `r` the radius through the faces' midpoints
+ * (the host's centreline), `t0` the angle of the face at `jambs[0]` and `sweep` the signed angle to
+ * the face at `jambs[1]`, through the opening's centre; `steps` is how many chords the cut's longer
+ * arc was tessellated into. `null` for a straight host (a four-corner cut) or anything this does not
+ * recognise, where the chord between the jambs already runs between the jamb faces.
+ */
+export interface CutSector {
+  c: Pt;
+  r: number;
+  t0: number;
+  sweep: number;
+  steps: number;
+}
+
+const TAU = 2 * Math.PI;
+/** `x` mod 2π, in [0, 2π). */
+const mod2pi = (x: number): number => ((x % TAU) + TAU) % TAU;
+
+export function cutSector(cut: readonly Pt[], jambs: readonly [Pt, Pt], centre: Pt): CutSector | null {
+  const ring = clean(cut);
+  if (!ring || ring.length <= 4) return null;
+  const n = ring.length;
+  // The four corners turn by about a right angle; a tessellated arc's vertices by a chord's angle.
+  const turn = ring.map((p, i) => {
+    const a = ring[(i + n - 1) % n] as Pt;
+    const b = ring[(i + 1) % n] as Pt;
+    const u = [p[0] - a[0], p[1] - a[1]];
+    const v = [b[0] - p[0], b[1] - p[1]];
+    return Math.abs(
+      Math.atan2(
+        (u[0] as number) * (v[1] as number) - (u[1] as number) * (v[0] as number),
+        (u[0] as number) * (v[0] as number) + (u[1] as number) * (v[1] as number),
+      ),
+    );
+  });
+  const corners = turn
+    .map((t, i) => [t, i] as const)
+    .sort((a, b) => b[0] - a[0] || a[1] - b[1])
+    .slice(0, 4)
+    .map(([, i]) => i)
+    .sort((a, b) => a - b);
+  // The four corner-to-corner paths: their chords and how many edges each has.
+  const paths = corners.map((ci, k) => {
+    const cj = corners[(k + 1) % 4] as number;
+    return { a: ring[ci] as Pt, b: ring[cj] as Pt, edges: (cj - ci + n) % n };
+  });
+  const mid = (p: { a: Pt; b: Pt }): Pt => [(p.a[0] + p.b[0]) / 2, (p.a[1] + p.b[1]) / 2];
+  const d = (p: Pt, q: Pt): number => Math.hypot(p[0] - q[0], p[1] - q[1]);
+  // The jamb faces are two opposite paths: the pair whose midpoints lie nearest the jambs.
+  let best: { cost: number; f0: { a: Pt; b: Pt }; f1: { a: Pt; b: Pt }; arcs: number } | null = null;
+  for (const [i, j] of [
+    [0, 2],
+    [1, 3],
+  ] as const) {
+    const [p, q] = [paths[i], paths[j]] as [(typeof paths)[number], (typeof paths)[number]];
+    const arcs = Math.max(
+      (paths[(i + 1) % 4] as (typeof paths)[number]).edges,
+      (paths[(j + 1) % 4] as (typeof paths)[number]).edges,
+    );
+    const straight = d(mid(p), jambs[0]) + d(mid(q), jambs[1]);
+    const swapped = d(mid(q), jambs[0]) + d(mid(p), jambs[1]);
+    const cand = straight <= swapped ? { cost: straight, f0: p, f1: q, arcs } : { cost: swapped, f0: q, f1: p, arcs };
+    if (!best || cand.cost < best.cost) best = cand;
+  }
+  if (!best) return null;
+  // The centre: where the two radial faces' lines meet.
+  const { f0, f1 } = best;
+  const u = [f0.b[0] - f0.a[0], f0.b[1] - f0.a[1]] as const;
+  const v = [f1.b[0] - f1.a[0], f1.b[1] - f1.a[1]] as const;
+  const den = u[0] * v[1] - u[1] * v[0];
+  if (Math.abs(den) <= 1e-9 * Math.hypot(...u) * Math.hypot(...v)) return null;
+  const s = ((f1.a[0] - f0.a[0]) * v[1] - (f1.a[1] - f0.a[1]) * v[0]) / den;
+  const c: Pt = [f0.a[0] + s * u[0], f0.a[1] + s * u[1]];
+  const m0 = mid(f0);
+  const m1 = mid(f1);
+  const r = (d(m0, c) + d(m1, c)) / 2;
+  const t0 = Math.atan2(m0[1] - c[1], m0[0] - c[0]);
+  const t1 = Math.atan2(m1[1] - c[1], m1[0] - c[0]);
+  const tc = Math.atan2(centre[1] - c[1], centre[0] - c[0]);
+  // The way round from face 0 to face 1 that passes the opening's centre.
+  const ccw = mod2pi(t1 - t0);
+  const sweep = mod2pi(tc - t0) <= ccw ? ccw : ccw - TAU;
+  return { c, r, t0, sweep, steps: Math.max(1, best.arcs) };
+}
+
+/**
+ * A band of `sector`, between radii `r + d0` and `r + d1` (d0 < d1) and from fraction `f0` to `f1`
+ * of its sweep (0 = the face at `jambs[0]`), tessellated as finely as the cut's arc; whole
+ * micrometres. Its ends lie on the jamb faces' radial lines, so a pane or a frame built on it runs
+ * from jamb face to jamb face, inside the cut.
+ */
+export function sectorBand(sector: CutSector, d0: number, d1: number, f0 = 0, f1 = 1): Polygon {
+  const k = Math.max(1, Math.ceil(sector.steps * (f1 - f0)));
+  const at = (rr: number, f: number): Pt => {
+    const t = sector.t0 + sector.sweep * f;
+    return [Math.round(sector.c[0] + rr * Math.cos(t)), Math.round(sector.c[1] + rr * Math.sin(t))];
+  };
+  const outer: Pt[] = [];
+  for (let i = 0; i <= k; i++) outer.push(at(sector.r + d1, f0 + ((f1 - f0) * i) / k));
+  for (let i = k; i >= 0; i--) outer.push(at(sector.r + d0, f0 + ((f1 - f0) * i) / k));
+  return { outer };
+}

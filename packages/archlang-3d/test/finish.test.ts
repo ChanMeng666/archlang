@@ -5,7 +5,7 @@
  * wall outline less voids, and a demolished wall (B3a) drawn from `ir.drawn` as a ghost.
  */
 import { describe, expect, it } from "vitest";
-import { adaptPlan, buildMesh, type Mesh3D, type MeshNode, type Pt, slab2d, T0_FAMILIES } from "../src/index.js";
+import { adaptPlan, buildMesh, type Mesh3D, type MeshNode, type Pt, T0_FAMILIES } from "../src/index.js";
 import { openEdges, signedVolume } from "../src/node.js";
 import { EXAMPLES_LIST, STRESS_PLANS, WORLD } from "./corpus.js";
 import { inside } from "./probe.js";
@@ -183,16 +183,83 @@ describe("window parts inside their cut (a curved host)", () => {
     expect(bad).toEqual([]);
   });
 
-  it("clips hillside-villa's window on the arc bay, whose chord pane crossed the jambs", () => {
-    const { scene, mesh } = corpus.find((c) => c.n === "hillside-villa.arch") as (typeof corpus)[number];
-    const lv = scene.levels[0];
-    // The windows whose chord pane leaves the cut are those on a curved host.
-    const crossing = (lv?.openings ?? []).filter(
-      (o) => o.kind === "window" && slab2d(o.jambs[0], o.jambs[1], 16000).outer.some((p) => !inOrOn(p, o.cut)),
+  /** Plan ring of a prism shell: its bottom layer, in order. */
+  const bottom = (s: { positions: number[] }): Pt[] => {
+    const ys = s.positions.filter((_, i) => i % 3 === 1);
+    const y0 = Math.min(...ys);
+    const out: Pt[] = [];
+    for (let i = 0; i < s.positions.length / 3; i++)
+      if (s.positions[3 * i + 1] === y0) out.push([s.positions[3 * i] as number, s.positions[3 * i + 2] as number]);
+    return out;
+  };
+  const segDist = (p: Pt, a: Pt, b: Pt): number => {
+    const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
+    const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy)));
+    return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy);
+  };
+  const ringArea = (r: readonly Pt[]): number =>
+    Math.abs(
+      r.reduce((s, p, i) => s + p[0] * (r[(i + 1) % r.length] as Pt)[1] - (r[(i + 1) % r.length] as Pt)[0] * p[1], 0),
+    ) / 2;
+  /** The cut's two jamb faces, read off the ring alone: its four right-angle corners, and the two
+   *  corner-to-corner edges that are single edges as long as the wall is thick. */
+  function jambFaces(cut: readonly Pt[], thickness: number): Array<[Pt, Pt]> {
+    const n = cut.length;
+    const corner = cut.map((p, i) => {
+      const a = cut[(i + n - 1) % n] as Pt;
+      const b = cut[(i + 1) % n] as Pt;
+      const u = [p[0] - a[0], p[1] - a[1]] as const;
+      const v = [b[0] - p[0], b[1] - p[1]] as const;
+      return Math.abs(Math.atan2(u[0] * v[1] - u[1] * v[0], u[0] * v[0] + u[1] * v[1])) > Math.PI / 4;
+    });
+    const faces: Array<[Pt, Pt]> = [];
+    for (let i = 0; i < n; i++) {
+      const [a, b] = [cut[i] as Pt, cut[(i + 1) % n] as Pt];
+      if (corner[i] && corner[(i + 1) % n] && Math.abs(Math.hypot(b[0] - a[0], b[1] - a[1]) - thickness) < 10)
+        faces.push([a, b]);
+    }
+    return faces;
+  }
+  const FRAME_W = 40_000;
+
+  it("runs the glass and the frame from jamb face to jamb face on a curved host", () => {
+    const hv = corpus.find((c) => c.n === "hillside-villa.arch") as (typeof corpus)[number];
+    // A 3000 mm window on an r = 3000 mm arc: a chord pane would leave the wall altogether.
+    const synth = built(
+      'plan "s" { units mm grid 50 north up wall id=c exterior thickness 250 { (0,0) (6000,0) (6000,6000) arc (0,6000) radius 3000 ccw (0,0) close } window id=w1 on c at 15000 width 3000 }',
     );
-    expect(crossing.map((o) => o.id)).toEqual(["window_10"]);
-    const glass = mesh.nodes.find((x) => x.key === "L1/window:window_10:glass") as MeshNode;
-    expect(glass.shells.length).toBe(1);
+    const cases = [
+      { m: hv, id: "window_10" },
+      { m: synth, id: "w1" },
+    ];
+    for (const { m, id } of cases) {
+      const lv = m.scene.levels[0];
+      const o = lv?.openings.find((x) => x.id === id);
+      const host = lv?.walls.find((w) => w.id === o?.host);
+      if (!o || !host) throw new Error(`no ${id}`);
+      const faces = jambFaces(o.cut, host.thickness);
+      expect(faces.length, id).toBe(2);
+      const gap = (r: readonly Pt[], f: [Pt, Pt]): number => Math.min(...r.map((p) => segDist(p, f[0], f[1])));
+      const glass = m.mesh.nodes.find((x) => x.key === `L1/window:${id}:glass`) as MeshNode;
+      expect(glass.shells.length).toBe(1);
+      const pane = bottom(glass.shells[0] as MeshNode["shells"][number]);
+      for (const f of faces) expect(gap(pane, f), `${id} glass to a jamb face`).toBeLessThanOrEqual(FRAME_W);
+      // Every frame member keeps a positive depth: each jamb member is a whole 40 × 60 mm section
+      // against its own face, and the sill and head members run face to face.
+      const frame = m.mesh.nodes.find((x) => x.key === `L1/window:${id}:frame`) as MeshNode;
+      expect(frame.shells.length).toBe(4);
+      const rings = frame.shells.map(bottom);
+      for (const [k, r] of rings.entries()) {
+        expect(signedVolume(frame.shells[k] as MeshNode["shells"][number])).toBeGreaterThan(0);
+        expect(openEdges(frame.shells[k] as MeshNode["shells"][number])).toBe(0);
+        if (k >= 2) for (const f of faces) expect(gap(r, f)).toBeLessThanOrEqual(1000);
+      }
+      const jambs = rings.slice(0, 2);
+      for (const r of jambs) {
+        expect(ringArea(r) / 1e6, `${id} jamb member section (mm²)`).toBeGreaterThan(0.9 * 40 * 60);
+        expect(Math.min(...faces.map((f) => gap(r, f)))).toBeLessThanOrEqual(1000);
+      }
+    }
   });
 });
 
@@ -276,6 +343,21 @@ describe("the slab: rooms ∪ wall outline, less voids (plan §4.2)", () => {
     expect(under(m, 8000, 700)).toBe(false);
   });
 
+  it("ledgers a room added whole over an earlier room's slab, in either order", () => {
+    // A triangle over a terrace that lies outside the walls: neither is under the outline, and the
+    // two overlap (1.5 m²), so whichever comes second is added whole and says so.
+    const terrace = 'room id=t at (6000,1000) size 2000x2000 label "Terrace" ';
+    const tri = 'room id=tri polygon (7000,0) (9000,0) (8000,2000) label "T" ';
+    const unsplit = (body: string): Array<string | undefined> =>
+      built(plan(body))
+        .mesh.assumptions.filter((a) => a.rule === "slab-room-unsplit")
+        .map((a) => a.id);
+    expect(unsplit(terrace + tri)).toEqual(["tri"]);
+    expect(unsplit(tri + terrace)).toEqual(["t"]);
+    // Apart from each other, nothing is ledgered.
+    expect(unsplit('room id=tri polygon (7000,3000) (9000,3000) (8000,5000) label "T" ' + terrace)).toEqual([]);
+  });
+
   it("changes nothing where the outline already covers every room (the corpus)", () => {
     const rules = corpus.flatMap((c) =>
       c.mesh.assumptions.filter((a) => a.rule === "slab-room-unsplit").map(() => c.n),
@@ -312,6 +394,38 @@ describe("a demolished wall (B3a), from ir.drawn", () => {
     expect(JSON.stringify(built(without).scene.levels[0]?.walls.map((w) => [w.id, w.footprint, w.body]))).toBe(
       JSON.stringify(remodel.scene.levels[0]?.walls.map((w) => [w.id, w.footprint, w.body])),
     );
+  });
+
+  it("trims a ghost to the standing walls: it stops at their faces, never in their openings", () => {
+    const probe = (t: number) =>
+      built(`plan "g" { units mm grid 50
+        wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+        wall id=x1 partition thickness ${t} status demolish { (3000,0) (3000,6000) }
+        room id=r at (0,0) size 8000x6000 label "R"
+        window id=win on shell at 3000 width 1800 }`);
+    const m = probe(100);
+    // From the shell's inner face to its inner face (y 100…5900 mm), not half a thickness past its centreline.
+    expect(m.scene.levels[0]?.demolished?.map((w) => w.footprint)).toEqual([
+      [
+        {
+          outer: [
+            [2950000, 100000],
+            [3050000, 100000],
+            [3050000, 5900000],
+            [2950000, 5900000],
+          ],
+        },
+      ],
+    ]);
+    const ghost = m.mesh.nodes.find((x) => x.part === "demolish") as MeshNode;
+    expect(ghost.shells.some((s) => inside(s, [3000000, 1000000, 0]))).toBe(false);
+    expect(m.mesh.assumptions.filter((a) => a.rule === "wall-demolish-overlap")).toEqual([]);
+    // A ghost thicker than the shell keeps the corner the joinery gives it: measured and ledgered.
+    expect(
+      probe(300)
+        .mesh.assumptions.filter((a) => a.rule === "wall-demolish-overlap")
+        .map((a) => [a.id, a.value]),
+    ).toEqual([["x1", "ghost overlaps a thinner standing wall by 120000 mm²"]]);
   });
 
   it("adds nothing to a plan that demolishes nothing (no `demolished` key)", () => {

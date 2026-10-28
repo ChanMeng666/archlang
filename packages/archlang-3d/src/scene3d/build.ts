@@ -28,7 +28,7 @@ import { circleRing, DEFAULT_CURVE_TOL_MM, tessellateLoops } from "../curves.js"
 import { assetFor } from "../mesh/t0.js";
 import { um, umPoint } from "../units.js";
 import { type Point, wallOwnership } from "../walls/ownership.js";
-import { floorLifts, floorOverlaps } from "./overlap.js";
+import { FLOOR_OVERLAP_MIN_UM2, floorLifts, floorOverlaps, overlapArea } from "./overlap.js";
 import type {
   Assumption,
   Box,
@@ -195,27 +195,51 @@ function wallsAndOpenings(
 }
 
 /**
- * The storey's `status demolish` walls, from the plan as drawn (B3a's `ir.drawn`), joined among
- * themselves only, as the core's drawing joins them for their dashed outline (B3b): the standing
- * walls' ownership (H1) stays the plan after the demolition, so a demolished wall never takes a
- * share of a standing one. Solid, hosting nothing.
+ * The storey's `status demolish` walls, from the plan as drawn (B3a's `ir.drawn`), solid, hosting
+ * nothing. Each is TRIMMED to the standing walls (red-team round 1): the ghosts are joined with the
+ * standing walls, standing walls listed first, so at a junction the joinery's own rule gives the
+ * corner to the thicker wall and a thickness tie to the standing one, and a ghost butting a standing
+ * wall stops at its face instead of standing in its openings. The standing walls' own ownership (H1)
+ * is computed apart (`wallsAndOpenings`) and stays the plan after the demolition: a demolished wall
+ * never takes a share of a standing one. A ghost THICKER than a standing wall it meets would keep
+ * that corner; what it then overlaps of any standing wall is measured and ledgered
+ * (`wall-demolish-overlap`), never guessed away.
  */
-function demolishedOf(ir: ResolvedPlan, tol: number): Wall[] {
+function demolishedOf(ir: ResolvedPlan, standing: readonly Wall[], ledger: Assumption[], tol: number): Wall[] {
   const gone = (ir.drawn?.walls ?? []).filter((w) => w.status === "demolish");
   if (gone.length === 0) return [];
-  return wallOwnership(gone, (loops) => tessellateLoops(loops, tol)).owned.map((o) => {
+  const own = wallOwnership([...ir.walls, ...gone], (loops) => tessellateLoops(loops, tol));
+  return own.owned.slice(ir.walls.length).flatMap((o) => {
     const pieces = o.pieces.map((p) => polygon(p.outer, p.holes));
-    return {
-      id: o.wall.id,
-      source: source(o.wall),
-      category: o.wall.category,
-      material: o.wall.material,
-      footprint: pieces,
-      body: pieces,
-      height: um(o.wall.height),
-      thickness: um(o.wall.thickness),
-      cuts: [],
-    };
+    // Wholly inside thicker standing walls: nothing of it is left to show.
+    if (pieces.length === 0) return [];
+    const overlap = pieces.reduce(
+      (s, p) => s + standing.reduce((t, w) => t + w.footprint.reduce((u, q) => u + overlapArea(p, q), 0), 0),
+      0,
+    );
+    if (overlap > FLOOR_OVERLAP_MIN_UM2) {
+      ledger.push({
+        kind: "wall",
+        id: o.wall.id,
+        field: "status",
+        value: `ghost overlaps a thinner standing wall by ${Math.round(overlap / 1e6)} mm²`,
+        provenance: "default",
+        rule: "wall-demolish-overlap",
+      });
+    }
+    return [
+      {
+        id: o.wall.id,
+        source: source(o.wall),
+        category: o.wall.category,
+        material: o.wall.material,
+        footprint: pieces,
+        body: pieces,
+        height: um(o.wall.height),
+        thickness: um(o.wall.thickness),
+        cuts: [],
+      },
+    ];
   });
 }
 
@@ -236,7 +260,7 @@ function levelOf(s: Storey, ledger: Assumption[], tol: number): Level {
   const of = <K extends ResolvedElement["kind"]>(k: K): Extract<ResolvedElement, { kind: K }>[] =>
     els.filter((e): e is Extract<ResolvedElement, { kind: K }> => e.kind === k);
   const { walls, openings, footprint } = wallsAndOpenings(ir, byId, tol);
-  const demolished = demolishedOf(ir, tol);
+  const demolished = demolishedOf(ir, walls, ledger, tol);
   for (const w of demolished) {
     ledger.push({
       kind: "wall",

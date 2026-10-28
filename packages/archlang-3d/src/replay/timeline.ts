@@ -33,6 +33,14 @@
  * Considered, not built: upper storeys fading (translucent walls over a furnished floor; neither
  * storey reads cleanly) and a cutaway (it removes the storey the viewer just watched rise).
  *
+ * A demolished wall's ghost (B3a; `part` "demolish") is NOT construction (decision, red-team round 1
+ * of card A2b): it takes no place in the build order. Its footprint appears in phase 1 with its
+ * storey's walls (at the time of the standing node drawn just before it) without taking a step of
+ * its own, and it rises, translucent, across its storey's whole wall slot [a, w] in one interval,
+ * never staggered among the walls. So every standing node's event (appear, rise, rank) is the one it
+ * has in the same plan with the `status demolish` lines deleted; ghosts rank after every standing
+ * node (the table stays in authoring order). The end camera frames the standing building only (`camera.ts`, `boxOfNodes`).
+ *
  * Nothing here reads a clock or a random source: `stateAt(events, t)` is the whole state, so a
  * frame at `t` is the same frame however it was reached (`__seek`, plan §6.5).
  */
@@ -122,6 +130,9 @@ function groupOf(n: MeshNode): number {
   }
 }
 
+/** A demolished wall's ghost (B3a): not construction, so not in the build order. */
+export const isGhost = (n: Pick<MeshNode, "part">): boolean => n.part === "demolish";
+
 /** Nodes that are flat from the start and never rise (they are what the plan draws on). */
 const isFlat = (n: MeshNode): boolean => n.kind === "slab" || n.kind === "floor";
 
@@ -193,13 +204,24 @@ const lerp = (a: number, b: number, f: number): number => a * (1 - f) + b * f;
  * starts only once the storey below is fully up. A one-storey mesh has one slot: the whole rise.
  */
 export function timeline(mesh: Mesh3D): ReplayEvent[] {
-  const order = authoringOrder(mesh);
-  const visible = order.filter((n) => !n.hidden);
+  const all = authoringOrder(mesh);
+  const ghosts = all.filter(isGhost);
+  // The build order (ranks): the standing nodes in authoring order, then the ghosts (see the header).
+  // The table itself stays in authoring order.
+  const order = [...all.filter((n) => !isGhost(n)), ...ghosts];
+  const visible = order.filter((n) => !n.hidden && !isGhost(n));
   const levels = storeysOf(mesh);
   const lowest = levels[0];
   const drawn = visible.filter((n) => n.level === lowest);
   const appearStep = PHASE.drawn / Math.max(1, drawn.length);
   const appearOf = new Map(drawn.map((n, i) => [n.key, i * appearStep] as const));
+  // A ghost of the lowest storey appears with the standing node drawn just before it (0 if none).
+  let last = 0;
+  for (const n of all) {
+    if (n.hidden || n.level !== lowest) continue;
+    if (isGhost(n)) appearOf.set(n.key, last);
+    else last = appearOf.get(n.key) ?? last;
+  }
   const stagger = (list: MeshNode[], from: number, to: number): Map<string, [number, number]> => {
     const span = to - from;
     const each = list.length > 0 ? span / (list.length + 2) : 0;
@@ -242,10 +264,13 @@ export function timeline(mesh: Mesh3D): ReplayEvent[] {
     const r = wallRise.get(n.key);
     if (r) hostRise.set(`${n.level}/${n.id}`, r);
   }
-  return order.map((n, rank) => {
+  const rankOf = new Map(order.map((n, i) => [n.key, i] as const));
+  return all.map((n) => {
+    const rank = rankOf.get(n.key) as number;
     const [a, w] = slot(n.level);
     let rise: [number, number];
-    if (wallRise.has(n.key)) rise = wallRise.get(n.key) as [number, number];
+    if (isGhost(n)) rise = [a, w];
+    else if (wallRise.has(n.key)) rise = wallRise.get(n.key) as [number, number];
     else if (thingRise.has(n.key)) rise = thingRise.get(n.key) as [number, number];
     else if (n.kind === "door" || n.kind === "window")
       rise = hostRise.get(`${n.level}/${String(n.extras.host)}`) ?? [a, w];

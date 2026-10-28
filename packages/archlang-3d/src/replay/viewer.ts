@@ -194,8 +194,9 @@ function start(): void {
   const [vx, vy, vw, vh] = p.viewBox;
   const aspect = W / H;
   const { cx, cz, ow, oh } = drawingFrame(p.viewBox, aspect);
-  // The end state's box (exploded storeys included) and the camera that fills the frame with it.
-  const box = boxOfNodes(p.nodes);
+  // Everything drawn, ghosts included (exploded storeys too): the cameras' clip range. The fitted
+  // cameras (`cameraStops`) frame the standing building only.
+  const box = boxOfNodes(p.nodes, { ghosts: true });
   const lo = new Vector3(...box.lo);
   const hi = new Vector3(...box.hi);
   const top = hi.y + 1000;
