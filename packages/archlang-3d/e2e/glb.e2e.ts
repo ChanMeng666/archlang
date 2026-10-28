@@ -228,10 +228,14 @@ describe("npm pack --dry-run (the package stays private)", () => {
     ]) {
       expect(files, f).toContain(f);
     }
-    const stray = files.filter(
-      (f) => !/^(package\.json|LICENSE|README\.md|CHANGELOG\.md|THIRD_PARTY_NOTICES)$/.test(f) && !f.startsWith("src/"),
-    );
-    expect(stray).toEqual([]);
+    // Under src/ only what the package runs: its modules, its type shims and the Scene3D schema.
+    // A test, a spec, a snapshot or a fixture there would ride along in the tarball: name it here.
+    const shipped = (f: string) =>
+      /^(package\.json|LICENSE|README\.md|CHANGELOG\.md|THIRD_PARTY_NOTICES)$/.test(f) ||
+      (/^src\/[\w/.-]+\.(ts|schema\.json)$/.test(f) &&
+        !/\.(test|spec|e2e)\.ts$/.test(f) &&
+        !/(^|\/)(fixtures?|__\w+__|test|e2e)\//.test(f));
+    expect(files.filter((f) => !shipped(f))).toEqual([]);
     // Plan §8.5 L2: no binary of a GPL program rides along (Blender, IfcOpenShell are external processes).
     expect(files.filter((f) => /\.(exe|dll|so|dylib|wasm|node)$/.test(f))).toEqual([]);
   });
