@@ -16,5 +16,31 @@ export type { MixedHeightJoint, OwnedWall, Ownership, Piece, Point, Ring } from 
 export { buildMesh, FURNITURE_HEIGHT_MM } from "./mesh/build.js";
 export { prism } from "./mesh/extrude.js";
 export type { Mesh3D, MeshNode, NodeKind, Shell, Stage } from "./mesh/types.js";
-export { authoringOrder, ease, FIXTURE_FAMILIES, keyFrames, PHASE, stateAt, timeline } from "./replay/timeline.js";
-export type { NodeState, ReplayEvent, ReplayState } from "./replay/timeline.js";
+export {
+  authoringOrder,
+  EXPLODE_GAP_MM,
+  ease,
+  explodeLifts,
+  FIXTURE_FAMILIES,
+  keyFrames,
+  PHASE,
+  stateAt,
+  STOP_LEAD,
+  storeysOf,
+  timeline,
+  viewLabel,
+  viewMesh,
+} from "./replay/timeline.js";
+export type { NodeState, ReplayEvent, ReplayState, ReplayView } from "./replay/timeline.js";
+export {
+  boxOfNodes,
+  coverage,
+  END_AZIMUTH,
+  END_FOV,
+  endElevation,
+  FILL,
+  fitEndCamera,
+  corners,
+  projectBox,
+} from "./replay/camera.js";
+export type { Box, EndCamera, Orbit, Vec3 } from "./replay/camera.js";

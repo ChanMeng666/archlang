@@ -9,10 +9,11 @@ import { existsSync, mkdtempSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { compile } from "@chanmeng666/archlang";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { adaptPlan, buildMesh, keyFrames, timeline } from "../src/index.js";
 import { renderReplay, replayHtml } from "../src/node.js";
-import { EXAMPLES_LIST, WORLD } from "../test/corpus.js";
+import { main } from "../src/cli/run.js";
+import { EXAMPLES_LIST, REPO, WORLD } from "../test/corpus.js";
 
 async function replayOf(name: string, width: number, height: number) {
   const src = EXAMPLES_LIST.find(([n]) => n === name)?.[1] ?? "";
@@ -89,6 +90,87 @@ describe("replay in a browser", () => {
       const v = await renderReplay({ html, events, width: 320, height: 180, fps: 10, seconds: 2, mp4 });
       expect(v.frames).toBe(20);
       expect(statSync(mp4).size).toBeGreaterThan(1000);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+/** Runs the CLI in-process; its stdout and stderr are captured. */
+async function cli(argv: string[]): Promise<{ code: number; out: string; err: string }> {
+  let out = "";
+  let err = "";
+  const o = vi.spyOn(process.stdout, "write").mockImplementation((s) => {
+    out += String(s);
+    return true;
+  });
+  const e = vi.spyOn(process.stderr, "write").mockImplementation((s) => {
+    err += String(s);
+    return true;
+  });
+  try {
+    return { code: await main(argv), out, err };
+  } finally {
+    o.mockRestore();
+    e.mockRestore();
+  }
+}
+
+describe("archlang3d view --storey (look notes round 1)", () => {
+  const plan = (n: string) => join(REPO, "examples", n);
+
+  it("a bad --storey exits 3; a storey past the plan's names how many it has", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "archlang3d-e2e-"));
+    try {
+      const html = join(dir, "x.html");
+      for (const bad of ["0", "x", "-1", "1.5"]) {
+        const r = await cli(["view", plan("two-storey.arch"), "--replay", "-o", html, "--storey", bad]);
+        expect(r.code, bad).toBe(3);
+      }
+      const r = await cli(["view", plan("two-storey.arch"), "--replay", "-o", html, "--storey", "3"]);
+      expect(r.code).toBe(3);
+      expect(r.err).toMatch(/the plan has 2 storeys/);
+      expect(existsSync(html)).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("--json hashes the key frames of every view; a one-storey plan's two views are one", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "archlang3d-e2e-"));
+    try {
+      const html = join(dir, "x.html");
+      const two = await cli([
+        "view",
+        plan("two-storey.arch"),
+        "--replay",
+        "-o",
+        html,
+        "--size",
+        "160x90",
+        "--storey",
+        "2",
+        "--json",
+      ]);
+      expect(two.code, two.err).toBe(0);
+      const rep = JSON.parse(two.out) as {
+        view: string;
+        storeys: number;
+        keyFrames: Array<{ sha256: string }>;
+        views: Array<{ view: string; keyFrames: Array<{ label: string; sha256: string }> }>;
+      };
+      expect(rep.view).toBe("storey:2");
+      expect(rep.storeys).toBe(2);
+      expect(rep.views.map((v) => v.view)).toEqual(["all", "storey:1", "storey:2"]);
+      expect(rep.views[2]?.keyFrames).toEqual(rep.keyFrames);
+      const ends = rep.views.map((v) => v.keyFrames.find((k) => k.label === "end")?.sha256);
+      expect(new Set(ends).size).toBe(3);
+
+      const one = await cli(["view", plan("one-room.arch"), "--replay", "-o", html, "--size", "160x90", "--json"]);
+      expect(one.code, one.err).toBe(0);
+      const r1 = JSON.parse(one.out) as { views: Array<{ view: string; keyFrames: unknown[] }> };
+      expect(r1.views.map((v) => v.view)).toEqual(["all", "storey:1"]);
+      expect(r1.views[1]?.keyFrames).toEqual(r1.views[0]?.keyFrames);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

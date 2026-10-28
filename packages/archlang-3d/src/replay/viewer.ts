@@ -23,12 +23,15 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
+import { boxOfNodes, cameraPosition, END_AZIMUTH, END_FOV, type EndCamera, fitEndCamera, type Vec3 } from "./camera.js";
 import { type ReplayEvent, stateAt } from "./timeline.js";
 
 export interface ReplayNode {
   key: string;
   kind: string;
   part?: string;
+  /** The combined view's exploded storeys: how far (mm) the node is lifted; absent = 0. */
+  lift?: number;
   /** Flat `[x, y, z, …]` in micrometres, exporters' axes (X plan x, Y up, Z plan y). */
   positions: number[];
   indices: number[];
@@ -43,6 +46,8 @@ export interface ReplayPayload {
   /** The core's own drawing of the plan (light theme) and its viewBox in plan millimetres. */
   svg: string;
   viewBox: [number, number, number, number];
+  /** The end camera's elevation in degrees (`endElevation`). */
+  elevation: number;
   nodes: ReplayNode[];
   events: ReplayEvent[];
 }
@@ -96,9 +101,6 @@ const THEMES = {
  */
 const FOOTPRINT_MM = 12;
 const START_FOV = 1.5;
-const END_FOV = 30;
-const END_ELEVATION = 30;
-const END_AZIMUTH = -32;
 
 function payload(): ReplayPayload {
   const el = document.getElementById("archlang-replay-payload");
@@ -131,8 +133,6 @@ function start(): void {
 
   // Nodes in millimetres. Each node rises about its own base (its lowest point).
   const nodes = new Map<string, { g: Group; flat: number }>();
-  const lo = new Vector3(Infinity, Infinity, Infinity);
-  const hi = new Vector3(-Infinity, -Infinity, -Infinity);
   for (const n of p.nodes) {
     const pos = new Float32Array(n.positions.length);
     let base = Infinity;
@@ -148,8 +148,6 @@ function start(): void {
       pos[i] = x;
       pos[i + 1] = y - base;
       pos[i + 2] = z;
-      lo.min(new Vector3(x, y, z));
-      hi.max(new Vector3(x, y, z));
     }
     const geo = new BufferGeometry();
     geo.setAttribute("position", new BufferAttribute(pos, 3));
@@ -169,7 +167,7 @@ function start(): void {
       polygonOffsetUnits: 4,
     });
     const g = new Group();
-    g.position.y = base;
+    g.position.y = base + (n.lift ?? 0);
     g.add(new Mesh(geo, mat));
     if (n.kind !== "slab" && !glass) {
       g.add(new LineSegments(new EdgesGeometry(geo, 30), new LineBasicMaterial({ color: new Color(theme.edge) })));
@@ -186,6 +184,10 @@ function start(): void {
   const oh = ow / aspect;
   const cx = vx + vw / 2;
   const cz = vy + vh / 2;
+  // The end state's box (exploded storeys included) and the camera that fills the frame with it.
+  const box = boxOfNodes(p.nodes);
+  const lo = new Vector3(...box.lo);
+  const hi = new Vector3(...box.hi);
   const top = hi.y + 1000;
   const ortho = new OrthographicCamera(-ow / 2, ow / 2, oh / 2, -oh / 2, 1, top + 100000);
   ortho.up.set(0, 0, -1);
@@ -193,12 +195,35 @@ function start(): void {
   ortho.lookAt(cx, 0, cz);
 
   const persp = new PerspectiveCamera(START_FOV, aspect, 10, 1e9);
-  const centre = lo.clone().add(hi).multiplyScalar(0.5);
+  const orbit = { elevation: p.elevation, azimuth: END_AZIMUTH, fov: END_FOV, aspect };
+  // One framing per camera stop: stop k fills the frame with storeys 0…k (the combined view), so the
+  // lower floor fills the frame before the floor above rises over it; the last stop is the whole
+  // building. One storey: one stop.
+  const storeyOf = new Map(p.events.map((e) => [e.key, e.storey ?? 0] as const));
+  const stops = Math.max(1, ...p.events.map((e) => (e.storey ?? 0) + 1));
+  const fits: EndCamera[] = [];
+  for (let k = 0; k < stops; k++)
+    fits.push(fitEndCamera(boxOfNodes(p.nodes.filter((n) => (storeyOf.get(n.key) ?? 0) <= k)), orbit));
+  const fitAt = (stop: number): EndCamera => {
+    const k = Math.min(fits.length - 1, Math.floor(stop));
+    const a = fits[k] as EndCamera;
+    const b = fits[Math.min(fits.length - 1, k + 1)] as EndCamera;
+    const f = stop - k;
+    if (f <= 0 || a === b) return a;
+    return {
+      target: [0, 1, 2].map((i) => (a.target[i] as number) * (1 - f) + (b.target[i] as number) * f) as Vec3,
+      dist: a.dist * (1 - f) + b.dist * f,
+    };
+  };
   const size = hi.clone().sub(lo);
-  const endHeight = Math.max(size.x, size.z, size.y * 2) * 1.35;
+  const mid = lo.clone().add(hi).multiplyScalar(0.5);
   // Every point of the building lies within this of any target the camera aims at (the target moves
-  // from the drawing's centre to the building's).
-  const radius = Math.max(size.length() * 0.75 + Math.hypot(centre.x - (vx + vw / 2), centre.z - (vy + vh / 2)), 1000);
+  // from the drawing's centre to the stops' targets).
+  const reach = Math.max(...fits.map((f) => mid.distanceTo(new Vector3(...f.target))));
+  const radius = Math.max(
+    size.length() * 0.75 + reach + Math.hypot(mid.x - (vx + vw / 2), mid.z - (vy + vh / 2)),
+    1000,
+  );
   const rad = (d: number) => (d * Math.PI) / 180;
 
   const img = new Image();
@@ -217,12 +242,16 @@ function start(): void {
     }
     let cam: OrthographicCamera | PerspectiveCamera = ortho;
     if (s.tilt > 0 || s.dolly > 0) {
+      const end = fitAt(s.stop);
+      const centre = new Vector3(...end.target);
+      const endHeight = 2 * end.dist * Math.tan(rad(END_FOV) / 2);
       const fov = START_FOV + (END_FOV - START_FOV) * s.dolly;
       const height = oh + (endHeight - oh) * s.dolly;
       const dist = height / (2 * Math.tan(rad(fov) / 2));
       const target = new Vector3(cx + (centre.x - cx) * s.dolly, centre.y * s.tilt, cz + (centre.z - cz) * s.dolly);
-      const el = rad(90 - (90 - END_ELEVATION) * s.tilt);
-      const az = rad(END_AZIMUTH * s.tilt);
+      const elevation = 90 - (90 - p.elevation) * s.tilt;
+      const azimuth = END_AZIMUTH * s.tilt;
+      const el = rad(elevation);
       persp.fov = fov;
       // Near and far hug the scene, so depth precision is spent where the building is.
       persp.near = Math.max(10, dist - radius);
@@ -230,11 +259,7 @@ function start(): void {
       persp.updateProjectionMatrix();
       persp.up.set(0, 0, -1);
       if (el < rad(89.99)) persp.up.set(0, 1, 0);
-      persp.position.set(
-        target.x + dist * Math.cos(el) * Math.sin(az),
-        target.y + dist * Math.sin(el),
-        target.z + dist * Math.cos(el) * Math.cos(az),
-      );
+      persp.position.set(...cameraPosition([target.x, target.y, target.z], dist, { elevation, azimuth }));
       persp.lookAt(target);
       cam = persp;
     }
