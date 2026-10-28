@@ -332,7 +332,9 @@ export function stateAt(events: readonly ReplayEvent[], t: number): ReplayState 
     if (u > a) stop = k - 1 + (b > a ? ease((u - a) / (b - a)) : 1);
   }
   return {
-    tilt: ease((u - PHASE.rise) / (PHASE.tilted - PHASE.rise)),
+    // The tilt is done by the first stop, so every stop sees the end orbit its camera was fitted for
+    // (one storey: `first` is 1 and the tilt keeps PHASE's own timing).
+    tilt: ease((u - PHASE.rise) / (Math.min(PHASE.tilted, first) - PHASE.rise)),
     dolly: ease((u - PHASE.rise) / (first - PHASE.rise)),
     stop,
     svg,
@@ -340,7 +342,11 @@ export function stateAt(events: readonly ReplayEvent[], t: number): ReplayState 
   };
 }
 
-/** The times at which a stage first shows, for key frames: one per stage boundary, then the end. */
+/**
+ * The key frames: when each stage first shows, the drawing, the tilt, then (combined view only)
+ * each upper storey's first footprint (`storey:<n>`) and each camera stop (`stop:<n>`, storey n
+ * fully up; n is 1-based), and the end.
+ */
 export function keyFrames(events: readonly ReplayEvent[]): Array<{ label: string; t: number }> {
   const first = (s: Stage): number | undefined =>
     events
@@ -351,6 +357,20 @@ export function keyFrames(events: readonly ReplayEvent[]): Array<{ label: string
     const t = first(s);
     if (t !== undefined) out.push({ label: `stage:${s}`, t });
   }
-  out.push({ label: "drawing", t: PHASE.svgIn }, { label: "tilted", t: PHASE.tilted }, { label: "end", t: 1 });
-  return out;
+  out.push({ label: "drawing", t: PHASE.svgIn }, { label: "tilted", t: PHASE.tilted });
+  // The combined view: each camera stop (storey k fully up) and each upper storey's first footprint.
+  const ends: number[] = [];
+  const starts: number[] = [];
+  for (const e of events) {
+    if (e.storey === undefined || e.hidden) continue;
+    ends[e.storey] = Math.max(ends[e.storey] ?? 0, e.riseTo);
+    starts[e.storey] = Math.min(starts[e.storey] ?? 1, e.appear);
+  }
+  ends.forEach((t, k) => {
+    if (k >= 1) out.push({ label: `storey:${k + 1}`, t: starts[k] as number });
+    out.push({ label: `stop:${k + 1}`, t });
+  });
+  out.push({ label: "end", t: 1 });
+  // In time order (a stable sort: one storey's list is already in order, and unchanged).
+  return out.sort((a, b) => a.t - b.t);
 }

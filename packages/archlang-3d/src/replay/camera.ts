@@ -6,6 +6,8 @@
  * up × back, true up = back × right, world up +Y).
  */
 
+import type { ReplayEvent, ReplayState } from "./timeline.js";
+
 export type Vec3 = [number, number, number];
 
 export interface Box {
@@ -172,4 +174,90 @@ export function boxOfNodes(nodes: ReadonlyArray<{ positions: readonly number[]; 
     }
   }
   return { lo, hi };
+}
+
+/** The perspective camera's lens at the start of the dolly (a near-orthographic top-down view). */
+export const START_FOV = 1.5;
+
+/**
+ * One fitted camera per stop: stop k fills the frame with storeys 0…k (the combined view; a node's
+ * storey is its event's), the last stop with the whole building. One storey: one stop. Each stop is
+ * fitted for the end orbit, which `stateAt` has reached by the time of the first stop.
+ */
+export function cameraStops(
+  nodes: ReadonlyArray<{ key: string; positions: readonly number[]; lift?: number }>,
+  events: readonly ReplayEvent[],
+  o: Orbit,
+): EndCamera[] {
+  const storeyOf = new Map(events.map((e) => [e.key, e.storey ?? 0] as const));
+  const stops = Math.max(1, ...events.map((e) => (e.storey ?? 0) + 1));
+  const fits: EndCamera[] = [];
+  for (let k = 0; k < stops; k++)
+    fits.push(fitEndCamera(boxOfNodes(nodes.filter((n) => (storeyOf.get(n.key) ?? 0) <= k)), o));
+  return fits;
+}
+
+/** The fitted camera at a (fractional) stop: between two stops, a straight blend of the two. */
+export function cameraAtStop(fits: readonly EndCamera[], stop: number): EndCamera {
+  const k = Math.min(fits.length - 1, Math.floor(stop));
+  const a = fits[k] as EndCamera;
+  const b = fits[Math.min(fits.length - 1, k + 1)] as EndCamera;
+  const f = stop - k;
+  if (f <= 0 || a === b) return a;
+  return {
+    target: [0, 1, 2].map((i) => (a.target[i] as number) * (1 - f) + (b.target[i] as number) * f) as Vec3,
+    dist: a.dist * (1 - f) + b.dist * f,
+  };
+}
+
+/** The perspective camera of one frame: where it aims, from how far, with which lens and bearing. */
+export interface FrameCamera {
+  target: Vec3;
+  dist: number;
+  fov: number;
+  elevation: number;
+  azimuth: number;
+}
+
+/**
+ * The perspective camera at state `s` (the viewer's `seek`): from straight down over the drawing's
+ * centre (`cx`, `cz`; `oh` the drawing's height in the frame) it tilts to the end orbit and dollies
+ * to the fitted camera of the current stop.
+ */
+export function frameCamera(
+  s: Pick<ReplayState, "tilt" | "dolly" | "stop">,
+  fits: readonly EndCamera[],
+  view: { cx: number; cz: number; oh: number; elevation: number },
+): FrameCamera {
+  const rad1 = (d: number) => (d * Math.PI) / 180;
+  const end = cameraAtStop(fits, s.stop);
+  const endHeight = 2 * end.dist * Math.tan(rad1(END_FOV) / 2);
+  const fov = START_FOV + (END_FOV - START_FOV) * s.dolly;
+  const height = view.oh + (endHeight - view.oh) * s.dolly;
+  const dist = height / (2 * Math.tan(rad1(fov) / 2));
+  const target: Vec3 = [
+    view.cx + (end.target[0] - view.cx) * s.dolly,
+    end.target[1] * s.tilt,
+    view.cz + (end.target[2] - view.cz) * s.dolly,
+  ];
+  return {
+    target,
+    dist,
+    fov,
+    elevation: 90 - (90 - view.elevation) * s.tilt,
+    azimuth: END_AZIMUTH * s.tilt,
+  };
+}
+
+/**
+ * The first frame frames the core drawing's viewBox exactly, letterboxed as the image is: its
+ * centre (`cx`, `cz`) and the height (`oh`) and width (`ow`) it spans in the frame, in plan mm.
+ */
+export function drawingFrame(
+  viewBox: readonly [number, number, number, number],
+  aspect: number,
+): { cx: number; cz: number; ow: number; oh: number } {
+  const [vx, vy, vw, vh] = viewBox;
+  const ow = Math.max(vw, vh * aspect);
+  return { cx: vx + vw / 2, cz: vy + vh / 2, ow, oh: ow / aspect };
 }

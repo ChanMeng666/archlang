@@ -13,6 +13,9 @@ import { PerspectiveCamera, Vector3 } from "three";
 import {
   adaptPlan,
   boxOfNodes,
+  cameraStops,
+  drawingFrame,
+  frameCamera,
   buildMesh,
   corners,
   coverage,
@@ -211,6 +214,20 @@ describe("multi-storey views (D14: each storey on its own, and the storeys combi
       expect(stateAt(ev, 1).stop).toBe(levels.length - 1);
     });
 
+    it(`${name}: combined key frames sample each upper storey's start and each camera stop`, () => {
+      const ev = timeline(mesh);
+      const labels = keyFrames(ev).map((k) => k.label);
+      for (let n = 1; n <= levels.length; n++) {
+        expect(labels, name).toContain(`stop:${n}`);
+        if (n >= 2) expect(labels, name).toContain(`storey:${n}`);
+      }
+      expect(labels).not.toContain("storey:1");
+      const ts = keyFrames(ev).map((k) => k.t);
+      expect(ts).toEqual([...ts].sort((a, b) => a - b));
+      // A storey view keeps the one-storey list.
+      expect(keyFrames(timeline(viewMesh(mesh, 1))).some((k) => /^(stop|storey):/.test(k.label))).toBe(false);
+    });
+
     it(`${name}: combined, the storeys are exploded by a gap; a storey view is not`, () => {
       const svg = compile(src, { world: WORLD }).svg;
       const lifts = explodeLifts(mesh);
@@ -271,6 +288,29 @@ describe("the end frame fills the canvas (look notes round 1)", () => {
     expect(Math.max(...xs)).toBeCloseTo(ours.x[1], 6);
     expect(Math.min(...ys)).toBeCloseTo(ours.y[0], 6);
     expect(Math.max(...ys)).toBeCloseTo(ours.y[1], 6);
+  });
+
+  it("combined: at every camera stop and at the end, what shows is unclipped and fills >= 80 % (red-team round 1)", () => {
+    // The viewer's own per-frame camera (`frameCamera`), applied at the stop times.
+    for (const name of MULTI) {
+      const { src, mesh } = meshOf(name);
+      const p = replayPayload(mesh, { title: name, svg: compile(src, { world: WORLD }).svg });
+      const orbit = { elevation: p.elevation, azimuth: END_AZIMUTH, fov: END_FOV, aspect: ASPECT };
+      const fits = cameraStops(p.nodes, p.events, orbit);
+      const frame = { ...drawingFrame(p.viewBox, ASPECT), elevation: p.elevation };
+      const stops = keyFrames(p.events).filter((k) => k.label.startsWith("stop:") || k.label === "end");
+      expect(stops.length, name).toBe(storeysOf(mesh).length + 1);
+      for (const { label, t } of stops) {
+        const s = stateAt(p.events, t);
+        expect(s.tilt, `${name} ${label}: the end orbit is reached`).toBe(1);
+        const cam = frameCamera(s, fits, frame);
+        const o = { elevation: cam.elevation, azimuth: cam.azimuth, fov: cam.fov, aspect: ASPECT };
+        const box = boxOfNodes(p.nodes.filter((n) => s.nodes.get(n.key)?.visible));
+        const pr = projectBox(box, cam, o);
+        for (const x of [...pr.x, ...pr.y]) expect(Math.abs(x), `${name} ${label}`).toBeLessThanOrEqual(0.95);
+        expect(coverage(box, cam, o), `${name} ${label}`).toBeGreaterThanOrEqual(0.8);
+      }
+    }
   });
 
   it("fills >= 80 % of the binding dimension, unclipped, for every corpus plan and every view", () => {

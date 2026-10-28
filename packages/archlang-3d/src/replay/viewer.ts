@@ -23,7 +23,16 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
-import { boxOfNodes, cameraPosition, END_AZIMUTH, END_FOV, type EndCamera, fitEndCamera, type Vec3 } from "./camera.js";
+import {
+  boxOfNodes,
+  cameraPosition,
+  cameraStops,
+  drawingFrame,
+  END_AZIMUTH,
+  END_FOV,
+  frameCamera,
+  START_FOV,
+} from "./camera.js";
 import { type ReplayEvent, stateAt } from "./timeline.js";
 
 export interface ReplayNode {
@@ -100,7 +109,6 @@ const THEMES = {
  * red-team, PR #330).
  */
 const FOOTPRINT_MM = 12;
-const START_FOV = 1.5;
 
 function payload(): ReplayPayload {
   const el = document.getElementById("archlang-replay-payload");
@@ -180,10 +188,7 @@ function start(): void {
   // The first frame frames the core drawing's viewBox exactly, letterboxed as the image is.
   const [vx, vy, vw, vh] = p.viewBox;
   const aspect = W / H;
-  const ow = Math.max(vw, vh * aspect);
-  const oh = ow / aspect;
-  const cx = vx + vw / 2;
-  const cz = vy + vh / 2;
+  const { cx, cz, ow, oh } = drawingFrame(p.viewBox, aspect);
   // The end state's box (exploded storeys included) and the camera that fills the frame with it.
   const box = boxOfNodes(p.nodes);
   const lo = new Vector3(...box.lo);
@@ -196,25 +201,9 @@ function start(): void {
 
   const persp = new PerspectiveCamera(START_FOV, aspect, 10, 1e9);
   const orbit = { elevation: p.elevation, azimuth: END_AZIMUTH, fov: END_FOV, aspect };
-  // One framing per camera stop: stop k fills the frame with storeys 0…k (the combined view), so the
-  // lower floor fills the frame before the floor above rises over it; the last stop is the whole
-  // building. One storey: one stop.
-  const storeyOf = new Map(p.events.map((e) => [e.key, e.storey ?? 0] as const));
-  const stops = Math.max(1, ...p.events.map((e) => (e.storey ?? 0) + 1));
-  const fits: EndCamera[] = [];
-  for (let k = 0; k < stops; k++)
-    fits.push(fitEndCamera(boxOfNodes(p.nodes.filter((n) => (storeyOf.get(n.key) ?? 0) <= k)), orbit));
-  const fitAt = (stop: number): EndCamera => {
-    const k = Math.min(fits.length - 1, Math.floor(stop));
-    const a = fits[k] as EndCamera;
-    const b = fits[Math.min(fits.length - 1, k + 1)] as EndCamera;
-    const f = stop - k;
-    if (f <= 0 || a === b) return a;
-    return {
-      target: [0, 1, 2].map((i) => (a.target[i] as number) * (1 - f) + (b.target[i] as number) * f) as Vec3,
-      dist: a.dist * (1 - f) + b.dist * f,
-    };
-  };
+  // One framing per camera stop (`cameraStops`): the lower floor fills the frame before the floor
+  // above rises over it; the last stop is the whole building.
+  const fits = cameraStops(p.nodes, p.events, orbit);
   const size = hi.clone().sub(lo);
   const mid = lo.clone().add(hi).multiplyScalar(0.5);
   // Every point of the building lies within this of any target the camera aims at (the target moves
@@ -242,15 +231,9 @@ function start(): void {
     }
     let cam: OrthographicCamera | PerspectiveCamera = ortho;
     if (s.tilt > 0 || s.dolly > 0) {
-      const end = fitAt(s.stop);
-      const centre = new Vector3(...end.target);
-      const endHeight = 2 * end.dist * Math.tan(rad(END_FOV) / 2);
-      const fov = START_FOV + (END_FOV - START_FOV) * s.dolly;
-      const height = oh + (endHeight - oh) * s.dolly;
-      const dist = height / (2 * Math.tan(rad(fov) / 2));
-      const target = new Vector3(cx + (centre.x - cx) * s.dolly, centre.y * s.tilt, cz + (centre.z - cz) * s.dolly);
-      const elevation = 90 - (90 - p.elevation) * s.tilt;
-      const azimuth = END_AZIMUTH * s.tilt;
+      const f = frameCamera(s, fits, { cx, cz, oh, elevation: p.elevation });
+      const { fov, dist, elevation, azimuth } = f;
+      const target = new Vector3(...f.target);
       const el = rad(elevation);
       persp.fov = fov;
       // Near and far hug the scene, so depth precision is spent where the building is.

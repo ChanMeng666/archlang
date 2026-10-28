@@ -34,13 +34,18 @@ export {
 export type { NodeState, ReplayEvent, ReplayState, ReplayView } from "./replay/timeline.js";
 export {
   boxOfNodes,
+  cameraAtStop,
+  cameraStops,
+  corners,
   coverage,
+  drawingFrame,
   END_AZIMUTH,
   END_FOV,
   endElevation,
   FILL,
   fitEndCamera,
-  corners,
+  frameCamera,
   projectBox,
+  START_FOV,
 } from "./replay/camera.js";
-export type { Box, EndCamera, Orbit, Vec3 } from "./replay/camera.js";
+export type { Box, EndCamera, FrameCamera, Orbit, Vec3 } from "./replay/camera.js";
