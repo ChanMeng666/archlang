@@ -9,6 +9,8 @@
  *   4. `build --json` answers plan §7.2's contract, and exit codes 0/1/2/3 hold, in-process and
  *      through a real process;
  *   5. a one-storey build (laneway-house) takes ≤ 2 s (measured, recorded in the PR).
+ * And `--doors plan` (card A7): every corpus plan's swung model passes S1–S4 with glTF-Validator
+ * 0/0, and `build`/`check --json` report the doors mode.
  * And `npm pack --dry-run` lists only what the package should carry, with its notices.
  */
 import { execSync, spawnSync } from "node:child_process";
@@ -29,10 +31,10 @@ const sha = (b: Uint8Array): string => createHash("sha256").update(b).digest("he
 const tmp = mkdtempSync(join(tmpdir(), "archlang3d-glb-"));
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
-async function glbOf(src: string) {
+async function glbOf(src: string, doors: "closed" | "plan" = "closed") {
   const r = adaptPlan(src, { world: WORLD });
   if (!r.ok) throw new Error(r.refusal.code);
-  const mesh = buildMesh(r.scene);
+  const mesh = buildMesh(r.scene, { doors });
   return { scene: r.scene, mesh, glb: await writeGlb(mesh) };
 }
 
@@ -83,6 +85,19 @@ describe("GLB over the corpus (§9.2 criteria 1 and 3)", () => {
     expect(EXAMPLES_LIST.length).toBe(35); // 35 since remodel.arch (B3b)
     expect(nodes).toBeGreaterThan(1000);
   });
+
+  it("--doors plan: every plan's swung model passes S1–S4, glTF-Validator 0/0", async () => {
+    const failed: string[] = [];
+    for (const [name, src] of EXAMPLES_LIST) {
+      const a = await glbOf(src, "plan");
+      const checks = [checkScene(a.scene), checkShells(a.mesh), ...(await checkGlb(a.glb, a.mesh))];
+      for (const c of checks.filter((x) => !x.ok)) failed.push(`${name} ${c.id}: ${c.failures.join("; ")}`);
+      const v = checks.find((c) => c.id === "V-GLTF-01");
+      if (v?.facts?.errors !== 0 || v?.facts?.warnings !== 0)
+        failed.push(`${name}: validator ${JSON.stringify(v?.facts)}`);
+    }
+    expect(failed).toEqual([]);
+  });
 });
 
 describe("archlang3d build / check (§9.2 criteria 2, 4 and 5)", () => {
@@ -97,6 +112,7 @@ describe("archlang3d build / check (§9.2 criteria 2, 4 and 5)", () => {
       "ok",
       "tool",
       "input",
+      "doors",
       "outputs",
       "scene",
       "assumptions",
@@ -106,6 +122,7 @@ describe("archlang3d build / check (§9.2 criteria 2, 4 and 5)", () => {
     expect(rep.tool).toMatchObject({ name: "archlang3d", version: "0.0.0" });
     expect(rep.tool.archlang).toMatch(/^\d+\.\d+\.\d+/);
     expect(rep.input).toEqual({ path: lane, levels: 1 });
+    expect(rep.doors).toBe("closed");
     const bytes = readFileSync(out);
     expect(rep.outputs).toEqual([{ path: out, format: "glb", bytes: bytes.byteLength, sha256: sha(bytes) }]);
     // Criterion 2: the hand-built model's counts (plan §7.2's example, the spike's laneway).
@@ -159,6 +176,31 @@ describe("archlang3d build / check (§9.2 criteria 2, 4 and 5)", () => {
     expect(plan.code, plan.err).toBe(0);
     expect(JSON.parse(plan.out).verify.passed).toBe(4);
     expect((await cli(["check", bad])).code).toBe(2);
+  });
+
+  it("--doors plan: build and check report the mode, the GLB's door nodes carry it, and a bad value is usage", async () => {
+    const out = join(tmp, "lane-plan.glb");
+    const r = await cli(["build", lane, "-o", out, "--doors", "plan", "--json"]);
+    expect(r.code, r.err).toBe(0);
+    const rep = JSON.parse(r.out);
+    expect(rep.doors).toBe("plan");
+    expect(rep.verify).toMatchObject({ passed: 4, failed: 0 });
+    expect(rep.assumptions.some((a: { rule: string }) => a.rule === "door-pose-plan")).toBe(true);
+    const doors = (await readGlbNodes(readFileSync(out))).nodes.filter((n) => n.extras.kind === "door");
+    expect(doors.length).toBe(4);
+    // Two hinged doors swing; the sliding and the pocket door sweep no leaf and stay closed.
+    expect(Object.fromEntries(doors.map((n) => [n.name, [n.extras.door_kind, n.extras.pose]]))).toEqual({
+      "door:d_bath": ["pocket", "closed"],
+      "door:d_bed": ["hinged", "plan"],
+      "door:d_front": ["hinged", "plan"],
+      "door:d_garden": ["sliding", "closed"],
+    });
+    // The default build is a different model (the doors are closed), so different bytes.
+    expect(sha(readFileSync(out))).not.toBe(sha(readFileSync(join(tmp, "a.glb"))));
+    const c = await cli(["check", lane, "--doors", "plan", "--json"]);
+    expect(c.code, c.err).toBe(0);
+    expect(JSON.parse(c.out)).toMatchObject({ ok: true, doors: "plan", verify: { passed: 4, failed: 0 } });
+    expect((await cli(["build", lane, "-o", join(tmp, "x.glb"), "--doors", "open"])).code).toBe(3);
   });
 
   it("--strict refuses a build with a warning: E3D_STRICT, exit 2, ok false, nothing written", async () => {

@@ -32,6 +32,13 @@ const CURVE_TOL: Flag = {
   arg: "<mm>",
   description: "largest sagitta of an arc's chords, in mm (default 2)",
 };
+/** Shared by every command that builds the model, so a GLB, its check and its replay agree. */
+const DOORS: Flag = {
+  flag: "--doors",
+  arg: "<closed|plan>",
+  description:
+    "closed (default): every leaf across its doorway; plan: each hinged or double leaf swung as the plan draws it (other kinds stay closed)",
+};
 
 export const COMMANDS: readonly Command[] = [
   {
@@ -46,6 +53,7 @@ export const COMMANDS: readonly Command[] = [
       },
       { flag: "--format", alias: "-f", arg: "<glb|scene3d>", description: "output format (default glb)" },
       CURVE_TOL,
+      DOORS,
       { flag: "--strict", description: "refuse a build with any W3D_* warning: E3D_STRICT, exit 2, nothing written" },
       JSON_FLAG,
     ],
@@ -60,7 +68,7 @@ export const COMMANDS: readonly Command[] = [
   {
     name: "check",
     summary: "run the checks (V-SCH, V-GEO, V-GLTF) without writing a model",
-    flags: [CURVE_TOL, JSON_FLAG],
+    flags: [CURVE_TOL, DOORS, JSON_FLAG],
     input: "<plan.arch|model.glb|->",
     output: "a report (stdout with --json); exit 2 when a check fails",
     examples: [
@@ -81,12 +89,17 @@ export const COMMANDS: readonly Command[] = [
       { flag: "--theme", arg: "<light|dark>", description: "light (default); dark for exports only" },
       { flag: "--storey", arg: "<n|all>", description: "one storey (1 = the lowest) or all combined (default)" },
       CURVE_TOL,
+      DOORS,
       JSON_FLAG,
     ],
     input: "<plan.arch|->",
     output: "an HTML file (and an MP4 with --video)",
     examples: [
       { cmd: "archlang3d view plan.arch --replay -o plan.html --json", note: "the replay and its key-frame hashes" },
+      {
+        cmd: "archlang3d view plan.arch --replay -o plan.html --doors plan",
+        note: "doors swung as the plan draws them",
+      },
     ],
   },
   {

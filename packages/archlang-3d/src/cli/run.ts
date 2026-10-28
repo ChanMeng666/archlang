@@ -3,10 +3,13 @@
  * `doctor` live in `commands.ts` (their flags in `manifest.ts`); `view` is here:
  *
  *   archlang3d view <plan.arch|-> --replay -o plan.html [--video out.mp4] [--seconds 15] [--fps 30]
- *                   [--size 1920x1080] [--theme light|dark] [--storey <n>|all] [--curve-tol <mm>] [--json]
+ *                   [--size 1920x1080] [--theme light|dark] [--storey <n>|all] [--curve-tol <mm>]
+ *                   [--doors closed|plan] [--json]
  *
  * `--storey all` (the default) replays the storeys combined; `--storey <n>` (1-based, lowest first)
- * replays storey n on its own over its own page of the core's drawing. With `--json` the report
+ * replays storey n on its own over its own page of the core's drawing. `--doors plan` swings each
+ * hinged or double leaf to the pose the plan draws (Q11: closed by default; `mesh/build.ts`); the
+ * timing is the same either way, since the event table reads no geometry. With `--json` the report
  * carries the key frames of EVERY view (`views`), the rendered one's also at the top level.
  *
  * Exit codes as the core's (ADR 0015, plan §7.3): 0 ok · 2 the plan is refused (`E3D_*`, with the
@@ -17,15 +20,15 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { compile } from "@chanmeng666/archlang";
 import { adaptPlan } from "../adapter/adapt.js";
-import { buildMesh } from "../mesh/build.js";
+import { buildMesh, type DoorPose } from "../mesh/build.js";
 import { makeNodeWorld } from "../node.js";
 import { replayHtml } from "../replay/html.js";
 import { type ReplayView, storeysOf, timeline, viewLabel, viewMesh } from "../replay/timeline.js";
 import { type KeyFrame, renderReplay, type VideoReport } from "../replay/video.js";
-import { HANDLERS, parseFlags, Usage } from "./commands.js";
+import { doorPose, HANDLERS, parseFlags, Usage } from "./commands.js";
 
 export const VIEW_USAGE =
-  "usage: archlang3d view <plan.arch|-> --replay -o <out.html> [--video <out.mp4>] [--seconds <n>] [--fps <n>] [--size <W>x<H>] [--theme light|dark] [--storey <n>|all] [--curve-tol <mm>] [--json]";
+  "usage: archlang3d view <plan.arch|-> --replay -o <out.html> [--video <out.mp4>] [--seconds <n>] [--fps <n>] [--size <W>x<H>] [--theme light|dark] [--storey <n>|all] [--curve-tol <mm>] [--doors closed|plan] [--json]";
 const USAGE = `usage: archlang3d <build|check|view|manifest|schema|doctor> … (archlang3d manifest --json lists every flag)\n${VIEW_USAGE}`;
 
 interface Args {
@@ -39,6 +42,7 @@ interface Args {
   theme: "light" | "dark";
   storey: ReplayView;
   curveTol?: number;
+  doors: DoorPose;
   json: boolean;
 }
 
@@ -52,6 +56,7 @@ function parse(argv: string[]): Args {
     height: 1080,
     theme: "light",
     storey: "all",
+    doors: "closed",
     json: false,
   };
   const num = (flag: string, v: string | undefined): number => {
@@ -69,6 +74,7 @@ function parse(argv: string[]): Args {
     else if (f === "--fps") a.fps = num(f, v());
     else if (f === "--curve-tol") a.curveTol = num(f, v());
     else if (f === "--json") a.json = true;
+    else if (f === "--doors") a.doors = doorPose(v() ?? true);
     else if (f === "--storey") {
       const t = v();
       if (t === "all") a.storey = "all";
@@ -125,7 +131,7 @@ async function view(args: Args): Promise<number> {
     say(`archlang3d: ${r.refusal.code}: ${r.refusal.message}`);
     return 2;
   }
-  const mesh = buildMesh(r.scene);
+  const mesh = buildMesh(r.scene, { doors: args.doors });
   const storeys = storeysOf(mesh);
   if (args.storey !== "all" && args.storey > storeys.length) {
     process.stderr.write(
@@ -200,6 +206,7 @@ async function view(args: Args): Promise<number> {
     seconds: video.seconds,
     size: [video.width, video.height],
     view: viewLabel(args.storey),
+    doors: args.doors,
     storeys: storeys.length,
     keyFrames: video.keyFrames,
     views,

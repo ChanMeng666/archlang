@@ -90,9 +90,11 @@ export interface Opening {
   centre: Pt;
   /** The two jambs on the host's centreline (the opening's chord along the wall, its tangent on a curve). */
   jambs: [Pt, Pt];
-  /** A door's leaves in the closed pose, each `[hinge, far jamb]` (two for a `double` door, from the
-   *  core's `doorLeaves`); absent for a kind that sweeps no leaf. */
-  leaves?: Array<[Pt, Pt]>;
+  /** A door's swinging leaves, each `[hinge, far jamb, open tip]` from the core's `doorLeaves` (two
+   *  for a `double` door): closed, the leaf runs hinge → far jamb; swung as the plan draws it (`--doors
+   *  plan`), hinge → open tip, 90° on. Absent for a kind that sweeps no leaf (sliding, barn, bifold,
+   *  pocket, garage). */
+  leaves?: Array<[Pt, Pt, Pt]>;
   width: Um;
   sill: Um;
   head: Um;
