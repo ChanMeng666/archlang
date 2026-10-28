@@ -6,6 +6,10 @@ The package is private and unpublished; versions start with its first 0.x public
 
 ### Added
 
+- The playground's 3D preview tab (card A5): a `./browser` entry (`mountReplay(canvas, payload)`,
+  `replayPayload`, `PREVIEW_LABEL`) so a page builds and mounts the replay itself; the single-file
+  HTML's viewer is now a thin host of the same `mountReplay`.
+
 - M1b GLB and checks (card A4): `archlang3d build <plan> -o plan.glb` writes a GLB with
   glTF-Transform from the same Mesh3D the replay reads (a `level:L<n>` node per storey, one node per
   Mesh3D node named `<kind>:<id>[:<part>]`, its facts in `extras.archlang`, deterministic bytes), and

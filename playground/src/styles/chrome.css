@@ -406,6 +406,9 @@ main {
   border-bottom: 1px solid var(--hairline);
   background: var(--paper-panel);
   display: flex;
+  /* Five tabs and a storey switcher outgrow a half-width pane near 1024 px: the
+     strip wraps to a second row there rather than scrolling the page sideways. */
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
@@ -437,6 +440,7 @@ main {
   text-transform: uppercase;
   letter-spacing: 0.07em;
   padding: 4px 10px;
+  white-space: nowrap;
   border: 0;
   border-bottom: 2px solid transparent;
   border-radius: 0;

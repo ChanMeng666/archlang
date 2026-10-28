@@ -11,15 +11,10 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { SWIFTSHADER_ARGS } from "./swiftshader.js";
 import { keyFrames, type ReplayEvent } from "./timeline.js";
 
-/** The flags that make Chromium render WebGL in software, the same on every machine (plan §6.5). */
-export const SWIFTSHADER_ARGS = [
-  "--use-gl=angle",
-  "--use-angle=swiftshader",
-  "--ignore-gpu-blocklist",
-  "--enable-unsafe-swiftshader",
-];
+export { SWIFTSHADER_ARGS };
 
 export interface KeyFrame {
   label: string;
