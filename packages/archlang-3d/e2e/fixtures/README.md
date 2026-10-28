@@ -13,7 +13,15 @@ e2e/keyframes.e2e.ts` in `packages/archlang-3d`, which writes the file with the 
 in. Never rewrite it to turn a red run green: a changed hash needs the reason (a Mesh3D, viewer or
 Chromium change) in the commit that re-pins it.
 
-The current baseline (card A4, 2026-10-28): taken on Windows 11 x64 (Chromium 156.0.8078.4 from
+Re-taken by card A2b (2026-10-28) on Windows 11 x64 with the same Chromium build and command: the
+T0 parametric furniture replaced the grey boxes, so every frame in which furniture shows moved
+(laneway-house `stage:fixtures`, `tilted`, `end`; two-storey `stage:fixtures`, `stop:1`,
+`tilted`, `storey:2`, `stop:2`, `end`) and none before it (`stage:brief` … `stage:openings`
+are byte-identical, so the split wall bodies changed no pixel). CI's `check-3d` job (ubuntu-latest x64, the same
+Chromium build; GitHub Actions run 40638897953) then rendered the same 17 hashes, byte for byte,
+and failed only because Linux was not listed; the Linux entry was added with the hashes unchanged.
+
+The baseline before A2b (card A4, 2026-10-28): taken on Windows 11 x64 (Chromium 156.0.8078.4 from
 `playwright-core` 1.64.1, SwiftShader) with the command above. The first run of CI's `check-3d`
 job (ubuntu-latest x64, the same Chromium build; GitHub Actions run 40621260478) rendered the same
 17 hashes, byte for byte, and failed only because Linux was not yet listed; the Linux entry was

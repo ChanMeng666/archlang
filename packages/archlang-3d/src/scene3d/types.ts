@@ -52,6 +52,9 @@ export interface Floor {
   source: Source;
   polygon: Polygon;
   uses?: string[];
+  /** How far (µm) the floor finish is lifted because it overlaps an earlier room's (V-GEO-05,
+   *  `W3D_FLOOR_OVERLAP`): 0.5 mm per step, absent when it overlaps none. */
+  lift?: Um;
 }
 
 /**
@@ -112,6 +115,7 @@ export interface Furniture {
   size: { w: Um; d: Um };
   /** Rotation about the vertical axis in the exporters' convention: minus the plan's `rotate`. */
   yawDeg: number;
+  /** What the mesh builds it with: `t0:<family>` (a parametric generator) or `greybox`. */
   asset: string;
 }
 
@@ -164,6 +168,13 @@ export interface Level {
   footprint: Ring3[];
   floors: Floor[];
   walls: Wall[];
+  /**
+   * The storey's `status demolish` walls (B3a), read from the plan AS DRAWN (`ir.drawn`): joined
+   * among themselves only, never with the standing walls (whose ownership, H1, is the plan after
+   * the demolition), and hosting nothing (`cuts` empty). Drawn as a ghost, never as structure.
+   * Absent when the storey demolishes nothing.
+   */
+  demolished?: Wall[];
   openings: Opening[];
   furniture: Furniture[];
   stairs: Stair[];

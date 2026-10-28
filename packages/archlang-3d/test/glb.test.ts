@@ -28,7 +28,7 @@ const diff = (a: Iterable<string>, b: Iterable<string>) => {
 };
 
 describe("GLB from Mesh3D", () => {
-  for (const name of ["laneway-house.arch", "two-storey.arch", "hexagon-pavilion.arch"]) {
+  for (const name of ["laneway-house.arch", "two-storey.arch", "hexagon-pavilion.arch", "remodel.arch"]) {
     it(`${name}: the GLB's nodes are the Mesh3D's, and the viewer's are the visible ones`, async () => {
       const { src, mesh } = meshOf(name);
       const glb = await writeGlb(mesh);
@@ -68,6 +68,21 @@ describe("GLB from Mesh3D", () => {
     expect(json.nodes.find((n) => n.name === "level:L1")?.extras?.archlang).toEqual({ kind: "level", level: 1 });
   });
 
+  it("writes a demolished wall (B3a) as its own node under its key, in a translucent material of its own", async () => {
+    const { mesh } = meshOf("remodel.arch");
+    const json = JSON.parse(glbJson(await writeGlb(mesh))) as {
+      nodes: Array<{ name: string; mesh?: number; extras?: { archlang?: Record<string, unknown> } }>;
+      meshes: Array<{ primitives: Array<{ material: number }> }>;
+      materials: Array<{ name: string; alphaMode?: string }>;
+    };
+    const ghost = json.nodes.find((n) => n.name === "wall:x_kitchen:demolish");
+    expect(ghost?.extras?.archlang).toMatchObject({ kind: "wall", part: "demolish", status: "demolish" });
+    const mat = json.materials[json.meshes[ghost?.mesh ?? -1]?.primitives[0]?.material ?? -1];
+    expect(mat).toMatchObject({ name: "wall:demolish", alphaMode: "BLEND" });
+    const standing = json.nodes.find((n) => n.name === "wall:shell");
+    expect(json.materials[json.meshes[standing?.mesh ?? -1]?.primitives[0]?.material ?? -1]?.name).toBe("wall");
+  });
+
   it("V-GLTF-02 fails a GLB that lacks a Mesh3D node", async () => {
     const { mesh } = meshOf("laneway-house.arch");
     const { levels, nodes } = await readGlbNodes(await writeGlb(mesh));
@@ -87,5 +102,8 @@ describe("GLB from Mesh3D", () => {
  * laneway-house's GLB, SHA-256. Taken on Windows / Node 24 at the commit that adds the GLB writer
  * (card A4); it moves with the Mesh3D (`LANEWAY_MESH_SHA256` in `mesh.test.ts`) or the writer, and
  * only with a reason recorded in the commit.
+ *
+ * Moved by card A2b (was bef25c7b…) with the Mesh3D alone: T0 furniture and the split wall bodies.
+ * The writer's one change (a `wall:demolish` material) writes nothing for a plan without one.
  */
-const LANEWAY_GLB_SHA256 = "bef25c7b26f4f34d557cf747a6a130b24a7e30ea2f75a5982f35934af07fcaa7";
+const LANEWAY_GLB_SHA256 = "4bcbf8e076e792ab259c4c516398bb259f9b890d26d219f6cf665ce82883b090";

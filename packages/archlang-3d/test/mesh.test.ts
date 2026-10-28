@@ -10,49 +10,15 @@
 import { createHash } from "node:crypto";
 import { describeLevel, describe as describePlan } from "@chanmeng666/archlang";
 import { describe, expect, it } from "vitest";
-import { adaptPlan, buildMesh, type Mesh3D, prism, type Shell } from "../src/index.js";
+import { adaptPlan, buildMesh, type Mesh3D, prism } from "../src/index.js";
 import { openEdges, signedVolume as volume } from "../src/node.js";
 import { EXAMPLES_LIST, STRESS_PLANS, WORLD } from "./corpus.js";
-
-type V3 = [number, number, number];
+import { inside, type V3 } from "./probe.js";
 
 function adapted(source: string) {
   const r = adaptPlan(source, { world: WORLD });
   if (!r.ok) throw new Error(`refused: ${r.refusal.code}`);
   return r;
-}
-
-const vert = (s: Shell, i: number): V3 => [
-  s.positions[3 * i] as number,
-  s.positions[3 * i + 1] as number,
-  s.positions[3 * i + 2] as number,
-];
-
-/**
- * Whether `p` lies inside the closed shell: parity of a +X ray's crossings. `p` is offset by a
- * fraction of a micrometre in Y and Z, so on an all-integer mesh the ray never grazes an edge.
- */
-function inside(s: Shell, p: V3): boolean {
-  const o: V3 = [p[0], p[1] + 0.37, p[2] + 0.61];
-  let hits = 0;
-  for (let t = 0; t < s.indices.length; t += 3) {
-    const [a, b, c] = [0, 1, 2].map((k) => vert(s, s.indices[t + k] as number)) as [V3, V3, V3];
-    // Möller–Trumbore against direction (1, 0, 0).
-    const e1: V3 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
-    const e2: V3 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
-    const pv: V3 = [0, -e2[2], e2[1]];
-    const det = e1[0] * pv[0] + e1[1] * pv[1] + e1[2] * pv[2];
-    if (det === 0) continue;
-    const tv: V3 = [o[0] - a[0], o[1] - a[1], o[2] - a[2]];
-    const u = (tv[0] * pv[0] + tv[1] * pv[1] + tv[2] * pv[2]) / det;
-    if (u < 0 || u > 1) continue;
-    const q: V3 = [tv[1] * e1[2] - tv[2] * e1[1], tv[2] * e1[0] - tv[0] * e1[2], tv[0] * e1[1] - tv[1] * e1[0]];
-    const v = q[0] / det;
-    if (v < 0 || u + v > 1) continue;
-    const dist = (e2[0] * q[0] + e2[1] * q[1] + e2[2] * q[2]) / det;
-    if (dist > 0) hits++;
-  }
-  return hits % 2 === 1;
 }
 
 const digest = (m: Mesh3D): string => createHash("sha256").update(JSON.stringify(m)).digest("hex");
@@ -61,6 +27,21 @@ const corpus = EXAMPLES_LIST.map(([n, s]) => {
   const r = adapted(s);
   return { n, r, mesh: buildMesh(r.scene) };
 });
+
+/**
+ * A demolished partition butting the shell where a window is cut (red-team round 1): untrimmed, its
+ * ghost ran half a thickness past the shell's centreline and stood in the window. V-GEO-04 probes it.
+ */
+const GHOST_IN_OPENING = `plan "g" { units mm grid 50
+  wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+  wall id=x1 partition thickness 100 status demolish { (3000,0) (3000,6000) }
+  room id=r at (0,0) size 8000x6000 label "R"
+  window id=win on shell at 3000 width 1800
+}`;
+const ghostProbe = (() => {
+  const r = adapted(GHOST_IN_OPENING);
+  return { n: "ghost-in-opening", r, mesh: buildMesh(r.scene) };
+})();
 
 describe("Mesh3D on the shipped corpus", () => {
   it("builds every example (35)", () => {
@@ -156,17 +137,21 @@ describe("Mesh3D on the shipped corpus", () => {
     const blocked: string[] = [];
     const notSolid: string[] = [];
     let probes = 0;
-    for (const { n, r, mesh } of corpus) {
+    for (const { n, r, mesh } of [...corpus, ghostProbe]) {
       for (const lv of r.scene.levels) {
-        const walls = mesh.nodes.filter((x) => x.level === lv.level && x.kind === "wall");
+        // A demolished wall's ghost holds no lintel, but it must not stand in an opening either: it is
+        // trimmed to the standing walls (red-team round 1), so it counts for `blocked`.
+        const all = mesh.nodes.filter((x) => x.level === lv.level && x.kind === "wall");
+        const walls = all.filter((x) => x.part !== "demolish");
         const solidAt = (p: V3): boolean => walls.some((w) => w.shells.some((s) => inside(s, p)));
+        const anyAt = (p: V3): boolean => all.some((w) => w.shells.some((s) => inside(s, p)));
         for (const o of lv.openings) {
           const host = lv.walls.find((w) => w.id === o.host);
           if (!host) continue;
           const [x, z] = o.centre;
           probes++;
           const mid = lv.elevation + Math.round((o.sill + Math.min(o.head, host.height)) / 2);
-          if (solidAt([x, mid, z])) blocked.push(`${n} ${o.id}`);
+          if (anyAt([x, mid, z])) blocked.push(`${n} ${o.id}`);
           if (o.head < host.height - 50_000) {
             const y = lv.elevation + Math.round((o.head + host.height) / 2);
             if (!solidAt([x, y, z])) notSolid.push(`${n} ${o.id} lintel`);
@@ -199,10 +184,11 @@ describe("Mesh3D on the shipped corpus", () => {
     let inRoom = 0;
     for (const { n, mesh } of corpus) {
       for (const f of mesh.nodes.filter((x) => x.kind === "furniture")) {
-        const s = f.shells[0] as Shell;
-        const xs = s.positions.filter((_, i) => i % 3 === 0);
-        const zs = s.positions.filter((_, i) => i % 3 === 2);
-        const ys = s.positions.filter((_, i) => i % 3 === 1);
+        // Every part of the piece (a T0 piece is several; their box is the footprint).
+        const all = f.shells.flatMap((s) => s.positions);
+        const xs = all.filter((_, i) => i % 3 === 0);
+        const zs = all.filter((_, i) => i % 3 === 2);
+        const ys = all.filter((_, i) => i % 3 === 1);
         const c: V3 = [
           (Math.min(...xs) + Math.max(...xs)) / 2,
           Math.min(...ys) - 2500,
@@ -333,7 +319,10 @@ describe("Mesh3D determinism and budget", () => {
 
   it("V-GEO-12: the mixed-height warning fires on s11 only", () => {
     const fired = [...EXAMPLES_LIST.map(([n, s]) => [n, s] as const), ...Object.entries(STRESS_PLANS)].flatMap(
-      ([n, s]) => adapted(s).warnings.map((w) => `${n}: ${w.owner.id}>${w.notched.id}`),
+      ([n, s]) =>
+        adapted(s).warnings.flatMap((w) =>
+          w.code === "W3D_MIXED_HEIGHT_JOINT" ? [`${n}: ${w.owner.id}>${w.notched.id}`] : [],
+        ),
     );
     expect(fired).toEqual(["s11-mixed-thick-low: lowthick>tall"]);
   });
@@ -344,5 +333,9 @@ describe("Mesh3D determinism and budget", () => {
  * this test; CI's Node 18/20/22 and Windows legs must reproduce it. It moves only with a deliberate
  * change to the adapter or the mesh stage (or a core change to the plan's geometry), recorded in
  * the PR that moves it.
+ *
+ * Moved by card A2b (was 7d05de61…): the twelve pieces are T0 parametric furniture instead of grey
+ * boxes (their shells and `extras.asset`), and the five walls with openings split their bodies'
+ * vertical edges at each sill and head (more vertices, the same solid); no other node changed.
  */
-const LANEWAY_MESH_SHA256 = "7d05de616817cba5b063f91ba0d5f77c3c218adf654e4323c0ff56e5bd725a6d";
+const LANEWAY_MESH_SHA256 = "92c99f930eaa185ccfd3d2e2a9d4515ec6bebcd29e450ece17827b839bc05185";

@@ -156,6 +156,54 @@ describe("replay timeline (D3)", () => {
   });
 });
 
+describe("a demolished wall's ghost is not construction (red-team round 1 of card A2b)", () => {
+  const { src, mesh } = meshOf("remodel.arch");
+  const r = adaptPlan(
+    src
+      .split("\n")
+      .filter((l) => !l.includes("status demolish"))
+      .join("\n"),
+    { world: WORLD },
+  );
+  if (!r.ok) throw new Error(r.refusal.code);
+  const without = buildMesh(r.scene);
+  const ev = timeline(mesh);
+  const ghosts = mesh.nodes.filter((n) => n.part === "demolish").map((n) => n.key);
+
+  it("leaves every standing node's event as in the plan with the demolish lines deleted", () => {
+    expect(ghosts.length).toBe(2);
+    const standing = ev.filter((e) => !ghosts.includes(e.key));
+    expect(standing).toEqual(timeline(without));
+  });
+
+  it("draws a ghost in phase 1 and raises it across the whole wall slot, unstaggered", () => {
+    for (const e of ev.filter((x) => ghosts.includes(x.key))) {
+      expect(e.appear).toBeLessThan(PHASE.drawn);
+      expect([e.riseFrom, e.riseTo]).toEqual([PHASE.rise, PHASE.wallsUp]);
+      expect(e.rank).toBeGreaterThanOrEqual(ev.length - ghosts.length);
+    }
+  });
+
+  it("leaves the ghosts out of the end camera's fit", () => {
+    // A demolished garden wall running 6 m past the house: the fit is the house's alone.
+    const house = (extra: string) => `plan "g" { units mm grid 50
+      wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+      room id=r at (0,0) size 8000x6000 label "R" ${extra} }`;
+    const payload = (s: string) => {
+      const a = adaptPlan(s, { world: WORLD });
+      if (!a.ok) throw new Error(a.refusal.code);
+      return replayPayload(buildMesh(a.scene), { svg: compile(s, { world: WORLD }).svg, title: "g" });
+    };
+    const a = payload(house("wall id=x partition thickness 100 status demolish { (8000,3000) (14000,3000) }"));
+    const b = payload(house(""));
+    expect(a.nodes.some((n) => n.part === "demolish")).toBe(true);
+    const orbit = { elevation: 30, azimuth: END_AZIMUTH, fov: END_FOV, aspect: 16 / 9 };
+    expect(cameraStops(a.nodes, a.events, orbit)).toEqual(cameraStops(b.nodes, b.events, orbit));
+    // The viewer's clip box still holds the ghost.
+    expect(boxOfNodes(a.nodes, { ghosts: true }).hi[0]).toBeGreaterThan(boxOfNodes(a.nodes).hi[0] + 5000);
+  });
+});
+
 const MULTI = ["two-storey.arch", "townhouse.arch", "hillside-villa.arch", "garden-house.arch"];
 
 describe("multi-storey views (D14: each storey on its own, and the storeys combined)", () => {

@@ -87,6 +87,7 @@ const THEMES = {
       door: "#b48a5c",
       "window:frame": "#e9e6e0",
       "window:glass": "#a9c7d8",
+      "wall:demolish": "#c8553d",
       furniture: "#d9d1c3",
     } as Record<string, string>,
   },
@@ -102,6 +103,7 @@ const THEMES = {
       door: "#7aa6c9",
       "window:frame": "#5d86a8",
       "window:glass": "#86c5ee",
+      "wall:demolish": "#e07a5f",
       furniture: "#3f6a8f",
     } as Record<string, string>,
   },
@@ -162,10 +164,13 @@ export function mountReplay(out: HTMLCanvasElement, p: ReplayPayload): ReplayHan
     geo.computeVertexNormals();
     const key = n.part ? `${n.kind}:${n.part}` : n.kind;
     const glass = key === "window:glass";
+    // A demolished wall (B3a) is a ghost: translucent, writing no depth, never read as structure.
+    const ghost = key === "wall:demolish";
     const mat = new MeshLambertMaterial({
       color: new Color(theme.colors[key] ?? theme.colors.furniture),
-      transparent: glass,
-      opacity: glass ? 0.45 : 1,
+      transparent: glass || ghost,
+      opacity: glass ? 0.45 : ghost ? 0.3 : 1,
+      depthWrite: !ghost,
       flatShading: true,
       // The floor finish sits a few millimetres under every footprint: pushed back in depth, so a
       // flat footprint never fights it in perspective.
@@ -192,8 +197,9 @@ export function mountReplay(out: HTMLCanvasElement, p: ReplayPayload): ReplayHan
   const [vx, vy, vw, vh] = p.viewBox;
   const aspect = W / H;
   const { cx, cz, ow, oh } = drawingFrame(p.viewBox, aspect);
-  // The end state's box (exploded storeys included) and the camera that fills the frame with it.
-  const box = boxOfNodes(p.nodes);
+  // Everything drawn, ghosts included (exploded storeys too): the cameras' clip range. The fitted
+  // cameras (`cameraStops`) frame the standing building only.
+  const box = boxOfNodes(p.nodes, { ghosts: true });
   const lo = new Vector3(...box.lo);
   const hi = new Vector3(...box.hi);
   const top = hi.y + 1000;

@@ -5,20 +5,29 @@
  * not state is a labelled default in the ledger (ADR 0005).
  *
  * Per storey, at its elevation `e` (µm):
- * - slab: the storey's wall footprint, [e − 200 mm, e] (Q6);
- * - floor: each room, a 5 mm finish [e, e + 5 mm], a void inside it as a hole;
+ * - slab: the rooms ∪ the storey's wall outline, less its voids, [e − 200 mm, e] (Q6, `slab.ts`);
+ * - floor: each room, a 5 mm finish [e, e + 5 mm], a void inside it as a hole; a room overlapping
+ *   an earlier one is lifted 0.5 mm per step (V-GEO-05, `Floor.lift`);
  * - column: its box, [e, e + storey height];
  * - wall: its body pieces [e, e + h]; under each cut a sill [e, e + sill], over it a lintel
- *   [e + head, e + h] (§4.1 step 2; a cased opening's head at the wall top makes no lintel);
+ *   [e + head, e + h] (§4.1 step 2; a cased opening's head at the wall top makes no lintel). The
+ *   body's vertical edges are split at every sill and head that meets them, so body, sill and
+ *   lintel meet vertex to vertex (no T-junction);
+ * - a demolished wall (B3a): its own pieces [e, e + h], a ghost keyed `wall:<id>:demolish` with
+ *   `extras.status` "demolish", never one of the standing walls;
  * - door: closed leaves, 40 mm thick, [e, e + head]: the core's leaves for a swinging door, one
  *   panel across the jambs for every other kind (Q11, closed by default);
- * - window: a 16 mm glass pane across the jambs and a 40 × 60 mm frame (§4.3);
- * - furniture: a grey box on the floor finish, its height a per-family default;
+ * - window: a 16 mm glass pane across the jambs and a 40 × 60 mm frame (§4.3), every part kept
+ *   inside its cut; on a curved host both follow the arc from jamb face to jamb face (`cutSector`);
+ * - furniture: a T0 parametric piece (`t0.ts`) fitted to its footprint for the twelve families it
+ *   covers, else a grey box on the floor finish, its height a per-family default;
  * - roof: a 150 mm flat slab on the storey's ring at the top of its tallest wall, hidden (Q7, D3).
  * Stairs, outdoor surfaces and fences are not built yet (M4 and later); the ledger says so.
  */
 import type { Assumption, Level, Polygon, Pt, Scene3D } from "../scene3d/types.js";
-import { prism, rect, slab2d } from "./extrude.js";
+import { cutSector, insideCut, prism, rect, sectorBand, slab2d } from "./extrude.js";
+import { type Rect, rectMinus, slabRegion } from "./slab.js";
+import { T0_HEIGHT_MM, t0Parts } from "./t0.js";
 import type { Mesh3D, MeshNode, NodeKind, Shell, Stage } from "./types.js";
 
 const MM = 1000;
@@ -91,9 +100,6 @@ const inRing = (p: Pt, r: readonly Pt[]): boolean => {
   return c;
 };
 
-/** An axis-aligned plan rectangle `[x0, y0, x1, y1]` (µm), x0 < x1, y0 < y1. */
-type Rect = [number, number, number, number];
-
 /** `ring` as a Rect when it is exactly an axis-aligned rectangle, else null. */
 function asRect(ring: readonly Pt[]): Rect | null {
   if (ring.length !== 4) return null;
@@ -105,18 +111,6 @@ function asRect(ring: readonly Pt[]): Rect | null {
     return p[0] === q[0] || p[1] === q[1];
   });
   return axis ? [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] : null;
-}
-
-/** `a` less `b`: at most four rectangles, exact, tiling `a` outside `b`. */
-function rectMinus(a: Rect, b: Rect): Rect[] {
-  const [x0, y0, x1, y1] = [Math.max(a[0], b[0]), Math.max(a[1], b[1]), Math.min(a[2], b[2]), Math.min(a[3], b[3])];
-  if (!(x0 < x1 && y0 < y1)) return [a];
-  const out: Rect[] = [];
-  if (a[1] < y0) out.push([a[0], a[1], a[2], y0]);
-  if (y1 < a[3]) out.push([a[0], y1, a[2], a[3]]);
-  if (a[0] < x0) out.push([a[0], y0, x0, y1]);
-  if (x1 < a[2]) out.push([x1, y0, a[2], y1]);
-  return out;
 }
 
 /** Whether the closed rectangle `r` overlaps `ring`'s interior at all (a corner inside, or crossing). */
@@ -209,12 +203,14 @@ function levelNodes(lv: Level, ledger: Assumption[], defaulted: Set<string>, isT
     });
   };
 
-  // Slab: the storey's wall footprint less its voids, below the floor level (§4.2).
+  // Slab: the rooms ∪ the storey's wall outline, less its voids, below the floor level (§4.2).
   node(
     "slab",
     "slab",
     0,
-    lv.footprint.flatMap((r) => lessVoids(r, lv.voids, "slab", ledger)).map((p) => prism(p, e - SLAB_MM * MM, e)),
+    slabRegion(lv.footprint, lv.floors, ledger)
+      .flatMap((r) => lessVoids(r.outer, lv.voids, "slab", ledger))
+      .map((p) => prism(p, e - SLAB_MM * MM, e)),
     { thickness_mm: SLAB_MM },
   );
 
@@ -223,12 +219,13 @@ function levelNodes(lv: Level, ledger: Assumption[], defaulted: Set<string>, isT
     const pieces = f.polygon.holes?.length
       ? [f.polygon]
       : lessVoids(f.polygon.outer, lv.voids, `floor:${f.id}`, ledger);
+    const z0 = e + (f.lift ?? 0);
     node(
       "floor",
       f.id,
       i,
-      pieces.map((p) => prism(p, e, e + FLOOR_FINISH_MM * MM)),
-      { ...(f.uses?.length ? { uses: f.uses.join(" ") } : {}) },
+      pieces.map((p) => prism(p, z0, z0 + FLOOR_FINISH_MM * MM)),
+      { ...(f.uses?.length ? { uses: f.uses.join(" ") } : {}), ...(f.lift ? { lift_mm: f.lift / MM } : {}) },
     );
   });
 
@@ -240,9 +237,22 @@ function levelNodes(lv: Level, ledger: Assumption[], defaulted: Set<string>, isT
 
   const openings = new Map(lv.openings.map((o) => [o.id, o] as const));
   const hostHeight = new Map(lv.walls.map((w) => [w.id, w.height] as const));
+  // Every cut corner's sill and head heights (µm above e): where a body's vertical edge is split,
+  // so the body meets its sill and lintel vertex to vertex.
+  const splitAt = new Map<string, number[]>();
+  for (const o of lv.openings) {
+    const h = hostHeight.get(o.host);
+    if (h === undefined) continue;
+    const hs = [...(o.sill > 0 ? [Math.min(o.sill, h)] : []), ...(o.head < h ? [o.head] : [])];
+    for (const p of o.cut) {
+      const k = `${p[0]},${p[1]}`;
+      splitAt.set(k, [...(splitAt.get(k) ?? []), ...hs]);
+    }
+  }
+  const splits = (p: Pt): number[] => (splitAt.get(`${p[0]},${p[1]}`) ?? []).map((h) => e + h);
   lv.walls.forEach((w, i) => {
     const top = e + w.height;
-    const shells: Array<Shell | null> = w.body.map((p) => prism(p, e, top));
+    const shells: Array<Shell | null> = w.body.map((p) => prism(p, e, top, splits));
     for (const id of w.cuts) {
       const o = openings.get(id);
       if (!o) continue;
@@ -254,6 +264,23 @@ function levelNodes(lv: Level, ledger: Assumption[], defaulted: Set<string>, isT
       height_mm: w.height / MM,
       thickness_mm: w.thickness / MM,
     });
+  });
+
+  // Demolished walls (B3a): ghosts of the plan as drawn, solid, hosting nothing.
+  (lv.demolished ?? []).forEach((w, i) => {
+    node(
+      "wall",
+      w.id,
+      lv.walls.length + i,
+      w.body.map((p) => prism(p, e, e + w.height)),
+      {
+        ...(w.category ? { category: w.category } : {}),
+        height_mm: w.height / MM,
+        status: "demolish",
+        thickness_mm: w.thickness / MM,
+      },
+      "demolish",
+    );
   });
 
   lv.openings.forEach((o, i) => {
@@ -275,16 +302,46 @@ function levelNodes(lv: Level, ledger: Assumption[], defaulted: Set<string>, isT
       const z1 = e + head;
       const fw = FRAME_WIDTH_MM * MM;
       const fd = FRAME_DEPTH_MM * MM;
-      node("window", o.id, i, [prism(slab2d(j0, j1, GLASS_MM * MM), z0, z1)], extras, "glass");
+      const sector = cutSector(o.cut, o.jambs, o.centre);
+      if (sector) {
+        // A curved host (red-team round 1): the jambs lie on the tangent at the opening's centre, so
+        // a chord pane clipped to the cut ends short of the radial jamb faces and its jamb members
+        // all but vanish. The pane and the frame follow the arc from jamb face to jamb face instead,
+        // centred on the host's centreline; a jamb member spans the frame's width along the arc.
+        const band = (depth: number, f0?: number, f1?: number): Polygon =>
+          sectorBand(sector, -depth / 2, depth / 2, f0, f1);
+        const f = Math.min(0.5, fw / (sector.r * Math.abs(sector.sweep)));
+        node("window", o.id, i, [prism(band(GLASS_MM * MM), z0, z1)], extras, "glass");
+        node(
+          "window",
+          o.id,
+          i,
+          [
+            prism(band(fd, 0, f), z0, z1),
+            prism(band(fd, 1 - f, 1), z0, z1),
+            prism(band(fd), z0, z0 + fw),
+            prism(band(fd), z1 - fw, z1),
+          ],
+          extras,
+          "frame",
+        );
+        return;
+      }
+      // A straight host: every part already lies in its cut (`insideCut` keeps it as it is).
+      const fit = (p: Polygon, a: number, b: number): Shell | null => {
+        const q = insideCut(p, o.cut);
+        return q ? prism(q, a, b) : null;
+      };
+      node("window", o.id, i, [fit(slab2d(j0, j1, GLASS_MM * MM), z0, z1)], extras, "glass");
       node(
         "window",
         o.id,
         i,
         [
-          prism(slab2d(j0, along(j0, j1, fw), fd), z0, z1),
-          prism(slab2d(along(j1, j0, fw), j1, fd), z0, z1),
-          prism(slab2d(j0, j1, fd), z0, z0 + fw),
-          prism(slab2d(j0, j1, fd), z1 - fw, z1),
+          fit(slab2d(j0, along(j0, j1, fw), fd), z0, z1),
+          fit(slab2d(along(j1, j0, fw), j1, fd), z0, z1),
+          fit(slab2d(j0, j1, fd), z0, z0 + fw),
+          fit(slab2d(j0, j1, fd), z1 - fw, z1),
         ],
         extras,
         "frame",
@@ -295,7 +352,9 @@ function levelNodes(lv: Level, ledger: Assumption[], defaulted: Set<string>, isT
 
   const floorTop = e + FLOOR_FINISH_MM * MM;
   lv.furniture.forEach((f, i) => {
-    const h = FURNITURE_HEIGHT_MM[f.category] ?? FURNITURE_DEFAULT_MM;
+    const parts = t0Parts(f);
+    const family = parts ? f.asset.slice("t0:".length) : undefined;
+    const h = family ? (T0_HEIGHT_MM[family] ?? 0) : (FURNITURE_HEIGHT_MM[f.category] ?? FURNITURE_DEFAULT_MM);
     if (!defaulted.has(f.category)) {
       defaulted.add(f.category);
       ledger.push({
@@ -303,15 +362,34 @@ function levelNodes(lv: Level, ledger: Assumption[], defaulted: Set<string>, isT
         field: `height_mm(${f.category})`,
         value: h,
         provenance: "default",
-        rule: f.category in FURNITURE_HEIGHT_MM ? "furniture-height-family" : "furniture-height-greybox",
+        rule: family
+          ? "furniture-height-t0"
+          : f.category in FURNITURE_HEIGHT_MM
+            ? "furniture-height-family"
+            : "furniture-height-greybox",
+      });
+    }
+    const asset = parts ? f.asset : "greybox";
+    if (f.asset !== asset) {
+      // A T0 family at a turn that is not a quarter turn: the grey box stands, never silently.
+      ledger.push({
+        kind: "furniture",
+        id: f.id,
+        field: "asset",
+        value: "greybox",
+        provenance: "default",
+        rule: "furniture-t0-not-quarter-turn",
       });
     }
     const [cx, cy] = f.centre;
     const box = rect(cx - f.size.w / 2, cy - f.size.d / 2, cx + f.size.w / 2, cy + f.size.d / 2);
-    node("furniture", f.id, i, [prism(box, floorTop, floorTop + h * MM)], {
+    const shells = parts
+      ? parts.map((p) => prism(p.polygon, floorTop + p.y0, floorTop + p.y1))
+      : [prism(box, floorTop, floorTop + h * MM)];
+    node("furniture", f.id, i, shells, {
       category: f.category,
       yaw_deg: f.yawDeg,
-      asset: f.asset,
+      asset,
       ...(f.room ? { room: f.room } : {}),
     });
   });

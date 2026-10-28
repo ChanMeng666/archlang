@@ -8,7 +8,11 @@ import * as core from "@chanmeng666/archlang";
 import type { Diagnostic, World } from "@chanmeng666/archlang";
 import { buildScene3D, type Storey } from "../scene3d/build.js";
 import { type MixedHeightJoint, mixedHeightJoints, wallOwnership } from "../walls/ownership.js";
+import { type FloorOverlap, floorOverlaps } from "../scene3d/overlap.js";
 import type { Scene3D } from "../scene3d/types.js";
+
+/** A warning of the package's own, on one storey. */
+export type Warning3D = (MixedHeightJoint | FloorOverlap) & { level: number };
 
 export type RefusalCode = "E3D_CORE_TOO_OLD" | "E3D_PLAN_ERRORS" | "E3D_NO_WALLS";
 
@@ -26,8 +30,8 @@ export type AdaptResult =
       storeys: Storey[];
       /** The core's diagnostics (warnings only: an error refuses). */
       diagnostics: Diagnostic[];
-      /** The package's own warnings, per storey (`W3D_MIXED_HEIGHT_JOINT`). */
-      warnings: Array<MixedHeightJoint & { level: number }>;
+      /** The package's own warnings, per storey (`W3D_MIXED_HEIGHT_JOINT`, `W3D_FLOOR_OVERLAP`). */
+      warnings: Warning3D[];
     }
   | { ok: false; refusal: Refusal };
 
@@ -79,16 +83,18 @@ export function adaptPlan(source: string, opts: AdaptOptions = {}): AdaptResult 
       refusal: { code: "E3D_NO_WALLS", message: "The plan has no walls, so there is nothing to raise." },
     };
   }
+  const scene = buildScene3D(storeys, {
+    coreVersion: opts.coreVersion ?? "unknown",
+    ...(opts.curveTolMm !== undefined ? { curveTolMm: opts.curveTolMm } : {}),
+  });
   return {
     ok: true,
-    scene: buildScene3D(storeys, {
-      coreVersion: opts.coreVersion ?? "unknown",
-      ...(opts.curveTolMm !== undefined ? { curveTolMm: opts.curveTolMm } : {}),
-    }),
+    scene,
     storeys,
     diagnostics: res.diagnostics,
-    warnings: storeys.flatMap((s) =>
-      mixedHeightJoints(wallOwnership(s.ir.walls)).map((w) => ({ ...w, level: s.level })),
-    ),
+    warnings: [
+      ...storeys.flatMap((s) => mixedHeightJoints(wallOwnership(s.ir.walls)).map((w) => ({ ...w, level: s.level }))),
+      ...scene.levels.flatMap((lv) => floorOverlaps(lv.floors).map((w) => ({ ...w, level: lv.level }))),
+    ],
   };
 }
