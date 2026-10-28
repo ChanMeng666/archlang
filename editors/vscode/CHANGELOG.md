@@ -14,6 +14,13 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-10-28
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.44.0`** (imperial length literals, wall
+  `status`, the garage-opening lint and every diagnostic since 1.43.1).
+
 ## [0.31.1] - 2026-10-17
 
 ### Changed
