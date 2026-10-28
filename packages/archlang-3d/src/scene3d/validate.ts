@@ -86,22 +86,22 @@ const source = object({ kind: string, id: string }, { span: array(integer, 2, 2)
 const sized = (a: string, b: string): Check => object({ [a]: integer, [b]: integer });
 const box = object({ id, source, at: pt, size: sized("w", "h") });
 
+const wall = object(
+  {
+    id,
+    source,
+    footprint: array(polygon),
+    body: array(polygon),
+    height: integer,
+    thickness: integer,
+    cuts: array(string),
+  },
+  { category: string, material: string },
+);
+
 const LEVEL_COLLECTIONS: Record<string, Check> = {
-  floors: array(object({ id, source, polygon }, { uses: array(string) })),
-  walls: array(
-    object(
-      {
-        id,
-        source,
-        footprint: array(polygon),
-        body: array(polygon),
-        height: integer,
-        thickness: integer,
-        cuts: array(string),
-      },
-      { category: string, material: string },
-    ),
-  ),
+  floors: array(object({ id, source, polygon }, { uses: array(string), lift: integer })),
+  walls: array(wall),
   openings: array(
     object(
       {
@@ -141,7 +141,7 @@ const LEVEL_COLLECTIONS: Record<string, Check> = {
 
 const level = object(
   { level: integer, elevation: integer, storeyHeight: integer, footprint: array(ring), ...LEVEL_COLLECTIONS },
-  { name: string },
+  { name: string, demolished: array(wall) },
 );
 
 const scene = object({
@@ -166,7 +166,7 @@ function references(v: Obj, out: ValidationIssue[]): void {
     if (!isObj(lv)) return;
     const ids = (k: string): string[] =>
       (Array.isArray(lv[k]) ? (lv[k] as unknown[]) : []).map((e) => (isObj(e) ? String(e.id) : ""));
-    for (const k of Object.keys(LEVEL_COLLECTIONS)) {
+    for (const k of [...Object.keys(LEVEL_COLLECTIONS), "demolished"]) {
       const seen = new Set<string>();
       ids(k).forEach((x, i) => {
         if (seen.has(x)) fail(out, `/levels/${li}/${k}/${i}/id`, `duplicates id "${x}" in ${k}`);
@@ -174,11 +174,18 @@ function references(v: Obj, out: ValidationIssue[]): void {
       });
     }
     const walls = new Set(ids("walls"));
+    for (const [i, x] of ids("demolished").entries()) {
+      if (walls.has(x)) fail(out, `/levels/${li}/demolished/${i}/id`, `names a standing wall too ("${x}")`);
+    }
     const openings = new Set(ids("openings"));
     (Array.isArray(lv.openings) ? lv.openings : []).forEach((o, i) => {
       if (isObj(o) && !walls.has(String(o.host))) {
         fail(out, `/levels/${li}/openings/${i}/host`, `names no wall of this level ("${String(o.host)}")`);
       }
+    });
+    (Array.isArray(lv.demolished) ? lv.demolished : []).forEach((w, i) => {
+      if (isObj(w) && Array.isArray(w.cuts) && w.cuts.length > 0)
+        fail(out, `/levels/${li}/demolished/${i}/cuts`, "a demolished wall hosts nothing");
     });
     (Array.isArray(lv.walls) ? lv.walls : []).forEach((w, i) => {
       if (!isObj(w) || !Array.isArray(w.cuts)) return;

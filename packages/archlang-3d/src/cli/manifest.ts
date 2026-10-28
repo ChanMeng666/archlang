@@ -125,6 +125,7 @@ export const DIAGNOSTIC_CODES = [
   "E3D_VERIFY_FAILED",
   "E3D_STRICT",
   "W3D_MIXED_HEIGHT_JOINT",
+  "W3D_FLOOR_OVERLAP",
 ] as const;
 
 export function buildManifest() {

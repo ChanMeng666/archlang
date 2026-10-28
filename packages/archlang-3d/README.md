@@ -18,10 +18,15 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
 
 - `src/walls/ownership.ts`: each wall's owned region from the core's `joinWallSet` split (H1), and
   `W3D_MIXED_HEIGHT_JOINT` where a lower wall owns a joint with a taller one.
-- `src/scene3d/`: the types, `scene3d.schema.json` and a zero-dependency validator.
+- `src/scene3d/`: the types, `scene3d.schema.json` and a zero-dependency validator;
+  `overlap.ts`: `W3D_FLOOR_OVERLAP` (V-GEO-05), rooms overlapping by more than 1 cm², the later one
+  lifted 0.5 mm per step.
 - `src/curves.ts`: arcs to a chord tolerance (default 2 mm).
-- `src/mesh/`: Mesh3D — slab, floors, columns, walls (body + sill + lintel per opening), closed door
-  leaves, window frame and glass, grey-box furniture, a hidden flat roof; `earcut` (ISC) for caps.
+- `src/mesh/`: Mesh3D — slab (rooms ∪ wall outline less voids, `slab.ts`), floors, columns, walls
+  (body + sill + lintel per opening, meeting vertex to vertex), demolished walls as translucent
+  ghosts (`wall:<id>:demolish`), closed door leaves, window frame and glass kept inside the cut,
+  T0 parametric furniture for twelve families (`t0.ts`) and grey boxes for the rest, a hidden flat
+  roof; `earcut` (ISC) for caps.
 - `src/replay/`: the replay (M1a) — `timeline.ts` (the event table and `stateAt(t)`, pure),
   `viewer.ts` (browser: three.js 0.186.1, `__seek`/`__frameHash`), `html.ts` (one offline file),
   `video.ts` (Playwright's Chromium on SwiftShader + ffmpeg).

@@ -34,6 +34,9 @@ const COLOUR: Record<NodeKind, [number, number, number, number]> = {
   roof: [0.45, 0.42, 0.4, 1],
 };
 
+/** A demolished wall's ghost (B3a): its own translucent material, `wall:demolish`. */
+const DEMOLISH_COLOUR: [number, number, number, number] = [0.78, 0.33, 0.24, 0.3];
+
 /** The glTF node name of a Mesh3D node: its key without the storey prefix (plan §3.6). */
 export const glbNodeName = (n: MeshNode): string => n.key.slice(n.key.indexOf("/") + 1);
 
@@ -67,12 +70,19 @@ export async function writeGlb(mesh: Mesh3D): Promise<Uint8Array> {
   const scene = doc.createScene(mesh.name);
   doc.getRoot().setDefaultScene(scene);
 
-  const materials = new Map<NodeKind, ReturnType<Document["createMaterial"]>>();
-  const material = (kind: NodeKind) => {
-    let m = materials.get(kind);
+  const materials = new Map<string, ReturnType<Document["createMaterial"]>>();
+  const material = (n: MeshNode) => {
+    const ghost = n.kind === "wall" && n.part === "demolish";
+    const key = ghost ? "wall:demolish" : n.kind;
+    let m = materials.get(key);
     if (!m) {
-      m = doc.createMaterial(kind).setBaseColorFactor(COLOUR[kind]).setMetallicFactor(0).setRoughnessFactor(1);
-      materials.set(kind, m);
+      m = doc
+        .createMaterial(key)
+        .setBaseColorFactor(ghost ? DEMOLISH_COLOUR : COLOUR[n.kind])
+        .setMetallicFactor(0)
+        .setRoughnessFactor(1);
+      if (ghost) m.setAlphaMode("BLEND");
+      materials.set(key, m);
     }
     return m;
   };
@@ -99,7 +109,7 @@ export async function writeGlb(mesh: Mesh3D): Promise<Uint8Array> {
       .setType("SCALAR")
       .setArray(count > 0xffff ? new Uint32Array(indices) : new Uint16Array(indices))
       .setBuffer(buffer);
-    const prim = doc.createPrimitive().setAttribute("POSITION", pos).setIndices(idx).setMaterial(material(n.kind));
+    const prim = doc.createPrimitive().setAttribute("POSITION", pos).setIndices(idx).setMaterial(material(n));
     const name = glbNodeName(n);
     const node = doc
       .createNode(name)

@@ -1,11 +1,6 @@
 {
   "taken": [
     {
-      "platform": "linux",
-      "arch": "x64",
-      "chromium": "156.0.8078.4"
-    },
-    {
       "platform": "win32",
       "arch": "x64",
       "chromium": "156.0.8078.4"
@@ -18,21 +13,21 @@
       "stage:rooms": "5fa9c2262556ca4ff35b00e7299bc4b8997ad06f96b85f84d7e98d2349a0cfad",
       "stage:walls": "226de8337694ff42788a1e09ffaa112269c68c1826715ccf0af0990c96db056a",
       "stage:openings": "b69c6417134f0bd340432c211ac78094174a84fd9e3b8528d657b6da0c460fb2",
-      "stage:fixtures": "f83c8529c013780d062cf3557896e24d9978c15e274fa140b580384637d91076",
-      "tilted": "39507db58f0be7c8ee99021560603829b4cd1d96da104856b3bbdebf6171e6af",
-      "end": "9f1574abde196b49dce31c7922bd8fe9f4ee9cd130b637f313d9efc027483468"
+      "stage:fixtures": "1a1ce6d4236eb3c3d2bf08a866f8d2d8abf280f3a26c764408449dce632ce6cf",
+      "tilted": "2e9f59ac8a9ec8f4ff1003de52565c2227c85f5fa652ec9c83d31cb12f9b1546",
+      "end": "c377303b98478c8385553f4dcbd11fdf59a5ccd8ca182f1094a7b212029952f6"
     },
     "two-storey.arch": {
       "stage:brief": "d569e5eaec80a35b9ffb7edb32ce6863892d5b7726337e364bce642e4e0584f4",
       "stage:rooms": "c33ac44dd55f10b21fe19747e0f519493c16092ef0f6e14b4719f1104881c1f9",
       "stage:walls": "7fb84e8848bea8eedf0a975c3769e27c5d946803c6adc1fe8f5c0f892dfbe4a8",
       "stage:openings": "e7f1b4949681132fd40440a75ff73efd8be2fe116e82ff27a83c1914687adc5a",
-      "stage:fixtures": "c83fc7244b8af99ed6bb15d62c1d149b91de7b5a577a1b6c6417eb2cd87637b8",
-      "stop:1": "2895dd822c35372a46757e1c4139fe1a388612739b9ce5439f93ae72556b212a",
-      "tilted": "3124ec8ff503bb833a221bd8c45a381325d7fb0e663892867ea24e3d56e3f86e",
-      "storey:2": "8f3ab439c7e021ca20a0aefa41e6f1b6fb75fc2e2f3057340b292ca0495491e9",
-      "stop:2": "8acd9bfb47fe0a29ad7ed16d579ff93e7f022dba8e86eca81a5c4f1a97b278bd",
-      "end": "8acd9bfb47fe0a29ad7ed16d579ff93e7f022dba8e86eca81a5c4f1a97b278bd"
+      "stage:fixtures": "c22a76d3f9c92684ba02cdbf8d3f857f30c7088a4e8cf5c50fb07f38904f1c3a",
+      "stop:1": "aad361543c4c7ece07f3c06380f62216dec2a4c7ba15ae6fcabae5797bf4e6c7",
+      "tilted": "c58baeb73759b900ba0f67f638395fc54cc8c320d460fbbabc266263fddab5c2",
+      "storey:2": "44b6b4c6045c28d5dd4882a14f0cd514c4f793d1298c5e79a30523f3dc5299f1",
+      "stop:2": "25055ad73bc4ad829e0a81f35bf1844fda2891831c624fe70f56b29ced53d644",
+      "end": "25055ad73bc4ad829e0a81f35bf1844fda2891831c624fe70f56b29ced53d644"
     }
   }
 }

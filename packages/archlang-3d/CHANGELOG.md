@@ -6,6 +6,18 @@ The package is private and unpublished; versions start with its first 0.x public
 
 ### Added
 
+- Mesh finish (card A2b): T0 parametric furniture for the twelve families laneway-house uses (bed,
+  sofa, table, rug, wardrobe, fridge, counter, kitchen sink, stove, shower, wc, basin), fitted to
+  the plan's footprint and turned by its quarter turn; every other family stays a grey box.
+  V-GEO-05 `W3D_FLOOR_OVERLAP`: rooms overlapping by more than 1 cm² are reported and the later one
+  lifted 0.5 mm per step (`Floor.lift`). The slab is the rooms ∪ the wall outline less voids, so a
+  room outside every wall stands on one. Window glass and frame stay inside their cut on a curved
+  host; a wall's body meets its sills and lintels vertex to vertex. A `status demolish` wall (B3a)
+  is read from `ir.drawn` into `Level.demolished` and drawn as a translucent ghost node
+  `wall:<id>:demolish` (`extras.status` "demolish", its own `wall:demolish` material), never part of
+  the standing walls' ownership. laneway-house's Mesh3D and GLB digests and the key-frame pixel
+  baseline move with the furniture and the split wall bodies.
+
 - M1b GLB and checks (card A4): `archlang3d build <plan> -o plan.glb` writes a GLB with
   glTF-Transform from the same Mesh3D the replay reads (a `level:L<n>` node per storey, one node per
   Mesh3D node named `<kind>:<id>[:<part>]`, its facts in `extras.archlang`, deterministic bytes), and

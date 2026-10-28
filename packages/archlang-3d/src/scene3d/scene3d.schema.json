@@ -214,6 +214,13 @@
             "$ref": "#/$defs/wall"
           }
         },
+        "demolished": {
+          "type": "array",
+          "description": "The storey's status-demolish walls, read from the plan as drawn and joined among themselves only; they host nothing. Absent when none.",
+          "items": {
+            "$ref": "#/$defs/wall"
+          }
+        },
         "openings": {
           "type": "array",
           "items": {
@@ -283,6 +290,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "lift": {
+          "$ref": "#/$defs/um",
+          "description": "Lift of the floor finish over an earlier overlapping room's (V-GEO-05): 500 um per step; absent when none."
         }
       }
     },
@@ -434,7 +445,8 @@
           "type": "integer"
         },
         "asset": {
-          "type": "string"
+          "type": "string",
+          "description": "What the mesh builds it with: t0:<family> (a parametric generator) or greybox."
         }
       }
     },

@@ -4,7 +4,7 @@
  * core's public seam (ADR 0031). Browser-safe: the Node `World` lives in `./node`.
  */
 export { adaptPlan, MIN_CORE } from "./adapter/adapt.js";
-export type { AdaptOptions, AdaptResult, Refusal, RefusalCode } from "./adapter/adapt.js";
+export type { AdaptOptions, AdaptResult, Refusal, RefusalCode, Warning3D } from "./adapter/adapt.js";
 export { ARCHLANG_3D_VERSION, buildScene3D } from "./scene3d/build.js";
 export type { BuildOptions, Storey } from "./scene3d/build.js";
 export type * from "./scene3d/types.js";
@@ -14,7 +14,12 @@ export { um, umPoint } from "./units.js";
 export { mixedHeightJoints, piecesOf, piecesTouch, wallOwnership } from "./walls/ownership.js";
 export type { MixedHeightJoint, OwnedWall, Ownership, Piece, Point, Ring } from "./walls/ownership.js";
 export { buildMesh, FURNITURE_HEIGHT_MM } from "./mesh/build.js";
-export { prism } from "./mesh/extrude.js";
+export { clipToConvex, insideCut, prism, slab2d } from "./mesh/extrude.js";
+export { rectsOf, slabRegion } from "./mesh/slab.js";
+export { assetFor, T0_FAMILIES, T0_HEIGHT_MM, t0Parts } from "./mesh/t0.js";
+export type { Part, PlacedPart } from "./mesh/t0.js";
+export { FLOOR_LIFT_UM, FLOOR_OVERLAP_MIN_UM2, floorLifts, floorOverlaps, overlapArea } from "./scene3d/overlap.js";
+export type { FloorOverlap } from "./scene3d/overlap.js";
 export type { Mesh3D, MeshNode, NodeKind, Shell, Stage } from "./mesh/types.js";
 export {
   authoringOrder,

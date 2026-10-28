@@ -36,7 +36,7 @@ function clean(r: readonly Pt[]): Pt[] | null {
 const orient = (r: Pt[], ccw: boolean): Pt[] => (area2(r) > 0 === ccw ? r : [...r].reverse());
 
 /** Even-odd containment, `null` when `p` lies ON the ring (a vertex or an edge). */
-function where(p: Pt, r: readonly Pt[]): boolean | null {
+export function where(p: Pt, r: readonly Pt[]): boolean | null {
   let c = false;
   for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
     const a = r[i] as Pt;
@@ -74,8 +74,13 @@ function holesApart(outer: readonly Pt[], holes: readonly Pt[][]): boolean {
  * degenerate or a hole touches its outer ring or another hole (callers cut such voids exactly
  * instead; see `lessVoids` in `build.ts`). Outer ring counter-clockwise and holes clockwise in plan numbers, so the solid lies to
  * the LEFT of every edge.
+ *
+ * `splits`, when given, names heights (strictly between z0 and z1) at which a vertex's vertical
+ * edge is split: the side faces then carry those vertices, so a neighbouring shell whose edge ends
+ * there (a wall's sill or lintel against its body's jamb, card A2b) meets a vertex, not the middle
+ * of an edge (no T-junction). A side face whose two edges are not split keeps its two triangles.
  */
-export function prism(poly: Polygon, z0: number, z1: number): Shell | null {
+export function prism(poly: Polygon, z0: number, z1: number, splits?: (p: Pt) => readonly number[]): Shell | null {
   if (!(z1 > z0)) return null;
   const outer = clean(poly.outer);
   if (!outer) return null;
@@ -123,6 +128,20 @@ export function prism(poly: Polygon, z0: number, z1: number): Shell | null {
     face(n + a, n + b, n + c, [0, 1, 0]);
     face(a, b, c, [0, -1, 0]);
   }
+  // Each plan vertex's column of vertices, bottom to top: its split heights in between.
+  const column: number[][] = [];
+  for (let i = 0; i < n; i++) {
+    const p: Pt = [flat[2 * i] as number, flat[2 * i + 1] as number];
+    const hs = splits ? [...new Set(splits(p))].filter((h) => h > z0 && h < z1).sort((x, y) => x - y) : [];
+    const col = [i];
+    for (const h of hs) {
+      col.push(positions.length / 3);
+      positions.push(p[0], h, p[1]);
+    }
+    col.push(n + i);
+    column.push(col);
+  }
+  const height = (v: number): number => positions[3 * v + 1] as number;
   let base = 0;
   for (const r of rings) {
     for (let k = 0; k < r.length; k++) {
@@ -133,8 +152,27 @@ export function prism(poly: Polygon, z0: number, z1: number): Shell | null {
       // Solid on the left of a→b (plan numbers), so outward is the right-hand normal (dy, −dx);
       // in the exporters' axes plan (x, y) is (X, Z).
       const out: [number, number, number] = [b[1] - a[1], 0, -(b[0] - a[0])];
-      face(i, j, n + j, out);
-      face(i, n + j, n + i, out);
+      const ci = column[i] as number[];
+      const cj = column[j] as number[];
+      if (ci.length === 2 && cj.length === 2) {
+        face(i, j, n + j, out);
+        face(i, n + j, n + i, out);
+        continue;
+      }
+      // A ladder up the two columns: always step the side whose next vertex is lower.
+      let u = 0;
+      let w = 0;
+      while (u < ci.length - 1 || w < cj.length - 1) {
+        const hu = u < ci.length - 1 ? height(ci[u + 1] as number) : Number.POSITIVE_INFINITY;
+        const hw = w < cj.length - 1 ? height(cj[w + 1] as number) : Number.POSITIVE_INFINITY;
+        if (hu <= hw) {
+          face(ci[u] as number, cj[w] as number, ci[u + 1] as number, out);
+          u++;
+        } else {
+          face(ci[u] as number, cj[w] as number, cj[w + 1] as number, out);
+          w++;
+        }
+      }
     }
     base += r.length;
   }
@@ -170,3 +208,44 @@ export function slab2d(a: Pt, b: Pt, depth: number): Polygon {
 }
 
 export type { Ring3 };
+
+/**
+ * `ring ∩ convex` (Sutherland–Hodgman: any simple subject, a convex clip), rounded to whole
+ * micrometres; `null` when nothing of it is left.
+ */
+export function clipToConvex(ring: readonly Pt[], convex: readonly Pt[]): Polygon | null {
+  const c = area2(convex) > 0 ? [...convex] : [...convex].reverse();
+  let out: Array<[number, number]> = ring.map((p) => [p[0], p[1]]);
+  for (let k = 0; k < c.length && out.length > 0; k++) {
+    const a = c[k] as Pt;
+    const b = c[(k + 1) % c.length] as Pt;
+    const side = (p: readonly number[]): number =>
+      (b[0] - a[0]) * ((p[1] as number) - a[1]) - (b[1] - a[1]) * ((p[0] as number) - a[0]);
+    const input = out;
+    out = [];
+    for (let i = 0; i < input.length; i++) {
+      const p = input[i] as [number, number];
+      const q = input[(i + 1) % input.length] as [number, number];
+      const sp = side(p);
+      const sq = side(q);
+      if (sp >= 0) out.push(p);
+      if (sp >= 0 !== sq >= 0) {
+        const t = sp / (sp - sq);
+        out.push([p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]);
+      }
+    }
+  }
+  const rounded = clean(out.map((p): Pt => [Math.round(p[0]), Math.round(p[1])]));
+  return rounded ? { outer: rounded } : null;
+}
+
+/**
+ * `poly` (a convex part: a pane, a frame member) kept inside `ring` (its opening's cut): as it is
+ * when every corner already lies in or on the cut, which is every opening on a straight wall; else
+ * the cut clipped to it. On a curved host the pane runs along the chord between the jambs, so its
+ * corners cross the jambs' radial faces into the wall body (card A2b); clipped, its ends follow them.
+ */
+export function insideCut(poly: Polygon, ring: readonly Pt[]): Polygon | null {
+  if (poly.outer.every((p) => where(p, ring) !== false)) return poly;
+  return clipToConvex(ring, poly.outer);
+}

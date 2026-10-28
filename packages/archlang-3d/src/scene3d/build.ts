@@ -25,8 +25,10 @@ import {
   type RWindow,
 } from "@chanmeng666/archlang";
 import { circleRing, DEFAULT_CURVE_TOL_MM, tessellateLoops } from "../curves.js";
+import { assetFor } from "../mesh/t0.js";
 import { um, umPoint } from "../units.js";
 import { type Point, wallOwnership } from "../walls/ownership.js";
+import { floorLifts, floorOverlaps } from "./overlap.js";
 import type {
   Assumption,
   Box,
@@ -102,7 +104,7 @@ function furnitureOf(f: RFurniture): Furniture {
     centre: umPoint({ x: f.at.x + f.size.w / 2, y: f.at.y + f.size.h / 2 }),
     size: { w: um(f.size.w), d: um(f.size.h) },
     yawDeg: rotate === 0 ? 0 : -rotate,
-    asset: "greybox",
+    asset: assetFor(f.category),
   };
 }
 
@@ -193,6 +195,31 @@ function wallsAndOpenings(
 }
 
 /**
+ * The storey's `status demolish` walls, from the plan as drawn (B3a's `ir.drawn`), joined among
+ * themselves only, as the core's drawing joins them for their dashed outline (B3b): the standing
+ * walls' ownership (H1) stays the plan after the demolition, so a demolished wall never takes a
+ * share of a standing one. Solid, hosting nothing.
+ */
+function demolishedOf(ir: ResolvedPlan, tol: number): Wall[] {
+  const gone = (ir.drawn?.walls ?? []).filter((w) => w.status === "demolish");
+  if (gone.length === 0) return [];
+  return wallOwnership(gone, (loops) => tessellateLoops(loops, tol)).owned.map((o) => {
+    const pieces = o.pieces.map((p) => polygon(p.outer, p.holes));
+    return {
+      id: o.wall.id,
+      source: source(o.wall),
+      category: o.wall.category,
+      material: o.wall.material,
+      footprint: pieces,
+      body: pieces,
+      height: um(o.wall.height),
+      thickness: um(o.wall.thickness),
+      cuts: [],
+    };
+  });
+}
+
+/**
  * An opening's two jambs on its host's centreline: the core's own chord through the doorway (its
  * tangent there on a curved host), read through `doorSwing` with a probe door of the opening's width,
  * so the 3D package never re-derives a wall direction.
@@ -209,6 +236,32 @@ function levelOf(s: Storey, ledger: Assumption[], tol: number): Level {
   const of = <K extends ResolvedElement["kind"]>(k: K): Extract<ResolvedElement, { kind: K }>[] =>
     els.filter((e): e is Extract<ResolvedElement, { kind: K }> => e.kind === k);
   const { walls, openings, footprint } = wallsAndOpenings(ir, byId, tol);
+  const demolished = demolishedOf(ir, tol);
+  for (const w of demolished) {
+    ledger.push({
+      kind: "wall",
+      id: w.id,
+      field: "status",
+      value: "demolish",
+      provenance: "authored",
+      rule: "wall-demolish-ghost",
+    });
+  }
+  const rooms = of("room").map((r) => floorOf(r, tol));
+  const lifts = floorLifts(rooms, floorOverlaps(rooms));
+  const floors = rooms.map((f) => {
+    const lift = lifts.get(f.id);
+    if (lift === undefined) return f;
+    ledger.push({
+      kind: "floor",
+      id: f.id,
+      field: "lift_mm",
+      value: lift / 1000,
+      provenance: "derived",
+      rule: "floor-overlap-lift",
+    });
+    return { ...f, lift };
+  });
   const roofs: Roof[] = of("roof").map((r: RRoof) => ({
     id: r.id,
     source: source(r),
@@ -244,8 +297,9 @@ function levelOf(s: Storey, ledger: Assumption[], tol: number): Level {
     elevation: um(ir.elevation),
     storeyHeight: um(ir.storeyHeight),
     footprint,
-    floors: of("room").map((r) => floorOf(r, tol)),
+    floors,
     walls,
+    ...(demolished.length > 0 ? { demolished } : {}),
     openings,
     furniture: of("furniture").map(furnitureOf),
     stairs: of("stair").map(stairOf),
