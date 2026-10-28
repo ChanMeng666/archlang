@@ -17,9 +17,9 @@ Re-taken by card A2b (2026-10-28) on Windows 11 x64 with the same Chromium build
 T0 parametric furniture replaced the grey boxes, so every frame in which furniture shows moved
 (laneway-house `stage:fixtures`, `tilted`, `end`; two-storey `stage:fixtures`, `stop:1`,
 `tilted`, `storey:2`, `stop:2`, `end`) and none before it (`stage:brief` … `stage:openings`
-are byte-identical, so the split wall bodies changed no pixel). `taken` lists only the
-environments the re-taken hashes were rendered in; Linux is added only after CI's `check-3d` job
-renders the same hashes.
+are byte-identical, so the split wall bodies changed no pixel). CI's `check-3d` job (ubuntu-latest x64, the same
+Chromium build; GitHub Actions run 40638897953) then rendered the same 17 hashes, byte for byte,
+and failed only because Linux was not listed; the Linux entry was added with the hashes unchanged.
 
 The baseline before A2b (card A4, 2026-10-28): taken on Windows 11 x64 (Chromium 156.0.8078.4 from
 `playwright-core` 1.64.1, SwiftShader) with the command above. The first run of CI's `check-3d`
