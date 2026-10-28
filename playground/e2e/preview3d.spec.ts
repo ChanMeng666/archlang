@@ -6,7 +6,7 @@ import { expect, type Page, test } from "@playwright/test";
 // The package's own software-WebGL flags (its replay tests render with the same ones); the one
 // browser-free module of the package, so the specs' typecheck never pulls its Node entry.
 import { SWIFTSHADER_ARGS } from "../../packages/archlang-3d/src/replay/swiftshader.js";
-import { BROKEN_PLAN, SIMPLE_PLAN, shareHash, waitForPlan } from "./fixtures.js";
+import { BROKEN_PLAN, SIMPLE_PLAN, setEditorSource, shareHash, waitForPlan } from "./fixtures.js";
 
 /**
  * The "3D preview" tab (card A5): the separate archlang-3d package's replay of the editor's plan,
@@ -94,6 +94,91 @@ test.describe("3D preview tab", () => {
     await expect(message).toContainText("No 3D preview: The plan does not resolve");
     await expect(page.locator("#preview3d")).toContainText(LABEL);
     await expect(page.locator("#preview3d canvas")).toBeHidden();
+    expect(errors).toEqual([]);
+  });
+});
+
+/** Open the 3D tab and wait until a replay is mounted and its drawing is ready. */
+async function open3d(page: Page): Promise<void> {
+  await page.locator("#tab-preview3d").click();
+  await page.waitForFunction(() => (window as W).__preview3d !== undefined);
+  await page.evaluate(async () => {
+    await (window as W).__preview3d?.ready;
+  });
+}
+
+test.describe("3D preview tab follows the editor", () => {
+  test("the storey switcher drives it: no selection is all storeys, L2 is storey 2 alone", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    await page.locator("#examples").selectOption("Townhouse (3 levels)");
+    await waitForPlan(page);
+    await open3d(page);
+    const tab = page.locator("#preview3d");
+    const canvas = page.locator("#preview3d canvas");
+    await expect(tab).toHaveAttribute("data-view", "all");
+    await expect(canvas).toHaveAttribute("aria-label", /\(all storeys\)/);
+    const all = await hashAt(page, 1);
+
+    await page.locator("#storeys button", { hasText: "L2" }).click();
+    await expect(tab).toHaveAttribute("data-view", "L2");
+    await expect(canvas).toHaveAttribute("aria-label", /\(storey L2\)/);
+    await page.evaluate(async () => {
+      await (window as W).__preview3d?.ready;
+    });
+    expect(await hashAt(page, 1), "storey 2 alone is not the combined view").not.toBe(all);
+
+    // Another tab and back: the storey holds, and the tab redraws.
+    await page.locator("#tab-describe").click();
+    await page.locator("#tab-preview3d").click();
+    await expect(tab).toHaveAttribute("data-view", "L2");
+  });
+
+  test("an edit while playing goes on from the current t, not back to the start", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await waitForPlan(page);
+    await open3d(page);
+    const scrub = page.locator('#preview3d input[type="range"]');
+    await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeGreaterThan(0.15);
+    await page.evaluate(() => {
+      (window as W & { __before?: unknown }).__before = (window as W).__preview3d;
+    });
+    const before = Number(await scrub.inputValue());
+    await setEditorSource(page, SIMPLE_PLAN.replace("6000x4000", "6000x4100"));
+    await page.waitForFunction(() => (window as W & { __before?: unknown }).__before !== (window as W).__preview3d);
+    expect(Number(await scrub.inputValue())).toBeGreaterThanOrEqual(before);
+  });
+
+  test("leaving the tab stops playback; coming back resumes it", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await waitForPlan(page);
+    await open3d(page);
+    const scrub = page.locator('#preview3d input[type="range"]');
+    await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeGreaterThan(0.05);
+    await page.locator("#tab-lint").click();
+    const parked = Number(await scrub.inputValue());
+    await page.waitForTimeout(600);
+    expect(Number(await scrub.inputValue()), "no frames while hidden").toBe(parked);
+    await page.locator("#tab-preview3d").click();
+    await expect.poll(async () => Number(await scrub.inputValue())).toBeGreaterThan(parked);
+  });
+
+  test("a plan that resolves but the core will not draw shows the core's message", async ({ page }) => {
+    // Resolves cleanly, then `compile()` refuses it at the drawing budget (E_DRAWING_LIMIT).
+    const tooBig = `plan "Budget" {
+  units mm
+  wall exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  room id=a at (0,0) size 6000x4000 label "Hall"
+  for i in 0..200 { escalator at (0, i * 2000) size 300000x1200 dir up }
+}`;
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.goto(`/${await shareHash(tooBig)}`);
+    await expect(page.locator("#editor .cm-content")).toBeVisible();
+    await page.locator("#tab-preview3d").click();
+    const message = page.locator("#preview3d .p3d-message");
+    await expect(message).toContainText("No 3D preview: The drawing is estimated at");
+    await expect(message).not.toContainText("viewBox");
     expect(errors).toEqual([]);
   });
 });

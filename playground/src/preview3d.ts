@@ -4,11 +4,16 @@
  *
  * The editor's plan goes through the package's own path, in the browser: `adaptPlan` → `buildMesh`
  * → `replayPayload` (the event table) → `mountReplay`, the same renderer the package's single-file
- * replay HTML uses. A plan the package refuses shows the refusal's message, never a crash. Every
- * frame is `seek(t)`; the playback loop only picks the next `t` (no clock reaches a frame).
+ * replay HTML uses. A plan the package refuses, or one the core does not draw, shows that message,
+ * never a crash. Every frame is `seek(t)`; the playback loop only picks the next `t` (no clock
+ * reaches a frame).
+ *
+ * The storey switcher drives this tab as it drives the other four: a selected storey is that
+ * storey's view alone (`viewMesh(mesh, n)` over the core's own page for it, as the CLI's
+ * `--storey n`); no selection, or a one-storey plan, is the combined view.
  */
 import { compile } from "archlang";
-import { adaptPlan, buildMesh } from "@chanmeng666/archlang-3d";
+import { adaptPlan, buildMesh, storeysOf, viewMesh } from "@chanmeng666/archlang-3d";
 import { mountReplay, PREVIEW_LABEL, type ReplayHandle, replayPayload } from "@chanmeng666/archlang-3d/browser";
 
 /** The canvas's drawing size (CSS scales it to the pane); 16:9 like the replay HTML. */
@@ -18,10 +23,15 @@ const HEIGHT = 540;
 const SECONDS = 10;
 
 export interface Preview3d {
-  /** The tab was opened: (re)build from `source` if it changed, and play from the start. */
-  show: (source: string) => void;
-  /** The source changed while the tab is open: rebuild and redraw at the current position. */
-  update: (source: string) => void;
+  /**
+   * The tab was opened. A new plan or storey (`level`: the switcher's selection, `null` = none)
+   * is built and played from the start; the same one resumes where it was hidden.
+   */
+  show: (source: string, level: number | null) => void;
+  /** The plan or the storey changed while the tab is open: rebuild and go on from the current t. */
+  update: (source: string, level: number | null) => void;
+  /** The tab was closed: playback stops (no frames are drawn while hidden). */
+  hide: () => void;
 }
 
 declare global {
@@ -67,9 +77,12 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   host.append(label, stage, controls, message);
 
   let handle: ReplayHandle | undefined;
+  /** What the mounted replay (or the refusal showing) was built from. */
   let built: string | undefined;
   let frame = 0;
   let generation = 0;
+  /** Playback was running when the tab was hidden: `show` resumes it. */
+  let resume = false;
 
   const stop = () => {
     if (frame) cancelAnimationFrame(frame);
@@ -84,25 +97,39 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     stage.hidden = true;
     controls.hidden = true;
     message.hidden = false;
-    message.textContent = text;
+    message.textContent = `No 3D preview: ${text}`;
+    delete host.dataset.view;
   };
 
-  /** Build the replay of `source`; false when it was refused (the message is showing). */
-  const build = (source: string): boolean => {
-    built = source;
+  /** Build the replay of `source` at `level`; false when it was refused (the message is showing). */
+  const build = (source: string, level: number | null, key: string): boolean => {
+    built = key;
     generation += 1;
     let next: ReplayHandle;
+    let view: string;
     try {
       const r = adaptPlan(source);
       if (!r.ok) {
-        refuse(`No 3D preview: ${r.refusal.message}`);
+        refuse(r.refusal.message);
+        return false;
+      }
+      const drawn = compile(source);
+      if (drawn.errors.length > 0 || !drawn.svg) {
+        refuse(drawn.errors[0]?.message ?? "the core did not draw the plan.");
         return false;
       }
       const mesh = buildMesh(r.scene);
-      const payload = replayPayload(mesh, {
+      const levels = storeysOf(mesh);
+      const index = level === null || levels.length < 2 ? -1 : levels.indexOf(level);
+      const svg = index < 0 ? drawn.svg : drawn.pages?.find((pg) => pg.level === level)?.svg;
+      if (!svg) {
+        refuse(`the core drew no page for storey L${level}.`);
+        return false;
+      }
+      view = index < 0 ? "all" : `L${level}`;
+      const payload = replayPayload(viewMesh(mesh, index < 0 ? "all" : index + 1), {
         title: r.scene.meta.name,
-        // The core's own light drawing (page 1 for a multi-storey plan: the combined view).
-        svg: compile(source).svg,
+        svg,
         width: WIDTH,
         height: HEIGHT,
         seconds: SECONDS,
@@ -110,16 +137,18 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
       stop();
       handle?.dispose();
       next = mountReplay(canvas, payload);
+      const which = index < 0 ? (levels.length > 1 ? "all storeys" : "") : `storey L${level}`;
       canvas.setAttribute(
         "aria-label",
-        `${payload.title}: the plan drawing itself in its authoring order, then rising`,
+        `${payload.title}${which ? ` (${which})` : ""}: the plan drawing itself in its authoring order, then rising`,
       );
     } catch (e) {
-      refuse(`No 3D preview: ${(e as { message?: string })?.message ?? String(e)}`);
+      refuse((e as { message?: string })?.message ?? String(e));
       return false;
     }
     handle = next;
     window.__preview3d = next;
+    host.dataset.view = view;
     stage.hidden = false;
     controls.hidden = false;
     message.hidden = true;
@@ -131,7 +160,8 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     scrub.value = String(t);
   };
 
-  const playFrom0 = () => {
+  /** Play from `from` to the end; the frame clock only advances t. */
+  const playFrom = (from: number) => {
     const h = handle;
     if (!h) return;
     stop();
@@ -145,7 +175,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
       let t0: number | undefined;
       const step = (now: number) => {
         t0 ??= now;
-        const t = Math.min(1, (now - t0) / (SECONDS * 1000));
+        const t = Math.min(1, from + (now - t0) / (SECONDS * 1000));
         seek(t);
         frame = t < 1 ? requestAnimationFrame(step) : 0;
       };
@@ -153,26 +183,46 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     });
   };
 
-  play.addEventListener("click", playFrom0);
+  /** Redraw at `t` once the drawing is ready (no playback). */
+  const drawAt = (t: number) => {
+    const h = handle;
+    const mine = generation;
+    void h?.ready.then(() => mine === generation && seek(t));
+  };
+
+  play.addEventListener("click", () => playFrom(0));
   scrub.addEventListener("input", () => {
     stop();
     handle?.seek(Number(scrub.value));
   });
 
+  const keyOf = (source: string, level: number | null) => `${level ?? ""}|${source}`;
+
   return {
-    show(source) {
-      if (source !== built && !build(source)) return;
-      playFrom0();
+    show(source, level) {
+      const key = keyOf(source, level);
+      if (key !== built) {
+        resume = false;
+        if (build(source, level, key)) playFrom(0);
+        return;
+      }
+      const t = Number(scrub.value);
+      if (resume) playFrom(t);
+      else drawAt(t);
+      resume = false;
     },
-    update(source) {
-      if (source === built) return;
+    update(source, level) {
+      const key = keyOf(source, level);
+      if (key === built) return;
       const t = Number(scrub.value);
       const playing = frame !== 0;
-      if (!build(source)) return;
-      const h = handle;
-      const mine = generation;
-      if (playing) playFrom0();
-      else void h?.ready.then(() => mine === generation && seek(t));
+      if (!build(source, level, key)) return;
+      if (playing) playFrom(t);
+      else drawAt(t);
+    },
+    hide() {
+      resume = frame !== 0;
+      stop();
     },
   };
 }

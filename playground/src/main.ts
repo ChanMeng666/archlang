@@ -105,6 +105,8 @@ for (const tab of tabs) {
       t.setAttribute("aria-selected", String(on));
     }
     for (const [name, el] of Object.entries(views)) el.classList.toggle("active", name === tab.dataset.tab);
+    // Leaving the 3D tab stops its playback (opening it is handled below).
+    if (tab.dataset.tab !== "preview3d") void preview3d?.then((p) => p?.hide());
   });
 }
 
@@ -315,7 +317,9 @@ function applyFixAt(rows: Diagnostic[], index: number): void {
 
 function render(source: string, refit = false) {
   // The 3D preview follows the editor only while its tab is open (and once loaded).
-  if (preview3d && preview3dEl.classList.contains("active")) void preview3d.then((p) => p?.update(source));
+  // The storey it shows is the switcher's explicit selection (none = the combined view).
+  if (preview3d && preview3dEl.classList.contains("active"))
+    void preview3d.then((p) => p?.update(source, selectedLevel));
   // Theme: empty value = the source's own `theme` directive (pass nothing); a named
   // key overrides it (compile's `theme` option wins over an in-source directive).
   const themeKey = themeSelect.value;
@@ -385,7 +389,7 @@ document.getElementById("tab-preview3d")?.addEventListener("click", () => {
       return undefined;
     },
   );
-  void preview3d.then((p) => p?.show(currentSource()));
+  void preview3d.then((p) => p?.show(currentSource(), selectedLevel));
 });
 
 let debounce: ReturnType<typeof setTimeout>;
