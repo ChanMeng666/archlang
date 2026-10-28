@@ -152,11 +152,16 @@ not depend on this programme until its 3D tab (Tier B).
 
 ## 6. Owner-only steps (never automated)
 
-- Cutting the core release that carries C1/C2 and the stages (needed by ArchCanvas).
+- ~~Cutting the core release that carries C1/C2 and the stages~~: delegated to the agent by D15;
+  1.44.0 carried them.
 - Registering the npm trusted publisher for `@chanmeng666/archlang-3d`; the first 0.x publish.
-- Confirming the merge of A5 (it opens Tier A on the live playground) and each Tier A post.
+- ~~Confirming the merge of A5~~: confirmed by D16 (A5 merged, Tier A open). Each Tier A post stays
+  the owner's.
 - Reading N10 at four weeks and deciding Tier B.
-- Updating `strategy/positioning.md` row 8 in the growth repository in the same window as A5 / Tier B.
+- Uploading each VS Code `.vsix` to the Marketplace (D16: the agent builds and verifies it, then
+  guides the upload).
+- ~~Updating `strategy/positioning.md` row 8 at Tier A~~: done by the agent at the owner's request
+  (archcanvas-growth #22); the Tier B rewrite rides with the ArchCanvas PR.
 
 ## 7. Related documents
 
