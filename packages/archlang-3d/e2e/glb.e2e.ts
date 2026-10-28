@@ -201,6 +201,14 @@ describe("archlang3d build / check (§9.2 criteria 2, 4 and 5)", () => {
     expect(c.code, c.err).toBe(0);
     expect(JSON.parse(c.out)).toMatchObject({ ok: true, doors: "plan", verify: { passed: 4, failed: 0 } });
     expect((await cli(["build", lane, "-o", join(tmp, "x.glb"), "--doors", "open"])).code).toBe(3);
+    // A GLB's pose was set when it was built: check applies none, so the flag is usage and the
+    // report names no pose (red-team round 1).
+    const g = await cli(["check", out, "--doors", "plan", "--json"]);
+    expect(g.code).toBe(3);
+    expect(g.err).toMatch(/posed when it was built/);
+    const gc = await cli(["check", out, "--json"]);
+    expect(gc.code, gc.err).toBe(0);
+    expect(JSON.parse(gc.out)).not.toHaveProperty("doors");
   });
 
   it("--strict refuses a build with a warning: E3D_STRICT, exit 2, ok false, nothing written", async () => {

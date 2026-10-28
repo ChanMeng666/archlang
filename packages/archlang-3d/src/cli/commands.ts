@@ -176,6 +176,9 @@ async function cmdBuild(p: Parsed): Promise<number> {
     out = input.replace(/\.arch$/i, "") + (format === "glb" ? ".glb" : ".scene3d.json");
   }
   if (out === "-" && json) throw new Usage("build: -o - and --json both write stdout; pick one");
+  // A Scene3D carries no pose (each leaf's closed and open points both): the pose is the model's.
+  if (format === "scene3d" && doors !== "closed")
+    throw new Usage("build: --doors plan poses the model; a Scene3D carries no pose (use -f glb)");
 
   let source: string;
   try {
@@ -246,7 +249,8 @@ async function cmdBuild(p: Parsed): Promise<number> {
 async function cmdCheck(p: Parsed): Promise<number> {
   const input = onePlan("check", p);
   const json = p.flags.has("--json");
-  const doors = doorPose(p.flags.get("--doors"));
+  const doorsFlag = p.flags.get("--doors");
+  const doors = doorPose(doorsFlag);
   let raw: Buffer;
   try {
     raw = readInput(input);
@@ -257,7 +261,11 @@ async function cmdCheck(p: Parsed): Promise<number> {
   let checks: CheckResult[];
   let diagnostics: Array<{ code: string; severity: string; message: string }> = [];
   // A GLB by its magic, whatever its name.
-  if (raw.byteLength >= 4 && raw.readUInt32LE(0) === 0x46546c67) {
+  const isGlb = raw.byteLength >= 4 && raw.readUInt32LE(0) === 0x46546c67;
+  // A GLB's pose was chosen when it was built; checking it applies none.
+  if (isGlb && doorsFlag !== undefined)
+    throw new Usage("check: --doors applies to a plan; a GLB's doors were posed when it was built");
+  if (isGlb) {
     try {
       checks = await checkGlb(new Uint8Array(raw));
     } catch (e) {
@@ -275,7 +283,7 @@ async function cmdCheck(p: Parsed): Promise<number> {
     diagnostics = b.warnings.map((w) => ({ code: w.code, severity: "warning", message: w.message }));
   }
   const ok = checks.every((c) => c.ok);
-  if (json) emit({ ok, input: { path: input }, doors, diagnostics, verify: summary(checks) });
+  if (json) emit({ ok, input: { path: input }, ...(isGlb ? {} : { doors }), diagnostics, verify: summary(checks) });
   for (const c of checks) {
     say(`archlang3d: ${c.ok ? "pass" : "FAIL"} ${c.id}${c.ok ? "" : ` E3D_VERIFY_FAILED: ${c.failures.join("; ")}`}`);
   }

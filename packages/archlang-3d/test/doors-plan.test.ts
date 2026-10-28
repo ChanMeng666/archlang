@@ -53,7 +53,10 @@ describe("--doors plan on the corpus", () => {
     let leaves = 0;
     for (const { n, scene } of corpus) {
       for (const { o } of doorsOf(scene)) {
-        for (const [h, f, e] of o.leaves ?? []) {
+        for (const leaf of o.leaves ?? []) {
+          // The writer always gives the open tip.
+          expect(leaf, `${n} ${o.id}`).toHaveLength(3);
+          const [h, f, e] = leaf as [Pt, Pt, Pt];
           leaves++;
           const c = [f[0] - h[0], f[1] - h[1]];
           const v = [e[0] - h[0], e[1] - h[1]];
@@ -147,6 +150,17 @@ describe("--doors plan on the corpus", () => {
       });
       expect(timeline(plan), n).toEqual(timeline(closed));
     }
+  });
+
+  it("a pre-A7 Scene3D (leaves without their open tip) builds its doors closed under plan, ledgered", () => {
+    const lane = corpus.find((c) => c.n === "laneway-house.arch");
+    const old = structuredClone(lane?.scene) as Scene3D;
+    for (const lv of old.levels)
+      for (const o of lv.openings) if (o.leaves) o.leaves = o.leaves.map((l) => [l[0], l[1]]);
+    const m = buildMesh(old, { doors: "plan" });
+    expect(m.nodes.filter((x) => x.kind === "door")).toEqual(lane?.closed.nodes.filter((x) => x.kind === "door"));
+    const ledgered = m.assumptions.filter((a) => a.rule === "door-pose-plan-no-swing").map((a) => a.id);
+    expect(ledgered.sort()).toEqual(["d_bath", "d_bed", "d_front", "d_garden"]);
   });
 
   it("the default is the closed build, byte for byte", () => {

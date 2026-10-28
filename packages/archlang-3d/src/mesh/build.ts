@@ -18,7 +18,10 @@
  * - door: leaves 40 mm thick, [e + sill, e + head]. Closed by default (Q11): the core's leaves for a
  *   swinging door, one panel across the jambs for every other kind. `doors: "plan"` (`--doors plan`)
  *   swings each of the core's leaves to the pose the plan draws (`openLeaf`); a kind that sweeps no
- *   leaf keeps its closed panel, ledgered;
+ *   leaf (or a pre-A7 Scene3D leaf without its open tip) keeps its closed panel, ledgered. The 3D
+ *   leaf is a fixed 40 mm (at most half the leaf) where the core draws max(40 mm, 2 pens) capped at
+ *   6 % of the width, so the two slabs can differ by a few mm in thickness; both share the hinge
+ *   edge on the open radius and lie inside the one sector (not a misalignment);
  * - window: a 16 mm glass pane across the jambs and a 40 × 60 mm frame (§4.3), every part kept
  *   inside its cut; on a curved host both follow the arc from jamb face to jamb face (`cutSector`);
  * - furniture: a T0 parametric piece (`t0.ts`) fitted to its footprint for the twelve families it
@@ -329,19 +332,20 @@ function levelNodes(
     const extras = { host: o.host, width_mm: o.width / MM, sill_mm: o.sill / MM, head_mm: o.head / MM };
     if (o.kind === "door") {
       const z0 = e + o.sill;
-      if (doors === "plan" && o.leaves) {
+      const swung = o.leaves?.every((l) => l.length === 3) ? (o.leaves as Array<[Pt, Pt, Pt]>) : undefined;
+      if (doors === "plan" && swung) {
         node(
           "door",
           o.id,
           i,
-          o.leaves.map(([h, f, end]) => prism(openLeaf(h, f, end, LEAF_MM * MM), z0, e + head)),
+          swung.map(([h, f, end]) => prism(openLeaf(h, f, end, LEAF_MM * MM), z0, e + head)),
           { ...extras, door_kind: o.doorKind ?? "hinged", pose: "plan" },
         );
         return;
       }
       if (doors === "plan") {
         // No swing to draw (a sliding, barn, bifold, pocket or garage door: the core's `doorLeaves`
-        // gives none): its panel stays across the doorway, and the ledger says so.
+        // gives none; or a pre-A7 leaf without its tip): it stays closed, and the ledger says so.
         ledger.push({
           kind: "door",
           id: o.id,

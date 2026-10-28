@@ -384,7 +384,7 @@
             "items": {
               "$ref": "#/$defs/pt"
             },
-            "minItems": 3,
+            "minItems": 2,
             "maxItems": 3
           }
         },

@@ -93,8 +93,9 @@ export interface Opening {
   /** A door's swinging leaves, each `[hinge, far jamb, open tip]` from the core's `doorLeaves` (two
    *  for a `double` door): closed, the leaf runs hinge → far jamb; swung as the plan draws it (`--doors
    *  plan`), hinge → open tip, 90° on. Absent for a kind that sweeps no leaf (sliding, barn, bifold,
-   *  pocket, garage). */
-  leaves?: Array<[Pt, Pt, Pt]>;
+   *  pocket, garage). The writer always gives the tip; a pre-A7 Scene3D's 2-point leaf (no tip) still
+   *  validates, and its door stays closed under `--doors plan`. */
+  leaves?: Array<[Pt, Pt] | [Pt, Pt, Pt]>;
   width: Um;
   sill: Um;
   head: Um;
