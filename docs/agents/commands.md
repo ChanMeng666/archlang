@@ -46,8 +46,9 @@
 
 ## CI
 
-`ci.yml` (push to `main` + PRs), all gating except `bench`. `main` is protected: its required checks
-are the seven gating check names below (not up-to-date-with-`main`, no reviews), and repository
+`ci.yml` (push to `main` + PRs), all gating except `bench` and `check-3d`. `main` is protected: its
+required checks are the seven gating check names below (not up-to-date-with-`main`, no reviews); `check-3d`
+is not one of them (adding it is the owner's branch-protection setting), and repository
 auto-merge is on. A new push to a PR cancels that PR's running CI (`concurrency`, per PR number); each
 push to `main` runs in a group of its own and is never cancelled.
 
@@ -70,6 +71,7 @@ Minutes, a full run measured 2026-10-27 (PR #290 at 2ed9d70e, `gh run view 40416
 | `builds` (Workspace builds) | `build`, `typecheck:all`, all four workspace builds, MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring` (each only here) | 2.0 |
 | `windows` | `npm test` + `check:drift` at the runner's default line endings (no `eval:ci`) | 21.1 |
 | `e2e-playground`, `e2e-docs` | Playwright against the built sites | 4.7, 4.7 |
+| `check-3d` (3D package (check:3d)) | `npm run check:3d` on Linux: `packages/archlang-3d`'s heavy tests (GLB through glTF-Validator, determinism over the corpus, CLI exit codes, `npm pack`, the replay in Playwright's Chromium on SwiftShader with ffmpeg, the key-frame pixel baseline pinned to this job's Chromium); browsers in `PLAYWRIGHT_BROWSERS_PATH`, cached by the `playwright-core` version; not a required check | not yet measured |
 | `bench` | informational per-stage timings in the job summary (+ a PR comment on same-repo PRs); never gates; skipped on a record-only PR | 0.9 |
 
 Coverage is not in `ci.yml`: nightly's `coverage` job runs `test:coverage` (report-only). The E2E legs

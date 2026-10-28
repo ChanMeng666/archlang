@@ -445,6 +445,82 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+  check-3d:
+    name: 3D package (check:3d)
+    runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ !cancelled() }}
+    env:
+      FULL_CI: ${{ needs.changes.outputs.code != 'false' }}
+      # The browsers live in the workspace, where the cache step below finds them.
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.pw-browsers
+    # packages/archlang-3d's heavy tests (archlang-3d plan §8.2, isolation rule I2): the GLB through
+    # Khronos glTF-Validator and its determinism over the corpus, the CLI's exit codes, the licence
+    # gate's `npm pack` check, and the replay in Playwright's Chromium on SwiftShader, including the
+    # key-frame pixel baseline, which is pinned to THIS environment (Linux, the Chromium build of the
+    # locked playwright-core; Q21). NOT a required check: the seven required names are a
+    # branch-protection setting the owner holds, and this job is not one of them.
+    steps:
+      - name: Record-only change, nothing to run on this leg
+        if: env.FULL_CI != 'true'
+        run: echo "Record-only change; see the Node 22 docs leg."
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.FULL_CI == 'true'
+
+      - name: Set up Node.js
+        if: env.FULL_CI == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          check-latest: true
+          cache: npm
+
+      - name: Install dependencies
+        if: env.FULL_CI == 'true'
+        run: npm ci
+
+      # The CLI test spawns `archlang3d` as a process, which reads the core through its built dist/.
+      - name: Build core
+        if: env.FULL_CI == 'true'
+        run: npm run build
+
+      # Keyed on the RESOLVED playwright-core version the package drives: its browser build is
+      # pinned to it, so a bump misses the cache instead of reusing another Chromium.
+      - name: Resolve playwright-core version
+        if: env.FULL_CI == 'true'
+        id: pw
+        run: |
+          version=$(node -p "require('playwright-core/package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        if: env.FULL_CI == 'true'
+        id: pw-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.PLAYWRIGHT_BROWSERS_PATH }}
+          key: playwright-core-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      # The pixel baseline pins only text-free frames, so no font packages are needed; the
+      # browser's own shared libraries still are, and they live outside the cached path.
+      - name: Install Chromium (browser + system deps)
+        if: env.FULL_CI == 'true' && steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright-core install --with-deps chromium
+
+      - name: Install Chromium system deps only (cached browser)
+        if: env.FULL_CI == 'true' && steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright-core install-deps chromium
+
+      # `view --video` encodes H.264 through ffmpeg; the e2e requires it under CI.
+      - name: Install ffmpeg
+        if: env.FULL_CI == 'true'
+        run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg)
+
+      - name: Run check:3d
+        if: env.FULL_CI == 'true'
+        run: npm run check:3d
+
   e2e-docs:
     name: Docs site E2E (Playwright)
     runs-on: ubuntu-latest

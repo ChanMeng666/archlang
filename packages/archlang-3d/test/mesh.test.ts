@@ -11,6 +11,7 @@ import { createHash } from "node:crypto";
 import { describeLevel, describe as describePlan } from "@chanmeng666/archlang";
 import { describe, expect, it } from "vitest";
 import { adaptPlan, buildMesh, type Mesh3D, prism, type Shell } from "../src/index.js";
+import { openEdges, signedVolume as volume } from "../src/node.js";
 import { EXAMPLES_LIST, STRESS_PLANS, WORLD } from "./corpus.js";
 
 type V3 = [number, number, number];
@@ -21,40 +22,11 @@ function adapted(source: string) {
   return r;
 }
 
-/** Directed edges not matched by exactly one reverse edge (0 = closed, consistently wound). */
-function openEdges(s: Shell): number {
-  const m = new Map<string, number>();
-  for (let t = 0; t < s.indices.length; t += 3) {
-    for (let k = 0; k < 3; k++) {
-      const key = `${s.indices[t + k]}>${s.indices[t + ((k + 1) % 3)]}`;
-      m.set(key, (m.get(key) ?? 0) + 1);
-    }
-  }
-  let bad = 0;
-  for (const [e, n] of m) {
-    const [a, b] = e.split(">");
-    if (n !== 1 || m.get(`${b}>${a}`) !== 1) bad++;
-  }
-  return bad;
-}
-
 const vert = (s: Shell, i: number): V3 => [
   s.positions[3 * i] as number,
   s.positions[3 * i + 1] as number,
   s.positions[3 * i + 2] as number,
 ];
-
-/** Signed volume (µm³); positive when every face points out. */
-function volume(s: Shell): number {
-  let v = 0;
-  for (let t = 0; t < s.indices.length; t += 3) {
-    const [a, b, c] = [0, 1, 2].map((k) => vert(s, s.indices[t + k] as number)) as [V3, V3, V3];
-    v +=
-      (a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0]) + a[2] * (b[0] * c[1] - b[1] * c[0])) /
-      6;
-  }
-  return v;
-}
 
 /**
  * Whether `p` lies inside the closed shell: parity of a +X ray's crossings. `p` is offset by a

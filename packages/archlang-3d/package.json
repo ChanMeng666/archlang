@@ -18,23 +18,31 @@
     ".": "./src/index.ts",
     "./node": "./src/node.ts"
   },
+  "files": [
+    "src",
+    "THIRD_PARTY_NOTICES",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "typecheck": "tsc --noEmit",
     "e2e": "vitest run --config vitest.e2e.config.ts",
-    "archlang3d": "tsx src/cli/main.ts"
+    "archlang3d": "tsx src/cli/main.ts",
+    "notices": "tsx scripts/licence-gate.ts --write"
   },
   "peerDependencies": {
     "@chanmeng666/archlang": "^1.43.1"
   },
   "dependencies": {
+    "@gltf-transform/core": "4.5.1",
     "earcut": "^3.2.4",
     "esbuild": "^0.28.2",
+    "gltf-validator": "2.0.0-dev.3.10",
     "playwright-core": "1.64.1",
     "three": "0.186.1"
   },
   "devDependencies": {
+    "@types/three": "0.186.0",
     "ajv": "^8.20.0",
-    "typescript": "^5.7.2",
-    "@types/three": "0.186.0"
+    "typescript": "^5.7.2"
   }
 }

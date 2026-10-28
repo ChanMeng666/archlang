@@ -39,6 +39,8 @@ export interface VideoReport {
   seekRoundTrip: boolean;
   /** Present when an MP4 was written. */
   mp4?: string;
+  /** The Chromium that rendered the frames (`browser.version()`): pixel baselines are per build (Q21). */
+  browser: string;
 }
 
 export interface VideoOptions {
@@ -174,6 +176,7 @@ export async function renderReplay(o: VideoOptions): Promise<VideoReport> {
       keyFrames: keys,
       seekRoundTrip: a === b,
       ...(mp4 ? { mp4 } : {}),
+      browser: browser.version(),
     };
   } finally {
     await browser.close();

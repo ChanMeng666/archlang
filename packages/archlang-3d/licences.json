@@ -1,0 +1,69 @@
+{
+  "$comment": "The Q20 licence gate (archlang-3d plan §8.5 L1; card A4). Every package the archlang-3d runtime installs (dependencies and installed optional dependencies, transitively; the peer core is ArchLang itself) must be listed under `allow` at its exact version, with the licence its package.json states AND a source check: where the code comes from, its LICENSE file, and whether it wraps, ports or bundles other code. An npm `license` field alone is not enough (straight-skeleton@3 says MIT and wraps GPL-3.0+ CGAL). `deny` names packages refused whatever they claim. scripts/licence-gate.ts reads this file; test/licences.test.ts enforces it; THIRD_PARTY_NOTICES is generated from it (npm -w packages/archlang-3d run notices).",
+  "permitted": ["MIT", "ISC", "BSD-2-Clause", "BSD-3-Clause", "Apache-2.0", "BSL-1.0", "0BSD"],
+  "allow": [
+    {
+      "name": "@gltf-transform/core",
+      "version": "4.5.1",
+      "license": "MIT",
+      "source": "https://github.com/donmccurdy/glTF-Transform",
+      "checked": "LICENSE.md is MIT (Don McCurdy). Original TypeScript; it wraps or ports no other project. One dependency, property-graph (same author)."
+    },
+    {
+      "name": "property-graph",
+      "version": "4.1.0",
+      "license": "MIT",
+      "source": "https://github.com/donmccurdy/property-graph",
+      "checked": "LICENSE is MIT (Don McCurdy). Original TypeScript, no dependencies."
+    },
+    {
+      "name": "earcut",
+      "version": "3.2.4",
+      "license": "ISC",
+      "source": "https://github.com/mapbox/earcut",
+      "checked": "LICENSE is ISC (Mapbox). Mapbox's own triangulator, no dependencies; it wraps or ports no other project."
+    },
+    {
+      "name": "esbuild",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://github.com/evanw/esbuild",
+      "checked": "LICENSE.md is MIT (Evan Wallace). A JavaScript shim over a native binary built from the same repository (Go; Go's standard library is BSD-3-Clause). Used at build time of the replay HTML only; nothing of it is inlined into an output."
+    },
+    {
+      "name": "@esbuild/*",
+      "version": "0.28.2",
+      "license": "MIT",
+      "source": "https://github.com/evanw/esbuild",
+      "checked": "esbuild's per-platform binary (one is installed, the one matching the OS), built from the esbuild repository and released with it; the package carries no LICENSE file of its own, esbuild's applies."
+    },
+    {
+      "name": "gltf-validator",
+      "version": "2.0.0-dev.3.10",
+      "license": "Apache-2.0",
+      "source": "https://github.com/KhronosGroup/glTF-Validator",
+      "checked": "LICENSE is Apache-2.0 (The Khronos Group). Khronos's validator compiled from Dart to JavaScript; its NOTICES file lists what the compiled file contains: the Dart SDK and Dart packages (BSD-3-Clause), node_preamble (MIT), PrismJS (MIT), yaml (MIT) and a zlib-style notice. No copyleft. Used by `check` and the heavy tests; it never enters an output."
+    },
+    {
+      "name": "playwright-core",
+      "version": "1.64.1",
+      "license": "Apache-2.0",
+      "source": "https://github.com/microsoft/playwright",
+      "checked": "LICENSE is Apache-2.0 (Microsoft); NOTICE: code derived from Puppeteer (Apache-2.0). Bundles npm packages inside lib/, each listed with its licence text in a sidecar *.LICENSE file (MIT, ISC, BSD-3-Clause; no GPL, LGPL or MPL, read 2026-10-28). The Chromium it drives is downloaded by `playwright install`, never shipped with this package."
+    },
+    {
+      "name": "three",
+      "version": "0.186.1",
+      "license": "MIT",
+      "source": "https://github.com/mrdoob/three.js",
+      "checked": "LICENSE is MIT (three.js authors). The core build the viewer imports is three.js's own code; its addons (examples/jsm, which carry their own notices) are not imported. Inlined into the replay HTML with its notice."
+    }
+  ],
+  "deny": [
+    {
+      "name": "straight-skeleton",
+      "major": 3,
+      "reason": "package.json says MIT, but 3.x wraps CGAL's straight skeleton, GPL-3.0-or-later (archlang-3d research/04 §2.4; plan Q20). 2.x is unchecked, so it is not allowed either: it is simply not on the allow list."
+    }
+  ]
+}
