@@ -14,6 +14,13 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.34.0] - 2026-10-28
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.46.0`** (`E_FURN_AGAINST_DEMOLISHED_WALL`;
+  an opening dropped with its demolished wall is no longer drawn).
+
 ## [0.33.0] - 2026-10-28
 
 ### Changed
