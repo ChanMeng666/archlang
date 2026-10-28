@@ -664,8 +664,11 @@ describe("DXF units and wall layers", () => {
       for (const scene of scenesOf(src)) {
         const split = dxfEntities(toDxf(scene));
         const base = dxfEntities(toDxf(plain(scene)));
-        // Every wall entity is on exactly one of the two wall layers.
-        for (const e of split.filter(isWallEnt)) expect(["A-WALL-EXTR", "A-WALL-INTR"]).toContain(e.layer);
+        // Every wall entity is on exactly one of the wall layers: the two class layers, or a
+        // remodel's status layer (`examples/remodel.arch`, B3b).
+        for (const e of split.filter(isWallEnt)) {
+          expect(["A-WALL-EXTR", "A-WALL-INTR", "A-WALL-NEWW", "A-WALL-DEMO"]).toContain(e.layer);
+        }
         // Everything that is not a wall is untouched, in order.
         expect(split.filter((e) => !isWallEnt(e))).toEqual(base.filter((e) => !isWallEnt(e)));
         const sw = split.filter(isWallEnt);

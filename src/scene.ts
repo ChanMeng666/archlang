@@ -421,6 +421,10 @@ export interface Scene {
   /**
    * The walls the `wallFill`/`wallFace` nodes were lowered from, in the order they were
    * lowered (the joinery's tie-break order), so re-joining the list reproduces those nodes.
+   * A storey with a `status demolish` wall is lowered in two calls, the standing walls (as the
+   * plan after the demolition has them) and the demolished ones (drawn dashed); the list is the
+   * standing walls then the demolished ones, each in source order, so each call's walls are its
+   * sublist by `status`.
    * `toScene` sets it on a plan with walls, as a lazy getter (`attachSceneWalls`,
    * `src/wall-lowering.ts`): a compile that never exports DXF never projects it.
    * **Export metadata, never drawn**: no backend draws from it — the drawing is the nodes. It exists for an export that must know WHICH wall drew a
@@ -433,11 +437,21 @@ export interface Scene {
 
 /**
  * A wall as {@link Scene.walls} carries it: what the joinery reads (band, hatch, the
- * openings cut through it — each only its `at`/`width`) plus the `category` an export
- * classifies by. Plain data with no id and none of the resolver's bookkeeping, so two plans
- * that draw the same walls carry the same walls (in statement order, which may differ).
+ * openings cut through it — each only its `at`/`width`) plus the `category` and the written
+ * `status` an export classifies by. Plain data with no id and none of the resolver's
+ * bookkeeping, so two plans that draw the same walls carry the same walls (in statement order,
+ * which may differ). `status` is present only when the plan wrote one.
  */
 export type SceneWall = Pick<
   import("./ir.js").RWall,
-  "category" | "thickness" | "points" | "arcs" | "closed" | "material" | "hatchScale" | "hatchAngle" | "openings"
+  | "category"
+  | "status"
+  | "thickness"
+  | "points"
+  | "arcs"
+  | "closed"
+  | "material"
+  | "hatchScale"
+  | "hatchAngle"
+  | "openings"
 >;

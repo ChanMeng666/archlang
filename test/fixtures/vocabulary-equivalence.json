@@ -1759,6 +1759,44 @@
       "room_type": "Bathroom"
     }
   ],
+  "examples/remodel.arch": [
+    {
+      "id": "r_living",
+      "label": "Kitchen / Living",
+      "uses": ["kitchen", "living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_bed",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_study",
+      "label": "Study",
+      "uses": ["office"],
+      "room_type": "StudyRoom"
+    },
+    {
+      "id": "r_hall",
+      "label": "Hall",
+      "uses": ["hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bathroom",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "r_util",
+      "label": "Utility",
+      "uses": ["utility"],
+      "room_type": "Storage"
+    }
+  ],
   "examples/sheet-notes.arch": [
     {
       "id": "r_living",

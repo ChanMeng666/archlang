@@ -1018,8 +1018,9 @@ export interface ResolvedPlan {
    * and every wall in source order, the demolished ones included. `elements`/`walls` above are the
    * plan after the demolition (what `describe()`, `lint()`, net area, circulation, enclosure,
    * keeps and every other analysis read), while the drawing (`toScene`, the drawing budget, the
-   * sheet fit, `finish`) reads this, through {@link drawnView}. Until B3b draws the status, a plan
-   * that marks a wall `demolish` draws exactly the bytes it draws without the clause.
+   * sheet fit, `finish`) reads this, through {@link drawnView}. `toScene` draws its demolished
+   * walls dashed and its standing walls, schedule and overlay from the plan after the demolition
+   * (B3b).
    */
   drawn?: { elements: ResolvedElement[]; walls: RWall[] };
   /**

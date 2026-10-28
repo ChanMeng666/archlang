@@ -168,6 +168,9 @@
  * the case lists the code under `validity`, its twin none. No existing row moved (no example or
  * corpus bed is under the figures).
  *
+ * B3b added three rows, `examples/remodel.arch` (the wall-status drawing example) under each of the
+ * three profiles, measured with `tasteDigest` when the example was added. No existing row moved.
+ *
  * B6 (`W_GARAGE_OPENING_UNDERSIZED`, a garage's vehicle door under 2400/4200 mm) added six rows, the
  * new `clearances/garage-door-undersized` pair under each of the three profiles, measured with
  * `tasteDigest`: the case lists the code under `validity` (`pass` false), its twin none; no criterion
@@ -208,6 +211,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
   ["4beb4fcd83b89912e1e3fb03dab62239c0108789541400db9ab0657f2becb953", "generic", "examples/parametric.arch"],
   ["a5ef110531c0ccb7cb9c40580ca4b5a887522baa3a21e4204a3652cc2a0ca4ff", "generic", "examples/practice-office.arch"],
   ["dbb4faf28437877a241105be25011cdeac4047f05cf2093e7e515e79e2262c35", "generic", "examples/relational.arch"],
+  ["73c4bfb6b9be4a504fbf877919b874fcc7397434e5a0e47b899442414ef996fb", "generic", "examples/remodel.arch"],
   ["805147a393adc8234322e0638409e74621ac698cc5f3f401ff1d305800be8636", "generic", "examples/sheet-notes.arch"],
   ["97d75cac716e67fbaa99ed74f6e1694c0135238c2a13bafcf06eab147bf6406a", "generic", "examples/studio.arch"],
   ["6d8fc2e54ce83a8228a025fb7be5a258f2cc772880298b2871c1b7fc354199ed", "generic", "examples/terrace-row.arch"],
@@ -1301,6 +1305,11 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "84d1e2042fcff4d197a976e885c435b5cbfb7a3d2e1c4af2a09d7b218b0e94a0",
     "cn-residential-advisory",
     "examples/relational.arch",
+  ],
+  [
+    "f8fcb9caec7a9c68c1266936dccbc8a7830616102662d0fbf13405b4adc70214",
+    "cn-residential-advisory",
+    "examples/remodel.arch",
   ],
   [
     "ef3ebab92179641603a76815c4e9227fffb73bd125b2c2dec414d8b724f5e236",
@@ -2431,6 +2440,11 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "ab1701676d6996111230fef9428bedae45cb6ced0fb26002c102bc423e3003c6",
     "us-residential-advisory",
     "examples/relational.arch",
+  ],
+  [
+    "b5bf32b9972bae8c31b38cf08d6af3822e2521fed325db00470c5f9ee9d36d8b",
+    "us-residential-advisory",
+    "examples/remodel.arch",
   ],
   [
     "cac8cdd171d6c87b4b650bfea0f7a9e9058597398aed665e748300677f5018bf",

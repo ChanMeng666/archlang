@@ -34,6 +34,11 @@
  * so a label-only room now agrees with an authored one. No other row, field or order moved. The
  * three rows were edited by hand to the values the corpus sweep measured, nothing else.
  *
+ * ## One example added on 2026-10-28 (preview-and-remodel B3b): `examples/remodel.arch`
+ *
+ * A new file, not a classifier change: its six rows were taken from `describe()` when it was
+ * added. No other row moved.
+ *
  * ## Four examples re-derived on 2026-10-27 (fix/examples-sound): their SOURCE changed
  *
  * Not a classifier change: the design review gave `garden-house` a study for its street-side

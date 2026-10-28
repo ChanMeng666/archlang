@@ -1,10 +1,12 @@
 /**
- * Wall `status existing|demolish|new` (preview-and-remodel B3a): the semantics, never a drawing.
+ * Wall `status existing|demolish|new` (preview-and-remodel B3a): the semantics. The drawing
+ * (B3b) is `wall-status-drawing.test.ts`.
  *
- * - **It draws nothing yet (B3b draws it).** Over every example, every authored wall that hosts
- *   nothing is marked `status demolish` and every `walls from rooms` statement `status new`: each
- *   storey's SVG is byte-identical to the plan without the clauses. With `status new` on every
- *   wall instead, `describe()` differs only by its `wall_status` block and `lint()` not at all.
+ * - **A demolished wall moves no standing wall.** Over every example, every authored wall that
+ *   hosts nothing is marked `status demolish` and every `walls from rooms` statement `status new`:
+ *   each storey draws exactly the standing walls the plan draws with those statements deleted,
+ *   plus one dashed outline. With `status new` on every wall instead, the SVG is unchanged,
+ *   `describe()` differs only by its `wall_status` block and `lint()` not at all.
  * - **A demolished wall encloses nothing, hosts nothing and counts in no area.** The card's
  *   acceptance fixture: one demolished partition between two rooms. The two rooms lie in one
  *   walled face, the access graph joins them across the run (so the study is reachable and its
@@ -31,11 +33,15 @@ import {
   planToJson,
 } from "../src/index.js";
 import type { RWall, ResolvedPlan } from "../src/ir.js";
+import type { Scene } from "../src/scene.js";
 import { PLAN_JSON_SCHEMA } from "../src/plan-json.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+/** The examples that write no `status` (the sweeps below write one into each); `remodel.arch`
+ *  writes its own and is pinned by `wall-status-drawing.test.ts`. */
 const EXAMPLES = readdirSync(join(ROOT, "examples"))
   .filter((f) => f.endsWith(".arch"))
+  .filter((f) => !/\bstatus\s+(existing|demolish|new)\b/.test(readFileSync(join(ROOT, "examples", f), "utf8")))
   .sort();
 
 /** Every storey's SVG (the pages of a multi-storey plan, else the one drawing). */
@@ -92,37 +98,95 @@ function wallStatements(src: string): { hostless: number[]; hosting: number[]; d
   };
 }
 
-suite("status draws nothing (until B3b)", () => {
-  /** How much of the corpus the demolish sweep really marked (non-vacuity, checked last). */
-  const swept = { plans: 0, demolished: 0 };
+/** Every storey's Scene (the pages of a multi-storey plan, else the one drawing). */
+function scenes(src: string): Scene[] {
+  const r = compile(src);
+  return r.pages ? r.pages.map((p) => p.scene) : r.scene ? [r.scene] : [];
+}
 
-  it.each(EXAMPLES)("%s: demolishing every wall that hosts nothing moves no SVG byte", (file) => {
-    const src = readFileSync(join(ROOT, "examples", file), "utf8");
-    const plain = svgs(src);
-    if (plain.some((s) => s === "")) return; // a plan that needs a world (imports) draws nothing here
-    const { hostless, derivers } = wallStatements(src);
-    const edits: Array<[number, string]> = [
-      ...hostless.map((s): [number, string] => [s, "demolish"]),
-      ...derivers.map((s): [number, string] => [s, "new"]),
-    ];
-    if (edits.length === 0) return;
-    const marked = insertAll(src, edits);
-    expect(compile(marked).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
-    expect(svgs(marked)).toEqual(plain);
-    // The analysis really dropped them: the plan after the demolition has fewer walls.
-    if (hostless.length > 0) {
-      const before = storeys(src).reduce((n, ir) => n + ir.walls.length, 0);
-      const after = storeys(marked).reduce((n, ir) => n + ir.walls.length, 0);
-      expect(after).toBeLessThan(before);
-      swept.plans++;
-      swept.demolished += hostless.length;
+/** A storey's wall drawing as geometry: each wall node's pass, primitive and line type. The paint
+ *  is left out, because a pen width is a fraction of the drawing's extent, which a deleted wall
+ *  can shrink. */
+const wallPrims = (sc: Scene) =>
+  sc.nodes
+    .filter((n) => n.layer === "wallFill" || n.layer === "wallFace")
+    .map((n) => ({ layer: n.layer, prim: n.prim, lineType: n.lineType }));
+
+/** Blank the wall statements starting at `starts` (their whole spans) with spaces, keeping every
+ *  newline, so every other statement keeps its byte offsets. */
+function blankStatements(src: string, starts: readonly number[]): string {
+  const spans = new Map<number, number>();
+  for (const ir of storeys(src)) {
+    for (const e of ir.drawn?.elements ?? ir.elements) {
+      const span = (e as { span?: { start: number; end: number } }).span;
+      if (e.kind === "wall" && span && starts.includes(span.start)) spans.set(span.start, span.end);
     }
-  });
+  }
+  let out = src;
+  for (const [a, b] of spans) out = out.slice(0, a) + out.slice(a, b).replace(/[^\n]/g, " ") + out.slice(b);
+  return out;
+}
+
+suite("status demolish draws the standing walls unchanged, and itself dashed", () => {
+  /** How much of the corpus the demolish sweep really marked (non-vacuity, checked last). */
+  const swept = { plans: 0, demolished: 0, compared: 0 };
+
+  it.each(EXAMPLES)(
+    "%s: demolishing every wall that hosts nothing draws what deleting it draws, plus a dashed outline",
+    (file) => {
+      const src = readFileSync(join(ROOT, "examples", file), "utf8");
+      const plain = svgs(src);
+      if (plain.some((s) => s === "")) return; // a plan that needs a world (imports) draws nothing here
+      const { hostless, derivers } = wallStatements(src);
+      const edits: Array<[number, string]> = [
+        ...hostless.map((s): [number, string] => [s, "demolish"]),
+        ...derivers.map((s): [number, string] => [s, "new"]),
+      ];
+      if (edits.length === 0) return;
+      const marked = insertAll(src, edits);
+      expect(compile(marked).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+      if (hostless.length === 0) {
+        expect(svgs(marked)).toEqual(plain);
+        return;
+      }
+      const markedScenes = scenes(marked);
+      // A storey that demolishes a wall draws exactly one dashed outline, on the poche pass.
+      for (const sc of markedScenes) {
+        const dashed = wallPrims(sc).filter((n) => n.lineType === "dashed");
+        expect(dashed.length).toBeLessThanOrEqual(1);
+        for (const d of dashed) expect(d.layer).toBe("wallFill");
+      }
+      expect(markedScenes.some((sc) => wallPrims(sc).some((n) => n.lineType === "dashed"))).toBe(true);
+      // The same walls deleted instead (blanked in `src`, so no other statement moves): the
+      // standing walls are drawn exactly as that plan draws them, with the same patterns.
+      const deleted = blankStatements(src, hostless);
+      if (compile(deleted).diagnostics.every((d) => d.severity !== "error")) {
+        const deletedScenes = scenes(deleted);
+        expect(markedScenes).toHaveLength(deletedScenes.length);
+        markedScenes.forEach((sc, i) => {
+          expect(wallPrims(sc).filter((n) => n.lineType === undefined)).toEqual(wallPrims(deletedScenes[i]!));
+          expect(sc.hatches).toEqual(deletedScenes[i]!.hatches);
+        });
+        swept.compared++;
+      }
+      // The analysis really dropped them: the plan after the demolition has fewer walls.
+      if (hostless.length > 0) {
+        const before = storeys(src).reduce((n, ir) => n + ir.walls.length, 0);
+        const after = storeys(marked).reduce((n, ir) => n + ir.walls.length, 0);
+        expect(after).toBeLessThan(before);
+        swept.plans++;
+        swept.demolished += hostless.length;
+      }
+    },
+  );
 
   it("the demolish sweep was not vacuous", () => {
     // Measured when the sweep was written: 25 plans, 84 hostless authored walls.
     expect(swept.plans).toBeGreaterThanOrEqual(20);
     expect(swept.demolished).toBeGreaterThanOrEqual(60);
+    // And the deletion comparison really ran (B3b; measured: 13 plans, the others' deleted twin
+    // does not compile because a statement names a deleted wall).
+    expect(swept.compared, JSON.stringify(swept)).toBeGreaterThanOrEqual(12);
   });
 
   it.each(EXAMPLES)("%s: `status new` on every wall moves only describe().wall_status", (file) => {
@@ -169,9 +233,11 @@ const STANDING = DEMOLISHED.replace(" status demolish", "");
 const NO_PARTITION = plan(`${SHELL}\n${ROOMS}`);
 
 suite("the acceptance fixture: one demolished partition", () => {
-  it("draws exactly what the standing partition draws", () => {
+  it("draws the shell the plan with no partition draws, and the partition dashed (B3b)", () => {
     expect(compile(DEMOLISHED).diagnostics).toEqual([]);
-    expect(compile(DEMOLISHED).svg).toBe(compile(STANDING).svg);
+    const walls = wallPrims(compile(DEMOLISHED).scene!);
+    expect(walls.filter((n) => n.lineType === undefined)).toEqual(wallPrims(compile(NO_PARTITION).scene!));
+    expect(walls.filter((n) => n.lineType === "dashed")).toHaveLength(1);
   });
 
   it("encloses nothing: the two rooms lie in one walled face", () => {
@@ -358,7 +424,7 @@ suite("round 1 · M2: an opening the hosting rule gave a demolished wall is re-h
         `  wall id=fresh partition thickness 100 status new { (4000,0) (4000,5000) }\n${ROOMS}\n${door}`,
     );
 
-  it("by position: hosted on the `new` wall for the analysis, drawn as before", () => {
+  it("by position: hosted on the `new` wall for the analysis, and cut through it in the drawing", () => {
     const src = coincident("  door id=d2 at (4000,2500) width 800");
     expect(compile(src).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
     const ir = resolvePlan(src).ir!;
@@ -369,7 +435,14 @@ suite("round 1 · M2: an opening the hosting rule gave a demolished wall is re-h
     const drawnD2 = ir.drawn!.elements.find((e) => e.id === "d2") as { host?: { wallId: string } };
     expect(drawnD2.host?.wallId).toBe("part");
     expect(ir.drawn!.walls.find((w) => w.id === "fresh")!.openings).toEqual([]);
-    expect(compile(src).svg).toBe(compile(src.replace(" status demolish", "").replace(" status new", "")).svg);
+    // The standing walls are drawn as the analysis has them (B3b): the `new` wall carries the
+    // door's cut, exactly as a plan with no demolished partition draws it, and the demolished
+    // partition is the one dashed outline.
+    const walls = wallPrims(compile(src).scene!);
+    const alone = src.replace(/ {2}wall id=part [^\n]*\n/, "");
+    expect(alone).not.toContain("id=part");
+    expect(walls.filter((n) => n.lineType === undefined)).toEqual(wallPrims(compile(alone).scene!));
+    expect(walls.filter((n) => n.lineType === "dashed")).toHaveLength(1);
     // And it is the door the access graph walks through.
     expect(describePlan(src).access.edges.find((e) => e.doorId === "d2")?.between).toEqual(["a", "b"]);
   });
@@ -413,16 +486,18 @@ ${status === "gone" ? "" : `  wall id=part partition thickness 100${status} { (4
   });
 });
 
-suite("round 1 · M4: the drawn room schedule measures the plan as drawn until B3b", () => {
-  it("states the exception: describe().schedule is after the demolition, the drawn table is not", () => {
+suite("round 1 · M4: the drawn room schedule measures the plan after the demolition (B3b)", () => {
+  it("the drawn table is describe().schedule: no exception", () => {
     const src = DEMOLISHED.replace("  units mm", "  units mm\n  schedule rooms");
     const rows = describePlan(src).schedule!;
     expect(rows.map((r) => r.net_area_m2)).toEqual([18.72, 18.72]);
-    // The drawn NET AREA still subtracts the demolished partition's band (B3b flips this).
+    // The drawn NET AREA no longer subtracts the demolished partition's band, and the TOTAL is
+    // describe()'s.
     const svg = compile(src).svg;
-    expect(svg).toContain(">18.48<");
-    expect(svg).not.toContain(">18.72<");
-    expect(svg).toBe(compile(STANDING.replace("  units mm", "  units mm\n  schedule rooms")).svg);
+    expect(svg).toContain(">18.72<");
+    expect(svg).not.toContain(">18.48<");
+    expect(svg).toContain(">37.44<");
+    expect(describePlan(src).totals.net_floor_area_m2).toBe(37.44);
   });
 });
 
@@ -442,7 +517,10 @@ suite("round 1 · minors", () => {
     expect(ir.elements.some((e) => e.id === "ab")).toBe(false);
     expect(ir.drawn!.elements.some((e) => e.id === "ab")).toBe(true);
     expect(describePlan(src).openings.map((o) => o.id)).toEqual([]);
-    expect(compile(src).svg).toBe(compile(src.replace(" status demolish", "")).svg);
+    // Every wall demolished: no poche, one dashed outline (B3b).
+    const walls = wallPrims(compile(src).scene!);
+    expect(walls).toHaveLength(1);
+    expect(walls[0]).toMatchObject({ layer: "wallFill", lineType: "dashed" });
   });
 
   it("m4: a demolished derived wall is in no `depends` or `derived_walls` fact, like an authored one", () => {

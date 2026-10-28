@@ -253,9 +253,10 @@ function groupRoomsByZone(
 
 /** One LEGEND line: a drawn swatch plus what it means. */
 export interface LegendEntry {
-  /** `material` draws the wall hatch pattern; `fixture` draws the fixture plan symbol. */
-  kind: "material" | "fixture";
-  /** Stable identity (the hatch pattern id, or the fixture category). */
+  /** `material` draws the wall hatch pattern; `fixture` draws the fixture plan symbol;
+   *  `demolished` draws a dashed wall outline (a `status demolish` wall, as the plan draws it). */
+  kind: "material" | "fixture" | "demolished";
+  /** Stable identity (the hatch pattern id, the fixture category, or `demolish`). */
   key: string;
   /** The printed name. */
   name: string;
@@ -293,12 +294,23 @@ function hatchName(h: HatchSpec): string {
  * requirement, lint semantics) with its symbol not written yet. Keying the legend off
  * membership would print a row with an empty swatch beside a piece the drawing renders as a
  * labelled box, which is exactly the "needs no legend row" case this rule already excluded.
+ *
+ * 3. **Demolition** — one `demolished` row after the materials when the storey draws a
+ *    `status demolish` wall (`demolished`), and none otherwise, so a plan that writes no status
+ *    keeps its legend. `hatches` are then the STANDING walls' (a demolished wall draws no
+ *    poché). A `status new` wall draws as any wall, so it adds no row: a row whose swatch
+ *    the drawing cannot tell from an existing wall's would claim a distinction it does not make.
  */
-export function legendEntries(hatches: readonly HatchSpec[], furniture: readonly RFurniture[]): LegendEntry[] {
+export function legendEntries(
+  hatches: readonly HatchSpec[],
+  furniture: readonly RFurniture[],
+  demolished = false,
+): LegendEntry[] {
   const out: LegendEntry[] = [];
   for (const h of hatches) {
     out.push({ kind: "material", key: patternId(h.material, h.scale, h.angle), name: hatchName(h), hatch: h });
   }
+  if (demolished) out.push({ kind: "demolished", key: "demolish", name: "demolished" });
   const present = new Set(furniture.map((f) => f.category));
   for (const cat of FIXTURE_CATEGORIES) {
     if (present.has(cat) && hasFixtureGlyph(cat)) out.push({ kind: "fixture", key: cat, name: cat, category: cat });
@@ -625,7 +637,7 @@ export function planTableRows(input: {
   legend?: boolean | undefined;
   rooms: readonly RRoom[];
   zones?: readonly ZoneRef[] | undefined;
-  walls: readonly (BandWall & { material: string; hatchScale: number; hatchAngle: number })[];
+  walls: readonly (BandWall & { material: string; hatchScale: number; hatchAngle: number; status?: string })[];
   furniture: readonly RFurniture[];
   /**
    * The ground surfaces, whose materials add legend rows exactly as a wall's do.
@@ -647,9 +659,16 @@ export function planTableRows(input: {
   /** The plan's `notes`, which draw a table in the same band. */
   notes?: readonly string[] | undefined;
 }): number {
-  const schedule = input.schedule === "rooms" ? roomSchedule(input.rooms, input.zones, input.walls) : null;
+  // The storey as drawn (B3b): a `status demolish` wall draws no poché, and adds the legend's
+  // `demolished` row — exactly the inputs `toScene` builds the legend from.
+  const standing = input.walls.filter((w) => w.status !== "demolish");
+  const schedule = input.schedule === "rooms" ? roomSchedule(input.rooms, input.zones, standing) : null;
   const legend = input.legend
-    ? legendEntries(hatchesUsed(input.walls, groundMaterialsUsed(input.outdoor ?? [])), input.furniture)
+    ? legendEntries(
+        hatchesUsed(standing, groundMaterialsUsed(input.outdoor ?? [])),
+        input.furniture,
+        standing.length < input.walls.length,
+      )
     : null;
   const openings = input.openingSchedule ? openingRowCount(openingCount(input.elements ?? [])) : 0;
   const notes = input.notes && input.notes.length > 0 ? notesRowCount(input.notes) : 0;
@@ -1088,6 +1107,15 @@ function legendNodes(t: LegendTableBox, theme: Theme, sizes: RenderSizes, out: S
       const glyph = fixtureGlyph(e.category, box, theme, sizes);
       if (glyph) out.push(...glyph.map((n) => ({ ...n, layer: "annotations" as const })));
       else d.frame(box.x, box.y, box.w, box.h);
+    } else if (e.kind === "demolished") {
+      // A wall drawn as the plan draws a demolished one: its outline in the wall pen, dashed,
+      // with no poché (`toScene`'s second `lowerWallSet` call).
+      out.push({
+        layer: "annotations",
+        prim: { t: "polygon", pts: loop },
+        paint: { fill: "none", stroke: theme.wallStroke, width: sizes.wallStroke },
+        lineType: "dashed",
+      });
     }
     d.text({ x: x0 + swatchW + pad, y: top + rowH * 0.5 }, e.name, fs, "start");
   });
