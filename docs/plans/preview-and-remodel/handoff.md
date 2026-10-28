@@ -1,17 +1,17 @@
-# Preview-and-remodel programme: handoff (state as of 2026-10-28, `main@80f2b3b1`)
+# Preview-and-remodel programme: handoff (state as of 2026-10-28, `main@f5756794`)
 
 The resume point for a new session. Re-written at every wave end; dated history goes to `research/`.
 
 ## 1. Where the programme stands
 
-Updated 2026-10-28 after wave 3 (`main@80f2b3b1`). Waves 0–3 are done.
+Updated 2026-10-28 after wave 3 (`main@f5756794`). Waves 0–3 are done.
 Landed: A0 (#319), B6 (#320), C1 (#321), C2 (#322), A1 (#325), B5 (#327), A2 (#328), B1 (#323),
-B4 (#324), B3a (#329), A3 (#330), A4 (#336), B3b (#337), A0b (#338), A5 (#340), A2b (#341); records #326,
-#331, #335, #342. As-built notes: `research/2026-10-28-as-built.md`. Quiet-machine baseline on
+B4 (#324), B3a (#329), A3 (#330), A4 (#336), B3b (#337), A0b (#338), A5 (#340), A2b (#341), A7 (#349), A8 (#350, #351); records #326,
+#331, #335, #342, #348. As-built notes: `research/2026-10-28-as-built.md`. Quiet-machine baseline on
 `main@00b7e7ec`: `npm run check` 557 s; wave 3's full runs took 576–675 s.
 
-**A2b** merged (#341, `80f2b3b1`): wave 3 is done. In flight: A7 (`--doors plan`) and A8 (residue,
-package and playground items); A8's B3b core items follow in their own PR and a patch release.
+**After wave 3:** A2b (#341), A7 (#349, `--doors plan`) and A8 (#350 package/playground, #351 core:
+`E_FURN_AGAINST_DEMOLISHED_WALL`) merged. Open residue: card A9.
 
 **A3 look set** (1080p30, per-storey and combined views): `D:\.claude-scratch\2026-10-28\a3-look\`
 on the owner's machine. Open for the owner's next look: the 30° end elevation of one-storey views
@@ -22,9 +22,9 @@ with D5's label; positioning row 8 took its Tier A wording (archcanvas-growth #2
 the owner's request). The docs site, README, npm README and landing pages stay without 3D. For every
 owner-only manual step the agent pauses, guides the owner step by step, waits, verifies, continues.
 
-**Releases (README §3 D15):** 1.44.0 (PR #334, tag `v1.44.0`, run 40618590620) and 1.45.0 (PR #339,
-merge `ad6c1b1a`, tag `v1.45.0`, run 40638685119; B3b + A0b) are out: npm core `latest` 1.45.0 with
-SLSA provenance, the shim 0.2.28 (MCP registry latest), `.mcpb` bundles on each GitHub Release;
+**Releases (README §3 D15):** 1.44.0 (PR #334, tag `v1.44.0`, run 40618590620) 1.45.0 (PR #339,
+tag `v1.45.0`, run 40638685119; B3b + A0b) and 1.46.0 (A8 core; its release PR and tag follow this
+record) are cut through the OIDC chain: npm core with SLSA provenance, the shim (MCP registry latest), `.mcpb` bundles on each GitHub Release;
 `@chanmeng666/arch-plan` stays 0.1.1 (unchanged). VS Code 0.32.0 and 0.33.0 were uploaded by the
 owner and verified on the Marketplace (0.33.0 = core 1.45.0).
 
@@ -47,7 +47,7 @@ ran on the inherited model. Every branch got a full local `npm run check` before
 
 ## 3. Next items, in order
 
-1. **A7** (`--doors plan`) and **A8** (wave-3 residue), in `cards.md`.
+1. **1.46.0**: verify npm/registry, then the owner uploads VS Code 0.34.0 (D16); then **A9** (residue).
 2. The N10 window starts with the owner's first Tier A post (README §6; the agent posts nothing).
 3. Wave 4 (README §4) after N10 is read: D1, A6 (parked), archlang-3d M2+.
 4. After each landed card: its records PR (done line, as-built note, this handoff). If anything lands

@@ -45,25 +45,20 @@ kit); `amendment-v0.7.md` (the recut). The viewer subset of three.js 0.186.1 is 
 
 Unpark when a Tier A post needs it. Labelled non-deterministic; muxer through the Q20 gate; never a CI gate.
 
-### A7 · `--doors plan` for the replay — `todo` · residue of A3 (accepted, D14) · 1 day · model: opus
+### A7 · `--doors plan` for the replay — `done` · PR #349 · merge `e667d8f0` · record: `research/2026-10-28-as-built.md` § A7
 
-**Goal.** `archlang3d view --doors plan`: each door leaf drawn at its plan opening (swung) instead of
-closed (Q11). Needs each leaf's open tip in Scene3D (`openings[].leaves`, from the core's
-`doorLeaves`). **Acceptance.** Corpus test: every leaf's open pose inside its swing sector; the default
-replay (closed doors) byte-identical; key-frame pins unchanged. **Must not.** Change the default.
+### A8 · Wave-3 residue — `done` · PRs #350 · merge `b11b83c3` and #351 · merge `f5756794` · record: `research/2026-10-28-as-built.md` § A8
 
-### A8 · Wave-3 residue — `todo` · residue of A3–A5, A0b · 1 day · model: opus
+### A9 · Residue of A7 and A8 — `todo` · 1 day · model: opus
 
-Each item small; one PR or several. (1) A5's ±1 % startup-chunk gate fires on ordinary core growth
-(a re-bless hazard): gate on the 3D chunk staying lazy and three.js absent from startup, with a wider
-size tolerance, and say why in the spec. (2) A5: three compiles per edit with the 3D tab open; the
-360 px tab strip; with no storey picked the switcher underlines L1 while the tab shows all storeys.
-(3) A4: the GLB leak regex (`YYYY-MM-DDTHH:MM` only, can false-positive on a plan name);
-`readGlbNodes` walks two levels; the pack test excludes all of `src/`. (4) A0b: `MIN_CORE` and the
-package's peer range move to 1.45.0 at its first publish. (5) A3 (owner's next look): the 30° end
-elevation of one-storey views hides most furniture (`endElevation`, `camera.ts`). (6) B3b: a derived
-`open between` on a demolished wall still draws as a cased opening inside the dashes; `against wall
-<id>` places on a demolished wall; the `new` legend row waits for a hatch option.
+Small items, one PR or several. (1) `MIN_CORE` and `packages/archlang-3d`'s peer range move to
+1.45.0 at its first publish (owner step). (2) The owner's call on the 30° end elevation of one-storey
+views (`endElevation`, `camera.ts`). (3) Sliding, barn, bifold and pocket panels posed open under
+`--doors plan` need a core export of the panel geometry. (4) A leaf the plan swings through a wall
+(stress `s5-door-on-arc`) is reproduced as interpenetrating geometry with no ledger entry. (5) The
+by-id `E_FURN_AGAINST_DEMOLISHED_WALL` span covers the whole statement; the B3a/B3b sweep's deletion
+comparison ignores furniture; `anchor … flush` measures from a demolished face; `roof … wall` can
+follow a demolished outer wall; the `new` legend row waits for a hatch option.
 
 ---
 
