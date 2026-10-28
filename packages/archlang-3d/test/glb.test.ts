@@ -9,7 +9,8 @@ import { createHash } from "node:crypto";
 import { compile } from "@chanmeng666/archlang";
 import { describe, expect, it } from "vitest";
 import { adaptPlan, buildMesh } from "../src/index.js";
-import { checkNaming, GLB_GENERATOR, glbJson, readGlbNodes, replayPayload, writeGlb } from "../src/node.js";
+import { WebIO } from "@gltf-transform/core";
+import { checkNaming, GLB_GENERATOR, glbJson, glbLeaks, readGlbNodes, replayPayload, writeGlb } from "../src/node.js";
 import { EXAMPLES_LIST, WORLD } from "./corpus.js";
 
 const meshOf = (name: string) => {
@@ -95,6 +96,44 @@ describe("GLB from Mesh3D", () => {
     const hashes = await Promise.all([0, 1, 2].map(async () => sha(await writeGlb(meshOf("laneway-house.arch").mesh))));
     expect(new Set(hashes).size).toBe(1);
     expect(hashes[0]).toBe(LANEWAY_GLB_SHA256);
+  });
+
+  it("reads a node nested below an element node, so V-GLTF-02 sees it", async () => {
+    const { mesh } = meshOf("laneway-house.arch");
+    const io = new WebIO();
+    const doc = await io.readBinary(await writeGlb(mesh));
+    const group = doc.getRoot().listScenes()[0]?.listChildren()[0];
+    const first = group?.listChildren()[0];
+    if (!group || !first) throw new Error("no element node");
+    first.addChild(doc.createNode("stray:x"));
+    const { levels, nodes } = await readGlbNodes(await io.writeBinary(doc));
+    expect(nodes.map((n) => n.key)).toContain(`${group.getName().slice("level:".length)}/stray:x`);
+    expect(checkNaming(nodes, levels, mesh).failures.join("\n")).toContain(
+      'GLB node "L1/stray:x" is not a Mesh3D node',
+    );
+  });
+});
+
+describe("the reproducibility leak check (plan §8.5 L7)", () => {
+  const json = (asset: Record<string, unknown>, name = "laneway") =>
+    JSON.stringify({ asset: { version: "2.0", ...asset }, scenes: [{ name }], nodes: [{ name: "room:r" }] });
+
+  it("accepts a plan whose own name carries a date and time", () => {
+    expect(glbLeaks(json({ generator: GLB_GENERATOR }, "Survey 2026-10-28T09:30"))).toEqual([]);
+  });
+
+  it("flags a date or time the writer stamped in the asset fields", () => {
+    expect(glbLeaks(json({ generator: `${GLB_GENERATOR} 2026-10-28T09:30:00Z` }))).toHaveLength(1);
+    expect(glbLeaks(json({ generator: GLB_GENERATOR, copyright: "2026-10-28" }))).toHaveLength(1);
+  });
+
+  it("flags an absolute path anywhere", () => {
+    expect(glbLeaks(json({ generator: GLB_GENERATOR }, "C:\\Users\\me\\plan"))).toHaveLength(1);
+    expect(glbLeaks(json({ generator: GLB_GENERATOR, extras: { src: "/home/me/plan.arch" } }))).toHaveLength(1);
+  });
+
+  it("passes the GLBs this package writes", async () => {
+    expect(glbLeaks(glbJson(await writeGlb(meshOf("laneway-house.arch").mesh)))).toEqual([]);
   });
 });
 

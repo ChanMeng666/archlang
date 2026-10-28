@@ -11,6 +11,9 @@
  * The storey switcher drives this tab as it drives the other four: a selected storey is that
  * storey's view alone (`viewMesh(mesh, n)` over the core's own page for it, as the CLI's
  * `--storey n`); no selection, or a one-storey plan, is the combined view.
+ *
+ * The core's drawing is the editor's own compile when `main.ts` hands it over (`Drawn`), so an edit
+ * with this tab open compiles once, not twice; `adaptPlan`'s resolve is the package's own.
  */
 import { compile } from "archlang";
 import { adaptPlan, buildMesh, storeysOf, viewMesh } from "@chanmeng666/archlang-3d";
@@ -22,14 +25,26 @@ const HEIGHT = 540;
 /** One play-through, in seconds: shorter than the 15 s export, a preview is glanced at. */
 const SECONDS = 10;
 
+/**
+ * The editor's compile of the same source, when it has one whose drawing is the light one this tab
+ * shows (no theme override): its `svg`, its per-storey `pages` and its `errors`. Annotation
+ * attributes (`annotate: true`) are inert in the `<img>` the replay draws the plan through.
+ */
+export interface Drawn {
+  svg: string;
+  pages?: ReadonlyArray<{ level: number; svg: string }>;
+  errors: ReadonlyArray<{ message: string }>;
+}
+
 export interface Preview3d {
   /**
    * The tab was opened. A new plan or storey (`level`: the switcher's selection, `null` = none)
-   * is built and played from the start; the same one resumes where it was hidden.
+   * is built and played from the start; the same one resumes where it was hidden. `drawn`, when
+   * given, is the editor's compile of `source` (else this tab compiles it).
    */
-  show: (source: string, level: number | null) => void;
+  show: (source: string, level: number | null, drawn?: Drawn) => void;
   /** The plan or the storey changed while the tab is open: rebuild and go on from the current t. */
-  update: (source: string, level: number | null) => void;
+  update: (source: string, level: number | null, drawn?: Drawn) => void;
   /** The tab was closed: playback stops (no frames are drawn while hidden). */
   hide: () => void;
 }
@@ -102,7 +117,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   };
 
   /** Build the replay of `source` at `level`; false when it was refused (the message is showing). */
-  const build = (source: string, level: number | null, key: string): boolean => {
+  const build = (source: string, level: number | null, key: string, given?: Drawn): boolean => {
     built = key;
     generation += 1;
     let next: ReplayHandle;
@@ -113,7 +128,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
         refuse(r.refusal.message);
         return false;
       }
-      const drawn = compile(source);
+      const drawn: Drawn = given ?? compile(source);
       if (drawn.errors.length > 0 || !drawn.svg) {
         refuse(drawn.errors[0]?.message ?? "the core did not draw the plan.");
         return false;
@@ -199,11 +214,11 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   const keyOf = (source: string, level: number | null) => `${level ?? ""}|${source}`;
 
   return {
-    show(source, level) {
+    show(source, level, drawn) {
       const key = keyOf(source, level);
       if (key !== built) {
         resume = false;
-        if (build(source, level, key)) playFrom(0);
+        if (build(source, level, key, drawn)) playFrom(0);
         return;
       }
       const t = Number(scrub.value);
@@ -211,12 +226,12 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
       else drawAt(t);
       resume = false;
     },
-    update(source, level) {
+    update(source, level, drawn) {
       const key = keyOf(source, level);
       if (key === built) return;
       const t = Number(scrub.value);
       const playing = frame !== 0;
-      if (!build(source, level, key)) return;
+      if (!build(source, level, key, drawn)) return;
       if (playing) playFrom(t);
       else drawAt(t);
     },

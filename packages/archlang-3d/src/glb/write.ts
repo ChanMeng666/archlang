@@ -127,20 +127,28 @@ export interface GlbNode {
   extras: Record<string, unknown>;
 }
 
-/** The storey groups and the element nodes of a GLB this module wrote, in file order. */
+/**
+ * The storey groups (each scene's root nodes) and every node below them at any depth, depth first
+ * in file order. This module writes element nodes one level under their group only, so a node
+ * nested deeper is reported too (and then named and diffed like any other), never skipped.
+ */
 export async function readGlbNodes(glb: Uint8Array): Promise<{ levels: string[]; nodes: GlbNode[] }> {
   const doc = await new WebIO().readBinary(glb);
   const levels: string[] = [];
   const nodes: GlbNode[] = [];
+  type Node = ReturnType<Document["createNode"]>;
+  const walk = (parent: Node, prefix: string): void => {
+    for (const c of parent.listChildren()) {
+      const extras = (c.getExtras() as { archlang?: Record<string, unknown> }).archlang ?? {};
+      nodes.push({ key: `${prefix}${c.getName()}`, name: c.getName(), extras });
+      walk(c, prefix);
+    }
+  };
   for (const scene of doc.getRoot().listScenes()) {
     for (const group of scene.listChildren()) {
       const lv = group.getName();
       levels.push(lv);
-      const prefix = lv.startsWith("level:") ? `${lv.slice("level:".length)}/` : "";
-      for (const c of group.listChildren()) {
-        const extras = (c.getExtras() as { archlang?: Record<string, unknown> }).archlang ?? {};
-        nodes.push({ key: `${prefix}${c.getName()}`, name: c.getName(), extras });
-      }
+      walk(group, lv.startsWith("level:") ? `${lv.slice("level:".length)}/` : "");
     }
   }
   return { levels, nodes };
