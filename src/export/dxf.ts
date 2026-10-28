@@ -443,19 +443,28 @@ function wallRefiling(scene: Scene): Map<SceneNode, Refiled> {
   const classes = standing.some((w) => w.status === "new")
     ? [...WALL_CLASS_LAYERS, NEW_WALL_LAYER.name]
     : WALL_CLASS_LAYERS;
-  refileSplit(scene, out, classifyWallSet(standing, standingLayerOf, classes));
+  // Each split claims only its own call's outline by line type as well as geometry: a standing
+  // set and a demolished one can join to byte-equal outlines (two coincident walls), and only
+  // the line type tells the solid node from the dashed one.
+  refileSplit(scene, out, classifyWallSet(standing, standingLayerOf, classes), undefined);
   if (demolished.length > 0) {
     refileSplit(
       scene,
       out,
       classifyWallSet(demolished, () => DEMO_WALL_LAYER.name, [DEMO_WALL_LAYER.name]),
+      "dashed",
     );
   }
   return out;
 }
 
 /** Re-file the wall nodes one {@link classifyWallSet} split reproduces (see {@link wallRefiling}). */
-function refileSplit(scene: Scene, out: Map<SceneNode, Refiled>, split: ClassedWallSet | null): void {
+function refileSplit(
+  scene: Scene,
+  out: Map<SceneNode, Refiled>,
+  split: ClassedWallSet | null,
+  outlineLineType: LineType | undefined,
+): void {
   if (!split) return;
   const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
   const outline = split.outline === null ? null : JSON.stringify(split.outline);
@@ -483,6 +492,7 @@ function refileSplit(scene: Scene, out: Map<SceneNode, Refiled>, split: ClassedW
       // A demolished set's dashed outline is drawn on the `wallFill` pass (`toScene`, B3b).
       (node.layer === "wallFace" || node.layer === "wallFill") &&
       prim.t !== "hatch" &&
+      node.lineType === outlineLineType &&
       outline !== null &&
       JSON.stringify(prim) === outline
     ) {

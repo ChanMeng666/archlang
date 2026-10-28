@@ -24,11 +24,11 @@ plan "Apartment Remodel" {
   wall id=x_kitchen partition thickness 100 status demolish { (3000,0) (3000,7600) }
   wall id=x_dining partition thickness 100 status demolish { (0,4000) (3000,4000) }
   # In: the study's wall.
-  wall id=n_study partition thickness 100 status new { (9000,0) (9000,4000) }
+  wall id=n_study partition thickness 100 status new { (9200,0) (9200,4000) }
 
-  room id=r_living at (0,0)      size 6000x7600 label "Kitchen / Living" uses kitchen living
-  room id=r_bed    at (6000,0)   size 3000x4000 label "Bedroom" at (7500,2800) uses bedroom
-  room id=r_study  at (9000,0)   size 2000x4000 label "Study" uses office
+  room id=r_living at (0,0)      size 6000x7600 label "Kitchen / Living" at (4500,3200) uses kitchen living
+  room id=r_bed    at (6000,0)   size 3200x4000 label "Bedroom" at (7600,2800) uses bedroom
+  room id=r_study  at (9200,0)   size 1800x4000 label "Study" uses office
   room id=r_hall   at (6000,4000) size 5000x1400 label "Hall" uses hall
   room id=r_bath   at (6000,5400) size 3000x2200 label "Bathroom" uses bath
   room id=r_util   at (9000,5400) size 2000x2200 label "Utility" uses utility
@@ -36,7 +36,7 @@ plan "Apartment Remodel" {
   door id=d_front on r_hall.right at center width 900 swing into r_hall
   opening between r_hall and r_living at center width 1000
   door between r_hall and r_bed at 1000 from start width 900 swing into r_bed
-  door between r_hall and r_study at 700 from start width 800 swing into r_study
+  door between r_hall and r_study at 600 from start width 800 swing into r_study
   door between r_hall and r_bath at 1900 from start width 800 hinge near end swing into r_bath
   door between r_hall and r_util at 600 from start width 800 swing into r_util
 
@@ -51,7 +51,7 @@ plan "Apartment Remodel" {
   furniture counter      against r_living.left offset 1900 in r_living
   furniture stove        against r_living.left offset 2600 in r_living
   furniture fridge       against r_living.left offset 3600 in r_living
-  furniture table at (2300,1500) size 1400x900 label "Table" in r_living
+  furniture table at (3600,1300) size 1400x900 label "Table" in r_living
   furniture sofa  at (4000,4400) size 900x2000 label "Sofa" in r_living
 
   furniture bed      in r_bed anchor top-left flush inset 300 size 1500x2000 label "Bed"

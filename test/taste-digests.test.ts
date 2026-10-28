@@ -211,7 +211,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
   ["4beb4fcd83b89912e1e3fb03dab62239c0108789541400db9ab0657f2becb953", "generic", "examples/parametric.arch"],
   ["a5ef110531c0ccb7cb9c40580ca4b5a887522baa3a21e4204a3652cc2a0ca4ff", "generic", "examples/practice-office.arch"],
   ["dbb4faf28437877a241105be25011cdeac4047f05cf2093e7e515e79e2262c35", "generic", "examples/relational.arch"],
-  ["500c3de312f85892f00eec72081c74ce95fb49e715711987f0f5f7ebda1f5da8", "generic", "examples/remodel.arch"],
+  ["73c4bfb6b9be4a504fbf877919b874fcc7397434e5a0e47b899442414ef996fb", "generic", "examples/remodel.arch"],
   ["805147a393adc8234322e0638409e74621ac698cc5f3f401ff1d305800be8636", "generic", "examples/sheet-notes.arch"],
   ["97d75cac716e67fbaa99ed74f6e1694c0135238c2a13bafcf06eab147bf6406a", "generic", "examples/studio.arch"],
   ["6d8fc2e54ce83a8228a025fb7be5a258f2cc772880298b2871c1b7fc354199ed", "generic", "examples/terrace-row.arch"],
@@ -1307,7 +1307,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "examples/relational.arch",
   ],
   [
-    "11c6c9e53c071aebccbbbaa2e8a4fb21c3727caf4ef0a346dfa0f14e13d40247",
+    "f8fcb9caec7a9c68c1266936dccbc8a7830616102662d0fbf13405b4adc70214",
     "cn-residential-advisory",
     "examples/remodel.arch",
   ],
@@ -2442,7 +2442,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "examples/relational.arch",
   ],
   [
-    "2b4130f18e8561aa77c96259ab8663d246379e594466249e5f7e8ce65218f105",
+    "b5bf32b9972bae8c31b38cf08d6af3822e2521fed325db00470c5f9ee9d36d8b",
     "us-residential-advisory",
     "examples/remodel.arch",
   ],

@@ -12213,8 +12213,8 @@ exports[`golden SVG snapshots > renders remodel.arch deterministically 1`] = `
 <rect x="-2071" y="-2071" width="15142" height="19742.4" fill="#ffffff"/>
 <g id="A-FLOR" inkscape:groupmode="layer" inkscape:label="A-FLOR">
 <polygon points="0,0 6000,0 6000,7600 0,7600" fill="#fbfaf7"/>
-<polygon points="6000,0 9000,0 9000,4000 6000,4000" fill="#fbfaf7"/>
-<polygon points="9000,0 11000,0 11000,4000 9000,4000" fill="#fbfaf7"/>
+<polygon points="6000,0 9200,0 9200,4000 6000,4000" fill="#fbfaf7"/>
+<polygon points="9200,0 11000,0 11000,4000 9200,4000" fill="#fbfaf7"/>
 <polygon points="6000,4000 11000,4000 11000,5400 6000,5400" fill="#fbfaf7"/>
 <polygon points="6000,5400 9000,5400 9000,7600 6000,7600" fill="#fbfaf7"/>
 <polygon points="9000,5400 11000,5400 11000,7600 9000,7600" fill="#fbfaf7"/>
@@ -12245,8 +12245,8 @@ exports[`golden SVG snapshots > renders remodel.arch deterministically 1`] = `
 <path d="M 150,3888 L 150,3312 A 12 12 0 0 1 162,3300 L 838,3300 A 12 12 0 0 1 850,3312 L 850,3888 A 12 12 0 0 1 838,3900 L 162,3900 A 12 12 0 0 1 150,3888 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18.08"/>
 <line x1="752" y1="3900" x2="752" y2="3300" stroke="#a8a29a" stroke-width="13.06"/>
 <line x1="801" y1="3696" x2="801" y2="3504" stroke="#6c6864" stroke-width="18.08"/>
-<path d="M 2310.8,1500 L 3689.2,1500 A 10.8 10.8 0 0 1 3700,1510.8 L 3700,2389.2 A 10.8 10.8 0 0 1 3689.2,2400 L 2310.8,2400 A 10.8 10.8 0 0 1 2300,2389.2 L 2300,1510.8 A 10.8 10.8 0 0 1 2310.8,1500 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18.08"/>
-<path d="M 2334.2,1527 L 3665.8,1527 A 7.2 7.2 0 0 1 3673,1534.2 L 3673,2365.8 A 7.2 7.2 0 0 1 3665.8,2373 L 2334.2,2373 A 7.2 7.2 0 0 1 2327,2365.8 L 2327,1534.2 A 7.2 7.2 0 0 1 2334.2,1527 Z" fill="none" stroke="#a8a29a" stroke-width="13.06"/>
+<path d="M 3610.8,1300 L 4989.2,1300 A 10.8 10.8 0 0 1 5000,1310.8 L 5000,2189.2 A 10.8 10.8 0 0 1 4989.2,2200 L 3610.8,2200 A 10.8 10.8 0 0 1 3600,2189.2 L 3600,1310.8 A 10.8 10.8 0 0 1 3610.8,1300 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18.08"/>
+<path d="M 3634.2,1327 L 4965.8,1327 A 7.2 7.2 0 0 1 4973,1334.2 L 4973,2165.8 A 7.2 7.2 0 0 1 4965.8,2173 L 3634.2,2173 A 7.2 7.2 0 0 1 3627,2165.8 L 3627,1334.2 A 7.2 7.2 0 0 1 3634.2,1327 Z" fill="none" stroke="#a8a29a" stroke-width="13.06"/>
 <path d="M 4063,4400 L 4837,4400 A 63 63 0 0 1 4900,4463 L 4900,6337 A 63 63 0 0 1 4837,6400 L 4063,6400 A 63 63 0 0 1 4000,6337 L 4000,4463 A 63 63 0 0 1 4063,4400 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18.08"/>
 <path d="M 4063,4400 L 4225,4400 L 4225,6337 A 63 63 0 0 1 4162,6400 L 4063,6400 A 63 63 0 0 1 4000,6337 L 4000,4463 A 63 63 0 0 1 4063,4400 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18.08"/>
 <path d="M 4675,4400 L 4837,4400 A 63 63 0 0 1 4900,4463 L 4900,6337 A 63 63 0 0 1 4837,6400 L 4738,6400 A 63 63 0 0 1 4675,6337 L 4675,4400 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18.08"/>
@@ -12259,26 +12259,26 @@ exports[`golden SVG snapshots > renders remodel.arch deterministically 1`] = `
 <polygon points="6395,1050 7805,1050 7805,2165 7565,2405 6395,2405" fill="#f4f2ee" stroke="#a8a29a" stroke-width="13.06"/>
 <polygon points="6395,1050 7805,1050 7805,1250 6395,1250" fill="#ffffff" stroke="#a8a29a" stroke-width="13.06"/>
 <polygon points="7805,2165 7565,2405 7565,2165" fill="#ffffff" stroke="#a8a29a" stroke-width="13.06"/>
-<path d="M 8944,3950 L 7756,3950 A 6 6 0 0 1 7750,3944 L 7750,3356 A 6 6 0 0 1 7756,3350 L 8944,3350 A 6 6 0 0 1 8950,3356 L 8950,3944 A 6 6 0 0 1 8944,3950 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18.08"/>
-<line x1="8950" y1="3374" x2="7750" y2="3374" stroke="#a8a29a" stroke-width="13.06"/>
-<line x1="8350" y1="3950" x2="8350" y2="3350" stroke="#a8a29a" stroke-width="13.06"/>
-<line x1="8914" y1="3650" x2="8386" y2="3650" stroke="#a8a29a" stroke-width="13.06" stroke-dasharray="108.48 72.32"/>
-<line x1="8848" y1="3860" x2="8848" y2="3440" stroke="#a8a29a" stroke-width="13.06"/>
-<line x1="8716" y1="3860" x2="8716" y2="3440" stroke="#a8a29a" stroke-width="13.06"/>
-<line x1="8584" y1="3860" x2="8584" y2="3440" stroke="#a8a29a" stroke-width="13.06"/>
-<line x1="8452" y1="3860" x2="8452" y2="3440" stroke="#a8a29a" stroke-width="13.06"/>
-<line x1="8314" y1="3650" x2="7786" y2="3650" stroke="#a8a29a" stroke-width="13.06" stroke-dasharray="108.48 72.32"/>
-<line x1="8248" y1="3860" x2="8248" y2="3440" stroke="#a8a29a" stroke-width="13.06"/>
-<line x1="8116" y1="3860" x2="8116" y2="3440" stroke="#a8a29a" stroke-width="13.06"/>
-<line x1="7984" y1="3860" x2="7984" y2="3440" stroke="#a8a29a" stroke-width="13.06"/>
-<line x1="7852" y1="3860" x2="7852" y2="3440" stroke="#a8a29a" stroke-width="13.06"/>
-<path d="M 9056,150 L 10244,150 A 6 6 0 0 1 10250,156 L 10250,744 A 6 6 0 0 1 10244,750 L 9056,750 A 6 6 0 0 1 9050,744 L 9050,156 A 6 6 0 0 1 9056,150 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18.08"/>
-<path d="M 9075.8,171 L 10224.2,171 A 4.8 4.8 0 0 1 10229,175.8 L 10229,724.2 A 4.8 4.8 0 0 1 10224.2,729 L 9075.8,729 A 4.8 4.8 0 0 1 9071,724.2 L 9071,175.8 A 4.8 4.8 0 0 1 9075.8,171 Z" fill="none" stroke="#a8a29a" stroke-width="13.06"/>
-<line x1="9071" y1="222" x2="10229" y2="222" stroke="#a8a29a" stroke-width="13.06"/>
-<polygon points="9890,270 10190,270 10190,702 9890,702" fill="none" stroke="#a8a29a" stroke-width="13.06" stroke-dasharray="108.48 72.32"/>
-<line x1="9890" y1="414" x2="10190" y2="414" stroke="#a8a29a" stroke-width="13.06" stroke-dasharray="108.48 72.32"/>
-<line x1="9890" y1="558" x2="10190" y2="558" stroke="#a8a29a" stroke-width="13.06" stroke-dasharray="108.48 72.32"/>
-<path d="M 9316.7,264 L 9623.3,264 A 14.7 14.7 0 0 1 9638,278.7 L 9638,291.3 A 14.7 14.7 0 0 1 9623.3,306 L 9316.7,306 A 14.7 14.7 0 0 1 9302,291.3 L 9302,278.7 A 14.7 14.7 0 0 1 9316.7,264 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="13.06"/>
+<path d="M 9144,3950 L 7956,3950 A 6 6 0 0 1 7950,3944 L 7950,3356 A 6 6 0 0 1 7956,3350 L 9144,3350 A 6 6 0 0 1 9150,3356 L 9150,3944 A 6 6 0 0 1 9144,3950 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18.08"/>
+<line x1="9150" y1="3374" x2="7950" y2="3374" stroke="#a8a29a" stroke-width="13.06"/>
+<line x1="8550" y1="3950" x2="8550" y2="3350" stroke="#a8a29a" stroke-width="13.06"/>
+<line x1="9114" y1="3650" x2="8586" y2="3650" stroke="#a8a29a" stroke-width="13.06" stroke-dasharray="108.48 72.32"/>
+<line x1="9048" y1="3860" x2="9048" y2="3440" stroke="#a8a29a" stroke-width="13.06"/>
+<line x1="8916" y1="3860" x2="8916" y2="3440" stroke="#a8a29a" stroke-width="13.06"/>
+<line x1="8784" y1="3860" x2="8784" y2="3440" stroke="#a8a29a" stroke-width="13.06"/>
+<line x1="8652" y1="3860" x2="8652" y2="3440" stroke="#a8a29a" stroke-width="13.06"/>
+<line x1="8514" y1="3650" x2="7986" y2="3650" stroke="#a8a29a" stroke-width="13.06" stroke-dasharray="108.48 72.32"/>
+<line x1="8448" y1="3860" x2="8448" y2="3440" stroke="#a8a29a" stroke-width="13.06"/>
+<line x1="8316" y1="3860" x2="8316" y2="3440" stroke="#a8a29a" stroke-width="13.06"/>
+<line x1="8184" y1="3860" x2="8184" y2="3440" stroke="#a8a29a" stroke-width="13.06"/>
+<line x1="8052" y1="3860" x2="8052" y2="3440" stroke="#a8a29a" stroke-width="13.06"/>
+<path d="M 9256,150 L 10444,150 A 6 6 0 0 1 10450,156 L 10450,744 A 6 6 0 0 1 10444,750 L 9256,750 A 6 6 0 0 1 9250,744 L 9250,156 A 6 6 0 0 1 9256,150 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18.08"/>
+<path d="M 9275.8,171 L 10424.2,171 A 4.8 4.8 0 0 1 10429,175.8 L 10429,724.2 A 4.8 4.8 0 0 1 10424.2,729 L 9275.8,729 A 4.8 4.8 0 0 1 9271,724.2 L 9271,175.8 A 4.8 4.8 0 0 1 9275.8,171 Z" fill="none" stroke="#a8a29a" stroke-width="13.06"/>
+<line x1="9271" y1="222" x2="10429" y2="222" stroke="#a8a29a" stroke-width="13.06"/>
+<polygon points="10090,270 10390,270 10390,702 10090,702" fill="none" stroke="#a8a29a" stroke-width="13.06" stroke-dasharray="108.48 72.32"/>
+<line x1="10090" y1="414" x2="10390" y2="414" stroke="#a8a29a" stroke-width="13.06" stroke-dasharray="108.48 72.32"/>
+<line x1="10090" y1="558" x2="10390" y2="558" stroke="#a8a29a" stroke-width="13.06" stroke-dasharray="108.48 72.32"/>
+<path d="M 9516.7,264 L 9823.3,264 A 14.7 14.7 0 0 1 9838,278.7 L 9838,291.3 A 14.7 14.7 0 0 1 9823.3,306 L 9516.7,306 A 14.7 14.7 0 0 1 9502,291.3 L 9502,278.7 A 14.7 14.7 0 0 1 9516.7,264 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="13.06"/>
 <path d="M 6086,6550 L 6914,6550 A 36 36 0 0 1 6950,6586 L 6950,7414 A 36 36 0 0 1 6914,7450 L 6086,7450 A 36 36 0 0 1 6050,7414 L 6050,6586 A 36 36 0 0 1 6086,6550 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18.08"/>
 <path d="M 6122,6604 L 6878,6604 A 18 18 0 0 1 6896,6622 L 6896,7378 A 18 18 0 0 1 6878,7396 L 6122,7396 A 18 18 0 0 1 6104,7378 L 6104,6622 A 18 18 0 0 1 6122,6604 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="13.06"/>
 <line x1="6123.09" y1="6623.09" x2="6465" y2="6965" stroke="#a8a29a" stroke-width="13.06"/>
@@ -12308,8 +12308,8 @@ exports[`golden SVG snapshots > renders remodel.arch deterministically 1`] = `
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -50,3950 L 2950,3950 L 2950,-50 L 3050,-50 L 3050,7650 L 2950,7650 L 2950,4050 L -50,4050 Z" fill="none" stroke="#1b1b1b" stroke-width="31.64" stroke-linejoin="miter" stroke-miterlimit="4" stroke-dasharray="108.48 72.32"/>
-<path d="M -150,-150 L 600,-150 L 600,150 L 150,150 L 150,4750 L -150,4750 Z M -150,6250 L 150,6250 L 150,7450 L 5950,7450 L 5950,5200 L 6050,5200 L 6050,5350 L 7500,5350 L 7500,5450 L 6050,5450 L 6050,7450 L 7100,7450 L 7100,7750 L -150,7750 Z M 10000,5350 L 10850,5350 L 10850,5150 L 11150,5150 L 11150,7750 L 7900,7750 L 7900,7450 L 8950,7450 L 8950,5450 L 8300,5450 L 8300,5350 L 9200,5350 L 9200,5450 L 9050,5450 L 9050,7450 L 10850,7450 L 10850,5450 L 10000,5450 Z M 10100,3950 L 10850,3950 L 10850,150 L 10500,150 L 10500,-150 L 11150,-150 L 11150,4250 L 10850,4250 L 10850,4050 L 10100,4050 Z M 2400,-150 L 3600,-150 L 3600,150 L 2400,150 Z M 5400,-150 L 6750,-150 L 6750,150 L 6050,150 L 6050,3950 L 6550,3950 L 6550,4050 L 6050,4050 L 6050,4200 L 5950,4200 L 5950,150 L 5400,150 Z M 7450,3950 L 8950,3950 L 8950,150 L 8250,150 L 8250,-150 L 9500,-150 L 9500,150 L 9050,150 L 9050,3950 L 9300,3950 L 9300,4050 L 7450,4050 Z" fill="url(#poche)" fill-rule="nonzero"/>
-<path d="M -150,-150 L 600,-150 L 600,150 L 150,150 L 150,4750 L -150,4750 Z M -150,6250 L 150,6250 L 150,7450 L 5950,7450 L 5950,5200 L 6050,5200 L 6050,5350 L 7500,5350 L 7500,5450 L 6050,5450 L 6050,7450 L 7100,7450 L 7100,7750 L -150,7750 Z M 10000,5350 L 10850,5350 L 10850,5150 L 11150,5150 L 11150,7750 L 7900,7750 L 7900,7450 L 8950,7450 L 8950,5450 L 8300,5450 L 8300,5350 L 9200,5350 L 9200,5450 L 9050,5450 L 9050,7450 L 10850,7450 L 10850,5450 L 10000,5450 Z M 10100,3950 L 10850,3950 L 10850,150 L 10500,150 L 10500,-150 L 11150,-150 L 11150,4250 L 10850,4250 L 10850,4050 L 10100,4050 Z M 2400,-150 L 3600,-150 L 3600,150 L 2400,150 Z M 5400,-150 L 6750,-150 L 6750,150 L 6050,150 L 6050,3950 L 6550,3950 L 6550,4050 L 6050,4050 L 6050,4200 L 5950,4200 L 5950,150 L 5400,150 Z M 7450,3950 L 8950,3950 L 8950,150 L 8250,150 L 8250,-150 L 9500,-150 L 9500,150 L 9050,150 L 9050,3950 L 9300,3950 L 9300,4050 L 7450,4050 Z" fill="none" stroke="#1b1b1b" stroke-width="31.64" stroke-linejoin="miter" stroke-miterlimit="4"/>
+<path d="M -150,-150 L 600,-150 L 600,150 L 150,150 L 150,4750 L -150,4750 Z M -150,6250 L 150,6250 L 150,7450 L 5950,7450 L 5950,5200 L 6050,5200 L 6050,5350 L 7500,5350 L 7500,5450 L 6050,5450 L 6050,7450 L 7100,7450 L 7100,7750 L -150,7750 Z M 10000,5350 L 10850,5350 L 10850,5150 L 11150,5150 L 11150,7750 L 7900,7750 L 7900,7450 L 8950,7450 L 8950,5450 L 8300,5450 L 8300,5350 L 9200,5350 L 9200,5450 L 9050,5450 L 9050,7450 L 10850,7450 L 10850,5450 L 10000,5450 Z M 10200,3950 L 10850,3950 L 10850,150 L 10600,150 L 10600,-150 L 11150,-150 L 11150,4250 L 10850,4250 L 10850,4050 L 10200,4050 Z M 2400,-150 L 3600,-150 L 3600,150 L 2400,150 Z M 5400,-150 L 6850,-150 L 6850,150 L 6050,150 L 6050,3950 L 6550,3950 L 6550,4050 L 6050,4050 L 6050,4200 L 5950,4200 L 5950,150 L 5400,150 Z M 7450,3950 L 9150,3950 L 9150,150 L 8350,150 L 8350,-150 L 9600,-150 L 9600,150 L 9250,150 L 9250,3950 L 9400,3950 L 9400,4050 L 7450,4050 Z" fill="url(#poche)" fill-rule="nonzero"/>
+<path d="M -150,-150 L 600,-150 L 600,150 L 150,150 L 150,4750 L -150,4750 Z M -150,6250 L 150,6250 L 150,7450 L 5950,7450 L 5950,5200 L 6050,5200 L 6050,5350 L 7500,5350 L 7500,5450 L 6050,5450 L 6050,7450 L 7100,7450 L 7100,7750 L -150,7750 Z M 10000,5350 L 10850,5350 L 10850,5150 L 11150,5150 L 11150,7750 L 7900,7750 L 7900,7450 L 8950,7450 L 8950,5450 L 8300,5450 L 8300,5350 L 9200,5350 L 9200,5450 L 9050,5450 L 9050,7450 L 10850,7450 L 10850,5450 L 10000,5450 Z M 10200,3950 L 10850,3950 L 10850,150 L 10600,150 L 10600,-150 L 11150,-150 L 11150,4250 L 10850,4250 L 10850,4050 L 10200,4050 Z M 2400,-150 L 3600,-150 L 3600,150 L 2400,150 Z M 5400,-150 L 6850,-150 L 6850,150 L 6050,150 L 6050,3950 L 6550,3950 L 6550,4050 L 6050,4050 L 6050,4200 L 5950,4200 L 5950,150 L 5400,150 Z M 7450,3950 L 9150,3950 L 9150,150 L 8350,150 L 8350,-150 L 9600,-150 L 9600,150 L 9250,150 L 9250,3950 L 9400,3950 L 9400,4050 L 7450,4050 Z" fill="none" stroke="#1b1b1b" stroke-width="31.64" stroke-linejoin="miter" stroke-miterlimit="4"/>
 </g>
 <g id="A-DOOR" inkscape:groupmode="layer" inkscape:label="A-DOOR">
 <polygon points="10850,4250 10850,5150 11150,5150 11150,4250" fill="none"/>
@@ -12318,9 +12318,9 @@ exports[`golden SVG snapshots > renders remodel.arch deterministically 1`] = `
 <polygon points="6550,4050 7450,4050 7450,3950 6550,3950" fill="none"/>
 <polygon points="6550,4000 6550,3100 6597.01,3101.23 6597.01,4000" fill="#ffffff" stroke="#555555" stroke-width="23.5"/>
 <path d="M 6550,3100 A 900 900 0 0 1 7450,4000" fill="none" stroke="#555555" stroke-width="13.06"/>
-<polygon points="9300,4050 10100,4050 10100,3950 9300,3950" fill="none"/>
-<polygon points="9300,4000 9300,3200 9347.01,3201.38 9347.01,4000" fill="#ffffff" stroke="#555555" stroke-width="23.5"/>
-<path d="M 9300,3200 A 800 800 0 0 1 10100,4000" fill="none" stroke="#555555" stroke-width="13.06"/>
+<polygon points="9400,4050 10200,4050 10200,3950 9400,3950" fill="none"/>
+<polygon points="9400,4000 9400,3200 9447.01,3201.38 9447.01,4000" fill="#ffffff" stroke="#555555" stroke-width="23.5"/>
+<path d="M 9400,3200 A 800 800 0 0 1 10200,4000" fill="none" stroke="#555555" stroke-width="13.06"/>
 <polygon points="7500,5450 8300,5450 8300,5350 7500,5350" fill="none"/>
 <polygon points="8300,5400 8300,6200 8252.99,6198.62 8252.99,5400" fill="#ffffff" stroke="#555555" stroke-width="23.5"/>
 <path d="M 8300,6200 A 800 800 0 0 1 7500,5400" fill="none" stroke="#555555" stroke-width="13.06"/>
@@ -12348,18 +12348,18 @@ exports[`golden SVG snapshots > renders remodel.arch deterministically 1`] = `
 <line x1="37.5" y1="6250" x2="37.5" y2="4750" stroke="#3a6ea5" stroke-width="18.08"/>
 <line x1="-37.5" y1="6250" x2="-37.5" y2="4750" stroke="#3a6ea5" stroke-width="18.08"/>
 <polygon points="-150,6310 -210,6310 -210,4690 -150,4690" fill="none" stroke="#1b1b1b" stroke-width="18.08"/>
-<polygon points="6750,181.64 8250,181.64 8250,-181.64 6750,-181.64" fill="#ffffff"/>
-<line x1="6750" y1="150" x2="8250" y2="150" stroke="#1b1b1b" stroke-width="18.08"/>
-<line x1="6750" y1="-150" x2="8250" y2="-150" stroke="#1b1b1b" stroke-width="18.08"/>
-<line x1="6750" y1="37.5" x2="8250" y2="37.5" stroke="#3a6ea5" stroke-width="18.08"/>
-<line x1="6750" y1="-37.5" x2="8250" y2="-37.5" stroke="#3a6ea5" stroke-width="18.08"/>
-<polygon points="6690,-150 6690,-210 8310,-210 8310,-150" fill="none" stroke="#1b1b1b" stroke-width="18.08"/>
-<polygon points="9500,181.64 10500,181.64 10500,-181.64 9500,-181.64" fill="#ffffff"/>
-<line x1="9500" y1="150" x2="10500" y2="150" stroke="#1b1b1b" stroke-width="18.08"/>
-<line x1="9500" y1="-150" x2="10500" y2="-150" stroke="#1b1b1b" stroke-width="18.08"/>
-<line x1="9500" y1="37.5" x2="10500" y2="37.5" stroke="#3a6ea5" stroke-width="18.08"/>
-<line x1="9500" y1="-37.5" x2="10500" y2="-37.5" stroke="#3a6ea5" stroke-width="18.08"/>
-<polygon points="9440,-150 9440,-210 10560,-210 10560,-150" fill="none" stroke="#1b1b1b" stroke-width="18.08"/>
+<polygon points="6850,181.64 8350,181.64 8350,-181.64 6850,-181.64" fill="#ffffff"/>
+<line x1="6850" y1="150" x2="8350" y2="150" stroke="#1b1b1b" stroke-width="18.08"/>
+<line x1="6850" y1="-150" x2="8350" y2="-150" stroke="#1b1b1b" stroke-width="18.08"/>
+<line x1="6850" y1="37.5" x2="8350" y2="37.5" stroke="#3a6ea5" stroke-width="18.08"/>
+<line x1="6850" y1="-37.5" x2="8350" y2="-37.5" stroke="#3a6ea5" stroke-width="18.08"/>
+<polygon points="6790,-150 6790,-210 8410,-210 8410,-150" fill="none" stroke="#1b1b1b" stroke-width="18.08"/>
+<polygon points="9600,181.64 10600,181.64 10600,-181.64 9600,-181.64" fill="#ffffff"/>
+<line x1="9600" y1="150" x2="10600" y2="150" stroke="#1b1b1b" stroke-width="18.08"/>
+<line x1="9600" y1="-150" x2="10600" y2="-150" stroke="#1b1b1b" stroke-width="18.08"/>
+<line x1="9600" y1="37.5" x2="10600" y2="37.5" stroke="#3a6ea5" stroke-width="18.08"/>
+<line x1="9600" y1="-37.5" x2="10600" y2="-37.5" stroke="#3a6ea5" stroke-width="18.08"/>
+<polygon points="9540,-150 9540,-210 10660,-210 10660,-150" fill="none" stroke="#1b1b1b" stroke-width="18.08"/>
 <polygon points="7900,7418.36 7100,7418.36 7100,7781.64 7900,7781.64" fill="#ffffff"/>
 <line x1="7900" y1="7450" x2="7100" y2="7450" stroke="#1b1b1b" stroke-width="18.08"/>
 <line x1="7900" y1="7750" x2="7100" y2="7750" stroke="#1b1b1b" stroke-width="18.08"/>
@@ -12368,12 +12368,12 @@ exports[`golden SVG snapshots > renders remodel.arch deterministically 1`] = `
 <polygon points="7960,7750 7960,7810 7040,7810 7040,7750" fill="none" stroke="#1b1b1b" stroke-width="18.08"/>
 </g>
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
-<text x="2100" y="4872.2" font-size="339" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Kitchen / Living</text>
-<text x="2100" y="5245.1" font-size="248.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">45.6 m²</text>
-<text x="7500" y="2732.2" font-size="339" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>
-<text x="7500" y="3105.1" font-size="248.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
-<text x="10000" y="1932.2" font-size="339" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Study</text>
-<text x="10000" y="2305.1" font-size="248.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">8.0 m²</text>
+<text x="4500" y="3132.2" font-size="339" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600"><tspan x="4500" y="2928.8">Kitchen /</tspan><tspan x="4500" y="3335.6">Living</tspan></text>
+<text x="4500" y="3708.5" font-size="248.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">45.6 m²</text>
+<text x="7600" y="2732.2" font-size="339" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>
+<text x="7600" y="3105.1" font-size="248.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.8 m²</text>
+<text x="10100" y="1932.2" font-size="339" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Study</text>
+<text x="10100" y="2305.1" font-size="248.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">7.2 m²</text>
 <text x="8500" y="4632.2" font-size="339" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Hall</text>
 <text x="8500" y="5005.1" font-size="248.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">7.0 m²</text>
 <text x="7950" y="6432.2" font-size="339" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bathroom</text>
@@ -12399,13 +12399,13 @@ exports[`golden SVG snapshots > renders remodel.arch deterministically 1`] = `
 <text x="6718.14" y="11919.7" font-size="214.7" fill="#333333" text-anchor="end" dominant-baseline="central">42.34</text>
 <text x="160.75" y="12303.9" font-size="214.7" fill="#333333" text-anchor="middle" dominant-baseline="central">02</text>
 <text x="552.86" y="12303.9" font-size="214.7" fill="#333333" text-anchor="start" dominant-baseline="central">Bedroom</text>
-<text x="5136.14" y="12303.9" font-size="214.7" fill="#333333" text-anchor="end" dominant-baseline="central">12.00</text>
-<text x="6718.14" y="12303.9" font-size="214.7" fill="#333333" text-anchor="end" dominant-baseline="central">11.02</text>
+<text x="5136.14" y="12303.9" font-size="214.7" fill="#333333" text-anchor="end" dominant-baseline="central">12.80</text>
+<text x="6718.14" y="12303.9" font-size="214.7" fill="#333333" text-anchor="end" dominant-baseline="central">11.78</text>
 <line x1="-150" y1="12111.8" x2="6799.5" y2="12111.8" stroke="#333333" stroke-width="13.06"/>
 <text x="160.75" y="12688.1" font-size="214.7" fill="#333333" text-anchor="middle" dominant-baseline="central">03</text>
 <text x="552.86" y="12688.1" font-size="214.7" fill="#333333" text-anchor="start" dominant-baseline="central">Study</text>
-<text x="5136.14" y="12688.1" font-size="214.7" fill="#333333" text-anchor="end" dominant-baseline="central">8.00</text>
-<text x="6718.14" y="12688.1" font-size="214.7" fill="#333333" text-anchor="end" dominant-baseline="central">6.84</text>
+<text x="5136.14" y="12688.1" font-size="214.7" fill="#333333" text-anchor="end" dominant-baseline="central">7.20</text>
+<text x="6718.14" y="12688.1" font-size="214.7" fill="#333333" text-anchor="end" dominant-baseline="central">6.08</text>
 <line x1="-150" y1="12496" x2="6799.5" y2="12496" stroke="#333333" stroke-width="13.06"/>
 <text x="160.75" y="13072.3" font-size="214.7" fill="#333333" text-anchor="middle" dominant-baseline="central">04</text>
 <text x="552.86" y="13072.3" font-size="214.7" fill="#333333" text-anchor="start" dominant-baseline="central">Hall</text>

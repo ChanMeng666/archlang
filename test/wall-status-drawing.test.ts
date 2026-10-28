@@ -210,6 +210,28 @@ suite("DXF: the remodel wall layers", () => {
     expect(declared).not.toContain("A-WALL");
   });
 
+  it("a demolished wall coincident with a new one: each outline goes to its own layer (red-team round 1)", () => {
+    // The two sets join to byte-equal outlines; only the line type tells the nodes apart.
+    const src = plan(
+      "",
+      `  wall id=old partition thickness 100 status demolish { (0,0) (4000,0) }
+  wall id=fresh partition thickness 100 status new { (0,0) (4000,0) }`,
+    );
+    const sc = compile(src).scene!;
+    const prims = wallNodes(sc).filter((n) => n.prim.t !== "hatch");
+    expect(prims).toHaveLength(2);
+    expect(prims[0]!.prim).toEqual(prims[1]!.prim);
+    const dxf = toDxf(sc);
+    const es = entities(dxf);
+    const demo = es.filter((e) => e.layer === "A-WALL-DEMO");
+    expect(demo.length).toBeGreaterThan(0);
+    expect(demo.every((e) => e.ltype === "DASHED")).toBe(true);
+    expect(es.filter((e) => e.layer === "A-WALL-NEWW").every((e) => e.ltype === undefined)).toBe(true);
+    expect(es.some((e) => e.layer === "A-WALL")).toBe(false);
+    expect(declaredLayers(dxf)).toContain("A-WALL-DEMO");
+    expect(declaredLayers(dxf)).toContain("A-WALL-NEWW");
+  });
+
   it("an `existing` wall stays where a wall with no status is, and no status layer is declared without one", () => {
     const existing = toDxf(compile(DEMOLISHED().replace(" status demolish", " status existing")).scene!);
     expect(existing).toBe(toDxf(compile(STANDING()).scene!));
@@ -238,8 +260,8 @@ suite("examples/remodel.arch", () => {
 });
 
 const PINS = {
-  svg: "b2231d401169d8cd22d536cd78583d9f30e6c60961af4693c19d7df66666d7de",
-  dxf: "437ddc35c9fe85cc1a8961dc94821163e28206af596e67688ed48cd5af867c53",
-  describe: "380ede0806d4364ac4a300da8635ed7b56398aee31bea9f750c73ac2da5ddc9a",
+  svg: "ceec6be3c7838b8f20a087204e18d5e0bcb2278b1dce4b20bfe3f0056b1e2315",
+  dxf: "b6ffd3dbceca703a6ec0a6eb61bafc14c8b75f8d5a2629361435e352d797b1d4",
+  describe: "ad7b4177c363a950d16088f56cb94864ff783809d6d24c3d848cea894440fd5e",
   lint: "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
 };

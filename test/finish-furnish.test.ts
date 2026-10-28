@@ -595,7 +595,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         ["323b8b2e7741e5cd31ae525c5d54c570cb47d5e27c8e32817d357350799a5053", "one-room"], // PS2.69, see above
         ["06e0d70afc7df98e0cf944d4d4d6179370632ea31e52eebf07aaf6efb7af210c", "parametric"],
         ["a6f645e75374318f4ec98242aaf081345a5c478041c9b953df1c235111e64c0c", "relational"], // PS2.9 and PS2.4 source edits; PS2.17 source edit (a worktop), see above; PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e source edit, see above
-        ["8f35311cc4796f2f78c6bae5051ef84e676e8f95a0e9cff870b85b043f670107", "remodel"], // first measurement, added with the example (B3b)
+        ["d5066807e2377a5e7915beebb279490b8eda5740e728b9f50760e614fc2e70b5", "remodel"], // first measurement, added with the example (B3b)
         ["d58bfbf0a25a5b70b7bdfdd1a8ef7b0fb8912f88ebb5cf631da3efe8268015e4", "sheet-notes"], // first measurement, added with the example
         ["07fdbb004b13fcea94bbc7969a42f821bbe48f8665f80dd39d093f502415f439", "practice-office"], // first measurement with the example; PS2.9 source edit, see above; PS2.11e source edit, see above; PS2.74 source edit, see above
         ["f6a934fcb40723366612a6485f93d6f1a306342ced16756d593aff9bd7eed4e7", "studio"], // PS2.11e source edit, see above
