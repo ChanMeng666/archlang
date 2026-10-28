@@ -96,6 +96,10 @@ describe("archlang3d manifest", () => {
       expect(r.code, argv.join(" ")).toBe(3);
       expect(r.err).toMatch(/usage: archlang3d/);
     }
+    // A Scene3D carries no pose (card A7, red-team round 1).
+    const sc = await cli(["build", "a.arch", "-f", "scene3d", "--doors", "plan"]);
+    expect(sc.code).toBe(3);
+    expect(sc.err).toMatch(/a Scene3D carries no pose/);
     const r = await cli(["build", "a.arch", "-o", "-", "--json"]);
     expect(r.code).toBe(3);
     expect(r.err).toMatch(/both write stdout/);

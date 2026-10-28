@@ -67,6 +67,24 @@ describe("Scene3D v0: the schema and the validator agree", () => {
     ["a cut naming no opening", set((s) => s.levels[0].walls[0].cuts.push("ghost")), false],
   ];
 
+  it("accepts a pre-A7 two-point leaf (no open tip), and rejects a one-point or four-point one", () => {
+    const base = scenes.find(([n]) => n === "laneway-house.arch")?.[1];
+    const leafOf = (s: any) => s.levels[0].openings.find((o: any) => o.leaves).leaves[0];
+    expect(leafOf(base)).toHaveLength(3);
+    const two = structuredClone(base);
+    leafOf(two).splice(2);
+    expect(validateScene3D(two)).toEqual([]);
+    expect(schemaValid(two) ? [] : schemaValid.errors).toEqual([]);
+    for (const n of [1, 4]) {
+      const bad = structuredClone(base);
+      const leaf = leafOf(bad);
+      if (n === 1) leaf.splice(1);
+      else leaf.push(leaf[0]);
+      expect(validateScene3D(bad).length, `${n} points`).toBeGreaterThan(0);
+      expect(schemaValid(bad), `${n} points`).toBe(false);
+    }
+  });
+
   for (const [name, mutate, schemaSees] of PLANTS) {
     it(`rejects ${name}`, () => {
       const sc = structuredClone(scenes.find(([n]) => n === "laneway-house.arch")?.[1]);

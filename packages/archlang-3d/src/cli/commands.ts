@@ -16,7 +16,7 @@ import * as core from "@chanmeng666/archlang";
 import { adaptPlan } from "../adapter/adapt.js";
 import { type CheckResult, checkGlb, checkScene, checkShells } from "../check/verify.js";
 import { writeGlb } from "../glb/write.js";
-import { buildMesh } from "../mesh/build.js";
+import { buildMesh, DOOR_POSES, type DoorPose } from "../mesh/build.js";
 import type { Mesh3D } from "../mesh/types.js";
 import { makeNodeWorld } from "../node.js";
 import { SWIFTSHADER_ARGS } from "../replay/video.js";
@@ -85,6 +85,13 @@ function curveTol(p: Parsed): number | undefined {
   return n;
 }
 
+/** `--doors <closed|plan>`, `closed` when not given. */
+export function doorPose(v: string | true | undefined): DoorPose {
+  if (v === undefined) return "closed";
+  if (typeof v === "string" && (DOOR_POSES as readonly string[]).includes(v)) return v as DoorPose;
+  throw new Usage(`--doors takes ${DOOR_POSES.join(" or ")}`);
+}
+
 function onePlan(cmd: string, p: Parsed): string {
   if (p.positional.length === 0) throw new Usage(`${cmd}: no input given`);
   if (p.positional.length > 1) throw new Usage(`${cmd}: unexpected argument "${p.positional[1]}"`);
@@ -97,7 +104,7 @@ type Built =
   | { ok: true; scene: Scene3D; mesh: Mesh3D; warnings: Array<{ code: string; level: number; message: string }> }
   | { ok: false; code: 2; refusal: unknown; message: string };
 
-function buildFrom(input: string, source: string, tol: number | undefined): Built {
+function buildFrom(input: string, source: string, tol: number | undefined, doors: DoorPose): Built {
   const world = makeNodeWorld(input === "-" ? process.cwd() : dirname(resolve(input)));
   const r = adaptPlan(source, {
     world,
@@ -108,7 +115,7 @@ function buildFrom(input: string, source: string, tol: number | undefined): Buil
   return {
     ok: true,
     scene: r.scene,
-    mesh: buildMesh(r.scene),
+    mesh: buildMesh(r.scene, { doors }),
     warnings: r.warnings.map((w) => ({ code: w.code, level: w.level, message: w.message })),
   };
 }
@@ -162,12 +169,16 @@ async function cmdBuild(p: Parsed): Promise<number> {
   const json = p.flags.has("--json");
   const strict = p.flags.has("--strict");
   const tol = curveTol(p);
+  const doors = doorPose(p.flags.get("--doors"));
   let out = p.flags.get("--out") as string | undefined;
   if (out === undefined) {
     if (input === "-") throw new Usage("build: reading stdin needs -o <file|->");
     out = input.replace(/\.arch$/i, "") + (format === "glb" ? ".glb" : ".scene3d.json");
   }
   if (out === "-" && json) throw new Usage("build: -o - and --json both write stdout; pick one");
+  // A Scene3D carries no pose (each leaf's closed and open points both): the pose is the model's.
+  if (format === "scene3d" && doors !== "closed")
+    throw new Usage("build: --doors plan poses the model; a Scene3D carries no pose (use -f glb)");
 
   let source: string;
   try {
@@ -176,7 +187,7 @@ async function cmdBuild(p: Parsed): Promise<number> {
     say(`archlang3d: cannot read ${input}: ${(e as Error).message}`);
     return 1;
   }
-  const b = buildFrom(input, source, tol);
+  const b = buildFrom(input, source, tol, doors);
   if (!b.ok) {
     if (json) emit({ ok: false, refusal: b.refusal });
     say(`archlang3d: ${b.message}`);
@@ -222,6 +233,7 @@ async function cmdBuild(p: Parsed): Promise<number> {
     ok: true,
     tool,
     input: { path: input, levels: b.scene.levels.length },
+    doors,
     outputs: [{ path: out, format, bytes: bytes.byteLength, sha256: sha256(bytes) }],
     scene: sceneFacts(b.scene, b.mesh),
     assumptions: b.mesh.assumptions,
@@ -237,6 +249,8 @@ async function cmdBuild(p: Parsed): Promise<number> {
 async function cmdCheck(p: Parsed): Promise<number> {
   const input = onePlan("check", p);
   const json = p.flags.has("--json");
+  const doorsFlag = p.flags.get("--doors");
+  const doors = doorPose(doorsFlag);
   let raw: Buffer;
   try {
     raw = readInput(input);
@@ -247,7 +261,11 @@ async function cmdCheck(p: Parsed): Promise<number> {
   let checks: CheckResult[];
   let diagnostics: Array<{ code: string; severity: string; message: string }> = [];
   // A GLB by its magic, whatever its name.
-  if (raw.byteLength >= 4 && raw.readUInt32LE(0) === 0x46546c67) {
+  const isGlb = raw.byteLength >= 4 && raw.readUInt32LE(0) === 0x46546c67;
+  // A GLB's pose was chosen when it was built; checking it applies none.
+  if (isGlb && doorsFlag !== undefined)
+    throw new Usage("check: --doors applies to a plan; a GLB's doors were posed when it was built");
+  if (isGlb) {
     try {
       checks = await checkGlb(new Uint8Array(raw));
     } catch (e) {
@@ -255,7 +273,7 @@ async function cmdCheck(p: Parsed): Promise<number> {
       checks = [{ id: "V-GLTF-01", ok: false, failures: [(e as Error).message] }];
     }
   } else {
-    const b = buildFrom(input, raw.toString("utf8"), curveTol(p));
+    const b = buildFrom(input, raw.toString("utf8"), curveTol(p), doors);
     if (!b.ok) {
       if (json) emit({ ok: false, refusal: b.refusal });
       say(`archlang3d: ${b.message}`);
@@ -265,7 +283,7 @@ async function cmdCheck(p: Parsed): Promise<number> {
     diagnostics = b.warnings.map((w) => ({ code: w.code, severity: "warning", message: w.message }));
   }
   const ok = checks.every((c) => c.ok);
-  if (json) emit({ ok, input: { path: input }, diagnostics, verify: summary(checks) });
+  if (json) emit({ ok, input: { path: input }, ...(isGlb ? {} : { doors }), diagnostics, verify: summary(checks) });
   for (const c of checks) {
     say(`archlang3d: ${c.ok ? "pass" : "FAIL"} ${c.id}${c.ok ? "" : ` E3D_VERIFY_FAILED: ${c.failures.join("; ")}`}`);
   }

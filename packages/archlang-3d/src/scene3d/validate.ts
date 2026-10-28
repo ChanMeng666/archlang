@@ -118,7 +118,7 @@ const LEVEL_COLLECTIONS: Record<string, Check> = {
       },
       {
         doorKind: oneOf("hinged", "sliding", "barn", "bifold", "pocket", "garage", "double"),
-        leaves: array(array(pt, 2, 2)),
+        leaves: array(array(pt, 2, 3)),
         hinge: oneOf("left", "right"),
         swing: oneOf("in", "out"),
         slide: oneOf("left", "right"),

@@ -6,6 +6,16 @@ The package is private and unpublished; versions start with its first 0.x public
 
 ### Added
 
+- `--doors plan` (card A7) on `view`, `build` and `check`: each hinged leaf, and each of a `double`
+  door's two, stands at the swing the core draws (`doorLeaves`: hinge → open tip, 90° on, its
+  40 mm thickness laid inside the quarter-disc). Sliding, barn, bifold, pocket and garage doors sweep
+  no leaf in the core and keep their closed panel, ledgered `door-pose-plan-no-swing`. Scene3D's
+  `openings[].leaves` gain each leaf's open tip (`[hinge, far jamb, open tip]`). `--json` reports
+  `doors` (a GLB `check` takes no `--doors`, and `build -f scene3d` refuses `--doors plan`: a
+  Scene3D carries no pose); the ledger states `door-pose-plan` as a user parameter. The default
+  (closed) Mesh3D, GLB and replay, and the replay's timing, are unchanged byte for byte; the Scene3D
+  output CHANGES: each door leaf gains its third point, the open tip. A pre-A7 Scene3D's 2-point
+  leaf still validates (schema and validator accept 2 or 3 points) and builds closed under `plan`.
 - Mesh finish (card A2b): T0 parametric furniture for the twelve families laneway-house uses (bed,
   sofa, table, rug, wardrobe, fridge, counter, kitchen sink, stove, shower, wc, basin), fitted to
   the plan's footprint and turned by its quarter turn; every other family stays a grey box.

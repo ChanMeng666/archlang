@@ -169,9 +169,25 @@ describe("archlang3d view --storey (look notes round 1)", () => {
 
       const one = await cli(["view", plan("one-room.arch"), "--replay", "-o", html, "--size", "160x90", "--json"]);
       expect(one.code, one.err).toBe(0);
-      const r1 = JSON.parse(one.out) as { views: Array<{ view: string; keyFrames: unknown[] }> };
+      const r1 = JSON.parse(one.out) as { doors: string; views: Array<{ view: string; keyFrames: unknown[] }> };
+      expect(r1.doors).toBe("closed");
       expect(r1.views.map((v) => v.view)).toEqual(["all", "storey:1"]);
       expect(r1.views[1]?.keyFrames).toEqual(r1.views[0]?.keyFrames);
+
+      // --doors plan (card A7): reported; the timing is the closed replay's (same key-frame times
+      // and labels), only the end frame's pixels differ, the doors standing open.
+      const args = ["view", plan("laneway-house.arch"), "--replay", "-o", html, "--size", "160x90", "--json"];
+      const closed = JSON.parse((await cli(args)).out) as {
+        doors: string;
+        keyFrames: Array<{ label: string; t: number; sha256: string }>;
+      };
+      const swung = await cli([...args, "--doors", "plan"]);
+      expect(swung.code, swung.err).toBe(0);
+      const rp = JSON.parse(swung.out) as typeof closed;
+      expect([closed.doors, rp.doors]).toEqual(["closed", "plan"]);
+      expect(rp.keyFrames.map((k) => [k.label, k.t])).toEqual(closed.keyFrames.map((k) => [k.label, k.t]));
+      const end = (r: typeof closed) => r.keyFrames.find((k) => k.label === "end")?.sha256;
+      expect(end(rp)).not.toBe(end(closed));
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

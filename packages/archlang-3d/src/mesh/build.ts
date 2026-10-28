@@ -15,8 +15,13 @@
  *   lintel meet vertex to vertex (no T-junction);
  * - a demolished wall (B3a): its own pieces [e, e + h], a ghost keyed `wall:<id>:demolish` with
  *   `extras.status` "demolish", never one of the standing walls;
- * - door: closed leaves, 40 mm thick, [e, e + head]: the core's leaves for a swinging door, one
- *   panel across the jambs for every other kind (Q11, closed by default);
+ * - door: leaves 40 mm thick, [e + sill, e + head]. Closed by default (Q11): the core's leaves for a
+ *   swinging door, one panel across the jambs for every other kind. `doors: "plan"` (`--doors plan`)
+ *   swings each of the core's leaves to the pose the plan draws (`openLeaf`); a kind that sweeps no
+ *   leaf (or a pre-A7 Scene3D leaf without its open tip) keeps its closed panel, ledgered. The 3D
+ *   leaf is a fixed 40 mm (at most half the leaf) where the core draws max(40 mm, 2 pens) capped at
+ *   6 % of the width, so the two slabs can differ by a few mm in thickness; both share the hinge
+ *   edge on the open radius and lie inside the one sector (not a misalignment);
  * - window: a 16 mm glass pane across the jambs and a 40 × 60 mm frame (§4.3), every part kept
  *   inside its cut; on a curved host both follow the arc from jamb face to jamb face (`cutSector`);
  * - furniture: a T0 parametric piece (`t0.ts`) fitted to its footprint for the twelve families it
@@ -165,7 +170,44 @@ function lessVoids(outer: readonly Pt[], voids: Level["voids"], where: string, l
   return [{ outer: [...outer], ...(holes.length ? { holes } : {}) }];
 }
 
-function levelNodes(lv: Level, ledger: Assumption[], defaulted: Set<string>, isTop: boolean): MeshNode[] {
+/** How the doors stand: `closed` (the default, Q11) or swung as the plan draws them (`plan`). */
+export type DoorPose = "closed" | "plan";
+export const DOOR_POSES: readonly DoorPose[] = ["closed", "plan"];
+
+export interface MeshOptions {
+  /** Default `closed`: every leaf across its doorway. `plan`: each swinging leaf at its drawn swing. */
+  doors?: DoorPose;
+}
+
+/**
+ * A leaf swung open as the core draws it: the slab along the open radius hinge → `end`, its
+ * thickness `t` laid off toward the far jamb `f` (inside the quarter-disc, where the core's own
+ * `leafSlab` puts it), the outer corner pulled onto the swing circle less a micrometre, so every
+ * corner, rounded, stays inside the sector the leaf sweeps. `[hinge, end, tip, heel]`.
+ */
+export function openLeaf(h: Pt, f: Pt, end: Pt, t: number): Polygon {
+  const r = Math.hypot(end[0] - h[0], end[1] - h[1]);
+  const c = Math.hypot(f[0] - h[0], f[1] - h[1]);
+  if (r === 0 || c === 0) return { outer: [h, h, h] };
+  const tt = Math.min(t, r / 2);
+  const ox = (end[0] - h[0]) / r;
+  const oy = (end[1] - h[1]) / r;
+  const ax = (f[0] - h[0]) / c;
+  const ay = (f[1] - h[1]) / c;
+  const reach = Math.sqrt(r * r - tt * tt) - 1;
+  const p = (x: number, y: number): Pt => [Math.round(x), Math.round(y)];
+  return {
+    outer: [h, end, p(h[0] + ox * reach + ax * tt, h[1] + oy * reach + ay * tt), p(h[0] + ax * tt, h[1] + ay * tt)],
+  };
+}
+
+function levelNodes(
+  lv: Level,
+  ledger: Assumption[],
+  defaulted: Set<string>,
+  isTop: boolean,
+  doors: DoorPose,
+): MeshNode[] {
   const e = lv.elevation;
   const out: MeshNode[] = [];
   /**
@@ -315,12 +357,36 @@ function levelNodes(lv: Level, ledger: Assumption[], defaulted: Set<string>, isT
     const head = Math.min(o.head, hostHeight.get(o.host) ?? o.head);
     const extras = { host: o.host, width_mm: o.width / MM, sill_mm: o.sill / MM, head_mm: o.head / MM };
     if (o.kind === "door") {
+      const z0 = e + o.sill;
+      const swung = o.leaves?.every((l) => l.length === 3) ? (o.leaves as Array<[Pt, Pt, Pt]>) : undefined;
+      if (doors === "plan" && swung) {
+        node(
+          "door",
+          o.id,
+          i,
+          swung.map(([h, f, end]) => prism(openLeaf(h, f, end, LEAF_MM * MM), z0, e + head)),
+          { ...extras, door_kind: o.doorKind ?? "hinged", pose: "plan" },
+        );
+        return;
+      }
+      if (doors === "plan") {
+        // No swing to draw (a sliding, barn, bifold, pocket or garage door: the core's `doorLeaves`
+        // gives none; or a pre-A7 leaf without its tip): it stays closed, and the ledger says so.
+        ledger.push({
+          kind: "door",
+          id: o.id,
+          field: "pose",
+          value: "closed",
+          provenance: "default",
+          rule: "door-pose-plan-no-swing",
+        });
+      }
       const leaves = o.leaves ?? [[j0, j1]];
       node(
         "door",
         o.id,
         i,
-        leaves.map(([h, f]) => prism(slab2d(h, f, LEAF_MM * MM), e + o.sill, e + head)),
+        leaves.map(([h, f]) => prism(slab2d(h, f, LEAF_MM * MM), z0, e + head)),
         { ...extras, door_kind: o.doorKind ?? "hinged", pose: "closed" },
       );
     } else if (o.kind === "window") {
@@ -446,10 +512,24 @@ function levelNodes(lv: Level, ledger: Assumption[], defaulted: Set<string>, isT
   return out;
 }
 
-/** A Scene3D → its Mesh3D: deterministic, nodes in canonical (level, kind, id, part) order. */
-export function buildMesh(scene: Scene3D): Mesh3D {
+/**
+ * A Scene3D → its Mesh3D: deterministic, nodes in canonical (level, kind, id, part) order. `opts`
+ * left out (or `doors: "closed"`) is the default build, byte for byte.
+ */
+export function buildMesh(scene: Scene3D, opts: MeshOptions = {}): Mesh3D {
+  const doors = opts.doors ?? "closed";
+  // The pose is chosen here, so a `plan` build restates the scene's `door-pose-closed` entry.
+  const asked: Assumption = {
+    kind: "door",
+    field: "pose",
+    value: "plan",
+    provenance: "user-param",
+    rule: "door-pose-plan",
+  };
   const ledger: Assumption[] = [
-    ...scene.meta.assumptions,
+    ...(doors === "closed"
+      ? scene.meta.assumptions
+      : scene.meta.assumptions.map((a) => (a.rule === "door-pose-closed" ? asked : a))),
     { kind: "slab", field: "thickness_mm", value: SLAB_MM, provenance: "default", rule: "slab-default-200" },
     { kind: "floor", field: "finish_mm", value: FLOOR_FINISH_MM, provenance: "default", rule: "floor-finish-5" },
     {
@@ -471,7 +551,7 @@ export function buildMesh(scene: Scene3D): Mesh3D {
   ];
   const defaulted = new Set<string>();
   const top = scene.levels.length - 1;
-  const nodes = scene.levels.flatMap((lv, i) => levelNodes(lv, ledger, defaulted, i === top));
+  const nodes = scene.levels.flatMap((lv, i) => levelNodes(lv, ledger, defaulted, i === top, doors));
   nodes.sort(
     (a, b) => a.level - b.level || byText(a.kind, b.kind) || byText(a.id, b.id) || byText(a.part ?? "", b.part ?? ""),
   );

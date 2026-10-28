@@ -161,7 +161,9 @@ function wallsAndOpenings(
     const door = el?.kind === "door" ? (el as RDoor) : undefined;
     const hosted = el as RDoor | RWindow | ROpening | undefined;
     const jambs = jambsOf(op.at, op.width, hosted?.host ?? null);
-    const leaves = door ? doorLeaves(door).map((l) => [umPoint(l.hinge), umPoint(l.farJamb)] as [Pt, Pt]) : [];
+    const leaves = door
+      ? doorLeaves(door).map((l) => [umPoint(l.hinge), umPoint(l.farJamb), umPoint(l.leafEnd)] as [Pt, Pt, Pt])
+      : [];
     openings.push({
       id,
       source: el ? source(el) : { kind, id },
