@@ -18,3 +18,8 @@ export function makeNodeWorld(baseDir: string): World {
     },
   };
 }
+
+export { PREVIEW_LABEL, replayHtml, replayPayload, viewBoxOf, viewerScript } from "./replay/html.js";
+export type { ReplayOptions } from "./replay/html.js";
+export { renderReplay, SWIFTSHADER_ARGS } from "./replay/video.js";
+export type { KeyFrame, VideoOptions, VideoReport } from "./replay/video.js";

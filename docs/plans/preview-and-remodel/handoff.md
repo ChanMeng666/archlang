@@ -1,33 +1,32 @@
-# Preview-and-remodel programme: handoff (state as of 2026-10-28, `main@c6db740b`)
+# Preview-and-remodel programme: handoff (state as of 2026-10-28, `main@323a3ee2`)
 
 The resume point for a new session. Re-written at every wave end; dated history goes to `research/`.
 
 ## 1. Where the programme stands
 
-Updated 2026-10-28 after the owner's answer (`main@c6db740b`). Waves 0 and 1 are done; wave 2 is
-done except A3. Landed: A0 (#319), B6 (#320), C1 (#321), C2 (#322), A1 (#325), B5 (#327),
-A2 (#328), B1 (#323), B4 (#324), B3a (#329); records #326, #331. As-built notes:
-`research/2026-10-28-as-built.md`. Quiet-machine baseline on `main@00b7e7ec`: `npm run check` 557 s.
+Updated 2026-10-28 after A3 and the 1.44.0 release (`main@323a3ee2`). Waves 0, 1 and 2 are done.
+Landed: A0 (#319), B6 (#320), C1 (#321), C2 (#322), A1 (#325), B5 (#327), A2 (#328), B1 (#323),
+B4 (#324), B3a (#329), A3 (#330, merge `323a3ee2`, look notes round 1 in); records #326, #331.
+As-built notes: `research/2026-10-28-as-built.md`. Quiet-machine baseline on `main@00b7e7ec`:
+`npm run check` 557 s.
 
-**A3 (#330, branch `feat/A3-replay-viewer`, head `58f1fdd5`):** gates green, independent red-team
-round 1 fixed, CI clean (Node 18 needed `playwright-core` imported lazily). **The owner looked**
-(2026-10-28) and filed look notes round 1 (README §3 D14; the A3 card): show each storey on its own
-and the storeys combined, never hiding the ground floor; frame the end shot to the building. The owner
-also accepted every optimisation the session found (A0b, A2b, `--doors plan`, framing). Implement
-the notes on #330, re-render the look set, then merge #330.
+**A3 look set** (1080p30, per-storey and combined views): `D:.claude-scratch6-10-28a3-look`
+on the owner's machine. Open for the owner's next look: the 30° end elevation of one-storey views
+(`endElevation`, `camera.ts`), at which near walls hide most furniture.
 
 **Tier A is open** (README §3 D16, owner 2026-10-28): A5 merges once green; the docs site, README,
 npm README and landing pages stay without 3D (Tier C). For every owner-only manual step (the VS Code
 Marketplace upload; OTP/2FA, logins, terms in the release chain) the agent pauses, guides the owner
 step by step, waits for confirmation, verifies, and continues.
 
-**Releases (README §3 D15):** the owner approved cutting and publishing the core, the MCP shim,
-`@chanmeng666/arch-plan` and the VS Code build end to end. No release has been cut yet: npm has core
-1.43.1, while `main` (and archlang.uk) carry the seam exports, `--lock`, quantities and `takeoff`,
-imperial literals, wall `status`, the garage lint and the authoring-order docs.
+**Releases (README §3 D15):** **1.44.0 is out** (PR #334, merge `a6405af9`, tag `v1.44.0`,
+`release.yml` run 40618590620 green): npm core 1.44.0 (`latest`, SLSA provenance), the shim 0.2.27
+(MCP registry `isLatest`), `.mcpb` bundles on the GitHub Release; `@chanmeng666/arch-plan` stays
+0.1.1 (unchanged). The VS Code `.vsix` 0.32.0 (core 1.44.0 stamped) is built in the primary checkout
+and waits for the owner's Marketplace upload (D16; the Marketplace shows 0.31.1).
 
 `packages/archlang-3d` (private): adapter, H1 ownership, Scene3D v0, Mesh3D; the replay viewer, HTML
-and video are on #330. Exposure is Tier 0; ADRs 0030/0031 are in archlang.uk's ADR list (factual
+and video (A3). Exposure is Tier 0; ADRs 0030/0031 are in archlang.uk's ADR list (factual
 wording). `spec.llm.md` is at 29,999 of 30,000. After #328/#330 a checkout needs `npm ci` (earcut,
 three, playwright-core, esbuild). Sonnet subagents were refused on 2026-10-28 (HTTP 403); executors
 ran on the inherited model. Every branch got a full local `npm run check` before its pin.
@@ -44,15 +43,9 @@ ran on the inherited model. Every branch got a full local `npm run check` before
 
 ## 3. Next items, in order
 
-1. **A3 look notes round 1** on #330 (the A3 card's list): per-storey and combined views, the ground
-   floor kept readable, end framing; re-render laneway, two-bed, hexagon-pavilion, two-storey and
-   townhouse at 1080p30 into a scratch folder and give the owner the paths; full gates; merge #330.
-2. **Release** (D15): run `/release-check` (`.claude/commands/release-check.md`) in the primary
-   checkout; the version-bump PR (core minor: new exports and language forms; the shim's version and
-   both `server.json` fields; CHANGELOG `[Unreleased]` → the version); the `v*` tag; watch
-   `release.yml`; prove npm, the MCP registry and `arch-plan`; build the VS Code bundle, then guide
-   the owner through its Marketplace upload (D16). At any OTP/2FA, login or terms prompt: pause,
-   give the owner exact steps, wait, verify, continue.
+1. **VS Code 0.32.0 Marketplace upload** (owner, D16): verify the listing after.
+2. **Wave 3 in flight:** A4 and B3b executors started 2026-10-28; B3b lands after 1.44.0, so a
+   1.44.1/1.45.0 follows it.
 3. **Wave 3:** A4 (GLB, glTF-Validator, V-DET-01, the `check:3d` CI job on Linux, the Q20 licence
    gate, the cross-machine key-frame baseline: pin only frames without SVG text, or ship a font);
    B3b (draw the wall status, DXF layers, legend, `examples/remodel.arch`, the schedule law restored);

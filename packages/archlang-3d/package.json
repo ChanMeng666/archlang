@@ -20,17 +20,21 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "e2e": "vitest run --config vitest.e2e.config.ts"
+    "e2e": "vitest run --config vitest.e2e.config.ts",
+    "archlang3d": "tsx src/cli/main.ts"
   },
   "peerDependencies": {
     "@chanmeng666/archlang": "^1.43.1"
   },
   "dependencies": {
-    "earcut": "^3.2.4"
+    "earcut": "^3.2.4",
+    "esbuild": "^0.28.2",
+    "playwright-core": "1.64.1",
+    "three": "0.186.1"
   },
   "devDependencies": {
     "ajv": "^8.20.0",
-    "esbuild": "^0.28.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "@types/three": "0.186.0"
   }
 }
