@@ -136,6 +136,14 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   every build, give a measurement server its own port (a parallel worktree may hold the fixed one),
   and gate on a marker only the new build has, never a status code.
 
+- **An executor's targeted test subset misses corpus-wide guards.** On 2026-10-28 five PRs went red
+  only under the full suite: the taste-digest table, the fixture corpus tables (import-module-lets,
+  while and double-door byte identity, rooms-tiling-probe), the per-storey key list (`cli-levels`),
+  and `context-size`'s hand-written catalogue size. Run the full `npm run check` on every branch
+  before pinning its auto-merge.
+- **`spec.llm.md` sat at 29,999 of 30,000 on 2026-10-28.** Two PRs that each fit can overflow
+  together after merging: re-measure after every merge and pay with a provable-duplicate cut.
+
 ## Tooling & process
 
 - **`npx vitest run --maxWorkers=N` errors in this repo unless `--minWorkers=1` is also given.**
@@ -147,6 +155,13 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   (seed it or assert across runs; `docs/backlog.md`).
 - **`2>nul` in the Bash tool on Windows creates files** named `nul`, `nul.L0`, `nul.L1` in the
   working tree (it is cmd syntax). Write `2>/dev/null`.
+
+- **`packages/archlang-3d` imports `playwright-core` lazily** (inside the function that launches a
+  browser): 1.64 calls `process.exit(1)` on import under Node < 20, and CI's Node 18 leg runs the
+  package's light tests. After a dependency lands in a workspace, a checkout whose `node_modules`
+  predates it needs `npm ci`, or every junctioned worktree fails to resolve it.
+- **`tsx` honours a workspace `tsconfig` `paths` entry that points at a `.d.ts`** and then loads a
+  file with no runtime exports; `packages/archlang-3d` resolves the core through the workspace link.
 
 - **(Typecheck) A file's compiler options come from the program compiling it.** A root test that
   imports a workspace module pulls it into the root program (`noUncheckedIndexedAccess` on), and

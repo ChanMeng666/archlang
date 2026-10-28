@@ -53,7 +53,7 @@ voids (today the wall footprint less voids, so a room outside every wall has no 
 wall (B3a) drawn from `ir.drawn`. **Acceptance.** Each with a corpus or synthetic test; Mesh3D stays
 deterministic and laneway's pinned digest moves only with a recorded reason. **Depends on.** A2.
 
-### A3 · M1a replay viewer and CLI video — `doing` (PR #330, gates green, red-team round 1 fixed; waits for the owner's look) · wave 2 · 4 days · model: opus; owner eyes the look
+### A3 · M1a replay viewer and CLI video — `doing` (PR #330, gates green, red-team round 1 fixed; owner look notes round 1 below) · wave 2 · 4 days · model: opus; owner eyes the look
 
 **Goal.** `archlang3d view plan.arch --replay -o plan.html` and `--video out.mp4`.
 **Design.** Single-file HTML, three.js viewer subset *inlined* (pinned 0.186.1, MIT notice in the
@@ -75,6 +75,19 @@ gives one frame hash).
 **Must not.** Pin MP4 bytes; add a WebCodecs button (A6); mention 3D anywhere in the core docs.
 **Depends on.** A2. **Reverse-if.** The 2D phase reads bare (README §5.1) → replay starts at walls;
 record it.
+
+**Look notes, round 1 (owner, 2026-10-28; README §3 D14): the scope that finishes A3 on PR #330.**
+1. *Multi-storey:* the replay and the video show **each storey on its own** (its footprints drawn
+   top-down with ITS page of the core drawing, `compile().pages[i].svg`, then its walls rising) **and
+   the storeys combined** (the building rising storey by storey). In the combined view the ground floor
+   stays readable: storeys above appear only after the one below is up, and the camera shows the lower
+   floor before the upper one closes over it (a cutaway, exploded storeys, or the upper storeys
+   fading; chosen by the look and recorded). Today's single sequence hides every ground-floor detail
+   under the upper slab. CLI: e.g. `--storey <n>|all` with a combined default; the JSON report gains a
+   key-frame set per view. Test on two-storey, townhouse, hillside-villa, garden-house.
+2. *Framing:* the end frame fills the canvas with the building (hexagon-pavilion ended small).
+3. Re-render the look set (laneway, two-bed, hexagon-pavilion, two-storey, townhouse) at 1080p30 and
+   hand the owner the file paths; merge #330 once these notes are in (the owner accepted the rest).
 
 ### A4 · M1b GLB, checks and the `check:3d` CI job — `todo` · wave 3 · 3 days · model: sonnet (opus for the licence gate)
 
