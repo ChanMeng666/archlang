@@ -73,7 +73,16 @@ describe("key-frame pixel baseline (Q21)", () => {
     }
     const env: Env = { platform: process.platform, arch: process.arch, chromium: browser };
     if (process.env.UPDATE_KEYFRAMES === "1") {
-      const b: Baseline = { taken: [env], size: [SIZE.width, SIZE.height], plans: rendered };
+      // Same hashes as pinned: this environment joins `taken`. Different: a new baseline, this environment alone.
+      let prior: Baseline | undefined;
+      try {
+        prior = JSON.parse(readFileSync(FIXTURE, "utf8")) as Baseline;
+      } catch {
+        prior = undefined;
+      }
+      const same = prior !== undefined && JSON.stringify(prior.plans) === JSON.stringify(rendered);
+      const others = same ? (prior?.taken ?? []).filter((e) => JSON.stringify(e) !== JSON.stringify(env)) : [];
+      const b: Baseline = { taken: [...others, env], size: [SIZE.width, SIZE.height], plans: rendered };
       writeFileSync(FIXTURE, `${JSON.stringify(b, null, 2)}\n`);
       return;
     }
