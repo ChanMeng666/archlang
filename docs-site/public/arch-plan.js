@@ -1,11 +1,11 @@
 // <arch-plan>, the ArchLang web component. Built from packages/web-component/src/arch-plan.ts by `npm run gen:arch-plan`; do not edit.
-// Loads the ArchLang compiler 1.43.1 from https://cdn.jsdelivr.net/npm/@chanmeng666/archlang@1.43.1/+esm on the first render.
+// Loads the ArchLang compiler 1.44.0 from https://cdn.jsdelivr.net/npm/@chanmeng666/archlang@1.44.0/+esm on the first render.
 // Usage: https://archlang.uk/embed
 
 // packages/web-component/src/arch-plan.ts
 var corePromise;
 function loadCore() {
-  corePromise ??= import("https://cdn.jsdelivr.net/npm/@chanmeng666/archlang@1.43.1/+esm").catch((e) => {
+  corePromise ??= import("https://cdn.jsdelivr.net/npm/@chanmeng666/archlang@1.44.0/+esm").catch((e) => {
     corePromise = void 0;
     throw e;
   });

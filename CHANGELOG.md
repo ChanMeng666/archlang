@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.44.0] - 2026-10-28
+
 ### Added
 
 - Imperial length input: `12ft`, `6in` and `12ft6in` are length literals (also in `WxH`, e.g.
@@ -560,6 +562,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   SVGs move; `describe()` and every other plan's output are unchanged.
 
 ### Changed
+
+- **The MCP shim's and the VS Code extension's core ranges are re-pinned to this release.**
+  `@chanmeng666/archlang-mcp` 0.2.27 re-bakes its spec, `llms-full.txt`, grammar and schemas when
+  it is packed; the VS Code extension 0.32.0 bundles this core. `@chanmeng666/arch-plan` is
+  unchanged at 0.1.1 (its peer range `^1.42.1` admits this release).
 
 - The `archlang` skill (and the generated plugin copy) states the authoring order next to `validate --stage`: `brief → rooms → walls → openings → fixtures → drafting`, the order inside each stage, and why. Paint order is unchanged.
 - `docs/language-reference.md` gains "Authoring order — the stages": the six authoring stages, which element kinds each holds, the sub-order inside a stage, and why (rooms first, exterior before interior, openings after walls, fixtures before loose furniture, drafting last); paint order is stated as separate and unchanged. Docs only.
