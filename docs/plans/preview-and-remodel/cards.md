@@ -29,16 +29,7 @@ kit); `amendment-v0.7.md` (the recut). The viewer subset of three.js 0.186.1 is 
 
 ### A1 · M0: package skeleton, adapter, H1, Scene3D v0 — `done` · PR #325 · merge `88d83823` · record: `research/2026-10-28-as-built.md` § A1
 
-### A0b · Close the seam's two naming gaps — `todo` · residue of A0/A1 · 0.5 day · model: opus
-
-**Goal.** Two additive core exports the package works around today: the hatch group key `joinWallSet`
-groups fills by (`hatchKey`/`hatchOf`, `src/hatches.ts`; the package rebuilds `material|scale|angle`
-in `hatchGroupKey`, guarded only by its corpus test) and `Point` (`src/ast.ts`; `RWall.points` is
-`Point[]`, the package names it `RWall["points"][number]`). Also teach both closure walkers in
-`test/public-surface.test.ts` to follow an inline `import("…").T` type node (today a field typed that
-way escapes both guards; plant one to prove it). **Acceptance.** The package drops `hatchGroupKey`
-for the export and its `Point` alias for the core's; the public-surface test goes red on a planted
-`import()`-typed field; every digest unchanged. **Must not.** Export anything else; change a body.
+### A0b · Close the seam's two naming gaps — `done` · PR #338 · merge `9f3e51c5` · record: `research/2026-10-28-as-built.md` § A0b
 
 ### A2 · M1a geometry: Mesh3D from Scene3D — `done` · PR #328 · merge `da464b51` · record: `research/2026-10-28-as-built.md` § A2
 
@@ -55,41 +46,33 @@ deterministic and laneway's pinned digest moves only with a recorded reason. **D
 
 ### A3 · M1a replay viewer and CLI video — `done` · PR #330 · merge `323a3ee2` · record: `research/2026-10-28-as-built.md` § A3
 
-### A4 · M1b GLB, checks and the `check:3d` CI job — `todo` · wave 3 · 3 days · model: sonnet (opus for the licence gate)
+### A4 · M1b GLB, checks and the `check:3d` CI job — `done` · PR #336 · merge `75072487` · record: `research/2026-10-28-as-built.md` § A4
 
-**Goal.** The GLB and its gates, from the same Mesh3D.
-**Design.** glTF-Transform writer (hierarchy, names, `extras`), glTF-Validator 0/0, V-DET-01
-(SHA-256 ×3) and V-GLTF as heavy tests; `archlang3d build|check|manifest|schema|doctor` with
-`--json` and exit codes 0/1/2/3 (plan §7); CI job `check:3d` on Linux; the Q20 licence gate:
-a source-checked allow-list, `THIRD_PARTY_NOTICES`, an explicit deny-list starting with
-`straight-skeleton@3`.
-**Acceptance.** Plan §9.2 criteria 1–5; the viewer's Mesh3D and the GLB's node set are equal (a test
-diffs them); `npm pack --dry-run` is clean though the package stays private.
-**Must not.** Publish; add IFC; change Mesh3D in a way that moves A3's key-frame hashes without a
-recorded reason.
-**Depends on.** A3. **Reverse-if.** glTF-Transform needs Node > 20 → vendor a minimal writer (the
-plan's IFC spike shows the shape).
-
-### A5 · M1c playground 2D/3D toggle (opens Tier A) — `todo` · wave 3 · 1.5 days · model: sonnet
-
-**Goal.** A "3D preview" tab in the playground's output tabs (`playground/src/main.ts` ~86–94),
-loaded on first use like `jspdf` (`playground/src/actions.ts:453`).
-**Design.** Dynamic import of a viewer entry from `packages/archlang-3d` (the playground is a
-workspace and may import a private package; the zero-dependency rule binds the core only). Light
-theme only. Label text, verbatim: *"Preview — from the separate archlang-3d package. ArchLang itself
-draws plans."* An `experimental` flag in the playground settings; off until the owner flips it is not
-enough, because a push to `main` deploys: the merge itself is the Tier A decision (D5, D13).
-E2E: open the tab, assert the canvas exists and `__frameHash()` is stable across two seeks; assert
-the two startup chunks' gzip sizes are unchanged (±1 %) by reading the build manifest.
-**Acceptance.** `e2e:playground` green; startup chunks unchanged; the owner has confirmed the merge
-in writing in the PR thread; the growth repository's row 8 edit (Tier A wording) is ready in a
-branch there.
-**Must not.** Add 3D to the docs site, README, npm README or landing page; change any 2D output.
-**Depends on.** A3, A4. **Reverse-if.** First paint regresses → separate demo page.
+### A5 · M1c playground 2D/3D toggle (opens Tier A) — `done` · PR #340 · merge `0d1cbda7` · record: `research/2026-10-28-as-built.md` § A5
 
 ### A6 · M1d in-browser WebCodecs MP4 — `parked` (D12) · 1 day · model: sonnet
 
 Unpark when a Tier A post needs it. Labelled non-deterministic; muxer through the Q20 gate; never a CI gate.
+
+### A7 · `--doors plan` for the replay — `todo` · residue of A3 (accepted, D14) · 1 day · model: opus
+
+**Goal.** `archlang3d view --doors plan`: each door leaf drawn at its plan opening (swung) instead of
+closed (Q11). Needs each leaf's open tip in Scene3D (`openings[].leaves`, from the core's
+`doorLeaves`). **Acceptance.** Corpus test: every leaf's open pose inside its swing sector; the default
+replay (closed doors) byte-identical; key-frame pins unchanged. **Must not.** Change the default.
+
+### A8 · Wave-3 residue — `todo` · residue of A3–A5, A0b · 1 day · model: opus
+
+Each item small; one PR or several. (1) A5's ±1 % startup-chunk gate fires on ordinary core growth
+(a re-bless hazard): gate on the 3D chunk staying lazy and three.js absent from startup, with a wider
+size tolerance, and say why in the spec. (2) A5: three compiles per edit with the 3D tab open; the
+360 px tab strip; with no storey picked the switcher underlines L1 while the tab shows all storeys.
+(3) A4: the GLB leak regex (`YYYY-MM-DDTHH:MM` only, can false-positive on a plan name);
+`readGlbNodes` walks two levels; the pack test excludes all of `src/`. (4) A0b: `MIN_CORE` and the
+package's peer range move to 1.45.0 at its first publish. (5) A3 (owner's next look): the 30° end
+elevation of one-storey views hides most furniture (`endElevation`, `camera.ts`). (6) B3b: a derived
+`open between` on a demolished wall still draws as a cased opening inside the dashes; `against wall
+<id>` places on a demolished wall; the `new` legend row waits for a hatch option.
 
 ---
 
@@ -104,19 +87,7 @@ checked by `impact --against` through the same path as B1.
 
 ### B3a · Wall `status` semantics — `done` · PR #329 · merge `f4b62e92` · record: `research/2026-10-28-as-built.md` § B3a
 
-### B3b · Wall `status` drawing, DXF, legend, example — `todo` · wave 3 · 2 days · model: sonnet
-
-**Goal.** Demolished walls dashed (a separate `lowerWallSet` call with `lineType: "dashed"` in
-`scene-build.ts`), new walls as today (optionally hatched under a sheet option, later), DXF layers
-`A-WALL-DEMO` / `A-WALL-NEWW` through `classifyWallSet`, legend rows only when a status is authored,
-`examples/remodel.arch` (a real apartment shell with two demolished partitions and one new one)
-pinned by golden and byte-identity law, docs page section with an `arch static` fence. The drawn
-`schedule rooms` NET AREA (and its TOTAL) and `--overlay circulation` read the plan after the
-demolition, so the drawn table equals `describe().schedule[]` again; then drop the exception B3a
-wrote into `docs/language-reference.md` (Room schedule) and flip the B3a test that pins it.
-**Acceptance.** Every existing golden unchanged; the new example's SVG, DXF, describe and lint
-pinned; `docs:build` green.
-**Depends on.** B3a. **Must not.** Touch paint order (D4).
+### B3b · Wall `status` drawing, DXF, legend, example — `done` · PR #337 · merge `28116116` · record: `research/2026-10-28-as-built.md` § B3b
 
 ### B4 · Quantities: `describe --facts quantities` and `arch takeoff` — `done` · PR #324 · merge `8031dd86` · record: `research/2026-10-28-as-built.md` § B4
 
