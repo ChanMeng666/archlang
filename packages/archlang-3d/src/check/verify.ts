@@ -124,6 +124,7 @@ interface ValidatorReport {
     numWarnings: number;
     numInfos: number;
     numHints: number;
+    truncated?: boolean;
     messages: Array<{ code: string; message: string; severity: number; pointer?: string }>;
   };
 }
@@ -134,7 +135,8 @@ export async function checkValidator(glb: Uint8Array): Promise<CheckResult> {
     validateBytes: (d: Uint8Array, o?: object) => Promise<ValidatorReport>;
     version: () => string;
   };
-  const r = await v.validateBytes(glb, { maxIssues: 100 });
+  // 0 = no cap: every issue is counted and listed; a truncated report is a failure regardless.
+  const r = await v.validateBytes(glb, { maxIssues: 0 });
   const i = r.issues;
   const bad = i.messages
     .filter((m) => m.severity <= 1)
@@ -143,7 +145,7 @@ export async function checkValidator(glb: Uint8Array): Promise<CheckResult> {
     );
   return {
     id: "V-GLTF-01",
-    ok: i.numErrors === 0 && i.numWarnings === 0,
+    ok: i.numErrors === 0 && i.numWarnings === 0 && i.truncated !== true,
     failures: capped(bad),
     facts: {
       validator: v.version(),

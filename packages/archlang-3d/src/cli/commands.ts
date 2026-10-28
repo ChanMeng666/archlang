@@ -2,7 +2,8 @@
  * `archlang3d build | check | manifest | schema | doctor` (card A4; archlang-3d plan §7). Flags are
  * parsed from `manifest.ts`'s table, so a flag works exactly when the manifest lists it. Exit codes
  * as the core's (ADR 0015, plan §7.3): 0 ok · 1 IO, internal or environment · 2 the plan is refused
- * (`E3D_*`) or a check failed (`E3D_VERIFY_FAILED`) · 3 bad usage. With `--json` the result goes
+ * (`E3D_*`), a check failed (`E3D_VERIFY_FAILED`) or, under `build --strict`, the build has a
+ * warning (`E3D_STRICT`); nothing is written then · 3 bad usage. With `--json` the result goes
  * to stdout and messages to stderr. No output echoes an absolute path the user did not type, and
  * none carries a time (plan §8.5 L7).
  */
@@ -204,6 +205,12 @@ async function cmdBuild(p: Parsed): Promise<number> {
     for (const c of failed) say(`archlang3d: E3D_VERIFY_FAILED ${c.id}: ${c.failures.join("; ")}`);
     return 2;
   }
+  if (strict && diagnostics.length > 0) {
+    // --strict: a warning refuses the build like a failed check; nothing is written.
+    if (json) emit({ ok: false, code: "E3D_STRICT", tool, diagnostics, verify: summary(checks) });
+    for (const d of diagnostics) say(`archlang3d: E3D_STRICT ${d.code}: ${d.message}`);
+    return 2;
+  }
   try {
     if (out === "-") process.stdout.write(bytes);
     else writeFileSync(out, bytes);
@@ -224,7 +231,7 @@ async function cmdBuild(p: Parsed): Promise<number> {
   if (json) emit(report);
   else if (out !== "-") say(`archlang3d: wrote ${out} (${bytes.byteLength} bytes, ${checks.length} checks passed)`);
   for (const d of diagnostics) say(`archlang3d: ${d.code}: ${d.message}`);
-  return strict && diagnostics.length > 0 ? 2 : 0;
+  return 0;
 }
 
 async function cmdCheck(p: Parsed): Promise<number> {

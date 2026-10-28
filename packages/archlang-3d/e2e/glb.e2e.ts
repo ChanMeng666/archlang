@@ -13,7 +13,7 @@
  */
 import { execSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -80,7 +80,7 @@ describe("GLB over the corpus (§9.2 criteria 1 and 3)", () => {
       if (again.some((h) => h !== sha(a.glb))) failed.push(`${name}: V-DET-01 ${sha(a.glb)} vs ${again.join(", ")}`);
     }
     expect(failed).toEqual([]);
-    expect(EXAMPLES_LIST.length).toBe(34);
+    expect(EXAMPLES_LIST.length).toBe(35); // 35 since remodel.arch (B3b)
     expect(nodes).toBeGreaterThan(1000);
   });
 });
@@ -159,6 +159,23 @@ describe("archlang3d build / check (§9.2 criteria 2, 4 and 5)", () => {
     expect(plan.code, plan.err).toBe(0);
     expect(JSON.parse(plan.out).verify.passed).toBe(4);
     expect((await cli(["check", bad])).code).toBe(2);
+  });
+
+  it("--strict refuses a build with a warning: E3D_STRICT, exit 2, ok false, nothing written", async () => {
+    const s11 = join(REPO, "docs/plans/archlang-3d/spike/stress/s11-mixed-thick-low.arch");
+    const out = join(tmp, "s11.glb");
+    const lax = await cli(["build", s11, "-o", out, "--json"]);
+    expect(lax.code, lax.err).toBe(0);
+    expect(JSON.parse(lax.out).diagnostics.map((d: { code: string }) => d.code)).toContain("W3D_MIXED_HEIGHT_JOINT");
+    rmSync(out);
+    const strict = await cli(["build", s11, "-o", out, "--strict", "--json"]);
+    expect(strict.code).toBe(2);
+    const rep = JSON.parse(strict.out);
+    expect(rep).toMatchObject({ ok: false, code: "E3D_STRICT" });
+    expect(rep.outputs).toBeUndefined();
+    expect(existsSync(out)).toBe(false);
+    // A clean plan builds under --strict.
+    expect((await cli(["build", lane, "-o", join(tmp, "strict.glb"), "--strict"])).code).toBe(0);
   });
 
   it("through a real process: stdin to stdout gives the in-process bytes, and the exit codes hold", () => {

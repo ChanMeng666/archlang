@@ -3,10 +3,12 @@
  * the THIRD_PARTY_NOTICES generator (`npm -w packages/archlang-3d run notices`).
  *
  * `installedRuntime()` walks what the package's runtime really installs: its `dependencies` and
- * `optionalDependencies`, transitively, each resolved the way Node resolves it (`node_modules/<name>`
- * from the requiring package's directory upward) and read from the INSTALLED package.json, never
- * from the lockfile or a registry. An optional dependency that is not installed (another
- * platform's binary) is skipped. The peer core is ArchLang itself and is not walked.
+ * `optionalDependencies`, transitively, and every dependency's `peerDependencies` (npm >= 7
+ * installs them), each resolved the way Node resolves it (`node_modules/<name>` from the requiring
+ * package's directory upward) and read from the INSTALLED package.json, never from the lockfile or
+ * a registry. An optional dependency or optional peer (`peerDependenciesMeta[x].optional`) that is
+ * not installed (another platform's binary, an unused integration) is skipped; a required one that
+ * is missing throws. The package's own peer is the ArchLang core itself and is not walked.
  */
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -51,6 +53,8 @@ interface Manifest {
   licenses?: Array<{ type: string }>;
   dependencies?: Record<string, string>;
   optionalDependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
+  peerDependenciesMeta?: Record<string, { optional?: boolean }>;
 }
 const manifest = (dir: string): Manifest => JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as Manifest;
 
@@ -75,11 +79,16 @@ export function installedRuntime(root: string = PKG): Installed[] {
   const out = new Map<string, Installed>();
   const visit = (dir: string, via: string[]): void => {
     const m = manifest(dir);
-    const optional = m.optionalDependencies ?? {};
-    for (const name of Object.keys({ ...m.dependencies, ...optional }).sort()) {
+    // The root's own peer is the core it reads (ArchLang itself), not a third party.
+    const peers = via.length > 0 ? (m.peerDependencies ?? {}) : {};
+    const optional = new Set([
+      ...Object.keys(m.optionalDependencies ?? {}),
+      ...Object.keys(peers).filter((n) => m.peerDependenciesMeta?.[n]?.optional === true),
+    ]);
+    for (const name of Object.keys({ ...m.dependencies, ...m.optionalDependencies, ...peers }).sort()) {
       const d = find(name, dir);
       if (!d) {
-        if (name in optional) continue;
+        if (optional.has(name)) continue;
         throw new Error(`${[...via, name].join(" > ")}: not installed (run npm ci)`);
       }
       if (out.has(d)) continue;

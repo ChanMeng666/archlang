@@ -4,7 +4,9 @@
  * version and stated licence, a permitted licence, and off the deny list (which wins). The allow
  * list holds no stale entry, and THIRD_PARTY_NOTICES is exactly what the generator writes from it.
  */
-import { readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { installedRuntime, licenceFile, NOTICES_FILE, notices, readPolicy, verdict } from "../scripts/licence-gate.js";
 
@@ -47,6 +49,36 @@ describe("licence gate (Q20)", () => {
     const listed = { ...policy, allow: [...policy.allow, { ...trap, source: "x", checked: "x" }] };
     expect(verdict(trap, listed)).toMatch(/denied/);
     expect(policy.deny.map((d) => `${d.name}@${d.major}`)).toContain("straight-skeleton@3");
+  });
+
+  it("walks peers too: a dependency's required peer is gated, a missing optional peer skipped, the root's peer not walked", () => {
+    const root = mkdtempSync(join(tmpdir(), "archlang3d-licences-"));
+    const pkg = (dir: string, m: object) => {
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "package.json"), JSON.stringify({ version: "1.0.0", license: "MIT", ...m }));
+    };
+    try {
+      const nm = join(root, "node_modules");
+      pkg(root, { name: "root", dependencies: { a: "1" }, peerDependencies: { core: "1" } });
+      pkg(join(nm, "core"), { name: "core" });
+      pkg(join(nm, "a"), {
+        name: "a",
+        peerDependencies: { b: "1", c: "1", d: "1" },
+        peerDependenciesMeta: { c: { optional: true }, d: { optional: true } },
+      });
+      pkg(join(nm, "b"), { name: "b", license: "GPL-3.0-only" });
+      pkg(join(nm, "d"), { name: "d" });
+      const names = installedRuntime(root).map((p) => p.name);
+      // b (required peer) and d (optional peer, installed) are walked; c (optional, absent) is skipped;
+      // the root's own peer (the core) is not.
+      expect(names).toEqual(["a", "b", "d"]);
+      const b = installedRuntime(root).find((p) => p.name === "b");
+      expect(b && verdict(b, policy)).toMatch(/not on the allow list/);
+      rmSync(join(nm, "b"), { recursive: true });
+      expect(() => installedRuntime(root)).toThrow(/a > b: not installed/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("THIRD_PARTY_NOTICES is the generator's output (npm -w packages/archlang-3d run notices)", () => {

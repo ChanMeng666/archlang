@@ -46,7 +46,7 @@ export const COMMANDS: readonly Command[] = [
       },
       { flag: "--format", alias: "-f", arg: "<glb|scene3d>", description: "output format (default glb)" },
       CURVE_TOL,
-      { flag: "--strict", description: "exit 2 when the build has a W3D_* warning" },
+      { flag: "--strict", description: "refuse a build with any W3D_* warning: E3D_STRICT, exit 2, nothing written" },
       JSON_FLAG,
     ],
     input: "<plan.arch|->",
@@ -123,6 +123,7 @@ export const DIAGNOSTIC_CODES = [
   "E3D_PLAN_ERRORS",
   "E3D_NO_WALLS",
   "E3D_VERIFY_FAILED",
+  "E3D_STRICT",
   "W3D_MIXED_HEIGHT_JOINT",
 ] as const;
 
@@ -136,7 +137,7 @@ export function buildManifest() {
     exitCodes: {
       "0": "ok",
       "1": "internal / IO / environment error (a missing Chromium or ffmpeg, a file that cannot be written)",
-      "2": "the plan is refused or a check failed (deterministic: fix it, don't blindly retry)",
+      "2": "the plan is refused, a check failed, or build --strict met a warning (E3D_STRICT); nothing is written (deterministic: fix it, don't blindly retry)",
       "3": "bad usage",
     },
     globalFlags: [JSON_FLAG],
