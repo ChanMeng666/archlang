@@ -1,32 +1,37 @@
-# Preview-and-remodel programme: handoff (state as of 2026-10-28, `main@323a3ee2`)
+# Preview-and-remodel programme: handoff (state as of 2026-10-28, `main@0d1cbda7`)
 
 The resume point for a new session. Re-written at every wave end; dated history goes to `research/`.
 
 ## 1. Where the programme stands
 
-Updated 2026-10-28 after A3 and the 1.44.0 release (`main@323a3ee2`). Waves 0, 1 and 2 are done.
+Updated 2026-10-28 after wave 3 (`main@0d1cbda7`). Waves 0–2 are done; wave 3 is done except A2b.
 Landed: A0 (#319), B6 (#320), C1 (#321), C2 (#322), A1 (#325), B5 (#327), A2 (#328), B1 (#323),
-B4 (#324), B3a (#329), A3 (#330, merge `323a3ee2`, look notes round 1 in); records #326, #331.
-As-built notes: `research/2026-10-28-as-built.md`. Quiet-machine baseline on `main@00b7e7ec`:
-`npm run check` 557 s.
+B4 (#324), B3a (#329), A3 (#330), A4 (#336), B3b (#337), A0b (#338), A5 (#340); records #326,
+#331, #335. As-built notes: `research/2026-10-28-as-built.md`. Quiet-machine baseline on
+`main@00b7e7ec`: `npm run check` 557 s; wave 3's full runs took 576–675 s.
 
-**A3 look set** (1080p30, per-storey and combined views): `D:.claude-scratch6-10-28a3-look`
+**A2b (#341)** is open: gates green on `0ab451ab`, red-team round 1 (no blocker; curved-host glass
+short of the jambs, demolished ghosts rising as construction, ghost end caps in openings, a slab
+double count) being fixed; then it merges `main` (A5 moved the renderer into `mount.ts`).
+
+**A3 look set** (1080p30, per-storey and combined views): `D:\.claude-scratch\2026-10-28\a3-look\`
 on the owner's machine. Open for the owner's next look: the 30° end elevation of one-storey views
-(`endElevation`, `camera.ts`), at which near walls hide most furniture.
+(card A8).
 
-**Tier A is open** (README §3 D16, owner 2026-10-28): A5 merges once green; the docs site, README,
-npm README and landing pages stay without 3D (Tier C). For every owner-only manual step (the VS Code
-Marketplace upload; OTP/2FA, logins, terms in the release chain) the agent pauses, guides the owner
-step by step, waits for confirmation, verifies, and continues.
+**Tier A is open** (README §3 D16): A5 merged (`0d1cbda7`), the playground has the "3D preview" tab
+with D5's label; positioning row 8 took its Tier A wording (archcanvas-growth #22, `826b241f`, at
+the owner's request). The docs site, README, npm README and landing pages stay without 3D. For every
+owner-only manual step the agent pauses, guides the owner step by step, waits, verifies, continues.
 
-**Releases (README §3 D15):** **1.44.0 is out** (PR #334, merge `a6405af9`, tag `v1.44.0`,
-`release.yml` run 40618590620 green): npm core 1.44.0 (`latest`, SLSA provenance), the shim 0.2.27
-(MCP registry `isLatest`), `.mcpb` bundles on the GitHub Release; `@chanmeng666/arch-plan` stays
-0.1.1 (unchanged). The VS Code `.vsix` 0.32.0 (core 1.44.0 stamped) is built in the primary checkout
-and waits for the owner's Marketplace upload (D16; the Marketplace shows 0.31.1).
+**Releases (README §3 D15):** 1.44.0 (PR #334, tag `v1.44.0`, run 40618590620) and 1.45.0 (PR #339,
+merge `ad6c1b1a`, tag `v1.45.0`, run 40638685119; B3b + A0b) are out: npm core `latest` 1.45.0 with
+SLSA provenance, the shim 0.2.28 (MCP registry latest), `.mcpb` bundles on each GitHub Release;
+`@chanmeng666/arch-plan` stays 0.1.1 (unchanged). VS Code 0.32.0 and 0.33.0 were uploaded by the
+owner and verified on the Marketplace (0.33.0 = core 1.45.0).
 
 `packages/archlang-3d` (private): adapter, H1 ownership, Scene3D v0, Mesh3D; the replay viewer, HTML
-and video (A3). Exposure is Tier 0; ADRs 0030/0031 are in archlang.uk's ADR list (factual
+and video (A3); GLB, checks, CLI, the `check:3d` CI job (A4, not a required check); the browser
+`mountReplay` entry (A5). Exposure is Tier A; ADRs 0030/0031 are in archlang.uk's ADR list (factual
 wording). `spec.llm.md` is at 29,999 of 30,000. After #328/#330 a checkout needs `npm ci` (earcut,
 three, playwright-core, esbuild). Sonnet subagents were refused on 2026-10-28 (HTTP 403); executors
 ran on the inherited model. Every branch got a full local `npm run check` before its pin.
@@ -43,17 +48,12 @@ ran on the inherited model. Every branch got a full local `npm run check` before
 
 ## 3. Next items, in order
 
-1. **VS Code 0.32.0 Marketplace upload** (owner, D16): verify the listing after.
-2. **Wave 3 in flight:** A4 and B3b executors started 2026-10-28; B3b lands after 1.44.0, so a
-   1.44.1/1.45.0 follows it.
-3. **Wave 3:** A4 (GLB, glTF-Validator, V-DET-01, the `check:3d` CI job on Linux, the Q20 licence
-   gate, the cross-machine key-frame baseline: pin only frames without SVG text, or ship a font);
-   B3b (draw the wall status, DXF layers, legend, `examples/remodel.arch`, the schedule law restored);
-   A5 (playground toggle; Tier A is open, D16: merge it once green).
-4. Residue: **A0b** (export the hatch group key and `Point`; the closure walkers follow `import()`
-   types), **A2b** (T0 parametric furniture, V-GEO-05, curved-host glass, slab ∪ rooms, extrude from
-   `ir.drawn` once B3b draws demolished walls), `--doors plan` (each leaf's open tip into Scene3D).
-5. After each landed card: its records PR (done line, as-built note, this handoff).
+1. **A2b (#341):** land its round-1 fixes, merge `main`, full gates, merge; its records.
+2. **A7** (`--doors plan`) and **A8** (wave-3 residue), in `cards.md`.
+3. The N10 window starts with the owner's first Tier A post (README §6; the agent posts nothing).
+4. Wave 4 (README §4) after N10 is read: D1, A6 (parked), archlang-3d M2+.
+5. After each landed card: its records PR (done line, as-built note, this handoff). If anything lands
+   in the core, cut a release the same way (D15/D16).
 
 ## 4. How a card is run
 
