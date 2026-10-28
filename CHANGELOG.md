@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.46.0] - 2026-10-28
+
 ### Fixed
 
 - An `open between` of a `walls from rooms … status demolish` statement, which the analysis has
@@ -19,6 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   resolve-time error `E_FURN_AGAINST_DEMOLISHED_WALL` (as a door in one is
   `E_OPENING_ON_DEMOLISHED_WALL`), and `against wall <category>` names only the walls of that
   category that stay.
+
+### Changed
+
+- **The MCP shim's and the VS Code extension's core ranges are re-pinned to this release.**
+  `@chanmeng666/archlang-mcp` 0.2.29 re-bakes its spec, `llms-full.txt`, grammar and schemas when
+  it is packed; the VS Code extension 0.34.0 bundles this core. `@chanmeng666/arch-plan` is
+  unchanged at 0.1.1 (its peer range `^1.42.1` admits this release).
 
 ## [1.45.0] - 2026-10-28
 
