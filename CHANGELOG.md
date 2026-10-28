@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.45.0] - 2026-10-28
+
 ### Added
 
 - Wall `status` is drawn (preview-and-remodel B3b). A `status demolish` wall is a dashed outline
@@ -23,6 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New exports `hatchKey` and `hatchOf` and the `HatchSpec` type: the key `joinWallSet` groups wall
   fills by, so a caller names a wall's group as `hatchKey(hatchOf(wall))` instead of rebuilding its
   format (ADR 0031, amended). No function body changes; every output is byte-identical.
+
+### Changed
+
+- **The MCP shim's and the VS Code extension's core ranges are re-pinned to this release.**
+  `@chanmeng666/archlang-mcp` 0.2.28 re-bakes its spec, `llms-full.txt`, grammar and schemas when
+  it is packed; the VS Code extension 0.33.0 bundles this core. `@chanmeng666/arch-plan` is
+  unchanged at 0.1.1 (its peer range `^1.42.1` admits this release).
 
 ## [1.44.0] - 2026-10-28
 
