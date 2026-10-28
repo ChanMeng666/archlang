@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- New exports `hatchKey` and `hatchOf` and the `HatchSpec` type: the key `joinWallSet` groups wall
+  fills by, so a caller names a wall's group as `hatchKey(hatchOf(wall))` instead of rebuilding its
+  format (ADR 0031, amended). No function body changes; every output is byte-identical.
+
 ## [1.44.0] - 2026-10-28
 
 ### Added

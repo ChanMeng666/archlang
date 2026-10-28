@@ -11,10 +11,17 @@
  * Ownership is computed with the openings stripped (the solid), and the cuts are returned
  * beside it, so the geometry stage can keep the sill and lintel under and over each cut.
  */
-import { joinWallSet, loopsToPolygons, type JoinedCut, type RWall } from "@chanmeng666/archlang";
+import {
+  hatchKey,
+  hatchOf,
+  joinWallSet,
+  loopsToPolygons,
+  type JoinedCut,
+  type Point,
+  type RWall,
+} from "@chanmeng666/archlang";
 
-/** A plan point (mm). The core's `Point` is not nameable from its root, so it is read off `RWall`. */
-export type Point = RWall["points"][number];
+export type { Point };
 
 /** A ring of plan points (mm), as `loopsToPolygons` returns it: closed, no repeated vertex. */
 export type Ring = Point[];
@@ -45,17 +52,6 @@ export interface Ownership {
   cuts: JoinedCut[];
   /** The outer rings of the joined solid (the building's wall footprint, holes dropped). */
   outline: Ring[];
-}
-
-/**
- * The hatch group a wall's fill belongs to. `joinWallSet` groups fills by the wall's hatch
- * (material, scale, angle) and the caller must name the groups it wants back; the core does not
- * export its key function, so the key is rebuilt from the three public fields. A drift in the
- * core's key format empties every fill, which `test/h1-ownership.test.ts` turns red on the
- * corpus (every wall must own a positive area).
- */
-export function hatchGroupKey(w: Pick<RWall, "material" | "hatchScale" | "hatchAngle">): string {
-  return `${w.material}|${w.hatchScale}|${w.hatchAngle}`;
 }
 
 /** Signed shoelace area of a ring in plan axes (y down). */
@@ -106,7 +102,7 @@ export function wallOwnership(
   tessellate: (loops: Parameters<typeof loopsToPolygons>[0]) => Ring[] = loopsToPolygons,
 ): Ownership {
   if (walls.length === 0) return { owned: [], fillArea: 0, cuts: [], outline: [] };
-  const groups = [...new Set(walls.map(hatchGroupKey))];
+  const groups = [...new Set(walls.map((w) => hatchKey(hatchOf(w))))];
   // Faces are wall INDICES, so two walls sharing an id (a placed component) never merge.
   const faces = walls.map((_, i) => String(i));
   const solid = walls.map((w) => ({ ...w, openings: [] }));
