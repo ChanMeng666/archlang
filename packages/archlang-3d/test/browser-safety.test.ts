@@ -75,4 +75,31 @@ describe("browser safety", () => {
     }).catch((e: { errors?: unknown[] }) => ({ errors: e.errors ?? [e] }));
     expect(bare.errors.length).toBeGreaterThan(0);
   }, 60_000);
+
+  it("bundles the ./browser entry (the playground's 3D tab) with no Node and no clock", async () => {
+    const out = await build({
+      entryPoints: [join(HERE, "../src/browser.ts")],
+      bundle: true,
+      platform: "browser",
+      format: "esm",
+      write: false,
+      logLevel: "silent",
+      minifyWhitespace: true,
+      legalComments: "none",
+    });
+    expect(out.errors).toEqual([]);
+    const code = out.outputFiles?.[0]?.text ?? "";
+    expect(code).toContain("WebGLRenderer"); // three.js is inside
+    // three.js itself calls Math.random (object UUIDs, never a pixel), so only Node and the clock
+    // are banned here; every frame is `seek(t)`.
+    const banned: Array<[RegExp, string]> = [
+      [/\bfrom\s*["']node:/, "a static node: import"],
+      [/\bimport\s*\(\s*["']node:/, "a node: import()"],
+      [/\brequire\(\s*["']node:/, "a node: require"],
+      [/\bprocess\.(env|argv|cwd|exit|platform)\b/, "process"],
+      [/\bDate\.now\s*\(/, "Date.now()"],
+      [/\bnew\s+Date\s*\(/, "new Date()"],
+    ];
+    expect(banned.filter(([re]) => re.test(code)).map(([, why]) => why)).toEqual([]);
+  }, 60_000);
 });

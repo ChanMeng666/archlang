@@ -87,9 +87,16 @@ const mobileViews = mountMobileViews(
   document.getElementById("mviewCount")!,
 );
 
-// ---- output tabs (Preview · Describe · Lint · Intent) ----
+// ---- output tabs (Preview · Describe · Lint · Intent · 3D preview) ----
+const preview3dEl = document.getElementById("preview3d")!;
 const tabs = [...document.querySelectorAll<HTMLElement>(".tab")];
-const views: Record<string, HTMLElement> = { preview, describe: describeEl, lint: lintEl, intent: intentEl };
+const views: Record<string, HTMLElement> = {
+  preview,
+  describe: describeEl,
+  lint: lintEl,
+  intent: intentEl,
+  preview3d: preview3dEl,
+};
 for (const tab of tabs) {
   tab.addEventListener("click", () => {
     for (const t of tabs) {
@@ -307,6 +314,8 @@ function applyFixAt(rows: Diagnostic[], index: number): void {
 }
 
 function render(source: string, refit = false) {
+  // The 3D preview follows the editor only while its tab is open (and once loaded).
+  if (preview3d && preview3dEl.classList.contains("active")) void preview3d.then((p) => p?.update(source));
   // Theme: empty value = the source's own `theme` directive (pass nothing); a named
   // key overrides it (compile's `theme` option wins over an in-source directive).
   const themeKey = themeSelect.value;
@@ -364,6 +373,20 @@ function render(source: string, refit = false) {
   lastSvg = pageSvg;
   lastScene = (page ? page.scene : scene) ?? null;
 }
+
+// ---- 3D preview (card A5): three.js and archlang-3d load on the tab's first open, like jsPDF ----
+let preview3d: Promise<import("./preview3d.js").Preview3d | undefined> | undefined;
+document.getElementById("tab-preview3d")?.addEventListener("click", () => {
+  preview3d ??= import("./preview3d.js").then(
+    (m) => m.mountPreview3d(preview3dEl),
+    (err: unknown) => {
+      preview3d = undefined; // a failed chunk load is retried on the next open
+      preview3dEl.textContent = `The 3D preview did not load: ${(err as { message?: string })?.message ?? err}`;
+      return undefined;
+    },
+  );
+  void preview3d.then((p) => p?.show(currentSource()));
+});
 
 let debounce: ReturnType<typeof setTimeout>;
 /** Set once the header actions mount; told of every document change. */

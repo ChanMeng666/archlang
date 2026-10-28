@@ -250,6 +250,7 @@
             <button class="tab" id="tab-describe" data-tab="describe" type="button" role="tab" aria-selected="false" aria-controls="describe">Describe</button>
             <button class="tab" id="tab-lint" data-tab="lint" type="button" role="tab" aria-selected="false" aria-controls="lint">Lint</button>
             <button class="tab" id="tab-intent" data-tab="intent" type="button" role="tab" aria-selected="false" aria-controls="intent">Intent</button>
+            <button class="tab" id="tab-preview3d" data-tab="preview3d" type="button" role="tab" aria-selected="false" aria-controls="preview3d">3D preview</button>
           </span>
           <!-- Storey switcher for a multi-storey plan. It sits in the tab strip rather
                than in the preview toolbar because every tab's contents follow it: a
@@ -309,6 +310,8 @@
           <textarea id="intentSrc" class="intent-src" spellcheck="false" aria-label="Intent JSON"></textarea>
           <div id="intentOutput"></div>
         </div>
+        <!-- Filled on the tab's first open by preview3d.ts (lazy: three.js never loads before). -->
+        <div id="preview3d" class="tabview" role="tabpanel" aria-labelledby="tab-preview3d"></div>
       </section>
     </main>
 

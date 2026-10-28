@@ -23,13 +23,18 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
 - `src/mesh/`: Mesh3D — slab, floors, columns, walls (body + sill + lintel per opening), closed door
   leaves, window frame and glass, grey-box furniture, a hidden flat roof; `earcut` (ISC) for caps.
 - `src/replay/`: the replay (M1a) — `timeline.ts` (the event table and `stateAt(t)`, pure),
-  `viewer.ts` (browser: three.js 0.186.1, `__seek`/`__frameHash`), `html.ts` (one offline file),
-  `video.ts` (Playwright's Chromium on SwiftShader + ffmpeg).
+  `payload.ts` (what a replay carries, browser-safe), `mount.ts` (browser: three.js 0.186.1,
+  `mountReplay(canvas, payload)` → `seek`/`frameHash`), `viewer.ts` (the HTML's host:
+  `__seek`/`__frameHash`), `html.ts` (one offline file), `video.ts` (Playwright's Chromium on
+  SwiftShader + ffmpeg).
 - `src/glb/write.ts`: the GLB (M1b), written with glTF-Transform from the same Mesh3D: a
   `level:L<n>` node per storey, under it one node per Mesh3D node named `<kind>:<id>[:<part>]`, its
   facts in `extras.archlang`; deterministic bytes.
 - `src/check/verify.ts`: V-SCH-01, V-GEO-02, V-GLTF-01 (Khronos glTF-Validator, 0 errors and 0
   warnings) and V-GLTF-02 (the GLB's nodes are the Mesh3D's, named per plan §3.6).
+- `src/browser.ts` (`./browser`): `replayPayload` + `mountReplay` + `PREVIEW_LABEL` for a page
+  that shows the replay (the playground's 3D preview tab, card A5); it bundles three.js, so it is
+  not `.`.
 - `src/node.ts`: the Node `World` and the Node-only builders (replay, GLB, checks), kept out of the
   browser entry.
 
