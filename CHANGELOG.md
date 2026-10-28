@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- An `open between` of a `walls from rooms … status demolish` statement, which the analysis has
+  dropped with its wall since B3a, is no longer drawn (the openings pass, its DXF entity) either:
+  the drawing agrees with `describe()`. The dashed outline keeps the gap it cut, the wall as it
+  stands before the works. A plan with no demolished wall draws, describes and lints to the same
+  bytes.
+- A piece of furniture can no longer back onto a `status demolish` wall: `against wall <id>`
+  naming one, or `against <room>.<edge>` where one is the only wall on the edge, is the new
+  resolve-time error `E_FURN_AGAINST_DEMOLISHED_WALL` (as a door in one is
+  `E_OPENING_ON_DEMOLISHED_WALL`), and `against wall <category>` names only the walls of that
+  category that stay.
+
 ## [1.45.0] - 2026-10-28
 
 ### Added

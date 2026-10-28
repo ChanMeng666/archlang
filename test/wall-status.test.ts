@@ -31,6 +31,7 @@ import {
   type PlanJson,
   planFromJson,
   planToJson,
+  toDxf,
 } from "../src/index.js";
 import type { RWall, ResolvedPlan } from "../src/ir.js";
 import type { Scene } from "../src/scene.js";
@@ -98,6 +99,40 @@ function wallStatements(src: string): { hostless: number[]; hosting: number[]; d
   };
 }
 
+/** Of the wall statements at `starts`, the ones no piece of furniture backs onto (A8: a demolished
+ *  wall holds nothing, `E_FURN_AGAINST_DEMOLISHED_WALL`). Read off the compiler's own refusal:
+ *  mark them all demolished, drop every statement whose wall a refusal's hint names (by id, or as
+ *  a component instance names it, `<instance>.<id>`), and repeat until nothing is refused. */
+function backsNoPiece(src: string, starts: readonly number[]): number[] {
+  let kept = [...starts];
+  for (let pass = 0; pass < 8 && kept.length > 0; pass++) {
+    const marked = insertAll(
+      src,
+      kept.map((s): [number, string] => [s, "demolish"]),
+    );
+    const named = new Set<string>();
+    for (const d of compile(marked).diagnostics) {
+      const id =
+        d.code === "E_FURN_AGAINST_DEMOLISHED_WALL" ? /the wall "([^"]+)"/.exec(d.hints?.[0] ?? "")?.[1] : undefined;
+      if (id !== undefined) named.add(id);
+    }
+    if (named.size === 0) return kept;
+    // The walls by id in the unmarked plan, whose offsets `kept` holds.
+    const backed = new Set<number>();
+    for (const ir of storeys(src)) {
+      for (const e of ir.elements) {
+        const span = (e as { span?: { start: number } }).span;
+        if (e.kind !== "wall" || !span) continue;
+        if ([...named].some((id) => e.id === id || e.id.endsWith(`.${id}`))) backed.add(span.start);
+      }
+    }
+    const before = kept.length;
+    kept = kept.filter((s) => !backed.has(s));
+    if (kept.length === before) throw new Error(`a refusal named no marked wall: ${[...named].join(", ")}`);
+  }
+  return kept;
+}
+
 /** Every storey's Scene (the pages of a multi-storey plan, else the one drawing). */
 function scenes(src: string): Scene[] {
   const r = compile(src);
@@ -137,7 +172,8 @@ suite("status demolish draws the standing walls unchanged, and itself dashed", (
       const src = readFileSync(join(ROOT, "examples", file), "utf8");
       const plain = svgs(src);
       if (plain.some((s) => s === "")) return; // a plan that needs a world (imports) draws nothing here
-      const { hostless, derivers } = wallStatements(src);
+      const { hostless: hostsNoOpening, derivers } = wallStatements(src);
+      const hostless = backsNoPiece(src, hostsNoOpening);
       const edits: Array<[number, string]> = [
         ...hostless.map((s): [number, string] => [s, "demolish"]),
         ...derivers.map((s): [number, string] => [s, "new"]),
@@ -181,9 +217,11 @@ suite("status demolish draws the standing walls unchanged, and itself dashed", (
   );
 
   it("the demolish sweep was not vacuous", () => {
-    // Measured when the sweep was written: 25 plans, 84 hostless authored walls.
-    expect(swept.plans).toBeGreaterThanOrEqual(20);
-    expect(swept.demolished).toBeGreaterThanOrEqual(60);
+    // Measured when the sweep was written: 25 plans, 84 hostless authored walls. Since A8 a wall
+    // that backs a piece hosts something too (`backsNoPiece`): 21 plans, 54 walls, and the
+    // deletion comparison then runs on all 21 (a deleted twin no longer loses a piece's wall).
+    expect(swept.plans, JSON.stringify(swept)).toBeGreaterThanOrEqual(20);
+    expect(swept.demolished, JSON.stringify(swept)).toBeGreaterThanOrEqual(45);
     // And the deletion comparison really ran (B3b; measured: 13 plans, the others' deleted twin
     // does not compile because a statement names a deleted wall).
     expect(swept.compared, JSON.stringify(swept)).toBeGreaterThanOrEqual(12);
@@ -515,7 +553,8 @@ suite("round 1 · minors", () => {
   walls from rooms exterior 200 partition 100 status demolish { open id=ab between a and b }`);
     const ir = resolvePlan(src).ir!;
     expect(ir.elements.some((e) => e.id === "ab")).toBe(false);
-    expect(ir.drawn!.elements.some((e) => e.id === "ab")).toBe(true);
+    // ... and leaves the drawing with it too (A8): the sheet draws no opening describe() lacks.
+    expect(ir.drawn!.elements.some((e) => e.id === "ab")).toBe(false);
     expect(describePlan(src).openings.map((o) => o.id)).toEqual([]);
     // Every wall demolished: no poche, one dashed outline (B3b).
     const walls = wallPrims(compile(src).scene!);
@@ -531,5 +570,134 @@ suite("round 1 · minors", () => {
     expect(d.depends?.derived_walls).toEqual([]);
     expect(d.derived_walls).toBeUndefined();
     expect(d.wall_status?.counts.demolish).toBe(2);
+  });
+});
+
+suite("A8: the drawing agrees with the analysis on a demolished wall's opening", () => {
+  const OPEN = (status: string) =>
+    plan(`  room id=a at (0,0) size 4000x5000
+  room id=b at (4000,0) size 4000x5000
+  walls from rooms exterior 200 partition 100${status} { open id=ab between a and b width 1000 }`);
+  const openingNodes = (src: string) => compile(src).scene!.nodes.filter((n) => n.layer === "openings");
+
+  it("an `open between` of a demolished statement is not drawn, scheduled or exported", () => {
+    const src = OPEN(" status demolish");
+    expect(compile(src).diagnostics).toEqual([]);
+    expect(openingNodes(src)).toEqual([]);
+    const svg = compile(src).svg;
+    expect(svg).not.toContain('id="A-DOOR"');
+    // The DXF files no entity on the openings layer: as many mentions as the statement with no
+    // `open between` at all (the layer table's own).
+    const doorLayer = (s: string) => toDxf(compile(s).scene!).split("A-DOOR").length - 1;
+    expect(doorLayer(src)).toBe(doorLayer(src.replace(" { open id=ab between a and b width 1000 }", "")));
+    expect(doorLayer(OPEN(""))).toBeGreaterThan(doorLayer(src));
+    expect(describePlan(src).openings).toEqual([]);
+  });
+
+  it("the demolished wall keeps the gap the opening cut: its outline as it stands before the works", () => {
+    const svg = compile(OPEN(" status demolish")).svg;
+    // The dashed outline runs round the 1000 mm gap at y 2000–3000 on the partition at x 4000.
+    expect(svg).toContain("L 3950,3000 L 4050,3000 L 4050,4900");
+    expect(svg).toContain("L 4050,2000 L 3950,2000 L 3950,100");
+    const walls = wallPrims(compile(OPEN(" status demolish")).scene!);
+    expect(walls).toEqual([expect.objectContaining({ layer: "wallFill", lineType: "dashed" })]);
+  });
+
+  it("a standing statement still draws its opening (only a demolished host drops it)", () => {
+    for (const status of ["", " status existing", " status new"]) {
+      expect(openingNodes(OPEN(status))).toHaveLength(1);
+      expect(resolvePlan(OPEN(status)).ir!.drawn).toBeUndefined();
+    }
+  });
+});
+
+type RFurnitureLike = { at: { x: number; y: number }; size: { w: number; h: number }; rotate?: number };
+
+suite("A8: a piece backed onto a demolished wall is E_FURN_AGAINST_DEMOLISHED_WALL", () => {
+  const PART = `  wall id=part partition thickness 100 status demolish { (4000,0) (4000,5000) }`;
+  const PLAN = (furniture: string, extra = "") => plan(`${SHELL}\n${PART}\n${extra}${ROOMS}\n  ${furniture}`);
+  const codes = (src: string) => compile(src).diagnostics.map((d) => d.code);
+
+  it("`against wall <id>` naming it is refused, named as a person would, ids in the hint", () => {
+    const src = PLAN("furniture id=wr wardrobe against wall part side left size 1200x600");
+    const d = compile(src).diagnostics;
+    expect(d.map((x) => x.code)).toEqual(["E_FURN_AGAINST_DEMOLISHED_WALL"]);
+    expect(d[0]!.severity).toBe("error");
+    expect(d[0]!.message).toBe(
+      "A piece of furniture backs onto the partition at x 4000, which is marked `status demolish`: a demolished wall holds nothing",
+    );
+    expect(d[0]!.message).not.toMatch(/"wr"|"part"|\bpart\b/);
+    expect(d[0]!.hints?.[0]).toContain('"wr"');
+    expect(d[0]!.hints?.[0]).toContain('"part"');
+    // The same statement on the standing wall places as it always did.
+    expect(codes(src.replace(" status demolish", ""))).toEqual([]);
+  });
+
+  it("`against wall <id>` naming it is refused even with a `new` wall on the same line", () => {
+    const fresh = `  wall id=fresh partition thickness 100 status new { (4000,0) (4000,5000) }\n`;
+    expect(codes(PLAN("furniture wardrobe against wall part side left size 1200x600", fresh))).toEqual([
+      "E_FURN_AGAINST_DEMOLISHED_WALL",
+    ]);
+    // ... while naming the new wall places against it.
+    expect(codes(PLAN("furniture wardrobe against wall fresh side left size 1200x600", fresh))).toEqual([]);
+  });
+
+  it("`against wall <category>` names only the walls that stay", () => {
+    // The only partition is coming out: refused.
+    expect(codes(PLAN("furniture wardrobe against wall partition side left size 1200x600"))).toEqual([
+      "E_FURN_AGAINST_DEMOLISHED_WALL",
+    ]);
+    // With one standing partition beside it, the category names that one (no "matches 2 walls").
+    const other = `  wall id=keep partition thickness 100 { (6000,0) (6000,5000) }\n`;
+    const src = PLAN("furniture id=wr wardrobe against wall partition side left size 1200x600", other);
+    expect(codes(src)).toEqual([]);
+    const at = (s: string) => (resolvePlan(s).ir!.elements.find((e) => e.id === "wr") as { at: unknown }).at;
+    expect(at(src)).toEqual(at(src.replace("against wall partition", "against wall keep")));
+  });
+
+  it("`against <room>.<edge>` where the demolished wall is the only wall on the edge is refused", () => {
+    expect(codes(PLAN("furniture desk against a.right size 1200x600"))).toEqual(["E_FURN_AGAINST_DEMOLISHED_WALL"]);
+    // A standing wall on the same line backs it, as an edge with that wall alone does.
+    const fresh = `  wall id=fresh partition thickness 100 status new { (4000,0) (4000,5000) }\n`;
+    const both = PLAN("furniture id=dk desk against a.right size 1200x600", fresh);
+    const alone = plan(`${SHELL}\n${fresh}${ROOMS}\n  furniture id=dk desk against a.right size 1200x600`);
+    expect(codes(both)).toEqual([]);
+    const at = (src: string) => (resolvePlan(src).ir!.elements.find((e) => e.id === "dk") as { at: unknown }).at;
+    expect(at(both)).toEqual(at(alone));
+  });
+
+  it("a demolished wall BESIDE the edge line (within the tolerance) is ignored, as if deleted", () => {
+    // Red-team round 1: the near-line scan admits walls within 300 mm of the edge; one at x 4200
+    // beside `a.right` (x 4000) is not on the edge and must not be blamed.
+    const beside = `  wall id=p partition thickness 100 status demolish { (4200,0) (4200,5000) }\n`;
+    const piece = "furniture id=dk desk against a.right size 1200x600";
+    const marked = plan(`${SHELL}\n${beside}${ROOMS}\n  ${piece}`);
+    const deleted = plan(`${SHELL}\n${ROOMS}\n  ${piece}`);
+    const diags = (src: string) => compile(src).diagnostics.map((d) => [d.code, d.message]);
+    expect(diags(marked)).toEqual(diags(deleted));
+    const dk = (src: string) => resolvePlan(src).ir!.elements.find((e) => e.id === "dk") as RFurnitureLike;
+    expect(dk(marked)).toBeDefined();
+    expect({ at: dk(marked).at, size: dk(marked).size, rotate: dk(marked).rotate }).toEqual({
+      at: dk(deleted).at,
+      size: dk(deleted).size,
+      rotate: dk(deleted).rotate,
+    });
+    expect(dk(deleted).at).toEqual({ x: 3400, y: 1900 });
+  });
+
+  it("inside a `place`d component, by the component's own wall id", () => {
+    const src = plan(`${SHELL}
+  component bay() {
+    wall id=p partition thickness 100 status demolish { (2000,0) (2000,5000) }
+    room id=r at (0,0) size 2000x5000
+    furniture wardrobe against wall p size 1200x600 in r
+  }
+  place bay() as k at (0,0)`);
+    const d = compile(src).diagnostics.filter((x) => x.code === "E_FURN_AGAINST_DEMOLISHED_WALL");
+    expect(d).toHaveLength(1);
+    expect(d[0]!.message).toBe(
+      "A piece of furniture backs onto the partition at x 2000, which is marked `status demolish`: a demolished wall holds nothing",
+    );
+    expect(codes(src.replace(" status demolish", "")).filter((c) => c?.startsWith("E_"))).toEqual([]);
   });
 });

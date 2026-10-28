@@ -840,7 +840,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `archlang explain <CODE>`.
-**147 errors** (abort rendering) · **88 warnings** (advisory; `validate --strict` fails on them too).
+**148 errors** (abort rendering) · **88 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -877,6 +877,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `E_FACING_TRANSPOSED` — Facing the target would put the piece's back on its short side. **Fix:** Swap the `size` (the message gives it), so that the footprint's long side runs across the direction the piece faces.
 - `E_FENCE_CURVED` — A fence cannot have a curved (`arc`) edge. **Fix:** Approximate the curve with short straight runs, which is what a fence built on a curve actually is.
 - `E_FURN_AGAINST` — Invalid `against wall` or `against <room>.<edge>` fixture placement. **Fix:** Name an existing wall id, add `segment <n>` for multi-segment walls, give `side left|right`, keep the segment axis-aligned, and drop any explicit `rotate`. With `against <room>.<edge>`, keep the offset on the edge and move the piece to a span one wall covers, or place it `at (x,y)`.
+- `E_FURN_AGAINST_DEMOLISHED_WALL` — A piece of furniture backs onto a wall marked `status demolish`. **Fix:** Back the piece onto a wall that stays (`against wall <id>` naming it), place it `at (x,y)` or `in <room> anchor <edge>`, or keep the wall: `status existing` (or no `status` at all).
 - `E_FURN_CLEAR` — Invalid `clear` depth. **Fix:** Write one positive depth per zone, e.g. `clear front 600`, or drop the clause.
 - `E_FURN_FLUSH` — `flush` on a placement that touches no edge. **Fix:** Anchor the piece to the edge you want it flush with (`anchor bottom flush`, `anchor top-left flush`), or drop `flush` and keep it centred.
 - `E_FURN_ROOM` — Furniture placed `in` an unknown room. **Fix:** Use the id of an existing `room id=…`, or drop the `in` clause.

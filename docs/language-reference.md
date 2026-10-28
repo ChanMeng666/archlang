@@ -904,7 +904,10 @@ points or the pairwise form, says what becomes of the wall; `walls from rooms �
 status <s>` gives every wall the statement derives the same status. Absent, a wall is
 `existing`, and a `new` wall is a wall like any other. No fact reads a `demolish` wall: it
 encloses nothing, hosts nothing (a door, window or opening in it is
-`E_OPENING_ON_DEMOLISHED_WALL`) and counts in no net area, and where it stood between two
+`E_OPENING_ON_DEMOLISHED_WALL`), backs no furniture (a piece `against wall <id>` naming it, or
+`against <room>.<edge>` where it is the only wall on the edge, is
+`E_FURN_AGAINST_DEMOLISHED_WALL`; `against wall <category>` names only the walls that stay) and
+counts in no net area, and where it stood between two
 rooms the access graph, circulation and the reachability rules join them across its run.
 `describe --json` adds `wall_status` (the count by status and each wall's status) only on a
 storey that writes one; Plan JSON carries `status` on a wall and on `walls_from_rooms`.
@@ -912,7 +915,9 @@ storey that writes one; Plan JSON carries `status` on a wall and on `walls_from_
 **Drawing a remodel.** A `demolish` wall is drawn as a dashed outline with no poché, beneath
 the walls that stay, so its dashes stop at the face of a standing wall it ran into; the
 standing walls are drawn as the plan after the demolition has them. A `new` wall is drawn as
-any wall. The sheet measures the plan after the demolition: the `schedule rooms` NET AREA and
+any wall. An `open between` of a `walls from rooms … status demolish` statement goes with its
+wall: the dashed outline keeps the gap it cut (the wall as it stands before the works), and no
+opening is drawn there. The sheet measures the plan after the demolition: the `schedule rooms` NET AREA and
 TOTAL count no demolished wall, and `--overlay circulation` walks across where one stood. The
 `legend` adds a `demolished` row (a dashed swatch) when a wall is demolished, and nothing for
 `new`, which looks like any wall. In the DXF a `demolish` wall is on `A-WALL-DEMO` and a `new`

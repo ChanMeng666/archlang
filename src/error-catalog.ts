@@ -178,6 +178,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Name an existing wall id, add `segment <n>` for multi-segment walls, give `side left|right`, keep the segment axis-aligned, and drop any explicit `rotate`. With `against <room>.<edge>`, keep the offset on the edge and move the piece to a span one wall covers, or place it `at (x,y)`.",
     "furniture wc against wall w1 side left size 400x700   # error if w1 is unknown or multi-segment",
   ),
+  E_FURN_AGAINST_DEMOLISHED_WALL: E(
+    "E_FURN_AGAINST_DEMOLISHED_WALL",
+    "A piece of furniture backs onto a wall marked `status demolish`.",
+    "A `wall … status demolish` (or a `walls from rooms … status demolish` statement) is a wall the remodel takes out: it is drawn, but it encloses nothing, hosts nothing and counts in no area. A piece placed `against wall <id>` naming it, or `against <room>.<edge>` where it is the only wall on the edge, would back onto a wall that is no longer there, so the plan contradicts itself. `against wall <category>` names only the walls of that category that stay, and raises this code when every one of them is coming out.",
+    "Back the piece onto a wall that stays (`against wall <id>` naming it), place it `at (x,y)` or `in <room> anchor <edge>`, or keep the wall: `status existing` (or no `status` at all).",
+    "wall id=p partition thickness 100 status demolish { (4000,0) (4000,5000) }\n  furniture wardrobe against wall p side left size 1200x600   # error: the wall is being demolished",
+  ),
   E_SEGMENT_SELECT: E(
     "E_SEGMENT_SELECT",
     "A segment selector (`segment north`, `segment containing <room>.<edge>`) does not name exactly one segment.",
