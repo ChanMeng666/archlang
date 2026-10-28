@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Wall `status` is drawn (preview-and-remodel B3b). A `status demolish` wall is a dashed outline
+  with no poché, drawn beneath the walls that stay so its dashes stop at a standing wall's face; the
+  standing walls are drawn as the plan after the demolition has them (a door the analysis re-hosts
+  onto a standing wall is cut through it). A `status new` wall draws as any wall. The drawn
+  `schedule rooms` NET AREA and TOTAL and `--overlay circulation` now read the plan after the
+  demolition, so the drawn table equals `describe().schedule` on every storey (the exception B3a
+  documented is gone). The `legend` adds a `demolished` row (a dashed swatch) only when a wall is
+  demolished. The DXF files a demolished wall on `A-WALL-DEMO` (dashed) and a new one on
+  `A-WALL-NEWW`, declaring each only when used; `SceneWall` carries `status` when written. New
+  example `examples/remodel.arch`. A plan that writes no `status` draws, describes, lints and
+  exports to the same bytes.
 - New exports `hatchKey` and `hatchOf` and the `HatchSpec` type: the key `joinWallSet` groups wall
   fills by, so a caller names a wall's group as `hatchKey(hatchOf(wall))` instead of rebuilding its
   format (ADR 0031, amended). No function body changes; every output is byte-identical.

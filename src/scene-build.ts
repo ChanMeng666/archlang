@@ -750,8 +750,9 @@ export function planTheme(ir: ResolvedPlan, opts: CompileOptions, runtime: Runti
  * drawn this way make 1.1 million nodes and about 240 MB. Use `compile().scene`.
  */
 export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: Runtime = BUILTIN_RUNTIME): Scene {
-  // The storey as drawn (B3a): a `status demolish` wall is drawn exactly as any wall until B3b
-  // draws its status, so the sheet reads every wall, never the plan after the demolition.
+  // The storey as drawn (B3a): every wall, a `status demolish` one included, which is lowered in
+  // a call of its own and drawn dashed (B3b). What the sheet MEASURES (the room schedule's net
+  // area, the circulation overlay) reads `plan`, the plan after the demolition, as describe() does.
   const ir = drawnView(plan);
   const registry = runtime.registry;
 
@@ -914,9 +915,27 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
   // every ground fill is a DANGLING `url(#…)` — the reference present, the pattern never
   // emitted, the surface invisible in every viewer. That is the specific trap this
   // feature was warned about, and it is why the two lists are separate rather than one.
-  const wallHatches = hatchesUsed(ir.walls);
-  const hatches = hatchesUsed(ir.walls, groundMaterialsUsed(outdoorEls));
-  for (const pushed of lowerWallSet(ir.walls, wallHatches, ctxFor("wall"))) nodes.push(pushed);
+  //
+  // A remodel (B3b) lowers its walls in TWO calls: the `status demolish` walls on their own,
+  // with no hatches, as one dashed outline, then the standing walls exactly as the plan after the
+  // demolition has them (`plan.walls`: their joints, faces and poché are the finished building's,
+  // and a door the analysis re-hosted from a demolished wall onto a standing one is cut through
+  // that one too). Both lists keep source order. Only the standing walls' materials enter either
+  // hatch list: a demolished wall draws no poché. A plan with no demolished wall makes the one
+  // call it always made.
+  //
+  // The dashed outline goes on the `wallFill` pass, ahead of the standing walls' poché: where a
+  // demolished partition ran into a standing wall, its outline lies inside that wall's band, and
+  // the poché painted over it is what stops the dashes at the standing wall's face. No pass is
+  // added or reordered (D4); the node is simply drawn beneath the fabric that stays.
+  const standing = ir.drawn ? plan.walls : ir.walls;
+  const demolished = ir.drawn ? ir.walls.filter((w) => w.status === "demolish") : [];
+  const wallHatches = hatchesUsed(standing);
+  const hatches = hatchesUsed(standing, groundMaterialsUsed(outdoorEls));
+  for (const pushed of lowerWallSet(demolished, [], ctxFor("wall"), "dashed")) {
+    nodes.push({ ...pushed, layer: "wallFill" });
+  }
+  for (const pushed of lowerWallSet(standing, wallHatches, ctxFor("wall"))) nodes.push(pushed);
 
   // `dims auto …` — synthesize dimension strings (presentation only; never touches
   // the IR, bounds, describe() or lint()). Every chain sits OUTSIDE the building,
@@ -980,18 +999,21 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
   // (see `sheet-tables.ts`). Computed before chrome layout because the table heights are
   // what grow the bottom margin; a plan that opts into neither passes null and every
   // margin below reduces to the previous arithmetic, so its bytes are unchanged.
+  // The schedule measures the plan after the demolition (`plan`, B3b), so its NET AREA and
+  // TOTAL are `describe().schedule`'s; with no demolished wall `plan` is `ir`'s very arrays.
   const scheduleData =
     ir.schedule === "rooms"
       ? roomSchedule(
-          ir.elements.filter((e): e is RRoom => e.kind === "room"),
+          plan.elements.filter((e): e is RRoom => e.kind === "room"),
           ir.zones,
-          ir.walls,
+          plan.walls,
         )
       : null;
   const legendData = ir.legend
     ? legendEntries(
         hatches,
         ir.elements.filter((e): e is RFurniture => e.kind === "furniture"),
+        demolished.length > 0,
       )
     : null;
 
@@ -1051,7 +1073,8 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
   // layout, so the default Scene (no overlays) is byte-identical and the overlay never
   // shifts the page or chrome. Off by default — never on the shipped-SVG path.
   if (opts.overlays?.includes("circulation")) {
-    for (const pushed of circulationOverlayNodes(ir, theme, sizes)) nodes.push(pushed);
+    // The walks describe() measures: the plan after the demolition (B3b).
+    for (const pushed of circulationOverlayNodes(plan, theme, sizes)) nodes.push(pushed);
   }
 
   const scene: Scene = {
@@ -1075,9 +1098,10 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
     // for the desc. Off by default → the Scene is byte-identical. Never read by geometry.
     ...(opts.accessible ? { name: ir.accTitle ?? ir.name, caption: ir.accDescr ?? captionForPlan(ir) } : {}),
   };
-  // Export metadata for the DXF wall-layer split (`Scene.walls`): the very list the wall
-  // lowering above was handed, in its order, projected lazily. No backend draws it.
-  attachSceneWalls(scene, ir.walls);
+  // Export metadata for the DXF wall-layer split (`Scene.walls`): the walls each lowering call
+  // above was handed, in its order (the standing walls, then the demolished ones), projected
+  // lazily. No backend draws it.
+  attachSceneWalls(scene, demolished.length > 0 ? [...standing, ...demolished] : ir.walls);
   return scene;
 }
 

@@ -123,7 +123,13 @@ export function storeyPassUnits(plan: ResolvedPlan, registry: Registry): number 
   if (ir.legend) {
     const outdoors = ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor");
     const furniture = ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
-    const entries = legendEntries(hatchesUsed(ir.walls, groundMaterialsUsed(outdoors)), furniture);
+    // `toScene`'s inputs (B3b): the standing walls' materials, and the `demolished` row.
+    const standing = ir.walls.filter((w) => w.status !== "demolish");
+    const entries = legendEntries(
+      hatchesUsed(standing, groundMaterialsUsed(outdoors)),
+      furniture,
+      standing.length < ir.walls.length,
+    );
     n += 4;
     for (const e of entries) n += e.kind === "fixture" ? 4 + DEFAULT_DRAW_COST : 5;
   }

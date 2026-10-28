@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: B6 (W_GARAGE_OPENING_UNDERSIZED) on feat/B6-garage-opening-lint, based on main 00b7e7ec
+ * Taken: re-taken for preview-and-remodel B3b (examples/remodel.arch added) on feat/B3b-wall-status-drawing, merged with main 0ec363d5
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -140,6 +140,11 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     "examples/relational.arch",
     "7088586e50efca9a26c8e9595c503b039f7db3f9d6d14655510acc8a0282adee",
     900,
+  ],
+  [
+    "examples/remodel.arch",
+    "e84cb5eaffce8a1fc7982ec66f40bc19b609a30ff11fb6ef51d9112933bb7ec9",
+    1257,
   ],
   [
     "examples/sheet-notes.arch",

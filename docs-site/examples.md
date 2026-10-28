@@ -230,6 +230,18 @@ sits beside the doorway past the hinge jamb, clear of the swing and out of the p
 
 <ArchLive :src="EXAMPLES['sheet-notes']" :rows="30" />
 
+### Apartment Remodel (walls that come out, a wall that goes in)
+
+A flat drawn for its works — **6 rooms, 83.6 m², 5 doors, 6 windows**, 11.3 × 7.9 m to the
+outer faces. Two partitions are `status demolish`: each is drawn as a dashed outline with no
+poché, beneath the walls that stay, and no fact reads it, so the old kitchen, dining room and
+living room are measured as the one space they become. The study's wall is `status new`,
+drawn as any wall. The room schedule's net areas are the flat after the works, the legend
+explains the dashed swatch, and in the DXF the two kinds of wall land on `A-WALL-DEMO` and
+`A-WALL-NEWW`. See [wall status](/language-reference#wall).
+
+<ArchLive :src="EXAMPLES['remodel']" :rows="30" />
+
 ### Suburban Bungalow (orientation, and doors that are not hinged)
 
 A single-storey house — **8 rooms, 102 m², 6 doors, 7 windows** at `scale 1:100` — on a

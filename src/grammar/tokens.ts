@@ -309,7 +309,7 @@ export const KEYWORDS = {
 /**
  * `wall … status <s>` / `walls from rooms … status <s>` (preview-and-remodel B3a): what becomes of
  * the wall in a remodel. `existing` and `new` are walls like any other; a `demolish` wall is drawn
- * (B3b will dash it) but encloses nothing, hosts nothing and counts in no area. Absent, a wall is
+ * dashed (B3b) but encloses nothing, hosts nothing and counts in no area. Absent, a wall is
  * `existing`. The one list the parser, the printer, Plan JSON, the GBNF and the spec read.
  */
 export const WALL_STATUSES = ["existing", "demolish", "new"] as const;
