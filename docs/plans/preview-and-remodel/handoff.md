@@ -1,18 +1,17 @@
-# Preview-and-remodel programme: handoff (state as of 2026-10-28, `main@0d1cbda7`)
+# Preview-and-remodel programme: handoff (state as of 2026-10-28, `main@80f2b3b1`)
 
 The resume point for a new session. Re-written at every wave end; dated history goes to `research/`.
 
 ## 1. Where the programme stands
 
-Updated 2026-10-28 after wave 3 (`main@0d1cbda7`). Waves 0–2 are done; wave 3 is done except A2b.
+Updated 2026-10-28 after wave 3 (`main@80f2b3b1`). Waves 0–3 are done.
 Landed: A0 (#319), B6 (#320), C1 (#321), C2 (#322), A1 (#325), B5 (#327), A2 (#328), B1 (#323),
-B4 (#324), B3a (#329), A3 (#330), A4 (#336), B3b (#337), A0b (#338), A5 (#340); records #326,
-#331, #335. As-built notes: `research/2026-10-28-as-built.md`. Quiet-machine baseline on
+B4 (#324), B3a (#329), A3 (#330), A4 (#336), B3b (#337), A0b (#338), A5 (#340), A2b (#341); records #326,
+#331, #335, #342. As-built notes: `research/2026-10-28-as-built.md`. Quiet-machine baseline on
 `main@00b7e7ec`: `npm run check` 557 s; wave 3's full runs took 576–675 s.
 
-**A2b (#341)** is open: gates green on `0ab451ab`, red-team round 1 (no blocker; curved-host glass
-short of the jambs, demolished ghosts rising as construction, ghost end caps in openings, a slab
-double count) being fixed; then it merges `main` (A5 moved the renderer into `mount.ts`).
+**A2b** merged (#341, `80f2b3b1`): wave 3 is done. In flight: A7 (`--doors plan`) and A8 (residue,
+package and playground items); A8's B3b core items follow in their own PR and a patch release.
 
 **A3 look set** (1080p30, per-storey and combined views): `D:\.claude-scratch\2026-10-28\a3-look\`
 on the owner's machine. Open for the owner's next look: the 30° end elevation of one-storey views
@@ -48,11 +47,10 @@ ran on the inherited model. Every branch got a full local `npm run check` before
 
 ## 3. Next items, in order
 
-1. **A2b (#341):** land its round-1 fixes, merge `main`, full gates, merge; its records.
-2. **A7** (`--doors plan`) and **A8** (wave-3 residue), in `cards.md`.
-3. The N10 window starts with the owner's first Tier A post (README §6; the agent posts nothing).
-4. Wave 4 (README §4) after N10 is read: D1, A6 (parked), archlang-3d M2+.
-5. After each landed card: its records PR (done line, as-built note, this handoff). If anything lands
+1. **A7** (`--doors plan`) and **A8** (wave-3 residue), in `cards.md`.
+2. The N10 window starts with the owner's first Tier A post (README §6; the agent posts nothing).
+3. Wave 4 (README §4) after N10 is read: D1, A6 (parked), archlang-3d M2+.
+4. After each landed card: its records PR (done line, as-built note, this handoff). If anything lands
    in the core, cut a release the same way (D15/D16).
 
 ## 4. How a card is run
