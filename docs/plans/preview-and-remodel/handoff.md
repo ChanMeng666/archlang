@@ -16,9 +16,10 @@ and the storeys combined, never hiding the ground floor; frame the end shot to t
 also accepted every optimisation the session found (A0b, A2b, `--doors plan`, framing). Implement
 the notes on #330, re-render the look set, then merge #330.
 
-**Tier A** (README §3 D5: the playground toggle A5 and the owner's posts) is still the owner's to open;
-the owner's answer did not open it. Build A5, but confirm its merge with the owner (a push to `main`
-deploys the playground).
+**Tier A is open** (README §3 D16, owner 2026-10-28): A5 merges once green; the docs site, README,
+npm README and landing pages stay without 3D (Tier C). For every owner-only manual step (the VS Code
+Marketplace upload; OTP/2FA, logins, terms in the release chain) the agent pauses, guides the owner
+step by step, waits for confirmation, verifies, and continues.
 
 **Releases (README §3 D15):** the owner approved cutting and publishing the core, the MCP shim,
 `@chanmeng666/arch-plan` and the VS Code build end to end. No release has been cut yet: npm has core
@@ -49,13 +50,13 @@ ran on the inherited model. Every branch got a full local `npm run check` before
 2. **Release** (D15): run `/release-check` (`.claude/commands/release-check.md`) in the primary
    checkout; the version-bump PR (core minor: new exports and language forms; the shim's version and
    both `server.json` fields; CHANGELOG `[Unreleased]` → the version); the `v*` tag; watch
-   `release.yml`; prove npm, the MCP registry and `arch-plan`; build the VS Code bundle (its
-   Marketplace upload stays the owner's manual step). The owner steps in only for OTP/2FA, logins
-   and terms.
+   `release.yml`; prove npm, the MCP registry and `arch-plan`; build the VS Code bundle, then guide
+   the owner through its Marketplace upload (D16). At any OTP/2FA, login or terms prompt: pause,
+   give the owner exact steps, wait, verify, continue.
 3. **Wave 3:** A4 (GLB, glTF-Validator, V-DET-01, the `check:3d` CI job on Linux, the Q20 licence
    gate, the cross-machine key-frame baseline: pin only frames without SVG text, or ship a font);
    B3b (draw the wall status, DXF layers, legend, `examples/remodel.arch`, the schedule law restored);
-   A5 (playground toggle, built and green; **its merge waits for the owner's written OK**).
+   A5 (playground toggle; Tier A is open, D16: merge it once green).
 4. Residue: **A0b** (export the hatch group key and `Point`; the closure walkers follow `import()`
    types), **A2b** (T0 parametric furniture, V-GEO-05, curved-host glass, slab ∪ rooms, extrude from
    `ir.drawn` once B3b draws demolished walls), `--doors plan` (each leaf's open tip into Scene3D).
