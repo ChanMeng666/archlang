@@ -77,7 +77,7 @@ export const wall: ElementDef = {
       heightSpan = { start: hk.start, end: ctx.peek(-1).end };
     }
     // `status existing|demolish|new` (preview-and-remodel B3a), after `height` and before the
-    // body: a fact about the wall, never a drawing (B3b draws it).
+    // body: a fact about the wall; `toScene` draws a `demolish` wall dashed (B3b).
     const status = parseWallStatus(ctx);
     // The pairwise forms (ADR 0028 §4) stand where the point list would: the wall's points
     // are derived from the rooms at resolve.

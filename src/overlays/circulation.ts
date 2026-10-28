@@ -11,7 +11,7 @@
  * so every backend serializes it with no changes.
  */
 
-import { buildDoorAccessGraph, DEFAULT_TOL } from "../analyze.js";
+import { buildDoorAccessGraph, DEFAULT_TOL, openRunsOf } from "../analyze.js";
 import { computeCirculationOverlay } from "../analyze/circulation.js";
 import { verticalsOf } from "../vertical.js";
 import type { Point } from "../ast.js";
@@ -27,7 +27,9 @@ export function circulationOverlayNodes(ir: ResolvedPlan, theme: Theme, sizes: R
   // The storey's floor voids, exactly as `describe()` and lint pass them: the drawn walks
   // and pinches must come from the grid the reported numbers were measured on.
   const voids = ir.elements.filter((e): e is RVoid => e.kind === "void");
-  const access = buildDoorAccessGraph(rooms, doors, DEFAULT_TOL, undefined, openings);
+  // The runs a `status demolish` wall leaves open (B3a): `ir` is the plan after the demolition,
+  // so the walk crosses them as describe()'s does. Empty without one, so the graph is unchanged.
+  const access = buildDoorAccessGraph(rooms, doors, DEFAULT_TOL, undefined, openings, openRunsOf(ir, DEFAULT_TOL));
   const overlay = computeCirculationOverlay(
     rooms,
     ir.walls,

@@ -394,6 +394,8 @@ const EXAMPLE_ADDITIONS: Record<string, string[]> = {
     // `hillside-villa`'s small north bedrooms left with fix/examples-sound (2026-10-27): both now meet the profile.
     'examples/relational.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 10.43 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     'examples/relational.arch W_ROOM_TOO_NARROW Room "Bedroom" is 2150 mm wide between its wall faces, under the 2750 mm the profile asks of one double bedroom of every home (none here is that wide) — 600 mm short.',
+    // B3b: the remodel's bedroom, 3000 × 4000 on centrelines less its walls (a true positive).
+    'examples/remodel.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 11.02 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     'examples/studio.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 8.12 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     'examples/themed.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 10.59 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     'examples/two-bed.arch W_ROOM_TOO_SMALL Room "Bedroom 2" is only 9.52 m² of net floor (under 11.5 m², the floor for a double bedroom).',

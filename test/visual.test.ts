@@ -104,6 +104,9 @@ const EXAMPLES = [
   "practice-office.arch",
   "corner-cafe.arch",
   "classroom-block.arch",
+  // The remodel (B3b): the only plan that draws a `status demolish` wall (dashed, no poche,
+  // beneath the standing walls) and the legend's `demolished` row.
+  "remodel.arch",
 ];
 
 async function hasResvg(): Promise<boolean> {

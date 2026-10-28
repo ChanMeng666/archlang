@@ -805,6 +805,14 @@
  * re-measured that whole-surface row once more — its first note now draws on two lines — and
  * the SUMMARY row held again (`a26a55ae…`). Still no other row moved.
  *
+ * ## `remodel`: a row ADDED with a new example, nothing re-measured
+ *
+ * `examples/remodel.arch` arrived with the wall-status drawing (preview-and-remodel B3b): two
+ * `status demolish` partitions drawn dashed and one `status new` wall. Its two rows were
+ * measured with this file's own digest bodies on the branch that added it; no other row moved
+ * (a per-payload sweep of the whole corpus, a `git archive` of `main` against the branch, moved
+ * nothing).
+ *
  * ## `hillside-villa`: both rows re-measured — `W_PATH_TOO_NARROW` names the door, once
  *
  * Case (3), a diagnostic-text change, in `lint()` only (`test/lint-fix-texts.test.ts`). When
@@ -1604,6 +1612,7 @@ export const BASELINE: [string, string][] = [
   ["parametric", "f56a97d02a2fca82327b80b3f7a7f5edcac9518a0b70244caa292ed8f3a2aee4"],
   ["practice-office", "105ae5709290f9946f0192427e430a1cef009ddd1de44be1b2ddd818c64cdd7e"], // added with the example, re-measured for net area, see header; PS2.11e, see header; PS2.74 source edit, see header
   ["relational", "357cb4f09333ffb210a8a276acfd524c384c90657cc9ba529d5d4298d88c8cb5"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header; PS2.11e, see header
+  ["remodel", "08934fb70bd6ada4e5b6ccb922a5cc20bb4cdebcbed493604527ffc5a3cdc9fc"], // added with the example, see header
   ["sheet-notes", "4cc86e92db896dade462f57b6db434057abe253ab5e10232711804e4da31d7d9"], // re-measured, see header
   ["studio", "c1b79a49af3ad31cddf82e88632624d46663c804f134b6e172e585cad36ed969"], // PS2.11e, see header
   ["terrace-row", "ec839a417cb57b6bce80a592a144bd98a216b175edb92c67df3260ab5ce9c33d"], // re-measured, see header
@@ -1652,6 +1661,7 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["parametric", "144703a7cf28e64c70cfc57451525839dd84da0f1d310135750b5d9f532d565a"],
   ["practice-office", "bf39a9a46d2635dd1cb6f14d61d222859d2e6439c9c5307dece6ae180bd62eb2"], // added with the example, re-measured for net area, see header
   ["relational", "f35d691d676a0787a261f876af34cbbeeb8c4c6148b378106629e17d30a5d426"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header; PS2.11e, see header
+  ["remodel", "a9628197e773e4f12a106a9d80136147366350fa3bf46dacee071d39c02773b6"], // added with the example, see header
   ["sheet-notes", "148de5f5a58fb9533999df816a742074ec901216e3b9fb78eff338b91633a4b8"], // added with the example, see header
   ["studio", "8ec08c91405139bf3d9979ad20d712299e82409bbec8d6ec9e70e89a856973e4"],
   ["terrace-row", "0c37d23bb8dfa83ce746869724ff62952637f1acb8a6ca353bfe8f7a440941a7"],

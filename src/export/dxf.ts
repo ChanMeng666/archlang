@@ -35,7 +35,7 @@ import { dxfPatternName, isSolidFill } from "../hatches.js";
 import { fmt4 as num } from "../num-format.js";
 import { plainText } from "../text-safe.js";
 import { textLines } from "../text-layout.js";
-import { classifyWallSet } from "../wall-lowering.js";
+import { type ClassedWallSet, classifyWallSet } from "../wall-lowering.js";
 
 /** Cap height of the drawing sans (Arial 0.716 em, Roboto 0.711 em), as a fraction of its font size. */
 const CAP_HEIGHT = 0.716;
@@ -307,14 +307,29 @@ const WALL_CLASS_LAYERS = ["A-WALL-EXTR", "A-WALL-INTR"] as const;
  */
 const wallLayerOf = (w: SceneWall): string => (w.category === "exterior" ? WALL_CLASS_LAYERS[0] : WALL_CLASS_LAYERS[1]);
 
-/** The LAYER rows this drawing declares: the static AIA set, plus `A-WALL` and any `V-`
- *  view layer only when an entity actually references it (see {@link VIEW_LAYER_COLORS}). */
+/**
+ * The remodel wall layers (preview-and-remodel B3b), the AIA status modifiers: `A-WALL-NEWW` for a
+ * `status new` wall and `A-WALL-DEMO` for a `status demolish` one. Declared only when an entity
+ * lands on one, so a plan that writes no status declares exactly the layers it always did.
+ */
+const NEW_WALL_LAYER = { name: "A-WALL-NEWW", color: 7 };
+const DEMO_WALL_LAYER = { name: "A-WALL-DEMO", color: 8 };
+
+/** A standing wall's layer: a `status new` wall on `A-WALL-NEWW`, every other one by
+ *  {@link wallLayerOf} (an `existing` wall, or one with no status, where it always was). */
+const standingLayerOf = (w: SceneWall): string => (w.status === "new" ? NEW_WALL_LAYER.name : wallLayerOf(w));
+
+/** The LAYER rows this drawing declares: the static AIA set, plus `A-WALL`, the remodel wall
+ *  layers and any `V-` view layer only when an entity actually references it (see
+ *  {@link VIEW_LAYER_COLORS}). */
 function layerRows(used: ReadonlySet<string>): { name: string; color: number }[] {
   const extra = VIEW_LAYER_NAMES.filter((n) => used.has(n)).map((name) => ({
     name,
     color: VIEW_LAYER_COLORS[name] ?? 7,
   }));
-  return [...(used.has(PLAIN_WALL_LAYER.name) ? [PLAIN_WALL_LAYER] : []), ...AIA_LAYERS, ...extra];
+  const [extr, intr, ...rest] = AIA_LAYERS;
+  const remodel = [NEW_WALL_LAYER, DEMO_WALL_LAYER].filter((l) => used.has(l.name));
+  return [...(used.has(PLAIN_WALL_LAYER.name) ? [PLAIN_WALL_LAYER] : []), extr!, intr!, ...remodel, ...rest, ...extra];
 }
 
 function header(layers: readonly { name: string; color: number }[]): string {
@@ -420,12 +435,32 @@ function wallRefiling(scene: Scene): Map<SceneNode, Refiled> {
   if (!scene.nodes.some((n) => n.layerName === undefined && (n.layer === "wallFill" || n.layer === "wallFace"))) {
     return out;
   }
-  const split = classifyWallSet(scene.walls, wallLayerOf, WALL_CLASS_LAYERS);
-  if (!split) return out;
+  // A remodel's walls were lowered in two calls (`toScene`, B3b): the standing walls, then the
+  // `status demolish` ones as one dashed outline. Each call is re-joined on its own, from its own
+  // sublist in its own order, so each split reproduces the nodes that call drew.
+  const standing = scene.walls.filter((w) => w.status !== "demolish");
+  const demolished = scene.walls.filter((w) => w.status === "demolish");
+  const classes = standing.some((w) => w.status === "new")
+    ? [...WALL_CLASS_LAYERS, NEW_WALL_LAYER.name]
+    : WALL_CLASS_LAYERS;
+  refileSplit(scene, out, classifyWallSet(standing, standingLayerOf, classes));
+  if (demolished.length > 0) {
+    refileSplit(
+      scene,
+      out,
+      classifyWallSet(demolished, () => DEMO_WALL_LAYER.name, [DEMO_WALL_LAYER.name]),
+    );
+  }
+  return out;
+}
+
+/** Re-file the wall nodes one {@link classifyWallSet} split reproduces (see {@link wallRefiling}). */
+function refileSplit(scene: Scene, out: Map<SceneNode, Refiled>, split: ClassedWallSet | null): void {
+  if (!split) return;
   const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
   const outline = split.outline === null ? null : JSON.stringify(split.outline);
   for (const node of scene.nodes) {
-    if (node.layerName !== undefined) continue;
+    if (node.layerName !== undefined || out.has(node)) continue;
     const prim = node.prim;
     const lt = dxfLineType(node.lineType);
     if (node.layer === "wallFill" && prim.t === "hatch") {
@@ -444,13 +479,18 @@ function wallRefiling(scene: Scene): Map<SceneNode, Refiled> {
           if (c.region.length > 0) b.hatch(c.cls, c.region, pattern, solid, prim.scale, prim.angle);
         }
       });
-    } else if (node.layer === "wallFace" && outline !== null && JSON.stringify(prim) === outline) {
+    } else if (
+      // A demolished set's dashed outline is drawn on the `wallFill` pass (`toScene`, B3b).
+      (node.layer === "wallFace" || node.layer === "wallFill") &&
+      prim.t !== "hatch" &&
+      outline !== null &&
+      JSON.stringify(prim) === outline
+    ) {
       out.set(node, (b) => {
         for (const f of split.faces) for (const run of f.runs) pathLoop(b, f.cls, run, lt);
       });
     }
   }
-  return out;
 }
 
 /** Serialize one scene node to DXF entities on its CAD layer. */

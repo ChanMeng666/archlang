@@ -29,7 +29,7 @@
 import type { Point } from "./ast.js";
 import type { Opening, RWall } from "./ir.js";
 import type { RenderCtx } from "./registry.js";
-import type { PathLoop, Scene, SceneNode, ScenePrim, SceneWall } from "./scene.js";
+import type { LineType, PathLoop, Scene, SceneNode, ScenePrim, SceneWall } from "./scene.js";
 import { MITER_LIMIT } from "./scene.js";
 import type { HatchSpec } from "./hatches.js";
 import { hatchesUsed, hatchKey, hatchOf, patternId } from "./hatches.js";
@@ -50,6 +50,7 @@ export type JoinableWall = Pick<
 function sceneWall(w: RWall): SceneWall {
   return {
     category: w.category,
+    ...(w.status !== undefined ? { status: w.status } : {}),
     thickness: w.thickness,
     points: w.points,
     ...(w.arcs ? { arcs: w.arcs } : {}),
@@ -240,10 +241,20 @@ export function classifyWallSet(
  * is why `RenderCtx.openingsVoided` is now unconditionally true and no element paints an
  * opaque cover any more.
  *
+ * `lineType` marks the outline node with a named line type (`dashed` for the walls a remodel
+ * demolishes, which `toScene` lowers in a call of their own with no hatches, so they draw as a
+ * dashed outline with no poché). Absent, the node carries no `lineType` key at all, so every
+ * other caller's nodes are what they always were.
+ *
  * Pure and deterministic: one {@link PointInterner} for the whole call (see `joinWalls`
  * for why that matters), no clock, no randomness, no Map-order dependence.
  */
-export function lowerWallSet(walls: readonly RWall[], hatches: readonly HatchSpec[], ctx: RenderCtx): SceneNode[] {
+export function lowerWallSet(
+  walls: readonly RWall[],
+  hatches: readonly HatchSpec[],
+  ctx: RenderCtx,
+  lineType?: LineType,
+): SceneNode[] {
   const joined = joinWallSet(walls, hatches.map(hatchKey));
   if (!joined) return [];
   const result = joined.result;
@@ -278,6 +289,7 @@ export function lowerWallSet(walls: readonly RWall[], hatches: readonly HatchSpe
         linejoin: "miter",
         miterLimit: MITER_LIMIT,
       },
+      ...(lineType !== undefined ? { lineType } : {}),
     });
   }
   return nodes;
