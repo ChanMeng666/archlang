@@ -6,6 +6,17 @@ The package is private and unpublished; versions start with its first 0.x public
 
 ### Added
 
+- M1b GLB and checks (card A4): `archlang3d build <plan> -o plan.glb` writes a GLB with
+  glTF-Transform from the same Mesh3D the replay reads (a `level:L<n>` node per storey, one node per
+  Mesh3D node named `<kind>:<id>[:<part>]`, its facts in `extras.archlang`, deterministic bytes), and
+  writes nothing when a check fails. `check`, `manifest --json`, `schema scene3d` and `doctor` join
+  `view`, with `--json` and exit codes 0/1/2/3. Checks V-SCH-01, V-GEO-02, V-GLTF-01 (Khronos
+  glTF-Validator, 0 errors / 0 warnings) and V-GLTF-02; V-DET-01 over the corpus, laneway-house's GLB
+  pinned. The Q20 licence gate (`licences.json`, `THIRD_PARTY_NOTICES`, a deny list starting with
+  `straight-skeleton@3`) and a key-frame pixel baseline of the replay's text-free frames, run by the
+  new `check-3d` CI job. Adds `@gltf-transform/core` 4.5.1 (MIT, with `property-graph`) and
+  `gltf-validator` 2.0.0-dev.3.10 (Apache-2.0) as runtime dependencies.
+
 - M1a replay (card A3): `archlang3d view <plan> --replay -o plan.html [--video out.mp4]`. The plan
   draws itself top-down in its authoring order (D3), the core's own SVG fades in over it, then the
   camera tilts to a 30° perspective while walls rise with their openings and fixtures and furniture
