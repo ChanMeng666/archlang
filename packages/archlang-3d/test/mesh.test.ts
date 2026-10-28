@@ -91,8 +91,8 @@ const corpus = EXAMPLES_LIST.map(([n, s]) => {
 });
 
 describe("Mesh3D on the shipped corpus", () => {
-  it("builds every example (34)", () => {
-    expect(corpus.length).toBe(34);
+  it("builds every example (35)", () => {
+    expect(corpus.length).toBe(35); // 35 since B3b added examples/remodel.arch
     expect(corpus.every((c) => c.mesh.nodes.length > 0)).toBe(true);
   });
 

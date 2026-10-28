@@ -902,16 +902,27 @@ wall exterior thickness 250 material brick scale 1.5 angle 30 { … }
 **Status** (for a remodel): `status existing|demolish|new`, after `height` and before the
 points or the pairwise form, says what becomes of the wall; `walls from rooms … partition <mm>
 status <s>` gives every wall the statement derives the same status. Absent, a wall is
-`existing`, and a `new` wall is a wall like any other. A `demolish` wall is drawn exactly as
-it would be without the clause (a later release draws the status), but no fact reads it: it
+`existing`, and a `new` wall is a wall like any other. No fact reads a `demolish` wall: it
 encloses nothing, hosts nothing (a door, window or opening in it is
 `E_OPENING_ON_DEMOLISHED_WALL`) and counts in no net area, and where it stood between two
 rooms the access graph, circulation and the reachability rules join them across its run.
 `describe --json` adds `wall_status` (the count by status and each wall's status) only on a
 storey that writes one; Plan JSON carries `status` on a wall and on `walls_from_rooms`.
 
+**Drawing a remodel.** A `demolish` wall is drawn as a dashed outline with no poché, beneath
+the walls that stay, so its dashes stop at the face of a standing wall it ran into; the
+standing walls are drawn as the plan after the demolition has them. A `new` wall is drawn as
+any wall. The sheet measures the plan after the demolition: the `schedule rooms` NET AREA and
+TOTAL count no demolished wall, and `--overlay circulation` walks across where one stood. The
+`legend` adds a `demolished` row (a dashed swatch) when a wall is demolished, and nothing for
+`new`, which looks like any wall. In the DXF a `demolish` wall is on `A-WALL-DEMO` and a `new`
+one on `A-WALL-NEWW`; an `existing` wall, or one with no status, stays on `A-WALL-EXTR` or
+`A-WALL-INTR`. `examples/remodel.arch` is a whole flat drawn this way.
+
 ```arch static
-wall id=p partition thickness 100 status demolish { (4000,0) (4000,5000) }
+wall id=shell exterior thickness 250 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+wall id=x_kitchen partition thickness 100 status demolish { (3000,0) (3000,5000) }
+wall id=n_study partition thickness 100 status new { (6000,0) (6000,5000) }
 ```
 
 ### Walls from rooms
@@ -2549,9 +2560,7 @@ renders exactly as before.
 
 A final **`TOTAL`** row closes the table with the same numbers as
 `describe().totals.floor_area_m2` and `.net_floor_area_m2`, so the drawn table and the JSON
-can never disagree, except on a storey with a `status demolish` wall, whose drawn table
-measures the plan as drawn (its NET AREA still less the demolished wall's band) until the
-status is drawn; `describe()` reports the plan after the demolition.
+can never disagree.
 The keyword takes a subject — `rooms` or `openings` — and an unknown one is a parse error
 with a did-you-mean, never a silently ignored word. The two subjects compose: write both
 and both tables draw.
@@ -2592,7 +2601,9 @@ every wrapped line. Past 200 wrapped lines the plan is refused with `E_DRAWING_L
 - one row per distinct **wall hatch** in use, its swatch filled with the very pattern
   the walls are filled with (`brick`, `poche`, …), in the Scene's stable order;
 - one row per **fixture category** actually placed that has a plan symbol (`wc`,
-  `basin`, `shower`, …), its swatch drawn with the real glyph, in catalog order.
+  `basin`, `shower`, …), its swatch drawn with the real glyph, in catalog order;
+- a `demolished` row after the materials, its swatch a dashed outline, only when the storey
+  draws a `status demolish` wall (see [Wall](#wall), its status).
 
 Nothing is listed that is not drawn, and a category that renders as a plain labelled
 rectangle gets no row (there is no symbol to explain). There is nothing to configure —
@@ -3392,7 +3403,8 @@ inserts the plan at true size. Entities sit on NCS-style layers by discipline:
 architectural `A-` (`A-DOOR`, `A-GLAZ`, `A-FLOR`, `A-ANNO-DIMS`, …), landscape `L-` and
 civil `C-` for the ground, and `V-` for an axonometric view. Walls go on two layers: a
 wall of category `exterior` on `A-WALL-EXTR`, every other wall on `A-WALL-INTR`, so you
-can freeze the partitions and keep the envelope. That is the rule the rest of ArchLang
+can freeze the partitions and keep the envelope (a remodel's `status demolish` and
+`status new` walls go on `A-WALL-DEMO` and `A-WALL-NEWW`). That is the rule the rest of ArchLang
 uses for an outside wall (an `exterior` host's door opens to the outside, a roof follows
 the closed `exterior` ring), so name the envelope `exterior`. Where walls join, the
 thicker wall owns the junction. Between two walls of equal thickness and the same

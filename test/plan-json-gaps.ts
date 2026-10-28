@@ -18,6 +18,12 @@ export const CANNOT_ROUND_TRIP: Record<string, { because: string; proof: RegExp 
     proof: /^\s*paper\b/m,
   },
   "corner-cafe.arch": { because: "sheet layer — `paper` + `schedule` + `legend`; and `zone`", proof: /^\s*paper\b/m },
+  // Its walls' `status` DOES round-trip; what is lost is the sheet layer, `north` and a room's
+  // `label … at`.
+  "remodel.arch": {
+    because: "sheet layer — `schedule` + `legend`; and `north`, a room's `label … at`",
+    proof: /^\s*legend\b/m,
+  },
   "classroom-block.arch": {
     because: "sheet layer — `paper` + `schedule` + `notes`; and `zone`",
     proof: /^\s*paper\b/m,

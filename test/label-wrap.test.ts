@@ -277,6 +277,9 @@ describe("room-name wrapping against the previous implementation", () => {
       // fix/examples-sound (2026-10-27) gave the library an accessible WC; its name wraps like the clinic's.
       'examples/library.arch: "Accessible WC" → "Accessible" / "WC"',
       'examples/practice-office.arch: "Accessible WC" → "Accessible" / "WC"',
+      // B3b: the remodel pins its kitchen/living name east of the demolished wall's dashes, where
+      // one line would cross them; it wraps like two-bed-hall's.
+      'examples/remodel.arch: "Kitchen / Living" → "Kitchen /" / "Living"',
       'test/recovery-corpus/clinic.arch: "Accessible WC" → "Accessible" / "WC"',
     ]);
     expect(t.knockOns).toBe(0);
