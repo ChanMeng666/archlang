@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
@@ -12,7 +12,7 @@ import { BROKEN_PLAN, SIMPLE_PLAN, setEditorSource, shareHash, waitForPlan } fro
  * The "3D preview" tab (card A5): the separate archlang-3d package's replay of the editor's plan,
  * loaded on the tab's first open. Its frames are a function of the replay time (`seek(t)`), so two
  * seeks of one `t` give one frame hash; a plan the package refuses shows the refusal, never a
- * crash; and the chunks the page loads at startup do not grow (three.js stays out of them).
+ * crash; and the chunks the page loads at startup carry no 3D code and grow by nothing 3D-sized.
  *
  * WebGL in headless Chromium: the package's own pinned software renderer (SwiftShader).
  */
@@ -81,6 +81,12 @@ test.describe("3D preview tab", () => {
       return seen.size;
     });
     expect(colours).toBeGreaterThan(3);
+
+    // Away and back: the chunk is not fetched again.
+    await page.locator("#tab-describe").click();
+    await page.locator("#tab-preview3d").click();
+    await expect(page.locator("#preview3d")).toHaveClass(/active/);
+    expect(chunks.length, "the 3D chunk is fetched once").toBe(1);
   });
 
   test("a plan the package refuses shows the refusal, not a crash", async ({ page }) => {
@@ -118,10 +124,20 @@ test.describe("3D preview tab follows the editor", () => {
     const canvas = page.locator("#preview3d canvas");
     await expect(tab).toHaveAttribute("data-view", "all");
     await expect(canvas).toHaveAttribute("aria-label", /\(all storeys\)/);
+    // No storey picked: the 3D tab shows them all, so the switcher underlines none; every other
+    // tab shows the lowest storey and underlines L1, as before.
+    const pressed = page.locator('#storeys button[aria-pressed="true"]');
+    await expect(pressed).toHaveCount(0);
+    await page.locator("#tab-describe").click();
+    await expect(pressed).toHaveText("L1");
+    await page.locator("#tab-preview3d").click();
+    await expect(pressed).toHaveCount(0);
+    await expect(tab).toHaveAttribute("data-view", "all");
     const all = await hashAt(page, 1);
 
     await page.locator("#storeys button", { hasText: "L2" }).click();
     await expect(tab).toHaveAttribute("data-view", "L2");
+    await expect(pressed).toHaveText("L2");
     await expect(canvas).toHaveAttribute("aria-label", /\(storey L2\)/);
     await page.evaluate(async () => {
       await (window as W).__preview3d?.ready;
@@ -183,14 +199,30 @@ test.describe("3D preview tab follows the editor", () => {
   });
 });
 
+/**
+ * What card A5 cares about at startup, gated directly: the 3D code is not in the chunks the page
+ * loads before the tab opens (the chunk itself is lazy: the first test above sees it fetched once,
+ * on the first open), and those chunks did not grow by anything 3D-sized.
+ *
+ * The size gate is a budget on the SUM of the startup chunks' gzip sizes, not a per-chunk ±1 %:
+ * that fired on ordinary core growth (A5's own PR moved `index` +0.14 %), a re-bless hazard that
+ * teaches re-blessing. The budget, `growthBudget` in the baseline, is 20,000 B: the 3D chunk is
+ * ~150,500 B gzip (three.js and the package, measured at A8), so a leak of even an eighth of it
+ * trips the gate, while ordinary core growth (hundreds of bytes per feature) takes dozens of PRs to
+ * reach it, and reaching it is a deliberate re-baseline with its reason in the commit. Summing makes
+ * the gate indifferent to the bundler renaming or re-splitting the startup chunks, so the old
+ * key-set equality is dropped. Code leaks smaller than the budget are the markers' job: three.js's
+ * renderer and camera class names and the package's label, each first checked to be in the 3D
+ * chunk, so a minifier that drops one fails here instead of passing vacuously.
+ */
 test.describe("startup chunks", () => {
   test.skip(!!process.env.E2E_BASE_URL, "reads the local build");
 
-  test("the chunks loaded at startup keep their gzip size (±1 %) and carry no three.js", () => {
+  test("the startup chunks carry no 3D code and stay within the growth budget", () => {
     const baseline = JSON.parse(
       readFileSync(join(dirname(fileURLToPath(import.meta.url)), "startup-chunks.baseline.json"), "utf8"),
     ) as {
-      tolerance: number;
+      growthBudget: number;
       gzip: Record<string, number>;
     };
     const html = readFileSync(join(DIST, "index.html"), "utf8");
@@ -198,20 +230,26 @@ test.describe("startup chunks", () => {
       ...html.matchAll(/<script type="module"[^>]*\bsrc="\.\/(assets\/[^"]+\.js)"/g),
       ...html.matchAll(/<link rel="modulepreload"[^>]*\bhref="\.\/(assets\/[^"]+\.js)"/g),
     ].map((m) => m[1] as string);
-    const sizes: Record<string, number> = {};
+    expect(startup.length, "index.html loads a module script").toBeGreaterThan(0);
+
+    const lazy = readdirSync(join(DIST, "assets")).filter((f) => /^preview3d-[\w-]+\.js$/.test(f));
+    expect(lazy, "one 3D chunk").toHaveLength(1);
+    expect(startup, "the 3D chunk is not loaded or preloaded at startup").not.toContain(`assets/${lazy[0]}`);
+    const lazyText = readFileSync(join(DIST, "assets", lazy[0] as string), "utf8");
+    const markers = ["WebGLRenderer", "PerspectiveCamera", LABEL];
+    for (const m of markers) expect(lazyText, `the marker "${m}" is in the 3D chunk`).toContain(m);
+
+    let total = 0;
     for (const file of startup) {
-      const name = /assets\/(.+)-[\w-]{8}\.js$/.exec(file)?.[1] ?? file;
       const bytes = readFileSync(join(DIST, file));
-      sizes[name] = gzipSync(bytes).length;
-      expect(bytes.toString("utf8"), `${file} carries three.js`).not.toContain("WebGLRenderer");
+      total += gzipSync(bytes).length;
+      const text = bytes.toString("utf8");
+      for (const m of markers) expect(text, `${file} carries 3D code ("${m}")`).not.toContain(m);
     }
-    expect(Object.keys(sizes).sort(), "the startup chunks are the baseline's").toEqual(
-      Object.keys(baseline.gzip).sort(),
-    );
-    for (const [name, size] of Object.entries(sizes)) {
-      const base = baseline.gzip[name] as number;
-      const drift = Math.abs(size - base) / base;
-      expect(drift, `${name}: ${size} B gzip vs the baseline's ${base} B`).toBeLessThanOrEqual(baseline.tolerance);
-    }
+    const base = Object.values(baseline.gzip).reduce((a, b) => a + b, 0);
+    expect(
+      total - base,
+      `startup chunks ${total} B gzip vs the baseline's ${base} B (budget +${baseline.growthBudget} B)`,
+    ).toBeLessThanOrEqual(baseline.growthBudget);
   });
 });

@@ -25,7 +25,7 @@
  * Stairs, outdoor surfaces and fences are not built yet (M4 and later); the ledger says so.
  */
 import type { Assumption, Level, Polygon, Pt, Scene3D } from "../scene3d/types.js";
-import { cutSector, insideCut, prism, rect, sectorBand, slab2d } from "./extrude.js";
+import { cutSector, degenerateHoles, insideCut, prism as extrude, rect, sectorBand, slab2d } from "./extrude.js";
 import { type Rect, rectMinus, slabRegion } from "./slab.js";
 import { T0_HEIGHT_MM, t0Parts } from "./t0.js";
 import type { Mesh3D, MeshNode, NodeKind, Shell, Stage } from "./types.js";
@@ -168,6 +168,17 @@ function lessVoids(outer: readonly Pt[], voids: Level["voids"], where: string, l
 function levelNodes(lv: Level, ledger: Assumption[], defaulted: Set<string>, isTop: boolean): MeshNode[] {
   const e = lv.elevation;
   const out: MeshNode[] = [];
+  /**
+   * Degenerate holes `extrude` left out of the shells built since the last `node` call. Every
+   * shell below is built in the arguments of (or just before) the `node` call it belongs to, so
+   * `node` reads and resets this count for its own shells.
+   */
+  let holesLeftOut = 0;
+  const prism: typeof extrude = (poly, z0, z1, splits) => {
+    const s = extrude(poly, z0, z1, splits);
+    if (s) holesLeftOut += degenerateHoles(poly);
+    return s;
+  };
   const node = (
     kind: NodeKind,
     id: string,
@@ -187,6 +198,18 @@ function levelNodes(lv: Level, ledger: Assumption[], defaulted: Set<string>, isT
         provenance: "derived",
         rule: "shell-degenerate-or-touching-hole",
       });
+    }
+    // Nor is a degenerate hole a shell was built without (it cut nothing).
+    if (holesLeftOut > 0) {
+      ledger.push({
+        kind,
+        id,
+        field: "holes_dropped",
+        value: holesLeftOut,
+        provenance: "derived",
+        rule: "hole-degenerate",
+      });
+      holesLeftOut = 0;
     }
     if (ok.length === 0) return;
     out.push({
@@ -238,7 +261,10 @@ function levelNodes(lv: Level, ledger: Assumption[], defaulted: Set<string>, isT
   const openings = new Map(lv.openings.map((o) => [o.id, o] as const));
   const hostHeight = new Map(lv.walls.map((w) => [w.id, w.height] as const));
   // Every cut corner's sill and head heights (µm above e): where a body's vertical edge is split,
-  // so the body meets its sill and lintel vertex to vertex.
+  // so the body meets its sill and lintel vertex to vertex. Keyed by the plan point, not by the
+  // host wall, on purpose: another wall with a vertex at a cut corner meets that sill or lintel
+  // there too, and is split for it (aquarium's `partition_8` under the rotunda door `d_rot_n`'s
+  // lintel; keyed by host it would meet the lintel mid-edge, a T-junction between the two nodes).
   const splitAt = new Map<string, number[]>();
   for (const o of lv.openings) {
     const h = hostHeight.get(o.host);

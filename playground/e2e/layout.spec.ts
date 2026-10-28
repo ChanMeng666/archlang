@@ -168,6 +168,7 @@ test.describe("phone layout", () => {
   });
 
   for (const [width, height] of [
+    [360, 740],
     [390, 844],
     [768, 1024],
   ] as const) {
@@ -179,6 +180,28 @@ test.describe("phone layout", () => {
         await page.locator(`.mview[data-mview=${view}]`).tap();
         expect(await horizontalOverflow(page), `overflow in ${view} at ${width}px`).toBeLessThanOrEqual(0);
       }
+      // The output pane's strip: five tabs and the storey switcher (a two-storey plan), each
+      // inside the strip's content box (its side gutters kept), and the strip does not scroll
+      // sideways. At 360 px the five tabs once ran 6 px into the right gutter.
+      await page.locator(".mview[data-mview=plan]").tap();
+      await expect(page.locator("#storeys")).toBeVisible();
+      const strip = await page.locator(".pane h2:has(.tabs)").evaluate((h) => {
+        const box = h.getBoundingClientRect();
+        const cs = getComputedStyle(h);
+        const left = box.left + Number.parseFloat(cs.paddingLeft);
+        const right = box.right - Number.parseFloat(cs.paddingRight);
+        return {
+          scroll: h.scrollWidth - h.clientWidth,
+          out: [...h.querySelectorAll<HTMLElement>(".tab, .lv-btn")]
+            .filter((b) => {
+              const r = b.getBoundingClientRect();
+              return r.left < left - 0.5 || r.right > right + 0.5;
+            })
+            .map((b) => b.textContent),
+        };
+      });
+      expect(strip.scroll, `the tab strip scrolls sideways at ${width}px`).toBeLessThanOrEqual(0);
+      expect(strip.out, `tabs outside the strip at ${width}px`).toEqual([]);
     });
   }
 

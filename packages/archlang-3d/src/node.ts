@@ -32,6 +32,7 @@ export {
   checkShells,
   checkValidator,
   glbJson,
+  glbLeaks,
   openEdges,
   signedVolume,
 } from "./check/verify.js";

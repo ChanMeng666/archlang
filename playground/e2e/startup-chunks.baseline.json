@@ -1,7 +1,8 @@
 {
   "taken": "origin/main 750724870135a92541ac1884aceb1cbf6198732d, before card A5 (the 3D preview tab)",
-  "how": "npm ci && npm run build && npm run playground:build:only on that commit; for each chunk dist/index.html loads at startup (its module <script src> and every <link rel=modulepreload>), the byte length of node:zlib gzipSync(file) at the default level, keyed by the file name without its content hash",
-  "tolerance": 0.01,
+  "how": "npm ci && npm run build && npm run playground:build:only on that commit; for each chunk dist/index.html loads at startup (its module <script src> and every <link rel=modulepreload>), the byte length of node:zlib gzipSync(file) at the default level, keyed by the file name without its content hash (for reading only: the gate sums them)",
+  "growthBudget": 20000,
+  "growthBudgetWhy": "card A8: the 3D chunk is ~150,500 B gzip, so +20,000 B over the sum trips on a leak of an eighth of it, while ordinary core growth (A5's own PR: +299 B over both) takes dozens of PRs to reach it; see preview3d.spec.ts",
   "gzip": {
     "index": 191005,
     "panels": 372286

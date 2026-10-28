@@ -124,6 +124,59 @@ describe("T0 parametric furniture (plan §4.4)", () => {
     expect(desk.extras.asset).toBe("greybox");
     expect(desk.shells.length).toBe(1);
   });
+
+  // The core only turns furniture by quarter turns, but `buildMesh` reads a Scene3D, whose schema
+  // takes any integer `yawDeg` (an exporter or a hand-made scene): that is the path this ledgers.
+  it("ledgers a T0 piece at a turn that is not a quarter turn and builds it a grey box", () => {
+    const m = built(plan('room id=r at (0,0) size 6000x4000 label "R" furniture bed at (1000,1000) size 1600x2000'));
+    const lv = m.scene.levels[0];
+    const bed = lv?.furniture[0];
+    expect(bed?.asset).toBe("t0:bed");
+    const scene = structuredClone(m.scene);
+    const piece = scene.levels[0]?.furniture[0];
+    if (!piece) throw new Error("no bed");
+    piece.yawDeg = 45;
+    const mesh = buildMesh(scene);
+    const node = mesh.nodes.find((x) => x.kind === "furniture") as MeshNode;
+    expect(node.extras.asset).toBe("greybox");
+    expect(node.shells.length).toBe(1);
+    expect(mesh.assumptions).toContainEqual(
+      expect.objectContaining({
+        kind: "furniture",
+        id: piece.id,
+        rule: "furniture-t0-not-quarter-turn",
+        value: "greybox",
+      }),
+    );
+    expect(m.mesh.assumptions.some((a) => a.rule === "furniture-t0-not-quarter-turn")).toBe(false);
+  });
+});
+
+describe("a degenerate hole is ledgered, never dropped silently", () => {
+  it("records the hole a floor was built without, and nothing on the corpus", () => {
+    const m = built(plan('room id=r at (0,0) size 6000x4000 label "R"'));
+    const scene = structuredClone(m.scene);
+    const floor = scene.levels[0]?.floors[0];
+    if (!floor) throw new Error("no floor");
+    // Three collinear points: no area, so the hole cuts nothing.
+    floor.polygon.holes = [
+      [
+        [1000, 1000],
+        [2000, 1000],
+        [3000, 1000],
+      ],
+    ];
+    const mesh = buildMesh(scene);
+    expect(mesh.nodes.find((n) => n.key === "L1/floor:r")?.shells.length).toBe(1);
+    expect(mesh.assumptions).toContainEqual(
+      expect.objectContaining({ kind: "floor", id: "r", field: "holes_dropped", value: 1, rule: "hole-degenerate" }),
+    );
+    for (const c of corpus)
+      expect(
+        c.mesh.assumptions.filter((a) => a.rule === "hole-degenerate"),
+        c.n,
+      ).toEqual([]);
+  });
 });
 
 describe("V-GEO-05: W3D_FLOOR_OVERLAP and the 0.5 mm lift (plan §4.2)", () => {

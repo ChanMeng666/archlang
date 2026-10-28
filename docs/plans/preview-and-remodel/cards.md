@@ -33,16 +33,7 @@ kit); `amendment-v0.7.md` (the recut). The viewer subset of three.js 0.186.1 is 
 
 ### A2 · M1a geometry: Mesh3D from Scene3D — `done` · PR #328 · merge `da464b51` · record: `research/2026-10-28-as-built.md` § A2
 
-### A2b · Mesh finish before the look round — `todo` · residue of A2 · 1.5 days · model: opus
-
-**Goal.** What A2 left: the 12 T0 parametric furniture families laneway-house uses (grey boxes
-today, §4.4); V-GEO-05 `W3D_FLOOR_OVERLAP` (rooms overlapping by more than 1 cm², with the plan's
-0.5 mm deterministic lift; the core already warns `W_ROOM_OVERLAP`); window glass on a curved host
-as a chord that runs into the body near its jambs; the T-junctions where a wall body meets its sill
-or lintel (each shell closed; a viewer may show hairlines); the slab as rooms ∪ wall outline less
-voids (today the wall footprint less voids, so a room outside every wall has no slab); a demolished
-wall (B3a) drawn from `ir.drawn`. **Acceptance.** Each with a corpus or synthetic test; Mesh3D stays
-deterministic and laneway's pinned digest moves only with a recorded reason. **Depends on.** A2.
+### A2b · Mesh finish before the look round — `done` · PR #341 · merge `80f2b3b1` · record: `research/2026-10-28-as-built.md` § A2b
 
 ### A3 · M1a replay viewer and CLI video — `done` · PR #330 · merge `323a3ee2` · record: `research/2026-10-28-as-built.md` § A3
 

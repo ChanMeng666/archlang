@@ -35,6 +35,13 @@ function clean(r: readonly Pt[]): Pt[] | null {
 /** Orient a ring: `ccw` = positive numeric area in plan (x, y). */
 const orient = (r: Pt[], ccw: boolean): Pt[] => (area2(r) > 0 === ccw ? r : [...r].reverse());
 
+/**
+ * How many of `poly`'s holes `prism` leaves out because they are degenerate (fewer than three
+ * distinct points, or no area): such a hole cuts nothing, so the shell is built without it, and the
+ * mesh builder records the count rather than dropping it silently.
+ */
+export const degenerateHoles = (poly: Polygon): number => (poly.holes ?? []).filter((h) => clean(h) === null).length;
+
 /** Even-odd containment, `null` when `p` lies ON the ring (a vertex or an edge). */
 export function where(p: Pt, r: readonly Pt[]): boolean | null {
   let c = false;
