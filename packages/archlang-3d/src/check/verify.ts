@@ -83,8 +83,30 @@ export function checkShells(mesh: Mesh3D): CheckResult {
 }
 
 const NAME = /^[a-z]+:[^:/\s]+(:[^:/\s]+)?$/;
-/** An absolute path (POSIX home or root dirs, a Windows drive, a file URL) or an ISO time: never in an output (L7). */
-const LEAK = /(?:^|["\s(])(?:\/(?:home|Users|tmp|var|root)\/|[A-Za-z]:[\\/]|file:\/\/)|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+/** An absolute path (POSIX home or root dirs, a Windows drive, a file URL): never in an output (L7). */
+const PATH_LEAK = /(?:^|["\s(])(?:\/(?:home|Users|tmp|var|root)\/|[A-Za-z]:[\\/]|file:\/\/)/;
+/** An ISO 8601 date, with or without its time: never in what the writer stamps (plan §3.7). */
+const TIME_LEAK = /\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?/;
+
+/**
+ * Why a GLB's JSON chunk is not reproducible (plan §8.5 L7); empty when it is. A path is looked
+ * for anywhere. A date or time only in `asset` (generator, copyright, version, its extras: what
+ * the WRITER stamps), because the scene, node and `extras.archlang` text is the plan's own, and a
+ * plan may well be called "Survey 2026-10-28T09:30".
+ */
+export function glbLeaks(json: string): string[] {
+  const out: string[] = [];
+  if (PATH_LEAK.test(json)) out.push("the GLB's JSON carries an absolute path (plan §8.5 L7)");
+  let asset: unknown;
+  try {
+    asset = (JSON.parse(json) as { asset?: unknown }).asset;
+  } catch {
+    asset = json; // not JSON: the validator reports that; look at all of it
+  }
+  if (TIME_LEAK.test(JSON.stringify(asset ?? null)))
+    out.push("the GLB's asset fields carry a date or time (plan §8.5 L7)");
+  return out;
+}
 
 /** V-GLTF-02 over nodes read back from a GLB; given `mesh`, its node set must equal the Mesh3D's. */
 export function checkNaming(nodes: readonly GlbNode[], levels: readonly string[], mesh?: Mesh3D): CheckResult {
@@ -162,10 +184,10 @@ export async function checkGlb(glb: Uint8Array, mesh?: Mesh3D): Promise<CheckRes
   const out = [await checkValidator(glb)];
   const { levels, nodes } = await readGlbNodes(glb);
   const naming = checkNaming(nodes, levels, mesh);
-  const json = glbJson(glb);
-  if (LEAK.test(json)) {
+  const leaks = glbLeaks(glbJson(glb));
+  if (leaks.length > 0) {
     naming.ok = false;
-    naming.failures.push("the GLB's JSON carries an absolute path or a time (plan §8.5 L7)");
+    naming.failures.push(...leaks);
   }
   out.push(naming);
   return out;

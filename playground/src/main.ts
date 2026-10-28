@@ -18,7 +18,7 @@ import { isolateHistory } from "@codemirror/commands";
 import type { EditorView } from "@codemirror/view";
 import { createEditor } from "./editor-setup.js";
 import { createPreview } from "./preview.js";
-import { selectPage } from "./levels.js";
+import { type LevelPage, selectPage } from "./levels.js";
 import { mountLevelSwitcher } from "./level-switcher.js";
 import { type ActionsHandle, mountActions } from "./actions.js";
 import { renderFacts } from "./facts-strip.js";
@@ -107,6 +107,8 @@ for (const tab of tabs) {
     for (const [name, el] of Object.entries(views)) el.classList.toggle("active", name === tab.dataset.tab);
     // Leaving the 3D tab stops its playback (opening it is handled below).
     if (tab.dataset.tab !== "preview3d") void preview3d?.then((p) => p?.hide());
+    // The switcher's underline follows what the tab now on screen shows (see `shownLevel`).
+    levelSwitch.set(lastPages, shownLevel());
   });
 }
 
@@ -170,6 +172,8 @@ let lastRooms: RoomSummary[] = [];
 let selectedLevel: number | null = null;
 /** The level whose facts the panels are currently reporting (`null` = whole plan). */
 let activeLevel: number | null = null;
+/** The storey pages of the last good compile (the switcher's buttons). */
+let lastPages: readonly LevelPage[] | undefined;
 /** Diagnostics in panel display order — `data-i` on a row indexes into this. */
 let lastDiagRows: Diagnostic[] = [];
 /** Same, for the Lint tab's rows (some lint rules carry their own applicable fix). */
@@ -315,11 +319,16 @@ function applyFixAt(rows: Diagnostic[], index: number): void {
   flash(best.title);
 }
 
+/**
+ * The storey the switcher underlines: the one on screen. Every tab shows `activeLevel` (the lowest
+ * storey when none is picked) except the 3D preview, which shows all storeys combined until one is
+ * picked, so there, with no pick, no storey is underlined.
+ */
+function shownLevel(): number | null {
+  return selectedLevel === null && preview3dEl.classList.contains("active") ? null : activeLevel;
+}
+
 function render(source: string, refit = false) {
-  // The 3D preview follows the editor only while its tab is open (and once loaded).
-  // The storey it shows is the switcher's explicit selection (none = the combined view).
-  if (preview3d && preview3dEl.classList.contains("active"))
-    void preview3d.then((p) => p?.update(source, selectedLevel));
   // Theme: empty value = the source's own `theme` directive (pass nothing); a named
   // key overrides it (compile's `theme` option wins over an in-source directive).
   const themeKey = themeSelect.value;
@@ -334,6 +343,13 @@ function render(source: string, refit = false) {
     : { noCache: true, annotate: true, accessible };
   const { svg, errors, diagnostics, scene, pages } = compile(source, opts);
   const ok = errors.length === 0;
+  // The 3D preview draws the core's light drawing: this compile is that drawing unless a theme
+  // overrides it, so it is handed over and the tab does not compile the source a second time.
+  lastDrawn = themeKey ? undefined : { source, drawn: { svg, pages, errors } };
+  // The 3D preview follows the editor only while its tab is open (and once loaded).
+  // The storey it shows is the switcher's explicit selection (none = the combined view).
+  if (preview3d && preview3dEl.classList.contains("active"))
+    void preview3d.then((p) => p?.update(source, selectedLevel, drawnFor(source)));
   // `pages` exists ONLY for a plan with `level` blocks; a single-storey plan has no such
   // key, `selectPage` returns undefined for it, and everything below takes the exact
   // path it always took — the drawing, the exports and the panels are all unmoved.
@@ -345,7 +361,8 @@ function render(source: string, refit = false) {
   const page = ok ? selectPage(pages, selectedLevel) : undefined;
   if (ok) {
     activeLevel = page?.level ?? null;
-    levelSwitch.set(pages, activeLevel);
+    lastPages = pages;
+    levelSwitch.set(pages, shownLevel());
   }
   updateAnalysis(source, ok);
   lastDiagRows = renderDiagnostics(errorsEl, diagnostics ?? [], source);
@@ -380,6 +397,9 @@ function render(source: string, refit = false) {
 
 // ---- 3D preview (card A5): three.js and archlang-3d load on the tab's first open, like jsPDF ----
 let preview3d: Promise<import("./preview3d.js").Preview3d | undefined> | undefined;
+/** The editor's last compile, kept for the 3D tab (`undefined` under a theme override). */
+let lastDrawn: { source: string; drawn: import("./preview3d.js").Drawn } | undefined;
+const drawnFor = (source: string) => (lastDrawn?.source === source ? lastDrawn.drawn : undefined);
 document.getElementById("tab-preview3d")?.addEventListener("click", () => {
   preview3d ??= import("./preview3d.js").then(
     (m) => m.mountPreview3d(preview3dEl),
@@ -389,7 +409,8 @@ document.getElementById("tab-preview3d")?.addEventListener("click", () => {
       return undefined;
     },
   );
-  void preview3d.then((p) => p?.show(currentSource(), selectedLevel));
+  const source = currentSource();
+  void preview3d.then((p) => p?.show(source, selectedLevel, drawnFor(source)));
 });
 
 let debounce: ReturnType<typeof setTimeout>;
