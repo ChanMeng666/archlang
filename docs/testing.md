@@ -33,6 +33,7 @@ broken or stale, not that a PR is bad.
 | PNG visual goldens | `test/__goldens__/*.png` (`test/visual.test.ts`) | `UPDATE_GOLDENS=1 vitest run test/visual.test.ts` |
 | ASCII goldens | `test/__ascii__/*.txt` (`test/ascii.test.ts`) | `ASCII_UPDATE=1 vitest run test/ascii.test.ts` |
 | README/docs SVGs | `examples/*.svg` (`test/example-svgs-drift.test.ts`) | `npm run gen:example-svgs`, then look at the drawing |
+| 3D pins (Mesh3D, GLB, event table, key-frame pixels) | `packages/archlang-3d/test/`, `e2e/fixtures/` | by hand with the reason in the commit; key frames per `e2e/fixtures/README.md` |
 
 **Policy.** `compile()` is byte-stable, so an unexplained golden change is a regression, not a
 snapshot to bless. Justify every changed byte or fix the source; never run an update to make a red

@@ -33,7 +33,8 @@ npm run gen:all       # every gen:* generator
 - A derived position comes from the shape, never its bounding box or centroid.
 - Every new language form ships a byte-identity law pinned by test (SHA-256 of SVG + `describe()` +
   `lint()` over the examples). Never bless a golden to green a suite.
-- Heights draw nothing; `--view` measures nothing (`describe()`/`lint()` never learn it).
+- Heights draw nothing; `--view` measures nothing (`describe()`/`lint()` never learn it). 3D lives
+  only in the private `packages/archlang-3d`, never a core dependency (`.claude/rules/archlang-3d.md`).
 - A drawing change never moves `describe()`/`lint()` over the corpus, except drafting-layer lint
   rules, which read the sheet (ADR 0032; `docs/agents/iron-laws.md`); a glyph never gains
   handedness and a loss is allow-listed (`test/glyph-chirality.test.ts`).

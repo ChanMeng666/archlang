@@ -46,7 +46,8 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 - **Editing any `examples/*.arch` moves many corpus-wide suites.** Expect `cursor-exhaustive`,
   `iso-snapshot`, `snapshot`, `visual`, `opening-tags-corpus`, `readme-permalink`,
   `docs-examples-figures`, `example-svgs-drift`, `rooms-tiling-probe`, `taste-digests`, the
-  `*-digests` and `*-byte-identity` suites and `playground/test/llm-prompt.test.ts` to react; run the
+  `*-digests` and `*-byte-identity` suites, `playground/test/llm-prompt.test.ts` and the corpus counts
+  written into `packages/archlang-3d`'s tests (light and `e2e/`) to react; run the
   lot, and explain each moved golden rather than re-pin it. A new lint rule moves a different set:
   `compose-assoc`, `lint-file-provenance`. `hillside-villa`'s prefilled-link budget in the playground
   test is the tightest constraint on that example: deflate output differs by zlib implementation (pako
@@ -143,6 +144,14 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   before pinning its auto-merge.
 - **`spec.llm.md` sat at 29,999 of 30,000 on 2026-10-28.** Two PRs that each fit can overflow
   together after merging: re-measure after every merge and pay with a provable-duplicate cut.
+- **A branch cut before a release merges its CHANGELOG entry into the new version's section.**
+  The release PR turns `[Unreleased]` into `## [x.y.z]` above an empty `[Unreleased]`; merging
+  `main` into an older branch is then clean and leaves the branch's entry inside `[x.y.z]` (B3b,
+  #337). After merging `main` past a release, check `node scripts/changelog-section.mjs <x.y.z>`
+  does not list the branch's entry, and move it under `[Unreleased]`.
+- **A record written through a shell `node -e`/heredoc loses its backslashes** (a Windows path's
+  `\2…` became a control byte in a handoff, #335). Write such text with the Write/Edit tools, then
+  `LC_ALL=C grep -c $'[\x01-\x08]' <file>` must print 0.
 
 ## Tooling & process
 
@@ -202,6 +211,9 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   48 hours**; dispatch `release.yml` once (`.claude/commands/release-check.md`).
 - **Remove a worktree's `node_modules` junctions with `cmd /c rmdir <path>`** before
   `git worktree remove --force` or any recursive delete, or the delete follows them into the primary.
+  Git Bash's `ln -s` does not link: it COPIES the target, and a copy of the primary's `node_modules`
+  carries its workspace junctions (one points at the repository root). Scan any such copy for
+  reparse points and unlink each (`[System.IO.Directory]::Delete(<junction>)`) before deleting it.
 - **A clean auto-merge of a moved function another branch modified is not evidence.** Taking one
   side can silently revert the other's fix with a green suite. Diff the moved body against the newer
   version and run both branches' fixtures together. The same holds for a CALLER: a PR's new rule

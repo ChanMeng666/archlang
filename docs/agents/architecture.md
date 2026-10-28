@@ -191,3 +191,12 @@ Core at the root; workspaces `editors/vscode`, `playground`, `docs-site`, `packa
 lockfile. `docs-site/sync-docs.mjs` copies `docs/*.md` + root artifacts into the site at build time.
 `eval/` authorability harness, `dataset/` HF dataset generator, `scripts/` generators + smoke,
 `bench/` timings.
+
+`packages/archlang-3d` (private, ADRs 0030/0031) reads a resolved plan through the core's public
+seam: `src/adapter` + `src/scene3d` (plan → Scene3D, plan-aligned, integer µm; `src/walls` the
+wall ownership, H1) → `src/mesh` (Mesh3D: closed shells,
+canonical order) → `src/replay` (`timeline.ts` pure in `t`; `camera.ts` the fitted framing;
+`mount.ts` the renderer, shared by the single-file HTML and the playground's lazy "3D preview" tab
+through `./browser`; `video.ts` Playwright + ffmpeg) and `src/glb` + `src/check` (the GLB and its
+checks). `src/cli` is `archlang3d view|build|check|manifest|schema|doctor`. Laws:
+`.claude/rules/archlang-3d.md`.
