@@ -23,3 +23,16 @@ export { PREVIEW_LABEL, replayHtml, replayPayload, viewBoxOf, viewerScript } fro
 export type { ReplayOptions } from "./replay/html.js";
 export { renderReplay, SWIFTSHADER_ARGS } from "./replay/video.js";
 export type { KeyFrame, VideoOptions, VideoReport } from "./replay/video.js";
+export { GLB_GENERATOR, glbNodeName, levelNodeName, nodeExtras, readGlbNodes, writeGlb } from "./glb/write.js";
+export type { GlbNode } from "./glb/write.js";
+export {
+  checkGlb,
+  checkNaming,
+  checkScene,
+  checkShells,
+  checkValidator,
+  glbJson,
+  openEdges,
+  signedVolume,
+} from "./check/verify.js";
+export type { CheckId, CheckResult } from "./check/verify.js";

@@ -1,5 +1,6 @@
 /**
- * `archlang3d` (card A3; archlang-3d plan §7). One command so far:
+ * `archlang3d` (cards A3, A4; archlang-3d plan §7): `build`, `check`, `manifest`, `schema` and
+ * `doctor` live in `commands.ts` (their flags in `manifest.ts`); `view` is here:
  *
  *   archlang3d view <plan.arch|-> --replay -o plan.html [--video out.mp4] [--seconds 15] [--fps 30]
  *                   [--size 1920x1080] [--theme light|dark] [--storey <n>|all] [--curve-tol <mm>] [--json]
@@ -21,9 +22,11 @@ import { makeNodeWorld } from "../node.js";
 import { replayHtml } from "../replay/html.js";
 import { type ReplayView, storeysOf, timeline, viewLabel, viewMesh } from "../replay/timeline.js";
 import { type KeyFrame, renderReplay, type VideoReport } from "../replay/video.js";
+import { HANDLERS, parseFlags, Usage } from "./commands.js";
 
-const USAGE =
+export const VIEW_USAGE =
   "usage: archlang3d view <plan.arch|-> --replay -o <out.html> [--video <out.mp4>] [--seconds <n>] [--fps <n>] [--size <W>x<H>] [--theme light|dark] [--storey <n>|all] [--curve-tol <mm>] [--json]";
+const USAGE = `usage: archlang3d <build|check|view|manifest|schema|doctor> … (archlang3d manifest --json lists every flag)\n${VIEW_USAGE}`;
 
 interface Args {
   input: string;
@@ -38,8 +41,6 @@ interface Args {
   curveTol?: number;
   json: boolean;
 }
-
-class Usage extends Error {}
 
 function parse(argv: string[]): Args {
   const [cmd, ...rest] = argv;
@@ -62,7 +63,7 @@ function parse(argv: string[]): Args {
     const f = rest[i] as string;
     const v = (): string | undefined => rest[++i];
     if (f === "--replay") a.replay = true;
-    else if (f === "-o") a.out = v();
+    else if (f === "-o" || f === "--out") a.out = v();
     else if (f === "--video") a.video = v();
     else if (f === "--seconds") a.seconds = num(f, v());
     else if (f === "--fps") a.fps = num(f, v());
@@ -94,9 +95,11 @@ function parse(argv: string[]): Args {
 
 /** The command, without exiting: resolves to its exit code (`main.ts` runs it). */
 export async function main(argv: string[]): Promise<number> {
-  let args: Args;
+  const [cmd, ...rest] = argv;
+  const handler = cmd !== undefined && cmd !== "view" ? HANDLERS[cmd] : undefined;
   try {
-    args = parse(argv);
+    if (handler) return await handler(parseFlags(cmd as string, rest));
+    return await view(parse(argv));
   } catch (e) {
     if (e instanceof Usage) {
       process.stderr.write(`archlang3d: ${e.message}\n${USAGE}\n`);
@@ -104,6 +107,9 @@ export async function main(argv: string[]): Promise<number> {
     }
     throw e;
   }
+}
+
+async function view(args: Args): Promise<number> {
   const say = (s: string) => process.stderr.write(`${s}\n`);
   let source: string;
   try {
@@ -123,7 +129,7 @@ export async function main(argv: string[]): Promise<number> {
   const storeys = storeysOf(mesh);
   if (args.storey !== "all" && args.storey > storeys.length) {
     process.stderr.write(
-      `archlang3d: --storey ${args.storey}: the plan has ${storeys.length} ${storeys.length === 1 ? "storey" : "storeys"}\n${USAGE}\n`,
+      `archlang3d: --storey ${args.storey}: the plan has ${storeys.length} ${storeys.length === 1 ? "storey" : "storeys"}\n${VIEW_USAGE}\n`,
     );
     return 3;
   }
