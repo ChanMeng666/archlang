@@ -611,6 +611,8 @@ suite("A8: the drawing agrees with the analysis on a demolished wall's opening",
   });
 });
 
+type RFurnitureLike = { at: { x: number; y: number }; size: { w: number; h: number }; rotate?: number };
+
 suite("A8: a piece backed onto a demolished wall is E_FURN_AGAINST_DEMOLISHED_WALL", () => {
   const PART = `  wall id=part partition thickness 100 status demolish { (4000,0) (4000,5000) }`;
   const PLAN = (furniture: string, extra = "") => plan(`${SHELL}\n${PART}\n${extra}${ROOMS}\n  ${furniture}`);
@@ -662,6 +664,25 @@ suite("A8: a piece backed onto a demolished wall is E_FURN_AGAINST_DEMOLISHED_WA
     expect(codes(both)).toEqual([]);
     const at = (src: string) => (resolvePlan(src).ir!.elements.find((e) => e.id === "dk") as { at: unknown }).at;
     expect(at(both)).toEqual(at(alone));
+  });
+
+  it("a demolished wall BESIDE the edge line (within the tolerance) is ignored, as if deleted", () => {
+    // Red-team round 1: the near-line scan admits walls within 300 mm of the edge; one at x 4200
+    // beside `a.right` (x 4000) is not on the edge and must not be blamed.
+    const beside = `  wall id=p partition thickness 100 status demolish { (4200,0) (4200,5000) }\n`;
+    const piece = "furniture id=dk desk against a.right size 1200x600";
+    const marked = plan(`${SHELL}\n${beside}${ROOMS}\n  ${piece}`);
+    const deleted = plan(`${SHELL}\n${ROOMS}\n  ${piece}`);
+    const diags = (src: string) => compile(src).diagnostics.map((d) => [d.code, d.message]);
+    expect(diags(marked)).toEqual(diags(deleted));
+    const dk = (src: string) => resolvePlan(src).ir!.elements.find((e) => e.id === "dk") as RFurnitureLike;
+    expect(dk(marked)).toBeDefined();
+    expect({ at: dk(marked).at, size: dk(marked).size, rotate: dk(marked).rotate }).toEqual({
+      at: dk(deleted).at,
+      size: dk(deleted).size,
+      rotate: dk(deleted).rotate,
+    });
+    expect(dk(deleted).at).toEqual({ x: 3400, y: 1900 });
   });
 
   it("inside a `place`d component, by the component's own wall id", () => {

@@ -913,7 +913,8 @@ function placeAgainstEdge(
   chargeSteps(ctx.walls.length + points + 1);
   const near: { seg: WallSegment; open: boolean }[] = [];
   // A `status demolish` wall on the line (B3a) is coming out: it backs nothing, and when no wall
-  // that stays is on the line either, nothing will stand there to back onto.
+  // that stays is near the line either, nothing will stand there to back onto. One beside the
+  // line (within the tolerance, off it) is ignored, as the plan with it deleted would be.
   let demolished: { seg: WallSegment; id: string } | undefined;
   for (const w of ctx.walls) {
     for (const s of segmentsOfWall(w)) {
@@ -925,8 +926,12 @@ function placeAgainstEdge(
       const a = horiz ? Math.min(s.a.x, s.b.x) : Math.min(s.a.y, s.b.y);
       const b = horiz ? Math.max(s.a.x, s.b.x) : Math.max(s.a.y, s.b.y);
       if (Math.min(b, s1) - Math.max(a, s0) <= 0) continue;
-      if (w.status === "demolish") demolished ??= { seg: s, id: w.id };
-      else near.push({ seg: s, open: w._derived?.open !== undefined });
+      // Only ON the edge line: a demolished wall beside it is ignored as if deleted.
+      if (w.status === "demolish") {
+        if (line === c) demolished ??= { seg: s, id: w.id };
+        continue;
+      }
+      near.push({ seg: s, open: w._derived?.open !== undefined });
     }
   }
   if (near.length === 0 && demolished) {
