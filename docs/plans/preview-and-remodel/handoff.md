@@ -45,12 +45,29 @@ is on the owner's machine under `D:\.claude-scratch\2026-10-28\a3-look\`.
 
 ## 3. Next items, in order
 
+*2026-10-29 audit (main at `3f603d80`, #354): the wave 0–3 claims above were verified against raw
+`git`/`gh`/`npm` evidence (every merged PR #319–#353 maps to a card, record or release; the laws,
+label text, pinned three.js and the private package are as planned). Deviations found: A5's chunk
+budget became +20,000 bytes; the imperial refusal code is `E_IMPERIAL_FORM`; B3b's hatch for new
+walls was not built (A9 item 5); A3's CI video runs at 320×180 and the "identical twice" claim rests
+on key-frame hashes; `archlang-3d`'s peer range still says `^1.43.1` though it needs 1.44.0 (A9 item
+1). ArchCanvas has started none of E1–E4 and still pins core 1.43.1 (1.42.0 installed), so its
+designer prompt carries a 1.42-era `spec.llm.md`. Wave 5 (cards G1–G6, decisions D17–D19) was added
+in response.*
+
 1. **A9** (residue of A7 and A8, `cards.md`). Its item (2), the 30° end elevation of one-storey
    views, is the owner's call on their next look.
-2. The owner's first Tier A post starts the N10 window (README §6; the agent posts nothing).
-3. Wave 4 (README §4) after N10 is read: D1, A6 (parked), archlang-3d M2+. Tier B needs the
-   owner's first npm publish of `@chanmeng666/archlang-3d` and its trusted publisher (§6).
-4. After each landed card: its records PR (done line, as-built note, this handoff). If anything lands
+2. **Wave 5, in parallel:** G1 (surface what shipped; docs), G2 (issue replies drafted in
+   `research/2026-10-29-issue-replies-draft.md`, posted only after the owner approves), G3
+   (rooms-only Plan JSON import + mask recipe), G4 (metrics strip), G5 (wall-closure measure-first).
+   G6 is blocked on the owner's reply to the Halo Forge user.
+3. The owner's first Tier A post starts the N10 window (README §6; the agent posts nothing). The
+   draft posts are in the growth repository, `marketing/content/posts/2026-10-29-tier-a-replay-posts-draft.md`.
+4. ArchCanvas, in that repository: E0 (core bump to 1.46.0 with the `spec.llm.md` diff per its
+   2026-10-16 bump checklist), then E1–E3 per its 2026-10-28 spec. E4 waits for Tier B.
+5. Wave 4 and wave 6 (README §4, cards G7) after N10 is read: D1, A6 (parked), archlang-3d M2+.
+   Tier B needs the owner's first npm publish of `@chanmeng666/archlang-3d` and its trusted publisher (§6).
+6. After each landed card: its records PR (done line, as-built note, this handoff). If anything lands
    in the core, cut a release the same way (D15), pausing for the owner's VS Code upload (D16).
 
 ## 4. How a card is run

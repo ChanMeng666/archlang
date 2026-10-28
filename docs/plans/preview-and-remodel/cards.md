@@ -115,3 +115,79 @@ whole programme; the cards are owned there.
 
 F1 claim corrections (filed 2026-10-28); F2 Tier A posting kit (after A3; four to six posts, each with
 a playground permalink; measurement rows added to `data/`); F3 the N10 read.
+
+---
+
+## G · Wave 5: surface what shipped, and the one real import gap (D17–D19; added 2026-10-29)
+
+Why this wave exists. A 2026-10-29 audit of the 2026-10-28 creator research and of the five public
+roadmap issues (#343–#347) found that about half of the proposed "upgrades" already exist in 1.46.0
+(`preview --review` rings every warning; `--overlay circulation`; the `dark` theme; `takeoff`;
+`keep stacked`, `W_STAIR_UNMATCHED`, `W_SHAFT_FOOTPRINT_MISMATCH`; door swings and 129 catalogued
+fixtures), that the README surfaces none of the 1.44–1.46 features, and that three of the five issues
+describe shipped features as future work. The only grade-A user ask that is a real gap is import from
+segmentation masks or PDF plans into `.arch` (one user, with masks in hand, who also wants quantities).
+
+### G1 · Surface what shipped — `todo` · wave 5 · 1 day · model: sonnet
+
+Docs only, Tier C rules (no 3D anywhere here). README feature list and `docs/overview.md` gain
+one short example each for: `arch takeoff` and `describe --facts quantities`; `arch impact --against
+old.arch --lock <ids>`; wall `status existing|demolish|new` with the dashed demolition drawing;
+imperial literals (`12ft6in`); `arch preview --review`; `--overlay circulation`; `keep stacked` and
+the stair/shaft checks. A `docs/whats-new.md` (or the existing release-notes page if one exists)
+lists 1.44.0–1.46.0 by feature with one `arch static` fence each. `spec.llm.md` is at its 30,000 cap
+and must not grow; check that status, lock and takeoff are already in it (B-cards said so) and only
+reorder if a line is missing. Acceptance: `docs:build` green; every new fence compiles or is
+`arch static`; a reader can find each feature from the README in one click.
+
+### G2 · Roadmap issues reconciled to 1.46.0 — `todo` · wave 5 · 0.5 day · model: sonnet; owner approves the text
+
+For #343–#347: a comment per issue, drafted first in
+`research/2026-10-29-issue-replies-draft.md` and posted only after the owner approves, that says
+what exists today with doc links (after G1 lands), what remains, and re-scopes the title where the
+body describes shipped work: #347 closes as shipped; #346 narrows to "wall-closure check and a
+playground takeoff panel"; #343 narrows to "a converter interface and a public glTF (waits for the
+3D package's first publish)"; #345 narrows to "shared grid (P2-4) and load-bearing stacking";
+#344 stays open as the import gap. Never write "users asked" where `data/community-replies.json`
+shows one user. Must not: add a 3D word to #343 beyond "waits for a separate package".
+
+### G3 · Rooms-only Plan JSON import and a mask-to-plan recipe — `todo` · wave 5 · 2 days · model: opus
+
+Evidence: one user training a segmentation model on floor plans asked for PDF-or-mask → `.arch` and
+wants vector geometry for quantities. Design (D18): the core gains nothing raster. Document the
+existing path: a Plan JSON with rooms only plus a derived-walls statement compiles through
+`--from-json` (verify first with a hand-written file; if derived walls cannot be expressed in Plan
+JSON today, that is the card's core change, additive, with its byte-identity law). Then
+`tools/mask-to-plan/` (outside the package, MIT, Python run with `-I`, OpenCV or scikit-image
+allowed there): label mask PNG + a millimetres-per-pixel scale → room polygons (simplified,
+right-angled where within tolerance, snapped to `grid`) → rooms-only Plan JSON → `.arch` via the CLI,
+and `arch validate` + `takeoff` on the result. A `docs/import.md` recipe with one worked example and
+its limits (no openings, no furniture, labels from the mask's class names only), marked experimental.
+Acceptance: the example mask round-trips to a plan whose `describe` room areas match the mask's
+pixel areas within 2 %; `check:drift` unchanged; no new core dependency. Must not: ship a VLM
+reversal (ArchCanvas W1 territory); promise PDF parsing (a PDF is rasterised by the user first).
+
+### G4 · Metrics strip in the replay viewer — `todo` · wave 5 · 0.5 day · model: sonnet
+
+In `packages/archlang-3d`'s replay, a small strip fed only by `describe()` facts the adapter already
+holds: floor area (centreline and net, labelled), room count, door and window counts, storey count,
+and the warnings count from `lint()`; numbers appear when their stage is reached. No "score", no
+"checks passed N/M", no percentages. Light theme in the playground; the exported file may use the
+dark theme (D11). Key-frame hashes re-pinned with the reason. Tier A artefact for the owner's posts.
+
+### G5 · Wall-closure check: measure first — `todo` · wave 5 · 0.5–1 day · model: sonnet
+
+Issue #346 asks for "walls closed". Measure before building: write three plans with an open exterior
+ring, a gap between a derived wall and an authored one, and a wall ending 80 mm short of its
+neighbour; run `validate`, `lint` and `describe`. If `E_ROOMS_NOT_TILING`, the enclosure rules and
+`W_OPENING_AT_JUNCTION` already name all three, the card closes with the evidence in the issue
+comment. Otherwise one new catalogued rule for the uncovered case, with the usual law.
+
+### G6 · DCjson and a game-level recipe — `blocked` on the owner's reply to the Halo Forge user · 0.5–1 day
+
+"DCjson" could not be identified on the web. Ask the user what the format is (owner reply, drafted in
+G2's file). If public and simple, a `tools/plan-json-to-<format>.mjs` recipe plus one paragraph in
+`docs/import.md`'s sibling "export recipes" section. No new example is pinned for it.
+
+### Wave 6 (after the N10 read): G7 repair-convergence replay (the review rings of iteration N fading
+into N+1; needs `fix`/`repair` to emit a trace, design spike first), D1, A6, archlang-3d M2+, Tier B.
