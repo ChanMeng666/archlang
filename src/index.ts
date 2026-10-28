@@ -454,6 +454,9 @@ export { resolvePlan } from "./analyze.js";
 export type { AnalyzeOptions } from "./analyze.js";
 export { joinWallSet } from "./wall-lowering.js";
 export type { JoinableWall, JoinedCut, JoinedWallSet } from "./wall-lowering.js";
+// The key `joinWallSet` groups fills by: `hatchKey(hatchOf(wall))` names a wall's group.
+export { hatchKey, hatchOf } from "./hatches.js";
+export type { HatchSpec } from "./hatches.js";
 export { loopsToPolygons } from "./geometry/joinery.js";
 export type { JoineryResult, JoinerySplit } from "./geometry/joinery.js";
 export type { Edge, EdgeLoop } from "./geometry/band.js";

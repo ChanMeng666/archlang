@@ -36,7 +36,7 @@ const DESCRIBE = resolve(SRC, "describe.ts");
 
 /**
  * The resolved-plan seam a downstream consumer reads (ADR 0031): each value and the module
- * that declares it. Only these five are walked; the types they reach are DERIVED below.
+ * that declares it. Only these are walked; the types they reach are DERIVED below.
  */
 const SEAM_VALUES: ReadonlyArray<readonly [name: string, module: string]> = [
   ["resolvePlan", "analyze.ts"],
@@ -44,6 +44,8 @@ const SEAM_VALUES: ReadonlyArray<readonly [name: string, module: string]> = [
   ["loopsToPolygons", "geometry/joinery.ts"],
   ["doorSwing", "geometry.ts"],
   ["doorLeaves", "geometry.ts"],
+  ["hatchKey", "hatches.ts"],
+  ["hatchOf", "hatches.ts"],
 ];
 
 /**
@@ -88,10 +90,10 @@ function ownedNamedType(checker: ts.TypeChecker, id: ts.Identifier): OwnedType |
 
 /**
  * Every named type declared under `src/` that is transitively reachable from `roots`, as
- * `name -> declaring file`. Breadth-first over type-reference nodes. A name in `stopAt` is
- * recorded but not expanded: the frontier walk of a function signature stops where the root
- * already gives the consumer a name, so a pre-existing hole behind an exported type is not
- * charged to the function that reaches it.
+ * `name -> declaring file`. Breadth-first over type-reference and `import("…").T` nodes. A
+ * name in `stopAt` is recorded but not expanded: the frontier walk of a function signature
+ * stops where the root already gives the consumer a name, so a pre-existing hole behind an
+ * exported type is not charged to the function that reaches it.
  */
 function reachableNamedTypes(
   checker: ts.TypeChecker,
@@ -105,8 +107,14 @@ function reachableNamedTypes(
     const current = queue.shift();
     if (!current) break;
     const visit = (node: ts.Node): void => {
-      if (ts.isTypeReferenceNode(node)) {
-        const nameNode = node.typeName;
+      // A named type is written either as a reference (`T`, `ns.T`) or inline as
+      // `import("./m.js").T`; the latter is an ImportTypeNode, not a TypeReferenceNode.
+      const nameNode = ts.isTypeReferenceNode(node)
+        ? node.typeName
+        : ts.isImportTypeNode(node)
+          ? node.qualifier
+          : undefined;
+      if (nameNode) {
         const id = ts.isIdentifier(nameNode) ? nameNode : nameNode.right;
         const hit = ownedNamedType(checker, id);
         if (hit) {
@@ -269,6 +277,7 @@ describe("the public type surface is closed", () => {
     expect(seam.get("loopsToPolygons")?.get("Arc")).toBe("src/geometry/arc.ts");
     expect(seam.get("doorSwing")?.get("DoorSwingDir")).toBe("src/grammar/tokens.ts");
     expect(seam.get("resolvePlan")?.has("AnalyzeOptions")).toBe(true);
+    expect(seam.get("hatchOf")?.get("HatchSpec")).toBe("src/hatches.ts");
     // And the stop set is the IR vocabulary, not empty and not the whole root.
     expect(irVocabulary.has("ResolvedPlan")).toBe(true);
     expect(irVocabulary.has("JoinedCut")).toBe(false);

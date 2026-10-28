@@ -125,3 +125,14 @@ semantic is a major; removing an export is a deprecation (`@deprecated` and a CH
   hole this change neither widens nor repairs.
 - **An `@experimental` tier or an `./analyze` subpath.** No precedent for the tier; the subpath would
   split the surface and add an entry the MCP release gate must carry.
+
+## Amendment 2026-10-28: the hatch group key (card A0b)
+
+`joinWallSet(walls, groupKeys, split?)` returns one fill per group key the caller names, and a
+wall's group is `hatchKey(hatchOf(wall))` (`src/hatches.ts`: material, scale and angle). The key
+function was not exported, so the first consumer rebuilt the key's format from the three public
+fields, guarded only by its corpus test. **Export `hatchKey` and `hatchOf`** as plain re-exports,
+and **`HatchSpec`**, the one type their signatures reach (decision 4: the contract test walks them
+like the other five). No function body changes. `Point` (`src/ast.ts`), the element of
+`RWall.points` and of `loopsToPolygons`'s rings, was already nameable from the root through
+`export type * from "./ast.js"`; the consumer now imports it instead of reading it off `RWall`.

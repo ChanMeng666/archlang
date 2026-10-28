@@ -18,6 +18,8 @@ const REQUIRED_VALUES = [
   "loopsToPolygons",
   "doorSwing",
   "doorLeaves",
+  "hatchKey",
+  "hatchOf",
   "makeVirtualWorld",
 ];
 
