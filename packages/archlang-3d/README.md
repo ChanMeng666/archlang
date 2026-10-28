@@ -22,7 +22,20 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
 - `src/curves.ts`: arcs to a chord tolerance (default 2 mm).
 - `src/mesh/`: Mesh3D — slab, floors, columns, walls (body + sill + lintel per opening), closed door
   leaves, window frame and glass, grey-box furniture, a hidden flat roof; `earcut` (ISC) for caps.
-- `src/node.ts`: the Node `World` (kept out of the browser entry).
+- `src/replay/`: the replay (M1a) — `timeline.ts` (the event table and `stateAt(t)`, pure),
+  `viewer.ts` (browser: three.js 0.186.1, `__seek`/`__frameHash`), `html.ts` (one offline file),
+  `video.ts` (Playwright's Chromium on SwiftShader + ffmpeg).
+- `src/node.ts`: the Node `World` and the Node-only replay builders (kept out of the browser entry).
+
+The command (from the repository root):
+
+```sh
+npm -w packages/archlang-3d run archlang3d -- view examples/laneway-house.arch --replay -o laneway.html --video laneway.mp4 --json
+```
+
+It writes a single offline HTML file (the plan draws itself in its authoring order, the core's own
+drawing fades in, then the walls rise) and, with `--video`, a 15 s 1080p30 MP4; `--json` reports the
+frame count and the key frames' pixel hashes. Needs Chromium through Playwright and `ffmpeg`.
 
 Tests: `test/*.test.ts` run in the core's `npm test`; heavy tests go in `e2e/*.e2e.ts` and run with
 `npm run check:3d` at the repository root. The plan and its cards: `docs/plans/archlang-3d/`,
