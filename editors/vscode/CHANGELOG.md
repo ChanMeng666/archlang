@@ -14,6 +14,14 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.33.0] - 2026-10-28
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.45.0`** (wall `status` is drawn: a demolished
+  wall as a dashed outline, with a `demolished` legend row and the DXF layers `A-WALL-DEMO` /
+  `A-WALL-NEWW`).
+
 ## [0.32.0] - 2026-10-28
 
 ### Changed

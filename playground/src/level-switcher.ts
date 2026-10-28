@@ -2,8 +2,8 @@
  * The storey switcher — one `L<n>` button per `level` block of a multi-storey plan.
  *
  * It lives in the OUTPUT PANE'S TAB STRIP, not in the preview toolbar, and that is a
- * decision rather than a layout accident: the selected storey drives all four tabs
- * (the drawing, the facts strip, Describe, Lint) and every export, so a control that is
+ * decision rather than a layout accident: the selected storey drives every tab (the
+ * drawing, the facts strip, Describe, Lint, the 3D preview) and every export, so a control that is
  * only reachable from the Preview tab delivers half of "the facts follow the storey" —
  * you would have to leave the numbers to change which numbers you are reading. It sits
  * OUTSIDE the `role="tablist"` element for the same kind of reason: these are toggle

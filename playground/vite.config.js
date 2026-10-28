@@ -10,6 +10,9 @@ export default defineConfig({
   resolve: {
     alias: {
       archlang: resolve(__dirname, "../dist/index.js"),
+      // The 3D preview tab (preview3d.ts) reads the core through archlang-3d's own import
+      // specifier: the same built file, so the lazy chunk shares the startup chunk's core.
+      "@chanmeng666/archlang": resolve(__dirname, "../dist/index.js"),
     },
   },
   server: {

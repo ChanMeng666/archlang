@@ -16,7 +16,8 @@
 #preview,
 #describe,
 #lint,
-#intent {
+#intent,
+#preview3d {
   flex: 1;
   min-height: 0;
   display: none;
@@ -960,6 +961,53 @@
 }
 #intent.active {
   display: flex;
+}
+
+/* 3D preview tab (card A5) — light only, like every surface here (ADR 0014). The
+   label is decision D5's wording, verbatim: the tab is a preview from a separate
+   package, and ArchLang itself draws plans. */
+#preview3d {
+  overflow: auto;
+  padding: 12px 14px;
+  background: var(--paper-panel);
+  flex-direction: column;
+  gap: 8px;
+}
+#preview3d.active {
+  display: flex;
+}
+.p3d-label {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-muted);
+}
+.p3d-stage {
+  border: 1px solid var(--hairline);
+  background: var(--paper);
+}
+.p3d-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.p3d-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.p3d-controls input[type="range"] {
+  flex: 1;
+  accent-color: var(--ink);
+}
+.p3d-message {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+[hidden].p3d-stage,
+[hidden].p3d-controls,
+[hidden].p3d-message {
+  display: none;
 }
 
 /* ---- Suggest (advisory topology) -----------------------------------------
