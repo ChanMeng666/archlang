@@ -1015,7 +1015,8 @@ export interface ResolvedPlan {
   walls: RWall[];
   /**
    * The storey AS DRAWN, present only when a wall on it is `status demolish` (B3a): every element
-   * and every wall in source order, the demolished ones included. `elements`/`walls` above are the
+   * and every wall in source order, the demolished ones included (but not an opening a demolished
+   * `walls from rooms` statement derived: it goes with its wall). `elements`/`walls` above are the
    * plan after the demolition (what `describe()`, `lint()`, net area, circulation, enclosure,
    * keeps and every other analysis read), while the drawing (`toScene`, the drawing budget, the
    * sheet fit, `finish`) reads this, through {@link drawnView}. `toScene` draws its demolished
@@ -4017,6 +4018,11 @@ function markPlacement(r: ResolvedElement, node: AstElement, fromStrip: boolean)
  * … status demolish` statement derived on one (it stood in the wall). An opening step 3d re-hosted
  * on a standing wall is a copy carrying its new host, and that wall a copy carrying the opening,
  * so the drawn objects (the hosting the drawing always had) are never touched.
+ *
+ * The plan as drawn drops that derived opening too (A8): it goes with its wall, so the sheet draws
+ * no opening, tags none and schedules none that `describe()` does not know. The demolished wall
+ * keeps the void the opening cut in it: that gap is the wall's own outline as it stands before the
+ * works, and the wall is drawn dashed with it.
  */
 function afterDemolition(
   elements: ResolvedElement[],
@@ -4052,7 +4058,7 @@ function afterDemolition(
   return {
     elements: elements.filter((e) => !demolished(e) && !onDemolished(e)).map(after),
     walls: standingWalls.map((w) => copies.get(w) ?? w),
-    drawn: { elements, walls },
+    drawn: { elements: elements.filter((e) => !onDemolished(e)), walls },
   };
 }
 

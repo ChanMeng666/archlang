@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**147 errors** · **88 warnings**
+**148 errors** · **88 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -42,6 +42,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_FACING_TRANSPOSED`](#e_facing_transposed) | error | Facing the target would put the piece's back on its short side. |
 | [`E_FENCE_CURVED`](#e_fence_curved) | error | A fence cannot have a curved (`arc`) edge. |
 | [`E_FURN_AGAINST`](#e_furn_against) | error | Invalid `against wall` or `against <room>.<edge>` fixture placement. |
+| [`E_FURN_AGAINST_DEMOLISHED_WALL`](#e_furn_against_demolished_wall) | error | A piece of furniture backs onto a wall marked `status demolish`. |
 | [`E_FURN_CLEAR`](#e_furn_clear) | error | Invalid `clear` depth. |
 | [`E_FURN_FLUSH`](#e_furn_flush) | error | `flush` on a placement that touches no edge. |
 | [`E_FURN_ROOM`](#e_furn_room) | error | Furniture placed `in` an unknown room. |
@@ -654,6 +655,19 @@ fence picket { (0,0) arc (3000,3000) radius 3000 }   # error: curved edge
 
 ```arch static
 furniture wc against wall w1 side left size 400x700   # error if w1 is unknown or multi-segment
+```
+
+## E_FURN_AGAINST_DEMOLISHED_WALL
+
+*error* — A piece of furniture backs onto a wall marked `status demolish`.
+
+**Cause.** A `wall … status demolish` (or a `walls from rooms … status demolish` statement) is a wall the remodel takes out: it is drawn, but it encloses nothing, hosts nothing and counts in no area. A piece placed `against wall <id>` naming it, or `against <room>.<edge>` where it is the only wall on the edge, would back onto a wall that is no longer there, so the plan contradicts itself. `against wall <category>` names only the walls of that category that stay, and raises this code when every one of them is coming out.
+
+**Fix.** Back the piece onto a wall that stays (`against wall <id>` naming it), place it `at (x,y)` or `in <room> anchor <edge>`, or keep the wall: `status existing` (or no `status` at all).
+
+```arch static
+wall id=p partition thickness 100 status demolish { (4000,0) (4000,5000) }
+  furniture wardrobe against wall p side left size 1200x600   # error: the wall is being demolished
 ```
 
 ## E_FURN_CLEAR

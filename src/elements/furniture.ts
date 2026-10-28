@@ -581,7 +581,17 @@ function placeAgainst(
     ctx.diag({ severity: "error", message: `Furniture "${id}" ${message}`, code: "E_FURN_AGAINST", span });
     return null;
   };
-  const matches = ctx.walls.filter((w) => w.id === ag.wall || w.category === ag.wall);
+  const named = ctx.walls.filter((w) => w.id === ag.wall || w.category === ag.wall);
+  // A `status demolish` wall (B3a) holds nothing up: named by id it is refused; a category names
+  // only the walls that stay, and is refused when every wall it names is coming out.
+  const gone = named.find((w) => w.status === "demolish" && w.id === ag.wall);
+  const matches = named.some((w) => w.status === "demolish") ? named.filter((w) => w.status !== "demolish") : named;
+  if (gone || (matches.length === 0 && named.length > 0)) {
+    const wall = gone ?? named[0]!;
+    const segs = segmentsOfWall(wall);
+    ctx.diag(demolishedBackDiagnostic(id, wall.id, wall.category, segs.length === 1 ? segs[0] : undefined, span));
+    return null;
+  }
   if (matches.length === 0) {
     return err(
       ctx.unplacedWall?.(ag.wall)
@@ -819,6 +829,36 @@ function againstText(edge: string, a: FurnitureAuthored | undefined): string {
 }
 
 /**
+ * `E_FURN_AGAINST_DEMOLISHED_WALL`: a piece is backed onto a wall marked `status demolish` (B3a),
+ * by `against wall <id|category>` or `against <room>.<edge>`. Named as a person would (the kind
+ * of wall and, for one straight axis-aligned segment, the line it runs on); the ids are in the hint.
+ */
+function demolishedBackDiagnostic(
+  pieceId: string,
+  wallId: string,
+  category: string,
+  seg: WallSegment | undefined,
+  span: Span | undefined,
+): Diagnostic {
+  const line =
+    seg && !seg.arc && seg.a.x === seg.b.x && seg.a.y !== seg.b.y
+      ? ` at x ${fmt3(seg.a.x)}`
+      : seg && !seg.arc && seg.a.y === seg.b.y && seg.a.x !== seg.b.x
+        ? ` at y ${fmt3(seg.a.y)}`
+        : "";
+  const kind = category === "partition" ? "partition" : `${category} wall`;
+  return {
+    severity: "error",
+    code: "E_FURN_AGAINST_DEMOLISHED_WALL",
+    message: `A piece of furniture backs onto the ${kind}${line}, which is marked \`status demolish\`: a demolished wall holds nothing`,
+    ...(span ? { span } : {}),
+    hints: [
+      `The piece is "${pieceId}" and the wall "${wallId}". Back it onto a wall that stays, place it \`at (x,y)\` or \`in <room> anchor <edge>\`, or keep the wall (\`status existing\`).`,
+    ],
+  };
+}
+
+/**
  * `against <room>.<edge> [offset <mm>]` (ADR 0028 §5a, ADR 0029 §2): back the piece onto a room's
  * own edge. The back face is the edge line, or the room-side face of the one wall body that
  * stands on the line over the piece's whole span; anything else is `E_FURN_AGAINST`. Closed
@@ -872,6 +912,9 @@ function placeAgainstEdge(
   for (const w of ctx.walls) points += w.points.length;
   chargeSteps(ctx.walls.length + points + 1);
   const near: { seg: WallSegment; open: boolean }[] = [];
+  // A `status demolish` wall on the line (B3a) is coming out: it backs nothing, and when no wall
+  // that stays is on the line either, nothing will stand there to back onto.
+  let demolished: { seg: WallSegment; id: string } | undefined;
   for (const w of ctx.walls) {
     for (const s of segmentsOfWall(w)) {
       if (s.arc) continue;
@@ -882,8 +925,13 @@ function placeAgainstEdge(
       const a = horiz ? Math.min(s.a.x, s.b.x) : Math.min(s.a.y, s.b.y);
       const b = horiz ? Math.max(s.a.x, s.b.x) : Math.max(s.a.y, s.b.y);
       if (Math.min(b, s1) - Math.max(a, s0) <= 0) continue;
-      near.push({ seg: s, open: w._derived?.open !== undefined });
+      if (w.status === "demolish") demolished ??= { seg: s, id: w.id };
+      else near.push({ seg: s, open: w._derived?.open !== undefined });
     }
+  }
+  if (near.length === 0 && demolished) {
+    ctx.diag(demolishedBackDiagnostic(id, demolished.id, demolished.seg.category, demolished.seg, span));
+    return null;
   }
   let back = c;
   if (near.length > 0) {
