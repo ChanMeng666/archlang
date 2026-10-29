@@ -99,8 +99,11 @@ export const furniture: ElementDef = {
     } else if (ctx.isKeyword("against")) {
       ctx.next();
       ctx.eatKeyword("wall");
-      const wall = ctx.eatIdent().value;
-      const a: NonNullable<FurnitureNode["against"]> = { wall };
+      const wallTok = ctx.eatIdent();
+      const a: NonNullable<FurnitureNode["against"]> = {
+        wall: wallTok.value,
+        wallSpan: { start: wallTok.start, end: wallTok.end },
+      };
       if (ctx.isKeyword("segment")) {
         ctx.next();
         const sel = parseSegmentSelect(ctx);
@@ -589,7 +592,9 @@ function placeAgainst(
   if (gone || (matches.length === 0 && named.length > 0)) {
     const wall = gone ?? named[0]!;
     const segs = segmentsOfWall(wall);
-    ctx.diag(demolishedBackDiagnostic(id, wall.id, wall.category, segs.length === 1 ? segs[0] : undefined, span));
+    // Points at the wall reference (the word after `against wall`), the way `flush` points at its word.
+    const at = ag.wallSpan ?? span;
+    ctx.diag(demolishedBackDiagnostic(id, wall.id, wall.category, segs.length === 1 ? segs[0] : undefined, at));
     return null;
   }
   if (matches.length === 0) {
@@ -778,9 +783,17 @@ function placeInRoom(
   // to the backing wall's inner face. `null` = keep the room-rect edge, either because
   // the author did not ask for `flush` or because that edge has no wall behind it.
   if (place.flush && ANCHOR_BACK_EDGES[a].length === 0) flushWithoutEdge(id, place, ctx, span);
+  // Both questions read the walls that stand (B3a): a `status demolish` wall backs nothing, so an
+  // edge whose only wall is coming out measures `flush` from the room edge, as an unwalled one does,
+  // and derives no turn. The same array when nothing is demolished (the copy is charged first).
+  let walls = ctx.walls;
+  if (walls.some((wl) => wl.status === "demolish")) {
+    chargeSteps(walls.length);
+    walls = walls.filter((wl) => wl.status !== "demolish");
+  }
   const face = (e: RectEdge): number | null =>
     place.flush && ANCHOR_BACK_EDGES[a].includes(e)
-      ? innerFaceOfRoomEdge(roomRect, e, ctx.walls, FIXTURE_WALL_TOL_MM)
+      ? innerFaceOfRoomEdge(roomRect, e, walls, FIXTURE_WALL_TOL_MM)
       : null;
   let x: number;
   if (a === "top-left" || a === "left" || a === "bottom-left") x = (face("left") ?? x0) + inset;
@@ -797,7 +810,7 @@ function placeInRoom(
   // its back. A single walled edge in both = one answer; anything else = no rotation.
   const shape = backCandidateEdges({ w, h }, defaultFootprint(category));
   const backed = ANCHOR_BACK_EDGES[a].filter(
-    (e) => shape.includes(e) && backingWallForRoomEdge(roomRect, e, ctx.walls, FIXTURE_WALL_TOL_MM) !== null,
+    (e) => shape.includes(e) && backingWallForRoomEdge(roomRect, e, walls, FIXTURE_WALL_TOL_MM) !== null,
   );
   return backed.length === 1 ? { at, rotate: rotateForBackEdge(backed[0]!) } : { at };
 }

@@ -952,7 +952,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `E_ROOF_PLACEMENT` — `roof` used inside a component body. **Fix:** Move the `roof` line out to the plan body (or into the `level` block it belongs to).
 - `E_ROOF_POLY_DEGENERATE` — `roof polygon` outline has fewer than 3 effective vertices. **Fix:** Give at least three vertices that actually turn a corner.
 - `E_ROOF_SELF_INTERSECT` — The roof outline crosses itself. **Fix:** Reorder the vertices, or reduce the overhang — or state the outline explicitly with `roof polygon …`.
-- `E_ROOF_WALL` — `roof overhang … wall <id>` names a wall that cannot carry a roof. **Fix:** Check the id, and give the wall a `close` so its points form a ring.
+- `E_ROOF_WALL` — `roof overhang … wall <id>` names a wall that cannot carry a roof. **Fix:** Check the id, give the wall a `close` so its points form a ring, or name a wall that stays.
 - `E_ROOMS_NOT_TILING` — `walls from rooms`, or a `wall … around`, meets rooms that do not tile one connected floor. **Fix:** Write the leftover floor as a room of its own (a corridor, a lobby), move the rooms so they meet edge to edge, or cover a courtyard exactly with an `outdoor` surface (under `walls from rooms`; round a hole, type the rings' points).
 - `E_ROOMS_OVERLAP` — `walls from rooms`, or a `wall … between`/`wall … around`, meets two rooms that overlap. **Fix:** Move or resize the rooms so they meet edge to edge; the shared edge becomes the partition. Name each room once.
 - `E_ROOM_ALIGN` — Unknown relational alignment edge. **Fix:** Use one of the six edges; the diagnostic suggests the nearest one and carries a fix that rewrites just that word.

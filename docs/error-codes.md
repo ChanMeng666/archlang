@@ -1550,7 +1550,7 @@ let x = 2   # error: redefinition
 
 *error* — `roof overhang` cannot tell which wall ring to follow.
 
-**Cause.** The `overhang` sugar offsets ONE closed wall ring, and with no `wall <id>` clause it infers that ring as the plan's single closed `exterior` wall. The plan has none, or has more than one, so there is nothing to infer — and picking the first would silently draw a roof over part of the building.
+**Cause.** The `overhang` sugar offsets ONE closed wall ring, and with no `wall <id>` clause it infers that ring as the plan's single closed `exterior` wall. The plan has none (a ring marked `status demolish` is coming out, so it does not count), or has more than one, so there is nothing to infer — and picking the first would silently draw a roof over part of the building.
 
 **Fix.** Name the ring (`roof overhang 600 wall <id>`), or state the outline yourself with `roof polygon (x,y) (x,y) (x,y) …`.
 
@@ -1627,9 +1627,9 @@ roof polygon (0,0) (4000,4000) (4000,0) (0,4000)   # error: bow-tie
 
 *error* — `roof overhang … wall <id>` names a wall that cannot carry a roof.
 
-**Cause.** The named wall is not declared in this plan, or it is not a closed ring. An overhang is offset from a loop; an open polyline has no inside to be outside of.
+**Cause.** The named wall is not declared in this plan, it is not a closed ring, or it is marked `status demolish`. An overhang is offset from a loop; an open polyline has no inside to be outside of, and a demolished wall holds no roof.
 
-**Fix.** Check the id, and give the wall a `close` so its points form a ring.
+**Fix.** Check the id, give the wall a `close` so its points form a ring, or name a wall that stays.
 
 ```arch static
 wall id=w1 exterior thickness 200 { (0,0) (8000,0) }
