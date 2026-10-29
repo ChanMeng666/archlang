@@ -7,7 +7,7 @@
  *              openings (doors, windows) → fixtures (catalogued fixtures, then loose furniture);
  *              source order inside a group;
  *   0.40–0.55  the core's own drawing (its SVG) fades in over the footprints and holds;
- *   0.55–1.00  the drawing fades out as the camera tilts to a 30° elevation with a narrow-lens
+ *   0.55–1.00  the drawing fades out as the camera tilts to a 45° elevation with a narrow-lens
  *              dolly; walls rise in the same order, each opening with its host wall; fixtures and
  *              furniture rise after the walls; the roof stays hidden. The end frame is fitted to
  *              the building (`camera.ts`), so it fills the canvas.
@@ -21,7 +21,8 @@
  * The combined view keeps the lower floors readable with EXPLODED STOREYS plus CAMERA STOPS, chosen
  * by looking at rendered frames of two-storey and townhouse:
  *   - each storey is lifted `EXPLODE_GAP_MM` (3 m, about one storey) above the one below, and the
- *     end camera looks down at 45° instead of 30°, so the floor below shows through the gap;
+ *     end camera looks down at 45° (since card A9, so does a one-storey view), so the floor below
+ *     shows through the gap;
  *   - the camera frames the storeys built so far: when storey k is fully up it fills the frame with
  *     storeys 1…k; the next storey's slot opens with a lead-in (`STOP_LEAD`) in which the camera
  *     pulls back and nothing new shows. So the ground floor fills the frame, furniture and all, and
@@ -307,7 +308,7 @@ export interface NodeState {
 }
 
 export interface ReplayState {
-  /** 0 = straight down, 1 = the final 30° perspective. */
+  /** 0 = straight down, 1 = the final perspective (`endElevation`). */
   tilt: number;
   /** 0…1 along the dolly (to the first camera stop). */
   dolly: number;

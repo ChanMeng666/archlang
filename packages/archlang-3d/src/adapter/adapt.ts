@@ -44,8 +44,12 @@ export interface AdaptOptions {
   curveTolMm?: number;
 }
 
-/** The first core release expected to carry the seam (the exports are on `main`, unreleased). */
-export const MIN_CORE = "the first release after 1.43.1";
+/**
+ * The first core release that carries every export this package reads: the seam (`resolvePlan`,
+ * ADR 0031) arrived in 1.44.0, `hatchKey`/`hatchOf` (card A0b) in 1.45.0. Kept equal to the
+ * `peerDependencies` floor (`test/package-meta.test.ts`).
+ */
+export const MIN_CORE = "1.45.0";
 
 export function adaptPlan(source: string, opts: AdaptOptions = {}): AdaptResult {
   // Feature-detect the export instead of failing with a TypeError on a published core that

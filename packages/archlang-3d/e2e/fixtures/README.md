@@ -13,6 +13,12 @@ e2e/keyframes.e2e.ts` in `packages/archlang-3d`, which writes the file with the 
 in. Never rewrite it to turn a red run green: a changed hash needs the reason (a Mesh3D, viewer or
 Chromium change) in the commit that re-pins it.
 
+Re-taken by card A9 (2026-10-29) on Windows 11 x64 with the same Chromium build and command: the
+end camera of a one-storey view moved from 30° to 45° (`endElevation`, `camera.ts`), so exactly
+laneway-house's `tilted` and `end` moved; every `stage:*` frame and all of two-storey's (a combined
+view, already 45°) are byte-identical. The Linux entry is added back once CI's `check-3d` renders
+the same hashes.
+
 Re-taken by card A2b (2026-10-28) on Windows 11 x64 with the same Chromium build and command: the
 T0 parametric furniture replaced the grey boxes, so every frame in which furniture shows moved
 (laneway-house `stage:fixtures`, `tilted`, `end`; two-storey `stage:fixtures`, `stop:1`,

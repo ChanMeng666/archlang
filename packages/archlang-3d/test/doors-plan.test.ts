@@ -106,6 +106,16 @@ describe("--doors plan on the corpus", () => {
     for (const { n, plan } of corpus) expect(checkShells(plan).failures, n).toEqual([]);
   });
 
+  it("a leaf the plan swings through a wall is built as drawn and ledgered (card A9)", () => {
+    const through = corpus.flatMap(({ n, plan }) =>
+      plan.assumptions.filter((a) => a.rule === "door-leaf-through-wall").map((a) => `${n} ${a.id}`),
+    );
+    // The one plan in the corpus that does it: its door's leaf swings into its own curved host.
+    expect(through).toEqual(["s5-door-on-arc d1"]);
+    for (const { closed } of corpus)
+      expect(closed.assumptions.some((a) => a.rule === "door-leaf-through-wall")).toBe(false);
+  });
+
   it("a kind that sweeps no leaf keeps its closed panel, ledgered; the pose is a user parameter", () => {
     const kinds = new Map<string, number>();
     for (const { n, scene, closed, plan } of corpus) {

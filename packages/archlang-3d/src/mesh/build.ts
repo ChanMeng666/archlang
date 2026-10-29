@@ -201,6 +201,28 @@ export function openLeaf(h: Pt, f: Pt, end: Pt, t: number): Polygon {
   };
 }
 
+/**
+ * Whether an open leaf (`openLeaf`'s quadrilateral) passes through a standing wall: a point of its
+ * mid-thickness line, from a tenth of the way out to just short of the tip, strictly inside a
+ * body piece and not in one of its holes. The hinge's own jamb is free (the cut removed the host
+ * there), so the host needs no exception. The leaf is still built as the plan draws it; the caller
+ * ledgers it (card A9: stress `s5-door-on-arc` swings a leaf through its curved host).
+ */
+export function leafThroughWall(leaf: Polygon, walls: ReadonlyArray<{ body: Polygon[] }>): boolean {
+  const [h, end, , inner] = leaf.outer;
+  if (!h || !end || !inner) return false;
+  const ox = (inner[0] - h[0]) / 2;
+  const oy = (inner[1] - h[1]) / 2;
+  for (let k = 1; k <= 19; k++) {
+    const s = k / 20;
+    const p: Pt = [h[0] + (end[0] - h[0]) * s + ox, h[1] + (end[1] - h[1]) * s + oy];
+    for (const w of walls)
+      for (const piece of w.body)
+        if (inRing(p, piece.outer) && !(piece.holes ?? []).some((r) => inRing(p, r))) return true;
+  }
+  return false;
+}
+
 function levelNodes(
   lv: Level,
   ledger: Assumption[],
@@ -360,11 +382,23 @@ function levelNodes(
       const z0 = e + o.sill;
       const swung = o.leaves?.every((l) => l.length === 3) ? (o.leaves as Array<[Pt, Pt, Pt]>) : undefined;
       if (doors === "plan" && swung) {
+        const open = swung.map(([h, f, end]) => openLeaf(h, f, end, LEAF_MM * MM));
+        // The plan swings this leaf through a wall: reproduced as drawn, never silently.
+        if (open.some((leaf) => leafThroughWall(leaf, lv.walls))) {
+          ledger.push({
+            kind: "door",
+            id: o.id,
+            field: "pose",
+            value: "through-wall",
+            provenance: "derived",
+            rule: "door-leaf-through-wall",
+          });
+        }
         node(
           "door",
           o.id,
           i,
-          swung.map(([h, f, end]) => prism(openLeaf(h, f, end, LEAF_MM * MM), z0, e + head)),
+          open.map((leaf) => prism(leaf, z0, e + head)),
           { ...extras, door_kind: o.doorKind ?? "hinged", pose: "plan" },
         );
         return;

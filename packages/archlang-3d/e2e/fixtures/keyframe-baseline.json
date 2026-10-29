@@ -1,11 +1,6 @@
 {
   "taken": [
     {
-      "platform": "linux",
-      "arch": "x64",
-      "chromium": "156.0.8078.4"
-    },
-    {
       "platform": "win32",
       "arch": "x64",
       "chromium": "156.0.8078.4"
@@ -19,8 +14,8 @@
       "stage:walls": "226de8337694ff42788a1e09ffaa112269c68c1826715ccf0af0990c96db056a",
       "stage:openings": "b69c6417134f0bd340432c211ac78094174a84fd9e3b8528d657b6da0c460fb2",
       "stage:fixtures": "1a1ce6d4236eb3c3d2bf08a866f8d2d8abf280f3a26c764408449dce632ce6cf",
-      "tilted": "2e9f59ac8a9ec8f4ff1003de52565c2227c85f5fa652ec9c83d31cb12f9b1546",
-      "end": "c377303b98478c8385553f4dcbd11fdf59a5ccd8ca182f1094a7b212029952f6"
+      "tilted": "10ba2d4db019731b3364dcf9de99d3afa8e127be93c0540dbe205269196bd5da",
+      "end": "e186b3d1b6aa65e5098db8ffff1e49aee7941438fa59404df60841e54a8fe1a9"
     },
     "two-storey.arch": {
       "stage:brief": "d569e5eaec80a35b9ffb7edb32ce6863892d5b7726337e364bce642e4e0584f4",
