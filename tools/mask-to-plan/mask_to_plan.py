@@ -135,6 +135,36 @@ def touching(a: tuple[int, int, int, int], b: tuple[int, int, int, int]) -> bool
     return False
 
 
+def wall_runs(mask_regions: np.ndarray, wall: np.ndarray, shortest: int) -> tuple[list[int], list[int]]:
+    """Lengths (px) of every run of wall pixels along rows and columns, at least `shortest` long
+    (a shorter one is segmentation noise), that is bounded by a room on both sides (a partition
+    crossing) or by a room on one side only (an exterior wall crossing; a run that reaches the
+    image edge counts too, as at least that thick)."""
+    part: list[int] = []
+    ext: list[int] = []
+    for lines in (mask_regions, mask_regions.T):
+        walls = wall if lines is mask_regions else wall.T
+        for line, wl in zip(lines, walls):
+            n = len(line)
+            k = 0
+            while k < n:
+                if not wl[k]:
+                    k += 1
+                    continue
+                k0 = k
+                while k < n and wl[k]:
+                    k += 1
+                if k - k0 < shortest:
+                    continue
+                a = k0 > 0 and line[k0 - 1] > 0
+                b = k < n and line[k] > 0
+                if a and b:
+                    part.append(k - k0)
+                elif a or b:
+                    ext.append(k - k0)
+    return part, ext
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("mask")
@@ -149,6 +179,8 @@ def main() -> None:
     ap.add_argument("--areas", help="also write each region's mask area and its room ids here")
     a = ap.parse_args()
 
+    if not (a.mm_per_px > 0) or a.grid <= 0 or a.exterior <= 0 or a.partition <= 0:
+        sys.exit("--mm-per-px, --grid, --exterior and --partition must be positive")
     cell = a.grid / a.mm_per_px
     if cell < 1 or abs(cell - round(cell)) > 1e-9:
         sys.exit("--grid must be a whole multiple of --mm-per-px")
@@ -173,11 +205,21 @@ def main() -> None:
             info.append({"class": cid, "label": room_classes[cid], "mask_area_m2": round(area, 4)})
             regions[sel] = len(info)
 
+    # Warn about the two ways a mask breaks the area match silently.
+    warnings: list[str] = []
+    edge = np.unique(np.concatenate([regions[0], regions[-1], regions[:, 0], regions[:, -1]]))
+    for idx in edge[edge > 0]:
+        warnings.append(f"{info[idx - 1]['label']} touches the image edge: it has no wall outside, so it ends at the wall line too early")
+    part_runs, ext_runs = wall_runs(regions, wall, cell)
+    for name, runs, given in (("partition", part_runs, a.partition), ("exterior", ext_runs, a.exterior)):
+        if runs:
+            measured = float(np.median(runs)) * a.mm_per_px
+            if abs(measured - given) > a.grid:
+                warnings.append(f"the mask's {name} walls measure about {measured:.0f} mm, but --{name} is {given}")
     regions[wall & (regions == 0)] = -1
-    half = max(a.exterior, a.partition) / 2
-    if half % a.grid:
-        sys.exit("half of each wall thickness must be a whole number of --grid steps")
-    grid = grow(snap(regions, cell), int(half // a.grid), -(-max(a.exterior, a.partition) // a.grid))
+    if (a.exterior / 2) % a.grid:
+        sys.exit("half of the exterior thickness must be a whole number of --grid steps")
+    grid = grow(snap(regions, cell), int(a.exterior / 2 // a.grid), -(-max(a.exterior, a.partition) // a.grid))
 
     # Translate so the building's top-left grid cell is the origin.
     ys, xs = np.nonzero(grid)
@@ -240,6 +282,8 @@ def main() -> None:
             json.dump({"mm_per_px": a.mm_per_px, "regions": areas}, f, indent=2)
             f.write("\n")
     print(f"{len(areas)} regions, {len(rooms)} rooms -> {a.out}", file=sys.stderr)
+    for w in warnings:
+        print(f"warning: {w}; floor areas will not match the mask (check with check_areas.mjs)", file=sys.stderr)
 
 
 if __name__ == "__main__":

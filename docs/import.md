@@ -24,7 +24,7 @@ PDF or a photo.
 | Each room as one or more rectangles, snapped to the plan grid | Doors, windows and openings |
 | Room labels, from the class names you give | Furniture and fixtures |
 | Wall positions, derived from the rooms by `walls from rooms` | Wall thicknesses (you pass them) |
-| Floor areas, to within the snap grid | Curved, angled or freely polygonal rooms |
+| Floor areas: within 1 % on the worked example, when the mask meets the limits below | Curved, angled or freely polygonal rooms |
 
 `walls from rooms` derives walls only between rectangles, so a room that is not one rectangle (an
 L-shaped living room) becomes several rectangles joined by `open between` clauses: the partition
@@ -56,12 +56,12 @@ values:
 }
 ```
 
-Convert, then compile, check and measure:
+Convert, then compile, check and count:
 
 ```bash
 cd tools/mask-to-plan
 pip install -r requirements.txt
-python -I mask_to_plan.py example/mask.png example/classes.json --mm-per-px 10 \
+python -I mask_to_plan.py example/mask.png example/classes.json --mm-per-px 10 --name "Mask example" \
   --grid 50 --exterior 200 --partition 100 -o example/plan.json --areas example/areas.json
 archlang compile --from-json example/plan.json -o plan.svg
 node json_to_arch.mjs example/plan.json > example/plan.arch
@@ -100,15 +100,23 @@ Bath         mask    2.59 m2  net    2.59 m2  0.00 %  (bath)
 worst 0.95 % (tolerance 2.0 %)
 ```
 
-`validate` passes with warnings, as it should for a plan with no doors or windows yet: every room is
-`W_ROOM_DISCONNECTED`, and the bedrooms and the living room have no window. Add the doors and windows
+`validate` passes with warnings, as it should for a plan with no doors or windows yet: most rooms are
+`W_ROOM_DISCONNECTED`, there is no entrance (`W_NO_ENTRANCE`), the rooms have no windows and the bath and
+kitchen no fixtures. Add the doors and windows
 as you would in any plan (`door between living_a and hall …`, `window on kitchen.top …`), and run
 `validate` again.
 
 ## Limits
 
-- **Axis-aligned only.** A wall at an angle snaps into a staircase of small rectangles. Rotate the
-  mask so the walls run along the pixel grid first.
+- **Axis-aligned only.** A wall at an angle snaps into a staircase of small rectangles whose shared
+  edges are shorter than a partition, so the result does not compile (`E_PARTITION_TOO_SHORT`, once per
+  pair). Rotate the mask so the walls run along the pixel grid first.
+- **Every room fully walled, and the thicknesses you pass match the mask.** A room touching the image
+  edge has no wall outside it, and a wall thicker or thinner than `--exterior` / `--partition` moves
+  every edge it bounds: the floor areas then drift by several per cent. The tool measures the mask's
+  own wall runs and warns in both cases; `check_areas.mjs` says by how much.
+- **Adjacent rooms of one class need a wall between them.** Two bedrooms that touch with no wall pixels
+  between them are one region, so they become one room.
 - **The grid decides the accuracy.** `--grid` must be a whole number of pixels, and half of each wall
   thickness a whole number of grid steps (50 mm with 200 and 100 mm walls). A coarser grid moves room
   edges by up to half a step.
