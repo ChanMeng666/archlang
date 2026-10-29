@@ -1,6 +1,7 @@
 # What's new in 1.44 to 1.46
 
-The features that arrived in 1.44.0, 1.45.0 and 1.46.0, one section each, with an example you can run.
+The features that arrived in 1.44.0, 1.45.0 and 1.46.0, one section each, with an example you can run,
+plus the circulation overlay, which is older and since 1.45.0 reads the plan after a demolition.
 Every command and code name below is the one `archlang <command> --help` and the
 [error catalog](error-codes.md) print. The full list of changes, version by version, is in
 [`CHANGELOG.md`](https://github.com/ChanMeng666/archlang/blob/main/CHANGELOG.md).
@@ -135,7 +136,7 @@ archlang preview remodel.arch --review -o review.png --json
 ```
 
 For the remodel above with its window deleted, the sheet carries one mark, `W_HABITABLE_NO_WINDOW`,
-ringing the living room; `marks[0]` reports `"n": 1` and `"line": 8`. A plan with no warning gives a
+ringing the living room; `marks[0]` reports `"n": 1` and `"line": 9`. A plan with no warning gives a
 sheet with `"rings": 0`.
 
 ## Circulation overlay
@@ -187,7 +188,8 @@ plan "Stacked" {
 }
 ```
 
-Move the upper stair to `at (3000,200)` and the keep reports `W_KEEP_VIOLATED` while the lint reports
+As written the plan lints with two advisory warnings unrelated to stacking (the living room has no
+window, and the upper stair has no clear landing at its head). Move the upper stair to `at (3000,200)` and the keep reports `W_KEEP_VIOLATED` while the lint reports
 `W_SHAFT_FOOTPRINT_MISMATCH` ("the footprints overlap by 0% of the smaller, under half"). Remove the keep and rename it
 `cor`, and the lint reports `W_STAIR_UNMATCHED` on both storeys. The keep forms are in the
 [language reference](language-reference.md#keep--declared-invariants-checked-and-never-solved).

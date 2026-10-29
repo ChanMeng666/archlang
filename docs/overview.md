@@ -338,7 +338,7 @@ suffixes (`4m` / `40cm` / `20mm`) fold exactly to millimetres at lex time.
 </details>
 
 <details>
-<summary><b>It measures, remodels and hands over a plan</b></summary>
+<summary><b>It counts quantities, remodels and hands over a plan</b></summary>
 
 <br/>
 
