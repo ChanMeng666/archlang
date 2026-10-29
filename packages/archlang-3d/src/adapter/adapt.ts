@@ -55,12 +55,13 @@ export function adaptPlan(source: string, opts: AdaptOptions = {}): AdaptResult 
   // Feature-detect the export instead of failing with a TypeError on a published core that
   // predates ADR 0031 (its downstream contract, item 3).
   const resolvePlan = (core as Partial<typeof core>).resolvePlan;
-  if (typeof resolvePlan !== "function") {
+  const hatches = (core as Partial<typeof core>).hatchKey;
+  if (typeof resolvePlan !== "function" || typeof hatches !== "function") {
     return {
       ok: false,
       refusal: {
         code: "E3D_CORE_TOO_OLD",
-        message: `@chanmeng666/archlang does not export resolvePlan; archlang-3d needs ${MIN_CORE}.`,
+        message: `@chanmeng666/archlang is too old (no resolvePlan or hatchKey); archlang-3d needs ${MIN_CORE} or later.`,
       },
     };
   }

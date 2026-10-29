@@ -203,7 +203,8 @@ export function openLeaf(h: Pt, f: Pt, end: Pt, t: number): Polygon {
 
 /**
  * Whether an open leaf (`openLeaf`'s quadrilateral) passes through a standing wall: a point of its
- * mid-thickness line, from a tenth of the way out to just short of the tip, strictly inside a
+ * mid-thickness line, sampled every twentieth of the way from the hinge to just short of the tip
+ * (columns are not tested), strictly inside a
  * body piece and not in one of its holes. The hinge's own jamb is free (the cut removed the host
  * there), so the host needs no exception. The leaf is still built as the plan draws it; the caller
  * ledgers it (card A9: stress `s5-door-on-arc` swings a leaf through its curved host).
@@ -384,11 +385,12 @@ function levelNodes(
       if (doors === "plan" && swung) {
         const open = swung.map(([h, f, end]) => openLeaf(h, f, end, LEAF_MM * MM));
         // The plan swings this leaf through a wall: reproduced as drawn, never silently.
-        if (open.some((leaf) => leafThroughWall(leaf, lv.walls))) {
+        const through = open.some((leaf) => leafThroughWall(leaf, lv.walls));
+        if (through) {
           ledger.push({
             kind: "door",
             id: o.id,
-            field: "pose",
+            field: "leaf",
             value: "through-wall",
             provenance: "derived",
             rule: "door-leaf-through-wall",
@@ -399,7 +401,8 @@ function levelNodes(
           o.id,
           i,
           open.map((leaf) => prism(leaf, z0, e + head)),
-          { ...extras, door_kind: o.doorKind ?? "hinged", pose: "plan" },
+          // `through_wall` rides on the node, so a GLB reader (whose file carries no ledger) sees it too.
+          { ...extras, door_kind: o.doorKind ?? "hinged", pose: "plan", ...(through ? { through_wall: true } : {}) },
         );
         return;
       }

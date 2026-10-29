@@ -16,8 +16,9 @@ Chromium change) in the commit that re-pins it.
 Re-taken by card A9 (2026-10-29) on Windows 11 x64 with the same Chromium build and command: the
 end camera of a one-storey view moved from 30° to 45° (`endElevation`, `camera.ts`), so exactly
 laneway-house's `tilted` and `end` moved; every `stage:*` frame and all of two-storey's (a combined
-view, already 45°) are byte-identical. The Linux entry is added back once CI's `check-3d` renders
-the same hashes.
+view, already 45°) are byte-identical. CI's `check-3d` job (ubuntu-latest x64, the same Chromium
+build; GitHub Actions run 40794082579) then rendered the same 17 hashes, byte for byte, and failed
+only because Linux was not listed; the Linux entry was added back with the hashes unchanged.
 
 Re-taken by card A2b (2026-10-28) on Windows 11 x64 with the same Chromium build and command: the
 T0 parametric furniture replaced the grey boxes, so every frame in which furniture shows moved
