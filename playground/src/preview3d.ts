@@ -16,7 +16,7 @@
  * with this tab open compiles once, not twice; `adaptPlan`'s resolve is the package's own.
  */
 import { compile } from "archlang";
-import { adaptPlan, buildMesh, storeysOf, viewMesh } from "@chanmeng666/archlang-3d";
+import { adaptPlan, buildMesh, replayFacts, storeysOf, viewMesh } from "@chanmeng666/archlang-3d";
 import { mountReplay, PREVIEW_LABEL, type ReplayHandle, replayPayload } from "@chanmeng666/archlang-3d/browser";
 
 /** The canvas's drawing size (CSS scales it to the pane); 16:9 like the replay HTML. */
@@ -67,7 +67,12 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   const canvas = document.createElement("canvas");
   canvas.className = "p3d-canvas";
   canvas.setAttribute("role", "img");
-  stage.append(canvas);
+  const strip = document.createElement("div");
+  strip.className = "p3d-strip";
+  strip.setAttribute("role", "group");
+  strip.setAttribute("aria-label", "Plan facts");
+  strip.hidden = true;
+  stage.append(canvas, strip);
 
   const controls = document.createElement("div");
   controls.className = "p3d-controls";
@@ -142,16 +147,21 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
         return false;
       }
       view = index < 0 ? "all" : `L${level}`;
+      const facts = replayFacts(source, { view: index < 0 ? "all" : index + 1 });
+      delete strip.dataset.stripKey;
+      strip.hidden = true;
       const payload = replayPayload(viewMesh(mesh, index < 0 ? "all" : index + 1), {
         title: r.scene.meta.name,
         svg,
         width: WIDTH,
         height: HEIGHT,
         seconds: SECONDS,
+        // The strip's numbers: the core's describe() and lint() of the same source.
+        ...(facts ? { facts } : {}),
       });
       stop();
       handle?.dispose();
-      next = mountReplay(canvas, payload);
+      next = mountReplay(canvas, payload, strip);
       const which = index < 0 ? (levels.length > 1 ? "all storeys" : "") : `storey L${level}`;
       canvas.setAttribute(
         "aria-label",

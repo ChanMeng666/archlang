@@ -16,7 +16,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { compile } from "@chanmeng666/archlang";
 import { describe, expect, it } from "vitest";
-import { adaptPlan, buildMesh, keyFrames, stateAt, timeline } from "../src/index.js";
+import { adaptPlan, buildMesh, keyFrames, replayFacts, stateAt, timeline } from "../src/index.js";
 import { renderReplay, replayHtml } from "../src/node.js";
 import { EXAMPLES_LIST, WORLD } from "../test/corpus.js";
 
@@ -44,7 +44,14 @@ async function render(name: string) {
   if (!r.ok) throw new Error(`${name}: ${r.refusal.code}`);
   const mesh = buildMesh(r.scene);
   const events = timeline(mesh);
-  const html = await replayHtml(mesh, { title: name, svg: compile(src, { world: WORLD }).svg, ...SIZE });
+  // With the metrics strip (card G4): it is DOM over the canvas, so the pinned hashes must not move.
+  const facts = replayFacts(src, { world: WORLD });
+  const html = await replayHtml(mesh, {
+    title: name,
+    svg: compile(src, { world: WORLD }).svg,
+    ...SIZE,
+    ...(facts ? { facts } : {}),
+  });
   const v = await renderReplay({ html, events, ...SIZE });
   // Text-free key frames only: the drawing (the only text) is invisible at these times.
   const textFree = new Set(

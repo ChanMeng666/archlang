@@ -6,6 +6,18 @@ The package is private and unpublished; versions start with its first 0.x public
 
 ### Added
 
+- Metrics strip in the replay (card G4): a line of plain facts over the picture, each shown when its
+  stage is reached: storeys (combined view of several storeys), rooms and two floor areas, "floor
+  area 45.05 m² (net)" and "floor area 48.75 m² (to wall centre lines)", when the first floor
+  appears; doors and windows with the first opening; the warnings count (`lint()`'s) once the core's
+  drawing is fully in. `replayFacts(source, { world, view })` reads the numbers from the core's
+  `describe()` and `lint()`; `stripAt(facts, events, t)` is a pure function of `t`. The strip is DOM
+  text in a layer over the canvas (`mountReplay(canvas, payload, strip)`), never drawn into it, so
+  `__frameHash` and every pinned key-frame hash are unchanged (the key-frame e2e now renders with the
+  strip and the fixture was not touched). The exported HTML and MP4 carry it (dark theme with
+  `--theme dark`); the playground's 3D tab shows it in the light theme. The video is cut from the
+  stage element (canvas plus strip) at the same size. No score, no pass counts, no percentages.
+
 - `--doors plan` (card A7) on `view`, `build` and `check`: each hinged leaf, and each of a `double`
   door's two, stands at the swing the core draws (`doorLeaves`: hinge → open tip, 90° on, its
   40 mm thickness laid inside the quarter-disc). Sliding, barn, bifold, pocket and garage doors sweep

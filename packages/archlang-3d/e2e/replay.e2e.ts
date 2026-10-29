@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { compile } from "@chanmeng666/archlang";
 import { describe, expect, it, vi } from "vitest";
-import { adaptPlan, buildMesh, keyFrames, timeline } from "../src/index.js";
+import { adaptPlan, buildMesh, keyFrames, replayFacts, timeline } from "../src/index.js";
 import { renderReplay, replayHtml } from "../src/node.js";
 import { main } from "../src/cli/run.js";
 import { EXAMPLES_LIST, REPO, WORLD } from "../test/corpus.js";
@@ -44,6 +44,33 @@ describe("replay in a browser", () => {
     // The frames differ from each other: the replay moves.
     expect(new Set(a.keyFrames.map((k) => k.sha256)).size).toBe(a.keyFrames.length);
   });
+
+  it("the metrics strip is DOM over the canvas: key-frame hashes are the same with and without it (card G4)", async () => {
+    const name = "laneway-house.arch";
+    const src = EXAMPLES_LIST.find(([n]) => n === name)?.[1] ?? "";
+    const r = adaptPlan(src, { world: WORLD });
+    if (!r.ok) throw new Error(r.refusal.code);
+    const mesh = buildMesh(r.scene);
+    const svg = compile(src, { world: WORLD }).svg;
+    const facts = replayFacts(src, { world: WORLD });
+    expect(facts).toBeDefined();
+    const size = { width: 640, height: 360 };
+    const events = timeline(mesh);
+    const bare = await renderReplay({ html: await replayHtml(mesh, { title: name, svg, ...size }), events, ...size });
+    const strip = await renderReplay({
+      html: await replayHtml(mesh, { title: name, svg, ...size, ...(facts ? { facts } : {}) }),
+      events,
+      ...size,
+    });
+    expect(strip.keyFrames).toEqual(bare.keyFrames);
+    expect(bare.strips).toBeUndefined();
+    const text = new Map((strip.strips ?? []).map((s) => [s.label, s.text] as const));
+    expect(text.get("stage:brief")).toBe("");
+    expect(text.get("stage:rooms")).toMatch(/3 rooms.*\(net\).*\(to wall centre lines\)/);
+    expect(text.get("stage:rooms")).not.toMatch(/door/);
+    expect(text.get("stage:openings")).toMatch(/4 doors.*4 windows/);
+    expect(text.get("end")).toMatch(/no warnings$/);
+  }, 120_000);
 
   it("runs on every corpus plan the mesh stage builds (35)", async () => {
     const failed: string[] = [];

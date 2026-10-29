@@ -22,7 +22,9 @@ import { compile } from "@chanmeng666/archlang";
 import { adaptPlan } from "../adapter/adapt.js";
 import { buildMesh, type DoorPose } from "../mesh/build.js";
 import { makeNodeWorld } from "../node.js";
+import { replayFacts } from "../replay/facts.js";
 import { replayHtml } from "../replay/html.js";
+import type { ReplayFacts } from "../replay/strip.js";
 import { type ReplayView, storeysOf, timeline, viewLabel, viewMesh } from "../replay/timeline.js";
 import { type KeyFrame, renderReplay, type VideoReport } from "../replay/video.js";
 import { doorPose, HANDLERS, parseFlags, Usage } from "./commands.js";
@@ -143,6 +145,11 @@ async function view(args: Args): Promise<number> {
   // A storey's own page of the core's drawing, matched by level; the combined view draws page 1.
   const svgOf = (view: ReplayView): string =>
     view === "all" ? compiled.svg : (compiled.pages?.find((pg) => pg.level === storeys[view - 1])?.svg ?? compiled.svg);
+  // The metrics strip's numbers: the core's describe() and lint() of this source (card G4).
+  const facts = (view: ReplayView): { facts?: ReplayFacts } => {
+    const f = replayFacts(source, { world, view });
+    return f ? { facts: f } : {};
+  };
   const htmlOf = (view: ReplayView): Promise<string> =>
     replayHtml(viewMesh(mesh, view), {
       title: r.scene.meta.name,
@@ -151,6 +158,7 @@ async function view(args: Args): Promise<number> {
       height: args.height,
       seconds: args.seconds,
       theme: args.theme,
+      ...facts(view),
     });
   const html = await htmlOf(args.storey);
   try {
