@@ -653,3 +653,89 @@ export const roomOutsideShell: LintRule = {
     return out;
   },
 };
+
+// ─── W_WALL_END_SHORT ──────────────────────────────────────────────────────────────────
+
+/** A wall named by its kind in a message ("an exterior wall", "a partition"). */
+function wallKindWords(category: string): string {
+  return category === "exterior" ? "exterior wall" : category === "partition" ? "partition" : `${category} wall`;
+}
+
+/** {@link wallKindWords} with its article. */
+function aKind(category: string): string {
+  const w = wallKindWords(category);
+  return /^[aeiou]/.test(w) ? `an ${w}` : `a ${w}`;
+}
+
+/** Step (mm) along a wall end's own line when looking for the wall it points at. */
+const END_SCAN_STEP_MM = 1;
+
+/**
+ * `W_WALL_END_SHORT`: a wall whose free end stops a sliver short of another wall it runs toward.
+ * Read on the drawing: the end is NOT inside any other wall's body, yet carrying the wall straight
+ * on for at most `wallGapMm` would land inside one. A wall that ends in the open further off is a
+ * stub, a peninsula or a doorway's jamb, which the rule never judges.
+ *
+ * Measured per free end of every open, straight-ended wall (a closed wall has none), against every
+ * OTHER wall's segments: the end touches when its distance to a segment is within half that
+ * segment's thickness; otherwise the wall's own line is walked on in whole millimetres to the first
+ * point inside a body, and that distance is the gap. Two walls ending toward each other on one line
+ * are one finding, not two. A curved end segment is not judged (no straight line to carry on).
+ * Walls are named by kind and place; ids are in the hints only.
+ */
+export const wallEndShort: LintRule = {
+  name: "wall-end-short",
+  family: "enclosure",
+  layer: "validity",
+  stage: "walls",
+  codes: ["W_WALL_END_SHORT"],
+  check(ctx: LintContext): Diagnostic[] {
+    const limit = ctx.rules.wallGapMm;
+    if (limit === null) return [];
+    const out: Diagnostic[] = [];
+    const seen = new Set<string>();
+    for (const w of ctx.ir.walls) {
+      if (w.closed || w.points.length < 2) continue;
+      const n = w.points.length;
+      const ends = [
+        { e: w.points[0]!, from: w.points[1]!, seg: 0 },
+        { e: w.points[n - 1]!, from: w.points[n - 2]!, seg: n - 2 },
+      ];
+      for (const { e, from, seg } of ends) {
+        if (w.arcs?.[seg]) continue;
+        const len = Math.hypot(e.x - from.x, e.y - from.y);
+        if (len < EPS) continue;
+        const d = { x: (e.x - from.x) / len, y: (e.y - from.y) / len };
+        const near = ctx.wallSegs.filter(
+          (s) => s.wallId !== w.id && distPointToWallSegment(e, s) - s.thickness / 2 <= limit + 1,
+        );
+        if (near.length === 0) continue;
+        if (near.some((s) => distPointToWallSegment(e, s) <= s.thickness / 2 + 1)) continue;
+        let hit: { gap: number; wallId: string } | undefined;
+        for (let g = END_SCAN_STEP_MM; g <= limit && !hit; g += END_SCAN_STEP_MM) {
+          const p = { x: e.x + d.x * g, y: e.y + d.y * g };
+          const s = near.find((o) => distPointToWallSegment(p, o) <= o.thickness / 2 + EPS);
+          if (s) hit = { gap: g, wallId: s.wallId };
+        }
+        if (!hit) continue;
+        const other = ctx.ir.walls.find((x) => x.id === hit.wallId);
+        if (!other) continue;
+        const key = `${[w.id, other.id].sort().join("|")}|${hit.gap}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const ids = [w, other].filter((x) => x._idAuthored === true).map((x) => `"${x.id}"`);
+        out.push({
+          severity: "warning",
+          code: "W_WALL_END_SHORT",
+          ...ctx.at(w),
+          message: `${capFirst(aKind(w.category))} ends ${mm(hit.gap)} mm short of ${aKind(other.category)} it runs toward, at (${mm(e.x)}, ${mm(e.y)}). The two do not meet, so the plan shows a slit of ${mm(hit.gap)} mm between them and the walls do not close.`,
+          hints: [
+            `Extend the end of the ${wallKindWords(w.category)} to the face of the ${wallKindWords(other.category)}, or into it so they join; if the slit is a real opening, draw a door or an \`opening\` there instead.`,
+            ...(ids.length > 0 ? [`The walls are ${ids.join(" and ")}.`] : []),
+          ],
+        });
+      }
+    }
+    return out;
+  },
+};

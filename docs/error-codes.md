@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**148 errors** · **88 warnings**
+**148 errors** · **89 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -241,6 +241,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_UNKNOWN_MATERIAL`](#w_unknown_material) | warning | Unknown wall material; using the default hatch. |
 | [`W_UNKNOWN_STYLE_KEY`](#w_unknown_style_key) | warning | Unknown style key. |
 | [`W_UNKNOWN_THEME_KEY`](#w_unknown_theme_key) | warning | Unknown theme key. |
+| [`W_WALL_END_SHORT`](#w_wall_end_short) | warning | A wall stops a few millimetres short of the wall it runs toward. |
 | [`W_WC_SIDE_CLEARANCE`](#w_wc_side_clearance) | warning | A WC's centreline is too close to a wall or fixture at its side. |
 | [`W_WET_ROOM_DOOR`](#w_wet_room_door) | warning | A bathroom or WC has no door, opens onto a kitchen, or is a passage. |
 | [`W_WHILE_DEPRECATED`](#w_while_deprecated) | warning | `while` is deprecated and will be removed in a future major version. |
@@ -3247,6 +3248,19 @@ style room { nope: "#000" }   # warning
 
 ```arch static
 theme { nope: "#000" }   # warning
+```
+
+## W_WALL_END_SHORT
+
+*warning* — A wall stops a few millimetres short of the wall it runs toward.
+
+**Cause.** A wall's free end is not inside any other wall, but carrying the wall straight on for at most `wallGapMm` (100 mm by default) would land inside one: the two were meant to meet and leave a slit. Walls are named by kind and place; a free end further off than the figure is a stub or a doorway's jamb and is never judged. A closed wall has no free end, and a curved end segment is not judged. Two walls ending toward each other on one line are reported once. Set `wallGapMm` to `null` to turn the rule off.
+
+**Fix.** Extend the wall to the face of the wall it runs toward, or into it, so they join. If the slit is meant as an opening, draw a door or an `opening` there instead. There is no machine-applicable fix: which wall moves is a design decision.
+
+```arch static
+wall id=a exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+wall id=p partition thickness 100 { (4000,180) (4000,5000) }   # lint: ends 80 mm short of the top wall's face
 ```
 
 ## W_WC_SIDE_CLEARANCE

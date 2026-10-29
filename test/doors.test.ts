@@ -461,7 +461,7 @@ suite("doors — W_POCKET_RUN", () => {
     // The two annotation-collision rules (PS2.12) follow those: drafting only, their corpus
     // movement listed in the same header. The clearance rules (PS2.11a–d) follow those, and the
     // stair rules (PS2.11e, PS2.34, PS2.15), the kitchen and door rules, PS2.74's
-    // accessible-WC rule and PS2.69's exit-approach rule come last.
+    // accessible-WC rule and PS2.69's exit-approach rule, the bed rule and the wall-end rule (G5) come last.
     expect(names.slice(i + 1)).toEqual([
       "outdoor-overlaps-room",
       "balcony-no-door",
@@ -499,6 +499,7 @@ suite("doors — W_POCKET_RUN", () => {
       "accessible-wc-side-wall",
       "exit-approach-blocked",
       "bed-undersized",
+      "wall-end-short",
     ]);
   });
 
@@ -517,7 +518,7 @@ suite("doors — W_POCKET_RUN", () => {
     // nor the six stair rules (PS2.11e, PS2.34, PS2.15: no stair), the three PS2.11e kitchen and
     // door rules (no hob, and a 600 mm leaf), nor PS2.74's accessible-WC rule (no WC),
     // nor PS2.69's exit-approach rule (no furniture), nor PS2.67's bed rule last of all (no bed).
-    expect(LINT_RULES.map((r) => r.name).slice(-34)).toEqual([
+    expect(LINT_RULES.map((r) => r.name).slice(-35)).toEqual([
       "door-near-corner",
       "opening-not-dimensioned",
       "room-via-private",
@@ -552,6 +553,7 @@ suite("doors — W_POCKET_RUN", () => {
       "accessible-wc-side-wall",
       "exit-approach-blocked",
       "bed-undersized",
+      "wall-end-short",
     ]);
     // A plan carrying an unrelated pre-existing warning (a sub-passable door width) AND
     // tripping the new rule: the old diagnostic must still be first, byte-for-byte.

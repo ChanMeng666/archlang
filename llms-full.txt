@@ -840,7 +840,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `archlang explain <CODE>`.
-**148 errors** (abort rendering) · **88 warnings** (advisory; `validate --strict` fails on them too).
+**148 errors** (abort rendering) · **89 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -1079,6 +1079,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `W_UNKNOWN_MATERIAL` — Unknown wall material; using the default hatch. **Fix:** Use a known material (e.g. brick, concrete, insulation, tile) or omit it.
 - `W_UNKNOWN_STYLE_KEY` — Unknown style key. **Fix:** Use a valid key (e.g. fill / stroke / label, depending on the kind).
 - `W_UNKNOWN_THEME_KEY` — Unknown theme key. **Fix:** Use a known theme key (see the language reference / hover).
+- `W_WALL_END_SHORT` — A wall stops a few millimetres short of the wall it runs toward. **Fix:** Extend the wall to the face of the wall it runs toward, or into it, so they join. If the slit is meant as an opening, draw a door or an `opening` there instead. There is no machine-applicable fix: which wall moves is a design decision.
 - `W_WC_SIDE_CLEARANCE` — A WC's centreline is too close to a wall or fixture at its side. **Fix:** Slide the pan along its back wall away from the obstacle by the shortfall (the hint says whether its other side then still keeps the figure), move the obstacle, or move the pan to a run wide enough for twice the figure. There is no machine fix: the edit depends on how the pan was placed.
 - `W_WET_ROOM_DOOR` — A bathroom or WC has no door, opens onto a kitchen, or is a passage. **Fix:** (1) Hang a leaf in it: write `door` in place of `opening`, at least 700 mm wide, or move its way in onto a hall. (2) Re-host the door onto a hall or corridor the wet room shares a door-wide edge with (the hints name each one, measured on centrelines), or put a lobby at least 900 mm clear between them; in an open-plan kitchen/living room, keep the kitchen's fixtures at least `wetDoorKitchenProximityMm` from the doorway. (3) Where one of the two rooms already has its own door to a room reached without the wet room, remove the wet room's door to it; where the two share a door-wide straight edge, re-host the wet room's second door onto it; otherwise run a corridor at least 900 mm clear between them. There is no machine fix: a door is a geometric decision (ADR 0005).
 - `W_WHILE_DEPRECATED` — `while` is deprecated and will be removed in a future major version. **Fix:** Rewrite the loop as `for I in A..B { … }`. `compile()` never offers this fix — only `archlang fix` proves it, against THIS file's own expansion: a shape that merely LOOKS canonical, but whose body calls a component that reads or writes `I`, that never actually ran (a library compiled standalone, a dead `if` branch), or that already caps out at `while`'s 10,000-iteration limit, is left as a warning with no fix. A proven fix at plan level is `machine-applicable`; one inside a `component` is `maybe-incorrect` (needs `archlang fix --unsafe`) — the proof only covers how THIS file instantiates it, and an importer may call it differently. Anything the fix declines needs a hand rewrite.

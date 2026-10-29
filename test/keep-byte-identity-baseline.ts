@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: re-taken for preview-and-remodel B3b (examples/remodel.arch added) on feat/B3b-wall-status-drawing, merged with main 0ec363d5
+ * Taken: G5: W_WALL_END_SHORT new rule; four new corpus plans (wall-end-short pairs) add rows, no shipped example moves
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -1075,6 +1075,26 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     "test/defect-corpus/space-not-enclosed/round-snug-unassigned.clean.arch",
     "3107c4fdc6ab21a189ec6f47a6620545eb20b9a66dca57f0120b11e96eaccbef",
     51,
+  ],
+  [
+    "test/defect-corpus/space-not-enclosed/wall-end-short-derived.arch",
+    "3730c9646ea33e73e5084e1d23b136c383a4396e83e652cbf1b007e4bd50a97c",
+    295,
+  ],
+  [
+    "test/defect-corpus/space-not-enclosed/wall-end-short-derived.clean.arch",
+    "5c1b05a13d985bc62ec7b94aa86a703d16d0853156068c7e3f1755d5d45f18f9",
+    295,
+  ],
+  [
+    "test/defect-corpus/space-not-enclosed/wall-end-short.arch",
+    "2fedf395917dfb3ae69ddfa1c74dd9780a91a9c2d2f9052d6e8d045eac628d3a",
+    131,
+  ],
+  [
+    "test/defect-corpus/space-not-enclosed/wall-end-short.clean.arch",
+    "77d64df8741855e4748706eac3d19d9b1afb9d1bbe94a1d203cab4d6d5019380",
+    131,
   ],
   [
     "test/defect-corpus/space-not-enclosed/widen-after-outside-shell.arch",

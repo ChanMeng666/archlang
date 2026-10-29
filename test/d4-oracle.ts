@@ -463,6 +463,8 @@ export const RULE_CLASS: Readonly<Record<string, RuleClass>> = {
   "accessible-wc-side-wall": "invariant",
   // PS2.67: a bed's two side lengths, which no turn or mirror changes.
   "bed-undersized": "invariant",
+  // G5: a wall end and the wall it runs toward, both turned or mirrored together.
+  "wall-end-short": "invariant",
 };
 
 /**
