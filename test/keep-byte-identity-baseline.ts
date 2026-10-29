@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: re-taken for preview-and-remodel B3b (examples/remodel.arch added) on feat/B3b-wall-status-drawing, merged with main 0ec363d5
+ * Taken: A9b (preview-and-remodel A9 item 5): anchored furniture charges the step meter for the standing-wall copy it takes when a wall is demolished; only examples/remodel.arch's step count moved, every digest unchanged
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -144,7 +144,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   [
     "examples/remodel.arch",
     "e84cb5eaffce8a1fc7982ec66f40bc19b609a30ff11fb6ef51d9112933bb7ec9",
-    1257,
+    1289,
   ],
   [
     "examples/sheet-notes.arch",
