@@ -111,6 +111,11 @@ const PAGE_META = [
     "Put an ArchLang floor plan on a web page: import the compiler from jsDelivr and set the SVG yourself, or use the arch-plan element with a .arch file.",
   ],
   [
+    "/import",
+    "Import from a segmentation mask (experimental)",
+    "An experimental recipe: a floor-plan label mask becomes a rooms-only Plan JSON, the walls are derived from the rooms, and validate and takeoff run on it.",
+  ],
+  [
     "/gallery",
     "Floor plans written by AI agents",
     "Eleven floor plans, each written by an AI agent from a one-paragraph brief: the brief as given, the ArchLang source the agent delivered, and the compiled drawing.",
@@ -700,6 +705,7 @@ export default defineConfig({
           { text: "Use it from an agent", link: "/agents" },
           { text: "Plans written by agents", link: "/gallery" },
           { text: "Embed in a web page", link: "/embed" },
+          { text: "Import from a mask (experimental)", link: "/import" },
           { text: "One-page spec", link: "/spec" },
           { text: "CLI reference", link: "/cli" },
         ],
@@ -733,6 +739,7 @@ export default defineConfig({
           { text: "Use it from an agent", link: "/agents" },
           { text: "Plans written by agents", link: "/gallery" },
           { text: "Embed in a web page", link: "/embed" },
+          { text: "Import from a mask (experimental)", link: "/import" },
           { text: "One-page spec", link: "/spec" },
         ],
       },
