@@ -17,11 +17,11 @@
     "rooms": {
       "type": "integer",
       "minimum": 0,
-      "description": "Exact expected room count. RULE: assert a count ONLY when the brief ENUMERATES the rooms; do not derive a count from under-determined wording (\"a few rooms\", \"some bedrooms\"). A single surplus room is tolerated only when it is pure circulation (a hall/corridor) — policy B."
+      "description": "Exact expected room count, over every storey of a plan with `level` blocks. RULE: assert a count ONLY when the brief ENUMERATES the rooms; do not derive a count from under-determined wording (\"a few rooms\", \"some bedrooms\"). A single surplus room is tolerated only when it is pure circulation (a hall/corridor) — policy B."
     },
     "roomsInclude": {
       "type": "array",
-      "description": "Rooms the brief names, as CONCEPTS (bathroom, master-bedroom, tea-point, …) rather than literal labels, each optionally carrying a count band, area band, and window requirement.",
+      "description": "Rooms the brief names, as CONCEPTS (bathroom, master-bedroom, tea-point, …) rather than literal labels, each optionally carrying a count band, area band, and window requirement. Rooms on any storey count.",
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -137,7 +137,7 @@
           ]
         }
       ],
-      "description": "Total floor-area band in square metres. Same band conventions as `areaM2`: \"about/~N\" or bare N → ±10%; \"at least N\" → `min` only; qualitative words → omit. At least one of min/max is required.",
+      "description": "Total floor-area band in square metres, summed over every storey of a plan with `level` blocks. Same band conventions as `areaM2`: \"about/~N\" or bare N → ±10%; \"at least N\" → `min` only; qualitative words → omit. At least one of min/max is required.",
       "properties": {
         "min": {
           "type": "number",
@@ -164,7 +164,7 @@
       "properties": {
         "requiredEdges": {
           "type": "object",
-          "description": "{ conceptA: [conceptB, …] } — each named pair of concepts must share an interior door or cased opening in the plan.",
+          "description": "{ conceptA: [conceptB, …] } — each named pair of concepts must share an interior door or cased opening in the plan, on any one storey.",
           "additionalProperties": {
             "type": "array",
             "items": {

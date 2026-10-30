@@ -239,3 +239,25 @@ describe("arch validate --intent: brief-bound measures (PS4.4)", () => {
     expect("measures" in plain.intent).toBe(false);
   }, 30000);
 });
+
+describe("arch validate --intent: every storey", () => {
+  it("counts every storey of a plan with `level` blocks (#365)", () => {
+    const intent = writeJson("storeys.json", {
+      rooms: 2,
+      roomsInclude: [{ concept: "bedroom", count: { min: 1, max: 1 }, windows: { min: 1 } }],
+      totalAreaM2: { min: 19, source: "brief" },
+    });
+    const plan = `plan "Two storeys" {
+      units mm
+      level 0 { room id=liv at (0,0) size 4000x5000 label "Living" uses living }
+      level 1 {
+        room id=bed at (0,0) size 4000x5000 label "Bedroom" uses bedroom
+        walls from rooms exterior 200 partition 100
+        window on bed.right width 1200
+      }
+    }`;
+    const r = run(["validate", "-", "--intent", intent], plan);
+    expect(r.stderr).not.toContain("E_INTENT");
+    expect(r.status).toBe(0);
+  }, 30000);
+});

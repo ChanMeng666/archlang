@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `validate --intent`, `score --brief` and `validateIntent()` read every storey of a plan with
+  `level` blocks (#365). `rooms`, `roomsInclude` (with its `areaM2` and `windows`), `totalAreaM2` and
+  the advisory `adjacency` saw only the lowest storey, so a correct two-storey house could never
+  pass. They now cover the building, as `grossInternalAreaM2` and `reachable` do; a room id repeated
+  on another storey stays a different room. `describe()` is unchanged, and a single-storey plan gets
+  byte-identical results.
 - `furniture … in <room> anchor <a> flush` no longer measures from a `status demolish` wall's
   face: an edge whose only wall is coming out measures from the room edge, as an unwalled edge
   does, and the turn an anchor derives reads only the walls that stay. The piece lands where the
