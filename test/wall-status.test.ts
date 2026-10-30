@@ -813,7 +813,7 @@ suite("G8: the derived rail, `dim faces|clear`, and category references read the
     elements: noSpans((resolvePlan(src).ir?.elements ?? []).filter((e) => e.kind !== "wall")),
   });
   const twin = (wall: string, rest: string) => {
-    const marked = facts(body(wall.replace("{", `${GONE.trim()} {`), rest));
+    const marked = facts(body(wall.split("{").join(`${GONE.trim()} {`), rest));
     const deleted = facts(body("", rest));
     return { marked, deleted };
   };
@@ -824,7 +824,7 @@ suite("G8: the derived rail, `dim faces|clear`, and category references read the
     const { marked, deleted } = twin(wall, rest);
     expect(marked).toEqual(deleted);
     const rail = (src: string) => describePlan(src).outdoor?.[0]?.rail;
-    expect(rail(body(wall.replace("{", `${GONE.trim()} {`), rest))).toEqual(["top", "bottom", "left", "right"]);
+    expect(rail(body(wall.split("{").join(`${GONE.trim()} {`), rest))).toEqual(["top", "bottom", "left", "right"]);
     // The same wall standing does take its edge's railing.
     expect(rail(body(wall, rest))).toEqual(["top", "bottom", "right"]);
   });
@@ -845,14 +845,14 @@ suite("G8: the derived rail, `dim faces|clear`, and category references read the
     const gone = "  wall id=gone partition thickness 100 { (3000,0) (3000,5000) }";
     const keep = "  wall id=keep partition thickness 100 { (6000,0) (6000,5000) }";
     const rest = "  door id=d on partition at 50% width 900";
-    const marked = facts(body(`${gone.replace("{", `${GONE.trim()} {`)}\n${keep}`, rest));
+    const marked = facts(body(`${gone.split("{").join(`${GONE.trim()} {`)}\n${keep}`, rest));
     const deleted = facts(body(keep, rest));
     expect(marked.diags).toEqual([]);
     expect(marked).toEqual(deleted);
     // Two standing partitions are still ambiguous.
     expect(facts(body(`${gone}\n${keep}`, rest)).diags.map((d: string[]) => d[0])).toEqual(["E_ATTACH_WALL_REF"]);
     // Only demolished ones: the wall is on the sheet, so the honest error names it.
-    const alone = facts(body(gone.replace("{", `${GONE.trim()} {`), rest));
+    const alone = facts(body(gone.split("{").join(`${GONE.trim()} {`), rest));
     expect(alone.diags.map((d: string[]) => d[0])).toEqual(["E_OPENING_ON_DEMOLISHED_WALL"]);
   });
 
