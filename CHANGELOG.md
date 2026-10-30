@@ -19,6 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `compile -f json` now says what Plan JSON could not carry (issue #366), as it always has for keeps:
+  a wall's arc edge (exported as its straight chord), `paper`, a `scale` or `angle` on a `poche` wall, a
+  circular room (exported as a 48-sided polygon), a room's `label … at`, every `stair`, `elevator`,
+  `escalator`, `roof`, `void`, `outdoor` and `fence`, `zone`, a storey's `level` number and name, `axes`, a
+  `site` boundary, `schedule`, `legend`, `notes`, `theme`, `style`, `accTitle` and `accDescr`. One `note:`
+  on stderr per clause, `dropped[]` in the `--json` envelope, and `dropped` on `planToJson()`. The exit
+  code and the document are unchanged, the format gains no field, and a plan that drops nothing
+  prints what it always did.
 - Three more resolvers no longer read a `status demolish` wall (G8, the same defect class as the flush
   fix below; each now matches the plan with that wall deleted): a balcony's derived rail keeps the
   balustrade edge beside a demolished wall; `dim faces|clear` no longer measures to a demolished face

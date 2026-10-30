@@ -17,7 +17,7 @@ import {
   renderPngFromSvg,
   rewriteMarkdown,
 } from "../index.js";
-import type { Diagnostic } from "../index.js";
+import type { Diagnostic, PlanJsonDropped } from "../index.js";
 import {
   type Args,
   type CommandResult,
@@ -167,8 +167,9 @@ export async function cmdCompile(args: Args): Promise<number> {
   }
 
   const errored = hasErrors(r.diagnostics);
-  // What the artifact left out (`-f json` drops keeps, PS4.11): one stderr line each, printed
-  // only once the export has succeeded.
+  // What the artifact left out (`-f json`, PS4.11 and #366): one stderr line each, printed only
+  // once the export has succeeded, and `dropped` in the `--json` envelope. Never a diagnostic: it
+  // moves no exit code.
   const noted = (code: number): number => {
     if (code === EXIT.OK && !args.quiet) for (const n of r.notes ?? []) process.stderr.write(`${n}\n`);
     return code;
@@ -179,7 +180,7 @@ export async function cmdCompile(args: Args): Promise<number> {
   // unless `--level` picked a single storey — the same doctrine as `-o -` + `--json`.
   if (r.pages) {
     if (args.o === "-") return stdoutMultiPage("compile", r.levels);
-    return noted(await writePages(r.pages, r.diagnostics, source, input, format, args));
+    return noted(await writePages(r.pages, r.diagnostics, source, input, format, args, r.dropped));
   }
 
   if (r.bytes === undefined) {
@@ -264,6 +265,7 @@ export async function cmdCompile(args: Args): Promise<number> {
       ...(noWrite ? { written: false } : { output: resolvePath(target) }),
       bytes: byteLen(bytes),
       diagnostics: warnings.map((d) => diagnosticToJson(source, d)),
+      ...(r.dropped ? { dropped: r.dropped } : {}),
       summary,
     });
   } else {
@@ -295,6 +297,7 @@ function writePages(
   input: string,
   format: Format,
   args: Args,
+  dropped?: PlanJsonDropped[],
 ): number {
   const noWrite = jsonNamesNoFile(args);
   const base = args.o ?? defaultOut(input, format);
@@ -329,6 +332,7 @@ function writePages(
       ...(noWrite ? { written: false } : { outputs: written.map((w) => w.output) }),
       pages: written,
       diagnostics: warnings.map((d) => diagnosticToJson(source, d)),
+      ...(dropped ? { dropped } : {}),
       summary,
     });
   } else {
