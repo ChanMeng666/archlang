@@ -815,8 +815,8 @@ export interface StairZone {
  * ({@link landingBlock}, as {@link swingHit} reads it): what stands behind the wall that cuts a
  * landing short is not on it. A landing a curved wall stands near is not judged.
  *
- * Shared by {@link furnitureOnStair} and `finish`'s furnish stage, so the stage never proposes a
- * position the rule would report.
+ * `finish`'s furnish stage keeps off all of it. {@link furnitureOnStair} reads the same zones with
+ * the flight bounded by headroom, so the stage never proposes a position the rule would report.
  */
 export function stairZones(f: StoreyStairs): StairZone[] {
   return f.stairs.flatMap((sf) => {
@@ -836,12 +836,15 @@ export function stairZones(f: StoreyStairs): StairZone[] {
  * `W_FURNITURE_ON_STAIR` (issue #364): a piece standing on a flight's footprint or on a landing the
  * flight owes (Approved Document K 1.21b: landings are kept clear of permanent obstructions [V]).
  *
- * The WHOLE footprint is read, on a storey the flight rises from as well, unlike {@link lowPart}:
- * a door leaf has one height and sweeps under the treads above it, while the plan does not say a
- * piece stands under a flight rather than on it. So a cupboard under the high end of a flight is
- * reported too. A landing reads only a piece at the cut plane's body layer: a rug on it is walked
- * on, a wall cabinet beside it hangs above it. One warning per piece and stair, at the first zone
- * it stands on. Past the storey's {@link MAX_STAIR_WORK} it declines, as the stair rules do.
+ * On a storey the flight rises from, only the part with less than {@link STAIR_HEADROOM_MM} over
+ * the floor is read ({@link lowPart}, as `W_STAIR_SIDE_ENTRY` reads it): a wardrobe under the high
+ * end of a flight is a normal drawing, and lint has no way to clear a warning on one statement. The
+ * height is `ir.storeyHeight`, 3000 mm (`STOREY_HEIGHT`) when the plan authors none, a default that
+ * can only narrow what is judged. A stairwell (a flight coming down, or arriving from below) is a
+ * hole, so all of its footprint is read. A landing reads only a piece at the cut plane's body layer:
+ * a rug on it is walked on, a wall cabinet beside it hangs above it. One warning per piece and
+ * stair, at the first zone it stands on. Past the storey's {@link MAX_STAIR_WORK} it declines, as
+ * the stair rules do.
  */
 export const furnitureOnStair: LintRule = {
   name: "furniture-on-stair",
@@ -856,7 +859,9 @@ export const furnitureOnStair: LintRule = {
     if (ctx.furniture.length === 0) return [];
     const f = factsFor(ctx);
     if (f === null) return [];
-    const zones = stairZones(f);
+    const zones = stairZones(f).map((z) =>
+      z.where === "flight" ? { ...z, rect: lowPart(z.sf, STAIR_HEADROOM_MM, ctx) } : z,
+    );
     if (!charge(f, ctx.furniture.length * zones.length)) {
       ctx.skip("stair-budget");
       return [];
@@ -879,12 +884,12 @@ export const furnitureOnStair: LintRule = {
           ...ctx.at(piece),
           message:
             hit.where === "flight"
-              ? `Furniture "${name}" stands on ${stair}: it covers ${mm(ox)} × ${mm(oy)} mm of the flight.`
+              ? `Furniture "${name}" stands on ${stair}: it covers ${mm(ox)} × ${mm(oy)} mm of ${sf.well ? "the stairwell" : `the flight, where less than ${mm(STAIR_HEADROOM_MM)} mm of headroom is left`}.`
               : `Furniture "${name}" stands on the landing at the ${hit.where} of ${stair}: a landing as long as the flight is wide, ${mm(sf.needs[hit.landing!]!)} mm, stays clear of furniture.`,
           hints: [
             hit.where === "flight"
-              ? `Move or resize it so it clears the footprint of \`${sf.v.id}\` (${span}), or move the stair. A piece meant to stand under the flight still reads as on it: the plan draws no height.`
-              : `Move or resize it so it clears the floor beyond the ${hit.where} of \`${sf.v.id}\` (${span}), or move the stair; a flight is stepped off straight ahead.`,
+              ? `Move or resize it so it clears ${sf.well ? `the stairwell of \`${sf.v.id}\`` : `the part of \`${sf.v.id}\` with too little headroom to stand under`} (${span}), or move the stair.`
+              : `Move or resize it so it clears the floor beyond the ${hit.where} of \`${sf.v.id}\` (${span}), or move the stair.`,
           ],
         });
       }

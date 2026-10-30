@@ -453,7 +453,7 @@ export function furnishStage(
     const nowhere = (item: FurnishItem): string =>
       site.walled === 0 && item.place !== "centre"
         ? `"${room.id}" has no wall behind any of its edges to stand the required \`${item.category}\` against`
-        : `no position for the ${item.category === "counter" ? `worktop (\`counter\`, ${(item.sizes ?? []).map(([a]) => a).join(", ")} mm along)` : `required \`${item.category}\``} in "${room.id}" clears its walls, its doors and the pieces before it${
+        : `no position for the ${item.category === "counter" ? `worktop (\`counter\`, ${(item.sizes ?? []).map(([a]) => a).join(", ")} mm along)` : `required \`${item.category}\``} in "${room.id}" clears its walls, its doors${site.nearStair ? ", its stair" : ""} and the pieces before it${
             site.named === 0 && item.place === "wall"
               ? `, and no wall behind it has an \`id=\` of its own for \`against wall\` to name`
               : ""
@@ -951,6 +951,8 @@ class Site {
   readonly walled: number;
   /** How many of those walls a statement can name: an authored `id=` no other wall shares. */
   readonly named: number;
+  /** Does a flight or a landing claim some of this room's floor? */
+  readonly nearStair: boolean;
 
   constructor(
     private readonly room: RRoom,
@@ -983,6 +985,13 @@ class Site {
       x1: back.right?.face ?? x1,
       y1: back.bottom?.face ?? y1,
     };
+    const floor: BBox = {
+      x: this.clear.x0,
+      y: this.clear.y0,
+      w: this.clear.x1 - this.clear.x0,
+      h: this.clear.y1 - this.clear.y0,
+    };
+    this.nearStair = stairs.some((z) => rectsOverlap(z, floor));
     const onEdge = (p: { x: number; y: number }, edge: RectEdge): number | null => {
       const horizontal = edge === "top" || edge === "bottom";
       const fixed = edge === "top" ? rect.y : edge === "bottom" ? y1 : edge === "left" ? rect.x : x1;

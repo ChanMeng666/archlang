@@ -55,10 +55,12 @@ suite("the plan of issue #364", () => {
 
   it("reports both pieces the old stage wrote on the flight, with what each covers", () => {
     expect(on(before).map((d) => d.message)).toEqual([
-      'Furniture "sofa" stands on the stair in "Living": it covers 550 × 2000 mm of the flight.',
-      'Furniture "coffee_table" stands on the stair in "Living": it covers 50 × 1000 mm of the flight.',
+      'Furniture "sofa" stands on the stair in "Living": it covers 550 × 1500 mm of the flight, where less than 2000 mm of headroom is left.',
+      'Furniture "coffee_table" stands on the stair in "Living": it covers 50 × 1000 mm of the flight, where less than 2000 mm of headroom is left.',
     ]);
-    expect(on(before)[0]!.hints![0]).toContain("`s1` (x 2500–3500, y 2500–5500)");
+    expect(on(before)[0]!.hints![0]).toContain(
+      "`s1` with too little headroom to stand under (x 2500–3500, y 3500–5500)",
+    );
   });
 
   it("is furnished off the flight, and the result lints as it did but for the furniture", () => {
@@ -92,14 +94,39 @@ suite("a clean plan", () => {
 });
 
 suite("the flight", () => {
-  it("reads the whole footprint where the flight rises, its high end as well as its foot", () => {
-    expect(on(hall("furniture wardrobe at (1000,600) size 1000x600"))[0]!.message).toContain("of the flight");
-    expect(on(hall("furniture wardrobe at (1000,2800) size 1000x600"))[0]!.message).toContain("of the flight");
+  /** A flight rising from y 3500 to y 500: under 2 m of headroom from y 1500 down. */
+  const STAIR = "stair id=s1 at (3000,500) size 1000x3000 dir up";
+
+  it("reads a rising flight only where a person cannot stand under it", () => {
+    expect(on(hall("furniture wardrobe at (3000,500) size 1000x600", STAIR))).toEqual([]);
+    expect(on(hall("furniture wardrobe at (3000,2800) size 1000x600", STAIR))[0]!.message).toContain("of the flight");
+    // The boundary: y 1500 is 2000 mm of run from the foot.
+    expect(on(hall("furniture wardrobe at (3000,900) size 1000x600", STAIR))).toEqual([]);
+    expect(on(hall("furniture wardrobe at (3000,902) size 1000x600", STAIR))).toHaveLength(1);
+  });
+
+  it("the storey's authored height moves that line: a higher storey leaves more of the flight clear", () => {
+    const tall = hall("furniture wardrobe at (3000,1600) size 1000x600", STAIR).replace(
+      "units mm",
+      "units mm\n  height 6000",
+    );
+    expect(on(hall("furniture wardrobe at (3000,1600) size 1000x600", STAIR))).toHaveLength(1);
+    expect(on(tall)).toEqual([]);
+  });
+
+  it("a flight coming down is a stairwell: all of its footprint is read", () => {
+    const down = "stair id=s1 at (3000,500) size 1000x3000 dir down";
+    const [d] = on(hall("furniture wardrobe at (3000,3000) size 1000x400", down));
+    expect(d!.message).toBe(
+      'Furniture "wardrobe" stands on the stair in "Hall": it covers 1000 × 400 mm of the stairwell.',
+    );
+    expect(on(hall("furniture wardrobe at (3000,600) size 1000x400", down))).toHaveLength(1);
+    expect(d!.hints![0]).toContain("the stairwell of `s1` (x 3000–4000, y 500–3500)");
   });
 
   it("reads every layer: a rug on the treads and a wall cabinet over them are on the flight", () => {
     expect(on(hall("furniture rug at (1000,1000) size 1000x1000")).length).toBe(1);
-    expect(on(hall("furniture wall_cabinet at (1000,1000) size 1000x350")).length).toBe(1);
+    expect(on(hall("furniture wall_cabinet at (1000,2000) size 1000x350")).length).toBe(1);
   });
 
   it("reports a piece once a stair, and once on each of two stairs it stands on", () => {
@@ -125,7 +152,7 @@ suite("the flight", () => {
 }`;
     const [d] = on(src);
     expect(d!.message).toBe(
-      'Furniture "sofa" stands on the stair in "Upper hall" on level 1: it covers 900 × 2000 mm of the flight.',
+      'Furniture "sofa" stands on the stair in "Upper hall" on level 1: it covers 900 × 2000 mm of the stairwell.',
     );
     expect(d!.message).not.toContain("s1");
   });
@@ -137,7 +164,9 @@ suite("the landing", () => {
     expect(on(hall(at(1000, 4000)))[0]!.message).toBe(
       'Furniture "bookcase" stands on the landing at the foot of the stair in "Hall": a landing as long as the flight is wide, 1000 mm, stays clear of furniture.',
     );
-    expect(on(hall(at(1000, 4000)))[0]!.hints![0]).toContain("`s1` (x 1000–2000, y 3500–4500)");
+    expect(on(hall(at(1000, 4000)))[0]!.hints).toEqual([
+      "Move or resize it so it clears the floor beyond the foot of `s1` (x 1000–2000, y 3500–4500), or move the stair.",
+    ]);
     expect(on(hall(at(600, 4000)))).toEqual([]); // beside it, to the west
     expect(on(hall(at(2000, 4000)))).toEqual([]); // beside it, to the east
     expect(on(hall(at(1000, 4500)))).toEqual([]); // past its far end
@@ -182,6 +211,28 @@ suite("finish keeps off the floor a flight claims", () => {
   stair id=s1 at (3100,300) size 900x3000 dir up
 }
 `;
+
+  it("keeps off the whole footprint, the high end of a rising flight the rule leaves alone included", () => {
+    // A west wall flight 1000 mm wide: the wardrobe the rule would accept at its high end is not written.
+    for (const src of [BEDROOM, BEDROOM.replace("at (3100,300)", "at (3900,300)")]) {
+      const out = finish(src, { only: "furnish" });
+      const stair = stairOf(out.source);
+      for (const f of piecesOf(out.source)) expect(overlaps(f, stair), f.category).toBe(false);
+    }
+  });
+
+  it("says so when the stair is what leaves no room", () => {
+    const tight = `plan "P" {
+  units mm
+  room id=r at (0,0) size 2000x2400 label "R" uses living
+  walls from rooms exterior 200 partition 100
+  door on r.bottom at 1000 from start width 800 swing into r
+  stair id=s1 at (500,200) size 1000x2000 dir up
+}
+`;
+    const reasons = finish(tight, { only: "furnish" }).unresolved.map((n) => n.reason);
+    expect(reasons.join(" ")).toContain("clears its walls, its doors, its stair and the pieces before it");
+  });
 
   it("no piece stands on the landing either", () => {
     const src = hall("").replace("uses hall", "uses living");

@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: G9: W_FURNITURE_ON_STAIR added four stair-safety corpus files; no existing row moved
+ * Taken: G9 round 1: W_FURNITURE_ON_STAIR bounded by headroom; merged main at 2649b9dd; the four new stair-safety rows only
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -1128,7 +1128,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/stair-safety/furniture-on-flight.arch",
-    "8fc6770f5d31d0e955994dc9860d08d1c56e82e1ad45f8f3a6953c205d8a5361",
+    "42beb8a70e5a5640eacac8a10dac8f2feaf9ad4c4acd044279a9397343c5fdaa",
     278,
   ],
   [
@@ -1138,7 +1138,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/stair-safety/furniture-on-landing.arch",
-    "e94660d5834891e72114cf43dc673bee2f19ef2af5ab7b56fd2e9a719183f84a",
+    "be3b061ecd16313c234a9f2864484ea594d5312caf42cd0a1963b332b466229c",
     166,
   ],
   [

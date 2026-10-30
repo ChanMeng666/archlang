@@ -2,8 +2,8 @@
 # origin: issue #364 (the plan `arch finish --only furnish` wrote, with the sofa and coffee table it put on the flight)
 # expect: W_FURNITURE_ON_STAIR
 # status: done
-# fact: stair s1 stands at x 2500-3500, y 2500-5500; the sofa covers x 3050-3500, y 3000-5000 of it and the coffee
-#   table x 2500-2650, y 3500-4500
+# fact: stair s1 rises from y 5500; with a 3000 mm storey its first 2000 mm of run, y 3500-5500, leaves under 2 m of
+#   headroom. The sofa covers x 2950-3500, y 3500-5000 of that and the coffee table x 2500-2550, y 3500-4500
 plan "Stair in the living room" {
   units mm
   room id=hall at (0,0) size 4000x2000 label "Hall" uses hall

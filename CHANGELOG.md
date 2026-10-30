@@ -15,8 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   joining. Measured first: the other closure cases (an open exterior ring, a gap between rooms) are
   already named by `describe`'s `gross_internal_area_omitted: no-closed-exterior-ring` and the enclosure
   rules, so only the near-miss is new.
-- `W_FURNITURE_ON_STAIR` (lint, issue #364): a piece on a `stair`'s footprint, or (a rug and a wall
-  cabinet aside) on the landing the flight owes, measured as `W_STAIR_NO_LANDING` measures it. Measured
+- `W_FURNITURE_ON_STAIR` (lint, issue #364): a piece on the part of a `stair` a person cannot stand
+  under (a stairwell's whole footprint; a rising flight's run with under 2 m of headroom, so a wardrobe
+  under its high end is fine), or (a rug and a wall cabinet aside) on the landing the flight owes,
+  measured as `W_STAIR_NO_LANDING` measures it. Measured
   first: no existing code read a piece against a flight, so `finish`'s never-worse check passed one.
   Fires on no shipped example or corpus plan. A consumer that classifies lint codes sees a new warning.
 
