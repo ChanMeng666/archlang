@@ -162,6 +162,9 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   asserts `> 0` suggestions over 60 fast-check runs with no `seed`, and about 0.5 % of runs (seeds
   124, 461, 524 of 640) offer none. A one-off red there is legitimately re-run; the fix is owed
   (seed it or assert across runs; `docs/backlog.md`).
+- **`npx tsx test/keep-weak-law-gen.ts` needs a reason argument** and prints only a usage line without one, so a
+  conflict in `test/keep-byte-identity-baseline.ts` stays unresolved if you do not read its output.
+- **`check:drift` reports the generated `_headers` as drift while a new docs page is uncommitted.** Commit, then run it.
 - **`2>nul` in the Bash tool on Windows creates files** named `nul`, `nul.L0`, `nul.L1` in the
   working tree (it is cmd syntax). Write `2>/dev/null`.
 
