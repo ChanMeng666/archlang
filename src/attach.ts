@@ -15,6 +15,7 @@
 import type { AttachFrom, AttachPos, ExprPoint, OpeningAttach, OpeningBetween, Point, WallsPairRoom } from "./ast.js";
 import type { Diagnostic, FixSuggestion } from "./diagnostics.js";
 import type { Expr, ParseExprOpts } from "./expr.js";
+import { chargeSteps } from "./expr.js";
 import type { ParseCtx, ResolveCtx } from "./registry.js";
 import type { WallLike, WallSegment } from "./geometry.js";
 import { segmentLength, segmentPointAlong, segmentsOfWall } from "./geometry.js";
@@ -169,6 +170,21 @@ export function percentOf(len: number, pct: number): number {
 }
 
 /**
+ * The walls a reference `on <ref>` names (B3a). Where any of them stands, the standing ones, as if
+ * the demolished one were deleted. Where none does, the demolished ones stay, so the door reaches
+ * `E_OPENING_ON_DEMOLISHED_WALL`, which is truer than "no wall has that id": the wall is on the
+ * sheet. The copy is charged to the step meter before it is allocated, and only when a wall is
+ * demolished.
+ */
+function wallsNamed<W extends WallLike & { status?: string }>(walls: readonly W[], ref: string): W[] {
+  const named = walls.filter((w) => w.id === ref || w.category === ref);
+  if (!named.some((w) => w.status === "demolish")) return named;
+  chargeSteps(named.length);
+  const standing = named.filter((w) => w.status !== "demolish");
+  return standing.length > 0 ? standing : named;
+}
+
+/**
  * Resolve an attachment against the (already-resolved) walls. Returns the
  * absolute (snapped) point and the host segment, or `null` after pushing a
  * catalogued diagnostic:
@@ -194,7 +210,7 @@ export function percentOf(len: number, pct: number): number {
  */
 export function resolveAttachment(
   attach: OpeningAttach,
-  walls: readonly WallLike[],
+  walls: readonly (WallLike & { status?: string })[],
   snapPt: (p: Point) => Point,
   diag: (d: Diagnostic) => void,
   what: string,
@@ -205,7 +221,7 @@ export function resolveAttachment(
   /** Is the name a pairwise wall the rooms refused (`ResolveCtx.unplacedWall`)? */
   unplacedWall?: (ref: string) => boolean,
 ): { at: Point; host: WallSegment } | null {
-  const matches = walls.filter((w) => w.id === attach.wall || w.category === attach.wall);
+  const matches = wallsNamed(walls, attach.wall);
   if (matches.length === 0) {
     diag({
       severity: "error",
