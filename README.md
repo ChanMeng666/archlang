@@ -71,6 +71,18 @@ flowchart LR
     V -->|yes| O([SVG · DXF · PDF · PNG])
 ```
 
+## New in 1.44 to 1.46
+
+Each links to a short section with an example, on [archlang.uk/whats-new](https://archlang.uk/whats-new).
+
+- [Quantities and takeoff](https://archlang.uk/whats-new#quantities-and-takeoff): `archlang takeoff plan.arch --format csv`
+- [Locked elements](https://archlang.uk/whats-new#locked-elements): `archlang impact new.arch --against old.arch --lock shell,front`
+- [Wall status](https://archlang.uk/whats-new#wall-status): `status existing|demolish|new`, demolition drawn dashed
+- [Imperial lengths](https://archlang.uk/whats-new#imperial-lengths): `12ft6in`
+- [Review sheet](https://archlang.uk/whats-new#review-sheet): `archlang preview plan.arch --review`
+- [Circulation overlay](https://archlang.uk/whats-new#circulation-overlay): `archlang compile plan.arch --overlay circulation`
+- [Stacked storeys](https://archlang.uk/whats-new#stacked-storeys): `keep stacked core on levels 1 2`
+
 ## For your agent
 
 This page is all a person needs. Everything else is written for agents: clone the repo and point yours at [`AGENTS.md`](AGENTS.md), or give it the whole language in one call:
