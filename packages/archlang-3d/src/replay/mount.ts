@@ -34,38 +34,14 @@ import {
   frameCamera,
   START_FOV,
 } from "./camera.js";
-import { paintStrip, type ReplayFacts, stripAt } from "./strip.js";
-import { type ReplayEvent, stateAt } from "./timeline.js";
+import type { ReplayPayload } from "./payload.js";
+import { stripAt } from "./strip.js";
+import { paintStrip } from "./strip-dom.js";
 
-export interface ReplayNode {
-  key: string;
-  kind: string;
-  part?: string;
-  /** The combined view's exploded storeys: how far (mm) the node is lifted; absent = 0. */
-  lift?: number;
-  /** Flat `[x, y, z, …]` in micrometres, exporters' axes (X plan x, Y up, Z plan y). */
-  positions: number[];
-  indices: number[];
-}
+import { stateAt } from "./timeline.js";
 
-export interface ReplayPayload {
-  title: string;
-  theme: "light" | "dark";
-  width: number;
-  height: number;
-  seconds: number;
-  /** The core's own drawing of the plan (light theme) and its viewBox in plan millimetres. */
-  svg: string;
-  viewBox: [number, number, number, number];
-  /** The end camera's elevation in degrees (`endElevation`). */
-  elevation: number;
-  /** The metrics strip's numbers (card G4); with none, no strip is painted. */
-  facts?: ReplayFacts;
-  nodes: ReplayNode[];
-  events: ReplayEvent[];
-}
+export type { ReplayNode, ReplayPayload } from "./payload.js";
 
-/** A mounted replay: every frame is `seek(t)`. */
 export interface ReplayHandle {
   /** Render the frame at replay time `t` (clamped to [0, 1]) into the canvas, synchronously. */
   seek: (t: number) => void;

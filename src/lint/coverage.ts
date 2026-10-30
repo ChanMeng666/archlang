@@ -108,7 +108,8 @@ export type LintSkipReason =
    *  not judged against a storey height the author never stated (`W_STAIR_TOO_STEEP`, PS2.11e). */
   | "no-storey-height"
   /** A curved wall stands near a stair's landing, which `W_STAIR_NO_LANDING` and
-   *  `W_SWING_OVER_STAIR` do not measure (PS2.11e): that landing is not judged. */
+   *  `W_SWING_OVER_STAIR` do not measure (PS2.11e), nor `W_FURNITURE_ON_STAIR` (issue #364): that
+   *  landing is not judged. */
   | "curved-landing-wall"
   /** The stair rules' counted work on the storey (`MAX_STAIR_WORK`, `src/lint/rules/stairs.ts`,
    *  charged before the work) would pass its cap: no stair on the storey is judged. */

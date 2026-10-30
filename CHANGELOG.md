@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   joining. Measured first: the other closure cases (an open exterior ring, a gap between rooms) are
   already named by `describe`'s `gross_internal_area_omitted: no-closed-exterior-ring` and the enclosure
   rules, so only the near-miss is new.
+- `W_FURNITURE_ON_STAIR` (lint, issue #364): a piece on the part of a `stair` a person cannot stand
+  under (a stairwell's whole footprint; a rising flight's run with under 2 m of headroom, so a wardrobe
+  under its high end is fine), or (a rug and a wall cabinet aside) on the landing the flight owes,
+  measured as `W_STAIR_NO_LANDING` measures it. Measured
+  first: no existing code read a piece against a flight, so `finish`'s never-worse check passed one.
+  Fires on no shipped example or corpus plan. A consumer that classifies lint codes sees a new warning.
 - `compile -f json` now says what Plan JSON could not carry (issue #366), as it always has for keeps:
   a wall's arc edge (exported as its straight chord), `paper`, a `scale` or `angle` on a `poche` wall, a
   circular room (exported as a 48-sided polygon), a room's `label … at`, every `stair`, `elevator`,
@@ -29,11 +35,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Room labels in small rooms (issue #367). `W_ANNOTATION_OVERLAP` now also reports a room's name or area
   figure printed over a wall or a door's swing, or running off its own floor, measured on the drawn
-  sheet at the width the text draws on average. And the label pass moves a label only to where it
-  stands on its own floor: a name that fits nowhere stays at the room's centre and is reported, where
-  it used to be walked sideways through the wall and out of the building with no warning. Plans whose
+  sheet at the width the text draws on average. And the label pass never moves a label further off
+  its floor than where it started: a name wider than its room still slides along the room, but it
+  is no longer walked sideways through the wall and out of the building with no warning. Plans whose
   labels used to leave their room this way draw those labels in a new place. The drawing still
   neither shrinks a label nor draws a leader to it.
+- Four `open between` boundaries meeting at one point no longer leave a free-standing pier one
+  partition thick at the crossing (issue #368): no wall is drawn at the crossing in the SVG, PDF, PNG or DXF, though a DXF keeps each
+  opening's outline on `A-DOOR`, as it does for every opening. `describe()` and `lint()` do not
+  move, and neither does a plan with three of the four open (a T keeps its square too), a `width`
+  that keeps some wall at the crossing, a door on the square, or another wall on the crossing.
+
+- `arch finish` no longer furnishes over a stair (issue #364, part 1): no piece, and no piece's front
+  strip, is placed on a flight or its landing. A plan with no stair furnishes as before.
 - `validate --intent`, `score --brief` and `validateIntent()` read every storey of a plan with
   `level` blocks (#365). `rooms`, `roomsInclude` (with its `areaM2` and `windows`), `totalAreaM2` and
   the advisory `adjacency` saw only the lowest storey, so a correct two-storey house could never

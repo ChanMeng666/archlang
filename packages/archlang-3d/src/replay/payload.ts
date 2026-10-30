@@ -5,10 +5,38 @@
  */
 import type { Mesh3D } from "../mesh/types.js";
 import { endElevation } from "./camera.js";
-import type { ReplayPayload } from "./mount.js";
 import type { ReplayFacts } from "./strip.js";
-import { explodeLifts, storeysOf, timeline } from "./timeline.js";
+import { explodeLifts, type ReplayEvent, storeysOf, timeline } from "./timeline.js";
 
+export interface ReplayNode {
+  key: string;
+  kind: string;
+  part?: string;
+  /** The combined view's exploded storeys: how far (mm) the node is lifted; absent = 0. */
+  lift?: number;
+  /** Flat `[x, y, z, …]` in micrometres, exporters' axes (X plan x, Y up, Z plan y). */
+  positions: number[];
+  indices: number[];
+}
+
+export interface ReplayPayload {
+  title: string;
+  theme: "light" | "dark";
+  width: number;
+  height: number;
+  seconds: number;
+  /** The core's own drawing of the plan (light theme) and its viewBox in plan millimetres. */
+  svg: string;
+  viewBox: [number, number, number, number];
+  /** The end camera's elevation in degrees (`endElevation`). */
+  elevation: number;
+  /** The metrics strip's numbers (card G4); with none, no strip is painted. */
+  facts?: ReplayFacts;
+  nodes: ReplayNode[];
+  events: ReplayEvent[];
+}
+
+/** A mounted replay: every frame is `seek(t)`. */
 /** The label every surface that shows the preview carries (decision D5's wording). */
 export const PREVIEW_LABEL = "Preview — from the separate archlang-3d package. ArchLang itself draws plans.";
 

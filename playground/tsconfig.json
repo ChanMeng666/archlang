@@ -16,9 +16,14 @@
     "noEmit": true,
     // Mirror the Vite alias (`archlang` → the built core): a repo-root
     // `node_modules/archlang` symlink points at the vscode extension, so without
-    // this TS would resolve the bare specifier to the wrong package.
+    // this TS would resolve the bare specifier to the wrong package. archlang-3d is read from
+    // source, as the Vite alias does (its published `exports` name a dist/ that may not be built).
     "baseUrl": ".",
-    "paths": { "archlang": ["../dist/index.d.ts"] }
+    "paths": {
+      "archlang": ["../dist/index.d.ts"],
+      "@chanmeng666/archlang-3d": ["../packages/archlang-3d/src/index.ts"],
+      "@chanmeng666/archlang-3d/browser": ["../packages/archlang-3d/src/browser.ts"]
+    }
   },
   // `test` is included so the playground's own vitest suites are typechecked too —
   // they were previously invisible to every typecheck in the repo. `e2e/` is NOT

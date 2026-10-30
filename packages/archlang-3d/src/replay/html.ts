@@ -1,15 +1,14 @@
 /**
- * The single-file replay HTML (card A3): the viewer and three.js 0.186.1 bundled into one inline
- * script (esbuild, browser target, nothing loaded from a network), the mesh, the event table and the
- * core's own SVG as an inline JSON payload, and three.js's MIT notice. It opens offline.
+ * The single-file replay HTML (card A3): the viewer and three.js 0.186.1 as one inline script
+ * (`viewer-bundle.ts`; browser target, nothing loaded from a network), the mesh, the event table and
+ * the core's own SVG as an inline JSON payload, and three.js's MIT notice. It opens offline.
  *
- * Node-only (it bundles at build time); the browser bundle never imports this module.
+ * Node-only; the browser bundle never imports this module.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { build } from "esbuild";
 import type { Mesh3D } from "../mesh/types.js";
 import { PREVIEW_LABEL, type ReplayOptions, replayPayload } from "./payload.js";
 
@@ -19,27 +18,26 @@ export type { ReplayOptions } from "./payload.js";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 
+/** `true` in `dist/` (tsup's `define`); undeclared when this module runs from the source tree. */
+declare const __ARCHLANG3D_BUILT__: boolean | undefined;
+
 let bundled: Promise<string> | undefined;
 
-/** The viewer and the parts of three.js it uses, as one minified browser script (built once). */
+/** The script: the file the build wrote beside `dist/`'s modules, or bundled here from source. */
+async function loadViewer(): Promise<string> {
+  if (typeof __ARCHLANG3D_BUILT__ === "undefined") {
+    const { bundleViewer } = await import("./viewer-bundle.js");
+    return bundleViewer(join(HERE, "viewer.ts"));
+  }
+  return readFileSync(join(HERE, "viewer.iife.js"), "utf8");
+}
+
+/** The viewer and the parts of three.js it uses, as one minified browser script (read once). */
 export function viewerScript(): Promise<string> {
-  bundled ??= build({
-    entryPoints: [join(HERE, "viewer.ts")],
-    bundle: true,
-    platform: "browser",
-    format: "iife",
-    target: "es2020",
-    minify: true,
-    legalComments: "none",
-    write: false,
-    logLevel: "silent",
-  }).then(
-    (r) => r.outputFiles[0]?.text ?? "",
-    (e: unknown) => {
-      bundled = undefined; // a failed build is not cached: the next call tries again
-      throw e;
-    },
-  );
+  bundled ??= loadViewer().catch((e: unknown) => {
+    bundled = undefined; // a failed read or build is not cached: the next call tries again
+    throw e;
+  });
   return bundled;
 }
 

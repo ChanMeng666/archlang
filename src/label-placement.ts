@@ -24,11 +24,12 @@
  * A label is relocated **only when its text box actually collides** — more than
  * {@link COLLIDE_MIN} of its own area buried in an obstacle or an already-placed label.
  * A plan whose labels are clear is not searched at all and its bytes are unchanged,
- * which is the property every drawing shipped before this pass relies on. And it moves only to
- * where it stands on its own floor, read at the width drawn ({@link INK_EM}): a label with no such
- * place stays at its anchor and `W_ANNOTATION_OVERLAP` reports it. Scoring such a place at a flat
- * {@link W_OUTSIDE} let the search trade the floor for less overlap, and walk a label through the
- * wall (#367).
+ * which is the property every drawing shipped before this pass relies on. And it never moves
+ * further off its own floor than its anchor stands, read at the width drawn ({@link INK_EM}): a
+ * name wider than its room may slide along the room, off a piece, and cannot walk out through a
+ * wall, which a flat {@link W_OUTSIDE} let the search trade for less overlap (#367). A room's label
+ * left over something is `W_ANNOTATION_OVERLAP`'s to report; that rule reads rooms only, so an
+ * `outdoor` surface's label is not reported.
  *
  * ### Determinism
  *
@@ -56,7 +57,7 @@ import { arcTessellate } from "./geometry/arc.js";
 import type { BBox } from "./geometry/rect.js";
 import { overlap1d } from "./geometry/rect.js";
 import { GridIndex } from "./geometry/grid-index.js";
-import { pointInPolygon, polygonBounds, rectInsidePolygon } from "./geometry/polygon.js";
+import { pointInPolygon, polygonBounds, rectAreaOutside, rectInsidePolygon } from "./geometry/polygon.js";
 import { ROOF_LAYER } from "./elements/roof.js";
 import { OUTDOOR_LAYERS } from "./elements/outdoor.js";
 import type { ResolvedPlan } from "./ir.js";
@@ -357,7 +358,7 @@ function gridSafe(b: BBox): boolean {
 
 /** Mean half-perimeter of the boxes (≥ 1): the grid's cell. Speed only — any cell gives the
  *  same sums. */
-function meanExtent(boxes: readonly BBox[]): number {
+export function meanExtent(boxes: readonly BBox[]): number {
   let s = 0;
   let n = 0;
   for (const b of boxes) {
@@ -409,7 +410,7 @@ function numKey(v: number): string {
  * colliding. Shared by the wrap step and the relocation, so "fits between the walls" and
  * "collides with a wall" are measured against the very same boxes.
  */
-function wallBands(ir: ResolvedPlan, clear: number): BBox[] {
+export function wallBands(ir: ResolvedPlan, clear: number): BBox[] {
   const bands: BBox[] = [];
   for (const w of ir.walls) {
     for (const s of segmentsOfWall(w)) {
@@ -695,14 +696,16 @@ export function relocateLabels(
     // The incumbent is candidate zero and carries preference 0, so it wins every tie.
     let best = anchor;
     let bestScore = score(anchor, 0, 1);
+    // How far off its floor the label already stands, the most a place may be. The slack is for
+    // the clip's own rounding: two places the same distance off must read as equal.
+    const inkRect = inkOf(rect0);
+    const offFloor = rectAreaOutside(inkRect, ring) + inkRect.w * inkRect.h * 1e-9;
     let k = 2;
     for (const fy of FRACTIONS) {
       for (const fx of FRACTIONS) {
         const p: Point = { x: bb.x + bb.w * fx, y: bb.y + bb.h * fy };
         const slot = k++;
-        // A label moves only to where it stands wholly on its own floor. One that fits nowhere
-        // stays where it was, for `W_ANNOTATION_OVERLAP` to report.
-        if (!pointInPolygon(p.x, p.y, ring) || !rectInsidePolygon(inkOf(rectAt(p)), ring)) continue;
+        if (!pointInPolygon(p.x, p.y, ring) || rectAreaOutside(inkOf(rectAt(p)), ring) > offFloor) continue;
         const s = score(p, 1 + (Math.hypot(p.x - anchor.x, p.y - anchor.y) / diag) * W_DISTANCE, slot);
         if (s < bestScore) {
           bestScore = s;

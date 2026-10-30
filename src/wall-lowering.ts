@@ -33,8 +33,9 @@ import type { LineType, PathLoop, Scene, SceneNode, ScenePrim, SceneWall } from 
 import { MITER_LIMIT } from "./scene.js";
 import type { HatchSpec } from "./hatches.js";
 import { hatchesUsed, hatchKey, hatchOf, patternId } from "./hatches.js";
-import { PointInterner, loopBBox, openingCut, wallBand } from "./geometry/band.js";
+import { PointInterner, SNAP_MM, loopBBox, loopWinding, openingCut, wallBand } from "./geometry/band.js";
 import type { EdgeLoop } from "./geometry/band.js";
+import type { GridBox } from "./geometry/grid-index.js";
 import type { JoineryCut, JoineryResult, JoineryWall } from "./geometry/joinery.js";
 import { bandBBox, emitLoops, joinWalls, loopsToPolygons, toPathLoop } from "./geometry/joinery.js";
 
@@ -42,7 +43,7 @@ import { bandBBox, emitLoops, joinWalls, loopsToPolygons, toPathLoop } from "./g
  *  `id` is optional because the joinery only ever prints it in a diagnostic. */
 export type JoinableWall = Pick<
   RWall,
-  "thickness" | "points" | "arcs" | "closed" | "material" | "hatchScale" | "hatchAngle" | "openings"
+  "thickness" | "points" | "arcs" | "closed" | "material" | "hatchScale" | "hatchAngle" | "openings" | "_derived"
 > & { id?: string };
 
 /** A resolved wall as {@link Scene.walls} carries it: the joinery's inputs plus `category`;
@@ -51,6 +52,8 @@ function sceneWall(w: RWall): SceneWall {
   return {
     category: w.category,
     ...(w.status !== undefined ? { status: w.status } : {}),
+    // The one derived fact the joinery reads, with none of the names (`freeCrossingCuts`).
+    ...(w._derived?.open ? { _derived: { from: w._derived.from, open: {} } } : {}),
     thickness: w.thickness,
     points: w.points,
     ...(w.arcs ? { arcs: w.arcs } : {}),
@@ -107,6 +110,68 @@ export interface JoinedWallSet {
   result: JoineryResult;
   /** Every opening's cut, in the order they were cut (the `JoineryCut.index` order). */
   cuts: JoinedCut[];
+}
+
+/**
+ * The cuts that clear a crossing nothing stands on (issue #368): four `open between` runs of one
+ * thickness end at one point, and each one's opening, the only opening on it, reaches the face of
+ * the runs it meets there. Every such opening stops at that face, as a jamb must, so what they
+ * leave is the square where the four bands overlap, joined to nothing: a pier no statement asked
+ * for (a `column` is how a plan asks for one). The square goes the way of the openings around it.
+ *
+ * An authored wall keeps what it draws, whatever is cut through it. Fewer than four such ends leave
+ * what they leave today, and so does a crossing another wall's band touches (read off edge boxes,
+ * so a near miss keeps the square): the cut would take that wall's material too. Each square is an
+ * ordinary cut of an arm, so it rides `place`, and it is absent from a wall set whose openings were
+ * stripped, which is what keeps `describe()` off it: `gross-area.ts` and `wall-faces.ts` read the
+ * solid.
+ */
+function freeCrossingCuts(
+  walls: readonly JoinableWall[],
+  bands: readonly JoineryWall[],
+  intern: PointInterner,
+): EdgeLoop[] {
+  const armsAt = new Map<Point, number[]>();
+  walls.forEach((w, i) => {
+    if (!w._derived?.open || w.openings.length !== 1) return;
+    const [a, b] = w.points as [Point, Point];
+    const opening = w.openings[0]!;
+    const length = Math.hypot(b.x - a.x, b.y - a.y);
+    for (const [end, far] of [
+      [a, b],
+      [b, a],
+    ] as const) {
+      const ux = (far.x - end.x) / length;
+      const uy = (far.y - end.y) / length;
+      const jamb = (opening.at.x - end.x) * ux + (opening.at.y - end.y) * uy - opening.width / 2;
+      if (jamb > w.thickness / 2 + SNAP_MM) continue;
+      const at = intern.get(end);
+      armsAt.set(at, [...(armsAt.get(at) ?? []), i]);
+    }
+  });
+  const out: EdgeLoop[] = [];
+  for (const [at, arms] of armsAt) {
+    const arm = walls[arms[0]!]!;
+    if (arms.length !== 4 || arms.some((i) => walls[i]!.thickness !== arm.thickness)) continue;
+    const square = openingCut(arm, { at, width: arm.thickness }, intern);
+    if (!square) continue;
+    const box = loopBBox(square);
+    const other = bands.some((w) => !arms.includes(w.index) && bandTouches(w, box, at));
+    if (!other) out.push(square);
+  }
+  return out;
+}
+
+const boxesOverlap = (a: GridBox, b: GridBox): boolean =>
+  a.minX <= b.maxX && b.minX <= a.maxX && a.minY <= b.maxY && b.minY <= a.maxY;
+
+/** Does a wall's band cover `p`, or have an edge whose box overlaps `box`, which holds `p`? */
+function bandTouches(w: JoineryWall, box: GridBox, p: Point): boolean {
+  if (!boxesOverlap(w.bbox, box)) return false;
+  // Summed over the loops: a ring's band is an outer loop and a hole, and only together do they
+  // leave the floor they enclose out of the wall.
+  if (w.loops.reduce((n, l) => n + loopWinding(l, p), 0) !== 0) return true;
+  return w.loops.some((l) => l.some((e) => boxesOverlap(loopBBox([e]), box)));
 }
 
 /**
@@ -167,6 +232,10 @@ export function joinWallSet<W extends JoinableWall>(
     }
   }
   if (jwalls.length === 0) return null;
+  // Not in `joined`: a cleared crossing is no opening, so a consumer counting openings sees none.
+  for (const loop of freeCrossingCuts(walls, jwalls, intern)) {
+    cuts.push({ index: cuts.length, loop, bbox: loopBBox(loop) });
+  }
   return { result: joinWalls(jwalls, cuts, groupKeys, split?.faces), cuts: joined };
 }
 

@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**148 errors** · **89 warnings**
+**148 errors** · **90 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -186,6 +186,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_FIXTURE_WRONG_ROOM`](#w_fixture_wrong_room) | warning | Fixture is not inside its declared room. |
 | [`W_FLOOR_UNASSIGNED`](#w_floor_unassigned) | warning | Walled floor is in no room. |
 | [`W_FOOTPRINT_TRANSPOSED`](#w_footprint_transposed) | warning | A piece is drawn turned a quarter: its long side is on the wrong axis. |
+| [`W_FURNITURE_ON_STAIR`](#w_furniture_on_stair) | warning | Furniture stands on a stair or on the landing it owes. |
 | [`W_FURNITURE_OVERLAP`](#w_furniture_overlap) | warning | Two pieces of furniture overlap. |
 | [`W_FURNITURE_OVER_WINDOW`](#w_furniture_over_window) | warning | A tall unit stands in front of a window. |
 | [`W_FURNITURE_WALL_COLLISION`](#w_furniture_wall_collision) | warning | Furniture penetrates a wall. |
@@ -2523,6 +2524,20 @@ room circle at (2500,1200) radius 1200 label "Snug" uses living   # lint: the co
 ```arch static
 room id=lounge at (0,0) size 5000x4000 label "Lounge"
 furniture sofa_l at (500,500) size 900x2400   # lint: a sofa_l is 2600 wide and 1600 deep; this one is drawn 900 wide and 2400 deep
+```
+
+## W_FURNITURE_ON_STAIR
+
+*warning* — Furniture stands on a stair or on the landing it owes.
+
+**Cause.** A piece's footprint overlaps the part of a `stair` a person cannot stand under, or the landing beyond the end the flight is entered from on this storey: as wide as the flight, as deep as the flight is wide (at least 1200 mm in a building other than a dwelling), and only as deep as the floor stands clear, as `W_STAIR_NO_LANDING` measures it. Approved Document K (2013) 1.21b keeps a landing clear of permanent obstructions. On a storey the flight rises from, that part is the run with less than 2 m of headroom, read against the storey height (3000 mm when the plan authors none), so a wardrobe under the high end of a flight is not reported. A stairwell, where a flight comes down or arrives from below, is a hole: all of its footprint is read. `finish` keeps off the whole footprint either way. On the landing a rug, which is walked on, and a wall cabinet, which hangs above it, are not. A landing a curved wall stands near is not judged, and an `elevator` or `escalator` is not read.
+
+**Fix.** Move or resize the piece so it clears the span the hint quotes, or move the stair. There is no machine-applicable fix: where the piece goes instead is a design decision.
+
+```arch static
+room id=liv at (0,0) size 5000x4000 label "Living"
+stair id=s1 at (3000,500) size 1000x3000 dir up
+furniture sofa at (2500,1000) size 900x2000 rotate 90   # lint: stands on the flight
 ```
 
 ## W_FURNITURE_OVERLAP

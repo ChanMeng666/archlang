@@ -61,11 +61,11 @@ export function nodeExtras(n: MeshNode): Record<string, string | number | boolea
   };
 }
 
-/** The GLB of `mesh`: same Mesh3D, same bytes. */
-export async function writeGlb(mesh: Mesh3D): Promise<Uint8Array> {
+/** The GLB of `mesh`: same Mesh3D and `generator`, same bytes. */
+export async function writeGlb(mesh: Mesh3D, opts: { generator?: string } = {}): Promise<Uint8Array> {
   const doc = new Document();
   doc.setLogger(new Logger(Logger.Verbosity.SILENT));
-  doc.getRoot().getAsset().generator = GLB_GENERATOR;
+  doc.getRoot().getAsset().generator = opts.generator ?? GLB_GENERATOR;
   const buffer = doc.createBuffer();
   const scene = doc.createScene(mesh.name);
   doc.getRoot().setDefaultScene(scene);

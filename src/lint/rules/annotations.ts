@@ -55,7 +55,8 @@
  * A door's swing is the area its leaf sweeps, not the leaf and the arc alone: they enclose nothing
  * this measure can see, and it is the area the label placer steers off. "Off its floor" is the
  * same 2 % of the text's box outside the room's ring, a wall's centreline where a wall bounds it.
- * A label pinned off its floor is `W_ROOM_LABEL_OUTSIDE`'s report and is not repeated here.
+ * A label pinned off its floor is `W_ROOM_LABEL_OUTSIDE`'s report: none of the three is repeated
+ * for it.
  *
  * ## Why `W_DIM_INSIDE` was not widened to `dims auto` (the card's first proposal)
  *
@@ -73,31 +74,41 @@
  * Post-resolve and outside the evaluator, so nothing is charged to the step meter. The storey is
  * drawn once (`toScene`) only when it is within the drawing budget (`drawBudgetDiagnostic`, the
  * check `compile()` refuses a plan by); otherwise the rule files an `annotation-budget` skip. The
- * collision work is a count, {@link MAX_ANNOTATION_WORK}: one unit per (text, symbol), (number,
- * label), (label, swing) and (label, poché loop) pair, plus one per shape vertex clipped. Worst
- * case `numbers × symbols + labels × (symbols + swings + loops + 1) + numbers × labels` pairs, each
- * clip linear in the shape's vertices; past the count the storey is skipped, never half-measured.
+ * collision work is a count, {@link MAX_ANNOTATION_WORK}: one unit per (text, symbol) and
+ * (number, label) pair whose boxes are compared, plus one per shape vertex clipped. Worst case
+ * `numbers × symbols + labels × symbols + numbers × labels` pairs, each clip linear in the
+ * shape's vertices; past the count the storey is skipped, never half-measured.
+ *
+ * The walls, swings and floors have a count of their own, the same size, so that measuring them can
+ * never cost a plan a symbol report: one unit per (label, swing) pair and per label, plus one per
+ * vertex clipped. Only a label within a wall's reach (a grid over the wall bands, grown by the
+ * thickest wall so a mitre stays inside) clips the poché, whose one loop can run round the whole
+ * building. Worst case `labels × (swings + 1)` units plus `labels × poché vertices`, for a storey
+ * whose every label touches a wall; past the count those three tests are dropped for the storey
+ * with an `annotation-budget` note, and the symbol and `dims auto` reports stand.
+ *
  * The title check is closed form: one comparison per title row.
  */
 
 import type { Point } from "../../ast.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { doorLeaves, rectCorners, type DoorSwing } from "../../geometry.js";
-import type { RDim, RDoor, ResolvedElement, RFurniture, RRoom } from "../../ir.js";
+import type { RDim, RDoor, ResolvedElement, ResolvedPlan, RFurniture, RRoom } from "../../ir.js";
 import type { ScenePrim } from "../../scene.js";
 import { BUILTIN_RUNTIME } from "../../registry.js";
 import { autoDimensions, toScene } from "../../scene-build.js";
 import { dimTextPrim } from "../../elements/dim.js";
 import { titleBlockMetrics, titleRows } from "../../chrome-layout.js";
 import { drawBudgetDiagnostic } from "../../draw-budget.js";
-import { COLLIDE_MIN } from "../../label-placement.js";
+import { COLLIDE_MIN, meanExtent, wallBands } from "../../label-placement.js";
 import { textExtent } from "../../text-layout.js";
 import { EM_PER_CHAR, INK_EM, textWidth } from "../../text-metrics.js";
 import { fmt2 as fmtMm } from "../../num-format.js";
 import { isUnderlay } from "../../fixtures-catalog.js";
 import { isVertical } from "../../vertical.js";
 import { pointInRoomBox, roomBox } from "../../analyze.js";
-import { pointInPolygon } from "../../geometry/polygon.js";
+import { GridIndex } from "../../geometry/grid-index.js";
+import { clippedArea, clippedSigned, pointInPolygon } from "../../geometry/polygon.js";
 import { openingName } from "../element-phrases.js";
 import type { LintContext, LintRule } from "../context.js";
 
@@ -175,7 +186,7 @@ export const annotationOverlap: LintRule = {
         const room = roomById.get(n.elementId);
         if (!room) continue;
         // `room.render` draws the name first (only when the room has one), then the area figure.
-        const isName = room.label !== undefined && !named.has(room);
+        const isName = !!room.label && !named.has(room);
         named.add(room);
         labels.push({ room, prim: n.prim, text: textBox(n.prim), ink: textBox(n.prim, INK_EM / EM_PER_CHAR), isName });
         continue;
@@ -209,11 +220,7 @@ export const annotationOverlap: LintRule = {
         return { door, ring, box };
       }),
     );
-    const wallLoops = walls.reduce((n, w) => n + w.length, 0);
-    const pairs =
-      (numbers.length + labels.length) * syms.length +
-      numbers.length * labels.length +
-      labels.length * (swings.length + wallLoops + 1);
+    const pairs = (numbers.length + labels.length) * syms.length + numbers.length * labels.length;
     if (pairs > MAX_ANNOTATION_WORK) {
       ctx.skip("annotation-budget");
       return [];
@@ -235,24 +242,33 @@ export const annotationOverlap: LintRule = {
     };
     const over = (t: Text, shapes: readonly Point[][], box: Box): boolean =>
       boxesMeet(t.box, box) && share(t, shapes) > COLLIDE_MIN * t.area;
+
+    // The walls, swings and floors, on their own count (see Bounds).
+    let fabricWork = labels.length * (swings.length + 1);
+    /** Charge `n` units of fabric work; false once the count is spent. */
+    const charge = (n: number): boolean => {
+      fabricWork += n;
+      return fabricWork <= MAX_ANNOTATION_WORK;
+    };
     /** The area of `t` a set of loops covers, holes subtracting: one fill of wall poche. */
     const inkOf = (t: Text, loops: readonly Point[][]): number => {
       let sum = 0;
-      for (const loop of loops) {
-        work += loop.length;
-        if (work > MAX_ANNOTATION_WORK) {
-          spent = true;
-          return 0;
-        }
-        sum += clippedSigned(loop, t.rect);
-      }
+      for (const loop of loops) if (charge(loop.length)) sum += clippedSigned(loop, t.rect);
       return Math.abs(sum);
     };
-    const overWall = (t: Text): boolean => walls.some((w) => inkOf(t, w) > COLLIDE_MIN * t.area);
-    /** `t` stands more than the trigger outside `room`'s floor. A label pinned off the floor is
-     *  `W_ROOM_LABEL_OUTSIDE`'s report, not a second one here. */
+    const reach = wallReach(ir, walls);
+    const nearWall = (t: Text): boolean => {
+      let near = false;
+      reach?.forEach(t.box, () => {
+        near = true;
+      });
+      return near;
+    };
+    const overWall = (t: Text): boolean => nearWall(t) && walls.some((w) => inkOf(t, w) > COLLIDE_MIN * t.area);
+    const overSwing = (t: Text, s: (typeof swings)[number]): boolean =>
+      boxesMeet(t.box, s.box) && charge(s.ring.length) && clippedArea(s.ring, t.rect) > COLLIDE_MIN * t.area;
+    /** `t` stands more than the trigger outside `room`'s floor. */
     const leaves = (t: Text, room: RRoom): boolean => {
-      if (room.labelAt && !pointInRoomFloor(room.labelAt, room)) return false;
       const ring = room.poly ?? rectCorners(room.at.x, room.at.y, room.size.w, room.size.h);
       return t.area - inkOf(t, [ring]) > COLLIDE_MIN * t.area;
     };
@@ -268,12 +284,14 @@ export const annotationOverlap: LintRule = {
       wall: boolean;
       doors: RDoor[];
       outside: boolean;
+      /** The name itself, not only the area figure, is over a wall or off the floor. */
+      nameTight: boolean;
     }
     const perRoom = new Map<RRoom, RoomHit>();
     const hitOn = (l: (typeof labels)[number]): RoomHit => {
       let e = perRoom.get(l.room);
       if (!e) {
-        e = { name: false, area: null, hits: [], wall: false, doors: [], outside: false };
+        e = { name: false, area: null, hits: [], wall: false, doors: [], outside: false, nameTight: false };
         perRoom.set(l.room, e);
       }
       if (l.isName) e.name = true;
@@ -286,14 +304,26 @@ export const annotationOverlap: LintRule = {
         const e = hitOn(l);
         if (!e.hits.includes(s.el)) e.hits.push(s.el);
       }
-      for (const s of swings) {
-        if (!over(l.ink, [s.ring], s.box)) continue;
-        const e = hitOn(l);
-        if (!e.doors.includes(s.door)) e.doors.push(s.door);
-      }
-      if (overWall(l.ink)) hitOn(l).wall = true;
-      if (leaves(l.ink, l.room)) hitOn(l).outside = true;
     }
+    // Measured whole or not at all, and merged only once it is known to be whole. A label pinned off
+    // its floor is `W_ROOM_LABEL_OUTSIDE`'s report, whatever it landed on.
+    const fabric: { l: (typeof labels)[number]; doors: RDoor[]; wall: boolean; outside: boolean }[] = [];
+    for (const l of labels) {
+      if (l.room.labelAt && !pointInRoomFloor(l.room.labelAt, l.room)) continue;
+      const doors = swings.filter((s) => overSwing(l.ink, s)).map((s) => s.door);
+      const wall = overWall(l.ink);
+      const outside = leaves(l.ink, l.room);
+      if (doors.length > 0 || wall || outside) fabric.push({ l, doors, wall, outside });
+    }
+    if (fabricWork > MAX_ANNOTATION_WORK) ctx.skip("annotation-budget");
+    else
+      for (const f of fabric) {
+        const e = hitOn(f.l);
+        for (const d of f.doors) if (!e.doors.includes(d)) e.doors.push(d);
+        e.wall ||= f.wall;
+        e.outside ||= f.outside;
+        if (f.l.isName) e.nameTight ||= f.wall || f.outside;
+      }
 
     // A `dims auto` number over a symbol or a room's label: one warning per number.
     const perNumber: { dm: RDim; value: string; at: Point; hits: ResolvedElement[]; over: typeof labels }[] = [];
@@ -311,7 +341,7 @@ export const annotationOverlap: LintRule = {
     }
 
     for (const [room, e] of perRoom) {
-      const name = room.label;
+      const name = room.label || undefined;
       const both = e.name && e.area !== null;
       const subject = both
         ? `The name "${name}" and the area figure (${e.area})`
@@ -338,8 +368,8 @@ export const annotationOverlap: LintRule = {
       const byId = listOf(movable);
       const pinned = room.labelAt !== undefined;
       const moveOr = movable.length > 0 ? `, or move ${byId}` : "";
-      // A name wider than the floor has no clear point to be given: its width has to change.
       const tight = e.wall || e.outside;
+      const clearPoint = `\`label "${name}" at (x,y)\``;
       out.push({
         severity: "warning",
         code: "W_ANNOTATION_OVERLAP",
@@ -347,10 +377,18 @@ export const annotationOverlap: LintRule = {
         message: `${subject} ${printed}${off}, ${after}`,
         hints: [
           name === undefined
-            ? `${tight ? "Enlarge the room" : `Move ${byId} off the middle of the floor`}, or name the room and give its label a clear point with \`label "…" at (x,y)\`.`
+            ? tight || e.doors.length > 0
+              ? `${movable.length > 0 ? `Move ${byId} clear of the figure, enlarge the room` : "Enlarge the room"}, or name it and give its label a clear point with \`label "…" at (x,y)\` if the floor has one.`
+              : `Move ${byId} off the middle of the floor, or name the room and give its label a clear point with \`label "…" at (x,y)\`.`
             : pinned
-              ? `The label of ${roomRef(ctx, room)} is pinned by \`label "${name}" at (x,y)\`: move that point to a clear part of the floor${moveOr}.`
-              : `The label placer found no clear part of the floor of ${roomRef(ctx, room)} big enough for the label. Give it a clear point with \`label "${name}" at (x,y)\`${tight ? ", shorten the name (a name with a space can wrap) or widen the room" : ""}${moveOr}.`,
+              ? `The label of ${roomRef(ctx, room)} is pinned by ${clearPoint}: move that point to a clear part of the floor${e.nameTight ? ", shorten the name, widen the room" : tight ? ", widen the room" : ""}${moveOr}.`
+              : `The label placer found no clear part of the floor of ${roomRef(ctx, room)} big enough for the label. ${
+                  e.nameTight
+                    ? `Shorten the name or widen the room, or give it a clear point with ${clearPoint} if the floor has one`
+                    : tight
+                      ? `Widen the room, or give the label a clear point with ${clearPoint} if the floor has one`
+                      : `Give it a clear point with ${clearPoint}`
+                }${moveOr}.`,
         ],
       });
     }
@@ -485,6 +523,21 @@ const idAuthored = (el: ResolvedElement): boolean => (el as { _idAuthored?: bool
 /** A room as a hint names it: by its authored id, else as the message does. */
 const roomRef = (ctx: LintContext, r: RRoom): string => (idAuthored(r) ? `room \`${r.id}\`` : ctx.nameOf(r));
 
+/**
+ * What can reach a wall's poché: a grid over the wall bands, grown by the thickest wall so that a
+ * mitre's tip stays inside its band. `undefined` for a storey that draws no poché.
+ */
+function wallReach(ir: ResolvedPlan, walls: readonly (readonly Point[][])[]): GridIndex<true> | undefined {
+  if (walls.length === 0) return undefined;
+  const bands = wallBands(
+    ir,
+    ir.walls.reduce((t, w) => Math.max(t, w.thickness), 0),
+  );
+  const grid = new GridIndex<true>(meanExtent(bands));
+  for (const b of bands) grid.insert({ minX: b.x, minY: b.y, maxX: b.x + b.w, maxY: b.y + b.h }, true);
+  return grid;
+}
+
 /** A door with the id an agent edits it by, for a hint. */
 const doorWithId = (d: RDoor): string => (idAuthored(d) ? `the door (\`${d.id}\`)` : "the door");
 
@@ -583,52 +636,3 @@ function grow(b: Box, p: Point): void {
 }
 
 const boxesMeet = (a: Box, b: Box): boolean => a.minX < b.maxX && b.minX < a.maxX && a.minY < b.maxY && b.minY < a.maxY;
-
-/** Twice the signed area of a ring (shoelace). */
-function area2(p: readonly Point[]): number {
-  let s = 0;
-  for (let i = 0; i < p.length; i++) {
-    const a = p[i]!;
-    const b = p[(i + 1) % p.length]!;
-    s += a.x * b.y - b.x * a.y;
-  }
-  return s;
-}
-
-/**
- * The area `subject` shares with the CONVEX ring `clip` (a text box): Sutherland–Hodgman against
- * each of the clip's edges, then the shoelace. Exact for any simple subject ring, convex or not —
- * the clipped ring may carry zero-width bridges along the clip's edges, which add no area.
- */
-function clippedArea(subject: readonly Point[], clip: readonly Point[]): number {
-  return Math.abs(clippedSigned(subject, clip));
-}
-
-/** {@link clippedArea} keeping the subject's winding, so a hole's loop subtracts from its outer's. */
-function clippedSigned(subject: readonly Point[], clip: readonly Point[]): number {
-  const turn = area2(clip) > 0 ? 1 : -1;
-  let ring: Point[] = [...subject];
-  for (let i = 0; i < clip.length && ring.length > 0; i++) {
-    const a = clip[i]!;
-    const b = clip[(i + 1) % clip.length]!;
-    const side = (p: Point): number => turn * ((b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x));
-    const input = ring;
-    ring = [];
-    for (let j = 0; j < input.length; j++) {
-      const cur = input[j]!;
-      const prev = input[(j + input.length - 1) % input.length]!;
-      const sc = side(cur);
-      const sp = side(prev);
-      if (sc >= 0) {
-        if (sp < 0) ring.push(cut(prev, cur, sp, sc));
-        ring.push(cur);
-      } else if (sp >= 0) ring.push(cut(prev, cur, sp, sc));
-    }
-  }
-  return ring.length >= 3 ? area2(ring) / 2 : 0;
-}
-
-function cut(p: Point, q: Point, sp: number, sq: number): Point {
-  const t = sp / (sp - sq);
-  return { x: p.x + (q.x - p.x) * t, y: p.y + (q.y - p.y) * t };
-}

@@ -7,6 +7,7 @@
  * Reads only fields the exported IR types document; underscore-prefixed fields are not part of
  * the core's promise (ADR 0031) and are never read (`test/contract.test.ts`).
  */
+import { version } from "../../package.json";
 import {
   doorLeaves,
   doorSwing,
@@ -49,7 +50,7 @@ import type {
 } from "./types.js";
 
 /** The package's own version, stamped into `meta.tool`. */
-export const ARCHLANG_3D_VERSION = "0.0.0";
+export const ARCHLANG_3D_VERSION = version;
 
 /** A resolved storey: its number, name and IR. */
 export interface Storey {

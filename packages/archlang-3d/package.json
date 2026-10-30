@@ -1,42 +1,75 @@
 {
   "name": "@chanmeng666/archlang-3d",
-  "version": "0.0.0",
-  "private": true,
-  "description": "A downstream reader of a resolved ArchLang plan: adapts it to a plan-aligned Scene3D. ArchLang itself draws plans; this package is separate and unpublished.",
+  "version": "0.1.0",
+  "description": "3D preview of an ArchLang floor plan: a separate package that reads the same .arch source and is checked against the plan.",
+  "keywords": [
+    "archlang",
+    "floor-plan",
+    "3d-preview",
+    "gltf",
+    "glb",
+    "three"
+  ],
   "license": "MIT",
   "author": "Chan Meng <chanmeng.dev@gmail.com>",
+  "homepage": "https://github.com/ChanMeng666/archlang/tree/main/packages/archlang-3d#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ChanMeng666/archlang.git",
     "directory": "packages/archlang-3d"
   },
-  "type": "module",
-  "engines": {
-    "node": ">=20"
+  "bugs": {
+    "url": "https://github.com/ChanMeng666/archlang/issues"
   },
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./browser": "./src/browser.ts",
-    "./node": "./src/node.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "import": "./dist/browser.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.js"
+    }
+  },
+  "bin": {
+    "archlang3d": "dist/cli.js"
   },
   "files": [
-    "src",
+    "dist",
+    "README.md",
+    "LICENSE",
     "THIRD_PARTY_NOTICES",
     "CHANGELOG.md"
   ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
+    "build": "tsup",
     "typecheck": "tsc --noEmit",
     "e2e": "vitest run --config vitest.e2e.config.ts",
     "archlang3d": "tsx src/cli/main.ts",
-    "notices": "tsx scripts/licence-gate.ts --write"
+    "notices": "tsx scripts/licence-gate.ts --write",
+    "prove:pack": "tsx scripts/prove-pack.ts",
+    "prepack": "npm run build"
   },
   "peerDependencies": {
     "@chanmeng666/archlang": "^1.45.0"
   },
   "dependencies": {
     "@gltf-transform/core": "4.5.1",
-    "earcut": "^3.2.4",
-    "esbuild": "^0.28.2",
+    "earcut": "3.2.4",
     "gltf-validator": "2.0.0-dev.3.10",
     "playwright-core": "1.64.1",
     "three": "0.186.1"
@@ -44,6 +77,8 @@
   "devDependencies": {
     "@types/three": "0.186.0",
     "ajv": "^8.20.0",
+    "esbuild": "^0.28.2",
+    "tsup": "^8.3.5",
     "typescript": "^5.7.2"
   }
 }

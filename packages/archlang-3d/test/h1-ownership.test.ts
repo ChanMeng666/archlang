@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 import {
   inRing,
   mixedHeightJoints,
+  type OwnedWall,
   type Ownership,
   type Point,
   signedArea,
@@ -35,6 +36,34 @@ const cutPoint = (o: Ownership, i: number): Point => o.cuts[i]?.opening.at ?? { 
 
 const covered = (o: Ownership, p: Point): boolean =>
   o.owned.some((w) => w.pieces.some((pc) => inRing(p, pc.outer) && !pc.holes.some((h) => inRing(p, h))));
+
+describe("a crossing of four open boundaries (#368)", () => {
+  const [ir] = storeys(`plan "Pier" {
+  units mm
+  room id=a at (0,0) size 4000x3000 uses living
+  room id=b at (4000,0) size 3000x3000 uses dining
+  room id=c at (0,3000) size 4000x3000 uses kitchen
+  room id=d at (4000,3000) size 3000x3000 uses hall
+  walls from rooms exterior 300 partition 120 {
+    open between a and b
+    open between a and c
+    open between b and d
+    open between c and d
+  }
+}
+`);
+  const own = wallOwnership(ir?.walls ?? []);
+  const crossing = { x: 4000, y: 3000 };
+
+  const holds = (pieces: OwnedWall["pieces"]): boolean =>
+    pieces.some((p) => inRing(crossing, p.outer) && !p.holes.some((h) => inRing(crossing, h)));
+
+  it("stays in the solid and leaves the body the mesh builds", () => {
+    expect(own.owned.some((w) => holds(w.pieces))).toBe(true);
+    expect(own.owned.some((w) => holds(w.body))).toBe(false);
+    expect(own.cuts).toHaveLength(4);
+  });
+});
 
 describe("H1 on the synthetic stress plans s1…s11", () => {
   const own = Object.fromEntries(

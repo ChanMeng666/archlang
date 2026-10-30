@@ -47,7 +47,14 @@ import { habitableNoWindow, roomMissingDefining } from "./room-contents.js";
 import { balconyNoDoor, outdoorOverlapsRoom } from "./outdoor.js";
 import { roomNotEquatorFacing } from "./site.js";
 import { shaftFootprintMismatch, stairUnmatched } from "./vertical.js";
-import { stairHeadVoid, stairNoLanding, stairSideEntry, stairTooSteep, swingOverStair } from "./stairs.js";
+import {
+  furnitureOnStair,
+  stairHeadVoid,
+  stairNoLanding,
+  stairSideEntry,
+  stairTooSteep,
+  swingOverStair,
+} from "./stairs.js";
 
 export const LINT_RULES: readonly LintRule[] = [
   perRoomRules,
@@ -184,6 +191,9 @@ export const LINT_RULES: readonly LintRule[] = [
   // A wall ending a sliver short of the wall it runs toward (issue #346, G5). Appended LAST, so no
   // existing diagnostic moves within the array.
   wallEndShort,
+  // Furniture on a flight or its landing (issue #364, G9). Appended LAST, so no existing diagnostic
+  // moves within the array.
+  furnitureOnStair,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

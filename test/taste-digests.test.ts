@@ -184,9 +184,13 @@
  *
  * #367 moved nine rows, three files under each profile. `examples/remodel` gains one
  * `W_ANNOTATION_OVERLAP` in `validity.drafting` (the swing's arc crosses the U of "Utility"), and
- * nothing else in its report moved. The two `r14-living-off-to-one-side` twins renamed "Bedroom 1"
- * and "Bedroom 2" to "Bed 1" and "Bed 2": the arc ran through both names, and set C needs the twins
- * lint clean; no room's use or geometry changed, so only the names in the reports moved.
+ * nothing else in its report moved. The two `r14-living-off-to-one-side` twins pin "Bedroom 1"
+ * and "Bedroom 2" clear of their door swings, because the arc ran through both names and set C needs
+ * the twins lint clean; no criterion reads where a label stands.
+ * G9 (`W_FURNITURE_ON_STAIR`, a piece on a flight or its landing) added twelve rows, the new
+ * `stair-safety/furniture-on-flight` and `furniture-on-landing` pairs under each of the three
+ * profiles, measured with `tasteDigest`. No existing row moved (no example or corpus piece stands on a
+ * flight or a landing).
  */
 
 import { describe, expect, it } from "vitest";
@@ -1041,6 +1045,26 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "61bf2e8fe6ce6c1df9696d52abdbb498b7ff7dcd0a87b81108be2bbea8811ead",
     "generic",
     "test/defect-corpus/stair-safety/foot-against-partition.clean.arch",
+  ],
+  [
+    "9c268517ee73b76623faed701b963b44ceb902a54fc85c8cf5e8d2e995c75141",
+    "generic",
+    "test/defect-corpus/stair-safety/furniture-on-flight.arch",
+  ],
+  [
+    "c60dc9af82702ce6636933e2dbcb6da206c22e172ce6e16805c2de1fe8c34624",
+    "generic",
+    "test/defect-corpus/stair-safety/furniture-on-flight.clean.arch",
+  ],
+  [
+    "c3a9c1eec2c7820dbb6f8890c54593b5a4db451b07e4035c5dd5b2f32e08f596",
+    "generic",
+    "test/defect-corpus/stair-safety/furniture-on-landing.arch",
+  ],
+  [
+    "28415399210cb525baee7349f45ea3c6c71934ab65252cf45e3dc0a34819ba3b",
+    "generic",
+    "test/defect-corpus/stair-safety/furniture-on-landing.clean.arch",
   ],
   [
     "ae46cab7c8ed30dfa1f468869e9727008a49b335fc71ea0913850d29d1a97139",
@@ -2198,6 +2222,26 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/foot-against-partition.clean.arch",
   ],
   [
+    "58d00e468628bd7083bafad9d6c82ebc7830b7b91bc1d3985713a0d62a95030e",
+    "cn-residential-advisory",
+    "test/defect-corpus/stair-safety/furniture-on-flight.arch",
+  ],
+  [
+    "7ab88e284162c786879e2ac7474747eeae7e95fbcd7b3835c83ab585d44f29e9",
+    "cn-residential-advisory",
+    "test/defect-corpus/stair-safety/furniture-on-flight.clean.arch",
+  ],
+  [
+    "b5fac72adea2cd2cbe6b5b1a6f1b71fd90aa03a320f9d44950dc7c0a3136016f",
+    "cn-residential-advisory",
+    "test/defect-corpus/stair-safety/furniture-on-landing.arch",
+  ],
+  [
+    "71d3b981c23dc89f8c4ed3643e03d30be93d657e9469956bedf9d7c39cc1d431",
+    "cn-residential-advisory",
+    "test/defect-corpus/stair-safety/furniture-on-landing.clean.arch",
+  ],
+  [
     "bd332a1df56dd81f95afb9fe137c7ce21816e99506a50684839825a923e3e547",
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/head-against-wall.arch",
@@ -3351,6 +3395,26 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "ba3875f9d9230b090534544604ee407f6566132a54bb7cb204ae7b188e00af86",
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/foot-against-partition.clean.arch",
+  ],
+  [
+    "5e4b261e2a8d5092d744ca93aebd0dfb8a4ffb096695e549528a0286900c2a8a",
+    "us-residential-advisory",
+    "test/defect-corpus/stair-safety/furniture-on-flight.arch",
+  ],
+  [
+    "26c1b091853ff85616d7e0afff8d39edfe6f5811bac0ab86781ebe262d955d88",
+    "us-residential-advisory",
+    "test/defect-corpus/stair-safety/furniture-on-flight.clean.arch",
+  ],
+  [
+    "2ef8a2fbece08411910fa7fba3b6609c92fb00a32259640ee83d52e668ef360a",
+    "us-residential-advisory",
+    "test/defect-corpus/stair-safety/furniture-on-landing.arch",
+  ],
+  [
+    "3e09e7c8005131bfbeaa7d82688faaaec1968048421659060b6951f0dc826781",
+    "us-residential-advisory",
+    "test/defect-corpus/stair-safety/furniture-on-landing.clean.arch",
   ],
   [
     "2cd19405d5d13685b895f8fb9395131595b1173c4f8d0874f0ea4e23b1284fba",
