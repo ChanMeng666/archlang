@@ -308,7 +308,8 @@ export interface RWall extends RBase {
    * authored wall split off), and its {@link RBase.span} is the statement's. So a lint fix or
    * hint never quotes it and never edits its span, `arch fix`/`suggest` never emit it, and
    * `roof overhang` counts only the outer ring. Internal (the `_` prefix keeps it out of the
-   * Scene/SVG/exports).
+   * SVG and the exports; the Scene carries `from` and an empty `open` on an `open between` run,
+   * for the joinery alone, and nothing is promised about it).
    */
   _derived?: {
     from: "rooms";

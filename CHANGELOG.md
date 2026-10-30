@@ -33,6 +33,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Four `open between` boundaries meeting at one point no longer leave a free-standing pier one
+  partition thick at the crossing (issue #368): no wall is drawn at the crossing in the SVG, PDF, PNG or DXF, though a DXF keeps each
+  opening's outline on `A-DOOR`, as it does for every opening. `describe()` and `lint()` do not
+  move, and neither does a plan with three of the four open (a T keeps its square too), a `width`
+  that keeps some wall at the crossing, a door on the square, or another wall on the crossing.
+
 - `arch finish` no longer furnishes over a stair (issue #364, part 1): no piece, and no piece's front
   strip, is placed on a flight or its landing. A plan with no stair furnishes as before.
 - `validate --intent`, `score --brief` and `validateIntent()` read every storey of a plan with
