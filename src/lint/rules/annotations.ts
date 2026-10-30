@@ -4,8 +4,9 @@
  * untouched by them.
  *
  * `W_ANNOTATION_OVERLAP` — a number `dims auto` writes, or a room's name or area figure, printed
- * over a furniture, fixture or stair symbol; or a `dims auto` number printed over a room's name
- * or area figure.
+ * over a furniture, fixture or stair symbol; a `dims auto` number printed over a room's name or
+ * area figure; or a room's name or area figure printed over a wall or a door's swing, or running
+ * off its own floor (#367).
  *
  * `W_TITLE_OVERFLOW` — a title-block value wider than its row.
  *
@@ -23,12 +24,19 @@
  *  - each symbol's DRAWN shapes — the polygons, closed paths and circles its `render` emits —
  *    not its footprint box. A line encloses no area and an arc stroke is not ink a number sits
  *    in, so neither is measured (the label placer's own rule, `primBBox`);
+ *  - the walls' poché, the `hatch` fill `lowerWallSet` drew (openings cut, joints mitred; a
+ *    demolished wall has none), and each leaf's quarter-disc from {@link doorLeaves}, the helper
+ *    the door draws with;
  *  - the title block's row geometry from {@link titleBlockMetrics}, the one formula the chrome
  *    is laid out and drawn with.
  *
  * Every width is the one shared estimate, {@link textWidth} (`characters × size × 0.62`), through
  * {@link textExtent}: the same model the label placer, the `dims auto` stagger and
- * `W_DIM_OVERLAP` measure with. There is no font, canvas or Node API anywhere in it.
+ * `W_DIM_OVERLAP` measure with. There is no font, canvas or Node API anywhere in it. The walls, the
+ * swings and the floor's edge are the exception: a label sits right up to them on every plan with
+ * a small room, and that estimate's slack read a name with clear floor on both sides as buried in
+ * both walls (`two-bed-min-area`'s "Bathroom"), so those three use {@link INK_EM}, the width the
+ * bundled face draws on average.
  *
  * ## What "over" means
  *
@@ -43,6 +51,11 @@
  *
  * A rug (an `underlay` fixture) is not a symbol here: it is the floor finish, and a name on a rug
  * reads. Furniture labels are text, not symbol ink, and are not measured.
+ *
+ * A door's swing is the area its leaf sweeps, not the leaf and the arc alone: they enclose nothing
+ * this measure can see, and it is the area the label placer steers off. "Off its floor" is the
+ * same 2 % of the text's box outside the room's ring, a wall's centreline where a wall bounds it.
+ * A label pinned off its floor is `W_ROOM_LABEL_OUTSIDE`'s report and is not repeated here.
  *
  * ## Why `W_DIM_INSIDE` was not widened to `dims auto` (the card's first proposal)
  *
@@ -60,16 +73,17 @@
  * Post-resolve and outside the evaluator, so nothing is charged to the step meter. The storey is
  * drawn once (`toScene`) only when it is within the drawing budget (`drawBudgetDiagnostic`, the
  * check `compile()` refuses a plan by); otherwise the rule files an `annotation-budget` skip. The
- * collision work is a count, {@link MAX_ANNOTATION_WORK}: one unit per (text, symbol) and
- * (number, label) pair whose boxes are compared, plus one per shape vertex clipped. Worst case
- * `numbers × symbols + labels × symbols + numbers × labels` pairs, each clip linear in the
- * shape's vertices; past the count the storey is skipped, never half-measured. The title check is
- * closed form: one comparison per title row.
+ * collision work is a count, {@link MAX_ANNOTATION_WORK}: one unit per (text, symbol), (number,
+ * label), (label, swing) and (label, poché loop) pair, plus one per shape vertex clipped. Worst
+ * case `numbers × symbols + labels × (symbols + swings + loops + 1) + numbers × labels` pairs, each
+ * clip linear in the shape's vertices; past the count the storey is skipped, never half-measured.
+ * The title check is closed form: one comparison per title row.
  */
 
 import type { Point } from "../../ast.js";
 import type { Diagnostic } from "../../diagnostics.js";
-import type { RDim, ResolvedElement, RFurniture, RRoom } from "../../ir.js";
+import { doorLeaves, rectCorners, type DoorSwing } from "../../geometry.js";
+import type { RDim, RDoor, ResolvedElement, RFurniture, RRoom } from "../../ir.js";
 import type { ScenePrim } from "../../scene.js";
 import { BUILTIN_RUNTIME } from "../../registry.js";
 import { autoDimensions, toScene } from "../../scene-build.js";
@@ -78,11 +92,13 @@ import { titleBlockMetrics, titleRows } from "../../chrome-layout.js";
 import { drawBudgetDiagnostic } from "../../draw-budget.js";
 import { COLLIDE_MIN } from "../../label-placement.js";
 import { textExtent } from "../../text-layout.js";
-import { EM_PER_CHAR, textWidth } from "../../text-metrics.js";
+import { EM_PER_CHAR, INK_EM, textWidth } from "../../text-metrics.js";
 import { fmt2 as fmtMm } from "../../num-format.js";
 import { isUnderlay } from "../../fixtures-catalog.js";
 import { isVertical } from "../../vertical.js";
 import { pointInRoomBox, roomBox } from "../../analyze.js";
+import { pointInPolygon } from "../../geometry/polygon.js";
+import { openingName } from "../element-phrases.js";
 import type { LintContext, LintRule } from "../context.js";
 
 type TextPrim = Extract<ScenePrim, { t: "text" }>;
@@ -133,8 +149,8 @@ export const annotationOverlap: LintRule = {
     const { ir } = ctx;
     const hasSymbols = ir.elements.some(isSymbolElement);
     const rooms = ctx.rooms;
-    // Nothing can collide: no symbol under a label, and no `dims auto` number to sit on one.
-    if (!(hasSymbols && rooms.length > 0) && !(ir.autoDims && (hasSymbols || rooms.length > 0))) return [];
+    // Nothing can collide: no room to letter, and no `dims auto` number to sit on a symbol.
+    if (rooms.length === 0 && !(ir.autoDims && hasSymbols)) return [];
     const registry = BUILTIN_RUNTIME.registry;
     if (drawBudgetDiagnostic([{ ir }], registry, undefined) !== undefined) {
       ctx.skip("annotation-budget");
@@ -147,10 +163,13 @@ export const annotationOverlap: LintRule = {
     for (const el of ir.elements) if (isSymbolElement(el)) byId.set(el.id, el);
     const symbols = new Map<string, SymbolInk>();
     // Room labels: each room's name and area figure as drawn.
-    const labels: { room: RRoom; prim: TextPrim; text: Text; isName: boolean }[] = [];
+    const labels: { room: RRoom; prim: TextPrim; text: Text; ink: Text; isName: boolean }[] = [];
     const roomById = new Map(rooms.map((r) => [r.id, r] as const));
     const named = new Set<RRoom>();
+    // The walls' poche as drawn (openings cut, joints mitred); a demolished wall draws none.
+    const walls: Point[][][] = [];
     for (const n of scene.nodes) {
+      if (n.layer === "wallFill" && n.prim.t === "hatch") walls.push(n.prim.region);
       if (n.elementId === undefined) continue;
       if (n.elementKind === "room" && n.prim.t === "text") {
         const room = roomById.get(n.elementId);
@@ -158,7 +177,7 @@ export const annotationOverlap: LintRule = {
         // `room.render` draws the name first (only when the room has one), then the area figure.
         const isName = room.label !== undefined && !named.has(room);
         named.add(room);
-        labels.push({ room, prim: n.prim, text: textBox(n.prim), isName });
+        labels.push({ room, prim: n.prim, text: textBox(n.prim), ink: textBox(n.prim, INK_EM / EM_PER_CHAR), isName });
         continue;
       }
       const el = byId.get(n.elementId);
@@ -182,7 +201,19 @@ export const annotationOverlap: LintRule = {
     });
 
     const syms = [...symbols.values()];
-    const pairs = (numbers.length + labels.length) * syms.length + numbers.length * labels.length;
+    const swings = ctx.doors.flatMap((door) =>
+      doorLeaves(door).map((leaf) => {
+        const ring = sectorOf(leaf);
+        const box = emptyBox();
+        for (const p of ring) grow(box, p);
+        return { door, ring, box };
+      }),
+    );
+    const wallLoops = walls.reduce((n, w) => n + w.length, 0);
+    const pairs =
+      (numbers.length + labels.length) * syms.length +
+      numbers.length * labels.length +
+      labels.length * (swings.length + wallLoops + 1);
     if (pairs > MAX_ANNOTATION_WORK) {
       ctx.skip("annotation-budget");
       return [];
@@ -204,23 +235,64 @@ export const annotationOverlap: LintRule = {
     };
     const over = (t: Text, shapes: readonly Point[][], box: Box): boolean =>
       boxesMeet(t.box, box) && share(t, shapes) > COLLIDE_MIN * t.area;
+    /** The area of `t` a set of loops covers, holes subtracting: one fill of wall poche. */
+    const inkOf = (t: Text, loops: readonly Point[][]): number => {
+      let sum = 0;
+      for (const loop of loops) {
+        work += loop.length;
+        if (work > MAX_ANNOTATION_WORK) {
+          spent = true;
+          return 0;
+        }
+        sum += clippedSigned(loop, t.rect);
+      }
+      return Math.abs(sum);
+    };
+    const overWall = (t: Text): boolean => walls.some((w) => inkOf(t, w) > COLLIDE_MIN * t.area);
+    /** `t` stands more than the trigger outside `room`'s floor. A label pinned off the floor is
+     *  `W_ROOM_LABEL_OUTSIDE`'s report, not a second one here. */
+    const leaves = (t: Text, room: RRoom): boolean => {
+      if (room.labelAt && !pointInRoomFloor(room.labelAt, room)) return false;
+      const ring = room.poly ?? rectCorners(room.at.x, room.at.y, room.size.w, room.size.h);
+      return t.area - inkOf(t, [ring]) > COLLIDE_MIN * t.area;
+    };
 
     const out: Diagnostic[] = [];
 
-    // A room's name or area figure over a symbol: one warning per room.
-    const perRoom = new Map<RRoom, { name: boolean; area: string | null; hits: ResolvedElement[] }>();
+    // A room's name or area figure over a symbol, a wall or a door's swing, or off its floor:
+    // one warning per room.
+    interface RoomHit {
+      name: boolean;
+      area: string | null;
+      hits: ResolvedElement[];
+      wall: boolean;
+      doors: RDoor[];
+      outside: boolean;
+    }
+    const perRoom = new Map<RRoom, RoomHit>();
+    const hitOn = (l: (typeof labels)[number]): RoomHit => {
+      let e = perRoom.get(l.room);
+      if (!e) {
+        e = { name: false, area: null, hits: [], wall: false, doors: [], outside: false };
+        perRoom.set(l.room, e);
+      }
+      if (l.isName) e.name = true;
+      else e.area = l.prim.value;
+      return e;
+    };
     for (const l of labels) {
       for (const s of syms) {
         if (!over(l.text, s.shapes, s.box)) continue;
-        let e = perRoom.get(l.room);
-        if (!e) {
-          e = { name: false, area: null, hits: [] };
-          perRoom.set(l.room, e);
-        }
-        if (l.isName) e.name = true;
-        else e.area = l.prim.value;
+        const e = hitOn(l);
         if (!e.hits.includes(s.el)) e.hits.push(s.el);
       }
+      for (const s of swings) {
+        if (!over(l.ink, [s.ring], s.box)) continue;
+        const e = hitOn(l);
+        if (!e.doors.includes(s.door)) e.doors.push(s.door);
+      }
+      if (overWall(l.ink)) hitOn(l).wall = true;
+      if (leaves(l.ink, l.room)) hitOn(l).outside = true;
     }
 
     // A `dims auto` number over a symbol or a room's label: one warning per number.
@@ -240,29 +312,45 @@ export const annotationOverlap: LintRule = {
 
     for (const [room, e] of perRoom) {
       const name = room.label;
-      const what =
-        e.name && e.area !== null
-          ? `The name "${name}" and the area figure (${e.area}) are`
-          : e.name
-            ? `The name "${name}" is`
-            : name !== undefined
-              ? `The area figure (${e.area}) of "${name}" is`
-              : `The area figure (${e.area}) of ${ctx.nameOf(room)} is`;
-      const things = listOf(e.hits.map(symbolWord));
+      const both = e.name && e.area !== null;
+      const subject = both
+        ? `The name "${name}" and the area figure (${e.area})`
+        : e.name
+          ? `The name "${name}"`
+          : name !== undefined
+            ? `The area figure (${e.area}) of "${name}"`
+            : `The area figure (${e.area}) of ${ctx.nameOf(room)}`;
+      const things = listOf([
+        ...e.hits.map(symbolWord),
+        ...(e.wall ? ["a wall"] : []),
+        ...e.doors.map((d) => `the swing of ${openingName(ctx, d)}`),
+      ]);
+      const printed = things === "" ? "" : `${both ? "are" : "is"} printed over ${things}`;
+      const off = e.outside ? `${printed === "" ? "" : " and "}${both ? "run" : "runs"} out of the room` : "";
+      const onlySymbols = !e.wall && e.doors.length === 0 && !e.outside;
+      const after = onlySymbols
+        ? "so the label and the symbol overprint each other on the drawing."
+        : printed === ""
+          ? "so part of the label is drawn off its own floor."
+          : "so the label and what is under it overprint each other on the drawing.";
       // The hint names each element by the id an agent edits it by (never the message).
-      const byId = listOf(e.hits.map(symbolWithId));
+      const movable = [...e.hits.map(symbolWithId), ...e.doors.map(doorWithId)];
+      const byId = listOf(movable);
       const pinned = room.labelAt !== undefined;
+      const moveOr = movable.length > 0 ? `, or move ${byId}` : "";
+      // A name wider than the floor has no clear point to be given: its width has to change.
+      const tight = e.wall || e.outside;
       out.push({
         severity: "warning",
         code: "W_ANNOTATION_OVERLAP",
         ...ctx.at(room),
-        message: `${what} printed over ${things}, so the label and the symbol overprint each other on the drawing.`,
+        message: `${subject} ${printed}${off}, ${after}`,
         hints: [
           name === undefined
-            ? `Move ${byId} off the middle of the floor, or name the room and give its label a clear point with \`label "…" at (x,y)\`.`
+            ? `${tight ? "Enlarge the room" : `Move ${byId} off the middle of the floor`}, or name the room and give its label a clear point with \`label "…" at (x,y)\`.`
             : pinned
-              ? `The label of ${roomRef(ctx, room)} is pinned by \`label "${name}" at (x,y)\`: move that point to a clear part of the floor, or move ${byId}.`
-              : `The label placer found no clear part of the floor of ${roomRef(ctx, room)} big enough for the label. Give it a clear point with \`label "${name}" at (x,y)\`, or move ${byId}.`,
+              ? `The label of ${roomRef(ctx, room)} is pinned by \`label "${name}" at (x,y)\`: move that point to a clear part of the floor${moveOr}.`
+              : `The label placer found no clear part of the floor of ${roomRef(ctx, room)} big enough for the label. Give it a clear point with \`label "${name}" at (x,y)\`${tight ? ", shorten the name (a name with a space can wrap) or widen the room" : ""}${moveOr}.`,
         ],
       });
     }
@@ -397,6 +485,13 @@ const idAuthored = (el: ResolvedElement): boolean => (el as { _idAuthored?: bool
 /** A room as a hint names it: by its authored id, else as the message does. */
 const roomRef = (ctx: LintContext, r: RRoom): string => (idAuthored(r) ? `room \`${r.id}\`` : ctx.nameOf(r));
 
+/** A door with the id an agent edits it by, for a hint. */
+const doorWithId = (d: RDoor): string => (idAuthored(d) ? `the door (\`${d.id}\`)` : "the door");
+
+/** Is `p` on `room`'s floor? */
+const pointInRoomFloor = (p: Point, room: RRoom): boolean =>
+  room.poly ? pointInPolygon(p.x, p.y, room.poly) : pointInRoomBox(p, roomBox(room));
+
 /** "a", "a and b", "a, b and c" — first-hit order, duplicates dropped. */
 function listOf(words: readonly string[]): string {
   const ws = [...new Set(words)];
@@ -404,8 +499,10 @@ function listOf(words: readonly string[]): string {
 }
 
 /** The turned rectangle a text occupies on the sheet, about its anchor. */
-function textBox(prim: TextPrim): Text {
-  const { w, h } = textExtent(prim);
+function textBox(prim: TextPrim, widthScale = 1): Text {
+  const extent = textExtent(prim);
+  const w = extent.w * widthScale;
+  const h = extent.h;
   const th = ((prim.rotate ?? 0) * Math.PI) / 180;
   const u = { x: Math.cos(th), y: Math.sin(th) };
   const v = { x: -u.y, y: u.x };
@@ -416,6 +513,20 @@ function textBox(prim: TextPrim): Text {
   const box = emptyBox();
   for (const p of rect) grow(box, p);
   return { rect, box, area: w * h };
+}
+
+/** The quarter-disc a door leaf sweeps, hinge first, its arc walked in {@link ARC_STEPS} chords. */
+function sectorOf(s: DoorSwing): Point[] {
+  const a0 = Math.atan2(s.farJamb.y - s.hinge.y, s.farJamb.x - s.hinge.x);
+  let d = Math.atan2(s.leafEnd.y - s.hinge.y, s.leafEnd.x - s.hinge.x) - a0;
+  while (d > Math.PI) d -= 2 * Math.PI;
+  while (d < -Math.PI) d += 2 * Math.PI;
+  const ring: Point[] = [s.hinge];
+  for (let i = 0; i <= ARC_STEPS; i++) {
+    const a = a0 + (d * i) / ARC_STEPS;
+    ring.push({ x: s.hinge.x + s.radius * Math.cos(a), y: s.hinge.y + s.radius * Math.sin(a) });
+  }
+  return ring;
 }
 
 /** The closed shapes a drawn primitive covers; none for a stroke, a text or a hatch. */
@@ -490,6 +601,11 @@ function area2(p: readonly Point[]): number {
  * the clipped ring may carry zero-width bridges along the clip's edges, which add no area.
  */
 function clippedArea(subject: readonly Point[], clip: readonly Point[]): number {
+  return Math.abs(clippedSigned(subject, clip));
+}
+
+/** {@link clippedArea} keeping the subject's winding, so a hole's loop subtracts from its outer's. */
+function clippedSigned(subject: readonly Point[], clip: readonly Point[]): number {
   const turn = area2(clip) > 0 ? 1 : -1;
   let ring: Point[] = [...subject];
   for (let i = 0; i < clip.length && ring.length > 0; i++) {
@@ -509,7 +625,7 @@ function clippedArea(subject: readonly Point[], clip: readonly Point[]): number 
       } else if (sp >= 0) ring.push(cut(prev, cur, sp, sc));
     }
   }
-  return ring.length >= 3 ? Math.abs(area2(ring)) / 2 : 0;
+  return ring.length >= 3 ? area2(ring) / 2 : 0;
 }
 
 function cut(p: Point, q: Point, sp: number, sq: number): Point {

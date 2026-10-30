@@ -27,7 +27,7 @@ Subscores per row: **R**ooms · **L**abels · **A**rea · **Adj**acency (– = u
 | `accessible-bath` | ✅ pass | yes | 0 | R1 L1 A– Adj– | — |
 | `compact-studio` | ❌ fail | yes | 5 | R1 L1 A– Adj1 | physical: W_DOORWAY_BLOCKED — The opening between "Studio Room" and "Kitchenette" is blocked — the approach needs 300 mm clear on each side but "kitchen_sink" leaves 250 mm (50 mm short). |
 | `bungalow` | ⚠️ warns | yes | 4 | R1 L1 A– Adj1 | 4 lint warning(s) |
-| `reception-suite` | ⚠️ warns | yes | 7 | R1 L1 A– Adj1 | 7 lint warning(s) |
+| `reception-suite` | ⚠️ warns | yes | 8 | R1 L1 A– Adj1 | 8 lint warning(s) |
 | `strip-corridor` | ✅ pass | yes | 0 | R1 L1 A– Adj1 | — |
 | `attach-openings` | ⚠️ warns | yes | 2 | R1 L1 A– Adj1 | 2 lint warning(s) |
 | `anchor-furniture` | ⚠️ warns | yes | 2 | R1 L1 A– Adj– | 2 lint warning(s) |

@@ -24,7 +24,11 @@
  * A label is relocated **only when its text box actually collides** — more than
  * {@link COLLIDE_MIN} of its own area buried in an obstacle or an already-placed label.
  * A plan whose labels are clear is not searched at all and its bytes are unchanged,
- * which is the property every drawing shipped before this pass relies on.
+ * which is the property every drawing shipped before this pass relies on. And it moves only to
+ * where it stands on its own floor, read at the width drawn ({@link INK_EM}): a label with no such
+ * place stays at its anchor and `W_ANNOTATION_OVERLAP` reports it. Scoring such a place at a flat
+ * {@link W_OUTSIDE} let the search trade the floor for less overlap, and walk a label through the
+ * wall (#367).
  *
  * ### Determinism
  *
@@ -57,7 +61,7 @@ import { ROOF_LAYER } from "./elements/roof.js";
 import { OUTDOOR_LAYERS } from "./elements/outdoor.js";
 import type { ResolvedPlan } from "./ir.js";
 import type { RenderSizes, SceneNode, ScenePrim } from "./scene.js";
-import { textWidth } from "./text-metrics.js";
+import { EM_PER_CHAR, INK_EM, textWidth } from "./text-metrics.js";
 import { balancedLines, fewestLines, LABEL_LINE_PITCH, textExtent } from "./text-layout.js";
 
 /**
@@ -151,6 +155,12 @@ function unionBBox(a: BBox, b: BBox): BBox {
   const x = Math.min(a.x, b.x);
   const y = Math.min(a.y, b.y);
   return { x, y, w: Math.max(a.x + a.w, b.x + b.w) - x, h: Math.max(a.y + a.h, b.y + b.h) - y };
+}
+
+/** The rect narrowed about its centre from the width estimate to the width drawn. */
+function inkOf(b: BBox): BBox {
+  const w = (b.w * INK_EM) / EM_PER_CHAR;
+  return { x: b.x + (b.w - w) / 2, y: b.y, w, h: b.h };
 }
 
 /** The rect translated by (dx, dy). */
@@ -676,8 +686,9 @@ export function relocateLabels(
 
     const bb = polygonBounds(ring);
     const diag = Math.max(1, Math.hypot(bb.w, bb.h));
+    const rectAt = (p: Point): BBox => shiftBBox(rect0, p.x - anchor.x, p.y - anchor.y);
     const score = (p: Point, preference: number, k: number): number => {
-      const rect = shiftBBox(rect0, p.x - anchor.x, p.y - anchor.y);
+      const rect = rectAt(p);
       return preference + (rectInsidePolygon(rect, ring) ? 0 : W_OUTSIDE) + crowding(crowd(rect, probe(k)));
     };
 
@@ -689,7 +700,9 @@ export function relocateLabels(
       for (const fx of FRACTIONS) {
         const p: Point = { x: bb.x + bb.w * fx, y: bb.y + bb.h * fy };
         const slot = k++;
-        if (!pointInPolygon(p.x, p.y, ring)) continue;
+        // A label moves only to where it stands wholly on its own floor. One that fits nowhere
+        // stays where it was, for `W_ANNOTATION_OVERLAP` to report.
+        if (!pointInPolygon(p.x, p.y, ring) || !rectInsidePolygon(inkOf(rectAt(p)), ring)) continue;
         const s = score(p, 1 + (Math.hypot(p.x - anchor.x, p.y - anchor.y) / diag) * W_DISTANCE, slot);
         if (s < bestScore) {
           bestScore = s;

@@ -27,6 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Room labels in small rooms (issue #367). `W_ANNOTATION_OVERLAP` now also reports a room's name or area
+  figure printed over a wall or a door's swing, or running off its own floor, measured on the drawn
+  sheet at the width the text draws on average. And the label pass moves a label only to where it
+  stands on its own floor: a name that fits nowhere stays at the room's centre and is reported, where
+  it used to be walked sideways through the wall and out of the building with no warning. Plans whose
+  labels used to leave their room this way draw those labels in a new place. The drawing still
+  neither shrinks a label nor draws a leader to it.
 - `validate --intent`, `score --brief` and `validateIntent()` read every storey of a plan with
   `level` blocks (#365). `rooms`, `roomsInclude` (with its `areaM2` and `windows`), `totalAreaM2` and
   the advisory `adjacency` saw only the lowest storey, so a correct two-storey house could never

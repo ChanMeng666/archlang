@@ -100,7 +100,8 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
   rules** (ADR 0032; owner decision taken by delegation, `docs/plans/plan-soundness/README.md` § 3
   D17/D18). `W_ANNOTATION_OVERLAP` and `W_TITLE_OVERFLOW` (PS2.12,
   `src/lint/rules/annotations.ts`) read the drawn sheet, because the defect they report (text
-  printed over a symbol or a label; a title value wider than its row) exists only there: they build
+  printed over a symbol, a wall, a door swing or a label, or off its room; a title value wider than
+  its row) exists only there: they build
   the storey's Scene and read where labels and `dims auto` numbers landed. So a renderer change that
   moves a label, a `dims auto` number, a symbol's drawn shape or the title block can move them. A PR
   that does so lists each corpus plan whose drafting-layer lint moved, says whether the plan or the

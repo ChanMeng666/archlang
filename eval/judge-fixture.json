@@ -1372,7 +1372,7 @@
     {
       "id": "reception-suite",
       "valid": true,
-      "lintWarnings": 7,
+      "lintWarnings": 8,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],

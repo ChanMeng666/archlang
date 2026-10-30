@@ -3,7 +3,7 @@
 # origin: audits/2026-10-18-first-contact.md A11 with the label placed at (1000,1950)
 # expect: none
 # fact: the label is drawn centred at (1000,1880) (y 1705-2055), clear of the wc (to y 1500) and the basin (to y
-#   1450)
+#   1450), and the door opens outward: into the room its leaf would run through the name (#367)
 plan "Room label over the WC" {
   units mm
   grid 50
@@ -11,7 +11,7 @@ plan "Room label over the WC" {
   scale 1:100
   wall id=shell exterior thickness 200 { (0,0) (2000,0) (2000,2500) (0,2500) close }
   room id=r_bath at (0,0) size 2000x2500 label "Bathroom" at (1000,1950) uses bath
-  door id=d_bath at (600,2500) width 800 wall shell swing in
+  door id=d_bath at (600,2500) width 800 wall shell swing out
   window at (1000,0) width 800 wall shell
   furniture bathtub against wall shell segment 0 offset 1000 in r_bath
   furniture wc against wall shell segment 1 offset 1300 in r_bath

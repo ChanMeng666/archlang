@@ -20,7 +20,7 @@ const DIGESTS: [string, string][] = [
   ["k1-east-to-west", "a04b716939992b6d37d522cf7d310dfae38aac880f235f9f63359abcfa10ae6f"], // PS2.29: message text only, same code, same span
   ["loop", "6a6e5e95567e7221eaf50b064a79d525f4cb2eca871290a95c0538afaacf6522"], // PS2.29: message text only, same code, same span
   ["ring", "4cc235210897be4e79a8e49740ddf55a2b28aa26fdd7fd0c03d1852cddff2bd0"],
-  ["frames", "1fbb5062d80872bdc8497c176eaea87f01c59ac8de002cfcdec2f553cbb18354"], // PS2.29: message text only, same code, same span
+  ["frames", "82213a228a4e5847d5704a8a068f66bdf211d093b5d7a409723ddd27aeb2c6dc"], // PS2.29: message text only, same code, same span
   // Moved once, by review round 1 (N1): the "both faces" message dropped "(it stands between two
   // rooms)", which was false for a wall free-standing inside one room. Message text only.
   // PS2.11e: the pocket door's `E_DOOR_KIND_CLAUSE` hint lists the kinds that take `swing`, now `double` too

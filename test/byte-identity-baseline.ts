@@ -1583,6 +1583,17 @@
  * `null`, this suite's body reproduces the previous rows (ea67d091…, 8a295571…), as do the W7 and
  * finish-furnish bodies theirs; with the fix, `describe()` + `lint()` are unchanged (the semantic
  * rows did not move), so only the drawing moved: the WC glyph, 100 and 750 mm along its wall.
+ *
+ * #367 re-measured rows, each named here (`docs/testing.md` § 3). `W_ANNOTATION_OVERLAP` (a drafting
+ * rule) also reads walls, door swings and the room's floor, and the label pass moves a label only
+ * onto its own floor. Compared field by field against the tree before it (a script over the whole
+ * corpus): `describe()`, `compile().diagnostics` and every other lint code are byte-identical on
+ * every plan; only that code's rows and the five SVGs below moved. `examples/remodel.arch` gains one
+ * warning and its SVG does not move: the door swing's arc crosses the U of "Utility". `chain30` (30)
+ * and `star30` (31) are 90 m long with no `paper`, so a label is 10 m wide on a 3 m room: true on
+ * every room, and their labels now stay at the room's centre. `reception-suite` gains one and its
+ * "Kitchenette" stays on the room's axis (x 9600 to 9000, into the wall before);
+ * `min-bedroom-flat.faithful`'s "Bathroom" (x 9090 to 9300) and `min-clear-joins`' "Bow" the same.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -1612,7 +1623,7 @@ export const BASELINE: [string, string][] = [
   ["parametric", "f56a97d02a2fca82327b80b3f7a7f5edcac9518a0b70244caa292ed8f3a2aee4"],
   ["practice-office", "105ae5709290f9946f0192427e430a1cef009ddd1de44be1b2ddd818c64cdd7e"], // added with the example, re-measured for net area, see header; PS2.11e, see header; PS2.74 source edit, see header
   ["relational", "357cb4f09333ffb210a8a276acfd524c384c90657cc9ba529d5d4298d88c8cb5"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header; PS2.11e, see header
-  ["remodel", "161368bc9296da30681b0de02d347d221fef40466cc6d94a7518d26ac1905902"], // added with the example, see header
+  ["remodel", "d85389cc2d339cefc1a52e89d3d33bb986a0dd73340757a0d730533fd88eca1a"], // added with the example, see header
   ["sheet-notes", "4cc86e92db896dade462f57b6db434057abe253ab5e10232711804e4da31d7d9"], // re-measured, see header
   ["studio", "c1b79a49af3ad31cddf82e88632624d46663c804f134b6e172e585cad36ed969"], // PS2.11e, see header
   ["terrace-row", "ec839a417cb57b6bce80a592a144bd98a216b175edb92c67df3260ab5ce9c33d"], // re-measured, see header
@@ -1661,7 +1672,7 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["parametric", "144703a7cf28e64c70cfc57451525839dd84da0f1d310135750b5d9f532d565a"],
   ["practice-office", "bf39a9a46d2635dd1cb6f14d61d222859d2e6439c9c5307dece6ae180bd62eb2"], // added with the example, re-measured for net area, see header
   ["relational", "f35d691d676a0787a261f876af34cbbeeb8c4c6148b378106629e17d30a5d426"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header; PS2.11e, see header
-  ["remodel", "a34991d47df368dcc42abfabce17f4020587cbed3b4e1a3ea626d448d673864b"], // added with the example, see header
+  ["remodel", "a0f96134958bcb9502a7a9c0c085a42cd7672e8c98232e28f6418a8a2c14a9b1"], // added with the example, see header
   ["sheet-notes", "148de5f5a58fb9533999df816a742074ec901216e3b9fb78eff338b91633a4b8"], // added with the example, see header
   ["studio", "8ec08c91405139bf3d9979ad20d712299e82409bbec8d6ec9e70e89a856973e4"],
   ["terrace-row", "0c37d23bb8dfa83ce746869724ff62952637f1acb8a6ca353bfe8f7a440941a7"],
