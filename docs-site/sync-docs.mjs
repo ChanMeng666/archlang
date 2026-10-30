@@ -46,6 +46,8 @@ const PAGES = [
   ["docs/axonometric.md", "axonometric.md"],
   ["docs/intent.md", "intent.md"],
   ["docs/error-codes.md", "errors.md"],
+  ["docs/import.md", "import.md"],
+  ["docs/whats-new.md", "whats-new.md"],
   ["spec.llm.md", "spec.md"],
 ];
 

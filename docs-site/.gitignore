@@ -12,6 +12,8 @@ analysis.md
 axonometric.md
 intent.md
 errors.md
+import.md
+whats-new.md
 spec.md
 adr/0*.md
 adr/index.md
@@ -52,6 +54,8 @@ public/analysis.md
 public/axonometric.md
 public/intent.md
 public/errors.md
+public/import.md
+public/whats-new.md
 public/spec.md
 
 # The hand-written pages' raw copies (SITE_PAGES in sync-docs.mjs), served at /<route>.md.

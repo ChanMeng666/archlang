@@ -1,0 +1,5 @@
+{
+  "background": [0],
+  "wall": [1],
+  "rooms": { "2": "Living", "3": "Kitchen", "4": "Hall", "5": "Bedroom", "6": "Bath" }
+}

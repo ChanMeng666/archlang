@@ -111,6 +111,11 @@ const PAGE_META = [
     "Put an ArchLang floor plan on a web page: import the compiler from jsDelivr and set the SVG yourself, or use the arch-plan element with a .arch file.",
   ],
   [
+    "/import",
+    "Import from a segmentation mask (experimental)",
+    "An experimental recipe: a floor-plan label mask becomes a rooms-only Plan JSON, the walls are derived from the rooms, and validate and takeoff run on it.",
+  ],
+  [
     "/gallery",
     "Floor plans written by AI agents",
     "Eleven floor plans, each written by an AI agent from a one-paragraph brief: the brief as given, the ArchLang source the agent delivered, and the compiled drawing.",
@@ -169,6 +174,11 @@ const PAGE_META = [
     "/errors",
     "Error and warning codes",
     "Every ArchLang diagnostic code with its meaning and a worked example. Errors abort rendering, warnings do not, and archlang explain prints any code from the CLI.",
+  ],
+  [
+    "/whats-new",
+    "What is new in 1.44 to 1.46",
+    "The features added in ArchLang 1.44.0 to 1.46.0, each with an example: quantities and takeoff, locked elements, wall status, imperial lengths and the review sheet.",
   ],
   [
     "/spec",
@@ -690,6 +700,7 @@ export default defineConfig({
           { text: "Analysis: describe & lint", link: "/analysis" },
           { text: "The intent contract", link: "/intent" },
           { text: "Error catalog", link: "/errors" },
+          { text: "What is new in 1.44 to 1.46", link: "/whats-new" },
         ],
       },
       { text: "Examples", link: "/examples" },
@@ -700,6 +711,7 @@ export default defineConfig({
           { text: "Use it from an agent", link: "/agents" },
           { text: "Plans written by agents", link: "/gallery" },
           { text: "Embed in a web page", link: "/embed" },
+          { text: "Import from a mask (experimental)", link: "/import" },
           { text: "One-page spec", link: "/spec" },
           { text: "CLI reference", link: "/cli" },
         ],
@@ -733,6 +745,7 @@ export default defineConfig({
           { text: "Use it from an agent", link: "/agents" },
           { text: "Plans written by agents", link: "/gallery" },
           { text: "Embed in a web page", link: "/embed" },
+          { text: "Import from a mask (experimental)", link: "/import" },
           { text: "One-page spec", link: "/spec" },
         ],
       },
@@ -745,6 +758,7 @@ export default defineConfig({
           { text: "Analysis: describe & lint", link: "/analysis" },
           { text: "The intent contract", link: "/intent" },
           { text: "Error catalog", link: "/errors" },
+          { text: "What is new in 1.44 to 1.46", link: "/whats-new" },
         ],
       },
       {
