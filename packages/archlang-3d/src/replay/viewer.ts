@@ -26,7 +26,8 @@ function payload(): ReplayPayload {
 function start(): void {
   const p = payload();
   const out = document.getElementById("archlang-replay") as HTMLCanvasElement;
-  const { seek, frameHash, ready } = mountReplay(out, p);
+  const strip = document.getElementById("archlang-replay-strip") ?? undefined;
+  const { seek, frameHash, ready } = mountReplay(out, p, strip);
 
   window.__seek = seek;
   window.__frameHash = frameHash;

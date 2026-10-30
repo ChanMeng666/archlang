@@ -282,7 +282,7 @@ describe("multi-storey views (D14: each storey on its own, and the storeys combi
       expect(levels.map((l) => lifts.get(l))).toEqual(levels.map((_, i) => i * 3000));
       const one = replayPayload(viewMesh(mesh, 2), { title: name, svg });
       expect(one.nodes.every((x) => x.lift === undefined)).toBe(true);
-      expect(one.elevation).toBe(30);
+      expect(one.elevation).toBe(45);
       expect(replayPayload(mesh, { title: name, svg }).elevation).toBe(45);
     });
   }

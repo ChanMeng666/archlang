@@ -16,6 +16,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   already named by `describe`'s `gross_internal_area_omitted: no-closed-exterior-ring` and the enclosure
   rules, so only the near-miss is new.
 
+
+### Fixed
+
+- `furniture … in <room> anchor <a> flush` no longer measures from a `status demolish` wall's
+  face: an edge whose only wall is coming out measures from the room edge, as an unwalled edge
+  does, and the turn an anchor derives reads only the walls that stay. The piece lands where the
+  plan with that wall deleted puts it.
+- `roof overhang <mm>` with no `wall` clause follows the one closed `exterior` wall that stays, so
+  a demolished shell beside a new one is no longer ambiguous (`E_ROOF_AMBIGUOUS`), and a plan whose
+  only shell is demolished says so. `roof overhang <mm> wall <id>` naming a demolished wall is
+  `E_ROOF_WALL`: a demolished wall holds no roof.
+- `E_FURN_AGAINST_DEMOLISHED_WALL` for `against wall <id|category>` now points at the wall
+  reference, not the whole `furniture` statement.
+
+A plan with no demolished wall draws, describes, lints and reports diagnostics to the same bytes.
+
+### Added
+
+- An experimental import recipe (`docs/import.md`, preview-and-remodel card G3): `tools/mask-to-plan/`
+  turns a floor-plan label mask (a PNG with one class per pixel value) into a rooms-only Plan JSON,
+  room rectangles plus a `walls_from_rooms` statement, which `compile --from-json` already accepts;
+  `validate` and `takeoff` then run on the result. Python with numpy, SciPy and Pillow, outside the
+  npm package; the compiler gains nothing and reads no image. No doors, windows or furniture are
+  recovered. The worked example's floor areas match the mask's within 1 %
+  (`test/tools-mask-to-plan.test.ts`).
 ### Docs
 
 - A "What is new in 1.44 to 1.46" page (`docs/whats-new.md`, published at `/whats-new`) with one example for each of `takeoff` and `describe --facts quantities`, `impact --lock`, wall `status`, imperial lengths, `preview --review`, `--overlay circulation` and `keep stacked` with its two stair checks; the README and `docs/overview.md` link to each section (preview-and-remodel card G1). Docs only: no compiler output, `describe()` or `lint()` moves, and `spec.llm.md` is unchanged.

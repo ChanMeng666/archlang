@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: G5 red-team 1: merged origin/main (bcc29010); W_WALL_END_SHORT measured on the drawn end; only the four wall-end-short corpus rows differ
+ * Taken: A9b (preview-and-remodel A9 item 5): anchored furniture charges the step meter for the standing-wall copy it takes when a wall is demolished; only examples/remodel.arch's step count moved, every digest unchanged
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -144,7 +144,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   [
     "examples/remodel.arch",
     "e84cb5eaffce8a1fc7982ec66f40bc19b609a30ff11fb6ef51d9112933bb7ec9",
-    1257,
+    1289,
   ],
   [
     "examples/sheet-notes.arch",
@@ -1075,26 +1075,6 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     "test/defect-corpus/space-not-enclosed/round-snug-unassigned.clean.arch",
     "3107c4fdc6ab21a189ec6f47a6620545eb20b9a66dca57f0120b11e96eaccbef",
     51,
-  ],
-  [
-    "test/defect-corpus/space-not-enclosed/wall-end-short-derived.arch",
-    "a21043df7e5c0f9cc21c389438a7eef3e776151fdb322f9926a86054323637c8",
-    295,
-  ],
-  [
-    "test/defect-corpus/space-not-enclosed/wall-end-short-derived.clean.arch",
-    "5c1b05a13d985bc62ec7b94aa86a703d16d0853156068c7e3f1755d5d45f18f9",
-    295,
-  ],
-  [
-    "test/defect-corpus/space-not-enclosed/wall-end-short.arch",
-    "0a394fd7a055ec94797432196a3419cf69ac24a14c704f5f42ace211bf1d98e4",
-    131,
-  ],
-  [
-    "test/defect-corpus/space-not-enclosed/wall-end-short.clean.arch",
-    "77d64df8741855e4748706eac3d19d9b1afb9d1bbe94a1d203cab4d6d5019380",
-    131,
   ],
   [
     "test/defect-corpus/space-not-enclosed/widen-after-outside-shell.arch",

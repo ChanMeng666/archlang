@@ -67,6 +67,7 @@ export async function replayHtml(mesh: Mesh3D, opts: ReplayOptions): Promise<str
   const script = (await viewerScript()).replace(/<\/script/gi, "<\\/script");
   const bg = payload.theme === "dark" ? "#0f2235" : "#f7f5f0";
   const fg = payload.theme === "dark" ? "#cfe3f5" : "#3d3a36";
+  const stripBg = payload.theme === "dark" ? "rgba(15,34,53,.82)" : "rgba(247,245,240,.88)";
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -79,14 +80,21 @@ ${threeLicence().replace(/--/g, "- -")}
 <style>
 html,body{margin:0;background:${bg};color:${fg};font:14px/1.4 system-ui,sans-serif}
 main{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px}
+#archlang-replay-stage{position:relative;container-type:inline-size;max-width:100%}
 canvas{max-width:100%;height:auto;display:block}
+#archlang-replay-strip{position:absolute;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:0 1.4em;padding:.5em 1em;font-size:clamp(9px,1.7cqw,26px);line-height:1.5;background:${stripBg};color:${fg};pointer-events:none}
+#archlang-replay-strip[hidden]{display:none}
 input[type=range]{width:min(720px,90vw)}
 p{margin:0;font-size:12px;opacity:.8}
 </style>
 </head>
 <body>
 <main>
-<canvas id="archlang-replay" role="img" aria-label="${escapeHtml(`${opts.title}: the plan drawing itself in its authoring order, then rising`)}"></canvas>
+<div id="archlang-replay-stage" style="width:${payload.width}px">
+<canvas id="archlang-replay" role="img" aria-label="${escapeHtml(`${opts.title}: the plan drawing itself in its authoring order, then rising`)}"></canvas>${
+    payload.facts ? `\n<div id="archlang-replay-strip" role="group" aria-label="Plan facts" hidden></div>` : ""
+  }
+</div>
 <input id="archlang-replay-t" type="range" min="0" max="1" step="0.001" value="0" aria-label="Replay position">
 <p>${escapeHtml(PREVIEW_LABEL)}</p>
 </main>

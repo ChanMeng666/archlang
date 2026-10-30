@@ -377,7 +377,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   E_ROOF_AMBIGUOUS: E(
     "E_ROOF_AMBIGUOUS",
     "`roof overhang` cannot tell which wall ring to follow.",
-    "The `overhang` sugar offsets ONE closed wall ring, and with no `wall <id>` clause it infers that ring as the plan's single closed `exterior` wall. The plan has none, or has more than one, so there is nothing to infer — and picking the first would silently draw a roof over part of the building.",
+    "The `overhang` sugar offsets ONE closed wall ring, and with no `wall <id>` clause it infers that ring as the plan's single closed `exterior` wall. The plan has none (a ring marked `status demolish` is coming out, so it does not count), or has more than one, so there is nothing to infer — and picking the first would silently draw a roof over part of the building.",
     "Name the ring (`roof overhang 600 wall <id>`), or state the outline yourself with `roof polygon (x,y) (x,y) (x,y) …`.",
     'plan "H" {\n  units mm\n  room id=r1 at (0,0) size 4000x3000\n  roof overhang 600   # error: no closed exterior wall to follow\n}',
   ),
@@ -419,8 +419,8 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   E_ROOF_WALL: E(
     "E_ROOF_WALL",
     "`roof overhang … wall <id>` names a wall that cannot carry a roof.",
-    "The named wall is not declared in this plan, or it is not a closed ring. An overhang is offset from a loop; an open polyline has no inside to be outside of.",
-    "Check the id, and give the wall a `close` so its points form a ring.",
+    "The named wall is not declared in this plan, it is not a closed ring, or it is marked `status demolish`. An overhang is offset from a loop; an open polyline has no inside to be outside of, and a demolished wall holds no roof.",
+    "Check the id, give the wall a `close` so its points form a ring, or name a wall that stays.",
     "wall id=w1 exterior thickness 200 { (0,0) (8000,0) }\nroof overhang 600 wall w1   # error: not a closed ring",
   ),
   E_SITE_DUP: E(

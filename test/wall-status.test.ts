@@ -5,7 +5,7 @@
  * - **A demolished wall moves no standing wall.** Over every example, every authored wall that
  *   hosts nothing is marked `status demolish` and every `walls from rooms` statement `status new`:
  *   each storey draws exactly the standing walls the plan draws with those statements deleted,
- *   plus one dashed outline. With `status new` on every wall instead, the SVG is unchanged,
+ *   plus one dashed outline, and places every piece of furniture where that plan places it. With `status new` on every wall instead, the SVG is unchanged,
  *   `describe()` differs only by its `wall_status` block and `lint()` not at all.
  * - **A demolished wall encloses nothing, hosts nothing and counts in no area.** The card's
  *   acceptance fixture: one demolished partition between two rooms. The two rooms lie in one
@@ -33,7 +33,7 @@ import {
   planToJson,
   toDxf,
 } from "../src/index.js";
-import type { RWall, ResolvedPlan } from "../src/ir.js";
+import type { RFurniture, RRoof, RWall, ResolvedPlan } from "../src/ir.js";
 import type { Scene } from "../src/scene.js";
 import { PLAN_JSON_SCHEMA } from "../src/plan-json.js";
 
@@ -147,6 +147,18 @@ const wallPrims = (sc: Scene) =>
     .filter((n) => n.layer === "wallFill" || n.layer === "wallFace")
     .map((n) => ({ layer: n.layer, prim: n.prim, lineType: n.lineType }));
 
+/** Every storey's furniture as placed: id, footprint, turn and mirror, in source order. */
+function furniturePlacements(src: string) {
+  return storeys(src).map((ir) =>
+    ir.elements
+      .filter((e) => e.kind === "furniture")
+      .map((e) => {
+        const f = e as RFurniture;
+        return { id: f.id, at: f.at, size: f.size, rotate: f.rotate, mirror: f._mirror };
+      }),
+  );
+}
+
 /** Blank the wall statements starting at `starts` (their whole spans) with spaces, keeping every
  *  newline, so every other statement keeps its byte offsets. */
 function blankStatements(src: string, starts: readonly number[]): string {
@@ -164,7 +176,7 @@ function blankStatements(src: string, starts: readonly number[]): string {
 
 suite("status demolish draws the standing walls unchanged, and itself dashed", () => {
   /** How much of the corpus the demolish sweep really marked (non-vacuity, checked last). */
-  const swept = { plans: 0, demolished: 0, compared: 0 };
+  const swept = { plans: 0, demolished: 0, compared: 0, furniture: 0 };
 
   it.each(EXAMPLES)(
     "%s: demolishing every wall that hosts nothing draws what deleting it draws, plus a dashed outline",
@@ -203,6 +215,12 @@ suite("status demolish draws the standing walls unchanged, and itself dashed", (
           expect(wallPrims(sc).filter((n) => n.lineType === undefined)).toEqual(wallPrims(deletedScenes[i]!));
           expect(sc.hatches).toEqual(deletedScenes[i]!.hatches);
         });
+        // And every piece of furniture is placed where the deleted twin places it (A9): a piece
+        // resolved against a wall (`flush`, a derived turn, `against <room>.<edge>`) reads only
+        // the walls that stand.
+        const markedFurniture = furniturePlacements(marked);
+        expect(markedFurniture).toEqual(furniturePlacements(deleted));
+        swept.furniture += markedFurniture.flat().length;
         swept.compared++;
       }
       // The analysis really dropped them: the plan after the demolition has fewer walls.
@@ -225,6 +243,11 @@ suite("status demolish draws the standing walls unchanged, and itself dashed", (
     // And the deletion comparison really ran (B3b; measured: 13 plans, the others' deleted twin
     // does not compile because a statement names a deleted wall).
     expect(swept.compared, JSON.stringify(swept)).toBeGreaterThanOrEqual(12);
+    // And it compared furniture (A9; measured: 440 pieces over the 21 plans). With `anchor …
+    // flush` and the derived turn reading a demolished wall again, 8 of the 21 went red
+    // (bungalow's piece moved x 4900 → 4850, half the demolished wall's thickness); with the
+    // derived turn alone, 4.
+    expect(swept.furniture, JSON.stringify(swept)).toBeGreaterThanOrEqual(400);
   });
 
   it.each(EXAMPLES)("%s: `status new` on every wall moves only describe().wall_status", (file) => {
@@ -699,5 +722,80 @@ suite("A8: a piece backed onto a demolished wall is E_FURN_AGAINST_DEMOLISHED_WA
       "A piece of furniture backs onto the partition at x 2000, which is marked `status demolish`: a demolished wall holds nothing",
     );
     expect(codes(src.replace(" status demolish", "")).filter((c) => c?.startsWith("E_"))).toEqual([]);
+  });
+});
+
+suite("A9: what resolves against a wall reads the walls that stand", () => {
+  const part = (status: string) => `  wall id=part partition thickness 100${status} { (4000,0) (4000,5000) }\n`;
+  /** The plan with the partition standing (""), demolished, or deleted (null). */
+  const PLAN = (status: string | null, furniture: string) =>
+    plan(`${SHELL}\n${status === null ? "" : part(status)}${ROOMS}\n  ${furniture}`);
+  const piece = (src: string) => {
+    const f = resolvePlan(src).ir!.elements.find((e) => e.id === "wr") as RFurnitureLike;
+    return { at: f.at, size: f.size, rotate: f.rotate };
+  };
+
+  it("the by-id refusal points at the wall reference, not the whole statement", () => {
+    for (const [furniture, word] of [
+      ["furniture id=wr wardrobe against wall part side left size 1200x600", "part"],
+      ["furniture id=wr wardrobe against wall partition side left size 1200x600", "partition"],
+    ] as const) {
+      const src = PLAN(" status demolish", furniture);
+      const [d] = compile(src).diagnostics;
+      expect(d?.code).toBe("E_FURN_AGAINST_DEMOLISHED_WALL");
+      expect(src.slice(d!.span!.start, d!.span!.end)).toBe(word);
+      expect(d!.span!.start).toBe(src.indexOf(`against wall ${word}`) + "against wall ".length);
+    }
+    // The by-edge refusal keeps the span of its `against <room>.<edge>` clause.
+    const edge = PLAN(" status demolish", "furniture id=wr desk against a.right size 1200x600");
+    const [e] = compile(edge).diagnostics;
+    expect(edge.slice(e!.span!.start, e!.span!.end)).toBe("against a.right");
+  });
+
+  it("`anchor … flush` on an edge whose only wall is demolished measures from the room edge", () => {
+    const f = "furniture id=wr sofa in a anchor right flush size 900x2000";
+    expect(piece(PLAN(" status demolish", f))).toEqual(piece(PLAN(null, f)));
+    expect(piece(PLAN(" status demolish", f)).at).toEqual({ x: 3100, y: 1500 });
+    // Standing (or new), the partition's face is 50 mm in.
+    expect(piece(PLAN("", f)).at).toEqual({ x: 3050, y: 1500 });
+    expect(piece(PLAN(" status new", f))).toEqual(piece(PLAN("", f)));
+  });
+
+  it("the turn an anchor derives reads no demolished wall", () => {
+    const f = "furniture id=wr bed in a anchor right size 2000x1600";
+    expect(piece(PLAN("", f)).rotate).toBe(90);
+    expect(piece(PLAN(" status demolish", f))).toEqual(piece(PLAN(null, f)));
+    expect(piece(PLAN(" status demolish", f)).rotate).toBeUndefined();
+  });
+
+  const OLD = `  wall id=shell exterior thickness 200 status demolish { (0,0) (8000,0) (8000,5000) (0,5000) close }`;
+  const NEW = `  wall id=ext exterior thickness 200 status new { (0,0) (9000,0) (9000,5000) (0,5000) close }`;
+  const roofPlan = (walls: string, roof: string) => plan(`${walls}\n  room id=a at (0,0) size 8000x5000\n  ${roof}`);
+  const roofNode = (src: string) => {
+    const r = resolvePlan(src).ir!.elements.find((e) => e.kind === "roof") as RRoof | undefined;
+    return r ? { ring: r.ring, follows: r._follows } : undefined;
+  };
+
+  it("`roof overhang` follows the closed exterior wall that stays, not a demolished one", () => {
+    const both = roofPlan(`${OLD}\n${NEW}`, "roof overhang 600");
+    expect(compile(both).diagnostics).toEqual([]);
+    // The ring it follows is the new one's: the same roof as naming it, or as the plan without the old shell.
+    expect(roofNode(both)).toEqual(roofNode(roofPlan(`${OLD}\n${NEW}`, "roof overhang 600 wall ext")));
+    expect(roofNode(both)).toEqual(roofNode(roofPlan(NEW, "roof overhang 600")));
+    expect(roofNode(both)?.follows).toBe("ext");
+    // With the old shell standing, the two rings are ambiguous, as they always were.
+    const standing = roofPlan(`${OLD.replace(" status demolish", "")}\n${NEW}`, "roof overhang 600");
+    expect(compile(standing).diagnostics.map((d) => d.code)).toEqual(["E_ROOF_AMBIGUOUS"]);
+  });
+
+  it("a roof over a demolished ring is refused: by id E_ROOF_WALL, as the only ring E_ROOF_AMBIGUOUS", () => {
+    const named = compile(roofPlan(`${OLD}\n${NEW}`, "roof overhang 600 wall shell")).diagnostics;
+    expect(named.map((d) => d.code)).toEqual(["E_ROOF_WALL"]);
+    expect(named[0]!.message).toContain("marked `status demolish`");
+    const only = compile(roofPlan(OLD, "roof overhang 600")).diagnostics;
+    expect(only.map((d) => d.code)).toEqual(["E_ROOF_AMBIGUOUS"]);
+    expect(only[0]!.message).toContain("no closed `exterior` wall that stays");
+    // The same plans with the shell standing roof it as before.
+    expect(compile(roofPlan(OLD.replace(" status demolish", ""), "roof overhang 600")).diagnostics).toEqual([]);
   });
 });

@@ -38,6 +38,10 @@ export {
   viewLabel,
   viewMesh,
 } from "./replay/timeline.js";
+export { replayFacts } from "./replay/facts.js";
+export type { FactsOptions } from "./replay/facts.js";
+export { stripAt } from "./replay/strip.js";
+export type { ReplayFacts, StripItem } from "./replay/strip.js";
 export type { NodeState, ReplayEvent, ReplayState, ReplayView } from "./replay/timeline.js";
 export {
   boxOfNodes,

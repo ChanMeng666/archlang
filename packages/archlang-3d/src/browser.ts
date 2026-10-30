@@ -6,5 +6,7 @@
  */
 export { mountReplay } from "./replay/mount.js";
 export type { ReplayHandle, ReplayNode, ReplayPayload } from "./replay/mount.js";
+export { paintStrip, stripAt } from "./replay/strip.js";
+export type { ReplayFacts, StripItem } from "./replay/strip.js";
 export { PREVIEW_LABEL, replayPayload, viewBoxOf } from "./replay/payload.js";
 export type { ReplayOptions } from "./replay/payload.js";

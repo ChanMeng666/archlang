@@ -70,6 +70,9 @@ test.describe("3D preview tab", () => {
     const b = await hashAt(page, 0.6);
     expect(a).toMatch(/^[0-9a-f]{64}$/);
     expect(b, "two seeks of one t give one frame").toBe(a);
+    // The facts strip (card G4) is DOM over the canvas: at the end it names both area conventions.
+    await expect(page.locator("#preview3d .p3d-strip")).toContainText(/floor area [\d.]+ m² \(net\)/);
+    await expect(page.locator("#preview3d .p3d-strip")).toContainText("(to wall centre lines)");
     expect(end, "a different t is a different frame").not.toBe(a);
     // The canvas drew something: not one flat colour.
     const colours = await page.evaluate(() => {

@@ -1,0 +1,48 @@
+{
+  "mm_per_px": 10.0,
+  "regions": [
+    {
+      "label": "Living",
+      "mask_area_m2": 30.9325,
+      "rooms": [
+        "living_a",
+        "living_b"
+      ]
+    },
+    {
+      "label": "Kitchen",
+      "mask_area_m2": 10.9725,
+      "rooms": [
+        "kitchen"
+      ]
+    },
+    {
+      "label": "Hall",
+      "mask_area_m2": 3.99,
+      "rooms": [
+        "hall"
+      ]
+    },
+    {
+      "label": "Bedroom",
+      "mask_area_m2": 6.84,
+      "rooms": [
+        "bedroom"
+      ]
+    },
+    {
+      "label": "Bedroom",
+      "mask_area_m2": 2.4975,
+      "rooms": [
+        "bedroom_2"
+      ]
+    },
+    {
+      "label": "Bath",
+      "mask_area_m2": 2.59,
+      "rooms": [
+        "bath"
+      ]
+    }
+  ]
+}
