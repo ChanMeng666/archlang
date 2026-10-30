@@ -1026,7 +1026,8 @@ takes one clause, and every refusal of a clause points at it.
   fall on a half millimetre, so a hand-placed opening on a coarse grid cannot always reproduce it.
 - Where four boundaries that all open across their whole clear span meet at one point, the square
   they would leave at the crossing is not drawn: the crossing stays empty. A `column` is how a plan
-  asks for a post there. With three of the four open, the wall that stays keeps the crossing.
+  asks for a post there. The crossing keeps its square with three of the four open, at a T of three
+  open boundaries, under a door hung on the square, and where another standing wall touches it.
 - The opening is an ordinary opening: it joins the two rooms in the access graph, appears in
   `describe --json`'s `openings[]` and in `schedule openings`, and counts toward the drawing and
   element budgets. Its id is `<A>|<B>:open` (the rooms in source order), which no identifier can

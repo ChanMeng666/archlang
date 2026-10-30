@@ -28,9 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Four `open between` boundaries meeting at one point no longer leave a free-standing pier one
-  partition thick at the crossing (issue #368): the crossing stays empty in the SVG, PDF, PNG and DXF.
-  `describe()` and `lint()` do not move, and neither does a plan with three of the four open, a
-  `width` that keeps some wall at the crossing, or another wall on the crossing.
+  partition thick at the crossing (issue #368): no wall is drawn at the crossing in the SVG, PDF, PNG or DXF, though a DXF keeps each
+  opening's outline on `A-DOOR`, as it does for every opening. `describe()` and `lint()` do not
+  move, and neither does a plan with three of the four open (a T keeps its square too), a `width`
+  that keeps some wall at the crossing, a door on the square, or another wall on the crossing.
 
 - `validate --intent`, `score --brief` and `validateIntent()` read every storey of a plan with
   `level` blocks (#365). `rooms`, `roomsInclude` (with its `areaM2` and `windows`), `totalAreaM2` and

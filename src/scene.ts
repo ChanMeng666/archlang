@@ -438,10 +438,11 @@ export interface Scene {
 /**
  * A wall as {@link Scene.walls} carries it: what the joinery reads (band, hatch, the
  * openings cut through it — each only its `at`/`width`) plus the `category` and the written
- * `status` an export classifies by. Plain data with no id and none of the resolver's
- * bookkeeping, so two plans that draw the same walls carry the same walls (in statement order,
- * which may differ). `status` is present only when the plan wrote one; `_derived` only on an
- * `open between` run, as `{ from, open: {} }`, which the joinery reads to clear a free crossing.
+ * `status` an export classifies by. Plain data with no id, so two plans that draw the same walls
+ * carry the same walls (in statement order, which may differ), with one exception: `_derived`,
+ * present only on an `open between` run, as `{ from, open: {} }`, which the joinery reads to clear
+ * a free crossing. Its underscore means what it means on the IR: no public promise (ADR 0031).
+ * `status` is present only when the plan wrote one.
  */
 export type SceneWall = Pick<
   import("./ir.js").RWall,
