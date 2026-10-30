@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: G5 red-team 1: W_WALL_END_SHORT measured on the drawn end; wall-end-short corpus plans re-authored; examples/hexagon-pavilion spokes closed (50 mm drawn slit); no other row moves
+ * Taken: G5 red-team 1: merged origin/main (bcc29010); W_WALL_END_SHORT measured on the drawn end; only the four wall-end-short corpus rows differ
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -78,7 +78,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/hexagon-pavilion.arch",
-    "42746c947f8af40446e0b207fbf277acc8c5797e5daf6f0f3aeda111bcdde635",
+    "6d2a5532474cec059ff104741cd0be727ee6edd9587eac028c23a61e8484705a",
     645,
   ],
   [
