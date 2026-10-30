@@ -37,7 +37,7 @@ import {
   furnitureOverlap,
   furnitureWallCollision,
 } from "./furniture.js";
-import { boundaryNoWall, floorUnassigned, roomOutsideShell } from "./enclosure.js";
+import { boundaryNoWall, floorUnassigned, roomOutsideShell, wallEndShort } from "./enclosure.js";
 import { furnClearDeclared, seatFacingAway } from "./furniture-relations.js";
 import { connectorAmbiguous, openingAtJunction, openingOverlap } from "./openings.js";
 import { perRoomRules } from "./per-room.js";
@@ -181,6 +181,9 @@ export const LINT_RULES: readonly LintRule[] = [
   // A bed drawn under the smallest standard bed (plan-soundness PS2.67). Appended LAST, so no
   // existing diagnostic moves within the array.
   bedUndersized,
+  // A wall ending a sliver short of the wall it runs toward (issue #346, G5). Appended LAST, so no
+  // existing diagnostic moves within the array.
+  wallEndShort,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

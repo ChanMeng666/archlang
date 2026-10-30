@@ -1,0 +1,17 @@
+# class: space-not-enclosed
+# twin-of: wall-end-short-derived
+# origin: issue 346 (G5), the authored wall run into the derived partition
+# expect: none
+# fact: the authored wall starts at x 4100, so its drawn end is at x 4050, flush on the derived partition's face: no slit
+plan "Authored wall meeting a derived one" {
+  units mm
+  grid 10
+  room id=a at (0,0) size 4000x5000 label "Living" uses living
+  room id=b right-of a align top gap 0 size 4000x5000 label "Bedroom" uses bedroom
+  walls from rooms exterior 200 partition 100 { }
+  wall id=cross partition thickness 100 { (4100,2500) (8000,2500) }
+  door id=d_entry on a.bottom at center width 900 swing into a
+  door between a and b at 1000 from start width 800 swing into b
+  window on a.top width 1500
+  window on b.top width 1500
+}

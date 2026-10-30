@@ -176,6 +176,11 @@
  * `tasteDigest`: the case lists the code under `validity` (`pass` false), its twin none; no criterion
  * scores either (one garage). No existing row moved (no example or corpus garage door is under the
  * figures; `examples/garden-house`'s is 3000 mm, `hillside-villa`'s 4800 mm).
+ *
+ * G5 (`W_WALL_END_SHORT`, a wall stopping up to 100 mm short of the wall it runs toward) added twelve
+ * rows, the new `space-not-enclosed/wall-end-short` and `wall-end-short-derived` pairs under each of the
+ * three profiles, measured with `tasteDigest`. No existing row moved (no example or corpus wall ends
+ * within 100 mm of another).
  */
 
 import { describe, expect, it } from "vitest";
@@ -980,6 +985,26 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "96aff8f107afc8392f908315badb1a61cad8254457048683d1d3a166e64211c7",
     "generic",
     "test/defect-corpus/space-not-enclosed/round-snug-unassigned.clean.arch",
+  ],
+  [
+    "ff1574725c7a8b8bf85a8c6fbd60198f793c8d7d1e772eebf9404e5196724b1e",
+    "generic",
+    "test/defect-corpus/space-not-enclosed/wall-end-short-derived.arch",
+  ],
+  [
+    "00f34456e0102742af0fc951787701810d11d070429d1435af6b842bdbea261e",
+    "generic",
+    "test/defect-corpus/space-not-enclosed/wall-end-short-derived.clean.arch",
+  ],
+  [
+    "8614797ac6c7d0fe3dc358a783b9340da7e4355f2e1c8941ba408a7e9cd16110",
+    "generic",
+    "test/defect-corpus/space-not-enclosed/wall-end-short.arch",
+  ],
+  [
+    "f1480e5c99d0da1128d33081345f21cd245ccd81e13f4230eef6ee761eed4dca",
+    "generic",
+    "test/defect-corpus/space-not-enclosed/wall-end-short.clean.arch",
   ],
   [
     "7bd983828eb54b14eb5d810bc7109c72fe38880057e8dd66ccee06f326d4df5f",
@@ -2117,6 +2142,26 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/space-not-enclosed/round-snug-unassigned.clean.arch",
   ],
   [
+    "a861724acab1a319ecc5bbc8b8c7cdc8ae2b719da39568c6d82881920c220146",
+    "cn-residential-advisory",
+    "test/defect-corpus/space-not-enclosed/wall-end-short-derived.arch",
+  ],
+  [
+    "2b053bc078e48af8e7d8753d08c2a2deb0a5b01f4c233cf876aee4be53fedd19",
+    "cn-residential-advisory",
+    "test/defect-corpus/space-not-enclosed/wall-end-short-derived.clean.arch",
+  ],
+  [
+    "596cae934678b95b687f4976be3c8104ce0142f7c3f74d8c7cd856d85641c6b1",
+    "cn-residential-advisory",
+    "test/defect-corpus/space-not-enclosed/wall-end-short.arch",
+  ],
+  [
+    "2ff50e9c416580266d75457762e836795993566c588a6165d9aa9dd5b30aa210",
+    "cn-residential-advisory",
+    "test/defect-corpus/space-not-enclosed/wall-end-short.clean.arch",
+  ],
+  [
     "83959b7c6d899de7db1034bc0925a3a31b6b815726c4d76e806e539b4a0f5ea7",
     "cn-residential-advisory",
     "test/defect-corpus/space-not-enclosed/widen-after-outside-shell.arch",
@@ -3250,6 +3295,26 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "0539b40bbf29fd0c5349f5a90fbaa5a4edfd537b78a8df924c0b9380c742249c",
     "us-residential-advisory",
     "test/defect-corpus/space-not-enclosed/round-snug-unassigned.clean.arch",
+  ],
+  [
+    "ea27650c853fa8dccc330fe49a5b385b0aea71fbc9e5b9986211f3809eaef5c5",
+    "us-residential-advisory",
+    "test/defect-corpus/space-not-enclosed/wall-end-short-derived.arch",
+  ],
+  [
+    "99ad7b2203084bb312738f72b07309d4fd545b8e8c8444745ab719d2fb6c5a67",
+    "us-residential-advisory",
+    "test/defect-corpus/space-not-enclosed/wall-end-short-derived.clean.arch",
+  ],
+  [
+    "cb4c8919cc79827fde81c2c019352ac79cba1bddbb9eb954a19565abdf9e2a57",
+    "us-residential-advisory",
+    "test/defect-corpus/space-not-enclosed/wall-end-short.arch",
+  ],
+  [
+    "e94eeb796035a792dc7c81c617e8a5fdc577d9b7c41e1e792688adfbd0d4df9a",
+    "us-residential-advisory",
+    "test/defect-corpus/space-not-enclosed/wall-end-short.clean.arch",
   ],
   [
     "e10d4417e04745aab24de928e6d1c7ccd1885f22bade89ae14759f8493752caa",
