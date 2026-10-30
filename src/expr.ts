@@ -744,6 +744,17 @@ export function chargeSteps(n: number): void {
   if (meter.used > meter.limit) throw new StepLimitSignal({ span: meter.span, file: meter.file, frame: meter.frame });
 }
 
+/**
+ * The walls that stand (B3a): a `status demolish` wall encloses nothing and hosts nothing, so a
+ * resolver reading walls reads these. The same array when nothing is demolished; otherwise a copy,
+ * charged to the step meter before it is allocated.
+ */
+export function standingWalls<W extends { status?: string }>(walls: readonly W[]): readonly W[] {
+  if (!walls.some((w) => w.status === "demolish")) return walls;
+  chargeSteps(walls.length);
+  return walls.filter((w) => w.status !== "demolish");
+}
+
 /** The statement now executing, or undefined outside a resolution. */
 export function currentStepSite(): StepSite | undefined {
   return meter === null ? undefined : { span: meter.span, file: meter.file, frame: meter.frame };

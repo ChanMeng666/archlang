@@ -5,6 +5,7 @@
 import type { DimNode, DimRef, ExprPoint, Point, SegmentSelect } from "../ast.js";
 import { DIM_REFS } from "../ast.js";
 import type { Expr } from "../expr.js";
+import { standingWalls } from "../expr.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { RDim } from "../ir.js";
@@ -284,8 +285,9 @@ export const dim: ElementDef = {
     if (n.ref) {
       const dir = unit(sub(to, from));
       // Each endpoint is pushed along the measurement axis, AWAY from the other one.
-      const pf = projectToWallFace(ctx.walls, from, mul(dir, -1), n.ref);
-      const pt = projectToWallFace(ctx.walls, to, dir, n.ref);
+      const standing = standingWalls(ctx.walls);
+      const pf = projectToWallFace(standing, from, mul(dir, -1), n.ref);
+      const pt = projectToWallFace(standing, to, dir, n.ref);
       if (!pf || !pt) {
         const which = !pf && !pt ? "Both endpoints" : !pf ? "The start endpoint" : "The end endpoint";
         ctx.diag({
@@ -441,12 +443,15 @@ function measureCurve(n: DimNode, ctx: ResolveCtx): { from: Point; to: Point; te
       text: diameterText(r, fmt2),
     };
   }
-  const walls = ctx.walls.filter((w) => w.id === c.ref || w.category === c.ref);
+  const walls = standingWalls(ctx.walls).filter((w) => w.id === c.ref || w.category === c.ref);
   if (walls.length === 0) {
+    const demolished = ctx.walls.some((w) => (w.id === c.ref || w.category === c.ref) && w.status === "demolish");
     return err(
-      ctx.unplacedWall?.(c.ref)
-        ? `names wall "${c.ref}", which could not be placed (see its own error)`
-        : "names no wall in this plan",
+      demolished
+        ? "names a wall marked `status demolish`, and a wall coming out has no arc to measure"
+        : ctx.unplacedWall?.(c.ref)
+          ? `names wall "${c.ref}", which could not be placed (see its own error)`
+          : "names no wall in this plan",
     );
   }
   if (walls.length > 1) return err(`matches ${walls.length} walls — reference a unique wall id`);
