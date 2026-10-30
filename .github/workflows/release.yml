@@ -33,7 +33,8 @@
 #   error — that is the expected signal to (re)do the npmjs registration, not to add a token.
 #   A new registration expires unless a publish goes through it within 2 days
 #   (https://docs.npmjs.com/trusted-publishers), and a version already on npm is skipped here, so
-#   the publish that validates it must be a NEW version (`.claude/commands/release-check.md`).
+#   the publish that validates it must be a NEW version (`.claude/commands/release-check.md`):
+#   @chanmeng666/archlang-3d goes 0.1.0 by hand, register, 0.1.1 through here, as arch-plan did.
 #
 #   The MCP registry publish (step 3) also uses GitHub OIDC (`mcp-publisher login
 #   github-oidc`) — no secret. The registry validates server.json against the just-published
@@ -360,12 +361,14 @@ jobs:
 
   # The 3D preview, in its own job for the same reason as arch-plan, and quieter still: a core
   # release must never go red because of it. OIDC cannot create a package, so while the name is not
-  # on npm this job skips with a notice (the owner publishes the first version by hand, then
-  # registers: npmjs.com → @chanmeng666/archlang-3d → Settings → Trusted Publisher → GitHub Actions,
-  # repo ChanMeng666/archlang, workflow release.yml, no environment). An unreadable registry also
-  # skips, with a warning: a dispatch re-runs it. Once the package exists, a version not on npm is
-  # built, proved and published; an auth failure then means the registration lapsed, and only this
-  # job is red. Nothing is installed unless there is something to publish.
+  # on npm this job skips with a notice. The plan: the owner publishes 0.1.0 by hand (no provenance),
+  # registers it (npmjs.com → @chanmeng666/archlang-3d → Settings → Trusted Publisher → GitHub Actions,
+  # repo ChanMeng666/archlang, workflow release.yml, no environment), and 0.1.1 comes through this job
+  # within 2 days, which validates the registration; every later version comes this way too, with
+  # provenance. An unreadable registry (a failed request, a body that does not parse) skips with a
+  # warning: a dispatch re-runs it. Once the package exists, a version not on npm is built, proved and
+  # published; an auth failure then means the registration lapsed, and only this job is red. Nothing
+  # is installed unless there is something to publish.
   publish-archlang-3d:
     name: Publish archlang-3d (npm)
     needs: publish
@@ -388,12 +391,15 @@ jobs:
         id: check
         run: |
           version=$(node -p "require('./packages/archlang-3d/package.json').version")
-          status=$(curl -s -o /dev/null -w '%{http_code}' 'https://registry.npmjs.org/@chanmeng666%2farchlang-3d' || true)
+          packument=$(mktemp)
+          status=$(curl -s -o "$packument" -w '%{http_code}' 'https://registry.npmjs.org/@chanmeng666%2farchlang-3d' || true)
           publish=false
           case "$status" in
             200)
-              on_registry=$(npm view "@chanmeng666/archlang-3d@$version" version 2>/dev/null || true)
-              if [ "$on_registry" = "$version" ]; then
+              # One read decides: a body that does not parse skips, as an unreadable registry does.
+              if ! known=$(VERSION="$version" PACKUMENT="$packument" node -p "!!JSON.parse(require('fs').readFileSync(process.env.PACKUMENT,'utf8')).versions[process.env.VERSION]" 2>/dev/null); then
+                echo "::warning::The registry's answer for @chanmeng666/archlang-3d did not parse — skipping publish; dispatch this workflow to retry."
+              elif [ "$known" = "true" ]; then
                 echo "::notice::@chanmeng666/archlang-3d@$version already on npm — skipping publish."
               else
                 publish=true
@@ -401,7 +407,7 @@ jobs:
               fi
               ;;
             404)
-              echo "::notice::@chanmeng666/archlang-3d is not on npm yet; its first version is published by hand — skipping publish."
+              echo "::notice::@chanmeng666/archlang-3d is not on npm yet; the owner publishes 0.1.0 by hand — skipping publish."
               ;;
             *)
               echo "::warning::The registry answered '$status' for @chanmeng666/archlang-3d — skipping publish; dispatch this workflow to retry."

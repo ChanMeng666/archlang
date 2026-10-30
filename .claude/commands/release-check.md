@@ -56,11 +56,13 @@ you observed. Do NOT push anything — this command only verifies.
    - `packages/font-cjk`: `release.yml` publishes it before the core and refuses a version/pin
      mismatch with the core's exact `optionalDependencies` pin.
    - `packages/archlang-3d` is versioned on its own: a core release needs nothing from it, and
-     `release.yml`'s `publish-archlang-3d` job does nothing unless its version is new. To release it,
-     bump `package.json`, set `ARCHLANG_3D_VERSION` (`src/scene3d/build.ts`) to match
-     (`test/package-meta.test.ts`), re-pin `LANEWAY_GLB_SHA256` (the generator string names the
-     version; the moved digest with that one string written back must be the old pin), bump
-     `playground/package.json`'s exact pin and the lockfile, and date its `CHANGELOG.md` section.
+     `release.yml`'s `publish-archlang-3d` job does nothing unless its version is new. A version bump
+     (0.1.0 → 0.1.1) touches exactly: `packages/archlang-3d/package.json` `version`; `package-lock.json`
+     (`npm install --package-lock-only`, one line; `npm ci` still passes without it, so nothing but this
+     list catches it); and
+     `packages/archlang-3d/CHANGELOG.md` (a new section, dated on the release commit). Nothing else:
+     `ARCHLANG_3D_VERSION` reads the manifest, `playground/package.json` says `*`, and the GLB pin
+     (`test/pins.ts`) uses a fixed generator, so a moved pin means moved geometry, never a release.
      Its peer range stays a caret range whose floor is `MIN_CORE` (same test); a core MAJOR needs a
      look at the seam (ADR 0031) before the range moves. No 3D wording reaches the core: the core's
      `npm pack --dry-run` list and its `CHANGELOG.md` stay silent on it (Tier C).
@@ -155,12 +157,17 @@ you observed. Do NOT push anything — this command only verifies.
   arch-plan did this (0.1.0 by hand, without provenance; 0.1.1 through the workflow, with it).
   npm cannot register a publisher for a package that does not exist
   (<https://docs.npmjs.com/cli/v11/commands/npm-trust>: "must already exist on the npm registry").
-  **`@chanmeng666/archlang-3d`** is this case. The hand publish, from the primary checkout after root
-  `npm run build`: `npm publish -w packages/archlang-3d --access public` (no `--provenance`: npm
-  refuses it off a supported CI, and `publishConfig` omits it for this reason; `prepack` builds).
-  Until that exists its job skips with a notice. Registration: npmjs.com → package → Settings →
-  Trusted Publisher → GitHub Actions, `ChanMeng666` / `archlang` / `release.yml`, environment
-  empty, tick "Allow npm publish".
+  **`@chanmeng666/archlang-3d`** is this case, and the plan is decided (arch-plan's route):
+  1. Date the `[0.1.0]` section of its `CHANGELOG.md`, merge, and run item 6's `prove:pack`.
+  2. The owner publishes 0.1.0 by hand, from the primary checkout after root `npm run build`:
+     `npm publish -w packages/archlang-3d --access public` (no `--provenance`: npm refuses it off a
+     supported CI, and `publishConfig` omits it for this reason; `prepack` builds). Until then the
+     job skips with a notice. 0.1.0 carries no provenance.
+  3. The owner registers: npmjs.com → package → Settings → Trusted Publisher → GitHub Actions,
+     `ChanMeng666` / `archlang` / `release.yml`, environment empty, tick "Allow npm publish".
+  4. Within 2 days: a PR with the 0.1.1 bump (item 2's list), merged, then
+     `gh workflow run release.yml --ref main`. The job publishes 0.1.1 with provenance, which
+     validates the registration. Confirm with `npm view @chanmeng666/archlang-3d@0.1.1 dist.attestations`.
 - **VS Code Marketplace upload is a human web step** (publisher `ChanMeng`, extension
   `ChanMeng.archlang`); nothing in CI publishes it. After a language-surface change:
   1. In the primary checkout: root `npm run build`, then `npm run package` in `editors/vscode`

@@ -25,7 +25,7 @@ the replay (HTML, video), the GLB and their checks. The plan and its cards:
   `t` (`stateAt`), and `window.__seek`/`__frameHash` stay. three.js is pinned exactly and inlined,
   never from a CDN; no animation library.
 - Pins move only with the reason in the commit and the test comment: laneway's Mesh3D and GLB
-  SHA-256, laneway's event table, and the key-frame pixel baseline
+  SHA-256 (the GLB's with a fixed generator, `test/pins.ts`, so a version bump never moves it), laneway's event table, and the key-frame pixel baseline
   (`e2e/fixtures/README.md`: text-free frames only; `UPDATE_KEYFRAMES` adds an environment, never
   rewrites a mismatch). A change to the default path (closed doors, combined view) must leave them.
 - `npm run check:3d` runs the heavy tests (Chromium through `playwright-core`, ffmpeg, glTF-Validator);

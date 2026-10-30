@@ -25,7 +25,10 @@ export default defineConfig({
   clean: true,
   // No source maps: a map would carry the `src/` tree into the tarball.
   sourcemap: false,
-  dts: { entry: { index: "src/index.ts", browser: "src/browser.ts", node: "src/node.ts" } },
+  // `replay.d.ts` holds the types `./node` shares with `./browser`, so `./node` never reads a DOM name.
+  dts: {
+    entry: { index: "src/index.ts", browser: "src/browser.ts", node: "src/node.ts", replay: "src/replay/payload.ts" },
+  },
   define: { __ARCHLANG3D_BUILT__: "true" },
   onSuccess: async () => {
     writeFileSync("dist/viewer.iife.js", await bundleViewer("src/replay/viewer.ts"));

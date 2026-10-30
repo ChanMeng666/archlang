@@ -71,8 +71,8 @@ the replay's script, bundled once at build time, so a consumer needs no esbuild;
 `npm -w packages/archlang-3d run prove:pack -- --dir <empty dir>` installs the real tarball into an
 empty project with a core from npm and uses it from outside (`release.yml` runs it before publishing).
 
-`ARCHLANG_3D_VERSION` (`src/scene3d/build.ts`) is the manifest's version and is stamped into every GLB
-and Scene3D, so a version bump also re-pins laneway-house's GLB digest, with that reason.
+`ARCHLANG_3D_VERSION` is read from `package.json` and stamped into every GLB and Scene3D. The GLB pin
+(`test/pins.ts`) is taken with a fixed generator, so a version bump leaves it alone.
 
 Tests: `test/*.test.ts` run in the core's `npm test`; heavy tests go in `e2e/*.e2e.ts` and run with
 `npm run check:3d` at the repository root. The plan and its cards: `docs/plans/archlang-3d/`,

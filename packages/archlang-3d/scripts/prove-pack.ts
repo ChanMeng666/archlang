@@ -7,7 +7,8 @@
  *
  * It checks: the file list; `.`, `./browser` and `./node` import under plain Node; `.` and
  * `./browser` bundle for a browser with no Node module; the types resolve under `NodeNext` with no
- * `skipLibCheck`; the CLI builds a GLB that passes its checks and names this version; the replay
+ * `skipLibCheck`, and `.` and `./node` also without the DOM lib; laneway-house's GLB hashes to the
+ * repository's pin; the CLI builds a GLB that passes its checks and names this version; the replay
  * HTML loads nothing from a network and carries the pinned three.js with its notice. Exit 1 on the
  * first failure; the last line of stdout is the JSON summary.
  */
@@ -16,6 +17,7 @@ import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "n
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
+import { LANEWAY_GLB_SHA256, PIN_GENERATOR } from "../test/pins.js";
 
 const PKG = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const REPO = resolve(PKG, "..", "..");
@@ -79,17 +81,19 @@ if (version("three") !== manifest.dependencies.three) fail(`three ${version("thr
 // Every entry, under plain Node, by its package name.
 writeFileSync(
   join(dir, "smoke.mjs"),
-  `import { readFileSync } from "node:fs";
+  `import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { adaptPlan, ARCHLANG_3D_VERSION, buildMesh, validateScene3D } from "${NAME}";
-import { makeNodeWorld, replayFacts } from "${NAME}/node";
+import { makeNodeWorld, replayFacts, writeGlb } from "${NAME}/node";
 import { mountReplay, PREVIEW_LABEL } from "${NAME}/browser";
-const base = "node_modules/${CORE}/examples";
+const base = ${JSON.stringify(join(REPO, "examples"))};
 const r = adaptPlan(readFileSync(base + "/laneway-house.arch", "utf8"), { world: makeNodeWorld(base) });
 if (!r.ok) throw new Error(r.refusal.code);
 if (validateScene3D(r.scene).length > 0) throw new Error("the scene does not validate");
 console.log(JSON.stringify({
   version: ARCHLANG_3D_VERSION,
   shells: buildMesh(r.scene).nodes.length,
+  pinned: createHash("sha256").update(await writeGlb(buildMesh(r.scene), { generator: ${JSON.stringify(PIN_GENERATOR)} })).digest("hex"),
   mount: typeof mountReplay,
   facts: typeof replayFacts,
   label: PREVIEW_LABEL.length > 0,
@@ -99,8 +103,11 @@ console.log(JSON.stringify({
 const smoke = JSON.parse(execFileSync(process.execPath, ["smoke.mjs"], { cwd: dir, encoding: "utf8" })) as {
   version: string;
   shells: number;
+  pinned: string;
 };
 if (smoke.version !== manifest.version) fail(`ARCHLANG_3D_VERSION is ${smoke.version}`);
+if (smoke.pinned !== LANEWAY_GLB_SHA256)
+  fail(`laneway-house's GLB hashes to ${smoke.pinned}, the pin is ${LANEWAY_GLB_SHA256}`);
 
 // The browser entries: a `node:` module anywhere in their graph fails this bundle.
 for (const entry of ["index.js", "browser.js"]) {
@@ -140,11 +147,25 @@ writeFileSync(
     files: ["types.ts"],
   }),
 );
-const tsc = spawnSync(process.execPath, [join(REPO, "node_modules/typescript/bin/tsc"), "-p", "."], {
-  cwd: dir,
-  encoding: "utf8",
-});
-if (tsc.status !== 0) fail(`the published types do not check:\n${tsc.stdout}${tsc.stderr}`);
+// `.` and `./node` are for Node too: they must check for a project with no DOM lib.
+writeFileSync(
+  join(dir, "types-node.ts"),
+  `import { adaptPlan } from "${NAME}";
+import { makeNodeWorld } from "${NAME}/node";
+export const used: [typeof adaptPlan, typeof makeNodeWorld] = [adaptPlan, makeNodeWorld];
+`,
+);
+const options = JSON.parse(readFileSync(join(dir, "tsconfig.json"), "utf8"));
+options.compilerOptions.lib = ["es2022"];
+options.files = ["types-node.ts"];
+writeFileSync(join(dir, "tsconfig.node.json"), JSON.stringify(options));
+for (const config of ["tsconfig.json", "tsconfig.node.json"]) {
+  const tsc = spawnSync(process.execPath, [join(REPO, "node_modules/typescript/bin/tsc"), "-p", config], {
+    cwd: dir,
+    encoding: "utf8",
+  });
+  if (tsc.status !== 0) fail(`the published types do not check under ${config}:\n${tsc.stdout}${tsc.stderr}`);
+}
 
 // The command, as `npx` finds it.
 const cli = (...args: string[]) => {
@@ -196,6 +217,7 @@ process.stdout.write(
     three: version("three"),
     meshNodes: smoke.shells,
     glb: report.outputs[0],
+    pinnedDigest: smoke.pinned,
     htmlBytes: html.length,
   })}\n`,
 );

@@ -2,13 +2,12 @@
  * The manifest's promises, without a build. The package's stated core floor (card A9): `MIN_CORE`,
  * which the adapter's refusal names, is the `peerDependencies` floor, so the message and the
  * install-time range never disagree. And the publish shape: everything a consumer resolves names a
- * `dist/` file a tsup entry writes, nothing published names `src/`, and `ARCHLANG_3D_VERSION` (stamped
- * into every GLB and Scene3D) is the manifest's. That the built tree really holds these files is
- * `e2e/pack.e2e.ts`.
+ * `dist/` file a tsup entry writes, nothing published names `src/`, and every runtime dependency is
+ * pinned exactly. That the built tree really holds these files is `e2e/pack.e2e.ts`.
  */
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { ARCHLANG_3D_VERSION, MIN_CORE } from "../src/index.js";
+import { MIN_CORE } from "../src/index.js";
 
 interface Conditions {
   types: string;
@@ -41,10 +40,6 @@ describe("package metadata", () => {
     expect(pkg.peerDependencies["@chanmeng666/archlang"]).toBe(`^${MIN_CORE}`);
   });
 
-  it("ARCHLANG_3D_VERSION is the manifest's version", () => {
-    expect(ARCHLANG_3D_VERSION).toBe(pkg.version);
-  });
-
   it("is publishable, public, and leaves provenance to the workflow", () => {
     expect(pkg.private).toBeUndefined();
     expect(pkg.publishConfig.access).toBe("public");
@@ -73,8 +68,21 @@ describe("package metadata", () => {
     expect(pkg.scripts.prepack).toBe("npm run build");
   });
 
-  it("three.js stays pinned exactly", () => {
-    expect(pkg.dependencies.three).toMatch(/^\d+\.\d+\.\d+$/);
+  // Geometry (earcut) and the replay (three.js) must not move under a published version: the README
+  // promises the same bytes for the same plan and versions. property-graph, under
+  // @gltf-transform/core, floats and cannot be pinned from here.
+  it("every runtime dependency is pinned exactly", () => {
+    expect(pkg.dependencies.three).toBeDefined();
+    expect(pkg.dependencies.earcut).toBeDefined();
+    const loose = Object.entries(pkg.dependencies).filter(([, v]) => !/^\d+\.\d+\.\d+(-[\w.]+)?$/.test(v));
+    expect(loose).toEqual([]);
+  });
+
+  it("the playground takes whatever version the workspace holds, so a bump never breaks npm ci", () => {
+    const playground = JSON.parse(
+      readFileSync(new URL("../../../playground/package.json", import.meta.url), "utf8"),
+    ) as { dependencies: Record<string, string> };
+    expect(playground.dependencies["@chanmeng666/archlang-3d"]).toBe("*");
   });
 
   // D5: the words the npm page may use. The README says what the package does and claims no more.
