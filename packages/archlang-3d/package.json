@@ -31,7 +31,7 @@
     "notices": "tsx scripts/licence-gate.ts --write"
   },
   "peerDependencies": {
-    "@chanmeng666/archlang": "^1.43.1"
+    "@chanmeng666/archlang": "^1.45.0"
   },
   "dependencies": {
     "@gltf-transform/core": "4.5.1",

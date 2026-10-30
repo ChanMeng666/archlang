@@ -147,10 +147,13 @@ export const END_FOV = 30;
 export const END_AZIMUTH = -32;
 
 /**
- * The end camera's elevation: 30° for one storey; the combined view of a taller building looks down
- * more steeply, so the exploded gaps show the floors below (see `timeline.ts`'s header).
+ * The end camera's elevation: 45° for every view. The combined view of a taller building needs it so
+ * the exploded gaps show the floors below (see `timeline.ts`'s header); a one-storey view took it
+ * too (card A9, by delegation, the owner may veto on a look): at 30° the near walls hid the floor,
+ * the inner doors and most furniture of `studio`. The storey count stays a parameter so a later
+ * look can split the two again without a signature change.
  */
-export const endElevation = (storeys: number): number => (storeys > 1 ? 45 : 30);
+export const endElevation = (_storeys: number): number => 45;
 
 /**
  * The scene's box (mm) from the payload's nodes: positions in micrometres, each node lifted by its

@@ -44,19 +44,24 @@ export interface AdaptOptions {
   curveTolMm?: number;
 }
 
-/** The first core release expected to carry the seam (the exports are on `main`, unreleased). */
-export const MIN_CORE = "the first release after 1.43.1";
+/**
+ * The first core release that carries every export this package reads: the seam (`resolvePlan`,
+ * ADR 0031) arrived in 1.44.0, `hatchKey`/`hatchOf` (card A0b) in 1.45.0. Kept equal to the
+ * `peerDependencies` floor (`test/package-meta.test.ts`).
+ */
+export const MIN_CORE = "1.45.0";
 
 export function adaptPlan(source: string, opts: AdaptOptions = {}): AdaptResult {
   // Feature-detect the export instead of failing with a TypeError on a published core that
   // predates ADR 0031 (its downstream contract, item 3).
   const resolvePlan = (core as Partial<typeof core>).resolvePlan;
-  if (typeof resolvePlan !== "function") {
+  const hatches = (core as Partial<typeof core>).hatchKey;
+  if (typeof resolvePlan !== "function" || typeof hatches !== "function") {
     return {
       ok: false,
       refusal: {
         code: "E3D_CORE_TOO_OLD",
-        message: `@chanmeng666/archlang does not export resolvePlan; archlang-3d needs ${MIN_CORE}.`,
+        message: `@chanmeng666/archlang is too old (no resolvePlan or hatchKey); archlang-3d needs ${MIN_CORE} or later.`,
       },
     };
   }

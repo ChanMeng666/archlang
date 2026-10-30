@@ -11,15 +11,8 @@
  * Ownership is computed with the openings stripped (the solid), and the cuts are returned
  * beside it, so the geometry stage can keep the sill and lintel under and over each cut.
  */
-import {
-  hatchKey,
-  hatchOf,
-  joinWallSet,
-  loopsToPolygons,
-  type JoinedCut,
-  type Point,
-  type RWall,
-} from "@chanmeng666/archlang";
+import * as core from "@chanmeng666/archlang";
+import { joinWallSet, loopsToPolygons, type JoinedCut, type Point, type RWall } from "@chanmeng666/archlang";
 
 export type { Point };
 
@@ -102,7 +95,9 @@ export function wallOwnership(
   tessellate: (loops: Parameters<typeof loopsToPolygons>[0]) => Ring[] = loopsToPolygons,
 ): Ownership {
   if (walls.length === 0) return { owned: [], fillArea: 0, cuts: [], outline: [] };
-  const groups = [...new Set(walls.map((w) => hatchKey(hatchOf(w))))];
+  // Read through the namespace, never a named import: a named import of an export a 1.44 core
+  // lacks fails at link time, before `adaptPlan` can refuse with `E3D_CORE_TOO_OLD` (card A9).
+  const groups = [...new Set(walls.map((w) => core.hatchKey(core.hatchOf(w))))];
   // Faces are wall INDICES, so two walls sharing an id (a placed component) never merge.
   const faces = walls.map((_, i) => String(i));
   const solid = walls.map((w) => ({ ...w, openings: [] }));
