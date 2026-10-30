@@ -25,6 +25,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `arch finish` no longer furnishes over a stair (issue #364, part 1): no piece, and no piece's front
   strip, is placed on a flight or its landing. A plan with no stair furnishes as before.
+- `validate --intent`, `score --brief` and `validateIntent()` read every storey of a plan with
+  `level` blocks (#365). `rooms`, `roomsInclude` (with its `areaM2` and `windows`), `totalAreaM2` and
+  the advisory `adjacency` saw only the lowest storey, so a correct two-storey house could never
+  pass. They now cover the building, as `grossInternalAreaM2` does; policy B allows one surplus
+  circulation room per storey, so a house with a hall and a landing a brief did not list still
+  passes `rooms`; a room id repeated
+  on another storey stays a different room. `describe()` is unchanged, and a single-storey plan gets
+  byte-identical results.
 - Three more resolvers no longer read a `status demolish` wall (G8, the same defect class as the flush
   fix below; each now matches the plan with that wall deleted): a balcony's derived rail keeps the
   balustrade edge beside a demolished wall; `dim faces|clear` no longer measures to a demolished face
