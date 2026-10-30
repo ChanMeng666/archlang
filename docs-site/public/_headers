@@ -70,6 +70,9 @@
 /import.md
   Content-Type: text/markdown; charset=utf-8
 
+/whats-new.md
+  Content-Type: text/markdown; charset=utf-8
+
 /spec.md
   Content-Type: text/markdown; charset=utf-8
 

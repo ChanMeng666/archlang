@@ -176,6 +176,11 @@ const PAGE_META = [
     "Every ArchLang diagnostic code with its meaning and a worked example. Errors abort rendering, warnings do not, and archlang explain prints any code from the CLI.",
   ],
   [
+    "/whats-new",
+    "What is new in 1.44 to 1.46",
+    "The features added in ArchLang 1.44.0 to 1.46.0, each with an example: quantities and takeoff, locked elements, wall status, imperial lengths and the review sheet.",
+  ],
+  [
     "/spec",
     "The language in one page",
     "The whole ArchLang language on one page, written for an AI agent's system prompt: the rules that matter, every statement form, and a compilable worked example.",
@@ -695,6 +700,7 @@ export default defineConfig({
           { text: "Analysis: describe & lint", link: "/analysis" },
           { text: "The intent contract", link: "/intent" },
           { text: "Error catalog", link: "/errors" },
+          { text: "What is new in 1.44 to 1.46", link: "/whats-new" },
         ],
       },
       { text: "Examples", link: "/examples" },
@@ -752,6 +758,7 @@ export default defineConfig({
           { text: "Analysis: describe & lint", link: "/analysis" },
           { text: "The intent contract", link: "/intent" },
           { text: "Error catalog", link: "/errors" },
+          { text: "What is new in 1.44 to 1.46", link: "/whats-new" },
         ],
       },
       {

@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   npm package; the compiler gains nothing and reads no image. No doors, windows or furniture are
   recovered. The worked example's floor areas match the mask's within 1 %
   (`test/tools-mask-to-plan.test.ts`).
+### Docs
+
+- A "What is new in 1.44 to 1.46" page (`docs/whats-new.md`, published at `/whats-new`) with one example for each of `takeoff` and `describe --facts quantities`, `impact --lock`, wall `status`, imperial lengths, `preview --review`, `--overlay circulation` and `keep stacked` with its two stair checks; the README and `docs/overview.md` link to each section (preview-and-remodel card G1). Docs only: no compiler output, `describe()` or `lint()` moves, and `spec.llm.md` is unchanged.
 
 ## [1.46.0] - 2026-10-28
 
