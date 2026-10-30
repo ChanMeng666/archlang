@@ -6,6 +6,7 @@
 import type { Mesh3D } from "../mesh/types.js";
 import { endElevation } from "./camera.js";
 import type { ReplayPayload } from "./mount.js";
+import type { ReplayFacts } from "./strip.js";
 import { explodeLifts, storeysOf, timeline } from "./timeline.js";
 
 /** The label every surface that shows the preview carries (decision D5's wording). */
@@ -23,6 +24,8 @@ export interface ReplayOptions {
   seconds?: number;
   /** Exports only: the sites stay light (D11, ADR 0014). */
   theme?: "light" | "dark";
+  /** The metrics strip's numbers (`replayFacts`); omit for a replay without the strip (card G4). */
+  facts?: ReplayFacts;
 }
 
 /** The `viewBox` of an SVG document, in its user units (plan millimetres for the core's drawing). */
@@ -49,6 +52,7 @@ export function replayPayload(mesh: Mesh3D, opts: ReplayOptions): ReplayPayload 
     svg: opts.svg,
     viewBox: viewBoxOf(opts.svg),
     elevation: endElevation(storeysOf(mesh).length),
+    ...(opts.facts ? { facts: opts.facts } : {}),
     nodes: mesh.nodes
       .filter((n) => !n.hidden)
       .map((n) => {

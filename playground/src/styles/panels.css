@@ -982,8 +982,29 @@
   color: var(--ink-muted);
 }
 .p3d-stage {
+  position: relative;
+  container-type: inline-size;
   border: 1px solid var(--hairline);
   background: var(--paper);
+}
+/* The replay's facts (card G4): DOM text laid over the canvas, never drawn into it. */
+.p3d-strip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.4em;
+  padding: 0.5em 1em;
+  font-size: clamp(9px, 1.7cqw, 15px);
+  line-height: 1.5;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  pointer-events: none;
+}
+[hidden].p3d-strip {
+  display: none;
 }
 .p3d-canvas {
   display: block;

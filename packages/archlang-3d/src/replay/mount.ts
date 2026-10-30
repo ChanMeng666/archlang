@@ -34,6 +34,7 @@ import {
   frameCamera,
   START_FOV,
 } from "./camera.js";
+import { paintStrip, type ReplayFacts, stripAt } from "./strip.js";
 import { type ReplayEvent, stateAt } from "./timeline.js";
 
 export interface ReplayNode {
@@ -58,6 +59,8 @@ export interface ReplayPayload {
   viewBox: [number, number, number, number];
   /** The end camera's elevation in degrees (`endElevation`). */
   elevation: number;
+  /** The metrics strip's numbers (card G4); with none, no strip is painted. */
+  facts?: ReplayFacts;
   nodes: ReplayNode[];
   events: ReplayEvent[];
 }
@@ -116,8 +119,13 @@ const THEMES = {
  */
 const FOOTPRINT_MM = 12;
 
-/** Mount the replay `p` on `out`: sizes the canvas to `p.width`×`p.height` and draws nothing yet. */
-export function mountReplay(out: HTMLCanvasElement, p: ReplayPayload): ReplayHandle {
+/**
+ * Mount the replay `p` on `out`: sizes the canvas to `p.width`×`p.height` and draws nothing yet.
+ * `strip`, an element the host lays over the canvas, receives the metrics strip (card G4) as DOM
+ * text at every `seek`; it is never drawn into the canvas, so `frameHash` is the same with and
+ * without it.
+ */
+export function mountReplay(out: HTMLCanvasElement, p: ReplayPayload, strip?: HTMLElement): ReplayHandle {
   const theme = THEMES[p.theme];
   const W = p.width;
   const H = p.height;
@@ -235,6 +243,7 @@ export function mountReplay(out: HTMLCanvasElement, p: ReplayPayload): ReplayHan
 
   function seek(t: number): void {
     if (disposed) return;
+    if (strip && p.facts) paintStrip(strip, stripAt(p.facts, p.events, Math.min(1, Math.max(0, t))));
     const s = stateAt(p.events, t);
     for (const [key, { g, flat }] of nodes) {
       const st = s.nodes.get(key);

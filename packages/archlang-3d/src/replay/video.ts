@@ -30,6 +30,8 @@ export interface VideoReport {
   width: number;
   height: number;
   keyFrames: KeyFrame[];
+  /** The metrics strip's text at each key frame (card G4); absent when the replay carries no facts. */
+  strips?: Array<{ label: string; text: string }>;
   /** `__seek(0.5)` twice gave one frame hash. */
   seekRoundTrip: boolean;
   /** Present when an MP4 was written. */
@@ -83,14 +85,23 @@ export async function renderReplay(o: VideoOptions): Promise<VideoReport> {
         return window.__frameHash();
       }, t);
     const keys: KeyFrame[] = [];
-    for (const k of keyFrames(o.events)) keys.push({ ...k, sha256: await hashAt(k.t) });
+    const strips: Array<{ label: string; text: string }> = [];
+    const hasStrip = (await page.locator("#archlang-replay-strip").count()) > 0;
+    for (const k of keyFrames(o.events)) {
+      keys.push({ ...k, sha256: await hashAt(k.t) });
+      if (hasStrip) {
+        const text = await page.locator("#archlang-replay-strip").evaluate((el) => el.textContent ?? "");
+        strips.push({ label: k.label, text });
+      }
+    }
     const a = await hashAt(0.5);
     await hashAt(0.1);
     const b = await hashAt(0.5);
 
     let mp4: string | undefined;
     if (o.mp4) {
-      const canvas = page.locator("#archlang-replay");
+      // The stage holds the canvas and, when the replay carries facts, the strip laid over it.
+      const canvas = page.locator("#archlang-replay-stage");
       const ff = spawn(
         o.ffmpeg ?? "ffmpeg",
         [
@@ -169,6 +180,7 @@ export async function renderReplay(o: VideoOptions): Promise<VideoReport> {
       width: o.width,
       height: o.height,
       keyFrames: keys,
+      ...(hasStrip ? { strips } : {}),
       seekRoundTrip: a === b,
       ...(mp4 ? { mp4 } : {}),
       browser: browser.version(),
