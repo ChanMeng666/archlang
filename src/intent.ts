@@ -470,26 +470,31 @@ function checkOne(
 ): AssertionResult {
   switch (p.kind) {
     case "room-count": {
-      // Policy B (approved rubric): exact, OR one surplus room attributable to
-      // circulation — got === exact + 1 AND the plan has at least one more
-      // circulation room than the brief's named circulation. A surplus BEDROOM in a
-      // plan that already has its hall still fails (the extra room is not circulation).
+      // Policy B (approved rubric): exact, OR a surplus of up to one room per storey
+      // attributable to circulation — the plan has at least that many more circulation
+      // rooms than the brief's named circulation, because each storey needs its own hall or
+      // landing and a brief rarely lists them. A surplus BEDROOM in a plan that already has
+      // its hall still fails (the extra room is not circulation).
       const got = storeysOf(summary).reduce((n, s) => n + s.totals.rooms, 0);
       const exactMatch = got === p.exact;
       let pass = exactMatch;
       let note = "";
-      if (!exactMatch && got === p.exact + 1) {
+      const surplus = got - p.exact;
+      if (surplus >= 1 && surplus <= storeysOf(summary).length) {
         const planCirc = allRooms(summary).filter(isCirculationRoom).length;
-        if (planCirc >= p.expectedCirc + 1) {
+        if (planCirc >= p.expectedCirc + surplus) {
           pass = true;
-          note = " (surplus is a circulation room — policy B)";
+          note =
+            surplus === 1
+              ? " (surplus is a circulation room — policy B)"
+              : ` (surplus is ${surplus} circulation rooms — policy B)`;
         } else {
           note = " (surplus is not a circulation room)";
         }
       }
       // Subscore grading is stricter than the gate: only an exact match is a perfect
-      // rooms score; a policy-B pass still records the +1 delta as 0.5.
-      const score = exactMatch ? 1 : Math.abs(got - p.exact) <= 1 ? 0.5 : 0;
+      // rooms score; a policy-B pass still records its delta as 0.5.
+      const score = exactMatch ? 1 : pass || Math.abs(surplus) <= 1 ? 0.5 : 0;
       return { predicate: p, pass, detail: `rooms: expected ${p.exact}, got ${got}${note}`, score };
     }
     case "total-area": {

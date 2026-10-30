@@ -22,7 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `validate --intent`, `score --brief` and `validateIntent()` read every storey of a plan with
   `level` blocks (#365). `rooms`, `roomsInclude` (with its `areaM2` and `windows`), `totalAreaM2` and
   the advisory `adjacency` saw only the lowest storey, so a correct two-storey house could never
-  pass. They now cover the building, as `grossInternalAreaM2` and `reachable` do; a room id repeated
+  pass. They now cover the building, as `grossInternalAreaM2` does; policy B allows one surplus
+  circulation room per storey, so a house with a hall and a landing a brief did not list still
+  passes `rooms`; a room id repeated
   on another storey stays a different room. `describe()` is unchanged, and a single-storey plan gets
   byte-identical results.
 - Three more resolvers no longer read a `status demolish` wall (G8, the same defect class as the flush

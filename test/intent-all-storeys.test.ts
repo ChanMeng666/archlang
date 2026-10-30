@@ -1,7 +1,7 @@
 /**
  * Issue #365: on a plan with `level` blocks the intent's `rooms`, `roomsInclude` and
- * `totalAreaM2` read the whole building, as `grossInternalAreaM2`, `roomDimensions` and
- * `reachable` always did. The check reads `levels[]`; `describe()` keeps its contract (the
+ * `totalAreaM2` read the whole building, as `grossInternalAreaM2` and `roomDimensions` always
+ * did. Per-room `reachable` still reads the lowest storey: that needs a new `describe()` fact. The check reads `levels[]`; `describe()` keeps its contract (the
  * top-level facts are the lowest storey), and a single-storey plan is judged exactly as before.
  */
 
@@ -138,6 +138,59 @@ suite("the intent reads every storey (#365)", () => {
     expect(codes(SAME_ID_PLAN, windows("bedroom", 1))).toEqual(["E_INTENT_NO_WINDOW"]);
     expect(codes(SAME_ID_PLAN, windows("Study", 1))).toEqual([]);
     expect(codes(SAME_ID_PLAN, { rooms: 2 })).toEqual([]);
+  });
+
+  it("allows one surplus circulation room per storey (policy B), and no surplus that is not one", () => {
+    const house = (upper: string) => `plan "house" {
+  units mm
+  level 0 "G" {
+    room id=hall at (0,0) size 2000x4000 label "Hall" uses hall
+    room id=liv right-of hall size 4000x4000 label "Living" uses living
+    room id=kit right-of liv size 4000x4000 label "Kitchen" uses kitchen
+    walls from rooms exterior 200 partition 100
+  }
+  level 1 "U" {
+    ${upper}
+    walls from rooms exterior 200 partition 100
+  }
+}`;
+    const landing = 'room id=land at (0,0) size 2000x4000 label "Landing" uses hall';
+    const bed = (id: string, where: string) => `room id=${id} ${where} size 4000x4000 label "Bed" uses bedroom`;
+    const two = house(`${landing}
+${bed("b1", "right-of land")}
+${bed("b2", "right-of b1")}`);
+    const brief = { roomsInclude: [{ concept: "bedroom", count: { min: 2, max: 2 } }] };
+    const r = validateIntent(two, { ...brief, rooms: 4 });
+    expect(r.violations).toEqual([]);
+    expect(r.assertions[0]?.detail).toBe("rooms: expected 4, got 6 (surplus is 2 circulation rooms — policy B)");
+    expect(r.assertions[0]?.score).toBe(0.5);
+    // A surplus of three on two storeys is too many, and a surplus bedroom is not circulation.
+    expect(codes(two, { ...brief, rooms: 3 })).toContain("E_INTENT_ROOM_COUNT");
+    const extraBed = house(`${bed("b1", "at (0,0)")}
+${bed("b2", "right-of b1")}
+${bed("b3", "right-of b2")}`);
+    expect(codes(extraBed, { rooms: 4 })).toEqual(["E_INTENT_ROOM_COUNT"]);
+  });
+
+  it("keeps a repeated id's doors on their own storey", () => {
+    // `a` is the kitchen below and a store above, `b` the store below and a bedroom above, and the
+    // only door between `a` and `b` is upstairs: no door joins the kitchen to a store or a bedroom.
+    const plan = `plan "ids" {
+  units mm
+  level 0 "G" {
+    room id=a at (0,0) size 4000x4000 label "Kitchen" uses kitchen
+    room id=b at (4000,0) size 4000x4000 label "Store" uses storage
+    walls from rooms exterior 200 partition 100
+  }
+  level 1 "U" {
+    room id=a at (0,0) size 4000x4000 label "Store" uses storage
+    room id=b at (4000,0) size 4000x4000 label "Bed" uses bedroom
+    walls from rooms exterior 200 partition 100
+    door between a and b at center width 800 swing into b
+  }
+}`;
+    const result = validateIntent(plan, { adjacency: { requiredEdges: { kitchen: ["bedroom"] }, source: "brief" } });
+    expect(result.violations.map((v) => v.code)).toContain("E_INTENT_NOT_ADJACENT");
   });
 
   it("finds an adjacency on any storey, and a stair is not one", () => {

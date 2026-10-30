@@ -81,7 +81,7 @@ value and the words that set the target.
 A brief describes a building, so the intent reads every storey: two bedrooms upstairs count
 toward `rooms` and `roomsInclude`, and their windows toward `windows`. `describe --json` reports
 it differently: its top-level `rooms` and `totals` are the lowest storey, and `levels[]` holds
-each storey's own ([multi-storey plans](analysis.md)).
+each storey's own ([multi-storey plans](analysis.md#levels--)).
 
 ### Brief-bound sizes
 
@@ -153,7 +153,7 @@ everywhere:
 
 **Count discipline.** Assert the top-level `rooms` count **only when the brief enumerates
 the rooms**. Do not derive a count from under-determined wording ("a few rooms", "some
-bedrooms"). A single surplus room is tolerated only when it is pure circulation — see
+bedrooms"). A surplus of one room per storey is tolerated only when it is pure circulation — see
 policy B below.
 
 These are the two requirements Gate G1 cleared for the intent channel before it shipped:
@@ -179,9 +179,9 @@ not decide which concept passes: a `storage` room and a `utility` room that shar
 still cannot clear both a `bathroom` and a separate `wc` expectation, and a concept's
 area/window checks score over exactly the rooms it was credited with.
 
-The room-count check applies **policy B**: an exact count passes; a count one over the
-target passes *only* when the surplus room is pure circulation (a hall or corridor) beyond
-what the brief's own circulation named. A surplus *bedroom* in a plan that already has its
+The room-count check applies **policy B**: an exact count passes; a count over the target by
+up to one room per storey passes *only* when the surplus rooms are pure circulation (a hall,
+landing or corridor) beyond what the brief's own circulation named. A surplus *bedroom* in a plan that already has its
 hall still fails — the extra room is not circulation.
 
 ## Gating vs. advisory
