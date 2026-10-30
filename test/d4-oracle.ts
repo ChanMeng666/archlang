@@ -465,6 +465,9 @@ export const RULE_CLASS: Readonly<Record<string, RuleClass>> = {
   "bed-undersized": "invariant",
   // G5: a wall end and the wall it runs toward, both turned or mirrored together.
   "wall-end-short": "invariant",
+  // #364: a piece's footprint against a flight's and its landings, all turned or mirrored together;
+  // the end a flight is entered from crosses `place` on its `_tail`.
+  "furniture-on-stair": "invariant",
 };
 
 /**

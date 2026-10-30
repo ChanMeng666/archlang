@@ -1,0 +1,15 @@
+# class: stair-safety
+# origin: issue #364 (the landing zone at a flight's foot); Approved Document K (2013) 1.21b keeps a landing clear of permanent obstructions
+# expect: W_FURNITURE_ON_STAIR
+# status: done
+# fact: the flight's foot is its south end at y 3500; the 1000 mm landing beyond it is x 1000-2000, y 3500-4500, and the
+#   bookcase stands at x 1200-2200, y 3700-4000 on it
+plan "Bookcase on the landing" {
+  units mm
+  room id=hall at (0,0) size 6000x5000 label "Hall" uses hall
+  walls from rooms exterior 200 partition 100
+  door on hall.bottom at 4500 from start width 1000 swing into hall
+  window on hall.top at 4500 from start width 1500
+  stair id=s1 at (1000,500) size 1000x3000 dir up
+  furniture bookcase at (1200,3700) size 1000x300
+}

@@ -822,7 +822,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 
 **`archlang context`** — print the full bundled agent context (spec + workflow + CLI + errors)
   - input: none → output: the full agent context (llms-full.txt), one --section of it, or the one-screen --level starter
-  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 153 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 153 KB of it (spec = the language, 30 KB; workflow = the agent loop, 31 KB; cli = every command, 29 KB; errors = the diagnostic catalog, 62 KB) · `--json` structured result on stdout, messages on stderr
+  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 154 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 154 KB of it (spec = the language, 30 KB; workflow = the agent loop, 31 KB; cli = every command, 29 KB; errors = the diagnostic catalog, 63 KB) · `--json` structured result on stdout, messages on stderr
   - example: `archlang context` — the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 
 **`archlang new`** (aliases: `init`) — scaffold a starter .arch
@@ -840,7 +840,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `archlang explain <CODE>`.
-**148 errors** (abort rendering) · **89 warnings** (advisory; `validate --strict` fails on them too).
+**148 errors** (abort rendering) · **90 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -1024,6 +1024,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `W_FIXTURE_WRONG_ROOM` — Fixture is not inside its declared room. **Fix:** Move the fixture inside the named room, or correct the `in <roomId>`.
 - `W_FLOOR_UNASSIGNED` — Walled floor is in no room. **Fix:** Extend the bordering rooms over the empty floor, draw a room on it, or move the walls in to the rooms' edges. If the floor is open ground (a courtyard, a light well) draw it as an `outdoor` surface; if it is a shaft, draw its stair or lift. Accept it if the floor is a sealed void, and then draw it as a `void` so the plan says so. There is no machine fix.
 - `W_FOOTPRINT_TRANSPOSED` — A piece is drawn turned a quarter: its long side is on the wrong axis. **Fix:** Swap the two sides of `size`, or keep it and turn the symbol a quarter (add 90 to `rotate` or take 90 from it, whichever puts its back where it belongs; an `against` piece takes its turn from the wall, so only the swap applies there, and a piece meant side-on to a wall, a crib or a treadmill with its long side along it, is placed `at (x,y)` or `in <room> anchor <edge> flush` with a `rotate` instead; the hint gives the numbers). When `size` is one literal (`900x2400`) and the swapped size, as drawn on the plan's grid, is exactly the catalogue footprint, a fix swaps it; it is `maybe-incorrect` (`archlang fix --unsafe`), because the swap changes which floor the piece covers.
+- `W_FURNITURE_ON_STAIR` — Furniture stands on a stair or on the landing it owes. **Fix:** Move or resize the piece so it clears the span the hint quotes, or move the stair. There is no machine-applicable fix: where the piece goes instead is a design decision.
 - `W_FURNITURE_OVERLAP` — Two pieces of furniture overlap. **Fix:** Move or resize one so they no longer intersect; leave a walkway between them.
 - `W_FURNITURE_OVER_WINDOW` — A tall unit stands in front of a window. **Fix:** Slide the unit along the wall clear of the window's span (the hint gives the shorter slide), move the window, or stand a unit no higher than the sill there instead: a worktop, a chest of drawers or a washer goes under a window, a fridge or a wardrobe beside it.
 - `W_FURNITURE_WALL_COLLISION` — Furniture penetrates a wall. **Fix:** The message names the wall the piece crosses by its kind and the line it runs on, and how far into its thickness; the hint names it by id. For a piece placed `against wall <id>`, `offset` is the distance along that wall to the piece's CENTRE, not its edge (omitted, it is the segment's midpoint): a 600 mm fridge at `offset 4100` spans 3800–4400 along the wall, so it crosses a 100 mm partition standing at 4000; the hint gives the `offset` that clears it. Otherwise move or resize the piece so it sits fully inside the room, against the wall face rather than through it, or place it with `against wall <id>` or `in <room> anchor <edge> flush`.
