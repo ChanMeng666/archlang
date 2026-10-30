@@ -127,13 +127,7 @@ segmentation masks or PDF plans into `.arch` (one user, with masks in hand, who 
 
 ### G4 · Metrics strip in the replay viewer — `done` · PR #360 · merge `1f4643c1` · record: `research/2026-10-30-as-built.md` § G4
 
-### G5 · Wall-closure check: measure first — `doing` (PR #358; the measurement found a gap: new rule `W_WALL_END_SHORT`) · wave 5 · 0.5–1 day · model: sonnet
-
-Issue #346 asks for "walls closed". Measure before building: write three plans with an open exterior
-ring, a gap between a derived wall and an authored one, and a wall ending 80 mm short of its
-neighbour; run `validate`, `lint` and `describe`. If `E_ROOMS_NOT_TILING`, the enclosure rules and
-`W_OPENING_AT_JUNCTION` already name all three, the card closes with the evidence in the issue
-comment. Otherwise one new catalogued rule for the uncovered case, with the usual law.
+### G5 · Wall-closure check: measure first — `done` · PR #358 · merge `dcd9a7a6` · record: `research/2026-10-30-as-built.md` § G5
 
 ### G6 · DCjson and a game-level recipe — `blocked` on the owner's reply to the Halo Forge user; closes at the N10 read if no answer (D22) · 0.5–1 day
 
