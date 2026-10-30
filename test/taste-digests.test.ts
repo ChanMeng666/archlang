@@ -182,11 +182,11 @@
  * three profiles, measured with `tasteDigest`. No existing row moved (no example or corpus wall ends
  * within 100 mm of another).
  *
- * #367 moved nine rows, three files under each profile. `examples/remodel` gains one
+ * #367 moved three rows, `examples/remodel` under each profile: it gains one
  * `W_ANNOTATION_OVERLAP` in `validity.drafting` (the swing's arc crosses the U of "Utility"), and
- * nothing else in its report moved. The two `r14-living-off-to-one-side` twins pin "Bedroom 1"
- * and "Bedroom 2" clear of their door swings, because the arc ran through both names and set C needs
- * the twins lint clean; no criterion reads where a label stands.
+ * nothing else in its report moved. The two `r14-living-off-to-one-side` twins pin "Bedroom 1" and
+ * "Bedroom 2" clear of their door swings, since the arc ran through both names and set C needs the
+ * twins lint clean; no criterion reads where a label stands, so their rows did not move.
  * G9 (`W_FURNITURE_ON_STAIR`, a piece on a flight or its landing) added twelve rows, the new
  * `stair-safety/furniture-on-flight` and `furniture-on-landing` pairs under each of the three
  * profiles, measured with `tasteDigest`. No existing row moved (no example or corpus piece stands on a
@@ -1147,12 +1147,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/taste-corpus/r12-single-aspect.good.arch",
   ],
   [
-    "9ebbda9e9420d370607d3af4a8c362b727231b22ba8de479b700bfaaa4f26fbb",
+    "e46465e2944cb8da1e3a8101cf8a46533f0ed8e54ae26c4dbe9825352747c865",
     "generic",
     "test/taste-corpus/r14-living-off-to-one-side.arch",
   ],
   [
-    "20186afb1249c4a9d5338d9dbd272870fb4b4f61b221c08b7fe06d14a92062bc",
+    "3a405e998ffb96ce1bfc2411ed77bbc4ad8a41d009484822491a71f886fbf2fd",
     "generic",
     "test/taste-corpus/r14-living-off-to-one-side.good.arch",
   ],
@@ -2322,12 +2322,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/taste-corpus/r12-single-aspect.good.arch",
   ],
   [
-    "1825afbee7bbf695d727e4232a250ca106a91fe362f1d59872c244bc0555fc9c",
+    "07b09caeb7de32d1dc796f2af79371be5026862865d7415ffa52c31f830ea446",
     "cn-residential-advisory",
     "test/taste-corpus/r14-living-off-to-one-side.arch",
   ],
   [
-    "278818c1add6cad3fb80f0f636c91da3069ce3b0657b04a680f7ef70cca51817",
+    "4873c213bdaa6aaf1e8e69bad1fc31bad27d1c15b8ad35908ebd665895dcee34",
     "cn-residential-advisory",
     "test/taste-corpus/r14-living-off-to-one-side.good.arch",
   ],
@@ -3497,12 +3497,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/taste-corpus/r12-single-aspect.good.arch",
   ],
   [
-    "1af205afffed5b1ba06f9ee6581d742541662ca67e858b239cae34855d33be52",
+    "cb2179542a53ce42728b6eb0eb7c58abcd2d9cb36b5efd654aff6d8deb7bca9f",
     "us-residential-advisory",
     "test/taste-corpus/r14-living-off-to-one-side.arch",
   ],
   [
-    "1dfe6f46680a4f6a7442dff620a09d985407fa75f8902116e3f19a62997fe47e",
+    "2a47fa885ac2b79d5db813de9e932f7d04c7cbe20beddcefa2d235d2bc8c3599",
     "us-residential-advisory",
     "test/taste-corpus/r14-living-off-to-one-side.good.arch",
   ],

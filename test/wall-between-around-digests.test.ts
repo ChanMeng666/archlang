@@ -23,7 +23,7 @@ const DIGESTS: [string, string][] = [
   // names the fixtures and says why; same code, same span, no new code.
   ["pairwise-forms", "06eb8323f02f5ba311b7fba05a9a6c0841cdc688c2b970f810064dfe087d8e03"],
   ["beside-walls-from-rooms", "76b1fe54963ed46db4de0a48abcaba829c135544bd8d6612bd69fda438f3baa6"],
-  ["frames", "ce68f4f314667f44364ba8f231e55764a1f0385be24f8c58bad9de172a7bf80e"],
+  ["frames", "709fa5ce55b469960c7c5e5ca87837eb61511f502bafe9b702c7b2ef4135c58e"],
   ["widen-4000", "86d18ac0da3a35cc67206619c7b9faf9224ba837caa9283af98404861bf3164c"],
   ["widen-4500", "9cef908d29584b917eb605f312962d98e0a957108ab9143e3d45601e1df18fdb"],
   ["refused", "7e18b4bff41d18b98b0f0457e0f0488a8ce0bb34792e7194d8144c42e88dc901"], // PS2.29: message text only, same code, same span

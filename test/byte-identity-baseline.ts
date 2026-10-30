@@ -1585,15 +1585,16 @@
  * rows did not move), so only the drawing moved: the WC glyph, 100 and 750 mm along its wall.
  *
  * #367 re-measured rows, each named here (`docs/testing.md` § 3). `W_ANNOTATION_OVERLAP` (a drafting
- * rule) also reads walls, door swings and the room's floor, and the label pass moves a label only
- * onto its own floor. Compared field by field against the tree before it (a script over the whole
- * corpus): `describe()`, `compile().diagnostics` and every other lint code are byte-identical on
- * every plan; only that code's rows and the five SVGs below moved. `examples/remodel.arch` gains one
- * warning and its SVG does not move: the door swing's arc crosses the U of "Utility". `chain30` (30)
- * and `star30` (31) are 90 m long with no `paper`, so a label is 10 m wide on a 3 m room: true on
- * every room, and their labels now stay at the room's centre. `reception-suite` gains one and its
- * "Kitchenette" stays on the room's axis (x 9600 to 9000, into the wall before);
- * `min-bedroom-flat.faithful`'s "Bathroom" (x 9090 to 9300) and `min-clear-joins`' "Bow" the same.
+ * rule) also reads walls, door swings and the room's floor, and the label pass never moves a label
+ * further off its floor than its anchor. Compared field by field against the tree before it (a
+ * script over the whole corpus): `describe()`, `compile().diagnostics` and every other lint code are
+ * byte-identical on every plan; only that code's rows and the four SVGs below moved.
+ * `examples/remodel.arch` gains one warning and its SVG does not move: the door swing's arc crosses
+ * the U of "Utility". `chain30` (30) and `star30` (31) are 90 m long with no `paper`, so a label is
+ * 10 m wide on a 3 m room: true on every room, and half their labels no longer step sideways off the
+ * floor. `reception-suite` gains one and its "Kitchenette" stays on the room's axis (x 9600 to 9000,
+ * same y; it stood across the wall); `min-bedroom-flat.faithful`'s "Bathroom" (9090,739) to
+ * (9300,3139), off the floor before, clear now.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

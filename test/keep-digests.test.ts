@@ -22,9 +22,9 @@ const K3_DIGESTS: [string, string][] = [
   ["grid50-cx", "e795fbb0dda8d8a957c8e5668a2773a84793e5ca30bb3a9daa708342e8e8a637"],
   ["instance", "90cc05d69bd661d54820ff53d76aa86ea7ec739de0bcdbd7de1f1d239186fc07"],
   ["loops", "9e6d4833ecd871d814eb1555d848f54a3ad90957a018c54795141cf061eb9dec"],
-  ["min-clear-arcbbox", "57b72467427dacf713c98e62e06d0be13cf8510faaa5efa8e5b0b6b73cd37945"],
+  ["min-clear-arcbbox", "b8c1d22d34ea5156831d8a245bb01d49f00edeee12f553a20409a191cd77df6d"],
   ["min-clear-derived", "50217fb42eed03770f6adab3455b56d8f160d25a845872f6499006a3b56ef192"],
-  ["min-clear-joins", "3d47c855a3c0edc8c420c322cda0385eb0d801d3f38f2ce47bedaf27e0ca34ad"], // round 2: the `skipped` reasons
+  ["min-clear-joins", "ffa32f50cc942d0e310c5f2eecb4591b070a00ded1b4cab1799fa072fcc019de"], // round 2: the `skipped` reasons
   ["min-clear-lining300", "6e792240271d43879ea9fe432c93a1c26390a664cc89317caa7c3b6ca6c10902"],
   ["min-clear-nib100", "4db5ed0e35604fca30f61b4adb18aed1f9e0230df3d6e63264772b9479bbe9c7"],
   ["min-clear-t45", "da04ce990baae33b4b2fd03d392030fdfbf90c9e425fefe45620ca2d7a46cc8d"],
