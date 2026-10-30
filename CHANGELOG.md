@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Three more resolvers no longer read a `status demolish` wall (G8, the same defect class as the flush
+  fix below; each now matches the plan with that wall deleted): a balcony's derived rail keeps the
+  balustrade edge beside a demolished wall; `dim faces|clear` no longer measures to a demolished face
+  (`W_DIM_NO_WALL`, as the twin says); and a category reference (`door on partition at 50%`,
+  `dim radius <category>`) names only the walls that stand, so one demolished and one standing partition is
+  no longer `E_ATTACH_WALL_REF`. A door written on a demolished wall's own id is still
+  `E_OPENING_ON_DEMOLISHED_WALL`.
 - `furniture … in <room> anchor <a> flush` no longer measures from a `status demolish` wall's
   face: an edge whose only wall is coming out measures from the room edge, as an unwalled edge
   does, and the turn an anchor derives reads only the walls that stay. The piece lands where the

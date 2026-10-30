@@ -72,7 +72,7 @@ import {
   polygonSelfIntersects,
   rectRing,
 } from "../geometry/polygon.js";
-import { closest } from "../expr.js";
+import { closest, standingWalls } from "../expr.js";
 import { patternId } from "../hatches.js";
 import { SIDE_NORMAL } from "../algebra/d4.js";
 
@@ -413,7 +413,7 @@ export const outdoor: ElementDef = {
       }
       return base({ at, size, rail: railSides(words) });
     }
-    return base({ at, size, rail: deriveRail(at, size, ctx.walls), railDerived: true });
+    return base({ at, size, rail: deriveRail(at, size, standingWalls(ctx.walls)), railDerived: true });
   },
 
   /**
@@ -424,7 +424,7 @@ export const outdoor: ElementDef = {
    */
   rewall(resolved, walls): void {
     const o = resolved as ROutdoor;
-    if (o.railDerived && o.rail) o.rail = deriveRail(o.at, o.size, walls);
+    if (o.railDerived && o.rail) o.rail = deriveRail(o.at, o.size, standingWalls(walls));
   },
 
   bounds(resolved): Point[] {

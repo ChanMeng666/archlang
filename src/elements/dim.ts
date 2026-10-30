@@ -5,6 +5,7 @@
 import type { DimNode, DimRef, ExprPoint, Point, SegmentSelect } from "../ast.js";
 import { DIM_REFS } from "../ast.js";
 import type { Expr } from "../expr.js";
+import { standingWalls } from "../expr.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { RDim } from "../ir.js";
@@ -284,8 +285,9 @@ export const dim: ElementDef = {
     if (n.ref) {
       const dir = unit(sub(to, from));
       // Each endpoint is pushed along the measurement axis, AWAY from the other one.
-      const pf = projectToWallFace(ctx.walls, from, mul(dir, -1), n.ref);
-      const pt = projectToWallFace(ctx.walls, to, dir, n.ref);
+      const standing = standingWalls(ctx.walls);
+      const pf = projectToWallFace(standing, from, mul(dir, -1), n.ref);
+      const pt = projectToWallFace(standing, to, dir, n.ref);
       if (!pf || !pt) {
         const which = !pf && !pt ? "Both endpoints" : !pf ? "The start endpoint" : "The end endpoint";
         ctx.diag({
@@ -441,7 +443,7 @@ function measureCurve(n: DimNode, ctx: ResolveCtx): { from: Point; to: Point; te
       text: diameterText(r, fmt2),
     };
   }
-  const walls = ctx.walls.filter((w) => w.id === c.ref || w.category === c.ref);
+  const walls = standingWalls(ctx.walls).filter((w) => w.id === c.ref || w.category === c.ref);
   if (walls.length === 0) {
     return err(
       ctx.unplacedWall?.(c.ref)
