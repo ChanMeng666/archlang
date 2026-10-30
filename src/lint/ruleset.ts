@@ -446,11 +446,11 @@ export interface LintRuleset {
    */
   bedMinWidthMm: number | null;
   /**
-   * The furthest (mm) a wall may stop short of another wall it runs straight toward before
+   * The furthest (mm), measured on the drawing from the square end cap, a wall may stop short of another wall it runs straight toward before
    * `W_WALL_END_SHORT` warns (issue #346). A free end further off than this is a stub or a
-   * doorway's jamb, never judged. `null` turns the rule off.
+   * doorway's jamb, never judged. `null` turns the rule off. The scan is capped at 500 mm whatever the figure.
    *
-   * **Default 100:** the thinnest partition the examples draw; a slit that narrow is a drawing slip, not a design. (150 would flag `hexagon-pavilion`, whose six spokes stop 150 mm short of the drum.)
+   * **Default 100:** the thinnest partition the examples draw; a slit that narrow is a drawing slip, not a design. A wall is judged against straight walls only.
    */
   wallGapMm: number | null;
 }

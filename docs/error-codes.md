@@ -3254,13 +3254,14 @@ theme { nope: "#000" }   # warning
 
 *warning* — A wall stops a few millimetres short of the wall it runs toward.
 
-**Cause.** A wall's free end is not inside any other wall, but carrying the wall straight on for at most `wallGapMm` (100 mm by default) would land inside one: the two were meant to meet and leave a slit. Walls are named by kind and place; a free end further off than the figure is a stub or a doorway's jamb and is never judged. A closed wall has no free end, and a curved end segment is not judged. Two walls ending toward each other on one line are reported once. Set `wallGapMm` to `null` to turn the rule off.
+**Cause.** A wall's free end, as drawn (the renderer caps it square, half the wall's thickness past its last point), is not inside any other wall's drawn outline, but carrying the wall straight on for at most `wallGapMm` (100 mm by default, at most 500 whatever the figure) would land inside one: the two were meant to meet and leave a slit. Walls are named by kind and place; a free end further off than the figure is a stub or a doorway's jamb and is never judged. A closed wall has no free end, and a curved end segment is not judged. Two walls ending toward each other on one line are reported once. Set `wallGapMm` to `null` to turn the rule off.
 
 **Fix.** Extend the wall to the face of the wall it runs toward, or into it, so they join. If the slit is meant as an opening, draw a door or an `opening` there instead. There is no machine-applicable fix: which wall moves is a design decision.
 
 ```arch static
+grid 10
 wall id=a exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
-wall id=p partition thickness 100 { (4000,180) (4000,5000) }   # lint: ends 80 mm short of the top wall's face
+wall id=p partition thickness 100 { (4000,230) (4000,5000) }   # lint: drawn end at y 180, 80 mm from the top wall's inner face
 ```
 
 ## W_WC_SIDE_CLEARANCE

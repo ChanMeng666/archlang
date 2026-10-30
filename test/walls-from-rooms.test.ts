@@ -724,7 +724,14 @@ suite("class-2 defect corpus (space not enclosed) written with `walls from rooms
     for (const [id, cat] of cats) out = out.replace(new RegExp(`\\b(wall|on) ${id}\\b`, "g"), `$1 ${cat}`);
     return out.replace(/\n}\s*$/, `\n  walls from rooms exterior ${ext} partition ${part}\n}\n`);
   }
-  const cases = readdirSync(join(ROOT, DIR)).filter((f) => f.endsWith(".arch") && !f.endsWith(".clean.arch"));
+  // A case that already says `walls from rooms` (G5's wall-end-short-derived: an authored wall beside
+  // a derived one) has nothing to rewrite, and a second statement is E_WALLS_FROM_ROOMS_DUP.
+  const cases = readdirSync(join(ROOT, DIR)).filter(
+    (f) =>
+      f.endsWith(".arch") &&
+      !f.endsWith(".clean.arch") &&
+      !/^\s*walls from rooms/m.test(readFileSync(join(ROOT, DIR, f), "utf8")),
+  );
   const outcome = new Map<string, string>();
   it.each(cases)("%s: refused, or gains the wall", (f) => {
     const before = readFileSync(join(ROOT, DIR, f), "utf8");

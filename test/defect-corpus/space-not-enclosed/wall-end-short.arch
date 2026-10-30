@@ -2,12 +2,12 @@
 # origin: issue 346 (G5): a partition that stops short of the shell it divides
 # expect: W_WALL_END_SHORT
 # status: done
-# fact: the partition's top end is at y 180; the shell's inner face is at y 100: an 80 mm slit
+# fact: the partition is 100 mm thick and starts at y 230, so its drawn end is at y 180; the shell's inner face is at y 100: an 80 mm slit
 plan "Partition ending 80 mm short" {
   units mm
   grid 10
   wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
-  wall id=p partition thickness 100 { (4000,180) (4000,5000) }
+  wall id=p partition thickness 100 { (4000,230) (4000,5000) }
   room id=a at (0,0) size 4000x5000 label "Living" uses living
   room id=b at (4000,0) size 4000x5000 label "Bedroom" uses bedroom
   door id=d_entry at (2000,5000) width 900 wall shell

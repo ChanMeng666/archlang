@@ -96,7 +96,8 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   append-only order windows (`slice(-N)` in `test/doors.test.ts`,
   `test/lint-circulation-privacy.test.ts`, `test/lint-space-enclosure.test.ts`), the per-stage counts
   in `test/stages.test.ts`, `test/defect-corpus/README.md`, the totals in
-  `test/rooms-tiling-probe.test.ts` (#308).
+  `test/rooms-tiling-probe.test.ts` (#308), and `test/walls-from-rooms.test.ts`, which walks the
+  `space-not-enclosed` corpus (a case that already says `walls from rooms` is skipped there; G5).
 - **Two rule PRs in parallel conflict on all of those** plus `src/lint/rules/index.ts`,
   `src/error-catalog.ts` and `src/lint/ruleset.ts`: keep main's entry first, then the PR's; bump the
   windows and counts; re-take K1 and `gen:*` by their generators; re-insert catalogue and ruleset

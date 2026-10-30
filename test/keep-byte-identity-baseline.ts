@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: G5: W_WALL_END_SHORT new rule; four new corpus plans (wall-end-short pairs) add rows, no shipped example moves
+ * Taken: G5 red-team 1: W_WALL_END_SHORT measured on the drawn end; wall-end-short corpus plans re-authored; examples/hexagon-pavilion spokes closed (50 mm drawn slit); no other row moves
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -78,7 +78,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/hexagon-pavilion.arch",
-    "6d2a5532474cec059ff104741cd0be727ee6edd9587eac028c23a61e8484705a",
+    "42746c947f8af40446e0b207fbf277acc8c5797e5daf6f0f3aeda111bcdde635",
     645,
   ],
   [
@@ -1078,7 +1078,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/space-not-enclosed/wall-end-short-derived.arch",
-    "3730c9646ea33e73e5084e1d23b136c383a4396e83e652cbf1b007e4bd50a97c",
+    "a21043df7e5c0f9cc21c389438a7eef3e776151fdb322f9926a86054323637c8",
     295,
   ],
   [
@@ -1088,7 +1088,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/space-not-enclosed/wall-end-short.arch",
-    "2fedf395917dfb3ae69ddfa1c74dd9780a91a9c2d2f9052d6e8d045eac628d3a",
+    "0a394fd7a055ec94797432196a3419cf69ac24a14c704f5f42ace211bf1d98e4",
     131,
   ],
   [

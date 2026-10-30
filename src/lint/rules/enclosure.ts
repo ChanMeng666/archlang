@@ -49,7 +49,7 @@ import {
   wallFaces,
 } from "../../analyze/wall-faces.js";
 import type { Diagnostic } from "../../diagnostics.js";
-import { distPointToWallSegment, wallFaceProbes } from "../../geometry.js";
+import { distPointToWallSegment, type WallSegment, wallFaceProbes } from "../../geometry.js";
 import { edgeMid, edgeTangentAt } from "../../geometry/band.js";
 import { collinearOverlapLength } from "../../geometry/polygon.js";
 import type { ResolvedPlan, RRoom, RWall } from "../../ir.js";
@@ -667,21 +667,58 @@ function aKind(category: string): string {
   return /^[aeiou]/.test(w) ? `an ${w}` : `a ${w}`;
 }
 
+/** Where a wall segment stands, for a message that must not quote its id: the line it runs on. */
+function wallLineWords(s: WallSegment): string {
+  if (s.a.x === s.b.x && s.a.y !== s.b.y) return `on the line x ${mm(s.a.x)}`;
+  if (s.a.y === s.b.y && s.a.x !== s.b.x) return `on the line y ${mm(s.a.y)}`;
+  return `from (${mm(s.a.x)}, ${mm(s.a.y)}) to (${mm(s.b.x)}, ${mm(s.b.y)})`;
+}
+
 /** Step (mm) along a wall end's own line when looking for the wall it points at. */
 const END_SCAN_STEP_MM = 1;
 
 /**
- * `W_WALL_END_SHORT`: a wall whose free end stops a sliver short of another wall it runs toward.
- * Read on the drawing: the end is NOT inside any other wall's body, yet carrying the wall straight
- * on for at most `wallGapMm` would land inside one. A wall that ends in the open further off is a
- * stub, a peninsula or a doorway's jamb, which the rule never judges.
+ * The longest slit (mm) the rule looks for, whatever `wallGapMm` says: the scan is one step per
+ * millimetre per free end, so the work is bounded by a count (at most this many steps per end;
+ * `AGENTS.md`: budgets are counts), never by a ruleset figure. Far above any real slit.
+ */
+const MAX_WALL_GAP_SCAN_MM = 500;
+
+/**
+ * Whether `p` lies in the DRAWN outline of a wall segment: the band of half its thickness round
+ * the centreline, and, on a straight segment, the square cap the renderer adds half a thickness
+ * beyond each end. Every segment end is capped, an inner joint too: that only over-covers a
+ * corner, so the rule can miss a slit there, never invent one.
+ */
+function inDrawnWall(p: Point, s: WallSegment): boolean {
+  const h = s.thickness / 2;
+  const dx = s.b.x - s.a.x;
+  const dy = s.b.y - s.a.y;
+  const len = Math.hypot(dx, dy);
+  if (len < EPS) return Math.hypot(p.x - s.a.x, p.y - s.a.y) <= h + EPS;
+  const ux = dx / len;
+  const uy = dy / len;
+  const along = (p.x - s.a.x) * ux + (p.y - s.a.y) * uy;
+  const across = Math.abs((p.x - s.a.x) * uy - (p.y - s.a.y) * ux);
+  return along >= -h - EPS && along <= len + h + EPS && across <= h + EPS;
+}
+
+/**
+ * `W_WALL_END_SHORT`: a wall whose free end stops a sliver short of another wall it runs toward,
+ * measured on the DRAWING. The renderer caps every free end square, half the wall's thickness
+ * beyond its last point, so the drawn end is that cap's face; the rule starts there and walks the
+ * wall's own line on, one millimetre at a time (at most {@link MAX_WALL_GAP_SCAN_MM}), to the
+ * first point inside another wall's drawn outline ({@link inDrawnWall}). The step count is the
+ * drawn slit, in whole millimetres, reported only when it is above 0 and at most `wallGapMm`: a
+ * cap already in or against another wall's outline is a join, not a slit. A wall that ends in the
+ * open further off is a stub, a peninsula or a doorway's jamb, never judged.
  *
- * Measured per free end of every open, straight-ended wall (a closed wall has none), against every
- * OTHER wall's segments: the end touches when its distance to a segment is within half that
- * segment's thickness; otherwise the wall's own line is walked on in whole millimetres to the first
- * point inside a body, and that distance is the gap. Two walls ending toward each other on one line
- * are one finding, not two. A curved end segment is not judged (no straight line to carry on).
- * Walls are named by kind and place; ids are in the hints only.
+ * Per free end of every open, straight-ended wall (a closed wall has none), against every OTHER
+ * wall's STRAIGHT segments (a curved wall is not a target: its drawn cap and band are not worth
+ * approximating, and `examples/hexagon-pavilion`'s spokes, 50 mm from its drum as drawn, stay unjudged).
+ * Two walls ending toward each other on one line are one finding. A curved end
+ * segment is not judged (no straight line to carry on). Walls are named by kind and the line they
+ * run on, and the storey on a plan of several; ids are in the hints only.
  */
 export const wallEndShort: LintRule = {
   name: "wall-end-short",
@@ -690,8 +727,10 @@ export const wallEndShort: LintRule = {
   stage: "walls",
   codes: ["W_WALL_END_SHORT"],
   check(ctx: LintContext): Diagnostic[] {
-    const limit = ctx.rules.wallGapMm;
-    if (limit === null) return [];
+    const configured = ctx.rules.wallGapMm;
+    if (configured === null || !(configured > 0)) return [];
+    const limit = Math.min(configured, MAX_WALL_GAP_SCAN_MM);
+    const level = (ctx.building.storeyCount ?? 1) > 1 && ctx.ir.level !== undefined ? ` on level ${ctx.ir.level}` : "";
     const out: Diagnostic[] = [];
     const seen = new Set<string>();
     for (const w of ctx.ir.walls) {
@@ -706,29 +745,33 @@ export const wallEndShort: LintRule = {
         const len = Math.hypot(e.x - from.x, e.y - from.y);
         if (len < EPS) continue;
         const d = { x: (e.x - from.x) / len, y: (e.y - from.y) / len };
+        // The drawn end: the square cap's face, half a thickness past the last point.
+        const tip = { x: e.x + (d.x * w.thickness) / 2, y: e.y + (d.y * w.thickness) / 2 };
         const near = ctx.wallSegs.filter(
-          (s) => s.wallId !== w.id && distPointToWallSegment(e, s) - s.thickness / 2 <= limit + 1,
+          (s) => s.wallId !== w.id && !s.arc && distPointToWallSegment(tip, s) <= limit + s.thickness + 1,
         );
         if (near.length === 0) continue;
-        if (near.some((s) => distPointToWallSegment(e, s) <= s.thickness / 2 + 1)) continue;
-        let hit: { gap: number; wallId: string } | undefined;
+        if (near.some((s) => inDrawnWall(tip, s))) continue;
+        let hit: { gap: number; s: WallSegment } | undefined;
         for (let g = END_SCAN_STEP_MM; g <= limit && !hit; g += END_SCAN_STEP_MM) {
-          const p = { x: e.x + d.x * g, y: e.y + d.y * g };
-          const s = near.find((o) => distPointToWallSegment(p, o) <= o.thickness / 2 + EPS);
-          if (s) hit = { gap: g, wallId: s.wallId };
+          const p = { x: tip.x + d.x * g, y: tip.y + d.y * g };
+          const s = near.find((o) => inDrawnWall(p, o));
+          if (s) hit = { gap: g, s };
         }
         if (!hit) continue;
-        const other = ctx.ir.walls.find((x) => x.id === hit.wallId);
+        const other = ctx.ir.walls.find((x) => x.id === hit.s.wallId);
         if (!other) continue;
         const key = `${[w.id, other.id].sort().join("|")}|${hit.gap}`;
         if (seen.has(key)) continue;
         seen.add(key);
+        const mine = ctx.wallSegs.find((s) => s.wallId === w.id && s.index === seg);
+        if (!mine) continue;
         const ids = [w, other].filter((x) => x._idAuthored === true).map((x) => `"${x.id}"`);
         out.push({
           severity: "warning",
           code: "W_WALL_END_SHORT",
           ...ctx.at(w),
-          message: `${capFirst(aKind(w.category))} ends ${mm(hit.gap)} mm short of ${aKind(other.category)} it runs toward, at (${mm(e.x)}, ${mm(e.y)}). The two do not meet, so the plan shows a slit of ${mm(hit.gap)} mm between them and the walls do not close.`,
+          message: `${capFirst(aKind(w.category))} ${wallLineWords(mine)} ends ${mm(hit.gap)} mm short of ${aKind(other.category)} ${wallLineWords(hit.s)}${level}, as drawn. The two do not meet, so the plan shows a slit of ${mm(hit.gap)} mm between them and the walls do not close.`,
           hints: [
             `Extend the end of the ${wallKindWords(w.category)} to the face of the ${wallKindWords(other.category)}, or into it so they join; if the slit is a real opening, draw a door or an \`opening\` there instead.`,
             ...(ids.length > 0 ? [`The walls are ${ids.join(" and ")}.`] : []),

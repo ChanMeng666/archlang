@@ -2,14 +2,14 @@
 # origin: issue 346 (G5): an authored wall that stops short of a derived one
 # expect: W_WALL_END_SHORT
 # status: done
-# fact: the authored wall starts at x 4130; the derived partition's face is at x 4050: an 80 mm slit
+# fact: the authored wall is 100 mm thick and starts at x 4180, so its drawn end is at x 4130; the derived partition's face is at x 4050: an 80 mm slit
 plan "Authored wall short of a derived one" {
   units mm
   grid 10
   room id=a at (0,0) size 4000x5000 label "Living" uses living
   room id=b right-of a align top gap 0 size 4000x5000 label "Bedroom" uses bedroom
   walls from rooms exterior 200 partition 100 { }
-  wall id=cross partition thickness 100 { (4130,2500) (8000,2500) }
+  wall id=cross partition thickness 100 { (4180,2500) (8000,2500) }
   door id=d_entry on a.bottom at center width 900 swing into a
   door between a and b at 1000 from start width 800 swing into b
   window on a.top width 1500
