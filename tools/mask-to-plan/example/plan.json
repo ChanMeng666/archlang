@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "plan": "Mask example",
+  "units": "mm",
+  "rooms": [
+    {
+      "id": "living_a",
+      "x": 0,
+      "y": 0,
+      "width": 6000,
+      "height": 4000,
+      "label": "Living"
+    },
+    {
+      "id": "living_b",
+      "x": 0,
+      "y": 4000,
+      "width": 3000,
+      "height": 3000
+    },
+    {
+      "id": "kitchen",
+      "x": 6000,
+      "y": 0,
+      "width": 3000,
+      "height": 4000,
+      "label": "Kitchen"
+    },
+    {
+      "id": "hall",
+      "x": 3000,
+      "y": 4000,
+      "width": 1500,
+      "height": 3000,
+      "label": "Hall"
+    },
+    {
+      "id": "bedroom",
+      "x": 4500,
+      "y": 4000,
+      "width": 2500,
+      "height": 3000,
+      "label": "Bedroom"
+    },
+    {
+      "id": "bedroom_2",
+      "x": 7000,
+      "y": 5500,
+      "width": 2000,
+      "height": 1500,
+      "label": "Bedroom"
+    },
+    {
+      "id": "bath",
+      "x": 7000,
+      "y": 4000,
+      "width": 2000,
+      "height": 1500,
+      "label": "Bath"
+    }
+  ],
+  "walls": [],
+  "walls_from_rooms": {
+    "exterior": 200,
+    "partition": 100,
+    "open": [
+      {
+        "between": [
+          "living_a",
+          "living_b"
+        ]
+      }
+    ]
+  },
+  "openings": [],
+  "furniture": []
+}
