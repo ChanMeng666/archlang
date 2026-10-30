@@ -49,16 +49,7 @@ Unpark when a Tier A post needs it. Labelled non-deterministic; muxer through th
 
 ### A8 · Wave-3 residue — `done` · PRs #350 · merge `b11b83c3` and #351 · merge `f5756794` · record: `research/2026-10-28-as-built.md` § A8
 
-### A9 · Residue of A7 and A8 — `todo` · 1 day · model: opus
-
-Small items, one PR or several. (1) `MIN_CORE` and `packages/archlang-3d`'s peer range move to
-1.45.0 at its first publish (owner step). (2) The owner's call on the 30° end elevation of one-storey
-views (`endElevation`, `camera.ts`). (3) Sliding, barn, bifold and pocket panels posed open under
-`--doors plan` need a core export of the panel geometry. (4) A leaf the plan swings through a wall
-(stress `s5-door-on-arc`) is reproduced as interpenetrating geometry with no ledger entry. (5) The
-by-id `E_FURN_AGAINST_DEMOLISHED_WALL` span covers the whole statement; the B3a/B3b sweep's deletion
-comparison ignores furniture; `anchor … flush` measures from a demolished face; `roof … wall` can
-follow a demolished outer wall; the `new` legend row waits for a hatch option.
+### A9 · Residue of A7 and A8 — `done` · PRs #356 · merge `8fa40dd7` and #361 · merge `ded0f0b5` · record: `research/2026-10-30-as-built.md` § A9
 
 ---
 
@@ -128,54 +119,15 @@ fixtures), that the README surfaces none of the 1.44–1.46 features, and that t
 describe shipped features as future work. The only grade-A user ask that is a real gap is import from
 segmentation masks or PDF plans into `.arch` (one user, with masks in hand, who also wants quantities).
 
-### G1 · Surface what shipped — `todo` · wave 5 · 1 day · model: sonnet
+### G1 · Surface what shipped — `done` · PR #357 · merge `bcc29010` · record: `research/2026-10-30-as-built.md` § G1
 
-Docs only, Tier C rules (no 3D anywhere here). README feature list and `docs/overview.md` gain
-one short example each for: `arch takeoff` and `describe --facts quantities`; `arch impact --against
-old.arch --lock <ids>`; wall `status existing|demolish|new` with the dashed demolition drawing;
-imperial literals (`12ft6in`); `arch preview --review`; `--overlay circulation`; `keep stacked` and
-the stair/shaft checks. A `docs/whats-new.md` (or the existing release-notes page if one exists)
-lists 1.44.0–1.46.0 by feature with one `arch static` fence each. `spec.llm.md` is at its 30,000 cap
-and must not grow; check that status, lock and takeoff are already in it (B-cards said so) and only
-reorder if a line is missing. Acceptance: `docs:build` green; every new fence compiles or is
-`arch static`; a reader can find each feature from the README in one click.
+### G2 · Roadmap issues reconciled to 1.46.0 — `done` · comments on #343–#347, #347 closed · record: `research/2026-10-30-as-built.md` § G2
 
-### G2 · Roadmap issues reconciled to 1.46.0 — `todo` · wave 5 · 0.5 day · model: sonnet; owner approves the text
+### G3 · Rooms-only Plan JSON import and a mask-to-plan recipe — `done` · PR #359 · merge `c61a6c10` · record: `research/2026-10-30-as-built.md` § G3
 
-For #343–#347: a comment per issue, drafted first in
-`research/2026-10-29-issue-replies-draft.md` and posted only after the owner approves, that says
-what exists today with doc links (after G1 lands), what remains, and re-scopes the title where the
-body describes shipped work: #347 closes as shipped; #346 narrows to "wall-closure check and a
-playground takeoff panel"; #343 narrows to "a converter interface and a public glTF (waits for the
-3D package's first publish)"; #345 narrows to "shared grid (P2-4) and load-bearing stacking";
-#344 stays open as the import gap. Never write "users asked" where `data/community-replies.json`
-shows one user. Must not: add a 3D word to #343 beyond "waits for a separate package".
+### G4 · Metrics strip in the replay viewer — `done` · PR #360 · merge `1f4643c1` · record: `research/2026-10-30-as-built.md` § G4
 
-### G3 · Rooms-only Plan JSON import and a mask-to-plan recipe — `todo` · wave 5 · 2 days · model: opus
-
-Evidence: one user training a segmentation model on floor plans asked for PDF-or-mask → `.arch` and
-wants vector geometry for quantities. Design (D18): the core gains nothing raster. Document the
-existing path: a Plan JSON with rooms only plus a derived-walls statement compiles through
-`--from-json` (verify first with a hand-written file; if derived walls cannot be expressed in Plan
-JSON today, that is the card's core change, additive, with its byte-identity law). Then
-`tools/mask-to-plan/` (outside the package, MIT, Python run with `-I`, OpenCV or scikit-image
-allowed there): label mask PNG + a millimetres-per-pixel scale → room polygons (simplified,
-right-angled where within tolerance, snapped to `grid`) → rooms-only Plan JSON → `.arch` via the CLI,
-and `arch validate` + `takeoff` on the result. A `docs/import.md` recipe with one worked example and
-its limits (no openings, no furniture, labels from the mask's class names only), marked experimental.
-Acceptance: the example mask round-trips to a plan whose `describe` room areas match the mask's
-pixel areas within 2 %; `check:drift` unchanged; no new core dependency. Must not: ship a VLM
-reversal (ArchCanvas W1 territory); promise PDF parsing (a PDF is rasterised by the user first).
-
-### G4 · Metrics strip in the replay viewer — `todo` · wave 5 · 0.5 day · model: sonnet
-
-In `packages/archlang-3d`'s replay, a small strip fed only by `describe()` facts the adapter already
-holds: floor area (centreline and net, labelled), room count, door and window counts, storey count,
-and the warnings count from `lint()`; numbers appear when their stage is reached. No "score", no
-"checks passed N/M", no percentages. Light theme in the playground; the exported file may use the
-dark theme (D11). Key-frame hashes re-pinned with the reason. Tier A artefact for the owner's posts.
-
-### G5 · Wall-closure check: measure first — `todo` · wave 5 · 0.5–1 day · model: sonnet
+### G5 · Wall-closure check: measure first — `doing` (PR #358; the measurement found a gap: new rule `W_WALL_END_SHORT`) · wave 5 · 0.5–1 day · model: sonnet
 
 Issue #346 asks for "walls closed". Measure before building: write three plans with an open exterior
 ring, a gap between a derived wall and an authored one, and a wall ending 80 mm short of its
@@ -183,11 +135,37 @@ neighbour; run `validate`, `lint` and `describe`. If `E_ROOMS_NOT_TILING`, the e
 `W_OPENING_AT_JUNCTION` already name all three, the card closes with the evidence in the issue
 comment. Otherwise one new catalogued rule for the uncovered case, with the usual law.
 
-### G6 · DCjson and a game-level recipe — `blocked` on the owner's reply to the Halo Forge user · 0.5–1 day
+### G6 · DCjson and a game-level recipe — `blocked` on the owner's reply to the Halo Forge user; closes at the N10 read if no answer (D22) · 0.5–1 day
 
 "DCjson" could not be identified on the web. Ask the user what the format is (owner reply, drafted in
 G2's file). If public and simple, a `tools/plan-json-to-<format>.mjs` recipe plus one paragraph in
 `docs/import.md`'s sibling "export recipes" section. No new example is pinned for it.
+
+### G8 · Demolished walls: the three remaining resolvers — `todo` · wave 5 · 0.5 day · model: sonnet
+
+Same defect class as A9 item 5, found by #361's red-team, outside that diff. Each was probed against
+its deleted-wall twin. (1) The derived rail: `deriveRail(…, ctx.walls)` at `src/elements/outdoor.ts:416`:
+a balcony beside a demolished wall loses a balustrade edge. (2) `dim faces`: `src/elements/dim.ts:287-288`
+measures to a demolished face where the twin says `W_DIM_NO_WALL`. (3) Category references:
+`src/attach.ts:207` and `src/elements/dim.ts:444` count demolished walls, so `door on partition at 50%`
+with one demolished and one standing partition is `E_ATTACH_WALL_REF`. Copy the `named`/`matches` filter
+from `placeAgainst`, charge the step meter before filtering. Acceptance: each matches its deleted-wall
+twin; SHA-256 sweep moves nothing on plans without a demolished wall. Must not: touch `new` wall drawing.
+
+### G9 · The first bugs from the German-houses user — `todo` · wave 5 · 1.5 days · model: opus
+
+Decision D21. A real user drew German houses with an agent and filed #362–#370 with reproductions. Fix
+in this order, one PR per issue: #365 (`validate --intent` counts only the lowest storey), #366 (Plan JSON
+round trip: say what it dropped, as `droppedKeeps` does for keeps; do not widen the format), #364 part 1
+(`finish` furnishing over a stair, with a lint that sees it), #368 (the free-standing pier), #367 (labels in
+small rooms). Must not: promise IFC; make a new language form without its byte-identity law.
+
+### G10 · Design spikes for #363 and #362 — `todo` · after G9 · 1 day · model: opus
+
+A written design only, in `research/`, no code. #363: L-shaped rooms in `walls from rooms`, `door between`
+and relational placement (touches `src/room-tiling.ts`, and would retire the rectangle cutting in
+`tools/mask-to-plan`). #362: quarter-turn and half-turn stairs. #369 and the #370 collection are split into
+single issues by the same session and wait for a second ask, unless they are one-line docs fixes.
 
 ### Wave 6 (after the N10 read): G7 repair-convergence replay (the review rings of iteration N fading
 into N+1; needs `fix`/`repair` to emit a trace, design spike first), D1, A6, archlang-3d M2+, Tier B.
