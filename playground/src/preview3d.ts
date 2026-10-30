@@ -147,7 +147,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
         return false;
       }
       view = index < 0 ? "all" : `L${level}`;
-      const facts = replayFacts(source, { view: index < 0 ? "all" : index + 1 });
+      const facts = replayFacts(source, { storeys: levels, view: index < 0 ? "all" : index + 1 });
       delete strip.dataset.stripKey;
       strip.hidden = true;
       const payload = replayPayload(viewMesh(mesh, index < 0 ? "all" : index + 1), {

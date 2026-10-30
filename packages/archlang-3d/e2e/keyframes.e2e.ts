@@ -16,7 +16,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { compile } from "@chanmeng666/archlang";
 import { describe, expect, it } from "vitest";
-import { adaptPlan, buildMesh, keyFrames, replayFacts, stateAt, timeline } from "../src/index.js";
+import { adaptPlan, buildMesh, keyFrames, replayFacts, stateAt, storeysOf, timeline } from "../src/index.js";
 import { renderReplay, replayHtml } from "../src/node.js";
 import { EXAMPLES_LIST, WORLD } from "../test/corpus.js";
 
@@ -45,7 +45,7 @@ async function render(name: string) {
   const mesh = buildMesh(r.scene);
   const events = timeline(mesh);
   // With the metrics strip (card G4): it is DOM over the canvas, so the pinned hashes must not move.
-  const facts = replayFacts(src, { world: WORLD });
+  const facts = replayFacts(src, { world: WORLD, storeys: storeysOf(mesh) });
   const html = await replayHtml(mesh, {
     title: name,
     svg: compile(src, { world: WORLD }).svg,

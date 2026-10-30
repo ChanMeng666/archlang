@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { compile } from "@chanmeng666/archlang";
 import { describe, expect, it, vi } from "vitest";
-import { adaptPlan, buildMesh, keyFrames, replayFacts, timeline } from "../src/index.js";
+import { adaptPlan, buildMesh, keyFrames, replayFacts, storeysOf, timeline } from "../src/index.js";
 import { renderReplay, replayHtml } from "../src/node.js";
 import { main } from "../src/cli/run.js";
 import { EXAMPLES_LIST, REPO, WORLD } from "../test/corpus.js";
@@ -52,7 +52,7 @@ describe("replay in a browser", () => {
     if (!r.ok) throw new Error(r.refusal.code);
     const mesh = buildMesh(r.scene);
     const svg = compile(src, { world: WORLD }).svg;
-    const facts = replayFacts(src, { world: WORLD });
+    const facts = replayFacts(src, { world: WORLD, storeys: storeysOf(mesh) });
     expect(facts).toBeDefined();
     const size = { width: 640, height: 360 };
     const events = timeline(mesh);

@@ -9,7 +9,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { compile, describe as describePlan, lint } from "@chanmeng666/archlang";
 import { describe, expect, it } from "vitest";
-import { adaptPlan, buildMesh, PHASE, replayFacts, stripAt, timeline, viewMesh } from "../src/index.js";
+import { adaptPlan, buildMesh, PHASE, replayFacts, storeysOf, stripAt, timeline, viewMesh } from "../src/index.js";
 import type { ReplayFacts } from "../src/index.js";
 import { replayHtml, replayPayload } from "../src/node.js";
 import { EXAMPLES_LIST, WORLD } from "./corpus.js";
@@ -27,7 +27,7 @@ describe("replayFacts", () => {
   it("reads laneway-house's numbers from describe() and lint(), nothing of its own", () => {
     const src = srcOf("laneway-house.arch");
     const d = describePlan(src, { world: WORLD });
-    const f = replayFacts(src, { world: WORLD }) as ReplayFacts;
+    const f = replayFacts(src, { world: WORLD, storeys: storeysOf(meshOf("laneway-house.arch")) }) as ReplayFacts;
     expect(f).toEqual({
       rooms: d.totals.rooms,
       doors: d.totals.doors,
@@ -44,7 +44,7 @@ describe("replayFacts", () => {
     const d = describePlan(src, { world: WORLD });
     const levels = d.levels ?? [];
     expect(levels.length).toBe(2);
-    const all = replayFacts(src, { world: WORLD }) as ReplayFacts;
+    const all = replayFacts(src, { world: WORLD, storeys: storeysOf(meshOf("two-storey.arch")) }) as ReplayFacts;
     expect(all.storeys).toBe(2);
     expect(all.rooms).toBe(levels.reduce((a, l) => a + l.totals.rooms, 0));
     expect(all.doors).toBe(levels.reduce((a, l) => a + l.totals.doors, 0));
@@ -52,14 +52,73 @@ describe("replayFacts", () => {
       levels.reduce((a, l) => a + l.totals.floor_area_m2, 0),
       2,
     );
-    const two = replayFacts(src, { world: WORLD, view: 2 }) as ReplayFacts;
+    const two = replayFacts(src, {
+      world: WORLD,
+      storeys: storeysOf(meshOf("two-storey.arch")),
+      view: 2,
+    }) as ReplayFacts;
     expect(two.storeys).toBeUndefined();
     expect(two.rooms).toBe(levels[1]?.totals.rooms);
     expect(two.areaNet).toBe(levels[1]?.totals.net_floor_area_m2);
   });
 
+  // Red-team round 1: a level with nothing to raise (a `dim` only) is absent from the replay's
+  // storeys, so storey 2 of the replay is LEVEL 3 and must say level 3's numbers.
+  const EMPTY_LEVEL = `plan "Empty level" {
+  units mm
+  grid 50
+  height 2700
+  level 1 "Ground" {
+    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+    room id=a at (0,0) size 6000x4000 label "Living" uses living
+    door id=d on shell at 1000 width 900
+  }
+  level 2 "Roof deck" {
+    dim (0,0)->(6000,0) offset 500
+  }
+  level 3 "Top" {
+    wall id=shell exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+    wall id=p partition thickness 100 { (2000,0) (2000,3000) }
+    room id=b at (0,0) size 2000x3000 label "Bed" uses bedroom
+    room id=c at (2000,0) size 2000x3000 label "Bath" uses bath
+    door id=d2 on p at 1500 width 800
+    window id=w on shell at 1000 width 900
+  }
+}
+`;
+  it("a storey view matches on the level number, not the index into the core's levels", () => {
+    const r = adaptPlan(EMPTY_LEVEL);
+    if (!r.ok) throw new Error(r.refusal.code);
+    const storeys = storeysOf(buildMesh(r.scene));
+    expect(storeys).toEqual([1, 3]);
+    const levels = describePlan(EMPTY_LEVEL).levels ?? [];
+    const top = levels.find((l) => l.level === 3)?.totals;
+    const view2 = replayFacts(EMPTY_LEVEL, { storeys, view: 2 }) as ReplayFacts;
+    expect(view2.rooms).toBe(2);
+    expect(view2.rooms).toBe(top?.rooms);
+    expect(view2.windows).toBe(1);
+    expect(view2.areaCentre).toBe(top?.floor_area_m2);
+    expect(replayFacts(EMPTY_LEVEL, { storeys, view: 1 })?.rooms).toBe(1);
+    // The combined view counts the storeys the replay shows (2), not the core's levels (3).
+    const all = replayFacts(EMPTY_LEVEL, { storeys }) as ReplayFacts;
+    expect(all.storeys).toBe(2);
+    expect(all.rooms).toBe(3);
+    // A view with no storey behind it has no facts: never another storey's.
+    expect(replayFacts(EMPTY_LEVEL, { storeys, view: 3 })).toBeUndefined();
+  });
+
+  it("warnings follow the shown level, not the whole plan", () => {
+    const src = srcOf("two-storey.arch");
+    const storeys = storeysOf(meshOf("two-storey.arch"));
+    const w = lint(src, { world: WORLD }).filter((x) => x.severity === "warning");
+    const total = replayFacts(src, { world: WORLD, storeys }) as ReplayFacts;
+    const parts = [1, 2].map((v) => (replayFacts(src, { world: WORLD, storeys, view: v }) as ReplayFacts).warnings);
+    expect(total.warnings).toBe(w.length);
+    expect(parts[0]! + parts[1]!).toBe(w.length);
+  });
+
   it("is undefined for a plan the core does not resolve", () => {
-    expect(replayFacts("room a at (0,0) size", { world: WORLD })).toBeUndefined();
+    expect(replayFacts("room a at (0,0) size", { world: WORLD, storeys: [1] })).toBeUndefined();
   });
 });
 
@@ -120,7 +179,7 @@ describe("the replay HTML carries the strip as a DOM layer", () => {
     const src = srcOf("laneway-house.arch");
     const mesh = meshOf("laneway-house.arch");
     const svg = compile(src, { world: WORLD }).svg;
-    const facts = replayFacts(src, { world: WORLD }) as ReplayFacts;
+    const facts = replayFacts(src, { world: WORLD, storeys: storeysOf(mesh) }) as ReplayFacts;
     const bare = await replayHtml(mesh, { title: "L", svg });
     const withFacts = await replayHtml(mesh, { title: "L", svg, facts });
     expect(bare).not.toContain('id="archlang-replay-strip"');

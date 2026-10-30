@@ -17,6 +17,10 @@ The package is private and unpublished; versions start with its first 0.x public
   strip and the fixture was not touched). The exported HTML and MP4 carry it (dark theme with
   `--theme dark`); the playground's 3D tab shows it in the light theme. The video is cut from the
   stage element (canvas plus strip) at the same size. No score, no pass counts, no percentages.
+  `replayFacts` takes the replay's level numbers (`storeys: storeysOf(mesh)`) and matches on them, so
+  a plan with a level that has nothing to raise still gives each storey view its own numbers; the
+  storey count and the warnings are those of the shown levels. `--json` reports the strip's text per
+  key frame (`strips`).
 
 - `--doors plan` (card A7) on `view`, `build` and `check`: each hinged leaf, and each of a `double`
   door's two, stands at the swing the core draws (`doorLeaves`: hinge → open tip, 90° on, its

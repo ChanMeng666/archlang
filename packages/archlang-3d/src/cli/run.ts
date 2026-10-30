@@ -147,7 +147,7 @@ async function view(args: Args): Promise<number> {
     view === "all" ? compiled.svg : (compiled.pages?.find((pg) => pg.level === storeys[view - 1])?.svg ?? compiled.svg);
   // The metrics strip's numbers: the core's describe() and lint() of this source (card G4).
   const facts = (view: ReplayView): { facts?: ReplayFacts } => {
-    const f = replayFacts(source, { world, view });
+    const f = replayFacts(source, { world, storeys, view });
     return f ? { facts: f } : {};
   };
   const htmlOf = (view: ReplayView): Promise<string> =>
@@ -217,6 +217,7 @@ async function view(args: Args): Promise<number> {
     doors: args.doors,
     storeys: storeys.length,
     keyFrames: video.keyFrames,
+    ...(video.strips ? { strips: video.strips } : {}),
     views,
     seekRoundTrip: video.seekRoundTrip,
     warnings: r.warnings.map((w) => ({ code: w.code, level: w.level, message: w.message })),
