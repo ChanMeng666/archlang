@@ -2733,7 +2733,8 @@ for. `compile -f json` prints one `note:` on stderr per clause, exits as it woul
 `dropped[]` to the `--json` envelope; `planToJson()` returns the same rows as `dropped`. A plan that
 drops nothing has no note and no key. A row is `clause`, `count`, and where they apply `ids` (who
 carries it), `text` (the clause in words) and `level` (the storey that holds it; with `--level`
-only that storey's rows and the plan-wide ones are reported).
+only that storey's rows and the plan-wide ones are reported; keeps are plan-wide, so every
+storey's keeps are reported on each `--level` export).
 
 | `clause` | What leaves |
 |---|---|

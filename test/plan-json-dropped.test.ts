@@ -251,6 +251,25 @@ describe("the keep path is the same path, and unchanged", () => {
   });
 });
 
+describe("counts and order", () => {
+  it("reports the keeps first and each other clause after them", async () => {
+    const src = readFileSync("test/keep-corpus/offset-fixed.arch", "utf8").replace(/}s*$/, '  legend
+}
+');
+    const r = await renderArtifact(src, "json", ARGS, ".", "all");
+    expect(r.notes?.[0]).toMatch(/^note: Plan JSON carries no keeps/);
+    expect(r.notes?.some((n) => n.includes("legend"))).toBe(true);
+  });
+
+  it("counts every `axes` block and every styled kind", () => {
+    const p = planToJson(planWith('axes { x at 0, 4000 y at 0 }
+  style wall { stroke: "#111111" }
+  style door { stroke: "#222222" }'));
+    expect(p.dropped?.find((d) => d.clause === "style")?.count).toBe(2);
+    expect(p.dropped?.find((d) => d.clause === "axes")?.count).toBeGreaterThan(0);
+  });
+});
+
 describe("the CLI", () => {
   // In a temporary directory: a file under `test/fixtures` would join the corpus sweeps.
   const dir = mkdtempSync(join(tmpdir(), "archlang-366-"));
