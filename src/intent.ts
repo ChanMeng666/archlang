@@ -89,9 +89,11 @@ export interface Intent {
   $schema?: string;
   /** Optional identifier for the intent file; ignored by the check. */
   $id?: string;
-  /** Exact expected room count. Assert only when the brief enumerates the rooms. */
+  /** Exact expected room count, over every storey. Assert only when the brief enumerates the
+   *  rooms. */
   rooms?: number;
-  /** Rooms the brief names, as concepts, with optional count/area/window bands. */
+  /** Rooms the brief names, as concepts, with optional count/area/window bands. Rooms on any
+   *  storey count. */
   roomsInclude?: {
     concept: string;
     count?: { min?: number; max?: number };
@@ -105,10 +107,11 @@ export interface Intent {
      *  `E_INTENT_NO_SITE`. */
     windows?: { min?: number; max?: number; facing?: IntentFacing };
   }[];
-  /** Total floor-area band — only where the brief states a number. At least one bound;
-   *  an open top ("at least N m²") sets `min` alone. */
+  /** Total floor-area band, summed over every storey — only where the brief states a number.
+   *  At least one bound; an open top ("at least N m²") sets `min` alone. */
   totalAreaM2?: { min?: number; max?: number; source: string };
-  /** Interior-door adjacency the brief licenses: `{ conceptA: [conceptB, …] }`. Advisory. */
+  /** Interior-door adjacency the brief licenses, on any one storey: `{ conceptA: [conceptB, …] }`.
+   *  Advisory. */
   adjacency?: { requiredEdges: Record<string, string[]>; source: string };
   /** Every room reachable from a modeled entrance — asserted only on brief license. Advisory. */
   reachable?: boolean;
@@ -419,21 +422,44 @@ export function compileIntent(intent: Intent): Predicate[] {
 /** Format an area band `[lo, hi]` for a message, rendering `∞` for an open top. */
 const band = (lo: number, hi: number): string => `[${lo}, ${hi === INF ? "∞" : hi}]`;
 
+/** The facts of one storey an assertion over rooms reads. */
+type StoreyFacts = Pick<SceneSummary, "rooms" | "windows" | "input_graph" | "totals">;
+
+/** The storeys a brief is checked over, lowest first. `describe()`'s top-level facts are the
+ *  LOWEST storey, so a plan with `level` blocks is read from `levels[]`; a plan with none is its
+ *  one storey. A room id is unique only within a storey: never match one across two of these. */
+const storeysOf = (summary: SceneSummary): readonly StoreyFacts[] =>
+  summary.levels?.length ? summary.levels : [summary];
+
+/** Every room of the plan, lowest storey first. */
+const allRooms = (summary: SceneSummary): RoomSummary[] => storeysOf(summary).flatMap((s) => s.rooms);
+
+/** The plan's total floor area: the storeys' figures summed and rounded as each already is, or
+ *  the one storey's figure untouched. */
+function totalFloorArea(summary: SceneSummary): number {
+  const storeys = storeysOf(summary);
+  if (storeys.length === 1) return storeys[0]!.totals.floor_area_m2;
+  return r2(storeys.reduce((n, s) => n + s.totals.floor_area_m2, 0));
+}
+
 /** Whether `a` and `b` (concept ids) are joined by an interior door/opening in the
- *  plan's `input_graph`. Existential over both concepts' matched rooms; checked in
- *  both directions defensively though `input_graph` is symmetric. */
+ *  plan's `input_graph`, on any one storey (a shaft joins storeys, a door never does).
+ *  Existential over both concepts' matched rooms; checked in both directions defensively
+ *  though `input_graph` is symmetric. */
 function conceptsAdjacent(a: string, b: string, summary: SceneSummary): boolean {
-  const as = roomsMatchingConcept(a, summary.rooms);
-  const bs = roomsMatchingConcept(b, summary.rooms);
-  for (const ra of as) {
-    const nbrs = summary.input_graph[ra.id] ?? [];
-    for (const rb of bs) {
-      if (ra.id === rb.id) continue;
-      if (nbrs.includes(rb.id)) return true;
-      if ((summary.input_graph[rb.id] ?? []).includes(ra.id)) return true;
+  return storeysOf(summary).some((storey) => {
+    const as = roomsMatchingConcept(a, storey.rooms);
+    const bs = roomsMatchingConcept(b, storey.rooms);
+    for (const ra of as) {
+      const nbrs = storey.input_graph[ra.id] ?? [];
+      for (const rb of bs) {
+        if (ra.id === rb.id) continue;
+        if (nbrs.includes(rb.id)) return true;
+        if ((storey.input_graph[rb.id] ?? []).includes(ra.id)) return true;
+      }
     }
-  }
-  return false;
+    return false;
+  });
 }
 
 /** Check one predicate that does NOT participate in the room assignment pool.
@@ -444,30 +470,35 @@ function checkOne(
 ): AssertionResult {
   switch (p.kind) {
     case "room-count": {
-      // Policy B (approved rubric): exact, OR one surplus room attributable to
-      // circulation — got === exact + 1 AND the plan has at least one more
-      // circulation room than the brief's named circulation. A surplus BEDROOM in a
-      // plan that already has its hall still fails (the extra room is not circulation).
-      const got = summary.totals.rooms;
+      // Policy B (approved rubric): exact, OR a surplus of up to one room per storey
+      // attributable to circulation — the plan has at least that many more circulation
+      // rooms than the brief's named circulation, because each storey needs its own hall or
+      // landing and a brief rarely lists them. A surplus BEDROOM in a plan that already has
+      // its hall still fails (the extra room is not circulation).
+      const got = storeysOf(summary).reduce((n, s) => n + s.totals.rooms, 0);
       const exactMatch = got === p.exact;
       let pass = exactMatch;
       let note = "";
-      if (!exactMatch && got === p.exact + 1) {
-        const planCirc = summary.rooms.filter(isCirculationRoom).length;
-        if (planCirc >= p.expectedCirc + 1) {
+      const surplus = got - p.exact;
+      if (surplus >= 1 && surplus <= storeysOf(summary).length) {
+        const planCirc = allRooms(summary).filter(isCirculationRoom).length;
+        if (planCirc >= p.expectedCirc + surplus) {
           pass = true;
-          note = " (surplus is a circulation room — policy B)";
+          note =
+            surplus === 1
+              ? " (surplus is a circulation room — policy B)"
+              : ` (surplus is ${surplus} circulation rooms — policy B)`;
         } else {
           note = " (surplus is not a circulation room)";
         }
       }
       // Subscore grading is stricter than the gate: only an exact match is a perfect
-      // rooms score; a policy-B pass still records the +1 delta as 0.5.
-      const score = exactMatch ? 1 : Math.abs(got - p.exact) <= 1 ? 0.5 : 0;
+      // rooms score; a policy-B pass still records its delta as 0.5.
+      const score = exactMatch ? 1 : pass || Math.abs(surplus) <= 1 ? 0.5 : 0;
       return { predicate: p, pass, detail: `rooms: expected ${p.exact}, got ${got}${note}`, score };
     }
     case "total-area": {
-      const a = summary.totals.floor_area_m2;
+      const a = totalFloorArea(summary);
       const pass = a >= p.minM2 && a <= p.maxM2;
       const detail = pass
         ? `area: total ${a} m² within ${band(p.minM2, p.maxM2)}`
@@ -549,7 +580,7 @@ function checkOne(
  *  `uses storage` and `uses utility` share a room_type, so greedy lets `storage` claim
  *  both, starving `utility`). */
 function assignRooms(preds: Predicate[], summary: SceneSummary): Map<number, RoomSummary[]> {
-  const rooms = summary.rooms;
+  const rooms = allRooms(summary);
   const idx = new Map<RoomSummary, number>(rooms.map((r, i) => [r, i]));
 
   // Which rooms each room-exists predicate matches, as source-ordered room indices.
@@ -648,7 +679,7 @@ function checkRoomArea(
 ): AssertionResult {
   const lo = p.minM2 ?? 0;
   const hi = p.maxM2 ?? INF;
-  const assigned = claims.get(p.concept) ?? roomsMatchingConcept(p.concept, summary.rooms);
+  const assigned = claims.get(p.concept) ?? roomsMatchingConcept(p.concept, allRooms(summary));
   const within = assigned.filter((r) => r.area_m2 >= lo && r.area_m2 <= hi).length;
   const pass = within >= p.min;
   const detail = pass
@@ -675,8 +706,7 @@ function checkRoomWindows(
   summary: SceneSummary,
   claims: Map<string, RoomSummary[]>,
 ): AssertionResult {
-  const assigned = claims.get(p.concept) ?? roomsMatchingConcept(p.concept, summary.rooms);
-  const ids = new Set(assigned.map((r) => r.id));
+  const assigned = new Set(claims.get(p.concept) ?? roomsMatchingConcept(p.concept, allRooms(summary)));
   const letter = p.facing === undefined ? undefined : facingLetter(p.facing, summary.site);
   if (letter === null) {
     return {
@@ -685,9 +715,15 @@ function checkRoomWindows(
       detail: `windows: facing "${p.facing}" needs a \`site\` block — the plan declares none, so the direction has no value`,
     };
   }
-  const count = summary.windows.filter(
-    (w: WindowSummary) => w.room !== null && ids.has(w.room) && (letter === undefined || w.facing === letter),
-  ).length;
+  const count = storeysOf(summary).reduce((n, storey) => {
+    const ids = new Set(storey.rooms.filter((r) => assigned.has(r)).map((r) => r.id));
+    return (
+      n +
+      storey.windows.filter(
+        (w: WindowSummary) => w.room !== null && ids.has(w.room) && (letter === undefined || w.facing === letter),
+      ).length
+    );
+  }, 0);
   const pass = count >= p.min && (p.max === undefined || count <= p.max);
   const want = p.max !== undefined ? `${p.min}–${p.max}` : `${p.min}`;
   // The letter is spelled out beside a symbolic name, and the bare-letter form is
@@ -936,7 +972,9 @@ function checkRoomSize(
  * {@link assignRooms}: a matching that lets every concept reach its `min` wherever the
  * plan's rooms allow it, then each spare room to the first concept that matches it.
  * `adjacent` deliberately matches over ALL rooms (rubric §4 — required-edge subset
- * semantics); `total-area`/`room-count` are plan-wide.
+ * semantics); `total-area`/`room-count` are plan-wide. On a plan with `level` blocks all of
+ * these read every storey ({@link storeysOf}), so a summary's `levels[]` outranks its
+ * top-level `rooms`, `windows`, `totals` and `input_graph`.
  */
 export function checkPredicates(preds: Predicate[], summary: SceneSummary): AssertionResult[] {
   const assignment = assignRooms(preds, summary);
@@ -1379,12 +1417,12 @@ export const INTENT_JSON_SCHEMA = {
       type: "integer",
       minimum: 0,
       description:
-        'Exact expected room count. RULE: assert a count ONLY when the brief ENUMERATES the rooms; do not derive a count from under-determined wording ("a few rooms", "some bedrooms"). A single surplus room is tolerated only when it is pure circulation (a hall/corridor) — policy B.',
+        'Exact expected room count, over every storey of a plan with `level` blocks. RULE: assert a count ONLY when the brief ENUMERATES the rooms; do not derive a count from under-determined wording ("a few rooms", "some bedrooms"). A single surplus room is tolerated only when it is pure circulation (a hall/corridor) — policy B.',
     },
     roomsInclude: {
       type: "array",
       description:
-        "Rooms the brief names, as CONCEPTS (bathroom, master-bedroom, tea-point, …) rather than literal labels, each optionally carrying a count band, area band, and window requirement.",
+        "Rooms the brief names, as CONCEPTS (bathroom, master-bedroom, tea-point, …) rather than literal labels, each optionally carrying a count band, area band, and window requirement. Rooms on any storey count.",
       items: {
         type: "object",
         additionalProperties: false,
@@ -1449,7 +1487,7 @@ export const INTENT_JSON_SCHEMA = {
       required: ["source"],
       anyOf: [{ required: ["min"] }, { required: ["max"] }],
       description:
-        'Total floor-area band in square metres. Same band conventions as `areaM2`: "about/~N" or bare N → ±10%; "at least N" → `min` only; qualitative words → omit. At least one of min/max is required.',
+        'Total floor-area band in square metres, summed over every storey of a plan with `level` blocks. Same band conventions as `areaM2`: "about/~N" or bare N → ±10%; "at least N" → `min` only; qualitative words → omit. At least one of min/max is required.',
       properties: {
         min: { type: "number", description: "Lower bound (m²)." },
         max: { type: "number", description: 'Upper bound (m²); omit for an open "at least" band.' },
@@ -1466,7 +1504,7 @@ export const INTENT_JSON_SCHEMA = {
         requiredEdges: {
           type: "object",
           description:
-            "{ conceptA: [conceptB, …] } — each named pair of concepts must share an interior door or cased opening in the plan.",
+            "{ conceptA: [conceptB, …] } — each named pair of concepts must share an interior door or cased opening in the plan, on any one storey.",
           additionalProperties: { type: "array", items: { type: "string" } },
         },
         source: { type: "string", description: "The brief phrase that licensed the adjacency, quoted." },
