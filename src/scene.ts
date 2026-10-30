@@ -440,12 +440,14 @@ export interface Scene {
  * openings cut through it — each only its `at`/`width`) plus the `category` and the written
  * `status` an export classifies by. Plain data with no id and none of the resolver's
  * bookkeeping, so two plans that draw the same walls carry the same walls (in statement order,
- * which may differ). `status` is present only when the plan wrote one.
+ * which may differ). `status` is present only when the plan wrote one; `_derived` only on an
+ * `open between` run, as `{ from, open: {} }`, which the joinery reads to clear a free crossing.
  */
 export type SceneWall = Pick<
   import("./ir.js").RWall,
   | "category"
   | "status"
+  | "_derived"
   | "thickness"
   | "points"
   | "arcs"
