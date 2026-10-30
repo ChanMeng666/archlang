@@ -23,7 +23,7 @@ export { PREVIEW_LABEL, replayHtml, replayPayload, viewBoxOf, viewerScript } fro
 export type { ReplayOptions } from "./replay/html.js";
 export { replayFacts } from "./replay/facts.js";
 export type { FactsOptions } from "./replay/facts.js";
-export { paintStrip, stripAt } from "./replay/strip.js";
+export { stripAt } from "./replay/strip.js";
 export type { ReplayFacts, StripItem } from "./replay/strip.js";
 export { renderReplay, SWIFTSHADER_ARGS } from "./replay/video.js";
 export type { KeyFrame, VideoOptions, VideoReport } from "./replay/video.js";

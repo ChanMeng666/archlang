@@ -26,6 +26,9 @@ import { buildManifest, COMMANDS } from "./manifest.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
+/** `true` in `dist/` (tsup's `define`); undeclared when this module runs from the source tree. */
+declare const __ARCHLANG3D_BUILT__: boolean | undefined;
+
 export class Usage extends Error {}
 
 type Parsed = { positional: string[]; flags: Map<string, string | true> };
@@ -299,7 +302,8 @@ function cmdManifest(p: Parsed): number {
 function cmdSchema(p: Parsed): number {
   const name = p.positional[0] ?? "scene3d";
   if (name !== "scene3d" || p.positional.length > 1) throw new Usage(`schema: the only schema is scene3d`);
-  process.stdout.write(readFileSync(join(HERE, "../scene3d/scene3d.schema.json"), "utf8"));
+  const file = typeof __ARCHLANG3D_BUILT__ !== "undefined" ? "scene3d.schema.json" : "../scene3d/scene3d.schema.json";
+  process.stdout.write(readFileSync(join(HERE, file), "utf8"));
   return 0;
 }
 
@@ -359,7 +363,7 @@ async function cmdDoctor(p: Parsed): Promise<number> {
         ok: false,
         required: false,
         for: "view (replay key frames, video)",
-        detail: `${first} (install: npx playwright install chromium)`,
+        detail: `${first} (install: npx playwright-core install chromium)`,
       });
     }
   } else {

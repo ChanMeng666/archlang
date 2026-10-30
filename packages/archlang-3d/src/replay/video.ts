@@ -6,6 +6,7 @@
  *
  * Node-only, and the only module that starts a browser or a process.
  */
+import type {} from "./viewer.js"; // the page's `window.__seek` and friends, for `page.evaluate`
 import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

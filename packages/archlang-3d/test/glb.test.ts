@@ -6,11 +6,13 @@
  * CLI are the heavy half, `e2e/glb.e2e.ts` under `npm run check:3d`.
  */
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { compile } from "@chanmeng666/archlang";
 import { describe, expect, it } from "vitest";
 import { adaptPlan, buildMesh } from "../src/index.js";
 import { WebIO } from "@gltf-transform/core";
 import { checkNaming, GLB_GENERATOR, glbJson, glbLeaks, readGlbNodes, replayPayload, writeGlb } from "../src/node.js";
+import { LANEWAY_GLB_SHA256, PIN_GENERATOR } from "./pins.js";
 import { EXAMPLES_LIST, WORLD } from "./corpus.js";
 
 const meshOf = (name: string) => {
@@ -93,9 +95,21 @@ describe("GLB from Mesh3D", () => {
   });
 
   it("V-DET-01/02: three writes, one SHA-256, pinned for laneway-house", async () => {
-    const hashes = await Promise.all([0, 1, 2].map(async () => sha(await writeGlb(meshOf("laneway-house.arch").mesh))));
+    const hashes = await Promise.all(
+      [0, 1, 2].map(async () => sha(await writeGlb(meshOf("laneway-house.arch").mesh, { generator: PIN_GENERATOR }))),
+    );
     expect(new Set(hashes).size).toBe(1);
     expect(hashes[0]).toBe(LANEWAY_GLB_SHA256);
+  });
+
+  it("the default asset.generator names the manifest's version, and an explicit one replaces it", async () => {
+    const { version } = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as {
+      version: string;
+    };
+    expect(GLB_GENERATOR).toBe(`archlang-3d ${version}`);
+    const { mesh } = meshOf("laneway-house.arch");
+    expect(JSON.parse(glbJson(await writeGlb(mesh))).asset.generator).toBe(GLB_GENERATOR);
+    expect(JSON.parse(glbJson(await writeGlb(mesh, { generator: "x" }))).asset.generator).toBe("x");
   });
 
   it("reads a node nested below an element node, so V-GLTF-02 sees it", async () => {
@@ -136,13 +150,3 @@ describe("the reproducibility leak check (plan §8.5 L7)", () => {
     expect(glbLeaks(glbJson(await writeGlb(meshOf("laneway-house.arch").mesh)))).toEqual([]);
   });
 });
-
-/**
- * laneway-house's GLB, SHA-256. Taken on Windows / Node 24 at the commit that adds the GLB writer
- * (card A4); it moves with the Mesh3D (`LANEWAY_MESH_SHA256` in `mesh.test.ts`) or the writer, and
- * only with a reason recorded in the commit.
- *
- * Moved by card A2b (was bef25c7b…) with the Mesh3D alone: T0 furniture and the split wall bodies.
- * The writer's one change (a `wall:demolish` material) writes nothing for a plan without one.
- */
-const LANEWAY_GLB_SHA256 = "4bcbf8e076e792ab259c4c516398bb259f9b890d26d219f6cf665ce82883b090";

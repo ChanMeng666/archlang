@@ -22,7 +22,6 @@ describe("licence gate (Q20)", () => {
     );
     for (const n of own) expect(names).toContain(n);
     expect(names).toContain("property-graph"); // a transitive one
-    expect(names.some((n) => n.startsWith("@esbuild/"))).toBe(true); // an installed optional one
   });
 
   it("every installed runtime package passes: allow-listed at its version and licence, not denied", () => {

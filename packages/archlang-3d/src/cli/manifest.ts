@@ -147,7 +147,7 @@ export function buildManifest() {
     invoke: "archlang3d",
     version: ARCHLANG_3D_VERSION,
     description:
-      "archlang-3d: a separate, unpublished downstream reader of ArchLang plans. Builds a checked GLB and a replay preview from a .arch plan. ArchLang itself draws plans.",
+      "archlang-3d: 3D preview of an ArchLang plan, a separate package that reads the same .arch source. Builds a checked GLB and a replay from a .arch plan. ArchLang itself draws plans.",
     exitCodes: {
       "0": "ok",
       "1": "internal / IO / environment error (a missing Chromium or ffmpeg, a file that cannot be written)",
