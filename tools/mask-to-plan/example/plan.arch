@@ -1,0 +1,11 @@
+plan "Mask example" {
+  units mm
+  walls from rooms exterior 200 partition 100 { open between living_a and living_b }
+  room id=living_a at (0,0) size 6000x4000 label "Living"
+  room id=living_b at (0,4000) size 3000x3000
+  room id=kitchen at (6000,0) size 3000x4000 label "Kitchen"
+  room id=hall at (3000,4000) size 1500x3000 label "Hall"
+  room id=bedroom at (4500,4000) size 2500x3000 label "Bedroom"
+  room id=bedroom_2 at (7000,5500) size 2000x1500 label "Bedroom"
+  room id=bath at (7000,4000) size 2000x1500 label "Bath"
+}

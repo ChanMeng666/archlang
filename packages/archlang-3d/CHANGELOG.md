@@ -4,6 +4,15 @@ The package is private and unpublished; versions start with its first 0.x public
 
 ## [Unreleased]
 
+### Changed
+
+- The replay's end camera looks down at 45° in every view (card A9): a one-storey view was at 30°,
+  where the near walls hid the floor, the inner doors and most furniture. Moves laneway-house's
+  `tilted` and `end` key frames (re-pinned with that reason); no other frame, the event table, the
+  Mesh3D and the GLB are unchanged.
+- The peer range is `^1.45.0` (was `^1.43.1`, which lacks the seam): `hatchKey`/`hatchOf` first
+  ship in 1.45.0. `MIN_CORE` is that floor, and a test keeps the two equal.
+
 ### Added
 
 - Metrics strip in the replay (card G4): a line of plain facts over the picture, each shown when its
@@ -22,6 +31,9 @@ The package is private and unpublished; versions start with its first 0.x public
   storey count and the warnings are those of the shown levels. `--json` reports the strip's text per
   key frame (`strips`).
 
+- `--doors plan`: a leaf the plan swings through a wall (stress `s5-door-on-arc`, a door on a
+  curved host) is still built as drawn and is now ledgered `door-leaf-through-wall`; no corpus
+  example does it.
 - `--doors plan` (card A7) on `view`, `build` and `check`: each hinged leaf, and each of a `double`
   door's two, stands at the swing the core draws (`doorLeaves`: hinge → open tip, 90° on, its
   40 mm thickness laid inside the quarter-disc). Sliding, barn, bifold, pocket and garage doors sweep

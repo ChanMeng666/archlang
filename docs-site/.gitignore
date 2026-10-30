@@ -12,6 +12,7 @@ analysis.md
 axonometric.md
 intent.md
 errors.md
+import.md
 whats-new.md
 spec.md
 adr/0*.md
@@ -53,6 +54,7 @@ public/analysis.md
 public/axonometric.md
 public/intent.md
 public/errors.md
+public/import.md
 public/whats-new.md
 public/spec.md
 
