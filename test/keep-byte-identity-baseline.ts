@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: G5 merged main at 1f4643c1: W_WALL_END_SHORT moved validate next on keep rows
+ * Taken: G9: W_FURNITURE_ON_STAIR added four stair-safety corpus files; no existing row moved
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -1125,6 +1125,26 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     "test/defect-corpus/stair-safety/foot-against-partition.clean.arch",
     "f2b05bd21e7aea0b0a1bd718baab9d7ebc34aaa04392dd04af4c5f74170eab12",
     130,
+  ],
+  [
+    "test/defect-corpus/stair-safety/furniture-on-flight.arch",
+    "8fc6770f5d31d0e955994dc9860d08d1c56e82e1ad45f8f3a6953c205d8a5361",
+    278,
+  ],
+  [
+    "test/defect-corpus/stair-safety/furniture-on-flight.clean.arch",
+    "7d178144600b9420b55c681f535a46dbf10ba440b4d31b946163cd5f63a751ff",
+    278,
+  ],
+  [
+    "test/defect-corpus/stair-safety/furniture-on-landing.arch",
+    "e94660d5834891e72114cf43dc673bee2f19ef2af5ab7b56fd2e9a719183f84a",
+    166,
+  ],
+  [
+    "test/defect-corpus/stair-safety/furniture-on-landing.clean.arch",
+    "350d5cfa4c7dd629bdcb3adde02155a87b34532f93a0f998c7442d50e974578a",
+    166,
   ],
   [
     "test/defect-corpus/stair-safety/head-against-wall.arch",

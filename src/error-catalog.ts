@@ -1542,6 +1542,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Extend the wall to the face of the wall it runs toward, or into it, so they join. If the slit is meant as an opening, draw a door or an `opening` there instead. There is no machine-applicable fix: which wall moves is a design decision.",
     "grid 10\nwall id=a exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }\nwall id=p partition thickness 100 { (4000,230) (4000,5000) }   # lint: drawn end at y 180, 80 mm from the top wall's inner face",
   ),
+  W_FURNITURE_ON_STAIR: W(
+    "W_FURNITURE_ON_STAIR",
+    "Furniture stands on a stair or on the landing it owes.",
+    "A piece's footprint overlaps a `stair`'s footprint, or the landing beyond the end the flight is entered from on this storey: as wide as the flight, as deep as the flight is wide (at least 1200 mm in a building other than a dwelling), and only as deep as the floor stands clear, as `W_STAIR_NO_LANDING` measures it. Approved Document K (2013) 1.21b keeps a landing clear of permanent obstructions. The whole footprint is read on every storey, because the plan does not say a piece stands under a flight rather than on it: a cupboard under the high end of a flight is reported too. On the landing a rug, which is walked on, and a wall cabinet, which hangs above it, are not. A landing a curved wall stands near is not judged, and an `elevator` or `escalator` is not read.",
+    "Move or resize the piece so it clears the span the hint quotes, or move the stair. There is no machine-applicable fix: where the piece goes instead is a design decision.",
+    'room id=liv at (0,0) size 5000x4000 label "Living"\nstair id=s1 at (3000,500) size 1000x3000 dir up\nfurniture sofa at (2500,1000) size 900x2000 rotate 90   # lint: stands on the flight',
+  ),
   W_BED_UNDERSIZED: W(
     "W_BED_UNDERSIZED",
     "A bed is drawn smaller than the smallest standard bed.",
