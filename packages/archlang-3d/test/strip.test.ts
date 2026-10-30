@@ -117,6 +117,24 @@ describe("replayFacts", () => {
     expect(parts[0]! + parts[1]!).toBe(w.length);
   });
 
+  it("a warning on one storey counts in that storey's view only (the combined view has it too)", () => {
+    const level = (n: number, window: string) => `level ${n} {
+    wall id=s${n} exterior thickness 200 { (0,0) (5000,0) (5000,4000) (0,4000) close }
+    room id=r${n} at (0,0) size 5000x4000 label "Bed ${n}" uses bedroom
+    door id=d${n} on r${n}.bottom at center width 900 swing into r${n}
+    ${window}
+  }`;
+    const src = `plan "w" {
+  units mm
+  ${level(1, "")}
+  ${level(2, "window on r2.top width 1500")}
+}`;
+    const storeys = [1, 2];
+    const at = (view?: 1 | 2) => (replayFacts(src, { world: WORLD, storeys, view }) as ReplayFacts).warnings;
+    expect(at(1)).toBeGreaterThan(at(2));
+    expect(at()).toBe(at(1) + at(2));
+  });
+
   it("is undefined for a plan the core does not resolve", () => {
     expect(replayFacts("room a at (0,0) size", { world: WORLD, storeys: [1] })).toBeUndefined();
   });
