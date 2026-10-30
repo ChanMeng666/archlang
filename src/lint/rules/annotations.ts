@@ -259,8 +259,8 @@ export const annotationOverlap: LintRule = {
     const reach = wallReach(ir, walls);
     const nearWall = (t: Text): boolean => {
       let near = false;
-      reach?.forEach(t.box, () => {
-        near = true;
+      reach?.forEach(t.box, (b) => {
+        near ||= boxesMeet(t.box, b);
       });
       return near;
     };
@@ -349,7 +349,7 @@ export const annotationOverlap: LintRule = {
           ? `The name "${name}"`
           : name !== undefined
             ? `The area figure (${e.area}) of "${name}"`
-            : `The area figure (${e.area}) of ${ctx.nameOf(room)}`;
+            : `The area figure (${e.area}) of ${room.label === "" ? `the unnamed room ${ctx.placeAt(room.at)}` : ctx.nameOf(room)}`;
       const things = listOf([
         ...e.hits.map(symbolWord),
         ...(e.wall ? ["a wall"] : []),
@@ -527,14 +527,17 @@ const roomRef = (ctx: LintContext, r: RRoom): string => (idAuthored(r) ? `room \
  * What can reach a wall's poché: a grid over the wall bands, grown by the thickest wall so that a
  * mitre's tip stays inside its band. `undefined` for a storey that draws no poché.
  */
-function wallReach(ir: ResolvedPlan, walls: readonly (readonly Point[][])[]): GridIndex<true> | undefined {
+function wallReach(ir: ResolvedPlan, walls: readonly (readonly Point[][])[]): GridIndex<Box> | undefined {
   if (walls.length === 0) return undefined;
   const bands = wallBands(
     ir,
     ir.walls.reduce((t, w) => Math.max(t, w.thickness), 0),
   );
-  const grid = new GridIndex<true>(meanExtent(bands));
-  for (const b of bands) grid.insert({ minX: b.x, minY: b.y, maxX: b.x + b.w, maxY: b.y + b.h }, true);
+  const grid = new GridIndex<Box>(meanExtent(bands));
+  for (const b of bands) {
+    const box = { minX: b.x, minY: b.y, maxX: b.x + b.w, maxY: b.y + b.h };
+    grid.insert(box, box);
+  }
   return grid;
 }
 

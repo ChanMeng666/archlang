@@ -10,6 +10,7 @@
 import { describe as suite, expect, it } from "vitest";
 import { compile, lint } from "../src/index.js";
 import { resolvePlan } from "../src/analyze.js";
+import { lintWithCoverage } from "../src/lint.js";
 import { toScene } from "../src/scene-build.js";
 
 const OVERLAP = "W_ANNOTATION_OVERLAP";
@@ -123,10 +124,38 @@ suite("W_ANNOTATION_OVERLAP — a room label against the room it stands in", () 
     expect(of(src(" status demolish"))).toEqual([]);
   });
 
-  it("leaves a label pinned off its floor to W_ROOM_LABEL_OUTSIDE", () => {
-    const src = room('label "Room" at (6000,1500)');
-    expect(compile(src).diagnostics.map((d) => d.code)).toContain("W_ROOM_LABEL_OUTSIDE");
-    expect(of(src)).toEqual([]);
+  it("leaves a label pinned off its floor to W_ROOM_LABEL_OUTSIDE, whatever it landed on", () => {
+    for (const at of ["(6000,1500)", "(4080,1500)"]) {
+      const src = room(`label "Room" at ${at}`).replace("exterior 100", "exterior 200");
+      expect(compile(src).diagnostics.map((d) => d.code)).toContain("W_ROOM_LABEL_OUTSIDE");
+      expect(of(src)).toEqual([]);
+    }
+  });
+
+  it('reads `label ""` as no name, as the drawing does', () => {
+    const [d] = of(room('label ""', "", "300x900"));
+    expect(d!.message).toMatch(/^The area figure \(0\.3 m²\) of /);
+    expect(d!.message).not.toContain('""');
+  });
+
+  it("says what is true of the case: the name, the figure, a pin, an unnamed room", () => {
+    const hint = (src: string) => of(src)[0]!.hints![0]!;
+    // The name over the wall: shortening it helps, and nothing promises it wraps.
+    const name = hint(room('label "Hauswirtschaftsraum"', "", "1200x2000"));
+    expect(name).toContain("Shorten the name");
+    expect(name).not.toContain("wrap");
+    // Only the area figure on the wall: the name is not the trouble.
+    const figure = hint(issue("Abstellraum"));
+    expect(figure).toContain("Widen the room");
+    expect(figure).not.toContain("Shorten");
+    // Pinned, the name over the wall.
+    expect(hint(room('label "Hauswirtschaftsraum" at (600,1000)', "", "1200x2000"))).toContain(
+      "move that point to a clear part of the floor, shorten the name, widen the room",
+    );
+    // An unnamed room over a wall: naming it is only an offer of a clear point.
+    expect(hint(room("", "", "300x900"))).toBe(
+      'Enlarge the room, or name it and give its label a clear point with `label "…" at (x,y)` if the floor has one.',
+    );
   });
 
   it("reports a pinned label over a swing and says to move the point", () => {
@@ -149,11 +178,25 @@ suite("the label pass moves a label only onto its own floor", () => {
     expect(name!.at.x).toBe(3600);
   });
 
-  it("leaves a name too wide for any place at the room's centre, and reports it", () => {
-    const src = issue("Hauswirtschaftsraum");
-    const [name] = drawn(src, "abst");
-    expect(name!.at).toEqual({ x: 3600, y: 1850 - 175 * 0.2 });
-    expect(of(src)[0]!.message).toContain("runs out of the room");
+  it("lets a name wider than its room slide along it, off a piece, no further off the floor", () => {
+    const src = room('label "Hauswirtschaftsraum"', "furniture table at (600,3000) size 800x800", "1200x6000");
+    const [name] = drawn(src, "r");
+    // Bare, the name stands at the room's centre on the table; it moves down the room, across it not at all.
+    expect(Math.abs(name!.at.x - 600)).toBeLessThanOrEqual(180);
+    expect(name!.at.y).not.toBe(3000 - 175 * 0.2);
+    const [d] = of(src);
+    expect(d!.message).toContain("runs out of the room");
+    expect(d!.message).not.toContain("table");
+  });
+
+  it("gives an outdoor surface's label the same room to slide", () => {
+    const src = room(
+      'label "Room"',
+      'outdoor id=t patio at (0,3100) size 300x3900 label "Sonnenterrasse"\n  furniture table at (150,5050) size 250x600',
+    );
+    const { ir } = resolvePlan(src);
+    const [name] = toScene(ir!, { annotate: true }).nodes.filter((n) => n.elementId === "t" && n.prim.t === "text");
+    expect(name!.prim.t === "text" && name!.prim.at).toEqual({ x: 150, y: 4445 });
   });
 
   it("still moves a label off a swing when the floor has a clear place", () => {
@@ -162,6 +205,39 @@ suite("the label pass moves a label only onto its own floor", () => {
     expect(name!.at).not.toEqual({ x: 2000, y: 2000 - 175 * 0.2 });
     expect(of(src)).toEqual([]);
   });
+
+  it("never costs a plan a symbol report: past the fabric count that test alone stands down", () => {
+    // A storey whose every label touches a wall, its poche one loop round the whole building.
+    const grid = (n: number) => {
+      let s = 'plan "g" {\n  units mm\n  paper A0 landscape\n  scale 1:200\n';
+      for (let y = 0; y < n; y++)
+        for (let x = 0; x < n; x++)
+          s += `  room id=r${x}_${y} at (${x * 2000},${y * 2000}) size 2000x2000 label "Room"${x + y === 0 ? " at (1000,1000)" : ""} uses bedroom\n`;
+      s += "  walls from rooms exterior 200 partition 100\n";
+      for (let y = 0; y < n; y++)
+        for (let x = 0; x + 1 < n; x++) s += `  door between r${x}_${y} and r${x + 1}_${y} at center width 700\n`;
+      return `${s}  furniture bed at (500,500) size 1000x1000\n}\n`;
+    };
+    const src = grid(20);
+    const skipped = (lintWithCoverage(src).coverage?.families ?? []).some((f) =>
+      (f.skipped ?? []).some((s) => s.reason === "annotation-budget"),
+    );
+    expect(skipped).toBe(true);
+    expect(of(src).map((d) => d.message)).toEqual([expect.stringContaining("printed over the bed")]);
+  }, 60_000);
+
+  it("charges a label clear of every wall nothing for the poche", () => {
+    const n = 16;
+    let s = 'plan "g" {\n  units mm\n  paper A0 landscape\n  scale 1:200\n';
+    for (let y = 0; y < n; y++)
+      for (let x = 0; x < n; x++)
+        s += `  room id=r${x}_${y} at (${x * 4000},${y * 4000}) size 4000x4000 label "Room" uses bedroom\n`;
+    s += "  walls from rooms exterior 200 partition 100\n";
+    for (let y = 0; y < n; y++)
+      for (let x = 0; x + 1 < n; x++) s += `  door between r${x}_${y} and r${x + 1}_${y} at center width 900\n`;
+    const family = (lintWithCoverage(`${s}}\n`).coverage?.families ?? []).find((f) => f.family === "annotation");
+    expect(family?.status).toBe("ran");
+  }, 60_000);
 
   it("changes no other lint code on the issue's plans", () => {
     const codes = (s: string) =>
