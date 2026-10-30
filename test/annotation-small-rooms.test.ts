@@ -138,6 +138,52 @@ suite("W_ANNOTATION_OVERLAP — a room label against the room it stands in", () 
     expect(d!.message).not.toContain('""');
   });
 
+  it('keeps `""` out of every message that names the room', () => {
+    const two = (room1: string, extra: string, head = "") => `plan "p" {
+  units mm
+  paper A4 landscape
+  scale 1:50
+  ${head}
+  ${room1}
+  room id=z right-of r size 3000x3000 label "Next" uses storage
+  walls from rooms exterior 100 partition 100
+  ${extra}
+}`;
+    const swing = two(
+      'room id=r at (0,0) size 2000x2000 label "" at (1650,1000) uses storage',
+      "door id=d between r and z at center width 900 swing into r",
+    );
+    const dims = of(`plan "p" {
+  units mm
+  paper A4 landscape
+  scale 1:50
+  dims auto
+  room id=r at (0,0) size 1200x900 label "" uses storage
+  walls from rooms exterior 300 partition 100
+  furniture id=t table at (600,450) size 300x300
+}`);
+    for (const d of [...of(swing), ...dims]) expect(d.message).not.toContain('""');
+    expect(of(swing)[0]!.message).toContain('and "Next"');
+    expect(dims.length).toBeGreaterThan(0);
+  });
+
+  it('tells a `label ""` pinned on a wall about its pin, not about naming the room', () => {
+    const src = room('label "" at (3950,1500)');
+    expect(of(src)[0]!.hints![0]).toContain('is pinned by `label "" at (x,y)`: move that point');
+  });
+
+  it("sees a label on a mitre's tip, past every wall band", () => {
+    const src = `plan "p" {
+  units mm
+  paper A2 landscape
+  scale 1:50
+  room id=r at (-4000,-3000) size 10000x6000 label "Room" at (875,-35) uses bedroom
+  wall id=o exterior thickness 100 { (-4000,-3000) (6000,-3000) (6000,3000) (-4000,3000) close }
+  wall id=v partition thickness 400 { (-3000,-804) (0,0) (-3000,804) }
+}`;
+    expect(of(src).map((d) => d.message)).toEqual([expect.stringContaining("printed over a wall")]);
+  });
+
   it("says what is true of the case: the name, the figure, a pin, an unnamed room", () => {
     const hint = (src: string) => of(src)[0]!.hints![0]!;
     // The name over the wall: shortening it helps, and nothing promises it wraps.
@@ -150,7 +196,7 @@ suite("W_ANNOTATION_OVERLAP — a room label against the room it stands in", () 
     expect(figure).not.toContain("Shorten");
     // Pinned, the name over the wall.
     expect(hint(room('label "Hauswirtschaftsraum" at (600,1000)', "", "1200x2000"))).toContain(
-      "move that point to a clear part of the floor, shorten the name, widen the room",
+      "move that point to a clear part of the floor, shorten the name, or widen the room",
     );
     // An unnamed room over a wall: naming it is only an offer of a clear point.
     expect(hint(room("", "", "300x900"))).toBe(
@@ -212,11 +258,11 @@ suite("the label pass moves a label only onto its own floor", () => {
       let s = 'plan "g" {\n  units mm\n  paper A0 landscape\n  scale 1:200\n';
       for (let y = 0; y < n; y++)
         for (let x = 0; x < n; x++)
-          s += `  room id=r${x}_${y} at (${x * 2000},${y * 2000}) size 2000x2000 label "Room"${x + y === 0 ? " at (1000,1000)" : ""} uses bedroom\n`;
+          s += `  room id=r${x}_${y} at (${x * 1500},${y * 1500}) size 1500x1500 label "Room"${x + y === 0 ? " at (750,750)" : ""} uses bedroom\n`;
       s += "  walls from rooms exterior 200 partition 100\n";
       for (let y = 0; y < n; y++)
         for (let x = 0; x + 1 < n; x++) s += `  door between r${x}_${y} and r${x + 1}_${y} at center width 700\n`;
-      return `${s}  furniture bed at (500,500) size 1000x1000\n}\n`;
+      return `${s}  furniture bed at (250,250) size 1000x1000\n}\n`;
     };
     const src = grid(20);
     const skipped = (lintWithCoverage(src).coverage?.families ?? []).some((f) =>

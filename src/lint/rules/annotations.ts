@@ -81,9 +81,8 @@
  *
  * The walls, swings and floors have a count of their own, the same size, so that measuring them can
  * never cost a plan a symbol report: one unit per (label, swing) pair and per label, plus one per
- * vertex clipped. Only a label within a wall's reach (a grid over the wall bands, grown by the
- * thickest wall so a mitre stays inside) clips the poché, whose one loop can run round the whole
- * building. Worst case `labels × (swings + 1)` units plus `labels × poché vertices`, for a storey
+ * vertex clipped. Only a label within a wall's reach (a grid over the poché's edges and the wall
+ * bands) clips the poché, whose one loop can run round the whole building. Worst case `labels × (swings + 1)` units plus `labels × poché vertices`, for a storey
  * whose every label touches a wall; past the count those three tests are dropped for the storey
  * with an `annotation-budget` note, and the symbol and `dims auto` reports stand.
  *
@@ -349,7 +348,7 @@ export const annotationOverlap: LintRule = {
           ? `The name "${name}"`
           : name !== undefined
             ? `The area figure (${e.area}) of "${name}"`
-            : `The area figure (${e.area}) of ${room.label === "" ? `the unnamed room ${ctx.placeAt(room.at)}` : ctx.nameOf(room)}`;
+            : `The area figure (${e.area}) of ${ctx.nameOf(room)}`;
       const things = listOf([
         ...e.hits.map(symbolWord),
         ...(e.wall ? ["a wall"] : []),
@@ -369,19 +368,24 @@ export const annotationOverlap: LintRule = {
       const pinned = room.labelAt !== undefined;
       const moveOr = movable.length > 0 ? `, or move ${byId}` : "";
       const tight = e.wall || e.outside;
-      const clearPoint = `\`label "${name}" at (x,y)\``;
+      const clearPoint = `\`label "${room.label ?? "…"}" at (x,y)\``;
       out.push({
         severity: "warning",
         code: "W_ANNOTATION_OVERLAP",
         ...ctx.at(room),
         message: `${subject} ${printed}${off}, ${after}`,
         hints: [
-          name === undefined
-            ? tight || e.doors.length > 0
-              ? `${movable.length > 0 ? `Move ${byId} clear of the figure, enlarge the room` : "Enlarge the room"}, or name it and give its label a clear point with \`label "…" at (x,y)\` if the floor has one.`
-              : `Move ${byId} off the middle of the floor, or name the room and give its label a clear point with \`label "…" at (x,y)\`.`
-            : pinned
-              ? `The label of ${roomRef(ctx, room)} is pinned by ${clearPoint}: move that point to a clear part of the floor${e.nameTight ? ", shorten the name, widen the room" : tight ? ", widen the room" : ""}${moveOr}.`
+          pinned
+            ? `The label of ${roomRef(ctx, room)} is pinned by ${clearPoint}: ${orList([
+                "move that point to a clear part of the floor",
+                ...(e.nameTight ? ["shorten the name"] : []),
+                ...(tight ? ["widen the room"] : []),
+                ...(movable.length > 0 ? [`move ${byId}`] : []),
+              ])}.`
+            : name === undefined
+              ? tight || e.doors.length > 0
+                ? `${movable.length > 0 ? `Move ${byId} clear of the figure, enlarge the room` : "Enlarge the room"}, or name it and give its label a clear point with \`label "…" at (x,y)\` if the floor has one.`
+                : `Move ${byId} off the middle of the floor, or name the room and give its label a clear point with \`label "…" at (x,y)\`.`
               : `The label placer found no clear part of the floor of ${roomRef(ctx, room)} big enough for the label. ${
                   e.nameTight
                     ? `Shorten the name or widen the room, or give it a clear point with ${clearPoint} if the floor has one`
@@ -524,15 +528,24 @@ const idAuthored = (el: ResolvedElement): boolean => (el as { _idAuthored?: bool
 const roomRef = (ctx: LintContext, r: RRoom): string => (idAuthored(r) ? `room \`${r.id}\`` : ctx.nameOf(r));
 
 /**
- * What can reach a wall's poché: a grid over the wall bands, grown by the thickest wall so that a
- * mitre's tip stays inside its band. `undefined` for a storey that draws no poché.
+ * What can reach a wall's poché: a grid over the poché's own edges, for a label that crosses one
+ * (a mitre's tip stands past every band), and the wall bands, for a label wholly inside a wall.
+ * `undefined` for a storey that draws no poché.
  */
 function wallReach(ir: ResolvedPlan, walls: readonly (readonly Point[][])[]): GridIndex<Box> | undefined {
   if (walls.length === 0) return undefined;
-  const bands = wallBands(
-    ir,
-    ir.walls.reduce((t, w) => Math.max(t, w.thickness), 0),
-  );
+  const bands = wallBands(ir, 0);
+  for (const fill of walls) {
+    for (const loop of fill) {
+      for (let i = 0; i < loop.length; i++) {
+        const p = loop[i]!;
+        const q = loop[(i + 1) % loop.length]!;
+        const x = Math.min(p.x, q.x);
+        const y = Math.min(p.y, q.y);
+        bands.push({ x, y, w: Math.abs(p.x - q.x), h: Math.abs(p.y - q.y) });
+      }
+    }
+  }
   const grid = new GridIndex<Box>(meanExtent(bands));
   for (const b of bands) {
     const box = { minX: b.x, minY: b.y, maxX: b.x + b.w, maxY: b.y + b.h };
@@ -553,6 +566,10 @@ function listOf(words: readonly string[]): string {
   const ws = [...new Set(words)];
   return ws.length <= 1 ? (ws[0] ?? "") : `${ws.slice(0, -1).join(", ")} and ${ws[ws.length - 1]}`;
 }
+
+/** "a", "a, or b", "a, b, or c": a hint's choices. */
+const orList = (words: readonly string[]): string =>
+  words.length <= 1 ? (words[0] ?? "") : `${words.slice(0, -1).join(", ")}, or ${words[words.length - 1]}`;
 
 /** The turned rectangle a text occupies on the sheet, about its anchor. */
 function textBox(prim: TextPrim, widthScale = 1): Text {
