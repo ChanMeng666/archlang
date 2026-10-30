@@ -182,9 +182,9 @@
  * three profiles, measured with `tasteDigest`. No existing row moved (no example or corpus wall ends
  * within 100 mm of another).
  *
- * #367 moved three rows, `examples/remodel` under each profile: it gains one
- * `W_ANNOTATION_OVERLAP` in `validity.drafting` (the swing's arc crosses the U of "Utility"), and
- * nothing else in its report moved. The two `r14-living-off-to-one-side` twins pin "Bedroom 1" and
+ * #367 moved three rows, `examples/remodel` under each profile: "Utility" gains a `label … at`
+ * in the source (the swing's arc crossed it), which moves a span or a label point in the report and
+ * no criterion. The two `r14-living-off-to-one-side` twins pin "Bedroom 1" and
  * "Bedroom 2" clear of their door swings, since the arc ran through both names and set C needs the
  * twins lint clean; no criterion reads where a label stands, so their rows did not move.
  * G9 (`W_FURNITURE_ON_STAIR`, a piece on a flight or its landing) added twelve rows, the new
@@ -226,7 +226,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
   ["4beb4fcd83b89912e1e3fb03dab62239c0108789541400db9ab0657f2becb953", "generic", "examples/parametric.arch"],
   ["a5ef110531c0ccb7cb9c40580ca4b5a887522baa3a21e4204a3652cc2a0ca4ff", "generic", "examples/practice-office.arch"],
   ["dbb4faf28437877a241105be25011cdeac4047f05cf2093e7e515e79e2262c35", "generic", "examples/relational.arch"],
-  ["d027ae3c126fb8caaf336b79ca1d11389e09fb527d25303dc0d54f78e3b3bbb1", "generic", "examples/remodel.arch"],
+  ["73c4bfb6b9be4a504fbf877919b874fcc7397434e5a0e47b899442414ef996fb", "generic", "examples/remodel.arch"],
   ["805147a393adc8234322e0638409e74621ac698cc5f3f401ff1d305800be8636", "generic", "examples/sheet-notes.arch"],
   ["97d75cac716e67fbaa99ed74f6e1694c0135238c2a13bafcf06eab147bf6406a", "generic", "examples/studio.arch"],
   ["6d8fc2e54ce83a8228a025fb7be5a258f2cc772880298b2871c1b7fc354199ed", "generic", "examples/terrace-row.arch"],
@@ -1362,7 +1362,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "examples/relational.arch",
   ],
   [
-    "4ccbde6dcd0676d7a8f99b9ae0d85d2c6ea5cb6be9a1ad3cdc714780b31db510",
+    "f8fcb9caec7a9c68c1266936dccbc8a7830616102662d0fbf13405b4adc70214",
     "cn-residential-advisory",
     "examples/remodel.arch",
   ],
@@ -2537,7 +2537,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "examples/relational.arch",
   ],
   [
-    "593c5614cd11b3e3160959603a40936baba30f577cc4e561256286cc34525525",
+    "b5bf32b9972bae8c31b38cf08d6af3822e2521fed325db00470c5f9ee9d36d8b",
     "us-residential-advisory",
     "examples/remodel.arch",
   ],

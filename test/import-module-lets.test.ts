@@ -554,7 +554,7 @@ const BASELINE: [string, string][] = [
   // ADDED with the new example (the issued-sheet statements), then re-measured once when the
   // thickness call-out change met it (drawing only): the same row, with the same digest body,
   // as `./while-byte-identity-baseline.ts`, whose header has both.
-  ["examples/remodel.arch", "60d0399664a56b8bf38bd88b093f880b349f647bf21888cdafc88cf6d6611f01"], // new example (B3b), see header
+  ["examples/remodel.arch", "0899315f2bd50e559d3e6e13350734231cd9c11f821fa929a9d0c1b51f1e13db"], // new example (B3b), see header
   ["examples/sheet-notes.arch", "602cfd5f8e34268bf660dcad47b5cbf28332ddf92a119fba7317850ab9f9d798"],
   ["examples/studio.arch", "b64f7234dddc6527a0176033e82b38b70ad4fe84ca8df22b7a2e3269a1029553"], // PS2.11e, see header
   ["examples/terrace-row.arch", "6667da00528cdd4ee4f155586a049ad877f81b83178f5a18c85afef7a76a781d"],

@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: G9 #367 round 1, on main eb3ecd3c: W_ANNOTATION_OVERLAP reads walls, swings and the floor; label pass; r14 twins pinned; label-over-wc twin door out
+ * Taken: G9 #367 round 2, on main eb3ecd3c: examples/remodel pins Utility; W_ANNOTATION_OVERLAP reads walls, swings and the floor; label pass
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -143,8 +143,8 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/remodel.arch",
-    "a1fcab8ab8bed63546ab71f0c1b63d7e8a385da7ba4a9a78c35db81d7b101356",
-    1289,
+    "97c8dce106cd9f5ea623719dd66603209bee805fa77ce810ed7ac799ba216ae4",
+    1291,
   ],
   [
     "examples/sheet-notes.arch",
@@ -1378,7 +1378,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-25-rerun/5-townhouse.arch",
-    "278ead5db22c33e986c5ef57494efffe19738114edcb9ad14778450b18bb32a7",
+    "07c5da5b505de4baaf5ca2e0bfb74e95fbf603c97124f94cd44ca893e7a81ddf",
     4632,
   ],
   [
@@ -1408,7 +1408,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armA/5-townhouse.arch",
-    "3a0b5afa2339a3b40ccd2a90947d24d8f303b129e60cb24cefa5d7a8059e3f93",
+    "f8356bb60c96bd4e0a23afd4847e8abe14b93e66d41e603b94d81c65b2a7cb2d",
     3706,
   ],
   [
@@ -1438,7 +1438,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armB/5-townhouse.arch",
-    "df6e3161761eadb61f4019e62eb64d2e935b697c80191c128e22b70256ef4d31",
+    "e1dce570ef5ce1c2d264866b6984982ab0aaacb19c2c860bd71f51b980bbbd1c",
     4410,
   ],
   [
@@ -1448,7 +1448,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/1-apartment.arch",
-    "9b43d0fe4c57a51efc236df93b9b833f56a3924e61671c72ca446fb3709795d2",
+    "af2554407bdd587ff5c329b59457233df9eeb3b4b3c1a37a20387f182719c2fd",
     1461,
   ],
   [
@@ -1563,7 +1563,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm2/6-clinic.arch",
-    "4148ed722b98d9e3dd37657fe4e86e76a6120eab7f416f8b6e94d0d080de0753",
+    "48ffcd0f094689da604ef100468809ca2c7d4c34d9ef776ea1c38f90b71c7af0",
     1969,
   ],
   [
