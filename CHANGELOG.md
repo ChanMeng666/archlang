@@ -21,6 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   measured as `W_STAIR_NO_LANDING` measures it. Measured
   first: no existing code read a piece against a flight, so `finish`'s never-worse check passed one.
   Fires on no shipped example or corpus plan. A consumer that classifies lint codes sees a new warning.
+- `compile -f json` now says what Plan JSON could not carry (issue #366), as it always has for keeps:
+  a wall's arc edge (exported as its straight chord), `paper`, a `scale` or `angle` on a `poche` wall, a
+  circular room (exported as a 48-sided polygon), a room's `label … at`, every `stair`, `elevator`,
+  `escalator`, `roof`, `void`, `outdoor` and `fence`, `zone`, a storey's `level` number and name, `axes`, a
+  `site` boundary, `schedule`, `legend`, `notes`, `theme`, `style`, `accTitle` and `accDescr`. One `note:`
+  on stderr per clause, `dropped[]` in the `--json` envelope, and `dropped` on `planToJson()`. The exit
+  code and the document are unchanged, the format gains no field, and a plan that drops nothing
+  prints what it always did.
 
 
 ### Fixed

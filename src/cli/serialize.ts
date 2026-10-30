@@ -21,7 +21,7 @@ import {
   isOptionalDepError,
   planToJson,
 } from "../index.js";
-import type { Diagnostic, PlanJson, Scene, ViewName, World } from "../index.js";
+import type { Diagnostic, PlanJson, PlanJsonDropped, PlanJsonDroppedClause, Scene, ViewName, World } from "../index.js";
 import { fmt3 } from "../num-format.js";
 import { type Args, type Format, EXIT, asciiCharset, baseDirOf, hasErrors, makeNodeWorld, readInput } from "./io.js";
 
@@ -103,6 +103,66 @@ async function serialize(
 /** The bytes `-f json` writes: one Plan-JSON document, two-space indented, newline-terminated. */
 const planJsonText = (json: PlanJson): string => `${JSON.stringify(json, null, 2)}\n`;
 
+/** The note's words for one dropped clause: what the format lacks, the thing counted, its plural. */
+const DROPPED_WORDS: Record<Exclude<PlanJsonDroppedClause, "keep">, [string, string, string]> = {
+  arc: ["arcs", "arc edge", "arc edges"],
+  "poche hatch": ["hatch scale or angle on `poche` walls", "wall's hatch setting", "walls' hatch settings"],
+  circle: ["circular rooms", "circular room", "circular rooms"],
+  "label at": ["room label positions", "`label … at` position", "`label … at` positions"],
+  stair: ["stairs", "stair", "stairs"],
+  elevator: ["elevators", "elevator", "elevators"],
+  escalator: ["escalators", "escalator", "escalators"],
+  roof: ["roofs", "roof", "roofs"],
+  void: ["voids", "void", "voids"],
+  outdoor: ["outdoor surfaces", "outdoor surface", "outdoor surfaces"],
+  fence: ["fences", "fence", "fences"],
+  zone: ["zones", "zone", "zones"],
+  level: ["level numbers or names", "level", "levels"],
+  paper: ["paper", "paper", "papers"],
+  axes: ["axes", "axis", "axes"],
+  "site boundary": ["site boundaries", "site boundary", "site boundaries"],
+  "schedule rooms": ["schedules", "`schedule rooms` statement", "`schedule rooms` statements"],
+  "schedule openings": ["schedules", "`schedule openings` statement", "`schedule openings` statements"],
+  legend: ["legends", "legend", "legends"],
+  notes: ["sheet notes", "sheet note", "sheet notes"],
+  theme: ["themes", "theme", "themes"],
+  style: ["styles", "`style` block", "`style` blocks"],
+  accTitle: ["accessible titles", "`accTitle`", "`accTitle`s"],
+  accDescr: ["accessible descriptions", "`accDescr`", "`accDescr`s"],
+};
+
+/** At most this many ids in a note; `--json` carries them all. */
+const NOTE_IDS = 5;
+
+const idList = (ids: string[]): string =>
+  ids.length > NOTE_IDS
+    ? `${ids.slice(0, NOTE_IDS).join(", ")} and ${fmt3(ids.length - NOTE_IDS)} more`
+    : ids.join(", ");
+
+/** One stderr line per clause, the storeys of an export summed; none for `keep`, which has its own. */
+function droppedNotes(rows: PlanJsonDropped[]): string[] {
+  const clauses = [...new Set(rows.map((r) => r.clause))];
+  return clauses.flatMap((clause) => {
+    if (clause === "keep") return [];
+    const of = rows.filter((r) => r.clause === clause);
+    const count = of.reduce((n, r) => n + r.count, 0);
+    const ids = [...new Set(of.flatMap((r) => r.ids ?? []))];
+    const texts = of.flatMap((r) => (r.text !== undefined ? [`\`${r.text}\``] : []));
+    const [lacks, one, many] = DROPPED_WORDS[clause];
+    const counted = `${fmt3(count)} ${count === 1 ? one : many}`;
+    const named = ids.length > 0 ? `: ${idList(ids)}` : "";
+    const told =
+      clause === "arc"
+        ? `writes ${counted} as ${count === 1 ? "a straight chord" : "straight chords"}, on ${ids.length === 1 ? "wall" : "walls"} ${idList(ids)}`
+        : clause === "circle"
+          ? `writes ${counted} as ${count === 1 ? "a 48-sided polygon" : "48-sided polygons"}${named}`
+          : `leaves out ${texts.length > 0 ? texts.join(", ") : `${counted}${named}`}`;
+    return [
+      `note: Plan JSON carries no ${lacks}; this export ${told} (the .arch source still holds ${count === 1 ? "it" : "them"})`,
+    ];
+  });
+}
+
 /**
  * `-f json`: the Plan JSON of a plan that compiled — the projection `planToJson` makes and
  * `compile --from-json` reads back, not a drawing of the Scene. It follows the page rules of
@@ -117,16 +177,21 @@ export function planJsonArtifact(
   levels: number[],
   diagnostics: Diagnostic[],
 ): Rendered {
-  const { json, pages, diagnostics: projected, droppedKeeps } = planToJson(source, { world });
-  // Plan JSON carries no keeps (PS4.10): say how many this export leaves out (PS4.11).
-  const notes =
-    droppedKeeps !== undefined
-      ? {
-          notes: [
+  const { json, pages, diagnostics: projected, droppedKeeps, dropped } = planToJson(source, { world });
+  // What this export leaves out, and only this export: one storey's document does not answer for
+  // what the other storeys hold. Plan JSON carries no keeps (PS4.10): say how many it leaves out
+  // (PS4.11); and the other clauses it has no field for, the same way (#366).
+  const report = (level?: number): Pick<Rendered, "notes" | "dropped"> => {
+    const rows = (dropped ?? []).filter((d) => level === undefined || d.level === undefined || d.level === level);
+    if (rows.length === 0) return {};
+    const keeps =
+      droppedKeeps !== undefined
+        ? [
             `note: Plan JSON carries no keeps; this export leaves out the plan's ${fmt3(droppedKeeps)} keep${droppedKeeps === 1 ? "" : "s"} (the .arch source still holds ${droppedKeeps === 1 ? "it" : "them"})`,
-          ],
-        }
-      : {};
+          ]
+        : [];
+    return { notes: [...keeps, ...droppedNotes(rows)], dropped: rows };
+  };
   // After a clean compile only a refused projection gets here (`E_JSON_DERIVED_IN_INSTANCE`):
   // reported with its diagnostic, never an exception.
   if (!json) {
@@ -143,14 +208,14 @@ export function planJsonArtifact(
         ...(p.name !== undefined ? { name: p.name } : {}),
         bytes: planJsonText(p.json),
       }));
-      return { pages: out, levels, diagnostics, ...notes };
+      return { pages: out, levels, diagnostics, ...report() };
     }
     const want = page === "first" ? pages[0]! : pages.find((p) => p.level === page.level);
     if (!want) return { diagnostics, levels, badLevel: true };
-    return { bytes: planJsonText(want.json), levels, diagnostics, ...notes };
+    return { bytes: planJsonText(want.json), levels, diagnostics, ...report(want.level) };
   }
   if (typeof page === "object") return { diagnostics, levels, badLevel: true };
-  return { bytes: planJsonText(json), levels, diagnostics, ...notes };
+  return { bytes: planJsonText(json), levels, diagnostics, ...report() };
 }
 
 /** One serialized page of a multi-storey plan (`level <n> { … }`). */
@@ -180,8 +245,10 @@ export interface Rendered {
   /** Serialize/dependency error message (compile errors are in `diagnostics`). */
   error?: string;
   errorCode?: string;
-  /** One-line notes for stderr: what the artifact left out (`-f json` drops keeps, PS4.11). */
+  /** One-line notes for stderr: what the artifact left out (`-f json`, PS4.11 and #366). */
   notes?: string[];
+  /** The same as data, for `--json`: absent when nothing was left out. */
+  dropped?: PlanJsonDropped[];
 }
 
 /**
