@@ -10,6 +10,10 @@ export default defineConfig({
   resolve: {
     alias: {
       archlang: resolve(__dirname, "../dist/index.js"),
+      // archlang-3d is read from its source, as it always was: its published `exports` name a
+      // dist/ this build has no reason to need. The longer key goes first (prefix match).
+      "@chanmeng666/archlang-3d/browser": resolve(__dirname, "../packages/archlang-3d/src/browser.ts"),
+      "@chanmeng666/archlang-3d": resolve(__dirname, "../packages/archlang-3d/src/index.ts"),
       // The 3D preview tab (preview3d.ts) reads the core through archlang-3d's own import
       // specifier: the same built file, so the lazy chunk shares the startup chunk's core.
       "@chanmeng666/archlang": resolve(__dirname, "../dist/index.js"),

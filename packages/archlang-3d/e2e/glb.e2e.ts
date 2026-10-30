@@ -11,9 +11,8 @@
  *   5. a one-storey build (laneway-house) takes ≤ 2 s (measured, recorded in the PR).
  * And `--doors plan` (card A7): every corpus plan's swung model passes S1–S4 with glTF-Validator
  * 0/0, and `build`/`check --json` report the doors mode.
- * And `npm pack --dry-run` lists only what the package should carry, with its notices.
  */
-import { execSync, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -21,7 +20,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { compile } from "@chanmeng666/archlang";
 import { afterAll, describe, expect, it, vi } from "vitest";
-import { adaptPlan, buildMesh } from "../src/index.js";
+import { adaptPlan, ARCHLANG_3D_VERSION, buildMesh } from "../src/index.js";
 import { checkGlb, checkScene, checkShells, readGlbNodes, replayPayload, writeGlb } from "../src/node.js";
 import { main } from "../src/cli/run.js";
 import { EXAMPLES_LIST, REPO, WORLD } from "../test/corpus.js";
@@ -119,7 +118,7 @@ describe("archlang3d build / check (§9.2 criteria 2, 4 and 5)", () => {
       "diagnostics",
       "verify",
     ]);
-    expect(rep.tool).toMatchObject({ name: "archlang3d", version: "0.0.0" });
+    expect(rep.tool).toMatchObject({ name: "archlang3d", version: ARCHLANG_3D_VERSION });
     expect(rep.tool.archlang).toMatch(/^\d+\.\d+\.\d+/);
     expect(rep.input).toEqual({ path: lane, levels: 1 });
     expect(rep.doors).toBe("closed");
@@ -258,35 +257,5 @@ describe("archlang3d build / check (§9.2 criteria 2, 4 and 5)", () => {
     expect(r.code).toBe(0);
     // check:3d renders the replay, so CI's job has Chromium; ffmpeg is required there too.
     if (process.env.CI) expect(rep.probes.every((p) => p.ok)).toBe(true);
-  });
-});
-
-describe("npm pack --dry-run (the package stays private)", () => {
-  it("carries the source, LICENSE, THIRD_PARTY_NOTICES, README and CHANGELOG, and nothing else", () => {
-    const pkg = JSON.parse(readFileSync(join(PKG, "package.json"), "utf8")) as { private?: boolean };
-    expect(pkg.private).toBe(true);
-    const json = execSync("npm pack --dry-run --json", { cwd: PKG, encoding: "utf8" });
-    const files = (JSON.parse(json) as Array<{ files: Array<{ path: string }> }>)[0]?.files.map((f) => f.path) ?? [];
-    for (const f of [
-      "package.json",
-      "LICENSE",
-      "README.md",
-      "CHANGELOG.md",
-      "THIRD_PARTY_NOTICES",
-      "src/cli/main.ts",
-      "src/glb/write.ts",
-    ]) {
-      expect(files, f).toContain(f);
-    }
-    // Under src/ only what the package runs: its modules, its type shims and the Scene3D schema.
-    // A test, a spec, a snapshot or a fixture there would ride along in the tarball: name it here.
-    const shipped = (f: string) =>
-      /^(package\.json|LICENSE|README\.md|CHANGELOG\.md|THIRD_PARTY_NOTICES)$/.test(f) ||
-      (/^src\/[\w/.-]+\.(ts|schema\.json)$/.test(f) &&
-        !/\.(test|spec|e2e)\.ts$/.test(f) &&
-        !/(^|\/)(fixtures?|__\w+__|test|e2e)\//.test(f));
-    expect(files.filter((f) => !shipped(f))).toEqual([]);
-    // Plan §8.5 L2: no binary of a GPL program rides along (Blender, IfcOpenShell are external processes).
-    expect(files.filter((f) => /\.(exe|dll|so|dylib|wasm|node)$/.test(f))).toEqual([]);
   });
 });

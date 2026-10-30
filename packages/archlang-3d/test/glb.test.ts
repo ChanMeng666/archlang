@@ -144,5 +144,9 @@ describe("the reproducibility leak check (plan §8.5 L7)", () => {
  *
  * Moved by card A2b (was bef25c7b…) with the Mesh3D alone: T0 furniture and the split wall bodies.
  * The writer's one change (a `wall:demolish` material) writes nothing for a plan without one.
+ *
+ * Moved by the 0.1.0 version bump (was 4bcbf8e0…) with `asset.generator` alone: those bytes with
+ * "archlang-3d 0.1.0" written back to "archlang-3d 0.0.0" hash to the old pin. It moves with every
+ * version of the package, since the generator string names it.
  */
-const LANEWAY_GLB_SHA256 = "4bcbf8e076e792ab259c4c516398bb259f9b890d26d219f6cf665ce82883b090";
+const LANEWAY_GLB_SHA256 = "80b64bfce0aba50b7a33f9a1ea10905d951c932f940961c04340a316be915309";

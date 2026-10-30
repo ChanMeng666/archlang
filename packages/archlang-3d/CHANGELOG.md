@@ -1,11 +1,21 @@
 # Changelog
 
-The package is private and unpublished; versions start with its first 0.x publication.
-
 ## [Unreleased]
+
+## [0.1.0]
+
+The first 0.x version on npm. The entries below are everything since the package began.
 
 ### Changed
 
+- The package is public and ships a build: `.`, `./browser` and `./node` resolve to `dist/` with
+  types, `archlang3d` is a `bin`, and the tarball carries `dist/`, the README, the licence, the
+  notices and this file, no source. The replay's script (the viewer with three.js 0.186.1 inlined) is
+  bundled at build time into `dist/viewer.iife.js`, so `esbuild` is a devDependency and leaves the
+  licence list. `ARCHLANG_3D_VERSION` follows the manifest, so a GLB now names `archlang-3d 0.1.0`:
+  laneway-house's GLB digest moved with that one string and nothing else.
+- `doctor`'s hint for a missing browser names `npx playwright-core install chromium`, the
+  Chromium this package's `playwright-core` drives.
 - The replay's end camera looks down at 45° in every view (card A9): a one-storey view was at 30°,
   where the near walls hid the floor, the inner doors and most furniture. Moves laneway-house's
   `tilted` and `end` key frames (re-pinned with that reason); no other frame, the event table, the

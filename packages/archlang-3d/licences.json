@@ -24,20 +24,6 @@
       "checked": "LICENSE is ISC (Mapbox). Mapbox's own triangulator, no dependencies; it wraps or ports no other project."
     },
     {
-      "name": "esbuild",
-      "version": "0.28.2",
-      "license": "MIT",
-      "source": "https://github.com/evanw/esbuild",
-      "checked": "LICENSE.md is MIT (Evan Wallace). A JavaScript shim over a native binary built from the same repository (Go; Go's standard library is BSD-3-Clause). Used at build time of the replay HTML only; nothing of it is inlined into an output."
-    },
-    {
-      "name": "@esbuild/*",
-      "version": "0.28.2",
-      "license": "MIT",
-      "source": "https://github.com/evanw/esbuild",
-      "checked": "esbuild's per-platform binary (one is installed, the one matching the OS), built from the esbuild repository and released with it; the package carries no LICENSE file of its own, esbuild's applies."
-    },
-    {
       "name": "gltf-validator",
       "version": "2.0.0-dev.3.10",
       "license": "Apache-2.0",

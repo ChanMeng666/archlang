@@ -456,7 +456,7 @@ jobs:
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.pw-browsers
     # packages/archlang-3d's heavy tests (archlang-3d plan §8.2, isolation rule I2): the GLB through
     # Khronos glTF-Validator and its determinism over the corpus, the CLI's exit codes, the licence
-    # gate's `npm pack` check, and the replay in Playwright's Chromium on SwiftShader, including the
+    # gate and the tarball's `npm pack` check, and the replay in Playwright's Chromium on SwiftShader, including the
     # key-frame pixel baseline, which is pinned to THIS environment (Linux, the Chromium build of the
     # locked playwright-core; Q21). NOT a required check: the seven required names are a
     # branch-protection setting the owner holds, and this job is not one of them.

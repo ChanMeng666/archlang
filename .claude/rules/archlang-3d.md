@@ -7,16 +7,20 @@ paths:
 
 # Working on the 3D package (`@chanmeng666/archlang-3d`)
 
-A private, downstream reader of a resolved plan (ADRs 0030, 0031): adapter → Scene3D → Mesh3D →
+A separate, downstream reader of a resolved plan (ADRs 0030, 0031): adapter → Scene3D → Mesh3D →
 the replay (HTML, video), the GLB and their checks. The plan and its cards:
-`docs/plans/archlang-3d/`, `docs/plans/preview-and-remodel/`.
+`docs/plans/archlang-3d/`, `docs/plans/preview-and-remodel/`. A map of the code: `DEVELOPMENT.md`.
 
 - It reads the core only through the core's public exports (the seam, ADR 0031); it never becomes a
   core dependency, and the core never gains a 3D option, command or drawing. Need a core fact? Add
   an additive export with its own byte-identity proof, never a deep import.
 - Exposure is tiered (`docs/plans/preview-and-remodel/README.md` D5, D13, D16): the playground's
   "3D preview" tab carries D5's label verbatim (`PREVIEW_LABEL`); no 3D on the docs site, the README,
-  any npm README or landing page. The first npm publish and its trusted publisher are owner-only.
+  any npm README or landing page, except this package's own, which keeps to D5's words
+  (`test/package-meta.test.ts`). The first npm publish and its trusted publisher are owner-only.
+- `exports` and `bin` name `dist/`; the repository reads `src/` (tests, `npm run archlang3d`, the
+  playground's alias). A new file a built module reads at run time goes beside `dist/`'s modules in
+  `tsup.config.ts`'s `onSuccess`; `e2e/pack.e2e.ts` and `prove:pack` hold the tarball.
 - Nothing that produces output reads a clock or a random source; the replay is a pure function of
   `t` (`stateAt`), and `window.__seek`/`__frameHash` stay. three.js is pinned exactly and inlined,
   never from a CDN; no animation library.

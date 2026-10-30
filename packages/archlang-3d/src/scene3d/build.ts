@@ -49,7 +49,7 @@ import type {
 } from "./types.js";
 
 /** The package's own version, stamped into `meta.tool`. */
-export const ARCHLANG_3D_VERSION = "0.0.0";
+export const ARCHLANG_3D_VERSION = "0.1.0";
 
 /** A resolved storey: its number, name and IR. */
 export interface Storey {
