@@ -184,6 +184,32 @@ suite("W_ANNOTATION_OVERLAP — a room label against the room it stands in", () 
     expect(of(src).map((d) => d.message)).toEqual([expect.stringContaining("printed over a wall")]);
   });
 
+  it("sees a label wholly inside a wall, where it crosses no edge of the poche", () => {
+    const src = `plan "p" {
+  units mm
+  paper A2 landscape
+  scale 1:50
+  room id=r at (0,0) size 10000x6000 label "A" at (5000,3000) uses bedroom
+  wall id=o exterior thickness 100 { (0,0) (10000,0) (10000,6000) (0,6000) close }
+  wall id=v partition thickness 1500 { (2000,3000) (8000,3000) }
+}`;
+    expect(of(src).map((d) => d.message)).toEqual([expect.stringContaining('The name "A"')]);
+  });
+
+  it('keeps `""` out of a message that names the room by its use', () => {
+    const entry = lint(`plan "p" {
+  units mm
+  paper A3 landscape
+  scale 1:50
+  room id=b at (0,0) size 4000x3000 label "" uses bedroom
+  room id=k right-of b size 4000x3000 label "Kitchen" uses kitchen
+  walls from rooms exterior 200 partition 100
+  door id=front on exterior at 2% width 1000
+  door id=d1 between b and k at center width 900
+}`).filter((d) => d.code === "W_ENTRANCE_INTO_PRIVATE");
+    expect(entry.map((d) => d.message)).toEqual([expect.stringContaining("opens into the bedroom.")]);
+  });
+
   it("says what is true of the case: the name, the figure, a pin, an unnamed room", () => {
     const hint = (src: string) => of(src)[0]!.hints![0]!;
     // The name over the wall: shortening it helps, and nothing promises it wraps.

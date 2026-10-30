@@ -1592,7 +1592,7 @@
  * `examples/remodel.arch` moved by its source: the door swing's arc crossed the U of "Utility", a
  * true report on a plan `wall-status-drawing` requires lint clean, so the example pins the label at
  * (9700,6450). Its `describe()` and `lint()` are unchanged; its SVG moves by that one label and its
- * area figure, and the `lint()` spans of the rows that carry any shift by the bytes added. `chain30` (30) and `star30` (31) are 90 m long with no `paper`, so a label is
+ * area figure, so its whole-surface row moved and its summary row did not. `chain30` (30) and `star30` (31) are 90 m long with no `paper`, so a label is
  * 10 m wide on a 3 m room: true on every room, and half their labels no longer step sideways off the
  * floor. `reception-suite` gains one and its "Kitchenette" stays on the room's axis (x 9600 to 9000,
  * same y; it stood across the wall); `min-bedroom-flat.faithful`'s "Bathroom" (9090,739) to
