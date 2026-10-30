@@ -170,16 +170,18 @@ export function percentOf(len: number, pct: number): number {
 }
 
 /**
- * The walls a reference `on <ref>` names (B3a). A `status demolish` wall is no member of a CATEGORY
- * (`partition` is the standing partitions, as if the demolished one were deleted), but its own id
- * still names it, so a door written on it reaches `E_OPENING_ON_DEMOLISHED_WALL`. The copy is
- * charged to the step meter before it is allocated, and only when a wall is demolished.
+ * The walls a reference `on <ref>` names (B3a). Where any of them stands, the standing ones, as if
+ * the demolished one were deleted. Where none does, the demolished ones stay, so the door reaches
+ * `E_OPENING_ON_DEMOLISHED_WALL`, which is truer than "no wall has that id": the wall is on the
+ * sheet. The copy is charged to the step meter before it is allocated, and only when a wall is
+ * demolished.
  */
 function wallsNamed<W extends WallLike & { status?: string }>(walls: readonly W[], ref: string): W[] {
   const named = walls.filter((w) => w.id === ref || w.category === ref);
   if (!named.some((w) => w.status === "demolish")) return named;
-  chargeSteps(walls.length);
-  return named.filter((w) => w.status !== "demolish" || w.id === ref);
+  chargeSteps(named.length);
+  const standing = named.filter((w) => w.status !== "demolish");
+  return standing.length > 0 ? standing : named;
 }
 
 /**

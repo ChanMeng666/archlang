@@ -445,10 +445,13 @@ function measureCurve(n: DimNode, ctx: ResolveCtx): { from: Point; to: Point; te
   }
   const walls = standingWalls(ctx.walls).filter((w) => w.id === c.ref || w.category === c.ref);
   if (walls.length === 0) {
+    const demolished = ctx.walls.some((w) => (w.id === c.ref || w.category === c.ref) && w.status === "demolish");
     return err(
-      ctx.unplacedWall?.(c.ref)
-        ? `names wall "${c.ref}", which could not be placed (see its own error)`
-        : "names no wall in this plan",
+      demolished
+        ? "names a wall marked `status demolish`, and a wall coming out has no arc to measure"
+        : ctx.unplacedWall?.(c.ref)
+          ? `names wall "${c.ref}", which could not be placed (see its own error)`
+          : "names no wall in this plan",
     );
   }
   if (walls.length > 1) return err(`matches ${walls.length} walls — reference a unique wall id`);

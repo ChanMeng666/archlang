@@ -33,6 +33,7 @@ import {
   planToJson,
   toDxf,
 } from "../src/index.js";
+import { MAX_EVAL_STEPS, standingWalls, withStepMeter } from "../src/expr.js";
 import type { RFurniture, RRoof, RWall, ResolvedPlan } from "../src/ir.js";
 import type { Scene } from "../src/scene.js";
 import { PLAN_JSON_SCHEMA } from "../src/plan-json.js";
@@ -850,10 +851,40 @@ suite("G8: the derived rail, `dim faces|clear`, and category references read the
     expect(marked).toEqual(deleted);
     // Two standing partitions are still ambiguous.
     expect(facts(body(`${gone}\n${keep}`, rest)).diags.map((d: string[]) => d[0])).toEqual(["E_ATTACH_WALL_REF"]);
-    // Only demolished ones: the category names nothing, as in the twin.
+    // Only demolished ones: the wall is on the sheet, so the honest error names it.
     const alone = facts(body(gone.replace("{", `${GONE.trim()} {`), rest));
-    expect(alone.diags.map((d: string[]) => d[0])).toEqual(["E_ATTACH_WALL_REF"]);
-    expect(alone.diags).toEqual(facts(body("", rest)).diags);
+    expect(alone.diags.map((d: string[]) => d[0])).toEqual(["E_OPENING_ON_DEMOLISHED_WALL"]);
+  });
+
+  it("a demolished wall whose id is the category's name leaves the category unambiguous", () => {
+    const gone = `  wall id=partition partition thickness 100${GONE} { (3000,0) (3000,5000) }`;
+    const keep = "  wall id=keep partition thickness 100 { (6000,0) (6000,5000) }";
+    const rest = "  door id=d on partition at 50% width 900";
+    expect(facts(body(`${gone}\n${keep}`, rest))).toEqual(facts(body(keep, rest)));
+  });
+
+  it("a balcony beside `walls from rooms … status demolish` is railed by the second pass too", () => {
+    const rooms = (st: string) => `plan "T" {
+  units mm
+  grid 100
+  room id=a at (0,0) size 4000x4000 label "A" uses living
+  room id=b at (4000,0) size 4000x4000 label "B" uses bedroom
+  walls from rooms exterior 200 partition 100${st}
+  outdoor id=o balcony at (8000,1000) size 1500x2000
+}`;
+    const rail = (src: string) => describePlan(src).outdoor?.[0]?.rail;
+    expect(rail(rooms(""))).toEqual(["top", "bottom", "right"]);
+    expect(rail(rooms(GONE))).toEqual(["top", "bottom", "left", "right"]);
+  });
+
+  it("the copy of the wall list is charged to the step meter; nothing demolished pays nothing", () => {
+    const walls = [{ status: "demolish" }, {}, {}];
+    const run = withStepMeter(0, () => standingWalls(walls));
+    expect(run.used).toBe(3);
+    expect(run).toMatchObject({ value: [{}, {}] });
+    const none = [{}, {}];
+    expect(withStepMeter(0, () => standingWalls(none))).toEqual({ value: none, used: 0 });
+    expect("signal" in withStepMeter(MAX_EVAL_STEPS - 2, () => standingWalls(walls))).toBe(true);
   });
 
   it("a door written on a demolished wall's own id is still E_OPENING_ON_DEMOLISHED_WALL", () => {
@@ -871,5 +902,15 @@ suite("G8: the derived rail, `dim faces|clear`, and category references read the
     expect(marked.diags).toEqual(deleted.diags);
     expect(marked.diags.map((d: string[]) => d[0])).not.toContain("E_DIM_REF");
     expect(marked).toEqual(deleted);
+    // Only demolished, by category or by id: refused, and the message does not deny the wall.
+    for (const ref of ["partition", "gone"]) {
+      const alone = facts(body(arc("gone", 1000, GONE), `  dim radius ${ref}`));
+      expect(alone.diags).toEqual([
+        [
+          "E_DIM_CURVE_REF",
+          `\`dim radius ${ref}\` names a wall marked \`status demolish\`, and a wall coming out has no arc to measure`,
+        ],
+      ]);
+    }
   });
 });
