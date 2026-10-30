@@ -82,6 +82,8 @@ const UNJUDGED: Readonly<Record<string, string>> = {
   "clearances/garage-too-shallow": "PS2.70 (PR #307): the depth finding is validity, not taste; neither twin is scored",
   "clearances/single-leaf-2400":
     "one entrance hall: no classified habitable, wet or kitchen room, and too few rooms for R17",
+  "stair-safety/furniture-on-landing":
+    "G9 (#364): W_FURNITURE_ON_STAIR is validity, not taste; nothing in PS5.1 reads a stair, so neither twin is scored",
   "openings-ignore-walls/door-jamb-50-from-tee": "a store and an unclassified staff room: no classified habitable room",
   "openings-ignore-walls/door-on-exterior-tee": "two unclassified rooms",
   "openings-ignore-walls/window-overlaps-door": "one unclassified studio",

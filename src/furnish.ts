@@ -63,6 +63,7 @@ import {
 import { buildLintContext } from "./lint/context.js";
 import { definingItems, pasteSet, useNoun } from "./lint/defining.js";
 import { type ExitApproachStrip, exitApproachStrips } from "./lint/rules/doors.js";
+import { stairZones, storeyStairs } from "./lint/rules/stairs.js";
 import { fmtSource } from "./num-format.js";
 import { parse } from "./parser.js";
 import { BUILTIN_REGISTRY, createRegistry } from "./registry.js";
@@ -336,7 +337,10 @@ export function furnishStage(
   const wcSrc: WcWorldSource = { wallSegs: segs, doors, openings };
   const windows = ir.elements.filter((e): e is RWindow => e.kind === "window");
   /** The exterior exits' clear floor, as `W_EXIT_APPROACH_BLOCKED` measures it (PS2.69). */
-  const exits = EXIT_MM ? exitApproachStrips(buildLintContext(ir, DEFAULT_RULESET), EXIT_MM.push, EXIT_MM.pull) : [];
+  const lintCtx = buildLintContext(ir, DEFAULT_RULESET);
+  const exits = EXIT_MM ? exitApproachStrips(lintCtx, EXIT_MM.push, EXIT_MM.pull) : [];
+  /** The flights and landings no piece stands on, as `W_FURNITURE_ON_STAIR` measures them (#364). */
+  const stairs = stairZones(storeyStairs(lintCtx) ?? { stairs: [], left: 0 }).map((z) => z.rect);
   const ids = new Map<string, number>();
   for (const e of ir.elements) if (e.kind === "room") ids.set(e.id, (ids.get(e.id) ?? 0) + 1);
 
@@ -428,6 +432,7 @@ export function furnishStage(
       passages,
       doors,
       exits.filter((x) => x.room === room.id),
+      stairs,
       windows,
       !relational,
     );
@@ -448,7 +453,7 @@ export function furnishStage(
     const nowhere = (item: FurnishItem): string =>
       site.walled === 0 && item.place !== "centre"
         ? `"${room.id}" has no wall behind any of its edges to stand the required \`${item.category}\` against`
-        : `no position for the ${item.category === "counter" ? `worktop (\`counter\`, ${(item.sizes ?? []).map(([a]) => a).join(", ")} mm along)` : `required \`${item.category}\``} in "${room.id}" clears its walls, its doors and the pieces before it${
+        : `no position for the ${item.category === "counter" ? `worktop (\`counter\`, ${(item.sizes ?? []).map(([a]) => a).join(", ")} mm along)` : `required \`${item.category}\``} in "${room.id}" clears its walls, its doors${site.nearStair ? ", its stair" : ""} and the pieces before it${
             site.named === 0 && item.place === "wall"
               ? `, and no wall behind it has an \`id=\` of its own for \`against wall\` to name`
               : ""
@@ -946,6 +951,8 @@ class Site {
   readonly walled: number;
   /** How many of those walls a statement can name: an authored `id=` no other wall shares. */
   readonly named: number;
+  /** Does a flight or a landing claim some of this room's floor? */
+  readonly nearStair: boolean;
 
   constructor(
     private readonly room: RRoom,
@@ -955,6 +962,8 @@ class Site {
     private readonly doors: readonly RDoor[],
     /** The clear floor inside this room's exterior exits. */
     private readonly exits: readonly ExitApproachStrip[],
+    /** The flights and landings on this storey. */
+    private readonly stairs: readonly BBox[],
     windows: readonly RWindow[],
     /** Can a piece be written `in <room> anchor`? Not in a relational room. */
     private readonly anchors: boolean,
@@ -976,6 +985,13 @@ class Site {
       x1: back.right?.face ?? x1,
       y1: back.bottom?.face ?? y1,
     };
+    const floor: BBox = {
+      x: this.clear.x0,
+      y: this.clear.y0,
+      w: this.clear.x1 - this.clear.x0,
+      h: this.clear.y1 - this.clear.y0,
+    };
+    this.nearStair = stairs.some((z) => rectsOverlap(z, floor));
     const onEdge = (p: { x: number; y: number }, edge: RectEdge): number | null => {
       const horizontal = edge === "top" || edge === "bottom";
       const fixed = edge === "top" ? rect.y : edge === "bottom" ? y1 : edge === "left" ? rect.x : x1;
@@ -1271,7 +1287,8 @@ class Site {
     return { item, text, rect, strip, edge, middle, against, lo, hi: lo + along, depth };
   }
 
-  /** Is the piece on the room's clear floor, off every door's approach and swing, and clear of `placed`?
+  /** Is the piece on the room's clear floor, off every door's approach and swing, off every flight
+   *  and landing (its front strip as well: that is floor it is used from), and clear of `placed`?
    *  Inside an exterior exit it may stand only where the clear stretch `W_EXIT_APPROACH_BLOCKED`
    *  asks is left with every piece placed (counting a rug, which the rule does not: stricter). */
   private fits(p: Placed, placed: readonly Placed[]): boolean {
@@ -1279,6 +1296,8 @@ class Site {
     const inside = (r: BBox): boolean =>
       r.x >= c.x0 - EPS && r.y >= c.y0 - EPS && r.x + r.w <= c.x1 + EPS && r.y + r.h <= c.y1 + EPS;
     if (p.rect.w <= 0 || p.rect.h <= 0 || !inside(p.rect) || (p.strip && !inside(p.strip))) return false;
+    if (this.stairs.some((z) => rectsOverlap(z, p.rect) || (p.strip !== null && rectsOverlap(z, p.strip))))
+      return false;
     const behind = p.item.place === "front" ? placed[placed.length - 1] : undefined;
     for (const q of placed) {
       if (rectsOverlap(p.rect, q.rect)) return false;

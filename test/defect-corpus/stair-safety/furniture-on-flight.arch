@@ -1,0 +1,18 @@
+# class: stair-safety
+# origin: issue #364 (the plan `arch finish --only furnish` wrote, with the sofa and coffee table it put on the flight)
+# expect: W_FURNITURE_ON_STAIR
+# status: done
+# fact: stair s1 rises from y 5500; with a 3000 mm storey its first 2000 mm of run, y 3500-5500, leaves under 2 m of
+#   headroom. The sofa covers x 2950-3500, y 3500-5000 of that and the coffee table x 2500-2550, y 3500-4500
+plan "Stair in the living room" {
+  units mm
+  room id=hall at (0,0) size 4000x2000 label "Hall" uses hall
+  room id=liv at (0,2000) size 4000x4000 label "Living" uses living
+  walls from rooms exterior 300 partition 100
+  door on hall.top at center width 1000 swing into hall
+  door between hall and liv at 2000 from start width 900 swing into liv
+  window on liv.bottom width 2000
+  stair id=s1 at (2500,2500) size 1000x3000 dir up
+  furniture sofa in liv anchor right flush size 900x2000 rotate 90
+  furniture coffee_table in liv anchor right flush inset 1300 size 600x1000 rotate 90
+}

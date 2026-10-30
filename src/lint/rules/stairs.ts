@@ -1,7 +1,8 @@
 /**
  * Stair safety (plan-soundness PS2.11e, the stair bullets, and PS2.34): a door swinging over a
  * flight or its landing, a flight with no landing at its foot or head, a doorway onto a flight's
- * side, a void where a flight arrives, and a flight too short to climb its storey.
+ * side, a void where a flight arrives, a flight too short to climb its storey, and (issue #364)
+ * furniture standing on a flight or its landing.
  *
  * Every rule reads facts the plan states: the stair's footprint (`at`, `size`), its flight width
  * (`width`, else the footprint's cross extent) and its `dir`, which fix the flight's axis and the
@@ -27,6 +28,7 @@ import type { Point } from "../../ast.js";
 import { pointInRoomBox } from "../../analyze.js";
 import { det, oppositeSide, type Side } from "../../algebra/d4.js";
 import type { Diagnostic } from "../../diagnostics.js";
+import { cutPlaneLayer } from "../../fixtures-catalog.js";
 import {
   doorLeaves,
   type DoorSwing,
@@ -37,7 +39,7 @@ import {
   type WallSegment,
 } from "../../geometry.js";
 import { VERTEX_EPS } from "../../geometry/polygon.js";
-import { type BBox, rectsOverlap } from "../../geometry/rect.js";
+import { type BBox, rectOverlapAmounts, rectsOverlap } from "../../geometry/rect.js";
 import type { RDoor, ROpening, RStair, RVoid } from "../../ir.js";
 import { roomOfVertical, runAxis, tailEdge } from "../../vertical.js";
 import { openingClauseOf, wallRef } from "../../wall-ref.js";
@@ -791,6 +793,106 @@ export const stairTooSteep: LintRule = {
           `Lengthen \`${v.id}\` along its flight to at least ${m.required} mm on every storey it is drawn on (its \`size\`), or turn the climb into two flights with a landing; the ${limits} from the lint profile (\`--profile\`).`,
         ],
       });
+    }
+    return out;
+  },
+};
+
+// ── W_FURNITURE_ON_STAIR ────────────────────────────────────────────────────
+
+/** Floor a flight claims: its whole footprint, or one of the landings it owes. */
+export interface StairZone {
+  sf: StairFacts;
+  where: "flight" | Landing["end"];
+  rect: BBox;
+  /** The landing's index in `sf.landings`; absent for the flight. */
+  landing?: number;
+}
+
+/**
+ * The floor `f`'s stairs claim, one stair after another, each flight before its head landing and
+ * that before its foot. A landing is read only as deep as its floor stands clear
+ * ({@link landingBlock}, as {@link swingHit} reads it): what stands behind the wall that cuts a
+ * landing short is not on it. A landing a curved wall stands near is not judged.
+ *
+ * `finish`'s furnish stage keeps off all of it. {@link furnitureOnStair} reads the same zones with
+ * the flight bounded by headroom, so the stage never proposes a position the rule would report.
+ */
+export function stairZones(f: StoreyStairs): StairZone[] {
+  return f.stairs.flatMap((sf) => {
+    const flight: StairZone = { sf, where: "flight", rect: rectOf(sf.v) };
+    const landing = (end: Landing["end"]): StairZone[] =>
+      sf.landings.flatMap((l, i): StairZone[] => {
+        const b = sf.blocks[i]!;
+        if (l.end !== end || b === "curved") return [];
+        const clear = Math.min(sf.needs[i]!, b?.depth ?? sf.needs[i]!);
+        return clear > 1 ? [{ sf, where: end, landing: i, rect: beyond(l.rect, l.edge, clear, l.width) }] : [];
+      });
+    return [flight, ...landing("head"), ...landing("foot")];
+  });
+}
+
+/**
+ * `W_FURNITURE_ON_STAIR` (issue #364): a piece standing on a flight's footprint or on a landing the
+ * flight owes (Approved Document K 1.21b: landings are kept clear of permanent obstructions [V]).
+ *
+ * On a storey the flight rises from, only the part with less than {@link STAIR_HEADROOM_MM} over
+ * the floor is read ({@link lowPart}, as `W_STAIR_SIDE_ENTRY` reads it): a wardrobe under the high
+ * end of a flight is a normal drawing, and lint has no way to clear a warning on one statement. The
+ * height is `ir.storeyHeight`, 3000 mm (`STOREY_HEIGHT`) when the plan authors none, a default that
+ * can only narrow what is judged. A stairwell (a flight coming down, or arriving from below) is a
+ * hole, so all of its footprint is read. A landing reads only a piece at the cut plane's body layer:
+ * a rug on it is walked on, a wall cabinet beside it hangs above it. One warning per piece and
+ * stair, at the first zone it stands on. Past the storey's {@link MAX_STAIR_WORK} it declines, as
+ * the stair rules do.
+ */
+export const furnitureOnStair: LintRule = {
+  name: "furniture-on-stair",
+  // The furniture family, not `stairs`: `validate`'s `next` yields a fixtures-stage finding to a
+  // stair-safety code (`STAIR_SAFETY_CODES`, PS7.10), and this is one: a stair with no landing is
+  // fixed before the sofa on it. The rule lives here for the facts it shares.
+  family: "furniture",
+  layer: "validity",
+  stage: "fixtures",
+  codes: ["W_FURNITURE_ON_STAIR"],
+  check(ctx: LintContext): Diagnostic[] {
+    if (ctx.furniture.length === 0) return [];
+    const f = factsFor(ctx);
+    if (f === null) return [];
+    const zones = stairZones(f).map((z) =>
+      z.where === "flight" ? { ...z, rect: lowPart(z.sf, STAIR_HEADROOM_MM, ctx) } : z,
+    );
+    if (!charge(f, ctx.furniture.length * zones.length)) {
+      ctx.skip("stair-budget");
+      return [];
+    }
+    const out: Diagnostic[] = [];
+    for (const piece of ctx.furniture) {
+      const foot = rectOf(piece);
+      const body = cutPlaneLayer(piece.category) === "body";
+      for (const sf of f.stairs) {
+        const hit = zones.find((z) => z.sf === sf && (z.where === "flight" || body) && rectsOverlap(foot, z.rect));
+        if (hit === undefined) continue;
+        const name = piece.label ?? piece.category;
+        const r = hit.rect;
+        const span = `x ${mm(r.x)}–${mm(r.x + r.w)}, y ${mm(r.y)}–${mm(r.y + r.h)}`;
+        const stair = stairName(sf.v, ctx);
+        const { ox, oy } = rectOverlapAmounts(foot, r);
+        out.push({
+          severity: "warning",
+          code: "W_FURNITURE_ON_STAIR",
+          ...ctx.at(piece),
+          message:
+            hit.where === "flight"
+              ? `Furniture "${name}" stands on ${stair}: it covers ${mm(ox)} × ${mm(oy)} mm of ${sf.well ? "the stairwell" : `the flight, where less than ${mm(STAIR_HEADROOM_MM)} mm of headroom is left`}.`
+              : `Furniture "${name}" stands on the landing at the ${hit.where} of ${stair}: a landing as long as the flight is wide, ${mm(sf.needs[hit.landing!]!)} mm, stays clear of furniture.`,
+          hints: [
+            hit.where === "flight"
+              ? `Move or resize it so it clears ${sf.well ? `the stairwell of \`${sf.v.id}\`` : `the part of \`${sf.v.id}\` with too little headroom to stand under`} (${span}), or move the stair.`
+              : `Move or resize it so it clears the floor beyond the ${hit.where} of \`${sf.v.id}\` (${span}), or move the stair.`,
+          ],
+        });
+      }
     }
     return out;
   },
