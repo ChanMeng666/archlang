@@ -155,6 +155,19 @@ function selectRing(n: RoofNode, id: string, ctx: ResolveCtx): RWall | null {
       });
       return null;
     }
+    // A `status demolish` wall (B3a) is coming out: the roof is the one over the plan after the
+    // demolition, so it follows a wall that stays.
+    if (named.status === "demolish") {
+      ctx.diag({
+        severity: "error",
+        message:
+          `Roof "${id}" follows wall "${named.id}", which is marked \`status demolish\`: a demolished wall ` +
+          `holds no roof, so name a wall that stays (or use \`roof polygon …\` to state the outline)`,
+        code: "E_ROOF_WALL",
+        span: n.span,
+      });
+      return null;
+    }
     if (!named.closed) {
       ctx.diag({
         severity: "error",
@@ -170,13 +183,17 @@ function selectRing(n: RoofNode, id: string, ctx: ResolveCtx): RWall | null {
   }
   // A courtyard ring `walls from rooms` derived is not a candidate: only the outer ring is
   // the building's eaves line (ADR 0028 §3).
-  const candidates = ctx.walls.filter((w) => w.closed && w.category === "exterior" && w._derived?.ring !== "inner");
+  // A `status demolish` ring (B3a) is not one either: the eaves are those of the walls that stay.
+  const rings = ctx.walls.filter((w) => w.closed && w.category === "exterior" && w._derived?.ring !== "inner");
+  const candidates = rings.filter((w) => w.status !== "demolish");
   if (candidates.length === 1) return candidates[0]!;
+  const demolished = candidates.length === 0 && rings.length > 0;
   ctx.diag({
     severity: "error",
     message:
       candidates.length === 0
-        ? `Roof "${id}" has no ring to follow — the plan declares no closed \`exterior\` wall. ` +
+        ? `Roof "${id}" has no ring to follow — the plan declares no closed \`exterior\` wall` +
+          `${demolished ? " that stays (each one is marked `status demolish`)" : ""}. ` +
           `Name the wall to offset (\`roof overhang <mm> wall <id>\`), or state the outline with \`roof polygon …\`.`
         : `Roof "${id}" is ambiguous — ${candidates.length} closed \`exterior\` walls could be the one it follows ` +
           `(${candidates.map((w) => (w._derived ? wallPhraseOf(w) : `"${w.id}"`)).join(", ")}). ` +

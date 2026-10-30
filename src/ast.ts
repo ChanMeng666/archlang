@@ -516,6 +516,8 @@ export type SegmentSelect =
 export interface FurnitureAgainst {
   /** Host wall id to back onto. */
   wall: string;
+  /** The byte span of the {@link wall} reference token, for a diagnostic about that wall. */
+  wallSpan?: Span;
   /** Which segment of a multi-segment wall (0-based); required when the wall has >1. */
   segment?: Expr;
   /** `segment north|south|east|west` / `segment containing <room>.<edge>` in place of the
