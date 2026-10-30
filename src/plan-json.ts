@@ -30,6 +30,7 @@
 import type {
   AutoDimsMode,
   CompassWord,
+  ElementKind,
   FurnitureAnchor,
   Hemisphere,
   NorthDir,
@@ -877,6 +878,113 @@ function titleToJson(t: TitleNode): TitleJson {
   return out;
 }
 
+/** The element kinds Plan JSON has no row for. Every other kind is projected. */
+export const UNPROJECTED_KINDS = [
+  "stair",
+  "elevator",
+  "escalator",
+  "roof",
+  "void",
+  "outdoor",
+  "fence",
+] as const satisfies readonly ElementKind[];
+
+/**
+ * A clause of a plan that its Plan JSON does not carry, spelled as the language spells it. `arc`
+ * and `circle` are the two that change shape: the document keeps the chord and the 48-gon.
+ */
+export type PlanJsonDroppedClause =
+  | "keep"
+  | "arc"
+  | "poche hatch"
+  | "circle"
+  | "label at"
+  | (typeof UNPROJECTED_KINDS)[number]
+  | "zone"
+  | "level"
+  | "paper"
+  | "axes"
+  | "site boundary"
+  | "schedule rooms"
+  | "schedule openings"
+  | "legend"
+  | "notes"
+  | "theme"
+  | "style"
+  | "accTitle"
+  | "accDescr";
+
+/** One line of what a Plan JSON export left out (see {@link planToJson}). */
+export interface PlanJsonDropped {
+  clause: PlanJsonDroppedClause;
+  /** How many: arc edges, axes, notes, the elements of a kind. */
+  count: number;
+  /** Who carries it, each once: the walls with an arc, the elements of a kind, the zones. */
+  ids?: string[];
+  /** The clause as the source means it (`paper A4 landscape`, `level 1 "Ground floor"`). */
+  text?: string;
+  /** The storey it sits on, on a multi-storey plan; absent on a plan-wide clause, and on every
+   *  row of a single-storey plan. */
+  level?: number;
+}
+
+/** What one storey holds and its document cannot carry. `level` is absent on a single-storey plan. */
+function droppedFromStorey(storey: ResolvedPlan, level: number | undefined): PlanJsonDropped[] {
+  const rows: PlanJsonDropped[] = [];
+  const on = level !== undefined ? { level } : {};
+  const add = (clause: PlanJsonDroppedClause, count: number, ids: string[]): void => {
+    if (count > 0) rows.push({ clause, count, ids: [...new Set(ids)], ...on });
+  };
+  // The walls and elements `resolvedToJson` lists: a demolished wall is exported, so its arc
+  // flattens as well; a derived wall is not, and has none.
+  const { walls, elements } = drawnView(storey);
+  const curved = walls.filter((w) => w._derived === undefined && w.arcs?.some((a) => a !== undefined));
+  add(
+    "arc",
+    curved.reduce((n, w) => n + w.arcs!.filter((a) => a !== undefined).length, 0),
+    curved.map((w) => w.id),
+  );
+  // `material_scale`/`material_angle` are written only beside a `material`, and the default
+  // material writes none, so `material poche scale 2` is the one hatch that does not travel.
+  const hatched = walls
+    .filter(
+      (w) => w._derived === undefined && w.material === DEFAULT_MATERIAL && (w.hatchScale !== 1 || w.hatchAngle !== 0),
+    )
+    .map((w) => w.id);
+  add("poche hatch", hatched.length, hatched);
+  const rooms = elements.filter((e): e is RRoom => e.kind === "room");
+  const circles = rooms.filter((r) => r.circle !== undefined).map((r) => r.id);
+  add("circle", circles.length, circles);
+  const anchored = rooms.filter((r) => r.labelAt !== undefined).map((r) => r.id);
+  add("label at", anchored.length, anchored);
+  for (const kind of UNPROJECTED_KINDS) {
+    const ids = elements.filter((e) => e.kind === kind).map((e) => e.id);
+    add(kind, ids.length, ids);
+  }
+  const zones = (storey.zones ?? []).filter((z) => !z.instance).map((z) => z.path);
+  add("zone", zones.length, zones);
+  return rows;
+}
+
+/** The plan-wide clauses, which every storey's document leaves out alike. */
+function droppedFromPlan(ir: ResolvedPlan): PlanJsonDropped[] {
+  const rows: PlanJsonDropped[] = [];
+  if (ir.sheet) rows.push({ clause: "paper", count: 1, text: `paper ${ir.sheet.size} ${ir.sheet.orientation}` });
+  if (ir.axes && ir.axes.length > 0) rows.push({ clause: "axes", count: ir.axes.length });
+  if (ir.siteBoundary) rows.push({ clause: "site boundary", count: 1 });
+  if (ir.schedule) rows.push({ clause: "schedule rooms", count: 1 });
+  if (ir.openingSchedule) rows.push({ clause: "schedule openings", count: 1 });
+  if (ir.legend) rows.push({ clause: "legend", count: 1 });
+  if (ir.notes && ir.notes.length > 0) rows.push({ clause: "notes", count: ir.notes.length });
+  const themed = ir.themeBase !== undefined || ir.themeFrom !== undefined || Object.keys(ir.theme ?? {}).length > 0;
+  if (themed) rows.push({ clause: "theme", count: 1 });
+  const styled = Object.entries(ir.styles ?? {}).filter(([, over]) => Object.keys(over).length > 0);
+  if (styled.length > 0) rows.push({ clause: "style", count: styled.length, ids: styled.map(([kind]) => kind) });
+  if (ir.accTitle !== undefined) rows.push({ clause: "accTitle", count: 1 });
+  if (ir.accDescr !== undefined) rows.push({ clause: "accDescr", count: 1 });
+  return rows;
+}
+
 /** One storey of a multi-storey plan, projected on its own (see {@link planToJson}). */
 export interface PlanJsonPage {
   level: number;
@@ -898,15 +1006,43 @@ export interface PlanJsonPage {
  * declares keeps says how many it left out: `droppedKeeps`, the accepted keeps as measured (a
  * keep a `for` loop repeats counts once per pass), present only when there is one (PS4.11), and
  * `compile -f json` prints it as a note on stderr. The loss is visible, never silent.
+ *
+ * `dropped` is the same report for every clause the format has no field for (issue #366): one
+ * {@link PlanJsonDropped} per clause, the keeps among them, over the whole plan; a row held by one
+ * storey says which, so a caller exporting one storey keeps that storey's rows and the plan-wide
+ * ones. Absent when nothing was dropped. What the document restates in another form is not
+ * dropped: a loop is exported as what it made, a `place`d element by its plan coordinates, a
+ * relational position by its result.
  */
 export function planToJson(
   source: string,
   opts: AnalyzeOptions = {},
-): { json?: PlanJson; pages?: PlanJsonPage[]; diagnostics: Diagnostic[]; droppedKeeps?: number } {
+): {
+  json?: PlanJson;
+  pages?: PlanJsonPage[];
+  diagnostics: Diagnostic[];
+  droppedKeeps?: number;
+  dropped?: PlanJsonDropped[];
+} {
   const { ir, diagnostics, levels } = resolvePlan(source, opts);
   if (!ir) return { diagnostics };
   const keeps = keepResultsOf(ir, levels);
-  const dropped = keeps ? { droppedKeeps: keeps.length } : {};
+  const rows: PlanJsonDropped[] = [
+    ...(keeps ? [{ clause: "keep" as const, count: keeps.length }] : []),
+    ...(levels.length > 0
+      ? levels.flatMap((l) => [
+          {
+            clause: "level" as const,
+            count: 1,
+            text: `level ${num(l.level)}${l.name !== undefined ? ` ${q(l.name)}` : ""}`,
+            level: l.level,
+          },
+          ...droppedFromStorey(l.ir, l.level),
+        ])
+      : droppedFromStorey(ir, undefined)),
+    ...droppedFromPlan(ir),
+  ];
+  const dropped = { ...(keeps ? { droppedKeeps: keeps.length } : {}), ...(rows.length > 0 ? { dropped: rows } : {}) };
   // A storey whose `place`d component derives its walls carries its components and instances
   // (PS3.9): the statement sits in the component's body, never the walls it derives (ADR 0028
   // §3). What that record cannot carry is refused, naming the instance, never dropped.

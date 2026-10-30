@@ -214,6 +214,8 @@ export {
 export type {
   PlanJson,
   PlanJsonPage,
+  PlanJsonDropped,
+  PlanJsonDroppedClause,
   RoomJson,
   WallJson,
   WallsFromRoomsJson,

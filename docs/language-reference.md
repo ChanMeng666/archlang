@@ -2731,6 +2731,29 @@ grid snapping: an edge, never a centre, and every literal it reads a multiple of
 axes) and says so with a note on stderr naming how many it left out; `planToJson()` returns the
 count as `droppedKeeps`. The `.arch` source is the only home of a keep.
 
+**What else Plan JSON leaves out.** The same report covers every clause the format has no field
+for. `compile -f json` prints one `note:` on stderr per clause, exits as it would have, and adds
+`dropped[]` to the `--json` envelope; `planToJson()` returns the same rows as `dropped`. A plan that
+drops nothing has no note and no key. A row is `clause`, `count`, and where they apply `ids` (who
+carries it), `text` (the clause in words) and `level` (the storey that holds it; with `--level`
+only that storey's rows and the plan-wide ones are reported; keeps are plan-wide, so every
+storey's keeps are reported on each `--level` export).
+
+| `clause` | What leaves |
+|---|---|
+| `keep` | every `keep` |
+| `arc` | a wall's arc edge: the document keeps its straight chord, so the outline changes |
+| `poche hatch` | `scale` or `angle` on a wall of the default `poche` material |
+| `circle` | a circular room: the document keeps its 48-sided polygon |
+| `label at` | a room's `label … at` position |
+| `stair`, `elevator`, `escalator`, `roof`, `void`, `outdoor`, `fence` | the whole element |
+| `zone` | a `zone` block (its contents are exported) |
+| `level` | a storey's number and name: each storey is its own document |
+| `paper` | the sheet (the effective `scale` stays) |
+| `axes`, `site boundary`, `schedule rooms`, `schedule openings`, `legend`, `notes` | the statement |
+| `theme`, `style` | paint |
+| `accTitle`, `accDescr` | the accessible title and description |
+
 **Where a keep may stand.** In the plan or a `level` block, inside `for`, `if` and `zone`. Not
 inside a `component` (it would be checked once per instance, in its own frame): `E_KEEP_PLACEMENT`.
 `stacked` compares storeys, so it sits at the root of a multi-storey plan; every other form sits
