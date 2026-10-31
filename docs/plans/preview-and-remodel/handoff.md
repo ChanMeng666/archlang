@@ -43,7 +43,7 @@ promise it.
 3. **G11,** the residue of G8 and G9, one PR per group.
 4. **The designs in `research/2026-10-31-g10-*.md`** carry open questions for the owner. No code until they are answered
    and the N10 read has set the wave.
-5. Close #212 once a nightly run is green. Confirm the first real record-only PR goes through the docs leg of `Node 22`.
+5. Close #212 once a nightly run is green.
 
 A new npm package goes: `prove:pack` with no browser, first version by hand, register, dispatch within 48 hours.
 Registering first is impossible, because npm needs the package to exist.
