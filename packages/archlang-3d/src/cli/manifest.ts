@@ -93,7 +93,8 @@ export const COMMANDS: readonly Command[] = [
       JSON_FLAG,
     ],
     input: "<plan.arch|->",
-    output: "an HTML file (and an MP4 with --video)",
+    output:
+      "an HTML file (and an MP4 with --video). With no browser that starts and no --video, the HTML is still written, the exit is 0 and --json reports rendered: false without the frame fields",
     examples: [
       { cmd: "archlang3d view plan.arch --replay -o plan.html --json", note: "the replay and its key-frame hashes" },
       {
@@ -150,7 +151,7 @@ export function buildManifest() {
       "archlang-3d: 3D preview of an ArchLang plan, a separate package that reads the same .arch source. Builds a checked GLB and a replay from a .arch plan. ArchLang itself draws plans.",
     exitCodes: {
       "0": "ok",
-      "1": "internal / IO / environment error (a missing Chromium or ffmpeg, a file that cannot be written)",
+      "1": "internal / IO / environment error (a missing Chromium or ffmpeg with view --video, a file that cannot be written)",
       "2": "the plan is refused, a check failed, or build --strict met a warning (E3D_STRICT); nothing is written (deterministic: fix it, don't blindly retry)",
       "3": "bad usage",
     },

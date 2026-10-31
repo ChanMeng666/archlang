@@ -1,6 +1,6 @@
 {
   "name": "@chanmeng666/archlang-3d",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "3D preview of an ArchLang floor plan: a separate package that reads the same .arch source and is checked against the plan.",
   "keywords": [
     "archlang",

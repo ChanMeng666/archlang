@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-31
+
+The first version published through the release workflow, with provenance.
+
+### Fixed
+
+- `archlang3d view --replay` no longer needs a browser for the HTML, as the README always said. In 0.1.0
+  it wrote the file and then exited 1 where Chromium was missing. It now exits 0 and says the key frames
+  were not measured; `--json` reports `rendered: false`. `--video` still needs Chromium and `ffmpeg`.
+
 ## [0.1.0] - 2026-10-31
 
 The first version on npm, published by hand. Versions from 0.1.1 on go through the release workflow
