@@ -26,6 +26,7 @@
  */
 
 import type { Point } from "../ast.js";
+import { chargeSteps } from "../expr.js";
 import type { BBox } from "./rect.js";
 
 /** Two vertices closer than this (mm) are the same vertex. */
@@ -347,11 +348,14 @@ function onSegment(p: Point, a: Point, b: Point): boolean {
  * when they overlap along their length (a spike doubling back on itself).
  *
  * O(n²) on the vertex count, which is the right shape here — a room polygon is a
- * handful of vertices, and an index would cost more than it saves.
+ * handful of vertices, and an index would cost more than it saves. A ring that is not
+ * pays for it: every pair is one step (`MAX_EVAL_STEPS`), charged before the scan, so a
+ * ring too long to test is `E_STEP_LIMIT` at once. Outside a resolution nothing is counted.
  */
 export function polygonSelfIntersects(pts: readonly Point[]): boolean {
   const n = pts.length;
   if (n < 4) return false;
+  chargeSteps((n * (n - 1)) / 2);
   const edges = polygonEdges(pts);
   for (let i = 0; i < n; i++) {
     for (let j = i + 1; j < n; j++) {
@@ -413,6 +417,103 @@ export function rectInsidePolygon(r: BBox, ring: readonly Point[]): boolean {
 }
 
 /**
+ * How many edge reads of an exact ring test one evaluation step pays for, so a read is counted at
+ * the budget's own rate: {@link import("../expr.js").MAX_EVAL_STEPS} is set on a loop iteration of
+ * 14 steps in 2 µs, about 140 ns a step, and a read is a few comparisons with no allocation, 6 to
+ * 20 ns over staircases, combs and round rooms alike. A count, never a time.
+ */
+export const RING_READS_PER_STEP = 14;
+
+/** Charge `reads` edge reads of an exact ring test to the step meter. */
+function chargeRingReads(reads: number): void {
+  chargeSteps(Math.ceil(reads / RING_READS_PER_STEP));
+}
+
+/** What of a ring can matter inside the two rings' shared window. */
+interface WindowedRing {
+  edges: Array<[Point, Point]>;
+  /** Its vertices and edge midpoints, each one the only points a containment test asks about. */
+  points: Point[];
+}
+
+/**
+ * The window two rings' boxes share, and what of each ring reaches it. Two edges that cross do so
+ * inside both boxes, so an edge that misses the window crosses nothing; a point outside the other
+ * ring's box is neither inside it nor within {@link VERTEX_EPS} of it. The window is grown by far
+ * more than the rounding of a point's distance (a few ulps of 2^25 mm is ~1e-8). What it does drop
+ * is a false crossing: two disjoint edges on one skew line whose cross products round to opposite
+ * signs read as crossing to a test of every pair, and an edge outside the window is not tested.
+ */
+function overlapWindow(a: readonly Point[], b: readonly Point[], eps: number): [WindowedRing, WindowedRing] {
+  const ba = polygonBounds(a);
+  const bb = polygonBounds(b);
+  const x0 = Math.max(ba.x, bb.x);
+  const y0 = Math.max(ba.y, bb.y);
+  const x1 = Math.min(ba.x + ba.w, bb.x + bb.w);
+  const y1 = Math.min(ba.y + ba.h, bb.y + bb.h);
+  const margin =
+    Math.max(eps, VERTEX_EPS) + 1e-6 + 1e-12 * Math.max(Math.abs(x0), Math.abs(y0), Math.abs(x1), Math.abs(y1));
+  const inWindow = (p: Point): boolean =>
+    p.x >= x0 - margin && p.x <= x1 + margin && p.y >= y0 - margin && p.y <= y1 + margin;
+  const windowed = (ring: readonly Point[]): WindowedRing => {
+    const edges: Array<[Point, Point]> = [];
+    const points: Point[] = [];
+    for (let i = 0; i < ring.length; i++) {
+      const p = ring[i]!;
+      const q = ring[(i + 1) % ring.length]!;
+      if (inWindow(p)) points.push(p);
+      const mid = { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 };
+      if (inWindow(mid)) points.push(mid);
+      if (
+        Math.max(p.x, q.x) >= x0 - margin &&
+        Math.min(p.x, q.x) <= x1 + margin &&
+        Math.max(p.y, q.y) >= y0 - margin &&
+        Math.min(p.y, q.y) <= y1 + margin
+      ) {
+        edges.push([p, q]);
+      }
+    }
+    return { edges, points };
+  };
+  return [windowed(a), windowed(b)];
+}
+
+/**
+ * `distToPolygonEdge(p, ring) > eps && pointInPolygon(p.x, p.y, ring)` in one pass with no
+ * allocation. An edge whose box, grown by the larger tolerance, misses `p` is further than that
+ * tolerance, so its distance cannot decide either test and is not computed; the near edges and the
+ * crossing count run the same expressions in the same orientation as those two functions.
+ */
+function strictlyInside(p: Point, ring: readonly Point[], eps: number): boolean {
+  const reach = Math.max(eps, VERTEX_EPS) + 1e-6 + 1e-12 * (Math.abs(p.x) + Math.abs(p.y));
+  let nearest = Infinity;
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const a = ring[i]!;
+    const b = ring[j]!;
+    if (
+      p.x >= Math.min(a.x, b.x) - reach &&
+      p.x <= Math.max(a.x, b.x) + reach &&
+      p.y >= Math.min(a.y, b.y) - reach &&
+      p.y <= Math.max(a.y, b.y) + reach
+    ) {
+      // The edge read as `polygonEdges` reads it, from pts[j] to pts[i].
+      nearest = Math.min(nearest, distPointToSegment(p, b, a));
+    }
+    if (a.y > p.y !== b.y > p.y) {
+      const xAt = a.x + ((p.y - a.y) * (b.x - a.x)) / (b.y - a.y);
+      if (p.x < xAt) inside = !inside;
+    }
+  }
+  return nearest > eps && (nearest <= VERTEX_EPS || inside);
+}
+
+/** The edge reads of the containment tests over two rings' windows. */
+function containmentReads(a: readonly Point[], b: readonly Point[], wa: WindowedRing, wb: WindowedRing): number {
+  return wa.points.length * b.length + wb.points.length * a.length;
+}
+
+/**
  * Do two simple polygons overlap in their **interiors** (by more than `eps` mm)?
  * Touching along a shared boundary — the normal case for two rooms either side of a
  * partition — is NOT an overlap, matching {@link import("./rect.js").rectsOverlap},
@@ -421,30 +522,46 @@ export function rectInsidePolygon(r: BBox, ring: readonly Point[]): boolean {
  * Exact, three closed-form cases: a properly crossing edge pair (two rings cutting
  * through each other), a vertex of one strictly inside the other (containment), or an
  * edge midpoint strictly inside the other (a shared-edge pair where one ring's vertices
- * all sit on the boundary).
+ * all sit on the boundary). Each case reads only what reaches the window the two boxes share
+ * ({@link overlapWindow}), so two round rooms that clip at a corner read a few edges of each.
+ *
+ * Past the box test each case is charged before it runs, in {@link RING_READS_PER_STEP}, so a pair
+ * that a box rejects costs nothing and the charge falls with the work. Outside a resolution
+ * nothing is counted: a caller there bounds itself with {@link polygonsOverlapCost}.
  */
 export function polygonsOverlap(a: readonly Point[], b: readonly Point[], eps = 1): boolean {
-  const ba = polygonBounds(a);
-  const bb = polygonBounds(b);
-  if (Math.min(ba.x + ba.w, bb.x + bb.w) - Math.max(ba.x, bb.x) <= eps) return false;
-  if (Math.min(ba.y + ba.h, bb.y + bb.h) - Math.max(ba.y, bb.y) <= eps) return false;
-  for (const [a1, a2] of polygonEdges(a)) {
-    for (const [b1, b2] of polygonEdges(b)) {
+  if (ringBoxesMiss(a, b, eps)) return false;
+  chargeRingReads(a.length + b.length);
+  const [wa, wb] = overlapWindow(a, b, eps);
+  chargeRingReads(wa.edges.length * wb.edges.length);
+  for (const [a1, a2] of wa.edges) {
+    for (const [b1, b2] of wb.edges) {
       if (segmentsProperlyCross(a1, a2, b1, b2)) return true;
     }
   }
-  const strictlyInside = (p: Point, ring: readonly Point[]): boolean =>
-    distToPolygonEdge(p, ring) > eps && pointInPolygon(p.x, p.y, ring);
-  for (const [p, ring] of [
-    [a, b],
-    [b, a],
-  ] as Array<[readonly Point[], readonly Point[]]>) {
-    for (const v of p) if (strictlyInside(v, ring)) return true;
-    for (const [e1, e2] of polygonEdges(p)) {
-      if (strictlyInside({ x: (e1.x + e2.x) / 2, y: (e1.y + e2.y) / 2 }, ring)) return true;
-    }
-  }
+  chargeRingReads(containmentReads(a, b, wa, wb));
+  for (const p of wa.points) if (strictlyInside(p, b, eps)) return true;
+  for (const p of wb.points) if (strictlyInside(p, a, eps)) return true;
   return false;
+}
+
+/**
+ * The most steps {@link polygonsOverlap} spends on a pair, and 0 when the box test rejects it. For
+ * a caller outside a resolution, where nothing is counted: it adds this up and decides first.
+ */
+export function polygonsOverlapCost(a: readonly Point[], b: readonly Point[], eps = 1): number {
+  if (ringBoxesMiss(a, b, eps)) return 0;
+  const [wa, wb] = overlapWindow(a, b, eps);
+  const steps = (reads: number): number => Math.ceil(reads / RING_READS_PER_STEP);
+  return steps(a.length + b.length) + steps(wa.edges.length * wb.edges.length) + steps(containmentReads(a, b, wa, wb));
+}
+
+/** Are two rings' boxes too far apart to share more than `eps` mm on both axes? */
+function ringBoxesMiss(a: readonly Point[], b: readonly Point[], eps: number): boolean {
+  const ba = polygonBounds(a);
+  const bb = polygonBounds(b);
+  if (Math.min(ba.x + ba.w, bb.x + bb.w) - Math.max(ba.x, bb.x) <= eps) return true;
+  return Math.min(ba.y + ba.h, bb.y + bb.h) - Math.max(ba.y, bb.y) <= eps;
 }
 
 /**

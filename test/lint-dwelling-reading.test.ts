@@ -220,8 +220,8 @@ describe("the non-dwelling reason", () => {
     const reasons = Object.keys(SKIP_WHY);
     // PS2.12 appended `annotation-budget` after it, PS5.2 `no-bed`, PS2.11b `curved-window-host`, PS2.11a
     // `curved-wc-wall` and PS2.11e `no-storey-height`, `curved-landing-wall` and `stair-budget`, PS2.70 `no-vehicle-door`,
-    // PS2.74 `wide-wc-pan`.
-    expect(reasons.slice(-10)).toEqual([
+    // PS2.74 `wide-wc-pan`, H10 `outdoor-budget`.
+    expect(reasons.slice(-11)).toEqual([
       "non-dwelling",
       "annotation-budget",
       "no-bed",
@@ -232,6 +232,7 @@ describe("the non-dwelling reason", () => {
       "stair-budget",
       "no-vehicle-door",
       "wide-wc-pan",
+      "outdoor-budget",
     ]);
     expect(reasons).toContain("no-dwelling"); // PS2.14's reserved reason, still distinct
     expect(SKIP_WHY["non-dwelling"]).toBe("the plan reads as non-residential");

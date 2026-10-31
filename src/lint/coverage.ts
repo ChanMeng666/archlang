@@ -123,7 +123,12 @@ export type LintSkipReason =
   /** A WC in an accessible room is more than twice `wcAccessibleSideWallMaxMm` wide, so no side
    *  wall can stand within the figure of its centreline and `W_ACCESSIBLE_WC_SIDE_WALL` does not
    *  judge it (PS2.74): a footprint that size is not a pan the rule reads. */
-  | "wide-wc-pan";
+  | "wide-wc-pan"
+  /** `W_OUTDOOR_OVERLAPS_ROOM` compares ground surfaces with rooms after the resolution, with no
+   *  meter, so it adds each surface's cost up first (`polygonsOverlapCost`,
+   *  `src/geometry/polygon.ts`): past the step budget, the surfaces that no longer fit, in source
+   *  order, are not judged. */
+  | "outdoor-budget";
 
 /** What each family checks, as the human coverage line names it. */
 export const FAMILY_NOUN: Readonly<Record<LintFamily, string>> = {
@@ -173,6 +178,8 @@ export const SKIP_WHY: Readonly<Record<LintSkipReason, string>> = {
   "stair-budget": "too many stairs, doors and walls on the storey to measure",
   "no-vehicle-door": "the garage has no vehicle door to measure its depth from",
   "wide-wc-pan": "a WC in an accessible room is too wide for a side wall to stand within the figure",
+  "outdoor-budget":
+    "some ground surfaces and rooms have too many vertices to compare, so those surfaces are not judged",
 };
 
 /**

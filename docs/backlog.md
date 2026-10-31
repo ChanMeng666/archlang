@@ -1641,7 +1641,30 @@ shape with far more runs). Verify: the chosen seed reproduces a non-zero count; 
 
 Done (PR #300): the equality law stays unseeded and a second case pins `seed: 20261027` for the `offered > 0` check; the grep found no other unseeded count assertion with the flaky shape.
 
-### M.19 · Quadratic passes the two budgets do not see — closed (two residuals kept by decision)
+### M.19 · Quadratic passes the two budgets do not see — closed (label placement kept by decision; ring tests charged after a reopening)
+
+**Reopened by the owner on 2026-11-01, on a measurement from H10.** The decision below rested on
+"seconds, not unbounded", which held for small rings only: 100 staircase rooms of about 300
+vertices, boxes overlapping and floors disjoint, spent 4,554,140 steps, under the budget, and 376 s
+in `checkRoomOverlaps` with no diagnostic. `polygonsOverlap` now reads only what reaches the window
+the two boxes share, 15 times faster on that plan's pairs and 100 times on two round rooms clipping
+at a corner, and charges those reads before each case runs, 14 to a step (`RING_READS_PER_STEP`),
+the budget's own rate. A pair a box rejects, and a class of coincident rooms beyond its one test, cost
+what they did, and no `W_ROOM_OVERLAP` text moves. Its answers are the old form's
+(`test/polygon-overlap-oracle.test.ts` keeps that form) except where the old form reported a crossing
+between disjoint near-collinear edges outside the shared window, a rounding artefact: there the new
+answer is correct. Several hundred polygon or round rooms whose boxes all overlap now reach
+`E_STEP_LIMIT` (a stack of 380 round rooms compiles, 400 does not, where the old form compiled 400 in
+about 2 s): that is the cap doing its job. That plan is now one `E_STEP_LIMIT` in about a second, reported at the pair; a
+cap on the count, which the decision weighed, was not needed. A first charge of 13 steps per edge
+pair of the whole rings refused honest plans (100 packed `room circle`s, each a 48-gon, after 0.19 s
+of real work), so the window is what makes the bound affordable. Two rooms of about 1,600 vertices
+whose boxes overlap still fit, and the largest example is back at 5,294 steps. `polygonsOverlap` has
+three other callers, all unmetered: `W_OUTDOOR_OVERLAPS_ROOM` adds each surface's cost up first and
+files `outdoor-budget` for those that no longer fit; `surfaceNames` (`src/lint/rules/outdoor.ts`)
+and `standsIn` (`src/furnish.ts`) test a rectangle against a ring and are not bounded by a count.
+The label-placement residual below stays kept, and so does `polygonLabelPoint`'s fallback, which
+runs at render, outside the meter, bounded by the element cap and its grid.
 
 The step budget counts the evaluator and the drawing budget the primitives drawn; three passes
 that run after both cost more than either counts, each within the element cap. Re-measured
@@ -1660,10 +1683,11 @@ byte moved, and each replaced pass is compared with its old form, kept verbatim,
   `describe` for zero diagnostics (identical rings never test as overlapping), now 1.1–1.3 s.
   Still quadratic, because the answer is: n DISTINCT polygon rooms sharing one cell are n²
   distinct exact ring tests. A bound there is a language decision (e.g. stop counting past a
-  cap and word the summary "…and more than N"); not built. **Owner decision: keep it.** The
-  input is a constructed pile, the cost is bounded by the element cap (seconds, not
-  unbounded), and a cap would change a shipped diagnostic's text for it. Reopen only against
-  a real plan that pays this cost.
+  cap and word the summary "…and more than N"); not built. **Owner decision: keep it**
+  (reopened, above: the tests are charged, and no cap was built). The input is a constructed
+  pile, the cost is bounded by the element cap (seconds, not unbounded), and a cap would
+  change a shipped diagnostic's text for it. Reopen only against a real plan that pays this
+  cost.
 - **Reduced: label placement.** Each probe's sum over obstacles and placed labels now asks a
   grid for the boxes it can touch, and groups with the same text box, anchor and ring continue
   a remembered running sum instead of rescanning (`BoxSums`, `src/label-placement.ts`). The

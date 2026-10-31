@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: H4 on main after #393: W_STAIR_TOO_STEEP's hint no longer advises two flights, so six plans' lint digests move on the hints string alone; no span, code, severity or count moves.
+ * Taken: H10 on main after #408, two charges side by side: polygonSelfIntersects charges one step per edge pair of a ring (room, outdoor or roof polygon, roof overhang, site boundary), and polygonsOverlap, reopening M.19, reads only the window two boxes share and charges those reads at 14 to a step. Every digest stays; only the step column moves.
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -24,7 +24,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   [
     "examples/aquarium.arch",
     "7d41ff1413bcf183d3a3262231708c321f588114b621dc5c9cdfd70d8488b787",
-    942,
+    3350,
   ],
   [
     "examples/attached.arch",
@@ -34,7 +34,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   [
     "examples/bungalow.arch",
     "a7014cb289a6c63439332610e96d31b580427fcfdcc66aedb83f70adb7f049fb",
-    771,
+    777,
   ],
   [
     "examples/classroom-block.arch",
@@ -54,7 +54,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   [
     "examples/courtyard-house.arch",
     "33c864b26d669ca7d1b63b28060219ca5301022494e2fd1ffecf91268ed6fdd5",
-    1243,
+    1277,
   ],
   [
     "examples/furnished-flat.arch",
@@ -64,12 +64,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   [
     "examples/gallery-l.arch",
     "0396aa8a113f9452383d830cc48f17222b3850d2562df02e5d1fa0f12aee09b1",
-    265,
+    294,
   ],
   [
     "examples/garden-house.arch",
     "a6037e5bf56650c49fb5ec92989c98d5a476391506bace57257cc3ed4549bc45",
-    3840,
+    3876,
   ],
   [
     "examples/garden-loft.arch",
@@ -79,12 +79,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   [
     "examples/hexagon-pavilion.arch",
     "6d2a5532474cec059ff104741cd0be727ee6edd9587eac028c23a61e8484705a",
-    645,
+    773,
   ],
   [
     "examples/hillside-villa.arch",
     "d70b0f90599ef90d42de3e78d4e3dd43443ff51485cf44216b49ae93dfdaf6cf",
-    5262,
+    5294,
   ],
   [
     "examples/imports.arch",
@@ -169,12 +169,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   [
     "examples/tiny-house.arch",
     "9b8b6d60771b8a36a046570987fd39eb86fcbbc7d30a15e31642e0a301385391",
-    479,
+    485,
   ],
   [
     "examples/townhouse.arch",
     "cdac0ed60bf6b3329771aee548104d8ac83119d78e481bc0338848240ae7a87a",
-    3812,
+    3824,
   ],
   [
     "examples/transit-hall.arch",
@@ -184,12 +184,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   [
     "examples/two-bed.arch",
     "ec3c4cb53be87499f36cd74f09581e3f269248c5a4c47d0c381309f4188419c9",
-    1304,
+    1310,
   ],
   [
     "examples/two-storey.arch",
     "b66cb93521853150748e49757f46fe58833f4ddfbb626be7755295c9a8360275",
-    1810,
+    1822,
   ],
   [
     "eval/goldens/accessible-bath.arch",
@@ -929,22 +929,22 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   [
     "test/defect-corpus/openings-ignore-walls/door-window-overlap-chamfer.arch",
     "8ddc7ce10d3af2fb9f3531d19110e6b4293ec3c8ab94ec502875f9c4bbba9102",
-    71,
+    81,
   ],
   [
     "test/defect-corpus/openings-ignore-walls/door-window-overlap-chamfer.clean.arch",
     "0fdf9c92013d356adf7ab02f2db1493cd0c5c2558a4fee4d7b664bc21db09950",
-    71,
+    81,
   ],
   [
     "test/defect-corpus/openings-ignore-walls/double-leaf-pier-chamfer.arch",
     "8d3bdde2b0a9f5709d7147e0346237d39284925a10d809b910035fa402dcceed",
-    91,
+    101,
   ],
   [
     "test/defect-corpus/openings-ignore-walls/double-leaf-pier-chamfer.clean.arch",
     "f1da19b05e5c34b2a796fa46ad3c1cc0a33119b4c4e59bc233538ae83ac12a66",
-    91,
+    101,
   ],
   [
     "test/defect-corpus/openings-ignore-walls/fa-door-across-tee.arch",
@@ -1279,7 +1279,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   [
     "test/taste-corpus/r18-l-shaped-bedroom.arch",
     "733149cf71e3314a81e44968cbb4212985c9bd847d156c6d15cc00070f317248",
-    125,
+    140,
   ],
   [
     "test/taste-corpus/r18-l-shaped-bedroom.good.arch",
@@ -1584,17 +1584,17 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/4-cafe.arch",
     "46da77092b6bc7ee0ab400db4a2c7df5988a25b8ac6c5b9bfec9c918e0cc9b48",
-    1783,
+    1813,
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/5-townhouse.arch",
     "f2f52edcea90be71a14947a62d7f799884da35a25640b1c307fd23c997d298b8",
-    1850,
+    1942,
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/6-clinic.arch",
     "98ea01c46ef03c20a415e6a54d2fdc160e0187017e23b2c2c28d6dcd9d08b43e",
-    1365,
+    1388,
   ],
   [
     "docs/plans/plan-soundness/repro/door-beside-tee-window-overlap.arch",

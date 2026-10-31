@@ -2646,8 +2646,9 @@ function stepLimitDiagnostic(signal: StepLimitSignal): Diagnostic {
     {
       severity: "error",
       message:
-        `Evaluation stopped after ${MAX_EVAL_STEPS} steps — the plan's loops, calls or strings do more work ` +
-        "than any plan needs (a loop nested in a loop, recursion that branches, or a string that doubles?)",
+        `Evaluation stopped after ${MAX_EVAL_STEPS} steps — the plan does more work than any plan needs ` +
+        "(a loop nested in a loop, recursion that branches, a string that doubles, a polygon of thousands of vertices, " +
+        "or many polygon or round rooms whose boxes overlap?)",
       code: "E_STEP_LIMIT",
       ...(at.span ? { span: at.span } : {}),
     },
@@ -3404,7 +3405,9 @@ function resolveBody(
   //    (a dropped room is still the room a piece of furniture names, so it raises no
   //    second error); the overlap check reads only what was kept.
   checkPlanDrawable(resolvedElements, diagnostics);
+  const siteBeforeOverlaps = currentStepSite();
   checkRoomOverlaps(elements, diagnostics, (extras?.storeyCount ?? 1) > 1 ? extras?.level?.level : undefined);
+  stepSite(siteBeforeOverlaps?.span, siteBeforeOverlaps?.file, siteBeforeOverlaps?.frame);
   checkFurnitureRooms(resolvedElements, diagnostics);
 
   // 5. Positioning axes (定位轴线): evaluated before the root group resolved (step 3(ii)),
@@ -4381,8 +4384,8 @@ export const MAX_OVERLAP_PAIRS_LISTED = 200;
  *  needed: rectangle pairs are counted in O(n log n) by {@link countOverlappingRectPairs}, and
  *  pairs with a polygon room by class (a pile of n coincident polygon rooms is one test). What
  *  stays quadratic is what the answer is made of: n DISTINCT polygon rooms that all share a
- *  cell are n² distinct exact tests. Rooms reaching this check are finite (`checkNumberDomain`
- *  drops the rest first). */
+ *  cell are n² distinct exact tests, each charged to the step meter by `polygonsOverlap`, with
+ *  the pair it is testing as the step site. Rooms reaching this check are finite (`checkNumberDomain` drops the rest first). */
 export function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diagnostic[], level?: number): void {
   // A room left unplaced carries a (0,0) placeholder, not geometry: testing it would
   // report phantom overlaps (quadratic in a chain) on top of the layout error.
@@ -4433,9 +4436,11 @@ export function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diag
     // A polygon room is tested EXACTLY (its own ring against the other's), never by
     // its bounding box — an L and the room tucked into its notch have overlapping
     // boxes and disjoint floors, and a bbox answer there would be a plain lie.
-    return r1.poly || r2.poly
-      ? rectsOverlap(b1, b2) && polygonsOverlap(r1.poly ?? rectRing(b1), r2.poly ?? rectRing(b2))
-      : rectsOverlap(b1, b2);
+    if (!(r1.poly || r2.poly)) return rectsOverlap(b1, b2);
+    if (!rectsOverlap(b1, b2)) return false;
+    // A budget crossed here is reported at this pair, never at whichever room came last.
+    stepSite(r2.span, r2._file);
+    return polygonsOverlap(r1.poly ?? rectRing(b1), r2.poly ?? rectRing(b2));
   };
   /** The classes overlapping class `c` (itself included when its members overlap one
    *  another), ascending; computed once per class. Both tests are symmetric in their

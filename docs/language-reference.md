@@ -236,7 +236,10 @@ Two refusals, both the `room polygon` precedent: a ring with fewer than three ef
 vertices is [`E_SITE_BOUNDARY_DEGENERATE`](error-codes.md#e_site_boundary_degenerate) and
 one whose edges cross is
 [`E_SITE_BOUNDARY_SELF_INTERSECT`](error-codes.md#e_site_boundary_self_intersect). A
-refused ring draws nothing at all — no half-valid property line reaches the sheet.
+refused ring draws nothing at all — no half-valid property line reaches the sheet. Testing a
+ring costs evaluation steps by the square of its vertices, so a `boundary` traced from a survey
+at about 3,000 vertices spends most of the budget and a longer one reaches `E_STEP_LIMIT`: thin
+a long survey outline before pasting it in.
 
 ### Accessible metadata (`accTitle`, `accDescr`)
 
@@ -755,16 +758,19 @@ while i < COUNT {
 - Two budgets hold what those per-loop and per-storey caps multiply. Evaluation as a
   whole (every storey, component and import together) is held to 5,000,000 steps,
   where a step is an expression evaluated, a statement run, a loop iteration, a value
-  or character produced (charged before it is built), a binding copied or a diagnostic
-  raised: loops nested in loops, a recursion that calls itself twice, or a string that
-  doubles stop with `E_STEP_LIMIT` at the statement that crossed the budget, in about a
-  second. And before anything is drawn, `compile` estimates the drawing over every
+  or character produced (charged before it is built), a binding copied, a diagnostic
+  raised, a pair of a polygon ring's edges tested, or a few edges read when two polygon
+  or round rooms have overlapping boxes: loops nested in loops, a recursion that
+  calls itself twice, a string that doubles, a polygon of thousands of vertices, or many
+  polygon or round rooms whose boxes overlap stop with `E_STEP_LIMIT` at the statement
+  or the pair of rooms that crossed the budget, in about a second or two. And before
+  anything is drawn, `compile` estimates the drawing over every
   storey (an upper bound per kind: a room 3 primitives, a door 5, a run one or two lines
   per tread, a fixture its own symbol, plus one per point of each outline and what
   `dims auto`, the axes and the tables add): past 300,000 the plan is
   `E_DRAWING_LIMIT`, which keeps the largest drawing under about 0.35 GB of memory.
   `describe` and `lint` draw nothing and are not held by it. The largest shipped
-  example spends under 5,000 steps and is estimated at under 5,000; a 24-storey
+  example spends under 6,000 steps and is estimated at under 5,000; a 24-storey
   tower of 200 flats a floor is estimated at about 108,000.
 
 **`while` is deprecated** (`W_WHILE_DEPRECATED`) and will be removed in a

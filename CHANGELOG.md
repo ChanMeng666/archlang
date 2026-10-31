@@ -19,6 +19,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the head of a flight arriving from below on a storey it continues up from is not read. It is not in
   `spec.llm.md` yet. No plan without the form moves: not the drawing, `describe()`, `lint()`, the
   accessibility lint, the overlay, the diagnostics, the Scene or the step count.
+
+## [1.49.0] - 2026-11-01
+
+### Fixed
+
+- A ring too long to check for self-intersection now stops with `E_STEP_LIMIT` instead of running for
+  tens of seconds. The check tests every pair of a ring's edges and nothing counted that work,
+  so a `room polygon` of 6,000 vertices compiled with no diagnostic after 18 million pairs. Each pair
+  is now one evaluation step, charged before the check runs, for `room`, `outdoor` and `roof polygon`,
+  `roof overhang` on a wall ring and a site `boundary`. A ring of up to about 3,000 vertices still
+  fits the 5,000,000-step budget, and the largest in the corpus spends far less. No drawing,
+  `describe()`, `lint()` or diagnostic of a plan under the budget moves; a plan with no such ring
+  spends the same steps.
+- Polygon and round rooms whose boxes overlap no longer run for minutes.
+  `W_ROOM_OVERLAP`'s exact test read every edge of both rings and counted nothing, so 100 thin
+  staircase rooms of 300 vertices, under the budget, spent 376 s in it with no diagnostic. The test
+  now reads only what reaches the window the two boxes share, which leaves two round rooms that clip
+  at a corner a few edges to read, and pays for those reads at the budget's own rate, charged before
+  they run. That plan is one `E_STEP_LIMIT` in about a second, reported at the pair of rooms being
+  tested. A pair a box rejects and a pile of coincident rooms stay free, and 400 packed round rooms
+  spend under 1 % of the budget. `W_ROOM_OVERLAP`'s wording stays, and its answers do except in one
+  case: two disjoint edges on one skew line, at full-precision coordinates, could read as crossing by
+  rounding alone, so `main` warned about rooms on opposite sides of a line. That false warning is gone.
+- The bound has a real edge, and this is it doing its job: several hundred polygon or round rooms
+  whose boxes all overlap one another now reach `E_STEP_LIMIT`. On a stack of round rooms 380 compile
+  and 400 do not, where the old test compiled 400 in about 2 s. Such a plan piles rooms on one spot. Move them apart so their boxes clear each other, draw them
+  as rectangles, which need no ring test, or split the plan into separate files: storeys share one
+  budget, so moving rooms to another `level` does not help.
+- `W_OUTDOOR_OVERLAPS_ROOM` no longer runs unbounded in `lint`. It asks the same ring question after
+  the resolution, where nothing counts, so many long ground and room outlines took tens of seconds with
+  no sign of why. It now adds each surface up first, in source order: a surface that no longer fits the
+  same budget is not judged, the others still are, and the lint coverage says so (`outdoor-budget`).
+- `E_STEP_LIMIT`'s message and catalogue entry no longer blame "loops, calls or strings" alone. They
+  name a polygon of thousands of vertices and many polygon or round rooms whose boxes overlap, which
+  is what a plan with no loop has done.
+
+### Added
+
 - A rectilinear `room polygon` in `walls from rooms` (issue #363, first part): a polygon whose every
   edge is horizontal or vertical joins the set and stays one room, with one stamp and one area. The
   statement derives the ring round it and a partition on each edge it shares; a pair that shares
