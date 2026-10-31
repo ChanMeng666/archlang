@@ -124,6 +124,7 @@ table literal. Record the measured tree and the patch in the baseline's header.
   goldens, `fidelity-plans` and faults, AND every `arch` fence in `docs/`, README and spec (skills hold none: `test/task-skills.test.ts` bans it).
   The "before" side is a `git archive` of the integration tip, never a rebuilt working tree; plant a
   change first, and cross-check with a differently-shaped second measurement.
+- **That corpus is not every plan a digest pins.** Inline plan tables in `test/*.ts` are outside it, and `test/import-module-lets.test.ts` keeps its own table. Evaluation steps and `compile().scene` are payloads too: K1 pins steps. Run every test that hashes output before calling a change byte-identical.
 - **Zero corpus movement is not evidence the new path ran.** Instrument it with a counter, show which
   examples reach it, then remove the counter.
 
