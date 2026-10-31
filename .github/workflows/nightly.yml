@@ -2,7 +2,7 @@ name: Nightly
 
 # Slow / redundant / external-facing checks that don't belong on the PR path.
 #
-# CI (ci.yml) gates every push and must stay fast. These are the checks that either
+# CI (ci.yml) gates every PR and push and must stay fast. These are the checks that either
 # talk to the outside world (production smoke, advisory feeds), take too long to run
 # per-PR (the full OS × Node matrix, instrumented coverage), or would be pure noise as a merge gate
 # (dependency advisories nobody can fix in the PR that tripped them).
@@ -136,9 +136,11 @@ jobs:
           # Read that file's header before adding to it.
 
   # ---------------------------------------------------------------------------
-  # Deliberately redundant with ci.yml's Node 18/20/22 matrix — this adds the Windows
-  # leg. Path handling and line endings are where an isomorphic, byte-exact compiler
-  # gets bitten, and paying for that on every PR isn't worth it; paying for it nightly is.
+  # Deliberately redundant with ci.yml's push run on `main`. Node 18, Node 20 and Windows
+  # do not run on PRs, so this is where a break on one of them reaches the pinned issue.
+  # Path handling and line endings are where an isomorphic, byte-exact compiler gets
+  # bitten. Same steps as those legs minus typecheck, lint and the eval, which do not vary
+  # by Node version or OS and run on Node 22 on every PR.
   # ---------------------------------------------------------------------------
   full-matrix:
     name: Test ${{ matrix.os }} / Node ${{ matrix.node }}
@@ -167,6 +169,9 @@ jobs:
       - run: npm ci
 
       - run: npm test
+
+      - name: Generated artifacts are in sync
+        run: npm run check:drift
 
   # ---------------------------------------------------------------------------
   # Coverage of `src/` (REPORT-ONLY). It used to run on ci.yml's Node 22 leg, where the

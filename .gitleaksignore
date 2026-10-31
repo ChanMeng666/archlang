@@ -236,3 +236,8 @@ c82d5dd89bdd450a64c9160064fefaa97bfe3f20:test/import-module-lets.test.ts:generic
 #           `gitleaks detect` 8.24.3 over the full history at adbf0dbb reported exactly this one.
 # ---------------------------------------------------------------------------------------
 c2978a477cf30cf228233c5707d5ddfb9e9c45ea:test/double-door-byte-identity.test.ts:generic-api-key:49
+# Two more of the same: byte-identity rows keyed by `examples/accessible.arch` (wall-status table) and
+# by a plan in the open-crossing table. Recomputable, they grant access to nothing. `gitleaks detect`
+# 8.24.3 over the full history at origin/main on 2026-10-31 reported exactly these two.
+2574428a96a0eccbb0b0ea1c0bdfda4266236655:test/open-crossing.test.ts:generic-api-key:73
+d6c2ff5ad9267d12b7ec4e207c7467ed4cb41ff4:test/wall-status-byte-identity.test.ts:generic-api-key:36

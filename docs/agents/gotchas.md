@@ -90,9 +90,13 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 - **Parallel PRs conflict on the records** (`CHANGELOG.md` `[Unreleased]`, a programme's
   `handoff.md` and `cards.md`) after nearly every merge. Resolve by keeping both entries; counts in
   those records are recounted only at a stage end, never per PR.
-- **CI's Node jobs run biome before vitest**, so a PR whose only red was formatting has never run
-  its tests: the run after the formatting fix is its first test run. Run `npx biome check .` before
-  pushing (#307, #308).
+- **Node 18, Node 20 and Windows do not run on a PR**, so a green PR proves only Node 22 on Linux.
+  A break on the others first shows in the push run on `main` (`commands.md` § CI). Suspect them for
+  a `node:` API newer than Node 18, a dependency that drops an old Node, deflate output (the
+  `hillside-villa` budget), and line endings or path handling.
+- **A test file must not read what another test file wrote.** `vitest --shard` assigns files by sorted
+  hash, so a new file can move others into another shard, on another runner. Symptom: a red shard on a
+  PR that touched neither file. Write to a `mkdtemp` directory.
 - **A new lint rule is registered beyond its module**: `test/d4-oracle.ts` `RULE_CLASS`, the
   append-only order windows (`slice(-N)` in `test/doors.test.ts`,
   `test/lint-circulation-privacy.test.ts`, `test/lint-space-enclosure.test.ts`), the per-stage counts
