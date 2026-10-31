@@ -52,7 +52,12 @@ function parseBlock(ctx: ParseCtx, id: string, line: number): StairNode {
     ctx.next();
     node.width = ctx.parseExpr();
   }
-  ctx.eat("lcurly");
+  if (!ctx.isType("lcurly")) {
+    ctx.fail(
+      `Expected "{" to open the stair's flights and landings; a straight stair takes \`at\` and \`size\` before \`dir\``,
+    );
+  }
+  ctx.next();
   while (!ctx.isType("rcurly") && !ctx.isType("eof")) {
     const t = ctx.peek();
     if (!ctx.isKeyword("flight") && !ctx.isKeyword("landing")) {

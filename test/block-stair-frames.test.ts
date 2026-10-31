@@ -14,7 +14,7 @@ import { describe as describePlan, lint } from "../src/index.js";
 import type { RStair } from "../src/ir.js";
 import { entryEdges, flightsOf, piecesOf, travelVector, verticalsOf } from "../src/vertical.js";
 import { canonPrim, D4_ELEMENTS, frameFor, lin, observe, sceneOf, transformPrim, witnessPair } from "./d4-oracle.js";
-import { BLOCK_STAIRS, hallBody, L_STAIR, stairBlock, U_STAIR } from "./block-stair-plans.js";
+import { BLOCK_STAIRS, type BlockStair, hallBody, L_STAIR, stairBlock, U_STAIR } from "./block-stair-plans.js";
 
 type Edge = "top" | "right" | "bottom" | "left";
 const NORMAL: Record<Edge, { x: number; y: number }> = {
@@ -115,7 +115,35 @@ ${stairBlock(L_STAIR)}
     for (const g of D4_ELEMENTS) expect(ofId(witnessPair(body, g).gP), g.name).toEqual(id);
   });
 
-  it("symmetry reads the pieces: a U on the axis of a square hall is no mirror image of itself", () => {
+  it("symmetry reads the pieces: two stairs are mirror images only if every piece is", () => {
+    const pair = (right: BlockStair): string => `plan "Pair" {
+  units mm
+  room id=r at (0,0) size 6000x5000
+  component a() {
+${stairBlock(U_STAIR)}
+  }
+  component b() {
+${stairBlock(right)}
+  }
+  place a() as left at (0,0)
+  place b() as right at (6000,0) mirror x
+}
+`;
+    const full = (src: string) => describePlan(src, { facts: ["symmetry"] }).symmetry!.layers.full!;
+    expect(full(pair(U_STAIR))).toMatchObject({ group: "D1", axis: "x" });
+    // Its third piece grows 100 mm west into the well: the same box, boarded the same way, in a
+    // frame with the same hand. Only the pieces differ.
+    const grown: BlockStair = {
+      ...U_STAIR,
+      pieces: [U_STAIR.pieces[0]!, U_STAIR.pieces[1]!, [1600, 2000, 1100, 2000]],
+    };
+    const [a, b] = verticalsOf(observe(pair(grown)).ir!) as RStair[];
+    expect(b!.size).toEqual(a!.size);
+    expect(entryEdges(b!)).toEqual(entryEdges(a!));
+    expect(full(pair(grown)).group).toBe("C1");
+  });
+
+  it("a U on the axis of a square hall is no mirror image of itself", () => {
     const bare = (run: string): string => `plan "Sym" {\n  units mm\n  room id=r at (0,0) size 6000x6000\n${run}\n}\n`;
     const full = (src: string) => describePlan(src, { facts: ["symmetry"] }).symmetry!.layers.full!.group;
     // The box stands centred in the room, which keeps both mirrors; the two flights travel

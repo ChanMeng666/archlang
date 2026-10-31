@@ -27,7 +27,7 @@ import {
   taste,
   toDxf,
 } from "../src/index.js";
-import type { RStair } from "../src/ir.js";
+import type { RRoom, RStair } from "../src/ir.js";
 import { MAX_ELEMENTS } from "../src/ir.js";
 import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
@@ -54,6 +54,7 @@ import {
   type Rect,
   SHORT_AXIS,
   type Side,
+  STRAIGHT_LANDING,
   stairBlock,
   THREE_FLIGHTS,
   U_STAIR,
@@ -124,6 +125,11 @@ describe("the block form parses", () => {
     expect(src.slice(parse0[0]!.span!.start, parse0[0]!.span!.end)).toBe("wall");
   });
 
+  it("`dir` first with no block says what the two forms want", () => {
+    const c = compile(hallPlan("    stair id=s dir up at (500,500) size 1000x3000"), { noCache: true });
+    expect(c.diagnostics.find((d) => d.code === "E_PARSE")!.message).toContain("`at` and `size` before `dir`");
+  });
+
   it("an unclosed block is a parse error, never a throw", () => {
     expect(codes(`plan "p" {\n  stair id=s dir up width 1000 {\n    flight at (0,0) size 10x10`)).toContain("E_PARSE");
   });
@@ -187,6 +193,18 @@ describe("what makes one stair", () => {
       one(F1, L1, "flight at (100,300) size 1400x1000"),
       "E_STAIR_PIECES",
       /does not meet piece 2 along its whole width/,
+    ],
+    [
+      // Every neighbour meets as it must, flight 2's 1000 mm band whole on the landing's edge at
+      // y 1000..2000. The flights themselves share x 1600..2100, y 2000..2100.
+      "a flight on a piece it does not touch",
+      one(
+        "flight at (100,2000) size 2000x2000",
+        "landing at (600,1000) size 1000x1000",
+        "flight at (1600,900) size 1000x1200",
+      ),
+      "E_STAIR_PIECES",
+      /pieces 1 and 3 overlap/,
     ],
   ])("%s", (_name, src, code, why) => {
     const c = compile(src, { noCache: true });
@@ -550,6 +568,18 @@ describe("the bounds of the form", () => {
     expect(codes(src)).not.toContain("E_NON_FINITE");
   });
 
+  it("a landing longer than the range is E_OUT_OF_RANGE with both its corners inside it", () => {
+    // 60,000,000 mm from -30,000,000: no corner is past MODEL_RANGE_MM, so only its length tells.
+    const landing = (x: number, w: number): string =>
+      hallPlan(`    stair id=s dir up width 1000 {
+      flight at (1500,1100) size 1000x1000
+      landing at (${x},100) size ${w}x1000
+      flight at (1500,-900) size 1000x1000
+    }`);
+    expect(codes(landing(1500, 1000))).toEqual([]);
+    expect(codes(landing(-30000000, 60000000))).toContain("E_OUT_OF_RANGE");
+  });
+
   it("each piece counts toward the element budget, before anything is built", () => {
     const rows: string[] = [];
     for (let i = 0; i <= MAX_ELEMENTS; i++) {
@@ -635,7 +665,7 @@ describe("every reader of the footprint reads the pieces, not the box", () => {
 }
 `;
     const { ir } = resolvePlan(src);
-    const rooms = ir!.elements.filter((e) => e.kind === "room") as never[];
+    const rooms = ir!.elements.filter((e): e is RRoom => e.kind === "room");
     const s = stairOf(src);
     const box = { x: s.at.x + s.size.w / 2, y: s.at.y + s.size.h / 2 };
     expect(box.x).toBeLessThan(3000 + 500);
@@ -662,6 +692,14 @@ describe("every reader of the footprint reads the pieces, not the box", () => {
     );
     expect(codes(over)).toEqual([]);
     expect(swings(over)).toBe(1);
+  });
+
+  it("a label in the notch overprints nothing; one pinned on a piece does", () => {
+    const pinned = (at: string): string => NOTCH.replace('label "Hall" uses hall', `label "Hall" at ${at} uses hall`);
+    const over = (src: string) =>
+      lint(src).filter((d) => d.code === "W_ANNOTATION_OVERLAP" && d.message.includes('"Hall"')).length;
+    expect(over(pinned("(2000,1800)"))).toBe(0);
+    expect(over(pinned("(600,600)"))).toBe(1);
   });
 
   it("one door beside two flights is one warning", () => {
@@ -709,21 +747,6 @@ describe("every reader of the footprint reads the pieces, not the box", () => {
     expect(codes(src)).toEqual([]);
     expect(lint(src).filter((d) => d.code === "W_FLOOR_UNASSIGNED").length).toBe(1);
   });
-
-  it("symmetry reads each piece: a stair and its mirror are not the same plan", () => {
-    const facts = (src: string) =>
-      (describePlan(src, { facts: ["symmetry"] } as never) as { symmetry?: { stabiliser?: unknown } }).symmetry;
-    const bare = (run: string) => `plan "Sym" {\n  units mm\n  room id=r at (0,0) size 6000x6000\n${run}\n}\n`;
-    // Symmetric across the room's north-south axis as boxes, and not as a stair: the pair of
-    // flights travels opposite ways, which a box could not show.
-    const u = bare(`  stair id=s dir up width 1000 {
-    flight at (1900,2000) size 1000x2000
-    landing at (1900,1000) size 2200x1000
-    flight at (3100,2000) size 1000x2000
-  }`);
-    const box = bare("  column at (1900,1000) size 2200x3000");
-    expect(JSON.stringify(facts(box))).not.toBe(JSON.stringify(facts(u)));
-  });
 });
 
 describe("arrival on a block stair", () => {
@@ -758,6 +781,152 @@ ${above}
     // Across the last flight's head, its 1000 mm width: that flight's footprint, not the box's
     // 2000 mm height.
     expect(up.circulation!.rooms[0]!.bottleneckClearWidthMm).toBe(1000);
+  });
+
+  /**
+   * The walk upstairs, worked out on a lattice of its own from the plain numbers of the fixture,
+   * the way `test/circulation-hand-derived.test.ts` does for a door: 100 mm cells over a wall-less
+   * room, a cell blocked inside any piece or within the 300 mm body radius of one, the halo lifted
+   * only beyond the boarded flight's entry edge, seeds in the row of cells beyond that edge, and
+   * four-connected steps to the free cell nearest the room's centre that the walk can reach.
+   */
+  const latticeWalk = (s: BlockStair, tail: Side, w: number, h: number): number => {
+    const boarded = s.pieces[s.pieces.length - 1]!;
+    const past = (r: Rect, cx: number, cy: number): boolean =>
+      tail === "left" ? cx < r[0] : tail === "right" ? cx > r[0] + r[2] : tail === "top" ? cy < r[1] : cy > r[1] + r[3];
+    const gap = (r: Rect, cx: number, cy: number): number =>
+      Math.hypot(Math.max(0, r[0] - cx, cx - r[0] - r[2]), Math.max(0, r[1] - cy, cy - r[1] - r[3]));
+    const free = (cx: number, cy: number): boolean =>
+      s.pieces.every((r) => !inside(r, cx, cy) && (gap(r, cx, cy) > 300 || (r === boarded && past(r, cx, cy))));
+    const nx = w / 100;
+    const ny = h / 100;
+    const key = (i: number, j: number): number => j * nx + i;
+    const hops = new Map<number, number>();
+    let front: [number, number][] = [];
+    for (let j = 0; j < ny; j++) {
+      for (let i = 0; i < nx; i++) {
+        const [cx, cy] = [50 + 100 * i, 50 + 100 * j];
+        const beyond =
+          (tail === "left" || tail === "right"
+            ? cy >= boarded[1] && cy <= boarded[1] + boarded[3]
+            : cx >= boarded[0] && cx <= boarded[0] + boarded[2]) &&
+          (tail === "left"
+            ? cx < boarded[0] && cx >= boarded[0] - 100
+            : tail === "right"
+              ? cx > boarded[0] + boarded[2] && cx <= boarded[0] + boarded[2] + 100
+              : tail === "top"
+                ? cy < boarded[1] && cy >= boarded[1] - 100
+                : cy > boarded[1] + boarded[3] && cy <= boarded[1] + boarded[3] + 100);
+        if (beyond && free(cx, cy)) {
+          hops.set(key(i, j), 0);
+          front.push([i, j]);
+        }
+      }
+    }
+    for (let d = 1; front.length > 0; d++) {
+      const next: [number, number][] = [];
+      for (const [i, j] of front) {
+        for (const [a, b] of [
+          [i + 1, j],
+          [i - 1, j],
+          [i, j + 1],
+          [i, j - 1],
+        ] as const) {
+          if (a < 0 || b < 0 || a >= nx || b >= ny || hops.has(key(a, b))) continue;
+          if (!free(50 + 100 * a, 50 + 100 * b)) continue;
+          hops.set(key(a, b), d);
+          next.push([a, b]);
+        }
+      }
+      front = next;
+    }
+    let best = Number.POSITIVE_INFINITY;
+    let walk = Number.POSITIVE_INFINITY;
+    for (const [k, d] of hops) {
+      const [i, j] = [k % nx, Math.floor(k / nx)];
+      const dist = Math.hypot(50 + 100 * i - w / 2, 50 + 100 * j - h / 2);
+      if (dist < best || (dist === best && d * 100 < walk)) {
+        best = dist;
+        walk = d * 100;
+      }
+    }
+    return walk;
+  };
+
+  const moved = (s: BlockStair, dx: number, dy: number): BlockStair => ({
+    ...s,
+    pieces: s.pieces.map((p) => [p[0] + dx, p[1] + dy, p[2], p[3]]),
+  });
+
+  /** Two storeys of `s`, the upper one a bare `w` × `h` room with the block drawn `dir down`, the
+   *  whole plan standing at (`ox`,`oy`). */
+  const bareUpper = (s: BlockStair, w: number, h: number, ox = 0, oy = 0): string => {
+    const [x1, y1] = [ox + w, oy + h];
+    const here = moved(s, ox, oy);
+    return `plan "Two" {
+  units mm
+  level 1 "Ground" {
+    room id=g at (${ox},${oy}) size ${w}x${h} uses hall
+    wall id=shell exterior thickness 200 { (${ox},${oy}) (${x1},${oy}) (${x1},${y1}) (${ox},${y1}) close }
+    door id=front at (${x1},${y1 - 400}) width 600 wall shell swing in
+${stairBlock(here, "up")}
+  }
+  level 2 "Upper" {
+    room id=up at (${ox},${oy}) size ${w}x${h} uses hall circulation
+${stairBlock(here, "down")}
+  }
+}
+`;
+  };
+
+  it.each([
+    // The room's centre stands in the notch of the L, floor that only the pieces leave free.
+    ["an L, to the floor it wraps round", CLEAR, 3600, 5000],
+    ["an L, past its first flight", CLEAR, 6000, 6000],
+    ["a half-turn", moved(U_STAIR, 1000, 500), 6000, 7000],
+    ["a short-axis flight", moved(SHORT_AXIS, 1000, 500), 7000, 7000],
+    ["three flights", moved(THREE_FLIGHTS, 1000, 500), 7000, 7000],
+  ] as const)("the walk upstairs agrees with a lattice of its own: %s", (_n, s, w, h) => {
+    const src = bareUpper(s, w, h);
+    expect(codes(src)).toEqual([]);
+    // Climbing, the last flight leaves by the edge opposite its foot: down, that edge is its tail.
+    const head = OPPOSITE[s.tails[s.tails.length - 1]!];
+    const up = describePlan(src).levels!.find((l) => l.level === 2)!;
+    expect(up.circulation!.rooms.map((r) => r.walkDistanceMm)).toEqual([latticeWalk(s, head, w, h)]);
+    // The flight's own width crosses the head, whatever the box's extent is.
+    expect(up.circulation!.rooms[0]!.bottleneckClearWidthMm).toBe(
+      head === "left" || head === "right" ? s.pieces[s.pieces.length - 1]![3] : s.pieces[s.pieces.length - 1]![2],
+    );
+    // The lattice stands at the origin, and a walk does not know where the plan is: every piece
+    // moves into the grid's frame with the room, or the walk is measured round a stair elsewhere.
+    const away = describePlan(bareUpper(s, w, h, 1500, 700)).levels!.find((l) => l.level === 2)!;
+    expect(away.circulation!.rooms.map((r) => r.walkDistanceMm)).toEqual([latticeWalk(s, head, w, h)]);
+  });
+
+  it("the head of the last flight stands short of the stair's own first flight: no landing", () => {
+    // Up, right along the landing, down, then back west to a head at `headX`, facing the first
+    // flight's east face at x 2000. The other pieces stay obstacles, so that face keeps the 300 mm
+    // the body needs: 400 mm is floor to step onto and 200 mm is not.
+    const spiral = (headX: number): BlockStair => ({
+      name: "spiral",
+      width: 1000,
+      pieces: [
+        [1000, 3000, 1000, 2000],
+        [1000, 2000, 3800, 1000],
+        [3800, 3000, 1000, 1000],
+        [3800, 4000, 1000, 1000],
+        [headX, 4000, 3800 - headX, 1000],
+      ],
+      tails: ["bottom", "top", "right"],
+    });
+    const walked = (headX: number): number => {
+      const src = bareUpper(spiral(headX), 6000, 6000);
+      expect(codes(src)).toEqual([]);
+      const up = describePlan(src).levels!.find((l) => l.level === 2)!;
+      return up.circulation!.rooms.filter((r) => r.walkDistanceMm !== undefined).length;
+    };
+    expect(walked(2400)).toBe(1);
+    expect(walked(2200)).toBe(0);
   });
 
   it("each storey's stop stands in the room of the flight boarded there", () => {
@@ -839,10 +1008,8 @@ describe("what lint says of a block stair until S2 and S3, deliberately strict",
   });
 
   it("clearances report the sum, and the same strict figure", () => {
-    const d = describePlan(planOf(L_STAIR, "up", "  height 2750\n"), { facts: ["clearances"] } as never) as {
-      clearances: { stairs: { run_mm: number; min_run_mm: number }[] };
-    };
-    expect(d.clearances.stairs).toMatchObject([{ id: "s", run_mm: 2400, min_run_mm: 2640 }]);
+    const d = describePlan(planOf(L_STAIR, "up", "  height 2750\n"), { facts: ["clearances"] });
+    expect(d.clearances!.stairs).toMatchObject([{ id: "s", run_mm: 2400, min_run_mm: 2640 }]);
   });
 
   it("the foot landing is the boarded flight's, read beyond its own edge", () => {
@@ -863,16 +1030,38 @@ describe("what lint says of a block stair until S2 and S3, deliberately strict",
     const ds = lint(src).filter((d) => d.code === "W_STAIR_NO_LANDING");
     expect(ds.length).toBe(1);
     expect(ds[0]!.message).toContain("at its foot");
+    // The first flight stops well short of the box's bottom edge here, and the wall that stands
+    // in front of it is nowhere near the box's: a box would read clear floor.
+    const short = `plan "Foot" {
+  units mm
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }
+  wall id=p partition thickness 100 { (100,3300) (1600,3300) }
+  room id=r at (0,0) size 6000x6000 uses hall
+  door id=front at (5000,6000) width 900 wall shell swing in
+  stair id=s dir up width 1000 {
+    flight at (500,2000) size 1000x1000
+    landing at (500,1000) size 2200x1000
+    flight at (1700,2000) size 1000x3000
+  }
+}
+`;
+    expect(codes(short)).toEqual([]);
+    const near = lint(short).filter((d) => d.code === "W_STAIR_NO_LANDING");
+    expect(near.map((d) => d.message.includes("at its foot"))).toEqual([true]);
+  });
+
+  it("a block in line agrees with a straight flight on the foot and the head it owes", () => {
+    const landingsOf = (src: string) =>
+      (describePlan(src, { facts: ["clearances"] }).clearances!.stairs as { landings: unknown[] }[])[0]!.landings;
+    const straight = (dir: string) => hallPlan(`    stair id=s at (1000,600) size 1000x3800 dir ${dir}`);
+    expect(landingsOf(planOf(STRAIGHT_LANDING, "up"))).toEqual(landingsOf(straight("up")));
+    expect(landingsOf(planOf(STRAIGHT_LANDING, "down"))).toEqual(landingsOf(straight("down")));
   });
 
   it("the head landing on a `dir down` stop is the last flight's", () => {
-    const d = describePlan(planOf(L_STAIR, "down"), { facts: ["clearances"] } as never) as {
-      clearances: { stairs: { landings: { end: string; clear_mm: number; by: unknown }[] }[] };
-    };
-    // Its left edge stands against the west wall: the box's left edge is the same line, so the
-    // proof that it is the flight's is that the end is a head and the wall stops it at once.
-    expect(d.clearances.stairs[0]!.landings).toMatchObject([{ end: "head" }]);
-    expect(d.clearances.stairs[0]!.landings[0]!.by).toMatchObject({ kind: "wall" });
+    const d = describePlan(planOf(L_STAIR, "down"), { facts: ["clearances"] });
+    // The last flight's left edge stands against the west wall.
+    expect(d.clearances!.stairs).toMatchObject([{ landings: [{ end: "head", by: { kind: "wall" } }] }]);
   });
 
   it("the shaft check keeps the box overlap, and does not cry wolf on the axis of an L", () => {
