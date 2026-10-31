@@ -137,13 +137,14 @@ describe("every gitleaks-excluded file is guarded for what it may CONTAIN", () =
     },
   );
 
-  it("test/open-crossing.test.ts holds only digests and the name of its one fixture row", () => {
+  it("test/open-crossing.test.ts holds only digests and the names of its long fixture rows", () => {
     // Plan paths carry a `.` and so are no candidates; what remains is a measured SHA-256 value
-    // or the one hyphenated row name below, spelled here so a new string has to be explained.
+    // or one of the hyphenated row names below, spelled here so a new string has to be explained.
+    const rows = ["door-on-narrowed", "three-open-north", "three-open-thick"];
     const opaque = opaqueLiteralsIn("test/open-crossing.test.ts");
     expect(opaque.filter((s) => /^[0-9a-f]{64}$/.test(s)).length).toBeGreaterThan(0);
-    const unexplained = opaque.filter((s) => !/^[0-9a-f]{64}$/.test(s) && s !== "door-on-narrowed");
-    expect(unexplained, "an opaque string that is neither a digest nor the fixture's name").toEqual([]);
+    const unexplained = opaque.filter((s) => !/^[0-9a-f]{64}$/.test(s) && !rows.includes(s));
+    expect(unexplained, "an opaque string that is neither a digest nor a fixture row's name").toEqual([]);
   });
 
   it("test/height-byte-identity.test.ts holds no opaque string at all", () => {
