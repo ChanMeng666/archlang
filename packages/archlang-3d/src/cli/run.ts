@@ -202,8 +202,28 @@ async function view(args: Args): Promise<number> {
       views.push({ view: viewLabel(view), keyFrames: keys });
     }
   } catch (e) {
-    say(`archlang3d: rendering failed (Chromium through Playwright, ffmpeg): ${(e as Error).message}`);
-    return 1;
+    const why = (e as Error).message;
+    if (args.video || !why.includes("browserType.launch")) {
+      say(`archlang3d: rendering failed (Chromium through Playwright, ffmpeg): ${why}`);
+      return 1;
+    }
+    // The HTML is whole and on disk, and only a video needs the browser. With none that starts the
+    // key frames are simply not measured; any other failure above is a broken replay.
+    say(`archlang3d: wrote ${args.out}; its key frames were not measured: ${why.split(/\r?\n/)[0]}`);
+    if (args.json) {
+      const report = {
+        ok: true,
+        html: args.out,
+        rendered: false,
+        view: viewLabel(args.storey),
+        doors: args.doors,
+        storeys: storeys.length,
+        warnings: r.warnings.map((w) => ({ code: w.code, level: w.level, message: w.message })),
+        assumptions: mesh.assumptions.length,
+      };
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    }
+    return 0;
   }
   const report = {
     ok: true,
