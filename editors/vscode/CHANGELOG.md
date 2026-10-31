@@ -14,6 +14,15 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.36.0] - 2026-11-01
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.48.0`** (`W_EXTERIOR_RING_OPEN`; `W_STAIR_TOO_STEEP` no longer
+  advises two flights; `E_PARSE` carries a hint for a hyphen in an id, a `,` between uses and a `;` at a line end).
+
+
+
 ## [0.35.0] - 2026-10-31
 
 ### Changed

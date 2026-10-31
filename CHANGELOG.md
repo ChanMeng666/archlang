@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.48.0] - 2026-11-01
+
 ### Added
 
 - `W_EXTERIOR_RING_OPEN` (lint, issues #346, #370): exterior walls that stand on a room and close
