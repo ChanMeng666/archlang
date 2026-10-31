@@ -1,6 +1,8 @@
 /**
  * `view --replay` with no browser on the machine. The HTML needs none and only `--video` does, which
- * is what the README says; `scripts/prove-pack.ts` proves it on the real tarball at publish.
+ * is what the README says; `scripts/prove-pack.ts` proves it on the real tarball at publish. The
+ * launch failure is simulated because these tests run on CI's Node 18 leg, where importing
+ * playwright-core exits the process.
  */
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -12,7 +14,7 @@ import { renderReplay } from "../src/replay/video.js";
 
 vi.mock("../src/replay/video.js", async (actual) => {
   const real = await actual<typeof import("../src/replay/video.js")>();
-  return { ...real, renderReplay: vi.fn(real.renderReplay) };
+  return { ...real, renderReplay: vi.fn() };
 });
 
 const PLAN = fileURLToPath(new URL("../../../examples/laneway-house.arch", import.meta.url));
@@ -40,10 +42,10 @@ describe("archlang3d view with no browser", () => {
   let dir: string;
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), "archlang3d-no-browser-"));
-    vi.stubEnv("PLAYWRIGHT_BROWSERS_PATH", join(dir, "none"));
+    vi.mocked(renderReplay).mockRejectedValue(new Error("browserType.launch: Executable doesn't exist"));
   });
   afterEach(() => {
-    vi.unstubAllEnvs();
+    vi.mocked(renderReplay).mockReset();
     rmSync(dir, { recursive: true, force: true });
   });
 
@@ -67,7 +69,7 @@ describe("archlang3d view with no browser", () => {
   });
 
   it("does not excuse a replay that breaks with a browser present", async () => {
-    vi.mocked(renderReplay).mockRejectedValueOnce(new Error("page.evaluate: the replay threw"));
+    vi.mocked(renderReplay).mockRejectedValue(new Error("page.evaluate: the replay threw"));
     const r = await cli(["view", PLAN, "--replay", "-o", join(dir, "plan.html")]);
     expect(r.code).toBe(1);
     expect(r.err).toContain("rendering failed");
