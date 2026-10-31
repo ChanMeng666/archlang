@@ -9,7 +9,8 @@
  * the group is resolved in (`+y` down, so `top` is the smaller `y`). A `polygon` or `circle`
  * room, a room that could not be placed, and a room of no positive size contribute no
  * lines; the table records why, so a later reader can refuse with the right code rather
- * than report an unknown name.
+ * than report an unknown name. A rectilinear polygon contributes its ring as well, for the one
+ * reader that takes a ring where it would take lines (`door|opening between`).
  *
  * The table is built and frozen here and read by the room-edge datums of the language
  * (`hall.top`, ADR 0028 §2) through the readers below, which the resolver installs on the
@@ -17,9 +18,11 @@
  * work, so it is charged to the step meter before it allocates.
  */
 
+import type { Point } from "./ast.js";
 import type { Diagnostic } from "./diagnostics.js";
 import { chargeSteps, closest, type DatumReader, type Value } from "./expr.js";
 import type { RAxis, RRoom } from "./ir.js";
+import { rectilinear } from "./room-tiling.js";
 
 /** A rectangular room's lines: edges and centre, in the group's own frame (mm). */
 export interface RoomDatums {
@@ -49,6 +52,9 @@ export interface DatumTable {
   readonly rooms: ReadonlyMap<string, RoomDatums>;
   /** Rooms the group can see that expose no lines, by id, with the reason. */
   readonly refused: ReadonlyMap<string, DatumRefusal>;
+  /** The rectilinear polygons among `refused`, by id, each with its ring (the room's own, in the
+   *  group's frame). `null` for a ring the room itself refused: that room has reported it. */
+  readonly rings: ReadonlyMap<string, readonly Point[] | null>;
   /** The plan's positioning axes, sorted and labelled as drawn; empty in an instance. */
   readonly axes: readonly DatumAxis[];
 }
@@ -69,16 +75,21 @@ function frozenMap<K, V>(entries: readonly (readonly [K, V])[]): ReadonlyMap<K, 
  * Build and freeze the datum table of one resolution group, from the rooms it can see (in
  * that order) once relational placement has run, and the plan's axes (root only).
  *
- * Steps: one per room and one per axis, charged in one call BEFORE anything is allocated.
+ * Steps: one per room and one per axis, charged in one call BEFORE anything is allocated. Asking
+ * whether a ring is rectilinear allocates nothing and reads a ring the room's own resolution paid
+ * for, so it is free, and a slanted polygon costs what it always cost.
  */
 export function buildDatumTable(rooms: readonly RRoom[], axes: readonly RAxis[] | undefined): DatumTable {
   chargeSteps(rooms.length + (axes?.length ?? 0));
   const lines: [string, RoomDatums][] = [];
   const refused: [string, DatumRefusal][] = [];
+  const rings: [string, readonly Point[] | null][] = [];
   for (const r of rooms) {
     if (r.circle) refused.push([r.id, "circle"]);
-    else if (r.poly) refused.push([r.id, "polygon"]);
-    else if (r._unplaced) refused.push([r.id, "unplaced"]);
+    else if (r.poly) {
+      refused.push([r.id, "polygon"]);
+      if (rectilinear(r.poly)) rings.push([r.id, r._ringRefused ? null : r.poly]);
+    } else if (r._unplaced) refused.push([r.id, "unplaced"]);
     else if (!(r.size.w > 0 && r.size.h > 0)) refused.push([r.id, "degenerate"]);
     else {
       const { x, y } = r.at;
@@ -99,6 +110,7 @@ export function buildDatumTable(rooms: readonly RRoom[], axes: readonly RAxis[] 
   return Object.freeze({
     rooms: frozenMap(lines),
     refused: frozenMap(refused),
+    rings: frozenMap(rings),
     axes: Object.freeze((axes ?? []).map((a) => Object.freeze({ axis: a.axis, label: a.label, pos: a.pos }))),
   });
 }

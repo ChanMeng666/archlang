@@ -5,8 +5,9 @@
  * the test runs.
  *
  * `issue` and `issue-tiled` are the issue's first and second plans. Both drop the door and the
- * anchored sofa (cards L2 and L4), and `issue` places the bath at (6000,0) for its `right-of liv`
- * (card L3); the ring and the rooms are the issue's own.
+ * anchored sofa, and `issue` places the bath at (6000,0) for its `right-of liv` (card L3); the ring
+ * and the rooms are the issue's own. `doors-both-runs` onward are card L2's: `door|opening between`
+ * on a polygon (`test/rectilinear-doors.test.ts`).
  */
 
 const plan = (title: string, body: string): string => `plan "${title}" {\n  units mm\n${body}\n}\n`;
@@ -102,6 +103,37 @@ export const RECTILINEAR_PLANS: [string, string][] = [
     plan(
       "An L in a placed component",
       `  component wing() {\n  ${LIV}\n  ${BED}\n  ${STATEMENT}\n    door at (3000,4500) width 800 wall partition hinge left swing in\n  }\n  place wing() as w at (0,0)\n  place wing() as m at (15000,0) rotate 90\n  place wing() as n at (6000,7000) mirror x`,
+    ),
+  ],
+  [
+    // One door on each run of the pair, and a door on the pair of one run beside it.
+    "doors-both-runs",
+    plan(
+      "A door on each run",
+      `${LIV}\n${BED}\n  room id=bath at (6000,0) size 2000x3000 label "Bath" uses bath\n${STATEMENT}\n  door id=d1 between liv and bed at 1500 from bed.top width 800 swing into bed\n  door id=d2 between liv and bed at 1500 from bed.left width 800 swing into liv\n  door id=d3 between liv and bath at center width 800 swing into bath`,
+    ),
+  ],
+  [
+    // The U's middle run is picked by either side of the neighbour; its side runs have no word.
+    "door-u",
+    plan(
+      "A door in a U",
+      `  room id=u polygon (0,0) (9000,0) (9000,6000) (6000,6000) (6000,3000) (3000,3000) (3000,6000) (0,6000) label "Hall" uses living\n  room id=core at (3000,3000) size 3000x3000 label "Core" uses bedroom\n${STATEMENT}\n  door id=d1 between u and core at 1500 from core.left width 800 swing into core\n  door id=d2 at (3000,4500) width 800 wall partition`,
+    ),
+  ],
+  [
+    // A door between the L and a room that shares one run with it, written every way one run allows.
+    "door-one-run",
+    plan(
+      "Every position on one run",
+      `${LIV}\n${BED}\n  room id=din at (6000,0) size 3000x3000 label "Dining" uses dining\n${STATEMENT}\n  door id=d1 between liv and din at 700 from start width 800 swing into din\n  door id=d2 between din and liv at 700 from end width 800 hinge right swing into din\n  opening id=o1 between liv and din at 1500 from din.top width 300`,
+    ),
+  ],
+  [
+    "doors-placed",
+    plan(
+      "Doors on an L in placed components",
+      `  component wing() {\n  ${LIV}\n  ${BED}\n  ${STATEMENT}\n    door id=a between liv and bed at 1200 from bed.top width 800 swing into bed\n    door id=b between liv and bed at 1200 from bed.left width 800 swing into liv\n  }\n  place wing() as w at (0,0)\n  place wing() as m at (15000,0) rotate 90\n  place wing() as n at (6000,7000) mirror x`,
     ),
   ],
 ];

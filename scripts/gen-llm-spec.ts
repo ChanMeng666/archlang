@@ -139,7 +139,7 @@ export const ELEMENT_GRAMMAR: Record<string, string> = {
   void: `void [id=<name>] at (x,y) size <W>x<H>   # a hole in THIS storey's floor (stair well, atrium, double-height room): dashed rectangle + both diagonals, \`at\` = TOP-LEFT. It OBSTRUCTS circulation (no walking across it, though you may stand at its edge) and does NOT reduce the containing room's area; \`describe --json\`'s \`voids[]\` gives the extent to subtract. Rectangle-only (E_VOID_SIZE)`,
   outdoor: `outdoor [id=<name>] ${OUTDOOR_KINDS.join("|")} (at (x,y) size <W>x<H> | polygon (x,y) (x,y) (x,y) …) [label "…"] [rail ${RAIL_EDGES.join("|")} …]   # GROUND outside the building. NOT a room — absent from \`rooms[]\`, \`totals.floor_area_m2\`, \`schedule rooms\`, the access graph and Plan JSON — and it obstructs NOTHING (water included). Its facts are \`describe --json\`'s \`outdoor[]\` + \`totals.outdoor_area_m2\`, area by exact shoelace on the ring form. \`label\` draws the name AND the m²; unlabelled ground draws neither. \`rail\` is \`balcony\`-only (E_OUTDOOR_RAIL) and rectangle-only (E_OUTDOOR_POLY_DEGENERATE); omitted, it is DERIVED — every edge with no wall one thickness behind it. W_OUTDOOR_OVERLAPS_ROOM covers a surface over a room's floor, W_BALCONY_NO_DOOR a balcony with no opening within a wall thickness. It grows the page, so a site plan wants \`paper\` (E_OUTDOOR_SIZE, E_OUTDOOR_POLY_SELF_INTERSECT)`,
   fence: `fence [id=<name>] [${FENCE_STYLES.join("|")}] { (x,y) (x,y) … [close] }   # a posted boundary line — dense ticks / a double line / sparse ticks; the style word LEADS and defaults to the first. NOT a thin wall: no thickness, no poché, hosts NO opening, absent from \`describe().walls\` and the access graph (a gate is deferred by name). It measures (\`fences[]\`: \`length_mm\` + \`closed\`) and grows the page. An \`arc\` edge is E_FENCE_CURVED — write short straight runs`,
-  walls: `walls from rooms exterior <mm> partition <mm> [status <s>] [{ except <room>… | open [id=] between <A> and <B> [width <mm>] | between … thickness <mm> }]   # a ring + a partition per shared edge (\`open\`: an opening across it); rooms: rectangles tiling one floor. Host openings by rooms (see door), never \`on <wall>\``,
+  walls: `walls from rooms exterior <mm> partition <mm> [status <s>] [{ except <room>… | open [id=] between <A> and <B> [width <mm>] | between … thickness <mm> }]   # a ring + a partition per shared edge (\`open\`: an opening across it); rooms: rectangles or rectilinear polygons tiling one floor. Host openings by rooms (see door), never \`on <wall>\``,
 };
 
 /**
@@ -713,6 +713,8 @@ ${LEAD_EXAMPLE}
 \`\`\`
 
 To type some walls and derive others, name one by its rooms: \`wall … between <A> and <B>\`.
+
+An L is one \`room polygon\` with only horizontal and vertical edges, and \`walls from rooms\` keeps it one room. Wrapped round a room it shares several edges, so a door must pick one by an edge meeting that run at an end: \`door between liv and bed at 1500 from bed.top\`. \`at center\` there is \`E_OPENING_HOST_AMBIGUOUS\`; its hint quotes the position.
 
 ## Structure
 

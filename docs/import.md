@@ -26,9 +26,9 @@ PDF or a photo.
 | Wall positions, derived from the rooms by `walls from rooms` | Wall thicknesses (you pass them) |
 | Floor areas: within 1 % on the worked example, when the mask meets the limits below | Curved, angled or freely polygonal rooms |
 
-`walls from rooms` derives walls only between rectangles, so a room that is not one rectangle (an
-L-shaped living room) becomes several rectangles joined by `open between` clauses: the partition
-between them is voided, and the space still reads as one room. `describe` counts each part's net
+`walls from rooms` also takes a rectilinear `room polygon`, but this tool traces no rings yet, so a
+room that is not one rectangle (an L-shaped living room) becomes several rectangles joined by `open
+between` clauses: the partition between them is voided, and the space still reads as one room. `describe` counts each part's net
 area separately and subtracts the voided partition's strip, so the parts' sum is a little under the
 mask's area (under 1 % in the worked example).
 
