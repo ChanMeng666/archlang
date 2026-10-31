@@ -14,6 +14,7 @@ import { describe as suite, expect, it } from "vitest";
 import * as A from "../src/index.js";
 import { compile, describe, ERROR_CATALOG, lint, makeVirtualWorld } from "../src/index.js";
 import { MAX_EVAL_STEPS } from "../src/expr.js";
+import { polygonsOverlapCost, RING_READS_PER_STEP } from "../src/geometry/polygon.js";
 import { clearResolveCache, evaluationSteps, resolveAll } from "../src/ir.js";
 import { link } from "../src/import.js";
 import { parse } from "../src/parser.js";
@@ -183,11 +184,15 @@ suite("a ring's self-intersection scan is charged, pair by pair", () => {
   });
 });
 
-suite("an exact test between two rooms' rings is charged", () => {
-  // `W_ROOM_OVERLAP` tests a polygon pair exactly when their boxes overlap. Uncharged, 100 stairs
-  // of 300 vertices (boxes overlapping, floors disjoint) spent 4,554,140 steps, under the budget,
-  // and 376 s in that pass, with no diagnostic. Every assertion here is on a count.
-  const STEPS_PER_EDGE_PAIR = 13;
+suite("an exact test between two rooms' rings is charged at the budget's rate", () => {
+  // `W_ROOM_OVERLAP` tests a polygon or round pair exactly when their boxes overlap. Uncharged, 100
+  // stairs of 300 vertices (boxes overlapping, floors disjoint) spent 4,554,140 steps, under the
+  // budget, and 376 s in that pass, with no diagnostic. Charged per edge pair of the whole rings,
+  // honest round rooms were refused instead: a `room circle` is a 48-gon. The test now reads only
+  // what reaches the window the two boxes share, and pays for those reads. Every assertion here
+  // is on a count.
+  const asRing = (s: string): { x: number; y: number }[] =>
+    [...s.matchAll(/\((-?\d+),(-?\d+)\)/g)].map((m) => ({ x: Number(m[1]), y: Number(m[2]) }));
   /** A thin band of `stairs` steps, `4 * stairs` vertices, `k` bands up and to the right. */
   const band = (k: number, stairs: number, dx = 0): string => {
     const shift = 400 * k;
@@ -204,46 +209,77 @@ suite("an exact test between two rooms' rings is charged", () => {
   const room = (id: string, ring: string): string => `  room id=${id} polygon ${ring}`;
   const bands = (rooms: number, stairs: number): string =>
     plan(Array.from({ length: rooms }, (_, k) => room(`r${k}`, band(k, stairs))).join("\n"));
+  /** `n` round rooms of 3 m, 200 mm apart, hexagonally packed: each box clips its staggered neighbours'. */
+  const podLines = (n: number, indent = "  "): string => {
+    const pitch = 3200;
+    const rise = 2771;
+    const cols = Math.ceil(Math.sqrt(n));
+    return Array.from({ length: n }, (_, i) => {
+      const row = Math.floor(i / cols);
+      const x = 1500 + (i % cols) * pitch + (row % 2 === 1 ? pitch / 2 : 0);
+      return `${indent}room id=p${i} circle at (${x},${1500 + row * rise}) radius 1500`;
+    }).join("\n");
+  };
 
-  it("100 staircase rooms stop with ONE E_STEP_LIMIT inside the pass, after a pair or so of its 4,950", () => {
+  it("100 staircase rooms stop with ONE E_STEP_LIMIT at a pair, inside the pass, naming the cause", () => {
     const src = bands(100, 75);
     const r = compile(src, { noCache: true });
-    expect(r.diagnostics.filter((d) => d.severity === "error").map((d) => d.code)).toEqual(["E_STEP_LIMIT"]);
+    const errs = r.diagnostics.filter((d) => d.severity === "error");
+    expect(errs.map((d) => d.code)).toEqual(["E_STEP_LIMIT"]);
     expect(r.svg).toBe("");
-    const onePair = STEPS_PER_EDGE_PAIR * 300 ** 2;
-    // Every room was resolved first: its own ring's 44,850 pairs are on the meter.
+    expect(errs[0]!.message).toContain("many polygon or round rooms whose boxes overlap");
+    expect(src.slice(errs[0]!.span!.start, errs[0]!.span!.end)).toMatch(/^room id=r\d+ polygon/);
+    // The whole pass would cost 4,950 such pairs, so it stopped within one pair of the budget.
+    const onePair = polygonsOverlapCost(asRing(band(0, 75)), asRing(band(1, 75)));
     expect(stepsOf(src)).toBeGreaterThan(MAX_EVAL_STEPS);
     expect(stepsOf(src)).toBeLessThanOrEqual(MAX_EVAL_STEPS + onePair);
-    expect(((100 * 99) / 2) * onePair).toBeGreaterThan(1000 * MAX_EVAL_STEPS);
+    expect(4950 * onePair).toBeGreaterThan(30 * MAX_EVAL_STEPS);
   }, 60_000);
 
-  it("a pair whose boxes overlap pays 13 steps an edge pair; the same pair a box apart pays nothing", () => {
-    const stairs = 6;
-    const n = 4 * stairs;
-    const near = plan([room("a", band(0, stairs)), room("b", band(1, stairs))].join("\n"));
-    const far = plan([room("a", band(0, stairs)), room("b", band(1, stairs, 100_000))].join("\n"));
+  it("a pair whose boxes overlap pays what it reads; the same pair a box apart pays nothing", () => {
+    const a = band(0, 6);
+    const near = plan([room("a", a), room("b", band(1, 6))].join("\n"));
+    const far = plan([room("a", a), room("b", band(1, 6, 100_000))].join("\n"));
     expect(compile(near, { noCache: true }).diagnostics).toEqual([]);
-    expect(stepsOf(near) - stepsOf(far)).toBe(STEPS_PER_EDGE_PAIR * n * n);
+    const paid = stepsOf(near) - stepsOf(far);
+    expect(paid).toBeGreaterThan(0);
+    expect(paid).toBe(polygonsOverlapCost(asRing(a), asRing(band(1, 6))));
   });
 
-  it("a pair that crosses pays its edge pairs only: the containment tests never run", () => {
+  it("a pair that crosses pays its filter and its crossing reads: the containment tests never run", () => {
     const a = room("a", "(0,0) (4000,0) (4000,4000) (0,4000)");
     const b = (dx: number): string =>
       room("b", `(${2000 + dx},-1000) (${2500 + dx},-1000) (${2500 + dx},5000) (${2000 + dx},5000)`);
     const near = plan(`${a}\n${b(0)}`);
     expect(compile(near, { noCache: true }).diagnostics.map((d) => d.code)).toEqual(["W_ROOM_OVERLAP"]);
-    expect(stepsOf(near) - stepsOf(plan(`${a}\n${b(100_000)}`))).toBe(4 * 4);
+    // Eight edges filtered is one step; two edges of each in the window, four reads, is one step.
+    expect(RING_READS_PER_STEP).toBeGreaterThanOrEqual(8);
+    expect(stepsOf(near) - stepsOf(plan(`${a}\n${b(100_000)}`))).toBe(2);
   });
 
   it("control: coincident rooms are one class, one exact test however many there are", () => {
     const ring = band(0, 6);
-    const n = 4 * 6;
     const pile = (rooms: number): number =>
       stepsOf(plan(Array.from({ length: rooms }, (_, k) => room(`r${k}`, ring)).join("\n")));
     const perRoom = pile(4) - pile(3);
     expect(pile(3) - pile(2)).toBe(perRoom);
-    expect(pile(2) - pile(1) - perRoom).toBe(STEPS_PER_EDGE_PAIR * n * n);
+    expect(pile(2) - pile(1) - perRoom).toBe(polygonsOverlapCost(asRing(ring), asRing(ring)));
   });
+
+  it("honest round rooms stay far under the budget: 400 packed pods, and storeys of them", () => {
+    const pods = plan(podLines(400));
+    expect(compile(pods, { noCache: true }).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    expect(stepsOf(pods) * 100).toBeLessThanOrEqual(MAX_EVAL_STEPS);
+    const storeys = Array.from({ length: 3 }, (_, k) => `  level ${k} {\n${podLines(40, "    ")}\n  }`);
+    expect(stepsOf(plan(storeys.join("\n"))) * 100).toBeLessThanOrEqual(MAX_EVAL_STEPS);
+    // Two clipping circles read a few edges of each: the 48-gons' 2,304 edge pairs are not read.
+    const circle = (cx: number, cy: number): { x: number; y: number }[] =>
+      Array.from({ length: 48 }, (_, i) => ({
+        x: cx + 1500 * Math.cos((i * Math.PI) / 24),
+        y: cy + 1500 * Math.sin((i * Math.PI) / 24),
+      }));
+    expect(polygonsOverlapCost(circle(1500, 1500), circle(3100, 4271))).toBeLessThan(100);
+  }, 60_000);
 
   it("control: under the budget a plan keeps its answers and W_ROOM_OVERLAP its wording", () => {
     const l = "(0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000)";
@@ -260,8 +296,8 @@ suite("an exact test between two rooms' rings is charged", () => {
       (A.lintWithCoverage(src).coverage?.families ?? []).some((f) =>
         (f.skipped ?? []).some((s) => s.reason === "outdoor-budget"),
       );
-    /** `rooms` stairs in a row, and `lawns` L-shaped lawns of the same size whose boxes cover them. */
-    const site = (rooms: number, lawns: number, stairs: number): string => {
+    /** `rooms` stairs in a row, `lawns` long L-shaped lawns whose boxes cover them, then `last`. */
+    const site = (rooms: number, lawns: number, stairs: number, last = ""): string => {
       const width = rooms * (stairs + 1) * 1000;
       const ring = (k: number): string => {
         const y = -1000 - k * 500;
@@ -278,23 +314,24 @@ suite("an exact test between two rooms' rings is charged", () => {
         [
           ...Array.from({ length: rooms }, (_, k) => room(`r${k}`, band(0, stairs, k * (stairs + 1) * 1000))),
           ...Array.from({ length: lawns }, (_, k) => `  outdoor id=o${k} lawn polygon ${ring(k)}`),
+          last,
         ].join("\n"),
       );
     };
-    const work = (rooms: number, lawns: number, stairs: number): number =>
-      rooms * lawns * STEPS_PER_EDGE_PAIR * (4 * stairs) ** 2;
+    const onFloor = "  outdoor id=small lawn at (1000,1000) size 500x100";
 
-    it("past the budget the rule files a skip rather than a silent minute, and lint still returns", () => {
-      expect(work(4, 4, 50)).toBeGreaterThan(MAX_EVAL_STEPS);
-      const src = site(4, 4, 50);
+    it("past the budget it skips the surfaces that no longer fit, and judges the ones that do", () => {
+      const src = site(15, 15, 100, onFloor);
       expect(compile(src, { noCache: true }).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
       expect(skipped(src)).toBe(true);
+      // Last in source, and small enough to fit whatever the long lawns left.
+      expect(lint(src).map((d) => d.code)).toContain("W_OUTDOOR_OVERLAPS_ROOM");
     }, 60_000);
 
-    it("control: just inside the count it judges every pair, and a lawn on a floor still warns", () => {
-      expect(work(2, 2, 50)).toBeLessThan(MAX_EVAL_STEPS);
-      expect(skipped(site(2, 2, 50))).toBe(false);
-      const lawn = plan(`  room id=a at (0,0) size 4000x4000\n  outdoor id=g lawn at (2000,2000) size 4000x4000`);
+    it("control: just inside the count it judges every surface", () => {
+      expect(skipped(site(5, 5, 100))).toBe(false);
+      expect(skipped(site(100, 2, 4))).toBe(false);
+      const lawn = plan("  room id=a at (0,0) size 4000x4000\n  outdoor id=g lawn at (2000,2000) size 4000x4000");
       expect(skipped(lawn)).toBe(false);
       expect(lint(lawn).map((d) => d.code)).toContain("W_OUTDOOR_OVERLAPS_ROOM");
     }, 60_000);

@@ -689,9 +689,8 @@ export function firstOverflow(kind: "eval" | "expand"): boolean {
  * {@link MAX_EVAL_STEPS} was set by measurement (`test/step-budget.test.ts` pins both
  * margins). Over the corpus (examples with `lib`, test fixtures, the recovery corpus, eval
  * goldens, faults and fidelity plans, every `arch` fence of the docs) the median plan spends
- * 80 steps and the largest that compiles 43,179 (`aquarium`, whose 56-vertex concourse is
- * tested exactly against every room in its box): the bound is 115 times that. The
- * catalogue's demonstrations of the other caps spend more by construction (a `while` at its
+ * 80 steps and the largest that compiles 5,294 (`hillside-villa`): the bound is 944 times
+ * that. The catalogue's demonstrations of the other caps spend more by construction (a `while` at its
  * 10,000 iterations 260,090, a range at its 100,000 items 200,078) and still reach their own
  * cap first, 19 times under it. The bound is not set
  * higher because time to reach it is linear in it: on Node 24 M.2's nested loops reach it in

@@ -136,25 +136,25 @@ export const outdoorOverlapsRoom: LintRule = {
     const out: Diagnostic[] = [];
     const outdoors = ctx.ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor");
     if (outdoors.length === 0) return out;
-    // Lint runs after the resolution, where the step meter is off, so the pairs are added up
-    // first, on the same count and the same budget: the rule judges every pair or none.
-    let work = 0;
-    for (const o of outdoors) {
-      const ring = ringOf(o);
-      if (!ring) continue;
-      for (const r of ctx.rooms) {
-        const box = ctx.roomRects.get(r.id);
-        if (box) work += polygonsOverlapCost(ring, box.poly ?? rectRing(box));
-      }
-    }
-    if (work > MAX_EVAL_STEPS) {
-      ctx.skip("outdoor-budget");
-      return out;
-    }
+    // Lint runs after the resolution, where the step meter is off, so each surface's pairs are
+    // added up first, on the same count and the same budget. In source order, a surface whose
+    // pairs no longer fit is not judged, the rest still are, and the skip says so.
+    let left = MAX_EVAL_STEPS;
+    let skipped = false;
     const hits: Array<{ o: ROutdoor; r: RRoom }> = [];
     for (const o of outdoors) {
       const ring = ringOf(o);
       if (!ring) continue;
+      let cost = 0;
+      for (const r of ctx.rooms) {
+        const box = ctx.roomRects.get(r.id);
+        if (box) cost += polygonsOverlapCost(ring, box.poly ?? rectRing(box));
+      }
+      if (cost > left) {
+        skipped = true;
+        continue;
+      }
+      left -= cost;
       for (const r of ctx.rooms) {
         const box = ctx.roomRects.get(r.id);
         if (!box) continue;
@@ -166,6 +166,7 @@ export const outdoorOverlapsRoom: LintRule = {
         break;
       }
     }
+    if (skipped) ctx.skip("outdoor-budget");
     // Named by place alone (reach -1): "off" the very room it overlaps would say nothing.
     const names = surfaceNames(
       ctx,

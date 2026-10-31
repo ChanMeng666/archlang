@@ -17,20 +17,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fits the 5,000,000-step budget, and the largest in the corpus spends far less. No drawing,
   `describe()`, `lint()` or diagnostic of a plan under the budget moves; a plan with no such ring
   spends the same steps.
-- Polygon rooms whose boxes overlap now stop with `E_STEP_LIMIT` instead of running for minutes (H10,
-  reopening M.19). `W_ROOM_OVERLAP`'s exact ring test counted nothing, so 100 thin staircase rooms of
-  300 vertices, under the budget, spent 376 s in it with no diagnostic. The test is now charged before
-  it runs: one step per edge pair, and 12 more per edge pair when no edge pair crossed, so a pair a box
-  rejects and a pile of coincident rooms stay as cheap as they were. `W_ROOM_OVERLAP`'s wording and
-  counts do not move. The largest example now spends 43,179 steps, 115 times under the budget. The
-  price is on long rings: two rooms of about 600 vertices whose boxes overlap, or about 150 nested
-  L-shaped rooms, now reach the budget.
+- Polygon and round rooms whose boxes overlap no longer run for minutes (H10, reopening M.19).
+  `W_ROOM_OVERLAP`'s exact test read every edge of both rings and counted nothing, so 100 thin
+  staircase rooms of 300 vertices, under the budget, spent 376 s in it with no diagnostic. The test
+  now reads only what reaches the window the two boxes share, which leaves two round rooms that clip
+  at a corner a few edges to read, and pays for those reads at the budget's own rate, charged before
+  they run. That plan is one `E_STEP_LIMIT` in about a second, reported at the pair of rooms being
+  tested. A pair a box rejects and a pile of coincident rooms stay free, 400 packed round rooms spend
+  under 1 % of the budget, and no answer, `W_ROOM_OVERLAP` wording or count moves.
 - `W_OUTDOOR_OVERLAPS_ROOM` no longer runs unbounded in `lint`. It asks the same ring question after
-  the resolution, where nothing counts, so a plan of many long ground and room outlines took minutes
-  with no sign of why. Past the same budget the rule now judges nothing on that storey and says so in
-  the lint coverage (`outdoor-budget`). Under it, every warning stands.
+  the resolution, where nothing counts, so many long ground and room outlines took tens of seconds with
+  no sign of why. It now adds each surface up first, in source order: a surface that no longer fits the
+  same budget is not judged, the others still are, and the lint coverage says so (`outdoor-budget`).
 - `E_STEP_LIMIT`'s message and catalogue entry no longer blame "loops, calls or strings" alone. They
-  name polygons of hundreds of vertices too, which is what a plan with no loop has done wrong.
+  name a polygon of thousands of vertices and many polygon or round rooms whose boxes overlap, which
+  is what a plan with no loop has done.
 
 ### Added
 

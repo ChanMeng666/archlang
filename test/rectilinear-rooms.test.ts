@@ -763,14 +763,12 @@ suite("budgets", () => {
     expect(codes(combs(1500))).toEqual(["E_STEP_LIMIT"]);
   }, 60_000);
 
-  it("many small combs: the flat pre-charge covers their rooms, the real count refuses first", () => {
-    // 400 rooms pre-charge 4,000 walls and share 5,200, each ring far inside the budget. The
-    // exact overlap test of 200 interlocked pairs can then spend what is left, later in the
-    // resolution, so the real count is the first error and `E_STEP_LIMIT` may follow it.
+  it("many small combs: the flat pre-charge covers their rooms, the real count refuses", () => {
+    // 400 rooms pre-charge 4,000 walls and share 5,200, each ring far inside the budget.
     const src = combs(6, 200);
     expect(400 + 400 * DERIVED_ELEMENTS_PER_ROOM).toBeLessThan(MAX_ELEMENTS);
     const d = errors(src);
-    expect(d[0]!.code).toBe("E_ELEMENT_LIMIT");
+    expect(d.map((x) => x.code)).toEqual(["E_ELEMENT_LIMIT"]);
     expect(d[0]!.message).toContain("would derive up to 5200");
   }, 60_000);
 });

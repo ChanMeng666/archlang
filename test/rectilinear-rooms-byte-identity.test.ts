@@ -24,9 +24,9 @@
  * A digest moving is a finding to explain before it is a diff to re-measure.
  *
  * Re-measured once (H10), for two charges side by side: `polygonSelfIntersects` now charges one step
- * per edge pair of a ring ("ring scan"), and `polygonsOverlap` 13 per edge pair of two rings whose
- * boxes overlap, or 1 when an edge pair crosses ("overlap", M.19 reopened). The step count is part of
- * this payload, so a row that reaches either moved on that count alone, by exactly those two amounts,
+ * per edge pair of a ring ("ring scan"), and `polygonsOverlap` charges what it reads of two rings
+ * whose boxes overlap, 14 reads to a step ("overlap", M.19 reopened). The step count is part of this
+ * payload, so a row that reaches either moved on that count alone, by exactly those two amounts,
  * which each marked row states. The rows marked `H10` are {@link lawDigest} on `58c1fc81` with those
  * charges applied (`src/geometry/polygon.ts`) and nothing else. For every row, this branch's payload
  * with the old step count put back reproduces the digest taken at `58c1fc81`.
@@ -80,7 +80,7 @@ const worldOf = (dir: string | undefined): World | undefined => (dir ? makeNodeW
 /** Measured at `58c1fc81`, the `H10` rows with those charges applied (see the header): `[digest, row]`. */
 const BASELINE: [string, string][] = [
   ["262def0349197a52678b48368bc427c7bd002861a06506cb9353dea8772119fe", "examples/accessible.arch"],
-  ["d9caea1d1ac0e275c85d7da049bb30fb72d1c3934e8f49569666bd0d4d00adbc", "examples/aquarium.arch"], // H10: +1469 ring scan, +40768 overlap
+  ["b53db64ebc080b48cea74c90edf8705664e48365a428d23c0c16fc7731ce6cba", "examples/aquarium.arch"], // H10: +1469 ring scan, +939 overlap
   ["44575ad4610b8698bb5193ccfbd2a35fae9638f3eecbcaf9bb65b40041d7545d", "examples/attached.arch"],
   ["ba6bfa022ec919d18bb8641bb5cc50f12e4cdbe0c2f72be4ce5586d058fa3acd", "examples/bungalow.arch"], // H10: +6 ring scan, +0 overlap
   ["4776988cf9066c16be109b2ae2e10ae2f845f5e614d9866a1f485aaa0ac41f2e", "examples/classroom-block.arch"],
@@ -88,10 +88,10 @@ const BASELINE: [string, string][] = [
   ["4daf0582ee7e899fddc98a460391781f9faec0082ebab85706e15ff466cf2b3d", "examples/corner-cafe.arch"],
   ["2fa285ac0a1406f1c19a4f5b8cd6405b9435f3192b681642f9f90add9c479fc8", "examples/courtyard-house.arch"], // H10: +34 ring scan, +0 overlap
   ["d4c16e520cd04dc9f2f2598e37cd9405e158c0c2bd5eba42b81ff7a5e81fe36c", "examples/furnished-flat.arch"],
-  ["25665ad437af7db4cca23eba6daf2777a26fdf6499364c7bd027d9e9e0b4a449", "examples/gallery-l.arch"], // H10: +21 ring scan, +312 overlap
+  ["969fe0c639c3e332de2045feda5a3300b521e1964214ea9bf6bbca79c29ee9f4", "examples/gallery-l.arch"], // H10: +21 ring scan, +8 overlap
   ["890ddc4c43eee8321c202addcb421ac12ddc6c4b681e2956c30128245054e918", "examples/garden-house.arch"], // H10: +36 ring scan, +0 overlap
   ["df359e005849a18fc1d8e83823066f09da02733314120bef6d20af6e184fae01", "examples/garden-loft.arch"],
-  ["4a13d2a7d549ef00a8a84e452e385b9dca3622bd0112ba7f7c6aed25dca2b549", "examples/hexagon-pavilion.arch"], // H10: +36 ring scan, +10816 overlap
+  ["d9a3b8c66ec2f242d2938dccecddd0553b964d72735d42ee005c33f003182968", "examples/hexagon-pavilion.arch"], // H10: +36 ring scan, +92 overlap
   ["be82d0e9243363c83bb31abddb46768357365ecdd9c4a6c2ca34ca4c27244949", "examples/hillside-villa.arch"], // H10: +32 ring scan, +0 overlap
   ["7d331b6506b22f2f3b347f7cd69066691419d8ce179543e995880159f3fd9781", "examples/imports.arch"],
   ["d96d19caeabce46e47c45e8c0e3ce20dd1c578b6cc789b04fbe96fa437ef6995", "examples/laneway-house.arch"],
@@ -151,8 +151,8 @@ const BASELINE: [string, string][] = [
   ["f289077bd51bafdd17c25269a83919b792fb3b363e772da02743a5a75ebf4315", "plans:open-width"],
   ["f69a63ac6b9c15b42337a03b6ae51a7dabd0d14745d44431cd26f5c0fcca007c", "plans:open-instances"],
   ["6d2f8ec2e8511dd5497f752dabee9f37fbf42905e5d1774dd9de64762eb131c3", "plans:clauses-refused"],
-  ["285256d27fe234ced8e0495d68f46656182573aa2b6e514ecfce784512ca509b", "inline:issue-hybrid"], // H10: +15 ring scan, +312 overlap
-  ["8782138b001082cf0d545f362301ab3d2299e530bc3b16020b078ee6787145b0", "inline:typed-walls"], // H10: +15 ring scan, +312 overlap
+  ["889465609e8eb6e43ad713ed4a296e525013a60e5b442546cfbeca7de0f664de", "inline:issue-hybrid"], // H10: +15 ring scan, +8 overlap
+  ["dd1a86262ce68c313653113d1c5e214652c86b42ecf399e45c7ffa7f16f589c5", "inline:typed-walls"], // H10: +15 ring scan, +8 overlap
   ["80a6ed511c4e8c1f2a7a3cd62782651f731b613eaad4cb18fd2465abc1de91b3", "inline:except-slanted"],
   ["874344a801971326859871db55b47877705079a16b852fe5aa0d75e1899b0e9a", "inline:clauses"],
 ];

@@ -1646,16 +1646,21 @@ Done (PR #300): the equality law stays unseeded and a second case pins `seed: 20
 **Reopened by the owner on 2026-11-01, on a measurement from H10.** The decision below rested on
 "seconds, not unbounded", which held for small rings only: 100 staircase rooms of about 300
 vertices, boxes overlapping and floors disjoint, spent 4,554,140 steps, under the budget, and 376 s
-in `checkRoomOverlaps` with no diagnostic. `polygonsOverlap` is now charged past its box test, before
-each case runs: one step per edge pair, and 12 more per edge pair when no edge pair crossed. So a
-pair a box rejects, and a class of coincident rooms beyond its one test, cost what they did, and no
-`W_ROOM_OVERLAP` text or count moves. That plan is now one `E_STEP_LIMIT`; a cap on the count, which
-the decision weighed, was not needed. The price: two rooms of about 600 vertices whose boxes overlap,
-or about 150 nested L-shaped rooms, now reach the budget, and the largest example spends 43,179 steps
-(115 times under it). The only other unmetered ring
-pass, `W_OUTDOOR_OVERLAPS_ROOM`, adds the same cost up first and files `outdoor-budget`. The
-label-placement residual below stays kept, and so does `polygonLabelPoint`'s fallback, which runs at
-render, outside the meter, bounded by the element cap and its grid.
+in `checkRoomOverlaps` with no diagnostic. `polygonsOverlap` now reads only what reaches the window
+the two boxes share, 15 times faster on that plan's pairs and 100 times on two round rooms clipping
+at a corner, and charges those reads before each case runs, 14 to a step (`RING_READS_PER_STEP`),
+the budget's own rate. A pair a box rejects, and a class of coincident rooms beyond its one test, cost
+what they did, and no answer, `W_ROOM_OVERLAP` text or count moves (`test/polygon-overlap-oracle.test.ts`
+keeps the old form). That plan is now one `E_STEP_LIMIT` in about a second, reported at the pair; a
+cap on the count, which the decision weighed, was not needed. A first charge of 13 steps per edge
+pair of the whole rings refused honest plans (100 packed `room circle`s, each a 48-gon, after 0.19 s
+of real work), so the window is what makes the bound affordable. Two rooms of about 1,600 vertices
+whose boxes overlap still fit, and the largest example is back at 5,294 steps. `polygonsOverlap` has
+three other callers, all unmetered: `W_OUTDOOR_OVERLAPS_ROOM` adds each surface's cost up first and
+files `outdoor-budget` for those that no longer fit; `surfaceNames` (`src/lint/rules/outdoor.ts`)
+and `standsIn` (`src/furnish.ts`) test a rectangle against a ring and are not bounded by a count.
+The label-placement residual below stays kept, and so does `polygonLabelPoint`'s fallback, which
+runs at render, outside the meter, bounded by the element cap and its grid.
 
 The step budget counts the evaluator and the drawing budget the primitives drawn; three passes
 that run after both cost more than either counts, each within the element cap. Re-measured
