@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A quarter-turn or half-turn `stair` (issue #362, first part): `stair id=s dir up width 1000 { flight
+  at (1500,1100) size 1000x1000  landing at (1500,100) size 1000x1000  flight at (100,100) size 1400x1000
+  }` is one stair of authored rectangles in climbing order, with one UP or DN, one walking line and one
+  break line, and each flight's direction comes from what it touches. The notch it wraps round stays
+  floor. `E_STAIR_PIECES` refuses pieces that do not make one stair. **The form is not yet linted:** it
+  is read strictly and the coverage report says `block-stair`, so a correct stair can draw a warning.
+  The steepness check allows nothing for a landing, the shaft check compares bounding boxes only and
+  the head of a flight arriving from below on a storey it continues up from is not read. It is not in
+  `spec.llm.md` yet. No plan without the form moves: not the drawing, `describe()`, `lint()`, the
+  accessibility lint, the overlay, the diagnostics, the Scene or the step count.
+
 ## [1.49.0] - 2026-11-01
 
 ### Fixed

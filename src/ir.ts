@@ -703,8 +703,24 @@ export interface RColumn extends RBase {
   size: { w: number; h: number };
 }
 
-/** A resolved straight flight of stairs. `width` is always concrete (defaulted to the
- *  footprint's cross-axis extent at resolve), so nothing downstream re-derives it. */
+/** One rectangle of a block stair. */
+export interface RStairPiece {
+  at: Point;
+  size: { w: number; h: number };
+}
+
+/** One flight of a block stair: its rectangle and the edge it is entered across on THIS storey. */
+export interface RStairFlight extends RStairPiece {
+  tail: Side;
+}
+
+/**
+ * A resolved stair. `width` is always concrete (defaulted to the footprint's cross-axis extent at
+ * resolve), so nothing downstream re-derives it. A straight flight is one rectangle, `at` and
+ * `size`. A block stair (`flights`, `landings`) is several, in climbing order on every storey, and
+ * its `at` and `size` are their bounding box, which holds floor that is no stair: read the pieces
+ * through `src/vertical.ts` (`flightsOf`, `piecesOf`).
+ */
 export interface RStair extends RBase {
   kind: "stair";
   at: Point;
@@ -715,9 +731,14 @@ export interface RStair extends RBase {
   /**
    * The footprint edge the run is entered across, in PLAN coordinates, once a `place` frame
    * has carried it: the local tail (`tailEdge`) acted on by the frame. Absent at the root,
-   * where `tailEdge` applies its fixed page rule. Internal; never reaches `describe()`.
+   * where `tailEdge` applies its fixed page rule; a block stair always has it, the tail of the
+   * flight boarded on this storey. Internal; never reaches `describe()`.
    */
   _tail?: Side;
+  /** A block stair's flights, in climbing order. Absent on a straight stair. */
+  flights?: RStairFlight[];
+  /** A block stair's landings: `landings[i]` stands between `flights[i]` and `flights[i + 1]`. */
+  landings?: RStairPiece[];
   /**
    * The frame REFLECTS, so the break line's diagonals (the one handed part of the symbol)
    * read their mirror. XOR-composed by `stair.transform`. Internal; never reaches `describe()`.

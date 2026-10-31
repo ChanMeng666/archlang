@@ -22,6 +22,16 @@
  * width and length at least as great as the smallest width of the flight" [V]; 1.21b, kept clear
  * of permanent obstructions [V]. In a building other than a dwelling it is at least 1200 mm long
  * (1.23a) [V]. The flight band is centred in the footprint (`stairGlyph`).
+ *
+ * **A block stair** (flights and landings, issue #362) is read piece by piece, never as its
+ * bounding box, whose notch is floor. What is judged so far is deliberately strict, and each rule
+ * files the `block-stair` coverage skip where its own reading is only part of the answer: the run
+ * is the sum of the flights against the {@link minimumRun} of a straight flight, one going per
+ * landing too long (`W_STAIR_TOO_STEEP`); only the ends of the stair are measured, not the landings
+ * between its flights, and the head a flight from below arrives at is not read beside a block on
+ * either stop ({@link headUnread}); on a storey it rises from, all of every piece stands in the
+ * way, with none of the high end a person passes under ({@link readInPart}). A stairwell is a hole,
+ * so a stop that comes down files nothing for that. A rule with nothing to compare files nothing.
  */
 
 import type { Point } from "../../ast.js";
@@ -41,7 +51,7 @@ import {
 import { VERTEX_EPS } from "../../geometry/polygon.js";
 import { type BBox, rectOverlapAmounts, rectsOverlap } from "../../geometry/rect.js";
 import type { RDoor, ROpening, RStair, RVoid } from "../../ir.js";
-import { roomOfVertical, runAxis, tailEdge } from "../../vertical.js";
+import { boardedFlight, flightsOf, isBlockStair, piecesOf, roomOfVertical, runAxis, tailEdge } from "../../vertical.js";
 import { openingClauseOf, wallRef } from "../../wall-ref.js";
 import { rectToArc } from "../clearance-measure.js";
 import { judgesAsDwelling, type LintContext, type LintRule } from "../context.js";
@@ -85,8 +95,9 @@ const rectOf = (v: { at: Point; size: { w: number; h: number } }): BBox => ({
   h: v.size.h,
 });
 
-/** The run's length along its flight axis. */
-export const runLength = (v: RStair): number => (runAxis(v) === "y" ? v.size.h : v.size.w);
+/** The run's length along its flight axis; on a block stair, the sum of its flights. */
+export const runLength = (v: RStair): number =>
+  flightsOf(v).reduce((n, f) => n + (runAxis(f) === "y" ? f.size.h : f.size.w), 0);
 
 /**
  * The rectangle beyond edge `e` of `r`, `depth` deep and `width` wide, centred on the edge (the
@@ -143,9 +154,10 @@ const inset = (r: BBox, by: number): BBox => ({ x: r.x + by, y: r.y + by, w: r.w
  */
 function landingsOf(v: RStair, ctx: LintContext): Landing[] {
   const tail = tailEdge(v);
-  const own = rectOf(v);
+  const own = rectOf(boardedFlight(v));
   const out: Landing[] = [{ end: v.dir === "up" ? "foot" : "head", edge: tail, rect: own, width: v.width }];
   const below = ctx.building.shaftNeighbours?.get(v.id)?.below?.run;
+  if (below && (isBlockStair(v) || isBlockStair(below))) return out;
   if (below && below.kind === "stair" && below.dir === "up" && runAxis(below) === runAxis(v)) {
     const head = oppositeSide(tailEdge(below));
     const rect = rectOf(below);
@@ -153,6 +165,19 @@ function landingsOf(v: RStair, ctx: LintContext): Landing[] {
     if (!same) out.push({ end: "head", edge: head, rect, width: (below as RStair).width });
   }
   return out;
+}
+
+/**
+ * Does {@link landingsOf} leave unread the head of a flight rising to `v` from the storey below,
+ * because a block stair stands on one stop or the other? Not when both are blocks and this stop
+ * comes down: the head boarded here is that head. A fact and not a skip: `storeyStairs` is memoised
+ * and has callers that are not rules, so each rule that reads the landings files it.
+ */
+function headUnread(v: RStair, ctx: LintContext): boolean {
+  const below = ctx.building.shaftNeighbours?.get(v.id)?.below?.run;
+  if (below?.kind !== "stair" || below.dir !== "up") return false;
+  if (isBlockStair(v) && isBlockStair(below)) return v.dir === "up";
+  return isBlockStair(v) || isBlockStair(below);
 }
 
 /** The clear headroom over a flight and its landings: Approved Document K (2013) 1.11 and
@@ -169,7 +194,8 @@ const landingDepth = (width: number, ctx: LintContext): number =>
 function stairName(v: RStair, ctx: LintContext): string {
   const roomId = roomOfVertical(v, ctx.rooms);
   const room = roomId === null ? undefined : ctx.rooms.find((r) => r.id === roomId);
-  const where = room ? `in ${ctx.nameOf(room)}` : ctx.placeAt({ x: v.at.x + v.size.w / 2, y: v.at.y + v.size.h / 2 });
+  const f = boardedFlight(v);
+  const where = room ? `in ${ctx.nameOf(room)}` : ctx.placeAt({ x: f.at.x + f.size.w / 2, y: f.at.y + f.size.h / 2 });
   const lv = (ctx.building.storeyCount ?? 1) > 1 && ctx.ir.level !== undefined ? ` on level ${ctx.ir.level}` : "";
   return `the stair ${where}${lv}`;
 }
@@ -205,6 +231,8 @@ export interface StairFacts {
   landings: Landing[];
   /** The footprint is a stairwell here (a flight comes down from, or arrives at, this storey). */
   well: boolean;
+  /** The head of a flight rising from the storey below is not read ({@link headUnread}). */
+  headUnread: boolean;
   /** Per landing: what cuts it short (`null` when the full depth is clear), or `"curved"` when a
    *  curved wall stands near it and it is not judged. */
   blocks: Array<LandingBlock | null | "curved">;
@@ -247,6 +275,7 @@ export function storeyStairs(ctx: LintContext): StoreyStairs | null {
             v,
             landings: ls,
             well: ls.some((l) => l.end === "head"),
+            headUnread: headUnread(v, ctx),
             needs,
             blocks: ls.map((l, j) => {
               const zone = beyond(l.rect, l.edge, needs[j]!, l.width);
@@ -262,6 +291,9 @@ export function storeyStairs(ctx: LintContext): StoreyStairs | null {
   return result;
 }
 
+/** The rectangles the storey's stairs stand on: one per stair, unless one is a block stair. */
+const pieceCount = (f: StoreyStairs): number => f.stairs.reduce((n, sf) => n + piecesOf(sf.v).length, 0);
+
 /**
  * Take `n` units of the storey's pairwise work, or report that it is spent. Charged before the
  * pairs are compared, so a rule either judges every pair or none.
@@ -271,6 +303,13 @@ function charge(f: StoreyStairs, n: number): boolean {
   f.left -= n;
   return true;
 }
+
+/**
+ * Is what stands in the way on `sf` only part of the answer, for the `block-stair` skip? A block
+ * rising from this floor stands whole, with nothing passed under; a stop whose head from below is
+ * unread is not known for the stairwell it is. A block that comes down is a stairwell: all of it.
+ */
+const readInPart = (sf: StairFacts): boolean => (isBlockStair(sf.v) && !sf.well) || sf.headUnread;
 
 /** Shared entry of the rules: the storey's stair facts, filing the skip that explains a `null`. */
 function factsFor(ctx: LintContext): StoreyStairs | null {
@@ -286,11 +325,12 @@ function factsFor(ctx: LintContext): StoreyStairs | null {
  * end: the treads climb the storey height over the run, so a door leaf `height` tall swings, and a
  * person walks, under the part of the flight higher than that (the pitch line, Diagram 1.3). The
  * storey height is `ir.storeyHeight`: the authored `height`, else 3000 mm (`STOREY_HEIGHT`), a
- * default that can only narrow what is judged.
+ * default that can only narrow what is judged. `flight` is the flight read, the run itself unless
+ * it is a block stair, whose every flight stands in the way whole for now.
  */
-function lowPart(f: StairFacts, height: number, ctx: LintContext): BBox {
-  const r = rectOf(f.v);
-  if (f.well) return r;
+function lowPart(f: StairFacts, height: number, ctx: LintContext, flight: RStair = f.v): BBox {
+  const r = rectOf(flight);
+  if (f.well || isBlockStair(f.v)) return r;
   const len = runLength(f.v);
   const reach = Math.min(len, (len * height) / ctx.ir.storeyHeight);
   switch (tailEdge(f.v)) {
@@ -318,7 +358,8 @@ type SwingHit = "flight" | "head" | "foot";
  * curved wall stands near is not judged.
  */
 function swingHit(s: DoorSwing, head: number, f: StairFacts, ctx: LintContext): SwingHit | null {
-  if (sectorIntersectsRect(s, inset(lowPart(f, head, ctx), 1), 0)) return "flight";
+  const low = isBlockStair(f.v) ? piecesOf(f.v) : [lowPart(f, head, ctx)];
+  if (low.some((r) => sectorIntersectsRect(s, inset(r, 1), 0))) return "flight";
   const dwelling = judgesAsDwelling(ctx);
   const sweeps = (i: number, depth: number): boolean => {
     const l = f.landings[i]!;
@@ -360,10 +401,11 @@ export const swingOverStair: LintRule = {
     });
     const leafCount = swings.reduce((n, x) => n + x.leaves.length, 0);
     // Each leaf is compared up to three times (the swing and its two alternatives).
-    if (!charge(f, leafCount * f.stairs.length * 3)) {
+    if (!charge(f, leafCount * pieceCount(f) * 3)) {
       ctx.skip("stair-budget");
       return [];
     }
+    if (swings.length > 0 && f.stairs.some(readInPart)) ctx.skip("block-stair");
     const out: Diagnostic[] = [];
     const dwelling = judgesAsDwelling(ctx);
     for (const { d, leaves } of swings) {
@@ -549,6 +591,8 @@ export const stairNoLanding: LintRule = {
     const out: Diagnostic[] = [];
     for (const sf of f.stairs) {
       const v = sf.v;
+      // Only the stair's ends are measured: not the landings between a block's flights.
+      if (isBlockStair(v) || sf.headUnread) ctx.skip("block-stair");
       sf.landings.forEach((l, i) => {
         const b = sf.blocks[i]!;
         if (b === "curved") {
@@ -603,10 +647,11 @@ export const stairSideEntry: LintRule = {
   check(ctx: LintContext): Diagnostic[] {
     const f = factsFor(ctx);
     if (f === null) return [];
-    if (!charge(f, ctx.connectors.length * f.stairs.length)) {
+    if (!charge(f, ctx.connectors.length * pieceCount(f))) {
       ctx.skip("stair-budget");
       return [];
     }
+    if (ctx.connectors.length > 0 && f.stairs.some(readInPart)) ctx.skip("block-stair");
     const out: Diagnostic[] = [];
     const min = ctx.rules.minPathClearWidthMm;
     for (const c of ctx.connectors) {
@@ -617,38 +662,43 @@ export const stairSideEntry: LintRule = {
       if (!vertical && !horizontal) continue;
       for (const sf of f.stairs) {
         const v = sf.v;
-        const axis = runAxis(v);
-        // A wall along the flight: vertical for a flight up the page, horizontal across it.
-        if ((axis === "y") !== vertical) continue;
-        // The part of the flight a person stepping through cannot pass under.
-        const r = lowPart(sf, STAIR_HEADROOM_MM, ctx);
-        const [lo, hi, mid] = axis === "y" ? [r.y, r.y + r.h, c.at.y] : [r.x, r.x + r.w, c.at.x];
-        const c0 = mid - c.width / 2;
-        const c1 = mid + c.width / 2;
-        // Beside the flight at all, and is a usable doorway left past either end of it?
-        if (Math.min(c1, hi) - Math.max(c0, lo) <= VERTEX_EPS) continue;
-        const past = Math.max(0, Math.min(c1, lo) - c0, c1 - Math.max(c0, hi));
-        if (past + VERTEX_EPS >= Math.min(ctx.rules.minDoorWidthMm, c.width)) continue;
-        const [flo, fhi, line] = axis === "y" ? [r.x, r.x + r.w, host.a.x] : [r.y, r.y + r.h, host.a.y];
-        const half = host.thickness / 2;
-        let gap: number;
-        if (line >= fhi) gap = line - half - fhi;
-        else if (line <= flo) gap = flo - (line + half);
-        else continue; // a wall through the footprint is another defect
-        gap = Math.max(0, gap);
-        if (gap + VERTEX_EPS >= min) continue;
-        const m = deficitMm(min, gap);
-        const kind = c.kind === "door" ? "door" : "opening";
-        const ref = connectorRef(ctx, c);
-        out.push({
-          severity: "warning",
-          code: "W_STAIR_SIDE_ENTRY",
-          ...ctx.at(c),
-          message: `${capitalise(openingName(ctx, c))} opens onto the side of ${stairName(v, ctx)}, ${m.available} mm from the flight: less than the ${m.required} mm a person needs to step through and turn, and a flight is entered at its foot or head, from a landing.`,
-          hints: [
-            `Move ${ref.startsWith("`") ? `the ${kind} ${ref}` : ref} along its wall past the end of \`${v.id}\`, or move the stair so at least ${m.required} mm stand between the doorway and the flight.`,
-          ],
-        });
+        // One warning per doorway and stair, at the first flight it opens beside; a landing has
+        // no side to enter by, so a block stair's are not read.
+        for (const flight of flightsOf(v)) {
+          const axis = runAxis(flight);
+          // A wall along the flight: vertical for a flight up the page, horizontal across it.
+          if ((axis === "y") !== vertical) continue;
+          // The part of the flight a person stepping through cannot pass under.
+          const r = lowPart(sf, STAIR_HEADROOM_MM, ctx, flight);
+          const [lo, hi, mid] = axis === "y" ? [r.y, r.y + r.h, c.at.y] : [r.x, r.x + r.w, c.at.x];
+          const c0 = mid - c.width / 2;
+          const c1 = mid + c.width / 2;
+          // Beside the flight at all, and is a usable doorway left past either end of it?
+          if (Math.min(c1, hi) - Math.max(c0, lo) <= VERTEX_EPS) continue;
+          const past = Math.max(0, Math.min(c1, lo) - c0, c1 - Math.max(c0, hi));
+          if (past + VERTEX_EPS >= Math.min(ctx.rules.minDoorWidthMm, c.width)) continue;
+          const [flo, fhi, line] = axis === "y" ? [r.x, r.x + r.w, host.a.x] : [r.y, r.y + r.h, host.a.y];
+          const half = host.thickness / 2;
+          let gap: number;
+          if (line >= fhi) gap = line - half - fhi;
+          else if (line <= flo) gap = flo - (line + half);
+          else continue; // a wall through the footprint is another defect
+          gap = Math.max(0, gap);
+          if (gap + VERTEX_EPS >= min) continue;
+          const m = deficitMm(min, gap);
+          const kind = c.kind === "door" ? "door" : "opening";
+          const ref = connectorRef(ctx, c);
+          out.push({
+            severity: "warning",
+            code: "W_STAIR_SIDE_ENTRY",
+            ...ctx.at(c),
+            message: `${capitalise(openingName(ctx, c))} opens onto the side of ${stairName(v, ctx)}, ${m.available} mm from the flight: less than the ${m.required} mm a person needs to step through and turn, and a flight is entered at its foot or head, from a landing.`,
+            hints: [
+              `Move ${ref.startsWith("`") ? `the ${kind} ${ref}` : ref} along its wall past the end of \`${v.id}\`, or move the stair so at least ${m.required} mm stand between the doorway and the flight.`,
+            ],
+          });
+          break;
+        }
       }
     }
     return out;
@@ -667,6 +717,8 @@ export const stairHeadVoid: LintRule = {
     if (ctx.voids.length === 0) return [];
     const f = factsFor(ctx);
     if (f === null) return [];
+    // Never on the lowest stop, which has nothing below it, so the family never folds to `skipped`.
+    if (f.stairs.some((sf) => sf.headUnread)) ctx.skip("block-stair");
     const out: Diagnostic[] = [];
     for (const sf of f.stairs) {
       const v = sf.v;
@@ -779,6 +831,7 @@ export const stairTooSteep: LintRule = {
     if (need === null) return [];
     const out: Diagnostic[] = [];
     for (const v of ups) {
+      if (isBlockStair(v)) ctx.skip("block-stair");
       const run = runLength(v);
       if (run + VERTEX_EPS >= need.run) continue;
       const m = deficitMm(need.run, run);
@@ -820,7 +873,7 @@ export interface StairZone {
  */
 export function stairZones(f: StoreyStairs): StairZone[] {
   return f.stairs.flatMap((sf) => {
-    const flight: StairZone = { sf, where: "flight", rect: rectOf(sf.v) };
+    const flights = piecesOf(sf.v).map((rect): StairZone => ({ sf, where: "flight", rect }));
     const landing = (end: Landing["end"]): StairZone[] =>
       sf.landings.flatMap((l, i): StairZone[] => {
         const b = sf.blocks[i]!;
@@ -828,7 +881,7 @@ export function stairZones(f: StoreyStairs): StairZone[] {
         const clear = Math.min(sf.needs[i]!, b?.depth ?? sf.needs[i]!);
         return clear > 1 ? [{ sf, where: end, landing: i, rect: beyond(l.rect, l.edge, clear, l.width) }] : [];
       });
-    return [flight, ...landing("head"), ...landing("foot")];
+    return [...flights, ...landing("head"), ...landing("foot")];
   });
 }
 
@@ -860,12 +913,13 @@ export const furnitureOnStair: LintRule = {
     const f = factsFor(ctx);
     if (f === null) return [];
     const zones = stairZones(f).map((z) =>
-      z.where === "flight" ? { ...z, rect: lowPart(z.sf, STAIR_HEADROOM_MM, ctx) } : z,
+      z.where === "flight" && !isBlockStair(z.sf.v) ? { ...z, rect: lowPart(z.sf, STAIR_HEADROOM_MM, ctx) } : z,
     );
     if (!charge(f, ctx.furniture.length * zones.length)) {
       ctx.skip("stair-budget");
       return [];
     }
+    if (f.stairs.some(readInPart)) ctx.skip("block-stair");
     const out: Diagnostic[] = [];
     for (const piece of ctx.furniture) {
       const foot = rectOf(piece);

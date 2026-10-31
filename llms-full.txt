@@ -821,7 +821,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 
 **`archlang context`** — print the full bundled agent context (spec + workflow + CLI + errors)
   - input: none → output: the full agent context (llms-full.txt), one --section of it, or the one-screen --level starter
-  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 155 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 155 KB of it (spec = the language, 30 KB; workflow = the agent loop, 31 KB; cli = every command, 29 KB; errors = the diagnostic catalog, 65 KB) · `--json` structured result on stdout, messages on stderr
+  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 156 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 156 KB of it (spec = the language, 30 KB; workflow = the agent loop, 31 KB; cli = every command, 29 KB; errors = the diagnostic catalog, 65 KB) · `--json` structured result on stdout, messages on stderr
   - example: `archlang context` — the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 
 **`archlang new`** (aliases: `init`) — scaffold a starter .arch
@@ -839,7 +839,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `archlang explain <CODE>`.
-**148 errors** (abort rendering) · **91 warnings** (advisory; `validate --strict` fails on them too).
+**149 errors** (abort rendering) · **91 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -969,6 +969,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `E_SITE_BOUNDARY_SELF_INTERSECT` — The site `boundary` crosses itself. **Fix:** Reorder the vertices so the boundary walks the lot line once without crossing back over itself.
 - `E_SITE_DUP` — Two `site` blocks in one plan. **Fix:** Delete one of the blocks, or merge their fields into a single `site { … }`. The first block is the one that takes effect.
 - `E_SITE_NO_STREET` — A `site` block declares no `street`. **Fix:** Add `street north`, `south`, `east` or `west` inside the block. `hemisphere` is the optional field (it defaults to `north`).
+- `E_STAIR_PIECES` — A stair's flights and landings do not make one stair. **Fix:** Check the order of the pieces and that each one ends exactly where the next begins. A landing may be wider or longer than the flights it joins.
 - `E_STAIR_WIDTH` — Stair flight `width` is outside the footprint. **Fix:** Drop `width` to fill the footprint, or give a value between 0 and the footprint's short side.
 - `E_STEP_LIMIT` — Evaluation did more work than any plan needs. **Fix:** Remove the inner loop or the doubling, compute the value directly, draw long outlines with fewer vertices, keep the boxes of polygon rooms apart, or split the plan.
 - `E_STRIP_NEST` — Illegal `strip` nesting. **Fix:** Move the `strip` to the plan body, alongside the other elements.

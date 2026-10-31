@@ -137,8 +137,17 @@ const STATEMENT_EXPRS: { [K in Statement["kind"]]: (s: Extract<Statement, { kind
     out.push(s.size.w, s.size.h);
   },
   stair: (s, out) => {
-    pt(out, s.at);
-    out.push(s.size.w, s.size.h);
+    // The block form writes `width` first, then its pieces, as the source reads.
+    if (s.pieces) {
+      if (s.width !== undefined) out.push(s.width);
+      for (const p of s.pieces) {
+        pt(out, p.at);
+        out.push(p.size.w, p.size.h);
+      }
+      return;
+    }
+    pt(out, s.at!);
+    out.push(s.size!.w, s.size!.h);
     if (s.width !== undefined) out.push(s.width);
   },
   elevator: (s, out) => {

@@ -10,7 +10,7 @@
  * format(x)`).
  */
 
-import type { AxesNode, ComponentDef, ImportNode, PlanNode, SiteNode, Statement, TitleNode } from "./ast.js";
+import type { AxesNode, ComponentDef, ImportNode, PlanNode, SiteNode, StairNode, Statement, TitleNode } from "./ast.js";
 import { TITLE_FIELD_KEY } from "./ast.js";
 import { TITLE_FIELDS } from "./grammar/tokens.js";
 import type { Comment } from "./lexer.js";
@@ -24,7 +24,7 @@ import { fmtSource as numStr } from "./num-format.js";
 import { escapeStr, exprToSource as exprStr } from "./expr-source.js";
 // The leaf (non-block) statement kinds print through the one shared printer an
 // element's own fix producers also lower onto — see `statement-print.ts`'s header.
-import { ptStr, statementText } from "./statement-print.js";
+import { ptStr, stairHeadStr, stairPieceStr, statementText } from "./statement-print.js";
 
 const PRINT_WIDTH = 80;
 
@@ -41,18 +41,33 @@ export function format(source: string): string {
 
 const BLOCK_KINDS = new Set(["for", "if", "while", "level", "zone"]);
 
+/** Does this statement's `{ … }` hold comments of its own? */
+const holdsComments = (s: Statement): boolean =>
+  BLOCK_KINDS.has(s.kind) || (s.kind === "stair" && s.pieces !== undefined);
+
 /** Build the `{ … }` Doc for a block body, weaving in its inner comments. */
 function blockDoc(stmts: Statement[], span: { start: number; end: number }, comments: Comment[], source: string): Doc {
-  const inner = comments.filter((c) => c.span.start > span.start && c.span.start < span.end);
   const slots = stmts.map((s) => ({
     start: s.span!.start,
     end: s.span!.end,
-    block: BLOCK_KINDS.has(s.kind),
+    block: holdsComments(s),
     doc: statementDoc(s, comments, source),
   }));
+  return slotsDoc(slots, span, comments, source);
+}
+
+/** The `{ … }` Doc of `slots`, weaving in the comments inside `span`. */
+function slotsDoc(slots: Slot[], span: { start: number; end: number }, comments: Comment[], source: string): Doc {
+  const inner = comments.filter((c) => c.span.start > span.start && c.span.start < span.end);
   const lines = weaveSlots(slots, inner, source);
   if (lines.length === 0) return "{ }";
   return concat(["{", indent(concat([hardline, join(hardline, lines)])), hardline, "}"]);
+}
+
+/** A block `stair`: printed here rather than by the leaf printer so its comments stay inside it. */
+function stairDoc(s: StairNode, comments: Comment[], source: string): Doc {
+  const slots = s.pieces!.map((p) => ({ start: p.span.start, end: p.span.end, block: false, doc: stairPieceStr(p) }));
+  return concat([stairHeadStr(s), " ", slotsDoc(slots, s.span!, comments, source)]);
 }
 
 function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
@@ -86,6 +101,9 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
     case "error":
       // Re-emit the broken region verbatim — formatting must never corrupt it.
       return s.span ? source.slice(s.span.start, s.span.end) : "";
+    case "stair":
+      if (s.pieces) return stairDoc(s, comments, source);
+      return statementText(s);
     default:
       // Every other (non-block) kind prints through the shared leaf printer.
       return statementText(s);
@@ -295,7 +313,7 @@ export function formatPlan(plan: PlanNode, source: string): string {
     slots.push({
       start: s.span!.start,
       end: s.span!.end,
-      block: BLOCK_KINDS.has(s.kind),
+      block: holdsComments(s),
       doc: statementDoc(s, comments, source),
     });
   if (plan.title?.span)

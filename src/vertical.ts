@@ -27,7 +27,16 @@
  */
 
 import type { Point, VerticalDir } from "./ast.js";
-import type { RElevator, REscalator, ResolvedElement, ResolvedPlan, RRoom, RStair } from "./ir.js";
+import type {
+  RElevator,
+  REscalator,
+  ResolvedElement,
+  ResolvedPlan,
+  RRoom,
+  RStair,
+  RStairFlight,
+  RStairPiece,
+} from "./ir.js";
 import type { BBox } from "./geometry/rect.js";
 import type { RectEdge } from "./fixture-orientation.js";
 import { oppositeSide, SIDE_NORMAL } from "./algebra/d4.js";
@@ -53,9 +62,55 @@ export function verticalsOf(ir: ResolvedPlan): RVertical[] {
   return ir.elements.filter(isVertical);
 }
 
-/** The footprint rectangle of a vertical run. */
+/** The footprint rectangle of a vertical run: on a block stair, the bounding box of its pieces,
+ *  which holds floor that is no stair ({@link piecesOf}, {@link boardedFlight}). */
 export function verticalRect(v: RVertical): BBox {
   return { x: v.at.x, y: v.at.y, w: v.size.w, h: v.size.h };
+}
+
+/** A stair written as flights and landings. */
+export type RBlockStair = RStair & { flights: RStairFlight[]; landings: RStairPiece[] };
+
+/** Is this run a block stair (issue #362)? False for every plan that does not use the form. */
+export function isBlockStair(v: RVertical): v is RBlockStair {
+  return v.kind === "stair" && v.flights !== undefined;
+}
+
+/** One flight of block stair `v` as a straight stair of its own, which every reader of a straight
+ *  run takes as it stands: its tail is carried, so its axis is read from that, a short-axis run
+ *  and a square one included. */
+function asFlight(v: RBlockStair, f: RStairFlight): RStair {
+  const { flights: _flights, landings: _landings, ...base } = v;
+  return { ...base, at: f.at, size: f.size, _tail: f.tail };
+}
+
+/**
+ * The straight flights of a run, in climbing order: the run itself unless it is a block stair, so
+ * a reader has one path and a plan with no block stair takes it unchanged.
+ */
+export function flightsOf<V extends RVertical>(v: V): V[];
+export function flightsOf(v: RVertical): RVertical[] {
+  if (!isBlockStair(v)) return [v];
+  return v.flights.map((f) => asFlight(v, f));
+}
+
+/**
+ * The flight a person boards on this storey: the first of a `dir up` block, the last of a `dir
+ * down` one (order is climbing order on every storey), and the run itself otherwise. The rooms a
+ * stair stands in and the floor at its entry are read here, so a stair spanning two rooms belongs
+ * to where you step on.
+ */
+export function boardedFlight<V extends RVertical>(v: V): V;
+export function boardedFlight(v: RVertical): RVertical {
+  if (!isBlockStair(v)) return v;
+  return asFlight(v, v.dir === "up" ? v.flights[0]! : v.flights[v.flights.length - 1]!);
+}
+
+/** Every rectangle of a run's footprint, in climbing order: one, unless it is a block stair. */
+export function piecesOf(v: RVertical): BBox[] {
+  if (!isBlockStair(v)) return [verticalRect(v)];
+  const rect = (p: RStairPiece): BBox => ({ x: p.at.x, y: p.at.y, w: p.size.w, h: p.size.h });
+  return v.flights.flatMap((f, i) => (i < v.landings.length ? [rect(f), rect(v.landings[i]!)] : [rect(f)]));
 }
 
 /**
@@ -152,11 +207,23 @@ export function dirLabel(dir: VerticalDir): "UP" | "DN" {
 export interface VerticalObstacle {
   rect: BBox;
   open: RectEdge[];
+  /** The id of the run it is part of; absent on an obstacle that is no run. */
+  run?: string;
 }
 
-/** The nav-grid obstacles a storey's vertical runs contribute, in source order. */
+/**
+ * The nav-grid obstacles a storey's vertical runs contribute, in source order: one per piece, so
+ * the floor a turning stair wraps round stays walkable, and open only on the flight boarded here.
+ * There are more obstacles than runs, so nothing may pair the two lists by position: an
+ * obstacle says which run it is part of ({@link VerticalObstacle.run}).
+ */
 export function verticalObstacles(verticals: readonly RVertical[]): VerticalObstacle[] {
-  return verticals.map((v) => ({ rect: verticalRect(v), open: entryEdges(v) }));
+  return verticals.flatMap((v) => {
+    if (!isBlockStair(v)) return [{ rect: verticalRect(v), open: entryEdges(v), run: v.id }];
+    const pieces = piecesOf(v);
+    const boarded = v.dir === "up" ? 0 : pieces.length - 1;
+    return pieces.map((rect, i) => ({ rect, open: i === boarded ? entryEdges(v) : [], run: v.id }));
+  });
 }
 
 /**
@@ -177,15 +244,18 @@ export function outsideOpenEdge(px: number, py: number, rect: BBox, open: readon
 /**
  * The id of the first room whose FLOOR contains a run's footprint centre, or null. The
  * floor is the room's shape — its ring for a `polygon`/`circle` room, so a stair in the
- * notch of an L is not claimed by the L — and its rectangle otherwise, closed bounds.
+ * notch of an L is not claimed by the L — and its rectangle otherwise, closed bounds. A
+ * block stair is read at the flight boarded here ({@link boardedFlight}): the centre of its
+ * bounding box can stand off the stair.
  *
  * This is `pointInRoomBox(centre, roomBox(r))` from `analyze.ts`, spelled with the two leaf
  * predicates it is made of: `vertical.ts` is loaded by `elements/stair.ts` while the element
  * registry is still initialising, and importing `analyze.ts` from here would close that cycle.
  */
 export function roomOfVertical(v: RVertical, rooms: readonly RRoom[]): string | null {
-  const cx = v.at.x + v.size.w / 2;
-  const cy = v.at.y + v.size.h / 2;
+  const f = boardedFlight(v);
+  const cx = f.at.x + f.size.w / 2;
+  const cy = f.at.y + f.size.h / 2;
   for (const r of rooms) {
     const inside = r.poly
       ? pointInPolygon(cx, cy, r.poly)
@@ -497,7 +567,10 @@ export interface ArrivingRun {
  * Where the end cannot be told — arrival sides both below AND above (a storey reachable
  * independently from either), or the neighbouring stop not drawn as the same kind of run, or
  * drawn with its flight along the other axis ({@link runAxis}: a portrait stair below, a
- * landscape one above) — the edges fall back to the run's own {@link entryEdges} on L.
+ * landscape one above) — the edges fall back to the run's own {@link entryEdges} on L. A block
+ * stair on either side takes the same fallback for now: which of its flights arrives is not
+ * read yet, so the run is stepped off where it is boarded on L, at the flight
+ * {@link boardedFlight} names. On a stop drawn `dir down` that is the true head.
  */
 export function arrivalRuns(
   levels: readonly VerticalLevelInput[],
@@ -567,7 +640,7 @@ function cutAt(connections: readonly VerticalConnection[], level: number): Verti
 /** {@link arrivalRuns}' edge rule for one arriving run; `src` is the run on the arriving side. */
 function arrivalEdges(run: RVertical, below: boolean, above: boolean, src: RVertical | undefined): RectEdge[] {
   if (run.kind === "elevator" || below === above) return entryEdges(run);
-  if (!src || src.kind !== run.kind) return entryEdges(run);
+  if (!src || src.kind !== run.kind || isBlockStair(run) || isBlockStair(src)) return entryEdges(run);
   // The head is read on THIS storey's footprint, so the two stops must draw the flight along
   // the same axis; otherwise the opposite of the other stop's tail is a long side of this
   // footprint (a flight's length read as a doorway).

@@ -23,6 +23,8 @@ import type {
   OpeningBetween,
   RoomRel,
   Statement,
+  StairNode,
+  StairPiece,
   StripRoomChild,
 } from "./ast.js";
 import type { Expr } from "./expr.js";
@@ -103,6 +105,16 @@ function placeStr(place: FurniturePlace, room: string): string {
 }
 
 /** One strip room child: `room [id=] size <main>[x<cross>] [label …] [uses …]`. */
+/** A block `stair` up to its `{`, shared with the formatter, which weaves comments into the block. */
+export function stairHeadStr(s: StairNode): string {
+  return `stair ${s.id ? `id=${s.id} ` : ""}dir ${s.dir}${s.width !== undefined ? ` width ${exprStr(s.width)}` : ""}`;
+}
+
+/** One line of a block `stair`, shared with the formatter. */
+export function stairPieceStr(p: StairPiece): string {
+  return `${p.kind} at ${ptStr(p.at)} size ${sizeStr(p.size)}`;
+}
+
 function stripRoomStr(r: StripRoomChild): string {
   const id = r.id ? `id=${r.id} ` : "";
   let size: string;
@@ -262,8 +274,14 @@ export function statementText(s: LeafStatement): Doc {
     }
     case "column":
       return `column ${id}at ${ptStr(s.at)} size ${sizeStr(s.size)}`;
-    case "stair":
-      return `stair ${id}at ${ptStr(s.at)} size ${sizeStr(s.size)} dir ${s.dir}${s.width !== undefined ? ` width ${exprStr(s.width)}` : ""}`;
+    case "stair": {
+      if (s.pieces) {
+        if (s.pieces.length === 0) return concat([stairHeadStr(s), " { }"]);
+        const lines: Doc[] = s.pieces.map(stairPieceStr);
+        return concat([stairHeadStr(s), " {", indent(concat([hardline, join(hardline, lines)])), hardline, "}"]);
+      }
+      return `stair ${id}at ${ptStr(s.at!)} size ${sizeStr(s.size!)} dir ${s.dir}${s.width !== undefined ? ` width ${exprStr(s.width)}` : ""}`;
+    }
     case "elevator":
       return `elevator ${id}at ${ptStr(s.at)} size ${sizeStr(s.size)}`;
     case "escalator":
