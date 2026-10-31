@@ -152,7 +152,6 @@ question and the open-ring lint (H1, H2); MCP and `batch` `dropped` (H6); the Ar
   dotted id; `dim faces` at a cleared crossing.
 - **`validate --intent` (#365):** per-room `reachable` above the lowest storey; `windows.min` is the total of
   the matching rooms, not per room (the user was told on the issue); a `level` key on `roomsInclude`.
-- **Plan JSON (#366):** MCP `compile` does not pass `dropped`; `batch -f json` does not report it.
 - **`finish` (#364):** placement-clear hints; a hinted route under a stair's high end; lifts and escalators;
   part 2, furnishing a plan with `level` blocks.
 - **Open boundaries (#368):** the T of three open boundaries keeps its pier (`arms.length<3`, one line, re-pin
@@ -175,59 +174,36 @@ evidence and their syntax as a suggestion. Order: what goes wrong silently, then
 Must not, for the whole wave: promise IFC; make a structural or compliance claim; add a language form without
 its byte-identity law.
 
-### H0 · Records — `doing` · 0.5 day · model: main session
+### H0 · Records — `done` · PR #391 (growth #34) · merge `b4453506` · record: `research/2026-11-01-as-built.md` § H0
 
-D23–D25, this section, the handoff, and in the growth repository the day-90 reading, the N10 release notes and
-the question for the user. Docs only.
+### H1 · Name an open exterior ring — `done` · PR #394 · merge `4eab66b1` · record: `research/2026-11-01-as-built.md` § H1
 
-### H1 · Name an open exterior ring — `todo` · 0.5–1 day · model: opus
+### H2 · Open boundaries, the two remainders — `done` · PR #393 · merge `58c1fc81` · record: `research/2026-11-01-as-built.md` § H2
 
-From #346 and #370. A 1000 mm gap in an exterior ring passes `validate` and `lint`; only `describe` hints at it
-through `gross_internal_area_omitted`. A new lint rule in `src/lint/rules/enclosure.ts`, on the same reading as
-`src/analyze/gross-area.ts` (`no-closed-exterior-ring`), catalogued in `src/error-catalog.ts`. Measure the corpus
-first and judge every hit. Must not: fire on a plan with no exterior wall at all; overlap `W_WALL_END_SHORT`'s
-reports; change a drawing.
+### H3 · `finish` names the rooms it leaves empty — `done` · PR #392 · merge `c0ecc0d8` · record: `research/2026-11-01-as-built.md` § H3
 
-### H2 · Open boundaries, the two remainders — `todo` · 0.5 day · model: opus
+### H4 · `W_STAIR_TOO_STEEP` stops advising a loop — `done` · PR #398 · merge `467648f1` · record: `research/2026-11-01-as-built.md` § H4
 
-From #368. (a) `freeCrossingCuts` needs four arms (`src/wall-lowering.ts:155`), so a T of three open boundaries
-keeps its pier; re-pin `open-tee` with the reason beside the value. (b) A boundary opened over its whole shared
-edge draws no wall, so it stops counting for `E_OPENING_NIB` and its lint twin (`src/opening-relation.ts:645`,
-`src/opening-junctions.ts`). Must not: relax any narrower opening; pin that with a test.
+### H5 · Parse errors that say what to write — `done` · PR #395 · merge `197a0fdb` · record: `research/2026-11-01-as-built.md` § H5
 
-### H3 · `finish` names the rooms it leaves empty — `todo` · 0.5 day · model: opus
+### H6 · `dropped` on the remaining paths — `done` · PR #397 · merge `76095ec4` · record: `research/2026-11-01-as-built.md` § H6
 
-From #370. Rooms with `uses hall`, `utility`, `storage` or `entry` come back empty with `unresolved: []`,
-against SKILL.md step 10 and `llms-full.txt`. Use the existing `note()` in `src/furnish.ts`. Must not: furnish
-them; change what `finish` writes into a plan.
-
-### H4 · `W_STAIR_TOO_STEEP` stops advising a loop — `todo` · 0.25 day · model: opus
-
-From #362. Its fix says to draw two flights with a landing, which lint then judges as two too-steep stairs
-(`src/error-catalog.ts:1500`, `src/lint/rules/stairs.ts:793`). Reword it; regenerate `docs/error-codes.md`; list
-the moved hint digests. S2 restores the advice in the block form.
-
-### H5 · Parse errors that say what to write — `todo` · 0.25 day · model: sonnet
-
-From #370. A hyphen in an id, `,` between uses and `;` at a line end give a bare `E_PARSE`
-(`src/lexer.ts:557`, `src/parser.ts:380,1362`). Add the hint. Must not: accept any of them.
-
-### H6 · `dropped` on the remaining paths — `todo` · 0.25 day · model: sonnet
-
-From #366. MCP `compile` does not pass `dropped`; `batch -f json` does not report it. Reuse
-`src/cli/serialize.ts`. A shim release follows.
-
-### H7 · Room in `spec.llm.md` — `todo` · 0.5 day · model: opus
-
-The spec is at 29,999 of 30,000 UTF-16 units and L, S and #370's stair-entry sentence all need room. Free at
-least 600 units by provable cuts, each with its evidence in the PR, then add the sentence on a stair entered
-from the north or west. Must not: remove a behavioural constraint.
+### H7 · Room in `spec.llm.md` — `done` · PR #396 · merge `3d4817d3` · record: `research/2026-11-01-as-built.md` § H7
 
 ### H8 · ArchCanvas on 1.48 — `todo` · after 1.48.0 · 0.5 day · model: opus · in the ArchCanvas repository
 
 Classify `W_FURNITURE_ON_STAIR`, `W_WALL_END_SHORT` and H1's code; `checkPredicates` now reads `levels[]`, so
 `mergeLevelSummaries` patches of top-level fields are ignored; refresh the stale comment at
 `src/lib/agent/intent.ts:702-720`; add a tripwire for each.
+
+### H9 · Residue of the H cards — `todo` · after Show HN · 1–2 days · model: opus
+
+What the red-team rounds of #392–#398 left, each with its reproduction in the PR. One PR per group; none blocks a release.
+
+- **`W_EXTERIOR_RING_OPEN`:** silent when a closed annex (porch, garage) is built off an open shell, where `describe` then reports the annex's area with no omission reason: this one needs a different reading, and a test pins today's silence. A jog at a free end loses the span figure; a roof-terrace parapet in `exterior` fires; a fin off an open run can pair with a shell end; two open shells facing each other pair across the street.
+- **Open boundaries:** the free-end nib is measured to a face that is not drawn; a narrowed continuation counts as carried on however thin; `W_CONNECTOR_AMBIGUOUS`'s straddle threshold moved from 250 to 200 mm past the line; `W_DOOR_NEAR_CORNER` calls a free end a corner; an authored wall left at a crossing keeps its cap; narrowing the nib scan to ends a boundary reaches moves 11 K1 rows instead of 19.
+- **`finish`:** the note on an instance room (`u1.hall`) and the older row-room note disagree on whether a plan body can name it.
+- **`batch -o`:** an output folder that does not exist fails each file with a raw `ENOENT`.
 
 ### L1, L2 · L-shaped rooms, walls and doors — `todo` · after H7 · 2.5 days · model: opus
 
