@@ -7,8 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.48.0] - 2026-11-01
-
 ### Added
 
 - A rectilinear `room polygon` in `walls from rooms` (issue #363, first part): a polygon whose every
@@ -21,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   part lands. `wall … between` and `wall … around` stay rectangle-only. A polygon with a slanted edge and
   a circle room keep `E_ROOM_NOT_RECTANGLE`, reworded to say rectangular or rectilinear. No other plan
   moves: not the drawing, `describe()`, `lint()`, the diagnostics, the Scene or the step count.
+
+## [1.48.0] - 2026-11-01
+
+### Added
+
 - `W_EXTERIOR_RING_OPEN` (lint, issues #346, #370): exterior walls that stand on a room and close
   nothing, on the reading `describe` omits the gross internal area on (`no-closed-exterior-ring`), so a
   1000 mm gap in a shell no longer passes `validate` and `lint`. The message gives each gap's two ends;
