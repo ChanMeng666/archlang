@@ -66,8 +66,8 @@ source (.arch)
 - `lint/rules/clearances.ts` WC side clearance and a tall unit in front of a window;
   `lint/rules/footprint.ts` `W_FOOTPRINT_TRANSPOSED`; `lint/clearance-measure.ts` the shape measures
   both read, shared with the placement check `lint/fixture-paste.ts` quotes positions through
-- `room-tiling.ts` the exact derivation behind `walls from rooms` (rectangular rooms in, rings and
-  partitions out, or a refusal); `wall-relation.ts` the pairwise forms `wall … between|around`, on the
+- `room-tiling.ts` the exact derivation behind `walls from rooms` (rectangular and rectilinear rooms
+  in, rings and partitions out, or a refusal); `wall-relation.ts` the pairwise forms `wall … between|around`, on the
   same sweep; `opening-junctions.ts` where other walls meet a host wall, shared by
   `W_OPENING_AT_JUNCTION` and `E_OPENING_NIB`
 - `impact.ts` `impact(before, after)`: what changed, what stayed and what broke between two sources,

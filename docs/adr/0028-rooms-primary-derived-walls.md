@@ -168,6 +168,36 @@ rooms (ADR 0005):**
 | An `open … width` wider than the run's clear span, or a run with no clear span | `E_WALL_BETWEEN_WIDTH` |
 | One pair named by two clauses (`open` and `thickness`, or either twice) | `E_WALL_BETWEEN_DUP` |
 
+*Amended 2026-11-01 (issue #363, card L1):* a rectilinear `polygon` room is now in the set: every
+edge horizontal or vertical, decided exactly on the snapped ring. The two `polygon` rows above now
+read "a polygon with any other edge"; a circle stays refused. Inside the sweep such a room is
+interior-disjoint rectangles of one owner, cut after snapping, and an edge with one room on both
+sides is no wall, so what is derived depends on the ring and not on how it was cut (a test holds
+that over three different cuts). It stays one room in every other respect, so this is not the
+two-rectangle plan with its seam left open: one stamp, one area, no half judged alone. The sentence
+"the union of the room rectangles" reads "the union of the rooms".
+
+The rest follows from one pair now being able to share **several** runs, which two rectangles
+never could (§4 still holds, for rectangles):
+
+- Each run is one partition. The first is `A|B`, later ones `A|B#2`, `A|B#3`, numbered by start
+  point, smallest `y`, then `x`; a vertical run comes before a horizontal one from the same reflex
+  corner. `~n` keeps its meaning, so `A|B#2~2` is legal. `#` is no identifier character, so the
+  name stays one nothing can spell.
+- `between A and B thickness t` sets every run of the pair. There is nothing to choose.
+- `open between A and B` on a pair with several runs is `E_OPENING_HOST_AMBIGUOUS` on the clause,
+  naming the runs. The clause derives one opening, with one `id` and one `width`, on one run, so
+  several runs leave no single answer (ADR 0005), and opening every run would make two rooms with
+  no boundary between them, which the consequence below says is one room. The drawing is not the
+  reason: since the 2026-10-31 amendment above the corner of two open runs clears, and no pier is
+  left there. On a pair with one run the clause works as it always did.
+- The pairwise forms of §4 stay rectangle-only (`E_ROOM_NOT_RECTANGLE`), so neither `runs[0]` nor
+  the first run of a ring can be picked silently.
+
+Not in this amendment: `door|opening between`, a polygon's datums (§2), relational placement against
+it and anchored furniture in it all still refuse a polygon. Those are cards L2 to L4, and §5
+gains its several-run rule with L2.
+
 There is no tolerance row: a 1 mm jog in the outline is a legal tiling whose ring follows the jog,
 and a 1 mm interior gap is a hole. A plan whose corridor is "the leftover" fails the tiling test,
 and that is the point: the corridor must be a room. The class-2 defect-corpus cases must be
@@ -227,6 +257,11 @@ shared runs come from one sort of the room edges per axis and a sweep, charged a
 steps on the evaluator meter before the sweep runs; the union outline is one sweep over the sorted
 edges. Derived children count toward the drawing budget like authored ones in `compile()`
 (`E_DRAWING_LIMIT`); `describe()` and `lint()` resolve the same children under the step meter.
+*Amended 2026-11-01 (issue #363, card L1):* a rectilinear polygon is cut into rectangles after the
+step above is charged for its ring and before the sweep runs, one pass over the ring per slab, and
+the sweep then counts rectangles where it counted rooms. The flat `10n` is no bound on what a comb
+can derive; the second count, of the real walls before any is allocated, is what holds it
+(`E_ELEMENT_LIMIT`). Nothing changes for a set of rectangles, by a step.
 
 **Implementation shape.** `walls from rooms` is one element kind (one `src/elements/` module with
 `drawCost` and `bounds()`), whose resolution yields its wall and opening children. The children
@@ -330,6 +365,9 @@ does not change by a byte.
 field. Rows follow source order, among a `walls from rooms` statement's own. `freedom.walls`
 gains `relational`, the count of pairwise walls, which `absolute` then excludes; it is present
 only when there is one.
+
+*Amended 2026-11-01 (issue #363, card L1):* `name` may also be `A|B#n` (§3): a pair with several
+runs has one row per run, each with the same `between`.
 
 ### 7. Teaching order
 
