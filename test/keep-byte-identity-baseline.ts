@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: H1, W_EXTERIOR_RING_OPEN (issues #346, #370), on main dff02717 plus the rule: two rows added, the space-not-enclosed/exterior-ring-open pair; the lint output of no other file moved.
+ * Taken: H1, W_EXTERIOR_RING_OPEN (issues #346, #370), on main dff02717 plus the rule: two rows added, the space-not-enclosed/exterior-ring-open pair, and no other row of this table moved. The rule moves plans outside this table as well: the open-ring fixture, and the open row of test/segment-select-plans.ts.
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
