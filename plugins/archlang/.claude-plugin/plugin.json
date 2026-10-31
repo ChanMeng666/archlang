@@ -21,9 +21,9 @@
       "command": "npx",
       "args": [
         "-y",
-        "@chanmeng666/archlang-mcp@0.2.29"
+        "@chanmeng666/archlang-mcp@0.2.30"
       ]
     }
   },
-  "version": "1.46.0"
+  "version": "1.47.0"
 }
