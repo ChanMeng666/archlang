@@ -124,18 +124,18 @@ describe("every gitleaks-excluded file is guarded for what it may CONTAIN", () =
     expect(unexplained, "an opaque string that is neither a digest nor a corpus directory").toEqual([]);
   });
 
-  it.each([
-    "test/double-door-byte-identity.test.ts",
-    "test/wall-status-byte-identity.test.ts",
-  ])("%s holds only digests and catalogued diagnostic codes", (file) => {
-    // A byte-identity suite whose BASELINE pins every corpus plan by path (a `.` and a `/`, so
-    // no candidate) and measured SHA-256 value; its assertions name diagnostics by code. What
-    // remains must be a digest or a code the error catalog defines.
-    const opaque = opaqueLiteralsIn(file);
-    expect(opaque.filter((s) => /^[0-9a-f]{64}$/.test(s)).length).toBeGreaterThan(0);
-    const unexplained = opaque.filter((s) => !/^[0-9a-f]{64}$/.test(s) && !Object.hasOwn(ERROR_CATALOG, s));
-    expect(unexplained, "an opaque string that is neither a digest nor a catalogued code").toEqual([]);
-  });
+  it.each(["test/double-door-byte-identity.test.ts", "test/wall-status-byte-identity.test.ts"])(
+    "%s holds only digests and catalogued diagnostic codes",
+    (file) => {
+      // A byte-identity suite whose BASELINE pins every corpus plan by path (a `.` and a `/`, so
+      // no candidate) and measured SHA-256 value; its assertions name diagnostics by code. What
+      // remains must be a digest or a code the error catalog defines.
+      const opaque = opaqueLiteralsIn(file);
+      expect(opaque.filter((s) => /^[0-9a-f]{64}$/.test(s)).length).toBeGreaterThan(0);
+      const unexplained = opaque.filter((s) => !/^[0-9a-f]{64}$/.test(s) && !Object.hasOwn(ERROR_CATALOG, s));
+      expect(unexplained, "an opaque string that is neither a digest nor a catalogued code").toEqual([]);
+    },
+  );
 
   it("test/open-crossing.test.ts holds only digests and the name of its one fixture row", () => {
     // Plan paths carry a `.` and so are no candidates; what remains is a measured SHA-256 value
