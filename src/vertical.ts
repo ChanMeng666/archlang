@@ -105,9 +105,9 @@ function footEdge(size: { w: number; h: number }): RectEdge {
  * search for the nearest door. That keeps the renderer and the analysis layer in exact
  * agreement with no extra resolve-order coupling, and keeps the answer independent of
  * unrelated edits elsewhere in the storey. A flight genuinely approached from the north or
- * the west therefore draws its arrow the wrong way round; swap the footprint's authored
- * coordinates, or wait for the `entry <edge>` clause a later release can add without
- * changing this default.
+ * the west therefore draws its arrow the wrong way round; draw it in a `component` and
+ * `place` it `mirror y` (portrait, entered from the north) or `mirror x` (landscape, from
+ * the west).
  */
 export function tailEdge(v: RVertical): RectEdge {
   if (v._tail !== undefined) return v._tail;

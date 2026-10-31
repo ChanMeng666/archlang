@@ -37,13 +37,12 @@ promise it.
 
 ## 3. Next items, in order
 
-1. **The N10 read, on or after 2026-11-27.** Wave 4 and wave 6 wait for it. G6 closes then if no sample arrived (D22).
-2. **ArchCanvas bump to 1.47,** from G11: classify the two new lint codes, and handle `checkPredicates` reading
-   `levels[]`.
-3. **G11,** the residue of G8 and G9, one PR per group.
-4. **The designs in `research/2026-10-31-g10-*.md`** carry open questions for the owner. No code until they are answered
-   and the N10 read has set the wave.
-5. Close #212 once a nightly run is green.
+1. **Wave 7, the `cards.md` H, L and S cards, in that order (D23).** It does not wait for N10. The G10 designs'
+   open questions are answered in D24. New language forms freeze on 2026-11-24 until Show HN has run.
+2. **ArchCanvas bump, card H8,** after 1.48.0: it replaces the old bump-to-1.47 item.
+3. **The N10 read, on or after 2026-11-27.** Wave 4 and wave 6 wait for it. G6 closes then if no sample arrived (D22).
+   Wave 7 releases fall inside the window; the growth `data/agent-reach.csv` notes date each one.
+4. **G11,** whatever Wave 7 did not take, after Show HN.
 
 A new npm package goes: `prove:pack` with no browser, first version by hand, register, dispatch within 48 hours.
 Registering first is impossible, because npm needs the package to exist.
