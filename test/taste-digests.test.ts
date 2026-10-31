@@ -190,6 +190,11 @@
  * `stair-safety/furniture-on-flight` and `furniture-on-landing` pairs under each of the three
  * profiles, measured with `tasteDigest`. No existing row moved (no example or corpus piece stands on a
  * flight or a landing).
+ *
+ * H1 (`W_EXTERIOR_RING_OPEN`, exterior walls that stand on a room and close nothing) added six rows,
+ * the new `space-not-enclosed/exterior-ring-open` pair under each of the three profiles, measured with
+ * `tasteDigest`. No existing row moved: of every source here the rule fires only on that case
+ * (`test/fixtures/wall-closure/open-ring.arch`, its one other hit, is no taste source).
  */
 
 import { describe, expect, it } from "vitest";
@@ -964,6 +969,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "4105b7b443b8b16895fe9a825acd5deef26b5d3d31dc9d75972359755cef8014",
     "generic",
     "test/defect-corpus/space-not-enclosed/bow-strip-unassigned.clean.arch",
+  ],
+  [
+    "c0239bb839e1fd8333df02b4a2f81a501617a7f314f2b06241cbdcd23a7ab6f1",
+    "generic",
+    "test/defect-corpus/space-not-enclosed/exterior-ring-open.arch",
+  ],
+  [
+    "f1480e5c99d0da1128d33081345f21cd245ccd81e13f4230eef6ee761eed4dca",
+    "generic",
+    "test/defect-corpus/space-not-enclosed/exterior-ring-open.clean.arch",
   ],
   [
     "8e5fcb500d4cc80467fe0f7f19819c51ba15f05adae20b014d8146ab0e79bfa1",
@@ -2141,6 +2156,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/space-not-enclosed/bow-strip-unassigned.clean.arch",
   ],
   [
+    "2357ea5865d1013b5a9bb93e3f231a1dddf541c809fc78a1eaf00cc6f6c3bb78",
+    "cn-residential-advisory",
+    "test/defect-corpus/space-not-enclosed/exterior-ring-open.arch",
+  ],
+  [
+    "2ff50e9c416580266d75457762e836795993566c588a6165d9aa9dd5b30aa210",
+    "cn-residential-advisory",
+    "test/defect-corpus/space-not-enclosed/exterior-ring-open.clean.arch",
+  ],
+  [
     "f840865a02423289e8ba60ab710d7954a13cf1d60c44273af7300acb8fc44a79",
     "cn-residential-advisory",
     "test/defect-corpus/space-not-enclosed/fa-no-wall-living-bedrooms.arch",
@@ -3314,6 +3339,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "bf66ad73a42088408e9613299fdd80a48714dbbc69cb6d28a433d1a38ba95f44",
     "us-residential-advisory",
     "test/defect-corpus/space-not-enclosed/bow-strip-unassigned.clean.arch",
+  ],
+  [
+    "223fb23258588289e942384de47fb820b7c4100657b799d98f33c3c44a074f54",
+    "us-residential-advisory",
+    "test/defect-corpus/space-not-enclosed/exterior-ring-open.arch",
+  ],
+  [
+    "e94eeb796035a792dc7c81c617e8a5fdc577d9b7c41e1e792688adfbd0d4df9a",
+    "us-residential-advisory",
+    "test/defect-corpus/space-not-enclosed/exterior-ring-open.clean.arch",
   ],
   [
     "f2dea0e6c4fa8d6455492e6d5e4c5e8efcba167ba30c4b4841a5aba2a58fb2a6",

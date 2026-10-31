@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**148 errors** · **90 warnings**
+**148 errors** · **91 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -181,6 +181,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_EMPTY_PLAN`](#w_empty_plan) | warning | Empty plan. |
 | [`W_ENTRANCE_INTO_PRIVATE`](#w_entrance_into_private) | warning | The way in from outside opens into a bedroom, bathroom or WC. |
 | [`W_EXIT_APPROACH_BLOCKED`](#w_exit_approach_blocked) | warning | Furniture stands in the clear floor inside an exterior exit. |
+| [`W_EXTERIOR_RING_OPEN`](#w_exterior_ring_open) | warning | Exterior walls that stand on a room close nothing: the shell has a gap. |
 | [`W_FIXTURE_BACK_TO_ROOM`](#w_fixture_back_to_room) | warning | A fixture stands against a wall but faces the wrong way. |
 | [`W_FIXTURE_FLOATING`](#w_fixture_floating) | warning | A plumbing/kitchen fixture is not against a wall. |
 | [`W_FIXTURE_WRONG_ROOM`](#w_fixture_wrong_room) | warning | Fixture is not inside its declared room. |
@@ -2462,6 +2463,20 @@ wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
 room id=hall at (0,0) size 6000x4000 label "Hall" uses entry
 door at (3000,4000) width 1200 wall w swing outward
 furniture sofa at (1200,2600) size 1800x900   # lint: 400 mm inside the exit, 600 mm of its 1200 mm clear
+```
+
+## W_EXTERIOR_RING_OPEN
+
+*warning* — Exterior walls that stand on a room close nothing: the shell has a gap.
+
+**Cause.** The storey's `exterior` walls, joined the way the drawing joins them before any opening is cut, include a run that encloses no floor and stands along a room's edge. This is the reading `describe` omits the gross internal area on (`no-closed-exterior-ring`), or, beside a closed building, a second building the figure leaves out. The message gives each gap's two ends, in mm between their centrelines; the drawing shows it narrower by the walls' caps and bodies. A wall of any other category that meets an end closes it, a run that stands on no room is a garden wall, runs that all lie on one straight line are no ring, a stub built off a closed ring encloses as the ring does, and a `demolish` wall closes nothing. A gap `W_WALL_END_SHORT` reports (up to `wallGapMm`) is left to that rule. A storey with no room or no exterior wall is not judged. The rule also misses one open shell: a closed annex built off it (a porch, a garage) gives the joined walls an enclosure, so nothing is reported and `describe` gives the annex's floor as the gross internal area, with no omission reason; a low figure there is worth a look at the shell.
+
+**Fix.** Draw the missing run of exterior wall, or carry one wall on to meet the other. If the gap is a way in, draw the wall across it and put a `door` or an `opening` in that wall. If the run is not the building's shell, give it another category. There is no machine-applicable fix: which wall moves is a design decision.
+
+```arch static
+wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) (0,1000) }   # lint: 1000 mm open on the line x 0
+room id=a at (0,0) size 6000x4000 label "A" uses living
+door on w at 3000 width 900 swing inward
 ```
 
 ## W_FIXTURE_BACK_TO_ROOM

@@ -270,7 +270,7 @@ describe("the corpus (ADR 0028 Acceptance): both figures, pinned", () => {
 const PINNED_ROWS: Record<string, [number, number, number, string]> = {
   // `hillside-villa`'s upper floor: a hole where two ensuite instances stand (fix/examples-sound), no polygon room left.
   examples: [40, 7, 7, "0/1/0/6"], // B3b: +1 example (remodel), tiles
-  "test/defect-corpus": [186, 9, 9, "0/0/0/9"], // PS2.70 (PR #307), PS2.74, PS2.69 (PR #308), PS2.67, B6: +2 corpus files each; G5: +4 corpus files (wall-end-short pairs); G9: +4 (furniture-on-flight, furniture-on-landing pairs) (garage-too-shallow, accessible-wc-pan-far, exit-approach-blocked, bed-undersized, garage-door-undersized pairs), all tile
+  "test/defect-corpus": [188, 9, 9, "0/0/0/9"], // H1: +2 corpus files (exterior-ring-open pair), both tile; PS2.70 (PR #307), PS2.74, PS2.69 (PR #308), PS2.67, B6: +2 corpus files each; G5: +4 corpus files (wall-end-short pairs); G9: +4 (furniture-on-flight, furniture-on-landing pairs) (garage-too-shallow, accessible-wc-pan-far, exit-approach-blocked, bed-undersized, garage-door-undersized pairs), all tile
   "test/recovery-corpus": [9, 0, 0, "0/0/0/0"],
   "test/fixtures": [19, 0, 0, "0/0/0/0"], // PS2.77: +1 fixture (storeys-eaves-overflow, two storeys), both tile; B1: +3 fixtures (lock-before, lock-partition-moved, lock-window-moved), all tile
   "docs/plans/plan-soundness/repro": [6, 0, 0, "0/0/0/0"],
@@ -281,7 +281,7 @@ const PINNED_ROWS: Record<string, [number, number, number, string]> = {
   "test/callout-fixtures": [1, 0, 0, "0/0/0/0"],
   "test/finish-fixtures": [1, 0, 0, "0/0/0/0"],
   "test/resolve-order": [1, 0, 0, "0/0/0/0"],
-  total: [332, 19, 19, "0/1/0/18"], // PS2.66 (PR #301) +2, PS2.70 (PR #307) +2, PS2.74 +2, PS2.69 (PR #308) +2, PS2.67 +2, B6 +2 corpus files (garage-too-shallow, accessible-wc-pan-far, exit-approach-blocked, bed-undersized, garage-door-undersized pairs, all tile); fix/examples-sound: hillside-villa's hole; PS2.77: +2 fixture storeys; B1: +3 fixture storeys; B3b: +1 example storey
+  total: [334, 19, 19, "0/1/0/18"], // H1 +2 corpus files; PS2.66 (PR #301) +2, PS2.70 (PR #307) +2, PS2.74 +2, PS2.69 (PR #308) +2, PS2.67 +2, B6 +2 corpus files (garage-too-shallow, accessible-wc-pan-far, exit-approach-blocked, bed-undersized, garage-door-undersized pairs, all tile); fix/examples-sound: hillside-villa's hole; PS2.77: +2 fixture storeys; B1: +3 fixture storeys; B3b: +1 example storey
 };
 /** Measured 2026-10-21 on `main@9fb7949`: 15 of 279 storeys refused, both figures (5.4 %). 2026-10-24: 15 of 283
  * (5.3 %) after four defect-corpus plans (seat-facing-away, fire-door-inward and their twins), none refused. 19 of 287
@@ -293,7 +293,7 @@ const PINNED_ROWS: Record<string, [number, number, number, string]> = {
  * bed-before-door-face and their twins), none refused; 309 (6.1 %) with PS2.70's garage-too-shallow pair, neither
  * refused; 311 (6.1 %) with PS2.77's two-storey fixture, neither refused; 313 (6.1 %) with PS2.74's accessible-wc-pan-far
  * pair, neither refused; 315 with PS2.69's exit-approach-blocked pair, neither refused; 317 with PS2.67's bed-undersized pair; 319 with B6's garage-door-undersized pair; 322 with B1's three lock fixtures, none refused; 323 with B3b's remodel example, not refused. */
-const PINNED_SHARE_A: [number, number] = [19, 332]; // PS2.70 (PR #307), PS2.74, PS2.69 (PR #308), PS2.67, B6 +2 corpus files each, PS2.77 +2 fixture storeys, B1 +3 fixtures, B3b +1 example, all tile
-const PINNED_SHARE_B: [number, number] = [19, 332]; // PS2.70 (PR #307), PS2.74, PS2.69 (PR #308), PS2.67, B6 +2 corpus files each, PS2.77 +2 fixture storeys, B1 +3 fixtures, B3b +1 example, all tile
+const PINNED_SHARE_A: [number, number] = [19, 334]; // H1 +2 corpus files, both tile; PS2.70 (PR #307), PS2.74, PS2.69 (PR #308), PS2.67, B6 +2 corpus files each, PS2.77 +2 fixture storeys, B1 +3 fixtures, B3b +1 example, all tile
+const PINNED_SHARE_B: [number, number] = [19, 334]; // H1 +2 corpus files, both tile; PS2.70 (PR #307), PS2.74, PS2.69 (PR #308), PS2.67, B6 +2 corpus files each, PS2.77 +2 fixture storeys, B1 +3 fixtures, B3b +1 example, all tile
 /** The literal reading of "no use kind means outdoor": 16 of 279 (5.7 %); 16 of 283 (5.7 %) since 2026-10-24; 20 of 287 with PS2.12's four pavilions; 20 of 289 with PS2.11c's pair; 20 of 301 with PS2.11e's eight stair plans; 20 of 305 with PR #283's four; 20 of 309 with PS2.70's pair; 20 of 311 with PS2.77's two-storey fixture; 20 of 313 with PS2.74's pair; 20 of 322 with B1's three lock fixtures; 20 of 323 with B3b's remodel example. */
-const PINNED_SHARE_LITERAL: [number, number] = [20, 332]; // PS2.70 (PR #307), PS2.74, PS2.69 (PR #308), PS2.67, B6 +2 corpus files each, PS2.77 +2 fixture storeys, B1 +3 fixtures, B3b +1 example, all tile
+const PINNED_SHARE_LITERAL: [number, number] = [20, 334]; // H1 +2 corpus files, both tile; PS2.70 (PR #307), PS2.74, PS2.69 (PR #308), PS2.67, B6 +2 corpus files each, PS2.77 +2 fixture storeys, B1 +3 fixtures, B3b +1 example, all tile
