@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: G9 #367 round 2, on main eb3ecd3c: examples/remodel pins Utility; W_ANNOTATION_OVERLAP reads walls, swings and the floor; label pass
+ * Taken: H1, W_EXTERIOR_RING_OPEN (issues #346, #370), on main dff02717 plus the rule: two rows added, the space-not-enclosed/exterior-ring-open pair; the lint output of no other file moved.
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -1045,6 +1045,16 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     "test/defect-corpus/space-not-enclosed/bow-strip-unassigned.clean.arch",
     "9cbb3f18a40b2f8d7414a11a9638a60848900124a77d7eba2f3793235e6d5b13",
     98,
+  ],
+  [
+    "test/defect-corpus/space-not-enclosed/exterior-ring-open.arch",
+    "df83a96e937ae8c05308f17d18cd115b79bb5d25072e27f708060399be255b6e",
+    148,
+  ],
+  [
+    "test/defect-corpus/space-not-enclosed/exterior-ring-open.clean.arch",
+    "e0aa1e86c44424ca19c6584e6b9157b0d863144918f2e17ec93f320a6bc72f29",
+    148,
   ],
   [
     "test/defect-corpus/space-not-enclosed/fa-no-wall-living-bedrooms.arch",

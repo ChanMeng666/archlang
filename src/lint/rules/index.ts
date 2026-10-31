@@ -37,7 +37,7 @@ import {
   furnitureOverlap,
   furnitureWallCollision,
 } from "./furniture.js";
-import { boundaryNoWall, floorUnassigned, roomOutsideShell, wallEndShort } from "./enclosure.js";
+import { boundaryNoWall, exteriorRingOpen, floorUnassigned, roomOutsideShell, wallEndShort } from "./enclosure.js";
 import { furnClearDeclared, seatFacingAway } from "./furniture-relations.js";
 import { connectorAmbiguous, openingAtJunction, openingOverlap } from "./openings.js";
 import { perRoomRules } from "./per-room.js";
@@ -194,6 +194,9 @@ export const LINT_RULES: readonly LintRule[] = [
   // Furniture on a flight or its landing (issue #364, G9). Appended LAST, so no existing diagnostic
   // moves within the array.
   furnitureOnStair,
+  // Exterior walls that stand on a room and close nothing (issues #346, #370). Appended LAST, so no
+  // existing diagnostic moves within the array.
+  exteriorRingOpen,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

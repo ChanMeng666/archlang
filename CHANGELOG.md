@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `W_EXTERIOR_RING_OPEN` (lint, issues #346, #370): exterior walls that stand on a room and close
+  nothing, on the reading `describe` omits the gross internal area on (`no-closed-exterior-ring`), so a
+  1000 mm gap in a shell no longer passes `validate` and `lint`. The message gives each gap's two ends;
+  the fix text quotes the wall that closes a straight gap. It also names a second, open building beside
+  a closed one, which that reason could not. It stays silent on a storey with no room or no exterior
+  wall, on a run that stands on no room (a garden wall), on runs along one straight line, on an end
+  that meets a wall of any other category, and on what `W_WALL_END_SHORT` reports: every gap goes to
+  exactly one of the two. A `status demolish` wall closes nothing. Fires on one corpus plan, the open-ring
+  fixture, and on no shipped example. No drawing and no `describe()` output moves. A consumer that
+  classifies lint codes sees a new warning.
+
 ## [1.47.0] - 2026-10-31
 
 ### Added

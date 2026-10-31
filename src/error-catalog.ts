@@ -1542,6 +1542,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Extend the wall to the face of the wall it runs toward, or into it, so they join. If the slit is meant as an opening, draw a door or an `opening` there instead. There is no machine-applicable fix: which wall moves is a design decision.",
     "grid 10\nwall id=a exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }\nwall id=p partition thickness 100 { (4000,230) (4000,5000) }   # lint: drawn end at y 180, 80 mm from the top wall's inner face",
   ),
+  W_EXTERIOR_RING_OPEN: W(
+    "W_EXTERIOR_RING_OPEN",
+    "Exterior walls that stand on a room close nothing: the shell has a gap.",
+    "The storey's `exterior` walls, joined the way the drawing joins them before any opening is cut, include a run that encloses no floor and stands along a room's edge. This is the reading `describe` omits the gross internal area on (`no-closed-exterior-ring`), or, beside a closed building, a second building the figure leaves out. The message gives each gap's two ends, in mm between their centrelines; the drawing shows it narrower by the walls' caps and bodies. A wall of any other category that meets an end closes it, a run that stands on no room is a garden wall, runs that all lie on one straight line are no ring, a stub built off a closed ring encloses as the ring does, and a `demolish` wall closes nothing. A gap `W_WALL_END_SHORT` reports (up to `wallGapMm`) is left to that rule. A storey with no room or no exterior wall is not judged.",
+    "Draw the missing run of exterior wall, or carry one wall on to meet the other. If the gap is a way in, draw the wall across it and put a `door` or an `opening` in that wall. If the run is not the building's shell, give it another category. There is no machine-applicable fix: which wall moves is a design decision.",
+    'wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) (0,1000) }   # lint: 1000 mm open on the line x 0\nroom id=a at (0,0) size 6000x4000 label "A" uses living\ndoor on w at 3000 width 900 swing inward',
+  ),
   W_FURNITURE_ON_STAIR: W(
     "W_FURNITURE_ON_STAIR",
     "Furniture stands on a stair or on the landing it owes.",

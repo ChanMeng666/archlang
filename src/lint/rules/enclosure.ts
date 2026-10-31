@@ -7,6 +7,8 @@
  *    rooms cover less than `minFaceCoverRatio` of, by at least `minUnassignedM2`.
  *  - `W_ROOM_OUTSIDE_SHELL` — a room with at least `minOutsideShellM2` of its floor off every
  *    walled face and every wall: outside the building.
+ *  - `W_EXTERIOR_RING_OPEN` — exterior walls that stand on a room and enclose nothing, on the
+ *    gross internal area's own reading (`src/analyze/gross-area.ts`).
  *
  * **From the shapes.** The run two rooms share is read off their own rings: a pair of
  * parallel edges within `tolMm` of each other (the room-adjacency test), checked by probing
@@ -40,6 +42,7 @@
 
 import type { Point } from "../../ast.js";
 import { edgeWallCover, type RoomBox, pointInRoomBox, rectOf, roomRing, roomUses } from "../../analyze.js";
+import { MAX_GROSS_AREA_TESTS, openExteriorRuns } from "../../analyze/gross-area.js";
 import {
   type FaceRoom,
   faceCover,
@@ -49,7 +52,7 @@ import {
   wallFaces,
 } from "../../analyze/wall-faces.js";
 import type { Diagnostic } from "../../diagnostics.js";
-import { distPointToWallSegment, type WallSegment, wallFaceProbes } from "../../geometry.js";
+import { distPointToWallSegment, segmentDirAt, type WallSegment, wallFaceProbes } from "../../geometry.js";
 import { edgeMid, edgeTangentAt } from "../../geometry/band.js";
 import { collinearOverlapLength } from "../../geometry/polygon.js";
 import type { ResolvedPlan, RRoom, RWall } from "../../ir.js";
@@ -656,6 +659,10 @@ export const roomOutsideShell: LintRule = {
 
 // ─── W_WALL_END_SHORT ──────────────────────────────────────────────────────────────────
 
+/** ` on level 1` on a plan of several storeys, else nothing. */
+const levelWords = (ctx: LintContext): string =>
+  (ctx.building.storeyCount ?? 1) > 1 && ctx.ir.level !== undefined ? ` on level ${ctx.ir.level}` : "";
+
 /** A wall named by its kind in a message ("an exterior wall", "a partition"). */
 function wallKindWords(category: string): string {
   return category === "exterior" ? "exterior wall" : category === "partition" ? "partition" : `${category} wall`;
@@ -703,6 +710,73 @@ function inDrawnWall(p: Point, s: WallSegment): boolean {
   return along >= -h - EPS && along <= len + h + EPS && across <= h + EPS;
 }
 
+/** One free end of an open wall: the end point, the point next to it on the wall, the segment they
+ *  bound, and which of the wall's two ends it is. */
+interface WallEnd {
+  e: Point;
+  from: Point;
+  seg: number;
+  which: 0 | 1;
+}
+
+/** An open wall's two ends; a closed wall has none. */
+function endsOfWall(w: RWall): WallEnd[] {
+  if (w.closed || w.points.length < 2) return [];
+  const n = w.points.length;
+  return [
+    { e: w.points[0]!, from: w.points[1]!, seg: 0, which: 0 },
+    { e: w.points[n - 1]!, from: w.points[n - 2]!, seg: n - 2, which: 1 },
+  ];
+}
+
+/** A free end {@link wallEndShort} measures a slit from, and what it stops short of. */
+interface ShortEnd {
+  wall: RWall;
+  which: 0 | 1;
+  seg: number;
+  gap: number;
+  target: WallSegment;
+  other: RWall;
+}
+
+/**
+ * Every free end {@link wallEndShort} measures, in wall order: one wall end stopping a slit of
+ * `gap` mm short of another wall. Two walls ending toward each other on one line give one entry
+ * each. {@link exteriorRingOpen} reads this too, so a slit is reported by exactly one rule.
+ */
+function shortEnds(ctx: LintContext): ShortEnd[] {
+  const configured = ctx.rules.wallGapMm;
+  if (configured === null || !(configured > 0)) return [];
+  const limit = Math.min(configured, MAX_WALL_GAP_SCAN_MM);
+  const out: ShortEnd[] = [];
+  for (const w of ctx.ir.walls) {
+    for (const { e, from, seg, which } of endsOfWall(w)) {
+      if (w.arcs?.[seg]) continue;
+      const len = Math.hypot(e.x - from.x, e.y - from.y);
+      if (len < EPS) continue;
+      const d = { x: (e.x - from.x) / len, y: (e.y - from.y) / len };
+      // The drawn end: the square cap's face, half a thickness past the last point.
+      const tip = { x: e.x + (d.x * w.thickness) / 2, y: e.y + (d.y * w.thickness) / 2 };
+      const near = ctx.wallSegs.filter(
+        (s) => s.wallId !== w.id && !s.arc && distPointToWallSegment(tip, s) <= limit + s.thickness + 1,
+      );
+      if (near.length === 0) continue;
+      if (near.some((s) => inDrawnWall(tip, s))) continue;
+      let hit: { gap: number; s: WallSegment } | undefined;
+      for (let g = END_SCAN_STEP_MM; g <= limit && !hit; g += END_SCAN_STEP_MM) {
+        const p = { x: tip.x + d.x * g, y: tip.y + d.y * g };
+        const s = near.find((o) => inDrawnWall(p, o));
+        if (s) hit = { gap: g, s };
+      }
+      if (!hit) continue;
+      const other = ctx.ir.walls.find((x) => x.id === hit.s.wallId);
+      if (!other) continue;
+      out.push({ wall: w, which, seg, gap: hit.gap, target: hit.s, other });
+    }
+  }
+  return out;
+}
+
 /**
  * `W_WALL_END_SHORT`: a wall whose free end stops a sliver short of another wall it runs toward,
  * measured on the DRAWING. The renderer caps every free end square, half the wall's thickness
@@ -727,58 +801,237 @@ export const wallEndShort: LintRule = {
   stage: "walls",
   codes: ["W_WALL_END_SHORT"],
   check(ctx: LintContext): Diagnostic[] {
-    const configured = ctx.rules.wallGapMm;
-    if (configured === null || !(configured > 0)) return [];
-    const limit = Math.min(configured, MAX_WALL_GAP_SCAN_MM);
-    const level = (ctx.building.storeyCount ?? 1) > 1 && ctx.ir.level !== undefined ? ` on level ${ctx.ir.level}` : "";
+    const level = levelWords(ctx);
     const out: Diagnostic[] = [];
     const seen = new Set<string>();
-    for (const w of ctx.ir.walls) {
-      if (w.closed || w.points.length < 2) continue;
-      const n = w.points.length;
-      const ends = [
-        { e: w.points[0]!, from: w.points[1]!, seg: 0 },
-        { e: w.points[n - 1]!, from: w.points[n - 2]!, seg: n - 2 },
-      ];
-      for (const { e, from, seg } of ends) {
-        if (w.arcs?.[seg]) continue;
-        const len = Math.hypot(e.x - from.x, e.y - from.y);
-        if (len < EPS) continue;
-        const d = { x: (e.x - from.x) / len, y: (e.y - from.y) / len };
-        // The drawn end: the square cap's face, half a thickness past the last point.
-        const tip = { x: e.x + (d.x * w.thickness) / 2, y: e.y + (d.y * w.thickness) / 2 };
-        const near = ctx.wallSegs.filter(
-          (s) => s.wallId !== w.id && !s.arc && distPointToWallSegment(tip, s) <= limit + s.thickness + 1,
-        );
-        if (near.length === 0) continue;
-        if (near.some((s) => inDrawnWall(tip, s))) continue;
-        let hit: { gap: number; s: WallSegment } | undefined;
-        for (let g = END_SCAN_STEP_MM; g <= limit && !hit; g += END_SCAN_STEP_MM) {
-          const p = { x: tip.x + d.x * g, y: tip.y + d.y * g };
-          const s = near.find((o) => inDrawnWall(p, o));
-          if (s) hit = { gap: g, s };
-        }
-        if (!hit) continue;
-        const other = ctx.ir.walls.find((x) => x.id === hit.s.wallId);
-        if (!other) continue;
-        const key = `${[w.id, other.id].sort().join("|")}|${hit.gap}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        const mine = ctx.wallSegs.find((s) => s.wallId === w.id && s.index === seg);
-        if (!mine) continue;
-        const ids = [w, other].filter((x) => x._idAuthored === true).map((x) => `"${x.id}"`);
-        out.push({
-          severity: "warning",
-          code: "W_WALL_END_SHORT",
-          ...ctx.at(w),
-          message: `${capFirst(aKind(w.category))} ${wallLineWords(mine)} ends ${mm(hit.gap)} mm short of ${aKind(other.category)} ${wallLineWords(hit.s)}${level}, as drawn. The two do not meet, so the plan shows a slit of ${mm(hit.gap)} mm between them and the walls do not close.`,
-          hints: [
-            `Extend the end of the ${wallKindWords(w.category)} to the face of the ${wallKindWords(other.category)}, or into it so they join; if the slit is a real opening, draw a door or an \`opening\` there instead.`,
-            ...(ids.length > 0 ? [`The walls are ${ids.join(" and ")}.`] : []),
-          ],
-        });
-      }
+    for (const { wall: w, seg, gap, target, other } of shortEnds(ctx)) {
+      const key = `${[w.id, other.id].sort().join("|")}|${gap}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const mine = ctx.wallSegs.find((s) => s.wallId === w.id && s.index === seg);
+      if (!mine) continue;
+      const ids = [w, other].filter((x) => x._idAuthored === true).map((x) => `"${x.id}"`);
+      out.push({
+        severity: "warning",
+        code: "W_WALL_END_SHORT",
+        ...ctx.at(w),
+        message: `${capFirst(aKind(w.category))} ${wallLineWords(mine)} ends ${mm(gap)} mm short of ${aKind(other.category)} ${wallLineWords(target)}${level}, as drawn. The two do not meet, so the plan shows a slit of ${mm(gap)} mm between them and the walls do not close.`,
+        hints: [
+          `Extend the end of the ${wallKindWords(w.category)} to the face of the ${wallKindWords(other.category)}, or into it so they join; if the slit is a real opening, draw a door or an \`opening\` there instead.`,
+          ...(ids.length > 0 ? [`The walls are ${ids.join(" and ")}.`] : []),
+        ],
+      });
     }
     return out;
+  },
+};
+
+// ─── W_EXTERIOR_RING_OPEN ──────────────────────────────────────────────────────────────
+
+/** An open exterior run's end that no wall meets. `order` is its place in source order. */
+interface FreeEnd {
+  wall: RWall;
+  at: Point;
+  /** Which of the shells it ends. */
+  shell: number;
+  order: number;
+}
+
+/** Are all these points on one straight line? */
+function onOneLine(pts: readonly Point[]): boolean {
+  const a = pts[0]!;
+  const b = pts.find((p) => Math.hypot(p.x - a.x, p.y - a.y) > EPS);
+  if (!b) return true;
+  const len = Math.hypot(b.x - a.x, b.y - a.y);
+  return pts.every((p) => Math.abs((b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x)) / len <= EPS);
+}
+
+/** Is this run nothing but one straight line? A curve never is. */
+const isStraightRun = (run: readonly RWall[]): boolean =>
+  !run.some((w) => w.arcs?.some((a) => a !== undefined)) && onOneLine(run.flatMap((w) => w.points));
+
+/**
+ * Does the run stand on a room's edge: a straight wall parallel to a stretch of the room's outline
+ * with its body within {@link WALL_BODY_SLACK_MM} of it (the run measured on a room edge, so a wall
+ * that only touches a corner does not count), or a curved wall against a vertex of the outline? A
+ * run that stands on no room is a garden wall, whatever it is called.
+ */
+function runStandsOnRoom(ctx: LintContext, run: readonly RWall[]): boolean {
+  const ids = new Set(run.map((w) => w.id));
+  const segs = ctx.wallSegs.filter((s) => ids.has(s.wallId));
+  const straight = segs.filter((s) => !s.arc);
+  const curved = segs.filter((s) => s.arc);
+  return ctx.rooms.some((r) => {
+    const ring = roomRing(ctx.roomRects.get(r.id)!);
+    return ring.some(
+      (a, i) =>
+        edgeWallCover(a, ring[(i + 1) % ring.length]!, straight, ctx.rules.tolMm, {
+          halfGap: 0,
+          slack: WALL_BODY_SLACK_MM,
+        }).length > 0 || curved.some((s) => distPointToWallSegment(a, s) <= s.thickness / 2 + WALL_BODY_SLACK_MM),
+    );
+  });
+}
+
+/**
+ * Does the drawn end of `w` touch another wall of any kind? The end is the square of its cap,
+ * half a thickness long and a thickness wide past the last point, read at nine stations; the wall's
+ * own last segment does not count. A wall of another category closes the enclosure as well as an
+ * exterior one: nothing is open there, however the plan classes the wall.
+ */
+function endMeetsWall(ctx: LintContext, w: RWall, end: WallEnd, own: WallSegment): boolean {
+  const tangent = segmentDirAt(own, end.e);
+  const d = end.which === 0 ? { x: -tangent.x, y: -tangent.y } : tangent;
+  const h = w.thickness / 2;
+  const others = ctx.wallSegs.filter((s) => s.thickness > 0 && s !== own);
+  for (const along of [0, h / 2, h]) {
+    for (const across of [-h, 0, h]) {
+      const p = { x: end.e.x + d.x * along - d.y * across, y: end.e.y + d.y * along + d.x * across };
+      if (others.some((s) => (s.arc ? distPointToWallSegment(p, s) <= s.thickness / 2 + EPS : inDrawnWall(p, s))))
+        return true;
+    }
+  }
+  return false;
+}
+
+/** Plain multiplication: the same value on every engine, and whichever way round the two points are. */
+function squaredGap(p: Point, q: Point): number {
+  const dx = p.x - q.x;
+  const dy = p.y - q.y;
+  return dx * dx + dy * dy;
+}
+
+/**
+ * The gaps the free ends leave: the nearest two ends first, then the next nearest of those left.
+ * Two ends of one straight run are its length, never a gap. Squared distances, so a turn or a
+ * mirror of the plan cannot change a tie; ties fall to source order.
+ */
+function gapsBetween(ends: readonly FreeEnd[], straightShells: readonly boolean[]): Array<[FreeEnd, FreeEnd]> {
+  const pairs: Array<{ a: number; b: number; d2: number }> = [];
+  for (let a = 0; a < ends.length; a++) {
+    for (let b = a + 1; b < ends.length; b++) {
+      const p = ends[a]!;
+      const q = ends[b]!;
+      if (p.shell === q.shell && straightShells[p.shell]) continue;
+      pairs.push({ a, b, d2: squaredGap(p.at, q.at) });
+    }
+  }
+  pairs.sort((p, q) => p.d2 - q.d2 || p.a - q.a || p.b - q.b);
+  const used = new Set<number>();
+  const out: Array<[FreeEnd, FreeEnd]> = [];
+  for (const { a, b } of pairs) {
+    if (used.has(a) || used.has(b)) continue;
+    used.add(a).add(b);
+    out.push([ends[a]!, ends[b]!]);
+  }
+  return out.sort((p, q) => p[0].order - q[0].order || p[1].order - q[1].order);
+}
+
+/** The last clause of every {@link exteriorRingOpen} message. */
+const NO_SHELL = "so the shell encloses no floor and counts in no gross internal area";
+
+/** What to do about a run that is not a shell, and which walls to edit. */
+function ringHints(walls: readonly RWall[]): string[] {
+  const ids = [...new Set(walls.filter((w) => w._idAuthored === true).map((w) => `"${w.id}"`))];
+  return [
+    "If the gap is a way in, draw the wall across it and put a `door` or an `opening` in that wall.",
+    "If this run is not the building's shell (a garden wall, a carport), give it another category: only `exterior` walls are read as the shell.",
+    ...(ids.length > 0 ? [`${ids.length > 1 ? "The walls are" : "The wall is"} ${ids.join(" and ")}.`] : []),
+  ];
+}
+
+/**
+ * `W_EXTERIOR_RING_OPEN`: exterior walls that stand on a room and close nothing. The closure is
+ * {@link openExteriorRuns}, the reading `describe()`'s gross internal area adds nothing for, so a
+ * plan this rule names is one `gross_internal_area_omitted` hints at, or, beside a closed building,
+ * a second building the figure leaves out. A closed ring with a stub built off it encloses floor
+ * and is not a finding; a run standing free inside a building is not outermost.
+ *
+ * **What it refuses, and why.** A storey with no room (nothing says the wall is a shell) or no
+ * exterior wall. A run that stands on no room (a garden wall). Runs that all lie on one straight
+ * line, which no ring is (a lean-to, a boundary wall). An end that meets a wall of any category:
+ * a shell finished in partitions is closed, and nothing is open there, though the area still
+ * reads no ring. An end `W_WALL_END_SHORT` measures: that slit is its finding, read through the
+ * one {@link shortEnds} scan, so `wallGapMm: null` hands the slit to this rule rather than drop it.
+ * A `demolish` wall is not in `ir.walls`: it closes nothing, so a shell it leaves open is named.
+ *
+ * One warning per gap, in source order, on the wall the gap's earlier end belongs to (one end with
+ * no other end to pair it is named alone). The gap is quoted between centreline ends, the points
+ * the source writes; the drawing shows it narrower by the walls' caps and bodies. Work is counted
+ * before it runs ({@link MAX_GROSS_AREA_TESTS}); past the count the storey is filed as an
+ * `enclosure-budget` skip. No machine fix: which wall moves is a design decision.
+ */
+export const exteriorRingOpen: LintRule = {
+  name: "exterior-ring-open",
+  family: "enclosure",
+  layer: "validity",
+  stage: "walls",
+  codes: ["W_EXTERIOR_RING_OPEN"],
+  check(ctx: LintContext): Diagnostic[] {
+    if (ctx.rooms.length === 0) return [];
+    const runs = openExteriorRuns(ctx.ir.walls);
+    const refuse = (): Diagnostic[] => {
+      ctx.skip("enclosure-budget", undefined, "regions");
+      return [];
+    };
+    if (runs === "too-much-work") return refuse();
+    if (runs.length === 0) return [];
+    // Charged before the work: every open wall's two ends against every segment, every room
+    // edge against every segment of the runs.
+    const ringEdges = ctx.rooms.reduce((n, r) => n + roomRing(ctx.roomRects.get(r.id)!).length, 0);
+    const open = runs.reduce((n, run) => n + run.length, 0);
+    if ((2 * open + ringEdges) * ctx.wallSegs.length > MAX_GROSS_AREA_TESTS) return refuse();
+    const shells = runs.filter((run) => runStandsOnRoom(ctx, run));
+    if (shells.length === 0 || isStraightRun(shells.flat())) return [];
+
+    const inOrder = new Map(ctx.ir.walls.map((w, i) => [w.id, i] as const));
+    const slits = new Set(shortEnds(ctx).map((s) => `${s.wall.id}|${s.which}`));
+    const ends: FreeEnd[] = [];
+    shells.forEach((run, shell) => {
+      for (const w of run) {
+        for (const end of endsOfWall(w)) {
+          if (slits.has(`${w.id}|${end.which}`)) continue;
+          const own = ctx.wallSegs.find((s) => s.wallId === w.id && s.index === end.seg);
+          if (!own || endMeetsWall(ctx, w, end, own)) continue;
+          ends.push({ wall: w, at: end.e, shell, order: 2 * inOrder.get(w.id)! + end.which });
+        }
+      }
+    });
+    if (ends.length * ends.length > MAX_GROSS_AREA_TESTS) return refuse();
+    ends.sort((p, q) => p.order - q.order);
+
+    const straight = shells.map(isStraightRun);
+    const level = levelWords(ctx);
+    const gaps = gapsBetween(ends, straight);
+    if (gaps.length === 0) {
+      return ends
+        .filter((end) => !straight[end.shell])
+        .map((end) => ({
+          severity: "warning" as const,
+          code: "W_EXTERIOR_RING_OPEN",
+          ...ctx.at(end.wall),
+          message: `The exterior walls do not close: a run stops at (${mm(end.at.x)}, ${mm(end.at.y)})${level} with no wall to meet there, ${NO_SHELL}.`,
+          hints: ["Carry the wall on until it meets another wall.", ...ringHints([end.wall])],
+        }));
+    }
+    return gaps.map(([a, b]) => {
+      // West or north end first, so the quoted wall reads the way a person writes one.
+      const [p, q] = [a.at, b.at].sort((m, k) => Math.round(m.x) - Math.round(k.x) || m.y - k.y) as [Point, Point];
+      const span = Math.sqrt(squaredGap(p, q));
+      const stmt = `wall exterior thickness ${mm(a.wall.thickness)} { (${mm(p.x)},${mm(p.y)}) (${mm(q.x)},${mm(q.y)}) }`;
+      const axial = Math.abs(p.x - q.x) < EPS || Math.abs(p.y - q.y) < EPS;
+      return {
+        severity: "warning" as const,
+        code: "W_EXTERIOR_RING_OPEN",
+        ...ctx.at(a.wall),
+        message: `The exterior walls do not close: their ends stop ${mm(span)} mm apart ${runWords(p, q)}, centreline to centreline${level}. No wall joins them, ${NO_SHELL}.`,
+        hints: [
+          axial
+            ? `Draw the missing run, e.g. \`${stmt}\`, or carry one wall on to meet the other.`
+            : "Carry the walls on until their ends meet.",
+          ...ringHints([a.wall, b.wall]),
+        ],
+      };
+    });
   },
 };
