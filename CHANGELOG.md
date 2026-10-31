@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Plan JSON's report of what it leaves out (`dropped`, issue #366) now reaches the two paths that
+  lost it: `batch -f json` adds `dropped` to each file's `--json` row and prints the same stderr notes
+  as `compile`, and the MCP `compile` tool with `format:"json"` returns `dropped` (per storey with
+  `level`). The field is absent when nothing was dropped; exit codes and the Plan JSON are unchanged.
 - `finish` names every room it leaves empty (issue #370). A room whose use has no row in the furnish
   table (`hall`, `circulation`, `entry`, `storage`, `garage`, `utility`), or of no known use (no `uses`,
   and a label the vocabulary does not hold), stayed empty with `unresolved: []`, although the skill and

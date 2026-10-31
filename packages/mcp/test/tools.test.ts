@@ -505,6 +505,26 @@ describe("compile tool", () => {
     expect(back.output).toBe(direct.output);
   });
 
+  it('format:"json" reports what Plan JSON leaves out as `dropped`, absent when nothing was (#366)', async () => {
+    const client = await connect();
+    const ARC = `plan "arc round trip" {
+  units mm
+  paper A4 landscape
+  scale 1:50
+  wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,4000) arc (0,4000) radius 4000 cw (0,0) close }
+}`;
+    const want = planToJson(ARC).dropped;
+    expect(want?.length).toBeGreaterThan(0);
+    const out = await call(client, "compile", { source: ARC, format: "json" });
+    expect(out.ok).toBe(true);
+    expect(out.dropped).toEqual(want);
+    expect(out.output).toEqual(planToJson(ARC).json);
+    const control = await call(client, "compile", { source: TWO_ROOMS, format: "json" });
+    expect("dropped" in control).toBe(false);
+    const svg = await call(client, "compile", { source: ARC });
+    expect("dropped" in svg).toBe(false);
+  });
+
   it('format:"json" projects every storey into `pages[]`, and `level` picks one', async () => {
     const client = await connect();
     const { pages: want } = planToJson(TWO_STOREY);

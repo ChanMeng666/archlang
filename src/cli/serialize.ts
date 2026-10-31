@@ -376,6 +376,9 @@ export interface PerFile {
   errorCode?: string;
   diagnostics: Diagnostic[];
   source: string;
+  /** What `-f json` left out (the {@link Rendered} report): stderr lines, and the same as data. */
+  notes?: string[];
+  dropped?: PlanJsonDropped[];
 }
 
 /** Read a `.arch` file, render it, and write the artifact to `targetPath`. */
@@ -396,7 +399,17 @@ export async function compileToFile(input: string, format: Format, args: Args, t
     return { input, ok: false, format, error: (e as Error).message, diagnostics: r.diagnostics, source };
   }
   const bytes = typeof r.bytes === "string" ? Buffer.byteLength(r.bytes) : r.bytes.length;
-  return { input, ok: true, format, output: resolvePath(targetPath), bytes, diagnostics: r.diagnostics, source };
+  return {
+    input,
+    ok: true,
+    format,
+    output: resolvePath(targetPath),
+    bytes,
+    diagnostics: r.diagnostics,
+    source,
+    ...(r.notes ? { notes: r.notes } : {}),
+    ...(r.dropped ? { dropped: r.dropped } : {}),
+  };
 }
 
 /** Project a {@link PerFile} onto the agent-facing JSON shape (with fix on a dep error). */
@@ -405,6 +418,7 @@ export function perFileJson(r: PerFile): Record<string, unknown> {
   if (r.output) o.output = r.output;
   if (r.bytes !== undefined) o.bytes = r.bytes;
   o.diagnostics = r.diagnostics.map((d) => diagnosticToJson(r.source, d));
+  if (r.dropped) o.dropped = r.dropped;
   if (r.error) o.error = r.error;
   if (r.errorCode) {
     o.code = r.errorCode;
