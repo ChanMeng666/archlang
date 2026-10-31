@@ -14,6 +14,14 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.37.0] - 2026-11-01
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.49.0`** (a rectilinear `room polygon` in `walls from rooms`, with
+  `door between` and `opening between` on it; very long polygon rings now stop with `E_STEP_LIMIT`).
+
+
 ## [0.36.0] - 2026-11-01
 
 ### Changed

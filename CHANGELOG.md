@@ -7,17 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.49.0] - 2026-11-01
+
 ### Fixed
 
 - A ring too long to check for self-intersection now stops with `E_STEP_LIMIT` instead of running for
-  tens of seconds (H10). The check tests every pair of a ring's edges and nothing counted that work,
+  tens of seconds. The check tests every pair of a ring's edges and nothing counted that work,
   so a `room polygon` of 6,000 vertices compiled with no diagnostic after 18 million pairs. Each pair
   is now one evaluation step, charged before the check runs, for `room`, `outdoor` and `roof polygon`,
   `roof overhang` on a wall ring and a site `boundary`. A ring of up to about 3,000 vertices still
   fits the 5,000,000-step budget, and the largest in the corpus spends far less. No drawing,
   `describe()`, `lint()` or diagnostic of a plan under the budget moves; a plan with no such ring
   spends the same steps.
-- Polygon and round rooms whose boxes overlap no longer run for minutes (H10, reopening M.19).
+- Polygon and round rooms whose boxes overlap no longer run for minutes.
   `W_ROOM_OVERLAP`'s exact test read every edge of both rings and counted nothing, so 100 thin
   staircase rooms of 300 vertices, under the budget, spent 376 s in it with no diagnostic. The test
   now reads only what reaches the window the two boxes share, which leaves two round rooms that clip
