@@ -1,13 +1,15 @@
 /**
- * Rectilinear rooms in `walls from rooms` (issue #363, card L1): the byte-identity law.
+ * Rectilinear rooms in `walls from rooms` and `door|opening between` (issue #363, cards L1, L2):
+ * the byte-identity law.
  *
- * A plan with no rectilinear polygon in a `walls from rooms` set resolves, draws, describes and
- * lints exactly as before, down to its Scene and the steps its resolution spends. Each digest is
- * {@link lawDigest} (`test/rectilinear-rooms-law.ts`): every page's SVG, `describe()`, `lint()`,
- * `compile().diagnostics`, every page's Scene and the step count, **measured against `src/` at
- * `58c1fc81`** (`main` before the form), that tree extracted by `git archive`, the body imported
- * from this branch and handed that tree's compiler. The rows are every plan of `examples/`,
- * `test/fixtures/` and `test/walls-from-rooms/`, the digest-table plans of
+ * A plan with no rectilinear polygon in a `walls from rooms` set, or named by a `door|opening
+ * between`, resolves, draws, describes and lints exactly as before, down to its Scene and the steps
+ * its resolution spends. Each digest is {@link lawDigest} (`test/rectilinear-rooms-law.ts`): every
+ * page's SVG, `describe()`, `lint()`, `compile().diagnostics`, every page's Scene and the step
+ * count, **measured against `src/` at `58c1fc81`** (`main` before the form), that tree extracted by
+ * `git archive`, the body imported from this branch and handed that tree's compiler. The three
+ * `inline:door-` rows are card L2's, measured the same way at `1e29c3af` (`main` before doors). The
+ * rows are every plan of `examples/`, `test/fixtures/` and `test/walls-from-rooms/`, the digest-table plans of
  * `test/walls-from-rooms-plans.ts`, and {@link INLINE_ROWS}: a rectilinear polygon that is
  * excepted, or that stands beside typed walls, is on the law's side of the line.
  *
@@ -16,8 +18,10 @@
  *
  * Why the rows hold (design §6): a rectangle-only set takes the sweep's new branch nowhere, because
  * one room on both sides of a line needs a polygon, and every charge is on the rectangle count,
- * which is the room count there. The sanctioned exception is the wording of a refusal: a slanted
- * polygon or a circle in a set reads "rectangular or rectilinear" now (`E_ROOM_NOT_RECTANGLE`,
+ * which is the room count there. A `between` of two rectangles keeps its line arithmetic and costs
+ * no step more: the ring path is taken only when the table holds a ring for a name. The sanctioned
+ * exception is the wording of a refusal: a slanted polygon or a circle in a set, or named by a
+ * `door|opening between`, reads "rectangular or rectilinear" now (`E_ROOM_NOT_RECTANGLE`,
  * `E_WALL_BETWEEN_ROOM`, the third class of `test/byte-identity-baseline.ts`'s header). No row here
  * raises either.
  *
@@ -45,24 +49,28 @@ const stepsOf = (src: string, world: World | undefined): number => {
 
 const API: LawApi = { compile, describe, lint, stepsOf };
 
-/** Does the plan put a rectilinear polygon in a `walls from rooms` set? */
+/**
+ * Does the plan put a rectilinear polygon in a `walls from rooms` set, or name one in a
+ * `door|opening between`? The doors are read off the source, since a refused one has no relation.
+ */
 function reachesTheForm(src: string, world: World | undefined): boolean {
   const res = resolvePlan(src, world ? { world } : {});
   const irs = res.levels.length > 0 ? res.levels.map((l) => l.ir) : res.ir ? [res.ir] : [];
-  return irs.some((ir) =>
-    ir.elements.some(
-      (s) =>
-        s.kind === "walls" &&
-        ir.elements.some(
-          (r) =>
-            r.kind === "room" &&
-            r._instance === s._instance &&
-            r.poly !== undefined &&
-            r.circle === undefined &&
-            rectilinear(r.poly) &&
-            !s.except.includes(r.id),
-        ),
-    ),
+  const named = new Set(
+    [...src.matchAll(/\b(?:door|opening)\b[^\n]*?\bbetween\s+(\S+)\s+and\s+(\S+)/g)].flatMap((m) => [m[1]!, m[2]!]),
+  );
+  const isRing = (r: { poly?: readonly { x: number; y: number }[]; circle?: unknown }): boolean =>
+    r.poly !== undefined && r.circle === undefined && rectilinear(r.poly);
+  return irs.some(
+    (ir) =>
+      ir.elements.some((r) => r.kind === "room" && isRing(r) && named.has(r.id)) ||
+      ir.elements.some(
+        (s) =>
+          s.kind === "walls" &&
+          ir.elements.some(
+            (r) => r.kind === "room" && r._instance === s._instance && isRing(r) && !s.except.includes(r.id),
+          ),
+      ),
   );
 }
 
@@ -147,6 +155,9 @@ const BASELINE: [string, string][] = [
   ["bce37c5588d4b6c1aee329002d5488ca13af14455a416ab66a160d50a8d27086", "inline:typed-walls"],
   ["80a6ed511c4e8c1f2a7a3cd62782651f731b613eaad4cb18fd2465abc1de91b3", "inline:except-slanted"],
   ["874344a801971326859871db55b47877705079a16b852fe5aa0d75e1899b0e9a", "inline:clauses"],
+  ["905fffe3bd86765a62d322d890f63b54a73e7e709e66a537245d7d2b712ae138", "inline:door-beside-excepted-L"],
+  ["dd9a9f05506152146ef7778cfcb15a2051d36bf06e5d7da4246e754b0c2fb954", "inline:door-positions"],
+  ["d9a51f44cc4e25155b77d0ae1f873ef92d79061cc05fc2b079b7be55b03ebdb0", "inline:door-refusals"],
 ];
 
 suite("rectilinear rooms: the byte-identity law", () => {
@@ -156,8 +167,16 @@ suite("rectilinear rooms: the byte-identity law", () => {
   });
 
   it("the premise can fail: the same check sees a plan that does reach the form", () => {
-    const src = `plan "p" {\n  units mm\n  room id=l polygon (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000)\n  walls from rooms exterior 200 partition 100\n}\n`;
+    const L = "room id=l polygon (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000)";
+    const src = `plan "p" {\n  units mm\n  ${L}\n  walls from rooms exterior 200 partition 100\n}\n`;
     expect(reachesTheForm(src, undefined)).toBe(true);
+    // A door on a ring the statement leaves out, and one refused: both are the form.
+    const room = "room id=r at (3000,3000) size 3000x3000";
+    const typed = `  wall id=w partition thickness 100 { (3000,3000) (3000,6000) }`;
+    const door = `plan "p" {\n  units mm\n  ${L}\n  ${room}\n${typed}\n  door between l and r at center width 800\n}\n`;
+    expect(reachesTheForm(door, undefined)).toBe(true);
+    // The control: the same plan with the door gone does not.
+    expect(reachesTheForm(door.replace(/ {2}door .*\n/, ""), undefined)).toBe(false);
   });
 
   it.each(BASELINE)("%s %s", (digest, name) => {

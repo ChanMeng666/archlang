@@ -341,9 +341,9 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   ),
   E_ROOM_NOT_RECTANGLE: E(
     "E_ROOM_NOT_RECTANGLE",
-    "A room-edge datum, `walls from rooms`, or a `wall … between`/`wall … around`, meets a polygon or circle room.",
-    "Datums (`top`, `bottom`, `left`, `right`, `cx`, `cy`) are the four edges and the centre of a RECTANGULAR room, the same condition relational placement refuses with `E_PLACE_POLY`, and `walls from rooms` and the pairwise `wall … between`/`wall … around` derive their walls from those same edges. A `room polygon` or `room circle` has no such edges, and its bounding box is not its floor, so the compiler refuses instead of guessing (ADR 0028 §2, §3, §4). For a pairwise wall the span points at the room's name.",
-    "Write the coordinate as a number, or read the datum of a rectangular room. For `walls from rooms`, leave the room out with `{ except <room> }` and draw its walls by hand, or split it into rectangles; for a pairwise wall, type its points.",
+    "A room-edge datum or a `wall … between`/`wall … around` meets a polygon or circle room, or `walls from rooms` or a door or opening placed `between` two rooms meets a circle or a polygon with a slanted edge.",
+    "Datums (`top`, `bottom`, `left`, `right`, `cx`, `cy`) are the four edges and the centre of a RECTANGULAR room, the same condition relational placement refuses with `E_PLACE_POLY`, and the pairwise `wall … between`/`wall … around` derive their walls from those same edges. A `room polygon` or `room circle` has no such edges, and its bounding box is not its floor, so the compiler refuses instead of guessing (ADR 0028 §2, §4). `walls from rooms` and `door|opening … between` read the ring as well, so a rectilinear polygon (every edge horizontal or vertical) is legal there; a circle, or a polygon with any other edge, shares no edge run, and is refused the same way (§3, §5). For a pairwise wall or a `between` the span points at the room's name.",
+    "Write the coordinate as a number, or read the datum of a rectangular room. For `walls from rooms`, leave the room out with `{ except <room> }` and draw its walls by hand, or make its edges horizontal and vertical; for a pairwise wall, type its points; for a door or opening, place it `on <wall> at …` or `at (x,y)`.",
     "room id=L polygon (0,0) (6000,0) (6000,4000) (0,4000)\nwall interior thickness 100 { (L.left, 0) (L.left, 4000) }   # error: L is a polygon room",
   ),
   E_ROOMS_NOT_TILING: E(
@@ -355,8 +355,8 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   ),
   E_ROOMS_OVERLAP: E(
     "E_ROOMS_OVERLAP",
-    "`walls from rooms`, or a `wall … between`/`wall … around`, meets two rooms that overlap.",
-    "Two rooms of the set share floor with positive area, so the edge between them is not one line and no partition (nor a `wall … between` the pair, nor one outline `around` them) can be derived on it. A room listed twice in `around [ … ]` would overlap itself and is refused the same way, on the repeated name. The compiler refuses and names every overlapping pair rather than choose which room owns the shared floor (ADR 0028 §3, §4).",
+    "`walls from rooms`, a `wall … between`/`wall … around`, or a door or opening `between` a polygon and a room, meets two rooms that overlap.",
+    "Two rooms of the set share floor with positive area, so the edge between them is not one line and no partition (nor a `wall … between` the pair, nor one outline `around` them, nor a door on a polygon's edge) can be derived on it. A room listed twice in `around [ … ]` would overlap itself and is refused the same way, on the repeated name. The compiler refuses and names every overlapping pair rather than choose which room owns the shared floor (ADR 0028 §3, §4).",
     "Move or resize the rooms so they meet edge to edge; the shared edge becomes the partition. Name each room once.",
     "room id=a at (0,0) size 4000x3000\nroom id=b at (3000,0) size 3000x3000\nwalls from rooms exterior 200 partition 100   # error: a and b overlap by 1000 mm\nwall partition thickness 100 between a and b   # error: the same pair",
   ),
@@ -1002,8 +1002,8 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   E_WALL_BETWEEN_ROOM: E(
     "E_WALL_BETWEEN_ROOM",
     "A `walls from rooms` clause names a room it cannot act on.",
-    "`walls from rooms` derives from the rooms of the plan or component it is written in (ADR 0016: a component sees only its own rooms). Its `except` clause can leave out only one of those rooms; an `open between` or `between … thickness` clause can name only one of those rooms that the statement derives walls round: a rectangle, not left out by `except` (a polygon or circle room has no edge run to share). A name that is not one of them (a typo, a room of another component, a placed instance's room) would act on nothing (ADR 0028 §3). The span points at the name.",
-    "Name a room written beside the statement (a rectangle, not excepted, in an `open`/`between` clause), or drop the name.",
+    "`walls from rooms` derives from the rooms of the plan or component it is written in (ADR 0016: a component sees only its own rooms). Its `except` clause can leave out only one of those rooms; an `open between` or `between … thickness` clause can name only one of those rooms that the statement derives walls round: a rectangle or a rectilinear polygon, not left out by `except` (a circle room, or a polygon with a slanted edge, has no edge run to share). A name that is not one of them (a typo, a room of another component, a placed instance's room) would act on nothing (ADR 0028 §3). The span points at the name.",
+    "Name a room written beside the statement (a rectangle or a rectilinear polygon, not excepted, in an `open`/`between` clause), or drop the name.",
     "room id=a at (0,0) size 4000x3000\nwalls from rooms exterior 200 partition 100 { except terrace }   # error: no room `terrace`",
   ),
   E_WALL_BETWEEN_WIDTH: E(
@@ -1057,9 +1057,9 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   ),
   E_OPENING_HOST_AMBIGUOUS: E(
     "E_OPENING_HOST_AMBIGUOUS",
-    "A relational opening's run carries more than one wall, or an `open between` clause names a pair that shares more than one edge.",
-    "`door|opening … between A and B` stands in the one wall body on the pair's shared edge run, and `… on <room>.<edge>` in the one exterior wall body on that edge (ADR 0028 §5). Two authored halves, an authored span beside a derived remainder (the `~2` pieces coexistence leaves), or two exterior runs either side of a narrower neighbouring room give more than one, and the compiler does not choose between them (ADR 0005). `open between A and B` derives one opening on one edge, so a pair that shares several (a polygon room wrapped round its neighbour) has no single answer either (ADR 0028 §3). The span points at the clause.",
-    "On a run with more than one wall: make it one wall (drop the authored wall lying on the derived line, or join the halves), or place the opening `on <wall> at …` on the wall you mean. On an `open between` clause: write the two rooms as one room if no boundary should stand between them, or remove the clause and write `opening at (x,y) width <mm>` on the edge you mean (a derived wall has no id to name).",
+    "A relational opening's run carries more than one wall, its position does not pick one of the edges two rooms share, or an `open between` clause names a pair that shares more than one edge.",
+    "`door|opening … between A and B` stands in the one wall body on the pair's shared edge run, and `… on <room>.<edge>` in the one exterior wall body on that edge (ADR 0028 §5). Two authored halves, an authored span beside a derived remainder (the `~2` pieces coexistence leaves), or two exterior runs either side of a narrower neighbouring room give more than one, and the compiler does not choose between them (ADR 0005). A polygon room wrapped round its neighbour shares several edges with it, and only `at <mm> from <room>.<edge>`, with an edge that meets one of them at an end, picks one: `at center`, `from start|end`, `at axis <label>` or no position would be a choice the author did not write. `open between A and B` derives one opening on one edge, so such a pair has no single answer there either (ADR 0028 §3). The span points at the clause.",
+    "On a run with more than one wall: make it one wall (drop the authored wall lying on the derived line, or join the halves), or place the opening `on <wall> at …` on the wall you mean. On a pair that shares several edges: write the position the hint quotes, `at <mm> from <room>.<edge>`, or `at (x,y)` where no room edge picks the one you mean (two polygons have no edge words). On an `open between` clause: write the two rooms as one room if no boundary should stand between them, or remove the clause and write the statement the hint quotes, `opening id=o between A and B at <mm> from B.<edge> width <mm>`, or `opening at (x,y) width <mm>` where no room edge picks it (a derived wall has no id to name).",
     "room id=a at (0,0) size 4000x3000\nroom id=b at (4000,0) size 3000x3000\nwall id=half partition thickness 100 { (4000,0) (4000,1500) }\nwalls from rooms exterior 200 partition 100\ndoor between a and b at 600 from end width 800   # error: the authored half beside the derived remainder",
   ),
   E_OPENING_NIB: E(

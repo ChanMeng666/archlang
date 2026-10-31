@@ -56,4 +56,30 @@ describe("a derived L", () => {
     expect(Math.abs(sum - own.fillArea) / own.fillArea).toBeLessThan(1e-9);
     expect(own.owned.map((w) => w.wall.id).sort()).toEqual(["exterior", "liv|bath", "liv|bed", "liv|bed#2"]);
   });
+
+  it("a door written by the rooms, on either run, is the door written by position", () => {
+    // The relation is a way of saying where; what reaches this package is the same door.
+    const twin = (a: string, b: string): string =>
+      PLAN.replace("door at (3000,4500) width 800 wall partition hinge left swing in", a).replace(
+        "door at (6000,1500) width 800 wall partition hinge left swing in",
+        b,
+      );
+    const mesh3 = (src: string) => {
+      const out = adaptPlan(src);
+      if (!out.ok) throw new Error(`refused: ${out.refusal.code}`);
+      return JSON.stringify(buildMesh(out.scene));
+    };
+    const onBoth = (at: string, relation: string): void => {
+      expect(
+        mesh3(
+          twin(
+            `door between liv and bed at ${relation} width 800 hinge left swing in`,
+            "door between liv and bath at center width 800 hinge left swing in",
+          ),
+        ),
+      ).toBe(mesh3(twin(`door at ${at} width 800 wall partition hinge left swing in`, PLAN.split("\n")[7]!.trim())));
+    };
+    onBoth("(3000,4500)", "1500 from bed.top");
+    onBoth("(4500,3000)", "1500 from bed.left");
+  });
 });

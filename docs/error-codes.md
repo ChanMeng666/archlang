@@ -92,7 +92,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_NON_FINITE`](#e_non_finite) | error | A number is too large to be finite. |
 | [`E_OPENING_ABOVE_WALL`](#e_opening_above_wall) | error | An opening's head is above the wall it is cut in. |
 | [`E_OPENING_DATUM`](#e_opening_datum) | error | An opening's position names no datum that applies to its run. |
-| [`E_OPENING_HOST_AMBIGUOUS`](#e_opening_host_ambiguous) | error | A relational opening's run carries more than one wall, or an `open between` clause names a pair that shares more than one edge. |
+| [`E_OPENING_HOST_AMBIGUOUS`](#e_opening_host_ambiguous) | error | A relational opening's run carries more than one wall, its position does not pick one of the edges two rooms share, or an `open between` clause names a pair that shares more than one edge. |
 | [`E_OPENING_NIB`](#e_opening_nib) | error | A relational opening leaves too short a nib of wall at a junction; it is refused, never moved. |
 | [`E_OPENING_NO_SHARED_WALL`](#e_opening_no_shared_wall) | error | A relational opening's run carries no wall (or, on a room edge, no exterior wall). |
 | [`E_OPENING_ON_DEMOLISHED_WALL`](#e_opening_on_demolished_wall) | error | A door, window or opening stands in a wall marked `status demolish`. |
@@ -119,10 +119,10 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_ROOF_SELF_INTERSECT`](#e_roof_self_intersect) | error | The roof outline crosses itself. |
 | [`E_ROOF_WALL`](#e_roof_wall) | error | `roof overhang … wall <id>` names a wall that cannot carry a roof. |
 | [`E_ROOMS_NOT_TILING`](#e_rooms_not_tiling) | error | `walls from rooms`, or a `wall … around`, meets rooms that do not tile one connected floor. |
-| [`E_ROOMS_OVERLAP`](#e_rooms_overlap) | error | `walls from rooms`, or a `wall … between`/`wall … around`, meets two rooms that overlap. |
+| [`E_ROOMS_OVERLAP`](#e_rooms_overlap) | error | `walls from rooms`, a `wall … between`/`wall … around`, or a door or opening `between` a polygon and a room, meets two rooms that overlap. |
 | [`E_ROOM_ALIGN`](#e_room_align) | error | Unknown relational alignment edge. |
 | [`E_ROOM_ALIGN_AXIS`](#e_room_align_axis) | error | Relational alignment edge belongs to the other axis. |
-| [`E_ROOM_NOT_RECTANGLE`](#e_room_not_rectangle) | error | A room-edge datum, `walls from rooms`, or a `wall … between`/`wall … around`, meets a polygon or circle room. |
+| [`E_ROOM_NOT_RECTANGLE`](#e_room_not_rectangle) | error | A room-edge datum or a `wall … between`/`wall … around` meets a polygon or circle room, or `walls from rooms` or a door or opening placed `between` two rooms meets a circle or a polygon with a slanted edge. |
 | [`E_ROOM_POLY_DEGENERATE`](#e_room_poly_degenerate) | error | Polygon room has fewer than three effective vertices. |
 | [`E_ROOM_POLY_SELF_INTERSECT`](#e_room_poly_self_intersect) | error | Polygon room intersects itself. |
 | [`E_ROOM_RADIUS`](#e_room_radius) | error | Circular room needs a positive radius. |
@@ -1307,11 +1307,11 @@ door between a and b width 800   # error: a door needs a position
 
 ## E_OPENING_HOST_AMBIGUOUS
 
-*error* — A relational opening's run carries more than one wall, or an `open between` clause names a pair that shares more than one edge.
+*error* — A relational opening's run carries more than one wall, its position does not pick one of the edges two rooms share, or an `open between` clause names a pair that shares more than one edge.
 
-**Cause.** `door|opening … between A and B` stands in the one wall body on the pair's shared edge run, and `… on <room>.<edge>` in the one exterior wall body on that edge (ADR 0028 §5). Two authored halves, an authored span beside a derived remainder (the `~2` pieces coexistence leaves), or two exterior runs either side of a narrower neighbouring room give more than one, and the compiler does not choose between them (ADR 0005). `open between A and B` derives one opening on one edge, so a pair that shares several (a polygon room wrapped round its neighbour) has no single answer either (ADR 0028 §3). The span points at the clause.
+**Cause.** `door|opening … between A and B` stands in the one wall body on the pair's shared edge run, and `… on <room>.<edge>` in the one exterior wall body on that edge (ADR 0028 §5). Two authored halves, an authored span beside a derived remainder (the `~2` pieces coexistence leaves), or two exterior runs either side of a narrower neighbouring room give more than one, and the compiler does not choose between them (ADR 0005). A polygon room wrapped round its neighbour shares several edges with it, and only `at <mm> from <room>.<edge>`, with an edge that meets one of them at an end, picks one: `at center`, `from start|end`, `at axis <label>` or no position would be a choice the author did not write. `open between A and B` derives one opening on one edge, so such a pair has no single answer there either (ADR 0028 §3). The span points at the clause.
 
-**Fix.** On a run with more than one wall: make it one wall (drop the authored wall lying on the derived line, or join the halves), or place the opening `on <wall> at …` on the wall you mean. On an `open between` clause: write the two rooms as one room if no boundary should stand between them, or remove the clause and write `opening at (x,y) width <mm>` on the edge you mean (a derived wall has no id to name).
+**Fix.** On a run with more than one wall: make it one wall (drop the authored wall lying on the derived line, or join the halves), or place the opening `on <wall> at …` on the wall you mean. On a pair that shares several edges: write the position the hint quotes, `at <mm> from <room>.<edge>`, or `at (x,y)` where no room edge picks the one you mean (two polygons have no edge words). On an `open between` clause: write the two rooms as one room if no boundary should stand between them, or remove the clause and write the statement the hint quotes, `opening id=o between A and B at <mm> from B.<edge> width <mm>`, or `opening at (x,y) width <mm>` where no room edge picks it (a derived wall has no id to name).
 
 ```arch static
 room id=a at (0,0) size 4000x3000
@@ -1656,9 +1656,9 @@ wall exterior thickness 200 around [a b]   # error: the same, as one ring
 
 ## E_ROOMS_OVERLAP
 
-*error* — `walls from rooms`, or a `wall … between`/`wall … around`, meets two rooms that overlap.
+*error* — `walls from rooms`, a `wall … between`/`wall … around`, or a door or opening `between` a polygon and a room, meets two rooms that overlap.
 
-**Cause.** Two rooms of the set share floor with positive area, so the edge between them is not one line and no partition (nor a `wall … between` the pair, nor one outline `around` them) can be derived on it. A room listed twice in `around [ … ]` would overlap itself and is refused the same way, on the repeated name. The compiler refuses and names every overlapping pair rather than choose which room owns the shared floor (ADR 0028 §3, §4).
+**Cause.** Two rooms of the set share floor with positive area, so the edge between them is not one line and no partition (nor a `wall … between` the pair, nor one outline `around` them, nor a door on a polygon's edge) can be derived on it. A room listed twice in `around [ … ]` would overlap itself and is refused the same way, on the repeated name. The compiler refuses and names every overlapping pair rather than choose which room owns the shared floor (ADR 0028 §3, §4).
 
 **Fix.** Move or resize the rooms so they meet edge to edge; the shared edge becomes the partition. Name each room once.
 
@@ -1695,11 +1695,11 @@ room id=b right-of a align right size 3000x3000   # error: `right` is horizontal
 
 ## E_ROOM_NOT_RECTANGLE
 
-*error* — A room-edge datum, `walls from rooms`, or a `wall … between`/`wall … around`, meets a polygon or circle room.
+*error* — A room-edge datum or a `wall … between`/`wall … around` meets a polygon or circle room, or `walls from rooms` or a door or opening placed `between` two rooms meets a circle or a polygon with a slanted edge.
 
-**Cause.** Datums (`top`, `bottom`, `left`, `right`, `cx`, `cy`) are the four edges and the centre of a RECTANGULAR room, the same condition relational placement refuses with `E_PLACE_POLY`, and `walls from rooms` and the pairwise `wall … between`/`wall … around` derive their walls from those same edges. A `room polygon` or `room circle` has no such edges, and its bounding box is not its floor, so the compiler refuses instead of guessing (ADR 0028 §2, §3, §4). For a pairwise wall the span points at the room's name.
+**Cause.** Datums (`top`, `bottom`, `left`, `right`, `cx`, `cy`) are the four edges and the centre of a RECTANGULAR room, the same condition relational placement refuses with `E_PLACE_POLY`, and the pairwise `wall … between`/`wall … around` derive their walls from those same edges. A `room polygon` or `room circle` has no such edges, and its bounding box is not its floor, so the compiler refuses instead of guessing (ADR 0028 §2, §4). `walls from rooms` and `door|opening … between` read the ring as well, so a rectilinear polygon (every edge horizontal or vertical) is legal there; a circle, or a polygon with any other edge, shares no edge run, and is refused the same way (§3, §5). For a pairwise wall or a `between` the span points at the room's name.
 
-**Fix.** Write the coordinate as a number, or read the datum of a rectangular room. For `walls from rooms`, leave the room out with `{ except <room> }` and draw its walls by hand, or split it into rectangles; for a pairwise wall, type its points.
+**Fix.** Write the coordinate as a number, or read the datum of a rectangular room. For `walls from rooms`, leave the room out with `{ except <room> }` and draw its walls by hand, or make its edges horizontal and vertical; for a pairwise wall, type its points; for a door or opening, place it `on <wall> at …` or `at (x,y)`.
 
 ```arch static
 room id=L polygon (0,0) (6000,0) (6000,4000) (0,4000)
@@ -2073,9 +2073,9 @@ door at (4000,1500) width 800 wall partition   # error: the edge is open
 
 *error* — A `walls from rooms` clause names a room it cannot act on.
 
-**Cause.** `walls from rooms` derives from the rooms of the plan or component it is written in (ADR 0016: a component sees only its own rooms). Its `except` clause can leave out only one of those rooms; an `open between` or `between … thickness` clause can name only one of those rooms that the statement derives walls round: a rectangle, not left out by `except` (a polygon or circle room has no edge run to share). A name that is not one of them (a typo, a room of another component, a placed instance's room) would act on nothing (ADR 0028 §3). The span points at the name.
+**Cause.** `walls from rooms` derives from the rooms of the plan or component it is written in (ADR 0016: a component sees only its own rooms). Its `except` clause can leave out only one of those rooms; an `open between` or `between … thickness` clause can name only one of those rooms that the statement derives walls round: a rectangle or a rectilinear polygon, not left out by `except` (a circle room, or a polygon with a slanted edge, has no edge run to share). A name that is not one of them (a typo, a room of another component, a placed instance's room) would act on nothing (ADR 0028 §3). The span points at the name.
 
-**Fix.** Name a room written beside the statement (a rectangle, not excepted, in an `open`/`between` clause), or drop the name.
+**Fix.** Name a room written beside the statement (a rectangle or a rectilinear polygon, not excepted, in an `open`/`between` clause), or drop the name.
 
 ```arch static
 room id=a at (0,0) size 4000x3000

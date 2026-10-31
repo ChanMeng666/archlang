@@ -57,8 +57,10 @@ const L = "(0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000)";
 
 /**
  * Plans a corpus cannot supply. The first three are this law's edge: a rectilinear polygon with
- * a `walls from rooms` statement beside it that leaves it out, or none at all. The last rows are
- * rectangle pair clauses whose runs the sweep's new branches sit next to.
+ * a `walls from rooms` statement beside it that leaves it out, or none at all. The next is rectangle
+ * pair clauses whose runs the sweep's new branches sit next to. The `door-` rows are card L2's edge:
+ * `door|opening between` on rectangles, with an L beside them, in every position and every refusal
+ * a pair of rectangles can reach, so the arithmetic the polygon path branches from cannot move.
  */
 export const INLINE_ROWS: readonly LawRow[] = [
   {
@@ -85,6 +87,26 @@ export const INLINE_ROWS: readonly LawRow[] = [
     name: "inline:clauses",
     src: plan(
       `  room id=a at (0,0) size 4000x3000 uses living\n  room id=b at (4000,0) size 3000x3000 uses kitchen\n  room id=c at (0,3000) size 7000x2000 uses hall\n  walls from rooms exterior 200 partition 100 { open id=ab between a and b width 1200  between a and c thickness 150 }`,
+    ),
+  },
+  {
+    // A door between two rectangles, with the L excepted beside them: it names no ring.
+    name: "inline:door-beside-excepted-L",
+    src: plan(
+      `  room id=liv polygon ${L} label "Living" uses living\n  room id=bed at (3000,3000) size 3000x3000 label "Bedroom" uses bedroom\n  room id=bath at (6000,0) size 2000x6000 label "Bath" uses bath\n  walls from rooms exterior 200 partition 100 { except liv }\n  wall id=lext exterior thickness 200 { (6000,0) (0,0) (0,6000) (3000,6000) }\n  wall id=p1 partition thickness 100 { (3000,6000) (3000,3000) (6000,3000) }\n  wall id=p2 partition thickness 100 { (6000,0) (6000,3000) }\n  door id=d between bed and bath at 1500 from bed.top width 800 swing into bath`,
+    ),
+  },
+  {
+    name: "inline:door-positions",
+    src: plan(
+      `  axes {\n    y at 1000\n  }\n  room id=a at (0,0) size 4000x6000 uses living\n  room id=b at (4000,0) size 4000x6000 uses bedroom\n  walls from rooms exterior 200 partition 100\n  door id=d1 between a and b at axis A width 800 swing into b\n  door id=d2 between a and b at 2500 from start width 800 swing into b\n  door id=d3 between b and a at 700 from end width 800 hinge right swing into a\n  opening id=o1 between a and b at center width 600\n  door id=d4 between a and b at 3000 from a.bottom width 800\n  door id=d5 on a.bottom at 1000 from a.left width 900 swing in\n  window id=w on b.right width 1200`,
+    ),
+  },
+  {
+    // Every refusal two rectangles can reach, so the wording of each is pinned where it stands.
+    name: "inline:door-refusals",
+    src: plan(
+      `  room id=a at (0,0) size 4000x3000 uses living\n  room id=b at (4000,0) size 3000x3000 uses bedroom\n  room id=c at (20000,0) size 3000x3000 uses bath\n  room id=e right-of nowhere size 1000x1000 uses hall\n  walls from rooms exterior 200 partition 100 { except c e }\n  door id=d1 between a and nosuch at center width 800\n  door id=d2 between a and c at center width 800\n  door id=d3 between a and a at center width 800\n  door id=d4 between a and b width 800\n  door id=d5 between a and b at 800 width 800\n  door id=d6 between a and b at 500 from a.left width 800\n  door id=d7 between a and b at 100 from start width 800\n  door id=d8 between a and e at center width 800\n  door id=d9 between a and b at 600 from a.cx width 800`,
     ),
   },
 ];
