@@ -17,7 +17,7 @@ const API: CompilerApi = { compile, describe, lint };
 const DIGESTS: [string, string][] = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
   ["ring", "b0e71529ada672dc0f5d35b78566b86fbcb5a523cd8157b5aad1651651b15d5b"], // PS2.29: message text only, same code, same span
-  ["open", "b084b3a9fe78e1ebadf676e66408ef9fae158c8cf41d6af084a6161de2b1b414"], // PS2.29: message text only, same code, same span
+  ["open", "1f3887ca145238a1bbf08e60fe13b2cdbf514f93903085fa051a3c0489f55b1e"], // H1: lint() gains W_EXTERIOR_RING_OPEN, true of this plan (an L on two of the room's four sides closes nothing); take that one diagnostic out and the digest is the old b084b3a9…; SVG, describe() and compile().diagnostics did not move. PS2.29: message text only, same code, same span
   ["derived", "0e9ba98a14acd1b134b0a7c40a08d4099d98b7f1be73c44dc15ee4b9bfaf289d"], // PS2.29: message text only, same code, same span
   ["frames", "fa90e92405b3198a736d6f7c9da05847bd679947c95e7b16b8da63be94a03822"], // PS2.29: message text only, same code, same span
   ["refused", "81a19f28940657c107b17ca08d7414999776c386e8a9d97a0e4450ca79c3346c"], // PS2.29: message text only, same code, same span
