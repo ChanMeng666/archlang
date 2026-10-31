@@ -11,7 +11,6 @@
  */
 
 import { createHash } from "node:crypto";
-import { OUT_OF_SCOPE } from "../src/furnish.js";
 import { finish } from "../src/index.js";
 import type { World } from "../src/world.js";
 
@@ -23,7 +22,7 @@ export function finishDigest(src: string, world: World): string {
     source: r.source,
     changed: r.changed,
     changes: r.changes,
-    unresolved: r.unresolved.filter((u) => !u.reason.includes(PARTLY) && !u.reason.includes(OUT_OF_SCOPE)),
+    unresolved: r.unresolved.filter((u) => !u.reason.includes(PARTLY) && u.scope === undefined),
   }));
   return createHash("sha256").update(JSON.stringify(runs)).digest("hex");
 }

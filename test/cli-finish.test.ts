@@ -152,7 +152,9 @@ describe("arch finish — exit codes", () => {
     const j = JSON.parse(dry.stdout);
     expect(j).toMatchObject({ ok: true, changed: false, changes: [], wrote: false, source: hall });
     expect(j.diff).toBeUndefined();
-    expect(j.unresolved).toEqual([expect.objectContaining({ stage: "furnish", room: "r", reason: note })]);
+    expect(j.unresolved).toEqual([
+      expect.objectContaining({ stage: "furnish", room: "r", scope: "outside-table", reason: note }),
+    ]);
 
     const human = run(["finish", file, "--only", "furnish"]);
     expect(human.status).toBe(0);

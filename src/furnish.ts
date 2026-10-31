@@ -134,9 +134,6 @@ export const furnishCheckBound = (rooms: number): number => 1 + rooms * MAX_CHEC
 /** The largest floor a room may have and still be furnished from the table, in m². */
 export const MAX_ROOM_AREA_M2 = 100;
 
-/** The words every note on a room with no row in the table carries, and no other note does. */
-export const OUT_OF_SCOPE = "is outside the furnish table";
-
 /**
  * The one code the never-worse gate does not count. `W_ROOM_MISSING_DEFINING` reports a
  * furnished room that lacks the piece its use is defined by, so it fires on every partial
@@ -271,12 +268,13 @@ export function furnishStage(
     ]);
 
   const unresolved: FinishNote[] = [];
-  const note = (room: RRoom, reason: string, codes?: string[]): void => {
+  const note = (room: RRoom, reason: string, codes?: string[], scope?: FinishNote["scope"]): void => {
     unresolved.push({
       stage: "furnish",
       room: room.id,
       reason,
       ...(codes && codes.length > 0 ? { codes } : {}),
+      ...(scope ? { scope } : {}),
       ...(room.span ? { span: room.span } : {}),
     });
   };
@@ -316,17 +314,19 @@ export function furnishStage(
   };
 
   /**
-   * A room the table has no pieces for, with nothing on its floor: left empty by scope, not
-   * refused, and named so that `unresolved` holds every room the run left empty (ADR 0025 §3,
-   * amended 2026-10-31). The last notes of the run, in room order.
+   * A room the table has no pieces for, with nothing on its floor and none declared `in` it: left
+   * empty by scope, not refused, and named so that `unresolved` holds every room the run left
+   * empty (ADR 0025 §3, amended 2026-10-31). `scope` marks the note as asking nothing of the
+   * author. The last of the furnish stage's notes, in room order.
    */
   const unlisted = (room: RRoom, level?: number): void => {
     const uses = [...roomUses(room)];
     const why =
       uses.length === 0
-        ? `neither \`uses\` nor its label names a use; give it \`uses\` with one of ${code(Object.keys(FURNISH_TABLE))} if finish should furnish it`
+        ? `neither \`uses\` nor its label or id names a use; give it \`uses\` with one of ${code(Object.keys(FURNISH_TABLE))} if finish should furnish it`
         : `${uses.length === 1 ? `its use ${code(uses)} has` : `its uses ${code(uses)} have`} no row there; add furniture yourself only if it should hold some`;
-    note(room, storeys(`${nameOf(room, level)} ${OUT_OF_SCOPE} and was left empty — ${why}`, level));
+    const reason = `${nameOf(room, level)} is outside the furnish table and was left empty — ${why}`;
+    note(room, storeys(reason, level), undefined, "outside-table");
   };
 
   if (resolved.levels.length > 0) {
@@ -350,8 +350,8 @@ export function furnishStage(
   const ir = resolved.ir;
   const { empty: todo, reported: partial, unlisted: outside } = roomsByFill(ir);
   /**
-   * Every note of the run: the stage's own, the partly furnished rooms, then the rooms outside
-   * the table. Called once, at the return.
+   * Every note of the stage: its own, the partly furnished rooms, then the rooms outside the
+   * table. Called once, at the return.
    */
   const reported = (): FinishNote[] => {
     for (const p of partial) partly(p);
@@ -865,11 +865,12 @@ type Reported =
   | { room: RRoom; strayed: string[] };
 
 /**
- * The rooms of one storey, by what they hold. Of those whose use has a row in the table: `empty`
- * (no piece; the stage furnishes it) and `reported` (never topped up, and said why: a
- * partly furnished room, or one whose only pieces are declared in it but stand elsewhere).
- * A room holding every required piece is in neither. Of the others, `unlisted` is the ones with
- * nothing on their floor: the stage has no pieces for them and only says so.
+ * The rooms of one storey, by what they hold: `empty` (a use with a row in the table, no piece;
+ * the stage furnishes it), `reported` (never topped up, and said why: a partly furnished room, or
+ * a room of ANY use whose only pieces are declared in it but stand elsewhere, a defect the author
+ * must fix) and `unlisted` (no row in the table, nothing on its floor and nothing declared in it:
+ * the stage has no pieces for it and only says so). A room holding every required piece is in none
+ * of them, and neither is a room with no row that holds a piece.
  *
  * Which pieces a room holds is read off the room's shape. A piece stands in the room it is
  * declared `in` when its footprint reaches that room's floor, and in any other room when it
@@ -895,16 +896,13 @@ function roomsByFill(ir: ResolvedPlan): { empty: RRoom[]; reported: Reported[]; 
           ? standsIn(footOf(f), floor)
           : standsIn(beyondBand(f), floor, 0),
     );
-    if (uses.length === 0) {
-      if (held.length === 0) unlisted.push(e);
-      continue;
-    }
     if (held.length === 0) {
       const strayed = furniture.filter(declaredHere);
-      if (strayed.length === 0) empty.push(e);
-      else reported.push({ room: e, strayed: [...new Set(strayed.map((f) => f.category))] });
+      if (strayed.length > 0) reported.push({ room: e, strayed: [...new Set(strayed.map((f) => f.category))] });
+      else (uses.length === 0 ? unlisted : empty).push(e);
       continue;
     }
+    if (uses.length === 0) continue;
     const families = new Set(held.flatMap((f) => servedBy(f.category)));
     const holds = (i: FurnishItem): boolean => [i.category, ...(i.or ?? [])].some((w) => families.has(familyOf(w)));
     const missing: Array<{ use: UseKind; categories: string[] }> = [];

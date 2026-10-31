@@ -4,13 +4,12 @@ import { describe, expect, it } from "vitest";
 import { USE_KINDS } from "../src/ast.js";
 import { describe as describePlan, finish, FURNISH_TABLE, lint } from "../src/index.js";
 import { CATALOG_CATEGORIES } from "../src/fixtures-catalog.js";
-import { OUT_OF_SCOPE } from "../src/furnish.js";
 import { DEFINING, definingItems, WASH_WITH, washItems } from "../src/lint/defining.js";
 import type { World } from "../src/world.js";
 
 /** Every note but the ones on a room outside the furnish table (these plans' companion halls). */
 const refused = (r: ReturnType<typeof finish>): ReturnType<typeof finish>["unresolved"] =>
-  r.unresolved.filter((u) => !u.reason.includes(OUT_OF_SCOPE));
+  r.unresolved.filter((u) => u.scope === undefined);
 
 /**
  * `W_HABITABLE_NO_WINDOW` (PS2.8) and `W_ROOM_MISSING_DEFINING` (PS2.9): each fires on the

@@ -3289,7 +3289,9 @@ rewrites the file in place, prints the diff on stderr, and takes `--dry-run`, `-
 `-o`. From the library: `finish(source, { reissue?, only?, world? })` returns
 `{ source, changes, unresolved, changed }`. A `furnish` change carries the `room` it was written
 for, and every room left empty, one the furnish table has no row for included, is an `unresolved`
-note with that `room` (and the blocking `codes`, when a diagnostic blocked it). A room that holds
+note with that `room` (and the blocking `codes`, when a diagnostic blocked it). The first kind also
+carries `scope: "outside-table"`: it asks nothing of the author unless the room should hold
+furniture, and `scope`, never `reason`, is what tells it from a note to act on. A room that holds
 some furniture but lacks a piece its use requires is an `unresolved` note with that `room` too,
 naming the missing pieces; it is never topped up.
 

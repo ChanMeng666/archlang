@@ -268,8 +268,9 @@ describe("finish tool", () => {
 `;
     const out = await call(await connect(), "finish", { source: hall, only: "furnish" });
     expect(out).toMatchObject({ ok: true, changed: false, changes: [], source: hall });
-    const notes = out.unresolved as Array<{ room?: string; reason: string }>;
+    const notes = out.unresolved as Array<{ room?: string; reason: string; scope?: string }>;
     expect(notes.map((u) => u.room)).toEqual(["r"]);
+    expect(notes[0]!.scope).toBe("outside-table");
     expect(notes[0]!.reason).toContain("its use `hall` has no row");
   });
 

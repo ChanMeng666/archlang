@@ -111,6 +111,12 @@ export interface FinishNote {
   room?: string;
   /** The diagnostic codes furnishing that room, or writing that sheet statement, would have raised. */
   codes?: string[];
+  /**
+   * Set on a note that declines nothing the plan needs: `outside-table` is a room the `furnish`
+   * stage has no pieces for, with nothing on its floor. Absent on a note the author must act on.
+   * Read this, never `reason`, to tell the two apart.
+   */
+  scope?: "outside-table";
   reason: string;
   /** The authored statement the note points at, when there is one. */
   span?: Span;

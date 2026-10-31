@@ -11,12 +11,6 @@ room id=main at (0,0) size 6000x4000 label "Main"
       door at (3000,4000) width 900 wall exterior
 }`;
 
-/** The simple plan with a piece on its floor: `finish` has nothing to report about its room. */
-const HOLDS_A_PIECE = SIMPLE_PLAN.replace(
-  "  door at",
-  "  furniture rug at (1000,1000) size 1000x800 in main\n  door at",
-);
-
 /**
  * The plan source a chat prompt carries, decoded from the `#z=` token in it. Compares
  * SOURCES, never deflate bytes: the page compresses in Chromium and this runs in Node,
@@ -78,11 +72,11 @@ test.describe("header actions", () => {
   test("Finish adds the sheet statements as one undoable edit and lists them in Lint", async ({ page }) => {
     await page.goto("/");
     await waitForPlan(page);
-    await setEditorSource(page, HOLDS_A_PIECE);
+    await setEditorSource(page, SIMPLE_PLAN);
     const status = await watchStatus(page);
 
     // The same transform as `arch finish`: for this plan, paper/scale/dims/schedule/
-    // legend and a title block, nothing left unresolved: its room holds a piece.
+    // legend and a title block, nothing left unresolved.
     await page.getByRole("button", { name: "Finish", exact: true }).click();
     await status.expectFlash("Finished: 6 changes (Ctrl+Z undoes)");
     const editor = page.locator(".cm-content");
@@ -112,28 +106,41 @@ test.describe("header actions", () => {
     await expect(editor).not.toContainText("dims auto all");
     await expect
       .poll(() => page.evaluate((k) => localStorage.getItem(k), AUTOSAVE_KEY), { timeout: 10_000 })
-      .toBe(HOLDS_A_PIECE);
+      .toBe(SIMPLE_PLAN);
     await expect(panel).toBeHidden();
   });
 
-  test("Finish names a room it left empty, and a second press still says so", async ({ page }) => {
+  test("A room finish has no pieces for is listed as information, and asks nothing", async ({ page }) => {
     await page.goto("/");
     await waitForPlan(page);
     await setEditorSource(page, SIMPLE_PLAN);
     const status = await watchStatus(page);
 
-    // "Main" names no use, so the room gets no piece, and `unresolved` says why (issue #370).
+    // "Main" names no use, so it gets no piece, and its note carries `scope` (issue #370): no
+    // "unresolved" in the flash, and Lint stays closed.
     await page.getByRole("button", { name: "Finish", exact: true }).click();
-    await status.expectFlash("Finished: 6 changes, 1 unresolved (see Lint)");
-    await expect(page.locator("#tab-lint")).toHaveAttribute("aria-selected", "true");
-    const panel = page.getByRole("region", { name: "Finish results" });
-    await expect(panel).toContainText("Finish — 6 changes, 1 unresolved");
-    await expect(panel.locator(".repair-un code", { hasText: "main" })).toBeVisible();
-    await expect(panel.locator(".repair-un")).toContainText("is outside the furnish table");
+    await status.expectFlash("Finished: 6 changes (Ctrl+Z undoes)");
+    await expect(page.locator("#tab-lint")).toHaveAttribute("aria-selected", "false");
 
+    await page.locator("#tab-lint").click();
+    const panel = page.getByRole("region", { name: "Finish results" });
+    await expect(panel.locator(".repair-outside code", { hasText: "main" })).toBeVisible();
+    await expect(panel.locator(".repair-outside")).toContainText("is outside the furnish table");
+    await expect(panel).not.toContainText("unresolved");
+    await expect(panel).not.toContainText("Left for you to resolve");
+    await expect(panel.getByRole("button", { name: "Reissue sheet" })).toHaveCount(0);
+
+    // A plan with nothing else to do is "Nothing to finish", and the room is still listed.
+    await expect
+      .poll(() => page.evaluate((k) => localStorage.getItem(k), AUTOSAVE_KEY), { timeout: 10_000 })
+      .toContain("paper A4 landscape");
+    const finished = (await page.evaluate((k) => localStorage.getItem(k), AUTOSAVE_KEY)) as string;
+    await setEditorSource(page, `${finished}\n`);
+    await expect(panel).toBeHidden();
     await page.getByRole("button", { name: "Finish", exact: true }).click();
-    await status.expectFlash("Finish added nothing: 1 unresolved (see Lint)");
-    await expect(panel).toContainText("Finish — 0 changes, 1 unresolved");
+    await status.expectFlash("Nothing to finish");
+    await expect(panel).toContainText("Nothing to finish");
+    await expect(panel.locator(".repair-outside code", { hasText: "main" })).toBeVisible();
   });
 
   test("Finish is its own undo step even straight after typing", async ({ page }) => {
@@ -173,8 +180,8 @@ test.describe("header actions", () => {
   test("Finish that declines says so, opens Lint, and offers Reissue sheet", async ({ page }) => {
     // The flagship on its old A2 sheet (it is issued on A1 since fix/examples-sound) is too
     // small at 1:50: finish adds nothing and says why, and only a reissue may replace the
-    // paper (the `arch finish --reissue` rule). The paper note joins the seven rooms the villa
-    // leaves empty by use: its halls and stores.
+    // paper (the `arch finish --reissue` rule). The villa's halls and stores it leaves empty are
+    // information, so the paper is the one note counted as unresolved here.
     const villaOnA2 = readFileSync(new URL("../../examples/hillside-villa.arch", import.meta.url), "utf8");
     expect(villaOnA2.split("  paper A1 landscape").length, "the villa's sheet line, once").toBe(2);
     await page.goto("/");
@@ -187,15 +194,15 @@ test.describe("header actions", () => {
     const status = await watchStatus(page);
 
     await page.getByRole("button", { name: "Finish", exact: true }).click();
-    await status.expectFlash("Finish added nothing: 8 unresolved (see Lint)");
+    await status.expectFlash("Finish added nothing: 1 unresolved (see Lint)");
     await expect(page.locator("#tab-lint")).toHaveAttribute("aria-selected", "true");
     const panel = page.getByRole("region", { name: "Finish results" });
     await expect(panel).toBeVisible();
-    await expect(panel).toContainText("8 unresolved");
+    await expect(panel).toContainText("1 unresolved");
     await expect(panel.locator(".repair-un code", { hasText: "paper" })).toBeVisible();
 
     await panel.getByRole("button", { name: "Reissue sheet" }).click();
-    await status.expectFlash("Finished: 1 change, 7 unresolved (see Lint)");
+    await status.expectFlash("Finished: 1 change (Ctrl+Z undoes)");
     await expect(page.locator(".cm-content")).toContainText("paper A1 landscape");
     await expect(panel).toContainText("replaced");
     await expect(panel.getByRole("button", { name: "Reissue sheet" })).toHaveCount(0);

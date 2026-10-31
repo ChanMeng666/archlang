@@ -15,7 +15,6 @@ import {
   MAX_PIECES_PER_ROOM,
   MAX_SET_CHECKS_PER_ROOM,
   NOT_GATED_DRAFTING,
-  OUT_OF_SCOPE,
 } from "../src/furnish.js";
 import {
   compile,
@@ -90,8 +89,8 @@ function isOneInsertion(src: string, out: string): boolean {
 }
 const furnitureLines = (src: string): string[] => src.split(/\r?\n/).filter((l) => /^\s*furniture /.test(l));
 /** Every note but the ones on a room outside the furnish table: what the stage tried and refused. */
-const refused = <N extends { reason: string }>(r: { unresolved: readonly N[] }): N[] =>
-  r.unresolved.filter((u) => !u.reason.includes(OUT_OF_SCOPE));
+const refused = <N extends { scope?: string }>(r: { unresolved: readonly N[] }): N[] =>
+  r.unresolved.filter((u) => u.scope === undefined);
 
 /** A flat: a bedroom, a bathroom and a hall off one corridor wall. Nothing is furnished. */
 const FLAT = `plan "Flat" {
@@ -123,6 +122,7 @@ suite("furnish — the corpus is not empty", () => {
       {
         stage: "furnish",
         room: "r_hall",
+        scope: "outside-table",
         reason:
           '"r_hall" is outside the furnish table and was left empty — its use `hall` has no row there; add furniture yourself only if it should hold some',
         span: { start: FLAT.indexOf("room id=r_hall"), end: FLAT.indexOf("\n  door id=d_bed") },
@@ -217,7 +217,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         "r_bed1",
         "r_bed2",
       ]);
-      expect(r.unresolved.filter((u) => u.stage === "furnish" && !u.reason.includes(OUT_OF_SCOPE))).toEqual([
+      expect(refused(r).filter((u) => u.stage === "furnish")).toEqual([
         {
           stage: "furnish",
           room: "r_live",
@@ -816,8 +816,10 @@ suite("furnish law — scope: rectangular rooms of a single-storey plan", () => 
 
 suite("furnish law — named: a room left empty is in `unresolved`, whatever left it empty (issue #370)", () => {
   const OUTSIDE = USE_KINDS.filter((u) => (FURNISH_TABLE[u]?.length ?? 0) === 0);
-  const notesOn = (r: { unresolved: readonly { room?: string; reason: string }[] }): Array<[string, string]> =>
-    r.unresolved.filter((u) => u.reason.includes(OUT_OF_SCOPE)).map((u) => [u.room!, u.reason]);
+  const notesOn = (r: {
+    unresolved: readonly { room?: string; reason: string; scope?: string }[];
+  }): Array<[string, string]> =>
+    r.unresolved.filter((u) => u.scope === "outside-table").map((u) => [u.room!, u.reason]);
   const noRow = (id: string, use: string): string =>
     `"${id}" is outside the furnish table and was left empty — its use \`${use}\` has no row there; add furniture yourself only if it should hold some`;
 
@@ -875,7 +877,7 @@ suite("furnish law — named: a room left empty is in `unresolved`, whatever lef
       .join(", ");
     expect(notesOn(r)[0]).toEqual([
       "r_bed",
-      `"r_bed" is outside the furnish table and was left empty — neither \`uses\` nor its label names a use; give it \`uses\` with one of ${words} if finish should furnish it`,
+      `"r_bed" is outside the furnish table and was left empty — neither \`uses\` nor its label or id names a use; give it \`uses\` with one of ${words} if finish should furnish it`,
     ]);
     // And `uses` then does what the note says.
     const fixed = finish(src.replace(`label "Schlafzimmer"`, `label "Schlafzimmer" uses bedroom`), {
@@ -903,9 +905,41 @@ suite("furnish law — named: a room left empty is in `unresolved`, whatever lef
       ).toEqual([]);
   });
 
-  it("a piece declared in the room but standing outside it leaves its floor empty, so it is named", () => {
+  it("a hall whose piece is declared `in` it but stands elsewhere gets the defect's note, not the scope note", () => {
     const src = FLAT.replace("  door id=d_bed", "  furniture rug at (500,500) size 800x600 in r_hall\n  door id=d_bed");
-    expect(notesOn(finish(src, { only: "furnish" })).map(([room]) => room)).toEqual(["r_hall"]);
+    expect(codes(src, undefined).has("W_FIXTURE_WRONG_ROOM")).toBe(true);
+    const r = finish(src, { only: "furnish" });
+    expect(notesOn(r)).toEqual([]);
+    const note = r.unresolved.find((u) => u.room === "r_hall")!;
+    expect(note.scope).toBeUndefined();
+    expect(note.reason).toBe(
+      '"r_hall" holds no piece on its floor — `rug` is declared `in r_hall` but stands outside it (`W_FIXTURE_WRONG_ROOM`); finish fills only empty rooms',
+    );
+    // Same reading, same words but the room's name, as a room with a row in the table.
+    const row = FLAT.replace("  door id=d_bed", "  furniture rug at (500,500) size 800x600 in r_bath\n  door id=d_bed");
+    expect(finish(row, { only: "furnish" }).unresolved.find((u) => u.room === "r_bath")!.reason).toBe(
+      note.reason.replaceAll("r_hall", "r_bath"),
+    );
+  });
+
+  it("only a room's own scope note carries `scope`: a refusal, a sheet note and a compile error never do", () => {
+    const polygon = `plan "L" {
+  units mm
+  wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000) close }
+  room id=r polygon (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000) label "Bedroom" uses bedroom
+  door id=d on w at 10% width 900 swing in
+}
+`;
+    const broken = `plan "X" {\n  units mm\n  room at (0,0) size\n}\n`;
+    const unnamed = FLAT.replace(`plan "Flat"`, `plan ""`);
+    for (const r of [
+      finish(polygon, { only: "furnish" }),
+      finish(broken, { only: "furnish" }),
+      finish(unnamed, { only: "sheet" }),
+    ]) {
+      expect(r.unresolved.length).toBeGreaterThan(0);
+      for (const u of r.unresolved) expect(u).not.toHaveProperty("scope");
+    }
   });
 
   it("a room with one use in the table is the stage's to furnish, not named", () => {

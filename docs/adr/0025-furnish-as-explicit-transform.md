@@ -43,17 +43,17 @@ piece claims it, then the use with the larger required footprint. A room whose u
 or is circulation, storage, a garage or `utility`, is left alone and is not reported.
 
 > *Amended 2026-10-31 (issue #370).* "Is not reported" no longer holds: such a room is still left
-> alone, and when nothing stands on its floor it is named in `unresolved`, last in the notes, with
-> the use that has no row, or, when neither `uses` nor the label names a use, with the words of
-> `FURNISH_TABLE`. The skill and `llms-full.txt` promised every room left empty, and on a plan with
-> a label the vocabulary does not hold (`"Schlafzimmer"`, `"Küche"`, `"Flur"`) the silence read as
-> nothing to do with every room empty. So the rule is one sentence: a room the run leaves empty has
-> a note. Such a note carries no `codes` and asks nothing of the author unless the room should hold
-> furniture, so `changed: false` with only such notes means finished. Nothing the stage writes
-> moved. Measured on the 465 tracked `.arch` files: 259 gain a note, 392 notes in all, 46 of them on
-> rooms of no known use, and 0 rows of `source`, `changed` and `changes[]` moved, for `--only
-> furnish` or a full run. Those notes are out of the digest in `test/finish-digest.ts`, and the
-> `Named` law below holds them.
+> alone, and when nothing stands on its floor it is named in `unresolved`, the last of the furnish
+> stage's notes, with the use that has no row, or, when neither `uses` nor the label or id names a
+> use, with the words of `FURNISH_TABLE`. The skill and `llms-full.txt` promised every room left
+> empty, and on a plan with a label the vocabulary does not hold (`"Schlafzimmer"`, `"Küche"`,
+> `"Flur"`) the silence read as nothing to do with every room empty. So the rule is one sentence: a
+> room the run leaves empty has a note. Such a note carries `scope: "outside-table"` and no `codes`.
+> It asks nothing of the author unless the room should hold furniture, so `changed: false` with
+> only such notes means finished; a consumer reads the field to tell them apart, never `reason`. A
+> room of any use whose only pieces are declared `in` it but stand elsewhere is a defect, not scope,
+> and gets the `W_FIXTURE_WRONG_ROOM` note a room with a row gets. Nothing the stage writes moved.
+> These notes are out of the digest in `test/finish-digest.ts`, and the `Named` law below holds them.
 
 **4. What goes in a room is a small public table.** `FURNISH_TABLE` (`src/furnish.ts`) is keyed
 by use and holds only words `src/fixtures-catalog.ts` already has. The wet-room and kitchen

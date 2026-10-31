@@ -26,6 +26,10 @@ import { KEYS, readStr, writeStr } from "./storage.js";
 import { levelFileName } from "./levels.js";
 import { saveBlob, svgToCanvas } from "./raster-export.js";
 
+/** The `finish` notes that ask something of the author: all but a room it has no pieces for. */
+const declined = (result: FinishResult): FinishResult["unresolved"] =>
+  result.unresolved.filter((u) => u.scope === undefined);
+
 interface ActionsCtx {
   getSource: () => string;
   loadSource: (src: string, refit?: boolean) => void;
@@ -110,7 +114,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     const src = getSource();
     const result = finish(src, reissue ? { reissue: true } : {});
     const n = result.changes.length;
-    const m = result.unresolved.length;
+    const m = declined(result).length;
     if (result.changed) loadSource(result.source, false);
     if (result.changed || m > 0 || els.finishPanel?.hidden !== false) showFinish(result);
     const added = `${n} change${n === 1 ? "" : "s"}`;
@@ -294,8 +298,20 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     const panel = els.finishPanel;
     if (!panel) return;
     panel.hidden = false;
-    if (!result.changed && result.unresolved.length === 0) {
-      panel.innerHTML = `<p class="repair-none">Nothing to finish — the sheet already has everything finish adds.</p>`;
+    const asked = declined(result);
+    // A room finish has no pieces for is information, not a job: it goes in its own list.
+    const outsideRows = result.unresolved
+      .filter((u) => u.scope !== undefined)
+      .map(
+        (u) =>
+          `<li class="repair-un repair-outside"><code>${escapeHtml(u.room ?? "")}</code> ${escapeHtml(u.reason)}</li>`,
+      )
+      .join("");
+    const outside = outsideRows
+      ? `<p class="repair-un-h">Left empty, nothing to do unless they should hold furniture:</p><ul class="repair-list">${outsideRows}</ul>`
+      : "";
+    if (!result.changed && asked.length === 0) {
+      panel.innerHTML = `<p class="repair-none">Nothing to finish — the sheet already has everything finish adds.</p>${outside}`;
       return;
     }
     const changeRows = result.changes
@@ -306,7 +322,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
           `<span class="repair-reason">${escapeHtml(c.reason)}</span></li>`,
       )
       .join("");
-    const unresolvedRows = result.unresolved
+    const unresolvedRows = asked
       .map((u) => {
         // A whole-plan note (e.g. "the plan does not compile") names no statement or room.
         const what = u.statement ?? u.room;
@@ -316,11 +332,11 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       .join("");
     // The notes may say "rerun with --reissue", a CLI flag. Offer it here when — and only
     // when — reissuing would actually change the sheet (`paper`/`scale`, nothing else).
-    const canReissue = result.unresolved.length > 0 && finish(getSource(), { reissue: true }).changed;
+    const canReissue = asked.length > 0 && finish(getSource(), { reissue: true }).changed;
     const n = result.changes.length;
     panel.innerHTML =
       `<div class="repair-head"><strong>Finish — ${n} change${n === 1 ? "" : "s"}` +
-      `${result.unresolved.length ? `, ${result.unresolved.length} unresolved` : ""}</strong>` +
+      `${asked.length ? `, ${asked.length} unresolved` : ""}</strong>` +
       (canReissue
         ? `<button class="repair-apply finish-reissue" type="button" title="Run finish again, allowed to replace paper and scale so the drawing fits">Reissue sheet</button>`
         : "") +
@@ -330,6 +346,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       (unresolvedRows
         ? `<p class="repair-un-h">Left for you to resolve (finish never guesses):</p><ul class="repair-list">${unresolvedRows}</ul>`
         : "") +
+      outside +
       // The core's note names the CLI flag; say what it is called here.
       (canReissue ? `<p class="repair-un-h">Here, Reissue sheet does what <code>--reissue</code> does.</p>` : "");
     panel.querySelector(".finish-reissue")?.addEventListener("click", () => runFinish(true));
