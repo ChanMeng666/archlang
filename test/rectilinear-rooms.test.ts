@@ -17,7 +17,8 @@ import { compile, describe, joinWallSet, lint, planJsonToArch, planToJson, resol
 import type { Point } from "../src/ast.js";
 import { ERROR_CATALOG } from "../src/error-catalog.js";
 import { impact } from "../src/impact.js";
-import { clearResolveCache, evaluationSteps, resolveAll } from "../src/ir.js";
+import { MAX_EVAL_STEPS } from "../src/expr.js";
+import { clearResolveCache, DERIVED_ELEMENTS_PER_ROOM, evaluationSteps, MAX_ELEMENTS, resolveAll } from "../src/ir.js";
 import { edgeOfPair, wallPhraseOf } from "../src/wall-ref.js";
 import { loopWinding } from "../src/geometry/band.js";
 import { link } from "../src/import.js";
@@ -733,26 +734,43 @@ suite("budgets", () => {
     expect(codes(src)).toContain("E_STEP_LIMIT");
   }, 60_000);
 
-  it("two interlocked combs: the flat pre-charge covers two rooms, the real count refuses", () => {
-    // Each tooth of one comb stands in a slot of the other, so two rooms share about 4n runs.
-    const combs = (n: number): string => {
+  // Each tooth of one comb stands in a slot of the other, so two rooms share about 4n runs.
+  // `pairs` such pairs, one above the other.
+  const combs = (n: number, pairs = 1): string => {
+    const pair = (k: number): string => {
+      const at = (x: number, y: number): string => `(${x},${y + k * 3000})`;
       const w = (2 * n + 1) * 1000;
-      const a = ["(0,0)", `(${w},0)`, `(${w},1000)`];
-      const b = [`(${w},3000)`, "(0,3000)", "(0,1000)"];
+      const a = [at(0, 0), at(w, 0), at(w, 1000)];
+      const b = [at(w, 3000), at(0, 3000), at(0, 1000)];
       for (let i = n; i > 0; i--) {
         const x = 2 * i * 1000;
-        a.push(`(${x},1000)`, `(${x},2000)`, `(${x - 1000},2000)`, `(${x - 1000},1000)`);
+        a.push(at(x, 1000), at(x, 2000), at(x - 1000, 2000), at(x - 1000, 1000));
       }
-      a.push("(0,1000)");
+      a.push(at(0, 1000));
       for (let i = 0; i < n; i++) {
         const x = 2 * i * 1000;
-        b.push(`(${x + 1000},1000)`, `(${x + 1000},2000)`, `(${x + 2000},2000)`, `(${x + 2000},1000)`);
+        b.push(at(x + 1000, 1000), at(x + 1000, 2000), at(x + 2000, 2000), at(x + 2000, 1000));
       }
-      b.push(`(${w},1000)`);
-      return plan(`  room id=a polygon ${a.join(" ")}\n  room id=b polygon ${b.join(" ")}\n${STATEMENT}`);
+      b.push(at(w, 1000));
+      return `  room id=a${k} polygon ${a.join(" ")}\n  room id=b${k} polygon ${b.join(" ")}`;
     };
+    return plan(`${Array.from({ length: pairs }, (_, k) => pair(k)).join("\n")}\n${STATEMENT}`);
+  };
+
+  it("two interlocked combs of 1,500 teeth stop at the step budget, before a run is cut", () => {
     expect(wallsOf(combs(3)).filter((w) => w._derived?.between)).toHaveLength(4 * 3 + 1);
-    const d = errors(combs(1500));
+    // A ring's self-intersection scan is charged first, so the real count below is never reached
+    // on this plan: 6,004 vertices are 18 million pairs, 3.6 times the budget.
+    expect(codes(combs(1500))).toEqual(["E_STEP_LIMIT"]);
+  }, 60_000);
+
+  it("many small combs: the flat pre-charge covers their rooms, the real count refuses", () => {
+    // 56 rooms pre-charge 560 elements and share 28 × 201 runs, with every ring inside the budget.
+    const src = combs(50, 28);
+    expect(56 * DERIVED_ELEMENTS_PER_ROOM).toBeLessThan(MAX_ELEMENTS);
+    expect(28 * (4 * 50 + 1)).toBeGreaterThan(MAX_ELEMENTS);
+    expect(stepsOf(src)).toBeLessThan(MAX_EVAL_STEPS);
+    const d = errors(src);
     expect(d.map((x) => x.code)).toEqual(["E_ELEMENT_LIMIT"]);
     expect(d[0]!.message).toContain("would derive up to");
   }, 60_000);
