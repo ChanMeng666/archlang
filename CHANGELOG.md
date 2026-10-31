@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   repetition, so the spec goes from 29,999 to 29,147 of its 30,000-character cap, with room for the
   L-shaped room and block stair lines still to come. No compiler output moves; the mechanism is
   1.37's.
+- Three inputs that gave a bare `E_PARSE` now carry a `= help:` line (issue #370): a hyphen in an `id=`
+  name ("ids are letters, digits and `_`"), a `,` between `uses` kinds ("separate uses with spaces"),
+  and a `;` at a line end ("statements end at the line break"). Code, message and span are unchanged;
+  each hint fires only in the case it describes, and none of the forms is accepted.
 
 ## [1.47.0] - 2026-10-31
 
