@@ -15,7 +15,9 @@ signal moved at 4 signups or 1 first frame a week. n is tiny. Posts 2–4 are re
 `marketing/content/posts/2026-10-30-tier-a-replay-posts-final.md`; media on the owner's machine in
 `D:\.claude-scratch\2026-10-29\tier-a-posts\`. Posting stays the owner's unless they ask again.
 
-**Released:** core 1.48.0, MCP shim 0.2.31, `@chanmeng666/archlang-3d` 0.1.1 with provenance (D20); VS Code extension 0.36.0 is versioned and waits for the owner's Marketplace upload. Cards H0–H7 are done (`research/2026-11-01-as-built.md`); L1 is in PR #400.
+**Released:** core 1.48.0, MCP shim 0.2.31, `@chanmeng666/archlang-3d` 0.1.1 with provenance (D20); VS Code extension 0.36.0, uploaded by the owner on 2026-11-01. Cards H0–H7 are done (`research/2026-11-01-as-built.md`); L1 is merged, and L2 and H10 share release 1.49.0.
+
+**Day 90 is read as STOP on the consumer product (D26):** ArchCanvas is in maintenance; ArchLang continues at low cost. Wave 7 runs through S3, S4 is out, and nothing new opens until the Show HN and N10 reads. The question to the user is deferred by the owner.
 
 **A real user:** Daniel Damm (X, GitHub bobsch-io) draws German houses with an agent and filed #362–#370.
 Thread: growth `discovery/interviews/2026-10-30-daniel-damm-x-thread.md`. Also needs IFC: not close, never
