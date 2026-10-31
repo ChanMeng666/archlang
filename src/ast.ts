@@ -386,7 +386,7 @@ export type AttachPos =
 
 /**
  * `door|opening … between <A> and <B> [at <pos>]` (ADR 0028 §5): the opening is hosted on
- * the one wall body on the shared edge run of two rectangular rooms, derived or authored,
+ * the one wall body on the shared edge run of two rooms, derived or authored,
  * at a position measured along that run. Exclusive with `at (x,y)` and `on <wall>`.
  */
 export interface OpeningBetween {

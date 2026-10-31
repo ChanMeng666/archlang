@@ -26,6 +26,7 @@ import { BUILTIN_REGISTRY } from "../src/registry.js";
 import {
   deriveWallsFromRooms,
   ringParts,
+  sharedRuns,
   type DerivedWallSpec,
   type TileRect,
   type TileRoom,
@@ -361,13 +362,17 @@ suite("the runs of one pair are told apart in words", () => {
 });
 
 suite("the catalogue", () => {
-  it("E_OPENING_HOST_AMBIGUOUS says what to do in both of its cases", () => {
+  it("E_OPENING_HOST_AMBIGUOUS says what to do in each of its cases", () => {
     const { fix, cause } = ERROR_CATALOG.E_OPENING_HOST_AMBIGUOUS!;
     // A run that carries two walls: the existing advice, and it holds.
     expect(fix).toContain("make it one wall");
     expect(fix).toContain("`on <wall> at …`");
+    // A door on a pair with several edges: the position that picks one.
+    expect(fix).toContain("`at <mm> from <room>.<edge>`");
+    expect(cause).toContain("only `at <mm> from <room>.<edge>`");
     // A clause on a pair with several edges: no authored wall to drop, no id to name.
     expect(fix).toContain("On an `open between` clause");
+    expect(fix).toContain("`opening id=o between A and B at <mm> from B.<edge> width <mm>`");
     expect(fix).toContain("`opening at (x,y) width <mm>`");
     expect(cause).toContain("`open between A and B` derives one opening on one edge");
   });
@@ -426,11 +431,8 @@ suite("a pair that shares several runs", () => {
     expect(codes(around)).toEqual(["E_ROOM_NOT_RECTANGLE"]);
   });
 
-  it("what is not built yet still refuses: `door between`, a datum, `right-of`, an anchor", () => {
+  it("what is not built yet still refuses: a datum, `right-of`, an anchor", () => {
     const body = `${LIV_BED}${STATEMENT}\n`;
-    expect(codes(plan(`${body}  door between liv and bed at center width 800 swing into bed`))).toEqual([
-      "E_ROOM_NOT_RECTANGLE",
-    ]);
     expect(codes(plan(`${body}  window on liv.left width 1000`))).toEqual(["E_ROOM_NOT_RECTANGLE"]);
     expect(codes(plan(`${LIV}\n  room id=x right-of liv size 2000x3000\n${STATEMENT}`))).toContain("E_PLACE_POLY");
     expect(codes(plan(`${body}  furniture sofa in liv anchor bottom-left flush size 2000x900`))).toEqual([
@@ -674,6 +676,110 @@ suite("against a cell-by-cell oracle", () => {
     expect(compared).toBeGreaterThan(150);
     expect(severalRuns).toBeGreaterThan(100);
   });
+
+  it("every pair's runs are its cell edges, in the walls' order, and a door stands on the one it names", () => {
+    let oneRun = 0;
+    let picked = 0;
+    let byPoint = 0;
+    for (let seed = 1; seed <= 200; seed++) {
+      const count = 2 + (seed % 4);
+      const cells = growRegions(seed, count);
+      const ids = Array.from({ length: count }, (_, r) => r);
+      const rings = ids.map((r) => traceRing(cells, r));
+      if (rings.some((r) => r === undefined)) continue;
+      // A ring of four corners is written as a rectangle, so its edges have words to pick a run by.
+      const tile = (r: number): TileRoom => {
+        const ring = rings[r]!;
+        const [xs, ys] = [ring.map((p) => p.x), ring.map((p) => p.y)];
+        const [x0, y0] = [Math.min(...xs), Math.min(...ys)];
+        return ring.length === 4
+          ? { id: `r${r}`, rect: { x0, y0, x1: Math.max(...xs), y1: Math.max(...ys) } }
+          : { id: `r${r}`, parts: ringParts(ring)! };
+      };
+      const rooms = ids.map(tile);
+      const walls = deriveWallsFromRooms(rooms, [], [], 100);
+      if (!walls.ok) continue;
+      const line = (r: number): string => {
+        const t = rooms[r]!;
+        return t.rect
+          ? `  room id=r${r} at (${t.rect.x0},${t.rect.y0}) size ${t.rect.x1 - t.rect.x0}x${t.rect.y1 - t.rect.y0}`
+          : `  room id=r${r} polygon ${rings[r]!.map((p) => `(${p.x},${p.y})`).join(" ")}`;
+      };
+      const body = `${ids.map(line).join("\n")}\n${STATEMENT}`;
+      for (const a of ids) {
+        for (const b of ids.filter((x) => x > a)) {
+          const got = sharedRuns(rooms[a]!, rooms[b]!);
+          if (!got.ok) throw new Error(`seed ${seed}: refused`);
+          const pair = [`r${a}`, `r${b}`].join("|");
+          // Against the cells: no sweep, no ring, no rectangle.
+          const truth: string[] = [];
+          for (let y = 0; y <= SIDE; y++) {
+            for (let x = 0; x <= SIDE; x++) {
+              const on = (p: number, q: number): boolean => (p === a && q === b) || (p === b && q === a);
+              if (on(cells[y - 1]?.[x] ?? -1, cells[y]?.[x] ?? -1)) truth.push(`H ${x * CELL} ${y * CELL}`);
+              if (on(cells[y]?.[x - 1] ?? -1, cells[y]?.[x] ?? -1)) truth.push(`V ${x * CELL} ${y * CELL}`);
+            }
+          }
+          const ends = (r: (typeof got.runs)[number]): [Point, Point] =>
+            r.vertical
+              ? [
+                  { x: r.c, y: r.r0 },
+                  { x: r.c, y: r.r1 },
+                ]
+              : [
+                  { x: r.r0, y: r.c },
+                  { x: r.r1, y: r.c },
+                ];
+          expect(got.runs.flatMap((r) => unitEdges(...ends(r))).sort(), `seed ${seed}`).toEqual(truth.sort());
+          // In the walls' order: the door and the name it would read are the same run.
+          const named = walls.walls.filter((w) => w.between?.join("|") === pair);
+          expect(
+            named.map((w) => w.pieces[0]!.points),
+            `seed ${seed}`,
+          ).toEqual(got.runs.map(ends));
+          if (got.runs.length === 0) continue;
+          const src = plan(`${body}\n  door id=d between r${a} and r${b} at center width 300`);
+          if (got.runs.length === 1) {
+            expect(codes(src), `seed ${seed}`).toEqual([]);
+            expect(resolvePlan(src).ir!.elements.find((e) => e.id === "d")).toMatchObject({
+              host: { wallId: pair },
+            });
+            oneRun++;
+            continue;
+          }
+          const d = errors(src);
+          expect(
+            d.map((x) => x.code),
+            `seed ${seed}`,
+          ).toEqual(["E_OPENING_HOST_AMBIGUOUS"]);
+          expect(d[0]!.message).toContain(`share ${got.runs.length} edges`);
+          expect(d[0]!.hints, `seed ${seed}`).toHaveLength(got.runs.length);
+          // Every fix the diagnostic quotes compiles, onto the run it names, in the walls' order.
+          got.runs.forEach((_, k) => {
+            const hint = d[0]!.hints![k]!;
+            const at = /`[^`]*\bat ([^`]+)`/.exec(hint)![1]!;
+            const fixed = at.startsWith("(")
+              ? `  door id=d at ${at} width 300 wall partition`
+              : `  door id=d between r${a} and r${b} at ${at} width 300`;
+            if (at.startsWith("(")) byPoint++;
+            else picked++;
+            const fix = plan(`${body}\n${fixed}`);
+            expect(codes(fix), `seed ${seed}: ${fixed}`).toEqual([]);
+            expect(
+              resolvePlan(fix).ir!.elements.find((e) => e.id === "d"),
+              `seed ${seed}: ${fixed}`,
+            ).toMatchObject({
+              host: { wallId: named[k]!.name },
+            });
+          });
+        }
+      }
+    }
+    // Not vacuous: each path ran.
+    expect(oneRun).toBeGreaterThan(100);
+    expect(picked).toBeGreaterThan(5);
+    expect(byPoint).toBeGreaterThan(50);
+  }, 120_000);
 });
 
 suite("the D4 oracle on a derived L", () => {
@@ -701,6 +807,35 @@ suite("the D4 oracle on a derived L", () => {
       fixedSheet: true,
     });
     expect(compareScenes(sceneOf(p0), sceneOf(gP), frameFor(g, 50)).length).toBeGreaterThan(0);
+  });
+
+  suite("relational doors, one on each run", () => {
+    // The door's words are the component's own: `bed.top` stays that edge under every frame.
+    const DOORS = `  ${LIV}\n  ${BED}\n  ${STATEMENT}\n    door id=a between liv and bed at 1200 from bed.top width 800 swing into bed\n    door id=b between liv and bed at 1200 from bed.left width 800 hinge right swing into liv`;
+
+    it("under all eight frames each door stays on its run, and every fact and primitive follows", () => {
+      for (const g of D4_ELEMENTS) {
+        const { vs, ctx } = witnessCase(DOORS, g);
+        expect(
+          vs.map((v) => v.key),
+          g.name,
+        ).toEqual([]);
+        expect(
+          ctx.obsG.summary.doors.map((d) => [d.id, d.between, d.relation]),
+          g.name,
+        ).toEqual([
+          ["g.a", ["g.liv", "g.bed"], "between liv and bed at 1200 from bed.top"],
+          ["g.b", ["g.liv", "g.bed"], "between liv and bed at 1200 from bed.left"],
+        ]);
+      }
+    });
+
+    it("the oracle can fail: the door moved to the other run is reported", () => {
+      const g = D4_ELEMENTS.find((e) => e.mirror)!;
+      const { p0 } = witnessPair(DOORS, g, { fixedSheet: true });
+      const { gP } = witnessPair(DOORS.replace("from bed.top", "from bed.right"), g, { fixedSheet: true });
+      expect(compareScenes(sceneOf(p0), sceneOf(gP), frameFor(g, 50)).length).toBeGreaterThan(0);
+    });
   });
 });
 
@@ -798,6 +933,10 @@ const DIGESTS: [string, string][] = [
   ["818566c77994d02cd63c9800e0578057d8f56872472e6ca086a9fbedbdeb0715", "open-one-run"],
   ["8cf9a11afd539f57a930e4c42b38350ff1162617ba969e9233b9cb2c0310cde1", "door-at"],
   ["70d9682e468ac43fa00fc25ba7cf6e4c4f7bd6bbb9110a586f062a8c3ad500cb", "placed"],
+  ["8607bb032468d6c7935125e6b8cdbe9e80de5e312f6232785aad52ee59442a38", "doors-both-runs"],
+  ["4da325fa3d79c1cad99505d1414a975259eab39bdb3b8a33709a952a91c5b7a9", "door-u"],
+  ["d6b67d8014eef1bf7851cee30d3432a2182adea38248f2162cb63a2fb129b74a", "door-one-run"],
+  ["720203b3f101ee639450ecd84f1fc6db5f4d4cb220e23d850c508c209e81c909", "doors-placed"],
 ];
 
 suite("the digest table", () => {

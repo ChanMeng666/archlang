@@ -3,8 +3,9 @@
  * is written against the rooms rather than against a wall.
  *
  * - `between <A> and <B> [at <pos>]` (door, cased opening): the one wall body on the shared
- *   edge run of two rectangular rooms, derived or authored, at a position measured along
- *   that run.
+ *   edge run of two rooms, rectangular or rectilinear, derived or authored, at a position
+ *   measured along that run. A polygon can share several runs with a room: the position then
+ *   has to pick one, which only `<mm> from <room>.<edge>` can, and any other is refused.
  * - `on <room>.<edge> [at <pos>]` (door, window, cased opening): the one EXTERIOR wall body on
  *   that edge of the room, at a position measured along the edge.
  * - The datum positions on the existing `on <wall> at …` form: `<mm> from start|end`,
@@ -43,6 +44,17 @@ import {
 } from "./opening-junctions.js";
 import type { DatumTable, RoomDatums } from "./room-datums.js";
 import { COMPASS_DATUM_ALIASES, splitDatum } from "./room-datums.js";
+import {
+  pickAt,
+  ringParts,
+  type RunLine,
+  type RunPick,
+  runEndMet,
+  runPicks,
+  runText,
+  sharedRuns,
+  type TileRoom,
+} from "./room-tiling.js";
 import { attachPosStr } from "./statement-print.js";
 import { openBoundaryPhraseOf, wallPhraseOf } from "./wall-ref.js";
 
@@ -62,8 +74,9 @@ export interface EdgeLine {
 export interface DatumAccess {
   table: DatumTable;
   /** The value of `name` read as a datum: `undefined` when it is not one, `null` when the
-   *  reader refused it (the diagnostic is already pushed). One step, charged by the caller. */
-  read(name: string, span: Span | undefined): number | null | undefined;
+   *  reader refused it (the diagnostic is already pushed, through `reword` when one is given).
+   *  One step, charged by the caller. */
+  read(name: string, span: Span | undefined, reword?: (d: Diagnostic) => Diagnostic): number | null | undefined;
   /** Whether a bare compass word may stand for a frame direction in this group (the root of a
    *  plan whose `north` is `up`, ADR 0028 §2), and why not when it may not: what `segment
    *  north` reads (`src/segment-select.ts`). Absent = refused. */
@@ -117,12 +130,13 @@ export function relationText(r: OpeningRelation): string {
  * The relational clause that puts an opening's centre at `centre` (a plan point on its run):
  * `between a and b at 600 from start`, `on r.top at 1200 from start`. What a lint hint quotes
  * for a relational opening, so it never names the internal id of a derived host (ADR 0028
- * §3). Read from the rooms the relation names (rectangles in plan coordinates, as lint holds
- * them); `undefined` when they no longer give a run.
+ * §3). Read from the rooms the relation names (rectangles and rectilinear rings in plan
+ * coordinates, as lint holds them); `undefined` when they no longer give a run. Of a pair with
+ * several runs it reads the one `centre` stands on, and the edge the author wrote keeps picking it.
  */
 export function relationalClause(
   r: OpeningRelation,
-  rooms: ReadonlyArray<{ id: string; at: Point; size: { w: number; h: number }; poly?: unknown }>,
+  rooms: ReadonlyArray<{ id: string; at: Point; size: { w: number; h: number }; poly?: readonly Point[] }>,
   centre: Point,
 ): string | undefined {
   const lines = (id: string): RoomDatums | undefined => {
@@ -131,6 +145,13 @@ export function relationalClause(
     const { x, y } = room.at;
     const { w, h } = room.size;
     return { top: y, bottom: y + h, left: x, right: x + w, cx: x + w / 2, cy: y + h / 2 };
+  };
+  const tile = (id: string): TileRoom | undefined => {
+    const l = lines(id);
+    if (l) return { id, rect: rectOf(l) };
+    const ring = rooms.find((x) => x.id === id)?.poly;
+    const parts = ring ? ringParts(ring) : undefined;
+    return parts ? { id, parts } : undefined;
   };
   const edgeLine = (datum: string): EdgeLine | undefined => {
     const d = splitDatum(datum);
@@ -142,7 +163,12 @@ export function relationalClause(
   if (r.between) {
     const a = lines(r.between[0]);
     const b = lines(r.between[1]);
-    run = a && b ? sharedRun(a, b) : undefined;
+    if (a && b) run = sharedRun(a, b);
+    else {
+      const [ta, tb] = [tile(r.between[0]), tile(r.between[1])];
+      const got = ta && tb ? sharedRuns(ta, tb) : undefined;
+      if (got?.ok) run = got.runs.find((u) => standsOn(centre, u));
+    }
   } else if (r.edge) {
     const e = edgeLine(r.edge);
     if (e) run = { vertical: e.vertical, c: e.c, r0: e.lo, r1: e.hi };
@@ -165,11 +191,17 @@ export function relationalClause(
  * Read a dotted `<room>.<edge>` name as an edge line: `undefined` after a diagnostic (a
  * refused datum, a centre line, or no datum at all). Charged one step, as a datum read is.
  */
-function readEdge(name: string, span: Span | undefined, ctx: RelationCtx, what: string): EdgeLine | undefined {
+function readEdge(
+  name: string,
+  span: Span | undefined,
+  ctx: RelationCtx,
+  what: string,
+  reword?: (d: Diagnostic) => Diagnostic,
+): EdgeLine | undefined {
   chargeSteps(1);
   const d = splitDatum(name);
   const access = ctx.datums;
-  const v = d && access ? access.read(name, span) : undefined;
+  const v = d && access ? access.read(name, span, reword) : undefined;
   if (v === null) return undefined;
   if (d === undefined || v === undefined || access === undefined) {
     ctx.diag(
@@ -313,18 +345,33 @@ function axisLine(
 // ---- relational placement (`between`, `on <room>.<edge>`) ------------------------------
 
 /** A run an opening is placed along: the line, and its ends `r0 < r1` (start, end). */
-interface Run {
-  vertical: boolean;
-  c: number;
-  r0: number;
-  r1: number;
-}
+type Run = RunLine;
 
-/** A room of the group's table by id, or `undefined` after the reader's own refusal. */
-function roomLines(room: WallsPairRoom, ctx: RelationCtx, what: string): RoomDatums | undefined {
-  // The same refusals a datum read gives (`E_UNKNOWN_REF`, `E_ROOM_NOT_RECTANGLE`,
-  // `E_DATUM_UNPLACED`), through the group's own reader, on the room's name.
-  const v = ctx.datums?.read(`${room.id}.top`, room.span);
+/** A room a `between` names: a rectangle's lines, or a rectilinear polygon's ring. */
+type PairRoom = RoomDatums | { ring: readonly Point[] };
+
+/**
+ * A room of the group's table by id, or `undefined` after a diagnostic. A ring the room itself
+ * refused adds none: the plan already says why, as it does in `walls from rooms`.
+ */
+function pairRoom(room: WallsPairRoom, ctx: RelationCtx, what: string): PairRoom | undefined {
+  const ring = ctx.datums?.table.rings.get(room.id);
+  if (ring === null) return undefined;
+  if (ring !== undefined) return { ring };
+  // The refusals a datum read gives (`E_UNKNOWN_REF`, `E_ROOM_NOT_RECTANGLE`, `E_DATUM_UNPLACED`),
+  // through the group's own reader, on the room's name. A shape it refuses is said in this line's
+  // words: the `.top` it reads to get there is no word the author wrote.
+  const reword = (d: Diagnostic): Diagnostic => {
+    if (d.code !== "E_ROOM_NOT_RECTANGLE") return d;
+    const circle = ctx.datums?.table.refused.get(room.id) === "circle";
+    const shape = circle ? "a circle room" : "a polygon room with an edge that is neither horizontal nor vertical";
+    return {
+      ...d,
+      message: `${what} is placed \`between\` "${room.id}", ${shape}: only rectangular and rectilinear rooms share an edge run`,
+      hints: ["Place it on the wall you mean instead: `on <wall> at …`, or `at (x,y)`."],
+    };
+  };
+  const v = ctx.datums?.read(`${room.id}.top`, room.span, reword);
   if (v === null) return undefined;
   const lines = ctx.datums?.table.rooms.get(room.id);
   if (lines === undefined) {
@@ -354,6 +401,105 @@ function sharedRun(a: RoomDatums, b: RoomDatums): Run | undefined {
     candidates.push({ vertical: false, c: a.bottom === b.top ? a.bottom : a.top, r0, r1 });
   }
   return candidates.find((r) => r.r1 > r.r0);
+}
+
+const rectOf = (r: RoomDatums): NonNullable<TileRoom["rect"]> => ({ x0: r.left, y0: r.top, x1: r.right, y1: r.bottom });
+
+/** A room of a pair as the sweep reads it. Its ring is rectilinear, or it would not be one. */
+const tileOf = (id: string, r: PairRoom): TileRoom =>
+  "ring" in r ? { id, parts: ringParts(r.ring)! } : { id, rect: rectOf(r) };
+
+/** A room of a pair as {@link runPicks} reads it: only a rectangle has edge words. */
+const edgesOf = (id: string, r: PairRoom): TileRoom =>
+  "ring" in r ? { id, shape: "polygon" } : { id, rect: rectOf(r) };
+
+/** Does `p` lie on the run? Exactly: an opening's centre was put on its run's line. */
+const standsOn = (p: Point, r: Run): boolean => {
+  const [c, t] = r.vertical ? [p.x, p.y] : [p.y, p.x];
+  return c === r.c && r.r0 <= t && t <= r.r1;
+};
+
+/**
+ * Every run two rooms share, or `null` after a diagnostic. Two rectangles keep their line
+ * arithmetic, and share at most one; a polygon is read through the sweep that derives its walls,
+ * so a door and the wall it stands in cannot disagree about where an edge is.
+ */
+function runsBetween(b: OpeningBetween, A: PairRoom, B: PairRoom, ctx: RelationCtx, what: string): Run[] | null {
+  if (!("ring" in A) && !("ring" in B)) {
+    const run = sharedRun(A, B);
+    return run ? [run] : [];
+  }
+  const got = sharedRuns(tileOf(b.a.id, A), tileOf(b.b.id, B));
+  if (got.ok) return got.runs;
+  ctx.diag({
+    severity: "error",
+    message: `${what} cannot stand between "${b.a.id}" and "${b.b.id}": the two rooms overlap, so the edge between them is not one line`,
+    code: got.refusal.code,
+    span: b.span,
+    hints: ["Move or resize the rooms so they meet edge to edge."],
+  });
+  return null;
+}
+
+/** What to write for each run: the position that picks it, or the point it stands at. */
+function pickHints(where: string, picks: readonly RunPick[], ctx: RelationCtx): string[] {
+  return picks.map((pick) => {
+    const { at } = pickAt(pick, ctx.snapPt);
+    return pick.from
+      ? `\`${where} at ${at}\` stands on the edge ${runText(pick.run)}.`
+      : `No edge of these rooms picks the edge ${runText(pick.run)} alone: write the point, \`at ${at}\`.`;
+  });
+}
+
+/**
+ * The one run of several that the position picks, or `undefined` after a diagnostic. Only
+ * `<mm> from <room>.<edge>` can: a run has one end there, and the rule of ADR 0028 §5 is what
+ * tells the runs apart. `center`, `from start|end`, an axis or no position would all be a choice
+ * of run the author did not write (ADR 0005), so each refuses and says what to write instead.
+ */
+function pickRun(
+  b: OpeningBetween,
+  A: PairRoom,
+  B: PairRoom,
+  runs: readonly Run[],
+  ctx: RelationCtx,
+  what: string,
+): Run | undefined {
+  const where = relationText({ between: [b.a.id, b.b.id] });
+  const said = runs.map(runText).join("; ");
+  const hints = (): string[] => pickHints(where, runPicks([edgesOf(b.a.id, A), edgesOf(b.b.id, B)], runs), ctx);
+  const pair = `"${b.a.id}" and "${b.b.id}"`;
+  const pos = b.pos;
+  let why = pos.kind === "default" ? "no position says which" : `\`at ${posText(pos)}\` does not say which`;
+  if (pos.kind === "from" && "datum" in pos.from) {
+    const name = pos.from.datum;
+    const edge = readEdge(name, pos.from.span, ctx, what, (d) =>
+      d.code === "E_ROOM_NOT_RECTANGLE" ? { ...d, hints: hints() } : d,
+    );
+    if (!edge) return undefined;
+    chargeSteps(runs.length);
+    const met = runs.filter((r) => runEndMet(edge, r) !== undefined);
+    if (met.length === 1) return met[0];
+    if (met.length === 0) {
+      ctx.diag({
+        ...datumDiag(
+          `\`${name}\` meets none of the ${runs.length} edges ${pair} share (${said}) at an end, so it does not say which`,
+          pos.from.span,
+        ),
+        hints: hints(),
+      });
+      return undefined;
+    }
+    why = `\`${name}\` meets ${met.length} of them at an end, so it does not say which`;
+  }
+  ctx.diag({
+    severity: "error",
+    message: `${what} cannot tell which edge to stand on: ${pair} share ${runs.length} edges (${said}), and ${why}`,
+    code: "E_OPENING_HOST_AMBIGUOUS",
+    span: b.span,
+    hints: hints(),
+  });
+  return undefined;
 }
 
 /** `x 4000` / `y 3000`: a run's line, as a reader looks it up. */
@@ -431,9 +577,9 @@ function positionOnRun(
       }
       const edge = readEdge(pos.from.datum, pos.from.span, ctx, what);
       if (!edge) return undefined;
-      const meets = edge.vertical !== run.vertical && edge.lo <= run.c && run.c <= edge.hi;
-      if (meets && edge.c === run.r0) return { c: run.r0 + v, anchor: { end: "r0", word: pos.from.datum } };
-      if (meets && edge.c === run.r1) return { c: run.r1 - v, anchor: { end: "r1", word: pos.from.datum } };
+      const end = runEndMet(edge, run);
+      if (end === "r0") return { c: run.r0 + v, anchor: { end: "r0", word: pos.from.datum } };
+      if (end === "r1") return { c: run.r1 - v, anchor: { end: "r1", word: pos.from.datum } };
       ctx.diag(
         datumDiag(
           edge.vertical === run.vertical
@@ -502,11 +648,12 @@ export function placeBetween(
   ctx: RelationCtx,
   what: string,
 ): Placed | null {
-  const A = roomLines(b.a, ctx, what);
-  const B = A ? roomLines(b.b, ctx, what) : undefined;
+  const A = pairRoom(b.a, ctx, what);
+  const B = A ? pairRoom(b.b, ctx, what) : undefined;
   if (!A || !B) return null;
-  const run = b.a.id === b.b.id ? undefined : sharedRun(A, B);
-  if (!run) {
+  const runs = b.a.id === b.b.id ? [] : runsBetween(b, A, B, ctx, what);
+  if (runs === null) return null;
+  if (runs.length === 0) {
     ctx.diag({
       severity: "error",
       message: `${what} cannot stand between "${b.a.id}" and "${b.b.id}": ${b.a.id === b.b.id ? "a room shares no edge with itself" : "the two rooms share no edge"}`,
@@ -516,6 +663,8 @@ export function placeBetween(
     });
     return null;
   }
+  const run = runs.length === 1 ? runs[0] : pickRun(b, A, B, runs, ctx, what);
+  if (!run) return null;
   return placeOnRun(run, b.pos, b.span, kind, width, ctx, what, "shared edge", relationOf({ between: b }), false);
 }
 

@@ -3099,11 +3099,11 @@ function resolveBody(
       ctx.datums = {
         table: frozen,
         compass: { aliases: opts.compassAliases, why: opts.compassWhy },
-        read: (name, span) => {
+        read: (name, span, reword) => {
           let refused = false;
           const v = reader(name, span, (d) => {
             refused = true;
-            pushDiag(d);
+            pushDiag(reword ? reword(d) : d);
           });
           return v === undefined ? undefined : refused ? null : v.t === "num" ? v.v : null;
         },

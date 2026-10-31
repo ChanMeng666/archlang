@@ -968,13 +968,14 @@ coordinates with no tolerance, and each failure refuses, naming the rooms:
 
 | Condition | Code |
 |---|---|
-| A `polygon` or `circle` room in the set | `E_ROOM_NOT_RECTANGLE` (leave it out with `except`) |
+| A `circle` room, or a `polygon` with an edge neither horizontal nor vertical, in the set | `E_ROOM_NOT_RECTANGLE` (leave it out with `except`) |
 | Two rooms overlap | `E_ROOMS_OVERLAP` |
 | Two parts, rooms touching only at a corner, or a hole (a corridor left as the leftover) | `E_ROOMS_NOT_TILING` |
 | A shared edge shorter than the partition is thick | `E_PARTITION_TOO_SHORT` |
 | A second statement in the same plan or component | `E_WALLS_FROM_ROOMS_DUP` |
 | `except` names no room written beside it | `E_WALL_BETWEEN_ROOM` |
-| A pair clause names a room not written beside it, a `polygon`/`circle` room, or an excepted room (on the name) | `E_WALL_BETWEEN_ROOM` |
+| A pair clause names a room not written beside it, a `circle` room, a `polygon` with an edge neither horizontal nor vertical, or an excepted room (on the name) | `E_WALL_BETWEEN_ROOM` |
+| `open between` names a pair that shares several edges (the hint quotes the `opening` for each) | `E_OPENING_HOST_AMBIGUOUS` |
 | A pair clause names two rooms that share no edge | `E_WALL_BETWEEN_NOT_ADJACENT` |
 | One pair named by two clauses (in either order of the rooms) | `E_WALL_BETWEEN_DUP` |
 | An authored wall on an edge declared `open`, or a door, window or opening hosted by position on the voided span | `E_WALL_BETWEEN_OPEN` |
@@ -987,6 +988,12 @@ coordinates with no tolerance, and each failure refuses, naming the rooms:
 A hole is legal when `outdoor` surfaces cover it exactly (a courtyard, which gets a second,
 inner exterior ring) or a `void` covers it exactly (no wall is derived round it). A 1 mm jog
 in the outline is a legal tiling, and the ring follows it.
+
+**An L is one room.** A `room polygon` whose every edge is horizontal or vertical joins the set
+and stays one room, with one stamp and one area. Where it wraps another room the two share
+several edges: each is its own partition, listed in `derived_walls[]` as `liv|bed`, `liv|bed#2`,
+…, numbered by start point, smallest `y`, then `x`. `between … thickness` sets all of them, and
+a door needs a [position that picks one](#openings-by-relation).
 
 **Hosting.** A derived wall has no id an author can type, so openings reach it by the rooms
 ([`between <A> and <B>`, `on <room>.<edge>`](#openings-by-relation)), by position
@@ -1156,6 +1163,12 @@ An opening may be placed by the rooms instead of by a wall
 - A **door** and a **cased opening** must write a position (a door is held to an end or a
   room edge, never centred by default); a **window** on an edge stands at its centre when it
   writes none. A window is never `between` two rooms (a parse error).
+- Either room of a `between` may be a polygon whose every edge is horizontal or vertical. Where
+  the two share one edge nothing changes. Where they share several, the position must **pick
+  one**, and only `<mm> from <room>.<edge>` can: the edge has to meet that run at an end, and
+  no other run. A rectangle's edges do this; a polygon has no edge words, so of two polygons
+  the way in is `at (x,y)`. Anything else is refused, and the diagnostic quotes the position
+  that picks each edge.
 - **The nib is enforced, never slid.** A jamb nearer than `max(100 mm, host thickness / 2)` to
   the face of a wall meeting the host, a meeting wall standing inside the span, or a span past
   the end of the run or of its wall is refused with `E_OPENING_NIB`, whose hint names the
@@ -1182,15 +1195,37 @@ plan "Rooms first" {
 Widen `living` and the partition, its door, the bedroom and its window all move with it, and
 the door keeps its 800 mm from the end of the shared edge.
 
+An L wrapped round a room shares two edges with it, one on `x` 3000 and one on `y` 3000. Each
+edge of the bedroom picks one of them, so this door stands on the edge on `x` 3000, which
+`bed.top` meets at its upper end; `from bed.left` would put it on the other. The bath shares one
+edge with the L, so `at center` is enough there:
+
+```arch
+plan "An L round a room" {
+  units mm
+  grid 50
+  room id=living polygon (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000) label "Living" uses living
+  room id=bed at (3000,3000) size 3000x3000 label "Bedroom" uses bedroom
+  room id=bath at (6000,0) size 2000x3000 label "Bath" uses bath
+  walls from rooms exterior 200 partition 100
+  door id=d1 between living and bed at 1500 from bed.top width 800 swing into bed
+  door id=d2 between living and bath at center width 800 swing into bath
+  door id=entry at (0,1500) width 1000 wall exterior swing inward
+  window id=w1 at (1500,0) width 1500 wall exterior
+  window id=w2 on bed.bottom width 1200
+}
+```
+
 | Condition | Code |
 |---|---|
-| No position on a door or cased opening; a plain `at <mm>` or `at <pct>%`; an edge parallel to the run, meeting it away from its ends, or a centre line (`cx`/`cy`); an axis parallel to the run, missing it, or not declared | `E_OPENING_DATUM` |
+| No position on a door or cased opening; a plain `at <mm>` or `at <pct>%`; an edge parallel to the run, meeting it away from its ends, or a centre line (`cx`/`cy`); an axis parallel to the run, missing it, or not declared; on a pair that shares several edges, an edge that meets none of them at an end | `E_OPENING_DATUM` |
 | The two rooms share no edge (or one room is named twice) | `E_WALL_BETWEEN_NOT_ADJACENT` |
 | No wall on the run; on `on <room>.<edge>`, the wall there is a partition | `E_OPENING_NO_SHARED_WALL` |
-| More than one wall body on the run (an authored span beside a derived remainder, two exterior runs either side of a narrower neighbour) | `E_OPENING_HOST_AMBIGUOUS` |
+| More than one wall body on the run (an authored span beside a derived remainder, two exterior runs either side of a narrower neighbour); on a pair that shares several edges, a position that does not pick one (`at center`, `from start\|end`, `at axis`, no position, an edge meeting two of them) | `E_OPENING_HOST_AMBIGUOUS` |
 | The pair is declared `open` in `walls from rooms` | `E_WALL_BETWEEN_OPEN` |
 | A jamb too near a meeting wall's face, a wall inside the span, or a span past its run | `E_OPENING_NIB` |
-| A room the plan or component cannot see, a polygon or circle room | `E_UNKNOWN_REF`, `E_ROOM_NOT_RECTANGLE` |
+| A room the plan or component cannot see; a circle, or a polygon with an edge neither horizontal nor vertical | `E_UNKNOWN_REF`, `E_ROOM_NOT_RECTANGLE` |
+| A polygon and a room that overlap | `E_ROOMS_OVERLAP` |
 
 **Facts.** `describe --json` reports such an opening's `placement` as `relational` in
 `freedom` (with an `openings.relational` count, present only when there is one) and its
@@ -1397,6 +1432,7 @@ could land a fixture in the notch, outside the room. Both raise
 | `furniture … in <poly> anchor <a>` / `in <poly> centered` | `E_PLACE_POLY` — place the piece with `at (x,y)` (plus `rotate`) |
 | `furniture … against wall <id>` | **Works** — a wall is a wall whatever shape the room is |
 | `furniture … at (x,y) in <poly>` | **Works** — an absolute position with declared membership |
+| `walls from rooms`, `door\|opening … between <poly>` | **Works** on a polygon whose every edge is horizontal or vertical — `E_ROOM_NOT_RECTANGLE` on any other |
 | `strip { room … }` | Not applicable — a strip child is a sized rectangle by construction |
 
 Everything else follows the ring, not the box: adjacency is a **shared boundary run**

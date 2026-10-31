@@ -790,6 +790,14 @@ const NEGATIVE: Negative[] = [
     ),
   },
   {
+    code: "E_OPENING_HOST_AMBIGUOUS",
+    channel: "compile",
+    note: "`at center` on an L wrapped round a room does not pick one of the edges they share",
+    src: plan(
+      `  room id=liv polygon (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000)\n  room id=bed at (3000,3000) size 3000x3000\n  walls from rooms exterior 200 partition 100\n  door between liv and bed at center width 800`,
+    ),
+  },
+  {
     code: "E_SWING_SIDE",
     channel: "compile",
     note: "`swing inward` on a wall with floor on both faces has no inside",

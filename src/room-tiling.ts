@@ -140,6 +140,8 @@ export interface TilingRefusal {
   why: string;
   /** The pair clause at fault (its index in {@link TileOptions.pairs}), when one is. */
   clause?: number;
+  /** A clause on a pair with several runs: what picks each run, in the order they number. */
+  picks?: RunPick[];
 }
 
 /** The opening an `open` pair derives: centred at `at`, `width` along its run. */
@@ -204,7 +206,99 @@ export interface TileRun {
   hi: number;
 }
 
+/** A run as a position reads it: its line (`x = c` when `vertical`), and its ends `r0 < r1`. */
+export interface RunLine {
+  vertical: boolean;
+  c: number;
+  r0: number;
+  r1: number;
+}
+
+/** One run of a pair, and what picks it. */
+export interface RunPick {
+  run: RunLine;
+  /** `bed.top`: an edge of the pair's rectangles that meets this run at an end and no other run.
+   *  Absent when none does: two polygons, or an edge meeting two runs at once. */
+  from?: string;
+  /** The end of the run `from` meets, which an offset from it is measured from. */
+  end?: "r0" | "r1";
+}
+
 const key = (p: Point): string => `${p.x},${p.y}`;
+
+/** A run's ends as coordinates along its line. */
+const lineOfRun = (r: TileRun): RunLine =>
+  r.a.x === r.b.x
+    ? { vertical: true, c: r.a.x, r0: r.a.y, r1: r.b.y }
+    : { vertical: false, c: r.a.y, r0: r.a.x, r1: r.b.x };
+
+/** A pair's runs in the order they number: the walls' `A|B`, `A|B#2`, …. The sort is stable, so
+ *  where two runs start at one point the vertical one, which `sweepRooms` lists first, is first. */
+const numbered = (runs: readonly TileRun[]): TileRun[] => [...runs].sort((u, v) => u.a.y - v.a.y || u.a.x - v.a.x);
+
+/** `on x 3000, y 3000–6000`: a run, as a reader looks it up. */
+export function runText(r: RunLine): string {
+  const [line, along] = r.vertical ? ["x", "y"] : ["y", "x"];
+  return `on ${line} ${numStr(r.c)}, ${along} ${numStr(r.r0)}–${numStr(r.r1)}`;
+}
+
+/**
+ * The position that stands an opening in the middle of a pick's run, as it is written: `1500 from
+ * bed.top`, measured from the end that edge meets, or the point `(3000,4500)`. Every position snaps
+ * as it resolves (ADR 0004), so this is where the middle lands on the plan's grid, and a quoted
+ * position resolves to what it says. `off` is how far the grid moved it.
+ */
+export function pickAt({ run, from, end }: RunPick, snap: (p: Point) => Point): { at: string; off: number } {
+  const mid = (run.r0 + run.r1) / 2;
+  const p = snap(run.vertical ? { x: run.c, y: mid } : { x: mid, y: run.c });
+  const t = run.vertical ? p.y : p.x;
+  const at = from
+    ? `${numStr(end === "r1" ? run.r1 - t : t - run.r0)} from ${from}`
+    : `(${numStr(p.x)},${numStr(p.y)})`;
+  return { at, off: Math.abs(t - mid) };
+}
+
+/**
+ * The end of `run` an edge meets, or `undefined`: an edge perpendicular to the run, through one
+ * of its ends (ADR 0028 §5). The rule `at <mm> from <room>.<edge>` is judged by, and what picks a
+ * run of a pair that shares several.
+ */
+export function runEndMet(
+  edge: { vertical: boolean; c: number; lo: number; hi: number },
+  run: RunLine,
+): "r0" | "r1" | undefined {
+  const crosses = edge.vertical !== run.vertical && edge.lo <= run.c && run.c <= edge.hi;
+  if (crosses && edge.c === run.r0) return "r0";
+  return crosses && edge.c === run.r1 ? "r1" : undefined;
+}
+
+/**
+ * What picks each of a pair's runs: the first edge of the pair's rectangles, in the order
+ * top, bottom, left, right, that meets this run and no other. Charged before it reads them.
+ */
+export function runPicks(pair: readonly TileRoom[], runs: readonly RunLine[]): RunPick[] {
+  chargeSteps(8 * runs.length + 1);
+  const picks: RunPick[] = runs.map((run) => ({ run }));
+  for (const room of pair) {
+    const r = room.rect;
+    if (!r) continue;
+    const edges = [
+      { word: "top", vertical: false, c: r.y0, lo: r.x0, hi: r.x1 },
+      { word: "bottom", vertical: false, c: r.y1, lo: r.x0, hi: r.x1 },
+      { word: "left", vertical: true, c: r.x0, lo: r.y0, hi: r.y1 },
+      { word: "right", vertical: true, c: r.x1, lo: r.y0, hi: r.y1 },
+    ];
+    for (const edge of edges) {
+      const met = picks.filter((p) => runEndMet(edge, p.run) !== undefined);
+      const pick = met.length === 1 ? met[0]! : undefined;
+      if (pick && pick.from === undefined) {
+        pick.from = `${room.id}.${edge.word}`;
+        pick.end = runEndMet(edge, pick.run);
+      }
+    }
+  }
+  return picks;
+}
 
 /**
  * Derive one group's walls. `rooms` in source order (that order names the partitions and
@@ -250,8 +344,9 @@ export function deriveWallsFromRooms(
     const i = index0.get(p.a)!;
     const j = index0.get(p.b)!;
     const onPair = runsOfPair.get(pairKey(i, j));
-    if (onPair && p.kind === "open" && onPair.length > 1) unpaired.push(severalRuns(p, onPair, named([i, j]), k));
-    else if (onPair) clauseOf.set(pairKey(i, j), k);
+    if (onPair && p.kind === "open" && onPair.length > 1) {
+      unpaired.push(severalRuns(p, onPair, named([i, j]), k, [rooms[i]!, rooms[j]!]));
+    } else if (onPair) clauseOf.set(pairKey(i, j), k);
     else
       unpaired.push({
         code: "E_WALL_BETWEEN_NOT_ADJACENT",
@@ -403,20 +498,16 @@ function severalRuns(
   runs: readonly TileRun[],
   rooms: string[],
   clause: number,
+  pair: readonly TileRoom[],
 ): TilingRefusal {
   chargeSteps(sortSteps(runs.length));
-  const said = [...runs]
-    .sort((u, v) => u.a.y - v.a.y || u.a.x - v.a.x)
-    .map((r) =>
-      r.a.x === r.b.x
-        ? `on x ${numStr(r.a.x)}, y ${numStr(r.a.y)}–${numStr(r.b.y)}`
-        : `on y ${numStr(r.a.y)}, x ${numStr(r.a.x)}–${numStr(r.b.x)}`,
-    );
+  const lines = numbered(runs).map(lineOfRun);
   return {
     code: "E_OPENING_HOST_AMBIGUOUS",
     rooms,
-    why: `"${p.a}" and "${p.b}" share ${runs.length} edges (${said.join("; ")}), and one clause derives one opening on one edge`,
+    why: `"${p.a}" and "${p.b}" share ${runs.length} edges (${lines.map(runText).join("; ")}), and one clause derives one opening on one edge`,
     clause,
+    picks: runPicks(pair, lines),
   };
 }
 
@@ -657,6 +748,21 @@ export function linkRings(
     }
   }
   return { pinched: false, outers, courtyards };
+}
+
+/**
+ * `door|opening between <A> and <B>` when either room is a polygon (ADR 0028 §5): every run the
+ * two share, by the sweep `walls from rooms` runs, in the order its walls number them. Refusals:
+ * `E_ROOMS_OVERLAP`, since two rooms that share floor have no edge to stand on.
+ */
+export function sharedRuns(
+  a: TileRoom,
+  b: TileRoom,
+): { ok: false; refusal: TilingRefusal } | { ok: true; runs: RunLine[] } {
+  const swept = sweepRooms([a, b]);
+  if (!swept.ok) return { ok: false, refusal: swept.refusals[0]! };
+  chargeSteps(sortSteps(swept.runs.length));
+  return { ok: true, runs: numbered(swept.runs).map(lineOfRun) };
 }
 
 /**
