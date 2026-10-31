@@ -133,25 +133,25 @@ jobs:
 
       - name: Type-check
         if: env.FULL_LEG == 'true'
-        run: npm run typecheck
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run typecheck || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: Lint & format (Biome)
         if: env.FULL_LEG == 'true'
-        run: npm run lint:ci
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run lint:ci || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: Generated artifacts are in sync
         if: env.FULL_LEG == 'true'
-        run: npm run check:drift
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run check:drift || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       # Coverage no longer runs here: it moved to nightly.yml's `coverage` job, where it
       # is still report-only. Every leg runs the plain suite, the pass/fail signal.
       - name: Test
         if: env.FULL_LEG == 'true'
-        run: npm test
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm test || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: Authorability eval (offline golden regression guard)
         if: env.FULL_LEG == 'true'
-        run: npm run eval:ci
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run eval:ci || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
   # The non-test half of the Node 22 leg. A record-only PR skips the whole job, and the
   # `Node 22` aggregator below expects exactly that skip; neither name here is required.
@@ -174,16 +174,16 @@ jobs:
         run: npm ci
 
       - name: Type-check
-        run: npm run typecheck
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run typecheck || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: Lint & format (Biome)
-        run: npm run lint:ci
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run lint:ci || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: Generated artifacts are in sync
-        run: npm run check:drift
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run check:drift || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: Authorability eval (offline golden regression guard)
-        run: npm run eval:ci
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run eval:ci || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
   # The suite on Node 22, one job per shard. Files carry no state to one another: a test
   # writes to the repository only under an UPDATE flag and otherwise to a mkdtemp directory.
@@ -212,7 +212,7 @@ jobs:
         run: npm ci
 
       - name: Test
-        run: npx vitest run --shard=${{ matrix.shard }}/3
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npx vitest run --shard=${{ matrix.shard }}/3; test "${{ matrix.shard }}" != 2 || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
   # The required `Node 22` check. It decides from its needs' results, so a shard that failed,
   # was cancelled or was skipped when it had work to do turns it red. `always()`, not
@@ -259,11 +259,11 @@ jobs:
       # full run covers all of these elsewhere.
       - name: "Docs leg: generated artifacts are in sync"
         if: env.FULL_CI != 'true'
-        run: npm run check:drift
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run check:drift || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: "Docs leg: every test file is wired into the suite"
         if: env.FULL_CI != 'true'
-        run: npm run check:test-wiring
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run check:test-wiring || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: "Docs leg: the suites that read a record"
         if: env.FULL_CI != 'true'
@@ -281,7 +281,7 @@ jobs:
 
       - name: "Docs leg: build the docs site"
         if: env.FULL_CI != 'true'
-        run: npm run docs:build
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run docs:build || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
   builds:
     name: Workspace builds
@@ -319,7 +319,7 @@ jobs:
       # times, so the core is built once and CI calls the `:only` variants.
       - name: Build core (once — every workspace below consumes dist/)
         if: env.FULL_CI == 'true'
-        run: npm run build
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run build || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       # Fails fast, before the slower site builds. Covers the root dev tsconfig
       # (src + test + eval + dataset + scripts + bench) plus the playground, the
@@ -330,23 +330,23 @@ jobs:
       # config.ts and CompileSeam.vue import its generated modules.
       - name: Type-check every workspace
         if: env.FULL_CI == 'true'
-        run: npm run typecheck:all
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run typecheck:all || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: Build docs site
         if: env.FULL_CI == 'true'
-        run: npm run docs:build:only
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run docs:build:only || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: Build playground
         if: env.FULL_CI == 'true'
-        run: npm run playground:build:only
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run playground:build:only || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: Build MCP shim
         if: env.FULL_CI == 'true'
-        run: npm run mcp:build:only
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run mcp:build:only || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: Build VS Code extension
         if: env.FULL_CI == 'true'
-        run: npm run vscode:build:only
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run vscode:build:only || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       # The MCP shim bakes its context resources into dist/ at pack time — the
       # 0.2.2 staleness incident shipped a v1.19 grammar against a current core.
@@ -359,7 +359,7 @@ jobs:
       # (dist/server.js); the plain test matrix skips them by design.
       - name: VS Code extension bundle tests
         if: env.FULL_CI == 'true'
-        run: npx vitest run editors/vscode
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npx vitest run editors/vscode || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       # A `*.test.ts` outside vitest.config.ts's `test.include` list is not skipped
       # and not reported — it is never collected, so it reads as coverage in the
@@ -367,7 +367,7 @@ jobs:
       # matched by a glob the suite actually runs (and that no glob has gone dead).
       - name: Every test file is wired into the suite
         if: env.FULL_CI == 'true'
-        run: npm run check:test-wiring
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run check:test-wiring || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       # (appended by later workstreams)
 
@@ -416,11 +416,11 @@ jobs:
 
       - name: Test
         if: env.FULL_LEG == 'true'
-        run: npm test
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm test || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: Generated artifacts are in sync
         if: env.FULL_LEG == 'true'
-        run: npm run check:drift
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run check:drift || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
   bench:
     name: Benchmark (informational)
@@ -510,11 +510,11 @@ jobs:
       # `archlang` specifier to ../dist/index.js, then the app itself.
       - name: Build core
         if: env.FULL_CI == 'true'
-        run: npm run build
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run build || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: Build playground
         if: env.FULL_CI == 'true'
-        run: npm run playground:build:only
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run playground:build:only || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       # Keyed on the RESOLVED @playwright/test version: a browser build is pinned
       # to its driver, so a version bump must miss the cache rather than reuse an
@@ -543,15 +543,15 @@ jobs:
       # Azure apt mirror serving those debs slowly, not a cache miss.
       - name: Install Chromium (browser + system deps)
         if: env.FULL_CI == 'true' && steps.pw-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npx playwright install --with-deps chromium || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: Install Chromium system deps only (cached browser)
         if: env.FULL_CI == 'true' && steps.pw-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npx playwright install-deps chromium || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: Run E2E specs
         if: env.FULL_CI == 'true'
-        run: npx playwright test -c playground
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npx playwright test -c playground || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: Upload Playwright report
         if: failure()
@@ -602,7 +602,7 @@ jobs:
       # The CLI test spawns `archlang3d` as a process, which reads the core through its built dist/.
       - name: Build core
         if: env.FULL_CI == 'true'
-        run: npm run build
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run build || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       # Keyed on the RESOLVED playwright-core version the package drives: its browser build is
       # pinned to it, so a bump misses the cache instead of reusing another Chromium.
@@ -625,11 +625,11 @@ jobs:
       # browser's own shared libraries still are, and they live outside the cached path.
       - name: Install Chromium (browser + system deps)
         if: env.FULL_CI == 'true' && steps.pw-cache.outputs.cache-hit != 'true'
-        run: npx playwright-core install --with-deps chromium
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npx playwright-core install --with-deps chromium || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: Install Chromium system deps only (cached browser)
         if: env.FULL_CI == 'true' && steps.pw-cache.outputs.cache-hit == 'true'
-        run: npx playwright-core install-deps chromium
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npx playwright-core install-deps chromium || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       # `view --video` encodes H.264 through ffmpeg; the e2e requires it under CI.
       - name: Install ffmpeg
@@ -638,7 +638,7 @@ jobs:
 
       - name: Run check:3d
         if: env.FULL_CI == 'true'
-        run: npm run check:3d
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run check:3d || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
   e2e-docs:
     name: Docs site E2E (Playwright)
@@ -694,11 +694,11 @@ jobs:
       # gallery example through it), then the site itself.
       - name: Build core
         if: env.FULL_CI == 'true'
-        run: npm run build
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run build || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: Build docs site
         if: env.FULL_CI == 'true'
-        run: npm run docs:build:only
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npm run docs:build:only || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       # Keyed on the RESOLVED @playwright/test version: a browser build is pinned
       # to its driver, so a version bump must miss the cache rather than reuse an
@@ -727,15 +727,15 @@ jobs:
       # Azure apt mirror serving those debs slowly, not a cache miss.
       - name: Install Chromium (browser + system deps)
         if: env.FULL_CI == 'true' && steps.pw-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npx playwright install --with-deps chromium || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: Install Chromium system deps only (cached browser)
         if: env.FULL_CI == 'true' && steps.pw-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npx playwright install-deps chromium || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: Run E2E specs
         if: env.FULL_CI == 'true'
-        run: npx playwright test -c docs-site
+        run: export CI_TRACE_LOG=/tmp/ci-trace.log NODE_OPTIONS="--require $GITHUB_WORKSPACE/.ci-trace.cjs"; rc=0; npx playwright test -c docs-site || rc=$?; grep -h TRACE /tmp/ci-trace.log | sort | uniq -c | sort -rn | head -40 || true; exit $rc
 
       - name: Upload Playwright report
         if: failure()
