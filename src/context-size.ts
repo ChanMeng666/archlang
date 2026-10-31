@@ -6,4 +6,4 @@
  * never states a size the file does not have; `check:drift` and `test/context-size.test.ts` fail
  * when it goes stale.
  */
-export const CONTEXT_BUNDLE_KB = { total: 154, spec: 30, workflow: 31, cli: 29, errors: 63 } as const;
+export const CONTEXT_BUNDLE_KB = { total: 153, spec: 29, workflow: 31, cli: 29, errors: 63 } as const;

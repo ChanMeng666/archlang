@@ -141,10 +141,11 @@ G2's file). If public and simple, a `tools/plan-json-to-<format>.mjs` recipe plu
 
 ### G10 · Design spikes for #363 and #362 — `done` · PR #383 · merge `cd10a5ef` · record: `research/2026-10-30-as-built.md` § G10
 
-### G11 · Residue of G8 and G9 — `todo` · after the N10 read · 1–2 days · model: opus
+### G11 · Residue of G8 and G9 — `todo` · after Show HN · 1–2 days · model: opus
 
 What the red-team rounds of #373–#380 left, each with its reproduction in the PR. Take them one PR per
-group; none blocks a release.
+group; none blocks a release. Four lines moved to Wave 7: the three-way open crossing, the `E_OPENING_NIB`
+question and the open-ring lint (H1, H2); MCP and `batch` `dropped` (H6); the ArchCanvas block (H8).
 
 - **Demolished walls:** `offWallFix` (`door.ts`, `window.ts`, `opening.ts`) can steer a door to a
   demolished wall; `door at (x,y) wall <category>`; the wording of `door on a.right`; `E_DATUM_NAME` on a
@@ -165,6 +166,81 @@ group; none blocks a release.
   the comment at `src/lib/agent/intent.ts:702-720` is stale; add a tripwire for each.
 
 Must not: promise IFC; make a new language form without its byte-identity law.
+
+## H, L, S · Wave 7: what the German-houses user reported, by order of harm (D23–D25; added 2026-10-31)
+
+Why this wave exists. One active user filed #362–#370 with reproductions. Each entry below was probed on
+1.47.0. The issues were written by the user's agent and skimmed by the user, so read their observations as
+evidence and their syntax as a suggestion. Order: what goes wrong silently, then forms any house has.
+Must not, for the whole wave: promise IFC; make a structural or compliance claim; add a language form without
+its byte-identity law.
+
+### H0 · Records — `doing` · 0.5 day · model: main session
+
+D23–D25, this section, the handoff, and in the growth repository the day-90 reading, the N10 release notes and
+the question for the user. Docs only.
+
+### H1 · Name an open exterior ring — `todo` · 0.5–1 day · model: opus
+
+From #346 and #370. A 1000 mm gap in an exterior ring passes `validate` and `lint`; only `describe` hints at it
+through `gross_internal_area_omitted`. A new lint rule in `src/lint/rules/enclosure.ts`, on the same reading as
+`src/analyze/gross-area.ts` (`no-closed-exterior-ring`), catalogued in `src/error-catalog.ts`. Measure the corpus
+first and judge every hit. Must not: fire on a plan with no exterior wall at all; overlap `W_WALL_END_SHORT`'s
+reports; change a drawing.
+
+### H2 · Open boundaries, the two remainders — `todo` · 0.5 day · model: opus
+
+From #368. (a) `freeCrossingCuts` needs four arms (`src/wall-lowering.ts:155`), so a T of three open boundaries
+keeps its pier; re-pin `open-tee` with the reason beside the value. (b) A boundary opened over its whole shared
+edge draws no wall, so it stops counting for `E_OPENING_NIB` and its lint twin (`src/opening-relation.ts:645`,
+`src/opening-junctions.ts`). Must not: relax any narrower opening; pin that with a test.
+
+### H3 · `finish` names the rooms it leaves empty — `todo` · 0.5 day · model: opus
+
+From #370. Rooms with `uses hall`, `utility`, `storage` or `entry` come back empty with `unresolved: []`,
+against SKILL.md step 10 and `llms-full.txt`. Use the existing `note()` in `src/furnish.ts`. Must not: furnish
+them; change what `finish` writes into a plan.
+
+### H4 · `W_STAIR_TOO_STEEP` stops advising a loop — `todo` · 0.25 day · model: opus
+
+From #362. Its fix says to draw two flights with a landing, which lint then judges as two too-steep stairs
+(`src/error-catalog.ts:1500`, `src/lint/rules/stairs.ts:793`). Reword it; regenerate `docs/error-codes.md`; list
+the moved hint digests. S2 restores the advice in the block form.
+
+### H5 · Parse errors that say what to write — `todo` · 0.25 day · model: sonnet
+
+From #370. A hyphen in an id, `,` between uses and `;` at a line end give a bare `E_PARSE`
+(`src/lexer.ts:557`, `src/parser.ts:380,1362`). Add the hint. Must not: accept any of them.
+
+### H6 · `dropped` on the remaining paths — `todo` · 0.25 day · model: sonnet
+
+From #366. MCP `compile` does not pass `dropped`; `batch -f json` does not report it. Reuse
+`src/cli/serialize.ts`. A shim release follows.
+
+### H7 · Room in `spec.llm.md` — `todo` · 0.5 day · model: opus
+
+The spec is at 29,999 of 30,000 UTF-16 units and L, S and #370's stair-entry sentence all need room. Free at
+least 600 units by provable cuts, each with its evidence in the PR, then add the sentence on a stair entered
+from the north or west. Must not: remove a behavioural constraint.
+
+### H8 · ArchCanvas on 1.48 — `todo` · after 1.48.0 · 0.5 day · model: opus · in the ArchCanvas repository
+
+Classify `W_FURNITURE_ON_STAIR`, `W_WALL_END_SHORT` and H1's code; `checkPredicates` now reads `levels[]`, so
+`mergeLevelSummaries` patches of top-level fields are ignored; refresh the stale comment at
+`src/lib/agent/intent.ts:702-720`; add a tripwire for each.
+
+### L1, L2 · L-shaped rooms, walls and doors — `todo` · after H7 · 2.5 days · model: opus
+
+`research/2026-10-31-g10-l-shaped-rooms.md` §10, with the rulings of D24. L1 and L2 share release 1.49.0.
+`check:3d` gates L1. L3 and L4 stay closed until the user answers.
+
+### S1–S3, S4 · Turning stairs — `todo` · after L2 · 4 days, S4 1 more · model: opus
+
+`research/2026-10-31-g10-turning-stairs.md` §10, with the rulings of D24. S1–S3 share release 1.50.0; S4 only if
+there is room before 2026-11-24. No prototype exists, so S1 opens with a probe. S1 also checks the positional
+pairing at `src/circulation.ts:1301`, lists a verdict per reader of `v.size` in the PR, and runs a block-stair
+fixture through `check:3d`: if the package draws it wrong, fix the package or refuse by name. If S1–S3 are not
+all in by 2026-11-24, none ships before Show HN.
 
 ### Wave 6 (after the N10 read): G7 repair-convergence replay (the review rings of iteration N fading
 into N+1; needs `fix`/`repair` to emit a trace, design spike first), D1, A6, archlang-3d M2+, Tier B.

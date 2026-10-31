@@ -46,7 +46,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { compile, lint, ERROR_CATALOG } from "../src/index.js";
+import { compile, describe as describePlan, lint, ERROR_CATALOG } from "../src/index.js";
 import {
   assertScriptingKeywordsTaught,
   clauseAtoms,
@@ -428,6 +428,14 @@ const POSITIVE: Snippet[] = [
     src: plan(`  stair id=s1 at (1000,1000) size 1200x3000 dir up width 1000`),
   },
   { keyword: "stair", note: "dir down", src: plan(`  stair id=s2 at (1000,1000) size 1200x3000 dir down`) },
+  {
+    keyword: "stair",
+    note: "the entry swapped by a mirrored place",
+    src: plan(
+      `  component flight() {\n    stair id=s at (0,0) size 1000x3300 dir up\n  }\n` +
+        `  place flight() as s1 at (900,4300) mirror y`,
+    ),
+  },
   { keyword: "elevator", note: "no dir", src: plan(`  elevator id=e1 at (3000,1000) size 2000x2000`) },
   { keyword: "escalator", note: "dir down", src: plan(`  escalator id=x1 at (1000,1000) size 1500x4000 dir down`) },
 
@@ -1114,8 +1122,6 @@ const PARSE_ERRORS: { note: string; src: string }[] = [
  */
 const NOT_REPRODUCED_HERE = new Map<string, string>([
   ["W_ROOM_UNREACHABLE", "circulation flood-fill outcome — a whole-plan spatial property, owned by test/lint.test.ts"],
-  ["W_CIRCUITOUS_PATH", "circulation routing outcome (path length vs. straight line) — test/lint.test.ts"],
-  ["W_PATH_TOO_NARROW", "circulation clear-width outcome over the nav grid — test/lint.test.ts"],
   ["W_NO_ENTRANCE", "access-graph outcome over the whole building — test/lint.test.ts"],
   ["W_BEDROOM_NO_WINDOW", "room-programme rule keyed on classification + openings — test/lint.test.ts"],
   ["W_BATH_VIA_BEDROOM", "access-graph topology rule between classified rooms — test/lint.test.ts"],
@@ -1364,6 +1370,49 @@ describe("spec.llm.md — the gate is not vacuous", () => {
     // snippet must produce real geometry, and a deliberately malformed one must fail.
     expect(compile(POSITIVE[0]!.src, { noCache: true }).svg).toContain("<svg");
     expect(errorsOf(plan(`  room id=r1 at (0,0) size`)).length).toBeGreaterThan(0);
+  });
+});
+
+describe("spec.llm.md — the stair line's entry sentence (issue #370)", () => {
+  /** A hall with a flight pressed against one wall, so the landing lint names the end it blames. */
+  const pressed = (size: string, hall: string, placeAt: string, mirror: "x" | "y"): string =>
+    plan(
+      `  component flight() { stair id=s at (0,0) size ${size} dir up }\n` +
+        `  room id=hall at (0,0) size ${hall} uses hall\n` +
+        `  walls from rooms exterior 200 partition 100\n` +
+        `  place flight() as s1 at ${placeAt} mirror ${mirror}`,
+    );
+  const noLanding = (src: string): string[] =>
+    lint(src)
+      .filter((d) => d.code === "W_STAIR_NO_LANDING")
+      .map((d) => d.message);
+
+  it("says which axis swaps which orientation, and teaches no `entry` clause (D24)", () => {
+    const stairLine = specText()
+      .split("\n")
+      .find((l) => l.startsWith("stair "));
+    expect(stairLine).toContain("`mirror y` if portrait (`dir up` entered from the north; `at` = its bottom-left)");
+    expect(stairLine).toContain("`mirror x` if landscape (from the west; `at` = its top-right)");
+    expect(stairLine).not.toMatch(/`entry\b|\[entry\b/);
+  });
+
+  it("`mirror y` puts a portrait flight's foot on the north, and `at` names its bottom-left", () => {
+    const src = pressed("1000x3300", "2000x4500", "(900,3400)", "y");
+    expect(describePlan(src).verticals?.[0]?.bbox).toEqual({ x: 900, y: 100, w: 1000, h: 3300 });
+    expect(noLanding(src)).toEqual([expect.stringMatching(/no landing at its foot: .* at y 0 /)]);
+  });
+
+  it("`mirror x` puts a landscape flight's foot on the west, and `at` names its top-right", () => {
+    const src = pressed("3300x1000", "4500x2000", "(3400,900)", "x");
+    expect(describePlan(src).verticals?.[0]?.bbox).toEqual({ x: 100, y: 900, w: 3300, h: 1000 });
+    expect(noLanding(src)).toEqual([expect.stringMatching(/no landing at its foot: .* at x 0 /)]);
+  });
+
+  it("the other axis leaves the entry where it was: the control for the two above", () => {
+    // The same two footprints against the same walls, the mirror on the other axis: the foot stays
+    // south or east, so nothing blocks it and the pressed end is not the entry.
+    expect(noLanding(pressed("1000x3300", "2000x4500", "(1900,100)", "x"))).toEqual([]);
+    expect(noLanding(pressed("3300x1000", "4500x2000", "(100,1900)", "y"))).toEqual([]);
   });
 });
 
