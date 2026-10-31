@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-## [0.1.0] - Unreleased
+## [0.1.0] - 2026-10-31
 
 The first version on npm, published by hand. Versions from 0.1.1 on go through the release workflow
 with provenance.
