@@ -1,12 +1,12 @@
-# Preview-and-remodel programme: handoff (state as of 2026-10-31, `main@1f4643c1`)
+# Preview-and-remodel programme: handoff (state as of 2026-10-31, after core 1.47.0 and archlang-3d 0.1.1)
 
 The resume point for a new session. Re-written at every wave end; dated history goes to `research/`.
 
 ## 1. Where the programme stands
 
-Waves 0–3 are done. Wave 5, as of 2026-10-31: A9 (#356, #361), G1 (#357), G2 (issue comments), G3 (#359),
-G4 (#360) are merged and cut to `done`, their notes in `research/2026-10-30-as-built.md`. G5 (#358) is
-open. A6 and B2 parked; D1 in wave 4.
+Waves 0–3 and wave 5 are done, except G6, which closes at the N10 read if no sample arrived (D22). G1–G5, G8, G9 and
+G10 are cut to `done`; their notes are in `research/2026-10-30-as-built.md`. G11 holds the residue. A6 and B2 parked;
+D1 in wave 4.
 
 **Tier A is open and the N10 window has started.** First post 2026-10-30T10:42:54Z (status
 2116118643063116081), first reply 10:44:40Z. **Read N10 on or after 2026-11-27.** Baseline in growth
@@ -15,15 +15,15 @@ signal moved at 4 signups or 1 first frame a week. n is tiny. Posts 2–4 are re
 `marketing/content/posts/2026-10-30-tier-a-replay-posts-final.md`; media on the owner's machine in
 `D:\.claude-scratch\2026-10-29\tier-a-posts\`. Posting stays the owner's unless they ask again.
 
-**Unreleased on `main`:** #361 changed the core (demolished walls); #358 adds a lint rule. So `archlang.uk`
-documents a little more than npm `latest` (1.46.0). A core release is owed.
+**Released:** core 1.47.0 (`W_WALL_END_SHORT`, `W_FURNITURE_ON_STAIR`, a wider `W_ANNOTATION_OVERLAP`, the G8 and G9
+fixes), MCP shim 0.2.30, VS Code extension 0.35.0, `@chanmeng666/archlang-3d` 0.1.1 with provenance (D20). Nothing core
+is unreleased. ArchCanvas is still on an older core; its bump is in G11.
 
 **A real user:** Daniel Damm (X, GitHub bobsch-io) draws German houses with an agent and filed #362–#370.
 Thread: growth `discovery/interviews/2026-10-30-daniel-damm-x-thread.md`. Also needs IFC: not close, never
 promise it.
 
-`packages/archlang-3d` is still private: adapter, Scene3D, Mesh3D, replay with the metrics strip, GLB, CLI,
-the `check:3d` job, `mountReplay`. Its exports point at `.ts` source, so publishing needs a build step.
+`packages/archlang-3d` is published at 0.x. Later versions go through `release.yml`: bump, merge, `gh workflow run release.yml --ref main`.
 `spec.llm.md` is at 29,999 of 30,000 UTF-16 units.
 
 ## 2. Pre-flight for a new session
@@ -37,23 +37,20 @@ the `check:3d` job, `mountReplay`. Its exports point at `.ts` source, so publish
 
 ## 3. Next items, in order
 
-1. **G5 / #358:** read its state, red-team round 1 is fixed; pin it when its full gate on the merged head is green.
-   Then a comment on #346 with the measurement: the short end is the new `W_WALL_END_SHORT`; an open exterior
-   ring is still reported only by `describe`'s omission reason; #370 reported the same gap independently.
-2. **G8**, then **G9** (decision D21), one PR per issue.
-3. **Core release** (D15): carries #361, #358, G8, G9. Pause for the owner's VS Code upload (D16).
-4. **Phase 4: first 0.x publish of `@chanmeng666/archlang-3d`.** Build step, engines, package README ("3D preview", "a
-   separate package that reads the same .arch source and is checked against the plan"; no "first"/"only", no CDN),
-   a release job mirroring the MCP package's in the OIDC workflow, version 0.1.0, `/release-check` adapted. Pause: the
-   owner registers the npmjs trusted publisher. Then publish through the workflow, prove it (`npm view`, provenance),
-   record decision **D20** in the README (published at 0.x; the core README stays silent on 3D until Tier C; growth
-   row 8 unchanged), comment on #343 that glTF is available. A newly registered publisher lapses after about 48 hours
-   without a publish.
-5. **G10**, written designs only.
-6. Wave 4 and wave 6 wait for the N10 read on 2026-11-27. G6 closes then if no sample arrived (D22).
+1. **The N10 read, on or after 2026-11-27.** Wave 4 and wave 6 wait for it. G6 closes then if no sample arrived (D22).
+2. **ArchCanvas bump to 1.47,** from G11: classify the two new lint codes, and handle `checkPredicates` reading
+   `levels[]`.
+3. **G11,** the residue of G8 and G9, one PR per group.
+4. **The designs in `research/2026-10-31-g10-*.md`** carry open questions for the owner. No code until they are answered
+   and the N10 read has set the wave.
+5. Close #212 once a nightly run is green. Confirm the first real record-only PR goes through the docs leg of `Node 22`.
+
+A new npm package goes: `prove:pack` with no browser, first version by hand, register, dispatch within 48 hours.
+Registering first is impossible, because npm needs the package to exist.
 
 ## 4. How a card is run
 
+- Never wait idly on CI: pin, then start the next item that does not depend on it (owner, 2026-10-31).
 - The main session plans, reviews and dispatches; one executor subagent per card in an isolated
   worktree branched from `main` (not from another card's branch), with its own `npm ci` (never a
   junctioned `node_modules`); the executor runs the card's gates and the touched tests; the
