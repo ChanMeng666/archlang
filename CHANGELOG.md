@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `spec.llm.md` says how to enter a `stair` from the other end (issue #370), which agents did not
+  find: a flight has one entry, and placing it from a `component` swaps that end, `mirror y` for a
+  portrait flight (a `dir up` entered from the north) and `mirror x` for a landscape one (from the
+  west). `mirror y` leaves a landscape flight's entry where it was. Paid for by 1,088 characters of
+  repetition, so the spec goes from 29,999 to 29,147 of its 30,000-character cap, with room for the
+  L-shaped room and block stair lines still to come. No compiler output moves; the mechanism is
+  1.37's.
 - Three inputs that gave a bare `E_PARSE` now carry a `= help:` line (issue #370): a hyphen in an `id=`
   name ("ids are letters, digits and `_`"), a `,` between `uses` kinds ("separate uses with spaces"),
   and a `;` at a line end ("statements end at the line break"). Code, message and span are unchanged;
