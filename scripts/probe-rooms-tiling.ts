@@ -13,7 +13,9 @@
  *                             surfaces or by a `void` of the same group, or is pinched (touches
  *                             itself or its hole at a single vertex);
  *  - `E_PARTITION_TOO_SHORT`  a shared edge run is shorter than the partition thickness;
- *  - `E_ROOM_NOT_RECTANGLE`   a `polygon` or `circle` room is in the set.
+ *  - `E_ROOM_NOT_RECTANGLE`   a `polygon` or `circle` room is in the set. The form has since taken
+ *                             rectilinear polygons in (card L1); the probe still counts every
+ *                             polygon, so its totals stay the ones ADR 0028's Acceptance read.
  *
  * No tolerance anywhere: every comparison is `===`/`<` on the resolved coordinates.
  *

@@ -572,7 +572,9 @@ function resolvePolygon(n: RoomNode, id: string, ctx: ResolveCtx): RRoom {
   const poly = n.polygon!.map((p) => ctx.snapPt(ctx.evalPt(p)));
   const effective = effectiveVertices(poly);
   const label = n.label !== undefined ? ctx.evalStr(n.label) : undefined;
+  let ringRefused = false;
   if (effective.length < 3) {
+    ringRefused = true;
     ctx.diag({
       severity: "error",
       message: `Room "${id}" is a degenerate polygon — ${effective.length} effective vertices after removing duplicate and collinear points (3 are needed)`,
@@ -580,6 +582,7 @@ function resolvePolygon(n: RoomNode, id: string, ctx: ResolveCtx): RRoom {
       span: n.span,
     });
   } else if (polygonSelfIntersects(effective)) {
+    ringRefused = true;
     ctx.diag({
       severity: "error",
       message: `Room "${id}" is a self-intersecting polygon — its edges cross, so it has no well-defined floor`,
@@ -598,6 +601,7 @@ function resolvePolygon(n: RoomNode, id: string, ctx: ResolveCtx): RRoom {
     at: { x: bbox.x, y: bbox.y },
     size: { w: bbox.w, h: bbox.h },
     poly,
+    ...(ringRefused ? { _ringRefused: true as const } : {}),
     ...(labelAt ? { labelAt } : {}),
     label,
     ...(n.uses ? { uses: n.uses } : {}),

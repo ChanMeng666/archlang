@@ -1,8 +1,13 @@
 /**
  * The derivation behind `walls from rooms` (ADR 0028 §3, plan decision D5): one group's
- * rectangular rooms in, its exterior ring(s) and its partitions out, or a refusal naming
- * the rooms at fault. Pure: no diagnostics, no ids beyond the internal names, no `RWall`
+ * rectangular and rectilinear rooms in, its exterior ring(s) and its partitions out, or a refusal
+ * naming the rooms at fault. Pure: no diagnostics, no ids beyond the internal names, no `RWall`
  * (the element module `src/elements/walls-from-rooms.ts` builds those).
+ *
+ * A rectilinear polygon is rectangles of one owner ({@link ringParts}): every interval below
+ * belongs to a room, not to a rectangle, and an edge with one room on both sides is no wall. So
+ * runs and boundary pieces merge across a seam, what is derived depends on the ring and not on
+ * how it was cut, and a pair of rooms may share several runs.
  *
  * The pairwise wall forms (ADR 0028 §4) reuse steps 1–5 through {@link sweepRooms} and
  * {@link linkRings}: `wall … between` is one pair's shared run ({@link deriveBetween}) and
@@ -14,8 +19,8 @@
  *
  * ## The algorithm
  *
- * 1. A `polygon` or `circle` room in the set refuses (`E_ROOM_NOT_RECTANGLE`); nothing
- *    else is decided around it (a non-rectangle has no edge lines).
+ * 1. A `circle` room, or a `polygon` room with a slanted edge, refuses
+ *    (`E_ROOM_NOT_RECTANGLE`); nothing else is decided around it (it has no edge lines).
  * 2. Overlap: a sweep over the rooms sorted by left edge, comparing each room with the rooms
  *    still open at its left edge (`E_ROOMS_OVERLAP`, every pair named). The rest of the
  *    algorithm relies on the rooms being interior-disjoint, so an overlap stops here.
@@ -55,13 +60,15 @@
  * (first along `+x`); a courtyard ring starts the same way and runs counter-clockwise (first
  * along `+y`); a partition runs from its end with the smaller `y`, then `x`. Names no
  * identifier can spell: `exterior` (the outer ring), `exterior#2`, `exterior#3`, … (courtyard
- * rings, by start vertex), `A|B` (a partition, the two room ids in source order). A derived
+ * rings, by start vertex), `A|B` (a partition, the two room ids in source order), and `A|B#2`,
+ * `A|B#3`, … for the later runs of a pair that shares several, numbered by start point. A derived
  * wall that an authored wall splits keeps its name on the first remaining run, and the later
  * runs are `<name>~2`, `<name>~3`, ….
  */
 
 import type { Point } from "./ast.js";
 import { chargeSteps } from "./expr.js";
+import { fmt3 as numStr } from "./num-format.js";
 
 /** An axis-aligned rectangle `[x0, x1] × [y0, y1]`. */
 export interface TileRect {
@@ -71,10 +78,14 @@ export interface TileRect {
   y1: number;
 }
 
-/** One room of the set, in source order. A room with no `rect` is a polygon or a circle. */
+/**
+ * One room of the set, in source order: a rectangle, or the interior-disjoint rectangles of a
+ * rectilinear polygon ({@link ringParts}). A room with neither is a slanted polygon or a circle.
+ */
 export interface TileRoom {
   id: string;
   rect?: TileRect;
+  parts?: readonly TileRect[];
   shape?: "polygon" | "circle";
 }
 
@@ -117,6 +128,7 @@ export type TilingCode =
   | "E_ROOMS_NOT_TILING"
   | "E_PARTITION_TOO_SHORT"
   | "E_ELEMENT_LIMIT"
+  | "E_OPENING_HOST_AMBIGUOUS"
   | "E_WALL_BETWEEN_NOT_ADJACENT"
   | "E_WALL_BETWEEN_OPEN"
   | "E_WALL_BETWEEN_WIDTH";
@@ -143,7 +155,7 @@ export interface DerivedOpeningSpec {
 
 /** One derived wall before coexistence, with what is left of it. */
 export interface DerivedWallSpec {
-  /** Internal name: `exterior`, `exterior#<k>` or `A|B`. */
+  /** Internal name: `exterior`, `exterior#<k>`, `A|B` or `A|B#<k>`. */
   name: string;
   role: "exterior" | "partition";
   /** Rings only: the outer ring, or a courtyard ring. */
@@ -218,20 +230,28 @@ export function deriveWallsFromRooms(
   const notTiling: string[] = [];
   const tilingRooms: number[] = [];
 
-  // The pair clauses against the runs: each names the one run its two rooms share (two
-  // interior-disjoint rectangles share at most one), or none.
+  // The pair clauses against the runs: each names the runs its two rooms share, or none. Two
+  // rectangles share at most one, a polygon may share several. `thickness` sets all of a pair's
+  // runs; `open` derives one opening, so it needs one run.
   chargeSteps(runs.length + clausePairs.length + 1);
   const index0 = new Map(ids.map((id, i) => [id, i]));
   const pairKey = (i: number, j: number): string => (i < j ? `${i}|${j}` : `${j}|${i}`);
-  const runOfPair = new Map<string, TileRun>();
-  for (const r of runs) runOfPair.set(pairKey(r.lo, r.hi), r);
+  const runsOfPair = new Map<string, TileRun[]>();
+  for (const r of runs) {
+    const k = pairKey(r.lo, r.hi);
+    const list = runsOfPair.get(k);
+    if (list) list.push(r);
+    else runsOfPair.set(k, [r]);
+  }
   /** Each run's pair clause, by the run's pair key. */
   const clauseOf = new Map<string, number>();
   const unpaired: TilingRefusal[] = [];
   clausePairs.forEach((p, k) => {
     const i = index0.get(p.a)!;
     const j = index0.get(p.b)!;
-    if (runOfPair.has(pairKey(i, j))) clauseOf.set(pairKey(i, j), k);
+    const onPair = runsOfPair.get(pairKey(i, j));
+    if (onPair && p.kind === "open" && onPair.length > 1) unpaired.push(severalRuns(p, onPair, named([i, j]), k));
+    else if (onPair) clauseOf.set(pairKey(i, j), k);
     else
       unpaired.push({
         code: "E_WALL_BETWEEN_NOT_ADJACENT",
@@ -277,10 +297,17 @@ export function deriveWallsFromRooms(
       return { a, b, path: [r.a, r.b], clause: clauseOf.get(pairKey(r.lo, r.hi)), t: thick(r) };
     })
     .sort((p, q) => p.a - q.a || p.b - q.b || p.path[0]!.y - q.path[0]!.y || p.path[0]!.x - q.path[0]!.x);
+  // A pair's runs are numbered in that order. Two of them can start at one point, a reflex corner
+  // of a polygon: `runs` holds the vertical lines first and the sort is stable, so the vertical
+  // run is the earlier.
+  const nth = new Map<string, number>();
   for (const p of partitionSpecs) {
     const kind = p.clause === undefined ? undefined : clausePairs[p.clause]!.kind;
+    const pair = `${ids[p.a]}|${ids[p.b]}`;
+    const k = (nth.get(pair) ?? 0) + 1;
+    nth.set(pair, k);
     specs.push({
-      name: `${ids[p.a]}|${ids[p.b]}`,
+      name: k === 1 ? pair : `${pair}#${k}`,
       role: "partition",
       between: [ids[p.a]!, ids[p.b]!],
       ...(kind === "thickness" ? { thickness: p.t } : {}),
@@ -370,7 +397,30 @@ export function deriveWallsFromRooms(
   return { ok: true, walls: result, counts: { partitions: partitionSpecs.length, ringVertices } };
 }
 
-/** What {@link sweepRooms} finds in a set of interior-disjoint rectangles. */
+/** An `open` clause on a pair with several runs: refused, naming each, in the order they number. */
+function severalRuns(
+  p: Extract<TilePair, { kind: "open" }>,
+  runs: readonly TileRun[],
+  rooms: string[],
+  clause: number,
+): TilingRefusal {
+  chargeSteps(sortSteps(runs.length));
+  const said = [...runs]
+    .sort((u, v) => u.a.y - v.a.y || u.a.x - v.a.x)
+    .map((r) =>
+      r.a.x === r.b.x
+        ? `on x ${numStr(r.a.x)}, y ${numStr(r.a.y)}–${numStr(r.b.y)}`
+        : `on y ${numStr(r.a.y)}, x ${numStr(r.a.x)}–${numStr(r.b.x)}`,
+    );
+  return {
+    code: "E_OPENING_HOST_AMBIGUOUS",
+    rooms,
+    why: `"${p.a}" and "${p.b}" share ${runs.length} edges (${said.join("; ")}), and one clause derives one opening on one edge`,
+    clause,
+  };
+}
+
+/** What {@link sweepRooms} finds in a set of rooms with disjoint interiors. */
 export interface SweptRooms {
   ok: true;
   /** The rooms' ids, in source order (a room's index is its place here). */
@@ -385,15 +435,16 @@ export interface SweptRooms {
 
 /**
  * Steps 1–3 of the algorithm, shared by `walls from rooms` and the pairwise wall forms
- * (`wall … between`, `wall … around`, ADR 0028 §4): refuse a non-rectangle, then any overlap,
- * then sort the edges per axis and merge each line into shared runs and boundary pieces.
- * Charged before each stage (`n log n + 3n` for the edge sweep, with `n` the 4·rooms edges).
+ * (`wall … between`, `wall … around`, ADR 0028 §4), which hand it rectangles only: refuse a room
+ * that is no rectangle and no rectilinear polygon, then any overlap, then sort the edges per axis
+ * and merge each line into shared runs and boundary pieces. Charged before each stage
+ * (`n log n + 3n` for the edge sweep, with `n` the 4·rectangles edges). A polygon's rectangles
+ * were paid for when it was cut ({@link ringParts}), so listing them here is not charged again.
  */
 export function sweepRooms(rooms: readonly TileRoom[]): { ok: false; refusals: TilingRefusal[] } | SweptRooms {
-  const n = rooms.length;
-  chargeSteps(n + 1);
-  // 1. Non-rectangles.
-  const nonRect = rooms.filter((r) => !r.rect);
+  chargeSteps(rooms.length + 1);
+  // 1. Neither a rectangle nor a rectilinear polygon.
+  const nonRect = rooms.filter((r) => !r.rect && !r.parts);
   if (nonRect.length > 0) {
     return {
       ok: false,
@@ -401,12 +452,27 @@ export function sweepRooms(rooms: readonly TileRoom[]): { ok: false; refusals: T
         {
           code: "E_ROOM_NOT_RECTANGLE",
           rooms: nonRect.map((r) => r.id),
-          why: nonRect.map((r) => `"${r.id}" is a ${r.shape ?? "polygon"} room`).join("; "),
+          why: nonRect
+            .map((r) =>
+              r.shape === "circle"
+                ? `"${r.id}" is a circle room`
+                : `"${r.id}" is a polygon room with an edge that is neither horizontal nor vertical`,
+            )
+            .join("; "),
         },
       ],
     };
   }
-  const R = rooms.map((r) => r.rect!);
+  // The rectangles, each with the room that owns it: from here on an interval's room is its owner.
+  const R: TileRect[] = [];
+  const ownerOf: number[] = [];
+  rooms.forEach((r, i) => {
+    for (const part of r.parts ?? [r.rect!]) {
+      R.push(part);
+      ownerOf.push(i);
+    }
+  });
+  const n = R.length;
   const ids = rooms.map((r) => r.id);
   const named = (set: Iterable<number>): string[] => [...new Set(set)].sort((a, b) => a - b).map((i) => ids[i]!);
 
@@ -422,20 +488,23 @@ export function sweepRooms(rooms: readonly TileRoom[]): { ok: false; refusals: T
     for (const j of active) {
       const q = R[j]!;
       if (Math.min(r.x1, q.x1) > Math.max(r.x0, q.x0) && Math.min(r.y1, q.y1) > Math.max(r.y0, q.y0)) {
-        pairs.push(i < j ? [i, j] : [j, i]);
+        const [oi, oj] = [ownerOf[i]!, ownerOf[j]!];
+        pairs.push(oi < oj ? [oi, oj] : [oj, oi]);
       }
     }
     active.push(i);
   }
   if (pairs.length > 0) {
     pairs.sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+    // Several rectangles of one polygon can overlap one room: the pair is named once.
+    const once = pairs.filter((p, k) => k === 0 || p[0] !== pairs[k - 1]![0] || p[1] !== pairs[k - 1]![1]);
     return {
       ok: false,
       refusals: [
         {
           code: "E_ROOMS_OVERLAP",
-          rooms: named(pairs.flat()),
-          why: pairs.map(([a, b]) => `"${ids[a]}" overlaps "${ids[b]}"`).join("; "),
+          rooms: named(once.flat()),
+          why: once.map(([a, b]) => `"${ids[a]}" overlaps "${ids[b]}"`).join("; "),
         },
       ],
     };
@@ -450,10 +519,11 @@ export function sweepRooms(rooms: readonly TileRoom[]): { ok: false; refusals: T
   const hEdges: Array<{ c: number; side: 0 | 1; iv: Interval }> = [];
   R.forEach((r, i) => {
     if (!(r.x1 > r.x0 && r.y1 > r.y0)) return; // no area: no edge to derive from
-    vEdges.push({ c: r.x1, side: 0, iv: { s: r.y0, e: r.y1, room: i } });
-    vEdges.push({ c: r.x0, side: 1, iv: { s: r.y0, e: r.y1, room: i } });
-    hEdges.push({ c: r.y1, side: 0, iv: { s: r.x0, e: r.x1, room: i } });
-    hEdges.push({ c: r.y0, side: 1, iv: { s: r.x0, e: r.x1, room: i } });
+    const room = ownerOf[i]!;
+    vEdges.push({ c: r.x1, side: 0, iv: { s: r.y0, e: r.y1, room } });
+    vEdges.push({ c: r.x0, side: 1, iv: { s: r.y0, e: r.y1, room } });
+    hEdges.push({ c: r.y1, side: 0, iv: { s: r.x0, e: r.x1, room } });
+    hEdges.push({ c: r.y0, side: 1, iv: { s: r.x0, e: r.x1, room } });
   });
   const order = (p: { c: number; iv: Interval }, q: { c: number; iv: Interval }): number =>
     p.c - q.c || p.iv.s - q.iv.s || p.iv.room - q.iv.room;
@@ -701,7 +771,8 @@ function shortRuns(
 /**
  * One line's merge: `lo` holds the intervals of rooms on the line's lower side (left of a
  * vertical line, above a horizontal one), `hi` those on its upper side, each sorted and
- * disjoint. Emits shared runs and oriented boundary pieces.
+ * disjoint. Emits shared runs and oriented boundary pieces; where one room is on both sides
+ * the line is a seam inside a polygon, and neither.
  */
 function sweepLine(
   c: number,
@@ -749,7 +820,7 @@ function sweepLine(
     while (ph < hi.length && hi[ph]!.e <= s) ph++;
     const L = pl < lo.length && lo[pl]!.s <= s ? lo[pl]!.room : -1;
     const H = ph < hi.length && hi[ph]!.s <= s ? hi[ph]!.room : -1;
-    const kind = L >= 0 && H >= 0 ? "run" : L >= 0 ? "lo" : H >= 0 ? "hi" : null;
+    const kind = L >= 0 && H >= 0 ? (L === H ? null : "run") : L >= 0 ? "lo" : H >= 0 ? "hi" : null;
     const same = cur !== null && kind === cur.kind && cur.e === s && (kind !== "run" || (cur.lo === L && cur.hi === H));
     if (!same) flush();
     if (kind === null) continue;
@@ -774,11 +845,49 @@ function inRing(px: number, py: number, ring: readonly Point[]): boolean {
   return inside;
 }
 
-const rectilinear = (ring: readonly Point[]): boolean =>
+/** Is every edge of the ring horizontal or vertical? Exact: `===` on the resolved coordinates. */
+export const rectilinear = (ring: readonly Point[]): boolean =>
   ring.every((p, i) => {
     const q = ring[(i + 1) % ring.length]!;
     return p.x === q.x || p.y === q.y;
   });
+
+/**
+ * A rectilinear ring as interior-disjoint rectangles of its floor, or `undefined` for a ring with
+ * a slanted edge. Horizontal slabs: one between each two neighbouring `y`s of the ring, cut at
+ * the vertical edges that cross it, alternately in and out. Any ring gives disjoint rectangles,
+ * one that touches itself included, so the sweep needs no guard; the statement hands it none, since
+ * a room that reported its own ring is left out of the set.
+ *
+ * The test allocates nothing and reads a ring the room's own resolution paid for, so it is free:
+ * a slanted polygon costs what it always cost. The cut is what a polygon adds, charged before it
+ * allocates: the sort, then one pass over the ring per slab (quadratic on a staircase).
+ */
+export function ringParts(ring: readonly Point[]): TileRect[] | undefined {
+  if (!rectilinear(ring)) return undefined;
+  const v = ring.length;
+  chargeSteps(sortSteps(v) + v + 1);
+  const ys = [...new Set(ring.map((p) => p.y))].sort((a, b) => a - b);
+  chargeSteps(ys.length * (v + 1));
+  const out: TileRect[] = [];
+  for (let j = 0; j + 1 < ys.length; j++) {
+    const y0 = ys[j]!;
+    const y1 = ys[j + 1]!;
+    // No vertex lies strictly between y0 and y1, so a vertical edge spans the slab or misses it.
+    const xs: number[] = [];
+    for (let k = 0; k < v; k++) {
+      const a = ring[k]!;
+      const b = ring[(k + 1) % v]!;
+      if (a.x === b.x && Math.min(a.y, b.y) <= y0 && y1 <= Math.max(a.y, b.y)) xs.push(a.x);
+    }
+    chargeSteps(sortSteps(xs.length) + xs.length);
+    xs.sort((a, b) => a - b);
+    for (let k = 0; k + 1 < xs.length; k += 2) {
+      if (xs[k + 1]! > xs[k]!) out.push({ x0: xs[k]!, y0, x1: xs[k + 1]!, y1 });
+    }
+  }
+  return out;
+}
 
 function boxOf(c: TileCover): TileRect {
   if (c.rect) return c.rect;

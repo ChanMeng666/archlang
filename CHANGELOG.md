@@ -16,6 +16,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `roof overhang` on a wall ring and a site `boundary`. A ring of up to about 3,000 vertices still
   fits the 5,000,000-step budget, and the largest in the corpus spends far less. No drawing,
   `describe()`, `lint()` or diagnostic moves; a plan with no such ring spends the same steps.
+### Added
+
+- A rectilinear `room polygon` in `walls from rooms` (issue #363, first part): a polygon whose every
+  edge is horizontal or vertical joins the set and stays one room, with one stamp and one area. The
+  statement derives the ring round it and a partition on each edge it shares; a pair that shares
+  several edges gets one partition per edge, and `between A and B thickness t` sets all of them. What
+  this does not do yet: `door|opening between`, `liv.top`-style datums, `right-of` against the room and
+  anchored furniture in it still refuse a polygon, and `open between` on a pair with several edges is
+  refused (`E_OPENING_HOST_AMBIGUOUS`), so a door on such a wall goes `door at (x,y)` until the next
+  part lands. `wall … between` and `wall … around` stay rectangle-only. A polygon with a slanted edge and
+  a circle room keep `E_ROOM_NOT_RECTANGLE`, reworded to say rectangular or rectilinear. No other plan
+  moves: not the drawing, `describe()`, `lint()`, the diagnostics, the Scene or the step count.
 
 ## [1.48.0] - 2026-11-01
 

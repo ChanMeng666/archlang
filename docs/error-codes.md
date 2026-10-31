@@ -92,7 +92,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_NON_FINITE`](#e_non_finite) | error | A number is too large to be finite. |
 | [`E_OPENING_ABOVE_WALL`](#e_opening_above_wall) | error | An opening's head is above the wall it is cut in. |
 | [`E_OPENING_DATUM`](#e_opening_datum) | error | An opening's position names no datum that applies to its run. |
-| [`E_OPENING_HOST_AMBIGUOUS`](#e_opening_host_ambiguous) | error | A relational opening's run carries more than one wall. |
+| [`E_OPENING_HOST_AMBIGUOUS`](#e_opening_host_ambiguous) | error | A relational opening's run carries more than one wall, or an `open between` clause names a pair that shares more than one edge. |
 | [`E_OPENING_NIB`](#e_opening_nib) | error | A relational opening leaves too short a nib of wall at a junction; it is refused, never moved. |
 | [`E_OPENING_NO_SHARED_WALL`](#e_opening_no_shared_wall) | error | A relational opening's run carries no wall (or, on a room edge, no exterior wall). |
 | [`E_OPENING_ON_DEMOLISHED_WALL`](#e_opening_on_demolished_wall) | error | A door, window or opening stands in a wall marked `status demolish`. |
@@ -1307,11 +1307,11 @@ door between a and b width 800   # error: a door needs a position
 
 ## E_OPENING_HOST_AMBIGUOUS
 
-*error* — A relational opening's run carries more than one wall.
+*error* — A relational opening's run carries more than one wall, or an `open between` clause names a pair that shares more than one edge.
 
-**Cause.** `door|opening … between A and B` stands in the one wall body on the pair's shared edge run, and `… on <room>.<edge>` in the one exterior wall body on that edge (ADR 0028 §5). Two authored halves, an authored span beside a derived remainder (the `~2` pieces coexistence leaves), or two exterior runs either side of a narrower neighbouring room give more than one, and the compiler does not choose between them (ADR 0005). The span points at the clause.
+**Cause.** `door|opening … between A and B` stands in the one wall body on the pair's shared edge run, and `… on <room>.<edge>` in the one exterior wall body on that edge (ADR 0028 §5). Two authored halves, an authored span beside a derived remainder (the `~2` pieces coexistence leaves), or two exterior runs either side of a narrower neighbouring room give more than one, and the compiler does not choose between them (ADR 0005). `open between A and B` derives one opening on one edge, so a pair that shares several (a polygon room wrapped round its neighbour) has no single answer either (ADR 0028 §3). The span points at the clause.
 
-**Fix.** Make the run one wall (drop the authored wall lying on the derived line, or join the halves), or place the opening `on <wall> at …` on the wall you mean.
+**Fix.** On a run with more than one wall: make it one wall (drop the authored wall lying on the derived line, or join the halves), or place the opening `on <wall> at …` on the wall you mean. On an `open between` clause: write the two rooms as one room if no boundary should stand between them, or remove the clause and write `opening at (x,y) width <mm>` on the edge you mean (a derived wall has no id to name).
 
 ```arch static
 room id=a at (0,0) size 4000x3000

@@ -1057,9 +1057,9 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   ),
   E_OPENING_HOST_AMBIGUOUS: E(
     "E_OPENING_HOST_AMBIGUOUS",
-    "A relational opening's run carries more than one wall.",
-    "`door|opening … between A and B` stands in the one wall body on the pair's shared edge run, and `… on <room>.<edge>` in the one exterior wall body on that edge (ADR 0028 §5). Two authored halves, an authored span beside a derived remainder (the `~2` pieces coexistence leaves), or two exterior runs either side of a narrower neighbouring room give more than one, and the compiler does not choose between them (ADR 0005). The span points at the clause.",
-    "Make the run one wall (drop the authored wall lying on the derived line, or join the halves), or place the opening `on <wall> at …` on the wall you mean.",
+    "A relational opening's run carries more than one wall, or an `open between` clause names a pair that shares more than one edge.",
+    "`door|opening … between A and B` stands in the one wall body on the pair's shared edge run, and `… on <room>.<edge>` in the one exterior wall body on that edge (ADR 0028 §5). Two authored halves, an authored span beside a derived remainder (the `~2` pieces coexistence leaves), or two exterior runs either side of a narrower neighbouring room give more than one, and the compiler does not choose between them (ADR 0005). `open between A and B` derives one opening on one edge, so a pair that shares several (a polygon room wrapped round its neighbour) has no single answer either (ADR 0028 §3). The span points at the clause.",
+    "On a run with more than one wall: make it one wall (drop the authored wall lying on the derived line, or join the halves), or place the opening `on <wall> at …` on the wall you mean. On an `open between` clause: write the two rooms as one room if no boundary should stand between them, or remove the clause and write `opening at (x,y) width <mm>` on the edge you mean (a derived wall has no id to name).",
     "room id=a at (0,0) size 4000x3000\nroom id=b at (4000,0) size 3000x3000\nwall id=half partition thickness 100 { (4000,0) (4000,1500) }\nwalls from rooms exterior 200 partition 100\ndoor between a and b at 600 from end width 800   # error: the authored half beside the derived remainder",
   ),
   E_OPENING_NIB: E(
