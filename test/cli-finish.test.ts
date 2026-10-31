@@ -141,6 +141,26 @@ describe("arch finish — exit codes", () => {
     expect(readFileSync(file, "utf8")).toBe(broken);
   }, 30000);
 
+  it("a room left empty for its use writes nothing, exits 0, and is named in the JSON and on stderr", () => {
+    const hall = BARE.replace('label "Room" uses living', 'label "Hall" uses hall');
+    writeFileSync(file, hall, "utf8");
+    const note =
+      '"r" is outside the furnish table and was left empty — its use `hall` has no row there; add furniture yourself only if it should hold some';
+
+    const dry = run(["finish", file, "--only", "furnish", "--dry-run", "--json"]);
+    expect(dry.status).toBe(0);
+    const j = JSON.parse(dry.stdout);
+    expect(j).toMatchObject({ ok: true, changed: false, changes: [], wrote: false, source: hall });
+    expect(j.diff).toBeUndefined();
+    expect(j.unresolved).toEqual([expect.objectContaining({ stage: "furnish", room: "r", reason: note })]);
+
+    const human = run(["finish", file, "--only", "furnish"]);
+    expect(human.status).toBe(0);
+    expect(human.stderr).toContain(`⚠ ${note}`);
+    expect(human.stderr).toContain("(no changes)");
+    expect(readFileSync(file, "utf8")).toBe(hall);
+  }, 30000);
+
   it("`--only furnish` runs the furnish stage and writes no sheet statement", () => {
     const r = run(["finish", file, "--only", "furnish", "--dry-run", "--json"]);
     expect(r.status).toBe(0);

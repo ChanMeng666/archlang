@@ -42,6 +42,19 @@ use by use: the uses with a wall run first, so the run gets a whole wall before 
 piece claims it, then the use with the larger required footprint. A room whose use is unknown,
 or is circulation, storage, a garage or `utility`, is left alone and is not reported.
 
+> *Amended 2026-10-31 (issue #370).* "Is not reported" no longer holds: such a room is still left
+> alone, and when nothing stands on its floor it is named in `unresolved`, last in the notes, with
+> the use that has no row, or, when neither `uses` nor the label names a use, with the words of
+> `FURNISH_TABLE`. The skill and `llms-full.txt` promised every room left empty, and on a plan with
+> a label the vocabulary does not hold (`"Schlafzimmer"`, `"Küche"`, `"Flur"`) the silence read as
+> nothing to do with every room empty. So the rule is one sentence: a room the run leaves empty has
+> a note. Such a note carries no `codes` and asks nothing of the author unless the room should hold
+> furniture, so `changed: false` with only such notes means finished. Nothing the stage writes
+> moved. Measured on the 465 tracked `.arch` files: 259 gain a note, 392 notes in all, 46 of them on
+> rooms of no known use, and 0 rows of `source`, `changed` and `changes[]` moved, for `--only
+> furnish` or a full run. Those notes are out of the digest in `test/finish-digest.ts`, and the
+> `Named` law below holds them.
+
 **4. What goes in a room is a small public table.** `FURNISH_TABLE` (`src/furnish.ts`) is keyed
 by use and holds only words `src/fixtures-catalog.ts` already has. The wet-room and kitchen
 rows are admitted through the catalogue's own zones. Each piece is required or optional. The
@@ -154,6 +167,7 @@ result a stage would edit again is not returned, and the source comes back untou
 | Never worse | no compile error, no new diagnostic code under the default ruleset or a universal lint profile, no new furniture conflict (drafting-layer codes and the residential-advisory profiles excepted, see the 2026-10-24 and 2026-10-25 amendments to §7) |
 | Run | a use's wall fixtures sit on one wall, each touching the next |
 | Fill only | a furnished room is untouched; an all-furnished plan is a byte no-op |
+| Named | a room the run leaves empty has a note in `unresolved`, whatever left it empty (2026-10-31) |
 | Pure insertion | the result is the source with one run of statements inserted |
 | Relative | every statement written is `against wall` or `in <room> anchor`, never `at (x,y)` |
 | Bounded | the compile checks of a run do not exceed `1 + 17 × rooms` |

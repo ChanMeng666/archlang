@@ -258,6 +258,21 @@ describe("finish tool", () => {
     expect(bad.isError).toBe(true);
   });
 
+  it("names a room left empty for its use, with `ok:true` and `changed:false`", async () => {
+    const hall = `plan "Hall" {
+  units mm
+  wall id=w exterior thickness 200 { (0,0) (4200,0) (4200,3600) (0,3600) close }
+  room id=r at (0,0) size 4200x3600 label "Hall" uses hall
+  door id=d on w at 85% width 900 swing in
+}
+`;
+    const out = await call(await connect(), "finish", { source: hall, only: "furnish" });
+    expect(out).toMatchObject({ ok: true, changed: false, changes: [], source: hall });
+    const notes = out.unresolved as Array<{ room?: string; reason: string }>;
+    expect(notes.map((u) => u.room)).toEqual(["r"]);
+    expect(notes[0]!.reason).toContain("its use `hall` has no row");
+  });
+
   it("a plan that does not compile comes back untouched with `ok:false`", async () => {
     const broken = 'plan "X" {\n  room at (0,0) size\n}\n';
     const out = await call(await connect(), "finish", { source: broken });

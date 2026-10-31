@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `finish` names every room it leaves empty (issue #370). A room whose use has no row in the furnish
+  table (`hall`, `circulation`, `entry`, `storage`, `garage`, `utility`), or of no known use (no `uses`,
+  and a label the vocabulary does not hold), stayed empty with `unresolved: []`, although the skill and
+  `llms-full.txt` say an empty room is named there. It now has a note with the use that has no row, or
+  with the uses that would furnish it, so a plan labelled `"Schlafzimmer"` no longer reads as nothing
+  to do. Such a room still gets no piece, and what `finish` writes is unchanged: across the 465
+  tracked `.arch` files no `source`, `changed` or `changes[]` moved. `unresolved` is now non-empty on
+  any plan with an empty hall or store, so `changed: false` with notes no longer means there is work
+  left: a note with no `codes` that says `is outside the furnish table` asks nothing unless the room
+  should hold furniture. The playground reports those notes as unresolved too. A consumer that treats
+  a non-empty `unresolved` as a failure sees this.
+
 ## [1.47.0] - 2026-10-31
 
 ### Added
