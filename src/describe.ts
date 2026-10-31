@@ -823,7 +823,7 @@ export interface SceneSummary {
   fences?: FenceSummary[];
   /**
    * The walls `walls from rooms` derived (ADR 0028 §6): one row per derived wall, with its
-   * internal name (`exterior`, `exterior#2`, `A|B`; never an id an author can type) and
+   * internal name (`exterior`, `exterior#2`, `A|B`, `A|B#2`; never an id an author can type) and
    * every span an authored wall took over. Absent unless the storey derived a wall.
    */
   derived_walls?: DerivedWallRow[];

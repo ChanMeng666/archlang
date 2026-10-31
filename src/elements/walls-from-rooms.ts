@@ -6,8 +6,9 @@
  * the group itself declares, never a descendant's (ADR 0016), and derives the exterior ring
  * on the outline of their union (a second, counter-clockwise ring round a courtyard covered
  * exactly by `outdoor` surfaces; nothing round a hole covered by a `void`) and one partition
- * on every shared edge run of two rooms. The derivation itself is `src/room-tiling.ts`; this
- * module turns its runs into walls and its refusals into diagnostics naming the rooms.
+ * on every shared edge run of two rooms. A room is a rectangle or a rectilinear polygon; any
+ * other room is refused or left out. The derivation itself is `src/room-tiling.ts`; this module
+ * turns its runs into walls and its refusals into diagnostics naming the rooms.
  *
  * The statement draws nothing itself. Its derived walls join the group's wall list the moment
  * it resolves (`ElementDef.yieldsWalls`, which also moves the group's resolve order: rooms,
@@ -27,6 +28,8 @@ import { DEFAULT_MATERIAL } from "../hatches.js";
 import { segmentsOfWall } from "../geometry.js";
 import {
   deriveWallsFromRooms,
+  rectilinear,
+  ringParts,
   type TileCover,
   type TilePair,
   type TileRoom,
@@ -157,7 +160,13 @@ export const wallsFromRooms: ElementDef = {
       });
     }
     const excluded = new Set(n.except.map((x) => x.id));
-    const { pairs, clauses, bad } = resolvePairs(n, rooms, excluded, ctx);
+    // A rectilinear room that reported its own ring has no floor to derive from, so it is out of
+    // the set, quietly: the plan already says why, and the gap it leaves is that error, not a
+    // second one. A slanted ring stays in, and is refused as any slanted polygon is.
+    const broken = new Set(
+      rooms.filter((r) => r._ringRefused && !excluded.has(r.id) && rectilinear(r.poly!)).map((r) => r.id),
+    );
+    const { pairs, clauses, bad } = resolvePairs(n, rooms, excluded, broken, ctx);
     if (pairs.length > 0) {
       out.pairs = pairs.map((p, k) =>
         p.kind === "open"
@@ -171,16 +180,9 @@ export const wallsFromRooms: ElementDef = {
       );
     }
     if (!(tExt > 0) || !(tInt > 0)) return out;
-    const set: TileRoom[] = rooms
-      .filter((r) => !excluded.has(r.id))
-      .map((r) =>
-        r.circle
-          ? { id: r.id, shape: "circle" }
-          : r.poly
-            ? { id: r.id, shape: "polygon" }
-            : { id: r.id, rect: { x0: r.at.x, y0: r.at.y, x1: r.at.x + r.size.w, y1: r.at.y + r.size.h } },
-      );
+    const set: TileRoom[] = rooms.filter((r) => !excluded.has(r.id) && !broken.has(r.id)).map(tileRoom);
     if (set.length === 0) {
+      if (broken.size > 0) return out;
       ctx.diag({
         severity: "error",
         message:
@@ -205,6 +207,7 @@ export const wallsFromRooms: ElementDef = {
     const res = deriveWallsFromRooms(set, covers, authored, tInt, ctx.elementBudget, { tExt, pairs });
     if (!res.ok) {
       for (const r of res.refusals) {
+        if (broken.size > 0 && r.code === "E_ROOMS_NOT_TILING") continue;
         const span = r.clause === undefined ? n.span : clauses[r.clause]!.span;
         ctx.diag({ severity: "error", ...refusalText(r), code: r.code, span });
       }
@@ -413,8 +416,8 @@ function parsePair(ctx: ParseCtx): WallsPairClause {
 
 /**
  * The statement's pair clauses, checked and evaluated in source order: each must name two
- * rectangular rooms of the derivation (`E_WALL_BETWEEN_ROOM`, on the name) and no pair twice
- * (`E_WALL_BETWEEN_DUP`, on the later clause); a thickness is judged as a wall's is
+ * rectangular or rectilinear rooms of the derivation (`E_WALL_BETWEEN_ROOM`, on the name) and no
+ * pair twice (`E_WALL_BETWEEN_DUP`, on the later clause); a thickness is judged as a wall's is
  * (`E_WALL_THICKNESS`), a width as an opening's (`E_OPENING_WIDTH`). Returns the clauses that
  * passed, as the derivation reads them, beside their source clauses; `bad` when any failed.
  */
@@ -422,22 +425,32 @@ function resolvePairs(
   n: WallsFromRoomsNode,
   rooms: readonly RRoom[],
   excluded: ReadonlySet<string>,
+  broken: ReadonlySet<string>,
   ctx: ResolveCtx,
 ): { pairs: TilePair[]; clauses: WallsPairClause[]; bad: boolean } {
   const pairs: TilePair[] = [];
   const clauses: WallsPairClause[] = [];
   let bad = false;
   const byId = new Map(rooms.map((r) => [r.id, r]));
+  // Decided once per room: a clause may name one many times.
+  const slanted = n.pairs
+    ? new Set(rooms.filter((r) => r.poly && !r.circle && !rectilinear(r.poly)).map((r) => r.id))
+    : null;
   const seen = new Set<string>();
   for (const c of n.pairs ?? []) {
     let ok = true;
     const word = c.kind === "open" ? "open between" : "between";
     for (const x of [c.a, c.b]) {
+      // Refused already, on the room: the clause cannot act, and has nothing to add.
+      if (broken.has(x.id)) {
+        ok = false;
+        continue;
+      }
       const r = byId.get(x.id);
       const why = !r
         ? "names no room written beside it: a clause names rooms of the plan or component the statement is written in"
-        : r.circle || r.poly
-          ? `is a ${r.circle ? "circle" : "polygon"} room: only rectangular rooms share an edge run`
+        : r.circle || slanted?.has(x.id)
+          ? `is a ${r.circle ? "circle room" : "polygon room with an edge that is neither horizontal nor vertical"}: only rectangular and rectilinear rooms share an edge run`
           : excluded.has(x.id)
             ? "is left out by `except`, so no wall is derived round it"
             : undefined;
@@ -497,6 +510,14 @@ function resolvePairs(
   return { pairs, clauses, bad };
 }
 
+/** A room as the derivation reads it. A circle's `poly` is its 48-gon: never read as a ring here. */
+function tileRoom(r: RRoom): TileRoom {
+  if (r.circle) return { id: r.id, shape: "circle" };
+  if (!r.poly) return { id: r.id, rect: { x0: r.at.x, y0: r.at.y, x1: r.at.x + r.size.w, y1: r.at.y + r.size.h } };
+  const parts = ringParts(r.poly);
+  return parts ? { id: r.id, parts } : { id: r.id, shape: "polygon" };
+}
+
 function coverOfVoid(v: RVoid): TileCover {
   return { kind: "void", rect: { x0: v.at.x, y0: v.at.y, x1: v.at.x + v.size.w, y1: v.at.y + v.size.h } };
 }
@@ -511,7 +532,7 @@ function refusalText(r: { code: string; rooms: string[]; why: string }): { messa
   switch (r.code) {
     case "E_ROOM_NOT_RECTANGLE":
       return {
-        message: `\`walls from rooms\` derives walls from rectangular rooms only: ${r.why}`,
+        message: `\`walls from rooms\` derives walls from rectangular or rectilinear rooms only: ${r.why}`,
         hints: [
           `Leave the room out with \`except ${r.rooms.join(" ")}\` and draw its walls by hand, or split it into rectangles.`,
         ],
@@ -545,6 +566,13 @@ function refusalText(r: { code: string; rooms: string[]; why: string }): { messa
         message: `\`walls from rooms\` cannot open the pair: ${r.why}`,
         hints: [
           "Remove the authored wall (or the door, window or opening on that edge), or remove the `open between` clause and keep the wall.",
+        ],
+      };
+    case "E_OPENING_HOST_AMBIGUOUS":
+      return {
+        message: `\`walls from rooms\` cannot open the pair: ${r.why}`,
+        hints: [
+          "If no boundary should stand between them, write the two rooms as one room. To open one edge, remove the clause and write `opening at (x,y) width <mm>` on it.",
         ],
       };
     case "E_WALL_BETWEEN_WIDTH":

@@ -231,7 +231,7 @@ suite("the statement", () => {
 
   it("E_WALL_BETWEEN_ROOM: a polygon or circle room, an excepted room, a room of another group", () => {
     const poly = plan(
-      `${ROOMS}  room id=p polygon (7000,0) (9000,0) (9000,5000) (7000,5000)\n  walls from rooms exterior 200 partition 100 { except p  open between b and p }\n`,
+      `${ROOMS}  room id=p polygon (7000,0) (9000,0) (9000,5000) (8000,5000)\n  walls from rooms exterior 200 partition 100 { except p  open between b and p }\n`,
     );
     const d = errors(poly);
     expect(d.map((x) => x.code)).toEqual(["E_WALL_BETWEEN_ROOM"]);

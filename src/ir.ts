@@ -304,8 +304,9 @@ export interface RWall extends RBase {
   /**
    * Present only on a wall DERIVED by a `walls from rooms` statement (ADR 0028 §3), never on
    * an authored one. Such a wall has no author-facing id: its {@link RBase.id} is an internal
-   * name no identifier can spell (`exterior`, `exterior#2`, `A|B`, with `~2`… for a run an
-   * authored wall split off), and its {@link RBase.span} is the statement's. So a lint fix or
+   * name no identifier can spell (`exterior`, `exterior#2`, `A|B`, `A|B#2` for a pair's later
+   * run, with `~2`… for a run an authored wall split off), and its {@link RBase.span} is the
+   * statement's. So a lint fix or
    * hint never quotes it and never edits its span, `arch fix`/`suggest` never emit it, and
    * `roof overhang` counts only the outer ring. Internal (the `_` prefix keeps it out of the
    * SVG and the exports; the Scene carries `from`, and an empty `open` on an `open between` run,
@@ -436,6 +437,10 @@ export interface RRoom extends RBase {
    *  unplaced or on a cycle). Survives the instance transform so an enclosing pass treats
    *  it as unplaced; `checkRoomOverlaps` skips it. Internal; never rendered. */
   _unplaced?: true;
+  /** Set on a `polygon` room that reported its own ring (`E_ROOM_POLY_DEGENERATE`,
+   *  `E_ROOM_POLY_SELF_INTERSECT`): it has no floor anything can be derived from, and the plan
+   *  already says why. Internal; never rendered. */
+  _ringRefused?: true;
   /** How the position was authored (`absolute` `at`, `relational` clause, or
    *  `strip` sugar). Internal marker for `describe().freedom`; never rendered. */
   _placement?: RoomPlacement;
@@ -825,8 +830,8 @@ export interface DerivedWallRow {
   /** `rooms` for a wall `walls from rooms` derived; `between`/`around` for an authored wall
    *  written in a pairwise form (ADR 0028 §4, §6). */
   from: "rooms" | "between" | "around";
-  /** The internal name (`exterior`, `exterior#2`, `A|B`), namespaced inside a `place`; for a
-   *  pairwise wall, its authored id. */
+  /** The internal name (`exterior`, `exterior#2`, `A|B`, `A|B#2`), namespaced inside a `place`;
+   *  for a pairwise wall, its authored id. */
   name: string;
   between?: [string, string];
   /** `around` only: the rooms the ring goes round, as written. */

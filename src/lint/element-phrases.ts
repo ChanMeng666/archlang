@@ -9,7 +9,7 @@
 import { connectorConnection, EXTERIOR_NODE, pointInRoomBox } from "../analyze.js";
 import type { WallSegment } from "../geometry.js";
 import type { RDoor, ROpening, RWindow } from "../ir.js";
-import { wallOf } from "../wall-ref.js";
+import { edgeOfPair, wallOf } from "../wall-ref.js";
 import type { LintContext } from "./context.js";
 import { mm } from "./measure.js";
 
@@ -71,7 +71,7 @@ export function wallNamed(ctx: LintContext, seg: WallSegment): string {
   if (between) {
     const a = roomNamed(between[0]);
     const b = roomNamed(between[1]);
-    if (a && b) return `the partition between ${a} and ${b}`;
+    if (a && b) return `the partition between ${a} and ${b}${edgeOfPair(w!)}`;
   }
   // A curved wall, or a plan with no room to place it among: the kind and the line it runs on.
   if (seg.arc || ctx.rooms.length === 0) return wallPhrase(seg);

@@ -53,13 +53,23 @@ export function isDerivedWall(walls: readonly RWall[], key: WallKey): boolean {
 }
 
 /**
+ * ` (edge 2)` on a later run of a pair that shares several (`A|B#2`, ADR 0028 §3), else nothing:
+ * the relation alone would give two runs one name. Read only on a partition, so a courtyard ring's
+ * `exterior#2` stays as it is, and it holds on a run coexistence split (`A|B#2~2`).
+ */
+export function edgeOfPair(w: { id: string; _derived?: RWall["_derived"] }): string {
+  const k = w._derived?.between ? /#(\d+)(?:~\d+)?$/.exec(w.id) : null;
+  return k ? ` (edge ${k[1]})` : "";
+}
+
+/**
  * The phrase that names one wall in prose: `wall "<id>"` for an authored wall (byte for byte
  * the text every rule wrote before derived walls existed), its relation for a derived one.
  */
 export function wallPhraseOf(w: { id: string; _derived?: RWall["_derived"] }): string {
   const d = w._derived;
   if (d === undefined) return `wall "${w.id}"`;
-  if (d.between) return `the partition between "${d.between[0]}" and "${d.between[1]}"`;
+  if (d.between) return `the partition between "${d.between[0]}" and "${d.between[1]}"${edgeOfPair(w)}`;
   return d.ring === "inner" ? "the courtyard wall derived from the rooms" : "the exterior wall derived from the rooms";
 }
 
