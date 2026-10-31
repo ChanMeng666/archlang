@@ -114,18 +114,19 @@ export type LintSkipReason =
   /** The stair rules' counted work on the storey (`MAX_STAIR_WORK`, `src/lint/rules/stairs.ts`,
    *  charged before the work) would pass its cap: no stair on the storey is judged. */
   | "stair-budget"
-  /** `W_OUTDOOR_OVERLAPS_ROOM` compares ground surfaces with rooms after the resolution, with no
-   *  meter, so it adds each surface's cost up first (`polygonsOverlapCost`,
-   *  `src/geometry/polygon.ts`): past the step budget, the surfaces that no longer fit, in source
-   *  order, are not judged. */
-  | "outdoor-budget"
   /** A garage has no `door garage` on its perimeter, so `W_GARAGE_TOO_NARROW` has no vehicle
    *  door to measure its depth from (PS2.70); its width is still judged. */
   | "no-vehicle-door"
   /** A WC in an accessible room is more than twice `wcAccessibleSideWallMaxMm` wide, so no side
    *  wall can stand within the figure of its centreline and `W_ACCESSIBLE_WC_SIDE_WALL` does not
    *  judge it (PS2.74): a footprint that size is not a pan the rule reads. */
-  | "wide-wc-pan";
+  | "wide-wc-pan"
+  /** `W_OUTDOOR_OVERLAPS_ROOM` compares ground surfaces with rooms after the resolution, with no
+   *  meter, so it adds each surface's cost up first (`polygonsOverlapCost`,
+   *  `src/geometry/polygon.ts`): past the step budget, the surfaces that no longer fit, in source
+   *  order, are not judged. */
+  | "outdoor-budget";
+
 
 /** What each family checks, as the human coverage line names it. */
 export const FAMILY_NOUN: Readonly<Record<LintFamily, string>> = {
@@ -172,10 +173,10 @@ export const SKIP_WHY: Readonly<Record<LintSkipReason, string>> = {
   "no-storey-height": "the plan states no storey height",
   "curved-landing-wall": "a curved wall stands near a stair's landing, which the rule does not measure",
   "stair-budget": "too many stairs, doors and walls on the storey to measure",
-  "outdoor-budget":
-    "some ground surfaces and rooms have too many vertices to compare, so those surfaces are not judged",
   "no-vehicle-door": "the garage has no vehicle door to measure its depth from",
   "wide-wc-pan": "a WC in an accessible room is too wide for a side wall to stand within the figure",
+  "outdoor-budget":
+    "some ground surfaces and rooms have too many vertices to compare, so those surfaces are not judged",
 };
 
 /**
