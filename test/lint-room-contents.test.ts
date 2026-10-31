@@ -7,6 +7,10 @@ import { CATALOG_CATEGORIES } from "../src/fixtures-catalog.js";
 import { DEFINING, definingItems, WASH_WITH, washItems } from "../src/lint/defining.js";
 import type { World } from "../src/world.js";
 
+/** Every note but the ones on a room outside the furnish table (these plans' companion halls). */
+const refused = (r: ReturnType<typeof finish>): ReturnType<typeof finish>["unresolved"] =>
+  r.unresolved.filter((u) => u.scope === undefined);
+
 /**
  * `W_HABITABLE_NO_WINDOW` (PS2.8) and `W_ROOM_MISSING_DEFINING` (PS2.9): each fires on the
  * defect, is silent on its fix, and stays out of the territory of the rule beside it
@@ -551,7 +555,7 @@ ${extra}}
     expect(words(src)).toEqual(["kitchen_sink", "stove", "counter", "fridge"]);
     // The dining use is left out and says so; the lint then reports the room's missing table.
     const r = finish(src, { only: "furnish" });
-    expect(r.unresolved.map((u) => u.reason)).toEqual([
+    expect(refused(r).map((u) => u.reason)).toEqual([
       'the dining pieces were left out of "r_x" — no position for the required `dining_table` in "r_x" clears its walls, its doors and the pieces before it',
     ]);
     expect(lint(r.source).map((d) => d.code)).toContain("W_ROOM_MISSING_DEFINING");
@@ -598,7 +602,7 @@ ${extra}}
     expect(words(src)).toEqual(["wc", "basin", "bathtub"]);
     const r = finish(src, { only: "furnish" });
     expect(r.changes.at(-1)!.text).toBe("furniture bathtub in r_x anchor left flush size 700x1700");
-    expect(r.unresolved).toEqual([]);
+    expect(refused(r)).toEqual([]);
     expect(lint(r.source).map((d) => d.code)).not.toContain("W_ROOM_MISSING_DEFINING");
   });
 
@@ -638,7 +642,7 @@ ${extra}}
     // (`wetSet`, `src/furnish.ts`) stands the pan elsewhere and fits all three.
     const src = plan(1950, 2250, "bath", "door id=d_x at (1400,2250) width 800 wall w_mid swing out", "");
     const r = finish(src, { only: "furnish" });
-    expect(r.unresolved).toEqual([]);
+    expect(refused(r)).toEqual([]);
     expect(r.changes.map((c) => c.text)).toEqual([
       "furniture wc against wall shell segment 3 offset 3500 side left in r_x",
       "furniture basin against wall shell segment 0 offset 400 side left in r_x",
@@ -677,7 +681,7 @@ ${extra}}
 `;
     expect(words(src)).toEqual([]);
     const r = finish(src, { only: "furnish" });
-    expect(r.unresolved.map((u) => u.reason)).toEqual([
+    expect(refused(r).map((u) => u.reason)).toEqual([
       '"r_x" was left empty — furnish found no position for its `bathtub` or `shower`, the piece that defines a bathroom (`W_ROOM_MISSING_DEFINING`)',
     ]);
     expect(lint(r.source).map((d) => d.code)).toContain("W_ROOM_NO_FIXTURE");
@@ -795,7 +799,7 @@ ${extra}}
     );
     const r = finish(src, { only: "furnish" });
     expect(r.changes).toEqual([]);
-    expect(r.unresolved.map((u) => u.reason)).toEqual([
+    expect(refused(r).map((u) => u.reason)).toEqual([
       'no position for the worktop (`counter`, 600, 400 mm along) in "r_x" clears its walls, its doors and the pieces before it — the room was left empty',
     ]);
   });

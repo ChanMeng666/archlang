@@ -22,6 +22,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   eight, each an exterior wall that really is left open. No drawing and no `describe()` output moves. A
   consumer that classifies lint codes sees a new warning.
 
+### Fixed
+
+- `finish` names every room it leaves empty (issue #370). A room whose use has no row in the furnish
+  table (`hall`, `circulation`, `entry`, `storage`, `garage`, `utility`), or of no known use (no `uses`,
+  and a label the vocabulary does not hold), stayed empty with `unresolved: []`, although the skill and
+  `llms-full.txt` say an empty room is named there. It now has a note with the use that has no row, or
+  with the uses that would furnish it, so a plan labelled `"Schlafzimmer"` no longer reads as nothing
+  to do. Such a room still gets no piece, and what `finish` writes is unchanged: across the tracked
+  `.arch` files no `source`, `changed` or `changes[]` moved. `FinishNote` gains an optional
+  `scope: "outside-table"` on these notes: `unresolved` is now non-empty on any plan with an empty hall
+  or store, and such a note asks nothing unless the room should hold furniture, so a consumer that
+  treats a non-empty `unresolved` as a failure should filter on `scope`. The playground does: it lists
+  these rooms apart, and they count as neither unresolved nor a reason to open Lint. A no-row room whose
+  only piece is declared `in` it but stands elsewhere gets the `W_FIXTURE_WRONG_ROOM` note instead.
+### Changed
+
+- `spec.llm.md` says how to enter a `stair` from the other end (issue #370), which agents did not
+  find: a flight has one entry, and placing it from a `component` swaps that end, `mirror y` for a
+  portrait flight (a `dir up` entered from the north) and `mirror x` for a landscape one (from the
+  west). `mirror y` leaves a landscape flight's entry where it was. Paid for by 1,088 characters of
+  repetition, so the spec goes from 29,999 to 29,147 of its 30,000-character cap, with room for the
+  L-shaped room and block stair lines still to come. No compiler output moves; the mechanism is
+  1.37's.
+- Three inputs that gave a bare `E_PARSE` now carry a `= help:` line (issue #370): a hyphen in an `id=`
+  name ("ids are letters, digits and `_`"), a `,` between `uses` kinds ("separate uses with spaces"),
+  and a `;` at a line end ("statements end at the line break"). Code, message and span are unchanged;
+  each hint fires only in the case it describes, and none of the forms is accepted.
+
 ## [1.47.0] - 2026-10-31
 
 ### Added

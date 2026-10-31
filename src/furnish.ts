@@ -10,10 +10,10 @@
  *
  * **Fill only.** A room that holds any furniture is not touched; when it lacks a piece its
  * use requires, the missing words are named in `unresolved`. Whether a piece is in a room is
- * read off the room's shape, never its bounding box. A room whose use is
- * unknown, or has no row in the table, is left alone. A polygon room and a multi-storey
- * plan are reported in `unresolved` and left as they are: `anchor` needs a rectangle, and
- * a position is never derived from a bounding box.
+ * read off the room's shape, never its bounding box. A room whose use is unknown, or has no
+ * row in the table, gets no piece and is named in `unresolved` ({@link roomsByFill}). A polygon
+ * room and a multi-storey plan are reported there too and left as they are: `anchor` needs a
+ * rectangle, and a position is never derived from a bounding box.
  *
  * **Never worse, per room.** A room's pieces are kept only when the plan with them compiles
  * and raises no diagnostic code (compile + lint under the default ruleset and under every
@@ -268,25 +268,34 @@ export function furnishStage(
     ]);
 
   const unresolved: FinishNote[] = [];
-  const note = (room: RRoom, reason: string, codes?: string[]): void => {
+  const note = (room: RRoom, reason: string, codes?: string[], scope?: FinishNote["scope"]): void => {
     unresolved.push({
       stage: "furnish",
       room: room.id,
       reason,
       ...(codes && codes.length > 0 ? { codes } : {}),
+      ...(scope ? { scope } : {}),
       ...(room.span ? { span: room.span } : {}),
     });
   };
 
+  const code = (words: readonly string[]): string => words.map((c) => `\`${c}\``).join(", ");
+  /** How a note names a room: its authored id, or its label when it has none. */
+  const nameOf = (room: RRoom, level?: number): string => {
+    const name = room._idAuthored === true ? `"${room.id}"` : `the room "${room.label ?? room.id}"`;
+    return level === undefined ? name : `${name} (level ${level})`;
+  };
+  /** A multi-storey plan's note ends by saying no storey is furnished. */
+  const storeys = (reason: string, level?: number): string =>
+    level === undefined ? reason : `${reason}, and the furnish stage handles single-storey plans only`;
+
   /**
    * A room that holds some furniture is never topped up (ADR 0025, decision 2): what it
-   * lacks is reported. These notes follow every other note of the run, in room order.
+   * lacks is reported. These notes follow the stage's own, in room order.
    */
   const partly = (r: Reported, level?: number): void => {
     const { room } = r;
-    const name = room._idAuthored === true ? `"${room.id}"` : `the room "${room.label ?? room.id}"`;
-    const where = level === undefined ? name : `${name} (level ${level})`;
-    const code = (words: readonly string[]): string => words.map((c) => `\`${c}\``).join(", ");
+    const where = nameOf(room, level);
     const what =
       "strayed" in r
         ? `holds no piece on its floor — ${code(r.strayed)} ${r.strayed.length === 1 ? "is" : "are"} declared \`in ${room.id}\` but ${r.strayed.length === 1 ? "stands" : "stand"} outside it (\`W_FIXTURE_WRONG_ROOM\`)`
@@ -301,14 +310,32 @@ export function furnishStage(
         : roomAreaMm2(room) / 1e6 > MAX_ROOM_AREA_M2
           ? `${where} ${what}; it is larger than ${MAX_ROOM_AREA_M2} m², which the furnish table does not cover; finish fills only empty dwelling rooms`
           : `${where} ${what}; finish fills only empty rooms`;
-    note(room, level === undefined ? reason : `${reason}, and the furnish stage handles single-storey plans only`);
+    note(room, storeys(reason, level));
+  };
+
+  /**
+   * A room the table has no pieces for, with nothing on its floor and none declared `in` it: left
+   * empty by scope, not refused, and named so that `unresolved` holds every room the run left
+   * empty (ADR 0025 §3, amended 2026-10-31). `scope` marks the note as asking nothing of the
+   * author. The last of the furnish stage's notes, in room order.
+   */
+  const unlisted = (room: RRoom, level?: number): void => {
+    const uses = [...roomUses(room)];
+    const why =
+      uses.length === 0
+        ? `neither \`uses\` nor its label or id names a use; give it \`uses\` with one of ${code(Object.keys(FURNISH_TABLE))} if finish should furnish it`
+        : `${uses.length === 1 ? `its use ${code(uses)} has` : `its uses ${code(uses)} have`} no row there; add furniture yourself only if it should hold some`;
+    const reason = `${nameOf(room, level)} is outside the furnish table and was left empty — ${why}`;
+    note(room, storeys(reason, level), undefined, "outside-table");
   };
 
   if (resolved.levels.length > 0) {
     const partial: Array<[Reported, number]> = [];
+    const outside: Array<[RRoom, number]> = [];
     for (const l of resolved.levels) {
       const fill = roomsByFill(l.ir);
       for (const p of fill.reported) partial.push([p, l.level]);
+      for (const room of fill.unlisted) outside.push([room, l.level]);
       for (const room of fill.empty)
         note(
           room,
@@ -316,14 +343,19 @@ export function furnishStage(
         );
     }
     for (const [p, level] of partial) partly(p, level);
+    for (const [room, level] of outside) unlisted(room, level);
     return none(unresolved);
   }
 
   const ir = resolved.ir;
-  const { empty: todo, reported: partial } = roomsByFill(ir);
-  /** Every note of the run: the stage's own, then the partly furnished rooms. Called once, at the return. */
+  const { empty: todo, reported: partial, unlisted: outside } = roomsByFill(ir);
+  /**
+   * Every note of the stage: its own, the partly furnished rooms, then the rooms outside the
+   * table. Called once, at the return.
+   */
   const reported = (): FinishNote[] => {
     for (const p of partial) partly(p);
+    for (const room of outside) unlisted(room);
     return unresolved;
   };
   if (todo.length === 0) return none(reported());
@@ -833,10 +865,12 @@ type Reported =
   | { room: RRoom; strayed: string[] };
 
 /**
- * The rooms of one storey whose use has a row in the table, by what they hold: `empty`
- * (no piece; the stage furnishes it) and `reported` (never topped up, and said why: a
- * partly furnished room, or one whose only pieces are declared in it but stand elsewhere).
- * A room holding every required piece is in neither.
+ * The rooms of one storey, by what they hold: `empty` (a use with a row in the table, no piece;
+ * the stage furnishes it), `reported` (never topped up, and said why: a partly furnished room, or
+ * a room of ANY use whose only pieces are declared in it but stand elsewhere, a defect the author
+ * must fix) and `unlisted` (no row in the table, nothing on its floor and nothing declared in it:
+ * the stage has no pieces for it and only says so). A room holding every required piece is in none
+ * of them, and neither is a room with no row that holds a piece.
  *
  * Which pieces a room holds is read off the room's shape. A piece stands in the room it is
  * declared `in` when its footprint reaches that room's floor, and in any other room when it
@@ -844,15 +878,15 @@ type Reported =
  * naming no room of this storey) stands in every room its footprint reaches. A room a piece
  * is declared `in` is never empty, wherever the piece stands, as before this test existed.
  */
-function roomsByFill(ir: ResolvedPlan): { empty: RRoom[]; reported: Reported[] } {
+function roomsByFill(ir: ResolvedPlan): { empty: RRoom[]; reported: Reported[]; unlisted: RRoom[] } {
   const furniture = ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
   const rooms = new Set(ir.elements.filter((e) => e.kind === "room").map((e) => (e as RRoom).id));
   const empty: RRoom[] = [];
   const reported: Reported[] = [];
+  const unlisted: RRoom[] = [];
   for (const e of ir.elements) {
     if (e.kind !== "room" || e._unplaced) continue;
     const uses = usesOf(e);
-    if (uses.length === 0) continue;
     const floor = e.poly ?? rectRing({ x: e.at.x, y: e.at.y, w: e.size.w, h: e.size.h });
     const declaredHere = (f: RFurniture): boolean => f.room === e.id;
     const held = furniture.filter((f) =>
@@ -864,10 +898,11 @@ function roomsByFill(ir: ResolvedPlan): { empty: RRoom[]; reported: Reported[] }
     );
     if (held.length === 0) {
       const strayed = furniture.filter(declaredHere);
-      if (strayed.length === 0) empty.push(e);
-      else reported.push({ room: e, strayed: [...new Set(strayed.map((f) => f.category))] });
+      if (strayed.length > 0) reported.push({ room: e, strayed: [...new Set(strayed.map((f) => f.category))] });
+      else (uses.length === 0 ? unlisted : empty).push(e);
       continue;
     }
+    if (uses.length === 0) continue;
     const families = new Set(held.flatMap((f) => servedBy(f.category)));
     const holds = (i: FurnishItem): boolean => [i.category, ...(i.or ?? [])].some((w) => families.has(familyOf(w)));
     const missing: Array<{ use: UseKind; categories: string[] }> = [];
@@ -877,7 +912,7 @@ function roomsByFill(ir: ResolvedPlan): { empty: RRoom[]; reported: Reported[] }
     }
     if (missing.length > 0) reported.push({ room: e, missing });
   }
-  return { empty, reported };
+  return { empty, reported, unlisted };
 }
 
 // ---------------------------------------------------------------------------

@@ -49,7 +49,8 @@ const zoned = (zone: ReadonlySet<string>, required: boolean, category: string, .
 /**
  * What goes in a room, by use. Every word is one `src/fixtures-catalog.ts` already has; the
  * wet-room and kitchen rows are read through the catalogue's own zones. A use with no row
- * (`hall`, `circulation`, `entry`, `storage`, `garage`, `utility`) is never furnished.
+ * (`hall`, `circulation`, `entry`, `storage`, `garage`, `utility`) is never furnished; a room
+ * left empty for it is named in `unresolved`.
  *
  * The rows describe the rooms of a DWELLING. `utility` has no row because the tag does not
  * say laundry: a plant room carries it too. A room larger than {@link MAX_ROOM_AREA_M2} is

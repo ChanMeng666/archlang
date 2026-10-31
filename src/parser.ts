@@ -74,6 +74,7 @@ class ParseError extends Error {
   constructor(
     public override message: string,
     public span: Span,
+    public hints?: string[],
   ) {
     super(message);
   }
@@ -123,6 +124,7 @@ function parseImpl(src: string, registry: Registry): ParseOutcome {
     message: e.message,
     code: e.code ?? "E_PARSE",
     span: e.span,
+    ...(e.hints ? { hints: e.hints } : {}),
   }));
 
   // parsePlan never throws on user source: it recovers from a malformed header
@@ -186,7 +188,30 @@ class Parser {
     return this.toks[Math.min(this.pos++, this.toks.length - 1)]!;
   }
   private fail(msg: string, t = this.peek()): never {
-    throw new ParseError(msg, { start: t.start, end: t.end });
+    throw new ParseError(msg, { start: t.start, end: t.end }, this.parseHints(t));
+  }
+
+  /**
+   * Hints for two shapes agents keep writing. Each fires only on the exact token it
+   * describes: a `-` glued to the `id=` name just read, or a `,` that directly follows the
+   * use-kinds of a `uses` list. Any other `-` or `,` gets none.
+   */
+  private parseHints(t: Token): string[] | undefined {
+    if (t.type === "minus" && this.lastIdSpan && t.start === this.lastIdSpan.end) {
+      return ["ids are letters, digits and `_` (not `-`); write `my_room`, not `my-room`"];
+    }
+    if (t.type === "comma") {
+      let i = this.toks.indexOf(t) - 1;
+      let sawUse = false;
+      while (i >= 0 && this.toks[i]!.type === "ident" && USE_SET.has(this.toks[i]!.value)) {
+        sawUse = true;
+        i--;
+      }
+      if (sawUse && i >= 0 && this.toks[i]!.type === "ident" && this.toks[i]!.value === "uses") {
+        return ["separate uses with spaces: `uses living dining`"];
+      }
+    }
+    return undefined;
   }
 
   /** Span from a start offset to the end of the last consumed token. */
@@ -364,7 +389,13 @@ class Parser {
       plan.bodyStart = this.eat("lcurly").end;
     } catch (e) {
       if (!(e instanceof ParseError)) throw e;
-      this.diagnostics.push({ severity: "error", message: e.message, code: "E_PARSE", span: e.span });
+      this.diagnostics.push({
+        severity: "error",
+        message: e.message,
+        code: "E_PARSE",
+        span: e.span,
+        ...(e.hints ? { hints: e.hints } : {}),
+      });
       while (!this.isType("eof") && !this.isType("lcurly")) {
         const t = this.peek();
         if (t.type === "ident" && this.statementStarts.has(t.value)) break;
@@ -506,7 +537,13 @@ class Parser {
         }
       } catch (e) {
         if (e instanceof ParseError) {
-          this.diagnostics.push({ severity: "error", message: e.message, code: "E_PARSE", span: e.span });
+          this.diagnostics.push({
+            severity: "error",
+            message: e.message,
+            code: "E_PARSE",
+            span: e.span,
+            ...(e.hints ? { hints: e.hints } : {}),
+          });
           this.synchronize(start);
           plan.body.push({ kind: "error", id: "", line: t.line, message: e.message, span: this.spanFrom(start) });
         } else {
@@ -524,7 +561,14 @@ class Parser {
     } catch (e) {
       if (!(e instanceof ParseError)) throw e;
       if (this.isType("eof")) this.missingClose();
-      else this.diagnostics.push({ severity: "error", message: e.message, code: "E_PARSE", span: e.span });
+      else
+        this.diagnostics.push({
+          severity: "error",
+          message: e.message,
+          code: "E_PARSE",
+          span: e.span,
+          ...(e.hints ? { hints: e.hints } : {}),
+        });
     }
     this.checkLevels(plan);
     return plan;
@@ -1490,7 +1534,13 @@ class Parser {
         body.push(this.parseOneBodyStatement(components, selfName));
       } catch (e) {
         if (e instanceof ParseError) {
-          this.diagnostics.push({ severity: "error", message: e.message, code: "E_PARSE", span: e.span });
+          this.diagnostics.push({
+            severity: "error",
+            message: e.message,
+            code: "E_PARSE",
+            span: e.span,
+            ...(e.hints ? { hints: e.hints } : {}),
+          });
           this.synchronize(stmtTok.start);
           body.push({
             kind: "error",

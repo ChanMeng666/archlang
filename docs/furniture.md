@@ -580,9 +580,12 @@ fixtures first. The table describes the rooms of a dwelling.
 
 Sizes are along the wall × into the room, in mm; a piece with no size uses its catalogued
 footprint. A room of any other use (`hall`, `circulation`, `entry`, `storage`, `garage`,
-`utility`) or of no known use is left alone: `utility` does not say laundry, and a plant room
-carries the tag too. A room larger than 100 m² is not a dwelling room; it is named in
-`unresolved` and left as it is.
+`utility`) or of no known use gets no piece: `utility` does not say laundry, and a plant room
+carries the tag too. It is still named in `unresolved`, so that list holds every room left
+empty: with the use that has no row, or, when neither `uses` nor the label or id names one, with
+the uses that would furnish it. Such a note carries `scope: "outside-table"` and asks nothing of
+the author unless the room should hold furniture. A room larger than 100 m² is not a dwelling
+room; it is named in `unresolved` and left as it is.
 
 A use's wall fixtures form one run: the stove next to the sink, the worktop next to the stove and
 the fridge next to the worktop, on one wall. A worktop with no room left in the run stands against

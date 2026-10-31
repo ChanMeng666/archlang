@@ -114,8 +114,11 @@ owns that name, so the shell runs the wrong program.
    statements the plan lacks — `paper`, `scale`, `dims auto`, `title`, `schedule rooms`,
    `legend` — on the smallest sheet the drawing fits. It fills only what is missing and deletes
    nothing. Read `unresolved`: a room it left empty or a statement it left out is named there
-   with the reason (`--only furnish`/`--only sheet` runs one step; `--reissue` lets it replace a
-   `paper`/`scale` the drawing does not fit).
+   with the reason. A room it has no pieces for (a hall, a store, a room of no known use) is named
+   too, with `scope: "outside-table"`; that note asks nothing of you unless the room should hold
+   furniture, so `changed: false` with only such notes means the plan is finished (`--only
+   furnish`/`--only sheet` runs one step;
+   `--reissue` lets it replace a `paper`/`scale` the drawing does not fit).
 11. **Show the user:** `archlang preview plan.arch -o plan.png` renders a PNG (`--install` fetches the
    optional renderer if missing). To hand the user the plan itself, rendered and with nothing to
    install, run `archlang link plan.arch` (or `npx -y @chanmeng666/archlang link plan.arch`): it
