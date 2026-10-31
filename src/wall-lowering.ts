@@ -52,8 +52,8 @@ function sceneWall(w: RWall): SceneWall {
   return {
     category: w.category,
     ...(w.status !== undefined ? { status: w.status } : {}),
-    // The one derived fact the joinery reads, with none of the names (`freeCrossingCuts`).
-    ...(w._derived?.open ? { _derived: { from: w._derived.from, open: {} } } : {}),
+    // The derived facts the joinery reads, with none of the names (`freeCrossingCuts`).
+    ...(w._derived ? { _derived: { from: w._derived.from, ...(w._derived.open ? { open: {} } : {}) } } : {}),
     thickness: w.thickness,
     points: w.points,
     ...(w.arcs ? { arcs: w.arcs } : {}),
@@ -112,52 +112,102 @@ export interface JoinedWallSet {
   cuts: JoinedCut[];
 }
 
+/** One derived run's end at a crossing. */
+interface CrossingArm {
+  /** Index into the wall list. */
+  wall: number;
+  /** Unit vector from the crossing along the run. */
+  away: Point;
+  /** How far from the crossing its opening's jamb stands, on a run whose one opening is the
+   *  `open between` clause's; `null` on a run with anything else to carry. */
+  jamb: number | null;
+}
+
 /**
- * The cuts that clear a crossing nothing stands on (issue #368): four `open between` runs of one
- * thickness end at one point, and each one's opening, the only opening on it, reaches the face of
- * the runs it meets there. Every such opening stops at that face, as a jamb must, so what they
- * leave is the square where the four bands overlap, joined to nothing: a pier no statement asked
- * for (a `column` is how a plan asks for one). The square goes the way of the openings around it.
+ * The cuts that clear a crossing of `open between` runs (issue #368).
  *
- * An authored wall keeps what it draws, whatever is cut through it. Fewer than four such ends leave
- * what they leave today, and so does a crossing another wall's band touches (read off edge boxes,
- * so a near miss keeps the square): the cut would take that wall's material too. Each square is an
- * ordinary cut of an arm, so it rides `place`, and it is absent from a wall set whose openings were
- * stripped, which is what keeps `describe()` off it: `gross-area.ts` and `wall-faces.ts` read the
- * solid.
+ * A jamb stops at the face of what it meets, and a band runs half its thickness past its end
+ * (the square cap, `band.ts`), so where such runs end at one point the openings leave a block of
+ * wall a full thickness across, the size of the thickest run there. Nothing asked for it (a
+ * `column` is how a plan asks for a pier). What becomes of it depends on what is left standing:
+ *
+ *  - **Every run there is open** (four at a crossing, three at a tee): the whole block goes.
+ *  - **One run stands**, at least two being open: the block goes except that run's own width on
+ *    its own side of the point, so the run ends flush on the crossing, its square cap gone,
+ *    whether it is thicker or thinner than the open runs: thicker, the block is its width; thinner,
+ *    the block's sides beside it go too. A run stands when it has any other opening to carry, or a
+ *    `width` that stops short of the crossing: that run is the wall the clause left.
+ *  - **Two or more stand**: they meet as walls do, so nothing is cut.
+ *
+ * An open run reaches the crossing when its jamb is on the face of the thickest run across its
+ * end, which is where `faceAt` (`src/room-tiling.ts`) put it.
+ *
+ * An authored wall keeps what it draws, whatever is cut through it, so only derived runs are arms:
+ * a crossing another wall's band touches stays as it is, authored or the ring (read off edge boxes,
+ * so a near miss keeps the block), because the cut would take that wall's material too. Each block
+ * is an ordinary cut of an arm, so it rides `place`, and it is absent from a wall set whose
+ * openings were stripped, which is what keeps `describe()` off it: `gross-area.ts` and
+ * `wall-faces.ts` read the solid.
  */
 function freeCrossingCuts(
   walls: readonly JoinableWall[],
   bands: readonly JoineryWall[],
   intern: PointInterner,
 ): EdgeLoop[] {
-  const armsAt = new Map<Point, number[]>();
+  if (!walls.some((w) => w._derived?.open)) return [];
+  const armsAt = new Map<Point, CrossingArm[]>();
   walls.forEach((w, i) => {
-    if (!w._derived?.open || w.openings.length !== 1) return;
+    if (!w._derived || w.closed || w.points.length !== 2) return;
     const [a, b] = w.points as [Point, Point];
-    const opening = w.openings[0]!;
+    const opening = w._derived.open && w.openings.length === 1 ? w.openings[0]! : null;
     const length = Math.hypot(b.x - a.x, b.y - a.y);
     for (const [end, far] of [
       [a, b],
       [b, a],
     ] as const) {
-      const ux = (far.x - end.x) / length;
-      const uy = (far.y - end.y) / length;
-      const jamb = (opening.at.x - end.x) * ux + (opening.at.y - end.y) * uy - opening.width / 2;
-      if (jamb > w.thickness / 2 + SNAP_MM) continue;
+      const away = { x: (far.x - end.x) / length, y: (far.y - end.y) / length };
+      const jamb = opening
+        ? (opening.at.x - end.x) * away.x + (opening.at.y - end.y) * away.y - opening.width / 2
+        : null;
       const at = intern.get(end);
-      armsAt.set(at, [...(armsAt.get(at) ?? []), i]);
+      armsAt.set(at, [...(armsAt.get(at) ?? []), { wall: i, away, jamb }]);
     }
   });
+  const half = (a: CrossingArm): number => walls[a.wall]!.thickness / 2;
   const out: EdgeLoop[] = [];
   for (const [at, arms] of armsAt) {
-    const arm = walls[arms[0]!]!;
-    if (arms.length !== 4 || arms.some((i) => walls[i]!.thickness !== arm.thickness)) continue;
-    const square = openingCut(arm, { at, width: arm.thickness }, intern);
-    if (!square) continue;
-    const box = loopBBox(square);
-    const other = bands.some((w) => !arms.includes(w.index) && bandTouches(w, box, at));
-    if (!other) out.push(square);
+    // The thickest run across each arm's end: the face its jamb stops at.
+    const face = (a: CrossingArm): number =>
+      Math.max(0, ...arms.filter((b) => Math.abs(b.away.x * a.away.x + b.away.y * a.away.y) < 0.5).map(half));
+    const open = arms.filter((a) => a.jamb !== null && a.jamb <= face(a) + SNAP_MM);
+    const standing = arms.filter((a) => !open.includes(a));
+    if (open.length < 2 || standing.length > 1) continue;
+    const reach = Math.max(...arms.map(half));
+    const stood = standing[0];
+    const host = walls[(stood ?? open[0]!).wall]!;
+    const block = openingCut({ ...host, thickness: 2 * reach }, { at, width: 2 * reach }, intern);
+    if (!block) continue;
+    const box = loopBBox(block);
+    if (bands.some((w) => !arms.some((a) => a.wall === w.index) && bandTouches(w, box, at))) continue;
+    if (!stood) {
+      out.push(block);
+      continue;
+    }
+    // `along` runs with the standing wall and `across` over it, in its frame from the crossing.
+    const piece = (along: number, across: number, length: number, breadth: number): EdgeLoop | null => {
+      const { x: ux, y: uy } = stood.away;
+      const centre = { x: at.x + ux * along - uy * across, y: at.y + uy * along + ux * across };
+      return openingCut({ ...host, thickness: breadth }, { at: centre, width: length }, intern);
+    };
+    const own = half(stood);
+    const beside = reach - own;
+    const pieces = [
+      piece(-reach / 2, 0, reach, 2 * reach),
+      ...(beside > SNAP_MM
+        ? [piece(reach / 2, (own + reach) / 2, reach, beside), piece(reach / 2, -(own + reach) / 2, reach, beside)]
+        : []),
+    ];
+    for (const p of pieces) if (p) out.push(p);
   }
   return out;
 }

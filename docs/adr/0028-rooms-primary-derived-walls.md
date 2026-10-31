@@ -133,6 +133,16 @@ per group (`E_WALLS_FROM_ROOMS_DUP`). It derives:
   jamb lines with the meeting walls' piers at the ends, which is what the plan says. A
   `door|opening between A and B` on a pair the author declared `open` is `E_WALL_BETWEEN_OPEN`:
   the run is already voided.
+  *Amended 2026-10-31 (issue #368, card H2):* where such runs meet each other, a meeting wall's
+  pier is a block no statement asked for, and the drawing removes it. With every run at a point
+  open the whole block goes; with one left standing that run ends flush on the point, across its
+  own width, whether thicker or thinner than the open runs; two or more that stand meet as walls do.
+  A run with a narrower `width` that stops short of the point, or with another opening on it,
+  stands. The block stays in the solid `describe()` reads, and an authored wall, or the ring,
+  touching it keeps what it draws. A boundary voided over its whole clear span is also no meeting
+  wall for `E_OPENING_NIB` or `W_OPENING_AT_JUNCTION` (§5): nothing is built there. The exception
+  is a host that stops at it with nothing carrying on past that end, whose jamb would stand beside
+  a free end, and the openings the clause itself derives, whose jambs were set on those faces.
 - `between A and B thickness t` overrides the partition thickness for that one pair.
 
 Rooms are centreline shapes (ADR 0027), so a room union tiled exactly by rooms gives an exterior

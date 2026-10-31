@@ -66,7 +66,7 @@ suite("the derivation (src/room-tiling.ts)", () => {
         closed: false,
       },
     ]);
-    expect(ab.open).toEqual({ clause: 0, at: { x: 4000, y: 1525 }, width: 2850 });
+    expect(ab.open).toEqual({ clause: 0, at: { x: 4000, y: 1525 }, width: 2850, whole: true });
     // with a width: centred on that clear span
     const w = derive(THREE, { pairs: [{ kind: "open", a: "b", b: "a", width: 900 }] }).result;
     expect(w.ok && w.walls.find((x) => x.name === "a|b")!.open).toEqual({
@@ -88,6 +88,7 @@ suite("the derivation (src/room-tiling.ts)", () => {
       clause: 1,
       at: { x: 4000, y: 1475 },
       width: 2750,
+      whole: true,
     });
     // an authored wall meeting the end counts too
     const authored = derive(THREE, { pairs: [{ kind: "open", a: "a", b: "b" }] }, [

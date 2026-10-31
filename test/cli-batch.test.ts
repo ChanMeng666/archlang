@@ -31,6 +31,29 @@ describe("CLI — batch", () => {
     }
   }, 60000);
 
+  it("-f json reports `dropped` per file and a stderr note; absent for a plan that drops nothing (#366)", () => {
+    const dir = mkdtempSync(join(tmpdir(), "arch-batch-"));
+    const arc = join(dir, "arc.arch");
+    const plain = join(dir, "plain.arch");
+    writeFileSync(
+      arc,
+      'plan "arc round trip" {\n  units mm\n  paper A4 landscape\n  scale 1:50\n  wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,4000) arc (0,4000) radius 4000 cw (0,0) close }\n}\n',
+    );
+    writeFileSync(plain, 'plan "G" { units mm room at (0,0) size 3000x3000 label "R" }');
+    const r = run(["batch", arc, plain, "-f", "json", "-o", dir, "--json"]);
+    expect(r.status).toBe(0);
+    const j = JSON.parse(r.stdout);
+    const a = j.results.find((x: { input: string }) => x.input.endsWith("arc.arch"));
+    const p = j.results.find((x: { input: string }) => x.input.endsWith("plain.arch"));
+    expect(a.dropped.length).toBeGreaterThan(0);
+    expect("dropped" in p).toBe(false);
+    expect(r.stderr).toContain("note: Plan JSON carries no");
+    // The control: svg drops nothing and says nothing.
+    const s = run(["batch", arc, "-f", "svg", "-o", dir, "--json"]);
+    expect("dropped" in JSON.parse(s.stdout).results[0]).toBe(false);
+    expect(s.stderr).not.toContain("note:");
+  }, 60000);
+
   it("reports a user-source error per file and aggregates exit 2", () => {
     const dir = mkdtempSync(join(tmpdir(), "arch-batch-"));
     const good = join(dir, "good.arch");

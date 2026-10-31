@@ -440,8 +440,9 @@ export interface Scene {
  * openings cut through it — each only its `at`/`width`) plus the `category` and the written
  * `status` an export classifies by. Plain data with no id, so two plans that draw the same walls
  * carry the same walls (in statement order, which may differ), with one exception: `_derived`,
- * present only on an `open between` run, as `{ from, open: {} }`, which the joinery reads to clear
- * a free crossing. Its underscore means what it means on the IR: no public promise (ADR 0031).
+ * present only on a derived wall, as `{ from }`, with an empty `open` on an `open between` run,
+ * which the joinery reads to clear a crossing. Its underscore means what it means on the IR: no
+ * public promise (ADR 0031).
  * `status` is present only when the plan wrote one.
  */
 export type SceneWall = Pick<

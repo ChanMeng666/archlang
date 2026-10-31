@@ -53,9 +53,18 @@ import { doorSwing, isDoubleDoorPair, segmentLength, segmentPointAlong, type Wal
 import { arcOpeningVoid } from "../../geometry/arc-band.js";
 import type { LintContext, LintRule } from "../context.js";
 import { mm } from "../measure.js";
-import { type Hosted, KIND_WORD, openingName, wallPhrase } from "../element-phrases.js";
+import { type Hosted, KIND_WORD, openBoundaryPhrase, openingName, wallPhrase } from "../element-phrases.js";
 import { isCorner, tightestCorner } from "./doors.js";
-import { FLUSH_MM, junctionSpans, MEET_TOL_MM, PARALLEL_SIN, sameSeg } from "../../opening-junctions.js";
+import {
+  atFreeEnd,
+  FLUSH_MM,
+  type JunctionSpan,
+  MEET_TOL_MM,
+  openBoundaryIds,
+  PARALLEL_SIN,
+  sameSeg,
+  standingJunctionSpans,
+} from "../../opening-junctions.js";
 import { relationalClause } from "../../opening-relation.js";
 
 /** Float dust on whole-millimetre geometry. */
@@ -73,10 +82,7 @@ interface OnRun {
 }
 
 /** A meeting wall's footprint on a host run, in the host's along-run coordinates. */
-interface Junction {
-  lo: number;
-  hi: number;
-  wall: WallSegment;
+interface Junction extends JunctionSpan {
   /** The host end this wall meets when that end is a CORNER (`isCorner`), else null. */
   corner: "a" | "b" | null;
 }
@@ -132,22 +138,31 @@ function cornerEnd(host: WallSegment, s: WallSegment, all: readonly WallSegment[
 }
 
 /**
- * Every other wall segment's footprint on `host`'s run ({@link junctionSpans}, the measure
- * the resolver's relational openings share), with the host end each one meets when that end
- * is a corner.
+ * Every other standing wall segment's footprint on `host`'s run ({@link standingJunctionSpans},
+ * the measure the resolver's relational openings share), with the host end each one meets when
+ * that end is a corner.
  */
-function junctionsOn(host: WallSegment, all: readonly WallSegment[]): Junction[] {
-  return junctionSpans(host, all).map((j) => ({ ...j, corner: cornerEnd(host, j.wall, all) }));
+function junctionsOn(host: WallSegment, all: readonly WallSegment[], open: ReadonlySet<string>): Junction[] {
+  return standingJunctionSpans(host, all, open).map((j) => ({ ...j, corner: cornerEnd(host, j.wall, all) }));
 }
 
-/** {@link junctionsOn} memoised per host segment for one rule run. */
-function junctionLookup(ctx: LintContext): (seg: WallSegment) => Junction[] {
+const NO_OPEN_BOUNDARIES: ReadonlySet<string> = new Set();
+
+/**
+ * The junctions on an opening's host run, memoised per host segment for one rule run. An opening
+ * an `open between` clause derived keeps every meeting wall, open boundaries too: its jambs were
+ * set on the faces of all of them (`faceAt`, `src/room-tiling.ts`), and the thickest one's pier
+ * excuses a thinner one beside it. Every other opening reads what stands.
+ */
+function junctionLookup(ctx: LintContext): (o: OnRun) => Junction[] {
   const cache = new Map<string, Junction[]>();
-  return (seg) => {
-    const k = `${seg.wallId}#${seg.index}`;
+  const open = openBoundaryIds(ctx.ir.walls);
+  return ({ el, seg }) => {
+    const derived = el.kind === "opening" && el._derived !== undefined;
+    const k = `${seg.wallId}#${seg.index}#${derived}`;
     const hit = cache.get(k);
     if (hit) return hit;
-    const v = junctionsOn(seg, ctx.wallSegs);
+    const v = junctionsOn(seg, ctx.wallSegs, derived ? NO_OPEN_BOUNDARIES : open);
     cache.set(k, v);
     return v;
   };
@@ -329,12 +344,12 @@ function clearMove(
   return null;
 }
 
-/** The nearest meeting-wall face to a span, in mm (for "that leaves N mm"). */
-function nearestNib(lo: number, hi: number, js: readonly Junction[]): number | null {
-  let best: number | null = null;
+/** The nearest meeting-wall face to a span, in mm, and whose it is (for "that leaves N mm"). */
+function nearestNib(lo: number, hi: number, js: readonly Junction[]): { nib: number; j: Junction } | null {
+  let best: { nib: number; j: Junction } | null = null;
   for (const j of js) {
     const nib = j.hi <= lo ? lo - j.hi : j.lo >= hi ? j.lo - hi : 0;
-    if (best === null || nib < best) best = nib;
+    if (best === null || nib < best.nib) best = { nib, j };
   }
   return best;
 }
@@ -449,8 +464,11 @@ function moveHints(
     if (!m) continue;
     const result = check(m.placed.map((p) => ({ el: p.leaf.el, at: p.at })));
     if (result === null) continue;
-    const nib = nearestNib(m.lo, m.hi, js);
-    const leaves = nib === null ? "" : `, ${mm(nib)} mm from the nearest meeting wall's face`;
+    const near = nearestNib(m.lo, m.hi, js);
+    const leaves =
+      near === null
+        ? ""
+        : `, ${mm(near.nib)} mm from ${near.j.boundary ? "the edge of the nearest open boundary" : "the nearest meeting wall's face"}`;
     const clause = (p: Placed): string => `\`${placeClause(ctx, p.leaf, p.at, p.s)}\``;
     const edit =
       o.el._instance !== undefined
@@ -518,7 +536,7 @@ export const openingAtJunction: LintRule = {
     const all = openingsOnRuns(ctx);
     const jsOf = junctionLookup(ctx);
     for (const o of all) {
-      const js = jsOf(o.seg);
+      const js = jsOf(o);
       const mine = junctionsFor(ctx, o, js);
       if (mine.length === 0) continue;
       const need = nibNeed(ctx, o.seg);
@@ -561,12 +579,19 @@ export const openingAtJunction: LintRule = {
 
       const name = openingName(ctx, o.el);
       const span = runSpan(o.seg, o.lo, o.hi);
+      // Every junction reported is an open boundary at a free end: no wall meets this one there,
+      // so the whole message says so, and each fact need not.
+      const reported = [...inside, ...(left ? [left.j] : []), ...(right ? [right.j] : [])];
+      const allFree = reported.every((j) => j.boundary?.freeEnd);
+      const freeEndOf = (j: Junction): string => (allFree ? "" : atFreeEnd(j));
       const facts: string[] = [];
       for (const j of inside) {
         const lo = Math.max(j.lo, o.lo);
         const hi = Math.min(j.hi, o.hi);
         facts.push(
-          `${wallPhrase(j.wall)} stands inside its span (${span}; that wall occupies ${runSpan(o.seg, j.lo, j.hi)}, ${mm(hi - lo)} mm of the opening)`,
+          j.boundary
+            ? `${openBoundaryPhrase(j.wall)}${freeEndOf(j) && `${freeEndOf(j)},`} lies inside its span (${span}; it is measured over ${runSpan(o.seg, j.lo, j.hi)}, ${mm(hi - lo)} mm of the opening)`
+            : `${wallPhrase(j.wall)} stands inside its span (${span}; that wall occupies ${runSpan(o.seg, j.lo, j.hi)}, ${mm(hi - lo)} mm of the opening)`,
         );
       }
       for (const [side, at] of [
@@ -574,17 +599,22 @@ export const openingAtJunction: LintRule = {
         [right, o.hi],
       ] as const) {
         if (!side) continue;
-        const face = side.j.hi <= o.lo + EPS ? side.j.hi : side.j.lo;
+        const { j } = side;
+        const face = j.hi <= o.lo + EPS ? j.hi : j.lo;
+        const met = j.boundary ? `edge of ${openBoundaryPhrase(j.wall)}` : `face of ${wallPhrase(j.wall)}`;
         facts.push(
-          `its jamb at ${runCoord(o.seg, at)} is ${mm(side.nib)} mm from the face of ${wallPhrase(side.j.wall)} (at ${runCoord(o.seg, face)})`,
+          `its jamb at ${runCoord(o.seg, at)} is ${mm(side.nib)} mm from the ${met} (at ${runCoord(o.seg, face)})${freeEndOf(j)}`,
         );
       }
       const reason =
         inside.length > 0
-          ? "A wall standing inside an opening is a pier in it, and the opening's frame has no jamb to close on."
+          ? inside.every((j) => j.boundary)
+            ? "The wall stops at that boundary, so the opening's frame has no wall to close on there."
+            : "A wall standing inside an opening is a pier in it, and the opening's frame has no jamb to close on."
           : `A jamb needs at least ${mm(need)} mm of wall beside it (the larger of ${mm(ctx.rules.minJunctionNibMm)} mm and ${ratioWords(ctx.rules.junctionNibThicknessRatio)} this wall's ${mm(o.seg.thickness)} mm thickness) to carry its frame or lining.`;
-      const accept =
-        inside.length > 0
+      const accept = allFree
+        ? "Accept it if the end of the wall is detailed to carry the frame."
+        : inside.length > 0
           ? o.el.kind === "window"
             ? "Accept it if the glazing is meant to run past the junction, with the meeting wall stopping on a mullion."
             : o.el.kind === "opening"
@@ -595,7 +625,7 @@ export const openingAtJunction: LintRule = {
         severity: "warning",
         code: "W_OPENING_AT_JUNCTION",
         ...ctx.at(o.el),
-        message: `${cap(name)} meets a wall junction — ${distinct(facts).join("; ")}. ${reason}`,
+        message: `${cap(name)} ${allFree ? "stands at a free end of its wall" : "meets a wall junction"} — ${distinct(facts).join("; ")}. ${reason}`,
         hints: [
           ...moveHints(ctx, o, all, js, `the ${KIND_WORD[o.el.kind]}`),
           ...(accept ? [accept] : []),
@@ -676,8 +706,8 @@ export const openingOverlap: LintRule = {
             ? "Two openings cannot share a length of wall: one cuts through the other's frame."
             : "A pier thinner than a mullion has no room for the two frames that meet on it.";
         const hints = [
-          ...moveHints(ctx, later, all, jsOf(later.seg), `this ${kL}`),
-          ...moveHints(ctx, earlier, all, jsOf(earlier.seg), `the ${kE}`)
+          ...moveHints(ctx, later, all, jsOf(later), `this ${kL}`),
+          ...moveHints(ctx, earlier, all, jsOf(earlier), `the ${kE}`)
             .filter((h) => h.startsWith("Move"))
             .map((h) => `Or m${h.slice(1)}`),
           ...(overlap > EPS
@@ -759,6 +789,7 @@ export const connectorAmbiguous: LintRule = {
     const out: Diagnostic[] = [];
     const edges = ctx.access().edges;
     const all = openingsOnRuns(ctx);
+    const jsOf = junctionLookup(ctx);
     const label = (id: string): string => {
       const r = ctx.rooms.find((x) => x.id === id);
       return r ? ctx.nameOf(r) : "outside";
@@ -782,7 +813,7 @@ export const connectorAmbiguous: LintRule = {
       const faces = connectorFaces(c, ctx.roomRects);
       if (!faces || !c.host) return;
       const o = all.find((x) => x.el === c);
-      const js = o ? junctionsOn(o.seg, ctx.wallSegs) : [];
+      const js = o ? jsOf(o) : [];
       if (!e.ambiguous && o && !straddlesRooms(ctx, o, faces, js)) return;
       const word = KIND_WORD[c.kind];
       const exteriorHost = c.host.category === "exterior";
