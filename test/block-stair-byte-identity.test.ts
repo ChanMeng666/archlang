@@ -26,6 +26,12 @@
  * count alone, by exactly those two amounts, which each marked row states. Every other row measured
  * the same on both trees. For every row, this branch's payload with the old step count put back
  * reproduces the digest taken at `7c57c6fb`.
+ *
+ * Re-measured for one row at S2, `stair-too-steep.arch`, case (3) of `./byte-identity-baseline.ts`:
+ * `W_STAIR_TOO_STEEP`'s hint offers a block stair again, now that a landing replaces one going
+ * (decision D24). Its `lint()`, under both profiles, and `compile().diagnostics` differ from the
+ * old tree in that one `hints` string; the SVG, `describe()`, Scene, overlay and steps do not move.
+ * `examples/turning-stair.arch` writes the form, so it is out of these rows by name.
  */
 
 import { describe as suite, expect, it } from "vitest";
@@ -200,7 +206,8 @@ const BASELINE: [string, string][] = [
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.clean.arch",
   ],
   [
-    "31404bb260b8634646f8f7ac84270be21fa629089ebd6b67319641c15e4a409e",
+    // Re-measured for S2, the hint alone, see header; was 31404bb260b8634646f8f7ac84270be21fa629089ebd6b67319641c15e4a409e.
+    "c7d7aa66271d6358a56defcee650e305af77b83af7dad3feea0168841bed1af5",
     "test/defect-corpus/stair-safety/stair-too-steep.arch",
   ],
   [

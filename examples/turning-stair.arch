@@ -1,0 +1,56 @@
+# A small house with a quarter-turn stair: one `stair` of flights and a landing, not two stairs.
+#
+# THE BLOCK IS WRITTEN TWICE AND CHANGES ONE WORD. Pieces are in climbing order on every storey,
+# so the upper level copies the block and says `dir down`: `dir up` boards the first flight's foot,
+# `dir down` the last flight's head. Each flight's direction comes from what it touches, never from
+# its long side, and the same id on both levels is one shaft, as it is for a straight stair.
+#
+# THE FLOOR IN THE NOTCH IS FLOOR. The box round the pieces holds the corner the hall is walked
+# through, and nothing reads that box: the walk, the rooms and lint all read the pieces.
+#
+# THE HEIGHT DRAWS NOTHING. `height 2750` is 13 risers of 220 mm at most, so a straight flight owes
+# 12 goings, 2640 mm. A flight ends on its landing as the top flight ends on the floor above, so this
+# one owes 11 goings and a landing, 2420 mm of flights: 1100 + 1320, 5 goings and 6. Try one flight
+# 100 mm shorter and `W_STAIR_TOO_STEEP` reports the whole stair, once. `arch describe --json
+# --facts clearances` prints the two figures, and `describe` reports the flights, the landing and
+# the turn. These are arithmetic on the plan's own numbers, and no statement that it complies.
+plan "Turning stair" {
+  units mm
+  grid 10
+  height 2750
+  paper A3 landscape
+  north up
+  dims auto all
+
+  level 1 "Ground floor" {
+    room id=hall at (0,0) size 3700x3400 label "Hall" at (1700,1700) uses hall
+    room id=living at (3700,0) size 4300x3400 label "Living" uses living
+    walls from rooms exterior 200 partition 100
+    door on hall.bottom at 1100 from start width 900 swing inward
+    door between hall and living at 2700 from start width 900 swing into living
+    window on living.right width 1600
+    window on hall.left width 900
+
+    stair id=s dir up width 1000 {
+      flight at (2520,1100) size 1000x1100
+      landing at (2520,100) size 1000x1000
+      flight at (1200,100) size 1320x1000
+    }
+  }
+
+  level 2 "First floor" {
+    room id=gallery at (0,0) size 3700x3400 label "Landing" at (1700,1700) uses hall
+    room id=bed at (3700,0) size 4300x3400 label "Bedroom" uses bedroom
+    walls from rooms exterior 200 partition 100
+    roof overhang 300
+    door between gallery and bed at 2700 from start width 900 swing into bed
+    window on bed.right width 1600
+    window on gallery.left width 900
+
+    stair id=s dir down width 1000 {
+      flight at (2520,1100) size 1000x1100
+      landing at (2520,100) size 1000x1000
+      flight at (1200,100) size 1320x1000
+    }
+  }
+}

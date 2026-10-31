@@ -65,8 +65,10 @@ export {
   verticalsOf,
   VERTICAL_KINDS,
 } from "./vertical.js";
+export type { RectEdge } from "./fixture-orientation.js";
 export type {
   RVertical,
+  StairTurn,
   StoreyRoomReach,
   StoreySeeds,
   VerticalLevelInput,
@@ -112,6 +114,8 @@ export type {
   KeepSkipped,
   LevelSummary,
   SheetSummary,
+  StairFlightSummary,
+  StairLandingSummary,
   VerticalSummary,
   VerticalReport,
   VerticalConnection,

@@ -636,8 +636,12 @@ coordinates with different ids stay two different shafts.
 Two fields carry it, and they sit at deliberately different levels:
 
 - **`levels[i].verticals`** — the runs drawn on *that* storey, as facts:
-  `{ id, kind, dir?, room, bbox, flight_width? }`. `room` is the room whose rectangle
-  contains the footprint's centre (or `null`). Absent when a storey draws none.
+  `{ id, kind, dir?, room, bbox, flight_width?, flights?, landings?, turn? }`. `room` is the
+  room whose rectangle contains the footprint's centre (or `null`). Absent when a storey draws
+  none. A block stair's `bbox` is the union of its pieces, which holds floor that is no stair,
+  so only that form adds `flights[]` (`bbox`, `run_mm`, `entry`, in climbing order), `landings[]`
+  (`bbox`, `turn`) and `turn`, the net of its landings' turns: `left`, `right`, `half` or `none`,
+  as the person climbing turns.
 - **`vertical`** — a **whole-building** block, present only at the top level (never inside
   `levels[i]`) and only when a run actually spans two or more storeys:
 

@@ -377,6 +377,7 @@ const EXAMPLE_ADDITIONS: Record<string, string[]> = {
     'examples/garden-loft.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 8.08 m² of net floor (under 9 m², the floor for a double bedroom).',
     'examples/relational.arch W_ROOM_TOO_NARROW Room "Hall" is 1100 mm wide between its wall faces, under the 1200 mm the profile asks of an entry passage — 100 mm short.',
     'examples/studio.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 8.12 m² of net floor (under 9 m², the floor for a double bedroom).',
+    'examples/turning-stair.arch W_STAIR_TOO_STEEP The stair in "Hall" on level 1 is too steep: its flights\' 2420 mm run must climb the 2750 mm storey, and at 200 mm a riser at most that is 14 risers, 12 goings and a landing, each going at least 220 mm, so 2640 mm of flights (220 mm short).',
   ],
   [UK]: [
     'examples/accessible.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 8.93 m² of net floor (under 11.5 m², the floor for a double bedroom).',
@@ -396,9 +397,11 @@ const EXAMPLE_ADDITIONS: Record<string, string[]> = {
     'examples/relational.arch W_ROOM_TOO_NARROW Room "Bedroom" is 2150 mm wide between its wall faces, under the 2750 mm the profile asks of one double bedroom of every home (none here is that wide) — 600 mm short.',
     'examples/studio.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 8.12 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     'examples/themed.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 10.59 m² of net floor (under 11.5 m², the floor for a double bedroom).',
+    'examples/turning-stair.arch W_STAIR_TOO_STEEP The stair in "Hall" on level 1 is too steep: its flights\' 2420 mm run must climb the 2750 mm storey, and at 220 mm a riser at most that is 13 risers, 11 goings and a landing, each going at least 235 mm, so 2585 mm of flights (165 mm short).',
     'examples/two-bed.arch W_ROOM_TOO_SMALL Room "Bedroom 2" is only 9.52 m² of net floor (under 11.5 m², the floor for a double bedroom).',
   ],
   [US]: [
+    'examples/turning-stair.arch W_STAIR_TOO_STEEP The stair in "Hall" on level 1 is too steep: its flights\' 2420 mm run must climb the 2750 mm storey, and at 197 mm (7¾ in) a riser at most that is 14 risers, 12 goings and a landing, each going at least 254 mm, so 3048 mm of flights (628 mm short).',
     'examples/two-storey.arch W_STAIR_TOO_STEEP The stair in "Hall" on level 1 is too steep: its 2900 mm run must climb the 2700 mm storey, and at 197 mm (7¾ in) a riser at most that is 14 risers and 13 goings of at least 254 mm, a 3302 mm run (402 mm short).',
   ],
 };

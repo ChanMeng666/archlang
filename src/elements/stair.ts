@@ -284,17 +284,27 @@ function resolveBlock(n: StairNode, ctx: ResolveCtx): RStair {
 export const stair: ElementDef = {
   kind: "stair",
   keyword: "stair",
-  doc: "A straight flight of stairs: treads, a break line and an UP/DN direction arrow.",
+  doc: "A straight flight of stairs: treads, a break line and an UP/DN direction arrow. Or one turning stair, written `stair dir up width 1000 { flight … landing … flight … }`: each `flight` and `landing` takes its own `at` and `size`, in climbing order on every storey, and each touches the next.",
   params: [
-    { name: "at", type: "point", doc: "Top-left corner (x, y) of the footprint, in mm." },
-    { name: "size", type: "WxH", doc: "Footprint width × height in mm; the flight runs along the LONG axis." },
-    { name: "dir", type: "up|down", doc: "Which way this flight goes from THIS storey — draws UP or DN." },
+    {
+      name: "at",
+      type: "point",
+      optional: true,
+      doc: "Top-left corner (x, y) of a straight stair's footprint, in mm. A turning stair has none: its pieces do.",
+    },
+    {
+      name: "size",
+      type: "WxH",
+      optional: true,
+      doc: "A straight stair's footprint, width × height in mm; the flight runs along the LONG axis. A turning stair has none: its pieces do.",
+    },
+    { name: "dir", type: "up|down", doc: "Which way this stair goes from THIS storey — draws UP or DN." },
     {
       name: "width",
       type: "number",
       optional: true,
-      default: "the footprint's cross-axis extent",
-      doc: "Flight width across the run, in mm; may not exceed the footprint.",
+      default: "on a straight stair, the footprint's cross-axis extent",
+      doc: "Flight width across the run, in mm; may not exceed the footprint. A turning stair must state it.",
     },
   ],
 

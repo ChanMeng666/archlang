@@ -328,6 +328,7 @@ suite("a module `let` that fails reports as it does in the module", () => {
  * likewise (preview-and-remodel B1, the `impact --lock` acceptance pair; `test/lock.test.ts`).
  * `examples/remodel.arch` likewise (preview-and-remodel B3b, the wall-status drawing example;
  * `test/wall-status-drawing.test.ts`).
+ * `examples/turning-stair.arch` likewise (issue #362, S2: the block stair's example).
  * `test/fixtures/storeys-eaves-overflow.arch` likewise (PS2.77, the multi-storey eaves overflow;
  * the same digest on `e432c24a`'s `src/`).
  *
@@ -516,6 +517,7 @@ suite("a module `let` that fails reports as it does in the module", () => {
 // Re-measured 2026-10-26 (PR #283 red-team round 2): eval/goldens/core-and-shell, `lint()` only: `W_LEAF_TOO_WIDE`'s hint now quotes widths rounded down to the plan grid.
 // Re-measured 2026-10-27 (PS2.74): museum and practice-office, each accessible-WC pan moved into the 400–500 mm band by one line; why, and the swap-back proof, in `test/byte-identity-baseline.ts`'s header. Not edited, gaining `W_ACCESSIBLE_WC_SIDE_WALL` (`lint()` only): test/recovery-corpus/clinic, the frozen copy of the clinic before PR #305 (its pan 900 mm from the nearer side wall); with the rule off its previous row (8321ab6d…) reproduces.
 // Re-measured 2026-11-01 (H4, #362): `test/recovery-corpus/two-storey.arch` only; the `W_STAIR_TOO_STEEP` hint no longer says "turn the climb into two flights with a landing". Old vs new `lint()` and `compile().diagnostics` differ in that one `hints[0]` string (no span, code, severity or count); the SVG and `describe()` do not read it. The old tree reproduces the old row.
+// Re-measured 2026-11-01 (S2, #362, D24): the same row and the same one `hints[0]` string; the hint offers a block stair again, now that a landing replaces one going. Field by field against the old tree, nothing else moved.
 const BASELINE: [string, string][] = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
   ["examples/accessible.arch", "5f69fe78d45db6b096e3e7f4c44bfcdb537c4201d06fee8780e813112869f20c"],
@@ -565,6 +567,7 @@ const BASELINE: [string, string][] = [
   ["examples/tiny-house.arch", "7dec52e5621d9af9dbdcf7cb73e58791705e6d976bbecf5ae59419c1c9a9ea17"], // PS2.11e, see header
   ["examples/townhouse.arch", "2ba4f5c6510c8c1c5b0dce5fda946532a49aa27d9d14668e8398903af71f3612"], // PS2.11e, see header
   ["examples/transit-hall.arch", "a9145858f1fb7a7f1a0f0aa86d53e115bfda51e68c2101b822913d7bdc97eed5"], // PS2.11e, see header
+  ["examples/turning-stair.arch", "ec6cf44a7849bb3a641680631daa18897d769d1797778ee961cdba1920763bd6"], // new example (S2), see header
   // Re-measured 2026-10-18 (PS0.7, the label classifier emits living; `describe()` only): the
   // same row, with the same digest body, as `./while-byte-identity-baseline.ts`, whose header has the reasons.
   ["examples/two-bed.arch", "4fb4b10d1cde2487691965ce44bb8eb7e210c785e026f586dbeaf853f1e5b610"], // PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e, see header
@@ -596,7 +599,7 @@ const BASELINE: [string, string][] = [
   ["test/recovery-corpus/terrace-row.arch", "776d912f42b22e335c57392e9edb02c9207b20c53c6c6db0c118484a68cda4d0"],
   // Re-measured 2026-10-18 (PS0.7): a copy of `examples/themed.arch`, the same cause and value.
   ["test/recovery-corpus/themed.arch", "ad274a10c13b1aa035e3e32fed8b6aecc0b0d6a1b2e5112008a647f5fde638e3"], // PS2.11e, see header
-  ["test/recovery-corpus/two-storey.arch", "2102a710477b9a23e3eb5a99256840119629b128297515d9603ec459c800ff99"], // re-measured for H4 (#362): `W_STAIR_TOO_STEEP`'s hint reworded, nothing else; was d8d10f31b567b34e81642e2dc36ce7becdee44aac6ca865864b805caf3fd171e
+  ["test/recovery-corpus/two-storey.arch", "db2cbde429ffc47cad0d358763626405d673525be3cb1797e88ed5492fc740e7"], // re-measured for S2 (#362): `W_STAIR_TOO_STEEP`'s hint reworded, nothing else; was 2102a710477b9a23e3eb5a99256840119629b128297515d9603ec459c800ff99
   ["eval/goldens/accessible-bath.arch", "d92fb8bf1dafde517a579409ff32602a06687a29149d3c2e7e1de69bd4cc4fce"],
   ["eval/goldens/accessible-flat.arch", "3809f58573d9685eb190389ae026bdbafa161dd57bdbf109a90048f4bb3e802a"],
   ["eval/goldens/against-wall-bath.arch", "731d8f1fc40ba19a5f431d54a643f236d70e4ae92aca19368cea2a38f29d734e"], // PS2.11e, see header

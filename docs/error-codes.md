@@ -235,7 +235,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_STAIR_HEAD_VOID`](#w_stair_head_void) | warning | A void opens on the landing at the head of a flight. |
 | [`W_STAIR_NO_LANDING`](#w_stair_no_landing) | warning | A flight has no landing at its foot or head. |
 | [`W_STAIR_SIDE_ENTRY`](#w_stair_side_entry) | warning | A doorway opens onto the side of a flight. |
-| [`W_STAIR_TOO_STEEP`](#w_stair_too_steep) | warning | A flight is too short to climb its storey. |
+| [`W_STAIR_TOO_STEEP`](#w_stair_too_steep) | warning | A stair is too short to climb its storey. |
 | [`W_STAIR_UNMATCHED`](#w_stair_unmatched) | warning | A run of vertical circulation appears on only one storey. |
 | [`W_SWING_OBSTRUCTED`](#w_swing_obstructed) | warning | Door swing is obstructed. |
 | [`W_SWING_OVER_STAIR`](#w_swing_over_stair) | warning | A door's swing sweeps a stair or the landing at its end. |
@@ -3155,7 +3155,7 @@ level 2 "First" {
 
 *warning* — A flight has no landing at its foot or head.
 
-**Cause.** Beyond the end a flight is entered from on this storey (its foot where it goes `up`, its head where it comes `down`, and the head of a flight from below that continues upward), a wall stands, a `void` opens (at a foot), or the floor ends, nearer than the landing the flight needs: as long as the flight is wide (Approved Document K (2013) 1.20, "At the top and bottom of every flight, provide landings the width and length at least as great as the smallest width of the flight"; at least 1200 mm in a building other than a dwelling, 1.23a). The depth is measured across the middle half of the flight's width, from the wall's drawn body (a cased opening is passable and cut out; a door's closed leaf is not), so a wall drawn along the flight's flank is not read as standing across its end. A person stepping off walks into the wall, or must turn on the last step. A curved wall is not measured.
+**Cause.** Beyond the end a flight is entered from on this storey (its foot where it goes `up`, its head where it comes `down`, and the head of a flight from below that continues upward), a wall stands, a `void` opens (at a foot), or the floor ends, nearer than the landing the flight needs: as long as the flight is wide (Approved Document K (2013) 1.20, "At the top and bottom of every flight, provide landings the width and length at least as great as the smallest width of the flight"; at least 1200 mm in a building other than a dwelling, 1.23a). The depth is measured across the middle half of the flight's width, from the wall's drawn body (a cased opening is passable and cut out; a door's closed leaf is not), so a wall drawn along the flight's flank is not read as standing across its end. A person stepping off walks into the wall, or must turn on the last step. A curved wall is not measured. On a block stair the foot is the first flight's and the head the last's; another part of the same stair standing past that end cuts the landing short, as it does for the walking grid, and the landings between its flights are not measured.
 
 **Fix.** Move the stair, shorten it, or move the wall until the quoted depth stands clear beyond the end. There is no machine-applicable fix: moving a stair moves the rooms around it.
 
@@ -3180,11 +3180,11 @@ stair id=s at (4200,300) size 1100x2400 dir up   # lint: the doorway is 150 mm f
 
 ## W_STAIR_TOO_STEEP
 
-*warning* — A flight is too short to climb its storey.
+*warning* — A stair is too short to climb its storey.
 
-**Cause.** A `stair` going `up` climbs its storey's floor-to-floor `height` in one straight flight, and its run (the footprint's long side) is shorter than the least run that climb needs: the fewest risers no higher than `stairMaxRiseMm`, and one going fewer, each at least `stairMinGoingMm` (and, under a pitch cap, the riser over `stairMaxPitchRatio`). The default, 220 mm risers and 220 mm goings with no pitch cap, is the most generous of the figures read (Approved Document K (2013) Table 1.1, private stair): a flight that fails it fails every code cited. `uk-residential-advisory` adds AD K's 42° pitch, `us-residential-advisory` IRC R311.7.5's 7¾ in riser and 10 in tread, `cn-residential-advisory` GB 50096-2011 5.7.4's 0.20 m riser and 0.22 m tread. Judged only where the plan authors a height (`describe().heights`); otherwise the coverage report says the stair checks skipped it. Judged on the storey the flight climbs from.
+**Cause.** A `stair` going `up` climbs its storey's floor-to-floor `height`, and its run (a straight flight's long side, or the sum of a block stair's flights) is shorter than the least run that climb needs: the fewest risers no higher than `stairMaxRiseMm`, and one going fewer, each at least `stairMinGoingMm` (and, under a pitch cap, the riser over `stairMaxPitchRatio`). A block stair owes one going fewer again per landing, because a flight ends on its landing as the top flight ends on the floor above. The default, 220 mm risers and 220 mm goings with no pitch cap, is the most generous of the figures read (Approved Document K (2013) Table 1.1, private stair): a flight that fails it fails every code cited. `uk-residential-advisory` adds AD K's 42° pitch, `us-residential-advisory` IRC R311.7.5's 7¾ in riser and 10 in tread, `cn-residential-advisory` GB 50096-2011 5.7.4's 0.20 m riser and 0.22 m tread. Judged only where the plan authors a height (`describe().heights`); otherwise the coverage report says the stair checks skipped it. Judged on the storey the flight climbs from.
 
-**Fix.** Lengthen the flight (its `size` along the run, on every storey the shaft is drawn) to the quoted run, or correct the storey `height` if it is wrong. Splitting the climb into separate flights does not clear the warning: each flight is still judged against the whole storey, flight by flight. There is no machine-applicable fix: a longer flight moves the rooms around it.
+**Fix.** Lengthen the flight (its `size` along the run, on every storey the shaft is drawn) to the quoted run, correct the storey `height` if it is wrong, or draw one block stair, `stair dir up width 1000 { flight … landing … flight … }`, where a landing replaces one going. Splitting the climb into separate stairs does not clear the warning: each is still judged against the whole storey. There is no machine-applicable fix: a longer flight moves the rooms around it.
 
 ```arch static
 height 2800

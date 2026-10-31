@@ -126,6 +126,7 @@ const BASELINE: [string, string][] = [
   ["d3dbf4f8bf57cb0b7b5f0a1e7aba17ca7513e2da8a007f31d6259c60dbde6269", "examples/tiny-house.arch"], // H10: +6 ring scan, +0 overlap
   ["f5d178bb9bb656c091c877b221077ff67974ac40d04c83e9b20c5236b22c5554", "examples/townhouse.arch"], // H10: +12 ring scan, +0 overlap
   ["8fb90ee449d4117eccc0d2a31d5d58a6eeb9856e8a2b08048c388ac1742d18a6", "examples/transit-hall.arch"],
+  ["416fbbe4ea92d69fb9ae6e6ae624ce59297f0544f93152cd08f40fb1281b73c6", "examples/turning-stair.arch"], // new example (S2): no rectilinear room
   ["772d5ca48a89936223bb6d8fd4b40116e649cacc40f14bbd9f32cb5cbf666b78", "examples/two-bed.arch"], // H10: +6 ring scan, +0 overlap
   ["6ee6d812bb6895cc36f98c26b46d58b9e04556f65b72a5c835f30440d409387e", "examples/two-storey.arch"], // H10: +12 ring scan, +0 overlap
   ["449c5ed8dd295c5962225440d46ebac117ee2258e17e05f8ab42ade1ee6e804c", "test/fixtures/axes-grid.arch"],

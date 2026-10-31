@@ -194,6 +194,34 @@ export function travelVector(v: RVertical): Point {
   return { x: n.x, y: n.y };
 }
 
+/** A flight's length along its run. */
+export function flightRun(f: RVertical): number {
+  return runAxis(f) === "y" ? f.size.h : f.size.w;
+}
+
+/** Which way a stair turns between two flights, as a person climbing it turns. */
+export type StairTurn = "left" | "right" | "half" | "none";
+
+/** The turn from climbing flight `a` to climbing flight `b`: read from carried geometry, so a
+ *  reflection swaps left and right, and from two travels that a stop coming down reverses together,
+ *  so it is the same fact on every storey. */
+function turnBetween(a: RVertical, b: RVertical): StairTurn {
+  const u = travelVector(a);
+  const v = travelVector(b);
+  const cross = u.x * v.y - u.y * v.x;
+  if (cross !== 0) return cross > 0 ? "right" : "left";
+  return u.x * v.x + u.y * v.y > 0 ? "none" : "half";
+}
+
+/** Block stair `v`'s turn at each landing, climbing, and from its first flight to its last. */
+export function stairTurns(v: RBlockStair): { landings: StairTurn[]; whole: StairTurn } {
+  const fs = flightsOf(v);
+  return {
+    landings: v.landings.map((_, i) => turnBetween(fs[i]!, fs[i + 1]!)),
+    whole: turnBetween(fs[0]!, fs[fs.length - 1]!),
+  };
+}
+
 /** The text a run's arrow carries on the storey it is drawn on. */
 export function dirLabel(dir: VerticalDir): "UP" | "DN" {
   return dir === "up" ? "UP" : "DN";

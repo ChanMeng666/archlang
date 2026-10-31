@@ -168,6 +168,9 @@
  * the case lists the code under `validity`, its twin none. No existing row moved (no example or
  * corpus bed is under the figures).
  *
+ * S2 added three rows, `examples/turning-stair.arch` (the block stair's example) under each of the
+ * three profiles, measured with `tasteDigest` when the example was added. No existing row moved.
+ *
  * B3b added three rows, `examples/remodel.arch` (the wall-status drawing example) under each of the
  * three profiles, measured with `tasteDigest` when the example was added. No existing row moved.
  *
@@ -238,6 +241,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
   ["0bd672f0aada54211d74b524fc1f3b0ab3124579c4dcf5638a4514d32074220f", "generic", "examples/tiny-house.arch"],
   ["85872c4976afb17d18b189240ccc2891c0506f1a41de23a46a70a423bf1fabc8", "generic", "examples/townhouse.arch"],
   ["74c9749a26ec9f777e9e9b969216e4b24fafd8fc4ed1499a255075e48f0bb53e", "generic", "examples/transit-hall.arch"],
+  ["8d3bf886bbdc611652938b53ea64ccd7090c46479648d037d2a77a29a9aedc71", "generic", "examples/turning-stair.arch"],
   ["1b5a551caf4aa0fb26334d09c73a5ba5976974b0e0b6004b657a6aaedb60e68d", "generic", "examples/two-bed.arch"],
   ["a65bc89547fbaa853dcc31d09c03201dab1bfed4d7057569b21bef5988b4f1ab", "generic", "examples/two-storey.arch"],
   [
@@ -1414,6 +1418,11 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "66bb87bb9ccdd423e604c24f0ba3526577a4f5f9e2d796bb20cdd6eeeaffb1ca",
     "cn-residential-advisory",
     "examples/transit-hall.arch",
+  ],
+  [
+    "8ea83711dad83940378c350dc90d2e814d911f4ecf68791e4c81c5222b4a59b6",
+    "cn-residential-advisory",
+    "examples/turning-stair.arch",
   ],
   [
     "04af6fe71fff2b3297ff9724c07c57b41d507355af839fcc490dbc21c953aa23",
@@ -2599,6 +2608,11 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "cc774163e13790dced3eb11034c74bd598751c1c092c352f8020f044aa9a135b",
     "us-residential-advisory",
     "examples/transit-hall.arch",
+  ],
+  [
+    "81efea7595bfcd0c13f30f9a9c1ac12e505ece461877782127896f447c08bf13",
+    "us-residential-advisory",
+    "examples/turning-stair.arch",
   ],
   [
     "28c225ee9cbdda87e468d2ccedd22dad125651d2ea438f82dc878c5a17c17475",

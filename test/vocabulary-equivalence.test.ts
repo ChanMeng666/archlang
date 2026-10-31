@@ -34,6 +34,11 @@
  * so a label-only room now agrees with an authored one. No other row, field or order moved. The
  * three rows were edited by hand to the values the corpus sweep measured, nothing else.
  *
+ * ## One example added on 2026-11-01 (issue #362, S2): `examples/turning-stair.arch`
+ *
+ * A new file, not a classifier change: its four rows were taken from `describe()` when it was
+ * added. No other row moved.
+ *
  * ## One example added on 2026-10-28 (preview-and-remodel B3b): `examples/remodel.arch`
  *
  * A new file, not a classifier change: its six rows were taken from `describe()` when it was

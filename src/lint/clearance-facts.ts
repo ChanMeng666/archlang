@@ -37,7 +37,7 @@ import {
 import { buildLintContext, type LintContext } from "./context.js";
 import { deficitMm, mm } from "./measure.js";
 import { blockedApproach } from "./rules/doors.js";
-import { minimumRun, runLength, storeyStairs } from "./rules/stairs.js";
+import { landingCount, minimumRun, runLength, storeyStairs } from "./rules/stairs.js";
 import { resolveRuleset } from "./ruleset.js";
 import { lintStoreys } from "./storeys.js";
 
@@ -138,8 +138,9 @@ export interface LandingFact {
   /** How deep the floor stands clear past the step, up to the figure (`null`: not measured,
    *  a curved wall near it). */
   clear_mm: number | null;
-  /** What cuts it short: a wall, a void, or no floor; `null` when clear to the figure. */
-  by: { kind: "wall"; id: string } | { kind: "void"; id: string } | { kind: "no-floor" } | null;
+  /** What cuts it short: a wall, a void, no floor, or another piece of the same block stair;
+   *  `null` when clear to the figure. */
+  by: { kind: "wall"; id: string } | { kind: "void"; id: string } | { kind: "no-floor" } | { kind: "own-piece" } | null;
 }
 
 /** A stair: its run against the storey it climbs, and its landings. */
@@ -147,9 +148,10 @@ export interface StairFact {
   id: string;
   dir: "up" | "down";
   width_mm: number;
+  /** The run along its flight; on a block stair, the sum of its flights. */
   run_mm: number;
-  /** The shortest run the storey height needs (`W_STAIR_TOO_STEEP`), on a `dir up` flight of a
-   *  plan that authors its heights; absent otherwise. */
+  /** The shortest run the storey height needs (`W_STAIR_TOO_STEEP`), one going less per landing
+   *  of a block stair, on a `dir up` flight of a plan that authors its heights; absent otherwise. */
   min_run_mm?: number;
   landings: LandingFact[];
 }
@@ -294,10 +296,10 @@ function stairFacts(ctx: LintContext): StairFact[] | null {
   if (!ctx.verticals.some((v) => v.kind === "stair")) return [];
   const f = storeyStairs(ctx);
   if (f === null) return null;
-  const need = ctx.ir._heightsAuthored ? minimumRun(ctx.ir.storeyHeight, ctx.rules) : null;
   return f.stairs.map((sf) => {
     const v = sf.v;
     const run = runLength(v);
+    const need = ctx.ir._heightsAuthored ? minimumRun(ctx.ir.storeyHeight, ctx.rules, landingCount(v)) : null;
     return {
       id: v.id,
       dir: v.dir,
@@ -314,7 +316,9 @@ function stairFacts(ctx: LintContext): StairFact[] | null {
             ? { kind: "no-floor" }
             : "void" in b.what
               ? { kind: "void", id: b.what.void.id }
-              : { kind: "wall", id: b.what.wall.wallId };
+              : "ownPiece" in b.what
+                ? { kind: "own-piece" }
+                : { kind: "wall", id: b.what.wall.wallId };
         return { end: l.end, need_mm, clear_mm: have(b.depth), by };
       }),
     };

@@ -390,21 +390,93 @@ function fixtureCategoryItems(): CompletionItem[] {
   });
 }
 
+/** The two words a block `stair` holds: statements are not legal there. */
+const STAIR_PIECE_ITEMS: readonly CompletionItem[] = [
+  {
+    label: "flight",
+    kind: "keyword",
+    detail: "flight at (x, y) size WxH",
+    doc: "A flight of a block stair: treads along its run. The first and the last piece of the block are flights.",
+  },
+  {
+    label: "landing",
+    kind: "keyword",
+    detail: "landing at (x, y) size WxH",
+    doc: "A landing between two flights of a block stair: its footprint, no treads. It replaces one going.",
+  },
+];
+
+/** Does the `{` at `i` open a block `stair`, `stair [id=<name>] dir …`? A straight stair has no
+ *  block, and the walk stops at the previous brace, so a whole source costs one pass. */
+function opensStairBlock(tokens: Token[], i: number): boolean {
+  for (let j = i - 1; j >= 0; j--) {
+    const t = tokens[j]!;
+    if (t.type === "lcurly" || t.type === "rcurly") return false;
+    if (!isIdentTok(t, "stair") || isIdentTok(tokens[j - 1], "set")) continue;
+    if (isIdentTok(tokens[j + 1], "dir")) return true;
+    return isIdentTok(tokens[j + 1], "id") && tokens[j + 2]?.type === "equals" && isIdentTok(tokens[j + 4], "dir");
+  }
+  return false;
+}
+
+/**
+ * Where `offset` stands in a block `stair`: `piece`, where a `flight` or `landing` goes next (just
+ * inside the `{`, or after a piece's dimensions, or in the word that starts one); `clause`, inside
+ * a piece, where only an expression's words are of use; `null` outside a block. Its own scan of the
+ * tokens, because `inTok` reads a cursor just after any token as still typing it, and just after a
+ * `{` or a dimension nothing is being typed.
+ */
+function stairBlockPlace(tokens: Token[], offset: number): "piece" | "clause" | null {
+  const stack: boolean[] = [];
+  let open = -1;
+  let anchor = -1;
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i]!;
+    if (t.type === "eof" || t.end > offset || (t.type === "ident" && t.end === offset)) break;
+    anchor = i;
+    if (t.type === "lcurly") {
+      stack.push(opensStairBlock(tokens, i));
+      open = i;
+    } else if (t.type === "rcurly") stack.pop();
+  }
+  if (stack[stack.length - 1] !== true) return null;
+  let piece = -1;
+  let size = -1;
+  let parens = 0;
+  for (let i = open + 1; i <= anchor; i++) {
+    const t = tokens[i]!;
+    if (isIdentTok(t, "flight") || isIdentTok(t, "landing")) [piece, size, parens] = [i, -1, 0];
+    else if (isIdentTok(t, "size")) size = i;
+    else if (size >= 0 && t.type === "lparen") parens++;
+    else if (size >= 0 && t.type === "rparen") parens--;
+  }
+  if (piece < 0) return anchor === open ? "piece" : "clause";
+  if (size < 0 || parens !== 0 || anchor === size) return "clause";
+  if (tokens[size + 1]!.type === "dimension") return "piece";
+  // `size <expr> x <expr>`: complete once something stands after the `x`.
+  for (let i = size + 1; i < anchor; i++) if (isIdentTok(tokens[i], "x")) return "piece";
+  return "clause";
+}
+
 /**
  * Completion items in scope at `offset`.
  *
- * Context-free everywhere except one place: in a `furniture` statement's category slot it
- * returns the fixture vocabulary and nothing else (see {@link inFixtureCategorySlot}). The
- * full set is returned mid-word too — both shipped clients filter by the typed prefix
- * themselves (VS Code's handler maps items 1:1 with no `filterText`, and the playground's
- * CodeMirror source anchors the popup at the matched word's start with a `validFor` pattern),
- * so narrowing here would only fight them.
+ * Context-free everywhere except two places. In a `furniture` statement's category slot it
+ * returns the fixture vocabulary and nothing else (see {@link inFixtureCategorySlot}), and in a
+ * block `stair` its two pieces, or inside a piece the words of an expression, and no statement
+ * (see {@link stairBlockPlace}). The full set is returned mid-word too — both shipped clients
+ * filter by the typed prefix themselves (VS Code's handler maps items 1:1 with no `filterText`,
+ * and the playground's CodeMirror source anchors the popup at the matched word's start with a
+ * `validFor` pattern), so narrowing here would only fight them.
  */
 export function completion(source: string, offset: number, registry: Registry = BUILTIN_REGISTRY): CompletionItem[] {
-  // The one position-sensitive branch. It returns EARLY and completely, which is what keeps
-  // the law below it true: everywhere that is not a category slot, this function still builds
-  // exactly the context-free list it always has.
-  if (inFixtureCategorySlot(lex(source).tokens, offset)) return fixtureCategoryItems();
+  // The position-sensitive branches. The first two return EARLY and completely, which is what
+  // keeps the law below them true: everywhere that is not one of these places, this function
+  // still builds exactly the context-free list it always has.
+  const { tokens } = lex(source);
+  if (inFixtureCategorySlot(tokens, offset)) return fixtureCategoryItems();
+  const place = stairBlockPlace(tokens, offset);
+  if (place === "piece") return [...STAIR_PIECE_ITEMS];
 
   const items: CompletionItem[] = [];
   for (const kw of Object.keys(SETTING_KW)) items.push({ label: kw, kind: "keyword", doc: SETTING_KW[kw] });
@@ -432,7 +504,7 @@ export function completion(source: string, offset: number, registry: Registry = 
   return items.filter((i) => {
     if (seen.has(i.label)) return false;
     seen.add(i.label);
-    return true;
+    return place !== "clause" || i.kind === "variable" || i.kind === "function";
   });
 }
 

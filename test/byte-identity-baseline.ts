@@ -813,6 +813,12 @@
  * (a per-payload sweep of the whole corpus, a `git archive` of `main` against the branch, moved
  * nothing).
  *
+ * ## `turning-stair`: a row ADDED with a new example, nothing re-measured
+ *
+ * `examples/turning-stair.arch` arrived with the block stair's lint (issue #362, S2). It authors a
+ * `height`, so it is read through its height-free derivation, as `two-storey` is. Its two rows were
+ * measured with this file's own digest bodies on the branch that added it.
+ *
  * ## `hillside-villa`: both rows re-measured — `W_PATH_TOO_NARROW` names the door, once
  *
  * Case (3), a diagnostic-text change, in `lint()` only (`test/lint-fix-texts.test.ts`). When
@@ -1634,6 +1640,7 @@ export const BASELINE: [string, string][] = [
   ["tiny-house", "8236b2c882cc2ff9f21a7b0d5a715f773d300b7432e5746987f2e3809e430ce9"], // PS2.11e, see header
   ["townhouse", "d17dfbff4905c3f6a1beb59c8a5be55cfa4c8227b0acf04639c2851c71edaf03"], // re-measured, see header; PS2.11e, see header
   ["transit-hall", "084cfa94f152b75ecee1786602569b6f008c3b3d3071d655d2d6711306ccea97"], // PS2.11e, see header
+  ["turning-stair", "94ccc962539b1f856d78f141c9f579e290e678825628a600211a072c33ce6b78"], // added with the example, see header
   ["two-bed", "7a832dd5930652a5e046202f31e00ff580eaf212ebc3cd1b43b967172f2941f0"], // PS3.6 source rewrite, see header; PS2.11e, see header
   ["two-storey", "3bf63c38e58121d55f65e405fa85ec53eb59e968ec781bd085a857ebcaca5e1e"], // re-measured, see header
 ];
@@ -1683,6 +1690,7 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["tiny-house", "3513ef53a1064ff6b4435f4a8f05db2578aa258a1bb6c55c90df0517a638190b"], // PS2.11e, see header
   ["townhouse", "3577f336430ef832625c19b90bb79771177e65b298be10b6cde18cec1fdb9c60"], // re-measured, see header
   ["transit-hall", "4092fd0a7d88401cc49781d8021f0863300e8cbe65804d5735a9271a0c6c3eff"], // PS2.11e, see header
+  ["turning-stair", "920e9aef6bcdf9a0b5168df3a2376f095362cd2b9732592bfee1cf1d1f01471b"], // added with the example, see header
   ["two-bed", "df3c47a0219448b3735540031ddd562e1f811f50430fa30d02350d40efc3e6cf"], // PS3.6 source rewrite, see header
   ["two-storey", "72a5fa1109dae69897fa073851fee0b5d601605aaf254efcbd309bf5dac33a8c"], // re-measured, see header
 ];
@@ -1705,4 +1713,4 @@ export const SEMANTIC_BASELINE: [string, string][] = [
  * stronger law vacuous, which is the failure this whole restructure exists to avoid; the
  * tests assert it.
  */
-export const AUTHORS_HEIGHT: readonly string[] = ["two-storey"];
+export const AUTHORS_HEIGHT: readonly string[] = ["turning-stair", "two-storey"];

@@ -26,6 +26,7 @@ import twoStorey from "../../examples/two-storey.arch?raw";
 import furnishedFlat from "../../examples/furnished-flat.arch?raw";
 import sheetNotes from "../../examples/sheet-notes.arch?raw";
 import remodel from "../../examples/remodel.arch?raw";
+import turningStair from "../../examples/turning-stair.arch?raw";
 import gardenHouse from "../../examples/garden-house.arch?raw";
 import museum from "../../examples/museum.arch?raw";
 import aquarium from "../../examples/aquarium.arch?raw";
@@ -140,6 +141,12 @@ const EXAMPLE_ROWS = [
     "Two-storey (2 levels)",
     "Homes",
     "A compact two-storey house whose stair carries the same id on both floors, which is what declares one shaft.",
+  ],
+  [
+    "turning-stair",
+    "Turning Stair",
+    "Homes",
+    "A small house with a quarter-turn stair: one stair of flights and a landing, the same block on both floors.",
   ],
   [
     "furnished-flat",
@@ -285,6 +292,7 @@ const SOURCES: Record<string, string> = {
   "furnished-flat": furnishedFlat,
   "sheet-notes": sheetNotes,
   remodel,
+  "turning-stair": turningStair,
   "garden-house": gardenHouse,
   museum,
   aquarium,

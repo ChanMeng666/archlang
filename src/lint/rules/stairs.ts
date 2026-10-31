@@ -24,14 +24,17 @@
  * (1.23a) [V]. The flight band is centred in the footprint (`stairGlyph`).
  *
  * **A block stair** (flights and landings, issue #362) is read piece by piece, never as its
- * bounding box, whose notch is floor. What is judged so far is deliberately strict, and each rule
- * files the `block-stair` coverage skip where its own reading is only part of the answer: the run
- * is the sum of the flights against the {@link minimumRun} of a straight flight, one going per
- * landing too long (`W_STAIR_TOO_STEEP`); only the ends of the stair are measured, not the landings
- * between its flights, and the head a flight from below arrives at is not read beside a block on
- * either stop ({@link headUnread}); on a storey it rises from, all of every piece stands in the
- * way, with none of the high end a person passes under ({@link readInPart}). A stairwell is a hole,
- * so a stop that comes down files nothing for that. A rule with nothing to compare files nothing.
+ * bounding box, whose notch is floor. Its foot is the first flight's and its head the last's, and
+ * its other pieces stand in those landings as they stand in the walking grid. The run is the sum of
+ * the flights against a {@link minimumRun} that takes one going off per landing, so a stair too
+ * short is reported once, for the whole stair. Each rule files the `block-stair` coverage skip where
+ * its own reading is still only part of the answer: a sum that passes although the flights cannot
+ * hold the goings whole ({@link holdsGoings}); only the ends of the stair are measured, not the
+ * landings between its flights, and the head a flight from below arrives at is not read beside a
+ * block on either stop ({@link headUnread}); on a storey it rises from, all of every piece stands in
+ * the way, with none of the high end a person passes under ({@link readInPart}). A stairwell is a
+ * hole, so a stop that comes down files nothing for that. A rule with nothing to compare files
+ * nothing.
  */
 
 import type { Point } from "../../ast.js";
@@ -43,6 +46,7 @@ import {
   doorLeaves,
   type DoorSwing,
   normal,
+  rectCorners,
   sectorIntersectsRect,
   sub,
   unit,
@@ -51,7 +55,17 @@ import {
 import { VERTEX_EPS } from "../../geometry/polygon.js";
 import { type BBox, rectOverlapAmounts, rectsOverlap } from "../../geometry/rect.js";
 import type { RDoor, ROpening, RStair, RVoid } from "../../ir.js";
-import { boardedFlight, flightsOf, isBlockStair, piecesOf, roomOfVertical, runAxis, tailEdge } from "../../vertical.js";
+import {
+  boardedFlight,
+  flightRun,
+  flightsOf,
+  isBlockStair,
+  piecesOf,
+  type RBlockStair,
+  roomOfVertical,
+  runAxis,
+  tailEdge,
+} from "../../vertical.js";
 import { openingClauseOf, wallRef } from "../../wall-ref.js";
 import { rectToArc } from "../clearance-measure.js";
 import { judgesAsDwelling, type LintContext, type LintRule } from "../context.js";
@@ -96,8 +110,7 @@ const rectOf = (v: { at: Point; size: { w: number; h: number } }): BBox => ({
 });
 
 /** The run's length along its flight axis; on a block stair, the sum of its flights. */
-export const runLength = (v: RStair): number =>
-  flightsOf(v).reduce((n, f) => n + (runAxis(f) === "y" ? f.size.h : f.size.w), 0);
+export const runLength = (v: RStair): number => flightsOf(v).reduce((n, f) => n + flightRun(f), 0);
 
 /**
  * The rectangle beyond edge `e` of `r`, `depth` deep and `width` wide, centred on the edge (the
@@ -219,10 +232,11 @@ interface WallBody {
   quad: Point[];
 }
 
-/** What first stands in a landing, and how far past the step. */
+/** What first stands in a landing, and how far past the step. `ownPiece`: another piece of the
+ *  same block stair, which the walking grid keeps off as it keeps off any other run. */
 export interface LandingBlock {
   depth: number;
-  what: { wall: WallSegment } | { void: RVoid } | { noFloor: true };
+  what: { wall: WallSegment } | { void: RVoid } | { noFloor: true } | { ownPiece: true };
 }
 
 /** One stair's facts, measured once per storey for every rule. */
@@ -261,8 +275,11 @@ export function storeyStairs(ctx: LintContext): StoreyStairs | null {
   if (stairs.length > 0) {
     const landings = stairs.map((v) => landingsOf(v, ctx));
     const nLandings = landings.reduce((a, l) => a + l.length, 0);
-    // Charged before any of it runs: every landing reads every wall piece, void and room once.
-    const cost = nLandings * (ctx.wallSegs.length + ctx.openings.length + ctx.voids.length + ctx.rooms.length + 1);
+    // Charged before any of it runs: every landing reads every wall piece, void and room once, and
+    // a block stair's every landing its own other pieces, so a straight stair's sum does not move.
+    const cost =
+      nLandings * (ctx.wallSegs.length + ctx.openings.length + ctx.voids.length + ctx.rooms.length + 1) +
+      stairs.reduce((a, v, i) => a + landings[i]!.length * (piecesOf(v).length - 1), 0);
     if (cost <= MAX_STAIR_WORK) {
       const bodies = wallBodies(ctx);
       const arcs = ctx.wallSegs.filter((s) => s.arc !== undefined);
@@ -280,7 +297,7 @@ export function storeyStairs(ctx: LintContext): StoreyStairs | null {
             blocks: ls.map((l, j) => {
               const zone = beyond(l.rect, l.edge, needs[j]!, l.width);
               if (arcs.some((s) => rectToArc(zone, s.arc!) < s.thickness / 2)) return "curved" as const;
-              return landingBlock(l, needs[j]!, ctx, bodies);
+              return landingBlock(l, needs[j]!, ctx, bodies, ownPieces(v));
             }),
           };
         }),
@@ -293,6 +310,15 @@ export function storeyStairs(ctx: LintContext): StoreyStairs | null {
 
 /** The rectangles the storey's stairs stand on: one per stair, unless one is a block stair. */
 const pieceCount = (f: StoreyStairs): number => f.stairs.reduce((n, sf) => n + piecesOf(sf.v).length, 0);
+
+/** The pieces of block stair `v` other than the flight boarded here: floor no one can stand on,
+ *  as `verticalObstacles` says to the walking grid. None on a straight stair. */
+const ownPieces = (v: RStair): BBox[] => {
+  if (!isBlockStair(v)) return [];
+  const pieces = piecesOf(v);
+  const boarded = v.dir === "up" ? 0 : pieces.length - 1;
+  return pieces.filter((_, i) => i !== boarded);
+};
 
 /**
  * Take `n` units of the storey's pairwise work, or report that it is spent. Charged before the
@@ -347,8 +373,8 @@ function lowPart(f: StairFacts, height: number, ctx: LintContext, flight: RStair
 
 // ── W_SWING_OVER_STAIR ──────────────────────────────────────────────────────
 
-/** Where a swing meets a stair, worst first. */
-type SwingHit = "flight" | "head" | "foot";
+/** Where a swing meets a stair, worst first. `mid`: a landing between a block stair's flights. */
+type SwingHit = "flight" | "mid" | "head" | "foot";
 
 /**
  * The first place swing `s` sweeps over a stair or the floor it owes, or null. A touch is not an
@@ -359,7 +385,11 @@ type SwingHit = "flight" | "head" | "foot";
  */
 function swingHit(s: DoorSwing, head: number, f: StairFacts, ctx: LintContext): SwingHit | null {
   const low = isBlockStair(f.v) ? piecesOf(f.v) : [lowPart(f, head, ctx)];
-  if (low.some((r) => sectorIntersectsRect(s, inset(r, 1), 0))) return "flight";
+  // In climbing order, so a flight is every other piece from the first.
+  const swept = (landing: boolean): boolean =>
+    low.some((r, i) => (i % 2 === 1) === landing && sectorIntersectsRect(s, inset(r, 1), 0));
+  if (swept(false)) return "flight";
+  if (swept(true)) return "mid";
   const dwelling = judgesAsDwelling(ctx);
   const sweeps = (i: number, depth: number): boolean => {
     const l = f.landings[i]!;
@@ -423,11 +453,13 @@ export const swingOverStair: LintRule = {
         const where =
           hit === "flight"
             ? "its open leaf sweeps the flight itself"
-            : hit === "head"
-              ? `its open leaf sweeps the landing at the head of the flight, the ${mm(headNeed)} mm a person steps off onto`
-              : dwelling
-                ? `its open leaf comes within ${mm(FOOT_DOOR_CLEAR_MM)} mm of the bottom step, the clear space a door at the foot of a flight must leave across its width`
-                : "its open leaf sweeps the landing at the foot of the flight, which no door of a building other than a dwelling may swing across";
+            : hit === "mid"
+              ? "its open leaf sweeps a landing between the flights"
+              : hit === "head"
+                ? `its open leaf sweeps the landing at the head of the flight, the ${mm(headNeed)} mm a person steps off onto`
+                : dwelling
+                  ? `its open leaf comes within ${mm(FOOT_DOOR_CLEAR_MM)} mm of the bottom step, the clear space a door at the foot of a flight must leave across its width`
+                  : "its open leaf sweeps the landing at the foot of the flight, which no door of a building other than a dwelling may swing across";
         const clears = (alt: RDoor): boolean => {
           const sws = doorLeaves(alt);
           return sws.length > 0 && sws.every((sw) => swingHit(sw, d.head, sf, ctx) === null);
@@ -536,12 +568,18 @@ function wallBodies(ctx: LintContext): WallBody[] {
 
 /**
  * How deep the floor stands clear beyond landing `l`'s step, up to `need`: the nearest wall body
- * (cased openings cut out) or, at a foot, `void`, met across the MIDDLE HALF of the flight's width
- * (so a flank wall drawn to the flight's edge, or 50 mm into it, is not read as standing across
- * it), and the floor itself: the point halfway to that depth must lie in a room. `null` when the
- * full depth is clear.
+ * (cased openings cut out), another of the stair's own `pieces` or, at a foot, `void`, met across
+ * the MIDDLE HALF of the flight's width (so a flank wall drawn to the flight's edge, or 50 mm into
+ * it, is not read as standing across it), and the floor itself: the point halfway to that depth
+ * must lie in a room. `null` when the full depth is clear.
  */
-function landingBlock(l: Landing, need: number, ctx: LintContext, bodies: readonly WallBody[]): LandingBlock | null {
+function landingBlock(
+  l: Landing,
+  need: number,
+  ctx: LintContext,
+  bodies: readonly WallBody[],
+  pieces: readonly BBox[],
+): LandingBlock | null {
   const r = l.rect;
   const probe = beyond(r, l.edge, need, l.width / 2);
   let best: LandingBlock | null = null;
@@ -554,6 +592,7 @@ function landingBlock(l: Landing, need: number, ctx: LintContext, bodies: readon
     if (d + VERTEX_EPS < need && (best === null || d < best.depth)) best = { depth: d, what };
   };
   for (const b of bodies) consider(b.quad, { wall: b.seg });
+  for (const p of pieces) consider(rectCorners(p.x, p.y, p.w, p.h), { ownPiece: true });
   if (l.end === "foot")
     for (const vd of ctx.voids)
       consider(
@@ -607,7 +646,9 @@ export const stairNoLanding: LintRule = {
             ? "there is no floor"
             : "void" in b.what
               ? `a void opens ${m.available} mm past the ${stepWord(l.end)}`
-              : `${wallPhrase(b.what.wall)} stands ${m.available} mm past the ${stepWord(l.end)}`;
+              : "ownPiece" in b.what
+                ? `another part of the stair stands ${m.available} mm past the ${stepWord(l.end)}`
+                : `${wallPhrase(b.what.wall)} stands ${m.available} mm past the ${stepWord(l.end)}`;
         const blocker =
           "wall" in b.what
             ? ` or ${wallRef(ctx.ir.walls, b.what.wall)}`
@@ -769,18 +810,20 @@ export function stairLimitsValid(rules: StairLimits): boolean {
 }
 
 /**
- * The shortest run (mm) a straight flight climbing `rise` needs under the ruleset: the fewest
- * risers no higher than `stairMaxRiseMm` (fewer risers mean fewer goings, so the shortest run),
- * each going at least `stairMinGoingMm` and, with a pitch cap, at least the riser over it. One
- * going fewer than risers: the top step is the floor above. Closed form: one `ceil` and one
- * correction for floating-point dust, no loop and no trigonometry. `null` when the limits or the
- * rise cannot be judged ({@link stairLimitsValid}; a rise finite and above zero) or the run is not
- * finite or longer than the modelling range (`MODEL_RANGE_MM`).
+ * The shortest run (mm) a stair of `landings` landings climbing `rise` needs under the ruleset: the
+ * fewest risers no higher than `stairMaxRiseMm` (fewer risers mean fewer goings, so the shortest
+ * run), each going at least `stairMinGoingMm` and, with a pitch cap, at least the riser over it. One
+ * going fewer than risers, because the top step is the floor above, and one fewer again per landing,
+ * because a flight ends on its landing the same way. Closed form: one `ceil` and one correction for
+ * floating-point dust, no loop and no trigonometry. `null` when the limits or the rise cannot be
+ * judged ({@link stairLimitsValid}; a rise finite and above zero) or the run is not finite or longer
+ * than the modelling range (`MODEL_RANGE_MM`).
  */
 export function minimumRun(
   rise: number,
   rules: StairLimits,
-): { risers: number; riser: number; going: number; run: number } | null {
+  landings = 0,
+): { risers: number; riser: number; going: number; goings: number; run: number } | null {
   if (!stairLimitsValid(rules) || !Number.isFinite(rise) || rise <= 0) return null;
   const max = rules.stairMaxRiseMm;
   let n = Math.max(1, Math.ceil(rise / max));
@@ -791,10 +834,24 @@ export function minimumRun(
     rules.stairMinGoingMm,
     rules.stairMaxPitchRatio === null ? 0 : riser / rules.stairMaxPitchRatio,
   );
-  const run = (n - 1) * going;
+  // More landings than the climb has goings to give up leave none, never fewer.
+  const goings = Math.max(0, n - 1 - landings);
+  const run = goings * going;
   // A run longer than anything the plan can draw is no measurement to quote.
   if (!Number.isFinite(run) || !Number.isFinite(going) || run > MODEL_RANGE_MM) return null;
-  return { risers: n, riser, going, run };
+  return { risers: n, riser, going, goings, run };
+}
+
+/**
+ * Can block stair `v`'s flights hold `goings` whole goings of `going` mm between them? Their sum can
+ * pass although each flight ends short of a whole going: 1210 + 1210 mm is the 2420 mm that 11
+ * goings of 220 mm need, and each holds 5. It stays out of the warning, whose figure is the sum: it
+ * answers only whether the sum was the whole answer, for the `block-stair` skip.
+ */
+function holdsGoings(v: RBlockStair, goings: number, going: number): boolean {
+  if (going <= 0) return true;
+  const held = flightsOf(v).reduce((n, f) => n + Math.floor((runLength(f) + VERTEX_EPS) / going), 0);
+  return held >= goings;
 }
 
 /** A length limit as prose: whole mm as is; a quarter inch exactly (an IRC figure) as
@@ -827,23 +884,31 @@ export const stairTooSteep: LintRule = {
       return [];
     }
     const rise = ctx.ir.storeyHeight;
-    const need = minimumRun(rise, ctx.rules);
-    if (need === null) return [];
     const out: Diagnostic[] = [];
     for (const v of ups) {
-      if (isBlockStair(v)) ctx.skip("block-stair");
+      const need = minimumRun(rise, ctx.rules, landingCount(v));
+      if (need === null) continue;
       const run = runLength(v);
-      if (run + VERTEX_EPS >= need.run) continue;
+      if (run + VERTEX_EPS >= need.run) {
+        if (isBlockStair(v) && !holdsGoings(v, need.goings, need.going)) ctx.skip("block-stair");
+        continue;
+      }
       const m = deficitMm(need.run, run);
       const limits =
         ctx.rules.stairMaxPitchRatio === null ? "riser and going limits come" : "riser, going and pitch limits come";
+      const going = mm(Math.ceil(need.going - VERTEX_EPS));
+      const atMost = `at ${limitMm(ctx.rules.stairMaxRiseMm)} a riser at most that is`;
       out.push({
         severity: "warning",
         code: "W_STAIR_TOO_STEEP",
         ...ctx.at(v),
-        message: `${capitalise(stairName(v, ctx))} is too steep: its ${mm(run)} mm run must climb the ${mm(rise)} mm storey, and at ${limitMm(ctx.rules.stairMaxRiseMm)} a riser at most that is ${need.risers} risers and ${need.risers - 1} goings of at least ${mm(Math.ceil(need.going - VERTEX_EPS))} mm, a ${m.required} mm run (${m.short} mm short).`,
+        message: isBlockStair(v)
+          ? `${capitalise(stairName(v, ctx))} is too steep: its flights' ${mm(run)} mm run must climb the ${mm(rise)} mm storey, and ${atMost} ${need.risers} risers, ${need.goings} goings and ${landingWords(v)}, each going at least ${going} mm, so ${m.required} mm of flights (${m.short} mm short).`
+          : `${capitalise(stairName(v, ctx))} is too steep: its ${mm(run)} mm run must climb the ${mm(rise)} mm storey, and ${atMost} ${need.risers} risers and ${need.goings} goings of at least ${going} mm, a ${m.required} mm run (${m.short} mm short).`,
         hints: [
-          `Lengthen \`${v.id}\` along its flight to at least ${m.required} mm on every storey it is drawn on (its \`size\`), or correct the storey \`height\` if it is wrong; flights drawn separately are still each judged against the whole storey; the ${limits} from the lint profile (\`--profile\`).`,
+          isBlockStair(v)
+            ? `Lengthen the flights of \`${v.id}\` to at least ${m.required} mm between them on every storey it is drawn on (each flight's \`size\`), or correct the storey \`height\` if it is wrong; the ${limits} from the lint profile (\`--profile\`).`
+            : `Lengthen \`${v.id}\` along its flight to at least ${m.required} mm on every storey it is drawn on (its \`size\`), or correct the storey \`height\` if it is wrong, or draw it as one block stair, \`stair dir up width … { flight … landing … flight … }\`, where a landing replaces one going; flights drawn as separate stairs are still each judged against the whole storey; the ${limits} from the lint profile (\`--profile\`).`,
         ],
       });
     }
@@ -851,14 +916,21 @@ export const stairTooSteep: LintRule = {
   },
 };
 
+/** The landings between a stair's flights: none on a straight stair. */
+export const landingCount = (v: RStair): number => (isBlockStair(v) ? v.landings.length : 0);
+
+/** A stair's landings as the message counts them. */
+const landingWords = (v: RStair): string => (landingCount(v) === 1 ? "a landing" : `${landingCount(v)} landings`);
+
 // ── W_FURNITURE_ON_STAIR ────────────────────────────────────────────────────
 
-/** Floor a flight claims: its whole footprint, or one of the landings it owes. */
+/** Floor a flight claims: its whole footprint, a landing between a block stair's flights (`mid`),
+ *  or one of the landings it owes. */
 export interface StairZone {
   sf: StairFacts;
-  where: "flight" | Landing["end"];
+  where: "flight" | "mid" | Landing["end"];
   rect: BBox;
-  /** The landing's index in `sf.landings`; absent for the flight. */
+  /** The landing's index in `sf.landings`; absent for a piece of the stair itself. */
   landing?: number;
 }
 
@@ -873,7 +945,8 @@ export interface StairZone {
  */
 export function stairZones(f: StoreyStairs): StairZone[] {
   return f.stairs.flatMap((sf) => {
-    const flights = piecesOf(sf.v).map((rect): StairZone => ({ sf, where: "flight", rect }));
+    // In climbing order, so a flight is every other piece from the first.
+    const flights = piecesOf(sf.v).map((rect, i): StairZone => ({ sf, where: i % 2 === 0 ? "flight" : "mid", rect }));
     const landing = (end: Landing["end"]): StairZone[] =>
       sf.landings.flatMap((l, i): StairZone[] => {
         const b = sf.blocks[i]!;
@@ -925,25 +998,31 @@ export const furnitureOnStair: LintRule = {
       const foot = rectOf(piece);
       const body = cutPlaneLayer(piece.category) === "body";
       for (const sf of f.stairs) {
-        const hit = zones.find((z) => z.sf === sf && (z.where === "flight" || body) && rectsOverlap(foot, z.rect));
+        // A piece of the stair is read whatever stands on it; a landing it owes, only a body.
+        const hit = zones.find((z) => z.sf === sf && (z.landing === undefined || body) && rectsOverlap(foot, z.rect));
         if (hit === undefined) continue;
         const name = piece.label ?? piece.category;
         const r = hit.rect;
         const span = `x ${mm(r.x)}–${mm(r.x + r.w)}, y ${mm(r.y)}–${mm(r.y + r.h)}`;
         const stair = stairName(sf.v, ctx);
         const { ox, oy } = rectOverlapAmounts(foot, r);
+        const covered = `Furniture "${name}" stands on ${stair}: it covers ${mm(ox)} × ${mm(oy)} mm of`;
         out.push({
           severity: "warning",
           code: "W_FURNITURE_ON_STAIR",
           ...ctx.at(piece),
           message:
             hit.where === "flight"
-              ? `Furniture "${name}" stands on ${stair}: it covers ${mm(ox)} × ${mm(oy)} mm of ${sf.well ? "the stairwell" : `the flight, where less than ${mm(STAIR_HEADROOM_MM)} mm of headroom is left`}.`
-              : `Furniture "${name}" stands on the landing at the ${hit.where} of ${stair}: a landing as long as the flight is wide, ${mm(sf.needs[hit.landing!]!)} mm, stays clear of furniture.`,
+              ? `${covered} ${sf.well ? "the stairwell" : `the flight, where less than ${mm(STAIR_HEADROOM_MM)} mm of headroom is left`}.`
+              : hit.where === "mid"
+                ? `${covered} ${sf.well ? "the stairwell" : "a landing between the flights"}.`
+                : `Furniture "${name}" stands on the landing at the ${hit.where} of ${stair}: a landing as long as the flight is wide, ${mm(sf.needs[hit.landing!]!)} mm, stays clear of furniture.`,
           hints: [
             hit.where === "flight"
               ? `Move or resize it so it clears ${sf.well ? `the stairwell of \`${sf.v.id}\`` : `the part of \`${sf.v.id}\` with too little headroom to stand under`} (${span}), or move the stair.`
-              : `Move or resize it so it clears the floor beyond the ${hit.where} of \`${sf.v.id}\` (${span}), or move the stair.`,
+              : hit.where === "mid"
+                ? `Move or resize it so it clears ${sf.well ? "the stairwell" : "the landing"} of \`${sf.v.id}\` (${span}), or move the stair.`
+                : `Move or resize it so it clears the floor beyond the ${hit.where} of \`${sf.v.id}\` (${span}), or move the stair.`,
           ],
         });
       }

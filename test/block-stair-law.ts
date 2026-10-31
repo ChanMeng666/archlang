@@ -107,5 +107,10 @@ export function stairLawRows(root: string): LawRow[] {
     .filter((f) => f.endsWith(".arch"))
     .sort()
     .map((f) => ({ name: `${dir}/${f}`, src: readFileSync(join(root, dir, f), "utf8"), dir: join(root, dir) }));
-  return [...lawRows(root), ...defects, ...STAIR_INLINE_ROWS];
+  const plans = lawRows(root).filter((r) => !WRITES_THE_FORM.includes(r.name));
+  return [...plans, ...defects, ...STAIR_INLINE_ROWS];
 }
+
+/** The shipped plans this law cannot hold, because they use the form. Named, so that a plan
+ *  reaching the form by accident fails the law's "no row reaches the form" instead of leaving it. */
+export const WRITES_THE_FORM: readonly string[] = ["examples/turning-stair.arch"];

@@ -60,6 +60,8 @@ describe("golden SVG snapshots", () => {
     // The remodel (B3b): the only plan that draws a `status demolish` wall (dashed, no poche,
     // beneath the standing walls) and the legend's `demolished` row.
     "remodel.arch",
+    // The turning stair (S2): the only plan that draws the block form on both of its stops.
+    "turning-stair.arch",
   ]) {
     it(`renders ${name} deterministically`, () => {
       const { svg, errors } = compile(example(name), { noCache: true });

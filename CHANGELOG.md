@@ -13,12 +13,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   at (1500,1100) size 1000x1000  landing at (1500,100) size 1000x1000  flight at (100,100) size 1400x1000
   }` is one stair of authored rectangles in climbing order, with one UP or DN, one walking line and one
   break line, and each flight's direction comes from what it touches. The notch it wraps round stays
-  floor. `E_STAIR_PIECES` refuses pieces that do not make one stair. **The form is not yet linted:** it
-  is read strictly and the coverage report says `block-stair`, so a correct stair can draw a warning.
-  The steepness check allows nothing for a landing, the shaft check compares bounding boxes only and
-  the head of a flight arriving from below on a storey it continues up from is not read. It is not in
-  `spec.llm.md` yet. No plan without the form moves: not the drawing, `describe()`, `lint()`, the
-  accessibility lint, the overlay, the diagnostics, the Scene or the step count.
+  floor. `E_STAIR_PIECES` refuses pieces that do not make one stair. `W_STAIR_TOO_STEEP` reads the sum
+  of the flights with one going fewer per landing, so a stair too short is reported once, for the whole
+  stair, as "11 goings and a landing", and `describe` adds `flights[]`, `landings[]` and `turn` on this
+  form only. `W_STAIR_NO_LANDING` counts the stair's own other pieces as the walking grid does.
+  **Part of it is still read strictly, and the coverage report says `block-stair`:** the landings
+  between flights are not measured, every piece stands whole with nothing passed under, the shaft
+  check compares bounding boxes only and the head of a flight arriving from below on a storey it
+  continues up from is not read. A run that passes as a sum although its flights cannot hold the
+  goings whole files it too. No plan without the form moves: not the drawing, `describe()`, the
+  overlay, the Scene or the step count, and `lint()` only by the hint below.
+
+### Changed
+
+- `W_STAIR_TOO_STEEP`'s fix and hint suggest a block stair with a landing again, now that a landing
+  replaces one going. The hint is one string on plans that raise the code; no warning came or went.
 
 ## [1.49.0] - 2026-11-01
 

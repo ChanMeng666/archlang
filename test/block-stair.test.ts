@@ -305,9 +305,10 @@ describe("the resolved form", () => {
     expect(s.at).toEqual({ x: 100, y: 100 });
     expect(s.size).toEqual({ w: 2400, h: 2000 });
     const d = describePlan(src);
-    expect(d.verticals).toEqual([
+    expect(d.verticals).toMatchObject([
       { id: "s", kind: "stair", dir: "up", room: "r", bbox: { x: 100, y: 100, w: 2400, h: 2000 }, flight_width: 1000 },
     ]);
+    expect(d.verticals!.length).toBe(1);
   });
 
   it("piecesOf is the pieces as written, in climbing order", () => {
@@ -1048,26 +1049,11 @@ ${both("down", "down")}
   });
 });
 
-describe("what lint says of a block stair until S2 and S3, deliberately strict", () => {
+describe("what lint says of a block stair until S3, deliberately strict", () => {
   const skipped = (src: string): boolean =>
     (lintWithCoverage(src).coverage?.families ?? []).some((f) => f.skipped?.some((s) => s.reason === "block-stair"));
 
-  it("W_STAIR_TOO_STEEP reads the flights' sum and allows nothing for a landing, and says so", () => {
-    const src = planOf(L_STAIR, "up", "  height 2750\n");
-    const ds = lint(src).filter((d) => d.code === "W_STAIR_TOO_STEEP");
-    expect(ds.length).toBe(1);
-    // 1000 + 1400, not the box's 2000; the 2640 is a straight flight's, 220 more than the form
-    // will owe once a landing counts.
-    expect(ds[0]!.message).toContain("its 2400 mm run");
-    expect(ds[0]!.message).toContain("a 2640 mm run (240 mm short)");
-    expect(skipped(src)).toBe(true);
-  });
-
-  it("clearances report the sum, and the same strict figure", () => {
-    const d = describePlan(planOf(L_STAIR, "up", "  height 2750\n"), { facts: ["clearances"] });
-    expect(d.clearances!.stairs).toMatchObject([{ id: "s", run_mm: 2400, min_run_mm: 2640 }]);
-  });
-
+  // `W_STAIR_TOO_STEEP` and `clearances` moved to `test/block-stair-lint.test.ts` with S2.
   it("the foot landing is the boarded flight's, read beyond its own edge", () => {
     // The first flight's foot is 800 mm from the south wall's face of a 3 m hall, in a plan where
     // the box's bottom edge is the same line: what moves it is the flight, not the box.
@@ -1329,8 +1315,10 @@ ${stairBlock(L_STAIR)}
       `${stairBlock(L_STAIR)}\n    void id=v at (4000,4000) size 800x800\n    furniture id=t table at (3000,3000) size 600x600`,
       "  height 2750\n",
     );
-    for (const rule of ["swing-over-stair", "stair-no-landing", "stair-side-entry", "stair-too-steep"])
+    for (const rule of ["swing-over-stair", "stair-no-landing", "stair-side-entry"])
       expect(filedBy(all, rule)).toEqual([0]);
+    // S2: the steepness reading is whole on this stair, so it stopped filing.
+    expect(filedBy(all, "stair-too-steep")).toEqual([]);
     expect(filedBy(all, "stair-head-void")).toEqual([]);
     expect(family(all, "stairs").status).toBe("partial");
     const hole = "    void id=v at (4000,400) size 800x800";
@@ -1339,7 +1327,7 @@ ${stairBlock(L_STAIR)}
       "  units mm\n  height 2750\n",
     );
     expect(filedBy(tall, "stair-head-void")).toEqual([2]);
-    expect(filedBy(tall, "stair-too-steep")).toEqual([1, 2]);
+    expect(filedBy(tall, "stair-too-steep")).toEqual([]);
     expect(family(tall, "stairs").status).toBe("partial");
   });
 

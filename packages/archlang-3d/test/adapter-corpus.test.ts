@@ -3,8 +3,8 @@ import { adaptPlan, validateScene3D, wallOwnership } from "../src/index.js";
 import { EXAMPLES_LIST, WORLD } from "./corpus.js";
 
 describe("every shipped example adapts to a valid Scene3D, or is refused by name", () => {
-  it("reads the whole corpus (35 examples)", () => {
-    expect(EXAMPLES_LIST.length).toBe(35); // 35 since B3b added examples/remodel.arch
+  it("reads the whole corpus (36 examples)", () => {
+    expect(EXAMPLES_LIST.length).toBe(36); // 36 since S2 added examples/turning-stair.arch
   });
 
   for (const [name, source] of EXAMPLES_LIST) {

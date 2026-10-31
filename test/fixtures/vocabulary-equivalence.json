@@ -2173,6 +2173,32 @@
       "room_type": "StudyRoom"
     }
   ],
+  "examples/turning-stair.arch": [
+    {
+      "id": "hall",
+      "label": "Hall",
+      "uses": ["hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "living",
+      "label": "Living",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "gallery",
+      "label": "Landing",
+      "uses": ["hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "bed",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    }
+  ],
   "examples/two-bed.arch": [
     {
       "id": "r_living",
