@@ -780,6 +780,8 @@ export async function cmdBatch(args: Args): Promise<number> {
       else process.stderr.write(`✗ ${r.input}: ${r.error ?? "compilation failed"}\n`);
     }
   }
+  // What `-f json` left out, as `compile` says it: one stderr line each, never a diagnostic.
+  if (!args.quiet) for (const r of results) if (r.ok) for (const n of r.notes ?? []) process.stderr.write(`${n}\n`);
   return aggregateExit(results);
 }
 
