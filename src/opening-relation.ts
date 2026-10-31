@@ -21,7 +21,8 @@
  * `max(100 mm, host thickness / 2)` to a meeting wall's face (the measure and the default
  * values of `W_OPENING_AT_JUNCTION`, `src/opening-junctions.ts`), runs into a meeting wall,
  * or runs past the end of its run or its host, is refused with `E_OPENING_NIB` naming the
- * nearest legal position. Steps are charged before every scan.
+ * nearest legal position. An `open between` boundary voided over its whole clear span is no
+ * meeting wall ({@link standingJunctionSpans}). Steps are charged before every scan.
  */
 
 import type { AttachPos, OpeningAttach, OpeningBetween, Point, WallsPairRoom } from "./ast.js";
@@ -31,7 +32,13 @@ import type { Expr } from "./expr.js";
 import { segmentsOfWall, type WallSegment } from "./geometry.js";
 import type { OpeningRelation, RWall } from "./ir.js";
 import { fmt3 as numStr } from "./num-format.js";
-import { FLUSH_MM, JUNCTION_EPS, JUNCTION_NIB_DEFAULTS, junctionSpans } from "./opening-junctions.js";
+import {
+  FLUSH_MM,
+  JUNCTION_EPS,
+  JUNCTION_NIB_DEFAULTS,
+  openBoundaryIds,
+  standingJunctionSpans,
+} from "./opening-junctions.js";
 import type { DatumTable, RoomDatums } from "./room-datums.js";
 import { COMPASS_DATUM_ALIASES, splitDatum } from "./room-datums.js";
 import { attachPosStr } from "./statement-print.js";
@@ -624,9 +631,11 @@ function placeOnRun(
   // The meeting walls, by the lint's own measure, in run coordinates.
   const segs = ctx.walls.flatMap((w) => segmentsOfWall(w));
   chargeSteps(segs.length + 1);
+  const voided = openBoundaryIds(ctx.walls);
+  if (voided.size > 0) chargeSteps(2 * segs.length); // a scan past each end of the host
   const sign = (run.vertical ? host.b.y - host.a.y : host.b.x - host.a.x) >= 0 ? 1 : -1;
   const a0 = run.vertical ? host.a.y : host.a.x;
-  const js = junctionSpans(host, segs).map((j) => {
+  const js = standingJunctionSpans(host, segs, voided).map((j) => {
     const p = a0 + sign * j.lo;
     const q = a0 + sign * j.hi;
     return { lo: Math.min(p, q), hi: Math.max(p, q), wall: j.wall };

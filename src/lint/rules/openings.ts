@@ -55,7 +55,14 @@ import type { LintContext, LintRule } from "../context.js";
 import { mm } from "../measure.js";
 import { type Hosted, KIND_WORD, openingName, wallPhrase } from "../element-phrases.js";
 import { isCorner, tightestCorner } from "./doors.js";
-import { FLUSH_MM, junctionSpans, MEET_TOL_MM, PARALLEL_SIN, sameSeg } from "../../opening-junctions.js";
+import {
+  FLUSH_MM,
+  MEET_TOL_MM,
+  openBoundaryIds,
+  PARALLEL_SIN,
+  sameSeg,
+  standingJunctionSpans,
+} from "../../opening-junctions.js";
 import { relationalClause } from "../../opening-relation.js";
 
 /** Float dust on whole-millimetre geometry. */
@@ -132,22 +139,31 @@ function cornerEnd(host: WallSegment, s: WallSegment, all: readonly WallSegment[
 }
 
 /**
- * Every other wall segment's footprint on `host`'s run ({@link junctionSpans}, the measure
- * the resolver's relational openings share), with the host end each one meets when that end
- * is a corner.
+ * Every other standing wall segment's footprint on `host`'s run ({@link standingJunctionSpans},
+ * the measure the resolver's relational openings share), with the host end each one meets when
+ * that end is a corner.
  */
-function junctionsOn(host: WallSegment, all: readonly WallSegment[]): Junction[] {
-  return junctionSpans(host, all).map((j) => ({ ...j, corner: cornerEnd(host, j.wall, all) }));
+function junctionsOn(host: WallSegment, all: readonly WallSegment[], open: ReadonlySet<string>): Junction[] {
+  return standingJunctionSpans(host, all, open).map((j) => ({ ...j, corner: cornerEnd(host, j.wall, all) }));
 }
 
-/** {@link junctionsOn} memoised per host segment for one rule run. */
-function junctionLookup(ctx: LintContext): (seg: WallSegment) => Junction[] {
+const NO_OPEN_BOUNDARIES: ReadonlySet<string> = new Set();
+
+/**
+ * The junctions on an opening's host run, memoised per host segment for one rule run. An opening
+ * an `open between` clause derived keeps every meeting wall, open boundaries too: its jambs were
+ * set on the faces of all of them (`faceAt`, `src/room-tiling.ts`), and the thickest one's pier
+ * excuses a thinner one beside it. Every other opening reads what stands.
+ */
+function junctionLookup(ctx: LintContext): (o: OnRun) => Junction[] {
   const cache = new Map<string, Junction[]>();
-  return (seg) => {
-    const k = `${seg.wallId}#${seg.index}`;
+  const open = openBoundaryIds(ctx.ir.walls);
+  return ({ el, seg }) => {
+    const derived = el.kind === "opening" && el._derived !== undefined;
+    const k = `${seg.wallId}#${seg.index}#${derived}`;
     const hit = cache.get(k);
     if (hit) return hit;
-    const v = junctionsOn(seg, ctx.wallSegs);
+    const v = junctionsOn(seg, ctx.wallSegs, derived ? NO_OPEN_BOUNDARIES : open);
     cache.set(k, v);
     return v;
   };
@@ -518,7 +534,7 @@ export const openingAtJunction: LintRule = {
     const all = openingsOnRuns(ctx);
     const jsOf = junctionLookup(ctx);
     for (const o of all) {
-      const js = jsOf(o.seg);
+      const js = jsOf(o);
       const mine = junctionsFor(ctx, o, js);
       if (mine.length === 0) continue;
       const need = nibNeed(ctx, o.seg);
@@ -676,8 +692,8 @@ export const openingOverlap: LintRule = {
             ? "Two openings cannot share a length of wall: one cuts through the other's frame."
             : "A pier thinner than a mullion has no room for the two frames that meet on it.";
         const hints = [
-          ...moveHints(ctx, later, all, jsOf(later.seg), `this ${kL}`),
-          ...moveHints(ctx, earlier, all, jsOf(earlier.seg), `the ${kE}`)
+          ...moveHints(ctx, later, all, jsOf(later), `this ${kL}`),
+          ...moveHints(ctx, earlier, all, jsOf(earlier), `the ${kE}`)
             .filter((h) => h.startsWith("Move"))
             .map((h) => `Or m${h.slice(1)}`),
           ...(overlap > EPS
@@ -759,6 +775,7 @@ export const connectorAmbiguous: LintRule = {
     const out: Diagnostic[] = [];
     const edges = ctx.access().edges;
     const all = openingsOnRuns(ctx);
+    const jsOf = junctionLookup(ctx);
     const label = (id: string): string => {
       const r = ctx.rooms.find((x) => x.id === id);
       return r ? ctx.nameOf(r) : "outside";
@@ -782,7 +799,7 @@ export const connectorAmbiguous: LintRule = {
       const faces = connectorFaces(c, ctx.roomRects);
       if (!faces || !c.host) return;
       const o = all.find((x) => x.el === c);
-      const js = o ? junctionsOn(o.seg, ctx.wallSegs) : [];
+      const js = o ? jsOf(o) : [];
       if (!e.ambiguous && o && !straddlesRooms(ctx, o, faces, js)) return;
       const word = KIND_WORD[c.kind];
       const exteriorHost = c.host.category === "exterior";

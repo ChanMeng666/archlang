@@ -308,7 +308,7 @@ export interface RWall extends RBase {
    * authored wall split off), and its {@link RBase.span} is the statement's. So a lint fix or
    * hint never quotes it and never edits its span, `arch fix`/`suggest` never emit it, and
    * `roof overhang` counts only the outer ring. Internal (the `_` prefix keeps it out of the
-   * SVG and the exports; the Scene carries `from` and an empty `open` on an `open between` run,
+   * SVG and the exports; the Scene carries `from`, and an empty `open` on an `open between` run,
    * for the joinery alone, and nothing is promised about it).
    */
   _derived?: {
@@ -318,8 +318,10 @@ export interface RWall extends RBase {
     /** Partitions only: the two rooms it stands between, in source order. */
     between?: [string, string];
     /** Partitions only: the run is voided by an `open between` clause (its span), so a
-     *  relational `door|opening between` the pair is refused (`E_WALL_BETWEEN_OPEN`). */
-    open?: { span?: Span };
+     *  relational `door|opening between` the pair is refused (`E_WALL_BETWEEN_OPEN`). `whole`
+     *  when it is voided over its whole clear span, which leaves nothing for a jamb to meet
+     *  (`openBoundaryIds`, `src/opening-junctions.ts`). */
+    open?: { span?: Span; whole?: true };
   };
   /**
    * Present only on an AUTHORED wall written in a pairwise form (ADR 0028 §4): the rooms as
