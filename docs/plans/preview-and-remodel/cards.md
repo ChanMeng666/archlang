@@ -204,6 +204,7 @@ What the red-team rounds of #392–#398 left, each with its reproduction in the 
 - **Open boundaries:** the free-end nib is measured to a face that is not drawn; a narrowed continuation counts as carried on however thin; `W_CONNECTOR_AMBIGUOUS`'s straddle threshold moved from 250 to 200 mm past the line; `W_DOOR_NEAR_CORNER` calls a free end a corner; an authored wall left at a crossing keeps its cap; narrowing the nib scan to ends a boundary reaches moves 11 K1 rows instead of 19.
 - **`finish`:** the note on an instance room (`u1.hall`) and the older row-room note disagree on whether a plan body can name it.
 - **`batch -o`:** an output folder that does not exist fails each file with a raw `ENOENT`.
+- **Stair `bounds()` (D27):** the break line overshoots the flight by 6 % of its width, 60 mm on a 1000 mm flight, past what `bounds()` declares, on every stair. This breaks the rule that `bounds()` covers every coordinate drawn; `test/block-stair.test.ts` pins it. Fix `bounds()`, never the ink, keep `drawCost` plus `bounds().length` an upper bound, and sweep `bbox`, the viewBox and `sheet.ts`.
 
 ### L1, L2 · L-shaped rooms, walls and doors — `todo` · after H7 · 2.5 days · model: opus
 
