@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `W_STAIR_TOO_STEEP` no longer advises drawing the climb as two flights with a landing (issue #362).
+  Lint judges each flight against the whole storey, so that advice produced the same warning twice.
+  The catalogue fix text (`arch explain`) and the per-instance hint now advise only lengthening the
+  flight or correcting a wrong `height`, and say a stair split into separate flights is still judged
+  flight by flight. Wording only: firing, severity and rule logic are unchanged.
 - `finish` names every room it leaves empty (issue #370). A room whose use has no row in the furnish
   table (`hall`, `circulation`, `entry`, `storage`, `garage`, `utility`), or of no known use (no `uses`,
   and a label the vocabulary does not hold), stayed empty with `unresolved: []`, although the skill and
