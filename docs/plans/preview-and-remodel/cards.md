@@ -204,16 +204,17 @@ What the red-team rounds of #392–#398 left, each with its reproduction in the 
 - **Open boundaries:** the free-end nib is measured to a face that is not drawn; a narrowed continuation counts as carried on however thin; `W_CONNECTOR_AMBIGUOUS`'s straddle threshold moved from 250 to 200 mm past the line; `W_DOOR_NEAR_CORNER` calls a free end a corner; an authored wall left at a crossing keeps its cap; narrowing the nib scan to ends a boundary reaches moves 11 K1 rows instead of 19.
 - **`finish`:** the note on an instance room (`u1.hall`) and the older row-room note disagree on whether a plan body can name it.
 - **`batch -o`:** an output folder that does not exist fails each file with a raw `ENOENT`.
+- **`polygonsOverlap` (M.19, an owner decision):** kept quadratic because the cost was "seconds, not unbounded". H10 measured 376 s with no diagnostic on 100 diagonal staircase rooms of about 300 vertices, under the budget. The input is constructed, so M.19's reopen condition is unmet; its premise is not. A charge in `overlapping()` changes no diagnostic text, and that is the recommended fix if the owner reopens it.
 
 ### L1, L2 · L-shaped rooms, walls and doors — `todo` · after H7 · 2.5 days · model: opus
 
 `research/2026-10-31-g10-l-shaped-rooms.md` §10, with the rulings of D24. L1 and L2 share release 1.49.0.
 `check:3d` gates L1. L3 and L4 stay closed until the user answers.
 
-### S1–S3, S4 · Turning stairs — `todo` · after L2 · 4 days, S4 1 more · model: opus
+### S1–S3 · Turning stairs — `todo` · after L2 · 4 days · model: opus
 
-`research/2026-10-31-g10-turning-stairs.md` §10, with the rulings of D24. S1–S3 share release 1.50.0; S4 only if
-there is room before 2026-11-24. No prototype exists, so S1 opens with a probe. S1 also checks the positional
+`research/2026-10-31-g10-turning-stairs.md` §10, with the rulings of D24. S1–S3 share release 1.50.0; S4 is out of this round
+(D26). No prototype exists, so S1 opens with a probe. S1 also checks the positional
 pairing at `src/circulation.ts:1301`, lists a verdict per reader of `v.size` in the PR, and runs a block-stair
 fixture through `check:3d`: if the package draws it wrong, fix the package or refuse by name. If S1–S3 are not
 all in by 2026-11-24, none ships before Show HN.
