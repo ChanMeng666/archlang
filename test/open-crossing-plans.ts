@@ -233,4 +233,16 @@ export const NIB_HOSTS = {
   /** The jamb 40 mm from the open line's face: refused, or a free 60 mm stub would stand there. */
   stemAtFreeEnd: stem(500),
   stemClear: stem(1500),
+  /** The span runs from the free end itself, over the open line's width. */
+  stemFromFreeEnd: stem(400),
+  /** `liv|kit`, on the line past `hall|kit`, is open too: nothing carries on. */
+  underOpen: under("open between liv and kit"),
+  /** Placed by point: the lint twin of {@link NIB_HOSTS.stemAtFreeEnd}, then with the span over it. */
+  stemByPoint: stem(1500).replace(
+    /door between b and c.*/,
+    "door at (3550,3000) width 800 wall partition swing into c",
+  ),
+  stemByPointOver: stem(1500).replace(/door between b and c.*/, "opening at (3400,3000) width 800 wall partition"),
+  /** The line `b|c` stops on is open on one side and stands on the other: no free end there. */
+  stemAtWall: stem(500).replace("    open between a and c\n", ""),
 };

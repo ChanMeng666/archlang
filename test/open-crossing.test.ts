@@ -90,9 +90,10 @@ const UNMOVED_DIGESTS: [string, string][] = [
  * The plans whose crossing this fix draws differently: `[name, semantic, drawn]`.
  *
  * `semantic` (`describe()` + `lint()`) was **measured at `dff02717`**, `main` before this fix, by
- * the same `git archive` route, and has not moved. `drawn` (every page, `describe()`, `lint()`,
- * diagnostics) is **re-pinned deliberately at this fix**, and only the drawing moved in it: the
- * reason stands beside each value, and each `was` is the digest it held until now.
+ * the same `git archive` route, and has not moved, but for the wording `door-on-narrowed` says
+ * beside its value. `drawn` (every page, `describe()`, `lint()`, diagnostics) is **re-pinned
+ * deliberately at this fix**, and only the drawing moved in it: the reason stands beside each
+ * value, and each `was` is the digest it held until now.
  */
 const FLUSH_DIGESTS: [string, string, string][] = [
   // was 8116502d (at 2649b9dd, when it sat in the unmoved table). c|d ran 60 mm past the crossing, on its square cap and the
@@ -139,10 +140,14 @@ const FLUSH_DIGESTS: [string, string, string][] = [
   ],
   // was 63d4b612 (at 2649b9dd, when it sat in the unmoved table). The same 60 mm; the door's jamb at y 3060 keeps the 60 mm
   // of c|d between it and the crossing, which is what stands there of the wall it hangs on.
+  // The one row whose `semantic` moved, from 3023c5c4 (and `drawn`, from e83216f4): its one
+  // W_OPENING_AT_JUNCTION called the open boundary at c|d's free end a partition wall, and now names
+  // it for what is drawn. Three strings, the message and two hints; put them back and both old
+  // digests come back, so nothing else in either payload moved.
   [
     "door-on-narrowed",
-    "3023c5c4efb776144efa0551f589e34ea35196c336c7916bf50005105230fa38",
-    "e83216f443d30f6221747f63e0fba1867b321f66d1d6a7b266a66081c02f22ce",
+    "6e080fe8f2c2ebb318fdbc1a4f6cd8e49727be231b7d6981f3c1f34798600507",
+    "cc034f7e226b1e11020c940f800e6aa20385a82142c3783849d5a970e5a13e9b",
   ],
   // was a122b452 (at 2649b9dd, when it sat in the unmoved table), pinned then as outside #368's four. Three open runs meet
   // at the T and none stands, so its 120 mm square is the same pier: re-pinned on the issue's
@@ -275,7 +280,7 @@ suite("four open boundaries at a crossing (#368)", () => {
     expect(allStoreysDigestWithDiagnostics(API, src)).toBe(digest);
   });
 
-  it.each(FLUSH_DIGESTS)("%s moves in the drawing alone", (name, semantic, drawn) => {
+  it.each(FLUSH_DIGESTS)("%s moves only as its row says", (name, semantic, drawn) => {
     const src = FLUSH.find(([n]) => n === name)?.[1] ?? "";
     expect(semanticDigestWith(API, src)).toBe(semantic);
     expect(allStoreysDigestWithDiagnostics(API, src)).toBe(drawn);

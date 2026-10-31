@@ -19,8 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   no longer counts as a meeting wall for `E_OPENING_NIB` or `W_OPENING_AT_JUNCTION`, nor in what those rules
   quote, because nothing is built there, so the reported door now compiles, with no `W_SWING_ROOM_NOT_ADJACENT`
   (that warning was the refusal's follow-on: a refused door has no wall). A narrower opening keeps today's
-  reading, and so does a wall that stops at the boundary with nothing carrying on past it, whose jamb would stand
-  beside a free end. A plan that relied on the refusal or the warning sees neither now.
+  reading. An opening on a wall that stops at the boundary with nothing carrying on past it stays refused or warned,
+  its jamb beside a free end, and the message now names the boundary and that end instead of a wall that is not
+  drawn. A plan that relied on the refusal or the warning sees neither now. A relational door or window in a plan
+  with such a boundary spends more evaluation steps, for the scans past its host's ends.
 
 ## [1.47.0] - 2026-10-31
 

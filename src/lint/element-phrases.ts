@@ -27,6 +27,9 @@ export function axisLine(s: WallSegment): string {
 /** A wall named by its kind and the line it runs on, never its id. */
 export const wallPhrase = (s: WallSegment): string => `the ${s.category} wall${axisLine(s)}`;
 
+/** An `open between` boundary named by the line it runs on: nothing is built along it. */
+export const openBoundaryPhrase = (s: WallSegment): string => `the open boundary${axisLine(s)}`;
+
 export const KIND_WORD: Record<Hosted["kind"], string> = { door: "door", window: "window", opening: "opening" };
 
 /** An opening named by the rooms it serves (labels, never ids). */

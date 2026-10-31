@@ -63,6 +63,12 @@ export function wallPhraseOf(w: { id: string; _derived?: RWall["_derived"] }): s
   return d.ring === "inner" ? "the courtyard wall derived from the rooms" : "the exterior wall derived from the rooms";
 }
 
+/** The phrase that names an `open between` boundary: nothing is built along it, so not a wall. */
+export function openBoundaryPhraseOf(w: { id: string; _derived?: RWall["_derived"] }): string {
+  const between = w._derived?.between;
+  return between ? `the open boundary between "${between[0]}" and "${between[1]}"` : wallPhraseOf(w);
+}
+
 /** {@link wallPhraseOf} for the wall a key names, over the walls the plan resolved. */
 export function wallRef(walls: readonly RWall[], key: WallKey): string {
   return wallPhraseOf(wallOf(walls, key) ?? { id: key.wallId });

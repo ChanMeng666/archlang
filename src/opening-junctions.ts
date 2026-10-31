@@ -32,6 +32,10 @@ export interface JunctionSpan {
   lo: number;
   hi: number;
   wall: WallSegment;
+  /** Present on an open boundary {@link standingJunctionSpans} keeps. Nothing is built along it,
+   *  so a diagnostic names it as a boundary, not a wall. `freeEnd` when no wall stands at that
+   *  end of the host either: the host just stops there. */
+  boundary?: { freeEnd: boolean };
 }
 
 const dot = (a: Point, b: Point): number => a.x * b.x + a.y * b.y;
@@ -183,10 +187,18 @@ export function standingJunctionSpans(
   if (open.size === 0) return spans;
   const len = segmentLength(host);
   const freeAt = { a: !carriedOn(host, "a", all, open), b: !carriedOn(host, "b", all, open) };
-  return spans.filter(
-    (j) =>
-      !open.has(j.wall.wallId) ||
-      (freeAt.a && j.lo <= JUNCTION_EPS && j.hi >= -JUNCTION_EPS) ||
-      (freeAt.b && j.lo <= len + JUNCTION_EPS && j.hi >= len - JUNCTION_EPS),
-  );
+  const reaches = (j: JunctionSpan, at: number): boolean => j.lo <= at + JUNCTION_EPS && j.hi >= at - JUNCTION_EPS;
+  const walled = (at: number): boolean => spans.some((j) => !open.has(j.wall.wallId) && reaches(j, at));
+  return spans.flatMap((j) => {
+    if (!open.has(j.wall.wallId)) return [j];
+    const atA = freeAt.a && reaches(j, 0);
+    const atB = freeAt.b && reaches(j, len);
+    if (!atA && !atB) return [];
+    const freeEnd = !host.arc && !(atA && walled(0)) && !(atB && walled(len));
+    return [{ ...j, boundary: { freeEnd } }];
+  });
 }
+
+/** The clause a diagnostic adds after naming a kept boundary at a host's free end. */
+export const atFreeEnd = (j: JunctionSpan): string =>
+  j.boundary?.freeEnd ? ", where this wall stops in a free end" : "";

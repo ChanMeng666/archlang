@@ -8,9 +8,9 @@
  * leaves the door with no host, and `swingInto` reports a door with no host as not bordering the
  * room. A door that is placed has a host. A door that stays refused keeps both, pinned here.
  *
- * Every digest here was **measured against `src/` at `dff02717`** (`main` before this change), with
- * that tree extracted by `git archive` and its own digest body run against it. A moved row is a
- * finding to explain (`docs/testing.md` section 3), never a re-pin.
+ * Every digest here but {@link FREE_END} was **measured against `src/` at `dff02717`** (`main`
+ * before this change), with that tree extracted by `git archive` and its own digest body run
+ * against it. A moved row is a finding to explain (`docs/testing.md` section 3), never a re-pin.
  */
 
 import { describe as suite, expect, it } from "vitest";
@@ -34,8 +34,14 @@ const TODAY: [string, string, string][] = [
   ["by point, narrower", NIB.byPointNarrower, "f5a70b89aeeb392e320e87d42716d699f46eb48f8983cc683ab585269a97a62f"],
   ["across, narrower", NIB.acrossLineNarrower, "a80f92c33ea8b4ee1ba96ca145ccc78ee995a31392a35ac8d5965d68d10d6b5c"],
   ["under, narrower", NIB_HOSTS.underNarrower, "760a183151624802540303f04da3ddf2a7bbab4278802347c13ee58023308429"],
-  ["a free end", NIB_HOSTS.stemAtFreeEnd, "5580eb42def67bfa864f58668e7a0b38e3ca5a99cc7441653757c3da0707608b"],
 ];
+
+/**
+ * Refused as it was, was 5580eb42 at `dff02717`. Re-pinned deliberately: the refusal called the
+ * open boundary at the host's free end a partition with a face, where nothing is drawn, and now
+ * names what is. One string; put it back and the old digest comes back.
+ */
+const FREE_END = "51d05029eaeba1041a4d95961f8b36f282ca6993bcd02139be047253127f4221";
 
 suite("a door beside an open boundary (#368)", () => {
   it("places the issue's door, on the wall the room's edge names", () => {
@@ -62,6 +68,10 @@ suite("a door beside an open boundary (#368)", () => {
 
   it.each(TODAY)("%s reads as it did", (_name, src, digest) => {
     expect(allStoreysDigestWithDiagnostics(API, src)).toBe(digest);
+  });
+
+  it("a free end is refused as it was, in the words of what is drawn", () => {
+    expect(allStoreysDigestWithDiagnostics(API, NIB_HOSTS.stemAtFreeEnd)).toBe(FREE_END);
   });
 
   it("keeps a narrower opening's refusal, naming the partition still on the boundary", () => {
@@ -130,8 +140,53 @@ suite("the host decides whether a jamb has wall beside it", () => {
   it("refuses a jamb beside a free end: the boundary is all that stands for the wall it would need", () => {
     const [nib, swing] = compile(NIB_HOSTS.stemAtFreeEnd, { noCache: true }).diagnostics;
     expect(nib?.code).toBe("E_OPENING_NIB");
-    expect(nib?.message).toContain('leaves a jamb 40 mm from the face of the partition between "a" and "b"');
+    expect(nib?.message).toContain(
+      'leaves a jamb 40 mm from the edge of the open boundary between "a" and "b", where this wall stops in a free end. A jamb needs at least 100 mm of wall to that edge',
+    );
     expect(swing?.code).toBe("W_SWING_ROOM_NOT_ADJACENT");
+  });
+
+  it.each([
+    ["a jamb beside the end", NIB_HOSTS.stemAtFreeEnd],
+    ["a span from the end", NIB_HOSTS.stemFromFreeEnd],
+    ["a continuation that is open too", NIB_HOSTS.underOpen],
+  ])("names no wall where nothing is drawn: %s", (_name, src) => {
+    const nib = compile(src, { noCache: true }).diagnostics.find((d) => d.code === "E_OPENING_NIB");
+    expect(nib?.message).toContain("the open boundary between");
+    expect(nib?.message).toContain("where this wall stops in a free end");
+    expect(nib?.message).not.toMatch(/the partition between|meeting wall's face/);
+  });
+
+  it("says the span lies over the boundary, not that a wall stands in it", () => {
+    const nib = compile(NIB_HOSTS.stemFromFreeEnd, { noCache: true }).diagnostics[0];
+    expect(nib?.message).toContain("lies inside its span");
+    expect(nib?.message).not.toContain("stands inside");
+  });
+
+  it("lints a jamb beside the end as a free end, with hints that are true of it", () => {
+    const [d] = lintOf(NIB_HOSTS.stemByPoint, "W_OPENING_AT_JUNCTION");
+    expect(d?.message).toContain("stands at a free end of its wall");
+    expect(d?.message).toContain("is 90 mm from the edge of the open boundary at x 3000 (at x 3060)");
+    expect(d?.message).not.toMatch(/partition wall|meets a wall junction/);
+    expect(d?.hints?.[0]).toContain("100 mm from the edge of the nearest open boundary");
+    expect(d?.hints?.join(" ")).toContain("Accept it if the end of the wall is detailed to carry the frame.");
+    expect(d?.hints?.join(" ")).not.toContain("meeting wall");
+  });
+
+  it("lints a span over the boundary without calling it a wall standing there", () => {
+    const [d] = lintOf(NIB_HOSTS.stemByPointOver, "W_OPENING_AT_JUNCTION");
+    expect(d?.message).toContain("the open boundary at x 3000 lies inside its span (x 3000–3800");
+    expect(d?.message).toContain("it is measured over x 2940–3060, 60 mm of the opening");
+    expect(d?.message).toContain(
+      "The wall stops at that boundary, so the opening's frame has no wall to close on there.",
+    );
+    expect(d?.message).not.toMatch(/stands inside|that wall occupies|a pier/);
+  });
+
+  it("does not call the end free when a wall stands there too", () => {
+    const nib = compile(NIB_HOSTS.stemAtWall, { noCache: true }).diagnostics.find((d) => d.code === "E_OPENING_NIB");
+    expect(nib?.message).toContain("leaves a jamb 40 mm from");
+    expect(nib?.message).not.toContain("free end");
   });
 
   it("places the door once it clears that end", () => {
