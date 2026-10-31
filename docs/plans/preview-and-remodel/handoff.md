@@ -1,4 +1,4 @@
-# Preview-and-remodel programme: handoff (state as of 2026-10-31, after core 1.47.0 and archlang-3d 0.1.1)
+# Preview-and-remodel programme: handoff (state as of 2026-11-01, after core 1.48.0 and archlang-3d 0.1.1)
 
 The resume point for a new session. Re-written at every wave end; dated history goes to `research/`.
 
@@ -15,16 +15,13 @@ signal moved at 4 signups or 1 first frame a week. n is tiny. Posts 2–4 are re
 `marketing/content/posts/2026-10-30-tier-a-replay-posts-final.md`; media on the owner's machine in
 `D:\.claude-scratch\2026-10-29\tier-a-posts\`. Posting stays the owner's unless they ask again.
 
-**Released:** core 1.47.0 (`W_WALL_END_SHORT`, `W_FURNITURE_ON_STAIR`, a wider `W_ANNOTATION_OVERLAP`, the G8 and G9
-fixes), MCP shim 0.2.30, VS Code extension 0.35.0, `@chanmeng666/archlang-3d` 0.1.1 with provenance (D20). Nothing core
-is unreleased. ArchCanvas is still on an older core; its bump is in G11.
+**Released:** core 1.48.0, MCP shim 0.2.31, `@chanmeng666/archlang-3d` 0.1.1 with provenance (D20); VS Code extension 0.36.0 is versioned and waits for the owner's Marketplace upload. Cards H0–H7 are done (`research/2026-11-01-as-built.md`); L1 is in PR #400.
 
 **A real user:** Daniel Damm (X, GitHub bobsch-io) draws German houses with an agent and filed #362–#370.
 Thread: growth `discovery/interviews/2026-10-30-daniel-damm-x-thread.md`. Also needs IFC: not close, never
 promise it.
 
 `packages/archlang-3d` is published at 0.x. Later versions go through `release.yml`: bump, merge, `gh workflow run release.yml --ref main`.
-`spec.llm.md` is at 29,999 of 30,000 UTF-16 units.
 
 ## 2. Pre-flight for a new session
 
@@ -37,7 +34,7 @@ promise it.
 
 ## 3. Next items, in order
 
-1. **Wave 7, the `cards.md` H, L and S cards, in that order (D23).** It does not wait for N10. The G10 designs'
+1. **Wave 7, the `cards.md` L and S cards, in that order (D23).** It does not wait for N10. The G10 designs'
    open questions are answered in D24. New language forms freeze on 2026-11-24 until Show HN has run.
 2. **ArchCanvas bump, card H8,** after 1.48.0: it replaces the old bump-to-1.47 item.
 3. **The N10 read, on or after 2026-11-27.** Wave 4 and wave 6 wait for it. G6 closes then if no sample arrived (D22).
