@@ -39,7 +39,8 @@ npx archlang3d view plan.arch --replay -o plan.html --video plan.mp4
 Playwright keeps its browsers in a cache shared by every project on the machine, and this install
 can remove browser versions it considers unused.
 
-`npx archlang3d doctor` reports what is installed.
+Without a browser, `view` still writes `plan.html` and exits 0. `npx archlang3d doctor` reports what is
+installed.
 
 ## GLB
 
