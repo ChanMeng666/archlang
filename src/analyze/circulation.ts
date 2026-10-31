@@ -45,7 +45,6 @@ import type { Point } from "../ast.js";
 import type { RectEdge } from "../fixture-orientation.js";
 import {
   type ArrivingRun,
-  boardedFlight,
   isBlockStair,
   outsideOpenEdge,
   roomOfVertical,
@@ -489,14 +488,14 @@ function centreOf(g: NavGrid, k: number): { x: number; y: number } {
  */
 function landingCells(
   g: NavGrid,
-  v: RVertical,
+  flight: RVertical,
   edges: readonly RectEdge[],
   roomIndex: number,
   bodyRadius: number,
   /** Is there floor a body can stand on at this plan point (see {@link landingProbe})? */
   open: (p: Point) => boolean,
 ): number[] {
-  const r = verticalRect(boardedFlight(v));
+  const r = verticalRect(flight);
   const x0 = r.x;
   const x1 = r.x + r.w;
   const y0 = r.y;
@@ -646,17 +645,16 @@ function landingProbe(
   };
 }
 
-/** The width of a run across the edge a person arrives over — the flight's width, as a
+/** The width of a flight across the edge a person arrives over — the flight's width, as a
  *  doorway's clear width is the opening they come in through. */
-function runWidth(v: RVertical, e: RectEdge): number {
-  const f = boardedFlight(v);
+function runWidth(f: RVertical, e: RectEdge): number {
   return e === "top" || e === "bottom" ? f.size.w : f.size.h;
 }
 
-/** The midpoint of a run's arrival edge — the model header's point for a storey walked
+/** The midpoint of a flight's arrival edge — the model header's point for a storey walked
  *  from a shaft, as a front door's `at` is for one walked from the street. */
-function entryMidpoint(v: RVertical, e: RectEdge): Point {
-  const r = verticalRect(boardedFlight(v));
+function entryMidpoint(f: RVertical, e: RectEdge): Point {
+  const r = verticalRect(f);
   if (e === "top") return { x: r.x + r.w / 2, y: r.y };
   if (e === "bottom") return { x: r.x + r.w / 2, y: r.y + r.h };
   if (e === "left") return { x: r.x, y: r.y + r.h / 2 };
@@ -670,12 +668,13 @@ function entryMidpoint(v: RVertical, e: RectEdge): Point {
  * storey walked from a shaft passes arrivals, so every other grid is built exactly as before.
  *
  * An obstacle names its own run: a block stair gives one obstacle per piece, so the obstacles do
- * not line up with the runs. The edges belong to the flight stepped off, the piece that is open.
+ * not line up with the runs. The edges belong to the flight stepped off ({@link steppedOff}), which
+ * on a block climbing on from here is not the piece that is open.
  */
 function withArrivalEdges(obstacles: VerticalObstacle[], arrivals: readonly ShaftArrival[]): VerticalObstacle[] {
   if (arrivals.length === 0) return obstacles;
   return obstacles.map((ob) => {
-    const a = ob.open.length > 0 ? arrivals.find((x) => x.run.id === ob.run) : undefined;
+    const a = arrivals.find((x) => steppedOff(ob, x));
     if (!a) return ob;
     const extra = a.edges.filter((e) => !ob.open.includes(e));
     return extra.length > 0 ? { ...ob, open: [...ob.open, ...extra] } : ob;
@@ -683,12 +682,47 @@ function withArrivalEdges(obstacles: VerticalObstacle[], arrivals: readonly Shaf
 }
 
 /** A shaft a storey with no exterior entrance is reached by, and the room it lands in
- *  ({@link roomOfVertical} — the room `verticalReach` names as an arrival room). */
+ *  ({@link roomOfVertical} — the room `verticalReach` names as an arrival room), read at the
+ *  flight stepped off. */
 interface ShaftArrival {
   run: RVertical;
   /** The edge(s) a person steps off across ({@link ArrivingRun.edges}); never empty. */
   edges: readonly RectEdge[];
+  /** The flight those are edges of ({@link ArrivingRun.flight}). */
+  flight: RVertical;
   roomId: string;
+}
+
+/**
+ * Is `ob` the obstacle arrival `a` steps off? The run's open one, unless a block stair stands on
+ * either stop, when it is the piece that stands where the flight does. A stop that draws no such
+ * piece has no obstacle to step off: the flight that reaches it ends in the open.
+ */
+function steppedOff(ob: VerticalObstacle, a: ShaftArrival): boolean {
+  if (ob.run !== a.run.id) return false;
+  if (a.flight === a.run) return ob.open.length > 0;
+  const r = verticalRect(a.flight);
+  return ob.rect.x === r.x && ob.rect.y === r.y && ob.rect.w === r.w && ob.rect.h === r.h;
+}
+
+/** The arriving runs that land in a room of `rooms`, each at the flight stepped off. */
+function landedOn(arrivals: readonly ArrivingRun[], rooms: readonly RRoom[]): ShaftArrival[] {
+  const out: ShaftArrival[] = [];
+  for (const { run, edges, flight } of arrivals) {
+    const roomId = roomOfVertical(flight, rooms);
+    if (roomId !== null && edges.length > 0) out.push({ run, edges, flight, roomId });
+  }
+  return out;
+}
+
+/** Arrivals moved into the nav extent's frame with the plan ({@link toExtentFrame}). A run that is
+ *  its own flight stays so, which is how {@link steppedOff} tells it from a block's. */
+function shaftsInFrame(origin: Point, landed: readonly ShaftArrival[]): ShaftArrival[] {
+  const move = (v: RVertical): RVertical => toExtentFrame(origin, { ...NO_ELEMENTS, verticals: [v] }).verticals[0]!;
+  return landed.map((a) => {
+    const run = move(a.run);
+    return { run, edges: a.edges, flight: a.flight === a.run ? run : move(a.flight), roomId: a.roomId };
+  });
 }
 
 /**
@@ -1727,7 +1761,7 @@ function buildNav(
   if (cache) cache.floors = floors;
   const { roomCells, seed, poles } = floors;
   const entranceId = viaShaft ? arrivals[0]!.run.id : access.entrances[0]!;
-  const entrancePoint = viaShaft ? entryMidpoint(arrivals[0]!.run, arrivals[0]!.edges[0]!) : atById.get(entranceId);
+  const entrancePoint = viaShaft ? entryMidpoint(arrivals[0]!.flight, arrivals[0]!.edges[0]!) : atById.get(entranceId);
 
   // Every entrance's inner seed cells, source order: the walk's sources, all at once. An
   // entrance on a lattice line seeds BOTH sides of it (`seedCells`), so one entrance may
@@ -1750,14 +1784,14 @@ function buildNav(
       [...doors, ...openings],
       furniture,
       voids,
-      verticalObstacles(verticals).filter((o) => !(o.run === a.run.id && o.open.length > 0)),
+      verticalObstacles(verticals).filter((o) => !steppedOff(o, a)),
       bodyRadius,
     );
-    const ks = landingCells(g, a.run, a.edges, ri, bodyRadius, open);
+    const ks = landingCells(g, a.flight, a.edges, ri, bodyRadius, open);
     if (ks.length === 0) continue; // that landing is covered; another run's may not be
     const ordinal = entranceSeeds.length;
     entranceSeeds.push(ks);
-    const clear = runWidth(a.run, a.edges[0]!);
+    const clear = runWidth(a.flight, a.edges[0]!);
     for (const k of ks) {
       g.clearMm[k] = clear;
       sources.push(k);
@@ -2112,13 +2146,7 @@ export function roomBottlenecks(
   avoiding?: { request: ReadonlyMap<string, ReadonlySet<string>>; result: Map<string, number> },
 ): Map<string, number> {
   const out = new Map<string, number>();
-  const landed: ShaftArrival[] = [];
-  if (!access.hasEntrance) {
-    for (const { run, edges } of arrivals) {
-      const roomId = roomOfVertical(run, rooms);
-      if (roomId !== null && edges.length > 0) landed.push({ run, edges, roomId });
-    }
-  }
+  const landed = access.hasEntrance ? [] : landedOn(arrivals, rooms);
   if (rooms.length === 0 || (!access.hasEntrance && landed.length === 0)) return out;
   const origin = extentOrigin(rooms);
   ({ rooms, walls, doors, openings, furniture, verticals, voids } = toExtentFrame(origin, {
@@ -2130,11 +2158,7 @@ export function roomBottlenecks(
     verticals,
     voids,
   }));
-  const shafts: ShaftArrival[] = landed.map((a) => ({
-    run: toExtentFrame(origin, { ...NO_ELEMENTS, verticals: [a.run] }).verticals[0]!,
-    edges: a.edges,
-    roomId: a.roomId,
-  }));
+  const shafts = shaftsInFrame(origin, landed);
   const nav = buildNav(
     rooms,
     walls,
@@ -2269,13 +2293,7 @@ export function computeCirculation(
   // The room each arriving run lands in, read off the plan as given — the same
   // `roomOfVertical` that names `verticalReach`'s arrival rooms. A run standing in no room
   // lands nowhere a walk could start.
-  const landed: ShaftArrival[] = [];
-  if (!access.hasEntrance) {
-    for (const { run, edges } of arrivals) {
-      const roomId = roomOfVertical(run, rooms);
-      if (roomId !== null && edges.length > 0) landed.push({ run, edges, roomId });
-    }
-  }
+  const landed = access.hasEntrance ? [] : landedOn(arrivals, rooms);
   if (rooms.length === 0 || (!access.hasEntrance && landed.length === 0)) return null; // buildNav's "none", before any copy
   // Every sample in the nav extent's own frame, so a translation moves no fact (see
   // `toExtentFrame` for the one ulp-level exception).
@@ -2289,11 +2307,7 @@ export function computeCirculation(
     verticals,
     voids,
   }));
-  const shafts: ShaftArrival[] = landed.map((a) => ({
-    run: toExtentFrame(origin, { ...NO_ELEMENTS, verticals: [a.run] }).verticals[0]!,
-    edges: a.edges,
-    roomId: a.roomId,
-  }));
+  const shafts = shaftsInFrame(origin, landed);
   const nav = buildNav(
     rooms,
     walls,

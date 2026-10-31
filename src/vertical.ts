@@ -106,6 +106,18 @@ export function boardedFlight(v: RVertical): RVertical {
   return asFlight(v, v.dir === "up" ? v.flights[0]! : v.flights[v.flights.length - 1]!);
 }
 
+/**
+ * Where a climb of stair `v` ends: at the top, the last flight and its head; at the bottom, the
+ * first flight and its foot. In climbing order whatever `dir` this stop draws, so it answers the
+ * same on every stop. On a stop drawn `dir down` a flight's tail is its head, not its foot.
+ */
+export function flightEnd(v: RStair, top: boolean): { flight: RStair; edge: RectEdge } {
+  const flights = flightsOf(v);
+  const flight = flights[top ? flights.length - 1 : 0]!;
+  const tail = tailEdge(flight);
+  return { flight, edge: top === (v.dir === "up") ? oppositeSide(tail) : tail };
+}
+
 /** Every rectangle of a run's footprint, in climbing order: one, unless it is a block stair. */
 export function piecesOf(v: RVertical): BBox[] {
   if (!isBlockStair(v)) return [verticalRect(v)];
@@ -306,6 +318,26 @@ export interface VerticalStop {
   dir?: VerticalDir;
   /** The room the footprint sits in on that storey, or `null` when it sits in none. */
   room: string | null;
+  /**
+   * Where a person steps off here, from the stop below and from the stop above, each as a room or
+   * `null`, a side with no stop being absent. Present only on a shaft with a block stair, and only
+   * where that is not {@link room}: the two ends of a block can stand in two rooms, and {@link room}
+   * is where it is boarded.
+   */
+  steps_off?: { below?: string | null; above?: string | null };
+}
+
+/** The room a shaft meets stop `s` in, on its way to the stop below or above. */
+export function roomToward(s: VerticalStop, side: "below" | "above"): string | null {
+  const room = s.steps_off?.[side];
+  return room === undefined ? s.room : room;
+}
+
+/** The rooms a person can step off a shaft in on stop `s`, from either side: one, unless a block's
+ *  ends part. For the storey-level loop, which has no rooms to tell which side a person came from. */
+function landsIn(s: VerticalStop): string[] {
+  const rooms = s.steps_off ? [s.steps_off.below, s.steps_off.above] : [s.room];
+  return [...new Set(rooms)].filter((r): r is string => typeof r === "string");
 }
 
 /**
@@ -333,6 +365,7 @@ export interface VerticalConnection {
  */
 export function verticalConnections(levels: readonly VerticalLevelInput[]): VerticalConnection[] {
   const byId = new Map<string, VerticalConnection>();
+  const runsOf = new Map<string, { run: RVertical; rooms: RRoom[] }[]>();
   for (const l of levels) {
     const rooms = l.ir.elements.filter((e): e is RRoom => e.kind === "room");
     for (const v of verticalsOf(l.ir)) {
@@ -340,6 +373,7 @@ export function verticalConnections(levels: readonly VerticalLevelInput[]): Vert
       if (!c) {
         c = { id: v.id, kind: v.kind as VerticalKind, levels: [], stops: [] };
         byId.set(v.id, c);
+        runsOf.set(v.id, []);
       }
       if (c.levels.includes(l.level)) continue; // one stop per storey
       c.levels.push(l.level);
@@ -348,9 +382,26 @@ export function verticalConnections(levels: readonly VerticalLevelInput[]): Vert
         ...(v.kind === "elevator" ? {} : { dir: (v as RStair | REscalator).dir }),
         room: roomOfVertical(v, rooms),
       });
+      runsOf.get(v.id)!.push({ run: v, rooms });
     }
   }
-  return [...byId.values()].filter((c) => c.levels.length >= 2);
+  const connections = [...byId.values()].filter((c) => c.levels.length >= 2);
+  for (const c of connections) {
+    const runs = runsOf.get(c.id)!;
+    if (!runs.some(({ run }) => isBlockStair(run))) continue;
+    for (const [i, stop] of c.stops.entries()) {
+      const { run, rooms } = runs[i]!;
+      const side = (top: boolean, n: RVertical | undefined): string | null | undefined => {
+        if (n === undefined) return undefined;
+        return roomOfVertical(steppedOffFrom(run, n, top)?.flight ?? boardedFlight(run), rooms);
+      };
+      const below = side(true, runs[i - 1]?.run);
+      const above = side(false, runs[i + 1]?.run);
+      if ((below === undefined || below === stop.room) && (above === undefined || above === stop.room)) continue;
+      stop.steps_off = { ...(below !== undefined ? { below } : {}), ...(above !== undefined ? { above } : {}) };
+    }
+  }
+  return connections;
 }
 
 /**
@@ -426,6 +477,9 @@ export type StoreyRoomReach = (level: number, seeds: StoreySeeds) => ReadonlySet
  * relays too, so a hillside ground floor can carry a shaft on upward). A stair in a
  * door-less store therefore joins nothing. A stop whose footprint lies in no room
  * (`room === null`) keeps the storey-level answer: active once its storey is reachable.
+ * Where a block stair's ends part ({@link VerticalStop.steps_off}) each flight is ridden on its
+ * own, from the room it leaves to the room it reaches, so a person who steps off in one room
+ * must still walk to the other to climb on.
  *
  * `arrivalRooms` keeps its historical meaning in both modes: rooms on UNGROUNDED storeys
  * only, so a grounded storey's lint sources never change.
@@ -439,10 +493,11 @@ export function verticalReach(
   return { reachable, arrivalRooms };
 }
 
-/** {@link VerticalReach}, plus whether a stop is ACTIVE at the fixpoint — the predicate
- *  {@link arrivalRuns} asks of a neighbouring stop on a building with one storey taken out. */
+/** {@link VerticalReach}, plus whether a stop is ACTIVE at the fixpoint for the stop on side
+ *  `toward` — the predicate {@link arrivalRuns} asks of a neighbouring stop on a building with one
+ *  storey taken out. */
 interface ReachState extends VerticalReach {
-  active(stop: VerticalStop): boolean;
+  active(stop: VerticalStop, toward: "below" | "above"): boolean;
 }
 
 /**
@@ -472,11 +527,13 @@ function reachOver(
           reachable.add(stop.level);
           grew = true;
         }
-        if (grounded(stop.level) || stop.room === null) continue;
-        const list = arrivalRooms.get(stop.level) ?? [];
-        if (!list.includes(stop.room)) {
-          list.push(stop.room);
-          arrivalRooms.set(stop.level, list);
+        if (grounded(stop.level)) continue;
+        for (const room of landsIn(stop)) {
+          const list = arrivalRooms.get(stop.level) ?? [];
+          if (!list.includes(room)) {
+            list.push(room);
+            arrivalRooms.set(stop.level, list);
+          }
         }
       }
     }
@@ -525,33 +582,52 @@ function roomAwareReach(
     }
     return s;
   };
-  const active = (stop: VerticalStop): boolean =>
-    reachable.has(stop.level) && (stop.room === null || liveOn(stop.level).has(stop.room));
+  // A person gets on a shaft in the room the flight toward that side leaves from. Only a block's
+  // ends can part, so on any other stop that is `stop.room`, whichever way it goes.
+  const active = (stop: VerticalStop, toward: "below" | "above"): boolean => {
+    if (!reachable.has(stop.level)) return false;
+    const room = roomToward(stop, toward);
+    return room === null || liveOn(stop.level).has(room);
+  };
+  /** A person arrives on `stop`, in `room` if it stands in one; whether that grew anything. */
+  const land = (stop: VerticalStop, room: string | null): boolean => {
+    let grew = false;
+    if (!reachable.has(stop.level)) {
+      reachable.add(stop.level);
+      grew = true;
+    }
+    if (room === null) return grew;
+    const seeds = seedRooms.get(stop.level) ?? [];
+    if (!seeds.includes(room)) {
+      seeds.push(room);
+      seedRooms.set(stop.level, seeds);
+      live.delete(stop.level);
+      grew = true;
+    }
+    if (grounded(stop.level)) return grew;
+    const list = arrivalRooms.get(stop.level) ?? [];
+    if (!list.includes(room)) {
+      list.push(room);
+      arrivalRooms.set(stop.level, list);
+    }
+    return grew;
+  };
 
   for (;;) {
     let grew = false;
     for (const c of connections) {
-      if (!c.stops.some(active)) continue;
-      for (const stop of c.stops) {
-        if (!reachable.has(stop.level)) {
-          reachable.add(stop.level);
-          grew = true;
+      if (c.stops.some((s) => s.steps_off)) {
+        // Two ends in two rooms: each flight goes from the room it leaves to the room it reaches.
+        for (const [i, stop] of c.stops.entries()) {
+          const next = c.stops[i + 1];
+          if (!next) break;
+          if (active(stop, "above") && land(next, roomToward(next, "below"))) grew = true;
+          if (active(next, "below") && land(stop, roomToward(stop, "above"))) grew = true;
         }
-        if (stop.room === null) continue;
-        const seeds = seedRooms.get(stop.level) ?? [];
-        if (!seeds.includes(stop.room)) {
-          seeds.push(stop.room);
-          seedRooms.set(stop.level, seeds);
-          live.delete(stop.level);
-          grew = true;
-        }
-        if (grounded(stop.level)) continue;
-        const list = arrivalRooms.get(stop.level) ?? [];
-        if (!list.includes(stop.room)) {
-          list.push(stop.room);
-          arrivalRooms.set(stop.level, list);
-        }
+        continue;
       }
+      if (!c.stops.some((s) => active(s, "above"))) continue;
+      for (const stop of c.stops) if (land(stop, stop.room)) grew = true;
     }
     if (!grew) break;
   }
@@ -567,6 +643,9 @@ export interface ArrivingRun {
   run: RVertical;
   /** The footprint edge(s) a person arriving by it steps off across — see {@link arrivalRuns}. */
   edges: RectEdge[];
+  /** The flight those edges are edges of: {@link run} itself, unless a block stair stands on either
+   *  stop, when it is one straight flight, which need not be the one boarded here. */
+  flight: RVertical;
 }
 
 /**
@@ -595,10 +674,13 @@ export interface ArrivingRun {
  * Where the end cannot be told — arrival sides both below AND above (a storey reachable
  * independently from either), or the neighbouring stop not drawn as the same kind of run, or
  * drawn with its flight along the other axis ({@link runAxis}: a portrait stair below, a
- * landscape one above) — the edges fall back to the run's own {@link entryEdges} on L. A block
- * stair on either side takes the same fallback for now: which of its flights arrives is not
- * read yet, so the run is stepped off where it is boarded on L, at the flight
- * {@link boardedFlight} names. On a stop drawn `dir down` that is the true head.
+ * landscape one above) — the edges fall back to the run's own {@link entryEdges} on L.
+ *
+ * **A block stair on either stop** is read on the flight that arrives ({@link steppedOffFrom}):
+ * from below the head of the lower stop's last flight, from above the foot of the upper stop's
+ * first, each on that flight's own footprint, which no axis needs to match, because the two ends
+ * of a turning stair run different ways. A run climbing on from L is boarded at its first flight
+ * and stepped off at the last.
  */
 export function arrivalRuns(
   levels: readonly VerticalLevelInput[],
@@ -630,17 +712,17 @@ export function arrivalRuns(
       seen.add(run.id);
       const c = byId.get(run.id);
       const at = c ? c.levels.indexOf(l.level) : -1;
-      if (!c || at < 0 || c.stops[at]!.room === null) continue;
+      if (!c || at < 0 || (c.stops[at]!.room === null && c.stops[at]!.steps_off === undefined)) continue;
       without ??= reachOver(
         levels.filter((x) => x.level !== l.level),
         cutAt(connections, l.level),
         grounded,
         roomReach,
       );
-      const below = at > 0 && without.active(c.stops[at - 1]!);
-      const above = at < c.stops.length - 1 && without.active(c.stops[at + 1]!);
+      const below = at > 0 && without.active(c.stops[at - 1]!, "above");
+      const above = at < c.stops.length - 1 && without.active(c.stops[at + 1]!, "below");
       if (!below && !above) continue; // nobody arrives by it: it is boarded here
-      runs.push({ run, edges: arrivalEdges(run, below, above, runOn(c.levels[below ? at - 1 : at + 1]!, run.id)) });
+      runs.push({ run, ...arrivalOn(run, below, above, runOn(c.levels[below ? at - 1 : at + 1]!, run.id)) });
     }
     if (runs.length > 0) out.set(l.level, runs);
   }
@@ -665,13 +747,33 @@ function cutAt(connections: readonly VerticalConnection[], level: number): Verti
   return out;
 }
 
+/**
+ * The end of the flights between `run` and its neighbouring stop `src` where a person steps off
+ * onto `run`'s storey, when a block stair stands on either: `top` for a `src` below, whose climb
+ * ends here, and otherwise the bottom of a `src` above. Read on `src`, so a stop that draws
+ * something else still arrives where the flight that reaches it ends. `null` when neither is a
+ * block, or `src` is no stair.
+ */
+function steppedOffFrom(run: RVertical, src: RVertical, top: boolean): { flight: RStair; edge: RectEdge } | null {
+  if (run.kind !== "stair" || src.kind !== "stair" || !(isBlockStair(run) || isBlockStair(src))) return null;
+  return flightEnd(src, top);
+}
+
 /** {@link arrivalRuns}' edge rule for one arriving run; `src` is the run on the arriving side. */
-function arrivalEdges(run: RVertical, below: boolean, above: boolean, src: RVertical | undefined): RectEdge[] {
-  if (run.kind === "elevator" || below === above) return entryEdges(run);
-  if (!src || src.kind !== run.kind || isBlockStair(run) || isBlockStair(src)) return entryEdges(run);
+function arrivalOn(
+  run: RVertical,
+  below: boolean,
+  above: boolean,
+  src: RVertical | undefined,
+): Pick<ArrivingRun, "edges" | "flight"> {
+  const own = { edges: entryEdges(run), flight: boardedFlight(run) };
+  if (run.kind === "elevator" || below === above) return own;
+  if (!src || src.kind !== run.kind) return own;
+  const end = steppedOffFrom(run, src, below);
+  if (end) return { edges: [end.edge], flight: end.flight };
   // The head is read on THIS storey's footprint, so the two stops must draw the flight along
   // the same axis; otherwise the opposite of the other stop's tail is a long side of this
   // footprint (a flight's length read as a doorway).
-  if (runAxis(src) !== runAxis(run)) return entryEdges(run);
-  return [oppositeSide(tailEdge(src))];
+  if (runAxis(src) !== runAxis(run)) return own;
+  return { edges: [oppositeSide(tailEdge(src))], flight: run };
 }

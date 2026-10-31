@@ -70,11 +70,10 @@ export type LintSkipReason =
   /** Every door to the outside opens onto a balcony or terrace, which the privacy rules do not
    *  count as a way in (the access graph and the walk do). */
   | "balcony-only-entrance"
-  /** A stair drawn as flights and landings, which the rule reads only in part so far: the landings
-   *  between its flights are not measured, the head of a flight from below is not read, every piece
-   *  stands whole with nothing passed under, the comparison between its two stops is by bounding
-   *  box, or a caller's ruleset leaves `W_STAIR_TOO_STEEP` more riser counts to try than it tries
-   *  (`MAX_RISER_TRIES`, `src/lint/rules/stairs.ts`). */
+  /** A stair drawn as flights and landings, which the rule reads in part: the landings between its
+   *  flights are not measured, every piece stands whole with nothing passed under on a storey it
+   *  rises from with no flight arriving, or a caller's ruleset leaves `W_STAIR_TOO_STEEP` more riser
+   *  counts to try than it tries (`MAX_RISER_TRIES`, `src/lint/rules/stairs.ts`). */
   | "block-stair"
   /** The door's host wall is angled or curved, which the rule does not measure. */
   | "unsupported-host-geometry"
@@ -161,7 +160,7 @@ export const SKIP_WHY: Readonly<Record<LintSkipReason, string>> = {
   "arc-window-unattributed": "a window on a curved wall is attributed to no room",
   "non-rectangular-room": "the rule measures rectangles only",
   "no-entrance": "the storey has no way in",
-  "block-stair": "a stair drawn as flights and landings is only partly judged so far",
+  "block-stair": "a stair drawn as flights and landings is read in part",
   "no-brief": "no brief is given",
   "no-dwelling": "no dwelling is declared",
   "no-operable-window-data": "windows carry no operable-sash data",

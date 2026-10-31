@@ -9,20 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- A quarter-turn or half-turn `stair` (issue #362, first part): `stair id=s dir up width 1000 { flight
-  at (1500,1100) size 1000x1000  landing at (1500,100) size 1000x1000  flight at (100,100) size 1400x1000
+- A quarter-turn or half-turn `stair` (issue #362): `stair id=s dir up width 1000 { flight at
+  (1500,1100) size 1000x1000  landing at (1500,100) size 1000x1000  flight at (100,100) size 1400x1000
   }` is one stair of authored rectangles in climbing order, with one UP or DN, one walking line and one
   break line, and each flight's direction comes from what it touches. The notch it wraps round stays
-  floor. `E_STAIR_PIECES` refuses pieces that do not make one stair. `W_STAIR_TOO_STEEP` reads the sum
-  of the flights with one going fewer per landing, so a stair too short is reported once, for the whole
-  stair, as "11 goings and a landing", and `describe` adds `flights[]`, `landings[]` and `turn` on this
-  form only. `W_STAIR_NO_LANDING` counts the stair's own other pieces as the walking grid does.
-  **Part of it is still read strictly, and the coverage report says `block-stair`:** the landings
-  between flights are not measured, every piece stands whole with nothing passed under, the shaft
-  check compares bounding boxes only and the head of a flight arriving from below on a storey it
-  continues up from is not read. A run that passes as a sum although its flights cannot hold the
-  goings whole files it too. No plan without the form moves: not the drawing, `describe()`, the
-  overlay, the Scene or the step count, and `lint()` only by the hint below.
+  floor. To draw the next storey, copy the block and change only `dir`. `E_STAIR_PIECES` refuses
+  pieces that do not make one stair, and `describe` adds `flights[]`, `landings[]` and `turn` on this
+  form only. `W_STAIR_TOO_STEEP` reads the sum of the flights with one going fewer per landing, so a
+  stair too short is reported once, for the whole stair, as "11 goings and a landing", and it reports a
+  sum that passes on flights that cannot hold those goings whole. Foot, head, door swings, side entry,
+  furniture and the walk all read the pieces, never the box, and a stair's own pieces cut its landings
+  short as they cut the walk. The same id on two storeys is one shaft: `W_SHAFT_FOOTPRINT_MISMATCH`
+  asks for the same block on both stops, and a straight flight over or under a block always mismatches.
+  A block that climbs on from a storey is stepped off at the head of the lower stop's last flight and
+  boarded at its first, and where those stand in two rooms `describe` adds `steps_off` to the stop.
+  **Two readings are strict, and the coverage report says `block-stair`:** the landings between flights
+  are not measured, and on a storey a block rises from with no flight arriving, every piece stands
+  whole with nothing passed under. `keep stacked` compares a block's bounding box. There is no `shape`
+  shortcut and no winder: draw a winder as a landing. No plan without the form moves: not the drawing,
+  `describe()`, the overlay, the Scene or the step count, and `lint()` only by the hint below.
 
 ### Changed
 

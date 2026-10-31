@@ -35,6 +35,27 @@ export const FRAMES = [
 ] as const;
 
 /**
+ * Three storeys of one quarter-turn `st`, climbing on through the middle one, which has no door:
+ * it is stepped off at the last flight's head and boarded at the first flight's foot.
+ */
+export function turningTower(s: number): Building {
+  const W = 6000 * s;
+  const D = 6000 * s;
+  const shell = `wall id=shell exterior thickness 200 { (0,0) (${W},0) (${W},${D}) (0,${D}) close }`;
+  const st = (dir: string) => `stair id=st dir ${dir} width 1000 {
+      flight at (${2500 * s},${2100 * s}) size 1000x${1400 * s}
+      landing at (${2500 * s},${2100 * s - 1000}) size 1000x1000
+      flight at (${2500 * s - 1400 * s},${2100 * s - 1000}) size ${1400 * s}x1000
+    }`;
+  const storey = (dir: string, door: boolean) => `
+    ${shell}
+    room id=r at (0,0) size ${W}x${D} label "Hall" uses hall circulation
+    ${door ? `door id=d on shell at ${1000 * s} width 900 swing into r` : ""}
+    ${st(dir)}`;
+  return { name: `Turning tower x${s}`, storeys: [storey("up", true), storey("up", false), storey("down", false)] };
+}
+
+/**
  * townhouse's shape: three storeys, one stair id climbing on through the middle one (`dir up`
  * on the ground and middle storeys, `dir down` on top), a landing beside two rooms on each.
  */
