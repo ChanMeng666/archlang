@@ -31,9 +31,10 @@
  * per edge pair of a ring ("ring scan"), and `polygonsOverlap` charges what it reads of two rings
  * whose boxes overlap, 14 reads to a step ("overlap", M.19 reopened). The step count is part of this
  * payload, so a row that reaches either moved on that count alone, by exactly those two amounts,
- * which each marked row states. The rows marked `H10` are {@link lawDigest} on `58c1fc81` with those
- * charges applied (`src/geometry/polygon.ts`) and nothing else. For every row, this branch's payload
- * with the old step count put back reproduces the digest taken at `58c1fc81`.
+ * which each marked row states. The rows marked `H10` are {@link lawDigest} on `58c1fc81` (`1e29c3af`
+ * for an `inline:door-` row) with those charges applied (`src/geometry/polygon.ts`) and nothing else.
+ * For every row, this branch's payload with the old step count put back reproduces the digest taken
+ * on that tree.
  */
 
 import { describe as suite, expect, it } from "vitest";
@@ -168,7 +169,7 @@ const BASELINE: [string, string][] = [
   ["dd1a86262ce68c313653113d1c5e214652c86b42ecf399e45c7ffa7f16f589c5", "inline:typed-walls"], // H10: +15 ring scan, +8 overlap
   ["80a6ed511c4e8c1f2a7a3cd62782651f731b613eaad4cb18fd2465abc1de91b3", "inline:except-slanted"],
   ["874344a801971326859871db55b47877705079a16b852fe5aa0d75e1899b0e9a", "inline:clauses"],
-  ["905fffe3bd86765a62d322d890f63b54a73e7e709e66a537245d7d2b712ae138", "inline:door-beside-excepted-L"],
+  ["4a08dc84357ece757d811e7daa5a53f8b377c49913663c2a491e801713d23481", "inline:door-beside-excepted-L"], // H10: +15 ring scan, +8 overlap
   ["dd9a9f05506152146ef7778cfcb15a2051d36bf06e5d7da4246e754b0c2fb954", "inline:door-positions"],
   ["d9a51f44cc4e25155b77d0ae1f873ef92d79061cc05fc2b079b7be55b03ebdb0", "inline:door-refusals"],
 ];
