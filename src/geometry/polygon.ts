@@ -26,6 +26,7 @@
  */
 
 import type { Point } from "../ast.js";
+import { chargeSteps } from "../expr.js";
 import type { BBox } from "./rect.js";
 
 /** Two vertices closer than this (mm) are the same vertex. */
@@ -347,11 +348,14 @@ function onSegment(p: Point, a: Point, b: Point): boolean {
  * when they overlap along their length (a spike doubling back on itself).
  *
  * O(n²) on the vertex count, which is the right shape here — a room polygon is a
- * handful of vertices, and an index would cost more than it saves.
+ * handful of vertices, and an index would cost more than it saves. A ring that is not
+ * pays for it: every pair is one step (`MAX_EVAL_STEPS`), charged before the scan, so a
+ * ring too long to test is `E_STEP_LIMIT` at once. Outside a resolution nothing is counted.
  */
 export function polygonSelfIntersects(pts: readonly Point[]): boolean {
   const n = pts.length;
   if (n < 4) return false;
+  chargeSteps((n * (n - 1)) / 2);
   const edges = polygonEdges(pts);
   for (let i = 0; i < n; i++) {
     for (let j = i + 1; j < n; j++) {

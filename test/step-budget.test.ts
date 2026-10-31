@@ -95,6 +95,94 @@ suite("the shapes that used to run away", () => {
   }, 60_000);
 });
 
+suite("a ring's self-intersection scan is charged, pair by pair", () => {
+  // `polygonSelfIntersects` tests every pair of a ring's edges. Uncharged, a pair of 1,500-tooth
+  // combs (6,004 vertices a ring, 18,021,006 pairs each) ran for tens of seconds and compiled
+  // with no diagnostic at all. Every assertion here is on a count, never on a clock.
+  const combRing = (teeth: number): string => {
+    const w = (2 * teeth + 1) * 1000;
+    const ring = ["(0,0)", `(${w},0)`, `(${w},1000)`];
+    for (let i = teeth; i > 0; i--) {
+      const x = 2 * i * 1000;
+      ring.push(`(${x},1000)`, `(${x},2000)`, `(${x - 1000},2000)`, `(${x - 1000},1000)`);
+    }
+    ring.push("(0,1000)");
+    return ring.join(" ");
+  };
+  /** A comb's vertices, all of them effective (no straight-through point). */
+  const combVertices = (teeth: number): number => 4 * teeth + 4;
+  const pairs = (n: number): number => (n * (n - 1)) / 2;
+  const combRoom = (teeth: number): string => plan(`  room id=a polygon ${combRing(teeth)}`);
+
+  it("a room's 1,500-tooth comb stops at its statement with ONE E_STEP_LIMIT, before the scan runs", () => {
+    const src = combRoom(1500);
+    const r = compile(src, { noCache: true });
+    const errs = r.diagnostics.filter((d) => d.severity === "error");
+    expect(errs.map((d) => d.code)).toEqual(["E_STEP_LIMIT"]);
+    expect(r.svg).toBe("");
+    expect(src.slice(errs[0]!.span!.start, errs[0]!.span!.end)).toMatch(/^room id=a polygon \(0,0\)/);
+    // The whole scan is on the meter, 3.6 times the budget: taken as one charge before the
+    // first pair. Charged as it went, the count would have stopped one step past the budget.
+    expect(pairs(combVertices(1500))).toBe(18_021_006);
+    expect(pairs(combVertices(1500))).toBeGreaterThan(MAX_EVAL_STEPS);
+    expect(stepsOf(src)).toBeGreaterThanOrEqual(pairs(combVertices(1500)));
+  }, 60_000);
+
+  it("every statement that scans a ring is charged the same way", () => {
+    const ring = combRing(1500);
+    const sources: Record<string, string> = {
+      "`room polygon`": combRoom(1500),
+      "`outdoor polygon`": plan(`${ROOM}\n  outdoor id=g lawn polygon ${ring}`),
+      "`roof polygon`": plan(`${ROOM}\n  roof polygon ${ring}`),
+      "`roof overhang` on a wall ring": plan(
+        `  wall id=w exterior thickness 200 { ${ring} close }\n${ROOM}\n  roof overhang 300`,
+      ),
+      "a site `boundary`": plan(ROOM, `  site {\n    street south\n    boundary ${ring}\n  }\n`),
+    };
+    for (const [name, src] of Object.entries(sources)) {
+      const errs = compile(src, { noCache: true }).diagnostics.filter((d) => d.severity === "error");
+      expect(
+        errs.map((d) => d.code),
+        name,
+      ).toEqual(["E_STEP_LIMIT"]);
+      expect(stepsOf(src), name).toBeGreaterThanOrEqual(pairs(combVertices(1500)));
+    }
+  }, 60_000);
+
+  it("rings share the one counter: two that each fit alone cross it together, on the second", () => {
+    const teeth = 750;
+    expect(pairs(combVertices(teeth))).toBeLessThan(MAX_EVAL_STEPS);
+    expect(2 * pairs(combVertices(teeth))).toBeGreaterThan(MAX_EVAL_STEPS);
+    const src = plan(`  room id=a polygon ${combRing(teeth)}\n  room id=b polygon ${combRing(teeth)}`);
+    const errs = compile(src, { noCache: true }).diagnostics.filter((d) => d.severity === "error");
+    expect(errs.map((d) => d.code)).toEqual(["E_STEP_LIMIT"]);
+    expect(src.slice(errs[0]!.span!.start, errs[0]!.span!.end)).toMatch(/^room id=b polygon/);
+  }, 60_000);
+
+  it("the charge is exactly the ring's pairs: the second difference over a ring's size", () => {
+    // What a vertex costs to evaluate is linear in the vertices, so it vanishes here, and
+    // n(n − 1)/2 over n, n + d, n + 2d leaves exactly d². A tooth is 4 vertices.
+    for (const teeth of [3, 40, 200]) {
+      const [a, b, c] = [teeth, teeth + 1, teeth + 2].map((t) => stepsOf(combRoom(t)));
+      expect(c! - 2 * b! + a!, `${teeth} teeth`).toBe(4 ** 2);
+    }
+  });
+
+  it("control: an ordinary polygon compiles as it did, and a crossed one is still its own error", () => {
+    const l = plan("  room id=a polygon (0,0) (6000,0) (6000,2000) (3000,2000) (3000,4000) (0,4000)");
+    const r = compile(l, { noCache: true });
+    expect(r.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    expect(r.svg).toContain("<svg");
+    expect(describe(l).rooms.map((x) => x.area_m2)).toEqual([18]);
+    // Six vertices are 15 pairs: the budget would take 333,333 such rooms.
+    expect(pairs(6)).toBe(15);
+    expect(stepsOf(l) * 100_000).toBeLessThanOrEqual(MAX_EVAL_STEPS);
+    expect(codes(plan("  room id=a polygon (0,0) (4000,4000) (4000,0) (0,4000)"))).toEqual([
+      "E_ROOM_POLY_SELF_INTERSECT",
+    ]);
+  });
+});
+
 suite("a string is charged before it is built, on every public surface", () => {
   // A 1 Mi-character string (16 doublings of 16 characters), referenced N times in an array,
   // then printed: printing allocates N Mi characters. Charged after building, 1,100

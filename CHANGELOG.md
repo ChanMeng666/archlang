@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A ring too long to check for self-intersection now stops with `E_STEP_LIMIT` instead of running for
+  tens of seconds (H10). The check tests every pair of a ring's edges and nothing counted that work,
+  so a `room polygon` of 6,000 vertices compiled with no diagnostic after 18 million pairs. Each pair
+  is now one evaluation step, charged before the check runs, for `room`, `outdoor` and `roof polygon`,
+  `roof overhang` on a wall ring and a site `boundary`. A ring of up to about 3,000 vertices still
+  fits the 5,000,000-step budget, and the largest in the corpus spends far less. No drawing,
+  `describe()`, `lint()` or diagnostic moves; a plan with no such ring spends the same steps.
+
 ## [1.48.0] - 2026-11-01
 
 ### Added
