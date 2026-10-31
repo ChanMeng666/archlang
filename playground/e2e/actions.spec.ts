@@ -110,6 +110,39 @@ test.describe("header actions", () => {
     await expect(panel).toBeHidden();
   });
 
+  test("A room finish has no pieces for is listed as information, and asks nothing", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    await setEditorSource(page, SIMPLE_PLAN);
+    const status = await watchStatus(page);
+
+    // "Main" names no use, so it gets no piece, and its note carries `scope` (issue #370): no
+    // "unresolved" in the flash, and Lint stays closed.
+    await page.getByRole("button", { name: "Finish", exact: true }).click();
+    await status.expectFlash("Finished: 6 changes (Ctrl+Z undoes)");
+    await expect(page.locator("#tab-lint")).toHaveAttribute("aria-selected", "false");
+
+    await page.locator("#tab-lint").click();
+    const panel = page.getByRole("region", { name: "Finish results" });
+    await expect(panel.locator(".repair-outside code", { hasText: "main" })).toBeVisible();
+    await expect(panel.locator(".repair-outside")).toContainText("is outside the furnish table");
+    await expect(panel).not.toContainText("unresolved");
+    await expect(panel).not.toContainText("Left for you to resolve");
+    await expect(panel.getByRole("button", { name: "Reissue sheet" })).toHaveCount(0);
+
+    // A plan with nothing else to do is "Nothing to finish", and the room is still listed.
+    await expect
+      .poll(() => page.evaluate((k) => localStorage.getItem(k), AUTOSAVE_KEY), { timeout: 10_000 })
+      .toContain("paper A4 landscape");
+    const finished = (await page.evaluate((k) => localStorage.getItem(k), AUTOSAVE_KEY)) as string;
+    await setEditorSource(page, `${finished}\n`);
+    await expect(panel).toBeHidden();
+    await page.getByRole("button", { name: "Finish", exact: true }).click();
+    await status.expectFlash("Nothing to finish");
+    await expect(panel).toContainText("Nothing to finish");
+    await expect(panel.locator(".repair-outside code", { hasText: "main" })).toBeVisible();
+  });
+
   test("Finish is its own undo step even straight after typing", async ({ page }) => {
     // CodeMirror merges adjacent changes made within 500 ms into one undo step. Typing
     // and then pressing Finish at once must still undo Finish ALONE, keeping the typing
@@ -147,7 +180,8 @@ test.describe("header actions", () => {
   test("Finish that declines says so, opens Lint, and offers Reissue sheet", async ({ page }) => {
     // The flagship on its old A2 sheet (it is issued on A1 since fix/examples-sound) is too
     // small at 1:50: finish adds nothing and says why, and only a reissue may replace the
-    // paper (the `arch finish --reissue` rule).
+    // paper (the `arch finish --reissue` rule). The villa's halls and stores it leaves empty are
+    // information, so the paper is the one note counted as unresolved here.
     const villaOnA2 = readFileSync(new URL("../../examples/hillside-villa.arch", import.meta.url), "utf8");
     expect(villaOnA2.split("  paper A1 landscape").length, "the villa's sheet line, once").toBe(2);
     await page.goto("/");

@@ -104,12 +104,19 @@ export interface FinishNote {
   /** The statement the note is about, when it is about one. */
   statement?: FinishStatement;
   /**
-   * The room the note is about, when the `furnish` stage left one empty, or found one that
-   * holds furniture but lacks a piece its use requires (named in `reason`; never topped up).
+   * The room the note is about, when the `furnish` stage left one empty (every such room has a
+   * note, one the furnish table has no row for included), or found one that holds furniture but
+   * lacks a piece its use requires (named in `reason`; never topped up).
    */
   room?: string;
   /** The diagnostic codes furnishing that room, or writing that sheet statement, would have raised. */
   codes?: string[];
+  /**
+   * Set on a note that declines nothing the plan needs: `outside-table` is a room the `furnish`
+   * stage has no pieces for, with nothing on its floor. Absent on a note the author must act on.
+   * Read this, never `reason`, to tell the two apart.
+   */
+  scope?: "outside-table";
   reason: string;
   /** The authored statement the note points at, when there is one. */
   span?: Span;
