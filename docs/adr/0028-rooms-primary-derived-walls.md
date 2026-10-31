@@ -332,7 +332,8 @@ them. A pair of rectangles keeps the line arithmetic above, step for step.
   as is an edge that meets two runs at an end (a U's neighbour has two). An edge that meets none
   is `E_OPENING_DATUM`. The refusal carries the fix: it names every run and, for each, the
   position that picks it, the offset of its middle from the first edge of the pair's rectangles
-  that does, or the point `at (x,y)` when none does.
+  that does, or the point `at (x,y)` when none does. The middle is taken where the plan's grid
+  puts it, so a quoted position resolves to what it says.
 - **Two polygons** leave no edge word, since a polygon still exposes no datum (§2). `door at
   (x,y)` reaches a derived wall by position, and this is its way in until a second ask names
   notch edges.

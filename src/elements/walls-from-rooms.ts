@@ -31,8 +31,8 @@ import { JUNCTION_NIB_DEFAULTS } from "../opening-junctions.js";
 import {
   deriveWallsFromRooms,
   rectilinear,
+  pickAt,
   ringParts,
-  runMiddle,
   type RunPick,
   type TileCover,
   type TilePair,
@@ -213,7 +213,7 @@ export const wallsFromRooms: ElementDef = {
       for (const r of res.refusals) {
         if (broken.size > 0 && r.code === "E_ROOMS_NOT_TILING") continue;
         const clause = r.clause === undefined ? undefined : clauses[r.clause]!;
-        const onEdge = r.picks ? openOneEdge(r.picks, r.clause!, clauses, pairs, tExt, tInt, ctx.grid) : [];
+        const onEdge = r.picks ? openOneEdge(r.picks, r.clause!, clauses, pairs, tExt, tInt, ctx) : [];
         ctx.diag({ severity: "error", ...refusalText(r, onEdge), code: r.code, span: clause?.span ?? n.span });
       }
       return out;
@@ -535,8 +535,8 @@ function coverOfOutdoor(o: ROutdoor): TileCover {
 /**
  * What opens one edge of a pair an `open` clause cannot, one statement per run, ready to paste
  * once the clause is gone. Its width keeps a nib at each end whatever meets the run there: half
- * the thickest wall the statement can derive, plus the nib a relational opening needs. A
- * statement with no room for that says `width <mm>`.
+ * the thickest wall the statement can derive, plus the nib a relational opening needs, plus what
+ * the grid moved its centre by. A statement with no room for that says `width <mm>`.
  */
 function openOneEdge(
   picks: readonly RunPick[],
@@ -545,7 +545,7 @@ function openOneEdge(
   pairs: readonly TilePair[],
   tExt: number,
   tInt: number,
-  grid: number,
+  ctx: ResolveCtx,
 ): string[] {
   const { id, a, b } = clauses[k] as Extract<WallsPairClause, { kind: "open" }>;
   const written = pairs[k]!.kind === "open" ? (pairs[k] as Extract<TilePair, { kind: "open" }>).width : undefined;
@@ -554,14 +554,15 @@ function openOneEdge(
   for (const p of pairs) if (p.kind === "thickness") thickest = Math.max(thickest, p.thickness);
   const { minJunctionNibMm, junctionNibThicknessRatio } = JUNCTION_NIB_DEFAULTS;
   const nib = Math.max(minJunctionNibMm, tInt * junctionNibThicknessRatio);
-  return picks.map(({ run, from }) => {
-    const length = run.r1 - run.r0;
-    const fits = length - thickest - 2 * nib;
+  const { grid } = ctx;
+  return picks.map((pick) => {
+    const { at, off } = pickAt(pick, ctx.snapPt);
+    const fits = pick.run.r1 - pick.run.r0 - thickest - 2 * nib - 2 * off;
     const wide = written ?? (grid > 0 ? Math.floor(fits / grid) * grid : fits);
     const width = wide > 0 ? numStr(wide) : "<mm>";
-    return from
-      ? `opening id=${name} between ${a.id} and ${b.id} at ${numStr(length / 2)} from ${from} width ${width}`
-      : `opening id=${name} at ${runMiddle(run)} width ${width}`;
+    return pick.from
+      ? `opening id=${name} between ${a.id} and ${b.id} at ${at} width ${width}`
+      : `opening id=${name} at ${at} width ${width}`;
   });
 }
 

@@ -45,11 +45,11 @@ import {
 import type { DatumTable, RoomDatums } from "./room-datums.js";
 import { COMPASS_DATUM_ALIASES, splitDatum } from "./room-datums.js";
 import {
+  pickAt,
   ringParts,
   type RunLine,
   type RunPick,
   runEndMet,
-  runMiddle,
   runPicks,
   runText,
   sharedRuns,
@@ -442,12 +442,13 @@ function runsBetween(b: OpeningBetween, A: PairRoom, B: PairRoom, ctx: RelationC
 }
 
 /** What to write for each run: the position that picks it, or the point it stands at. */
-function pickHints(where: string, picks: readonly RunPick[]): string[] {
-  return picks.map(({ run, from }) =>
-    from
-      ? `\`${where} at ${numStr((run.r1 - run.r0) / 2)} from ${from}\` stands on the edge ${runText(run)}.`
-      : `No edge of these rooms picks the edge ${runText(run)} alone: write the point, \`at ${runMiddle(run)}\`.`,
-  );
+function pickHints(where: string, picks: readonly RunPick[], ctx: RelationCtx): string[] {
+  return picks.map((pick) => {
+    const { at } = pickAt(pick, ctx.snapPt);
+    return pick.from
+      ? `\`${where} at ${at}\` stands on the edge ${runText(pick.run)}.`
+      : `No edge of these rooms picks the edge ${runText(pick.run)} alone: write the point, \`at ${at}\`.`;
+  });
 }
 
 /**
@@ -466,7 +467,7 @@ function pickRun(
 ): Run | undefined {
   const where = relationText({ between: [b.a.id, b.b.id] });
   const said = runs.map(runText).join("; ");
-  const hints = (): string[] => pickHints(where, runPicks([edgesOf(b.a.id, A), edgesOf(b.b.id, B)], runs));
+  const hints = (): string[] => pickHints(where, runPicks([edgesOf(b.a.id, A), edgesOf(b.b.id, B)], runs), ctx);
   const pair = `"${b.a.id}" and "${b.b.id}"`;
   const pos = b.pos;
   let why = pos.kind === "default" ? "no position says which" : `\`at ${posText(pos)}\` does not say which`;

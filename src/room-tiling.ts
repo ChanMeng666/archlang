@@ -220,6 +220,8 @@ export interface RunPick {
   /** `bed.top`: an edge of the pair's rectangles that meets this run at an end and no other run.
    *  Absent when none does: two polygons, or an edge meeting two runs at once. */
   from?: string;
+  /** The end of the run `from` meets, which an offset from it is measured from. */
+  end?: "r0" | "r1";
 }
 
 const key = (p: Point): string => `${p.x},${p.y}`;
@@ -240,10 +242,20 @@ export function runText(r: RunLine): string {
   return `on ${line} ${numStr(r.c)}, ${along} ${numStr(r.r0)}–${numStr(r.r1)}`;
 }
 
-/** `(3000,4500)`: the middle of a run, as `at (x,y)` writes it. */
-export function runMiddle(r: RunLine): string {
-  const t = numStr((r.r0 + r.r1) / 2);
-  return r.vertical ? `(${numStr(r.c)},${t})` : `(${t},${numStr(r.c)})`;
+/**
+ * The position that stands an opening in the middle of a pick's run, as it is written: `1500 from
+ * bed.top`, measured from the end that edge meets, or the point `(3000,4500)`. Every position snaps
+ * as it resolves (ADR 0004), so this is where the middle lands on the plan's grid, and a quoted
+ * position resolves to what it says. `off` is how far the grid moved it.
+ */
+export function pickAt({ run, from, end }: RunPick, snap: (p: Point) => Point): { at: string; off: number } {
+  const mid = (run.r0 + run.r1) / 2;
+  const p = snap(run.vertical ? { x: run.c, y: mid } : { x: mid, y: run.c });
+  const t = run.vertical ? p.y : p.x;
+  const at = from
+    ? `${numStr(end === "r1" ? run.r1 - t : t - run.r0)} from ${from}`
+    : `(${numStr(p.x)},${numStr(p.y)})`;
+  return { at, off: Math.abs(t - mid) };
 }
 
 /**
@@ -278,7 +290,11 @@ export function runPicks(pair: readonly TileRoom[], runs: readonly RunLine[]): R
     ];
     for (const edge of edges) {
       const met = picks.filter((p) => runEndMet(edge, p.run) !== undefined);
-      if (met.length === 1 && met[0]!.from === undefined) met[0]!.from = `${room.id}.${edge.word}`;
+      const pick = met.length === 1 ? met[0]! : undefined;
+      if (pick && pick.from === undefined) {
+        pick.from = `${room.id}.${edge.word}`;
+        pick.end = runEndMet(edge, pick.run);
+      }
     }
   }
   return picks;

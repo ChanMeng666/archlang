@@ -714,7 +714,7 @@ ${LEAD_EXAMPLE}
 
 To type some walls and derive others, name one by its rooms: \`wall … between <A> and <B>\`.
 
-An L is one \`room polygon\` with only horizontal and vertical edges, and \`walls from rooms\` keeps it one room. Wrapped round a room it shares several edges with it, so a door must pick one: \`door between liv and bed at 1500 from bed.top\`, an edge meeting that run at an end; \`at center\` there is \`E_OPENING_HOST_AMBIGUOUS\`, whose hint quotes the position. A polygon has no \`liv.top\`, \`right-of\` or \`anchor\`: use \`at (x,y)\`.
+An L is one \`room polygon\` with only horizontal and vertical edges, and \`walls from rooms\` keeps it one room. Wrapped round a room it shares several edges, so a door must pick one by an edge meeting that run at an end: \`door between liv and bed at 1500 from bed.top\`. \`at center\` there is \`E_OPENING_HOST_AMBIGUOUS\`; its hint quotes the position.
 
 ## Structure
 

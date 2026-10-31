@@ -14,6 +14,7 @@
 
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, lint, planJsonToArch, planToJson, resolvePlan, toDxf } from "../src/index.js";
+import { ERROR_CATALOG } from "../src/error-catalog.js";
 import { impact } from "../src/impact.js";
 import { clearResolveCache, evaluationSteps, resolveAll } from "../src/ir.js";
 import { link } from "../src/import.js";
@@ -247,6 +248,102 @@ suite("a position that picks no run is refused, and the diagnostic carries the f
 
   it("a centre line is refused as on any run", () => {
     expect(codes(door("at 1500 from bed.cx"))).toEqual(["E_OPENING_DATUM"]);
+  });
+
+  it("the catalogue's advice is true of both cases: E_OPENING_DATUM's fix does not end on a refusal", () => {
+    const { fix, cause } = ERROR_CATALOG.E_OPENING_DATUM!;
+    // Its first list holds for one run. On several, each of those words is the other code.
+    for (const at of ["at 600 from start", "at 600 from end", "at center"]) {
+      expect(fix).toContain(at);
+      expect(codes(door(at))).toEqual(["E_OPENING_HOST_AMBIGUOUS"]);
+    }
+    expect(fix).toContain("On a pair that shares several edges only the edge will do");
+    expect(cause).toContain("any other position is `E_OPENING_HOST_AMBIGUOUS`");
+  });
+});
+
+suite("on a grid, every quoted position is the one that resolves", () => {
+  // Runs of an odd length, so the raw middle is off the grid: 3050 on grid 50 has its middle at 4525.
+  const L_ODD = (grid: number): string =>
+    `  grid ${grid}\n  room id=liv polygon (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6050) (0,6050) uses living\n  room id=bed at (3000,3000) size 3000x3050 uses bedroom\n`;
+  const TWO_ODD = (grid: number): string =>
+    `  grid ${grid}\n  room id=liv polygon (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6050) (0,6050) uses living\n  room id=bed polygon (6000,0) (9000,0) (9000,6050) (3000,6050) (3000,3000) (6000,3000) uses bedroom\n`;
+  // `bed.top` meets two runs here, so the left run is picked by `bed.bottom`, from its far end.
+  const FAR_END = (grid: number): string =>
+    `  grid ${grid}\n  room id=liv polygon (0,0) (9000,0) (9000,4050) (6000,4050) (6000,3000) (3000,3000) (3000,6050) (0,6050) uses living\n  room id=bed at (3000,3000) size 3000x3050 uses bedroom\n  room id=x at (6000,4050) size 3000x2000 uses hall\n`;
+
+  /** The point a pasted position says: a written `(x,y)`, or the offset along the host's line. */
+  const said = (src: string, id: string, pos: string): { x: number; y: number } => {
+    const at = pos.replace(/^at /, "");
+    const point = /^\((\d+),(\d+)\)$/.exec(at);
+    if (point) return { x: +point[1]!, y: +point[2]! };
+    const [, off, room, word] = /^(\d+) from (\w+)\.(\w+)$/.exec(at)!;
+    const r = irOf(src).elements.find((e) => e.id === room);
+    if (r?.kind !== "room") throw new Error(`no room ${room}`);
+    const line = { top: r.at.y, bottom: r.at.y + r.size.h, left: r.at.x, right: r.at.x + r.size.w }[word!]!;
+    const { a, b } = el(src, id).host!;
+    const vertical = a.x === b.x;
+    const [r0, r1] = vertical ? [Math.min(a.y, b.y), Math.max(a.y, b.y)] : [Math.min(a.x, b.x), Math.max(a.x, b.x)];
+    const t = line === r0 ? r0 + +off! : r1 - +off!;
+    expect(line === r0 || line === r1, `${at} is measured from an end of its run`).toBe(true);
+    return vertical ? { x: a.x, y: t } : { x: t, y: a.y };
+  };
+
+  const paste = (rooms: string, line: string): string => plan(`${rooms}${STATEMENT}\n  ${line}`);
+  const asDoor = (at: string): string =>
+    at.startsWith("at (")
+      ? `door id=d ${at} width 800 wall partition`
+      : `door id=d between liv and bed ${at} width 800`;
+
+  it.each([
+    ["an L", L_ODD, 2],
+    ["two polygons", TWO_ODD, 3],
+    ["an edge at the run's far end", FAR_END, 3],
+  ])("door hints on %s", (_, rooms, runs) => {
+    for (const grid of [50, 25]) {
+      const d = errors(paste(rooms(grid), "door id=d between liv and bed at center width 800"));
+      expect(d.map((x) => x.code)).toEqual(["E_OPENING_HOST_AMBIGUOUS"]);
+      const fixes = quoted(d[0]!.hints);
+      expect(fixes).toHaveLength(runs);
+      for (const at of fixes) {
+        const src = paste(rooms(grid), asDoor(at));
+        expect(codes(src), at).toEqual([]);
+        const got = el(src, "d").at;
+        expect(got, `grid ${grid}: ${at}`).toEqual(said(src, "d", at));
+        // The quote is already on the grid, so nothing moved it.
+        expect([got.x % grid, got.y % grid]).toEqual([0, 0]);
+      }
+    }
+  });
+
+  it("the case that was wrong: a run's middle off the grid is quoted where it lands", () => {
+    const fixes = quoted(errors(paste(L_ODD(50), "door id=d between liv and bed at center width 800"))[0]!.hints);
+    expect(fixes[0]).toBe("at 1550 from bed.top");
+    expect(el(paste(L_ODD(50), asDoor(fixes[0]!)), "d").at).toEqual({ x: 3000, y: 4550 });
+    const point = quoted(errors(paste(TWO_ODD(50), "door id=d between liv and bed at center width 800"))[0]!.hints);
+    expect(point[1]).toBe("at (3000,4550)");
+    // Measured from the end the edge meets, the same point has another offset.
+    const far = quoted(errors(paste(FAR_END(50), "door id=d between liv and bed at center width 800"))[0]!.hints);
+    expect(far[0]).toBe("at 1500 from bed.bottom");
+    expect(el(paste(FAR_END(50), asDoor(far[0]!)), "d").at).toEqual({ x: 3000, y: 4550 });
+  });
+
+  it.each([
+    ["an L", L_ODD, 2],
+    ["two polygons", TWO_ODD, 3],
+    ["an edge at the run's far end", FAR_END, 3],
+  ])("the `open between` statements on %s compile, and stand where they say", (_, rooms, runs) => {
+    for (const grid of [50, 25]) {
+      const src = plan(`${rooms(grid)}  walls from rooms exterior 200 partition 100 { open between liv and bed }`);
+      const statements = errors(src)[0]!.hints!.flatMap((h) => [...h.matchAll(/`(opening [^`]+)`/g)].map((m) => m[1]!));
+      expect(statements).toHaveLength(runs);
+      for (const s of statements) {
+        const fixed = paste(rooms(grid), s);
+        expect(codes(fixed), s).toEqual([]);
+        const at = /\bat (.+) width /.exec(s)![1]!;
+        expect(el(fixed, "o").at, `grid ${grid}: ${s}`).toEqual(said(fixed, "o", at));
+      }
+    }
   });
 });
 
