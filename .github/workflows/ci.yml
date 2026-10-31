@@ -91,7 +91,7 @@ jobs:
           EVENT: ${{ github.event_name }}
           CODE: ${{ steps.filter.outputs.code }}
         run: |
-          if [ "$EVENT" = "pull_request" ] && [ "$CODE" = "false" ]; then code=false; else code=true; fi
+          code=false
           echo "code=$code" >> "$GITHUB_OUTPUT"
           if [ "$code" = "false" ]; then
             echo "Record-only change: the gating legs report green without running; Node 22 runs the docs leg." >> "$GITHUB_STEP_SUMMARY"
