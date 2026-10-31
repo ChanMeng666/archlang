@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Three inputs that gave a bare `E_PARSE` now carry a `= help:` line (issue #370): a hyphen in an `id=`
+  name ("ids are letters, digits and `_`"), a `,` between `uses` kinds ("separate uses with spaces"),
+  and a `;` at a line end ("statements end at the line break"). Code, message and span are unchanged;
+  each hint fires only in the case it describes, and none of the forms is accepted.
+
 ## [1.47.0] - 2026-10-31
 
 ### Added
