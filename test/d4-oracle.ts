@@ -468,6 +468,8 @@ export const RULE_CLASS: Readonly<Record<string, RuleClass>> = {
   // #364: a piece's footprint against a flight's and its landings, all turned or mirrored together;
   // the end a flight is entered from crosses `place` on its `_tail`.
   "furniture-on-stair": "invariant",
+  // H1: a shell's free ends and the gap between them, all turned or mirrored together.
+  "exterior-ring-open": "invariant",
 };
 
 /**

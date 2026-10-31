@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `W_EXTERIOR_RING_OPEN` (lint, issues #346, #370): exterior walls that stand on a room and close
+  nothing, on the reading `describe` omits the gross internal area on (`no-closed-exterior-ring`), so a
+  1000 mm gap in a shell no longer passes `validate` and `lint`. The message gives each gap's two ends;
+  the fix text quotes the wall that closes a straight gap. It also names a second, open building beside
+  a closed one, which that reason could not. It stays silent on a storey with no room or no exterior
+  wall, on a run that stands on no room (a garden wall), on runs along one straight line, on an end
+  that meets a wall of any other category, and on what `W_WALL_END_SHORT` reports: every gap goes to
+  exactly one of the two. A `status demolish` wall closes nothing. A closed annex built off an open
+  shell (a porch, a garage) still hides it, and `describe` then gives only the annex's floor. Fires on
+  the open-ring fixture and on no shipped example; of the plans written inside the tests it fires on
+  eight, each an exterior wall that really is left open. No drawing and no `describe()` output moves. A
+  consumer that classifies lint codes sees a new warning.
+
 ### Fixed
 
 - `finish` names every room it leaves empty (issue #370). A room whose use has no row in the furnish

@@ -1,0 +1,18 @@
+# class: space-not-enclosed
+# origin: the case with the east wall carried on through the gap
+# expect: none
+# twin-of: exterior-ring-open
+# fact: the same ring closed: describe reports a gross internal area
+plan "Exterior ring closed" {
+  units mm
+  grid 50
+  wall id=north exterior thickness 200 { (0,0) (8000,0) (8000,2000) }
+  wall id=rest exterior thickness 200 { (8000,2000) (8000,5000) (0,5000) (0,0) }
+  wall id=p partition thickness 100 { (4000,0) (4000,5000) }
+  room id=a at (0,0) size 4000x5000 label "Living" uses living
+  room id=b at (4000,0) size 4000x5000 label "Bedroom" uses bedroom
+  door id=d_entry at (2000,5000) width 900 wall rest
+  door at (4000,2500) width 800 wall p
+  window at (2000,0) width 1500 wall north
+  window at (6000,0) width 1500 wall north
+}

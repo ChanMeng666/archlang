@@ -448,7 +448,8 @@ export interface LintRuleset {
   /**
    * The furthest (mm), measured on the drawing from the square end cap, a wall may stop short of another wall it runs straight toward before
    * `W_WALL_END_SHORT` warns (issue #346). A free end further off than this is a stub or a
-   * doorway's jamb, never judged. `null` turns the rule off. The scan is capped at 500 mm whatever the figure.
+   * doorway's jamb, never judged. `null` turns the rule off. An open shell's gap this rule does not
+   * report is `W_EXTERIOR_RING_OPEN`'s, so the figure moves a gap between them and never hides one. The scan is capped at 500 mm whatever the figure.
    *
    * **Default 100:** the thinnest partition the examples draw; a slit that narrow is a drawing slip, not a design. A wall is judged against straight walls only.
    */

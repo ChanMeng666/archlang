@@ -2,8 +2,9 @@
  * Issue #346, card G5 (wall closure, measured first). Three plans with a closure defect, each
  * otherwise clean, and the codes lint and `describe` raise on them today:
  *
- *  - an exterior ring left open by a 1000 mm gap: NO lint code; `describe` only omits the gross
- *    area with the reason `no-closed-exterior-ring`;
+ *  - an exterior ring left open by a 1000 mm gap: no lint code when G5 measured it, so `describe`
+ *    alone hinted at it, by omitting the gross area (`no-closed-exterior-ring`). H1 named it:
+ *    `W_EXTERIOR_RING_OPEN`, whose own suite is `test/lint-exterior-ring.test.ts`;
  *  - an authored wall stopping short of a derived partition, and a partition stopping short of
  *    the shell: `W_WALL_END_SHORT` (added by this card) and nothing else.
  *
@@ -68,9 +69,9 @@ suite("wall closure, measured (G5, issue #346)", () => {
     expect(codes(read(`${DERIVED}.clean.arch`))).toEqual([]);
   });
 
-  it("an open exterior ring raises no lint code; describe names it as an omitted gross area", () => {
+  it("an open exterior ring raises W_EXTERIOR_RING_OPEN, and describe omits its gross area", () => {
     const src = read(RING);
-    expect(codes(src)).toEqual([]);
+    expect(codes(src)).toEqual(["W_EXTERIOR_RING_OPEN"]);
     const totals = (describe(src) as { totals: Record<string, unknown> }).totals;
     expect(totals.gross_internal_area_omitted).toBe("no-closed-exterior-ring");
   });

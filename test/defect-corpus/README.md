@@ -97,6 +97,7 @@ Two classes from `evidence.md` §3 have no cases, because no core lint rule can 
 | `W_BED_UNDERSIZED` | PS2.67 |
 | `W_WALL_END_SHORT` | issue #346 (G5) |
 | `W_FURNITURE_ON_STAIR` | issue #364 (G9) |
+| `W_EXTERIOR_RING_OPEN` | issues #346, #370 (H1) |
 | `W_GARAGE_OPENING_UNDERSIZED` | B6 (preview-and-remodel) |
 
 ## Proposed codes
