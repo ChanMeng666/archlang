@@ -135,31 +135,36 @@ segmentation masks or PDF plans into `.arch` (one user, with masks in hand, who 
 G2's file). If public and simple, a `tools/plan-json-to-<format>.mjs` recipe plus one paragraph in
 `docs/import.md`'s sibling "export recipes" section. No new example is pinned for it.
 
-### G8 · Demolished walls: the three remaining resolvers — `todo` · wave 5 · 0.5 day · model: sonnet
+### G8 · Demolished walls: the three remaining resolvers — `done` · PR #373 · merge `3185e374` · record: `research/2026-10-30-as-built.md` § G8
 
-Same defect class as A9 item 5, found by #361's red-team, outside that diff. Each was probed against
-its deleted-wall twin. (1) The derived rail: `deriveRail(…, ctx.walls)` at `src/elements/outdoor.ts:416`:
-a balcony beside a demolished wall loses a balustrade edge. (2) `dim faces`: `src/elements/dim.ts:287-288`
-measures to a demolished face where the twin says `W_DIM_NO_WALL`. (3) Category references:
-`src/attach.ts:207` and `src/elements/dim.ts:444` count demolished walls, so `door on partition at 50%`
-with one demolished and one standing partition is `E_ATTACH_WALL_REF`. Copy the `named`/`matches` filter
-from `placeAgainst`, charge the step meter before filtering. Acceptance: each matches its deleted-wall
-twin; SHA-256 sweep moves nothing on plans without a demolished wall. Must not: touch `new` wall drawing.
+### G9 · The first bugs from the German-houses user — `done` · PRs #374, #376, #377, #378, #380 · merges `2649b9dd`, `350e2155`, `a6375be8`, `becf3ca8`, `e1526a4c` · record: `research/2026-10-30-as-built.md` § G9
 
-### G9 · The first bugs from the German-houses user — `todo` · wave 5 · 1.5 days · model: opus
+### G10 · Design spikes for #363 and #362 — `done` · PR #383 · merge `cd10a5ef` · record: `research/2026-10-30-as-built.md` § G10
 
-Decision D21. A real user drew German houses with an agent and filed #362–#370 with reproductions. Fix
-in this order, one PR per issue: #365 (`validate --intent` counts only the lowest storey), #366 (Plan JSON
-round trip: say what it dropped, as `droppedKeeps` does for keeps; do not widen the format), #364 part 1
-(`finish` furnishing over a stair, with a lint that sees it), #368 (the free-standing pier), #367 (labels in
-small rooms). Must not: promise IFC; make a new language form without its byte-identity law.
+### G11 · Residue of G8 and G9 — `todo` · after the N10 read · 1–2 days · model: opus
 
-### G10 · Design spikes for #363 and #362 — `todo` · after G9 · 1 day · model: opus
+What the red-team rounds of #373–#380 left, each with its reproduction in the PR. Take them one PR per
+group; none blocks a release.
 
-A written design only, in `research/`, no code. #363: L-shaped rooms in `walls from rooms`, `door between`
-and relational placement (touches `src/room-tiling.ts`, and would retire the rectangle cutting in
-`tools/mask-to-plan`). #362: quarter-turn and half-turn stairs. #369 and the #370 collection are split into
-single issues by the same session and wait for a second ask, unless they are one-line docs fixes.
+- **Demolished walls:** `offWallFix` (`door.ts`, `window.ts`, `opening.ts`) can steer a door to a
+  demolished wall; `door at (x,y) wall <category>`; the wording of `door on a.right`; `E_DATUM_NAME` on a
+  dotted id; `dim faces` at a cleared crossing.
+- **`validate --intent` (#365):** per-room `reachable` above the lowest storey; `windows.min` is the total of
+  the matching rooms, not per room (the user was told on the issue); a `level` key on `roomsInclude`.
+- **Plan JSON (#366):** MCP `compile` does not pass `dropped`; `batch -f json` does not report it.
+- **`finish` (#364):** placement-clear hints; a hinted route under a stair's high end; lifts and escalators;
+  part 2, furnishing a plan with `level` blocks.
+- **Open boundaries (#368):** the T of three open boundaries keeps its pier (`arms.length<3`, one line, re-pin
+  `open-tee`); part 2, whether `E_OPENING_NIB` should skip an open boundary; open-ring lint.
+- **Labels (#367):** `INK_EM` understates all-caps names (`WC` 0.769, `HWR` 0.739, `BEDROOM 1` 0.613 em per
+  character, measured against 0.5); a circle-room pin about 3 mm from the wall gets neither report;
+  "found no clear part" overclaims in an L room, where the lattice misses a clear point; `Abstell- raum`
+  does not wrap.
+- **ArchCanvas at its bump to 1.47:** classify `W_FURNITURE_ON_STAIR` and `W_WALL_END_SHORT`;
+  `checkPredicates` now reads `levels[]`, so `mergeLevelSummaries` patches of top-level fields are ignored;
+  the comment at `src/lib/agent/intent.ts:702-720` is stale; add a tripwire for each.
+
+Must not: promise IFC; make a new language form without its byte-identity law.
 
 ### Wave 6 (after the N10 read): G7 repair-convergence replay (the review rings of iteration N fading
 into N+1; needs `fix`/`repair` to emit a trace, design spike first), D1, A6, archlang-3d M2+, Tier B.
