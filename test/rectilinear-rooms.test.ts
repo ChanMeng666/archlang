@@ -226,6 +226,18 @@ suite("the walls of a polygon", () => {
     }
   });
 
+  it("lint raises no wall or enclosure code on any of them: the derived walls enclose what they should", () => {
+    const quiet = ["W_BOUNDARY_NO_WALL", "W_FLOOR_UNASSIGNED", "W_ROOM_OUTSIDE_SHELL", "W_EXTERIOR_RING_OPEN"];
+    for (const [name, s] of RECTILINEAR_PLANS) {
+      expect(
+        lint(s)
+          .filter((d) => quiet.includes(d.code!))
+          .map((d) => d.code),
+        name,
+      ).toEqual([]);
+    }
+  });
+
   it("a courtyard closed by an L keeps its inner ring", () => {
     const src = RECTILINEAR_PLANS.find((p) => p[0] === "courtyard")![1];
     expect(named(src)).toContain("exterior#2");
@@ -429,6 +441,149 @@ suite("the two equivalence laws", () => {
     expect(edges(wallsOf(ISSUE_PLAN))).toEqual(edges(noSeam));
     // The control: with its seam the rectangle plan draws something else.
     expect(edges(wallsOf(rects))).not.toEqual(edges(noSeam));
+  });
+});
+
+/** A small seeded generator (no clock, no `Math.random`): the next integer below `n`. */
+const lcg = (seed: number) => {
+  let s = seed >>> 0;
+  return (n: number): number => {
+    s = (Math.imul(s, 1103515245) + 12345) & 0x7fffffff;
+    return (s >>> 16) % n;
+  };
+};
+
+const CELL = 1000;
+const SIDE = 6;
+
+/** A square of cells grown into `rooms` connected regions from random seeds: `cells[y][x]` = room. */
+function growRegions(seed: number, rooms: number): number[][] {
+  const rnd = lcg(seed);
+  const cells = Array.from({ length: SIDE }, () => Array<number>(SIDE).fill(-1));
+  const frontier: [number, number][] = [];
+  for (let r = 0; r < rooms; r++) {
+    let [x, y] = [rnd(SIDE), rnd(SIDE)];
+    while (cells[y]![x] !== -1) [x, y] = [rnd(SIDE), rnd(SIDE)];
+    cells[y]![x] = r;
+    frontier.push([x, y]);
+  }
+  while (frontier.length > 0) {
+    const k = rnd(frontier.length);
+    const [x, y] = frontier[k]!;
+    const free = [
+      [x + 1, y],
+      [x - 1, y],
+      [x, y + 1],
+      [x, y - 1],
+    ].filter(([u, v]) => cells[v!]?.[u!] === -1);
+    if (free.length === 0) {
+      frontier.splice(k, 1);
+      continue;
+    }
+    const [u, v] = free[rnd(free.length)]! as [number, number];
+    cells[v]![u] = cells[y]![x]!;
+    frontier.push([u, v]);
+  }
+  return cells;
+}
+
+/** The ring of room `r`'s cells, floor on the right, or undefined if it has a hole or touches itself. */
+function traceRing(cells: readonly number[][], r: number): Point[] | undefined {
+  const at = (x: number, y: number): number => cells[y]?.[x] ?? -1;
+  const next = new Map<string, Point>();
+  const add = (a: Point, b: Point): boolean => {
+    const k = `${a.x},${a.y}`;
+    const clash = next.has(k);
+    next.set(k, b);
+    return !clash;
+  };
+  for (let y = 0; y < SIDE; y++) {
+    for (let x = 0; x < SIDE; x++) {
+      if (at(x, y) !== r) continue;
+      const fine = [
+        at(x, y - 1) === r || add({ x, y }, { x: x + 1, y }),
+        at(x + 1, y) === r || add({ x: x + 1, y }, { x: x + 1, y: y + 1 }),
+        at(x, y + 1) === r || add({ x: x + 1, y: y + 1 }, { x, y: y + 1 }),
+        at(x - 1, y) === r || add({ x, y: y + 1 }, { x, y }),
+      ];
+      if (fine.includes(false)) return undefined;
+    }
+  }
+  const [start] = next.keys();
+  if (start === undefined) return undefined;
+  const ring: Point[] = [];
+  let k = start;
+  do {
+    const [x, y] = k.split(",").map(Number) as [number, number];
+    ring.push({ x: x * CELL, y: y * CELL });
+    const b = next.get(k)!;
+    k = `${b.x},${b.y}`;
+  } while (k !== start);
+  return ring.length === next.size ? ring : undefined;
+}
+
+/** A segment as the unit edges it covers: `H|V x y`, each `CELL` long. */
+function unitEdges(a: Point, b: Point): string[] {
+  const out: string[] = [];
+  const [x0, x1] = [Math.min(a.x, b.x), Math.max(a.x, b.x)];
+  const [y0, y1] = [Math.min(a.y, b.y), Math.max(a.y, b.y)];
+  for (let x = x0; x < x1; x += CELL) out.push(`H ${x} ${y0}`);
+  for (let y = y0; y < y1; y += CELL) out.push(`V ${x0} ${y}`);
+  return out;
+}
+
+suite("against a cell-by-cell oracle", () => {
+  it("every shared cell edge is on one partition of its pair, every outer one on the ring, and nothing else is", () => {
+    let compared = 0;
+    let severalRuns = 0;
+    for (let seed = 1; seed <= 400; seed++) {
+      const count = 2 + (seed % 4);
+      const cells = growRegions(seed, count);
+      // Every other plan leaves one room out, so the union has notches of its own.
+      const kept = Array.from({ length: seed % 2 === 0 ? count : count - 1 }, (_, r) => r);
+      const rings = kept.map((r) => traceRing(cells, r));
+      if (rings.some((r) => r === undefined)) continue;
+      const rooms: TileRoom[] = kept.map((r, k) => ({ id: `r${r}`, parts: ringParts(rings[k]!)! }));
+      const got = deriveWallsFromRooms(rooms, [], [], 100);
+      if (!got.ok) continue;
+
+      // The truth, read off the cells: no sweep, no ring, no rectangle.
+      const want: string[] = [];
+      const inSet = (x: number, y: number): number => {
+        const c = cells[y]?.[x] ?? -1;
+        return kept.includes(c) ? c : -1;
+      };
+      for (let y = 0; y <= SIDE; y++) {
+        for (let x = 0; x <= SIDE; x++) {
+          const pairs: [number, number, string][] = [
+            [inSet(x, y - 1), inSet(x, y), `H ${x * CELL} ${y * CELL}`],
+            [inSet(x - 1, y), inSet(x, y), `V ${x * CELL} ${y * CELL}`],
+          ];
+          for (const [a, b, edge] of pairs) {
+            if (a === b) continue;
+            want.push(a >= 0 && b >= 0 ? `${edge} r${Math.min(a, b)}|r${Math.max(a, b)}` : `${edge} ring`);
+          }
+        }
+      }
+      const seen: string[] = [];
+      for (const w of got.walls) {
+        const who = w.between ? [...w.between].sort().join("|") : "ring";
+        for (const p of w.pieces) {
+          const last = p.closed ? p.points.length : p.points.length - 1;
+          for (let k = 0; k < last; k++) {
+            for (const e of unitEdges(p.points[k]!, p.points[(k + 1) % p.points.length]!)) seen.push(`${e} ${who}`);
+          }
+        }
+      }
+      expect(seen.sort(), `seed ${seed}`).toEqual(want.sort());
+      const names = got.walls.map((w) => w.name);
+      expect(new Set(names).size, `seed ${seed}`).toBe(names.length);
+      compared++;
+      if (names.some((n) => n.includes("#"))) severalRuns++;
+    }
+    // Not vacuous: most seeds were compared, and many of them have a pair with several runs.
+    expect(compared).toBeGreaterThan(150);
+    expect(severalRuns).toBeGreaterThan(100);
   });
 });
 
