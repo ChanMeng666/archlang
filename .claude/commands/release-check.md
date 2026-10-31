@@ -76,8 +76,22 @@ you observed. Do NOT push anything — this command only verifies.
    otherwise).
 
 5. **Gates green.** `npm run check`, `npm run check:drift`, `npm run typecheck:all`,
-   `npm run docs:build`, and the PR gates on GitHub for the release commit
-   (`gh run list --branch main --limit 5`).
+   `npm run docs:build`, and the PR gates on GitHub for the release PR. A green PR says nothing about
+   Node 18, Node 20 or Windows: those legs report green without running on a PR, and only `main`'s
+   runs prove them. Before merging the release PR, read both, for the commit it branches from:
+
+   ```bash
+   gh run list --workflow ci.yml --branch main --event push --limit 3
+   gh run view <id> --json headSha,jobs --jq '.headSha, (.jobs[] | "\(.conclusion)  \(.name)")'
+   gh run list --workflow nightly.yml --limit 1
+   gh run view <id> --json jobs --jq '.jobs[] | select(.name | startswith("Test ")) | "\(.conclusion)  \(.name)"'
+   ```
+
+   The newest completed push run must be `main`'s head and `success` on every job, with `Node 18`,
+   `Node 20` and `Windows (tests + drift)` listed. Every nightly `Test …` job must be `success`
+   (a red `Secret scan` is not one of these). A red one blocks the release until it is fixed on
+   `main`. The bump commit's own push run finishes after the tag, since the tag follows the merge at
+   once (below): read it once it finishes, and a red there is owed a patch release.
 
 6. **Built artifacts** (CI's `builds` job; run locally if it has not run):
 
