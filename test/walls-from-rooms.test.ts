@@ -315,8 +315,9 @@ suite("probe agreement (PS3.0 part A, PR #222)", () => {
     ["a run exactly the thickness", `  room id=a at (0,0) size 4000x3000\n  room id=b at (4000,2900) size 3000x3000`],
     ["a thicker partition", `  room id=a at (0,0) size 4000x3000\n  room id=b at (4000,2900) size 3000x3000`, 150],
     [
+      // Slanted: a rectilinear ring is in the set since card L1, and the probe predates that.
       "a polygon room",
-      `  room id=a polygon (0,0) (4000,0) (4000,3000) (0,3000)\n  room id=b at (4000,0) size 3000x3000`,
+      `  room id=a polygon (0,0) (4000,0) (4000,3000) (1000,3000)\n  room id=b at (4000,0) size 3000x3000`,
     ],
     ["a circle room", `  room id=a circle at (2000,2000) radius 2000`],
   ];
