@@ -71,7 +71,9 @@ export type LintSkipReason =
    *  count as a way in (the access graph and the walk do). */
   | "balcony-only-entrance"
   /** A stair drawn as flights and landings, which the rule reads only in part so far: its figures
-   *  allow nothing for a landing, or the comparison between its two stops is not made. */
+   *  allow nothing for a landing, the landings between its flights are not measured, the head of
+   *  a flight from below is not read, every piece stands whole with nothing passed under, or the
+   *  comparison between its two stops is by bounding box (`src/lint/rules/stairs.ts`). */
   | "block-stair"
   /** The door's host wall is angled or curved, which the rule does not measure. */
   | "unsupported-host-geometry"

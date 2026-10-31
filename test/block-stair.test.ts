@@ -20,6 +20,7 @@ import {
   format,
   impact,
   lint,
+  lintCoverage,
   lintWithCoverage,
   planToJson,
   renderAscii,
@@ -29,6 +30,10 @@ import {
 } from "../src/index.js";
 import type { RRoom, RStair } from "../src/ir.js";
 import { MAX_ELEMENTS } from "../src/ir.js";
+import { LINT_RULES } from "../src/lint.js";
+import { buildLintContext } from "../src/lint/context.js";
+import { resolveRuleset } from "../src/lint/ruleset.js";
+import { lintStoreys } from "../src/lint/storeys.js";
 import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import type { SceneNode } from "../src/scene.js";
@@ -1161,5 +1166,190 @@ ${stairBlock(moved, "down")}
       .map((d) => d.message)
       .join(" ");
     expect(text).not.toMatch(/complian|complies|conform|meets the/i);
+  });
+});
+
+describe("the coverage report says so wherever a block stair is read in part", () => {
+  const { pieces } = L_STAIR;
+  /** The quarter-turn as a storey draws it, shifted clear of a 3600 mm hall's stair wall. */
+  const flights = (dir: string, pad = "    ") =>
+    stairBlock(
+      { ...L_STAIR, pieces: pieces.map((p) => [p[0] + 1000, p[1], p[2], p[3]]) },
+      dir as "up" | "down",
+      "s",
+      pad,
+    );
+  const straight = (dir: string) => `    stair id=s at (2500,100) size 1000x2000 dir ${dir}`;
+
+  /** A storey of the review's two-storey hall, holding `run`. */
+  const storey = (n: number, run: string, extra = ""): string => `  level ${n} {
+    room id=hall${n} at (0,0) size 3600x3200 label "Hall ${n}" uses hall
+    room id=side${n} at (3600,0) size 4000x3200 label "Side ${n}" uses living
+    walls from rooms exterior 200 partition 100
+    door between hall${n} and side${n} at 1600 from start width 900
+${run}
+${extra}
+  }`;
+  const levels = (...storeys: string[]) => `plan "Stops" {\n  units mm\n${storeys.join("\n")}\n}\n`;
+
+  /** The review's repro: a block with no height anywhere. */
+  const NO_HEIGHT = `plan "Quarter-turn stair" {
+  units mm
+
+  room id=hall at (0,0) size 2600x3200 label "Stair hall" at (700,2700) uses hall
+  walls from rooms exterior 200 partition 100
+  door on hall.bottom at 800 from start width 900 swing inward
+  stair id=s dir up width 1000 {
+    flight at (1500,1100) size 1000x1000
+    landing at (1500,100) size 1000x1000
+    flight at (100,100) size 1400x1000
+  }
+}
+`;
+  /** The review's repro: a block that continues up from level 2, and comes down on level 3. */
+  const MID_UP = levels(storey(1, flights("up")), storey(2, flights("up")), storey(3, flights("down")));
+
+  const family = (src: string, name: string) => lintCoverage(src)!.families.find((f) => f.family === name)!;
+  const reasons = (src: string, name: string) => (family(src, name).skipped ?? []).map((s) => s.reason);
+  const entry = (src: string, name: string) => family(src, name).skipped?.find((s) => s.reason === "block-stair");
+
+  /** The stops on which `rule` alone files the reason (0 for a plan of one storey), read through
+   *  its own sink, since the report folds a family's rules together. */
+  const filedBy = (src: string, rule: string): number[] => {
+    expect(codes(src)).toEqual([]); // so that an empty answer is about the rule, not a broken plan
+    const { ir, levels: stops } = resolvePlan(src);
+    const rules = resolveRuleset();
+    return lintStoreys(ir!, stops, rules.tolMm).flatMap((st) => {
+      let filed = false;
+      const sink = (reason: string): void => {
+        if (reason === "block-stair") filed = true;
+      };
+      LINT_RULES.find((r) => r.name === rule)!.check(buildLintContext(st.ir, rules, st.building, sink));
+      return filed ? [st.level ?? 0] : [];
+    });
+  };
+
+  it("with no height anywhere, beside `no-storey-height`", () => {
+    expect(reasons(NO_HEIGHT, "stairs").sort()).toEqual(["block-stair", "no-storey-height"]);
+    expect(filedBy(NO_HEIGHT, "stair-too-steep")).toEqual([]);
+    expect(filedBy(NO_HEIGHT, "stair-no-landing")).toEqual([0]);
+    expect(filedBy(NO_HEIGHT, "swing-over-stair")).toEqual([0]);
+    expect(filedBy(NO_HEIGHT, "stair-side-entry")).toEqual([0]);
+  });
+
+  it("on the storey it continues up from, in the stair family and not only the shaft's", () => {
+    // Every stop, so `levels` is left out; the shaft comparison files from level 2 up.
+    expect(entry(MID_UP, "stairs")).toMatchObject({ reason: "block-stair" });
+    expect(entry(MID_UP, "stairs")!.levels).toBeUndefined();
+    expect(entry(MID_UP, "vertical")!.levels).toEqual([2, 3]);
+    expect(filedBy(MID_UP, "stair-no-landing")).toEqual([1, 2, 3]);
+  });
+
+  it("each rule files only on a stop its own reading is partial: a stairwell is a hole, read whole", () => {
+    // Level 3 comes down, so it is a stairwell: whole is right, and only the landing rule files.
+    expect(filedBy(MID_UP, "swing-over-stair")).toEqual([1, 2]);
+    expect(filedBy(MID_UP, "stair-side-entry")).toEqual([1, 2]);
+    const furnished = levels(
+      storey(1, flights("up"), "    furniture id=t1 table at (200,300) size 600x600"),
+      storey(2, flights("down"), "    furniture id=t2 table at (200,300) size 600x600"),
+    );
+    expect(filedBy(furnished, "furniture-on-stair")).toEqual([1]);
+    expect(entry(furnished, "furniture")!.levels).toEqual([1]);
+  });
+
+  it("`W_STAIR_HEAD_VOID` files where the head from below goes unread, and only there", () => {
+    const hole = "    void id=v at (4000,400) size 800x800";
+    const src = levels(
+      storey(1, flights("up"), hole),
+      storey(2, flights("up"), hole),
+      storey(3, flights("down"), hole),
+    );
+    expect(filedBy(src, "stair-head-void")).toEqual([2]);
+    // Two straight stops: the rule reads that head itself, and the form is not on the plan.
+    const plain = levels(storey(1, straight("up"), hole), storey(2, straight("up"), hole));
+    expect(filedBy(plain, "stair-head-void")).toEqual([]);
+  });
+
+  it("a straight stop beside a block goes unread too, either way up", () => {
+    const hole = "    void id=v at (4000,400) size 800x800";
+    const over = levels(storey(1, flights("up")), storey(2, straight("up"), hole));
+    expect(filedBy(over, "stair-head-void")).toEqual([2]);
+    expect(filedBy(over, "stair-no-landing")).toEqual([1, 2]);
+    // A straight flight that rises here is not known for the well it stands over.
+    expect(filedBy(over, "swing-over-stair")).toEqual([1, 2]);
+    const under = levels(storey(1, straight("up")), storey(2, flights("up"), hole));
+    expect(filedBy(under, "stair-head-void")).toEqual([2]);
+    expect(entry(under, "stairs")!.levels).toEqual([2]);
+    const down = levels(storey(1, flights("up")), storey(2, straight("down"), hole));
+    expect(filedBy(down, "stair-head-void")).toEqual([2]);
+    expect(filedBy(down, "stair-no-landing")).toEqual([1, 2]);
+  });
+
+  it("a stop below that is no stair, or does not rise to it, leaves no head to read", () => {
+    const hole = "    void id=v at (4000,400) size 800x800";
+    const lift = levels(storey(1, "    elevator id=s at (2500,100) size 1000x2000"), storey(2, flights("up"), hole));
+    expect(filedBy(lift, "stair-head-void")).toEqual([]);
+    // An escalator has a `dir` to rise by, and no head landing is read of one, straight or not.
+    const moving = levels(
+      storey(1, "    escalator id=s at (2500,100) size 1000x2000 dir up"),
+      storey(2, flights("up"), hole),
+    );
+    expect(filedBy(moving, "stair-head-void")).toEqual([]);
+    const falling = levels(storey(1, straight("down")), storey(2, flights("up"), hole));
+    expect(filedBy(falling, "stair-head-void")).toEqual([]);
+  });
+
+  it("a rule with nothing to compare files nothing, and the landing rule always does", () => {
+    const bare = `plan "Bare" {
+  units mm
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }
+  room id=r at (0,0) size 6000x6000 uses hall
+${stairBlock(L_STAIR)}
+}
+`;
+    expect(filedBy(bare, "swing-over-stair")).toEqual([]);
+    expect(filedBy(bare, "stair-side-entry")).toEqual([]);
+    expect(filedBy(bare, "stair-no-landing")).toEqual([0]);
+    // A sliding door is a doorway to be beside, and sweeps nothing.
+    const sliding = bare.replace("  room id=r", "  door id=d sliding at (3000,6000) width 900 wall shell\n  room id=r");
+    expect(filedBy(sliding, "swing-over-stair")).toEqual([]);
+    expect(filedBy(sliding, "stair-side-entry")).toEqual([0]);
+  });
+
+  it("the furniture family says so of a piece read against a rising block, and only then", () => {
+    const hall = (dir: "up" | "down") =>
+      hallPlan(`${stairBlock(L_STAIR, dir)}\n    furniture id=t table at (3000,3000) size 600x600`);
+    expect(reasons(hall("up"), "furniture")).toContain("block-stair");
+    expect(reasons(hall("down"), "furniture")).not.toContain("block-stair");
+    expect(reasons(planOf(L_STAIR), "furniture")).not.toContain("block-stair");
+  });
+
+  it("the stair family stays `partial` with every rule that can file filing: it did judge", () => {
+    const all = hallPlan(
+      `${stairBlock(L_STAIR)}\n    void id=v at (4000,4000) size 800x800\n    furniture id=t table at (3000,3000) size 600x600`,
+      "  height 2750\n",
+    );
+    for (const rule of ["swing-over-stair", "stair-no-landing", "stair-side-entry", "stair-too-steep"])
+      expect(filedBy(all, rule)).toEqual([0]);
+    expect(filedBy(all, "stair-head-void")).toEqual([]);
+    expect(family(all, "stairs").status).toBe("partial");
+    const hole = "    void id=v at (4000,400) size 800x800";
+    const tall = levels(storey(1, flights("up"), hole), storey(2, flights("up"), hole)).replace(
+      "  units mm\n",
+      "  units mm\n  height 2750\n",
+    );
+    expect(filedBy(tall, "stair-head-void")).toEqual([2]);
+    expect(filedBy(tall, "stair-too-steep")).toEqual([1, 2]);
+    expect(family(tall, "stairs").status).toBe("partial");
+  });
+
+  it("a plan of straight stairs files nothing in any family", () => {
+    const hole = "    void id=v at (4000,400) size 800x800";
+    const src = levels(
+      storey(1, straight("up"), `${hole}\n    furniture id=t table at (200,300) size 600x600`),
+      storey(2, straight("down"), hole),
+    );
+    for (const f of lintCoverage(src)!.families)
+      expect((f.skipped ?? []).map((s) => s.reason)).not.toContain("block-stair");
   });
 });

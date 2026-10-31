@@ -24,12 +24,14 @@
  * (1.23a) [V]. The flight band is centred in the footprint (`stairGlyph`).
  *
  * **A block stair** (flights and landings, issue #362) is read piece by piece, never as its
- * bounding box, whose notch is floor. What is judged so far is deliberately strict, and files
- * the `block-stair` coverage skip where it is only part of the answer: its run is the sum of its
- * flights against the {@link minimumRun} of a straight flight, one going per landing too long; its
- * landing is the one this storey's boarded flight owes, and the head a flight from below arrives
- * at on a storey it continues up from is not read; all of every piece stands in the way, with
- * none of the high end a person passes under.
+ * bounding box, whose notch is floor. What is judged so far is deliberately strict, and each rule
+ * files the `block-stair` coverage skip where its own reading is only part of the answer: the run
+ * is the sum of the flights against the {@link minimumRun} of a straight flight, one going per
+ * landing too long (`W_STAIR_TOO_STEEP`); only the ends of the stair are measured, not the landings
+ * between its flights, and the head a flight from below arrives at is not read beside a block on
+ * either stop ({@link headUnread}); on a storey it rises from, all of every piece stands in the
+ * way, with none of the high end a person passes under ({@link readInPart}). A stairwell is a hole,
+ * so a stop that comes down files nothing for that. A rule with nothing to compare files nothing.
  */
 
 import type { Point } from "../../ast.js";
@@ -165,6 +167,19 @@ function landingsOf(v: RStair, ctx: LintContext): Landing[] {
   return out;
 }
 
+/**
+ * Does {@link landingsOf} leave unread the head of a flight rising to `v` from the storey below,
+ * because a block stair stands on one stop or the other? Not when both are blocks and this stop
+ * comes down: the head boarded here is that head. A fact and not a skip: `storeyStairs` is memoised
+ * and has callers that are not rules, so each rule that reads the landings files it.
+ */
+function headUnread(v: RStair, ctx: LintContext): boolean {
+  const below = ctx.building.shaftNeighbours?.get(v.id)?.below?.run;
+  if (below?.kind !== "stair" || below.dir !== "up") return false;
+  if (isBlockStair(v) && isBlockStair(below)) return v.dir === "up";
+  return isBlockStair(v) || isBlockStair(below);
+}
+
 /** The clear headroom over a flight and its landings: Approved Document K (2013) 1.11 and
  *  Diagram 1.3, "at least 2m" [V]. What a person walking beside a rising flight passes under. */
 export const STAIR_HEADROOM_MM = 2000;
@@ -216,6 +231,8 @@ export interface StairFacts {
   landings: Landing[];
   /** The footprint is a stairwell here (a flight comes down from, or arrives at, this storey). */
   well: boolean;
+  /** The head of a flight rising from the storey below is not read ({@link headUnread}). */
+  headUnread: boolean;
   /** Per landing: what cuts it short (`null` when the full depth is clear), or `"curved"` when a
    *  curved wall stands near it and it is not judged. */
   blocks: Array<LandingBlock | null | "curved">;
@@ -258,6 +275,7 @@ export function storeyStairs(ctx: LintContext): StoreyStairs | null {
             v,
             landings: ls,
             well: ls.some((l) => l.end === "head"),
+            headUnread: headUnread(v, ctx),
             needs,
             blocks: ls.map((l, j) => {
               const zone = beyond(l.rect, l.edge, needs[j]!, l.width);
@@ -285,6 +303,13 @@ function charge(f: StoreyStairs, n: number): boolean {
   f.left -= n;
   return true;
 }
+
+/**
+ * Is what stands in the way on `sf` only part of the answer, for the `block-stair` skip? A block
+ * rising from this floor stands whole, with nothing passed under; a stop whose head from below is
+ * unread is not known for the stairwell it is. A block that comes down is a stairwell: all of it.
+ */
+const readInPart = (sf: StairFacts): boolean => (isBlockStair(sf.v) && !sf.well) || sf.headUnread;
 
 /** Shared entry of the rules: the storey's stair facts, filing the skip that explains a `null`. */
 function factsFor(ctx: LintContext): StoreyStairs | null {
@@ -380,6 +405,7 @@ export const swingOverStair: LintRule = {
       ctx.skip("stair-budget");
       return [];
     }
+    if (swings.length > 0 && f.stairs.some(readInPart)) ctx.skip("block-stair");
     const out: Diagnostic[] = [];
     const dwelling = judgesAsDwelling(ctx);
     for (const { d, leaves } of swings) {
@@ -565,6 +591,8 @@ export const stairNoLanding: LintRule = {
     const out: Diagnostic[] = [];
     for (const sf of f.stairs) {
       const v = sf.v;
+      // Only the stair's ends are measured: not the landings between a block's flights.
+      if (isBlockStair(v) || sf.headUnread) ctx.skip("block-stair");
       sf.landings.forEach((l, i) => {
         const b = sf.blocks[i]!;
         if (b === "curved") {
@@ -623,6 +651,7 @@ export const stairSideEntry: LintRule = {
       ctx.skip("stair-budget");
       return [];
     }
+    if (ctx.connectors.length > 0 && f.stairs.some(readInPart)) ctx.skip("block-stair");
     const out: Diagnostic[] = [];
     const min = ctx.rules.minPathClearWidthMm;
     for (const c of ctx.connectors) {
@@ -688,6 +717,8 @@ export const stairHeadVoid: LintRule = {
     if (ctx.voids.length === 0) return [];
     const f = factsFor(ctx);
     if (f === null) return [];
+    // Never on the lowest stop, which has nothing below it, so the family never folds to `skipped`.
+    if (f.stairs.some((sf) => sf.headUnread)) ctx.skip("block-stair");
     const out: Diagnostic[] = [];
     for (const sf of f.stairs) {
       const v = sf.v;
@@ -888,6 +919,7 @@ export const furnitureOnStair: LintRule = {
       ctx.skip("stair-budget");
       return [];
     }
+    if (f.stairs.some(readInPart)) ctx.skip("block-stair");
     const out: Diagnostic[] = [];
     for (const piece of ctx.furniture) {
       const foot = rectOf(piece);
