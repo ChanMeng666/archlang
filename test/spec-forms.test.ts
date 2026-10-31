@@ -676,6 +676,14 @@ const NEGATIVE: Negative[] = [
     src: plan(`  room id=a at (0,0) size 3000x3000\n  keep fixed a.left at 100`),
   },
   {
+    code: "E_STAIR_PIECES",
+    channel: "compile",
+    note: "a turning stair's pieces must make one stair: two flights with no landing between",
+    src: plan(
+      `  stair id=s dir up width 1000 {\n    flight at (0,1000) size 1000x1000\n    flight at (0,0) size 1000x1000\n  }`,
+    ),
+  },
+  {
     code: "E_ARC_RADIUS",
     channel: "compile",
     note: "R < chord/2 has no circle",

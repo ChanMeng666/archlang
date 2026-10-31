@@ -37,6 +37,7 @@
  * (preview-and-remodel B1, `test/lock.test.ts`) were added after the kind too: each row is the
  * same digest body on the tree that adds them; they write no `double` door.
  * `examples/remodel.arch` (preview-and-remodel B3b, `test/wall-status-drawing.test.ts`) likewise.
+ * `examples/turning-stair.arch` (issue #362, S2) likewise.
  *
  * A digest here moving is a finding to explain before it is a diff to re-measure.
  */
@@ -75,6 +76,7 @@ const BASELINE: [string, string][] = [
   ["examples/parametric.arch", "402cf58e4e122164928e6d875320e63b7be5c017396dce026ab8c73d4a0373ef"],
   ["examples/remodel.arch", "0899315f2bd50e559d3e6e13350734231cd9c11f821fa929a9d0c1b51f1e13db"],
   ["examples/sheet-notes.arch", "602cfd5f8e34268bf660dcad47b5cbf28332ddf92a119fba7317850ab9f9d798"],
+  ["examples/turning-stair.arch", "9e27b499358898fd45376c73ca5771c883335999f3506c5b84acb3b1a4eef835"], // new example (S2), see header
   ["examples/two-storey.arch", "30fea74236f151947c7fec764e66b2f5a860ce6f71908a5a60fc68e87566837a"],
   ["test/fixtures/axes-grid.arch", "e6be5d70788d931cacaa8cb1db2c2c454c1532d01153b90e2427c125770e5559"],
   ["test/fixtures/chain30.arch", "9ba4940dd0056ea94b3ff99e95a9288b8130a485aa2a3e7e97c9c6cc32b797d9"],

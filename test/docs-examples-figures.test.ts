@@ -207,8 +207,8 @@ suite("docs-site/examples.md quotes figures the compiler agrees with", () => {
     // The page is a tour of every publishable example; if this number moves, a section
     // was added or removed and the figure sweep below has to have followed it.
     // 28 since the Issued Sheet section (`sheet-notes`) was added; 31 with the office, cafe and classroom;
-    // 32 with the Apartment Remodel (B3b).
-    expect(secs.length).toBe(32);
+    // 32 with the Apartment Remodel (B3b); 33 with the Turning Stair (S2).
+    expect(secs.length).toBe(33);
     expect(new Set(secs.map((s) => s.example)).size).toBe(secs.length);
   });
 

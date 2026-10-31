@@ -536,6 +536,7 @@ describe("law: a storey no shaft arrives on measures exactly as before", () => {
       "examples/hillside-villa.arch L2",
       "examples/townhouse.arch L2",
       "examples/townhouse.arch L3",
+      "examples/turning-stair.arch L2",
       "examples/two-storey.arch L2",
       // PS2.77's fixture: `two-storey`'s building on another sheet, so its first floor likewise.
       "test/fixtures/storeys-eaves-overflow.arch L2",

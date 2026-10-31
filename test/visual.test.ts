@@ -107,6 +107,8 @@ const EXAMPLES = [
   // The remodel (B3b): the only plan that draws a `status demolish` wall (dashed, no poche,
   // beneath the standing walls) and the legend's `demolished` row.
   "remodel.arch",
+  // The turning stair (S2): the block form's walking line, landing and one break line.
+  "turning-stair.arch",
 ];
 
 async function hasResvg(): Promise<boolean> {

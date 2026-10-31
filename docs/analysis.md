@@ -636,8 +636,12 @@ coordinates with different ids stay two different shafts.
 Two fields carry it, and they sit at deliberately different levels:
 
 - **`levels[i].verticals`** — the runs drawn on *that* storey, as facts:
-  `{ id, kind, dir?, room, bbox, flight_width? }`. `room` is the room whose rectangle
-  contains the footprint's centre (or `null`). Absent when a storey draws none.
+  `{ id, kind, dir?, room, bbox, flight_width?, flights?, landings?, turn? }`. `room` is the
+  room whose rectangle contains the footprint's centre (or `null`); on a block stair, the centre
+  of the flight boarded on that storey. Absent when a storey draws none. A block stair's `bbox` is the union of its pieces, which holds floor that is no stair,
+  so only that form adds `flights[]` (`bbox`, `run_mm`, `entry`, in climbing order), `landings[]`
+  (`bbox`, `turn`) and `turn`, the net of its landings' turns: `left`, `right`, `half` or `none`,
+  as the person climbing turns.
 - **`vertical`** — a **whole-building** block, present only at the top level (never inside
   `levels[i]`) and only when a run actually spans two or more storeys:
 
@@ -1021,7 +1025,7 @@ the key is absent. Lengths are whole millimetres, rounded as the messages round 
 | `tall_units[]` | `W_FURNITURE_OVER_WINDOW` | per window the unit stands in front of: `covered_mm` along the span, `across_mm` into the band |
 | `hobs[]` | `W_HOB_UNDER_WINDOW`, `W_HOB_FRIDGE_GAP` | per window band it reaches: `covered_mm`, `across_mm`, `off_face_mm` (its side nearest the host, past the wall's face) and `under` (the rule's reading); `tall_unit_gap`, the nearest tall unit inside a side's landing |
 | `doorways[]` | `W_DOORWAY_BLOCKED`, `W_PATH_TOO_NARROW` | `width_mm`, `clear_width_mm` (the access graph's), `approach` (`need_mm`, `blocked_by` with the depth left from the wall's face); a cased opening wider than a doorway adds `stretch` (the longest clear stretch, against 1200 mm); `approach: null` with `unmeasured` (`garage`, `host`) when it is not read |
-| `stairs[]` | `W_STAIR_NO_LANDING`, `W_STAIR_TOO_STEEP` | `run_mm`, `min_run_mm` (on a `dir up` flight of a plan that authors heights), and per landing this storey owes, `need_mm`, `clear_mm` and `by` (a wall, a void or `no-floor`); `null` past the stair rules' work budget |
+| `stairs[]` | `W_STAIR_NO_LANDING`, `W_STAIR_TOO_STEEP` | `run_mm`, `min_run_mm` (on a `dir up` flight of a plan that authors heights; on a block stair whose flights cannot hold the goings whole, their run once lengthened to hold them), and per landing this storey owes, `need_mm`, `clear_mm` and `by` (a wall, a void or `no-floor`); `null` past the stair rules' work budget |
 
 ```bash
 archlang describe plan.arch --facts clearances --json --select clearances

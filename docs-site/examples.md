@@ -242,6 +242,18 @@ explains the dashed swatch, and in the DXF the two kinds of wall land on `A-WALL
 
 <ArchLive :src="EXAMPLES['remodel']" :rows="30" />
 
+### Turning Stair (one stair of flights and a landing)
+
+A small house on two storeys, **4 rooms, 2 doors between them and a front door**, 8.2 × 4.0 m to
+the outer faces. Its quarter-turn is one `stair`, written as a block of flights and a landing in
+climbing order, and the upper level copies the block and changes only `dir`. The floor the stair
+wraps round stays floor. At a 2750 mm storey it owes 11 goings and a landing, 2420 mm of flights,
+not the 2640 mm a straight flight owes, and its two 1530 mm flights hold 6 goings each, so no
+residential lint profile warns. `describe` reports the flights, the landing and the turn. See
+[vertical circulation](/language-reference#vertical-circulation--stair-elevator-escalator-v121).
+
+<ArchLive :src="EXAMPLES['turning-stair']" :rows="30" />
+
 ### Suburban Bungalow (orientation, and doors that are not hinged)
 
 A single-storey house — **8 rooms, 102 m², 6 doors, 7 windows** at `scale 1:100` — on a

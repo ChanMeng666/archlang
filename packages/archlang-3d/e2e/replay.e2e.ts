@@ -72,7 +72,7 @@ describe("replay in a browser", () => {
     expect(text.get("end")).toMatch(/no warnings$/);
   }, 120_000);
 
-  it("runs on every corpus plan the mesh stage builds (35)", async () => {
+  it("runs on every corpus plan the mesh stage builds (36)", async () => {
     const failed: string[] = [];
     for (const [name] of EXAMPLES_LIST) {
       const { html, events } = await replayOf(name, 320, 180);
@@ -80,7 +80,7 @@ describe("replay in a browser", () => {
       if (!v.seekRoundTrip || v.keyFrames.length < 4) failed.push(name);
     }
     expect(failed).toEqual([]);
-    // One browser per plan, 35 plans: about 50 s idle, past the 120 s default on a loaded machine.
+    // One browser per plan, 36 plans: about 50 s idle, past the 120 s default on a loaded machine.
   }, 600_000);
 
   it("refuses cleanly without a runnable ffmpeg: no hang, no partial MP4 (PR #330 review round 1)", async () => {

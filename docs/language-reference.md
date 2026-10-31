@@ -2100,6 +2100,7 @@ wall.
 
 ```
 stair     [id=<id>] at (x,y) size <w>x<h> dir up|down [width <mm>]
+stair     [id=<id>] dir up|down width <mm> { flight … landing … flight … }
 elevator  [id=<id>] at (x,y) size <w>x<h>
 escalator [id=<id>] at (x,y) size <w>x<h> dir up|down
 ```
@@ -2139,10 +2140,41 @@ was authored with, and a mirrored stair's break line is drawn mirrored.
 
 **`width` (stairs only)** is the FLIGHT width measured across the run. It defaults to the
 footprint's cross-axis extent, and may not exceed it
-([`E_STAIR_WIDTH`](error-codes.md#e_stair_width)). v1 always draws **one straight flight**:
-a narrower `width` centres the flight band in the footprint and leaves the remainder as an
-un-drawn return/void, so a dog-leg stair is modelled as its footprint plus a narrower run
-rather than as two flights.
+([`E_STAIR_WIDTH`](error-codes.md#e_stair_width)). A straight stair draws **one flight**: a
+narrower `width` centres the flight band in the footprint and leaves the remainder undrawn.
+
+**A turning stair** is one `stair` of authored pieces:
+
+```arch static
+stair id=s dir up width 1000 {
+  flight at (1500,1100) size 1000x1000
+  landing at (1500,100) size 1000x1000
+  flight at (100,100) size 1400x1000
+}
+```
+
+Pieces alternate, starting and ending with a `flight`, and each touches the next along the
+flight's whole `width`, which the block must state. Nothing lays them out: pieces that do not
+make one stair are refused ([`E_STAIR_PIECES`](error-codes.md#e_stair_pieces)), never moved.
+Pieces are in **climbing order on every storey**: to draw the storey above, copy the block and
+change only `dir`. `dir up` boards the first flight's foot and `dir down` the last flight's head.
+A flight's direction comes from what it touches, never from its long side, so a square flight or
+one running along its short side reads correctly. `flight` and `landing` mean something only
+inside the block, so `room id=landing` is still a room.
+
+It draws one `UP` or `DN`, one walking line through every piece, one arrowhead and one break
+line, and the floor it wraps round stays floor: every reader takes the pieces, never the bounding
+box. A storey height moves none of this: treads stay at the nominal going. `describe()` adds
+`flights[]`, `landings[]` and `turn`, and lint reads the run as the sum of the flights, with **one
+going fewer per landing**, because a flight ends on its landing as the top flight ends on the
+floor above. So at 2750 mm, under the default limits, one landing needs 11 goings of 220 mm:
+2420 mm of flights, not the 2640 mm of a straight flight
+([`W_STAIR_TOO_STEEP`](error-codes.md#w_stair_too_steep)). The flights must also hold those goings
+whole, because every going of a stair is the same: 1210 + 1210 mm is 2420 mm and holds 5 + 5, one
+short, and the warning says so. Lint measures the foot and the head,
+not the landings between the flights, and reads every piece whole, with nothing passed under; the
+coverage report says `block-stair` wherever that is only part of the answer. That is arithmetic
+on what the plan says, not a statement that a stair complies with anything.
 
 **What it does to circulation.** The footprint obstructs the
 [navigation grid](analysis.md#circulation--how-a-person-walks-the-plan) exactly like a piece

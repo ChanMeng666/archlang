@@ -58,6 +58,11 @@ export const CANNOT_ROUND_TRIP: Record<string, { because: string; proof: RegExp 
     because: "`level` — each storey projects alone and draws differently from its sheet; also `roof`/`stair`/`paper`",
     proof: /^\s*level\b/m,
   },
+  // Plan JSON has no stair, of either form: `dropped` reports this one (#366).
+  "turning-stair.arch": {
+    because: "`level` — each storey projects alone and draws differently from its sheet; also `roof`/`stair`/`paper`",
+    proof: /^\s*level\b/m,
+  },
   "garden-house.arch": {
     because: "`level`, `outdoor`/`fence`/`roof`, `site … boundary` and the sheet layer",
     proof: /^\s*level\b/m,

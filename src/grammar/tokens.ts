@@ -106,6 +106,10 @@ export const KEYWORDS = {
     "text",
     "close",
     "id",
+    // The pieces of a block `stair`, read only inside its `{ … }`: never `STATEMENT_STARTS`, or
+    // `room id=landing` would stop parsing.
+    "flight",
+    "landing",
     // The `title { … }` field words, from their one list.
     ...TITLE_FIELDS,
     "from",

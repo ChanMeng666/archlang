@@ -560,7 +560,19 @@ export function latticeAligned(ir: ResolvedPlan | null): boolean {
 // ---------------------------------------------------------------------------
 
 /** How the group acts on one fact. */
-export type FactKind = "inv" | "extent" | "rect" | "box" | "ring" | "circle" | "deg" | "rails" | "facing" | "instance";
+export type FactKind =
+  | "inv"
+  | "extent"
+  | "rect"
+  | "box"
+  | "ring"
+  | "circle"
+  | "deg"
+  | "rails"
+  | "facing"
+  | "instance"
+  | "side"
+  | "turn";
 
 export interface Fact {
   kind: FactKind;
@@ -716,9 +728,21 @@ export function summaryFacts(
     (s.verticals ?? []).map((v) => v.id),
   );
   for (const [k, v] of keyed(s.verticals, (v) => v.id)) {
-    const { bbox, ...rest } = v;
+    const { bbox, flights, landings, turn, ...rest } = v;
     inv(`verticals[${k}]`, rest);
     f.set(`verticals[${k}].bbox`, { kind: "rect", value: bbox });
+    // A block stair's own facts: a flight's length holds, its edge turns with the plan, and a turn
+    // is handed. Order is climbing order, which no frame changes.
+    (flights ?? []).forEach((x, i) => {
+      inv(`verticals[${k}].flights[${i}].run_mm`, x.run_mm);
+      f.set(`verticals[${k}].flights[${i}].bbox`, { kind: "rect", value: x.bbox });
+      f.set(`verticals[${k}].flights[${i}].entry`, { kind: "side", value: x.entry });
+    });
+    (landings ?? []).forEach((x, i) => {
+      f.set(`verticals[${k}].landings[${i}].bbox`, { kind: "rect", value: x.bbox });
+      f.set(`verticals[${k}].landings[${i}].turn`, { kind: "turn", value: x.turn });
+    });
+    if (turn !== undefined) f.set(`verticals[${k}].turn`, { kind: "turn", value: turn });
   }
 
   inv(
@@ -1104,6 +1128,15 @@ const KINDS: Readonly<Record<FactKind, Canon>> = {
   rails: {
     canon: (v) => (v === null ? null : [...(v as string[])].sort()),
     expect: (v, f) => (v === null ? null : (v as string[]).map((s) => sideOf(lin(f, SIDE_VEC[s]!))).sort()),
+  },
+  side: { canon: (v) => v, expect: (v, f) => sideOf(lin(f, SIDE_VEC[v as string]!)) },
+  // A reflection swaps a person's left and right; a half-turn and no turn have no hand.
+  turn: {
+    canon: (v) => v,
+    expect: (v, f) => {
+      const reflected = f.a * f.d - f.b * f.c < 0;
+      return reflected && v === "left" ? "right" : reflected && v === "right" ? "left" : v;
+    },
   },
   facing: {
     canon: (v) => v,

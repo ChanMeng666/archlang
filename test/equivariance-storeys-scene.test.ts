@@ -96,7 +96,7 @@ function factViolations(c: StoreyCase, g: string, observedSrc: (gP: string) => s
 describe("the per-storey scene's own construction", () => {
   it("covers every building the per-storey facts suites cover — the shipped `level` examples and every shaft model", () => {
     expect(CASES.map((c) => c.name)).toEqual(STOREY_BUILDING_NAMES);
-    expect(CASES.length).toBe(16);
+    expect(CASES.length).toBe(17);
   });
 
   it("every storey is drawn on the fixed sheet, and P₀ and gP still differ only in their closing `level` lines", () => {

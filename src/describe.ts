@@ -77,15 +77,23 @@ import { deriveSite, planCenterOfRooms, type SiteFacts, toCompass, windowFacingP
 import {
   type ArrivingRun,
   arrivalRuns,
+  flightRun,
+  flightsOf,
+  isBlockStair,
   levelsEnteredFromBelow,
+  type RBlockStair,
   type RVertical,
   roomOfVertical,
+  type StairTurn,
+  stairTurns,
+  tailEdge,
   type VerticalConnection,
   verticalConnections,
   type VerticalKind,
   verticalReach,
   verticalsOf,
 } from "./vertical.js";
+import type { RectEdge } from "./fixture-orientation.js";
 import { fmt2 } from "./num-format.js";
 import { type KeepSummary, keepSummary } from "./keep.js";
 import { drawnView, keepResultsOf } from "./ir.js";
@@ -454,11 +462,39 @@ export interface VerticalSummary {
   kind: VerticalKind;
   /** `up`/`down` as declared on THIS storey; absent for an `elevator`. */
   dir?: VerticalDir;
-  /** The room whose rectangle contains the footprint's centre, or `null`. */
+  /** The room whose rectangle contains the footprint's centre, or `null`; on a block stair, the
+   *  centre of the flight boarded on this storey, because that of its {@link bbox} can stand off the
+   *  stair. */
   room: string | null;
+  /** The footprint; on a block stair the bounding box of its pieces, which holds floor that is no
+   *  stair (read {@link flights} and {@link landings}). */
   bbox: BBox;
   /** Flight width across the run (mm) — `stair` only. */
   flight_width?: number;
+  /** A block stair's flights, in climbing order on every storey; absent on any other run. */
+  flights?: StairFlightSummary[];
+  /** A block stair's landings, in climbing order; absent on any other run. */
+  landings?: StairLandingSummary[];
+  /** How the last flight climbs from the first, as the person climbing turns: the net of
+   *  {@link StairLandingSummary.turn}, so two right turns read `half`. A block stair only. */
+  turn?: StairTurn;
+}
+
+/** One flight of a block stair. */
+export interface StairFlightSummary {
+  bbox: BBox;
+  /** Its length along its run (mm). */
+  run_mm: number;
+  /** The edge a person on THIS storey meets it by: its foot on a `dir up` stop, its head on a
+   *  `dir down` one. */
+  entry: RectEdge;
+}
+
+/** One landing between a block stair's flights. */
+export interface StairLandingSummary {
+  bbox: BBox;
+  /** How the person climbing turns on it. */
+  turn: StairTurn;
 }
 
 /**
@@ -1180,6 +1216,16 @@ function buildFreedom(
 }
 
 /** Spreadable instance stamp for a resolved element — nothing at all at plan level. */
+/** What only a block stair reports (`VerticalSummary`): the pieces its `bbox` cannot say. */
+function blockStairFacts(v: RBlockStair): Pick<VerticalSummary, "flights" | "landings" | "turn"> {
+  const turns = stairTurns(v);
+  return {
+    flights: flightsOf(v).map((f) => ({ bbox: rectOf(f), run_mm: flightRun(f), entry: tailEdge(f) })),
+    landings: v.landings.map((l, i) => ({ bbox: rectOf(l), turn: turns.landings[i]! })),
+    turn: turns.whole,
+  };
+}
+
 function instanceOf(e: { _instance?: string; _component?: string }): { instance?: string; component?: string } {
   return e._instance === undefined ? {} : { instance: e._instance, component: e._component };
 }
@@ -1520,6 +1566,7 @@ function summarize(
     room: roomOfVertical(v, roomEls),
     bbox: rectOf(v),
     ...(v.kind === "stair" ? { flight_width: v.width } : {}),
+    ...(isBlockStair(v) ? blockStairFacts(v) : {}),
   }));
 
   // A void's owning room is the room whose FLOOR holds the opening's CENTRE — through the
