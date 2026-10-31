@@ -24,6 +24,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `open between` boundaries at one point (issue #368, which 1.47.0 fixed for four of them). Three open
+  boundaries of a tee no longer leave a pier, and where one wall is left standing, three of four open at a
+  crossing or two of three at a tee, it ends flush on the point instead of running half a thickness past it,
+  across its own width whether it is thicker or thinner than the open runs. A run with a narrower `width` that
+  stops short of the point, or with another opening on it, is that wall. A wall written by hand, or the ring,
+  touching the point draws what it drew. The drawing alone moves: `describe()` and `lint()` do not.
+- A door or window beside an `open between` boundary (issue #368). A boundary voided over its whole clear span
+  no longer counts as a meeting wall for `E_OPENING_NIB` or `W_OPENING_AT_JUNCTION`, nor in what those rules
+  quote, because nothing is built there, so the reported door now compiles, with no `W_SWING_ROOM_NOT_ADJACENT`
+  (that warning was the refusal's follow-on: a refused door has no wall). A narrower opening keeps today's
+  reading. An opening on a wall that stops at the boundary with nothing carrying on past it stays refused or warned,
+  its jamb beside a free end, and the message now names the boundary and that end instead of a wall that is not
+  drawn. A plan that relied on the refusal or the warning sees neither now. A relational door or window in a plan
+  with such a boundary spends more evaluation steps, for the scans past its host's ends.
+
+
+
 - Plan JSON's report of what it leaves out (`dropped`, issue #366) now reaches the two paths that
   lost it: `batch -f json` adds `dropped` to each file's `--json` row and prints the same stderr notes
   as `compile`, and the MCP `compile` tool with `format:"json"` returns `dropped` (per storey with

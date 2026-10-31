@@ -46,12 +46,80 @@ export const FOUR_OPEN_PLACED = `plan "Placed" {
 }
 `;
 
+/** The same four rooms placed turned and mirrored, with only three boundaries open. */
+export const THREE_OPEN_PLACED = FOUR_OPEN_PLACED.replaceAll("      open between c and d\n", "").replace(
+  'plan "Placed"',
+  'plan "Placed three"',
+);
+
+/** Three rooms at a T, the `A` room down the whole left side, with `doors` beside the rooms. */
+const tee = (clauses: readonly string[]): string =>
+  `plan "Tee" {
+  units mm
+  room id=a at (0,0) size 3000x6000 label "A" uses living
+  room id=b at (3000,0) size 3000x3000 label "B" uses dining
+  room id=c at (3000,3000) size 3000x3000 label "C" uses kitchen
+  walls from rooms exterior 300 partition 120 {
+${clauses.map((c) => `    ${c}\n`).join("")}  }
+  door on c.right at center width 1000 swing into c
+}
+`;
+
+/**
+ * Plans whose crossing changes: one run left standing ends flush on the point, and a tee of three
+ * open runs draws nothing. Each names the point and the direction the wall that stands leaves it
+ * in (`null`: none stands).
+ */
+export const FLUSH: ReadonlyArray<
+  readonly [name: string, src: string, at: { x: number; y: number }, stands: "n" | "s" | "e" | "w" | null, half: number]
+> = [
+  // Three of the four open: the issue's plan. The c|d wall ends on the point.
+  ["three-open", crossing(""), { x: 4000, y: 3000 }, "s", 60],
+  ["three-open-north", crossing("").replace("between a and b", "between c and d"), { x: 4000, y: 3000 }, "n", 60],
+  ["three-open-west", crossing("").replace("between a and c", "between c and d"), { x: 4000, y: 3000 }, "w", 60],
+  ["three-open-east", crossing("").replace("between b and d", "between c and d"), { x: 4000, y: 3000 }, "e", 60],
+  // The wall left is thicker than the open runs: it ends flush across its own width.
+  ["three-open-thick", crossing("between c and d thickness 200"), { x: 4000, y: 3000 }, "s", 100],
+  // Thinner: the block's sides beside it go too.
+  ["three-open-thin", crossing("between c and d thickness 60"), { x: 4000, y: 3000 }, "s", 30],
+  // The fourth opening is narrower than its run, so a length of wall stands at the crossing.
+  ["narrowed", crossing("open between c and d width 1000"), { x: 4000, y: 3000 }, "s", 60],
+  // The fourth run keeps a length of wall, and a door written first hangs on what stays of it.
+  [
+    "door-on-narrowed",
+    crossing("open between c and d width 800").replace(
+      "  walls from rooms",
+      "  door at (4000,3400) width 680 wall partition hinge left swing in\n  walls from rooms",
+    ),
+    { x: 4000, y: 3000 },
+    "s",
+    60,
+  ],
+  // Three rooms at a T, three open boundaries: no wall is left at the point.
+  [
+    "open-tee",
+    tee(["open between a and b", "open between a and c", "open between b and c"]),
+    { x: 3000, y: 3000 },
+    null,
+    0,
+  ],
+  // The tee's stem stands, the line it meets is open: the stem stops on the line.
+  ["tee-stem-stands", tee(["open between a and b", "open between a and c"]), { x: 3000, y: 3000 }, "e", 60],
+  // One half of the line stands, its other half and the stem are open.
+  ["tee-line-stands", tee(["open between a and b", "open between b and c"]), { x: 3000, y: 3000 }, "s", 60],
+];
+
 /** Plans that must draw what they drew before the fix. */
 export const UNMOVED: ReadonlyArray<readonly [string, string]> = [
-  // Three of the four open: the fourth wall stands and carries the crossing.
-  ["three-open", crossing("")],
-  // The fourth opening is narrower than its run, so a length of wall joins the crossing to it.
-  ["narrowed", crossing("open between c and d width 1000")],
+  // Two open at a corner of the four rooms: the two walls left meet as a corner does.
+  ["two-open-corner", crossing("").replace("    open between b and d\n", "")],
+  // Two open across from each other: the two walls left are one line through the point.
+  [
+    "two-open-across",
+    crossing("").replace("    open between a and c\n", "").replace("between b and d", "between c and d"),
+  ],
+  // Three open, and the wall left is authored: it keeps what it draws, cap and all.
+  ["authored-fourth", crossing("", "  wall id=x partition thickness 120 between c and d\n")],
   // A wall of the plan crosses the point: the square is partly that wall's.
   [
     "wall-through",
@@ -80,29 +148,101 @@ ${BODY}  wall id=ext exterior thickness 300 { (0,0) (7000,0) (7000,6000) (0,6000
 ${OPENINGS}}
 `,
   ],
-  // The fourth run keeps a length of wall, and a door written first hangs on the square.
-  [
-    "door-on-narrowed",
-    crossing("open between c and d width 800").replace(
-      "  walls from rooms",
-      "  door at (4000,3400) width 680 wall partition hinge left swing in\n  walls from rooms",
-    ),
-  ],
-  // Three rooms at a T: three open boundaries. Outside #368's four (see the PR); drawn as it was.
-  [
-    "open-tee",
-    `plan "Tee" {
+];
+
+const pair = (clause: string, door: string): string => `plan "Nib" {
+  units mm
+  room id=hall at (0,0) size 2400x4000 label "Hall" uses hall
+  room id=liv at (2400,0) size 5000x4000 label "Living" uses living
+  walls from rooms exterior 300 partition 100 { ${clause} }
+  ${door}
+  window on liv.top width 1500
+}
+`;
+
+const ON_HALL = "door on hall.bottom at 1800 from start width 1135 swing into hall";
+const CLOSE_TO_LINE = "door at (1850,4000) width 1000 wall exterior swing inward";
+const ACROSS_LINE = "door at (2400,4000) width 900 wall exterior swing inward";
+
+/** A door beside an open boundary (issue #368, part 2). */
+export const NIB = {
+  /** The issue's plan: the boundary is open over its whole shared edge. */
+  whole: pair("open between hall and liv", ON_HALL),
+  /** The same, the width written out: 3700 is the clear span between the ring's faces. */
+  wholeWritten: pair("open between hall and liv width 3700", ON_HALL),
+  /** A narrower opening leaves wall on the boundary, so the door stays refused. */
+  narrower: pair("open between hall and liv width 2000", ON_HALL),
+  /** No clause: a partition, as ever. */
+  closed: pair("", ON_HALL),
+  /** Measured against the room's own edge, which an open boundary does not change. */
+  pastTheEdge: pair("open between hall and liv", "door on hall.bottom at 2200 from start width 1135 swing into hall"),
+  /** The lint twin: placed by point, a jamb on the boundary's face. */
+  byPoint: pair("open between hall and liv", CLOSE_TO_LINE),
+  byPointNarrower: pair("open between hall and liv width 2000", CLOSE_TO_LINE),
+  /** Placed by point across the boundary's line, so the door opens on both rooms. */
+  acrossLine: pair("open between hall and liv", ACROSS_LINE),
+  acrossLineNarrower: pair("open between hall and liv width 2000", ACROSS_LINE),
+};
+
+/** A partition under an open boundary: `liv|kit` carries on past the end of `hall|kit`. */
+const under = (extra: string): string => `plan "Under" {
+  units mm
+  room id=hall at (0,0) size 2400x3000 label "Hall" uses hall
+  room id=liv at (2400,0) size 5000x3000 label "Living" uses living
+  room id=kit at (0,3000) size 7400x2000 label "Kitchen" uses kitchen
+  walls from rooms exterior 300 partition 100 { open between hall and liv ${extra} }
+  door between hall and kit at 2000 from start width 800 swing into kit
+  door on kit.bottom at center width 1000 swing into kit
+  window on liv.top width 1500
+}
+`;
+
+/** Past the end of `b|c`, nothing: the line it stops on is open, so a jamb there has no wall. */
+const stem = (at: number): string => `plan "Stem" {
   units mm
   room id=a at (0,0) size 3000x6000 label "A" uses living
   room id=b at (3000,0) size 3000x3000 label "B" uses dining
-  room id=c at (3000,3000) size 3000x3000 label "C" uses kitchen
+  room id=c at (3000,3000) size 3000x3000 label "C" uses bedroom
   walls from rooms exterior 300 partition 120 {
     open between a and b
     open between a and c
-    open between b and c
   }
-  door on c.right at center width 1000 swing into c
+  door between b and c at ${at} from start width 800 swing into c
+  door on a.left at center width 1000 swing into a
 }
-`,
-  ],
-];
+`;
+
+/** The issue's door and a door by point, in a component placed turned and mirrored. */
+export const NIB_PLACED = `plan "Placed nib" {
+  units mm
+  component unit() {
+    room id=hall at (0,0) size 2400x4000 uses hall
+    room id=liv at (2400,0) size 5000x4000 uses living
+    walls from rooms exterior 300 partition 100 { open between hall and liv }
+    door on hall.bottom at 1800 from start width 1135 swing into hall
+    door at (2650,0) width 900 wall exterior swing inward
+  }
+  place unit() as west at (0,0)
+  place unit() as east at (20000,0) rotate 90 mirror x
+}
+`;
+
+export const NIB_HOSTS = {
+  under: under(""),
+  underNarrower: under("width 1000"),
+  /** The jamb 40 mm from the open line's face: refused, or a free 60 mm stub would stand there. */
+  stemAtFreeEnd: stem(500),
+  stemClear: stem(1500),
+  /** The span runs from the free end itself, over the open line's width. */
+  stemFromFreeEnd: stem(400),
+  /** `liv|kit`, on the line past `hall|kit`, is open too: nothing carries on. */
+  underOpen: under("open between liv and kit"),
+  /** Placed by point: the lint twin of {@link NIB_HOSTS.stemAtFreeEnd}, then with the span over it. */
+  stemByPoint: stem(1500).replace(
+    /door between b and c.*/,
+    "door at (3550,3000) width 800 wall partition swing into c",
+  ),
+  stemByPointOver: stem(1500).replace(/door between b and c.*/, "opening at (3400,3000) width 800 wall partition"),
+  /** The line `b|c` stops on is open on one side and stands on the other: no free end there. */
+  stemAtWall: stem(500).replace("    open between a and c\n", ""),
+};

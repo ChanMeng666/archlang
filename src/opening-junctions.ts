@@ -32,6 +32,10 @@ export interface JunctionSpan {
   lo: number;
   hi: number;
   wall: WallSegment;
+  /** Present on an open boundary {@link standingJunctionSpans} keeps. Nothing is built along it,
+   *  so a diagnostic names it as a boundary, not a wall. `freeEnd` when no wall stands at that
+   *  end of the host either: the host just stops there. */
+  boundary?: { freeEnd: boolean };
 }
 
 const dot = (a: Point, b: Point): number => a.x * b.x + a.y * b.y;
@@ -136,3 +140,65 @@ export function junctionSpans(host: WallSegment, all: readonly WallSegment[]): J
   }
   return out;
 }
+
+/**
+ * The ids of the `open between` boundaries voided over their whole clear span: walls only in
+ * the data, with nothing built along them for a jamb to meet. A `width` narrower than the span
+ * leaves wall on the run, so that boundary is not one of these.
+ */
+export function openBoundaryIds(
+  walls: ReadonlyArray<{ id: string; _derived?: { open?: { whole?: true } } }>,
+): ReadonlySet<string> {
+  return new Set(walls.filter((w) => w._derived?.open?.whole).map((w) => w.id));
+}
+
+/** Does a wall that stands carry on straight past this end of `host`? Straight hosts only. */
+function carriedOn(host: WallSegment, end: "a" | "b", all: readonly WallSegment[], open: ReadonlySet<string>): boolean {
+  if (host.arc) return false;
+  const p = host[end];
+  const u = unitOf(end === "a" ? sub(host.a, host.b) : sub(host.b, host.a));
+  if (!u) return false;
+  return all.some((s) => {
+    if (s.arc || sameSeg(s, host) || open.has(s.wallId)) return false;
+    if (Math.abs(cross(u, sub(s.a, p))) > MEET_TOL_MM || Math.abs(cross(u, sub(s.b, p))) > MEET_TOL_MM) return false;
+    const [q, r] = [dot(sub(s.a, p), u), dot(sub(s.b, p), u)];
+    return Math.min(q, r) <= MEET_TOL_MM && Math.max(q, r) > MEET_TOL_MM;
+  });
+}
+
+/**
+ * {@link junctionSpans} without the {@link openBoundaryIds} `open`, the walls that are not built:
+ * what `E_OPENING_NIB` and the lint rules measure an opening against. A host passing such a
+ * boundary, or stopping at one with a wall of its line carrying on beyond it (the ring of an
+ * open-plan pair, a partition along two rooms open to each other), is unbroken there, so a jamb
+ * has wall on both sides and needs no nib.
+ *
+ * A host that STOPS at an open boundary with nothing carrying on keeps the boundary as its
+ * junction. Its run ends there in a free end, so without the boundary a jamb could stand beside a
+ * sliver of wall joined to nothing: the free-standing pier issue #368 is about, and no other rule
+ * would report it.
+ */
+export function standingJunctionSpans(
+  host: WallSegment,
+  all: readonly WallSegment[],
+  open: ReadonlySet<string>,
+): JunctionSpan[] {
+  const spans = junctionSpans(host, all);
+  if (open.size === 0) return spans;
+  const len = segmentLength(host);
+  const freeAt = { a: !carriedOn(host, "a", all, open), b: !carriedOn(host, "b", all, open) };
+  const reaches = (j: JunctionSpan, at: number): boolean => j.lo <= at + JUNCTION_EPS && j.hi >= at - JUNCTION_EPS;
+  const walled = (at: number): boolean => spans.some((j) => !open.has(j.wall.wallId) && reaches(j, at));
+  return spans.flatMap((j) => {
+    if (!open.has(j.wall.wallId)) return [j];
+    const atA = freeAt.a && reaches(j, 0);
+    const atB = freeAt.b && reaches(j, len);
+    if (!atA && !atB) return [];
+    const freeEnd = !host.arc && !(atA && walled(0)) && !(atB && walled(len));
+    return [{ ...j, boundary: { freeEnd } }];
+  });
+}
+
+/** The clause a diagnostic adds after naming a kept boundary at a host's free end. */
+export const atFreeEnd = (j: JunctionSpan): string =>
+  j.boundary?.freeEnd ? ", where this wall stops in a free end" : "";

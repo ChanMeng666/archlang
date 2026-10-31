@@ -240,7 +240,14 @@ export const wallsFromRooms: ElementDef = {
             from: "rooms",
             ...(spec.ring ? { ring: spec.ring } : {}),
             ...(spec.between ? { between: spec.between } : {}),
-            ...(spec.open ? { open: { span: clauses[spec.open.clause]!.span } } : {}),
+            ...(spec.open
+              ? {
+                  open: {
+                    span: clauses[spec.open.clause]!.span,
+                    ...(spec.open.whole ? { whole: true as const } : {}),
+                  },
+                }
+              : {}),
           },
         };
         out._derivedWalls.push(w);

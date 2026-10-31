@@ -136,6 +136,9 @@ export interface DerivedOpeningSpec {
   clause: number;
   at: Point;
   width: number;
+  /** Present when the opening spans the run's whole clear span, however the clause wrote it:
+   *  no length of wall is left on the run for anything to meet. */
+  whole?: true;
 }
 
 /** One derived wall before coexistence, with what is left of it. */
@@ -354,7 +357,12 @@ export function deriveWallsFromRooms(
         continue;
       }
       const mid = (s0 + s1) / 2;
-      result[k]!.open = { clause, at: vertical ? { x: a.x, y: mid } : { x: mid, y: a.y }, width };
+      result[k]!.open = {
+        clause,
+        at: vertical ? { x: a.x, y: mid } : { x: mid, y: a.y },
+        width,
+        ...(width === clear ? { whole: true as const } : {}),
+      };
     }
     if (bad.length > 0) return { ok: false, refusals: bad };
   }

@@ -21,7 +21,8 @@
  * `max(100 mm, host thickness / 2)` to a meeting wall's face (the measure and the default
  * values of `W_OPENING_AT_JUNCTION`, `src/opening-junctions.ts`), runs into a meeting wall,
  * or runs past the end of its run or its host, is refused with `E_OPENING_NIB` naming the
- * nearest legal position. Steps are charged before every scan.
+ * nearest legal position. An `open between` boundary voided over its whole clear span is no
+ * meeting wall ({@link standingJunctionSpans}). Steps are charged before every scan.
  */
 
 import type { AttachPos, OpeningAttach, OpeningBetween, Point, WallsPairRoom } from "./ast.js";
@@ -31,11 +32,19 @@ import type { Expr } from "./expr.js";
 import { segmentsOfWall, type WallSegment } from "./geometry.js";
 import type { OpeningRelation, RWall } from "./ir.js";
 import { fmt3 as numStr } from "./num-format.js";
-import { FLUSH_MM, JUNCTION_EPS, JUNCTION_NIB_DEFAULTS, junctionSpans } from "./opening-junctions.js";
+import {
+  atFreeEnd,
+  FLUSH_MM,
+  JUNCTION_EPS,
+  JUNCTION_NIB_DEFAULTS,
+  type JunctionSpan,
+  openBoundaryIds,
+  standingJunctionSpans,
+} from "./opening-junctions.js";
 import type { DatumTable, RoomDatums } from "./room-datums.js";
 import { COMPASS_DATUM_ALIASES, splitDatum } from "./room-datums.js";
 import { attachPosStr } from "./statement-print.js";
-import { wallPhraseOf } from "./wall-ref.js";
+import { openBoundaryPhraseOf, wallPhraseOf } from "./wall-ref.js";
 
 /** The four edge words, and the line each lies on. */
 type EdgeWord = "top" | "bottom" | "left" | "right";
@@ -624,12 +633,14 @@ function placeOnRun(
   // The meeting walls, by the lint's own measure, in run coordinates.
   const segs = ctx.walls.flatMap((w) => segmentsOfWall(w));
   chargeSteps(segs.length + 1);
+  const voided = openBoundaryIds(ctx.walls);
+  if (voided.size > 0) chargeSteps(2 * segs.length); // a scan past each end of the host
   const sign = (run.vertical ? host.b.y - host.a.y : host.b.x - host.a.x) >= 0 ? 1 : -1;
   const a0 = run.vertical ? host.a.y : host.a.x;
-  const js = junctionSpans(host, segs).map((j) => {
+  const js = standingJunctionSpans(host, segs, voided).map((j) => {
     const p = a0 + sign * j.lo;
     const q = a0 + sign * j.hi;
-    return { lo: Math.min(p, q), hi: Math.max(p, q), wall: j.wall };
+    return { ...j, lo: Math.min(p, q), hi: Math.max(p, q) };
   });
   const need = Math.max(
     JUNCTION_NIB_DEFAULTS.minJunctionNibMm,
@@ -639,9 +650,15 @@ function placeOnRun(
   const fault = nibFault(c, width, R0, R1, js, need, flushOk, run);
   if (fault) {
     const legal = nearestLegal(c, width, R0, R1, js, need, flushOk, ctx.grid, run);
+    const boundaryPhrase = (s: WallSegment): string => {
+      const w = wallOfSeg(ctx.walls, s);
+      return w ? openBoundaryPhraseOf(w) : `wall "${s.wallId}"`;
+    };
+    const name = (j: JunctionSpan): string => (j.boundary ? boundaryPhrase(j.wall) : phrase(j.wall));
+    const measure = fault.atBoundary ? "that edge" : "a meeting wall's face";
     ctx.diag({
       severity: "error",
-      message: `${what} is refused, not moved: ${fault(phrase)}. A jamb needs at least ${numStr(need)} mm of wall to a meeting wall's face (the larger of ${numStr(JUNCTION_NIB_DEFAULTS.minJunctionNibMm)} mm and half the ${numStr(host.thickness)} mm wall)`,
+      message: `${what} is refused, not moved: ${fault.say(name)}. A jamb needs at least ${numStr(need)} mm of wall to ${measure} (the larger of ${numStr(JUNCTION_NIB_DEFAULTS.minJunctionNibMm)} mm and half the ${numStr(host.thickness)} mm wall)`,
       code: "E_OPENING_NIB",
       span,
       hints: [
@@ -655,33 +672,49 @@ function placeOnRun(
   return { at, host, relation };
 }
 
-/** Why a span fails its nibs (a phrase builder), or `null` when it passes. */
+/** Why a span fails its nibs (a phrase builder, and whether it reads an open boundary, which has
+ *  no face to name), or `null` when it passes. */
 function nibFault(
   c: number,
   width: number,
   R0: number,
   R1: number,
-  js: ReadonlyArray<{ lo: number; hi: number; wall: WallSegment }>,
+  js: readonly JunctionSpan[],
   need: number,
   flushOk: boolean,
   run: Run,
-): ((phrase: (s: WallSegment) => string) => string) | null {
+): { say: (name: (j: JunctionSpan) => string) => string; atBoundary: boolean } | null {
   const lo = c - width / 2;
   const hi = c + width / 2;
   const span = `${alongText(run, lo)}–${numStr(hi)}`;
   if (lo < R0 - JUNCTION_EPS || hi > R1 + JUNCTION_EPS) {
-    return () =>
-      `its span ${span} runs past the end of the wall it can stand in there (${alongText(run, R0)}–${numStr(R1)})`;
+    return {
+      say: () =>
+        `its span ${span} runs past the end of the wall it can stand in there (${alongText(run, R0)}–${numStr(R1)})`,
+      atBoundary: false,
+    };
   }
   for (const j of js) {
     if (j.lo < hi - JUNCTION_EPS && j.hi > lo + JUNCTION_EPS) {
-      return (phrase) => `${phrase(j.wall)} stands inside its span ${span}`;
+      return {
+        say: (name) =>
+          j.boundary
+            ? `${name(j)}${atFreeEnd(j) && `${atFreeEnd(j)},`} lies inside its span ${span}`
+            : `${name(j)} stands inside its span ${span}`,
+        atBoundary: j.boundary !== undefined,
+      };
     }
   }
   for (const j of js) {
     const nib = j.hi <= lo + JUNCTION_EPS ? Math.max(0, lo - j.hi) : Math.max(0, j.lo - hi);
     if (nib < need - JUNCTION_EPS && !(flushOk && nib <= FLUSH_MM)) {
-      return (phrase) => `its span ${span} leaves a jamb ${numStr(nib)} mm from the face of ${phrase(j.wall)}`;
+      return {
+        say: (name) =>
+          j.boundary
+            ? `its span ${span} leaves a jamb ${numStr(nib)} mm from the edge of ${name(j)}${atFreeEnd(j)}`
+            : `its span ${span} leaves a jamb ${numStr(nib)} mm from the face of ${name(j)}`,
+        atBoundary: j.boundary !== undefined,
+      };
     }
   }
   return null;
@@ -698,7 +731,7 @@ function nearestLegal(
   width: number,
   R0: number,
   R1: number,
-  js: ReadonlyArray<{ lo: number; hi: number; wall: WallSegment }>,
+  js: readonly JunctionSpan[],
   need: number,
   flushOk: boolean,
   grid: number,
