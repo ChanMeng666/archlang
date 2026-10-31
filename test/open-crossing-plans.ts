@@ -212,6 +212,21 @@ const stem = (at: number): string => `plan "Stem" {
 }
 `;
 
+/** The issue's door and a door by point, in a component placed turned and mirrored. */
+export const NIB_PLACED = `plan "Placed nib" {
+  units mm
+  component unit() {
+    room id=hall at (0,0) size 2400x4000 uses hall
+    room id=liv at (2400,0) size 5000x4000 uses living
+    walls from rooms exterior 300 partition 100 { open between hall and liv }
+    door on hall.bottom at 1800 from start width 1135 swing into hall
+    door at (2650,0) width 900 wall exterior swing inward
+  }
+  place unit() as west at (0,0)
+  place unit() as east at (20000,0) rotate 90 mirror x
+}
+`;
+
 export const NIB_HOSTS = {
   under: under(""),
   underNarrower: under("width 1000"),

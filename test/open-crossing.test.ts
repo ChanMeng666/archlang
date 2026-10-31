@@ -92,10 +92,10 @@ const UNMOVED_DIGESTS: [string, string][] = [
  * `semantic` (`describe()` + `lint()`) was **measured at `dff02717`**, `main` before this fix, by
  * the same `git archive` route, and has not moved. `drawn` (every page, `describe()`, `lint()`,
  * diagnostics) is **re-pinned deliberately at this fix**, and only the drawing moved in it: the
- * reason stands beside each value, and `was` is what it pinned before.
+ * reason stands beside each value, and each `was` is the digest it held until now.
  */
 const FLUSH_DIGESTS: [string, string, string][] = [
-  // was 8116502d (in the table above). c|d ran 60 mm past the crossing, on its square cap and the
+  // was 8116502d (at 2649b9dd, when it sat in the unmoved table). c|d ran 60 mm past the crossing, on its square cap and the
   // stubs of the three open runs; it now ends on the point, the issue's expected drawing.
   [
     "three-open",
@@ -130,21 +130,21 @@ const FLUSH_DIGESTS: [string, string, string][] = [
     "894aeef5a86edc783c4a11a826c84e7e96b70caa512fabbe34ce9934277b75d8",
     "cd44cfff10834ec8222a4baf6765e72b5a4e06e3c3fce21b9336fa2fc6fba9b5",
   ],
-  // was d3a57ef3 (in the table above). A `width` that stops short leaves the run standing at the
+  // was d3a57ef3 (at 2649b9dd, when it sat in the unmoved table). A `width` that stops short leaves the run standing at the
   // crossing, so this is `three-open` with the wall's far end cut by an opening: the same 60 mm.
   [
     "narrowed",
     "efa0f9670cc2f6b76bc05735f344910c6ac2fd109139a05d377ce355bd566315",
     "1fe7112867d5058ee4a4476efa063e41450fba24ea7edcf0b330eb6057945727",
   ],
-  // was 63d4b612 (in the table above). The same 60 mm; the door's jamb at y 3060 keeps the 60 mm
+  // was 63d4b612 (at 2649b9dd, when it sat in the unmoved table). The same 60 mm; the door's jamb at y 3060 keeps the 60 mm
   // of c|d between it and the crossing, which is what stands there of the wall it hangs on.
   [
     "door-on-narrowed",
     "3023c5c4efb776144efa0551f589e34ea35196c336c7916bf50005105230fa38",
     "e83216f443d30f6221747f63e0fba1867b321f66d1d6a7b266a66081c02f22ce",
   ],
-  // was a122b452 (in the table above), pinned then as outside #368's four. Three open runs meet
+  // was a122b452 (at 2649b9dd, when it sat in the unmoved table), pinned then as outside #368's four. Three open runs meet
   // at the T and none stands, so its 120 mm square is the same pier: re-pinned on the issue's
   // "no wall material stays" now every arm at a point is read, whatever their number.
   [

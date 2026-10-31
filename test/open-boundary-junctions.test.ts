@@ -17,7 +17,7 @@ import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint } from "../src/index.js";
 import type { Diagnostic } from "../src/index.js";
 import { type CompilerApi, allStoreysDigestWithDiagnostics } from "./byte-identity-digest.js";
-import { NIB, NIB_HOSTS } from "./open-crossing-plans.js";
+import { NIB, NIB_HOSTS, NIB_PLACED } from "./open-crossing-plans.js";
 
 const API: CompilerApi = { compile, describe: describePlan, lint };
 
@@ -136,5 +136,17 @@ suite("the host decides whether a jamb has wall beside it", () => {
 
   it("places the door once it clears that end", () => {
     expect(compileCodes(NIB_HOSTS.stemClear)).toEqual([]);
+  });
+
+  it("reads the same in a turned, mirrored instance, whose walls carry namespaced ids", () => {
+    expect(compileCodes(NIB_PLACED)).toEqual([]);
+    expect(lintOf(NIB_PLACED, "W_OPENING_AT_JUNCTION")).toEqual([]);
+    const edges = describePlan(NIB_PLACED).access?.edges.filter((e) => e.kind === "door") ?? [];
+    expect(edges.map((e) => e.between)).toEqual([
+      ["exterior", "west.hall"],
+      ["exterior", "west.liv"],
+      ["exterior", "east.hall"],
+      ["exterior", "east.liv"],
+    ]);
   });
 });
