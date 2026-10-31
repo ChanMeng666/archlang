@@ -440,7 +440,9 @@ interface WindowedRing {
  * The window two rings' boxes share, and what of each ring reaches it. Two edges that cross do so
  * inside both boxes, so an edge that misses the window crosses nothing; a point outside the other
  * ring's box is neither inside it nor within {@link VERTEX_EPS} of it. The window is grown by far
- * more than any rounding of those tests (a few ulps of 2^25 mm is ~1e-8), so nothing is dropped.
+ * more than the rounding of a point's distance (a few ulps of 2^25 mm is ~1e-8). What it does drop
+ * is a false crossing: two disjoint edges on one skew line whose cross products round to opposite
+ * signs read as crossing to a test of every pair, and an edge outside the window is not tested.
  */
 function overlapWindow(a: readonly Point[], b: readonly Point[], eps: number): [WindowedRing, WindowedRing] {
   const ba = polygonBounds(a);

@@ -23,8 +23,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   now reads only what reaches the window the two boxes share, which leaves two round rooms that clip
   at a corner a few edges to read, and pays for those reads at the budget's own rate, charged before
   they run. That plan is one `E_STEP_LIMIT` in about a second, reported at the pair of rooms being
-  tested. A pair a box rejects and a pile of coincident rooms stay free, 400 packed round rooms spend
-  under 1 % of the budget, and no answer, `W_ROOM_OVERLAP` wording or count moves.
+  tested. A pair a box rejects and a pile of coincident rooms stay free, and 400 packed round rooms
+  spend under 1 % of the budget. `W_ROOM_OVERLAP`'s wording stays, and its answers do except in one
+  case: two disjoint edges on one skew line, at full-precision coordinates, could read as crossing by
+  rounding alone, so `main` warned about rooms on opposite sides of a line. That false warning is gone.
+- The bound has a real edge, and this is it doing its job: several hundred polygon or round rooms
+  whose boxes all overlap one another now reach `E_STEP_LIMIT`. On a stack of round rooms 380 compile
+  and 400 do not, where the old test compiled 400 in about 2 s. Such a plan piles rooms on one spot. Move them apart so their boxes clear each other, draw them
+  as rectangles, which need no ring test, or split the plan into separate files: storeys share one
+  budget, so moving rooms to another `level` does not help.
 - `W_OUTDOOR_OVERLAPS_ROOM` no longer runs unbounded in `lint`. It asks the same ring question after
   the resolution, where nothing counts, so many long ground and room outlines took tens of seconds with
   no sign of why. It now adds each surface up first, in source order: a surface that no longer fits the

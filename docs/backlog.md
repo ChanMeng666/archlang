@@ -1650,8 +1650,12 @@ in `checkRoomOverlaps` with no diagnostic. `polygonsOverlap` now reads only what
 the two boxes share, 15 times faster on that plan's pairs and 100 times on two round rooms clipping
 at a corner, and charges those reads before each case runs, 14 to a step (`RING_READS_PER_STEP`),
 the budget's own rate. A pair a box rejects, and a class of coincident rooms beyond its one test, cost
-what they did, and no answer, `W_ROOM_OVERLAP` text or count moves (`test/polygon-overlap-oracle.test.ts`
-keeps the old form). That plan is now one `E_STEP_LIMIT` in about a second, reported at the pair; a
+what they did, and no `W_ROOM_OVERLAP` text moves. Its answers are the old form's
+(`test/polygon-overlap-oracle.test.ts` keeps that form) except where the old form reported a crossing
+between disjoint near-collinear edges outside the shared window, a rounding artefact: there the new
+answer is correct. Several hundred polygon or round rooms whose boxes all overlap now reach
+`E_STEP_LIMIT` (a stack of 380 round rooms compiles, 400 does not, where the old form compiled 400 in
+about 2 s): that is the cap doing its job. That plan is now one `E_STEP_LIMIT` in about a second, reported at the pair; a
 cap on the count, which the decision weighed, was not needed. A first charge of 13 steps per edge
 pair of the whole rings refused honest plans (100 packed `room circle`s, each a 48-gon, after 0.19 s
 of real work), so the window is what makes the bound affordable. Two rooms of about 1,600 vertices
