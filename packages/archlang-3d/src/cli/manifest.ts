@@ -93,7 +93,8 @@ export const COMMANDS: readonly Command[] = [
       JSON_FLAG,
     ],
     input: "<plan.arch|->",
-    output: "an HTML file (and an MP4 with --video)",
+    output:
+      "an HTML file (and an MP4 with --video). With no browser that starts and no --video, the HTML is still written, the exit is 0 and --json reports rendered: false without the frame fields",
     examples: [
       { cmd: "archlang3d view plan.arch --replay -o plan.html --json", note: "the replay and its key-frame hashes" },
       {

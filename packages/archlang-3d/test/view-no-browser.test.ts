@@ -8,6 +8,12 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { main } from "../src/cli/run.js";
+import { renderReplay } from "../src/replay/video.js";
+
+vi.mock("../src/replay/video.js", async (actual) => {
+  const real = await actual<typeof import("../src/replay/video.js")>();
+  return { ...real, renderReplay: vi.fn(real.renderReplay) };
+});
 
 const PLAN = fileURLToPath(new URL("../../../examples/laneway-house.arch", import.meta.url));
 
@@ -58,5 +64,12 @@ describe("archlang3d view with no browser", () => {
     expect(r.code).toBe(1);
     expect(r.err).toContain("rendering failed");
     expect(existsSync(mp4)).toBe(false);
+  });
+
+  it("does not excuse a replay that breaks with a browser present", async () => {
+    vi.mocked(renderReplay).mockRejectedValueOnce(new Error("page.evaluate: the replay threw"));
+    const r = await cli(["view", PLAN, "--replay", "-o", join(dir, "plan.html")]);
+    expect(r.code).toBe(1);
+    expect(r.err).toContain("rendering failed");
   });
 });
