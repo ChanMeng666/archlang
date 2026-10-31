@@ -77,14 +77,14 @@ and `/release-check` item 5, which refuses a release on either. An open pinned i
 which notifies nobody, so close it once triaged or the next bad night is silent.
 
 Minutes, a full run measured 2026-10-27 (PR #290 at 2ed9d70e, `gh run view 40416348158`; wall clock
-22.7), the Node 22 rows on @@PR@@:
+22.7), the Node 22 rows on PR #385 at cd730b85:
 
 | Job (check name) | Runs | Min |
 |---|---|---|
 | `changes` (Changed paths) | classifies the PR's paths (not a required check) | < 0.1 |
 | `build` (Node 18, Node 20) | push only: typecheck, `lint:ci`, `check:drift`, `npm test`, `eval:ci` | 20.7, 19.9 |
-| `node-22-checks` (Node 22 checks) | typecheck, `lint:ci`, `check:drift`, `eval:ci` | @@CHECKS@@ |
-| `node-22-tests` (Node 22 tests 1/3, 2/3, 3/3) | `vitest run --shard=N/3` | @@SHARDS@@ |
+| `node-22-checks` (Node 22 checks) | typecheck, `lint:ci`, `check:drift`, `eval:ci` | 0.7 |
+| `node-22-tests` (Node 22 tests 1/3, 2/3, 3/3) | `vitest run --shard=N/3` | 5.8, 4.8, 9.6 |
 | `node-22` (Node 22) | gates on the two above; on a record-only PR, runs the docs leg | < 0.2 |
 | `builds` (Workspace builds) | `build`, `typecheck:all`, all four workspace builds, MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring` (each only here) | 2.0 |
 | `windows` | push only: `npm test` + `check:drift` at the runner's default line endings (no `eval:ci`) | 21.1 |

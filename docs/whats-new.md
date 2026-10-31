@@ -1,6 +1,6 @@
-# What's new in 1.44 to 1.46
+# What's new in 1.44 to 1.47
 
-The features that arrived in 1.44.0, 1.45.0 and 1.46.0, one section each, with an example you can run,
+The features that arrived in 1.44.0 to 1.47.0, one section each, with an example you can run,
 plus the circulation overlay, which is older and since 1.45.0 reads the plan after a demolition.
 Every command and code name below is the one `archlang <command> --help` and the
 [error catalog](error-codes.md) print. The full list of changes, version by version, is in
@@ -15,6 +15,9 @@ Every command and code name below is the one `archlang <command> --help` and the
 | A sheet for the reviewer | 1.44.0 | [Review sheet](#review-sheet) |
 | Walking routes drawn on the plan | opt-in flag | [Circulation overlay](#circulation-overlay) |
 | Storeys that must stand over each other | 1.44.0 | [Stacked storeys](#stacked-storeys) |
+| Briefs checked over every storey | 1.47.0 | [Intent across storeys](#intent-across-storeys) |
+| Plan JSON says what it dropped | 1.47.0 | [What Plan JSON leaves out](#what-plan-json-leaves-out) |
+| Slits, furniture on stairs, labels on walls | 1.47.0 | [More lint reports](#more-lint-reports) |
 
 ## Quantities and takeoff
 
@@ -193,3 +196,45 @@ window, and the upper stair has no clear landing at its head). Move the upper st
 `W_SHAFT_FOOTPRINT_MISMATCH` ("the footprints overlap by 0% of the smaller, under half"). Remove the keep and rename it
 `cor`, and the lint reports `W_STAIR_UNMATCHED` on both storeys. The keep forms are in the
 [language reference](language-reference.md#keep--declared-invariants-checked-and-never-solved).
+
+## Intent across storeys
+
+`validate --intent`, `score --brief` and `validateIntent()` read every storey of a plan with `level` blocks
+(1.47.0). `rooms`, `roomsInclude`, `totalAreaM2` and the advisory `adjacency` used to see only the lowest storey,
+so a correct two-storey house could never pass. A room id repeated on another storey is a different room.
+`windows.min` in `roomsInclude` counts the windows of all the matching rooms together, not of each room.
+
+```bash
+archlang validate house.arch --intent intent.json
+```
+
+## What Plan JSON leaves out
+
+`compile -f json` says what the format could not carry (1.47.0): one `note:` on stderr per clause, `dropped` in
+the `--json` envelope and on `planToJson()`. The exit code and the document are unchanged, and the format
+gained no field, so an arc edge is still written as its straight chord.
+
+```arch
+plan "Bow" {
+  units mm
+  paper A4 landscape
+  scale 1:50
+  wall id=w exterior thickness 300 { (0,0) (6000,0) (6000,4000) arc (0,4000) radius 4000 cw (0,0) close }
+}
+```
+
+```text
+note: Plan JSON carries no arcs; this export writes 1 arc edge as a straight chord, on wall w (the .arch source still holds it)
+note: Plan JSON carries no paper; this export leaves out `paper A4 landscape` (the .arch source still holds it)
+```
+
+## More lint reports
+
+1.47.0 reports three things it used to pass in silence:
+
+- `W_WALL_END_SHORT`: a wall whose free end stops up to `wallGapMm` (100 mm by default) short of a wall it runs
+  toward, which leaves a visible slit instead of a joint.
+- `W_FURNITURE_ON_STAIR`: a piece on a flight, or on the landing it owes. `arch finish` no longer places one there.
+- `W_ANNOTATION_OVERLAP` now also reports a room's name or area figure over a wall or a door's swing, or running
+  off its floor. The label pass no longer walks a name out of its room; a name too wide for its room stays
+  there and is reported. The drawing neither shrinks a label nor draws a leader to it.

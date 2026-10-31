@@ -191,6 +191,8 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   an agent branch's tip with `git rev-parse` before merging it.
 - **A literal NUL byte in a source file makes git and ripgrep treat it as binary** (the diff shows
   `Bin`, search skips the file). Write `\u0000`.
+- **`check:drift` reads the committed tree**, so a release bump fails it until the bump is committed.
+- **A new `.gitleaksignore` fingerprint on a live file needs a rule in `test/opaque-literal-guard.test.ts`.**
 - **gitleaks `generic-api-key` flags SHA-256 digest tables keyed by a name containing a key-ish word**
   (e.g. `accessible`). Allowlist the exact fingerprint per `.gitleaksignore`'s header and hold the
   file in `test/opaque-literal-guard.test.ts`; never a glob. The fingerprint names the branch commit,

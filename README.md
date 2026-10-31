@@ -71,7 +71,7 @@ flowchart LR
     V -->|yes| O([SVG · DXF · PDF · PNG])
 ```
 
-## New in 1.44 to 1.46
+## New in 1.44 to 1.47
 
 Each links to a short section with an example, on [archlang.uk/whats-new](https://archlang.uk/whats-new).
 
@@ -82,6 +82,9 @@ Each links to a short section with an example, on [archlang.uk/whats-new](https:
 - [Review sheet](https://archlang.uk/whats-new#review-sheet): `archlang preview plan.arch --review`
 - [Circulation overlay](https://archlang.uk/whats-new#circulation-overlay): `archlang compile plan.arch --overlay circulation`
 - [Stacked storeys](https://archlang.uk/whats-new#stacked-storeys): `keep stacked core on levels 1 2`
+- [Intent across storeys](https://archlang.uk/whats-new#intent-across-storeys): `archlang validate plan.arch --intent intent.json`
+- [What Plan JSON leaves out](https://archlang.uk/whats-new#what-plan-json-leaves-out): `archlang compile plan.arch -f json`
+- [More lint reports](https://archlang.uk/whats-new#more-lint-reports): `W_WALL_END_SHORT`, `W_FURNITURE_ON_STAIR`
 
 ## For your agent
 
