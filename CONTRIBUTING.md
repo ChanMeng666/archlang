@@ -74,14 +74,15 @@ The E2E suites serve the built output, so build first — e.g.
 `E2E_BASE_URL=<origin>` makes either suite drive that origin instead, with no build and no preview
 server (that is how the nightly workflow re-runs the read-only `@prod` subset against production).
 
-**What PR CI runs.** `ci.yml` has five gating jobs in parallel — the Node 18/20/22 test matrix
-(the 22 leg also collects report-only coverage), a **builds** job (all four workspaces compile,
-`typecheck:all`, the MCP baked-resource freshness check, the VS Code bundle tests), a **Windows**
-leg (tests + drift at the runner's default line endings), and the two **Playwright E2E** jobs —
-plus an informational benchmark comment that never gates. `codeql.yml` adds static security
-analysis on the same events. A separate `nightly.yml` runs production smoke, a report-only
-dependency audit, a full-history secret scan, a wider OS×Node matrix and the read-only E2E subset
-against the live sites.
+**What PR CI runs.** `ci.yml` gates a PR on Node 22 (typecheck, lint, drift, eval and the test
+suite in three shards), a **builds** job (all four workspaces compile, `typecheck:all`, the MCP
+baked-resource freshness check, the VS Code bundle tests) and the two **Playwright E2E** jobs, plus
+an informational benchmark comment that never gates. Node 18, Node 20 and **Windows** (tests + drift
+at the runner's default line endings) keep their checks but report green without running on a PR;
+they run on every push to `main` and nightly, so run the suite locally if your change is sensitive to
+Node version or platform. `codeql.yml` adds static security analysis on the same events. A separate
+`nightly.yml` runs production smoke, a report-only dependency audit, a full-history secret scan, the
+OS×Node matrix, report-only coverage and the read-only E2E subset against the live sites.
 
 **Full reference: [docs/testing.md](docs/testing.md)** — the tiers, the golden/snapshot update
 policy, **what to do when each class of guard goes red**, and the house patterns for adding tests.

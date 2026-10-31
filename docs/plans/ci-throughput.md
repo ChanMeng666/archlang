@@ -1,7 +1,7 @@
 # CI throughput: options for the owner
 
-Status: A, B, C, D live 2026-10-27 (B/C/D by PR #290). Every option changes a workflow or a repository setting,
-and the owner decides which to take. Job map and per-job minutes: `docs/agents/commands.md` § CI.
+Status: A, B, C, D live 2026-10-27 (B/C/D by PR #290); G approved by the owner 2026-10-31 (PR #385).
+Every option changes a workflow or a repository setting, and the owner decides which to take. Job map and per-job minutes: `docs/agents/commands.md` § CI.
 
 ## 1. What is measured
 
@@ -112,6 +112,46 @@ triggers. Queued PRs are merged in order, each tested on top of the one before.
 - `handoff.md` and `cards.md` counts: recounted only at a stage end (already the rule).
 - Recommendation: decide after A; with auto-merge the remaining conflicts cost one hand merge each,
   not a wait.
+
+### G. PR legs and Node 22 shards
+
+Approved 2026-10-31, measured then at 14–19 min for each Node leg and about 22 for Windows, each
+running the full suite on every code PR.
+
+- As built (PR #385), `pull_request` only: Node 18, Node 20 and `Windows (tests + drift)` keep their
+  check names and report green with a job-summary line, guarded steps as in C. `Node 22` is an
+  aggregator over `Node 22 checks` (typecheck, lint, drift, eval) and `Node 22 tests 1/3` to `3/3`
+  (`vitest run --shard=N/3`). It needs no branch-protection edit. It runs under `always()`, because
+  a job skipped by its `if` satisfies a required check, and it fails unless both needs are `success`
+  (or both `skipped` on a record-only PR). A failed `changes` job runs every leg, as C does. A push
+  runs every leg, Node 22's suite across the shards.
+- **Trade-off, accepted by the owner:** a break only on Node 18 or 20, or only on Windows CI, appears
+  after the merge, and law 2 above no longer holds for those legs on a PR. Windows may leave PRs
+  because the owner's local gate runs the full suite on Windows before a PR. Nothing local stands in
+  for Node 18 and 20 (the local gate runs Node 24): a `node:` API, a dependency dropping an old Node,
+  or a deflate budget can reach `main` red. Dependabot PRs have no local gate at all.
+- **How a break is seen:** a red push run on `main` (GitHub's failed-run notification goes to whoever
+  merged; its delivery is an account setting, not checked here); nightly's `report` within a day, for
+  a failed `npm test` or `check:drift`; `/release-check` item 5, the only hard stop. Typecheck, lint
+  and the eval on Node 18/20 are read only in the push run. They do not vary by Node version. The
+  nightly route has a hole: an open pinned issue is edited in place, which notifies nobody, and #212
+  has been open since 2026-10-30 on a red `Secret scan`. Close it, or the next failed leg is silent.
+- Overlap: nightly's `full-matrix` already ran these legs' `npm test`; it gained `check:drift`, the
+  one step only the Windows leg proved.
+- Sharding is safe because no test passes state to another: tests write to the repository only
+  under an `UPDATE` flag and otherwise to `mkdtemp` directories, nothing builds `dist/` (`npm-tarball`
+  packs with `--ignore-scripts`), and vitest isolates each file in a process. `vitest --shard` sorts
+  by hash, so the shards are not balanced by time and a new file can move others. `check:test-wiring`
+  is untouched: it reads `test.include`, and a shard narrows after that.
+- Record set: `editors/vscode/CHANGELOG.md` joined it. An `fs` trace of every node process in
+  CI (`--require`, run 41158755763, every suite plus `builds`, `check:3d` and both E2E legs) shows only
+  `docs-table-pipes` reads it, on the docs leg. `packages/archlang-3d/CHANGELOG.md` stays out:
+  `npm pack` in `check:3d`'s `pack.e2e.ts` reads it. That trace missed `check:drift` and `eval:ci`,
+  which stopped at lint; neither names a changelog, and the docs leg runs `check:drift`.
+- Measured on PR #385's code run 41160009838: 10m52s from start to finish, against 14–19 min for one Node leg before.
+  Shards 5m36s, 4m42s and 10m32s, so `3/3` sets the time; Node 18, Node 20 and Windows 3–4 s each. One run.
+- Reverse if: a break on a main-only leg sits unseen on `main` past a release, or Node 18/20 breaks
+  land often enough that the post-merge fix costs more than the leg did.
 
 ## 4. Recommendation
 

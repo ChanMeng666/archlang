@@ -46,7 +46,8 @@
 
 ## CI
 
-`ci.yml` (push to `main` + PRs), all gating except `bench` and `check-3d`. `main` is protected: its
+`ci.yml` (push to `main` + PRs), all gating except `bench` and `check-3d`; the jobs behind the
+`Node 22` check are not required by name, the `Node 22` aggregator gates on them. `main` is protected: its
 required checks are the seven gating check names below (not up-to-date-with-`main`, no reviews); `check-3d`
 is not one of them (adding it is the owner's branch-protection setting), and repository
 auto-merge is on. A new push to a PR cancels that PR's running CI (`concurrency`, per PR number); each
@@ -54,7 +55,7 @@ push to `main` runs in a group of its own and is never cancelled.
 
 **Record-only PRs.** The `changes` job sets `code=false` when every changed path is a record: the
 negated globs in its `dorny/paths-filter` step (Markdown under `docs/plans/`, `docs/agents/`, a few
-unpublished `docs/*.md`, `.claude/**/*.md`, `AGENTS.md`, `CLAUDE.md`, `CHANGELOG.md`; never a published
+unpublished `docs/*.md`, `.claude/**/*.md`, `AGENTS.md`, `CLAUDE.md`, `CHANGELOG.md`, `editors/vscode/CHANGELOG.md`; never a published
 page, an ADR, the README, `spec.llm.md`, a skill, or a non-Markdown file under `docs/plans/`). Then
 every gating job still reports its check, green, with its steps skipped, and Node 22 runs the docs
 leg instead: `check:drift`, `check:test-wiring`, the suites that read a record (`docs-*`, the seven
@@ -62,14 +63,31 @@ that compile every `arch` fence of every Markdown page, `npm-tarball`) and `docs
 `main`, a failed `changes` job or any other path runs everything. A suite that starts reading a record
 joins the docs leg's list in `ci.yml`, or the record leaves the filter.
 
-Minutes, a full run measured 2026-10-27 (PR #290 at 2ed9d70e, `gh run view 40416348158`; wall clock 22.7):
+**Code PRs.** Node 18, Node 20 and Windows report green with a job-summary line and run nothing: they
+run on every push to `main` and in nightly's `full-matrix`. Node 22 runs: `Node 22` is an aggregator
+over `Node 22 checks` and the shards `Node 22 tests 1/3` to `3/3`, and fails if one of them failed,
+was cancelled, or was skipped when `changes` did not call the PR a record. A push to `main` runs
+every leg, the suite on Node 22 split across those shards. A failed `changes` job runs every leg on
+a PR too.
+
+**A break on a main-only leg appears after the merge**, and nothing blocks on it. It is seen in three
+places: the red push run on `main`, with GitHub's failed-run notification to whoever merged;
+nightly's `report`, which lists a failed `full-matrix` job in the pinned issue, by the next 03:00 UTC;
+and `/release-check` item 5, which refuses a release on either. An open pinned issue is only edited,
+which notifies nobody, so close it once triaged or the next bad night is silent.
+
+Minutes, a full run measured 2026-10-27 (PR #290 at 2ed9d70e, `gh run view 40416348158`; wall clock
+22.7), the Node 22 rows on @@PR@@:
 
 | Job (check name) | Runs | Min |
 |---|---|---|
 | `changes` (Changed paths) | classifies the PR's paths (not a required check) | < 0.1 |
-| `build` (Node 18, Node 20, Node 22) | typecheck, `lint:ci`, `check:drift`, `npm test`, `eval:ci`; on a record-only PR, Node 22 runs the docs leg | 20.7, 19.9, 10.8 |
+| `build` (Node 18, Node 20) | push only: typecheck, `lint:ci`, `check:drift`, `npm test`, `eval:ci` | 20.7, 19.9 |
+| `node-22-checks` (Node 22 checks) | typecheck, `lint:ci`, `check:drift`, `eval:ci` | @@CHECKS@@ |
+| `node-22-tests` (Node 22 tests 1/3, 2/3, 3/3) | `vitest run --shard=N/3` | @@SHARDS@@ |
+| `node-22` (Node 22) | gates on the two above; on a record-only PR, runs the docs leg | < 0.2 |
 | `builds` (Workspace builds) | `build`, `typecheck:all`, all four workspace builds, MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring` (each only here) | 2.0 |
-| `windows` | `npm test` + `check:drift` at the runner's default line endings (no `eval:ci`) | 21.1 |
+| `windows` | push only: `npm test` + `check:drift` at the runner's default line endings (no `eval:ci`) | 21.1 |
 | `e2e-playground`, `e2e-docs` | Playwright against the built sites | 4.7, 4.7 |
 | `check-3d` (3D package (check:3d)) | `npm run check:3d` on Linux: `packages/archlang-3d`'s heavy tests (GLB through glTF-Validator, determinism over the corpus, CLI exit codes, the tarball through `npm pack`, the replay in Playwright's Chromium on SwiftShader with ffmpeg, the key-frame pixel baseline pinned to this job's Chromium); browsers in `PLAYWRIGHT_BROWSERS_PATH`, cached by the `playwright-core` version; not a required check | 2.0 (PR #336, browser cache cold) |
 | `bench` | informational per-stage timings in the job summary (+ a PR comment on same-repo PRs); never gates; skipped on a record-only PR | 0.9 |
@@ -81,7 +99,8 @@ runner image lacks, which the specs' layout depends on): 10 and 18 minutes in ru
 
 ### Merging a PR
 
-Auto-merge (option A of `docs/plans/ci-throughput.md`); nothing waits for CI or for the `push` run on `main`.
+Auto-merge (option A of `docs/plans/ci-throughput.md`); nothing waits for CI or for the `push` run on
+`main`, which is the first run of Node 18, Node 20 and Windows (§ CI).
 
 1. Review the diff as soon as the PR opens, never after CI; post `reviewed <full sha>` on the PR.
 2. `gh pr merge <n> --auto --merge --match-head-commit <full 40-character sha>`: GitHub merges (a merge
@@ -98,7 +117,7 @@ Auto-merge (option A of `docs/plans/ci-throughput.md`); nothing waits for CI or 
 
 `codeql.yml` `analyze` gates too (and runs weekly). `nightly.yml`: `prod-smoke`
 (`scripts/smoke.mjs`), `audit` (report-only), `secrets` (gitleaks over full history),
-`full-matrix`, `coverage` (`test:coverage`, the coverage summary and artifact; report-only, `continue-on-error`, outside `report`), `cross-engine` (`digest:engines`, advisory: never fails the night, a divergence updates
+`full-matrix` (`npm test` + `check:drift`), `coverage` (`test:coverage`, the coverage summary and artifact; report-only, `continue-on-error`, outside `report`), `cross-engine` (`digest:engines`, advisory: never fails the night, a divergence updates
 the pinned issue; its report is an
 artifact), `e2e-prod` (the read-only `@prod` subset against the live sites; its docs half also
 detects a stale deploy), and `report` (the single writer of the pinned issue; a fully green night comments on it and closes it). `deploy.yml` deploys
