@@ -398,6 +398,14 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
         }
         return format === "txt" ? renderAscii(pageScene) : pageSvg;
       };
+      // What the Plan JSON leaves out (#366), as `compile -f json --json` reports it: rows for one
+      // storey answer only for it; absent when nothing was dropped (or the core predates the report).
+      const droppedField = (level?: number): { dropped?: NonNullable<typeof projection>["dropped"] } => {
+        const rows = (projection?.dropped ?? []).filter(
+          (d) => level === undefined || d.level === undefined || d.level === level,
+        );
+        return rows.length > 0 ? { dropped: rows } : {};
+      };
       // A `level` this plan does not declare is refused with the real set — never silently
       // answered with the ground floor, which would look like a successful render of it.
       if (a.level !== undefined) {
@@ -422,6 +430,7 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
           level: want.level,
           output: render(want.svg, want.scene, want.level),
           levels,
+          ...droppedField(want.level),
           diagnostics: diags,
         });
       }
@@ -451,6 +460,7 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
               })),
             }
           : {}),
+        ...droppedField(),
         diagnostics: diags,
       });
     }),
