@@ -968,7 +968,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `E_SITE_DUP` — Two `site` blocks in one plan. **Fix:** Delete one of the blocks, or merge their fields into a single `site { … }`. The first block is the one that takes effect.
 - `E_SITE_NO_STREET` — A `site` block declares no `street`. **Fix:** Add `street north`, `south`, `east` or `west` inside the block. `hemisphere` is the optional field (it defaults to `north`).
 - `E_STAIR_WIDTH` — Stair flight `width` is outside the footprint. **Fix:** Drop `width` to fill the footprint, or give a value between 0 and the footprint's short side.
-- `E_STEP_LIMIT` — Evaluation did more work than any plan needs. **Fix:** Remove the inner loop or the doubling, compute the value directly, or split the plan.
+- `E_STEP_LIMIT` — Evaluation did more work than any plan needs. **Fix:** Remove the inner loop or the doubling, compute the value directly, draw a polygon of hundreds of vertices with fewer, or split the plan.
 - `E_STRIP_NEST` — Illegal `strip` nesting. **Fix:** Move the `strip` to the plan body, alongside the other elements.
 - `E_STRIP_SIZE` — Room in a `strip` is missing a size. **Fix:** Give the room a `size <main>` (main-axis extent) plus either a strip `height`/`width` or its own `size <main>x<cross>`.
 - `E_SWING_SIDE` — `swing inward` or `swing outward` on a wall with no single inside. **Fix:** Name the room the leaf opens into with `swing into <room>`, or write the wall-relative `swing in|out` (`in` is the right-hand side of the wall's drawn direction on the page, `out` the left).

@@ -755,16 +755,17 @@ while i < COUNT {
 - Two budgets hold what those per-loop and per-storey caps multiply. Evaluation as a
   whole (every storey, component and import together) is held to 5,000,000 steps,
   where a step is an expression evaluated, a statement run, a loop iteration, a value
-  or character produced (charged before it is built), a binding copied or a diagnostic
-  raised: loops nested in loops, a recursion that calls itself twice, or a string that
-  doubles stop with `E_STEP_LIMIT` at the statement that crossed the budget, in about a
-  second. And before anything is drawn, `compile` estimates the drawing over every
+  or character produced (charged before it is built), a binding copied, a diagnostic
+  raised or a pair of polygon edges tested: loops nested in loops, a recursion that
+  calls itself twice, a string that doubles, or polygons of hundreds of vertices stop
+  with `E_STEP_LIMIT` at the statement that crossed the budget, in a few seconds at
+  most. And before anything is drawn, `compile` estimates the drawing over every
   storey (an upper bound per kind: a room 3 primitives, a door 5, a run one or two lines
   per tread, a fixture its own symbol, plus one per point of each outline and what
   `dims auto`, the axes and the tables add): past 300,000 the plan is
   `E_DRAWING_LIMIT`, which keeps the largest drawing under about 0.35 GB of memory.
   `describe` and `lint` draw nothing and are not held by it. The largest shipped
-  example spends under 5,000 steps and is estimated at under 5,000; a 24-storey
+  example spends under 50,000 steps and is estimated at under 5,000; a 24-storey
   tower of 200 flats a floor is estimated at about 108,000.
 
 **`while` is deprecated** (`W_WHILE_DEPRECATED`) and will be removed in a

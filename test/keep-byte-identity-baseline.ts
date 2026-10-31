@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: H10 on main after #399: polygonSelfIntersects charges one step per edge pair before its scan, so a plan that scans a ring (room, outdoor or roof polygon, roof overhang, site boundary) spends n(n-1)/2 more steps per ring; every digest stays, only the step column moves.
+ * Taken: H10 on main after #408, two charges side by side: polygonSelfIntersects charges one step per edge pair of a ring (room, outdoor or roof polygon, roof overhang, site boundary), and polygonsOverlap, reopening M.19, charges one per edge pair of two rooms whose boxes overlap plus 12 more when no pair crosses. Every digest stays; only the step column moves.
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -24,7 +24,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   [
     "examples/aquarium.arch",
     "7d41ff1413bcf183d3a3262231708c321f588114b621dc5c9cdfd70d8488b787",
-    2411,
+    43179,
   ],
   [
     "examples/attached.arch",
@@ -64,7 +64,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   [
     "examples/gallery-l.arch",
     "0396aa8a113f9452383d830cc48f17222b3850d2562df02e5d1fa0f12aee09b1",
-    286,
+    598,
   ],
   [
     "examples/garden-house.arch",
@@ -79,7 +79,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   [
     "examples/hexagon-pavilion.arch",
     "6d2a5532474cec059ff104741cd0be727ee6edd9587eac028c23a61e8484705a",
-    681,
+    11497,
   ],
   [
     "examples/hillside-villa.arch",
@@ -1584,17 +1584,17 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/4-cafe.arch",
     "46da77092b6bc7ee0ab400db4a2c7df5988a25b8ac6c5b9bfec9c918e0cc9b48",
-    1804,
+    2168,
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/5-townhouse.arch",
     "f2f52edcea90be71a14947a62d7f799884da35a25640b1c307fd23c997d298b8",
-    1910,
+    3158,
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/6-clinic.arch",
     "98ea01c46ef03c20a415e6a54d2fdc160e0187017e23b2c2c28d6dcd9d08b43e",
-    1380,
+    1692,
   ],
   [
     "docs/plans/plan-soundness/repro/door-beside-tee-window-overlap.arch",

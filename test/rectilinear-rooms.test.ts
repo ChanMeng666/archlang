@@ -17,7 +17,6 @@ import { compile, describe, joinWallSet, lint, planJsonToArch, planToJson, resol
 import type { Point } from "../src/ast.js";
 import { ERROR_CATALOG } from "../src/error-catalog.js";
 import { impact } from "../src/impact.js";
-import { MAX_EVAL_STEPS } from "../src/expr.js";
 import { clearResolveCache, DERIVED_ELEMENTS_PER_ROOM, evaluationSteps, MAX_ELEMENTS, resolveAll } from "../src/ir.js";
 import { edgeOfPair, wallPhraseOf } from "../src/wall-ref.js";
 import { loopWinding } from "../src/geometry/band.js";
@@ -764,15 +763,15 @@ suite("budgets", () => {
     expect(codes(combs(1500))).toEqual(["E_STEP_LIMIT"]);
   }, 60_000);
 
-  it("many small combs: the flat pre-charge covers their rooms, the real count refuses", () => {
-    // 56 rooms pre-charge 560 elements and share 28 × 201 runs, with every ring inside the budget.
-    const src = combs(50, 28);
-    expect(56 * DERIVED_ELEMENTS_PER_ROOM).toBeLessThan(MAX_ELEMENTS);
-    expect(28 * (4 * 50 + 1)).toBeGreaterThan(MAX_ELEMENTS);
-    expect(stepsOf(src)).toBeLessThan(MAX_EVAL_STEPS);
+  it("many small combs: the flat pre-charge covers their rooms, the real count refuses first", () => {
+    // 400 rooms pre-charge 4,000 walls and share 5,200, each ring far inside the budget. The
+    // exact overlap test of 200 interlocked pairs can then spend what is left, later in the
+    // resolution, so the real count is the first error and `E_STEP_LIMIT` may follow it.
+    const src = combs(6, 200);
+    expect(400 + 400 * DERIVED_ELEMENTS_PER_ROOM).toBeLessThan(MAX_ELEMENTS);
     const d = errors(src);
-    expect(d.map((x) => x.code)).toEqual(["E_ELEMENT_LIMIT"]);
-    expect(d[0]!.message).toContain("would derive up to");
+    expect(d[0]!.code).toBe("E_ELEMENT_LIMIT");
+    expect(d[0]!.message).toContain("would derive up to 5200");
   }, 60_000);
 });
 

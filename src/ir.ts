@@ -2625,8 +2625,8 @@ function stepLimitDiagnostic(signal: StepLimitSignal): Diagnostic {
     {
       severity: "error",
       message:
-        `Evaluation stopped after ${MAX_EVAL_STEPS} steps — the plan's loops, calls or strings do more work ` +
-        "than any plan needs (a loop nested in a loop, recursion that branches, or a string that doubles?)",
+        `Evaluation stopped after ${MAX_EVAL_STEPS} steps — the plan does more work than any plan needs ` +
+        "(a loop nested in a loop, recursion that branches, a string that doubles, or polygons of hundreds of vertices?)",
       code: "E_STEP_LIMIT",
       ...(at.span ? { span: at.span } : {}),
     },
@@ -4360,8 +4360,8 @@ export const MAX_OVERLAP_PAIRS_LISTED = 200;
  *  needed: rectangle pairs are counted in O(n log n) by {@link countOverlappingRectPairs}, and
  *  pairs with a polygon room by class (a pile of n coincident polygon rooms is one test). What
  *  stays quadratic is what the answer is made of: n DISTINCT polygon rooms that all share a
- *  cell are n² distinct exact tests. Rooms reaching this check are finite (`checkNumberDomain`
- *  drops the rest first). */
+ *  cell are n² distinct exact tests, each charged to the step meter by `polygonsOverlap`. Rooms
+ *  reaching this check are finite (`checkNumberDomain` drops the rest first). */
 export function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diagnostic[], level?: number): void {
   // A room left unplaced carries a (0,0) placeholder, not geometry: testing it would
   // report phantom overlaps (quadratic in a chain) on top of the layout error.

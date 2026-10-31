@@ -15,7 +15,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is now one evaluation step, charged before the check runs, for `room`, `outdoor` and `roof polygon`,
   `roof overhang` on a wall ring and a site `boundary`. A ring of up to about 3,000 vertices still
   fits the 5,000,000-step budget, and the largest in the corpus spends far less. No drawing,
-  `describe()`, `lint()` or diagnostic moves; a plan with no such ring spends the same steps.
+  `describe()`, `lint()` or diagnostic of a plan under the budget moves; a plan with no such ring
+  spends the same steps.
+- Polygon rooms whose boxes overlap now stop with `E_STEP_LIMIT` instead of running for minutes (H10,
+  reopening M.19). `W_ROOM_OVERLAP`'s exact ring test counted nothing, so 100 thin staircase rooms of
+  300 vertices, under the budget, spent 376 s in it with no diagnostic. The test is now charged before
+  it runs: one step per edge pair, and 12 more per edge pair when no edge pair crossed, so a pair a box
+  rejects and a pile of coincident rooms stay as cheap as they were. `W_ROOM_OVERLAP`'s wording and
+  counts do not move. The largest example now spends 43,179 steps, 115 times under the budget. The
+  price is on long rings: two rooms of about 600 vertices whose boxes overlap, or about 150 nested
+  L-shaped rooms, now reach the budget.
+- `W_OUTDOOR_OVERLAPS_ROOM` no longer runs unbounded in `lint`. It asks the same ring question after
+  the resolution, where nothing counts, so a plan of many long ground and room outlines took minutes
+  with no sign of why. Past the same budget the rule now judges nothing on that storey and says so in
+  the lint coverage (`outdoor-budget`). Under it, every warning stands.
+- `E_STEP_LIMIT`'s message and catalogue entry no longer blame "loops, calls or strings" alone. They
+  name polygons of hundreds of vertices too, which is what a plan with no loop has done wrong.
+
 ### Added
 
 - A rectilinear `room polygon` in `walls from rooms` (issue #363, first part): a polygon whose every

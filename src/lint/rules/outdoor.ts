@@ -8,12 +8,14 @@
 import type { Point } from "../../ast.js";
 import type { ROutdoor, RRoom } from "../../ir.js";
 import type { Diagnostic } from "../../diagnostics.js";
+import { MAX_EVAL_STEPS } from "../../expr.js";
 import { rectCorners } from "../../geometry.js";
 import {
   distToPolygonEdge,
   pointInPolygon,
   polygonLabelPoint,
   polygonsOverlap,
+  polygonsOverlapCost,
   rectRing,
 } from "../../geometry/polygon.js";
 import type { LintContext, LintRule } from "../context.js";
@@ -134,6 +136,21 @@ export const outdoorOverlapsRoom: LintRule = {
     const out: Diagnostic[] = [];
     const outdoors = ctx.ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor");
     if (outdoors.length === 0) return out;
+    // Lint runs after the resolution, where the step meter is off, so the pairs are added up
+    // first, on the same count and the same budget: the rule judges every pair or none.
+    let work = 0;
+    for (const o of outdoors) {
+      const ring = ringOf(o);
+      if (!ring) continue;
+      for (const r of ctx.rooms) {
+        const box = ctx.roomRects.get(r.id);
+        if (box) work += polygonsOverlapCost(ring, box.poly ?? rectRing(box));
+      }
+    }
+    if (work > MAX_EVAL_STEPS) {
+      ctx.skip("outdoor-budget");
+      return out;
+    }
     const hits: Array<{ o: ROutdoor; r: RRoom }> = [];
     for (const o of outdoors) {
       const ring = ringOf(o);

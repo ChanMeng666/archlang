@@ -417,6 +417,13 @@ export function rectInsidePolygon(r: BBox, ring: readonly Point[]): boolean {
 }
 
 /**
+ * The containment tests' upper bound per edge pair: each ring's vertices and edge midpoints (two
+ * points per edge) read the other ring up to three times (a distance, the on-edge test, the
+ * crossing count), on both sides.
+ */
+const CONTAINMENT_STEPS_PER_EDGE_PAIR = 12;
+
+/**
  * Do two simple polygons overlap in their **interiors** (by more than `eps` mm)?
  * Touching along a shared boundary — the normal case for two rooms either side of a
  * partition — is NOT an overlap, matching {@link import("./rect.js").rectsOverlap},
@@ -426,17 +433,22 @@ export function rectInsidePolygon(r: BBox, ring: readonly Point[]): boolean {
  * through each other), a vertex of one strictly inside the other (containment), or an
  * edge midpoint strictly inside the other (a shared-edge pair where one ring's vertices
  * all sit on the boundary).
+ *
+ * Past the box test each case is charged before it runs (`MAX_EVAL_STEPS`), so a pair that a
+ * box rejects costs nothing: one step per edge pair, then, when no edge pair crossed,
+ * {@link CONTAINMENT_STEPS_PER_EDGE_PAIR} for the containment tests. Outside a resolution
+ * nothing is counted: a caller there bounds itself with {@link polygonsOverlapCost}.
  */
 export function polygonsOverlap(a: readonly Point[], b: readonly Point[], eps = 1): boolean {
-  const ba = polygonBounds(a);
-  const bb = polygonBounds(b);
-  if (Math.min(ba.x + ba.w, bb.x + bb.w) - Math.max(ba.x, bb.x) <= eps) return false;
-  if (Math.min(ba.y + ba.h, bb.y + bb.h) - Math.max(ba.y, bb.y) <= eps) return false;
+  if (ringBoxesMiss(a, b, eps)) return false;
+  const edgePairs = a.length * b.length;
+  chargeSteps(edgePairs);
   for (const [a1, a2] of polygonEdges(a)) {
     for (const [b1, b2] of polygonEdges(b)) {
       if (segmentsProperlyCross(a1, a2, b1, b2)) return true;
     }
   }
+  chargeSteps(CONTAINMENT_STEPS_PER_EDGE_PAIR * edgePairs);
   const strictlyInside = (p: Point, ring: readonly Point[]): boolean =>
     distToPolygonEdge(p, ring) > eps && pointInPolygon(p.x, p.y, ring);
   for (const [p, ring] of [
@@ -449,6 +461,22 @@ export function polygonsOverlap(a: readonly Point[], b: readonly Point[], eps = 
     }
   }
   return false;
+}
+
+/**
+ * The most steps {@link polygonsOverlap} spends on a pair, and 0 when the box test rejects it. For
+ * a caller outside a resolution, where nothing is counted: it adds this up and decides first.
+ */
+export function polygonsOverlapCost(a: readonly Point[], b: readonly Point[], eps = 1): number {
+  return ringBoxesMiss(a, b, eps) ? 0 : (1 + CONTAINMENT_STEPS_PER_EDGE_PAIR) * a.length * b.length;
+}
+
+/** Are two rings' boxes too far apart to share more than `eps` mm on both axes? */
+function ringBoxesMiss(a: readonly Point[], b: readonly Point[], eps: number): boolean {
+  const ba = polygonBounds(a);
+  const bb = polygonBounds(b);
+  if (Math.min(ba.x + ba.w, bb.x + bb.w) - Math.max(ba.x, bb.x) <= eps) return true;
+  return Math.min(ba.y + ba.h, bb.y + bb.h) - Math.max(ba.y, bb.y) <= eps;
 }
 
 /**

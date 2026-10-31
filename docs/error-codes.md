@@ -1877,9 +1877,9 @@ stair id=s at (0,0) size 900x2600 dir up width 1200   # error: cross extent is 9
 
 *error* — Evaluation did more work than any plan needs.
 
-**Cause.** One counter measures the work the whole resolution does (every storey, component instance and import): an expression evaluated, a statement run, a loop iteration, a value or character produced (charged before it is built), a binding copied, a diagnostic raised. Past 5,000,000 steps evaluation stops at the statement that crossed the budget and the plan draws nothing. Each loop's own caps hold (`E_RANGE_LIMIT`, `E_WHILE_LIMIT`, `E_ELEMENT_LIMIT`), but loops nested in loops, recursion that calls itself twice and a string that doubles multiply inside them.
+**Cause.** One counter measures the work the whole resolution does (every storey, component instance and import): an expression evaluated, a statement run, a loop iteration, a value or character produced (charged before it is built), a binding copied, a diagnostic raised, a pair of polygon edges tested (within one ring for a crossing, and between two rooms whose boxes overlap, 13 steps a pair when neither crosses the other). Past 5,000,000 steps evaluation stops at the statement that crossed the budget and the plan draws nothing. Each loop's own caps hold (`E_RANGE_LIMIT`, `E_WHILE_LIMIT`, `E_ELEMENT_LIMIT`), but loops nested in loops, recursion that calls itself twice and a string that doubles multiply inside them. Edge pairs grow with the square of a ring's vertices, so one ring of about 3,000 vertices, or two rooms of about 600 whose boxes overlap, spends the budget with no loop in the plan.
 
-**Fix.** Remove the inner loop or the doubling, compute the value directly, or split the plan.
+**Fix.** Remove the inner loop or the doubling, compute the value directly, draw a polygon of hundreds of vertices with fewer, or split the plan.
 
 ```arch static
 for i in 0..100000 { for j in 0..1000 { let x = i } }   # error: 100 million iterations

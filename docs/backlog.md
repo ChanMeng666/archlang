@@ -1641,7 +1641,21 @@ shape with far more runs). Verify: the chosen seed reproduces a non-zero count; 
 
 Done (PR #300): the equality law stays unseeded and a second case pins `seed: 20261027` for the `offered > 0` check; the grep found no other unseeded count assertion with the flaky shape.
 
-### M.19 · Quadratic passes the two budgets do not see — closed (two residuals kept by decision)
+### M.19 · Quadratic passes the two budgets do not see — closed (label placement kept by decision; ring tests charged after a reopening)
+
+**Reopened by the owner on 2026-11-01, on a measurement from H10.** The decision below rested on
+"seconds, not unbounded", which held for small rings only: 100 staircase rooms of about 300
+vertices, boxes overlapping and floors disjoint, spent 4,554,140 steps, under the budget, and 376 s
+in `checkRoomOverlaps` with no diagnostic. `polygonsOverlap` is now charged past its box test, before
+each case runs: one step per edge pair, and 12 more per edge pair when no edge pair crossed. So a
+pair a box rejects, and a class of coincident rooms beyond its one test, cost what they did, and no
+`W_ROOM_OVERLAP` text or count moves. That plan is now one `E_STEP_LIMIT`; a cap on the count, which
+the decision weighed, was not needed. The price: two rooms of about 600 vertices whose boxes overlap,
+or about 150 nested L-shaped rooms, now reach the budget, and the largest example spends 43,179 steps
+(115 times under it). The only other unmetered ring
+pass, `W_OUTDOOR_OVERLAPS_ROOM`, adds the same cost up first and files `outdoor-budget`. The
+label-placement residual below stays kept, and so does `polygonLabelPoint`'s fallback, which runs at
+render, outside the meter, bounded by the element cap and its grid.
 
 The step budget counts the evaluator and the drawing budget the primitives drawn; three passes
 that run after both cost more than either counts, each within the element cap. Re-measured
@@ -1660,10 +1674,11 @@ byte moved, and each replaced pass is compared with its old form, kept verbatim,
   `describe` for zero diagnostics (identical rings never test as overlapping), now 1.1–1.3 s.
   Still quadratic, because the answer is: n DISTINCT polygon rooms sharing one cell are n²
   distinct exact ring tests. A bound there is a language decision (e.g. stop counting past a
-  cap and word the summary "…and more than N"); not built. **Owner decision: keep it.** The
-  input is a constructed pile, the cost is bounded by the element cap (seconds, not
-  unbounded), and a cap would change a shipped diagnostic's text for it. Reopen only against
-  a real plan that pays this cost.
+  cap and word the summary "…and more than N"); not built. **Owner decision: keep it**
+  (reopened, above: the tests are charged, and no cap was built). The input is a constructed
+  pile, the cost is bounded by the element cap (seconds, not unbounded), and a cap would
+  change a shipped diagnostic's text for it. Reopen only against a real plan that pays this
+  cost.
 - **Reduced: label placement.** Each probe's sum over obstacles and placed labels now asks a
   grid for the boxes it can touch, and groups with the same text box, anchor and ring continue
   a remembered running sum instead of rescanning (`BoxSums`, `src/label-placement.ts`). The
