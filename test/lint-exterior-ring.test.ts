@@ -100,6 +100,14 @@ suite("what it never judges", () => {
     expect(found(plan(`${CLOSED}\n${fin}\n${ROOM}`))).toEqual([]);
   });
 
+  it("a run standing free inside a building is not outermost, even along a room's edge", () => {
+    // The L stands on room b's two sides, so only "outermost" can refuse it.
+    const big = `  wall id=w exterior thickness 200 { (0,0) (12000,0) (12000,8000) (0,8000) close }`;
+    const inner = `  wall id=g exterior thickness 200 { (3000,2000) (8000,2000) (8000,6000) }`;
+    const b = `  room id=b at (3000,2000) size 5000x4000 label "B" uses bedroom`;
+    expect(found(plan(`${big}\n${inner}\n${b}`))).toEqual([]);
+  });
+
   it("a shell finished in another category is closed: nothing is open there", () => {
     const u = `  wall id=u exterior thickness 200 { (0,4000) (0,0) (6000,0) (6000,4000) }`;
     const last = `  wall id=party party thickness 200 { (0,4000) (6000,4000) }`;
@@ -311,6 +319,24 @@ ${ROOM}`);
     const ds = found(src);
     expect(ds).toHaveLength(4);
     for (const d of ds) expect(d.message).toContain("1414 mm apart from (");
+  });
+
+  it("a straight run's own two ends are its length, never a gap, even when they are the nearest pair", () => {
+    // The short south wall's ends stand 2000 mm apart; the nearest ends it can pair with are 4472 mm off.
+    const src = plan(`  wall id=n exterior thickness 200 { (0,0) (6000,0) }
+  wall id=s exterior thickness 200 { (2000,4000) (4000,4000) }
+${ROOM}`);
+    const ds = found(src);
+    expect(ds).toHaveLength(2);
+    for (const d of ds) expect(d.message).toContain("4472 mm apart from (");
+  });
+
+  it("a straight run beside a shell closed in another category has nothing to pair with: not a gap", () => {
+    const u = `  wall id=u exterior thickness 200 { (0,4000) (0,0) (6000,0) (6000,4000) }`;
+    const last = `  wall id=p partition thickness 100 { (0,4000) (6000,4000) }`;
+    const lean = `  room id=c at (8000,0) size 3000x4000 label "Lean-to" uses storage
+  wall id=x exterior thickness 200 { (8000,0) (11000,0) }`;
+    expect(found(plan(`${u}\n${last}\n${ROOM}\n${lean}`))).toEqual([]);
   });
 
   it("a shell open across a whole side", () => {
