@@ -29,7 +29,7 @@
  */
 
 import { describe as suite, expect, it } from "vitest";
-import { compile, describe, lint, resolvePlan } from "../src/index.js";
+import { compile, describe, lint } from "../src/index.js";
 import { makeNodeWorld } from "../src/cli/io.js";
 import { clearResolveCache, evaluationSteps, resolveAll } from "../src/ir.js";
 import { link } from "../src/import.js";
@@ -51,11 +51,16 @@ const API: LawApi = { compile, describe, lint, stepsOf };
 
 /**
  * Does the plan put a rectilinear polygon in a `walls from rooms` set, or name one in a
- * `door|opening between`? The doors are read off the source, since a refused one has no relation.
+ * `door|opening between`? The doors are read off the source, since a refused one has no relation,
+ * and the rooms off the resolver itself, since `resolvePlan` hands back no plan that has an error.
  */
 function reachesTheForm(src: string, world: World | undefined): boolean {
-  const res = resolvePlan(src, world ? { world } : {});
-  const irs = res.levels.length > 0 ? res.levels.map((l) => l.ir) : res.ir ? [res.ir] : [];
+  clearResolveCache();
+  const { plan: ast } = parse(src, BUILTIN_REGISTRY);
+  if (!ast) return false;
+  const w = world ?? NULL_WORLD;
+  const res = resolveAll(link(ast, w, BUILTIN_REGISTRY).plan, BUILTIN_REGISTRY, w);
+  const irs = res.levels.length > 0 ? res.levels.map((l) => l.ir) : [res.ir];
   const named = new Set(
     [...src.matchAll(/\b(?:door|opening)\b[^\n]*?\bbetween\s+(\S+)\s+and\s+(\S+)/g)].flatMap((m) => [m[1]!, m[2]!]),
   );
