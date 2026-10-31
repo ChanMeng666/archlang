@@ -590,7 +590,7 @@ export const openingAtJunction: LintRule = {
         const hi = Math.min(j.hi, o.hi);
         facts.push(
           j.boundary
-            ? `${openBoundaryPhrase(j.wall)}${freeEndOf(j)}${allFree ? "" : ","} lies inside its span (${span}; it is measured over ${runSpan(o.seg, j.lo, j.hi)}, ${mm(hi - lo)} mm of the opening)`
+            ? `${openBoundaryPhrase(j.wall)}${freeEndOf(j) && `${freeEndOf(j)},`} lies inside its span (${span}; it is measured over ${runSpan(o.seg, j.lo, j.hi)}, ${mm(hi - lo)} mm of the opening)`
             : `${wallPhrase(j.wall)} stands inside its span (${span}; that wall occupies ${runSpan(o.seg, j.lo, j.hi)}, ${mm(hi - lo)} mm of the opening)`,
         );
       }

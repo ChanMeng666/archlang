@@ -183,6 +183,12 @@ suite("the host decides whether a jamb has wall beside it", () => {
     expect(d?.message).not.toMatch(/stands inside|that wall occupies|a pier/);
   });
 
+  it("reads as one clause when a span lies over a boundary at an end a wall also stands at", () => {
+    const src = NIB_HOSTS.stemFromFreeEnd.replace("    open between a and c\n", "");
+    const nib = compile(src, { noCache: true }).diagnostics.find((d) => d.code === "E_OPENING_NIB");
+    expect(nib?.message).toContain('the open boundary between "a" and "b" lies inside its span');
+  });
+
   it("does not call the end free when a wall stands there too", () => {
     const nib = compile(NIB_HOSTS.stemAtWall, { noCache: true }).diagnostics.find((d) => d.code === "E_OPENING_NIB");
     expect(nib?.message).toContain("leaves a jamb 40 mm from");

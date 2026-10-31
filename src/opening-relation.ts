@@ -699,7 +699,7 @@ function nibFault(
       return {
         say: (name) =>
           j.boundary
-            ? `${name(j)}${atFreeEnd(j)}, lies inside its span ${span}`
+            ? `${name(j)}${atFreeEnd(j) && `${atFreeEnd(j)},`} lies inside its span ${span}`
             : `${name(j)} stands inside its span ${span}`,
         atBoundary: j.boundary !== undefined,
       };
