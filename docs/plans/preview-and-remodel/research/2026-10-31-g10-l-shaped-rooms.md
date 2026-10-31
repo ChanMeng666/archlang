@@ -2,7 +2,7 @@
 
 A written design, card G10 of `cards.md`. Nothing here is built. Measured on `main@4b42ceea`, which is
 core 1.47.0 (`arch --version`). File references are to that commit. Probes and the spike are outside
-the repository, in `D:\.claude-scratch\2026-10-31\g10\`.
+the repository, in `D:\github_repository\claude-kept\2026-10-31-round-evidence\g10\`.
 
 **Decision.** Accept a rectilinear `room polygon` in `walls from rooms`, `door|opening between`,
 relational placement and anchored furniture. No new statement and no new clause. The issue's option

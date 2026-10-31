@@ -2,7 +2,7 @@
 
 A written design, card G10 of `cards.md`. Nothing here is built. Measured on `main@4b42ceea`, which is
 core 1.47.0. File references are to that commit. Probes are in
-`D:\.claude-scratch\2026-10-31\g10\p362\`. Unlike the L-room design, no prototype was built: the
+`D:\github_repository\claude-kept\2026-10-31-round-evidence\g10\p362\`. Unlike the L-room design, no prototype was built: the
 claims about the future form below are designed from the code, not run.
 
 **Decision.** One `stair` made of ordered rectangular pieces, the issue's step 1: a new block form of
