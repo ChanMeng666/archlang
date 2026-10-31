@@ -241,7 +241,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
   ["0bd672f0aada54211d74b524fc1f3b0ab3124579c4dcf5638a4514d32074220f", "generic", "examples/tiny-house.arch"],
   ["85872c4976afb17d18b189240ccc2891c0506f1a41de23a46a70a423bf1fabc8", "generic", "examples/townhouse.arch"],
   ["74c9749a26ec9f777e9e9b969216e4b24fafd8fc4ed1499a255075e48f0bb53e", "generic", "examples/transit-hall.arch"],
-  ["8d3bf886bbdc611652938b53ea64ccd7090c46479648d037d2a77a29a9aedc71", "generic", "examples/turning-stair.arch"],
+  ["7b49368008669bb90ed2985c9ae02e85f03098cb94c18d4d143247f3688d51c3", "generic", "examples/turning-stair.arch"],
   ["1b5a551caf4aa0fb26334d09c73a5ba5976974b0e0b6004b657a6aaedb60e68d", "generic", "examples/two-bed.arch"],
   ["a65bc89547fbaa853dcc31d09c03201dab1bfed4d7057569b21bef5988b4f1ab", "generic", "examples/two-storey.arch"],
   [
@@ -1420,7 +1420,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "examples/transit-hall.arch",
   ],
   [
-    "8ea83711dad83940378c350dc90d2e814d911f4ecf68791e4c81c5222b4a59b6",
+    "4e69b284e12ff7af08f8a22138b3ea4f268e4dd285db191e8af87da249f3e231",
     "cn-residential-advisory",
     "examples/turning-stair.arch",
   ],
@@ -2610,7 +2610,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "examples/transit-hall.arch",
   ],
   [
-    "81efea7595bfcd0c13f30f9a9c1ac12e505ece461877782127896f447c08bf13",
+    "c56eeb54fbcaf4bcb30ae745e41270c43b0e04ecaec633e6c46afbb545cdf282",
     "us-residential-advisory",
     "examples/turning-stair.arch",
   ],

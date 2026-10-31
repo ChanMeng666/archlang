@@ -27,14 +27,14 @@
  * bounding box, whose notch is floor. Its foot is the first flight's and its head the last's, and
  * its other pieces stand in those landings as they stand in the walking grid. The run is the sum of
  * the flights against a {@link minimumRun} that takes one going off per landing, so a stair too
- * short is reported once, for the whole stair. Each rule files the `block-stair` coverage skip where
- * its own reading is still only part of the answer: a sum that passes although the flights cannot
- * hold the goings whole ({@link holdsGoings}); only the ends of the stair are measured, not the
+ * short is reported once, for the whole stair, and so is a sum that passes on flights that cannot
+ * hold the goings whole ({@link flightsShort}). Each rule files the `block-stair` coverage skip where
+ * its own reading is still only part of the answer: only the ends of the stair are measured, not the
  * landings between its flights, and the head a flight from below arrives at is not read beside a
  * block on either stop ({@link headUnread}); on a storey it rises from, all of every piece stands in
- * the way, with none of the high end a person passes under ({@link readInPart}). A stairwell is a
- * hole, so a stop that comes down files nothing for that. A rule with nothing to compare files
- * nothing.
+ * the way, with none of the high end a person passes under ({@link readInPart}); a caller's ruleset
+ * leaves more riser counts to try than are tried ({@link MAX_RISER_TRIES}). A stairwell is a hole, so
+ * a stop that comes down files nothing for that. A rule with nothing to compare files nothing.
  */
 
 import type { Point } from "../../ast.js";
@@ -61,7 +61,6 @@ import {
   flightsOf,
   isBlockStair,
   piecesOf,
-  type RBlockStair,
   roomOfVertical,
   runAxis,
   tailEdge,
@@ -454,7 +453,7 @@ export const swingOverStair: LintRule = {
           hit === "flight"
             ? "its open leaf sweeps the flight itself"
             : hit === "mid"
-              ? "its open leaf sweeps a landing between the flights"
+              ? `its open leaf sweeps ${sf.well ? "the stairwell" : "a landing between the flights"}`
               : hit === "head"
                 ? `its open leaf sweeps the landing at the head of the flight, the ${mm(headNeed)} mm a person steps off onto`
                 : dwelling
@@ -809,6 +808,10 @@ export function stairLimitsValid(rules: StairLimits): boolean {
   return Number.isFinite(r) && r > 0 && Number.isFinite(g) && g >= 0 && (p === null || (Number.isFinite(p) && p > 0));
 }
 
+/** The going a riser asks for: at least `stairMinGoingMm` and, with a pitch cap, the riser over it. */
+const goingFor = (riser: number, rules: StairLimits): number =>
+  Math.max(rules.stairMinGoingMm, rules.stairMaxPitchRatio === null ? 0 : riser / rules.stairMaxPitchRatio);
+
 /**
  * The shortest run (mm) a stair of `landings` landings climbing `rise` needs under the ruleset: the
  * fewest risers no higher than `stairMaxRiseMm` (fewer risers mean fewer goings, so the shortest
@@ -830,10 +833,7 @@ export function minimumRun(
   if (n > 1 && (n - 1) * max >= rise) n -= 1;
   else if (n * max < rise) n += 1;
   const riser = rise / n;
-  const going = Math.max(
-    rules.stairMinGoingMm,
-    rules.stairMaxPitchRatio === null ? 0 : riser / rules.stairMaxPitchRatio,
-  );
+  const going = goingFor(riser, rules);
   // More landings than the climb has goings to give up leave none, never fewer.
   const goings = Math.max(0, n - 1 - landings);
   const run = goings * going;
@@ -842,16 +842,73 @@ export function minimumRun(
   return { risers: n, riser, going, goings, run };
 }
 
+/** What {@link minimumRun} answers when it can judge. */
+export type RunNeed = NonNullable<ReturnType<typeof minimumRun>>;
+
 /**
- * Can block stair `v`'s flights hold `goings` whole goings of `going` mm between them? Their sum can
- * pass although each flight ends short of a whole going: 1210 + 1210 mm is the 2420 mm that 11
- * goings of 220 mm need, and each holds 5. It stays out of the warning, whose figure is the sum: it
- * answers only whether the sum was the whole answer, for the `block-stair` skip.
+ * How many riser counts {@link flightsShort} tries, from the fewest up. Under a pitch cap the going
+ * shrinks as risers are added only until it reaches `stairMinGoingMm`, a riser or two on under every
+ * shipped profile; only a caller's ruleset with next to no least going gets this far. A count, so
+ * the rule stays linear in the flights.
  */
-function holdsGoings(v: RBlockStair, goings: number, going: number): boolean {
-  if (going <= 0) return true;
-  const held = flightsOf(v).reduce((n, f) => n + Math.floor((runLength(f) + VERTEX_EPS) / going), 0);
-  return held >= goings;
+export const MAX_RISER_TRIES = 64;
+
+/** What a block stair's flights lack when their sum passes and they cannot hold the goings whole. */
+export interface FlightsShort {
+  /** The whole goings each flight holds, in climbing order, at the fewest risers. */
+  held: number[];
+  /** The flights to lengthen, each to its next whole going, the nearest first. */
+  lengthen: Array<{ from: number; to: number }>;
+}
+
+/** The whole goings of `going` mm a flight of `run` mm holds. */
+const goingsIn = (run: number, going: number): number => Math.floor((run + VERTEX_EPS) / going);
+
+/**
+ * Do block stair `v`'s flights fail to hold their goings whole, although their sum passes? The sum
+ * can pass with each flight ending short of a whole going: 1210 + 1210 mm is the 2420 mm that 11
+ * goings of 220 mm need, and each holds 5, so that stair climbs 2750 mm on 12 risers of 229 mm.
+ *
+ * Every riser count from the fewest is tried while the going still shrinks, because one more riser
+ * can shorten the going under a pitch cap by more than it costs: 1320 + 1320 mm fails at the 13
+ * risers and 235 mm of `uk-residential-advisory`, and holds 6 + 6 at 14 risers and 220 mm. Once the
+ * going stands at `stairMinGoingMm` another riser only owes another going, so the answer is final.
+ * `null` when the flights hold them, or the sum is the answer ({@link minimumRun}), as on a straight
+ * stair, whose one flight is never cut short; `"undecided"` past {@link MAX_RISER_TRIES}.
+ */
+export function flightsShort(
+  v: RStair,
+  rise: number,
+  rules: StairLimits,
+  need: RunNeed,
+): FlightsShort | "undecided" | null {
+  if (!isBlockStair(v) || runLength(v) + VERTEX_EPS < need.run) return null;
+  const runs = flightsOf(v).map(flightRun);
+  const held = (going: number): number[] => runs.map((r) => goingsIn(r, going));
+  const total = (xs: readonly number[]): number => xs.reduce((n, x) => n + x, 0);
+  for (let tries = 0; tries < MAX_RISER_TRIES; tries++) {
+    const risers = need.risers + tries;
+    const going = goingFor(rise / risers, rules);
+    if (going <= 0 || total(held(going)) >= risers - runs.length) return null;
+    if (going === rules.stairMinGoingMm) {
+      const at = held(need.going);
+      const lengthen = runs
+        .map((from, i) => ({ from, to: (at[i]! + 1) * need.going }))
+        .sort((a, b) => a.to - a.from - (b.to - b.from));
+      return { held: at, lengthen: lengthen.slice(0, need.goings - total(at)) };
+    }
+  }
+  return "undecided";
+}
+
+/**
+ * The run `clearances` quotes against `v`: {@link minimumRun}'s, or, where {@link flightsShort}
+ * reports, what the flights come to once lengthened, so a run under it is the warning's reading.
+ */
+export function leastRun(v: RStair, rise: number, rules: StairLimits, need: RunNeed): number {
+  const short = flightsShort(v, rise, rules, need);
+  if (short === null || short === "undecided") return need.run;
+  return short.lengthen.reduce((n, l) => n + (l.to - l.from), runLength(v));
 }
 
 /** A length limit as prose: whole mm as is; a quarter inch exactly (an IRC figure) as
@@ -889,15 +946,32 @@ export const stairTooSteep: LintRule = {
       const need = minimumRun(rise, ctx.rules, landingCount(v));
       if (need === null) continue;
       const run = runLength(v);
-      if (run + VERTEX_EPS >= need.run) {
-        if (isBlockStair(v) && !holdsGoings(v, need.goings, need.going)) ctx.skip("block-stair");
-        continue;
-      }
-      const m = deficitMm(need.run, run);
+      const short = flightsShort(v, rise, ctx.rules, need);
+      if (short === "undecided") ctx.skip("block-stair");
+      if (short === "undecided" || (short === null && run + VERTEX_EPS >= need.run)) continue;
       const limits =
         ctx.rules.stairMaxPitchRatio === null ? "riser and going limits come" : "riser, going and pitch limits come";
       const going = mm(Math.ceil(need.going - VERTEX_EPS));
       const atMost = `at ${limitMm(ctx.rules.stairMaxRiseMm)} a riser at most that is`;
+      if (short !== null) {
+        const risers = short.held.reduce((n, x) => n + x + 1, 0);
+        const owed = short.lengthen.length;
+        const each = short.lengthen.map((l) => {
+          const d = deficitMm(l.to, l.from);
+          return `from ${d.available} mm to at least ${d.required} mm`;
+        });
+        out.push({
+          severity: "warning",
+          code: "W_STAIR_TOO_STEEP",
+          ...ctx.at(v),
+          message: `${capitalise(stairName(v, ctx))} is too steep: its flights' ${mm(run)} mm run must climb the ${mm(rise)} mm storey, and ${atMost} ${need.risers} risers, ${need.goings} goings and ${landingWords(v)}, each going at least ${going} mm, but the flights hold only ${short.held.join(" + ")} whole goings, which makes ${risers} risers of ${limitMm(rise / risers)} (${owed === 1 ? "1 going" : `${owed} goings`} short).`,
+          hints: [
+            `Lengthen ${owed === 1 ? `one flight of \`${v.id}\` ${each[0]}` : `${owed} flights of \`${v.id}\`, ${each.join(" and ")}`} on every storey it is drawn on (each flight's \`size\`), or correct the storey \`height\` if it is wrong; the ${limits} from the lint profile (\`--profile\`).`,
+          ],
+        });
+        continue;
+      }
+      const m = deficitMm(need.run, run);
       out.push({
         severity: "warning",
         code: "W_STAIR_TOO_STEEP",
@@ -967,8 +1041,9 @@ export function stairZones(f: StoreyStairs): StairZone[] {
  * end of a flight is a normal drawing, and lint has no way to clear a warning on one statement. The
  * height is `ir.storeyHeight`, 3000 mm (`STOREY_HEIGHT`) when the plan authors none, a default that
  * can only narrow what is judged. A stairwell (a flight coming down, or arriving from below) is a
- * hole, so all of its footprint is read. A landing reads only a piece at the cut plane's body layer:
- * a rug on it is walked on, a wall cabinet beside it hangs above it. One warning per piece and
+ * hole, so all of its footprint is read. Any landing, between the flights or at either end, reads
+ * only a piece at the cut plane's body layer: a rug on it is walked on, a wall cabinet beside it
+ * hangs above it. A stairwell has no landing to walk on. One warning per piece and
  * stair, at the first zone it stands on. Past the storey's {@link MAX_STAIR_WORK} it declines, as
  * the stair rules do.
  */
@@ -998,8 +1073,9 @@ export const furnitureOnStair: LintRule = {
       const foot = rectOf(piece);
       const body = cutPlaneLayer(piece.category) === "body";
       for (const sf of f.stairs) {
-        // A piece of the stair is read whatever stands on it; a landing it owes, only a body.
-        const hit = zones.find((z) => z.sf === sf && (z.landing === undefined || body) && rectsOverlap(foot, z.rect));
+        // A flight or a hole is read whatever stands on it; a landing, only a body.
+        const open = (z: StairZone): boolean => z.where === "flight" || (z.where === "mid" && sf.well);
+        const hit = zones.find((z) => z.sf === sf && (open(z) || body) && rectsOverlap(foot, z.rect));
         if (hit === undefined) continue;
         const name = piece.label ?? piece.category;
         const r = hit.rect;

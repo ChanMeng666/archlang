@@ -378,7 +378,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/tiny-house.arch", "7dec52e5621d9af9dbdcf7cb73e58791705e6d976bbecf5ae59419c1c9a9ea17"], // PS2.11e, see header
   ["examples/townhouse.arch", "2ba4f5c6510c8c1c5b0dce5fda946532a49aa27d9d14668e8398903af71f3612"], // PS2.11e, see header
   ["examples/transit-hall.arch", "a9145858f1fb7a7f1a0f0aa86d53e115bfda51e68c2101b822913d7bdc97eed5"], // PS2.11e, see header
-  ["examples/turning-stair.arch", "ec6cf44a7849bb3a641680631daa18897d769d1797778ee961cdba1920763bd6"], // new example (S2), see header
+  ["examples/turning-stair.arch", "9e27b499358898fd45376c73ca5771c883335999f3506c5b84acb3b1a4eef835"], // new example (S2), see header
   ["examples/two-bed.arch", "4fb4b10d1cde2487691965ce44bb8eb7e210c785e026f586dbeaf853f1e5b610"], // PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e, see header
   ["examples/two-storey.arch", "30fea74236f151947c7fec764e66b2f5a860ce6f71908a5a60fc68e87566837a"],
   ["test/fixtures/axes-grid.arch", "e6be5d70788d931cacaa8cb1db2c2c454c1532d01153b90e2427c125770e5559"],

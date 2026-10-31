@@ -462,7 +462,9 @@ export interface VerticalSummary {
   kind: VerticalKind;
   /** `up`/`down` as declared on THIS storey; absent for an `elevator`. */
   dir?: VerticalDir;
-  /** The room whose rectangle contains the footprint's centre, or `null`. */
+  /** The room whose rectangle contains the footprint's centre, or `null`; on a block stair, the
+   *  centre of the flight boarded on this storey, because that of its {@link bbox} can stand off the
+   *  stair. */
   room: string | null;
   /** The footprint; on a block stair the bounding box of its pieces, which holds floor that is no
    *  stair (read {@link flights} and {@link landings}). */

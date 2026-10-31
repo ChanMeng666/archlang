@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: S2 of #362 (D24): W_STAIR_TOO_STEEP offers a block stair again, in two strings on each plan that raises the code, its lint hint and its catalogue fix, which validate --json prints; putting both back reproduces each moved row's digest. And examples/turning-stair.arch, a new row.
+ * Taken: S2 of #362, red-team round 1: examples/turning-stair.arch alone moved, by its digest, because the example was redrawn (rooms 3400 to 3800 deep, flights 1100 + 1320 to 1530 + 1530 mm) so it clears every residential profile; the code of the round moved no other file, 39,300 sweep rows against e3e45339.
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -183,7 +183,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/turning-stair.arch",
-    "cc774666825b38236649e4345c258c5ab3e11193d544780cc91c33341969b1f9",
+    "ccb7fda952498015ae3113ce81d8c6ffbd49c1ba7c0c2bf31e137e1425f51a78",
     1186,
   ],
   [

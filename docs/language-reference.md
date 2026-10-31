@@ -2169,7 +2169,9 @@ box. A storey height moves none of this: treads stay at the nominal going. `desc
 going fewer per landing**, because a flight ends on its landing as the top flight ends on the
 floor above. So at 2750 mm, under the default limits, one landing needs 11 goings of 220 mm:
 2420 mm of flights, not the 2640 mm of a straight flight
-([`W_STAIR_TOO_STEEP`](error-codes.md#w_stair_too_steep)). Lint measures the foot and the head,
+([`W_STAIR_TOO_STEEP`](error-codes.md#w_stair_too_steep)). The flights must also hold those goings
+whole, because every going of a stair is the same: 1210 + 1210 mm is 2420 mm and holds 5 + 5, one
+short, and the warning says so. Lint measures the foot and the head,
 not the landings between the flights, and reads every piece whole, with nothing passed under; the
 coverage report says `block-stair` wherever that is only part of the answer. That is arithmetic
 on what the plan says, not a statement that a stair complies with anything.

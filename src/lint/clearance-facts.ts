@@ -37,7 +37,7 @@ import {
 import { buildLintContext, type LintContext } from "./context.js";
 import { deficitMm, mm } from "./measure.js";
 import { blockedApproach } from "./rules/doors.js";
-import { landingCount, minimumRun, runLength, storeyStairs } from "./rules/stairs.js";
+import { landingCount, leastRun, minimumRun, runLength, storeyStairs } from "./rules/stairs.js";
 import { resolveRuleset } from "./ruleset.js";
 import { lintStoreys } from "./storeys.js";
 
@@ -299,13 +299,14 @@ function stairFacts(ctx: LintContext): StairFact[] | null {
   return f.stairs.map((sf) => {
     const v = sf.v;
     const run = runLength(v);
-    const need = ctx.ir._heightsAuthored ? minimumRun(ctx.ir.storeyHeight, ctx.rules, landingCount(v)) : null;
+    const rise = ctx.ir.storeyHeight;
+    const need = ctx.ir._heightsAuthored ? minimumRun(rise, ctx.rules, landingCount(v)) : null;
     return {
       id: v.id,
       dir: v.dir,
       width_mm: len(v.width),
       run_mm: len(run),
-      ...(v.dir === "up" && need !== null ? { min_run_mm: want(need.run) } : {}),
+      ...(v.dir === "up" && need !== null ? { min_run_mm: want(leastRun(v, rise, ctx.rules, need)) } : {}),
       landings: sf.landings.map((l, i): LandingFact => {
         const b = sf.blocks[i]!;
         const need_mm = want(sf.needs[i]!);

@@ -15,9 +15,9 @@ import { resolvePlan } from "../src/analyze.js";
 import { STATEMENT_STARTS } from "../src/grammar/tokens.js";
 import { compile, describe as describePlan, lint, lintCoverage, type Diagnostic } from "../src/index.js";
 import { buildLintContext } from "../src/lint/context.js";
-import { MAX_STAIR_WORK, minimumRun } from "../src/lint/rules/stairs.js";
+import { MAX_RISER_TRIES, MAX_STAIR_WORK, minimumRun } from "../src/lint/rules/stairs.js";
 import { LINT_RULES } from "../src/lint/rules/index.js";
-import { DEFAULT_RULESET, LINT_PROFILES, resolveRuleset } from "../src/lint/ruleset.js";
+import { DEFAULT_RULESET, LINT_PROFILES, type LintRuleset, resolveRuleset } from "../src/lint/ruleset.js";
 import { lintStoreys } from "../src/lint/storeys.js";
 import { completion, hover } from "../src/lsp.js";
 import {
@@ -59,21 +59,20 @@ const ENOUGH: BlockStair = {
   ],
 };
 
-/** The same 2420 mm, in flights that hold 4 goings and 6: a sum that passes and is not the answer. */
-const REMAINDER: BlockStair = {
+/** A quarter-turn of the two flights given, each as long as it is written. */
+const twoFlights = (first: number, second: number): BlockStair => ({
   ...L_STAIR,
-  name: "remainder",
+  name: `${first} + ${second}`,
   pieces: [
-    [1500, 1100, 1000, 1000],
-    [1500, 100, 1000, 1000],
-    [80, 100, 1420, 1000],
+    [2500, 1100, 1000, first],
+    [2500, 100, 1000, 1000],
+    [2500 - second, 100, second, 1000],
   ],
-};
+});
 
 /** The stops on which `rule` alone files `block-stair` (0 for one storey), through its own sink. */
-const filedBy = (src: string, rule: string): number[] => {
+const filedBy = (src: string, rule: string, rules: LintRuleset = resolveRuleset()): number[] => {
   const { ir, levels } = resolvePlan(src);
-  const rules = resolveRuleset();
   return lintStoreys(ir!, levels, rules.tolMm).flatMap((st) => {
     let filed = false;
     const sink = (reason: string): void => {
@@ -212,11 +211,11 @@ describe("the block-stair skip stays true", () => {
     expect(filedBy(planOf(L_STAIR, "up", HEIGHT), "stair-too-steep")).toEqual([]);
   });
 
-  it("a sum that passes on flights that cannot hold the goings whole still files", () => {
+  it("a sum that passes on flights that cannot hold the goings whole is an answer, so it stops filing", () => {
     // 1000 holds 4 goings of 220 and 1420 holds 6: 10, and the storey owes 11. The sum is 2420.
-    const src = planOf(REMAINDER, "up", HEIGHT);
-    expect(steep(src)).toEqual([]);
-    expect(filedBy(src, "stair-too-steep")).toEqual([0]);
+    const src = planOf(twoFlights(1000, 1420), "up", HEIGHT);
+    expect(steep(src).length).toBe(1);
+    expect(filedBy(src, "stair-too-steep")).toEqual([]);
   });
 
   it("a straight stair never files, at a run that is a whole number of goings or not", () => {
@@ -236,8 +235,182 @@ describe("the block-stair skip stays true", () => {
   });
 });
 
+describe("flights that cannot hold the goings whole", () => {
+  const UK = "uk-residential-advisory";
+  const stair = (first: number, second: number, head = HEIGHT): string => planOf(twoFlights(first, second), "up", head);
+  const steepUnder = (src: string, profile: string): Diagnostic[] =>
+    lint(src, { profile }).filter((d) => d.code === "W_STAIR_TOO_STEEP");
+
+  it("1210 + 1210 passes as a sum, and takes 12 risers of 229 mm", () => {
+    const ds = steep(stair(1210, 1210));
+    expect(ds.length).toBe(1);
+    // 2750 / 220 is 13 risers, so 11 goings and a landing, 2420 mm. Each flight holds 5 of 220, and
+    // 5 + 1 + 5 + 1 = 12 risers, 2750 / 12 = 229.17 mm, above the 220 mm limit.
+    expect(ds[0]!.message).toContain("13 risers, 11 goings and a landing, each going at least 220 mm");
+    expect(ds[0]!.message).toContain("hold only 5 + 5 whole goings, which makes 12 risers of about 229 mm");
+    expect(ds[0]!.message).toContain("(1 going short)");
+    expect(ds[0]!.hints![0]).toContain("one flight of `s` from 1210 mm to at least 1320 mm");
+  });
+
+  it("the flight nearest its next going is the one named", () => {
+    // 1000 is 100 from 5 goings, 1420 is 120 from 7.
+    expect(steep(stair(1000, 1420))[0]!.hints![0]).toContain("from 1000 mm to at least 1100 mm");
+    expect(steep(stair(1420, 1000))[0]!.hints![0]).toContain("from 1000 mm to at least 1100 mm");
+  });
+
+  it("the hint's advice is true: that one flight clears it", () => {
+    expect(steep(stair(1320, 1210))).toEqual([]);
+    expect(steep(stair(1100, 1420))).toEqual([]);
+  });
+
+  it("a whole going is exact: 1100 holds 5, 1099 holds 4", () => {
+    expect(steep(stair(1100, 1320))).toEqual([]);
+    const [d] = steep(stair(1099, 1321));
+    expect(d!.message).toContain("hold only 4 + 6 whole goings");
+    expect(d!.hints![0]).toContain("from 1099 mm to at least 1100 mm");
+  });
+
+  it("two goings short names two flights", () => {
+    const s: BlockStair = {
+      name: "in line",
+      width: 1000,
+      pieces: [
+        [1000, 4650, 1000, 1300],
+        [1000, 3650, 1000, 1000],
+        [1000, 2350, 1000, 1300],
+        [1000, 1350, 1000, 1000],
+        [1000, 50, 1000, 1300],
+      ],
+      tails: ["bottom", "bottom", "bottom"],
+    };
+    // 4400 / 220 is 20 risers, less 3 flights is 17 goings, 3740 mm, and 3900 passes. Each flight
+    // holds 5, so 15 goings and 18 risers, 4400 / 18 = 244.4 mm.
+    const [d] = steep(planOf(s, "up", "  height 4400\n"));
+    expect(d!.message).toContain("20 risers, 17 goings and 2 landings");
+    expect(d!.message).toContain("hold only 5 + 5 + 5 whole goings, which makes 18 risers of about 244 mm");
+    expect(d!.message).toContain("(2 goings short)");
+    expect(d!.hints![0]).toContain(
+      "2 flights of `s`, from 1300 mm to at least 1320 mm and from 1300 mm to at least 1320 mm",
+    );
+  });
+
+  it("under a pitch cap a riser more can hold what the fewest risers cannot", () => {
+    // 13 risers ask 211.5 / 0.9004 = 234.9 mm, and 1320 holds 5: 10 of 11. 14 risers ask 218.2, so
+    // the going stands at 220, and 1320 holds 6: 12 of 12. The stair is buildable, so no warning.
+    expect(steepUnder(stair(1320, 1320), UK)).toEqual([]);
+  });
+
+  it("and a pitch cap that no riser count clears warns at the fewest, with that going", () => {
+    // 1295 + 1295 = 2590 passes the 2585 sum. It holds 5 + 5 at 234.9 mm (10 of 11), and 5 + 5 at
+    // 220 mm (10 of 12), where the going has stopped falling.
+    const [d] = steepUnder(stair(1295, 1295), UK);
+    expect(d!.message).toContain("13 risers, 11 goings and a landing, each going at least 235 mm");
+    expect(d!.message).toContain("hold only 5 + 5 whole goings, which makes 12 risers of about 229 mm");
+    // 6 × 234.9 = 1409.6.
+    expect(d!.hints![0]).toContain("from 1295 mm to at least 1410 mm");
+    expect(d!.hints![0]).toContain("riser, going and pitch limits");
+    expect(steepUnder(stair(1410, 1295), UK)).toEqual([]);
+  });
+
+  it("agrees with every riser count written out, over a grid of stairs", () => {
+    let warned = 0;
+    let passed = 0;
+    let onlyPast = 0;
+    const profiles = ["uk-residential-advisory", "cn-residential-advisory", "us-residential-advisory"];
+    for (const profile of profiles) {
+      const rules = resolveRuleset(LINT_PROFILES[profile]);
+      for (const rise of [2400, 2750, 3000]) {
+        const need = minimumRun(rise, rules, 1)!;
+        for (let a = 900; a <= 1900; a += 110) {
+          for (let b = a; b <= 2100; b += 170) {
+            if (a + b < need.run) continue;
+            const fits = (risers: number): boolean => {
+              const pitch = rules.stairMaxPitchRatio;
+              const going = Math.max(rules.stairMinGoingMm, pitch === null ? 0 : rise / risers / pitch);
+              return Math.floor(a / going) + Math.floor(b / going) >= risers - 2;
+            };
+            const counts = [0, 1, 2, 3, 4, 5, 6].map((i) => need.risers + i);
+            const holds = counts.some(fits);
+            expect(steepUnder(stair(a, b, `  height ${rise}\n`), profile).length).toBe(holds ? 0 : 1);
+            if (holds) passed++;
+            else warned++;
+            if (holds && !fits(need.risers)) onlyPast++;
+          }
+        }
+      }
+    }
+    expect(warned).toBeGreaterThan(0);
+    expect(passed).toBeGreaterThan(0);
+    expect(onlyPast).toBeGreaterThan(0);
+  });
+
+  describe("past the riser counts it tries", () => {
+    /** A pitch cap's going that falls to `least`, with flights that hold no count of risers. */
+    const rules = (least: number): LintRuleset => ({
+      ...DEFAULT_RULESET,
+      stairMinGoingMm: least,
+      stairMaxPitchRatio: 0.9004,
+    });
+    const steepWith = (r: LintRuleset): number => {
+      const { ir, levels } = resolvePlan(stair(1295, 1295));
+      return lintStoreys(ir!, levels, r.tolMm).flatMap((st) =>
+        LINT_RULES.find((x) => x.name === "stair-too-steep")!.check(buildLintContext(st.ir, r, st.building, () => {})),
+      ).length;
+    };
+
+    it("a going that never reaches its floor in the count is no answer, so it stays silent and files", () => {
+      // n risers ask 2750 / n / 0.9004 = 3054 / n mm of going, so 2590 mm of flights holds about
+      // 0.85 n goings against the n − 2 owed, and no count from 14 holds. The going reaches 1 mm only
+      // at 3055 risers, past what is tried, so the rule cannot reach that answer and files instead.
+      expect(MAX_RISER_TRIES).toBe(64);
+      expect(steepWith(rules(1))).toBe(0);
+      expect(filedBy(stair(1295, 1295), "stair-too-steep", rules(1))).toEqual([0]);
+    });
+
+    it("the last riser count tried is still an answer, and the next is not", () => {
+      // The last count tried is 13 + 63 = 76 risers: 2750 / 76 / 0.9004 = 40.19 mm.
+      expect(steepWith(rules(40.2))).toBe(1);
+      expect(steepWith(rules(40))).toBe(0);
+    });
+  });
+
+  it("clearances quote what the warning asks for, so a short row is a warning", () => {
+    const row = (first: number, second: number) =>
+      describePlan(stair(first, second), { facts: ["clearances"] }).clearances!.stairs![0]!;
+    // 1320 + 1210, or the sum where the flights hold their goings.
+    expect(row(1210, 1210)).toMatchObject({ run_mm: 2420, min_run_mm: 2530 });
+    expect(row(1100, 1320)).toMatchObject({ run_mm: 2420, min_run_mm: 2420 });
+    expect(row(1099, 1321)).toMatchObject({ run_mm: 2420, min_run_mm: 2421 });
+    // A sum that fails is still quoted as the sum.
+    expect(row(1000, 1400)).toMatchObject({ run_mm: 2400, min_run_mm: 2420 });
+    for (const [a, b] of [
+      [1210, 1210],
+      [1100, 1320],
+      [1099, 1321],
+      [1000, 1400],
+    ] as const) {
+      expect(row(a, b).run_mm < row(a, b).min_run_mm!).toBe(steep(stair(a, b)).length === 1);
+    }
+  });
+
+  it("the example's header is true: cut both flights to 1210 and it warns, cut one and it does not", () => {
+    const src = readFileSync("examples/turning-stair.arch", "utf8");
+    const first = (s: string): string => s.replaceAll("size 1000x1530", "size 1000x1210");
+    // The last flight's near end stays on the landing, so its far end moves in.
+    const last = (s: string): string =>
+      s.replaceAll("flight at (1100,100) size 1530x1000", "flight at (1420,100) size 1210x1000");
+    expect(steep(src)).toEqual([]);
+    expect(compile(first(last(src)), { noCache: true }).diagnostics).toEqual([]);
+    expect(steep(first(src))).toEqual([]);
+    expect(steep(last(src))).toEqual([]);
+    const both = steep(first(last(src)));
+    expect(both.length).toBe(1);
+    expect(both[0]!.message).toContain("hold only 5 + 5 whole goings");
+  });
+});
+
 /** The red team's plan: a door between two rooms, beside a quarter-turn at the hall's east wall. */
-const doorPlan = (along: number): string => `plan "Door" {
+const doorPlan = (along: number, dir: "up" | "down" = "up"): string => `plan "Door" {
   units mm
   height 2750
   room id=hall at (0,0) size 3600x3200 label "Hall" uses hall
@@ -245,7 +418,7 @@ const doorPlan = (along: number): string => `plan "Door" {
   walls from rooms exterior 200 partition 100
   door on hall.bottom at 800 from start width 900 swing inward
   door between hall and side at ${along} from start width 900 swing into hall
-  stair id=s dir up width 1000 {
+  stair id=s dir ${dir} width 1000 {
     flight at (2500,1100) size 1000x1000
     landing at (2500,100) size 1000x1000
     flight at (1100,100) size 1400x1000
@@ -266,6 +439,12 @@ describe("a landing between the flights is called a landing", () => {
     expect(d!.message).toContain("its open leaf sweeps the flight itself");
   });
 
+  it("over a stair coming down, the same door sweeps the stairwell, not a landing", () => {
+    const [d] = of(doorPlan(650, "down"), "W_SWING_OVER_STAIR");
+    expect(d!.message).toContain("its open leaf sweeps the stairwell");
+    expect(d!.message).not.toContain("landing");
+  });
+
   /** A piece on the landing, one in the notch, and the storey it stands on. */
   const furnished = (dir: "up" | "down", piece: string): string =>
     hallPlan(
@@ -280,10 +459,22 @@ describe("a landing between the flights is called a landing", () => {
     expect(ds[0]!.hints![0]).toContain("clears the landing of `s` (x 1500–2500, y 100–1100)");
   });
 
-  it("a piece of the stair is read whatever stands on it: a rug on the landing, which a floor beyond would let lie", () => {
-    const ds = of(furnished("up", "rug"), "W_FURNITURE_ON_STAIR");
-    expect(ds.length).toBe(1);
-    expect(ds[0]!.message).toContain("600 × 600 mm of a landing between the flights.");
+  it("a rug on any landing is walked on, as the rule's doc says: between the flights or at either end", () => {
+    // It used to warn on the landing between the flights alone, which read that landing as flight.
+    expect(of(furnished("up", "rug"), "W_FURNITURE_ON_STAIR")).toEqual([]);
+    // The foot landing of the first flight, x 1500–2500 and y 2100–3100.
+    const onFoot = (piece: string): string =>
+      hallPlan(`${stairBlock(L_STAIR)}\n    furniture id=t ${piece} at (1700,2300) size 600x600`);
+    expect(of(onFoot("rug"), "W_FURNITURE_ON_STAIR")).toEqual([]);
+    expect(of(onFoot("table"), "W_FURNITURE_ON_STAIR").length).toBe(1);
+  });
+
+  it("a rug is still read on a flight, and over a stairwell, which is a hole and no landing", () => {
+    const src = hallPlan(`${stairBlock(L_STAIR)}\n    furniture id=t rug at (1700,1300) size 600x600`);
+    expect(of(src, "W_FURNITURE_ON_STAIR")[0]!.message).toContain("of the flight, where less than 2000 mm");
+    expect(of(furnished("down", "rug"), "W_FURNITURE_ON_STAIR")[0]!.message).toContain(
+      "600 × 600 mm of the stairwell.",
+    );
   });
 
   it("over a stair coming down it is the stairwell, as a flight is", () => {

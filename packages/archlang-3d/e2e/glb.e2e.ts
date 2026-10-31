@@ -81,7 +81,7 @@ describe("GLB over the corpus (§9.2 criteria 1 and 3)", () => {
       if (again.some((h) => h !== sha(a.glb))) failed.push(`${name}: V-DET-01 ${sha(a.glb)} vs ${again.join(", ")}`);
     }
     expect(failed).toEqual([]);
-    expect(EXAMPLES_LIST.length).toBe(35); // 35 since remodel.arch (B3b)
+    expect(EXAMPLES_LIST.length).toBe(36); // 36 since S2 added examples/turning-stair.arch
     expect(nodes).toBeGreaterThan(1000);
   });
 
