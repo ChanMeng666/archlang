@@ -148,7 +148,8 @@ running the full suite on every code PR.
   `docs-table-pipes` reads it, on the docs leg. `packages/archlang-3d/CHANGELOG.md` stays out:
   `npm pack` in `check:3d`'s `pack.e2e.ts` reads it. That trace missed `check:drift` and `eval:ci`,
   which stopped at lint; neither names a changelog, and the docs leg runs `check:drift`.
-- Measured: @@G-MEASURE@@
+- Measured on PR #385's code run 41160009838: 10m52s from start to finish, against 14–19 min for one Node leg before.
+  Shards 5m36s, 4m42s and 10m32s, so `3/3` sets the time; Node 18, Node 20 and Windows 3–4 s each. One run.
 - Reverse if: a break on a main-only leg sits unseen on `main` past a release, or Node 18/20 breaks
   land often enough that the post-merge fix costs more than the leg did.
 
