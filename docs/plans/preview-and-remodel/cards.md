@@ -204,7 +204,6 @@ What the red-team rounds of #392–#398 left, each with its reproduction in the 
 - **Open boundaries:** the free-end nib is measured to a face that is not drawn; a narrowed continuation counts as carried on however thin; `W_CONNECTOR_AMBIGUOUS`'s straddle threshold moved from 250 to 200 mm past the line; `W_DOOR_NEAR_CORNER` calls a free end a corner; an authored wall left at a crossing keeps its cap; narrowing the nib scan to ends a boundary reaches moves 11 K1 rows instead of 19.
 - **`finish`:** the note on an instance room (`u1.hall`) and the older row-room note disagree on whether a plan body can name it.
 - **`batch -o`:** an output folder that does not exist fails each file with a raw `ENOENT`.
-- **`polygonsOverlap` (M.19, an owner decision):** kept quadratic because the cost was "seconds, not unbounded". H10 measured 376 s with no diagnostic on 100 diagonal staircase rooms of about 300 vertices, under the budget. The input is constructed, so M.19's reopen condition is unmet; its premise is not. A charge in `overlapping()` changes no diagnostic text, and that is the recommended fix if the owner reopens it.
 
 ### L1, L2 · L-shaped rooms, walls and doors — `todo` · after H7 · 2.5 days · model: opus
 

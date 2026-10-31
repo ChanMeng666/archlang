@@ -14,6 +14,7 @@ import { describe as suite, expect, it } from "vitest";
 import * as A from "../src/index.js";
 import { compile, describe, ERROR_CATALOG, lint, makeVirtualWorld } from "../src/index.js";
 import { MAX_EVAL_STEPS } from "../src/expr.js";
+import { polygonsOverlapCost, RING_READS_PER_STEP } from "../src/geometry/polygon.js";
 import { clearResolveCache, evaluationSteps, resolveAll } from "../src/ir.js";
 import { link } from "../src/import.js";
 import { parse } from "../src/parser.js";
@@ -93,6 +94,248 @@ suite("the shapes that used to run away", () => {
     expect(cs.length).toBeGreaterThan(0);
     expect(cs.every((c) => ["E_ELEMENT_LIMIT", "E_STEP_LIMIT", "E_DRAWING_LIMIT"].includes(c))).toBe(true);
   }, 60_000);
+});
+
+suite("a ring's self-intersection scan is charged, pair by pair", () => {
+  // `polygonSelfIntersects` tests every pair of a ring's edges. Uncharged, a pair of 1,500-tooth
+  // combs (6,004 vertices a ring, 18,021,006 pairs each) ran for tens of seconds and compiled
+  // with no diagnostic at all. Every assertion here is on a count, never on a clock.
+  const combRing = (teeth: number): string => {
+    const w = (2 * teeth + 1) * 1000;
+    const ring = ["(0,0)", `(${w},0)`, `(${w},1000)`];
+    for (let i = teeth; i > 0; i--) {
+      const x = 2 * i * 1000;
+      ring.push(`(${x},1000)`, `(${x},2000)`, `(${x - 1000},2000)`, `(${x - 1000},1000)`);
+    }
+    ring.push("(0,1000)");
+    return ring.join(" ");
+  };
+  /** A comb's vertices, all of them effective (no straight-through point). */
+  const combVertices = (teeth: number): number => 4 * teeth + 4;
+  const pairs = (n: number): number => (n * (n - 1)) / 2;
+  const combRoom = (teeth: number): string => plan(`  room id=a polygon ${combRing(teeth)}`);
+
+  it("a room's 1,500-tooth comb stops at its statement with ONE E_STEP_LIMIT, before the scan runs", () => {
+    const src = combRoom(1500);
+    const r = compile(src, { noCache: true });
+    const errs = r.diagnostics.filter((d) => d.severity === "error");
+    expect(errs.map((d) => d.code)).toEqual(["E_STEP_LIMIT"]);
+    expect(r.svg).toBe("");
+    expect(src.slice(errs[0]!.span!.start, errs[0]!.span!.end)).toMatch(/^room id=a polygon \(0,0\)/);
+    // The whole scan is on the meter, 3.6 times the budget: taken as one charge before the
+    // first pair. Charged as it went, the count would have stopped one step past the budget.
+    expect(pairs(combVertices(1500))).toBe(18_021_006);
+    expect(pairs(combVertices(1500))).toBeGreaterThan(MAX_EVAL_STEPS);
+    expect(stepsOf(src)).toBeGreaterThanOrEqual(pairs(combVertices(1500)));
+  }, 60_000);
+
+  it("every statement that scans a ring is charged the same way", () => {
+    const ring = combRing(1500);
+    const sources: Record<string, string> = {
+      "`room polygon`": combRoom(1500),
+      "`outdoor polygon`": plan(`${ROOM}\n  outdoor id=g lawn polygon ${ring}`),
+      "`roof polygon`": plan(`${ROOM}\n  roof polygon ${ring}`),
+      "`roof overhang` on a wall ring": plan(
+        `  wall id=w exterior thickness 200 { ${ring} close }\n${ROOM}\n  roof overhang 300`,
+      ),
+      "a site `boundary`": plan(ROOM, `  site {\n    street south\n    boundary ${ring}\n  }\n`),
+    };
+    for (const [name, src] of Object.entries(sources)) {
+      const errs = compile(src, { noCache: true }).diagnostics.filter((d) => d.severity === "error");
+      expect(
+        errs.map((d) => d.code),
+        name,
+      ).toEqual(["E_STEP_LIMIT"]);
+      expect(stepsOf(src), name).toBeGreaterThanOrEqual(pairs(combVertices(1500)));
+    }
+  }, 60_000);
+
+  it("rings share the one counter: two that each fit alone cross it together, on the second", () => {
+    const teeth = 750;
+    expect(pairs(combVertices(teeth))).toBeLessThan(MAX_EVAL_STEPS);
+    expect(2 * pairs(combVertices(teeth))).toBeGreaterThan(MAX_EVAL_STEPS);
+    const src = plan(`  room id=a polygon ${combRing(teeth)}\n  room id=b polygon ${combRing(teeth)}`);
+    const errs = compile(src, { noCache: true }).diagnostics.filter((d) => d.severity === "error");
+    expect(errs.map((d) => d.code)).toEqual(["E_STEP_LIMIT"]);
+    expect(src.slice(errs[0]!.span!.start, errs[0]!.span!.end)).toMatch(/^room id=b polygon/);
+  }, 60_000);
+
+  it("the charge is exactly the ring's pairs: the second difference over a ring's size", () => {
+    // What a vertex costs to evaluate is linear in the vertices, so it vanishes here, and
+    // n(n − 1)/2 over n, n + d, n + 2d leaves exactly d². A tooth is 4 vertices.
+    for (const teeth of [3, 40, 200]) {
+      const [a, b, c] = [teeth, teeth + 1, teeth + 2].map((t) => stepsOf(combRoom(t)));
+      expect(c! - 2 * b! + a!, `${teeth} teeth`).toBe(4 ** 2);
+    }
+  });
+
+  it("control: an ordinary polygon compiles as it did, and a crossed one is still its own error", () => {
+    const l = plan("  room id=a polygon (0,0) (6000,0) (6000,2000) (3000,2000) (3000,4000) (0,4000)");
+    const r = compile(l, { noCache: true });
+    expect(r.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    expect(r.svg).toContain("<svg");
+    expect(describe(l).rooms.map((x) => x.area_m2)).toEqual([18]);
+    // Six vertices are 15 pairs: the budget would take 333,333 such rooms.
+    expect(pairs(6)).toBe(15);
+    expect(stepsOf(l) * 100_000).toBeLessThanOrEqual(MAX_EVAL_STEPS);
+    expect(codes(plan("  room id=a polygon (0,0) (4000,4000) (4000,0) (0,4000)"))).toEqual([
+      "E_ROOM_POLY_SELF_INTERSECT",
+    ]);
+  });
+});
+
+suite("an exact test between two rooms' rings is charged at the budget's rate", () => {
+  // `W_ROOM_OVERLAP` tests a polygon or round pair exactly when their boxes overlap. Uncharged, 100
+  // stairs of 300 vertices (boxes overlapping, floors disjoint) spent 4,554,140 steps, under the
+  // budget, and 376 s in that pass, with no diagnostic. Charged per edge pair of the whole rings,
+  // honest round rooms were refused instead: a `room circle` is a 48-gon. The test now reads only
+  // what reaches the window the two boxes share, and pays for those reads. Every assertion here
+  // is on a count.
+  const asRing = (s: string): { x: number; y: number }[] =>
+    [...s.matchAll(/\((-?\d+),(-?\d+)\)/g)].map((m) => ({ x: Number(m[1]), y: Number(m[2]) }));
+  /** A thin band of `stairs` steps, `4 * stairs` vertices, `k` bands up and to the right. */
+  const band = (k: number, stairs: number, dx = 0): string => {
+    const shift = 400 * k;
+    const top: string[] = [];
+    const low: string[] = [];
+    for (let i = 0; i < stairs; i++) {
+      const x = i * 1000 + shift + dx;
+      const y = i * 1000 - shift;
+      top.push(`(${x},${y})`, `(${x + 1000},${y})`);
+      low.push(`(${x},${y + 300})`, `(${x + 700},${y + 300})`);
+    }
+    return [...top, ...low.reverse()].join(" ");
+  };
+  const room = (id: string, ring: string): string => `  room id=${id} polygon ${ring}`;
+  const bands = (rooms: number, stairs: number): string =>
+    plan(Array.from({ length: rooms }, (_, k) => room(`r${k}`, band(k, stairs))).join("\n"));
+  /** `n` round rooms of 3 m, 200 mm apart, hexagonally packed: each box clips its staggered neighbours'. */
+  const podLines = (n: number, indent = "  "): string => {
+    const pitch = 3200;
+    const rise = 2771;
+    const cols = Math.ceil(Math.sqrt(n));
+    return Array.from({ length: n }, (_, i) => {
+      const row = Math.floor(i / cols);
+      const x = 1500 + (i % cols) * pitch + (row % 2 === 1 ? pitch / 2 : 0);
+      return `${indent}room id=p${i} circle at (${x},${1500 + row * rise}) radius 1500`;
+    }).join("\n");
+  };
+
+  it("100 staircase rooms stop with ONE E_STEP_LIMIT at a pair, inside the pass, naming the cause", () => {
+    const src = bands(100, 75);
+    const r = compile(src, { noCache: true });
+    const errs = r.diagnostics.filter((d) => d.severity === "error");
+    expect(errs.map((d) => d.code)).toEqual(["E_STEP_LIMIT"]);
+    expect(r.svg).toBe("");
+    expect(errs[0]!.message).toContain("many polygon or round rooms whose boxes overlap");
+    expect(src.slice(errs[0]!.span!.start, errs[0]!.span!.end)).toMatch(/^room id=r\d+ polygon/);
+    // The whole pass would cost 4,950 such pairs, so it stopped within one pair of the budget.
+    const onePair = polygonsOverlapCost(asRing(band(0, 75)), asRing(band(1, 75)));
+    expect(stepsOf(src)).toBeGreaterThan(MAX_EVAL_STEPS);
+    expect(stepsOf(src)).toBeLessThanOrEqual(MAX_EVAL_STEPS + onePair);
+    expect(4950 * onePair).toBeGreaterThan(30 * MAX_EVAL_STEPS);
+  }, 60_000);
+
+  it("a pair whose boxes overlap pays what it reads; the same pair a box apart pays nothing", () => {
+    const a = band(0, 6);
+    const near = plan([room("a", a), room("b", band(1, 6))].join("\n"));
+    const far = plan([room("a", a), room("b", band(1, 6, 100_000))].join("\n"));
+    expect(compile(near, { noCache: true }).diagnostics).toEqual([]);
+    const paid = stepsOf(near) - stepsOf(far);
+    expect(paid).toBeGreaterThan(0);
+    expect(paid).toBe(polygonsOverlapCost(asRing(a), asRing(band(1, 6))));
+  });
+
+  it("a pair that crosses pays its filter and its crossing reads: the containment tests never run", () => {
+    const a = room("a", "(0,0) (4000,0) (4000,4000) (0,4000)");
+    const b = (dx: number): string =>
+      room("b", `(${2000 + dx},-1000) (${2500 + dx},-1000) (${2500 + dx},5000) (${2000 + dx},5000)`);
+    const near = plan(`${a}\n${b(0)}`);
+    expect(compile(near, { noCache: true }).diagnostics.map((d) => d.code)).toEqual(["W_ROOM_OVERLAP"]);
+    // Eight edges filtered is one step; two edges of each in the window, four reads, is one step.
+    expect(RING_READS_PER_STEP).toBeGreaterThanOrEqual(8);
+    expect(stepsOf(near) - stepsOf(plan(`${a}\n${b(100_000)}`))).toBe(2);
+  });
+
+  it("control: coincident rooms are one class, one exact test however many there are", () => {
+    const ring = band(0, 6);
+    const pile = (rooms: number): number =>
+      stepsOf(plan(Array.from({ length: rooms }, (_, k) => room(`r${k}`, ring)).join("\n")));
+    const perRoom = pile(4) - pile(3);
+    expect(pile(3) - pile(2)).toBe(perRoom);
+    expect(pile(2) - pile(1) - perRoom).toBe(polygonsOverlapCost(asRing(ring), asRing(ring)));
+  });
+
+  it("honest round rooms stay far under the budget: 400 packed pods, and storeys of them", () => {
+    const pods = plan(podLines(400));
+    expect(compile(pods, { noCache: true }).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    expect(stepsOf(pods) * 100).toBeLessThanOrEqual(MAX_EVAL_STEPS);
+    const storeys = Array.from({ length: 3 }, (_, k) => `  level ${k} {\n${podLines(40, "    ")}\n  }`);
+    expect(stepsOf(plan(storeys.join("\n"))) * 100).toBeLessThanOrEqual(MAX_EVAL_STEPS);
+    // Two clipping circles read a few edges of each: the 48-gons' 2,304 edge pairs are not read.
+    const circle = (cx: number, cy: number): { x: number; y: number }[] =>
+      Array.from({ length: 48 }, (_, i) => ({
+        x: cx + 1500 * Math.cos((i * Math.PI) / 24),
+        y: cy + 1500 * Math.sin((i * Math.PI) / 24),
+      }));
+    expect(polygonsOverlapCost(circle(1500, 1500), circle(3100, 4271))).toBeLessThan(100);
+  }, 60_000);
+
+  it("control: under the budget a plan keeps its answers and W_ROOM_OVERLAP its wording", () => {
+    const l = "(0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000)";
+    const notch = plan(`${room("l", l)}\n  room id=n at (3000,3000) size 3000x3000`);
+    expect(compile(notch, { noCache: true }).diagnostics).toEqual([]);
+    const over = plan(`${room("l", l)}\n  room id=n at (2000,2000) size 3000x3000`);
+    expect(compile(over, { noCache: true }).diagnostics.map((d) => d.code)).toEqual(["W_ROOM_OVERLAP"]);
+    expect(compile(bands(5, 10), { noCache: true }).diagnostics).toEqual([]);
+  });
+
+  // `W_OUTDOOR_OVERLAPS_ROOM` runs in lint, after the resolution, where the meter is off.
+  suite("the lint rule that asks the same question", () => {
+    const skipped = (src: string): boolean =>
+      (A.lintWithCoverage(src).coverage?.families ?? []).some((f) =>
+        (f.skipped ?? []).some((s) => s.reason === "outdoor-budget"),
+      );
+    /** `rooms` stairs in a row, `lawns` long L-shaped lawns whose boxes cover them, then `last`. */
+    const site = (rooms: number, lawns: number, stairs: number, last = ""): string => {
+      const width = rooms * (stairs + 1) * 1000;
+      const ring = (k: number): string => {
+        const y = -1000 - k * 500;
+        const right = width + 1000 + k * 500;
+        const top: string[] = [];
+        for (let i = 0; i < 4 * stairs - 4; i++) {
+          top.push(`(${Math.round((i * right) / (4 * stairs))},${y + (i % 2 === 0 ? 0 : 100)})`);
+        }
+        return [...top, `(${right},${y})`, `(${right},${stairs * 1000})`, `(${right - 200},${stairs * 1000})`].join(
+          " ",
+        );
+      };
+      return plan(
+        [
+          ...Array.from({ length: rooms }, (_, k) => room(`r${k}`, band(0, stairs, k * (stairs + 1) * 1000))),
+          ...Array.from({ length: lawns }, (_, k) => `  outdoor id=o${k} lawn polygon ${ring(k)}`),
+          last,
+        ].join("\n"),
+      );
+    };
+    const onFloor = "  outdoor id=small lawn at (1000,1000) size 500x100";
+
+    it("past the budget it skips the surfaces that no longer fit, and judges the ones that do", () => {
+      const src = site(15, 15, 100, onFloor);
+      expect(compile(src, { noCache: true }).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+      expect(skipped(src)).toBe(true);
+      // Last in source, and small enough to fit whatever the long lawns left.
+      expect(lint(src).map((d) => d.code)).toContain("W_OUTDOOR_OVERLAPS_ROOM");
+    }, 60_000);
+
+    it("control: just inside the count it judges every surface", () => {
+      expect(skipped(site(5, 5, 100))).toBe(false);
+      expect(skipped(site(100, 2, 4))).toBe(false);
+      const lawn = plan("  room id=a at (0,0) size 4000x4000\n  outdoor id=g lawn at (2000,2000) size 4000x4000");
+      expect(skipped(lawn)).toBe(false);
+      expect(lint(lawn).map((d) => d.code)).toContain("W_OUTDOOR_OVERLAPS_ROOM");
+    }, 60_000);
+  });
 });
 
 suite("a string is charged before it is built, on every public surface", () => {
