@@ -1,14 +1,19 @@
 /**
  * `W_EXTERIOR_RING_OPEN` (card H1, issues #346 and #370): exterior walls that stand on a room and
  * close nothing, on the gross internal area's own reading (`openExteriorRuns`,
- * `src/analyze/gross-area.ts`). Every case here is one the corpus does not hold: of the 631 storeys
- * measured for the card, one fires (`test/fixtures/wall-closure/open-ring.arch`) and one has a
- * free-standing exterior run beside a room (the `parapet` in `docs/language-reference.md`).
+ * `src/analyze/gross-area.ts`). Of the 631 storeys of the card's file and fence corpus, one fires
+ * (`test/fixtures/wall-closure/open-ring.arch`) and one has a free-standing exterior run beside a
+ * room (the `parapet` in `docs/language-reference.md`). That corpus holds no inline test table: the
+ * `open` plan of `test/segment-select-plans.ts`, an L on two sides of a room, fires as well.
  */
 
 import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
+import { resolvePlan } from "../src/analyze.js";
 import { describe, lint, lintCoverage } from "../src/index.js";
+import { buildLintContext } from "../src/lint/context.js";
+import { exteriorRingOpen, wallEndShort } from "../src/lint/rules/enclosure.js";
+import { DEFAULT_RULESET } from "../src/lint/ruleset.js";
 
 const CODE = "W_EXTERIOR_RING_OPEN";
 const plan = (body: string): string => `plan "P" {\n  units mm\n${body}\n}\n`;
@@ -128,6 +133,15 @@ suite("what it never judges", () => {
   it("every wall derived and demolished leaves no exterior wall to judge", () => {
     const src = plan(`${ROOM}\n  walls from rooms exterior 200 partition 100 status demolish`);
     expect(found(src)).toEqual([]);
+  });
+
+  it("the catalogue's stated miss: a closed annex off an open shell hides it", () => {
+    const annex = `  wall id=p exterior thickness 200 { (6000,1000) (8000,1000) (8000,3000) (6000,3000) }
+  room id=b at (6000,1000) size 2000x2000 label "Porch" uses storage`;
+    const src = plan(`${OPEN}\n${ROOM}\n${annex}`);
+    expect(found(src)).toEqual([]);
+    expect(totals(src).gross_internal_area_m2).toBe(3.24);
+    expect(totals(src).gross_internal_area_omitted).toBeUndefined();
   });
 });
 
@@ -339,6 +353,36 @@ ${ROOM}`);
     expect(found(plan(`${u}\n${last}\n${ROOM}\n${lean}`))).toEqual([]);
   });
 
+  const mouth = `  wall id=u exterior thickness 200 { (0,4000) (0,0) (6000,0) (6000,4000) }`;
+
+  it("a straight wall standing past a shell's mouth has no gap to it: the shell's own gap is named", () => {
+    const src = plan(`${mouth}
+  wall id=x exterior thickness 200 { (8000,4000) (11000,4000) }
+${ROOM}
+  room id=c at (8000,0) size 3000x4000 label "Carport" uses garage`);
+    const ds = found(src);
+    expect(ds).toHaveLength(1);
+    expect(ds[0]?.message).toContain("6000 mm apart on the line y 4000, x 0–6000");
+    expect(ds[0]?.hints?.[0]).toContain("wall exterior thickness 200 { (0,4000) (6000,4000) }");
+    expect(ds[0]?.hints?.at(-1)).toBe('The wall is "u".');
+  });
+
+  it("a straight wall standing in a shell's mouth leaves a gap each side of it", () => {
+    const src = plan(`${mouth}\n  wall id=x exterior thickness 200 { (1000,4000) (5000,4000) }\n${ROOM}`);
+    expect(found(src).map((d) => /on the line y 4000, x (\S+),/.exec(d.message)?.[1])).toEqual(["0–1000", "5000–6000"]);
+  });
+
+  it("a lone end is named alone, not paired with a straight wall past the shell", () => {
+    const src = plan(`  wall id=u exterior thickness 200 { (0,0) (6000,0) (6000,4000) (2000,4000) }
+  wall id=p partition thickness 100 { (2000,4000) (0,4000) }
+  wall id=x exterior thickness 200 { (8000,0) (11000,0) }
+${ROOM}
+  room id=c at (8000,0) size 3000x4000 label "Lean-to" uses storage`);
+    const ds = found(src);
+    expect(ds).toHaveLength(1);
+    expect(ds[0]?.message).toContain("a run stops at (0, 0) with no wall to meet there");
+  });
+
   it("a shell open across a whole side", () => {
     const src = plan(`  wall id=u exterior thickness 200 { (0,4000) (0,0) (6000,0) (6000,4000) }\n${ROOM}`);
     expect(found(src)[0]?.message).toContain("6000 mm apart on the line y 4000, x 0–6000");
@@ -408,15 +452,17 @@ suite("the budget: counted, charged first, refused in words", () => {
     expect(budgetSkips(zigzag(400))).toEqual([]);
   });
 
-  it("the rule's own count, every open wall's ends against every segment, is charged before it walks them", () => {
-    // The 600 free-standing Ls stay under the shell's caps; (2·600 + 4) × (1200 + 2200) segments is
-    // past MAX_GROSS_AREA_TESTS. `over` is `under` plus partitions, so only that count can silence it.
-    const ells = Array.from({ length: 600 }, (_, i) => {
+  it("the rule's own count is charged before it walks them, each end's nine stations and every pair", () => {
+    // 300 free-standing Ls leave 600 open ends. `under`, 600 segments: (600·9 + 4) × 600 + 600² is
+    // 3 602 400. `over` is `under` plus 100 partitions, 700 segments: (600·9 + 4) × 700 + 600² is
+    // 4 142 800, past MAX_GROSS_AREA_TESTS, and only by the stations and the pairs together (without
+    // the 600², or at one test per end, it would stay under).
+    const ells = Array.from({ length: 300 }, (_, i) => {
       const x = i * 3000;
       return `  wall exterior thickness 200 { (${x},0) (${x + 1000},0) (${x + 1000},1000) }`;
     }).join("\n");
     const rest = Array.from(
-      { length: 2200 },
+      { length: 100 },
       (_, i) => `  wall partition thickness 100 { (${i * 3000},9000) (${i * 3000 + 1000},9000) }`,
     );
     const room = `  room id=a at (0,0) size 1000x1000 label "A" uses living`;
@@ -424,9 +470,26 @@ suite("the budget: counted, charged first, refused in words", () => {
     const over = plan(`${ells}\n${rest.join("\n")}\n${room}`);
     expect(() => lint(over)).not.toThrow();
     expect(found(under).length).toBeGreaterThan(0);
+    expect(budgetSkips(under)).toEqual([]);
     expect(found(over)).toEqual([]);
-    expect(budgetSkips(over)).toContainEqual(["enclosure-budget", "regions"]);
+    expect(budgetSkips(over)).toEqual([["enclosure-budget", "point-tests"]]);
   }, 60_000);
+
+  it("the slit scan runs once for a context, whichever of its two rules reads it", () => {
+    let reads = 0;
+    const rules = {
+      ...DEFAULT_RULESET,
+      get wallGapMm(): number | null {
+        reads++;
+        return DEFAULT_RULESET.wallGapMm;
+      },
+    };
+    const ctx = buildLintContext(resolvePlan(splitRing(250), {}).ir!, rules);
+    expect(wallEndShort.check(ctx)).toHaveLength(1);
+    expect(reads).toBe(1);
+    expect(exteriorRingOpen.check(ctx)).toEqual([]);
+    expect(reads).toBe(1);
+  });
 });
 
 suite("the corpus", () => {

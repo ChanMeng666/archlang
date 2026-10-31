@@ -739,12 +739,23 @@ interface ShortEnd {
   other: RWall;
 }
 
+/** {@link shortEnds} per context: its two readers share one scan. */
+const SHORT_ENDS = new WeakMap<LintContext, readonly ShortEnd[]>();
+
 /**
  * Every free end {@link wallEndShort} measures, in wall order: one wall end stopping a slit of
  * `gap` mm short of another wall. Two walls ending toward each other on one line give one entry
  * each. {@link exteriorRingOpen} reads this too, so a slit is reported by exactly one rule.
  */
-function shortEnds(ctx: LintContext): ShortEnd[] {
+function shortEnds(ctx: LintContext): readonly ShortEnd[] {
+  const known = SHORT_ENDS.get(ctx);
+  if (known) return known;
+  const found = scanShortEnds(ctx);
+  SHORT_ENDS.set(ctx, found);
+  return found;
+}
+
+function scanShortEnds(ctx: LintContext): ShortEnd[] {
   const configured = ctx.rules.wallGapMm;
   if (configured === null || !(configured > 0)) return [];
   const limit = Math.min(configured, MAX_WALL_GAP_SCAN_MM);
@@ -873,19 +884,27 @@ function runStandsOnRoom(ctx: LintContext, run: readonly RWall[]): boolean {
   });
 }
 
+/** Where {@link endMeetsWall} reads a drawn end, in half thicknesses along and across the wall. */
+const END_ALONG: readonly number[] = [0, 0.5, 1];
+const END_ACROSS: readonly number[] = [-1, 0, 1];
+/** The stations of one drawn end, each tested against every segment: the count the rule charges. */
+const END_STATIONS = END_ALONG.length * END_ACROSS.length;
+
 /**
  * Does the drawn end of `w` touch another wall of any kind? The end is the square of its cap,
- * half a thickness long and a thickness wide past the last point, read at nine stations; the wall's
- * own last segment does not count. A wall of another category closes the enclosure as well as an
- * exterior one: nothing is open there, however the plan classes the wall.
+ * half a thickness long and a thickness wide past the last point, read at {@link END_STATIONS}
+ * stations; the wall's own last segment does not count. A wall of another category closes the
+ * enclosure as well as an exterior one: nothing is open there, however the plan classes the wall.
  */
 function endMeetsWall(ctx: LintContext, w: RWall, end: WallEnd, own: WallSegment): boolean {
   const tangent = segmentDirAt(own, end.e);
   const d = end.which === 0 ? { x: -tangent.x, y: -tangent.y } : tangent;
   const h = w.thickness / 2;
   const others = ctx.wallSegs.filter((s) => s.thickness > 0 && s !== own);
-  for (const along of [0, h / 2, h]) {
-    for (const across of [-h, 0, h]) {
+  for (const stepAlong of END_ALONG) {
+    const along = stepAlong * h;
+    for (const stepAcross of END_ACROSS) {
+      const across = stepAcross * h;
       const p = { x: end.e.x + d.x * along - d.y * across, y: end.e.y + d.y * along + d.x * across };
       if (others.some((s) => (s.arc ? distPointToWallSegment(p, s) <= s.thickness / 2 + EPS : inDrawnWall(p, s))))
         return true;
@@ -901,30 +920,47 @@ function squaredGap(p: Point, q: Point): number {
   return dx * dx + dy * dy;
 }
 
+/** One gap: the two free ends either side of it. */
+type RingGap = [FreeEnd, FreeEnd];
+
 /**
- * The gaps the free ends leave: the nearest two ends first, then the next nearest of those left.
- * Two ends of one straight run are its length, never a gap. Squared distances, so a turn or a
- * mirror of the plan cannot change a tie; ties fall to source order.
+ * The allowed pairs of ends: the nearest two first, then the next nearest of those left. Squared
+ * distances, so a turn or a mirror of the plan cannot change a tie; ties fall to source order.
  */
-function gapsBetween(ends: readonly FreeEnd[], straightShells: readonly boolean[]): Array<[FreeEnd, FreeEnd]> {
+function pairEnds(ends: readonly FreeEnd[], allowed: (p: FreeEnd, q: FreeEnd) => boolean): RingGap[] {
   const pairs: Array<{ a: number; b: number; d2: number }> = [];
   for (let a = 0; a < ends.length; a++) {
     for (let b = a + 1; b < ends.length; b++) {
       const p = ends[a]!;
       const q = ends[b]!;
-      if (p.shell === q.shell && straightShells[p.shell]) continue;
-      pairs.push({ a, b, d2: squaredGap(p.at, q.at) });
+      if (allowed(p, q)) pairs.push({ a, b, d2: squaredGap(p.at, q.at) });
     }
   }
   pairs.sort((p, q) => p.d2 - q.d2 || p.a - q.a || p.b - q.b);
   const used = new Set<number>();
-  const out: Array<[FreeEnd, FreeEnd]> = [];
+  const out: RingGap[] = [];
   for (const { a, b } of pairs) {
     if (used.has(a) || used.has(b)) continue;
     used.add(a).add(b);
     out.push([ends[a]!, ends[b]!]);
   }
   return out.sort((p, q) => p[0].order - q[0].order || p[1].order - q[1].order);
+}
+
+const gapsLength = (gaps: readonly RingGap[]): number =>
+  gaps.reduce((n, [p, q]) => n + Math.sqrt(squaredGap(p.at, q.at)), 0);
+
+/**
+ * The gaps the free ends leave. Two ends of one straight run are its length, never a gap, so
+ * straight runs alone pair across runs. Otherwise each shell closes on its own ends, unless pairing
+ * across shells comes to less in all: a shell in two pieces, or a wall standing in a shell's mouth,
+ * has its gaps between the pieces, but a straight wall standing past the mouth has none to the shell.
+ */
+function gapsBetween(ends: readonly FreeEnd[], straightShells: readonly boolean[]): RingGap[] {
+  const across = pairEnds(ends, (p, q) => p.shell !== q.shell || !straightShells[p.shell]);
+  if (straightShells.every(Boolean)) return across;
+  const own = pairEnds(ends, (p, q) => p.shell === q.shell && !straightShells[p.shell]);
+  return gapsLength(across) < gapsLength(own) - EPS ? across : own;
 }
 
 /** The last clause of every {@link exteriorRingOpen} message. */
@@ -954,12 +990,15 @@ function ringHints(walls: readonly RWall[]): string[] {
  * reads no ring. An end `W_WALL_END_SHORT` measures: that slit is its finding, read through the
  * one {@link shortEnds} scan, so `wallGapMm: null` hands the slit to this rule rather than drop it.
  * A `demolish` wall is not in `ir.walls`: it closes nothing, so a shell it leaves open is named.
+ * **A known miss:** a closed annex built off an open shell gives the joined outline a hole, so the
+ * run reads as closed here and `describe()` adds the annex's floor with no omission to explain it.
  *
  * One warning per gap, in source order, on the wall the gap's earlier end belongs to (one end with
  * no other end to pair it is named alone). The gap is quoted between centreline ends, the points
  * the source writes; the drawing shows it narrower by the walls' caps and bodies. Work is counted
  * before it runs ({@link MAX_GROSS_AREA_TESTS}); past the count the storey is filed as an
- * `enclosure-budget` skip. No machine fix: which wall moves is a design decision.
+ * `enclosure-budget` skip. The slit scan is not in that count: it is `W_WALL_END_SHORT`'s own work,
+ * done once per context and only read here. No machine fix: which wall moves is a design decision.
  */
 export const exteriorRingOpen: LintRule = {
   name: "exterior-ring-open",
@@ -970,17 +1009,19 @@ export const exteriorRingOpen: LintRule = {
   check(ctx: LintContext): Diagnostic[] {
     if (ctx.rooms.length === 0) return [];
     const runs = openExteriorRuns(ctx.ir.walls);
-    const refuse = (): Diagnostic[] => {
-      ctx.skip("enclosure-budget", undefined, "regions");
+    const refuse = (cap: EnclosureBudgetCap): Diagnostic[] => {
+      ctx.skip("enclosure-budget", undefined, cap);
       return [];
     };
-    if (runs === "too-much-work") return refuse();
+    if (runs === "too-much-work") return refuse("regions");
     if (runs.length === 0) return [];
-    // Charged before the work: every open wall's two ends against every segment, every room
-    // edge against every segment of the runs.
+    // Charged before the work, in one count: each end of an open wall at its stations against every
+    // segment, every room edge against every segment of the runs, and the pairing's two passes
+    // over the pairs of ends.
     const ringEdges = ctx.rooms.reduce((n, r) => n + roomRing(ctx.roomRects.get(r.id)!).length, 0);
-    const open = runs.reduce((n, run) => n + run.length, 0);
-    if ((2 * open + ringEdges) * ctx.wallSegs.length > MAX_GROSS_AREA_TESTS) return refuse();
+    const openEnds = 2 * runs.reduce((n, run) => n + run.length, 0);
+    const tests = (openEnds * END_STATIONS + ringEdges) * ctx.wallSegs.length + openEnds * openEnds;
+    if (tests > MAX_GROSS_AREA_TESTS) return refuse("point-tests");
     const shells = runs.filter((run) => runStandsOnRoom(ctx, run));
     if (shells.length === 0 || isStraightRun(shells.flat())) return [];
 
@@ -997,7 +1038,6 @@ export const exteriorRingOpen: LintRule = {
         }
       }
     });
-    if (ends.length * ends.length > MAX_GROSS_AREA_TESTS) return refuse();
     ends.sort((p, q) => p.order - q.order);
 
     const straight = shells.map(isStraightRun);
