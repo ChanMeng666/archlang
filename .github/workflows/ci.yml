@@ -28,6 +28,7 @@ jobs:
   # that compile every `arch` fence of every Markdown page under `docs/` and the root,
   # and `npm-tarball`, which ships CHANGELOG.md). NOT records: published pages,
   # `docs/adr/` (synced to the site), the README, `spec.llm.md`, skills, package READMEs,
+  # `packages/archlang-3d/CHANGELOG.md` (`npm pack` in check:3d's pack.e2e.ts reads it),
   # and every non-Markdown file under `docs/plans/` (its `.arch` plans are the corpus of
   # 19 suites; its scripts are linted). A suite that starts reading a record joins
   # the docs leg's list below, or the record leaves this list.
@@ -82,6 +83,7 @@ jobs:
               - '!AGENTS.md'
               - '!CLAUDE.md'
               - '!CHANGELOG.md'
+              - '!editors/vscode/CHANGELOG.md'
 
       - name: Verdict
         id: verdict

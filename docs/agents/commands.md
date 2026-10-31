@@ -55,7 +55,7 @@ push to `main` runs in a group of its own and is never cancelled.
 
 **Record-only PRs.** The `changes` job sets `code=false` when every changed path is a record: the
 negated globs in its `dorny/paths-filter` step (Markdown under `docs/plans/`, `docs/agents/`, a few
-unpublished `docs/*.md`, `.claude/**/*.md`, `AGENTS.md`, `CLAUDE.md`, `CHANGELOG.md`; never a published
+unpublished `docs/*.md`, `.claude/**/*.md`, `AGENTS.md`, `CLAUDE.md`, `CHANGELOG.md`, `editors/vscode/CHANGELOG.md`; never a published
 page, an ADR, the README, `spec.llm.md`, a skill, or a non-Markdown file under `docs/plans/`). Then
 every gating job still reports its check, green, with its steps skipped, and Node 22 runs the docs
 leg instead: `check:drift`, `check:test-wiring`, the suites that read a record (`docs-*`, the seven
