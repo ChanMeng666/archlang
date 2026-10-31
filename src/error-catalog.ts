@@ -465,6 +465,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Drop `width` to fill the footprint, or give a value between 0 and the footprint's short side.",
     "stair id=s at (0,0) size 900x2600 dir up width 1200   # error: cross extent is 900",
   ),
+  E_STAIR_PIECES: E(
+    "E_STAIR_PIECES",
+    "A stair's flights and landings do not make one stair.",
+    "The block form of `stair` is one stair of authored rectangles in climbing order. It alternates `flight` and `landing`, starts and ends on a flight, has at least two flights and needs `width`, the flight width. Each piece touches the next along an edge that holds the whole flight, no two pieces overlap, and a flight between two landings leaves by the edge opposite the one it is entered by, because a flight is straight. A flight's direction comes from what it touches, never from its long side.",
+    "Check the order of the pieces and that each one ends exactly where the next begins. A landing may be wider or longer than the flights it joins.",
+    "stair id=s dir up width 1000 { flight at (0,1000) size 1000x1000 flight at (0,0) size 1000x1000 }   # error: two flights with no landing between",
+  ),
   E_RUN_TOO_LONG: E(
     "E_RUN_TOO_LONG",
     "A stair or escalator run is longer than any run the plan draws.",

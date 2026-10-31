@@ -45,6 +45,8 @@ import type { Point } from "../ast.js";
 import type { RectEdge } from "../fixture-orientation.js";
 import {
   type ArrivingRun,
+  boardedFlight,
+  isBlockStair,
   outsideOpenEdge,
   roomOfVertical,
   type RVertical,
@@ -494,7 +496,7 @@ function landingCells(
   /** Is there floor a body can stand on at this plan point (see {@link landingProbe})? */
   open: (p: Point) => boolean,
 ): number[] {
-  const r = verticalRect(v);
+  const r = verticalRect(boardedFlight(v));
   const x0 = r.x;
   const x1 = r.x + r.w;
   const y0 = r.y;
@@ -592,7 +594,8 @@ const LANDING_PROBE_MM = 1;
  * wall's band unless it lies within a door or opening of its width, farther than the body
  * radius from every solid furniture footprint, outside every void, and outside every OTHER
  * vertical run's footprint and the halo it keeps (lifted outside its entry edges) — the
- * same obstacles the grid erodes, asked of a point instead of a cell centre.
+ * same obstacles the grid erodes, asked of a point instead of a cell centre. `runs` are those
+ * obstacles; a block stair's own pieces are among them, all but the flight stepped off.
  */
 function landingProbe(
   roomIndex: number,
@@ -601,12 +604,11 @@ function landingProbe(
   connectors: ReadonlyArray<RDoor | ROpening>,
   furniture: readonly RFurniture[],
   voids: readonly RVoid[],
-  others: readonly RVertical[],
+  runs: readonly VerticalObstacle[],
   bodyRadius: number,
 ): (p: Point) => boolean {
   const solid = solidFurniture(furniture as RFurniture[]).map((f) => rectOf(f));
   const holes = voids.map((v) => rectOf(v));
-  const runs = verticalObstacles(others);
   const inBox = (p: Point, rb: RoomBox): boolean =>
     rb.poly ? pointInPolygon(p.x, p.y, rb.poly) : pointInRect(p.x, p.y, rb);
   return (p) => {
@@ -647,13 +649,14 @@ function landingProbe(
 /** The width of a run across the edge a person arrives over — the flight's width, as a
  *  doorway's clear width is the opening they come in through. */
 function runWidth(v: RVertical, e: RectEdge): number {
-  return e === "top" || e === "bottom" ? v.size.w : v.size.h;
+  const f = boardedFlight(v);
+  return e === "top" || e === "bottom" ? f.size.w : f.size.h;
 }
 
 /** The midpoint of a run's arrival edge — the model header's point for a storey walked
  *  from a shaft, as a front door's `at` is for one walked from the street. */
 function entryMidpoint(v: RVertical, e: RectEdge): Point {
-  const r = verticalRect(v);
+  const r = verticalRect(boardedFlight(v));
   if (e === "top") return { x: r.x + r.w / 2, y: r.y };
   if (e === "bottom") return { x: r.x + r.w / 2, y: r.y + r.h };
   if (e === "left") return { x: r.x, y: r.y + r.h / 2 };
@@ -665,18 +668,17 @@ function entryMidpoint(v: RVertical, e: RectEdge): Point {
  * is lifted outside. `townhouse`'s middle storey is the case: you step off the ground flight
  * at its head, while the storey's own `dir up` run lifts its halo only at its foot. Only a
  * storey walked from a shaft passes arrivals, so every other grid is built exactly as before.
+ *
+ * An obstacle names its own run: a block stair gives one obstacle per piece, so the obstacles do
+ * not line up with the runs. The edges belong to the flight stepped off, the piece that is open.
  */
-function withArrivalEdges(
-  obstacles: VerticalObstacle[],
-  verticals: readonly RVertical[],
-  arrivals: readonly ShaftArrival[],
-): VerticalObstacle[] {
+function withArrivalEdges(obstacles: VerticalObstacle[], arrivals: readonly ShaftArrival[]): VerticalObstacle[] {
   if (arrivals.length === 0) return obstacles;
-  return obstacles.map((ob, i) => {
-    const a = arrivals.find((x) => x.run.id === verticals[i]!.id);
+  return obstacles.map((ob) => {
+    const a = ob.open.length > 0 ? arrivals.find((x) => x.run.id === ob.run) : undefined;
     if (!a) return ob;
     const extra = a.edges.filter((e) => !ob.open.includes(e));
-    return extra.length > 0 ? { rect: ob.rect, open: [...ob.open, ...extra] } : ob;
+    return extra.length > 0 ? { ...ob, open: [...ob.open, ...extra] } : ob;
   });
 }
 
@@ -1298,7 +1300,7 @@ function buildGrid(
   // to stand at the foot of a flight to use it (see `src/vertical.ts`).
   const obstacles: VerticalObstacle[] = [
     ...solidFurniture(furniture).map((f) => ({ rect: rectOf(f), open: [] as VerticalObstacle["open"] })),
-    ...withArrivalEdges(verticalObstacles(verticals), verticals, arrivals),
+    ...withArrivalEdges(verticalObstacles(verticals), arrivals),
     // A floor void blocks the cells inside it — you cannot walk across a hole — with the
     // body-radius halo suppressed on EVERY edge: you can stand at the railing. Same
     // mechanism a stair's entry edge uses, with the whole rectangle "open".
@@ -1546,6 +1548,8 @@ function toExtentFrame(
   const snap = snapToFrame;
   const p = (q: Point): Point => ({ x: snap(q.x - origin.x), y: snap(q.y - origin.y) });
   const at = <T extends { at: Point }>(e: T): T => ({ ...e, at: p(e.at) });
+  const run = (v: RVertical): RVertical =>
+    isBlockStair(v) ? { ...at(v), flights: v.flights.map(at), landings: v.landings.map(at) } : at(v);
   return {
     rooms: plan.rooms.map((r) => ({
       ...at(r),
@@ -1560,7 +1564,7 @@ function toExtentFrame(
     doors: plan.doors.map(at),
     openings: plan.openings.map(at),
     furniture: plan.furniture.map(at),
-    verticals: plan.verticals.map(at),
+    verticals: plan.verticals.map(run),
     voids: plan.voids.map(at),
   };
 }
@@ -1746,7 +1750,7 @@ function buildNav(
       [...doors, ...openings],
       furniture,
       voids,
-      verticals.filter((o) => o.id !== a.run.id),
+      verticalObstacles(verticals).filter((o) => !(o.run === a.run.id && o.open.length > 0)),
       bodyRadius,
     );
     const ks = landingCells(g, a.run, a.edges, ri, bodyRadius, open);

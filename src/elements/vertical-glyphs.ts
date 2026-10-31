@@ -27,9 +27,18 @@ import type { Diagnostic, Span } from "../diagnostics.js";
 import { fmt3 } from "../num-format.js";
 import type { Paint, RenderSizes, SceneNode } from "../scene.js";
 import type { Theme } from "../theme.js";
-import type { RElevator, REscalator, RStair } from "../ir.js";
+import type { RElevator, REscalator, RStair, RStairPiece } from "../ir.js";
 import { rectCorners } from "../geometry.js";
-import { dirLabel, runAxis, type RVertical, tailEdge } from "../vertical.js";
+import {
+  dirLabel,
+  flightsOf,
+  isBlockStair,
+  type RBlockStair,
+  runAxis,
+  type RVertical,
+  tailEdge,
+  travelVector,
+} from "../vertical.js";
 import { symbolInk } from "./glyph-lib.js";
 
 /** The outline tone of a vertical-circulation symbol: the fixtures' derived symbol ink. */
@@ -149,7 +158,20 @@ function arrow(f: RunFrame, label: string, layerName: string, theme: Theme, size
     line(f.at(head, 0), f.at(head - barb, barb * 0.6), layerName, stroke),
     line(f.at(head, 0), f.at(head - barb, -barb * 0.6), layerName, stroke),
   ];
-  out.push({
+  out.push(runWord(f, step, label, layerName, theme, sizes));
+  return out;
+}
+
+/** The `UP`/`DN` word, in the first tread cell of the flight boarded. */
+function runWord(
+  f: RunFrame,
+  step: number,
+  label: string,
+  layerName: string,
+  theme: Theme,
+  sizes: RenderSizes,
+): SceneNode {
+  return {
     layer: "furniture",
     layerName,
     prim: {
@@ -161,12 +183,11 @@ function arrow(f: RunFrame, label: string, layerName: string, theme: Theme, size
       baseline: "central",
     },
     paint: { fill: theme.annotation },
-  });
-  return out;
+  };
 }
 
 /** The footprint rectangle every run draws under its symbol. */
-function footprint(v: RVertical, layerName: string, theme: Theme, sizes: RenderSizes): SceneNode {
+function footprint(v: RStairPiece, layerName: string, theme: Theme, sizes: RenderSizes): SceneNode {
   return {
     layer: "furniture",
     layerName,
@@ -180,10 +201,25 @@ function footprint(v: RVertical, layerName: string, theme: Theme, sizes: RenderS
  * (the paired-diagonal cut convention) at mid-flight with the treads it crosses omitted,
  * and the UP/DN direction arrow. When the authored `width` is narrower than the
  * footprint's cross extent the flight band is centred in the footprint and the remainder
- * is left as an un-drawn return/void (v1 draws a single straight flight).
+ * is left as an un-drawn return/void. A block stair draws {@link blockStairGlyph}.
  */
 export function stairGlyph(s: RStair, theme: Theme, sizes: RenderSizes): SceneNode[] {
+  if (isBlockStair(s)) return blockStairGlyph(s, theme, sizes);
   const f = runFrame(s, s.width);
+  const nodes = flightSymbol(s, f, "full", theme, sizes);
+  nodes.push(...arrow(f, dirLabel(s.dir), STAIR_LAYER, theme, sizes));
+  return nodes;
+}
+
+/**
+ * How a flight's break line is drawn: not at all, `full` (a straight stair's, each diagonal rising
+ * half the flight's width), or `shallow`, held to a quarter of the run, for a flight of a block:
+ * those are short, and a full cut on a square flight omits every tread it has.
+ */
+type FlightCut = "none" | "full" | "shallow";
+
+/** One flight's footprint, treads and band edges, and its break line. */
+function flightSymbol(s: RStair, f: RunFrame, cut: FlightCut, theme: Theme, sizes: RenderSizes): SceneNode[] {
   const layer = STAIR_LAYER;
   const stroke: Paint = { stroke: theme.furnitureStroke, width: sizes.thin, fill: "none" };
   const nodes: SceneNode[] = [footprint(s, layer, theme, sizes)];
@@ -196,7 +232,8 @@ export function stairGlyph(s: RStair, theme: Theme, sizes: RenderSizes): SceneNo
   // half the flight width over the crossing (a ~26° cut) and separated along the run by
   // one going. Treads inside the cut band are omitted, as a drawn break omits them.
   const mid = f.length / 2;
-  const rise = half; // along-run rise of one diagonal across the full width
+  // Along-run rise of one diagonal across the full width.
+  const rise = cut === "shallow" ? Math.min(half, f.length / 4) : half;
   const gap = Math.min(step, f.length / 6);
   const over = f.width * 0.06; // the diagonals overshoot the flight edges slightly
   const band = gap / 2 + rise / 2;
@@ -206,13 +243,15 @@ export function stairGlyph(s: RStair, theme: Theme, sizes: RenderSizes): SceneNo
   const lo = -half - over;
   const hi = half + over;
   const [c0, c1] = s._mirror ? [hi, lo] : [lo, hi];
-  for (const off of [-gap / 2, gap / 2]) {
-    nodes.push(line(f.at(mid + off - rise / 2, c0), f.at(mid + off + rise / 2, c1), layer, stroke));
+  if (cut !== "none") {
+    for (const off of [-gap / 2, gap / 2]) {
+      nodes.push(line(f.at(mid + off - rise / 2, c0), f.at(mid + off + rise / 2, c1), layer, stroke));
+    }
   }
 
   for (let i = 1; i < n; i++) {
     const a = i * step;
-    if (Math.abs(a - mid) <= band) continue;
+    if (cut !== "none" && Math.abs(a - mid) <= band) continue;
     nodes.push(line(f.at(a, -half), f.at(a, half), layer, stroke));
   }
   // The flight band's own long edges, drawn only when it is narrower than the footprint
@@ -222,8 +261,120 @@ export function stairGlyph(s: RStair, theme: Theme, sizes: RenderSizes): SceneNo
     nodes.push(line(f.at(0, -half), f.at(f.length, -half), layer, stroke));
     nodes.push(line(f.at(0, half), f.at(f.length, half), layer, stroke));
   }
+  return nodes;
+}
 
-  nodes.push(...arrow(f, dirLabel(s.dir), layer, theme, sizes));
+/** The walking line's way across a landing, from `p` (where the flight before it ends) to `q`
+ *  (where the flight after it starts), turning at right angles: the points between them. */
+function acrossLanding(p: Point, q: Point, before: RStair, after: RStair, landing: RStairPiece): Point[] {
+  const d0 = travelVector(before);
+  const d1 = travelVector(after);
+  const parallel = d0.x * d1.x + d0.y * d1.y !== 0;
+  if (!parallel) return d0.y !== 0 ? [{ x: p.x, y: q.y }] : [{ x: q.x, y: p.y }];
+  // In line, or a half-turn or a jog: out to the landing's middle, across, and on.
+  if (d0.y !== 0) {
+    if (p.x === q.x && d0.y === d1.y) return [];
+    const y = landing.at.y + landing.size.h / 2;
+    return [
+      { x: p.x, y },
+      { x: q.x, y },
+    ];
+  }
+  if (p.y === q.y && d0.x === d1.x) return [];
+  const x = landing.at.x + landing.size.w / 2;
+  return [
+    { x, y: p.y },
+    { x, y: q.y },
+  ];
+}
+
+/** The walk's length on one landing between two flights in climbing order: {@link acrossLanding}'s. */
+function landingWalk(before: RStair, after: RStair, landing: RStairPiece): number {
+  const f0 = runFrame(before, 0);
+  const f1 = runFrame(after, 0);
+  const p = f0.at(f0.length, 0);
+  const q = f1.at(0, 0);
+  let at = p;
+  let walked = 0;
+  for (const next of [...acrossLanding(p, q, before, after, landing), q]) {
+    walked += Math.abs(next.x - at.x) + Math.abs(next.y - at.y);
+    at = next;
+  }
+  return walked;
+}
+
+/**
+ * Which flight, in climbing order, carries a block stair's one break line: the flight holding the
+ * walking line's midpoint, or the flight before it when the midpoint is on a landing. Fixed by
+ * authored geometry alone, so no height draws, and in climbing order, so a block copied between
+ * storeys keeps its cut when only `dir` changes.
+ */
+export function cutFlight(s: RBlockStair): number {
+  const flights = flightsOf(s);
+  const walks = s.landings.map((l, i) =>
+    s.dir === "up" ? landingWalk(flights[i]!, flights[i + 1]!, l) : landingWalk(flights[i + 1]!, flights[i]!, l),
+  );
+  const runs = flights.map((f) => runFrame(f, 0).length);
+  const half = (runs.reduce((a, b) => a + b, 0) + walks.reduce((a, b) => a + b, 0)) / 2;
+  let walked = 0;
+  for (let i = 0; i < runs.length; i++) {
+    walked += runs[i]!;
+    if (walked >= half) return i;
+    walked += walks[i] ?? 0;
+    if (walked >= half) return i;
+  }
+  return runs.length - 1;
+}
+
+/**
+ * One stair of several pieces: each flight as a straight one draws, each landing its outline and
+ * no treads, one break line ({@link cutFlight}), and one walking line through the middle of every
+ * piece, boarded where {@link RStair.dir} says, to one arrowhead, with one UP/DN in the first tread
+ * cell of the flight boarded. The treads stay at the nominal going whatever the storey height:
+ * nothing here reads a height.
+ *
+ * The walking line is several `line` primitives, never one long path: a label is kept off each
+ * primitive's box (`src/label-placement.ts`), and a turning line's box holds the floor it turns round.
+ */
+function blockStairGlyph(s: RBlockStair, theme: Theme, sizes: RenderSizes): SceneNode[] {
+  const layer = STAIR_LAYER;
+  const climb = flightsOf(s);
+  const cut = cutFlight(s);
+  const nodes: SceneNode[] = [];
+  climb.forEach((f, i) => {
+    nodes.push(...flightSymbol(f, runFrame(f, s.width), i === cut ? "shallow" : "none", theme, sizes));
+    const landing = s.landings[i];
+    if (landing) nodes.push(footprint(landing, layer, theme, sizes));
+  });
+
+  const up = s.dir === "up";
+  const walk = up ? climb : [...climb].reverse();
+  const frames = walk.map((f) => runFrame(f, s.width));
+  const first = frames[0]!;
+  const last = frames[frames.length - 1]!;
+  const step = first.length / treadCount(first.length);
+  const lastStep = last.length / treadCount(last.length);
+  const head = last.length - Math.min(lastStep * 0.4, last.length * 0.12);
+  const points: Point[] = [first.at(Math.min(step * 1.2, first.length * 0.3), 0)];
+  frames.forEach((f, i) => {
+    if (i > 0) {
+      const before = frames[i - 1]!;
+      const landing = s.landings[up ? i - 1 : s.landings.length - i]!;
+      points.push(
+        ...acrossLanding(before.at(before.length, 0), f.at(0, 0), walk[i - 1]!, walk[i]!, landing),
+        f.at(0, 0),
+      );
+    }
+    if (i < frames.length - 1) points.push(f.at(f.length, 0));
+  });
+  points.push(last.at(head, 0));
+
+  const ink: Paint = { stroke: inkOf(theme), width: sizes.thin, fill: "none" };
+  for (let i = 1; i < points.length; i++) nodes.push(line(points[i - 1]!, points[i]!, layer, ink));
+  const barb = Math.min(last.width * 0.28, head * 0.25);
+  nodes.push(line(last.at(head, 0), last.at(head - barb, barb * 0.6), layer, ink));
+  nodes.push(line(last.at(head, 0), last.at(head - barb, -barb * 0.6), layer, ink));
+  nodes.push(runWord(first, step, dirLabel(s.dir), layer, theme, sizes));
   return nodes;
 }
 

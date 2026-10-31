@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**148 errors** · **91 warnings**
+**149 errors** · **91 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -135,6 +135,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_SITE_BOUNDARY_SELF_INTERSECT`](#e_site_boundary_self_intersect) | error | The site `boundary` crosses itself. |
 | [`E_SITE_DUP`](#e_site_dup) | error | Two `site` blocks in one plan. |
 | [`E_SITE_NO_STREET`](#e_site_no_street) | error | A `site` block declares no `street`. |
+| [`E_STAIR_PIECES`](#e_stair_pieces) | error | A stair's flights and landings do not make one stair. |
 | [`E_STAIR_WIDTH`](#e_stair_width) | error | Stair flight `width` is outside the footprint. |
 | [`E_STEP_LIMIT`](#e_step_limit) | error | Evaluation did more work than any plan needs. |
 | [`E_STRIP_NEST`](#e_strip_nest) | error | Illegal `strip` nesting. |
@@ -1859,6 +1860,18 @@ plan "H" {
   units mm
   site { hemisphere south }   # error: no street
 }
+```
+
+## E_STAIR_PIECES
+
+*error* — A stair's flights and landings do not make one stair.
+
+**Cause.** The block form of `stair` is one stair of authored rectangles in climbing order. It alternates `flight` and `landing`, starts and ends on a flight, has at least two flights and needs `width`, the flight width. Each piece touches the next along an edge that holds the whole flight, no two pieces overlap, and a flight between two landings leaves by the edge opposite the one it is entered by, because a flight is straight. A flight's direction comes from what it touches, never from its long side.
+
+**Fix.** Check the order of the pieces and that each one ends exactly where the next begins. A landing may be wider or longer than the flights it joins.
+
+```arch static
+stair id=s dir up width 1000 { flight at (0,1000) size 1000x1000 flight at (0,0) size 1000x1000 }   # error: two flights with no landing between
 ```
 
 ## E_STAIR_WIDTH

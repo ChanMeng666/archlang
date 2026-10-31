@@ -70,6 +70,9 @@ export type LintSkipReason =
   /** Every door to the outside opens onto a balcony or terrace, which the privacy rules do not
    *  count as a way in (the access graph and the walk do). */
   | "balcony-only-entrance"
+  /** A stair drawn as flights and landings, which the rule reads only in part so far: its figures
+   *  allow nothing for a landing, or the comparison between its two stops is not made. */
+  | "block-stair"
   /** The door's host wall is angled or curved, which the rule does not measure. */
   | "unsupported-host-geometry"
   /** A room that is a kitchen and also the living room holds no kitchen fixture, so
@@ -150,6 +153,7 @@ export const SKIP_WHY: Readonly<Record<LintSkipReason, string>> = {
   "arc-window-unattributed": "a window on a curved wall is attributed to no room",
   "non-rectangular-room": "the rule measures rectangles only",
   "no-entrance": "the storey has no way in",
+  "block-stair": "a stair drawn as flights and landings is only partly judged so far",
   "no-brief": "no brief is given",
   "no-dwelling": "no dwelling is declared",
   "no-operable-window-data": "windows carry no operable-sash data",

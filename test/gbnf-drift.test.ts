@@ -705,6 +705,16 @@ plan "Sugar" {
     expect(accepts(rules, src)).toBe(true);
   });
 
+  it("accepts the block form of `stair`, and refuses its shapes that are no stair", () => {
+    const stair = (body: string): string => `plan "d" {\n  stair id=s dir up width 1000 {\n${body}\n  }\n}\n`;
+    const f = "    flight at (0,1000) size 1000x1000";
+    const l = "    landing at (0,0) size 1000x1000";
+    expect(accepts(rules, stair(`${f}\n${l}\n${f}`))).toBe(true);
+    expect(parses(stair(`${f}\n${l}\n${f}`))).toBe(true);
+    expect(accepts(rules, stair("    wall x thickness 100 { (0,0) (1,0) }"))).toBe(false);
+    expect(accepts(rules, stair(f))).toBe(false);
+  });
+
   it("accepts tricky-but-valid spellings the parser allows", () => {
     const ok = [
       `plan "d" {\n  room at (4000,-100) size 4000 x 6000\n}\n`, // spaced dimension, negative coord

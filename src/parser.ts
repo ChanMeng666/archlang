@@ -175,6 +175,7 @@ class Parser {
       parseDimensions: () => this.parseDimensions(),
       parseStringExpr: () => this.parseStringExpr(),
       parseIdOpt: () => this.parseIdOpt(),
+      spanFrom: (start) => this.spanFrom(start),
       fail: (msg, t) => this.fail(msg, t),
       report: (code, message, span) => this.diagnostics.push({ severity: "error", message, code, span }),
     };

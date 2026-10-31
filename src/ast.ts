@@ -723,16 +723,33 @@ export type VerticalDir = (typeof VERTICAL_DIRS)[number];
  *
  * `at` is the footprint's TOP-LEFT corner (as for `room`/`furniture`, not `column`'s
  * centre). `width` is the FLIGHT width across the run; it defaults to the footprint's
- * cross-axis extent and may not exceed it (`E_STAIR_WIDTH`). v1 draws a single straight
- * flight: a narrower `width` leaves the rest of the footprint as an un-drawn return/void.
+ * cross-axis extent and may not exceed it (`E_STAIR_WIDTH`). A narrower `width` leaves the
+ * rest of the footprint as an un-drawn return/void.
+ *
+ * The block form, `stair [id=] dir up|down width <expr> { flight … landing … flight … }`, is one
+ * stair of authored rectangles in climbing order (issue #362). It has `pieces` and no `at` or
+ * `size`; the straight form has exactly the reverse, and the word after the id decides which.
  */
 export interface StairNode extends NodeBase {
   kind: "stair";
+  /** Top-left of the footprint; absent on the block form. */
+  at?: ExprPoint;
+  /** The footprint; absent on the block form. */
+  size?: { w: Expr; h: Expr };
+  dir: VerticalDir;
+  /** Flight width across the run (mm); defaults to the footprint's cross extent. The block form
+   *  requires it (`E_STAIR_PIECES`). */
+  width?: Expr;
+  /** The block form's flights and landings, in climbing order. */
+  pieces?: StairPiece[];
+}
+
+/** One rectangle of a block `stair`: `flight|landing at (x,y) size WxH`. */
+export interface StairPiece {
+  kind: "flight" | "landing";
   at: ExprPoint;
   size: { w: Expr; h: Expr };
-  dir: VerticalDir;
-  /** Flight width across the run (mm); defaults to the footprint's cross extent. */
-  width?: Expr;
+  span: Span;
 }
 
 /** `elevator [id=] at (x,y) size WxH` — a lift shaft: the car rectangle with the

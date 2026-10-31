@@ -57,6 +57,7 @@ import { edgeMid, edgeTangentAt } from "../../geometry/band.js";
 import { collinearOverlapLength } from "../../geometry/polygon.js";
 import type { ResolvedPlan, RRoom, RWall } from "../../ir.js";
 import { fmt2 } from "../../num-format.js";
+import { piecesOf } from "../../vertical.js";
 import type { LintContext, LintRule } from "../context.js";
 import { capFirst } from "../../naming.js";
 import type { EnclosureBudgetCap } from "../coverage.js";
@@ -535,7 +536,9 @@ function nonRoomCover(ctx: LintContext): FaceRoom[] {
       });
     else if (e.kind === "void") out.push({ id: e.id, at: e.at, size: e.size });
   }
-  for (const v of ctx.verticals) out.push({ id: v.id, at: v.at, size: v.size });
+  for (const v of ctx.verticals) {
+    for (const r of piecesOf(v)) out.push({ id: v.id, at: { x: r.x, y: r.y }, size: { w: r.w, h: r.h } });
+  }
   return out;
 }
 

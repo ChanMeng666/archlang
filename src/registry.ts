@@ -51,6 +51,8 @@ export interface ParseCtx {
    *  evaluated to text at resolve via {@link ResolveCtx.evalStr}. */
   parseStringExpr(): Expr;
   parseIdOpt(): string;
+  /** The span from byte `start` to the end of the last token read. */
+  spanFrom(start: number): Span;
   /** Report a fatal parse error at `t` (defaults to the current token); never returns. */
   fail(msg: string, t?: Token): never;
 }

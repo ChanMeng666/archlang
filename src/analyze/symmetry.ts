@@ -91,7 +91,7 @@ import { fixtureGlyph } from "../elements/fixtures-glyphs.js";
 import { marksEqual, mirrorNode } from "../elements/glyph-chirality.js";
 import type { RenderSizes } from "../scene.js";
 import { DEFAULT_THEME } from "../theme.js";
-import { type RVertical, tailEdge, travelVector, verticalsOf } from "../vertical.js";
+import { flightsOf, isBlockStair, type RVertical, tailEdge, travelVector, verticalsOf } from "../vertical.js";
 
 // ---------------------------------------------------------------------------
 // Output shapes
@@ -585,7 +585,19 @@ function doorRec(d: RDoor): Rec<Point> {
  *  - `hand` — a stair's break line, the one handed part of its symbol: `runFrame` is a
  *    proper rotation for every tail edge, so the drawn chirality is exactly `RStair._mirror`.
  *    An escalator's chevrons and a lift's diagonals are mirror-symmetric, so they carry none.
+ *
+ * A block stair is one record per flight, with that flight's travel, and one per landing, so its
+ * turn is read from what the frame carried: its bounding box would read a stair and its mirror as
+ * the same thing.
  */
+function verticalRecs(v: RVertical): Rec<Point>[] {
+  if (!isBlockStair(v)) return [verticalRec(v)];
+  const landings = v.landings.map(
+    (l): Rec<Point> => ({ form: "set", label: `stair landing w=${fmt4(v.width)}`, pts: boxRing(l.at, l.size) }),
+  );
+  return [...flightsOf(v).map(verticalRec), ...landings];
+}
+
 function verticalRec(v: RVertical): Rec<Point> {
   const { x, y } = v.at;
   const { w, h } = v.size;
@@ -925,7 +937,7 @@ export function symmetryFacts(ir: ResolvedPlan): SymmetryFacts {
       (o): Rec<Point> => ({ form: "set", label: `opening w=${fmt4(o.width)}`, pts: jambs(o.at, o.width, o.host) }),
     ),
     ...furniture.map(furnitureRec),
-    ...verticalsOf(ir).map(verticalRec),
+    ...verticalsOf(ir).flatMap(verticalRecs),
     ...drawnRecs(ir),
   ];
   const tidyLayer = (raw: readonly Rec<Point>[]): LayerSymmetry | null => {

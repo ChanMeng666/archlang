@@ -588,7 +588,11 @@ function rules(): [string, string][] {
     ["dim-curve", `"radius" rws ref ( rws "segment" ws segment-sel )? | "diameter" rws ref`],
     ["dim-ref", `"faces" | "clear"`],
     ["column-stmt", `"column" rws id-opt "at" ws point ws "size" ws dims`],
-    ["stair-stmt", `"stair" rws id-opt "at" ws point ws "size" ws dims ws "dir" rws vert-dir ( ws "width" ws expr )?`],
+    [
+      "stair-stmt",
+      `"stair" rws id-opt ( "at" ws point ws "size" ws dims ws "dir" rws vert-dir ( ws "width" ws expr )? | "dir" rws vert-dir ws "width" ws expr ws "{" ws stair-piece ( ws stair-piece )+ ws "}" )`,
+    ],
+    ["stair-piece", `( "flight" | "landing" ) rws "at" ws point ws "size" ws dims`],
     ["elevator-stmt", `"elevator" rws id-opt "at" ws point ws "size" ws dims`],
     ["escalator-stmt", `"escalator" rws id-opt "at" ws point ws "size" ws dims ws "dir" rws vert-dir`],
     ["vert-dir", `"up" | "down"`],

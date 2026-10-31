@@ -17,7 +17,7 @@
  */
 
 import type { Diagnostic } from "../../diagnostics.js";
-import { runAxis, verticalRect as rect } from "../../vertical.js";
+import { boardedFlight, isBlockStair, runAxis, verticalRect as rect } from "../../vertical.js";
 import { mm } from "../measure.js";
 import type { LintContext, LintRule } from "../context.js";
 
@@ -36,14 +36,15 @@ export const stairUnmatched: LintRule = {
     const out: Diagnostic[] = [];
     for (const v of verticals) {
       if (building.verticalPeerIds.has(v.id)) continue;
+      const r = rect(boardedFlight(v));
       out.push({
         severity: "warning",
         code: "W_STAIR_UNMATCHED",
         ...at(v),
         // Named by where it stands, never by its id: the id is what joins storeys, and is in the hint.
         message: `The ${v.kind === "elevator" ? "elevator" : v.kind === "escalator" ? "escalator" : "stair"} ${placeAt({
-          x: rect(v).x + rect(v).w / 2,
-          y: rect(v).y + rect(v).h / 2,
+          x: r.x + r.w / 2,
+          y: r.y + r.h / 2,
         })}${(building.storeyCount ?? 1) > 1 && ir.level !== undefined ? ` on level ${ir.level}` : ""} appears on only one storey, so it connects nothing.`,
         hints: [
           `Draw the matching run with the same id \`${v.id}\` on the storey above or below (each storey declares its own \`dir\`).`,
@@ -69,6 +70,10 @@ export const stairUnmatched: LintRule = {
  * and its two footprints must overlap by at least half of the smaller one. Half is this
  * programme's threshold, not a code's: it catches a run drawn in another place or turned, and
  * leaves a footprint redrawn a little longer or shifted by a wall's thickness.
+ *
+ * A block stair is compared on its bounding box and its axis is not: the axis of the flight
+ * boarded differs between a `dir up` and a `dir down` stop of one L, which is no defect. Filed as
+ * the `block-stair` coverage skip.
  */
 export const SHAFT_MIN_OVERLAP_SHARE = 0.5;
 
@@ -92,6 +97,8 @@ export const shaftFootprintMismatch: LintRule = {
       if (!below) continue;
       const a = rect(v);
       const b = rect(below.run);
+      const block = isBlockStair(v) || isBlockStair(below.run);
+      if (block) skip("block-stair");
       const ox = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
       const oy = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
       const share = (ox * oy) / Math.min(a.w * a.h, b.w * b.h);
@@ -101,7 +108,7 @@ export const shaftFootprintMismatch: LintRule = {
       else if (lift) {
         if (a.x !== b.x || a.y !== b.y || a.w !== b.w || a.h !== b.h)
           why = "a lift car stands in one plumb shaft, and this car is not drawn in the footprint of the one below";
-      } else if (runAxis(v) !== runAxis(below.run))
+      } else if (!block && runAxis(v) !== runAxis(below.run))
         why = "the flight runs across the page on one storey and up it on the other";
       else if (share < SHAFT_MIN_OVERLAP_SHARE)
         why = `the footprints overlap by ${pct(share)} of the smaller, under half`;
