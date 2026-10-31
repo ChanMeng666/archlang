@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.48.0] - 2026-11-01
+
 ### Added
 
 - A rectilinear `room polygon` in `walls from rooms` (issue #363, first part): a polygon whose every
@@ -33,6 +35,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   consumer that classifies lint codes sees a new warning.
 
 ### Fixed
+
+- `W_STAIR_TOO_STEEP` no longer advises drawing the climb as two flights with a landing (issue #362).
+  Lint judges each flight against the whole storey, so that advice produced the same warning twice.
+  The catalogue fix text (`arch explain`) and the per-instance hint now advise only lengthening the
+  flight or correcting a wrong `height`, and say a stair split into separate flights is still judged
+  flight by flight. Wording only: firing, severity and rule logic are unchanged.
 
 - `open between` boundaries at one point (issue #368, which 1.47.0 fixed for four of them). Three open
   boundaries of a tee no longer leave a pier, and where one wall is left standing, three of four open at a

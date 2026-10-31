@@ -3171,7 +3171,7 @@ stair id=s at (4200,300) size 1100x2400 dir up   # lint: the doorway is 150 mm f
 
 **Cause.** A `stair` going `up` climbs its storey's floor-to-floor `height` in one straight flight, and its run (the footprint's long side) is shorter than the least run that climb needs: the fewest risers no higher than `stairMaxRiseMm`, and one going fewer, each at least `stairMinGoingMm` (and, under a pitch cap, the riser over `stairMaxPitchRatio`). The default, 220 mm risers and 220 mm goings with no pitch cap, is the most generous of the figures read (Approved Document K (2013) Table 1.1, private stair): a flight that fails it fails every code cited. `uk-residential-advisory` adds AD K's 42° pitch, `us-residential-advisory` IRC R311.7.5's 7¾ in riser and 10 in tread, `cn-residential-advisory` GB 50096-2011 5.7.4's 0.20 m riser and 0.22 m tread. Judged only where the plan authors a height (`describe().heights`); otherwise the coverage report says the stair checks skipped it. Judged on the storey the flight climbs from.
 
-**Fix.** Lengthen the flight (its `size` along the run, on every storey the shaft is drawn) to the quoted run, lower the storey `height` if it is wrong, or draw the climb as two flights with a landing between. There is no machine-applicable fix: a longer flight moves the rooms around it.
+**Fix.** Lengthen the flight (its `size` along the run, on every storey the shaft is drawn) to the quoted run, or correct the storey `height` if it is wrong. Splitting the climb into separate flights does not clear the warning: each flight is still judged against the whole storey, flight by flight. There is no machine-applicable fix: a longer flight moves the rooms around it.
 
 ```arch static
 height 2800

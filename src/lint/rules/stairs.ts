@@ -790,7 +790,7 @@ export const stairTooSteep: LintRule = {
         ...ctx.at(v),
         message: `${capitalise(stairName(v, ctx))} is too steep: its ${mm(run)} mm run must climb the ${mm(rise)} mm storey, and at ${limitMm(ctx.rules.stairMaxRiseMm)} a riser at most that is ${need.risers} risers and ${need.risers - 1} goings of at least ${mm(Math.ceil(need.going - VERTEX_EPS))} mm, a ${m.required} mm run (${m.short} mm short).`,
         hints: [
-          `Lengthen \`${v.id}\` along its flight to at least ${m.required} mm on every storey it is drawn on (its \`size\`), or turn the climb into two flights with a landing; the ${limits} from the lint profile (\`--profile\`).`,
+          `Lengthen \`${v.id}\` along its flight to at least ${m.required} mm on every storey it is drawn on (its \`size\`), or correct the storey \`height\` if it is wrong; flights drawn separately are still each judged against the whole storey; the ${limits} from the lint profile (\`--profile\`).`,
         ],
       });
     }
