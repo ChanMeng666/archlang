@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `finish` names every room it leaves empty (issue #370). A room whose use has no row in the furnish
+  table (`hall`, `circulation`, `entry`, `storage`, `garage`, `utility`), or of no known use (no `uses`,
+  and a label the vocabulary does not hold), stayed empty with `unresolved: []`, although the skill and
+  `llms-full.txt` say an empty room is named there. It now has a note with the use that has no row, or
+  with the uses that would furnish it, so a plan labelled `"Schlafzimmer"` no longer reads as nothing
+  to do. Such a room still gets no piece, and what `finish` writes is unchanged: across the tracked
+  `.arch` files no `source`, `changed` or `changes[]` moved. `FinishNote` gains an optional
+  `scope: "outside-table"` on these notes: `unresolved` is now non-empty on any plan with an empty hall
+  or store, and such a note asks nothing unless the room should hold furniture, so a consumer that
+  treats a non-empty `unresolved` as a failure should filter on `scope`. The playground does: it lists
+  these rooms apart, and they count as neither unresolved nor a reason to open Lint. A no-row room whose
+  only piece is declared `in` it but stands elsewhere gets the `W_FIXTURE_WRONG_ROOM` note instead.
 ### Changed
 
 - `spec.llm.md` says how to enter a `stair` from the other end (issue #370), which agents did not

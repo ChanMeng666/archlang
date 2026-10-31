@@ -2,6 +2,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import fc from "fast-check";
 import { describe as suite, expect, it } from "vitest";
+import { resolvePlan, roomUses } from "../src/analyze.js";
 import { USE_KINDS, type UseKind } from "../src/ast.js";
 import { CATALOG_CATEGORIES, defaultFootprint, fixtureSpec, zoneFixtureCategories } from "../src/fixtures-catalog.js";
 import {
@@ -26,6 +27,8 @@ import {
   LINT_PROFILES,
   lint,
 } from "../src/index.js";
+import { rectsOverlap } from "../src/geometry/rect.js";
+import type { RFurniture, RRoom } from "../src/ir.js";
 import { ADVISORY_CODE_PROFILES } from "../src/lint.js";
 import { sourceConflicts } from "../src/repair.js";
 import type { World } from "../src/world.js";
@@ -85,6 +88,9 @@ function isOneInsertion(src: string, out: string): boolean {
   return out.length >= src.length && p + s === src.length;
 }
 const furnitureLines = (src: string): string[] => src.split(/\r?\n/).filter((l) => /^\s*furniture /.test(l));
+/** Every note but the ones on a room outside the furnish table: what the stage tried and refused. */
+const refused = <N extends { scope?: string }>(r: { unresolved: readonly N[] }): N[] =>
+  r.unresolved.filter((u) => u.scope === undefined);
 
 /** A flat: a bedroom, a bathroom and a hall off one corridor wall. Nothing is furnished. */
 const FLAT = `plan "Flat" {
@@ -110,9 +116,18 @@ suite("furnish — the corpus is not empty", () => {
     expect(changed.length).toBeGreaterThan(0);
   }, 120000);
 
-  it("furnishes the flat's bedroom and bathroom, and leaves the hall alone", () => {
+  it("furnishes the flat's bedroom and bathroom, and names the hall it leaves empty", () => {
     const r = finish(FLAT, { only: "furnish" });
-    expect(r.unresolved).toEqual([]);
+    expect(r.unresolved).toEqual([
+      {
+        stage: "furnish",
+        room: "r_hall",
+        scope: "outside-table",
+        reason:
+          '"r_hall" is outside the furnish table and was left empty — its use `hall` has no row there; add furniture yourself only if it should hold some',
+        span: { start: FLAT.indexOf("room id=r_hall"), end: FLAT.indexOf("\n  door id=d_bed") },
+      },
+    ]);
     expect([...new Set(r.changes.map((c) => c.room))]).toEqual(["r_bed", "r_bath"]);
     const words = r.changes.map((c) => c.text.split(" ")[1]);
     expect(words).toEqual(expect.arrayContaining(["bed", "wc", "basin"]));
@@ -166,9 +181,13 @@ suite("furnish law — fill only: a room that holds furniture is not touched", (
   });
 
   it("a plan whose rooms are all furnished is a byte no-op", () => {
-    const done = finish(FLAT, { only: "furnish" }).source;
-    const r = finish(done, { only: "furnish" });
-    expect(r).toEqual({ source: done, changes: [], unresolved: [], changed: false });
+    const first = finish(FLAT, { only: "furnish" });
+    const r = finish(first.source, { only: "furnish" });
+    // The hall's note is the first run's, word for word: finishing again asks nothing new.
+    expect(r.source).toBe(first.source);
+    expect(r.changes).toEqual([]);
+    expect(r.changed).toBe(false);
+    expect(r.unresolved.map((u) => [u.room, u.reason])).toEqual(first.unresolved.map((u) => [u.room, u.reason]));
   });
 
   for (const name of NAMES)
@@ -198,7 +217,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         "r_bed1",
         "r_bed2",
       ]);
-      expect(r.unresolved.filter((u) => u.stage === "furnish")).toEqual([
+      expect(refused(r).filter((u) => u.stage === "furnish")).toEqual([
         {
           stage: "furnish",
           room: "r_live",
@@ -331,7 +350,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
     expect(codes(r.source, undefined)).toEqual(codes(src, undefined));
     // r_bath holds the wc and lacks its basin; r_bed holds nothing on its floor, and says why.
     expect(partly(r)).toEqual([["r_bath", "bath: `basin`"]]);
-    expect(r.unresolved.map((u) => u.room)).toEqual(["r_bed", "r_bath"]);
+    expect(r.unresolved.map((u) => u.room)).toEqual(["r_bed", "r_bath", "r_hall"]);
     expect(r.unresolved[0]!.reason).toBe(
       '"r_bed" holds no piece on its floor — `wc` is declared `in r_bed` but stands outside it (`W_FIXTURE_WRONG_ROOM`); finish fills only empty rooms',
     );
@@ -494,7 +513,9 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
 
   /**
    * {@link finishDigest} of every example — `source`, `changes[]` and every note except the
-   * partly-furnished ones, for a `--only furnish` run and a full run — measured on the stage
+   * partly-furnished ones and the ones on a room outside the furnish table (issue #370: no row
+   * moved when those notes joined, because the digest reads neither), for a `--only furnish` run
+   * and a full run — measured on the stage
    * BEFORE the partly-furnished note and the shape test existed (base a18dcca) and unchanged
    * since: neither may move what `finish` writes or how it reports an empty room. Re-measure
    * only for a change you can explain row by row (`test/finish-digest.ts`).
@@ -774,15 +795,6 @@ suite("furnish law — scope: rectangular rooms of a single-storey plan", () => 
     expect(r.unresolved.map((u) => u.room)).toEqual(["r", "r1"]);
   });
 
-  it("a room whose use is unknown or circulation-only is left alone, silently", () => {
-    const src = FLAT.replace(`label "Bedroom" uses bedroom`, `label "Room 1"`).replace(
-      `label "Bathroom" uses bath`,
-      `label "Lobby" uses entry circulation`,
-    );
-    const r = finish(src, { only: "furnish" });
-    expect(r).toEqual({ source: src, changes: [], unresolved: [], changed: false });
-  });
-
   it("a room with no `id=` of its own is reported, not furnished through its positional id", () => {
     const src = FLAT.replace("room id=r_bath at", "room at").replace(" swing into r_bath", " swing in");
     expect(errorsOf(src)).toEqual([]);
@@ -800,6 +812,201 @@ suite("furnish law — scope: rectangular rooms of a single-storey plan", () => 
       expect(r.unresolved).toEqual([expect.objectContaining({ stage: "furnish" })]);
     }
   });
+});
+
+suite("furnish law — named: a room left empty is in `unresolved`, whatever left it empty (issue #370)", () => {
+  const OUTSIDE = USE_KINDS.filter((u) => (FURNISH_TABLE[u]?.length ?? 0) === 0);
+  const notesOn = (r: {
+    unresolved: readonly { room?: string; reason: string; scope?: string }[];
+  }): Array<[string, string]> =>
+    r.unresolved.filter((u) => u.scope === "outside-table").map((u) => [u.room!, u.reason]);
+  const noRow = (id: string, use: string): string =>
+    `"${id}" is outside the furnish table and was left empty — its use \`${use}\` has no row there; add furniture yourself only if it should hold some`;
+
+  it("the issue's plan: `changed:false`, and both rooms are named with the use that has no row", () => {
+    const src = `plan "f" {
+  units mm
+  room id=h at (0,0) size 3000x2000 label "Hall" uses hall
+  room id=u at (3000,0) size 2000x2000 label "Utility" uses utility
+  walls from rooms exterior 300 partition 100
+  door on h.top at center width 1000 swing into h
+  door between h and u at center width 800 swing into u
+  window on u.top width 800
+}
+`;
+    const r = finish(src, { only: "furnish" });
+    expect(r.source).toBe(src);
+    expect(r.changed).toBe(false);
+    expect(r.changes).toEqual([]);
+    expect(notesOn(r)).toEqual([
+      ["h", noRow("h", "hall")],
+      ["u", noRow("u", "utility")],
+    ]);
+  });
+
+  for (const use of OUTSIDE)
+    it(`\`uses ${use}\` gets no piece, and is named`, () => {
+      const src = FLAT.replace(`label "Hall" uses hall`, `label "Spare" uses ${use}`);
+      const r = finish(src, { only: "furnish" });
+      expect(r.changes.some((c) => c.room === "r_hall")).toBe(false);
+      expect(notesOn(r)).toEqual([["r_hall", noRow("r_hall", use)]]);
+    });
+
+  it("the no-row uses are the six the docs list", () => {
+    expect([...OUTSIDE].sort()).toEqual(["circulation", "entry", "garage", "hall", "storage", "utility"]);
+  });
+
+  it("several uses with no row are all named, in the room's own order", () => {
+    const src = FLAT.replace(`label "Hall" uses hall`, `label "Lobby" uses entry circulation`);
+    expect(notesOn(finish(src, { only: "furnish" }))).toEqual([
+      [
+        "r_hall",
+        '"r_hall" is outside the furnish table and was left empty — its uses `entry`, `circulation` have no row there; add furniture yourself only if it should hold some',
+      ],
+    ]);
+  });
+
+  it("a room of no known use is named with the uses that would furnish it, read from the table", () => {
+    // A label in any language the vocabulary does not hold reads as no use: such a plan used to
+    // come back `changed:false`, `unresolved:[]`, with every room empty.
+    const src = FLAT.replace(`label "Bedroom" uses bedroom`, `label "Schlafzimmer"`);
+    const r = finish(src, { only: "furnish" });
+    expect(r.changes.some((c) => c.room === "r_bed")).toBe(false);
+    const words = Object.keys(FURNISH_TABLE)
+      .map((u) => `\`${u}\``)
+      .join(", ");
+    expect(notesOn(r)[0]).toEqual([
+      "r_bed",
+      `"r_bed" is outside the furnish table and was left empty — neither \`uses\` nor its label or id names a use; give it \`uses\` with one of ${words} if finish should furnish it`,
+    ]);
+    // And `uses` then does what the note says.
+    const fixed = finish(src.replace(`label "Schlafzimmer"`, `label "Schlafzimmer" uses bedroom`), {
+      only: "furnish",
+    });
+    expect(fixed.changes.some((c) => c.room === "r_bed")).toBe(true);
+  });
+
+  it("a room with no `id=` is named by its label", () => {
+    const src = FLAT.replace("room id=r_hall at", "room at");
+    expect(errorsOf(src)).toEqual([]);
+    const [note] = notesOn(finish(src, { only: "furnish" }));
+    expect(note![1]).toBe(
+      'the room "Hall" is outside the furnish table and was left empty — its use `hall` has no row there; add furniture yourself only if it should hold some',
+    );
+  });
+
+  it("a room that holds a piece is not left empty, so it is not named", () => {
+    for (const piece of [
+      "furniture rug at (500,4000) size 800x600 in r_hall",
+      "furniture rug at (500,4000) size 800x600",
+    ])
+      expect(
+        notesOn(finish(FLAT.replace("  door id=d_bed", `  ${piece}\n  door id=d_bed`), { only: "furnish" })),
+      ).toEqual([]);
+  });
+
+  it("a hall whose piece is declared `in` it but stands elsewhere gets the defect's note, not the scope note", () => {
+    const src = FLAT.replace("  door id=d_bed", "  furniture rug at (500,500) size 800x600 in r_hall\n  door id=d_bed");
+    expect(codes(src, undefined).has("W_FIXTURE_WRONG_ROOM")).toBe(true);
+    const r = finish(src, { only: "furnish" });
+    expect(notesOn(r)).toEqual([]);
+    const note = r.unresolved.find((u) => u.room === "r_hall")!;
+    expect(note.scope).toBeUndefined();
+    expect(note.reason).toBe(
+      '"r_hall" holds no piece on its floor — `rug` is declared `in r_hall` but stands outside it (`W_FIXTURE_WRONG_ROOM`); finish fills only empty rooms',
+    );
+    // Same reading, same words but the room's name, as a room with a row in the table.
+    const row = FLAT.replace("  door id=d_bed", "  furniture rug at (500,500) size 800x600 in r_bath\n  door id=d_bed");
+    expect(finish(row, { only: "furnish" }).unresolved.find((u) => u.room === "r_bath")!.reason).toBe(
+      note.reason.replaceAll("r_hall", "r_bath"),
+    );
+  });
+
+  it("only a room's own scope note carries `scope`: a refusal, a sheet note and a compile error never do", () => {
+    const polygon = `plan "L" {
+  units mm
+  wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000) close }
+  room id=r polygon (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000) label "Bedroom" uses bedroom
+  door id=d on w at 10% width 900 swing in
+}
+`;
+    const broken = `plan "X" {\n  units mm\n  room at (0,0) size\n}\n`;
+    const unnamed = FLAT.replace(`plan "Flat"`, `plan ""`);
+    for (const r of [
+      finish(polygon, { only: "furnish" }),
+      finish(broken, { only: "furnish" }),
+      finish(unnamed, { only: "sheet" }),
+    ]) {
+      expect(r.unresolved.length).toBeGreaterThan(0);
+      for (const u of r.unresolved) expect(u).not.toHaveProperty("scope");
+    }
+  });
+
+  it("a room with one use in the table is the stage's to furnish, not named", () => {
+    const src = FLAT.replace(`label "Hall" uses hall`, `label "Hall" uses hall office`);
+    const r = finish(src, { only: "furnish" });
+    expect(r.changes.some((c) => c.room === "r_hall")).toBe(true);
+    expect(notesOn(r)).toEqual([]);
+  });
+
+  it("a storey's room is named with its level, after the rooms the stage could have furnished", () => {
+    const src = `plan "Two" {
+  units mm
+  level 0 {
+    wall id=w exterior thickness 200 { (0,0) (4000,0) (4000,4000) (0,4000) close }
+    room id=h at (0,0) size 4000x4000 label "Hall" uses hall
+    door id=d on w at 10% width 900 swing in
+  }
+  level 1 {
+    wall id=w1 exterior thickness 200 { (0,0) (4000,0) (4000,4000) (0,4000) close }
+    room id=r at (0,0) size 4000x4000 label "Bedroom" uses bedroom
+  }
+}
+`;
+    const r = finish(src, { only: "furnish" });
+    expect(r.source).toBe(src);
+    expect(r.unresolved.map((u) => u.room)).toEqual(["r", "h"]);
+    expect(r.unresolved[1]!.reason).toBe(
+      '"h" (level 0) is outside the furnish table and was left empty — its use `hall` has no row there; add furniture yourself only if it should hold some, and the furnish stage handles single-storey plans only',
+    );
+  });
+
+  it("the note belongs to the furnish stage: once in a full run, never in `--only sheet`", () => {
+    expect(notesOn(finish(FLAT))).toHaveLength(1);
+    expect(notesOn(finish(FLAT, { only: "sheet" }))).toEqual([]);
+  });
+
+  /** Every storey of a resolved plan, as `[rooms, furniture]`. */
+  const storeysOf = (src: string): Array<[RRoom[], RFurniture[]]> => {
+    const r = resolvePlan(src, { world });
+    return (r.levels.length > 0 ? r.levels.map((l) => l.ir) : [r.ir!]).map((ir) => [
+      ir.elements.filter((e): e is RRoom => e.kind === "room"),
+      ir.elements.filter((e): e is RFurniture => e.kind === "furniture"),
+    ]);
+  };
+
+  for (const name of NAMES)
+    it(`${name}: every room the run leaves empty is named, and every room outside the table is one of them`, () => {
+      const r = finish(srcOf(name), { world, only: "furnish" });
+      const named = new Set(r.unresolved.map((u) => u.room));
+      for (const [rooms, furniture] of storeysOf(r.source))
+        for (const room of rooms) {
+          // Measured apart from the stage: no piece declared `in` the room, and none whose
+          // footprint touches its bounding box (a coarser test than the stage's own, on purpose).
+          const box = { x: room.at.x, y: room.at.y, w: room.size.w, h: room.size.h };
+          const bare = !furniture.some(
+            (f) => f.room === room.id || rectsOverlap({ x: f.at.x, y: f.at.y, w: f.size.w, h: f.size.h }, box),
+          );
+          if (bare) expect(named.has(room.id), `"${room.id}" is empty and unnamed`).toBe(true);
+        }
+      const everyRoom = storeysOf(r.source).flatMap(([rooms]) => rooms);
+      for (const [id] of notesOn(r)) {
+        const rooms = everyRoom.filter((e) => e.id === id);
+        expect(rooms.length, id).toBeGreaterThan(0);
+        for (const room of rooms)
+          expect([...roomUses(room)].filter((u) => (FURNISH_TABLE[u]?.length ?? 0) > 0)).toEqual([]);
+      }
+    }, 120000);
 });
 
 suite("furnish law — a room with several uses gets the union: the wall run first, then the largest use", () => {
@@ -875,7 +1082,7 @@ suite("furnish law — bounded: the compile checks are linear in the rooms", () 
     expect(r.checks).toBeGreaterThan(2);
     expect(r.checks).toBeLessThanOrEqual(furnishCheckBound(r.rooms));
     expect(calls).toBeLessThanOrEqual(furnishCheckBound(r.rooms));
-    expect(r.unresolved.map((u) => u.codes)).toEqual([["W_TEST_BLOCK"], ["W_TEST_BLOCK"]]);
+    expect(refused(r).map((u) => u.codes)).toEqual([["W_TEST_BLOCK"], ["W_TEST_BLOCK"]]);
   });
 
   it("is deterministic", () => {
@@ -923,7 +1130,7 @@ suite("furnish law — generated rows of rooms: fixpoint, never worse, pure inse
 
   it("holds every law, and reaches rooms it furnishes and rooms it refuses", () => {
     let furnished = 0;
-    let refused = 0;
+    let leftEmpty = 0;
     fc.assert(
       fc.property(row, (src) => {
         if (compile(src, { noCache: true }).diagnostics.some((d) => d.severity === "error")) return;
@@ -951,14 +1158,14 @@ suite("furnish law — generated rows of rooms: fixpoint, never worse, pure inse
             const touched = new Set(r.changes.map((c) => c.room));
             for (const l of furnitureLines(src)) expect(touched.has(/in (\w+)$/.exec(l)![1]!)).toBe(false);
             furnished += touched.size;
-            refused += r.unresolved.length;
+            leftEmpty += refused(r).length;
           }
         }
       }),
       { numRuns: 60, seed: 20261009 },
     );
     expect(furnished, "the property never furnished a room").toBeGreaterThan(20);
-    expect(refused, "the property never met a room it had to leave empty").toBeGreaterThan(0);
+    expect(leftEmpty, "the property never met a room it had to leave empty").toBeGreaterThan(0);
     expect(FURNISHED_USES.length).toBeGreaterThan(4);
   }, 300000);
 });
@@ -1062,15 +1269,15 @@ suite("furnish law — a relational room has no fixed `at` to anchor in", () => 
     expect(r.source).toBe(REL);
     expect(r.checks).toBe(0);
     expect(calls).toBe(1); // the measure of the source itself
-    expect(r.unresolved).toEqual([expect.objectContaining({ stage: "furnish", room: "side" })]);
-    expect(r.unresolved[0]!.reason).toContain("a relational room has no fixed `at` to anchor in");
-    expect(r.unresolved[0]!.codes).toBeUndefined();
+    expect(refused(r)).toEqual([expect.objectContaining({ stage: "furnish", room: "side" })]);
+    expect(refused(r)[0]!.reason).toContain("a relational room has no fixed `at` to anchor in");
+    expect(refused(r)[0]!.codes).toBeUndefined();
   });
 
   it("a relational room whose pieces all go `against wall` is furnished", () => {
     const src = REL.replace(`label "Bedroom" uses bedroom`, `label "Bathroom" uses wc`);
     const r = finish(src, { only: "furnish" });
-    expect(r.unresolved).toEqual([]);
+    expect(refused(r)).toEqual([]);
     expect(r.changes.map((c) => c.text.split(" ")[1])).toEqual(["wc", "basin"]);
     for (const c of r.changes) expect(c.text).toContain(" against wall ");
     expect(gainedBy(src, r.source, undefined)).toEqual([]);
@@ -1206,7 +1413,7 @@ suite("furnish law — a wet room's pieces are placed together (PS2.45)", () => 
     // 1200 on the centrelines, a 200 mm wall: 1000 mm clear, 2200 mm long, the door at the far end.
     const src = room("wc", 1200, 2400, "out");
     const r = finish(src, { only: "furnish" });
-    expect(r.unresolved).toEqual([]);
+    expect(refused(r)).toEqual([]);
     expect(r.changes.map((c) => c.text)).toEqual([
       // the pan on the end wall, its centreline 450 mm off the side face (and 550 off the other)
       "furniture wc against wall w segment 2 offset 650 side left in r",
@@ -1223,7 +1430,7 @@ suite("furnish law — a wet room's pieces are placed together (PS2.45)", () => 
   it("a 2.4 × 2.1 m bathroom takes a shower after an off-corner pan, lint clean", () => {
     const src = room("bath", 2400, 2100, "in");
     const r = finish(src, { only: "furnish" });
-    expect(r.unresolved).toEqual([]);
+    expect(refused(r)).toEqual([]);
     expect(r.changes.map((c) => c.text)).toEqual([
       // the pan on the far wall, its centreline 450 mm off the side face
       "furniture wc against wall w segment 2 offset 1850 side left in r",
@@ -1252,7 +1459,7 @@ suite("furnish law — a wet room's pieces are placed together (PS2.45)", () => 
     expect(r.checks).toBe(1 + MAX_CHECKS_PER_PIECE + MAX_SET_CHECKS_PER_ROOM);
     expect(r.checks).toBe(8);
     expect(calls).toBe(1 + r.checks);
-    expect(r.unresolved.map((u) => u.codes)).toEqual([["W_TEST_BLOCK"]]);
+    expect(refused(r).map((u) => u.codes)).toEqual([["W_TEST_BLOCK"]]);
   });
 
   it("a room too small for any layout stays empty, with the note the stage already gives", () => {
@@ -1261,7 +1468,7 @@ suite("furnish law — a wet room's pieces are placed together (PS2.45)", () => 
     const r = finish(src, { only: "furnish" });
     expect(r.source).toBe(src);
     expect(r.changed).toBe(false);
-    expect(r.unresolved).toEqual([
+    expect(refused(r)).toEqual([
       {
         stage: "furnish",
         room: "r",
