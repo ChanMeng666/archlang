@@ -150,7 +150,7 @@ export function buildManifest() {
       "archlang-3d: 3D preview of an ArchLang plan, a separate package that reads the same .arch source. Builds a checked GLB and a replay from a .arch plan. ArchLang itself draws plans.",
     exitCodes: {
       "0": "ok",
-      "1": "internal / IO / environment error (a missing Chromium or ffmpeg, a file that cannot be written)",
+      "1": "internal / IO / environment error (a missing Chromium or ffmpeg with view --video, a file that cannot be written)",
       "2": "the plan is refused, a check failed, or build --strict met a warning (E3D_STRICT); nothing is written (deterministic: fix it, don't blindly retry)",
       "3": "bad usage",
     },
