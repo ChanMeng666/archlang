@@ -23,7 +23,7 @@ const DIGESTS: [string, string][] = [
   // PS2.69: `lint()` gains one `W_EXIT_APPROACH_BLOCKED`, its sofa 400 mm inside the living room's
   // 900 mm exterior door over 250 mm of it (under the 914 mm clear floor); nothing else moved.
   ["relations", "c11d90bafe8a319f799ea5cd0787c51ba720d4d87b1feaeba499a37e27bd6679"],
-  ["frames", "52fedc6c31336afaf64806bda125a0f1ec6567a773a5c98ef531b2ffa0b6c7d2"], // PS2.29: message text only, same code, same span
+  ["frames", "f38055441cc4a51350efc6a36c271dd3491562ecf699a4903cc7d8cba8fad46b"], // PS2.29: message text only, same code, same span
   ["seats", "1c34ef80221b0c63becf52f9a3bb03d87afdd38ee051222b2dce615aeff8563e"], // seat hint reworded (red team round 1),
   ["refused", "77a135b355d61ee48ed2f265c7dbb99da75edcb9ab381ead6c615e4cf8facd39"],
 ];

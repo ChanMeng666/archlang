@@ -25,6 +25,14 @@
  */
 export const EM_PER_CHAR = 0.62;
 
+/**
+ * The mean advance the bundled face actually draws per character (0.50 over the room names of the
+ * examples, the goldens and the taste corpus; 0.36 for "Utility", 0.77 for "WC"). For a test that
+ * reports a name over a wall or off its floor, or refuses it a place: at {@link EM_PER_CHAR} a
+ * name with clear floor on both sides reads as buried in both walls.
+ */
+export const INK_EM = 0.5;
+
 /** Estimated drawn width of `text` at `fontSize`, in the same units as `fontSize`. */
 export function textWidth(text: string, fontSize: number): number {
   return text.length * fontSize * EM_PER_CHAR;

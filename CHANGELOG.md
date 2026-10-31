@@ -33,6 +33,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Room labels in small rooms (issue #367). `W_ANNOTATION_OVERLAP` now also reports a room's name or area
+  figure printed over a wall or a door's swing, or running off its own floor, measured on the drawn
+  sheet at the width the text draws on average. And the label pass never moves a label further off
+  its floor than where it started: a name wider than its room still slides along the room, but it
+  is no longer walked sideways through the wall and out of the building with no warning. Plans whose
+  labels used to leave their room this way draw those labels in a new place. The drawing still
+  neither shrinks a label nor draws a leader to it.
 - Four `open between` boundaries meeting at one point no longer leave a free-standing pier one
   partition thick at the crossing (issue #368): no wall is drawn at the crossing in the SVG, PDF, PNG or DXF, though a DXF keeps each
   opening's outline on `A-DOOR`, as it does for every opening. `describe()` and `lint()` do not

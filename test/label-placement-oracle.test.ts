@@ -23,7 +23,9 @@
  * the pass runs (`wrapLabels`). How big a label is is the pass's INPUT, not the search under
  * test, and for a one-line text the two measures are the same expression — so every call
  * without a wrapped name replays exactly as before, and the wrapped ones are counted
- * (`Reach.wrapped`) so the comparison is shown to cover them.
+ * (`Reach.wrapped`) so the comparison is shown to cover them. A second edit (#367): a lattice point
+ * further off the label's floor than its anchor stands is no candidate. That rule changes which
+ * places are searched, in both forms alike; the sums this file compares are untouched by it.
  */
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
@@ -35,7 +37,7 @@ import { OUTDOOR_LAYERS } from "../src/elements/outdoor.js";
 import { ROOF_LAYER } from "../src/elements/roof.js";
 import { segmentRectangle, segmentsOfWall } from "../src/geometry.js";
 import { arcTessellate } from "../src/geometry/arc.js";
-import { pointInPolygon, polygonBounds, rectInsidePolygon } from "../src/geometry/polygon.js";
+import { pointInPolygon, polygonBounds, rectAreaOutside, rectInsidePolygon } from "../src/geometry/polygon.js";
 import type { BBox } from "../src/geometry/rect.js";
 import { overlap1d } from "../src/geometry/rect.js";
 import { compile } from "../src/index.js";
@@ -44,6 +46,7 @@ import { BoxSums, CLEARANCE, COLLIDE_MIN, FRACTIONS, type LabelGroup, relocateLa
 import { extractArchBlocks } from "../src/markdown.js";
 import type { RenderSizes, SceneNode, ScenePrim } from "../src/scene.js";
 import { textExtent } from "../src/text-layout.js";
+import { EM_PER_CHAR, INK_EM } from "../src/text-metrics.js";
 import type { World } from "../src/world.js";
 import { NULL_WORLD } from "../src/world.js";
 
@@ -335,7 +338,14 @@ function relocateLabelsBefore(
     for (const fy of FRACTIONS) {
       for (const fx of FRACTIONS) {
         const p: Point = { x: bb.x + bb.w * fx, y: bb.y + bb.h * fy };
-        if (!pointInPolygon(p.x, p.y, ring)) continue;
+        const inkOf = (b: BBox): BBox => {
+          const w = (b.w * INK_EM) / EM_PER_CHAR;
+          return { x: b.x + (b.w - w) / 2, y: b.y, w, h: b.h };
+        };
+        const start = inkOf(rect0);
+        const limit = rectAreaOutside(start, ring) + start.w * start.h * 1e-9;
+        const shifted = shiftBBox(rect0, p.x - anchor.x, p.y - anchor.y);
+        if (!pointInPolygon(p.x, p.y, ring) || rectAreaOutside(inkOf(shifted), ring) > limit) continue;
         const s = score(p, 1 + (Math.hypot(p.x - anchor.x, p.y - anchor.y) / diag) * W_DISTANCE);
         if (s < bestScore) {
           bestScore = s;

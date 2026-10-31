@@ -182,6 +182,10 @@
  * three profiles, measured with `tasteDigest`. No existing row moved (no example or corpus wall ends
  * within 100 mm of another).
  *
+ * #367 moved no row. `W_ANNOTATION_OVERLAP` would have fired on `examples/remodel` and on the two
+ * r14 twins, so those plans pin the labels clear, and no criterion reads where a label stands. The two `r14-living-off-to-one-side` twins pin "Bedroom 1" and
+ * "Bedroom 2" clear of their door swings, since the arc ran through both names and set C needs the
+ * twins lint clean; no criterion reads where a label stands, so their rows did not move.
  * G9 (`W_FURNITURE_ON_STAIR`, a piece on a flight or its landing) added twelve rows, the new
  * `stair-safety/furniture-on-flight` and `furniture-on-landing` pairs under each of the three
  * profiles, measured with `tasteDigest`. No existing row moved (no example or corpus piece stands on a

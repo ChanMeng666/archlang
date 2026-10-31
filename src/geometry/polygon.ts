@@ -489,3 +489,57 @@ export function ringsAdjacent(a: readonly Point[], b: readonly Point[], tol: num
   }
   return false;
 }
+
+/** Twice the signed area of a ring (shoelace). */
+function area2(p: readonly Point[]): number {
+  let s = 0;
+  for (let i = 0; i < p.length; i++) {
+    const a = p[i]!;
+    const b = p[(i + 1) % p.length]!;
+    s += a.x * b.y - b.x * a.y;
+  }
+  return s;
+}
+
+/**
+ * The area `subject` shares with the CONVEX ring `clip` (a text box): Sutherland–Hodgman against
+ * each of the clip's edges, then the shoelace. Exact for any simple subject ring, convex or not —
+ * the clipped ring may carry zero-width bridges along the clip's edges, which add no area.
+ */
+export function clippedArea(subject: readonly Point[], clip: readonly Point[]): number {
+  return Math.abs(clippedSigned(subject, clip));
+}
+
+/** {@link clippedArea} keeping the subject's winding, so a hole's loop subtracts from its outer's. */
+export function clippedSigned(subject: readonly Point[], clip: readonly Point[]): number {
+  const turn = area2(clip) > 0 ? 1 : -1;
+  let ring: Point[] = [...subject];
+  for (let i = 0; i < clip.length && ring.length > 0; i++) {
+    const a = clip[i]!;
+    const b = clip[(i + 1) % clip.length]!;
+    const side = (p: Point): number => turn * ((b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x));
+    const input = ring;
+    ring = [];
+    for (let j = 0; j < input.length; j++) {
+      const cur = input[j]!;
+      const prev = input[(j + input.length - 1) % input.length]!;
+      const sc = side(cur);
+      const sp = side(prev);
+      if (sc >= 0) {
+        if (sp < 0) ring.push(cut(prev, cur, sp, sc));
+        ring.push(cur);
+      } else if (sp >= 0) ring.push(cut(prev, cur, sp, sc));
+    }
+  }
+  return ring.length >= 3 ? area2(ring) / 2 : 0;
+}
+
+function cut(p: Point, q: Point, sp: number, sq: number): Point {
+  const t = sp / (sp - sq);
+  return { x: p.x + (q.x - p.x) * t, y: p.y + (q.y - p.y) * t };
+}
+
+/** The area of the rectangle `r` that lies outside `ring`: 0 when it stands wholly on the ring. */
+export function rectAreaOutside(r: BBox, ring: readonly Point[]): number {
+  return r.w * r.h - Math.abs(clippedSigned(ring, rectRing(r)));
+}

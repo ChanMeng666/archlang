@@ -12378,8 +12378,8 @@ exports[`golden SVG snapshots > renders remodel.arch deterministically 1`] = `
 <text x="8500" y="5005.1" font-size="248.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">7.0 m²</text>
 <text x="7950" y="6432.2" font-size="339" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bathroom</text>
 <text x="7950" y="6805.1" font-size="248.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">6.6 m²</text>
-<text x="10000" y="6102.2" font-size="339" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Utility</text>
-<text x="10000" y="6475.1" font-size="248.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">4.4 m²</text>
+<text x="9700" y="6432.2" font-size="339" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Utility</text>
+<text x="9700" y="6805.1" font-size="248.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">4.4 m²</text>
 </g>
 <g id="A-ANNO" inkscape:groupmode="layer" inkscape:label="A-ANNO">
 <polygon points="-150,10959.2 6799.5,10959.2 6799.5,14417 -150,14417" fill="none" stroke="#333333" stroke-width="18.08"/>

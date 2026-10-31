@@ -334,19 +334,20 @@ export function buildLintContext(
     walkAccess: () => (walkMemo ??= walkAccessGraph(access(), walkWaysOf())),
     labelOf: (r) => r.label ?? r.id,
     nameOf: (r, noun) => {
-      if (r.label !== undefined) return noun === undefined ? `"${r.label}"` : `${noun} "${r.label}"`;
+      // `label ""` draws no name (`room.render`), so it names nothing here either.
+      if (r.label) return noun === undefined ? `"${r.label}"` : `${noun} "${r.label}"`;
       const { naming, by } = namingOf();
       const n = by.get(r.id);
       return n ? naming.phrase(n, noun !== undefined ? { noun } : {}) : "an unlabelled room";
     },
     placeOf: (r) => {
-      if (r.label !== undefined) return `"${r.label}"`;
+      if (r.label) return `"${r.label}"`;
       const { naming, by } = namingOf();
       const n = by.get(r.id);
       return n ? naming.phrase(n, { byUse: false }) : "an unlabelled room";
     },
     nameAs: (r, noun) => {
-      if (r.label !== undefined) return `"${r.label}"`;
+      if (r.label) return `"${r.label}"`;
       const { naming, by } = namingOf();
       const n = by.get(r.id);
       return n ? naming.phrase(n, { noun }) : "an unlabelled room";

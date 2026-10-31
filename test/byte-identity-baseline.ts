@@ -1583,6 +1583,20 @@
  * `null`, this suite's body reproduces the previous rows (ea67d091…, 8a295571…), as do the W7 and
  * finish-furnish bodies theirs; with the fix, `describe()` + `lint()` are unchanged (the semantic
  * rows did not move), so only the drawing moved: the WC glyph, 100 and 750 mm along its wall.
+ *
+ * #367 re-measured rows, each named here (`docs/testing.md` § 3). `W_ANNOTATION_OVERLAP` (a drafting
+ * rule) also reads walls, door swings and the room's floor, and the label pass never moves a label
+ * further off its floor than its anchor. Compared field by field against the tree before it (a
+ * script over the whole corpus): `describe()`, `compile().diagnostics` and every other lint code are
+ * byte-identical on every plan; only that code's rows and the four SVGs below moved.
+ * `examples/remodel.arch` moved by its source: the door swing's arc crossed the U of "Utility", a
+ * true report on a plan `wall-status-drawing` requires lint clean, so the example pins the label at
+ * (9700,6450). Its `describe()` and `lint()` are unchanged; its SVG moves by that one label and its
+ * area figure, so its whole-surface row moved and its summary row did not. `chain30` (30) and `star30` (31) are 90 m long with no `paper`, so a label is
+ * 10 m wide on a 3 m room: true on every room, and half their labels no longer step sideways off the
+ * floor. `reception-suite` gains one and its "Kitchenette" stays on the room's axis (x 9600 to 9000,
+ * same y; it stood across the wall); `min-bedroom-flat.faithful`'s "Bathroom" (9090,739) to
+ * (9300,3139), off the floor before, clear now.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -1612,7 +1626,7 @@ export const BASELINE: [string, string][] = [
   ["parametric", "f56a97d02a2fca82327b80b3f7a7f5edcac9518a0b70244caa292ed8f3a2aee4"],
   ["practice-office", "105ae5709290f9946f0192427e430a1cef009ddd1de44be1b2ddd818c64cdd7e"], // added with the example, re-measured for net area, see header; PS2.11e, see header; PS2.74 source edit, see header
   ["relational", "357cb4f09333ffb210a8a276acfd524c384c90657cc9ba529d5d4298d88c8cb5"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header; PS2.11e, see header
-  ["remodel", "161368bc9296da30681b0de02d347d221fef40466cc6d94a7518d26ac1905902"], // added with the example, see header
+  ["remodel", "74364e7281171e580e465d10950a82fc1e3a8bc83418351bec02b2092fb66f5f"], // added with the example, see header
   ["sheet-notes", "4cc86e92db896dade462f57b6db434057abe253ab5e10232711804e4da31d7d9"], // re-measured, see header
   ["studio", "c1b79a49af3ad31cddf82e88632624d46663c804f134b6e172e585cad36ed969"], // PS2.11e, see header
   ["terrace-row", "ec839a417cb57b6bce80a592a144bd98a216b175edb92c67df3260ab5ce9c33d"], // re-measured, see header

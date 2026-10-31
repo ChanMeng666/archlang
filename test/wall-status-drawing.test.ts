@@ -248,6 +248,7 @@ suite("examples/remodel.arch", () => {
   });
 
   // Pinned when the example was written (B3b). A move is a finding to explain, never a re-pin.
+  // #367 moved svg and dxf: "Utility" is pinned clear of the swing; describe() and lint() held.
   it("pins its SVG, DXF, describe() and lint()", () => {
     const r = compile(REMODEL, { noCache: true });
     expect({
@@ -260,8 +261,8 @@ suite("examples/remodel.arch", () => {
 });
 
 const PINS = {
-  svg: "ceec6be3c7838b8f20a087204e18d5e0bcb2278b1dce4b20bfe3f0056b1e2315",
-  dxf: "b6ffd3dbceca703a6ec0a6eb61bafc14c8b75f8d5a2629361435e352d797b1d4",
+  svg: "70df86ff2b4e794170d764ff3234c0dff105267c8afa7fbcca28f1fc3ea31467",
+  dxf: "837b1718cf545ba44a7a7486a78ad071a8359d8686a6dd0dfdaeb47bb059c116",
   describe: "ad7b4177c363a950d16088f56cb94864ff783809d6d24c3d848cea894440fd5e",
   lint: "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
 };

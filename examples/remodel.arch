@@ -31,7 +31,7 @@ plan "Apartment Remodel" {
   room id=r_study  at (9200,0)   size 1800x4000 label "Study" uses office
   room id=r_hall   at (6000,4000) size 5000x1400 label "Hall" uses hall
   room id=r_bath   at (6000,5400) size 3000x2200 label "Bathroom" uses bath
-  room id=r_util   at (9000,5400) size 2000x2200 label "Utility" uses utility
+  room id=r_util   at (9000,5400) size 2000x2200 label "Utility" at (9700,6450) uses utility
 
   door id=d_front on r_hall.right at center width 900 swing into r_hall
   opening between r_hall and r_living at center width 1000
