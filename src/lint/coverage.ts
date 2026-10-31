@@ -127,7 +127,6 @@ export type LintSkipReason =
    *  order, are not judged. */
   | "outdoor-budget";
 
-
 /** What each family checks, as the human coverage line names it. */
 export const FAMILY_NOUN: Readonly<Record<LintFamily, string>> = {
   rooms: "room checks",
