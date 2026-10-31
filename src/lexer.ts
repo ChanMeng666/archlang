@@ -71,6 +71,8 @@ export interface LexError {
   message: string;
   span: { start: number; end: number };
   code?: string;
+  /** Follow-up suggestions, rendered as `= help:` lines. */
+  hints?: string[];
 }
 
 export interface LexResult {
@@ -554,7 +556,16 @@ function lexImpl(src: string): LexResult {
     }
 
     // Unknown character
-    errors.push({ message: `Unexpected character ${JSON.stringify(c)}`, span: { start: startIdx, end: startIdx + 1 } });
+    const unexpected: LexError = {
+      message: `Unexpected character ${JSON.stringify(c)}`,
+      span: { start: startIdx, end: startIdx + 1 },
+    };
+    // A `;` that ends its line (only blanks, a `#` comment or EOF follow) is the habit of
+    // terminating a statement; say so. A `;` mid-line gets no hint.
+    if (c === ";" && /^[ \t]*(#[^\n]*)?(\r?\n|$)/.test(src.slice(startIdx + 1))) {
+      unexpected.hints = ["statements end at the line break; delete the `;`"];
+    }
+    errors.push(unexpected);
     advance();
   }
 
