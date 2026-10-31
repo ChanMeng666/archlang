@@ -15,7 +15,10 @@
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, joinWallSet, lint, planJsonToArch, planToJson, resolvePlan } from "../src/index.js";
 import type { Point } from "../src/ast.js";
+import { ERROR_CATALOG } from "../src/error-catalog.js";
+import { impact } from "../src/impact.js";
 import { clearResolveCache, evaluationSteps, resolveAll } from "../src/ir.js";
+import { edgeOfPair, wallPhraseOf } from "../src/wall-ref.js";
 import { loopWinding } from "../src/geometry/band.js";
 import { link } from "../src/import.js";
 import { parse } from "../src/parser.js";
@@ -270,17 +273,103 @@ suite("the refusals keep their codes", () => {
     expect(codes(src)).toEqual(["E_PARTITION_TOO_SHORT"]);
   });
 
-  it("a ring the room itself refuses never throws: the room's own error is reported", () => {
-    const figure8 = plan(
-      `  room id=a polygon (0,0) (3000,0) (3000,3000) (6000,3000) (6000,6000) (3000,6000) (3000,3000) (0,3000)\n${STATEMENT}`,
+  suite("a rectilinear ring the room itself refuses reports once, and leaves the set", () => {
+    const FIGURE8 =
+      "  room id=a polygon (0,0) (3000,0) (3000,3000) (6000,3000) (6000,6000) (3000,6000) (3000,3000) (0,3000)";
+    const KEYHOLE =
+      "  room id=a polygon (0,0) (6000,0) (6000,6000) (0,6000) (0,3000) (2000,3000) (2000,2000) (4000,2000) (4000,4000) (2000,4000) (2000,3000) (0,3000)";
+    const DEGENERATE = "  room id=a polygon (0,0) (1000,0) (2000,0)";
+
+    it("alone in the plan", () => {
+      expect(codes(plan(`${FIGURE8}\n${STATEMENT}`))).toEqual(["E_ROOM_POLY_SELF_INTERSECT"]);
+      expect(codes(plan(`${KEYHOLE}\n${STATEMENT}`))).toEqual(["E_ROOM_POLY_SELF_INTERSECT"]);
+      expect(codes(plan(`${DEGENERATE}\n${STATEMENT}`))).toEqual(["E_ROOM_POLY_DEGENERATE"]);
+    });
+
+    it("between two rooms it joined: the gap it leaves is its own error, not a tiling fault", () => {
+      const rooms = "  room id=b at (-2000,0) size 2000x3000\n  room id=c at (6000,3000) size 2000x3000\n";
+      expect(codes(plan(`${FIGURE8}\n${rooms}${STATEMENT}`))).toEqual(["E_ROOM_POLY_SELF_INTERSECT"]);
+    });
+
+    it("what the others do wrong is still reported", () => {
+      const rooms = "  room id=b at (20000,0) size 2000x3000\n  room id=c at (21000,0) size 2000x3000\n";
+      expect(codes(plan(`${FIGURE8}\n${rooms}${STATEMENT}`))).toEqual([
+        "E_ROOM_POLY_SELF_INTERSECT",
+        "E_ROOMS_OVERLAP",
+      ]);
+    });
+
+    it("named in a clause: the clause adds nothing", () => {
+      const src = plan(
+        `${FIGURE8}\n  room id=b at (-2000,0) size 2000x3000\n  walls from rooms exterior 200 partition 100 { open between a and b }`,
+      );
+      expect(codes(src)).toEqual(["E_ROOM_POLY_SELF_INTERSECT"]);
+    });
+
+    it("the law's edge: excepted, or slanted, it is judged as it always was", () => {
+      const excepted = plan(`${FIGURE8}\n  walls from rooms exterior 200 partition 100 { except a }`);
+      expect(codes(excepted)).toEqual(["E_ROOM_POLY_SELF_INTERSECT", "E_WALLS_FROM_NO_ROOMS"]);
+      const slanted = plan(`  room id=a polygon (0,0) (4000,3000) (4000,0) (0,3000)\n${STATEMENT}`);
+      expect(codes(slanted)).toEqual(["E_ROOM_POLY_SELF_INTERSECT", "E_ROOM_NOT_RECTANGLE"]);
+    });
+  });
+});
+
+suite("the runs of one pair are told apart in words", () => {
+  const from = { from: "rooms" as const, between: ["a", "b"] as [string, string] };
+
+  it("`#n` reads `(edge n)`, on a partition only, and through a split and a frame", () => {
+    expect(edgeOfPair({ id: "a|b", _derived: from })).toBe("");
+    expect(edgeOfPair({ id: "a|b~2", _derived: from })).toBe("");
+    expect(edgeOfPair({ id: "a|b#2", _derived: from })).toBe(" (edge 2)");
+    expect(edgeOfPair({ id: "a|b#2~3", _derived: from })).toBe(" (edge 2)");
+    expect(edgeOfPair({ id: "west.a|b#3", _derived: from })).toBe(" (edge 3)");
+    expect(wallPhraseOf({ id: "a|b#2", _derived: from })).toBe('the partition between "a" and "b" (edge 2)');
+    // A courtyard ring's name has a `#` too, and an authored id is quoted as written.
+    expect(wallPhraseOf({ id: "exterior#2", _derived: { from: "rooms", ring: "inner" } })).toBe(
+      "the courtyard wall derived from the rooms",
     );
-    const keyhole = plan(
-      `  room id=a polygon (0,0) (6000,0) (6000,6000) (0,6000) (0,3000) (2000,3000) (2000,2000) (4000,2000) (4000,4000) (2000,4000) (2000,3000) (0,3000)\n${STATEMENT}`,
-    );
-    const degenerate = plan(`  room id=a polygon (0,0) (1000,0) (2000,0)\n${STATEMENT}`);
-    expect(codes(figure8)).toContain("E_ROOM_POLY_SELF_INTERSECT");
-    expect(codes(keyhole)).toContain("E_ROOM_POLY_SELF_INTERSECT");
-    expect(codes(degenerate)).toContain("E_ROOM_POLY_DEGENERATE");
+    expect(wallPhraseOf({ id: "w" })).toBe('wall "w"');
+  });
+
+  it("`impact` gives each run its own row", () => {
+    const body = (t: number): string => plan(`  let t = ${t}\n${LIV_BED}  walls from rooms exterior 200 partition t`);
+    const r = impact(body(100), body(150));
+    const walls = r.changed.filter((c) => c.kind === "wall").map((c) => c.name);
+    expect(walls).toEqual(['the partition between "liv" and "bed"', 'the partition between "liv" and "bed" (edge 2)']);
+  });
+
+  it("`#n` and `~n` compose in the same words", () => {
+    const src = RECTILINEAR_PLANS.find((p) => p[0] === "coexist-second-run")![1];
+    const r = impact(src, src.replace("partition 100", "partition 150"));
+    expect(r.changed.filter((c) => c.kind === "wall").map((c) => c.name)).toEqual([
+      'the partition between "liv" and "bed"',
+      'the partition between "liv" and "bed" (edge 2)',
+      'the partition between "liv" and "bed" (edge 2) (run 2)',
+    ]);
+  });
+
+  it("a lint message about a later run names which one, by the rooms' names", () => {
+    // A pocket door with no wall to slide into, on the second run and on the first.
+    const pocket = (x: number, y: number): string =>
+      plan(`${LIV_BED}${STATEMENT}\n  door id=p pocket at (${x},${y}) width 2000 wall partition`);
+    const said = (src: string) => lint(src).find((d) => d.code === "W_POCKET_RUN")?.message;
+    expect(said(pocket(4500, 3000))).toContain('the partition between "Living" and "Bedroom" (edge 2)');
+    expect(said(pocket(3000, 4500))).toContain('the partition between "Living" and "Bedroom" ');
+    expect(said(pocket(3000, 4500))).not.toContain("(edge");
+  });
+});
+
+suite("the catalogue", () => {
+  it("E_OPENING_HOST_AMBIGUOUS says what to do in both of its cases", () => {
+    const { fix, cause } = ERROR_CATALOG.E_OPENING_HOST_AMBIGUOUS!;
+    // A run that carries two walls: the existing advice, and it holds.
+    expect(fix).toContain("make it one wall");
+    expect(fix).toContain("`on <wall> at …`");
+    // A clause on a pair with several edges: no authored wall to drop, no id to name.
+    expect(fix).toContain("On an `open between` clause");
+    expect(fix).toContain("`opening at (x,y) width <mm>`");
+    expect(cause).toContain("`open between A and B` derives one opening on one edge");
   });
 });
 

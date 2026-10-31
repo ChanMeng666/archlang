@@ -175,7 +175,9 @@ interior-disjoint rectangles of one owner, cut after snapping, and an edge with 
 sides is no wall, so what is derived depends on the ring and not on how it was cut (a test holds
 that over three different cuts). It stays one room in every other respect, so this is not the
 two-rectangle plan with its seam left open: one stamp, one area, no half judged alone. The sentence
-"the union of the room rectangles" reads "the union of the rooms".
+"the union of the room rectangles" reads "the union of the rooms". A rectilinear ring the room itself
+refuses (`E_ROOM_POLY_SELF_INTERSECT`, `E_ROOM_POLY_DEGENERATE`) leaves the set with no second
+report: the gap it leaves is that error, not a tiling fault.
 
 The rest follows from one pair now being able to share **several** runs, which two rectangles
 never could (§4 still holds, for rectangles):
@@ -183,7 +185,8 @@ never could (§4 still holds, for rectangles):
 - Each run is one partition. The first is `A|B`, later ones `A|B#2`, `A|B#3`, numbered by start
   point, smallest `y`, then `x`; a vertical run comes before a horizontal one from the same reflex
   corner. `~n` keeps its meaning, so `A|B#2~2` is legal. `#` is no identifier character, so the
-  name stays one nothing can spell.
+  name stays one nothing can spell. In prose a later run is `the partition between A and B (edge 2)`,
+  so a message or an `impact` row about it says which.
 - `between A and B thickness t` sets every run of the pair. There is nothing to choose.
 - `open between A and B` on a pair with several runs is `E_OPENING_HOST_AMBIGUOUS` on the clause,
   naming the runs. The clause derives one opening, with one `id` and one `width`, on one run, so

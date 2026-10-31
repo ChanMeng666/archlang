@@ -437,6 +437,10 @@ export interface RRoom extends RBase {
    *  unplaced or on a cycle). Survives the instance transform so an enclosing pass treats
    *  it as unplaced; `checkRoomOverlaps` skips it. Internal; never rendered. */
   _unplaced?: true;
+  /** Set on a `polygon` room that reported its own ring (`E_ROOM_POLY_DEGENERATE`,
+   *  `E_ROOM_POLY_SELF_INTERSECT`): it has no floor anything can be derived from, and the plan
+   *  already says why. Internal; never rendered. */
+  _ringRefused?: true;
   /** How the position was authored (`absolute` `at`, `relational` clause, or
    *  `strip` sugar). Internal marker for `describe().freedom`; never rendered. */
   _placement?: RoomPlacement;

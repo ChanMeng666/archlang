@@ -160,7 +160,13 @@ export const wallsFromRooms: ElementDef = {
       });
     }
     const excluded = new Set(n.except.map((x) => x.id));
-    const { pairs, clauses, bad } = resolvePairs(n, rooms, excluded, ctx);
+    // A rectilinear room that reported its own ring has no floor to derive from, so it is out of
+    // the set, quietly: the plan already says why, and the gap it leaves is that error, not a
+    // second one. A slanted ring stays in, and is refused as any slanted polygon is.
+    const broken = new Set(
+      rooms.filter((r) => r._ringRefused && !excluded.has(r.id) && rectilinear(r.poly!)).map((r) => r.id),
+    );
+    const { pairs, clauses, bad } = resolvePairs(n, rooms, excluded, broken, ctx);
     if (pairs.length > 0) {
       out.pairs = pairs.map((p, k) =>
         p.kind === "open"
@@ -174,8 +180,9 @@ export const wallsFromRooms: ElementDef = {
       );
     }
     if (!(tExt > 0) || !(tInt > 0)) return out;
-    const set: TileRoom[] = rooms.filter((r) => !excluded.has(r.id)).map(tileRoom);
+    const set: TileRoom[] = rooms.filter((r) => !excluded.has(r.id) && !broken.has(r.id)).map(tileRoom);
     if (set.length === 0) {
+      if (broken.size > 0) return out;
       ctx.diag({
         severity: "error",
         message:
@@ -200,6 +207,7 @@ export const wallsFromRooms: ElementDef = {
     const res = deriveWallsFromRooms(set, covers, authored, tInt, ctx.elementBudget, { tExt, pairs });
     if (!res.ok) {
       for (const r of res.refusals) {
+        if (broken.size > 0 && r.code === "E_ROOMS_NOT_TILING") continue;
         const span = r.clause === undefined ? n.span : clauses[r.clause]!.span;
         ctx.diag({ severity: "error", ...refusalText(r), code: r.code, span });
       }
@@ -417,6 +425,7 @@ function resolvePairs(
   n: WallsFromRoomsNode,
   rooms: readonly RRoom[],
   excluded: ReadonlySet<string>,
+  broken: ReadonlySet<string>,
   ctx: ResolveCtx,
 ): { pairs: TilePair[]; clauses: WallsPairClause[]; bad: boolean } {
   const pairs: TilePair[] = [];
@@ -432,6 +441,11 @@ function resolvePairs(
     let ok = true;
     const word = c.kind === "open" ? "open between" : "between";
     for (const x of [c.a, c.b]) {
+      // Refused already, on the room: the clause cannot act, and has nothing to add.
+      if (broken.has(x.id)) {
+        ok = false;
+        continue;
+      }
       const r = byId.get(x.id);
       const why = !r
         ? "names no room written beside it: a clause names rooms of the plan or component the statement is written in"

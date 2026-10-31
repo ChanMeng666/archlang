@@ -856,8 +856,8 @@ export const rectilinear = (ring: readonly Point[]): boolean =>
  * A rectilinear ring as interior-disjoint rectangles of its floor, or `undefined` for a ring with
  * a slanted edge. Horizontal slabs: one between each two neighbouring `y`s of the ring, cut at
  * the vertical edges that cross it, alternately in and out. Any ring gives disjoint rectangles,
- * one that touches itself included, so the sweep needs no further guard (the room reports such a
- * ring itself).
+ * one that touches itself included, so the sweep needs no guard; the statement hands it none, since
+ * a room that reported its own ring is left out of the set.
  *
  * The test allocates nothing and reads a ring the room's own resolution paid for, so it is free:
  * a slanted polygon costs what it always cost. The cut is what a polygon adds, charged before it
