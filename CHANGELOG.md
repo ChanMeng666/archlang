@@ -13,12 +13,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   edge is horizontal or vertical joins the set and stays one room, with one stamp and one area. The
   statement derives the ring round it and a partition on each edge it shares; a pair that shares
   several edges gets one partition per edge, and `between A and B thickness t` sets all of them. What
-  this does not do yet: `door|opening between`, `liv.top`-style datums, `right-of` against the room and
-  anchored furniture in it still refuse a polygon, and `open between` on a pair with several edges is
-  refused (`E_OPENING_HOST_AMBIGUOUS`), so a door on such a wall goes `door at (x,y)` until the next
-  part lands. `wall … between` and `wall … around` stay rectangle-only. A polygon with a slanted edge and
-  a circle room keep `E_ROOM_NOT_RECTANGLE`, reworded to say rectangular or rectilinear. No other plan
-  moves: not the drawing, `describe()`, `lint()`, the diagnostics, the Scene or the step count.
+  this does not do yet: `liv.top`-style datums, `right-of` against the room and anchored furniture in
+  it still refuse a polygon, and `open between` on a pair with several edges is refused
+  (`E_OPENING_HOST_AMBIGUOUS`). `wall … between` and `wall … around` stay rectangle-only. A polygon with
+  a slanted edge and a circle room keep `E_ROOM_NOT_RECTANGLE`, reworded to say rectangular or
+  rectilinear. No other plan moves: not the drawing, `describe()`, `lint()`, the diagnostics, the Scene
+  or the step count.
+- `door|opening between` on a rectilinear `room polygon` (issue #363, second part). A pair that shares
+  one edge works as it always did. A pair that shares several needs a position that picks one, and
+  that is `at <mm> from <room>.<edge>`, with an edge that meets one of them at an end:
+  `door between liv and bed at 1500 from bed.top`. `at center`, `from start|end`, `at axis` and no
+  position are `E_OPENING_HOST_AMBIGUOUS`, whose hints quote the position for each edge; two polygons
+  have no edge words, so there the hint quotes `at (x,y)`. A lint hint about such a door keeps the
+  edge the author wrote. The refusal of `open between` on such a pair now quotes the `opening` that
+  opens each edge.
+
+### Changed
+
+- `door between` naming a circle room or a polygon with a slanted edge says what the line needs, and
+  no longer names `<room>.top`, which the line does not contain. The code stays
+  `E_ROOM_NOT_RECTANGLE`; only the message and a new hint move, on those plans alone. A `door between`
+  naming a room that cannot be seen or placed keeps its message.
 
 ## [1.48.0] - 2026-11-01
 

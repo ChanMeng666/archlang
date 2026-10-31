@@ -199,7 +199,9 @@ never could (§4 still holds, for rectangles):
 
 Not in this amendment: `door|opening between`, a polygon's datums (§2), relational placement against
 it and anchored furniture in it all still refuse a polygon. Those are cards L2 to L4, and §5
-gains its several-run rule with L2.
+gains its several-run rule with L2. *Amended 2026-11-01 (card L2):* `door|opening between` has
+landed, and §5 says how. The clause's refusal now quotes, for each run, the `opening` that
+opens it alone, so what §5 gained is also the way out of the rule above.
 
 There is no tolerance row: a 1 mm jog in the outline is a legal tiling whose ring follows the jog,
 and a 1 mm interior gap is a hole. A plan whose corridor is "the leftover" fails the tiling test,
@@ -316,6 +318,27 @@ same way. Positions are measured along the shared run or the edge, not along the
   `on <wall> at 150 from <A>.<edge>`, `on <wall> at axis 3`. On a hosted wall the datum line must
   cross the host run at exactly one point (`E_OPENING_DATUM` otherwise), and the offset runs from
   that crossing along the host's own direction; the other way is written `from end`.
+
+*Amended 2026-11-01 (issue #363, card L2):* `between` also reads a rectilinear polygon (§3). The
+runs of a pair with a polygon in it come from the sweep of §3, cut from the rings, so a door and
+the wall it stands in cannot disagree, and they are read in the order `A|B`, `A|B#2`, … number
+them. A pair of rectangles keeps the line arithmetic above, step for step.
+
+- **One run:** every position above, as written.
+- **Several runs:** the position must pick one, and only `<mm> from <R>.<edge>` can. The rule
+  above is what tells the runs apart: the edge has to meet one run at an end, and no other, and
+  the offset then runs from that end. `center`, `from start|end`, `axis` and no position would be
+  a choice of run the author did not write (ADR 0005), so each is `E_OPENING_HOST_AMBIGUOUS`,
+  as is an edge that meets two runs at an end (a U's neighbour has two). An edge that meets none
+  is `E_OPENING_DATUM`. The refusal carries the fix: it names every run and, for each, the
+  position that picks it, the offset of its middle from the first edge of the pair's rectangles
+  that does, or the point `at (x,y)` when none does.
+- **Two polygons** leave no edge word, since a polygon still exposes no datum (§2). `door at
+  (x,y)` reaches a derived wall by position, and this is its way in until a second ask names
+  notch edges.
+- A polygon and a room that overlap have no edge to stand on: `E_ROOMS_OVERLAP`, as for a wall.
+- A circle, or a polygon with a slanted edge, stays `E_ROOM_NOT_RECTANGLE`, in the words of this
+  form, which no longer quote the `<room>.top` it reads to find that out.
 
 **The nib is enforced, never slid.** If the resolved position leaves a jamb nearer than
 `max(100 mm, host thickness / 2)` to a meeting wall face, the opening is refused with
