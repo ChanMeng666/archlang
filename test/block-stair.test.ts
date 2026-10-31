@@ -417,19 +417,32 @@ describe("the drawing", () => {
     expect(compile(short, { noCache: true }).svg).toBe(compile(src, { noCache: true }).svg);
   });
 
-  it("the estimate is an upper bound, and every coordinate stands inside the bounds", () => {
+  /** The two diagonals of the break line: the only slanted lines not in the walking line's ink,
+   *  whose last stroke is the arrowhead's barb. */
+  const cutOf = (lines: ReturnType<typeof linesOf>) =>
+    lines.filter((l) => l.ink !== lines.at(-1)!.ink && l.a.x !== l.b.x && l.a.y !== l.b.y);
+
+  it("the estimate is an upper bound on what a block draws", () => {
     for (const s of BLOCK_STAIRS) {
       for (const dir of ["up", "down"] as const) {
         const src = planOf(s, dir);
-        const { ir } = resolvePlan(src);
-        const v = verticalsOf(ir!)[0]!;
-        const def = BUILTIN_REGISTRY.byKind.get("stair")!;
-        const nodes = inkOf(src);
-        expect(def.drawCost!(v)).toBeGreaterThanOrEqual(nodes.length);
-        const pts = def.bounds(v);
+        const v = verticalsOf(resolvePlan(src).ir!)[0]!;
+        expect(BUILTIN_REGISTRY.byKind.get("stair")!.drawCost!(v)).toBeGreaterThanOrEqual(inkOf(src).length);
+      }
+    }
+  });
+
+  it("every line stands inside the bounds but the break line's two diagonals", () => {
+    for (const s of BLOCK_STAIRS) {
+      for (const dir of ["up", "down"] as const) {
+        const src = planOf(s, dir);
+        const pts = BUILTIN_REGISTRY.byKind.get("stair")!.bounds(verticalsOf(resolvePlan(src).ir!)[0]!);
         const xs = pts.map((p) => p.x);
         const ys = pts.map((p) => p.y);
-        for (const l of linesOf(nodes).filter((x) => x.ink === linesOf(nodes).at(-1)!.ink)) {
+        const lines = linesOf(inkOf(src));
+        const cut = cutOf(lines);
+        expect(cut.length).toBe(2);
+        for (const l of lines.filter((x) => !cut.includes(x))) {
           for (const p of [l.a, l.b]) {
             expect(p.x).toBeGreaterThanOrEqual(Math.min(...xs));
             expect(p.x).toBeLessThanOrEqual(Math.max(...xs));
@@ -439,6 +452,44 @@ describe("the drawing", () => {
         }
       }
     }
+  });
+
+  it("the break line overshoots the flight band by 6% of the width, and stays on the run", () => {
+    for (const s of BLOCK_STAIRS) {
+      for (const dir of ["up", "down"] as const) {
+        const cut = cutOf(linesOf(inkOf(planOf(s, dir))));
+        const mid = { x: (cut[0]!.a.x + cut[0]!.b.x) / 2, y: (cut[0]!.a.y + cut[0]!.b.y) / 2 };
+        const flights = s.pieces.filter((_, i) => i % 2 === 0);
+        const held = flights.findIndex((r) => inside(r, mid.x, mid.y));
+        const r = flights[held]!;
+        const upThePage = s.tails[held] === "top" || s.tails[held] === "bottom";
+        const centre = upThePage ? r[0] + r[2] / 2 : r[1] + r[3] / 2;
+        const [from, to] = upThePage ? [r[1], r[1] + r[3]] : [r[0], r[0] + r[2]];
+        const reach = s.width / 2 + s.width * 0.06;
+        for (const l of cut) {
+          const ends = [l.a, l.b].map((p) => (upThePage ? p.x - centre : p.y - centre)).sort((a, b) => a - b);
+          expect(ends[0]).toBeCloseTo(-reach, 6);
+          expect(ends[1]).toBeCloseTo(reach, 6);
+          for (const p of [l.a, l.b]) {
+            const along = upThePage ? p.y : p.x;
+            expect(along).toBeGreaterThanOrEqual(from);
+            expect(along).toBeLessThanOrEqual(to);
+          }
+        }
+      }
+    }
+  });
+
+  it("so `bounds()` is 60 mm short of the ink on a 1000 mm flight at the box's edge, as a straight stair's is", () => {
+    // The quarter-turn's first flight stands on the box's east edge, x 2500.
+    const xs = cutOf(linesOf(inkOf(planOf(L_STAIR)))).flatMap((l) => [l.a.x, l.b.x]);
+    expect(Math.max(...xs)).toBeCloseTo(2560, 6);
+    const straight = hallPlan("    stair id=s at (500,500) size 1000x3000 dir up");
+    const nodes = linesOf(inkOf(straight));
+    const slanted = nodes.filter((l) => l.a.x !== l.b.x && l.a.y !== l.b.y && Math.abs(l.a.x - l.b.x) > 1000);
+    const ends = slanted.flatMap((l) => [l.a.x, l.b.x]);
+    expect(Math.min(...ends)).toBeCloseTo(440, 6);
+    expect(Math.max(...ends)).toBeCloseTo(1560, 6);
   });
 });
 
