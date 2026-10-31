@@ -14,6 +14,13 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.35.0] - 2026-10-31
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.47.0`** (`W_WALL_END_SHORT`, `W_FURNITURE_ON_STAIR`;
+  `W_ANNOTATION_OVERLAP` also reports a room label over a wall or a door's swing, or off its floor).
+
 ## [0.34.0] - 2026-10-28
 
 ### Changed

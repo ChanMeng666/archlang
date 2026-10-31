@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.47.0] - 2026-10-31
+
 ### Added
 
 - `W_WALL_END_SHORT` (lint, issue #346): a wall whose free end stops up to `wallGapMm` (100 mm by default,
@@ -29,7 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   on stderr per clause, `dropped[]` in the `--json` envelope, and `dropped` on `planToJson()`. The exit
   code and the document are unchanged, the format gains no field, and a plan that drops nothing
   prints what it always did.
-
+- An experimental import recipe (`docs/import.md`, preview-and-remodel card G3): `tools/mask-to-plan/`
+  turns a floor-plan label mask (a PNG with one class per pixel value) into a rooms-only Plan JSON,
+  room rectangles plus a `walls_from_rooms` statement, which `compile --from-json` already accepts;
+  `validate` and `takeoff` then run on the result. Python with numpy, SciPy and Pillow, outside the
+  npm package; the compiler gains nothing and reads no image. No doors, windows or furniture are
+  recovered. The worked example's floor areas match the mask's within 1 %
+  (`test/tools-mask-to-plan.test.ts`).
 
 ### Fixed
 
@@ -77,18 +85,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 A plan with no demolished wall draws, describes, lints and reports diagnostics to the same bytes.
 
-### Added
-
-- An experimental import recipe (`docs/import.md`, preview-and-remodel card G3): `tools/mask-to-plan/`
-  turns a floor-plan label mask (a PNG with one class per pixel value) into a rooms-only Plan JSON,
-  room rectangles plus a `walls_from_rooms` statement, which `compile --from-json` already accepts;
-  `validate` and `takeoff` then run on the result. Python with numpy, SciPy and Pillow, outside the
-  npm package; the compiler gains nothing and reads no image. No doors, windows or furniture are
-  recovered. The worked example's floor areas match the mask's within 1 %
-  (`test/tools-mask-to-plan.test.ts`).
 ### Docs
 
 - A "What is new in 1.44 to 1.46" page (`docs/whats-new.md`, published at `/whats-new`) with one example for each of `takeoff` and `describe --facts quantities`, `impact --lock`, wall `status`, imperial lengths, `preview --review`, `--overlay circulation` and `keep stacked` with its two stair checks; the README and `docs/overview.md` link to each section (preview-and-remodel card G1). Docs only: no compiler output, `describe()` or `lint()` moves, and `spec.llm.md` is unchanged.
+
+### Changed
+
+- **The MCP shim's and the VS Code extension's core ranges are re-pinned to this release.**
+  `@chanmeng666/archlang-mcp` 0.2.30 re-bakes its spec, `llms-full.txt`, grammar and schemas when
+  it is packed; the VS Code extension 0.35.0 bundles this core. `@chanmeng666/arch-plan` is
+  unchanged at 0.1.1 (its peer range `^1.42.1` admits this release).
 
 ## [1.46.0] - 2026-10-28
 
