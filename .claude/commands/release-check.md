@@ -172,7 +172,9 @@ you observed. Do NOT push anything — this command only verifies.
   npm cannot register a publisher for a package that does not exist
   (<https://docs.npmjs.com/cli/v11/commands/npm-trust>: "must already exist on the npm registry").
   **`@chanmeng666/archlang-3d`** is this case, and the plan is decided (arch-plan's route):
-  1. Date the `[0.1.0]` section of its `CHANGELOG.md`, merge, and run item 6's `prove:pack`.
+  1. Date the `[0.1.0]` section of its `CHANGELOG.md`, merge, and run item 6's `prove:pack` with
+     `PLAYWRIGHT_BROWSERS_PATH` at an empty directory: a version cannot be taken back, and a machine with
+     a browser hid that `view --replay` failed without one (0.1.0).
   2. The owner publishes 0.1.0 by hand, from the primary checkout after root `npm run build`:
      `npm publish -w packages/archlang-3d --access public` (no `--provenance`: npm refuses it off a
      supported CI, and `publishConfig` omits it for this reason; `prepack` builds). Until then the

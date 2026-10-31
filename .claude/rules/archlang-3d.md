@@ -17,7 +17,7 @@ the replay (HTML, video), the GLB and their checks. The plan and its cards:
 - Exposure is tiered (`docs/plans/preview-and-remodel/README.md` D5, D13, D16): the playground's
   "3D preview" tab carries D5's label verbatim (`PREVIEW_LABEL`); no 3D on the docs site, the README,
   any npm README or landing page, except this package's own, which keeps to D5's words
-  (`test/package-meta.test.ts`). The first npm publish and its trusted publisher are owner-only.
+  (`test/package-meta.test.ts`). Published at 0.x (D20): a version bump merges, then `gh workflow run release.yml --ref main` publishes it with provenance.
 - `exports` and `bin` name `dist/`; the repository reads `src/` (tests, `npm run archlang3d`, the
   playground's alias). A new file a built module reads at run time goes beside `dist/`'s modules in
   `tsup.config.ts`'s `onSuccess`; `e2e/pack.e2e.ts` and `prove:pack` hold the tarball.

@@ -1,6 +1,7 @@
 # archlang-3d：从平面图到 3D 模型与渲染图
 
 **Status:** Proposed（v0.6）· **Date:** 2026-10 · **Owner:** ChanMeng666
+**Delivered so far:** the replay, the GLB and the CLI are on npm as `@chanmeng666/archlang-3d` 0.x (2026-10-31). The current state is `../preview-and-remodel/handoff.md`.
 
 这个目录是一个**开发计划**（programme plan），回答一个问题：ArchLang 的 `.arch` 平面图已经是精确、确定、可校验的源码，能否再跑一个自动化工作流，得到带语义的 3D 建筑模型（GLB / IFC）、交互查看器、渲染图与漫游视频？结论：**可以，而且应当作为独立的下游包去做，核心保持 plan-first**（[ADR 0021](../../adr/0021-plan-first-view-deprecated.md)）。
 
