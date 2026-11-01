@@ -35,7 +35,7 @@
  * ### The search
  *
  * At each height, largest first, the name's wrapped forms and then its one line are tried at the
- * places `relocateLabels` tries, nearest the room's anchor first; the first form with a clear place
+ * places `relocateLabels` tries, from the room's anchor out; the first form with a clear place
  * wins, at its best place. A form that also keeps `relocateLabels`' clearance from the walls at the
  * height tried beats one that does not, so a label that shrinks does not end up touching one. A
  * wrapped form comes first because a name that reached this pass did not
@@ -46,9 +46,11 @@
  *
  * Which labels do not fit is read first, from the fabric alone. A label that does not fit then
  * claims no floor until its turn comes, so a neighbour never dodges a box that is about to shrink,
- * and the turns go by the room's anchor, so the result of this pass does not depend on the order of
- * the source. (`relocateLabels` before it visits in element order, and two labels it moves can
- * still settle differently for that.)
+ * and the turns go by the room's anchor. So this pass is order-free GIVEN what `relocateLabels` left,
+ * and that pass is not: it visits in element order, and the rooms of
+ * `docs/plans/plan-soundness/audits/first-contact-plans/6-clinic.arch`, written the other way
+ * round, settle differently before this pass sees them. A place is ranked off the lattice, never by a
+ * measured distance, so an edit too small to matter cannot flip a label across its room.
  *
  * When no height clears it, the form that leaves the least of the label buried is drawn, and an
  * exact tie keeps the larger height, so a label wholly on a symbol keeps its size. What is left is
@@ -125,6 +127,9 @@ export const fitWork = (plan: ResolvedPlan): number => MAX_FIT_WORK / (plan._sto
 
 /** Score weight per unit of a label buried, against the distance preference (`W_DISTANCE`). */
 const W_BURIED = 250;
+
+/** How finely a place's burial is told apart, in parts of its own area: far past what a reader sees. */
+const BURIED_STEPS = 1_000_000;
 
 /** Score between the tiers of a place: past any score a place of the tier before can reach. */
 const W_TIER = 1_000_000;
@@ -339,25 +344,35 @@ function extentOf(shapes: readonly Point[][]): BBox {
   return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
 }
 
+/** A candidate and how far from the anchor it ranks. */
+interface Place {
+  p: Point;
+  rank: number;
+}
+
+/** A lattice fraction's distance from the middle of the box, in hundredths of the box: 50 - 35 is 15. */
+const offCentre = (f: number): number => Math.abs(Math.round(f * 100) - 50);
+
+/** The rank of the lattice's far corner, {@link Place.rank}'s largest. */
+const LAST_RANK = 2 * offCentre(FRACTIONS[FRACTIONS.length - 1]!) ** 2;
+
 /**
- * The candidates a label tries, nearest its anchor first: the anchor, where it stands now, and
- * the relocation's lattice. Equal distances keep that order (the sort is stable).
+ * The candidates a label tries, nearest its anchor first: the anchor, then the relocation's lattice,
+ * which also holds wherever that pass put the label. The rank is a whole number read off the
+ * lattice, never a coordinate: 0.2 and 0.8 of a box stand exactly as far from its middle, and a
+ * measured distance can part them by an ulp, so a 1 mm edit to a room would flip a label across it.
+ * Equal ranks keep the lattice's own order (the sort is stable).
  */
-function placesFor(g: LabelGroup, here: Point): Point[] {
+function placesFor(g: LabelGroup): Place[] {
   const bb = polygonBounds(g.ring);
-  const out = [g.anchor];
-  if (here.x !== g.anchor.x || here.y !== g.anchor.y) out.push(here);
+  const out: Place[] = [{ p: g.anchor, rank: 0 }];
   for (const fy of FRACTIONS) {
     for (const fx of FRACTIONS) {
       const p = { x: bb.x + bb.w * fx, y: bb.y + bb.h * fy };
-      if (pointInPolygon(p.x, p.y, g.ring)) out.push(p);
+      if (pointInPolygon(p.x, p.y, g.ring)) out.push({ p, rank: offCentre(fx) ** 2 + offCentre(fy) ** 2 });
     }
   }
-  const far = (p: Point): number => Math.hypot(p.x - g.anchor.x, p.y - g.anchor.y);
-  return out
-    .map((p) => ({ p, d: far(p) }))
-    .sort((a, b) => a.d - b.d)
-    .map((e) => e.p);
+  return out.sort((a, b) => a.rank - b.rank);
 }
 
 /**
@@ -475,9 +490,8 @@ export function fitLabels(
     const nameNode = nodes[misfit.nameAt]!;
     const areaNode = nodes[misfit.areaAt]!;
     const bb = polygonBounds(g.ring);
-    const diag = Math.max(1, Math.hypot(bb.w, bb.h));
     const here = { x: name.at.x, y: name.at.y + sizes.roomFont * LABEL_NAME_RISE };
-    const places = placesFor(g, here);
+    const places = placesFor(g);
     const { block: _drawnLines, ...oneLine } = name;
     const wrapped: string[][] = [];
     for (let n = 2; n < 2 + WRAP_TRIES; n++) {
@@ -521,10 +535,10 @@ export function fitLabels(
         const clearance = h.name * CLEARANCE;
         let best: { p: Point; tier: number; total: number } | undefined;
         let bestScore = Infinity;
-        for (const p of tooBig ? [g.anchor, here] : places) {
-          // The anchor scores no distance at all and places run outward: past the best score
-          // nothing further can win, and a tie stays with the nearer place.
-          const distance = (Math.hypot(p.x - g.anchor.x, p.y - g.anchor.y) / diag) * W_DISTANCE;
+        for (const { p, rank } of tooBig ? [places[0]!, { p: here, rank: 0 }] : places) {
+          // Places run outward: past the best score nothing further can win, and a tie stays with
+          // the place tried first.
+          const distance = (rank / LAST_RANK) * W_DISTANCE;
           if (distance >= bestScore) break;
           const nameHere = moved(nameBoxes, nameAt(p));
           const areaHere = moved(areaBoxes, areaAt(p));
@@ -542,7 +556,8 @@ export function fitLabels(
               : Math.max(n.fabric, n.text, a.fabric, a.text) <= COLLIDE_MIN
                 ? 1
                 : 2;
-          const score = tier * W_TIER + total * W_BURIED + distance;
+          // Rounded, so two places a mirror apart tie exactly and the order settles them.
+          const score = tier * W_TIER + (Math.round(total * BURIED_STEPS) / BURIED_STEPS) * W_BURIED + distance;
           if (score < bestScore) {
             bestScore = score;
             best = { p, tier, total };

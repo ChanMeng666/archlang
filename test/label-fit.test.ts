@@ -12,7 +12,7 @@ import { describe, expect, it, vi } from "vitest";
 import { resolvePlan } from "../src/analyze.js";
 import { toDxf } from "../src/export/dxf.js";
 import { compile, lint } from "../src/index.js";
-import type { ResolvedPlan } from "../src/ir.js";
+import type { ResolvedPlan, RRoom } from "../src/ir.js";
 import { fitWork, labelHeights, MAX_FIT_WORK } from "../src/label-fit.js";
 import { extractArchBlocks } from "../src/markdown.js";
 import type { RenderSizes, ScenePrim } from "../src/scene.js";
@@ -70,6 +70,18 @@ const room = (label: string, size = "4000x3000", extra = "", head = "paper A4 la
   walls from rooms exterior 100 partition 100
   ${extra}
 }`;
+
+/** Every text the Scene of a plan's first page holds, in drawing order. */
+function textPrims(src: string, opts: { annotate?: boolean } = {}): Text[] {
+  const nodes = compile(src, { noCache: true, ...opts }).scene!.nodes;
+  return nodes.flatMap((n) => (n.prim.t === "text" ? [n.prim] : []));
+}
+
+/** The size of every room name a plan draws: a name is the one text of weight 600. */
+const nameSizes = (src: string): number[] =>
+  textPrims(src)
+    .filter((t) => t.weight === 600)
+    .map((t) => t.size);
 
 /** Where the Scene drew a room's texts, name first, and the sizes it drew with. */
 function drawn(src: string, id = "r"): { texts: Text[]; sizes: RenderSizes } {
@@ -169,6 +181,22 @@ describe("what fits, or is not the pass's to touch, stays", () => {
     }
   });
 
+  it("does not flip a label across its room on a 1 mm edit", () => {
+    // Two places of the lattice stand exactly as far from the middle, either side of the wardrobe;
+    // measured, they differed by an ulp that came and went with the width.
+    const sides = new Set<string>();
+    for (let w = 2990; w <= 3010; w++) {
+      const src = room(
+        'label "Hauswirtschaft"',
+        `${w}x1200`,
+        `furniture wardrobe at (${w / 2 - 150},20) size 300x1160`,
+      );
+      const [name] = drawn(src).texts;
+      sides.add(name!.at.x < w / 2 ? "left" : "right");
+    }
+    expect([...sides]).toEqual(["left"]);
+  });
+
   it("takes the first height that clears, not the smallest", () => {
     // 1400 mm of clear floor. The name draws 9.6 em: 1683 mm at 3.5 mm, 1442 at 3, 1202 at 2.5.
     const [name, area] = drawn(room('label "Mmmmmmmmmmm"', "1500x3000")).texts;
@@ -258,10 +286,7 @@ describe("wrapping", () => {
   it("is the same on every run, and the same whether the drawing is annotated or not", () => {
     const src = issue("Abstell- raum");
     expect(compile(src, { noCache: true }).svg).toBe(compile(src, { noCache: true }).svg);
-    const sizesIn = (svg: string): string[] => [...svg.matchAll(/font-size="([^"]+)"/g)].map((m) => m[1]!);
-    expect(sizesIn(compile(src, { noCache: true, annotate: true }).svg)).toEqual(
-      sizesIn(compile(src, { noCache: true }).svg),
-    );
+    expect(textPrims(src, { annotate: true })).toEqual(textPrims(src));
   });
 
   it("carries through the DXF: one TEXT per line, at the height the Scene holds", () => {
@@ -398,9 +423,17 @@ describe("over the corpus", () => {
   }, 300_000);
 });
 
+/** The rooms a source resolves to, whatever order it writes them in. */
+function roomsOf(src: string, world: World): string {
+  const { ir } = resolvePlan(src, { world });
+  const rooms = (ir?.elements ?? []).filter((e): e is RRoom => e.kind === "room");
+  return JSON.stringify(rooms.map((r) => [r.id, r.label, r.at, r.size, r.poly, r.uses]).sort());
+}
+
 /** The `room` statements of a source reversed in place, every other line where it stood; null for a
- *  plan whose rooms are not all placed absolutely, on one storey. */
-function roomsReversed(src: string): string | null {
+ *  plan whose rooms are not all placed absolutely, on one storey, or that does not come out the
+ *  same rooms: a statement written over two lines is not one line to move. */
+function roomsReversed(src: string, world: World): string | null {
   const lines = src.split("\n");
   if (lines.some((l) => /^\s*(level|component|place)\b/.test(l))) return null;
   const rooms = lines.flatMap((l, i) => (/^\s*room\b/.test(l) ? [i] : []));
@@ -415,7 +448,8 @@ function roomsReversed(src: string): string | null {
   rooms.forEach((i, k) => {
     out[i] = lines[rooms[rooms.length - 1 - k]!]!;
   });
-  return out.join("\n");
+  const reversed = out.join("\n");
+  return roomsOf(reversed, world) === roomsOf(src, world) ? reversed : null;
 }
 
 /** Every room's drawn texts, whatever order they were drawn in. */
@@ -455,7 +489,7 @@ describe("the order of the source", () => {
     let acted = 0;
     let before = 0;
     for (const { name, src, world } of corpus()) {
-      const other = roomsReversed(src);
+      const other = roomsReversed(src, world);
       if (other === null) continue;
       // `relocateLabels` visits in element order: where its result differs, the order is its own.
       const a = off(() => textsOf(src, world));
@@ -469,10 +503,10 @@ describe("the order of the source", () => {
       held++;
       if (JSON.stringify(after) !== JSON.stringify(a)) acted++;
     }
-    expect(held).toBeGreaterThan(100);
-    expect(acted).toBeGreaterThan(2);
+    expect(held).toBeGreaterThan(200);
+    expect(acted).toBeGreaterThan(5);
     // Few, or the comparison above is excusing what it is meant to hold.
-    expect(before).toBeLessThan(10);
+    expect(before).toBeLessThanOrEqual(4);
   }, 300_000);
 });
 
@@ -484,9 +518,9 @@ describe("the count", () => {
       for (let x = 0; x < n; x++)
         s += `  room id=r${x}_${y} at (${x * 1500},${y * 1500}) size 1500x1500 label "Hauswirtschaftsraum ${x}" uses storage\n`;
     s += "  walls from rooms exterior 200 partition 100\n}\n";
-    const sizes = [...compile(s, { noCache: true }).svg.matchAll(/font-size="(\d+)"[^>]*font-weight="600"/g)];
+    const sizes = nameSizes(s);
     expect(sizes.length).toBe(n * n);
-    expect(sizes.every((m) => m[1] === "400")).toBe(true);
+    expect(sizes.every((size) => size === 400)).toBe(true);
   }, 60_000);
 
   it("charges a round room's 48-gon and still reaches a plan's worth of them", () => {
@@ -494,9 +528,9 @@ describe("the count", () => {
     for (let i = 0; i < 40; i++) {
       s += `  room id=r${i} circle at (${(i % 8) * 1400 + 600},${Math.floor(i / 8) * 1400 + 600}) radius 600 label "Hauswirtschaft ${i}" uses storage\n`;
     }
-    const sizes = [...compile(`${s}}\n`, { noCache: true }).svg.matchAll(/font-size="(\d+)"[^>]*font-weight="600"/g)];
+    const sizes = nameSizes(`${s}}\n`);
     expect(sizes.length).toBe(40);
-    expect(sizes.every((m) => m[1] !== "350")).toBe(true);
+    expect(sizes.every((size) => size !== 350)).toBe(true);
   }, 60_000);
 
   it("stops at the count on a hostile pile: the labels after it keep their size, the same every run", () => {
@@ -511,10 +545,10 @@ describe("the count", () => {
     }
     const src = `${s}}\n`;
     const first = compile(src, { noCache: true });
-    const sizes = [...first.svg.matchAll(/font-size="(\d+)"[^>]*font-weight="600"/g)].map((m) => m[1]);
+    const sizes = nameSizes(src);
     expect(sizes.length).toBe(1500);
-    expect(sizes.at(-1)).toBe("350");
-    expect(sizes[0]).not.toBe("350");
+    expect(sizes.at(-1)).toBe(350);
+    expect(sizes[0]).not.toBe(350);
     expect(compile(src, { noCache: true }).svg).toBe(first.svg);
   }, 120_000);
 
