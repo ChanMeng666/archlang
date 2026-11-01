@@ -212,3 +212,9 @@ you observed. Do NOT push anything — this command only verifies.
 
   The namespace/server id is `chanmeng-dev/archlang`. A new shim version needs a new bundle and a
   re-publish; the manifests are generated, never committed.
+- **OpenAI plugin directory (submit and publish are human steps).** The hosted tools follow `main`,
+  but the listing's skills pin the CLI to the version in their ZIP, so they stay on it until a new
+  ZIP is published. After a release that changes the skills or the language: in the primary
+  checkout, `npm run build:openai-plugin`, then "Create draft from ZIP" in the portal; an agent may
+  upload it. Wait for the scans, then the owner submits (six attestations) and publishes. Steps in
+  `docs/integrations.md`.
