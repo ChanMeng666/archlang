@@ -6,7 +6,8 @@
  *
  * The door's `W_SWING_ROOM_NOT_ADJACENT` was a follow-on, not a second finding: `E_OPENING_NIB`
  * leaves the door with no host, and `swingInto` reports a door with no host as not bordering the
- * room. A door that is placed has a host. A door that stays refused keeps both, pinned here.
+ * room. A door that is placed has a host. A door that stays refused now gets the refusal alone,
+ * which is why the rows of the plans below that still refuse were re-taken (see {@link TODAY}).
  *
  * Every digest here but {@link FREE_END} was **measured against `src/` at `dff02717`** (`main`
  * before this change), with that tree extracted by `git archive` and its own digest body run
@@ -25,15 +26,15 @@ const compileCodes = (src: string): (string | undefined)[] =>
   compile(src, { noCache: true }).diagnostics.map((d) => d.code);
 const lintOf = (src: string, code: string): Diagnostic[] => lint(src).filter((d) => d.code === code);
 
-const REFUSED = ["E_OPENING_NIB", "W_SWING_ROOM_NOT_ADJACENT"];
+const REFUSED = ["E_OPENING_NIB"];
 
 /** Plans that read exactly as they did: the boundary still has wall on it, or the host stops at it. */
 const TODAY: [string, string, string][] = [
-  ["a narrower opening", NIB.narrower, "7c416cd6b4abfdf511ded0d70270c7c0471f9a5f72cbca16b4ab4670eae8cba6"],
-  ["no clause", NIB.closed, "6dfb9a3ef6418ccb0fd177730aff2f0bdd4abe87893aa48cf1b53c1db0a945e9"],
+  ["a narrower opening", NIB.narrower, "894a64b88c5abe07f9a6e4ae79a4a684fa68ab6af348de4e0d675266a77dd4d9"], // still refused, and `W_SWING_ROOM_NOT_ADJACENT` no longer follows the refusal (#401 residue)
+  ["no clause", NIB.closed, "ac0fea08aad07952d5533ea2da0f10fcc3f21bd31a47b4a45e1ff03c4cbd9cf5"], // still refused, and `W_SWING_ROOM_NOT_ADJACENT` no longer follows the refusal (#401 residue)
   ["by point, narrower", NIB.byPointNarrower, "f5a70b89aeeb392e320e87d42716d699f46eb48f8983cc683ab585269a97a62f"],
   ["across, narrower", NIB.acrossLineNarrower, "a80f92c33ea8b4ee1ba96ca145ccc78ee995a31392a35ac8d5965d68d10d6b5c"],
-  ["under, narrower", NIB_HOSTS.underNarrower, "760a183151624802540303f04da3ddf2a7bbab4278802347c13ee58023308429"],
+  ["under, narrower", NIB_HOSTS.underNarrower, "67631e9c36af24a9338c90cfde2535d40ca6af71ccfa41d19e125bd7e536ed79"], // still refused, and `W_SWING_ROOM_NOT_ADJACENT` no longer follows the refusal (#401 residue)
 ];
 
 /**
@@ -41,7 +42,7 @@ const TODAY: [string, string, string][] = [
  * open boundary at the host's free end a partition with a face, where nothing is drawn, and now
  * names what is. One string; put it back and the old digest comes back.
  */
-const FREE_END = "51d05029eaeba1041a4d95961f8b36f282ca6993bcd02139be047253127f4221";
+const FREE_END = "8b6524971e1ebab0c2b2a62c890d9b50509221f2c71609abdfd9e59ed1cf2d3d"; // still refused, and `W_SWING_ROOM_NOT_ADJACENT` no longer follows the refusal (#401 residue)
 
 suite("a door beside an open boundary (#368)", () => {
   it("places the issue's door, on the wall the room's edge names", () => {
@@ -138,12 +139,12 @@ suite("the host decides whether a jamb has wall beside it", () => {
   });
 
   it("refuses a jamb beside a free end: the boundary is all that stands for the wall it would need", () => {
-    const [nib, swing] = compile(NIB_HOSTS.stemAtFreeEnd, { noCache: true }).diagnostics;
+    const [nib, ...rest] = compile(NIB_HOSTS.stemAtFreeEnd, { noCache: true }).diagnostics;
     expect(nib?.code).toBe("E_OPENING_NIB");
     expect(nib?.message).toContain(
       'leaves a jamb 40 mm from the edge of the open boundary between "a" and "b", where this wall stops in a free end. A jamb needs at least 100 mm of wall to that edge',
     );
-    expect(swing?.code).toBe("W_SWING_ROOM_NOT_ADJACENT");
+    expect(rest).toEqual([]); // the refusal is the whole report
   });
 
   it.each([

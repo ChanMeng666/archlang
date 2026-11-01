@@ -6,8 +6,8 @@
  * behavior unchanged).
  */
 
-import { writeFileSync, existsSync } from "node:fs";
-import { resolve as resolvePath } from "node:path";
+import { mkdirSync, writeFileSync, existsSync } from "node:fs";
+import { dirname, resolve as resolvePath } from "node:path";
 import { spawnSync } from "node:child_process";
 import {
   compile,
@@ -392,6 +392,14 @@ export async function compileToFile(input: string, format: Format, args: Args, t
   const r = await renderArtifact(source, format, args, baseDirOf(input));
   if (r.error || r.bytes === undefined) {
     return { input, ok: false, format, error: r.error, errorCode: r.errorCode, diagnostics: r.diagnostics, source };
+  }
+  // Only now, so a plan that does not compile leaves no empty directory behind.
+  const dir = dirname(resolvePath(targetPath));
+  try {
+    mkdirSync(dir, { recursive: true });
+  } catch (e) {
+    const error = `cannot create the output directory ${dir}: ${(e as Error).message}`;
+    return { input, ok: false, format, error, diagnostics: r.diagnostics, source };
   }
   try {
     writeFileSync(resolvePath(targetPath), r.bytes);

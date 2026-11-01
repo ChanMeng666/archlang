@@ -171,8 +171,8 @@ const BASELINE: [string, string][] = [
   ["80a6ed511c4e8c1f2a7a3cd62782651f731b613eaad4cb18fd2465abc1de91b3", "inline:except-slanted"],
   ["874344a801971326859871db55b47877705079a16b852fe5aa0d75e1899b0e9a", "inline:clauses"],
   ["38cc9a4086d56351eeaedd9b8a088ac60c3e04bc0865089d50ed929f813216b9", "inline:door-beside-excepted-L"], // H10: +15 ring scan, +8 overlap; `centreline_at`, see ./byte-identity-baseline.ts
-  ["5966aba9156563ce2d602cc266e4e833e4697a0d4c36fd39aa17644cf3df6f13", "inline:door-positions"], // `centreline_at`, see ./byte-identity-baseline.ts
-  ["d9a51f44cc4e25155b77d0ae1f873ef92d79061cc05fc2b079b7be55b03ebdb0", "inline:door-refusals"],
+  ["03cb65e691bdcc7bec6e8382a8528924e6e470e3e98817a380d653b299862347", "inline:door-positions"], // `centreline_at`, see ./byte-identity-baseline.ts; `W_SWING_OBSTRUCTED`'s hints name no `<wall>` on a derived wall (#401 residue): lint text only
+  ["28e9a77964e2f33f02ac570119ef9f757c67399da8753bb4a931bcbed513e027", "inline:door-refusals"], // refused as it was, in the same steps: `E_UNKNOWN_REF` and `E_DATUM_UNPLACED` now name the room the line wrote, not `.top` (#401 residue)
 ];
 
 suite("rectilinear rooms: the byte-identity law", () => {

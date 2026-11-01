@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `W_BALCONY_NO_DOOR` no longer accepts a window that the plan says stops above the floor: a window with an authored `sill` above 0 is not a way onto a balcony. `sill 0` still counts, and so does a window with no `sill` clause, because its 900 mm is only the default.
 - `W_FURNITURE_OVER_WINDOW` also reports a low piece standing against a `sill 0` window, on the wall's face. `describe --facts clearances` lists those pieces under `low_units`, and a plan with no such piece has no such key.
 - `window on liv.top` now resolves on an edge that is part exterior, part partition, when the whole window lands on one exterior wall. So do `door on` and `opening on`. The position still counts along the whole room edge, and `center` is still that edge's middle. A span that crosses two walls or lands on a partition stays `E_OPENING_HOST_AMBIGUOUS`, and its hint now quotes the nearest position on each exterior wall, where one exists. An edge with no exterior wall standing on it is `E_OPENING_NO_SHARED_WALL`, whether it carries one wall or several.
+- A `door` or `opening` `between` a room the plan does not have, or one that could not be placed, now says so about the name you wrote. It reported a datum, `nosuch.top`, that the line did not contain.
+- `archlang batch -o <dir>` creates the directory, however deep, where it failed every file with a raw `ENOENT`. A plan that does not compile creates nothing.
+- `W_SWING_OBSTRUCTED`'s hints no longer tell a door on a wall derived by `walls from rooms` to write `on <wall>`, since such a wall has no id. A door placed by rooms is told its own clause, and one placed by a point is told `at (x,y)`.
+- `W_SWING_ROOM_NOT_ADJACENT` and `E_SWING_SIDE` no longer follow a door whose placement was already refused. A door that resolves still gets them.
 
 ### Changed
 

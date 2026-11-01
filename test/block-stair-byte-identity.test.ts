@@ -111,7 +111,7 @@ const BASELINE: [string, string][] = [
   ["1a78c5532e6c4bb783da712f6f27c83f5c771765278ec8552940d4f73e32beaa", "examples/tiny-house.arch"], // H10: +6 ring scan, +0 overlap
   ["93c6bfea3a6c314a3a9c602a079b64b70593a630f90b3988a7601567e47f9b53", "examples/townhouse.arch"], // H10: +12 ring scan, +0 overlap
   ["12a2c3da84bc3fb045fc784bcad3851edaaf6ae0ec539727b52a5d39e58dca2b", "examples/transit-hall.arch"],
-  ["07b8c9e83ad497933dba52d53e8b5bc55bffbe7d4edb72be12d1ff0838c26b70", "examples/two-bed.arch"], // H10: +6 ring scan, +0 overlap; `centreline_at`, see ./byte-identity-baseline.ts
+  ["f220acec3a66201d974fd3475459a35d52efe4689fc4f76784ccfae1ddc1b92d", "examples/two-bed.arch"], // H10: +6 ring scan, +0 overlap; `centreline_at`, see ./byte-identity-baseline.ts; `W_SWING_OBSTRUCTED`'s hints name no `<wall>` on a derived wall (#401 residue): the accessibility lint's text alone, same steps
   ["33437c49c3e35fcf638c3e37456e0ab9382c91a95aeb46b0d1814905aae8ad0a", "examples/two-storey.arch"], // H10: +12 ring scan, +0 overlap
   ["2fe38a4ad849ebb8a3192c7cea724d729f659fed022b9a1740b8b96a0e1db1f9", "test/fixtures/axes-grid.arch"],
   ["8b201a108d4f8cf901579b200c92b809000d77b9550cda3e092994c09fbba1d5", "test/fixtures/chain30.arch"], // #367, see test/byte-identity-baseline.ts
@@ -155,8 +155,8 @@ const BASELINE: [string, string][] = [
   ["e140a63b3c5a19f2abfaf470afccbdbdbdf1acccea6da3f7cf0ea52e86d0aacc", "inline:except-slanted"],
   ["6e4367336a461f79b8927cdb2671f2571c0d5e029ca95b26448cf70bd39eb058", "inline:clauses"],
   ["ffcbcbe475c12edbcf2713a4449a06d4eed619f415d3d08ea57428e3cea4bca9", "inline:door-beside-excepted-L"], // H10: +15 ring scan, +8 overlap; `centreline_at`, see ./byte-identity-baseline.ts
-  ["b0c30333ef933c517965aa0a4a7b8022f11d296a6b134eb4ff27f53710ae76ac", "inline:door-positions"], // `centreline_at`, see ./byte-identity-baseline.ts
-  ["2646e902db98a47d07ba4b74dcd1be4256394c939d9067531d2fc624cd74ad45", "inline:door-refusals"],
+  ["9a461091afe9fe608b6f1ad40d02a6a366df5884bf1af8b178b1d03c4011b40b", "inline:door-positions"], // `centreline_at`, see ./byte-identity-baseline.ts; `W_SWING_OBSTRUCTED`'s hints name no `<wall>` on a derived wall (#401 residue): both lints' text alone, same steps
+  ["b699986d9e7a9fd640cba2cc7fd75cd76eb213bf5b01fec1730e1b60fb57f725", "inline:door-refusals"], // refused as it was, in the same steps: `E_UNKNOWN_REF` and `E_DATUM_UNPLACED` now name the room the line wrote, not `.top` (#401 residue)
   [
     "c393511a4734b76c5a878d1666ab6e36e638b84abcc963a6e01c97a2bbe1b97e",
     "test/defect-corpus/stair-safety/door-onto-flank.arch",

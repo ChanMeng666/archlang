@@ -113,7 +113,7 @@ render many .arch files in one call, concurrently
 
 | Flag | Does |
 | --- | --- |
-| `--out, -o <dir>` | output DIRECTORY for every rendered file (default: alongside each input) |
+| `--out, -o <dir>` | output DIRECTORY for every rendered file, created if missing (default: alongside each input) |
 | `--format, -f <svg\|dxf\|txt\|json\|pdf\|png>` | output format (default: the -o extension, else svg); json writes the Plan JSON that --from-json reads |
 | `--jobs, -j <n>` | max concurrent renders (default: CPU count) |
 | `--width, -w <px>` | page width hint in pixels |
