@@ -662,6 +662,11 @@ Two fields carry it, and they sit at deliberately different levels:
 }
 ```
 
+A stop adds `steps_off` only on a shaft with a block stair, and only when a person steps off it
+in another room than `room`, the room it is boarded in: `{ below?, above? }`, the room reached
+from the stop on that side, `null` where that flight ends in no room and absent where there is no
+such stop.
+
 **Reachability through a shaft.** A storey is *grounded* when its own access graph has an
 exterior entrance. Reachability then spreads along the connections to a fixpoint over
 storeys **and rooms**: a shaft carries you on only from a stop whose room you can walk to
@@ -669,7 +674,9 @@ on its own storey — from the front door if the storey is grounded, or from a r
 live shaft lands in. The rooms it lands in become **arrival rooms** — the floor's entrance,
 one floor up. A stair standing in a store with no door therefore connects nothing, and the
 floor it leads to is not reachable through it. `reachable_levels` is the answer. (A stop
-whose footprint lies in no room still counts as soon as its storey is reachable.)
+whose footprint lies in no room still counts as soon as its storey is reachable. On a shaft with
+`steps_off` each flight is ridden on its own, from the room it leaves to the room it reaches, so a
+person who steps off in one room must still walk to the other to climb on.)
 
 Two lint rules read that, per storey:
 
@@ -729,6 +736,13 @@ is a drawing convention per storey — so a pair of escalators, one up and one d
 upper storey at both cars. When there are arrival sides both below and
 above (the storey is reachable from either independently), or the neighbouring stop is a
 different kind of run, the walk starts in front of the run's own entry edge(s) instead.
+
+A block stair on either stop is read on the flight itself: arriving from below, the head of the
+lower stop's last flight, on that flight's footprint, and from above the foot of the upper stop's
+first. No axis is asked of it, because the two ends of a turning stair run different ways. So a
+block that climbs on from a storey is stepped off at its last flight and boarded at its first, and
+the walk starts in the room that last flight stands in. A flight that ends where the stop draws
+none of its pieces ends in the open, and the stop's own pieces still stand in the way.
 
 Whether there is a landing at all is decided on the plan's geometry, not on the grid: at
 nine evenly spaced points just beyond the edge, is there floor in the arrival room that no

@@ -517,7 +517,7 @@ describe("law: a storey no shaft arrives on measures exactly as before", () => {
             JSON.stringify(
               circulationOf(
                 st.ir,
-                verticalsOf(st.ir).map((run) => ({ run, edges: entryEdges(run) })),
+                verticalsOf(st.ir).map((run) => ({ run, edges: entryEdges(run), flight: run })),
               ),
             ),
             `${name} L${st.level}`,

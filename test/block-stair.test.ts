@@ -1,8 +1,8 @@
 /**
  * One stair of several pieces (issue #362, card S1): `stair id=s dir up width 1000 { flight …
  * landing … flight … }`. The grammar, the refusals, the direction read from what touches, every
- * reader of the footprint, the drawing, and `place`. What each lint rule does with the form until
- * cards S2 and S3 is pinned at the end, so a change there is a decision and not a surprise.
+ * reader of the footprint, the drawing, and `place`. What lint reads of the form only in part is
+ * pinned at the end, so a change there is a decision and not a surprise.
  *
  * The expected values are derived from `test/block-stair-plans.ts`'s numbers, by hand or by a
  * lattice of its own: nothing here reads the resolver's own idea of a flight to check itself.
@@ -844,17 +844,24 @@ ${above}
    * The walk upstairs, worked out on a lattice of its own from the plain numbers of the fixture,
    * the way `test/circulation-hand-derived.test.ts` does for a door: 100 mm cells over a wall-less
    * room, a cell blocked inside any piece or within the 300 mm body radius of one, the halo lifted
-   * only beyond the boarded flight's entry edge, seeds in the row of cells beyond that edge, and
-   * four-connected steps to the free cell nearest the room's centre that the walk can reach.
+   * only beyond the edge of the last flight a person steps off (and `foot`, beyond the first flight's
+   * foot on a stop it is boarded at), seeds in the row of cells beyond the head, and four-connected
+   * steps to the free cell nearest the room's centre that the walk can reach.
    */
-  const latticeWalk = (s: BlockStair, tail: Side, w: number, h: number): number => {
+  const latticeWalk = (s: BlockStair, tail: Side, w: number, h: number, foot?: Side): number => {
     const boarded = s.pieces[s.pieces.length - 1]!;
-    const past = (r: Rect, cx: number, cy: number): boolean =>
-      tail === "left" ? cx < r[0] : tail === "right" ? cx > r[0] + r[2] : tail === "top" ? cy < r[1] : cy > r[1] + r[3];
+    const beyondSide = (e: Side, r: Rect, cx: number, cy: number): boolean =>
+      e === "left" ? cx < r[0] : e === "right" ? cx > r[0] + r[2] : e === "top" ? cy < r[1] : cy > r[1] + r[3];
     const gap = (r: Rect, cx: number, cy: number): number =>
       Math.hypot(Math.max(0, r[0] - cx, cx - r[0] - r[2]), Math.max(0, r[1] - cy, cy - r[1] - r[3]));
     const free = (cx: number, cy: number): boolean =>
-      s.pieces.every((r) => !inside(r, cx, cy) && (gap(r, cx, cy) > 300 || (r === boarded && past(r, cx, cy))));
+      s.pieces.every(
+        (r) =>
+          !inside(r, cx, cy) &&
+          (gap(r, cx, cy) > 300 ||
+            (r === boarded && beyondSide(tail, r, cx, cy)) ||
+            (foot !== undefined && r === s.pieces[0] && beyondSide(foot, r, cx, cy))),
+      );
     const nx = w / 100;
     const ny = h / 100;
     const key = (i: number, j: number): number => j * nx + i;
@@ -960,6 +967,57 @@ ${stairBlock(here, "down")}
     expect(away.circulation!.rooms.map((r) => r.walkDistanceMm)).toEqual([latticeWalk(s, head, w, h)]);
   });
 
+  /** {@link bareUpper} with a storey between: `s` climbs on through it, so it arrives at the last
+   *  flight's head and is boarded at the first flight's foot, and the walk is measured there. */
+  const bareMiddle = (s: BlockStair, w: number, h: number): string =>
+    bareUpper(s, w, h).replace(
+      `  level 2 "Upper" {
+    room id=up at (0,0) size ${w}x${h} uses hall circulation
+${stairBlock(s, "down")}
+  }
+`,
+      `  level 2 "Middle" {
+    room id=mid at (0,0) size ${w}x${h} uses hall circulation
+${stairBlock(s, "up")}
+  }
+  level 3 "Upper" {
+    room id=up at (0,0) size ${w}x${h} uses hall circulation
+${stairBlock(s, "down")}
+  }
+`,
+    );
+
+  it.each([
+    ["an L", CLEAR, 6000, 6000],
+    ["a half-turn", moved(U_STAIR, 1000, 500), 6000, 7000],
+    ["a short-axis flight", moved(SHORT_AXIS, 1000, 500), 7000, 7000],
+    ["three flights", moved(THREE_FLIGHTS, 1000, 500), 7000, 7000],
+  ] as const)("the walk across a storey it climbs on from starts at the last flight's head: %s", (_n, s, w, h) => {
+    const src = bareMiddle(s, w, h);
+    expect(codes(src)).toEqual([]);
+    const head = OPPOSITE[s.tails[s.tails.length - 1]!];
+    const mid = describePlan(src).levels!.find((l) => l.level === 2)!;
+    expect(mid.circulation!.entranceId).toBe("s");
+    expect(mid.circulation!.rooms.map((r) => r.walkDistanceMm)).toEqual([latticeWalk(s, head, w, h, s.tails[0])]);
+    expect(mid.circulation!.rooms[0]!.bottleneckClearWidthMm).toBe(
+      head === "left" || head === "right" ? s.pieces[s.pieces.length - 1]![3] : s.pieces[s.pieces.length - 1]![2],
+    );
+    // The flight stepped off moves into the grid's frame with the plan, as the pieces do.
+    const away = bareMiddle(moved(s, 1500, 700), w, h)
+      .replaceAll("at (0,0) size", "at (1500,700) size")
+      .replace(
+        /\(0,0\) \(\d+,0\) \(\d+,\d+\) \(0,\d+\) close/,
+        `(1500,700) (${1500 + w},700) (${1500 + w},${700 + h}) (1500,${700 + h}) close`,
+      )
+      .replace(/door id=front at \(\d+,\d+\)/, `door id=front at (${1500 + w},${700 + h - 400})`);
+    expect(codes(away)).toEqual([]);
+    expect(
+      describePlan(away)
+        .levels!.find((l) => l.level === 2)!
+        .circulation!.rooms.map((r) => r.walkDistanceMm),
+    ).toEqual([latticeWalk(s, head, w, h, s.tails[0])]);
+  });
+
   it("the head of the last flight stands short of the stair's own first flight: no landing", () => {
     // Up, right along the landing, down, then back west to a head at `headX`, facing the first
     // flight's east face at x 2000. The other pieces stay obstacles, so that face keeps the 300 mm
@@ -1049,11 +1107,12 @@ ${both("down", "down")}
   });
 });
 
-describe("what lint says of a block stair until S3, deliberately strict", () => {
+describe("what lint says of a block stair, deliberately strict", () => {
   const skipped = (src: string): boolean =>
     (lintWithCoverage(src).coverage?.families ?? []).some((f) => f.skipped?.some((s) => s.reason === "block-stair"));
 
-  // `W_STAIR_TOO_STEEP` and `clearances` moved to `test/block-stair-lint.test.ts` with S2.
+  // `W_STAIR_TOO_STEEP` and `clearances` are in `test/block-stair-lint.test.ts`, the shaft in
+  // `test/block-stair-shaft.test.ts`.
   it("the foot landing is the boarded flight's, read beyond its own edge", () => {
     // The first flight's foot is 800 mm from the south wall's face of a 3 m hall, in a plan where
     // the box's bottom edge is the same line: what moves it is the flight, not the box.
@@ -1106,7 +1165,7 @@ describe("what lint says of a block stair until S3, deliberately strict", () => 
     expect(d.clearances!.stairs).toMatchObject([{ landings: [{ end: "head", by: { kind: "wall" } }] }]);
   });
 
-  it("the shaft check keeps the box overlap, and does not cry wolf on the axis of an L", () => {
+  it("the shaft check does not cry wolf on the axis of an L", () => {
     const s = L_STAIR;
     const src = `plan "Two" {
   units mm
@@ -1121,10 +1180,9 @@ ${stairBlock(s, "down")}
 }
 `;
     expect(lint(src).filter((d) => d.code === "W_SHAFT_FOOTPRINT_MISMATCH")).toEqual([]);
-    expect(skipped(src)).toBe(true);
   });
 
-  it("a block drawn elsewhere on the next storey is still a mismatch, on the box", () => {
+  it("a block drawn elsewhere on the next storey is a mismatch", () => {
     const moved: BlockStair = { ...U_STAIR, pieces: U_STAIR.pieces.map((p) => [p[0] + 3100, p[1] + 2000, p[2], p[3]]) };
     const src = `plan "Two" {
   units mm
@@ -1224,17 +1282,18 @@ ${extra}
   });
 
   it("on the storey it continues up from, in the stair family and not only the shaft's", () => {
-    // Every stop, so `levels` is left out; the shaft comparison files from level 2 up.
+    // Every stop, so `levels` is left out. The shaft comparison is whole, so it files nowhere.
     expect(entry(MID_UP, "stairs")).toMatchObject({ reason: "block-stair" });
     expect(entry(MID_UP, "stairs")!.levels).toBeUndefined();
-    expect(entry(MID_UP, "vertical")!.levels).toEqual([2, 3]);
+    expect(entry(MID_UP, "vertical")).toBeUndefined();
     expect(filedBy(MID_UP, "stair-no-landing")).toEqual([1, 2, 3]);
   });
 
   it("each rule files only on a stop its own reading is partial: a stairwell is a hole, read whole", () => {
-    // Level 3 comes down, so it is a stairwell: whole is right, and only the landing rule files.
-    expect(filedBy(MID_UP, "swing-over-stair")).toEqual([1, 2]);
-    expect(filedBy(MID_UP, "stair-side-entry")).toEqual([1, 2]);
+    // Level 3 comes down and a flight arrives at level 2, so both are stairwells: whole is right,
+    // and only the landing rule files there.
+    expect(filedBy(MID_UP, "swing-over-stair")).toEqual([1]);
+    expect(filedBy(MID_UP, "stair-side-entry")).toEqual([1]);
     const furnished = levels(
       storey(1, flights("up"), "    furniture id=t1 table at (200,300) size 600x600"),
       storey(2, flights("down"), "    furniture id=t2 table at (200,300) size 600x600"),
@@ -1243,29 +1302,30 @@ ${extra}
     expect(entry(furnished, "furniture")!.levels).toEqual([1]);
   });
 
-  it("`W_STAIR_HEAD_VOID` files where the head from below goes unread, and only there", () => {
+  it("`W_STAIR_HEAD_VOID` reads the head from below, so it files nothing", () => {
     const hole = "    void id=v at (4000,400) size 800x800";
     const src = levels(
       storey(1, flights("up"), hole),
       storey(2, flights("up"), hole),
       storey(3, flights("down"), hole),
     );
-    expect(filedBy(src, "stair-head-void")).toEqual([2]);
-    // Two straight stops: the rule reads that head itself, and the form is not on the plan.
+    expect(filedBy(src, "stair-head-void")).toEqual([]);
     const plain = levels(storey(1, straight("up"), hole), storey(2, straight("up"), hole));
     expect(filedBy(plain, "stair-head-void")).toEqual([]);
   });
 
-  it("a straight stop beside a block goes unread too, either way up", () => {
+  it("a straight stop beside a block never matches: its head from below is not read, and that files", () => {
+    // Every storey has a door, and only level 2 the void, so each rule has a reason to run there.
     const hole = "    void id=v at (4000,400) size 800x800";
     const over = levels(storey(1, flights("up")), storey(2, straight("up"), hole));
     expect(filedBy(over, "stair-head-void")).toEqual([2]);
     expect(filedBy(over, "stair-no-landing")).toEqual([1, 2]);
-    // A straight flight that rises here is not known for the well it stands over.
+    // Level 2 is no well the block arrives by: nothing arriving was read to make it one.
     expect(filedBy(over, "swing-over-stair")).toEqual([1, 2]);
     const under = levels(storey(1, straight("up")), storey(2, flights("up"), hole));
     expect(filedBy(under, "stair-head-void")).toEqual([2]);
     expect(entry(under, "stairs")!.levels).toEqual([2]);
+    expect(filedBy(under, "swing-over-stair")).toEqual([2]);
     const down = levels(storey(1, flights("up")), storey(2, straight("down"), hole));
     expect(filedBy(down, "stair-head-void")).toEqual([2]);
     expect(filedBy(down, "stair-no-landing")).toEqual([1, 2]);
@@ -1317,7 +1377,7 @@ ${stairBlock(L_STAIR)}
     );
     for (const rule of ["swing-over-stair", "stair-no-landing", "stair-side-entry"])
       expect(filedBy(all, rule)).toEqual([0]);
-    // S2: the steepness reading is whole on this stair, so it stopped filing.
+    // The steepness reading is whole on this stair, so it files nothing.
     expect(filedBy(all, "stair-too-steep")).toEqual([]);
     expect(filedBy(all, "stair-head-void")).toEqual([]);
     expect(family(all, "stairs").status).toBe("partial");
@@ -1326,7 +1386,7 @@ ${stairBlock(L_STAIR)}
       "  units mm\n",
       "  units mm\n  height 2750\n",
     );
-    expect(filedBy(tall, "stair-head-void")).toEqual([2]);
+    expect(filedBy(tall, "stair-head-void")).toEqual([]);
     expect(filedBy(tall, "stair-too-steep")).toEqual([]);
     expect(family(tall, "stairs").status).toBe("partial");
   });

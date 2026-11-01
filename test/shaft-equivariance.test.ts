@@ -35,7 +35,16 @@
 import { describe, expect, it } from "vitest";
 import type { CirculationModel } from "../src/analyze/circulation.js";
 import { describe as describePlan } from "../src/index.js";
-import { type Building, FRAMES, hillside, P3, placed, shell, townhouse } from "./shaft-equivariance-models.js";
+import {
+  type Building,
+  FRAMES,
+  hillside,
+  P3,
+  placed,
+  shell,
+  townhouse,
+  turningTower,
+} from "./shaft-equivariance-models.js";
 
 /** How far one frame may differ from the identity, for one building. */
 interface Bound {
@@ -57,6 +66,7 @@ const CASES: ReadonlyArray<[Building, Bound]> = [
   [townhouse(1), EXACT],
   [hillside(1), EXACT],
   [shell(20000, 15000, 300, true), EXACT],
+  [turningTower(1), EXACT],
   [townhouse(8), spill(2)], // 118 mm cells
   [hillside(5), spill(2)], // 119 mm cells
   [shell(100000, 80000, 300, true), spill(1)], // 179 mm cells

@@ -92,7 +92,7 @@ import {
   type AccessGraph,
   type AnalyzeOptions,
 } from "./analyze.js";
-import { verticalConnections } from "./vertical.js";
+import { roomToward, verticalConnections } from "./vertical.js";
 import { SEGMENT_SELECT_RE } from "./segment-select.js";
 import { DEFAULT_MATERIAL } from "./hatches.js";
 import { openRunsOf } from "./analyze.js";
@@ -2084,8 +2084,8 @@ export function checkGraph(source: string, intent: Record<string, string[]>, opt
       // One edge per ADJACENT pair of the shaft's storeys: a lift serving 1/2/3 links
       // 1–2 and 2–3, never 1–3 (you pass through the intervening floor's room).
       for (let i = 1; i < c.stops.length; i++) {
-        const a = c.stops[i - 1]!.room;
-        const b = c.stops[i]!.room;
+        const a = roomToward(c.stops[i - 1]!, "above");
+        const b = roomToward(c.stops[i]!, "below");
         if (a !== null && b !== null) addActual(a, b);
       }
     }

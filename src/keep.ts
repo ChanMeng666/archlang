@@ -48,6 +48,7 @@ import {
 import { fmt3, fmtHalfLattice, MODEL_RANGE_MM } from "./num-format.js";
 import { COMPASS_DATUM_ALIASES, type DatumWord } from "./room-datums.js";
 import { keepFormText, keepRefText } from "./statement-print.js";
+import { boardedFlight, isVertical } from "./vertical.js";
 import { classifyLabelUses } from "./vocabulary.js";
 
 /** Most keeps one plan may declare: 12 × the 80 that would pin every edge of the largest example. */
@@ -1588,7 +1589,8 @@ export function evaluateStacked(
       const n = byId.get(r.id);
       return n ? naming.phrase(n) : "the room";
     }
-    const f = el as unknown as { at: Point; size: { w: number; h: number } };
+    // A block stair is named where it is boarded: the centre of its box can be floor beside it.
+    const f = (isVertical(el) ? boardedFlight(el) : el) as unknown as { at: Point; size: { w: number; h: number } };
     const c = { x: f.at.x + f.size.w / 2, y: f.at.y + f.size.h / 2 };
     return `the ${KIND_NOUN[el.kind] ?? el.kind} ${naming.placeAt(c)}`;
   };

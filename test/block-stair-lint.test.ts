@@ -1,12 +1,12 @@
 /**
- * What lint and `describe` say of a block stair (issue #362, card S2).
+ * What lint and `describe` say of a block stair on one storey (issue #362).
  *
  * A landing replaces one going: `minimumRun` owes `n − 1 − L` goings for `L` landings, because a
  * flight ends on its landing as the top flight ends on the floor above. Every figure below is worked
  * out by hand from the plan's numbers, in the comment beside it, never read back from the rule.
  *
- * Coverage stays true: a reading that is now whole stops filing `block-stair`, and one that is not
- * keeps filing. No height enters the drawing, and nothing here claims a stair complies.
+ * Coverage stays true: a reading that is whole files nothing under `block-stair`, and one that is
+ * not keeps filing. No height enters the drawing, and nothing here claims a stair complies.
  */
 
 import { readFileSync } from "node:fs";
@@ -225,10 +225,10 @@ describe("the block-stair skip stays true", () => {
     }
   });
 
-  it("what is not read yet goes on filing", () => {
+  it("what is read in part goes on filing", () => {
     const src = planOf(ENOUGH, "up", HEIGHT);
     // The landing between the flights is not measured, and a door beside a rising block is read
-    // against all of it: S4's, out of this round.
+    // against all of it.
     expect(filedBy(src, "stair-no-landing")).toEqual([0]);
     expect(filedBy(src, "swing-over-stair")).toEqual([0]);
     expect(filedBy(src, "stair-side-entry")).toEqual([0]);

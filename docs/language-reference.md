@@ -2147,9 +2147,9 @@ narrower `width` centres the flight band in the footprint and leaves the remaind
 
 ```arch static
 stair id=s dir up width 1000 {
-  flight at (1500,1100) size 1000x1000
-  landing at (1500,100) size 1000x1000
-  flight at (100,100) size 1400x1000
+  flight at (2630,1100) size 1000x1530
+  landing at (2630,100) size 1000x1000
+  flight at (1100,100) size 1530x1000
 }
 ```
 
@@ -2171,10 +2171,15 @@ floor above. So at 2750 mm, under the default limits, one landing needs 11 going
 2420 mm of flights, not the 2640 mm of a straight flight
 ([`W_STAIR_TOO_STEEP`](error-codes.md#w_stair_too_steep)). The flights must also hold those goings
 whole, because every going of a stair is the same: 1210 + 1210 mm is 2420 mm and holds 5 + 5, one
-short, and the warning says so. Lint measures the foot and the head,
-not the landings between the flights, and reads every piece whole, with nothing passed under; the
-coverage report says `block-stair` wherever that is only part of the answer. That is arithmetic
-on what the plan says, not a statement that a stair complies with anything.
+short, and the warning says so. Lint measures the foot, the head, and the head a flight from below
+arrives at, which is the lower stop's last flight's. Where a block's stops do not match, the
+mismatch is the report ([`W_SHAFT_FOOTPRINT_MISMATCH`](error-codes.md#w_shaft_footprint_mismatch)):
+that head is not read, and each stop stands as what it says, a stop that comes down as a stairwell
+and one that rises as a stair rising from its floor. Lint does not measure the landings between
+the flights, and on a storey a block rises from with no flight arriving it reads every piece
+whole, with nothing passed under; the coverage report says `block-stair` wherever any of this is
+only part of the answer. That is arithmetic on what the plan says, not a statement that a stair
+complies with anything.
 
 **What it does to circulation.** The footprint obstructs the
 [navigation grid](analysis.md#circulation--how-a-person-walks-the-plan) exactly like a piece
@@ -2199,6 +2204,13 @@ Nothing is inferred from geometry: two flights at the same coordinates with diff
 are two different shafts. A run whose id appears on exactly one storey of a multi-storey
 plan is [`W_STAIR_UNMATCHED`](error-codes.md#w_stair_unmatched) — advisory, so a top-floor
 flight to a roof hatch simply carries the warning.
+
+A turning stair joins storeys the same way, by its id, and each stop draws the same block: the same
+flights and landings in the same order, at the same `width`. Change one piece on one storey and
+[`W_SHAFT_FOOTPRINT_MISMATCH`](error-codes.md#w_shaft_footprint_mismatch) names it. A straight
+flight over or under a block is always that warning; if it really is two stairs, give them two ids.
+Where a block climbs on from a storey you arrive at the head of its last flight and board the foot
+of its first, and those two ends can stand in two rooms.
 
 ```arch
 plan "Two-storey" {
@@ -2754,7 +2766,8 @@ earlier element is named, and a keep is the statement that must survive edits.
   `curved`, `oblique`); an arc meets the room when the box around its extreme points, ± half its
   thickness, does.
 - `stacked`: the element's resolved `at` + `size` rectangle (a rectangular room, a stair, a lift,
-  an escalator or a void) on each listed storey, edge by edge against the first.
+  an escalator or a void) on each listed storey, edge by edge against the first. On a turning stair
+  that is the bounding box of its pieces; `W_SHAFT_FOOTPRINT_MISMATCH` compares the pieces.
 - `fixed`: the datum against the stated value.
 
 **Grades.** A broken `hard` keep is `W_KEEP_VIOLATED`, a compile-channel warning: it fails

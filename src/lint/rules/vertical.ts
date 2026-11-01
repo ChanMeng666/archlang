@@ -17,7 +17,17 @@
  */
 
 import type { Diagnostic } from "../../diagnostics.js";
-import { boardedFlight, isBlockStair, runAxis, verticalRect as rect } from "../../vertical.js";
+import { VERTEX_EPS } from "../../geometry/polygon.js";
+import type { BBox } from "../../geometry/rect.js";
+import {
+  boardedFlight,
+  isBlockStair,
+  piecesOf,
+  type RBlockStair,
+  runAxis,
+  type RVertical,
+  verticalRect as rect,
+} from "../../vertical.js";
 import { mm } from "../measure.js";
 import type { LintContext, LintRule } from "../context.js";
 
@@ -71,11 +81,58 @@ export const stairUnmatched: LintRule = {
  * programme's threshold, not a code's: it catches a run drawn in another place or turned, and
  * leaves a footprint redrawn a little longer or shifted by a wall's thickness.
  *
- * A block stair is compared on its bounding box and its axis is not: the axis of the flight
- * boarded differs between a `dir up` and a `dir down` stop of one L, which is no defect. Filed as
- * the `block-stair` coverage skip.
+ * **A block stair is the same block on both stops:** the same pieces in the same climbing order,
+ * each where the other is, at the same width, because the author copies the block and changes only
+ * `dir`. No share of overlap applies. It tells a redrawn rectangle from a moved one, and on a block
+ * half of a flight can go astray while what stands round it stays; pieces that must touch cannot be
+ * a little off on one storey and be one stair. Nor is an axis asked of it: the flight boarded differs
+ * between a `dir up` and a `dir down` stop of one L, which is no defect. Identity alone still joins
+ * the stops: two blocks of one id that differ are reported, never taken for two shafts, and two
+ * ids that match are never joined.
+ *
+ * **A straight stop beside a block always mismatches.** One flight and flights with landings are
+ * two drawings of two stairs, whatever their footprints share. A straight flight that truly hands
+ * on to a turning one is two runs, which is two ids, and the upper storey then draws both.
  */
 export const SHAFT_MIN_OVERLAP_SHARE = 0.5;
+
+/** What differs between block stairs `v`, here, and `b`, on `level`: the first thing a person would
+ *  come to, climbing. `null` when they are the same block. */
+function blockDiffers(v: RBlockStair, b: RBlockStair, level: number): { why: string; hint: string } | null {
+  const copy = `copying the block and changing only \`dir\``;
+  const here = piecesOf(v);
+  const there = piecesOf(b);
+  const count = (n: number): string => (n === 1 ? "1 flight" : `${n} flights`);
+  if (v.flights.length !== b.flights.length) {
+    return {
+      why: `it has ${count(b.flights.length)} there and ${count(v.flights.length)} here`,
+      hint: `Draw \`${v.id}\` with the same pieces on both storeys, ${copy}`,
+    };
+  }
+  if (Math.abs(v.width - b.width) > VERTEX_EPS) {
+    return {
+      why: `its flights are ${mm(b.width)} mm wide there and ${mm(v.width)} mm here`,
+      hint: `Draw \`${v.id}\` at one \`width\` on both storeys, ${copy}`,
+    };
+  }
+  const place = (r: BBox): string => `(${mm(r.x)},${mm(r.y)}) size ${mm(r.w)}x${mm(r.h)}`;
+  const at = here.findIndex((r, i) => {
+    const o = there[i]!;
+    return [r.x - o.x, r.y - o.y, r.w - o.w, r.h - o.h].some((d) => Math.abs(d) > VERTEX_EPS);
+  });
+  if (at < 0) return null;
+  const nth = Math.floor(at / 2) + 1;
+  const piece = at % 2 === 0 ? `flight ${nth}` : v.landings.length === 1 ? "the landing" : `landing ${nth}`;
+  return {
+    why: `${piece} is not drawn the same on both storeys`,
+    hint: `Draw \`${v.id}\` with the same pieces on both storeys, ${copy}: on level ${level} ${piece} is at ${place(there[at]!)}, here at ${place(here[at]!)}`,
+  };
+}
+
+/** Do `a` and `b`, two stops of a shaft, draw one block stair? This rule's own test, so what reads
+ *  across a shaft cannot disagree with what it reports. The level only words a hint. */
+export const sameBlock = (a: RVertical, b: RVertical): boolean =>
+  isBlockStair(a) && isBlockStair(b) && blockDiffers(a, b, 0) === null;
 
 export const shaftFootprintMismatch: LintRule = {
   name: "shaft-footprint-mismatch",
@@ -98,29 +155,36 @@ export const shaftFootprintMismatch: LintRule = {
       const a = rect(v);
       const b = rect(below.run);
       const block = isBlockStair(v) || isBlockStair(below.run);
-      if (block) skip("block-stair");
       const ox = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
       const oy = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
       const share = (ox * oy) / Math.min(a.w * a.h, b.w * b.h);
       const lift = v.kind === "elevator" || below.run.kind === "elevator";
       let why: string | null = null;
+      let hint: string | null = null;
       if (v.kind !== below.run.kind) why = `it is drawn as ${word(below.run.kind)} there and ${word(v.kind)} here`;
       else if (lift) {
         if (a.x !== b.x || a.y !== b.y || a.w !== b.w || a.h !== b.h)
           why = "a lift car stands in one plumb shaft, and this car is not drawn in the footprint of the one below";
-      } else if (!block && runAxis(v) !== runAxis(below.run))
+      } else if (isBlockStair(v) && isBlockStair(below.run)) {
+        const differs = blockDiffers(v, below.run, below.level);
+        if (differs !== null) ({ why, hint } = differs);
+      } else if (block) {
+        why = `it is drawn as ${isBlockStair(v) ? "one flight there and as flights and landings here" : "flights and landings there and as one flight here"}`;
+        hint = `Draw \`${v.id}\` the same way on both storeys, a block of flights and landings or one flight`;
+      } else if (runAxis(v) !== runAxis(below.run))
         why = "the flight runs across the page on one storey and up it on the other";
       else if (share < SHAFT_MIN_OVERLAP_SHARE)
         why = `the footprints overlap by ${pct(share)} of the smaller, under half`;
       if (why === null) continue;
       const name = v.kind === "elevator" ? "elevator" : v.kind === "escalator" ? "escalator" : "stair";
+      const r = block ? rect(boardedFlight(v)) : a;
       out.push({
         severity: "warning",
         code: "W_SHAFT_FOOTPRINT_MISMATCH",
         ...at(v),
-        message: `The ${name} ${placeAt({ x: a.x + a.w / 2, y: a.y + a.h / 2 })} on level ${ir.level} does not stand over the run it continues from level ${below.level}: ${why}.`,
+        message: `The ${name} ${placeAt({ x: r.x + r.w / 2, y: r.y + r.h / 2 })} on level ${ir.level} does not stand over the run it continues from level ${below.level}: ${why}.`,
         hints: [
-          `Draw \`${v.id}\` with the same footprint on both storeys: on level ${below.level} it is at (${mm(b.x)},${mm(b.y)}) size ${mm(b.w)}x${mm(b.h)}, here at (${mm(a.x)},${mm(a.y)}) size ${mm(a.w)}x${mm(a.h)}. If they are two different runs, give them different ids.`,
+          `${hint ?? `Draw \`${v.id}\` with the same footprint on both storeys: on level ${below.level} it is at (${mm(b.x)},${mm(b.y)}) size ${mm(b.w)}x${mm(b.h)}, here at (${mm(a.x)},${mm(a.y)}) size ${mm(a.w)}x${mm(a.h)}`}. If they are two different runs, give them different ids.`,
         ],
       });
     }

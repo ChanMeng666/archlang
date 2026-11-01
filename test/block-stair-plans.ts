@@ -84,6 +84,16 @@ export const THREE_FLIGHTS: BlockStair = {
 
 export const BLOCK_STAIRS: readonly BlockStair[] = [L_STAIR, U_STAIR, STRAIGHT_LANDING, SHORT_AXIS, THREE_FLIGHTS];
 
+/** `s` moved by (`dx`,`dy`). */
+export const movedBlock = (s: BlockStair, dx: number, dy: number): BlockStair => ({
+  ...s,
+  pieces: s.pieces.map((p) => [p[0] + dx, p[1] + dy, p[2], p[3]]),
+});
+
+/** The issue's L, moved clear of the west wall its head stands against: from there the storey above
+ *  can be walked. */
+export const CLEAR_L: BlockStair = movedBlock(L_STAIR, 1000, 1000);
+
 /** The block statement for `s`, drawn `dir` on this storey, indented `pad`. */
 export function stairBlock(s: BlockStair, dir: "up" | "down" = "up", id = "s", pad = "    "): string {
   const lines = s.pieces.map(
@@ -98,6 +108,13 @@ export const hallBody = (
 ): string => `    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }
     room id=r at (0,0) size 6000x6000 label "Hall" uses hall
     door id=d at (3000,6000) width 900 wall shell
+${run}`;
+
+/** The body of an upper storey over {@link hallBody}: the same hall, with no way in but a shaft. */
+export const upperBody = (
+  run: string,
+): string => `    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }
+    room id=up at (0,0) size 6000x6000 label "Landing" uses hall circulation
 ${run}`;
 
 /** A whole one-storey plan of {@link hallBody}. */
