@@ -658,6 +658,26 @@ suite("finish on an L", () => {
     expect(gained(src, r.source)).toEqual([]);
   });
 
+  it("a small wet L with a named wall is furnished or reported, and is no worse", () => {
+    const ring = "(0,0) (2600,0) (2600,1300) (1300,1300) (1300,2600) (0,2600)";
+    const src = plan(
+      `  room id=a polygon ${ring} label "WC" uses wc\n  wall id=w exterior thickness 100 { ${ring} close }\n  door id=d on w at 1950 width 800 swing into a`,
+    );
+    const r = finish(src, { only: "furnish" });
+    expect(errors(r.source)).toEqual([]);
+    expect(gained(src, r.source)).toEqual([]);
+    expect(r.changes.length + r.unresolved.length).toBeGreaterThan(0);
+  });
+
+  it("a diagonal wall has no band, and the gate still judges a piece beside it", () => {
+    const src = plan(
+      `  room id=a polygon ${L_RING} label "Room" uses bedroom\n${STATEMENT}\n  wall id=d partition thickness 100 { (4000,500) (5000,900) }\n  door id=e on a.left at 1500 from start width 1000 swing into a\n  window id=w on a.top at 1500 from start width 1500`,
+    );
+    const r = finish(src, { only: "furnish" });
+    expect(errors(r.source)).toEqual([]);
+    expect(gained(src, r.source)).toEqual([]);
+  });
+
   it("a room larger than the table covers is measured on its floor, not its box", () => {
     // The box is 12 × 12 m, 144 m² over the 100 m² limit; the L's floor is 108 m².
     const big = "(0,0) (12000,0) (12000,6000) (6000,6000) (6000,12000) (0,12000)";

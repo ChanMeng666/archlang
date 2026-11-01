@@ -107,7 +107,9 @@ rows are the sanctioned class of `test/byte-identity-baseline.ts` and are listed
 
 Proof: the six-payload sweep plus steps, from a `git archive` of the base, over the repository corpus and the
 harvested inline plans, with a plant first; the digest tables by their own routes; a fixture that uses every
-new form, pinned; and every new branch reached by a counter.
+new form, pinned; and the added lines read off a coverage run of the new test file, so a green sweep is not taken
+as proof that the new paths ran. One added line stays unreached: the landing filter in `Site.abutting` on a polygon,
+which only a wet L the set search reaches would run.
 
 ## 5. Not done
 
