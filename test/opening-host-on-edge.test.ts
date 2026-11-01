@@ -161,16 +161,93 @@ suite("the refusals stay, and say what to write", () => {
     expect(right).toEqual({ x: 6750, y: 3000 });
   });
 
-  it("an edge with no exterior wall has no position to quote", () => {
-    const [d] = errors(
-      plan(
-        `  room id=a at (0,3000) size 6000x3000\n  room id=b at (0,0) size 3000x3000\n  room id=c at (3000,0) size 3000x3000\n${W}  window id=x on a.top at 1000 from start width 900\n`,
-      ),
+  it("with no exterior wall on the edge it is the refusal one partition gets, with no position to quote", () => {
+    const rooms = (above: string): string =>
+      plan(`  room id=a at (0,3000) size 6000x3000\n${above}${W}  window id=x on a.top at 1000 from start width 900\n`);
+    const [two] = errors(rooms("  room id=b at (0,0) size 3000x3000\n  room id=c at (3000,0) size 3000x3000\n"));
+    const [one] = errors(rooms("  room id=b at (0,0) size 6000x3000\n"));
+    expect([two!.code, one!.code]).toEqual(["E_OPENING_NO_SHARED_WALL", "E_OPENING_NO_SHARED_WALL"]);
+    expect(two!.message).toContain("needs an exterior wall on `on a.top`, but none stands there");
+    expect(two!.message).not.toContain("cannot tell");
+    expect(two!.hints).toEqual(["Use an edge of the room that faces outside."]);
+  });
+
+  /** The top of `liv` is an authored wall on x 0–3000, then the partition with `bed`. */
+  const demolished = (status: string, written: string): string =>
+    plan(
+      `  room id=liv at (0,0) size 6000x4000 uses living\n  room id=bed at (3000,-3000) size 3000x3000 uses bedroom\n  wall id=old exterior thickness 300${status} { (0,0) (3000,0) }\n${W}  ${written}\n${ENTRY}`,
     );
+
+  it("a demolished wall is no target: it is named, and no hint leads to it", () => {
+    const [d] = errors(demolished(" status demolish", "window id=w on liv.top at center width 1200"));
+    expect(d!.code).toBe("E_OPENING_NO_SHARED_WALL");
+    expect(d!.message).toContain('wall "old" (`status demolish`)');
+    expect(d!.hints).toEqual(["Use an edge of the room that faces outside."]);
+    // The control: the same wall standing takes the window at the position it was offered.
+    expect(errors(demolished("", "window id=w on liv.top at 2100 from start width 1200"))).toEqual([]);
+  });
+
+  it("the exterior wall that stands is still offered, beside a demolished one on the same edge", () => {
+    const src = plan(
+      `  room id=w at (0,3000) size 9000x3000\n  room id=n at (3000,0) size 3000x3000\n  wall id=old exterior thickness 300 status demolish { (0,3000) (3000,3000) }\n${W}  window id=x on w.top width 900\n`,
+    );
+    const [d] = errors(src);
     expect(d!.code).toBe("E_OPENING_HOST_AMBIGUOUS");
+    expect(d!.message).toContain('wall "old" (`status demolish`)');
+    expect(d!.hints!.map(quoted)).toEqual(["on w.top at 6750 from start"]);
+    expect(errors(paste(src, "on w.top", d!.hints![0]!))).toEqual([]);
+  });
+
+  it("a span on a demolished wall alone keeps its own refusal, and an overrun quotes no position", () => {
+    const alone = demolished(" status demolish", "window id=w on liv.top at 1500 from start width 1200");
+    expect(codes(alone)).toEqual(["E_OPENING_ON_DEMOLISHED_WALL"]);
+    const [d] = errors(demolished(" status demolish", "window id=w on liv.top at 300 from start width 1200"));
+    expect(d!.code).toBe("E_OPENING_NIB");
     expect(d!.hints).toEqual([
-      "No exterior wall lies on the edge `on a.top` names: use an edge of the room that faces outside.",
+      "That wall is marked `status demolish` and hosts nothing: host the opening on a wall that stays, or keep the wall.",
     ]);
+  });
+
+  it("a demolished wall on the same stretch as a standing one is still a second wall there", () => {
+    const src = plan(
+      `  room id=liv at (0,0) size 6000x4000 uses living\n  room id=bed at (3000,-3000) size 3000x3000 uses bedroom\n  wall id=oldp partition thickness 100 status demolish { (3000,0) (6000,0) }\n  wall id=newx exterior thickness 300 { (3000,0) (6000,0) }\n${W}  window id=w on liv.top at 4500 from start width 1200\n${ENTRY}`,
+    );
+    const [d] = errors(src);
+    expect(d!.code).toBe("E_OPENING_HOST_AMBIGUOUS");
+    expect(d!.message).toContain("lies on 2 of them");
+    expect(d!.message).toContain('wall "oldp" (`status demolish`)');
+    expect(errors(paste(src, "on liv.top at 4500 from start", d!.hints![0]!))).toEqual([]);
+  });
+
+  const OPEN = `  room id=liv at (0,0) size 6000x4000 uses living\n  room id=bed at (3000,-3000) size 3000x3000 uses bedroom\n  walls from rooms exterior 300 partition 100 { open between liv and bed }\n`;
+
+  it("an `open between` boundary is named as one, and nothing sends an opening `between` that pair", () => {
+    const door = plan(`${OPEN}  door id=d on liv.top at 4500 from start width 900 swing into liv\n${ENTRY}`);
+    const [d] = errors(door);
+    expect(d!.code).toBe("E_OPENING_HOST_AMBIGUOUS");
+    expect(d!.message).toContain('stands on the open boundary between "liv" and "bed", not on an exterior wall');
+    expect(d!.message).not.toContain("the partition between");
+    expect(d!.hints!.join(" ")).not.toContain("between <room>");
+    expect(d!.hints).toHaveLength(1);
+    expect(errors(paste(door, "on liv.top at 4500 from start", d!.hints![0]!))).toEqual([]);
+    // What the dropped hint would have written.
+    expect(codes(door.replace("on liv.top at 4500 from start", "between liv and bed at 1500 from start"))).toEqual([
+      "E_WALL_BETWEEN_OPEN",
+    ]);
+    const window = plan(`${OPEN}  window id=w on liv.top at 4500 from start width 900\n${ENTRY}`);
+    const [w] = errors(window);
+    expect(w!.hints!.map(quoted)).toEqual(["on liv.top at 2250 from start"]);
+    expect(errors(paste(window, "on liv.top at 4500 from start", w!.hints![0]!))).toEqual([]);
+  });
+
+  it("an opening left narrower than the span keeps a partition, and `between` still refuses that pair", () => {
+    const partial = plan(
+      `${OPEN.replace("open between liv and bed", "open between liv and bed width 900")}  door id=d on liv.top at 3600 from start width 500 swing into liv\n${ENTRY}`,
+    );
+    const [d] = errors(partial);
+    expect(d!.code).toBe("E_OPENING_HOST_AMBIGUOUS");
+    expect(d!.message).toContain('the partition between "liv" and "bed"');
+    expect(d!.hints!.join(" ")).not.toContain("between <room>");
   });
 
   const HALVES = `  room id=r at (0,0) size 6000x3000\n  wall id=a exterior thickness 200 { (0,0) (2000,0) }\n  wall id=b exterior thickness 200 { (4000,0) (6000,0) }\n`;
@@ -291,14 +368,17 @@ suite("the step budget", () => {
       const linked = link(parse(src, BUILTIN_REGISTRY).plan!, world, BUILTIN_REGISTRY);
       return evaluationSteps(resolveAll(linked.plan, BUILTIN_REGISTRY, world));
     };
-    const FAR = 400;
-    const far = Array.from(
-      { length: FAR },
-      (_, k) => `  wall id=f${k} exterior thickness 200 { (0,${20000 + 1000 * k}) (3000,${20000 + 1000 * k}) }\n`,
-    ).join("");
-    const on = (at: string): string => plan(`${NARROW}${far}  window id=x on w.top at ${at} width 900\n`);
-    // Placed, one host is scanned; refused, each of the two exterior runs is.
-    expect(steps(on("center")) - steps(on("1500 from start"))).toBeGreaterThanOrEqual(FAR);
+    const refusalCost = (walls: number): number => {
+      const far = Array.from(
+        { length: walls },
+        (_, k) => `  wall id=f${k} exterior thickness 200 { (0,${20000 + 1000 * k}) (3000,${20000 + 1000 * k}) }\n`,
+      ).join("");
+      const on = (at: string): string => plan(`${NARROW}${far}  window id=x on w.top at ${at} width 900\n`);
+      return steps(on("center")) - steps(on("1500 from start"));
+    };
+    // Each far wall costs 3 steps for reading the 3 bodies' status, and 1 because a refusal scans
+    // the two exterior runs where a placement scans its one host.
+    expect(refusalCost(800) - refusalCost(400)).toBe(4 * 400);
   });
 
   it("a hostile edge of refusals returns a diagnostic, each hint paid for", () => {

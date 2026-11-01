@@ -9,7 +9,7 @@
 
 import { describe as suite, expect, it } from "vitest";
 import { resolvePlan } from "../src/analyze.js";
-import { describe, type RDoor } from "../src/index.js";
+import { compile, describe, planToJson, type RDoor } from "../src/index.js";
 import { D4_ELEMENTS, witnessCase } from "./d4-oracle.js";
 
 const plan = (body: string): string => `plan "t" {\n  units mm\n${body}}\n`;
@@ -30,6 +30,17 @@ suite("describe(): `centreline_at`", () => {
     expect(d.centreline_at).toEqual({ x: 7000, y: 3000 });
     expect(d.relation).toBe("between a and b at 4000 from start");
     expect(placedAt(src, "d")).toEqual(d.centreline_at);
+  });
+
+  it("is the point Plan JSON exports, and the `at (x,y)` a hand-placed twin draws from", () => {
+    const rooms = `  room id=a at (0,0) size 10000x3000 uses living\n  room id=b at (3000,3000) size 7000x3000 uses bedroom\n${W}`;
+    const src = plan(`${rooms}  door id=d between a and b at 4000 from end width 900 swing into b\n${ENTRY}`);
+    const { x, y } = describe(src).doors.find((d) => d.id === "d")!.centreline_at!;
+    const row = planToJson(src).json!.openings.find((o) => o.id === "d")!;
+    expect({ x: row.x, y: row.y }).toEqual({ x, y });
+    const twin = plan(`${rooms}  door id=d at (${x},${y}) width 900 wall partition swing into b\n${ENTRY}`);
+    expect(compile(twin, { noCache: true }).svg).toBe(compile(src, { noCache: true }).svg);
+    expect({ x, y }).toEqual({ x: 6000, y: 3000 });
   });
 
   it("is appended after every existing key, on a door and on a cased opening", () => {

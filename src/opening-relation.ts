@@ -790,16 +790,18 @@ function placeOnRun(
     const under = exterior ? bodiesUnder(bodies, c, width, run) : undefined;
     const lands = under?.length === 1 && under[0]!.category === "exterior" ? under[0] : undefined;
     if (lands === undefined) {
-      const names = [...new Set(bodies.map((s) => phrase(s)))];
-      const lead = `${what} cannot tell which wall to stand in: the ${runWord} \`${where}\` names carries ${bodies.length} wall runs (${names.join(", ")}${names.length < bodies.length ? ", in pieces" : ""})`;
-      const landing = { c, width, flushOk, kind, anchor: placed.anchor, where, runWord, run };
-      ctx.diag({
-        severity: "error",
-        message: under ? `${lead}, and ${landingText(under, landing, phrase)}` : lead,
-        code: "E_OPENING_HOST_AMBIGUOUS",
-        span,
-        hints: under ? edgeHints(bodies, under, landing, ctx) : [ONE_WALL_HINT],
-      });
+      if (under) {
+        const landing = { c, width, flushOk, kind, anchor: placed.anchor, where, runWord, run };
+        ctx.diag(refusalOnEdge(bodies, under, landing, what, span, ctx));
+      } else {
+        ctx.diag({
+          severity: "error",
+          message: `${what} cannot tell which wall to stand in: the ${runWord} \`${where}\` names carries ${wallRuns(bodies, phrase)}`,
+          code: "E_OPENING_HOST_AMBIGUOUS",
+          span,
+          hints: [ONE_WALL_HINT],
+        });
+      }
       return null;
     }
     host = lands;
@@ -838,6 +840,8 @@ function placeOnRun(
     const legal = nearestLegal(c, width, R0, R1, js, need, flushOk, ctx.grid, run);
     // A wall lying on part of this host can take the nearest legal span too, and then it would refuse.
     const alone = legal === undefined || bodies.length === 1 || bodiesUnder(bodies, legal, width, run).length === 1;
+    // Nor is a position in a demolished wall legal: it hosts nothing, wherever the span stands.
+    const gone = hostWall?.status === "demolish";
     const boundaryPhrase = (s: WallSegment): string => {
       const w = wallOfSeg(ctx.walls, s);
       return w ? openBoundaryPhraseOf(w) : `wall "${s.wallId}"`;
@@ -850,11 +854,13 @@ function placeOnRun(
       code: "E_OPENING_NIB",
       span,
       hints: [
-        !alone
-          ? ONE_WALL_HINT
-          : legal === undefined
-            ? `No position along the ${runWord} \`${where}\` names fits a ${numStr(width)} mm opening with its nibs: narrow it, or move a wall that meets the ${runWord}.`
-            : `The nearest legal position is \`${where} at ${legalText(placed.anchor, legal, run)}\` (centre at ${alongText(run, legal)}).`,
+        gone
+          ? DEMOLISHED_HINT
+          : !alone
+            ? ONE_WALL_HINT
+            : legal === undefined
+              ? `No position along the ${runWord} \`${where}\` names fits a ${numStr(width)} mm opening with its nibs: narrow it, or move a wall that meets the ${runWord}.`
+              : `The nearest legal position is \`${where} at ${legalText(placed.anchor, legal, run)}\` (centre at ${alongText(run, legal)}).`,
       ],
     });
     return null;
@@ -865,6 +871,16 @@ function placeOnRun(
 /** The advice for a run that carries two walls where no position can tell them apart. */
 const ONE_WALL_HINT =
   "Make it one wall on that line (remove the authored wall lying on the derived one, or join the pieces), or place the opening `on <wall> at …` on the wall you mean.";
+
+/** The advice for an opening whose only wall is coming down: no position there would resolve. */
+const DEMOLISHED_HINT =
+  "That wall is marked `status demolish` and hosts nothing: host the opening on a wall that stays, or keep the wall.";
+
+/** `3 wall runs (…)`: what a run carries, each wall named once. */
+function wallRuns(bodies: readonly WallSegment[], phrase: (s: WallSegment) => string): string {
+  const names = [...new Set(bodies.map((s) => phrase(s)))];
+  return `${bodies.length} wall runs (${names.join(", ")}${names.length < bodies.length ? ", in pieces" : ""})`;
+}
 
 /** `x 2400–3600`: an opening's span along its run. */
 const spanText = (c: number, width: number, run: Run): string =>
@@ -896,20 +912,69 @@ function landingText(
 }
 
 /**
- * What to write when no wall on a room's edge takes the span: for each exterior body, the nearest
- * position that stands in it alone. The position is read through {@link hostFit} and the same check
- * a placement gets, so a quoted one resolves. Each body's scan is charged before it runs.
+ * The refusal of an opening on a room's edge with several walls, none of which takes its span. With
+ * an exterior wall standing somewhere on the edge the position is what failed, so it is the
+ * ambiguity and the hint quotes positions. With none, no position could help: it is the refusal one
+ * partition gets. A wall is named for what it is: an `open between` boundary voided over its whole
+ * span has nothing built along it, and a `status demolish` wall is on the sheet but hosts nothing.
+ * Reading each wall's status is charged before the scan, and only on this path.
+ */
+function refusalOnEdge(
+  bodies: readonly WallSegment[],
+  under: readonly WallSegment[],
+  landing: Landing,
+  what: string,
+  span: Span,
+  ctx: RelationCtx,
+): Diagnostic {
+  chargeSteps(bodies.length * ctx.walls.length);
+  const walls = meetingWalls(ctx);
+  const phrase = (s: WallSegment): string => {
+    const w = wallOfSeg(ctx.walls, s);
+    if (!w) return `wall "${s.wallId}"`;
+    if (w.status === "demolish") return `${wallPhraseOf(w)} (\`status demolish\`)`;
+    return walls.voided.has(w.id) ? openBoundaryPhraseOf(w) : wallPhraseOf(w);
+  };
+  const standing = bodies.filter((s) => s.category === "exterior" && wallOfSeg(ctx.walls, s)?.status !== "demolish");
+  const carries = wallRuns(bodies, phrase);
+  const { where, runWord, kind } = landing;
+  const one = under.length === 1 ? wallOfSeg(ctx.walls, under[0]!) : undefined;
+  // `between` refuses an open pair whatever `width` left of the wall, and a demolished wall hosts nothing.
+  const between =
+    kind !== "window" && one !== undefined && one._derived?.open === undefined && one.status !== "demolish"
+      ? ["Place it `between <room> and <room>` for an opening into the neighbouring room."]
+      : [];
+  if (standing.length === 0) {
+    return {
+      severity: "error",
+      message: `${what} needs an exterior wall on \`${where}\`, but none stands there: the ${runWord} carries ${carries}`,
+      code: "E_OPENING_NO_SHARED_WALL",
+      span,
+      hints: [`Use an edge of the room that faces outside.`, ...between],
+    };
+  }
+  return {
+    severity: "error",
+    message: `${what} cannot tell which wall to stand in: the ${runWord} \`${where}\` names carries ${carries}, and ${landingText(under, landing, phrase)}`,
+    code: "E_OPENING_HOST_AMBIGUOUS",
+    span,
+    hints: [...edgeHints(bodies, standing, landing, walls, ctx), ...between],
+  };
+}
+
+/**
+ * What to write for each exterior wall that stands on a room's edge: the nearest position in it alone.
+ * The position is read through {@link hostFit} and the same check a placement gets, so a quoted one
+ * resolves. Each body's scan is charged before it runs.
  */
 function edgeHints(
   bodies: readonly WallSegment[],
-  under: readonly WallSegment[],
-  { c, width, flushOk, kind, anchor, where, runWord, run }: Landing,
+  standing: readonly WallSegment[],
+  { c, width, flushOk, where, runWord, anchor, run }: Landing,
+  walls: ReturnType<typeof meetingWalls>,
   ctx: RelationCtx,
 ): string[] {
-  const exteriors = bodies
-    .filter((s) => s.category === "exterior")
-    .sort((p, q) => extent(p, run.vertical)[0] - extent(q, run.vertical)[0]);
-  const walls = meetingWalls(ctx);
+  const exteriors = [...standing].sort((p, q) => extent(p, run.vertical)[0] - extent(q, run.vertical)[0]);
   const fits: string[] = [];
   let doubled = false;
   for (const s of exteriors) {
@@ -921,21 +986,10 @@ function edgeHints(
       fits.push(`\`${where} at ${legalText(anchor, legal, run)}\` stands in the exterior wall on ${on}.`);
     } else doubled = true;
   }
-  const between =
-    kind !== "window" && under.length === 1 && under[0]!.category !== "exterior"
-      ? [`Place it \`between <room> and <room>\` for an opening into the neighbouring room.`]
-      : [];
-  if (fits.length > 0) return [...fits, ...between];
+  if (fits.length > 0) return fits;
   if (doubled) return [ONE_WALL_HINT];
-  if (exteriors.length > 0) {
-    return [
-      `No position along the ${runWord} \`${where}\` names fits a ${numStr(width)} mm opening with its nibs in an exterior wall: narrow it, or move a wall that meets the ${runWord}.`,
-      ...between,
-    ];
-  }
   return [
-    `No exterior wall lies on the ${runWord} \`${where}\` names: use an edge of the room that faces outside.`,
-    ...between,
+    `No position along the ${runWord} \`${where}\` names fits a ${numStr(width)} mm opening with its nibs in an exterior wall: narrow it, or move a wall that meets the ${runWord}.`,
   ];
 }
 
