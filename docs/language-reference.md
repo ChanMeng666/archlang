@@ -1153,7 +1153,10 @@ An opening may be placed by the rooms instead of by a wall
 - `between <A> and <B>` stands in the **one wall body on the edge run the two rooms share**,
   derived or authored. `<edge>` is `top`, `bottom`, `left` or `right` (the compass words only
   where a datum may use them).
-- `on <room>.<edge>` stands in the **one exterior wall body on that edge** of the room.
+- `on <room>.<edge>` stands in the **one exterior wall body on that edge** of the room. An edge
+  can carry several walls, say exterior for part of its length and a partition for the rest. The
+  position is still measured along the whole edge, and the opening stands in an exterior wall
+  when its whole span lands on that wall and no other.
 - `<pos>` is measured **along the run** (or the edge), never along the host wall, and every
   offset is to the opening's **centre**. The run starts at its end with the smaller `x`
   (horizontal) or `y` (vertical), whichever way the host wall is drawn.
@@ -1220,8 +1223,8 @@ plan "An L round a room" {
 |---|---|
 | No position on a door or cased opening; a plain `at <mm>` or `at <pct>%`; an edge parallel to the run, meeting it away from its ends, or a centre line (`cx`/`cy`); an axis parallel to the run, missing it, or not declared; on a pair that shares several edges, an edge that meets none of them at an end | `E_OPENING_DATUM` |
 | The two rooms share no edge (or one room is named twice) | `E_WALL_BETWEEN_NOT_ADJACENT` |
-| No wall on the run; on `on <room>.<edge>`, the wall there is a partition | `E_OPENING_NO_SHARED_WALL` |
-| More than one wall body on the run (an authored span beside a derived remainder, two exterior runs either side of a narrower neighbour); on a pair that shares several edges, a position that does not pick one (`at center`, `from start\|end`, `at axis`, no position, an edge meeting two of them) | `E_OPENING_HOST_AMBIGUOUS` |
+| No wall on the run; on `on <room>.<edge>`, the one wall there is a partition | `E_OPENING_NO_SHARED_WALL` |
+| On `between`, more than one wall body on the run (an authored span beside a derived remainder); on `on <room>.<edge>` with several walls on the edge, a span that crosses two of them, stands on a partition, stands on none or lies on two at once (the hint quotes a position on each exterior wall); on a pair that shares several edges, a position that does not pick one (`at center`, `from start\|end`, `at axis`, no position, an edge meeting two of them) | `E_OPENING_HOST_AMBIGUOUS` |
 | The pair is declared `open` in `walls from rooms` | `E_WALL_BETWEEN_OPEN` |
 | A jamb too near a meeting wall's face, a wall inside the span, or a span past its run | `E_OPENING_NIB` |
 | A room the plan or component cannot see; a circle, or a polygon with an edge neither horizontal nor vertical | `E_UNKNOWN_REF`, `E_ROOM_NOT_RECTANGLE` |

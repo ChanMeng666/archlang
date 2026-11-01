@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `archlang compile plan.arch -o plan.pdf` with no `-f` now writes a PDF. It wrote SVG bytes under the `.pdf` name and reported success, and the same held for `.png`, `.dxf`, `.txt` and `.json`. `-f` still wins, and an unknown extension still means SVG.
 - The Playground's PDF of a plan with a `paper` statement is now that paper's size, so its scale holds. It was a page of the raster's pixel size, about 1.4 m wide.
+- `window on liv.top` now resolves on an edge that is part exterior, part partition, when the whole window lands on one exterior wall. So do `door on` and `opening on`. The position still counts along the whole room edge, and `center` is still that edge's middle. A span that crosses two walls or lands on a partition stays `E_OPENING_HOST_AMBIGUOUS`, and its hint now quotes the nearest position on each exterior wall.
 
 ### Changed
 
