@@ -89,6 +89,7 @@ matter — run it yourself for the full object):
 | `rooms[].adjacent` | ids of rooms whose walls touch this one within tolerance (a shared corner alone doesn't count) |
 | `doors[].between` / `openings[].between` | the two spaces the connector joins — a room id or the literal `"exterior"`. For a connector on a wall it is the space probed one wall thickness either side of that wall's centreline, half a thickness past each face (on no floor behind an exterior wall: `"exterior"`), not which room edges the connector's centre point touches. A probe that lands on the boundary two rooms share picks the room covering more of the opening on that side. A side counts only for a room the connector's point touches, so behind a thick wall a probe that reaches a room beyond a shallow one decides nothing |
 | `doors[].straddles` / `openings[].straddles` | every room the opening covers on one side of its wall when that is more than one: a wall runs into the opening (measured just inside each jamb). Listed even when those rooms are the `between` pair. **Present only then** |
+| `doors[].centreline_at` / `openings[].centreline_at` | where an opening placed `between` two rooms landed: `{x, y}`, the centre of its span on its host wall's centreline, in plan mm. Its `from start` counts from the shared run, so the source alone does not show this. **Present only on a `between` door or cased opening** |
 | `windows[].room` | the room the window lights: the first room whose edge the window's centre is on. A window on an `arc` wall edge that no room edge touches is read from the shape instead: the room whose floor lies one wall thickness behind either face, or, for a bay outside a room drawn to the arc's chord, the room the probe enters one wall thickness past the chord along the curve's inward normal, unless a wall stands on or across the chord there. `null` when none of these finds a room |
 | `windows[].facing` | the **true compass** direction the window's wall faces (`N`/`S`/`E`/`W`), read against the plan's [`north`](language-reference.md#plan-settings) setting. Under the default `north up` the top of the drawing is north, so a top-edge window faces `N`; under `north right` compass north points at the page's right edge, so a right-edge window faces `N` and a top-edge one faces `W`. A `north <deg>` bearing snaps to the nearest cardinal (an exact 45° tie rounds clockwise) |
 | `windows[].facingPage` | the same direction **before** `north` is applied — `N` = toward the top of the drawing. **Present only when the declared `north` actually turns the answer**, so a plan on the default `north up` is unchanged |
@@ -682,7 +683,9 @@ Two lint rules read that, per storey:
 
 - **`W_NO_ENTRANCE`** stands down on a storey with an arrival room. Before v1.21 an upper
   floor had to invent a balcony door to lint clean; `examples/two-storey.arch` no longer
-  does.
+  does. On a storey with no arrival room, when another storey has a way in, its message says
+  which storey and why: no shaft joins it to another storey, its run stops on no other storey,
+  the shaft lands on no room there, or the shaft starts in a room nobody can walk to.
 - **`W_ROOM_UNREACHABLE`** treats each arrival room as joined to `exterior`, so the same
   BFS answers the same question one floor up.
 
@@ -1037,6 +1040,7 @@ the key is absent. Lengths are whole millimetres, rounded as the messages round 
 |-----|------|---------------------|
 | `wcs[]` | `W_WC_SIDE_CLEARANCE` | `need_mm`; per side, `centreline_mm` to what stands there and `by` (a piece, wall or swing; `null`: clear to the figure); `sides: null` with `unmeasured` (`wide`, `curved-wall`) when the rule does not measure the pan |
 | `tall_units[]` | `W_FURNITURE_OVER_WINDOW` | per window the unit stands in front of: `covered_mm` along the span, `across_mm` into the band |
+| `low_units[]` | `W_FURNITURE_OVER_WINDOW` | the pieces standing against a `sill 0` window, with the same rows as `tall_units[]`; the key is absent when there are none |
 | `hobs[]` | `W_HOB_UNDER_WINDOW`, `W_HOB_FRIDGE_GAP` | per window band it reaches: `covered_mm`, `across_mm`, `off_face_mm` (its side nearest the host, past the wall's face) and `under` (the rule's reading); `tall_unit_gap`, the nearest tall unit inside a side's landing |
 | `doorways[]` | `W_DOORWAY_BLOCKED`, `W_PATH_TOO_NARROW` | `width_mm`, `clear_width_mm` (the access graph's), `approach` (`need_mm`, `blocked_by` with the depth left from the wall's face); a cased opening wider than a doorway adds `stretch` (the longest clear stretch, against 1200 mm); `approach: null` with `unmeasured` (`garage`, `host`) when it is not read |
 | `stairs[]` | `W_STAIR_NO_LANDING`, `W_STAIR_TOO_STEEP` | `run_mm`, `min_run_mm` (on a `dir up` flight of a plan that authors heights; on a block stair whose flights cannot hold the goings whole, their run once lengthened to hold them), and per landing this storey owes, `need_mm`, `clear_mm` and `by` (a wall, a void or `no-floor`); `null` past the stair rules' work budget |
@@ -1263,7 +1267,10 @@ square to the centreline over the pan's depth; a mirror above it, a rug under it
 swing do not count. `W_FURNITURE_OVER_WINDOW` fires when a tall unit (a fridge, wardrobe,
 bookcase or locker) stands against a window's wall across part of its span, on either side of
 the wall; a window whose sill is at or above 2100 mm is a high window over the unit and is not
-judged. Both give the measured figure and a slide that clears it in the hint, and neither offers a
+judged. Against a `sill 0` window it reads every other piece at the cut plane too, when it stands
+on the wall's face: nothing stands lower than a sill at the floor, so no height is needed, and a
+window with no `sill` clause takes the 900 mm default and is not read this way. Both rules give the
+measured figure and a slide that clears it in the hint, and neither offers a
 machine fix.
 
 `W_ACCESSIBLE_WC_SIDE_WALL` reads the other end of the same band, in a room whose label says

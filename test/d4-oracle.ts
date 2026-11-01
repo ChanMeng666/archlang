@@ -563,6 +563,7 @@ export function latticeAligned(ir: ResolvedPlan | null): boolean {
 export type FactKind =
   | "inv"
   | "extent"
+  | "point"
   | "rect"
   | "box"
   | "ring"
@@ -695,7 +696,11 @@ export function summaryFacts(
     "doors.order",
     s.doors.map((d) => d.id),
   );
-  for (const [k, d] of keyed(s.doors, (d) => d.id)) inv(`doors[${k}]`, d);
+  for (const [k, d] of keyed(s.doors, (d) => d.id)) {
+    const { centreline_at, ...rest } = d;
+    inv(`doors[${k}]`, rest);
+    f.set(`doors[${k}].centreline_at`, { kind: "point", value: centreline_at ?? null });
+  }
 
   inv(
     "windows.order",
@@ -711,7 +716,11 @@ export function summaryFacts(
     "openings.order",
     s.openings.map((o) => o.id),
   );
-  for (const [k, o] of keyed(s.openings, (o) => o.id)) inv(`openings[${k}]`, o);
+  for (const [k, o] of keyed(s.openings, (o) => o.id)) {
+    const { centreline_at, ...rest } = o;
+    inv(`openings[${k}]`, rest);
+    f.set(`openings[${k}].centreline_at`, { kind: "point", value: centreline_at ?? null });
+  }
 
   inv(
     "furniture.order",
@@ -1103,6 +1112,7 @@ const KINDS: Readonly<Record<FactKind, Canon>> = {
       return quantise(swapsAxes(f) ? { w: e.h, h: e.w } : { w: e.w, h: e.h });
     },
   },
+  point: { canon: quantise, expect: (v, f) => (v === null ? null : quantise(tp(f, v as Point))) },
   rect: { canon: quantise, expect: (v, f) => quantise(rectT(f, v as Rect)) },
   box: {
     canon: quantise,

@@ -148,10 +148,37 @@ WC), with the wall fixtures only. A relational room that needs an anchored piece
 sofa, a table, a desk) is reported with that reason and left empty. This is decided before any
 compile check.
 
+> *Amended 2026-11-02 (issue #364, part 2).* A plan with `level` blocks is furnished storey by
+> storey, each storey as a single-storey plan would be; the "every empty room of a plan with `level`
+> blocks" limit above is gone. What a storey adds:
+>
+> - **The insertion.** Each storey's statements go inside its own `level` block (decision 9, one
+>   run per storey). `in <room>` and `against wall <id>` there mean that storey's room and wall, so
+>   an id repeated on another level needs nothing. A change and a room's note carry `level`.
+> - **The building.** A storey is read as `lint()` reads it (`lintStoreys`), so a stop of a shaft
+>   owes the head of the flight arriving from below, and `W_FURNITURE_ON_STAIR` is read the same way.
+> - **The floor.** A piece also keeps off the flights of the storeys either side, which pass through
+>   this floor whether or not a stop is drawn here; this storey's `void`s, each a hole in this
+>   storey's plate, while one on the storey above is headroom here; and this storey's lifts and
+>   escalators. No rule reports a piece on these, so the never-worse gate cannot refuse one: the
+>   candidate is dropped before any compile. A single-storey plan reads none of them, so what it
+>   gets did not move, and a piece may still be written on a `void` there.
+> - **The judgement.** Decision 7's multiset is counted on each storey as well as over the plan
+>   (`FurnishCodes.storeys`), under each ruleset: no storey may gain a code, whatever another storey
+>   lost. The sheet stage reads the same measure.
+>
+> "No statement in the plan body can name it" above was wrong: `furniture … in u1.bed` written where
+> `u1` is placed compiles, in the `in … anchor` form too. A room of a placed component stays
+> unfurnished by the stage's choice, on a single storey and on a level alike, and its note says what
+> the author can write.
+
 **9. The edits are one insertion.** The statements go after the last `furniture` statement of
 the plan body, or after its last room, wall, door, window or opening. They are never written
 inside a `for`, an `if`, a `zone`, a `level` or a component body. They go through the `Data`
 piece table, so every authored byte and comment survives.
+
+> *Amended 2026-11-02.* On a plan with `level` blocks the rule reads per storey: the block is that
+> storey's `level` block, and a run of statements is written in each storey that gained any.
 
 **10. A full run furnishes first.** `finish` with no `--only` runs `furnish`, then `sheet`,
 because the legend lists the furniture. Each stage is then run once more on the result; a
@@ -164,11 +191,11 @@ result a stage would edit again is not returned, and the source comes back untou
 | Law | Statement |
 |---|---|
 | Fixpoint | a second run changes nothing |
-| Never worse | no compile error, no new diagnostic code under the default ruleset or a universal lint profile, no new furniture conflict (drafting-layer codes and the residential-advisory profiles excepted, see the 2026-10-24 and 2026-10-25 amendments to §7) |
+| Never worse | no compile error, no new diagnostic code under the default ruleset or a universal lint profile, on any storey, no new furniture conflict (drafting-layer codes and the residential-advisory profiles excepted, see the 2026-10-24 and 2026-10-25 amendments to §7) |
 | Run | a use's wall fixtures sit on one wall, each touching the next |
 | Fill only | a furnished room is untouched; an all-furnished plan is a byte no-op |
 | Named | a room the run leaves empty has a note in `unresolved`, whatever left it empty (2026-10-31) |
-| Pure insertion | the result is the source with one run of statements inserted |
+| Pure insertion | the result is the source with one run of statements inserted, one per storey on a plan with `level` blocks |
 | Relative | every statement written is `against wall` or `in <room> anchor`, never `at (x,y)` |
 | Bounded | the compile checks of a run do not exceed `1 + 17 × rooms` |
 | Untouched | a source that does not compile is returned byte-identical |
@@ -193,7 +220,8 @@ leaves the room empty and says why.
 - An agent gets a furnished, sheeted drawing from one command, after lint is clean.
 - The pieces are conventional, not designed. An author who wants a different arrangement edits
   the statements or furnishes the room first; a furnished room is never revisited.
-- A multi-storey plan and a polygon room get no furniture from this stage. Both are reported.
+- A polygon room gets no furniture from this stage, and neither does a room of a placed component.
+  Both are reported. (Until 2026-11-02 a multi-storey plan got none either.)
 - A relational room gets wall fixtures only, and none when its use needs an anchored piece.
 - The table is public data. Adding a use or a piece is an edit to `FURNISH_TABLE` and to the
   table in `docs/furniture.md`, which a test compares.

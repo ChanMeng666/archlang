@@ -94,7 +94,7 @@ import {
   verticalsOf,
 } from "./vertical.js";
 import type { RectEdge } from "./fixture-orientation.js";
-import { fmt2 } from "./num-format.js";
+import { fmt2, fmt3 } from "./num-format.js";
 import { type KeepSummary, keepSummary } from "./keep.js";
 import { drawnView, keepResultsOf } from "./ir.js";
 import { type D4, fromSpelling, northQuarterTurns } from "./algebra/d4.js";
@@ -138,6 +138,7 @@ export type {
   HobFact,
   HobWindowFact,
   LandingFact,
+  LowUnitFact,
   StairFact,
   TallUnitFact,
   WcFact,
@@ -286,6 +287,13 @@ export interface DoorSummary {
    * `sill` here to pair with it.
    */
   head?: number;
+  /**
+   * Where a `between` door landed: the centre of its span on its host wall's centreline, in plan
+   * mm, the point `door at (x,y)` would name. Read off the resolved position, so it answers what
+   * `from start` counted from (the shared run, not the room). Present only on a door placed
+   * `between`, whose position cannot be read off one room's edge, so every other row is byte-identical.
+   */
+  centreline_at?: Point;
 }
 
 export interface WindowSummary {
@@ -353,6 +361,8 @@ export interface OpeningSummary {
   /** Top of the cased opening above this storey's floor, in mm — by default the
    *  host wall's own height. Present only when the plan authored a height somewhere. */
   head?: number;
+  /** As {@link DoorSummary.centreline_at}: only on a cased opening placed `between`. */
+  centreline_at?: Point;
 }
 
 /**
@@ -1230,6 +1240,11 @@ function instanceOf(e: { _instance?: string; _component?: string }): { instance?
   return e._instance === undefined ? {} : { instance: e._instance, component: e._component };
 }
 
+/** Spreadable {@link DoorSummary.centreline_at}: the resolved point of an opening placed `between`. */
+function centrelineAt(o: RDoor | ROpening): { centreline_at?: Point } {
+  return o._relation?.between ? { centreline_at: { x: Number(fmt3(o.at.x)), y: Number(fmt3(o.at.y)) } } : {};
+}
+
 /** Spreadable instance stamp for a {@link FreedomElement}. */
 function inst(instance: string | undefined): { instance?: string } {
   return instance === undefined ? {} : { instance };
@@ -1485,6 +1500,7 @@ function summarize(
       ...(d._relation ? { relation: relationText(d._relation) } : {}),
       ...(d.doorKind !== undefined ? { kind: d.doorKind } : {}),
       ...(heights ? { head: d.head } : {}),
+      ...centrelineAt(d),
     };
   });
 
@@ -1541,6 +1557,7 @@ function summarize(
       width: o.width,
       ...(o._relation ? { relation: relationText(o._relation) } : {}),
       ...(heights ? { head: o.head } : {}),
+      ...centrelineAt(o),
     };
   });
 

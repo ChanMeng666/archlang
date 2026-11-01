@@ -7,7 +7,11 @@
  *   measured along that run. A polygon can share several runs with a room: the position then
  *   has to pick one, which only `<mm> from <room>.<edge>` can, and any other is refused.
  * - `on <room>.<edge> [at <pos>]` (door, window, cased opening): the one EXTERIOR wall body on
- *   that edge of the room, at a position measured along the edge.
+ *   that edge of the room, at a position measured along the edge. An edge can carry several
+ *   bodies, say part exterior, part partition. The position is still measured along the whole
+ *   edge, and names one point of it before any wall is read, so where the opening lands is
+ *   arithmetic: its whole span on one exterior body and no other wall stands there, and any
+ *   other landing refuses.
  * - The datum positions on the existing `on <wall> at …` form: `<mm> from start|end`,
  *   `<mm> from <room>.<edge>`, `axis <label>` ({@link datumAccess}, read by `attach.ts`).
  *
@@ -619,6 +623,50 @@ const extent = (s: WallSegment, vertical: boolean): [number, number] => {
   return [Math.min(a, b), Math.max(a, b)];
 };
 
+/** The bodies a span centred on `c` lies on by more than float dust. Charged before the scan. */
+function bodiesUnder(bodies: readonly WallSegment[], c: number, width: number, run: Run): WallSegment[] {
+  chargeSteps(bodies.length);
+  const lo = c - width / 2;
+  const hi = c + width / 2;
+  return bodies.filter((s) => {
+    const [bl, bh] = extent(s, run.vertical);
+    return bl < hi - JUNCTION_EPS && bh > lo + JUNCTION_EPS;
+  });
+}
+
+/** What the walls of the group leave an opening in one host, each read in run coordinates: the
+ *  stretch of the run the host covers, where other walls meet it, and the nib a jamb needs. */
+interface HostFit {
+  R0: number;
+  R1: number;
+  js: JunctionSpan[];
+  need: number;
+}
+
+/** {@link hostFit}'s reading of the group's walls, shared by every host of one placement. */
+function meetingWalls(ctx: RelationCtx): { segs: WallSegment[]; voided: ReadonlySet<string> } {
+  return { segs: ctx.walls.flatMap((w) => segmentsOfWall(w)), voided: openBoundaryIds(ctx.walls) };
+}
+
+function hostFit(host: WallSegment, run: Run, { segs, voided }: ReturnType<typeof meetingWalls>): HostFit {
+  chargeSteps(segs.length + 1);
+  if (voided.size > 0) chargeSteps(2 * segs.length); // a scan past each end of the host
+  const [bl, bh] = extent(host, run.vertical);
+  // The meeting walls, by the lint's own measure, in run coordinates.
+  const sign = (run.vertical ? host.b.y - host.a.y : host.b.x - host.a.x) >= 0 ? 1 : -1;
+  const a0 = run.vertical ? host.a.y : host.a.x;
+  const js = standingJunctionSpans(host, segs, voided).map((j) => {
+    const p = a0 + sign * j.lo;
+    const q = a0 + sign * j.hi;
+    return { ...j, lo: Math.min(p, q), hi: Math.max(p, q) };
+  });
+  const need = Math.max(
+    JUNCTION_NIB_DEFAULTS.minJunctionNibMm,
+    host.thickness * JUNCTION_NIB_DEFAULTS.junctionNibThicknessRatio,
+  );
+  return { R0: Math.max(run.r0, bl), R1: Math.min(run.r1, bh), js, need };
+}
+
 /** The wall a segment belongs to (by identity: its id and that exact segment). */
 function wallOfSeg(walls: readonly RWall[], s: WallSegment): RWall | undefined {
   return walls.find(
@@ -731,20 +779,33 @@ function placeOnRun(
     const w = wallOfSeg(ctx.walls, s);
     return w ? wallPhraseOf(w) : `wall "${s.wallId}"`;
   };
+  // The position, snapped as every coordinate is (ADR 0004), then judged where it lands.
+  const at = ctx.snapPt(run.vertical ? { x: run.c, y: centre } : { x: centre, y: run.c });
+  const c = run.vertical ? at.y : at.x;
+  const flushOk = kind === "opening";
+  let host = bodies[0]!;
   if (bodies.length > 1) {
-    const names = [...new Set(bodies.map((s) => phrase(s)))];
-    ctx.diag({
-      severity: "error",
-      message: `${what} cannot tell which wall to stand in: the ${runWord} \`${where}\` names carries ${bodies.length} wall runs (${names.join(", ")}${names.length < bodies.length ? ", in pieces" : ""})`,
-      code: "E_OPENING_HOST_AMBIGUOUS",
-      span,
-      hints: [
-        "Make it one wall on that line (remove the authored wall lying on the derived one, or join the pieces), or place the opening `on <wall> at …` on the wall you mean.",
-      ],
-    });
-    return null;
+    // On a room's edge the position has already named a point of it, so where the span lands can
+    // settle the wall. A shared run keeps its one-wall rule: two bodies there are never told apart.
+    const under = exterior ? bodiesUnder(bodies, c, width, run) : undefined;
+    const lands = under?.length === 1 && under[0]!.category === "exterior" ? under[0] : undefined;
+    if (lands === undefined) {
+      if (under) {
+        const landing = { c, width, flushOk, kind, anchor: placed.anchor, where, runWord, run };
+        ctx.diag(refusalOnEdge(bodies, under, landing, what, span, ctx));
+      } else {
+        ctx.diag({
+          severity: "error",
+          message: `${what} cannot tell which wall to stand in: the ${runWord} \`${where}\` names carries ${wallRuns(bodies, phrase)}`,
+          code: "E_OPENING_HOST_AMBIGUOUS",
+          span,
+          hints: [ONE_WALL_HINT],
+        });
+      }
+      return null;
+    }
+    host = lands;
   }
-  const host = bodies[0]!;
   const hostWall = wallOfSeg(ctx.walls, host);
   if (exterior && host.category !== "exterior") {
     ctx.diag({
@@ -773,32 +834,14 @@ function placeOnRun(
     });
     return null;
   }
-  // The position, snapped as every coordinate is (ADR 0004), then judged where it lands.
-  const at = ctx.snapPt(run.vertical ? { x: run.c, y: centre } : { x: centre, y: run.c });
-  const c = run.vertical ? at.y : at.x;
-  const [bl, bh] = extent(host, run.vertical);
-  const R0 = Math.max(run.r0, bl);
-  const R1 = Math.min(run.r1, bh);
-  // The meeting walls, by the lint's own measure, in run coordinates.
-  const segs = ctx.walls.flatMap((w) => segmentsOfWall(w));
-  chargeSteps(segs.length + 1);
-  const voided = openBoundaryIds(ctx.walls);
-  if (voided.size > 0) chargeSteps(2 * segs.length); // a scan past each end of the host
-  const sign = (run.vertical ? host.b.y - host.a.y : host.b.x - host.a.x) >= 0 ? 1 : -1;
-  const a0 = run.vertical ? host.a.y : host.a.x;
-  const js = standingJunctionSpans(host, segs, voided).map((j) => {
-    const p = a0 + sign * j.lo;
-    const q = a0 + sign * j.hi;
-    return { ...j, lo: Math.min(p, q), hi: Math.max(p, q) };
-  });
-  const need = Math.max(
-    JUNCTION_NIB_DEFAULTS.minJunctionNibMm,
-    host.thickness * JUNCTION_NIB_DEFAULTS.junctionNibThicknessRatio,
-  );
-  const flushOk = kind === "opening";
+  const { R0, R1, js, need } = hostFit(host, run, meetingWalls(ctx));
   const fault = nibFault(c, width, R0, R1, js, need, flushOk, run);
   if (fault) {
     const legal = nearestLegal(c, width, R0, R1, js, need, flushOk, ctx.grid, run);
+    // A wall lying on part of this host can take the nearest legal span too, and then it would refuse.
+    const alone = legal === undefined || bodies.length === 1 || bodiesUnder(bodies, legal, width, run).length === 1;
+    // Nor is a position in a demolished wall legal: it hosts nothing, wherever the span stands.
+    const gone = hostWall?.status === "demolish";
     const boundaryPhrase = (s: WallSegment): string => {
       const w = wallOfSeg(ctx.walls, s);
       return w ? openBoundaryPhraseOf(w) : `wall "${s.wallId}"`;
@@ -811,14 +854,143 @@ function placeOnRun(
       code: "E_OPENING_NIB",
       span,
       hints: [
-        legal === undefined
-          ? `No position along the ${runWord} \`${where}\` names fits a ${numStr(width)} mm opening with its nibs: narrow it, or move a wall that meets the ${runWord}.`
-          : `The nearest legal position is \`${where} at ${legalText(placed.anchor, legal, run)}\` (centre at ${alongText(run, legal)}).`,
+        gone
+          ? DEMOLISHED_HINT
+          : !alone
+            ? ONE_WALL_HINT
+            : legal === undefined
+              ? `No position along the ${runWord} \`${where}\` names fits a ${numStr(width)} mm opening with its nibs: narrow it, or move a wall that meets the ${runWord}.`
+              : `The nearest legal position is \`${where} at ${legalText(placed.anchor, legal, run)}\` (centre at ${alongText(run, legal)}).`,
       ],
     });
     return null;
   }
   return { at, host, relation };
+}
+
+/** The advice for a run that carries two walls where no position can tell them apart. */
+const ONE_WALL_HINT =
+  "Make it one wall on that line (remove the authored wall lying on the derived one, or join the pieces), or place the opening `on <wall> at …` on the wall you mean.";
+
+/** The advice for an opening whose only wall is coming down: no position there would resolve. */
+const DEMOLISHED_HINT =
+  "That wall is marked `status demolish` and hosts nothing: host the opening on a wall that stays, or keep the wall.";
+
+/** `3 wall runs (…)`: what a run carries, each wall named once. */
+function wallRuns(bodies: readonly WallSegment[], phrase: (s: WallSegment) => string): string {
+  const names = [...new Set(bodies.map((s) => phrase(s)))];
+  return `${bodies.length} wall runs (${names.join(", ")}${names.length < bodies.length ? ", in pieces" : ""})`;
+}
+
+/** `x 2400–3600`: an opening's span along its run. */
+const spanText = (c: number, width: number, run: Run): string =>
+  `${alongText(run, c - width / 2)}–${numStr(c + width / 2)}`;
+
+/** Where an opening landed on a run, and the words a refusal quotes it in. */
+interface Landing {
+  c: number;
+  width: number;
+  flushOk: boolean;
+  kind: Kind;
+  anchor: OnRun["anchor"];
+  where: string;
+  runWord: string;
+  run: Run;
+}
+
+/** Why a span on a room's edge has no wall of its own, given the bodies it lies on. */
+function landingText(
+  under: readonly WallSegment[],
+  { c, width, run }: Landing,
+  phrase: (s: WallSegment) => string,
+): string {
+  const span = `its span ${spanText(c, width, run)}`;
+  if (under.length === 0) return `${span} stands on none of them`;
+  return under.length === 1
+    ? `${span} stands on ${phrase(under[0]!)}, not on an exterior wall`
+    : `${span} lies on ${under.length} of them`;
+}
+
+/**
+ * The refusal of an opening on a room's edge with several walls, none of which takes its span. With
+ * an exterior wall standing somewhere on the edge the position is what failed, so it is the
+ * ambiguity and the hint quotes positions. With none, no position could help: it is the refusal one
+ * partition gets. A wall is named for what it is: an `open between` boundary voided over its whole
+ * span has nothing built along it, and a `status demolish` wall is on the sheet but hosts nothing.
+ * Reading each wall's status is charged before the scan, and only on this path.
+ */
+function refusalOnEdge(
+  bodies: readonly WallSegment[],
+  under: readonly WallSegment[],
+  landing: Landing,
+  what: string,
+  span: Span,
+  ctx: RelationCtx,
+): Diagnostic {
+  chargeSteps(bodies.length * ctx.walls.length);
+  const walls = meetingWalls(ctx);
+  const phrase = (s: WallSegment): string => {
+    const w = wallOfSeg(ctx.walls, s);
+    if (!w) return `wall "${s.wallId}"`;
+    if (w.status === "demolish") return `${wallPhraseOf(w)} (\`status demolish\`)`;
+    return walls.voided.has(w.id) ? openBoundaryPhraseOf(w) : wallPhraseOf(w);
+  };
+  const standing = bodies.filter((s) => s.category === "exterior" && wallOfSeg(ctx.walls, s)?.status !== "demolish");
+  const carries = wallRuns(bodies, phrase);
+  const { where, runWord, kind } = landing;
+  const one = under.length === 1 ? wallOfSeg(ctx.walls, under[0]!) : undefined;
+  // `between` refuses an open pair whatever `width` left of the wall, and a demolished wall hosts nothing.
+  const between =
+    kind !== "window" && one !== undefined && one._derived?.open === undefined && one.status !== "demolish"
+      ? ["Place it `between <room> and <room>` for an opening into the neighbouring room."]
+      : [];
+  if (standing.length === 0) {
+    return {
+      severity: "error",
+      message: `${what} needs an exterior wall on \`${where}\`, but none stands there: the ${runWord} carries ${carries}`,
+      code: "E_OPENING_NO_SHARED_WALL",
+      span,
+      hints: [`Use an edge of the room that faces outside.`, ...between],
+    };
+  }
+  return {
+    severity: "error",
+    message: `${what} cannot tell which wall to stand in: the ${runWord} \`${where}\` names carries ${carries}, and ${landingText(under, landing, phrase)}`,
+    code: "E_OPENING_HOST_AMBIGUOUS",
+    span,
+    hints: [...edgeHints(bodies, standing, landing, walls, ctx), ...between],
+  };
+}
+
+/**
+ * What to write for each exterior wall that stands on a room's edge: the nearest position in it alone.
+ * The position is read through {@link hostFit} and the same check a placement gets, so a quoted one
+ * resolves. Each body's scan is charged before it runs.
+ */
+function edgeHints(
+  bodies: readonly WallSegment[],
+  standing: readonly WallSegment[],
+  { c, width, flushOk, where, runWord, anchor, run }: Landing,
+  walls: ReturnType<typeof meetingWalls>,
+  ctx: RelationCtx,
+): string[] {
+  const exteriors = [...standing].sort((p, q) => extent(p, run.vertical)[0] - extent(q, run.vertical)[0]);
+  const fits: string[] = [];
+  let doubled = false;
+  for (const s of exteriors) {
+    const { R0, R1, js, need } = hostFit(s, run, walls);
+    const legal = nearestLegal(c, width, R0, R1, js, need, flushOk, ctx.grid, run);
+    if (legal === undefined) continue;
+    if (bodiesUnder(bodies, legal, width, run).length === 1) {
+      const on = `${alongText(run, R0)}–${numStr(R1)}`;
+      fits.push(`\`${where} at ${legalText(anchor, legal, run)}\` stands in the exterior wall on ${on}.`);
+    } else doubled = true;
+  }
+  if (fits.length > 0) return fits;
+  if (doubled) return [ONE_WALL_HINT];
+  return [
+    `No position along the ${runWord} \`${where}\` names fits a ${numStr(width)} mm opening with its nibs in an exterior wall: narrow it, or move a wall that meets the ${runWord}.`,
+  ];
 }
 
 /** Why a span fails its nibs (a phrase builder, and whether it reads an open boundary, which has
@@ -835,7 +1007,7 @@ function nibFault(
 ): { say: (name: (j: JunctionSpan) => string) => string; atBoundary: boolean } | null {
   const lo = c - width / 2;
   const hi = c + width / 2;
-  const span = `${alongText(run, lo)}–${numStr(hi)}`;
+  const span = spanText(c, width, run);
   if (lo < R0 - JUNCTION_EPS || hi > R1 + JUNCTION_EPS) {
     return {
       say: () =>

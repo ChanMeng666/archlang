@@ -197,3 +197,65 @@ describe("arch finish — exit codes", () => {
     expect(run(["finish", join(dir, "nope.arch")]).status).toBe(1);
   }, 30000);
 });
+
+describe("arch finish — a plan with `level` blocks", () => {
+  const LEVELS = `plan "Two storeys" {
+  units mm
+  level 0 "Ground" {
+    room id=r at (0,0) size 5000x4000 label "Living" uses living
+    walls from rooms exterior 300 partition 100
+    door on r.bottom at 2500 from start width 1000 swing into r
+    window on r.top width 2000
+  }
+  level 1 "Upper" {
+    room id=r at (0,0) size 5000x4000 label "Bedroom" uses bedroom
+    walls from rooms exterior 300 partition 100
+    window on r.top width 1500
+  }
+}
+`;
+  beforeEach(() => writeFileSync(file, LEVELS, "utf8"));
+
+  it("`--only furnish --dry-run --json`: the same keys, each change with its `level`, nothing written", () => {
+    const r = run(["finish", file, "--only", "furnish", "--dry-run", "--json"]);
+    expect(r.status).toBe(0);
+    expect(readFileSync(file, "utf8")).toBe(LEVELS);
+    const out = JSON.parse(r.stdout);
+    expect(Object.keys(out).sort()).toEqual(
+      ["changed", "changes", "diff", "ok", "source", "target", "unresolved", "wrote"].sort(),
+    );
+    expect(out.ok).toBe(true);
+    expect(out.changed).toBe(true);
+    expect(out.wrote).toBe(false);
+    expect(out.changes.map((c: { room: string; level: number }) => [c.room, c.level])).toEqual([
+      ["r", 0],
+      ["r", 1],
+      ["r", 1],
+    ]);
+    expect(Object.keys(out.changes[0]).sort()).toEqual(
+      ["kind", "level", "reason", "room", "span", "stage", "statement", "text"].sort(),
+    );
+    expect(out.changes[0].reason).toBe(`"r" (living, level 0) held no furniture`);
+    expect(out.unresolved).toEqual([]);
+  }, 30000);
+
+  it("rewrites the file with each storey's pieces in its own block, and a second run says no changes", () => {
+    const r = run(["finish", file, "--only", "furnish"]);
+    expect(r.status).toBe(0);
+    expect(r.stderr).toContain("+    furniture sofa in r anchor");
+    const out = readFileSync(file, "utf8");
+    expect(out.indexOf("furniture sofa")).toBeLessThan(out.indexOf(`level 1 "Upper"`));
+    expect(out.indexOf("furniture bed")).toBeGreaterThan(out.indexOf(`level 1 "Upper"`));
+    const again = run(["finish", file, "--only", "furnish"]);
+    expect(again.status).toBe(0);
+    expect(readFileSync(file, "utf8")).toBe(out);
+    expect(again.stderr).toContain("(no changes)");
+  }, 60000);
+
+  it("a human run names the storey of a room it left alone", () => {
+    writeFileSync(file, LEVELS.replace(`label "Bedroom" uses bedroom`, `label "Store" uses storage`), "utf8");
+    const r = run(["finish", file, "--only", "furnish", "--dry-run"]);
+    expect(r.status).toBe(0);
+    expect(r.stderr).toContain(`"r" (level 1) is outside the furnish table`);
+  }, 30000);
+});

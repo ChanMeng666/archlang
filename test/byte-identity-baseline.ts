@@ -1604,6 +1604,32 @@
  * same y; it stood across the wall); `min-bedroom-flat.faithful`'s "Bathroom" (9090,739) to
  * (9300,3139), off the floor before, clear now.
  *
+ * ## Four examples (both rows each): `describe()` reports where a `between` opening landed (#401)
+ *
+ * Case (1), a compiler change, in `describe()` only (`test/describe-centreline-at.test.ts`). A door
+ * or cased opening placed `between` gains an appended `centreline_at`, the point it resolved to, and
+ * no other key moves. It appears on no other row, so a plan with no such opening keeps its bytes:
+ * `relational`, `remodel`, `turning-stair` and `two-bed` are the four examples with one. Their SVGs,
+ * `lint()` and `compile().diagnostics` are byte-identical. It has to move these rows because the
+ * position is the fact asked for and `describe()` is where a reader looks: a `from start` there
+ * counts from the shared run, which the source alone does not show (#370).
+ *
+ * Proof, on the tree with the field. With the field switched off, every digest suite, this table
+ * and K1 included, passed against the previous rows. Then, over 24,874 plans (the corpus of
+ * `docs/testing.md` § 5 and every plan the relational and hashing suites parse, read at `parse()`),
+ * each payload hashed apart against a `git archive` of `18127701`: SVG, scene, both `lint()`
+ * profiles and the circulation overlay moved on no row, `describe()` moved on the 719 plans with
+ * the field, and with the key removed each of those is byte-identical to the base. One more row
+ * moved: `narrow` in `test/openings-between.test.ts`, whose `E_OPENING_HOST_AMBIGUOUS` keeps its
+ * code and span and gains the landing in `message` and the positions in `hints`. It pins no digest.
+ *
+ * The same rows moved in `while-byte-identity-baseline.ts`, `import-module-lets.test.ts`,
+ * `garage-`, `double-door-`, `wall-status-`, `block-stair-` and
+ * `rectilinear-rooms-byte-identity.test.ts`, `open-crossing.test.ts` and K1, and plan rows of the
+ * same kind in `openings-between-`, `wall-between-around-`, `furniture-relations-` and
+ * `swing-building-digests.test.ts`, `rectilinear-rooms.test.ts` and `wall-status-drawing.test.ts`.
+ * Each row names this section. No other row in this table moved.
+ *
  * #367 re-measured again, when a label that does not fit began to shrink (`fitLabels`,
  * `src/label-fit.ts`) and `inkWidth`, the wider of Roboto and Helvetica Bold per character, replaced
  * the flat 0.5 em. Swap-back proof, with these tables'
@@ -1655,8 +1681,8 @@ export const BASELINE: [string, string][] = [
   ["one-room", "17b12740d9e290ca59ea17013f89d54c42a3d6907c915db4338416966d988ce0"],
   ["parametric", "f56a97d02a2fca82327b80b3f7a7f5edcac9518a0b70244caa292ed8f3a2aee4"],
   ["practice-office", "105ae5709290f9946f0192427e430a1cef009ddd1de44be1b2ddd818c64cdd7e"], // added with the example, re-measured for net area, see header; PS2.11e, see header; PS2.74 source edit, see header
-  ["relational", "357cb4f09333ffb210a8a276acfd524c384c90657cc9ba529d5d4298d88c8cb5"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header; PS2.11e, see header
-  ["remodel", "74364e7281171e580e465d10950a82fc1e3a8bc83418351bec02b2092fb66f5f"], // added with the example, see header
+  ["relational", "e159c8772d98b0f9d3c73e8eb08a16e8e2653bd3b470cb13e561b8b1184dc27b"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header; PS2.11e, see header; `centreline_at`, see header
+  ["remodel", "ac397a1ade4e48022c139ae00354c992c0c793ef1a632f9abd319140339e7daa"], // added with the example, see header; `centreline_at`, see header
   ["sheet-notes", "4cc86e92db896dade462f57b6db434057abe253ab5e10232711804e4da31d7d9"], // re-measured, see header
   ["studio", "c1b79a49af3ad31cddf82e88632624d46663c804f134b6e172e585cad36ed969"], // PS2.11e, see header
   ["terrace-row", "ec839a417cb57b6bce80a592a144bd98a216b175edb92c67df3260ab5ce9c33d"], // re-measured, see header
@@ -1664,8 +1690,8 @@ export const BASELINE: [string, string][] = [
   ["tiny-house", "8236b2c882cc2ff9f21a7b0d5a715f773d300b7432e5746987f2e3809e430ce9"], // PS2.11e, see header
   ["townhouse", "d17dfbff4905c3f6a1beb59c8a5be55cfa4c8227b0acf04639c2851c71edaf03"], // re-measured, see header; PS2.11e, see header
   ["transit-hall", "084cfa94f152b75ecee1786602569b6f008c3b3d3071d655d2d6711306ccea97"], // PS2.11e, see header
-  ["turning-stair", "ef0ff50f1985532ba5e4c88b442d29133ead65f5f4510cad2f27aa51ba5d5ba1"], // added with the example, see header
-  ["two-bed", "7a832dd5930652a5e046202f31e00ff580eaf212ebc3cd1b43b967172f2941f0"], // PS3.6 source rewrite, see header; PS2.11e, see header
+  ["turning-stair", "2d3e7a34b2e54592f90c65b7d4248462fe862c98b4516deb5e196c59b85aedc7"], // added with the example, see header; `centreline_at`, see header
+  ["two-bed", "21101fea33b149201d58eddfc32d024b4a939a682cf7e4f37c859d717a8e8eca"], // PS3.6 source rewrite, see header; PS2.11e, see header; `centreline_at`, see header
   ["two-storey", "3bf63c38e58121d55f65e405fa85ec53eb59e968ec781bd085a857ebcaca5e1e"], // re-measured, see header
 ];
 
@@ -1705,8 +1731,8 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["one-room", "48eb98086894551bb9dddcab954a4e3f3d5a532158da11e38fd711134709605a"],
   ["parametric", "144703a7cf28e64c70cfc57451525839dd84da0f1d310135750b5d9f532d565a"],
   ["practice-office", "bf39a9a46d2635dd1cb6f14d61d222859d2e6439c9c5307dece6ae180bd62eb2"], // added with the example, re-measured for net area, see header
-  ["relational", "f35d691d676a0787a261f876af34cbbeeb8c4c6148b378106629e17d30a5d426"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header; PS2.11e, see header
-  ["remodel", "a34991d47df368dcc42abfabce17f4020587cbed3b4e1a3ea626d448d673864b"], // added with the example, see header
+  ["relational", "4589a3eea239e9ac74b45a1a09c9639d1b33863e56660ca8ca0cf140a8e45be0"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header; PS2.11e, see header; `centreline_at`, see header
+  ["remodel", "b6eba3f1d2bb132e4447b146292a561316755c2d27494697d499e4ea86dce2a9"], // added with the example, see header; `centreline_at`, see header
   ["sheet-notes", "148de5f5a58fb9533999df816a742074ec901216e3b9fb78eff338b91633a4b8"], // added with the example, see header
   ["studio", "8ec08c91405139bf3d9979ad20d712299e82409bbec8d6ec9e70e89a856973e4"],
   ["terrace-row", "0c37d23bb8dfa83ce746869724ff62952637f1acb8a6ca353bfe8f7a440941a7"],
@@ -1714,8 +1740,8 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["tiny-house", "3513ef53a1064ff6b4435f4a8f05db2578aa258a1bb6c55c90df0517a638190b"], // PS2.11e, see header
   ["townhouse", "3577f336430ef832625c19b90bb79771177e65b298be10b6cde18cec1fdb9c60"], // re-measured, see header
   ["transit-hall", "4092fd0a7d88401cc49781d8021f0863300e8cbe65804d5735a9271a0c6c3eff"], // PS2.11e, see header
-  ["turning-stair", "08bb92245d0619fe6967d633befc61097cdadbdf6f7510ab7911d87f73a43b2c"], // added with the example, see header
-  ["two-bed", "df3c47a0219448b3735540031ddd562e1f811f50430fa30d02350d40efc3e6cf"], // PS3.6 source rewrite, see header
+  ["turning-stair", "2629386bd8d59f0c4725e705f4c13395a969e61f27c07fb15e09b886fe891798"], // added with the example, see header; `centreline_at`, see header
+  ["two-bed", "436fadbabbba67d12d667cfca3dc435a7be1e5d131d27f5a523caf9584b26454"], // PS3.6 source rewrite, see header; `centreline_at`, see header
   ["two-storey", "72a5fa1109dae69897fa073851fee0b5d601605aaf254efcbd309bf5dac33a8c"], // re-measured, see header
 ];
 

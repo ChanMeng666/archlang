@@ -112,6 +112,10 @@ the reason goes in `unresolved`. A plan that needs nothing comes back byte-ident
 > areas; none as drawn). Card PS5.6 lets `finish`/`furnish --profile <name>` hold the law under
 > that one profile.
 
+> *Amended 2026-11-02 (issue #364).* On a plan with `level` blocks the law is also read storey by
+> storey (`gainedCodes`, `src/furnish.ts`): a code a storey gained is a gain whatever another storey
+> lost. A single-storey plan has no storey to read, and nothing it gets moved.
+
 > **Superseded (2026-10).** The `furnish` stage exists: see
 > [ADR 0025](0025-furnish-as-explicit-transform.md). A full run is `furnish`, then `sheet`, and
 > `--only furnish` runs that stage. The paragraph below is the record of the first version.

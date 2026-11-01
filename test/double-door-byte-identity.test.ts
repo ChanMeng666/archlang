@@ -74,9 +74,9 @@ const BASELINE: [string, string][] = [
   ["examples/museum-wing.arch", "546b10dfb0204dbce454dff9e47713f32745285f4885e58a46b5faff23d10126"],
   ["examples/one-room.arch", "8c47e263f778993d69c2f85d07a24b3a62c0b96d9f17ccb5cd9ebf2af6fa0120"],
   ["examples/parametric.arch", "402cf58e4e122164928e6d875320e63b7be5c017396dce026ab8c73d4a0373ef"],
-  ["examples/remodel.arch", "0899315f2bd50e559d3e6e13350734231cd9c11f821fa929a9d0c1b51f1e13db"],
+  ["examples/remodel.arch", "f0f4a5aa4758c3f9feb14449b6a9be0b7afd020fb925619c6d83e66f7cb95f2d"], // `centreline_at`, see ./byte-identity-baseline.ts
   ["examples/sheet-notes.arch", "602cfd5f8e34268bf660dcad47b5cbf28332ddf92a119fba7317850ab9f9d798"],
-  ["examples/turning-stair.arch", "9e27b499358898fd45376c73ca5771c883335999f3506c5b84acb3b1a4eef835"], // new example (S2), see header
+  ["examples/turning-stair.arch", "34b5b4344ca81803a4b3f94513cd947adc0749f6e7e20dbf72c918244ee4c99c"], // new example (S2), see header; `centreline_at`, see ./byte-identity-baseline.ts
   ["examples/two-storey.arch", "30fea74236f151947c7fec764e66b2f5a860ce6f71908a5a60fc68e87566837a"],
   ["test/fixtures/axes-grid.arch", "e6be5d70788d931cacaa8cb1db2c2c454c1532d01153b90e2427c125770e5559"],
   ["test/fixtures/chain30.arch", "c4bd8bcd0890a5fbfa2b1304bb0ca17c3499f690ad10595e165e7b20f5871a02"], // #367, see test/byte-identity-baseline.ts
@@ -229,7 +229,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/relational.arch",
-    "4c117d32d823ccbfa76734397cf58001d5b3fcf700a67ee52b493856c436f5b1",
+    "d99a898c06b322f203c7f9f3d34740be351b523712bb04fe7b0d846e85811084", // `centreline_at`, see ./byte-identity-baseline.ts
     "8034d1bda180d886dd5fa3e053155b20f1508131985434735c5bdc283bd74053",
     [],
   ],
@@ -309,7 +309,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/two-bed.arch",
-    "4ddd7391b3da9f7b6b74bb336b6b65c0031a34fe99a22914f260026b2d14fc01",
+    "773304f859e2ecbbb549d24b228cf74022fbfd7d8dfc18a7125ceb2db394edcb", // `centreline_at`, see ./byte-identity-baseline.ts
     "64900f557e651ec2bfa263284f0fb583a4ca8eece54ec3a8c8335ef7d5d72090",
     [
       [

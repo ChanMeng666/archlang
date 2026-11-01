@@ -7,16 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `archlang finish` furnishes a plan with `level` blocks (issue #364). Each storey is furnished by the rules of a one-storey plan, written inside its own block, so `in <room>` means that storey's room when an id repeats on another level. A piece keeps off a shaft's flights and landings, a flight that passes through the floor from the storey above or below, the storey's own `void`s and its lifts and escalators. "Never worse" is judged per storey: a new warning on one storey is refused even when another storey improved. `changes` and `unresolved` entries of such a plan carry `level`. A one-storey plan gets the same bytes as before, so `finish` can still write a piece on a `void`, a lift or an escalator there. Each gate check compiles and lints the whole building, so `finish` time grows faster than the storey count.
+
 ### Fixed
 
+- The `finish` note on a room of a placed component no longer says a plan body cannot name it: `furniture … in u1.bed` works, and the note says so.
 - A room's label that does not fit now shrinks (issue #367). The name and area figure are drawn at the first height that clears the walls, the door swings and the fixtures, 3, 2.5 or 2 mm on the sheet, wrapped at a space where that helps, at the clear place nearest the room's centre. 2 mm is the furniture-label size; without `paper` the steps end at that drawing's furniture-label size. So `Abstellraum` in a 1.2 × 0.9 m store is 2 mm of text clear of the door, and `Abstell- raum` breaks at its space. A word is never split, a pinned label keeps its size, and a label that fits does not change. One that clears at no height is reported by `W_ANNOTATION_OVERLAP`, whose hint now says the placer did not find a clear place rather than that none exists.
 - `W_ANNOTATION_OVERLAP` and the label pass read a name's width character by character, the wider of Roboto (the PNG and PDF) and Helvetica Bold (a browser's SVG, Arial Bold having the same widths). They assumed half the font size per character, which read `WC` at 0.5 em when it draws 0.77 to 0.83: a "Bathroom" running through both walls of a 1.4 m room went unreported. A CJK character counts as one em, not half. This is an estimate covering those two faces, not a promise for every font.
 - `W_ANNOTATION_OVERLAP` now reads a pin in a round room against the circle. A pin in the sliver between the circle and the polygon that approximates it got neither that report nor `W_ROOM_LABEL_OUTSIDE`.
 - `archlang compile plan.arch -o plan.pdf` with no `-f` now writes a PDF. It wrote SVG bytes under the `.pdf` name and reported success, and the same held for `.png`, `.dxf`, `.txt` and `.json`. `-f` still wins, and an unknown extension still means SVG.
 - The Playground's PDF of a plan with a `paper` statement is now that paper's size, so its scale holds. It was a page of the raster's pixel size, about 1.4 m wide.
+- `W_NO_ENTRANCE` on a storey of a building that has a way in on another storey says which storey and what is missing there: no stair joins it to another storey, its stair stops on no other storey, the stair lands on no room there, or the stair starts in a room nobody can walk to. It said "the plan has no exterior door" although another storey had one. A plan of one storey and a building with no way in at all keep that sentence, and which storeys warn has not changed.
+- `W_BALCONY_NO_DOOR` no longer accepts a window that the plan says stops above the floor: a window with an authored `sill` above 0 is not a way onto a balcony. `sill 0` still counts, and so does a window with no `sill` clause, because its 900 mm is only the default.
+- `W_FURNITURE_OVER_WINDOW` also reports a low piece standing against a `sill 0` window, on the wall's face. `describe --facts clearances` lists those pieces under `low_units`, and a plan with no such piece has no such key.
+- `window on liv.top` now resolves on an edge that is part exterior, part partition, when the whole window lands on one exterior wall. So do `door on` and `opening on`. The position still counts along the whole room edge, and `center` is still that edge's middle. A span that crosses two walls or lands on a partition stays `E_OPENING_HOST_AMBIGUOUS`, and its hint now quotes the nearest position on each exterior wall, where one exists. An edge with no exterior wall standing on it is `E_OPENING_NO_SHARED_WALL`, whether it carries one wall or several.
 
 ### Changed
 
+- `describe --json` reports where a `between` door or cased opening landed, as `centreline_at`: the centre of its span on the wall's centreline, in plan millimetres. A `from start` there counts from the shared run, which the source alone does not show. Other doors and windows are unchanged.
 - The `archlang-export` skill says what to do where the CLI cannot run: stop after the first failure, then use the MCP tools and the Playground. In ChatGPT's sandbox `npx` cannot reach npm.
 - The OpenAI listing's third starter prompt asks for an A3 sheet and a PDF download link, which the hosted tools can deliver. `build:openai-plugin` takes `--plugin-version=<version>`, so a listing update does not need a core release.
 
