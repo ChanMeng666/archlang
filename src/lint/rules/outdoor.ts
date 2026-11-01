@@ -206,7 +206,8 @@ export const outdoorOverlapsRoom: LintRule = {
  * Unless the plan says otherwise ({@link stopsAboveFloor}): a window whose `sill` is authored above
  * the floor cannot be walked through. A window with no `sill` clause keeps counting. Its 900 mm is
  * the datum's default, heights are opt-in and nearly every plan writes none, so the rule would
- * otherwise fire on every plan that means a French window and never had to say so.
+ * otherwise fire on every plan that means a French window and never had to say so. A `fixed` or
+ * `tilt` window says the opposite whatever its sill: no one walks through it.
  */
 export const balconyNoDoor: LintRule = {
   name: "balcony-no-door",
@@ -226,7 +227,7 @@ export const balconyNoDoor: LintRule = {
       const near = (p: Point): boolean => pointInPolygon(p.x, p.y, ring) || distToPolygonEdge(p, ring) <= reach;
       if (ctx.doors.some((d) => near(d.at))) continue;
       const windows = ctx.windows.filter((w) => near(w.at));
-      if (windows.some((w) => !stopsAboveFloor(w))) continue;
+      if (windows.some((w) => !stopsAboveFloor(w) && !shutToWalking(w))) continue;
       unserved.push({ b, sealed: windows });
     }
     const names = surfaceNames(
@@ -241,14 +242,20 @@ export const balconyNoDoor: LintRule = {
           sealed.length === 0
             ? `${capFirst(names.get(b)!)} has no door or window within ${reach} mm of any of its edges, so there is ` +
               `no way onto it. Add a door (or a full-height window) on the wall it hangs off.`
-            : `${capFirst(names.get(b)!)} has no door within ${reach} mm of any of its edges, and ${sillPhrase(sealed)}, ` +
-              `so there is no way onto it. Add a door, or bring the window down to the floor.`,
+            : sealed.some(shutToWalking)
+              ? `${capFirst(names.get(b)!)} has no door within ${reach} mm of any of its edges, and ` +
+                `${sealed.length === 1 ? "the window there is not one to walk through" : "no window there is one to walk through"}, ` +
+                `so there is no way onto it. Add a door, or make the window a kind that opens.`
+              : `${capFirst(names.get(b)!)} has no door within ${reach} mm of any of its edges, and ${sillPhrase(sealed)}, ` +
+                `so there is no way onto it. Add a door, or bring the window down to the floor.`,
         code: "W_BALCONY_NO_DOOR",
         ...ctx.at(b),
         hints: [
           sealed.length === 0
             ? `The balcony is \`${b.id}\`.`
-            : `The balcony is \`${b.id}\`. Add a \`door\` on the wall it hangs off, or write \`sill 0\` on ${sealed.map(windowRef).join(" or ")}.`,
+            : sealed.some(shutToWalking)
+              ? `The balcony is \`${b.id}\`. Add a \`door\` on the wall it hangs off, or make ${sealed.map(windowRef).join(" or ")} a \`casement\`, \`tilt_turn\` or \`sliding\` window reaching the floor.`
+              : `The balcony is \`${b.id}\`. Add a \`door\` on the wall it hangs off, or write \`sill 0\` on ${sealed.map(windowRef).join(" or ")}.`,
         ],
       });
     }
@@ -258,6 +265,10 @@ export const balconyNoDoor: LintRule = {
 
 /** The plan says this window's glass stops above the floor: a `sill` above 0 that it wrote itself. */
 const stopsAboveFloor = (w: RWindow): boolean => w._sillAuthored === true && w.sill > 0;
+
+/** The window's kind says no one walks through it: a pane that does not open, or a sash that
+ *  only tilts. */
+const shutToWalking = (w: RWindow): boolean => w.windowKind === "fixed" || w.windowKind === "tilt";
 
 /** The windows beside a balcony in a message: the one, or the lowest of them. */
 function sillPhrase(windows: readonly RWindow[]): string {

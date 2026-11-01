@@ -90,6 +90,7 @@ function applyEmitOpts(node: OpeningLikeNode, opts: EmitOpts): OpeningLikeNode {
   if (opts.width !== undefined) {
     node.width = { t: "ref", name: opts.width };
   }
+  if (node.kind === "window" && opts.drop?.includes("hinge")) delete node.hinge;
   if (node.kind === "door") {
     const d = node;
     if (opts.hinge !== undefined) {
@@ -324,6 +325,24 @@ export function doorKindClauseFix(
       applicability: "machine-applicable",
       fixId: "door-kind-clause",
       edits: [{ span: node.span, newText: emitOpening("door", node, { drop: [clause] }) }],
+    },
+  ];
+}
+
+/**
+ * The fix for `E_WINDOW_KIND_CLAUSE`: delete the `hinge` clause and nothing else, as
+ * {@link doorKindClauseFix} does and for the same reason: deletion keeps the stated kind, and
+ * which other kind was meant is a design decision. `null` without a span to write into.
+ */
+export function windowKindClauseFix(node: WindowNode): FixSuggestion[] | null {
+  if (!node.span) return null;
+  const what = node.windowKind ? `a "${node.windowKind}" window` : "a window with no kind";
+  return [
+    {
+      title: `delete the \`hinge\` clause — ${what} has none`,
+      applicability: "machine-applicable",
+      fixId: "window-kind-clause",
+      edits: [{ span: node.span, newText: emitOpening("window", node, { drop: ["hinge"] }) }],
     },
   ];
 }

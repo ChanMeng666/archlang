@@ -1039,6 +1039,7 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
         hatches,
         ir.elements.filter((e): e is RFurniture => e.kind === "furniture"),
         demolished.length > 0,
+        ir.elements,
       )
     : null;
 

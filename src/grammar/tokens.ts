@@ -242,6 +242,12 @@ export const KEYWORDS = {
     "bifold",
     "pocket",
     "double",
+    // `door glazed_sliding` (`DOOR_KINDS`, issue #369), and the `window` kinds (`WINDOW_KINDS`) no
+    // other list spells: `sliding` is above, and `fixed`, a `keep` word, is in `attribute`.
+    "glazed_sliding",
+    "casement",
+    "tilt",
+    "tilt_turn",
     "A4",
     "A3",
     "A2",
@@ -385,10 +391,19 @@ export const DOOR_SWING_BUILDING = ["inward", "outward"] as const;
  * `hinged` is the default and is EXACTLY equivalent to writing nothing: the resolver
  * drops it, so `door hinged …` and `door …` produce byte-identical output. Order is
  * the order both generators render; `double` (plan-soundness PS2.11e: two hinged leaves, each
- * half the width, hung on the two jambs and meeting in the middle) is last, so every kind
- * before it renders where it always did.
+ * half the width, hung on the two jambs and meeting in the middle) and `glazed_sliding` (a fixed
+ * and a moving glass panel) come last, so every kind before them renders where it always did.
  */
-export const DOOR_KINDS = ["hinged", "sliding", "barn", "bifold", "pocket", "garage", "double"] as const;
+export const DOOR_KINDS = [
+  "hinged",
+  "sliding",
+  "barn",
+  "bifold",
+  "pocket",
+  "garage",
+  "double",
+  "glazed_sliding",
+] as const;
 
 /** The optional door clauses whose legality depends on the kind. */
 export type DoorClauseName = "hinge" | "swing" | "slide" | "open";
@@ -439,6 +454,32 @@ export const DOOR_KIND_CLAUSES: Readonly<Record<DoorKind, Readonly<Record<DoorCl
   // door's does. No `hinge` (each jamb carries a leaf, so there is no side to choose) and no
   // `slide`/`open` (nothing slides; a leaf is drawn open, as a hinged one is).
   double: { hinge: false, swing: true, slide: false, open: false },
+  // The sliding family's clauses: a glass panel runs on a track in the plane of the wall, as a
+  // `sliding` panel does. Lifting, if the hardware lifts, is not a plan fact.
+  glazed_sliding: { hinge: false, swing: false, slide: true, open: true },
+};
+
+/**
+ * The WINDOW kinds, the bare word that may lead a `window` statement after any `id=`
+ * (`window casement on a.top width 1500 hinge left`), as a kind leads a `door` (issue #369).
+ *
+ * There is no word for the default: a window with no kind states nothing about how it opens,
+ * and every payload of it is byte-identical to a plan written before kinds existed.
+ *
+ * The words are English trade words that read outside any one country's window market:
+ * `tilt_turn` is "tilt and turn". The order is the order both generators render.
+ */
+export const WINDOW_KINDS = ["fixed", "casement", "tilt", "tilt_turn", "sliding"] as const;
+
+/** Which window kinds hang on a jamb, and so take `hinge left|right`, whose value set is
+ *  {@link DOOR_ENUMS}'s. A kind that does not refuses the clause (`E_WINDOW_KIND_CLAUSE`), as a
+ *  window with no kind does. Left out, the side is unstated: no default supplies it. */
+export const WINDOW_KIND_HINGED: Readonly<Record<WindowKind, boolean>> = {
+  fixed: false,
+  casement: true,
+  tilt: false,
+  tilt_turn: true,
+  sliding: false,
 };
 
 /** A door clause that takes a closed value set — a key of {@link DOOR_ENUMS}. */
@@ -455,6 +496,8 @@ export type DoorSwingBuilding = (typeof DOOR_SWING_BUILDING)[number];
 export type DoorHingeNear = (typeof DOOR_HINGE_NEAR)[number];
 /** The leading kind word of a `door` statement; `hinged` is the default. */
 export type DoorKind = (typeof DOOR_KINDS)[number];
+/** The leading kind word of a `window` statement; a window with none has no kind. */
+export type WindowKind = (typeof WINDOW_KINDS)[number];
 
 /**
  * Render a closed value set the way every enum diagnostic in the tree phrases it —

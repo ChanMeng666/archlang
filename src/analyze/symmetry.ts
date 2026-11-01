@@ -526,9 +526,9 @@ function jambs(at: Point, width: number, host: RDoor["host"]): Point[] {
  * reads them (`geometry.ts`'s `doorSwing`, `elements/door-panels.ts`):
  *
  *  - `hinged` — `[hinge jamb, far jamb, open leaf's tip]`, the very points `doorSwing` draws;
- *  - `sliding` — `[slide-side jamb, other jamb, tip]`, the tip one width off the slide-side
- *    jamb on the FIXED PANEL'S TRACK side: `slide` times the wall's left normal, reversed by
- *    `RDoor._mirror`. `swing` draws nothing here, so it is not read;
+ *  - `sliding`, `glazed_sliding` — `[slide-side jamb, other jamb, tip]`, the tip one width off the
+ *    slide-side jamb on the FIXED PANEL'S TRACK side: `slide` times the wall's left normal,
+ *    reversed by `RDoor._mirror`. `swing` draws nothing here, so it is not read;
  *  - `barn` / `bifold` — `[slide-side jamb, other jamb, tip]`, the tip on the `swing` face
  *    (the face the panel hangs on / folds toward);
  *  - `pocket` — `[slide-side jamb, other jamb]`: the cavity's side; the symbol is symmetric
@@ -539,13 +539,15 @@ function jambs(at: Point, width: number, host: RDoor["host"]): Point[] {
  *    only the face they open to is handed.
  *
  * So a reflection that swaps any of those choices is seen, and one the drawing ignores is not.
- * The label carries the kind and width, and — for the four kinds whose panel is DRAWN at a
- * travel fraction (`sliding`, `barn`, `bifold`, `pocket`) — that fraction, `open`, with the
- * renderer's own default of 0.5: two sliders at different `open` draw different panels.
+ * The label carries the kind and width, and — for the five kinds whose panel is DRAWN at a
+ * travel fraction (`sliding`, `glazed_sliding`, `barn`, `bifold`, `pocket`) — that fraction,
+ * `open`, with the renderer's own default of 0.5: two sliders at different `open` draw different
+ * panels.
  */
 function doorRec(d: RDoor): Rec<Point> {
   const kind = d.doorKind ?? "hinged";
-  const drawnOpen = kind === "sliding" || kind === "barn" || kind === "bifold" || kind === "pocket";
+  const drawnOpen =
+    kind === "sliding" || kind === "glazed_sliding" || kind === "barn" || kind === "bifold" || kind === "pocket";
   const label = `door ${kind} w=${fmt4(d.width)}${drawnOpen ? ` open=${fmt4(d.open ?? 0.5)}` : ""}`;
   const swing = doorSwing(d);
   if (swing) return { form: "seq", label, pts: [swing.hinge, swing.farJamb, swing.leafEnd] };
@@ -559,7 +561,8 @@ function doorRec(d: RDoor): Rec<Point> {
   const face = d.swing === "in" ? n : { x: -n.x, y: -n.y };
   const off = (from: Point, v: Point): Point => ({ x: from.x + v.x * d.width, y: from.y + v.y * d.width });
   switch (kind) {
-    case "sliding": {
+    case "sliding":
+    case "glazed_sliding": {
       const track = d._mirror ? -s : s;
       return { form: "seq", label, pts: [p, o, off(p, { x: n.x * track, y: n.y * track })] };
     }
@@ -573,6 +576,18 @@ function doorRec(d: RDoor): Rec<Point> {
     default:
       return { form: "seq", label, pts: [p, o, off(p, face)] };
   }
+}
+
+/**
+ * A window as its jambs: unordered, because a plain window, and a kind with no hinge or none
+ * written, draws no hand, and ordered hinged jamb first when `hinge` is written (`window.ts`'s
+ * `kindMarks` draws the mark on that jamb alone). The label carries a written kind.
+ */
+function windowRec(w: RWindow): Rec<Point> {
+  const label = `window ${w.windowKind ? `${w.windowKind} ` : ""}w=${fmt4(w.width)}`;
+  const pts = jambs(w.at, w.width, w.host);
+  if (w.hinge === undefined) return { form: "set", label, pts };
+  return { form: "seq", label, pts: w.hinge === "left" ? pts : [...pts].reverse() };
 }
 
 /**
@@ -930,9 +945,7 @@ export function symmetryFacts(ir: ResolvedPlan): SymmetryFacts {
   const fullRecs: Rec<Point>[] = [
     ...roomRecs,
     ...doors.map(doorRec),
-    ...windows.map(
-      (w): Rec<Point> => ({ form: "set", label: `window w=${fmt4(w.width)}`, pts: jambs(w.at, w.width, w.host) }),
-    ),
+    ...windows.map(windowRec),
     ...openings.map(
       (o): Rec<Point> => ({ form: "set", label: `opening w=${fmt4(o.width)}`, pts: jambs(o.at, o.width, o.host) }),
     ),

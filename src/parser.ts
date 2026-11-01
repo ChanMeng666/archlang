@@ -1656,7 +1656,10 @@ class Parser {
     this.eat("lparen");
     const over: SetOverride[] = [];
     while (!this.isType("rparen") && !this.isType("eof")) {
-      const key = this.eatIdent().value;
+      const keyTok = this.eatIdent();
+      const key = keyTok.value;
+      const refused = def.setRefuses?.[key];
+      if (refused) this.fail(refused, keyTok);
       this.eat("colon");
       over.push({ key, value: this.parseSetValue() });
       if (this.isType("comma")) this.next();

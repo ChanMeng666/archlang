@@ -13,6 +13,7 @@ import type {
   DoorSwingDir,
   TitleField,
   WallStatus,
+  WindowKind,
 } from "./grammar/tokens.js";
 import type { Span } from "./diagnostics.js";
 import type { Comment } from "./lexer.js";
@@ -455,10 +456,15 @@ export interface DoorNode extends NodeBase {
 
 export interface WindowNode extends NodeBase {
   kind: "window";
+  /** The leading kind word (`window fixed on a.top …`), when one was written. */
+  windowKind?: WindowKind;
   at?: ExprPoint;
   attach?: OpeningAttach;
   width: Expr;
   wall?: string;
+  /** `hinge left|right`, as a door's: relative to the host wall's traversal direction. Written
+   *  or absent, never defaulted; only a kind that hangs on a jamb takes it. */
+  hinge?: DoorHinge;
   /**
    * `sill <expr>` — the bottom of the glazing above this storey's floor, in mm.
    * Absent unless authored, in which case it defaults to

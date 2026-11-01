@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - An L-shaped room now has sides (issue #363). On a `room polygon` whose edges are all horizontal or vertical, `right-of` and the other relational clauses, `liv.top` and the other edge datums, `window on liv.left`, `against liv.left` and `in liv anchor …` read the outline's run on that side, never the bounding box. `align` reads that run's ends. A corner anchor needs a vertex of the outline there. Refused, with the runs named: a side of two runs (the prongs of a U), a corner in the notch, `centered`, `liv.cx`, and a piece that would leave the floor.
 - `archlang finish` furnishes an L-shaped room (issue #370). A piece stands only where those forms can say, on the outermost runs and the corners of the outline, and the never-worse check decides as before. A notch edge takes no piece. A circle or a slanted polygon is still reported and left as it is.
+- A `window` can name its kind: `window fixed`, `casement`, `tilt`, `tilt_turn` or `sliding` (issue #369). Each draws its own small sign inside the wall, and the kind reaches `describe --json` (`windows[].kind`), the TYPE column of the DOOR & WINDOW SCHEDULE, the `legend` and Plan JSON (`window_kind`). `casement` and `tilt_turn` take `hinge left|right`. Left out, the sign stands on both jambs, because nothing supplies a side the plan did not state. `hinge` on any other window is `E_WINDOW_KIND_CLAUSE`. A window with no kind word draws, describes and lints as before.
+- `door glazed_sliding` is a glazed terrace door: one fixed and one moving panel in the window's glazing ink, with a slide arrow (issue #369). It is a door in the access graph, the schedule and `describe`, and it takes `slide` and `open` as `door sliding` does. A person passes through the one panel that moves, so `W_DOOR_CLEARANCE` and the route width read half its `width`. The word is not `lift_slide`, because a plan does not show whether a door lifts.
+- The language reference says what `width` means on a door: the structural opening, jamb to jamb in the wall, not the moving leaf or the clear glass.
+
+### Fixed
+
+- `W_BALCONY_NO_DOOR` no longer accepts a `fixed` or `tilt` window as a way onto a balcony, whatever its sill.
 
 ## [1.51.0] - 2026-11-02
 

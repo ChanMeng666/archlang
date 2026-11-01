@@ -1749,6 +1749,7 @@ A bare **kind** word may lead the statement, after any `id=` — the same shape 
 | `pocket` | a panel and the **dashed** (hidden) wall cavity it slides into | no |
 | `garage` *(v1.31)* | a sectional panel in the reveal, plus its **dashed** overhead projection | no |
 | `double` | two leaf slabs, each half the width, hung on the two jambs and closing onto each other at the centre, each with its solid swing arc | yes, two |
+| `glazed_sliding` | one fixed and one moving glass panel, drawn in the window's glazing ink, with an arrow on the moving panel | no |
 
 Every panel is a slab drawn with the same pen as a hinged leaf, and a dash is never
 decoration: it marks what is above the cut plane (a track, a parked garage panel) or
@@ -1805,6 +1806,22 @@ The overhead projection is a rectangle the width of the opening and half that de
 **dashed**, which is the drawing's standing convention for anything above the cut plane —
 the same statement an `upper_cabinet`, a [`roof`](#roof) eaves line and a [`void`](#void)
 make.
+
+A `glazed_sliding` door is a terrace or patio door. It takes the `slide` and `open` clauses of
+the sliding family, and it counts as a door in the access graph, the schedule and `describe`.
+`slide` says which way the moving panel goes; left out, it is `left`, as for every sliding kind.
+A person passes through the one panel that moves, so [`W_DOOR_CLEARANCE`](error-codes.md#w_door_clearance)
+and the route width read **half** the door's `width`, the nominal share of one panel of two, as they
+read one leaf of a `double` door.
+
+**What `width` means.** On every kind, `width` is the **structural opening**: the gap cut through
+the wall from jamb to jamb, along the wall's line. It is the figure `describe --json` reports. It
+is not the moving leaf and not the clear glass. A `sliding` or `glazed_sliding` panel is drawn at
+55% of `width`, so the two overlap by 10% when closed, and on the drawing a panel pushed fully open
+leaves 45% of `width`. Lint does not read that 45%. It reads a nominal figure, as it does for any
+door: half the `width` for `glazed_sliding`, and the whole `width` for `sliding`, which it has always
+read that way. ArchLang models no frame, so it has no clear-glass figure. A window's `width` is the
+same gap.
 
 **Other clauses are refused, not ignored.** `hinge` is hinged-only (a `double` door has a
 leaf on each jamb, so there is no side to choose) and `slide`/`open` are sliding-family-only; the wrong pairing is
@@ -1864,8 +1881,8 @@ plan "Door kinds" {
 ### Window
 
 ```
-window [id=<id>] at (x,y) width <mm> [wall <ref>]
-window [id=<id>] on <wall> at <pos> width <mm>
+window [id=<id>] [<kind>] at (x,y) width <mm> [wall <ref>] [hinge left|right]
+window [id=<id>] [<kind>] on <wall> at <pos> width <mm> [hinge left|right]
 ```
 
 An opening drawn the way a window block is: both wall faces carried across it,
@@ -1877,6 +1894,46 @@ inside the building too — is outside: the same probe a `garage` door makes to 
 floor side. A window with the inside on both sides (an interior window, or one onto a
 void) or on neither (a free-standing wall) has no outside and draws no sill. The `on <wall> at <pos>` attachment form works exactly as
 for doors.
+
+#### Window kinds
+
+A bare **kind** word may lead the statement, after any `id=`, as on a door. A window with no
+kind word says nothing about how it opens, and draws as above.
+
+| kind | the window | what is drawn |
+| --- | --- | --- |
+| `fixed` | a pane that does not open | one glass line on the wall's centreline instead of two |
+| `casement` | a sash hinged on one jamb | both glass lines and a chevron with its point on the hinged jamb |
+| `tilt` | a sash hinged along its foot | both glass lines and a small circle at mid-span |
+| `tilt_turn` | a sash that does both, sold as tilt and turn | both glass lines, the chevron and the circle |
+| `sliding` | a sash that slides along the wall | both glass lines and a two-headed arrow at mid-span |
+
+`hinge left|right` names the hinged jamb of a `casement` or `tilt_turn` window. It reads along the
+wall's direction, as a door's `hinge` does, and follows a mirrored `place` the same way. Leave it
+out when the plan you are copying does not say: the chevron then stands on both jambs, so the
+drawing states no hand. Nothing supplies a side for you, not a default and not `set`. On any other
+window the clause is [`E_WINDOW_KIND_CLAUSE`](error-codes.md#e_window_kind_clause), with a
+machine-applicable fix that deletes it.
+
+The kind reaches `describe --json` as `windows[].kind`, the TYPE column of
+`schedule openings`, a row of the `legend` and Plan JSON (`window_kind`, and `hinge` beside it). Every mark stays inside the wall's thickness and the opening's width, so a
+kind moves nothing else on the sheet. A kind reads no height: a `fixed` window draws the same at
+`sill 0` and `sill 900`. A `fixed` or `tilt` window is no way onto a balcony, whatever its sill
+([`W_BALCONY_NO_DOOR`](error-codes.md#w_balcony_no_door)).
+
+```arch
+plan "Window kinds" {
+  units mm
+  schedule openings
+  legend
+  room id=a at (0,0) size 6000x4000 label "Living" uses living
+  walls from rooms exterior 300 partition 100
+  door on a.left at center width 1000 swing into a
+  window tilt_turn on a.top at 1500 from start width 1500 hinge left sill 900
+  window fixed on a.top at 4500 from start width 1500 sill 900
+  door glazed_sliding on a.bottom at center width 2400 slide right
+}
+```
 
 ### Opening (v1.3)
 
@@ -2723,7 +2780,7 @@ plan "Net stamp" {
 | `TAG` | The tag drawn beside the opening. |
 | `ROOM(S)` | The room(s) it opens onto, by name — a door's are `describe().doors[].between`, `exterior` for the outside; a window lists the room it serves (`describe().windows[].room`) and, on a wall between two rooms, the other one too. Clipped to the column with `...`. |
 | `WIDTH` | The nominal width in mm. |
-| `TYPE` | A door's kind (`hinged`, `sliding`, …); `window` for a window. |
+| `TYPE` | A door's kind (`hinged`, `sliding`, …); a window's kind, or `window` for a window with none. |
 | `HAND` | A hinged door's hand, by the EN 12519 / DIN 107 convention: stand on the side it opens into (the pull side), face it, and the hinge is on your `left` or `right`. North American (ANSI/BHMA) handing is read from the other side, so an inswing door reads the other way there. Read off the drawn leaf, so it does not depend on which way the wall's points run; `-` for anything else. |
 
 A tag's position comes from the opening's own wall: a window's first place is just inside,
@@ -2753,7 +2810,9 @@ every wrapped line. Past 200 wrapped lines the plan is refused with `E_DRAWING_L
 - one row per **fixture category** actually placed that has a plan symbol (`wc`,
   `basin`, `shower`, …), its swatch drawn with the real glyph, in catalog order;
 - a `demolished` row after the materials, its swatch a dashed outline, only when the storey
-  draws a `status demolish` wall (see [Wall](#wall), its status).
+  draws a `status demolish` wall (see [Wall](#wall), its status);
+- one row per **window kind** in use and one for a `glazed_sliding` door, after the fixtures,
+  each swatch the real symbol. The other door kinds have no row.
 
 Nothing is listed that is not drawn, and a category that renders as a plain labelled
 rectangle gets no row (there is no symbol to explain). There is nothing to configure —

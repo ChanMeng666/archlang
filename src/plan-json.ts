@@ -70,6 +70,7 @@ import type {
   DoorSwingDir,
   TitleField,
   WallStatus,
+  WindowKind,
 } from "./grammar/tokens.js";
 import {
   DOOR_ENUMS,
@@ -79,6 +80,8 @@ import {
   enumList,
   TITLE_FIELDS,
   WALL_STATUSES,
+  WINDOW_KIND_HINGED,
+  WINDOW_KINDS,
 } from "./grammar/tokens.js";
 import { parse } from "./parser.js";
 import { isDrawableHeight, isPlacedHeight, MAX_HEIGHT } from "./datum.js";
@@ -363,6 +366,9 @@ export interface OpeningJson extends InstanceMark {
    * every payload a pre-v1.25 plan produces is byte-identical.
    */
   door_kind?: DoorKind;
+  /** A window's kind (`window_kind`, for the reason `door_kind` is not `kind`). Emitted only when
+   *  one was written, as a window's `hinge` is. */
+  window_kind?: WindowKind;
   /** Which way a sliding-family panel travels to open. */
   slide?: DoorSlideDir;
   /** How far the panel is drawn open, 0–1. A drawing fact; nothing measured reads it. */
@@ -741,6 +747,10 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL, carr
         // The reflecting `place` frame this door crossed (`_mirror`); `swing` above is
         // already the reflected one, so the flag adds only what it cannot say.
         if (e._mirror) base.mirror = true;
+      }
+      if (e.kind === "window") {
+        if (e.windowKind !== undefined) base.window_kind = e.windowKind;
+        if (e.hinge !== undefined) base.hinge = e.hinge;
       }
       // The vertical datum, under the one gate. `sill` is a window's alone — a
       // door's and a cased opening's sill is the floor, and emitting `sill: 0` for them
@@ -1583,6 +1593,17 @@ function validateOpening(o: unknown, path: string, val: Validator): void {
   // door/window/opening. Held to `DOOR_KINDS`, the same table the parser reads.
   if (o.door_kind !== undefined && !(isStr(o.door_kind) && (DOOR_KINDS as readonly string[]).includes(o.door_kind)))
     val.err(`${path}/door_kind`, `expected ${enumList(DOOR_KINDS)}`);
+  if (
+    o.window_kind !== undefined &&
+    !(isStr(o.window_kind) && (WINDOW_KINDS as readonly string[]).includes(o.window_kind))
+  )
+    val.err(`${path}/window_kind`, `expected ${enumList(WINDOW_KINDS)}`);
+  if (o.window_kind !== undefined && o.kind !== "window")
+    val.err(`${path}/window_kind`, "only a window has a `window_kind` — a door has a `door_kind`");
+  // Refused here, or a side the payload states would fall away with no word: the emitter prints it
+  // only beside a kind, and the resolver refuses it on a kind that does not hang on a jamb.
+  if (o.kind === "window" && o.hinge !== undefined && !WINDOW_KIND_HINGED[o.window_kind as WindowKind])
+    val.err(`${path}/hinge`, "only a `casement` or `tilt_turn` window has a `hinge`: give it that `window_kind`");
   if (o.open !== undefined && !(isNum(o.open) && o.open >= 0 && o.open <= 1))
     val.err(`${path}/open`, "expected a number in [0,1]");
   // The vertical datum. `sill` may be exactly 0 (a floor-length window); `head`
@@ -1825,6 +1846,7 @@ function emitOpening(o: OpeningJson): string {
   let line = `  ${kw} ${idAttr(o.id)}`;
   // The KIND word leads, after any `id=` — `door pocket on w1 at 40% width 900`.
   if (o.kind === "door" && o.door_kind) line += `${o.door_kind} `;
+  if (o.kind === "window" && o.window_kind) line += `${o.window_kind} `;
   const rel = o.relation;
   if (rel) {
     line += rel.between ? `between ${rel.between[0]} and ${rel.between[1]}` : `on ${rel.edge}`;
@@ -1840,6 +1862,8 @@ function emitOpening(o: OpeningJson): string {
     if (o.slide) line += ` slide ${o.slide}`;
     if (o.open !== undefined) line += ` open ${num(o.open)}`;
   }
+  // The validator above holds a window's `hinge` to a kind that takes it.
+  if (o.kind === "window" && o.hinge) line += ` hinge ${o.hinge}`;
   // The vertical clauses trail every other one, in `sill` then `head` order — the
   // grammar's, so the emitted line re-parses. `sill` is a window's alone; the validator
   // above refuses it anywhere else, so this needs no second check.
@@ -2387,7 +2411,11 @@ export const PLAN_JSON_SCHEMA = {
           },
           width: { type: "number", description: "Opening width in millimetres." },
           wall: { type: "string", description: "Host wall by id or category (else nearest)." },
-          hinge: { enum: [...DOOR_ENUMS.hinge], description: "Door hinge side relative to the wall direction." },
+          hinge: {
+            enum: [...DOOR_ENUMS.hinge],
+            description:
+              "Hinge side relative to the wall direction: a door's, or a `casement` or `tilt_turn` window's when one was written.",
+          },
           swing: {
             enum: [...DOOR_ENUMS.swing],
             description:
@@ -2401,6 +2429,10 @@ export const PLAN_JSON_SCHEMA = {
             enum: [...DOOR_KINDS],
             description:
               "Door kind (default `hinged`, in which case this is omitted). A non-hinged kind has no swing arc; `hinge` is not accepted on one.",
+          },
+          window_kind: {
+            enum: [...WINDOW_KINDS],
+            description: "Window only. The kind word as written; omitted on a window with none.",
           },
           slide: {
             enum: [...DOOR_ENUMS.slide],

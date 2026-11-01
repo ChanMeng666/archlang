@@ -281,6 +281,9 @@ export interface ElementDef {
   /** Parameter schema — one source for the LSP (hover/completion/signature) and
    *  the docs. Optional so third-party plugins need not provide it. */
   params?: readonly ParamDoc[];
+  /** Keys `set <kind>(…)` refuses, each with why: a fact only the element's own statement may
+   *  state. Every other key parses, whether or not anything reads it. */
+  setRefuses?: Readonly<Record<string, string>>;
   /** One-line summary of what the element draws (for hover). */
   doc?: string;
   /**
