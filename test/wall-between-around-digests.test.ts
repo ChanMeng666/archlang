@@ -23,7 +23,7 @@ const DIGESTS: [string, string][] = [
   // names the fixtures and says why; same code, same span, no new code.
   ["pairwise-forms", "40e355067438606cc04800bd7fddef29300ecaa16a1cf781069ea9aff8605d59"], // `centreline_at`, see ./byte-identity-baseline.ts
   ["beside-walls-from-rooms", "2b099428e6ddc133abf357450a697883b156a28ad3d4fdb767109996faf963c3"], // `centreline_at`, see ./byte-identity-baseline.ts
-  ["frames", "4895ee477a59251b6c3fc9927729faf13186131202b2738b58642ca9bbcf0739"], // `centreline_at`, see ./byte-identity-baseline.ts; #367, see test/byte-identity-baseline.ts
+  ["frames", "d6aae13861b18ef8fbe81db04019505dfd33f92cb8cfa21aeee4eef4a28ac9bb"], // `centreline_at`, see ./byte-identity-baseline.ts; #367, see test/byte-identity-baseline.ts
   ["widen-4000", "c728d0c567f3b3b116fd00b8870ae67ff5ca525f490f51d7d1dae511ab77e3e3"], // `centreline_at`, see ./byte-identity-baseline.ts
   ["widen-4500", "867ccff0da3eb30c562df83da26c5ef86835cd62e16486efe3fdf61f3d91e0a2"], // `centreline_at`, see ./byte-identity-baseline.ts
   ["refused", "7e18b4bff41d18b98b0f0457e0f0488a8ce0bb34792e7194d8144c42e88dc901"], // PS2.29: message text only, same code, same span

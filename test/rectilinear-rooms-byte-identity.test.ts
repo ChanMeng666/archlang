@@ -130,7 +130,7 @@ const BASELINE: [string, string][] = [
   ["8f5ccdac7528e0374d50a2c05664c90704bdb22b1da8ee129b6c3a8e1b754af1", "examples/two-bed.arch"], // H10: +6 ring scan, +0 overlap; `centreline_at`, see ./byte-identity-baseline.ts
   ["6ee6d812bb6895cc36f98c26b46d58b9e04556f65b72a5c835f30440d409387e", "examples/two-storey.arch"], // H10: +12 ring scan, +0 overlap
   ["449c5ed8dd295c5962225440d46ebac117ee2258e17e05f8ab42ade1ee6e804c", "test/fixtures/axes-grid.arch"],
-  ["5b1d4be597e5a7c2d576eaa525c2078ae910c6c5a098019bfc67deaf370f76cd", "test/fixtures/chain30.arch"], // #367, see test/byte-identity-baseline.ts
+  ["5336af359d30144ea7f14a069b605773dab5615c8a72f5182a07dfd03d318ada", "test/fixtures/chain30.arch"], // #367, see test/byte-identity-baseline.ts
   ["cbfb99f4c6105f1dc4686f8c90aae852f5c78f87bbf40cfdcf3271bbf3e1bb04", "test/fixtures/dense-bays.arch"],
   ["3f9b93799a04497b79ad1a64e8a9ab39396afc6f3cc2e7926b166c22932b40cd", "test/fixtures/diff-a.arch"],
   ["def6a1888f39f8cece746688cc51129fa95abe845502c284403c1bba8dba70aa", "test/fixtures/diff-b.arch"],
@@ -141,7 +141,7 @@ const BASELINE: [string, string][] = [
   ["911b2c771e68c9931bab3f95995873a2027f757705140f4bbcd53e4a3fb9df76", "test/fixtures/lock-window-moved.arch"],
   ["947c91d438bd4507e84c02e9f1a15cd7417b32717d867d41261599049befdfa9", "test/fixtures/off-path-bypass.arch"],
   ["f6031de45dc54fe15b0c22019de5123543e6aade443518347c48d3373892c9bd", "test/fixtures/schedule-sheet.arch"],
-  ["3c3978528c9105442845d7f216d2c276b0b7a4446f059161ed3c1c4f62b6e487", "test/fixtures/star30.arch"], // #367, see test/byte-identity-baseline.ts
+  ["2f0c4e2b63425468b46263ab7a6581dfd15bd12fadc36db828f97f6fc079a17c", "test/fixtures/star30.arch"], // #367, see test/byte-identity-baseline.ts
   ["114ea8bb6ef0556a294603caad1d316ff8bde8732bb63122c52dbd9fcc6c4bd1", "test/fixtures/storeys-eaves-overflow.arch"], // H10: +12 ring scan, +0 overlap
   ["5c3ce8b3d4f3858110637edb74d4760a4d84fba40bfe44795260fb38ada5934b", "test/fixtures/zones-levels.arch"],
   ["3795021918eab02d38979618173a348100b1b7e0265d3a0308c8ee12dc4fb8dd", "test/fixtures/zones-wings.arch"],
