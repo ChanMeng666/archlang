@@ -746,9 +746,13 @@ describe("every reader of the footprint reads the pieces, not the box", () => {
     const over = NOTCH.replace(
       "door id=ds at (3000,2000) width 800 wall mid swing in",
       "door id=ds at (3000,500) width 800 wall mid swing into hall",
-    );
+    ).replace("units mm", "units mm\n  height 2200");
     expect(codes(over)).toEqual([]);
+    // The leaf reaches x 2200. A 2100 mm head of 2200 mm is 3055 of the 3200 mm of flights: 1655 of
+    // the last, which runs east from x 1100, so that flight is in the way up to x 2755.
     expect(swings(over)).toBe(1);
+    // Of the default 3000 mm it is 2240: up to x 1940. The leaf passes under the high end.
+    expect(swings(over.replace("  height 2200\n", ""))).toBe(0);
   });
 
   it("a label in the notch overprints nothing; one pinned on a piece does", () => {
@@ -1155,14 +1159,23 @@ describe("what lint says of a block stair, deliberately strict", () => {
     const landingsOf = (src: string) =>
       (describePlan(src, { facts: ["clearances"] }).clearances!.stairs as { landings: unknown[] }[])[0]!.landings;
     const straight = (dir: string) => hallPlan(`    stair id=s at (1000,600) size 1000x3800 dir ${dir}`);
-    expect(landingsOf(planOf(STRAIGHT_LANDING, "up"))).toEqual(landingsOf(straight("up")));
-    expect(landingsOf(planOf(STRAIGHT_LANDING, "down"))).toEqual(landingsOf(straight("down")));
+    // A `turn` row is the landing between the flights, which a straight flight has none of.
+    const ends = (src: string) => (landingsOf(src) as { end: string }[]).filter((l) => l.end !== "turn");
+    expect(ends(planOf(STRAIGHT_LANDING, "up"))).toEqual(landingsOf(straight("up")));
+    expect(ends(planOf(STRAIGHT_LANDING, "down"))).toEqual(landingsOf(straight("down")));
   });
 
   it("the head landing on a `dir down` stop is the last flight's", () => {
     const d = describePlan(planOf(L_STAIR, "down"), { facts: ["clearances"] });
     // The last flight's left edge stands against the west wall.
-    expect(d.clearances!.stairs).toMatchObject([{ landings: [{ end: "head", by: { kind: "wall" } }] }]);
+    expect(d.clearances!.stairs).toMatchObject([
+      {
+        landings: [
+          { end: "head", by: { kind: "wall" } },
+          { end: "turn", by: null },
+        ],
+      },
+    ]);
   });
 
   it("the shaft check does not cry wolf on the axis of an L", () => {
@@ -1273,33 +1286,26 @@ ${extra}
     });
   };
 
-  it("with no height anywhere, beside `no-storey-height`", () => {
-    expect(reasons(NO_HEIGHT, "stairs").sort()).toEqual(["block-stair", "no-storey-height"]);
+  it("with no height anywhere, only `no-storey-height`: the rest reads the default storey", () => {
+    expect(reasons(NO_HEIGHT, "stairs")).toEqual(["no-storey-height"]);
     expect(filedBy(NO_HEIGHT, "stair-too-steep")).toEqual([]);
-    expect(filedBy(NO_HEIGHT, "stair-no-landing")).toEqual([0]);
-    expect(filedBy(NO_HEIGHT, "swing-over-stair")).toEqual([0]);
-    expect(filedBy(NO_HEIGHT, "stair-side-entry")).toEqual([0]);
+    expect(filedBy(NO_HEIGHT, "stair-no-landing")).toEqual([]);
+    expect(filedBy(NO_HEIGHT, "swing-over-stair")).toEqual([]);
+    expect(filedBy(NO_HEIGHT, "stair-side-entry")).toEqual([]);
   });
 
-  it("on the storey it continues up from, in the stair family and not only the shaft's", () => {
-    // Every stop, so `levels` is left out. The shaft comparison is whole, so it files nowhere.
-    expect(entry(MID_UP, "stairs")).toMatchObject({ reason: "block-stair" });
-    expect(entry(MID_UP, "stairs")!.levels).toBeUndefined();
+  it("a block on every stop of a matching shaft is read whole, in both families", () => {
+    expect(entry(MID_UP, "stairs")).toBeUndefined();
     expect(entry(MID_UP, "vertical")).toBeUndefined();
-    expect(filedBy(MID_UP, "stair-no-landing")).toEqual([1, 2, 3]);
-  });
-
-  it("each rule files only on a stop its own reading is partial: a stairwell is a hole, read whole", () => {
-    // Level 3 comes down and a flight arrives at level 2, so both are stairwells: whole is right,
-    // and only the landing rule files there.
-    expect(filedBy(MID_UP, "swing-over-stair")).toEqual([1]);
-    expect(filedBy(MID_UP, "stair-side-entry")).toEqual([1]);
+    expect(filedBy(MID_UP, "stair-no-landing")).toEqual([]);
+    expect(filedBy(MID_UP, "swing-over-stair")).toEqual([]);
+    expect(filedBy(MID_UP, "stair-side-entry")).toEqual([]);
     const furnished = levels(
       storey(1, flights("up"), "    furniture id=t1 table at (200,300) size 600x600"),
       storey(2, flights("down"), "    furniture id=t2 table at (200,300) size 600x600"),
     );
-    expect(filedBy(furnished, "furniture-on-stair")).toEqual([1]);
-    expect(entry(furnished, "furniture")!.levels).toEqual([1]);
+    expect(filedBy(furnished, "furniture-on-stair")).toEqual([]);
+    expect(entry(furnished, "furniture")).toBeUndefined();
   });
 
   it("`W_STAIR_HEAD_VOID` reads the head from below, so it files nothing", () => {
@@ -1319,16 +1325,16 @@ ${extra}
     const hole = "    void id=v at (4000,400) size 800x800";
     const over = levels(storey(1, flights("up")), storey(2, straight("up"), hole));
     expect(filedBy(over, "stair-head-void")).toEqual([2]);
-    expect(filedBy(over, "stair-no-landing")).toEqual([1, 2]);
+    expect(filedBy(over, "stair-no-landing")).toEqual([2]);
     // Level 2 is no well the block arrives by: nothing arriving was read to make it one.
-    expect(filedBy(over, "swing-over-stair")).toEqual([1, 2]);
+    expect(filedBy(over, "swing-over-stair")).toEqual([2]);
     const under = levels(storey(1, straight("up")), storey(2, flights("up"), hole));
     expect(filedBy(under, "stair-head-void")).toEqual([2]);
     expect(entry(under, "stairs")!.levels).toEqual([2]);
     expect(filedBy(under, "swing-over-stair")).toEqual([2]);
     const down = levels(storey(1, flights("up")), storey(2, straight("down"), hole));
     expect(filedBy(down, "stair-head-void")).toEqual([2]);
-    expect(filedBy(down, "stair-no-landing")).toEqual([1, 2]);
+    expect(filedBy(down, "stair-no-landing")).toEqual([2]);
   });
 
   it("a stop below that is no stair, or does not rise to it, leaves no head to read", () => {
@@ -1345,7 +1351,7 @@ ${extra}
     expect(filedBy(falling, "stair-head-void")).toEqual([]);
   });
 
-  it("a rule with nothing to compare files nothing, and the landing rule always does", () => {
+  it("a block that matches files nothing, and where a head is unread a rule with nothing to compare still does not", () => {
     const bare = `plan "Bare" {
   units mm
   wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }
@@ -1355,32 +1361,47 @@ ${stairBlock(L_STAIR)}
 `;
     expect(filedBy(bare, "swing-over-stair")).toEqual([]);
     expect(filedBy(bare, "stair-side-entry")).toEqual([]);
-    expect(filedBy(bare, "stair-no-landing")).toEqual([0]);
+    expect(filedBy(bare, "stair-no-landing")).toEqual([]);
     // A sliding door is a doorway to be beside, and sweeps nothing.
     const sliding = bare.replace("  room id=r", "  door id=d sliding at (3000,6000) width 900 wall shell\n  room id=r");
     expect(filedBy(sliding, "swing-over-stair")).toEqual([]);
-    expect(filedBy(sliding, "stair-side-entry")).toEqual([0]);
+    expect(filedBy(sliding, "stair-side-entry")).toEqual([]);
+    // Over a straight flight the head is unread. No door to swing on either storey, so that rule
+    // has nothing to compare; the landing rule, which owes the head, says so.
+    const unread = levels(
+      `  level 1 {\n    room id=a at (0,0) size 3600x3200 uses hall\n${straight("up")}\n  }`,
+      `  level 2 {\n    room id=b at (0,0) size 3600x3200 uses hall\n${flights("up")}\n  }`,
+    );
+    expect(filedBy(unread, "swing-over-stair")).toEqual([]);
+    expect(filedBy(unread, "stair-no-landing")).toEqual([2]);
   });
 
-  it("the furniture family says so of a piece read against a rising block, and only then", () => {
+  it("the furniture family says so of a piece beside an unread head, and only then", () => {
     const hall = (dir: "up" | "down") =>
       hallPlan(`${stairBlock(L_STAIR, dir)}\n    furniture id=t table at (3000,3000) size 600x600`);
-    expect(reasons(hall("up"), "furniture")).toContain("block-stair");
+    expect(reasons(hall("up"), "furniture")).not.toContain("block-stair");
     expect(reasons(hall("down"), "furniture")).not.toContain("block-stair");
     expect(reasons(planOf(L_STAIR), "furniture")).not.toContain("block-stair");
+    const table = "    furniture id=t table at (200,300) size 600x600";
+    const under = levels(storey(1, straight("up")), storey(2, flights("up"), table));
+    expect(entry(under, "furniture")!.levels).toEqual([2]);
+    expect(filedBy(under, "furniture-on-stair")).toEqual([2]);
   });
 
-  it("the stair family stays `partial` with every rule that can file filing: it did judge", () => {
+  it("the stair family stays `partial` while a head is unread: it did judge the rest", () => {
     const all = hallPlan(
       `${stairBlock(L_STAIR)}\n    void id=v at (4000,4000) size 800x800\n    furniture id=t table at (3000,3000) size 600x600`,
       "  height 2750\n",
     );
-    for (const rule of ["swing-over-stair", "stair-no-landing", "stair-side-entry"])
-      expect(filedBy(all, rule)).toEqual([0]);
-    // The steepness reading is whole on this stair, so it files nothing.
-    expect(filedBy(all, "stair-too-steep")).toEqual([]);
-    expect(filedBy(all, "stair-head-void")).toEqual([]);
-    expect(family(all, "stairs").status).toBe("partial");
+    for (const rule of [
+      "swing-over-stair",
+      "stair-no-landing",
+      "stair-side-entry",
+      "stair-too-steep",
+      "stair-head-void",
+    ])
+      expect(filedBy(all, rule)).toEqual([]);
+    expect(family(all, "stairs").status).toBe("ran");
     const hole = "    void id=v at (4000,400) size 800x800";
     const tall = levels(storey(1, flights("up"), hole), storey(2, flights("up"), hole)).replace(
       "  units mm\n",
@@ -1388,7 +1409,9 @@ ${stairBlock(L_STAIR)}
     );
     expect(filedBy(tall, "stair-head-void")).toEqual([]);
     expect(filedBy(tall, "stair-too-steep")).toEqual([]);
-    expect(family(tall, "stairs").status).toBe("partial");
+    expect(family(tall, "stairs").status).toBe("ran");
+    const unread = levels(storey(1, straight("up"), hole), storey(2, flights("up"), hole));
+    expect(family(unread, "stairs").status).toBe("partial");
   });
 
   it("a plan of straight stairs files nothing in any family", () => {

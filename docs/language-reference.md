@@ -2197,15 +2197,26 @@ floor above. So at 2750 mm, under the default limits, one landing needs 11 going
 2420 mm of flights, not the 2640 mm of a straight flight
 ([`W_STAIR_TOO_STEEP`](error-codes.md#w_stair_too_steep)). The flights must also hold those goings
 whole, because every going of a stair is the same: 1210 + 1210 mm is 2420 mm and holds 5 + 5, one
-short, and the warning says so. Lint measures the foot, the head, and the head a flight from below
-arrives at, which is the lower stop's last flight's. Where a block's stops do not match, the
-mismatch is the report ([`W_SHAFT_FOOTPRINT_MISMATCH`](error-codes.md#w_shaft_footprint_mismatch)):
-that head is not read, and each stop stands as what it says, a stop that comes down as a stairwell
-and one that rises as a stair rising from its floor. Lint does not measure the landings between
-the flights, and on a storey a block rises from with no flight arriving it reads every piece
-whole, with nothing passed under; the coverage report says `block-stair` wherever any of this is
-only part of the answer. That is arithmetic on what the plan says, not a statement that a stair
-complies with anything.
+short, and the warning says so.
+
+Lint measures the foot, the head, the head a flight from below arrives at, which is the lower stop's
+last flight's, and each **landing between the flights**, which must run the flight's `width` along
+each flight that meets it ([`W_STAIR_NO_LANDING`](error-codes.md#w_stair_no_landing), at least
+1200 mm in a building other than a dwelling). It is read along each flight in turn, never as the
+length of the walking line, on the stop the climb starts from, so a shaft reports it once. At a
+corner the landing cannot be shorter than `width`, because each flight meets it whole, so only a
+wall across it or that 1200 mm can report there. On a storey a block rises from, the climb spreads
+over the flights with the landings level, so its high end is passed under as a flight's is, and a
+landing with less than 2 m beneath it stands in the way whole.
+
+Where a block's stops do not match, the mismatch is the report
+([`W_SHAFT_FOOTPRINT_MISMATCH`](error-codes.md#w_shaft_footprint_mismatch)): that head is not read,
+each stop stands as what it says, a stop that comes down as a stairwell and one that rises as a
+stair rising from its floor, and the coverage report says `block-stair`.
+
+There is no winder form. Draw the turn as a landing, and lint reads the run strictly, with fewer
+goings than the stair has. All of this is arithmetic on what the plan says, not a statement that a
+stair complies with anything.
 
 **What it does to circulation.** The footprint obstructs the
 [navigation grid](analysis.md#circulation--how-a-person-walks-the-plan) exactly like a piece
