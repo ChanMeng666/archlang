@@ -292,7 +292,7 @@ It draws as one stair, with one label, one walking line and one break line. `W_S
 
 ## Furnishing every storey
 
-`arch finish` used to report a plan with `level` blocks and leave it empty. In the next release it furnishes each storey as it would furnish a one-storey plan, and it writes each storey's pieces inside that storey's own block:
+`arch finish` used to report a plan with `level` blocks and leave it empty. In the next release it furnishes each storey by the rules of a one-storey plan, and it writes each storey's pieces inside that storey's own block:
 
 ```diff
    level 0 "Ground" {
@@ -304,4 +304,4 @@ It draws as one stair, with one label, one walking line and one break line. `W_S
    }
 ```
 
-The same room id on two levels is two rooms, so `in liv` means the room of the block it is written in, and each entry of `changes` and `unresolved` carries its `level`. A piece keeps off a shaft's flights and landings, a flight that passes through the floor from the storey above or below, the storey's own `void`s and its lifts and escalators. "Never worse" is judged per storey: a new warning on one storey is refused even when another storey improved. A room of a placed component stays empty and is named; furnish the component, or write `furniture … in u1.bed` yourself. A one-storey plan gets the same bytes as before.
+The same room id on two levels is two rooms, so `in liv` means the room of the block it is written in, and each entry of `changes` and `unresolved` carries its `level`. A piece keeps off a shaft's flights and landings, a flight that passes through the floor from the storey above or below, the storey's own `void`s and its lifts and escalators. "Never worse" is judged per storey: a new warning on one storey is refused even when another storey improved. A room of a placed component stays empty and is named; furnish the component, or write `furniture … in u1.bed` yourself. A one-storey plan gets the same bytes as before, so `finish` can still write a piece on a `void`, a lift or an escalator there.

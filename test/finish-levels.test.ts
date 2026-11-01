@@ -584,6 +584,17 @@ suite("finish on `level` blocks — where the statements are written", () => {
     expect(r.changes.length).toBeGreaterThan(0);
     for (const c of r.changes) expect(blocks(r.source).get(c.level!)).toContain(c.text);
     expect(furnish(r.source).source).toBe(r.source);
+    // The block's closing brace stands at the block's own indentation.
+    expect(r.source).toMatch(/rotate \d+\n {2}\}\n {2}level 1/);
+    expect(r.source).not.toMatch(/\n {3}\}/);
+  });
+
+  it("the closing brace of a one-line plan stays where a single-storey run always left it", () => {
+    const src = `  plan "One line" { wall id=w exterior thickness 200 { (0,0) (5000,0) (5000,4000) (0,4000) close } room id=a at (0,0) size 5000x4000 label "Bedroom" uses bedroom door on w at 40% width 900 swing in }\n`;
+    expect(errorsOf(src)).toEqual([]);
+    const r = furnish(src);
+    expect(r.changed).toBe(true);
+    expect(r.source.endsWith("\n }\n")).toBe(true);
   });
 
   it("a file with CRLF line ends keeps them, and a block's own indentation", () => {

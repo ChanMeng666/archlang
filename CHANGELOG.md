@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `archlang finish` furnishes a plan with `level` blocks (issue #364). Each storey gets what the same rooms would get in a one-storey plan, written inside its own block, so `in <room>` means that storey's room when an id repeats on another level. A piece keeps off a shaft's flights and landings, a flight that passes through the floor from the storey above or below, the storey's own `void`s and its lifts and escalators. "Never worse" is judged per storey: a new warning on one storey is refused even when another storey improved. `changes` and `unresolved` entries of such a plan carry `level`. A one-storey plan gets the same bytes as before.
+- `archlang finish` furnishes a plan with `level` blocks (issue #364). Each storey is furnished by the rules of a one-storey plan, written inside its own block, so `in <room>` means that storey's room when an id repeats on another level. A piece keeps off a shaft's flights and landings, a flight that passes through the floor from the storey above or below, the storey's own `void`s and its lifts and escalators. "Never worse" is judged per storey: a new warning on one storey is refused even when another storey improved. `changes` and `unresolved` entries of such a plan carry `level`. A one-storey plan gets the same bytes as before, so `finish` can still write a piece on a `void`, a lift or an escalator there. Each gate check compiles and lints the whole building, so `finish` time grows faster than the storey count.
 
 ### Fixed
 

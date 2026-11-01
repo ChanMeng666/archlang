@@ -1504,7 +1504,7 @@ function blockOf(source: string, plan: PlanNode, level: number | undefined): Ins
   const header = node.span!.start;
   // The block opens at the first brace of the statement: its header holds a name and a number.
   const open = lex(source).tokens.find((t) => t.type === "lcurly" && t.start >= header)!;
-  return insertionPoint(source, node.body, open.end);
+  return insertionPoint(source, node.body, open.end, true);
 }
 
 /**
@@ -1514,7 +1514,7 @@ function blockOf(source: string, plan: PlanNode, level: number | undefined): Ins
  * body. When that statement does not end its line, they go before the block's closing brace
  * instead. A wrong guess does not compile, and the never-worse check then refuses the room.
  */
-function insertionPoint(source: string, body: readonly Statement[], bodyStart: number): Insertion {
+function insertionPoint(source: string, body: readonly Statement[], bodyStart: number, storey = false): Insertion {
   const eol = source.includes("\r\n") ? "\r\n" : "\n";
   const lineStart = (at: number): number => source.lastIndexOf("\n", at - 1) + 1;
   const lineEnd = (at: number): number => {
@@ -1555,11 +1555,13 @@ function insertionPoint(source: string, body: readonly Statement[], bodyStart: n
     return { at, wrap: (lines) => lines.map((l) => `${indent}${l}${eol}`).join("") };
   }
   // The brace shares its line: the statements go in before the blanks in front of it, which
-  // then lead the brace's own new line — nothing authored is removed.
+  // then lead the brace's own new line — nothing authored is removed. A `level` block's brace is
+  // padded up to its block's indentation; a plan's stays as it always was.
   const lead = source.slice(lineStart(close), close);
   const blanks = lead.length - lead.trimEnd().length;
+  const pad = blanks === 0 || storey ? outer.slice(blanks) : "";
   return {
     at: close - blanks,
-    wrap: (lines) => `${lines.map((l) => `${eol}${indent}${l}`).join("")}${eol}${blanks === 0 ? outer : ""}`,
+    wrap: (lines) => `${lines.map((l) => `${eol}${indent}${l}`).join("")}${eol}${pad}`,
   };
 }

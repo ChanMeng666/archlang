@@ -620,13 +620,20 @@ written; a room that no set fits stays empty, with the reason.
 - **Scope.** Rectangular rooms. A polygon room is reported in `unresolved` and left as it is. A room
   of a placed component is reported too: furnish the component, or write the piece yourself where
   the instance is placed, `furniture rug in u1.bed anchor center size 800x600 rotate 0`.
-- **Storeys.** A plan with `level` blocks is furnished storey by storey, as a single-storey plan
-  would be. Each storey's statements go inside its own block, so `in <room>` and `against wall <id>`
-  mean that storey's room and wall when the same id stands on another level. A piece keeps off a
-  shaft's flights and landings, a flight that passes through the floor from the storey above or
-  below, the storey's own `void`s and its lifts and escalators. A `void` on another storey takes no
-  floor here. "Never worse" is judged storey by storey: no storey may gain a diagnostic, whatever
-  another storey lost. `changes` and `unresolved` entries carry the `level`.
+- **Storeys.** A plan with `level` blocks is furnished storey by storey, by the rules of a
+  single-storey plan with one addition, below. Each storey's statements go inside its own block, so
+  `in <room>` and `against wall <id>` mean that storey's room and wall when the same id stands on
+  another level. A piece keeps off a shaft's flights and landings, a flight that passes through the
+  floor from the storey above or below, and, the addition, the storey's own `void`s and its lifts
+  and escalators. A `void` on another storey takes no floor here. A single-storey plan does not get
+  the addition: its output stays as it was, so `finish` can still write a piece on a `void`, a lift
+  or an escalator there, and no lint rule reports it. "Never worse" is judged storey by storey: no
+  storey may gain a diagnostic, whatever another storey lost. `changes` and `unresolved` entries
+  carry the `level`.
+- **Time.** Each check of the "never worse" gate compiles and lints the whole building, so `finish`
+  takes longer as storeys are added, and it grows faster than the storey count. As one measurement,
+  not a promise: `--only furnish` on the same floor of seven furnished rooms and a hall took about
+  2 s for one storey, 17 s for four and between 34 s and 58 s for eight, on a busy machine.
 
 ## Furniture-aware lint rules
 
