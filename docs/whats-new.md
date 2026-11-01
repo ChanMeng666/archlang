@@ -1,6 +1,6 @@
-# What's new in 1.44 to 1.50
+# What's new in 1.44 to 1.51
 
-The features that arrived in 1.44.0 to 1.50.0, one section each, with an example you can run,
+The features that arrived in 1.44.0 to 1.51.0, one section each, with an example you can run,
 plus the circulation overlay, which is older and since 1.45.0 reads the plan after a demolition.
 Every command and code name below is the one `archlang <command> --help` and the
 [error catalog](error-codes.md) print. The full list of changes, version by version, is in
@@ -21,8 +21,8 @@ Every command and code name below is the one `archlang <command> --help` and the
 | Open shells named, empty rooms named | 1.48.0 | [Gaps that used to pass quietly](#gaps-that-used-to-pass-quietly) |
 | One L-shaped room in `walls from rooms` | 1.49.0 | [L-shaped rooms](#l-shaped-rooms) |
 | Quarter-turn and half-turn stairs | 1.50.0 | [Turning stairs](#turning-stairs) |
-| `arch finish` on a plan with storeys | next release | [Furnishing every storey](#furnishing-every-storey) |
-| Labels that shrink to fit a small room | unreleased | [Labels in small rooms](#labels-in-small-rooms) |
+| `arch finish` on a plan with storeys | 1.51.0 | [Furnishing every storey](#furnishing-every-storey) |
+| Labels that shrink to fit a small room | 1.51.0 | [Labels in small rooms](#labels-in-small-rooms) |
 
 ## Quantities and takeoff
 
@@ -295,7 +295,7 @@ It draws as one stair, with one label, one walking line and one break line. `W_S
 
 ## Furnishing every storey
 
-`arch finish` used to report a plan with `level` blocks and leave it empty. In the next release it furnishes each storey by the rules of a one-storey plan, and it writes each storey's pieces inside that storey's own block:
+`arch finish` used to report a plan with `level` blocks and leave it empty. Since 1.51.0 it furnishes each storey by the rules of a one-storey plan, and it writes each storey's pieces inside that storey's own block:
 
 ```diff
    level 0 "Ground" {
