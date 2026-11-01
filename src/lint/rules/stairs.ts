@@ -29,12 +29,21 @@
  * the flights against a {@link minimumRun} that takes one going off per landing, so a stair too
  * short is reported once, for the whole stair, and so is a sum that passes on flights that cannot
  * hold the goings whole ({@link flightsShort}). The head a flight from below arrives at is the head
- * of the lower stop's last flight, read on that flight's footprint whatever this stop draws. Each
- * rule files the `block-stair` coverage skip where its own reading is only part of the answer: only
- * the ends of the stair are measured, not the landings between its flights; on a storey it rises
- * from, with no flight arriving there, all of every piece stands in the way, with none of the high
- * end a person passes under ({@link readInPart}); a caller's ruleset leaves more riser counts to try
- * than are tried ({@link MAX_RISER_TRIES}). A stairwell is a hole, so a stop a flight comes down or
+ * of the lower stop's last flight, read on that flight's footprint.
+ *
+ * That head is read only between stops of one stair. Where a block stair's stops do not match, the
+ * mismatch is the report (`W_SHAFT_FOOTPRINT_MISMATCH`), and a head measured against pieces it does
+ * not end in would only say what is not so. Each stop is then read as what it says: one that comes
+ * down is a stairwell by its own `dir`; one that rises stands as any stair rising from its floor,
+ * a block whole and a straight flight by its low end, because nothing arriving was read to make it
+ * a stairwell.
+ *
+ * Each rule files the `block-stair` coverage skip where its own reading is only part of the answer:
+ * only the ends of the stair are measured, not the landings between its flights; on a storey it
+ * rises from, with no flight arriving there, all of every piece stands in the way, with none of the
+ * high end a person passes under ({@link readInPart}); a head from below was not read
+ * ({@link StairFacts.headUnread}); a caller's ruleset leaves more riser counts to try than are tried
+ * ({@link MAX_RISER_TRIES}). A stairwell is a hole, so a matching stop a flight comes down or
  * arrives at files nothing for that. A rule with nothing to compare files nothing.
  */
 
@@ -73,6 +82,7 @@ import { judgesAsDwelling, type LintContext, type LintRule } from "../context.js
 import { openingName, wallPhrase } from "../element-phrases.js";
 import { deficitMm, mm } from "../measure.js";
 import { MODEL_RANGE_MM } from "../../num-format.js";
+import { sameBlock } from "./vertical.js";
 
 /** The clear depth a door's swing must leave at the foot of a flight in a dwelling: Approved
  *  Document K (2013) 1.24 and Diagram 1.8, "at least 400mm" across the flight's width [V]. */
@@ -167,22 +177,25 @@ const inset = (r: BBox, by: number): BBox => ({ x: r.x + by, y: r.y + by, w: r.w
  * where it actually ends. The other end of a `dir up` flight is on the storey above, not here.
  *
  * Beside a block stair the head is the lower stop's last flight's, and no axis is asked of it: the
- * two ends of a turning stair run different ways, and a stop that comes down boards that same head,
- * so it owes one landing and not two.
+ * two ends of a turning stair run different ways. A stop of the same block that comes down boards
+ * that same head, so it owes one landing. A stop that does not match is not owed it: the head is left
+ * unread (`headUnread`), and the mismatch is the report.
  */
-function landingsOf(v: RStair, ctx: LintContext): Landing[] {
+function landingsOf(v: RStair, ctx: LintContext): { landings: Landing[]; headUnread: boolean } {
   const tail = tailEdge(v);
   const own = rectOf(boardedFlight(v));
-  const out: Landing[] = [{ end: v.dir === "up" ? "foot" : "head", edge: tail, rect: own, width: v.width }];
+  const landings: Landing[] = [{ end: v.dir === "up" ? "foot" : "head", edge: tail, rect: own, width: v.width }];
   const below = ctx.building.shaftNeighbours?.get(v.id)?.below?.run;
-  if (below?.kind !== "stair" || below.dir !== "up") return out;
-  if (isBlockStair(v) || isBlockStair(below) || runAxis(below) === runAxis(v)) {
-    const { flight, edge: head } = flightEnd(below, true);
-    const rect = rectOf(flight);
-    const same = head === tail && rect.x === own.x && rect.y === own.y && rect.w === own.w && rect.h === own.h;
-    if (!same) out.push({ end: "head", edge: head, rect, width: below.width });
-  }
-  return out;
+  if (below?.kind !== "stair" || below.dir !== "up") return { landings, headUnread: false };
+  const block = isBlockStair(v) || isBlockStair(below);
+  if (!block && runAxis(below) !== runAxis(v)) return { landings, headUnread: false };
+  const { flight, edge: head } = flightEnd(below, true);
+  const rect = rectOf(flight);
+  const same = head === tail && rect.x === own.x && rect.y === own.y && rect.w === own.w && rect.h === own.h;
+  if (same) return { landings, headUnread: false };
+  if (block && !sameBlock(v, below)) return { landings, headUnread: true };
+  landings.push({ end: "head", edge: head, rect, width: below.width });
+  return { landings, headUnread: false };
 }
 
 /** The clear headroom over a flight and its landings: Approved Document K (2013) 1.11 and
@@ -237,6 +250,9 @@ export interface StairFacts {
   landings: Landing[];
   /** The footprint is a stairwell here (a flight comes down from, or arrives at, this storey). */
   well: boolean;
+  /** A flight from below ends somewhere this storey's stop does not stand, on a shaft with a block
+   *  stair whose stops do not match, so its head is not among {@link landings}. */
+  headUnread: boolean;
   /** Per landing: what cuts it short (`null` when the full depth is clear), or `"curved"` when a
    *  curved wall stands near it and it is not judged. */
   blocks: Array<LandingBlock | null | "curved">;
@@ -263,7 +279,8 @@ export function storeyStairs(ctx: LintContext): StoreyStairs | null {
   const stairs = ctx.verticals.filter((v): v is RStair => v.kind === "stair");
   let result: StoreyStairs | null = null;
   if (stairs.length > 0) {
-    const landings = stairs.map((v) => landingsOf(v, ctx));
+    const owed = stairs.map((v) => landingsOf(v, ctx));
+    const landings = owed.map((o) => o.landings);
     const nLandings = landings.reduce((a, l) => a + l.length, 0);
     // Charged before any of it runs: every landing reads every wall piece, void and room once, and
     // a block stair's every landing its own other pieces, so a straight stair's sum does not move.
@@ -282,6 +299,7 @@ export function storeyStairs(ctx: LintContext): StoreyStairs | null {
             v,
             landings: ls,
             well: ls.some((l) => l.end === "head"),
+            headUnread: owed[i]!.headUnread,
             needs,
             blocks: ls.map((l, j) => {
               const zone = beyond(l.rect, l.edge, needs[j]!, l.width);
@@ -301,9 +319,7 @@ export function storeyStairs(ctx: LintContext): StoreyStairs | null {
 const pieceCount = (f: StoreyStairs): number => f.stairs.reduce((n, sf) => n + piecesOf(sf.v).length, 0);
 
 /** The pieces of block stair `v` that can stand in landing `l`: all but the flight `l` ends, floor
- *  no one can stand on, as `verticalObstacles` says to the walking grid. On a stop that draws
- *  another stair than the one below, a head from below ends no piece of it. None on a straight
- *  stair. */
+ *  no one can stand on, as `verticalObstacles` says to the walking grid. None on a straight stair. */
 const ownPieces = (v: RStair, l: Landing): BBox[] => {
   if (!isBlockStair(v)) return [];
   const r = l.rect;
@@ -323,9 +339,10 @@ function charge(f: StoreyStairs, n: number): boolean {
 /**
  * Is what stands in the way on `sf` only part of the answer, for the `block-stair` skip? A block
  * rising from this floor stands whole, with nothing passed under. A block that comes down, or that
- * a flight arrives at, is a stairwell: all of it.
+ * a flight arrives at, is a stairwell: all of it. Any stop that left a head from below unread is
+ * part of the answer, whatever it stands as: what arrives there was not read.
  */
-const readInPart = (sf: StairFacts): boolean => isBlockStair(sf.v) && !sf.well;
+const readInPart = (sf: StairFacts): boolean => sf.headUnread || (isBlockStair(sf.v) && !sf.well);
 
 /** Shared entry of the rules: the storey's stair facts, filing the skip that explains a `null`. */
 function factsFor(ctx: LintContext): StoreyStairs | null {
@@ -342,7 +359,8 @@ function factsFor(ctx: LintContext): StoreyStairs | null {
  * person walks, under the part of the flight higher than that (the pitch line, Diagram 1.3). The
  * storey height is `ir.storeyHeight`: the authored `height`, else 3000 mm (`STOREY_HEIGHT`), a
  * default that can only narrow what is judged. `flight` is the flight read, the run itself unless
- * it is a block stair, whose every flight stands in the way whole for now.
+ * it is a block stair, and it comes back whole: a block's height is not read flight by flight, and
+ * {@link readInPart} says so.
  */
 function lowPart(f: StairFacts, height: number, ctx: LintContext, flight: RStair = f.v): BBox {
   const r = rectOf(flight);
@@ -620,8 +638,9 @@ export const stairNoLanding: LintRule = {
     const out: Diagnostic[] = [];
     for (const sf of f.stairs) {
       const v = sf.v;
-      // Only the stair's ends are measured: not the landings between a block's flights.
-      if (isBlockStair(v)) ctx.skip("block-stair");
+      // Only the stair's ends are measured: not the landings between a block's flights, nor a head
+      // from below where the stops do not match.
+      if (isBlockStair(v) || sf.headUnread) ctx.skip("block-stair");
       sf.landings.forEach((l, i) => {
         const b = sf.blocks[i]!;
         if (b === "curved") {
@@ -748,6 +767,7 @@ export const stairHeadVoid: LintRule = {
     if (ctx.voids.length === 0) return [];
     const f = factsFor(ctx);
     if (f === null) return [];
+    if (f.stairs.some((sf) => sf.headUnread)) ctx.skip("block-stair");
     const out: Diagnostic[] = [];
     for (const sf of f.stairs) {
       const v = sf.v;

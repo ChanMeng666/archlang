@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - A quarter-turn or half-turn `stair` (issue #362): `stair id=s dir up width 1000 { flight at
-  (1500,1100) size 1000x1000  landing at (1500,100) size 1000x1000  flight at (100,100) size 1400x1000
+  (2630,1100) size 1000x1530  landing at (2630,100) size 1000x1000  flight at (1100,100) size 1530x1000
   }` is one stair of authored rectangles in climbing order, with one UP or DN, one walking line and one
   break line, and each flight's direction comes from what it touches. The notch it wraps round stays
   floor. To draw the next storey, copy the block and change only `dir`. `E_STAIR_PIECES` refuses
@@ -23,11 +23,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   asks for the same block on both stops, and a straight flight over or under a block always mismatches.
   A block that climbs on from a storey is stepped off at the head of the lower stop's last flight and
   boarded at its first, and where those stand in two rooms `describe` adds `steps_off` to the stop.
-  **Two readings are strict, and the coverage report says `block-stair`:** the landings between flights
-  are not measured, and on a storey a block rises from with no flight arriving, every piece stands
-  whole with nothing passed under. `keep stacked` compares a block's bounding box. There is no `shape`
-  shortcut and no winder: draw a winder as a landing. No plan without the form moves: not the drawing,
-  `describe()`, the overlay, the Scene or the step count, and `lint()` only by the hint below.
+  Two stops of the same block that meet at one head owe one landing there. Where the stops do not
+  match, the mismatch is the report: the head of the flight from below is not read, and each stop
+  stands as what it says, one that comes down as a stairwell and one that rises as a stair rising
+  from its floor. **Three readings are strict, and the coverage report says `block-stair`:** the
+  landings between flights are not measured; on a storey a block rises from with no flight arriving,
+  every piece stands whole with nothing passed under; and that head on stops that do not match is not
+  read, a straight flight beside a block included. `keep stacked` compares a block's bounding box.
+  There is no `shape` shortcut and no winder: draw a winder as a landing. No plan without the form
+  moves: not the drawing, `describe()`, the overlay, the Scene or the step count, and `lint()` only by
+  the hint below.
 
 ### Changed
 

@@ -25,6 +25,7 @@ import {
   piecesOf,
   type RBlockStair,
   runAxis,
+  type RVertical,
   verticalRect as rect,
 } from "../../vertical.js";
 import { mm } from "../measure.js";
@@ -127,6 +128,11 @@ function blockDiffers(v: RBlockStair, b: RBlockStair, level: number): { why: str
     hint: `Draw \`${v.id}\` with the same pieces on both storeys, ${copy}: on level ${level} ${piece} is at ${place(there[at]!)}, here at ${place(here[at]!)}`,
   };
 }
+
+/** Do `a` and `b`, two stops of a shaft, draw one block stair? This rule's own test, so what reads
+ *  across a shaft cannot disagree with what it reports. The level only words a hint. */
+export const sameBlock = (a: RVertical, b: RVertical): boolean =>
+  isBlockStair(a) && isBlockStair(b) && blockDiffers(a, b, 0) === null;
 
 export const shaftFootprintMismatch: LintRule = {
   name: "shaft-footprint-mismatch",

@@ -2147,9 +2147,9 @@ narrower `width` centres the flight band in the footprint and leaves the remaind
 
 ```arch static
 stair id=s dir up width 1000 {
-  flight at (1500,1100) size 1000x1000
-  landing at (1500,100) size 1000x1000
-  flight at (100,100) size 1400x1000
+  flight at (2630,1100) size 1000x1530
+  landing at (2630,100) size 1000x1000
+  flight at (1100,100) size 1530x1000
 }
 ```
 
@@ -2172,11 +2172,14 @@ floor above. So at 2750 mm, under the default limits, one landing needs 11 going
 ([`W_STAIR_TOO_STEEP`](error-codes.md#w_stair_too_steep)). The flights must also hold those goings
 whole, because every going of a stair is the same: 1210 + 1210 mm is 2420 mm and holds 5 + 5, one
 short, and the warning says so. Lint measures the foot, the head, and the head a flight from below
-arrives at, which is the lower stop's last flight's. It does not measure the landings between the
-flights, and on a storey a block rises from with no flight arriving it reads every piece whole,
-with nothing passed under; the coverage report says `block-stair` wherever that is only part of
-the answer. That is arithmetic on what the plan says, not a statement that a stair complies with
-anything.
+arrives at, which is the lower stop's last flight's. Where a block's stops do not match, the
+mismatch is the report ([`W_SHAFT_FOOTPRINT_MISMATCH`](error-codes.md#w_shaft_footprint_mismatch)):
+that head is not read, and each stop stands as what it says, a stop that comes down as a stairwell
+and one that rises as a stair rising from its floor. Lint does not measure the landings between
+the flights, and on a storey a block rises from with no flight arriving it reads every piece
+whole, with nothing passed under; the coverage report says `block-stair` wherever any of this is
+only part of the answer. That is arithmetic on what the plan says, not a statement that a stair
+complies with anything.
 
 **What it does to circulation.** The footprint obstructs the
 [navigation grid](analysis.md#circulation--how-a-person-walks-the-plan) exactly like a piece

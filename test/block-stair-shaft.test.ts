@@ -395,37 +395,6 @@ describe("the head a flight from below arrives at", () => {
     expect(d!.message).toContain("sweeps the landing at the head of the flight, the 1000 mm a person steps off onto");
   });
 
-  it("a head on a stop that draws another stair is read where the flight below ends", () => {
-    // Level 2's flight 2 is drawn 100 mm longer, so it stands in that landing and is no piece of it.
-    const longer = withPiece(L, 2, [1000, 1100, 1500, 1000]);
-    const src = threeStorey(L, stairBlock(longer, "up"));
-    expect(levelsOf(src, MISMATCH)).toEqual([2, 3]);
-    expect(clearances(src, 2).landings[1]).toEqual({
-      end: "head",
-      need_mm: 1000,
-      clear_mm: 0,
-      by: { kind: "own-piece" },
-    });
-  });
-
-  it("a straight flight below a climbing block, and a block below a climbing straight flight", () => {
-    const run = (dir: string) => `    stair id=s at (2500,1100) size 1000x2000 dir ${dir}`;
-    // The straight flight rises north to y 1100, and the block's landing starts there.
-    const under = stops(run("up"), stairBlock(L, "up"));
-    expect(clearances(under, 2).landings[1]).toEqual({
-      end: "head",
-      need_mm: 1000,
-      clear_mm: 0,
-      by: { kind: "own-piece" },
-    });
-    const over = stops(stairBlock(L, "up"), run("up"));
-    // The block's last flight heads west, whatever axis the stop above runs along.
-    expect(clearances(over, 2).landings).toEqual([
-      { end: "foot", need_mm: 1000, clear_mm: 1000, by: null },
-      { end: "head", need_mm: 1000, clear_mm: 1000, by: null },
-    ]);
-  });
-
   it("no head is owed from a stop below that does not rise here", () => {
     const run = (kind: string, tail: string) => `    ${kind} id=s at (2500,1100) size 1000x2000${tail}`;
     for (const below of [run("elevator", ""), run("escalator", " dir up"), run("stair", " dir down")]) {
@@ -494,20 +463,16 @@ describe("arrival on a block that climbs on", () => {
       expect(run!.flight.at).toEqual({ x: 1100, y: 1100 });
     });
 
-    it("a block over a flight across it still owes that flight's head", () => {
-      // The foot of the block and the head of `across`, each with the 1000 mm of floor it needs.
+    it("a block over a flight across it owes its own foot, and that flight's head is not read", () => {
       expect(clearances(stops(across, stairBlock(L, "up")), 2).landings).toEqual([
         { end: "foot", need_mm: 1000, clear_mm: 1000, by: null },
-        { end: "head", need_mm: 1000, clear_mm: 1000, by: null },
       ]);
     });
 
-    it("a flight across a block still owes the block's head", () => {
-      // The tail of `across` is at x 5700, 200 mm from the wall's face at x 5900. The block's last
-      // flight ends at x 1100, 1000 mm from the west wall's face at x 100.
+    it("a flight across a block owes its own foot, and the block's head is not read", () => {
+      // The tail of `across` is at x 5700, 200 mm from the wall's face at x 5900.
       expect(clearances(stops(stairBlock(L, "up"), across), 2).landings).toEqual([
         { end: "foot", need_mm: 1000, clear_mm: 200, by: { kind: "wall", id: "shell" } },
-        { end: "head", need_mm: 1000, clear_mm: 1000, by: null },
       ]);
     });
   });
@@ -744,13 +709,13 @@ describe("what still files `block-stair`, and why each is true", () => {
     });
   };
 
-  it("the sites are the five this file names, and no other rule files it", () => {
+  it("the sites are the six this file names, and no other rule files it", () => {
     const dir = "src/lint/rules/";
     const sites = readdirSync(dir).flatMap((f) => {
       const hits = readFileSync(dir + f, "utf8").split('skip("block-stair")').length - 1;
       return hits > 0 ? [[f, hits]] : [];
     });
-    expect(sites).toEqual([["stairs.ts", 5]]);
+    expect(sites).toEqual([["stairs.ts", 6]]);
   });
 
   it("the landing between the flights is not measured: a short one says nothing, and files", () => {
@@ -786,6 +751,120 @@ describe("what still files `block-stair`, and why each is true", () => {
     expect(filedBy(src, "shaft-footprint-mismatch")).toEqual([]);
     expect(filedBy(src, "stair-head-void")).toEqual([]);
     expect(filedBy(src, "stair-unmatched")).toEqual([]);
+  });
+
+  describe("a head from below left unread: where the stops do not match, the mismatch is the report", () => {
+    const L = CLEAR_L;
+    /** Every thing on the stop above that a stair rule compares, so each rule has a reason to run. */
+    const THINGS = [
+      "    door id=w at (0,1600) width 900 wall shell swing in",
+      "    void id=v at (4600,4000) size 500x500",
+      "    furniture id=t rug at (4600,3000) size 500x500",
+    ].join("\n");
+    const run = (dir: string) => `    stair id=s at (2500,1100) size 1000x2000 dir ${dir}`;
+    const longer = withPiece(L, 2, [1000, 1100, 1500, 1000]);
+    const reversed: BlockStair = { ...L, pieces: [...L.pieces].reverse(), tails: ["right", "bottom"] };
+    const landingEnds = (src: string) => clearances(src, 2).landings.map((l) => l.end);
+    const RULES = ["stair-no-landing", "swing-over-stair", "stair-side-entry", "furniture-on-stair", "stair-head-void"];
+
+    it("the false report is gone: a straight flight under a block says the mismatch and nothing else", () => {
+      // The flight below rises north to y 1100, the north edge of this block's landing, so the block's
+      // first flight and landing stand behind that head, never past it: nothing is short here.
+      const src = stops(run("up"), stairBlock(L, "down"));
+      expect(of(src, MISMATCH).map((d) => d.level)).toEqual([2]);
+      expect(of(src, "W_STAIR_NO_LANDING")).toEqual([]);
+    });
+
+    it.each([
+      ["a straight flight under a block coming down", stops(run("up"), stairBlock(L, "down"))],
+      ["a straight flight over a block, coming down", stops(stairBlock(L, "up"), run("down"))],
+      ["the same pieces in the other order, coming down", stops(stairBlock(L, "up"), stairBlock(reversed, "down"))],
+    ])("%s has the one head it says, not two rows nothing tells apart", (_, src) => {
+      expect(of(src, MISMATCH).map((d) => d.level)).toEqual([2]);
+      expect(landingEnds(src)).toEqual(["head"]);
+    });
+
+    it.each([
+      ["a block over a straight flight", () => stops(run("up"), `${stairBlock(L, "up")}\n${THINGS}`)],
+      ["a straight flight over a block", () => stops(stairBlock(L, "up"), `${run("up")}\n${THINGS}`)],
+      ["a block over another block", () => stops(stairBlock(L, "up"), `${stairBlock(longer, "up")}\n${THINGS}`)],
+    ])("%s, both rising: only its foot, and every rule that reads the stop files", (_, plan) => {
+      expect(landingEnds(plan())).toEqual(["foot"]);
+      for (const rule of RULES) expect(filedBy(plan(), rule), rule).toContain(2);
+    });
+
+    it.each([
+      ["a block, coming down, over a straight flight", () => stops(run("up"), `${stairBlock(L, "down")}\n${THINGS}`)],
+      ["a straight flight, coming down, over a block", () => stops(stairBlock(L, "up"), `${run("down")}\n${THINGS}`)],
+    ])("%s: its own head, and every rule that reads the stop files", (_, plan) => {
+      expect(landingEnds(plan())).toEqual(["head"]);
+      for (const rule of RULES) expect(filedBy(plan(), rule), rule).toContain(2);
+    });
+
+    it("a block rising over what it does not match is no stairwell: it stands as a block rising", () => {
+      const over = (extra: string) => stops(stairBlock(L, "up"), `${stairBlock(longer, "up")}\n${extra}`);
+      // A rug on the landing between the flights is walked on, as on any block rising from its floor.
+      expect(of(over("    furniture id=t rug at (2800,1400) size 400x400"), "W_FURNITURE_ON_STAIR")).toEqual([]);
+      // A wardrobe on it is a body on a landing, and on a flight no part of the block is passed under.
+      const body = of(over("    furniture id=t wardrobe at (2800,1400) size 400x400"), "W_FURNITURE_ON_STAIR");
+      expect(body[0]!.message).toContain("of a landing between the flights.");
+      const flight = of(over("    furniture id=t rug at (1400,1300) size 400x400"), "W_FURNITURE_ON_STAIR");
+      expect(flight[0]!.message).toContain("of the flight, where less than 2000 mm of headroom is left.");
+      // A leaf hung on a wall at x 3600, 100 mm east of the landing, swings west across it and stops
+      // short of the flights: y 1150 to y 2050, x 2700 to x 3600.
+      const leaf = `    wall id=p partition thickness 100 { (3600,800) (3600,3000) }
+    door id=w at (3600,1600) width 900 wall p hinge right swing in`;
+      const [d, ...rest] = of(over(leaf), "W_SWING_OVER_STAIR");
+      expect(rest).toEqual([]);
+      expect(d!.message).toContain("sweeps a landing between the flights.");
+    });
+
+    it("a block coming down over what it does not match is a stairwell by its own `dir`", () => {
+      const src = stops(run("up"), `${stairBlock(L, "down")}\n    furniture id=t rug at (2800,1400) size 400x400`);
+      expect(of(src, "W_FURNITURE_ON_STAIR")[0]!.message).toContain("of the stairwell.");
+    });
+
+    it("a straight flight rising over a block reads by its low end, as any flight rising from its floor", () => {
+      // The flight runs north from y 3100 to y 1100; 2 m of a 3 m storey is its low 1333 mm, y 1767
+      // to y 3100. A rug on its high end is passed under, and one on its low end is not.
+      const over = (y: number) =>
+        stops(stairBlock(L, "up"), `${run("up")}\n    furniture id=t rug at (2800,${y}) size 400x300`);
+      expect(of(over(1200), "W_FURNITURE_ON_STAIR")).toEqual([]);
+      expect(of(over(2500), "W_FURNITURE_ON_STAIR")[0]!.message).toContain("less than 2000 mm of headroom");
+    });
+
+    it("stops that meet at one head, though they differ elsewhere, read it: nothing was left out", () => {
+      // Flight 1 is 100 mm shorter, and the last flight, whose head both stops meet at, is the same.
+      const first = withPiece(L, 0, [2500, 2100, 1000, 900]);
+      const src = stops(stairBlock(L, "up"), `${stairBlock(first, "down")}\n${THINGS}`);
+      expect(of(src, MISMATCH).map((d) => d.level)).toEqual([2]);
+      expect(landingEnds(src)).toEqual(["head"]);
+      expect(filedBy(src, "stair-head-void")).toEqual([]);
+    });
+
+    it("the same block reads the head as before, and files nothing for it", () => {
+      const src = threeStorey(L, `${stairBlock(L, "up")}\n${THINGS}`);
+      expect(of(src, MISMATCH)).toEqual([]);
+      expect(landingEnds(src)).toEqual(["foot", "head"]);
+      expect(filedBy(src, "stair-head-void")).toEqual([]);
+      expect(filedBy(src, "swing-over-stair")).not.toContain(2);
+    });
+
+    it("two straight flights are what they were: the head is read, nothing is filed", () => {
+      // 60% of the smaller footprint shared, so no mismatch; a head above that is not this stop's.
+      const low = "    stair id=s at (2500,1100) size 1000x2000 dir up";
+      const high = "    stair id=s at (2500,1900) size 1000x2000 dir up";
+      const src = stops(low, high);
+      expect(of(src, MISMATCH)).toEqual([]);
+      expect(landingEnds(src)).toEqual(["foot", "head"]);
+      // Across the page is a mismatch, and a straight shaft has never read that head: nothing is left
+      // out that the stop was owed, so nothing is filed.
+      const across = stops(low, "    stair id=s at (2000,1500) size 2000x1000 dir up");
+      expect(of(across, MISMATCH).map((d) => d.level)).toEqual([2]);
+      expect(landingEnds(across)).toEqual(["foot"]);
+      expect(filedBy(src, "stair-no-landing")).toEqual([]);
+      expect(filedBy(across, "stair-no-landing")).toEqual([]);
+    });
   });
 
   it("the report's own words say what is partial, and nothing about later", () => {

@@ -1314,20 +1314,21 @@ ${extra}
     expect(filedBy(plain, "stair-head-void")).toEqual([]);
   });
 
-  it("a straight stop beside a block has its head read too, either way up", () => {
+  it("a straight stop beside a block never matches: its head from below is not read, and that files", () => {
+    // Every storey has a door, and only level 2 the void, so each rule has a reason to run there.
     const hole = "    void id=v at (4000,400) size 800x800";
     const over = levels(storey(1, flights("up")), storey(2, straight("up"), hole));
-    expect(filedBy(over, "stair-head-void")).toEqual([]);
-    expect(filedBy(over, "stair-no-landing")).toEqual([1]);
-    // A straight flight that rises here is the well the block arrives by, read whole.
-    expect(filedBy(over, "swing-over-stair")).toEqual([1]);
+    expect(filedBy(over, "stair-head-void")).toEqual([2]);
+    expect(filedBy(over, "stair-no-landing")).toEqual([1, 2]);
+    // Level 2 is no well the block arrives by: nothing arriving was read to make it one.
+    expect(filedBy(over, "swing-over-stair")).toEqual([1, 2]);
     const under = levels(storey(1, straight("up")), storey(2, flights("up"), hole));
-    expect(filedBy(under, "stair-head-void")).toEqual([]);
+    expect(filedBy(under, "stair-head-void")).toEqual([2]);
     expect(entry(under, "stairs")!.levels).toEqual([2]);
-    expect(filedBy(under, "swing-over-stair")).toEqual([]);
+    expect(filedBy(under, "swing-over-stair")).toEqual([2]);
     const down = levels(storey(1, flights("up")), storey(2, straight("down"), hole));
-    expect(filedBy(down, "stair-head-void")).toEqual([]);
-    expect(filedBy(down, "stair-no-landing")).toEqual([1]);
+    expect(filedBy(down, "stair-head-void")).toEqual([2]);
+    expect(filedBy(down, "stair-no-landing")).toEqual([1, 2]);
   });
 
   it("a stop below that is no stair, or does not rise to it, leaves no head to read", () => {
