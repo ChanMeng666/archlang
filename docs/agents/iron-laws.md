@@ -74,8 +74,9 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
   376 s measurement. The label-placement residual stays kept.
 - **No structural attribute on walls and no load-bearing check** (D25): cross-storey wall checks go
   through `keep stacked`, geometry only.
-- **Parked until a second ask** (D23, D24): `right-of` and anchors on a polygon, edge names, winders,
-  `shape` shortcuts, an `entry` clause, a German profile, `locale`.
+- **Not built yet, and open on their merit** (D29): `right-of` and anchors on a polygon, edge names, winders,
+  `shape` shortcuts, an `entry` clause, `locale`. A German profile stays out until its rules are read from
+  the source, as the other profiles were.
 - **A `lint()` diagnostic's `message` names things the way a person would** (rooms by label, doors
   by the rooms they join, walls by kind and the line they run on) and never quotes an element id;
   ids live only in `hint`. A consumer may show `message` to someone who never sees the source,
