@@ -19,6 +19,8 @@ signal moved at 4 signups or 1 first frame a week. n is tiny. Posts 2–4 are re
 
 **Day 90 is read as STOP on the consumer product (D26):** ArchCanvas is in maintenance; ArchLang continues at low cost. No new language programme opens until the Show HN and N10 reads. The question to the user is deferred by the owner.
 
+ArchCanvas stays on core 1.48 (D28); the bump to 1.50 is a draft PR there.
+
 **A real user:** Daniel Damm (X, GitHub bobsch-io) draws German houses with an agent and filed #362–#370.
 Thread: growth `discovery/interviews/2026-10-30-daniel-damm-x-thread.md`. Also needs IFC: not close, never
 promise it.
