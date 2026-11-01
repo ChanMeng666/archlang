@@ -1037,6 +1037,10 @@ takes one clause, and every refusal of a clause points at it.
   `width <mm>`, the opening is that wide and centred on the clear span, and the partition stays
   either side of it. The derived position is exact and is not snapped to `grid`: its centre may
   fall on a half millimetre, so a hand-placed opening on a coarse grid cannot always reproduce it.
+  `open between` takes no position. For an opening placed along a wall that stays, leave the clause
+  out and write [`opening between <A> and <B> at <pos> width <mm>`](#openings-by-relation): it draws
+  the same hole, keeps the nibs, and the pair can still take a door. Neither form merges the two
+  rooms or moves their areas.
 - Where boundaries that open across their whole clear span meet at one point, the square they would
   leave there is not drawn. Four at a crossing or three at a T leave the point empty; a `column` is
   how a plan asks for a post there. With one wall left standing at the point (a boundary that is not
@@ -1143,6 +1147,7 @@ trip keeps the geometry and drops the relation, as it does for an opening placed
 ```
 door|opening [id=<name>] … between <A> and <B> at <pos> width <mm> …
 door|window|opening [id=<name>] … on <room>.<edge> [at <pos>] width <mm> …
+window [id=<name>] … on <room>.<edge> at corner <room>.<edge> width <mm> …
 <pos>  :=  center  |  <mm> from start|end  |  <mm> from <room>.<edge>  |  axis <label>
 ```
 
@@ -1227,6 +1232,7 @@ plan "An L round a room" {
 | On `between`, more than one wall body on the run (an authored span beside a derived remainder); on `on <room>.<edge>` with an exterior wall on the edge among several, a span that crosses two of them, stands on a partition, stands on none or lies on two at once (the hint quotes a position on each exterior wall, where one exists); on a pair that shares several edges, a position that does not pick one (`at center`, `from start\|end`, `at axis`, no position, an edge meeting two of them) | `E_OPENING_HOST_AMBIGUOUS` |
 | The pair is declared `open` in `walls from rooms` | `E_WALL_BETWEEN_OPEN` |
 | A jamb too near a meeting wall's face, a wall inside the span, or a span past its run | `E_OPENING_NIB` |
+| `at corner` where the two edges or the walls on them do not make a true corner, or with the window on the other wall missing | `E_WINDOW_CORNER` |
 | A room the plan or component cannot see; a circle, or a polygon with an edge neither horizontal nor vertical | `E_UNKNOWN_REF`, `E_ROOM_NOT_RECTANGLE` |
 | A polygon and a room that overlap | `E_ROOMS_OVERLAP` |
 
@@ -1242,6 +1248,41 @@ an edge through an end of the run; otherwise from the start). Plan JSON exports 
 `at axis <label>`: Plan JSON carries no axes, so that one is exported by its `x`/`y` alone. (The opening an
 `open between` clause derives keeps `placement: "absolute"`, so its hand-placed twin stays
 byte-identical.)
+
+**A window round a corner.** Two windows, one on each wall, each placed `at corner` and naming the
+edge the other stands on, meet at the corner with no wall left between them:
+
+```arch
+plan "A corner window" {
+  units mm
+  grid 50
+  room id=living at (0,0) size 5000x4000 label "Living" uses living
+  walls from rooms exterior 200 partition 100
+  door id=entry on living.left at 2000 from start width 900 swing into living
+  window id=n on living.top at corner living.right width 1800
+  window id=e on living.right at corner living.top width 1200
+}
+```
+
+`width` runs from the window's free jamb to the **outer corner**, the other wall's outer face, so it
+is the length of glass on that face. The centre follows from that face and is not snapped to `grid`.
+They stay two windows: each has its own wall, `facing`, tag and row in `schedule openings`, and
+`describe --json` adds `corner_with`, the other's id, to each `windows[]` row. The wall at the corner
+goes with the two cuts, so the net areas do not move, and the drawing mitres their glass, faces and
+sills from the inner corner to the outer one. Each counts its own `width`, so the two overlap by the
+corner in a sum of widths.
+
+It has to be a true corner of the two walls, and anything else is refused with
+[`E_WINDOW_CORNER`](error-codes.md): both edges of one room, meeting at an end; on each, one exterior
+wall that stays, ending exactly on the corner; no third wall and no `column` at the corner; one window
+on each wall, with the same `sill` and `head`, each wider than the other wall is thick. On an L the
+side words name its outermost runs, which meet only at convex corners, so a re-entrant corner has no
+word and is refused. A window `kind` works on either leg. Its marks stand clear of the corner, between
+the free jamb and the other wall's inner face, and the hinge mark of a `casement` or `tilt_turn` stands
+on the free jamb, written or not: a `hinge` naming the corner end is refused. The free jamb
+keeps its nib (`E_OPENING_NIB`, whose hint quotes the widest window that fits). The form reads
+rooms' edges, so it is refused on `on <wall>`, and on a door or a cased opening. Written by `at (x,y)`,
+two such windows are ordinary windows: `W_OPENING_AT_JUNCTION` reports each.
 
 **The same datums on a wall.** `on <wall> at <mm> from start|end`,
 `on <wall> at <mm> from <room>.<edge>` and `on <wall> at axis <label>` read the run of an
@@ -1893,7 +1934,7 @@ a thickness clear of each face), the side with no room floor — and no `void`, 
 inside the building too — is outside: the same probe a `garage` door makes to find its
 floor side. A window with the inside on both sides (an interior window, or one onto a
 void) or on neither (a free-standing wall) has no outside and draws no sill. The `on <wall> at <pos>` attachment form works exactly as
-for doors.
+for doors. Two windows can run round a corner: see [Openings by relation](#openings-by-relation).
 
 #### Window kinds
 

@@ -19,11 +19,11 @@ import { chargeSteps } from "./expr.js";
 import type { ParseCtx, ResolveCtx } from "./registry.js";
 import type { WallLike, WallSegment } from "./geometry.js";
 import { segmentLength, segmentPointAlong, segmentsOfWall } from "./geometry.js";
-import type { OpeningRelation } from "./ir.js";
+import type { OpeningRelation, WindowCorner } from "./ir.js";
 import { enumList } from "./grammar/tokens.js";
 import { EDGE_WORDS } from "./room-datums.js";
 import { fmt3 as numStr } from "./num-format.js";
-import { hostedDatumDistance, placeBetween, placeOnEdge, type RelationCtx } from "./opening-relation.js";
+import { cornerOnWall, hostedDatumDistance, placeBetween, placeOnEdge, type RelationCtx } from "./opening-relation.js";
 
 /**
  * The fix for `E_ATTACH_POS_RANGE`: clamp the out-of-range attach position to the
@@ -72,9 +72,11 @@ export function eatEnumValue<T extends string>(ctx: ParseCtx, allowed: readonly 
  * bare reference. `axis` is read as the datum word only when a label follows it (a number,
  * or a name other than the `width` that always follows a position): `axis <label>` was never
  * a legal expression, so a plan that names a binding `axis` (`at axis width 900`) reads as
- * it always did. `from` after the value was never legal either.
+ * it always did. `from` after the value was never legal either. `corner` likewise, read as the
+ * word only with a dotted name after it: a binding of that name followed by a dotted name was
+ * never legal, so `at corner width 900` reads as it always did.
  */
-function parseAttachPos(ctx: ParseCtx): { pos: AttachPos; end: number } {
+export function parseAttachPos(ctx: ParseCtx): { pos: AttachPos; end: number } {
   if (ctx.isKeyword("center")) {
     const c = ctx.next();
     return { pos: { kind: "center" }, end: c.end };
@@ -85,6 +87,14 @@ function parseAttachPos(ctx: ParseCtx): { pos: AttachPos; end: number } {
       ctx.next();
       const t = ctx.next();
       return { pos: { kind: "axis", label: t.value, span: { start: t.start, end: t.end } }, end: t.end };
+    }
+  }
+  if (ctx.isKeyword("corner")) {
+    const after = ctx.peek(1);
+    if (after.type === "ident" && after.value.includes(".")) {
+      ctx.next();
+      const t = ctx.next();
+      return { pos: { kind: "corner", edge: t.value, span: { start: t.start, end: t.end } }, end: t.end };
     }
   }
   const value = ctx.parseExpr({ noModulo: true });
@@ -361,7 +371,7 @@ export function resolveOpeningLead(
   width: number,
   ctx: ResolveCtx,
   what: string,
-): { at: Point; host: WallSegment | null; relation?: OpeningRelation } | undefined {
+): { at: Point; host: WallSegment | null; relation?: OpeningRelation; corner?: WindowCorner } | undefined {
   const rel: RelationCtx = {
     grid: ctx.grid,
     walls: ctx.walls,
@@ -388,6 +398,10 @@ export function resolveOpeningLead(
       return none;
     }
     if (!isWall) return placeOnEdge(attach, kind, width, rel, what) ?? none;
+  }
+  if (attach.pos.kind === "corner") {
+    ctx.diag(cornerOnWall(attach.wall, what, attach.span));
+    return none;
   }
   const a = resolveAttachment(attach, ctx.walls, ctx.snapPt, ctx.diag, what, (e) => ctx.eval(e), rel, ctx.unplacedWall);
   return a ?? none;

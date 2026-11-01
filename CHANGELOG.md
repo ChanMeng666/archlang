@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A window can run round a corner (issue #401). `window on r.top at corner r.right width 1800` and `window on r.right at corner r.top width 1200` meet at the corner with no wall left between them: the walls' corner goes with the two cuts, and the glass, wall faces and sills mitre. `width` runs to the outer corner. They stay two windows, each with its own wall, `facing` and schedule row, and `describe --json` adds `corner_with`. What is not a true corner of two exterior walls is refused (`E_WINDOW_CORNER`).
 - An L-shaped room now has sides (issue #363). On a `room polygon` whose edges are all horizontal or vertical, `right-of` and the other relational clauses, `liv.top` and the other edge datums, `window on liv.left`, `against liv.left` and `in liv anchor …` read the outline's run on that side, never the bounding box. `align` reads that run's ends. A corner anchor needs a vertex of the outline there. Refused, with the runs named: a side of two runs (the prongs of a U), a corner in the notch, `centered`, `liv.cx`, and a piece that would leave the floor.
 - `archlang finish` furnishes an L-shaped room (issue #370). A piece stands only where those forms can say, on the outermost runs and the corners of the outline, and the never-worse check decides as before. A notch edge takes no piece. A circle or a slanted polygon is still reported and left as it is.
 - A `window` can name its kind: `window fixed`, `casement`, `tilt`, `tilt_turn` or `sliding` (issue #369). Each draws its own small sign inside the wall, and the kind reaches `describe --json` (`windows[].kind`), the TYPE column of the DOOR & WINDOW SCHEDULE, the `legend` and Plan JSON (`window_kind`). `casement` and `tilt_turn` take `hinge left|right`. Left out, the sign stands on both jambs, because nothing supplies a side the plan did not state. `hinge` on any other window is `E_WINDOW_KIND_CLAUSE`. A window with no kind word draws, describes and lints as before.
@@ -17,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `open between … at …` says what to write (issue #401). `open between` stays centred, and the parse error now quotes the `opening between` statement that places the opening, with your position and width.
 - `W_BALCONY_NO_DOOR` no longer accepts a `fixed` or `tilt` window as a way onto a balcony, whatever its sill.
 
 ## [1.51.0] - 2026-11-02

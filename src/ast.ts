@@ -376,13 +376,15 @@ export type AttachFrom = { word: "start" | "end" } | { datum: string; span: Span
 /**
  * An opening's position along its run. The first three are the original `on <wall> at`
  * forms; the rest are ADR 0028 §5's datum forms: `<mm> from start|end|<room>.<edge>`,
- * `axis <label>` (a positioning axis crossing the run), and `default` (no `at` written,
+ * `axis <label>` (a positioning axis crossing the run), `corner <room>.<edge>` (a window run
+ * out to the corner that edge makes, `src/opening-relation.ts`) and `default` (no `at` written,
  * the `on <room>.<edge>` form only).
  */
 export type AttachPos =
   | { kind: "percent" | "mm" | "center"; value?: Expr }
   | { kind: "from"; value: Expr; from: AttachFrom }
   | { kind: "axis"; label: string; span: Span }
+  | { kind: "corner"; edge: string; span: Span }
   | { kind: "default" };
 
 /**

@@ -209,6 +209,7 @@ export const KEYWORDS = {
     "middle",
     "bottom",
     "center",
+    "corner",
     "centered",
     "start",
     "end",

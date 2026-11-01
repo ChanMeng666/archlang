@@ -308,6 +308,9 @@ export interface WindowSummary {
    * relational opening, so every other payload is byte-identical.
    */
   relation?: string;
+  /** The window on the other wall of a corner, on a window placed `at corner`. Each row keeps its
+   *  own wall, `width` and `facing`: a window faces one way. */
+  corner_with?: string;
   /**
    * The window's kind, emitted **only when one was written**, so a kind-free window's row is
    * byte-identical. A semantic fact, like a door's: it says whether the window opens and how. The
@@ -1568,6 +1571,7 @@ function summarize(
       width: w.width,
       ...(w._relation ? { relation: relationText(w._relation) } : {}),
       ...(w.windowKind !== undefined ? { kind: w.windowKind } : {}),
+      ...(w._corner?.with !== undefined ? { corner_with: w._corner.with } : {}),
       facing: toCompass(facingPage, northTurns),
       ...(northTurns !== 0 ? { facingPage } : {}),
       ...(heights ? { sill: w.sill, head: w.head } : {}),

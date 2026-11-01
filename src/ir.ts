@@ -515,6 +515,16 @@ export interface RDoor extends RBase {
    */
   head: number;
 }
+/** A window run out to a corner of two walls (`at corner <room>.<edge>`): its span ends on the
+ *  other wall's outer face, so with the window on that wall no wall stands at the corner. */
+export interface WindowCorner {
+  /** Where the two centrelines meet. */
+  at: Point;
+  /** The other wall's segment, which ends at {@link WindowCorner.at}. */
+  other: WallSegment;
+  /** The window on that wall, once the group has settled (`windowEl.settle`). */
+  with?: string;
+}
 export interface RWindow extends RBase {
   kind: "window";
   at: Point;
@@ -536,6 +546,13 @@ export interface RWindow extends RBase {
   _placement?: OpeningPlacement;
   /** See {@link RDoor._relation}. */
   _relation?: OpeningRelation;
+  /** Present only on a window placed `at corner`. Internal: the drawing, `lint()` and `describe()`
+   *  read it, and it never reaches the Scene. */
+  _corner?: WindowCorner;
+  /** Written `at corner` and refused there, as written: `on` the one edge, to the `to` edge. The
+   *  window that names those two the other way round is not alone: this one was written, and its
+   *  own error says what is wrong with it. Internal. */
+  _cornerRefused?: { on: string; to: string };
   /** Bottom of the glazing above this storey's floor, in mm — always resolved,
    *  the authored `sill` or {@link import("./datum.js").WINDOW_SILL}. */
   sill: number;

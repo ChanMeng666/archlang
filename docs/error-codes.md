@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**150 errors** · **91 warnings**
+**151 errors** · **91 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -157,6 +157,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_WALL_ID_RESERVED`](#e_wall_id_reserved) | error | An authored wall takes the id the derived exterior ring has in this plan or component. |
 | [`E_WALL_THICKNESS`](#e_wall_thickness) | error | Wall must have a positive thickness. |
 | [`E_WHILE_LIMIT`](#e_while_limit) | error | `while` exceeded its iteration cap. |
+| [`E_WINDOW_CORNER`](#e_window_corner) | error | A window placed `at corner` does not stand at a true corner of two walls. |
 | [`E_WINDOW_KIND_CLAUSE`](#e_window_kind_clause) | error | That clause is not available on this kind of window. |
 | [`E_WINDOW_WIDTH`](#e_window_width) | error | Window must have a positive width. |
 | [`W_ACCESSIBLE_WC_SIDE_WALL`](#w_accessible_wc_side_wall) | warning | An accessible WC's pan stands too far from every side wall. |
@@ -2147,6 +2148,20 @@ wall exterior thickness 0 { (0,0) (1,0) }   # error
 ```arch static
 let i = 0
 while i < 1 { let y = i }   # error: i never changes
+```
+
+## E_WINDOW_CORNER
+
+*error* — A window placed `at corner` does not stand at a true corner of two walls.
+
+**Cause.** `window on <room>.<edge> at corner <room>.<edge>` runs a window to the corner the two edges make, with a window on each of the two walls, and no wall left at the corner between them. So it is refused where that is not what the plan says: on a door or a cased opening; on `on <wall>`, since a corner is read from a room's edges; on two edges that do not meet at an end, or belong to different rooms; where either edge has no exterior wall that stays and ends exactly on the corner (a wall running on past it, a partition, a demolished wall); where a third wall or a column stands at the corner; on a window no wider than the other wall is thick; with no window at the corner on the other wall, or more than one; on two windows with different `sill` or `head`; and on a `hinge` naming the corner end, since a hinge needs a jamb and no wall is left there. A polygon's side words name its outermost runs, which meet only at convex corners, so a re-entrant corner cannot be named. Refused, never approximated: taking away the wall at a corner is a statement about the corner.
+
+**Fix.** Write the other window (the hint quotes it), name two edges of one room that meet at an end, or stand the window clear of the corner with `at <mm> from <room>.<edge>`.
+
+```arch static
+room id=r at (0,0) size 4000x3000
+  walls from rooms exterior 200 partition 100
+  window id=n on r.top at corner r.right width 1500   # error: no window on r.right
 ```
 
 ## E_WINDOW_KIND_CLAUSE

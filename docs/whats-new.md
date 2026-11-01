@@ -25,6 +25,7 @@ Every command and code name below is the one `archlang <command> --help` and the
 | Labels that shrink to fit a small room | 1.51.0 | [Labels in small rooms](#labels-in-small-rooms) |
 | Net area in the room stamp | unreleased | [Net area in the stamp](#net-area-in-the-stamp) |
 | Window kinds and a glazed terrace door | unreleased | [Window kinds](#window-kinds) |
+| A window round a corner, with no wall left at it | unreleased | [Corner windows](#corner-windows) |
 
 ## Quantities and takeoff
 
@@ -402,3 +403,23 @@ plan "Net stamp" {
 ```
 
 The figure is the NET AREA column's, which is `describe()`'s `rooms[].net_area_m2`: one calculation, read twice. A room the schedule cannot measure shows `-` there and keeps its centreline stamp without `net`, and so does a room no wall touches. Without the word nothing changes. The longer stamp is fitted like any label, so it can shrink in a narrow room. This is a drawing choice, no standard's rule.
+
+## Corner windows
+
+Two windows can now meet at a corner with no wall left between them. Write one on each wall, each placed `at corner` and naming the edge the other stands on:
+
+```arch
+plan "A corner window" {
+  units mm
+  grid 50
+  room id=living at (0,0) size 5000x4000 label "Living" uses living
+  walls from rooms exterior 200 partition 100
+  door id=entry on living.left at 2000 from start width 900 swing into living
+  window id=n on living.top at corner living.right width 1800
+  window id=e on living.right at corner living.top width 1200
+}
+```
+
+`width` runs to the outer corner. The glass, the wall faces and the sills mitre at the corner. They stay two windows, each with its own wall, `facing` and schedule row, and `describe --json` gives each the other's id in `corner_with`. What is not a true corner of two exterior walls is refused with `E_WINDOW_CORNER`, and a window with no partner is refused with the missing statement in the hint.
+
+`open between` stays centred. An `at` on it now says so and quotes the `opening between` statement to write instead, which draws the same hole at the position you asked for and keeps the wall on either side of it.
