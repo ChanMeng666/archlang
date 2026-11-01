@@ -974,6 +974,8 @@ export interface ResolvedPlan {
    * copied straight from the AST, never derived, and absent unless the plan opts in.
    */
   schedule?: "rooms";
+  /** `schedule rooms net` — the room stamp reads the schedule's net area. Copied from the AST. */
+  scheduleNet?: boolean;
   /** `schedule openings` — draw the door/window tags and the DOOR & WINDOW SCHEDULE.
    *  Presentation only, copied from the AST, absent unless the plan opts in. */
   openingSchedule?: boolean;
@@ -3519,6 +3521,7 @@ function resolveBody(
     // Sheet-table opt-ins: presentation flags carried through untouched. Spread so an
     // opted-out plan has no key at all and the IR stays byte-identical to before.
     ...(ast.schedule ? { schedule: ast.schedule } : {}),
+    ...(ast.scheduleNet ? { scheduleNet: true } : {}),
     ...(ast.openingSchedule ? { openingSchedule: true } : {}),
     ...(ast.legend ? { legend: true } : {}),
     ...(ast.notes && ast.notes.length > 0 ? { notes: ast.notes } : {}),

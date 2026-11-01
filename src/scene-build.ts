@@ -812,7 +812,32 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
     .filter((el): el is RRoom | RVoid => el.kind === "room" || el.kind === "void")
     .map(roomBox);
   const floorAt = (p: Point): boolean => floorBoxes.some((r) => pointInRoomBox(p, r));
-  const baseCtx: RenderCtx = { theme, sizes, bounds: b, fmt: fmtMm, openingsVoided: true, floorAt };
+  // The schedule measures the plan after the demolition (`plan`, B3b), so its NET AREA and
+  // TOTAL are `describe().schedule`'s; with no demolished wall `plan` is `ir`'s very arrays.
+  // Derived before the elements are drawn because `schedule rooms net` stamps its figure.
+  const scheduleData =
+    ir.schedule === "rooms"
+      ? roomSchedule(
+          plan.elements.filter((e): e is RRoom => e.kind === "room"),
+          ir.zones,
+          plan.walls,
+        )
+      : null;
+  // A room whose net figure equals its centreline figure had nothing deducted (no wall on or in
+  // it): ` net` would claim a deduction that did not happen, so it keeps the bare stamp.
+  const netById =
+    ir.scheduleNet && scheduleData
+      ? new Map(scheduleData.rows.map((r) => [r.id, r.net_area_m2 === r.area_m2 ? undefined : r.net_area_m2]))
+      : null;
+  const baseCtx: RenderCtx = {
+    theme,
+    sizes,
+    bounds: b,
+    fmt: fmtMm,
+    openingsVoided: true,
+    floorAt,
+    ...(netById ? { netAreaOf: (id: string) => netById.get(id) } : {}),
+  };
   const ctxFor = (kind: string): RenderCtx => {
     const st = styledByKind.get(kind);
     return st ? { ...baseCtx, theme: st } : baseCtx;
@@ -1008,16 +1033,7 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
   // (see `sheet-tables.ts`). Computed before chrome layout because the table heights are
   // what grow the bottom margin; a plan that opts into neither passes null and every
   // margin below reduces to the previous arithmetic, so its bytes are unchanged.
-  // The schedule measures the plan after the demolition (`plan`, B3b), so its NET AREA and
-  // TOTAL are `describe().schedule`'s; with no demolished wall `plan` is `ir`'s very arrays.
-  const scheduleData =
-    ir.schedule === "rooms"
-      ? roomSchedule(
-          plan.elements.filter((e): e is RRoom => e.kind === "room"),
-          ir.zones,
-          plan.walls,
-        )
-      : null;
+  // (`scheduleData` itself is derived above, before the elements are drawn.)
   const legendData = ir.legend
     ? legendEntries(
         hatches,
