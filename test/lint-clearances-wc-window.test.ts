@@ -262,8 +262,8 @@ describe("W_FURNITURE_OVER_WINDOW: a low piece against a `sill 0` window", () =>
     expect(of(living("furniture rug at (2200,100) size 1200x800"), WIN)).toEqual([]);
     expect(of(living("furniture wall_cabinet at (2200,100) size 600x350"), WIN)).toEqual([]);
   });
-  it("a piece near the glass and not against it does not warn: a chair at a table, a piece in the band's far part", () => {
-    expect(of(living("furniture chair at (2500,300) size 450x450"), WIN)).toEqual([]);
+  it("a piece in the window's band and 100 mm off the wall's face does not warn: a chair at a table", () => {
+    expect(of(living("furniture chair at (2500,200) size 450x450"), WIN)).toEqual([]);
     expect(of(living("furniture chair at (2500,100) size 450x450"), WIN)).toHaveLength(1);
   });
   it("an uncatalogued piece counts: nothing stands lower than a sill at the floor", () => {
