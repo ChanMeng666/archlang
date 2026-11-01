@@ -404,7 +404,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
     expect(r.source).toBe(src);
     expect(partly(r)).toEqual([["u1.r", "living: `sofa`"]]);
     expect(r.unresolved.map((u) => u.reason)).toEqual([
-      '"u1.r" holds furniture but not every piece its use requires — living: `sofa` missing; it belongs to a placed component instance — furnish the component instead',
+      '"u1.r" holds furniture but not every piece its use requires — living: `sofa` missing; it belongs to a placed component instance, which finish leaves to you: furnish the component, or write `furniture … in u1.r` in the plan body',
     ]);
   });
 
@@ -437,7 +437,8 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
     const notes = r.unresolved.filter((u) => u.reason.includes(PARTLY));
     expect(notes.length).toBeGreaterThan(0);
     for (const n of notes) {
-      expect(n.reason).toContain("it belongs to a placed component instance — furnish the component instead");
+      expect(n.reason).toContain("it belongs to a placed component instance, which finish leaves to you");
+      expect(n.reason).toContain(`or write \`furniture … in ${n.room}\` in the plan body`);
       expect(n.reason).not.toContain("finish fills only empty rooms");
     }
   }, 120000);
@@ -586,6 +587,14 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
   // the table stands 1400 mm inside the pull side of the exterior door, which raises
   // `W_EXIT_APPROACH_BLOCKED` under `accessibility-advisory` (1525 mm), so the never-worse gate
   // now writes the sofa alone. Nothing else in the two runs moved.
+  // Re-measured 2026-11-02 (issue #364 part 2, on 18127701): two rows, each read field by field. The
+  // multi-storey examples other than turning-stair have no room the stage can fill, so they did not move.
+  // museum-wings: the note on a room of a placed component no longer says a plan body cannot name it;
+  // `source` and `changes[]` of both runs are unchanged, and the old sentence put back in the new runs
+  // reproduces the previous row. turning-stair: a plan with `level` blocks is furnished now: 4 pieces
+  // (`living` on level 1, `bed` on level 2), each change with its `level`. Less those statements, the
+  // `--only furnish` source is the example's and the full run's is the previous full run's, with the
+  // same sheet statements; the four notes that said the stage handles one storey are two scope notes now.
   const FINISH_DIGESTS: ReadonlyMap<string, string> = new Map(
     (
       [
@@ -612,7 +621,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         ["0a8902f60aa17c548fed121167615cdaaf3d1ea679fb34dff983e1dfa84b2b13", "materials"],
         ["536031a0e434a8373242b3c6c3849b5f1f212bce9ed71d3294f0364dd4350156", "museum"], // PS2.11e source edit, see above; PS2.74 source edit, see above
         ["e56adeb88cb99daf3c2e93723b84ccd134c948f803bffb84fb519553d0ff63c4", "museum-wing"],
-        ["9f9ff13b19a6f8faf34b8c6bd7092e86c5e87ed70f2c37597f5414906114d292", "museum-wings"], // PS2.11e source edit, see above
+        ["6b667b581ae1ad37f2c5ae97fd569b189765d2bc97ecd7317d3b79716545de9d", "museum-wings"], // PS2.11e source edit, see above; a note's wording (#364), see above
         ["323b8b2e7741e5cd31ae525c5d54c570cb47d5e27c8e32817d357350799a5053", "one-room"], // PS2.69, see above
         ["06e0d70afc7df98e0cf944d4d4d6179370632ea31e52eebf07aaf6efb7af210c", "parametric"],
         ["a6f645e75374318f4ec98242aaf081345a5c478041c9b953df1c235111e64c0c", "relational"], // PS2.9 and PS2.4 source edits; PS2.17 source edit (a worktop), see above; PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e source edit, see above
@@ -625,7 +634,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         ["d9d4e8820a66dd416c690161cb107ed6ce9148fd26d160150ef20d72227a3542", "tiny-house"], // PS2.17 source edit (a worktop); PS2.50 comment edit, see above; PS2.11e source edit, see above
         ["f65d780ba8d63321f1a00dfac34b070e2cf6f6ec912c14eda5a4396549966362", "townhouse"], // PS2.17 source edit (a worktop), see above; PS2.11e source edit, see above
         ["d444146fdb6b48864dd0523c1013599e72ff7108a16d1e154ecc79dd0e0137e1", "transit-hall"], // PS2.11e source edit, see above
-        ["21dae75047dc0cffe06c6dfc040f7cef977805c18a500ec666ae0b5ead73496b", "turning-stair"], // first measurement, added with the example (S2)
+        ["04ad638fbbf260c847bdfae5738006e076f8d4b79f70e4a36357db7ac640ed17", "turning-stair"], // first measurement, added with the example (S2); furnished storey by storey (#364), see above
         ["16b598f449b4051c4113c1ad9ec92cc0b603cffa0772d51c9d78e6e59490a1e7", "two-bed"], // PS2.17 source edit (a worktop), see above; PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e source edit, see above
         ["508fcd552120d23495ad6ed995f93dfa83a94e6a6e90782d36b87ff2b4926e26", "two-storey"], // PS2.1–PS2.3 and PS2.9 source edits; PS2.17 source edit (a worktop), see above
       ] as const
@@ -693,10 +702,16 @@ suite("furnish law — never worse: no error, no new diagnostic code, no new fur
 
 suite("furnish law — pure insertion: every authored byte and comment survives, in place", () => {
   for (const name of NAMES)
-    it(`${name}: the result is the source with one run of statements inserted`, () => {
+    it(`${name}: the result is the source with one run of statements inserted, one per storey`, () => {
       const src = srcOf(name);
       const r = finish(src, { world, only: "furnish" });
-      expect(isOneInsertion(src, r.source)).toBe(true);
+      // Less every other storey's statements, what is left is one insertion into the source.
+      for (const level of new Set(r.changes.map((c) => c.level))) {
+        const others = r.changes.filter((c) => c.level !== level).map((c) => c.text);
+        const less = r.source.split("\n").filter((l) => !others.includes(l.trim()));
+        expect(isOneInsertion(src, less.join("\n"))).toBe(true);
+      }
+      expect(isOneInsertion(src, r.source)).toBe(new Set(r.changes.map((c) => c.level)).size <= 1);
       expect(r.changed).toBe(r.source !== src);
     }, 120000);
 
@@ -752,7 +767,7 @@ suite("furnish law — pure insertion: every authored byte and comment survives,
   });
 });
 
-suite("furnish law — scope: rectangular rooms of a single-storey plan", () => {
+suite("furnish law — scope: rectangular rooms", () => {
   it("a polygon room is reported and left empty; its bounding box is never used", () => {
     const src = `plan "L" {
   units mm
@@ -769,15 +784,8 @@ suite("furnish law — scope: rectangular rooms of a single-storey plan", () => 
     expect(r.unresolved[0]!.reason).toContain("polygon room");
   });
 
-  it("a plan with `level` blocks is reported room by room and left as it is", () => {
-    const multi = NAMES.filter((n) => /^\s*level /m.test(srcOf(n)));
-    expect(multi.length).toBeGreaterThan(0);
-    for (const name of multi) {
-      const r = finish(srcOf(name), { world, only: "furnish" });
-      expect(r.source).toBe(srcOf(name));
-      expect(r.changes).toEqual([]);
-      for (const u of r.unresolved) expect(u.reason).toContain("single-storey");
-    }
+  it("a plan with `level` blocks is furnished room by room, in each storey's own block", () => {
+    // The law lives in `test/finish-levels.test.ts`; this was "reported and left as it is".
     const two = `plan "Two" {
   units mm
   level 0 {
@@ -792,8 +800,11 @@ suite("furnish law — scope: rectangular rooms of a single-storey plan", () => 
 }
 `;
     const r = finish(two, { only: "furnish" });
-    expect(r.source).toBe(two);
-    expect(r.unresolved.map((u) => u.room)).toEqual(["r", "r1"]);
+    expect([...new Set(r.changes.map((c) => c.room))]).toEqual(["r", "r1"]);
+    expect(r.unresolved).toEqual([]);
+    const lower = r.source.indexOf("level 1 {");
+    expect(r.source.indexOf(" in r anchor")).toBeLessThan(lower);
+    expect(r.source.indexOf(" in r1 anchor")).toBeGreaterThan(lower);
   });
 
   it("a room with no `id=` of its own is reported, not furnished through its positional id", () => {
@@ -965,10 +976,12 @@ suite("furnish law — named: a room left empty is in `unresolved`, whatever lef
 }
 `;
     const r = finish(src, { only: "furnish" });
-    expect(r.source).toBe(src);
-    expect(r.unresolved.map((u) => u.room)).toEqual(["r", "h"]);
-    expect(r.unresolved[1]!.reason).toBe(
-      '"h" (level 0) is outside the furnish table and was left empty — its use `hall` has no row there; add furniture yourself only if it should hold some, and the furnish stage handles single-storey plans only',
+    expect(r.changes.length).toBeGreaterThan(0);
+    expect(r.changes.every((c) => c.room === "r" && c.level === 1)).toBe(true);
+    expect(r.unresolved).toHaveLength(1);
+    expect(r.unresolved[0]).toMatchObject({ room: "h", level: 0, scope: "outside-table" });
+    expect(r.unresolved[0]!.reason).toBe(
+      '"h" (level 0) is outside the furnish table and was left empty — its use `hall` has no row there; add furniture yourself only if it should hold some',
     );
   });
 
