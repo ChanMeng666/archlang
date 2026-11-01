@@ -637,15 +637,16 @@ make each re-measure cheap enough to raise the budget.
 
 Left open by routing "which side of this wall has floor" through `wallFaceProbes`
 (`src/geometry.ts`) and giving `roomOfVertical` the room's shape. Neither was in that change's scope.
-Both closed their SHAPE half in W5a; P.1's message half is still `todo`.
+Both closed their SHAPE half in W5a; P.1's message half closed with #404.
 
-### P.1 · A shaft landing on no room says its storey has no way in — `todo` (the shape half is done)
+### P.1 · A shaft landing on no room says its storey has no way in — closed: the shape half by W5a, the message by #404
 
 **Landed (W5a): `roomOfVertical` asks the room's shape, not its bounding box.** A stair or lift
 standing in a concave room's notch, or in a circle's bounding-box corner, is no longer claimed by
 that room — `test/vertical-room-shape.test.ts`.
 
-**Still open: the message.** `verticalReach` (`src/vertical.ts`) counts the storey reachable
+**Landed (#404): the message.** `W_NO_ENTRANCE` now names the storey and says why no shaft makes up
+for its door; what follows is the case as it was found. `verticalReach` (`src/vertical.ts`) counts the storey reachable
 (`describe().vertical.reachable_levels` lists it) but records an arrival room only for a stop whose
 `room` is non-null, and `no-entrance` (`src/lint/rules/entrance.ts`) stands down only for an arrival
 room. A stair landing in an L's unroomed notch therefore gets `W_NO_ENTRANCE` ("there is no way into
@@ -1607,12 +1608,13 @@ Re-run: `plan "A<TAB>B"` through `arch fmt` prints `"A\tB"`, which reads back as
 
 ### M.22 · `finish` furnish stage: what it leaves alone — `todo` (limits, not defects)
 
-`src/furnish.ts` furnishes single-storey plans, rectangular rooms with an authored `id=` of
-their own, and only a room that holds no furniture. Each of these is reported in `unresolved`
-and left as it is:
+`src/furnish.ts` furnishes rectangular rooms with an authored `id=` of their own, on every storey,
+and only a room that holds no furniture. Each of these is reported in `unresolved` and left as it
+is:
 
-- polygon and circular rooms, and any plan with `level` storeys;
-- rooms inside a component instance (no statement in the plan body can name them);
+- polygon and circular rooms;
+- rooms inside a component instance (a plan body can name them, `in u1.bed`, but the stage writes
+  nothing for one; a single-storey plan's bytes and a storey's must agree if that changes);
 - rooms over `MAX_ROOM_AREA_M2`;
 - a room that already holds any furniture (fill-only: it is never topped up);
 - relational rooms with no fixed `at`.

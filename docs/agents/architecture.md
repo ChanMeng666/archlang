@@ -179,8 +179,9 @@ source (.arch)
   span inserts through `fix-apply.ts`'s `Data`, the fit decided by `sheet.ts` `fitsOnSheet` on
   `ir.ts` `sheetExtents`
 - `furnish.ts` the `furnish` stage (`docs/adr/0025-furnish-as-explicit-transform.md`): `FURNISH_TABLE`
-  by `roomUses()`, relative placement only, one compile check per room in the common case; it
-  imports nothing from `intent-concepts.ts` or `eval/`
+  by `roomUses()`, relative placement only, one compile check per room in the common case, one run
+  of statements per storey, each in its own `level` block; it imports nothing from
+  `intent-concepts.ts` or `eval/`
 - `pipeline.ts` the ONE `compileUncached()` (parse→link→resolve→render), extracted verbatim from
   `index.ts` so `compile()`'s memo-cache wrapper and `reroll.ts`'s twin-compile proof obligation
   call the same function and can never drift apart

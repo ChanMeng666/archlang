@@ -307,6 +307,25 @@ remainder) is `E_OPENING_HOST_AMBIGUOUS`. `window on A.top` picks the one exteri
 that edge; none, a partition, or two bodies (a narrower room centred above a wider one) refuse the
 same way. Positions are measured along the shared run or the edge, not along the host wall.
 
+*Amended 2026-11-02 (issue #401):* on `on <room>.<edge>` several bodies no longer refuse by their
+count alone. The position is measured along the whole room edge, exactly as on an edge with one
+body, so `from start` keeps the edge's smaller-coordinate end and `center` its middle, wherever the
+exterior part runs. That names one point before any wall is read, which is why this is arithmetic
+on what the author wrote and not a choice (ADR 0005), and why it differs from a pair with several
+runs below, where the same words mean nothing until a run is picked. Where the span lands, after
+the grid, settles the wall: the whole span on one exterior body and no other wall stands there. A
+span across two bodies, on a partition, on no body or on two walls at once stays
+`E_OPENING_HOST_AMBIGUOUS`, and the hint quotes the nearest legal position on each exterior body,
+where one exists. With no exterior body standing on the edge no position could help, and it is
+`E_OPENING_NO_SHARED_WALL`, as with one partition. A span on one exterior body that runs past its
+end is `E_OPENING_NIB`, as on an edge with one body. A `status demolish` wall counts as a wall that
+stands there for the landing: it is on the sheet, so a span on it and on another wall refuses, and
+a span on it alone is `E_OPENING_ON_DEMOLISHED_WALL`. It counts as no exterior body: it hosts
+nothing, so no hint quotes a position in it. An `open between` boundary voided over its whole span
+is named as a boundary, not a wall, though it is a body here, and no hint sends an opening
+`between` a pair declared open. `between` keeps its rule: a run has one wall body, and an authored
+span beside a derived remainder refuses wherever the position falls.
+
 - A door's position is **required**: the plan's own rule (`README.md` §4) is that a hosted door is
   held to a corner or a room edge, never centred by default. `center` is a word the author writes.
   A window's position defaults to `center`.

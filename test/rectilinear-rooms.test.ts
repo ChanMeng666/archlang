@@ -933,10 +933,10 @@ const DIGESTS: [string, string][] = [
   ["818566c77994d02cd63c9800e0578057d8f56872472e6ca086a9fbedbdeb0715", "open-one-run"],
   ["8cf9a11afd539f57a930e4c42b38350ff1162617ba969e9233b9cb2c0310cde1", "door-at"],
   ["70d9682e468ac43fa00fc25ba7cf6e4c4f7bd6bbb9110a586f062a8c3ad500cb", "placed"],
-  ["8607bb032468d6c7935125e6b8cdbe9e80de5e312f6232785aad52ee59442a38", "doors-both-runs"],
-  ["4da325fa3d79c1cad99505d1414a975259eab39bdb3b8a33709a952a91c5b7a9", "door-u"],
-  ["d6b67d8014eef1bf7851cee30d3432a2182adea38248f2162cb63a2fb129b74a", "door-one-run"],
-  ["720203b3f101ee639450ecd84f1fc6db5f4d4cb220e23d850c508c209e81c909", "doors-placed"],
+  ["0f051e46f0c99c26ef0c0c3509426d96ea8d84f64fcc95d035c29a45a44f88b9", "doors-both-runs"], // `centreline_at`, see ./byte-identity-baseline.ts
+  ["4fcb697a9ca1bba1bcbcb0dbf13b8408a036eac7d7cf11a3b49f893f60858533", "door-u"], // `centreline_at`, see ./byte-identity-baseline.ts
+  ["7f8fd6e2ab3e0d3e05cc6654f5d18fa1d28e16e19b612f82d05d3aa42240d957", "door-one-run"], // `centreline_at`, see ./byte-identity-baseline.ts
+  ["46f0683fb76364297815f3e2830e4d9814db366bcecb577be04eec9c0f59f351", "doors-placed"], // `centreline_at`, see ./byte-identity-baseline.ts
 ];
 
 suite("the digest table", () => {

@@ -16,8 +16,8 @@ Read this before you read the drawings:
   [`archlang finish`](/cli), which furnishes rooms the author left empty and adds the sheet
   statements a plan lacks (paper size, scale, dimensions, title block, room schedule, legend).
   So some of the furniture and all of the sheet furniture you see may come from `finish`, not
-  from the agent. `finish` deletes nothing, and it furnishes single-storey plans, so the
-  two-storey house keeps exactly the furniture its author placed.
+  from the agent. `finish` deletes nothing and fills only rooms that hold no furniture, so every
+  piece an author placed is where the author put it.
 - **Nothing was edited by hand.** No room, wall, door, window or piece of furniture was moved,
   added or removed by a person. The source under each drawing is the file that produced it.
 - **The briefs were written for the run that produced these plans.** They are not an evaluation

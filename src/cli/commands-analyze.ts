@@ -445,7 +445,7 @@ function factLines(s: SceneSummary): string[] {
   if (s.clearances) {
     const c = s.clearances;
     out.push(
-      `clearances: ${c.wcs.length} WC(s), ${c.tall_units.length} tall unit(s), ${c.hobs.length} hob(s), ${c.doorways.length} doorway(s), ${c.stairs === null ? "stairs not measured (budget)" : `${c.stairs.length} stair(s)`} measured (--json for the figures)`,
+      `clearances: ${c.wcs.length} WC(s), ${c.tall_units.length} tall unit(s), ${c.low_units ? `${c.low_units.length} low unit(s) against a floor-length window, ` : ""}${c.hobs.length} hob(s), ${c.doorways.length} doorway(s), ${c.stairs === null ? "stairs not measured (budget)" : `${c.stairs.length} stair(s)`} measured (--json for the figures)`,
     );
   }
   if (s.quantities) {

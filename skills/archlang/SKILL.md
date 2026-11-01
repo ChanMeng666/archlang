@@ -109,7 +109,7 @@ owns that name, so the shell runs the wrong program.
    the source.
 10. **Finish the drawing:** once lint is clean, run `archlang finish plan.arch --dry-run --json`, then
    without `--dry-run` to apply. It first furnishes each rectangular room that holds no furniture,
-   by the room's use (single-storey plans; a furnished room is never touched — a partly furnished one is
+   by the room's use (on every storey; a furnished room is never touched — a partly furnished one is
    named in `unresolved` with the categories it lacks, not topped up), then adds the sheet
    statements the plan lacks — `paper`, `scale`, `dims auto`, `title`, `schedule rooms`,
    `legend` — on the smallest sheet the drawing fits. It fills only what is missing and deletes

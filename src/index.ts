@@ -186,6 +186,7 @@ export type {
   HobFact,
   HobWindowFact,
   LandingFact,
+  LowUnitFact,
   StairFact,
   TallUnitFact,
   WcFact,

@@ -1153,7 +1153,10 @@ An opening may be placed by the rooms instead of by a wall
 - `between <A> and <B>` stands in the **one wall body on the edge run the two rooms share**,
   derived or authored. `<edge>` is `top`, `bottom`, `left` or `right` (the compass words only
   where a datum may use them).
-- `on <room>.<edge>` stands in the **one exterior wall body on that edge** of the room.
+- `on <room>.<edge>` stands in the **one exterior wall body on that edge** of the room. An edge
+  can carry several walls, say exterior for part of its length and a partition for the rest. The
+  position is still measured along the whole edge, and the opening stands in an exterior wall
+  when its whole span lands on that wall and no other.
 - `<pos>` is measured **along the run** (or the edge), never along the host wall, and every
   offset is to the opening's **centre**. The run starts at its end with the smaller `x`
   (horizontal) or `y` (vertical), whichever way the host wall is drawn.
@@ -1220,8 +1223,8 @@ plan "An L round a room" {
 |---|---|
 | No position on a door or cased opening; a plain `at <mm>` or `at <pct>%`; an edge parallel to the run, meeting it away from its ends, or a centre line (`cx`/`cy`); an axis parallel to the run, missing it, or not declared; on a pair that shares several edges, an edge that meets none of them at an end | `E_OPENING_DATUM` |
 | The two rooms share no edge (or one room is named twice) | `E_WALL_BETWEEN_NOT_ADJACENT` |
-| No wall on the run; on `on <room>.<edge>`, the wall there is a partition | `E_OPENING_NO_SHARED_WALL` |
-| More than one wall body on the run (an authored span beside a derived remainder, two exterior runs either side of a narrower neighbour); on a pair that shares several edges, a position that does not pick one (`at center`, `from start\|end`, `at axis`, no position, an edge meeting two of them) | `E_OPENING_HOST_AMBIGUOUS` |
+| No wall on the run; on `on <room>.<edge>`, no exterior wall stands on the edge, whether it carries one wall or several | `E_OPENING_NO_SHARED_WALL` |
+| On `between`, more than one wall body on the run (an authored span beside a derived remainder); on `on <room>.<edge>` with an exterior wall on the edge among several, a span that crosses two of them, stands on a partition, stands on none or lies on two at once (the hint quotes a position on each exterior wall, where one exists); on a pair that shares several edges, a position that does not pick one (`at center`, `from start\|end`, `at axis`, no position, an edge meeting two of them) | `E_OPENING_HOST_AMBIGUOUS` |
 | The pair is declared `open` in `walls from rooms` | `E_WALL_BETWEEN_OPEN` |
 | A jamb too near a meeting wall's face, a wall inside the span, or a span past its run | `E_OPENING_NIB` |
 | A room the plan or component cannot see; a circle, or a polygon with an edge neither horizontal nor vertical | `E_UNKNOWN_REF`, `E_ROOM_NOT_RECTANGLE` |
@@ -1230,7 +1233,9 @@ plan "An L round a room" {
 **Facts.** `describe --json` reports such an opening's `placement` as `relational` in
 `freedom` (with an `openings.relational` count, present only when there is one) and its
 placement as written in a `relation` field of its `doors[]`/`windows[]`/`openings[]` row
-(`"between living and bed at 800 from end"`), never the internal name of its host. A lint hint
+(`"between living and bed at 800 from end"`), never the internal name of its host. A `between`
+door or cased opening also reports `centreline_at`, where it landed: the centre of its span on the
+host wall's centreline, in plan millimetres, the point `door at (x,y)` would name. A lint hint
 that moves it quotes the same form, measured from the anchor the author wrote (`from end`, or
 an edge through an end of the run; otherwise from the start). Plan JSON exports it as written
 (`relation: { between | edge, at }`) beside its resolved `x`/`y`, except one placed
@@ -2463,7 +2468,8 @@ Two advisory rules:
 room's floor — double-counted by anything adding the two totals; a surface merely *abutting*
 the house does not trip it) and
 [`W_BALCONY_NO_DOOR`](error-codes.md#w_balcony_no_door) (a balcony with no door **or
-window** within a wall thickness of any edge).
+window** within a wall thickness of any edge; a window whose authored `sill` is above 0 does not
+count, one with no `sill` clause does).
 
 Refusals: [`E_OUTDOOR_SIZE`](error-codes.md#e_outdoor_size),
 [`E_OUTDOOR_POLY_DEGENERATE`](error-codes.md#e_outdoor_poly_degenerate) (which also covers
@@ -3026,7 +3032,10 @@ Both trail every clause the statement already had, and `sill` precedes `head`:
 
 Only a window takes a `sill`. A door and a cased opening start at the floor, so a clause that
 could only ever be written `sill 0` is not in the language. On a window, `sill 0` *is* legal
-and means a floor-length window — it is the one height that may be zero.
+and means a floor-length window — it is the one height that may be zero. Heights draw nothing, but
+two lint rules read this one:
+[`W_BALCONY_NO_DOOR`](error-codes.md#w_balcony_no_door) and
+[`W_FURNITURE_OVER_WINDOW`](error-codes.md#w_furniture_over_window).
 
 ### Elevation, and why it accumulates
 
@@ -3342,7 +3351,8 @@ adds what the plan lacks, as a second **explicit, opt-in** source-to-source tran
 `--only sheet` runs one:
 
 1. **`furnish`** puts furniture in each rectangular room that holds none, by the room's use
-   ([ADR 0025](adr/0025-furnish-as-explicit-transform.md)). The pieces per use, the placement
+   ([ADR 0025](adr/0025-furnish-as-explicit-transform.md)), storey by storey on a plan with `level`
+   blocks, each storey's statements inside its own block. The pieces per use, the placement
    forms and the limits are in [Furniture & Fixtures](furniture.md).
 2. **`sheet`** adds the sheet statements ([ADR 0024](adr/0024-finish-as-explicit-transform.md)).
    It runs second because the legend lists the furniture.
@@ -3369,8 +3379,8 @@ An authored sheet is kept. If the drawing would not fit it with every statement 
 `unresolved`. `--reissue` lets it replace `paper` and `scale` instead (and nothing else).
 
 Run it after lint is clean. The result is checked before it is returned: it never has a
-compile error, or a diagnostic code under any lint profile, that the plan did not have. A
-sheet statement that would break that is left out and named in `unresolved` with the `codes`
+compile error, or a diagnostic code under any lint profile, that the plan did not have, on any
+storey. A sheet statement that would break that is left out and named in `unresolved` with the `codes`
 it would have raised, and the rest are still written. `dims auto all` steps down to
 `dims auto overall` first, for example when an opening on an angled or curved wall is on no
 chain (`W_OPENING_NOT_DIMENSIONED`), and is left out only when that is refused too. Nothing is
@@ -3384,7 +3394,8 @@ note with that `room` (and the blocking `codes`, when a diagnostic blocked it). 
 carries `scope: "outside-table"`: it asks nothing of the author unless the room should hold
 furniture, and `scope`, never `reason`, is what tells it from a note to act on. A room that holds
 some furniture but lacks a piece its use requires is an `unresolved` note with that `room` too,
-naming the missing pieces; it is never topped up.
+naming the missing pieces; it is never topped up. On a plan with `level` blocks a furnish change or
+room note also carries the `level`, because the same id on two levels is two rooms.
 
 ### Comparing two plans — `diffPlans`
 

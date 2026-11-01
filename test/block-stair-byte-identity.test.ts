@@ -102,8 +102,8 @@ const BASELINE: [string, string][] = [
   ["232be7cd74316c370773ffc6c75d17076cbffdd4ba37df3a9b3c3cf3c3b9a6c2", "examples/one-room.arch"],
   ["cfb3df7a358a33c3ab583d90b3ce215c3ef2f53a8d994ea040f97c1f4c4ddd28", "examples/parametric.arch"],
   ["1d5d2c0df9dad3beca99c1146fc2457ef40021d604453b012d45dc333d88ba8d", "examples/practice-office.arch"],
-  ["416be1ef23a2b89decff001d306a77ebf67f29eadc0ef6d0217b882d29e07a9e", "examples/relational.arch"],
-  ["eb4a059574f4bac6af7850a5345afd589e7b95cd56ae3a48cf0ad53a4e20f150", "examples/remodel.arch"],
+  ["02918cde41f10b126dee8f4a0a847c25168eead83c4be59553b88acabb47bd00", "examples/relational.arch"], // `centreline_at`, see ./byte-identity-baseline.ts
+  ["a4a2014e8fb5a304471442fd6b8738b26523c1521cb83af5d170ecaa5198251e", "examples/remodel.arch"], // `centreline_at`, see ./byte-identity-baseline.ts
   ["478fdeeb66fd3e037e1665fa1be8a49313c5db38e5802999bb95c6f328754bc2", "examples/sheet-notes.arch"],
   ["f6a6a81fa57cd5183bfbb7c607bdb9599ddf2eebfbc657c0cc4e69c7c0bcae7a", "examples/studio.arch"],
   ["bd6056a84ec5d55dee071e9101fea8d157ce72e0830211a1f66b11291f0e0ef7", "examples/terrace-row.arch"],
@@ -111,7 +111,7 @@ const BASELINE: [string, string][] = [
   ["1a78c5532e6c4bb783da712f6f27c83f5c771765278ec8552940d4f73e32beaa", "examples/tiny-house.arch"], // H10: +6 ring scan, +0 overlap
   ["93c6bfea3a6c314a3a9c602a079b64b70593a630f90b3988a7601567e47f9b53", "examples/townhouse.arch"], // H10: +12 ring scan, +0 overlap
   ["12a2c3da84bc3fb045fc784bcad3851edaaf6ae0ec539727b52a5d39e58dca2b", "examples/transit-hall.arch"],
-  ["d8b506619a166424c02abe8949627728e376eb1b9e1733d2570338b801b16cfa", "examples/two-bed.arch"], // H10: +6 ring scan, +0 overlap
+  ["07b8c9e83ad497933dba52d53e8b5bc55bffbe7d4edb72be12d1ff0838c26b70", "examples/two-bed.arch"], // H10: +6 ring scan, +0 overlap; `centreline_at`, see ./byte-identity-baseline.ts
   ["33437c49c3e35fcf638c3e37456e0ab9382c91a95aeb46b0d1814905aae8ad0a", "examples/two-storey.arch"], // H10: +12 ring scan, +0 overlap
   ["2fe38a4ad849ebb8a3192c7cea724d729f659fed022b9a1740b8b96a0e1db1f9", "test/fixtures/axes-grid.arch"],
   ["acd6528394a79d385a1e02c64e9646a656daecb22eaeda68fcd8d0a814428aa8", "test/fixtures/chain30.arch"],
@@ -154,8 +154,8 @@ const BASELINE: [string, string][] = [
   ["fe5d6778a14fabccdaff0138b49e0c7fe9b8850007ca1ed6f4f0d7629abc1e5e", "inline:typed-walls"], // H10: +15 ring scan, +8 overlap
   ["e140a63b3c5a19f2abfaf470afccbdbdbdf1acccea6da3f7cf0ea52e86d0aacc", "inline:except-slanted"],
   ["6e4367336a461f79b8927cdb2671f2571c0d5e029ca95b26448cf70bd39eb058", "inline:clauses"],
-  ["345bd181a47a5f73cade9fe06ecc2e6fc84aa3452fa85d94188f25329c5ca4bb", "inline:door-beside-excepted-L"], // H10: +15 ring scan, +8 overlap
-  ["3e8e9e786c88c697fd7d4d1be0a653cccd5a9f9ed6777ec9eda5366e76a46687", "inline:door-positions"],
+  ["ffcbcbe475c12edbcf2713a4449a06d4eed619f415d3d08ea57428e3cea4bca9", "inline:door-beside-excepted-L"], // H10: +15 ring scan, +8 overlap; `centreline_at`, see ./byte-identity-baseline.ts
+  ["b0c30333ef933c517965aa0a4a7b8022f11d296a6b134eb4ff27f53710ae76ac", "inline:door-positions"], // `centreline_at`, see ./byte-identity-baseline.ts
   ["2646e902db98a47d07ba4b74dcd1be4256394c939d9067531d2fc624cd74ad45", "inline:door-refusals"],
   [
     "c393511a4734b76c5a878d1666ab6e36e638b84abcc963a6e01c97a2bbe1b97e",
@@ -174,11 +174,11 @@ const BASELINE: [string, string][] = [
     "test/defect-corpus/stair-safety/foot-against-partition.clean.arch",
   ],
   [
-    "5f4814023d4dc4f7a37237520e062f5802e45d1d8eb9db4157aef841e5bac2c2",
+    "eb907cc8fc65e290cf295b2ab564a75a4f306aa906b9c59bf6e0605b3c7b96e3", // `centreline_at`, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/furniture-on-flight.arch",
   ],
   [
-    "46b3c52914812d0e9848110080cf9baaff570726a6ce3745154d0aecb8501735",
+    "3da79477b1e625bd59f30ae59161e47fa8b8bc14f52038c4c71695678168a339", // `centreline_at`, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/furniture-on-flight.clean.arch",
   ],
   [

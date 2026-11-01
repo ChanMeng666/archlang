@@ -21,11 +21,11 @@ const DIGESTS: [string, string][] = [
   // quotes its fixture set (the counter's placement would stand in front of the exterior door and
   // raise `W_EXIT_APPROACH_BLOCKED`, which the hint's set verification now re-lints, PS2.17), so it
   // names the fixtures and says why; same code, same span, no new code.
-  ["pairwise-forms", "06eb8323f02f5ba311b7fba05a9a6c0841cdc688c2b970f810064dfe087d8e03"],
-  ["beside-walls-from-rooms", "76b1fe54963ed46db4de0a48abcaba829c135544bd8d6612bd69fda438f3baa6"],
-  ["frames", "709fa5ce55b469960c7c5e5ca87837eb61511f502bafe9b702c7b2ef4135c58e"],
-  ["widen-4000", "86d18ac0da3a35cc67206619c7b9faf9224ba837caa9283af98404861bf3164c"],
-  ["widen-4500", "9cef908d29584b917eb605f312962d98e0a957108ab9143e3d45601e1df18fdb"],
+  ["pairwise-forms", "40e355067438606cc04800bd7fddef29300ecaa16a1cf781069ea9aff8605d59"], // `centreline_at`, see ./byte-identity-baseline.ts
+  ["beside-walls-from-rooms", "2b099428e6ddc133abf357450a697883b156a28ad3d4fdb767109996faf963c3"], // `centreline_at`, see ./byte-identity-baseline.ts
+  ["frames", "153dcaea21e591fe124000e8f41d6fd00c96245c9e3bb7e2ae7b69dc728750c3"], // `centreline_at`, see ./byte-identity-baseline.ts
+  ["widen-4000", "c728d0c567f3b3b116fd00b8870ae67ff5ca525f490f51d7d1dae511ab77e3e3"], // `centreline_at`, see ./byte-identity-baseline.ts
+  ["widen-4500", "867ccff0da3eb30c562df83da26c5ef86835cd62e16486efe3fdf61f3d91e0a2"], // `centreline_at`, see ./byte-identity-baseline.ts
   ["refused", "7e18b4bff41d18b98b0f0457e0f0488a8ce0bb34792e7194d8144c42e88dc901"], // PS2.29: message text only, same code, same span
 ];
 

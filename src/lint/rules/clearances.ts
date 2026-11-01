@@ -7,7 +7,7 @@
  * for the placement check every quoted position passes.
  */
 
-import { rectOf } from "../../analyze.js";
+import { rectInRoomBox, rectOf } from "../../analyze.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { isTallUnit } from "../../fixtures-catalog.js";
 import { type ClearWorld, measureStrip, type Obstacle } from "../../furniture-relation.js";
@@ -19,17 +19,23 @@ import {
   hobSideGap,
   hobWindowCover,
   isCookingSurface,
+  isFloorLength,
+  isLowUnit,
   isShort,
   isWc,
+  lowUnitCover,
   measureWcSides,
   roomOf,
   type WcSide,
   type WcSides,
   wcWorld,
+  type WindowBand,
   windowBands,
+  type WindowCover,
   windowCover,
 } from "../clearance-measure.js";
 import type { LintContext, LintRule } from "../context.js";
+import { placementClear } from "../fixture-paste.js";
 import { deficitMm, mm } from "../measure.js";
 import { VERTEX_EPS } from "../../geometry/polygon.js";
 
@@ -258,6 +264,11 @@ function wcHint(
  * head (2100 mm, `DOOR_HEAD`) is a high window over full-height storage and is not judged; a
  * window on a curved wall files a `curved-window-host` coverage skip. One warning per unit and
  * window it covers, in source order; hint only, no fix (the author chooses which to move).
+ *
+ * A window that reaches the floor ({@link isFloorLength}: `sill 0`) has no sill to stand a low unit
+ * under, so any piece standing against it is reported too ({@link isLowUnit}, {@link lowUnitCover}).
+ * A window with no `sill` clause is not one: it takes the 900 mm default, so a plan that authors no
+ * heights never reaches this arm.
  */
 export const furnitureOverWindow: LintRule = {
   name: "furniture-over-window",
@@ -266,27 +277,47 @@ export const furnitureOverWindow: LintRule = {
   stage: "fixtures",
   codes: ["W_FURNITURE_OVER_WINDOW"],
   check(ctx: LintContext): Diagnostic[] {
-    const tall = ctx.furniture.filter((f) => isTallUnit(f.category));
-    if (tall.length === 0 || ctx.windows.length === 0) return [];
+    const floorLength = ctx.windows.some(isFloorLength);
+    const pieces = ctx.furniture.filter((f) => isTallUnit(f.category) || (floorLength && isLowUnit(f.category)));
+    if (pieces.length === 0 || ctx.windows.length === 0) return [];
     const bands = windowBands(ctx.windows, () => ctx.skip("curved-window-host"));
     const tol = ctx.rules.fixtureWallTolMm;
     const out: Diagnostic[] = [];
-    for (const f of tall) {
+    for (const f of pieces) {
+      const tall = isTallUnit(f.category);
+      // One slide is worked out per piece, on its first window: each reads every other piece, so
+      // a pile of windows in one place would otherwise cost a cube of the plan.
+      let slideOwed = true;
       for (const band of bands) {
-        const cover = windowCover(band, rectOf(f), tol);
-        if (cover === null) continue;
         const { w } = band;
+        if (!tall && !isFloorLength(w)) continue;
+        const cover = (tall ? windowCover : lowUnitCover)(band, rectOf(f), tol);
+        if (cover === null) continue;
+        const name = f.label ?? f.category;
+        if (!tall) {
+          const slide = slideOwed ? lowUnitSlide(f, band, cover, ctx) : null;
+          slideOwed = false;
+          out.push({
+            severity: "warning",
+            code: "W_FURNITURE_OVER_WINDOW",
+            ...ctx.at(f),
+            message: `${subject(f, name, ctx)} stands against ${mm(cover.covered)} mm of a ${mm(w.width)} mm floor-length window, so the glass is not clear to the floor there.`,
+            hints: [
+              `${capFirst(pieceRef(f, ctx))} stands against ${mm(cover.covered)} mm of ${w._idAuthored === true ? `window "${w.id}"` : `the ${mm(w.width)} mm window`} on ${wallRef(ctx.ir.walls, w.host!)}: ${slide ?? "stand it away from the glass"}, or raise the window's \`sill\` above it, or move the window.`,
+            ],
+          });
+          continue;
+        }
         // The shorter slide along the wall that clears the window's span: past its near end.
         const toStart = cover.hi + w.width / 2;
         const toEnd = w.width / 2 - cover.lo;
-        const name = f.label ?? f.category;
         out.push({
           severity: "warning",
           code: "W_FURNITURE_OVER_WINDOW",
           ...ctx.at(f),
           message: `${subject(f, name, ctx)} stands in front of ${mm(cover.covered)} mm of a ${mm(w.width)} mm window: a tall unit against the glass blocks its light and view.`,
           hints: [
-            `"${f.id}" covers ${mm(cover.covered)} mm of window "${w.id}" on ${wallRef(ctx.ir.walls, w.host!)}: slide it ${mm(Math.min(toStart, toEnd))} mm along the wall past the window's ${toStart <= toEnd ? "start" : "end"} (its end nearer the wall's ${toStart <= toEnd ? "first" : "last"} point), or move the window, or stand a unit no higher than the sill (${mm(w.sill)} mm) there instead.`,
+            `"${f.id}" covers ${mm(cover.covered)} mm of window "${w.id}" on ${wallRef(ctx.ir.walls, w.host!)}: slide it ${mm(Math.min(toStart, toEnd))} mm along the wall past the window's ${toStart <= toEnd ? "start" : "end"} (its end nearer the wall's ${toStart <= toEnd ? "first" : "last"} point), or move the window${isFloorLength(w) ? "" : `, or stand a unit no higher than the sill (${mm(w.sill)} mm) there instead`}.`,
           ],
         });
       }
@@ -294,6 +325,33 @@ export const furnitureOverWindow: LintRule = {
     return out;
   },
 };
+
+/**
+ * The slide along the wall that takes low unit `f` clear of a window's span, in words, or `null`
+ * when neither way works: a sofa longer than the wall beside the window has nowhere to go, and a
+ * hint must not send it through the corner. The shorter way first; each is rounded up, stays on
+ * the piece's room's floor and passes the placement check, so it trades this warning for no other.
+ */
+function lowUnitSlide(f: RFurniture, band: WindowBand, cover: WindowCover, ctx: LintContext): string | null {
+  const { w, d } = band;
+  const fr = rectOf(f);
+  const room = roomOf(f, ctx);
+  const box = room === null ? undefined : ctx.roomRects.get(room.id);
+  const clear = (shift: number): boolean => {
+    const moved = { x: fr.x + d.x * shift, y: fr.y + d.y * shift, w: fr.w, h: fr.h };
+    return (box === undefined || rectInRoomBox(moved, box)) && placementClear(ctx, moved, f.category, f.rotate ?? 0, f);
+  };
+  const toStart = Math.ceil(cover.hi + w.width / 2);
+  const toEnd = Math.ceil(w.width / 2 - cover.lo);
+  const start = `slide it ${mm(toStart)} mm along the wall past the window's start (its end nearer the wall's first point)`;
+  const end = `slide it ${mm(toEnd)} mm along the wall past the window's end (its end nearer the wall's last point)`;
+  const ways: Array<[number, string]> = [
+    [-toStart, start],
+    [toEnd, end],
+  ];
+  if (toEnd < toStart) ways.reverse();
+  return ways.find(([shift]) => clear(shift))?.[1] ?? null;
+}
 
 /**
  * A cooking surface (`stove`, `hob`, `cooktop`) standing under a window (plan-soundness PS2.46):
