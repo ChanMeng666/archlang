@@ -3346,7 +3346,8 @@ adds what the plan lacks, as a second **explicit, opt-in** source-to-source tran
 `--only sheet` runs one:
 
 1. **`furnish`** puts furniture in each rectangular room that holds none, by the room's use
-   ([ADR 0025](adr/0025-furnish-as-explicit-transform.md)). The pieces per use, the placement
+   ([ADR 0025](adr/0025-furnish-as-explicit-transform.md)), storey by storey on a plan with `level`
+   blocks, each storey's statements inside its own block. The pieces per use, the placement
    forms and the limits are in [Furniture & Fixtures](furniture.md).
 2. **`sheet`** adds the sheet statements ([ADR 0024](adr/0024-finish-as-explicit-transform.md)).
    It runs second because the legend lists the furniture.
@@ -3373,8 +3374,8 @@ An authored sheet is kept. If the drawing would not fit it with every statement 
 `unresolved`. `--reissue` lets it replace `paper` and `scale` instead (and nothing else).
 
 Run it after lint is clean. The result is checked before it is returned: it never has a
-compile error, or a diagnostic code under any lint profile, that the plan did not have. A
-sheet statement that would break that is left out and named in `unresolved` with the `codes`
+compile error, or a diagnostic code under any lint profile, that the plan did not have, on any
+storey. A sheet statement that would break that is left out and named in `unresolved` with the `codes`
 it would have raised, and the rest are still written. `dims auto all` steps down to
 `dims auto overall` first, for example when an opening on an angled or curved wall is on no
 chain (`W_OPENING_NOT_DIMENSIONED`), and is left out only when that is refused too. Nothing is
@@ -3388,7 +3389,8 @@ note with that `room` (and the blocking `codes`, when a diagnostic blocked it). 
 carries `scope: "outside-table"`: it asks nothing of the author unless the room should hold
 furniture, and `scope`, never `reason`, is what tells it from a note to act on. A room that holds
 some furniture but lacks a piece its use requires is an `unresolved` note with that `room` too,
-naming the missing pieces; it is never topped up.
+naming the missing pieces; it is never topped up. On a plan with `level` blocks a furnish change or
+room note also carries the `level`, because the same id on two levels is two rooms.
 
 ### Comparing two plans — `diffPlans`
 

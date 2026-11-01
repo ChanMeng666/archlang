@@ -51,6 +51,8 @@ plan "Two-Storey House" {
     furniture stove        in r_kitchen anchor right        flush size 600x600
     furniture fridge       in r_kitchen anchor bottom-right flush size 700x700 rotate 180
     furniture table        at (6700, 1900) size 1400x900 label "Dining" in r_kitchen
+    furniture sofa in r_living anchor bottom flush size 2000x900 rotate 180
+    furniture coffee_table in r_living anchor bottom flush inset 1300 size 1000x600 rotate 180
   }
 
   level 1 "First Floor" {
