@@ -1,5 +1,5 @@
 # A parapet written with its height, built off a closed room and stopping 1000 mm short of it: a wall
-# lower than the storey is no shell, whatever its category and whatever the floor beyond it is called.
+# lower than a door's head is no shell, whatever its category and whatever the floor beyond it is called.
 plan "Parapet" {
   units mm
   grid 50

@@ -11,7 +11,7 @@
 import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
 import { resolvePlan } from "../src/analyze.js";
-import { describe, describeLevel, lint, lintCoverage } from "../src/index.js";
+import { DOOR_HEAD, describe, describeLevel, lint, lintCoverage } from "../src/index.js";
 import { buildLintContext } from "../src/lint/context.js";
 import { exteriorRingOpen, wallEndShort } from "../src/lint/rules/enclosure.js";
 import { DEFAULT_RULESET } from "../src/lint/ruleset.js";
@@ -223,35 +223,100 @@ suite("telling a shell from what is not one", () => {
   const terrace = (label: string, uses = ""): string =>
     `  room id=t at (6000,0) size 3000x4000 label "${label}"${uses}`;
 
-  it("a wall lower than the storey is no shell", () => {
+  it("a wall lower than a door's head is no shell, one at it is", () => {
+    const at = (h: number): string => parapet.replace("1100", String(h));
     expect(found(stub(`${parapet}\n${terrace("Lookout")}`))).toEqual([]);
-    const tall = parapet.replace(" height 1100", " height 3000");
-    expect(found(stub(`${tall}\n${terrace("Lookout")}`))).toHaveLength(1);
+    expect(found(stub(`${at(DOOR_HEAD - 1)}\n${terrace("Lookout")}`))).toEqual([]);
+    expect(found(stub(`${at(DOOR_HEAD)}\n${terrace("Lookout")}`))).toHaveLength(1);
     const noHeight = parapet.replace(" height 1100", "");
     expect(found(stub(`${noHeight}\n${terrace("Lookout")}`))).toHaveLength(1);
-    // Against the storey's height, not a figure: 2600 stops short of the default 3000, not of a 2600 storey.
-    const inStorey = plan(
-      `  height 2600\n${CLOSED}\n${ROOM}\n${parapet.replace("1100", "2600")}\n${terrace("Lookout")}`,
-    );
-    expect(found(inStorey)).toHaveLength(1);
   });
 
-  it("a room whose label says it is open to the sky has no shell", () => {
+  it("a shell authored to the clear height, below its storey, is a shell", () => {
+    const shell = OPEN.replace("thickness 200", "thickness 200 height 2700");
+    expect(found(plan(`  height 3000\n${shell}\n${ROOM}`))).toHaveLength(1);
+    const storeys = plan(`  height 3000
+  level 0 {\n  ${CLOSED}\n  ${ROOM}\n  }
+  level 1 height 3500 {\n  ${OPEN.replace("thickness 200", "thickness 200 height 3000")}\n  ${ROOM}\n  }`);
+    expect(found(storeys).map((d) => d.level)).toEqual([1]);
+  });
+
+  it("a room named for a place outdoors has no shell", () => {
     const wall = parapet.replace(" height 1100", "");
-    for (const label of ["Roof terrace", "Balcony", "Sun deck", "Back yard", "Patio", "Roof garden", "Veranda"])
-      expect(found(stub(`${wall}\n${terrace(label)}`)), label).toEqual([]);
-    expect(
-      found(
-        plan(
-          `  wall id=q exterior thickness 100 { (0,4000) (0,0) (6000,0) (6000,4000) }\n${terrace("Terrace").replace("(6000,0)", "(0,0)")}`,
-        ),
-      ),
-    ).toEqual([]);
+    const outdoors = [
+      "Roof terrace",
+      "Balcony",
+      "Sun deck",
+      "Back yard",
+      "Backyard",
+      "Yard 2",
+      "Patio",
+      "Roof garden",
+      "Veranda",
+      "Forecourt",
+      "Lawn",
+      "Pool",
+      "Driveway",
+      "Loggia",
+      "Carport",
+    ];
+    for (const label of outdoors) expect(found(stub(`${wall}\n${terrace(label)}`)), label).toEqual([]);
+    const alone = terrace("Terrace").replace("(6000,0)", "(0,0)");
+    expect(found(plan(`  wall id=q exterior thickness 100 { (0,4000) (0,0) (6000,0) (6000,4000) }\n${alone}`))).toEqual(
+      [],
+    );
+  });
+
+  it("the word must be the label's head: what is built in a garden has its own enclosure", () => {
+    const wall = parapet.replace(" height 1100", "");
+    for (const label of ["Garden shed", "Pool house", "Yardley", "Decker", "Porch", "Terrasse", "Bin store"])
+      expect(found(stub(`${wall}\n${terrace(label)}`)), label).toHaveLength(1);
+  });
+
+  it("with no label the id is read, as a room's use is", () => {
+    const wall = parapet.replace(" height 1100", "");
+    expect(found(stub(`${wall}\n  room id=terrace at (6000,0) size 3000x4000`))).toEqual([]);
+    expect(found(stub(`${wall}\n  room id=t at (6000,0) size 3000x4000`))).toHaveLength(1);
   });
 
   it("an authored use wins over the label", () => {
     const wall = parapet.replace(" height 1100", "");
     expect(found(stub(`${wall}\n${terrace("Winter terrace", " uses living")}`))).toHaveLength(1);
+    expect(found(stub(`${wall}\n${terrace("Carport", " uses garage")}`))).toHaveLength(1);
+  });
+
+  it("a closed core standing inside a room encloses the core, not the room, wherever it stands", () => {
+    for (const [x, y] of [
+      [2000, 1500],
+      [500, 500],
+      [3500, 2500],
+    ] as const) {
+      const core = `  wall id=core exterior thickness 200 { (${x},${y}) (${x + 2000},${y}) (${x + 2000},${y + 1000}) (${x},${y + 1000}) close }`;
+      const src = plan(`${OPEN}\n${core}\n${ROOM}`);
+      expect(
+        found(src).map((d) => d.message),
+        `core at ${x},${y}`,
+      ).toEqual(found(plan(`${OPEN}\n${ROOM}`)).map((d) => d.message));
+      expect(totals(src).gross_internal_area_leaves_out, `core at ${x},${y}`).toEqual(["a"]);
+    }
+  });
+
+  it("a ring over part of a room puts that part in the figure and lists the room", () => {
+    const src = plan(`${OPEN}\n  wall id=p exterior thickness 200 { (4000,0) (4000,4000) }\n${ROOM}`);
+    expect(found(src).map((d) => /stop (.+), centreline/.exec(d.message)?.[1])).toEqual([
+      "1000 mm apart on the line x 0, y 0–1000",
+    ]);
+    // The hole: 1800 × 3800 mm between the faces of the walls at x 4000 and x 6000.
+    expect(totals(src).gross_internal_area_m2).toBe(6.84);
+    expect(totals(src).gross_internal_area_leaves_out).toEqual(["a"]);
+  });
+
+  it("a room drawn a little past a ring's wall is not outside it", () => {
+    const open = `  wall id=x exterior thickness 200 { (10000,0) (16000,0) (16000,4000) (10000,4000) (10000,1000) }
+  room id=b at (10000,0) size 6000x4000 label "B" uses living`;
+    // 20 mm past the wall's outer face along 4000 mm: 0.08 m², under the figure W_ROOM_OUTSIDE_SHELL calls outside.
+    const over = ROOM.replace("6000x4000", "6120x4000");
+    expect(totals(plan(`${CLOSED}\n${over}\n${open}`)).gross_internal_area_leaves_out).toEqual(["b"]);
   });
 
   it("a fin off an open run is not a shell end: it no longer pairs with the shell's", () => {
@@ -297,6 +362,7 @@ ${ROOM}`);
 
   it("each kept-out fixture's control: what holds it is the clause it names", () => {
     expect(found(fixture("not-parapet").replace(" height 1100", ""))).toHaveLength(1);
+    expect(found(fixture("not-parapet").replace(" height 1100", " height 2100"))).toHaveLength(1);
     expect(found(fixture("not-roof-terrace").replace('label "Roof terrace"', 'label "Lookout"'))).toHaveLength(1);
     // The garden wall along a room left outside is a run standing on it.
     const room = `  room id=z at (8000,2500) size 3000x4500 label "Shed" uses storage\n`;
@@ -691,12 +757,12 @@ suite("the budget: counted, charged first, refused in words", () => {
   });
 
   it("the rule's own count is charged before it walks them, each end's nine stations and every pair", () => {
-    // 300 free-standing Ls leave 600 open ends on 600 segments, all of them exterior and open. `under`:
-    // (600·9 + 4) × 600 + 600² + 600 × 600 is 3 962 400. `near` adds 30 partitions, 630 segments, for
-    // 4 124 520: past MAX_GROSS_AREA_TESTS only by the last term, each open segment walked against the
-    // exterior ones. `over` adds 100, 700 segments, for 4 502 800: at one test per end it would stay
-    // under, so the stations are counted.
-    const ells = Array.from({ length: 300 }, (_, i) => {
+    // 280 free-standing Ls leave 560 open ends on 560 segments, all of them exterior and open. `under`:
+    // (560·9 + 4) × 560 + 560² + 2 × 560 × 560 is 3 765 440. `near` adds 50 partitions, 610 segments, for
+    // 4 017 640: past MAX_GROSS_AREA_TESTS only because each END walks its wall's segments (once per
+    // segment it would come to 3 704 040). `over` adds 100, 660 segments, for 4 269 840: at one test per
+    // end it would stay under, so the stations are counted.
+    const ells = Array.from({ length: 280 }, (_, i) => {
       const x = i * 3000;
       return `  wall exterior thickness 200 { (${x},0) (${x + 1000},0) (${x + 1000},1000) }`;
     }).join("\n");
@@ -706,7 +772,7 @@ suite("the budget: counted, charged first, refused in words", () => {
     );
     const room = `  room id=a at (0,0) size 1000x1000 label "A" uses living`;
     const under = plan(`${ells}\n${room}`);
-    const near = plan(`${ells}\n${rest.slice(0, 30).join("\n")}\n${room}`);
+    const near = plan(`${ells}\n${rest.slice(0, 50).join("\n")}\n${room}`);
     const over = plan(`${ells}\n${rest.join("\n")}\n${room}`);
     expect(() => lint(over)).not.toThrow();
     expect(found(under).length).toBeGreaterThan(0);

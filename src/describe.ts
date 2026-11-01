@@ -938,10 +938,12 @@ export interface SceneSummary {
     gross_internal_area_omitted?: GrossAreaReason;
     /**
      * What {@link gross_internal_area_m2} leaves out, present only when it does: the ids of the
-     * rooms no exterior ring encloses, in source order, on a storey where a ring closes and an
-     * open shell stands beside it or off it (`W_EXTERIOR_RING_OPEN`'s reading,
+     * rooms with floor outside every exterior ring, in source order, on a storey where a ring closes
+     * and an open shell stands beside it or off it (`W_EXTERIOR_RING_OPEN`'s reading,
      * `src/analyze/open-shell.ts`), so the figure is a closed porch's or one building's, not the
-     * storey's. A room whose label says it is open to the sky is not listed. Absent on every other
+     * storey's. A room a ring covers in part is listed, and the figure holds the covered part: the
+     * list names what is short, not how much. A room whose label says it is open to the sky is not
+     * listed. Absent on every other
      * storey, a closed building's and one with no figure alike, and absent past that reading's
      * counted cap. A second key, so the figure and {@link gross_internal_area_omitted} stay exactly one of two.
      */
@@ -1694,7 +1696,6 @@ function summarize(
         segs: segs(),
         rooms: roomEls,
         rects: roomRects,
-        storeyHeight: ir.storeyHeight,
       })
     : null;
   const leavesOut = shells && !("refused" in shells) ? shells.rooms.map((r) => r.id) : [];

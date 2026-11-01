@@ -227,9 +227,10 @@ export function roomUses(room: { label?: string; id: string; uses?: UseKind[] })
   return new Set(classifyLabelUses(room.label ?? room.id).uses);
 }
 
-/** Does the room's label say it is open to the sky (a terrace, a yard)? An authored `uses` wins. */
-export const isOpenAir = (room: { label?: string; uses?: UseKind[] }): boolean =>
-  !(room.uses && room.uses.length > 0) && namesOpenAir(room.label ?? "");
+/** Does the room read as open to the sky (a terrace, a yard)? As {@link roomUses} reads: an authored
+ *  `uses` wins, else its label, else its id. */
+export const isOpenAir = (room: { label?: string; id: string; uses?: UseKind[] }): boolean =>
+  !(room.uses && room.uses.length > 0) && namesOpenAir(room.label ?? room.id);
 
 /** Does the room read as a bedroom? */
 export const isBedroom = (room: { label?: string; id: string; uses?: UseKind[] }): boolean =>

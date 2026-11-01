@@ -14,14 +14,22 @@
  *
  *  1. **Nothing meets it.** Its drawn end touches no wall of any category (a shell finished in
  *     partitions is closed; {@link endMeetsWall}).
- *  2. **It stands to the storey's height.** A wall with a lower `height` of its own (a parapet, a
- *     garden wall) cannot be a shell, whatever its category.
+ *  2. **It is tall enough to be a storey's wall.** A wall lower than a door's head
+ *     ({@link DOOR_HEAD}: no one walks through it, so no door could stand in it) is a parapet or a
+ *     garden wall, whatever its category. The floor is that head and not the storey's height,
+ *     because a shell is often authored to the clear height, below the storey it stands on.
  *  3. **Its last stretch stands on a room left outside.** The stretch runs from the end to the first
  *     exterior wall that meets the run ({@link lastStretch}), and must lie along the edge of a room
- *     whose floor no ring encloses and which is not open to the sky ({@link isOpenAir}). That is what
- *     tells a shell from a garden wall: a boundary wall carrying on past the corner of a closed
- *     house stands on no room past that corner, though the same wall stands on one before it. A
- *     fin inside a building stands on a room a ring encloses, so it leaves no gap in anything.
+ *     with floor outside every ring ({@link roomsLeftOut}), not open to the sky ({@link isOpenAir}).
+ *     That is what tells a shell from a garden wall: a boundary wall carrying on past the corner of
+ *     a closed house stands on no room past that corner, though the same wall stands on one before
+ *     it. A fin inside a building stands on a room a ring encloses, so it leaves no gap in anything.
+ *
+ * **A room is left outside by its shape, never by a point.** The exterior walls' own faces are
+ * measured against the room's outline in closed form (`roomOutside`): a room is enclosed when its
+ * floor lies inside the rings and the walls' bodies. So a ring standing inside a room's outline (a
+ * closed core) encloses that core and not the room, and a ring over part of a room leaves the rest
+ * outside: the room counts as left outside, and its enclosed part is in the figure.
  *
  * Runs that all lie on one straight line are no ring, so a storey whose shell ends all sit on one
  * line has no open shell (a lean-to, a boundary wall).
@@ -32,17 +40,20 @@
  *
  * ## Bounded
  *
- * Counted before the work, {@link MAX_GROSS_AREA_TESTS} in all: a storey past it is refused, never
- * approximated. Pure and deterministic: rooms and walls in source order.
+ * Counted before the work, {@link MAX_GROSS_AREA_TESTS} in all, and the room measure under the walled
+ * faces' own caps: a storey past either is refused, never approximated. Pure and deterministic: rooms
+ * and walls in source order.
  */
 
 import { edgeWallCover, isOpenAir, type RoomBox, roomRing } from "../analyze.js";
 import type { Point } from "../ast.js";
+import { DOOR_HEAD } from "../datum.js";
 import { distPointToWallSegment, segmentDirAt, segmentLength, type WallSegment } from "../geometry.js";
-import { polygonLabelPoint } from "../geometry/polygon.js";
 import type { RRoom, RWall } from "../ir.js";
+import { DEFAULT_RULESET } from "../lint/ruleset.js";
 import { junctionSpans } from "../opening-junctions.js";
 import { exteriorRuns, MAX_GROSS_AREA_TESTS } from "./gross-area.js";
+import { roomOutside, wallFaces, type WallFacesRefused } from "./wall-faces.js";
 
 /** Float dust on whole-millimetre geometry. */
 const EPS = 1e-6;
@@ -202,47 +213,70 @@ export interface OpenShells {
   rooms: RRoom[];
 }
 
-/** What {@link openShells} reads: one storey's walls, rooms and height. */
+/** What {@link openShells} reads: one storey's walls and rooms. */
 export interface StoreyShellInput {
   walls: readonly RWall[];
   segs: readonly WallSegment[];
   rooms: readonly RRoom[];
   rects: ReadonlyMap<string, RoomBox>;
-  storeyHeight: number;
 }
 
-/** Refused before the work: `regions` by the exterior joinery's own caps, `point-tests` by this count. */
-export type OpenShellsRefused = { refused: "regions" | "point-tests" };
+/** Refused before the work: by the exterior joinery's caps, by this count, or by the walled faces'. */
+export type OpenShellsRefused = { refused: "too-much-work" | "point-tests" | WallFacesRefused["refused"] };
 
 const NONE: OpenShells = { runs: [], ends: [], rooms: [] };
 
+/**
+ * The rooms not open to the sky with floor outside every ring: more of it off the exterior walls'
+ * faces and bodies than `W_ROOM_OUTSIDE_SHELL` calls outside by default, so a room's edge drawn a
+ * little past a ring's wall does not count. Measured from the shapes (see the module header), and
+ * only on a storey with a ring: with none, every room is outside.
+ */
+function roomsLeftOut(
+  walls: readonly RWall[],
+  rooms: readonly RRoom[],
+  rings: boolean,
+): readonly RRoom[] | OpenShellsRefused {
+  const indoor = rooms.filter((r) => !isOpenAir(r));
+  if (!rings) return indoor;
+  const faces = wallFaces(
+    walls.filter((w) => w.category === "exterior" && w.thickness > 0),
+    [],
+    indoor,
+  );
+  if (faces === null) return indoor;
+  if ("refused" in faces) return { refused: faces.refused };
+  const out: RRoom[] = [];
+  for (const r of indoor) {
+    const o = roomOutside(faces, r);
+    if (o === null) return { refused: "too-many-room-curves" };
+    if (o.area / 1_000_000 >= DEFAULT_RULESET.minOutsideShellM2 - EPS) out.push(r);
+  }
+  return out;
+}
+
 /** The storey's open shells (see the module header), or the count that refused them. */
 export function openShells(input: StoreyShellInput): OpenShells | OpenShellsRefused {
-  const { walls, segs, rooms, rects, storeyHeight } = input;
+  const { walls, segs, rooms, rects } = input;
   const read = exteriorRuns(walls);
-  if (read === "too-much-work") return { refused: "regions" };
+  if (read === "too-much-work") return { refused: read };
   const open = read.runs.flatMap((r) => r.walls.filter((w) => !w.closed));
   if (open.length === 0) return NONE;
   // Charged before the work, in one count: each end at its stations against every segment, every
   // room edge against every segment, the pairing's two passes over the pairs of ends (the rule's,
-  // whose bound belongs here with the rest), each open wall's segments against the exterior
-  // segments, and each room against the rings.
+  // whose bound belongs here with the rest), and each end's walk over its wall's segments against
+  // the exterior segments. The rooms against the rings are charged in `wallFaces`.
   const exterior = segs.filter((s) => s.category === "exterior" && s.thickness > 0);
   const ringEdges = rooms.reduce((n, r) => n + roomRing(rects.get(r.id)!).length, 0);
   const openEnds = 2 * open.length;
   const openIds = new Set(open.map((w) => w.id));
   const openSegs = exterior.reduce((n, s) => n + (openIds.has(s.wallId) ? 1 : 0), 0);
   const tests =
-    (openEnds * END_STATIONS + ringEdges) * segs.length +
-    openEnds * openEnds +
-    openSegs * exterior.length +
-    rooms.length * read.holeEdges;
+    (openEnds * END_STATIONS + ringEdges) * segs.length + openEnds * openEnds + 2 * openSegs * exterior.length;
   if (tests > MAX_GROSS_AREA_TESTS) return { refused: "point-tests" };
 
-  const left = rooms.filter((r) => {
-    if (isOpenAir(r)) return false;
-    return read.holeEdges === 0 || !read.inRing(polygonLabelPoint(roomRing(rects.get(r.id)!)));
-  });
+  const left = roomsLeftOut(walls, rooms, read.rings);
+  if ("refused" in left) return left;
   const leftRings = left.map((r) => roomRing(rects.get(r.id)!));
 
   const runs: RWall[][] = [];
@@ -250,7 +284,7 @@ export function openShells(input: StoreyShellInput): OpenShells | OpenShellsRefu
   for (const run of read.runs) {
     const found: ShellEnd[] = [];
     for (const w of run.walls) {
-      if (w.height < storeyHeight) continue;
+      if (w.height < DOOR_HEAD) continue;
       for (const end of endsOfWall(w)) {
         const own = segs.find((s) => s.wallId === w.id && s.index === end.seg);
         if (!own || endMeetsWall(segs, w, end, own)) continue;
@@ -266,5 +300,5 @@ export function openShells(input: StoreyShellInput): OpenShells | OpenShellsRefu
     ends.push(...found);
   }
   if (runs.length === 0 || isStraightRun(runs.flat())) return NONE;
-  return { runs, ends, rooms: left };
+  return { runs, ends, rooms: [...left] };
 }

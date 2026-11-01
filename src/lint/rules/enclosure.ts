@@ -901,12 +901,13 @@ export const exteriorRingOpen: LintRule = {
       segs: ctx.wallSegs,
       rooms: ctx.rooms,
       rects: ctx.roomRects,
-      storeyHeight: ctx.ir.storeyHeight,
     });
     if ("refused" in read) {
       // Over a counted budget: this rule judges nothing on the storey, and says so in the coverage
       // report.
-      const cap: EnclosureBudgetCap = read.refused;
+      const why = read.refused;
+      const cap: EnclosureBudgetCap =
+        why === "too-much-work" ? "regions" : why === "point-tests" ? "point-tests" : CAP_OF[why];
       ctx.skip("enclosure-budget", undefined, cap);
       return [];
     }

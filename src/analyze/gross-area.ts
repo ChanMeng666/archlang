@@ -209,12 +209,10 @@ function wallBodyPoint(w: RWall): Point | null {
 /** The storey's exterior walls by the building they form, and the closed rings among them. */
 export interface ExteriorRuns {
   /** One entry per outermost loop, as the walls that form it, in wall order. A wall standing free
-   *  inside a ring reads as that loop's too: {@link ExteriorRuns.inRing} is what sets it apart. */
+   *  inside a ring reads as that loop's too: the room it stands on is what sets it apart. */
   runs: Array<{ walls: RWall[]; closes: boolean }>;
-  /** Is `p` on floor a ring encloses, a courtyard included? */
-  inRing(p: Point): boolean;
-  /** The edges of the holes: what one {@link ExteriorRuns.inRing} costs at most. */
-  holeEdges: number;
+  /** Does any ring close on the storey? */
+  rings: boolean;
 }
 
 /**
@@ -225,7 +223,7 @@ export interface ExteriorRuns {
  */
 export function exteriorRuns(walls: readonly RWall[]): ExteriorRuns | "too-much-work" {
   const tree = exteriorTree(walls);
-  const none: ExteriorRuns = { runs: [], inRing: () => false, holeEdges: 0 };
+  const none: ExteriorRuns = { runs: [], rings: false };
   if (tree === null) return none;
   if (tree === "too-much-work") return tree;
   const { shell, outline, signed, boxes, parent, children, edges } = tree;
@@ -245,16 +243,10 @@ export function exteriorRuns(walls: readonly RWall[]): ExteriorRuns | "too-much-
       break;
     }
   }
-  const holes = outline.flatMap((_, i) => (signed[i]! < 0 ? [i] : []));
   return {
     runs: outer
       .filter((i) => runs.get(i)!.length > 0)
       .map((i) => ({ walls: runs.get(i)!, closes: children[i]!.some((c) => signed[c]! < 0) })),
-    inRing: (p) =>
-      holes.some((i) => {
-        const b = boxes[i]!;
-        return p.x >= b.minX && p.x <= b.maxX && p.y >= b.minY && p.y <= b.maxY && loopWinding(outline[i]!, p) !== 0;
-      }),
-    holeEdges: holes.reduce((n, i) => n + outline[i]!.length, 0),
+    rings: signed.some((a) => a < 0),
   };
 }
