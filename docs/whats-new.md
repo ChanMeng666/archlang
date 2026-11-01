@@ -1,6 +1,6 @@
-# What's new in 1.44 to 1.50
+# What's new in 1.44 to 1.51
 
-The features that arrived in 1.44.0 to 1.50.0, one section each, with an example you can run,
+The features that arrived in 1.44.0 to 1.51.0, one section each, with an example you can run,
 plus the circulation overlay, which is older and since 1.45.0 reads the plan after a demolition.
 Every command and code name below is the one `archlang <command> --help` and the
 [error catalog](error-codes.md) print. The full list of changes, version by version, is in
@@ -21,8 +21,10 @@ Every command and code name below is the one `archlang <command> --help` and the
 | Open shells named, empty rooms named | 1.48.0 | [Gaps that used to pass quietly](#gaps-that-used-to-pass-quietly) |
 | One L-shaped room in `walls from rooms` | 1.49.0 | [L-shaped rooms](#l-shaped-rooms) |
 | Quarter-turn and half-turn stairs | 1.50.0 | [Turning stairs](#turning-stairs) |
-| `arch finish` on a plan with storeys | next release | [Furnishing every storey](#furnishing-every-storey) |
-| Labels that shrink to fit a small room | unreleased | [Labels in small rooms](#labels-in-small-rooms) |
+| `arch finish` on a plan with storeys | 1.51.0 | [Furnishing every storey](#furnishing-every-storey) |
+| Labels that shrink to fit a small room | 1.51.0 | [Labels in small rooms](#labels-in-small-rooms) |
+| Net area in the room stamp | unreleased | [Net area in the stamp](#net-area-in-the-stamp) |
+| Window kinds and a glazed terrace door | unreleased | [Window kinds](#window-kinds) |
 | A window round a corner, with no wall left at it | unreleased | [Corner windows](#corner-windows) |
 
 ## Quantities and takeoff
@@ -271,7 +273,31 @@ plan "L-shaped living room" {
 }
 ```
 
-`liv` and `bed` share two edges here, so `door between` has to say which: `at center` is refused, and the message quotes the forms that work. `open between` on such a pair is refused too. A polygon with a slanted edge and a circle room stay outside `walls from rooms`, and `right-of`, anchored furniture and datums such as `liv.top` still refuse a polygon.
+`liv` and `bed` share two edges here, so `door between` has to say which: `at center` is refused, and the message quotes the forms that work. `open between` on such a pair is refused too. A polygon with a slanted edge and a circle room stay outside `walls from rooms`.
+
+Such a polygon also has sides now. Each is the outline's run on its outermost line, so the rooms-first forms read the shape and never its bounding box:
+
+```arch
+plan "L-shaped room, placed by its sides" {
+  units mm
+  room id=liv polygon (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000) label "Living" uses living
+  room id=bed at (3000,3000) size 3000x3000 label "Bedroom" uses bedroom
+  room id=bath right-of liv align bottom size 3200x1800 label "Bath" uses bath
+  room id=store at (6000,0) size 3200x1200 label "Store" uses storage
+  walls from rooms exterior 200 partition 100
+  window on liv.top width 1500
+  window on bed.bottom width 1200
+  door on liv.left at 900 from liv.top width 1000 swing inward
+  door between liv and bed at 1500 from bed.top width 800 swing into bed
+  door between liv and bath at center width 800 swing into bath
+  door between liv and store at center width 800 swing into store
+  furniture sofa in liv anchor left flush size 900x2000
+  furniture bookshelf in liv anchor bottom flush size 1200x300
+  furniture shower in bath anchor right flush size 900x900
+}
+```
+
+`right-of liv` stands on the run at x 6000, y 0–3000, and `align bottom` keeps the bath on it rather than floating past the notch at y 6000. A corner anchor needs a vertex of the outline there, so `anchor bottom-right` is refused: that corner is the notch. A side anchor centres on the run. A side with two runs, like the prongs of a U, `liv.cx` and `centered` are refused, and so is a piece that would leave the floor. `finish` now furnishes such a room on the same terms: a piece stands only where those forms can say. A notch edge has no word yet, so nothing is proposed against it.
 
 ## Turning stairs
 
@@ -294,9 +320,39 @@ plan "Quarter-turn stair" {
 
 It draws as one stair, with one label, one walking line and one break line. `W_STAIR_TOO_STEEP` reads the block as one climb, with a landing replacing one going, and `describe --json` lists `flights`, `landings` and `turn`. Write the same block on two storeys and it is one shaft. `examples/turning-stair.arch` is a worked house. Winders are not in the language; draw a landing, and lint reads the stair strictly.
 
+## Window kinds
+
+A `window` can say what kind it is, and a wide terrace door can be glass. Neither was possible on a
+plan: every window drew alike, and `door sliding` drew thin interior panels.
+
+```arch
+plan "Window kinds" {
+  units mm
+  schedule openings
+  legend
+  room id=a at (0,0) size 6000x4000 label "Living" uses living
+  walls from rooms exterior 300 partition 100
+  door on a.left at center width 1000 swing into a
+  window tilt_turn on a.top at 1500 from start width 1500 hinge left sill 900
+  window fixed on a.top at 4500 from start width 1500 sill 900
+  door glazed_sliding on a.bottom at center width 2400 slide right
+}
+```
+
+The window words are `fixed`, `casement`, `tilt`, `tilt_turn` and `sliding`. Each draws a small sign
+inside the wall, and the word reaches `describe --json`, the schedule's TYPE column, the legend and
+Plan JSON. `hinge left|right` belongs to `casement` and `tilt_turn`. Leave it out when you do not know
+the side: the sign then stands on both jambs, and the drawing claims no hand. A window with no kind
+word is unchanged.
+
+`door glazed_sliding` draws one fixed and one moving panel in glass, with a slide arrow. It counts as
+a door everywhere a door counts, and a person passes through the panel that moves, so the checks read
+half its `width`. On a door, `width` is the structural opening, jamb to jamb in the wall: see
+[Door](language-reference.md#door).
+
 ## Furnishing every storey
 
-`arch finish` used to report a plan with `level` blocks and leave it empty. In the next release it furnishes each storey by the rules of a one-storey plan, and it writes each storey's pieces inside that storey's own block:
+`arch finish` used to report a plan with `level` blocks and leave it empty. Since 1.51.0 it furnishes each storey by the rules of a one-storey plan, and it writes each storey's pieces inside that storey's own block:
 
 ```diff
    level 0 "Ground" {
@@ -329,6 +385,24 @@ plan "A small store" {
 "Abstellraum" comes out at 2 mm, beside the door's swing. Write `Abstell- raum` and it breaks at the space; a word is never split on its own. A pinned `label … at (x,y)` keeps its size. A label that clears at no height is reported by `W_ANNOTATION_OVERLAP`, and no leader line is drawn. 2 mm is the size of furniture labels, the smallest lettering the sheet draws, and it is this drawing's own rule, no standard's minimum. Without `paper`, the steps end at that drawing's furniture-label size.
 
 Widths are now read character by character, in place of one figure for every letter: the wider of Roboto, which the PNG and the PDF draw, and Helvetica Bold, which a browser reaches for an SVG's room name. `WC` reads 0.83 of its size per character and "Utility" 0.4, so `W_ANNOTATION_OVERLAP` can report a name it used to pass, and drop one it used to report. This is an estimate covering those two faces, not a promise for every font.
+
+## Net area in the stamp
+
+The room stamp shows the centreline area, and the schedule lists both that and the net area. Write `schedule rooms net` and the stamp shows the net figure, named: `10.4 m² net`.
+
+```arch
+plan "Net stamp" {
+  units mm
+  paper A4 landscape
+  scale 1:50
+  schedule rooms net
+  room id=living at (0,0) size 3000x4000 label "Living"
+  room id=bed at (3000,0) size 3000x4000 label "Bed"
+  walls from rooms exterior 300 partition 100
+}
+```
+
+The figure is the NET AREA column's, which is `describe()`'s `rooms[].net_area_m2`: one calculation, read twice. A room the schedule cannot measure shows `-` there and keeps its centreline stamp without `net`, and so does a room no wall touches. Without the word nothing changes. The longer stamp is fitted like any label, so it can shrink in a narrow room. This is a drawing choice, no standard's rule.
 
 ## Corner windows
 

@@ -60,6 +60,7 @@ import {
   OPERATORS,
   TITLE_FIELDS,
   WALL_STATUSES,
+  WINDOW_KINDS,
 } from "../src/grammar/tokens.js";
 import {
   USE_KINDS,
@@ -138,6 +139,21 @@ const DOOR_CLAUSES = Object.keys(DOOR_ENUMS) as DoorEnumClause[];
  * the sequence of `if (ctx.isKeyword(…))` tests in `door.parse()`.
  */
 const DOOR_CLAUSE_PARSE_ORDER: readonly string[] = ["hinge", "swing", "slide"];
+
+/** The window-kind guard, {@link assertDoorVocab}'s for a door's: `window-kind` renders the table, and
+ *  `window-stmt` reaches it. Exported so a test can prove it fires. */
+export function assertWindowVocab(body: [string, string][], kinds: readonly string[] = WINDOW_KINDS): void {
+  const kindRule = body.find(([name]) => name === "window-kind");
+  if (!kindRule?.[1].includes(litAlt(kinds))) {
+    throw new Error(
+      `gen-gbnf: \`window-kind\` does not render its value set (${litAlt(kinds)}) — ` +
+        `it must be injected from WINDOW_KINDS, never retyped.`,
+    );
+  }
+  if (!body.some(([name, prod]) => name === "window-stmt" && prod.includes("window-kind"))) {
+    throw new Error("gen-gbnf: `window-kind` is unreachable from `window-stmt`.");
+  }
+}
 
 /**
  * The door-clause guard. Every clause in `DOOR_ENUMS` must (a) be reachable from
@@ -242,6 +258,7 @@ function assertVocab(body: [string, string][]): void {
     );
   }
   assertDoorVocab(body, DOOR_ENUMS);
+  assertWindowVocab(body);
 }
 
 /**
@@ -350,7 +367,8 @@ function rules(): [string, string][] {
     ["dims-mode", `"overall" | "rooms" | "walls" | "all"`],
     // Sheet tables: `schedule <subject>` (subjects injected from SCHEDULE_SUBJECTS, the
     // parser's own closed list) and the bare `legend` flag.
-    ["schedule-stmt", `"schedule" rws schedule-subject`],
+    // `net` rides on `rooms` only; the grammar over-accepts it after `openings` (the parser refuses).
+    ["schedule-stmt", `"schedule" rws schedule-subject ( rws "net" )?`],
     ["schedule-subject", litAlt(SCHEDULE_SUBJECTS)],
     ["legend-stmt", `"legend"`],
     // `notes "…" ["…" …]` — one or more note strings for the sheet's NOTES table.
@@ -504,7 +522,13 @@ function rules(): [string, string][] {
     // `sill` is a WINDOW's alone and precedes `head`: the parsers read a fixed sequence,
     // so a re-ordering is a parse error, and a door or a cased opening starts at the
     // floor — a `sill` clause there is not a redundant one, it is not in the language.
-    ["window-stmt", `"window" rws id-opt opening-placement ( ws "sill" ws expr )? ( ws "head" ws expr )?`],
+    // A kind word leads, as on a `door`, and `hinge` takes the door's two sides, not `near`.
+    [
+      "window-stmt",
+      `"window" rws id-opt ( window-kind rws )? opening-placement ( ws "hinge" rws window-hinge )? ( ws "sill" ws expr )? ( ws "head" ws expr )?`,
+    ],
+    ["window-kind", litAlt(WINDOW_KINDS)],
+    ["window-hinge", litAlt(DOOR_ENUMS.hinge)],
     ["opening-stmt", `"opening" rws id-opt ( opening-placement | opening-between ) ( ws "head" ws expr )?`],
     /*
      * The shared placement of `door`/`window`/`opening`, and the ONE place the

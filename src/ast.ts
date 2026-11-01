@@ -13,6 +13,7 @@ import type {
   DoorSwingDir,
   TitleField,
   WallStatus,
+  WindowKind,
 } from "./grammar/tokens.js";
 import type { Span } from "./diagnostics.js";
 import type { Comment } from "./lexer.js";
@@ -457,10 +458,15 @@ export interface DoorNode extends NodeBase {
 
 export interface WindowNode extends NodeBase {
   kind: "window";
+  /** The leading kind word (`window fixed on a.top …`), when one was written. */
+  windowKind?: WindowKind;
   at?: ExprPoint;
   attach?: OpeningAttach;
   width: Expr;
   wall?: string;
+  /** `hinge left|right`, as a door's: relative to the host wall's traversal direction. Written
+   *  or absent, never defaulted; only a kind that hangs on a jamb takes it. */
+  hinge?: DoorHinge;
   /**
    * `sill <expr>` — the bottom of the glazing above this storey's floor, in mm.
    * Absent unless authored, in which case it defaults to
@@ -1508,6 +1514,12 @@ export interface PlanNode {
    * so the two subjects compose rather than overwrite each other.
    */
   schedule?: "rooms";
+  /**
+   * `schedule rooms net` — the room stamp prints the schedule's NET AREA figure (suffixed
+   * `net`) instead of the centreline area. Only ever set together with {@link PlanNode.schedule};
+   * absent unless written, so an existing drawing is byte-identical.
+   */
+  scheduleNet?: boolean;
   /**
    * `schedule openings` — tag every door (`D01`…) and window (`W01`…) beside it and draw
    * the DOOR & WINDOW SCHEDULE table in the sheet's bottom band. Presentation only; absent

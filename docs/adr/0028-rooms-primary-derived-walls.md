@@ -96,6 +96,10 @@ grid axis names already in the language. Datums are read wherever a coordinate i
 - A `polygon` or `circle` room exposes no datum in this version (`E_ROOM_NOT_RECTANGLE`, the same
   condition relational placement refuses with `E_PLACE_POLY`). A rectilinear polygon may gain named
   edges later; the honest extension is §8 question 4 of the plan.
+  *Amended 2026-11-02:* a rectilinear polygon's `top|bottom|left|right` are the ring's run on that
+  outermost line, one run or a refusal, and `right-of` reads the same run. Its centre stays refused
+  and a notch edge has no word
+  (`docs/plans/preview-and-remodel/research/2026-11-02-l-rooms-extreme-runs-and-finish.md`).
 
 ### 3. The headline form: `walls from rooms` (D5)
 

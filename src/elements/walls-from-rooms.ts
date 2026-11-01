@@ -548,7 +548,7 @@ function tileRoom(r: RRoom): TileRoom {
   if (r.circle) return { id: r.id, shape: "circle" };
   if (!r.poly) return { id: r.id, rect: { x0: r.at.x, y0: r.at.y, x1: r.at.x + r.size.w, y1: r.at.y + r.size.h } };
   const parts = ringParts(r.poly);
-  return parts ? { id: r.id, parts } : { id: r.id, shape: "polygon" };
+  return parts ? { id: r.id, parts, ring: r.poly } : { id: r.id, shape: "polygon" };
 }
 
 function coverOfVoid(v: RVoid): TileCover {

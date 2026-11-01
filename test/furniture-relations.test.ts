@@ -282,10 +282,8 @@ suite("against <room>.<edge> (ADR 0028 §5a)", () => {
     expect(codes(plan(`${ROOMS}\n  door on w at 2500 width 900\n  furniture wardrobe against r.top`))).toEqual([]);
   });
 
-  it("a polygon room is E_ROOM_NOT_RECTANGLE, through the datum reader", () => {
-    const src = plan(
-      `  room id=p polygon (0,0) (4000,0) (4000,2000) (2000,2000) (2000,4000) (0,4000)\n  furniture wardrobe against p.top`,
-    );
+  it("a slanted polygon room is E_ROOM_NOT_RECTANGLE, through the datum reader", () => {
+    const src = plan(`  room id=p polygon (0,0) (4000,0) (2000,3000)\n  furniture wardrobe against p.top`);
     expect(codes(src)).toContain("E_ROOM_NOT_RECTANGLE");
   });
 });

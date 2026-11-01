@@ -234,7 +234,7 @@ export function statementText(s: LeafStatement): Doc {
       return `door ${id}${doorKind}${openingLead(s)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}${hinge}${swing}${slide}${open}${heightsStr(s)}`;
     }
     case "window":
-      return `window ${id}${openingLead(s)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}${heightsStr(s)}`;
+      return `window ${id}${s.windowKind ? `${s.windowKind} ` : ""}${openingLead(s)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}${s.hinge ? ` hinge ${s.hinge}` : ""}${heightsStr(s)}`;
     case "opening":
       return `opening ${id}${openingLead(s)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}${heightsStr(s)}`;
     case "furniture": {

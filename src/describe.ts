@@ -39,7 +39,7 @@ import { polygonArea, polygonBounds } from "./geometry/polygon.js";
 import { memoRoomNetAreaMm2, storeyNetAreaBands } from "./analyze/net-area-memo.js";
 import { grossInternalArea, type GrossAreaReason } from "./analyze/gross-area.js";
 import { openShells } from "./analyze/open-shell.js";
-import { type DoorKind, WALL_STATUSES, type WallStatus } from "./grammar/tokens.js";
+import { type DoorKind, WALL_STATUSES, type WallStatus, type WindowKind } from "./grammar/tokens.js";
 import type { Diagnostic } from "./diagnostics.js";
 import {
   resolvePlan,
@@ -164,7 +164,7 @@ export type { AccessEdge, AccessGraph, AccessRoomNode, MainEntranceBasis, MainEn
 
 // Likewise for the door kind: it is a grammar token type, but {@link DoorSummary.kind} is
 // where a consumer of the facts channel meets it.
-export type { DoorKind } from "./grammar/tokens.js";
+export type { DoorKind, WindowKind } from "./grammar/tokens.js";
 // And for the wall status (B3a): {@link WallStatusFacts} is where a consumer meets it.
 export type { WallStatus } from "./grammar/tokens.js";
 
@@ -311,6 +311,12 @@ export interface WindowSummary {
   /** The window on the other wall of a corner, on a window placed `at corner`. Each row keeps its
    *  own wall, `width` and `facing`: a window faces one way. */
   corner_with?: string;
+  /**
+   * The window's kind, emitted **only when one was written**, so a kind-free window's row is
+   * byte-identical. A semantic fact, like a door's: it says whether the window opens and how. The
+   * hinge side is not here, as a door's is not: it is a drafting handedness.
+   */
+  kind?: WindowKind;
   /**
    * **True compass** direction the window's wall faces (the outward normal of its host
    * wall segment), read against the plan's declared `north`.
@@ -1564,6 +1570,7 @@ function summarize(
       room,
       width: w.width,
       ...(w._relation ? { relation: relationText(w._relation) } : {}),
+      ...(w.windowKind !== undefined ? { kind: w.windowKind } : {}),
       ...(w._corner?.with !== undefined ? { corner_with: w._corner.with } : {}),
       facing: toCompass(facingPage, northTurns),
       ...(northTurns !== 0 ? { facingPage } : {}),

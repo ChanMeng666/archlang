@@ -1174,9 +1174,9 @@ An opening may be placed by the rooms instead of by a wall
 - Either room of a `between` may be a polygon whose every edge is horizontal or vertical. Where
   the two share one edge nothing changes. Where they share several, the position must **pick
   one**, and only `<mm> from <room>.<edge>` can: the edge has to meet that run at an end, and
-  no other run. A rectangle's edges do this; a polygon has no edge words, so of two polygons
-  the way in is `at (x,y)`. Anything else is refused, and the diagnostic quotes the position
-  that picks each edge.
+  no other run. A rectangle's edges do this, and so does a polygon's side, so of two polygons
+  the way in is `at (x,y)` only for an edge no side reaches. Anything else is refused, and the
+  diagnostic quotes the position that picks each edge.
 - **The nib is enforced, never slid.** A jamb nearer than `max(100 mm, host thickness / 2)` to
   the face of a wall meeting the host, a meeting wall standing inside the span, or a span past
   the end of the run or of its wall is refused with `E_OPENING_NIB`, whose hint names the
@@ -1275,7 +1275,11 @@ corner in a sum of widths.
 It has to be a true corner of the two walls, and anything else is refused with
 [`E_WINDOW_CORNER`](error-codes.md): both edges of one room, meeting at an end; on each, one exterior
 wall that stays, ending exactly on the corner; no third wall and no `column` at the corner; one window
-on each wall, with the same `sill` and `head`, each wider than the other wall is thick. The free jamb
+on each wall, with the same `sill` and `head`, each wider than the other wall is thick. On an L the
+side words name its outermost runs, which meet only at convex corners, so a re-entrant corner has no
+word and is refused. A window `kind` works on either leg. Its marks stand clear of the corner, between
+the free jamb and the other wall's inner face, and the hinge mark of a `casement` or `tilt_turn` stands
+on the free jamb, written or not: a `hinge` naming the corner end is refused. The free jamb
 keeps its nib (`E_OPENING_NIB`, whose hint quotes the widest window that fits). The form reads
 rooms' edges, so it is refused on `on <wall>`, and on a door or a cased opening. Written by `at (x,y)`,
 two such windows are ordinary windows: `W_OPENING_AT_JUNCTION` reports each.
@@ -1441,9 +1445,15 @@ room of its own, so `let f() = hall.top` refuses when called; pass the edge in: 
   `west.main.top` is the placed room `west.main`'s edge in page words (the last dotted segment
   is the datum). A component sees only its own rooms. A path that is also an element id
   inside the instance (an instance `west` holding an element `top`) reports `E_DATUM_NAME`.
-- **No datum.** A `polygon` or `circle` room reports `E_ROOM_NOT_RECTANGLE`; a room that could
-  not be placed, or has no positive size, `E_DATUM_UNPLACED`; an unknown room `E_UNKNOWN_REF`
-  with the closest room id as a hint.
+- **A polygon's sides.** On a `polygon` whose every edge is horizontal or vertical, `liv.top`,
+  `bottom`, `left` and `right` are the ring's run on that outermost line, and everything that
+  reads an edge reads that run: an offset, `on liv.left`, `against liv.left`, `segment containing`.
+  `at center` on `on liv.right` is the middle of the run, not of the box. A side of several runs
+  (the prongs of a U) and `cx`, `cy` report `E_ROOM_NOT_RECTANGLE`; a notch edge has no word, so
+  reach it by `at (x,y)`.
+- **No datum.** A `circle` room or a `polygon` with a slanted edge reports `E_ROOM_NOT_RECTANGLE`;
+  a room that could not be placed, or has no positive size, `E_DATUM_UNPLACED`; an unknown room
+  `E_UNKNOWN_REF` with the closest room id as a hint.
 
 ### Polygonal rooms (v1.23)
 
@@ -1484,15 +1494,19 @@ report [`E_ROOM_POLY_SELF_INTERSECT`](error-codes.md); a ring with fewer than th
 *effective* vertices once duplicate and straight-through points are removed reports
 [`E_ROOM_POLY_DEGENERATE`](error-codes.md). A redundant point sitting on an edge is fine.
 
-**What refuses rather than approximates.** Two clauses are arithmetic on a room's four
-rectangle edges, and a bounding box is not a substitute — `anchor bottom-left` on an L
-could land a fixture in the notch, outside the room. Both raise
-[`E_PLACE_POLY`](error-codes.md) and name the way out:
+**What reads the ring, and what refuses.** Two clauses are arithmetic on a room's edges, and a
+bounding box is not a substitute: `anchor bottom-right` on an L would land a fixture in the
+notch, outside the room. A polygon whose every edge is horizontal or vertical has edges of its
+own, its **sides**: the ring's run on each outermost line. Anything else raises
+[`E_PLACE_POLY`](error-codes.md) and names the way out:
 
 | Clause | With a polygon room |
 | --- | --- |
-| `room … right-of <poly>` (and `left-of`/`below`/`above`) | `E_PLACE_POLY` — place this room with `at (x,y)` |
-| `furniture … in <poly> anchor <a>` / `in <poly> centered` | `E_PLACE_POLY` — place the piece with `at (x,y)` (plus `rotate`) |
+| `room … right-of <poly>` (and `left-of`/`below`/`above`) | **Works** on a one-run side: the run's line is where the room stands, and `align` reads the run's ends. `E_PLACE_POLY` on a side of several runs, a circle or a slanted polygon |
+| `furniture … in <poly> anchor <corner>` | **Works** where that corner is a vertex of the ring. `E_PLACE_POLY` in a notch |
+| `furniture … in <poly> anchor top\|bottom\|left\|right` | **Works** on a one-run side, centred on the run, not the box |
+| `furniture … in <poly> centered` / `anchor center` | `E_PLACE_POLY`: the middle of the outline may not be floor |
+| Any anchor whose footprint would leave the ring | `E_PLACE_POLY`: place the piece with `at (x,y)` (plus `rotate`) |
 | `furniture … against wall <id>` | **Works** — a wall is a wall whatever shape the room is |
 | `furniture … at (x,y) in <poly>` | **Works** — an absolute position with declared membership |
 | `walls from rooms`, `door\|opening … between <poly>` | **Works** on a polygon whose every edge is horizontal or vertical — `E_ROOM_NOT_RECTANGLE` on any other |
@@ -1776,6 +1790,7 @@ A bare **kind** word may lead the statement, after any `id=` — the same shape 
 | `pocket` | a panel and the **dashed** (hidden) wall cavity it slides into | no |
 | `garage` *(v1.31)* | a sectional panel in the reveal, plus its **dashed** overhead projection | no |
 | `double` | two leaf slabs, each half the width, hung on the two jambs and closing onto each other at the centre, each with its solid swing arc | yes, two |
+| `glazed_sliding` | one fixed and one moving glass panel, drawn in the window's glazing ink, with an arrow on the moving panel | no |
 
 Every panel is a slab drawn with the same pen as a hinged leaf, and a dash is never
 decoration: it marks what is above the cut plane (a track, a parked garage panel) or
@@ -1832,6 +1847,22 @@ The overhead projection is a rectangle the width of the opening and half that de
 **dashed**, which is the drawing's standing convention for anything above the cut plane —
 the same statement an `upper_cabinet`, a [`roof`](#roof) eaves line and a [`void`](#void)
 make.
+
+A `glazed_sliding` door is a terrace or patio door. It takes the `slide` and `open` clauses of
+the sliding family, and it counts as a door in the access graph, the schedule and `describe`.
+`slide` says which way the moving panel goes; left out, it is `left`, as for every sliding kind.
+A person passes through the one panel that moves, so [`W_DOOR_CLEARANCE`](error-codes.md#w_door_clearance)
+and the route width read **half** the door's `width`, the nominal share of one panel of two, as they
+read one leaf of a `double` door.
+
+**What `width` means.** On every kind, `width` is the **structural opening**: the gap cut through
+the wall from jamb to jamb, along the wall's line. It is the figure `describe --json` reports. It
+is not the moving leaf and not the clear glass. A `sliding` or `glazed_sliding` panel is drawn at
+55% of `width`, so the two overlap by 10% when closed, and on the drawing a panel pushed fully open
+leaves 45% of `width`. Lint does not read that 45%. It reads a nominal figure, as it does for any
+door: half the `width` for `glazed_sliding`, and the whole `width` for `sliding`, which it has always
+read that way. ArchLang models no frame, so it has no clear-glass figure. A window's `width` is the
+same gap.
 
 **Other clauses are refused, not ignored.** `hinge` is hinged-only (a `double` door has a
 leaf on each jamb, so there is no side to choose) and `slide`/`open` are sliding-family-only; the wrong pairing is
@@ -1891,8 +1922,8 @@ plan "Door kinds" {
 ### Window
 
 ```
-window [id=<id>] at (x,y) width <mm> [wall <ref>]
-window [id=<id>] on <wall> at <pos> width <mm>
+window [id=<id>] [<kind>] at (x,y) width <mm> [wall <ref>] [hinge left|right]
+window [id=<id>] [<kind>] on <wall> at <pos> width <mm> [hinge left|right]
 ```
 
 An opening drawn the way a window block is: both wall faces carried across it,
@@ -1904,6 +1935,46 @@ inside the building too — is outside: the same probe a `garage` door makes to 
 floor side. A window with the inside on both sides (an interior window, or one onto a
 void) or on neither (a free-standing wall) has no outside and draws no sill. The `on <wall> at <pos>` attachment form works exactly as
 for doors. Two windows can run round a corner: see [Openings by relation](#openings-by-relation).
+
+#### Window kinds
+
+A bare **kind** word may lead the statement, after any `id=`, as on a door. A window with no
+kind word says nothing about how it opens, and draws as above.
+
+| kind | the window | what is drawn |
+| --- | --- | --- |
+| `fixed` | a pane that does not open | one glass line on the wall's centreline instead of two |
+| `casement` | a sash hinged on one jamb | both glass lines and a chevron with its point on the hinged jamb |
+| `tilt` | a sash hinged along its foot | both glass lines and a small circle at mid-span |
+| `tilt_turn` | a sash that does both, sold as tilt and turn | both glass lines, the chevron and the circle |
+| `sliding` | a sash that slides along the wall | both glass lines and a two-headed arrow at mid-span |
+
+`hinge left|right` names the hinged jamb of a `casement` or `tilt_turn` window. It reads along the
+wall's direction, as a door's `hinge` does, and follows a mirrored `place` the same way. Leave it
+out when the plan you are copying does not say: the chevron then stands on both jambs, so the
+drawing states no hand. Nothing supplies a side for you, not a default and not `set`. On any other
+window the clause is [`E_WINDOW_KIND_CLAUSE`](error-codes.md#e_window_kind_clause), with a
+machine-applicable fix that deletes it.
+
+The kind reaches `describe --json` as `windows[].kind`, the TYPE column of
+`schedule openings`, a row of the `legend` and Plan JSON (`window_kind`, and `hinge` beside it). Every mark stays inside the wall's thickness and the opening's width, so a
+kind moves nothing else on the sheet. A kind reads no height: a `fixed` window draws the same at
+`sill 0` and `sill 900`. A `fixed` or `tilt` window is no way onto a balcony, whatever its sill
+([`W_BALCONY_NO_DOOR`](error-codes.md#w_balcony_no_door)).
+
+```arch
+plan "Window kinds" {
+  units mm
+  schedule openings
+  legend
+  room id=a at (0,0) size 6000x4000 label "Living" uses living
+  walls from rooms exterior 300 partition 100
+  door on a.left at center width 1000 swing into a
+  window tilt_turn on a.top at 1500 from start width 1500 hinge left sill 900
+  window fixed on a.top at 4500 from start width 1500 sill 900
+  door glazed_sliding on a.bottom at center width 2400 slide right
+}
+```
 
 ### Opening (v1.3)
 
@@ -1972,8 +2043,8 @@ exactly that number, so the plan draws, describes and lints as if the number wer
   under any other `north`, they are [`E_DATUM_COMPASS`](error-codes.md).
 - `segment containing <room>.<edge>` picks the straight segment whose centreline lies on that
   room edge's line and overlaps the edge. It works on open walls and inside components (in the
-  component's own words). The edge is read as a datum, so a polygon, circle or unplaced room is
-  refused as a datum is.
+  component's own words). The edge is read as a datum, so a circle, a slanted polygon or an
+  unplaced room is refused as a datum is, and a polygon's side reads its one run.
 
 A selector that matches no segment, or several, is [`E_SEGMENT_SELECT`](error-codes.md), and the
 message lists the candidate numbers. A derived wall is reached only the way `segment <n>` reaches
@@ -2728,6 +2799,20 @@ The keyword takes a subject — `rooms` or `openings` — and an unknown one is 
 with a did-you-mean, never a silently ignored word. The two subjects compose: write both
 and both tables draw.
 
+**`schedule rooms net`** also changes the room stamp. Each room is stamped with the NET AREA column's figure, to one decimal, followed by `net`: `10.4 m² net`. It is the figure `describe()` reports as `rooms[].net_area_m2`, read from the same rows as the table, so the stamp and the table cannot disagree. A room with no net figure (the table shows `-`) keeps its centreline stamp, with no `net`, and so does a room no wall touches (nothing was deducted, so `net` would claim too much). The one decimal is rounded from the table's two, a tie up: 9.45 stamps `9.5`. Without the word the stamp is the centreline area, as before. `net` belongs to `rooms` only. `describe()` does not change; the longer stamp is placed and shrunk like any label, and `W_ANNOTATION_OVERLAP` reports one that cannot be cleared.
+
+```arch
+plan "Net stamp" {
+  units mm
+  paper A4 landscape
+  scale 1:50
+  schedule rooms net
+  room id=living at (0,0) size 3000x4000 label "Living"
+  room id=bed at (3000,0) size 3000x4000 label "Bed"
+  walls from rooms exterior 300 partition 100
+}
+```
+
 **`schedule openings`** tags every door `D01, D02, …` and every window `W01, W02, …`
 (element order, per storey) and draws the **DOOR & WINDOW SCHEDULE**:
 
@@ -2736,7 +2821,7 @@ and both tables draw.
 | `TAG` | The tag drawn beside the opening. |
 | `ROOM(S)` | The room(s) it opens onto, by name — a door's are `describe().doors[].between`, `exterior` for the outside; a window lists the room it serves (`describe().windows[].room`) and, on a wall between two rooms, the other one too. Clipped to the column with `...`. |
 | `WIDTH` | The nominal width in mm. |
-| `TYPE` | A door's kind (`hinged`, `sliding`, …); `window` for a window. |
+| `TYPE` | A door's kind (`hinged`, `sliding`, …); a window's kind, or `window` for a window with none. |
 | `HAND` | A hinged door's hand, by the EN 12519 / DIN 107 convention: stand on the side it opens into (the pull side), face it, and the hinge is on your `left` or `right`. North American (ANSI/BHMA) handing is read from the other side, so an inswing door reads the other way there. Read off the drawn leaf, so it does not depend on which way the wall's points run; `-` for anything else. |
 
 A tag's position comes from the opening's own wall: a window's first place is just inside,
@@ -2766,7 +2851,9 @@ every wrapped line. Past 200 wrapped lines the plan is refused with `E_DRAWING_L
 - one row per **fixture category** actually placed that has a plan symbol (`wc`,
   `basin`, `shower`, …), its swatch drawn with the real glyph, in catalog order;
 - a `demolished` row after the materials, its swatch a dashed outline, only when the storey
-  draws a `status demolish` wall (see [Wall](#wall), its status).
+  draws a `status demolish` wall (see [Wall](#wall), its status);
+- one row per **window kind** in use and one for a `glazed_sliding` door, after the fixtures,
+  each swatch the real symbol. The other door kinds have no row.
 
 Nothing is listed that is not drawn, and a category that renders as a plain labelled
 rectangle gets no row (there is no symbol to explain). There is nothing to configure —

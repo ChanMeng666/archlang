@@ -4,7 +4,7 @@
  * A plan that writes neither form resolves, draws, describes and lints exactly as before, down to
  * its Scene and the steps its resolution spends, in the accessibility profile and on the circulation
  * overlay too. Each digest is {@link stairLawDigest}, the widest law body the repository has
- * (`test/block-stair-law.ts`), **measured against `src/` at `90cee401`** (`main` before the forms),
+ * (`test/block-stair-law.ts`), **measured against `src/` at `129b7dda`** (`main` before the forms),
  * that tree extracted by `git archive`, the body and the rows imported from this branch and handed
  * that tree's compiler. The rows are every plan the block-stair law pins, then
  * {@link CORNER_INLINE_ROWS}: the near misses on each path the forms fork from.
@@ -69,7 +69,7 @@ const writesCorner = (src: string): boolean => {
   return plan !== undefined && JSON.stringify(plan).includes('"kind":"corner"');
 };
 
-/** Measured at `90cee401` (see the header): `[digest, row]`. */
+/** Measured at `129b7dda` (see the header): `[digest, row]`. */
 const BASELINE: [string, string][] = [
   ["e33e9923337208c91bf7093a0fa63040f132db455f3e3e85d584740a18a8f611", "examples/accessible.arch"],
   ["164d5d3f4955ae6a2ea4b3c117bc7b9d6f024ca0f68d52b9f708f77a3ee982b4", "examples/aquarium.arch"],

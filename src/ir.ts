@@ -41,6 +41,7 @@ import type {
   DoorSwingBuilding,
   DoorSwingDir,
   WallStatus,
+  WindowKind,
 } from "./grammar/tokens.js";
 import { moduleBindings } from "./import.js";
 import { placeRelational } from "./layout.js";
@@ -529,6 +530,15 @@ export interface RWindow extends RBase {
   at: Point;
   width: number;
   host: WallSegment | null;
+  /** The window's kind, present ONLY when written, so a kind-free window carries no field and
+   *  every downstream payload is byte-identical. */
+  windowKind?: WindowKind;
+  /**
+   * The hinged jamb, relative to the host wall's traversal direction as a door's is, so it rides
+   * a `place` frame with the carried segment. Present ONLY when written, on a kind that takes it:
+   * absent means the source does not say, and the symbol then states no hand.
+   */
+  hinge?: DoorHinge;
   /** The author wrote this window's `id=` (set only then). Read by `W_HOB_UNDER_WINDOW`'s hint,
    *  which quotes an id only when the author wrote one. Internal. */
   _idAuthored?: true;
@@ -981,6 +991,8 @@ export interface ResolvedPlan {
    * copied straight from the AST, never derived, and absent unless the plan opts in.
    */
   schedule?: "rooms";
+  /** `schedule rooms net` — the room stamp reads the schedule's net area. Copied from the AST. */
+  scheduleNet?: boolean;
   /** `schedule openings` — draw the door/window tags and the DOOR & WINDOW SCHEDULE.
    *  Presentation only, copied from the AST, absent unless the plan opts in. */
   openingSchedule?: boolean;
@@ -3526,6 +3538,7 @@ function resolveBody(
     // Sheet-table opt-ins: presentation flags carried through untouched. Spread so an
     // opted-out plan has no key at all and the IR stays byte-identical to before.
     ...(ast.schedule ? { schedule: ast.schedule } : {}),
+    ...(ast.scheduleNet ? { scheduleNet: true } : {}),
     ...(ast.openingSchedule ? { openingSchedule: true } : {}),
     ...(ast.legend ? { legend: true } : {}),
     ...(ast.notes && ast.notes.length > 0 ? { notes: ast.notes } : {}),

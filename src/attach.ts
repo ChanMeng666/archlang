@@ -20,6 +20,7 @@ import type { ParseCtx, ResolveCtx } from "./registry.js";
 import type { WallLike, WallSegment } from "./geometry.js";
 import { segmentLength, segmentPointAlong, segmentsOfWall } from "./geometry.js";
 import type { OpeningRelation, WindowCorner } from "./ir.js";
+import { enumList } from "./grammar/tokens.js";
 import { EDGE_WORDS } from "./room-datums.js";
 import { fmt3 as numStr } from "./num-format.js";
 import { cornerOnWall, hostedDatumDistance, placeBetween, placeOnEdge, type RelationCtx } from "./opening-relation.js";
@@ -40,6 +41,20 @@ function attachClampFix(attach: OpeningAttach, valueText: string): FixSuggestion
       edits: [{ span: attach.span, newText: `on ${attach.wall} at ${valueText}` }],
     },
   ];
+}
+
+/**
+ * Read the next ident and check it against a closed value set from
+ * {@link DOOR_ENUMS} / {@link DOOR_HINGE_NEAR}. The allowed values and the message
+ * that lists them both come from the table, so the check can never allow one thing
+ * and the diagnostic name another. `ctx.fail` returns `never`, which narrows the
+ * result to the member type.
+ */
+export function eatEnumValue<T extends string>(ctx: ParseCtx, allowed: readonly T[], what: string, orForm?: string): T {
+  const v = ctx.eatIdent().value;
+  if (!(allowed as readonly string[]).includes(v))
+    ctx.fail(`Expected ${what} ${enumList(allowed)}${orForm ? ` or ${orForm}` : ""} but found "${v}"`);
+  return v as T;
 }
 
 /**

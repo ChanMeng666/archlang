@@ -24,6 +24,7 @@ import {
 import { windowEl } from "../src/elements/window.js";
 import type { RWindow } from "../src/ir.js";
 import { clearResolveCache, evaluationSteps, resolveAll } from "../src/ir.js";
+import { WINDOW_KINDS } from "../src/grammar/tokens.js";
 import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import { NULL_WORLD } from "../src/world.js";
@@ -707,6 +708,220 @@ describe("the count is charged", () => {
     const got = errors(src);
     expect(got.length).toBeGreaterThan(0);
     expect(new Set(got).has("E_WINDOW_CORNER") || new Set(got).has("E_STEP_LIMIT")).toBe(true);
+  });
+});
+
+describe("a window kind on a leg", () => {
+  /** On `a.top` the corner is ahead along the wall, so `hinge left` is the free jamb there; on
+   *  `a.right` it is behind, so `hinge right` is. */
+  const legs = (kind: string, top = "", side = "", width = 1800): string =>
+    plan(
+      ROOM,
+      DERIVED,
+      DOOR,
+      `  window id=n ${kind} on a.top at corner a.right width ${width}${top}`,
+      `  window id=e ${kind} on a.right at corner a.top width 1200${side}`,
+    );
+  /** Every point a window's nodes draw: line ends, polygon vertices, a circle's extreme points. */
+  const inked = (n: SceneNode): Point[] => {
+    if (n.prim.t === "line") return [n.prim.a, n.prim.b];
+    if (n.prim.t === "polygon") return [...n.prim.pts];
+    if (n.prim.t === "circle") {
+      const { center: c, r } = n.prim;
+      return [
+        { x: c.x - r, y: c.y - r },
+        { x: c.x + r, y: c.y + r },
+      ];
+    }
+    throw new Error(`no reading of ${n.prim.t}`);
+  };
+  /** The marks alone: what a kind adds to the six nodes every leg draws. */
+  const marks = (src: string): { n: SceneNode[]; e: SceneNode[] } => {
+    const nodes = windowsOf(src);
+    const split = nodes.findIndex(
+      (_, i) => i > 0 && nodes[i]!.paint.fill === nodes[0]!.paint.fill && nodes[i]!.prim.t === "polygon",
+    );
+    return { n: nodes.slice(6, split), e: nodes.slice(split + 6) };
+  };
+
+  it.each([...WINDOW_KINDS])("%s draws inside its own span, and no mark reaches the mitre", (kind) => {
+    for (const width of [1800, 300, 220]) {
+      const src = legs(kind, "", "", width).replace("grid 50", "grid 10");
+      expect(errors(src)).toEqual([]);
+      const { n, e } = marks(src);
+      // The inner face of the wall on `a.right` is x 5900: nothing of the top leg's marks passes it.
+      for (const p of n.flatMap(inked)) expect(p.x, `${kind} ${width}`).toBeLessThanOrEqual(5900);
+      for (const p of n.flatMap(inked)) expect(p.x).toBeGreaterThanOrEqual(6100 - width);
+      // Likewise the inner face of the wall on `a.top`, y 100, for the side leg.
+      for (const p of e.flatMap(inked)) expect(p.y, `${kind} side`).toBeGreaterThanOrEqual(100);
+    }
+  });
+
+  it("`fixed` has one pane, and it stops on the corner point", () => {
+    const panes = windowsOf(legs("fixed")).filter(
+      (n) => n.prim.t === "line" && n.paint.stroke === windowsOf(CORNER)[3]!.paint.stroke,
+    );
+    expect(panes).toHaveLength(2);
+    expect(ends(panes).get(at(6000, 0))).toBe(2);
+  });
+
+  it("two kinds can meet at a corner: each stops on the mitre", () => {
+    const src = plan(
+      ROOM,
+      DERIVED,
+      DOOR,
+      `  window id=n fixed on a.top at corner a.right width 1800`,
+      `  window id=e sliding on a.right at corner a.top width 1200`,
+    );
+    expect(errors(src)).toEqual([]);
+    expect(ends(windowsOf(src)).get(at(6000, 0))).toBe(1);
+    expect(ends(windowsOf(src)).get(at(6025, -25))).toBe(1);
+  });
+
+  describe("a hinge cannot stand at the corner end", () => {
+    it.each(["casement", "tilt_turn"])("%s: a hinge naming the corner end is refused", (kind) => {
+      const src = legs(kind, " hinge right");
+      expect(errors(src)).toEqual(["E_WINDOW_CORNER"]);
+      expect(compile(src).diagnostics[0]!.message).toContain("`hinge right` names the jamb at the corner");
+    });
+
+    it("on the other wall the same word is the free jamb, which is the frame's business", () => {
+      expect(errors(legs("casement", " hinge left", " hinge left"))).toEqual(["E_WINDOW_CORNER"]);
+      expect(errors(legs("casement", " hinge left", " hinge right"))).toEqual([]);
+    });
+
+    it("the refusal's own word, pasted in, compiles", () => {
+      const src = legs("casement", " hinge right");
+      const word = /`hinge (left|right)`, the free jamb/.exec(compile(src).diagnostics[0]!.hints![0]!)![1]!;
+      expect(word).toBe("left");
+      expect(errors(legs("casement", ` hinge ${word}`))).toEqual([]);
+    });
+
+    it.each(["casement", "tilt_turn"])("%s with no `hinge` draws its mark on the free jamb alone", (kind) => {
+      const { n, e } = marks(legs(kind));
+      const chevrons = (m: SceneNode[]): SceneNode[] => m.filter((x) => x.prim.t === "line");
+      // Two lines of one chevron, both from the jamb: x 4300 on top, y 1100 down the side.
+      expect(chevrons(n)).toHaveLength(2);
+      expect(ends(chevrons(n)).get(at(4300, 0))).toBe(2);
+      expect(chevrons(e)).toHaveLength(2);
+      expect(ends(chevrons(e)).get(at(6000, 1100))).toBe(2);
+    });
+
+    it("a hinge written on the free jamb draws what none written draws", () => {
+      expect(marks(legs("casement", " hinge left", " hinge right"))).toEqual(marks(legs("casement")));
+    });
+
+    it("an ordinary casement keeps a mark on both jambs: a leg's rule is a leg's", () => {
+      const src = plan(ROOM, DERIVED, DOOR, `  window id=w casement on a.top at 3000 from start width 1800`);
+      expect(windowsOf(src).filter((n) => n.lineWeight === "extraThin")).toHaveLength(4);
+    });
+  });
+
+  it("a kind on a leg rides through describe, fmt and Plan JSON", () => {
+    const src = legs("casement", " hinge left", " hinge right");
+    expect(describePlan(src).windows[0]).toMatchObject({ kind: "casement", corner_with: "e" });
+    expect(format(src)).toContain("window id=n casement on a.top at corner a.right width 1800 hinge left");
+    const back = planJsonToArch(planToJson(src).json);
+    expect(back.diagnostics).toEqual([]);
+    expect(windowsOf(back.source!)).toEqual(windowsOf(src));
+  });
+
+  it("sill and head parity still holds on a kind", () => {
+    const src = plan(
+      ROOM,
+      DERIVED,
+      `  window id=n fixed on a.top at corner a.right width 1800 sill 300`,
+      `  window id=e fixed on a.right at corner a.top width 1200`,
+    );
+    expect(errors(src)).toEqual(["E_WINDOW_CORNER"]);
+  });
+
+  describe("under the group", () => {
+    const body = (kind: string, n = "", w = ""): string =>
+      CORNER_BODY.replace("window id=n on", `window id=n ${kind} on`)
+        .replace("window id=w on", `window id=w ${kind} on`)
+        .replace("corner a.left width 1800", `corner a.left width 1800${n}`)
+        .replace("corner a.top width 1200", `corner a.top width 1200${w}`);
+    const CASES = [
+      ...WINDOW_KINDS.map((k) => [k, body(k)] as const),
+      ["casement, hinges written on the free jambs", body("casement", " hinge right", " hinge left")] as const,
+    ];
+
+    it.each(CASES.flatMap(([name, b]) => D4_TEST_ELEMENTS.map((g) => [name, g.name, b, g] as const)))(
+      "%s × %s: every tier, and every primitive g of P₀'s",
+      (_name, _g, b, g) => {
+        expect(errors(witnessPair(b, g).gP)).toEqual([]);
+        expect(witnessViolations(b, g, { fixedSheet: true })).toEqual([]);
+        const f = frameFor(g, 50);
+        const { p0, gP } = witnessPair(b, g, { fixedSheet: true });
+        const prims = (src: string, carry: boolean): string[] =>
+          sceneOf(src)
+            .nodes.filter((n) => n.elementKind === "window")
+            .map((n) => canonPrim(carry ? transformPrim(f, n.prim) : n.prim))
+            .sort();
+        expect(prims(gP, false)).toEqual(prims(p0, true));
+      },
+    );
+  });
+});
+
+describe("an L-shaped room's corners", () => {
+  /** Notch at the bottom right. Its sides: top, right, bottom, left; the notch has no word. */
+  const L = `  room id=a polygon (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000) label "Living" uses living`;
+  const legs = (p: string, q: string): string[] => [
+    `  window id=n on a.${p} at corner a.${q} width 1500`,
+    `  window id=e on a.${q} at corner a.${p} width 1200`,
+  ];
+
+  it.each([
+    ["top", "right", 6100, -100],
+    ["top", "left", -100, -100],
+    ["bottom", "left", -100, 6100],
+  ])("the convex corner of %s and %s: no diagnostic, and no wall left at it", (p, q, x, y) => {
+    const src = plan(L, DERIVED, ...legs(p, q));
+    expect(errors(src)).toEqual([]);
+    expect(wallVertices(src)).not.toContain(at(x, y));
+    expect(ends(windowsOf(src)).get(at(x, y))).toBe(2);
+    expect(lint(src).map((d) => d.code)).not.toContain("W_OPENING_AT_JUNCTION");
+    expect(describePlan(src).windows.map((w) => w.corner_with)).toEqual(["e", "n"]);
+  });
+
+  it("the sides that never meet are refused, and the refusal says why", () => {
+    const src = plan(L, DERIVED, ...legs("bottom", "right"));
+    expect(errors(src)).toEqual(["E_WINDOW_CORNER", "E_WINDOW_CORNER"]);
+    const d = compile(src).diagnostics[0]!;
+    expect(d.message).toContain("`a.right` does not meet `a.bottom` at an end of it");
+    expect(d.hints![0]).toContain("a re-entrant corner has no word");
+  });
+
+  it("every end of a side is convex: no pair of side words reaches the re-entrant corner", () => {
+    const sides = ["top", "right", "bottom", "left"];
+    const met = sides.flatMap((p) =>
+      sides.flatMap((q) => (errors(plan(L, DERIVED, ...legs(p, q))).length === 0 ? [`${p}/${q}`] : [])),
+    );
+    expect(met.sort()).toEqual(["bottom/left", "left/bottom", "left/top", "right/top", "top/left", "top/right"]);
+  });
+
+  it("an L's outline from two rooms: the re-entrant corner is a tee, and says so", () => {
+    const rooms = [
+      `  room id=a at (0,0) size 6000x3000 label "Living" uses living`,
+      `  room id=b below a align left size 3000x3000 label "Bed" uses bedroom`,
+    ];
+    const src = plan(
+      ...rooms,
+      DERIVED,
+      `  window id=n on b.right at corner b.top width 1200`,
+      `  window id=e on a.bottom at corner a.right width 1200`,
+    );
+    const said = compile(src).diagnostics.map((d) => [d.code, d.message]);
+    expect(said[0]![0]).toBe("E_WINDOW_CORNER");
+    expect(said[0]![1]).toContain("the wall on `b.top` there is a partition");
+  });
+
+  it("a U's side is several runs, and reading it refuses as any read of it does", () => {
+    const U = `  room id=a polygon (0,0) (2000,0) (2000,3000) (4000,3000) (4000,0) (6000,0) (6000,5000) (0,5000) uses living`;
+    const src = plan(U, DERIVED, `  window id=n on a.right at corner a.top width 1200`);
+    expect(errors(src)).toContain("E_ROOM_NOT_RECTANGLE");
   });
 });
 

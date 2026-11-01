@@ -1,0 +1,26 @@
+# Every window kind, with and without a written hinge, and a glazed sliding door, on a sheet that
+# carries the schedule and the legend. The byte-identity law's own fixture (see
+# test/window-kinds-byte-identity.test.ts), the plan that reaches every form.
+plan "Window kinds" {
+  units mm
+  schedule openings
+  legend
+
+  room id=living at (0,0) size 9000x5000 label "Living" uses living
+  room id=study at (9000,0) size 4000x5000 label "Study" uses office
+  walls from rooms exterior 300 partition 100
+
+  door on study.right at center width 1000 swing inward
+  door between living and study at 2500 from start width 900
+  door glazed_sliding on living.bottom at 3000 from start width 3000 slide right
+  door id=terrace glazed_sliding on study.bottom at center width 1800 open 0.25
+
+  window fixed on living.top at 1200 from start width 1500
+  window casement on living.top at 3400 from start width 1200 hinge left
+  window casement on living.top at 5200 from start width 1200
+  window tilt on living.top at 7000 from start width 800 sill 1500
+  window tilt_turn on study.top at 1000 from start width 1200 hinge right sill 900
+  window tilt_turn on study.top at 3000 from start width 1200
+  window sliding on living.left at center width 2400
+  window on living.bottom at 7000 from start width 1500
+}

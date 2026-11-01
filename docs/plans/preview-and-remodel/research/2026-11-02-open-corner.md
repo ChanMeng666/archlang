@@ -184,10 +184,13 @@ the fixture really reaches the new path.
   corner, and a notch has no word to name. Expected conflict: the import block of
   `opening-relation.ts`, nothing else. `runEndMet` keeps its signature there.
 - **`feat/j8-window-kinds`** rewrites parts of `window.ts`. Conflicts are textual (the pane loop, the
-  sill, `drawCost`), with one decision for whichever lands second: a kind's marks stand at `at ±
-  width/2` on the centreline, so on a leg a hinge mark would stand on the outer corner. Refuse a
-  hinged kind on a leg's corner jamb, or draw the mark on the free jamb only. `fixed` has one pane on
-  the centreline, and the mitre gives it the corner point.
+  sill, `drawCost`), with one decision, since ruled: a hinge cannot stand at the corner end, so a
+  `hinge` naming it is `E_WINDOW_CORNER`, one on the free jamb is fine, and a hinged kind with none
+  written draws its mark on the free jamb alone. A kind's marks stand in the leg's **clear span**, from
+  the free jamb to the other wall's inner face, not at `at`: on a narrow leg `at` lies almost on the
+  mitre, and the whole mitre lies at or past that face, so a mark in the clear span cannot reach it.
+  `fixed` has one pane on the centreline, and the mitre gives it the corner point. Kinds need not
+  match across a corner: each leg stops on the mitre.
 
 ## 6. What this does not do
 

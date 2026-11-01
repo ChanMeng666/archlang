@@ -353,19 +353,20 @@ export interface AccessConnector {
   width: number;
   host: (Pick<WallSegment, "a" | "b" | "arc" | "thickness"> & { category: string; wallId: string }) | null;
   kind: "door" | "opening";
-  /** A door's kind when it is not hinged ({@link RDoor.doorKind}); a `double` door passes
-   *  through one leaf ({@link activeLeafWidth}). */
+  /** A door's kind when it is not hinged ({@link RDoor.doorKind}); a `double` or
+   *  `glazed_sliding` door passes through one leaf ({@link activeLeafWidth}). */
   doorKind?: string;
 }
 
 /**
  * The width a person passes through: a `double` door's one active leaf, half its width (the
  * ADA 2010 Standards 404.2.3: "for a pair of doors, at least one of the active leaves" gives the
- * clear width), else the whole width. Read by `W_DOOR_CLEARANCE` and by every connector's clear
+ * clear width), or the half a `glazed_sliding` door's one moving panel leaves when it parks over
+ * the fixed one, else the whole width. Read by `W_DOOR_CLEARANCE` and by every connector's clear
  * width ({@link connectorClearWidth}), so `W_PATH_TOO_NARROW` reads the leaf too.
  */
 export function activeLeafWidth(d: { width: number; doorKind?: string }): number {
-  return d.doorKind === "double" ? d.width / 2 : d.width;
+  return d.doorKind === "double" || d.doorKind === "glazed_sliding" ? d.width / 2 : d.width;
 }
 
 /**
@@ -873,9 +874,10 @@ export function connectorClearWidth(
   return kind === "opening" ? width : Math.max(0, width / leaves - clearAllowanceMm);
 }
 
-/** How many leaves a connector's width is shared by: 2 for a `double` door, else 1. */
+/** How many leaves a connector's width is shared by: 2 for a `double` or `glazed_sliding` door,
+ *  else 1 ({@link activeLeafWidth}). */
 export const leavesOf = (c: { kind: string; doorKind?: string }): number =>
-  c.kind === "door" && c.doorKind === "double" ? 2 : 1;
+  c.kind === "door" && (c.doorKind === "double" || c.doorKind === "glazed_sliding") ? 2 : 1;
 
 /**
  * One {@link AccessEdge} per connector, in connector order. An opening keeps its full

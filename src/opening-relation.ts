@@ -53,9 +53,12 @@ import {
   standingJunctionSpans,
 } from "./opening-junctions.js";
 import type { DatumTable, RoomDatums } from "./room-datums.js";
-import { COMPASS_DATUM_ALIASES, splitDatum } from "./room-datums.js";
+import { COMPASS_DATUM_ALIASES, edgeOfRoom, splitDatum } from "./room-datums.js";
 import {
+  type EdgeLine,
+  extremeRuns,
   pickAt,
+  rectilinear,
   ringParts,
   type RunLine,
   type RunPick,
@@ -63,21 +66,13 @@ import {
   runPicks,
   runText,
   sharedRuns,
+  type SideWord,
   type TileRoom,
 } from "./room-tiling.js";
 import { attachPosStr } from "./statement-print.js";
 import { openBoundaryPhraseOf, wallPhraseOf } from "./wall-ref.js";
 
-/** The four edge words, and the line each lies on. */
-type EdgeWord = "top" | "bottom" | "left" | "right";
-
-/** A straight axis-aligned line `x = c` (`vertical`) or `y = c`, with an extent on it. */
-export interface EdgeLine {
-  vertical: boolean;
-  c: number;
-  lo: number;
-  hi: number;
-}
+export type { EdgeLine } from "./room-tiling.js";
 
 /** What the resolver lends a relational opening: the group's frozen datum table, and a read
  *  of a dotted datum name through the group's own reader (its refusals included). */
@@ -105,13 +100,6 @@ export interface RelationCtx {
 }
 
 type Kind = "door" | "window" | "opening";
-
-const EDGE_OF: Record<EdgeWord, (r: RoomDatums) => EdgeLine> = {
-  top: (r) => ({ vertical: false, c: r.top, lo: r.left, hi: r.right }),
-  bottom: (r) => ({ vertical: false, c: r.bottom, lo: r.left, hi: r.right }),
-  left: (r) => ({ vertical: true, c: r.left, lo: r.top, hi: r.bottom }),
-  right: (r) => ({ vertical: true, c: r.right, lo: r.top, hi: r.bottom }),
-};
 
 /** The position as written, for `describe()` and Plan JSON: `800 from end`, `center`;
  *  `undefined` when none is written. The one printer `arch fmt` uses. */
@@ -166,8 +154,16 @@ export function relationalClause(
   const edgeLine = (datum: string): EdgeLine | undefined => {
     const d = splitDatum(datum);
     const word = d ? (COMPASS_DATUM_ALIASES[d.word] ?? d.word) : undefined;
-    const l = d ? lines(d.room) : undefined;
-    return l && word && word in EDGE_OF ? EDGE_OF[word as EdgeWord](l) : undefined;
+    if (!d || !word || word === "cx" || word === "cy") return undefined;
+    const side = word as SideWord;
+    const l = lines(d.room);
+    if (l) {
+      const vertical = side === "left" || side === "right";
+      return { vertical, c: l[side], lo: vertical ? l.top : l.left, hi: vertical ? l.bottom : l.right };
+    }
+    const ring = rooms.find((x) => x.id === d.room)?.poly;
+    const runs = ring && rectilinear(ring) ? extremeRuns(ring, side) : [];
+    return runs.length === 1 ? runs[0] : undefined;
   };
   let run: Run | undefined;
   if (r.between) {
@@ -222,7 +218,7 @@ function readEdge(
     );
     return undefined;
   }
-  const word = (COMPASS_DATUM_ALIASES[d.word] ?? d.word) as EdgeWord | "cx" | "cy";
+  const word = (COMPASS_DATUM_ALIASES[d.word] ?? d.word) as SideWord | "cx" | "cy";
   if (word === "cx" || word === "cy") {
     ctx.diag(
       datumDiag(
@@ -232,8 +228,7 @@ function readEdge(
     );
     return undefined;
   }
-  const lines = access.table.rooms.get(d.room)!;
-  return EDGE_OF[word](lines);
+  return edgeOfRoom(access.table, d.room, word);
 }
 
 const datumDiag = (message: string, span: Span | undefined): Diagnostic => ({
@@ -428,9 +423,9 @@ const rectOf = (r: RoomDatums): NonNullable<TileRoom["rect"]> => ({ x0: r.left, 
 const tileOf = (id: string, r: PairRoom): TileRoom =>
   "ring" in r ? { id, parts: ringParts(r.ring)! } : { id, rect: rectOf(r) };
 
-/** A room of a pair as {@link runPicks} reads it: only a rectangle has edge words. */
+/** A room of a pair as {@link runPicks} reads it: a rectangle's edges, or a polygon's sides. */
 const edgesOf = (id: string, r: PairRoom): TileRoom =>
-  "ring" in r ? { id, shape: "polygon" } : { id, rect: rectOf(r) };
+  "ring" in r ? { id, shape: "polygon", ring: r.ring } : { id, rect: rectOf(r) };
 
 /** Does `p` lie on the run? Exactly: an opening's centre was put on its run's line. */
 const standsOn = (p: Point, r: Run): boolean => {
@@ -1017,7 +1012,9 @@ function placeCorner(
   const end = runEndMet(edge, run);
   if (end === undefined) {
     return refuse(`\`${pos.edge}\` does not meet \`${attach.wall}\` at an end of it, so the two make no corner`, [
-      `Name an edge of "${room}" that crosses \`${attach.wall}\` at one of its ends.`,
+      room !== undefined && ctx.datums?.table.rings.has(room)
+        ? "A polygon's side words name its outermost runs, which meet only at convex corners, so a re-entrant corner has no word: stand the windows clear of it with `at <mm> from <room>.<edge>`."
+        : `Name an edge of "${room}" that crosses \`${attach.wall}\` at one of its ends.`,
     ]);
   }
   const along = run[end];

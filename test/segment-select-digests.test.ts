@@ -20,7 +20,9 @@ const DIGESTS: [string, string][] = [
   ["open", "1f3887ca145238a1bbf08e60fe13b2cdbf514f93903085fa051a3c0489f55b1e"], // H1: lint() gains W_EXTERIOR_RING_OPEN, true of this plan (an L on two of the room's four sides closes nothing); take that one diagnostic out and the digest is the old b084b3a9…; SVG, describe() and compile().diagnostics did not move. PS2.29: message text only, same code, same span
   ["derived", "0e9ba98a14acd1b134b0a7c40a08d4099d98b7f1be73c44dc15ee4b9bfaf289d"], // PS2.29: message text only, same code, same span
   ["frames", "fa90e92405b3198a736d6f7c9da05847bd679947c95e7b16b8da63be94a03822"], // PS2.29: message text only, same code, same span
-  ["refused", "81a19f28940657c107b17ca08d7414999776c386e8a9d97a0e4450ca79c3346c"], // PS2.29: message text only, same code, same span
+  // A slanted polygon's datum refusal now reads "rectangular or rectilinear": message text only. With the old
+  // words put back this plan's payload hashes to the digest before it, 81a19f28.
+  ["refused", "6735289270fe0fa8fcee6d6adabc593c177e7f5673b4787a629801a8442f1967"],
   ["compass-refused", "bdfa0c557e5c3653610eee94b8f9f9c1983a262b0f91b31ea86e1a7f4708e741"],
 ];
 

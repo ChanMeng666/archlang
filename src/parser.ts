@@ -813,7 +813,16 @@ class Parser {
       );
     }
     if ((subject as ScheduleSubject) === "openings") plan.openingSchedule = true;
-    else plan.schedule = "rooms";
+    else {
+      plan.schedule = "rooms";
+      // `net` rides on `rooms` only. A word on the next line can also start a statement: an inline
+      // macro call of a component named `net` (`net()`), as `dims auto` guards `walls` above. So `net`
+      // is taken only when no `(` follows it.
+      if (this.isType("ident") && this.peek().value === "net" && this.peek(1).type !== "lparen") {
+        this.next();
+        plan.scheduleNet = true;
+      }
+    }
   }
 
   /**
@@ -1647,7 +1656,10 @@ class Parser {
     this.eat("lparen");
     const over: SetOverride[] = [];
     while (!this.isType("rparen") && !this.isType("eof")) {
-      const key = this.eatIdent().value;
+      const keyTok = this.eatIdent();
+      const key = keyTok.value;
+      const refused = def.setRefuses?.[key];
+      if (refused) this.fail(refused, keyTok);
       this.eat("colon");
       over.push({ key, value: this.parseSetValue() });
       if (this.isType("comma")) this.next();

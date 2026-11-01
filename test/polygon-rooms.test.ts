@@ -441,24 +441,26 @@ describe("polygon rooms — doors, windows and occupancy", () => {
   });
 });
 
-describe("polygon rooms — rect-only features refuse, they never approximate", () => {
-  it("E_PLACE_POLY: relational placement against a polygon reference", () => {
+describe("polygon rooms — what has no edges refuses, it never approximates", () => {
+  const SLANTED = "room id=g polygon (0,0) (6000,0) (3000,5000)";
+
+  it("E_PLACE_POLY: relational placement against a slanted polygon reference", () => {
     const cs = codes(`plan "P" {
-      ${L_ROOM}
+      ${SLANTED}
       room id=b right-of g size 3000x3000
     }`);
     expect(cs).toContain("E_PLACE_POLY");
   });
 
   it("E_PLACE_POLY names the way out (`at (x,y)`)", () => {
-    const d = compile(`plan "P" { ${L_ROOM}\n room id=b right-of g size 3000x3000 }`, {
+    const d = compile(`plan "P" { ${SLANTED}\n room id=b right-of g size 3000x3000 }`, {
       noCache: true,
     }).diagnostics.find((x) => x.code === "E_PLACE_POLY");
     expect(d!.message).toContain("at (x,y)");
   });
 
-  it("E_PLACE_POLY: `in <polygon room> anchor …` furniture placement", () => {
-    expect(codes(`plan "P" { ${L_ROOM}\n furniture wc in g anchor bottom-left size 400x700 }`)).toContain(
+  it("E_PLACE_POLY: `in <slanted polygon room> anchor …` furniture placement", () => {
+    expect(codes(`plan "P" { ${SLANTED}\n furniture wc in g anchor bottom-left size 400x700 }`)).toContain(
       "E_PLACE_POLY",
     );
   });
