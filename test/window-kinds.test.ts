@@ -430,7 +430,7 @@ suite("`describe --json` and the schedule", () => {
   const SHEET = "  schedule openings\n";
 
   it("a written kind is `windows[].kind`, in the place a door's sits; none adds no key", () => {
-    const rows = (src: string) => (describePlan(src) as { windows: Record<string, unknown>[] }).windows;
+    const rows = (src: string) => describePlan(src).windows as unknown as Record<string, unknown>[];
     expect(Object.keys(rows(withWindow("window fixed on r.top width 1500"))[0]!)).toEqual([
       "id",
       "room",
@@ -569,14 +569,7 @@ suite("`door glazed_sliding` is a door", () => {
 
   it("the access graph, the entrance and every door rule read it as `sliding`, but for the width", () => {
     const facts = (kind: string) => {
-      const d = describePlan(TERRACE(kind)) as {
-        access: {
-          mainEntrance?: unknown;
-          edges?: { doorId: string; estimatedClearWidth?: number }[];
-          reachable?: unknown;
-        };
-        doors: Record<string, unknown>[];
-      };
+      const d = describePlan(TERRACE(kind));
       return { main: d.access.mainEntrance, doors: d.doors.map(({ kind: _k, ...rest }) => rest) };
     };
     expect(facts("glazed_sliding")).toEqual(facts("sliding"));
@@ -677,8 +670,8 @@ ${stmtAt(4500, b)}
     const els = elementsOf(TERRACE("glazed_sliding"));
     const glazed = els.find((e): e is RDoor => e.kind === "door" && e.doorKind === "glazed_sliding")!;
     const plain = els.find((e): e is RDoor => e.kind === "door" && e.doorKind === undefined)!;
-    expect(door.measures!(plain, undefined as never)).toHaveLength(3);
-    const m = door.measures!(glazed, undefined as never);
+    expect(door.measures!(plain)).toHaveLength(3);
+    const m = door.measures!(glazed);
     expect(Math.max(...m)).toBe(glazed.at.x + glazed.width / 2 + 150);
     expect(Math.min(...m)).toBeLessThanOrEqual(glazed.at.x - glazed.width / 2 - 150);
   });
