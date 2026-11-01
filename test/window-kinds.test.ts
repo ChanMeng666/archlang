@@ -235,6 +235,71 @@ const WITNESS = `    wall id=w exterior thickness 300 { (0,0) (8000,0) (8000,500
     window casement on c at 30% width 1200 hinge left
     window tilt_turn on c at 70% width 1200 hinge right`;
 
+suite("on an L-shaped room", () => {
+  const L = (openings: string): string =>
+    plan(`  room id=liv polygon (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000) label "Living" uses living
+  walls from rooms exterior 300 partition 100
+  door on liv.left at 1500 from start width 1000 swing inward
+${openings}
+`);
+  const FORMS = `  window casement on liv.top at 1500 from start width 1200 hinge left
+  window fixed on liv.top at 4500 from start width 1200
+  window tilt_turn on liv.right at center width 1200
+  door glazed_sliding on liv.bottom at center width 2000 slide right`;
+
+  it("every form stands on a side of the L, and the facts read it", () => {
+    const out = compile(L(FORMS), { noCache: true });
+    expect(out.errors).toEqual([]);
+    const d = describePlan(L(FORMS));
+    expect(d.windows.map((w) => [w.kind, w.room])).toEqual([
+      ["casement", "liv"],
+      ["fixed", "liv"],
+      ["tilt_turn", "liv"],
+    ]);
+    expect(d.doors.at(-1)).toMatchObject({ kind: "glazed_sliding", between: ["exterior", "liv"] });
+    expect(lint(L(FORMS)).map((x) => x.code)).not.toContain("W_LEAF_TOO_WIDE");
+  });
+
+  it("a kind moves no fact the plain plan states, and no room", () => {
+    const plain = L(
+      FORMS.replace("window casement", "window")
+        .replace(" hinge left", "")
+        .replace("window fixed", "window")
+        .replace("window tilt_turn", "window")
+        .replace("door glazed_sliding", "door sliding"),
+    );
+    const strip = (src: string) => {
+      const d = describePlan(src);
+      return {
+        rooms: d.rooms,
+        windows: d.windows.map(({ kind: _k, ...w }) => w),
+        doors: d.doors.map(({ kind: _k, ...x }) => x),
+        totals: d.totals,
+      };
+    };
+    expect(strip(L(FORMS))).toEqual(strip(plain));
+  });
+
+  it("passes the oracle: facts, lint and marks are carried by a turn and a reflection", () => {
+    const body = `    room id=liv polygon (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000) label "Living" uses living
+    walls from rooms exterior 300 partition 100
+    door on liv.left at 1500 from start width 1000 swing inward
+${FORMS.replace(/^ {2}/gm, "    ")}`;
+    expect(compile(witnessPair(body, elementNamed("mx")).p0, { noCache: true }).errors).toEqual([]);
+    for (const name of ["r90", "mx", "r90mx"]) expect(witnessViolations(body, elementNamed(name)), name).toEqual([]);
+  });
+
+  it("a notch edge, on which a side reads nothing, is refused as for a plain window", () => {
+    const codes = (w: string): (string | undefined)[] =>
+      compile(L(`  ${w}`), { noCache: true })
+        .diagnostics.filter((x) => x.severity === "error")
+        .map((x) => x.code);
+    expect(codes("window fixed on liv.right at 5000 from start width 1200")).toEqual(
+      codes("window on liv.right at 5000 from start width 1200"),
+    );
+  });
+});
+
 suite("the equivariance oracle", () => {
   it("the witness compiles: a refused plan has nothing to compare", () => {
     const { p0 } = witnessPair(WITNESS, elementNamed("mx"));

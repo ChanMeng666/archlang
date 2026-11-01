@@ -4,7 +4,7 @@
  * A plan that writes neither form resolves, draws, describes and lints exactly as before, down to
  * its Scene and the steps its resolution spends, in the accessibility profile and on the circulation
  * overlay too. Each digest is {@link stairLawDigest}, the widest law body the repository has
- * (`test/block-stair-law.ts`), **measured against `src/` at `1974d928`** (`main` before the forms),
+ * (`test/block-stair-law.ts`), **measured against `src/` at `ecedd364`** (`main` before the forms),
  * that tree extracted by `git archive`, the body and the rows imported from this branch and handed
  * that tree's compiler. The rows are every plan the block-stair law pins, then
  * {@link WINDOW_INLINE_ROWS}: plain windows and the older door kinds on each path the forms fork from.
@@ -76,7 +76,7 @@ function kindsIn(src: string): { windows: string[]; glazed: boolean } {
   };
 }
 
-/** Measured at `1974d928` (see the header): `[digest, row]`. */
+/** Measured at `ecedd364` (see the header): `[digest, row]`. */
 const BASELINE: [string, string][] = [
   ["e33e9923337208c91bf7093a0fa63040f132db455f3e3e85d584740a18a8f611", "examples/accessible.arch"],
   ["164d5d3f4955ae6a2ea4b3c117bc7b9d6f024ca0f68d52b9f708f77a3ee982b4", "examples/aquarium.arch"],
@@ -84,7 +84,7 @@ const BASELINE: [string, string][] = [
   ["312d17f25ef87de1b03b11ab09383648ec0a85c38a1f4ecf569e54014387b8fd", "examples/bungalow.arch"],
   ["843f1de2ff7da325a3211c0c95d6c4211d47108cc15be61b8364fbc3f2955886", "examples/classroom-block.arch"],
   ["add2574d8abfc894d4d3880bbc97a485bee142c9ef90c16df3e5a491747a4858", "examples/clinic.arch"],
-  ["74b06965f559d70538ab6b8091206a6d7c21228ed57909bbb11a1394132e622a", "examples/corner-cafe.arch"],
+  ["0c5f2a884df8dd9e94a4304efc09c531fc6199a24284a43f4ef2c1e9481eef9a", "examples/corner-cafe.arch"],
   ["411fd77e07ded87ca0555dae3f1abb713057a7b63b5e86e712e3a05e2d4fb02a", "examples/courtyard-house.arch"],
   ["fcb5a98c9bf892177daef2174831cb56be4314d6c9ac66526b1046cd6618438b", "examples/furnished-flat.arch"],
   ["4090de73163a56b3319477311f2a1d38126aa4861359e38193f897b364e58ef5", "examples/gallery-l.arch"],
@@ -111,10 +111,10 @@ const BASELINE: [string, string][] = [
   ["1a78c5532e6c4bb783da712f6f27c83f5c771765278ec8552940d4f73e32beaa", "examples/tiny-house.arch"],
   ["93c6bfea3a6c314a3a9c602a079b64b70593a630f90b3988a7601567e47f9b53", "examples/townhouse.arch"],
   ["12a2c3da84bc3fb045fc784bcad3851edaaf6ae0ec539727b52a5d39e58dca2b", "examples/transit-hall.arch"],
-  ["07b8c9e83ad497933dba52d53e8b5bc55bffbe7d4edb72be12d1ff0838c26b70", "examples/two-bed.arch"],
+  ["f220acec3a66201d974fd3475459a35d52efe4689fc4f76784ccfae1ddc1b92d", "examples/two-bed.arch"],
   ["33437c49c3e35fcf638c3e37456e0ab9382c91a95aeb46b0d1814905aae8ad0a", "examples/two-storey.arch"],
   ["2fe38a4ad849ebb8a3192c7cea724d729f659fed022b9a1740b8b96a0e1db1f9", "test/fixtures/axes-grid.arch"],
-  ["acd6528394a79d385a1e02c64e9646a656daecb22eaeda68fcd8d0a814428aa8", "test/fixtures/chain30.arch"],
+  ["8b201a108d4f8cf901579b200c92b809000d77b9550cda3e092994c09fbba1d5", "test/fixtures/chain30.arch"],
   ["c08051d0ac804cb6ddbc6d6a073934ce248aab2951f1b3bcbb05e242ec1f4c22", "test/fixtures/dense-bays.arch"],
   ["b9215930403c72e737b6486d949354fc8162cf96ec5d53897edfab5f21835e4f", "test/fixtures/diff-a.arch"],
   ["cc20d6821e47c1a45a5c0b94d86a15eda2e2e684a66c096c06ef8071b21bf20b", "test/fixtures/diff-b.arch"],
@@ -125,7 +125,7 @@ const BASELINE: [string, string][] = [
   ["bfe79454671a15f63522c0a770453a819328df15f90b01154d028f5161350046", "test/fixtures/lock-window-moved.arch"],
   ["ff686ab3285ac3d6f30af9607a711627f6f864825a15fef562f19c28700b2753", "test/fixtures/off-path-bypass.arch"],
   ["b1d58662ed6a557fd27aa948f640a3a70d38552402506413bd13f774a15fa47b", "test/fixtures/schedule-sheet.arch"],
-  ["fce50b915b34c243f9cbcf3f8dbdc47b3f2006973098b3d9ab3339dff541cb0d", "test/fixtures/star30.arch"],
+  ["ac6b7954d2cefaa2461c5e8111d1004603b931ef133597f0971e07db78c6dd42", "test/fixtures/star30.arch"],
   ["09ac060ad6731b56e40a23bf9b43938ec0c2aa82d38066050eff243c1b86728a", "test/fixtures/storeys-eaves-overflow.arch"],
   ["3d10dfea39abccb9a292527e7a5c85adaaf04b944de920f9ad3d9690187bcb68", "test/fixtures/zones-levels.arch"],
   ["ee9f057b82b717e4b7c0753daef62a2baa9b3df5c5d8aa617079c3dedce0081e", "test/fixtures/zones-wings.arch"],
@@ -155,8 +155,8 @@ const BASELINE: [string, string][] = [
   ["e140a63b3c5a19f2abfaf470afccbdbdbdf1acccea6da3f7cf0ea52e86d0aacc", "inline:except-slanted"],
   ["6e4367336a461f79b8927cdb2671f2571c0d5e029ca95b26448cf70bd39eb058", "inline:clauses"],
   ["ffcbcbe475c12edbcf2713a4449a06d4eed619f415d3d08ea57428e3cea4bca9", "inline:door-beside-excepted-L"],
-  ["b0c30333ef933c517965aa0a4a7b8022f11d296a6b134eb4ff27f53710ae76ac", "inline:door-positions"],
-  ["2646e902db98a47d07ba4b74dcd1be4256394c939d9067531d2fc624cd74ad45", "inline:door-refusals"],
+  ["9a461091afe9fe608b6f1ad40d02a6a366df5884bf1af8b178b1d03c4011b40b", "inline:door-positions"],
+  ["b699986d9e7a9fd640cba2cc7fd75cd76eb213bf5b01fec1730e1b60fb57f725", "inline:door-refusals"],
   [
     "c393511a4734b76c5a878d1666ab6e36e638b84abcc963a6e01c97a2bbe1b97e",
     "test/defect-corpus/stair-safety/door-onto-flank.arch",
