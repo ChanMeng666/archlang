@@ -61,6 +61,8 @@ import {
 } from "../scripts/gen-llm-spec.js";
 import { AUTO_DIMS_MODES, AXIS_ALIGNS, FURNITURE_ANCHORS, OUTDOOR_KINDS, REL_ALIGNS } from "../src/ast.js";
 import { KEYWORDS } from "../src/grammar/tokens.js";
+import { resolvePlan } from "../src/analyze.js";
+import { travelVector, verticalsOf } from "../src/vertical.js";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -1397,6 +1399,21 @@ describe("spec.llm.md — the gate is not vacuous", () => {
 });
 
 describe("spec.llm.md — the stair line's entry sentence (issue #370)", () => {
+  it("the arrow's direction is the one the run has: N/W up, S/E down, portrait and landscape", () => {
+    const stairLine = specText()
+      .split("\n")
+      .find((l) => l.startsWith("stair "));
+    expect(stairLine).toContain("(arrow points N/W), `dir down` at the opposite end (arrow S/E).");
+    const travel = (size: string, dir: string) => {
+      const { ir } = resolvePlan(plan(`  stair id=s at (0,0) size ${size} dir ${dir}`));
+      return travelVector(verticalsOf(ir!)[0]!);
+    };
+    expect(travel("1000x3000", "up")).toEqual({ x: 0, y: -1 }); // north
+    expect(travel("3000x1000", "up")).toEqual({ x: -1, y: 0 }); // west
+    expect(travel("1000x3000", "down")).toEqual({ x: 0, y: 1 }); // south
+    expect(travel("3000x1000", "down")).toEqual({ x: 1, y: 0 }); // east
+  });
+
   /** A hall with a flight pressed against one wall, so the landing lint names the end it blames. */
   const pressed = (size: string, hall: string, placeAt: string, mirror: "x" | "y"): string =>
     plan(
