@@ -2527,11 +2527,11 @@ passes that scan; the shim release brings the annotations to local installs.
 row of https://developers.openai.com/plugins/deploy/submission-errors as read on 2026-10-15. When
 `test/agent-manifests.test.ts` or the portal disagrees with it, re-check it against that page.
 
-### O.9 · The OpenAI portal finds the `compile` tool's name unclear — `todo`
+### O.9 · The OpenAI portal finds the `compile` tool's name unclear — `done`
 
-The portal's MCP scan reports "compile: This tool's name appears unclear or does not communicate its
-purpose" (the scanner shows the title "Compile ArchLang → SVG, ASCII, Plan JSON or PNG"). Give the
-tool a shorter title at the next shim release (O.7 already schedules it).
+The portal's MCP scan reported "compile: This tool's name appears unclear or does not communicate
+its purpose": the scanner shows a tool's title as its name, and the title listed output formats. The
+title is now "Compile a floor plan to a drawing"; local installs get it at the next shim release.
 
 ### O.10 · Two Dependabot major bumps wait for a decision — todo (decision needed)
 

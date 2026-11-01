@@ -121,8 +121,9 @@ opens the written ZIP again and checks the entry list and both rewritten files;
    or lifecycle hooks; the ZIP has neither. A later change to the listing or the skills needs a new ZIP
    with a new `version`, uploaded as a new version; a change to the hosted server's tools is picked up
    by the portal's scans. The hosted server's tools show "Not live" until the plugin is published.
-   Non-blocking findings (a skill "could create a security risk", the `compile` tool title) do not
-   block submission but may be raised in review.
+   Until then the portal's MCP card also reads "Endpoint unavailable", which clears on publish, so
+   it says nothing about the server. Non-blocking findings (a skill "could create a security risk")
+   do not block submission but may be raised in review.
 
 ### Awesome Copilot (GitHub Copilot CLI marketplace)
 
