@@ -617,7 +617,7 @@ written; a room that no set fits stays empty, with the reason.
   diagnostic it did not have. Otherwise the next position is tried. When a required piece has no
   position, the room is left empty and named in `unresolved` with the code that blocked it. An
   optional piece that does not fit is left out.
-- **Scope.** Rectangular rooms. A polygon room is reported in `unresolved` and left as it is. A room
+- **Scope.** Rectangular rooms, and polygons whose every edge is horizontal or vertical: in those a piece stands only where an anchor or a named wall can say, on the outermost runs and the corners that are vertices of the ring, never against a notch edge. A circle or a slanted polygon is reported in `unresolved` and left as it is. A room
   of a placed component is reported too: furnish the component, or write the piece yourself where
   the instance is placed, `furniture rug in u1.bed anchor center size 800x600 rotate 0`.
 - **Storeys.** A plan with `level` blocks is furnished storey by storey, by the rules of a

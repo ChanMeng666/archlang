@@ -12,7 +12,7 @@ import { FURNITURE_ANCHORS } from "../ast.js";
 import type { Diagnostic, Span } from "../diagnostics.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { RenderSizes, SceneNode } from "../scene.js";
-import type { FurnitureAuthored, ResolvedElement, RFurniture, RRoom } from "../ir.js";
+import type { FurnitureAuthored, ResolvedElement, RFurniture, RRoom, RWall } from "../ir.js";
 import { rectCorners, segmentsOfWall, unit, normal, add, mul, sub, length, type WallSegment } from "../geometry.js";
 import type { BBox } from "../geometry/rect.js";
 import { pointInPolygon } from "../geometry/polygon.js";
@@ -21,12 +21,15 @@ import { mirrorGlyph } from "./glyph-chirality.js";
 import { mapSceneNode } from "./glyph-lib.js";
 import { defaultFootprint, fixtureSpec, orientationMatters } from "../fixtures-catalog.js";
 import { chargeSteps } from "../expr.js";
-import { COMPASS_DATUM_ALIASES, splitDatum } from "../room-datums.js";
+import { COMPASS_DATUM_ALIASES, edgeOfRoom, splitDatum } from "../room-datums.js";
+import { rectilinear, rectInRing, runRect } from "../room-tiling.js";
 import { parseSegmentSelect, segmentSelectText, selectSegment } from "../segment-select.js";
 import { fmt3, MODEL_RANGE_MM } from "../num-format.js";
 import { facingTurn, openingBody, TURNS } from "../furniture-relation.js";
 import {
   ANCHOR_BACK_EDGES,
+  anchoredAt,
+  anchorRuns,
   backCandidateEdges,
   backEdgeForRotate,
   backingWallForRoomEdge,
@@ -755,17 +758,8 @@ function placeInRoom(
   // `in <room> anchor|centered` measures from the room RECTANGLE's corners, edges and
   // centre. A polygon room has none of those as a whole — its bounding box is not its
   // floor, so "anchor bottom-left" could land the piece in a notch that is outside the
-  // room. Refuse and name the alternative rather than place it somewhere plausible-
-  // looking and wrong (ADR 0005 — the core never guesses).
-  if (room.poly) {
-    ctx.diag({
-      severity: "error",
-      message: `Furniture "${id}" is placed \`in ${roomId}\` with \`${place.mode === "centered" ? "centered" : `anchor ${place.anchor}`}\`, but "${roomId}" is a polygon room — anchored placement needs a rectangular room. Place it with \`at (x,y)\` (plus \`rotate\`) instead.`,
-      code: "E_PLACE_POLY",
-      span,
-    });
-    return null;
-  }
+  // room. A rectilinear ring reads its own corners and extreme runs instead.
+  if (room.poly) return placeInRing(id, place, room, category, w, h, ctx, span, derive);
   const x0 = room.at.x;
   const y0 = room.at.y;
   const x1 = x0 + room.size.w;
@@ -783,14 +777,7 @@ function placeInRoom(
   // to the backing wall's inner face. `null` = keep the room-rect edge, either because
   // the author did not ask for `flush` or because that edge has no wall behind it.
   if (place.flush && ANCHOR_BACK_EDGES[a].length === 0) flushWithoutEdge(id, place, ctx, span);
-  // Both questions read the walls that stand (B3a): a `status demolish` wall backs nothing, so an
-  // edge whose only wall is coming out measures `flush` from the room edge, as an unwalled one does,
-  // and derives no turn. The same array when nothing is demolished (the copy is charged first).
-  let walls = ctx.walls;
-  if (walls.some((wl) => wl.status === "demolish")) {
-    chargeSteps(walls.length);
-    walls = walls.filter((wl) => wl.status !== "demolish");
-  }
+  const walls = standingWalls(ctx);
   const face = (e: RectEdge): number | null =>
     place.flush && ANCHOR_BACK_EDGES[a].includes(e)
       ? innerFaceOfRoomEdge(roomRect, e, walls, FIXTURE_WALL_TOL_MM)
@@ -811,6 +798,75 @@ function placeInRoom(
   const shape = backCandidateEdges({ w, h }, defaultFootprint(category));
   const backed = ANCHOR_BACK_EDGES[a].filter(
     (e) => shape.includes(e) && backingWallForRoomEdge(roomRect, e, walls, FIXTURE_WALL_TOL_MM) !== null,
+  );
+  return backed.length === 1 ? { at, rotate: rotateForBackEdge(backed[0]!) } : { at };
+}
+
+/**
+ * Both anchor questions read the walls that stand (B3a): a `status demolish` wall backs nothing, so
+ * an edge whose only wall is coming out measures `flush` from the room edge, as an unwalled one does,
+ * and derives no turn. The same array when nothing is demolished (the copy is charged first).
+ */
+function standingWalls(ctx: ResolveCtx): RWall[] {
+  if (!ctx.walls.some((wl) => wl.status === "demolish")) return ctx.walls;
+  chargeSteps(ctx.walls.length);
+  return ctx.walls.filter((wl) => wl.status !== "demolish");
+}
+
+/**
+ * `in <polygon> anchor <a>`: {@link placeInRoom} on a ring (design: the G10 addendum of 2026-11-02).
+ * The anchor stands on the ring's own corners and extreme runs ({@link anchorRuns}); `flush` and the
+ * derived turn hand each run to the wall scans, and the footprint must lie inside the ring. Anything
+ * else is `E_PLACE_POLY`, naming the way out. The wall scans are charged before they run.
+ */
+function placeInRing(
+  id: string,
+  place: NonNullable<FurnitureNode["place"]>,
+  room: RRoom,
+  category: string,
+  w: number,
+  h: number,
+  ctx: ResolveCtx,
+  span: Span | undefined,
+  derive: boolean,
+): { at: Point; rotate?: number } | null {
+  const ring = room.poly!;
+  const written = place.mode === "centered" ? "centered" : `anchor ${place.anchor}`;
+  const refuse = (why: string): null => {
+    ctx.diag({
+      severity: "error",
+      message: `Furniture "${id}" is placed \`in ${room.id}\` with \`${written}\`, but ${why}. Place it with \`at (x,y)\` (plus \`rotate\`) instead.`,
+      code: "E_PLACE_POLY",
+      span,
+    });
+    return null;
+  };
+  if (room._ringRefused) return refuse(`the outline of "${room.id}" was refused (see its own error)`);
+  if (room.circle || !rectilinear(ring))
+    return refuse(
+      `"${room.id}" is ${room.circle ? "a circle room" : "a polygon room with an edge neither horizontal nor vertical"} — anchored placement needs a rectangular or rectilinear room`,
+    );
+  if (place.mode === "centered" || place.anchor === "center")
+    return refuse(`the middle of polygon room "${room.id}" may not be floor — anchor it to a side or a corner`);
+  const a = place.anchor;
+  const runs = anchorRuns(ring, a);
+  if (typeof runs === "string") return refuse(`on polygon room "${room.id}", ${runs}`);
+  const inset = place.inset !== undefined ? ctx.eval(place.inset) : 0;
+  const walls = standingWalls(ctx);
+  const edges = ANCHOR_BACK_EDGES[a];
+  let points = 0;
+  for (const wl of walls) points += wl.points.length;
+  chargeSteps(2 * edges.length * (walls.length + points + 1));
+  const segs = walls.flatMap((wl) => segmentsOfWall(wl));
+  const face = (e: RectEdge): number | null =>
+    place.flush ? innerFaceOfRoomEdge(runRect(runs[e]!), e, walls, FIXTURE_WALL_TOL_MM, segs) : null;
+  const at = anchoredAt(runs, w, h, inset, face);
+  if (!rectInRing({ x: at.x, y: at.y, w, h }, ring))
+    return refuse(`a ${fmt3(w)}x${fmt3(h)} piece there leaves the floor of polygon room "${room.id}"`);
+  if (!derive) return { at };
+  const shape = backCandidateEdges({ w, h }, defaultFootprint(category));
+  const backed = edges.filter(
+    (e) => shape.includes(e) && backingWallForRoomEdge(runRect(runs[e]!), e, walls, FIXTURE_WALL_TOL_MM, segs) !== null,
   );
   return backed.length === 1 ? { at, rotate: rotateForBackEdge(backed[0]!) } : { at };
 }
@@ -911,11 +967,10 @@ function placeAgainstEdge(
     return err(
       `is placed \`against ${name}\`, an edge of "${d.room}", but written \`in ${inRoom}\`: the edge already names the room`,
     );
-  const r = access.table.rooms.get(d.room)!;
+  // The read above took this side as one run or refused, so the accessor finds that same run.
+  const { c, lo, hi } = edgeOfRoom(access.table, d.room, edge)!;
   const horiz = edge === "top" || edge === "bottom";
-  const c = horiz ? (edge === "top" ? r.top : r.bottom) : edge === "left" ? r.left : r.right;
-  const lo = horiz ? r.left : r.top;
-  const len = (horiz ? r.right : r.bottom) - lo;
+  const len = hi - lo;
   const off = offset ?? len / 2;
   if (!(off >= 0 && off <= len)) return err(`offset ${fmt3(off)} is outside the edge \`${name}\` (0..${fmt3(len)})`);
   const s0 = lo + off - along / 2;
@@ -996,6 +1051,12 @@ function placeAgainstEdge(
     default:
       at = { x: back - depth, y: mid - along / 2 };
   }
+  // A rectangle's piece stays beside its edge; along a polygon's run it can reach the notch.
+  const ring = access.table.rings.get(d.room);
+  if (ring && !rectInRing({ x: at.x, y: at.y, w, h }, ring))
+    return err(
+      `is placed \`against ${name}\`, but a ${fmt3(w)}x${fmt3(h)} piece there leaves the floor of "${d.room}"`,
+    );
   return { at, size: { w, h }, rotate: rotateForBackEdge(edge), room: d.room };
 }
 

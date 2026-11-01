@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- An L-shaped room now has sides (issue #363). On a `room polygon` whose edges are all horizontal or vertical, `right-of` and the other relational clauses, `liv.top` and the other edge datums, `window on liv.left`, `against liv.left` and `in liv anchor …` read the outline's run on that side, never the bounding box. `align` reads that run's ends. A corner anchor needs a vertex of the outline there. Refused, with the runs named: a side of two runs (the prongs of a U), a corner in the notch, `centered`, `liv.cx`, and a piece that would leave the floor.
+- `archlang finish` furnishes an L-shaped room (issue #370). A piece stands only where those forms can say, on the outermost runs and the corners of the outline, and the never-worse check decides as before. A notch edge takes no piece. A circle or a slanted polygon is still reported and left as it is.
+
 ## [1.51.0] - 2026-11-02
 
 ### Added

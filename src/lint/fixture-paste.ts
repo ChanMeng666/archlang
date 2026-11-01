@@ -17,9 +17,9 @@
  *     reproduced with `placeInRoom`'s own arithmetic (`elements/furniture.ts`): the anchored
  *     edge(s) on the inner wall face, the rotation derived from the one anchored edge the
  *     footprint's aspect allows;
- *   - a `polygon` or relational room cannot take `anchor` (E_PLACE_POLY / E_PLACE_REF), so it
- *     gets `at (x,y) … rotate … in <room>` with the coordinates on the plan grid, taken from
- *     the ring's axis-aligned edges and the wall face behind each.
+ *   - a `polygon` room, whose `anchor` reaches only its outermost runs, and a relational room get
+ *     `at (x,y) … rotate … in <room>` with the coordinates on the plan grid, taken from the
+ *     ring's axis-aligned edges and the wall face behind each.
  * Pure, bounded by the room's edge count times the plan's doors, walls and furniture.
  */
 
