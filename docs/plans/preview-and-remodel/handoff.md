@@ -21,6 +21,8 @@ signal moved at 4 signups or 1 first frame a week. n is tiny. Posts 2–4 are re
 
 ArchCanvas stays on core 1.48 (D28); the bump to 1.50 is a draft PR there.
 
+**OpenAI plugin directory:** ArchLang is live at 1.50.1 (`docs/seo.md` section 8). `main` is ahead of npm by the `compile -o` format fix and the Playground's paper-sized PDF, which is already deployed. The next core release must version above 1.50.1, and the listing's open items are O.11 to O.15 in `docs/backlog.md`.
+
 **A real user:** Daniel Damm (X, GitHub bobsch-io) draws German houses with an agent and filed #362–#370.
 Thread: growth `discovery/interviews/2026-10-30-daniel-damm-x-thread.md`. Also needs IFC: not close, never
 promise it.

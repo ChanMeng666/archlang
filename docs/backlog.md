@@ -2534,11 +2534,47 @@ row of https://developers.openai.com/plugins/deploy/submission-errors as read on
 The portal's MCP scan reported "compile: This tool's name appears unclear or does not communicate
 its purpose": the scanner shows a tool's title as its name, and the title listed output formats. The
 title is now "Compile a floor plan to a drawing"; local installs get it at the next shim release.
+The listing still shows the old one: O.11.
 
 ### O.10 · Two Dependabot major bumps wait for a decision — todo (decision needed)
 
 `@types/node` 22 → 26 (#121; the runtime stays Node 18-22, so the types would run ahead of it) and
 `vitest` 2 → 5 (#119, CI red on the branch). Patch/minor bumps were merged on 2026-10-15 under the merge policy.
+
+### O.11 · The OpenAI listing shows the `compile` tool's old title — `todo` (BLOCKED on a third party)
+
+`tools/list` on the hosted server returns the new title, but the portal and ChatGPT's tool card show
+the definition cached at review ("Compile ArchLang → SVG, ASCII, Plan JSON or PNG"). On 2026-11-01,
+after 1.50.1 was published, Rescan and Reconnect were disabled, and a new draft had not refreshed
+it. Calls are unaffected. **Gate:** ChatGPT's card reads the new title; if it never does, ask OpenAI
+how a published plugin refreshes its tool definitions.
+
+### O.12 · Two OpenAI starter prompts name a `plan.arch` a new user does not have — `todo`
+
+"Make the bedroom in plan.arch 1 m wider…" and "Put plan.arch on an A3 sheet…" passed in ChatGPT on
+2026-11-01, but that account's earlier chats had saved a `plan.arch`, which ChatGPT found. What a
+user with no such file sees is unverified. **Gate:** both prompts run in an account with no saved
+plan. If they fail or dead-end, reword them or have the skills offer to start from a brief; either
+needs a new ZIP and the owner's resubmission.
+
+### O.13 · The OpenAI plugin is untested in Codex — `todo` (owner: a ChatGPT-login Codex)
+
+`codex-cli` on the owner's machine is logged in with a paid API key and its marketplaces list no
+ArchLang, so it was not run; a paid run was not approved. **Gate:** one starter prompt in a Codex
+signed in with a ChatGPT account.
+
+### O.14 · The MCP WAF rule may throttle OpenAI's shared egress — `todo` (check once traffic exists)
+
+The "mcp abuse guard" rule (100 requests per 10 s per IP, then a 10 s block) counts per IP, and
+ChatGPT's calls may share addresses. This is inferred, not observed. **Gate:** the owner reads the
+rule's WAF records in the Cloudflare dashboard, which an agent cannot open.
+
+### O.15 · The next core release must version above the OpenAI listing — `todo` (owner: release)
+
+The listing is at 1.50.1 with its skills pinning CLI 1.50.0, while npm's core is 1.50.0, so a core
+release of exactly 1.50.1 would build a ZIP the directory refuses as unchanged. `[Unreleased]` in
+`CHANGELOG.md` holds the `compile -o plan.pdf` fix, which reaches users only with that release.
+**Gate:** the release takes a higher version, or `build:openai-plugin -- --plugin-version` does.
 
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)
 
