@@ -1,7 +1,7 @@
 /**
  * Playground panels — the content of the output pane and its dialogs: the
  * pan/zoom preview viewport + toolbar + room tooltip, the facts strip, the
- * Describe (access-graph + JSON), Lint (rows + repair), Errors (diagnostics),
+ * Describe (access-graph + JSON), Lint (rows + repair), Takeoff, Errors (diagnostics),
  * the embed-snippet dialog, and the saved-snapshots popover. The embed page
  * (embed.ts) reuses .pz-* and .room-tip from here.
  *
@@ -17,6 +17,7 @@
 #describe,
 #lint,
 #intent,
+#takeoff,
 #preview3d {
   flex: 1;
   min-height: 0;
@@ -961,6 +962,101 @@
 }
 #intent.active {
   display: flex;
+}
+
+/* Takeoff tab: same scroll/padding idiom as #lint; the figures sit in ruled sheet tables, mono and
+   right-aligned so a column of lengths reads down its digits. */
+#takeoff {
+  overflow: auto;
+  padding: 12px 14px;
+  background: var(--paper-panel);
+  flex-direction: column;
+  gap: 10px;
+}
+#takeoff.active {
+  display: flex;
+}
+.to-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.to-controls label {
+  font-size: 12.5px;
+  color: var(--ink-muted);
+}
+.to-controls .lint-caption {
+  flex-basis: 100%;
+  margin: 0;
+}
+.to-controls .lint-caption.to-bad {
+  color: var(--redline-ink);
+}
+.to-waste {
+  width: 6ch;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  padding: 3px 6px;
+  border: 1px solid var(--hairline);
+  border-radius: 2px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.to-waste:focus-visible {
+  outline: 2px solid var(--redline-ink);
+  outline-offset: 1px;
+}
+.to-note {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-muted);
+}
+.to-note:empty {
+  display: none;
+}
+#takeoffOutput {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.to-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+.to-table caption {
+  text-align: left;
+  font-family: var(--font-display);
+  font-variation-settings:
+    "wdth" 85,
+    "wght" 600;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink-muted);
+  padding-bottom: 4px;
+}
+.to-table th {
+  font-weight: 500;
+  text-align: left;
+  color: var(--ink-muted);
+  border-bottom: 1px solid var(--hairline);
+  padding: 3px 8px 3px 0;
+}
+.to-table td {
+  border-bottom: 1px solid var(--hairline);
+  padding: 3px 8px 3px 0;
+}
+.to-table .to-n {
+  text-align: right;
+  font-family: var(--font-mono);
+  padding-left: 12px;
+  padding-right: 0;
+}
+.to-table th.to-n {
+  font-family: inherit;
 }
 
 /* 3D preview tab (card A5) — light only, like every surface here (ADR 0014). The

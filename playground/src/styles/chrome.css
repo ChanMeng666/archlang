@@ -775,8 +775,8 @@ main {
   .lv-btn {
     min-height: 40px;
   }
-  /* Five tabs fit a 360 px phone inside the 16 px gutters only at 8 px side padding; narrower
-     than that, the tabs wrap rather than run into the gutter. */
+  /* The tabs keep inside the 16 px gutters of a phone at 8 px side padding; narrower than their
+     sum, they wrap rather than run into the gutter. */
   .tab {
     padding-inline: 8px;
   }

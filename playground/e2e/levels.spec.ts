@@ -138,10 +138,10 @@ test.describe("storey switcher", () => {
     // storey to choose. `compile()` does not even emit a `pages` key for this plan.
     await expect(page.locator("#storeys")).toBeHidden();
     await expect(page.locator("#storeysSep")).toBeHidden();
-    // The tablist still contains only tabs, so a screen reader is told there are five
-    // (Preview, Describe, Lint, Intent, 3D preview).
-    expect(await page.locator('[role="tablist"] > *').count()).toBe(5);
-    await expect(page.locator('[role="tablist"] > [role="tab"]')).toHaveCount(5);
+    // The tablist still contains only tabs, so a screen reader is told there are six
+    // (Preview, Describe, Lint, Intent, Takeoff, 3D preview).
+    expect(await page.locator('[role="tablist"] > *').count()).toBe(6);
+    await expect(page.locator('[role="tablist"] > [role="tab"]')).toHaveCount(6);
     await expect(levelButtons(page)).toHaveCount(0);
 
     // And the panels are the whole-plan read: no narrowing marker anywhere, and the

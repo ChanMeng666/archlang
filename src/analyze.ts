@@ -32,7 +32,7 @@ import {
   VERTEX_EPS,
 } from "./geometry/polygon.js";
 import { arcAngleOffset, arcLength, arcParamAt, arcPointAt, fullCircleArc } from "./geometry/arc.js";
-import { classifyLabelUses } from "./vocabulary.js";
+import { classifyLabelUses, namesOpenAir } from "./vocabulary.js";
 import { bestPaths, type Digraph } from "./algebra/paths.js";
 import { BOOLEAN, MAX_MIN, MIN_PLUS } from "./algebra/semiring.js";
 // Type-only (erased): a value import of `vertical.ts` from here is harmless, but the
@@ -226,6 +226,11 @@ export function roomUses(room: { label?: string; id: string; uses?: UseKind[] })
   if (room.uses && room.uses.length > 0) return new Set(room.uses);
   return new Set(classifyLabelUses(room.label ?? room.id).uses);
 }
+
+/** Does the room read as open to the sky (a terrace, a yard)? As {@link roomUses} reads: an authored
+ *  `uses` wins, else its label, else its id. */
+export const isOpenAir = (room: { label?: string; id: string; uses?: UseKind[] }): boolean =>
+  !(room.uses && room.uses.length > 0) && namesOpenAir(room.label ?? room.id);
 
 /** Does the room read as a bedroom? */
 export const isBedroom = (room: { label?: string; id: string; uses?: UseKind[] }): boolean =>
