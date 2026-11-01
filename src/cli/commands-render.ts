@@ -43,6 +43,7 @@ import {
   unknownLevel,
   usageError,
   usageErrorFor,
+  formatOfOutput,
 } from "./io.js";
 import {
   type PageSelect,
@@ -104,7 +105,7 @@ export async function cmdCompile(args: Args): Promise<number> {
   const input = args._[0];
   if (!input) return usageError("missing input file (use a path or `-` for stdin)");
 
-  const format = parseFormat(args);
+  const format = parseFormat({ ...args, format: args.format ?? formatOfOutput(args.o) });
   if (!format) return usageError(`unknown format "${args.format}" (use ${FORMAT_LIST})`);
   const jsonRefusal = refuseJsonDrawingFlags(args, format, "compile");
   if (jsonRefusal !== undefined) return jsonRefusal;

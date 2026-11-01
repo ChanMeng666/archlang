@@ -17,6 +17,7 @@ import {
   coreVersion,
   openaiPluginFiles,
   pinSkill,
+  pluginVersion,
   readZip,
   zipName,
 } from "../scripts/build-openai-plugin.js";
@@ -111,6 +112,21 @@ describe("OpenAI plugin ZIP", () => {
     expect(() =>
       checkOpenaiZip(tamper((fs) => fs.map((x) => (x.name === skill ? { ...x, data: read(skill) } : x)))),
     ).toThrow(/pinned CLI/);
+  });
+
+  it("a named plugin version moves the listing and leaves the CLI pin on the core", () => {
+    expect(pluginVersion([], "1.50.0")).toBe("1.50.0");
+    expect(pluginVersion(["--plugin-version=1.50.1"], "1.50.0")).toBe("1.50.1");
+    expect(pluginVersion(["--plugin-version=1.51.0"], "1.50.3")).toBe("1.51.0");
+    for (const bad of ["1.50.0", "1.49.9", "1.5", "v2.0.0"])
+      expect(() => pluginVersion([`--plugin-version=${bad}`], "1.50.0")).toThrow(/plugin-version/);
+
+    const named = readZip(buildOpenaiZip("99.0.0", version));
+    expect(JSON.parse(named.get("plugin.json")!.toString("utf8")).version).toBe("99.0.0");
+    expect(() => checkOpenaiZip(named, "99.0.0", version)).not.toThrow();
+    const skill = [...named.keys()].find((n) => n.startsWith("skills/"))!;
+    expect(named.get(skill)!.toString("utf8")).toContain(`@chanmeng666/archlang@${version}`);
+    expect(() => checkOpenaiZip(named, "99.0.0", "99.0.0")).toThrow(/pinned CLI/);
   });
 
   it("is deterministic", () => {

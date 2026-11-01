@@ -538,6 +538,19 @@ test.describe("downloads", () => {
     expect(bytes.length).toBeGreaterThan(0);
     expect(bytes.subarray(0, 5).toString("utf8")).toBe("%PDF-");
   });
+
+  test("PDF of a plan with a sheet is that paper's size", async ({ page }) => {
+    await page.goto("/");
+    await setEditorSource(
+      page,
+      `plan "Sheet" {\n  units mm\n  paper A3 landscape\n  scale 1:100\n  room id=a at (0,0) size 4000x3000 label "A"\n}\n`,
+    );
+    await waitForPlan(page);
+    const download = await downloadAs(page, "pdf");
+    const box = (await payload(download)).toString("latin1").match(/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/);
+    expect(Number(box?.[1])).toBeCloseTo((420 / 25.4) * 72, 0);
+    expect(Number(box?.[2])).toBeCloseTo((297 / 25.4) * 72, 0);
+  });
 });
 
 test.describe("preview toolbar", () => {

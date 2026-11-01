@@ -1,8 +1,8 @@
 ---
 name: archlang-export
-description: Use when the user wants an ArchLang .arch floor plan delivered as files, e.g. "export this plan as PDF", "give me a DXF for CAD", "a PNG I can paste into a document", "one sheet per floor", "print it at 1:50 on A3". Covers SVG, PNG, PDF and DXF output, paper size and scale, multi-storey plans and batches, all through the archlang CLI. Not for writing or changing the plan itself.
+description: Use when the user wants an ArchLang .arch floor plan delivered as files, e.g. "export this plan as PDF", "give me a DXF for CAD", "a PNG I can paste into a document", "one sheet per floor", "print it at 1:50 on A3". Covers SVG, PNG, PDF and DXF output, paper size and scale, multi-storey plans and batches, through the archlang CLI, or through the ArchLang MCP tools and the Playground where the CLI cannot run. Not for writing or changing the plan itself.
 license: MIT
-compatibility: Needs a shell with Node 18+ and the archlang CLI (npx -y @chanmeng666/archlang, or npm i -g @chanmeng666/archlang for a global archlang). PNG and PDF need optional packages that the CLI can install with --install.
+compatibility: Needs a shell with Node 18+ and the archlang CLI (npx -y @chanmeng666/archlang, or npm i -g @chanmeng666/archlang for a global archlang). PNG and PDF need optional packages that the CLI can install with --install. Without them, the ArchLang MCP tools and a browser.
 ---
 
 # Export a plan
@@ -48,6 +48,21 @@ flag; `archlang spec` describes the `paper` and `scale` statements.
 - Each file written, with its format.
 - The paper size and scale of the sheet, and whether you or `finish` chose them.
 - Any storey or input that failed, with its diagnostic.
+
+## When the CLI cannot run
+
+Some hosts have no shell, or a shell that cannot reach npm: in ChatGPT's sandbox `npx` only times
+out, and a retry ends in `ENOTCACHED`. Stop after the first such failure and do not substitute
+another PDF tool. With the ArchLang MCP tools:
+
+1. Set the plan's `paper` and `scale`, then check it with the `validate` tool and render it with
+   the `compile` tool. `W_SCALE_OVERFLOW` means the sheet cannot hold the drawing at that scale:
+   choose a smaller scale or a larger sheet, and say which.
+2. For SVG, `compile` returns the drawing.
+3. For PDF, PNG or DXF, call the `link` tool and give the user its `playground` URL. In the
+   Playground they choose the format beside the Download button and press it.
+4. Say plainly that the user downloads the file and that you wrote none. A Playground PDF is an
+   image on a page of the sheet's paper size; a vector PDF needs the CLI.
 
 ## When something goes wrong
 

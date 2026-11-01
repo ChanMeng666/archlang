@@ -24,7 +24,7 @@ import { encodeSrc, updateHash } from "./share.js";
 import { mountSnapshots } from "./snapshots.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
 import { levelFileName } from "./levels.js";
-import { saveBlob, svgToCanvas } from "./raster-export.js";
+import { paperSizeMm, saveBlob, svgToCanvas } from "./raster-export.js";
 
 /** The `finish` notes that ask something of the author: all but a room it has no pieces for. */
 const declined = (result: FinishResult): FinishResult["unresolved"] =>
@@ -468,15 +468,19 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
         // via jsPDF (lazy-loaded so it never bloats the initial bundle).
         const canvas = await svgToCanvas(clean);
         const { jsPDF } = await import("jspdf");
+        // A plan with a sheet prints at its paper size, so its scale holds; a plan with none
+        // has no physical size and keeps the raster's.
+        const paper = paperSizeMm(clean);
+        const [pageW, pageH] = paper ? [paper.width, paper.height] : [canvas.width, canvas.height];
         const pdf = new jsPDF({
-          orientation: canvas.width >= canvas.height ? "landscape" : "portrait",
-          unit: "pt",
-          format: [canvas.width, canvas.height],
+          orientation: pageW >= pageH ? "landscape" : "portrait",
+          unit: paper ? "mm" : "pt",
+          format: [pageW, pageH],
           compress: true, // Flate-compress streams — line-art on white shrinks hugely.
         });
         // "FAST" compression on the embedded raster keeps the PDF a sane size
         // (an uncompressed full-res PNG embed runs to tens of MB).
-        pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, canvas.width, canvas.height, undefined, "FAST");
+        pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pageW, pageH, undefined, "FAST");
         // jsPDF names its own download, so the level suffix is applied here rather than
         // through `saveBlob` — same rule, one spelling (`levelFileName`).
         pdf.save(levelFileName("floorplan.pdf", level));

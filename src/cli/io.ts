@@ -403,6 +403,15 @@ export function unknownLevel(command: string, want: number, levels: readonly num
 }
 
 /** Parse + validate the `-f` format, or `null` if it's not a known format. */
+/**
+ * The format an output path names, for `compile` with no `-f`: otherwise `-o plan.pdf` writes SVG
+ * bytes under a `.pdf` name and reports success. An unknown extension names none (the default).
+ */
+export function formatOfOutput(out: string | undefined): Format | undefined {
+  const ext = out?.match(/\.([a-z]+)$/i)?.[1]?.toLowerCase();
+  return ext && FORMAT_IDS.has(ext) ? (ext as Format) : undefined;
+}
+
 export function parseFormat(args: Args): Format | null {
   const fmt = (args.format ?? "svg").toLowerCase();
   return FORMAT_IDS.has(fmt) ? (fmt as Format) : null;

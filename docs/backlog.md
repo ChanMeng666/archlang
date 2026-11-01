@@ -2339,10 +2339,12 @@ count. The estimate is the first thing to replace.
 **Gate:** the script prints "N of M codes have a span edit" and a test fails if the count
 drops. **Size:** S.
 
-### U.18 · The playground PDF is raster and not to scale — `todo`
+### U.18 · The playground PDF is raster — `todo`
 
 **Observed (engineering gap audit, row 32).** The playground builds its PDF through jsPDF
-(`playground/src/actions.ts:206-216`), while the CLI writes a vector PDF at true scale.
+(`playground/src/actions.ts`), while the CLI writes a vector PDF at true scale. Since 2026-11-01 a
+plan with a sheet prints at its paper size, so its scale holds; the PDF is still a raster, which is
+what remains of this card.
 
 **Hypothesis.** The playground cannot load pdfkit; the core already produces the sheet SVG.
 Whether a vector path is worth the bundle is open.

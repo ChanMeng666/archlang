@@ -153,7 +153,7 @@ const FMT_FLAG: ManifestFlag = {
   flag: "--format",
   alias: "-f",
   arg: `<${EXPORT_FORMATS.map((f) => f.id).join("|")}>`,
-  description: "output format (default svg); json writes the Plan JSON that --from-json reads",
+  description: "output format (default: the -o extension, else svg); json writes the Plan JSON that --from-json reads",
 };
 const SCALE_FLAG: ManifestFlag = {
   flag: "--scale",
