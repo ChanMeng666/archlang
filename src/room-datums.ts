@@ -9,8 +9,9 @@
  * the group is resolved in (`+y` down, so `top` is the smaller `y`). A `polygon` or `circle`
  * room, a room that could not be placed, and a room of no positive size contribute no
  * lines; the table records why, so a later reader can refuse with the right code rather
- * than report an unknown name. A rectilinear polygon contributes its ring as well, for the one
- * reader that takes a ring where it would take lines (`door|opening between`).
+ * than report an unknown name. A rectilinear polygon contributes its ring as well: its sides
+ * are read from the ring at the read ({@link edgeOfRoom}), one run or a refusal, so a plan that
+ * reads none pays nothing, and `door|opening between` takes the ring where it would take lines.
  *
  * The table is built and frozen here and read by the room-edge datums of the language
  * (`hall.top`, ADR 0028 §2) through the readers below, which the resolver installs on the
@@ -22,7 +23,7 @@ import type { Point } from "./ast.js";
 import type { Diagnostic } from "./diagnostics.js";
 import { chargeSteps, closest, type DatumReader, type Value } from "./expr.js";
 import type { RAxis, RRoom } from "./ir.js";
-import { rectilinear } from "./room-tiling.js";
+import { type EdgeLine, extremeRuns, rectilinear, runsText, type SideWord } from "./room-tiling.js";
 
 /** A rectangular room's lines: edges and centre, in the group's own frame (mm). */
 export interface RoomDatums {
@@ -138,6 +139,28 @@ export const EDGE_WORDS: readonly string[] = Object.freeze([
 ]);
 
 /**
+ * An edge of a room the table holds, as a line and its extent: a rectangle's side, or the one run
+ * on that side of a rectilinear polygon. `undefined` when the room has no such edge: no room, or a
+ * side that is several runs. Reading a ring is charged by {@link extremeRuns}; a rectangle's lines
+ * are a lookup.
+ */
+export function edgeOfRoom(table: DatumTable, room: string, edge: SideWord): EdgeLine | undefined {
+  const r = table.rooms.get(room);
+  if (r !== undefined) {
+    const vertical = edge === "left" || edge === "right";
+    return {
+      vertical,
+      c: r[edge],
+      lo: vertical ? r.top : r.left,
+      hi: vertical ? r.bottom : r.right,
+    };
+  }
+  const ring = table.rings.get(room);
+  const runs = ring ? extremeRuns(ring, edge) : [];
+  return runs.length === 1 ? runs[0] : undefined;
+}
+
+/**
  * A dotted name read as a datum: everything before the last dot names the room, the last
  * segment is the datum word (`west.main.top` is room `west.main`, word `top`). `undefined`
  * when the last segment is neither a datum word nor a compass alias, so the name stays an
@@ -220,8 +243,9 @@ export interface TableReaderOpts {
  * - `E_DATUM_NAME` when the whole dotted path is also an element id inside an instance (an
  *   instance `west` holding an element `top`): never resolved either way;
  * - `E_DATUM_COMPASS` for a compass word where it would mean two things;
- * - `E_ROOM_NOT_RECTANGLE` for a polygon or circle room, `E_DATUM_UNPLACED` for a room that
- *   could not be placed or has no positive size;
+ * - `E_ROOM_NOT_RECTANGLE` for a circle or slanted polygon, a rectilinear polygon's `cx`/`cy`, and
+ *   a side of one that is several runs; `E_DATUM_UNPLACED` for a room that could not be placed or
+ *   has no positive size;
  * - `E_UNKNOWN_REF` for a room the group cannot see (the closest room id as a hint).
  *
  * A read is one table lookup, paid by the evaluation step of the name itself.
@@ -261,10 +285,25 @@ export function tableReader(table: DatumTable, opts: TableReaderOpts): DatumRead
     const lines = table.rooms.get(d.room);
     if (lines !== undefined) return { t: "num", v: lines[word] };
     const why = table.refused.get(d.room);
+    const ring = table.rings.get(d.room);
+    if (ring) {
+      if (word === "cx" || word === "cy") {
+        return refuse({
+          code: "E_ROOM_NOT_RECTANGLE",
+          message: `Room "${d.room}" is a polygon room, so \`${name}\` names no line: the middle of its outline may not be floor; read one of its sides`,
+        });
+      }
+      const runs = extremeRuns(ring, word);
+      if (runs.length === 1) return { t: "num", v: runs[0]!.c };
+      return refuse({
+        code: "E_ROOM_NOT_RECTANGLE",
+        message: `The ${word} side of polygon room "${d.room}" is ${runs.length} separate runs (${runsText(runs)}), so \`${name}\` does not say which`,
+      });
+    }
     if (why === "polygon" || why === "circle") {
       return refuse({
         code: "E_ROOM_NOT_RECTANGLE",
-        message: `Room "${d.room}" is a ${why} room, so \`${name}\` names no edge; only a rectangular room exposes datums`,
+        message: `Room "${d.room}" is a ${why} room, so \`${name}\` names no edge; only a rectangular or rectilinear room exposes datums`,
       });
     }
     if (why === "unplaced" || why === "degenerate") {

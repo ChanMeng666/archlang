@@ -748,10 +748,8 @@ const NEGATIVE: Negative[] = [
   {
     code: "E_PLACE_POLY",
     channel: "compile",
-    note: "a rectangle-only clause REFUSES a polygon room rather than approximating it",
-    src: plan(
-      `  room id=p polygon (0,0) (4000,0) (4000,4000) (2000,4000) (2000,2000) (0,2000)\n  room id=q right-of p size 3000x3000`,
-    ),
+    note: "relational placement REFUSES a slanted polygon rather than approximating it",
+    src: plan(`  room id=p polygon (0,0) (4000,0) (2000,3000)\n  room id=q right-of p size 3000x3000`),
   },
   {
     code: "E_DATUM_BEFORE_ROOMS",
@@ -770,9 +768,9 @@ const NEGATIVE: Negative[] = [
   {
     code: "E_ROOM_NOT_RECTANGLE",
     channel: "compile",
-    note: "a polygon room exposes no datum",
+    note: "a slanted polygon room exposes no datum",
     src: plan(
-      `  room id=p polygon (0,0) (4000,0) (4000,4000) (0,4000)\n  wall interior thickness 100 { (p.left, 0) (0, 4000) }`,
+      `  room id=p polygon (0,0) (4000,0) (2000,3000)\n  wall interior thickness 100 { (p.left, 0) (0, 4000) }`,
     ),
   },
   {

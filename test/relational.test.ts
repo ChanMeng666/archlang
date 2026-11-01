@@ -280,7 +280,7 @@ ${rooms.join(NL)}
   it("a dependent of a polygon-reference failure is UNPLACED", () => {
     expect(
       blame(
-        `  room id=p polygon (0,0) (12000,0) (12000,8000) (6000,8000) (6000,14000) (0,14000)\n  room id=q right-of p size 100x100\n  room id=r below q size 100x100`,
+        `  room id=p polygon (0,0) (12000,0) (6000,8000)\n  room id=q right-of p size 100x100\n  room id=r below q size 100x100`,
       ),
     ).toEqual([
       ["E_PLACE_POLY", "q"],

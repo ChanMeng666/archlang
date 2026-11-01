@@ -1169,9 +1169,9 @@ An opening may be placed by the rooms instead of by a wall
 - Either room of a `between` may be a polygon whose every edge is horizontal or vertical. Where
   the two share one edge nothing changes. Where they share several, the position must **pick
   one**, and only `<mm> from <room>.<edge>` can: the edge has to meet that run at an end, and
-  no other run. A rectangle's edges do this; a polygon has no edge words, so of two polygons
-  the way in is `at (x,y)`. Anything else is refused, and the diagnostic quotes the position
-  that picks each edge.
+  no other run. A rectangle's edges do this, and so does a polygon's side, so of two polygons
+  the way in is `at (x,y)` only for an edge no side reaches. Anything else is refused, and the
+  diagnostic quotes the position that picks each edge.
 - **The nib is enforced, never slid.** A jamb nearer than `max(100 mm, host thickness / 2)` to
   the face of a wall meeting the host, a meeting wall standing inside the span, or a span past
   the end of the run or of its wall is refused with `E_OPENING_NIB`, whose hint names the
@@ -1383,9 +1383,15 @@ room of its own, so `let f() = hall.top` refuses when called; pass the edge in: 
   `west.main.top` is the placed room `west.main`'s edge in page words (the last dotted segment
   is the datum). A component sees only its own rooms. A path that is also an element id
   inside the instance (an instance `west` holding an element `top`) reports `E_DATUM_NAME`.
-- **No datum.** A `polygon` or `circle` room reports `E_ROOM_NOT_RECTANGLE`; a room that could
-  not be placed, or has no positive size, `E_DATUM_UNPLACED`; an unknown room `E_UNKNOWN_REF`
-  with the closest room id as a hint.
+- **A polygon's sides.** On a `polygon` whose every edge is horizontal or vertical, `liv.top`,
+  `bottom`, `left` and `right` are the ring's run on that outermost line, and everything that
+  reads an edge reads that run: an offset, `on liv.left`, `against liv.left`, `segment containing`.
+  `at center` on `on liv.right` is the middle of the run, not of the box. A side of several runs
+  (the prongs of a U) and `cx`, `cy` report `E_ROOM_NOT_RECTANGLE`; a notch edge has no word, so
+  reach it by `at (x,y)`.
+- **No datum.** A `circle` room or a `polygon` with a slanted edge reports `E_ROOM_NOT_RECTANGLE`;
+  a room that could not be placed, or has no positive size, `E_DATUM_UNPLACED`; an unknown room
+  `E_UNKNOWN_REF` with the closest room id as a hint.
 
 ### Polygonal rooms (v1.23)
 
@@ -1426,15 +1432,19 @@ report [`E_ROOM_POLY_SELF_INTERSECT`](error-codes.md); a ring with fewer than th
 *effective* vertices once duplicate and straight-through points are removed reports
 [`E_ROOM_POLY_DEGENERATE`](error-codes.md). A redundant point sitting on an edge is fine.
 
-**What refuses rather than approximates.** Two clauses are arithmetic on a room's four
-rectangle edges, and a bounding box is not a substitute — `anchor bottom-left` on an L
-could land a fixture in the notch, outside the room. Both raise
-[`E_PLACE_POLY`](error-codes.md) and name the way out:
+**What reads the ring, and what refuses.** Two clauses are arithmetic on a room's edges, and a
+bounding box is not a substitute: `anchor bottom-right` on an L would land a fixture in the
+notch, outside the room. A polygon whose every edge is horizontal or vertical has edges of its
+own, its **sides**: the ring's run on each outermost line. Anything else raises
+[`E_PLACE_POLY`](error-codes.md) and names the way out:
 
 | Clause | With a polygon room |
 | --- | --- |
-| `room … right-of <poly>` (and `left-of`/`below`/`above`) | `E_PLACE_POLY` — place this room with `at (x,y)` |
-| `furniture … in <poly> anchor <a>` / `in <poly> centered` | `E_PLACE_POLY` — place the piece with `at (x,y)` (plus `rotate`) |
+| `room … right-of <poly>` (and `left-of`/`below`/`above`) | **Works** on a one-run side: the run's line is where the room stands, and `align` reads the run's ends. `E_PLACE_POLY` on a side of several runs, a circle or a slanted polygon |
+| `furniture … in <poly> anchor <corner>` | **Works** where that corner is a vertex of the ring. `E_PLACE_POLY` in a notch |
+| `furniture … in <poly> anchor top\|bottom\|left\|right` | **Works** on a one-run side, centred on the run, not the box |
+| `furniture … in <poly> centered` / `anchor center` | `E_PLACE_POLY`: the middle of the outline may not be floor |
+| Any anchor whose footprint would leave the ring | `E_PLACE_POLY`: place the piece with `at (x,y)` (plus `rotate`) |
 | `furniture … against wall <id>` | **Works** — a wall is a wall whatever shape the room is |
 | `furniture … at (x,y) in <poly>` | **Works** — an absolute position with declared membership |
 | `walls from rooms`, `door\|opening … between <poly>` | **Works** on a polygon whose every edge is horizontal or vertical — `E_ROOM_NOT_RECTANGLE` on any other |
@@ -1914,8 +1924,8 @@ exactly that number, so the plan draws, describes and lints as if the number wer
   under any other `north`, they are [`E_DATUM_COMPASS`](error-codes.md).
 - `segment containing <room>.<edge>` picks the straight segment whose centreline lies on that
   room edge's line and overlaps the edge. It works on open walls and inside components (in the
-  component's own words). The edge is read as a datum, so a polygon, circle or unplaced room is
-  refused as a datum is.
+  component's own words). The edge is read as a datum, so a circle, a slanted polygon or an
+  unplaced room is refused as a datum is, and a polygon's side reads its one run.
 
 A selector that matches no segment, or several, is [`E_SEGMENT_SELECT`](error-codes.md), and the
 message lists the candidate numbers. A derived wall is reached only the way `segment <n>` reaches

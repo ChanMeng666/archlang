@@ -216,16 +216,16 @@ suite("a position that picks no run is refused, and the diagnostic carries the f
     expect(quoted(all.hints).map((f) => placed(out(f)).host)).toEqual(["u|core", "u|core#2", "u|core#3"]);
   });
 
-  it("two polygons leave no edge word: the hint quotes the points, and they compile", () => {
+  it("two polygons: where no rectangle picks a run a side does, the hint quotes it, and it compiles", () => {
     const line = "  door id=d between a and b at center width 800";
     const src = INTERLOCKED_PLAN.replace(/\n\}\n$/, `\n${line}\n}\n`);
     const d = errors(src);
     expect(d.map((x) => x.code)).toEqual(["E_OPENING_HOST_AMBIGUOUS"]);
     const fixes = quoted(d[0]!.hints);
-    expect(fixes).toEqual(["at (6000,1500)", "at (3000,4500)", "at (4500,3000)"]);
+    expect(fixes).toEqual(["at 1500 from a.top", "at 1500 from a.bottom", "at 1500 from a.right"]);
     expect(
       fixes.map(
-        (f) => placed(INTERLOCKED_PLAN.replace(/\n\}\n$/, `\n  door id=d ${f} width 800 wall partition\n}\n`)).host,
+        (f) => placed(INTERLOCKED_PLAN.replace(/\n\}\n$/, `\n  door id=d between a and b ${f} width 800\n}\n`)).host,
       ),
     ).toEqual(["a|b", "a|b#2", "a|b#3"]);
   });
@@ -239,9 +239,11 @@ suite("a position that picks no run is refused, and the diagnostic carries the f
     expect(quoted(d[0]!.hints)).toEqual(["at 1500 from bed.top", "at 1500 from bed.left"]);
   });
 
-  it("an edge of the polygon itself: no datum, and the fix is still there", () => {
+  it("a side of the polygon itself picks the run it meets, and one that meets none has the fix", () => {
+    expect(errors(door("at 1500 from liv.bottom"))).toEqual([]);
+    expect(placed(door("at 1500 from liv.bottom")).host).toBe("liv|bed");
     const d = errors(door("at 1500 from liv.top"));
-    expect(d.map((x) => x.code)).toEqual(["E_ROOM_NOT_RECTANGLE"]);
+    expect(d.map((x) => x.code)).toEqual(["E_OPENING_DATUM"]);
     expect(d[0]!.message).toContain("`liv.top`");
     expect(quoted(d[0]!.hints)).toEqual(["at 1500 from bed.top", "at 1500 from bed.left"]);
   });
@@ -321,7 +323,8 @@ suite("on a grid, every quoted position is the one that resolves", () => {
     expect(fixes[0]).toBe("at 1550 from bed.top");
     expect(el(paste(L_ODD(50), asDoor(fixes[0]!)), "d").at).toEqual({ x: 3000, y: 4550 });
     const point = quoted(errors(paste(TWO_ODD(50), "door id=d between liv and bed at center width 800"))[0]!.hints);
-    expect(point[1]).toBe("at (3000,4550)");
+    expect(point[1]).toBe("at 1500 from liv.bottom");
+    expect(el(paste(TWO_ODD(50), asDoor(point[1]!)), "d").at).toEqual({ x: 3000, y: 4550 });
     // Measured from the end the edge meets, the same point has another offset.
     const far = quoted(errors(paste(FAR_END(50), "door id=d between liv and bed at center width 800"))[0]!.hints);
     expect(far[0]).toBe("at 1500 from bed.bottom");
@@ -586,13 +589,13 @@ suite("the `open between` refusal quotes what opens one edge", () => {
     expect(statements(src)[0]).toContain("width <mm>");
   });
 
-  it("no edge word: a statement by position, which compiles too", () => {
+  it("no rectangle: a statement by a polygon's side, which compiles too", () => {
     const src = INTERLOCKED_PLAN.replace(
       STATEMENT,
       "  walls from rooms exterior 200 partition 100 { open between a and b }",
     );
     const got = statements(src);
-    expect(got[0]).toBe("opening id=o at (6000,1500) width 2600");
+    expect(got[0]).toBe("opening id=o between a and b at 1500 from a.top width 2600");
     const fixed = INTERLOCKED_PLAN.replace(/\n\}\n$/, `\n  ${got[0]}\n}\n`);
     expect(placed(fixed, "o").host).toBe("a|b");
   });

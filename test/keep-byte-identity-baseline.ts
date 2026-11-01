@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: `centreline_at` on `between` openings moves describe() alone (issue #401), on 18127701 plus fix/j5-opening-host; with the field off every row held, and no evaluation-step count moved
+ * Taken: A catalogue sentence moved: W_ROOM_NO_FIXTURE's fix says a circle or slanted polygon cannot take an anchor, on the base of 1974d928; validate's next carries that text. With the old sentence put back K1 is green on the old table, 22 of 22.
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -233,7 +233,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "eval/goldens/core-and-shell.arch",
-    "0a05d9940404ec5c25b5bf506b840c141853739be5ae7103a1bb6363a304a04c",
+    "2706eddadecac1707f76dc5ab05916f743b7f982bde81ab82403f9068a6a78eb",
     284,
   ],
   [
@@ -323,22 +323,22 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/annotation-collisions/auto-dims-in-room.arch",
-    "b6848ece2367b69f7da9efe478279ae08a54485b3e9f62d1f273ba192202f097",
+    "5fca907df82a4edfbec603aa0ae66ac2ca77aaec9d60c8ce4c4c2a22d0e9be72",
     229,
   ],
   [
     "test/defect-corpus/annotation-collisions/auto-dims-in-room.clean.arch",
-    "7525a59beaccef1e45965c2251dfc2eb18a710916cdc3a27a293476b1509e4aa",
+    "797262ea1f574857c86d5cc1be9d7ba7af2d3b950b3431aa8a16384f25f0b27f",
     229,
   ],
   [
     "test/defect-corpus/annotation-collisions/dim-text-lies.arch",
-    "b38de51c1a67178dd02943810e85c3607f7a7a2d8f4da14cee640753a034151c",
+    "f81b9c426e3e1db4144c8d90ed883ac526b312f73eb0db86b697bb909a4fcb5d",
     185,
   ],
   [
     "test/defect-corpus/annotation-collisions/dim-text-lies.clean.arch",
-    "b830fabd0c19ee46601e3988422133eb81a4d6af7b921831fbc73f3ddc8cc77e",
+    "9aaf03684fc4a85af23326e9b28f7bbeed0c5bca0ef274766779f2a68b3d6a41",
     185,
   ],
   [
@@ -393,22 +393,22 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/circulation-privacy/bath-door-off-kitchen.arch",
-    "a48a618e23c94e8ac942040acfcfdf297ff19df72e048e2bcd67da626199df5a",
+    "0c28c96b0b8ce32e05039c581f3ff73a2d517ac93bde1e8dbe2bffacbdc4a1fb",
     170,
   ],
   [
     "test/defect-corpus/circulation-privacy/bath-door-off-kitchen.clean.arch",
-    "a45c598564c6c8cc1dc07362ff3cd930dee67dbc7c21f906d516c6b15a4ee282",
+    "b87955a83f1bbef5220740a90f0c00dc2a85f236d1cfb893f52dc82f4ee90356",
     170,
   ],
   [
     "test/defect-corpus/circulation-privacy/bath-leafless-to-living.arch",
-    "c8819e1c5cd420c12e9ffa7bdda25f9031d9e9e3f657efb496bc912b0a4a75bf",
+    "fdd1abc30c15e8a4015b4a31112953e302955447c4a5c548cd73ac56f2f01115",
     190,
   ],
   [
     "test/defect-corpus/circulation-privacy/bath-leafless-to-living.clean.arch",
-    "bc85b7e0e233f5ca6d77153ff2ad5307c058062e10ed00a673bd3a960e831210",
+    "dc08c7f7dd02fd22c3c21a8e0d1a5ef4322cd2c679a10101fc5b634c11a33844",
     190,
   ],
   [
@@ -423,12 +423,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/circulation-privacy/bath-via-bedroom.arch",
-    "acaed29922fc0fe8a38a415a5b195286af3654e2bb3d4331a109a8264523c410",
+    "c6caf8fc985601ba04a6d32eb316842dcbe271b193be87465c1d832d454a236e",
     185,
   ],
   [
     "test/defect-corpus/circulation-privacy/bath-via-bedroom.clean.arch",
-    "16ec7ccc1bfa027aecd26f6e4c6c701675c2d254c6d07c6d2901a91d6cc3855e",
+    "73cd0f698cab7583e2edb30354d6b8fb85cea4711d430950200fec6e9d6571d3",
     185,
   ],
   [
@@ -463,22 +463,22 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/circulation-privacy/living-via-bedrooms.arch",
-    "5ab5c5f91cb3497a8476735604a7e91266dca461829008d1f9557d494ca0ebe3",
+    "3faf835a70bb35883c2862d8154af179bd8df3ce2166b1140881ae3b5af29845",
     255,
   ],
   [
     "test/defect-corpus/circulation-privacy/living-via-bedrooms.clean.arch",
-    "f4bed6d576d89f72af808fb51f5f6ddd15fad69021426deae029612a1f601e1f",
+    "61882a1e3893c560dd866109d0224095f10d2c5fd41789ce09dcfc5912e1c4ec",
     268,
   ],
   [
     "test/defect-corpus/circulation-privacy/two-bed-chain.arch",
-    "b9af7cb51ddb2ad0fcd9955a675ba505c9a8c24ae27abd2f8da7c1a1183bbf92",
+    "3e5a35ca96a0e44d63bf6350e707ff36bc3df634e008aade5226ba571246d36e",
     299,
   ],
   [
     "test/defect-corpus/circulation-privacy/two-bed-chain.clean.arch",
-    "001b5a10c6569aeb055b921a948c0d4bff3f1c6493d55301ed093b6be91a9a18",
+    "365659b60921976b2cbd1e9b09247468dd9b3e9fbcfbd85477ba7b6ee5293fad",
     299,
   ],
   [
@@ -493,12 +493,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/circulation-privacy/wc-off-servery.arch",
-    "6d889c15102dc62a1cf38937d30523a0e26849da16f666019c608b1b9e48e552",
+    "348eadbac0e38c5b8b71c041e68b9dc1a90f8abf1bd7bbe7a205abb4d7a30d06",
     276,
   ],
   [
     "test/defect-corpus/circulation-privacy/wc-off-servery.clean.arch",
-    "911603bbde78febf2ba0d5380dabbd7f99de61a9cdaecde20cf20bfe00c2bafe",
+    "cc1c42e5d190bc2524f0489ef1595550266e177e75ea9b5873cdc3ffd4eaa193",
     276,
   ],
   [
@@ -883,12 +883,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/openings-ignore-walls/door-fills-gap.arch",
-    "0cd55900f3e310ef70ee9b76ed1a19aaafb236b61bef2707a5d18be6ec86fb28",
+    "f809c03baf708902582fa533f49bd12f4b89bb267e3d99e6dd4c6930b25451f6",
     229,
   ],
   [
     "test/defect-corpus/openings-ignore-walls/door-fills-gap.clean.arch",
-    "298737189d4fbf3a39c8f731d526d93f81cb4f002ae3aa0ba76dbbfa595f274c",
+    "8480d1f6b5ae9cbd6e3d9bc4a07ea6a0d825c1d113254eb9519baead79ead2e6",
     229,
   ],
   [
@@ -953,12 +953,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/openings-ignore-walls/fa-door-across-tee.arch",
-    "34b0d1b00f97bd64705541808776a7eb6da2cb37e281a9792954dbe0bf3252b9",
+    "a925eaaf3f252c8624a8b1fc47e6c6cd2e8d2d68ef2a491de324e978838367e6",
     159,
   ],
   [
     "test/defect-corpus/openings-ignore-walls/fa-door-across-tee.clean.arch",
-    "a0b164e3ca7b6ddae8584f76650a40583f6c74e502c19647a3bb1c9e47373c1c",
+    "20945561e6fc15ff16a0acca2b249bb2d73c63d61e83dca6e09d718dc38b2000",
     159,
   ],
   [
@@ -973,12 +973,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/openings-ignore-walls/opening-between-two-tees.arch",
-    "0ecfea10c9c2968fd42bbf80912312e5212af9663fb827179eb1863829958b15",
+    "d419df9b6abb63214fbf88f87ff050ecd068693745ac5381ad1045a250d78577",
     202,
   ],
   [
     "test/defect-corpus/openings-ignore-walls/opening-between-two-tees.clean.arch",
-    "6f65003dd9de33ad135f4b4a9faf349c11a008c8035cc9c231b152782819d1bc",
+    "a55a0b470d73dc3efc224d1757209be61482d94a535aea28412a1ae5707cff8d",
     202,
   ],
   [
@@ -1203,7 +1203,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/stair-safety/swing-over-stair.arch",
-    "b338ee18e5bab852fdad2a45abbe43d0a20896a9ce975c3c86fe1cf7b5d1d723",
+    "70e4af29aefc144c6790c6c71e8779544b3244b88e539090ece9fa7de7609035",
     186,
   ],
   [
