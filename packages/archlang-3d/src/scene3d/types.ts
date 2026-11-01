@@ -76,7 +76,7 @@ export interface Wall {
   cuts: string[];
 }
 
-export type DoorKind = "hinged" | "sliding" | "barn" | "bifold" | "pocket" | "garage" | "double";
+export type DoorKind = "hinged" | "sliding" | "barn" | "bifold" | "pocket" | "garage" | "double" | "glazed_sliding";
 
 export interface Opening {
   id: string;

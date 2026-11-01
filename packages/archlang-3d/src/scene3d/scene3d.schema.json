@@ -358,7 +358,7 @@
           "enum": ["door", "window", "opening"]
         },
         "doorKind": {
-          "enum": ["hinged", "sliding", "barn", "bifold", "pocket", "garage", "double"]
+          "enum": ["hinged", "sliding", "barn", "bifold", "pocket", "garage", "double", "glazed_sliding"]
         },
         "host": {
           "type": "string"

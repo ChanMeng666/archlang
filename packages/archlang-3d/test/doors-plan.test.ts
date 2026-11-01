@@ -9,7 +9,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { adaptPlan, buildMesh, type Mesh3D, type Pt, type Scene3D, timeline } from "../src/index.js";
-import { checkShells } from "../src/node.js";
+import { checkScene, checkShells } from "../src/node.js";
 import { EXAMPLES_LIST, STRESS_PLANS, WORLD } from "./corpus.js";
 
 const plans: Array<readonly [string, string]> = [...EXAMPLES_LIST, ...Object.entries(STRESS_PLANS)];
@@ -187,5 +187,39 @@ describe("--doors plan on the corpus", () => {
         n,
       ).toBe(true);
     }
+  });
+});
+
+/**
+ * The core's `glazed_sliding` kind (issue #369). The package has no glass door: it builds the closed
+ * panel it builds for `sliding`, on the same scene, and the node says which kind the plan wrote. The
+ * list the validator holds is what this pins: a core kind missing from it fails `V-SCH-01`.
+ */
+describe("a `door glazed_sliding`", () => {
+  const plan = (kind: string): string => `plan "G" {
+  units mm
+  room id=r at (0,0) size 6000x4000 uses living
+  walls from rooms exterior 300 partition 100
+  door on r.left at center width 1000 swing inward
+  door id=t ${kind} on r.bottom at center width 2400 slide right open 0.25
+}
+`;
+  const built = (kind: string) => {
+    const r = adaptPlan(plan(kind));
+    if (!r.ok) throw new Error(r.refusal.code);
+    return { scene: r.scene, mesh: buildMesh(r.scene, { doors: "plan" }) };
+  };
+
+  it("passes the scene check, and builds `sliding`'s panel with its own kind on the node", () => {
+    const glazed = built("glazed_sliding");
+    const sliding = built("sliding");
+    expect(checkScene(glazed.scene).ok).toBe(true);
+    expect(nodeOf(glazed.mesh, glazed.scene.levels[0]!.level, "t")?.extras).toMatchObject({
+      door_kind: "glazed_sliding",
+      pose: "closed",
+    });
+    const same = (m: Mesh3D): string =>
+      JSON.stringify(m).replaceAll('"door_kind":"glazed_sliding"', '"door_kind":"sliding"');
+    expect(same(glazed.mesh)).toBe(JSON.stringify(sliding.mesh));
   });
 });

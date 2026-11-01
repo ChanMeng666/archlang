@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- A `door glazed_sliding` from the core no longer fails the scene check. It builds the closed panel a
+  `sliding` door builds, so it is not glass in the model, and `door_kind` on the node names it.
+
 ## [0.1.1] - 2026-10-31
 
 The first version published through the release workflow, with provenance.
